@@ -14,9 +14,11 @@ livrées ; ce script est la couche T3 (gated). Il lit un CSV `translations/<fami
 avec T2 (hash_<lang> = cell_hash(text_<lang>), même normalize que T1/T2).
 
 Sécurité (HARD) :
-  - `ENABLED = False` par défaut. Même avec `--apply`, le moteur refuse d'appeler
-    l'API tant que `ENABLED` n'est pas passé à `True` dans la source (GO user,
-    #6949 moyen terme). Triple gate : edit source + --apply + clé env.
+  - `ENABLED` contrôlé par la variable d'environnement `TRANSLATE_ENABLED`
+    (`1`/`true`/`yes`/`on`). Défaut : inactif. Même avec `--apply`, le moteur
+    refuse d'appeler l'API tant que `TRANSLATE_ENABLED` n'est pas activé. Triple
+    gate : `TRANSLATE_ENABLED=1` (env, CI-callable sans monkeypatch — grain D
+    #10043) + --apply + clé env. Fini l'activation in-memory par importlib (#10032).
   - `--dry-run` est le mode défaut (no API, no mutation) : imprime le plan de
     traduction (cellules markdown x langues = N appels).
   - Les clés API viennent UNIQUEMENT de l'environnement (`OPENAI_API_KEY`,
@@ -33,8 +35,9 @@ Usage :
   python translate_csv.py --csv translations/iit/iit.csv                  # dry-run plan
   python translate_csv.py --csv x.csv --smoke                              # dry-run 1 cell x 7 langs
   python translate_csv.py --csv x.csv --lang en                            # dry-run 1 langue
-  python translate_csv.py --csv x.csv --apply                              # GATED (ENABLED=False) -> no-op
-  # (activation : éditer ENABLED=True + OPENAI_API_KEY env + --apply)
+  python translate_csv.py --csv x.csv --apply                              # GATED (TRANSLATE_ENABLED inactif) -> no-op
+  # (activation : TRANSLATE_ENABLED=1 + OPENAI_API_KEY env + --apply ; CI-callable)
+  python translate_csv.py --csv x.csv --apply --max-cells 50               # cap dur : 50 traductions max/passe
 """
 import argparse
 import csv
@@ -47,10 +50,26 @@ import urllib.error
 import urllib.request
 
 # ----------------------------------------------------------------------------
-# Gate de sécurité (HARD). `False` = le moteur est inactif même avec --apply.
-# Passer à `True` uniquement après GO user (#6949 moyen terme, #1650 Phase 1).
+# Gate de sécurité (HARD). Inactif par défaut ; activé par la variable
+# d'environnement TRANSLATE_ENABLED (grain D #10043). CI-callable sans
+# monkeypatch : `TRANSLATE_ENABLED=1 python translate_csv.py --csv x --apply`.
+# Triple gate : env flag + --apply + clé API env. GO user = umbrella #10038.
 # ----------------------------------------------------------------------------
-ENABLED = False
+_TRUTHY = ("1", "true", "yes", "on")
+
+
+def _enabled_from_env() -> bool:
+    """Lit la gate d'activation depuis l'env (TRANSLATE_ENABLED). Défaut : off.
+
+    Résout le cran de sûreté posé pendant le développement (ENABLED=False en
+    source) en une activation CI-callable sans monkeypatch : la CI positionne
+    ``TRANSLATE_ENABLED=1`` dans son env, au lieu d'éditer la source en mémoire
+    via ``importlib`` (workaround de #10032, désormais inutile).
+    """
+    return os.getenv("TRANSLATE_ENABLED", "").strip().lower() in _TRUTHY
+
+
+ENABLED = _enabled_from_env()
 
 TARGETS = ["en", "ru", "pt", "es", "ar", "fa", "zh"]
 LANG_NAMES = {
@@ -290,10 +309,17 @@ def main() -> int:
                          "la traduction des commentaires de code est un refinement T3)")
     ap.add_argument("--model", default=DEFAULT_MODEL, help=f"modèle primaire (défaut {DEFAULT_MODEL})")
     ap.add_argument("--base-url", default=DEFAULT_BASE_URL, help="endpoint primaire")
+    ap.add_argument("--max-cells", type=int, default=300,
+                    help="cap dur du nombre de traductions par exécution (défaut 300, grain D "
+                         "#10043) : borne le coût d'une passe et protège contre un bug de hash "
+                         "qui déclencherait une passe complète (24 470 cellules). Neutre sur la gate.")
     ap.add_argument("--limit", type=int, default=None,
-                    help="borne le plan aux N premières traductions (tranche/test bornée, #6949). "
-                         "Neutre sur la gate de sécurité (borne le plan seulement).")
+                    help="[deprecated, alias de --max-cells] surcharge le cap si donné (backward "
+                         "compat #10032). Préférer --max-cells.")
     args = ap.parse_args()
+
+    # Cap effectif : --limit (deprecated alias) surcharge --max-cells sinon (grain D #10043).
+    effective_cap = args.limit if args.limit is not None else args.max_cells
 
     out_path = args.out or args.csv
     rows = load_csv(args.csv)
@@ -312,11 +338,13 @@ def main() -> int:
     if args.smoke:
         first_idx = next((i for i, _ in plan), None)
         plan = [(i, lang) for i, lang in plan if i == first_idx] if first_idx is not None else []
-    if args.limit:
-        plan = plan[:args.limit]
 
+    # dry-run : plan COMPLET (informatif) + cap appliqué en --apply (grain D #10043).
     print(f"[plan] {len(plan)} traductions nécessaires "
           f"({len(langs)} langue(s), include_code={args.include_code})", file=sys.stderr)
+    if len(plan) > effective_cap and not args.smoke:
+        print(f"[cap] --apply sera borné à {effective_cap} traductions (--max-cells) ; "
+              f"{len(plan) - effective_cap} attendront une passe ultérieure.", file=sys.stderr)
 
     if not args.apply:
         print("[dry-run] aucune mutation, aucun appel API. Passe --apply pour exécuter "
@@ -331,15 +359,15 @@ def main() -> int:
             print(f"  ... +{len(plan) - 5} autres", file=sys.stderr)
         return 0
 
-    # --apply : gate de sécurité ENABLED.
+    # --apply : gate de sécurité ENABLED (env TRANSLATE_ENABLED, grain D #10043).
     if not ENABLED:
-        print("[GATED] ENABLED=False dans translate_csv.py. Le moteur T3 est inactif : "
-              "aucun appel API, aucune mutation. Pour activer (après GO user, #6949 "
-              "moyen terme / #1650 Phase 1) : éditer ENABLED=True + définir "
-              "OPENAI_API_KEY env + re-passer --apply.", file=sys.stderr)
+        print("[GATED] TRANSLATE_ENABLED inactif. Le moteur T3 n'appelle pas l'API, "
+              "ne mute rien. Activation CI-callable (sans monkeypatch) : "
+              "`TRANSLATE_ENABLED=1 python translate_csv.py --csv x --apply` + clé "
+              "OPENAI_API_KEY env. GO user = umbrella #10038.", file=sys.stderr)
         return 0
 
-    return 0 if run_translations(rows, langs, args.include_code, out_path, args.smoke, args.limit)[1] == 0 else 1
+    return 0 if run_translations(rows, langs, args.include_code, out_path, args.smoke, effective_cap)[1] == 0 else 1
 
 
 if __name__ == "__main__":

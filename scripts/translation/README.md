@@ -8,7 +8,7 @@ Infrastructure de synchronisation multilingue pour les notebooks pédagogiques. 
 |--------|--------|------|--------|
 | **T1** | `extract_cells_to_csv.py` | Extrait les cellules des notebooks vers le CSV (langue pivot `fr`) | Livré |
 | **T2** | `check_translation_sync.py` | Détecte le drift (source modifiée / trad éditée / cellule supprimée) | Livré (non-bloquant, CI) |
-| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Starter livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976)), gated `ENABLED=False` + `--dry-run` défaut — activation après GO user, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
+| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Moteur livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976)) + activation **env-controlled** (grain D [#10043](https://github.com/jsboige/CoursIA/issues/10043), umbrella [#10038](https://github.com/jsboige/CoursIA/issues/10038)) : gate `TRANSLATE_ENABLED` (off par défaut) + `--dry-run` défaut + cap `--max-cells`. Premier `--apply` réel = mandat user (clé API env, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
 
 ## Issue #6949 — Status de clôture (2026-07-22, c.757)
 
@@ -28,7 +28,7 @@ Travaux d'harmonisation shipped post-issue (PRs additionnelles non-comptées dan
 - [#7731](https://github.com/jsboige/CoursIA/pull/7731) — verdict `FR_CONTAM` (4e classe Argumentum alignée, c.738).
 
 **Hors-scope explicite** (gated) :
-- **Activation T3** (`ENABLED=True` + premier run `--apply`) — mandat user requis, déclencheur Phase 1 de l'épic [#1650](https://github.com/jsboige/CoursIA/issues/1650). Le moteur reste **gated** intentionnellement : la pre-flight account/mandat (coût API, choix LLM en prod, stratégie de quota) sort du périmètre d'une PR de code.
+- **Activation T3** — le **mécanisme** (gate `TRANSLATE_ENABLED` env, cap `--max-cells`, dégradation propre, cache `src_hash`) est livré par le grain D [#10043](https://github.com/jsboige/CoursIA/issues/10043) de l'umbrella [#10038](https://github.com/jsboige/CoursIA/issues/10038) ; le moteur reste **gated** (off par défaut). Le **premier run `--apply` réel** = mandat user (clé `OPENAI_API_KEY` env + GO), déclencheur Phase 1 de l'épic [#1650](https://github.com/jsboige/CoursIA/issues/1650) : la pre-flight account (coût API prod, choix LLM prod, stratégie de quota) sort du périmètre d'une PR de code.
 - **T4 — re-import CSV → notebooks traduits** (papermill `--language <lang>`) — travail post-activation, dépendant du retour d'expérience du premier run T3 réel.
 
 Cible de revue cross-doc (à matérialiser au merge de la PR de clôture c.757) : `docs/translation/argumentum-fork-mapping.md` porte la même déclaration de clôture.

@@ -15,6 +15,7 @@ exercée). stdlib-only (csv/hashlib/os/json/sys/argparse/urllib), hermétique.
 import csv
 import os
 import sys
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -47,6 +48,18 @@ def _write_csv(path, rows):
         for row in rows:
             w.writerow({c: row.get(c, "") for c in t3.CSV_COLUMNS})
     return path
+
+
+def _stub_translator(records):
+    """Remplaçant de translate_markdown qui enregistre (lang, texte) sans appeler l'API.
+
+    Sert aux tests du cap (--max-cells), du cache (0 appels sur lot inchangé) et de
+    la dégradation propre (échec simulé) — grain D #10043. Aucun réseau.
+    """
+    def _fake(fr_text, target_lang, model, key, base_url, **kw):
+        records.append((target_lang, fr_text))
+        return f"[{target_lang}] {fr_text[:12]}", 0.01, 0
+    return _fake
 
 
 # --------------------------------------------------------------------------
@@ -256,16 +269,22 @@ def test_main_dry_run_returns_0_no_mutation(tmp_path, monkeypatch, capsys):
 
 
 def test_main_apply_gated_noop_when_disabled(tmp_path, monkeypatch, capsys):
-    """--apply + ENABLED=False = GATED no-op (aucun appel API, aucune mutation)."""
+    """--apply + TRANSLATE_ENABLED inactif = GATED no-op (aucun appel API, aucune mutation).
+
+    Grain D #10043 : la gate est désormais env-controlled (TRANSLATE_ENABLED),
+    CI-callable sans monkeypatch source. On force la gate fermée pour un test
+    déterministe quel que soit l'environnement d'exécution.
+    """
     csv_path = _write_csv(tmp_path / "in.csv", [_row("c1", text_fr="bonjour")])
     original = csv_path.read_bytes()
+    monkeypatch.setattr(t3, "ENABLED", False)  # gate fermée, déterministe
     monkeypatch.setattr(sys, "argv", ["translate_csv.py", "--csv", str(csv_path), "--apply"])
     rc = t3.main()
     assert rc == 0
     assert csv_path.read_bytes() == original  # gated = aucune mutation
     err = capsys.readouterr().err
     assert "GATED" in err
-    assert "ENABLED=False" in err
+    assert "TRANSLATE_ENABLED inactif" in err
 
 
 def test_main_smoke_restricts_to_first_cell(tmp_path, monkeypatch, capsys):
@@ -281,7 +300,9 @@ def test_main_smoke_restricts_to_first_cell(tmp_path, monkeypatch, capsys):
 
 
 def test_main_limit_bounds_plan(tmp_path, monkeypatch, capsys):
-    # 5 cells markdown x 1 langue = 5 traductions ; --limit 2 borne a 2 (#6949).
+    # 5 cells markdown x 1 langue = 5 traductions. --limit 2 (alias de --max-cells,
+    # grain D #10043) borne l'EXÉCUTION --apply à 2 ; le dry-run affiche le plan
+    # complet (5) + signale le cap.
     csv_path = _write_csv(tmp_path / "in.csv", [
         _row(f"c{i}", text_fr=f"cellule {i}") for i in range(5)
     ])
@@ -290,7 +311,8 @@ def test_main_limit_bounds_plan(tmp_path, monkeypatch, capsys):
     rc = t3.main()
     assert rc == 0
     err = capsys.readouterr().err
-    assert "2 traductions nécessaires" in err  # borne par --limit, pas 5
+    assert "5 traductions nécessaires" in err  # dry-run = plan complet (informatif)
+    assert "borné à 2" in err  # cap --limit=2 signalé pour --apply
 
 
 def test_main_single_lang(tmp_path, monkeypatch, capsys):
@@ -349,3 +371,80 @@ def test_csv_columns_match_pipeline_schema():
     # T3 CSV_COLUMNS doit être un sous-ensemble cohérent du schéma ratifié T1.
     for col in t3.CSV_COLUMNS:
         assert col in t1.COLUMNS, f"T3 column {col} not in T1 schema"
+
+
+# --------------------------------------------------------------------------
+# Grain D #10043 — activation env + cap + dégradation propre + cache
+# --------------------------------------------------------------------------
+
+def test_activation_env_flag(monkeypatch):
+    """TRANSLATE_ENABLED contrôle la gate (CI-callable, sans monkeypatch source).
+
+    Grain D #10043 acceptance #1 : T3 activable sans éditer la source. La CI
+    positionne TRANSLATE_ENABLED=1 dans son env au lieu du workaround importlib
+    de #10032.
+    """
+    monkeypatch.delenv("TRANSLATE_ENABLED", raising=False)
+    assert t3._enabled_from_env() is False
+    for v in ("1", "true", "TRUE", "Yes", "on"):
+        monkeypatch.setenv("TRANSLATE_ENABLED", v)
+        assert t3._enabled_from_env() is True, f"{v!r} should enable"
+    for v in ("0", "false", "no", "off", "", "random", "2"):
+        monkeypatch.setenv("TRANSLATE_ENABLED", v)
+        assert t3._enabled_from_env() is False, f"{v!r} should NOT enable"
+
+
+def test_max_cells_caps_api_calls(tmp_path, monkeypatch):
+    """--max-cells borne le nombre d'appels API (grain D #10043 acceptance #3).
+
+    5 cellules éligibles, cap=2 => exactement 2 appels provider (pas 5). Protège
+    contre un bug de hash qui déclencherait une passe complète.
+    """
+    rows = [_row(f"c{i}", text_fr=f"cellule {i}") for i in range(5)]
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub-model", "k", "http://x")])
+    calls = []
+    monkeypatch.setattr(t3, "translate_markdown", _stub_translator(calls))
+    done, fails = t3.run_translations(rows, ["es"], False, str(tmp_path / "out.csv"), False, limit=2)
+    assert done == 2 and fails == 0
+    assert len(calls) == 2  # cap respecté : 2 appels, pas 5
+
+
+def test_graceful_degradation_no_source_copy(tmp_path, monkeypatch):
+    """Échec provider => text_<lang> RESTE VIDE (jamais recopiée depuis text_fr).
+
+    Grain D #10043 acceptance #4 : pas de falsification (récopie du source dans la
+    colonne cible = même faute que la règle 6 sur les sorties de cellules).
+    """
+
+    def _fail(fr_text, target_lang, model, key, base_url, **kw):
+        raise urllib.error.HTTPError("http://x", 500, "server err", {}, None)
+
+    rows = [_row("c1", text_fr="contenu source français secret")]
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub", "k", "http://x")])
+    monkeypatch.setattr(t3, "translate_markdown", _fail)
+    done, fails = t3.run_translations(rows, ["es"], False, str(tmp_path / "out.csv"), False, limit=5)
+    assert done == 0 and fails == 1
+    assert rows[0]["text_es"] == ""  # resté vide, pas recopié depuis text_fr
+    assert "secret" not in rows[0]["text_es"]
+    assert rows[0]["hash_es"] == ""
+
+
+def test_cache_zero_calls_on_unchanged_lot(tmp_path, monkeypatch):
+    """Cache (text_<lang> rempli) : 2e passe sur lot inchangé = 0 appel provider.
+
+    Grain D #10043 acceptance #2 : la propriété qui rend l'automatisation (grain C)
+    soutenable — les cellules déjà traduites ne sont jamais re-soumises.
+    """
+    rows = [_row(f"c{i}", text_fr=f"cellule {i}") for i in range(3)]
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub", "k", "http://x")])
+    calls1 = []
+    monkeypatch.setattr(t3, "translate_markdown", _stub_translator(calls1))
+    out = str(tmp_path / "out.csv")
+    t3.run_translations(rows, ["es"], False, out, False, limit=10)  # 1re passe
+    assert len(calls1) == 3  # 3 cellules traduites
+    # 2e passe : text_es rempli pour les 3 => plan vide => 0 appel (cache)
+    calls2 = []
+    monkeypatch.setattr(t3, "translate_markdown", _stub_translator(calls2))
+    done2, fails2 = t3.run_translations(rows, ["es"], False, out, False, limit=10)
+    assert done2 == 0 and fails2 == 0
+    assert len(calls2) == 0  # cache : 0 appel provider sur lot inchangé
