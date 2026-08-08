@@ -236,6 +236,26 @@ _BIBLIO_CONTEXT_RE = re.compile(
 )
 _BIBLIO_CONTEXT_WINDOW = 200  # fenêtre de recherche du contexte (chars avant/après)
 
+# FP class 5 (#9998) : references croisees structurelles vers un autre notebook
+# de la serie. La prose pedagogique pointe frequemment un notebook voisin via un
+# lien markdown dont le TEXTE et/ou l'URL portent l'indice du notebook :
+# « la theorie du [2.8](2.8-Theorie-PAC.ipynb) », « l'ACP du
+# [2.6](2.6-Clustering-KMeans-PCA.ipynb) », « [<< 2.8-Theorie-PAC](...ipynb) ».
+# Le nombre extrait (2.8, 2.6, 1.3) est l'IDENTIFIANT du notebook pointe, pas une
+# mesure calculee -- aucun output ne peut le verifier. SAFE par construction : on
+# ne filtre la decimale N.M que si TOUTES ses occurrences dans la cellule
+# tombent a l'interieur d'un span de lien markdown ciblant un .ipynb. Si une
+# seule occurrence est hors-lien (potentielle mesure en prose), on ne filtre pas
+# (conservateur, 0 sur-filtrage). Verifie firsthand : 20/10895 orphelins corpus
+# supprimes (0.18%), concentres dans 2.9-Grokking-Generalisation (cellules de
+# conclusion/navigation referencent 2.5/2.6/2.8 via liens .ipynb -- chaque indice
+# y apparait exclusivement dans un lien). Les cellules ou l'indice apparait
+# AUSSI hors-lien (ex 1.2-NumPy « Pandas (1.3) » en prose + lien [1.3]) ne sont
+# PAS filtrees (conservateur : l'occurrence prose pourrait etre un measurand).
+# On ne s'appuie PAS sur le pattern keyword « section N.M » / prose-xref (plus
+# ambigu, defer -- grain futur si material).
+_MARKDOWN_IPYNB_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)]*\.ipynb)\)")
+
 
 # --------------------------------------------------------------------------- #
 #  Dataclasses
@@ -461,6 +481,43 @@ def _is_bibliographic_reference(value: float, text: str) -> bool:
         if _BIBLIO_CONTEXT_RE.search(window):
             return True
     return False
+
+def _is_notebook_cross_reference(value: float, text: str) -> bool:
+    """Vrai si ``value`` est l'indice d'un notebook pointe par un lien markdown.
+
+    Critere falsifiable (FP class 5, #9998) : un nombre orphelin n'est pas une
+    mesure manquante s'il apparait comme l'indice d'un autre notebook de la
+    serie, cite via un lien markdown ciblant un ``.ipynb`` -- « la theorie du
+    [2.8](2.8-Theorie-PAC.ipynb) », « l'ACP du [2.6](2.6-Clustering.ipynb) »,
+    « [<< 2.8-Theorie-PAC](2.8-Theorie-PAC.ipynb) ». Le nombre est alors
+    l'IDENTIFIANT du notebook pointe (dans le texte du lien ou dans le nom du
+    fichier .ipynb), pas un resultat de calcul.
+
+    SAFE par construction (0 sur-filtrage) : on ne filtre la decimale N.M que si
+    **toutes** ses occurrences dans la cellule tombent a l'interieur d'un span de
+    lien markdown ``[...](...ipynb)``. Ainsi, si la meme cellule contient aussi
+    N.M comme vraie mesure en prose (hors-lien), au moins une occurrence est
+    hors-lien -> on ne filtre pas (l'orphelin legitime survive). Les indices de
+    notebook etant toujours decimaux (2.8, 1.3), un entier n'est jamais filtre.
+
+    On ne s'appuie PAS sur le pattern keyword « section N.M » (plus ambigu, defer).
+
+    Falsifiable both-directions : un nombre qui n'apparait dans AUCUN lien
+    markdown .ipynb, ou dont une occurrence est hors-lien, n'est PAS filtre.
+    """
+    if value == int(value):
+        return False  # un indice de notebook est decimal (2.8), jamais entier
+    token = f"{value:g}"
+    token_re = re.compile(r"(?<![\d.])" + re.escape(token) + r"(?![\d.])")
+    link_spans = [(m.start(), m.end()) for m in _MARKDOWN_IPYNB_LINK_RE.finditer(text)]
+    if not link_spans:
+        return False
+    found_inside = False
+    for m in token_re.finditer(text):
+        if not any(a <= m.start() < b for a, b in link_spans):
+            return False  # occurrence hors-lien -> potentielle mesure, ne pas filtrer
+        found_inside = True
+    return found_inside
 
 
 # --------------------------------------------------------------------------- #
@@ -698,6 +755,12 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
             # pas une mesure manquante -- skip (conservateur : exige contexte
             # biblio, cf ``_is_bibliographic_reference``).
             if _is_bibliographic_reference(v, text):
+                continue
+            # FP class 5 (#9998) : reference croisee vers un autre notebook de
+            # la serie (lien markdown [N.M](fichier.ipynb)). L'indice du notebook
+            # pointe n'est pas une mesure -> skip (SAFE par construction, cf
+            # ``_is_notebook_cross_reference``).
+            if _is_notebook_cross_reference(v, text):
                 continue
             findings.append(AlignmentFinding(
                 notebook=str(path),

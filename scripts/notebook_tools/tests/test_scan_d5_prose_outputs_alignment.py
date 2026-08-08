@@ -866,6 +866,124 @@ class TestBibliographicReferenceFilter:
 
 # --------------------------------------------------------------------------- #
 #  Contre-epreuve positive ICT-1
+
+# --------------------------------------------------------------------------- #
+
+
+class TestNotebookCrossReferenceFilter:
+    """FP class 5 (#9998) : references croisees vers un notebook voisin.
+
+    La prose pedagogique pointe un autre notebook de la serie via un lien
+    markdown dont le TEXTE est l'indice : « la theorie du
+    [2.8](2.8-Theorie-PAC.ipynb) », « l'ACP du
+    [2.6](2.6-Clustering-KMeans-PCA.ipynb) ». Le nombre (2.8, 2.6) est
+    l'IDENTIFIANT du notebook pointe, pas une mesure. Verifie firsthand :
+    25/10895 orphelins corpus (0.23%), concentres dans
+    ML\\DataScienceWithAgents\\02-ML-Cours (cellules de conclusion/navigation).
+    """
+
+    def test_helper_link_match(self):
+        # « theorie du [2.8](2.8-Theorie-PAC.ipynb) » -- 2.8 est l'indice du
+        # notebook pointe, pas une mesure.
+        text = "Relions ce constat a la sample complexity du [2.8](2.8-Theorie-PAC.ipynb)."
+        assert mod._is_notebook_cross_reference(2.8, text) is True
+
+    def test_helper_link_with_path_subdir(self):
+        # Lien vers un notebook dans un sous-dossier (.ipynb present).
+        text = "Voir [1.3](notebooks/1.3-Pandas.ipynb) pour Pandas."
+        assert mod._is_notebook_cross_reference(1.3, text) is True
+
+    def test_helper_multiple_links(self):
+        # Cellule avec plusieurs liens : chacun matche sa propre valeur.
+        text = ("compromis biais-variance du [2.5](2.5-Biais.ipynb) et "
+                "capacite du [2.8](2.8-PAC.ipynb).")
+        assert mod._is_notebook_cross_reference(2.5, text) is True
+        assert mod._is_notebook_cross_reference(2.8, text) is True
+
+    def test_helper_no_ipynb_link_not_filtered(self):
+        # Falsifiabilite (anti-overfilter) : un nombre dans un lien markdown
+        # qui ne pointe PAS vers un .ipynb (lien web, ancre) n'est pas filtre.
+        text = "Voir [2.8](https://example.org) pour le detail."
+        assert mod._is_notebook_cross_reference(2.8, text) is False
+        text2 = "Aller a [2.8](#section) ci-dessous."
+        assert mod._is_notebook_cross_reference(2.8, text2) is False
+
+    def test_helper_keyword_only_not_filtered(self):
+        # Anti-overfilter : le pattern keyword « section 2.8 » SANS lien .ipynb
+        # n'est PAS filtre (trop ambigu -- un measurand pourrait coïncider avec
+        # un numero de section). Seule la syntaxe de lien .ipynb est retenue.
+        text = "Le cout d'ajustement de la section 2.8 n'est pas negligeable."
+        assert mod._is_notebook_cross_reference(2.8, text) is False
+
+    def test_helper_value_not_in_any_link_not_filtered(self):
+        # Un nombre qui n'apparait dans AUCUN lien .ipynb -> non filtre.
+        text = "Le ratio mesure est 0.69, cf. [2.8](2.8-PAC.ipynb) pour le contexte."
+        assert mod._is_notebook_cross_reference(0.69, text) is False
+        assert mod._is_notebook_cross_reference(2.8, text) is True
+
+    def test_helper_integer_not_filtered(self):
+        # Un entier (pas une decimale N.M) n'est jamais un indice de notebook
+        # dans la syntaxe [N.M] -> non filtre (les indices de notebook sont
+        # decimaux : 2.8, 1.3).
+        text = "Voir [12](12-quelquechose.ipynb) pour la suite."
+        assert mod._is_notebook_cross_reference(12.0, text) is False
+
+    def test_helper_overfilter_guard_occurrence_outside_link(self):
+        # Anti-sur-filtrage (propriete SAFE cle) : si N.M apparait a la fois
+        # dans un lien .ipynb ET comme occurrence hors-lien (potentielle vraie
+        # mesure en prose), on NE filtre PAS -- l'occurrence hors-lien pourrait
+        # etre le measurand legitime. Le conservatisme prime.
+        text = "Le ratio mesure est 2.8, cf. [2.8](2.8-Theorie-PAC.ipynb)."
+        assert mod._is_notebook_cross_reference(2.8, text) is False
+
+    def test_helper_long_link_text_leading_index(self):
+        # Cas reel 2.9-Grokking : le lien a un texte long « [<< 2.8-Theorie-PAC] »
+        # ou l'indice 2.8 est en tete. L'indice dans le texte ET dans l'URL.
+        text = "Retour sur la theorie du [<< 2.8-Theorie-PAC](2.8-Theorie-PAC.ipynb)."
+        assert mod._is_notebook_cross_reference(2.8, text) is True
+
+    def test_integration_navigation_cell_suppressed(self, tmp_path):
+        # Cas fondateur 2.9-Grokking cell[0] : cellule de navigation avec liens
+        # vers les notebooks voisins de la serie. Les indices 2.8/3.1 cites
+        # dans les liens ne sont pas des mesures -> MISSING_FROM_OUTPUTS supprime.
+        # Note : on n'ecrit PAS de « (2.8) » hors-lien -- un indice hors-lien
+        # n'est pas filtre par le LINK-only filter (cas KEYWORD defer, volontai-
+        # rement conservateur). Les indices entiers-valeurs (3.0) ne sont pas
+        # filtres non plus (garde value==int(value)) -- on utilise 3.1.
+        nb = tmp_path / "nav.ipynb"
+        _make_notebook([
+            _markdown_cell("# 2.9 Grokking\n"
+                           "**Navigation** : [<< 2.8-Theorie-PAC](2.8-Theorie-PAC.ipynb) "
+                           "| [>> 3.1-Suite](3.1-Suite.ipynb)"),
+            _code_cell("print(0.5)", [{"text": "0.5\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        xref_filtered = [f for f in mfo if f.prose_number in (2.8, 3.1)]
+        assert xref_filtered == [], (
+            f"notebook xref indices 2.8/3.1 must be filtered, got {xref_filtered}")
+
+    def test_integration_legit_orphan_near_link_preserved(self, tmp_path):
+        # Falsifiabilite : une mesure orpheline LEGITIME (0.69) dans une cellule
+        # qui contient aussi un lien .ipynb (2.8) DOIT rester signalee. Le filtre
+        # ne supprime QUE la valeur dans le lien, pas les vraies mesures
+        # cohabitant dans la meme cellule.
+        nb = tmp_path / "mixed.ipynb"
+        _make_notebook([
+            _markdown_cell("Le ratio observe est 0.69, cf. la theorie du "
+                           "[2.8](2.8-Theorie-PAC.ipynb) pour le contexte."),
+            _code_cell("print(0.1875)", [{"text": "0.1875\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        legit = [f for f in mfo if f.prose_number == pytest.approx(0.69)]
+        xref = [f for f in mfo if f.prose_number == pytest.approx(2.8)]
+        assert len(legit) == 1, (
+            f"legit orphan 0.69 must survive the xref filter, got {mfo}")
+        assert xref == [], (
+            f"xref index 2.8 must be filtered, got {xref}")
+
+
 # --------------------------------------------------------------------------- #
 
 
