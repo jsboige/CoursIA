@@ -191,6 +191,61 @@ class TestExtractProseNumbers:
         assert 0.71 in nums
 
 
+class TestHexColorAndExponentFalsePositives:
+    """Filtre codes couleur hex + exposants plaine (EPIC #9768, c.1295).
+
+    Deux classes residuelles de FP decouvertes firsthand en scannant 4 familles
+    (Probas/IIT/Search/SemanticWeb). Distinctes de la math LaTeX (c.1293) :
+    elles apparaissent hors de tout span $...$.
+    """
+
+    def test_filter_hex_color_mermaid_classdef(self):
+        # SW-6-CSharp-RDFS cell[6]: mermaid `classDef root fill:#cfe2ff,stroke:#084298`
+        # -> the #084298 channel was extracted as the number 84298. Systematic in
+        # any mermaid-styled notebook.
+        nums = mod._extract_prose_numbers(
+            "classDef root fill:#cfe2ff,stroke:#084298,color:#052c65. Resultat observe 0.69."
+        )
+        assert 0.69 in nums
+        assert 84298.0 not in nums
+        assert 5132.0 not in nums  # #0f5132 style also filtered when present
+
+    def test_filter_hex_color_six_digits(self):
+        # A standalone hex color #ff0000 in prose must not leak red/green/blue channels.
+        nums = mod._extract_prose_numbers("Couleur #ff0000, score mesure 0.42.")
+        assert 0.42 in nums
+        assert 255.0 not in nums  # would-be leak from #ff
+        assert 0.0 not in nums
+
+    def test_filter_hex_color_not_overfilter_legit_hash_ref(self):
+        # A short `#5` or `#12` (< 3 hex) is NOT a color code -- it stays subject
+        # to the other reference filters, not the hex one. And a real measurement
+        # after a `#ref` is preserved.
+        nums = mod._extract_prose_numbers("Voir #12, valeur reelle 84298 atteinte.")
+        assert 84298.0 in nums  # legit big number preserved (no `#` prefix)
+
+    def test_filter_plaintext_exponent(self):
+        # Infer-7-Skills-IRT cell[64]: "2^3 combinaisons" -> base 2 and exp 3
+        # are constituents of a math expression, not separate measurements.
+        nums = mod._extract_prose_numbers("Soit 2^3 combinaisons, resultat observe 0.77.")
+        assert 0.77 in nums
+        assert 2.0 not in nums
+        assert 3.0 not in nums
+
+    def test_filter_plaintext_exponent_letter_base(self):
+        # n^2 / n^k -- the exponent digit is a math constituent.
+        nums = mod._extract_prose_numbers("Complexite n^2, avec ratio mesure 0.31.")
+        assert 0.31 in nums
+        assert 2.0 not in nums
+
+    def test_legit_measure_near_exponent_notation_preserved(self):
+        # A real measurement adjacent to an exponent is still captured.
+        nums = mod._extract_prose_numbers("Facteur 10^5, et on mesure 84298 cas au total.")
+        assert 84298.0 in nums
+        assert 5.0 not in nums  # exp of 10^5 filtered
+        assert 10.0 not in nums  # base filtered
+
+
 class TestReferenceIdentifiers:
     """Filtre DOI / arXiv (EPIC #9768 Phase 0, c.1291).
 

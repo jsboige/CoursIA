@@ -142,6 +142,24 @@ _ATX_HEADING_LINE_RE = re.compile(r"\s{0,3}#{1,6}(?:\s|$)")
 # gobler un $ de monnaie isole jusqu'au prochain $ distant).
 _LATEX_MATH_SPAN_RE = re.compile(r"\$\$.*?\$\$|\$[^\$\n]*?\$", re.DOTALL)
 
+# Codes couleur hex (#RRGGBB / #RGB / #RRGGBBAA) dans les diagrammes mermaid
+# et le CSS inline. Un canal comme #084298 etait extrait comme le nombre
+# 84298 (c.1295 firsthand : SW-6-CSharp-RDFS cell[6] classDef mermaid ->
+# stroke:#084298, plus #0f5132/#b8860b/#5c4400 dans la meme cellule ; la
+# classe est systematique des qu'un notebook embarque du mermaid style).
+# On exclut tout token `#` + 3 a 8 chiffres hex ; une mesure reelle n'est
+# jamais prefixee de `#` (et les references `#123` sont deja filtrees par
+# les hints semantiques / _is_reference_identifier).
+_HEX_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}")
+
+# Exposants en notation plaine (2^3, 10^5, n^2), hors math LaTeX ($2^3$ est
+# deja couvert par _LATEX_MATH_SPAN_RE). La base et l'exposant sont des
+# constituants d'une expression mathematique, pas des mesures separees
+# (c.1295 firsthand : Infer-7-Skills-IRT cell[64] "2^3 combinaisons" ->
+# prose_number 2.0 et 3.0 FP). On saute tout nombre tombant dans un span
+# alphanum^alphanum (couvre 2^3, n^2, 2^32 ; le caret est distinctif).
+_PLAINTEXT_EXPONENT_RE = re.compile(r"[0-9a-zA-Z]+\^[0-9a-zA-Z]+")
+
 
 # Faux positifs semantiques : regex strictes (mot complet + caractere de
 # liaison) pour eviter de matcher au milieu d'une phrase legit.
@@ -252,14 +270,21 @@ def _extract_prose_numbers(text: str) -> list[float]:
     """Extrait les nombres d'un texte markdown en filtrant les faux positifs semantiques."""
     if not text:
         return []
-    # Precompute les spans math LaTeX une fois (evite un finditer par nombre).
-    math_spans = [m.span() for m in _LATEX_MATH_SPAN_RE.finditer(text)]
+    # Precompute les spans a ignorer une fois (evite un finditer par nombre) :
+    # math LaTeX ($2^n - 1$), codes couleur hex (#084298), exposants plaine
+    # (2^3). Un nombre tombant dans un de ces spans n'est pas une mesure
+    # d'output (constante de formule / canal de couleur / constituant
+    # d'exposant). c.1293 (LaTeX), c.1295 (hex + exposant).
+    skip_spans = (
+        [m.span() for m in _LATEX_MATH_SPAN_RE.finditer(text)]
+        + [m.span() for m in _HEX_COLOR_RE.finditer(text)]
+        + [m.span() for m in _PLAINTEXT_EXPONENT_RE.finditer(text)]
+    )
     out: list[float] = []
     for m in FR_DECIMAL_RE.finditer(text):
         raw = m.group(0)
-        # Filtre math LaTeX : un nombre dans $2^n - 1$ ou $\{0, 1\}$ est une
-        # constante de formule, pas une mesure d'output (cf c.1293).
-        if any(a <= m.start() < b for a, b in math_spans):
+        # Filtre spans a ignorer (math LaTeX, hex, exposant) : voir ci-dessus.
+        if any(a <= m.start() < b for a, b in skip_spans):
             continue
         # Filtre bruit : années, numéros d'issue, etc.
         if any(p.match(raw) for p in EXCLUDE_PATTERNS):
