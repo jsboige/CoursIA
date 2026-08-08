@@ -172,8 +172,32 @@ jobs:
             COLOR=$(echo "$LABEL_PAIR" | cut -d: -f2)
             SIGNAL=$(echo "$LABEL_PAIR" | cut -d: -f3)
             DESC=$(echo "$LABEL_PAIR" | cut -d: -f4)
-            SIGVAR="SIG_$(echo "$SIGNAL" | tr '-' '_')"
-            SIGVAL=$(eval "echo \$$SIGVAR")
+            # Mapping explicite SIGNAL -> nom de variable (evite le `eval`
+            # dynamique qui, avec `set -u`, fait sortir en 1 sur le tout
+            # premier signal dont le nom contient un hyphen --
+            # SIG_TIER_INFLATION n'existe pas, le nom canonique est
+            # SIG_INFLATION ; idem SIG_GENRE_RUN vs SIG_RUN). Les noms
+            # sont fixes (cf scripts/variation_light_cap.py), une table
+            # explicite reste la lecture la moins fragile.
+            case "$SIGNAL" in
+              TIER-INFLATION)        SIGVAR="SIG_INFLATION" ;;
+              GENRE-RUN)             SIGVAR="SIG_RUN" ;;
+              CAP-EXCEEDED-BY-GENRE) SIGVAR="SIG_CAPEXC" ;;
+              GENRE-MISMATCH)        SIGVAR="SIG_MISMATCH" ;;
+              *)
+                echo "Signal non reconnnu : ${SIGNAL} (PR ${PR_NUMBER})"
+                SIGVAR="__UNDEFINED__"
+                ;;
+            esac
+            if [ "$SIGVAR" = "__UNDEFINED__" ]; then
+              SIGVAL="False"
+            else
+              # Expansion indirecte bash (${!VAR}) avec default pour eviter
+              # l'`eval` dynamique (qui ne survit pas a `set -u` sur var
+              # absente). Le `:-False` couvre le cas d'une variable non
+              # initialisee ; on en reste a SIGVAL=False sans crasher.
+              SIGVAL="${!SIGVAR:-False}"
+            fi
             gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force 2>/dev/null || true
             if [ "$SIGVAL" = "True" ]; then
               gh pr edit "$PR_NUMBER" --add-label "$LABEL" 2>/dev/null || true
