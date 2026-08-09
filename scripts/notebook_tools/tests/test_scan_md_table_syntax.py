@@ -65,6 +65,16 @@ class TestColumnCount:
         # breaking the math, so it is excluded (non-actionable).
         assert _column_count("| $|x|$ | description |") == 2
 
+    def test_currency_price_columns_not_col_mismatch(self):
+        # Cost tables with $amount values are NOT inline math: the bare
+        # `$[^$\n]*$` regex bridged `$15.00 | ~$` across the cell-delimiter
+        # pipe, false-positive-ing every price column as COL_MISMATCH
+        # (fleet-wide currency FP class, #10097). A KaTeX-faithful boundary
+        # (closing $ not followed by an alnum) refuses to close at `$0.75`,
+        # so the pipe counts normally -> 3 columns.
+        assert _column_count("| OpenAI tts-1 | $15.00 | ~$0.75 |") == 3
+        assert _column_count("| a | $1 | $2 | $3 |") == 4
+
     def test_multiple_backtick_spans(self):
         assert _column_count("| a | `b|c` | `d|e` |") == 3
 
@@ -172,6 +182,21 @@ class TestDetectColMismatch:
             "| a | b | c |",
             "|---|---|---|",
             "1 | 2 | 3",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
+
+    def test_currency_price_table_not_flagged(self):
+        # A real cost/comparison table whose cells hold $amount values must
+        # NOT be flagged COL_MISMATCH. The bare `$[^$\n]*$` math regex used to
+        # bridge two currency cells across the delimiter pipe (fleet-wide FP
+        # on every price column, #10097). After the KaTeX-boundary fix the
+        # pipes count normally and the table is clean.
+        lines = [
+            "| Modele | Cout / 1M caracteres | Cout / 1 heure narration |",
+            "|--------|---------------------|-------------------------|",
+            "| OpenAI tts-1 | $15.00 | ~$0.75 |",
+            "| OpenAI tts-1-hd | $30.00 | ~$1.50 |",
         ]
         f = detect_md_table_syntax(lines)
         assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
