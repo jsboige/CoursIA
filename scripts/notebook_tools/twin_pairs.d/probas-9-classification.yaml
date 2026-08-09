@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: 5171f5eac673b08f03930ad3cf8ba67516cea121
       csharp_sha: 536e512f086a44306ebfb1bf241536c5055a8123
+    - date: "2026-08-09"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 5171f5eac673b08f03930ad3cf8ba67516cea121
+      csharp_sha: beebb734aaa685b1f5df23d23a5a41bcb03deabc
+      content_python_sha: 9a7b9da90854d32395899656b2015f1ba5f8fdbce76090c80d0438669f0ca1ea
+      content_csharp_sha: 55696e6883f73cdad3dab1dff4b9d80afa7e3c18d19f3dc8d097d1a42b5251c9
   known_differences:
   - 'Socle pedagogique commun : classification bayesienne modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
