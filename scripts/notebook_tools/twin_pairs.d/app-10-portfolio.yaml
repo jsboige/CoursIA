@@ -4,30 +4,57 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb
   parity_level: semantic
   audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
-      csharp_sha: dad13c7fac88520807664b25ab6b95095f608677
-    - date: "2026-08-08"
-      by: myia-po-2024:CoursIA
-      python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
-      csharp_sha: 0e679cb6c2a1b3ea821e9a0e72db238e39ebcef8
-      content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
-      content_csharp_sha: d65d9189296d1821c2e871ed3d2968488cdbb693c831729755d9b7fcccab9084
-    - date: "2026-08-08"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
-      csharp_sha: 443cb79d128f63e03a41ae99400f5da630084db2
-      content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
-      content_csharp_sha: 2b4046cb859f06d956bc016cac81878b798c0ff8622d659c1ec76882a80d1121
-    - date: "2026-08-08"
-      by: myia-po-2024:CoursIA-2
-      python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
-      csharp_sha: 0855da6aca816a8dcec54ff4f62088655ce54cb2
-      content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
-      content_csharp_sha: f3309247124d8c6f0541f2da2624c997d48d86b81e617dbcceed2145af641809
+  - date: '2026-08-04'
+    by: myia-po-2023:CoursIA
+    python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+    csharp_sha: dad13c7fac88520807664b25ab6b95095f608677
+  - date: '2026-08-08'
+    by: myia-po-2024:CoursIA
+    python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+    csharp_sha: 0e679cb6c2a1b3ea821e9a0e72db238e39ebcef8
+    content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+    content_csharp_sha: d65d9189296d1821c2e871ed3d2968488cdbb693c831729755d9b7fcccab9084
+  - date: '2026-08-08'
+    by: myia-po-2024:CoursIA-2
+    python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+    csharp_sha: 443cb79d128f63e03a41ae99400f5da630084db2
+    content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+    content_csharp_sha: 2b4046cb859f06d956bc016cac81878b798c0ff8622d659c1ec76882a80d1121
+  - date: '2026-08-08'
+    by: myia-po-2024:CoursIA-2
+    python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+    csharp_sha: 0855da6aca816a8dcec54ff4f62088655ce54cb2
+    content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+    content_csharp_sha: f3309247124d8c6f0541f2da2624c997d48d86b81e617dbcceed2145af641809
+  - date: '2026-08-09'
+    by: myia-po-2024:CoursIA-2
+    python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+    csharp_sha: d06e92c8e9186a9023e080f96c4a78fae8ded399
+    content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+    content_csharp_sha: 6a5e1fc75d8e3794e6a90836c5286e9c4ca701e87d62dc450f3d713b20012dd0
   known_differences:
-    - "Socle pedagogique commun : Optimisation de portefeuille (convex opt cvxpy + GeneticSharp C#) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
-    - "Idiomes framework : Python = cvxpy convex optimization + math.comb ; C# = GeneticSharp NuGet (GA)."
-    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
-    - "Extension cardinalite K : les deux twins demontrent l'inefficacite d'un solveur convexe (Markowitz long-only) face a une contrainte non-convexe (||w||₀ ≤ K). Cote Python : la section 7 du notebook enonce d'abord le discriminant (convexe → cvxpy), puis enumere les C(5,2)=10 paires en resolvant un QP convexe (cvxpy/CLARABEL) sur chacune via `itertools.combinations` (rf=0.02, K=2 → Actions US + Emergents, Sharpe 1.3060), compare au PyGAD GA avec projection top-K dans la fitness (200 generations) — verdict : le GA retrouve l'optimum exact. Cote C# : BCL pure enumeration exhaustive C(5,2)=10 paires avec tangence Tobin analytique par paire (formule fermee w ∝ Σ⁻¹(μ-rf) sur sous-matrice 2x2, rf=0.0 simplifie pedagogiquement, meme instance d'actifs), plus metaheuristique GA (GeneticSharp) avec projection top-K dans le decodeur du chromosome (TopKFitness : IFitness). Verdict croise attendu : Concordance OUI entre enumeration et GA (meme paire trouvee, ecart Sharpe ≈ 0.0000). Demonstration du discriminant 'convexe → solveur exact, non-convexe → enumeration ou metaheuristique'."
+  - 'Socle pedagogique commun : Optimisation de portefeuille (convex opt cvxpy + GeneticSharp
+    C#) comme application canonique. Les deux twins couvrent le meme socle theorique
+    (formulation variables/domaines/contraintes, resolution, experimentation) avec
+    parite semantique sur les concepts cibles.'
+  - 'Idiomes framework : Python = cvxpy convex optimization + math.comb ; C# = GeneticSharp
+    NuGet (GA).'
+  - 'Asymetrie pedagogique : Python met l''accent sur le solveur SOTA (OR-Tools CP-SAT
+    / library specialisee) + visualisation matplotlib + experimentation comparative
+    ; le C# demontre l''implementation from-scratch en BCL pure (ou binding NuGet
+    du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique,
+    leviers de demonstration differents.'
+  - 'Extension cardinalite K : les deux twins demontrent l''inefficacite d''un solveur
+    convexe (Markowitz long-only) face a une contrainte non-convexe (||w||₀ ≤ K).
+    Cote Python : la section 7 du notebook enonce d''abord le discriminant (convexe
+    → cvxpy), puis enumere les C(5,2)=10 paires en resolvant un QP convexe (cvxpy/CLARABEL)
+    sur chacune via `itertools.combinations` (rf=0.02, K=2 → Actions US + Emergents,
+    Sharpe 1.3060), compare au PyGAD GA avec projection top-K dans la fitness (200
+    generations) — verdict : le GA retrouve l''optimum exact. Cote C# : BCL pure enumeration
+    exhaustive C(5,2)=10 paires avec tangence Tobin analytique par paire (formule
+    fermee w ∝ Σ⁻¹(μ-rf) sur sous-matrice 2x2, rf=0.0 simplifie pedagogiquement, meme
+    instance d''actifs), plus metaheuristique GA (GeneticSharp) avec projection top-K
+    dans le decodeur du chromosome (TopKFitness : IFitness). Verdict croise attendu
+    : Concordance OUI entre enumeration et GA (meme paire trouvee, ecart Sharpe ≈
+    0.0000). Demonstration du discriminant ''convexe → solveur exact, non-convexe
+    → enumeration ou metaheuristique''.'
