@@ -671,6 +671,15 @@ jobs:
   # issue hit is silent (intended close -- catalog-pr-hygiene HARD 4).
   # Same shape as the prev: gate next to it: the discriminator is the
   # nature of the N, not the surface syntax.
+  #
+  # NOTE (c.1331+15): a body that QUOTES the offending `prev: TIER/fix #N`
+  # pattern in prose (e.g. describing the #10093 incident) trips this gate
+  # via the same `_PREV_RE` regex. The guard fires on the literal text
+  # inside code spans; backticks are stripped before matching. Mitigations
+  # for prose quoting the bug: paraphrase the pattern out of existence
+  # (e.g. "a `prev:` tag whose genre was a closing keyword" rather than
+  # `prev: MED/fix #10067`). A future hardening could strip code-fenced
+  # blocks before the scan; out of scope here.
   check-prose-close-keyword-required:
     name: 'Require prose non-closing-PR (block on close-keyword + PR ref, #10101)'
     runs-on: ubuntu-latest
