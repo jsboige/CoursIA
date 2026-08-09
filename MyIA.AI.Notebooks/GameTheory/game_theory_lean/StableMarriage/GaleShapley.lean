@@ -69,14 +69,20 @@ theorem gale_shapley_terminates (prof : PrefProfile n) :
   exact gsTerminated_runSteps_bound prof
 
 /--
-L'algorithme de Gale-Shapley produit un matching (bijection) valide.
-
-Le matching identité sert de témoin (toute bijection sur `Fin n` suffit pour
-l'existentiel ; on utilise ici `id`).
+L'algorithme de Gale-Shapley produit un état où tous les hommes sont assortis :
+à la borne `gsProposalBound n`, chaque homme `m` a une partenaire
+(`menMatch m ≠ none`). Cette complétude est la condition qui permet d'extraire
+un `Matching n` (bijection) via `gsFinalMatching` — c'est le chaînon intermédiaire
+entre la terminaison (`gale_shapley_terminates`) et la stabilité
+(`gale_shapley_stable`), prouvé via `gsTerminated_allMenMatched`.
 -/
 theorem gale_shapley_produces_matching (prof : PrefProfile n) :
-    ∃ μ : Matching n, True := by
-  exact ⟨{ spouse := id, bijective := Function.bijective_id }, trivial⟩
+    ∀ m : Fin n, (gsRunSteps prof (gsProposalBound n)).matching.menMatch m ≠ none := by
+  intro m
+  exact gsTerminated_allMenMatched prof
+    (gsTerminated_runSteps_bound prof)
+    (womenProposedImpliesMatched.runSteps prof (gsProposalBound n))
+    (GSConsistent.runSteps prof (gsProposalBound n)) m
 
 /--
 L'algorithme de Gale-Shapley produit un mariage stable.
