@@ -75,7 +75,7 @@ Cette section documente **ce qui est commité** dans le harnais et **ce qui est 
 | **Configuration** | `playwright.config.ts`, `tsconfig.json`, `package.json`, `package-lock.json` | Lockfile = reproductibilité d'`npm install` |
 | **Notebooks pédagogiques** | `00-Parcours-QA-OWUI.ipynb`, `01..06/*/[Module].ipynb` | Format hybride notebook + `.spec.ts` (cf. supra) |
 | **Documentation** | `README.md` (ce fichier), `00-Parcours-QA-OWUI.md`, `TRIAGE-INFRA-VS-TEST.md`, `WHATS-NEW-v0.9.1.md`, `WHATS-NEW-v0.10.md`, `01..06/README.md` | Cadrage pédagogique et guides transverses |
-| **Template de configuration** | `.env.example` | **11 clés nommées, valeurs vides ou exemples neutres** (`OWUI_URL=https://open-webui.example.com`, `OWUI_EMAIL=your_email_here`, etc.). Aucune valeur réelle. |
+| **Template de configuration** | `.env.example` | **8 clés actives + 7 commentées (optionnelles), valeurs vides ou exemples neutres** (`OWUI_URL=https://open-webui.example.com`, `OWUI_EMAIL=your_email_here`, etc.). Aucune valeur réelle. |
 
 ### Ignoré (jamais committé)
 
