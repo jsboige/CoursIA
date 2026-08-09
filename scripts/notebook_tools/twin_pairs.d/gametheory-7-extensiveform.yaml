@@ -21,6 +21,12 @@
       csharp_sha: c73ff346285a169f7f382044373ad1e72b533951
       content_python_sha: 06dd33ec1f4ce37553f035d0f2772818af271b5c96742fa4035564a15c610831
       content_csharp_sha: e21f5e562523c28ae4918105dd214bf303b95adfadd595c04aa90f1ebea009cf
+    - date: "2026-08-09"
+      by: myia-po-2026:CoursIA
+      python_sha: 3759a8e1de531d7fbf4a1e43057ef42ac7efaf89
+      csharp_sha: c73ff346285a169f7f382044373ad1e72b533951
+      content_python_sha: 8a9f706352a7b1b8dec1f1271d1f7f7d5c3d6659b9ee576f836702c9c23c73da
+      content_csharp_sha: e21f5e562523c28ae4918105dd214bf303b95adfadd595c04aa90f1ebea009cf
   known_differences:
     - "Socle pedagogique commun : jeux sous forme extensive (arbre de jeu sequentiel avec noeuds de decision/terminal/chance + infosets), backward induction (induction en arriere) pour calculer les SPE (Subgame Perfect Equilibria), exemple canonique du jeu d'entree sur le marche (entrant vs incumbente)."
     - "Idiomes framework : Python = `@dataclass` + `networkx` (graphe arborescent + rendu matplotlib des arbres de jeu) + implementation manuelle de `backward_induction` + `ConvertToNormal` (reduction extensive-vers-normal). C# = **BCL .NET pur 0 NuGet** (modele `GameNode` decision/terminal/chance + `ExtensiveFormGame` from-scratch) + **rendu ASCII de l'arbre** (pas de viz graphique, fidele a la contrainte 0-NuGet de la serie)."
