@@ -357,6 +357,43 @@ def _classify_quant_value(
     if re.search(r"\d+\s*h\s*[+=]\s*\d+\s*h", ctx_with_raw):
         return ("STRUCTUREL", "arithmétique horloge v5 (Nh ± = Nh, exemple math)")
 
+    # -1b v6 (c.1331+15, #9434): anti-FP résiduel — 3 nouvelles classes mesurées
+    #     firsthand sur GT-1-Setup + PyMC-1-Setup NON couvertes par v4 (#10016) ni
+    #     v5 (#10062). Même asymétrie failure-mode-safe que v4/v5 : ces guards
+    #     absorbent UNIQUEMENT vers STRUCTUREL (jamais vers drainable), donc un
+    #     guard trop large = garder une vraie valeur en STRUCTUREL = sur-correction
+    #     inoffensive (pas de corruption de drain). Falsification tests
+    #     (TestFpGuardV6) prouvent qu'un genuine ENV "NumPy 2.4.4" et un genuine
+    #     STOCH "accuracy 0.87" restent drainables.
+    #
+    #     IMPORTANT — ce que v6 NE touche pas : les version-adjacents ("python
+    #     3.10+", "numpy 2.x") restent ENV-DEP légitimes (test_10012_falsif_python
+    #     _semver_kept : un floor/wildcard de version DÉRIVE quand la lib évolue —
+    #     3.10+ → 3.13+ — donc est env-drift-prone par design). v6 ne cible que les
+    #     valeurs NON-version rattrapées par proximité de mot-clé.
+    s_l = suffix.lstrip()
+    p_r = prefix.rstrip()
+    # (B) Cross-ref nom de notebook : "voir pymc-6-debugging" = le chiffre est le
+    #     slug d'un notebook voisin, pas une version. Mesuré : PyMC-1-Setup
+    #     cell[16] "pymc-6-debugging" → ENV-DEP via kw 'version'.
+    if re.search(r"[a-z0-9]-$", p_r, re.I) and re.match(r"-\s*[a-z]", s_l, re.I):
+        return ("STRUCTUREL", "cross-ref slug v6 (\\w-N-\\w: nom notebook/fichier)")
+    # (A) Citation bibliographique : "Physics Letters B, 195(2), 216-222" = les
+    #     chiffres sont vol/issue/pages d'une réf journal, pas des mesures. Le
+    #     pattern Vol(Issue), pages est non-ambigu. Mesuré : PyMC-1-Setup
+    #     cell[25] "195(2)" → STOCHASTIQUE via kw 'Monte Carlo' (titre du papier).
+    if re.search(r"\d+\s*\(\s*\d+\s*\)\s*,\s*\d+\s*[-–]\s*\d+",
+                 prefix + " " + raw + " " + suffix):
+        return ("STRUCTUREL", "citation biblio v6 (Vol(Issue), pages: réf journal)")
+    # (F) Compteur structurel : "randomiser sur ses 3 actions", "5 candidats" =
+    #     N est la cardinalité d'un ensemble fini du domaine, pas une mesure
+    #     stochastique (le tirage porte SUR les N, N lui-même est fixe). Mesuré :
+    #     GT-1-Setup cell[60] "3 actions" → STOCHASTIQUE via kw 'random'.
+    if re.match(r"(?:actions?|choix|strat[eé]gies?|candidats?|joueurs?|players?|"
+                r"[eé]tats?|[eé]tapes?|coups?|moves?|dimensions?|attributs?|"
+                r"features?|classes?)\b", s_l, re.I):
+        return ("STRUCTUREL", "compteur structurel v6 (N <count-noun>: cardinalité)")
+
     # -1 (c.1301+12): anti-FP ML/DfA + Search/Part1 — guard structurel v4
     #     (4 classes : editorial-duration / biblio / section-number /
     #     theoretical-reference). Capture les FPs AVANT que les mots-cles

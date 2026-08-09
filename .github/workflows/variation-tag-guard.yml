@@ -340,7 +340,12 @@ jobs:
   # the day the convention is rolled out, which is the failure mode the
   # issue rejects).
   check-short-header:
-    name: Check short-header trio (Quoi/Preuve/Perimetre, #9861)
+    # Job name carries the `advisory` marker so pr_gate.is_advisory() diverts
+    # it out of `pending` (incident #10104: the job posts a check-run that can
+    # linger in_progress, and a name without the marker made pr_gate.py wait on
+    # it until the 90-min gate timeout -> every PR lacking the trio BLOCKED).
+    # Same convention as "CJK residue advisory (label, non-blocking)" etc.
+    name: Check short-header trio (advisory, label, non-blocking, #9861)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the shared tag extractor (sparse)
@@ -657,6 +662,116 @@ jobs:
           \`\`\`
           Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<refactor|guard|tooling|...> #<PR>
           \`\`\`
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+  # #10101 -- the BLOCKING gate against `<closing-keyword> #N` in FREE PROSE
+  # (body + commit messages) where N resolves to a PR. The #10093 gate above
+  # blocks the SAME keyword but ONLY in the `prev:` genre slot (structurally
+  # always wrong). #10101 closes the second, measured vector: PR #10094's own
+  # commit message claimed it had CLOSED a PR (the translation core deliverable)
+  # "without merging it" -- a naive squash would have re-closed that PR because
+  # GitHub parses `<closing-keyword> #N` in a squash message as an auto-close
+  # whenever N is a PR.
+  #
+  # The discriminator is the NUMBER's nature, not the keyword's context:
+  #   - N is an ISSUE -> silence (intended close, catalog-pr-hygiene HARD 4:
+  #     `Closes #N` is what shrinks the backlog on its own)
+  #   - N is a PR      -> BLOCK (one does not "resolve" a PR by keyword)
+  #   - N missing/API error -> fail-open warn (a stale ref or a network blip
+  #     must not block a legitimate merge)
+  # The PR-vs-issue resolution uses `gh api repos/:owner/:repo/issues/N` (a
+  # non-null `.pull_request` field is a PR). The resolver is INJECTABLE in the
+  # helper (`scripts/ci/pr_close_keyword_guard.py`), so the unit tests pass a
+  # table and never touch the network. The YAML is plomberie, same shape as
+  # `check-prev-close-keyword-required` above.
+  #
+  # The job name carries the `-required` suffix so PR #10036's `is_advisory()`
+  # classifier in `scripts/pr_gate.py` does NOT silence it -- same reason as
+  # the tag-required and prev-close-keyword-required jobs.
+  check-close-keyword-pr-ref-required:
+    name: 'Require no close-keyword + PR-number (block on auto-close of a PR, #10101)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the close-keyword-pr-ref helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/pr_close_keyword_guard.py
+            scripts/grain_tag.py
+      - name: 'Resolve body + commit close-keyword refs (PR -> block, issue -> silence)'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Same bot/fork gating as the other jobs (cf. student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Commit messages as a JSON array of strings. `messageBody` is the
+          # full commit message (subject + body), which is what GitHub parses
+          # for auto-close keywords. Empty/missing file -> no commits to scan
+          # (the helper tolerates it).
+          gh pr view "$PR_NUMBER" --json commits --jq '[.[].messageBody]' \
+            > /tmp/commits.json 2>/dev/null || printf '[]' > /tmp/commits.json
+
+          # The helper resolves each `<closing-keyword> #N` via `gh api` and
+          # exits 0 (pass / fail-open) or 1 (block on a PR). stderr surfaced
+          # for debug.
+          python3 scripts/ci/pr_close_keyword_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err
+          RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          # Surface fail-open warnings even on the pass path (stale refs, API
+          # blips) so the author can fix the ref without the gate blocking.
+          python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No closing-keyword + PR-number reference in body or commits -- job passes."
+            exit 0
+          fi
+
+          # Block path. Idempotent comment via the HTML marker.
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::closing-keyword + PR-number reference detected: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-close-keyword-pr-ref -->
+          **\`<mot-clé fermant> #N\` où N est une PR -- bloquant (#10101).**
+
+          ${REASON}
+
+          GitHub interprète \`close/closes/closed/fix/fixes/fixed/resolve/resolves/resolved #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans le message de squash -- et fermer une **PR** par mot-clé n'est jamais intentionnel (une PR se merge ou se ferme explicitement, elle ne se « résout » pas). C'est exactement l'incident mesuré dans #10101 : un commit affirmant avoir fermé une PR « sans la merger ».
+
+          Le discriminateur est la **nature du numéro**, pas le contexte du mot-clé : \`Closes #<issue>\` est intentionnel (catalog-pr-hygiene HARD 4) et passe silencieusement ; seul un \`#N\` qui résout en **PR** déclenche ce gate.
+
+          Pour passer ce gate :
+          - **retirez le mot-clé fermant** devant le numéro, ou
+          - **écrivez le numéro SANS le \`#\`** (un nombre nu n'est pas un auto-close).
           EOF
           )" 2>/dev/null || true
 
