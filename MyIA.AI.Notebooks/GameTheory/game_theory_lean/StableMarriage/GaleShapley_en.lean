@@ -55,12 +55,13 @@ variable {n : Nat} [NeZero n]
 /--
 The Gale-Shapley algorithm terminates.
 At most n^2 proposals can occur (each man proposes to each woman at most once).
-
-TODO: formalize the algorithm as a step relation and prove termination.
+The state machine `gsRunSteps`, run up to the bound `gsProposalBound n`, reaches
+a terminated state (`gsTerminated`); termination is proved by
+`gsTerminated_runSteps_bound`.
 -/
 theorem gale_shapley_terminates (prof : PrefProfile n) :
-    True := by
-  trivial
+    gsTerminated prof (gsRunSteps prof (gsProposalBound n)) := by
+  exact gsTerminated_runSteps_bound prof
 
 /--
 The Gale-Shapley algorithm produces a valid matching (bijection).
