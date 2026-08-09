@@ -102,6 +102,24 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
+## ICT (docs/ict/)
+
+Documentation de cadrage et de synthèse de la série ICT (strate 7) — tous **grade C-documentaire** (positionnement/consolidation/cartographie, aucun résultat démontré). Index thématique et parcours suggéré dans [`ict/README.md`](ict/README.md). Epic umbrella [#4588](https://github.com/jsboige/CoursIA/issues/4588), méta-proxy [#7395](https://github.com/jsboige/CoursIA/issues/7395).
+
+| Fichier | Rôle |
+|---------|------|
+| [ict/README.md](ict/README.md) | **Index** — cartographie des 10 docs par mode (vertical / horizontal / méta) + parcours suggéré |
+| [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Fils 1–3 : trois régimes de lecture (invariants / dissociations / obstructions) |
+| [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4e fil : généalogie de `p̂` (représentation interne, ICT-10 → ICT-17) |
+| [ict/dissolution-scalaires.md](ict/dissolution-scalaires.md) | 5e fil : dissolution successive des scalaires Φ / F / K |
+| [ict/strate7-boussole-myth.md](ict/strate7-boussole-myth.md) | 6e fil : boussole narrative de la strate 7 |
+| [ict/strate7-cadres-libres.md](ict/strate7-cadres-libres.md) | Jambe D1 : formalisme (variables libres, jeu évolutif `G_t`) |
+| [ict/jambe-c4-propagation.md](ict/jambe-c4-propagation.md) | Jambe C4 : grammaire de propagation & seuil de bascule `(π, W, causalité)` |
+| [ict/cadrage-trajectoires-representations.md](ict/cadrage-trajectoires-representations.md) | Pivot N2 : états → représentations |
+| [ict/tresse-cartographie.md](ict/tresse-cartographie.md) | Cartographie horizontale : la tresse (Thom / Grothendieck / Schmidhuber / Friston) |
+| [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice de dissociations 4-objets `(s, q, π, W)` |
+| [ict/d1-c4-rencontre-meta.md](ict/d1-c4-rencontre-meta.md) | Méta-cadrage : rencontre D1 ↔ C4 (le formel et l'opérationnel) |
+
 ## Curriculum (docs/curriculum/)
 
 Guides pédagogiques et parcours d'apprentissage.
