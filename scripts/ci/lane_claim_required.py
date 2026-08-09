@@ -100,6 +100,52 @@ def gh_issue_fetcher(number: int) -> "dict | None":
         return None
 
 
+def _compute_advisory_labels(
+    pr_body: str | None,
+    issue_fetcher: IssueFetcher,
+    pr_lane: str,
+) -> list[str]:
+    r"""Advisory labels for adoption telemetry (#10223 Task 4) -- never block.
+
+    Two labels, surfaced so the coordinator can read the adoption curve at the
+    merge-gate without the gate reddening:
+
+      - ``lane-claim-absent``  -- a CLOSING-referenced issue carries NO active
+        claim at all. The protocol wants a claim before editing; measuring it
+        without blocking gives the curve (most of the historical backlog was
+        taken without a claim, and a hard gate here would redden massively and
+        teach nothing).
+      - ``lane-claim-conflict`` -- a NON-closing reference (See/Part of #N)
+        points to an issue another lane actively claims. Multi-lane by
+        construction on an EPIC, so advisory only (the closing variant blocks).
+
+    Reuses the SAME reducer (``check_lane_claim.compute_active_claims``) and the
+    SAME scanners (``grain_tag.find_close_keyword_pr_refs`` /
+    ``find_non_closing_refs``) -- no competing logic. Fetch failures are
+    skipped: an advisory label must not crash the job on a network blip.
+    """
+    labels: set[str] = set()
+    # lane-claim-absent: a closing-referenced issue with no active claim at all.
+    for h in gt.find_close_keyword_pr_refs(pr_body):
+        payload = issue_fetcher(h["number"])
+        if payload is None:
+            continue
+        events = clc._sort_events(payload)
+        active, _unattrib = clc.compute_active_claims(events)
+        if not active:
+            labels.add("lane-claim-absent")
+    # lane-claim-conflict: a non-closing ref whose issue another lane claims.
+    for h in gt.find_non_closing_refs(pr_body):
+        payload = issue_fetcher(h["number"])
+        if payload is None:
+            continue
+        events = clc._sort_events(payload)
+        active, _unattrib = clc.compute_active_claims(events)
+        if any(ln != pr_lane for ln in active):
+            labels.add("lane-claim-conflict")
+    return sorted(labels)
+
+
 def check(
     pr_body: str | None,
     issue_fetcher: IssueFetcher,
@@ -127,6 +173,7 @@ def check(
           "blocking_issue": int|None,       # set on block
           "blocking_claim_at": str|None,    # set on block (server ISO UTC)
           "closing_issues": [int, ...],
+          "advisory_labels": [str, ...],    # #10223 Task 4 (never blocks)
           "warnings": [str, ...],
         }
 
@@ -140,7 +187,8 @@ def check(
     pr_lane = gt.extract_lane(pr_body)
     if pr_lane is None:
         # Lane unreadable -> the tag gate (check-variation-tag-required) owns
-        # this defect. Do not duplicate the red.
+        # this defect. Do not duplicate the red. Advisory labels are skipped:
+        # without a pr_lane, a conflict/absent reading is meaningless.
         return {
             "guard_pass": True,
             "reason": "PR lane unreadable -- deferred to check-variation-tag-required",
@@ -149,8 +197,15 @@ def check(
             "blocking_issue": None,
             "blocking_claim_at": None,
             "closing_issues": [],
+            "advisory_labels": [],
             "warnings": [],
         }
+
+    # Advisory labels (#10223 Task 4): computed across BOTH closing and
+    # non-closing refs -- the blocking path below only looks at closing refs,
+    # but a `See #N` conflict or a no-claim closing issue is still worth a
+    # label. Never blocks.
+    advisory = _compute_advisory_labels(pr_body, issue_fetcher, pr_lane)
 
     # Closing references ONLY (Closes|Fixes|Resolves). See/Part of are excluded
     # by construction by find_close_keyword_pr_refs -- that is the discriminant.
@@ -165,6 +220,7 @@ def check(
             "blocking_issue": None,
             "blocking_claim_at": None,
             "closing_issues": [],
+            "advisory_labels": advisory,
             "warnings": [],
         }
 
@@ -214,6 +270,7 @@ def check(
                 "blocking_issue": num,
                 "blocking_claim_at": ev.created_at,
                 "closing_issues": issue_nums,
+                "advisory_labels": advisory,
                 "warnings": warnings,
             }
 
@@ -225,6 +282,7 @@ def check(
         "blocking_issue": None,
         "blocking_claim_at": None,
         "closing_issues": issue_nums,
+        "advisory_labels": advisory,
         "warnings": warnings,
     }
 

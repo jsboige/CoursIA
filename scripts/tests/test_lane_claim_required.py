@@ -109,6 +109,8 @@ def test_d_same_conflict_on_non_closing_ref_is_pass():
     v = lcr.check(body, fetch, now=NOW)
     assert v["guard_pass"] is True
     assert v["closing_issues"] == []  # See #N is not closing -> not scanned
+    # Criterion (d): non-closing conflict -> pass + ADVISORY label (Task 4).
+    assert "lane-claim-conflict" in v["advisory_labels"]
 
 
 def test_e_released_claim_is_pass():
@@ -218,6 +220,58 @@ def test_multiple_closing_issues_one_blocked():
     v = lcr.check(body, fetch, now=NOW)
     assert v["guard_pass"] is False
     assert v["blocking_issue"] == 100
+
+
+# --- advisory labels (#10223 Task 4) -- never block --------------------------
+
+def test_advisory_lane_claim_absent_when_closing_issue_has_no_claim():
+    # Closes an issue that carries NO claim at all -> advisory label (measure
+    # adoption), never a block. The historical backlog was mostly taken without
+    # a claim; reddening here would teach nothing.
+    body = pr_body("myia-po-2026:CoursIA", "Closes #10169")
+    fetch = fetcher_from({10169: issue_payload(number=10169)})  # no comments
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is True
+    assert "lane-claim-absent" in v["advisory_labels"]
+
+
+def test_advisory_lane_claim_conflict_on_see_ref():
+    # See #N (non-closing) where another lane claims #N -> advisory label; the
+    # closing variant of the same conflict would block. A multi-lane EPIC is
+    # advisory by construction.
+    body = pr_body("myia-po-2026:CoursIA", "See #10169 -- part of the epic")
+    fetch = fetcher_from({10169: issue_payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- working here",
+                "2026-08-09T11:41:43Z"),
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is True
+    assert v["closing_issues"] == []  # non-closing -> not scanned for blocking
+    assert "lane-claim-conflict" in v["advisory_labels"]
+
+
+def test_advisory_labels_empty_when_no_refs():
+    # Lane readable but no issue reference at all -> no advisory labels.
+    body = pr_body("myia-po-2026:CoursIA", "Just a refactoring, no issue ref.")
+    fetch = fetcher_from({})
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is True
+    assert v["advisory_labels"] == []
+
+
+def test_advisory_labels_carried_on_block_verdict():
+    # A block verdict must still carry the advisory_labels field (well-typed)
+    # so the advisory job can read it even when the blocking job is red.
+    body = pr_body("myia-po-2026:CoursIA", "Closes #10169")
+    fetch = fetcher_from({10169: issue_payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- working here",
+                "2026-08-09T11:41:43Z"),
+    )})
+    v = lcr.check(body, fetch, now=NOW)
+    assert v["guard_pass"] is False
+    # #10169 has a claim (not absent) and is closing (not a See) -> no advisory
+    # label fires here, but the field is present and a list on the block path.
+    assert isinstance(v["advisory_labels"], list)
 
 
 # --- is_advisory: the job name must NOT be advisory --------------------------

@@ -478,3 +478,28 @@ def test_prev_close_keyword_multiple_prevs():
     assert len(hits) == 2
     genres = {h["genre"] for h in hits}
     assert genres == {"fix", "closes"}
+
+
+def test_find_non_closing_refs_see_part_of_refs():
+    # The 3 safe-syntax non-closing references (See/Part of/Refs) -- the
+    # complement of find_close_keyword_pr_refs. Feeds lane_claim_required's
+    # advisory `lane-claim-conflict` label (#10223 Task 4).
+    text = "See #1454 -- part of the epic\nPart of #1027\nRefs #3801"
+    hits = gt.find_non_closing_refs(text)
+    assert sorted(h["number"] for h in hits) == [1027, 1454, 3801]
+    # Same hit shape as find_close_keyword_pr_refs (keyword lowercased + span).
+    assert all("keyword" in h and "span" in h for h in hits)
+    assert {h["keyword"] for h in hits} == {"see", "part of", "refs"}
+
+
+def test_find_non_closing_refs_excludes_closing_keywords():
+    # Closing keywords must NOT be matched by the non-closing scanner (the
+    # blocking discriminant stays the closing scanner's job).
+    hits = gt.find_non_closing_refs("Closes #10169\nFixes #200\nSee #300")
+    assert [h["number"] for h in hits] == [300]
+
+
+def test_find_non_closing_refs_empty_and_none():
+    assert gt.find_non_closing_refs(None) == []
+    assert gt.find_non_closing_refs("") == []
+    assert gt.find_non_closing_refs("nothing here") == []
