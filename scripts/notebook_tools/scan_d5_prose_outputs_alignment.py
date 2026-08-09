@@ -160,6 +160,29 @@ _HEX_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}")
 # alphanum^alphanum (couvre 2^3, n^2, 2^32 ; le caret est distinctif).
 _PLAINTEXT_EXPONENT_RE = re.compile(r"[0-9a-zA-Z]+\^[0-9a-zA-Z]+")
 
+# Marqueur de liste ordonnee markdown/CommonMark (po-2023 #9790, FP class 7) :
+# une ligne debutant par <= 3 espaces, un entier, puis `.` ou `)` puis un
+# espace (ou fin de ligne) est un ITEM de liste ordonnee -- l'entier est
+# l'INDICE d'enumeration, jamais une mesure d'output. Source documentee dans
+# le corpus run #9790 : po-2023 a quantifie 345 occurrences (14 %) de
+# `ordered-list-marker` sur SymbolicAI. Re-verifie firsthand (G.1, 2026-08-09,
+# classifier SAFE-by-construction sur le corpus full) : 770/10411 findings
+# MISSING_FROM_OUTPUTS (7.4 %) sont des marqueurs purs -- echantillon 12/12
+# est 100 % d'items de liste (« 5. Analyser le jeu de la Chasse au Cerf »,
+# « 6. **Exercices** », « 3. **Monitoring** : Necessaire uniquement en
+# production »).
+#
+# Falsifiable both-directions (0 sur-filtrage par construction) : on ne filtre
+# QUE si le nombre extrait est le PREMIER token non-blanc de sa ligne ET est
+# immediatement suivi de `.`/`)` puis d'un espace/EOL. Une mesure decimale
+# (`1.15`, `0.73`) ne rend jamais sous cette forme -- le `.` est un separateur
+# decimal interne au token, donc apres le token matche le caractere suivant
+# n'est pas `.`/`)`+espace (c'est le contexte de la phrase). Une mesure entiere
+# en milieu de phrase (« on obtient 5 widgets ») a du texte avant elle ->
+# n'est pas le premier token de la ligne -> non filtree. Verifie : aucun
+# marqueur de liste dans l'echantillon n'est une mesure citee.
+_ORDERED_LIST_MARKER_LINE_RE = re.compile(r"\s{0,3}(\d+)[.)](?:[ \t]|$)")
+
 
 # Faux positifs semantiques : regex strictes (mot complet + caractere de
 # liaison) pour eviter de matcher au milieu d'une phrase legit.
@@ -401,6 +424,19 @@ def _extract_prose_numbers(text: str) -> list[float]:
         # examine le debut de ligne brut (le `#` n'a pas de casse).
         if _ATX_HEADING_LINE_RE.match(text[line_start:m.start() + len(raw)]):
             continue
+        # Filtre marqueur de liste ordonnee (po-2023 #9790, FP class 7) : le
+        # nombre extrait est-il le MARQUEUR d'un item (`N.` / `N)` en debut de
+        # ligne) ? Un indice d'enumeration n'est jamais une mesure d'output.
+        # SAFE-by-construction : exige (a) le nombre est le premier token
+        # non-blanc de sa ligne (prefix purement blanc) ET (b) immediatement
+        # suivi de `.`/`)` puis d'un espace/EOL -- forme distincte d'une mesure
+        # decimale ou entiere en milieu de phrase (cf. _ORDERED_LIST_MARKER_LINE_RE).
+        if prefix.strip() == "":
+            after = text[m.end():m.end() + 2]
+            if after and after[0] in ".)" and (
+                len(after) == 1 or after[1] in " \t" or after[1] == "\n"
+            ):
+                continue
         if any(h in prefix for h in SEMANTIC_FALSE_POSITIVE_HINTS):
             continue
         # Filtre DOI / arXiv : identifiants de reference (jamais des mesures).

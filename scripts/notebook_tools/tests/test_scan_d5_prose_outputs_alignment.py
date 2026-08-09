@@ -191,6 +191,73 @@ class TestExtractProseNumbers:
         assert 0.71 in nums
 
 
+class TestOrderedListMarkerFalsePositive:
+    """Filtre marqueur de liste ordonnee (po-2023 #9790, FP class 7).
+
+    Un entier qui est le MARQUEUR d'un item de liste (ligne debutant par
+    ``N.`` / ``N)`` + espace) est un indice d'enumeration, jamais une mesure
+    d'output. Falsifiable both-directions : une mesure decimale (``1.15``) ou
+    un entier en milieu de phrase (``5 widgets``) ne rend jamais sous la forme
+    d'un marqueur (premier token de la ligne + ``.``/``)`` + espace). Verifie
+    firsthand (G.1, 2026-08-09) : 770/10411 findings (7.4 %) sont des marqueurs
+    purs sur le corpus full.
+    """
+
+    def test_filter_dot_marker(self):
+        # "5. **Exercices**" -- le 5 est un indice de liste, pas une mesure.
+        nums = mod._extract_prose_numbers("5. Analyser le jeu de la Chasse au Cerf.")
+        assert 5.0 not in nums
+
+    def test_filter_paren_marker(self):
+        # "1) First item" -- marqueur parenthese.
+        nums = mod._extract_prose_numbers("1) Premier element de la liste.")
+        assert 1.0 not in nums
+
+    def test_filter_indented_marker(self):
+        # Nested list item (indentation <= 3 espaces, CommonMark).
+        nums = mod._extract_prose_numbers("  2. sous-element imbrique")
+        assert 2.0 not in nums
+
+    def test_filter_marker_followed_by_bold(self):
+        # Cas corpus (GameTheory-13, GenAI) : "3. **Monitoring** : ..."
+        nums = mod._extract_prose_numbers("3. **Convergence** -- la strategie moyenne converge vers Nash")
+        assert 3.0 not in nums
+
+    def test_filter_marker_at_eol(self):
+        # Marqueur seul en fin de ligne ("5.\n6. ...").
+        nums = mod._extract_prose_numbers("5.\n6. suite")
+        assert 5.0 not in nums
+        assert 6.0 not in nums
+
+    def test_preserve_decimal_measurement(self):
+        # CRUCIAL both-directions : "1.15" est une mesure decimale, le point
+        # est un SEPARATEUR DECIMAL interne au token, pas un marqueur.
+        nums = mod._extract_prose_numbers("Le ratio de Sharpe est 1.15 sur la periode OOS.")
+        assert 1.15 in nums
+
+    def test_preserve_integer_mid_line(self):
+        # CRUCIAL both-directions : un entier en milieu de phrase n'est pas un
+        # marqueur (du texte le precede sur la ligne).
+        nums = mod._extract_prose_numbers("On obtient 5 widgets apres optimisation.")
+        assert 5.0 in nums
+
+    def test_preserve_sentence_internal_period(self):
+        # CRUCIAL both-directions : "Le seuil est 5. Continuons." -- le 5 est
+        # en MILIEU de ligne (pas le premier token), donc le "5." n'est PAS un
+        # marqueur de liste. C'est une mesure suivie d'une fin de phrase.
+        nums = mod._extract_prose_numbers("Le seuil est 5. Continuons l'analyse.")
+        assert 5.0 in nums
+
+    def test_preserve_marker_and_measurement_same_cell(self):
+        # Une cellule peut avoir un marqueur "5." ET une mesure "5" ailleurs :
+        # seul le marqueur est filtre, la mesure survive.
+        nums = mod._extract_prose_numbers(
+            "5. Cinquieme etape du protocole\n\nLa dimension de l'espace est 5."
+        )
+        # La mesure 5 (deuxieme ligne, milieu de phrase) est conservee.
+        assert 5.0 in nums
+
+
 class TestHexColorAndExponentFalsePositives:
     """Filtre codes couleur hex + exposants plaine (EPIC #9768, c.1295).
 
