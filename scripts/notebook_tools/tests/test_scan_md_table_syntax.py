@@ -23,6 +23,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scan_md_table_syntax import (  # noqa: E402
+    SEP_ROW_RE,
     _column_count,
     _find_table_blocks,
     _has_delimiter_pipe,
@@ -208,6 +209,66 @@ class TestDetectNoSep:
         ]
         f = detect_md_table_syntax(lines)
         assert [x for x in f if x["pathology"] == "NO_SEP"] == []
+
+
+class TestBlockquoteTableNotFalsePositive:
+    """FP classe #10097 (po-2023 c.189) : table GFM valide enveloppee dans un
+    blockquote. Chaque ligne porte un prefixe ``>`` ; la ligne separateur
+    ``> |---|---|`` est un separateur GFM VALIDE, mais ``SEP_ROW_RE`` (``^\\s*``)
+    ne matchait pas le ``>`` -> faux NO_SEP. Cas fondateur : ICT-0-Annexe."""
+
+    def test_blockquote_table_not_no_sep(self):
+        # Table blockquote complete : header + separateur + 2 data, toutes prefixees `> `.
+        # Le separateur `> |---|---|` doit etre reconnu -> pas de NO_SEP.
+        lines = [
+            "> | Pattern original | Restaure en |",
+            "> |---|---|---|",
+            "> | `\\text{X}*_\\text{Y}` | `\\text{X}_\\text{Y}` | 4 |",
+            "> | `\\min*` | `\\min_*` | 2 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "NO_SEP"] == [], (
+            f"blockquote table with valid `> |---|` separator must not be NO_SEP, "
+            f"got {[x for x in f if x['pathology'] == 'NO_SEP']}")
+
+    def test_blockquote_sep_row_regex_match(self):
+        # Test unitaire du regex : la ligne separateur blockquote matche SEP_ROW_RE.
+        assert SEP_ROW_RE.match("> |---|---|---|")
+        assert SEP_ROW_RE.match("> |:---:|---:|")
+        assert SEP_ROW_RE.match("> ---|---|---")
+        # Un separateur SANS blockquote matche toujours (regression guard).
+        assert SEP_ROW_RE.match("|---|---|---|")
+        assert SEP_ROW_RE.match("  |---|---|")
+
+    def test_blockquote_table_no_col_mismatch(self):
+        # La table blockquote est bien formee (3 colonnes logiques) -> pas de
+        # COL_MISMATCH non plus. (Le prefixe `> ` ajoute une "cellule" fantome a
+        # toutes les lignes de maniere CONSISTANTE, donc la detection de mismatch
+        # header-vs-data reste correcte.)
+        lines = [
+            "> | a | b | c |",
+            "> |---|---|---|",
+            "> | 1 | 2 | 3 |",
+            "> | 4 | 5 | 6 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "NO_SEP"] == []
+        assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
+
+    def test_blockquote_table_real_col_mismatch_still_flagged(self):
+        # Falsifiabilite : si une ligne blockquote a un vrai drift de pipes (5 au
+        # lieu de 3), COL_MISMATCH DOIT etre flagge -- le fix blockquote ne masque
+        # pas les vrais defauts.
+        lines = [
+            "> | a | b | c |",
+            "> |---|---|---|",
+            "> | 1 | 2 | 3 | extra | extra2 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        cm = [x for x in f if x["pathology"] == "COL_MISMATCH"]
+        assert len(cm) >= 1, (
+            f"a real pipe-drift row in a blockquote table must still be flagged, "
+            f"got {f}")
 
 
 class TestDetectNoBlankBefore:
