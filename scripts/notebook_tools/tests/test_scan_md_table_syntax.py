@@ -27,7 +27,9 @@ from scan_md_table_syntax import (  # noqa: E402
     _column_count,
     _find_table_blocks,
     _has_delimiter_pipe,
+    _is_out_of_scope,
     detect_md_table_syntax,
+    iter_targets,
     main,
     scan_markdown,
     scan_notebook,
@@ -501,3 +503,63 @@ class TestCli:
 
     def test_missing_path_exits_two(self):
         assert main(["definitely_does_not_exist_xyz123/"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# _is_out_of_scope -- out-of-scope zone exclusion (#10097 re-measure)
+# ---------------------------------------------------------------------------
+
+class TestOutOfScopeExclusion:
+    """The scanner excludes committed-transcript / generated-report / artefact
+    zones by default (#10097: ~73% of the raw count is journal noise). Lock the
+    classifier so a future refactor cannot silently re-include them."""
+
+    def test_roo_code_corrections_transcript_excluded(self):
+        # A committed Roo agent task transcript under Roo-Code/Corrections/.
+        p = "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Corrections/roo_task.md"
+        excluded, reason = _is_out_of_scope(p)
+        assert excluded is True
+        assert "transcript" in reason
+
+    def test_argumentum_generated_report_excluded(self):
+        p = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/Documentation/Git_Archeology_Report.md"
+        excluded, reason = _is_out_of_scope(p)
+        assert excluded is True
+        assert "generated report" in reason
+
+    def test_output_ipynb_artefact_excluded(self):
+        p = "MyIA.AI.Notebooks/Search/Part1-Foundations/03_Search_output.ipynb"
+        excluded, reason = _is_out_of_scope(p)
+        assert excluded is True
+        assert "artefact" in reason
+
+    def test_pedagogical_notebook_not_excluded(self):
+        # A genuine teaching notebook must NOT be excluded.
+        p = "MyIA.AI.Notebooks/QuantConnect/projects/QC-Py-28-Market-Regime-Detection.ipynb"
+        assert _is_out_of_scope(p) == (False, None)
+
+    def test_regular_markdown_not_excluded(self):
+        p = "MyIA.AI.Notebooks/GameTheory/README.md"
+        assert _is_out_of_scope(p) == (False, None)
+
+    def test_roo_code_but_not_corrections_not_excluded(self):
+        # Roo-Code content OUTSIDE Corrections is real authored prose -- keep it.
+        p = "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/03-assistant-pro/doc.md"
+        assert _is_out_of_scope(p) == (False, None)
+
+    def test_iter_targets_excludes_by_default(self, tmp_path):
+        # Build a fake Corrections transcript + a real notebook, confirm the
+        # transcript is dropped from the default walk but kept under --include-all.
+        roo = tmp_path / "GenAI/Vibe-Coding/Roo-Code/Corrections"
+        roo.mkdir(parents=True)
+        (roo / "transcript.md").write_text("| a |\n|---|\n| 1 |\n", encoding="utf-8")
+        nb_dir = tmp_path / "Search/Part1-Foundations"
+        nb_dir.mkdir(parents=True)
+        (nb_dir / "real.ipynb").write_text("{}", encoding="utf-8")
+
+        default = list(iter_targets([str(tmp_path)]))
+        full = list(iter_targets([str(tmp_path)], include_all=True))
+        assert any("transcript.md" in t for t in full)
+        assert not any("transcript.md" in t for t in default)
+        assert any("real.ipynb" in t for t in default)
+

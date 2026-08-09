@@ -395,9 +395,51 @@ def scan_path(path):
 _SKIP_DIRS = {".lake", "node_modules", ".git", "_archives", ".pytest_cache",
               "__pycache__"}
 
+# Out-of-scope zones excluded by DEFAULT (override with --include-all). Per the
+# #10097 post-merge re-measure, ~73% of the raw defect count lives in committed
+# *agent conversation transcripts* and *generated reports* where "GFM table
+# rendering" is meaningless -- fixing them by hand rewrites a journal or a
+# machine-generated doc, which is the opposite of the file's purpose. The
+# scanner must exclude these zones itself (a rule each worker recalls is not
+# applied; a default `--exclude` is). See #10097 comment (re-measure on main).
+#
+#   (a) Roo-Code/Corrections/**        -- Roo agent task transcripts committed
+#                                         as "corriges d'atelier" (a journal,
+#                                         not rendered prose). ~238/324 defects.
+#   (b) Argumentum/**/*_Report.md      -- machine-generated Git-archaeology /
+#                                         validation reports (not authored prose).
+#   (c) *_output.ipynb                 -- papermill/execution artefacts (already
+#                                         excluded by other gates; kept here for
+#                                         a single source of truth).
+# Matched by path PARTS (robust to repo layout changes) so the rule is a
+# directory-shape / filename pattern, not a fragile absolute path.
 
-def iter_targets(paths):
-    """Yield .ipynb + .md + README* files under the given paths."""
+
+def _is_out_of_scope(path_str):
+    """True if `path_str` is a committed-transcript / generated-report /
+    execution-artefact zone the scanner should exclude by default (#10097).
+    Returns (excluded: bool, reason: str|None) so callers can tally the drop."""
+    p = pathlib.Path(path_str)
+    parts = [str(x) for x in p.parts]
+    name = p.name
+    # (a) Roo-Code/Corrections/** -- a Corrections dir anywhere under a Roo-Code dir.
+    if "Corrections" in parts and "Roo-Code" in parts:
+        return True, "Roo-Code/Corrections transcript"
+    # (b) Argumentum/**/*_Report.md -- generated report under the Argumentum tree.
+    if "Argumentum" in parts and name.endswith("_Report.md"):
+        return True, "Argumentum generated report"
+    # (c) *_output.ipynb -- execution artefact.
+    if name.endswith("_output.ipynb"):
+        return True, "execution artefact"
+    return False, None
+
+
+def iter_targets(paths, include_all=False):
+    """Yield .ipynb + .md + README* files under the given paths.
+
+    By default out-of-scope zones (transcripts, generated reports, execution
+    artefacts -- see `_is_out_of_scope`) are skipped; pass `include_all=True`
+    to audit the raw corpus (the count then includes the ~73% journal noise)."""
     seen = set()
     for p in paths:
         pp = pathlib.Path(p)
@@ -414,6 +456,8 @@ def iter_targets(paths):
                 name = f.name
                 if (name.endswith(".ipynb") or name.endswith(".md")
                         or name.upper().startswith("README")):
+                    if not include_all and _is_out_of_scope(str(f))[0]:
+                        continue
                     if str(f) not in seen:
                         seen.add(str(f))
                         yield str(f)
@@ -434,9 +478,23 @@ def main(argv=None):
     ap.add_argument("--check", action="store_true",
                     help="exit 1 if >=1 finding (CI-ready). Without it, "
                          "exit 0 on success regardless of findings.")
+    ap.add_argument("--include-all", action="store_true",
+                    help="do NOT exclude out-of-scope zones (Roo-Code/Corrections "
+                         "transcripts, Argumentum generated reports, *_output.ipynb "
+                         "artefacts). By default these are excluded (#10097); use "
+                         "this to audit the raw corpus including journal noise.")
     args = ap.parse_args(argv)
 
-    targets = list(iter_targets(args.paths))
+    # Count out-of-scope files for the exclusion summary (makes the reduced count
+    # explicit -- a silently lower total could hide a regression).
+    if args.include_all:
+        targets = list(iter_targets(args.paths, include_all=True))
+        excluded = []
+    else:
+        all_targets = list(iter_targets(args.paths, include_all=True))
+        excluded = [t for t in all_targets if _is_out_of_scope(t)[0]]
+        in_scope = [t for t in all_targets if not _is_out_of_scope(t)[0]]
+        targets = in_scope
     if not targets:
         sys.stderr.write(
             "scan_md_table_syntax: rien a scanner sous "
@@ -462,6 +520,12 @@ def main(argv=None):
                 print(f"      {f['snippet']!r}")
         print(f"\nTotal: {total} defaut(s) sur {len(flagged)}/{len(results)} "
               f"fichier(s) scanne(s).")
+        if excluded:
+            from collections import Counter
+            reasons = Counter(_is_out_of_scope(t)[1] for t in excluded)
+            rstr = ", ".join(f"{n} {r}" for r, n in reasons.items())
+            print(f"        ({len(excluded)} fichier(s) hors-scope exclus: {rstr}; "
+                  f"--include-all pour le corpus brut, #10097)")
 
     if args.check and total > 0:
         return 1
