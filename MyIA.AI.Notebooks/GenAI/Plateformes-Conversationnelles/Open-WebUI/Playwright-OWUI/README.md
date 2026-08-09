@@ -62,6 +62,58 @@ Playwright-OWUI/
 └── README.md                         # Ce fichier
 ```
 
+## Périmètre publiable
+
+Cette section documente **ce qui est commité** dans le harnais et **ce qui est ignoré**, avec le motif. Décision tranchée par [#10025](https://github.com/jsboige/CoursIA/issues/10025) (livrable 1 — périmètre publiable ; le livrable 2, les patterns `.gitignore` globaux, est dans la PR #10057).
+
+### Committé (34 fichiers tracked)
+
+| Catégorie | Fichiers | Motif |
+|-----------|----------|-------|
+| **Spécifications de tests** | `01-decouverte/*.spec.ts`, `02-navigation-authentification/*.spec.ts`, `03-chat-streaming/*.spec.ts`, `04-rag-tools-avances/*.spec.ts`, `05-multi-tenant-ci/*.spec.ts`, `06-nouveautes-v0.10/*.spec.ts` | Code pédagogique, reproductible par quiconque clone le dépôt |
+| **Helpers et fixtures** | `helpers/selectors.ts`, `helpers/chat.ts`, `helpers/api.ts`, `fixtures/auth.setup.ts` | Code utilitaire partagé entre modules |
+| **Configuration** | `playwright.config.ts`, `tsconfig.json`, `package.json`, `package-lock.json` | Lockfile = reproductibilité d'`npm install` |
+| **Notebooks pédagogiques** | `00-Parcours-QA-OWUI.ipynb`, `01..06/*/[Module].ipynb` | Format hybride notebook + `.spec.ts` (cf. supra) |
+| **Documentation** | `README.md` (ce fichier), `00-Parcours-QA-OWUI.md`, `TRIAGE-INFRA-VS-TEST.md`, `WHATS-NEW-v0.9.1.md`, `WHATS-NEW-v0.10.md`, `01..06/README.md` | Cadrage pédagogique et guides transverses |
+| **Template de configuration** | `.env.example` | **8 clés actives + 7 commentées (optionnelles), valeurs vides ou exemples neutres** (`OWUI_URL=https://open-webui.example.com`, `OWUI_EMAIL=your_email_here`, etc.). Aucune valeur réelle. |
+
+### Ignoré (jamais committé)
+
+| Pattern | Motif |
+|---------|-------|
+| `.env` | **SECRET** — credentials utilisateur, jamais versionné |
+| `.auth/*.json` | **SECRET** — Playwright storageState contient les cookies de session authentifiés |
+| `storage-state*.json` (racine) | **SECRET** — idem, scope global (PR #10057) |
+| `playwright/.auth/` (racine) | **SECRET** — idem, scope global (PR #10057) |
+| `node_modules/` | **REGENERABLE** — `npm install` suffit, pollue le diff |
+| `dist/` | **REGENERABLE** — `tsc` rebuild, artefacts TypeScript |
+| `playwright-report/`, `test-results/`, `blob-report/` | **REGENERABLE** — sortie HTML/JSON de `npx playwright test`, régénérable à chaque run |
+| `playwright/.cache/` (racine) | **REGENERABLE** — cache browser downloads |
+
+### Vérifications après la PR
+
+```bash
+# 1. Check-ignore sur les 3 chemins sensibles
+git check-ignore -v <racine>/.auth/owui.json          # → ignoré
+git check-ignore -v <racine>/playwright-report/index.html  # → ignoré
+git check-ignore -v <racine>/test-results/.last-run.json  # → ignoré
+
+# 2. git add -An (dry-run) doit ne rien proposer de sensible
+git add -An -- MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/
+# (vide)
+
+# 3. Aucun fichier credential-class dans l'index
+git ls-files | grep -ciE '\.auth/|storage[-_]?state'
+# 0
+```
+
+### Voir aussi
+
+- [Issue #10025](https://github.com/jsboige/CoursIA/issues/10025) — décision du périmètre publiable (ce document)
+- [PR #10057](https://github.com/jsboige/CoursIA/pull/10057) — `chore(gitignore,#10025): ignore Playwright storage-state (session cookies) + test artifacts` (patterns `.gitignore` globaux)
+- [Issue #10021](https://github.com/jsboige/CoursIA/issues/10021) — même défaut de fond : harnais de calcul non committé → sorties invérifiables
+- [Issue #16](https://github.com/jsboige/CoursIA/issues/16) — provisioning OWUI/auth services (territoire po-2023)
+
 ## Modules
 
 ### Module 01 — Découverte de Playwright & OWUI (2-3h)
