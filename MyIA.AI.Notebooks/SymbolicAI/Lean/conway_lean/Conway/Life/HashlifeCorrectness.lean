@@ -1142,10 +1142,12 @@ theorem boxAssezGrandN_block_8 : BoxAssezGrandN block 8 := by native_decide
 theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
 
 /-- **P5.2 genuine large-`n` jump (N2, P4-gated) — the sole remaining open
-    target of the P5 layer.** When `n ≥ jumpSize k` on the n-aware frame,
-    `evolveHashlifeFast` makes one Hashlife jump of `2^(k-2)` generations
-    (certified by P4 `hashlifeResult_central_correct`) then recurses
-    on `n - 2^(k-2)`, with the light cone staying inside the `gridFrameN` margin
+    target of the P5 layer.** When `n ≥ jumpSize lvl` (the MacroCell level)
+    on the n-aware frame, `evolveHashlifeFast` makes one Hashlife jump of
+    `jumpSize lvl = 2^lvl` generations (via `hashlifeJump = hashlifeResult
+    (padCenter2 c)` on the level-`lvl+2` padded cell, certified by P4
+    `hashlifeResult_central_correct`) then recurses on `n - jumpSize lvl`,
+    with the light cone staying inside the `gridFrameN` margin
     (`window_cheb_cone_in_domain`, now in `Conway.Life.ConeGeometry`). This is
     the real P5.2 target — **open named sorry, P4-gated** (`p4_succ_membership`,
     ai-01 turf), NOT closed by vacuity.
