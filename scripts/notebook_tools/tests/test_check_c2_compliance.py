@@ -322,6 +322,44 @@ class TestHeuristicCarveOuts:
         result = check_notebook(nb_path)
         assert result["violations"] == []
 
+    def test_function_def_body_print_no_output_ok(self, tmp_path):
+        """`def foo(): ... print(...) ... return` -> OK (PRINT_IN_DEF_FP).
+
+        A ``print(`` nested INSIDE a def body is not a top-level output:
+        it only fires when the function is called. Scanning the whole
+        source for ``print(`` (the pre-fix behaviour) flagged 73 pure
+        function-definition cells whose body merely happened to call
+        print. Only column-0 (top-level) output calls count.
+        """
+        nb_path = _write_nb(tmp_path / "func_print.ipynb", [
+            _code(
+                "def summarize(scores):\n"
+                "    print('mean:', sum(scores) / len(scores))\n"
+                "    return sum(scores)",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_top_level_print_still_flagged(self, tmp_path):
+        """Regression guard: a column-0 print() with no outputs -> violation.
+
+        The PRINT_IN_DEF_FP fix restricts output-call detection to
+        top-level lines; a genuine top-level ``print(`` must still be
+        flagged (no false-negative regression).
+        """
+        nb_path = _write_nb(tmp_path / "toplevel.ipynb", [
+            _code(
+                "x = 42\n"
+                "print('result', x)",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert len(result["violations"]) == 1
+        assert "no outputs" in result["violations"][0]["reason"]
+
     # --- C# declarations ----------------------------------------------------
 
     def test_csharp_using_no_output_ok(self, tmp_path):
