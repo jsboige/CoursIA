@@ -764,6 +764,15 @@ videos/
 **/playwright/.auth/
 **/blob-report/
 
+# Defense in depth (cf #10144) — Playwright `.auth/*.json` mixed-case variants.
+# Les cas d'école :
+#   - Playwright-OWUI/.auth/owui.json  (mixed case + tiret)
+#   - Playwright-XYZ/.auth/*.json     (futures instances)
+#   - anyPlaywrightX/.auth/*.json     (mixed case arbitraire)
+# Le `.gitignore` local de chaque sous-dossier reste l'organe principal ;
+# cette règle-ci est un filet de sécurité au cas où il serait omis.
+**/*[Pp]laywright*/.auth/*.json
+
 # Slidev pre-fix vs post-fix screenshot pairs (regenerable via Playwright)
 slides/*/analysis/_*.png
 
