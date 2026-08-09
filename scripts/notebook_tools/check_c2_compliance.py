@@ -171,9 +171,17 @@ def check_notebook(nb_path: Path) -> dict:
 
             # Detect output-producing top-level expression. A top-level call
             # (`foo()`, `obj.bar()`, `df.head()`) or top-level `print/display`
-            # call is what triggers Jupyter's auto-output.
+            # call is what triggers Jupyter's auto-output. Only column-0
+            # (non-indented) occurrences count: a `print(` nested inside a
+            # def/class body produces no output until the function is called
+            # (PRINT_IN_DEF_FP — 73 cells flagged pre-fix were pure function
+            # definitions whose body happened to call print).
             output_keywords = ("print(", "display(", "plt.", "fig", "IPython.")
-            has_output_call = any(kw in source for kw in output_keywords)
+            toplevel_source = "\n".join(
+                line for line in source.split("\n")
+                if line and not line[0].isspace()
+            )
+            has_output_call = any(kw in toplevel_source for kw in output_keywords)
             # `return` outside a function = a Jupyter cell that should output
             # something — but typically `return` only appears inside a `def`,
             # so this is mostly a smoke-check.
