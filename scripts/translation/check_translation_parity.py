@@ -82,8 +82,10 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 # Convention #1650 : un notebook xxx.ipynb source + xxx_<lang>.ipynb traduit.
-# Langues cibles = ratifiees #4957 §1 (meme liste que PERIMETER + sync).
-TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
+# Langues cibles = l'univers ordonné de source unique ``check_perimeter`` (#10109)
+# -- une copie locale divergente est un bug latent silencieux (zip positionnel).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_perimeter import TARGET_LANGS  # noqa: E402  -- single source of truth
 
 # Seuil de longueur pour le verdict FR_CONTAM : un texte trop court (< 4 chars
 # post-normalisation) est un faux-ami structurel (token unique, chiffre, ponctuation).

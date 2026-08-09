@@ -68,7 +68,8 @@ jobs:
           # 3-dot diff: translation-owned files changed on the PR branch.
           # translations/** = sync CSVs (derived). *_<lang>.ipynb = rendered
           # translation notebooks (derived by render_notebook.py T4). Target
-          # langs match translate_csv.py TARGETS (en/ru/pt/es/ar/fa/zh).
+          # langs match check_perimeter.py TARGET_LANGS (en/es/ar/fa/zh/ru/pt),
+          # the single source of truth (#10109).
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- \
             'translations/**' \
             'MyIA.AI.Notebooks/**/*_en.ipynb' \
