@@ -685,6 +685,146 @@ class TestV5NumberedListAndClockArithmetic:
         )
 
 
+class TestFpGuardV6:
+    """Guards v6 (c.1331+15, #9434) — residuel apres v4 (#10016) + v5 (#10062).
+
+    3 classes de FP residuels mesurees firsthand sur GT-1-Setup + PyMC-1-Setup :
+    valeurs NON-version rattrapees par proximite de mot-cle, que v4/v5 ne couvraient
+    pas (elles ciblent les listes numerotees / arithmetique horloge, pas ces cas).
+    Meme asymetrie failure-mode-safe : absorption UNIQUEMENT vers STRUCTUREL.
+
+    IMPORTANT — ce que v6 NE touche PAS : les version-adjacents ("python 3.10+",
+    "numpy 2.x") restent ENV-DEP legitimes (test_10012_falsif_python_semver_kept :
+    un floor/wildcard de version DERIVE quand la lib evolue, donc env-drift-prone).
+    """
+
+    # -- (B) Cross-ref slug de notebook ------------------------------------- #
+
+    def test_v6_notebook_slug_cross_ref(self):
+        """PyMC-1-Setup c16: "pymc-6-debugging" = slug d'un notebook voisin, pas une version.
+
+        Le 6 est le numero du notebook dans le slug (pymc-6-debugging), rattrape
+        par le kw 'version' dans le contexte environnant. Le guard reconnait le
+        pattern <alnum>-<N>-<alnum> (lettre/chiffre - tiret - lettre).
+        """
+        cls, _ = _classify_quant_value("6", 6.0,
+                                       "pymc-", "-debugging pour le debug")
+        assert cls == "STRUCTUREL", (
+            f"slug de notebook (\\w-N-\\w) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v6_file_ref_slug(self):
+        """Cross-ref fichier : "voir data-2-preprocessed.csv" = le 2 est dans un nom de fichier."""
+        cls, _ = _classify_quant_value("2", 2.0,
+                                       "voir data-", "-preprocessed.csv")
+        assert cls == "STRUCTUREL", (
+            f"slug de fichier (\\w-N-\\w) doit etre STRUCTUREL, got {cls}"
+        )
+
+    # -- (A) Citation bibliographique --------------------------------------- #
+
+    def test_v6_journal_citation_vol_issue_pages(self):
+        """PyMC-1-Setup c25: "Physics Letters B, 195(2), 216-222" = ref journal.
+
+        Le pattern Vol(Issue), pages est non-ambigu : 195(2) = vol 195, issue 2 ;
+        216-222 = pages. Les chiffres sont ceux d'une reference, pas des mesures.
+        Rattrape par kw 'Monte Carlo' (titre du papier cite).
+        """
+        cls, _ = _classify_quant_value("195", 195.0,
+                                       "physics letters b, ", "(2), 216-222")
+        assert cls == "STRUCTUREL", (
+            f"citation journal (Vol(Issue), pages) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v6_journal_citation_secondary_page_number(self):
+        """Le 216 dans la meme citation doit aussi etre absorbe (pages)."""
+        cls, _ = _classify_quant_value("216", 216.0,
+                                       "(2), ", "-222 (duane et al. 1987)")
+        assert cls == "STRUCTUREL", (
+            f"numero de page dans citation Vol(Issue),pages doit etre STRUCTUREL, got {cls}"
+        )
+
+    # -- (F) Compteur structurel (cardinalite d'un ensemble fini) ----------- #
+
+    def test_v6_structural_count_actions(self):
+        """GT-1-Setup c60: "randomiser sur ses 3 actions" = N est la cardinalite.
+
+        Le tirage porte SUR les 3 actions ; le 3 lui-meme est fixe (cardinalite de
+        l'ensemble des actions), pas une mesure stochastique. Rattrape par kw 'random'.
+        """
+        cls, _ = _classify_quant_value("3", 3.0,
+                                       "randomiser sur ses ", " actions")
+        assert cls == "STRUCTUREL", (
+            f"compteur structurel (N actions) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v6_structural_count_players(self):
+        """Autre compteur : "5 joueurs participent au jeu" = cardinalite fixe."""
+        cls, _ = _classify_quant_value("5", 5.0,
+                                       "ces ", " joueurs participent")
+        assert cls == "STRUCTUREL", (
+            f"compteur structurel (N joueurs) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v6_structural_count_dimensions(self):
+        """Compteur technique : "vecteur de 10 dimensions" = cardinalite fixe."""
+        cls, _ = _classify_quant_value("10", 10.0,
+                                       "un vecteur de ", " dimensions")
+        assert cls == "STRUCTUREL", (
+            f"compteur structurel (N dimensions) doit etre STRUCTUREL, got {cls}"
+        )
+
+    # -- Falsification : genuine drainables ne sont PAS absorbes (anti-FN) -- #
+
+    def test_v6_genuine_semver_still_env_dep(self):
+        """Falsification : "numpy 2.4.4" (version pincee) reste ENV-DEP.
+
+        Un semver X.Y.Z adjacent a un mot-cle env est env-drift-prone (la lib
+        bouge). v6 ne touche QUE les valeurs NON-version.
+        """
+        cls, _ = _classify_quant_value("2.4.4", 2.44,
+                                       "numpy ", " installe")
+        assert cls == "ENV-DEP", (
+            f"version pincee 'numpy 2.4.4' doit rester ENV-DEP, got {cls}"
+        )
+
+    def test_v6_genuine_version_floor_still_env_dep(self):
+        """Falsification : "python 3.10+" (floor) reste ENV-DEP (deja valide #10012).
+
+        Le floor DERIVE quand Python evolue (3.10+ -> 3.13+). v6 ne l'absorbe PAS.
+        """
+        cls, _ = _classify_quant_value("3.10", 3.10,
+                                       "python ", "+ (jupyter env)")
+        assert cls == "ENV-DEP", (
+            f"floor de version 'python 3.10+' doit rester ENV-DEP, got {cls}"
+        )
+
+    def test_v6_genuine_accuracy_still_stoch(self):
+        """Falsification : "accuracy de 0.87" reste STOCHASTIQUE (mesure reelle).
+
+        0.87 est une mesure de performance stochastique (depend du seed/sample),
+        pas un compteur structurel (n'est pas prefixe d'un count-noun au suffix).
+        """
+        cls, _ = _classify_quant_value("0.87", 0.87,
+                                       "une accuracy de ", " sur le test set")
+        assert cls == "STOCHASTIQUE-NON-SEEDEE", (
+            f"mesure stochastique 'accuracy 0.87' doit rester drainable, got {cls}"
+        )
+
+    def test_v6_count_noun_requires_adjacency(self):
+        """Falsification : "3" sans count-noun adjacent n'est pas auto-absorbe.
+
+        Un "3" isole (ex: "resultat = 3") tombe sur sa vraie classe via le contexte,
+        il n'est pas absorbe juste parce qu'il est entier. Isole le comportement du
+        guard (F) qui exige un count-noun EN SUFFIXE immediat.
+        """
+        cls, rat = _classify_quant_value("3", 3.0,
+                                         "resultat = ", " apres convergence")
+        assert "cardinalité" not in rat and "cardinalit" not in rat.lower(), (
+            f"'3' sans count-noun ne doit pas declencher le guard (F), rationale={rat!r}"
+        )
+
+
 # --------------------------------------------------------------------------- #
 #  Tests _extract_context
 # --------------------------------------------------------------------------- #
