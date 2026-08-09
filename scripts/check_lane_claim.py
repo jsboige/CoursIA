@@ -82,8 +82,19 @@ from grain_tag import extract_lane
 # `[DONE]`/`[RELEASED]`/`[CANCELLED]`/`[ABANDONED]` close a claim; `[CLAIMED]`
 # opens one. Read on ISSUE comments (the claim registry per #9774), not on the
 # dashboard. Case-insensitive, tolerates inner spaces.
+# Line-anchored (`(?m)^[ \t]*\[...`): a marker only enacts a state change when
+# it STARTS a line -- the convention of every `--claim`/`--release` post and every
+# coordinator dispatch. A marker MENTIONED mid-sentence in prose is not an event.
+# Closes the #10228 false-negative: ai-01's claim comment ended with the
+# instructional sentence "Release with `[RELEASED]` when your PR lands" -- the
+# unanchored regex took that mid-prose `[RELEASED]` as the final-intent close,
+# neutralising the real `[CLAIMED]` and reporting the issue CLEAR while another
+# lane held an active claim. `findall` still returns markers in order, so the
+# legitimate "last marker wins" design (a `[CLAIMED]\n[DONE]` edit sequence on
+# separate lines) is preserved -- only mid-line mentions are rejected.
 _MARKER_RE = re.compile(
-    r"\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE)\s*\]", re.IGNORECASE
+    r"(?m)^[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE)\s*\]",
+    re.IGNORECASE,
 )
 _OPEN = {"CLAIMED"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
