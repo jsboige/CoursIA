@@ -1,0 +1,131 @@
+name: machine-dep-timing-advisory
+
+# Organe de signalisation (label-driven) pour le drainage progressif des temps
+# d'horloge machine-dependants en prose de notebook (cf. EPIC #9434 + #10158).
+#
+# Mode advisory : exit 0 en TOUTE circonstance, le signal est porte par un
+# label ``machine-dep-timing-count`` sur la PR. Bloquer le merge sur ce label
+# releve de la politique de la lane, pas du CI.
+#
+# Pourquoi advisory : #9434 inventorie 1397 findings wallclock a drainer dans
+# 355 notebooks -- un check bloquant fermerait systematiquement toutes les
+# PRs touchant la prose. Le drainage est progressif (cf. backlog dedie), et
+# ce workflow sert de jauge d'avancement (le label baisse a mesure qu'on
+# draine) plutot que de porte bloquante.
+#
+# Origine du design : aligne sur prose-counts-guard.yml (le garde de la
+# regex canonique) + exercises-advisory.yml (le modele advisory label-only).
+# Sortie : label `machine-dep-timing-count: <N>` pour traçabilite de la
+# regression / drainage.
+
+on:
+    pull_request:
+        paths:
+            - 'MyIA.AI.Notebooks/**/*.ipynb'
+            - 'scripts/notebook_tools/check_machine_dep_timing.py'
+            - 'scripts/notebook_tools/tests/test_check_machine_dep_timing.py'
+
+jobs:
+    machine-dep-timing:
+        runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
+        steps:
+            - name: Checkout PR
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.11'
+
+            - name: Install detector (no external deps)
+              run: |
+                  python --version
+                  python -c "import scripts.notebook_tools.check_machine_dep_timing as m; print('module OK', m.MACHINE_RE.pattern[:60])"
+
+            - name: Run detector (advisory, exit 0)
+              id: scan
+              run: |
+                  set +e
+                  # On scanne TOUT le repo (mode inventaire) ; le delta vs main
+                  # sera porte par le label, pas par le check.
+                  python scripts/notebook_tools/check_machine_dep_timing.py --all --json > /tmp/machine_dep_timing.json
+                  rc=$?
+                  set -e
+                  # MEME si le detector retourne 1 (mode --check future), on
+                  # laisse le job advisory passer -- c'est le label qui parle.
+                  echo "detector exit (ignored in advisory mode): $rc"
+                  # Compter les findings wallclock (cible drainage #9434).
+                  wallclock=$(python -c "import json; d=json.load(open('/tmp/machine_dep_timing.json')); print(d['summary']['wallclock'])")
+                  distribution=$(python -c "import json; d=json.load(open('/tmp/machine_dep_timing.json')); print(d['summary']['distribution_param'])")
+                  ambiguous=$(python -c "import json; d=json.load(open('/tmp/machine_dep_timing.json')); print(d['summary']['ambiguous'])")
+                  echo "wallclock=$wallclock distribution=$distribution ambiguous=$ambiguous"
+                  echo "wallclock_count=$wallclock" >> "$GITHUB_OUTPUT"
+
+            - name: Apply signal label (advisory)
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      // ========================================================================
+                      // Apply signal label (advisory, never blocking)
+                      // ========================================================================
+                      // actions/github-script@v7 expose `github.rest` (Octokit REST), PAS
+                      // `github.api`. La premiere version du script utilisait `github.api.issues.*`
+                      // qui est undefined, d'ou l'erreur "Cannot read properties of undefined".
+                      // Cf. c.1331+57-L1 du worker po-2024 pour le fix.
+                      // ========================================================================
+                      const count = '${{ steps.scan.outputs.wallclock_count }}';
+                      const label = `machine-dep-timing-count: ${count}`;
+
+                      // Helper : liste des labels existants sur cette PR.
+                      const listLabels = async () => {
+                          const { data } = await github.rest.issues.listLabelsOnIssue({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: context.issue.number,
+                          });
+                          return data;
+                      };
+
+                      // Cleanup : retirer les anciens labels machine-dep-timing-count:*
+                      let existing = [];
+                      try {
+                          existing = await listLabels();
+                      } catch (e) {
+                          core.warning(`listLabelsOnIssue failed: ${e.message}`);
+                      }
+                      const toRemove = existing
+                          .filter(l => l.name && l.name.startsWith('machine-dep-timing-count:'))
+                          .map(l => l.name);
+                      for (const name of toRemove) {
+                          try {
+                              await github.rest.issues.removeLabel({
+                                  owner: context.repo.owner,
+                                  repo: context.repo.repo,
+                                  issue_number: context.issue.number,
+                                  name,
+                              });
+                          } catch (e) {
+                              // Label absent / race condition : ok, on continue.
+                              core.info(`removeLabel ${name} ignored: ${e.status || e.message}`);
+                          }
+                      }
+
+                      // Poser le nouveau label.
+                      try {
+                          await github.rest.issues.addLabels({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: context.issue.number,
+                              labels: [label],
+                          });
+                      } catch (e) {
+                          // Le label n'existe pas encore dans le repo (premiere
+                          // utilisation). On ne fait pas crasher le job advisory.
+                          core.warning(`addLabels "${label}" failed (label may not exist yet): ${e.message}`);
+                      }
+
+                      core.info(`Advisory label set: ${label}`);
