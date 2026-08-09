@@ -122,6 +122,16 @@ ESCAPED_PIPE_RE = re.compile(r'\\\|')
 # NO_BLANK findings were ``P(X|Y)`` math pipes). See #10097.
 COND_NOTATION_RE = re.compile(r'[A-Za-z]\([^)]*\|[^)]*\)')
 
+# List-item marker (CommonMark): a line beginning with a bullet (``-``/``*``/
+# ``+``) or an ordered-list marker (``1.``/``1)``) after up to 3 leading spaces.
+# GFM parses list items BEFORE tables, so a list-item line is never a table row:
+# any ``|`` in it is literal content. Excluding list items from table-block
+# grouping kills the bare absolute-value math-pipe false positive -- e.g.
+# ``- |r| > 0.7`` (Pearson correlation in a sub-list, 7_Code_Interpreter cell
+# 36, the root cause of the c.198 #10221 retraction) -- without touching real
+# tables: a GFM table row never starts with a list marker. See #10097.
+LIST_MARKER_RE = re.compile(r'^ {0,3}(?:[-*+]|[0-9]{1,9}[.)])(?:[ \t]+|$)')
+
 
 def _has_delimiter_pipe(line):
     """True if ``line`` has a pipe that could be a GFM table column delimiter.
@@ -131,8 +141,11 @@ def _has_delimiter_pipe(line):
     whose only pipes live inside those spans is math/prose, not a table row.
     Mirrors the protection already applied by ``_column_count`` (which handles
     code/math/escaped) and extends it to bare ``P(X|Y)`` plain-text conditional
-    notation that ``$...$`` stripping does not reach.
+    notation that ``$...$`` stripping does not reach. A list-item line (CommonMark
+    marker) is never a table row, so its pipes are content regardless.
     """
+    if LIST_MARKER_RE.match(line):
+        return False
     t = CODE_SPAN_RE.sub('', line)
     t = MATH_SPAN_RE.sub('', t)
     t = ESCAPED_PIPE_RE.sub('', t)
