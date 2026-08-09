@@ -6,15 +6,17 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 > **Migration canonical c.765 (2026-07-22, jsboige:CoursIA-2)** : ajout du champ **`Description visuelle`** (gist compact de ce qui est *visible* en un coup d'œil, distinct du `Contenu réel vérifié` détaillé) sur les 5 figures vid3-*. Format aligné sur c.751 (GenAI/Audio racine, PR #7995) + c.763 (GenAI/Video/04-Applications, PR #8000) + c.764 (GenAI/Image/02-Advanced, PR #8002) + modèle rollout #5780. 5/5 figures migrées, audit vision MiniMax M3 firsthand + PIL RGB mean+std à 80×80 (cf PR body). **Audit fondateur c.476 préservé verbatim** ci-dessus ; cette migration est purement additive (pas de suppression de contenu). **Pivot cross-famille strict** vs c.763 (Video/04-Apps) et c.764 (Image/02-Advanced) : sub-famille **03-Orchestration** distincte de 04-Applications, et famille Video distincte d'Image — G-VAR-3 pivot obligatoire après 2 cycles MED/docs-figures-audit consécutifs.
 
+> **Régénération c.184 (2026-08-09, po-2023:CoursIA-2, issue #10155 — Prong A cure)** : `vid3-workflow1.webp` régénérée avec le **vrai SDXL**. L'audit c.476 ci-dessus avait diagnostiqué une « SDXL abstraite » — en réalité les pixels étaient un **fallback synthétique PIL** (notebook cell[14]) tracé géométriquement (rectangle noir + ovale jaune sur dégradé mauve→orange), mais `image_model` restait `"sdxl"` → le tracé héritait du label SDXL (bug de *labeling*, pas de génération). Cette régénération remplace les pixels synthétiques par une **vraie sortie de diffusion SDXL** : `StableDiffusionXLPipeline` sur GPU local, prompt `pipeline1_prompt` (« a majestic lighthouse on a rocky cliff at sunset, dramatic clouds, golden light, cinematic photography »), seed 42. **Variante honnêtement disclosed** : checkpoint **SDXL Lightning 4-step** (distillation ByteDance du SDXL base, même architecture) via `from_single_file`, scheduler EulerDiscreteScheduler(trailing), 8 steps, CFG 1.5 — config différente du notebook cell[8] (30 steps / CFG 7.5 sur base) car la base SDXL n'était pas téléchargeable (cache HF incomplet + throttle réseau) ; Lightning produit une **vraie sortie de diffusion** (pas un workaround dégradé). **Heuristiques objectives** (classe de défaut #10155 = objectivement distinguable) : 69 Ko vs 6 Ko synthétique (×12), pixel_std 67 vs 43, 6004 couleurs uniques échantillonnées vs ~centaines, palette chaude confirmée (mean RGB R=133>G=100>B=83, R dominant = coucher de soleil), structure verticale col-var 665 (cohérente avec « phare »), variance photo std 73/61/55 (vs 43/42/46 synthétique). **Audit c.476 préservé verbatim** ci-dessous (diagnostic historique de l'ancien asset). **QA vision** (reconnaissance du sujet « phare ») : la lane génératrice (GLM) n'a pas la vision — description basée sur prompt + heuristiques ; confirmation visuelle routée vers ai-01 au merge-gate (couplage double-vision CoursIA-2/ai-01).
+
 | Figure | Fichier | Dimensions | Poids | Source (notebook · cellule · output) | Source native |
 |--------|---------|------------|-------|--------------------------------------|---------------|
-| Image source SDXL (pipeline text→image→vidéo) | `vid3-workflow1.webp` | 819×490 | 6 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 8 · output 3 | 819×490, 10 Ko |
+| Image source SDXL (pipeline text→image→vidéo) | `vid3-workflow1.webp` | 819×490 | 69 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 8 · output 3 | 1024×576 (régén c.184) |
 | Pipeline text→image→vidéo — planche-contact (source + frames 1-25) | `vid3-workflow2.webp` | 1200×201 | 8 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 8 · output 10 | 1790×300, 113 Ko |
 | Comparatif brut vs upscale + interpolation (LTX-Video, marguerite) | `vid3-frame1.webp` | 1200×531 | 40 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 10 · output 9 | 1589×704, 984 Ko |
 | Batch multi-prompts LTX-Video (océan / torche / montagnes, 3×4 frames) | `vid3-frame2.webp` | 1200×723 | 46 Ko | `03-2-Video-Workflow-Orchestration.ipynb` · cellule 12 · output 14 | 1389×837, 913 Ko |
 | ComfyUI AnimateDiff — frames 1-8/16 (lac au couchant) | `vid3-comfyui.webp` | 1200×606 | 82 Ko | `03-3-ComfyUI-Video-Workflows.ipynb` · cellule 9 · output 4 | 1560×788, 1697 Ko |
 
-**Total** : 5 figures, 185 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. Les frames vidéo GenAI sont des images photographiques denses (sources 913–1697 Ko) : WebP q82 à 1200 px bat massivement le PNG (ex. frame 1 : 984 Ko → WebP 1200 px 40 Ko vs PNG 600 px 162 Ko — 2× la résolution pour 4× moins de poids). C'est la recommandation WebP P2 « quand le gain est net ».
+**Total** : 5 figures, 248 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. Les frames vidéo GenAI sont des images photographiques denses (sources 913–1697 Ko) : WebP q82 à 1200 px bat massivement le PNG (ex. frame 1 : 984 Ko → WebP 1200 px 40 Ko vs PNG 600 px 162 Ko — 2× la résolution pour 4× moins de poids). C'est la recommandation WebP P2 « quand le gain est net ».
 
 ---
 
@@ -62,13 +64,13 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 
 | Figure | Type attendu (prompt) | Type observé | Niveau de succès |
 |--------|----------------------|--------------|------------------|
-| vid3-workflow1 | image source concrète | rectangle abstrait | Très partiel |
+| vid3-workflow1 | image source concrète | phare sur falaise au coucher de soleil (SDXL, régén c.184) | Réussi (après régén c.184) |
 | vid3-workflow2 | propagation temporelle | propagation + dérive qualitative | Partiel — montre la dérive |
 | vid3-frame1 | comparatif marguerite focus | comparatif marguerite réussi | Réussi |
 | vid3-frame2 | batch océan/torche/montagnes | batch eau/lumignon/paysage crépusculaire | Très partiel |
 | vid3-comfyui | lac au couchant | palette coucher de soleil sans lac | Très partiel |
 
-**Bilan** : **1/5 figure illustre pleinement son concept** (vid3-frame1 — comparatif marguerite). Les 4 autres illustrent **la dérive qualitative** des modèles vidéo GenAI sur des prompts concrets. **Utile pédagogiquement** (montre les limites), mais **le MANIFEST les présentait comme des succès**, créant un **sous-vente de la dérive**.
+**Bilan** : **2/5 figures illustrent pleinement leur concept** (vid3-frame1 — comparatif marguerite ; vid3-workflow1 — image source SDXL phare, **régénérée c.184** avec vrai SDXL après que l'audit c.476 eut identifié un fallback synthétique PIL). Les 3 autres illustrent **la dérive qualitative** des modèles vidéo GenAI sur des prompts concrets. **Utile pédagogiquement** (montre les limites), mais **le MANIFEST les présentait comme des succès**, créant un **sous-vente de la dérive**.
 
 ## Conformité règles
 

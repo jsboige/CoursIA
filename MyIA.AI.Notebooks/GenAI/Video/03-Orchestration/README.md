@@ -59,11 +59,11 @@ pip install -r requirements-video.txt
 
 Le notebook [03-2](03-2-Video-Workflow-Orchestration.ipynb) exécute réellement trois workflows ; les figures ci-dessous sont ses sorties, réduites en WebP pour l'affichage (provenance et poids natifs dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md)).
 
-Le **pipeline 1 (text → image → vidéo)** découple la composition de l'animation : SDXL génère d'abord une image source fidèle au prompt, puis Stable Video Diffusion (SVD) l'anime. L'image ci-dessous est cette source, produite en 8,1 s — une silhouette stylisée coiffée d'un ovale lumineux sur un ciel en dégradé orange-violet.
+Le **pipeline 1 (text → image → vidéo)** découple la composition de l'animation : SDXL génère d'abord une image source fidèle au prompt, puis Stable Video Diffusion (SVD) l'anime. L'image ci-dessous est cette source — un phare dressé sur une falaise rocheuse au coucher de soleil, sous des nuages dramatiques baignés d'une lumière dorée (prompt `pipeline1_prompt` du notebook).
 
 <p align="center">
-<img src="assets/readme/vid3-workflow1.webp" alt="Image source générée par SDXL : silhouette sombre coiffée d'un ovale clair sur un ciel en dégradé orange-violet" width="420"/><br/>
-<sub><b>Image source SDXL (8,1 s)</b> — le point de départ du pipeline text → image → vidéo, que SVD anime ensuite</sub>
+<img src="assets/readme/vid3-workflow1.webp" alt="Image source générée par SDXL : un phare sur une falaise rocheuse au coucher de soleil, nuages dramatiques et lumière dorée" width="420"/><br/>
+<sub><b>Image source SDXL</b> — phare sur falaise au coucher de soleil ; le point de départ du pipeline text → image → vidéo, que SVD anime ensuite</sub>
 </p>
 
 La planche-contact suivante montre le pipeline complet : la source SDXL, puis les frames 1, 9, 17 et 25 de la vidéo générée — on y voit le sujet évoluer (et dériver) au fil de l'animation.
