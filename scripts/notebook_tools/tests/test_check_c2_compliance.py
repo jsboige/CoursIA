@@ -153,10 +153,80 @@ class TestMissingOutputs:
         result = check_notebook(nb_path)
         assert result["violations"] == []
 
-    def test_assignment_no_output_flagged(self, tmp_path):
-        """Simple assignment with = but no print/display -> flagged (has '=' keyword)."""
+    def test_assignment_no_output_ok(self, tmp_path):
+        """Simple assignment with = but no print/display -> NOT flagged.
+
+        A pure assignment (`x = compute_value()`) produces no visible output in
+        Jupyter — only the LAST expression-statement of a cell (or an explicit
+        print/display) emits output. The prior heuristic listed "=" among the
+        output-keyword triggers and `is_assignment` (computed to exclude this
+        case) was dead code, so assignment cells were wrongly flagged (#10120).
+        Wiring `is_assignment` into the condition restores the correct verdict.
+        """
         nb_path = _write_nb(tmp_path / "assign.ipynb", [
             _code("x = compute_value()", exec_count=1),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_papermill_parameter_no_output_ok(self, tmp_path):
+        """Papermill parameter cell (assignments under a header comment) -> OK.
+
+        Papermill injects parameter values via API at execution time, so the
+        cell body (a set of assignments like `BATCH_MODE = "true"`) intentionally
+        produces no visible output. Recognised by the GenAI convention header
+        `# Parametres Papermill` or the QC-strategies convention `# Parameters`
+        (#10120). NB: plain assignments are already exempt via `is_assignment`;
+        this header check adds robustness for config cells holding a stray
+        non-assignment expression.
+        """
+        nb_path = _write_nb(tmp_path / "papermill.ipynb", [
+            _code('# Parametres Papermill - JAMAIS modifier ce commentaire\n'
+                  'BATCH_MODE = "true"\nskip_widgets = "true"',
+                  exec_count=1),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_csharp_using_decl_no_output_ok(self, tmp_path):
+        """C#/.NET top-of-file `using` declaration -> OK (import boilerplate).
+
+        `using System;` is the C# analogue of Python `import` — import
+        boilerplate that produces no output. Guard the rare case where a class
+        initializer (`=`) or the substring `fig` in the same cell would
+        otherwise trip has_output_statement (#10120).
+        """
+        nb_path = _write_nb(tmp_path / "cs_using.ipynb", [
+            _code("using System;\nusing Microsoft.DotNet.Interactive;",
+                  exec_count=1),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_function_def_stub_no_output_ok(self, tmp_path):
+        """Pedagogical function-definition stub (`def foo(): return None`) -> OK.
+
+        A cell whose top-level statements are all definitions/imports/
+        assignments produces no top-level output — defining a function does
+        not echo. This is the common exercise-stub case, flagged by the `return `
+        trigger before the `is_definition_only` guard (#10120).
+        """
+        nb_path = _write_nb(tmp_path / "stub.ipynb", [
+            _code("def fibonacci(n):\n    # TODO etudiant\n    return None",
+                  exec_count=1),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_function_def_with_top_level_call_flagged(self, tmp_path):
+        """Control: a def followed by a top-level CALL -> flagged (call echoes).
+
+        `is_definition_only` must NOT skip a cell whose last top-level statement
+        is an expression-call (produces output), only cells that are purely
+        definitions/imports/assignments. Guards against over-broad skipping.
+        """
+        nb_path = _write_nb(tmp_path / "def_call.ipynb", [
+            _code("def foo():\n    return 1\nfoo()", exec_count=1),
         ])
         result = check_notebook(nb_path)
         assert len(result["violations"]) == 1

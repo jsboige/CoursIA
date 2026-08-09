@@ -109,8 +109,13 @@ def check_notebook(nb_path: Path) -> dict:
                 "source_preview": source[:80].replace("\n", " "),
             })
         elif not outputs and source.strip():
-            # Code cell with execution_count but no outputs
-            # Only flag if the cell should produce output (print, return, expression)
+            # Code cell with execution_count but no outputs.
+            # Only flag if the cell SHOULD produce output. The prior heuristic
+            # listed "=" among the output-keyword triggers, so every pure
+            # assignment (`x = 5`, papermill parameter cells `BATCH_MODE = "true"`)
+            # was flagged as "should produce output". `is_assignment` was computed
+            # precisely to exclude those, but never wired into the condition (dead
+            # code, #10120) — the half-finished refactor is completed here.
             has_output_statement = any(
                 kw in source for kw in
                 ["print(", "display(", "plt.", "fig", "return ", "="]
@@ -121,8 +126,52 @@ def check_notebook(nb_path: Path) -> dict:
                 "=" in source
                 and not any(kw in source for kw in ["print(", "display(", "plt."])
             )
+            # Papermill parameter cells are intentionally no-output: papermill
+            # injects values via API at execution time, so the cell body (a set
+            # of assignments) produces nothing visible. Recognised by the GenAI
+            # convention header `# Parametres Papermill` or the QC-strategies
+            # convention `# Parameters`. Covers the case where such a cell also
+            # holds a stray non-assignment expression that would trip
+            # has_output_statement despite being a config cell (#10120).
+            stripped_lower = source.lstrip().lower()
+            is_papermill_param = (
+                stripped_lower.startswith("# parametres papermill")
+                or stripped_lower.startswith("# parameters")
+            )
+            # C#/.NET top-of-file `using` declarations are import boilerplate
+            # (the C# analogue of Python `import`) and produce no output. Guard
+            # the rare cell where a class-declaration initializer (`=`) or the
+            # substring `fig` would otherwise trip has_output_statement (#10120).
+            first_code_line = next(
+                (l for l in lines if not l.startswith(("#", "//"))), "")
+            is_csharp_using = (
+                first_code_line.startswith("using ")
+                and first_code_line.endswith(";")
+            )
+            # A pedagogical stub cell whose top-level statements are ALL
+            # definitions (`def`/`class`), imports, or assignments produces no
+            # top-level output: defining a function/class does not echo, and
+            # assignments don't display. This is the common exercise-stub case
+            # (`def fib(n):\n    return None`) flagged by the `return ` trigger.
+            # A top-level EXPRESSION statement (a bare call like `foo()` or
+            # `df.head()`) DOES echo, so such a cell is NOT definition-only and
+            # is still checked. Conservative: only skips when every unindented,
+            # non-comment line is a definition/import/assignment (#10120).
+            top_level_stmts = [
+                l for l in source.split("\n")
+                if l.strip()
+                and not l[0].isspace()
+                and not l.strip().startswith(("#", "//"))
+            ]
+            is_definition_only = bool(top_level_stmts) and all(
+                l.strip().startswith(("def ", "class ", "import ", "from "))
+                or "=" in l
+                for l in top_level_stmts
+            )
 
-            if has_output_statement and not is_import:
+            if (has_output_statement and not is_import and not is_assignment
+                    and not is_papermill_param and not is_csharp_using
+                    and not is_definition_only):
                 violations.append({
                     "cell_index": i,
                     "code_cell": code_idx,
