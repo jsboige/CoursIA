@@ -43,6 +43,15 @@ What it checks
    need: on identical content, 8.21.2 reported 0 findings where 8.24.3
    reported 2, so a hook pinned to 8.21.2 could not reproduce -- nor warn
    about -- what CI rejected.
+8. **NEW** (#10141): ``secret-scan.yml`` does not invoke the third-party
+   wrapper ``gitleaks/gitleaks-action@v2``. The wrapper tag is the action's
+   own version, not the gitleaks binary version; without an explicit
+   ``GITLEAKS_VERSION`` AND a consumer that honors it, the wrapper falls
+   back to a hard-coded default (``8.24.3``, src/index.js:138) -- an
+   implicit pin owned by a third party and revisable by any ``@v2``
+   release without a commit here. #10141 replaces the wrapper with an
+   explicit ``docker pull`` + ``docker run`` on a tagged image, so the
+   CI pin and the hook ``rev`` agree on a single, repo-owned value.
 
 Why advisory only
 -----------------
@@ -216,6 +225,11 @@ def _hook_gitleaks_version() -> str | None:
 def _ci_gitleaks_version() -> str | None:
     """Version pinned by ``GITLEAKS_VERSION`` in the Secret Scan workflow.
 
+    Looks at both job-level ``env:`` and step-level ``env:`` (the new
+    post-#10141 pattern keeps it at job level so the ``run:`` step
+    expands it via shell interpolation; the old wrapper-style pattern
+    put it at step level only).
+
     Returns ``None`` when the workflow exists but pins nothing -- which is a
     real finding, not an absence of information: unset, the action falls back
     to a version hard-coded in its own source, i.e. an implicit pin owned by a
@@ -231,6 +245,11 @@ def _ci_gitleaks_version() -> str | None:
     for job in (data.get("jobs") or {}).values():
         if not isinstance(job, dict):
             continue
+        # Job-level env (the #10141 pattern).
+        job_env = job.get("env")
+        if isinstance(job_env, dict) and job_env.get("GITLEAKS_VERSION"):
+            return str(job_env["GITLEAKS_VERSION"]).lstrip("v")
+        # Step-level env (the old gitleaks-action@v2 pattern, still legitimate).
         for step in job.get("steps", []) or []:
             if not isinstance(step, dict):
                 continue
@@ -238,6 +257,34 @@ def _ci_gitleaks_version() -> str | None:
             if isinstance(env, dict) and env.get("GITLEAKS_VERSION"):
                 return str(env["GITLEAKS_VERSION"]).lstrip("v")
     return None
+
+
+def _ci_uses_third_party_gitleaks_action() -> bool:
+    """True iff ``secret-scan.yml`` invokes the ``gitleaks/gitleaks-action@v2`` wrapper.
+
+    The wrapper's tag is the GitHub Action version, not the gitleaks binary
+    version. Without a tagged image and a ``run:`` step that consumes it
+    explicitly (the pattern #10141 introduces), the binary is selected by
+    ``GITLEAKS_VERSION`` from the action's environment with a hard-coded
+    fallback -- an implicit pin revisable by any ``@v2`` release.
+    """
+    if yaml is None:
+        raise RuntimeError("PyYAML not installed; install with `pip install pyyaml`")
+    if not SECRET_SCAN_PATH.exists():
+        raise FileNotFoundError(f"{SECRET_SCAN_PATH} missing")
+    data = yaml.safe_load(SECRET_SCAN_PATH.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{SECRET_SCAN_PATH}: top-level must be a mapping")
+    for job in (data.get("jobs") or {}).values():
+        if not isinstance(job, dict):
+            continue
+        for step in job.get("steps", []) or []:
+            if not isinstance(step, dict):
+                continue
+            uses = str(step.get("uses", ""))
+            if "gitleaks-action@v2" in uses:
+                return True
+    return False
 
 
 def _run_checks() -> list[tuple[str, str, str]]:
@@ -358,6 +405,33 @@ def _run_checks() -> list[tuple[str, str, str]]:
             out.append(("gitleaks version parity", "OK", f"hook and CI both pin {hook_v}"))
     except (FileNotFoundError, ValueError, RuntimeError) as e:
         out.append(("gitleaks version parity", "ERR", str(e)))
+
+    # Gate 8: secret-scan.yml does not invoke the gitleaks-action wrapper
+    # (#10141). The wrapper's tag is the Action version, not the gitleaks
+    # binary version; the binary is selected by GITLEAKS_VERSION from the
+    # action's environment with a hard-coded fallback (src/index.js:138),
+    # i.e. an implicit pin owned by a third party that any @v2 release
+    # can revise. #10141 removes the wrapper entirely in favor of an
+    # explicit `docker pull` + `docker run` on a tagged image. This gate
+    # locks that structural fix: a future PR that re-introduces the
+    # wrapper would re-create the implicit third-party pin.
+    try:
+        uses_wrapper = _ci_uses_third_party_gitleaks_action()
+        if uses_wrapper:
+            out.append((
+                "gitleaks wrapper not used", "KO",
+                f"{SECRET_SCAN_PATH.name} invokes gitleaks/gitleaks-action@v2 -- "
+                "that wrapper's binary version is an implicit third-party pin "
+                "(see src/index.js:138, fallback \"8.24.3\"). Use an explicit "
+                "`docker pull` + `docker run` on a tagged image instead.",
+            ))
+        else:
+            out.append((
+                "gitleaks wrapper not used", "OK",
+                f"{SECRET_SCAN_PATH.name} invokes the docker image directly",
+            ))
+    except (FileNotFoundError, ValueError, RuntimeError) as e:
+        out.append(("gitleaks wrapper not used", "ERR", str(e)))
 
     return out
 
