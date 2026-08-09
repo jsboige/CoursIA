@@ -74,8 +74,11 @@ PIPE_LINE_RE = re.compile(r'\|')
 # A GFM table separator row: optional leading/trailing pipe, then one or more
 # cells of the form `:?-+:?` (dashes, optionally colon-padded for alignment),
 # joined by pipes. e.g. `|---|---|`, `|:---:|---:|`, `---|---`.
+# An optional blockquote marker ``>`` is tolerated: a GFM table wrapped in a
+# blockquote keeps its separator as ``> |---|---|``, and ``^\s*`` alone missed
+# the ``>`` and flagged valid blockquote tables as NO_SEP (ICT-0-Annexe, #10097).
 SEP_ROW_RE = re.compile(
-    r'^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$'
+    r'^\s*>?\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$'
 )
 
 # A markdown heading line (`#`..`######`). A heading directly above a table is
@@ -225,7 +228,13 @@ def _column_count(line):
 
 
 def _is_blank(line):
-    return line.strip() == ""
+    # A bare blockquote marker ``>`` (optionally followed by whitespace) renders
+    # as a blank separator within a blockquote -- it provides the same visual
+    # separation between a table and surrounding prose as a true blank line, so
+    # for the table-glue checks (NO_BLANK_BEFORE/AFTER) it counts as blank
+    # (a ``>`` line does NOT glue a blockquote table to its neighbors).
+    s = line.strip()
+    return s == "" or s == ">"
 
 
 # ---------------------------------------------------------------------------
