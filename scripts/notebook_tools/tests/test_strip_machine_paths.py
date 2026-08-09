@@ -19,6 +19,7 @@ Tests focus on:
 """
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -999,3 +1000,176 @@ def test_strip_mixed_categories_one_cell_redact_then_drop(tmp_path):
     # pip REDACTed (preserved with username prefix gone).
     assert any(l.startswith("<USER_PATH>\\AppData\\Roaming\\Python") for l in tp)
     assert count_leak_lines(p) == 0
+
+
+# ---------------------------------------------------------------------------
+# Negative-detection contracts (ported from scripts/tests/test_strip_machine_paths.py
+# tranche #10066 tranche 8, see #10103 — pinning the 4 negative-detection
+# contracts that keep ``_has_leak`` from over-matching on benign prose)
+# ---------------------------------------------------------------------------
+
+def test_has_leak_tilde_home_placeholder_not_leak():
+    """The dotnet-interactive tilde variant (``~\\.nuget\\...``) is the HOME
+    placeholder — no username, so NOT a leak (must stay untouched).
+    Pinned: cf. ``#6537`` review on the initial implementation."""
+    assert _has_leak("~\\.nuget\\packages\\dotnet.interactive\\1.0.0") is False
+
+
+def test_has_leak_token_without_username_not_leak():
+    """A bare cache token (no ``Users\\<u>``) is not a leak."""
+    assert _has_leak("Loading from .nuget\\packages\\foo") is False
+
+
+def test_has_leak_username_without_token_not_leak():
+    """A ``Users\\`` path with NO runtime cache token is not a category-A leak."""
+    assert _has_leak("C:\\Users\\bob\\Desktop\\notes.txt") is False
+
+
+def test_has_leak_plain_text_not_leak():
+    """Plain output with no path-shaped strings is not a leak."""
+    assert _has_leak("just some output with no paths") is False
+
+
+# ---------------------------------------------------------------------------
+# RedactLine trailing-relative contract (ported from #10066 tranche 8 / #10103)
+# ---------------------------------------------------------------------------
+
+def test_redact_line_preserves_trailing_relative_path():
+    """The pedagogical content (library path after the cache token) is kept
+    verbatim: only the username prefix is replaced by ``<USER_PATH>``.
+
+    Without this pin, a future refactor of ``_redact_line`` that drops the
+    trailing leaf (e.g. ``.dll`` filename) would silently erase the runtime
+    token that's the whole point of the warning students see.
+    """
+    line = "C:\\Users\\jsboi\\.nuget\\packages\\microsoft.dotnet.interactive\\1.0.0\\dllexport.dll"
+    out = _redact_line(line)
+    assert "jsboi" not in out
+    assert "<USER_PATH>" in out
+    # Trailing relative path (the cache token + library leaf) survives.
+    assert ".nuget\\packages\\microsoft.dotnet.interactive\\1.0.0\\dllexport.dll" in out
+
+
+def test_redact_line_drive_letter_prefix_consumed():
+    """``C:\\Users\\<u>\\...`` → ``<USER_PATH>\\...`` (drive letter dropped).
+
+    The drive letter is a Windows-only artifact and must NOT survive in the
+    redacted output (cross-platform readability).
+    """
+    line = "C:\\Users\\jsboi\\.nuget\\packages\\foo"
+    out = _redact_line(line)
+    assert "jsboi" not in out
+    # Drive letter must NOT appear in the redacted prefix (the placeholder
+    # occupies the position).
+    assert not out.startswith("C:\\")
+    assert out.startswith("<USER_PATH>")
+
+
+def test_redact_line_idempotent_after_redaction():
+    """Re-running ``_redact_line`` on an already-redacted line is a no-op:
+    ``REDACTED_PATH`` carries no username marker, so the second pass is
+    inert. This is what makes ``--apply-all`` safe to run repeatedly.
+    """
+    for line in (_PIP_LINE, _DISPLAY_LINE, _STREAM_LINE, _HF_LINE, _CONDA_LINE):
+        once = _redact_line(line)
+        twice = _redact_line(once)
+        assert once == twice, f"redact_line not idempotent on {line!r}"
+
+
+# ---------------------------------------------------------------------------
+# Notebook-level error paths (ported from #10066 tranche 8 / #10103)
+# ---------------------------------------------------------------------------
+
+def test_count_skips_markdown_cells(tmp_path):
+    """``count_leak_lines`` only scans code-cell outputs — a markdown cell
+    carrying a path-looking string is not a leak (path is content, not
+    a runtime artifact)."""
+    nb = _nb([
+        {"cell_type": "markdown",
+         "source": ["some text C:\\Users\\jsboi\\.nuget\\packages\\foo"]},
+        _code(["x = 1"], outputs=[]),
+    ])
+    p = tmp_path / "md.ipynb"
+    p.write_text(json.dumps(nb), encoding="utf-8")
+    assert count_leak_lines(p) == 0
+
+
+def test_count_returns_zero_on_missing_file(tmp_path):
+    """A missing path returns 0 (not an exception): the helper is a
+    counter, callers chain ``count`` without try/except."""
+    assert count_leak_lines(tmp_path / "does_not_exist.ipynb") == 0
+
+
+def test_find_returns_empty_on_missing_file(tmp_path):
+    """Mirror of ``test_count_returns_zero_on_missing_file`` for the locator
+    variant: returns ``[]``, not raise."""
+    assert find_leak_outputs(tmp_path / "does_not_exist.ipynb") == []
+
+
+def test_count_returns_zero_on_invalid_json(tmp_path):
+    """A malformed notebook JSON is treated as zero-leak (don't crash on
+    scanner noise — the reporter degrades gracefully, the operator
+    surfaces the parse error separately if needed)."""
+    bad = tmp_path / "bad.ipynb"
+    bad.write_text("{not valid json", encoding="utf-8")
+    assert count_leak_lines(bad) == 0
+
+
+# ---------------------------------------------------------------------------
+# CLI --scan subprocess contract (ported from #10066 tranche 8 / #10103 —
+# canon had no CLI subprocess coverage before this port)
+# ---------------------------------------------------------------------------
+
+# Path to the script-under-test, resolved at import time so the subprocess
+# tests point at the live source (not a stale installed copy).
+_SMP_SCRIPT = Path(__file__).resolve().parent.parent / "strip_machine_paths.py"
+
+
+def _cli(*args, timeout=60):
+    """Run ``strip_machine_paths.py`` with the given args and return the
+    completed ``subprocess.CompletedProcess``."""
+    return subprocess.run(
+        [sys.executable, str(_SMP_SCRIPT), *args],
+        capture_output=True, text=True, timeout=timeout,
+    )
+
+
+def test_cli_scan_clean_notebook_reports_no_defect(tmp_path):
+    """``--scan <path>`` is a dry-run reporter: exit 0, no ``[DEFECT]`` in
+    stdout for a clean notebook. The gate signal (exit 1) only fires under
+    ``--scan-all --check`` (separate code path)."""
+    cells = [_code(["print('x')"], outputs=[_stream_output("all good\n")])]
+    p = _write_nb(tmp_path / "clean.ipynb", cells)
+    r = _cli("--scan", str(p))
+    assert r.returncode == 0, r.stderr
+    assert "[DEFECT]" not in r.stdout
+    assert "0 notebook(s) carrying 0 leak" in r.stdout
+
+
+def test_cli_scan_leaky_notebook_reports_defect(tmp_path):
+    """``--scan`` flags defects inline (``[DEFECT]`` + summary line) but
+    still exits 0 — it is a reporter, not a gate. Use ``--scan-all --check``
+    for the gating CI exit code."""
+    out = _stream_output(
+        "C:\\Users\\jsboi\\.nuget\\packages\\foo\\1.0.0\\bar.dll\n")
+    cells = [_code(["pass"], outputs=[out])]
+    p = _write_nb(tmp_path / "leak.ipynb", cells)
+    r = _cli("--scan", str(p))
+    assert r.returncode == 0, r.stderr
+    assert "[DEFECT]" in r.stdout
+    assert "leak.ipynb" in r.stdout
+    assert "1 notebook(s) carrying 1 leak" in r.stdout
+
+
+def test_cli_scan_missing_path_exits_two(tmp_path):
+    """A missing path triggers ``argparse.parser.error`` — exit code 2 with
+    a friendly stderr message and no Python traceback. Operators relying on
+    ``--scan`` in shell pipelines can branch on ``$? == 2`` to distinguish
+    'path typo' from 'real defects found'."""
+    r = _cli("--scan", str(tmp_path / "nope.ipynb"))
+    assert r.returncode == 2, (
+        f"expected exit 2 (argparse error), got {r.returncode}. "
+        f"stderr={r.stderr!r}"
+    )
+    assert "Traceback" not in r.stderr
+    assert "path not found" in r.stderr.lower()
