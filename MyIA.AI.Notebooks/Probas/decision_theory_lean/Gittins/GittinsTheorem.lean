@@ -145,10 +145,35 @@ theorem gittins_index_monotone_discount (arm : BanditArm) (γ₁ γ₂ : ℝ)
   simp only [gittinsIndex]
   apply le_refl
 
-/-- Pour le bandit à 2 bras, la politique de Gittins surpasse la politique gloutonne. -/
-theorem gittins_beats_greedy (inst : BanditInstance)
-    (h : inst.arms.size = 2) :
-    True := by  -- Placeholder : l'énoncé réel nécessite V(gittins) ≥ V(greedy)
-  trivial
+/-- Politique gloutonne (myope) : toujours jouer le bras de moyenne réelle la plus
+    élevée. C'est le même argmax que `gittinsPolicy` mais lu directement sur
+    `arm.trueMean` plutôt que via l'indice de Gittins. -/
+noncomputable def greedyPolicy (inst : BanditInstance) : Nat :=
+  ((Array.range inst.arms.size).foldl
+    (fun (best : Nat × ℝ) i =>
+      match inst.arms[i]? with
+      | none => best
+      | some arm =>
+        let g := arm.trueMean
+        if g > best.2 then (i, g) else best)
+    (0, 0)).1
+
+/-- Dans le modèle à moyenne connue, la politique de Gittins **coïncide** avec la
+    politique gloutonne, quelle que soit l'historique observé : l'indice de Gittins
+    égale `trueMean` (`gittins_index_known_arm`), donc les deux argmax portent sur la
+    même quantité. La preuve est définitionnelle (réduction à l'identité des deux
+    plis après débrouillage de `gittinsIndex`).
+
+    C'est précisément pourquoi l'ancien énoncé « Gittins bat greedy » était vide ici :
+    la domination de la politique de Gittins sur l'approche gloutonne n'apparaît que
+    dans le régime à croyances incertaines (posterior Beta–Bernoulli, exploration),
+    qui requiert la machinerie arrêt-optimal / Bellman absente de Mathlib (INTRINSIC,
+    `gittins_optimality` ci-dessus, #4039). Dans le modèle à bras connus,
+    Gittins = greedy, point. -/
+theorem gittinsPolicy_eq_greedyPolicy (inst : BanditInstance)
+    (histories : Array RewardHistory) :
+    gittinsPolicy inst histories = greedyPolicy inst := by
+  unfold gittinsPolicy greedyPolicy gittinsIndex
+  rfl
 
 end Gittins
