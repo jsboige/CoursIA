@@ -24,6 +24,9 @@ from check_machine_dep_timing import (  # noqa: E402
     _categorize,
     _scan_notebook,
     _is_range_bound,
+    _is_detached_approximate,
+    _repo_root,
+    PROTOCOL_KEYWORDS,
     CATEGORY_WALLCLOCK,
     CATEGORY_DISTRIBUTION,
     CATEGORY_AMBIGUOUS,
@@ -557,6 +560,188 @@ def test_main_advisory_mode_exits_zero() -> None:
     # Sur CI (avec MyIA.AI.Notebooks/ present), --all peut renvoyer 0 ou 1
     # selon --check, mais sans --check, c'est TOUJOURS 0 (mode advisory).
     assert rc == 0
+
+
+# --------------------------------------------------------------------------- #
+#  Residus #10169 : duree modelisee per-notebook + constante de protocole
+#                   + --all resolu hors racine
+# --------------------------------------------------------------------------- #
+def test_silence_per_notebook_propagation_residu1() -> None:
+    """Residu 1 #10169 : propagation per-NOTEBOOK domain_quantity.
+
+    Rationnel : la propagation per-cell (passe 2) est trop etroite. Quand le
+    notebook ENTIER porte >=1 ``distribution_param`` (une cellule Gaussienne),
+    les wallclock des AUTRES cellules (sans mot-cle stat) basculent en
+    ``domain_quantity`` -- l'unite de temps est le sujet du notebook, pas
+    d'une cellule. Cas reel Infer-2-Gaussian-Mixtures : les moyennes ajustees
+    ``| Ordinaire | 15.07 min |`` / ``| Extraordinaire | 26.69 min |`` sont la
+    SORTIE du modele (obtenue par inference), pas une mesure d'execution.
+    """
+    nb = _make_nb([
+        # Cellule 1 : declare les parametres de la distribution (distribution_param).
+        _md_cell(
+            "## Modele\n"
+            "Le melange suit une Gaussian de moyenne 15.33 min et sigma 1.32 min."
+        ),
+        # Cellule 2 : SEPARATE, sans mot-cle stat. Sans la passe per-notebook,
+        # les 15.07 / 26.69 resteraient wallclock (la cellule 2 n'a pas de
+        # mot-cle distribution pour declencher la passe per-cell).
+        _md_cell(
+            "## Resultats ajustes\n"
+            "| Ordinaire | 15.07 min | Trajets normaux : {13, 17, 16} |\n"
+            "| Extraordinaire | 26.69 min | Trajets longs : {20, 25, 25, 30} |"
+        ),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        assert wallclock == [], (
+            f"Propagation per-notebook rate : wallclock residuel = {wallclock}"
+        )
+        domain = {f["snippet"]: f["category"] for f in findings
+                  if f["category"] == CATEGORY_DOMAIN_QUANTITY}
+        assert "15.07 min" in domain, (
+            f"15.07 min (moyenne ajustee) attendue en domain_quantity: {domain}"
+        )
+        assert "26.69 min" in domain, (
+            f"26.69 min (moyenne ajustee) attendue en domain_quantity: {domain}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_silence_protocol_constant_settle_delay_residu2() -> None:
+    """Residu 2 #10169 : constante de protocole = domain_quantity, pas wallclock.
+
+    Un ``settle_delay`` de canal de paiement (consensus) ne derive pas d'une
+    machine a l'autre -- c'est un parametre du domaine. Cas reel SC-19-Ripple-XRP
+    cell[30] : « Le ``settle_delay`` est crucial... attendre 3600 secondes ».
+    """
+    nb = _make_nb([
+        _md_cell(
+            "**Note technique** : Le `settle_delay` est crucial pour la securite. "
+            "Si Alice veut fermer le canal, elle doit attendre 3600 secondes "
+            "pendant lesquelles Bob peut contester."
+        ),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        assert wallclock == [], (
+            f"settle_delay 3600 secondes ne doit pas etre wallclock : {wallclock}"
+        )
+        assert any(f["category"] == CATEGORY_DOMAIN_QUANTITY for f in findings), (
+            f"3600 secondes attendu en domain_quantity : {findings}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_silence_protocol_block_time_residu2() -> None:
+    """Residu 2 #10169 : temps de bloc Ethereum = constante de protocole.
+
+    Cas reel SC-23-Cross-Chain : « 12 blocs Ethereum ... ». Le temps de bloc
+    est un parametre de consensus, pas une duree machine.
+    """
+    nb = _make_nb([
+        _md_cell("Finalite : 12 blocs Ethereum correspondent a environ 3 min."),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        assert wallclock == [], (
+            f"temps de bloc Ethereum ne doit pas etre wallclock : {wallclock}"
+        )
+        assert any(f["category"] == CATEGORY_DOMAIN_QUANTITY for f in findings)
+    finally:
+        nb.unlink()
+
+
+def test_silence_detached_tilde_residu2() -> None:
+    """Residu 2 #10169 : tilde detache ``~ 2 min`` = ordre de grandeur, on skip.
+
+    Le ``MACHINE_RE`` colle ``~2 min`` est deja gere (snippet commence par ``~``).
+    Ce test couvre la forme DETACHEE (espace entre marqueur et chiffre). La ligne
+    est choisie SANS mot-cle protocole/distribution, pour isoler le comportement
+    du tilde detache (sinon un mot-cle sauverait le finding par ailleurs).
+    """
+    nb = _make_nb([
+        _md_cell("Estimation de convergence : ~ 2 min par appel."),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        snippets = [f["snippet"] for f in findings]
+        assert "2 min" not in snippets, (
+            f"Le tilde detache '~ 2 min' doit etre skip (ordre de grandeur) : "
+            f"trouve {findings}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_is_detached_approximate_helper() -> None:
+    """Le helper _is_detached_approximate couvre ~ et ≈, avec ou sans espace."""
+    # `~ 2 min` : tilde + espace avant le chiffre.
+    assert _is_detached_approximate("foo ~ 2 min", 6) is True   # '~ ' avant idx 6
+    # `~2 min` : tilde colle (deja gere par MACHINE_RE, mais le helper le couvre).
+    assert _is_detached_approximate("foo ~2 min", 5) is True
+    # `≈ 2 min` : variante unicode.
+    assert _is_detached_approximate("≈ 2 min", 2) is True
+    # Sans tilde : pas un ordre de grandeur.
+    assert _is_detached_approximate("duree 2 min", 6) is False
+
+
+def test_bare_wallclock_still_detected_negative_control() -> None:
+    """Controle negatif : sans tilde ni protocole ni distribution, un ``2 min``
+    reste wallclock. Garantie que le detecteur n'est pas muet (cf. controle
+    positif Sudoku-13 + celui-ci isole le comportement par defaut)."""
+    nb = _make_nb([
+        _md_cell("La duree d'execution est 2 min pour 1000 iterations."),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        assert any(f["category"] == CATEGORY_WALLCLOCK and f["snippet"] == "2 min"
+                   for f in findings), (
+            f"Un bare '2 min' sans marqueur doit rester wallclock : {findings}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_all_resolves_from_other_dir_residu3(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Residu 3 #10169 : ``--all`` resolu depuis la racine git, pas depuis le cwd.
+
+    Invoque depuis un repertoire externe (tmp_path). ``_repo_root()`` utilise
+    ``git rev-parse --show-toplevel`` (authoritatif), donc ``--all`` trouve les
+    notebooks meme hors du repertoire du script. Advisory -> exit 0.
+    """
+    from check_machine_dep_timing import main
+    if not (_repo_root() / "MyIA.AI.Notebooks").exists():
+        pytest.skip("Hors env repo (MyIA.AI.Notebooks absent sous la racine git)")
+    monkeypatch.chdir(tmp_path)
+    rc = main(["--all"])
+    assert rc == 0, (
+        "--all invoque hors racine doit trouver les notebooks via git toplevel "
+        "et sortir en advisory (exit 0)"
+    )
+
+
+def test_empty_explicit_scan_is_error_residu3(tmp_path: Path) -> None:
+    """Residu 3 #10169 : un scan explicite vide = erreur bruyante (exit 1).
+
+    Un path explicite inexistant ne doit PAS retourner un silent 0 (« Aucun
+    notebook ») -- c'est exactement le piege qui apprend a la lane suivante
+    qu'il n'y a rien a faire alors que l'outil a juste rate sa cible.
+    """
+    from check_machine_dep_timing import main
+    bogus = tmp_path / "n'existe-pas.ipynb"
+    rc = main([str(bogus)])
+    assert rc == 1, (
+        "Un path explicite inexistant doit echouer bruyamment (exit 1), "
+        "pas retourner un silent 0"
+    )
 
 
 if __name__ == "__main__":
