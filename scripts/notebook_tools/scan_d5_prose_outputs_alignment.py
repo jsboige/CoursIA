@@ -623,6 +623,101 @@ def _is_notebook_cross_reference(value: float, text: str) -> bool:
     return found_inside
 
 
+def _is_code_defined_value(value, prose_text) -> bool:
+    r"""Vrai si la prose cite ``value`` comme parametre de code dans un span backtick.
+
+    Critere falsifiable (FP class 1, #9998) : un nombre orphelin n'est pas une
+    mesure manquante si la prose le cite explicitement comme un PARAMETRE de code,
+    entre backticks -- « K-Means avec `n_clusters=3`, `random_state=42`,
+    `n_init=10` », « les hyperparametres (`learning_rate=0.001`) ». Le nombre est
+    alors un INPUT configure, pas une mesure a verifier.
+
+    SAFE par construction (0 sur-filtrage, mesure corpus firsthand) : on exige
+    QUATRE gardes cumulatifs, chacun issu d'un mode de sur-filtrage mesure et
+    rejete (consigne ci-dessous pour prevenir les retentes) :
+
+      1. L'assignment ``identifiant = valeur`` figure DANS UN SPAN BACKTICK
+         `` `...` ``. L'auteur qui backtick un fragment cite explicitement du
+         CODE (un parametre de config). Une METRIQUE RESTITUEE en prose
+         narrative (« **MAE = 0,41**, **RMSE = 2,33** », « score = 0.95 »)
+         n'est JAMAIS backtickee (elle est en gras/dans un tableau) -> n'est pas
+         filtree : c'est un resultat que l'output doit confirmer. C'est ce gate
+         qui distingue un INPUT (param) d'un OUTPUT (metrique restituee).
+
+      2. ``=`` simple isole (pas ``==``, ``>=``, ``<=``, ``!=``, ``+=`` ...) et
+         bornes numeriques strictes ``(?<![\d.,_])`` / ``(?![\d._])`` : ``5`` ne
+         matche pas dans ``n = 50`` ni dans le prefixe de ``QUORUM = 4_000_000``.
+         Decimale francaise toleree (la prose FR ecrit `` `alpha=0,5` ``).
+
+      3. Exclut les VARIABLES DE RESULTAT de solveur (``x_1 = 0.5``,
+         ``x_2 = ...``) : une valeur de solution restituee en prose est un
+         output a verifier, pas un parametre de config (cas OR-tools c[13]).
+
+      4. La valeur doit etre le RHS COMPLET, pas le debut d'une expression
+         mathematique : on bloque si le caractere suivant est un operateur
+         formel (ASCII ``* + - / ^ %`` et variantes Unicode ``· − × ÷ ∗``).
+         Exclut les formules (``MONEY = 10000·M``, ``RSI = 100 - ...``,
+         ``Cosine Distance = 1 −``) et les pourcentages illustratifs
+         (``heat = 18%``).
+
+    Deux heuristiques anterieures ont ete mesurees firsthand et REJETEES comme
+    sur-filtrantes (consignees ici pour prevenir les retentes) :
+      - cross-cell « var = value dans une cellule code voisine » : un ``value = 1``
+        de code generic collide avec un « 1 » de table (Sudoku-2 c[8]) ;
+      - intra-prose « identifiant = valeur » hors backtick : filtre les METRIQUES
+        restituees en gras (MAE/RMSE dans ML-4 c[36]) -> supprime un vrai drift.
+
+    Falsifiable both-directions : un nombre qui ne franchit pas les 4 gardes
+    n'est PAS filtre -- il demeure un orphelin a signaler.
+    """
+    token = f"{value:g}"
+    variants = [token]
+    if "." in token:
+        variants.append(token.replace(".", ","))  # decimale FR « 0,5 »
+    # Spans backtick de la cellule prose.
+    bk_spans = [(m.start(), m.end())
+                for m in re.finditer(r"`[^`]*`", prose_text)]
+    if not bk_spans:
+        return False
+    for tok in variants:
+        pat = re.compile(
+            r"\b([A-Za-z_]\w{1,})\s*=\s*(?<![\d.,_])"
+            + re.escape(tok)
+            + r"(?![\d._])"
+        )
+        for m in pat.finditer(prose_text):
+            var = m.group(1)
+            # Condition 1 : l'assignment doit etre dans un span backtick.
+            if not any(a < m.start() and m.end() <= b for a, b in bk_spans):
+                continue
+            # Condition 2 : '=' simple isole (remonte les blancs avant le '=').
+            k = prose_text.find("=", m.start() + len(m.group(1)),
+                                m.start() + len(m.group(1)) + 12)
+            if k < 0:
+                continue
+            p = k - 1
+            while p >= 0 and prose_text[p] in " \t":
+                p -= 1
+            if p >= 0 and prose_text[p] in "=!<>+-*/%&|^~":
+                continue
+            # Condition 3 : exclut les VARIABLES DE RESULTAT de solveur
+            # (x_1 = 0.5, x_2 = ...) -- une valeur de solution restituee en prose
+            # est un output a verifier, pas un parametre de config.
+            if re.match(r"^[a-z]_\d+$", var):
+                continue
+            # Condition 4 : la valeur doit etre le RHS COMPLET, pas le debut d'une
+            # expression mathematique. On bloque si le caractere suivant (apres
+            # blancs optionnels) est un operateur formel (ASCII * + - / ^ % et
+            # variantes Unicode · − × ÷ ∗) -> exclut les formules
+            # (MONEY = 10000·M, RSI = 100 - ..., Cosine Distance = 1 −) et les
+            # pourcentages illustratifs (heat = 18%).
+            tail = prose_text[m.end():m.end() + 3].lstrip()
+            if tail[:1] in "*+-/^·%−×÷∗":
+                continue
+            return True
+    return False
+
+
 # --------------------------------------------------------------------------- #
 #  Alignement prose <-> outputs
 # --------------------------------------------------------------------------- #
@@ -864,6 +959,12 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
             # pointe n'est pas une mesure -> skip (SAFE par construction, cf
             # ``_is_notebook_cross_reference``).
             if _is_notebook_cross_reference(v, text):
+                continue
+            # FP class 1 (#9998) : parametre d'entree restitue dans la prose sous
+            # la forme ``identifiant = valeur`` (n_init=10, Size = 2,5). La valeur
+            # est un INPUT nomme, pas une mesure a verifier -> skip (SAFE par
+            # construction, cf ``_is_code_defined_value``).
+            if _is_code_defined_value(v, text):
                 continue
             findings.append(AlignmentFinding(
                 notebook=str(path),
