@@ -579,39 +579,46 @@ def genre_runs(merged_prs: list[dict], target_lane: str) -> list[dict]:
 def _genre_from_paths(files: list[str] | None) -> str | None:
     """Best-effort GENRE inferred from a PR's diff file paths.
 
-    Issue #10020 §Corroboration: "si tous les fichiers du diff sont des
-    `*.md` (hors `docs/**` de fond), le genre effectif est `readme`/`docs`
-    quel que soit le genre declare". Implemented as:
+    Issue #10020 §Corroboration, refined by #10102: the heuristic can only
+    arbitrate the `docs`/`readme` axis, and ONLY for diffs that are 100%
+    `*.md`. Implemented as:
 
-      * all paths absent or empty   -> None (no signal)
-      * any non-`*.md` path present -> `tooling` (code change dominant)
-      * all paths under `docs/`     -> `docs`
-      * all paths `*.md` (but NOT under `docs/`) -> `readme`
+      * paths absent or empty                    -> None (no signal)
+      * any non-`*.md` path present              -> None (a code PR; the
+        heuristic cannot distinguish `lean`/`notebook-python`/`qc`/...,
+        so it abstains -- forcing `tooling` here would MISMATCH 12 of 14
+        honest code declarations, #10102)
+      * any `*.md` under `docs/` or `.claude/`   -> `docs` (prose/rule work)
+      * all `*.md` named `README*`               -> `readme`
+      * other `*.md`-only diffs                  -> None (cannot classify
+        confidently, e.g. a lone series .md; abstain)
 
-    The function is conservative on the partial-evidence case (a diff that
-    touches BOTH a `*.md` and a `*.py` is `tooling`, NOT `readme`): the
-    GENRE-MISMATCH signal is only raised when ALL paths are
-    `*.md`-equivalent. A PR with no diff paths at all returns `None`
-    (no claim possible), which means GENRE-MISMATCH is INACTIVE for that
-    PR -- not silently `readme`. CI workflows that do not pass `--files`
-    see no GENRE-MISMATCH signal: a missing input is a missing signal,
-    never a false positive.
+    The signal therefore fires ONLY in the case the heuristic can decide: a
+    100%-`*.md` diff whose paths pin the genre to `docs` or `readme`,
+    contrasted with a declared genre that disagrees. A code PR (any
+    non-`*.md` file) sees NO GENRE-MISMATCH -- the previous `tooling`
+    inference flagged every honest code declaration (#10102 measured 6 of 7
+    open PRs). A missing `--files` is INACTIVE: a missing input is a missing
+    signal, never a false positive.
     """
     if not files:
         return None
     # Normalise Windows backslashes to forward slashes for the prefix test.
     norm = [f.replace("\\", "/") for f in files]
-    md_only = all(f.endswith(".md") for f in norm)
-    if not md_only:
-        # Any non-md file present -> this is a code-change PR, not a
-        # doc-only PR. The `tooling` call is what `GENRE-MISMATCH` would
-        # contrast a `readme` declaration against; it is a coarse
-        # distinction (not `lean`/`notebook-python`/...), which is the
-        # point of the corroboration heuristic.
-        return "tooling"
-    if all(f.startswith("docs/") for f in norm):
+    if not all(f.endswith(".md") for f in norm):
+        # Any non-md file -> a code-change PR. The heuristic cannot
+        # distinguish code genres (`lean`/`notebook-python`/`qc`/...), so it
+        # abstains (None) rather than force a `tooling` inference that would
+        # MISMATCH 12 of 14 honest code declarations (#10102).
+        return None
+    # md-only diff: classify the prose work.
+    if any(f.startswith("docs/") or f.startswith(".claude/") for f in norm):
         return "docs"
-    return "readme"
+    if all(f.rsplit("/", 1)[-1].upper().startswith("README") for f in norm):
+        return "readme"
+    # md-only but neither docs/.claude/ nor all-README (e.g. a lone series
+    # .md): the heuristic cannot confidently classify -> abstain.
+    return None
 
 
 def compute_signals(
