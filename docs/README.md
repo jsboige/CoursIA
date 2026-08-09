@@ -140,7 +140,6 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 | Fichier | Description |
 |---------|-------------|
 | [i18n/CSV-by-series-design.md](i18n/CSV-by-series-design.md) | Design doc infra CSV-by-series (EPIC #4957 Phase 1) |
-| [i18n/argumentum-fork-mapping.md](i18n/argumentum-fork-mapping.md) | Cartographie fork Argumentum → CoursIA (EPIC #6949 T3) |
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
 | [translation/epic-4957-status.md](translation/epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
 
