@@ -340,7 +340,12 @@ jobs:
   # the day the convention is rolled out, which is the failure mode the
   # issue rejects).
   check-short-header:
-    name: Check short-header trio (Quoi/Preuve/Perimetre, #9861)
+    # Job name carries the `advisory` marker so pr_gate.is_advisory() diverts
+    # it out of `pending` (incident #10104: the job posts a check-run that can
+    # linger in_progress, and a name without the marker made pr_gate.py wait on
+    # it until the 90-min gate timeout -> every PR lacking the trio BLOCKED).
+    # Same convention as "CJK residue advisory (label, non-blocking)" etc.
+    name: Check short-header trio (advisory, label, non-blocking, #9861)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the shared tag extractor (sparse)
