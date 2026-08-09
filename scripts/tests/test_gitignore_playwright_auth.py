@@ -116,20 +116,27 @@ def test_non_playwright_auth_NOT_ignored(tmp_path: Path) -> None:
 
 
 @pytest.mark.skipif(not _have_git(), reason="git not available")
-def test_any_p_laywright_via_bracket_pattern_ignored(tmp_path: Path) -> None:
-    """Mixed-case variants like `myPlaywright`, `pLaywright`, etc. MUST be caught
-    by either the bracketed `[Pp]laywright` rule or the existing lowercase
+def test_any_p_laywright_first_char_variants_ignored(tmp_path: Path) -> None:
+    """First-letter case variants (`P` or `p` followed by `laywright`) MUST be
+    caught by either the bracketed `[Pp]laywright` rule or the existing lowercase
     `**/playwright/.auth/` rule. Order-dependence means we accept whichever
     matches — the important thing is ``git check-ignore`` returns ignored=True.
+
+    NOTE: Only the FIRST character is covered by the bracket (and the lowercase
+    rule). Mid-word case swaps like `pLaywright` (lowercase p + uppercase L) are
+    NOT caught. This is a deliberate, bounded scope — the threat model is
+    Playwright series names that follow the conventional PascalCase or
+    lowercase spellings, not arbitrary mid-word case flips.
     """
     repo = _make_fixture_repo(tmp_path)
     for variant in (
-        "anywhere/myPlaywright/.auth/x.json",
-        "anywhere/pLaywright/.auth/y.json",
-        "anywhere/pLAYWRIGHT/.auth/z.json",
+        "anywhere/Playwright-XYZ/.auth/foo.json",   # PascalCase — bracket
+        "anywhere/playwright-xyz/.auth/bar.json",   # lowercase — old rule
+        "anywhere/PlaywrightFoo/.auth/x.json",      # PascalCase + concat — bracket
+        "anywhere/playwrightFoo/.auth/y.json",      # lowercase + concat — old rule
     ):
         ignored, trace = _check_ignore(repo, variant)
-        assert ignored, f"Bracketed pattern did NOT catch {variant} (trace={trace!r})"
+        assert ignored, f"First-letter pattern did NOT catch {variant} (trace={trace!r})"
         # Either the new bracketed rule OR the existing lowercase rule may match;
         # both are valid (and the lowercase one takes precedence for some variants).
         assert (
