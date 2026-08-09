@@ -116,22 +116,22 @@ Série sur [TweetyProject](https://tweetyproject.org/), bibliothèque Java pour 
 
 | # | Notebook | Contenu | Exercices | Prérequis |
 |---|----------|---------|-----------|-----------|
-| **Fondations** |
+| **Fondations** |   |   |   |   |
 | 1 | [Tweety-1-Setup](Tweety/Tweety-1-Setup.ipynb) | Configuration JVM via JPype, JARs (35 modules), outils externes | Setup | Java/JPype |
 | 2 | [Tweety-2-Basic-Logics](Tweety/Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle, SAT4J, PySAT. FOL : prédicats, quantificateurs | 2 | Java/JPype |
 | 3 | [Tweety-3-Advanced-Logics](Tweety/Tweety-3-Advanced-Logics.ipynb) | Description Logic, Logique Modale (SPASS), QBF, Conditionnelle | 2 | Java/JPype, SPASS |
-| **Revision de Croyances** |
+| **Revision de Croyances** |   |   |   |   |
 | 4 | [Tweety-4-Belief-Revision](Tweety/Tweety-4-Belief-Revision.ipynb) | Postulats AGM, MUS, MaxSAT, mesures d'incohérence | 2 | Java/JPype |
-| **Argumentation** |
+| **Argumentation** |   |   |   |   |
 | 5 | [Tweety-5-Abstract-Argumentation](Tweety/Tweety-5-Abstract-Argumentation.ipynb) | Frameworks de Dung, sémantiques (grounded, preferred, stable, CF2) | 2 | Java/JPype |
 | 5b | [Tweety-5b-Lean-Argumentation](Tweety/Tweety-5b-Lean-Argumentation.ipynb) | Companion natif (kernel Lean) : preuve formelle 0-sorry de l'argumentation de Dung (grounded = point fixe Knaster–Tarski) dans le lake `argumentation_lean` | 3 | Lean 4 / WSL |
 | 6 | [Tweety-6-Structured-Argumentation](Tweety/Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP avec Clingo | 2 | Java/JPype, Clingo |
 | 7a | [Tweety-7a-Extended-Frameworks](Tweety/Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, EAF | 2 | Java/JPype |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety/Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking semantics, argumentation probabiliste | 2 | Java/JPype |
-| **Applications** |
+| **Applications** |   |   |   |   |
 | 8 | [Tweety-8-Agent-Dialogues](Tweety/Tweety-8-Agent-Dialogues.ipynb) | Agents argumentatifs, protocoles de dialogue, loteries | 2 | Java/JPype |
 | 9 | [Tweety-9-Preferences](Tweety/Tweety-9-Preferences.ipynb) | Ordres de préférence, théorie du vote (Borda, Copeland) | 1 | Java/JPype |
-| **Raisonnement avancé** |
+| **Raisonnement avancé** |   |   |   |   |
 | 10 | [Tweety-10-MLN](Tweety/Tweety-10-MLN.ipynb) | Markov Logic Networks : FOL pondérée, inférence probabiliste sur formules | 3 | Java/JPype |
 | 11 | [Tweety-11-Causal](Tweety/Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus (Pearl), interventions, contrefactuels | 3 | Java/JPype |
 
@@ -186,13 +186,13 @@ Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 
 | # | Notebook | Kernel | Contenu | Exercices |
 |---|----------|--------|---------|-----------|
-| **Fondations** |
+| **Fondations** |   |   |   |   |
 | 1 | [Lean-1-Setup](Lean/Lean-1-Setup.ipynb) | Python WSL | Diagnostic environnement, installation elan, Lean 4, lean4_jupyter | Setup |
 | 2 | [Lean-2-Dependent-Types](Lean/Lean-2-Dependent-Types.ipynb) | Lean 4 | Calcul des Constructions, types, fonctions, Pi/Sigma-types, inductifs | 9 |
 | 3 | [Lean-3-Propositions-Proofs](Lean/Lean-3-Propositions-Proofs.ipynb) | Lean 4 | Curry-Howard, connecteurs, preuves comme fonctions, logique classique vs constructive | 8 |
 | 4 | [Lean-4-Quantifiers](Lean/Lean-4-Quantifiers.ipynb) | Lean 4 | Quantificateurs universels et existentiels, propriétés arithmétiques | 7 |
 | 5 | [Lean-5-Tactics](Lean/Lean-5-Tactics.ipynb) | Lean 4 | Mode tactique, exact, intro, apply, cases, induction, rw, simp, calc | 5 |
-| **État de l'art 2024-2026** |
+| **État de l'art 2024-2026** |   |   |   |   |
 | 6 | [Lean-6-Mathlib-Essentials](Lean/Lean-6-Mathlib-Essentials.ipynb) | Lean 4 | Mathlib4, tactiques puissantes (ring, linarith, omega), Loogle/Moogle | 4 |
 | 7 | [Lean-7-LLM-Integration](Lean/Lean-7-LLM-Integration.ipynb) | Python WSL | AlphaProof, LeanCopilot, collaboration humain-LLM-Lean | 2 |
 | 7b | [Lean-7b-Examples](Lean/Lean-7b-Examples.ipynb) | Python WSL | Exemples progressifs, comparaison OpenAI vs Anthropic, Erdos | 8 |
@@ -204,7 +204,7 @@ Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 12 | [Lean-12-Sensitivity-Theorem](Lean/Lean-12-Sensitivity-Theorem.ipynb) | Lean 4 | Port Lean du théorème de sensibilité de Huang (2019), hypercube, signing matrix | 4 |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Python WSL | Companion natif : sources `sensitivity_lean/`, snippets via WSL | 3 |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean/Lean-14-Finiteness-Derivatives.ipynb) | Lean 4 | Finitude des dérivées, formalisation constructive, dépendance sur les réels | 3 |
-| **Hommages et théorèmes** |
+| **Hommages et théorèmes** |   |   |   |   |
 | 13 | [Lean-15-Grothendieck-Tribute](Lean/Lean-15-Grothendieck-Tribute.ipynb) | Lean 4 | Hommage à Grothendieck : tour Mathlib, micro-formalisations | 3 |
 | 13b | [Lean-15b-Lean-Grothendieck](Lean/Lean-15b-Lean-Grothendieck.ipynb) | Python WSL | Grothendieck en Lean, atelier pratique : sources `grothendieck_lean/`, snippets via WSL | 3 |
 | 14a | [Lean-16a-Conway-Man-and-Work](Lean/Lean-16a-Conway-Man-and-Work.ipynb) | Python WSL | Conway, l'homme et l'oeuvre : panorama des grands résultats, premières formalisations exécutées depuis `conway_lean` | 3 |
@@ -239,7 +239,7 @@ Série de **25 notebooks** sur le Web Sémantique (**13 C#** incluant le noteboo
 
 | # | Notebook | Kernel | Contenu | Exercices |
 |---|----------|--------|---------|-----------|
-| **Partie 1 : Fondations RDF** |
+| **Partie 1 : Fondations RDF** |   |   |   |   |
 | 1 | [SW-1-CSharp-Setup](SemanticWeb/SW-1-CSharp-Setup.ipynb) | .NET C# | Installation dotNetRDF, pile W3C "Layer Cake" | Setup |
 | 2 | [SW-2-CSharp-RDFBasics](SemanticWeb/SW-2-CSharp-RDFBasics.ipynb) | .NET C# | Triplets RDF, noeuds, serialisation (Turtle, N-Triples, RDF/XML) | 6 |
 | 2b | [SW-2b-Python-RDFBasics](SemanticWeb/SW-2b-Python-RDFBasics.ipynb) | Python | Équivalent Python avec rdflib | 5 |
@@ -247,21 +247,21 @@ Série de **25 notebooks** sur le Web Sémantique (**13 C#** incluant le noteboo
 | 3b | [SW-3b-Python-GraphOperations](SemanticWeb/SW-3b-Python-GraphOperations.ipynb) | Python | Twin Python (rdflib) — opérations sur graphes RDF | twin |
 | 4 | [SW-4-CSharp-SPARQL](SemanticWeb/SW-4-CSharp-SPARQL.ipynb) | .NET C# | Query Builder, SELECT/FILTER, OPTIONAL, UNION | 7 |
 | 4b | [SW-4b-Python-SPARQL](SemanticWeb/SW-4b-Python-SPARQL.ipynb) | Python | Équivalent Python avec SPARQLWrapper | 5 |
-| **Partie 2 : Données Liees et Ontologies** |
+| **Partie 2 : Données Liees et Ontologies** |   |   |   |   |
 | 5 | [SW-5-CSharp-LinkedData](SemanticWeb/SW-5-CSharp-LinkedData.ipynb) | .NET C# | DBpedia, Wikidata, requêtes federees SERVICE | 6 |
 | 5b | [SW-5b-Python-LinkedData](SemanticWeb/SW-5b-Python-LinkedData.ipynb) | Python | Équivalent Python | 5 |
 | 6 | [SW-6-CSharp-RDFS](SemanticWeb/SW-6-CSharp-RDFS.ipynb) | .NET C# | RDFS, inference automatique, OntologyGraph | 4 |
 | 6b | [SW-6b-Python-RDFS](SemanticWeb/SW-6b-Python-RDFS.ipynb) | Python | Sidetrack Python (rdflib + owlrl) — schéma et inférence RDFS | twin |
 | 7 | [SW-7-CSharp-OWL](SemanticWeb/SW-7-CSharp-OWL.ipynb) | .NET C# | OWL 2, profils (EL/QL/RL), restrictions | 5 |
 | 7b | [SW-7b-Python-OWL](SemanticWeb/SW-7b-Python-OWL.ipynb) | Python | Équivalent Python avec OWLReady2 | 5 |
-| **Partie 3 : Standards Modernes (Python + jumeaux C#)** |
+| **Partie 3 : Standards Modernes (Python + jumeaux C#)** |   |   |   |   |
 | 8 | [SW-8-Python-SHACL](SemanticWeb/SW-8-Python-SHACL.ipynb) | Python | SHACL, NodeShape, PropertyShape, pySHACL | 7 |
 | 8c | [SW-8-CSharp-SHACL](SemanticWeb/SW-8-CSharp-SHACL.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — validation SHACL | twin |
 | 9 | [SW-9-Python-JSONLD](SemanticWeb/SW-9-Python-JSONLD.ipynb) | Python | JSON-LD, Schema.org, SEO | 7 |
 | 9c | [SW-9-CSharp-JSONLD](SemanticWeb/SW-9-CSharp-JSONLD.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — JSON-LD | twin |
 | 10 | [SW-10-Python-RDFStar](SemanticWeb/SW-10-Python-RDFStar.ipynb) | Python | RDF 1.2, quoted triples, SPARQL-Star | 5 |
 | 10c | [SW-10-CSharp-RDFStar](SemanticWeb/SW-10-CSharp-RDFStar.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — réification/annotation de triplets | twin |
-| **Partie 4 : Graphes de Connaissances et IA (Python + jumeaux C#)** |
+| **Partie 4 : Graphes de Connaissances et IA (Python + jumeaux C#)** |   |   |   |   |
 | 11 | [SW-11-Python-KnowledgeGraphs](SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) | Python | kglab, OWLReady2, visualisation NetworkX | 6 |
 | 11c | [SW-11-CSharp-KnowledgeGraphs](SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb) | .NET C# | Jumeau C# (dotNetRDF) — construction/requête d'un KG | twin |
 | 12 | [SW-12-Python-GraphRAG](SemanticWeb/SW-12-Python-GraphRAG.ipynb) | Python | GraphRAG, extraction entites LLM | 6 |
@@ -280,22 +280,22 @@ Série de **23 notebooks** (14 Python + 9 jumeaux C#, plus l'archive Fast-Downwa
 
 | # | Notebook | Contenu | Exercices | Prérequis |
 |---|----------|---------|-----------|-----------|
-| **Fondations** |
+| **Fondations** |   |   |   |   |
 | 0 | [Planners-0-Setup](Planners/00-Environment/Planners-0-Setup.ipynb) | Configuration environnement, Fast-Downward | Setup | WSL/Docker |
 | 1 | [Planners-1-Introduction](Planners/01-Foundation/Planners-1-Introduction.ipynb) | Concepts de planification, représentations | 5 | Python |
 | 2 | [Planners-2-PDDL-Basics](Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) | Syntaxe PDDL, domaines et problèmes | 4 | Fast-Downward |
-| **Classique** |
+| **Classique** |   |   |   |   |
 | 3 | [Planners-3-State-Space](Planners/01-Foundation/Planners-3-State-Space.ipynb) | Recherche dans l'espace d'états | 7 | Fast-Downward |
 | 4 | [Planners-4-Fast-Downward](Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | Fast Downward, heuristiques | 6 | Docker, Fast-Downward |
 | 5 | [Planners-5-Heuristics](Planners/02-Classical/Planners-5-Heuristics.ipynb) | Heuristiques (FF, LM-Cut, Merge-and-Shrink) | 5 | Fast-Downward |
 | 5b | [Planners-5b-Lean-Relaxation](Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Companion natif (kernel Lean) : formalisation de la relaxation h-add dans le lake `planners_lean` | 3 | Lean 4 / WSL |
 | 6 | [Planners-6-Domains](Planners/02-Classical/Planners-6-Domains.ipynb) | Catalogue de domaines PDDL | 3 | Fast-Downward |
 | 6b | [Fast-Downward-Legacy](Planners/_archive/Fast-Downward-Legacy.ipynb) | Legacy Fast-Downward .NET | 0 | .NET kernel |
-| **Avancé** |
+| **Avancé** |   |   |   |   |
 | 7 | [Planners-7-OR-Tools](Planners/03-Advanced/Planners-7-OR-Tools.ipynb) | CP-SAT, Job Shop, VRP | 2 | ortools |
 | 8 | [Planners-8-Temporal](Planners/03-Advanced/Planners-8-Temporal.ipynb) | Planification temporelle (PDDL 2.1) | 6 | Python |
 | 9 | [Planners-9-HTN](Planners/03-Advanced/Planners-9-HTN.ipynb) | Hierarchical Task Networks | 7 | Python |
-| **Neuro-symbolique** |
+| **Neuro-symbolique** |   |   |   |   |
 | 10 | [Planners-10-LLM-Planning](Planners/04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | LLMs pour la planification | 2 | API keys |
 | 11 | [Planners-11-Unified-Planning](Planners/04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Unified Planning Framework | 3 | unified_planning |
 | 12 | [Planners-12-LOOP](Planners/04-NeuroSymbolic/Planners-12-LOOP.ipynb) | LLM + OR-Tools + planification | 2 | Fast-Downward |
