@@ -1232,6 +1232,127 @@ class TestNotebookCrossReferenceFilter:
 
 
 # --------------------------------------------------------------------------- #
+#  FP class 1 (#9998) : parametres de code restitues dans la prose (backtick)
+# --------------------------------------------------------------------------- #
+
+
+class TestCodeDefinedValueFilter:
+    """FP class 1 (#9998) : parametres de code restitues dans la prose en span backtick.
+
+    Un nombre orphelin n'est pas une mesure manquante si la prose le cite comme
+    un PARAMETRE de code, entre backticks : « `n_init=10` », « `random_state=42` »,
+    « `alpha=0,5` ». La valeur pilote le calcul, elle n'en est pas un output.
+
+    SAFE par construction (mesure corpus firsthand, 4 gardes cumulatifs) :
+      1. assignment ``identifiant = valeur`` DANS un span backtick (l'auteur cite
+         du CODE). Une METRIQUE RESTITUEE en prose narrative (« **MAE = 0,41** »)
+         n'est jamais backtickee -> non filtree : c'est un output a verifier.
+      2. identifiant non-resultat-de-solveur (exclut ``x_1 = 0.5``).
+      3. valeur = RHS complet (pas une formule ``MONEY = 10000·M`` ni un % ``heat = 18%``).
+      4. bornes numeriques + ``_`` (exclut le prefixe 4 de ``QUORUM = 4_000_000``).
+
+    Verifie firsthand ML.NET : 2/184 (ML-1 Size=2.5, ML-8 n_init=10) ; full corpus
+    65 orphelins filtres. Aucune metrique restituee (MAE/RMSE/score) filtree.
+    """
+
+    def test_helper_backtick_param_int(self):
+        # "`n_init=10`" -- 10 est un parametre de KMeans, cite en backtick.
+        text = "K-Means avec `n_clusters=3`, `random_state=42`, `n_init=10`."
+        assert mod._is_code_defined_value(10.0, text) is True
+        assert mod._is_code_defined_value(42.0, text) is True
+
+    def test_helper_backtick_param_decimal(self):
+        # "`alpha=0.5`" -- decimale en backtick.
+        text = "Regression ridge avec `alpha=0.5`."
+        assert mod._is_code_defined_value(0.5, text) is True
+
+    def test_helper_backtick_param_fr_decimal(self):
+        # "`alpha=0,5`" -- decimale francaise en backtick (prose pedagogique FR).
+        text = "Regression ridge avec `alpha=0,5` (seuil FR)."
+        assert mod._is_code_defined_value(0.5, text) is True
+
+    def test_helper_no_backtick_not_filtered(self):
+        # Anti-sur-filtrage : une valeur en prose SANS backtick n'est pas filtree
+        # (peut etre une metrique narrative). "Sharpe = 0.69" non backticke.
+        text = "Le ratio de Sharpe est 0.69 sur la periode OOS."
+        assert mod._is_code_defined_value(0.69, text) is False
+
+    def test_helper_reported_metric_bold_not_filtered(self):
+        # Anti-sur-filtrage (cas ML-4 c[36]) : une METRIQUE RESTITUEE en prose
+        # narrative (MAE, RMSE) en gras n'est PAS un parametre de code -> non
+        # filtree. C'est un output que le detecteur doit pouvoir verifier.
+        text = "Les metriques sont **R^2 = 0,941**, **MAE = 0,41**, **RMSE = 2,33**."
+        assert mod._is_code_defined_value(0.41, text) is False
+        assert mod._is_code_defined_value(2.33, text) is False
+
+    def test_helper_solver_result_backtick_not_filtered(self):
+        # Anti-sur-filtrage (cas OR-tools-Stiegler c[13]) : une VALEUR DE SOLUTION
+        # de solveur restituee en backtick (`x_1 = 0.5`) est un OUTPUT, pas un
+        # parametre de config -> non filtree.
+        text = "La solution optimale est `x_1 = 0.5` et `x_2 = 0.3`."
+        assert mod._is_code_defined_value(0.5, text) is False
+
+    def test_helper_formula_expression_not_filtered(self):
+        # Anti-sur-filtrage (cas 13_Cryptarithmetic c[2]) : une formule en
+        # backtick (`MONEY = 10000·M + ...`) -- 10000 est un coefficient de
+        # place-value, RHS incomplet -> non filtre.
+        text = "Decomposition : `MONEY = 10000·M + 1000·O + 100·N + 10·E + Y`."
+        assert mod._is_code_defined_value(10000.0, text) is False
+
+    def test_helper_unicode_minus_formula_not_filtered(self):
+        # Anti-sur-filtrage (cas 05-SemanticKernel c[19]) : identite mathematique
+        # avec moins Unicode U+2212 « Cosine Distance = 1 − ... » -> 1 non filtre.
+        text = "Rappel : `Cosine Distance = 1 − Cosine Similarity`."
+        assert mod._is_code_defined_value(1.0, text) is False
+
+    def test_helper_underscore_grouping_not_filtered(self):
+        # Anti-sur-filtrage (cas SC-9 c[5]) : le separateur underscore `4_000_000`
+        # ne doit pas faire matcher le prefixe 4 comme parametre.
+        text = "Seuil de gouvernance `QUORUM = 4_000_000` tokens."
+        assert mod._is_code_defined_value(4.0, text) is False
+
+    def test_helper_comparison_not_filtered(self):
+        # Anti-sur-filtrage : un comparateur (`count >= 5`, `ratio == 0.9`) n'est
+        # pas un assignment de parametre.
+        text = "On garde si `count >= 5` et `ratio == 0.9`."
+        assert mod._is_code_defined_value(5.0, text) is False
+        assert mod._is_code_defined_value(0.9, text) is False
+
+    def test_helper_value_not_in_any_assignment_not_filtered(self):
+        # Un nombre hors de tout assignment backtick -> orphelin normal.
+        text = "Le code `model.fit(X)` produit un score. Valeur cible 0.69."
+        assert mod._is_code_defined_value(0.69, text) is False
+
+    def test_integration_param_suppressed(self, tmp_path):
+        # Cas fondateur ML-8 c[5] : prose cite `n_init=10` -> 10 orphelin filtre.
+        nb = tmp_path / "param.ipynb"
+        _make_notebook([
+            _markdown_cell("## Pipeline\nK-Means avec `n_clusters=3`, `n_init=10` "
+                           "(10 redemarrages)."),
+            _code_cell("print(0.42)", [{"text": "0.42\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        filtered = [f for f in mfo if f.prose_number == pytest.approx(10.0)]
+        assert filtered == [], f"param n_init=10 must be filtered, got {filtered}"
+
+    def test_integration_legit_orphan_alongside_param_preserved(self, tmp_path):
+        # Falsifiabilite : une vraie mesure orpheline (0.69) coexistant avec un
+        # parametre backtick (n_init=10) DOIT rester signalee.
+        nb = tmp_path / "mixed.ipynb"
+        _make_notebook([
+            _markdown_cell("Sharpe observe = 0.69 ; K-Means `n_init=10`."),
+            _code_cell("print(0.42)", [{"text": "0.42\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        legit = [f for f in mfo if f.prose_number == pytest.approx(0.69)]
+        param = [f for f in mfo if f.prose_number == pytest.approx(10.0)]
+        assert len(legit) == 1, f"legit orphan 0.69 must survive, got {mfo}"
+        assert param == [], f"param n_init=10 must be filtered, got {param}"
+
+
+# --------------------------------------------------------------------------- #
 
 
 class TestICT1CounterEvidence:
