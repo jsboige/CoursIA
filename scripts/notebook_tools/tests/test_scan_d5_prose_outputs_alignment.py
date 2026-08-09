@@ -258,6 +258,89 @@ class TestOrderedListMarkerFalsePositive:
         assert 5.0 in nums
 
 
+class TestMarkdownTableDataFalsePositive:
+    """Filtre cellules de table GFM (po-2023 #9790, FP class 8 -- markdown-table-data).
+
+    Un nombre dans une rangee de table markdown (ligne debutant par ``|`` et
+    finissant par ``|``) est une CELLULE de donnees structurale (dataset input,
+    table de versions, benchmark de papier, spec d'outil), pas une affirmation
+    de mesure en prose. Verifie firsthand (G.1, 2026-08-09, classifier
+    full-corpus SymbolicAI) : 808/2110 findings MISSING_FROM_OUTPUTS (38 %)
+    tombent dans une rangee de table ; echantillon divers 19/19 notebooks =
+    100 % tables de REFERENCE/DONNEES, zero table de resultats calcules.
+    Falsifiable both-directions : un nombre en PROSE (hors table) est conserve,
+    meme si la cellule contient aussi une table ; un item de liste avec un pipe
+    ne commence pas par ``|`` donc n'est pas une table.
+    """
+
+    def test_filter_table_cell_input_data(self):
+        # Cas corpus (OR-tools-Stiegler c8, Stigler diet dataset) : "36" est le
+        # prix nutrient de la farine, donnee d'INPUT du solver, pas une mesure.
+        nums = mod._extract_prose_numbers(
+            "| Ingredient | Quantite | Prix |\n|---|---|---|\n| Farine | 4,5 kg | 36 |\n"
+        )
+        assert 36.0 not in nums
+
+    def test_filter_table_cell_version_reference(self):
+        # Cas corpus (SW-9-JSONLD) : table de versions "1.1 (2020)" = reference.
+        nums = mod._extract_prose_numbers(
+            "| Standard | Version |\n|---|---|\n| RDF-Star | 1.2 (2020) |\n"
+        )
+        assert 1.2 not in nums
+
+    def test_filter_table_cell_paper_benchmark(self):
+        # Cas corpus (Lean-8-Agentic) : "0.53" est un benchmark tire d'un papier.
+        nums = mod._extract_prose_numbers(
+            "| Lemme | Auto | Semantique |\n|---|---|---|\n| Nat.add_comm | 0.53 | 0.95 |\n"
+        )
+        assert 0.53 not in nums
+        assert 0.95 not in nums
+
+    def test_filter_multi_column_table_all_cells(self):
+        # Toutes les cellules numeriques d'une table a plusieurs colonnes.
+        nums = mod._extract_prose_numbers(
+            "| A | B | C |\n|---|---|---|\n| 10 | 20 | 30 |\n| 40 | 50 | 60 |\n"
+        )
+        assert nums == []
+
+    def test_filter_indented_table_row(self):
+        # Table indentee (<= 3 espaces, CommonMark) toujours une rangee.
+        nums = mod._extract_prose_numbers("  | x | 42 |\n")
+        assert 42.0 not in nums
+
+    def test_preserve_measurement_after_table(self):
+        # CRUCIAL both-directions : une mesure en PROSE apres une table est
+        # conservee -- on ne filtre que les nombres DANS les rangees.
+        nums = mod._extract_prose_numbers(
+            "| Data | Val |\n|---|---|\n| a | 99 |\n\nLe score final observe est 0.42."
+        )
+        assert 99.0 not in nums
+        assert 0.42 in nums
+
+    def test_preserve_prose_measurement_with_math_pipe(self):
+        # CRUCIAL both-directions : "|r| = 0,5" mid-sentence n'est PAS une table
+        # (la ligne ne commence pas par `|`) -> la mesure 0.5 est conservee.
+        nums = mod._extract_prose_numbers("La valeur absolue |r| = 0,5 indique correlation.")
+        assert 0.5 in nums
+
+    def test_list_item_with_pipe_not_table(self):
+        # CRUCIAL both-directions : un item de liste "- a | b" ne commence pas
+        # par `|` -> un nombre dedans est conserve (pas une table).
+        nums = mod._extract_prose_numbers("- Ratio gagnant | 7 trades sur 12")
+        assert 7.0 in nums
+        assert 12.0 in nums
+
+    def test_table_and_prose_claim_same_cell(self):
+        # Une cellule avec une table ET une affirmation en prose : seules les
+        # cellules de table sont filtrees, la mesure en prose survive.
+        nums = mod._extract_prose_numbers(
+            "Parametres :\n| Seuil | 0.5 |\n|---|---|\n| K | 3 |\n\nResultat : Phi = 0.69."
+        )
+        assert 0.5 not in nums      # cellule de table
+        assert 3.0 not in nums      # cellule de table
+        assert 0.69 in nums         # affirmation de prose
+
+
 class TestHexColorAndExponentFalsePositives:
     """Filtre codes couleur hex + exposants plaine (EPIC #9768, c.1295).
 
