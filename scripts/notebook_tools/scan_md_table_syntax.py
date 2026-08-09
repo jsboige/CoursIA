@@ -102,6 +102,32 @@ CODE_SPAN_RE = re.compile(r'(`+)[^`]*\1')
 MATH_SPAN_RE = re.compile(r'\$[^$\n]*\$')
 ESCAPED_PIPE_RE = re.compile(r'\\\|')
 
+# Conditional-probability / function-call notation: ``P(x|y)``, ``O(|A|*|S|)``,
+# ``Cov(a|b)`` -- a ``|`` inside such a ``Letter(...)`` span is a math conditional
+# bar, NOT a table column delimiter. Excluding these lines from block grouping
+# prevents two consecutive ``P(X|Y)`` prose lines (e.g. an exercise enumerating
+# conditional probabilities) from being mistaken for a 2-row table block, which
+# was the dominant false-positive source on the Probas family (~71% of the
+# NO_BLANK findings were ``P(X|Y)`` math pipes). See #10097.
+COND_NOTATION_RE = re.compile(r'[A-Za-z]\([^)]*\|[^)]*\)')
+
+
+def _has_delimiter_pipe(line):
+    """True if ``line`` has a pipe that could be a GFM table column delimiter.
+
+    A pipe that survives removal of inline code, inline math, escaped pipes, and
+    ``Letter(...|...)`` conditional notation is a candidate delimiter; a line
+    whose only pipes live inside those spans is math/prose, not a table row.
+    Mirrors the protection already applied by ``_column_count`` (which handles
+    code/math/escaped) and extends it to bare ``P(X|Y)`` plain-text conditional
+    notation that ``$...$`` stripping does not reach.
+    """
+    t = CODE_SPAN_RE.sub('', line)
+    t = MATH_SPAN_RE.sub('', t)
+    t = ESCAPED_PIPE_RE.sub('', t)
+    t = COND_NOTATION_RE.sub('', t)
+    return '|' in t
+
 
 # ---------------------------------------------------------------------------
 # Core: find table blocks in a list of (1-indexed) source lines
@@ -135,8 +161,8 @@ def _find_table_blocks(lines):
             fence_marker = m.group(1)[0]
             i += 1
             continue
-        # Not in a fence: is this a pipe-line?
-        if not stripped or not PIPE_LINE_RE.search(line):
+        # Not in a fence: is this a pipe-line? (math/conditional pipes excluded)
+        if not stripped or not _has_delimiter_pipe(line):
             i += 1
             continue
         # Start of a potential pipe-line run
@@ -145,7 +171,7 @@ def _find_table_blocks(lines):
         while i < n:
             l = lines[i]
             ls = l.strip()
-            if not ls or not PIPE_LINE_RE.search(l):
+            if not ls or not _has_delimiter_pipe(l):
                 break
             # stop if a fence opens mid-run
             if FENCE_OPEN_RE.match(l):

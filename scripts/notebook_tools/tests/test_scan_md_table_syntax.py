@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scan_md_table_syntax import (  # noqa: E402
     _column_count,
     _find_table_blocks,
+    _has_delimiter_pipe,
     detect_md_table_syntax,
     main,
     scan_markdown,
@@ -66,6 +67,65 @@ class TestColumnCount:
 
     def test_multiple_backtick_spans(self):
         assert _column_count("| a | `b|c` | `d|e` |") == 3
+
+
+# ---------------------------------------------------------------------------
+# _has_delimiter_pipe / math-pipe exclusion -- the P(X|Y) false-positive guard
+# ---------------------------------------------------------------------------
+
+class TestHasDelimiterPipe:
+    def test_real_table_row_has_delimiter_pipe(self):
+        assert _has_delimiter_pipe("| a | b |") is True
+        assert _has_delimiter_pipe("a | b | c") is True
+
+    def test_conditional_probability_pipe_excluded(self):
+        # ``P(X|Y)`` plain-text conditional notation: the pipe is a math bar,
+        # not a delimiter. The dominant Probas false-positive source (#10097).
+        assert _has_delimiter_pipe("- P(Cloudy | Rain=True) = **0.800**") is False
+        assert _has_delimiter_pipe("calculez P(Sprinkler | Rain=True)") is False
+
+    def test_big_o_set_notation_excluded(self):
+        # ``O(|A| x |S|)`` complexity notation -- pipes are abs/norm bars.
+        assert _has_delimiter_pipe("complexite O(|A| x |S|)") is False
+
+    def test_inline_math_pipe_excluded(self):
+        assert _has_delimiter_pipe("- $P(z_t | z_{t-1})$ transition") is False
+
+    def test_table_row_with_conditional_in_cell_still_detected(self):
+        # A real table cell may legitimately contain P(A|B); the OUTER cell
+        # delimiters remain, so it is still a table row.
+        assert _has_delimiter_pipe("| Var | P(A|B) | note |") is True
+
+    def test_english_aside_still_has_delimiter_pipe(self):
+        # "a | b" flowing prose is unchanged (still a candidate; the >=2-row
+        # block rule handles it, not this guard).
+        assert _has_delimiter_pipe("text a | text b") is True
+
+
+class TestMathPipeBlockExclusion:
+    def test_consecutive_conditional_probs_not_a_table(self):
+        # Two consecutive ``P(X|Y)`` exercise lines must NOT be mistaken for a
+        # 2-row table block (was the #10097 Probas NO_BLANK false positive).
+        lines = [
+            "**Resultats** :",
+            "- P(Cloudy | Rain=True) = **0.800** -- observationnel",
+            "- P(Cloudy | do(Rain=True)) = **0.500** -- interventionnel",
+        ]
+        assert detect_md_table_syntax(lines) == []
+
+    def test_conditional_probs_above_real_table_not_flagged(self):
+        # A ``P(X|Y)`` line directly before a real table must not be treated as
+        # the table's first row (no NO_BLANK_BEFORE on the real table's account,
+        # and no spurious block merging).
+        lines = [
+            "",
+            "| Algorithme | Usage |",
+            "|---|---|",
+            "| naive | P(C|X) bayesien |",
+        ]
+        f = detect_md_table_syntax(lines)
+        # The table is clean (blank before, has sep); no finding expected.
+        assert [x for x in f if x["pathology"] == "NO_BLANK_BEFORE"] == []
 
 
 # ---------------------------------------------------------------------------
