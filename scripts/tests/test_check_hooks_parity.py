@@ -331,10 +331,20 @@ def test_main_returns_1_on_ko(tmp_path, monkeypatch, capsys):
 
 
 def test_main_returns_0_when_all_green(tmp_path, monkeypatch, capsys):
-    """main() returns 0 when every gate is green."""
+    """main() returns 0 when every gate is green.
+
+    Gate 7 (#10139) needs BOTH pinned versions to exist and agree, so the
+    fake repo declares a gitleaks hook and a matching workflow. Feeding the
+    new gate its inputs is deliberate: exempting it here would make
+    "every gate green" quietly mean "every gate but one".
+    """
     mod = _load(CHECK_HOOKS_PARITY)
     config_text = (
         "repos:\n"
+        "  - repo: https://github.com/gitleaks/gitleaks\n"
+        "    rev: v9.9.9\n"
+        "    hooks:\n"
+        "      - id: gitleaks\n"
         "  - repo: local\n"
         "    hooks:\n"
         "      - id: local-a\n"
@@ -344,9 +354,21 @@ def test_main_returns_0_when_all_green(tmp_path, monkeypatch, capsys):
     (repo / ".git" / "hooks" / "pre-commit").write_text("#!/bin/sh\nexit 0\n")
     (repo / "scripts").mkdir(parents=True)
     (repo / "scripts" / "a.py").write_text("# stub\n")
+    workflow = repo / ".github" / "workflows" / "secret-scan.yml"
+    workflow.parent.mkdir(parents=True)
+    workflow.write_text(
+        "jobs:\n"
+        "  gitleaks:\n"
+        "    steps:\n"
+        "      - uses: gitleaks/gitleaks-action@v2\n"
+        "        env:\n"
+        "          GITLEAKS_VERSION: 9.9.9\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(mod, "REPO_ROOT", repo)
     monkeypatch.setattr(mod, "CONFIG_PATH", repo / ".pre-commit-config.yaml")
     monkeypatch.setattr(mod, "HOOK_PATH", repo / ".git" / "hooks" / "pre-commit")
+    monkeypatch.setattr(mod, "SECRET_SCAN_PATH", workflow)
     monkeypatch.setattr(shutil, "which", lambda name: f"/usr/bin/{name}")
 
     # Mock subprocess.run for BOTH the --version probe (Gate 2) and the
@@ -364,3 +386,124 @@ def test_main_returns_0_when_all_green(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert rc == 0, f"expected rc=0, got rc={rc}, output={out!r}"
     assert "OK" in out
+
+
+# --- Gate 7: gitleaks version parity (hook rev vs CI GITLEAKS_VERSION) -------
+#
+# This is the ENFORCING copy of the gate. check_hooks_parity.py is advisory in
+# CI by design (a missing local hook is the worker's state to repair), but a
+# version divergence is not machine state: it is two files in the repo
+# disagreeing, identical on every checkout. It must fail something blocking,
+# and that is this test.
+#
+# What it guards, measured on this repo (#10139): gitleaks 8.21.2 reported 0
+# findings on the very files where 8.24.3 reported 2. While the hook pinned
+# 8.21.2 and CI resolved 8.24.3, a clean `git commit` was rejected in CI with
+# nothing in the repo to explain it.
+
+
+def _write_pair(tmp_path: Path, hook_rev: str | None, ci_version: str | None):
+    """Fake repo pinning ``hook_rev`` locally and ``ci_version`` in CI.
+
+    ``None`` means "pin absent" -- for the hook, no gitleaks repo at all; for
+    CI, a workflow step carrying no GITLEAKS_VERSION.
+    """
+    repos = "repos:\n"
+    if hook_rev is not None:
+        repos += (
+            "  - repo: https://github.com/gitleaks/gitleaks\n"
+            f"    rev: {hook_rev}\n"
+            "    hooks:\n"
+            "      - id: gitleaks\n"
+        )
+    repos += (
+        "  - repo: local\n"
+        "    hooks:\n"
+        "      - id: local-a\n"
+        "        entry: python scripts/a.py\n"
+    )
+    repo = _make_repo(tmp_path, repos)
+    workflow = repo / ".github" / "workflows" / "secret-scan.yml"
+    workflow.parent.mkdir(parents=True)
+    env_block = f"        env:\n          GITLEAKS_VERSION: {ci_version}\n" if ci_version else ""
+    workflow.write_text(
+        "jobs:\n  gitleaks:\n    steps:\n"
+        "      - uses: gitleaks/gitleaks-action@v2\n" + env_block,
+        encoding="utf-8",
+    )
+    return repo, workflow
+
+
+def _parity_row(mod, tmp_path, monkeypatch, hook_rev, ci_version):
+    repo, workflow = _write_pair(tmp_path, hook_rev, ci_version)
+    monkeypatch.setattr(mod, "REPO_ROOT", repo)
+    monkeypatch.setattr(mod, "CONFIG_PATH", repo / ".pre-commit-config.yaml")
+    monkeypatch.setattr(mod, "SECRET_SCAN_PATH", workflow)
+    rows = [r for r in mod._run_checks() if r[0] == "gitleaks version parity"]
+    assert rows, "gate 'gitleaks version parity' absent from _run_checks()"
+    return rows[0]
+
+
+def test_parity_ok_when_versions_agree(tmp_path, monkeypatch):
+    mod = _load(CHECK_HOOKS_PARITY)
+    gate, status, detail = _parity_row(mod, tmp_path, monkeypatch, "v8.24.3", "8.24.3")
+    assert status == "OK", f"{gate}: {detail}"
+
+
+def test_parity_ko_when_versions_diverge(tmp_path, monkeypatch):
+    """The exact shape of the #10139 defect: hook 8.21.2 vs CI 8.24.3."""
+    mod = _load(CHECK_HOOKS_PARITY)
+    _gate, status, detail = _parity_row(mod, tmp_path, monkeypatch, "v8.21.2", "8.24.3")
+    assert status == "KO", f"expected KO on divergence, got {status}: {detail}"
+    assert "8.21.2" in detail and "8.24.3" in detail, detail
+
+
+def test_parity_ko_when_ci_pins_nothing(tmp_path, monkeypatch):
+    """No GITLEAKS_VERSION is a finding, not an absence of information.
+
+    Unset, the action falls back to a version hard-coded in its own source
+    (``GITLEAKS_VERSION || "8.24.3"``, src/index.js) -- an implicit pin owned
+    by a third party that any ``@v2`` release can revise with no commit here.
+    """
+    mod = _load(CHECK_HOOKS_PARITY)
+    _gate, status, detail = _parity_row(mod, tmp_path, monkeypatch, "v8.24.3", None)
+    assert status == "KO", f"expected KO when CI pins nothing, got {status}: {detail}"
+    assert "GITLEAKS_VERSION" in detail, detail
+
+
+def test_parity_v_prefix_is_not_a_divergence(tmp_path, monkeypatch):
+    """``rev: v8.24.3`` vs ``GITLEAKS_VERSION: 8.24.3`` is the CORRECT form.
+
+    The hook tag carries the ``v``; the action's env var must not (its README
+    is explicit: "no ``v`` prefix"). A gate that flagged this would push
+    someone to "fix" it into a genuinely broken download URL.
+    """
+    mod = _load(CHECK_HOOKS_PARITY)
+    _gate, status, _detail = _parity_row(mod, tmp_path, monkeypatch, "v8.24.3", "8.24.3")
+    assert status == "OK"
+
+
+def test_parity_holds_on_the_real_repo_files(monkeypatch):
+    """The live gate: the versions actually shipped in this repo must agree.
+
+    Unlike the fixtures above, this reads the real ``.pre-commit-config.yaml``
+    and ``.github/workflows/secret-scan.yml``. It is what turns the rule into
+    an organ: bump one file alone and this test goes red.
+    """
+    mod = _load(CHECK_HOOKS_PARITY)
+    if not (mod.CONFIG_PATH.exists() and mod.SECRET_SCAN_PATH.exists()):
+        import pytest
+        pytest.skip("real config/workflow not present in this environment")
+    try:
+        hook_v = mod._hook_gitleaks_version()
+        ci_v = mod._ci_gitleaks_version()
+    except RuntimeError as e:
+        import pytest
+        pytest.skip(f"PyYAML missing in test environment: {e}")
+    assert hook_v is not None, ".pre-commit-config.yaml declares no gitleaks rev"
+    assert ci_v is not None, "secret-scan.yml sets no GITLEAKS_VERSION (unpinned CI gate)"
+    assert hook_v == ci_v, (
+        f"gitleaks version drift: hook pins v{hook_v}, CI pins {ci_v}. "
+        "These must be bumped together -- they disagree on real content "
+        "(see #10139), so a green pre-commit would stop predicting CI."
+    )
