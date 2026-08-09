@@ -1,5 +1,11 @@
 # Fork du moteur de traduction Argumentum → CoursIA — cartographie (EPIC #6949, T3)
 
+> **Archivé le 2026-08-09** : déplacé vers `docs/archive/reference/` (était `docs/i18n/`). **Raison** : doc de **conception figée** (« Statut : doc de conception… Figée ») pré-implémentation du fork T3. La roadmap qu'elle porte (PR #2 = fork code, PR #3 = activation, T4 = re-import) est **exécutée** — le fork `scripts/translation/translate_csv.py` est livré (#6976). **Mode** : preservation move (contenu inchangé ci-dessous, header de préservation ajouté). **Issue** : [#7422](https://github.com/jsboige/CoursIA/issues/7422) (hygiène `docs/`). **Statut** : record de conception historique, **plus mis à jour**.
+>
+> **Superseded par** [`docs/translation/argumentum-fork-mapping.md`](../../translation/argumentum-fork-mapping.md) — la **référence pérenne live** post-implémentation (couche T3, moteur `translate_csv.py`, #6949/#6976 + travaux d'harmonisation #7615/#7714/#7731). Pour le mapping Argumentum → CoursIA à jour, consulter la version live, pas cet archive.
+>
+> **Contenu historique préservé ci-dessous** — conserve une analyse technique détaillée de la source Argumentum (`translate_game_rules.py` ligne-par-ligne, audit drift 5 classes) et le raisonnement sur la **discrepancy d'ordre des langues** (Argumentum `en,ru,pt,es,ar,fa,zh` vs CoursIA `en,es,ar,fa,zh,ru,pt`) : utile pour comprendre *pourquoi* le fork adopte l'ordre CoursIA (correspondance par nom de langue, pas par position).
+
 > **Statut** : doc de conception (Issue #6949, tranche court-terme PR #1, doc-only).
 > Figée la cartographie entre le pipeline de traduction d'Argumentum (submodule
 > `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` @ `7e72f3e5d`,
