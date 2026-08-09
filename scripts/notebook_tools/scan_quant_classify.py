@@ -389,10 +389,29 @@ def _classify_quant_value(
     #     N est la cardinalité d'un ensemble fini du domaine, pas une mesure
     #     stochastique (le tirage porte SUR les N, N lui-même est fixe). Mesuré :
     #     GT-1-Setup cell[60] "3 actions" → STOCHASTIQUE via kw 'random'.
+    #     v7 (c.1331+19, #9434) étend la liste de count-nouns aux entités
+    #     pédagogiques/documentaires mesurées sur la flotte (164 FP ENV-DEP) :
+    #     "21 notebooks", "3 modules", "5 sections", "12 fichiers", "8 puzzles",
+    #     "3 exercices" — cardinalités de structure, pas des versions/mesures.
     if re.match(r"(?:actions?|choix|strat[eé]gies?|candidats?|joueurs?|players?|"
                 r"[eé]tats?|[eé]tapes?|coups?|moves?|dimensions?|attributs?|"
-                r"features?|classes?)\b", s_l, re.I):
-        return ("STRUCTUREL", "compteur structurel v6 (N <count-noun>: cardinalité)")
+                r"features?|classes?|notebooks?|modules?|sections?|cellules?|"
+                r"cells?|chapitres?|fichiers?|files?|puzzles?|exercices?|"
+                r"th[eé]or[eè]mes?|theorems?|probl[eè]mes?|exemples?)\b",
+                s_l, re.I):
+        return ("STRUCTUREL", "compteur structurel v6/v7 (N <count-noun>: cardinalité)")
+    # (G) Slug de module/section : "module 01-5", "modules [01]-05", "notebooks
+    #     02-1 a 02-5", "parts 7-23" = le chiffre est dans le slug hiérarchique
+    #     d'un module pédagogique (préfixe = count-noun structurel), pas une version.
+    #     Même asymétrie que le slug-B (cross-ref notebook). Mesuré : GenAI/Audio
+    #     "module 01-5" → ENV-DEP via kw env adjacent. TIGHTENED : exige (a) un
+    #     count-noun structurel en préfixe (module/modules/notebooks/parts — PAS
+    #     "module p" mathématique ni "2^127-1" qui a un caret) ET (b) un slug -N
+    #     en suffixe (le raw matche le 1er chiffre, le suffixe porte le -N). Exclut
+    #     les expressions mathématiques (" - 1" avec espace).
+    if re.search(r"\b(?:modules?|notebooks?|parts?)\b\s*\[?$", p_r, re.I) and \
+       re.match(r"-\d", s_l):
+        return ("STRUCTUREL", "slug module v7 (module N-M: hiérarchie pédagogique)")
 
     # -1 (c.1301+12): anti-FP ML/DfA + Search/Part1 — guard structurel v4
     #     (4 classes : editorial-duration / biblio / section-number /

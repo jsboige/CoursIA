@@ -824,6 +824,68 @@ class TestFpGuardV6:
             f"'3' sans count-noun ne doit pas declencher le guard (F), rationale={rat!r}"
         )
 
+    # -- v7: extended count-nouns + module-slug (c.1331+19, #9434) ------------- #
+
+    def test_v7_structural_count_notebooks(self):
+        """GT-15b: "cette serie de **21 notebooks**" = cardinalite de la serie.
+
+        21 = nb de notebooks dans la serie (structurel), rattrape par kw 'python'
+        adjacent (+3 compagnons python). Mesure firsthand : 1426 FP ENV-DEP de
+        cette classe sur la flotte avant v7.
+        """
+        cls, _ = _classify_quant_value("21", 21.0,
+                                       "cette serie de **", " notebooks** (+3")
+        assert cls == "STRUCTUREL", (
+            f"compteur structurel (N notebooks) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v7_structural_count_modules(self):
+        """"on importe les 3 modules" = cardinalite des modules importes."""
+        cls, _ = _classify_quant_value("3", 3.0,
+                                       "n est structure en ", " modules (`zerosum`")
+        assert cls == "STRUCTUREL", (
+            f"compteur structurel (N modules) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v7_module_slug_range(self):
+        """GenAI/Audio: "module 01-5" = slug hierarchique d'un module pedagogique.
+
+        Le 01 est le numero du module (raw match), le suffixe -5 est la sous-partie.
+        Rattrape par kw env adjacent. Meme asymetrie que le slug-B notebook.
+        """
+        cls, _ = _classify_quant_value("01", 1.0,
+                                       "kokoro (module ", "-5) ou des services")
+        assert cls == "STRUCTUREL", (
+            f"slug module (module NN-N) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v7_notebooks_range(self):
+        """GT/GameTheory: "notebooks 7-15" = plage de notebooks de la serie.
+
+        7 = debut de plage (raw match), -15 = fin. Structurel (organisation serie),
+        pas une version ni une mesure.
+        """
+        cls, _ = _classify_quant_value("7", 7.0,
+                                       "les notebooks ", "-15 utiliseront")
+        assert cls == "STRUCTUREL", (
+            f"plage notebooks (NN-NN) doit etre STRUCTUREL, got {cls}"
+        )
+
+    def test_v7_mersenne_prime_NOT_absorbed(self):
+        """Falsification CRITIQUE : "2^127-1" (nombre premier de Mersenne) reste drainable.
+
+        Le context "module p | 2^127 - 1 | premier de mersenne" contient le mot
+        "module" mais c'est un nom mathematique (module-Mersenne), pas un module
+        pedagogique. L'exposant `^` et l'expression `- 1` (avec espace) doivent
+        EMPECHER le guard (G) de l'absorber. 2^127-1 = vrai nombre, pas un slug.
+        """
+        cls, rat = _classify_quant_value("127", 127.0,
+                                         "| module p | 2^", " - 1 | premier")
+        assert "slug module" not in rat, (
+            f"nombre premier de Mersenne 2^127-1 ne doit PAS etre absorbe par le "
+            f"guard module-slug (faux 'module' mathematique), rationale={rat!r}"
+        )
+
 
 # --------------------------------------------------------------------------- #
 #  Tests _extract_context
