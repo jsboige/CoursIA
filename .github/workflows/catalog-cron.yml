@@ -28,6 +28,31 @@ name: Catalog Auto-Regen (main, scheduled)
 # git fields from origin/main for entries untouched on the current ref
 # (_load_main_catalog + _merge_curated_fields, the #2433 fix), so running it on
 # main is idempotent: only the time-drifted fields are refreshed.
+#
+# Delivery model: long-lived PR (issue #10136)
+# --------------------------------------------------
+# Why this workflow DOES NOT push directly to main:
+#   The `PR gate` status check on main's branch protection is required for ANY
+#   push to main. A `schedule:` trigger never runs that gate (it only fires on
+#   pull_request), so github-actions[bot] is blocked by GH006 / "Required status
+#   check 'PR gate' is expected" (first observed on catalog-cron run
+#   31293765051, 2026-08-09T04:03Z, after main's protection was tightened).
+#   The same structural barrier also blocks the post-merge delivery proposed
+#   in #10133 (translation-sync.yml on push to main).
+#
+# Instead, this workflow:
+#   (a) checks out the long-lived branch `chore/catalog-refresh-pending`
+#       (created from origin/main the first time, refreshed thereafter);
+#   (b) regenerates + commits the catalog on that branch with `[skip ci]`;
+#   (c) pushes the branch to origin;
+#   (d) opens a PR via github-script if none exists yet, OR updates the
+#       existing PR's body / re-pings a maintainer on subsequent runs.
+# The PR goes through normal checks (PR gate, gitleaks, etc.). When a
+# maintainer merges it, main's catalog is refreshed exactly as before — only
+# the bottleneck changed (a maintained PR replaces a direct bot push).
+#
+# Push failures must be loud: see the hard-fail block at the end of the
+# `commit + push + PR` step (echo ::error + exit 1).
 
 on:
   schedule:
@@ -37,6 +62,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write   # open/update the refresh PR via github-script
 
 concurrency:
   group: catalog-cron-main
@@ -44,15 +70,38 @@ concurrency:
 
 jobs:
   regen:
-    name: Regenerate catalog on main
+    name: Regenerate catalog on long-lived PR
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout main (history only)
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0          # full history so git-derived fields are exact
           persist-credentials: true
+
+      # Prepare the long-lived branch from origin/main. We checkout it directly
+      # when it exists; otherwise we create it from main. This step NEVER
+      # touches main -- it only operates on chore/catalog-refresh-pending.
+      - name: Prepare chore/catalog-refresh-pending branch
+        run: |
+          set -euo pipefail
+          BRANCH="chore/catalog-refresh-pending"
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "Branch $BRANCH already exists on origin; checking it out."
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+            # Rebase on top of origin/main so the regen always starts from
+            # the freshest main (catalog regen is idempotent -- same main
+            # produces the same catalog, so rebase-and-retry is safe).
+            git fetch origin main
+            git rebase origin/main
+          else
+            echo "Branch $BRANCH does not exist on origin yet; creating it from origin/main."
+            git fetch origin main
+            git checkout -b "$BRANCH" origin/main
+          fi
+          echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -81,9 +130,11 @@ jobs:
           # they never drift again (See #7422).
           python scripts/notebook_tools/generate_parcours.py
 
-      - name: Commit + push to main if the catalog drifted
+      - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
+        id: drift
         run: |
           set -euo pipefail
+          BRANCH="chore/catalog-refresh-pending"
           git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md
           # Stage the 5 generated curriculum (parcours) pages if they drifted.
           mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
@@ -98,8 +149,12 @@ jobs:
 
           if git diff --cached --quiet; then
             echo "::notice title=Catalog::main catalog already canonical -- no change."
+            # Stamp "no-op" run so the downstream open/update-PR step can
+            # detect it and skip PR activity.
+            echo "drift_detected=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          echo "drift_detected=true" >> "$GITHUB_OUTPUT"
 
           echo "Drift detected. Files to commit:"
           git diff --cached --name-only
@@ -107,28 +162,89 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit \
-            -m "chore(catalog): scheduled auto-regenerate on main [skip ci]" \
+            -m "chore(catalog): scheduled auto-regenerate [skip ci]" \
             -m "Refresh COURSE_CATALOG.generated.{json,md} + CATALOG-STATUS markers." \
-            -m "Catalog is owned by automation; agents must not regenerate it on feature branches (see .claude/rules/catalog-pr-hygiene.md, #2433)."
+            -m "Catalog is owned by automation; agents must not regenerate it on feature branches (see .claude/rules/catalog-pr-hygiene.md, #2433, #10136)."
 
-          # Sync with remote main before pushing. Without this, when other PRs
-          # land between checkout and push, `git push` is rejected with
-          # "[rejected] HEAD -> main (fetch first)" (incident: 2026-07-02 cron
-          # run 28566453812, catalog stayed stale for 24h+ -> CaseStudies
-          # marker held at pedagogical_count: 4 while disk had 6, See #4910).
-          # `--rebase` rewrites our local catalog commit on top of remote main
-          # (the catalog regen is idempotent and pull-and-retry safe since
-          # #2433); `--autostash` preserves any in-progress local changes if
-          # the rebase touches the same files.
-          git fetch origin main
-          git pull --rebase --autostash origin main
-
-          # Direct push of a generated artifact to main. Requires branch
-          # protection to allow github-actions[bot] (GITHUB_TOKEN) to push to
-          # main, or main to have no PR-required protection for this actor.
-          # A hard failure here is intentional and visible in the Actions tab.
-          if ! git push origin HEAD:main; then
-            echo "::error title=Catalog push rejected::Could not push the regenerated catalog to main. Allow github-actions[bot] to push generated artifacts to main in branch-protection settings, then re-run this workflow."
+          # Push the long-lived branch. Direct push to main would trigger GH006
+          # because the `PR gate` status check is required and a schedule
+          # trigger never runs it (issue #10136, run 31293765051, 2026-08-09T04:03Z).
+          # `[skip ci]` in the commit message also prevents this workflow from
+          # re-firing when the bot pushes the branch.
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::error title=Catalog push rejected::Could not push $BRANCH to origin. Check that github-actions[bot] has push rights on chore/* branches, then re-run this workflow."
             exit 1
           fi
-          echo "::notice title=Catalog::main catalog refreshed and pushed."
+          echo "::notice title=Catalog::$BRANCH pushed; PR open/update follows in next step."
+
+      # Open the refresh PR if it does not exist yet; otherwise, ping a
+      # maintainer comment on the existing PR to signal a new push is ready.
+      # The PR is what carries the catalog onto main -- the bot NEVER pushes
+      # to main itself.
+      - name: Open or update the catalog-refresh PR
+        if: steps.drift.outputs.drift_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = 'chore/catalog-refresh-pending';
+            const prTitle = 'chore(catalog): scheduled auto-regenerate (long-lived PR)';
+            const prBody = [
+              '## Purpose',
+              '',
+              'Long-lived PR refreshed daily by `catalog-cron.yml` (schedule cron 03:37 UTC) to keep',
+              '`COURSE_CATALOG.generated.{json,md}` + `CATALOG-STATUS` markers + the curriculum (`docs/curriculum/*.md`)',
+              'and health dashboard (`docs/archive/reference/HEALTH_DASHBOARD.md`) canonical on `main`.',
+              '',
+              '**Maintainer review only — no direct push to `main`** (issue #10136). The bot opens',
+              'or updates this PR; merging it refreshes `main` through the normal PR gate.',
+              '',
+              '## What to review',
+              '',
+              '- Catalog totals (`notebook_count`, per-family counts) drift only if new notebooks landed on `main` since the last merge.',
+              '- README `<!-- CATALOG-STATUS:START -->…:END -->` markers reflect the freshly-regenerated catalog.',
+              '- Curriculum pages under `docs/curriculum/` and `docs/archive/reference/HEALTH_DASHBOARD.md` stay consistent.',
+              '',
+              '## Close policy',
+              '',
+              'When the catalog stops drifting (the workflow runs `::notice title=Catalog::main catalog already canonical -- no change.`),',
+              'this PR will be auto-closed by `catalog-pr-close.yml` to keep the queue clean. Subsequent',
+              'drift reopens it under the same branch.',
+              '',
+              'See `.claude/rules/catalog-pr-hygiene.md` and #2433, #10136.',
+            ].join('\n');
+
+            // Look for an existing open PR on this branch (HEAD_REF exact).
+            const existing = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', head: `${owner}:${branch}`, per_page: 1,
+            });
+            if (existing.length > 0) {
+              const pr = existing[0];
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: pr.number,
+                body: [
+                  `New commit pushed on \`${branch}\` by catalog-cron (run \`${context.runId}\`).`,
+                  `Last commit SHA: \`${context.sha.slice(0, 12)}\`.`,
+                  'Catalog drift detected; the bot has nothing else to do here. Maintainer: please review + merge when convenient.',
+                ].join('\n'),
+              });
+              core.info(`Updated existing PR #${pr.number} (${pr.html_url})`);
+              return;
+            }
+
+            // Otherwise create the PR targeting main.
+            const created = await github.rest.pulls.create({
+              owner, repo,
+              title: prTitle,
+              head: branch,
+              base: 'main',
+              body: prBody,
+              maintainer_can_modify: true,
+            });
+            await github.rest.issues.addLabels({
+              owner, repo,
+              issue_number: created.data.number,
+              labels: ['catalog-refresh', 'automation'],
+            });
+            core.info(`Opened new PR #${created.data.number} (${created.data.html_url})`);
