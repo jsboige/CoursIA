@@ -245,6 +245,170 @@ def test_short_header_first_hit_wins_per_key():
     assert sh["quoi"] == "first answer (canonical)"
 
 
+# --- short-header section form (#10163) -------------------------------------
+#
+# #10163 extends the trio: key on its own line (optionally with title hashes or
+# `**` wrapper), value in the NEXT paragraph (until blank-line break). The
+# inline form (#9861) must continue to work unchanged -- non-regression.
+
+def test_short_header_section_form_h2():
+    """`## Quoi` then the answer in the next paragraph (#10163 reference form)."""
+    body = (
+        "Grain: MED/guard -- lane myia-po-2024:CoursIA-2 -- prev: MED/guard #10162\n"
+        "\n"
+        "## Quoi\n"
+        "\n"
+        "Extend parse_short_header to recognise the section form (#10163) --\n"
+        "key on its own line, value in the next paragraph.\n"
+        "\n"
+        "## Preuve\n"
+        "\n"
+        "pytest scripts/tests/test_grain_tag.py -v (30/30 PASS expected)\n"
+        "\n"
+        "## Perimetre\n"
+        "\n"
+        "scripts/grain_tag.py + scripts/tests/test_grain_tag.py. Out of scope:\n"
+        "variation-tag-guard.yml (no API change, the guard consumes parse_short_header\n"
+        "identically).\n"
+        "\n"
+        "## Context\n"
+        "..."
+    )
+    sh = gt.parse_short_header(body)
+    assert sh["quoi"].startswith("Extend parse_short_header")
+    assert "next paragraph" in sh["quoi"]
+    assert sh["preuve"].startswith("pytest scripts/tests/test_grain_tag.py")
+    assert "(30/30 PASS expected)" in sh["preuve"]
+    assert sh["perimetre"].startswith("scripts/grain_tag.py +")
+    assert "variation-tag-guard.yml" in sh["perimetre"]
+
+
+def test_short_header_section_form_bold_alone():
+    """`**Quoi**` (bold wrapper, NO colon, NO value on the line) -- section form."""
+    body = (
+        "Grain: MED/guard -- lane myia-po-2024:CoursIA-2\n"
+        "\n"
+        "**Quoi**\n"
+        "\n"
+        "split the parser into two phases (#10163)\n"
+        "\n"
+        "**Preuve** : lake build conway_lean (exit 0)\n"
+        "\n"
+        "**Perimetre** : conway_lean/Conway/Life/HashlifeCorrectness.lean\n"
+    )
+    sh = gt.parse_short_header(body)
+    # Section form (Quoi): value is the next paragraph.
+    assert sh["quoi"] == "split the parser into two phases (#10163)"
+    # Inline form (Preuve/Perimetre) coexists -- non-regression check.
+    assert sh["preuve"] == "lake build conway_lean (exit 0)"
+    assert sh["perimetre"] == "conway_lean/Conway/Life/HashlifeCorrectness.lean"
+
+
+def test_short_header_section_form_h3():
+    """`### Quoi` -- three hashes, same mechanism as `## Quoi`."""
+    body = (
+        "Grain: LIGHT/guard -- lane myia-po-2024:CoursIA-2\n"
+        "\n"
+        "### Quoi\n"
+        "\n"
+        "doc-resync for #9756 (h3 form, same as h2)\n"
+    )
+    sh = gt.parse_short_header(body)
+    assert sh["quoi"] == "doc-resync for #9756 (h3 form, same as h2)"
+    assert sh["preuve"] is None
+    assert sh["perimetre"] is None
+
+
+def test_short_header_section_form_paragraph_boundary():
+    """Section form: value spans MULTIPLE lines, joined into one capture."""
+    body = (
+        "## Quoi\n"
+        "\n"
+        "First line of the answer.\n"
+        "Second line, same paragraph (no blank between).\n"
+        "Third line, still the same paragraph.\n"
+        "\n"
+        "## Preuve\n"
+        "\n"
+        "single-line preuve\n"
+    )
+    sh = gt.parse_short_header(body)
+    assert sh["quoi"] == "First line of the answer. Second line, same paragraph (no blank between). Third line, still the same paragraph."
+    assert sh["preuve"] == "single-line preuve"
+    assert sh["perimetre"] is None
+
+
+def test_short_header_inline_form_no_regression():
+    """The reference body from #9861 -- inline form, still captured (non-regression)."""
+    body = (
+        "Quoi: fix the parser\n"
+        "Preuve: pytest -v\n"
+        "Perimetre: scripts/x.py\n"
+    )
+    sh = gt.parse_short_header(body)
+    assert sh["quoi"] == "fix the parser"
+    assert sh["preuve"] == "pytest -v"
+    assert sh["perimetre"] == "scripts/x.py"
+
+
+def test_short_header_mid_paragraph_silence():
+    """A key mid-paragraph (after commentary) is NOT captured -- the anchor
+    is at the START of the line, and section form keys must lead their
+    paragraph too. This is the test that proves we didn't widen too much."""
+    body = (
+        "## Context\n"
+        "\n"
+        "We discuss the trio convention here. Note that Quoi: the convention\n"
+        "is anchored at start of line, NOT inside running prose -- this body\n"
+        "has no canonical answer, only commentary.\n"
+        "\n"
+        "## Preuve\n"
+        "\n"
+        "actual proof line\n"
+    )
+    sh = gt.parse_short_header(body)
+    # The first paragraph starts with "We discuss..." -- not a key line.
+    # The mid-paragraph "Quoi: the convention" must NOT be captured.
+    assert sh["quoi"] is None
+    assert sh["preuve"] == "actual proof line"
+
+
+def test_short_header_section_form_mixed_inline_and_section():
+    """A body mixing the two forms: Quoi inline, Preuve/Perimetre section."""
+    body = (
+        "Grain: MED/guard -- lane myia-po-2024:CoursIA-2\n"
+        "\n"
+        "Quoi: fix the parser\n"
+        "\n"
+        "## Preuve\n"
+        "\n"
+        "pytest scripts/tests/test_grain_tag.py -v\n"
+        "\n"
+        "## Perimetre\n"
+        "\n"
+        "scripts/grain_tag.py only\n"
+    )
+    sh = gt.parse_short_header(body)
+    assert sh["quoi"] == "fix the parser"
+    assert sh["preuve"] == "pytest scripts/tests/test_grain_tag.py -v"
+    assert sh["perimetre"] == "scripts/grain_tag.py only"
+
+
+def test_short_header_section_form_first_paragraph_no_value():
+    """Section form: key leads, but next paragraph is empty -> still None."""
+    body = (
+        "## Quoi\n"
+        "\n"
+        "## Preuve\n"
+        "\n"
+        "actual proof\n"
+    )
+    sh = gt.parse_short_header(body)
+    # Quoi: key alone, no following non-empty paragraph -> None.
+    assert sh["quoi"] is None
+    assert sh["preuve"] == "actual proof"
+
+
 # --- prev: close-keyword detection (#10093) ---------------------------------
 #
 # find_prev_close_keywords() scans any text (body OR commit message) for a
