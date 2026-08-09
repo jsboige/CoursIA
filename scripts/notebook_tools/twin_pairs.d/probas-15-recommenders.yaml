@@ -17,3 +17,4 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - 'Re-baseline 2026-08-09 (myia-po-2025:CoursIA-2, #10170) : SHA C# avance c841d0e3 -> 32356c6e (insertion d''une ligne vide avant un tableau markdown GFM -- fix MD028 blanks-around-tables, le tableau collait au paragraphe precedent). Markdown-only typographique (structure de tableau), ne touche pas l''axe de parite semantic (Infer.NET EP + concepts de recommandation inchanges). Drift verifie parite-preserving.'
