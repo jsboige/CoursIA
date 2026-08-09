@@ -62,6 +62,10 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [archive/reference/notebook-counts-reconciliation.md](archive/reference/notebook-counts-reconciliation.md) | **Archivé 2026-08-08** (était [reference/](reference/)) : réconciliation forensic des 4 sources de comptage notebooks (disque 946 / forensic 944 / catalogue 830 / STABLE_SNAPSHOT 934) — écart catalogue-disque = 116 = 84 drift + 30 exclusions par design, filtre `scripts/audit/check_denominators.py`. SHA daté 2026-07-23. **Record historique** — superseded pour usage live par [`reference/notebook-counters.md`](reference/notebook-counters.md) (#9857). 174 lignes. Linked #8050 |
 | [reference/stale-tree-drift-scan.md](reference/stale-tree-drift-scan.md) | Scan de drift sur worktree frais (anti-phantom) |
 | [reference/orphan-branch-scan-l576.md](reference/orphan-branch-scan-l576.md) | Scan de branche orpheline (L576 ★★) — compound gate 3 ancres (`merge-base` + REST `commits/<sha>/pulls` + `gh pr list --search head:<branch>`) anti-FPOS du REST, decision matrix 5 lignes. Détail de référence pour la section « Orphan-branch scan » de `.claude/rules/git-workflow.md`. 105 lignes. Origine : investigation 5 branches `jsboige/*` attachées à #7086-#7091 (c.576) |
+| [reference/probas-history.md](reference/probas-history.md) | Référence pérenne du portage Infer.NET → Python (`Probas/`) — périmètre intentionnel (combien de notebooks, quelle bibliothèque pour quel concept) + recommandation PyMC/NumPyro/pgmpy/hmmlearn/Pyro. Source canonique issue #297. Le mapping d'API ligne-à-ligne y est explicitement marqué *périssable* (poison si non re-testé). 117 lignes |
+| [reference/quant-prose-census.md](reference/quant-prose-census.md) | Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules markdown des notebooks, classées selon la ligne de partage codifiée par #9434 (acceptance item 4, #9958). Outil `scripts/notebook_tools/scan_quant_classify.py`. 212 lignes |
+| [reference/repo-size-policy.md](reference/repo-size-policy.md) | Politique de taille du dépôt (~1,2 GiB) — pourquoi ce poids est le prix d'une décision délibérée (sorties notebooks committées C.2/H.1), ce qui est acquis (ne sera pas réécrit), ce qui est surveillé. Mesure, pas impression. 177 lignes |
+| [reference/verification-verte-systeme-casse.md](reference/verification-verte-systeme-casse.md) | « Quand la vérification est verte et le système est cassé » — étude de cas 8 incidents datés, un seul motif (un agent déclare un état système sur la foi d'une vérification qui passait alors que cet état était faux). Détail de référence pour la règle G.9 (culture du doute). 170 lignes |
 
 ## GenAI (docs/genai/)
 
@@ -87,7 +91,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 
 ## Lean (docs/lean/)
 
-Iteration history prover, intractable diagnosis, LLM endpoints.
+Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-répertoire :** [lean/README.md](lean/README.md) — point d'entrée de référence regroupant les sous-docs ci-dessous (coordinator-workflow, llm-endpoints, prover history, SOTA 2026, AB, i18n). Établi par po-2024 (#10132).
 
 | Fichier | Description |
 |---------|-------------|
