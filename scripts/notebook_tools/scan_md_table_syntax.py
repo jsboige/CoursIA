@@ -99,7 +99,15 @@ HEADING_RE = re.compile(r'^\s{0,3}#{1,6}\s')
 #      is non-actionable noise; current GitHub renders ``$|x|$`` correctly in
 #      tables. Excluded by deliberate conservative choice.
 CODE_SPAN_RE = re.compile(r'(`+)[^`]*\1')
-MATH_SPAN_RE = re.compile(r'\$[^$\n]*\$')
+# KaTeX-faithful inline-math span. The bare ``\$[^$\n]*\$`` treated two
+# currency amounts in a cost table (``$15.00 | ~$0.75``) as ONE math span,
+# swallowing the cell-delimiter pipe and false-positive-ing COL_MISMATCH on
+# every price column fleet-wide. The real delimiter rule (KaTeX / GFM math):
+# the opening ``$`` is NOT preceded by an alnum, and the closing ``$`` is NOT
+# followed by an alnum. ``$0.75`` has the ``$`` followed by ``0`` so it cannot
+# close a span, while ``$|x|$`` and ``$P(z_t|z_{t-1})$`` keep clean boundaries
+# and stay protected. See #10097 (currency-price COL_MISMATCH FP class).
+MATH_SPAN_RE = re.compile(r'(?<![A-Za-z0-9])\$[^$\n]*\$(?![A-Za-z0-9])')
 ESCAPED_PIPE_RE = re.compile(r'\\\|')
 
 # Conditional-probability / function-call notation: ``P(x|y)``, ``O(|A|*|S|)``,
