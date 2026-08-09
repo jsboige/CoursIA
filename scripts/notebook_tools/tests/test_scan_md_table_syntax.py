@@ -112,6 +112,26 @@ class TestHasDelimiterPipe:
         # block rule handles it, not this guard).
         assert _has_delimiter_pipe("text a | text b") is True
 
+    def test_list_item_abs_value_pipe_excluded(self):
+        # A list item whose content holds a bare abs-value math pipe is NOT a
+        # table row (GFM parses list items before tables). ``- |r| > 0.7`` is the
+        # 7_Code_Interpreter Pearson-correlation FP that drove the c.198 #10221
+        # retraction; ``|Z|`` / ``|z-score|`` are the QC-pairs-trading FPs flagged
+        # independently by po-2024 c.72 (#10224). Three lanes hit this class.
+        assert _has_delimiter_pipe("- |r| > 0.7 : Forte correlation") is False
+        assert _has_delimiter_pipe("- **Entree**: |Z| > 2 + prediction ML") is False
+        assert _has_delimiter_pipe("- Sortie quand |z-score| < 0.5") is False
+        # Indented sub-list item + ordered-list marker are also list items.
+        assert _has_delimiter_pipe("  - |r| < 0.3 : Faible") is False
+        assert _has_delimiter_pipe("1. |z-score| < 2 : regime normal") is False
+
+    def test_real_table_with_abs_value_cell_still_detected(self):
+        # FALSIFIABILITY: a real table row whose cell legitimately contains an
+        # abs-value (bordered with outer cell pipes) is still a table row -- the
+        # list-marker guard only excludes lines that START with a marker.
+        assert _has_delimiter_pipe("| |r| | description |") is True
+        assert _has_delimiter_pipe("| seuil | |Z| | note |") is True
+
 
 class TestMathPipeBlockExclusion:
     def test_consecutive_conditional_probs_not_a_table(self):
@@ -137,6 +157,38 @@ class TestMathPipeBlockExclusion:
         f = detect_md_table_syntax(lines)
         # The table is clean (blank before, has sep); no finding expected.
         assert [x for x in f if x["pathology"] == "NO_BLANK_BEFORE"] == []
+
+    def test_list_item_abs_value_block_not_a_table(self):
+        # Three consecutive list items holding bare ``|r|`` abs-value pipes must
+        # NOT be grouped as a 3-row table block (was the NO_SEP false positive on
+        # 7_Code_Interpreter cell 36, the root cause of the c.198 #10221
+        # retraction). The escape ``\|r\|`` was a visual no-op (renders identical
+        # to ``|r|``) -- the real fix lives here, in the detector.
+        lines = [
+            "**Interpretation** :",
+            "  - |r| > 0.7 : Forte correlation",
+            "  - 0.3 < |r| < 0.7 : Correlation moderee",
+            "  - |r| < 0.3 : Faible correlation",
+        ]
+        assert detect_md_table_syntax(lines) == []
+
+    def test_real_table_following_list_items_still_detected(self):
+        # FALSIFIABILITY: a genuine table (header + separator + data) that sits
+        # after list items must still be detected -- the list-marker guard only
+        # drops list-item lines from block membership, it does not blind the
+        # detector to a real bordered table below them.
+        lines = [
+            "- intro bullet one",
+            "- intro bullet two",
+            "",
+            "| a | b |",
+            "|---|---|",
+            "| 1 | 2 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        # The real table is clean (blank before it); no defect on its account,
+        # and crucially the two intro list items are not flagged either.
+        assert [x for x in f if x["pathology"] == "NO_SEP"] == []
 
 
 # ---------------------------------------------------------------------------
