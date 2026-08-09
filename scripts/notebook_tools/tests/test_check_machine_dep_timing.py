@@ -23,9 +23,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from check_machine_dep_timing import (  # noqa: E402
     _categorize,
     _scan_notebook,
+    _is_range_bound,
     CATEGORY_WALLCLOCK,
     CATEGORY_DISTRIBUTION,
     CATEGORY_AMBIGUOUS,
+    CATEGORY_DOMAIN_QUANTITY,
     STUDENT_PACING_RE,
     WALLCLOCK_KEYWORDS,
     DISTRIBUTION_KEYWORDS,
@@ -245,6 +247,210 @@ def test_student_pacing_regex_matches_duree() -> None:
     # Negatifs -- des mentions incidentes ne declenchent PAS l'exemption.
     assert not STUDENT_PACING_RE.search("La duree d'execution est 2.4 s")
     assert not STUDENT_PACING_RE.search("compute takes 5 sec")
+
+
+# --------------------------------------------------------------------------- #
+#  Extensions #10162 (c.1331+59) : parenhese + cellule de tableau + fourchette
+# --------------------------------------------------------------------------- #
+def test_student_pacing_regex_matches_paren() -> None:
+    """CHANGES_REQUESTED #10162 : parenhese '(15 min)' en fin de titre de section.
+
+    Rationnel : dans l'inventaire 978 findings wallclock, 533 etaient du pacing
+    pedagogique cache dans des formes indirectes : '(15 min)' en fin de titre
+    H1/H2/H3 ou '(1-2 min)' pour une fourchette. La regex doit maintenant
+    matcher ces formes pour les exonerer.
+    """
+    assert STUDENT_PACING_RE.search("## Introduction aux Futures (15 min)")
+    assert STUDENT_PACING_RE.search("### Bayes naif (1-2 min)")
+    assert STUDENT_PACING_RE.search("Titre de section (30 sec)")
+    # Negatif : parenthese non-pacing
+    assert not STUDENT_PACING_RE.search("Voir annexe (page 12)")
+
+
+def test_student_pacing_regex_matches_table_cell() -> None:
+    """CHANGES_REQUESTED #10162 : cellule de tableau '| 15 min |' (sommaire).
+
+    Rationnel : les sommaires de series utilisent typiquement un tableau
+    markdown pour aligner 'Section | Duree' -- la cellule de droite est du
+    pacing, pas une duree machine.
+    """
+    assert STUDENT_PACING_RE.search("| **1** | Introduction | 15 min |")
+    assert STUDENT_PACING_RE.search("| Section | 1-2 min |")
+    assert STUDENT_PACING_RE.search("| titre | 30 sec | notes |")
+    # Negatif : pipe sans chiffre ou sans unite de duree
+    assert not STUDENT_PACING_RE.search("| col1 | col2 |")
+
+
+def test_silence_on_pacing_paren_title() -> None:
+    """Le scan doit silencieux sur '## Titre (15 min)' -- c'est du pacing.
+
+    Extrait reel observe dans l'inventaire : QC-Py-07-Futures-Forex 24/24
+    findings en cell[0] sommaire de la forme '| **1** | Introduction ... |'.
+    """
+    nb = _make_nb([
+        _md_cell("# Module Futures (15 min)"),
+        _md_cell("## Sous-section (1-2 min)"),
+    ])
+    try:
+        assert _scan_notebook(nb) == []
+    finally:
+        nb.unlink()
+
+
+def test_silence_on_pacing_table_cell() -> None:
+    """Le scan doit silencieux sur les cellules de tableau de sommaire.
+
+    Extrait reel observe dans l'inventaire : 533/978 findings du sommaire
+    de QC-Py-07-Futures-Forex cell[0] de la forme :
+        | **1** | Introduction aux Futures | (15 min) |
+        | **2** | Donnees de marche | (30 min) |
+    Ces durees sont du pacing pedagogique, pas des wallclock.
+    """
+    nb = _make_nb([
+        _md_cell(
+            "| **#** | Section | Duree |\n"
+            "| --- | --- | --- |\n"
+            "| **1** | Introduction aux Futures | (15 min) |\n"
+            "| **2** | Donnees de marche | (30 min) |\n"
+            "| **3** | Strategie de base | (1-2 min) |"
+        ),
+    ])
+    try:
+        assert _scan_notebook(nb) == []
+    finally:
+        nb.unlink()
+
+
+def test_silence_on_range_bound_estimate() -> None:
+    """CHANGES_REQUESTED #10162 : fourchette/borne = soft signal.
+
+    Rationnel : '1-2 min', '< 30 sec', '5+ min' sont des FOURCHETTES ou
+    des BORNES -- comme `~`, ce sont des estimations d'ordre de grandeur,
+    conformes au mandat #9434. Le scan NE doit PAS les signaler.
+    """
+    nb = _make_nb([
+        _md_cell("Le solveur prend 1-2 min par iteration."),
+        _md_cell("Reponse rapide : < 30 sec."),
+        _md_cell("Cas lourd : 5+ min."),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        assert findings == [], f"Attendu 0 finding, trouve {findings}"
+    finally:
+        nb.unlink()
+
+
+def test_is_range_bound_helper() -> None:
+    """Le helper _is_range_bound detecte fourchette/borne autour du match."""
+    # Fourchette : '...1-2 min...' -> match '2 min', prefix '1-'.
+    line = "Le solveur prend 1-2 min par iteration."
+    pos = line.index("2 min")
+    assert _is_range_bound(line, pos, pos + len("2 min"))
+    # Borne superieure : '< 30 sec'.
+    line = "Reponse : < 30 sec."
+    pos = line.index("30 sec")
+    assert _is_range_bound(line, pos, pos + len("30 sec"))
+    # Negatif : '4.5 sec' isole (pas de fourchette ni de borne).
+    line = "Elapsed time : 4.5 sec."
+    pos = line.index("4.5 sec")
+    assert not _is_range_bound(line, pos, pos + len("4.5 sec"))
+
+
+def test_domain_quantity_propagation_in_cell() -> None:
+    """CHANGES_REQUESTED #10162 : FP-2 propagation per-cell domain_quantity.
+
+    Rationnel : quand une cellule porte >=1 finding distribution_param, les
+    autres findings wallclock de la MEME cellule basculent en domain_quantity
+    -- l'unite de temps est le sujet du modele, pas une mesure d'execution.
+
+    Extrait reel (paraphrase du cas fondateur Infer-2-Gaussian-Mixtures) :
+    une cellule de plusieurs lignes ou la premiere ligne declare les
+    parametres de la distribution (distribution_param), et une autre ligne
+    utilise ces parametres comme variable modelisee -- ex '15 min de moins
+    que la moyenne'. Les '15 min' de la 2eme ligne sont la variable
+    modelisee (domain_quantity), pas une mesure wallclock.
+    """
+    nb = _make_nb([
+        _md_cell(
+            "Le modele suit une Gaussian de moyenne 15.33 min et sigma 1.32 min.\n"
+            "\n"
+            "La duree typique observee est de l'ordre de 15 minutes par trajet.\n"
+            "La proportion de trajets de moins de 15 min est la metrique cle."
+        ),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        assert len(findings) >= 2, f"Attendu >=2 findings, trouve {findings}"
+        # Au moins un finding est distribution_param (le '15.33 min' / '1.32 min').
+        has_distribution = any(
+            f["category"] == CATEGORY_DISTRIBUTION for f in findings
+        )
+        assert has_distribution, f"Attendu >=1 distribution_param, categories={findings}"
+        # Au moins un finding wallclock avant propagation (les '15 minutes' /
+        # '15 min' des autres lignes).
+        has_wallclock_before = any(
+            f["category"] == CATEGORY_WALLCLOCK for f in findings
+        )
+        # Si la propagation per-cell s'applique, ces wallclock basculent en
+        # domain_quantity. NB: si la ligne 2 a un mot-cle distribution
+        # ('moyenne', 'distribution'), elle aussi serait distribution_param.
+        # On choisit deliberement une ligne sans mot-cle distribution.
+        assert has_wallclock_before or any(
+            f["category"] == CATEGORY_DOMAIN_QUANTITY for f in findings
+        ), (
+            f"Attendu au moins un wallclock (avant/apres propagation) ou "
+            f"un domain_quantity, categories={[f['category'] for f in findings]}"
+        )
+        # La propagation per-cell doit avoir bascule les wallclock en
+        # domain_quantity.
+        has_domain = any(
+            f["category"] == CATEGORY_DOMAIN_QUANTITY for f in findings
+        )
+        assert has_domain, (
+            f"Attendu >=1 domain_quantity (FP-2 propagation), "
+            f"categories={[f['category'] for f in findings]}"
+        )
+        # Et AUCUN finding de cette cellule ne reste wallclock.
+        wallclock_in_cell = [
+            f for f in findings if f["category"] == CATEGORY_WALLCLOCK
+        ]
+        assert wallclock_in_cell == [], (
+            f"Aucun wallclock attendu apres propagation, "
+            f"mais trouve {wallclock_in_cell}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_sudoku13_positive_control_preserved() -> None:
+    """Le controle positif Sudoku-13 reste detecte apres le fix.
+
+    Rationnel : le detecteur est sense signaler les wallclock STRICTS. Meme
+    apres l'extension STUDENT_PACING_RE (qui risque de tilter sur les
+    titres) et le range-bound exemption (qui risque de tilter sur les
+    fourchettes), un vrai wallclock strict reste detecte.
+
+    Extrait reel (paraphrase du cas fondateur #10158) : un notebook
+    d'optimisation Sudoku rapporte 'duree d'execution : 2.4 s pour 1000
+    iterations' -- c'est le controle positif canonique.
+    """
+    nb = _make_nb([
+        _md_cell("# Sudoku-13 -- benchmark solveur DLX"),
+        _md_cell(
+            "La duree d'execution est 2.4 s pour 1000 iterations. "
+            "Le solveur a converge en 1.8 sec sur la grille 13x13."
+        ),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        # Au moins un finding wallclock strict (le '2.4 s' et '1.8 sec').
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        assert wallclock, (
+            f"Controle positif perdu : aucun wallclock trouve, "
+            f"categories={[f['category'] for f in findings]}"
+        )
+    finally:
+        nb.unlink()
 
 
 # --------------------------------------------------------------------------- #
