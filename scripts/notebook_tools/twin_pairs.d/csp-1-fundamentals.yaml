@@ -14,6 +14,12 @@
       csharp_sha: affc4fa92d76e6cb9dbe157d41f967a20c43ad94
       content_python_sha: 0148af8590584a1234e23b1d9599151ffa6e7bf36c3d71fdfc5c6604cd07644a
       content_csharp_sha: fa531f46e6aa9dc764062c9927a5417a8f9560182c7c66597c031e1de036e017
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 7013d56a565f9243bbf1b7d7e49529c4048bba24
+      csharp_sha: d6cd5b2719c40d6aa8670f4212102afae346fdee
+      content_python_sha: 0148af8590584a1234e23b1d9599151ffa6e7bf36c3d71fdfc5c6604cd07644a
+      content_csharp_sha: 24c3e489cf23df1e832b35c9a1e25d1b531ac6ba588421e3e467d70882208b36
   known_differences:
     - "Socle pedagogique commun (parity semantic) : les deux cotes implementent une classe CSP generique + backtracking simple + heuristique MRV + value-ordering LCV, depuis zero (pas de lib externe pour le coeur). Cote Python : classe CSP dict/list pure Python. Cote C# : classe CSP generique C# (Dictionary/List) qui reflete la Python."
     - "Extension solveur ASYMETRIQUE : le cote C# ajoute Choco-solver 4.10.17 (Java solver via IKVM 8.15.0, recette #4711) avec des cellules (coloration Australie par Choco, enumeration de TOUTES les solutions, 8-Reines par Choco) qui n'ont PAS d'equivalent direct cote Python. Le cote Python reste pur from-scratch sur tout le notebook."
