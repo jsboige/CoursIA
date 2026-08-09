@@ -32,11 +32,17 @@ What it checks
 --------------
 1. ``.pre-commit-config.yaml`` exists and parses as YAML.
 2. ``pre-commit`` binary is on PATH.
-3. ``gitleaks`` binary is on PATH (since the config declares v8.21.2).
+3. *(removed -- see "Gate 3" note in ``_run_checks``: gitleaks lives in
+   pre-commit's own cache and never has to be on the system PATH.)*
 4. ``.git/hooks/pre-commit`` is installed (produced by ``pre-commit install``).
 5. The id of each hook declared in the config matches an id the framework
    will execute (best-effort: relies on ``pre-commit validate-config``).
-6. **NEW**: each local hook's ``entry`` script exists on disk (PyYAML pair).
+6. each local hook's ``entry`` script exists on disk (PyYAML pair).
+7. **NEW** (#10139): the gitleaks version pinned by the hook's ``rev`` equals
+   the one pinned by ``GITLEAKS_VERSION`` in ``secret-scan.yml``. Measured
+   need: on identical content, 8.21.2 reported 0 findings where 8.24.3
+   reported 2, so a hook pinned to 8.21.2 could not reproduce -- nor warn
+   about -- what CI rejected.
 
 Why advisory only
 -----------------
@@ -68,6 +74,7 @@ except ImportError:
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = REPO_ROOT / ".pre-commit-config.yaml"
 HOOK_PATH = REPO_ROOT / ".git" / "hooks" / "pre-commit"
+SECRET_SCAN_PATH = REPO_ROOT / ".github" / "workflows" / "secret-scan.yml"
 
 
 def _declared_hook_ids() -> list[str]:
@@ -187,6 +194,52 @@ def _entry_script(entry: str) -> str | None:
     return next((p for p in parts if p.endswith(".py")), None)
 
 
+def _hook_gitleaks_version() -> str | None:
+    """Version pinned by the gitleaks hook's ``rev``, ``v`` prefix stripped.
+
+    Returns ``None`` when no gitleaks repo is declared at all.
+    """
+    if yaml is None:
+        raise RuntimeError("PyYAML not installed; install with `pip install pyyaml`")
+    data = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{CONFIG_PATH}: top-level must be a mapping")
+    for repo in data.get("repos", []) or []:
+        if not isinstance(repo, dict):
+            continue
+        url = str(repo.get("repo", ""))
+        if "gitleaks" in url and repo.get("rev"):
+            return str(repo["rev"]).lstrip("v")
+    return None
+
+
+def _ci_gitleaks_version() -> str | None:
+    """Version pinned by ``GITLEAKS_VERSION`` in the Secret Scan workflow.
+
+    Returns ``None`` when the workflow exists but pins nothing -- which is a
+    real finding, not an absence of information: unset, the action falls back
+    to a version hard-coded in its own source, i.e. an implicit pin owned by a
+    third party that any ``@v2`` release can revise without a commit here.
+    """
+    if yaml is None:
+        raise RuntimeError("PyYAML not installed; install with `pip install pyyaml`")
+    if not SECRET_SCAN_PATH.exists():
+        raise FileNotFoundError(f"{SECRET_SCAN_PATH} missing")
+    data = yaml.safe_load(SECRET_SCAN_PATH.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{SECRET_SCAN_PATH}: top-level must be a mapping")
+    for job in (data.get("jobs") or {}).values():
+        if not isinstance(job, dict):
+            continue
+        for step in job.get("steps", []) or []:
+            if not isinstance(step, dict):
+                continue
+            env = step.get("env")
+            if isinstance(env, dict) and env.get("GITLEAKS_VERSION"):
+                return str(env["GITLEAKS_VERSION"]).lstrip("v")
+    return None
+
+
 def _run_checks() -> list[tuple[str, str, str]]:
     """Return list of (gate, status, detail). status in {"OK", "KO", "ERR"}."""
     out: list[tuple[str, str, str]] = []
@@ -269,6 +322,42 @@ def _run_checks() -> list[tuple[str, str, str]]:
             out.append(("local hook entry scripts", "OK", f"{len(local)} local hooks wired"))
     except (ValueError, RuntimeError) as e:
         out.append(("local hook entry scripts", "ERR", str(e)))
+
+    # Gate 7: gitleaks version parity between the hook and CI (#10139).
+    #
+    # Unlike every gate above, this one does not depend on the worker's machine
+    # state -- it compares two files in the repo, so it reads the same on every
+    # checkout. It is here for discoverability (a worker running this script
+    # sees it), but the ENFORCING copy is the unit test in
+    # scripts/tests/test_check_hooks_parity.py, which runs on PRs. This script
+    # stays advisory by design (see "Why advisory only" above) and a divergence
+    # must fail something blocking.
+    #
+    # Why it matters concretely: on the files that blocked 5 PRs, gitleaks
+    # 8.21.2 reported 0 findings and 8.24.3 reported 2. While the hook pinned
+    # 8.21.2 and CI resolved 8.24.3, a clean `git commit` was rejected in CI
+    # with nothing in the repo to explain it.
+    try:
+        hook_v = _hook_gitleaks_version()
+        ci_v = _ci_gitleaks_version()
+        if hook_v is None:
+            out.append(("gitleaks version parity", "KO", "no gitleaks repo in pre-commit config"))
+        elif ci_v is None:
+            out.append((
+                "gitleaks version parity", "KO",
+                f"hook pins {hook_v} but {SECRET_SCAN_PATH.name} sets no GITLEAKS_VERSION "
+                "(CI would use the action's own hard-coded default)",
+            ))
+        elif hook_v != ci_v:
+            out.append((
+                "gitleaks version parity", "KO",
+                f"hook rev v{hook_v} != CI GITLEAKS_VERSION {ci_v} -- "
+                "a green pre-commit does not predict CI",
+            ))
+        else:
+            out.append(("gitleaks version parity", "OK", f"hook and CI both pin {hook_v}"))
+    except (FileNotFoundError, ValueError, RuntimeError) as e:
+        out.append(("gitleaks version parity", "ERR", str(e)))
 
     return out
 

@@ -6,13 +6,21 @@
 
 repos:
   # gitleaks: scans STAGED content before it enters history. Uses the hook's
-  # canonical v8.21.2 entry (`gitleaks protect --verbose --redact --staged`,
-  # pass_filenames: false) -- do NOT override `args` with the old `detect
-  # --no-git` form: that appends to the canonical entry and gitleaks rejects
-  # the combined flags (#9888). `protect` scans uncommitted changes (fast,
-  # correct for pre-commit); `detect` would scan full git history (slow).
+  # canonical upstream entry -- since v8.22 that is
+  # `gitleaks git --pre-commit --redact --staged --verbose` (it was
+  # `gitleaks protect ...` at v8.21.2; `protect` still resolves but is no longer
+  # listed as a command). Do NOT override `args` with the old `detect --no-git`
+  # form: that appends to the canonical entry and gitleaks rejects the combined
+  # flags (#9888). `git --staged` scans uncommitted changes (fast, correct for
+  # pre-commit); `detect` would scan full git history (slow).
+  #
+  # `rev` MUST match GITLEAKS_VERSION in .github/workflows/secret-scan.yml --
+  # gated by scripts/check_hooks_parity.py, do not bump one alone. The versions
+  # disagree on real content: on the files that blocked 5 PRs, 8.21.2 reported 0
+  # findings and 8.24.3 reported 2, so pinning 8.21.2 here while CI ran 8.24.3
+  # meant a green pre-commit did not predict CI. See #10139.
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.21.2
+    rev: v8.24.3
     hooks:
       - id: gitleaks
         name: Secret scanner (gitleaks)
