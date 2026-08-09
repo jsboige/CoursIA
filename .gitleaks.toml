@@ -50,13 +50,20 @@ regexes = [
     # Positive control (#10143): a real sk-or-v1-<lowercase-hex> key in the same file
     # is STILL flagged (uppercase-only class cannot match hex) — detector stays armed.
     '''sk-or-v1-[A-Z][A-Z_]+''',
-    # NOTE: the standard JWT header `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9` is a non-secret
-    # protocol constant, but it CANNOT be allowlisted: it is a prefix of EVERY real JWT,
-    # and gitleaks allowlist matching is substring-based, so suppressing it disarms the
-    # jwt detector entirely (verified — a full jwt header.payload.signature vanished from
-    # the scan when this was listed). The 2 bare-header FP findings in Roo-Code docs
-    # (exemple-api.md, guide-agent.md) are left visible by design: keeping the jwt
-    # detector armed is worth 2 pedagogical-doc FPs. See #10143.
+    # --- Truncated-example JWT (Roo-Code docs, #10143 residual) ---
+    # The BARE header `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9` still CANNOT be allowlisted
+    # (it is a prefix of every real JWT; gitleaks allowlist matching is substring-based,
+    # so the bare header disarms the jwt detector — verified, #10201). BUT the 2 FP findings
+    # in Roo-Code docs (exemple-api.md L38, guide-agent.md L124) are TRUNCATED pedagogical
+    # examples: the literal string is the header followed by an ellipsis `...` (no payload,
+    # no signature) — e.g. `"token": "eyJ...XVCJ9..."`. A real JWT is `header.payload.signature`
+    # (single dots, base64 segments), NEVER header+`...`. Anchoring the allowlist regex on
+    # the trailing literal `\.\.\.` therefore matches ONLY the truncated teaching example,
+    # never a real JWT. Positive control (gitleaks 8.24.3, this PR): a synthetic file with a
+    # real full JWT (header.eyJzdWIi…payload.signature) + the truncated example side by side
+    # → the real JWT stays FLAGGED, the truncated example is SUPPRESSED. Detector armed.
+    # Covers 2 findings (×7 under translation-sync #10133 if these docs are translated).
+    '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.''',
 ]
 
 # Teaching placeholders and model identifiers that `generic-api-key` reads as
