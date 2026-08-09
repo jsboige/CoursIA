@@ -553,20 +553,27 @@ def _is_notebook_cross_reference(value: float, text: str) -> bool:
     l'IDENTIFIANT du notebook pointe (dans le texte du lien ou dans le nom du
     fichier .ipynb), pas un resultat de calcul.
 
-    SAFE par construction (0 sur-filtrage) : on ne filtre la decimale N.M que si
-    **toutes** ses occurrences dans la cellule tombent a l'interieur d'un span de
-    lien markdown ``[...](...ipynb)``. Ainsi, si la meme cellule contient aussi
-    N.M comme vraie mesure en prose (hors-lien), au moins une occurrence est
-    hors-lien -> on ne filtre pas (l'orphelin legitime survive). Les indices de
-    notebook etant toujours decimaux (2.8, 1.3), un entier n'est jamais filtre.
+    SAFE par construction (0 sur-filtrage) : on ne filtre la valeur (decimale N.M
+    OU entier) que si **toutes** ses occurrences dans la cellule tombent a
+    l'interieur d'un span de lien markdown ``[...](...ipynb)``. Ainsi, si la meme
+    cellule contient aussi la valeur comme vraie mesure en prose (hors-lien), au
+    moins une occurrence est hors-lien -> on ne filtre pas (l'orphelin legitime
+    survive).
+
+    Entiers ET decimaux : certaines series nomment leurs notebooks par un INDICE
+    DECIMAL (ML/DataScience : 2.8, 1.3), d'autres par un INDICE ENTIER (GameTheory,
+    SymbolicAI : « [GameTheory-7](GameTheory-7-ExtensiveForm.ipynb) »,
+    « [<< 12-Reputation](12-ReputationGames.ipynb) »). L'exclusion prematuree des
+    entiers (historique : « un indice est toujours decimal ») a ete refutee par le
+    forensic po-2023 c.188 sur SymbolicAI (375/2458 = 15%) et GameTheory (34%) --
+    la majorite des FPs nav-link sont des entiers. L'identite SAFE (toutes les
+    occurrences dans un span lien) couvre les deux formes.
 
     On ne s'appuie PAS sur le pattern keyword « section N.M » (plus ambigu, defer).
 
     Falsifiable both-directions : un nombre qui n'apparait dans AUCUN lien
     markdown .ipynb, ou dont une occurrence est hors-lien, n'est PAS filtre.
     """
-    if value == int(value):
-        return False  # un indice de notebook est decimal (2.8), jamais entier
     token = f"{value:g}"
     token_re = re.compile(r"(?<![\d.])" + re.escape(token) + r"(?![\d.])")
     link_spans = [(m.start(), m.end()) for m in _MARKDOWN_IPYNB_LINK_RE.finditer(text)]

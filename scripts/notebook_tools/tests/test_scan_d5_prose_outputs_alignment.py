@@ -1066,12 +1066,47 @@ class TestNotebookCrossReferenceFilter:
         assert mod._is_notebook_cross_reference(0.69, text) is False
         assert mod._is_notebook_cross_reference(2.8, text) is True
 
-    def test_helper_integer_not_filtered(self):
-        # Un entier (pas une decimale N.M) n'est jamais un indice de notebook
-        # dans la syntaxe [N.M] -> non filtre (les indices de notebook sont
-        # decimaux : 2.8, 1.3).
+    def test_helper_integer_link_filtered(self):
+        # Cas reel GameTheory/SymbolicAI : certaines series nomment leurs
+        # notebooks par un INDICE ENTIER. « [12](12-quelquechose.ipynb) » ->
+        # 12 est l'indice du notebook pointe, pas une mesure. L'exclusion
+        # historique des entiers (refutee par forensic po-2023 c.188) est levee.
         text = "Voir [12](12-quelquechose.ipynb) pour la suite."
-        assert mod._is_notebook_cross_reference(12.0, text) is False
+        assert mod._is_notebook_cross_reference(12.0, text) is True
+
+    def test_helper_integer_gameyseries_nav_link(self):
+        # Cas fondateur (forensic po-2023 c.188, SymbolicAI 15% / GameTheory 34%
+        # des MISSING_FROM_OUTPUTS) : barre de navigation entre notebooks d'une
+        # serie a indice entier. Le « 7 » de « GameTheory-7 » est l'indice du
+        # notebook pointe, dans le texte ET dans l'URL du lien .ipynb.
+        text = ("**Navigation** : [GameTheory-7](GameTheory-7-ExtensiveForm-Csharp.ipynb) "
+                "| [GameTheory-11 (Bayesien)](GameTheory-11-BayesianGames.ipynb)")
+        assert mod._is_notebook_cross_reference(7.0, text) is True
+        assert mod._is_notebook_cross_reference(11.0, text) is True
+
+    def test_helper_integer_prevnext_bar(self):
+        # Barre prev/next « [<< 12-Reputation] » : l'indice 12 est en tete du
+        # texte du lien, objet navigationnel, pas une mesure.
+        text = "**Transition** : [<< 12-ReputationGames](12-ReputationGames.ipynb)"
+        assert mod._is_notebook_cross_reference(12.0, text) is True
+
+    def test_helper_integer_overfilter_guard_occurrence_outside_link(self):
+        # Anti-sur-filtrage (propriete SAFE cle, entiers) : si un entier apparait
+        # a la fois dans un lien .ipynb ET comme occurrence hors-lien (potentielle
+        # vraie mesure en prose, ex. « 2 joueurs »), on NE filtre PAS. Le
+        # conservatisme prime -- l'occurrence hors-lien peut etre le measurand.
+        text = "Ce jeu a 2 joueurs, cf. [2-Coordination](2-Coordination.ipynb)."
+        assert mod._is_notebook_cross_reference(2.0, text) is False
+
+    def test_helper_integer_measurement_cell_not_overfiltered(self):
+        # La cellule peut cohabiter indices-entiers (filtres) ET vraies mesures
+        # decimales (preservees) -- le filtre est par-valeur, SAFE. Ici 0.73 est
+        # une vraie valeur de Shapley en prose hors-lien -> non filtre, tandis
+        # que 15 (indice du notebook pointe) est filtre.
+        text = ("La valeur de Shapley calculee est 0.73 ; "
+                "suite : [GameTheory-15-Cooperatif](GameTheory-15-CooperativeGames.ipynb)")
+        assert mod._is_notebook_cross_reference(15.0, text) is True
+        assert mod._is_notebook_cross_reference(0.73, text) is False
 
     def test_helper_overfilter_guard_occurrence_outside_link(self):
         # Anti-sur-filtrage (propriete SAFE cle) : si N.M apparait a la fois
@@ -1093,8 +1128,8 @@ class TestNotebookCrossReferenceFilter:
         # dans les liens ne sont pas des mesures -> MISSING_FROM_OUTPUTS supprime.
         # Note : on n'ecrit PAS de « (2.8) » hors-lien -- un indice hors-lien
         # n'est pas filtre par le LINK-only filter (cas KEYWORD defer, volontai-
-        # rement conservateur). Les indices entiers-valeurs (3.0) ne sont pas
-        # filtres non plus (garde value==int(value)) -- on utilise 3.1.
+        # rement conservateur). Les indices decimaux (2.8, 3.1) et entiers
+        # sont desormais tous deux filtres (forensic po-2023 c.188).
         nb = tmp_path / "nav.ipynb"
         _make_notebook([
             _markdown_cell("# 2.9 Grokking\n"
