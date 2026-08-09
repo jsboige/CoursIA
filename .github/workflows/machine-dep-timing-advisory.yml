@@ -69,57 +69,63 @@ jobs:
               uses: actions/github-script@v7
               with:
                   script: |
+                      // ========================================================================
+                      // Apply signal label (advisory, never blocking)
+                      // ========================================================================
+                      // actions/github-script@v7 expose `github.rest` (Octokit REST), PAS
+                      // `github.api`. La premiere version du script utilisait `github.api.issues.*`
+                      // qui est undefined, d'ou l'erreur "Cannot read properties of undefined".
+                      // Cf. c.1331+57-L1 du worker po-2024 pour le fix.
+                      // ========================================================================
                       const count = '${{ steps.scan.outputs.wallclock_count }}';
                       const label = `machine-dep-timing-count: ${count}`;
-                      // Nettoyer les anciens labels machine-dep-timing-count:*
-                      const { data: existing } = await github.api.issues.listLabelsOnIssue({
-                          owner: context.repo.owner,
-                          repo: context.repo.repo,
-                          issue_number: context.issue.number,
-                      });
+
+                      // Helper : liste des labels existants sur cette PR.
+                      const listLabels = async () => {
+                          const { data } = await github.rest.issues.listLabelsOnIssue({
+                              owner: context.repo.owner,
+                              repo: context.repo.repo,
+                              issue_number: context.issue.number,
+                          });
+                          return data;
+                      };
+
+                      // Cleanup : retirer les anciens labels machine-dep-timing-count:*
+                      let existing = [];
+                      try {
+                          existing = await listLabels();
+                      } catch (e) {
+                          core.warning(`listLabelsOnIssue failed: ${e.message}`);
+                      }
                       const toRemove = existing
-                          .filter(l => l.name.startsWith('machine-dep-timing-count:'))
+                          .filter(l => l.name && l.name.startsWith('machine-dep-timing-count:'))
                           .map(l => l.name);
                       for (const name of toRemove) {
                           try {
-                              await github.api.issues.removeLabel({
+                              await github.rest.issues.removeLabel({
                                   owner: context.repo.owner,
                                   repo: context.repo.repo,
                                   issue_number: context.issue.number,
                                   name,
                               });
                           } catch (e) {
-                              // Label absent / deja supprime : ok.
+                              // Label absent / race condition : ok, on continue.
+                              core.info(`removeLabel ${name} ignored: ${e.status || e.message}`);
                           }
                       }
+
                       // Poser le nouveau label.
                       try {
-                          await github.api.issues.addLabels({
+                          await github.rest.issues.addLabels({
                               owner: context.repo.owner,
                               repo: context.repo.repo,
                               issue_number: context.issue.number,
                               labels: [label],
                           });
                       } catch (e) {
-                          // Le label n'existe peut-etre pas encore dans le
-                          // repo : on log et on continue (le commentaire
-                          // ci-dessous porte l'info).
-                          core.warning(`Label "${label}" add failed: ${e.message}`);
+                          // Le label n'existe pas encore dans le repo (premiere
+                          // utilisation). On ne fait pas crasher le job advisory.
+                          core.warning(`addLabels "${label}" failed (label may not exist yet): ${e.message}`);
                       }
-                      // Poster un commentaire de synthese (lisible meme si le
-                      // label n'a pas pu etre pose).
-                      const body = [
-                          '## Machine-dep timing inventory (advisory)',
-                          '',
-                          `- **wallclock findings**: ${count}`,
-                          '- see full TSV / JSON in the run log',
-                          '',
-                          'Mode advisory (exit 0). Cf. #9434 + #10158.',
-                      ].join('\n');
-                      // Pas de spam : commenter seulement si le label a
-                      // change de maniere non-triviale (>= 100 wallclock OU
-                      // delta significatif vs main). Ici, on commente pour
-                      // la premiere fois et on laisse la lane tracker.
-                      // Pour eviter le spam, on ne commente pas du tout par
-                      // defaut (le label suffit).
+
                       core.info(`Advisory label set: ${label}`);
