@@ -69,16 +69,6 @@ theorem gale_shapley_terminates (prof : PrefProfile n) :
   exact gsTerminated_runSteps_bound prof
 
 /--
-L'algorithme de Gale-Shapley produit un matching (bijection) valide.
-
-Le matching identité sert de témoin (toute bijection sur `Fin n` suffit pour
-l'existentiel ; on utilise ici `id`).
--/
-theorem gale_shapley_produces_matching (prof : PrefProfile n) :
-    ∃ μ : Matching n, True := by
-  exact ⟨{ spouse := id, bijective := Function.bijective_id }, trivial⟩
-
-/--
 L'algorithme de Gale-Shapley produit un mariage stable.
 
 Aucune paire bloquante n'existe dans le matching en sortie.
