@@ -57,11 +57,25 @@ Acceptance (cf. CHANGES_REQUESTED #10162, c.1331+59)
 - [x] Inventaire re-mesure : 256 wallclock + 40 distribution_param +
       35 domain_quantity + 0 ambiguous = 331 total (vs 978 avant).
 
+Acceptance (cf. #10169, frontiere residuelle)
+- [x] Residu 1 : propagation per-NOTEBOOK ``domain_quantity`` -- si le notebook
+      porte >=1 ``distribution_param``, l'unite de temps est son sujet et tous
+      les ``wallclock`` residuels basculent (6 findings Infer-2-Gaussian-Mixtures
+      dont les moyennes ajustees 15.07 / 26.69 min).
+- [x] Residu 2 : ``PROTOCOL_KEYWORDS`` (settle_delay, temps de bloc, finality)
+      route les constantes de consensus en ``domain_quantity`` ; tilde detache
+      ``~ 2 min`` reconnu comme ordre de grandeur (SC-19, SC-23).
+- [x] Residu 3 : ``--all`` resolu depuis la racine git (``git rev-parse
+      --show-toplevel``), resultat vide = erreur explicite (exit 1).
+- [x] Controle positif `Sudoku-13` preserve (Z3 wall-clock strict reste detecte).
+
 Note : `ambiguous=0` est structural (defaut conservateur = wallclock). Aucun
 finding ne reste ambigue apres la passe 1 -- le defaut de `_categorize`
 classe toute ligne sans mot-cle en wallclock. La categorie `ambiguous`
 reste dans la taxonomie pour compatibilite (cf. migrations futures) mais
-n'est pas emise en pratique avec l'heuristique courante.
+n'est pas emise en pratique avec l'heuristique courante. Decision #10169 :
+on garde la categorie documentee plutot que de la retirer, pour stabilite
+du schema ``--json`` consomme par l'inventaire #9434.
 """
 
 from __future__ import annotations
@@ -69,6 +83,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -117,6 +132,20 @@ DISTRIBUTION_KEYWORDS = re.compile(
     r"moyenne|mean|std|sigma|sigma[_\s]?2|variance|precision|"
     r"distribution|mu_|sigma_|mixture|Dirichlet|Gamma|Beta|"
     r"intervalle?\s+de\s+confiance|IC\s+\d|probabilit[ée]?)\b",
+    re.IGNORECASE,
+)
+
+# Mot-cle qui signale une CONSTANTE DE PROTOCOLE (consensus blockchain, canal
+# de paiement) -- le chiffre est un parametre du domaine modifie, pas une
+# duree machine. Exempt en tant que ``domain_quantity`` (cf. residu 2 #10169) :
+# un ``settle_delay`` de canal XRP (3600 s) ou un temps de bloc Ethereum
+# (12 blocs ~ 2 min) ne derivent pas d'une machine a l'autre -- ils ne derivent
+# pas du tout, ce sont des parametres de consensus.
+PROTOCOL_KEYWORDS = re.compile(
+    r"\b(?:settle[\s\-_]?delay|settlement|temps\s+de\s+bloc|block[\s\-]?time|"
+    r"blocs?(?:\s+(?:d['Ee]thereum|ethereum|de\s+bitcoin|bitcoin))?|"
+    r"finalit[ée]|epoch|slot|confirmation|consensus|"
+    r"canal\s+de\s+paiement|payment\s+channel)\b",
     re.IGNORECASE,
 )
 
@@ -175,6 +204,22 @@ def _is_range_bound(line: str, match_start: int, match_end: int) -> bool:
     return False
 
 
+def _is_detached_approximate(line: str, match_start: int) -> bool:
+    """Detecte un marqueur d'ordre de grandeur DETACHE : ``~ 2 min`` (espace).
+
+    Le ``MACHINE_RE`` accolé ``~2 min`` est deja gere (le ``~?`` optionnel
+    inclus dans le match -> ``snippet.startswith('~')`` -> skip). Ce helper
+    couvre la forme avec espace, ou le ``~`` (ou ``≈``) precede le chiffre
+    d'une espace -- cas reel SC-23-Cross-Chain : « 12 blocs Ethereum ~ 2 min »
+    (residu 2 #10169). Conforme au mandat #9434 : ordre de grandeur, pas
+    mesure precise -> on ne signale pas.
+    """
+    # Fenetre de 3 chars avant le match : le marqueur + eventuelle espace.
+    lo = max(0, match_start - 3)
+    window = line[lo:match_start]
+    return bool(re.search(r"[~≈]\s*$", window))
+
+
 # --------------------------------------------------------------------------- #
 #  Taxonomie de sortie
 # --------------------------------------------------------------------------- #
@@ -208,6 +253,10 @@ def _categorize(line: str, snippet: str) -> str:
     """
     if DISTRIBUTION_KEYWORDS.search(line):
         return CATEGORY_DISTRIBUTION
+    # Constante de protocole (consensus blockchain / canal de paiement) :
+    # parametre du domaine, pas une duree machine. Residu 2 #10169.
+    if PROTOCOL_KEYWORDS.search(line):
+        return CATEGORY_DOMAIN_QUANTITY
     if WALLCLOCK_KEYWORDS.search(line):
         return CATEGORY_WALLCLOCK
     # Pas de mot-cle de contexte : on considere que la presence de la regex
@@ -237,15 +286,21 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
     -- cf. #10158 acceptance : "les cellules de code et les outputs (une
     sortie doit porter la valeur reelle mesuree -- c'est sa fonction)".
 
-    Strategie en 2 passes (CHANGES_REQUESTED #10162 c.1331+59) :
+    Strategie en 3 passes (FP-2 #10162 + residu 1 #10169) :
 
     1. **Passe ligne** : pour chaque ligne markdown, on applique les exemptions
-       (pacing pedagogique, tilde, fourchette/borne) et on classifie selon le
-       contexte de la ligne (wallclock / distribution_param / ambiguous).
+       (pacing pedagogique, tilde colle/detache, fourchette/borne, constante de
+       protocole) et on classifie selon le contexte de la ligne (wallclock /
+       distribution_param / domain_quantity / ambiguous).
     2. **Passe cellule** : si une cellule porte >=1 finding ``distribution_param``,
        tous les autres findings ``wallclock`` de la meme cellule basculent en
        ``domain_quantity`` -- l'unite de temps est le sujet du modele, pas une
        mesure d'execution (cf. FP-2 sur Infer-2-Gaussian-Mixtures).
+    3. **Passe notebook** : si le notebook ENTIER porte >=1 ``distribution_param``,
+       les ``wallclock`` residuels (cellules sans mot-cle stat) basculent aussi
+       en ``domain_quantity`` (residu 1 #10169 : les 6 findings Infer-2 dont les
+       moyennes ajustees 15.07 / 26.69 min). La granularite per-cell etait trop
+       etroite -- l'unite de temps est le sujet du notebook, pas d'une cellule.
     """
     try:
         data = json.loads(nb_path.read_text(encoding="utf-8"))
@@ -272,6 +327,10 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
                 # pour le tilde.
                 if _is_range_bound(line, m.start(), m.end()):
                     continue
+                # Residu 2 #10169 : tilde DETACHE (`~ 2 min`, marqueur + espace).
+                # Ordre de grandeur, comme le tilde colle et la fourchette.
+                if _is_detached_approximate(line, m.start()):
+                    continue
                 category = _categorize(line, snippet)
                 findings.append({
                     "cell_index": ci,
@@ -297,12 +356,50 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
             if f["category"] == CATEGORY_WALLCLOCK:
                 f["category"] = CATEGORY_DOMAIN_QUANTITY
 
+    # Passe 3 : propagation per-NOTEBOOK domain_quantity (residu 1 #10169).
+    # La propagation per-cell (passe 2) est trop etroite : 6 findings Infer-2
+    # restent wallclock parce que leur cellule ne porte aucun mot-cle statistique,
+    # alors que le notebook entier modelise un temps de trajet. Si le notebook
+    # porte >=1 finding distribution_param, l'unite de temps est le SUJET du
+    # modele -> tous les wallclock residuels basculent en domain_quantity.
+    nb_has_distribution = any(
+        f["category"] == CATEGORY_DISTRIBUTION for f in findings
+    )
+    if nb_has_distribution:
+        for f in findings:
+            if f["category"] == CATEGORY_WALLCLOCK:
+                f["category"] = CATEGORY_DOMAIN_QUANTITY
+
     return findings
+
+
+def _repo_root() -> Path:
+    """Racine du depot : ``git rev-parse --show-toplevel`` (authoritatif),
+    fallback ``parents[2]`` du script.
+
+    Residu 3 #10169 : ``parents[2]`` resolu depuis l'emplacement du script
+    fonctionne seulement tant que le script vit a ``<root>/scripts/...``. Un
+    outil invoque hors du repertoire (le cas d'usage canonique ``--all``)
+    doit trouver ses cibles depuis la racine git reelle, pas depuis un
+    chemin calcule par hypothese.
+    """
+    try:
+        out = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=str(Path(__file__).resolve().parent),
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        if out:
+            return Path(out).resolve()
+    except (OSError, subprocess.CalledProcessError, subprocess.SubprocessError):
+        pass
+    return Path(__file__).resolve().parents[2]
 
 
 def _collect_targets(args: argparse.Namespace) -> list[Path]:
     """Resout la liste des notebooks a scanner depuis la CLI."""
-    root = Path(__file__).resolve().parents[2]
+    root = _repo_root()
     if args.all or args.json or args.check:
         # Cible canonique : notebooks pedagogiques. Les READMEs et `assets/`
         # sont exclus -- le scope de #10158 est uniquement les ``.ipynb``.
@@ -371,9 +468,22 @@ def main(argv: list[str] | None = None) -> int:
 
     targets = _collect_targets(args)
     if not targets:
-        print("Aucun notebook a scanner.", file=sys.stderr)
-        return 0
+        # Residu 3 #10169 : un resultat vide sur une invocation explicite
+        # (--all/--json/--check ou paths nommes) est une ERREUR bruyante, pas
+        # un succes silencieux. Sinon la lane suivante apprend qu'il n'y a
+        # rien a faire alors que l'outil a juste rate la racine git.
+        explicit_scan = bool(args.all or args.json or args.check or args.paths)
+        if explicit_scan:
+            print(
+                "Aucun notebook a scanner sous la racine git. "
+                "Invoque depuis le depot, ou passe des chemins explicites.",
+                file=sys.stderr,
+            )
+            return 1
+        parser.print_help(sys.stderr)
+        return 1
 
+    repo_root = _repo_root()
     all_findings: dict[str, list[dict]] = {}
     wallclock_count = 0
     distribution_count = 0
@@ -383,7 +493,7 @@ def main(argv: list[str] | None = None) -> int:
         rel = str(nb_path)
         # Afficher le chemin relatif a la racine du depot si possible.
         try:
-            rel = str(nb_path.resolve().relative_to(Path(__file__).resolve().parents[2]))
+            rel = str(nb_path.resolve().relative_to(repo_root))
         except ValueError:
             pass
         findings = _scan_notebook(nb_path)
