@@ -57,8 +57,10 @@ from typing import Iterable
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# 7 target languages (matches the CoursIA translation CSV schema + ai-01 mandate).
-LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
+# 7 target languages = l'univers ordonné de source unique ``check_perimeter``
+# (#10109). Aucune copie locale : une permutation divergente est un bug latent.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from check_perimeter import TARGET_LANGS as LANGS  # noqa: E402
 NON_LATIN = {"ru", "ar", "fa", "zh"}  # langs whose cells should carry non-Latin script
 
 # Drift classes.

@@ -56,8 +56,14 @@ import sys
 from pathlib import Path
 from typing import Iterable
 
-ALL_LANGS = ("en", "es", "ar", "fa", "zh", "ru", "pt")
-PIVOT_LANG = "fr"
+# Sibling import: the ordered target-language universe is the SINGLE source of
+# truth in ``check_perimeter`` (#10109). ``ALL_LANGS`` here is the 7 target
+# languages (NOT including the 'fr' pivot -- this script's semantics match the
+# ``text_<lang>``/``hash_<lang>`` target columns), in the canonical order.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_perimeter import PIVOT_LANG, TARGET_LANGS  # noqa: E402
+
+ALL_LANGS = tuple(TARGET_LANGS)
 
 # ``translations/...csv`` paths only. Anything else (a notebook .ipynb, a
 # script, a doc) breaks the "resync-only" verdict immediately.

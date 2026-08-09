@@ -87,6 +87,15 @@ from typing import Dict, List, Optional, Set, Tuple
 # Langs tracked by the CSV schema (ratified #4957 §1). Order matches the
 # schema header : text_<lang> columns in CSV order, with hash_<lang> after.
 # The pivot lang ('fr') is always in-scope by construction (T1 extracts it).
+#
+# SINGLE SOURCE OF TRUTH (#10109). ``TARGET_LANGS`` is the ONLY place the
+# ordered universe of 7 target languages may live as a literal. Every other
+# site (translate_csv.TARGETS, check_resync_only.ALL_LANGS, the T4 step in
+# translation-sync.yml) MUST consume it from here -- a duplicated list with a
+# different order is a latent silent bug (any positional ``zip``/``enumerate``
+# across two copies swaps translations without raising). The regression guard
+# ``scripts/translation/tests/test_lang_single_source.py`` fails if a
+# language-list literal reappears outside this module.
 PIVOT_LANG = "fr"
 TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
 ALL_LANGS = [PIVOT_LANG] + TARGET_LANGS

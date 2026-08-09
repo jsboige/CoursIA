@@ -43,8 +43,9 @@ from pathlib import Path
 
 # Langues vivantes côté Argumentum (8 langues, #4957 §1).
 # Le pivot (fr en Phase 0.5) est la source ; les autres sont cibles de traduction.
-PIVOT_LANG = "fr"
-TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
+# L'univers ordonné des cibles vient de la source unique ``check_perimeter`` (#10109).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_perimeter import PIVOT_LANG, TARGET_LANGS  # noqa: E402
 
 # Colonnes du CSV, dans l'ordre ratifié #4957 §1.
 COLUMNS = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]

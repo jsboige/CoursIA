@@ -51,10 +51,10 @@ import math
 import sys
 from pathlib import Path
 
-# Doit rester coherent avec extract_cells_to_csv.py (T1).
-PIVOT_LANG = "fr"
-TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
-ALL_LANGS = [PIVOT_LANG] + TARGET_LANGS
+# Doit rester coherent avec extract_cells_to_csv.py (T1) ET check_perimeter.py
+# (source unique de l'univers des langues, #10109) -- pas de copie locale.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_perimeter import ALL_LANGS, PIVOT_LANG, TARGET_LANGS  # noqa: E402
 
 # Plages Unicode du script attendu pour les langues cibles non-Latines.
 # Une cellule text_<lang> deposee dont le contenu ne porte AUCUN caractere de
