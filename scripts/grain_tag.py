@@ -199,6 +199,54 @@ def find_prev_close_keywords(text: str | None) -> list[dict]:
     return hits
 
 
+# Matches `<closing-keyword> #N` in free prose (#10101). The keyword set is
+# exactly `CLOSING_KEYWORDS` (the 9 GitHub auto-close words); the `#N` tail is
+# what GitHub parses as an auto-close instruction when the text lands in a
+# PR description or a commit message. The 9 flexions are anchored with a
+# word boundary so `fixed` does not match inside `affixed`, and `\s+` allows
+# any whitespace between the keyword and the `#`. The number is captured so
+# the caller can resolve it: closing an ISSUE is intended
+# (catalog-pr-hygiene HARD 4), closing a PR by keyword never is (one does not
+# "resolve" a PR -- one merges or closes it explicitly). #10101.
+CLOSE_KW_REF_RE = re.compile(
+    r"\b(close[ds]?|fix(?:es|ed)?|resolv(?:e|es|ed))\s+#(\d+)\b",
+    re.IGNORECASE,
+)
+
+
+def find_close_keyword_pr_refs(text: str | None) -> list[dict]:
+    r"""Return ``<closing-keyword> #N`` references found in free prose (#10101).
+
+    The complement of ``find_prev_close_keywords``: that one flags a closing
+    keyword in the *genre slot of a `prev:` field* (structurally always wrong).
+    This one flags a closing keyword followed by a number **anywhere in the
+    text** -- the failure mode #10101 measures: PR #10094's own commit message
+    carried a ``CLOSED <PR-number>`` line in prose, which a naive squash would
+    have re-closed that PR (the same translation deliverable #10093 protects).
+
+    Each hit is ``{"keyword": <lowercased>, "number": <int>, "span": <tuple>}``:
+    the keyword (lowercased for the 9-flexion test), the referenced number
+    (the caller resolves it PR-vs-issue), and the match span (so the verdict
+    can cite the offending line). Returns an empty list when the text is clean
+    or falsy.
+
+    This function is a *finder*, not a *decider*: it does not know whether N is
+    a PR or an issue (that needs an API call). The decision lives in the gate
+    that calls it (`scripts/ci/pr_close_keyword_guard.py`), with the resolver
+    injected so unit tests never touch the network.
+    """
+    if not text:
+        return []
+    hits = []
+    for m in CLOSE_KW_REF_RE.finditer(text):
+        hits.append({
+            "keyword": m.group(1).lower(),
+            "number": int(m.group(2)),
+            "span": m.span(),
+        })
+    return hits
+
+
 def parse_grain_tag(body: str | None) -> dict | None:
     """Extract {tier, genre, lane} from a PR body, form-tolerant.
 

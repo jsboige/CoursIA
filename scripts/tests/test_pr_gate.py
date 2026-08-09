@@ -369,6 +369,24 @@ def test_advisory_marker_is_case_insensitive():
     assert bad == [] and len(advisory) == 1
 
 
+def test_short_header_trio_job_name_is_advisory_diverted():
+    """Incident #10104 -- the short-header trio job is advisory by design
+    (exit 0, label-only, see variation-tag-guard.yml comment) but its job name
+    originally lacked the `advisory` marker. A lingering in_progress check-run
+    then made pr_gate.py wait on it until the 90-min timeout, blocking every PR
+    whose body lacked the Quoi/Preuve/Perimetre trio (e.g. #10104 itself).
+
+    The job name now carries the marker; this test pins the invariant so a
+    future rename that drops `advisory` is caught here, not by a stuck gate.
+    """
+    job_name = "Check short-header trio (advisory, label, non-blocking, #9861)"
+    assert pr_gate.is_advisory(job_name), "short-header job name must carry the advisory marker"
+    checks = [run(job_name, None, status="in_progress"), run("Lean CI", "success")]
+    pending, bad, _ok, advisory = pr_gate.classify(checks, "PR gate")
+    assert pending == [] and bad == [], "a hung short-header advisory must not hold the gate"
+    assert advisory == [f"{job_name} (in_progress)"]
+
+
 def test_green_advisory_counts_as_a_normal_pass():
     """Only non-green advisory checks are singled out for reporting."""
     checks = [run("Large blob advisory (>= 10 MiB)", "success")]
