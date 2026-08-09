@@ -28,9 +28,10 @@ require mathlib from git
 -- + Basic + MechanismDesign + SortedListCounting, FR+EN i18n EPIC #4980).
 -- 16 fichiers (7 modules FR + 7 siblings _en + 1 _SmokeTest + 1 root
 -- SocialChoice.lean) deplaces byte-identique depuis `social_choice_lean/`
--- vers `game_theory_lean/SocialChoice/`. Lake source `social_choice_lean/`
--- reste en place (docs + lakefile + manifest archives) pour ne pas casser
--- les refs notebooks existantes ; sera archive en follow-up post-merge.
+-- vers `game_theory_lean/SocialChoice/`. La coquille technique du lake source
+-- `social_choice_lean/` (lakefile + toolchain + manifest) a été retirée en
+-- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 4 markdown
+-- (README/STATUS/NOTICE/LEAN_PREREQUISITES) subsistent comme tombstone.
 -- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
 -- INTRINSIC documente si port depasse budget cf sota-not-workaround).
 --
