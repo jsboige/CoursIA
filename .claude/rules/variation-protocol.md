@@ -34,6 +34,15 @@ Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, 
 
 `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test` · `tooling` · `research-code`.
 
+**L'énumération se partitionne en deux, et la frontière porte G-VAR-1 :**
+
+| Classe | Genres | Ce qu'un grain y produit |
+|---|---|---|
+| **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
+| **META** | `guard` · `tooling` · `ledger` · `docs` · `readme` · `test` · `refactor` | l'outillage, les garde-fous et la prose *autour* du contenu — nécessaire, jamais suffisant |
+
+Un genre META n'est pas un genre inférieur : un guard qui rougit au bon moment vaut mieux qu'un notebook de plus. Mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
+
 Un genre hors liste est un **alias** que le merge-gate normalise avant d'appliquer les gates — pas une violation, le worker n'est ni repris ni HOLD. La fermeture n'est pas du vocabulaire : l'adjacence compare des genres, et un vocabulaire ouvert rend G-VAR-3 inatteignable par simple choix de mot.
 
 **Le GENRE est le TYPE DE TRAVAIL, jamais la famille où vivent les fichiers.** Test : *si le prochain grain de ce rollout tombait dans une autre famille, changerais-je le GENRE ?* Si oui, le genre décrit le répertoire — reprendre celui du travail. Même chose pour le composé `<famille>-<genre>` (`lean-ci`, `cjk-ci`, `audit-tooling`) : **il se réduit toujours à sa tête**, la famille se lit déjà dans les chemins du diff.
@@ -52,7 +61,11 @@ Un genre hors liste est un **alias** que le merge-gate normalise avant d'appliqu
 
 ## 2. Les trois gates durs
 
-- **G-VAR-1 — Plat principal DEEP ou MED.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP ou MED. **Une LIGHT ne satisfait JAMAIS le plancher.** Le pool global porte toujours du DEEP/MED : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+- **G-VAR-1 — Plat principal DEEP ou MED, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP ou MED **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier.** Le pool global porte toujours du DEEP/MED de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+
+  **Pourquoi la clause de genre a été ajoutée (2026-08-10).** Le tier seul laissait une porte ouverte, et la flotte l'a prise sans jamais mentir : un grain `tooling`/`guard` qui attrape un vrai défaut « change quelque chose », donc le tag **MED** est défendable, donc le plancher est tenu — plancher vert, variété verte, adjacence verte, et **zéro contenu livré**. Mesuré sur six semaines de commits : la part `scripts/` est passée de 3 % à **45 %** et la part code-de-série (hors notebooks) de **51 % à 18 %**, à volume de PR constant (S29 = 994, S32 = 917 PR mergées). Le préfixe `fix` est monté de 29 % à 44 % pendant que `feat` tombait de 26 % à 15 %. Aucun gate n'avait rougi : l'échappatoire était dans la spécification, pas dans la discipline des lanes.
+
+  Un cycle dont le plat principal est META **n'a pas de plancher tenu** — même avec dix PR livrées. Le remède n'est pas de bannir le META (il reste bienvenu au-delà du plancher, sous budget G-VAR-2 pour ses composantes LIGHT) mais d'exiger qu'**au moins un** grain de contenu porte le cycle.
 - **G-VAR-2 — Budget LIGHT proportionnel : `max(1, grains_mergés_du_jour // 3)`**, par lane et par jour, **toutes catégories LIGHT confondues**. Une lane à 1-5 grains garde l'ancien plafond d'une LIGHT ; à 6 elle en a deux, à 19 elle en a six. Au-delà : la LIGHT attend demain ou cède la place à du DEEP/MED. Le budget se **calcule** — [`scripts/variation_light_cap.py`](../../scripts/variation_light_cap.py) — il ne se déclare pas.
 - **G-VAR-3 — Pas deux fois le même GENRE LIGHT consécutif.** Ban **absolu** sur les genres LIGHT (`guard` · `ledger` · `docs` · `readme` · `test`) : bloqué dès 2. Pour un genre **DEEP ou MED dans le domaine-cœur d'une lane spécialiste**, deux consécutifs sont autorisés **si chacun est une substance genuinement distincte** — théorème/module/résultat différent, produit par du raisonnement neuf. Un spécialiste Lean qui enchaîne deux preuves DEEP distinctes n'est **pas** la monoculture visée. Tell décisif : le litmus LIGHT — générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP**.
 
@@ -64,7 +77,8 @@ Le protocole ne mord que si `ai-01` cesse de merger passivement. À chaque passe
 |---|---|
 | LIGHT d'une lane à budget épuisé (G-VAR-2) | **HOLD** : citer la sortie de `variation_light_cap.py` (`N` LIGHT pour `M` grains), pas une estimation |
 | 2ᵉ même-GENRE consécutif (G-VAR-3) | **HOLD** *si* genre LIGHT **ou** DEEP/MED non-distinct. Un 2ᵉ DEEP/MED genuinement distinct **passe** |
-| Plancher tenu par une LIGHT (G-VAR-1) | steer vers un grain DEEP/MED du pool, **nommé** |
+| Plancher tenu par une LIGHT (G-VAR-1) | steer vers un grain DEEP/MED de **contenu** du pool, **nommé** |
+| Plancher tenu par un genre **META**, même tagué DEEP/MED (G-VAR-1) | le cycle n'a pas de plancher : merger la PR si elle est bonne, **et** nommer dans le même geste le grain de contenu qui portera le cycle suivant. Ne **pas** HOLD une PR META saine — la sanction porterait sur le mauvais objet ; c'est le **provisionnement** qui a manqué (obligation §4) |
 | Tag mal dérivé (tier sur-coté, genre pris sur la famille, alias/composé) | **re-qualifier le tag soi-même**, puis traiter selon le tag corrigé |
 | `lane` absente | **HOLD** jusqu'à déclaration — un grain sans lane est **structurellement incomptable**, et le cap devient inapplicable sans que personne ne le contourne |
 
@@ -78,7 +92,9 @@ Le HOLD **ne sanctionne jamais la lane en idle** ([coordinator-discipline.md](co
 
 La cause racine est **autant** un défaut de provisionnement qu'un réflexe de facilité worker : sans substance stockée, le worker tombe sur les veines faciles. Chaque cycle `/coordinate`, `ai-01` :
 
-1. **Provisionne ≥1 grain DEEP/MED par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre.
+1. **Provisionne ≥1 grain DEEP/MED de CONTENU par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre. Un provisionnement composé uniquement de `guard`/`tooling`/`docs` ne satisfait pas cette obligation — il garantit au contraire que toutes les lanes manqueront leur plancher.
+   **Corollaire mesuré : agréger les GENRES des merges récents avant de provisionner**, pas seulement leurs tiers. « 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook`. Le tier ne dit rien de ce qui a été construit.
+   **Un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle : compter ce qui reste OPEN **et exécutable seul** dans la famille fermée, et créer si le reste est intégralement gaté (précédent ICT : 24 fermetures justifiées item par item entre le 04 et le 06/08, 14 issues restantes toutes dures/gatées, série endormie).
 2. **Varie la loterie** d'un cycle à l'autre — le coordinateur applique G-VAR-3 à son propre dispatch.
 
 Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige.
@@ -86,6 +102,8 @@ Sous-provisionner puis merger la monoculture qui en résulte est **le** manqueme
 ## 5. Auto-détection
 
 Avant de claim / de merger : **« ce grain est-il générable-en-série (LIGHT) ET (budget épuisé OU même-genre-que-le-précédent) ? »** Si oui, c'est la monoculture — le worker pioche un DEEP/MED, le coordinateur HOLD+redirige.
+
+Et la question que le tier seul ne posait pas, à se poser en fin de cycle : **« qu'est-ce que ce cycle a ajouté au dépôt qu'un lecteur ou un étudiant puisse utiliser ? »** Si la seule réponse honnête est « un détecteur de plus, un guard de plus, une doc de plus », le plancher n'est pas tenu — quel que soit le nombre de PR mergées et quels que soient les tiers déclarés. Côté worker : piocher un grain de contenu. Côté coordinateur : c'est un défaut de provisionnement (§4), pas une faute de lane.
 
 ## Voir aussi
 
