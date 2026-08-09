@@ -24,6 +24,7 @@ from check_machine_dep_timing import (  # noqa: E402
     _categorize,
     _scan_notebook,
     _is_range_bound,
+    _repo_root,
     CATEGORY_WALLCLOCK,
     CATEGORY_DISTRIBUTION,
     CATEGORY_AMBIGUOUS,
@@ -31,6 +32,7 @@ from check_machine_dep_timing import (  # noqa: E402
     STUDENT_PACING_RE,
     WALLCLOCK_KEYWORDS,
     DISTRIBUTION_KEYWORDS,
+    PROTOCOL_KEYWORDS,
 )
 
 import pytest
@@ -536,8 +538,152 @@ def test_pii_governed_notebook_skipped(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- #
-#  Main entry point : smoke test que l'argparse tient
+#  Extensions #10169 (c.1301+40) : propagation per-notebook + constante de
+#  protocole + tilde detache + resolution git-root
 # --------------------------------------------------------------------------- #
+def test_per_notebook_propagation_flips_cross_cell() -> None:
+    """#10169 residu 1 : la propagation domain_quantity est per-NOTEBOOK.
+
+    Rationnel : la propagation per-cell (#10162 FP-2) etait trop etroite.
+    Sur Infer-2-Gaussian-Mixtures, 6 findings restaient en wallclock bien que
+    l'unite de temps (temps de trajet) soit le sujet du notebook -- leurs
+    cellules ne portaient pas de mot-cle statistique, mais d'autres cellules
+    du meme notebook oui. La propagation per-notebook : si le notebook porte
+    >=1 distribution_param, TOUS ses wallclock basculent en domain_quantity.
+
+    Ce test met la distribution_param dans la cellule A et un wallclock pur
+    (aucun mot-cle) dans la cellule B -- un cas que la propagation per-cell
+    ne couvrait PAS (cellules differentes).
+    """
+    nb = _make_nb([
+        _md_cell("Le modele est une Gaussian de moyenne 15.33 min (sigma 1.32 min)."),
+        _md_cell(
+            "| Classe | Moyenne ajustee |\n"
+            "| --- | --- |\n"
+            "| Ordinaire | 15.07 min | Trajets normaux |\n"
+            "| Extraordinaire | 26.69 min | Trajets longs |"
+        ),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        # La cellule B (tableau, aucun mot-cle distribution) contient les
+        # '15.07 min' et '26.69 min' qui sont les MOYENNES AJUSTEES du
+        # melange -- le resultat du modele. Apres propagation per-notebook,
+        # ils basculent en domain_quantity, pas wallclock.
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        domain = [f for f in findings if f["category"] == CATEGORY_DOMAIN_QUANTITY]
+        assert wallclock == [], (
+            f"Aucun wallclock attendu (propagation per-notebook), trouve {wallclock}"
+        )
+        assert len(domain) >= 2, (
+            f"Attendu >=2 domain_quantity (15.07/26.69 min), categories="
+            f"{[f['category'] for f in findings]}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_protocol_constant_classified_as_domain_quantity() -> None:
+    """#10169 residu 2 : une constante de protocole n'est PAS un wallclock.
+
+    Rationnel : un `settle_delay` de canal de paiement XRP (3600 secondes) ou
+    un temps de bloc Ethereum (~2 min) sont des PARAMETRES DU DOMAINE modelise
+    (consensus blockchain), pas des durees machine. Ils ne derivent pas d'une
+    machine a l'autre -- ce sont des constantes du protocole. Meme famille que
+    domain_quantity, dans un domaine que les mots-cles statistiques ne couvrent
+    pas.
+    """
+    nb = _make_nb([
+        _md_cell(
+            "Le `settle_delay` est crucial pour la securite. Pour fermer le "
+            "canal, il faut attendre 3600 secondes (le delai de consensus)."
+        ),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        assert wallclock == [], (
+            f"'settle_delay 3600 secondes' ne doit PAS etre wallclock, trouve {wallclock}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_protocol_keyword_detects_blockchain_domain() -> None:
+    """PROTOCOL_KEYWORDS detecte settle_delay, blocs Ethereum, consensus."""
+    assert PROTOCOL_KEYWORDS.search("Le `settle_delay` du canal XRP")
+    assert PROTOCOL_KEYWORDS.search("12 blocs Ethereum ~ 2 min")
+    assert PROTOCOL_KEYWORDS.search("temps de bloc Bitcoin = 10 min")
+    assert PROTOCOL_KEYWORDS.search("finalite du consensus")
+    # Negatif : un 'block' hors-contexte blockchain n'est pas un protocole.
+    assert not PROTOCOL_KEYWORDS.search("un block de code de 50 lignes")
+
+
+def test_silence_on_detached_tilde() -> None:
+    """#10169 residu 2 : '~ 2 min' (tilde detache, espace) est conforme.
+
+    Rationnel : '~ 2 min' (avec un espace entre le tilde et le nombre) est un
+    ordre de grandeur, tout comme '~2 min' (attache). MACHINE_RE ne capture pas
+    le tilde dans le snippet (il est trop loin du chiffre), donc le check
+    `snippet.startswith('~')` le manquait. On verifie maintenant le tilde dans
+    le prefixe juste avant le match.
+
+    Extrait reel : SC-23-Cross-Chain cell[24] 'Confirmation source (12 blocs
+    Ethereum ~ 2 min)'.
+    """
+    nb = _make_nb([
+        _md_cell("Confirmation source (12 blocs Ethereum ~ 2 min)."),
+        _md_cell("Le scan prend ~ 30 sec habituellement."),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        assert findings == [], (
+            f"'~ 2 min' et '~ 30 sec' sont des ordres de grandeur conformes, "
+            f"trouve {findings}"
+        )
+    finally:
+        nb.unlink()
+
+
+def test_repo_root_resolves_git_toplevel() -> None:
+    """#10169 residu 3 : _repo_root() resout la racine via git (cwd-independant).
+
+    Rationnel : la resolution precedente (parents[2]) supposait une profondeur
+    fixe. _repo_root() utilise git rev-parse --show-toplevel (ancre canonique),
+    fallback parents[2]. Dans l'env de test (dans le repo), le resultat doit
+    contenir MyIA.AI.Notebooks (la racine du depot).
+    """
+    repo = _repo_root()
+    # Dans l'env de test on est dans le repo CoursIA.
+    if not (Path(__file__).resolve().parents[3] / "MyIA.AI.Notebooks").exists():
+        pytest.skip("Hors env repo (MyIA.AI.Notebooks absent)")
+    assert (repo / "MyIA.AI.Notebooks").exists(), (
+        f"_repo_root()={repo} ne contient pas MyIA.AI.Notebooks/"
+    )
+
+
+def test_all_vacuous_zero_guard_returns_two(monkeypatch: pytest.MonkeyPatch) -> None:
+    """#10169 residu 3 : --all qui trouve 0 notebooks = exit 2 (pas faux 0).
+
+    Rationnel : un --all qui renvoie silencieusement '0 findings' apprend a la
+    lane suivante qu'il n'y a rien a faire -- alors que c'est presque toujours
+    une resolution de racine cassee. On echoue explicitement (exit 2), mirror
+    scan_md_table_syntax.py / scan_md_hierarchy.py (#3968).
+    """
+    from check_machine_dep_timing import main, _collect_targets
+    import argparse
+
+    # Simuler une racine cassee : _collect_targets ne trouve rien.
+    def _bogus_targets(args):
+        return []
+    monkeypatch.setattr(
+        "check_machine_dep_timing._collect_targets", _bogus_targets
+    )
+    rc = main(["--all"])
+    assert rc == 2, f"--all avec 0 cibles doit retourner 2, pas {rc}"
+
+
+
 def test_main_runs_with_help(capsys: pytest.CaptureFixture) -> None:
     """Le main peut etre appele avec --help sans crash."""
     from check_machine_dep_timing import main

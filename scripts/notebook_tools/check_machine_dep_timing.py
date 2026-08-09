@@ -120,6 +120,22 @@ DISTRIBUTION_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+# Constante de protocole / consensus : le chiffre est un parametre du domaine
+# modelise (blockchain, reseau), pas une duree machine. Il ne derive pas d'une
+# machine a l'autre, il ne derive pas du tout -- c'est une constante du protocole
+# (settle_delay d'un canal de paiement XRP, temps de bloc Ethereum). Meme famille
+# conceptuelle que domain_quantity, dans un domaine que les mots-clés statistiques
+# ne couvrent pas. Cf #10169 residu 2.
+PROTOCOL_KEYWORDS = re.compile(
+    r"\b(?:settle_?delay|settlement|settle\b|"
+    r"blocs?\s+(?:d['’]\s*)?(?:Ethereum|Bitcoin|eth|btc)|block\s*time|"
+    r"temps\s+de\s+bloc|"
+    r"consensus|finalit[ée]|finality|"
+    r"d[ée]lai\s+de\s+(?:settlement|consensus|finalit)|"
+    r"confir(?:mation|mer).*\bblocs?)\b",
+    re.IGNORECASE,
+)
+
 # Pacing pedagogique : la cellule H1/H2/H3 documente l'effort demande a
 # l'etudiant. Ligne entiere exoneree (cf. arbitrage jsboige 14:05:37Z #9434).
 # Le motif "**Notebook** : ... 30-60 min selon niveau" est aussi couvert --
@@ -208,6 +224,10 @@ def _categorize(line: str, snippet: str) -> str:
     """
     if DISTRIBUTION_KEYWORDS.search(line):
         return CATEGORY_DISTRIBUTION
+    # Constante de protocole/consensus (settle_delay, temps de bloc) : la duree
+    # est un parametre du domaine modelise, pas une mesure machine. Cf #10169.
+    if PROTOCOL_KEYWORDS.search(line):
+        return CATEGORY_DOMAIN_QUANTITY
     if WALLCLOCK_KEYWORDS.search(line):
         return CATEGORY_WALLCLOCK
     # Pas de mot-cle de contexte : on considere que la presence de la regex
@@ -267,6 +287,13 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
                 # mandat #9434. On ne signale pas (cf. acceptance #10158).
                 if snippet.startswith("~"):
                     continue
+                # Tilde detache : `~ 2 min` (espace entre `~` et le nombre) est
+                # aussi un marqueur d'ordre de grandeur conforme. Le tilde n'est
+                # pas colle au nombre, donc MACHINE_RE ne le capture pas dans le
+                # snippet -- on verifie son presence juste avant le match.
+                # Cf #10169 residu 2.
+                if re.search(r"~\s*$", line[: m.start()]):
+                    continue
                 # CHANGES_REQUESTED #10162 : fourchette/borne = soft signal
                 # (`N-M min`, `< N sec`, `N+ min`). On ne signale pas, comme
                 # pour le tilde.
@@ -281,28 +308,54 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
                     "category": category,
                 })
 
-    # Passe 2 : propagation per-cell domain_quantity. Si une cellule porte
-    # >=1 finding distribution_param, tous les findings wallclock de cette
-    # cellule basculent en domain_quantity (FP-2 #10162).
-    by_cell: dict[int, list[dict]] = {}
-    for f in findings:
-        by_cell.setdefault(f["cell_index"], []).append(f)
-    for ci, cell_findings in by_cell.items():
-        has_distribution = any(
-            f["category"] == CATEGORY_DISTRIBUTION for f in cell_findings
-        )
-        if not has_distribution:
-            continue
-        for f in cell_findings:
+    # Passe 2 : propagation per-NOTEBOOK domain_quantity (#10169 residu 1).
+    # La propagation per-cell (#10162 FP-2) etait trop etroite : sur Infer-2
+    # (Gaussian Mixture), 6 findings restaient en wallclock bien que l'unite
+    # de temps (le temps de trajet) soit le sujet meme du notebook -- leurs
+    # cellules ne portaient pas de mot-cle statistique, mais d'autres cellules
+    # du meme notebook oui. Logique correcte a la bonne granularite : si le
+    # notebook porte >=1 finding distribution_param, l'unite de temps est le
+    # sujet du modele, et TOUS ses findings wallclock basculent en
+    # domain_quantity. Le controle positif (Sudoku-13, 0 distribution_param)
+    # est preserve -- aucune propagation ne s'y applique.
+    has_distribution = any(
+        f["category"] == CATEGORY_DISTRIBUTION for f in findings
+    )
+    if has_distribution:
+        for f in findings:
             if f["category"] == CATEGORY_WALLCLOCK:
                 f["category"] = CATEGORY_DOMAIN_QUANTITY
 
     return findings
 
 
+def _repo_root() -> Path:
+    """Resout la racine du depot.
+
+    Priorite : ``git rev-parse --show-toplevel`` (robuste et cwd-independant),
+    fallback sur ``parents[2]`` du script (``<root>/scripts/notebook_tools/``).
+    Cf #10169 residu 3 : la resolution precedente (``parents[2]`` seul)
+    supposait une profondeur fixe et echouait silencieusement (0 cibles) si
+    l'arborescence diferait. La racine git est l'ancre canonique.
+    """
+    try:
+        import subprocess
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True,
+            cwd=str(Path(__file__).resolve().parent),
+            timeout=5,
+        )
+        if out.returncode == 0 and out.stdout.strip():
+            return Path(out.stdout.strip()).resolve()
+    except Exception:
+        pass
+    return Path(__file__).resolve().parents[2]
+
+
 def _collect_targets(args: argparse.Namespace) -> list[Path]:
     """Resout la liste des notebooks a scanner depuis la CLI."""
-    root = Path(__file__).resolve().parents[2]
+    root = _repo_root()
     if args.all or args.json or args.check:
         # Cible canonique : notebooks pedagogiques. Les READMEs et `assets/`
         # sont exclus -- le scope de #10158 est uniquement les ``.ipynb``.
@@ -371,6 +424,19 @@ def main(argv: list[str] | None = None) -> int:
 
     targets = _collect_targets(args)
     if not targets:
+        # Vacuous-zero guard (#10169 residu 3) : un ``--all`` qui ne trouve
+        # AUCUN notebook est presque toujours une resolution de racine cassee
+        # (cwd errone, _repo_root() qui echoue), pas un depôt vide. On echoue
+        # explicitement (exit 2) plutot que d'emettre un faux "0 findings" qui
+        # apprend a la lane suivante qu'il n'y a rien a faire. Mirror
+        # scan_md_table_syntax.py / scan_md_hierarchy.py (#3968).
+        if args.all or args.json or args.check:
+            print(
+                "Aucun notebook a scanner pour --all : la resolution de la "
+                "racine du depot a echoue (verifier _repo_root / git toplevel).",
+                file=sys.stderr,
+            )
+            return 2
         print("Aucun notebook a scanner.", file=sys.stderr)
         return 0
 
