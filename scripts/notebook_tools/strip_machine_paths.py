@@ -227,6 +227,35 @@ def _normalize_bs(text):
 # as **not** a leak on the next scan — making ``--apply-all`` idempotent.
 REDACTED_PATH = "<USER_PATH>"
 
+# Numeric process IDs that change on every kernel launch. Unlike the
+# username prefix (a stable per-worker leak) a PID is **per-execution**:
+# the same notebook re-executed twice emits two different
+# ``ipykernel_<N>`` temp paths, producing a spurious ``git diff`` even
+# after the username has been redacted. Normalizing the PID to a stable
+# placeholder makes the redacted output byte-identical across re-execs
+# (motivation: #10061 — the 10 notebooks sharing an ``ipykernel_<N>``
+# numeric churn). The PID carries no pedagogy, unlike the trailing
+# per-cell source hash (``<hash>.py``), which is stable per cell and is
+# left untouched. Currently scoped to the ipykernel family (the proven
+# churn source); ``/proc/<N>`` / ``pid=<N>`` are deferred to a follow-up
+# — they are rarer in notebook outputs and broader matching risks
+# normalizing legitimate numeric literals.
+_IPYKERNEL_PID_PATTERN = re.compile(r"ipykernel_\d+")
+
+
+def _normalize_runtime_pids(text):
+    """Replace per-execution numeric PIDs with stable placeholders.
+
+    Covers the ipykernel per-cell temp directory (``ipykernel_<N>``) so that
+    two re-executions of the same notebook redact to the same
+    ``ipykernel_<pid>`` form instead of differing on the PID. Applied after
+    the username-redaction loop in :func:`_redact_line`, so every caller of
+    the strip pipeline benefits from a single normalization site.
+    """
+    if not isinstance(text, str):
+        return text
+    return _IPYKERNEL_PID_PATTERN.sub("ipykernel_<pid>", text)
+
 # Output fields that can carry the leak:
 # - ``data["text/plain"]`` / ``data["text/html"]`` for ``display_data`` /
 #   ``execute_result`` outputs.
@@ -366,7 +395,10 @@ def _redact_line(text):
         # may be mid-line; bytes before it carry the first runtime prefix
         # that we want to keep in the output).
         out = out[:drive_start] + REDACTED_PATH + "\\" + out[after_marker:]
-    return out
+    # Normalize per-execution PIDs (e.g. ``ipykernel_30104`` -> ``ipykernel_<pid>``)
+    # so two re-execs redact to the same form (no spurious diff). Applied after the
+    # username loop so the redacted trailing path is normalized too.
+    return _normalize_runtime_pids(out)
 
 
 def _field_value(out, key):

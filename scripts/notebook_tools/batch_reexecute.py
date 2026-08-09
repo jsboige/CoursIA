@@ -41,6 +41,33 @@ def needs_reexecution(entry: dict) -> bool:
     return False
 
 
+def _normalize_kernel_paths(nb_path: Path) -> int:
+    """Redact kernel-injected username paths and normalize per-execution PIDs
+    on a freshly re-executed notebook.
+
+    Wires ``strip_machine_paths.strip_in_place`` into the re-exec path
+    (#10061) so that the two churn sources that change on every run — the
+    username absolute path and the ``ipykernel_<N>`` PID — are normalized in
+    a single place. This makes two re-executions of the same notebook
+    redact to byte-identical output (no spurious ``git diff``), removing the
+    need for a manual post-hoc scrub per notebook. Returns the number of
+    leak lines normalized (0 when the re-exec produced no kernel-injected
+    paths, or when the normalizer is unavailable).
+    """
+    try:
+        here = str(Path(__file__).resolve().parent)
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        from strip_machine_paths import strip_in_place
+    except ImportError:
+        return 0
+    try:
+        _outputs_with_leak, lines_fixed = strip_in_place(nb_path)
+    except Exception:
+        return 0
+    return lines_fixed
+
+
 def get_kernel_name(entry: dict) -> str:
     """Map catalog kernel to papermill kernel name."""
     kernel = entry.get("kernel", "").lower()
@@ -75,8 +102,10 @@ def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
         )
 
         if result.returncode == 0:
+            normalized = _normalize_kernel_paths(nb_path)
             backup_path.unlink(missing_ok=True)
-            return {"path": str(nb_path), "status": "SUCCESS"}
+            return {"path": str(nb_path), "status": "SUCCESS",
+                    "normalized": normalized}
         else:
             # Restore backup on failure
             shutil.copy2(backup_path, nb_path)

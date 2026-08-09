@@ -41,6 +41,7 @@ from strip_machine_paths import (
     _redact_line,
     _first_matching_label,
     _normalize_bs,
+    _normalize_runtime_pids,
 )
 
 
@@ -557,7 +558,7 @@ def test_redact_line_per_category():
     """
     cases = [
         (_PIP_LINE, "AppData\\Roaming\\Python"),
-        (_IPYKERNEL_LINE, "AppData\\Local\\Temp\\ipykernel_30104"),
+        (_IPYKERNEL_LINE, "AppData\\Local\\Temp\\ipykernel_<pid>"),
         (_CONDA_LINE, ".conda\\envs\\mcp-jupyter-py310"),
         (_HF_LINE, ".cache\\huggingface"),
         (_OTHER_LINE, "AppData\\Local\\Temp\\test_audio.mp3"),
@@ -570,6 +571,32 @@ def test_redact_line_per_category():
         # The stable placeholder MUST appear at least once (the username
         # was successfully redacted to the placeholder form).
         assert "<USER_PATH>" in redacted, (line, redacted)
+
+
+def test_normalize_runtime_pids_stable_across_reexec():
+    """#10061 — the ipykernel per-execution PID must normalize to a stable
+    placeholder so two re-execs of the same notebook redact byte-identically
+    (no spurious ``git diff``). The PID carries no pedagogy; the trailing
+    per-cell source hash (``<hash>.py``) is stable per cell and MUST survive.
+    """
+    # Two raw kernel lines differing ONLY in the PID (as a fresh re-exec would).
+    a = r"C:\Users\jsboi\AppData\Local\Temp\ipykernel_30104\1424116259.py:8: DeprecationWarning"
+    b = r"C:\Users\jsboi\AppData\Local\Temp\ipykernel_55982\1424116259.py:8: DeprecationWarning"
+    red_a = _redact_line(a)
+    red_b = _redact_line(b)
+    # The PIDs are gone, replaced by the stable placeholder...
+    assert "30104" not in red_a and "55982" not in red_b, (red_a, red_b)
+    assert "ipykernel_<pid>" in red_a and "ipykernel_<pid>" in red_b
+    # ...so the two redactions are byte-identical (acceptance: empty diff on
+    # the PID motif across two re-execs).
+    assert red_a == red_b, (red_a, red_b)
+    # The per-cell source hash (stable, carries pedagogy) is preserved verbatim.
+    assert "1424116259.py" in red_a
+    # The unit normalizer is idempotent (re-applying is a no-op).
+    assert _normalize_runtime_pids(red_a) == red_a
+    # Non-ipykernel numerics are NOT touched (conservative scope: only the
+    # ipykernel family, not arbitrary digits).
+    assert _normalize_runtime_pids("version 3.10.2 pid=99") == "version 3.10.2 pid=99"
 
 
 def test_redact_line_per_category_audit_extension_3_tokens():
