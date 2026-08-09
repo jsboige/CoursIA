@@ -1991,17 +1991,25 @@ theorem hashlifeResult_central_correct_base (c : MacroCell)
 
 /-! ## P4 inductive step — scaffolding for the double-nine decomposition
 
-The sorry at `p4_ext_bridge c (k+1) (fun p => by sorry)` is the **research-level
-verrou** of the whole module. It demands the pointwise membership biconditional:
+The P4 inductive step is **discharged** in the current source. The pointwise
+membership biconditional it demanded —
 
     ∀ p, p ∈ (hashlifeResultAux (k+2) c).toGrid (2^k, 2^k)
          ↔ p ∈ restrictGridTo (evolve (2^k) (c.toGrid (0,0))) (2^k) (2^(k+1))
 
-`p4_ext_bridge` (proven) reduces list-equality to this biconditional, so once
-the biconditional is discharged, `hashlifeResult_central_correct` closes by
-induction. The function `p4_succ_membership` below is the **single named
-entry point** that gathers the four sub-lemmas; each sub-lemma is an
-independent, difficulty-ranked prover target (grignotable one-per-session).
+— is proven by `p4_succ_membership` (aggregator `HashlifeCorrectness.lean`,
+sorry-free body), which gathers the four sub-lemmas below. The aggregator's
+`hashlifeResult_central_correct` consumes it via `p4_ext_bridge` (proven here):
+its `k → k+1` case applies `p4_ext_bridge` to the `p4_succ_membership`
+biconditional to close. The **live open target** is now the P5 large-`n` jump
+`p5_large_n_jumpN` (aggregator, `:= by sorry`), which is P4-gated on exactly
+this inductive step being closed.
+
+NOTE for readers/provers: earlier drafts carried the biconditional as
+`p4_ext_bridge c (k+1) (fun p => by sorry)` — that sorry is gone (the call-site
+now passes the proven `p4_succ_membership`). Do not hunt for it; the
+`p4_ext_bridge`/`p4_succ_membership`/`hashlifeResult_central_correct` chain is
+the closed P4 step.
 
 ### Proof plan (the double-nine, two half-steps)
 
