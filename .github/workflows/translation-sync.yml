@@ -57,6 +57,19 @@ permissions:
   contents: write   # bot commit to the PR branch
   pull-requests: write
 
+# Cancel a superseded in-flight run when a new push lands on the same PR/ref.
+# A translation-sync run re-extracts CSVs + re-renders derived notebooks off
+# the PR HEAD; if the HEAD moves mid-run (force-push, or a second push during
+# the ~2-min T1-T4 pipeline), the stale run can commit derived state that no
+# longer matches the new HEAD -- a silent drift source. Serialising per-PR
+# (cancel-in-progress) matches the convention used by pr-gate / pip-leak-guard
+# / banner-guard / catalog-cron / exercise-leak-ci / markdown-rendering-guard.
+# NOTE (#10114): this does NOT fix the action_required bot-trap -- that needs
+# the Option B/C mandate decision. It only prevents the within-PR race.
+concurrency:
+  group: translation-sync-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   translation-sync:
     name: "Translation auto-sync (bot)"
