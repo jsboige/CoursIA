@@ -149,6 +149,26 @@ PROTOCOL_KEYWORDS = re.compile(
     re.IGNORECASE,
 )
 
+# Contrainte de duree de CONTENU (longueur cible d'un media produit) : le chiffre
+# est une borne du domaine (longueur max d'une video YouTube Shorts, duree cible
+# d'un module de cours), pas une duree machine. Exempt en tant que
+# ``domain_quantity`` (#10178 Classe 4). Discriminant : un wallclock strict ne
+# s'encadre JAMAIS comme « contrainte de duree » / « duree cible » / « YouTube
+# Shorts » / « module de cours » -- ce sont des descripteurs de CONTENU, pas
+# d'execution. Verifie firsthand : GenAI/Video cell[12] « contraintes de duree
+# (ex: moins de 5 minutes pour YouTube Shorts, ou exactement 10 minutes pour un
+# module de cours) » = 2 FP wallclock -> domain_quantity ; le controle positif
+# GenAI/Texte/10 cell[56] « Temps : 1M / 40 = 25,000 secondes » (vrai throughput
+# compute) ne matche AUCUN de ces signaux et reste wallclock.
+CONTENT_DURATION_CONSTRAINT_RE = re.compile(
+    r"(?:\bcontrainte[s]?\s+(?:de\s+)?dur[ée]e\b"
+    r"|\bdur[ée]e\s+(?:cible|totale|maximale|optimale)\b"
+    r"|\bdur[ée]e\s+de\s+la\s+vid[ée]o\b"
+    r"|\bYouTube\s+Shorts\b"
+    r"|\bmodule\s+de\s+cours\b)",
+    re.IGNORECASE,
+)
+
 # Pacing pedagogique : la cellule H1/H2/H3 documente l'effort demande a
 # l'etudiant. Ligne entiere exoneree (cf. arbitrage jsboige 14:05:37Z #9434).
 # Le motif "**Notebook** : ... 30-60 min selon niveau" est aussi couvert --
@@ -267,6 +287,11 @@ def _categorize(line: str, snippet: str) -> str:
     # Constante de protocole (consensus blockchain / canal de paiement) :
     # parametre du domaine, pas une duree machine. Residu 2 #10169.
     if PROTOCOL_KEYWORDS.search(line):
+        return CATEGORY_DOMAIN_QUANTITY
+    # Contrainte de duree de CONTENU (#10178 Classe 4) : longueur cible d'un
+    # media produit (YouTube Shorts, module de cours, duree cible de video).
+    # Borne du domaine, pas une duree machine -- les 2 FP GenAI/Video cell[12].
+    if CONTENT_DURATION_CONSTRAINT_RE.search(line):
         return CATEGORY_DOMAIN_QUANTITY
     # Frontiere FP (frontier issue) : cout d'action dans une table de plan.
     # La duree est le RESULTAT d'une arithmetique « N + M = K unit » (ex

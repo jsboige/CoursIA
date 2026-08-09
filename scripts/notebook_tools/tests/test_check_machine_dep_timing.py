@@ -27,6 +27,7 @@ from check_machine_dep_timing import (  # noqa: E402
     _is_detached_approximate,
     _repo_root,
     PROTOCOL_KEYWORDS,
+    CONTENT_DURATION_CONSTRAINT_RE,
     CATEGORY_WALLCLOCK,
     CATEGORY_DISTRIBUTION,
     CATEGORY_AMBIGUOUS,
@@ -450,6 +451,79 @@ def test_sudoku13_positive_control_preserved() -> None:
         wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
         assert wallclock, (
             f"Controle positif perdu : aucun wallclock trouve, "
+            f"categories={[f['category'] for f in findings]}"
+        )
+    finally:
+        nb.unlink()
+
+
+# --------------------------------------------------------------------------- #
+#  #10178 Classe 4 : contrainte de duree de CONTENU (longueur cible d'un media)
+# --------------------------------------------------------------------------- #
+def test_content_duration_constraint_regex_matches() -> None:
+    """Le motif detecte les descripteurs de duree de CONTENU, pas d'execution.
+
+    Rationnel (#10178 Classe 4) : « moins de 5 minutes pour YouTube Shorts » ou
+    « 10 minutes pour un module de cours » sont des bornes du domaine video
+    (longueur max du media produit), pas des durees machine. Le motif vise 5
+    signaux univoques de contenu.
+    """
+    # Signaux positifs (chacun univoque de duree de contenu).
+    assert CONTENT_DURATION_CONSTRAINT_RE.search("respecter des contraintes de duree (ex: 5 minutes)")
+    assert CONTENT_DURATION_CONSTRAINT_RE.search("moins de 5 minutes pour YouTube Shorts")
+    assert CONTENT_DURATION_CONSTRAINT_RE.search("exactement 10 minutes pour un module de cours")
+    assert CONTENT_DURATION_CONSTRAINT_RE.search("la duree cible de la video est 30 secondes")
+    assert CONTENT_DURATION_CONSTRAINT_RE.search("duree totale du clip : 2 minutes")
+    assert CONTENT_DURATION_CONSTRAINT_RE.search("duree maximale autorisee : 60s")
+    # Negatifs -- un vrai wallclock ne s'encadre pas ainsi.
+    assert not CONTENT_DURATION_CONSTRAINT_RE.search("La duree d'execution est 2.4 s")
+    assert not CONTENT_DURATION_CONSTRAINT_RE.search("Temps : 1M / 40 = 25,000 secondes = ~7 heures")
+    assert not CONTENT_DURATION_CONSTRAINT_RE.search("compute took 3.5 sec on the GPU")
+
+
+def test_categorize_content_duration_constraint_is_domain_quantity() -> None:
+    """Une duree de contenu (contrainte de duree / Shorts / module) -> domain_quantity.
+
+    Cas reel GenAI/Video cell[12] (#10178 Classe 4) : le « 5 minutes » est la
+    longueur max d'un YouTube Shorts, pas un runtime. Le controle positif
+    GenAI/Texte/10 cell[56] (throughput compute) reste wallclock.
+    """
+    # Ligne reelle GenAI/Video cell[12] (paraphrase ASCII conforme au notebook).
+    line_video = (
+        "les videos educatives doivent souvent respecter des contraintes de "
+        "duree (ex: moins de 5 minutes pour YouTube Shorts)"
+    )
+    assert _categorize(line_video, "5 minutes") == CATEGORY_DOMAIN_QUANTITY
+    # Controle positif : vrai throughput compute -> reste wallclock.
+    line_throughput = "Temps : 1M / 40 = 25,000 secondes = ~7 heures"
+    assert _categorize(line_throughput, "25,000 secondes") == CATEGORY_WALLCLOCK
+
+
+def test_content_duration_constraint_fp_routed_to_domain_quantity() -> None:
+    """Le FP GenAI/Video cell[12] (wallclock) est silencie en domain_quantity.
+
+    Rationnel : le detecteur ne doit PLUS rapporter « 5 minutes » / « 10 minutes »
+    comme wallclock quand la ligne encadre une contrainte de duree de contenu.
+    Avant le fix : wallclock=2 sur ce notebook ; apres : wallclock=0 (les 2
+    findings basculent en domain_quantity, categorie non-signalee par design).
+    """
+    nb = _make_nb([_md_cell(
+        "**Contexte** : En production, les videos educatives doivent souvent "
+        "respecter des contraintes de duree (ex: moins de 5 minutes pour "
+        "YouTube Shorts, ou exactement 10 minutes pour un module de cours)."
+    )])
+    try:
+        findings = _scan_notebook(nb)
+        # Aucun finding wallclock (les 2 chiffres sont des durees de contenu).
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        assert not wallclock, (
+            f"FP Classe 4 non corrige : wallclock trouve, "
+            f"categories={[f['category'] for f in findings]}"
+        )
+        # Et au moins un finding route en domain_quantity (l'exemption agit).
+        domain = [f for f in findings if f["category"] == CATEGORY_DOMAIN_QUANTITY]
+        assert domain, (
+            f"Aucun domain_quantity : l'exemption n'a pas route le finding, "
             f"categories={[f['category'] for f in findings]}"
         )
     finally:
