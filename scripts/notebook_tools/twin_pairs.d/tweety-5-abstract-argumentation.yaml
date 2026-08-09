@@ -8,7 +8,14 @@
       by: myia-po-2026:CoursIA
       python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
       csharp_sha: 0993ec2e3068216e3b07f1448dd5776de232692b
+    - date: "2026-08-09"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
+      csharp_sha: 1cb02535990e166e31594dd2d5b852dd04877aff
+      content_python_sha: e7b00864506b27c1b7840f0b8b6fabc792d256b0607d7b01c18ed3da9c7f70f1
+      content_csharp_sha: 2b766fb4ebc5f6c7b97d4acf0996cf2b023b46063778f938737d648ac15e37a6
   known_differences:
     - "Socle commun : argumentation abstraite de Dung (semantiques grounded/preferred/stable) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-dung.dll\"`). Python via JPype (`from java.util import Collection, HashSet`). Meme moteur Dung de TweetyProject."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python+C# avance depuis l'audit 2026-07-23 via #8320/#8170 (doc-honesty md52 non-determinism output alignment + hyphenation) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+    - "Interpretation 4-semantiques sur a<->b (c.48, po-2025:CoursIA-2) : le C# possede une cellule d'interpretation dediee au resultat-pivot 4-semantiques (Grounded unique vide vs Stable/Preferred multiples {a},{b} vs Complete intermediaire). Le Python possede une interpretation DIFFERENTE mais couvrant le meme axe (cell 9 'Interpretation des extensions Dung' = tableau par semantique sur AF1 a1<->b1->c1). Parite semantique tenue : les deux jumeaux interpreten la divergence des semantiques de Dung, sous des angles complementaires (C# = multiplicite isolee sur a<->b minimal ; Python = tableau multi-AF). Rebaseline markdown-only legitime, pas de strip outille."
