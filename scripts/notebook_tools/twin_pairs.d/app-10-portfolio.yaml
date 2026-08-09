@@ -29,9 +29,9 @@
   - date: '2026-08-09'
     by: myia-po-2024:CoursIA-2
     python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
-    csharp_sha: 4b3175c6981d53c7b9eb3c0845b3d0cab0dfbaf6
+    csharp_sha: d06e92c8e9186a9023e080f96c4a78fae8ded399
     content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
-    content_csharp_sha: 106e718cf4934deb56057ff63196009f2f065381862f113758b1320c132153d9
+    content_csharp_sha: 6a5e1fc75d8e3794e6a90836c5286e9c4ca701e87d62dc450f3d713b20012dd0
   known_differences:
   - 'Socle pedagogique commun : Optimisation de portefeuille (convex opt cvxpy + GeneticSharp
     C#) comme application canonique. Les deux twins couvrent le meme socle theorique
