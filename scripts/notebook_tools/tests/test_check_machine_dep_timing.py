@@ -744,5 +744,60 @@ def test_empty_explicit_scan_is_error_residu3(tmp_path: Path) -> None:
     )
 
 
+# --------------------------------------------------------------------------- #
+#  Frontiere FP (frontier issue) : pacing-extension + planning-domain
+# --------------------------------------------------------------------------- #
+def test_silence_pacing_duration_with_lecture_qualifier() -> None:
+    """Frontiere : « N min (lecture + execution) » = pacing (effort humain).
+
+    Cas reel ICT-19-EnjeuBattery cell[0] : « 45 min (lecture + execution
+    sequentielle) ». C'est l'estimation d'effort demande a l'etudiant, pas une
+    duree machine -- meme rationale que le pacing deja exempte (arbitrage
+    jsboige 14:05:37Z #9434). La duree PRECEDE la parenthese (inhabituel), ce
+    que le STUDENT_PACING_RE historique ratait.
+
+    NB : on cible le qualificatif d'effort (lecture/cours/tp) precisement. La
+    forme « moins de N » / « plus de N » n'est PAS exemptee -- c'est un signal
+    de borne runtime ou de probabilite de domaine (ex P(trajet < 18 min)), pas
+    de pacing (cf. brainstorm G.1 : sur-exemption cassait la propagation #10162).
+    """
+    assert STUDENT_PACING_RE.search("45 min (lecture + execution sequentielle). GPU-free.")
+    assert STUDENT_PACING_RE.search("90 min (cours magistral + TP)")
+    # Sans qualificatif d'effort : reste un finding (pas pacing).
+    assert not STUDENT_PACING_RE.search("La duree d'execution est 45 min.")
+    # « moins de N » / « plus de N » n'est PAS pacing (borne runtime/domaine).
+    assert not STUDENT_PACING_RE.search("converge en plus de 10 min sur les gros cas")
+
+
+def test_plan_table_cost_routed_to_domain_quantity() -> None:
+    """Frontiere : « N + M = K min » = cout d'action dans une table de plan.
+
+    Cas reel Planners-8-Temporal cell[37] : « | D1 | A -> B | 5 + 4 = 9 min | ».
+    Le « 9 min » est la duree DETERMINISTE d'une livraison drone (somme acces +
+    vol), pas une duree machine. Routed vers domain_quantity (compte, visible),
+    pas wallclock.
+
+    On verifie via _categorize : la ligne porte l'arithmetique de cout -> le
+    snippet « 9 min » est classe domain_quantity.
+    """
+    line = "| D1 | A -> B | 5 + 4 = 9 min | Drone 0 ou 1 |"
+    assert _categorize(line, "9 min") == CATEGORY_DOMAIN_QUANTITY
+    line2 = "Duree totale : 0 + 6 = 6 min pour la livraison D2."
+    assert _categorize(line2, "6 min") == CATEGORY_DOMAIN_QUANTITY
+
+
+def test_plan_cost_regex_does_not_overreach_real_wallclock() -> None:
+    """Controle negatif : un vrai wallclock sans arithmetique de cout reste wallclock.
+
+    Garantie que le motif « N + M = K unit » est precis. Sudoku-13 (controle
+    positif canonique) rapporte « 2.4 s pour 1000 iterations » -- aucune somme
+    explicite `a + b = c unit` -> reste wallclock. Ce test isole le comportement.
+    """
+    line = "La duree d'execution est 2.4 s pour 1000 iterations."
+    # Pas d'arithmetique de cout -> _categorize ne bascule pas en domain_quantity
+    # via la branche plan-cost (WALLCLOCK_KEYWORDS 'execution' -> wallclock).
+    assert _categorize(line, "2.4 s") == CATEGORY_WALLCLOCK
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -166,7 +166,18 @@ STUDENT_PACING_RE = re.compile(
     # Extensions #10162 : parenhese "(15 min)" / "(1-2 min)"
     r"\(\d+\s*(?:-\s*\d+)?\s*(?:min(?:utes?)?|sec(?:ondes?)?|h(?:eures?)?)\)|"
     # Extensions #10162 : cellule de tableau "| 15 min |"
-    r"\|\s*\d+\s*(?:-\s*\d+)?\s*(?:min(?:utes?)?|sec(?:ondes?)?|h(?:eures?)?)\s*\|)",
+    r"\|\s*\d+\s*(?:-\s*\d+)?\s*(?:min(?:utes?)?|sec(?:ondes?)?|h(?:eures?)?)\s*\|"
+    # Frontiere FP (frontier issue) : duree suivi d'un qualificatif d'effort
+    # humain entre parentheses -- « 45 min (lecture + execution sequentielle) ».
+    # C'est le meme signal que le pacing ci-dessus (effort demande a l'etudiant,
+    # arbitrage jsboige 14:05:37Z #9434), mais la duree PRECEDE la parenthese au
+    # lieu de s'y trouver (ex ICT-19-EnjeuBattery cell[0], ICT-19b cell[0]).
+    # NB : on cible le qualificatif d'effort (lecture/cours/tp) precisement -- la
+    # forme « moins de N » / « plus de N » est un signal de borne runtime OU de
+    # probabilite de domaine (P(trajet < 18 min)), PAS de pacing, et ne doit PAS
+    # etre exemptee (cf. brainstorm G.1 : sur-exemption cassait la propagation
+    # per-cell #10162 et flagait des wallclock reels « plus de 4 secondes »).
+    r"|\d+\s*(?:min(?:utes?)?|sec(?:ondes?)?|h(?:eures)?)\s*\(\s*(?:lecture|cours|travaux\s+pratiques|tp\b))",
     re.IGNORECASE,
 )
 
@@ -256,6 +267,15 @@ def _categorize(line: str, snippet: str) -> str:
     # Constante de protocole (consensus blockchain / canal de paiement) :
     # parametre du domaine, pas une duree machine. Residu 2 #10169.
     if PROTOCOL_KEYWORDS.search(line):
+        return CATEGORY_DOMAIN_QUANTITY
+    # Frontiere FP (frontier issue) : cout d'action dans une table de plan.
+    # La duree est le RESULTAT d'une arithmetique « N + M = K unit » (ex
+    # Planners-8-Temporal cell[37] « 5 + 4 = 9 min » = duree d'une livraison
+    # drone). C'est un parametre DETERMINISTE du domaine planifie, pas une
+    # duree machine. Le motif est precis (un vrai wallclock ne se rend presque
+    # jamais comme une somme explicite `a + b = c unit`) -- Sudoku-13 (controle
+    # positif) n'a aucune ligne de cette forme, donc reste detecte.
+    if re.search(r"\d+\s*\+\s*\d+\s*=\s*\d+\s*(?:min(?:utes?)?|sec(?:ondes?)?|s\b|h(?:eures)?)", line):
         return CATEGORY_DOMAIN_QUANTITY
     if WALLCLOCK_KEYWORDS.search(line):
         return CATEGORY_WALLCLOCK
