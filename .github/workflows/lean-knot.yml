@@ -40,10 +40,11 @@ name: Lean Knot CI
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 17 (raised from 16 by #9966: +1 wrapper front
-# tricolorable_forward_r1, characterized ∀c∈d₂.crossings wall, 2/3 sub-cases proven;
-# was 16 after #8766 discharged trefoil_not_unknot; re-verified 2026-07-29 at 16 by
-# canonical count_real_sorries replica + CI run 30465509621).
+# Total real tactic sorry = 16 (lowered from 17: the tricolorable_forward_r1
+# wrapper ∀c∈d₂.crossings wall is now DISCHARGED — append decomposition +
+# Lean core lemma List.mem_or_eq_of_mem_set + 3 proven sub-lemmas (_renamed,
+# _unchanged, _newKink) + nomatch on the singleton tail; was 17 raised by
+# #9966 which fronted the wall; 16 after #8766 discharged trefoil_not_unknot).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
@@ -99,7 +100,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "17"
+      sorry-baseline: "16"
       sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
