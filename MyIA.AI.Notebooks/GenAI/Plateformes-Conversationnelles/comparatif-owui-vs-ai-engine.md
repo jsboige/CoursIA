@@ -38,7 +38,7 @@ version 3.7.0), de son code source GPL (distribué via le dépôt SVN
 | **Modèle économique** | Open source pur | Freemium (gratuit + Pro) |
 | **License** | Open source (BSD-3 conforme au dépôt GitHub `open-webui/open-webui`) | GPL (conforme au dépôt WordPress plugins) |
 | **Statistiques publiques** | Écosystème open-source mature (image officielle OCI multi-tags, déploiement massif auto-hébergé) | **100K+ installations actives**, 4.9/5 étoiles (854 avis), 14 traductions, cadence hebdomadaire |
-| **Position dans le dépôt** | `MyIA.AI.Notebooks/GenAI/Open-WebUI/` (série dédiée) | Sibling `01-AI-Engine-WordPress/` (extension du parcours OWUI) |
+| **Position dans le dépôt** | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/` (sous-série dédiée) | Sibling `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/` (sous-série homologue) |
 
 ---
 
