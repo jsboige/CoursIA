@@ -2,10 +2,9 @@ name: Translation Sync
 
 # Purpose
 # -------
-# Autonomous CI that keeps translations synchronized with notebook sources on
-# every PR (grain C of #10038, the mandat-user deliverable). When a PR modifies
-# an in-scope notebook (any language — the mandate requires symmetry), this
-# workflow:
+# Autonomous CI that keeps translations synchronized with notebook sources.
+# When a commit lands on `main` that touches an in-scope notebook (any language
+# — the mandate requires symmetry), this workflow:
 #   T1  re-extracts the changed cells -> refreshes src_hash in the sync CSV
 #       (extract_cells_to_csv.py --update preserves existing translations)
 #   T2  detects drift (check_translation_sync.py: SRC_DRIFT = source moved)
@@ -14,15 +13,51 @@ name: Translation Sync
 #       never the whole CSV. This is the cost-marginal property (D4): N changed
 #       cells => N API calls, not the full corpus.
 #   T4  re-renders the *_<lang>.ipynb of active languages (render_notebook.py)
-#   then commits the derived files (CSV + rendered notebooks) to the PR branch
-#   as github-actions[bot]. The reviewer reads the SOURCE-LANGUAGE diff only;
-#   the derived translations are not reviewed (same contract as the catalog,
-#   cf catalog-drift.yml / catalog-guard.yml, decision #2632).
+#   then commits the derived files (CSV + rendered notebooks) to the long-lived
+#   branch `chore/translation-sync-pending` as github-actions[bot], tagged
+#   `[skip ci]`. A PR is opened (or updated) targeting main; merging the PR
+#   refreshes main. The bot NEVER pushes to main itself.
 #
-# Fork handling: same-repo PRs only (a bot cannot push to a fork branch). Fork
-# PRs are skipped here; the read-only translation-drift.yml still surfaces drift
-# as a notice for them. Publishing the patch as an artifact for forks is a
-# documented future enhancement (not required by the core mandate).
+# Why POST-MERGE on `main` (not per-PR on the PR branch)
+# ------------------------------------------------------
+# This workflow previously fired on `pull_request` and committed derived files
+# back to the PR branch as github-actions[bot] (issue #10067, MERGED 2026-07-19).
+# That design had two structural problems (issue #10133):
+#
+#   1. The bot commit moves the PR head SHA, which re-creates the entire check
+#      roster on a new SHA. The `PR gate` (the only required status check on
+#      main's branch protection) parks in `action_required` while 37+ queued
+#      runs drain. Result: `mergeable_state=blocked` permanent, visually
+#      indistinguishable from "still running". This affected 7+ PRs at the
+#      time of the report (#10110 #10116 #10117 #10118 #10119 #10122 #10125)
+#      and grew linearly in notebook PRs.
+#
+#   2. Auto-committing on a PR branch conflicts with the policy that PRs are
+#      reviewed for source-language intent only (cf #10042, decision #2632
+#      extended). A reviewer-facing diff that contains bot-generated
+#      translations invites review of artifacts the reviewer never wrote.
+#
+# Why a long-lived PR (not direct push to main) -- issue #10136
+# -------------------------------------------------------------
+# The earlier proposal in #10133 was "post-merge on `main`, mirroring
+# catalog-cron.yml". That proposal is non-viable as written: main's branch
+# protection requires the `PR gate` status check on EVERY push to main, and
+# the `push` event for a workflow that runs on `push` to `main` itself never
+# produces a `PR gate` run. Result: GH006 ("Required status check 'PR gate' is
+# expected"). catalog-cron.yml hit this on run 31293765051, 2026-08-09T04:03Z;
+# translation-sync.yml would hit the exact same barrier.
+#
+# Resolution: the bot pushes to a long-lived branch (`chore/translation-sync-pending`)
+# and opens (or updates) a PR targeting main. The PR goes through normal
+# checks; merging it is what refreshes main. This is the same structural
+# pattern as catalog-cron.yml post-#10136.
+#
+# The detection story is preserved by:
+#   - translation-guard.yml  (FAIL on hand-edited *_<lang>.ipynb / CSV -- unchanged)
+#   - translation-drift.yml  (read-only drift notice on PR -- unchanged)
+# So a PR with out-of-sync translations still surfaces drift to the reviewer
+# via translation-drift.yml, but the regeneration now happens via this long-lived
+# PR after the source-language change has landed on main.
 #
 # Coupling / honest current state:
 #   - T3 (translate_csv.py) is GATED by ENABLED=False until grain D (#10043)
@@ -33,19 +68,31 @@ name: Translation Sync
 #   - The translation API key comes from GitHub secrets (never a literal, never
 #     logged — secrets-hygiene §1-3): secrets.OPENAI_API_KEY (primary) /
 #     secrets.OPENROUTER_API_KEY (fallback). A repo admin must add the secret.
+#   - This workflow SUPERSEDES the per-PR design of #10067 (MERGED 2026-07-19)
+#     and the post-merge-on-main proposal of #10133 / PR #10135. Both earlier
+#     designs hit structural barriers (#10067: check roster re-creation;
+#     #10133: GH006 on main). The replacement is verified by issue #10136.
 #
-# Catalog precedent (#2744 retired auto-commit-on-PR): that design was abandoned
-# because bot commits silently REVERTED curated catalog fields (maturity,
-# issue_pr_associee). Translations differ: (a) the CSV carries no curated fields
-# beyond post-edited text_<lang>, and (b) src_hash indexing means a bot only
-# touches cells whose SOURCE changed — a curated post-edit (CJK, proper noun)
-# of an UNCHANGED cell is never overwritten. This is the grain-C body's argument
-# (#10042) and it is sound under the incremental T3 contract.
+# Reconciliation with the previous bot design:
+#   - #10067 (MERGED, the original per-PR auto-commit bot) is structurally
+#     superseded: the workflow it added is replaced by this one.
+#   - #10127 (OPEN, `concurrency` block on the per-PR design) is superseded
+#     by the trigger change itself — concurrency only mattered because the
+#     bot kept pushing on PR branches. After this change there is no per-PR
+#     push to serialize.
+#   - PR #10135 (OPEN, post-merge on main) is superseded by this design:
+#     push on main is blocked by GH006; the long-lived PR is the structurally
+#     viable variant.
+#   - translation-guard.yml and translation-drift.yml are kept AS-IS. Their
+#     job is unchanged and they correctly exempt github-actions[bot] when the
+#     bot now commits to chore/translation-sync-pending (the guard's check is
+#     path-based, not branch-based — bot commits to the long-lived branch do
+#     not appear on a feature branch's diff in the first place).
 #
-# See #10038, #10042, #4957, #1650, #6949.
+# See #10038, #10042, #4957, #1650, #6949, #10133, #10136.
 
 on:
-  pull_request:
+  push:
     branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
@@ -54,26 +101,51 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # bot commit to the PR branch
-  pull-requests: write
+  contents: write   # bot commit to chore/translation-sync-pending
+  pull-requests: write   # open/update the long-lived PR via github-script
+
+concurrency:
+  group: translation-sync-main
+  cancel-in-progress: false
 
 jobs:
   translation-sync:
-    name: "Translation auto-sync (bot)"
+    name: "Translation auto-sync (long-lived PR)"
     runs-on: ubuntu-latest
-    # Same-repo PRs only: a bot cannot push to a fork's branch. workflow_dispatch
-    # (manual maintainer trigger) always allowed.
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    # workflow_dispatch (manual maintainer trigger) always allowed.
+    # push events from github-actions[bot] are skipped automatically via
+    # [skip ci] in the commit message — defense in depth.
 
     steps:
-      - name: Checkout PR head (with token for bot commit)
+      - name: Checkout main (history only)
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          ref: main
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      # Prepare the long-lived branch from origin/main. The bot NEVER touches
+      # main directly — it only operates on chore/translation-sync-pending.
+      - name: Prepare chore/translation-sync-pending branch
+        run: |
+          set -euo pipefail
+          BRANCH="chore/translation-sync-pending"
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "Branch $BRANCH already exists on origin; checking it out."
+            git fetch origin "$BRANCH"
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+            # Rebase on top of origin/main so T1 sees the freshest set of
+            # changed notebooks. Translation re-render is idempotent -- same
+            # main + same source produces the same output, so rebase-and-retry
+            # is safe.
+            git fetch origin main
+            git rebase origin/main
+          else
+            echo "Branch $BRANCH does not exist on origin yet; creating it from origin/main."
+            git fetch origin main
+            git checkout -b "$BRANCH" origin/main
+          fi
+          echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -90,8 +162,11 @@ jobs:
 
       # ------------------------------------------------------------------
       # T1 — re-extract changed notebooks to refresh src_hash in their CSVs.
-      # --update preserves existing text_<lang>/hash_<lang> columns (no clobber
-      # of curated post-edits), only refreshes src_hash for changed cells.
+      # On main we don't know which notebooks "changed" relative to a base
+      # (we ARE the base); instead we sweep the in-scope set identified by
+      # `git log -1 --name-only` for the latest push. The script is
+      # idempotent and --update preserves existing translations: unchanged
+      # cells with existing text_<lang>/hash_<lang> are never re-submitted.
       # ------------------------------------------------------------------
       - name: T1 re-extract (refresh src_hash for changed notebooks)
         id: t1
@@ -103,13 +178,15 @@ jobs:
             exit 0
           fi
           echo "has_translations=true" >> "$GITHUB_OUTPUT"
-          # Changed *.ipynb on this PR (any language — symmetry per mandate).
-          BASE="origin/${{ github.base_ref }}"
-          CHANGED_NB=$(git diff --name-only "$BASE...HEAD" -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          # Notebooks touched by the most recent commit on main (single push
+          # event). If the push contains many files, this may be empty (e.g.
+          # a workflow-only commit) — T1 then no-ops and T4 idempotently
+          # re-renders all known *_<lang>.ipynb from the existing CSVs.
+          CHANGED_NB=$(git log -1 --name-only --pretty=format: -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
           if [ -z "$CHANGED_NB" ]; then
-            echo "No in-scope notebooks changed. Running a drift check only."
+            echo "No in-scope notebook changed in the latest commit. T1 will no-op (idempotent re-extract skipped)."
           else
-            echo "Changed notebooks:"
+            echo "Changed notebooks in the latest commit:"
             echo "$CHANGED_NB" | sed 's/^/  - /'
             # --update refreshes src_hash in existing CSVs without clobbering T3 columns.
             for nb in $CHANGED_NB; do
@@ -170,6 +247,9 @@ jobs:
       # T4 — re-render the *_<lang>.ipynb of active languages from each CSV.
       # render_notebook.py takes --csv --notebook (source FR) --lang --out.
       # The source notebook path is read from the CSV's 'notebook' column.
+      # The active-language list is sourced from scripts/translation/check_perimeter.py
+      # via importlib.util.spec_from_file_location — single source of truth,
+      # post #10109 consolidation.
       # ------------------------------------------------------------------
       - name: T4 render translated notebooks
         if: steps.t1.outputs.has_translations == 'true'
@@ -177,12 +257,16 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           import csv, pathlib, subprocess, sys
-          active_langs = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
+          import importlib.util
+          spec = importlib.util.spec_from_file_location(
+              "check_perimeter", "scripts/translation/check_perimeter.py")
+          mod = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(mod)
+          active_langs = list(mod.TARGET_LANGS)
           troot = pathlib.Path("translations")
           if not troot.exists():
               sys.exit(0)
           for csv_path in troot.rglob("*.csv"):
-              # Collect distinct source notebooks referenced by this CSV.
               notebooks = set()
               with open(csv_path, newline="", encoding="utf-8") as fh:
                 for row in csv.DictReader(fh):
@@ -208,23 +292,106 @@ jobs:
           PY
 
       # ------------------------------------------------------------------
-      # Commit derived files to the PR branch as github-actions[bot]. Only if
-      # the pipeline produced changes (CSV src_hash refresh, new translations
-      # post-D, re-rendered notebooks). translation-guard.yml exempts the bot.
+      # Commit derived files to chore/translation-sync-pending as
+      # github-actions[bot], tagged `[skip ci]`. Direct push to main is
+      # blocked by GH006 (PR gate required) -- the long-lived PR is the
+      # structurally viable delivery vehicle (issue #10136).
       # ------------------------------------------------------------------
-      - name: Commit derived translations (bot)
+      - name: Commit + push derived translations to chore/translation-sync-pending
+        id: drift
         run: |
           set -euo pipefail
+          BRANCH="chore/translation-sync-pending"
           git add translations 'MyIA.AI.Notebooks/**/*_en.ipynb' 'MyIA.AI.Notebooks/**/*_ru.ipynb' \
               'MyIA.AI.Notebooks/**/*_pt.ipynb' 'MyIA.AI.Notebooks/**/*_es.ipynb' \
               'MyIA.AI.Notebooks/**/*_ar.ipynb' 'MyIA.AI.Notebooks/**/*_fa.ipynb' \
               'MyIA.AI.Notebooks/**/*_zh.ipynb' 2>/dev/null || true
+
           if git diff --cached --quiet; then
-            echo "::notice title=Translation sync::No derived-translation changes to commit."
-          else
-            CHANGED_COUNT=$(git diff --cached --name-only | wc -l)
-            echo "Committing $CHANGED_COUNT derived-translation file(s) to PR branch."
-            COMMIT_MSG="chore(translation): auto-sync derived translations [bot] (T1+T3+T4, See #10038 #10042; T3 gated on #10043)"
-            git commit -m "$COMMIT_MSG" || echo "commit failed (possibly empty or race) — continuing"
-            git push || echo "::warning title=Translation sync::push failed (token scope or race). Derived files left uncommitted on the runner."
+            echo "::notice title=Translation sync::No derived-translation changes to commit. main already in sync."
+            echo "drift_detected=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "drift_detected=true" >> "$GITHUB_OUTPUT"
+
+          CHANGED_COUNT=$(git diff --cached --name-only | wc -l)
+          echo "Pushing $CHANGED_COUNT derived-translation file(s) to $BRANCH."
+          git diff --cached --name-only
+
+          git commit \
+            -m "chore(translation): auto-sync derived translations [bot] [skip ci]" \
+            -m "See #10038 #10042; T3 gated on #10043; long-lived PR delivery (See #10133 #10136)." \
+            -m "Generated by translation-sync.yml on push to main. Direct push to main blocked by GH006 (PR gate required); this commit lives on chore/translation-sync-pending until a maintainer merges the long-lived PR."
+
+          if ! git push origin "HEAD:$BRANCH"; then
+            echo "::error title=Translation push rejected::Could not push $BRANCH to origin. Check that github-actions[bot] has push rights on chore/* branches, then re-run this workflow."
+            exit 1
+          fi
+          echo "::notice title=Translation sync::$BRANCH pushed; PR open/update follows in next step."
+
+      # Open the long-lived PR if it does not exist yet; otherwise, ping a
+      # maintainer comment on the existing PR to signal a new push is ready.
+      - name: Open or update the translation-sync PR
+        if: steps.drift.outputs.drift_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = 'chore/translation-sync-pending';
+            const prTitle = 'chore(translation): auto-sync derived translations (long-lived PR)';
+            const prBody = [
+              '## Purpose',
+              '',
+              'Long-lived PR refreshed on every push to `main` (or via `workflow_dispatch`) by `translation-sync.yml`.',
+              'Keeps `translations/*.csv` + `MyIA.AI.Notebooks/**/*_<lang>.ipynb` synchronized with the source notebooks',
+              'on the latest `main` (grain C of #10038).',
+              '',
+              '**Maintainer review only — no direct push to `main`** (issue #10136). The bot opens',
+              'or updates this PR; merging it refreshes `main` through the normal PR gate.',
+              '',
+              '## What to review',
+              '',
+              '- `translations/*.csv` `src_hash` rows updated for cells whose source actually changed.',
+              '- `text_<lang>` / `hash_<lang>` columns preserved on unchanged cells (T3 incremental contract, D4).',
+              '- Re-rendered `*_<lang>.ipynb` files match the freshly-extracted CSVs.',
+              '',
+              '## Close policy',
+              '',
+              'When the pipeline produces no changes (the workflow runs `::notice title=Translation sync::No derived-translation changes to commit. main already in sync.`)',
+              'this PR will be auto-closed by `translation-pr-close.yml`. Subsequent drift reopens it under the same branch.',
+              '',
+              'See `.claude/rules/secrets-hygiene.md` for the API key handling, and #10038, #10042, #10043, #10133, #10136.',
+            ].join('\n');
+
+            const existing = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', head: `${owner}:${branch}`, per_page: 1,
+            });
+            if (existing.length > 0) {
+              const pr = existing[0];
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: pr.number,
+                body: [
+                  `New commit pushed on \`${branch}\` by translation-sync (run \`${context.runId}\`).`,
+                  `Last commit SHA: \`${context.sha.slice(0, 12)}\`.`,
+                  'Derived translations refreshed. Maintainer: please review + merge when convenient.',
+                ].join('\n'),
+              });
+              core.info(`Updated existing PR #${pr.number} (${pr.html_url})`);
+              return;
+            }
+
+            const created = await github.rest.pulls.create({
+              owner, repo,
+              title: prTitle,
+              head: branch,
+              base: 'main',
+              body: prBody,
+              maintainer_can_modify: true,
+            });
+            await github.rest.issues.addLabels({
+              owner, repo,
+              issue_number: created.data.number,
+              labels: ['translation-sync', 'automation'],
+            });
+            core.info(`Opened new PR #${created.data.number} (${created.data.html_url})`);
