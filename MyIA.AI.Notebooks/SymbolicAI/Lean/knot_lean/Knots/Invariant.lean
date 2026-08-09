@@ -747,8 +747,10 @@ theorem triColorConditionAt_renamed {d₁ d₂ : KnotDiagram}
   omega
 
 /-- **Direction avant** de l'invariance de tricolorabilité par torsion R1
-    connectée. Témoin = extension triviale. Voir la note de blocage ci-dessus
-    pour le mur actuel (la conjonction `∀ c ∈ d₂.crossings`). -/
+    connectée. Témoin = extension triviale. Le mur `∀ c ∈ d₂.crossings` est
+    résolu (c.995) : décomposition append + lemme core
+    `List.mem_or_eq_of_mem_set` (`a ∈ l.set i b → a ∈ l ∨ a = b`) +
+    3 sous-lemmas (`_renamed`, `_unchanged`, `_newKink`). -/
 theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) (htc : IsTricolorable d₁) :
     IsTricolorable d₂ := by
@@ -759,18 +761,43 @@ theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
   -- réglé en c.982, cf. `tricolorForwardExtension`).
   refine' ⟨tricolorForwardExtension hnum2 a ha1 ha2 coloring₁, ?_, ?_, ?_⟩
   · -- (1) `∀ c ∈ d₂.crossings, triColorConditionAt d₂ coloring₂ c`.
-    --   `hsurg` déplie `d₂.crossings = d₁.crossings.set i.val Y' ++ [newKink]`.
-    --   Les 3 sous-cas sont PROUVÉS (lemmes ci-dessus) :
-    --     • (a) `c = Y'` (renamed)        → `triColorConditionAt_renamed`
-    --     • (b) c inchangé (d₁, index ≠ i) → `triColorConditionAt_unchanged`
-    --     • (c) `c = newKink`              → `triColorConditionAt_newKink`
-    --   MUR NOMMÉ restant (c.986) : la décomposition d'appartenance
-    --   `c ∈ d₁.crossings.set i.val Y' → c = Y' ∨ c ∈ d₁.crossings` n'a pas de
-    --   lemme nommé en Lean 4.11 (`List.get_set`/`mem_set_iff` absents ;
-    --   `simpa using hc` échoue, pas de forme normale simp pour `List.set`).
-    --   Raccourcissement du pont (Fin/getElem/getElem_set_of_ne) = travail
-    --   dédié prochain cycle. Les sous-faits mathématiques sont établis.
-    exact sorry
+    --   `hsurg` : `d₂.crossings = d₁.crossings.set i.val Y' ++ [newKink]`.
+    --   3 sous-cas PROUVÉS + lemme core `List.mem_or_eq_of_mem_set` (c.995).
+    intro c hc
+    rw [hsurg] at hc
+    obtain hc_set | hc_kink := List.mem_append.mp hc
+    · -- (i)+(ii) `c ∈ d₁.crossings.set i.val Y'` : c'est `Y'` (renommé) ou un
+      -- crossing `d₁` inchangé (via `List.mem_or_eq_of_mem_set`).
+      by_cases hY : c = Y'
+      · -- (i) c = Y' : crossing renommé. `hcond` (htc) fournit la condition du
+        -- crossing source `d₁.crossings.get i`, transportée par `_renamed`.
+        subst hY
+        have hget_mem : d₁.crossings.get i ∈ d₁.crossings := List.get_mem d₁.crossings i
+        have hcond_i : triColorConditionAt d₁ coloring₁ (d₁.crossings.get i) :=
+          hcond _ hget_mem
+        exact triColorConditionAt_renamed hnum2 a ha1 ha2 coloring₁ _
+          (d₁.crossings.get i) hrename hcond_i
+      · -- (ii) c ≠ Y' : crossing `d₁` inchangé. `List.mem_or_eq_of_mem_set`
+        -- donne `c ∈ d₁.crossings ∨ c = Y'` ; `hY` écarte `.inr`, d'où `c ∈
+        -- d₁.crossings`, puis `_unchanged` transporte la condition.
+        have hc_in : c ∈ d₁.crossings := by
+          rcases List.mem_or_eq_of_mem_set hc_set with h | h'
+          · exact h
+          · exact absurd h' hY
+        have hcond_c : triColorConditionAt d₁ coloring₁ c := hcond _ hc_in
+        -- Bornes (8) extraites de `hcond_c` (définitionnellement la conjonction).
+        have hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+                      1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+                      1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+                      1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges := by
+          have := hcond_c
+          simp only [triColorConditionAt] at this
+          exact this.1
+        exact triColorConditionAt_unchanged hnum2 a ha1 ha2 coloring₁ c hc_wf hcond_c
+    · -- (iii) `c ∈ [newKink]` : seul le `head`, `c = newKink`.
+      cases hc_kink with
+        | head _ => exact triColorConditionAt_newKink hnum2 a ha1 ha2 coloring₁
+        | tail _ h => nomatch h
   · -- (2) `d₂.numEdges ≥ 2` : `d₂.numEdges = d₁.numEdges + 2 ≥ 2`.
     rw [hnum2]; omega
   · -- (3) ≥ 2 couleurs : héritées de `coloring₁` (le préfixe `[0, d₁.numEdges)` est

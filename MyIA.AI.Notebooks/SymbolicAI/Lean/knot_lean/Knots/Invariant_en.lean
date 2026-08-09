@@ -654,8 +654,10 @@ theorem triColorConditionAt_renamed {d₁ d₂ : KnotDiagram}
   omega
 
 /-- **Forward direction** of tricolorability invariance under connected R1 twist.
-    Witness = trivial extension. See the blocking note above for the current wall
-    (the `∀ c ∈ d₂.crossings` conjunction). -/
+    Witness = trivial extension. The wall `∀ c ∈ d₂.crossings` is resolved
+    (c.995): append decomposition + core lemma `List.mem_or_eq_of_mem_set`
+    (`a ∈ l.set i b → a ∈ l ∨ a = b`) + 3 sub-lemmas (`_renamed`,
+    `_unchanged`, `_newKink`). -/
 theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) (htc : IsTricolorable d₁) :
     IsTricolorable d₂ := by
@@ -665,18 +667,44 @@ theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
   -- Witness: the trivial extension. `a`/bounds passed explicit (Prop → Type
   -- settled in c.982, cf. `tricolorForwardExtension`).
   refine' ⟨tricolorForwardExtension hnum2 a ha1 ha2 coloring₁, ?_, ?_, ?_⟩
-  · -- (1) CHARACTERIZED WALL: `∀ c ∈ d₂.crossings, triColorConditionAt d₂ coloring₂ c`.
-    --   Unfolding required: `d₂.crossings = d₁.crossings.set i Y' ++ [⟨a,n+1,n+2,n+2⟩]`
-    --   (`hsurg`) → 3 sub-cases by `List.set`/append membership:
-    --     • `c = Y'` (renamed slot): `colorAtNat_fresh_eq` + `colorAtNat_eq` on
-    --       the unchanged slots + `isRenameOf hrename` → Fox preserved.
-    --     • `c` unchanged (d₁ crossing, index ≠ i): `colorAtNat_eq` on the 4 slots.
-    --     • `c = ⟨a,n+1,n+2,n+2⟩` (new kink): `colorAtNat_eq` (slot a) +
-    --       `colorAtNat_freshEdge_eq` (slots n+1,n+2) → Fox all-equal (or.inl).
-    --   3 tactics attempted: `rw [hsurg]; rintro _ (hc|hc)`, `simp only [List.mem_append,
-    --   List.mem_set]`, manual `obtain`. None closes without a named bridge lemma
-    --   carrying `isRenameOf` + the 4 colorAtNat reductions (cf. named-hard-wall).
-    exact sorry
+  · -- (1) `∀ c ∈ d₂.crossings, triColorConditionAt d₂ coloring₂ c`.
+    --   `hsurg`: `d₂.crossings = d₁.crossings.set i.val Y' ++ [newKink]`.
+    --   3 sub-cases PROVEN + core lemma `List.mem_or_eq_of_mem_set` (c.995).
+    intro c hc
+    rw [hsurg] at hc
+    obtain hc_set | hc_kink := List.mem_append.mp hc
+    · -- (i)+(ii) `c ∈ d₁.crossings.set i.val Y'`: it's `Y'` (renamed) or an
+      -- unchanged `d₁` crossing (via `List.mem_or_eq_of_mem_set`).
+      by_cases hY : c = Y'
+      · -- (i) c = Y': renamed crossing. `hcond` (htc) provides the source
+        -- crossing condition `d₁.crossings.get i`, transported by `_renamed`.
+        subst hY
+        have hget_mem : d₁.crossings.get i ∈ d₁.crossings := List.get_mem d₁.crossings i
+        have hcond_i : triColorConditionAt d₁ coloring₁ (d₁.crossings.get i) :=
+          hcond _ hget_mem
+        exact triColorConditionAt_renamed hnum2 a ha1 ha2 coloring₁ _
+          (d₁.crossings.get i) hrename hcond_i
+      · -- (ii) c ≠ Y': unchanged `d₁` crossing. `List.mem_or_eq_of_mem_set`
+        -- gives `c ∈ d₁.crossings ∨ c = Y'`; `hY` rules out `.inr`, yielding
+        -- `c ∈ d₁.crossings`, then `_unchanged` transports the condition.
+        have hc_in : c ∈ d₁.crossings := by
+          rcases List.mem_or_eq_of_mem_set hc_set with h | h'
+          · exact h
+          · exact absurd h' hY
+        have hcond_c : triColorConditionAt d₁ coloring₁ c := hcond _ hc_in
+        -- 8 bounds extracted from `hcond_c` (definitionally the conjunction).
+        have hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+                      1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+                      1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+                      1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges := by
+          have := hcond_c
+          simp only [triColorConditionAt] at this
+          exact this.1
+        exact triColorConditionAt_unchanged hnum2 a ha1 ha2 coloring₁ c hc_wf hcond_c
+    · -- (iii) `c ∈ [newKink]`: only the `head`, `c = newKink`.
+      cases hc_kink with
+        | head _ => exact triColorConditionAt_newKink hnum2 a ha1 ha2 coloring₁
+        | tail _ h => nomatch h
   · -- (2) `d₂.numEdges ≥ 2`: `d₂.numEdges = d₁.numEdges + 2 ≥ 2`.
     rw [hnum2]; omega
   · -- (3) ≥ 2 colors: inherited from `coloring₁` (the prefix `[0, d₁.numEdges)` is
