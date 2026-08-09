@@ -21,6 +21,12 @@
       csharp_sha: 8a66009c6597f54f6000b01aea6046b9c0da3d2d
       content_python_sha: d1fe10134ab24d1f3e2dd0bace24236d4fcab07b1cd1afbb93ca3af29b194b09
       content_csharp_sha: d173a98ebf56f36fcf4d80c271613359b19aa577325e264445aebb1abee7a3ee
+    - date: "2026-08-09"
+      by: myia-po-2024:CoursIA
+      python_sha: cd9b0d292100b31b38b036e77954534d0eb69ab5
+      csharp_sha: 8a66009c6597f54f6000b01aea6046b9c0da3d2d
+      content_python_sha: eb2571fa7f0df9984c7dcc3067b57c80db0cd248f7ac1f2a9b058f33ef057d7f
+      content_csharp_sha: d173a98ebf56f36fcf4d80c271613359b19aa577325e264445aebb1abee7a3ee
   known_differences:
     - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
     - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : from-scratch BCL .NET (0 NuGet, Job-Shop modelise main, instance canonique Fisher & Thompson ft3 reprise cote Python)."
