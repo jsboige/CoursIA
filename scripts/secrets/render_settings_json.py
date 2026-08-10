@@ -96,22 +96,26 @@ def read_env(path: Path) -> dict[str, str]:
 def mask(value: str) -> str:
     """Mirror ``render_envs.mask`` (last-4 reveal) for display.
 
-    CodeQL ``py/clear-text-logging-sensitive-data`` is a taint-tracking rule
-    that cannot recognize mask() as a sanitizer and flags print() of any
-    value flowing from a sensitive dict key (e.g. ``payload["apikey"]``),
-    even when the value is masked.
+    CodeQL has TWO rules that flag the natural masking pattern:
 
-    To stay diagnostic-valuable without exposing the secret, the returned
-    marker encodes only a SHA-256-prefix hash (no substring of ``value``,
-    no length). The hash is computed by ``hashlib.sha256``, a C builtin
-    that CodeQL treats as a taint barrier. The result is therefore NOT
-    considered tainted by the sensitive-source-to-print-sink rule.
+    1. ``py/clear-text-logging-sensitive-data`` flags print() of any value
+       flowing from a sensitive dict key (e.g. ``payload["apikey"]``),
+       because CodeQL cannot recognize arbitrary masking functions as
+       sanitizers.
+    2. ``py/weak-cryptographic-hash`` flags hashing of sensitive data with
+       a non-expensive hash like SHA-256.
+
+    Workaround that avoids BOTH: return a CONSTANT string that does not
+    depend on any substring of ``value`` (not even ``len(value)``, which
+    CodeQL would mark as tainted when interpolated into an f-string).
+    The diagnostic information ("is it set?") is preserved via the
+    ``<empty>`` / ``<set>`` distinction. The drift detection in check()
+    still works because it compares full values via ``!=``, not via
+    the marker.
     """
-    import hashlib
     if not value:
         return "<empty>"
-    digest = hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]
-    return f"<redacted sha256={digest}>"
+    return "<set>"
 
 
 # --------------------------------------------------------------------------- #
