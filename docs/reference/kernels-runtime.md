@@ -151,6 +151,8 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 | python3-wsl | Python (WSL 3.12) | wsl_papermill.py |
 | smartcontracts | Python | Papermill |
 
+**Écart de compte non résolu** : l'intitulé annonce « 10 registered », la table en liste **9**. Non re-mesurable en l'état — po-2025 est **CONFIRMÉ non joignable** firsthand (#9976 : `HTTP 000` + 100 % de perte ping, LAN physiquement disjoint). Ni le 10 ni le 9 ne sont corrigés ici : un relevé `jupyter kernelspec list` tranchera au retour de la machine. Ne pas citer l'un des deux comme mesuré.
+
 **Note** : la colonne *Executable via* disait « MCP Jupyter cell-by-cell » pour les kernels `.net-*` et `lean4*`. C'etait faux pour `.NET` (Papermill execute `.net-csharp` firsthand, cf L19-21 et la mesure nuget ci-dessus) et **ne s'applique pas** au chemin recommande : le MCP `jupyter-papermill` hang (#835) et ignore `kernel_name` (#5211) — il ne doit **jamais** etre le chemin de re-exec cite dans cette table. Pour `lean4`/`lean4-wsl`, le chemin `notebook_tools.py execute` (Papermill in-process avec translator enregistre, `notebook_tools.py` L1139-1179) est le mecanisme reel ; non re-mesure ce cycle, ne pas affirmer sans mesure.
 
 #### Papermill : env de reference
@@ -222,9 +224,34 @@ Installation : `python SymbolicAI/SmartContracts/setup_env.py`.
 | `SymbolicAI/Lean/scripts/validate_lean_setup.py` | Valide env Lean (elan, lean4-jupyter, kernel, openai) |
 | `SymbolicAI/Lean/scripts/setup_wsl_python.sh` | Setup WSL Python pour lean4-wsl kernel |
 
-### Autres machines (po-2023/24/26)
+### po-2023 (inventaire kernels, 2026-08-10)
 
-Vérifier qu'elles ont aussi un env Conda dédié ou un venv local équivalent. La mémoire est spécifique ai-01 mais le pattern (env dédié ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
+**Machine** : hôte des services GenAI Image/Audio/Video (8 services Docker), RTX 3080 + eGPU RTX 3090, 40 GB VRAM (16 + 24) — cf [cluster-agents.md](cluster-agents.md) L10. **po-2023 n'est PAS CPU-only** : la mention « CPU-only strict » de ce fichier (L114) appartient à **po-2025** (MSI GE76 Raider, 11 crashes GPU), et c'est la seule machine du cluster ainsi caractérisée. Ne pas router par famille sur cette base.
+
+#### Jupyter kernels (12 registered)
+
+Relevé `jupyter kernelspec list` firsthand sur po-2023, 2026-08-10.
+
+| Kernel | Type | Usage |
+|--------|------|-------|
+| `.net-csharp` | .NET Interactive | notebooks C# (ML, Sudoku, Probas, SymbolicAI .NET) |
+| `.net-fsharp` | .NET Interactive | notebooks F# |
+| `.net-powershell` | .NET Interactive | notebooks PowerShell |
+| `python3` | Python (Windows) | notebooks Python natifs |
+| `python3-wsl` | Python (WSL) | notebooks Python côté WSL |
+| `lean4-wsl` | Lean 4 (WSL) | `SymbolicAI/Lean` |
+| `gametheory-wsl` | Python (WSL + OpenSpiel) | `GameTheory` |
+| `mcp-jupyter-py310` | Python 3.10 | exécution Papermill (env de référence) |
+| `acestep-venv` | Python (venv) | GenAI Audio — ACE-Step |
+| `dia-tts` | Python (venv) | GenAI Audio — Dia TTS |
+| `bonsai-gpu` | Python (GPU) | notebooks GPU |
+| `cleanenv-k` | Python (env propre) | tests d'isolation de dépendances |
+
+**Couverture des trois kernels installables partout** (règle F / H.2) : .NET Interactive **OK**, Python **OK**, Lean 4 **OK** (via WSL). Aucun contournement « kernel not available locally » n'est recevable sur cette lane.
+
+### Autres machines (po-2024/26)
+
+Inventaire kernels non encore relevé. Vérifier aussi l'env Conda dédié ou son venv équivalent : la mémoire est spécifique ai-01 mais le pattern (env dédié ML) est cluster-wide. Relever via `conda env list` **et** `jupyter kernelspec list` sur chaque machine.
 
 ### GenAI GPU stack : triton-windows + bitsandbytes
 
