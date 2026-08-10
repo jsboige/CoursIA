@@ -75,7 +75,7 @@ Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualit
 
 <p align="center">
   <a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb"><img src="assets/readme/video-svd.png" width="540" alt="« Images de test pour SVD » — 3 vignettes côte-à-côte servant d'inputs pour Stable Video Diffusion (Paysage avec montagnes / Silhouette portrait / Coucher de soleil sur l'eau), pas une sortie SVD."></a><br>
-  <em>Sortie du notebook <a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb">02-4</a> : <strong>images de test (inputs)</strong> pour Stable Video Diffusion — 3 vignettes statiques servant de données d'entrée : paysage avec montagnes / silhouette portrait / coucher de soleil sur l'eau. <strong>Ce ne sont PAS des sorties SVD générées</strong>, mais les sources fournies au modèle ; les animations produites sont à voir dans le notebook lui-même.</em>
+  <em>Le notebook <a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb">02-4</a> <strong>exécute réellement</strong> Stable Video Diffusion (pipeline <code>stable-video-diffusion-img2vid-xt</code> complet, ~100 s par génération sur RTX 3090, ~10 GB VRAM) et anime ces images d'entrée. L'image ci-dessus montre les <strong>3 images sources (inputs)</strong> — paysage avec montagnes / silhouette portrait / coucher de soleil sur l'eau — ; les <strong>animations générées</strong> (contact-sheets de frames + mesure quantitative du mouvement via <code>motion_bucket_id</code>) sont visibles dans le notebook lui-même. Licence Stable Video Diffusion Community : aucune exclusion territoriale, l'utilisateur possède les outputs.</em>
 </p>
 
 | Notebook | Contenu | Service | VRAM |
