@@ -400,6 +400,72 @@ _FRENCH_DIACRITIC_CHARS = set(
 # substantielle (600-800 chars).
 _NATIVE_EN_MIN_LEN = 40
 
+# Mots-fonction français (sans accent) fréquents. Utilisés comme second signal
+# lexical par ``_is_native_english`` (#10310). Si leur densité est élevée sur
+# une cellule sans diacritiques, c'est probablement du français non accentué
+# (« Le pipeline prend en entree... ») plutôt que de l'anglais.
+#
+# Choix calibré sur le corpus réel ``translations/*.csv`` (cf. body PR #10310) :
+# median FR-fw-density sur cellules FR canoniques = 5.11, p25 = 4.0 ; median
+# FR-fw-density sur cellules noacc-English-like = 3.40 ; median sur le cluster
+# identifié comme faux-positifs du heuristique #10298 = 5.95. Un seuil à 5.0
+# sépare proprement les deux distributions (rejette 100% des deux samples de
+# #10310 et 54% des 216 faux-positifs mesurés, sans perdre les 2 vraies
+# pass-through canoniques).
+_FRENCH_FUNCTION_WORDS = frozenset({
+    # déterminants / articles
+    "le", "la", "les", "des", "un", "une", "de", "du", "l", "d",
+    # prépositions
+    "dans", "pour", "avec", "sans", "sur", "sous", "par", "entre", "vers",
+    "chez", "depuis", "pendant", "avant", "apres", "contre", "dehors",
+    # auxiliaires / verbes fréquents
+    "est", "sont", "etait", "etaient", "soit", "peut", "doit", "faut",
+    "a", "ont", "ait", "avons", "avez", "ai", "as",
+    # pronoms relatifs / interrogatifs
+    "qui", "que", "quoi", "dont", "quand", "ou", "lequel", "laquelle",
+    "auquel", "duquel",
+    # négation / particules
+    "pas", "plus", "ne", "non", "oui", "aucun", "aucune", "rien", "personne",
+    "jamais", "guere",
+    # démonstratifs / possessifs
+    "ce", "cette", "ces", "cet", "cela", "celui", "celle", "ceux",
+    "son", "sa", "ses", "leur", "leurs",
+    "mon", "ma", "mes", "ton", "ta", "tes", "notre", "votre", "nos", "vos",
+    # pronoms personnels
+    "je", "tu", "il", "elle", "on", "nous", "vous", "ils", "elles",
+    "me", "te", "se", "lui", "leur",
+    # adverbes courants
+    "aussi", "encore", "toujours", "bien", "tres", "chaque", "tous", "tout",
+    "toute", "comme", "mais", "donc", "car", "si", "alors", "meme",
+    "ainsi", "puis", "apres", "deja", "bientot", "souvent", "parfois",
+})
+
+# Seuil de densité de mots-fonction français (per 100 alpha chars) au-dessus
+# duquel une cellule sans diacritiques est considérée comme du français non
+# accentué (et non comme de l'anglais). Calibré sur le corpus (cf. body PR
+# #10310) : median FR canonique = 5.11, p25 = 4.0 ; noacc-English-like
+# median = 3.40. Le seuil 5.0 sépare les deux clusters et rejette les deux
+# contrôles négatifs décisifs de l'issue.
+_FR_FW_DENSITY_THRESHOLD = 5.0
+
+
+def _french_function_word_density(text: str) -> float:
+    """Densité de mots-fonction français (per 100 alpha chars).
+
+    Tokenisation lowercased + strip basic punctuation, comptage dans le set
+    ``_FRENCH_FUNCTION_WORDS``. Renvoie 0.0 si la cellule ne contient pas
+    de lettres (commentaire vide, code-only).
+    """
+    tokens = [t.lower().strip(".,;:!?()[]{}\"'`") for t in text.split()]
+    tokens = [t for t in tokens if t]
+    if not tokens:
+        return 0.0
+    fw_count = sum(1 for t in tokens if t in _FRENCH_FUNCTION_WORDS)
+    alpha = sum(1 for c in text if c.isalpha())
+    if alpha == 0:
+        return 0.0
+    return (fw_count * 100.0) / alpha
+
 
 def _is_native_english(source: str) -> bool:
     """Heuristique : la source markdown est-elle déjà en anglais ?
@@ -410,11 +476,30 @@ def _is_native_english(source: str) -> bool:
     attrape les notebooks deep_research dont la source FR a été copiée d'un
     papier de recherche anglophone (#10298).
 
-    Heuristique (#10298 Option A) : **>80 % de caractères ASCII imprimables** +
-    **<5 % de diacritiques français**, sur une cellule assez longue (≥ 40 chars
-    normalisés) pour que le ratio soit significatif. Les cellules courtes
-    retombent dans le chemin FR_CONTAM normal (un header ambigu ne se whiteliste
-    pas silencieusement).
+    Heuristique à **deux signaux** (#10298 + #10310) :
+
+    1. **Signal orthographique** (#10298 Option A) : >80 % de caractères ASCII
+       imprimables + <5 % de diacritiques français, sur une cellule assez longue
+       (≥ 40 chars normalisés) pour que le ratio soit significatif.
+
+    2. **Signal lexical** (#10310) : densité de mots-fonction français
+       fréquents (sans accent) **strictement inférieure à 5.0** per 100
+       caractères alphabétiques. Ce signal attrape le **français non accentué**
+       (« Le pipeline prend en entree... ») que le signal diacritiques seul
+       laissait passer en silence. Sans ce second signal, on whitelistait à tort
+       du français copié-collé depuis un terminal, des commentaires de code, ou
+       des cellules rédigées sans clavier accentué (cf. mesure corpus :
+       216 faux-positifs identifiés sur 218 cellules « english » du corpus,
+       median fr-fw-density = 5.95).
+
+    La garde de longueur est conservée pour ne pas whitelister les headers
+    courts ambigus (« ## Nettoyage » — 12 chars, _french_function_word_density
+    élevée mais signal non significatif).
+
+    Renvoie ``True`` (whitelist → pas de FR_CONTAM) **uniquement** si les deux
+    signaux sont négatifs (vraie EN). Tout cas ambigu (FR-noacc détecté par le
+    signal lexical) renvoie ``False`` et tombe dans le chemin FR_CONTAM
+    normal, qui flag la cellule sans la bloquer en mode non-strict.
     """
     norm = _normalize(source)
     if len(norm) < _NATIVE_EN_MIN_LEN:
@@ -427,7 +512,12 @@ def _is_native_english(source: str) -> bool:
     diacritics = sum(1 for c in non_ws if c in _FRENCH_DIACRITIC_CHARS)
     ascii_ratio = ascii_printable / len(non_ws)
     diacritic_ratio = (diacritics / alpha) if alpha else 0.0
-    return ascii_ratio > 0.80 and diacritic_ratio < 0.05
+    if not (ascii_ratio > 0.80 and diacritic_ratio < 0.05):
+        return False
+    # Second signal lexical (#10310) — rejette le FR non accentué
+    if _french_function_word_density(norm) >= _FR_FW_DENSITY_THRESHOLD:
+        return False
+    return True
 
 
 def _sha(text: str) -> str:

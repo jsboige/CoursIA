@@ -301,6 +301,50 @@ def test_is_native_english_rejects_short_ambiguous_cell():
     assert p._is_native_english("## Introduction") is False
 
 
+def test_is_native_english_rejects_french_noaccent_tech():
+    """French prose written without diacritics (technical sample from #10310).
+    Without the lexical signal (#10310), the diacritics-only heuristic
+    whitelist this cell as native English, hiding a real FR_CONTAM violation.
+    With the new lexical signal, the function-word density (~7.26 per 100
+    alpha chars) is above the threshold and the cell is rejected."""
+    sample = (
+        "Le pipeline prend en entree la specification du modele sous forme de "
+        "parametres de generation, incluant la temperature, le nombre de tokens "
+        "maximum, et la cle d'API fournie par l'utilisateur. La sortie est ensuite "
+        "formatee selon le schema JSON defini dans la documentation du service, "
+        "avec une verification automatique des champs obligatoires avant insertion "
+        "dans la base de donnees."
+    )
+    assert len(sample) >= p._NATIVE_EN_MIN_LEN
+    assert p._is_native_english(sample) is False
+
+
+def test_is_native_english_rejects_french_noaccent_admin():
+    """French admin prose written without diacritics (administrative sample
+    from #10310). Same defect as the technical sample : the diacritics-only
+    heuristic whitelist it, the new lexical signal rejects it."""
+    sample = (
+        "Le tableau ci-dessous resume les principaux parametres du projet. "
+        "Pour chaque ligne, la premiere colonne indique le nom du composant, "
+        "la deuxieme colonne la date de la derniere mise a jour, et la troisieme "
+        "colonne la personne responsable du suivi. Les changements effectues "
+        "au cours du trimestre sont signales par un asterisque dans la marge droite."
+    )
+    assert len(sample) >= p._NATIVE_EN_MIN_LEN
+    assert p._is_native_english(sample) is False
+
+
+def test_french_function_word_density_helper_exposed():
+    """Helper is module-public and returns a finite float on non-empty input."""
+    text = "Le pipeline prend en entree les parametres de generation."
+    density = p._french_function_word_density(text)
+    assert isinstance(density, float)
+    assert density > 0.0  # at least 1 FW (le, les, de)
+    # Empty / no-alpha input returns 0.0
+    assert p._french_function_word_density("") == 0.0
+    assert p._french_function_word_density("---") == 0.0
+
+
 def test_fr_contam_native_english_not_flagged_strict(tmp_path):
     """Under strict_fr, a markdown cell identical to its source where the
     source is native English must NOT be flagged FR_CONTAM (#10298)."""
