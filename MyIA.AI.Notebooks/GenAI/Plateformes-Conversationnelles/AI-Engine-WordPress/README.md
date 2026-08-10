@@ -70,6 +70,13 @@ d'appel d'outil — et remplace « je l'ai essayé, il répond bien » par un
 tableau reproductible. Configuration : copier [`.env.example`](.env.example)
 vers `.env`.
 
+Un second notebook [`ingestion-corpus-long-rag.ipynb`](ingestion-corpus-long-rag.ipynb)
+traite l'amont du chatbot : **comment découper un catalogue de plusieurs
+ouvrages** (chacun en chapitres) avant de l'indexer. Il compare un chunking
+naïf (taille fixe) à un chunking structuré (par chapitre) et montre que la
+dégradation du retrieval vient du découpage, pas du modèle d'embeddings —
+démontré avec un vectoriseur TF-IDF déterministe, sans clé d'API.
+
 ---
 
 ## Sections
@@ -179,6 +186,8 @@ attendues.
   d'usage concret
 - [`eval-choisir-son-modele.ipynb`](eval-choisir-son-modele.ipynb) —
   banc d'évaluation reproductible, cinq propriétés discriminantes
+- [`ingestion-corpus-long-rag.ipynb`](ingestion-corpus-long-rag.ipynb) —
+  ingestion RAG d'un corpus long structuré, chunking naïf vs par chapitre
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

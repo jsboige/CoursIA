@@ -247,6 +247,45 @@ def find_close_keyword_pr_refs(text: str | None) -> list[dict]:
     return hits
 
 
+# Matches NON-closing references in free prose: the "safe syntax" of
+# git-workflow.md (``See #N`` / ``Part of #N`` / ``Refs #N``) that links an
+# issue without auto-closing it. These are the references an EPIC carries while
+# several lanes work it concurrently (#1454, #1027, #3801) -- multi-lane by
+# construction, which is why lane_claim_required blocks on CLOSING refs only and
+# surfaces a conflict here as an ADVISORY label, never a block (#10223 Tache 4).
+NON_CLOSING_REF_RE = re.compile(
+    r"\b(see|part\s+of|refs?)\s+#(\d+)\b",
+    re.IGNORECASE,
+)
+
+
+def find_non_closing_refs(text: str | None) -> list[dict]:
+    r"""Return non-closing ``<keyword> #N`` references (See/Part of/Refs).
+
+    The complement of ``find_close_keyword_pr_refs``: that one returns the
+    references that auto-close an issue (the blocking discriminant of
+    lane_claim_required). This one returns the references that merely LINK an
+    issue -- an EPIC's ``See #N`` / ``Part of #N`` -- which are multi-lane by
+    construction and must never block, but may still carry an advisory label
+    when another lane holds a claim on them (#10223 Tache 4:
+    ``lane-claim-conflict``).
+
+    Same hit shape as ``find_close_keyword_pr_refs``:
+    ``{"keyword": <lowercased>, "number": <int>, "span": <tuple>}``. Returns an
+    empty list when the text is clean or falsy.
+    """
+    if not text:
+        return []
+    hits = []
+    for m in NON_CLOSING_REF_RE.finditer(text):
+        hits.append({
+            "keyword": m.group(1).lower(),
+            "number": int(m.group(2)),
+            "span": m.span(),
+        })
+    return hits
+
+
 def parse_grain_tag(body: str | None) -> dict | None:
     """Extract {tier, genre, lane} from a PR body, form-tolerant.
 
@@ -335,44 +374,96 @@ def parse_short_header(body: str | None) -> dict:
     when **all three are absent**, by design (existing PRs have none of the
     three and must not suddenly turn red).
 
-    Each value is stripped of leading/trailing whitespace. The keys themselves
-    are case-insensitive (matched after the noise strip, which lower-cases
-    nothing but removes decoration). Returns {quoi, preuve, perimetre} with
-    each entry `None` when the key is absent and the captured text otherwise.
+    Two presentation forms are recognised (#10163 acceptance):
 
-    The body is treated as already-presented markdown: leading/trailing
-    whitespace and the noise (bold, backticks, hashes, blockquotes) are
-    handled by translating through `_NOISE` first, exactly like
-    `parse_grain_tag`.
+    - **Inline form** (#9861 reference) -- key + value on the SAME line:
+        ``Quoi: fix the parser for #10163``
+    - **Section form** (#10163 extension) -- key on its own line (optionally
+      titled with `#`, optionally wrapped in `**`), value is the NEXT
+      paragraph (lines until next blank-line break):
+        ``## Quoi\\n\\nfix the parser for #10163\\n\\n## Context\\n...``
+
+    Both forms tolerate the same noise discipline as `parse_grain_tag`: bold
+    (``**``), backticks, title hashes (`#`), blockquotes (`>`) are stripped
+    before matching. Each value is stripped of leading/trailing whitespace.
+    Keys are case-insensitive. Returns {quoi, preuve, perimetre} with each
+    entry `None` when the key is absent and the captured text otherwise.
+
+    Mid-paragraph mentions like ``We discuss Quoi: the convention here`` are
+    still rejected -- the key MUST be at the start of the line (after the
+    noise strip), and in section form the value is the next PARAGRAPH, not
+    the rest of the line.
     """
     out: dict[str, str | None] = {k.lower(): None for k in _SHORT_HEADER_KEYS}
     if not body:
         return out
     flat = _strip_title_hashes(body.translate(_NOISE))
-    # Scan line-by-line. A trio key on the same line as the Grain tag would
-    # be a structural oddity; the convention in #9861 puts each on its own
-    # line just after the Grain tag, and that is what we match. Multi-line
-    # values are explicitly excluded by the spec ("une ligne -- ...").
-    for line in flat.splitlines():
-        line = line.strip()
+
+    # Two-pass scan: first, the inline form (a key on a line that also has a
+    # value -- captured by the same regex as #9861). Second, the section
+    # form (key on its own line, value in the NEXT non-empty paragraph).
+    # Pass 1 -- inline form.
+    # The inline trio puts Quoi/Preuve/Perimetre on three CONSECUTIVE lines
+    # inside ONE paragraph (joined by '\n', no blank line between them); we
+    # iterate line-by-line and capture any key whose line yields an inline
+    # match. The section-form pass 2 runs on paragraphs, not lines.
+    for raw_line in flat.splitlines():
+        line = raw_line.strip()
         if not line:
             continue
-        # Each key MUST be at the start of the line (after strip). Anchored
-        # to prevent false positives where a body says e.g. "We discuss Quoi:
-        # the convention here" mid-paragraph -- that is commentary, not a
-        # canonical answer. The convention #9861 is "juste apres le tag Grain:
-        # un en-tete court normalise" -- three lines, one key per line.
         for k in _SHORT_HEADER_KEYS:
-            # Cheap prefix check before the regex: skips the regex engine
-            # on every line that does not start with the key word.
+            if out[k.lower()] is not None:
+                continue
             if not line.lower().startswith(k.lower()):
                 continue
             m = _SHORT_HEADER_RES[k].search(line)
             if m:
-                # First hit wins per key. If a body carries the key twice, the
-                # first is the canonical answer; later mentions are commentary.
-                if out[k.lower()] is None:
-                    out[k.lower()] = m.group(1).strip()
+                out[k.lower()] = m.group(1).strip()
+
+    # Pass 2 -- section form. Walk paragraphs in order. A paragraph whose
+    # FIRST line is a key (anchored, no inline value) takes the NEXT
+    # non-empty paragraph as its value. We only fall back here for keys
+    # still unfilled after pass 1 -- so a body that uses inline for Quoi
+    # and section for Preuve still works (see
+    # `test_short_header_section_form_mixed_inline_and_section`).
+    paragraphs = flat.split("\n\n")
+    for pi, para in enumerate(paragraphs):
+        if not para.strip():
+            continue
+        first = para.splitlines()[0].strip()
+        if not first:
+            continue
+        for k in _SHORT_HEADER_KEYS:
+            if out[k.lower()] is not None:
+                continue
+            if not first.lower().startswith(k.lower()):
+                continue
+            # Already have inline value? pass 1 won.
+            m = _SHORT_HEADER_RES[k].search(first)
+            if m:
+                continue
+            # Section form: key alone on the line, value is the next
+            # non-empty paragraph (any number of subsequent paragraphs,
+            # skipping blanks -- matches the documented #10163 form where
+            # the body has `## Key\n\nAnswer paragraph\n\n## NextKey\n...`).
+            value_lines: list[str] = []
+            for next_para in paragraphs[pi + 1:]:
+                pstripped = next_para.strip()
+                if not pstripped:
+                    continue
+                # Stop at a paragraph that itself starts with a known key
+                # -- that paragraph belongs to the next key, not to ours.
+                pfirst = pstripped.splitlines()[0].strip().lower()
+                if any(pfirst.startswith(other.lower()) for other in _SHORT_HEADER_KEYS):
+                    break
+                value_lines.append(pstripped)
+                # Take the first non-empty answer paragraph only.
+                break
+            if value_lines:
+                out[k.lower()] = " ".join(
+                    ln.strip() for ln in value_lines[0].splitlines() if ln.strip()
+                )
+
     return out
 
 

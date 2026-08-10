@@ -940,3 +940,12 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/*
 # ephemeral, lives anywhere outside the repo). Scope is root-only (/PR_BODY.md)
 # so a same-named pedagogical file deeper in the tree is unaffected.
 /PR_BODY.md
+
+# Pipeline output directory — scripts/quantconnect/quantbooks_stop_repair_pipeline.py (#9749)
+# The orchestrator writes timestamped CSV+MD smoke reports to results/quantbooks_stop_repair_<ts>/
+# on every run. A dry-run smoke report (20260806_172234, "Creds ABSENTES") was committed alongside
+# the script in #9749 and nothing references it (grep-empty). Pipeline output is ephemeral
+# (harness-hygiene tier ephemere + secrets-hygiene Stop&Repair rule 6 : reports belong on the
+# RooSync dashboard, never tracked in the repo). Gitignoring the root path stops future runs from
+# leaking reports, without affecting local execution (the script still writes there untracked).
+/results/

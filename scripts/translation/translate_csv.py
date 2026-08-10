@@ -49,6 +49,13 @@ import time
 import urllib.error
 import urllib.request
 
+# Sibling import: ``check_perimeter`` owns the SINGLE source of truth for the
+# ordered target-language universe (#10109). This script's directory is on
+# ``sys.path`` when run as ``python scripts/translation/translate_csv.py``;
+# the explicit insert also covers ``python -m`` and pytest invocation.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from check_perimeter import TARGET_LANGS  # noqa: E402
+
 # ----------------------------------------------------------------------------
 # Gate de sécurité (HARD). Inactif par défaut ; activé par la variable
 # d'environnement TRANSLATE_ENABLED (grain D #10043). CI-callable sans
@@ -71,7 +78,11 @@ def _enabled_from_env() -> bool:
 
 ENABLED = _enabled_from_env()
 
-TARGETS = ["en", "ru", "pt", "es", "ar", "fa", "zh"]
+# The 7 target languages, in the canonical order owned by ``check_perimeter``
+# (#10109). A local divergent copy previously listed ``en ru pt es ar fa zh``
+# -- a permutation that silently swaps translations the moment any positional
+# access traverses it. Consume the single source instead.
+TARGETS = list(TARGET_LANGS)
 LANG_NAMES = {
     "en": "English",
     "ru": "Russian",

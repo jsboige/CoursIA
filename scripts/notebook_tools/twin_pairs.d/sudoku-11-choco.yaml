@@ -14,6 +14,12 @@
       csharp_sha: 225710e79b086d5bf54282e53d6cfe925de53357
       content_python_sha: a6609e480abe6ffb3c7978244f23d9cb5f72e3d039df17ee438448fa23b17b5e
       content_csharp_sha: 92ade1dd77eef038de3cd7cf1f94e1c74916875e33ef7f92f4145dad2f597523
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: c62db3b84c0386eddd494a7c579fa12375401828
+      csharp_sha: 225710e79b086d5bf54282e53d6cfe925de53357
+      content_python_sha: 6bed29eb21df32b1f9c2d022d6d0e604c4c9f77785e6cb69ccd59824585f04ec
+      content_csharp_sha: 92ade1dd77eef038de3cd7cf1f94e1c74916875e33ef7f92f4145dad2f597523
   known_differences:
     - "Edition 2026-08-08 (myia-po-2023:CoursIA-2, #9434 item 3) : les DEUX twins ont evacue leurs valeurs de timing absolues machine-dependantes de la prose d'interpretation (Python cell[18/23/26] : 64.01/8.38/50.43 ms etc. ; C# cell[28] : 728 ms startup JVM IKVM) au profit de descripteurs qualitatifs pointant vers la cellule de mesure live ci-dessus. Markdown-only, pas de re-exec (exception C.2). Parite semantique tenue : socle CP, modelisation, contraintes, asymetrie IKVM/from-scratch inchanges."
     - "Socle pedagogique commun : resolution de Sudoku par programmation par contraintes (CP) avec le solveur Choco -- modelisation (variables, domaines, contraintes), propagation, recherche. Meme solveur (Choco), meme cas d'application (Sudoku). Les deux couvrent Choco, choco, Solver."

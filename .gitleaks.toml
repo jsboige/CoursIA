@@ -43,6 +43,27 @@ regexes = [
     '''os\.getenv\(['\"][A-Z_]+['\"]\)''',  # env var reads without defaults
     '''data:image/[a-z]+;base64,''',  # Inline base64 images in outputs
     '''^[A-Za-z0-9+/]{100,}={0,2}$''',  # Base64 blobs (long lines typical of image outputs)
+    # --- #10143 class-based FP suppression (each read at source + positive control) ---
+    # OpenRouter pedagogical placeholder: real keys are `sk-or-v1-` + 64 hex chars;
+    # the uppercase-only suffix (VOTRE_CLE, VOTRE_CLE_ICI) is the FR teaching form and
+    # can never be a real key. Covers ~15 findings across GenAI/Vibe-Coding/Claude-Code.
+    # Positive control (#10143): a real sk-or-v1-<lowercase-hex> key in the same file
+    # is STILL flagged (uppercase-only class cannot match hex) — detector stays armed.
+    '''sk-or-v1-[A-Z][A-Z_]+''',
+    # --- Truncated-example JWT (Roo-Code docs, #10143 residual) ---
+    # The BARE header `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9` still CANNOT be allowlisted
+    # (it is a prefix of every real JWT; gitleaks allowlist matching is substring-based,
+    # so the bare header disarms the jwt detector — verified, #10201). BUT the 2 FP findings
+    # in Roo-Code docs (exemple-api.md L38, guide-agent.md L124) are TRUNCATED pedagogical
+    # examples: the literal string is the header followed by an ellipsis `...` (no payload,
+    # no signature) — e.g. `"token": "eyJ...XVCJ9..."`. A real JWT is `header.payload.signature`
+    # (single dots, base64 segments), NEVER header+`...`. Anchoring the allowlist regex on
+    # the trailing literal `\.\.\.` therefore matches ONLY the truncated teaching example,
+    # never a real JWT. Positive control (gitleaks 8.24.3, this PR): a synthetic file with a
+    # real full JWT (header.eyJzdWIi…payload.signature) + the truncated example side by side
+    # → the real JWT stays FLAGGED, the truncated example is SUPPRESSED. Detector armed.
+    # Covers 2 findings (×7 under translation-sync #10133 if these docs are translated).
+    '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.''',
 ]
 
 # Teaching placeholders and model identifiers that `generic-api-key` reads as
@@ -65,4 +86,31 @@ stopwords = [
     "dummy_key",
     "no-key-needed",
     "GPT-4o-Transcribe",
+    # --- #10143 distinct pedagogical/test literals (each re-read at its source) ---
+    # None is a secret; none is rotatable. Kept as stopwords (substring on the finding)
+    # so a REAL key in the same file still fails the scan.
+    "sk-secret-12345",            # pedagogical key placeholder, Claude-Code commit-review README
+    "sk_live_1234567890abcdef",   # canonical Stripe TEST key, bonnes-pratiques.md (stripe-access-token)
+    "rt-67890abcdef",             # pedagogical refresh-token placeholder, Roo-Code exemple-api/guide-agent
+    "v4_officier_german",         # voice-clone sample name (character->voice map), p1_voice_cloning.py
+    "_getDistanceToBezierEdge2",  # vendored vis.js Bezier-edge function, movie_kg_interactive.html
+    "votre_token_ici",            # FR placeholder "your token here", archived README-ETUDIANTS-AUTH
+    "INVALID_TOKEN",              # error-string literal, archived ComfyUI auth-archaeology report
+    "b2NWTdQ/zSFsWQ/JwCHyK/egVV6jpIssX0htD16",  # throwaway ComfyUI-Login local test token, archived 2025-11 failed-auth report
+    "wrongkey",                   # pedagogical placeholder, auth-flip-runbook.md
+    "fixture-whisper-XXXX-1234",  # test fixture, scripts/secrets/tests/test_verify_running_containers.py
+    "hf_fixtureABCDEF1234567890", # test fixture (HF-token-shaped), same test file
+    "val2=with=equals",           # parser test fixture (value with embedded '='), test_notebook_tools_pure.py
+    "ghp_IMfYN5...NCsd",          # redacted GitHub-token example (the `...` is literal), symbolicai-lean translation CSV
+    # --- #10141 revoked Civitai token (allowlist for scanner hygiene) ---
+    # c39ba121e12e5b40ac67a87836431e34 = CIVITAI_TOKEN, 6 occurrences in archive dirs
+    # (docker-configurations/_archive-20251125/, docs/archive/suivis/genai-image/phase-30-*/,
+    # scripts/genai-stack/_archive/). Rotation performed at Civitai (user action 2026-08);
+    # revoked confirmed firsthand: GET /api/v1/users/self with this token -> 401 Unauthorized
+    # (same as a fake token; a live key returns 200). Allowlister une valeur REVOQUEE est de
+    # l'hygiene de scanner (secrets-hygiene rule 5: rotation is the PRIMARY remediation and is
+    # DONE; this entry only silences the dead value in CI). NEVER allowlist a live credential
+    # (#9888) — this entry is legitimate precisely because the value is dead. The 6 archive
+    # files are redacted in a SEPARATE PR (replace with ROTATED placeholder). See #10141.
+    "c39ba121e12e5b40ac67a87836431e34",
 ]

@@ -23,9 +23,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scan_md_table_syntax import (  # noqa: E402
+    SEP_ROW_RE,
     _column_count,
     _find_table_blocks,
+    _has_delimiter_pipe,
+    _is_out_of_scope,
     detect_md_table_syntax,
+    iter_targets,
     main,
     scan_markdown,
     scan_notebook,
@@ -64,8 +68,129 @@ class TestColumnCount:
         # breaking the math, so it is excluded (non-actionable).
         assert _column_count("| $|x|$ | description |") == 2
 
+    def test_currency_price_columns_not_col_mismatch(self):
+        # Cost tables with $amount values are NOT inline math: the bare
+        # `$[^$\n]*$` regex bridged `$15.00 | ~$` across the cell-delimiter
+        # pipe, false-positive-ing every price column as COL_MISMATCH
+        # (fleet-wide currency FP class, #10097). A KaTeX-faithful boundary
+        # (closing $ not followed by an alnum) refuses to close at `$0.75`,
+        # so the pipe counts normally -> 3 columns.
+        assert _column_count("| OpenAI tts-1 | $15.00 | ~$0.75 |") == 3
+        assert _column_count("| a | $1 | $2 | $3 |") == 4
+
     def test_multiple_backtick_spans(self):
         assert _column_count("| a | `b|c` | `d|e` |") == 3
+
+
+# ---------------------------------------------------------------------------
+# _has_delimiter_pipe / math-pipe exclusion -- the P(X|Y) false-positive guard
+# ---------------------------------------------------------------------------
+
+class TestHasDelimiterPipe:
+    def test_real_table_row_has_delimiter_pipe(self):
+        assert _has_delimiter_pipe("| a | b |") is True
+        assert _has_delimiter_pipe("a | b | c") is True
+
+    def test_conditional_probability_pipe_excluded(self):
+        # ``P(X|Y)`` plain-text conditional notation: the pipe is a math bar,
+        # not a delimiter. The dominant Probas false-positive source (#10097).
+        assert _has_delimiter_pipe("- P(Cloudy | Rain=True) = **0.800**") is False
+        assert _has_delimiter_pipe("calculez P(Sprinkler | Rain=True)") is False
+
+    def test_big_o_set_notation_excluded(self):
+        # ``O(|A| x |S|)`` complexity notation -- pipes are abs/norm bars.
+        assert _has_delimiter_pipe("complexite O(|A| x |S|)") is False
+
+    def test_inline_math_pipe_excluded(self):
+        assert _has_delimiter_pipe("- $P(z_t | z_{t-1})$ transition") is False
+
+    def test_table_row_with_conditional_in_cell_still_detected(self):
+        # A real table cell may legitimately contain P(A|B); the OUTER cell
+        # delimiters remain, so it is still a table row.
+        assert _has_delimiter_pipe("| Var | P(A|B) | note |") is True
+
+    def test_english_aside_still_has_delimiter_pipe(self):
+        # "a | b" flowing prose is unchanged (still a candidate; the >=2-row
+        # block rule handles it, not this guard).
+        assert _has_delimiter_pipe("text a | text b") is True
+
+    def test_list_item_abs_value_pipe_excluded(self):
+        # A list item whose content holds a bare abs-value math pipe is NOT a
+        # table row (GFM parses list items before tables). ``- |r| > 0.7`` is the
+        # 7_Code_Interpreter Pearson-correlation FP that drove the c.198 #10221
+        # retraction; ``|Z|`` / ``|z-score|`` are the QC-pairs-trading FPs flagged
+        # independently by po-2024 c.72 (#10224). Three lanes hit this class.
+        assert _has_delimiter_pipe("- |r| > 0.7 : Forte correlation") is False
+        assert _has_delimiter_pipe("- **Entree**: |Z| > 2 + prediction ML") is False
+        assert _has_delimiter_pipe("- Sortie quand |z-score| < 0.5") is False
+        # Indented sub-list item + ordered-list marker are also list items.
+        assert _has_delimiter_pipe("  - |r| < 0.3 : Faible") is False
+        assert _has_delimiter_pipe("1. |z-score| < 2 : regime normal") is False
+
+    def test_real_table_with_abs_value_cell_still_detected(self):
+        # FALSIFIABILITY: a real table row whose cell legitimately contains an
+        # abs-value (bordered with outer cell pipes) is still a table row -- the
+        # list-marker guard only excludes lines that START with a marker.
+        assert _has_delimiter_pipe("| |r| | description |") is True
+        assert _has_delimiter_pipe("| seuil | |Z| | note |") is True
+
+
+class TestMathPipeBlockExclusion:
+    def test_consecutive_conditional_probs_not_a_table(self):
+        # Two consecutive ``P(X|Y)`` exercise lines must NOT be mistaken for a
+        # 2-row table block (was the #10097 Probas NO_BLANK false positive).
+        lines = [
+            "**Resultats** :",
+            "- P(Cloudy | Rain=True) = **0.800** -- observationnel",
+            "- P(Cloudy | do(Rain=True)) = **0.500** -- interventionnel",
+        ]
+        assert detect_md_table_syntax(lines) == []
+
+    def test_conditional_probs_above_real_table_not_flagged(self):
+        # A ``P(X|Y)`` line directly before a real table must not be treated as
+        # the table's first row (no NO_BLANK_BEFORE on the real table's account,
+        # and no spurious block merging).
+        lines = [
+            "",
+            "| Algorithme | Usage |",
+            "|---|---|",
+            "| naive | P(C|X) bayesien |",
+        ]
+        f = detect_md_table_syntax(lines)
+        # The table is clean (blank before, has sep); no finding expected.
+        assert [x for x in f if x["pathology"] == "NO_BLANK_BEFORE"] == []
+
+    def test_list_item_abs_value_block_not_a_table(self):
+        # Three consecutive list items holding bare ``|r|`` abs-value pipes must
+        # NOT be grouped as a 3-row table block (was the NO_SEP false positive on
+        # 7_Code_Interpreter cell 36, the root cause of the c.198 #10221
+        # retraction). The escape ``\|r\|`` was a visual no-op (renders identical
+        # to ``|r|``) -- the real fix lives here, in the detector.
+        lines = [
+            "**Interpretation** :",
+            "  - |r| > 0.7 : Forte correlation",
+            "  - 0.3 < |r| < 0.7 : Correlation moderee",
+            "  - |r| < 0.3 : Faible correlation",
+        ]
+        assert detect_md_table_syntax(lines) == []
+
+    def test_real_table_following_list_items_still_detected(self):
+        # FALSIFIABILITY: a genuine table (header + separator + data) that sits
+        # after list items must still be detected -- the list-marker guard only
+        # drops list-item lines from block membership, it does not blind the
+        # detector to a real bordered table below them.
+        lines = [
+            "- intro bullet one",
+            "- intro bullet two",
+            "",
+            "| a | b |",
+            "|---|---|",
+            "| 1 | 2 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        # The real table is clean (blank before it); no defect on its account,
+        # and crucially the two intro list items are not flagged either.
+        assert [x for x in f if x["pathology"] == "NO_SEP"] == []
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +241,21 @@ class TestDetectColMismatch:
         f = detect_md_table_syntax(lines)
         assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
 
+    def test_currency_price_table_not_flagged(self):
+        # A real cost/comparison table whose cells hold $amount values must
+        # NOT be flagged COL_MISMATCH. The bare `$[^$\n]*$` math regex used to
+        # bridge two currency cells across the delimiter pipe (fleet-wide FP
+        # on every price column, #10097). After the KaTeX-boundary fix the
+        # pipes count normally and the table is clean.
+        lines = [
+            "| Modele | Cout / 1M caracteres | Cout / 1 heure narration |",
+            "|--------|---------------------|-------------------------|",
+            "| OpenAI tts-1 | $15.00 | ~$0.75 |",
+            "| OpenAI tts-1-hd | $30.00 | ~$1.50 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
+
 
 class TestDetectNoSep:
     def test_three_pipe_lines_no_sep_flagged(self):
@@ -148,6 +288,66 @@ class TestDetectNoSep:
         ]
         f = detect_md_table_syntax(lines)
         assert [x for x in f if x["pathology"] == "NO_SEP"] == []
+
+
+class TestBlockquoteTableNotFalsePositive:
+    """FP classe #10097 (po-2023 c.189) : table GFM valide enveloppee dans un
+    blockquote. Chaque ligne porte un prefixe ``>`` ; la ligne separateur
+    ``> |---|---|`` est un separateur GFM VALIDE, mais ``SEP_ROW_RE`` (``^\\s*``)
+    ne matchait pas le ``>`` -> faux NO_SEP. Cas fondateur : ICT-0-Annexe."""
+
+    def test_blockquote_table_not_no_sep(self):
+        # Table blockquote complete : header + separateur + 2 data, toutes prefixees `> `.
+        # Le separateur `> |---|---|` doit etre reconnu -> pas de NO_SEP.
+        lines = [
+            "> | Pattern original | Restaure en |",
+            "> |---|---|---|",
+            "> | `\\text{X}*_\\text{Y}` | `\\text{X}_\\text{Y}` | 4 |",
+            "> | `\\min*` | `\\min_*` | 2 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "NO_SEP"] == [], (
+            f"blockquote table with valid `> |---|` separator must not be NO_SEP, "
+            f"got {[x for x in f if x['pathology'] == 'NO_SEP']}")
+
+    def test_blockquote_sep_row_regex_match(self):
+        # Test unitaire du regex : la ligne separateur blockquote matche SEP_ROW_RE.
+        assert SEP_ROW_RE.match("> |---|---|---|")
+        assert SEP_ROW_RE.match("> |:---:|---:|")
+        assert SEP_ROW_RE.match("> ---|---|---")
+        # Un separateur SANS blockquote matche toujours (regression guard).
+        assert SEP_ROW_RE.match("|---|---|---|")
+        assert SEP_ROW_RE.match("  |---|---|")
+
+    def test_blockquote_table_no_col_mismatch(self):
+        # La table blockquote est bien formee (3 colonnes logiques) -> pas de
+        # COL_MISMATCH non plus. (Le prefixe `> ` ajoute une "cellule" fantome a
+        # toutes les lignes de maniere CONSISTANTE, donc la detection de mismatch
+        # header-vs-data reste correcte.)
+        lines = [
+            "> | a | b | c |",
+            "> |---|---|---|",
+            "> | 1 | 2 | 3 |",
+            "> | 4 | 5 | 6 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "NO_SEP"] == []
+        assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
+
+    def test_blockquote_table_real_col_mismatch_still_flagged(self):
+        # Falsifiabilite : si une ligne blockquote a un vrai drift de pipes (5 au
+        # lieu de 3), COL_MISMATCH DOIT etre flagge -- le fix blockquote ne masque
+        # pas les vrais defauts.
+        lines = [
+            "> | a | b | c |",
+            "> |---|---|---|",
+            "> | 1 | 2 | 3 | extra | extra2 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        cm = [x for x in f if x["pathology"] == "COL_MISMATCH"]
+        assert len(cm) >= 1, (
+            f"a real pipe-drift row in a blockquote table must still be flagged, "
+            f"got {f}")
 
 
 class TestDetectNoBlankBefore:
@@ -355,3 +555,63 @@ class TestCli:
 
     def test_missing_path_exits_two(self):
         assert main(["definitely_does_not_exist_xyz123/"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# _is_out_of_scope -- out-of-scope zone exclusion (#10097 re-measure)
+# ---------------------------------------------------------------------------
+
+class TestOutOfScopeExclusion:
+    """The scanner excludes committed-transcript / generated-report / artefact
+    zones by default (#10097: ~73% of the raw count is journal noise). Lock the
+    classifier so a future refactor cannot silently re-include them."""
+
+    def test_roo_code_corrections_transcript_excluded(self):
+        # A committed Roo agent task transcript under Roo-Code/Corrections/.
+        p = "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/Corrections/roo_task.md"
+        excluded, reason = _is_out_of_scope(p)
+        assert excluded is True
+        assert "transcript" in reason
+
+    def test_argumentum_generated_report_excluded(self):
+        p = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/Documentation/Git_Archeology_Report.md"
+        excluded, reason = _is_out_of_scope(p)
+        assert excluded is True
+        assert "generated report" in reason
+
+    def test_output_ipynb_artefact_excluded(self):
+        p = "MyIA.AI.Notebooks/Search/Part1-Foundations/03_Search_output.ipynb"
+        excluded, reason = _is_out_of_scope(p)
+        assert excluded is True
+        assert "artefact" in reason
+
+    def test_pedagogical_notebook_not_excluded(self):
+        # A genuine teaching notebook must NOT be excluded.
+        p = "MyIA.AI.Notebooks/QuantConnect/projects/QC-Py-28-Market-Regime-Detection.ipynb"
+        assert _is_out_of_scope(p) == (False, None)
+
+    def test_regular_markdown_not_excluded(self):
+        p = "MyIA.AI.Notebooks/GameTheory/README.md"
+        assert _is_out_of_scope(p) == (False, None)
+
+    def test_roo_code_but_not_corrections_not_excluded(self):
+        # Roo-Code content OUTSIDE Corrections is real authored prose -- keep it.
+        p = "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/03-assistant-pro/doc.md"
+        assert _is_out_of_scope(p) == (False, None)
+
+    def test_iter_targets_excludes_by_default(self, tmp_path):
+        # Build a fake Corrections transcript + a real notebook, confirm the
+        # transcript is dropped from the default walk but kept under --include-all.
+        roo = tmp_path / "GenAI/Vibe-Coding/Roo-Code/Corrections"
+        roo.mkdir(parents=True)
+        (roo / "transcript.md").write_text("| a |\n|---|\n| 1 |\n", encoding="utf-8")
+        nb_dir = tmp_path / "Search/Part1-Foundations"
+        nb_dir.mkdir(parents=True)
+        (nb_dir / "real.ipynb").write_text("{}", encoding="utf-8")
+
+        default = list(iter_targets([str(tmp_path)]))
+        full = list(iter_targets([str(tmp_path)], include_all=True))
+        assert any("transcript.md" in t for t in full)
+        assert not any("transcript.md" in t for t in default)
+        assert any("real.ipynb" in t for t in default)
+

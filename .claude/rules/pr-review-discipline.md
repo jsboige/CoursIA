@@ -44,7 +44,7 @@ Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le bod
 
 ### C. ML : multi-seed obligatoire
 
-Toute PR claim « BEATS » / « improvement » sur métriques ML/trading **DOIT** inclure : (1) walk-forward 5-fold ; (2) **≥4 seeds** parmi 0/1/7/42/99 ; (3) edge ≥ 2σ cross-seed sinon flag « noise » ; (4) comparaison à majority baseline + coûts de transaction (5bps SPY, 10bps crypto) ; (5) **pas de FAANG/Mag7** en training ; (6) verdict honnête « BEATS » / « NO BEATS » / « INCONCLUSIVE » — jamais « promising ».
+Toute PR claim « BEATS » / « improvement » sur métriques ML/trading **DOIT** inclure : (1) walk-forward 5-fold ; (2) **≥4 seeds** parmi 0/1/7/42/99 ; (3) **la conjonction** edge ≥ 2σ cross-seed **ET** Diebold-Mariano `dm_p_median < 0.05` — les deux conditions requises, pas σ seul. *Contre-exemple inscrit* : `edge_sigma = +19.97σ` avec `DM p = 0.236` n'est **pas** un BEATS (`validate_xrp_dt_holdout.py` holdout_fresh 06/08) — le dénominateur de `edge_sigma` mesure la dispersion *inter-seeds* (reproductibilité de la procédure), pas la significativité de l'edge, donc σ croît sans borne quand les seeds s'accordent sans que l'edge soit réel. Un σ seul sans DM est un flag « noise » ; (4) comparaison à majority baseline + coûts de transaction (5bps SPY, 10bps crypto) ; (5) **pas de FAANG/Mag7** en training ; (6) verdict honnête « BEATS » / « NO BEATS » / « INCONCLUSIVE » — jamais « promising ».
 
 Single-seed ou single-fold = **CHANGES_REQUESTED** sauf flag explicite `[POC]` dans le titre.
 

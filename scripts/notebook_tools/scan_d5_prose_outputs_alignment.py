@@ -160,6 +160,51 @@ _HEX_COLOR_RE = re.compile(r"#[0-9a-fA-F]{3,8}")
 # alphanum^alphanum (couvre 2^3, n^2, 2^32 ; le caret est distinctif).
 _PLAINTEXT_EXPONENT_RE = re.compile(r"[0-9a-zA-Z]+\^[0-9a-zA-Z]+")
 
+# Ligne de table GFM (markdown) (po-2023 #9790, FP class 8 -- markdown-table-data) :
+# une ligne debutant par <= 3 espaces/tab, un `|`, du contenu, puis un `|` de fin
+# est une RANGEE de table -- le nombre est une CELLULE de donnees structurale,
+# pas une affirmation de mesure en prose. Source documentee : po-2023 a mesure
+# firsthand (G.1, 2026-08-09, classifier full-corpus SymbolicAI) 1001/2110
+# findings MISSING_FROM_OUTPUTS (47,4 %) tombent dans une rangee de table ;
+# echantillon divers 19/19 notebooks = 100 % tables de REFERENCE/DONNEES/SPEC
+# (dataset input Stigler `| Farine | 4,5 kg | 36 | 44,7 | 1411 |`, tables de
+# versions `RDF 1.2 (2020)`, benchmarks de papier `0.53 | 0.95 | +79 %`, specs
+# d'outils `IKVM 8.15.0`), zero table de resultats-calculés.
+#
+# SAFE-by-construction (exclusion structurelle, cf. deja-exclus : titres ATX
+# `## 4.2`, marqueurs de liste `1.`, math LaTeX `$2^3$` -- tous presentation
+# structurelle, pas affirmation de mesure). Ancre debut-de-ligne `|` : un item
+# de liste (`- x |`) ou une math mid-sentence (`|r| = 0,5`) ne rend jamais sous
+# cette forme (ils ne commencent pas par `|`), donc non filtres. Considération
+# de faux-negatif : une table markdown de RESULTATS serait aussi exclue -- mais
+# un notebook qui calcule un resultat l'echo dans les outputs code (verifies
+# separatement) ; retaper un resultat calcule dans une table markdown est rare
+# dans ce corpus (0/19 echantillon). Le gain (1001 FP, 47 %) domine largement.
+_MARKDOWN_TABLE_ROW_RE = re.compile(r"^[ \t]{0,3}\|.*\|[ \t]*$", re.MULTILINE)
+
+# Marqueur de liste ordonnee markdown/CommonMark (po-2023 #9790, FP class 7) :
+# une ligne debutant par <= 3 espaces, un entier, puis `.` ou `)` puis un
+# espace (ou fin de ligne) est un ITEM de liste ordonnee -- l'entier est
+# l'INDICE d'enumeration, jamais une mesure d'output. Source documentee dans
+# le corpus run #9790 : po-2023 a quantifie 345 occurrences (14 %) de
+# `ordered-list-marker` sur SymbolicAI. Re-verifie firsthand (G.1, 2026-08-09,
+# classifier SAFE-by-construction sur le corpus full) : 770/10411 findings
+# MISSING_FROM_OUTPUTS (7.4 %) sont des marqueurs purs -- echantillon 12/12
+# est 100 % d'items de liste (« 5. Analyser le jeu de la Chasse au Cerf »,
+# « 6. **Exercices** », « 3. **Monitoring** : Necessaire uniquement en
+# production »).
+#
+# Falsifiable both-directions (0 sur-filtrage par construction) : on ne filtre
+# QUE si le nombre extrait est le PREMIER token non-blanc de sa ligne ET est
+# immediatement suivi de `.`/`)` puis d'un espace/EOL. Une mesure decimale
+# (`1.15`, `0.73`) ne rend jamais sous cette forme -- le `.` est un separateur
+# decimal interne au token, donc apres le token matche le caractere suivant
+# n'est pas `.`/`)`+espace (c'est le contexte de la phrase). Une mesure entiere
+# en milieu de phrase (« on obtient 5 widgets ») a du texte avant elle ->
+# n'est pas le premier token de la ligne -> non filtree. Verifie : aucun
+# marqueur de liste dans l'echantillon n'est une mesure citee.
+_ORDERED_LIST_MARKER_LINE_RE = re.compile(r"\s{0,3}(\d+)[.)](?:[ \t]|$)")
+
 
 # Faux positifs semantiques : regex strictes (mot complet + caractere de
 # liaison) pour eviter de matcher au milieu d'une phrase legit.
@@ -370,13 +415,15 @@ def _extract_prose_numbers(text: str) -> list[float]:
         return []
     # Precompute les spans a ignorer une fois (evite un finditer par nombre) :
     # math LaTeX ($2^n - 1$), codes couleur hex (#084298), exposants plaine
-    # (2^3). Un nombre tombant dans un de ces spans n'est pas une mesure
-    # d'output (constante de formule / canal de couleur / constituant
-    # d'exposant). c.1293 (LaTeX), c.1295 (hex + exposant).
+    # (2^3), rangees de table GFM (`| ... |`). Un nombre tombant dans un de ces
+    # spans n'est pas une mesure d'output (constante de formule / canal de
+    # couleur / constituant d'exposant / cellule de donnees tabulaire). c.1293
+    # (LaTeX), c.1295 (hex + exposant), c.XXX (table GFM, FP class 8).
     skip_spans = (
         [m.span() for m in _LATEX_MATH_SPAN_RE.finditer(text)]
         + [m.span() for m in _HEX_COLOR_RE.finditer(text)]
         + [m.span() for m in _PLAINTEXT_EXPONENT_RE.finditer(text)]
+        + [m.span() for m in _MARKDOWN_TABLE_ROW_RE.finditer(text)]
     )
     out: list[float] = []
     for m in FR_DECIMAL_RE.finditer(text):
@@ -401,6 +448,19 @@ def _extract_prose_numbers(text: str) -> list[float]:
         # examine le debut de ligne brut (le `#` n'a pas de casse).
         if _ATX_HEADING_LINE_RE.match(text[line_start:m.start() + len(raw)]):
             continue
+        # Filtre marqueur de liste ordonnee (po-2023 #9790, FP class 7) : le
+        # nombre extrait est-il le MARQUEUR d'un item (`N.` / `N)` en debut de
+        # ligne) ? Un indice d'enumeration n'est jamais une mesure d'output.
+        # SAFE-by-construction : exige (a) le nombre est le premier token
+        # non-blanc de sa ligne (prefix purement blanc) ET (b) immediatement
+        # suivi de `.`/`)` puis d'un espace/EOL -- forme distincte d'une mesure
+        # decimale ou entiere en milieu de phrase (cf. _ORDERED_LIST_MARKER_LINE_RE).
+        if prefix.strip() == "":
+            after = text[m.end():m.end() + 2]
+            if after and after[0] in ".)" and (
+                len(after) == 1 or after[1] in " \t" or after[1] == "\n"
+            ):
+                continue
         if any(h in prefix for h in SEMANTIC_FALSE_POSITIVE_HINTS):
             continue
         # Filtre DOI / arXiv : identifiants de reference (jamais des mesures).
@@ -516,6 +576,18 @@ def _is_bibliographic_reference(value: float, text: str) -> bool:
         window = text[max(0, m.start() - _BIBLIO_CONTEXT_WINDOW): m.end() + _BIBLIO_CONTEXT_WINDOW]
         if _BIBLIO_CONTEXT_RE.search(window):
             return True
+        # FP class 4 extended (#9998) : journaux sans mot-cle generique (Nature,
+        # Science, Econometrica, Annals of Mathematics, ...) au format SIMPLE
+        # vol:pages (sans parenthese d'issue). _BIBLIO_EXTENDED_CONTEXT_RE est un
+        # sur-ensemble de _BIBLIO_CONTEXT_RE ; on l'applique sur une fenetre etroite
+        # (60 chars, identique au Tier 1 de class 6) -- et NON sur la fenetre 200 du
+        # base -- car "nature"/"science" y figurent SANS frontiere de mot : une
+        # fenetre large risquerait de sur-filtrer une plage de donnees proche d'une
+        # prose "la nature de". La fenetre etroite ancre le mot-cle au pattern
+        # (le nom du journal precede immediatement vol:pages, ex "Nature 518:529-533").
+        window_60 = text[max(0, m.start() - 60): m.end() + 60]
+        if _BIBLIO_EXTENDED_CONTEXT_RE.search(window_60):
+            return True
     # FP class 6 (#9998) : vol(issue):pages, double-tier safe-by-construction
     # Tier 1 : keyword biblio (etendu) en proximite 60 chars
     # Tier 2 : pattern anchor + year (19xx/20xx) sur la meme ligne
@@ -553,20 +625,27 @@ def _is_notebook_cross_reference(value: float, text: str) -> bool:
     l'IDENTIFIANT du notebook pointe (dans le texte du lien ou dans le nom du
     fichier .ipynb), pas un resultat de calcul.
 
-    SAFE par construction (0 sur-filtrage) : on ne filtre la decimale N.M que si
-    **toutes** ses occurrences dans la cellule tombent a l'interieur d'un span de
-    lien markdown ``[...](...ipynb)``. Ainsi, si la meme cellule contient aussi
-    N.M comme vraie mesure en prose (hors-lien), au moins une occurrence est
-    hors-lien -> on ne filtre pas (l'orphelin legitime survive). Les indices de
-    notebook etant toujours decimaux (2.8, 1.3), un entier n'est jamais filtre.
+    SAFE par construction (0 sur-filtrage) : on ne filtre la valeur (decimale N.M
+    OU entier) que si **toutes** ses occurrences dans la cellule tombent a
+    l'interieur d'un span de lien markdown ``[...](...ipynb)``. Ainsi, si la meme
+    cellule contient aussi la valeur comme vraie mesure en prose (hors-lien), au
+    moins une occurrence est hors-lien -> on ne filtre pas (l'orphelin legitime
+    survive).
+
+    Entiers ET decimaux : certaines series nomment leurs notebooks par un INDICE
+    DECIMAL (ML/DataScience : 2.8, 1.3), d'autres par un INDICE ENTIER (GameTheory,
+    SymbolicAI : « [GameTheory-7](GameTheory-7-ExtensiveForm.ipynb) »,
+    « [<< 12-Reputation](12-ReputationGames.ipynb) »). L'exclusion prematuree des
+    entiers (historique : « un indice est toujours decimal ») a ete refutee par le
+    forensic po-2023 c.188 sur SymbolicAI (375/2458 = 15%) et GameTheory (34%) --
+    la majorite des FPs nav-link sont des entiers. L'identite SAFE (toutes les
+    occurrences dans un span lien) couvre les deux formes.
 
     On ne s'appuie PAS sur le pattern keyword « section N.M » (plus ambigu, defer).
 
     Falsifiable both-directions : un nombre qui n'apparait dans AUCUN lien
     markdown .ipynb, ou dont une occurrence est hors-lien, n'est PAS filtre.
     """
-    if value == int(value):
-        return False  # un indice de notebook est decimal (2.8), jamais entier
     token = f"{value:g}"
     token_re = re.compile(r"(?<![\d.])" + re.escape(token) + r"(?![\d.])")
     link_spans = [(m.start(), m.end()) for m in _MARKDOWN_IPYNB_LINK_RE.finditer(text)]
@@ -578,6 +657,101 @@ def _is_notebook_cross_reference(value: float, text: str) -> bool:
             return False  # occurrence hors-lien -> potentielle mesure, ne pas filtrer
         found_inside = True
     return found_inside
+
+
+def _is_code_defined_value(value, prose_text) -> bool:
+    r"""Vrai si la prose cite ``value`` comme parametre de code dans un span backtick.
+
+    Critere falsifiable (FP class 1, #9998) : un nombre orphelin n'est pas une
+    mesure manquante si la prose le cite explicitement comme un PARAMETRE de code,
+    entre backticks -- « K-Means avec `n_clusters=3`, `random_state=42`,
+    `n_init=10` », « les hyperparametres (`learning_rate=0.001`) ». Le nombre est
+    alors un INPUT configure, pas une mesure a verifier.
+
+    SAFE par construction (0 sur-filtrage, mesure corpus firsthand) : on exige
+    QUATRE gardes cumulatifs, chacun issu d'un mode de sur-filtrage mesure et
+    rejete (consigne ci-dessous pour prevenir les retentes) :
+
+      1. L'assignment ``identifiant = valeur`` figure DANS UN SPAN BACKTICK
+         `` `...` ``. L'auteur qui backtick un fragment cite explicitement du
+         CODE (un parametre de config). Une METRIQUE RESTITUEE en prose
+         narrative (« **MAE = 0,41**, **RMSE = 2,33** », « score = 0.95 »)
+         n'est JAMAIS backtickee (elle est en gras/dans un tableau) -> n'est pas
+         filtree : c'est un resultat que l'output doit confirmer. C'est ce gate
+         qui distingue un INPUT (param) d'un OUTPUT (metrique restituee).
+
+      2. ``=`` simple isole (pas ``==``, ``>=``, ``<=``, ``!=``, ``+=`` ...) et
+         bornes numeriques strictes ``(?<![\d.,_])`` / ``(?![\d._])`` : ``5`` ne
+         matche pas dans ``n = 50`` ni dans le prefixe de ``QUORUM = 4_000_000``.
+         Decimale francaise toleree (la prose FR ecrit `` `alpha=0,5` ``).
+
+      3. Exclut les VARIABLES DE RESULTAT de solveur (``x_1 = 0.5``,
+         ``x_2 = ...``) : une valeur de solution restituee en prose est un
+         output a verifier, pas un parametre de config (cas OR-tools c[13]).
+
+      4. La valeur doit etre le RHS COMPLET, pas le debut d'une expression
+         mathematique : on bloque si le caractere suivant est un operateur
+         formel (ASCII ``* + - / ^ %`` et variantes Unicode ``· − × ÷ ∗``).
+         Exclut les formules (``MONEY = 10000·M``, ``RSI = 100 - ...``,
+         ``Cosine Distance = 1 −``) et les pourcentages illustratifs
+         (``heat = 18%``).
+
+    Deux heuristiques anterieures ont ete mesurees firsthand et REJETEES comme
+    sur-filtrantes (consignees ici pour prevenir les retentes) :
+      - cross-cell « var = value dans une cellule code voisine » : un ``value = 1``
+        de code generic collide avec un « 1 » de table (Sudoku-2 c[8]) ;
+      - intra-prose « identifiant = valeur » hors backtick : filtre les METRIQUES
+        restituees en gras (MAE/RMSE dans ML-4 c[36]) -> supprime un vrai drift.
+
+    Falsifiable both-directions : un nombre qui ne franchit pas les 4 gardes
+    n'est PAS filtre -- il demeure un orphelin a signaler.
+    """
+    token = f"{value:g}"
+    variants = [token]
+    if "." in token:
+        variants.append(token.replace(".", ","))  # decimale FR « 0,5 »
+    # Spans backtick de la cellule prose.
+    bk_spans = [(m.start(), m.end())
+                for m in re.finditer(r"`[^`]*`", prose_text)]
+    if not bk_spans:
+        return False
+    for tok in variants:
+        pat = re.compile(
+            r"\b([A-Za-z_]\w{1,})\s*=\s*(?<![\d.,_])"
+            + re.escape(tok)
+            + r"(?![\d._])"
+        )
+        for m in pat.finditer(prose_text):
+            var = m.group(1)
+            # Condition 1 : l'assignment doit etre dans un span backtick.
+            if not any(a < m.start() and m.end() <= b for a, b in bk_spans):
+                continue
+            # Condition 2 : '=' simple isole (remonte les blancs avant le '=').
+            k = prose_text.find("=", m.start() + len(m.group(1)),
+                                m.start() + len(m.group(1)) + 12)
+            if k < 0:
+                continue
+            p = k - 1
+            while p >= 0 and prose_text[p] in " \t":
+                p -= 1
+            if p >= 0 and prose_text[p] in "=!<>+-*/%&|^~":
+                continue
+            # Condition 3 : exclut les VARIABLES DE RESULTAT de solveur
+            # (x_1 = 0.5, x_2 = ...) -- une valeur de solution restituee en prose
+            # est un output a verifier, pas un parametre de config.
+            if re.match(r"^[a-z]_\d+$", var):
+                continue
+            # Condition 4 : la valeur doit etre le RHS COMPLET, pas le debut d'une
+            # expression mathematique. On bloque si le caractere suivant (apres
+            # blancs optionnels) est un operateur formel (ASCII * + - / ^ % et
+            # variantes Unicode · − × ÷ ∗) -> exclut les formules
+            # (MONEY = 10000·M, RSI = 100 - ..., Cosine Distance = 1 −) et les
+            # pourcentages illustratifs (heat = 18%).
+            tail = prose_text[m.end():m.end() + 3].lstrip()
+            if tail[:1] in "*+-/^·%−×÷∗":
+                continue
+            return True
+    return False
 
 
 # --------------------------------------------------------------------------- #
@@ -821,6 +995,12 @@ def analyze_notebook(path: str | os.PathLike) -> NotebookAlignment:
             # pointe n'est pas une mesure -> skip (SAFE par construction, cf
             # ``_is_notebook_cross_reference``).
             if _is_notebook_cross_reference(v, text):
+                continue
+            # FP class 1 (#9998) : parametre d'entree restitue dans la prose sous
+            # la forme ``identifiant = valeur`` (n_init=10, Size = 2,5). La valeur
+            # est un INPUT nomme, pas une mesure a verifier -> skip (SAFE par
+            # construction, cf ``_is_code_defined_value``).
+            if _is_code_defined_value(v, text):
                 continue
             findings.append(AlignmentFinding(
                 notebook=str(path),

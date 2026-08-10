@@ -15,10 +15,28 @@ produire un Sharpe 0.225 le 2026-04-27 et un Sharpe 0.123 le 2026-08-06,
 soit une degradation de ~46 % en 3,4 mois sur les memes parametres
 committes. La barre de mesure etait `SetEndDate(2024, 12, 31)` absente.
 
-L'audit Phase 0 (issue #9772, c.1331+13) a mesure le phenomene sur le depot
-reel : 0 % des `main.py` QuantConnect sont D2+, mais **82 % des notebooks
-QC (227/276)** le sont. ML-Training-Pipeline concentre 8/8 D2+ -- c'est un
-cluster-specifique qui meriterait un audit dedie.
+Historique de la mesure (IMPORTANT -- ne pas propager la mesure #9772) :
+
+  - L'audit Phase 0 (issue #9772, c.1331+13) avait rapporte **82 % de D2+
+    (227/276)** via un grep manuel `set_end_date`. Cette mesure SUR-COMPTAIT :
+    elle incluait ~87 notebooks **sans aucune API QC** (ni QuantBook, ni
+    QCAlgorithm, ni add_equity/set_start_date) sur lesquels `set_end_date` est
+    un no-op ou un NameError. Les 8 notebooks `ML-Training-Pipeline/` cibles
+    du correctif propose etaient tous dans ces 87 -- les ajouter aurait ete
+    "satisfaire le grep sans corriger le defaut" (motif #1214).
+  - Refute firsthand (issue #10230, re-mesure G.1) : ce probe deterministe
+    rapporte **3/207 (1.4 %)** car il ne capte que la **forme S** (SetStartDate
+    sans SetEndDate). Les 3 autres formes de drift -- N (`datetime.now()`),
+    L (`qb.History(sym, N)` lookback-count), T (`timedelta`) -- qui constituent
+    la majorite des drift reels, ECHAPPENT a ce probe.
+  - Le detecteur canonique des 4 formes est ``scan_window_drift.py`` (#10235),
+    qui rapporte ~31/207 DRIFT (verdicts DRIFT/PINNED/INDETERMINE/N-A).
+    **Pour mesurer le D2 reel, utiliser scan_window_drift.py, pas ce probe.**
+
+Ce probe reste utile comme **filtre forme-S** rapide (SetStartDate explicite
+sans SetEndDate, le sous-ensemble le plus facile a corriger) et pour le scope
+Phase 2 des sources deployables (``main.py`` / ``Main.cs``) non couvert par
+scan_window_drift.py.
 
 Cet outil transforme l'audit manuel (forensic au cas par cas) en un
 **detecteur deterministe** utilisable en CI :
@@ -93,9 +111,14 @@ Usage
 
 Sortie type (--format text)
 ---------------------------
-  QC-Notebooks D2+ (fenetre non figee) : 227/276 (82 %)
-  QC-Notebooks conformes (EndDate OK)   : 49/276 (18 %)
-  QC-Notebooks sans SetStartDate (N/A)  : 0/276 (0 %)
+  Total D2+ (fenetre non figee)       : 3/207 (1.4 %)   <- forme S seule
+  Total CONFORME (EndDate OK)         : 43/207
+  Total NEUTRE (sans SetStartDate)    : 161/207
+
+  NOTE : ce probe ne capte que la forme S (SetStartDate sans SetEndDate).
+  Les formes N/L/T (datetime.now / lookback-count / timedelta) echappent ;
+  elles sont mesurees par scan_window_drift.py (~31/207 DRIFT, 4 formes).
+  Voir issue #10230 (refutation firsthand de la mesure 82 % de #9772).
   ---
   Echantillon D2+ (10 premiers) :
     MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion.ipynb
@@ -105,6 +128,13 @@ Sortie type (--format text)
 Voir aussi
 ----------
 - Issue #9772 (Phase 0 audit, c.1331+13) -- mesure empirique 227/276 D2+
+  **SUR-COMPTEE** (grep manuel incluant ~87 notebooks sans API QC = no-op).
+  Refutee firsthand par issue #10230 (re-mesure G.1) : vrai D2 multi-forme
+  ~9.5 %, ce probe forme-S = 1.4 %. NE PAS reprendre la mesure 82 %/#9772.
+- Issue #10230 -- refutation de la mesure #9772 + diagnostic des 4 formes.
+- ``scan_window_drift.py`` (#10235) -- detecteur CANONIQUE D2 (4 formes
+  N/L/T/S, verdicts DRIFT/PINNED/INDETERMINE/N-A). A utiliser pour la mesure
+  reelle ; ce probe est le filtre forme-S + scope sources deployables.
 - EPIC #9768 -- cadre methodologique (D1-D6)
 - .claude/rules/audit-cross-source-distillation.md -- regle HARD 1 :
   aucun rapport committe (sorties de l'audit = dashboard + issues filles)
@@ -507,6 +537,19 @@ def _format_text(report: dict[str, Any]) -> str:
     if report["errors"]:
         lines.append("Erreurs de lecture :")
         lines.extend(f"  {e['path']}: {e['error']}" for e in report["errors"])
+    # Advisory : ce probe ne capte que la forme S (SetStartDate sans SetEndDate).
+    # Les formes N/L/T (datetime.now / lookback-count / timedelta) echappent et
+    # sont mesurees par scan_window_drift.py. Voir #10230 (refutation 82 %/#9772).
+    lines.append("---")
+    lines.append(
+        "NOTE : ce probe capte la forme S (SetStartDate sans SetEndDate) "
+        "uniquement."
+    )
+    lines.append(
+        "      Formes N/L/T (datetime.now / qb.History(N) / timedelta) -> "
+        "scan_window_drift.py (#10235, 4 formes, ~31 DRIFT)."
+    )
+    lines.append("      La mesure 82 % de #9772 etait SUR-COMPTEE (refutee #10230).")
     return "\n".join(lines)
 
 

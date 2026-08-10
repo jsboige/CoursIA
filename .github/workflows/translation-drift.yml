@@ -75,8 +75,8 @@ jobs:
           # surface it into the PR annotation so a SRC_DRIFT=0 on a 0%-translated
           # table can no longer read as "up to date" at the merge gate (#8678:
           # a bare count perishes, a count plus its denominator self-contradicts).
-          FILL_SUMMARY="$(echo "$REPORT" | python -c 'import sys,json; gf=json.load(sys.stdin).get("fill_rate",{}).get("global",{}); t=["en","es","ar","fa","zh","ru","pt"]; print(" ".join("%s=%s%%" % (l, gf.get(l,{}).get("pct",0.0)) for l in t))')"
-          ANY_FILLED="$(echo "$REPORT" | python -c 'import sys,json; gf=json.load(sys.stdin).get("fill_rate",{}).get("global",{}); t=["en","es","ar","fa","zh","ru","pt"]; print(any(gf.get(l,{}).get("filled",0)>0 for l in t))')"
+          FILL_SUMMARY="$(echo "$REPORT" | python -c 'import sys,json; sys.path.insert(0,"scripts/translation"); from check_perimeter import TARGET_LANGS as t; gf=json.load(sys.stdin).get("fill_rate",{}).get("global",{}); print(" ".join("%s=%s%%" % (l, gf.get(l,{}).get("pct",0.0)) for l in t))')"
+          ANY_FILLED="$(echo "$REPORT" | python -c 'import sys,json; sys.path.insert(0,"scripts/translation"); from check_perimeter import TARGET_LANGS as t; gf=json.load(sys.stdin).get("fill_rate",{}).get("global",{}); print(any(gf.get(l,{}).get("filled",0)>0 for l in t))')"
           if [ "$COUNT" = "0" ]; then
             if [ "$ANY_FILLED" = "True" ]; then
               echo "::notice title=Translation sync::All translation CSVs in sync with notebooks. No drift. (fill rate: $FILL_SUMMARY)"

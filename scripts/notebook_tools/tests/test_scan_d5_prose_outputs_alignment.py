@@ -191,6 +191,156 @@ class TestExtractProseNumbers:
         assert 0.71 in nums
 
 
+class TestOrderedListMarkerFalsePositive:
+    """Filtre marqueur de liste ordonnee (po-2023 #9790, FP class 7).
+
+    Un entier qui est le MARQUEUR d'un item de liste (ligne debutant par
+    ``N.`` / ``N)`` + espace) est un indice d'enumeration, jamais une mesure
+    d'output. Falsifiable both-directions : une mesure decimale (``1.15``) ou
+    un entier en milieu de phrase (``5 widgets``) ne rend jamais sous la forme
+    d'un marqueur (premier token de la ligne + ``.``/``)`` + espace). Verifie
+    firsthand (G.1, 2026-08-09) : 770/10411 findings (7.4 %) sont des marqueurs
+    purs sur le corpus full.
+    """
+
+    def test_filter_dot_marker(self):
+        # "5. **Exercices**" -- le 5 est un indice de liste, pas une mesure.
+        nums = mod._extract_prose_numbers("5. Analyser le jeu de la Chasse au Cerf.")
+        assert 5.0 not in nums
+
+    def test_filter_paren_marker(self):
+        # "1) First item" -- marqueur parenthese.
+        nums = mod._extract_prose_numbers("1) Premier element de la liste.")
+        assert 1.0 not in nums
+
+    def test_filter_indented_marker(self):
+        # Nested list item (indentation <= 3 espaces, CommonMark).
+        nums = mod._extract_prose_numbers("  2. sous-element imbrique")
+        assert 2.0 not in nums
+
+    def test_filter_marker_followed_by_bold(self):
+        # Cas corpus (GameTheory-13, GenAI) : "3. **Monitoring** : ..."
+        nums = mod._extract_prose_numbers("3. **Convergence** -- la strategie moyenne converge vers Nash")
+        assert 3.0 not in nums
+
+    def test_filter_marker_at_eol(self):
+        # Marqueur seul en fin de ligne ("5.\n6. ...").
+        nums = mod._extract_prose_numbers("5.\n6. suite")
+        assert 5.0 not in nums
+        assert 6.0 not in nums
+
+    def test_preserve_decimal_measurement(self):
+        # CRUCIAL both-directions : "1.15" est une mesure decimale, le point
+        # est un SEPARATEUR DECIMAL interne au token, pas un marqueur.
+        nums = mod._extract_prose_numbers("Le ratio de Sharpe est 1.15 sur la periode OOS.")
+        assert 1.15 in nums
+
+    def test_preserve_integer_mid_line(self):
+        # CRUCIAL both-directions : un entier en milieu de phrase n'est pas un
+        # marqueur (du texte le precede sur la ligne).
+        nums = mod._extract_prose_numbers("On obtient 5 widgets apres optimisation.")
+        assert 5.0 in nums
+
+    def test_preserve_sentence_internal_period(self):
+        # CRUCIAL both-directions : "Le seuil est 5. Continuons." -- le 5 est
+        # en MILIEU de ligne (pas le premier token), donc le "5." n'est PAS un
+        # marqueur de liste. C'est une mesure suivie d'une fin de phrase.
+        nums = mod._extract_prose_numbers("Le seuil est 5. Continuons l'analyse.")
+        assert 5.0 in nums
+
+    def test_preserve_marker_and_measurement_same_cell(self):
+        # Une cellule peut avoir un marqueur "5." ET une mesure "5" ailleurs :
+        # seul le marqueur est filtre, la mesure survive.
+        nums = mod._extract_prose_numbers(
+            "5. Cinquieme etape du protocole\n\nLa dimension de l'espace est 5."
+        )
+        # La mesure 5 (deuxieme ligne, milieu de phrase) est conservee.
+        assert 5.0 in nums
+
+
+class TestMarkdownTableDataFalsePositive:
+    """Filtre cellules de table GFM (po-2023 #9790, FP class 8 -- markdown-table-data).
+
+    Un nombre dans une rangee de table markdown (ligne debutant par ``|`` et
+    finissant par ``|``) est une CELLULE de donnees structurale (dataset input,
+    table de versions, benchmark de papier, spec d'outil), pas une affirmation
+    de mesure en prose. Verifie firsthand (G.1, 2026-08-09, classifier
+    full-corpus SymbolicAI) : 808/2110 findings MISSING_FROM_OUTPUTS (38 %)
+    tombent dans une rangee de table ; echantillon divers 19/19 notebooks =
+    100 % tables de REFERENCE/DONNEES, zero table de resultats calcules.
+    Falsifiable both-directions : un nombre en PROSE (hors table) est conserve,
+    meme si la cellule contient aussi une table ; un item de liste avec un pipe
+    ne commence pas par ``|`` donc n'est pas une table.
+    """
+
+    def test_filter_table_cell_input_data(self):
+        # Cas corpus (OR-tools-Stiegler c8, Stigler diet dataset) : "36" est le
+        # prix nutrient de la farine, donnee d'INPUT du solver, pas une mesure.
+        nums = mod._extract_prose_numbers(
+            "| Ingredient | Quantite | Prix |\n|---|---|---|\n| Farine | 4,5 kg | 36 |\n"
+        )
+        assert 36.0 not in nums
+
+    def test_filter_table_cell_version_reference(self):
+        # Cas corpus (SW-9-JSONLD) : table de versions "1.1 (2020)" = reference.
+        nums = mod._extract_prose_numbers(
+            "| Standard | Version |\n|---|---|\n| RDF-Star | 1.2 (2020) |\n"
+        )
+        assert 1.2 not in nums
+
+    def test_filter_table_cell_paper_benchmark(self):
+        # Cas corpus (Lean-8-Agentic) : "0.53" est un benchmark tire d'un papier.
+        nums = mod._extract_prose_numbers(
+            "| Lemme | Auto | Semantique |\n|---|---|---|\n| Nat.add_comm | 0.53 | 0.95 |\n"
+        )
+        assert 0.53 not in nums
+        assert 0.95 not in nums
+
+    def test_filter_multi_column_table_all_cells(self):
+        # Toutes les cellules numeriques d'une table a plusieurs colonnes.
+        nums = mod._extract_prose_numbers(
+            "| A | B | C |\n|---|---|---|\n| 10 | 20 | 30 |\n| 40 | 50 | 60 |\n"
+        )
+        assert nums == []
+
+    def test_filter_indented_table_row(self):
+        # Table indentee (<= 3 espaces, CommonMark) toujours une rangee.
+        nums = mod._extract_prose_numbers("  | x | 42 |\n")
+        assert 42.0 not in nums
+
+    def test_preserve_measurement_after_table(self):
+        # CRUCIAL both-directions : une mesure en PROSE apres une table est
+        # conservee -- on ne filtre que les nombres DANS les rangees.
+        nums = mod._extract_prose_numbers(
+            "| Data | Val |\n|---|---|\n| a | 99 |\n\nLe score final observe est 0.42."
+        )
+        assert 99.0 not in nums
+        assert 0.42 in nums
+
+    def test_preserve_prose_measurement_with_math_pipe(self):
+        # CRUCIAL both-directions : "|r| = 0,5" mid-sentence n'est PAS une table
+        # (la ligne ne commence pas par `|`) -> la mesure 0.5 est conservee.
+        nums = mod._extract_prose_numbers("La valeur absolue |r| = 0,5 indique correlation.")
+        assert 0.5 in nums
+
+    def test_list_item_with_pipe_not_table(self):
+        # CRUCIAL both-directions : un item de liste "- a | b" ne commence pas
+        # par `|` -> un nombre dedans est conserve (pas une table).
+        nums = mod._extract_prose_numbers("- Ratio gagnant | 7 trades sur 12")
+        assert 7.0 in nums
+        assert 12.0 in nums
+
+    def test_table_and_prose_claim_same_cell(self):
+        # Une cellule avec une table ET une affirmation en prose : seules les
+        # cellules de table sont filtrees, la mesure en prose survive.
+        nums = mod._extract_prose_numbers(
+            "Parametres :\n| Seuil | 0.5 |\n|---|---|\n| K | 3 |\n\nResultat : Phi = 0.69."
+        )
+        assert 0.5 not in nums      # cellule de table
+        assert 3.0 not in nums      # cellule de table
+        assert 0.69 in nums         # affirmation de prose
+
+
 class TestHexColorAndExponentFalsePositives:
     """Filtre codes couleur hex + exposants plaine (EPIC #9768, c.1295).
 
@@ -806,6 +956,35 @@ class TestBibliographicReferenceFilter:
         assert mod._is_bibliographic_reference(5.7, text2) is False
         assert mod._is_bibliographic_reference(6.0, text2) is True
 
+    def test_helper_extended_journal_nature_simple_volpages(self):
+        # FP class 4 extended (#9998) : journal SANS mot-cle generique (Nature,
+        # Econometrica, Annals of Mathematics) au format SIMPLE vol:pages. Le nom
+        # du journal precede immediatement le pattern (fenetre etroite 60 chars).
+        # Cas fondateur : rl_6_dqn_policy_gradient cell[27] "Nature 518:529-533".
+        text = "Mnih et al., Nature 518:529-533 (2015)."
+        assert mod._is_bibliographic_reference(518.0, text) is True
+        assert mod._is_bibliographic_reference(529.0, text) is True
+        assert mod._is_bibliographic_reference(533.0, text) is True
+
+    def test_helper_extended_journal_econometrica(self):
+        # Econometrica est dans _BIBLIO_EXTENDED_CONTEXT_RE sans "Journal" dans
+        # le nom. DecPyMC-2 corpus : "Econometrica 32:122-136".
+        text = "Theorie de l'utilite, Econometrica 32:122-136 (1964)."
+        assert mod._is_bibliographic_reference(32.0, text) is True
+        assert mod._is_bibliographic_reference(122.0, text) is True
+        assert mod._is_bibliographic_reference(136.0, text) is True
+
+    def test_helper_extended_keyword_far_from_pattern_not_filtered(self):
+        # Anti-sur-filtrage (fenetre etroite 60 chars) : "nature" mot courant en
+        # prose LOIN (>60 chars) d'un pattern N:N-N qui est un range de donnees.
+        # Si la fenetre etait 200 chars (comme le base), "nature" collerait et
+        # sur-filtrerait la plage de donnees. La fenetre etroite protege.
+        filler = ("x" * 80)  # 80 chars > 60 : "nature" hors fenetre etroite
+        text = "On etudie la nature du phenomene " + filler + " sur la plage 5:10-15 des indices."
+        assert mod._is_bibliographic_reference(5.0, text) is False
+        assert mod._is_bibliographic_reference(10.0, text) is False
+        assert mod._is_bibliographic_reference(15.0, text) is False
+
     def test_integration_comptes_rendus_suppressed(self, tmp_path):
         # Cas fondateur DecPyMC-2 cell[23] : prose cite "Comptes Rendus
         # 25:536-538" -- 25, 536, 538 sont des identifiants de citation,
@@ -1066,12 +1245,47 @@ class TestNotebookCrossReferenceFilter:
         assert mod._is_notebook_cross_reference(0.69, text) is False
         assert mod._is_notebook_cross_reference(2.8, text) is True
 
-    def test_helper_integer_not_filtered(self):
-        # Un entier (pas une decimale N.M) n'est jamais un indice de notebook
-        # dans la syntaxe [N.M] -> non filtre (les indices de notebook sont
-        # decimaux : 2.8, 1.3).
+    def test_helper_integer_link_filtered(self):
+        # Cas reel GameTheory/SymbolicAI : certaines series nomment leurs
+        # notebooks par un INDICE ENTIER. « [12](12-quelquechose.ipynb) » ->
+        # 12 est l'indice du notebook pointe, pas une mesure. L'exclusion
+        # historique des entiers (refutee par forensic po-2023 c.188) est levee.
         text = "Voir [12](12-quelquechose.ipynb) pour la suite."
-        assert mod._is_notebook_cross_reference(12.0, text) is False
+        assert mod._is_notebook_cross_reference(12.0, text) is True
+
+    def test_helper_integer_gameyseries_nav_link(self):
+        # Cas fondateur (forensic po-2023 c.188, SymbolicAI 15% / GameTheory 34%
+        # des MISSING_FROM_OUTPUTS) : barre de navigation entre notebooks d'une
+        # serie a indice entier. Le « 7 » de « GameTheory-7 » est l'indice du
+        # notebook pointe, dans le texte ET dans l'URL du lien .ipynb.
+        text = ("**Navigation** : [GameTheory-7](GameTheory-7-ExtensiveForm-Csharp.ipynb) "
+                "| [GameTheory-11 (Bayesien)](GameTheory-11-BayesianGames.ipynb)")
+        assert mod._is_notebook_cross_reference(7.0, text) is True
+        assert mod._is_notebook_cross_reference(11.0, text) is True
+
+    def test_helper_integer_prevnext_bar(self):
+        # Barre prev/next « [<< 12-Reputation] » : l'indice 12 est en tete du
+        # texte du lien, objet navigationnel, pas une mesure.
+        text = "**Transition** : [<< 12-ReputationGames](12-ReputationGames.ipynb)"
+        assert mod._is_notebook_cross_reference(12.0, text) is True
+
+    def test_helper_integer_overfilter_guard_occurrence_outside_link(self):
+        # Anti-sur-filtrage (propriete SAFE cle, entiers) : si un entier apparait
+        # a la fois dans un lien .ipynb ET comme occurrence hors-lien (potentielle
+        # vraie mesure en prose, ex. « 2 joueurs »), on NE filtre PAS. Le
+        # conservatisme prime -- l'occurrence hors-lien peut etre le measurand.
+        text = "Ce jeu a 2 joueurs, cf. [2-Coordination](2-Coordination.ipynb)."
+        assert mod._is_notebook_cross_reference(2.0, text) is False
+
+    def test_helper_integer_measurement_cell_not_overfiltered(self):
+        # La cellule peut cohabiter indices-entiers (filtres) ET vraies mesures
+        # decimales (preservees) -- le filtre est par-valeur, SAFE. Ici 0.73 est
+        # une vraie valeur de Shapley en prose hors-lien -> non filtre, tandis
+        # que 15 (indice du notebook pointe) est filtre.
+        text = ("La valeur de Shapley calculee est 0.73 ; "
+                "suite : [GameTheory-15-Cooperatif](GameTheory-15-CooperativeGames.ipynb)")
+        assert mod._is_notebook_cross_reference(15.0, text) is True
+        assert mod._is_notebook_cross_reference(0.73, text) is False
 
     def test_helper_overfilter_guard_occurrence_outside_link(self):
         # Anti-sur-filtrage (propriete SAFE cle) : si N.M apparait a la fois
@@ -1093,8 +1307,8 @@ class TestNotebookCrossReferenceFilter:
         # dans les liens ne sont pas des mesures -> MISSING_FROM_OUTPUTS supprime.
         # Note : on n'ecrit PAS de « (2.8) » hors-lien -- un indice hors-lien
         # n'est pas filtre par le LINK-only filter (cas KEYWORD defer, volontai-
-        # rement conservateur). Les indices entiers-valeurs (3.0) ne sont pas
-        # filtres non plus (garde value==int(value)) -- on utilise 3.1.
+        # rement conservateur). Les indices decimaux (2.8, 3.1) et entiers
+        # sont desormais tous deux filtres (forensic po-2023 c.188).
         nb = tmp_path / "nav.ipynb"
         _make_notebook([
             _markdown_cell("# 2.9 Grokking\n"
@@ -1127,6 +1341,127 @@ class TestNotebookCrossReferenceFilter:
             f"legit orphan 0.69 must survive the xref filter, got {mfo}")
         assert xref == [], (
             f"xref index 2.8 must be filtered, got {xref}")
+
+
+# --------------------------------------------------------------------------- #
+#  FP class 1 (#9998) : parametres de code restitues dans la prose (backtick)
+# --------------------------------------------------------------------------- #
+
+
+class TestCodeDefinedValueFilter:
+    """FP class 1 (#9998) : parametres de code restitues dans la prose en span backtick.
+
+    Un nombre orphelin n'est pas une mesure manquante si la prose le cite comme
+    un PARAMETRE de code, entre backticks : « `n_init=10` », « `random_state=42` »,
+    « `alpha=0,5` ». La valeur pilote le calcul, elle n'en est pas un output.
+
+    SAFE par construction (mesure corpus firsthand, 4 gardes cumulatifs) :
+      1. assignment ``identifiant = valeur`` DANS un span backtick (l'auteur cite
+         du CODE). Une METRIQUE RESTITUEE en prose narrative (« **MAE = 0,41** »)
+         n'est jamais backtickee -> non filtree : c'est un output a verifier.
+      2. identifiant non-resultat-de-solveur (exclut ``x_1 = 0.5``).
+      3. valeur = RHS complet (pas une formule ``MONEY = 10000·M`` ni un % ``heat = 18%``).
+      4. bornes numeriques + ``_`` (exclut le prefixe 4 de ``QUORUM = 4_000_000``).
+
+    Verifie firsthand ML.NET : 2/184 (ML-1 Size=2.5, ML-8 n_init=10) ; full corpus
+    65 orphelins filtres. Aucune metrique restituee (MAE/RMSE/score) filtree.
+    """
+
+    def test_helper_backtick_param_int(self):
+        # "`n_init=10`" -- 10 est un parametre de KMeans, cite en backtick.
+        text = "K-Means avec `n_clusters=3`, `random_state=42`, `n_init=10`."
+        assert mod._is_code_defined_value(10.0, text) is True
+        assert mod._is_code_defined_value(42.0, text) is True
+
+    def test_helper_backtick_param_decimal(self):
+        # "`alpha=0.5`" -- decimale en backtick.
+        text = "Regression ridge avec `alpha=0.5`."
+        assert mod._is_code_defined_value(0.5, text) is True
+
+    def test_helper_backtick_param_fr_decimal(self):
+        # "`alpha=0,5`" -- decimale francaise en backtick (prose pedagogique FR).
+        text = "Regression ridge avec `alpha=0,5` (seuil FR)."
+        assert mod._is_code_defined_value(0.5, text) is True
+
+    def test_helper_no_backtick_not_filtered(self):
+        # Anti-sur-filtrage : une valeur en prose SANS backtick n'est pas filtree
+        # (peut etre une metrique narrative). "Sharpe = 0.69" non backticke.
+        text = "Le ratio de Sharpe est 0.69 sur la periode OOS."
+        assert mod._is_code_defined_value(0.69, text) is False
+
+    def test_helper_reported_metric_bold_not_filtered(self):
+        # Anti-sur-filtrage (cas ML-4 c[36]) : une METRIQUE RESTITUEE en prose
+        # narrative (MAE, RMSE) en gras n'est PAS un parametre de code -> non
+        # filtree. C'est un output que le detecteur doit pouvoir verifier.
+        text = "Les metriques sont **R^2 = 0,941**, **MAE = 0,41**, **RMSE = 2,33**."
+        assert mod._is_code_defined_value(0.41, text) is False
+        assert mod._is_code_defined_value(2.33, text) is False
+
+    def test_helper_solver_result_backtick_not_filtered(self):
+        # Anti-sur-filtrage (cas OR-tools-Stiegler c[13]) : une VALEUR DE SOLUTION
+        # de solveur restituee en backtick (`x_1 = 0.5`) est un OUTPUT, pas un
+        # parametre de config -> non filtree.
+        text = "La solution optimale est `x_1 = 0.5` et `x_2 = 0.3`."
+        assert mod._is_code_defined_value(0.5, text) is False
+
+    def test_helper_formula_expression_not_filtered(self):
+        # Anti-sur-filtrage (cas 13_Cryptarithmetic c[2]) : une formule en
+        # backtick (`MONEY = 10000·M + ...`) -- 10000 est un coefficient de
+        # place-value, RHS incomplet -> non filtre.
+        text = "Decomposition : `MONEY = 10000·M + 1000·O + 100·N + 10·E + Y`."
+        assert mod._is_code_defined_value(10000.0, text) is False
+
+    def test_helper_unicode_minus_formula_not_filtered(self):
+        # Anti-sur-filtrage (cas 05-SemanticKernel c[19]) : identite mathematique
+        # avec moins Unicode U+2212 « Cosine Distance = 1 − ... » -> 1 non filtre.
+        text = "Rappel : `Cosine Distance = 1 − Cosine Similarity`."
+        assert mod._is_code_defined_value(1.0, text) is False
+
+    def test_helper_underscore_grouping_not_filtered(self):
+        # Anti-sur-filtrage (cas SC-9 c[5]) : le separateur underscore `4_000_000`
+        # ne doit pas faire matcher le prefixe 4 comme parametre.
+        text = "Seuil de gouvernance `QUORUM = 4_000_000` tokens."
+        assert mod._is_code_defined_value(4.0, text) is False
+
+    def test_helper_comparison_not_filtered(self):
+        # Anti-sur-filtrage : un comparateur (`count >= 5`, `ratio == 0.9`) n'est
+        # pas un assignment de parametre.
+        text = "On garde si `count >= 5` et `ratio == 0.9`."
+        assert mod._is_code_defined_value(5.0, text) is False
+        assert mod._is_code_defined_value(0.9, text) is False
+
+    def test_helper_value_not_in_any_assignment_not_filtered(self):
+        # Un nombre hors de tout assignment backtick -> orphelin normal.
+        text = "Le code `model.fit(X)` produit un score. Valeur cible 0.69."
+        assert mod._is_code_defined_value(0.69, text) is False
+
+    def test_integration_param_suppressed(self, tmp_path):
+        # Cas fondateur ML-8 c[5] : prose cite `n_init=10` -> 10 orphelin filtre.
+        nb = tmp_path / "param.ipynb"
+        _make_notebook([
+            _markdown_cell("## Pipeline\nK-Means avec `n_clusters=3`, `n_init=10` "
+                           "(10 redemarrages)."),
+            _code_cell("print(0.42)", [{"text": "0.42\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        filtered = [f for f in mfo if f.prose_number == pytest.approx(10.0)]
+        assert filtered == [], f"param n_init=10 must be filtered, got {filtered}"
+
+    def test_integration_legit_orphan_alongside_param_preserved(self, tmp_path):
+        # Falsifiabilite : une vraie mesure orpheline (0.69) coexistant avec un
+        # parametre backtick (n_init=10) DOIT rester signalee.
+        nb = tmp_path / "mixed.ipynb"
+        _make_notebook([
+            _markdown_cell("Sharpe observe = 0.69 ; K-Means `n_init=10`."),
+            _code_cell("print(0.42)", [{"text": "0.42\n"}]),
+        ], nb)
+        result = mod.analyze_notebook(nb)
+        mfo = [f for f in result.findings if f.category == "MISSING_FROM_OUTPUTS"]
+        legit = [f for f in mfo if f.prose_number == pytest.approx(0.69)]
+        param = [f for f in mfo if f.prose_number == pytest.approx(10.0)]
+        assert len(legit) == 1, f"legit orphan 0.69 must survive, got {mfo}"
+        assert param == [], f"param n_init=10 must be filtered, got {param}"
 
 
 # --------------------------------------------------------------------------- #

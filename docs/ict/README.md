@@ -50,6 +50,16 @@ Lectures *horizontales* : où les fils se rejoignent, s'éloignent, se mélangen
 - **Entrée par les jambes** (cadrage formel) : [`strate7-cadres-libres.md`](strate7-cadres-libres.md) (D1) → [`jambe-c4-propagation.md`](jambe-c4-propagation.md) (C4) → [`d1-c4-rencontre-meta.md`](d1-c4-rencontre-meta.md) (leur articulation).
 - **Entrée par la carte** (vue d'ensemble) : [`tresse-cartographie.md`](tresse-cartographie.md) (la tresse) + [`dissociations-matrix.md`](dissociations-matrix.md) (la matrice 4-objets).
 
+## Entrée exécutable — la série IIT (PyPhi)
+
+Les documents ci-dessus sont au **grade C-documentaire** : ils *cadrent* et *cartographient*, ils ne calculent pas. Le pendant **exécutable** de cette mécanique vit dans la série **IIT** ([`MyIA.AI.Notebooks/IIT/`](../../MyIA.AI.Notebooks/IIT/)), où les instruments dont parlent les fils se calculent réellement avec PyPhi :
+
+- [`IIT-1-IntroToPyPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-1-IntroToPyPhi.ipynb) — le socle mécanique : Φ (petite *phi*) sur un réseau *toy*, mécanisme d'information minimale irréductible (MIP), cause-effect structure. Le Φ dont parle le [5ᵉ fil (dissolution des scalaires)](dissolution-scalaires.md) s'y calcule.
+- [`IIT-2-AdvancedTopics.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-2-AdvancedTopics.ipynb) — partitionnement (MIP/SIA), répertoires cause-effet d'un mécanisme, concepts (MICE/CES). La gymnastique qui rend la [matrice des dissociations](dissociations-matrix.md) lisible.
+- [`IIT-3-CoarseGrainingMacroPhi.ipynb`](../../MyIA.AI.Notebooks/IIT/IIT-3-CoarseGrainingMacroPhi.ipynb) — coarse-graining et survie de Φ au changement de résolution. **Le cas le plus net** : la mécanique de changement d'échelle dont relèvent directement la [dissolution des scalaires](dissolution-scalaires.md) et la [cartographie en tresse](tresse-cartographie.md).
+
+Entrer par **IIT-3** quand on vient du 5ᵉ fil ; par **IIT-1 / IIT-2** quand on cherche l'instrument avant la carte.
+
 ## État et provenance
 
 Tous les documents consolident un travail mené sur la série de notebooks ICT et les conversations de référence (cadrage stratégique 2026-07-19, tour 523 audit #4, tour 755 jambe C4 2026-07-20). Ils sont *postérieurs* aux livrables expérimentaux qu'ilscadrent — c'est ce timing (synthèse *après* les jambes) qui les rend lisibles. Aucun ne crée de nouvelle dépendance expérimentale ; ils ne dispatchent pas de nouveau notebook.
