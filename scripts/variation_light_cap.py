@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """Detect G-VAR-2 cap-reached: a 2nd+ LIGHT PR merged the same day for a lane.
 
-G-VAR-2 (variation-protocol.md) caps the protocol at **one LIGHT PR per lane
-per day, all LIGHT sub-categories confounded** (guard, doc, refs, ... share a
-single budget). It is the only gate of the protocol that is **cross-PR** -- it
-needs to know what the lane has ALREADY merged today -- so until now it was
-counted by hand by the coordinator, who merged a 2nd LIGHT twice in one cycle
-(issue #8964: measured firsthand on the 2026-07-30 wave). This tool makes the
-fact VISIBLE (advisory, exit 0), it does not block.
+G-VAR-2 (variation-protocol.md) caps the protocol at a **ratio**, not a flat
+ceiling: the LIGHT allowance is `max(1, lane_grains_merged_today // 3)` (sign-off
+user 2026-07-31, incident #8961), with **all LIGHT sub-categories confounded**
+(guard, doc, refs, ... share a single budget). The flat `1 LIGHT/lane/day` it
+replaced scored a 1-PR lane and a 19-merge/13-DEEP lane identically -- a cap
+blind to throughput does not measure monoculture, it caps throughput. See
+`light_budget` below for the implementation and the L165-184 historicizing
+block for the rationale. It is the only gate of the protocol that is **cross-PR**
+-- it needs to know what the lane has ALREADY merged today -- so until it was
+automated the coordinator merged a 2nd LIGHT twice in one cycle (issue #8964:
+measured firsthand on the 2026-07-30 wave). This tool makes the fact VISIBLE
+(advisory, exit 0), it does not block.
 
 Input: a JSON array of the day's merged PRs, each `{number, body, mergedAt}`,
 produced by:
