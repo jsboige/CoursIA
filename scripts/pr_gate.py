@@ -238,11 +238,13 @@ def platform_delivered(checks: Sequence[dict], always_on_jobs: frozenset[str]) -
 
     The delivery canary (rule 8). Judges on observed NAMES -- the raw input to
     `classify` -- and deliberately NOT on the `ok` bucket: at least two
-    always-on jobs are themselves advisory (e.g. the repo-size advisory, the
-    short-header advisory trio) and `classify` diverts a non-green advisory out
-    of `ok` into `advisory`. Judging `ok` would therefore flag a healthy PR whose
-    only always-on happened to be a red advisory. Judging names sidesteps the
-    trap: a delivered advisory job is still present by name.
+    always-on jobs are themselves advisory (e.g. the repo-size advisory and
+    former short-header trio, both advisory-diverted) and `classify` diverts a
+    non-green advisory out of `ok` into `advisory`. Judging `ok` would therefore
+    flag a healthy PR whose only always-on happened to be a red advisory.
+    Judging names sidesteps the trap: a delivered advisory job is still present
+    by name. The short-header job was retired by c.10330 / PR and is no longer
+    part of the always-on set; this comment is kept as a trace for reviewers.
 
     A check matches an always-on job when the normalised names are equal, or when
     the observed name ends with " / <job>" (GitHub's "<workflow> / <job>"

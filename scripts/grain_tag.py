@@ -36,11 +36,12 @@ discipline). Each key is a single line, anywhere after the Grain tag:
     Perimetre:  <one-line -- files/domain touched, and what is explicitly
                          out of scope>
 
-Tolerant to bold (`**Quoi** :`), case, and extra whitespace. The trio is
-**advisory** at first: the guard flags `variation-short-header-missing` only
-when ALL THREE are absent (so existing PRs do not suddenly turn red the day
-the convention is rolled out). Hardening to "1 absent = flag" is a separate
-gate, after the convention has spread.
+Tolerant to bold (`**Quoi** :`), case, and extra whitespace. c.10330 / PR
+retired the `check-short-header` CI job that labelled `variation-short-header-missing`
+on 69 % of PRs without the convention ever being promulgated in the harness
+(#10330). The parser stays in place (pure function, no cost when no caller
+invokes it); a future convention rollout would re-cable a job and pair it
+with a harnais rule.
 
 `parse_short_header` returns {quoi, preuve, perimetre} (each | None).
 `parse_grain_tag` is unchanged (back-compat for the variation_light_cap organ).
@@ -340,12 +341,13 @@ def extract_lane(body: str | None) -> str | None:
 #
 # The detailed body below stays authorised and welcome (audit value) -- the
 # goal is NOT to censor the argument, it is to guarantee the reviewer finds
-# those three answers AT THE TOP, in three lines. The trio is advisory at
-# rollout (issue spec: "rougit sur une PR dont le body n'a pas les trois
-# cles"), so we flag `variation-short-header-missing` only when ALL THREE
-# are absent -- existing PRs that have none of the three keys still pass,
-# so the convention spreads without churn. Hardening to "1 absent = flag"
-# is a separate decision, taken when the fleet has adopted the convention.
+# those three answers AT THE TOP, in three lines.
+#
+# c.10330 / PR retired the `check-short-header` CI job: the convention was
+# voluntarily not promulgated (cf. issue title "pas une nouvelle regle") but
+# the organ was cabled and labelled 69 % of PRs without ever discriminating
+# anything. The function `parse_short_header` below stays in place as a pure
+# parser -- available if a future harness rule ever adopts the convention.
 #
 # Same noise discipline as `_GRAIN_FULL_RE` / `_LANE_RE`: bold (`**`), backticks
 # (`` ` ``), title hashes (`#`), blockquotes (`>`) are stripped BEFORE matching.
@@ -369,10 +371,12 @@ def parse_short_header(body: str | None) -> dict:
     """Extract the {Quoi, Preuve, Perimetre} short-header trio (#9861).
 
     Each key is independent: a body can carry one, two, or all three -- the
-    caller decides what to do with the partial coverage. The CI guard
-    (`check-short-header` job in `variation-tag-guard.yml`) flags a PR only
-    when **all three are absent**, by design (existing PRs have none of the
-    three and must not suddenly turn red).
+    caller decides what to do with the partial coverage. c.10330 / PR retired
+    the `check-short-header` CI job (#10330): the convention was not
+    promulgated in the harness, so the label `variation-short-header-missing`
+    flagged 69 % of PRs without ever discriminating anything. The function
+    stays in place -- pure parser, no cost when no caller invokes it,
+    available if the convention is one day promulgated.
 
     Two presentation forms are recognised (#10163 acceptance):
 
