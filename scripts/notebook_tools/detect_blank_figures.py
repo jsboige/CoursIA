@@ -37,15 +37,31 @@ Une sortie `image/png` (ou `image/jpeg`) d'une cellule code est DEGENERECE si :
     fait 70 o ; un vrai plot fait des dizaines de Ko).
 Les deux signaux concordent sur le cas #6891 ; chacun est rapporte separement
 pour que l'humain juge (une image JPEG dont on ne parse pas les dimensions n'est
-retenue que sur la taille).
+retenue que sur la taille). Ces deux signaux sont BLOQUANTS (--check exit 1).
+
+Signaux ADVISORY par region (#10319, NON bloquants)
+---------------------------------------------------
+Un grand PNG riche en couleurs peut quand meme avoir la moitie de son contenu
+absent : une grille matplotlib dont certaines rangées de sous-graphes sont vides
+(cas #10319 : 4x4 dont 2 rangees uniformes). Les trois signaux ci-dessus
+raisonnent sur l'image ENTIERE et ne voient pas le trou. Une 4e métrique, par
+TUILE, ajoute le contraste INTRA-image : on decoupe l'image en grille (adaptive
+~64 px par tuile, ou `--tiles RxC`), on calcule par tuile l'ecart-type max par
+canal, et on signale (advisory) quand une fraction significative des tuiles est
+quasi-uniforme (>= MIN_UNIFORM_FRACTION) COEXISTANT avec une fraction
+significative de tuiles riches (>= MIN_CONTENT_FRACTION). Le signal est le
+CONTRASTE, pas le niveau absolu : une image entierement uniforme ou entierement
+riche n'est PAS flaggee. Advisory = rapporte mais ne fait PAS rougir --check
+(phase 1 : on mesure le taux de FP avant tout blocage, #10319 critere 4).
 
 Known blind spots (hors scope par design)
 -----------------------------------------
 - FIGURE PLEINE MAIS VIDE : un PNG full-size (ex 690x590) entierement blanc /
-  transparent (un plot qui a trace des axes vides). Detecter ca demande une
-  analyse pixel (variance de couleur) -- plus lourd et bruite. Hors scope : cet
-  outil cible la degenerescence de dimension/taille (le cas #6891 verifie), pas
-  le contenu semantique de l'image.
+  transparent (un plot qui a trace des axes vides, SANS region riche). La
+  métrique par tuile (#10319) ne le voit PAS : elle exige du contraste intra-
+  image (uniforme + riche). Le cas « tout vide » reste hors scope (variance
+  globale faible -- bruité, couvert partiellement par _has_real_content quand
+  l'image a < MIN_DISTINCT_COLORS).
 - IMAGE LEGITIMEMENT PETITE : une icone / un sprite / un QR code volontairement
   petit. Rare en notebook pedagogique (les sorties image sont des figures). Si
   rencontre, l'exclure au cas par cas -- l'outil est read-only.
@@ -58,12 +74,14 @@ Usage
     python detect_blank_figures.py NB.ipynb --json          # sortie machine
     python detect_blank_figures.py NB.ipynb --check         # exit 1 si figures degenerees (CI-ready)
     python detect_blank_figures.py NB.ipynb --min-dim 8 --min-bytes 1024   # seuils explicites
+    python detect_blank_figures.py NB.ipynb --tiles 4x4    # grille par-region advisory explicite
 
 Exit codes
 ----------
-    0 -- aucune figure degenerece (ou mode non --check)
-    1 -- une ou plusieurs figures degenerees (--check seulement)
-    2 -- erreur (notebook illisible, famille introuvable)
+    0 -- aucune figure degeneree bloquante (ou mode non --check). Les findings
+         advisory (#10319) ne font JAMAIS remonter exit 1.
+    1 -- une ou plusieurs figures degenerees BLOQUANTES (--check seulement)
+    2 -- erreur (notebook illisible, famille introuvable, --tiles mal forme)
 
 Voir aussi
 ----------
@@ -71,6 +89,7 @@ Voir aussi
 - `.claude/rules/sota-not-workaround.md` -- Prong-A : vrai outil, pas workaround/fabrication
 - `.claude/rules/secrets-hygiene.md` regle 6 -- Stop&Repair : re-executer, jamais scrubber
 - #6891 -- incident fondateur (8 quantbook.ipynb QC blank-PNG)
+- #10319 -- grille partiellement vide (advisory par-region, non bloquant)
 
 Part of #3801 (EPIC SOTA axe-2).
 """
@@ -97,6 +116,45 @@ MIN_BYTES = 1024    # o  : un PNG decode < 1 Ko ne porte pas de vraie figure
 # taille pour ne pas regresser la couverture de #6891).
 MIN_DISTINCT_COLORS = 4  # nb de couleurs RGB distinctes en dessous duquel une
                          # petite image est consideree sans contenu reel
+
+# Detection par region (#10319) -- grille partiellement vide.
+# Les trois seuils ci-dessus (dim / bytes / couleurs) raisonnent sur des agrégats
+# de l'image ENTIÈRE : une grille matplotlib dont seule une partie des sous-graphes
+# est vide est un grand PNG riche en couleurs -- elle passe les trois au vert alors
+# que la moitie de son contenu pedagogique est absent (cas #10319 : 4x4 dont 2
+# rangées vides). La métrique par tuile ci-dessous ajoute le contraste INTRA-image
+# comme 4e signal (advisory, non bloquant -- phase 1).
+TILE_TARGET_PX = 64          # cote de tuile vise en mode adaptatif (grille choisie
+                             # pour que chaque tuile fasse ~>= 64 px, min 2x2). Une
+                             # tuile plus fine qu'un sous-graphe marche aussi bien :
+                             # un sous-graphe vide de 172x147 couvre ~3x3 tuiles, qui
+                             # contribuent toutes au compte "uniforme".
+MIN_TILES_AXIS = 2           # ne pas subdivider en dessous de 2x2 (une tuile unique
+                             # = l'image entiere = le cas global deja couvert).
+UNIFORM_TILE_STD = 10.0      # ecart-type max (0-255) par canal en dessous duquel une
+                             # tuile est "quasi-uniforme" (fond uni, cadre vide).
+CONTENT_TILE_STD = 25.0      # ecart-type min au-dessus duquel une tuile porte un
+                             # vrai contenu. La bande [10, 25] = ambigue, exclue des
+                             # deux comptes (conservateur : ne gonfle ni uniforme ni
+                             # riche, donc ne fabrique pas de contraste artificiel).
+LARGE_UNIFORM_REGION = 0.40  # Une GRANDE region uniforme CONNEXE couvrant >= 40 % des
+                             # tuiles est la signature d'un sous-graphe vide (cas
+                             # #10319 : la moitie superieure de la grille est vide ->
+                             # une composante 4-connexe de tuiles uniformes couvre ~50 %
+                             # de l'image). Un plot matplotlib normal a son blanc de
+                             # fond EPARPILLE entre les tuiles de contenu -> ses
+                             # composantes uniformes connexes sont petites (marges,
+                             # interstices) -> non flaggue. Seuil phase 1 calibre sur
+                             # le corpus (1100 figures candidates) : p50=0.11, p90=0.33,
+                             # p95=0.43 -> 0.40 est juste au-dela de p90 et laisse 94 %
+                             # des figures muettes, ne surfacent que la queue ~6 % pour
+                             # tri visuel. Taux advisory mesure a d'autres seuils :
+                             # 0.20->27 %, 0.30->13 %, 0.40->6 %, 0.50->2 %. A retuner
+                             # apres tri visuel des candidats par les lanes qui voient
+                             # (MiniMax/ai-01) -- #10319 critere 4.
+MIN_CONTENT_FRACTION = 0.15  # ... ET >= 15 % de tuiles riches => il y a BIEN du
+                             # contenu quelque part (sinon c'est le cas "figure pleine
+                             # mais vide", hors scope).
 
 _IMAGE_MIMES = ("image/png", "image/jpeg")
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
@@ -174,8 +232,165 @@ def _has_real_content(raw: bytes, min_colors: int = MIN_DISTINCT_COLORS) -> bool
         return None
 
 
-def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict | None:
-    """Return a finding dict if the image is degenerate, else None."""
+def _partially_empty_metric(
+    raw: bytes,
+    tiles: tuple[int, int] | None = None,
+) -> dict | None:
+    """Detect a grid figure that is PARTIALLY empty (#10319).
+
+    Returns a detail dict when the image carries intra-image contrast -- a
+    significant fraction of near-uniform tiles coexisting with a significant
+    fraction of rich tiles -- which is the signature of a matplotlib subplot
+    grid where some rows rendered empty (uniform canvas) while others carry
+    real content. Returns None otherwise (fully-rich real plot, fully-uniform
+    white canvas, PIL/numpy absent, or undecodable image).
+
+    Why per-tile and not whole-image: the three blocking metrics above reason
+    on aggregates of the ENTIRE image. A 4x4 grid whose top half is empty is a
+    large, byte-heavy, many-colored PNG -- it passes dimension, payload AND
+    distinct-color checks, because the rich bottom half supplies enough colors.
+    Only a per-region statistic can see that half the content is missing.
+
+    The signal is CONTRAST, not absolute level: a fully-empty image (all tiles
+    uniform, none rich) is NOT flagged here -- that is the separate, already
+    documented "figure pleine mais vide" blind spot, out of this metric's
+    scope. Only the *partially*-empty case (both uniform AND rich fractions
+    above threshold) produces an advisory.
+
+    numpy is used for the per-tile std-dev (fast vectorised). It is optional:
+    if numpy or PIL is unavailable, or the image is undecodable, returns None
+    and the caller keeps the blocking size/dimension behaviour (no coverage
+    regression -- same degrade-gracefully contract as `_has_real_content`).
+
+    `tiles` overrides the adaptive grid as (rows, cols); None = adaptive
+    (grid chosen so each tile ~= TILE_TARGET_PX, floored at MIN_TILES_AXIS).
+    """
+    try:
+        import io
+        import numpy as np
+        from PIL import Image
+    except Exception:
+        return None
+    try:
+        im = Image.open(io.BytesIO(raw)).convert("RGB")
+        arr = np.asarray(im)  # (H, W, 3) uint8
+    except Exception:
+        return None
+    if arr.ndim != 3 or arr.shape[2] < 3:
+        return None
+    h, w = int(arr.shape[0]), int(arr.shape[1])
+    if h < MIN_TILES_AXIS or w < MIN_TILES_AXIS:
+        return None  # too small to subdivide meaningfully
+
+    if tiles is None:
+        cols = max(MIN_TILES_AXIS, round(w / TILE_TARGET_PX))
+        rows = max(MIN_TILES_AXIS, round(h / TILE_TARGET_PX))
+    else:
+        rows, cols = tiles
+    rows = max(MIN_TILES_AXIS, int(rows))
+    cols = max(MIN_TILES_AXIS, int(cols))
+
+    row_edges = np.linspace(0, h, rows + 1, dtype=int)
+    col_edges = np.linspace(0, w, cols + 1, dtype=int)
+
+    # Carte par tuile : 0 = uniforme, 1 = contenu, -1 = ambigue.
+    tile_map = [[-1] * cols for _ in range(rows)]
+    uniform = 0
+    content = 0
+    total = 0
+    for ri in range(rows):
+        for ci in range(cols):
+            tile = arr[row_edges[ri]:row_edges[ri + 1], col_edges[ci]:col_edges[ci + 1]]
+            if tile.size == 0:
+                continue
+            total += 1
+            # max-channel std across all pixels of the tile (0-255 scale)
+            std = float(tile.reshape(-1, tile.shape[-1]).std(axis=0).max())
+            if std < UNIFORM_TILE_STD:
+                uniform += 1
+                tile_map[ri][ci] = 0
+            elif std >= CONTENT_TILE_STD:
+                content += 1
+                tile_map[ri][ci] = 1
+    if total == 0:
+        return None
+
+    c_frac = content / total
+    # Le signal discriminant est la CONTIGUITE, pas la fraction. Un plot normal
+    # a ses tuiles uniformes (blanc de fond) EPARPILLEES entre les tuiles de
+    # contenu -> la plus grande region uniforme connexe est petite. Une grille
+    # dont des sous-graphes entiers sont vides a une GRANDE region uniforme
+    # connexe (ex. la moitie superieure de l'image). On mesure donc la plus
+    # grande composante 4-connexe de tuiles uniformes (#10319). Sans ce test,
+    # 64 % des notebooks pedagogiques (plot matplotlib clairsemes sur fond
+    # blanc) etaient flaggues advisory -- bruit inutilisable.
+    largest_region = _largest_uniform_region(tile_map, rows, cols)
+    region_frac = largest_region / total if total else 0.0
+    if region_frac >= LARGE_UNIFORM_REGION and c_frac >= MIN_CONTENT_FRACTION:
+        return {
+            "uniform_fraction": round(uniform / total, 3),
+            "content_fraction": round(c_frac, 3),
+            "largest_uniform_region": round(region_frac, 3),
+            "tiles": f"{rows}x{cols}",
+            "uniform_tiles": uniform,
+            "content_tiles": content,
+            "total_tiles": total,
+        }
+    return None
+
+
+def _largest_uniform_region(tile_map: list[list[int]], rows: int, cols: int) -> int:
+    """Size of the largest 4-connected component of uniform (0) tiles.
+
+    Pure-Python flood fill on the (small) tile grid -- the grid is at most a few
+    hundred tiles, so no scipy dependency is warranted. Used by
+    `_partially_empty_metric` to distinguish a contiguous empty subplot block
+    (large region) from scattered background-white tiles of a normal plot
+    (small regions).
+    """
+    visited = [[False] * cols for _ in range(rows)]
+    largest = 0
+    for sr in range(rows):
+        for sc in range(cols):
+            if tile_map[sr][sc] != 0 or visited[sr][sc]:
+                continue
+            # BFS over uniform tiles
+            size = 0
+            stack = [(sr, sc)]
+            visited[sr][sc] = True
+            while stack:
+                r, c = stack.pop()
+                size += 1
+                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nr, nc = r + dr, c + dc
+                    if (
+                        0 <= nr < rows
+                        and 0 <= nc < cols
+                        and not visited[nr][nc]
+                        and tile_map[nr][nc] == 0
+                    ):
+                        visited[nr][nc] = True
+                        stack.append((nr, nc))
+            if size > largest:
+                largest = size
+    return largest
+
+
+def _classify_image(
+    mime: str,
+    raw: bytes,
+    min_dim: int,
+    min_bytes: int,
+    tiles: tuple[int, int] | None = None,
+) -> dict | None:
+    """Return a finding dict if the image is degenerate or partially empty, else None.
+
+    Findings carry a ``severity`` field: ``"blocking"`` for the deterministic
+    dimension/payload defects (#6891), ``"advisory"`` for the per-region
+    partially-empty signal (#10319). A ``"blocking"`` finding trips ``--check``;
+    an ``"advisory"`` finding never does (phase 1: measure the FP rate before
+    any blocking, per #10319 acceptance criterion 4).
+    """
     reasons = []
     size = len(raw)
     dims = _png_dimensions(raw) if mime == "image/png" else None
@@ -193,18 +408,41 @@ def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict
         if _has_real_content(raw) is not True:
             reasons.append(f"tiny_payload({size}B)")
 
-    if not reasons:
+    if reasons:
+        # Defaut deterministe (dim/taille) -> bloquant.
+        return {
+            "mime": mime,
+            "bytes": size,
+            "dimensions": list(dims) if dims else None,
+            "reasons": reasons,
+            "severity": "blocking",
+        }
+
+    # L'image a passe les seuils bloquants : examiner le contraste intra-image
+    # (#10319). Advisory seulement -- ne fait pas rougir le gate.
+    region = _partially_empty_metric(raw, tiles)
+    if region is None:
         return None
     return {
         "mime": mime,
         "bytes": size,
         "dimensions": list(dims) if dims else None,
-        "reasons": reasons,
+        "reasons": [
+            f"partially_empty_grid(largest_empty_region={region['largest_uniform_region']}, "
+            f"content={region['content_fraction']}, tiles={region['tiles']})"
+        ],
+        "severity": "advisory",
+        "region_detail": region,
     }
 
 
-def detect_cell(cell: dict, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES) -> list[dict]:
-    """Return findings (one per degenerate image output) for a code cell."""
+def detect_cell(
+    cell: dict,
+    min_dim: int = MIN_DIM,
+    min_bytes: int = MIN_BYTES,
+    tiles: tuple[int, int] | None = None,
+) -> list[dict]:
+    """Return findings (one per degenerate/partially-empty image output) for a code cell."""
     findings = []
     for oi, out in enumerate(_cell_outputs(cell)):
         data = out.get("data", {}) if isinstance(out, dict) else {}
@@ -214,13 +452,18 @@ def detect_cell(cell: dict, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES) 
             raw = _decode_image(data[mime])
             if raw is None:
                 continue
-            finding = _classify_image(mime, raw, min_dim, min_bytes)
+            finding = _classify_image(mime, raw, min_dim, min_bytes, tiles)
             if finding:
                 findings.append({"output_index": oi, **finding})
     return findings
 
 
-def scan_notebook(path: Path, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES) -> dict:
+def scan_notebook(
+    path: Path,
+    min_dim: int = MIN_DIM,
+    min_bytes: int = MIN_BYTES,
+    tiles: tuple[int, int] | None = None,
+) -> dict:
     """Return a result dict for one notebook: path, hits[], error."""
     try:
         with open(path, encoding="utf-8") as f:
@@ -232,7 +475,7 @@ def scan_notebook(path: Path, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES
     for ci, cell in enumerate(nb.get("cells", [])):
         if cell.get("cell_type") != "code":
             continue
-        for finding in detect_cell(cell, min_dim, min_bytes):
+        for finding in detect_cell(cell, min_dim, min_bytes, tiles):
             hits.append({"cell_index": ci, **finding})
     return {"path": str(path), "kernel": _kernel(nb), "hits": hits, "error": None}
 
@@ -261,34 +504,76 @@ def _iter_notebooks(root: Path, family: str | None):
 
 
 def _human_report(results: list[dict]) -> str:
-    total_hits = sum(len(r["hits"]) for r in results)
-    affected = [r for r in results if r["hits"]]
+    # Les findings advisory (#10319, par-region) ne sont pas des degenerescences
+    # deterministes : on les rapporte dans une section dediee, sans faire monter le
+    # compteur "Degenerate figures" (qui pilote historiquement le gate --check).
+    blocking: list[tuple[dict, dict]] = []
+    advisory: list[tuple[dict, dict]] = []
+    for r in results:
+        for h in r["hits"]:
+            (advisory if h.get("severity") == "advisory" else blocking).append((r, h))
+    nb_blocking = len({id(r) for r, _ in blocking})
     errored = [r for r in results if r.get("error")]
     lines = [
         f"Notebooks scanned  : {len(results)}",
-        f"Degenerate figures : {total_hits}",
-        f"Affected notebooks : {len(affected)}",
+        f"Degenerate figures : {len(blocking)}",
+        f"Affected notebooks : {nb_blocking}",
         "",
     ]
-    if not affected:
+    if not blocking and not advisory:
         lines.append("No degenerate figures detected (deterministic dimension/size check).")
         if errored:
             lines.append("")
             lines.append(f"NOTE: {len(errored)} notebook(s) unreadable (see --json for details).")
         return "\n".join(lines)
-    for r in affected:
+    # Findings bloquants (deterministes dim/taille -- #6891).
+    for r, h in blocking:
         short = r["path"].split("MyIA.AI.Notebooks")[-1].lstrip("\\/")
         lines.append(f"## {short}  [{r['kernel']}]")
-        for h in r["hits"]:
-            reasons = ", ".join(h["reasons"])
-            lines.append(f"  - cell [{h['cell_index']}] output[{h['output_index']}] {h['mime']}: {reasons}")
+        lines.append(f"  - cell [{h['cell_index']}] output[{h['output_index']}] {h['mime']}: {', '.join(h['reasons'])}")
+    if blocking:
         lines.append("")
-    lines.append(
-        "FIX: re-execute the cell in the real environment (QC Cloud research for "
-        "QuantBook, local kernel for matplotlib) and commit the real figure -- "
-        "Stop&Repair, never scrub/delete to hide (secrets-hygiene rule 6)."
-    )
+        lines.append(
+            "FIX: re-execute the cell in the real environment (QC Cloud research for "
+            "QuantBook, local kernel for matplotlib) and commit the real figure -- "
+            "Stop&Repair, never scrub/delete to hide (secrets-hygiene rule 6)."
+        )
+    # Findings advisory (par-region, #10319, NON bloquants).
+    if advisory:
+        lines.append("")
+        lines.append(f"## Advisory -- partially-empty grids (#10319, non-blocking): {len(advisory)}")
+        for r, h in advisory:
+            short = r["path"].split("MyIA.AI.Notebooks")[-1].lstrip("\\/")
+            lines.append(f"  - {short} cell [{h['cell_index']}] output[{h['output_index']}]: {', '.join(h['reasons'])}")
+        lines.append(
+            "NOTE: advisory only -- a region of the figure is near-uniform while another "
+            "carries content. Verify by eye (vision lanes); --check does not fail on this "
+            "(FP-rate measure phase, #10319 acceptance criterion 4)."
+        )
+    if errored:
+        lines.append("")
+        lines.append(f"NOTE: {len(errored)} notebook(s) unreadable (see --json for details).")
     return "\n".join(lines)
+
+
+def _parse_tiles(spec: str | None) -> tuple[int, int] | None:
+    """Parse a ``--tiles RxC`` spec (e.g. ``"4x4"``) into a (rows, cols) tuple.
+
+    Accepts ``x`` or ``X`` as the separator. Returns None for an empty/None
+    spec (adaptive grid). Raises ValueError on a malformed spec so argparse
+    surfaces it as a usage error.
+    """
+    if not spec:
+        return None
+    parts = spec.lower().replace("x", "X").split("X")
+    if len(parts) != 2:
+        raise ValueError(f"--tiles expects RxC (e.g. 4x4), got {spec!r}")
+    rows, cols = int(parts[0]), int(parts[1])
+    if rows < MIN_TILES_AXIS or cols < MIN_TILES_AXIS:
+        raise ValueError(
+            f"--tiles rows and cols must be >= {MIN_TILES_AXIS} (got {spec!r})"
+        )
+    return (rows, cols)
 
 
 def main(argv=None) -> int:
@@ -303,7 +588,22 @@ def main(argv=None) -> int:
     parser.add_argument("--check", action="store_true", help="Exit 1 if any degenerate figure (CI-ready)")
     parser.add_argument("--min-dim", type=int, default=MIN_DIM, help=f"Min figure side px (default {MIN_DIM})")
     parser.add_argument("--min-bytes", type=int, default=MIN_BYTES, help=f"Min decoded bytes (default {MIN_BYTES})")
+    parser.add_argument(
+        "--tiles",
+        default=None,
+        help=(
+            "Per-region grid for the partially-empty advisory (#10319), as RxC "
+            "(e.g. 4x4). Default: adaptive (~64px tiles). Advisory only, never "
+            "trips --check."
+        ),
+    )
     args = parser.parse_args(argv)
+
+    try:
+        tiles = _parse_tiles(args.tiles)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
 
     root = Path(args.root).resolve()
     if args.notebook:
@@ -319,16 +619,31 @@ def main(argv=None) -> int:
             print(f"error: family not found: {args.family}", file=sys.stderr)
             return 2
 
-    results = [scan_notebook(p, args.min_dim, args.min_bytes) for p in paths]
-    total_hits = sum(len(r["hits"]) for r in results)
+    results = [scan_notebook(p, args.min_dim, args.min_bytes, tiles) for p in paths]
+    # --check ne rougit QUE sur les findings bloquants (dim/taille, #6891). Les
+    # advisory partially_empty_grid (#10319) sont rapportes mais non bloquants
+    # (phase 1 : mesure du taux de FP avant tout blocage).
+    blocking_hits = sum(
+        1 for r in results for h in r["hits"] if h.get("severity") != "advisory"
+    )
+    advisory_hits = sum(
+        1 for r in results for h in r["hits"] if h.get("severity") == "advisory"
+    )
+    total_hits = blocking_hits + advisory_hits
 
     if args.json:
-        payload = {"notebooks_scanned": len(results), "total_hits": total_hits, "results": results}
+        payload = {
+            "notebooks_scanned": len(results),
+            "total_hits": total_hits,
+            "blocking_hits": blocking_hits,
+            "advisory_hits": advisory_hits,
+            "results": results,
+        }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(_human_report(results))
 
-    if args.check and total_hits > 0:
+    if args.check and blocking_hits > 0:
         return 1
     return 0
 

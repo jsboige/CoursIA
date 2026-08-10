@@ -40,16 +40,25 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from detect_blank_figures import (  # noqa: E402
+    LARGE_UNIFORM_REGION,
     MIN_BYTES,
+    MIN_CONTENT_FRACTION,
     MIN_DIM,
     MIN_DISTINCT_COLORS,
+    MIN_TILES_AXIS,
     SKIP_DIRS,
+    TILE_TARGET_PX,
+    UNIFORM_TILE_STD,
+    CONTENT_TILE_STD,
     _OUTPUT_SUFFIX,
     _PNG_SIGNATURE,
     _classify_image,
     _decode_image,
     _flattened_pixels,
     _has_real_content,
+    _largest_uniform_region,
+    _parse_tiles,
+    _partially_empty_metric,
     detect_cell,
     _human_report,
     _iter_notebooks,
@@ -876,3 +885,248 @@ class TestGateWorkflowContract:
             "`|| true` makes rc always 0 and permanently disarms the gate; "
             "use `&& rc=0 || rc=$?`"
         )
+
+
+# ---------------------------------------------------------------------------
+# 12. Per-region partially-empty grid (#10319) -- advisory, non-blocking
+# ---------------------------------------------------------------------------
+# The #6891 founding class was an EMPTY figure (1x1, 70 B): the size/dimension
+# gate catches it. #10319 is the OTHER half: a figure that is LARGE and RICH
+# overall but has WHOLE SUBPLOTS empty (a 4x4 grid whose top 2 rows rendered
+# nothing). The three whole-image metrics (dim / bytes / distinct-colors) all
+# pass -- the rich half supplies enough colors. Only a per-tile statistic can
+# see the hole, and only a CONTIGUITY test (largest connected uniform region,
+# not scattered fraction) separates a real missing subplot from a normal sparse
+# matplotlib plot. These tests pin both the detection and the phase-1 contract:
+# advisory surfaces, but --check does NOT fail on it.
+
+def _make_grid_png_bytes(row_kinds, cell=120, cols=4):
+    """Synthesize a grid PNG: row_kinds[i] in {'rich','uniform'}.
+
+    A 'rich' cell is filled with uniform random noise (per-channel std ~73,
+    well above CONTENT_TILE_STD=25 -- a real-plot analog). A 'uniform' cell is a
+    solid beige (std 0 < UNIFORM_TILE_STD=10 -- the empty-render case). Each
+    row spans `cols` cells of `cell` px. Needs numpy + PIL (both transitive
+    matplotlib deps; importorskip'd at the class level below).
+    """
+    np = pytest.importorskip("numpy")
+    pytest.importorskip("PIL")
+    from PIL import Image
+    import io
+
+    rows = len(row_kinds)
+    arr = np.zeros((rows * cell, cols * cell, 3), dtype=np.uint8)
+    for ri, kind in enumerate(row_kinds):
+        for ci in range(cols):
+            if kind == "rich":
+                rng = np.random.default_rng(ri * 1000 + ci)
+                block = rng.integers(0, 256, size=(cell, cell, 3), dtype=np.uint8)
+            else:
+                block = np.empty((cell, cell, 3), dtype=np.uint8)
+                block[:, :, 0] = 235
+                block[:, :, 1] = 220
+                block[:, :, 2] = 190
+            arr[ri * cell:(ri + 1) * cell, ci * cell:(ci + 1) * cell] = block
+    buf = io.BytesIO()
+    Image.fromarray(arr).save(buf, format="PNG")  # no positional mode (Pillow 13)
+    return buf.getvalue()
+
+
+# The canonical #10319 grid: 4 rows x 4 cols, top 2 rows empty, bottom 2 rich.
+# ~50 % of its area is one contiguous uniform block -> advisory at threshold 0.40.
+GRID_HALF_EMPTY = _make_grid_png_bytes(["uniform", "uniform", "rich", "rich"])
+# A grid where only the rich rows exist -> fully rich -> clean.
+GRID_FULL_RICH = _make_grid_png_bytes(["rich", "rich", "rich", "rich"])
+
+
+class TestPartiallyEmptyConstants:
+    def test_large_uniform_region_threshold(self):
+        # Phase-1 default calibrated on the corpus (p90 of largest-region = 0.33;
+        # the canonical 2/4-empty case = ~0.50 -> 0.40 catches it with margin).
+        assert LARGE_UNIFORM_REGION == 0.40
+
+    def test_min_content_fraction(self):
+        # Must have SOME content, else it's the out-of-scope "fully empty" case.
+        assert MIN_CONTENT_FRACTION == 0.15
+
+    def test_tile_std_thresholds(self):
+        # A tile is uniform below 10, content above 25; the [10,25] band is
+        # ambiguous (excluded from both counts so neither inflates artificially).
+        assert UNIFORM_TILE_STD == 10.0
+        assert CONTENT_TILE_STD == 25.0
+
+    def test_adaptive_tile_target(self):
+        # Adaptive grid aims at ~64px tiles, floored at 2x2.
+        assert TILE_TARGET_PX == 64
+        assert MIN_TILES_AXIS == 2
+
+
+class TestParseTiles:
+    def test_rxc_lowercase(self):
+        assert _parse_tiles("4x4") == (4, 4)
+
+    def test_rxc_uppercase_separator(self):
+        assert _parse_tiles("3X2") == (3, 2)
+
+    def test_none_means_adaptive(self):
+        assert _parse_tiles(None) is None
+        assert _parse_tiles("") is None
+
+    def test_non_rectangular_raises(self):
+        with pytest.raises(ValueError):
+            _parse_tiles("4")
+        with pytest.raises(ValueError):
+            _parse_tiles("4x4x4")
+
+    def test_below_min_axis_raises(self):
+        with pytest.raises(ValueError):
+            _parse_tiles("1x4")  # rows < MIN_TILES_AXIS
+
+
+class TestLargestUniformRegion:
+    def test_contiguous_block_size(self):
+        # A 4x4 tile map with the top 2 rows uniform -> largest component = 8.
+        tile_map = [[0] * 4 for _ in range(2)] + [[1] * 4 for _ in range(2)]
+        assert _largest_uniform_region(tile_map, 4, 4) == 8
+
+    def test_scattered_uniform_small_largest(self):
+        # 4 uniform tiles scattered (checkerboard) -> each is its own component of 1.
+        tile_map = [
+            [0, 1, 0, 1],
+            [1, 0, 1, 0],
+            [0, 1, 0, 1],
+            [1, 0, 1, 0],
+        ]
+        assert _largest_uniform_region(tile_map, 4, 4) == 1
+
+    def test_no_uniform_tiles(self):
+        tile_map = [[1, 1], [1, 1]]
+        assert _largest_uniform_region(tile_map, 2, 2) == 0
+
+    def test_diagonal_not_connected(self):
+        # 4-connectivity: diagonal tiles are NOT connected -> two components of 1.
+        tile_map = [
+            [0, 1],
+            [1, 0],
+        ]
+        assert _largest_uniform_region(tile_map, 2, 2) == 1
+
+
+class TestPartiallyEmptyMetric:
+    def test_half_empty_grid_flagged(self):
+        # THE #10319 case: 4x4 grid, top half empty -> advisory.
+        region = _partially_empty_metric(GRID_HALF_EMPTY)
+        assert region is not None
+        assert region["largest_uniform_region"] >= LARGE_UNIFORM_REGION
+        assert region["content_fraction"] >= MIN_CONTENT_FRACTION
+
+    def test_fully_rich_grid_not_flagged(self):
+        # A grid with no empty rows -> no large contiguous uniform region.
+        region = _partially_empty_metric(GRID_FULL_RICH)
+        assert region is None
+
+    def test_fully_uniform_not_flagged(self):
+        # Fully uniform (all empty) -> content_fraction = 0 < MIN_CONTENT_FRACTION.
+        # This is the out-of-scope "figure pleine mais vide" case: the signal is
+        # CONTRAST (uniform + content), and there is no content here.
+        fully_empty = _make_grid_png_bytes(["uniform", "uniform", "uniform", "uniform"])
+        region = _partially_empty_metric(fully_empty)
+        assert region is None
+
+    def test_tiles_override_propagates(self):
+        # An explicit --tiles 4x4 still flags the half-empty grid.
+        region = _partially_empty_metric(GRID_HALF_EMPTY, tiles=(4, 4))
+        assert region is not None
+        assert region["tiles"] == "4x4"
+
+    def test_returns_none_when_numpy_absent(self, monkeypatch):
+        # Degrade-gracefully: no numpy -> None (caller keeps blocking behaviour,
+        # no coverage regression). Same contract as _has_real_content.
+        import builtins
+        real_import = builtins.__import__
+
+        def fake_import(name, *a, **k):
+            if name == "numpy":
+                raise ImportError("simulated absent numpy")
+            return real_import(name, *a, **k)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+        assert _partially_empty_metric(GRID_HALF_EMPTY) is None
+
+
+class TestClassifyImageAdvisory:
+    def test_half_empty_returns_advisory_finding(self):
+        result = _classify_image("image/png", GRID_HALF_EMPTY, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert result["severity"] == "advisory"
+        assert any("partially_empty_grid" in r for r in result["reasons"])
+        assert "region_detail" in result
+
+    def test_fully_rich_returns_none(self):
+        # A fully-rich large image scans clean (no blocking, no advisory).
+        result = _classify_image("image/png", GRID_FULL_RICH, MIN_DIM, MIN_BYTES)
+        assert result is None
+
+    def test_blocking_takes_precedence_over_advisory(self):
+        # A degenerate (1x1) image is blocking regardless of region logic.
+        raw = _make_png(1, 1)
+        result = _classify_image("image/png", raw, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert result["severity"] == "blocking"
+
+
+class TestAdvisoryDoesNotBlock:
+    """The phase-1 contract (#10319 acceptance criterion 4): advisory findings
+    appear in the report/JSON but NEVER trip --check (the CI gate stays green).
+    Blocking is deferred until the FP rate is measured by vision triage."""
+
+    def test_advisory_only_notebook_check_exits_zero(self, tmp_path):
+        # A notebook whose only figure is a partially-empty grid: --check must
+        # NOT fail (advisory is non-blocking).
+        b64 = base64.b64encode(GRID_HALF_EMPTY).decode("ascii")
+        nb_path = _write_nb(tmp_path / "grid.ipynb", [_code_cell_with_png(b64)])
+        rc = main([str(nb_path), "--check"])
+        assert rc == 0
+
+    def test_advisory_appears_in_json_payload(self, tmp_path, capsys):
+        b64 = base64.b64encode(GRID_HALF_EMPTY).decode("ascii")
+        nb_path = _write_nb(tmp_path / "grid.ipynb", [_code_cell_with_png(b64)])
+        rc = main([str(nb_path), "--json"])
+        assert rc == 0
+        parsed = json.loads(capsys.readouterr().out)
+        assert parsed["blocking_hits"] == 0
+        assert parsed["advisory_hits"] == 1
+        assert parsed["total_hits"] == 1
+
+    def test_blocking_still_trips_check(self, tmp_path):
+        # Regression guard: a blocking 1x1 figure still fails --check.
+        nb_path = _write_nb(tmp_path / "bad.ipynb", [_code_cell_with_png(PNG_1x1_B64)])
+        assert main([str(nb_path), "--check"]) == 1
+
+    def test_advisory_in_human_report_under_advisory_heading(self, tmp_path):
+        b64 = base64.b64encode(GRID_HALF_EMPTY).decode("ascii")
+        nb_path = _write_nb(tmp_path / "grid.ipynb", [_code_cell_with_png(b64)])
+        result = scan_notebook(nb_path)
+        report = _human_report([result])
+        assert "Degenerate figures : 0" in report  # blocking count unchanged
+        assert "Advisory" in report  # surfaced in its own section
+        assert "partially_empty_grid" in report
+        assert "non-blocking" in report  # the phase-1 caveat is stated
+
+    def test_tiles_flag_threaded_to_scan(self, tmp_path, capsys):
+        # --tiles 4x4 reaches _classify_image via scan_notebook.
+        b64 = base64.b64encode(GRID_HALF_EMPTY).decode("ascii")
+        nb_path = _write_nb(tmp_path / "grid.ipynb", [_code_cell_with_png(b64)])
+        rc = main([str(nb_path), "--json", "--tiles", "4x4"])
+        assert rc == 0
+        parsed = json.loads(capsys.readouterr().out)
+        assert parsed["advisory_hits"] == 1
+        # the region_detail.tiles reflects the override
+        hit = parsed["results"][0]["hits"][0]
+        assert hit["region_detail"]["tiles"] == "4x4"
+
+    def test_malformed_tiles_exits_2(self, tmp_path, capsys):
+        nb_path = _write_nb(tmp_path / "ok.ipynb", [_code("x = 1")])
+        rc = main([str(nb_path), "--tiles", "garbage"])
+        assert rc == 2
+        assert "tiles" in capsys.readouterr().err.lower()
