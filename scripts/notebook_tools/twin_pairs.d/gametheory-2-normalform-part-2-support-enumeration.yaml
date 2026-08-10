@@ -17,6 +17,12 @@
       csharp_sha: 7114fe6997be2bbd13cad0ef5a6a76652811ebb2
       content_python_sha: b60792d2c1b041113ef870cf04c6eb17c1e31230115354571d25c7007a5cb2a9
       content_csharp_sha: ef8e3d603ee1cc1b0879dfcadff0c685d48b2020133258ed130f3d1bc07e3c8f
+    - date: "2026-08-10"
+      by: myia-po-2024:CoursIA
+      python_sha: 13c27d9afd12ca9f9f5dc96c00aa761d8d5bb87c
+      csharp_sha: 0803644967201646eb00beb62327da4059e9bb29
+      content_python_sha: b60792d2c1b041113ef870cf04c6eb17c1e31230115354571d25c7007a5cb2a9
+      content_csharp_sha: f3431f222a16b4b4161785d0cf953b79f2670cb7bd27d8d821b56760ff760952
   known_differences:
     - "Socle pedagogique commun : support enumeration des equilibres de Nash mixtes NxN (indifference + Gauss pivot partiel + best-response), sur 4 jeux canoniques (RPS, RPS biaise, Prisonnier, Matching Pennies) + 3 exercices (BoS, RPSLS, complexite)."
     - "Idiomes framework : Python = `numpy` pur pour le from-scratch (meme algorithme que le C#), PLUS `nashpy` comme verification independante (pont SOTA, cell 8). C# = pur BCL .NET (System.*, pas de lib tiers), nashpy n'existe pas en .NET."
