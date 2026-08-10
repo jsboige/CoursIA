@@ -93,17 +93,25 @@ from grain_tag import extract_lane
 # legitimate "last marker wins" design (a `[CLAIMED]\n[DONE]` edit sequence on
 # separate lines) is preserved -- only mid-line mentions are rejected.
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE)\s*\]",
+    r"(?m)^[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
     re.IGNORECASE,
 )
 _OPEN = {"CLAIMED"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
+# `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
+# GRANTS the claim to the named lane and CLOSES every other lane's claim in one
+# gesture. Distinct from CLAIMED (grants to one) and RELEASED/DONE (closes one):
+# override does both at once, which is the only mechanical trace of a
+# coordinator merging against a held claim (the gap that let #10169 / #10161 be
+# merged without a written adjudication). Additive: the existing markers keep
+# their semantics, so no prior test changes.
+_OVERRIDE = {"OVERRIDE"}
 
 
 class ClaimEvent(dict):
     """Typed-ish view over a parsed claim event.
 
-    Keys: lane (str|None), action ("open"|"close"), marker (str upper),
+    Keys: lane (str|None), action ("open"|"close"|"override"), marker (str upper),
     created_at (str ISO, server UTC), author (str|None), url (str|None).
     `created_at` comes from the comment's server field, never from the body.
     """
@@ -115,6 +123,10 @@ class ClaimEvent(dict):
     @property
     def is_open(self) -> bool:
         return self.get("action") == "open"
+
+    @property
+    def is_override(self) -> bool:
+        return self.get("action") == "override"
 
     @property
     def created_at(self) -> str | None:
@@ -146,7 +158,12 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     if not marks:
         return None
     marker = marks[-1].upper()  # last marker = final intent in that comment
-    action = "open" if marker in _OPEN else "close"
+    if marker in _OPEN:
+        action = "open"
+    elif marker in _OVERRIDE:
+        action = "override"
+    else:
+        action = "close"
     author = (comment.get("author") or {}).get("login")
     return ClaimEvent(
         lane=extract_lane(body),
@@ -163,10 +180,15 @@ def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEve
 
     Returns `(active_by_lane, unattributed)`:
       - `active_by_lane`: {lane: ClaimEvent} for lanes whose LATEST event is an
-        open. Computed by walking events in order (caller sorts); later events
-        overwrite earlier ones, and a close removes the lane.
+        open (or the lane named by the latest override). Computed by walking
+        events in order (caller sorts); later events overwrite earlier ones, a
+        close removes the lane, and an **override** (#10223) grants the claim to
+        its named lane while closing every other lane -- the only event type
+        that touches more than one lane at once.
       - `unattributed`: events whose body carried a marker but no lane token --
         the tool surfaces them for manual verification, it does not guess.
+        An override with no lane token is unattributed (an adjudication must
+        name its beneficiary).
     """
     state: dict[str, ClaimEvent] = {}
     unattributed: list[ClaimEvent] = []
@@ -174,7 +196,11 @@ def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEve
         if ev.lane is None:
             unattributed.append(ev)
             continue
-        if ev.is_open:
+        if ev.is_override:
+            # Coordinator adjudication (#10223): grant to this lane, close all
+            # others. Later events (open/close) still apply on top in walk order.
+            state = {ev.lane: ev}
+        elif ev.is_open:
             state[ev.lane] = ev
         else:
             state.pop(ev.lane, None)

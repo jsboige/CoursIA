@@ -60,11 +60,13 @@ name: Translation Sync
 # PR after the source-language change has landed on main.
 #
 # Coupling / honest current state:
-#   - T3 (translate_csv.py) is GATED by ENABLED=False until grain D (#10043)
-#     activates it. Until then the T3 step is a NO-OP: T1 refreshes src_hash,
-#     T2 detects drift, T4 re-renders EXISTING translations, but no NEW
-#     translations are produced. The pipeline becomes fully functional the
-#     moment D lands (ENABLED=True) — no change to this workflow required.
+#   - T3 (translate_csv.py) is ACTIVATED. Grain D (#10055, MERGED) landed the
+#     TRANSLATE_ENABLED env gate + --max-cells hard cap; this workflow now wires
+#     them. INITIAL ACTIVATION PERIMETER (ai-01 dispatch #10042 items 5-7): en
+#     only, genai/finetuning series (161 cells, 71 text_en still empty). The
+#     hand-rendered FT-01-Introduction-FineTuning_en.ipynb serves as positive
+#     control — the bot must reproduce an equivalent file. Widen the perimeter
+#     (more series, more langs) only after the positive control passes.
 #   - The translation API key comes from GitHub secrets (never a literal, never
 #     logged — secrets-hygiene §1-3): secrets.OPENAI_API_KEY (primary) /
 #     secrets.OPENROUTER_API_KEY (fallback). A repo admin must add the secret.
@@ -218,30 +220,38 @@ jobs:
           echo "$REPORT"
 
       # ------------------------------------------------------------------
-      # T3 — translate CHANGED CELLS ONLY. GATED by ENABLED=False in
-      # translate_csv.py until grain D (#10043) activates it. The env carries
-      # the API key from GitHub secrets (never a literal). Until D lands this is
-      # a no-op (the script prints [GATED] and exits 0); the pipeline structure
-      # is correct and activates unchanged when D lands.
+      # T3 — translate CHANGED CELLS ONLY. ACTIVATED (grain D #10055 landed the
+      # TRANSLATE_ENABLED gate + --max-cells cap; this step wires them). Initial
+      # activation perimeter (ai-01 dispatch #10042 items 5-7): en only,
+      # genai/finetuning series. translate_csv.py only translates MARKDOWN cells
+      # whose text_<lang> is empty (cost-marginal property, D4). The 90 markdown
+      # text_en cells are already filled (#10018) -> T3 plans 0 new translations
+      # on the first run; the 71 code cells stay untranslated (include_code=False).
+      # A future change to a finetuning markdown cell re-activates T3 for THAT
+      # cell only. The env carries the API key from GitHub secrets (never literal).
       # ------------------------------------------------------------------
-      - name: T3 translate changed cells (gated on #10043)
+      - name: T3 translate changed cells (en, finetuning perimeter)
         if: steps.t1.outputs.has_translations == 'true'
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          TRANSLATE_ENABLED: "1"
+          TRANSLATE_MAX_CELLS: "100"
         run: |
           set -euo pipefail
-          echo "T3 status: translate_csv.py ENABLED flag = governed by grain D (#10043)."
-          # Apply across all CSVs. translate_csv.py only translates cells whose
-          # text_<lang> is empty (the cost-marginal property): unchanged cells
-          # with existing translations are never re-submitted.
-          find translations -name '*.csv' -print0 | while IFS= read -r -d '' csv; do
-            echo "T3 processing: $csv"
-            python scripts/translation/translate_csv.py --csv "$csv" --apply || {
-              echo "::notice title=T3 translate::GATED or failed for $csv (ENABLED=False until #10043, or missing API key). No-op, continuing.";
+          echo "T3 status: ACTIVATED (TRANSLATE_ENABLED=1). Perimeter = en, genai/finetuning. Hard cap = ${TRANSLATE_MAX_CELLS} cells/run."
+          # Initial activation perimeter (ai-01 #10042): en only, finetuning.csv.
+          # Widen (more CSVs, more langs) only after FT-01_en positive control passes.
+          csv="translations/genai/finetuning.csv"
+          if [ ! -f "$csv" ]; then
+            echo "T3 skip: $csv not on this branch. No-op, continuing."
+          else
+            echo "T3 processing: $csv (--lang en, --max-cells ${TRANSLATE_MAX_CELLS})"
+            python scripts/translation/translate_csv.py --csv "$csv" --apply --lang en --max-cells "${TRANSLATE_MAX_CELLS}" || {
+              echo "::notice title=T3 translate::failed for $csv (missing API key, rate-limited, or cap reached). Derived files unaffected — T4 re-renders existing translations only. Continuing.";
             }
-          done
-          echo "T3 done. If ENABLED=False (pre-D), no new translations were produced — T4 re-renders existing ones only."
+          fi
+          echo "T3 done."
 
       # ------------------------------------------------------------------
       # T4 — re-render the *_<lang>.ipynb of active languages from each CSV.
@@ -320,7 +330,7 @@ jobs:
 
           git commit \
             -m "chore(translation): auto-sync derived translations [bot] [skip ci]" \
-            -m "See #10038 #10042; T3 gated on #10043; long-lived PR delivery (See #10133 #10136)." \
+            -m "See #10038 #10042 #10055; T3 activated (en, finetuning perimeter); long-lived PR delivery (See #10133 #10136)." \
             -m "Generated by translation-sync.yml on push to main. Direct push to main blocked by GH006 (PR gate required); this commit lives on chore/translation-sync-pending until a maintainer merges the long-lived PR."
 
           if ! git push origin "HEAD:$BRANCH"; then
