@@ -42,6 +42,11 @@ __all__ = [
     "acts_topk_panels",
     "binarize_quantile",
     "states_from_panel",
+    # Garde-fous cross-echelle (9B/W64K <-> 2B/W32K)
+    "resolve_capture_layer",
+    "check_sae_model_match",
+    "assert_bf16_readout",
+    "trace_filename",
 ]
 
 
@@ -165,3 +170,117 @@ def states_from_panel(bits: np.ndarray) -> np.ndarray:
                          "(explosion d'etats vs support statistique)")
     weights = (1 << np.arange(F)).astype(np.int64)
     return bits.astype(np.int64) @ weights
+
+
+# --------------------------------------------------------------------------- #
+# Garde-fous cross-echelle (9B/W64K <-> 2B/W32K) — #5105 / #7396
+#
+# Ces quatre fonctions sont volontairement pures (aucun torch, aucun reseau) :
+# elles decrivent le contrat d'une extraction SAE, donc elles doivent etre
+# testables sans GPU, et le script d'extraction les consomme au lieu de
+# reimplementer les memes verifications en ligne.
+# --------------------------------------------------------------------------- #
+def resolve_capture_layer(n_layers: int,
+                          layer: int | None = None,
+                          layer_frac: float | None = None) -> dict:
+    """Resout la couche de capture et rend sa **profondeur relative**.
+
+    Le piege que cette fonction existe pour fermer : ``--layer 16`` est
+    silencieusement comparable a lui-meme d'une echelle a l'autre alors qu'il
+    ne l'est pas. Sur ``Qwen3.5-9B-Base`` (32 couches) la couche 16 est le
+    mi-reseau ; sur ``Qwen3.5-2B-Base`` (24 couches) c'est **deux tiers** de la
+    profondeur. Un differentiel de features entre les deux melangerait alors
+    l'effet cherche et un simple artefact de profondeur, **sans jamais lever
+    d'erreur** — le mode de defaillance le plus couteux qui soit.
+
+    Passer ``layer_frac`` rend l'intention explicite et transposable :
+    ``0.5`` donne 16 sur le 9B (16/31) et 12 sur le 2B (12/23).
+
+    Exactement un des deux parametres doit etre fourni.
+    """
+    if (layer is None) == (layer_frac is None):
+        raise ValueError("fournir exactement un de layer / layer_frac "
+                         f"(recu layer={layer}, layer_frac={layer_frac})")
+    if n_layers is None or n_layers < 1:
+        raise ValueError(f"n_layers invalide : {n_layers!r} — la config du "
+                         "modele n'expose pas num_hidden_layers")
+    if layer_frac is not None:
+        if not 0.0 <= layer_frac <= 1.0:
+            raise ValueError(f"layer_frac={layer_frac} hors [0, 1]")
+        layer = int(round(layer_frac * (n_layers - 1)))
+    if not 0 <= layer < n_layers:
+        raise ValueError(
+            f"couche {layer} hors bornes : ce modele a {n_layers} couches "
+            f"(indices 0-{n_layers - 1}). Le defaut 16 vise le mi-reseau d'un "
+            "modele 32 couches ; pour une autre echelle, preferer "
+            "--layer-frac 0.5.")
+    return {"layer": int(layer),
+            "n_layers": int(n_layers),
+            "layer_frac": round(layer / (n_layers - 1), 4) if n_layers > 1 else 0.0}
+
+
+def check_sae_model_match(sae_d_model: int, model_d_model: int,
+                          sae_repo: str = "", model: str = "") -> None:
+    """Verifie que le SAE encode bien le residual stream de CE modele.
+
+    Remplace un ``assert`` nu : un ``assert`` disparait sous ``python -O`` et
+    son message n'indiquait pas quoi corriger. La confusion realiste, une fois
+    deux echelles en jeu, est de garder le SAE 9B/W64K (d_model 4096) en
+    changeant le modele pour le 2B (d_model 2048) — le produit ``h @ W_enc.T``
+    echouerait alors sur une erreur de forme torch illisible.
+    """
+    if int(sae_d_model) != int(model_d_model):
+        raise ValueError(
+            f"d_model incompatible : le SAE {sae_repo or '(?)'} encode "
+            f"{sae_d_model} dimensions, le modele {model or '(?)'} en produit "
+            f"{model_d_model}. Apparier les familles : "
+            "Qwen3.5-9B-Base <-> SAE-Res-Qwen3.5-9B-Base-W64K-*, "
+            "Qwen3.5-2B(-Base) <-> SAE-Res-Qwen3.5-2B-Base-W32K-*.")
+
+
+def assert_bf16_readout(quantization_config: object | None,
+                        allow_quantized: bool = False) -> None:
+    """Refuse une lecture SAE sur un modele charge quantifie.
+
+    Les SAE Qwen-Scope ont ete entraines sur le residual stream **pleine
+    precision** du modele *Base*. Lire les features d'un modele post-entraine
+    charge en 4-bit et les comparer a une base bf16 produirait un differentiel
+    indiscernable de l'erreur d'arrondi de la quantification : le resultat
+    aurait l'air d'un effet de post-training alors qu'il mesurerait NF4.
+
+    Le regime correct pour l'arc PT-12 est dissocie : QLoRA (base gelee 4-bit,
+    adapters bf16) pour la **boucle d'entrainement**, puis rechargement en
+    **bf16** — base + adapters fusionnes — pour la **lecture SAE**.
+
+    ``allow_quantized=True`` reste possible pour une exploration assumee, mais
+    doit etre demande explicitement et ecrit dans les metadonnees de la trace.
+    """
+    if quantization_config is not None and not allow_quantized:
+        raise ValueError(
+            "modele charge quantifie (quantization_config present) : la "
+            "lecture SAE exige bf16. Les SAE sont entraines sur le residual "
+            "stream pleine precision, donc un differentiel mesure en 4-bit "
+            "melangerait l'effet du post-training et l'erreur d'arrondi NF4. "
+            "Recharger base+adapters fusionnes en bf16, ou passer "
+            "--allow-quantized-readout pour une exploration assumee.")
+
+
+def trace_filename(variant: str, layer: int, *, model: str = "",
+                   default_model: str = "", n_layers: int | None = None,
+                   n_clamp: int = 0, prefix: str = "ict21_sae") -> str:
+    """Nom de fichier de trace **discriminant par echelle**.
+
+    Defaut historique conserve a l'octet pour le modele de reference (les
+    traces ``ict21_sae_layer16_{trained,control}.npz`` deja committees et les
+    notebooks ICT-21/ICT-24 qui les chargent par chemin explicite continuent de
+    fonctionner). Des que le modele differe, un slug d'echelle est insere :
+    sans lui, un run 2B et un run 9B a la meme couche 16 ecrivent **le meme
+    nom** et le second efface le premier en silence — perte de donnees, pas
+    seulement confusion.
+    """
+    clamp = f"_clamp{n_clamp}" if n_clamp else ""
+    if model and default_model and model != default_model:
+        slug = model.rstrip("/").split("/")[-1].lower().replace(".", "")
+        depth = f"layer{layer}of{n_layers}" if n_layers else f"layer{layer}"
+        return f"{prefix}_{slug}_{depth}_{variant}{clamp}.npz"
+    return f"{prefix}_layer{layer}_{variant}{clamp}.npz"
