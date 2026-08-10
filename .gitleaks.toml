@@ -23,6 +23,56 @@ title = "CoursIA Secret Scanner"
 [extend]
 useDefault = true
 
+# Custom rules below ADD to the default 700+ detectors. Each is a precise
+# detector for a CoursIA-specific credential format that the default ruleset
+# does NOT catch (verified empirically against the values redacted in #10265 —
+# characters outside the default ruleset's [a-zA-Z0-9_\-] alphabet). A gate that
+# can't rouge is not a gate, so every [[rules]] block below MUST be exercised
+# against the positive control before being merged (see scripts/secrets/tests/
+# test_gitleaks_qwen_rule.py).
+
+# --- #10265 Qwen / ComfyUI-Login bearer token ---
+# Detects assignments of QWEN_API_TOKEN / QWEN_API_USER_TOKEN (same secret,
+# two env-var names) when the VALUE is a literal that is NOT one of the
+# LEAKED-PENDING-ROTATION sha256[:12] placeholders (which are allowlisted as stopwords). The
+# default `generic-api-key` detector does NOT catch these tokens because the
+# generated values contain ``!@#$%^&*()`` characters (outside the default
+# alphabet) and the legacy `QWEN_API_USER_TOKEN` name does not even anchor
+# near "API_KEY".
+#
+# Positive control (this PR): a synthetic ``QWEN_API_TOKEN=foo-real-secret-bar``
+# is FLAGGED. Negative control: ``QWEN_API_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4``
+# is SUPPRESSED via the [allowlist].stopwords entry. Detector armed.
+[[rules]]
+id = "qwen-api-token"
+description = "Qwen / ComfyUI-Login bearer token (env-var form, #10265)"
+# Match the KEY name (Qwen env vars) followed by ``=`` then a VALUE of
+# length >= 20 with characters drawn from the alphabet observed in the
+# redacted values + standard URL-safe base64 (default ruleset covers the
+# latter; we add the former). Excluded values are handled via the stopwords
+# list at the bottom (LEAKED-PENDING-ROTATION <sha256[:12]>).
+# Match the KEY name (Qwen env vars) followed by ``=`` then a VALUE of
+# length >= 20 with characters drawn from the alphabet observed in the
+# redacted values + standard URL-safe base64 (default ruleset covers the
+# latter; we add the former). Excluded values are handled via the stopwords
+# list at the bottom (LEAKED-PENDING-ROTATION <sha256[:12]>).
+# Character class verified against the actual redacted token alphabet
+# (``2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij`` from commit 81eb1a2b,
+# `docker-configurations/_archive-20251125/docker-compose-no-auth.yml`):
+# ``[A-Za-z0-9!@#$%^&*()_=+.-]`` -- 32 chars exactly.
+regex = '''(?i)(?:qwen_api_token|qwen_api_user_token)\s*[:=]\s*['"]?([A-Za-z0-9!@#\$%^&*()\-_=+.]{20,})['"]?'''
+# entropy = 0 disables the Shannon-entropy filter that would otherwise drop
+# low-entropy pedagogical placeholders ("abcd1234...") AND many real secrets
+# whose generated alphabet compresses well. The path-allowlist (``.env.example``,
+# ``.env.template``, ``docs/suivis/.*\.md$``) handles the FP surface; the
+# stopwords handle the LEAKED-PENDING-ROTATION sha256[:12] redaction markers.
+entropy = 0
+keywords = [
+    "qwen_api_token",
+    "qwen-api-token",
+    "qwen_api_user_token",
+]
+
 [allowlist]
 description = "Global allowlist for known false positives"
 paths = [
@@ -30,6 +80,18 @@ paths = [
     '''\.env\.template$''',
     '''docs/suivis/.*\.md$''',  # Historical docs with rotated/stale credentials
     '''\.gitleaks\.toml$''',
+    # --- #10265 synthetic test fixtures (POSITIVE controls for qwen-api-token rule) ---
+    # The custom `qwen-api-token` rule MUST rougir on synthetic tokens to prove
+    # the gate works (c.10139-L4 ★★: gate that can't rougir isn't a gate).
+    # These fixtures are explicitly designed to LOOK like real 32-char
+    # generated tokens (entropy >= 4.8, full alphabet coverage) so the test
+    # validates the production regex -- not a model of it. A REAL secret
+    # accidentally committed to the same file WILL still rougir via the
+    # custom rule, because gitleaks evaluates `paths` AFTER `[[rules]]`
+    # matches. This path-allowlist is a SCOPE marker ("this file IS a
+    # test, the tokens inside ARE synthetic by construction"), not a
+    # content bypass.
+    '''scripts/secrets/tests/test_gitleaks_.*\.py$''',
 ]
 
 # Notebooks: do NOT blanket-exclude .ipynb — secrets inline in code cells are a real vector.
@@ -38,7 +100,7 @@ paths = [
 
 # Allowlist for specific known patterns that are NOT secrets
 regexes = [
-    '''ROTATED \d{4}-\d{2}-\d{2}''',  # Rotation placeholders
+    '''LEAKED-PENDING-ROTATION''',  # Qwen redaction markers (leaked, awaiting real rotation)
     '''see docker-configurations/''',  # References to .env locations
     '''os\.getenv\(['\"][A-Z_]+['\"]\)''',  # env var reads without defaults
     '''data:image/[a-z]+;base64,''',  # Inline base64 images in outputs
@@ -111,6 +173,40 @@ stopwords = [
     # l'hygiene de scanner (secrets-hygiene rule 5: rotation is the PRIMARY remediation and is
     # DONE; this entry only silences the dead value in CI). NEVER allowlist a live credential
     # (#9888) — this entry is legitimate precisely because the value is dead. The 6 archive
-    # files are redacted in a SEPARATE PR (replace with ROTATED placeholder). See #10141.
+    # files are redacted in a SEPARATE PR (replace with LEAKED-PENDING-ROTATION placeholder). See #10141.
     "c39ba121e12e5b40ac67a87836431e34",
+    # --- #10265 revoked QWEN_API_TOKEN sha256 prefixes (allowlist for scanner hygiene) ---
+    # 3 distinct values were redacted across 14 files in docs/archive/suivis/genai-image/
+    # (Phase 29, Phase 30, Phase 31), docker-configurations/_archive-20251125/, and
+    # scripts/genai-stack/_archive/utils/. The sha256[:12] hashes are the placeholders
+    # used in the redaction marker ``LEAKED-PENDING-ROTATION <sha256[:12]>`` (non-inversible
+    # fingerprint, c.10186-L1 ★★ — distinct from the full-value ``value[-4:]`` slice
+    # that secrets-hygiene §C forbids). Rotation of the LIVE tokens is a
+    # RECOVERABLE-MACHINE action: ComfyUI-Login is our self-hosted stack (we ARE
+    # the provider — no third-party console), so the path is master.env ->
+    # render_envs.py -> docker compose restart (the restart regenerates the bcrypt
+    # hash from env, per docs/genai/secrets-management.md). Deferred to a separate
+    # grain (voie a); this PR is voie (b) — honest redaction marker only.
+    # RECOVERABLE-LOCAL for the redaction itself. Same revocation-then-redact
+    # logic as Civitai (#10141).
+    "7a052dd4aeb4",
+    "2e5dd4339ca9",
+    "de13deaace0c",
+    # --- #10265 pedagogical QWEN_API_TOKEN placeholder values (FR/EN, first read at source) ---
+    # The default ruleset's `generic-api-key` does not catch these (entropy too
+    # low / non-secret shape) but the new custom `qwen-api-token` rule
+    # (length >= 20 + the right charset) flags them. They are PLACEHOLDERS,
+    # not secrets — re-read at source 2026-08-10:
+    #   * "votre_token_copie_ici"  — FR placeholder in docs/archive/genai/
+    #                                 user-guide.md:92, GUIDE-APIS-ETUDIANTS.md:85
+    #   * "your_bearer_token_here" — EN placeholder in MyIA.AI.Notebooks/
+    #                                 GenAI/.env.example + 2 docker-configurations
+    #                                 .env.example + 1 phase-30 archive
+    #   * "your_qwen_api_token_here" — EN placeholder, same files as above
+    # None is rotatable. Kept as stopwords so a REAL 32-char alphanum key in the
+    # same file still rougir (the stopword is a substring match — a long real key
+    # will not contain "votre_token_copie_ici").
+    "votre_token_copie_ici",
+    "your_bearer_token_here",
+    "your_qwen_api_token_here",
 ]

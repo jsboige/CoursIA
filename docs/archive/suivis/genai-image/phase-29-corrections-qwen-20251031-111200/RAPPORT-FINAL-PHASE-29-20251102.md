@@ -58,7 +58,7 @@ Custom node `ComfyUI-Login` **manquant** dans le container Docker `comfyui-qwen`
 **Actions effectuées** :
 1. Clone repository `Comfy-Deploy/ComfyUI-Login` dans `/workspace/ComfyUI/custom_nodes/`
 2. Installation dépendances Python (`bcrypt`, `python-dotenv`)
-3. Génération token brut plaintext : `2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij`
+3. Génération token brut plaintext : `LEAKED-PENDING-ROTATION 7a052dd4aeb4`
 4. Hachage bcrypt (rounds=12) : `$2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5M2`
 5. Sauvegarde sécurisée :
    - Token plaintext → `.secrets/.env.generated` (référence humaine)
