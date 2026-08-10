@@ -181,11 +181,14 @@ stopwords = [
     # scripts/genai-stack/_archive/utils/. The sha256[:12] hashes are the placeholders
     # used in the redaction marker ``LEAKED-PENDING-ROTATION <sha256[:12]>`` (non-inversible
     # fingerprint, c.10186-L1 ★★ — distinct from the full-value ``value[-4:]`` slice
-    # that secrets-hygiene §C forbids). Rotation of the LIVE tokens is DEFERRED to a
-    # user-triggered follow-up; the underlying service authenticates via bind-mounted
-    # .secrets/qwen-api-user.token (NOT env vars), so the env-var form is a notebook-
-    # side fallback only — INTRINSIC service dependency for the rotation, RECOVERABLE-
-    # LOCAL for the redaction. Same revocation-then-redact logic as Civitai (#10141).
+    # that secrets-hygiene §C forbids). Rotation of the LIVE tokens is a
+    # RECOVERABLE-MACHINE action: ComfyUI-Login is our self-hosted stack (we ARE
+    # the provider — no third-party console), so the path is master.env ->
+    # render_envs.py -> docker compose restart (the restart regenerates the bcrypt
+    # hash from env, per docs/genai/secrets-management.md). Deferred to a separate
+    # grain (voie a); this PR is voie (b) — honest redaction marker only.
+    # RECOVERABLE-LOCAL for the redaction itself. Same revocation-then-redact
+    # logic as Civitai (#10141).
     "7a052dd4aeb4",
     "2e5dd4339ca9",
     "de13deaace0c",
