@@ -226,7 +226,7 @@ jobs:
           **G-VAR-2/3 GENRE signals** (advisory, non bloquant, #10020).
           La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
 
-          G-VAR-2 plafonne a **une LIGHT par lane et par jour, toutes categories LIGHT confondues** ; G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`) -- la decision de merge reste au coordinateur."
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`) -- la decision de merge reste au coordinateur."
             EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
             if [ -n "$EXISTING_ID" ]; then
               gh api -X PATCH "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" \
