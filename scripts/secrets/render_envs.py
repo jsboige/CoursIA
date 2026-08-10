@@ -82,6 +82,38 @@ TARGET_ENVS = [
     # edit master.env + render. The credential was lost 3x when it lived only in a
     # per-machine .env with no canonical anchor -- master.env is now that anchor.
     REPO_ROOT / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Portfolio-IBKR-Coinbase-Hybrid" / ".env",
+    # --- Notebook-side .env targets (#9929, c.10186) -----------------------
+    # Closes the structural blind-spot documented in ai-01's c.9929 finding:
+    # `--check` reports `[OK] No drift` whenever a `.env` is **absent** from
+    # TARGET_ENVS, even if it carries a stale shared key (e.g. a revoked
+    # OpenAI token duplicated into two series, sha=4a2fac0e1714 -> HTTP 401).
+    # Six escalations in a row (#6255 #8519 #8624 #9059 #9929 + the
+    # GPU-1 "vLLM DOWN" phantom) evaporated to a 10-second measurement that
+    # TARGET_ENVS would have surfaced. The lists below are **optional**: a
+    # path that does not exist on the current machine is silently skipped
+    # (see ``sync()``'s ``if not env.exists(): continue``), so adding them is
+    # a no-op on machines where the series is absent and a real check on
+    # machines where the series is present (e.g. ai-01 confirmed SmartContracts
+    # + QuantConnect + SymbolicLearning carry real OPENAI/OPENROUTER keys).
+    # Per-series rationale lives in the comments above each entry below.
+    # AgenticDataScience (ML/DataScienceWithAgents series). ECE TP uses
+    # OPENAI_API_KEY + OPENAI_BASE_URL; OPENROUTER is a duplicate alias.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "AgenticDataScience" / ".env",
+    # SemanticKernel notebooks (.NET Interactive). 0-AI-settings.ipynb +
+    # 09-SemanticKernel-Building-CLR consume this via Settings.LoadFromFile
+    # (config/settings.json is gitignored and derived from this key -- see
+    # render_settings_json.py).
+    REPO_ROOT / "MyIA.AI.Notebooks" / "SemanticKernel" / ".env",
+    # SmartContracts series (Solidity, foundry). OPENAI_API_KEY is an
+    # OpenRouter-key alias used by SC-11 LLM-Assisted notebook.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "SmartContracts" / ".env",
+    # QuantConnect series. May carry OPENAI_API_KEY on machines that use
+    # OpenAI for QC LLM summaries (not all do -- some route via QC Cloud).
+    REPO_ROOT / "MyIA.AI.Notebooks" / "QuantConnect" / ".env",
+    # SymbolicLearning series. SL-* notebooks may consume OPENAI/OPENROUTER
+    # for LLM-assisted proof search. Path may not exist on machines that
+    # never provisioned it.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "SymbolicLearning" / ".env",
 ]
 
 # Keys whose VALUE is a shared secret and must be synced from master.env.
