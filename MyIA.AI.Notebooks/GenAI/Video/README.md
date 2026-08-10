@@ -71,7 +71,7 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 
 ### 02-Advanced - Générer du mouvement à partir de texte ou d'images
 
-Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment. Le notebook 02-5 introduit en outre LTX-2 (Lightricks 22B), le seul modèle de la série qui génère vidéo **et audio synchronisés** en une seule passe de diffusion (quantization obligatoire : `fp8-cast` via ltx-pipelines — borderline sur 24 GB — ou GGUF Q4 via ComfyUI en production, ~14-24 GB VRAM). Le notebook 02-6 traite **MiniMax H3 (Hailuo 3.0)**, modèle omni-modal #1 au benchmark *Artificial Analysis* — mais dont la licence communautaire **exclut l'UE** (territoires exclus : UE, Royaume-Uni, Corée du Sud, États-Unis). Ce notebook est **descriptif** : il n'exécute pas le modèle (interdit par licence) mais enseigne l'architecture et, surtout, le **raisonnement de conformité** (vérificateur de juridiction, matrice de décision, alternatives UE). La licence géo-restreinte comme angle pédagogique.
+Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualité cinématographique (malgré ses 24 GB de VRAM), LTX-Video pour la génération rapide sur des configurations modestes, Wan pour les prompts multilingues, et Stable Video Diffusion pour animer une image existante. Chaque modèle a ses forces et ses limites — le but est de les connaître pour choisir le bon outil au bon moment. Le notebook 02-5 introduit en outre LTX-2 (Lightricks 22B), le seul modèle de la série qui génère vidéo **et audio synchronisés** en une seule passe de diffusion (quantization obligatoire : `fp8-cast` via ltx-pipelines — borderline sur 24 GB — ou GGUF Q4 via ComfyUI en production, ~14-24 GB VRAM). Le notebook 02-6 traite **MiniMax H3 (Hailuo 3.0)**, modèle omni-modal #1 au benchmark *Artificial Analysis* — mais dont la licence communautaire **exclut l'UE** (territoires exclus : UE, Royaume-Uni, Corée du Sud, États-Unis). Ce notebook sépare **deux instruments juridiques** : la licence des poids (auto-hébergement interdit en UE) et les *Terms of Service* du service cloud Hailuo (ouverts en UE). Il est donc **descriptif sur la licence** (architecture + raisonnement de conformité : vérificateur de juridiction, matrice de décision, alternatives UE) **et** pose un **loader idempotent** (Section 7) pour invoquer le service cloud — squelette sans clé, génération réelle derrière `MINIMAX_GENAI_API_KEY`. La bifurcation licence-des-poids ≠ ToS-du-service comme angle pédagogique.
 
 <p align="center">
   <a href="02-Advanced/02-4-SVD-Image-to-Video.ipynb"><img src="assets/readme/video-svd.png" width="540" alt="« Images de test pour SVD » — 3 vignettes côte-à-côte servant d'inputs pour Stable Video Diffusion (Paysage avec montagnes / Silhouette portrait / Coucher de soleil sur l'eau), pas une sortie SVD."></a><br>
@@ -85,7 +85,7 @@ Ce niveau explore les modèles génératifs vidéo : HunyuanVideo pour la qualit
 | [02-3-Wan-Video-Generation](02-Advanced/02-3-Wan-Video-Generation.ipynb) | Wan 2.1/2.2, prompts FR/EN | Local GPU | ~10 GB |
 | [02-4-SVD-Image-to-Video](02-Advanced/02-4-SVD-Image-to-Video.ipynb) | Stable Video Diffusion, animation | Local GPU | ~10 GB |
 | [02-5-LTX2-Audiovisual](02-Advanced/02-5-LTX2-Audiovisual.ipynb) | LTX-2 (Lightricks 22B), vidéo + audio conjoint | Local GPU | ~16-24 GB |
-| [02-6-MiniMax-H3-Architecture-Licensing](02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) | MiniMax H3 (descriptif), licence + conformité UE | Local (analyse) | 0 |
+| [02-6-MiniMax-H3-Architecture-Licensing](02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) | MiniMax H3 : licence poids (INTRINSIC UE) + service cloud Hailuo (ouvert UE), loader idempotent | Local (analyse + squelette service key-gated) | 0 |
 
 ### 03-Orchestration - Combiner les modèles dans des pipelines
 
@@ -117,6 +117,7 @@ Les trois derniers notebooks et le notebook de synchronisation audio-vidéo conc
 | [04-2-Creative-Video-Workflows](04-Applications/04-2-Creative-Video-Workflows.ipynb) | Style transfer, music video | Mixed | ~16 GB |
 | [04-3-Sora-API-Cloud-Video](04-Applications/04-3-Sora-API-Cloud-Video.ipynb) | Sora 2 API, cloud vs local | OpenAI API | 0 |
 | [04-4-Production-Video-Pipeline](04-Applications/04-4-Production-Video-Pipeline.ipynb) | Pipeline complet bout-en-bout | Mixed | ~18 GB |
+| [04-5-MiniMax-H3-Cloud-Video](04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb) | Hailuo API, HD/2K + audio natif, key-gated | MiniMax API | 0 |
 
 ## Recette : construire un pipeline texte vers vidéo pédagogique
 
@@ -124,7 +125,7 @@ Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogiq
 
 1. **01-Foundation** (compréhension vidéo) : [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A). [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) améliore la qualité. À la fin, vous savez analyser et manipuler une vidéo existante.
 
-2. **02-Advanced** (génération vidéo) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) génère des vidéos haute qualité. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation). [02-5](02-Advanced/02-5-LTX2-Audiovisual.ipynb) est le seul à produire vidéo **et audio synchronisés** en une passe (LTX-2 22B, le plus exigeant en VRAM). [02-6](02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) étudie MiniMax H3 (modèle omni-modal #1) sous l'angle de sa **licence géo-restreinte** — un cas d'école de conformité : pourquoi ce modèle ne peut pas être exécuté en UE et comment raisonner la décision de déploiement.
+2. **02-Advanced** (génération vidéo) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) génère des vidéos haute qualité. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation). [02-5](02-Advanced/02-5-LTX2-Audiovisual.ipynb) est le seul à produire vidéo **et audio synchronisés** en une passe (LTX-2 22B, le plus exigeant en VRAM). [02-6](02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) étudie MiniMax H3 (modèle omni-modal #1) sous l'angle de sa **bifurcation juridique** — un cas d'école de conformité : pourquoi ce modèle ne peut pas être *auto-hébergé* en UE (licence des poids) mais reste invocable via le *service cloud* Hailuo (ToS sans exclusion UE).
 
 3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) compare les modèles pour choisir le bon. [03-2](03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) construit le pipeline text-to-image-to-video. [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb) utilise ComfyUI pour des workflows natifs.
 
@@ -182,9 +183,10 @@ flowchart TD
 | **Wan 2.1/2.2** | 02-3 | GPU ~10 GB VRAM |
 | **SVD** | 02-4 | GPU ~10 GB VRAM |
 | **LTX-2 (Lightricks)** | 02-5 | GPU ~14-24 GB VRAM (GGUF Q4 / fp8-cast) |
-| **MiniMax H3 (Hailuo 3.0)** | 02-6 | Descriptif — licence exclut l'UE (pas d'exécution) |
+| **MiniMax H3 (Hailuo 3.0)** | 02-6 | Descriptif — licence des poids exclut l'UE (bifurcation §Section 6 ; voie cloud réalisable : `04-5`) |
 | **ComfyUI Video** | 03-3 | Docker, nodes vidéo |
 | **OpenAI Sora 2** | 04-3 | `OPENAI_API_KEY` |
+| **Hailuo Video API** | 04-5 | `MINIMAX_GENAI_API_KEY`, 5 gén/jour, HD/2K + audio stéréo natif |
 
 ## Parcours recommandé
 
@@ -237,9 +239,14 @@ ffmpeg_path = imageio_ffmpeg.get_ffmpeg_exe()
 
 Pour du prototypage ou des résultats rapides, Sora 2 (notebook [04-3](04-Applications/04-3-Sora-API-Cloud-Video.ipynb)) est idéal. Pour un contrôle fin, une production répétitive, ou des données sensibles, les modèles locaux sont indispensables.
 
-### Pourquoi le notebook MiniMax H3 (02-6) n'exécute-t-il pas le modèle ?
+### Pourquoi le notebook MiniMax H3 (02-6) n'auto-héberge-t-il pas le modèle ?
 
-MiniMax H3 (Hailuo 3.0) est techniquement excellent (#1 video editing au benchmark *Artificial Analysis*, omni-modal, audio natif), mais sa **licence communautaire exclut l'UE, le Royaume-Uni, la Corée du Sud et les États-Unis** des territoires autorisés. Cette restriction couvre les poids **et les Outputs** générés (y compris via l'API cloud). Aucune exception éducation/recherche n'est prévue. Le notebook [02-6](02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) choisit donc la voie conforme : **étude descriptive** de l'architecture + raisonnement de conformité (vérificateur de juridiction, matrice de décision, alternatives UE), sans exécuter ni afficher d'Outputs. L'alternative UE pédagogiquement équivalente pour « vidéo + audio natif » est **LTX-2** (notebook [02-5](02-Advanced/02-5-LTX2-Audiovisual.ipynb), licence permissive, exécutable).
+MiniMax H3 (Hailuo 3.0) est techniquement excellent (#1 video editing au benchmark *Artificial Analysis*, omni-modal, audio natif), mais **deux instruments juridiques distincts** gouvernent son usage, et le notebook les sépare honnêtement :
+
+- **La *MiniMax H3 Community License*** (les **poids** téléchargeables) exclut l'UE, le Royaume-Uni, la Corée du Sud et les États-Unis des territoires autorisés. Cette restriction couvre les poids **et les Outputs** générés par *votre propre exécution* des poids — y compris via un *Hosted Service* que **vous** exploiteriez. Aucune exception éducation/recherche n'est prévue. → **Auto-hébergement en UE = INTERDIT** (verdict INTRINSIC, définitif sans licence commerciale).
+- **Les *Terms of Service* de la plateforme Hailuo** (le **service cloud** hébergé par MiniMax, souscrit et facturé) sont un **second instrument** : un consommateur qui ne télécharge jamais les poids n'accepte pas la Community License. Lus *firsthand*, ces ToS ne contiennent **aucune exclusion UE** et ne restreignent pas territorialement l'affichage des Outputs. → **Service cloud souscrit depuis la France = ouvert**.
+
+Le notebook [02-6](02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) livre donc **deux voies** : (1) une **étude descriptive** de l'architecture + raisonnement de conformité (vérificateur de juridiction, matrice de décision, alternatives UE) pour la licence des poids, et (2) un **loader idempotent** (Section 7) pour invoquer le service cloud Hailuo — squelette exécutable sans clé, génération réelle activée par `MINIMAX_GENAI_API_KEY` derrière un flag (idempotence obligatoire : 5 générations/jour, la ré-exécution ne rebrûle jamais le quota). L'alternative UE **auto-hébergeable** pédagogiquement équivalente pour « vidéo + audio natif » reste **LTX-2** (notebook [02-5](02-Advanced/02-5-LTX2-Audiovisual.ipynb), licence permissive, exécutable).
 
 ### Les vidéos générées manquent de cohérence temporelle
 
