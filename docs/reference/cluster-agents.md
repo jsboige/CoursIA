@@ -101,7 +101,7 @@ Depuis ~juin 2026, chaque machine worker porte **deux lanes** (un `lane` = machi
 | Machine | Lane `CoursIA` (dashboard `workspace-CoursIA`) | Lane `CoursIA-2` (dashboard `workspace-CoursIA-2`) |
 |---------|-----------------------------------------------|---------------------------------------------------|
 | `myia-po-2024` | QC backtest + ML (RTX 3070) | MetaGeneticSharp / metaheuristiques .NET (#1203) |
-| `myia-po-2025` | Python / ML CPU-only (exec OpenRouter) | .NET / Argumentum (#2137) |
+| `myia-po-2025` | Python / ML (off-LAN — OpenRouter pour LLM, vLLM local non-joignable, cf [#9976](https://github.com/jsboige/CoursIA/issues/9976)) | .NET / Argumentum (#2137) |
 | `myia-po-2026` | Lean Conway/Knot + embeddings GenAI | Grothendieck (#2159) |
 
 `po-2023` (hote GenAI) et `ai-01` (coord) n'ont qu'une lane `CoursIA`. po-2025 ajoute par ailleurs ses 2 workspaces EPITA (cf section "po-2025 - 3 agents distincts").
