@@ -264,6 +264,69 @@ def test_fr_contam_strict_blocks(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# FR_CONTAM — by-design-English source cell (#10298)
+# A markdown cell copied verbatim from an EN research doc is legitimately
+# identical FR -> _en (the source is already English). FR_CONTAM must NOT fire.
+# ---------------------------------------------------------------------------
+
+# Substantial EN text (0% French diacritics, > 80 alpha chars) — mimics the real
+# deep_research_optimization cell (calibration: real FR cells measure >= 2.6%).
+_BY_DESIGN_EN_TEXT = (
+    "# Deep Research: Sector Momentum Optimization\n\n"
+    "## Objective\nMaximize Sharpe ratio for the Sector Momentum strategy.\n\n"
+    "## Strategy Overview\n"
+    "- Assets: sector ETFs\n"
+    "- Signal: Dual momentum (relative strength plus absolute momentum)\n"
+    "- Rebalancing: Monthly rotation to top-performing sectors\n"
+    "- Risk Management: VIX filter to skip rebalancing in high-volatility regimes\n"
+)
+# Substantial FR text (carries diacritics) — must STILL flag under strict_fr.
+_REAL_FR_TEXT = (
+    "# Recherche Approfondie : Optimisation de la Dynamique Sectorielle\n\n"
+    "## Objectif\nMaximiser le ratio de Sharpe pour la stratégie de momentum sectoriel.\n"
+    "## Analyse\nLes métriques de performance sont calculées à partir des rendements passés."
+)
+
+
+def test_by_design_english_source_not_flagged_strict(tmp_path):
+    """A long EN source cell (0% French diacritics) identical FR -> _en is NOT
+    FR_CONTAM even under strict_fr — the source is already English, no FR lost."""
+    src_cells = [_md_cell("c1", _BY_DESIGN_EN_TEXT)]
+    trd_cells = [_md_cell("c1", _BY_DESIGN_EN_TEXT)]  # identical render (legitimate)
+    src, trd = _write_pair(tmp_path, "ByDesignEN-01", src_cells, trd_cells)
+    src_records, _ = p.load_cells(src)
+    trd_records, _ = p.load_cells(trd)
+    anomalies = p.check_invariants(src_records, trd_records, strict_fr=True)
+    assert not [a for a in anomalies if a.verdict == "FR_CONTAM"]
+
+
+def test_by_design_english_does_not_suppress_real_fr(tmp_path):
+    """The heuristic must NOT suppress a real FR cell of similar length — a
+    French source carries diacritics (>= 2% measured), which clears the threshold.
+    Negative control: the detector keeps its discriminating power."""
+    src_cells = [_md_cell("c1", _REAL_FR_TEXT)]
+    trd_cells = [_md_cell("c1", _REAL_FR_TEXT)]  # untranslated real FR -> genuine contam
+    src, trd = _write_pair(tmp_path, "ByDesignEN-02", src_cells, trd_cells)
+    src_records, _ = p.load_cells(src)
+    trd_records, _ = p.load_cells(trd)
+    anomalies = p.check_invariants(src_records, trd_records, strict_fr=True)
+    fr_contam = [a for a in anomalies if a.verdict == "FR_CONTAM"]
+    assert len(fr_contam) == 1, "real FR cell must still flag (heuristic not over-suppressing)"
+
+
+def test_by_design_english_short_cell_still_flagged(tmp_path):
+    """A short FR fragment without diacritics ('# Code') is NOT whitelisted — the
+    min-length guard prevents the heuristic from masking short untranslated cells."""
+    src_cells = [_md_cell("c1", "# Code")]
+    trd_cells = [_md_cell("c1", "# Code")]
+    src, trd = _write_pair(tmp_path, "ByDesignEN-03", src_cells, trd_cells)
+    src_records, _ = p.load_cells(src)
+    trd_records, _ = p.load_cells(trd)
+    anomalies = p.check_invariants(src_records, trd_records, strict_fr=True)
+    assert len([a for a in anomalies if a.verdict == "FR_CONTAM"]) == 1
+
+
+# ---------------------------------------------------------------------------
 # Legitimate case (corollaire D2) — FR text inside a CODE cell is OK
 # ---------------------------------------------------------------------------
 

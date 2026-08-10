@@ -92,6 +92,21 @@ from check_perimeter import TARGET_LANGS  # noqa: E402  -- single source of trut
 # Meme garde que check_translation_sync._is_fr_contam (cohérence inter-scripts).
 FR_CONTAM_MIN_LEN = 4
 
+# --- by-design-English source cells (#10298) ------------------------------
+# Un notebook source FR peut contenir une cellule markdown copiée verbatim
+# d'un document de recherche anglais (deep_research, papier). Sa traduction
+# ``_en`` est alors légitimement IDENTIQUE à la source FR (le contenu est
+# déjà en anglais — aucun texte français perdu). FR_CONTAM ne s'applique pas
+# à ces cellules : il n'y a pas de contamination, juste une source non-FR.
+# Heuristique : la prose française de cette longueur porte quasi-systématiquement
+# des diacritiques (>= 2 % mesuré sur cellules FR réelles) ; une cellule EN en
+# porte ~0 %. L'écart est large (0 % vs 2,6 %+), donc un seuil < 1 % sépare
+# proprement. Garde de longueur : un fragment FR court sans diacritique
+# (« # Code », « # Titre ») n'est PAS whitelisté.
+BY_DESIGN_EN_MIN_ALPHA = 80       # nb minimal de lettres (sinon heuristique non-significative)
+BY_DESIGN_EN_DIAC_RATIO = 0.01    # < 1 % de diacritiques FR -> by-design-English
+_FR_DIACRITICS = frozenset("àâäéèêëïîôöùûüçÀÂÄÉÈÊËÏÎÔÖÙÛÜÇ")
+
 
 # ---------------------------------------------------------------------------
 # Notebook loading
@@ -338,6 +353,7 @@ def check_invariants(
             if (
                 _normalize(src.source) == _normalize(trd.source)
                 and len(_normalize(src.source)) >= FR_CONTAM_MIN_LEN
+                and not _is_by_design_english(src.source)
             ):
                 anomalies.append(
                     Anomaly(
@@ -358,6 +374,7 @@ def check_invariants(
             if (
                 _normalize(src.source) == _normalize(trd.source)
                 and len(_normalize(src.source)) >= FR_CONTAM_MIN_LEN
+                and not _is_by_design_english(src.source)
             ):
                 anomalies.append(
                     Anomaly(
@@ -372,6 +389,18 @@ def check_invariants(
                 )
 
     return anomalies
+
+
+def _is_by_design_english(text: str) -> bool:
+    """Heuristique (#10298) : la cellule markdown source est-elle elle-même
+    rédigée en anglais (donc légitimement identique FR -> _en, pas de
+    FR_CONTAM) ? Signal = diacritiques françaises quasi-absentes sur un texte
+    substantiel. Voir ``BY_DESIGN_EN_*`` pour la calibration mesurée."""
+    alpha = [ch for ch in text if ch.isalpha()]
+    if len(alpha) < BY_DESIGN_EN_MIN_ALPHA:
+        return False
+    n_diac = sum(1 for ch in text if ch in _FR_DIACRITICS)
+    return (n_diac / len(alpha)) < BY_DESIGN_EN_DIAC_RATIO
 
 
 def _normalize(text: str) -> str:
