@@ -599,3 +599,110 @@ def test_paths_multiple_prs_mixed(capsys):
     # But the JSON summary names it.
     assert "#9010" in captured.out
     assert "BLOCKED" in captured.err
+
+
+# --- [OVERRIDE] (#10223) -- coordinator adjudication -------------------------
+#
+# `[OVERRIDE] lane <X>` grants the claim to lane X and closes every other
+# lane's claim. This is the mechanical trace of a coordinator merging against a
+# held claim (the gap that let #10169 / #10161 be merged with no written
+# adjudication). Additive: the existing markers keep their semantics, and the
+# 36 prior tests are untouched. The motivating incident (#10169) was
+# myia-po-2025:CoursIA-2 holding the sole issue-level claim, po-2026 merging
+# anyway -- the override is what the coordinator must now WRITE on the issue.
+
+def test_parse_override_marker():
+    ev = clc.parse_claim_event(comment(
+        "[OVERRIDE] lane myia-po-2024:CoursIA -- substance favors this PR",
+        "2026-08-09T22:00:00Z", author="jsboige",
+    ))
+    assert ev is not None
+    assert ev.is_override is True
+    assert ev.is_open is False
+    assert ev.lane == "myia-po-2024:CoursIA"
+    assert ev.marker == "OVERRIDE"
+
+
+def test_override_grants_to_named_lane_closes_others():
+    # A and B both claimed; override to A -> only A remains active.
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- x", "2026-08-06T22:00:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane B:CoursIA-2 -- y", "2026-08-06T22:10:00Z")),
+        clc.parse_claim_event(comment(
+            "[OVERRIDE] lane A:CoursIA -- coordinator adjudication",
+            "2026-08-06T22:30:00Z")),
+    ]
+    active, unattrib = clc.compute_active_claims(events)
+    assert set(active) == {"A:CoursIA"}
+    assert unattrib == []
+
+
+def test_override_closes_all_others_grants_to_third_lane():
+    # A and B claimed; override to a THIRD lane C -> only C active.
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- x", "2026-08-06T22:00:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane B:CoursIA-2 -- y", "2026-08-06T22:10:00Z")),
+        clc.parse_claim_event(comment(
+            "[OVERRIDE] lane C:CoursIA -- reassign", "2026-08-06T22:30:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"C:CoursIA"}
+
+
+def test_override_then_claim_reopens_other_lane():
+    # Override to A, then B claims afterward -> both active (B reopens after
+    # the override in walk order; override is not a permanent lockout).
+    events = [
+        clc.parse_claim_event(comment(
+            "[OVERRIDE] lane A:CoursIA -- initial", "2026-08-06T22:00:00Z")),
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane B:CoursIA-2 -- y", "2026-08-06T22:30:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"A:CoursIA", "B:CoursIA-2"}
+
+
+def test_override_no_lane_token_unattributed():
+    # An override that names no beneficiary cannot be applied -> unattributed.
+    ev = clc.parse_claim_event(comment(
+        "[OVERRIDE] #9764 merging the better PR", "2026-08-06T22:00:00Z"
+    ))
+    assert ev is not None and ev.lane is None
+    events = [ev]
+    active, unattrib = clc.compute_active_claims(events)
+    assert active == {}
+    assert len(unattrib) == 1
+
+
+def test_check_override_for_my_lane_is_clear(capsys):
+    # Another lane claimed, then the coordinator overrode TO my lane -> CLEAR
+    # (I now hold the claim via adjudication). This is the #10169 resolution.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- working here",
+                "2026-08-09T11:29:59Z"),
+        comment("[OVERRIDE] lane myia-po-2025:CoursIA-2 -- substance favors",
+                "2026-08-09T22:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "CLEAR" in out
+
+
+def test_check_override_to_other_lane_blocks(capsys):
+    # I claimed, then the coordinator overrode to ANOTHER lane -> BLOCKED for me.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- working here",
+                "2026-08-09T11:41:43Z"),
+        comment("[OVERRIDE] lane myia-po-2026:CoursIA -- reassign",
+                "2026-08-09T22:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2026:CoursIA" in captured.out

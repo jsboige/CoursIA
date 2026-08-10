@@ -247,6 +247,45 @@ def find_close_keyword_pr_refs(text: str | None) -> list[dict]:
     return hits
 
 
+# Matches NON-closing references in free prose: the "safe syntax" of
+# git-workflow.md (``See #N`` / ``Part of #N`` / ``Refs #N``) that links an
+# issue without auto-closing it. These are the references an EPIC carries while
+# several lanes work it concurrently (#1454, #1027, #3801) -- multi-lane by
+# construction, which is why lane_claim_required blocks on CLOSING refs only and
+# surfaces a conflict here as an ADVISORY label, never a block (#10223 Tache 4).
+NON_CLOSING_REF_RE = re.compile(
+    r"\b(see|part\s+of|refs?)\s+#(\d+)\b",
+    re.IGNORECASE,
+)
+
+
+def find_non_closing_refs(text: str | None) -> list[dict]:
+    r"""Return non-closing ``<keyword> #N`` references (See/Part of/Refs).
+
+    The complement of ``find_close_keyword_pr_refs``: that one returns the
+    references that auto-close an issue (the blocking discriminant of
+    lane_claim_required). This one returns the references that merely LINK an
+    issue -- an EPIC's ``See #N`` / ``Part of #N`` -- which are multi-lane by
+    construction and must never block, but may still carry an advisory label
+    when another lane holds a claim on them (#10223 Tache 4:
+    ``lane-claim-conflict``).
+
+    Same hit shape as ``find_close_keyword_pr_refs``:
+    ``{"keyword": <lowercased>, "number": <int>, "span": <tuple>}``. Returns an
+    empty list when the text is clean or falsy.
+    """
+    if not text:
+        return []
+    hits = []
+    for m in NON_CLOSING_REF_RE.finditer(text):
+        hits.append({
+            "keyword": m.group(1).lower(),
+            "number": int(m.group(2)),
+            "span": m.span(),
+        })
+    return hits
+
+
 def parse_grain_tag(body: str | None) -> dict | None:
     """Extract {tier, genre, lane} from a PR body, form-tolerant.
 
