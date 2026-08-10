@@ -130,6 +130,13 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "HF_TOKEN", "HUGGINGFACE_TOKEN",
     # Paid LLM APIs (centrally managed, rotation-sensitive)
     "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "MISTRAL_API_KEY",
+    # MiniMax cloud (Hailuo Video API, #10244). Le fournisseur n'emet **qu'une
+    # seule** cle par souscription : elle est donc plus sensible que les autres,
+    # pas moins -- la perdre coute l'acces API de l'abonnement entier.
+    # Le suffixe _GENAI est la convention deja recue par la flotte : il distingue
+    # cette cle de souscription du credential MiniMax *texte* servi via claudish,
+    # qui ne porte aucun entitlement video.
+    "MINIMAX_GENAI_API_KEY",
     # Model hubs / git
     "CIVITAI_TOKEN", "GITHUB_TOKEN", "GITHUB_ACCESS_TOKEN",
     # Per-service client API keys (server defines the value; clients must match)
