@@ -81,7 +81,14 @@ jobs:
           # donc elle n'est PAS dans le set -- c'est ce qui rend la detection
           # du 2e grain consecutif possible.
           TODAY=$(date -u +%Y-%m-%d)
-          gh pr list --state merged --search "merged:$TODAY" \
+          # --limit 500 est OBLIGATOIRE : `gh pr list` pagine a 30 par defaut
+          # et ne signale pas la troncature. Le set tronque attaque le
+          # DENOMINATEUR du ratio G-VAR-2 (`max(1, lane_grains // 3)`) : la
+          # lane sous-compte, le cap retombe a 1, et l'organe accuse de
+          # CAP-EXCEEDED la lane la plus productive du jour -- l'inverse exact
+          # de ce que le ratio protege. Constate le 2026-08-10 sur #10328
+          # (60 mergees, 30 vues, lane po-2024:CoursIA a 11 grains lue <=2).
+          gh pr list --state merged --search "merged:$TODAY" --limit 500 \
             --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || \
             printf '[]' > /tmp/merged.json
 

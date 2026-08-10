@@ -904,3 +904,54 @@ def test_po2025_replay_signals_genre_run_via_cli(tmp_path, capsys):
     # The long_run carries the 5 readme numbers from the issue acceptance.
     assert out["long_runs"][0]["count"] == 5
     assert out["long_runs"][0]["numbers"] == [9960, 9965, 9966, 9969, 9977]
+
+
+# --- troncature du dataset (#10328, 2026-08-10) ----------------------------
+# `gh pr list` pagine a 30 sans le dire. La troncature attaque le DENOMINATEUR
+# du ratio G-VAR-2 : le cap retombe a son plancher de 1 et l'organe accuse de
+# CAP-EXCEEDED la lane la plus productive. Les deux tests ci-dessous encadrent
+# le tell : il tire a exactement 30 (page par defaut) et se tait sinon.
+
+def _grain(n: int, tier: str, genre: str, lane: str) -> dict:
+    return {"number": n, "mergedAt": f"2026-08-10T{n % 24:02d}:00:00Z",
+            "body": f"Grain: {tier}/{genre} - lane {lane} - prev: MED/guard #1\n",
+            "labels": []}
+
+
+def test_load_warns_when_dataset_is_exactly_the_gh_default_page(tmp_path, capsys):
+    lane = "myia-po-2024:CoursIA"
+    data = [_grain(9000 + i, "MED", "notebook-python", lane) for i in range(30)]
+    p = tmp_path / "merged.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    assert len(vlc._load(str(p))) == 30
+    err = capsys.readouterr().err
+    assert "TRONQUE" in err and "30" in err
+
+
+def test_load_silent_when_dataset_is_not_a_full_default_page(tmp_path, capsys):
+    lane = "myia-po-2024:CoursIA"
+    for n in (29, 31, 60):
+        p = tmp_path / f"m{n}.json"
+        p.write_text(json.dumps([_grain(9000 + i, "MED", "notebook-python", lane)
+                                 for i in range(n)]), encoding="utf-8")
+        vlc._load(str(p))
+        assert "TRONQUE" not in capsys.readouterr().err, n
+
+
+def test_truncation_flips_cap_verdict_on_the_10328_shape(tmp_path, capsys):
+    # Forme reelle du 2026-08-10 : la lane po-2024:CoursIA a merge 11 grains
+    # dont 2 LIGHT. Cap correct = max(1, 11 // 3) = 3 -> les 2 LIGHT passent.
+    # Vue tronquee ou seuls les 2 LIGHT survivent : cap = max(1, 2 // 3) = 1
+    # -> le 2e LIGHT est declare cap-reached. C'est le faux positif observe.
+    lane = "myia-po-2024:CoursIA"
+    lights = [_grain(10291, "LIGHT", "guard", lane), _grain(10279, "LIGHT", "docs", lane)]
+    full = lights + [_grain(10250 + i, "MED", "notebook-python", lane) for i in range(9)]
+
+    def cap_of(dataset):
+        p = tmp_path / f"d{len(dataset)}.json"
+        p.write_text(json.dumps(dataset), encoding="utf-8")
+        vlc.main(["--replay", str(p), "--genre-signals", "--lane", lane])
+        return json.loads(capsys.readouterr().out.strip().splitlines()[-1])["tally"]
+
+    assert cap_of(full)["cap"] == 3
+    assert cap_of(lights)["cap"] == 1

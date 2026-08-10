@@ -262,7 +262,12 @@ jobs:
           # honorer la requalification #8970 (grain-requalified:<TIER> qui
           # override le tier declare) : ajouter le champ `labels` a la MEME
           # requete ne consomme pas de quota supplementaire.
-          gh pr list --state merged --search "merged:$TODAY" \
+          # --limit 500 OBLIGATOIRE : la page par defaut de `gh pr list` est 30,
+          # silencieusement. Le set tronque attaque le DENOMINATEUR du ratio
+          # G-VAR-2 -- le cap retombe a son plancher de 1 et le label devient un
+          # faux positif contre les lanes productives (cf #10328, 2026-08-10 :
+          # 60 mergees pour 30 vues). Meme correctif dans variation-light-genre.yml.
+          gh pr list --state merged --search "merged:$TODAY" --limit 500 \
             --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
 
           # Le body circule par fichier : printf '%s' ne reinterprete rien
