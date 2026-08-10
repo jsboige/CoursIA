@@ -8,6 +8,14 @@ un faux negatif absout un notebook D2+ et le signal perd toute credibilite
 des la premiere declaration usurpee. Un faux positif accuse un notebook
 conforme et bloque une PR legitime.
 
+PORTEE -- ce probe capte la **forme S** seule (SetStartDate sans SetEndDate).
+Les formes N (datetime.now()), L (qb.History(sym, N)), T (timedelta)
+echappent et sont mesurees par scan_window_drift.py (#10235, 4 formes).
+La mesure 82 % (227/276) de #9772 etait un grep manuel SUR-COMPTE (incluait
+~87 notebooks sans API QC = no-op), refusee firsthand par #10230. Ce probe
+deterministe rapporte ~1.4 % (forme S) ; le vrai D2 multi-forme est ~15 %
+(scan_window_drift, ~31/207). Voir #10230 pour le diagnostic complet.
+
 Les tests ci-dessous couvrent les 4 axes :
 
   1. **Vrais positifs** -- un notebook avec SetStartDate mais sans SetEndDate
@@ -32,9 +40,11 @@ fixture. Le detecteur est du Python pur operant sur des dicts `cells[]` ;
 on synthetise exactement les structures que Jupyter produit.
 
 References :
-  - Issue #9772 : Phase 0 audit (mesure empirique 227/276 D2+)
+  - Issue #9772 : Phase 0 audit (mesure 227/276 D2+ -- SUR-COMPTEE, voir #10230)
+  - Issue #10230 : refutation firsthand de la mesure #9772 + diagnostic 4 formes
+  - scan_window_drift.py (#10235) : detecteur CANONIQUE D2 (4 formes N/L/T/S)
   - EPIC #9768 : cadre methodologique (D1-D6)
-  - c.1331+13-L1 ★★ : `grep -L` MSYS non fiable (immune ici, on utilise pathlib)
+  - c.1331+13-L1 : `grep -L` MSYS non fiable (immune ici, on utilise pathlib)
 """
 
 from __future__ import annotations
@@ -795,3 +805,75 @@ class TestScanMergedPopulations:
         # by_type doit contenir 'cs'
         assert "cs" in report["by_type"]
         assert report["by_type"]["cs"]["D2+"] >= 1
+
+
+class TestFormSScopeLimitation:
+    """Portee du probe : forme S (SetStartDate sans SetEndDate) SEULE.
+
+    Ce probe NE capte PAS les formes N/L/T de drift (datetime.now, lookback-count,
+    timedelta) -- qui constituent la majorite des drift reels sur le corpus QC.
+    Ces formes sont mesurees par scan_window_drift.py (#10235). Les tests
+    ci-dessous ANCRENT cette limitation dans le code : si un futur contributeur
+    ajoutait par megarde une detection des formes N/L/T ici, il dupliquerait
+    scan_window_drift.py ; si on retirait la forme S, on perdrait le filtre S.
+
+    Refs : #10230 (refutation de la mesure 82 %/#9772), #10235 (scan_window_drift).
+    """
+
+    def test_form_lookback_count_L_not_detected(self, tmp_path):
+        """Forme L : qb.History(sym, 2520, Resolution.DAILY) drift (N barres
+        depuis maintenant) MAIS ce probe ne le capte pas (pas de SetStartDate).
+        C'est attendu : scan_window_drift.py couvre cette forme. On verifie ici
+        que le probe rend NEUTRE (pas de faux D2+ sur un pattern qu'il ne mesure
+        pas honnetement)."""
+        nb_path = tmp_path / "lookback.ipynb"
+        nb_path.write_text(json.dumps({
+            "cells": [
+                {"cell_type": "code", "source": [
+                    "from QuantConnect.Research import QuantBook",
+                    "qb = QuantBook()",
+                    "history = qb.history(['SPY'], 2520, Resolution.DAILY)",
+                ], "outputs": []},
+            ],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+        }), encoding="utf-8")
+        rec = classify_notebook(nb_path)
+        assert rec["verdict"] == "NEUTRE"
+        assert rec["has_qc_context"] is True
+        assert rec["has_set_start"] is False
+
+    def test_form_datetime_now_N_not_detected(self, tmp_path):
+        """Forme N : end = datetime.now() drift avec l'horloge murale, mais
+        ce probe ne le capte pas. Verifie que le probe ne pretend PAS mesurer
+        cette forme (honetete de portee, anti-claim-trompeur)."""
+        nb_path = tmp_path / "nownb.ipynb"
+        nb_path.write_text(json.dumps({
+            "cells": [
+                {"cell_type": "code", "source": [
+                    "from QuantConnect.Research import QuantBook",
+                    "from datetime import datetime",
+                    "qb = QuantBook()",
+                    "end = datetime.now().strftime('%Y-%m-%d')",
+                ], "outputs": []},
+            ],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+        }), encoding="utf-8")
+        rec = classify_notebook(nb_path)
+        assert rec["verdict"] == "NEUTRE"
+
+    def test_form_S_set_start_without_end_IS_detected(self, tmp_path):
+        """Forme S (la seule que ce probe couvre) : SetStartDate sans SetEndDate
+        + contexte QC -> D2+. C'est le sous-ensemble honnetement mesure."""
+        nb_path = tmp_path / "formS.ipynb"
+        nb_path.write_text(json.dumps({
+            "cells": [
+                {"cell_type": "code", "source": [
+                    "from QuantConnect.Research import QuantBook",
+                    "qb = QuantBook()",
+                    "qb.SetStartDate(2015, 1, 1)",
+                ], "outputs": []},
+            ],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+        }), encoding="utf-8")
+        rec = classify_notebook(nb_path)
+        assert rec["verdict"] == "D2+"
