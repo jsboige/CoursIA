@@ -94,6 +94,42 @@ def test_parse_last_marker_wins():
     assert ev is not None and ev.is_open is False
 
 
+def test_parse_instructional_marker_in_prose_ignored():
+    # The #10228 false-negative (c.74). ai-01's claim comment carried a real
+    # line-start `[CLAIMED]` then an instructional sentence MENTIONING
+    # `[RELEASED]` mid-prose ("Release with `[RELEASED]` when your PR lands").
+    # The unanchored regex took that mid-prose `[RELEASED]` as the final-intent
+    # close, neutralising the claim -- the tool reported CLEAR while po-2025
+    # held an active claim, a near-collision. Line-anchoring rejects the
+    # mid-prose mention; only the real line-start `[CLAIMED]` counts.
+    body = (
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 -- Taches 1-2 (CPU).\r\n\r\n"
+        "(check_lane_claim #9774; Release with `[RELEASED]` when your PR lands.)"
+    )
+    ev = clc.parse_claim_event(
+        comment(body, "2026-08-09T21:19:00Z", author="myia-ai-01"))
+    assert ev is not None
+    assert ev.is_open is True              # NOT closed by the mid-prose mention
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2025:CoursIA-2"
+
+
+def test_check_blocked_when_claim_comment_mentions_marker_in_prose(capsys):
+    # Full-flow regression for the #10228 FN: a claim comment that ALSO mentions
+    # a close marker in instructional prose must still BLOCK another lane. This
+    # is the exact shape of ai-01's dispatch comments (claim + release instructions).
+    body = (
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 -- Taches 1-2 (CPU).\r\n\r\n"
+        "(Release with `[RELEASED]` when your PR lands.)"
+    )
+    p = payload(comment(body, "2026-08-09T21:19:00Z", author="myia-ai-01"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    assert rc == 1                          # BLOCKED, not CLEAR (the FN returned 0)
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2025:CoursIA-2" in captured.out
+
+
 def test_parse_unattributed_marker():
     # Marker present but no `lane` keyword -> lane None (surfaced, not guessed).
     ev = clc.parse_claim_event(comment(
