@@ -115,6 +115,17 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree)
     "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN",
+    # Qwen / ComfyUI-Login bearer token (#10265). Consumed by:
+    #   - MyIA.AI.Notebooks/GenAI/00-5-ComfyUI-Local-Test.ipynb cell as
+    #     ``os.getenv("COMFYUI_API_TOKEN") or os.getenv("QWEN_API_TOKEN")``
+    #   - scripts/genai-stack/core/auth_manager.py:281
+    #   - scripts/genai-stack/_archive/utils/reconstruct_env.py:46 (legacy
+    #     sync path used in Phase 30 docs)
+    # Real auth is via the bind-mounted .secrets/qwen-api-user.token (ComfyUI-Login
+    # middleware reads it directly); the env-var form is a notebook-side fallback.
+    # Both env-var names (``QWEN_API_TOKEN`` / ``QWEN_API_USER_TOKEN`` legacy)
+    # carry the same value -- see ALIASES below.
+    "QWEN_API_TOKEN",
     # IBKR paper/simulated trading login (Portfolio-IBKR-Coinbase-Hybrid, #1199).
     # A single shared credential (not per-instance) -> centralized so a re-provision
     # is edit-master + render, never a scattered per-machine .env that gets lost.
@@ -132,6 +143,11 @@ SECRET_KEYS: frozenset[str] = frozenset({
 ALIASES: dict[str, str] = {
     "HUGGINGFACE_TOKEN": "HF_TOKEN",
     "GITHUB_ACCESS_TOKEN": "GITHUB_TOKEN",
+    # ComfyUI-Login bearer -- the legacy env-var name used by
+    # scripts/genai-stack/core/auth_manager.py:233 (still referenced as
+    # ``QWEN_API_USER_TOKEN`` in legacy code paths). Both names MUST
+    # carry the same value; bootstrap enforces this on first sync. #10265.
+    "QWEN_API_USER_TOKEN": "QWEN_API_TOKEN",
 }
 
 

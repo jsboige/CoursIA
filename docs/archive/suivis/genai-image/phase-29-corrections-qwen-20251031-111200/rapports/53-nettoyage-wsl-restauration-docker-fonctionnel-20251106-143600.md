@@ -124,7 +124,7 @@ networks:
 ### Variables d'Environnement
 ```bash
 # API Authentication
-QWEN_API_TOKEN=2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij
+QWEN_API_TOKEN=ROTATED 7a052dd4aeb4 2026-08-10
 
 # GPU Configuration
 GPU_DEVICE_ID=0

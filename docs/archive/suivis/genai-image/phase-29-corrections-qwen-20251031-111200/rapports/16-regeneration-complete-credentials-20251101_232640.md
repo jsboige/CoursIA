@@ -18,7 +18,7 @@ Apr√®s **10 scripts transients successifs** et diagnostic complet, conclusion d√
 
 ### Token Brut (Client)
 ```
-2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij
+ROTATED 7a052dd4aeb4 2026-08-10
 ```
 
 ### Hash Bcrypt (Serveur Attendu)

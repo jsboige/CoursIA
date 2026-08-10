@@ -43,7 +43,7 @@ class EnvReconstructor:
             # API Keys pour téléchargement des modèles
             "CIVITAI_TOKEN": "ROTATED 2026-08-10",
             "HF_TOKEN": "HF_TOKEN_REDACTED",
-            "QWEN_API_TOKEN": "2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij",
+            "QWEN_API_TOKEN": "ROTATED 7a052dd4aeb4 2026-08-10",
             
             # Configuration GPU
             "GPU_DEVICE_ID": "0",

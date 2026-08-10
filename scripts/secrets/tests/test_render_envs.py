@@ -334,13 +334,19 @@ class TestConstants:
         assert isinstance(render_envs.SECRET_KEYS, frozenset)
 
     def test_known_secret_keys_present(self):
-        for k in ("HF_TOKEN", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN"):
+        for k in ("HF_TOKEN", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GITHUB_TOKEN",
+                  # #10265: Qwen / ComfyUI-Login bearer, consumed by GenAI
+                  # notebooks (00-5-ComfyUI-Local-Test.ipynb), auth_manager.py,
+                  # and the legacy reconstruct_env.py sync path.
+                  "QWEN_API_TOKEN"):
             assert k in render_envs.SECRET_KEYS
 
     def test_aliases_mapping(self):
         assert render_envs.ALIASES == {
             "HUGGINGFACE_TOKEN": "HF_TOKEN",
             "GITHUB_ACCESS_TOKEN": "GITHUB_TOKEN",
+            # #10265: Qwen legacy alias (kept by auth_manager.py:233).
+            "QWEN_API_USER_TOKEN": "QWEN_API_TOKEN",
         }
 
 

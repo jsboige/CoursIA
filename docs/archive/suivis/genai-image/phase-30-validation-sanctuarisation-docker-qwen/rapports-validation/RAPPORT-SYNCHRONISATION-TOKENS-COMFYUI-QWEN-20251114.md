@@ -23,7 +23,7 @@ Le problème identifié : **les trois hash étaient différents**, empêchant la
 ### Tokens Avant Synchronisation
 ```bash
 # Token brut (inchangé)
-QWEN_API_USER_TOKEN=2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij
+QWEN_API_USER_TOKEN=ROTATED 7a052dd4aeb4 2026-08-10
 
 # Hash serveur (ancien)
 $2b$12$4NWTdQ/zSFsWQ/JwCHyK/egV6jpIssX0htD16.HtoBNRWpX993mTW
@@ -47,7 +47,7 @@ $2b$12$6kSChnnUFiCUPfyAllJPoHm.9O9LL9KnIlX88zomudAiJDvMRoJ3uOXa
 
 ```python
 # Token brut conservé
-token_brut = "2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij"
+token_brut = "ROTATED 7a052dd4aeb4 2026-08-10"
 
 # Génération hash bcrypt
 salt = bcrypt.gensalt()
@@ -79,7 +79,7 @@ validation = bcrypt.checkpw(token_brut.encode('utf-8'), hash_bcrypt)
 
 3. **`.secrets/.env.generated`**
    - **Statut** : Inchangé (token brut préservé)
-   - **Contenu** : `QWEN_API_USER_TOKEN=2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij`
+   - **Contenu** : `QWEN_API_USER_TOKEN=ROTATED 7a052dd4aeb4 2026-08-10`
 
 ### 3. Synchronisation avec Container Docker
 
@@ -108,7 +108,7 @@ docker-compose down && docker-compose up -d
 2. **Test avec token brut** :
    ```bash
    curl -X GET 'http://localhost:8188/system_stats' \
-        -H 'Authorization: Bearer 2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij' \
+        -H 'Authorization: Bearer ROTATED 7a052dd4aeb4 2026-08-10' \
         -H 'Content-Type: application/json'
    ```
    **Résultat** : `{"error": "Authentication required."}`
@@ -153,14 +153,14 @@ Statut: SUCCESS
 ### Tokens Synchronisés ✅
 | Emplacement | Contenu | Statut |
 |------------|---------|--------|
-| `.secrets/.env.generated` | `2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij` | ✅ Token brut préservé |
+| `.secrets/.env.generated` | `ROTATED 7a052dd4aeb4 2026-08-10` | ✅ Token brut préservé |
 | `.secrets/qwen-api-user.token` | `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.` | ✅ Hash mis à jour |
 | `docker-configurations/services/comfyui-qwen/.env` | `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.` | ✅ Hash synchronisé |
 
 ### Validation Technique ✅
 ```python
 # Test de correspondance
-token_brut = "2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij"
+token_brut = "ROTATED 7a052dd4aeb4 2026-08-10"
 hash_bcrypt = "$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr."
 validation = bcrypt.checkpw(token_brut.encode('utf-8'), hash_bcrypt.encode('utf-8'))
 # Résultat : True ✅

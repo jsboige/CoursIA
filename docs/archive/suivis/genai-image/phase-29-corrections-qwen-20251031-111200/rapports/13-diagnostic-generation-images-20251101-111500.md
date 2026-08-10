@@ -68,7 +68,7 @@ Le token API utilisé par le client Python (`QWEN_API_USER_TOKEN`) ne correspond
    - Hash bcrypt attendu par le serveur : `$2b$12$UDceblhZeEySDwVMC0ccN...`
 
 2. **Client Python** :
-   - Token chargé depuis `.env` : `@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf`
+   - Token chargé depuis `.env` : `ROTATED 2e5dd4339ca9 2026-08-10`
    - Nouveau token généré : `yZeE#11yA1E#AWCM$As1%mOf3(Y2O_+QQ`
    - Hash bcrypt généré : `$2b$12$W5AwdaSiM6Mg2...4tWdJWva06`
 
