@@ -51,6 +51,14 @@ from check_perimeter import PIVOT_LANG, TARGET_LANGS  # noqa: E402
 COLUMNS = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]
 COLUMNS += [f"text_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
 COLUMNS += [f"hash_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
+# translate_policy (#10326): per-row translation policy declared on the source
+# notebook cell (metadata) and carried through the pipeline. Empty = default
+# (translate if target empty or drifted); ``verbatim`` = never translate (the
+# source FR is the deliverable for every lang -- literary citation, idiomatic
+# example, prompt to reproduce). T3 reads/honors it; T1 only carries it (not a
+# PIVOT_COL, so --update preserves a hand-set value on existing rows). See
+# translate_csv.py VERBATIM_POLICY for the honoring contract.
+COLUMNS += ["translate_policy"]
 
 
 def normalize(text: str) -> str:

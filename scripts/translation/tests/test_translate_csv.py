@@ -734,3 +734,244 @@ def test_run_translations_preserves_obsolete_text_on_run_interruption(tmp_path, 
     assert rows[0]["hash_en"] == "oldhash"
     # Sécurité : aucun copier-coller du FR dans la colonne cible.
     assert rows[0]["text_en"] != rows[0]["text_fr"]
+
+
+# =========================================================================== #
+# #10326 — translate_policy: T3 preserve-verbatim (pipeline-honors-policy slice)
+#
+# Problème : T3 (translate_csv.py) traduit toute cellule dont la cible est vide
+# ou dérivée. Aucun moyen de déclarer qu'une cellule NE DOIT PAS être traduite
+# (verbatim) -- or c'est pédagogiquement critique pour les citations littéraires
+# (vers de Hugo dans FT-02-QLoRA-Quantization), les exemples idiomatiques, les
+# prompt/completion à reproduire à l'identique.
+#
+# Fix : colonne ``translate_policy`` dans le schéma CSV (T1 + T3), lue par T3,
+# honorée AVANT le test d'éligibilité. ``verbatim`` => ``text_<lang> := text_fr``
+# (le FR source EST le livrable), aucun appel LLM.
+#
+# Acceptance #10326 couverte par CETTE tranche (1/2/5) :
+#   1. une cellule verbatim traverse T1->T3->T4 sans traduction ni appel LLM ;
+#   2. la politique survit a un ``extract_cells_to_csv.py --update`` (test) ;
+#   5. le log nomme chaque cellule préservée.
+#   Critères 3/4 (déclaration metadata dans le notebook source + 2 cellules Hugo
+#   FT-02 marquées) = follow-up PR (hors scope de cette tranche pipeline).
+# =========================================================================== #
+
+
+# --------------------------------------------------------------------------
+# translation_plan — éligibilité : verbatim court-circuîte AVANT cible-vide
+# --------------------------------------------------------------------------
+def test_translation_plan_excludes_verbatim_row():
+    """Acceptance #10326 critère 1 (côté plan) : une cellule ``verbatim`` n'est
+    JAMAIS éligible, même si toutes ses cibles sont vides. Le court-circuit
+    intervient AVANT le test cible-vide/dérivée pour qu'une cible verbatim vide
+    ne soit jamais envoyée au LLM au premier passage."""
+    rows = [_row("c1", text_fr="Demain, dès l'aube, à l'heure où blanchit la campagne",
+                 translate_policy="verbatim")]
+    # Toutes les cibles vides MAIS verbatim => plan vide.
+    assert list(t3.translation_plan(rows, t3.TARGETS)) == []
+
+
+def test_translation_plan_verbatim_short_circuits_before_drift():
+    """Le court-circuit verbatim domine même un drift déclaré : une cellule
+    verbatim dont la source FR a dérivé n'est PAS retraduite (la politique est
+    explicite, elle prime sur la dérive). On vérifie l'orthogonalité."""
+    rows = [_row("c1", text_fr="citation littéraire", translate_policy="verbatim")]
+    drifted = {(0, lang) for lang in t3.TARGETS}  # drift sur toutes les langues
+    assert list(t3.translation_plan(rows, t3.TARGETS, drifted=drifted)) == []
+
+
+def test_translation_plan_legacy_row_without_policy_key_is_eligible():
+    """Rétrocompat : un CSV SANS la colonne ``translate_policy`` (extraction
+    legacy pré-#10326) est lu par DictReader sans la clé. ``row.get(..., "")``
+    => "" != "verbatim" => comportement par défaut (éligible). Aucune
+    régression sur les lots existants."""
+    rows = [_row("c1", text_fr="bonjour")]
+    del rows[0]["translate_policy"]  # simule un CSV legacy sans la colonne
+    plan = list(t3.translation_plan(rows, ["en"]))
+    assert (0, "en") in plan  # éligible par défaut
+
+
+def test_translation_plan_unknown_policy_value_falls_back_to_default():
+    """Une valeur de politique non reconnue (ex. ``verbatim-with-gloss``,
+    follow-up non implémenté) retombe sur le comportement par défaut
+    (éligible) -- elle n'est PAS traitée comme verbatim."""
+    rows = [_row("c1", text_fr="x", translate_policy="verbatim-with-gloss")]
+    assert (0, "en") in list(t3.translation_plan(rows, ["en"]))
+
+
+def test_translation_plan_policy_whitespace_tolerant():
+    """``' verbatim '`` (espaces accidentels) est quand même honoré -- le
+    ``.strip()`` dans le test évite un faux négatif sur une déclaration
+    éditée à la main."""
+    rows = [_row("c1", text_fr="x", translate_policy="  verbatim  ")]
+    assert list(t3.translation_plan(rows, ["en"])) == []
+
+
+# --------------------------------------------------------------------------
+# run_translations — contrat verbatim : text_<lang> := text_fr, AUCUN appel LLM
+# --------------------------------------------------------------------------
+def test_run_translations_verbatim_copies_fr_to_all_langs_no_llm(tmp_path, monkeypatch):
+    """Acceptance #10326 critère 1 (côté exécution) : une cellule verbatim
+    reçoit ``text_<lang> := text_fr`` ET ``hash_<lang> := hash_fr`` pour CHAQUE
+    langue cible, sans AUCUN appel provider (le compteur d'appels reste à 0).
+    Le FR source EST le livrable pour toutes les langues."""
+    calls = []
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub-model", "k", "http://x")])
+    monkeypatch.setattr(t3, "translate_markdown", _stub_translator(calls))
+
+    fr_text = "Demain, dès l'aube, à l'heure où blanchit la campagne"
+    rows = [_row("hugo1", text_fr=fr_text, translate_policy="verbatim")]
+    out = str(tmp_path / "out.csv")
+    done, fails = t3.run_translations(rows, ["en", "es", "ar"], False, out, False)
+
+    assert done == 0 and fails == 0  # aucune traduction (plan vide)
+    assert calls == []  # AUCUN appel LLM -- critère 1
+    expected_hash = t3.cell_hash(fr_text)
+    for lang in ("en", "es", "ar"):
+        assert rows[0][f"text_{lang}"] == fr_text  # text_<lang> := text_fr
+        assert rows[0][f"hash_{lang}"] == expected_hash  # hash cohérent
+
+
+def test_run_translations_verbatim_mixed_with_normal_rows(tmp_path, monkeypatch):
+    """Un lot mixte (1 verbatim + 1 normale) : seule la normale est traduite
+    (1 appel LLM), la verbatim est préservée. Prouve que verbatim et traduction
+    coexistent sans interférence."""
+    calls = []
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub-model", "k", "http://x")])
+    monkeypatch.setattr(t3, "translate_markdown", _stub_translator(calls))
+
+    fr_citation = "Ô temps, suspends ton vol"
+    rows = [
+        _row("c1", text_fr=fr_citation, translate_policy="verbatim"),
+        _row("c2", text_fr="paragraphe normal à traduire"),
+    ]
+    out = str(tmp_path / "out.csv")
+    done, fails = t3.run_translations(rows, ["en"], False, out, False)
+
+    assert done == 1 and fails == 0  # seule c2 traduite
+    assert len(calls) == 1  # 1 appel LLM (c2), pas 2
+    assert rows[0]["text_en"] == fr_citation  # c1 verbatim préservée
+    assert rows[1]["text_en"].startswith("[en]")  # c2 traduite par le stub
+
+
+def test_run_translations_verbatim_logs_each_preserved_cell(tmp_path, monkeypatch, capsys):
+    """Acceptance #10326 critère 5 : le log nomme CHAQUE cellule préservée
+    (notebook + cell_id + politique), jamais silencieux. Un compteur final
+    récapitule."""
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub-model", "k", "http://x")])
+    monkeypatch.setattr(t3, "translate_markdown", _stub_translator([]))
+
+    rows = [
+        _row("c1", text_fr="citation un", translate_policy="verbatim",
+             notebook="FT-02-QLoRA-Quantization.ipynb"),
+        _row("c2", text_fr="citation deux", translate_policy="verbatim",
+             notebook="FT-02-QLoRA-Quantization.ipynb"),
+    ]
+    out = str(tmp_path / "out.csv")
+    t3.run_translations(rows, ["en"], False, out, False)
+    err = capsys.readouterr().err
+    # Chaque cellule est nommée individuellement (critère 5 : pas silencieux).
+    assert "[verbatim] FT-02-QLoRA-Quantization.ipynb c1 preserved" in err
+    assert "[verbatim] FT-02-QLoRA-Quantization.ipynb c2 preserved" in err
+    # Compteur récapitulatif.
+    assert "2 cellule(s) préservée(s)" in err
+
+
+def test_run_translations_verbatim_persisted_when_plan_empty(tmp_path, monkeypatch):
+    """Edge case (#10326) : si TOUTES les cellules sont verbatim, le plan est
+    vide et la write_csv incrémentale (dans la boucle plan) ne s'exécute jamais.
+    Le bloc verbatim persiste les copies au CSV lui-même dans ce cas, sinon les
+    copies resteraient en mémoire (et le CSV de sortie serait vide)."""
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub-model", "k", "http://x")])
+    monkeypatch.setattr(t3, "translate_markdown", _stub_translator([]))
+
+    fr_text = "citation verbatim unique"
+    rows = [_row("c1", text_fr=fr_text, translate_policy="verbatim")]
+    out = tmp_path / "out.csv"
+    t3.run_translations(rows, ["en", "es"], False, str(out), False)
+
+    # Le CSV de sortie DOIT contenir les copies verbatim persistées.
+    reloaded = t3.load_csv(str(out))
+    assert len(reloaded) == 1
+    assert reloaded[0]["text_en"] == fr_text
+    assert reloaded[0]["text_es"] == fr_text
+    assert reloaded[0]["translate_policy"] == "verbatim"
+
+
+# --------------------------------------------------------------------------
+# Schéma pipeline — translate_policy dans T1 ET T3 (contrat #10326)
+# --------------------------------------------------------------------------
+def test_translate_policy_in_both_t1_and_t3_schema():
+    """Acceptance #10326 (schéma) : ``translate_policy`` est une colonne
+    canonique du pipeline, présente dans T1 (extraction/write) ET T3 (honorer).
+    Verrouille le contrat de schéma pour empêcher une divergence silencieuse."""
+    import extract_cells_to_csv as t1
+    assert "translate_policy" in t1.COLUMNS
+    assert "translate_policy" in t3.CSV_COLUMNS
+
+
+def test_translate_policy_not_in_t1_pivot_cols():
+    """Acceptance #10326 critère 2 (précondition) : ``translate_policy`` n'est
+    PAS dans ``PIVOT_COLS``, donc T1 ``--update`` ne l'écrase PAS sur une ligne
+    existante -- une valeur posée à la main survive. (Le test fonctionnel de
+    survie est ``test_t1_update_preserves_translate_policy`` ci-dessous.)"""
+    import extract_cells_to_csv as t1
+    import inspect
+    src = inspect.getsource(t1.update_existing_csv)
+    # On extrait PIVOT_COLS du source (défini localement dans la fonction).
+    import re
+    m = re.search(r'PIVOT_COLS\s*=\s*\(([^)]*)\)', src)
+    assert m, "PIVOT_COLS introuvable dans update_existing_csv"
+    pivot = m.group(1)
+    assert "translate_policy" not in pivot
+
+
+def test_t1_update_preserves_translate_policy(tmp_path):
+    """Acceptance #10326 critère 2 (fonctionnel) : la politique survit à un
+    ``extract_cells_to_csv.py --update``. On part d'une ligne existante avec
+    ``translate_policy=verbatim``, on passe un fresh_row (re-extraction, qui
+    amène ``translate_policy=""`` par défaut), et on vérifie que la valeur
+    verbatim posée à la main EST PRÉSERVÉE (non écrasée)."""
+    import extract_cells_to_csv as t1
+
+    citation = "Ô Civile ! ô Baptistine !"
+    existing = [_row_t1("c1", citation, translate_policy="verbatim")]
+    # fresh_rows : re-extraction simulée, translate_policy="" par défaut.
+    fresh = [_row_t1("c1", citation, translate_policy="")]
+
+    updated, stats = t1.update_existing_csv(
+        existing, fresh, target_notebooks={"nb.ipynb"})
+
+    assert stats["updated"] == 0  # PIVOT_COLS inchangés (même source)
+    assert updated[0]["translate_policy"] == "verbatim"  # PRÉSERVÉ, pas écrasé
+    assert updated[0]["text_fr"] == citation  # contenu intact
+
+
+def test_t1_update_preserves_default_empty_policy_on_unchanged_source(tmp_path):
+    """Cas nominal : une ligne normale (translate_policy="") reste "" après
+    update -- pas de side-effect du guard. Confirme que la préservation n'est
+    pas spécifique à ``verbatim`` mais à toute valeur non-PIVOT."""
+    import extract_cells_to_csv as t1
+    existing = [_row_t1("c1", "texte normal", translate_policy="")]
+    fresh = [_row_t1("c1", "texte normal", translate_policy="")]
+    updated, _ = t1.update_existing_csv(
+        existing, fresh, target_notebooks={"nb.ipynb"})
+    assert updated[0]["translate_policy"] == ""
+
+
+# --------------------------------------------------------------------------
+# Helper local #10326 — ligne CSV au schéma T1 (COLUMNS ordre canonique)
+# --------------------------------------------------------------------------
+def _row_t1(cell_id, text_fr, translate_policy="", notebook="nb.ipynb"):
+    """Ligne CSV au schéma ``extract_cells_to_csv.COLUMNS`` (et non t3.CSV_COLUMNS)
+    pour les tests T1 ``--update``. On importe T1 dans le test, pas ici, pour
+    éviter un import au niveau module (T1 n'est pas sur sys.path par défaut)."""
+    import extract_cells_to_csv as t1
+    r = {col: "" for col in t1.COLUMNS}
+    r.update(notebook=notebook, cell_id=cell_id, cell_type="markdown",
+             src_lang="fr", text_fr=text_fr)
+    r["src_hash"] = t1.cell_hash(text_fr)
+    r["hash_fr"] = r["src_hash"]
+    r["translate_policy"] = translate_policy
+    return r
