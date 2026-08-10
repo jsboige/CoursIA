@@ -556,3 +556,181 @@ def test_provider_keys_have_no_literal_default_in_source():
     src = Path(t3.__file__).read_text(encoding="utf-8")
     assert 'getenv("OPENAI_API_KEY"' in src
     assert 'getenv("OPENAI_API_KEY", "' not in src  # no literal default
+
+
+# =========================================================================== #
+# #10287 — translation_plan() src_hash pivot
+#
+# Bug fondateur (c.1301+48, démo #10282) : translation_plan() filtrait sur
+# ``text_<lang>`` vide (cache/resume) et ignorait src_hash. Conséquence : un
+# notebook modifié FR (src_hash stale) ➜ T2 signale « SRC_DRIFT » mais T3
+# planifie 0 retraduction ➜ traduction périmée reste figée en EN/ES/...
+#
+# Fix : 4e paramètre ``drifted: set[(int, str)] | None`` injecté par l'appelant.
+#      - None (legacy) : comportement cible vide inchangé, rétrocompat.
+#      - set : éligibilité = cible vide OU (i, lang) dans drifted.
+#
+# Acceptance #10287 :
+#   1. translation_plan() rend éligible une cellule dont src_hash diffère,
+#      même si text_<lang> est déjà rempli.
+#   2. translation_plan() reste pure (pas d'I/O notebook).
+#   3. Aucune écriture destructive — un test couvre le cas « run interrompu ».
+#   4. La démo #10282 bascule de verdict (couvert dans test_demo_t3_t4_acceptance).
+#   5. Tests existants (234) restent verts.
+# =========================================================================== #
+
+
+# --------------------------------------------------------------------------
+# Pivot du fix — éligibilité par src_hash (paramètre drifted)
+# --------------------------------------------------------------------------
+def test_translation_plan_picks_up_drift_when_text_already_filled():
+    """Pivot #10287 critère 1 : une cellule dont la source FR a dérivé doit
+    être éligible À RETRADUIRE, même si text_<lang> est déjà rempli (le cache
+    logique est invalidé par la dérive de la source).
+
+    Cas : c1 a text_en="hello" (cache du run précédent), MAIS src_hash stale
+    (la source FR du notebook a changé depuis l'extraction CSV). L'appelant
+    injecte ``{(0, "en")}`` dans drifted → c1->en est yielded.
+    """
+    rows = [_row("c1", text_fr="nouvelle source FR", text_en="hello (obsolète)")]
+    drifted = {(0, "en")}
+    plan = list(t3.translation_plan(rows, ["en"], drifted=drifted))
+    assert (0, "en") in plan, "drift doit réactiver la cellule, même si text_en rempli"
+
+
+def test_translation_plan_legacy_behavior_without_drifted_kwarg():
+    """Rétrocompat #10287 critère 5 : translation_plan(rows, langs) (3 args,
+    sans drifted) reproduit le comportement legacy (cible vide uniquement)."""
+    rows = [_row("c1", text_fr="fr", text_en="hello")]
+    # drifted=None (défaut) → c1->en PAS yielded (text_en rempli = cache valide)
+    assert (0, "en") not in list(t3.translation_plan(rows, ["en"]))
+    # drifted=None explicite → même comportement
+    assert (0, "en") not in list(t3.translation_plan(rows, ["en"], drifted=None))
+
+
+def test_translation_plan_drifted_empty_set_behaves_like_none():
+    """``set()`` ≠ ``None`` : un set vide n'élargit pas l'éligibilité (pas de
+    cellule flagged). C'est la sémantique attendue (l'appelant qui calcule
+    drift=set() dit « aucun drift détecté »)."""
+    rows = [_row("c1", text_fr="fr", text_en="hello")]
+    # drifted=set() → c1->en PAS yielded (idem legacy)
+    assert list(t3.translation_plan(rows, ["en"], drifted=set())) == []
+
+
+def test_translation_plan_drift_does_not_affect_unrelated_cells():
+    """Orthogonalité : drift sur c1 ne réveille pas c2 (drifted ciblé)."""
+    rows = [
+        _row("c1", text_fr="fr1", text_en="en1"),
+        _row("c2", text_fr="fr2", text_en="en2"),
+    ]
+    drifted = {(0, "en")}  # SEUL c1->en drift
+    plan = list(t3.translation_plan(rows, ["en"], drifted=drifted))
+    assert (0, "en") in plan
+    assert (1, "en") not in plan  # c2 intouché
+
+
+def test_translation_plan_drift_scoped_to_lang():
+    """drift ciblé sur 'en' ne drape pas 'es' : (0, 'en') in drifted ⟹ (0, 'es')
+    reste legacy (text_es vide dans ce test → yielded par cible-vide, pas par
+    drift). Cas inverse : text_es rempli + pas de drift es → PAS yielded."""
+    rows = [_row("c1", text_fr="fr", text_en="en", text_es="es")]
+    drifted = {(0, "en")}  # drift EN, pas ES
+    plan = list(t3.translation_plan(rows, ["en", "es"], drifted=drifted))
+    assert (0, "en") in plan  # drift
+    assert (0, "es") not in plan  # text_es rempli + pas drift es
+
+
+# --------------------------------------------------------------------------
+# compute_drift_from_notebooks — détecteur pur (lit le disque via _read_cell_source)
+# --------------------------------------------------------------------------
+def test_compute_drift_from_notebooks_detects_modified_source(tmp_path):
+    """Le détecteur compare cell_hash(source_FR_actuelle) au row["src_hash"]
+    extrait. Si la source FR du notebook diffère du hash d'extraction, la
+    ligne est dans le set retourné."""
+    # Écrit un notebook .ipynb minimaliste avec 1 cellule markdown.
+    import json
+    nb_path = tmp_path / "MyIA.AI.Notebooks" / "demo.ipynb"
+    nb_path.parent.mkdir(parents=True)
+    nb = {
+        "cells": [{"id": "abc123", "cell_type": "markdown",
+                   "source": "source FR actuelle MODIFIÉE"}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    nb_path.write_text(json.dumps(nb), encoding="utf-8")
+
+    # src_hash INTENTIELLEMENT faux (≠ hash de la source actuelle).
+    rows = [_row("abc123", text_fr="source FR actuelle MODIFIÉE",
+                 src_hash="deadbeef" * 4)]  # 32 hex bidons
+    rows[0]["notebook"] = "MyIA.AI.Notebooks/demo.ipynb"
+
+    drifted = t3.compute_drift_from_notebooks(rows, repo_root=tmp_path)
+    assert 0 in drifted, "src_hash mismatch doit être détecté"
+
+
+def test_compute_drift_from_notebooks_no_drift_when_match(tmp_path):
+    """Si src_hash == cell_hash(source_actuelle), pas de drift."""
+    import json
+    actual_src = "contenu identique à l'extraction"
+    nb_path = tmp_path / "demo.ipynb"
+    nb = {"cells": [{"id": "c1", "cell_type": "markdown", "source": actual_src}],
+          "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    nb_path.write_text(json.dumps(nb), encoding="utf-8")
+
+    rows = [_row("c1", text_fr=actual_src, src_hash=t3.cell_hash(actual_src))]
+    rows[0]["notebook"] = "demo.ipynb"
+    drifted = t3.compute_drift_from_notebooks(rows, repo_root=tmp_path)
+    assert drifted == set()
+
+
+def test_compute_drift_from_notebooks_missing_notebook_is_not_drift(tmp_path):
+    """Lecture défensive : notebook introuvable → skip (pas de drift déclaré).
+    L'absence d'info ne déclare pas un drift (cf acceptance #10287)."""
+    rows = [_row("c1", text_fr="x", src_hash="deadbeef" * 4)]
+    rows[0]["notebook"] = "introuvable.ipynb"  # n'existe pas
+    drifted = t3.compute_drift_from_notebooks(rows, repo_root=tmp_path)
+    assert drifted == set()  # skip, pas drift
+
+
+def test_compute_drift_from_notebooks_empty_src_hash_is_not_drift(tmp_path):
+    """Ligne sans src_hash (extraction legacy) → skip, pas drift."""
+    rows = [_row("c1", text_fr="x", src_hash="")]
+    rows[0]["notebook"] = "demo.ipynb"
+    drifted = t3.compute_drift_from_notebooks(rows, repo_root=tmp_path)
+    assert drifted == set()
+
+
+# --------------------------------------------------------------------------
+# Acceptance #10287 #3 — aucune écriture destructrice sur run interrompu
+# --------------------------------------------------------------------------
+def test_run_translations_preserves_obsolete_text_on_run_interruption(tmp_path, monkeypatch):
+    """Test « run interrompu » : tous les providers échouent → text_<lang>
+    RESTE FIGÉ à la valeur périmée (cache observé), pas de wipe ni de recopiage
+    depuis text_fr. La traduction périmée reste lisible dans le CSV jusqu'à
+    ce qu'un run réussi la remplace.
+
+    Acceptance #10287 #3 : « pas d'écriture destructive » + « la traduction
+    périmée reste lisible ».
+    """
+    import urllib.error
+
+    def _fail(fr_text, target_lang, model, key, base_url, **kw):
+        raise urllib.error.HTTPError("http://x", 500, "server err", {}, None)
+
+    out = str(tmp_path / "out.csv")
+    rows = [_row("c1", text_fr="contenu secret FR",
+                 text_en="OLD EN (sera remplacé)", hash_en="oldhash")]
+
+    monkeypatch.setattr(t3, "_provider_keys", lambda: [("stub", "k", "http://x")])
+    monkeypatch.setattr(t3, "translate_markdown", _fail)
+
+    # drifted indique « c1->en est périmé » — le moteur doit RETRADUIRE
+    # (drift + API KO => text_en reste la valeur ENSUITE au fallback).
+    done, fails = t3.run_translations(rows, ["en"], False, out, False,
+                                      limit=5, drifted={(0, "en")})
+    assert done == 0 and fails == 1
+    # text_en INTACT : la dérive déclenche bien la planification, mais l'échec
+    # provider n'efface pas la valeur périmée.
+    assert rows[0]["text_en"] == "OLD EN (sera remplacé)"
+    assert rows[0]["hash_en"] == "oldhash"
+    # Sécurité : aucun copier-coller du FR dans la colonne cible.
+    assert rows[0]["text_en"] != rows[0]["text_fr"]

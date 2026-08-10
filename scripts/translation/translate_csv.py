@@ -48,6 +48,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 # Sibling import: ``check_perimeter`` owns the SINGLE source of truth for the
 # ordered target-language universe (#10109). This script's directory is on
@@ -225,11 +226,29 @@ def translate_markdown(fr_text, target_lang, model, key, base_url,
 # ----------------------------------------------------------------------------
 # Plan de traduction — cellules éligibles.
 # ----------------------------------------------------------------------------
-def translation_plan(rows, langs, include_code=False):
-    """Yield (row_index, lang) pour chaque cellule markdown éligible x langue cible vide.
+def translation_plan(rows, langs, include_code=False, drifted=None):
+    """Yield (row_index, lang) pour chaque cellule éligible x langue cible.
 
-    Éligibilité : cell_type == 'markdown' (ou 'code' si include_code), text_fr non
-    vide, text_<lang> vide (non déjà traduit — sert aussi de cache/resume).
+    Éligibilité (filtres cumulatifs) :
+      - cell_type == 'markdown' (ou 'code' si include_code) ;
+      - text_fr non vide ;
+      - **soit** ``text_<lang>`` vide (cible à produire — sert aussi de cache/resume),
+        **soit** ``(row_index, lang) in drifted`` (source FR modifiée depuis
+        l'extraction CSV, le contenu cible existant est périmé et doit être
+        régénéré — goulot d'intégration T3 ↔ T2 #10287).
+
+    Args:
+        rows: lignes CSV chargées (DictReader).
+        langs: liste des langues cibles.
+        include_code: inclure les cellules ``code`` (defaut False).
+        drifted: ``None`` (comportement legacy : cible vide uniquement) ou
+            ``set[(int, str)]`` de paires ``(row_index, lang)`` dont la source
+            FR a dérivé. Computé par l'appelant (qui a accès au disque) via
+            ``compute_drift_from_notebooks()`` — la fonction reste **pure**,
+            pas d'I/O notebook ici (acceptance #10287 critère 2).
+
+    Yields:
+        ``(row_index, lang)`` — tuples éligibles.
     """
     for i, row in enumerate(rows):
         ctype = row.get("cell_type", "")
@@ -241,15 +260,113 @@ def translation_plan(rows, langs, include_code=False):
         if not fr.strip():
             continue
         for lang in langs:
-            if not row.get(f"text_{lang}", "").strip():
+            target_empty = not row.get(f"text_{lang}", "").strip()
+            if target_empty:
+                yield i, lang
+                continue
+            if drifted is not None and (i, lang) in drifted:
                 yield i, lang
 
 
-def run_translations(rows, langs, include_code, out_path, smoke, limit=None):
+def compute_drift_from_notebooks(rows, repo_root=None):
+    """Identifie les row indices dont le ``src_hash`` ne match plus la source FR courante.
+
+    Lit les ``.ipynb`` référencés par les lignes du CSV, compare
+    ``cell_hash(cell_source_fr_actual)`` au ``row["src_hash"]`` extrait. Retourne
+    les indices dont le hash diffère (= « SRC_DRIFT » au sens T2). Une lecture
+    manquante ou un JSON cassé est traitée comme **non-drift** (skip défensif,
+    comme ``check_translation_sync.py`` T2) — la vérité disque prime, l'absence
+    d'info ne déclare pas un drift.
+
+    Args:
+        rows: lignes CSV chargées.
+        repo_root: racine du dépôt. ``None`` → auto-détection via le chemin
+            CSV (le repo contient ``scripts/translation/translate_csv.py``).
+
+    Returns:
+        ``set[int]`` — indices des lignes dont la source FR a dérivé.
+    """
+    if repo_root is None:
+        repo_root = _detect_repo_root(rows)
+    if repo_root is None:
+        return set()
+
+    # Cache (path, cell_id) -> source FR pour éviter de relire N fois le même notebook.
+    notebook_cache: dict[tuple[str, str], str | None] = {}
+
+    drifted_indices: set[int] = set()
+    for i, row in enumerate(rows):
+        csv_src_hash = row.get("src_hash", "").strip()
+        if not csv_src_hash:
+            # Pas de hash d'extraction → T2 ne peut pas conclure, on ne déclare pas drift.
+            continue
+        nb_rel = row.get("notebook", "").strip()
+        cell_id = row.get("cell_id", "").strip()
+        if not nb_rel or not cell_id:
+            continue
+        key = (nb_rel, cell_id)
+        if key not in notebook_cache:
+            notebook_cache[key] = _read_cell_source(nb_rel, cell_id, repo_root)
+        actual = notebook_cache[key]
+        if actual is None:
+            continue  # cellule introuvable → skip défensif, pas drift
+        if cell_hash(actual) != csv_src_hash:
+            drifted_indices.add(i)
+    return drifted_indices
+
+
+def _detect_repo_root(rows) -> Path | None:
+    """Détecte la racine du dépôt (contenant ``scripts/translation/``).
+
+    On cherche d'abord depuis ``cwd``, puis en remontant les ancêtres (cas
+    worktree où ``cwd`` peut être n'importe où). ``rows`` est conservé dans la
+    signature pour permettre un affinement futur (chemin absolu d'un notebook
+    comme heuristique) — aujourd'hui cwd suffit.
+    """
+    del rows  # noqa: F811 - unused parameter kept for future heuristic
+    cwd = Path.cwd()
+    if (cwd / "scripts" / "translation").is_dir():
+        return cwd
+    for ancestor in cwd.parents:
+        if (ancestor / "scripts" / "translation").is_dir():
+            return ancestor
+    return None
+
+
+def _read_cell_source(notebook_rel: str, cell_id: str, repo_root: Path) -> str | None:
+    """Lit le source FR actuel d'une cellule depuis son notebook. None si KO.
+
+    Lecture défensive : notebook introuvable, JSON cassé, cellule absente → None.
+    On **ne lève pas** : T2 a le même comportement et l'absence d'info ne déclare
+    pas un drift (cf acceptance #10287 — pas d'effet de bord silencieux sur
+    ``text_<lang>``).
+    """
+    nb_path = repo_root / notebook_rel
+    try:
+        with open(nb_path, encoding="utf-8") as f:
+            nb = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+    for cell in nb.get("cells", []):
+        if cell.get("id") == cell_id:
+            src = cell.get("source", "")
+            if isinstance(src, list):
+                return "".join(src)
+            return src or ""
+    return None
+
+
+def run_translations(rows, langs, include_code, out_path, smoke, limit=None, drifted=None):
     """Exécute les traductions live (ENABLED doit être True). Mutate rows in place.
 
     Écrit le CSV incrémentalement après chaque cellule (resume-safe : un run
     interrompu reprend où il s'est arrêté grâce au cache text_<lang>).
+
+    Args:
+        drifted: ``set[(int, str)]`` — paires éligibles dont la source FR a
+            dérivé. Si ``None``, comportement legacy (cible vide uniquement).
+            Computé upstream dans ``main()`` via ``compute_drift_from_notebooks()``
+            — ``run_translations`` reste pure sur le CSV (acceptance #10287).
     """
     providers = _provider_keys()
     if not providers:
@@ -258,7 +375,7 @@ def run_translations(rows, langs, include_code, out_path, smoke, limit=None):
             "OPENROUTER_API_KEY) dans l'environnement. Jamais de littéral inline "
             "(secrets-hygiene.md).")
 
-    plan = list(translation_plan(rows, langs, include_code))
+    plan = list(translation_plan(rows, langs, include_code, drifted=drifted))
     if smoke:
         # 1 cellule x toutes les langues demandées (premier markdown trouvé).
         first_idx = next((i for i, _ in plan), None)
@@ -345,7 +462,18 @@ def main() -> int:
     else:
         langs = list(TARGETS)  # dry-run default = plan complet sur les 7 langues
 
-    plan = list(translation_plan(rows, langs, args.include_code))
+    # Compute drift depuis les notebooks (cf #10287) — la dérive est injectée
+    # dans translation_plan() pour qu'une cellule ``text_<lang>`` non-vide
+    # dont la source FR a changé devienne éligible à retraduction.
+    # Erreurs de lecture (notebook introuvable, JSON cassé) → skip défensif.
+    drifted_indices = compute_drift_from_notebooks(rows)
+    drifted_pairs = {(i, lang) for i in drifted_indices for lang in langs}
+    if drifted_pairs:
+        print(f"[drift] {len(drifted_indices)} cellule(s) FR modifiée(s) "
+              f"depuis l'extraction CSV ({len(drifted_pairs)} paires "
+              f"cel. x langue éligibles à retraduction) — #10287", file=sys.stderr)
+
+    plan = list(translation_plan(rows, langs, args.include_code, drifted=drifted_pairs))
     if args.smoke:
         first_idx = next((i for i, _ in plan), None)
         plan = [(i, lang) for i, lang in plan if i == first_idx] if first_idx is not None else []
@@ -378,7 +506,7 @@ def main() -> int:
               "OPENAI_API_KEY env. GO user = umbrella #10038.", file=sys.stderr)
         return 0
 
-    return 0 if run_translations(rows, langs, args.include_code, out_path, args.smoke, effective_cap)[1] == 0 else 1
+    return 0 if run_translations(rows, langs, args.include_code, out_path, args.smoke, effective_cap, drifted=drifted_pairs)[1] == 0 else 1
 
 
 if __name__ == "__main__":
