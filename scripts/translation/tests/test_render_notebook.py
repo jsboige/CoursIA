@@ -221,6 +221,93 @@ def test_render_empty_csv_falls_back_to_fr(tmp_path):
     assert md[1]["source"] == ["para"]
 
 
+# --------------------------------------------------------------------------
+# Gate 3b — --require-translated guardrail (#10349) : refuse FR-clone renders
+# --------------------------------------------------------------------------
+
+def test_require_translated_raises_on_zero_translated(tmp_path):
+    """require_translated=True + CSV vide (0 traduit) → ValueError (refus clone FR)."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["# Titre"]},
+        {"id": "c1", "type": "code", "source": ["x"], "execution_count": None},
+        {"id": "m2", "type": "markdown", "source": ["para"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [])  # 0 traduction
+    out = tmp_path / "out_en.ipynb"
+    with pytest.raises(ValueError, match="0 cellule markdown traduite"):
+        r.render(nb, csv_p, "en", out, require_translated=True)
+
+
+def test_require_translated_writes_no_file_on_refusal(tmp_path):
+    """Le guardrail leve AVANT l'ecriture atomique : aucun fichier clone sur disque."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["# Titre"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [])
+    out = tmp_path / "out_en.ipynb"
+    with pytest.raises(ValueError):
+        r.render(nb, csv_p, "en", out, require_translated=True)
+    assert not out.exists()  # aucun clone FR ecrit
+
+
+def test_require_translated_passes_when_cells_translated(tmp_path):
+    """require_translated=True + CSV rempli (>=1 traduit) → rendu normal, pas d'erreur."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["# Titre FR"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(nb), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "a", "text_fr": "# Titre FR",
+         "text_en": "# Title EN"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    result = r.render(nb, csv_p, "en", out, require_translated=True)
+    assert result.stats.n_translated == 1
+    assert out.exists()  # rendu normal ecrit
+
+
+def test_require_translated_noop_when_no_markdown_cells(tmp_path):
+    """Notebook sans markdown (0 cellule traduisible) → guardrail se tait (pas de clone possible)."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "c1", "type": "code", "source": ["print(1)"], "execution_count": None},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [])
+    out = tmp_path / "out_en.ipynb"
+    # Pas de raise : n_md_cells == 0, le guardrail ne s'applique pas.
+    result = r.render(nb, csv_p, "en", out, require_translated=True)
+    assert result.stats.n_md_cells == 0
+    assert out.exists()
+
+
+def test_default_render_preserves_criterion3_fr_placeholder(tmp_path):
+    """Sans require_translated (defaut) → 0 traduit produit un clone FR (critere 3 #10039),
+    le guardrail opt-in ne casse PAS le contrat de re-render idempotent."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["# Titre FR"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [])  # 0 traduction
+    out = tmp_path / "out_en.ipynb"
+    result = r.render(nb, csv_p, "en", out)  # defaut require_translated=False
+    assert result.stats.n_translated == 0
+    out_nb = json.loads(out.read_text(encoding="utf-8"))
+    assert out_nb["cells"][0]["source"] == ["# Titre FR"]  # placeholder FR, pas d'erreur
+
+
+def test_main_require_translated_returns_exit_2(tmp_path):
+    """main() avec --require-translated + CSV vide → exit code 2 (ValueError catche)."""
+    nb = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "m1", "type": "markdown", "source": ["# Titre"]},
+    ])
+    csv_p = _write_csv(tmp_path, "tr.csv", [])
+    out = tmp_path / "out_en.ipynb"
+    rc = r.main([
+        "--csv", str(csv_p), "--notebook", str(nb),
+        "--lang", "en", "--out", str(out), "--require-translated",
+    ])
+    assert rc == 2
+    assert not out.exists()  # aucun clone FR ecrit
+
+
 def test_render_partial_csv_translates_only_present_cells(tmp_path):
     """Cellule absente du CSV → fallback FR (jamais blank, jamais placeholder)."""
     nb = _write_nb(tmp_path, "nb.ipynb", [
