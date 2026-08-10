@@ -17,7 +17,7 @@ Ce guide documente la configuration complète des credentials pour l'authentific
 
 | Type | Valeur | Emplacement | Usage |
 |---|---|---|---|
-| **Token Brut** | `ROTATED 2e5dd4339ca9 2026-08-10` | `.secrets/.env.generated` | Clients Bearer |
+| **Token Brut** | `LEAKED-PENDING-ROTATION 2e5dd4339ca9` | `.secrets/.env.generated` | Clients Bearer |
 | **Hash bcrypt** | `$2b$12$UDceblhZeE...` | `.secrets/qwen-api-user.token` | Serveur Validation |
 | **Docker Env** | `QWEN_API_TOKEN=...` | `docker-configurations/services/comfyui-qwen/.env` | Config Docker |
 
@@ -56,7 +56,7 @@ Ce guide documente la configuration complète des credentials pour l'authentific
 
 **Fichier** : `.secrets/.env.generated`
 ```env
-QWEN_API_USER_TOKEN=ROTATED 2e5dd4339ca9 2026-08-10
+QWEN_API_USER_TOKEN=LEAKED-PENDING-ROTATION 2e5dd4339ca9
 ```
 
 **Caractéristiques** :
@@ -88,7 +88,7 @@ $2b$12$UDceblhZeEySDwVMC0ccN.IaQmMBfKdTY.aAE3poXcq1zsOP6coni
 **Fichier** : `docker-configurations/services/comfyui-qwen/.env`
 ```env
 # ComfyUI API Authentication
-QWEN_API_TOKEN=ROTATED 2e5dd4339ca9 2026-08-10
+QWEN_API_TOKEN=LEAKED-PENDING-ROTATION 2e5dd4339ca9
 COMFYUI_AUTH_TOKEN_FILE=/workspace/ComfyUI/.secrets/qwen-api-user.token
 ```
 
@@ -117,7 +117,7 @@ import os
 import requests
 
 # Lire le token depuis l'environnement ou fallback
-api_key = os.getenv("QWEN_API_USER_TOKEN") or "ROTATED 2e5dd4339ca9 2026-08-10"
+api_key = os.getenv("QWEN_API_USER_TOKEN") or "LEAKED-PENDING-ROTATION 2e5dd4339ca9"
 
 # Authentification Bearer
 headers = {
@@ -182,7 +182,7 @@ docker-compose up -d
 ```bash
 # Afficher le token brut
 cat .secrets/.env.generated
-# Doit afficher: QWEN_API_USER_TOKEN=ROTATED 2e5dd4339ca9 2026-08-10
+# Doit afficher: QWEN_API_USER_TOKEN=LEAKED-PENDING-ROTATION 2e5dd4339ca9
 ```
 
 ### Test 2 : Vérifier le Hash
@@ -197,7 +197,7 @@ cat .secrets/qwen-api-user.token
 
 ```bash
 # Exporter le token
-export QWEN_API_USER_TOKEN="ROTATED 2e5dd4339ca9 2026-08-10"
+export QWEN_API_USER_TOKEN="LEAKED-PENDING-ROTATION 2e5dd4339ca9"
 
 # Lancer le script de validation
 python scripts/genai-auth/validation_complete_qwen_system.py
@@ -207,7 +207,7 @@ python scripts/genai-auth/validation_complete_qwen_system.py
 
 ```bash
 curl -X GET \
-  -H "Authorization: Bearer ROTATED 2e5dd4339ca9 2026-08-10" \
+  -H "Authorization: Bearer LEAKED-PENDING-ROTATION 2e5dd4339ca9" \
   -H "Content-Type: application/json" \
   http://localhost:8188/system_stats
 ```

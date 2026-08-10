@@ -90,6 +90,11 @@ stopwords = [
     "7a052dd4aeb4",
     "2e5dd4339ca9",
     "de13deaace0c",
+    # Mirror production: the redaction marker ``LEAKED-PENDING-ROTATION``
+    # (22 chars) itself matches the {20,} regex threshold, so it must be a
+    # stopword (substring match against the finding) — same logic as the
+    # production ``regexes = ['''LEAKED-PENDING-ROTATION''']``.
+    "LEAKED-PENDING-ROTATION",
 ]
 """
 
@@ -230,21 +235,21 @@ class TestRuleStaysSilentOn:
     """Verify the rule does NOT fire on placeholder / allowlisted values."""
 
     def test_rotated_sha256_marker_is_allowlisted(self, tmp_scan_dir):
-        # The redaction marker used in #10265. 12 hex chars + "ROTATED" prefix
-        # + ISO date == the stopword entry + the regex allows `ROTATED <sha256>`
+        # The redaction marker used in #10265. 12 hex chars prefixed by
+        # LEAKED-PENDING-ROTATION == the stopword entry; the regex allows the marker
         # because the regex matches on the ``qwen_api_token=`` anchor and the
-        # value length is 33 chars, but the stopword kills the finding.
+        # value length, but the stopword kills the finding.
         (tmp_scan_dir["work"] / "redacted.env").write_text(
-            "QWEN_API_TOKEN=ROTATED 7a052dd4aeb4 2026-08-10\n",
+            "QWEN_API_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4\n",
             encoding="utf-8",
         )
         findings = _run_gitleaks(tmp_scan_dir["work"], tmp_scan_dir["config"])
-        assert len(findings) == 0, f"ROTATED marker should not rougir: {findings}"
+        assert len(findings) == 0, f"LEAKED-PENDING-ROTATION marker should not rougir: {findings}"
 
     def test_all_three_sha256_prefixes_are_allowlisted(self, tmp_scan_dir):
         for sha in ("7a052dd4aeb4", "2e5dd4339ca9", "de13deaace0c"):
             (tmp_scan_dir["work"] / f"{sha}.env").write_text(
-                f"QWEN_API_TOKEN=ROTATED {sha} 2026-08-10\n",
+                f"QWEN_API_TOKEN=LEAKED-PENDING-ROTATION {sha}\n",
                 encoding="utf-8",
             )
         findings = _run_gitleaks(tmp_scan_dir["work"], tmp_scan_dir["config"])
@@ -258,8 +263,8 @@ class TestRuleStaysSilentOn:
         # length, but in the .env.example files they are path-allowlisted. In
         # an arbitrary file outside the path allowlist, they would still
         # rouge. This test guards against that regression by asserting the
-        # opposite: a value that is clearly a placeholder but lacks the
-        # ROTATED marker is *correctly* caught (so the rule has teeth).
+        # opposite: a value that is clearly a placeholder but lacks any
+        # stopword match — it MUST rougir (the rule keeps its discriminating power).
         (tmp_scan_dir["work"] / "placeholder.env").write_text(
             "QWEN_API_TOKEN=NOT_A_REAL_TOKEN_BUT_LONG_ENOUGH_TO_MATCH\n",
             encoding="utf-8",
