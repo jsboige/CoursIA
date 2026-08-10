@@ -132,21 +132,17 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="chore/translation-sync-pending"
-          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
-            echo "Branch $BRANCH already exists on origin; checking it out."
-            git fetch origin "$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-            # Rebase on top of origin/main so T1 sees the freshest set of
-            # changed notebooks. Translation re-render is idempotent -- same
-            # main + same source produces the same output, so rebase-and-retry
-            # is safe.
-            git fetch origin main
-            git rebase origin/main
-          else
-            echo "Branch $BRANCH does not exist on origin yet; creating it from origin/main."
-            git fetch origin main
-            git checkout -b "$BRANCH" origin/main
-          fi
+          git fetch origin main
+          # Reset (not rebase) onto origin/main unconditionally. T1->T4
+          # regenerate the entire derived set on every run, so the previous
+          # bot commit holds no information worth preserving -- rebasing it
+          # instead yields structural add/add conflicts as soon as any human
+          # PR lands a rendered notebook or CSV (see issue #10373: 12 runs
+          # failed 2026-08-10 on add/add for FT-02_en + finetuning.csv).
+          # --force-with-lease is safe here: branch is mono-writer bot-owned
+          # (git-workflow.md allows it on lane-unique feature branches; main
+          # is untouched either way).
+          git checkout -B "$BRANCH" origin/main
           echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
 
       - name: Set up Python
