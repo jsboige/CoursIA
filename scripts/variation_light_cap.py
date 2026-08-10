@@ -183,6 +183,20 @@ def effective_tier(body: str | None, labels: list[str]) -> str | None:
 # keeps EXACTLY the old ceiling of one LIGHT (the small-lane case was never
 # the problem); a lane merging 19 gets six. The floor is what makes this a
 # strict relaxation: no lane is worse off than under the absolute cap.
+#
+# Anti-blanchiment corollary (#10290, 2026-08-10): the 1-LIGHT/lane/day cap
+# that the ratio replaced manufactured duplicate work. The same shape of
+# blindness would attach to any "anti-blanchiment de genre" organ that flags
+# by file-class signature (e.g. "this PR is .ipynb-only + zero code modif +
+# declared MED/notebook-*") without measuring throughput-adjusted signal.
+# The 7-day census (Aug 3-10, see docs/reference/variation-genre-census-
+# 2026-08-10.md) measured markdown-only `.ipynb` PRs at 1.51 % of the merge
+# universe (15/996) -- all 5 heuristically-flagged drift candidates were
+# spot-checked as legitimate MED-declared GFM-table or cost-metadata fixes.
+# An organ that flips the SAME ratio cap into a per-file-class signal would
+# have flagged genuine work for zero genuine blanchiment: same blind-spot,
+# inverted direction. Hence the organ was retired; the census remains the
+# deliverable so the question can be re-asked if the proportion rises.
 LIGHT_RATIO_DIVISOR = 3
 
 
