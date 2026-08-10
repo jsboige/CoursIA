@@ -629,7 +629,10 @@ class TestHumanReport:
         assert "Affected notebooks : 1" in report
         assert "sample.ipynb" in report
         assert "python3" in report
-        assert "FIX:" in report  # the Stop&Repair prescription
+        # #10319: the prescription prefix is now ``FIX (degenerate):`` -- it
+        # distinguishes the blocking degenerate-FIX from the non-blocking
+        # sparse-grid advisory section added by the per-tile detector.
+        assert "FIX (degenerate):" in report  # the Stop&Repair prescription
 
     def test_errored_results_included(self, tmp_path):
         # Build a malformed notebook
