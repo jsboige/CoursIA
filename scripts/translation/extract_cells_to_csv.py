@@ -51,6 +51,13 @@ from check_perimeter import PIVOT_LANG, TARGET_LANGS  # noqa: E402
 COLUMNS = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]
 COLUMNS += [f"text_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
 COLUMNS += [f"hash_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
+# translate_policy (#10326): per-row translation policy declared on the source
+# notebook cell (metadata) and carried through the pipeline. Empty = default
+# (translate if target empty or drifted); ``verbatim`` = never translate (the
+# source FR is the deliverable for every lang, no LLM call). Trailing column
+# pour rester rétro-compatible avec les CSV legacy (DictReader fill missing
+# avec ``""`` via load_existing_csv.setdefault).
+COLUMNS += ["translate_policy"]
 
 
 def normalize(text: str) -> str:
@@ -73,11 +80,40 @@ def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
 
 
+def _read_translate_policy(cell: dict) -> str:
+    """Lit la politique de traduction déclarée dans ``cell.metadata``.
+
+    Convention (#10326, tranche 2) : la politique vit dans ``cell.metadata.translate``
+    du notebook source — pas dans le CSV dérivé — pour survivre aux régénérations
+    T1. Une seule valeur reconnue à ce jour : ``"verbatim"`` (texte source
+    préservé, jamais traduit). Toute autre valeur (clé absente, valeur vide,
+    autre chaîne) = politique par défaut (traduire si cible vide ou driftée).
+
+    Le design accepte délibérément des valeurs inconnues (cf test
+    ``test_extract_unknown_policy_value_falls_back_to_default``) : ajouter une
+    nouvelle politique ne casse pas les anciens extractions. T3 et T4 sont
+    responsables de la sémantique exacte — T1 ne fait que transporter le
+    marqueur.
+    """
+    meta = cell.get("metadata") or {}
+    policy = meta.get("translate")
+    if not isinstance(policy, str):
+        return ""
+    return policy.strip()
+
+
 def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict]:
     """Extrait les cellules d'un notebook en lignes CSV.
 
     Saute les cellules sans id nbformat stable (cell_id vide = non traduisible de
     façon fiable). Les cellules vides sont incluses (leur texte peut être traduit).
+
+    Chaque cellule peut porter une **politique de traduction** déclarée dans
+    ``cell.metadata.translate`` (#10326, tranche 2) — ex. ``"verbatim"`` pour les
+    citations Hugo de ``FT-02-QLoRA-Quantization``. La politique est recopiée
+    dans la colonne CSV ``translate_policy`` et propagée à T3 (qui honore
+    ``verbatim`` court-circuitant l'éligibilité) puis à T4 (qui rend ``text_fr``
+    inchangé pour les cellules verbatim). Défaut : ``""`` = traduire.
     """
     rows = []
     try:
@@ -102,6 +138,7 @@ def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict
         row["cell_type"] = cell_type
         row["src_lang"] = src_lang
         row["src_hash"] = cell_hash(text)
+        row["translate_policy"] = _read_translate_policy(cell)
         # Pivot : on dépose le texte + son hash dans la colonne pivot. À l'extraction
         # initiale (T1) le pivot EST la source, donc hash_{src_lang} == src_hash par
         # construction (c'est intentionnel, pas une invariance à tester). Les vrais
@@ -208,7 +245,17 @@ def update_existing_csv(
             # on garde la première occurrence.
             index[key] = i
 
-    PIVOT_COLS = ("src_lang", "src_hash", "text_fr", "hash_fr", "cell_type")
+    # Champs pivot : toute mutation dans le notebook source DOIT se propager
+    # dans le CSV à l'extraction suivante (sans attendre T3).
+    # ``translate_policy`` (#10326) rejoint le groupe : un auteur qui ajoute
+    # ``metadata.translate = "verbatim"`` dans le notebook veut voir la
+    # politique prendre effet immédiatement, pas rester cachée derrière un
+    # ``""`` legacy. Les colonnes cibles T3 (text_en, hash_en, ...) restent
+    # quant à elles préservées entre deux extractions.
+    PIVOT_COLS = (
+        "src_lang", "src_hash", "text_fr", "hash_fr", "cell_type",
+        "translate_policy",
+    )
 
     # 1) Calculer le diff en PRÉ-update (avant de muter existing_rows).
     pre_updated = 0
