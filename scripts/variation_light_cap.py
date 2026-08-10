@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Detect G-VAR-2 cap-reached: a 2nd+ LIGHT PR merged the same day for a lane.
+"""Detect G-VAR-2 cap-reached: a LIGHT PR merged past the lane's daily budget.
 
-G-VAR-2 (variation-protocol.md) caps the protocol at **one LIGHT PR per lane
-per day, all LIGHT sub-categories confounded** (guard, doc, refs, ... share a
-single budget). It is the only gate of the protocol that is **cross-PR** -- it
+G-VAR-2 (variation-protocol.md) caps the protocol at **max(1, lane grains
+merged today // 3) LIGHT PRs per lane per day, all LIGHT sub-categories
+confounded** (guard, doc, refs, ... share a single budget). The cap is a
+RATIO, not a flat one-per-day: see `light_budget()` below and the rationale
+block above it. It is the only gate of the protocol that is **cross-PR** -- it
 needs to know what the lane has ALREADY merged today -- so until now it was
 counted by hand by the coordinator, who merged a 2nd LIGHT twice in one cycle
 (issue #8964: measured firsthand on the 2026-07-30 wave). This tool makes the

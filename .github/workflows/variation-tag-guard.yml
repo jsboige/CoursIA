@@ -200,8 +200,9 @@ jobs:
           exit 0
 
   # G-VAR-2 est le seul gate du protocole qui ne se decide pas DANS la PR : il
-  # demande de savoir ce que la lane a DEJA merge aujourd'hui (au plus une LIGHT
-  # par lane et par jour, toutes categories LIGHT confondues). Compte a la main
+  # demande de savoir ce que la lane a DEJA merge aujourd'hui (au plus
+  # max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes
+  # categories LIGHT confondues -- un RATIO, pas un plafond plat). Compte a la main
   # par le coordinateur jusqu'ici, qui a merge une 2e LIGHT deux fois en un
   # cycle (#8964). Ce job rend le fait VISIBLE (advisory, exit 0).
   #
@@ -311,9 +312,10 @@ jobs:
             if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
               BODY="${MARK}
           **G-VAR-2 light cap reached** (advisory, non bloquant).
-          La lane \`${LANE}\` a deja merge une LIGHT aujourd'hui (${CB}).
-          G-VAR-2 plafonne a **une LIGHT par lane et par jour, toutes categories LIGHT confondees**
-          (guard, doc, refs, ... partagent un seul budget). La decision de merge reste au coordinateur."
+          La lane \`${LANE}\` a deja consomme son budget LIGHT du jour (${CB}).
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour,
+          toutes categories LIGHT confondues** (guard, doc, refs, ... partagent un seul budget) :
+          c'est un RATIO, pas un plafond plat. La decision de merge reste au coordinateur."
               gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
             fi
             echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
