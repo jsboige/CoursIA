@@ -12,10 +12,23 @@ Three invariants locked, one per direction:
 * **suppression** — each FP entry actually suppresses its target literal.
 * **positive control** — real-shaped keys of the same provider prefix stay
   DETECTED: no allowlist regex/stopword may match them. Includes the JWT HS256
-  real-formed token (kept armed by #10201's choice NOT to allowlist the header),
-  and the **Civitai token** ``c39ba121…34`` — a real committed secret (#10202)
-  whose rotation is tracked by #10205; a future allowlist entry that swallowed it
-  is exactly the disarm this test must catch.
+  real-formed token (kept armed by #10201's choice NOT to allowlist the header)
+  and a bare 32-hex shape (the Civitai/generic-api-key class).
+
+  The positive-control fixtures are **synthetic by construction**: a shape, never
+  a historical value. That is what makes the invariant un-gameable — a synthetic
+  value can never legitimately appear in the allowlist, so a collision is *always*
+  a disarm. Pinning an actual credential here instead couples the control to that
+  credential's lifecycle, and the control then fires on the day the value is
+  legitimately retired (which is precisely what happened, see below).
+
+* **revocation discipline** (``REVOKED_ALLOWLISTED``) — a value may be allowlisted
+  once it is DEAD, and only with its rotation evidence written in
+  ``.gitleaks.toml``. Rotation is the primary remediation (secrets-hygiene rule
+  5); the allowlist entry only silences the corpse in CI. This invariant checks
+  the paperwork, not the value: entry present + rotation documented. A **live**
+  credential swallowed by the allowlist remains caught by the positive control
+  above, which no longer has any exemption to hide behind.
 
 The tests parse ``.gitleaks.toml`` as text and compile the regexes themselves,
 so they run without the gitleaks binary (CI only has gitleaks-action).
@@ -107,14 +120,27 @@ REAL_KEYS = [
     ("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
      + "." + "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkphbmUgRG9lIn0"
      + "." + "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"),
-    # CIVITAI_TOKEN — a REAL committed secret (32-hex), 6 occurrences in archived
-    # docker-configs/docs (#10202). NOT allowlisted by design (rotation tracked
-    # by #10205). A future allowlist entry (regex or stopword) that swallowed it
-    # would disarm the scanner exactly where it caught something real — the
-    # #9888 failure mode. This control catches that regression. Built from
-    # concatenation so the literal never sits contiguously in the test source.
-    "c39ba121" + "e12e5b40ac67a87836431e34",
+    # Bare 32-hex shape (Civitai / generic-api-key class, #10202). SYNTHETIC:
+    # this value has never been a credential anywhere, so it can never acquire a
+    # legitimate reason to sit in the allowlist — any collision is a real disarm.
+    # It replaces the historical Civitai token, which was pinned here until
+    # #10255: once that token was rotated and legitimately allowlisted as a dead
+    # value, the control fired on the *correct* allowlisting instead of on a
+    # disarm. A positive control must outlive the lifecycle of any one secret.
+    "a7f3c91d" + "4e82b56097fd3a1c8b64e250",
 ]
+
+# Values that ARE allowed to sit in the allowlist because they are dead: rotated
+# at the provider, revocation verified firsthand, evidence written next to the
+# entry in .gitleaks.toml. Allowlisting a *live* credential stays forbidden
+# (#9888) — and stays caught, because the positive control above is synthetic and
+# therefore has no exemption. Key = the 8-char prefix (the full literal has no
+# business in this file); value = the evidence required in the toml comment.
+REVOKED_ALLOWLISTED = {
+    "c39ba121": "Civitai token, 6 occurrences in archive dirs (#10202); rotated "
+                "at provider (#10205), revocation verified firsthand (401 on "
+                "GET /api/v1/users/self); allowlisted by #10255 (see #10141).",
+}
 
 
 class TestAllowlistEntriesPresent:
@@ -234,28 +260,63 @@ class TestJWTDetectorArmed:
         )
 
 
-class TestCivitaiTokenStaysDetected:
-    """The Civitai token ``c39ba121e12e5b40ac67a87836431e34`` is a real committed
-    secret (6 occurrences in archived docker-configs/docs, #10202). It is
-    deliberately NOT allowlisted — the fix is ROTATION at the provider (tracked
-    by #10205), not a suppression entry. This test guards that no future
-    allowlist widening (regex or stopword) silently swallows it, which would
-    disarm the scanner exactly where it caught something real."""
+class TestRevocationDiscipline:
+    """A secret may be allowlisted only once it is DEAD, and only with its
+    rotation evidence written beside the entry.
 
-    CIVITAI_TOKEN = "c39ba121" + "e12e5b40ac67a87836431e34"
+    This class replaces ``TestCivitaiTokenStaysDetected``, whose premise —
+    "deliberately NOT allowlisted, the fix is ROTATION (#10205)" — was correct
+    while the token was live and became false the moment the rotation it demanded
+    was actually performed (#10255: 401 verified firsthand). The old test encoded
+    a *temporal* state as a permanent invariant, so completing the remediation it
+    asked for turned it red and blocked every PR touching ``scripts/``.
 
-    def test_not_matched_by_any_regex(self):
-        compiled = _compiled_regexes()
-        hits = [r.pattern for r in compiled if r.search(self.CIVITAI_TOKEN)]
-        assert not hits, (
-            f"allowlist regex(es) match the Civitai token -> scanner disarmed where "
-            f"it caught a real secret (#9888): {hits} (see #10202/#10205)"
-        )
+    What is durable is not "this value stays out" but "nothing enters alive". So
+    the checks below verify the **paperwork** for each retired value, while the
+    positive control (synthetic fixtures) keeps guarding live credentials."""
 
-    def test_not_a_stopword_substring(self):
+    def test_revoked_entries_are_actually_in_the_allowlist(self):
+        """No stale exemption: an entry removed from the toml must lose its row
+        here too, otherwise the dict silently grants cover to nothing."""
         stopwords = _load_allowlist_stopwords()
-        hits = [s for s in stopwords if s in self.CIVITAI_TOKEN]
-        assert not hits, (
-            f"a stopword is a substring of the Civitai token -> scanner disarmed "
-            f"where it caught a real secret: {hits} (see #10202/#10205)"
-        )
+        for prefix in REVOKED_ALLOWLISTED:
+            matches = [s for s in stopwords if s.startswith(prefix)]
+            assert matches, (
+                f"{prefix}... is listed in REVOKED_ALLOWLISTED but is no longer a "
+                f"stopword in .gitleaks.toml -> stale exemption, drop the row"
+            )
+            assert len(matches) == 1, (
+                f"{prefix}... matches {len(matches)} stopwords -> ambiguous "
+                f"exemption, make the prefix discriminating"
+            )
+
+    def test_revoked_entries_document_their_rotation(self):
+        """The entry must carry its evidence in the toml, next to the value.
+
+        Rotation is the remediation (secrets-hygiene rule 5); the allowlist line
+        only silences the dead value in CI. Without the evidence written down, a
+        future reader cannot tell this apart from allowlisting a live secret."""
+        text = GITLEAKS_TOML.read_text(encoding="utf-8")
+        for prefix in REVOKED_ALLOWLISTED:
+            idx = text.find(prefix)
+            assert idx != -1, f"{prefix}... not found in .gitleaks.toml"
+            # The documenting comment block precedes the value; 1200 chars back
+            # covers a verbose block without reaching the previous entry's.
+            window = text[max(0, idx - 1200):idx].lower()
+            assert "revok" in window or "rotat" in window, (
+                f"the .gitleaks.toml entry for {prefix}... does not document a "
+                f"rotation/revocation -> indistinguishable from allowlisting a "
+                f"live credential (#9888)"
+            )
+
+    def test_revoked_values_are_not_positive_controls(self):
+        """A retired value must never also be a positive-control fixture.
+
+        Otherwise an exemption could be laundered into the control set, and the
+        collision that should turn this suite red would read as authorised."""
+        for prefix in REVOKED_ALLOWLISTED:
+            collides = [k[:12] + "..." for k in REAL_KEYS if prefix in k]
+            assert not collides, (
+                f"{prefix}... is both REVOKED_ALLOWLISTED and inside a positive "
+                f"control {collides} -> the control can no longer detect a disarm"
+            )
