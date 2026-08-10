@@ -46,7 +46,14 @@ from detect_blank_figures import (  # noqa: E402
     SKIP_DIRS,
     _OUTPUT_SUFFIX,
     _PNG_SIGNATURE,
+    RICH_DISTINCT_COLORS_PER_TILE,
+    MIN_DISTINCT_COLORS_PER_TILE,
+    PARTIAL_BLANK_RICH_FRAC,
+    PARTIAL_BLANK_UNIFORM_FRAC,
+    MIN_UNIFORM_RUN,
+    _max_uniform_run,
     _classify_image,
+    _classify_partial_blank,
     _decode_image,
     _flattened_pixels,
     _has_real_content,
@@ -57,6 +64,7 @@ from detect_blank_figures import (  # noqa: E402
     _png_dimensions,
     _should_skip,
     main,
+    partial_blank_fraction,
     scan_notebook,
 )
 
@@ -876,3 +884,193 @@ class TestGateWorkflowContract:
             "`|| true` makes rc always 0 and permanently disarms the gate; "
             "use `&& rc=0 || rc=$?`"
         )
+
+# ---------------------------------------------------------------------------
+# 8. TestPartialBlankGrid -- per-tile advisory metric (#10319)
+# ---------------------------------------------------------------------------
+# A grid figure (e.g. a 4x4 panel of subplots) whose tiles are PARTIALLY empty
+# passes all three global metrics (dimensions, payload, whole-image color count):
+# the rich tiles carry enough colors for the whole image. The per-tile advisory
+# catches the intra-image contrast (uniform tiles + rich tiles coexisting).
+# Phase advisory: emitted with level="advisory", does NOT fail --check.
+
+def _grid_png_bytes(rows: int, cols: int, tile: int,
+                    uniform_cells: set[tuple[int, int]],
+                    seed: int = 42) -> bytes:
+    """Build a (cols*tile)x(rows*tile) RGB PNG grid.
+
+    Cells in ``uniform_cells`` are solid beige (1 distinct color); the rest are
+    seeded random noise (>= 100 distinct colors = "rich"). Returns raw PNG bytes.
+    """
+    import io
+    import random
+    from PIL import Image
+    rng = random.Random(seed)
+    w, h = cols * tile, rows * tile
+    im = Image.new("RGB", (w, h))
+    px = im.load()
+    for r in range(rows):
+        for c in range(cols):
+            if (r, c) in uniform_cells:
+                color = (245, 240, 230)  # beige quasi-uniforme
+                for y in range(r * tile, (r + 1) * tile):
+                    for x in range(c * tile, (c + 1) * tile):
+                        px[x, y] = color
+            else:
+                for y in range(r * tile, (r + 1) * tile):
+                    for x in range(c * tile, (c + 1) * tile):
+                        px[x, y] = (rng.randint(0, 255), rng.randint(0, 255), rng.randint(0, 255))
+    buf = io.BytesIO()
+    im.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def _grid_b64(rows: int, cols: int, tile: int,
+              uniform_cells: set[tuple[int, int]]) -> str:
+    return base64.b64encode(_grid_png_bytes(rows, cols, tile, uniform_cells)).decode("ascii")
+
+
+# 4x4 grid, rows 0-1 uniform (8 cells), rows 2-3 rich (8 cells) -- the #10319 case.
+_UNIFORM_HALF = {(r, c) for r in range(2) for c in range(4)}
+PNG_PARTIAL_GRID_B64 = _grid_b64(4, 4, 40, _UNIFORM_HALF)
+# 4x4 grid, fully rich (no uniform cells).
+PNG_FULL_GRID_B64 = _grid_b64(4, 4, 40, set())
+# 4x4 grid, only the 4 CORNERS uniform -- scattered (no full row/col). Models the
+# whitespace-margin false positive (a single matplotlib figure whose 4 corner
+# tiles are pure background). Has the frac contrast but NO contiguity -> the
+# precision gate (#10319 contiguity) must reject it.
+_UNIFORM_CORNERS = {(0, 0), (0, 3), (3, 0), (3, 3)}
+PNG_SCATTERED_CORNERS_B64 = _grid_b64(4, 4, 40, _UNIFORM_CORNERS)
+
+
+class TestPartialBlankGrid:
+    """Per-tile advisory metric (#10319): partially-blank grid detection."""
+
+    def test_partial_blank_fraction_half_empty(self):
+        """The #10319 case: 4x4 grid, half uniform -> uniform_frac=0.5, rich_frac=0.5,
+        and a contiguous block of 2 fully-uniform rows (rows 0-1)."""
+        raw = base64.b64decode(PNG_PARTIAL_GRID_B64)
+        stats = partial_blank_fraction(raw, 4, 4)
+        assert stats is not None
+        assert stats["n_tiles"] == 16
+        assert stats["n_uniform"] == 8
+        assert stats["uniform_frac"] >= PARTIAL_BLANK_UNIFORM_FRAC
+        assert stats["rich_frac"] >= PARTIAL_BLANK_RICH_FRAC
+        assert stats["max_uniform_row_run"] == 2  # rows 0-1 fully uniform (contiguous)
+        assert stats["max_uniform_col_run"] == 0  # no full uniform column
+
+    def test_max_uniform_run_helper(self):
+        """_max_uniform_run returns the longest streak of fully-uniform rows/cols."""
+        # row-major counts: 16 tiles. Make rows 2-3 fully uniform (values < threshold).
+        counts = [200, 200, 200, 200,   # row 0 rich
+                  200, 200, 200, 200,   # row 1 rich
+                  1, 1, 1, 1,           # row 2 uniform
+                  1, 1, 1, 1]           # row 3 uniform
+        assert _max_uniform_run(counts, 4, 4, axis=0) == 2
+        assert _max_uniform_run(counts, 4, 4, axis=1) == 0
+        # column contiguity: cols 0-1 uniform, cols 2-3 rich
+        counts_c = [1, 1, 200, 200] * 4
+        assert _max_uniform_run(counts_c, 4, 4, axis=1) == 2
+        assert _max_uniform_run(counts_c, 4, 4, axis=0) == 0
+
+    def test_scattered_corners_not_flagged(self):
+        """Precision gate (#10319): 4 scattered uniform corner tiles have the frac
+        contrast but NO contiguous full row -> NOT flagged (the FP that would flood
+        a whitespace-margin single figure). This is the regression that keeps the
+        advisory at 0 FP on the existing notebook base."""
+        raw = base64.b64decode(PNG_SCATTERED_CORNERS_B64)
+        stats = partial_blank_fraction(raw, 4, 4)
+        assert stats is not None
+        assert stats["n_uniform"] == 4                      # has the frac (4/16 = 25%)
+        assert stats["uniform_frac"] >= PARTIAL_BLANK_UNIFORM_FRAC
+        assert stats["rich_frac"] >= PARTIAL_BLANK_RICH_FRAC
+        assert stats["max_uniform_row_run"] == 0            # but no contiguous full row
+        assert stats["max_uniform_col_run"] == 0
+        assert _classify_partial_blank("image/png", raw, 4, 4) is None  # precision gate rejects
+
+    def test_full_grid_no_partial_blank(self):
+        """A fully-rich grid has no uniform tiles -> not flagged."""
+        raw = base64.b64decode(PNG_FULL_GRID_B64)
+        stats = partial_blank_fraction(raw, 4, 4)
+        assert stats is not None
+        assert stats["n_uniform"] == 0
+        assert stats["uniform_frac"] < PARTIAL_BLANK_UNIFORM_FRAC
+        assert _classify_partial_blank("image/png", raw, 4, 4) is None
+
+    def test_classify_partial_blank_emits_advisory(self):
+        """The half-empty grid yields an advisory finding with level='advisory'."""
+        raw = base64.b64decode(PNG_PARTIAL_GRID_B64)
+        finding = _classify_partial_blank("image/png", raw, 4, 4)
+        assert finding is not None
+        assert finding["level"] == "advisory"
+        assert any("partial_blank_grid" in r for r in finding["reasons"])
+
+    def test_detect_cell_advisory_on_partial_grid(self):
+        """detect_cell emits an advisory finding for a partial-grid image output,
+        and it carries level='advisory' (distinct from a hard degenerate finding)."""
+        cell = _code("# plot\n")
+        cell["outputs"] = [{
+            "output_type": "display_data",
+            "data": {"image/png": PNG_PARTIAL_GRID_B64},
+            "metadata": {},
+        }]
+        findings = detect_cell(cell, tiles=(4, 4))
+        adv = [f for f in findings if f.get("level") == "advisory"]
+        assert len(adv) == 1
+        assert "partial_blank_grid" in adv[0]["reasons"][0]
+
+    def test_detect_cell_no_advisory_on_full_grid(self):
+        """A fully-rich grid image yields no advisory finding (no false positive)."""
+        cell = _code("# plot\n")
+        cell["outputs"] = [{
+            "output_type": "display_data",
+            "data": {"image/png": PNG_FULL_GRID_B64},
+            "metadata": {},
+        }]
+        findings = detect_cell(cell, tiles=(4, 4))
+        adv = [f for f in findings if f.get("level") == "advisory"]
+        assert adv == []
+
+    def test_advisory_does_not_fail_check(self):
+        """--check on a notebook whose only finding is advisory exits 0 (phase advisory)."""
+        nb = _nb([_code("# plot\n")])
+        nb["cells"][0]["outputs"] = [{
+            "output_type": "display_data",
+            "data": {"image/png": PNG_PARTIAL_GRID_B64},
+            "metadata": {},
+        }]
+        with open(_NB_TMP := Path(__file__).parent / "_tmp_partial_grid.ipynb", "w", encoding="utf-8") as f:
+            json.dump(nb, f)
+        try:
+            rc = main([str(_NB_TMP), "--check", "--root", str(Path(__file__).resolve().parents[3])])
+        finally:
+            _NB_TMP.unlink(missing_ok=True)
+        assert rc == 0, "advisory-only notebook must NOT fail --check (phase advisory)"
+
+    def test_advisory_fails_check_strict(self):
+        """--check --strict exits 1 on an advisory finding (opt-in hardening)."""
+        nb = _nb([_code("# plot\n")])
+        nb["cells"][0]["outputs"] = [{
+            "output_type": "display_data",
+            "data": {"image/png": PNG_PARTIAL_GRID_B64},
+            "metadata": {},
+        }]
+        with open(_NB_TMP := Path(__file__).parent / "_tmp_partial_grid_strict.ipynb", "w", encoding="utf-8") as f:
+            json.dump(nb, f)
+        try:
+            rc = main([str(_NB_TMP), "--check", "--strict", "--root", str(Path(__file__).resolve().parents[3])])
+        finally:
+            _NB_TMP.unlink(missing_ok=True)
+        assert rc == 1, "--strict must fail --check on advisory findings"
+
+    def test_no_tiles_disables_advisory(self):
+        """tiles=None (or --tiles off) preserves the pre-#10319 behavior: no advisory."""
+        cell = _code("# plot\n")
+        cell["outputs"] = [{
+            "output_type": "display_data",
+            "data": {"image/png": PNG_PARTIAL_GRID_B64},
+            "metadata": {},
+        }]
+        findings = detect_cell(cell, tiles=None)
+        adv = [f for f in findings if f.get("level") == "advisory"]
+        assert adv == [], "tiles=None must not run the per-tile advisory"

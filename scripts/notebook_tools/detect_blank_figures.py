@@ -98,6 +98,28 @@ MIN_BYTES = 1024    # o  : un PNG decode < 1 Ko ne porte pas de vraie figure
 MIN_DISTINCT_COLORS = 4  # nb de couleurs RGB distinctes en dessous duquel une
                          # petite image est consideree sans contenu reel
 
+# Metrique per-tile advisory (#10319) : une figure-grille dont une fraction des
+# tuiles est quasi-uniforme (vide/blanc) tandis que d'autres sont riches (vrai
+# contenu) est une "grille partiellement vide" que les trois metriques globales
+# (dimensions, payload, couleurs de toute l'image) ne peuvent pas voir -- le
+# contenu des tuiles pleines dilue le vide des autres dans l'agregat. Cas revele
+# par 02-7 CogVideoX : grille 4x4 dont 2 rangees sur 4 etaient vides (pomme
+# absente), 955 Ko, passee au vert par les metriques globales. Phase advisory
+# (label) : signale sans bloquer --check ; le durcissement vient apres mesure
+# du taux de faux positifs sur les assets existants.
+MIN_DISTINCT_COLORS_PER_TILE = 16    # tuile "uniforme" si < 16 couleurs RGB distinctes
+RICH_DISTINCT_COLORS_PER_TILE = 100  # tuile "riche" si >= 100 couleurs (vrai contenu)
+PARTIAL_BLANK_UNIFORM_FRAC = 0.25    # >= 25 % de tuiles uniformes ...
+PARTIAL_BLANK_RICH_FRAC = 0.25       # ... ET >= 25 % de tuiles riches = contraste intra-image
+MIN_UNIFORM_RUN = 2                  # >= 2 rangees (ou colonnes) completes contigues de
+                                      # tuiles uniformes : la signature d'un BLOC de panneaux
+                                      # vides (rangees de subplots absents). Discrimine le
+                                      # vrai defaut (panneaux contigus) des marges blanches
+                                      # d'une figure simple (tuiles uniformes eparpillees aux
+                                      # coins) -> 0 FP sur 981 notebooks (scan #10319).
+DEFAULT_TILES = (4, 4)               # grille par defaut (lignes, colonnes)
+_TILE_SAMPLE_PX = 64                 # sous-echantillonnage des tuiles pour le denombrement
+
 _IMAGE_MIMES = ("image/png", "image/jpeg")
 _PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
@@ -174,6 +196,130 @@ def _has_real_content(raw: bytes, min_colors: int = MIN_DISTINCT_COLORS) -> bool
         return None
 
 
+def _tile_distinct_colors(im, rows: int, cols: int) -> list[int]:
+    """Return the distinct-RGB-color count of each tile in a rows x cols grid.
+
+    Tiles larger than _TILE_SAMPLE_PX on either side are downsampled before
+    counting, bounding the work on big figures. Downsampling preserves the
+    uniform/rich distinction (a blank tile stays ~1 color, a content tile stays
+    many) while capping per-tile cost at _TILE_SAMPLE_PX**2 pixels.
+    """
+    from PIL import Image  # noqa: F401  (resize available on the crop instance)
+    w, h = im.size
+    tw, th = w // cols, h // rows
+    counts = []
+    for r in range(rows):
+        for c in range(cols):
+            tile = im.crop((c * tw, r * th, (c + 1) * tw, (r + 1) * th))
+            if tile.size[0] > _TILE_SAMPLE_PX or tile.size[1] > _TILE_SAMPLE_PX:
+                tile = tile.resize((_TILE_SAMPLE_PX, _TILE_SAMPLE_PX))
+            counts.append(len(set(_flattened_pixels(tile))))
+    return counts
+
+
+def _max_uniform_run(counts: list[int], rows: int, cols: int, axis: int) -> int:
+    """Longest run of fully-uniform tiles along ``axis`` (0=rows, 1=cols).
+
+    A "fully-uniform row" = every tile in that row is below
+    MIN_DISTINCT_COLORS_PER_TILE. Returns the longest streak of such rows
+    (resp. columns) -- 0 if none. This is the contiguity signal that separates
+    a block of blank subplot panels (contiguous) from the scattered uniform
+    tiles of a single figure's whitespace margins.
+    """
+    best = cur = 0
+    outer, inner = (rows, cols) if axis == 0 else (cols, rows)
+    for o in range(outer):
+        full = True
+        for i in range(inner):
+            idx = o * inner + i if axis == 0 else i * outer + o
+            if counts[idx] >= MIN_DISTINCT_COLORS_PER_TILE:
+                full = False
+                break
+        if full:
+            cur += 1
+            best = max(best, cur)
+        else:
+            cur = 0
+    return best
+
+
+def partial_blank_fraction(raw: bytes, rows: int, cols: int) -> dict | None:
+    """Per-tile uniform/rich fractions + contiguity for a grid figure, or None.
+
+    Detects a *partially blank* grid (#10319): a figure where a significant
+    fraction of tiles is quasi-uniform (blank/near-blank) while others are rich.
+    The signal is the intra-image contrast -- both uniform AND rich tiles must be
+    present. A fully blank figure (caught by the global metrics) and a fully
+    filled one do not qualify.
+
+    Returns ``{uniform_frac, rich_frac, n_uniform, n_rich, n_tiles,
+    max_uniform_row_run, max_uniform_col_run}`` or None if the image cannot be
+    decoded or is too small to tile meaningfully (< 8 px per tile side).
+    """
+    try:
+        from PIL import Image
+        import io
+        im = Image.open(io.BytesIO(raw)).convert("RGB")
+    except Exception:
+        return None
+    w, h = im.size
+    if w < cols * 8 or h < rows * 8:
+        return None
+    counts = _tile_distinct_colors(im, rows, cols)
+    n_tiles = len(counts)
+    n_uniform = sum(1 for c in counts if c < MIN_DISTINCT_COLORS_PER_TILE)
+    n_rich = sum(1 for c in counts if c >= RICH_DISTINCT_COLORS_PER_TILE)
+    return {
+        "uniform_frac": n_uniform / n_tiles,
+        "rich_frac": n_rich / n_tiles,
+        "n_uniform": n_uniform,
+        "n_rich": n_rich,
+        "n_tiles": n_tiles,
+        "max_uniform_row_run": _max_uniform_run(counts, rows, cols, 0),
+        "max_uniform_col_run": _max_uniform_run(counts, rows, cols, 1),
+    }
+
+
+def _classify_partial_blank(mime: str, raw: bytes, rows: int, cols: int) -> dict | None:
+    """Return an *advisory* finding if the image is a partially-blank grid.
+
+    Advisory findings carry ``"level": "advisory"`` and do NOT fail ``--check``
+    (phase advisory, #10319). They are reported separately from hard degenerate
+    findings so the exit code of existing CI gates is unchanged.
+
+    Three conjuncts must hold: (1) enough uniform tiles, (2) enough rich tiles
+    (intra-image contrast), and (3) a contiguous block of >= MIN_UNIFORM_RUN
+    fully-uniform rows or columns -- the signature of missing subplot panels.
+    Conjunct (3) is the precision gate: it rejects single figures whose
+    whitespace margins scatter uniform tiles at the corners (0 FP on 981
+    notebooks, scan #10319) while keeping the real defect (>= 2 blank rows of a
+    subplot grid).
+    """
+    stats = partial_blank_fraction(raw, rows, cols)
+    if stats is None:
+        return None
+    has_contrast = (stats["uniform_frac"] >= PARTIAL_BLANK_UNIFORM_FRAC
+                    and stats["rich_frac"] >= PARTIAL_BLANK_RICH_FRAC)
+    has_block = (stats["max_uniform_row_run"] >= MIN_UNIFORM_RUN
+                 or stats["max_uniform_col_run"] >= MIN_UNIFORM_RUN)
+    if has_contrast and has_block:
+        dims = _png_dimensions(raw) if mime == "image/png" else None
+        return {
+            "mime": mime,
+            "bytes": len(raw),
+            "dimensions": list(dims) if dims else None,
+            "reasons": [
+                f"partial_blank_grid("
+                f"uniform={stats['n_uniform']}/{stats['n_tiles']},"
+                f"rich={stats['n_rich']}/{stats['n_tiles']},"
+                f"run={max(stats['max_uniform_row_run'], stats['max_uniform_col_run'])},"
+                f"tiles={rows}x{cols})"
+            ],
+            "level": "advisory",
+        }
+    return None
+
+
 def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict | None:
     """Return a finding dict if the image is degenerate, else None."""
     reasons = []
@@ -203,8 +349,14 @@ def _classify_image(mime: str, raw: bytes, min_dim: int, min_bytes: int) -> dict
     }
 
 
-def detect_cell(cell: dict, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES) -> list[dict]:
-    """Return findings (one per degenerate image output) for a code cell."""
+def detect_cell(cell: dict, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES,
+                tiles: tuple[int, int] | None = None) -> list[dict]:
+    """Return findings (one per degenerate OR advisory image output) for a code cell.
+
+    Advisory findings (#10319, ``level == "advisory"``) flag partially-blank grids
+    and are only emitted for images that passed the hard degenerate checks (a hard
+    finding already covers a fully-blank image). They do NOT fail ``--check``.
+    """
     findings = []
     for oi, out in enumerate(_cell_outputs(cell)):
         data = out.get("data", {}) if isinstance(out, dict) else {}
@@ -217,10 +369,16 @@ def detect_cell(cell: dict, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES) 
             finding = _classify_image(mime, raw, min_dim, min_bytes)
             if finding:
                 findings.append({"output_index": oi, **finding})
+                continue  # hard finding couvre deja cette image
+            if tiles is not None:
+                adv = _classify_partial_blank(mime, raw, *tiles)
+                if adv:
+                    findings.append({"output_index": oi, **adv})
     return findings
 
 
-def scan_notebook(path: Path, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES) -> dict:
+def scan_notebook(path: Path, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES,
+                  tiles: tuple[int, int] | None = None) -> dict:
     """Return a result dict for one notebook: path, hits[], error."""
     try:
         with open(path, encoding="utf-8") as f:
@@ -232,7 +390,7 @@ def scan_notebook(path: Path, min_dim: int = MIN_DIM, min_bytes: int = MIN_BYTES
     for ci, cell in enumerate(nb.get("cells", [])):
         if cell.get("cell_type") != "code":
             continue
-        for finding in detect_cell(cell, min_dim, min_bytes):
+        for finding in detect_cell(cell, min_dim, min_bytes, tiles):
             hits.append({"cell_index": ci, **finding})
     return {"path": str(path), "kernel": _kernel(nb), "hits": hits, "error": None}
 
@@ -261,12 +419,14 @@ def _iter_notebooks(root: Path, family: str | None):
 
 
 def _human_report(results: list[dict]) -> str:
-    total_hits = sum(len(r["hits"]) for r in results)
+    total_hits = sum(len([h for h in r["hits"] if h.get("level") != "advisory"]) for r in results)
+    total_adv = sum(len([h for h in r["hits"] if h.get("level") == "advisory"]) for r in results)
     affected = [r for r in results if r["hits"]]
     errored = [r for r in results if r.get("error")]
     lines = [
         f"Notebooks scanned  : {len(results)}",
         f"Degenerate figures : {total_hits}",
+        f"Advisory (partial) : {total_adv}",
         f"Affected notebooks : {len(affected)}",
         "",
     ]
@@ -281,13 +441,20 @@ def _human_report(results: list[dict]) -> str:
         lines.append(f"## {short}  [{r['kernel']}]")
         for h in r["hits"]:
             reasons = ", ".join(h["reasons"])
-            lines.append(f"  - cell [{h['cell_index']}] output[{h['output_index']}] {h['mime']}: {reasons}")
+            tag = "  [advisory]" if h.get("level") == "advisory" else ""
+            lines.append(f"  - cell [{h['cell_index']}] output[{h['output_index']}] {h['mime']}: {reasons}{tag}")
         lines.append("")
     lines.append(
-        "FIX: re-execute the cell in the real environment (QC Cloud research for "
-        "QuantBook, local kernel for matplotlib) and commit the real figure -- "
-        "Stop&Repair, never scrub/delete to hide (secrets-hygiene rule 6)."
+        "FIX: re-execute the cell in the real environment (QC Cloud "
+        "research for QuantBook, local kernel for matplotlib) and commit the real "
+        "figure -- Stop&Repair, never scrub/delete to hide (secrets-hygiene rule 6)."
     )
+    if total_adv:
+        lines.append(
+            "NOTE (advisory, #10319): a partially-blank grid is signalled, not blocked. "
+            "Inspect by eye (a lane that sees) before acting -- it may be a legitimate "
+            "sparse layout or a real missing-content defect."
+        )
     return "\n".join(lines)
 
 
@@ -303,7 +470,24 @@ def main(argv=None) -> int:
     parser.add_argument("--check", action="store_true", help="Exit 1 if any degenerate figure (CI-ready)")
     parser.add_argument("--min-dim", type=int, default=MIN_DIM, help=f"Min figure side px (default {MIN_DIM})")
     parser.add_argument("--min-bytes", type=int, default=MIN_BYTES, help=f"Min decoded bytes (default {MIN_BYTES})")
+    parser.add_argument("--tiles", default="4x4",
+                        help="Per-tile advisory grid RxC for partially-blank detection "
+                        f"(#10319, default {DEFAULT_TILES[0]}x{DEFAULT_TILES[1]}); "
+                        "pass 'off' to disable.")
+    parser.add_argument("--strict", action="store_true",
+                        help="Also exit 1 on advisory findings (default: advisories do not fail --check)")
     args = parser.parse_args(argv)
+
+    tiles = None
+    if args.tiles and args.tiles.lower() != "off":
+        try:
+            r_s, c_s = args.tiles.lower().split("x")
+            tiles = (int(r_s), int(c_s))
+            if tiles[0] < 1 or tiles[1] < 1:
+                raise ValueError
+        except ValueError:
+            print(f"error: --tiles expects RxC (e.g. 4x4), got {args.tiles!r}", file=sys.stderr)
+            return 2
 
     root = Path(args.root).resolve()
     if args.notebook:
@@ -319,16 +503,25 @@ def main(argv=None) -> int:
             print(f"error: family not found: {args.family}", file=sys.stderr)
             return 2
 
-    results = [scan_notebook(p, args.min_dim, args.min_bytes) for p in paths]
-    total_hits = sum(len(r["hits"]) for r in results)
+    results = [scan_notebook(p, args.min_dim, args.min_bytes, tiles) for p in paths]
+    # Hard hits only for --check exit code (advisories do not block, unless --strict).
+    hard_hits = sum(len([h for h in r["hits"] if h.get("level") != "advisory"]) for r in results)
+    adv_hits = sum(len([h for h in r["hits"] if h.get("level") == "advisory"]) for r in results)
 
     if args.json:
-        payload = {"notebooks_scanned": len(results), "total_hits": total_hits, "results": results}
+        payload = {
+            "notebooks_scanned": len(results),
+            "total_hits": hard_hits,
+            "advisory_hits": adv_hits,
+            "results": results,
+        }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(_human_report(results))
 
-    if args.check and total_hits > 0:
+    if args.check and hard_hits > 0:
+        return 1
+    if args.check and args.strict and adv_hits > 0:
         return 1
     return 0
 
