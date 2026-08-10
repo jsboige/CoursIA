@@ -356,13 +356,19 @@ def test_main_returns_0_when_all_green(tmp_path, monkeypatch, capsys):
     (repo / "scripts" / "a.py").write_text("# stub\n")
     workflow = repo / ".github" / "workflows" / "secret-scan.yml"
     workflow.parent.mkdir(parents=True)
+    # Gate 8 (#10141) forbids the gitleaks/gitleaks-action@v2 wrapper; this
+    # fixture matches the post-#10141 shape (env at job level + a docker run:
+    # step on a tagged image) so every gate, including gate 8, is green.
     workflow.write_text(
         "jobs:\n"
         "  gitleaks:\n"
+        "    env:\n"
+        "      GITLEAKS_VERSION: 9.9.9\n"
         "    steps:\n"
-        "      - uses: gitleaks/gitleaks-action@v2\n"
-        "        env:\n"
-        "          GITLEAKS_VERSION: 9.9.9\n",
+        "      - uses: actions/checkout@v4\n"
+        "      - run: |\n"
+        "          docker pull \"zricethezav/gitleaks:v${GITLEAKS_VERSION}\"\n"
+        "          docker run --rm \"zricethezav/gitleaks:v${GITLEAKS_VERSION}\" detect\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(mod, "REPO_ROOT", repo)
@@ -506,4 +512,91 @@ def test_parity_holds_on_the_real_repo_files(monkeypatch):
         f"gitleaks version drift: hook pins v{hook_v}, CI pins {ci_v}. "
         "These must be bumped together -- they disagree on real content "
         "(see #10139), so a green pre-commit would stop predicting CI."
+    )
+
+
+# --- Gate 8: gitleaks wrapper not used (issue #10141) ------------------------
+#
+# The structural fix of #10141 is removing `gitleaks/gitleaks-action@v2` and
+# invoking the docker image directly. Gate 8 locks that fix: a future PR that
+# re-introduces the wrapper would re-create the implicit third-party pin
+# (src/index.js:138 falls back to "8.24.3") and break parity with the hook.
+
+def _wrapper_row(mod, tmp_path, monkeypatch, secret_scan_text: str):
+    """Run _run_checks on a fixture secret-scan.yml and return the gate 8 row."""
+    repo = tmp_path / "fake_repo_wrapper"
+    repo.mkdir()
+    workflow = repo / "secret-scan.yml"
+    workflow.write_text(secret_scan_text, encoding="utf-8")
+    monkeypatch.setattr(mod, "SECRET_SCAN_PATH", workflow)
+    rows = [r for r in mod._run_checks() if r[0] == "gitleaks wrapper not used"]
+    assert rows, "gate 'gitleaks wrapper not used' absent from _run_checks()"
+    return rows[0]
+
+
+_WRAPPER_USED = """\
+name: Secret Scan
+on: [push]
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: gitleaks-action
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+"""
+
+_WRAPPER_REMOVED = """\
+name: Secret Scan
+on: [push]
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.24.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gitleaks (pinned docker image)
+        run: |
+          docker pull "zricethezav/gitleaks:v${GITLEAKS_VERSION}"
+          docker run --rm -v "${{ github.workspace }}:/src" \\
+            "zricethezav/gitleaks:v${GITLEAKS_VERSION}" detect \\
+            --source . --config .gitleaks.toml --exit-code 1
+"""
+
+
+def test_wrapper_used_ko(tmp_path, monkeypatch):
+    """Re-introduction of gitleaks/gitleaks-action@v2 is a regression.
+
+    The wrapper's tag is the GitHub Action version, not the gitleaks binary
+    version; without an explicit GITLEAKS_VERSION consumer, the binary
+    defaults to "8.24.3" hard-coded in the action's own source (src/index.js),
+    i.e. an implicit third-party pin revisable by any @v2 release.
+    """
+    mod = _load(CHECK_HOOKS_PARITY)
+    gate, status, detail = _wrapper_row(mod, tmp_path, monkeypatch, _WRAPPER_USED)
+    assert status == "KO", f"{gate}: {detail}"
+    assert "gitleaks-action@v2" in detail, detail
+
+
+def test_wrapper_removed_ok(tmp_path, monkeypatch):
+    """Direct docker invocation (the #10141 pattern) is what gate 8 protects."""
+    mod = _load(CHECK_HOOKS_PARITY)
+    gate, status, detail = _wrapper_row(mod, tmp_path, monkeypatch, _WRAPPER_REMOVED)
+    assert status == "OK", f"{gate}: {detail}"
+
+
+def test_wrapper_holds_on_the_real_repo_files(monkeypatch):
+    """The live gate: secret-scan.yml in this repo must NOT use the wrapper."""
+    mod = _load(CHECK_HOOKS_PARITY)
+    if not mod.SECRET_SCAN_PATH.exists():
+        import pytest
+        pytest.skip("real secret-scan.yml not present in this environment")
+    assert not mod._ci_uses_third_party_gitleaks_action(), (
+        f"{mod.SECRET_SCAN_PATH} invokes gitleaks/gitleaks-action@v2 -- "
+        "the structural fix of #10141 (direct docker image via run: step) "
+        "has been reverted. Re-introducing the wrapper re-creates the "
+        "implicit third-party pin that gate 8 was added to lock down."
     )
