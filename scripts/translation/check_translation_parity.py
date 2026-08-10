@@ -330,6 +330,11 @@ def check_invariants(
 
         # Invariant 3 : FR_CONTAM — markdown cell text identical to source FR.
         # Advisory by default; promoted to blocking under --strict-fr.
+        # Exception (#10298 Option A): when the SOURCE cell is itself native
+        # English, trd==src is a legitimate same-language pass-through (the
+        # cell needed no translation), not French contamination. Without this,
+        # deep_research notebooks whose FR source was copy-pasted from an
+        # English paper are false-flagged under --strict-fr.
         if (
             src.cell_type == "markdown"
             and trd.cell_type == "markdown"
@@ -338,6 +343,7 @@ def check_invariants(
             if (
                 _normalize(src.source) == _normalize(trd.source)
                 and len(_normalize(src.source)) >= FR_CONTAM_MIN_LEN
+                and not _is_native_english(src.source)
             ):
                 anomalies.append(
                     Anomaly(
@@ -358,6 +364,7 @@ def check_invariants(
             if (
                 _normalize(src.source) == _normalize(trd.source)
                 and len(_normalize(src.source)) >= FR_CONTAM_MIN_LEN
+                and not _is_native_english(src.source)
             ):
                 anomalies.append(
                     Anomaly(
@@ -378,6 +385,49 @@ def _normalize(text: str) -> str:
     """Meme garde que check_translation_sync.normalize — anti faux-drift cosmétique."""
     lines = [line.rstrip() for line in text.splitlines()]
     return "\n".join(lines).strip("\n")
+
+
+# Caractères signalant du prose français (accents, cédille, ligatures) par
+# opposition à de l'anglais ASCII. Utilisé par ``_is_native_english`` (#10298).
+_FRENCH_DIACRITIC_CHARS = set(
+    "àâäçéèêëîïôöùûüÿœæÀÂÄÇÉÈÊËÎÏÔÖÙÛÜŸŒÆñÑ"
+)
+
+# Longueur minimale (post-normalisation) pour qu'une cellule soit candidate au
+# whitelist ``_is_native_english``. Les cellules courtes (« ## Introduction »)
+# sont ambiguës : un header français sans diacritiques ne doit pas être
+# silencieusement whitelisté. Les cas visés (#10298) sont du prose de recherche
+# substantielle (600-800 chars).
+_NATIVE_EN_MIN_LEN = 40
+
+
+def _is_native_english(source: str) -> bool:
+    """Heuristique : la source markdown est-elle déjà en anglais ?
+
+    Une cellule traduite dont la **source** (FR) est elle-même en anglais, et
+    dont le rendu égal la source, n'est **pas** une contamination française —
+    c'est un pass-through légitime (la cellule n'avait rien à traduire). Ceci
+    attrape les notebooks deep_research dont la source FR a été copiée d'un
+    papier de recherche anglophone (#10298).
+
+    Heuristique (#10298 Option A) : **>80 % de caractères ASCII imprimables** +
+    **<5 % de diacritiques français**, sur une cellule assez longue (≥ 40 chars
+    normalisés) pour que le ratio soit significatif. Les cellules courtes
+    retombent dans le chemin FR_CONTAM normal (un header ambigu ne se whiteliste
+    pas silencieusement).
+    """
+    norm = _normalize(source)
+    if len(norm) < _NATIVE_EN_MIN_LEN:
+        return False
+    non_ws = [c for c in norm if not c.isspace()]
+    if not non_ws:
+        return False
+    ascii_printable = sum(1 for c in non_ws if 0x20 <= ord(c) <= 0x7E)
+    alpha = sum(1 for c in non_ws if c.isalpha())
+    diacritics = sum(1 for c in non_ws if c in _FRENCH_DIACRITIC_CHARS)
+    ascii_ratio = ascii_printable / len(non_ws)
+    diacritic_ratio = (diacritics / alpha) if alpha else 0.0
+    return ascii_ratio > 0.80 and diacritic_ratio < 0.05
 
 
 def _sha(text: str) -> str:
