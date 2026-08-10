@@ -102,14 +102,15 @@ stopwords = [
     "hf_fixtureABCDEF1234567890", # test fixture (HF-token-shaped), same test file
     "val2=with=equals",           # parser test fixture (value with embedded '='), test_notebook_tools_pure.py
     "ghp_IMfYN5...NCsd",          # redacted GitHub-token example (the `...` is literal), symbolicai-lean translation CSV
+    # --- #10141 revoked Civitai token (allowlist for scanner hygiene) ---
+    # c39ba121e12e5b40ac67a87836431e34 = CIVITAI_TOKEN, 6 occurrences in archive dirs
+    # (docker-configurations/_archive-20251125/, docs/archive/suivis/genai-image/phase-30-*/,
+    # scripts/genai-stack/_archive/). Rotation performed at Civitai (user action 2026-08);
+    # revoked confirmed firsthand: GET /api/v1/users/self with this token -> 401 Unauthorized
+    # (same as a fake token; a live key returns 200). Allowlister une valeur REVOQUEE est de
+    # l'hygiene de scanner (secrets-hygiene rule 5: rotation is the PRIMARY remediation and is
+    # DONE; this entry only silences the dead value in CI). NEVER allowlist a live credential
+    # (#9888) — this entry is legitimate precisely because the value is dead. The 6 archive
+    # files are redacted in a SEPARATE PR (replace with ROTATED placeholder). See #10141.
+    "c39ba121e12e5b40ac67a87836431e34",
 ]
-
-# NOTE (#10143) — INTENTIONALLY NOT ALLOWLISTED:
-#   c39ba121e12e5b40ac67a87836431e34  (CIVITAI_TOKEN, 6 occurrences)
-# Read at source: docker-configurations/_archive-20251125/docker-compose-no-auth.yml,
-# scripts/genai-stack/_archive/utils/reconstruct_env.py (default_config), + 3 archived
-# genai-image reports. Sits next to `HF_TOKEN=HF_TOKEN_REDACTED` (redacted) while this
-# value is NOT redacted, and is absent from .secrets/master.env — consistent with a REAL
-# committed token, not a fixture. Suppressing it would disarm the scanner exactly where
-# it caught something real. Left visible on purpose: if confirmed real, the fix is
-# ROTATION at Civitai (secrets-hygiene rule 5), not an allowlist entry.
