@@ -6,6 +6,7 @@
 |---------|--------|------|-------------|
 | **Qwen Image Edit** | qwen_image_edit_2509 | ~29GB | Edition d'images avec prompts multimodaux |
 | **Z-Image/Lumina** | Lumina-Next-SFT | ~10GB | Generation text-to-image haute qualite |
+| **MiniMax H3 (Hailuo 3.0)** | MiniMax-H3 (open-weights) | ~24+ GB | **VIDEO omni-modale + audio stereo natif (UE exclue par licence)** — voir [Architecture MiniMax H3](#architecture-minimax-h3-hailuo-30--video-avec-audio-natif) |
 
 ## Architecture Qwen (Phase 29)
 
@@ -62,6 +63,72 @@ SaveImage
 - `max_sequence_length`: 256
 
 **Note technique (Janvier 2025)** : Le node utilise `LuminaPipeline` (diffusers 0.34+), ancien nom `LuminaText2ImgPipeline` obsolete.
+
+## Architecture MiniMax H3 (Hailuo 3.0) — VIDEO avec audio natif
+
+**Statut : INTRINSIC pour l'UE (Tâche 2 #10244).** Le modele est open-weights et techniquement auto-hebergeable (ComfyUI workflows publies sur `ai-models-lab/minimax-h3`), mais la licence *MiniMax H3 Community License* (datee 2 aout 2026, deposee sur HuggingFace `MiniMaxAI/MiniMax-H3`) **exclut explicitement l'usage, l'hebergement et l'affichage des Outputs sur le territoire de l'Union Europeenne** (cf. Art. I.3 *Applicable Territory* et Art. I.5 *Excluded Territories*). Ce bloc documente donc l'architecture **a titre de reference** — pour informer la decision de deploiement — et **non** pour inviter au deploiement local.
+
+> **Verdict SOTA pour notre contexte (France / UE, depot public, ecoles partenaires) : INTRINSIC.** La voie pedagogiquement equivalente pour « video + audio natif synchronise » en UE est **LTX-2** (`02-5-LTX2-Audiovisual`, licence permissive, executable). Le notebook `02-6-MiniMax-H3-Architecture-Licensing` de la serie Video enseigne l'architecture et le raisonnement de conformite (verificateur de juridiction, matrice de decision avec Sora et LTX-2).
+
+### Specifications du modele (verifiees firsthand, source officielle minimax.io + GitHub `MiniMax-AI/MiniMax-H3` + HuggingFace)
+
+| Caracteristique | Valeur |
+|---|---|
+| Modalites d'entree | **Omni-modale unifiee** : texte, image, video, audio |
+| Sortie | Video + **audio stereo natif** (32 kHz, 11 langues) |
+| Resolution | jusqu'a **2K** |
+| Duree | clips de **5 a 15 s** |
+| Fps | 24 fps |
+| Modes de generation | text-to-video · image-to-video · first+last frame · omni-reference (entrees mixtes) |
+| Classement | **#1 Artificial Analysis video editing** au lancement (Elo 1130) |
+| VRAM (selon documentation, execution reelle hors UE) | ~24 GB+ (quantization fp8 / GGUF Q4 envisageable) |
+| Workflows ComfyUI | hub communautaire `ai-models-lab/minimax-h3` (non deploye ici) |
+
+### Architecture du pipeline (telle que publiee par la communaute ComfyUI ; **non deployee sur le cluster**)
+
+```
+MiniMaxH3Loader (checkpoint MultiModal, fp8 ou GGUF Q4)
+    |
+CLIPLoader (H3 text-encoder, ~7B)
+    |
+OmniModalConditioning (text + image + audio refs)
+    |
+MiniMaxH3UNET (denoising + audio decoder couple)
+    |
+AudioVAEDecode (32 kHz stereo, 11 langues)
+    |
+VaeDecode (frames 2K, 24 fps, 5-15 s)
+    |
+SaveVideo + SaveAudio (synchronisation native)
+```
+
+**Points critiques** (selon documentation communautaire, **non valides firsthand** sur le cluster) :
+- **VAE multi-modal** (pas SDXL standard) — couples video frames + audio waveform
+- **CFG 1.0 recommande** pour eviter la degenerescence audio (semblable a Qwen Image Edit)
+- **Scheduler beta** recommande pour la convergence des clips longs
+- **Omni-reference** : permet d'injecter des refs image+audio simultanement (capacite distinctive vs Wan/SVD)
+
+### Comparaison synthetique avec les modeles Video de la serie
+
+| Modele | Format | Audio natif | UE-ok | Open-weights | Notebook |
+|---|---|---|---|---|---|
+| HunyuanVideo | text-to-video | non | oui | oui | 02-1 (~18 GB VRAM) |
+| LTX-Video | text-to-video | non | oui | oui | 02-2 (~8 GB VRAM) |
+| Wan 2.1/2.2 | text-to-video | non | oui | oui | 02-3 (~10 GB VRAM) |
+| SVD | image-to-video | non | oui | oui | 02-4 (~10 GB VRAM) |
+| **LTX-2 (Lightricks 22B)** | text-to-video | **OUI (stereo)** | **oui** | oui | 02-5 (~16-24 GB VRAM) |
+| **MiniMax H3** | omni-modal | **OUI (stereo 11 langues)** | **NON (UE exclue)** | oui (licence geo-restreinte) | 02-6 (descriptif, INTRINSIC) |
+| OpenAI Sora 2 | text-to-video | non | oui (API) | non (API fermee) | 04-3 |
+
+### Etat reversible — ce qui changerait la decision
+
+Le verdict INTRINSIC pour notre contexte n'est pas un mur infranchissable ; il est conditionne a la licence. Trois evenements le feraient basculer :
+
+1. **MiniMax deplace l'Excluded Territory** (ex. retire l'UE de la liste). Surveillance : `MiniMaxAI/MiniMax-H3` releases / `minimax.io/news` (cf. notebook 02-6 §5).
+2. **Licence commerciale UE obtenue** (Art. II dernier § : *« you are welcome to contact us about obtaining a license »*). Demarche *provider-side* dependant de MiniMax.
+3. **Fork communautaire re-licencie** sous licence permissive (hypothese, aucun signal actuel a 2026-08-10).
+
+En attendant, le notebook 02-6 evoluera vers une execution locale reelle des qu'un de ces evenements se materialise — l'architecture ci-dessus est le blueprint ComfyUI a deployer le moment venu.
 
 ## Approches abandonnees
 
@@ -141,8 +208,15 @@ python scripts/genai-stack/genai.py auth sync              # Synchroniser tokens
 | Video/02-2 | LTX-Video | GPU ~8 GB |
 | Video/02-3 | Wan 2.1/2.2 | GPU ~10 GB |
 | Video/02-4 | SVD | GPU ~10 GB |
+| Video/02-5 | LTX-2 (Lightricks 22B) | GPU ~16-24 GB (fp8-cast / GGUF Q4) |
+| **Video/02-6** | **MiniMax H3 (analyse architecture)** | **0 VRAM (descriptif, INTRINSIC UE)** |
+| Video/03-1 | Multi-modeles locaux | GPU ~18 GB |
+| Video/03-2 | Pipeline text-to-image-to-video | Mixed |
 | Video/03-3 | ComfyUI Video | Docker, nodes video |
+| Video/04-1 | Pipeline educatif | Mixed |
+| Video/04-2 | Style transfer + music video | Mixed |
 | Video/04-3 | Sora 2 API | OPENAI_API_KEY |
+| Video/04-4 | Pipeline production complet | Mixed |
 
 ## Configuration .env GenAI
 
