@@ -714,10 +714,32 @@ def compute_signals(
 
 # --- CLI -------------------------------------------------------------------
 
+# `gh pr list` pagine a 30 par defaut et ne le dit pas. Un dataset de
+# *exactement* 30 PRs est donc presque toujours une page tronquee, pas une
+# journee a 30 merges -- et la troncature attaque le DENOMINATEUR du ratio
+# G-VAR-2 : lane_grains sous-compte, `max(1, n // 3)` retombe sur son plancher
+# de 1, et l'organe accuse de CAP-EXCEEDED la lane la plus productive du jour
+# (exactement l'inverse de ce que le ratio existe pour proteger). Constate le
+# 2026-08-10 sur #10328 : 60 PRs mergees, l'organe en voyait 30, la lane
+# `myia-po-2024:CoursIA` comptait 11 grains vus comme <=2 -> cap=1, faux
+# positif. Le correctif est le `--limit` cote workflow ; ce tell existe pour
+# que la PROCHAINE copie de l'idiome ne puisse pas le reintroduire en silence.
+_GH_DEFAULT_PAGE = 30
+
+
 def _load(path: str) -> list[dict]:
     data = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(data, list):
         sys.exit(f"--replay/--check-pr expects a JSON array, got {type(data).__name__}")
+    if len(data) == _GH_DEFAULT_PAGE:
+        print(
+            f"AVERTISSEMENT: le jeu de comptage fait exactement {_GH_DEFAULT_PAGE} "
+            "entrees = la taille de page par defaut de `gh pr list`. Si le "
+            "producteur du dataset n'a pas passe --limit, le set est TRONQUE : "
+            "le denominateur de G-VAR-2 sous-compte et le cap retombe a son "
+            "plancher de 1 (faux CAP-EXCEEDED sur les lanes productives).",
+            file=sys.stderr,
+        )
     return data
 
 
