@@ -706,3 +706,206 @@ def test_check_override_to_other_lane_blocks(capsys):
     captured = capsys.readouterr()
     assert "BLOCKED" in captured.err
     assert "myia-po-2026:CoursIA" in captured.out
+
+
+# --- [OVERRIDE] paths: scope (#10342) ----------------------------------------
+#
+# The motivating case: an `[OVERRIDE]` is a coordinator adjudication -- it
+# reassigns the claim to a named lane. Pre-#10342 the override was EPIC-WIDE
+# (every other lane locked out on every path). When the override is meant to
+# be SCOPED (e.g. reassign ONE lake, leave another lake free), the epic-wide
+# read created a phantom lockout. The fix: an optional `paths: <comma-list>`
+# clause on the override body, scoped only by fnmatch against the caller's
+# declared `--paths`. The reducer (`compute_active_claims`) keeps the full
+# state; the check (`_run_check`) filters `others` by `_path_matches_any`
+# when `my_paths` is provided.
+#
+# Three orthogonal axes tested below:
+#  (1) parse layer: the `paths:` clause is read by `parse_claim_event`.
+#  (2) reducer layer: `compute_active_claims` keeps the scope payload.
+#  (3) check layer: `_run_check(..., my_paths=...)` honours the scope.
+
+
+def test_parse_override_with_paths_clause():
+    ev = clc.parse_claim_event(comment(
+        "[OVERRIDE] lane myia-po-2024:CoursIA -- paths: GenAI/PostTraining/**, scripts/lane_guard.py",
+        "2026-08-09T22:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_override is True
+    assert ev.lane == "myia-po-2024:CoursIA"
+    assert ev.paths == ["GenAI/PostTraining/**", "scripts/lane_guard.py"]
+
+
+def test_parse_override_without_paths_clause_is_none():
+    # Legacy override (no scope) -- `paths` property is None, NOT [].
+    # The distinction matters: None means "epic-wide" (legacy semantics),
+    # an empty list would be ambiguous (was the scope declared empty?).
+    ev = clc.parse_claim_event(comment(
+        "[OVERRIDE] lane myia-po-2024:CoursIA -- reassign",
+        "2026-08-09T22:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.paths is None
+
+
+def test_parse_override_paths_clause_drops_empty_fragments():
+    # Stray commas must not produce empty patterns; `fnmatch("", ...)` would
+    # match every path, which would be a catastrophic over-block.
+    ev = clc.parse_claim_event(comment(
+        "[OVERRIDE] lane myia-po-2024:CoursIA -- paths: a.py, , b.py, ",
+        "2026-08-09T22:00:00Z",
+    ))
+    assert ev.paths == ["a.py", "b.py"]
+
+
+def test_reducer_preserves_override_scope_payload():
+    # The reducer stores the override event with its `paths` field intact.
+    # Without this, the check layer cannot honour the scope.
+    events = [
+        clc.parse_claim_event(comment(
+            "[CLAIMED] lane A:CoursIA -- x", "2026-08-06T22:00:00Z")),
+        clc.parse_claim_event(comment(
+            "[OVERRIDE] lane B:CoursIA -- paths: MyIA.AI.Notebooks/SymbolicAI/Lean/**",
+            "2026-08-06T22:30:00Z")),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"B:CoursIA"}
+    assert active["B:CoursIA"].paths == [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/**",
+    ]
+
+
+# --- the actual SCOPE behaviour at the check layer ---------------------------
+
+def test_check_override_no_paths_preserves_legacy_epic_wide_behaviour(capsys):
+    # Override WITHOUT `paths:` clause, check WITHOUT `--paths` -> legacy
+    # epic-wide block. This pins backward compatibility: a caller that did
+    # not opt into the new scope mechanism keeps the old behaviour.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- original",
+                "2026-08-09T11:00:00Z"),
+        comment("[OVERRIDE] lane myia-po-2024:CoursIA -- substance favors",
+                "2026-08-09T22:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2024:CoursIA" in captured.out
+
+
+def test_check_override_paths_blocks_other_lane_on_matching_path(capsys):
+    # Override with `paths: A/**` to lane X; I (lane Z) want to edit a file
+    # UNDER A/ -> my path intersects the scope -> Z is BLOCKED.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- before override",
+                "2026-08-09T11:00:00Z"),
+        comment(
+            "[OVERRIDE] lane myia-po-2024:CoursIA -- "
+            "paths: MyIA.AI.Notebooks/SymbolicAI/Lean/**",
+            "2026-08-09T22:00:00Z",
+        ),
+    )
+    rc = clc._run_check(
+        p,
+        "myia-po-2025:CoursIA-2",
+        my_paths=["MyIA.AI.Notebooks/SymbolicAI/Lean/Foo.lean"],
+    )
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2024:CoursIA" in captured.out
+
+
+def test_check_override_paths_keeps_other_lane_free_on_non_matching_path(capsys):
+    # Same override, but my file is OUTSIDE the scope -> CLEAR.
+    # This is the core #10342 fix: the override no longer reads as epic-wide.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- before override",
+                "2026-08-09T11:00:00Z"),
+        comment(
+            "[OVERRIDE] lane myia-po-2024:CoursIA -- "
+            "paths: MyIA.AI.Notebooks/SymbolicAI/Lean/**",
+            "2026-08-09T22:00:00Z",
+        ),
+    )
+    rc = clc._run_check(
+        p,
+        "myia-po-2025:CoursIA-2",
+        my_paths=["scripts/check_lane_claim.py"],
+    )
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "CLEAR" in captured.out
+    # The override is still in the audit JSON (state is preserved), but it
+    # does NOT appear in blocking_lanes.
+    assert "myia-po-2024:CoursIA" in captured.out  # in active_claims
+
+
+def test_check_override_paths_keeps_plain_claimed_lane_blocking(capsys):
+    # Plain `[CLAIMED]` (not an override) is always epic-wide, even when the
+    # caller supplies `--paths`. The scope is a coordinator's adjudication
+    # tool; a worker's claim never carries it. This pins the boundary.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- original",
+                "2026-08-09T11:00:00Z"),
+    )
+    rc = clc._run_check(
+        p,
+        "myia-po-2025:CoursIA-2",
+        my_paths=["scripts/check_lane_claim.py"],  # unrelated to claimed lane's work
+    )
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2026:CoursIA" in captured.out
+
+
+def test_check_override_paths_mixed_one_blocked_one_free(capsys):
+    # Two overrides: one scoped to Lean/**, one scoped to scripts/**.
+    # Caller edits a file in scripts/ -> blocked by the scripts override,
+    # but CLEAR of the Lean override (its scope doesn't touch the file).
+    # The summary JSON keeps both active; the human verdict names only the
+    # blocker.
+    p = payload(
+        comment(
+            "[OVERRIDE] lane myia-po-2024:CoursIA -- "
+            "paths: MyIA.AI.Notebooks/SymbolicAI/Lean/**",
+            "2026-08-09T22:00:00Z",
+        ),
+        comment(
+            "[OVERRIDE] lane myia-po-2023:CoursIA -- "
+            "paths: scripts/**",
+            "2026-08-09T22:30:00Z",
+        ),
+    )
+    rc = clc._run_check(
+        p,
+        "myia-po-2025:CoursIA-2",
+        my_paths=["scripts/check_lane_claim.py"],
+    )
+    assert rc == 1
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    assert "myia-po-2023:CoursIA" in captured.out
+    assert "myia-po-2024:CoursIA" not in captured.err  # not blocking here
+
+
+def test_active_claims_summary_exposes_paths(capsys):
+    # The audit JSON surfaces the `paths` field on override events, so a
+    # human reviewer can verify the scope without re-reading the source.
+    # The reducer grants A the claim -> A is in `others` (because I am B),
+    # so the verdict is BLOCKED; that is not what this test is pinning. We
+    # only check that the scope payload leaks into the JSON, NOT the verdict.
+    p = payload(
+        comment(
+            "[OVERRIDE] lane myia-po-2024:CoursIA -- paths: Lean/**, scripts/**",
+            "2026-08-09T22:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert rc == 1  # override granted A, so B is blocked (epic-wide read)
+    assert "Lean/**" in out
+    assert "scripts/**" in out
