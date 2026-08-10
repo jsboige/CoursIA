@@ -987,9 +987,9 @@ remains structural-on-P4, not local-on-P5. -/
     out loud rather than banked as progress.
 
     **The genuine large-`n` target is `p5_large_n_jumpN`** (n-aware frame,
-    non-vacuous at `n ≥ 8`, witnessed by `boxAssezGrandN_block_8` /
-    `boxAssezGrandN_glider_8`), which remains an open P4-gated sorry. Read that
-    one, not this one. -/
+    restated unconditional c.8175 after the finding that `BoxAssezGrandN` is a
+    tautology), which remains an open named sorry. Read that one, not this
+    one. -/
 theorem p5_large_n_jump (n : Nat) (g : Grid) (h : BoxAssezGrand g n)
     (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
     evolveHashlifeFast n g = evolve n g := by
@@ -1111,35 +1111,30 @@ conjunction).
 The n-aware restatement `hashlife_correctN` below replaces the hypothesis with
 `BoxAssezGrandN g n` (the predicate over `gridFrameN n g`, padding `max 2 n`).
 Because `gridFrameN` pads by `max 2 n ≥ n` on every side, `BoxAssezGrandN g n`
-is *satisfiable for every `n`* (not just `n ≤ 2`) — witnessed at `n = 8` on
-concrete Game-of-Life patterns by `box_assez_grandN_block_8` /
-`box_assez_grandN_glider_8` (Bool form, proven above) and the universal
-`box_assez_grandN_single_cell`. This makes the large-`n` statement
-*non-vacuous*: it is the genuine P5.2 target.
+is in fact a **tautology** — true for *every* grid and *every* `n`
+(`box_assez_grandN_trivial` in `Conway.Life.JumpCapture`, finding #6724), not a
+real geometric precondition. The signature of `p5_large_n_jumpN` below was
+accordingly restated (c.8175) to drop that vacuous hypothesis: the remaining
+sorry is now **unconditional**, honest about what is actually open (the jump
+itself, not a side-condition that never binds).
 
 **Anti-gaming (ai-01 gate, msg-...zylpzl).** The restatement carries real value
-on the *spec* (a non-vacuous large-`n` correctness statement, witnessed at
-`n = 8` on real patterns) and is the honest framing of the remaining work. The
-genuine large-`n` Hashlife jump, however, remains an **open named sorry**
-`p5_large_n_jumpN` (P5.2, P4-gated) — it is **not** closed by any vacuity
-argument, and its body is `sorry` pending the P4 unlock (`p4_succ_membership`,
-the offset-matching assembly, ai-01 turf). A gated-meaningful sorry is honest
-progress; a vacuous-worthless proof would not be. -/
+on the *spec* (an honestly unconditional large-`n` correctness statement) and is
+the honest framing of the remaining work. The genuine large-`n` Hashlife jump,
+however, remains an **open named sorry** `p5_large_n_jumpN` (P5.2, P4-gated) —
+it is **not** closed by any vacuity argument, and its body is `sorry` pending
+the P4 unlock (`p4_succ_membership`, the offset-matching assembly, ai-01 turf).
+A gated-meaningful sorry is honest progress; a vacuous-worthless proof would
+not be. -/
 
-/-- **Non-vacuity witness, propositional form (gate W2, ai-01 garde-fou 1).**
-    `BoxAssezGrandN block 8` holds — the 2×2 still-life carries margin `≥ 8` on
-    every side under `gridFrameN 8` (padding `max 2 8 = 8`). This is the
-    concrete substrate that makes `hashlife_correctN` non-vacuous at the
-    large-`n` regime (vs the fixed-frame `BoxAssezGrand block 8`, unsatisfiable
-    by the `n ≤ 2` cap). It is the propositional twin of the Bool-form
-    `box_assez_grandN_block 8 = true` (proven above), discharged by
-    `native_decide` directly on the `BoxAssezGrandN` proposition via the
-    `Decidable (BoxAssezGrandN)` instance. -/
-theorem boxAssezGrandN_block_8 : BoxAssezGrandN block 8 := by native_decide
-
-/-- Same non-vacuity witness on the `glider` spaceship at `n = 8`
-    (propositional form). -/
-theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
+/-! **Re-signature c.8175 (finding #6724).** The two `native_decide` witnesses
+    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` that stood here were
+    *strictly redundant* with `boxAssezGrandN_trivial` (a universal proof by
+    `cases g` + `rfl`, no `native_decide`), and became orphan justifications of
+    a precondition that the restatement below removes. Retiring them shrinks the
+    `native_decide` surface by 2 (allow-axioms list 38 → 36, verified firsthand)
+    without losing any mathematical content: the universal lemma says strictly
+    more. -/
 
 /-- **P5.2 genuine large-`n` jump (N2, P4-gated) — the sole remaining open
     target of the P5 layer.** When `n ≥ jumpSize lvl` (the MacroCell level)
@@ -1154,8 +1149,15 @@ theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
 
     **Moved above `hashlife_correctN` (c.95)** so the latter can consume it: the
     N-frame statement is now *derived* from this jump plus the padding-free
-    small-`n` fallback, instead of carrying an independent sorry of its own. -/
-theorem p5_large_n_jumpN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n)
+    small-`n` fallback, instead of carrying an independent sorry of its own.
+
+    **Re-signed (c.8175, finding #6724).** The tautological hypothesis
+    `BoxAssezGrandN g n` (true for every grid and every `n`, cf
+    `box_assez_grandN_trivial` in `Conway.Life.JumpCapture`) was dropped from
+    the signature: the sorry is now **unconditional**, honest that the open
+    question is the jump itself, not a geometric side-condition that never
+    binds. -/
+theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
     evolveHashlifeFast n g = evolve n g := by
   sorry
@@ -1165,9 +1167,12 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n)
     (satisfiable for *every* `n`, unlike `BoxAssezGrand g n` capped at `n ≤ 2`),
     `evolveHashlifeFast n g` agrees with `evolve n g`.
 
-    Unlike the fixed-frame `hashlife_correct` (vacuously true at large `n`),
-    this statement is **non-vacuous** at `n ≥ 8` (witnessed by
-    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` above).
+    The `BoxAssezGrandN g n` hypothesis is retained in this aggregator's
+    signature purely for API stability (existing callers that pass it still
+    compile), but is now known to be a **tautology** (`box_assez_grandN_trivial`)
+    and is **not used** in either arm of the proof — not passed to
+    `p5_large_n_jumpN` (restated unconditional, c.8175), and not needed by
+    `p5_small_n_fallback` (which takes no padding hypothesis). It binds nothing.
 
     **Reduction (c.95, ai-01).** The theorem no longer carries a sorry of its
     own. Splitting on the jump guard discharges it entirely:
@@ -1180,11 +1185,11 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n)
     named sorry `p5_large_n_jumpN`. Before this change the two carried
     independent sorries, and a reader could not tell whether `hashlife_correctN`
     required work *beyond* the jump. It does not. -/
-theorem hashlife_correctN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n) :
+theorem hashlife_correctN (n : Nat) (g : Grid) (_ : BoxAssezGrandN g n) :
     evolveHashlifeFast n g = evolve n g := by
   by_cases hsmall : n < jumpSize (gridToMacroCellWithOffset g).2.level
   · exact p5_small_n_fallback n g hsmall
-  · exact p5_large_n_jumpN n g h (Nat.not_lt.mp hsmall)
+  · exact p5_large_n_jumpN n g (Nat.not_lt.mp hsmall)
 
 /-- **N3 small-`n` bridge (issue #3846, ai-01 greenlight msg-zx9es2).** On the
     small-`n` regime (`n ≤ 2`), the n-aware spec `BoxAssezGrandN g n` coincides
