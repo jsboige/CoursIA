@@ -104,6 +104,7 @@ def _compute_advisory_labels(
     pr_body: str | None,
     issue_fetcher: IssueFetcher,
     pr_lane: str,
+    pr_closing_refs: set[int] | None = None,
 ) -> list[str]:
     r"""Advisory labels for adoption telemetry (#10223 Task 4) -- never block.
 
@@ -123,10 +124,20 @@ def _compute_advisory_labels(
     SAME scanners (``grain_tag.find_close_keyword_pr_refs`` /
     ``find_non_closing_refs``) -- no competing logic. Fetch failures are
     skipped: an advisory label must not crash the job on a network blip.
+
+    ``pr_closing_refs`` (#10323): the issue numbers GitHub resolved as closing
+    refs for this PR (``closingIssuesReferences``). A closing keyword inside a
+    code span / negation is matched by the regex finder but IGNORED by GitHub --
+    it must not fire ``lane-claim-absent`` either, since GitHub will not close
+    it. ``None`` = cross-check unavailable -> keep the regex-only behaviour
+    (backward compatible).
     """
     labels: set[str] = set()
     # lane-claim-absent: a closing-referenced issue with no active claim at all.
     for h in gt.find_close_keyword_pr_refs(pr_body):
+        # #10323: skip closing keywords GitHub ignores (code span / negation).
+        if pr_closing_refs is not None and h["number"] not in pr_closing_refs:
+            continue
         payload = issue_fetcher(h["number"])
         if payload is None:
             continue
@@ -151,6 +162,7 @@ def check(
     issue_fetcher: IssueFetcher,
     stale_threshold: float = 48.0,
     now: datetime | None = None,
+    pr_closing_refs: set[int] | None = None,
 ) -> dict:
     r"""Pure decision function: blocking verdict for a PR body (#10223).
 
@@ -204,30 +216,58 @@ def check(
     # Advisory labels (#10223 Task 4): computed across BOTH closing and
     # non-closing refs -- the blocking path below only looks at closing refs,
     # but a `See #N` conflict or a no-claim closing issue is still worth a
-    # label. Never blocks.
-    advisory = _compute_advisory_labels(pr_body, issue_fetcher, pr_lane)
-
-    # Closing references ONLY (Closes|Fixes|Resolves). See/Part of are excluded
-    # by construction by find_close_keyword_pr_refs -- that is the discriminant.
-    closing = gt.find_close_keyword_pr_refs(pr_body)
-    issue_nums = sorted({h["number"] for h in closing})
-    if not issue_nums:
-        return {
-            "guard_pass": True,
-            "reason": "no closing-keyword reference -> advisory only (See/Part of do not block)",
-            "pr_lane": pr_lane,
-            "blocking_lane": None,
-            "blocking_issue": None,
-            "blocking_claim_at": None,
-            "closing_issues": [],
-            "advisory_labels": advisory,
-            "warnings": [],
-        }
+    # label. Never blocks. The same closingIssuesReferences cross-check (#10323)
+    # applies so a code-span/negated closing keyword does not fire lane-claim-absent.
+    advisory = _compute_advisory_labels(pr_body, issue_fetcher, pr_lane, pr_closing_refs)
 
     now = now or datetime.now(timezone.utc)
     warnings: list[str] = []
 
-    for num in issue_nums:
+    # Closing references ONLY (Closes|Fixes|Resolves). See/Part of are excluded
+    # by construction by find_close_keyword_pr_refs -- that is the discriminant.
+    closing = gt.find_close_keyword_pr_refs(pr_body)
+    regex_nums = sorted({h["number"] for h in closing})
+
+    # #10323: for a PR BODY, GitHub's closingIssuesReferences is authoritative.
+    # The regex finder matches closing keywords even inside code spans, fenced
+    # blocks, or negations ("NOT closing #N") that GitHub's parser ignores. Only
+    # numbers GitHub actually resolved as closing refs can block; regex-only
+    # matches are logged IGNORED_BY_GITHUB and do not block. The regex stays the
+    # source of truth for COMMIT messages (scanned by pr_close_keyword_guard.py),
+    # which GitHub does not pre-resolve and where the squash trap is real.
+    if pr_closing_refs is None:
+        # Cross-check unavailable (fetch failed / older caller) -> fall back to
+        # the regex finder. Do NOT disarm the gate on a network blip: a real
+        # closing ref still blocks; only the code-span FP resurfaces, and it is
+        # warned so the gap is visible.
+        warnings.append(
+            "closingIssuesReferences unavailable -- using regex finder only; a "
+            "closing keyword in a code span/negation may false-positive (#10323)"
+        )
+        confirmed_nums = regex_nums
+    else:
+        confirmed_nums = sorted(n for n in regex_nums if n in pr_closing_refs)
+        for n in regex_nums:
+            if n not in pr_closing_refs:
+                warnings.append(
+                    f"#{n}: closing-keyword matched by regex but IGNORED_BY_GITHUB "
+                    f"(code span or negation) -- not treated as a closing ref (#10323)"
+                )
+
+    if not confirmed_nums:
+        return {
+            "guard_pass": True,
+            "reason": "no GitHub-confirmed closing-keyword reference -> advisory only (See/Part of do not block)",
+            "pr_lane": pr_lane,
+            "blocking_lane": None,
+            "blocking_issue": None,
+            "blocking_claim_at": None,
+            "closing_issues": confirmed_nums,
+            "advisory_labels": advisory,
+            "warnings": warnings,
+        }
+
+    for num in confirmed_nums:
         payload = issue_fetcher(num)
         if payload is None:
             # Fail-open: a fetch failure (network, missing issue) must not
@@ -269,7 +309,7 @@ def check(
                 "blocking_lane": blocking,
                 "blocking_issue": num,
                 "blocking_claim_at": ev.created_at,
-                "closing_issues": issue_nums,
+                "closing_issues": confirmed_nums,
                 "advisory_labels": advisory,
                 "warnings": warnings,
             }
@@ -281,7 +321,7 @@ def check(
         "blocking_lane": None,
         "blocking_issue": None,
         "blocking_claim_at": None,
-        "closing_issues": issue_nums,
+        "closing_issues": confirmed_nums,
         "advisory_labels": advisory,
         "warnings": warnings,
     }
@@ -295,6 +335,13 @@ def main(argv: list[str] | None = None) -> int:
                    default=48.0,
                    help="other lanes' claims older than HOURS do not block "
                         "(default 48; age from server createdAt).")
+    p.add_argument("--pr-closing-refs", metavar="NUMS", default=None,
+                   help="comma-separated issue numbers GitHub resolved as closing "
+                        "refs for this PR (from `gh pr view --json "
+                        "closingIssuesReferences`). The PR BODY is cross-checked "
+                        "against this set so a closing keyword in a code span/"
+                        "negation cannot block alone (#10323). Omit to fall back "
+                        "to the regex finder (used when the fetch failed).")
     args = p.parse_args(argv)
 
     try:
@@ -307,9 +354,30 @@ def main(argv: list[str] | None = None) -> int:
         ), file=sys.stderr)
         return 2
 
-    verdict = check(body, gh_issue_fetcher, stale_threshold=args.stale_threshold)
+    pr_closing_refs = _parse_closing_refs(args.pr_closing_refs)
+    verdict = check(
+        body, gh_issue_fetcher,
+        stale_threshold=args.stale_threshold,
+        pr_closing_refs=pr_closing_refs,
+    )
     print(json.dumps(verdict, ensure_ascii=False))
     return 0 if verdict["guard_pass"] else 1
+
+
+def _parse_closing_refs(spec: str | None) -> set[int] | None:
+    """Parse the ``--pr-closing-refs`` CLI value into a set, or ``None``.
+
+    ``None`` (arg omitted) signals "cross-check unavailable" -> the gate falls
+    back to the regex finder. An empty string means "GitHub fetched, the PR
+    closes nothing" -> an empty set (every regex hit is IGNORED_BY_GITHUB).
+    Non-numeric tokens are skipped rather than crashing the job.
+    """
+    if spec is None:
+        return None
+    spec = spec.strip()
+    if spec == "":
+        return set()
+    return {int(t) for t in spec.split(",") if t.strip().isdigit()}
 
 
 if __name__ == "__main__":

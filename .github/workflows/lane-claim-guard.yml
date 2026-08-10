@@ -86,12 +86,30 @@ jobs:
           # ajoute, pas d'interpretation des backslash).
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
 
+          # #10323: GitHub-authoritative closing refs. closingIssuesReferences
+          # est ce que GitHub fermera REELLEMENT au merge ; le finder regex
+          # seul false-positivait sur un mot-cle fermant dans un code span /
+          # une negation ("NOT closing #N") que le parser de GitHub ignore. On
+          # fetch une fois et on passe au helper. Sur ECHEC du fetch, on omet
+          # l'arg -> le helper retombe sur le regex + warn (ne desarme pas le
+          # gate sur un blip reseau). `gh ... --jq` sort 0 sur un set vide
+          # (chaine vide), non-zero sur auth/erreur -> le `if` discrimine.
+          if PR_CLOSING_REFS=$(gh pr view "$PR_NUMBER" \
+              --json closingIssuesReferences \
+              --jq '[.closingIssuesReferences[].number] | join(",")' 2>/dev/null); then
+            PR_CREFS_ARG=(--pr-closing-refs "$PR_CLOSING_REFS")
+          else
+            PR_CREFS_ARG=()
+            echo "::warning::closingIssuesReferences fetch failed; falling back to regex finder (#10323)."
+          fi
+
           # Le helper fetch chaque issue referencee par mot-cle fermant via
           # `gh issue view`, reduit l'etat des claims, et sort 0 (pass /
           # fail-open) ou 1 (block sur un claim frais d'une autre lane).
           # stderr exempte pour debug.
           python3 scripts/ci/lane_claim_required.py \
-            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err
+            --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
+            > /tmp/verdict.json 2>/tmp/verdict.err
           RC=$?
 
           if [ -s /tmp/verdict.err ]; then
@@ -171,12 +189,24 @@ jobs:
 
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
 
+          # #10323: meme cross-check closingIssuesReferences que le job required,
+          # pour que lane-claim-absent ne se declenche pas sur un mot-cle fermant
+          # dans un code span/negation que GitHub ignore.
+          if PR_CLOSING_REFS=$(gh pr view "$PR_NUMBER" \
+              --json closingIssuesReferences \
+              --jq '[.closingIssuesReferences[].number] | join(",")' 2>/dev/null); then
+            PR_CREFS_ARG=(--pr-closing-refs "$PR_CLOSING_REFS")
+          else
+            PR_CREFS_ARG=()
+          fi
+
           # Le helper sort 0/1/2 ; ici on ignore le code (advisory) et on ne
           # lit que advisory_labels. `|| true` garde le job vert meme sur un
           # block du sibling required (le verdict JSON est ecrit sur stdout
           # avant l'exit 1 du block path).
           python3 scripts/ci/lane_claim_required.py \
-            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err || true
+            --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
+            > /tmp/verdict.json 2>/tmp/verdict.err || true
 
           # Creation idempotente des deux labels.
           mk_label() {

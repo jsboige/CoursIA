@@ -324,3 +324,111 @@ def test_cli_missing_body_file_exit_two(tmp_path):
         capture_output=True, text=True, check=False,
     )
     assert proc.returncode == 2
+
+
+# --- #10323: closingIssuesReferences is authoritative for a PR body -----------
+#
+# The regex finder matches a closing keyword even inside a code span, a fenced
+# block, or a negation ("NOT closing #N") -- contexts GitHub's parser ignores.
+# closingIssuesReferences (passed as pr_closing_refs) is what GitHub will
+# ACTUALLY close on merge. A regex hit absent from that set must NOT block.
+# A real closing ref still does (the ratchet does not disarm).
+
+
+def _body_with(line, lane="myia-po-2026:CoursIA"):
+    return (
+        f"Grain: DEEP/guard -- lane {lane} -- prev: MED/guard #10151\n\n"
+        f"## Summary\n\n{line}\n"
+    )
+
+
+def _claimed_by_other_issue(num=6724):
+    return fetcher_from({num: issue_payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- working here",
+                "2026-08-09T11:41:43Z"),
+        number=num,
+    )})
+
+
+def test_10323_closing_keyword_in_negation_does_not_block():
+    # The #10307 incident shape: the body carries a closing keyword in a context
+    # GitHub's parser ignores (here a negated prose clause). The regex finder
+    # matches `Closes #6724` regardless of the surrounding "NOT" -- but GitHub
+    # resolves nothing (pr_closing_refs=set()), so the gate must NOT block even
+    # though another lane claims #6724. The word "closing" itself is NOT a
+    # GitHub keyword and does not match `close[ds]?`; the FP trigger is the
+    # canonical `Closes`/`Fixes`/`Resolves` token in a GitHub-ignored context.
+    body = _body_with("- OUT of scope: NOT actually Closes #6724 (epic sub-delivery).")
+    fetch = _claimed_by_other_issue(6724)
+    v = lcr.check(body, fetch, now=NOW, pr_closing_refs=set())
+    assert v["guard_pass"] is True
+    assert v["closing_issues"] == []
+    assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
+
+
+def test_10323_closing_keyword_in_inline_code_span_does_not_block():
+    # `` `Closes #6724` `` inside backticks -- GitHub ignores closing keywords
+    # in inline code. Regex matches, GitHub doesn't -> no block.
+    body = _body_with("Avoid the form `Closes #6724`; use `See #6724` instead.")
+    fetch = _claimed_by_other_issue(6724)
+    v = lcr.check(body, fetch, now=NOW, pr_closing_refs=set())
+    assert v["guard_pass"] is True
+    assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
+
+
+def test_10323_closing_keyword_in_fenced_block_does_not_block():
+    # A closing keyword inside a ``` fenced code block is ignored by GitHub.
+    body = _body_with("Example of what NOT to write:\n```\nCloses #6724\n```\n")
+    fetch = _claimed_by_other_issue(6724)
+    v = lcr.check(body, fetch, now=NOW, pr_closing_refs=set())
+    assert v["guard_pass"] is True
+    assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
+
+
+def test_10323_real_closing_ref_still_blocks_when_other_lane_claims():
+    # Ratchet (acceptance #4): a REAL `Closes #N` that GitHub resolves (it is
+    # in pr_closing_refs) still blocks when another lane holds a fresh claim.
+    # The fix must make the gate MORE correct, not more permissive.
+    body = _body_with("Closes #6724")
+    fetch = _claimed_by_other_issue(6724)
+    v = lcr.check(body, fetch, now=NOW, pr_closing_refs={6724})
+    assert v["guard_pass"] is False
+    assert v["blocking_issue"] == 6724
+    assert v["blocking_lane"] == "myia-po-2025:CoursIA-2"
+    assert v["closing_issues"] == [6724]
+
+
+def test_10323_none_pr_closing_refs_falls_back_to_regex_with_warning():
+    # Backward compat / fail-open: when closingIssuesReferences is unavailable
+    # (older caller or fetch failure), pr_closing_refs=None -> the gate keeps
+    # the regex-only behaviour (does not disarm) and warns about the gap.
+    body = _body_with("Closes #6724")
+    fetch = _claimed_by_other_issue(6724)
+    v = lcr.check(body, fetch, now=NOW, pr_closing_refs=None)
+    assert v["guard_pass"] is False  # regex still blocks the real ref
+    assert any("unavailable" in w for w in v["warnings"])
+
+
+def test_10323_advisory_absent_not_fired_on_ignored_closing_ref():
+    # lane-claim-absent must not fire on a closing keyword GitHub ignores (code
+    # span) -- consistent with the blocking path.
+    body = _body_with("Avoid `Closes #6724`; use `See #6724`.")
+    fetch = fetcher_from({6724: issue_payload(number=6724)})  # no claim
+    v = lcr.check(body, fetch, now=NOW, pr_closing_refs=set())
+    assert v["guard_pass"] is True
+    assert "lane-claim-absent" not in v["advisory_labels"]
+
+
+def test_10323_cli_pr_closing_refs_arg_parsed(tmp_path):
+    # The CLI accepts --pr-closing-refs and the verdict reflects the cross-check.
+    body_file = tmp_path / "body.md"
+    body_file.write_text(_body_with("Closes #6724"), encoding="utf-8")
+    proc = subprocess.run(
+        [sys.executable, "scripts/ci/lane_claim_required.py",
+         "--body-file", str(body_file), "--pr-closing-refs", ""],
+        capture_output=True, text=True, check=False,
+    )
+    v = json.loads(proc.stdout)
+    assert v["guard_pass"] is True  # GitHub closes nothing -> no block
+    assert v["closing_issues"] == []
+    assert any("IGNORED_BY_GITHUB" in w for w in v["warnings"])
