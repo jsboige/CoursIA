@@ -105,7 +105,21 @@ _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
 # coordinator merging against a held claim (the gap that let #10169 / #10161 be
 # merged without a written adjudication). Additive: the existing markers keep
 # their semantics, so no prior test changes.
+#
+# `paths:` clause (#10342): an optional path scope after the lane token -- when
+# present, the override's "close all others" effect is BOUND to the listed paths
+# (fnmatch, comma-separated). Other lanes remain FREE on paths outside the
+# scope, which is the missing leg for step-bounded adjudications (e.g. an
+# override that reassigns ONE lake leaves other lakes' claims un-touched).
+# Syntax: `[OVERRIDE] lane <machine:workspace> -- paths: glob1, glob2`.
+# Without the clause, the override is EPIC-WIDE (legacy semantics, preserved).
 _OVERRIDE = {"OVERRIDE"}
+# The token is OPTIONAL; the lane stays REQUIRED (an override without a named
+# beneficiary is unattributed, per existing semantics). Capture groups:
+# 1 = comma-separated path list (already stripped of surrounding spaces).
+_OVERRIDE_PATHS_RE = re.compile(
+    r"(?im)^[ \t]*\[\s*OVERRIDE\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+)
 
 
 class ClaimEvent(dict):
@@ -144,6 +158,18 @@ class ClaimEvent(dict):
     def url(self) -> str | None:
         return self.get("url")
 
+    @property
+    def paths(self) -> list[str] | None:
+        """Optional path scope (#10342); None when the override is epic-wide.
+
+        A non-None value means the override's "close all others" effect is bound
+        to the listed globs (fnmatch); lanes without claims intersecting them
+        remain free. The reducer and check honour this: `compute_active_claims`
+        always preserves the full `paths` payload, and the check filters the
+        `others` dict by `_path_matches` when the caller supplies `--paths`.
+        """
+        return self.get("paths")
+
 
 def parse_claim_event(comment: dict) -> ClaimEvent | None:
     """Classify one issue comment into a claim event, or None if not a marker.
@@ -152,6 +178,11 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     The lane is read by `extract_lane`; None when the body carries no lane token
     (surfaced as "unattributed", never guessed). The timestamp is the comment's
     server `createdAt` -- the Defaut-2 fix: body stamps are not trusted.
+
+    `#10342 scope`: when the marker is `[OVERRIDE]` and the body carries a
+    `paths: <comma-list>` clause, the parsed list is attached to the event as
+    `paths`. Other markers ignore the clause (claim/release/done are not
+    scope-bound; the path-mode guard handles file collisions separately, #9959).
     """
     body = comment.get("body") or ""
     marks = _MARKER_RE.findall(body)
@@ -165,6 +196,7 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     else:
         action = "close"
     author = (comment.get("author") or {}).get("login")
+    paths = _extract_override_paths(body) if action == "override" else None
     return ClaimEvent(
         lane=extract_lane(body),
         action=action,
@@ -172,7 +204,26 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
         created_at=comment.get("createdAt"),
         author=author,
         url=comment.get("url"),
+        paths=paths,
     )
+
+
+def _extract_override_paths(body: str) -> list[str] | None:
+    """Parse the optional `paths: <comma-list>` clause of an [OVERRIDE] body.
+
+    Returns the trimmed path list, or None when the clause is absent (the
+    override is then EPIC-WIDE -- the legacy semantics, preserved for backward
+    compatibility: every prior override without scope continues to lock
+    every other lane out). Empty fragments from stray commas are dropped
+    (a worker pasting `paths: a, , b` gets `["a", "b"]`, not `["a", "", "b"]`).
+    """
+    m = _OVERRIDE_PATHS_RE.search(body or "")
+    if not m:
+        return None
+    raw = m.group(1)
+    parts = [p.strip() for p in raw.split(",")]
+    parts = [p for p in parts if p]
+    return parts or None
 
 
 def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEvent]]:
@@ -369,11 +420,34 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
-               now: datetime | None = None) -> int:
+               now: datetime | None = None,
+               my_paths: list[str] | None = None) -> int:
+    """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
+
+    Args:
+        payload: `gh issue view --json ...` payload (or `from-json`).
+        my_lane: caller lane `machine:workspace`.
+        stale_threshold: optional hours; claims older than this DO NOT block
+            (but a warning is printed, #9812). None = legacy epic-wide block.
+        now: injected `datetime` for stale calc (testability).
+        my_paths: optional list of files the caller intends to edit (#10342).
+            When supplied, an `[OVERRIDE]` whose `paths:` clause does NOT
+            intersect `my_paths` is treated as if it does not exist for the
+            blocker test -- the override only locks the lanes it names the
+            paths for. Without `my_paths`, behaviour is unchanged (every
+            `[OVERRIDE]` is epic-wide, regardless of its scope clause).
+    """
     events = _sort_events(payload)
     active, unattributed = compute_active_claims(events)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
+
+    # Override-scope filter (#10342): an `[OVERRIDE]` with a `paths:` clause
+    # only locks lanes whose intended files intersect the scope. Without
+    # `my_paths`, we conservatively treat every scoped override as blocking
+    # (the caller's intent is unknown -- better to over-block than silently
+    # merge a write that should have pinged a held lane).
+    others = _filter_by_override_scope(others, my_paths)
 
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
     # (age from the server createdAt, NEVER the body) is treated as STALE -- it
@@ -402,6 +476,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "by": ev.author,
                 "marker": ev.marker,
                 "url": ev.url,
+                "paths": ev.get("paths"),
             }
             for ln, ev in sorted(active.items())
         },
@@ -440,6 +515,56 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     note = f" ({'; '.join(parts)})" if parts else ""
     print(f"\nCLEAR: no other lane claims #{payload.get('number')}{note}.")
     return 0
+
+
+def _filter_by_override_scope(
+    others: dict[str, ClaimEvent],
+    my_paths: list[str] | None,
+) -> dict[str, ClaimEvent]:
+    """Drop `others` lanes whose `[OVERRIDE]` grant has a `paths:` scope that
+    does NOT intersect the caller's intended files (#10342).
+
+    Rules:
+      - Plain `[CLAIMED]` events (no override) always stay in `others` --
+        their epic-wide semantics predate the scope feature.
+      - `[OVERRIDE]` events WITHOUT a `paths:` clause stay in `others` --
+        legacy epic-wide adjudication, preserved.
+      - `[OVERRIDE]` events WITH a `paths:` clause stay in `others` only when
+        at least one of `my_paths` matches the scope. When `my_paths` is
+        None (the caller did not declare intent), we conservatively keep the
+        lane in `others` -- better over-block than silent miss.
+      - The lane whose `event.marker == "OVERRIDE"` but has scope and DOES
+        NOT match `my_paths` is dropped: that lane was granted the claim on
+        a specific path range, the caller is working elsewhere, no collision.
+
+    The reducer `compute_active_claims` already stored the override event
+    under its named lane (line `state = {ev.lane: ev}`); this filter only
+    prunes the `others` view, never the reducer output. The active_claims
+    summary keeps the full state, so the JSON output remains auditable.
+    """
+    if not my_paths:
+        return others  # conservative legacy behaviour
+    filtered: dict[str, ClaimEvent] = {}
+    for ln, ev in others.items():
+        if ev.marker != "OVERRIDE":
+            filtered[ln] = ev
+            continue
+        scope = ev.get("paths")
+        if not scope:
+            filtered[ln] = ev  # epic-wide override, preserved
+            continue
+        if _path_matches_any(my_paths, scope):
+            filtered[ln] = ev  # scope covers at least one of my paths
+        # else: scope doesn't touch my paths -> free, drop from others
+    return filtered
+
+
+def _path_matches_any(paths: list[str], patterns: list[str]) -> bool:
+    """Return True if any of `paths` matches any of `patterns` (fnmatch glob)."""
+    for p in paths:
+        if _path_matches(p, patterns):
+            return True
+    return False
 
 
 def _fmt_active(ev: ClaimEvent) -> str:
@@ -632,7 +757,15 @@ def main(argv: list[str] | None = None) -> int:
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
                         "Lane key is full `machine:workspace` (same-machine "
                         "different-workspace counts as different lane). "
-                        "Complements the issue-claim check, does not replace.")
+                        "Complements the issue-claim check, does not replace. "
+                        "When supplied TOGETHER with an issue number "
+                        "(`check_lane_claim ISSUE --paths PATH ...`), the "
+                        "scope is also applied to `[OVERRIDE]` markers that "
+                        "carry a `paths:` clause (#10342): an override whose "
+                        "scope does not intersect the caller's paths is "
+                        "treated as if it did not exist for the blocker "
+                        "decision. Without `--paths`, override scope is "
+                        "ignored (legacy epic-wide behaviour, preserved).")
     act = p.add_mutually_exclusive_group()
     act.add_argument("--claim", metavar="INTENTION",
                      help="post a [CLAIMED] comment for your lane")
@@ -640,12 +773,13 @@ def main(argv: list[str] | None = None) -> int:
                      metavar="NOTE", help="post a [RELEASED] comment")
     args = p.parse_args(argv)
 
-    # Path mode (#9959) does NOT require an issue number -- it is the missing
-    # leg of L898 dispatched pre-claim to detect cross-lane PR collisions on
-    # the same files. Posting modes (--claim/--release) and the default check
-    # mode still require an issue. We branch on --paths first so callers do
-    # not have to fabricate a placeholder issue.
-    if args.paths is not None:
+    # Path-only mode (#9959) does NOT require an issue number -- it is the
+    # missing leg of L898 dispatched pre-claim to detect cross-lane PR
+    # collisions on the same files. We branch here when `--paths` is supplied
+    # WITHOUT an issue; when both are present we go through the issue-claim
+    # check with `my_paths` (the `--paths` are then used to scope-bind any
+    # `[OVERRIDE]` markers, #10342).
+    if args.paths is not None and args.issue is None:
         return _run_check_paths(args.paths, args.lane)
 
     # Posting modes: short-circuit before any read. Both require an issue.
@@ -673,7 +807,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"posted [RELEASED] lane {args.lane} on #{args.issue}")
         return 0
 
-    # Check mode (default).
+    # Check mode (default). `--paths` (when supplied with an issue) threads
+    # through to `_run_check` as `my_paths` -- it scopes `[OVERRIDE]` blockers
+    # by intersection. Posting modes already returned above, so `args.paths`
+    # here is unambiguously the scope-binding form.
     try:
         if args.from_json:
             payload = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
@@ -682,7 +819,12 @@ def main(argv: list[str] | None = None) -> int:
     except (RuntimeError, json.JSONDecodeError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    return _run_check(payload, args.lane, stale_threshold=args.stale_threshold)
+    return _run_check(
+        payload,
+        args.lane,
+        stale_threshold=args.stale_threshold,
+        my_paths=args.paths,
+    )
 
 
 if __name__ == "__main__":
