@@ -956,6 +956,35 @@ class TestBibliographicReferenceFilter:
         assert mod._is_bibliographic_reference(5.7, text2) is False
         assert mod._is_bibliographic_reference(6.0, text2) is True
 
+    def test_helper_extended_journal_nature_simple_volpages(self):
+        # FP class 4 extended (#9998) : journal SANS mot-cle generique (Nature,
+        # Econometrica, Annals of Mathematics) au format SIMPLE vol:pages. Le nom
+        # du journal precede immediatement le pattern (fenetre etroite 60 chars).
+        # Cas fondateur : rl_6_dqn_policy_gradient cell[27] "Nature 518:529-533".
+        text = "Mnih et al., Nature 518:529-533 (2015)."
+        assert mod._is_bibliographic_reference(518.0, text) is True
+        assert mod._is_bibliographic_reference(529.0, text) is True
+        assert mod._is_bibliographic_reference(533.0, text) is True
+
+    def test_helper_extended_journal_econometrica(self):
+        # Econometrica est dans _BIBLIO_EXTENDED_CONTEXT_RE sans "Journal" dans
+        # le nom. DecPyMC-2 corpus : "Econometrica 32:122-136".
+        text = "Theorie de l'utilite, Econometrica 32:122-136 (1964)."
+        assert mod._is_bibliographic_reference(32.0, text) is True
+        assert mod._is_bibliographic_reference(122.0, text) is True
+        assert mod._is_bibliographic_reference(136.0, text) is True
+
+    def test_helper_extended_keyword_far_from_pattern_not_filtered(self):
+        # Anti-sur-filtrage (fenetre etroite 60 chars) : "nature" mot courant en
+        # prose LOIN (>60 chars) d'un pattern N:N-N qui est un range de donnees.
+        # Si la fenetre etait 200 chars (comme le base), "nature" collerait et
+        # sur-filtrerait la plage de donnees. La fenetre etroite protege.
+        filler = ("x" * 80)  # 80 chars > 60 : "nature" hors fenetre etroite
+        text = "On etudie la nature du phenomene " + filler + " sur la plage 5:10-15 des indices."
+        assert mod._is_bibliographic_reference(5.0, text) is False
+        assert mod._is_bibliographic_reference(10.0, text) is False
+        assert mod._is_bibliographic_reference(15.0, text) is False
+
     def test_integration_comptes_rendus_suppressed(self, tmp_path):
         # Cas fondateur DecPyMC-2 cell[23] : prose cite "Comptes Rendus
         # 25:536-538" -- 25, 536, 538 sont des identifiants de citation,

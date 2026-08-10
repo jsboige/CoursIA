@@ -21,6 +21,12 @@
       csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
       content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
       content_csharp_sha: 4021a70b18b0be17cf3cc9302549df5de68a6c1f5fecedf62517af96e45b6214
+    - date: "2026-08-10"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: dc0c6381a77c3b5efd488de2e0f57ce400300d7f
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: c88fd3c06bdb5b2d9688475998c6f03d763e4d06e64bdd0f43ec8514ee3feba2
   known_differences:
     - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
     - "Idiomes framework : Python = `nashpy` + `scipy.optimize.linprog` (resolution des mixtes via programmation lineaire). C# = `BestResponseRow` from-scratch (enumeration des meilleures reponses en pur Linq, pas de solveur LP externe)."
