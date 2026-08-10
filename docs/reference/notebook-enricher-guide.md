@@ -1,6 +1,10 @@
-# Notebook Enricher - Agent Memory
+# Guide d'enrichissement des notebooks — méthodologie & vocabulaire par domaine
 
-## Key Learnings
+> **Provenance** : consolidé depuis `.claude/agent-memory/notebook-enricher/MEMORY.md` (relocalisé ici le 2026-08-10, item-7 de #9535). Ce fichier regroupe les leçons trans-machine de l'agent `notebook-enricher` : règles de positionnement des cellules, vocabulaire pédagogique par famille, patrons de contenu et checklist qualité. Il complète [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) (règles C.1/C.2/C.3) et [docs/reference/procedures-recurrentes.md](procedures-recurrentes.md) (workflow d'enrichissement).
+>
+> **Note de fraîcheur** : les « session logs » datés (2026-02 à 2026-06) sont conservés comme provenance historique ; les références de fichiers `enrichment-log-*.md` / `enrichment_summary_*.md` pointent vers des journaux de session locaux non conservés dans le dépôt. Les noms de notebooks cités peuvent avoir évolué (renumérotation #5081).
+
+## Règles de positionnement des cellules (CRITIQUE)
 
 ### Cell Positioning Rules (CRITICAL)
 
@@ -29,17 +33,17 @@
   - Added interpretations for: complexity viz, SSM demo, S4 test, Mamba test, training results, SST hybrid, benchmark
   - Summary report: `enrichment_summary_qc23.md`
 
-- **2026-02-07**: DataScienceWithAgents Labs (3 notebooks, 11 cells added) - See [enrichment-log-2026-02-07.md](enrichment-log-2026-02-07.md)
+- **2026-02-07**: DataScienceWithAgents Labs (3 notebooks, 11 cells added) — journal de session local `enrichment-log-2026-02-07.md` (non conservé dans le dépôt)
   - All cells positioned correctly on first attempt
   - BOTTOM-to-TOP strategy prevented index conflicts
   - No git rollbacks needed
-- **2026-02-16**: Sudoku-3-ORTools (4 cells added: 1 header with objectives, 2 interpretations, 1 footer)
+- **2026-02-16**: Sudoku-10-ORTools (anciennement « Sudoku-3-ORTools » avant la renumérotation #5081 ; 4 cells added: 1 header with objectives, 2 interpretations, 1 footer)
   - Navigation header and footer with Search notebook links
   - Learning objectives (Bloom taxonomy) for CSP, CP-SAT, MIP
   - Duration: 50 minutes, Prerequisites: Sudoku-1-Backtracking
   - Interpretations after CP solver test and performance comparison
   - BOTTOM-to-TOP strategy with re-read between each insertion
-- **2026-02-16**: Search-9-Metaheuristics (3 cells added: 2 interpretations, 1 code improvement)
+- **2026-02-16**: Search — notebook métaheuristiques (anciennement « Search-9-Metaheuristics » avant la renumérotation #5081 ; 3 cells added: 2 interpretations, 1 code improvement)
   - Added interpretation after parameter analysis visualization (pop_size impact)
   - Added interpretation after PSO convergence visualization with technical note
   - Replaced seaborn with matplotlib in comparative plots (removed dependency)
@@ -117,7 +121,7 @@
 2. **Never** skip re-reading after insertions
 3. **Never** use ad-hoc Python for notebook manipulation (use notebook_helpers.py)
 4. **Never** add emojis
-5. **Never** modify existing code cells (unless --fix-errors flag)
+5. **Never** modify existing code cells (l'enrichissement ajoute du markdown autour du code existant ; pour corriger une cellule code cassée, tracer une PR séparée — cf [anti-regression.md](../../.claude/rules/anti-regression.md))
 
 ### Quality Checklist
 
@@ -132,19 +136,37 @@ Before completing enrichment:
 
 ### Tools Reference
 
+L'outil désigné (cf [CLAUDE.md](../../CLAUDE.md) « Catalogue agents / skills / scripts ») est la CLI multi-famille `scripts/notebook_tools/notebook_tools.py` :
+
 ```bash
-# Analyze structure
+# Valider la structure d'un notebook (cellules, execution_count, outputs)
+python scripts/notebook_tools/notebook_tools.py validate <path>
+
+# Analyser les sorties (détecter les erreurs, les outputs vides)
+python scripts/notebook_tools/notebook_tools.py analyze <path>
+
+# Extraire le squelette (index de cellules pour le repérage avant insertion)
+python scripts/notebook_tools/notebook_tools.py skeleton <path>
+```
+
+L'utilitaire `notebook_helpers.py` reste utile pour un listing détaillé par cellule :
+
+```bash
+# Lister les cellules avec leurs indices (repérage avant insertion BOTTOM-to-TOP)
 python scripts/notebook_tools/notebook_helpers.py list <path> --verbose
 
-# Verify consecutive code cells
+# Vérifier l'absence de cellules code consécutives sans markdown intercalaire
 grep -A1 "cell_type.*code" <path>
 
-# Check git diff
+# Vérifier le diff final
 git diff --stat <path>
 ```
 
-### Memory Organization
+Catalogue complet des scripts : [scripts-reference.md](scripts-reference.md).
 
-- `MEMORY.md` (this file): High-level patterns and lessons
-- `enrichment-log-YYYY-MM-DD.md`: Detailed session logs
-- Future: `domain-patterns.md` for domain-specific vocabulary expansion
+### Documentation associée
+
+- [notebook-conventions.md](../../.claude/rules/notebook-conventions.md) — règles C.1/C.2/C.3 (stubs sans erreur volontaire, outputs commités, scope des re-exécutions).
+- [procedures-recurrentes.md](procedures-recurrentes.md) — workflow d'enrichissement et pré-commit notebook (H.3).
+- [subagents-reference.md](subagents-reference.md) — catalogue des sous-agents (`notebook-enricher`, `notebook-cleaner`, `notebook-designer`).
+- Les journaux de session détaillés (`enrichment-log-YYYY-MM-DD.md`) sont des artefacts locaux hors dépôt ; cette doc n'en conserve que la synthèse trans-machine.
