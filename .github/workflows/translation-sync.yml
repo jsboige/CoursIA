@@ -271,6 +271,11 @@ jobs:
           spec = importlib.util.spec_from_file_location(
               "check_perimeter", "scripts/translation/check_perimeter.py")
           mod = importlib.util.module_from_spec(spec)
+          # OBLIGATOIRE avant exec_module : check_perimeter.py definit un @dataclass,
+          # et dataclasses._is_type resout sys.modules.get(cls.__module__).__dict__.
+          # Sans cet enregistrement le lookup rend None -> AttributeError, et l'etape
+          # entiere echoue avant tout rendu (cause des 31 runs push / 0 succes, #10321).
+          sys.modules[spec.name] = mod
           spec.loader.exec_module(mod)
           active_langs = list(mod.TARGET_LANGS)
           troot = pathlib.Path("translations")
