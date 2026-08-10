@@ -725,3 +725,169 @@ class TestComposeReferencedKeys:
             tmp_path / "absent.yml", frozenset({"WHISPER_API_KEY"}),
         )
         assert keys == set()
+
+
+# --------------------------------------------------------------------------- #
+# TARGET_ENVS -- notebook-side .env paths (#9929, c.10186)
+#
+# The ``TARGET_ENVS`` module constant enumerates the .env files the script
+# propagates ``master.env`` secrets into. Before #9929, only 3 notebook-side
+# paths were listed (GenAI/.env, SymbolicAI/Lean/.env, QuantConnect/projects/
+# Portfolio-IBKR-Coinbase-Hybrid/.env). Per-series notebooks whose .env files
+# carry shared SECRET_KEYS (OPENAI_API_KEY, OPENROUTER_API_KEY) lived OUTSIDE
+# TARGET_ENVS, making their drift invisible to ``--check``. The c.10186
+# extension added 5 paths:
+#
+#   - ML/DataScienceWithAgents/AgenticDataScience/.env  (ECE TP series)
+#   - SemanticKernel/.env                               (0-AI-settings + 09-CLR)
+#   - SymbolicAI/SmartContracts/.env                    (Solidity / foundry)
+#   - QuantConnect/.env                                 (LLM summary channel)
+#   - SymbolicAI/SymbolicLearning/.env                  (LLM-assisted proof)
+#
+# The tests below pin three things:
+#   (1) all 5 paths are PRESENT in the module's TARGET_ENVS (a future
+#       cleanup that drops one of them is a deliberate, reviewed decision
+#       rather than silent blind-spot regression),
+#   (2) ``sync()`` silently skips a notebook .env that does not exist on
+#       the current machine (machines that have not provisioned a series
+#       are no-ops for that series),
+#   (3) ``sync()`` correctly DRIFTS a notebook .env that DOES exist on
+#       this machine -- proving that adding the path closes the blind
+#       spot on machines where the file is provisioned.
+# --------------------------------------------------------------------------- #
+class TestNotebookTargetEnvs:
+    """Pinning the #9929 TARGET_ENVS extension."""
+
+    EXPECTED_NEW_PATHS = (
+        # (relative-to-REPO_ROOT substring; the script's TARGET_ENVS ends
+        # with the .env path; we match by suffix to be tolerant of any
+        # future restructuring of parents above the notebook series).
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/.env",
+        "MyIA.AI.Notebooks/SemanticKernel/.env",
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/.env",
+        "MyIA.AI.Notebooks/QuantConnect/.env",
+        "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/.env",
+    )
+
+    def _target_env_paths(self) -> list[str]:
+        # Strip the REPO_ROOT prefix (no trailing slash on Path.__str__,
+        # so add one) to compare against the relative suffixes below.
+        # Note: normalize backslashes to forward slashes BEFORE the rstrip,
+        # else the rstrip("/") doesn't catch any trailing path separator.
+        repo_root = (
+            str(render_envs.REPO_ROOT).replace("\\", "/").rstrip("/") + "/"
+        )
+        return [
+            str(p).replace("\\", "/").split(repo_root, 1)[-1]
+            for p in render_envs.TARGET_ENVS
+        ]
+
+    def test_all_five_paths_present(self):
+        rels = self._target_env_paths()
+        for expected in self.EXPECTED_NEW_PATHS:
+            assert expected in rels, (
+                f"#9929 regression: TARGET_ENVS no longer lists {expected!r}; "
+                f"current TARGET_ENVS notebook-side paths: {rels}"
+            )
+
+    def test_count_includes_three_legacy_plus_five_new(self):
+        # Legacy 3 (GenAI/.env, SymbolicAI/Lean/.env,
+        # QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/.env) + 5 new.
+        # The service glob is not enumerated by this test (machine-dependent).
+        rels = self._target_env_paths()
+        legacy = {
+            "MyIA.AI.Notebooks/GenAI/.env",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/.env",
+            "MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/.env",
+        }
+        for lpath in legacy:
+            assert lpath in rels, (
+                f"Legacy notebook .env path dropped: {lpath!r}"
+            )
+        for npath in self.EXPECTED_NEW_PATHS:
+            assert npath in rels, (
+                f"New #9929 notebook .env path missing: {npath!r}"
+            )
+
+    def test_sync_skips_missing_notebook_env(
+        self, tmp_path, monkeypatch
+    ):
+        """A TARGET_ENVS path that does not exist on disk must NOT crash sync()
+        (silent skip). This is the safety property that lets us add paths
+        unconditionally for ALL machines, regardless of which series they have
+        provisioned."""
+        master = tmp_path / "master.env"
+        master.write_text("OPENAI_API_KEY=canonical-oai\n", encoding="utf-8")
+        # Build a tmp tree mirroring REPO_ROOT layout so the absent .env path
+        # is exactly the one the script's TARGET_ENVS expects -- but do NOT
+        # create the file.
+        nb_root = tmp_path / "MyIA.AI.Notebooks"
+        nb_root.mkdir()
+        (nb_root / "SemanticKernel").mkdir()
+        # NB: NO (nb_root / "SemanticKernel" / ".env").write_text(...)
+
+        monkeypatch.setattr(render_envs, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(
+            render_envs, "TARGET_ENVS",
+            [tmp_path / "MyIA.AI.Notebooks" / "SemanticKernel" / ".env"],
+        )
+        # sync() must NOT raise -- silent skip is the contract.
+        assert render_envs.sync(check_only=False) == 0
+        # And the absent file must remain absent.
+        assert not (tmp_path / "MyIA.AI.Notebooks" / "SemanticKernel" / ".env").exists()
+
+    def test_sync_drifts_existing_notebook_env_to_master(
+        self, tmp_path, monkeypatch
+    ):
+        """A TARGET_ENVS path that DOES exist with a stale OPENAI_API_KEY
+        must be detected as drift by ``--check`` and rewritten by sync()."""
+        master = tmp_path / "master.env"
+        master.write_text("OPENAI_API_KEY=canonical-oai\n", encoding="utf-8")
+        nb_root = tmp_path / "MyIA.AI.Notebooks"
+        nb_root.mkdir()
+        nb_env = nb_root / "SemanticKernel" / ".env"
+        nb_env.parent.mkdir()
+        nb_env.write_text(
+            "# OpenAI key for SemanticKernel notebooks\n"
+            "OPENAI_API_KEY=stale-dead-key\n",
+            encoding="utf-8",
+        )
+
+        monkeypatch.setattr(render_envs, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [nb_env])
+
+        # --check: stale key is drift -> exit 1, no write.
+        assert render_envs.sync(check_only=True) == 1
+        assert "OPENAI_API_KEY=stale-dead-key" in nb_env.read_text(encoding="utf-8")
+        # sync (no --check): rewrites canonical value -> exit 0.
+        assert render_envs.sync(check_only=False) == 0
+        assert "OPENAI_API_KEY=canonical-oai" in nb_env.read_text(encoding="utf-8")
+
+    def test_sync_preserves_non_secret_keys_in_notebook_env(
+        self, tmp_path, monkeypatch
+    ):
+        """A TARGET_ENVS notebook .env may carry non-SECRET_KEYS config
+        (e.g. SERVICE_NAME, semantic_kernel_version). sync() must leave
+        those lines untouched -- master only governs declared SECRET_KEYS."""
+        master = tmp_path / "master.env"
+        master.write_text("OPENAI_API_KEY=canonical-oai\n", encoding="utf-8")
+        nb_env = tmp_path / "SemanticKernel" / ".env"
+        nb_env.parent.mkdir()
+        nb_env.write_text(
+            "# Series-local config (NOT in master)\n"
+            "SK_VERSION=1.45.0\n"
+            "OPENAI_API_KEY=stale\n"
+            "NOTEBOOK_LOCALE=fr-FR\n",
+            encoding="utf-8",
+        )
+
+        monkeypatch.setattr(render_envs, "MASTER_ENV", master)
+        monkeypatch.setattr(render_envs, "TARGET_ENVS", [nb_env])
+
+        assert render_envs.sync(check_only=False) == 0
+        text = nb_env.read_text(encoding="utf-8")
+        assert "OPENAI_API_KEY=canonical-oai" in text
+        assert "SK_VERSION=1.45.0" in text, "non-secret key was wrongly clobbered"
+        assert "NOTEBOOK_LOCALE=fr-FR" in text, "non-secret key was wrongly clobbered"
