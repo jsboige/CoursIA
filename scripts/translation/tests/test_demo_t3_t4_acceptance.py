@@ -6,9 +6,10 @@ Verifies that the end-to-end T3/T4 acceptance demo produces a falsifiable
 report and that the *couture* (gating flags, dry-run discipline, plan
 captioning) is intact.
 
-Litmus (litmus anti-regression, miroir du PR body) :
+Litmus (litmus anti-regression, miroir du PR body) — état après #10287 :
   - couture T3/T4 active (GATED banner present, plan count parseable)
-  - T3 ne capture pas le SRC_DRIFT dans state filled (lacune documentee)
+  - T3 détecte le SRC_DRIFT (translation_plan() pivote sur src_hash) — pivot
+    #10287 critère 1+4 : la lacune documentée par #10282 est FERMÉE.
   - T4 dry-run byte-stable sur le notebook de reference (FT-01)
 """
 from __future__ import annotations
@@ -54,13 +55,21 @@ def test_drift_count_is_consistent():
     assert drift["drift_with_filled_text_en"] == drift["src_drift_in_csv"]
 
 
-def test_t3_does_not_capture_filled_text_en_drift():
-    """Lacune documentee : T3 plan = 0 meme quand drift > 0 sur cellules filled."""
+def test_t3_captures_drift_now():
+    """Pivot #10287 : la lacune documentée par #10282 est fermée — T3 détecte
+    maintenant le SRC_DRIFT même quand text_<lang> est rempli. Critère #10287
+    critère 4 : la démo doit basculer de verdict (t3_detects_drift=False → True).
+
+    Avant #10287 : plan_count=0, drift_with_filled_text_en=78 → t3_detects_drift=False.
+    Après #10287 : plan_count=78, drift_with_filled_text_en=78 → t3_detects_drift=True.
+    """
     report = _run_demo()
     if report["drift"]["drift_with_filled_text_en"] > 0:
-        assert report["t3_plan"]["translations_planned"] == 0
-        assert report["verdict"]["t3_detects_drift"] is False
-        assert report["verdict"]["lacune"] is not None
+        # Le plan couvre toutes les cellules drifted (sur la langue `en` du test).
+        assert report["t3_plan"]["translations_planned"] == report["drift"]["drift_with_filled_text_en"]
+        assert report["verdict"]["t3_detects_drift"] is True
+        # La lacune est résolue — verdict.lacune est null.
+        assert report["verdict"]["lacune"] is None
 
 
 def test_t4_render_byte_stable():
