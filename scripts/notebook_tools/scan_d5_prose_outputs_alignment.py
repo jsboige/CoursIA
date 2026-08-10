@@ -576,6 +576,18 @@ def _is_bibliographic_reference(value: float, text: str) -> bool:
         window = text[max(0, m.start() - _BIBLIO_CONTEXT_WINDOW): m.end() + _BIBLIO_CONTEXT_WINDOW]
         if _BIBLIO_CONTEXT_RE.search(window):
             return True
+        # FP class 4 extended (#9998) : journaux sans mot-cle generique (Nature,
+        # Science, Econometrica, Annals of Mathematics, ...) au format SIMPLE
+        # vol:pages (sans parenthese d'issue). _BIBLIO_EXTENDED_CONTEXT_RE est un
+        # sur-ensemble de _BIBLIO_CONTEXT_RE ; on l'applique sur une fenetre etroite
+        # (60 chars, identique au Tier 1 de class 6) -- et NON sur la fenetre 200 du
+        # base -- car "nature"/"science" y figurent SANS frontiere de mot : une
+        # fenetre large risquerait de sur-filtrer une plage de donnees proche d'une
+        # prose "la nature de". La fenetre etroite ancre le mot-cle au pattern
+        # (le nom du journal precede immediatement vol:pages, ex "Nature 518:529-533").
+        window_60 = text[max(0, m.start() - 60): m.end() + 60]
+        if _BIBLIO_EXTENDED_CONTEXT_RE.search(window_60):
+            return True
     # FP class 6 (#9998) : vol(issue):pages, double-tier safe-by-construction
     # Tier 1 : keyword biblio (etendu) en proximite 60 chars
     # Tier 2 : pattern anchor + year (19xx/20xx) sur la meme ligne
