@@ -163,7 +163,7 @@ def load_existing_csv(csv_path: Path) -> list[dict]:
 def update_existing_csv(
     existing_rows: list[dict],
     fresh_rows: list[dict],
-    target_notebooks: set[str],
+    target_notebooks: set[str] | None,
 ) -> tuple[list[dict], dict]:
     """Met à jour les lignes existantes pour les notebooks cibles, sans toucher
     aux autres entrées du CSV.
@@ -238,15 +238,26 @@ def update_existing_csv(
             appended += 1
 
     # 3) Compteurs finaux (post-update).
-    kept_orphan = sum(
-        1
-        for r in existing_rows
-        if r.get("notebook") in target_notebooks
-        and (r.get("notebook", ""), r.get("cell_id", "")) not in fresh_keys
-    )
-    kept_other = sum(
-        1 for r in existing_rows if r.get("notebook") not in target_notebooks
-    )
+    # target_notebooks=None (mode --full, #10329 etape 2) : on considere
+    # toutes les lignes comme cibles. kept_orphan = toute ligne existante
+    # qui n'a pas de cellule correspondante dans le scan courant.
+    if target_notebooks is None:
+        kept_orphan = sum(
+            1
+            for r in existing_rows
+            if (r.get("notebook", ""), r.get("cell_id", "")) not in fresh_keys
+        )
+        kept_other = 0
+    else:
+        kept_orphan = sum(
+            1
+            for r in existing_rows
+            if r.get("notebook") in target_notebooks
+            and (r.get("notebook", ""), r.get("cell_id", "")) not in fresh_keys
+        )
+        kept_other = sum(
+            1 for r in existing_rows if r.get("notebook") not in target_notebooks
+        )
 
     stats = {
         "updated": pre_updated,
@@ -347,6 +358,15 @@ def main() -> int:
         "par T3. Les champs pivot (src_hash, text_fr, hash_fr, src_lang, cell_type) "
         "sont rafraîchis pour les notebooks donnés en input.",
     )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Mode plein périmètre (étape 2 #10329). Quand combiné avec --update, "
+        "rafraîchit TOUS les notebooks référencés dans le CSV (et tout nouveau "
+        "notebook FR trouvé sous args.input), même ceux dont la dernière modif "
+        "git est antérieure au dernier run. Sans --full, seuls les notebooks "
+        "passés en input sont rafraîchis.",
+    )
     args = parser.parse_args()
 
     # `input` est une liste (nargs="+"). On accepte des chemins individuels ou
@@ -358,7 +378,42 @@ def main() -> int:
         print(f"ERROR : aucun chemin d'input valide (reçus : {args.input}).", file=sys.stderr)
         return 2
 
+    # Mode --full : on élargit la zone de scan pour rafraîchir TOUS les
+    # notebooks FR référencés (étape 2 de #10329). Sans --full, seul `input`
+    # est scanné (mode incrémental = comportement historique, post-#4957).
     repo_root = (args.repo_root or Path.cwd()).resolve()
+    if args.full and args.update is not None:
+        # Si --full + --update, on scanne récursivement chaque répertoire
+        # parent des notebooks déjà référencés dans le CSV, ce qui attrape
+        # les nouveaux notebooks FR jamais encore extraits (etape 2 de
+        # #10329 : comble la dette de 78 lignes désynchronisées détectée
+        # par c.199 / PR #10347).
+        existing_csv_rows = load_existing_csv(args.update)
+        ref_dirs = set()
+        for row in existing_csv_rows:
+            # "notebook" est un chemin POSIX relatif au repo. On prend le
+            # dossier parent (jusqu'à 3 niveaux) pour borner le scan sans
+            # exploser sur tout le dépôt.
+            nb_path = row["notebook"]
+            # On prend juste le répertoire parent immédiat (le dossier de
+            # série). Pour les chemins type "translations/foo/bar.csv",
+            # c'est bar.csv ; ici c'est "MyIA.AI.Notebooks/..." qu'on
+            # cherche — pas un CSV. Donc on prend le dossier parent du
+            # notebook.
+            # Heuristique : on prend le dossier qui contient 2+ notebooks
+            # existants dans le CSV = dossier de série.
+            parts = nb_path.split("/")
+            if len(parts) >= 2:
+                ref_dirs.add("/".join(parts[:-1]))
+        # On ajoute les chemins input existants (compatibilité historique).
+        # Les ref_dirs serviront de bornes de scan.
+        existing_inputs = list(existing_inputs)  # freeze
+        # On étend existing_inputs par les ref_dirs absolus (résolus vs repo_root).
+        for rd in ref_dirs:
+            abs_rd = (repo_root / rd).resolve() if not Path(rd).is_absolute() else Path(rd)
+            if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in existing_inputs:
+                existing_inputs.append(abs_rd)
+
     notebooks = iter_notebooks(existing_inputs)
     if not notebooks:
         print(f"ERROR : aucun notebook trouvé dans {existing_inputs}.", file=sys.stderr)
@@ -379,11 +434,19 @@ def main() -> int:
             print(f"ERROR : --update CSV introuvable : {args.update}", file=sys.stderr)
             return 2
         existing = load_existing_csv(args.update)
-        target_notebooks = {row["notebook"] for row in rows}
+        # --full : on rafraîchit TOUTES les lignes du CSV existant (mode plein
+        # périmètre #10329 etape 2), pas seulement celles des notebooks passés
+        # en input. Sans --full, on cible uniquement les notebooks du scan
+        # courant (= ceux dont le notebook est dans `rows`).
+        if args.full:
+            target_notebooks = None  # signal "tout rafraîchir"
+        else:
+            target_notebooks = {row["notebook"] for row in rows}
         updated_rows, stats = update_existing_csv(existing, rows, target_notebooks)
         sink = write_csv(updated_rows, args.update)
         print(
-            f"OK (--update) : {stats['updated']} ligne(s) rafraîchie(s), "
+            f"OK (--update{' --full' if args.full else ''}) : "
+            f"{stats['updated']} ligne(s) rafraîchie(s), "
             f"{stats['unchanged']} déjà in-sync, "
             f"{stats['appended']} ajoutée(s), "
             f"{stats['kept_orphan']} orpheline(s) "
