@@ -405,13 +405,18 @@ _NATIVE_EN_MIN_LEN = 40
 # une cellule sans diacritiques, c'est probablement du français non accentué
 # (« Le pipeline prend en entree... ») plutôt que de l'anglais.
 #
-# Choix calibré sur le corpus réel ``translations/*.csv`` (cf. body PR #10310) :
-# median FR-fw-density sur cellules FR canoniques = 5.11, p25 = 4.0 ; median
-# FR-fw-density sur cellules noacc-English-like = 3.40 ; median sur le cluster
-# identifié comme faux-positifs du heuristique #10298 = 5.95. Un seuil à 5.0
-# sépare proprement les deux distributions (rejette 100% des deux samples de
-# #10310 et 54% des 216 faux-positifs mesurés, sans perdre les 2 vraies
-# pass-through canoniques).
+# Choix calibré sur le corpus réel ``translations/*.csv`` (cf. body PR #10310
+# + cycle 193 sweep). Distribution des densités sur 218 cellules flaggées
+# « english » par le signal orthographique seul :
+#   - 2 TRUE_PASS (text_fr == text_en byte-eq, vrai pass-through EN authentique,
+#     densités 0.0 / 0.227, max 0.227)
+#   - 216 FALSE_POS (text_fr ≠ text_en, le heuristique whiteliste à tort du
+#     français non accentué) : médiane 5.136, p10 2.727, p25 4.0, p75 6.5,
+#     max 9.7
+# Seuil 3.0 retenu : rejette 192/216 FP (88.9%) vs 116/216 (54%) à seuil 5.0,
+# garde les 2 TRUE_PASS (gap sécurité 2.773 entre TRUE_PASS max 0.227 et
+# seuil 3.0), et passe confortablement les prose EN authentique (« Transformer
+# research » à densité 0.54, « Model scaling » à 0.85 — gap 2.46 et 2.15).
 _FRENCH_FUNCTION_WORDS = frozenset({
     # déterminants / articles
     "le", "la", "les", "des", "un", "une", "de", "du", "l", "d",
@@ -443,10 +448,11 @@ _FRENCH_FUNCTION_WORDS = frozenset({
 # Seuil de densité de mots-fonction français (per 100 alpha chars) au-dessus
 # duquel une cellule sans diacritiques est considérée comme du français non
 # accentué (et non comme de l'anglais). Calibré sur le corpus (cf. body PR
-# #10310) : median FR canonique = 5.11, p25 = 4.0 ; noacc-English-like
-# median = 3.40. Le seuil 5.0 sépare les deux clusters et rejette les deux
-# contrôles négatifs décisifs de l'issue.
-_FR_FW_DENSITY_THRESHOLD = 5.0
+# #10310) : voir tableau ci-dessus pour la justification 5.0 → 3.0 (cycle
+# 193). Une révision ultérieure de ce seuil doit recalibrer le sweep corpus
+# (scratchpad ``c193_sweep_v2.py``) et ajouter une fixture non-régression
+# pour tout EN authentique de densité ≥2.0.
+_FR_FW_DENSITY_THRESHOLD = 3.0
 
 
 def _french_function_word_density(text: str) -> float:
@@ -483,14 +489,16 @@ def _is_native_english(source: str) -> bool:
        (≥ 40 chars normalisés) pour que le ratio soit significatif.
 
     2. **Signal lexical** (#10310) : densité de mots-fonction français
-       fréquents (sans accent) **strictement inférieure à 5.0** per 100
+       fréquents (sans accent) **strictement inférieure à 3.0** per 100
        caractères alphabétiques. Ce signal attrape le **français non accentué**
        (« Le pipeline prend en entree... ») que le signal diacritiques seul
        laissait passer en silence. Sans ce second signal, on whitelistait à tort
        du français copié-collé depuis un terminal, des commentaires de code, ou
        des cellules rédigées sans clavier accentué (cf. mesure corpus :
        216 faux-positifs identifiés sur 218 cellules « english » du corpus,
-       median fr-fw-density = 5.95).
+       median fr-fw-density = 5.14, p25 = 4.0). Le seuil 3.0 (vs seuil initial
+       5.0) rejette 192/216 FP (88.9%) vs 116/216 (54%), avec gap sécurité
+       2.773 vs les 2 vraies pass-through canoniques (densité max 0.227).
 
     La garde de longueur est conservée pour ne pas whitelister les headers
     courts ambigus (« ## Nettoyage » — 12 chars, _french_function_word_density
