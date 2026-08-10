@@ -400,6 +400,78 @@ _FRENCH_DIACRITIC_CHARS = set(
 # substantielle (600-800 chars).
 _NATIVE_EN_MIN_LEN = 40
 
+# Mots-fonction français (sans accent) fréquents. Utilisés comme second signal
+# lexical par ``_is_native_english`` (#10310). Si leur densité est élevée sur
+# une cellule sans diacritiques, c'est probablement du français non accentué
+# (« Le pipeline prend en entree... ») plutôt que de l'anglais.
+#
+# Choix calibré sur le corpus réel ``translations/*.csv`` (cf. body PR #10310
+# + cycle 193 sweep). Distribution des densités sur 218 cellules flaggées
+# « english » par le signal orthographique seul :
+#   - 2 TRUE_PASS (text_fr == text_en byte-eq, vrai pass-through EN authentique,
+#     densités 0.0 / 0.227, max 0.227)
+#   - 216 FALSE_POS (text_fr ≠ text_en, le heuristique whiteliste à tort du
+#     français non accentué) : médiane 5.136, p10 2.727, p25 4.0, p75 6.5,
+#     max 9.7
+# Seuil 3.0 retenu : rejette 192/216 FP (88.9%) vs 116/216 (54%) à seuil 5.0,
+# garde les 2 TRUE_PASS (gap sécurité 2.773 entre TRUE_PASS max 0.227 et
+# seuil 3.0), et passe confortablement les prose EN authentique (« Transformer
+# research » à densité 0.54, « Model scaling » à 0.85 — gap 2.46 et 2.15).
+_FRENCH_FUNCTION_WORDS = frozenset({
+    # déterminants / articles
+    "le", "la", "les", "des", "un", "une", "de", "du", "l", "d",
+    # prépositions
+    "dans", "pour", "avec", "sans", "sur", "sous", "par", "entre", "vers",
+    "chez", "depuis", "pendant", "avant", "apres", "contre", "dehors",
+    # auxiliaires / verbes fréquents
+    "est", "sont", "etait", "etaient", "soit", "peut", "doit", "faut",
+    "a", "ont", "ait", "avons", "avez", "ai", "as",
+    # pronoms relatifs / interrogatifs
+    "qui", "que", "quoi", "dont", "quand", "ou", "lequel", "laquelle",
+    "auquel", "duquel",
+    # négation / particules
+    "pas", "plus", "ne", "non", "oui", "aucun", "aucune", "rien", "personne",
+    "jamais", "guere",
+    # démonstratifs / possessifs
+    "ce", "cette", "ces", "cet", "cela", "celui", "celle", "ceux",
+    "son", "sa", "ses", "leur", "leurs",
+    "mon", "ma", "mes", "ton", "ta", "tes", "notre", "votre", "nos", "vos",
+    # pronoms personnels
+    "je", "tu", "il", "elle", "on", "nous", "vous", "ils", "elles",
+    "me", "te", "se", "lui", "leur",
+    # adverbes courants
+    "aussi", "encore", "toujours", "bien", "tres", "chaque", "tous", "tout",
+    "toute", "comme", "mais", "donc", "car", "si", "alors", "meme",
+    "ainsi", "puis", "apres", "deja", "bientot", "souvent", "parfois",
+})
+
+# Seuil de densité de mots-fonction français (per 100 alpha chars) au-dessus
+# duquel une cellule sans diacritiques est considérée comme du français non
+# accentué (et non comme de l'anglais). Calibré sur le corpus (cf. body PR
+# #10310) : voir tableau ci-dessus pour la justification 5.0 → 3.0 (cycle
+# 193). Une révision ultérieure de ce seuil doit recalibrer le sweep corpus
+# (scratchpad ``c193_sweep_v2.py``) et ajouter une fixture non-régression
+# pour tout EN authentique de densité ≥2.0.
+_FR_FW_DENSITY_THRESHOLD = 3.0
+
+
+def _french_function_word_density(text: str) -> float:
+    """Densité de mots-fonction français (per 100 alpha chars).
+
+    Tokenisation lowercased + strip basic punctuation, comptage dans le set
+    ``_FRENCH_FUNCTION_WORDS``. Renvoie 0.0 si la cellule ne contient pas
+    de lettres (commentaire vide, code-only).
+    """
+    tokens = [t.lower().strip(".,;:!?()[]{}\"'`") for t in text.split()]
+    tokens = [t for t in tokens if t]
+    if not tokens:
+        return 0.0
+    fw_count = sum(1 for t in tokens if t in _FRENCH_FUNCTION_WORDS)
+    alpha = sum(1 for c in text if c.isalpha())
+    if alpha == 0:
+        return 0.0
+    return (fw_count * 100.0) / alpha
+
 
 def _is_native_english(source: str) -> bool:
     """Heuristique : la source markdown est-elle déjà en anglais ?
@@ -410,11 +482,32 @@ def _is_native_english(source: str) -> bool:
     attrape les notebooks deep_research dont la source FR a été copiée d'un
     papier de recherche anglophone (#10298).
 
-    Heuristique (#10298 Option A) : **>80 % de caractères ASCII imprimables** +
-    **<5 % de diacritiques français**, sur une cellule assez longue (≥ 40 chars
-    normalisés) pour que le ratio soit significatif. Les cellules courtes
-    retombent dans le chemin FR_CONTAM normal (un header ambigu ne se whiteliste
-    pas silencieusement).
+    Heuristique à **deux signaux** (#10298 + #10310) :
+
+    1. **Signal orthographique** (#10298 Option A) : >80 % de caractères ASCII
+       imprimables + <5 % de diacritiques français, sur une cellule assez longue
+       (≥ 40 chars normalisés) pour que le ratio soit significatif.
+
+    2. **Signal lexical** (#10310) : densité de mots-fonction français
+       fréquents (sans accent) **strictement inférieure à 3.0** per 100
+       caractères alphabétiques. Ce signal attrape le **français non accentué**
+       (« Le pipeline prend en entree... ») que le signal diacritiques seul
+       laissait passer en silence. Sans ce second signal, on whitelistait à tort
+       du français copié-collé depuis un terminal, des commentaires de code, ou
+       des cellules rédigées sans clavier accentué (cf. mesure corpus :
+       216 faux-positifs identifiés sur 218 cellules « english » du corpus,
+       median fr-fw-density = 5.14, p25 = 4.0). Le seuil 3.0 (vs seuil initial
+       5.0) rejette 192/216 FP (88.9%) vs 116/216 (54%), avec gap sécurité
+       2.773 vs les 2 vraies pass-through canoniques (densité max 0.227).
+
+    La garde de longueur est conservée pour ne pas whitelister les headers
+    courts ambigus (« ## Nettoyage » — 12 chars, _french_function_word_density
+    élevée mais signal non significatif).
+
+    Renvoie ``True`` (whitelist → pas de FR_CONTAM) **uniquement** si les deux
+    signaux sont négatifs (vraie EN). Tout cas ambigu (FR-noacc détecté par le
+    signal lexical) renvoie ``False`` et tombe dans le chemin FR_CONTAM
+    normal, qui flag la cellule sans la bloquer en mode non-strict.
     """
     norm = _normalize(source)
     if len(norm) < _NATIVE_EN_MIN_LEN:
@@ -427,7 +520,12 @@ def _is_native_english(source: str) -> bool:
     diacritics = sum(1 for c in non_ws if c in _FRENCH_DIACRITIC_CHARS)
     ascii_ratio = ascii_printable / len(non_ws)
     diacritic_ratio = (diacritics / alpha) if alpha else 0.0
-    return ascii_ratio > 0.80 and diacritic_ratio < 0.05
+    if not (ascii_ratio > 0.80 and diacritic_ratio < 0.05):
+        return False
+    # Second signal lexical (#10310) — rejette le FR non accentué
+    if _french_function_word_density(norm) >= _FR_FW_DENSITY_THRESHOLD:
+        return False
+    return True
 
 
 def _sha(text: str) -> str:

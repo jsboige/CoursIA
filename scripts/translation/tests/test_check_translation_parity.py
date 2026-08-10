@@ -301,6 +301,109 @@ def test_is_native_english_rejects_short_ambiguous_cell():
     assert p._is_native_english("## Introduction") is False
 
 
+def test_is_native_english_rejects_french_noaccent_tech():
+    """French prose written without diacritics (technical sample from #10310).
+    Without the lexical signal (#10310), the diacritics-only heuristic
+    whitelist this cell as native English, hiding a real FR_CONTAM violation.
+    With the new lexical signal, the function-word density (~7.26 per 100
+    alpha chars) is above the threshold and the cell is rejected."""
+    sample = (
+        "Le pipeline prend en entree la specification du modele sous forme de "
+        "parametres de generation, incluant la temperature, le nombre de tokens "
+        "maximum, et la cle d'API fournie par l'utilisateur. La sortie est ensuite "
+        "formatee selon le schema JSON defini dans la documentation du service, "
+        "avec une verification automatique des champs obligatoires avant insertion "
+        "dans la base de donnees."
+    )
+    assert len(sample) >= p._NATIVE_EN_MIN_LEN
+    assert p._is_native_english(sample) is False
+
+
+def test_is_native_english_rejects_french_noaccent_admin():
+    """French admin prose written without diacritics (administrative sample
+    from #10310). Same defect as the technical sample : the diacritics-only
+    heuristic whitelist it, the new lexical signal rejects it."""
+    sample = (
+        "Le tableau ci-dessous resume les principaux parametres du projet. "
+        "Pour chaque ligne, la premiere colonne indique le nom du composant, "
+        "la deuxieme colonne la date de la derniere mise a jour, et la troisieme "
+        "colonne la personne responsable du suivi. Les changements effectues "
+        "au cours du trimestre sont signales par un asterisque dans la marge droite."
+    )
+    assert len(sample) >= p._NATIVE_EN_MIN_LEN
+    assert p._is_native_english(sample) is False
+
+
+# Non-regression fixtures — long authentic EN prose (research notebook style)
+# used in #10298. Density is non-zero (occasional FR-function-words in EN
+# academic prose, e.g. "des", "le" in citations) but well below the threshold.
+# These guard against threshold drift: if a future edit raises the lexical
+# threshold past ~2.0, these will fail and force a re-calibration.
+_TRANSFORMER_PROSE_NONREGR = (
+    "## Research Findings\n\n"
+    "Based on the grid search, the optimal lookback window for the momentum "
+    "strategy balances signal stability against responsiveness. The VIX "
+    "threshold reduces drawdown at the cost of forgone upside. "
+    "The attention mechanism computes a weighted sum of value vectors, where "
+    "the weights are derived from query-key compatibility scores via a softmax "
+    "normalization. Multi-head attention allows the model to attend to different "
+    "subspaces simultaneously. The transformer architecture stacks these attention "
+    "layers with position-wise feedforward networks, residual connections, and "
+    "layer normalization to enable stable training of deep networks."
+)
+
+_MODEL_SCALING_PROSE_NONREGR = (
+    "## Model Scaling\n\n"
+    "Scaling laws describe how model performance improves predictably as we "
+    "increase the number of parameters, the size of the training dataset, and "
+    "the amount of compute. The relationship follows a power law in compute "
+    "with diminishing returns at larger scales. Optimal allocation strategies "
+    "depend on the relative cost of compute versus data, with larger models "
+    "favored when compute is the binding constraint."
+)
+
+
+def test_is_native_english_keeps_transformer_prose_nonregr():
+    """Non-regression : long authentic EN prose (Transformer/attention,
+    research-notebook style) must still be whitelisted as native English.
+
+    Density ~0.54 (occasional FR-function-words in EN academic prose, e.g.
+    "le", "des" in citations). Safety gap to threshold 3.0 is 2.46.
+    """
+    density = p._french_function_word_density(_TRANSFORMER_PROSE_NONREGR)
+    assert density < p._FR_FW_DENSITY_THRESHOLD, (
+        f"Transformer prose density {density:.3f} unexpectedly close to or "
+        f"above threshold {p._FR_FW_DENSITY_THRESHOLD} -- fixture stale?"
+    )
+    assert p._is_native_english(_TRANSFORMER_PROSE_NONREGR) is True
+
+
+def test_is_native_english_keeps_model_scaling_prose_nonregr():
+    """Non-regression : long authentic EN prose (model scaling laws,
+    research-notebook style) must still be whitelisted as native English.
+
+    Density ~0.85 (similar marginal FR-function-words as Transformer prose).
+    Safety gap to threshold 3.0 is 2.15.
+    """
+    density = p._french_function_word_density(_MODEL_SCALING_PROSE_NONREGR)
+    assert density < p._FR_FW_DENSITY_THRESHOLD, (
+        f"Model scaling prose density {density:.3f} unexpectedly close to or "
+        f"above threshold {p._FR_FW_DENSITY_THRESHOLD} -- fixture stale?"
+    )
+    assert p._is_native_english(_MODEL_SCALING_PROSE_NONREGR) is True
+
+
+def test_french_function_word_density_helper_exposed():
+    """Helper is module-public and returns a finite float on non-empty input."""
+    text = "Le pipeline prend en entree les parametres de generation."
+    density = p._french_function_word_density(text)
+    assert isinstance(density, float)
+    assert density > 0.0  # at least 1 FW (le, les, de)
+    # Empty / no-alpha input returns 0.0
+    assert p._french_function_word_density("") == 0.0
+    assert p._french_function_word_density("---") == 0.0
+
+
 def test_fr_contam_native_english_not_flagged_strict(tmp_path):
     """Under strict_fr, a markdown cell identical to its source where the
     source is native English must NOT be flagged FR_CONTAM (#10298)."""
