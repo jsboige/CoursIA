@@ -4,6 +4,12 @@
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb
   parity_level: semantic
   audits:
+    - date: "2026-08-10"
+      by: myia-po-2024:CoursIA
+      python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+      csharp_sha: 8618c1c6c3d92f85e5fce7b5a5271f958d95dbc2
+      content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+      content_csharp_sha: 6ca5eaf891a72a96a636d849e407280dd7921dffbf749f5c8eb1b125f1aefe1c
   - date: '2026-08-04'
     by: myia-po-2023:CoursIA
     python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
