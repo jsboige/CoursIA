@@ -1141,6 +1141,38 @@ theorem boxAssezGrandN_block_8 : BoxAssezGrandN block 8 := by native_decide
     (propositional form). -/
 theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
 
+/-- **Confinement authentique du jump** (re-signed, inlined from
+    `Conway.Life.JumpCapture` to avoid the A↔B import cycle that exists because
+    `JumpCapture.lean` imports `HashlifeCorrectness`). Byte-identical term to
+    `Conway.Life.JumpCapture.jumpCaptured`; `private` prevents name-resolution
+    ambiguity in the downstream module. -/
+private def jumpCaptured (c : MacroCell) : Bool :=
+  (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))).all fun p =>
+    decide ((2 ^ c.level : Int) ≤ p.1) &&
+    decide (p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) &&
+    decide ((2 ^ c.level : Int) ≤ p.2) &&
+    decide (p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+
+/-- Dépliage propositionnel de `jumpCaptured` (inlined). -/
+private theorem jumpCaptured_iff (c : MacroCell) :
+    jumpCaptured c = true ↔
+      ∀ p ∈ evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)),
+        (2 ^ c.level : Int) ≤ p.1 ∧
+          p.1 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) ∧
+          (2 ^ c.level : Int) ≤ p.2 ∧
+          p.2 < (2 ^ c.level : Int) + ((2 ^ (c.level + 1) : Nat) : Int) := by
+  unfold jumpCaptured
+  rw [List.all_eq_true]
+  constructor
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq] at hb
+    tauto
+  · intro h p hp
+    have hb := h p hp
+    simp only [Bool.and_eq_true, decide_eq_true_eq]
+    tauto
+
 /-- **P5.2 genuine large-`n` jump (N2, P4-gated) — the sole remaining open
     target of the P5 layer.** When `n ≥ jumpSize lvl` (the MacroCell level)
     on the n-aware frame, `evolveHashlifeFast` makes one Hashlife jump of
@@ -1152,39 +1184,71 @@ theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
     the real P5.2 target — **open named sorry, P4-gated** (`p4_succ_membership`,
     ai-01 turf), NOT closed by vacuity.
 
+    **Re-signed (c.1035, finding #6724 — voie (a)).** The hypothesis was
+    `BoxAssezGrandN g n`, which is **tautological** (proved by
+    `box_assez_grandN_trivial` in `JumpCapture.lean`) — so the old
+    `p5_large_n_jumpN_iff_unconditional` showed the original statement carried
+    zero information. Re-signed to consume `jumpCaptured
+    (gridToMacroCellWithOffset g).2 = true` (inlined above to avoid the import
+    cycle that would arise from `import Conway.Life.JumpCapture`, since
+    `JumpCapture.lean` itself imports `HashlifeCorrectness`). The new
+    hypothesis is **non-tautological** (witnessed by `jumpCaptured_block`,
+    `jumpCaptured_glider`, `jumpCaptured_not_trivial` in `JumpCapture.lean`),
+    so this restatement carries real geometric content. Body remains `sorry`
+    (P4-gated); `restrictGridTo_eq_self` lives in `JumpCapture.lean` (not
+    Foundation), tracked as a known constraint for the eventual sorry discharge.
+
     **Moved above `hashlife_correctN` (c.95)** so the latter can consume it: the
     N-frame statement is now *derived* from this jump plus the padding-free
     small-`n` fallback, instead of carrying an independent sorry of its own. -/
-theorem p5_large_n_jumpN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n)
+theorem p5_large_n_jumpN (n : Nat) (g : Grid)
+    (hcap : jumpCaptured (gridToMacroCellWithOffset g).2 = true)
     (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
     evolveHashlifeFast n g = evolve n g := by
   sorry
 
 /-- **N2 restatement — the genuine large-`n` correctness statement (EPIC #3846,
-    gate W2).** Under the n-aware padding hypothesis `BoxAssezGrandN g n`
-    (satisfiable for *every* `n`, unlike `BoxAssezGrand g n` capped at `n ≤ 2`),
-    `evolveHashlifeFast n g` agrees with `evolve n g`.
+    gate W2).** Under the **geometric capture hypothesis** `jumpCaptured
+    (gridToMacroCellWithOffset g).2 = true` (i.e., the final generation of the
+    Hashlife jump on the MacroCell representation of `g` stays inside the
+    central window that P4 clips), `evolveHashlifeFast n g` agrees with
+    `evolve n g`.
 
-    Unlike the fixed-frame `hashlife_correct` (vacuously true at large `n`),
-    this statement is **non-vacuous** at `n ≥ 8` (witnessed by
-    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` above).
+    **Re-signed (c.1035, finding #6724).** The previous hypothesis
+    `BoxAssezGrandN g n` was **tautological** (`box_assez_grandN_trivial`,
+    `JumpCapture.lean`) — it held for *every* `(g, n)` and thus carried no
+    information. The new hypothesis `jumpCaptured (gridToMacroCellWithOffset
+    g).2 = true` is **non-tautological** (witnessed by `jumpCaptured_block`,
+    `jumpCaptured_glider`, `jumpCaptured_not_trivial` in `JumpCapture.lean`)
+    and makes this theorem genuinely informative.
 
     **Reduction (c.95, ai-01).** The theorem no longer carries a sorry of its
     own. Splitting on the jump guard discharges it entirely:
     - `n < jumpSize` : `p5_small_n_fallback`, which takes **no padding
       hypothesis whatsoever** — it holds on any frame, the n-aware one included;
-    - `n ≥ jumpSize` : `p5_large_n_jumpN`, the genuine P4-gated jump.
+    - `n ≥ jumpSize` : `p5_large_n_jumpN`, the genuine P4-gated jump, which
+      now also consumes `jumpCaptured` (see its doc above).
 
     This is a structural reduction, **not** a vacuity closure: the whole
     remaining content of the N-frame statement is now localized in the single
     named sorry `p5_large_n_jumpN`. Before this change the two carried
     independent sorries, and a reader could not tell whether `hashlife_correctN`
-    required work *beyond* the jump. It does not. -/
-theorem hashlife_correctN (n : Nat) (g : Grid) (h : BoxAssezGrandN g n) :
+    required work *beyond* the jump. It does not.
+
+    **Note (c.1035).** The non-vacuity witnesses
+    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` (L1138/L1142) are now
+    orphaned relative to this theorem, since the hypothesis they satisfied is
+    gone. They still typecheck standalone and are kept for traceability of
+    the c.95 / c.1035 evolution; their substantive role is superseded by
+    `jumpCaptured_block` / `jumpCaptured_glider` in `JumpCapture.lean`. The
+    `BoxAssezGrandN` predicate itself remains consumed by
+    `hashlife_correctN_le_two` (L1199), which keeps the witnesses honest. -/
+theorem hashlife_correctN (n : Nat) (g : Grid)
+    (hcap : jumpCaptured (gridToMacroCellWithOffset g).2 = true) :
     evolveHashlifeFast n g = evolve n g := by
   by_cases hsmall : n < jumpSize (gridToMacroCellWithOffset g).2.level
   · exact p5_small_n_fallback n g hsmall
-  · exact p5_large_n_jumpN n g h (Nat.not_lt.mp hsmall)
+  · exact p5_large_n_jumpN n g hcap (Nat.not_lt.mp hsmall)
 
 /-- **N3 small-`n` bridge (issue #3846, ai-01 greenlight msg-zx9es2).** On the
     small-`n` regime (`n ≤ 2`), the n-aware spec `BoxAssezGrandN g n` coincides
