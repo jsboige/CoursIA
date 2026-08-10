@@ -144,12 +144,12 @@ for (int i=0; i<20000; i++) {
     else seen[rk] = (pos, blank);
 }
 Console.WriteLine($""Injectivité du rang : {seen.Count} états abstraits testés, {collisions} collision (attendu 0)"");",,,,,,,,bb820f9e424c86e0,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,0038145f,markdown,fr,a2b1ee929cf8be09,"## 5. PDB simple : construction par BFS rétrograde
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,0038145f,markdown,fr,e8ec3853b7386955,"## 5. PDB simple : construction par BFS rétrograde
 
 On construit d'abord une PDB sur **un** motif de tuiles. BFS = coût unitaire =
 distances optimales depuis le but abstrait. Cette PDB unique couvre un sous-ensemble
-de tuiles ; elle servira de brique, puis la **PDB additive** (section 7) en combinera
-plusieurs pour couvrir les 15 tuiles.",,,,,,,,a2b1ee929cf8be09,,,,,,,
+de tuiles ; elle servira de brique, puis la **PDB additive** (section 6) en combinera
+plusieurs pour couvrir les 15 tuiles.",,,,,,,,e8ec3853b7386955,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,d6c11ea3,code,fr,c5830b71c905f67c,"(byte[] table, int nSeen) BuildPdb(int[] group) {
     int k = group.Length;
     int[] goalPos = group.Select(t => Array.IndexOf(GOAL, t)).ToArray();
@@ -421,7 +421,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,
 //   Étape 2 : attention à l'explosion de P(25, k) — restez sur des groupes <= 6.
 // TODO etudiant
 Console.WriteLine(""Exercice 3 à compléter : généralisation au 24-puzzle (5x5, partition 6-6-6-7)."");",,,,,,,,64fa8dc2dd9d00ff,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,08e76387,markdown,fr,155893e48f112932,"## Conclusion
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,08e76387,markdown,fr,81dbf3af5de86e26,"## Conclusion
 
 La **base de données de motifs** illustre un principe central de la recherche
 heuristique avancée : **investir du calcul en amont** (précalculer des tables une
@@ -458,8 +458,9 @@ construction amorti sur des millions de requêtes.
 ---
 
 ← [Search-3 — Recherche informée](../Part1-Foundations/Search-3-Informed.ipynb)
+
 | ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)
-| 🐍 [Version Python](Search-12-PatternDatabases.ipynb)",,,,,,,,155893e48f112932,,,,,,,
+| 🐍 [Version Python](Search-12-PatternDatabases.ipynb)",,,,,,,,81dbf3af5de86e26,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,05478eeb,markdown,fr,f86e06a656ece30f,"# Search-13 (C#) — Recherche à écart limité (Limited Discrepancy Search)
 
 > **Partie 3 — Recherche avancée.** Ce notebook est le **jumeau .NET** du notebook
@@ -1891,12 +1892,12 @@ for _ in range(20000):
         seen[rk] = (pos, blank)
 print(f""Injectivité du rang : {len(seen)} états abstraits testés, {collisions} collision (attendu 0)"")
 assert collisions == 0",,,,,,,,e4d838bccb9f6c05,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-28a5c873,markdown,fr,8520d9123901a015,"## 5. PDB simple : construction par BFS rétrograde
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-28a5c873,markdown,fr,b39615f524619b1d,"## 5. PDB simple : construction par BFS rétrograde
 
-On construit d'abord une PDB sur **un** motif de 5 tuiles. BFS = coût unitaire =
-distances optimales depuis le but abstrait. Cette PDB unique couvre 5 tuiles ;
-elle servira de briques, puis la **PDB additive** (section 7) en combinera
-plusieurs pour couvrir les 15 tuiles.",,,,,,,,8520d9123901a015,,,,,,,
+On construit d'abord une PDB sur **un** motif de 4 tuiles. BFS = coût unitaire =
+distances optimales depuis le but abstrait. Cette PDB unique couvre 4 tuiles ;
+elle servira de briques, puis la **PDB additive** (section 6) en combinera
+plusieurs pour couvrir les 15 tuiles.",,,,,,,,b39615f524619b1d,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-138d881a,code,fr,0f15ed7659eb46f0,"def build_pdb(group):
     '''BFS rétrograde sur le groupe de tuiles. Coût unitaire = distance optimale.
     Renvoie (table uint8, n_états_atteignables).'''
@@ -1931,9 +1932,9 @@ t0 = time.time()
 PDB5, n5 = build_pdb(PATTERN)
 print(f""PDB simple ({len(PATTERN)} tuiles) : {n5:,} états en {time.time()-t0:.1f}s, ""
       f""distance max = {int(PDB5[PDB5<255].max())}"")",,,,,,,,0f15ed7659eb46f0,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-ebf444e1,markdown,fr,c3922e8e1a1780ad,"## 6. La SOTA : PDB *additives* (Korf & Felner 2002)
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-ebf444e1,markdown,fr,e226d40c33c475f0,"## 6. La SOTA : PDB *additives* (Korf & Felner 2002)
 
-Une PDB unique sur 5 tuiles n'informe qu'un tiers du puzzle. L'idée de génie de
+Une PDB unique sur 4 tuiles n'informe qu'environ un quart du puzzle. L'idée de génie de
 Korf & Felner (2002) : **partitionner** les 15 tuiles en groupes *disjoints* et
 construire une PDB par groupe, en ne comptant — dans chaque BFS — **que les
 mouvements des tuiles du groupe**. Les coûts deviennent alors **additifs** :
@@ -1946,7 +1947,7 @@ coups.
 
 On utilise une partition **4-4-4-3** (les groupes couvrent les 15 tuiles). Le BFS
 devient un **0-1 BFS** : déplacer une tuile du groupe coûte 1, déplacer la case
-vide à travers un joker coûte 0.",,,,,,,,c3922e8e1a1780ad,,,,,,,
+vide à travers un joker coûte 0.",,,,,,,,e226d40c33c475f0,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-c66a73a7,code,fr,2a41b7632a538178,"GROUPS = [(1,2,3,4), (5,6,7,8), (9,10,11,12), (13,14,15)]  # partition 4-4-4-3
 
 def build_additive_pdb(group):
@@ -2045,14 +2046,14 @@ print(""OK : h_additive est admissible (ne surestime pas la vraie distance)."")
 # Dominance vs Manhattan sur une instance
 print(f""Sur l'instance de démo : Manhattan={manhattan(INST)}, h_additive={h_additive(INST)} ""
       f""(additive >= Manhattan attendu)"")",,,,,,,,ce1d3d76f479ab82,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-48fd0855,markdown,fr,8ae04d9159f95ed9,"## 9. Expérience : Manhattan vs PDB additive (la valeur du moteur, visible)
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-48fd0855,markdown,fr,2c1dd31110af936e,"## 9. Expérience : Manhattan vs PDB additive (la valeur du moteur, visible)
 
-Trois instances **réalistement difficiles** (brouillage 50-90 pas, optimal ~32-44
+Trois instances **réalistement difficiles** (brouillage 50-90 pas, optimal ~26-52
 coups). On résout à l'optimum avec (a) Manhattan seule, puis (b) la PDB additive.
 On mesure les **nœuds explorés** : c'est la métrique qui révèle la puissance de
 l'heuristique. Sur les instances les plus dures, Manhattan frappe la limite
 (20M nœuds) tandis que la PDB additive en explore **un ordre de grandeur moins**
-et termine.",,,,,,,,8ae04d9159f95ed9,,,,,,,
+et termine.",,,,,,,,2c1dd31110af936e,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-4cf2ee63,code,fr,5d5f9ce38c5fb0b5,"INSTANCES = {
     ""I1 (brouillage 50)"": scramble(GOAL, 50, seed=11),
     ""I2 (brouillage 70)"": scramble(GOAL, 70, seed=23),
@@ -2073,7 +2074,7 @@ for name, s in INSTANCES.items():
 
 bench = rows",,,,,,,,5d5f9ce38c5fb0b5,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-e423da18,markdown,fr,2285fd94cd144720,## 10. Visualisation : la PDB additive comprime l'arbre de recherche,,,,,,,,2285fd94cd144720,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-228ee245,code,fr,a6b7a57b5b771c9c,"names = [r[0] for r in bench]
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-228ee245,code,fr,3716c0c444bbec73,"names = [r[0] for r in bench]
 man_nodes = [r[4] if r[4] is not None else 20_000_000 for r in bench]
 add_nodes = [r[5] if r[5] is not None else 20_000_000 for r in bench]
 x = np.arange(len(names)); w = 0.38
@@ -2081,13 +2082,13 @@ fig, ax = plt.subplots(figsize=(8, 4.4))
 b1 = ax.bar(x - w/2, man_nodes, w, label='Manhattan', color='#c0392b')
 b2 = ax.bar(x + w/2, add_nodes, w, label='PDB additive (4-4-4-3)', color='#2980b9')
 ax.set_yscale('log'); ax.set_ylabel(""Nœuds explorés par IDA* (échelle log)"")
-ax.set_title(""15-puzzle : la PDB additive comprime la recherche d'un à deux ordres de grandeur"")
+ax.set_title(""15-puzzle : la PDB additive comprime la recherche d'environ un ordre de grandeur"")
 ax.set_xticks(x); ax.set_xticklabels(names, fontsize=8); ax.legend()
 for bars in (b1, b2):
     for r in bars:
         ax.annotate(f'{int(r.get_height()):,}', (r.get_x()+r.get_width()/2, r.get_height()),
                     ha='center', va='bottom', fontsize=7)
-plt.tight_layout(); plt.show()",,,,,,,,a6b7a57b5b771c9c,,,,,,,
+plt.tight_layout(); plt.show()",,,,,,,,3716c0c444bbec73,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-0b79209d,markdown,fr,a65792da85f20f60,"## 11. Limites et au-delà
 
 - **Coût de construction.** Plus le groupe est grand, plus la PDB est fine mais
@@ -2149,13 +2150,13 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-12
 # et la partition. Étape 1 : redéfinissez GOAL24 et neighbors pour N=5.
 # Étape 2 : attention à l'explosion de P(25, k) — restez sur des groupes <= 6.
 pass  # TODO etudiant",,,,,,,,df81e76a1a6a3d70,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-58db3f04,markdown,fr,06ae1e4dd9c000ee,"## Conclusion
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-58db3f04,markdown,fr,77478471ade87780,"## Conclusion
 
 La **base de données de motifs** illustre un principe central de la recherche
 heuristique avancée : **investir du calcul en amont** (précalculer des tables une
 fois pour toutes) **pour rendre chaque recherche ultérieure radicalement plus
 cheap**. Sur le 15-puzzle, passer de Manhattan à une PDB *additive* comprime
-l'arbre exploré par IDA\* d'un à deux ordres de grandeur — assez pour résoudre à
+l'arbre exploré par IDA\* d'environ un ordre de grandeur — assez pour résoudre à
 l'optimum des instances que Manhattan ne termine pas.
 
 Les trois ingrédients de la technique :
@@ -2190,4 +2191,43 @@ millions de requêtes.
 ---
 
 ← [Search-3 — Recherche informée](../Part1-Foundations/Search-3-Informed.ipynb)
-| ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)",,,,,,,,06ae1e4dd9c000ee,,,,,,,
+| ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)",,,,,,,,77478471ade87780,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-pdb-speedup-interpretation,markdown,fr,c90644d7fc75e783,"### Lecture du résultat : pourquoi le speedup **croît** avec la difficulté
+
+Le tableau ci-dessus raconte l'histoire la plus importante de ce notebook, et elle
+n'est pas dans les chiffres absolus — elle est dans la **dernière colonne**.
+
+| Instance | Optimal | Nœuds Manhattan | Nœuds PDB additive | Speedup |
+|---|---|---|---|---|
+| I1 (brouillage 50) | 26 | 653 | 78 | **× 8,4** |
+| I2 (brouillage 70) | 40 | 655 908 | 63 018 | **× 10,4** |
+| I3 (brouillage 90) | 52 | 20 000 000 *(limite)* | 972 772 | **× 20,6** |
+
+Deux phénomènes, un seul mécanisme :
+
+1. **Le speedup n'est pas constant, il augmente avec la difficulté.** Sur l'instance
+   facile (I1), Manhattan explore 653 nœuds et la PDB additive 78 — l'écart existe
+   mais les deux terminent en moins de 0,1 s, donc invisible en pratique. Sur
+   l'instance dure (I3), le même rapport de qualité d'heuristique se traduit par un
+   facteur **20,6** sur le nombre de nœuds. C'est la propriété fondamentale d'une
+   **heuristique admissible plus informative** : l'avantage est **amplifié par le
+   facteur de branchement**. L'arbre de recherche croît exponentiellement avec la
+   profondeur ; une borne inférieure légèrement plus serrée élague un peu plus à
+   chaque nœud, et ce « un peu plus » composé sur un arbre exponentiel devient un
+   facteur super-linéaire sur la taille totale explorée.
+
+2. **Manhattan frappe le mur des 20 millions de nœuds sur I3.** Ce n'est pas un
+   ralentissement anodin : c'est la **limite pratique** où l'informedness de
+   Manhattan (somme des distances de Manhattan, une borne inférieure mais lâche) est
+   épuisée. La recherche ne termine pas dans le budget imparti — elle est coupée au
+   plafond. La PDB additive, elle, termine (972 772 nœuds, 43 s) parce qu'elle
+   encode une partie de la structure *globale* du puzzle (sous-problèmes
+   indépendants dont les distances sont additionnées), pas seulement une somme de
+   distances locales.
+
+**La leçon à retenir** : comparer deux heuristiques admissibles sur une instance
+facile ne dit rien. La différence qualitative (« l'une termine, l'autre pas »)
+n'apparaît qu'au voisinage de la difficulté où la moins informative atteint sa
+limite. C'est exactement pourquoi les *pattern databases* ont été inventées — pour
+les puzzles où Manhattan, la référence pédagogique, ne suffit plus.
+",,,,,,,,c90644d7fc75e783,,,,,,,

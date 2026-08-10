@@ -255,9 +255,9 @@ if resultat == sat:
     print(""  x ="", m[x].as_long())
     print(""  y ="", m[y].as_long())
     print(""  Verification : x + y ="", m[x].as_long() + m[y].as_long())",,,,,,,,7d644ff642f36300,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb,nb01-solver-interp,markdown,fr,b2ec64da2f5a749a,"### Interpretation : sat / unsat / unknown
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb,nb01-solver-interp,markdown,fr,3b632031b7a815ef,"### Interpretation : sat / unsat / unknown
 
-**Sortie obtenue** : le solveur repond `sat` et fournit un modèle concret (par exemple `x = 6, y = 4`).
+**Sortie obtenue** : le solveur repond `sat` et fournit un modèle concret (`x = 9, y = 1` ici, parmi d'autres possibles).
 
 | Reponse | Signification | Action |
 |---------|---------------|--------|
@@ -268,7 +268,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb,nb01-sol
 **Points cles** :
 1. `s.model()` ne donne **qu'un** modèle parmi potentiellement plusieurs ; Z3 ne garantit pas lequel.
 2. Les variables Z3 sont des **objets symboliques** : `x + y == 10` construit une formule, n'evaluate rien tant que `check()` n'est pas appele.
-3. `m[x].as_long()` convertit la valeur Z3 en entier Python natif.",,,,,,,,b2ec64da2f5a749a,,,,,,,
+3. `m[x].as_long()` convertit la valeur Z3 en entier Python natif.",,,,,,,,3b632031b7a815ef,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb,nb01-unsat-code,code,fr,7e5d33eb4f52fdbb,"# Exemple insatisfiable : contraintes contradictoires
 s2 = Solver()
 x = Int('x')
@@ -854,14 +854,14 @@ solution_facile = resoudre_sudoku(puzzle_facile)
 print(""Puzzle facile :"", ""resolu"" if solution_facile else ""insatisfiable"")
 for ligne in solution_facile:
     print(ligne)",,,,,,,,a817a1254948432b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-model-interp,markdown,fr,bf4e141f9a4de1f2,"### Interpretation : la puissance de la declaration
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-model-interp,markdown,fr,14157bcdca9059ee,"### Interpretation : la puissance de la declaration
 
 **Sortie obtenue** : Z3 resout le puzzle instantanement et affiche la grille complete.
 
 | Famille de contraintes | Nombre | Rôle |
 |------------------------|--------|------|
 | Domaine (1-9) | 81 | Bornes des variables |
-| Indices figes | ~35 | Enonce du puzzle |
+| Indices figes | 30 | Enonce du puzzle (puzzle_facile, cf. cellule 3) |
 | `Distinct` ligne | 9 | Une seule occurrence par ligne |
 | `Distinct` colonne | 9 | Une seule occurrence par colonne |
 | `Distinct` bloc | 9 | Une seule occurrence par bloc 3x3 |
@@ -869,7 +869,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-model-int
 **Points cles** :
 1. **Aucun algorithme de recherche ecrit a la main** : Z3 gere lui-même l'exploration.
 2. La contrainte `Distinct([...])` exprime naturellement « tous différents ».
-3. Le même code resout n'importe quel puzzle, du facile a l'expert : seules les données changent.",,,,,,,,bf4e141f9a4de1f2,,,,,,,
+3. Le même code resout n'importe quel puzzle, du facile a l'expert : seules les données changent.",,,,,,,,14157bcdca9059ee,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb,nb02-viz-intro,markdown,fr,13a254995f48f516,"## 3. Visualisation : donne en noir, resolu en bleu
 
 Pour distinguer les indices fournis par l'enonce des valeurs deduites par le solveur, nous reprenons le style de visualisation de la [serie Sudoku par backtracking](../../../Sudoku/Sudoku-1-Backtracking-Python.ipynb). Les valeurs **initiales** s'affichent en noir, les valeurs **ajoutees** par Z3 en bleu.",,,,,,,,13a254995f48f516,,,,,,,
@@ -1171,7 +1171,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb,ec97da
 
 Un même vecteur de bits peut être interprété comme **signé** (bit de poids fort = signe, plage -128 à 127) ou **non signé** (plage 0 à 255). Les comparaisons non signées utilisent `MkBVUGt`/`MkBVULt`/`MkBVUGe`/`MkBVULe`, signées `MkBVSgt`/`MkBVSlt`. La valeur `200` non signée = `-56` signée.
 ",,,,,,,,2bf3c0419142f045,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb,ae9a1169,code,fr,2d229b006cbc3256,"var a5 = ctx.MkBVConst(""a"", 8);
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb,ae9a1169,code,fr,868a55de90ef90a3,"var a5 = ctx.MkBVConst(""a"", 8);
 var s = ctx.MkSolver();
 s.Add(ctx.MkEq(a5, ctx.MkBV(200, 8)));  // 200 unsigned = -56 signed
 // Unsigned : 200 > 100 est vrai
@@ -1180,7 +1180,11 @@ Console.WriteLine(""200 (unsigned) > 100 ? "" + s.Check());
 if (s.Check() == Status.SATISFIABLE) {
     var m = s.Model;
     var bvnum = (BitVecNum)m.Evaluate(a5);
-    Console.WriteLine(""  a = "" + bvnum.UInt64 + "" (unsigned) = "" + bvnum.Int64 + "" (signed)"");
+    // Sign-extension 8 bits : bvnum.Int64 retourne la valeur NON signee (200) ;
+    // l interpretation signee (two's complement) de 11001000 sur 8 bits = -56.
+    ulong bvUnsigned = bvnum.UInt64;
+    long bvSigned = (bvUnsigned & 0x80) != 0 ? (long)bvUnsigned - 256 : (long)bvUnsigned;
+    Console.WriteLine(""  a = "" + bvUnsigned + "" (unsigned) = "" + bvSigned + "" (signed)"");
 }
 Console.WriteLine();
 Console.WriteLine(""Operateurs signes vs non signes :"");
@@ -1190,7 +1194,7 @@ Console.WriteLine(""| a < b         | MkBVSlt   | MkBVULT(a, b)  |"");
 Console.WriteLine(""| a <= b        | MkBVSLe   | MkBVULE(a, b)  |"");
 Console.WriteLine(""| a > b         | MkBVSgt   | MkBVUGT(a, b)  |"");
 Console.WriteLine(""| a >= b        | MkBVSGe   | MkBVUGE(a, b)  |"");
-",,,,,,,,2d229b006cbc3256,,,,,,,
+",,,,,,,,868a55de90ef90a3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb,c72afa7f,markdown,fr,33a9db28088070c0,"## 6. Casse-tête : nombre palindrome binaire
 
 Un **palindrome binaire 8 bits** se lit identiquement de gauche à droite et de droite à gauche (ex: `10011001` = 153). On construit une fonction `ReverseBits` via `MkExtract` (extraire chaque bit) + `MkConcat` (réassembler en ordre inverse), puis on impose `x == ReverseBits(x)`.
@@ -1434,14 +1438,16 @@ for i in range(len(res_ctx)):
     sg = res_ctx[i]
     for j in range(sg.size()):
         print(f""  {sg[j]}"")",,,,,,,,dda2c231cc4d99a5,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb,2296f1db,markdown,fr,bd83b93813bd129d,"### Interpretation : simplification contextuelle
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb,2296f1db,markdown,fr,133d8ec326f5173c,"### Interpretation : simplification contextuelle
 
-**Sortie obtenue** : la tactique `simplify` normalise les contraintes (par exemple `x > 10` devient `Not(x <= 10)`) mais ne detecte pas les redundances. La tactique `ctx-solver-simplify` raisonne sur le contexte mais peut conserver certaines contraintes selon la version de Z3.
+**Sortie obtenue** : sur ce goal, `simplify` produit **2 contraintes** alors que `ctx-solver-simplify` en conserve **3**. C'est donc `simplify` qui elimine ici une redondance : les contraintes `x > 5` et `x + 2 > 7` se normalisent toutes deux en `Not(x <= 5)`, et `simplify` les fusionne en une seule (deduplication **syntaxique**). Inversement, `ctx-solver-simplify` -- bien que concue pour exploiter le contexte -- ne retire ni `x > 5` ni `x + 2 > 7` (pourtant impliquees par `x > 10`) et conserve les trois contraintes.
 
 **Points cles** :
-1. `simplify` traite chaque contrainte isolement et normalise les expressions.
-2. `ctx-solver-simplify` tient compte du **contexte global** pour eliminer les redundances detectees.
-3. Sur de gros problemes, le pretraitement peut reduire significativement le nombre de contraintes utiles.",,,,,,,,bd83b93813bd129d,,,,,,,
+1. `simplify` normalise chaque contrainte puis fusionne les formes **syntaxiquement identiques** (ici `x > 5` et `x + 2 > 7`) : deduplication locale, peu couteuse.
+2. `ctx-solver-simplify` cible la subsomption **contextuelle** (retirer une contrainte impliquee par les autres), mais son comportement n'est pas garanti : selon la version de Z3 et la forme du goal, elle peut laisser passer des contraintes contextuellement redondantes, comme on le voit ici.
+3. Les deux tactiques sont **complementaires** plutot que hierarchisees : `simplify` attrape les doublons syntaxiques que `ctx-solver-simplify` laisse passer, et reciproquement pour les implications contextuelles. Sur de gros problemes, on les combine souvent dans un pipeline (`Then`).
+
+> **Note technique** : le resultat de `ctx-solver-simplify` depend de la version de Z3 (tactique historique au comportement partiel). Pour une subsomption contextuelle fiable, on prefere generalement combiner `simplify` avec d'autres tactiques plutot que de s'y fier seule.",,,,,,,,133d8ec326f5173c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb,cbe4ea6a,markdown,fr,7ebff2a2b37c2bfa,"### 1.1 Composer des tactiques : `Then`, `OrElse`, `Repeat`, `TryFor`
 
 Z3 permet de **composer** des tactiques pour créer des pipelines de resolution. Les combinateurs principaux :
@@ -2482,7 +2488,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-re
 1. Les expressions regulieres Z3 se construisent **par composition fonctionnelle**, pas par syntaxe de chaîne comme en Python (`re.compile('a+')`).
 2. `Range('a', 'z')` represente un caractère dans l'intervalle ASCII, equivalent a `[a-z]`.
 3. `Union` prend un nombre variable d'arguments : `Union(r1, r2, r3, ...)`.",,,,,,,,44679e5e9663e984,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-re-solver,code,fr,8e4f98dbe7e57c78,"# InRe : verifier qu'une chaîne appartient a une expression reguliere
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-re-solver,code,fr,272bef69390cb959,"# InRe : verifier qu'une chaîne appartient a une expression reguliere
 # Et faire generer par le solveur une chaîne correspondant au motif.
 
 # Exemple 1 : une chaîne composee uniquement de chiffres [0-9]+
@@ -2509,24 +2515,34 @@ if s2.check() == sat:
     m2 = s2.model()
     print(f""  email = {m2[email].as_string()}"")
 
-# Exemple 3 : format de date AAAA-MM-JJ
+# Exemple 3 : format de date AAAA-MM-JJ (4-2-2 chiffres EXACTS)
 s3 = Solver()
 date = String('date')
+
+
+def chiffres(n):
+    """"""n chiffres consécutifs [0-9]{n} : longueur FIXEE (contrairement a Plus = [0-9]+ variable).""""""
+    return Concat(*[Range('0', '9') for _ in range(n)])
+
+
+# AAAA-MM-JJ : groupes de longueur fixee (4, 2, 2) et non Plus (variable).
+# Avec Plus, le solveur retournait des chaînes non-dates comme 022-2-8242 (3-1-4 chiffres).
 regex_date = Concat(
-    Plus(Range('0', '9')),  # annee
+    chiffres(4),  # annee AAAA
     Re('-'),
-    Plus(Range('0', '9')),  # mois
+    chiffres(2),  # mois MM
     Re('-'),
-    Plus(Range('0', '9')),  # jour
+    chiffres(2),  # jour JJ
 )
 s3.add(InRe(date, regex_date))
-s3.add(Length(date) == 10)  # forcer le format compact
+s3.add(Length(date) == 10)  # desormais implicite (4+1+2+1+2 = 10), garde pour lisibilite
 
 print(f""\nDate AAAA-MM-JJ : {s3.check()}"")
 if s3.check() == sat:
     m3 = s3.model()
-    print(f""  date = {m3[date].as_string()}"")",,,,,,,,8e4f98dbe7e57c78,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-re-solver-interp,markdown,fr,906aad70eaced05d,"### Interpretation : generation de chaînes par motif
+    print(f""  date = {m3[date].as_string()}"")
+",,,,,,,,272bef69390cb959,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-re-solver-interp,markdown,fr,421b217839b82223,"### Interpretation : generation de chaînes par motif
 
 **Sortie obtenue** : le solveur genere une chaîne concrete correspondant a l'expression reguliere, sans qu'on lui fournisse de candidat.
 
@@ -2534,14 +2550,14 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-re
 |-----|------------------------|------------------|
 | 4 chiffres | `Plus(Range('0','9'))` | `[0-9]+` |
 | Email | `Concat(mot, Re('@'), mot, Re('.'), mot)` | `[a-z]+@[a-z]+\.[a-z]+` |
-| Date | `Concat(chiffres, Re('-'), chiffres, Re('-'), chiffres)` | `[0-9]+-[0-9]+-[0-9]+` |
+| Date | `Concat(chiffres(4), Re('-'), chiffres(2), Re('-'), chiffres(2))` | `[0-9]{4}-[0-9]{2}-[0-9]{2}` |
 
 **Points cles** :
 1. `InRe(s, r)` est le predicat d'appartenance : la chaîne `s` doit matcher l'expression reguliere `r`.
 2. Le solveur peut **inventer** une chaîne satisfaisant le motif, ce qu'aucun moteur `re` imperatif ne sait faire.
 3. Les expressions regulieres Z3 supportent les mêmes constructeurs que la théorie classique (Kleene), mais en notation fonctionnelle.
 
-> **Note technique** : Z3 supporte également `Option(r)` (zero ou une occurrence, equivalent `r?`) et la construction `Range(c1, c2)` pour les intervalles de caractères.",,,,,,,,906aad70eaced05d,,,,,,,
+> **Note technique** : Z3 supporte également `Option(r)` (zero ou une occurrence, equivalent `r?`) et la construction `Range(c1, c2)` pour les intervalles de caractères.",,,,,,,,421b217839b82223,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-unsat-intro,markdown,fr,e89abf69084e0304,"## 4. Contraintes combinees et insatisfiabilite
 
 La puissance de la théorie des chaînes reside dans la combinaison de **contraintes structurelles** (longueur, prefixe) et de **contraintes de motif** (expression reguliere). Le solveur peut detecter des contradictions qu'il serait fastidieux de prouver manuellement.
@@ -2649,19 +2665,19 @@ print(f""  {mdp1}"")
 print(""\nGeneration d'un mot de passe valide (approche Contains) :"")
 mdp2 = generer_mot_de_passe_v2()
 print(f""  {mdp2}"")",,,,,,,,6755e1cfbad8d97a,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-app-password-interp,markdown,fr,07cc7a3911c7daba,"### Interpretation : deux stratégies de modelisation
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-app-password-interp,markdown,fr,864dd420ce082bfc,"### Interpretation : deux stratégies de modelisation
 
 **Sortie obtenue** : les deux approches produisent un mot de passe valide mais avec des stratégies différentes.
 
 | Stratégie | Mécanisme | Avantage | Limite |
 |-----------|-----------|----------|-------|
-| Regex (`InRe`) | Motif global `[a-z]*[A-Z][a-z]*` | Exprime l'ordre et la repetition | Plus verbeux |
+| Regex par position (`InRe`) | `Length==8` puis `InRe(SubString(pwd,i,1), Range(...))` sur chaque position | Autorise une *classe* de caracteres par position | Plus verbeux, longueur figee |
 | Positionnel (`SubString`) | Force des positions spécifiques | Simple et direct | fige la structure |
 
 **Points cles** :
 1. La **generation** d'un mot de passe valide est un test immediat de la politique : si le solveur repond `sat`, les règles sont coherentres entre elles.
-2. La première approche utilise `Star` pour autoriser un nombre arbitraire de minuscules autour des caractères obligatoires.
-3. En pratique, pour des politiques complexes (caractères speciaux, historique), la modelisation declarative est plus maintenable qu'une cascade de `if`.",,,,,,,,07cc7a3911c7daba,,,,,,,
+2. Les deux approches fixent `Length(pwd) == 8` (une longueur libre rend le probleme NP-hard) ; elles different par la contrainte sur chaque position : `InRe`+`Range` autorise un *intervalle* de caracteres (`[A-Z]`, `[0-9]`, `[a-z]`), tandis que l'egalite `== StringVal` impose un caractere *precis*.
+3. En pratique, pour des politiques complexes (caractères speciaux, historique), la modelisation declarative est plus maintenable qu'une cascade de `if`.",,,,,,,,864dd420ce082bfc,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb,nb04-app-extract-intro,markdown,fr,f9750ae51044a8c1,"## 6. Application : recherche de motif et extraction
 
 Un autre cas d'usage est la **recherche de chaîne contrainte** : on dispose d'un ensemble de proprietes (prefixe, longueur, caractères obligatoires) et on veut trouver une chaîne les satisfaisant. Le module `re` de Python ne sait que filtrer des candidats ; Z3 sait les **inventer**.
@@ -4202,7 +4218,7 @@ Objectifs :
 1. **(Dur)** Respecter le budget total et les minimums de financement.
 2. **(Souple, pondere)** Preferer financer les projets haute priorite au-dela de leur minimum.
 3. **(Principal)** Maximiser la valeur totale.",,,,,,,,5852fbdea0a6fac9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,911f07e9,code,fr,9807eb86478db487,"// Allocation de budget multi-projets avec contraintes dures, souples et objectif principal.
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,911f07e9,code,fr,93326a1fdbb3999a,"// Allocation de budget multi-projets avec contraintes dures, souples et objectif principal.
 var optB = ctx.MkOptimize();
 // Donnees : 5 projets (nom, valeur unitaire, financement minimum, priorite)
 var projets = new (string nom, int val, int finMin, int prio)[] {
@@ -4212,7 +4228,7 @@ var projets = new (string nom, int val, int finMin, int prio)[] {
     (""Delta"", 2, 12, 3),   // basse priorite
     (""Epsil"", 4,  6, 2),   // moyenne priorite
 };
-long budgetTotal = 100;
+long budgetTotal = 80;
 int nProjets = projets.Length;
 // Variables : allocation[i] = montant investi dans le projet i
 var alloc = new IntExpr[nProjets];
@@ -4266,25 +4282,40 @@ if (optB.Check() == Status.SATISFIABLE) {
     Console.WriteLine($""{""TOTAL"",8} | {"""",5} | {"""",4} | {"""",4} | {totalAlloue,6} | {totalValeur,7}"");
     Console.WriteLine($""\nCout des violations souples : {((IntNum)m.Evaluate(coutViolations)).Int64}"");
     Console.WriteLine($""Budget non utilise : {budgetTotal - totalAlloue}"");
-}",,,,,,,,9807eb86478db487,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,b138a368,markdown,fr,0d8a06d5b219e935,"### Interpretation : allocation multi-objectif complete
+}",,,,,,,,93326a1fdbb3999a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,b138a368,markdown,fr,61c0cb798a586c2f,"### Interprétation : allocation multi-objectif complète
 
-**Sortie obtenue** : Z3 produit une allocation qui respecte tous les minimums de financement (contraintes dures), minimise les violations de bonus prioritaire (contraintes souples), puis maximise la valeur totale. Avec 5 projets et un budget de 100, la solution minimisant les violations donne 20 unites a chaque projet (cout de violations nul).
+**Sortie obtenue** : avec un budget de 80 (inférieur à la demande idéale de 5 x 20 = 100), Z3 ne peut pas satisfaire toutes les contraintes souples simultanément. Il produit une allocation **non uniforme** qui révèle les deux mécanismes distincts du capstone :
 
-| Type de contrainte | Mécanisme Microsoft.Z3 | Effet sur la solution |
-|--------------------|------------------------|----------------------|
-| Budget total | `ctx.MkAdd(alloc) <= 100` | Contrainte dure absolue |
-| Minimum par projet | `alloc[i] >= fin_min` | Chaque projet viable |
-| Bonus priorite | `ctx.MkOr(alloc[i] >= 20, r)` + poids | Projets prioritaires favorises |
-| Valeur totale | `opt.MkMaximize(valeur_totale)` | Optimisee en second lieu |
+| Projet | Val/u | Min | Prio | Alloué | Valeur | Bonus prio ? |
+|--------|-------|-----|------|--------|--------|--------------|
+| Alpha | 5 | 10 | 1 | 20 | 100 | Oui |
+| Beta | 3 | 8 | 2 | **8** | 24 | **Non** (ramené au min) |
+| Gamma | 7 | 5 | 1 | 20 | 140 | Oui |
+| Delta | 2 | 12 | 3 | **12** | 24 | **Non** (ramené au min) |
+| Epsil | 4 | 6 | 2 | 20 | 80 | Oui |
+| **TOTAL** | | | | **80** | **368** | cout = 6 |
 
-**Points cles** :
-1. Les contraintes dures garantissent la **faisabilite** (budget, minimums).
-2. Les contraintes souples hierarchisent les **préférences** (favoriser les projets prioritaires).
-3. L'objectif principal maximise la **valeur** une fois les préférences honorees.
-4. L'ordre `MkMinimize` puis `MkMaximize` impose la lexicographie : les violations sont eliminees en priorite, puis la valeur est maximisee.
+**Pourquoi cette instance est discriminante ?**
 
-> **Note technique** : Ce cas pratique combine les trois techniques du notebook : relaxation booleenne (section 2/5), lexicographie (section 3) et contraintes dures (NB01). C'est le pattern typique des problemes d'allocation de ressources reels.",,,,,,,,0d8a06d5b219e935,,,,,,,
+1. **La hiérarchie des priorités est ACTIVE** : Z3 ne peut honorer qu'un sous-ensemble des bonus prioritaires. Il sacrifie en priorité le projet de **basse priorité Delta (poids 1)**, le ramenant à son minimum 12, puis **Beta (poids 5)** à son minimum 8. Les projets haute priorité (Alpha, Gamma prio 1 + Epsil prio 2 tenu) restent à 20. Le cout total des violations = 5 (Beta) + 1 (Delta) = **6** -- exactement l'ordre imposé par la pondération. Si le budget avait permis 100, toutes les contraintes souples seraient satisfaites (cout = 0) et la hiérarchie n'aurait eu **aucun effet visible**.
+
+2. **La maximisation de valeur est ACTIVE** : une fois le cout des violations minimisé, Z3 répartit le budget résiduel vers les projets les plus rentables. Gamma (valeur 7) est porté à son plafond pertinent, et le budget économisé sur Delta (valeur 2, le moins rentable) est conservé pour les projets à plus forte valeur. Avec budget=100, l'allocation était forcée à (20,20,20,20,20) et la valeur 420 était identique à celle d'une répartition uniforme triviale -- l'objectif de valeur n'aurait rien pu discriminer.
+
+| Type de contrainte | Mécanisme Z3 (.NET) | Effet sur la solution (budget=80) |
+|--------------------|---------------------|-----------------------------------|
+| Budget total | `ctx.MkLe(ctx.MkAdd(alloc), ctx.MkInt(80))` | Contrainte dure absolue |
+| Minimum par projet | `ctx.MkGe(alloc[i], ctx.MkInt(finMin))` | Chaque projet viable (Beta=8, Delta=12 à leur minimum) |
+| Bonus priorité | `ctx.MkOr(ctx.MkGe(alloc[i], 20), r)` + poids | Hiérarchie ACTIVE : Delta (poids 1) puis Beta (poids 5) sacrifiés |
+| Valeur totale | `optB.MkMaximize(valeurTotale)` | Optimisée APRÈS cout minimisé : budget vers projets rentables |
+
+**Points clés** :
+1. Les contraintes dures garantissent la **faisabilité** (budget, minimums).
+2. Les contraintes souples hiérarchisent les **préférences** -- mais ne sont visibles **que si le budget est contraint** (ici 80 < 100). Sur un budget généreux, toutes les préférences sont honorées (cout = 0) et la hiérarchie devient invisible.
+3. L'objectif principal maximise la **valeur** une fois les préférences honorées au mieux -- ici aussi, ne discrimine que parce que l'instance force un arbitrage.
+4. L'ordre `optB.MkMinimize(coutViolations)` puis `optB.MkMaximize(valeurTotale)` impose la lexicographie : éliminer les violations d'abord (Delta puis Beta), puis maximiser la valeur sur l'espace restant.
+
+> **Leçon Prong-B** : un problème d'allocation ne met en valeur l'optimisation multi-objectif que si la demande dépasse la ressource. Avec budget=100 = somme exacte des seuils souples, le solveur n'avait aucun arbitrage à faire -- il suffisait de donner 20 à chacun. La réduction à budget=80 force l'arbitrage et rend les deux objectifs (hiérarchie + valeur) observables. C'est le cas dégénéré qui rend l'exemple pédagogiquement instructif.",,,,,,,,61c0cb798a586c2f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,04fb99d7,markdown,fr,1d5b6bd3d787b7b1,"## Exercice 3 : Allocation de budget avec priorites
 
 ### Enonce
@@ -4599,54 +4630,49 @@ On obtient ainsi une suite de points $(A_1, B_1), (A_2, B_2), \ldots$ ou le cout
 ### Exemple : qualite vs cout
 
 On choisit un niveau de qualite `q` (0 a 10) et un niveau de cout `c`. Les deux sont lies : une qualite elevee implique un cout minimal, mais le cout peut aussi augmenter pour d'autres raisons. On cherche tous les compromis optimaux (qualite maximale, cout minimal).",,,,,,,,683c7184df713761,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s4-code,code,fr,367c02cd5ab95ddb,"# Enumeration du front de Pareto : maximiser qualite (0-10), minimiser cout.
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s4-code,code,fr,e2aced291cd4ff26,"# Enumeration du front de Pareto : maximiser qualite (0-10), minimiser cout.
 # Modele : qualite et cout sont des entiers lies par une relation lineaire.
 # Une qualite elevee exige un cout minimal, mais le cout peut depasser ce minimum.
 
 def enumerer_front_pareto(max_iter=15):
     """"""Enumere les points Pareto-optimaux (qualite, cout).
 
-    Strategie : a chaque iteration, on maximise qualite sous la contrainte
-    que le cout soit strictement inferieur au cout du point precedent.
-    Comme la relation cout >= 2 * qualite lie les deux objectifs, baisser
-    le cout force la qualite a baisser aussi.
+    Strategie lexicographique en deux phases, a chaque iteration :
+      1. maximiser la qualite sous cout < cout_precedent (objectif primaire) ;
+      2. a qualite ainsi fixee, minimiser le cout (objectif secondaire).
+    La phase 2 est indispensable : sans elle, Z3 renvoie un cout quelconque dans
+    [2*qualite, cout_precedent-1] et le point est alors DOMINE (le meme niveau de
+    qualite existe pour un cout strictement inferieur) -> ce ne serait PAS un
+    point Pareto-optimal.
     """"""
-    front_brut = []
+    front = []
     for iteration in range(max_iter):
+        # --- Phase 1 : qualite maximale sous cout < cout_precedent ---
         opt = Optimize()
         qualite = Int('qualite')
         cout = Int('cout')
-
-        # Domaine : petits entiers pour garantir un calcul rapide
         opt.add(qualite >= 0, qualite <= 10)
         opt.add(cout >= 0, cout <= 20)
-
-        # Relation qualite-cout : une qualite q exige un cout minimal de q * 2
         opt.add(cout >= qualite * 2)
-
-        # Exclusion : forcer un cout strictement plus bas que le precedent
-        for (_, c_prec) in front_brut:
+        for (_, c_prec) in front:
             opt.add(cout < c_prec)
-
-        # Objectif : maximiser la qualite
         opt.maximize(qualite)
-
         if opt.check() != sat:
             break  # plus de solution : front complet
+        q_val = opt.model()[qualite].as_long()
 
-        m = opt.model()
-        q_val = m[qualite].as_long()
-        c_val = m[cout].as_long()
-        front_brut.append((q_val, c_val))
-
-    # Dedoublonner : ne garder qu'un point par niveau de qualite
-    # (Z3 peut trouver plusieurs points de meme qualite avec des couts differents)
-    front = []
-    qualites_vues = set()
-    for (q, c) in front_brut:
-        if q not in qualites_vues:
-            front.append((q, c))
-            qualites_vues.add(q)
+        # --- Phase 2 : a qualite fixee, cout minimal -> point reellement Pareto-optimal ---
+        opt2 = Optimize()
+        cout2 = Int('cout2')
+        opt2.add(cout2 >= q_val * 2)
+        opt2.add(cout2 <= 20)
+        for (_, c_prec) in front:
+            opt2.add(cout2 < c_prec)
+        opt2.minimize(cout2)
+        if opt2.check() != sat:
+            break
+        c_val = opt2.model()[cout2].as_long()
+        front.append((q_val, c_val))
 
     return front
 
@@ -4662,10 +4688,10 @@ for i, (q, c) in enumerate(front):
 
 print(f""\n{len(front)} points Pareto-optimaux trouves (qualites distinctes)."")
 print(""Chaque point est un compromis : pour baisser le cout, il faut"")
-print(""sacrifier de la qualite (puisque cout_min = 2 * qualite)."")",,,,,,,,367c02cd5ab95ddb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,382a21b8,markdown,fr,5676a9d70c705e13,"### Visualiser le front de Pareto
+print(""sacrifier de la qualite (puisque cout_min = 2 * qualite)."")",,,,,,,,e2aced291cd4ff26,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,382a21b8,markdown,fr,b815330396bfe0cc,"### Visualiser le front de Pareto
 
-Un tableau de nombres ne rend pas justice au concept de **compromis**. En projetant chaque point Pareto-optimal dans le plan (qualité, coût), le front devient une courbe descendante : chaque pas vers un coût plus bas coûte de la qualité. La droite `coût_min = 2 × qualité` (la frontière de faisabilité imposée par le modèle) apparaît en pointillés : on voit immédiatement que certains points Pareto-optimaux sont *strictement au-dessus* de cette borne minimale — Z3 les a choisis parce qu'à qualité fixée, plusieurs coûts sont Pareto-équivalents, et le solveur en échantillonne un. C'est précisément ce que le front de Pareto révèle qu'un simple « minimiser le coût » cacherait.",,,,,,,,5676a9d70c705e13,,,,,,,
+Un tableau de nombres ne rend pas justice au concept de **compromis**. En projetant chaque point Pareto-optimal dans le plan (qualité, coût), le front devient une courbe descendante : chaque pas vers un coût plus bas coûte de la qualité. La droite `coût_min = 2 × qualité` (la frontière de faisabilité imposée par le modèle) apparaît en pointillés : les points du front se superposent exactement à cette droite. Ce n'est pas un hasard — pour ce modèle, le coût minimal d'une qualité `q` vaut précisément `2*q` (contrainte `cout >= 2*qualite`), et l'énumération en deux phases (maximiser la qualité, *puis* minimiser le coût à qualité fixée) garantit que chaque point retombe sur ce plancher. On obtient ainsi la véritable frontière de Pareto : aucun point n'est dominé.",,,,,,,,b815330396bfe0cc,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,3793c9d6,code,fr,62da6eba65d33ef4,"# Visualisation du front de Pareto : qualite (x) vs cout (y).
 # On distingue les points Pareto-optimaux de la borne minimale cout = 2 * qualite.
 
@@ -4699,22 +4725,23 @@ plt.show()
 
 print(f""Le front comporte {len(front)} compromis Pareto-optimaux."")
 print(""La pente descendante illustre le trade-off : baisser le coût dégrade la qualité."")",,,,,,,,62da6eba65d33ef4,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s4-interp,markdown,fr,71c4b47d9ef0f9ba,"### Interpretation : front de Pareto
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s4-interp,markdown,fr,02bdb9d4ef18702e,"### Interpretation : front de Pareto
 
-**Sortie obtenue** : une liste de points `(qualite, cout)` tries par cout decroissant. Chaque point est Pareto-optimal : on ne peut pas ameliorer un objectif sans degrader l'autre.
+**Sortie obtenue** : une liste de points `(qualite, cout)` tries par cout decroissant. Chaque point est **Pareto-optimal** : on ne peut pas ameliorer un objectif sans degrader l'autre. Ici, comme le cout minimal d'une qualite `q` vaut `2*q`, chaque point retombe exactement sur le plancher `cout = 2*qualite`.
 
 | Étape | Action | Résultat |
 |-------|--------|----------|
-| 1 | `opt.maximize(qualite)` sans contrainte de cout | Point avec qualite maximale |
-| 2 | Ajouter `cout < cout_precedent`, re-maximiser | Point avec cout plus bas |
+| 1 | `opt.maximize(qualite)` sous `cout < cout_precedent` | Qualite maximale encore atteignable |
+| 2 | `opt2.minimize(cout)` a qualite fixee | Cout minimal pour cette qualite -> point reellement Pareto-optimal |
 | 3 | Repeter jusqu'a `unsat` | Front complet |
 
 **Points cles** :
 1. Le front de Pareto contient les **compromis optimaux** : aucun point n'est domine par un autre.
-2. Le nombre de points est fini (domains entiers petits), mais peut etre grand si les ranges sont larges.
-3. Cette méthode d'enumeration par exclusion successive est simple mais couteuse : a chaque itération, on ajoute une contrainte. Pour de grands fronts, on prefere des algorithmes specialises.
+2. La **phase 2** (minimiser le cout a qualite fixee) est essentielle : sans elle, Z3 renvoie un cout quelconque entre `2*q` et le cout precedent, et le point obtenu est alors domine — ce ne serait pas un vrai point Pareto-optimal.
+3. Le nombre de points est fini (domains entiers petits), mais peut etre grand si les ranges sont larges.
+4. Cette méthode d'enumeration par exclusion successive est simple mais couteuse : a chaque itération, on ajoute une contrainte. Pour de grands fronts, on prefere des algorithmes specialises.
 
-> **Note technique** : On maintient les domains entiers **petits** (0-10 pour la qualite, 0-20 pour le cout) pour garantir que chaque appel a `opt.check()` est quasi instantane. Avec de larges ranges de `Real`, l'enumeration du front de Pareto peut devenir prohibitif.",,,,,,,,71c4b47d9ef0f9ba,,,,,,,
+> **Note technique** : On maintient les domains entiers **petits** (0-10 pour la qualite, 0-20 pour le cout) pour garantir que chaque appel a `opt.check()` est quasi instantane. Avec de larges ranges de `Real`, l'enumeration du front de Pareto peut devenir prohibitif.",,,,,,,,02bdb9d4ef18702e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-ex1-intro,markdown,fr,acfe400d0bd0fb1b,"## Exercice 1 : Construire un front de Pareto
 
 ### Enonce
@@ -4890,13 +4917,13 @@ def satisfaire_preferences(n_items: int, n_slots: int, preferences: list) -> dic
 prefs_test = [(0, 0), (1, 0), (2, 1), (3, 1)]
 resultat = satisfaire_preferences(4, 4, prefs_test)
 print(""Resultat MaxSAT :"", resultat)",,,,,,,,7572d7125b0682f4,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s6-intro,markdown,fr,4a9ebbc4fda9004b,"## 6. Cas pratique — allocation de budget
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s6-intro,markdown,fr,1278c73480c3a7e6,"## 6. Cas pratique — allocation de budget
 
 Synthesisons les techniques vues (contraintes dures, contraintes souples ponderees, optimisation multi-objectif) sur un cas concret d'**allocation de budget**.
 
 ### Scénario
 
-Une organisation dispose d'un budget de **100 unites** a repartir entre 5 projets. Chaque projet $i$ a :
+Une organisation dispose d'un budget de **80 unites** a repartir entre 5 projets. Chaque projet $i$ a :
 - une **valeur unitaire** $v_i$ (gain par unite investie)
 - un **financement minimum** $m_i$ (en-dessous duquel le projet n'est pas viable)
 - une **priorite** $p_i$ (1 = haute, 2 = moyenne, 3 = basse)
@@ -4904,8 +4931,8 @@ Une organisation dispose d'un budget de **100 unites** a repartir entre 5 projet
 Objectifs :
 1. **(Dur)** Respecter le budget total et les minimums de financement.
 2. **(Souple, pondere)** Preferer financert les projets haute priorite au-dela de leur minimum.
-3. **(Principal)** Maximiser la valeur totale.",,,,,,,,4a9ebbc4fda9004b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s6-code,code,fr,2c5b7cf421a63f6c,"# Allocation de budget multi-projets avec contraintes dures, souples et objectif principal.
+3. **(Principal)** Maximiser la valeur totale.",,,,,,,,1278c73480c3a7e6,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s6-code,code,fr,3b149018d9ad5e66,"# Allocation de budget multi-projets avec contraintes dures, souples et objectif principal.
 
 opt = Optimize()
 
@@ -4918,7 +4945,7 @@ projets = [
     (""Delta"", 2, 12, 3),   # basse priorite
     (""Epsil"", 4,  6, 2),   # moyenne priorite
 ]
-budget_total = 100
+budget_total = 80
 n_projets = len(projets)
 
 # Variables : allocation[i] = montant investi dans le projet i
@@ -4980,25 +5007,40 @@ if opt.check() == sat:
     print(""-"" * 50)
     print(f""{'TOTAL':>8} | {'':>5} | {'':>4} | {'':>4} | {total_alloue:>6} | {total_valeur:>7}"")
     print(f""\nCout des violations souples : {m[cout_violations].as_long()}"")
-    print(f""Budget non utilise : {budget_total - total_alloue}"")",,,,,,,,2c5b7cf421a63f6c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s6-interp,markdown,fr,756fa4ec59242f29,"### Interpretation : allocation multi-objectif complete
+    print(f""Budget non utilise : {budget_total - total_alloue}"")",,,,,,,,3b149018d9ad5e66,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s6-interp,markdown,fr,0de087dcf6ef2308,"### Interpretation : allocation multi-objectif complete
 
-**Sortie obtenue** : Z3 produit une allocation qui respecte tous les minimums de financement (contraintes dures), minimise les violations de bonus prioritaire (contraintes souples), puis maximise la valeur totale.
+**Sortie obtenue** : avec un budget de 80 (inférieur à la demande idéale de 5 x 20 = 100), Z3 ne peut pas satisfaire toutes les contraintes souples simultanément. Il produit une allocation **non uniforme** qui révèle les deux mécanismes distincts du capstone :
 
-| Type de contrainte | Mécanisme Z3 | Effet sur la solution |
-|--------------------|-------------|----------------------|
-| Budget total | `somme_alloc <= 100` | Contrainte dure absolue |
-| Minimum par projet | `alloc[i] >= fin_min` | Chaque projet viable |
-| Bonus priorite | `Or(alloc[i] >= 20, r)` + poids | Projets prioritaires favorises |
-| Valeur totale | `maximize(valeur_totale)` | Optimisee en second lieu |
+| Projet | Val/u | Min | Prio | Alloué | Valeur | Bonus prio ? |
+|--------|-------|-----|------|--------|--------|--------------|
+| Alpha | 5 | 10 | 1 | 20 | 100 | Oui |
+| Beta | 3 | 8 | 2 | **8** | 24 | **Non** (ramené au min) |
+| Gamma | 7 | 5 | 1 | 20 | 140 | Oui |
+| Delta | 2 | 12 | 3 | **12** | 24 | **Non** (ramené au min) |
+| Epsil | 4 | 6 | 2 | 20 | 80 | Oui |
+| **TOTAL** | | | | **80** | **368** | cout = 6 |
 
-**Points cles** :
-1. Les contraintes dures garantissent la **faisabilite** (budget, minimums).
-2. Les contraintes souples hierarchisent les **préférences** (favoriser les projets prioritaires).
-3. L'objectif principal maximise la **valeur** une fois les préférences honorées.
-4. L'ordre `minimize` puis `maximize` impose la lexicographie : les violations sont eliminees en priorite, puis la valeur est maximisee.
+**Pourquoi cette instance est discriminante ?**
 
-> **Note technique** : Ce cas pratique combine les trois techniques du notebook : relaxation booleenne (section 2/5), lexicographie (section 3) et contraintes dures (NB01). C'est le pattern typique des problemes d'allocation de ressources reels.",,,,,,,,756fa4ec59242f29,,,,,,,
+1. **La hiérarchie des priorités est ACTIVE** : Z3 ne peut honorer qu'un sous-ensemble des bonus prioritaires. Il sacrifie en priorité le projet de **basse priorité Delta (poids 1)**, le ramenant à son minimum 12, puis **Beta (poids 5)** à son minimum 8. Les projets haute priorité (Alpha, Gamma prio 1 + Epsil prio 2 tenu) restent à 20. Le cout total des violations = 5 (Beta) + 1 (Delta) = **6** -- exactement l'ordre imposé par la pondération. Si le budget avait permis 100, toutes les contraintes souples seraient satisfaites (cout = 0) et la hiérarchie n'aurait eu **aucun effet visible**.
+
+2. **La maximisation de valeur est ACTIVE** : une fois le cout des violations minimisé, Z3 répartit le budget résiduel vers les projets les plus rentables. Gamma (valeur 7) est porté à son plafond pertinent, et le budget économisé sur Delta (valeur 2, le moins rentable) est conservé pour les projets à plus forte valeur. Avec budget=100, l'allocation était forcée à (20,20,20,20,20) et la valeur 420 était identique à celle d'une répartition uniforme triviale -- l'objectif de valeur n'aurait rien pu discriminer.
+
+| Type de contrainte | Mécanisme Z3 | Effet sur la solution (budget=80) |
+|--------------------|-------------|-----------------------------------|
+| Budget total | `somme_alloc <= 80` | Contrainte dure absolue |
+| Minimum par projet | `alloc[i] >= fin_min` | Chaque projet viable (Beta=8, Delta=12 à leur minimum) |
+| Bonus priorité | `Or(alloc[i] >= 20, r)` + poids | Hiérarchie ACTIVE : Delta (poids 1) puis Beta (poids 5) sacrifiés |
+| Valeur totale | `maximize(valeur_totale)` | Optimisée APRÈS cout minimisé : budget vers projets rentables |
+
+**Points clés** :
+1. Les contraintes dures garantissent la **faisabilité** (budget, minimums).
+2. Les contraintes souples hiérarchisent les **préférences** -- mais ne sont visibles **que si le budget est contraint** (ici 80 < 100). Sur un budget généreux, toutes les préférences sont honorées (cout = 0) et la hiérarchie devient invisible.
+3. L'objectif principal maximise la **valeur** une fois les préférences honorées au mieux -- ici aussi, ne discrimine que parce que l'instance force un arbitrage.
+4. L'ordre `minimize(cout)` puis `maximize(valeur)` impose la lexicographie : éliminer les violations d'abord (Delta puis Beta), puis maximiser la valeur sur l'espace restant.
+
+> **Leçon Prong-B** : un problème d'allocation ne met en valeur l'optimisation multi-objectif que si la demande dépasse la ressource. Avec budget=100 = somme exacte des seuils souples, le solveur n'avait aucun arbitrage à faire -- il suffisait de donner 20 à chacun. La réduction à budget=80 force l'arbitrage et rend les deux objectifs (hiérarchie + valeur) observables. C'est le cas dégénéré qui rend l'exemple pédagogiquement instructif.",,,,,,,,0de087dcf6ef2308,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-ex3-intro,markdown,fr,2ee30202c37e3f79,"## Exercice 3 : Allocation de budget avec priorites
 
 ### Enonce
@@ -5971,7 +6013,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c7,ma
 
 
 Plutot que d'affirmer que le solveur est plus rapide, **mesurons** l'ecart. L'espace de recherche brut est $(5!)^5$ : chaque attribut est une permutation des 5 maisons, independamment. On chronometre aussi la resolution Z3, puis on **prouve l'unicite** de la solution en ajoutant la negation du temoin trouve et en re-resolvant (on attend `unsat`).",,,,,,,,8bdea66954b73fea,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c8,code,fr,80b257c5e7198c8c,"# (1) Espace de recherche brut
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c8,code,fr,1e1c318b329ea532,"# (1) Espace de recherche brut
 
 import math
 
@@ -6015,16 +6057,16 @@ print(f""Z3 solve temps                 : {z3_ms:.1f} ms"")
 
 print(f""Solution unique (UNSAT si nie) : {unique}"")
 
-print(f"" -> Z3 resout en millisecondes un espace de 2,5 milliards, et prouve l'unicite sans enumeration."")",,,,,,,,80b257c5e7198c8c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c9,markdown,fr,377c1959741e19eb,"## Lecture du benchmark
+print(f"" -> Z3 resout en millisecondes un espace de ~{space/1e9:.0f} milliards, et prouve l'unicite sans enumeration."")",,,,,,,,1e1c318b329ea532,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c9,markdown,fr,e69879dd2f3fe1cc,"## Lecture du benchmark
 
 
 
-Sur cette enigme, l'ecart est **frappant** : Z3 resout les 25 variables entrelacees en quelques millisecondes, alors que la brute force doit affronter **2,5 milliards** de combinaisons (soit plusieurs minutes même a cadence elevee, et bien plus avec le test des 15 indices a chaque candidat).
+Sur cette enigme, l'ecart est **frappant** : Z3 resout les 25 variables entrelacees en quelques millisecondes, alors que la brute force doit affronter **~25 milliards** de combinaisons (soit plusieurs minutes même a cadence elevee, et bien plus avec le test des 15 indices a chaque candidat).
 
 
 
-La **propagation** fait tout le travail : `Norwegian == 0` et `Milk == 2` sont des ancres imposees par les indices 9 et 8, puis les egalites de position et les adjacences reduisent les domaines restants jusqu'a ce qu'il ne reste qu'une seule combinaison coherente. C'est exactement la mecanique qu'un humain deployerait a la main sur le tableau - mais le solveur la realise sans erreur et la **prouve complete** (unicite via `unsat` sur la negation).",,,,,,,,377c1959741e19eb,,,,,,,
+La **propagation** fait tout le travail : `Norwegian == 0` et `Milk == 2` sont des ancres imposees par les indices 9 et 8, puis les egalites de position et les adjacences reduisent les domaines restants jusqu'a ce qu'il ne reste qu'une seule combinaison coherente. C'est exactement la mecanique qu'un humain deployerait a la main sur le tableau - mais le solveur la realise sans erreur et la **prouve complete** (unicite via `unsat` sur la negation).",,,,,,,,e69879dd2f3fe1cc,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c10,markdown,fr,6fc051499651d077,"## Exercices
 
 
@@ -6122,7 +6164,7 @@ def resoudre_mini_zebra():
 
 
 print(""Exercice 3 a completer : modelisez un mini-Zebra a 4 maisons / 4 attributs."")",,,,,,,,8510f5cc66f6ad39,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c17,markdown,fr,f97a802ac873d73e,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb,c17,markdown,fr,719a1737806908dd,"## Conclusion
 
 
 
@@ -6132,7 +6174,7 @@ L'enigme d'Einstein illustre le gain du **declaratif** sur une classe de problem
 
 - L'**encodage par position** (une variable entiere = position de chaque valeur) transforme un puzzle apparemment qualitatif en un système de contraintes arithmetiques : egalites (`Brit == Red`), adjacences (`|Blend - Cat| == 1`), permutations (`Distinct`).
 
-- La **propagation de contraintes** resout les 25 variables entrelacees en millisecondes la ou la brute force affronte 2,5 milliards de combinaisons ; le solveur **prouve l'unicite** en niant le temoin et en observant `unsat`.
+- La **propagation de contraintes** resout les 25 variables entrelacees en millisecondes la ou la brute force affronte ~25 milliards de combinaisons ; le solveur **prouve l'unicite** en niant le temoin et en observant `unsat`.
 
 - Le modèle est **paramètre par les données** : ajouter un indice, un attribut ou une maison se fait en modifiant l'instance, sans re-ecrire l'algorithme de resolution.
 
@@ -6142,7 +6184,7 @@ L'enigme d'Einstein illustre le gain du **declaratif** sur une classe de problem
 
 
 
-Suite logique : retour a la [serie Z3-Python](README.md), ou explorez la version C# [Z3.Linq](../Z3-Linq2Z3/README.md) qui aborde la même enigme via la couche declarative LINQ.",,,,,,,,f97a802ac873d73e,,,,,,,
+Suite logique : retour a la [serie Z3-Python](README.md), ou explorez la version C# [Z3.Linq](../Z3-Linq2Z3/README.md) qui aborde la même enigme via la couche declarative LINQ.",,,,,,,,719a1737806908dd,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb,90651222,markdown,fr,888a557ccd189ba4,"← [09 - Enigme d'Einstein](Z3-Python-09-Enigme-Einstein.ipynb) | [README Z3-Python](README.md)
 
 # 10. Cryptarithmes (SEND + MORE = MONEY)
@@ -6881,7 +6923,7 @@ print(""Check(assumptions) : %s"" % s4.check())
 core = s4.unsat_core()
 print(""UnsatCore = { %s }   (x>=0 exclu du core)"" % '  '.join(str(c) for c in core))
 ",,,,,,,,2ac6415d7f43d26e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,f30db165,markdown,fr,2995dfc9ef1605a1,"## 6. Ce que ce notebook a demontre
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,f30db165,markdown,fr,6bd3a0f71d90b350,"## 7. Ce que ce notebook a demontre
 
 Trois lecons sur le noyau d'insatisfiabilite :
 1. **Du verdict a l'explication** - `unsat` dit *qu'il n'y a pas* de solution ; `unsat_core()` dit *pourquoi* (lesquelles contraintes conflictuent).
@@ -6892,10 +6934,14 @@ Trois lecons sur le noyau d'insatisfiabilite :
 
 
 
-Cette capacite d'explication distingue un solveur d'un simple oracle booléen : il ne dit pas seulement *non*, il dit *a cause de quoi*.",,,,,,,,2995dfc9ef1605a1,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0a3b9d82,markdown,fr,71f51d8d8a05acc3,"## 7. Exercices
+4. **La ou ca compte** - sur un systeme ou aucun conflit n'est visible a l'oeil (section 6), le core isole la combinaison coupable parmi de nombreuses contraintes innocentes -- c'est la que le diagnostic devient indispensable, pas decoratif.
 
-Les trois exercices ci-dessous vous font manipuler le UNSAT core sur des variantes : conflit cache parmi 4 contraintes (1), planning avec relachement (2), core minimal parmi 10 (3). Chaque stub est self-contained : les fonctions (`Int`, `Bool`, `Solver`, `assert_and_track`) sont définies dans les sections précédentes.",,,,,,,,71f51d8d8a05acc3,,,,,,,
+
+
+Cette capacite d'explication distingue un solveur d'un simple oracle booléen : il ne dit pas seulement *non*, il dit *a cause de quoi*.",,,,,,,,6bd3a0f71d90b350,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0a3b9d82,markdown,fr,487c7c68619279ac,"## 8. Exercices
+
+Les trois exercices ci-dessous vous font manipuler le UNSAT core sur des variantes : conflit cache parmi 4 contraintes (1), planning avec relachement (2), core minimal parmi 10 (3). Chaque stub est self-contained : les fonctions (`Int`, `Bool`, `Solver`, `assert_and_track`) sont définies dans les sections précédentes.",,,,,,,,487c7c68619279ac,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,b2f2760f,markdown,fr,3765c4ece7e53e5f,"### Exercice 1 - Core sur un conflit cache (2 coupables parmi 4)
 
 Construisez 4 contraintes sur `z` dont 2 sont compatibles et 2 en conflit (ex : `z <= 3`, `z >= 0`, `z == 7`, `z != 9`). Obtenez le core et verifiez qu'il ne contient **que** les 2 coupables.
@@ -7432,7 +7478,7 @@ complète de `z3-py`, sans la couche déclarative du binding C# Z3.Linq.
 toutes différentes) ou un Sudoku avec objectif de minimiser le nombre de givens.
 
 ← [11 - Coloration de graphe](Z3-Python-11-Graph-Coloring.ipynb) | [README Z3-Python](README.md)",,,,,,,,3dd4c9b6b0133863,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,00a1074c,markdown,fr,b19918631f8f8e2b,"← [15 - Tableaux imbriqués et grilles 2D](Z3-Python-15-Nested-Arrays-2D.ipynb) | [README Z3-Python](README.md)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,00a1074c,markdown,fr,071aab9bda041a0b,"← [15 - Tableaux imbriqués et grilles 2D](Z3-Python-15-Nested-Arrays-2D.ipynb) | [README Z3-Python](README.md)
 
 # 16. Meal-Planner déclaratif : du modèle Z3 au plan hebdomadaire visualisé
 
@@ -7446,14 +7492,22 @@ Ce notebook porte le C# `06_Meal_Planner_Modelisation` (Z3.Linq) vers z3-py et c
 **trois approches de modélisation** d'un même problème — index-based, énumération, booléenne —
 puis montre comment `Optimize` trouve le menu minimal en coût, et comment un modèle à matrice
 booléenne `jours × plats` produit un **plan hebdomadaire** que ne sait pas énumérer une
-heuristique gloutonne (prong B : le couplage fenêtre-calorique × variété est non compositionnel).",,,,,,,,b19918631f8f8e2b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,0761223d,code,fr,7fc199bd04fc5995,"# Imports : z3 (solveur SMT + Optimize) + time (mesure de résolution).
+heuristique gloutonne (prong B : le couplage fenêtre-calorique × variété est non compositionnel).
+
+> **Aller plus loin : la jambe Python-large (corpus réel).** Ce notebook pose la modélisation
+> sur un corpus **jouet** (10 puis 24 plats saisis à la main). La track se poursuit sur un
+> **corpus réel** Ciqual × RecipeML (R ≈ 594 recettes) :
+> [16b — couche de données](Z3-Python-16b-Meal-Planner-Data-External.ipynb) ·
+> [16c — capstone patient](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) ·
+> [16d — convergence à l'échelle](Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) ·
+> [16e — optimisation](Z3-Python-16e-Meal-Planner-Optimize.ipynb).",,,,,,,,071aab9bda041a0b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,0761223d,code,fr,dded0ba7c391484c,"# Imports : z3 (solveur SMT + Optimize + pseudo-Booleen) + time (mesure de resolution).
 from z3 import (Solver, Optimize, Int, Bool, And, Or, Not, Implies, If,
-                Sum, sat, unsat, set_param)
+                Sum, PbEq, sat, unsat, set_param)
 import time
 set_param('parallel.enable', False)
 
-# Base de données nutritionnelle : (nom, kcal, proteines_g, cout_centimes, categorie).
+# Base de donnees nutritionnelle : (nom, kcal, proteines_g, cout_centimes, categorie).
 FOODS = [
     (""Salade verte"",      80,  2,  300, ""entree""),
     (""Soupe de legumes"", 120,  4,  250, ""entree""),
@@ -7469,16 +7523,16 @@ FOODS = [
 NAMES, KCALS, PROTS, COSTS, CATS = map(list, zip(*FOODS))
 CATS_SET = (""entree"", ""plat"", ""dessert"")
 print(f""Base nutritionnelle : {len(FOODS)} aliments ({sum(c=='entree' for c in CATS)} entrees, ""
-      f""{sum(c=='plat' for c in CATS)} plats, {sum(c=='dessert' for c in CATS)} desserts)."")",,,,,,,,7fc199bd04fc5995,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,f196c99c,code,fr,3626168134602e1e,"def exactement_un(solver, booleens):
-    """"""Contrainte 'exactement un vrai' parmi une liste de Bool z3.
-    Encode : au moins un (Or) + au plus un (exclusion pairwise Implies(x, Not(y))).""""""
-    solver.add(Or(booleens))
-    for i in range(len(booleens)):
-        for j in range(i + 1, len(booleens)):
-            solver.add(Implies(booleens[i], Not(booleens[j])))
+      f""{sum(c=='plat' for c in CATS)} plats, {sum(c=='dessert' for c in CATS)} desserts)."")",,,,,,,,dded0ba7c391484c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,f196c99c,code,fr,e7487ea0c2b04cdd,"def exactement_un(solver, booleens):
+    # Contrainte 'exactement un vrai' parmi une liste de Bool z3.
+    # Encode nativement une contrainte pseudo-booleenne : la somme ponderee (coeffs tous 1)
+    # egale 1 -- c'est-a-dire 'au moins un' ET 'au plus un' en UNE assertion, au lieu de
+    # l'encodage naif (Or + exclusion pairwise en O(n^2)). Idiom PbEq retrouve a l'echelle
+    # reelle dans les notebooks 16c/16d (cf. forward-links en conclusion).
+    solver.add(PbEq([(b, 1) for b in booleens], 1))
 
-print(""Helper exactement_un defini (au-moins-un + exclusion pairwise)."")",,,,,,,,3626168134602e1e,,,,,,,
+print(""Helper exactement_un defini (PbEq natif : exactement-un en 1 assertion, vs O(n^2) pairwise)."")",,,,,,,,e7487ea0c2b04cdd,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,4a54fe08,markdown,fr,df1d15d7d91abbe1,"## 1. Approche index-based : un `Int` par catégorie
 
 L'encodage le plus direct : une variable `Int` par catégorie, dont la valeur est l'**index**
@@ -7728,21 +7782,23 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,54fb83c3
 # Etape 3 : ajouter total_carbs_g*4 >= 0.45*total_cal ET <= 0.65*total_cal (x100 pour entiers).
 # Etape 4 : compter les solutions (negation du modele + boucle).
 print(""Exercice 1 a completer : contrainte macro glucides (45-65%)."")",,,,,,,,2f11d3f7e47cd947,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,266e11cc,markdown,fr,00d8f3c9da7239f0,"### Exercice 2 — Plan hebdomadaire à 5 jours avec contrainte de coût
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,266e11cc,markdown,fr,3eb9ff200257af3a,"### Exercice 2 — Plan hebdomadaire à **variété maximale**
 
-Reprenez `plan_hebdomadaire` (§5) avec `D = 5` jours, et transformez-le en `Optimize` qui
-**minimise le coût total de la semaine** tout en respectant fenêtre kcal + variété. Quel est
-le plan le moins cher ? Quel plat revient le plus souvent (et pourquoi la contrainte de variété
-l'interdit-elle strictement) ?
+Reprenez `plan_hebdomadaire_optimal` (§5b), mais **changez l'objectif** : au lieu de
+minimiser le coût, **maximisez le nombre de plats distincts** servis sur la semaine.
+Combien des `ND2 = 24` plats le solveur parvient-il à utiliser au moins une fois ?
+Pourquoi la contrainte « 1 plat par catégorie et par jour » fixe-t-elle un plafond
+théorique à cette variété ?
 
-*Indice* : `week_cost = Sum([If(Sel[j][i], COST_i, 0) for j in range(D) for i in range(ND)])`,
-puis `opt.minimize(week_cost)`.",,,,,,,,00d8f3c9da7239f0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,17680bc0,code,fr,8691f7154246969e,"# Exercice 2 : plan hebdomadaire D=5 a cout minimal (Optimize.minimize).
+*Indice* : `distinct_count = Sum([If(Or([Sel[j][i] for j in range(D2)]), 1, 0) for i in range(ND2)])`,
+puis `opt.maximize(distinct_count)`. (Contraste avec §5b qui *minimisait* le coût :
+deux objectifs différents sur le même encodage.)",,,,,,,,3eb9ff200257af3a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,17680bc0,code,fr,d14155f98388007c,"# Exercice 2 : plan hebdomadaire a VARIETE MAXIMALE (Optimize.maximize).
 # TODO etudiant :
-# Etape 1 : passer Solver -> Optimize, D=5.
-# Etape 2 : calculer week_cost = Sum(If(Sel[j][i], COST_i, 0)) sur tous j, i.
-# Etape 3 : opt.minimize(week_cost), afficher le plan + cout total.
-print(""Exercice 2 a completer : plan D=5 a cout minimal."")",,,,,,,,8691f7154246969e,,,,,,,
+# Etape 1 : reprendre l'encodage de plan_hebdomadaire_optimal (D=7, meme contraintes hard).
+# Etape 2 : calculer distinct_count = Sum(If(Or(Sel[j][i] pour tout j), 1, 0) pour tout i).
+# Etape 3 : opt.maximize(distinct_count), afficher le plan + le nombre de plats distincts.
+print(""Exercice 2 a completer : plan D=7 a variete maximale (maximiser les plats distincts)."")",,,,,,,,d14155f98388007c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,1745006c,markdown,fr,95513fef58173958,"### Exercice 3 — Démontrer l'échec du glouton (prong B)
 
 Implémentez le glouton décrit au §5 (remplir jour par jour avec le premier trio valide restant)
@@ -7758,7 +7814,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,50efcc07
 # Etape 2 : pour chaque jour, premier trio (bf+ lunch+dinner) valide et non-utilise.
 # Etape 3 : si aucun trio -> echec (print). Comparer au plan SMT de la cellule precedente.
 print(""Exercice 3 a completer : demontrer l'echec du glouton vs SMT."")",,,,,,,,0dfed0cce09c0504,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,76bef050,markdown,fr,a028de20e14a4691,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,76bef050,markdown,fr,c36850ebb712e071,"## Conclusion
 
 Ce notebook a porté le **meal-planner déclaratif** du C# Z3.Linq vers z3-py, en montrant trois
 encodages du même problème (index / énumération / booléen), l'optimisation du coût via
@@ -7780,7 +7836,17 @@ Ce notebook est le premier d'une série appliquée : les C# 07-09 (données exte
 patient, convergence à l'échelle) étendent ce socle vers des données réelles et la
 passage-à-l'échelle.
 
-← [15 - Tableaux imbriqués et grilles 2D](Z3-Python-15-Nested-Arrays-2D.ipynb) | [README Z3-Python](README.md)",,,,,,,,a028de20e14a4691,,,,,,,
+← [15 - Tableaux imbriqués et grilles 2D](Z3-Python-15-Nested-Arrays-2D.ipynb) | [README Z3-Python](README.md)
+
+---
+
+> **Suite de la track (corpus réel).** Ce notebook reste sur un corpus **jouet**. L'idiom
+> `PbEq` (pseudo-booléen natif) utilisé ici pour `exactement_un` est la clé qui rend le
+> meal-planner **tractable à l'échelle réelle** (~594 recettes) : cf.
+> [16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) (données),
+> [16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) (capstone patient),
+> [16d](Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) (convergence : l'encodage décide),
+> [16e](Z3-Python-16e-Meal-Planner-Optimize.ipynb) (optimisation + MaxSAT + Pareto).",,,,,,,,c36850ebb712e071,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb,377a772e,markdown,fr,db5b426ae2f0a203,"# Z3-Python 17 — Théorie des tableaux : Select, Store et axiomes de McCarthy
 
 **Navigation** : [Index Z3-Python](README.md) | [Index SMT](../README.md) | [Index SymbolicAI](../../README.md) | [Série Z3 C#](../Z3-Linq2Z3/README.md)
@@ -8209,3 +8275,1833 @@ Ce notebook démontre le principe fondamental de la modélisation SMT : **le pro
 
 **Leçon** : choisir l'encodage selon le **contexte de raisonnement** (grille fixe vs dynamique), pas selon une prétendue « meilleure » représentation. Le solveur réécrit tout vers le même noyau SMT — la correction est garantie par les contraintes, pas par la syntaxe.
 ",,,,,,,,0b08363978c2dd5f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb,nb01-opt-prongb-intro,markdown,fr,767c789a23b43fdd,"### Aller plus loin : un cas ou le glouton echoue, et ou `Optimize` devient indispensable
+
+L'exemple precedent etait un sac a dos **non borne** (variables `>= 0`) avec un objet dominant : A a la meilleure **densite** (valeur/poids), donc la strategie **gloutonne** - remplir le sac en priorisant les objets les plus denses - donne *deja* l'optimum. Dans ce cas degenere, le moteur **branches-boundes** de `Optimize` n'apporte rien : une heuristique triviale suffit.
+
+Pour **voir** l'apport d'un solveur exact, il faut un probleme ou le glouton echoue. Passons au sac a dos **0/1** : chaque objet est pris une fois au plus (variable binaire `0` ou `1`), avec une instance classique (Cormen, Leiserson, Rivest, Stein) concue pour pieger le glouton. On compare alors les deux approches cote a cote.",,,,,,,,767c789a23b43fdd,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb,nb01-opt-prongb-code,code,fr,eb312ee3e1f89596,"# Sac a dos 0/1 (binaire) : pourquoi Optimize est indispensable.
+# Instance classique (Cormen et al.) : 3 objets, capacite 50 kg.
+# (nom, valeur, poids)
+objets = [(""A"", 60, 10), (""B"", 100, 20), (""C"", 120, 30)]
+CAPACITE = 50
+
+# --- 1. Heuristique gloutonne : trier par densite decroissante, prendre tant que possible ---
+ordre = sorted(range(len(objets)), key=lambda i: objets[i][1] / objets[i][2], reverse=True)
+poids_g, valeur_g, choix_g = 0, 0, []
+for i in ordre:
+    if poids_g + objets[i][2] <= CAPACITE:
+        poids_g += objets[i][2]
+        valeur_g += objets[i][1]
+        choix_g.append(objets[i][0])
+
+print(""Glouton (densite) :"", choix_g)
+print(f""  poids = {poids_g}/{CAPACITE} kg (capacite inutilisee : {CAPACITE - poids_g} kg)"")
+print(f""  valeur = {valeur_g}"")
+print()
+# --- 2. Z3 Optimize : resolution EXACTE du sac a dos 0/1 ---
+opt = Optimize()
+x = [Int(f""x_{i}"") for i in range(len(objets))]   # x_i = 1 si l'objet i est pris, 0 sinon
+for xi in x:
+    opt.add(xi >= 0, xi <= 1)                       # variable binaire 0/1
+opt.add(Sum([objets[i][2] * x[i] for i in range(len(objets))]) <= CAPACITE)
+opt.maximize(Sum([objets[i][1] * x[i] for i in range(len(objets))]))
+
+print(""Optimisation Z3 :"", opt.check())
+m = opt.model()
+choix_z = [objets[i][0] for i in range(len(objets)) if m[x[i]].as_long() == 1]
+poids_z = sum(objets[i][2] for i in range(len(objets)) if m[x[i]].as_long() == 1)
+valeur_z = sum(objets[i][1] for i in range(len(objets)) if m[x[i]].as_long() == 1)
+print(""Optimum Z3      :"", choix_z)
+print(f""  poids = {poids_z}/{CAPACITE} kg (capacite inutilisee : {CAPACITE - poids_z} kg)"")
+print(f""  valeur = {valeur_z}"")
+print()
+# --- 3. Confrontation : l'ecart rend visible la valeur d'Optimize ---
+ecart = valeur_z - valeur_g
+print(f""Ecart glouton -> optimum : {ecart} ({100 * ecart / valeur_z:.0f} % de valeur perdue)"")
+print(""-> le glouton est SOUS-OPTIMAL : Optimize trouve une meilleure solution."")",,,,,,,,eb312ee3e1f89596,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb,nb01-opt-prongb-interp,markdown,fr,c9a4d2b92c54d88f,"### Interpretation : pourquoi le glouton echoue (et pourquoi `Optimize` gagne)
+
+**Sortie obtenue** :
+
+| Methode | Objets choisis | Poids utilise | Valeur |
+|---------|----------------|---------------|--------|
+| Glouton (densite) | A, B | 30 / 50 kg | 160 |
+| Z3 `Optimize` (exact) | B, C | 50 / 50 kg | 220 |
+
+Le glouton echoue de **deux manieres cumulees** :
+
+1. **Mauvaise composition.** Il prend d'abord A (densite 6,0) puis B (densite 5,0), atteignant 30 kg. Il ne peut alors plus faire rentrer C (30 kg) : il abandonne. La solution optimale **abandonne A** pour liberer de la place et prend B + C (50 kg, valeur 220). Le glouton est **myope** : il ne peut pas ""voir"" que renoncer a l'objet le plus dense libere assez de capacite pour un objet plus valuable.
+2. **Capacite gaspillee.** Le glouton laisse **20 kg inutilises** (30/50), alors que l'optimum remplit le sac **parfaitement** (50/50). Un sac a dos 0/1 n'est pas juste un probleme de ""prendre le maximum d'objets"" : c'est un **equilibre global** que seul un parcours exact du domaine retrouve.
+
+**Lecon** : le sac a dos 0/1 est **NP-difficile**. Aucune heuristique gloutonne ne garantit l'optimum (le glouton peut etre arbitrairement mauvais sur certaines instances). `Optimize`, par son **exploration branches-boundes** avec preuves de borne, **garantit** l'optimum global - c'est precisement la capacite distinctive que la cellule precedente (instance degeneree) ne permettait pas d'exercer.
+
+> **Astuce** : variables binaires `x_i dans {0, 1}` modelisees par `Int` + contraintes `xi >= 0, xi <= 1`. Z3 expose aussi un type `Bool` mieux adapte aux pures decisions vrai/faux, mais la formulation entiere 0/1 se prete naturellement au calcul de poids et de valeur via `Sum`.",,,,,,,,c9a4d2b92c54d88f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,nb06cs-s3-interp-divergence,markdown,fr,e08264248e9befa0,"### Quand lexicographique differe vraiment de la somme ponderee
+
+L'exemple precedent convergeait : maximiser le revenu *puis* minimiser le cout donnait le meme resultat qu'un seul objectif (profit net), parce que les deux objectifs etaient monotones dans la meme variable `q`. La machinerie lexicographique de Z3 (`MkMaximize` puis `MkMinimize`, par ordre de declaration) n'etait donc pas *visible* dans la sortie.
+
+Voici un cas ou les deux strategies **divergent** : un catalogue de deux produits partageant une capacite de production, dont l'un est un *loss-leader* (fort revenu brut, mais vendu a perte).
+
+- **Produit premium** : revenu 8 EUR/unite, cout 10 EUR/unite (perte de 2 EUR/unite).
+- **Produit standard** : revenu 3 EUR/unite, cout 1 EUR/unite (profit de 2 EUR/unite).
+
+Un objectif de *chiffre d'affaires brut* pousse vers le premium ; un objectif de *profit net* pousse vers le standard. Le compromis est ici reel, et le choix strategique (priorite au CA vs priorite au profit) change la solution optimale -- c'est exactement ce que l'optimisation lexicographique permet de formaliser, et que la somme ponderee, elle, melange.",,,,,,,,e08264248e9befa0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb,nb06cs-s3-code-divergence,code,fr,c11bf803043c3fe7,"// Loss-leader : lexicographique (CA brut d'abord) vs somme ponderee (profit net).
+// Deux produits partagent une capacite de 15 unites (ll_q1 + ll_q2 <= 15).
+//   - premium (ll_q1) : revenu 8/u, cout 10/u   -> perte de 2/u
+//   - standard (ll_q2): revenu 3/u, cout 1/u    -> profit de 2/u
+const int CAPACITE = 15;
+
+// --- Strategie 1 : LEXICOGRAPHIQUE (max revenu, puis min cout) ---
+var ll_opt1 = ctx.MkOptimize();
+var ll_q1 = ctx.MkIntConst(""q1"");
+var ll_q2 = ctx.MkIntConst(""q2"");
+ll_opt1.Assert(ctx.MkGe(ll_q1, ctx.MkInt(0)), ctx.MkGe(ll_q2, ctx.MkInt(0)));
+ll_opt1.Assert(ctx.MkLe(ctx.MkAdd(ll_q1, ll_q2), ctx.MkInt(CAPACITE)));
+var ll_revenu = ctx.MkAdd(ctx.MkMul(ctx.MkInt(8), ll_q1), ctx.MkMul(ctx.MkInt(3), ll_q2));
+var ll_cout = ctx.MkAdd(ctx.MkMul(ctx.MkInt(10), ll_q1), ctx.MkMul(ctx.MkInt(1), ll_q2));
+ll_opt1.MkMaximize(ll_revenu);   // priorite 1 : chiffre d'affaires brut
+ll_opt1.MkMinimize(ll_cout);     // priorite 2 : cout (secondaire)
+if (ll_opt1.Check() == Status.SATISFIABLE) {
+    var ll_m1 = ll_opt1.Model;
+    long ll_a1 = ((IntNum)ll_m1.Evaluate(ll_q1)).Int64;
+    long ll_b1 = ((IntNum)ll_m1.Evaluate(ll_q2)).Int64;
+    long ll_r1 = 8*ll_a1 + 3*ll_b1, ll_c1 = 10*ll_a1 + 1*ll_b1;
+    Console.WriteLine(""Lexicographique (CA brut prioritaire) :"");
+    Console.WriteLine($""  premium={ll_a1}, standard={ll_b1} -> CA={ll_r1}, cout={ll_c1}, profit={ll_r1 - ll_c1}"");
+}
+
+// --- Strategie 2 : SOMME PONDEREE (max profit net = revenu - cout) ---
+var ll_opt2 = ctx.MkOptimize();
+var ll_p1 = ctx.MkIntConst(""p1"");
+var ll_p2 = ctx.MkIntConst(""p2"");
+ll_opt2.Assert(ctx.MkGe(ll_p1, ctx.MkInt(0)), ctx.MkGe(ll_p2, ctx.MkInt(0)));
+ll_opt2.Assert(ctx.MkLe(ctx.MkAdd(ll_p1, ll_p2), ctx.MkInt(CAPACITE)));
+var ll_profit = ctx.MkSub(ctx.MkAdd(ctx.MkMul(ctx.MkInt(8), ll_p1), ctx.MkMul(ctx.MkInt(3), ll_p2)),
+                          ctx.MkAdd(ctx.MkMul(ctx.MkInt(10), ll_p1), ctx.MkMul(ctx.MkInt(1), ll_p2)));
+ll_opt2.MkMaximize(ll_profit);
+if (ll_opt2.Check() == Status.SATISFIABLE) {
+    var ll_m2 = ll_opt2.Model;
+    long ll_a2 = ((IntNum)ll_m2.Evaluate(ll_p1)).Int64;
+    long ll_b2 = ((IntNum)ll_m2.Evaluate(ll_p2)).Int64;
+    long ll_r2 = 8*ll_a2 + 3*ll_b2, ll_c2 = 10*ll_a2 + 1*ll_b2;
+    Console.WriteLine(""Somme ponderee (profit net prioritaire) :"");
+    Console.WriteLine($""  premium={ll_a2}, standard={ll_b2} -> CA={ll_r2}, cout={ll_c2}, profit={ll_r2 - ll_c2}"");
+}
+",,,,,,,,c11bf803043c3fe7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s3-interp-divergence,markdown,fr,0b2748eecc2123d2,"### Quand lexicographique differe vraiment de la somme ponderee
+
+L'exemple precedent convergeait : maximiser le revenu *puis* minimiser le cout donnait le meme resultat qu'un seul objectif (profit net), parce que les deux objectifs etaient monotones dans la meme variable `q`. La machinerie lexicographique de Z3 (`maximize` puis `minimize` par ordre de priorite) n'etait donc pas *visible* dans la sortie.
+
+Voici un cas ou les deux strategies **divergent** : un catalogue de deux produits partageant une capacite de production, dont l'un est un *loss-leader* (fort revenu brut, mais vendu a perte).
+
+- **Produit premium** : revenu 8 EUR/unite, cout 10 EUR/unite (perte de 2 EUR/unite).
+- **Produit standard** : revenu 3 EUR/unite, cout 1 EUR/unite (profit de 2 EUR/unite).
+
+Un objectif de *chiffre d'affaires brut* pousse vers le premium ; un objectif de *profit net* pousse vers le standard. Le compromis est ici reel, et le choix strategique (priorite au CA vs priorite au profit) change la solution optimale -- c'est exactement ce que l'optimisation lexicographique permet de formaliser, et que la somme ponderee, elle, melange.",,,,,,,,0b2748eecc2123d2,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb,nb06-s3-code-divergence,code,fr,ae6fd89b1ad0c009,"# Loss-leader : lexicographique (CA brut d'abord) vs somme ponderee (profit net).
+# Deux produits partagent une capacite de 15 unites (q1 + q2 <= 15).
+#   - premium (q1) : revenu 8/u, cout 10/u   -> perte de 2/u
+#   - standard (q2): revenu 3/u, cout 1/u    -> profit de 2/u
+CAPACITE = 15
+
+# --- Strategie 1 : LEXICOGRAPHIQUE (max revenu, puis min cout) ---
+opt = Optimize()
+q1, q2 = Ints('q1 q2')
+opt.add(q1 >= 0, q2 >= 0, q1 + q2 <= CAPACITE)
+revenu = 8 * q1 + 3 * q2
+cout = 10 * q1 + 1 * q2
+opt.maximize(revenu)   # priorite 1 : chiffre d'affaires brut
+opt.minimize(cout)     # priorite 2 : cout (secondaire)
+assert opt.check() == sat
+m = opt.model()
+r1, c1 = 8 * m[q1].as_long() + 3 * m[q2].as_long(), 10 * m[q1].as_long() + 1 * m[q2].as_long()
+print(""Lexicographique (CA brut prioritaire) :"")
+print(f""  premium={m[q1].as_long()}, standard={m[q2].as_long()} -> CA={r1}, cout={c1}, profit={r1 - c1}"")
+
+# --- Strategie 2 : SOMME PONDEREE (max profit net = revenu - cout) ---
+opt2 = Optimize()
+p1, p2 = Ints('p1 p2')
+opt2.add(p1 >= 0, p2 >= 0, p1 + p2 <= CAPACITE)
+profit = (8 * p1 + 3 * p2) - (10 * p1 + 1 * p2)   # = -2*p1 + 2*p2
+opt2.maximize(profit)
+assert opt2.check() == sat
+m2 = opt2.model()
+r2, c2 = 8 * m2[p1].as_long() + 3 * m2[p2].as_long(), 10 * m2[p1].as_long() + 1 * m2[p2].as_long()
+print(""Somme ponderee (profit net prioritaire) :"")
+print(f""  premium={m2[p1].as_long()}, standard={m2[p2].as_long()} -> CA={r2}, cout={c2}, profit={r2 - c2}"")
+
+print(""\n=> Les deux strategies DIVERGENT : lexicographique sacrifie le profit pour"")
+print(""   le CA brut (premium a perte), la somme ponderee fait l'inverse (standard)."")",,,,,,,,ae6fd89b1ad0c009,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,3d4c302c,markdown,fr,a8a76435f19c26eb,"## 6. Le vrai test : un core invisible a l'inspection
+
+Les exemples precedents (sections 2 a 5) partagent une limite : dans chacun, le conflit est **visible a l'oeil nu** -- deux contraintes se contredisent textuellement (`h == 12` vs `h != 12`, `x == 1` vs `x == 2`). On n'a pas vraiment besoin de Z3 pour les isoler.
+
+C'est la que `unsat_core()` devient precieux : sur un systeme ou **aucune paire** de contraintes ne se contredit, mais ou l'insatisfiabilite **emerge d'une combinaison**. Cas concret, un projet de planification : quatre taches $T_0, T_1, T_2, T_3$ s'enchainent (chacune doit finir avant que la suivante commence), chacune dure 2 unites, et tout doit etre termine avant la date 7. Aucune contrainte prise isolement n'est absurde -- et pourtant le systeme est insatisfiable. Lequel des 11 ingredients faut-il relacher ?",,,,,,,,a8a76435f19c26eb,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,991f21a8,code,fr,2007235ddcc57885,"# Planification surcontrainte : 4 taches enchainees (T0->T1->T2->T3), duree 2 chacune,
+# a finir avant la date 7. Aucune contrainte isolee n'est absurde -> conflit structurel.
+s_start = [Int(f""start_{i}"") for i in range(4)]
+DUREE = 2
+DATE_LIMITE = 7
+s5 = Solver()
+s5.set(""unsat_core"", True)
+labels = []
+
+def ajouter(constraint, nom):
+    b = Bool(nom)
+    s5.assert_and_track(constraint, b)
+    labels.append(b)
+    return b
+
+# Chaque tache : demarre apres 0 et finit avant la date limite
+for i in range(4):
+    ajouter(s_start[i] >= 0, f""release_T{i}"")
+    ajouter(s_start[i] + DUREE <= DATE_LIMITE, f""deadline_T{i}"")
+# Enchainement : Ti finit avant que Ti+1 commence
+for i in range(3):
+    ajouter(s_start[i] + DUREE <= s_start[i + 1], f""precedence_T{i}_vers_T{i + 1}"")
+
+print(""Check : %s"" % s5.check())
+core = s5.unsat_core()
+print(""Core minimal = { %s }"" % ""  "".join(str(c) for c in core))
+print(""Taille du core : %d contraintes sur %d"" % (len(core), len(labels)))
+innocentes = [str(b) for b in labels if b not in core]
+print(""Contraintes innocentes ecartees (%d) : %s"" % (len(innocentes), "", "".join(innocentes)))",,,,,,,,2007235ddcc57885,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb,0e0fd9dd,markdown,fr,7797f70b14d0c00b,"### Lecture : le core isole la chaine, pas une paire
+
+Le core minimal contient **5 contraintes sur 11** : le `release_T0` (point de depart), les **trois precedences** qui enchainent $T_0 \to T_1 \to T_2 \to T_3$, et le `deadline_T3` (echeance finale). Les **6 autres** -- les bornes et echeances intermediaires `deadline_T0`, `release_T1`/`T2`/`T3`, `deadline_T1`/`T2` -- sont ecartees : la chaine les implique deja, elles ne sont pas necessaires au conflit.
+
+Pourquoi ce core est **invisible a l'inspection** : aucune des 5 contraintes coupables ne contredit une autre textuellement. Il faut **tracer la chaine** -- `start_T0 >= 0`, puis `+2` a chaque precedence, donc `start_T3 >= 6`, puis `+2` de duree = `8 > 7` (la deadline) -- pour voir le conflit. C'est precisement le travail fastidieux qu'evite `unsat_core()` : parmi 11 contraintes, il isole chirurgicalement les 5 qui forment la preuve d'insatisfiabilite.
+
+> **Lecon** : la valeur d'un solveur SMT n'est pas de trouver un conflit evident (ca, un regard suffit). C'est d'isoler la **cause minimale** dans un systeme ou le conflit emerge d'une combinaison -- la ou l'ingenieur doit relacher une contrainte sans tout casser. Les exemples triviaux des sections 2 a 5 introduisaient l'API ; celui-ci montre **pourquoi elle compte en pratique**.",,,,,,,,7797f70b14d0c00b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,ba0ea718,markdown,fr,8e68cf294193c83b,"## 5b. Optimisation SMT a l'echelle : le plan hebdomadaire a cout minimal
+
+La section 5 a resolu le plan hebdomadaire avec un `Solver()` (recherche de **faisabilite** : une grille valide suffit). C'est passer a cote de la capacite signature de Z3 : l'**optimisation** sous contraintes via `Optimize()`. On veut desormais le plan hebdomadaire **le moins cher**, en respectant fenetre kcal + apport proteique + variete (chaque plat au plus 2 fois dans la semaine).
+
+On met aussi le probleme a l'echelle : un corpus de **24 plats** (vs 9) et un plan sur **D=7 jours** (la semaine complete, vs 3). C'est le ""probleme riche"" (Prong-B) ou un glouton ""jour par jour"" echoue : minimiser le cout de chaque jour **independamment** violente la contrainte de variete hebdomadaire (les plats les moins chers reviennent trop souvent) et le couplage des apports proteiques. Le `minimize` de Z3, lui, optimise le **cout global de la semaine** en considerant toutes les contraintes simultanement.
+
+> Miroir ""Python-large"" de l'Epic #1206 : le corpus de 24 plats est un modele d'echelle (noms reels, kcal/proteines/couts realistes) du corpus RecipeML (~11 000 recettes). Le chemin vers les vraies donnees (`download_meal_data.py` : Ciqual ANSES 2025 + RecipeML) est un effort separe multi-jours ; ici on demontre la capacite d'optimisation SMT sur un tableau imbrique (jours x plats) a une echelle pedagogique bornee.
+",,,,,,,,8e68cf294193c83b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,685398fd,code,fr,88a412d0f2bd93b3,"# Corpus elargi : 24 plats (8 par categorie), deterministe, kcal/proteines/couts realistes.
+# Modele d'echelle du corpus RecipeML (~11k) — noms reels, pas de PRNG, pour la reproductibilite.
+DISHES2 = [
+    (""Porridge fruits rouges"", ""breakfast"", 300, 12, 180),
+    (""Yaourt granola"",         ""breakfast"", 350, 18, 220),
+    (""Oeufs brouilles"",        ""breakfast"", 400, 22, 280),
+    (""Pain beurre confiture"",  ""breakfast"", 320,  8, 120),
+    (""Smoothie banane"",        ""breakfast"", 280, 10, 150),
+    (""Pancakes sirop"",         ""breakfast"", 380, 14, 250),
+    (""Fromage blanc miel"",     ""breakfast"", 260, 16, 170),
+    (""Bowl chia"",              ""breakfast"", 340, 12, 210),
+    (""Salade cesar"",           ""lunch"", 500, 25, 650),
+    (""Wrap poulet"",            ""lunch"", 550, 30, 580),
+    (""Quiche epinards"",        ""lunch"", 600, 20, 520),
+    (""Sandwich thon"",          ""lunch"", 480, 22, 420),
+    (""Bowl quinoa legumes"",    ""lunch"", 520, 18, 480),
+    (""Soupe poireaux fromage"", ""lunch"", 450, 16, 380),
+    (""Pates pesto"",            ""lunch"", 580, 16, 440),
+    (""Riz saute legumes"",      ""lunch"", 560, 14, 410),
+    (""Poulet curry"",           ""dinner"", 650, 35, 700),
+    (""Saumon four"",            ""dinner"", 700, 32, 850),
+    (""Risotto champignons"",    ""dinner"", 750, 18, 600),
+    (""Boeuf bourguignon"",      ""dinner"", 720, 38, 780),
+    (""Lasagnes"",               ""dinner"", 680, 26, 620),
+    (""Poisson papillote"",      ""dinner"", 600, 34, 720),
+    (""Chili con carne"",        ""dinner"", 690, 30, 560),
+    (""Tarte tatin salee"",      ""dinner"", 710, 22, 540),
+]
+DN2 = [d[0] for d in DISHES2]
+DC2 = [d[1] for d in DISHES2]
+DK2 = [d[2] for d in DISHES2]
+DP2 = [d[3] for d in DISHES2]   # proteines (g)
+DCOST2 = [d[4] for d in DISHES2]  # cout (centimes)
+ND2 = len(DISHES2)
+D2 = 7                          # semaine complete (lundi..dimanche)
+DAY_LO2, DAY_HI2 = 1400, 1900    # fenetre kcal/jour (petit-dej + dejeuner + diner)
+PROT_MIN = 40                    # apport proteique minimal par jour (g)
+MAX_REPEAT = 2                   # variete : chaque plat au plus 2x dans la semaine
+print(f""Corpus elargi : {ND2} plats ({sum(c=='breakfast' for c in DC2)} bf, ""
+      f""{sum(c=='lunch' for c in DC2)} lunch, {sum(c=='dinner' for c in DC2)} dinner). ""
+      f""Plan Optimize sur D={D2} jours, fenetre [{DAY_LO2},{DAY_HI2}] kcal, proteines >= {PROT_MIN} g, ""
+      f""variete <= {MAX_REPEAT}x/semaine."")
+
+def plan_hebdomadaire_optimal():
+    opt = Optimize()
+    # Sel[j][i] = True ssi le plat i est servi le jour j (matrice booleenne jours x plats).
+    Sel = [[Bool(f""O_{j}_{i}"") for i in range(ND2)] for j in range(D2)]
+    # (1) 1 plat par categorie et par jour.
+    for j in range(D2):
+        for cat in (""breakfast"", ""lunch"", ""dinner""):
+            opt.add(Sum([If(Sel[j][i], 1, 0) for i in range(ND2) if DC2[i] == cat]) == 1)
+    # (2) Fenetre kcal par jour.
+    for j in range(D2):
+        day_cal = Sum([If(Sel[j][i], DK2[i], 0) for i in range(ND2)])
+        opt.add(day_cal >= DAY_LO2, day_cal <= DAY_HI2)
+    # (3) Apport proteique minimal par jour.
+    for j in range(D2):
+        day_prot = Sum([If(Sel[j][i], DP2[i], 0) for i in range(ND2)])
+        opt.add(day_prot >= PROT_MIN)
+    # (4) Variete : chaque plat au plus MAX_REPEAT fois dans la semaine.
+    for i in range(ND2):
+        opt.add(Sum([If(Sel[j][i], 1, 0) for j in range(D2)]) <= MAX_REPEAT)
+    # (5) Objectif : MINIMISER le cout total de la semaine (signature Optimize, Prong-B).
+    week_cost = Sum([If(Sel[j][i], DCOST2[i], 0) for j in range(D2) for i in range(ND2)])
+    opt.minimize(week_cost)
+    t0 = time.perf_counter()
+    status = opt.check()
+    t1 = time.perf_counter()
+    plan = None
+    cost = None
+    if status == sat:
+        m = opt.model()
+        plan = [[DN2[i] for i in range(ND2) if m.eval(Sel[j][i])] for j in range(D2)]
+        cost = sum(DCOST2[i] for j in range(D2) for i in range(ND2) if m.eval(Sel[j][i]))
+    return plan, cost, (t1 - t0) * 1000
+
+plan, cost, ms = plan_hebdomadaire_optimal()
+print(f""\n=== Plan hebdomadaire OPTIMAL (D={D2}, minimise le cout, resolu en {ms:.1f} ms) ==="")
+if plan:
+    print(f""Cout total minimal de la semaine : {cost} centimes = {cost/100:.2f} EUR"")
+    for j, day in enumerate(plan):
+        kcal = sum(DK2[DN2.index(d)] for d in day)
+        prot = sum(DP2[DN2.index(d)] for d in day)
+        print(f""  Jour {j+1} : {', '.join(day)}  ->  {kcal} kcal, {prot} g prot"")
+else:
+    print(""  Aucun plan (UNSAT) — relacher une contrainte (fenetre kcal, variete, proteines)."")
+",,,,,,,,88a412d0f2bd93b3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb,d06d2a09,markdown,fr,e0bff008aaeaddc5,"### Interpretation 5b — pourquoi le glouton ne trouve pas l'optimum global
+
+Un glouton ""jour par jour"" choisirait, pour chaque jour, les 3 plats les moins chers satisfaisant la fenetre kcal — mais il **ignorerait le couplage hebdomadaire** : apres 2 repetitions, les plats les moins chers deviennent indisponibles (contrainte de variete), et le glouton se retrouve bloque ou contraint de prendre des plats chers en fin de semaine, sans avoir anticipe. Le `Optimize()` de Z3, lui, minimise le **cout total sur les 7 jours simultanement** : il repartit les repetitions bon marche sur toute la semaine pour minimiser la somme globale.
+
+**Capabilite exercee (Prong-B).** La matrice booleenne `Sel[7][24]` (168 variables) est resolue en quelques centaines de millisecondes : l'optimisation SMT reste tractable a cette echelle. La frontiere de convergence est plus loin — un corpus RecipeML a ~11 000 recettes (variables `Sel[7][11000]` = 77 000 Booleens par jour) sortirait du regime d'un simple `Optimize()` et demanderait une decomposition (column-generation, Lagrangian relaxation) : c'est la limite honnete de la ""couverture bornee"" d'un solveur SMT monocall, signalee dans l'Epic #1206.
+",,,,,,,,e0bff008aaeaddc5,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,3b618ed6,markdown,fr,ab98bd1311fedf73,"# Z3-Python-16b — Meal-Planner : couche de données réelles (Ciqual × RecipeML)
+
+*Compagnon « data layer » du module [Z3-Python-16 — Meal-Planner](Z3-Python-16-Meal-Planner.ipynb) (strate SMT, jambe Python-large du planificateur #1206).*
+
+Le notebook [16](Z3-Python-16-Meal-Planner.ipynb) posait la **modélisation** (3 encodages,
+`Optimize`, matrice `jours × plats`) sur un **corpus jouet** (24 plats saisis à la main, la
+nutrition = un scalaire par plat). Ce notebook **16b** est la **couche de données** qui
+manquait : il charge un corpus **réel** (Ciqual ANSES 2025 × archive RecipeML), le fusionne
+par **appariement lexical flou**, normalise les quantités en **grammes**, et agrège la
+nutrition **pondérée par la masse** — puis sérialise un cache propre que les notebooks de
+capstone consommeront. **0 solveur** : pur *data-engineering*.
+
+> **Port fidèle du C# `07_Meal_Planner_Data_External`** ([Z3-Linq2Z3](../Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb)).
+> La logique (normalisation étagée, garde tête-de-nom, densités, gating) est transposée
+> *byte-pour-byte* ; seule la plomberie change : `XmlReader` → `xml.etree.ElementTree.iterparse`,
+> LINQ → Python natif. Les valeurs committées sont **recomputées** à l'exécution (anti-drift).
+
+## Deux sources, une jointure de *data fusion*
+
+| Source | Rôle | Format | Ce qu'elle apporte |
+|--------|------|--------|--------------------|
+| **Ciqual (ANSES 2025)** | référentiel nutrition | XML | composition de ~3484 aliments **par 100 g** ; noms **anglais** (`alim_nom_eng`) |
+| **RecipeML** (archive culinaire) | corpus recettes | XML auto-décrit | `<ing>` = `<amt><qty>` + `<unit>` + `<item>` — **avec les quantités** |
+
+RecipeML porte **quoi** (les ingrédients), Ciqual porte **combien** (la nutrition). Aucune clé
+commune ne les relie : seul un **appariement lexical approximatif** (item anglais ↔
+`alim_nom_eng`) fait le pont. C'est de la **fusion de données réelle** — pas un `join` jouet.
+
+> **Échelle démonstrative.** Ce notebook charge un **sous-ensemble** du corpus (Ciqual
+> complet + 5 lots RecipeML ≈ 500 recettes) pour valider le pipeline bout-en-bout en quelques
+> secondes. Le **taux** de couverture d'appariement (~72 %) est reproductible et constitue la
+> métrique *cross-stack* (il matche le port C# à 73,1 %) ; le **compte absolu** d'utilisables
+> (~215) dépend de la taille du sous-ensemble. Le passage à l'échelle sur le corpus plein
+> (~11 000 recettes, ~2 400 utilisables) est l'objet du grain **convergence-scale** (G3) :
+> augmenter `--recipeml-limit` dans la cellule de *setup*.",,,,,,,,ab98bd1311fedf73,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,1a256fc7,code,fr,404dbd3c6b6cbf7b,"# Setup : imports + données (téléchargées si absentes, via le downloader partagé).
+import sys, json, re, unicodedata
+from pathlib import Path
+from xml.etree import ElementTree as ET
+
+BASE = Path(""data/meals"")
+# --- truststore : cert store OS natif (proxy SSL corporate SOTA, on ne DESACTIVE pas la vérif) ---
+try:
+    import truststore; truststore.inject_into_ssl()
+except Exception:
+    pass  # env sans MITM : urllib utilise déjà le default context
+
+if not (BASE / ""Ciqual"").exists() or not (BASE / ""RecipeML"").exists():
+    print(""Donnees absentes : appel du downloader partage (subset limit 5 batches RecipeML)..."")
+    # reuse the shared downloader in-process (avoids touching po-2025's file)
+    import importlib.util
+    _p = Path(""../Z3-Linq2Z3/download_meal_data.py"").resolve()
+    _spec = importlib.util.spec_from_file_location(""dl"", _p)
+    _dl = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_dl)
+    _dl.main([""--dest"", str(BASE), ""--areas"", ""Ciqual"", ""RecipeML"", ""--recipeml-limit"", ""5""])
+
+dirs = sorted(p.name for p in BASE.iterdir() if p.is_dir())
+print(""Donnees presentes :"", "", "".join(dirs) if dirs else ""(aucune)"")
+assert (BASE / ""Ciqual"").exists() and (BASE / ""RecipeML"").exists(), ""Corpus toujours absent.""
+",,,,,,,,404dbd3c6b6cbf7b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,1ed80d6f,markdown,fr,d8f0024730eba9b5,"## 1. Ciqual : le référentiel nutritionnel (per-100g), lu en flux
+
+On lit `const` (5 constituants contraints : énergie, protéines, glucides, lipides, sel), `alim`
+(nom anglais) et `compo` (teneurs) — le gros fichier `compo` (~66 Mo) est lu **en flux**
+(`iterparse` + `clear`) pour ne pas tout charger en mémoire. Les teneurs Ciqual sont **toutes
+par 100 g** — c'est ce qui rendra la normalisation en grammes (§4) indispensable.",,,,,,,,d8f0024730eba9b5,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,39cc27d6,code,fr,c317d5617257a461,"# Ciqual : lecture en flux du sous-ensemble des constituants contraints.
+import time
+WANTED = [""Energie, Règlement"", ""Protéines, N x"", ""Glucides (g"", ""Lipides (g"", ""Sel chlorure""]
+
+def _text_stream(path, record_tag, fields):
+    """"""Stream an XML file yielding dicts for each <record_tag> with wanted text fields.""""""
+    fields = set(fields)
+    for ev, el in ET.iterparse(path, events=(""start"", ""end"")):
+        if ev == ""start"" and el.tag == record_tag:
+            cur = {f: None for f in fields}
+        elif ev == ""end"":
+            if el.tag in fields:
+                cur[el.tag] = (el.text or """").strip()
+            elif el.tag == record_tag:
+                yield cur
+            el.clear()  # free memory
+
+# const_code -> nom FR
+consts = {}
+for r in _text_stream(BASE / ""Ciqual/const_2025_11_03.xml"", ""CONST"", [""const_code"", ""const_nom_fr""]):
+    if r[""const_code""]:
+        consts[r[""const_code""]] = r[""const_nom_fr""] or """"
+chosen = []
+for w in WANTED:
+    pref = w[:18]
+    code = next(c for c, n in consts.items() if n.startswith(pref))
+    chosen.append(code)
+codeIdx = {c: i for i, c in enumerate(chosen)}
+C = len(chosen)
+
+# alim_code -> nom anglais
+alimEng = {}
+for r in _text_stream(BASE / ""Ciqual/alim_2025_11_03.xml"", ""ALIM"", [""alim_code"", ""alim_nom_eng""]):
+    if r[""alim_code""]:
+        alimEng[r[""alim_code""]] = r[""alim_nom_eng""] or """"
+
+def parse_teneur(s):
+    if not s:
+        return 0.0
+    s = s.replace(""traces"", ""0"").replace(""<"", "" "").replace(""-"", ""0"").replace("","", ""."").strip()
+    try:
+        return float(s)
+    except ValueError:
+        return 0.0
+
+t0 = time.time()
+alimCompo = {}  # alim_code -> [teneurs sur C constituants]
+for r in _text_stream(BASE / ""Ciqual/compo_2025_11_03.xml"", ""COMPO"", [""alim_code"", ""const_code"", ""teneur""]):
+    cc, ac = r[""const_code""], r[""alim_code""]
+    if cc in codeIdx and ac:
+        alimCompo.setdefault(ac, [0.0] * C)[codeIdx[cc]] = parse_teneur(r[""teneur""])
+print(f""Ciqual charge en {time.time()-t0:.1f}s : {len(consts)} constituants, ""
+      f""{len(alimEng)} aliments, {len(alimCompo)} avec composition."")
+print(f""Constituants contraints (C={C}) :"")
+for cc in chosen:
+    print(f""   [{cc}] {consts[cc][:48]}"")",,,,,,,,c317d5617257a461,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,38e6dbb9,markdown,fr,f7fe8ef4abe8dcbc,"## 2. La jointure de data fusion : ingrédient anglais → aliment Ciqual
+
+RecipeML est en **anglais** ; on matche contre `alim_nom_eng`. Un **index inversé** mot →
+aliments accélère la recherche : chaque ingrédient n'est comparé qu'aux aliments partageant au
+moins un mot. La **normalisation étagée** est la leçon — et la curation tue les faux positifs :
+
+1. **déaccentuation** + singularisation grossière + suppression des mots de préparation/qualificatifs ;
+2. **aliment primaire** = avant la 1re virgule côté Ciqual (`Sugar, white` → tête = `sugar`) ;
+3. **garde sur la tête-de-nom** : l'aliment candidat doit partager le **dernier mot** de l'ingrédient
+   (le nom, pas l'adjectif) — c'est ce qui écarte « White pudding » pour « white **sugar** » ;
+4. **similarité de Jaccard** (seuil 0,5), départage par nom Ciqual **le plus court** ;
+5. petites tables de **synonymes** / **composés** / **modificateurs de forme**.",,,,,,,,f7fe8ef4abe8dcbc,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,8725053f,code,fr,a48be5451b8d5425,"# Rapprochement lexical CURÉ : normalisation étagée + index inversé + garde tête-de-nom.
+# (port verbatim du C# 07 : DROP / SYN / COMPOUND + Deaccent / Singular / Norm / Jacc / MatchKey)
+DROP = set((""chopped ground grated minced sliced diced melted softened packed sifted beaten cooked raw ""
+    ""peeled seeded finely coarsely halved quartered cubed shredded crushed crumbled drained rinsed ""
+    ""lightly thinly thickly cut divided fresh dried frozen canned chilled warmed uncooked prepared ""
+    ""unbaked mashed toasted roasted boiled steamed blanched julienned trimmed cored pitted stemmed deveined ""
+    ""large small medium extra whole ripe boneless skinless unsalted salted lean heavy light dark ""
+    ""granulated powdered confectioners all purpose self rising active instant fine coarse ""
+    ""of to for the with and or into pieces piece plus taste needed garnish optional about each more ""
+    ""as in at room temperature degrees inch thick thin long your favorite good quality such other any some few several"").split())
+
+SYN = {""catsup"": ""ketchup"", ""scallion"": ""green onion"", ""cilantro"": ""coriander"",
+    ""cornstarch"": ""corn starch"", ""shortening"": ""vegetable fat"", ""baking soda"": ""sodium bicarbonate"",
+    ""confectioner sugar"": ""icing sugar"", ""powdered sugar"": ""icing sugar"", ""bell pepper"": ""sweet pepper"",
+    ""heavy cream"": ""cream"", ""whipping cream"": ""cream"", ""vanilla extract"": ""vanilla"",
+    ""lemon rind"": ""lemon zest"", ""lemon peel"": ""lemon zest""}
+COMPOUND = {""salt pepper"": [""salt"", ""pepper""], ""butter margarine"": [""butter"", ""margarine""],
+    ""salt black pepper"": [""salt"", ""black pepper""], ""oil butter"": [""oil"", ""butter""]}
+
+def deaccent(s):
+    return """".join(ch for ch in unicodedata.normalize(""NFKD"", s) if not unicodedata.combining(ch))
+
+def singular(t):
+    if t.endswith(""ies"") and len(t) > 4: return t[:-3] + ""y""
+    if t.endswith(""oes"") and len(t) > 4: return t[:-2]
+    if t.endswith(""s"") and not t.endswith(""ss"") and len(t) > 3: return t[:-1]
+    return t
+
+def norm(s):
+    s = deaccent((s or """").lower())
+    s = re.sub(r""\([^)]*\)"", "" "", s)            # retire les parenthèses
+    s = s.split("","")[0]                            # aliment primaire = avant la 1re virgule
+    s = re.sub(r""[^a-z\s-]"", "" "", s).replace(""-"", "" "")
+    out = []
+    for w in s.split():
+        if len(w) <= 1 or w in DROP: continue
+        t = singular(w)
+        if t: out.append(t)
+    return out
+
+# index Ciqual : (code, toks set, head, first)
+ents = []
+for k in alimCompo:
+    if k in alimEng and alimEng[k]:
+        t = norm(alimEng[k])
+        if t:
+            ents.append((k, set(t), t[-1], t[0]))
+byTok = {}
+for e, (code, toks, head, first) in enumerate(ents):
+    for tok in toks:
+        byTok.setdefault(tok, []).append(e)
+
+def jacc(a, b):
+    if not a or not b: return 0.0
+    inter = len(a & b)
+    return inter / (len(a) + len(b) - inter)
+
+def match_key(key):
+    if key in SYN: key = "" "".join(norm(SYN[key]))
+    toks = key.split()
+    if len(toks) > 1 and toks[-1] in (""powder"", ""extract"", ""root"") and key != ""baking powder"":
+        toks = toks[:-1]                           # retire un modificateur de forme final
+    if not toks: return None
+    it = set(toks); head = toks[-1]
+    cand = set()
+    for tok in it:
+        for e in byTok.get(tok, ()): cand.add(e)
+    best = None; bj = 0.0; bfb = 0; bnl = 0; has = False
+    for e in cand:
+        code, etoks, ehead, efirst = ents[e]
+        if head not in etoks: continue             # garde : partage la tête-de-nom
+        j = jacc(it, etoks)
+        if j < 0.5: continue
+        fb = 1 if efirst == head else 0            # bonus : Ciqual COMMENCE par la tête
+        nl = -len(etoks)                           # préférer le nom le plus court
+        if not has or j > bj + 1e-9 or (abs(j - bj) < 1e-9 and (fb > bfb or (fb == bfb and nl > bnl))):
+            bj, bfb, bnl, best, has = j, fb, nl, code, True
+    return best
+
+_matchCache = {}
+def match(item):
+    key = "" "".join(norm(item.split("";"")[0]))
+    if not key: return None
+    if key in _matchCache: return _matchCache[key]
+    if key in COMPOUND: code = match_key("" "".join(norm(COMPOUND[key][0])))
+    else: code = match_key(key)
+    _matchCache[key] = code
+    return code
+
+print(""Démonstration du matcheur curé sur quelques items RecipeML :"")
+for t in [""White sugar"", ""All-purpose flour"", ""Baking soda"", ""Eggs"", ""Butter"", ""Olive oil"", ""Salt pepper""]:
+    mcode = match(t)
+    print(f""   {t!r:24} -> {alimEng.get(mcode) if mcode else '(aucun)'}"")",,,,,,,,a48be5451b8d5425,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,a26438ed,markdown,fr,fb7882d8bf7ce544,"## 3. RecipeML : parsing structuré **avec quantités**
+
+Chaque `<recipe>` porte des `<ing>` de forme `<amt><qty>…</qty><unit>…</unit></amt><item>…</item>`.
+On extrait le **triplet (item, quantité, unité)**. `ParseQty` gère entiers, **fractions** (`1/2`),
+**quantités mixtes** (`1 1/2`), fractions Unicode (`½`) et prend la borne basse d'une fourchette
+(`2-3` → `2`). Le parsing XML est tolérant (`&` nus → `&amp;`).",,,,,,,,fb7882d8bf7ce544,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,beceb300,code,fr,7b47088d4c2461c9,"# ParseQty + parsing de l'archive RecipeML -> (item, qty, unit) par recette.
+FRAC = {""½"": ""1/2"", ""¼"": ""1/4"", ""¾"": ""3/4"", ""⅓"": ""1/3"", ""⅔"": ""2/3""}
+
+def parse_qty(s):
+    if not s or not s.strip(): return 0.0
+    s = s.strip()
+    for u, v in FRAC.items(): s = s.replace(u, v)
+    dash = s.find(""-"")
+    if dash > 0: s = s[:dash]                     # fourchette -> borne basse
+    total = 0.0; any_ = False
+    for tok in s.split():
+        if ""/"" in tok:
+            pr = tok.split(""/"")
+            if len(pr) == 2:
+                try:
+                    a, b = float(pr[0]), float(pr[1])
+                    if b != 0: total += a / b; any_ = True
+                except ValueError: pass
+        else:
+            try: total += float(tok); any_ = True
+            except ValueError: pass
+    return total if any_ else 0.0
+
+recipes = []
+skipped = nIng = nQty = nUnit = 0
+for f in sorted((BASE / ""RecipeML"").rglob(""*.xml"")):
+    try:
+        doc = ET.parse(f)
+    except ET.ParseError:
+        try:
+            txt = f.read_text(encoding=""utf-8"", errors=""replace"").replace(""&"", ""&amp;"")
+            doc = ET.fromstring(txt)
+        except Exception:
+            skipped += 1; continue
+    root = doc.getroot() if not isinstance(doc, ET.Element) else doc
+    title_el = next((e for e in root.iter(""title"") if (e.text or """").strip()), None)
+    title = (title_el.text.strip()[:44] if title_el is not None else f.stem)
+    cats = [e.text.strip() for e in root.iter(""cat"") if (e.text or """").strip()]
+    ings = []
+    for ing in root.iter(""ing""):
+        item_el = ing.find(""item"")
+        item = (item_el.text or """").strip() if item_el is not None else """"
+        if not item: continue
+        nIng += 1
+        qty = 0.0; unit = """"
+        amt = ing.find(""amt"")
+        if amt is not None:
+            qty_el = amt.find(""qty"")
+            qty = parse_qty(qty_el.text) if qty_el is not None else 0.0
+            unit_el = amt.find(""unit"")
+            unit = (unit_el.text or """").strip().lower() if unit_el is not None else """"
+        if qty > 0: nQty += 1
+        if unit: nUnit += 1
+        ings.append((item, qty, unit))
+    if ings: recipes.append((title, cats, ings))
+print(f""RecipeML : {len(recipes)} recettes, {nIng} ingrédients ""
+      f""({100.0*nQty/max(1,nIng):.0f}% avec quantité, {100.0*nUnit/max(1,nIng):.0f}% avec unité), ""
+      f""{skipped} fichiers XML irrécupérables ignorés."")
+print(""Exemple de recette (item | qty | unité) :"")
+for it, q, u in recipes[0][2][:5]:
+    print(f""   {it[:38]:38} | {q:5} | {u}"")",,,,,,,,7b47088d4c2461c9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,d00cb117,markdown,fr,abe3922c834464ac,"## 4. Normalisation quantité → grammes (le show-stopper résolu)
+
+Ciqual ne fournit pas de densité. Le passage `(qté, unité, ingrédient) → grammes` se fait en
+**deux couches honnêtes** : (1) unité → mL (volumes) ou g (masses) via une table fixe ;
+(2) mL → g via une **table de densités** curée par mot-clé ; (3) items **comptés** (unité vide :
+`2 Eggs`) → poids moyen par pièce. Les unités de conditionnement (`can`, `package`…) restent
+**non convertibles** → masse `0` (honnête et visible dans les métriques).",,,,,,,,abe3922c834464ac,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,07b66ccd,code,fr,501b06102748b27b,"# unite -> mL/g ; densites ; items comptes -> grammes.
+UNIT = {""cup"": (236.588, False), ""cups"": (236.588, False),
+    ""tablespoon"": (14.7868, False), ""tablespoons"": (14.7868, False), ""tbsp"": (14.7868, False), ""tbs"": (14.7868, False),
+    ""teaspoon"": (4.92892, False), ""teaspoons"": (4.92892, False), ""tsp"": (4.92892, False),
+    ""ounce"": (28.3495, True), ""ounces"": (28.3495, True), ""oz"": (28.3495, True),
+    ""pound"": (453.592, True), ""pounds"": (453.592, True), ""lb"": (453.592, True), ""lbs"": (453.592, True),
+    ""gram"": (1, True), ""grams"": (1, True), ""g"": (1, True), ""kg"": (1000, True), ""kilogram"": (1000, True),
+    ""ml"": (1, False), ""milliliter"": (1, False), ""millilitre"": (1, False),
+    ""l"": (1000, False), ""liter"": (1000, False), ""litre"": (1000, False),
+    ""pint"": (473.176, False), ""pt"": (473.176, False), ""quart"": (946.353, False), ""qt"": (946.353, False),
+    ""gallon"": (3785.41, False), ""gal"": (3785.41, False),
+    ""pinch"": (0.36, True), ""dash"": (0.6, False), ""stick"": (113.0, True), ""sticks"": (113.0, True)}
+DENS = [(""flour"", 0.53), (""sugar"", 0.85), (""oil"", 0.92), (""butter"", 0.911), (""honey"", 1.42),
+    (""syrup"", 1.33), (""milk"", 1.03), (""cream"", 1.01), (""water"", 1.0), (""salt"", 1.22),
+    (""rice"", 0.85), (""cocoa"", 0.52), (""cornstarch"", 0.54), (""oats"", 0.41)]
+COUNT = [(""egg"", 50), (""banana"", 120), (""apple"", 180), (""onion"", 110), (""clove"", 5),
+    (""carrot"", 60), (""potato"", 150), (""tomato"", 120), (""lemon"", 60), (""lime"", 45),
+    (""orange"", 130), (""garlic"", 5), (""shallot"", 30), (""scallion"", 15), (""pepper"", 120)]
+
+def density(item_lower):
+    for kw, d in DENS:
+        if kw in item_lower: return d
+    return 1.0
+def count_weight(item_lower):
+    for kw, g in COUNT:
+        if kw in item_lower: return g
+    return 0.0
+def to_grams(qty, unit, item_lower):
+    if qty <= 0: return 0.0
+    if not unit:
+        cw = count_weight(item_lower)
+        return qty * cw if cw > 0 else 0.0
+    u = UNIT.get(unit)
+    if u is None: return 0.0
+    factor, is_mass = u
+    return qty * factor if is_mass else qty * factor * density(item_lower)
+
+for q, u, it in [(2.0, ""cups"", ""white sugar""), (2.0, ""cups"", ""flour""), (1.0, ""teaspoon"", ""vanilla""),
+                 (4.0, ""ounces"", ""butter""), (2.0, """", ""eggs""), (1.0, ""can"", ""crushed pineapple"")]:
+    g = to_grams(q, u, it)
+    print(f""   {q} {(u or '(compte)'):10} {it:18} -> {g:.1f} g"" + (""   (non convertible)"" if g == 0 else """"))",,,,,,,,501b06102748b27b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,451ccc82,markdown,fr,304e79b622847b4a,"## 5. Agrégation nutritionnelle **pondérée par la masse** + couverture
+
+Pour chaque recette : on apparie chaque `item` à Ciqual, on convertit sa quantité en grammes, et
+on ajoute sa contribution `teneur_per_100g × grammes / 100`. C'est la correction du biais
+*quantity-blind* : un gâteau avec 2 tasses de farine (~250 g) ne compte plus comme 100 g. On
+mesure aussi la **couverture d'appariement** (fraction des ingrédients appariés) — le critère de
+gating.",,,,,,,,304e79b622847b4a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,61d4605c,code,fr,0caccd532c8c1577,"# Agrégation pondérée par la masse + couverture par recette.
+built = []
+mc = {}  # item -> code Ciqual (cache d'appariement)
+for title, cats, ings in recipes:
+    vec = [0.0] * C
+    nMatch = 0
+    for item, qty, unit in ings:
+        acode = mc.get(item)
+        if acode is None:
+            acode = match(item); mc[item] = acode
+        if acode is None: continue
+        nMatch += 1
+        cv = alimCompo.get(acode)
+        if cv is None: continue
+        grams = to_grams(qty, unit, item.lower())
+        if grams <= 0: continue
+        for k in range(C):
+            vec[k] += cv[k] * (grams / 100.0)
+    cover = nMatch / len(ings) if ings else 0.0
+    built.append((title, cats, vec, cover, nMatch, len(ings)))
+
+N = len(built)
+b100 = b90 = b80 = b50 = blo = 0; covSum = 0.0
+for r in built:
+    c = r[3]; covSum += c
+    if c >= 1.0: b100 += 1
+    elif c >= 0.9: b90 += 1
+    elif c >= 0.8: b80 += 1
+    elif c >= 0.5: b50 += 1
+    else: blo += 1
+print(f""Agrégation : {N} recettes, couverture moyenne d'appariement = {100.0*covSum/max(1,N):.1f}%"")
+print(f""   couverture 100%           : {b100:5} recettes"")
+print(f""   couverture >=80% (solveur): {b100+b90+b80:5} recettes"")
+print(f""   couverture >=50%          : {b100+b90+b80+b50:5} recettes"")
+print(f""   couverture  <50%          : {blo:5} recettes"")
+print(""Échantillon 100% apparié (énergie kJ, prot g, gluc g, lip g, sel g — PONDÉRÉ par la masse) :"")
+for r in [x for x in built if x[3] >= 1.0 and any(v > 0 for v in x[2])][:4]:
+    vec = "", "".join(f""{v:.1f}"" for v in r[2])
+    print(f""   {r[0][:46]:46} [{vec}]"")",,,,,,,,0caccd532c8c1577,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,e63307b9,markdown,fr,32fb96165d969be1,"## 6. Sous-ensembles gatés par qualité + cache JSON (contract assertif)
+
+Le sous-ensemble **solveur-usable** (≥ 80 % des ingrédients appariés) est sérialisé en cache
+`mealplan_cache.json` — la matière première propre que les notebooks de capstone consommeront.
+Le **cache contract** (`constituants`, `n_total`, `n_usable`, `recipes[].{title,cats,cover,vec}`)
+est **asserté** : c'est un test différentiel qui garantit que le port Python respecte le même
+schéma que le cache C# consommé par [08](../Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb).
+
+> Le cache vit sous `data/meals/` (gitignore) : régénéré à l'exécution, jamais committé.",,,,,,,,32fb96165d969be1,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,254ac27c,code,fr,eeeed2f556f31f17,"# Cache JSON du sous-ensemble solveur-usable (>=80% apparié) + contract assertif.
+usable = [{""title"": r[0], ""cats"": r[1], ""cover"": round(r[3], 3),
+           ""vec"": [round(v, 2) for v in r[2]]}
+          for r in built if r[3] >= 0.8 and any(v > 0 for v in r[2])]
+payload = {""constituants"": [consts[c] for c in chosen],
+           ""n_total"": N, ""n_usable"": len(usable), ""recipes"": usable}
+cache_path = BASE / ""mealplan_cache.json""
+cache_path.write_text(json.dumps(payload, ensure_ascii=False), encoding=""utf-8"")
+size_kb = cache_path.stat().st_size / 1024
+
+# --- contract assertif : le cache respecte le schema attendu par les notebooks C# 08/09 ---
+assert isinstance(payload[""constituants""], list) and len(payload[""constituants""]) == C
+assert isinstance(payload[""n_total""], int) and payload[""n_total""] == N
+assert isinstance(payload[""n_usable""], int) and payload[""n_usable""] == len(usable)
+for rec in payload[""recipes""][:50]:
+    assert set(rec.keys()) == {""title"", ""cats"", ""cover"", ""vec""}
+    assert isinstance(rec[""cats""], list) and isinstance(rec[""vec""], list) and len(rec[""vec""]) == C
+print(f""Cache écrit : {cache_path.name} -- {len(usable)} recettes solveur-usables, {size_kb:.0f} Ko."")
+print(""Contract assertif PASS : constituants(C), n_total, n_usable, recipes[].{title,cats,cover,vec} OK."")
+print(""Palier de montée en charge (piloté par la qualité, non par un plafond arbitraire) :"")
+print(f""   subset propre 100%   : {sum(1 for r in built if r[3] >= 1.0 and any(v>0 for v in r[2])):5} recettes"")
+print(f""   subset >=80% (cache) : {len(usable):5} recettes  <- livré au solveur"")
+print(f""   subset >=50%         : {sum(1 for r in built if r[3] >= 0.5 and any(v>0 for v in r[2])):5} recettes"")",,,,,,,,eeeed2f556f31f17,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,72134c54,markdown,fr,f4f1127e8986427d,"## Synthèse — la couche de données du planificateur, en Python
+
+| Verdict | Ce qu'il montre | Contrôle falsifiant |
+|---|---|---|
+| **appariement curé** | White sugar → Sugar white (pas White pudding) | garde tête-de-nom écarte le faux positif positionnel |
+| **agrégation massique** | 2 cups flour (~250 g) ≠ 100 g | sans `ToGrams`, chaque ingrédient = 100 g fictif |
+| **gating par qualité** | seules les recettes ≥80% appariées entrent au cache | `cover < 0.8` → exclu du cache |
+
+Ce notebook **16b** comble le **gap de la couche données** du planificateur Python : là où
+[16](Z3-Python-16-Meal-Planner.ipynb) modélisait sur un corpus jouet, ici le corpus est **réel**
+(Ciqual × RecipeML), **fusionné** (appariement lexical flou), **normalisé** (unités → grammes),
+et **agrégé** (pondéré par la masse). C'est le socle que les prochains grains Python consommeront :
+**capstone patient** (restrictions Min/Max) et **convergence à l'échelle** (comparaison d'encodages
+`Optimize` / `PbEq` / Array theory).",,,,,,,,f4f1127e8986427d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,f3ad5249,markdown,fr,fb78cca9030c0293,"## 7. Exercices
+
+Trois exercices de data-engineering (0 solveur), prolongeant les limites mesurées.",,,,,,,,fb78cca9030c0293,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,d1629f6c,code,fr,585a0c685782ca91,"# Exercice 1 — pousser le matcheur (synonymes non couverts).
+# TODO: lister les items non appariés fréquents, étendre SYN, re-mesurer la couverture.
+from collections import Counter
+miss = Counter(it for _, _, ings in recipes for it, _, _ in ings if mc.get(it) is None)
+print(""Top 15 items non appariés (à couvrir dans SYN) :"")
+for it, n in miss.most_common(15):
+    print(f""   {n:4}x  {it}"")",,,,,,,,585a0c685782ca91,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,ef66fe8f,code,fr,2b6b3669e7119e74,"# Exercice 2 — étendre la couverture des unités (rendre pesables plus d'ingrédients).
+# TODO: ajouter à une copie de UNIT (clove ~5g, slice ~30g, bunch...) et recompter ToGrams > 0.
+unites_sup = {}  # ex: {""clove"": (5, True), ""slice"": (30, True)}
+n_pesable = sum(1 for _, _, ings in recipes for _, q, u in ings if to_grams(q, u, ""x"") > 0 or not u)
+print(f""Ingrédients pesables (table UNIT courante) : à compléter après extension."")",,,,,,,,2b6b3669e7119e74,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb,316d4d8c,code,fr,a97deff2387ada52,"# Exercice 3 — profil nutritionnel moyen par catégorie RecipeML.
+# TODO: built filtré cover>=0.8, grouper par cats, moyenne composant par composant.
+from collections import defaultdict
+prof = defaultdict(list)
+for title, cats, vec, cover, _, _ in built:
+    if cover >= 0.8:
+        for c in cats: prof[c].append(vec)
+print(""Profil par catégorie : à compléter (moyenne de vec par catégorie)."")",,,,,,,,a97deff2387ada52,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,f088ace5,markdown,fr,a7263c985367c0c4,"# Z3-Python-16c — Meal-Planner : capstone patient (restrictions nutritionnelles)
+
+*Compagnon « capstone » de la jambe Python-large #1206 : [16](Z3-Python-16-Meal-Planner.ipynb) (modélisation jouet) → [16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) (couche de données réelles) → **16c (ce notebook) : le patient**.*
+
+Le capstone : un **patient** impose des **restrictions nutritionnelles** (énergie bornée, protéines
+minimum, lipides maximum) et le solveur doit composer un menu multi-jours qui les satisfait.
+**Port fidèle du C# `08_Meal_Planner_Patient_Capstone`** ([Z3-Linq2Z3](../Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb)).
+
+```
+Patient ──> Menu (1 jour) ──> Plat (1 créneau) ──> Denrées (nutrition Ciqual)
+            [energie?]       [entrée | plat | accomp.]
+```
+
+**Deux mouvements** : (1) un **squelette structural** à grande échelle (semaine 7×5, sans
+nutrition) ; (2) le **capstone patient** curé (nutrition contrainte).",,,,,,,,a7263c985367c0c4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,8af082a2,markdown,fr,a547a4c6177f4867,"## 0. Dépendances : le cache produit par 16b
+
+Ce notebook **consomme** le cache solveur-usable régénéré par
+[16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) (`data/meals/mealplan_cache.json`). Pas de
+solveur ici tant que le cache est absent — échec **bruyant** (règle SOTA : pas de corpus de
+substitution).",,,,,,,,a547a4c6177f4867,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,3dfcf6ff,code,fr,d524b5a21e84de3f,"# Chargement du cache 16b + derivation du creneau (Ordre 1..5) depuis les cats RecipeML.
+import json, time
+from z3 import Solver, Int, Or, Distinct, sat, Implies
+from pathlib import Path
+
+CACHE = Path(""data/meals/mealplan_cache.json"")
+if not CACHE.exists():
+    print(f""[CACHE ABSENT] {CACHE}"")
+    print(""Executez d'abord Z3-Python-16b-Meal-Planner-Data-External (couche de donnees)."")
+    raise FileNotFoundError(CACHE)
+print(f""Cache present : {CACHE} ({CACHE.stat().st_size/1024:.0f} Ko)"")
+
+root = json.loads(CACHE.read_text(encoding=""utf-8""))
+constituants = root[""constituants""]; C = len(constituants)
+
+class Plat:
+    __slots__ = (""nom"", ""ordre"", ""comp"")
+    def __init__(self, nom, ordre, comp): self.nom, self.ordre, self.comp = nom, ordre, comp
+
+def ordre_from_cats(cats):
+    j = "" "".join(cats).lower()
+    if any(k in j for k in (""appetizer"",""starter"",""soup"")): return 1
+    if any(k in j for k in (""main dish"",""beef"",""pork"",""chicken"",""meat"",""fish"")): return 2
+    if any(k in j for k in (""vegetable"",""salad"",""rice"",""pasta"",""potato"",""bread"",""side"")): return 3
+    if any(k in j for k in (""cheese"",""dairy"",""yogurt"",""cream"")): return 4
+    if any(k in j for k in (""dessert"",""cake"",""cookie"",""pie"",""fruit"",""sweet"",""tart"")): return 5
+    return 0
+
+t0 = time.perf_counter()
+all_plats = []
+for r in root[""recipes""]:
+    t = r[""title""].strip()[:44]                 # tronque a 44 (miroir C#)
+    o = ordre_from_cats(r[""cats""])
+    if o < 1: continue                          # orphelin ecarte
+    all_plats.append(Plat(t, o, [float(x) for x in r[""vec""]]))
+print(f""Cache charge en {time.perf_counter()-t0:.2f}s : {len(all_plats)} recettes exploitables ""
+      f""(sur {root['n_total']} brutes), {C} constituants."")
+print(""Constituants : "" + "" | "".join(f""[{i}] {n.split(',')[0].strip()}"" for i,n in enumerate(constituants)))",,,,,,,,d524b5a21e84de3f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,c03386aa,markdown,fr,ca3b2b5395d3c30c,"## Mouvement 1 — squelette structural à grande échelle (7 jours × 5 créneaux)
+
+Avant la nutrition, le **squelette** : une semaine de 7 jours × 5 créneaux, où chaque créneau
+choisit un plat dans sa catégorie. C'est l'occasion d'examiner l'idiome « tableau imbriqué »
+(`int[][]`) en SMT — et pourquoi le binding C# `Z3.Linq` le réifie via `CollectionHandling.Array`
+tandis qu'en z3-py on déclare simplement une **grille plate de `Int`**.
+
+> **Divergence de port (honnête)** : le C# pose `DefaultCollectionHandling = CollectionHandling.Array`
+> pour traduire `int[][]` en un *SMT Array* (théorie des tableaux de McCarthy, `Select`/`Store`).
+> z3-py n'impose pas cette couche : on déclare une `list[list[Int]]` — chaque cellule est une
+> variable `Int` indépendante. Fonctionnellement équivalent pour ce squelette ; la vraie théorie
+> des Array est l'objet du notebook [15](Z3-Python-15-Nested-Arrays-2D.ipynb).",,,,,,,,ca3b2b5395d3c30c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,b2e3423d,markdown,fr,226927bf4f90d53a,### 1.1 Corpus + créneaux : pourquoi trier par Ordre,,,,,,,,226927bf4f90d53a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,6767b1a8,code,fr,7fd5c13bb2868906,"# Semaine 7x5 : on groupe les plats par creneau, ranges contigus [lo,hi] par categorie.
+JOURS, CRENEAUX = 7, 5
+# tri par (ordre, nom) pour des ranges contigus par creneau (le tri n'affecte que lo/hi, pas le modele M2).
+plats = sorted([p for p in all_plats], key=lambda p: (p.ordre, p.nom))
+lo, hi = [], []
+for o in range(1, CRENEAUX + 1):
+    idxs = [i for i, p in enumerate(plats) if p.ordre == o]
+    lo.append(idxs[0] if idxs else 0)
+    hi.append(idxs[-1] if idxs else -1)
+print(f""{len(plats)} plats ranges en 5 creneaux :"")
+for o in range(CRENEAUX):
+    n = 0 if hi[o] < lo[o] else hi[o] - lo[o] + 1
+    print(f""  creneau {o+1} (ordre {o+1}) : [{lo[o]}..{hi[o]}] ({n} candidats)"")",,,,,,,,7fd5c13bb2868906,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,5d3bcb03,markdown,fr,493ed6f8ba8de7f4,"### 1.2 Le théorème hiérarchique + deux variantes
+
+`with_bounds` encadre chaque créneau dans sa range contigue. **Variante A** : montée en gamme
+(chaque jour fait *mieux* que le précédent, même créneau). **Variante B** : variété totale
+(`Distinct` croisé sur la colonne d'un même créneau, tous jours confondus).",,,,,,,,493ed6f8ba8de7f4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,49de70d6,code,fr,0fac15c001ecdaaf,"# M1 : squelette 7x5 + Variante A (montee en gamme) + Variante B (Distinct cross-row).
+def with_bounds(plan):
+    cs = []
+    for jj in range(JOURS):
+        for cc in range(CRENEAUX):
+            cs.append(plan[jj][cc] >= lo[cc]); cs.append(plan[jj][cc] <= hi[cc])
+    return cs
+def print_plan(plan, mdl, titre):
+    print(titre)
+    for jj in range(JOURS):
+        row = []
+        for cc in range(CRENEAUX):
+            v = mdl.eval(plan[jj][cc]).as_long()
+            row.append(f""{plats[v].nom[:14]:14}"")
+        print(f""  J{jj+1}: "" + "" | "".join(row))
+
+t0 = time.perf_counter()
+# Variante A : montee en gamme, chaque jour > precedent (meme creneau)
+sA = Solver()
+planA = [[Int(f""a_j{jj}_c{cc}"") for cc in range(CRENEAUX)] for jj in range(JOURS)]
+for c in with_bounds(planA): sA.add(c)
+for jj in range(JOURS - 1):
+    for cc in range(CRENEAUX):
+        sA.add(planA[jj][cc] < planA[jj+1][cc])
+satA = (sA.check() == sat); mA = sA.model() if satA else None
+print(f""[A] Montee en gamme : {'resolue' if satA else 'UNSAT'} en {(time.perf_counter()-t0)*1000:.0f} ms"")
+
+# Variante B : Distinct cross-row par creneau (tous jours differents dans la meme categorie)
+t1 = time.perf_counter()
+sB = Solver()
+planB = [[Int(f""b_j{jj}_c{cc}"") for cc in range(CRENEAUX)] for jj in range(JOURS)]
+for c in with_bounds(planB): sB.add(c)
+for cc in range(CRENEAUX):
+    if hi[cc] >= lo[cc] and (hi[cc] - lo[cc] + 1) >= JOURS:
+        sB.add(Distinct(*[planB[jj][cc] for jj in range(JOURS)]))
+satB = (sB.check() == sat); mB = sB.model() if satB else None
+print(f""[B] Permutation totale (Distinct cross-row) : {'resolue' if satB else 'UNSAT'} en {(time.perf_counter()-t1)*1000:.0f} ms"")
+if satA: print_plan(planA, mA, ""\n== Variante A (montee en gamme) =="")",,,,,,,,0fac15c001ecdaaf,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,b743f07f,markdown,fr,1826940885bacd79,"## Mouvement 2 — le capstone patient : la nutrition force la curation
+
+Le squelette M1 ignore la nutrition. Lui ajouter des restrictions patient à l'échelle pleine
+(`7×5×R×C`) ferait exploser le modèle. D'où la **curation** : on réduit à **2 menus × 3 créneaux ×
+5 candidats × 3 constituants** — un sous-ensemble à taille humaine où le capstone reste lisible.
+
+> **Note de fidélité** : le C# 08 référence dans sa prose une classe upstream `Patient {
+> Restriction[] Restrictions }` (chaque restriction porte un `Min`/`Max` par constituant, `-1` =
+> pas de borne), qui **n'existe pas dans ce dépôt** (fork externe `Z3.LinqBinding`). Le notebook
+> 08 lui-même **inline** le patient comme quatre entiers et n'a **aucune** classe `Patient`/
+> `Restriction`. Ce port Python reste **fidèle à 08** (patient inline) plutôt que de reconstruire
+> la classe upstream absente — ne pas lui attribuer une structure que 08 n'a pas.",,,,,,,,1826940885bacd79,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,8d9d06d6,markdown,fr,6abe7626cb2e04b7,### 2.1 Curation : 2 menus × 3 créneaux × 5 candidats × 3 constituants,,,,,,,,6abe7626cb2e04b7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,1cf364f2,code,fr,8ea2c3a8db3eaa23,"# Curation : pool de 5 candidats par creneau 1..3 (cache order, PAS le tri M1), 3 constituants.
+NB_MENUS, NB_PLATS, CAND = 2, 3, 5
+# 3 constituants cles : [0] Energie kJ, [1] Proteines, [3] Lipides (le 2 = Glucides est SKIPPE).
+cEnergie, cProt, cLip = 0, 1, 3
+CONST = [cEnergie, cProt, cLip]
+NOMK = [""energie(kJ)"", ""proteines(g)"", ""lipides(g)""]
+K = len(CONST)
+print(""Constituants suivis :"")
+for k, ci in enumerate(CONST): print(f""  k={k} -> cache[{ci}] {constituants[ci].split(',')[0].strip()}"")
+
+pool = []
+for o in range(1, NB_PLATS + 1):
+    pool.extend([p for p in all_plats if p.ordre == o][:CAND])   # cache order, fidèle a 08
+def teneur(i, constIdx): return int(round(pool[i].comp[constIdx]))   # round half-to-even (caveat float)
+def slot(m, p): return m * NB_PLATS + p
+print(f""\nPool curee : {len(pool)} plats ({NB_PLATS} creneaux x {CAND} candidats)"")
+print(""Apercu (creneau : candidats -> energie kJ) :"")
+for p in range(NB_PLATS):
+    noms = [f""{pool[i].nom.strip()[:18]}({teneur(i,cEnergie)})"" for i in range(p*CAND, p*CAND+CAND)]
+    print(f""  creneau {p+1} : "" + "", "".join(noms))",,,,,,,,8ea2c3a8db3eaa23,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,a46990a4,markdown,fr,a70beb41dd46838f,"### 2.2 Trois matrices d'entiers : `PlatId`, `Comp`, `MenuNut`
+
+| Matrice | Forme | Rôle |
+|---|---|---|
+| `PlatId[m][p]` | 2×3 | index pool du plat choisi par (menu, créneau) |
+| `Comp[slot][k]` | 6×3 | **composition liée** du slot aplati (variable auxiliaire) |
+| `MenuNut[m][k]` | 2×3 | somme nutritionnelle par menu |
+
+`Comp` est la **variable auxiliaire** qui résout l'impossibilité d'indexer un tableau hôte par une
+variable Z3 (`pool[PlatId[m][p]]` est interdit). Total : **30 variables `Int`**.",,,,,,,,a70beb41dd46838f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,272cfbe8,code,fr,d1b962970ef20971,"# Variables de decision : 30 Int (PlatId 6 + Comp 18 + MenuNut 6).
+platid = [[Int(f""pid_{m}_{p}"") for p in range(NB_PLATS)] for m in range(NB_MENUS)]
+comp = [[Int(f""comp_{slot(m,p)}_{k}"") for k in range(K)] for m in range(NB_MENUS) for p in range(NB_PLATS)]
+menunut = [[Int(f""nut_{m}_{k}"") for k in range(K)] for m in range(NB_MENUS)]
+print(f""{NB_MENUS*NB_PLATS} PlatId + {NB_MENUS*NB_PLATS*K} Comp + {NB_MENUS*K} MenuNut = ""
+      f""{NB_MENUS*NB_PLATS + NB_MENUS*NB_PLATS*K + NB_MENUS*K} variables Int."")",,,,,,,,d1b962970ef20971,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,605d03bf,markdown,fr,e55ec9dd69df79bd,"### 2.3 Le patient et ses restrictions (bornes par MENU)
+
+Fidèle au C# 08 : un seul patient, **inline** comme quatre bornes entières, **par menu** (la somme
+des 3 plats du menu doit respecter chaque borne). Bornes rescalées kcal→kJ (×4,184) au moment du
+rewiring sur le cache Ciqual (kJ/100 g).
+
+> **ATTENTION millésime (#8901)** : ces bornes ont été *réglées* contre un cache C# aujourd'hui
+> désuet (08 tourne sur 121 Ko / 736 recettes ; 07+09 s'accordent sur 270 Ko / 2387). Ici on
+> consomme le **cache Python 16b régénéré frais** — les valeurs du menu résolu **différeront** des
+> sorties C# (qu'on ne reproduit pas). On vérifie que le patient reste **SAT** sur ce pool (sinon
+> = finding à reporter, pas de retouche silencieuse des bornes).",,,,,,,,e55ec9dd69df79bd,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,4a30e44d,code,fr,20a78f2ce246d9b3,"# Restrictions patient (fidele a Restriction{Min,Max}, -1 = pas de borne), par MENU.
+energieMin = 3347    # ~800 kcal cumules minimum par menu
+energieMax = 10878   # ~2600 kcal cumules maximum par menu
+protMin    = 30      # proteines minimum par menu (g)
+lipMax     = 600     # lipides maximum par menu (g)
+print(f""Patient : energie in [{energieMin}, {energieMax}] kJ, proteines >= {protMin} g, ""
+      f""lipides <= {lipMax} g (par menu)"")",,,,,,,,20a78f2ce246d9b3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,e5a75359,markdown,fr,b9816a6d248e1e0c,"### 2.4 Les cinq familles de contraintes
+
+1. **Bornes d'ordre** : `PlatId[m][p]` dans la fenêtre des 5 candidats de son créneau.
+2. **Variété** : `Distinct` global sur les 6 slots (pas deux fois le même plat).
+3. **Linking composition** : `Or(PlatId[m][p] ≠ cand, Comp[slot][k] == teneur(cand, k))` — l'idiome
+   **index + disjonction** (90 assertions) qui relie l'index choisi à sa composition. C'est l'idiom
+   que la jambe Python n'avait **aucun** exemple avant ce notebook.
+4. **Somme par menu** : `MenuNut[m][k] == Σ Comp[slot][k]` sur les 3 créneaux.
+5. **Restrictions patient** : `MenuNut[m][·]` dans les bornes (énergie, protéines, lipides).",,,,,,,,b9816a6d248e1e0c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,b2b1d3c9,code,fr,1c2dfdfb49aa4432,"# THE MODEL : 5 familles de contraintes + Solve (pure satisfiabilite, pas d'objectif).
+t0 = time.perf_counter()
+s = Solver()
+# (1) bornes d'ordre
+for m in range(NB_MENUS):
+    for p in range(NB_PLATS):
+        s.add(platid[m][p] >= p*CAND, platid[m][p] <= p*CAND + CAND - 1)
+# (2) variete : Distinct global sur les 6 slots
+s.add(Distinct(*[platid[m][p] for m in range(NB_MENUS) for p in range(NB_PLATS)]))
+# (3) linking composition : PlatId != cand || Comp[slot][k] == teneur(cand, k)
+for m in range(NB_MENUS):
+    for p in range(NB_PLATS):
+        sl = slot(m, p)
+        for cand in range(p*CAND, p*CAND + CAND):
+            for k in range(K):
+                s.add(Or(platid[m][p] != cand, comp[sl][k] == teneur(cand, CONST[k])))
+# (4) somme par menu
+for m in range(NB_MENUS):
+    for k in range(K):
+        s.add(menunut[m][k] == comp[slot(m,0)][k] + comp[slot(m,1)][k] + comp[slot(m,2)][k])
+# (5) restrictions patient (par menu)
+for m in range(NB_MENUS):
+    s.add(menunut[m][0] >= energieMin, menunut[m][0] <= energieMax)
+    s.add(menunut[m][1] >= protMin)
+    s.add(menunut[m][2] <= lipMax)
+
+sat_cap = (s.check() == sat)
+mdl = s.model() if sat_cap else None
+print(f""Modele resolu en {(time.perf_counter()-t0)*1000:.0f} ms"")
+if not sat_cap:
+    print(""UNSAT : aucun plan ne satisfait les restrictions du patient sur cette pool (finding #8901)."")
+else:
+    for m in range(NB_MENUS):
+        e = mdl.eval(menunut[m][0]).as_long(); pr = mdl.eval(menunut[m][1]).as_long(); li = mdl.eval(menunut[m][2]).as_long()
+        print(f""== Menu {m+1} ==  energie={e} kJ | proteines={pr} g | lipides={li} g"")
+        for p in range(NB_PLATS):
+            v = mdl.eval(platid[m][p]).as_long()
+            print(f""   creneau {p+1} : {pool[v].nom.strip():<30} ""
+                  f""(kJ={teneur(v,cEnergie)}, prot={teneur(v,cProt)}, lip={teneur(v,cLip)})"")",,,,,,,,1c2dfdfb49aa4432,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,0adf3a59,markdown,fr,63878c2a11d8f79c,"### 2.5 Vérification hors-Z3 (croire vs prouver)
+
+Un solveur **garantit** les contraintes par construction — mais on **vérifie** indépendamment
+(re-calcul hors Z3). Deux prongs : (a) les sommes recomputées depuis la pool satisfont les bornes
+patient ; (b) ces sommes **égalent** les `MenuNut` du solveur — ce qui valide la **couche de
+linking** elle-même, pas seulement les bornes.",,,,,,,,63878c2a11d8f79c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,6ca44228,code,fr,da71fc43f4bc49a7,"# Re-verification hors Z3 : re-somme depuis la pool, compare aux MenuNut du solveur.
+if not sat_cap:
+    print(""Pas de solution a verifier (UNSAT)."")
+else:
+    ok = True
+    for m in range(NB_MENUS):
+        e = pr = li = 0
+        for p in range(NB_PLATS):
+            v = mdl.eval(platid[m][p]).as_long()
+            e  += teneur(v, cEnergie); pr += teneur(v, cProt); li += teneur(v, cLip)
+        eOk = energieMin <= e <= energieMax; pOk = pr >= protMin; lOk = li <= lipMax
+        Me = mdl.eval(menunut[m][0]).as_long(); Mpr = mdl.eval(menunut[m][1]).as_long(); Mli = mdl.eval(menunut[m][2]).as_long()
+        match = (e == Me and pr == Mpr and li == Mli)
+        ok = ok and eOk and pOk and lOk and match
+        print(f""Menu {m+1} : recalc energie={e}({'OK' if eOk else 'HORS'}), prot={pr}({'OK' if pOk else 'HORS'}), ""
+              f""lip={li}({'OK' if lOk else 'HORS'}) ; coherent avec MenuNut={'oui' if match else 'NON'}"")
+    print(""\nVERIFIE : toutes les restrictions patient sont respectees."" if ok
+          else ""\nINCOHERENCE detectee (a investiguer)."")",,,,,,,,da71fc43f4bc49a7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,c32230f3,markdown,fr,4eb6ecc33079b85b,"## 3. Exercices
+
+Quatre prolongements (stubs : ils s'exécutent tels quels, n'échouent pas, à compléter).",,,,,,,,4eb6ecc33079b85b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,61cbf070,markdown,fr,7545d6b96451cd80,"**Exercice 1** — Diversité d'entrée sur jours consécutifs : forcer que le créneau 1 diffère
+entre `Menu 1` et `Menu 2` (déjà couvert par le `Distinct` global, mais l'exprimer comme une
+contrainte dédiée `Or(PlatId[0][0] != PlatId[1][0], ...)` et mesurer l'impact).",,,,,,,,7545d6b96451cd80,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,7f58a745,code,fr,780628e5247e9ba5,"# Exercice 1 (stub) : diversite entree jours consecutifs.
+# TODO: ajouter s.add(Or(...)) forçant créneau 1 different entre menus, re-solve, comparer.
+print(""[Ex.1] Stub : a completer (diversite entree jours consecutifs)."")
+def exercice_diversite_entree():
+    # ... ajouter la contrainte, re-solve, retourner le nb de plans ...
+    return -1",,,,,,,,780628e5247e9ba5,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,32408a7e,markdown,fr,55cec23b1cdf4bd3,"**Exercice 2** — Seuil d'énergie strict → UNSAT : resserrer `energieMax` par dichotomie
+jusqu'à rendre le modèle insatisfiable. Quel créneau porte l'essentiel de l'énergie kJ ?",,,,,,,,55cec23b1cdf4bd3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,2d870898,code,fr,cc137122f58af5c4,"# Exercice 2 (stub) : seuil UNSAT par dichotomie sur energieMax.
+# TODO: boucle resserrant energieMax, re-solve, retourner le seuil ou ca casse.
+print(""[Ex.2] Stub : a completer (seuil UNSAT energie)."")
+def exercice_unsat_threshold():
+    # ... dichotomie sur energieMax ...
+    return -1",,,,,,,,cc137122f58af5c4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,780da97c,markdown,fr,9d62893498e45387,"**Exercice 3** — Passage à 3 menus : adapter les dimensions des matrices (`PlatId` 3×3,
+`Comp` 9×3, `MenuNut` 3×3) et re-solve. Note : les formes sont hardcoded à `NB_MENUS=2` dans la
+déclaration des variables — les paramétrer est le cœur de l'exercice.",,,,,,,,9d62893498e45387,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,53456006,code,fr,f243afa14740e0b3,"# Exercice 3 (stub) : passer a 3 menus (adapter les formes de matrices).
+# TODO: parametriser NB_MENUS=3, redeclarer les matrices, re-solve, retourner le temps.
+print(""[Ex.3] Stub : a completer (3 menus)."")
+def exercice_trois_menus():
+    # ... NB_MENUS=3, redeclarer vars, re-solve ...
+    return -1.0",,,,,,,,f243afa14740e0b3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,2b956624,markdown,fr,8273543fff26023c,"**Exercice 4** — Ajouter le sel (`Sel chlorure de sodium`, cache idx 4) comme 4e constituant
+contraint (borne max `selMax`), et re-solve.",,,,,,,,8273543fff26023c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,8192b51c,code,fr,bf6de6339d54bc6a,"# Exercice 4 (stub) : ajouter le constituant Sel (cache idx 4).
+# TODO: CONST.append(4), ajouter selMax, re-declarer Comp/MenuNut sur K=4, re-solve.
+print(""[Ex.4] Stub : a completer (constituant sel)."")
+def exercice_constituant_sel():
+    cSel = next(i for i, n in enumerate(constituants) if ""sel chlorure"" in n.lower())
+    # ... CONST.append(cSel) ...
+    return cSel",,,,,,,,bf6de6339d54bc6a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb,9bafa1e9,markdown,fr,bfaa6ed03202bb36,"## Synthèse — le capstone patient, en Python
+
+| Mouvement | Ce qu'il montre | Idiome Z3 |
+|---|---|---|
+| **M1 squelette** | semaine 7×5 sans nutrition | `int[][]` plate de `Int` (vs `CollectionHandling.Array` C#) |
+| **M2 capstone** | patient SAT avec restrictions nutritionnelles | **index + linking disjonction** (`Or(pid≠cand, comp==val)`) |
+
+Le capstone patient est **le point où la nutrition rencontre la combinatoire** : on ne peut pas
+forcer « 30 g de protéines minimum » sur un jouet de 24 plats — il faut un corpus réel (le cache
+16b) pour que la contrainte *morde*. La **re-vérification hors-Z3** clôt l'arc : on ne *croit* pas
+le solveur, on le *prouve*. C'est ce qui distingue ce capstone d'une simple démonstration.
+
+**Prochain grain (G3)** : la convergence à l'échelle — comparer les encodages (index naïf vs
+one-hot pseudo-Boolean `PbEq`/`PbLe`) quand `R` et `C` augmentent, là où le naïf explose.",,,,,,,,bfaa6ed03202bb36,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,9f3a950b,markdown,fr,2476f1f3a82ffe68,"# Z3-Python-16d — Convergence à l'échelle : l'encodage décide de la tractabilité
+
+*Clôture du bloc meal-planner (Epic #4677, jambe Python-large du planificateur #1206).*
+Suite de [16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) (couche de données réelles :
+Ciqual × RecipeML, appariement lexical flou, agrégation pondérée par la masse) et de
+[16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) (capstone patient : 5 familles de
+contraintes, idiom index + linking). Ce notebook **16d** branche enfin le solveur sur le
+**cache réel** de 16b, et y rencontre le problème que les corpus jouets masquaient :
+à l'échelle, l'encodage naïf **explose dès la construction**, l'encodage le plus **compact**
+(théorie des tableaux) devient **insoluble**, et seul l'encodage **one-hot pseudo-booléen**
+se construit et se résout.
+
+> **Port fidèle du C# `09_Meal_Planner_Convergence_Scale`** ([Z3-Linq2Z3](../Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb)).
+> Le C# utilise l'API `Microsoft.Z3` brute (Stack B, car le DSL Z3.Linq n'expose pas les
+> contraintes pseudo-booléennes). Le port Python utilise `z3-solver` : l'idiome équivalent
+> est `PbEq` / `PbLe` / `PbGe` (liste de paires `(booléen, coefficient)` + seuil `k`).
+
+> **Stack : API brute `z3-solver`** — le cœur de la leçon est l'encodage **pseudo-booléen**,
+> une famille de contraintes que le DSL Z3.Linq n'expose pas.
+
+> **Question de convergence.** Le problème fidèle reste-t-il *tractable* quand on remonte à
+> l'échelle réelle (`7 menus × 5 créneaux × ~R recettes × constituants Ciqual`) ? La puissance
+> brute du solveur Z3 suffit-elle, ou le choix d'**encodage** décide-t-il seul de la tractabilité ?
+>
+> **Insight clé.** Plus de recettes = plus de **solutions possibles**, pas plus de contraintes :
+> des recettes supplémentaires sont des **contraintes *enablantes*** (elles élargissent l'espace
+> des modèles). C'est l'encodage — pas le solveur — qui décide si cet espace est explorable.
+
+> **Échelle démonstrative.** Ce notebook tourne sur le **sous-ensemble du corpus produit par
+> 16b** (ici `R` recettes solveur-usables). Les **verdicts qualitatifs** — naïf qui explose,
+> théorie des tableaux qui reste `unknown`, one-hot qui se résout — sont **reproductibles**
+> à cette échelle et **se renforcent** à `R=2387` (mesuré sur le port C#). Le notebook C#
+> 09 fournit l'étalon à l'échelle du corpus plein ; les **timing absolus** en Python sont
+> plus lents qu'en C# (overhead `ctypes` par assertion, ~10-20×), mais l'**ordre relatif**
+> des trois encodages est inchangé.",,,,,,,,2476f1f3a82ffe68,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,3e01b930,markdown,fr,71787b5e4265ef14,"## Objectifs
+
+1. Constater que l'encodage naïf (index + disjonction, celui de [16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb)) **explose dès la construction** à l'échelle réelle.
+2. Constater que l'encodage le plus compact à écrire — la **théorie des tableaux** (`Select`/`Store`) — est **insoluble** (`unknown`).
+3. Maîtriser l'encodage qui passe à l'échelle : le **one-hot pseudo-booléen** (`PbEq` / `PbLe` / `PbGe`).
+4. Comprendre **pourquoi** : les recettes sont des contraintes *enablantes*, et la somme pondérée de booléens est du ressort du **solveur pseudo-booléen** natif de Z3, pas de l'arithmétique linéaire générale.
+
+**Prérequis :** [16](Z3-Python-16-Meal-Planner.ipynb) (modélisation, corpus jouet), [16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) (cache réel), [16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) (idiom index + linking).",,,,,,,,71787b5e4265ef14,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,a3642ab4,markdown,fr,c0fb53076fc1b81f,"## 1. Données : le cache solveur-usable produit par 16b
+
+Le notebook [16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) a construit un cache
+`data/meals/mealplan_cache.json` : recettes RecipeML appariées à Ciqual, agrégation
+**pondérée par la masse**, sous-ensemble *gaté par qualité* (couverture d'appariement `≥ 80%`).
+Chaque recette porte un vecteur de `C=5` constituants à l'échelle de la **recette entière**
+(kJ, g) — pas per-100g. On charge ce cache : c'est le seul corpus qui rende la question de
+tractabilité *non triviale*.",,,,,,,,c0fb53076fc1b81f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,14c0c450,code,fr,c35ccd50cecc7baa,"# Chargement du cache solveur-usable produit par 16b (le seul corpus non-jouet).
+import json, time
+from pathlib import Path
+
+CACHE = Path(""data/meals"") / ""mealplan_cache.json""
+assert CACHE.exists(), (
+    f""Cache absent : {CACHE}. Executez d'abord le notebook 16b (couche de donnees) de bout en bout.""
+)
+doc = json.loads(CACHE.read_text(encoding=""utf-8""))
+constituants = doc[""constituants""]          # [str x C]
+C = len(constituants)
+# plats : (title tronque, vec de C floats a l'echelle recette entiere, cats RecipeML)
+plats = [(r[""title""].strip()[:40], [float(v) for v in r[""vec""]], list(r[""cats""]))
+         for r in doc[""recipes""]]
+R = len(plats)
+N_TOTAL = doc[""n_total""]
+print(f""Cache charge : R={R} recettes solveur-usables (sur {N_TOTAL} brutes), C={C} constituants."")
+
+# --- contract assertif : le cache respecte le schema attendu par les notebooks C# 08/09 ---
+assert C == 5, f""C={C} (attendu 5 : Energie, Proteines, Glucides, Lipides, Sel)""
+assert all(len(p[1]) == C for p in plats), ""chaque vec doit avoir C=5 constituants""
+assert isinstance(N_TOTAL, int) and N_TOTAL >= R
+
+def pq(c, q):
+    # quantile TRONQUE (index dans la liste triee), pas interpole -- ne pas utiliser numpy.percentile
+    vals = sorted(p[1][c] for p in plats)
+    return vals[int(q * (len(vals) - 1))]
+
+print(""Quartiles par constituant (echelle : recette ENTIERE, agregation ponderee par la masse) :"")
+for c in range(C):
+    nom = (constituants[c])[:38]
+    print(f""   [{c}] {nom:<38} P25={round(pq(c,0.25),1):>8}  mediane={round(pq(c,0.5),1):>8}  P75={round(pq(c,0.75),1):>8}"")",,,,,,,,c35ccd50cecc7baa,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,abba3de8,markdown,fr,536c2e134cd763b9,"Les quartiles calibrent les **fenêtres nutritionnelles** patient : les vecteurs étant à
+l'échelle de la *recette entière* (et non per-100g), des constantes héritées d'un autre
+encodage n'auraient aucun sens. La bande d'énergie `[P20, P80] × 5 plats` couvre l'IQR ;
+les protéines ont un plancher `P30 × 5` ; le sel un plafond contraignant `P70 × 5`.",,,,,,,,536c2e134cd763b9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,034c1bbe,code,fr,45b2d7d8057a1494,"# Parametres du theoreme, partages par les trois encodages.
+NMENUS, NPLATS = 7, 5
+# valeurs entieres par constituant (banker's rounding : Python round() = ties-to-even, = C# Math.Round)
+vint = [[int(round(p[1][c])) for p in plats] for c in range(C)]
+# restrictions patient CALIBREES sur les quartiles mesures ci-dessus.
+loE = NPLATS * int(pq(0, 0.20))   # energie/menu : bande large autour de l'IQR
+hiE = NPLATS * int(pq(0, 0.80))
+loP = NPLATS * int(pq(1, 0.30))   # proteines/menu : plancher realiste
+hiS = max(1, NPLATS * int(pq(4, 0.70)))   # sel/menu : plafond contraignant
+# CONVENTION : restr = [(constituantIndex, lo, hi)] avec -1 = ""pas de borne sur ce cote"".
+# Chaque encodage branche sur lo >= 0 / hi >= 0.
+restr = [(0, loE, hiE), (1, loP, -1), (4, -1, hiS)]
+print(f""Theoreme : {NMENUS} menus x {NPLATS} plats, sur R={R} recettes (vecteurs recette entiere)."")
+print(f""   energie/menu in [{loE},{hiE}] kJ, proteines/menu >= {loP} g, sel/menu <= {hiS} g."")",,,,,,,,45b2d7d8057a1494,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,9a7345cb,markdown,fr,d558e8340f9ae544,"## 2. Trois encodages du même théorème, trois comportements
+
+Le théorème est **fixe** : `7 menus × 5 plats`, chaque plat **distinct** sur la semaine
+(variété), chaque menu dans une **fenêtre nutritionnelle**. Seul l'**encodage** SMT change.
+On va voir trois comportements radicalement différents sur le **même** corpus réel.
+
+### 2.1 Encodage naïf (disjonction) — explose dès la construction
+
+L'encodage naïf (celui de [16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb)) introduit
+une variable de nutrition par créneau et, pour **chaque recette**, la disjonction
+`créneau ≠ r  OU  nutrition == ligne[r]`. Le nombre d'assertions croît en
+`menus × plats × R × constituants` : on ne mesure même pas la résolution, juste la **construction**.",,,,,,,,d558e8340f9ae544,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,536107a8,code,fr,75dcd1203fc3cfb0,"# Encodage A -- naif : sonde de temps de CONSTRUCTION (la resolution ne demarre meme pas a l'echelle).
+from z3 import Int, Solver, And, Or
+def build_naive(rcap):
+    s = Solver()
+    pid = [[Int(f""q_{m}_{p}"") for p in range(NPLATS)] for m in range(NMENUS)]   # index de recette par creneau
+    na = 0
+    t0 = time.perf_counter()
+    for m in range(NMENUS):
+        for p in range(NPLATS):
+            s.add(And(pid[m][p] >= 0, pid[m][p] < rcap))
+            for rr in range(rcap):
+                for (cc, lo, hi) in restr:
+                    nutr = Int(f""n_{m}_{p}_{cc}"")    # meme nom => meme const Z3
+                    s.add(Or(pid[m][p] != rr, nutr == vint[cc][rr]))   # linking disjunction
+                    na += 1
+    dt = time.perf_counter() - t0
+    print(f""  naif R={rcap:>5} : {na:>8} disjonctions construites en {dt:.2f}s (CONSTRUCTION seule, sans resolution)"")
+    return na
+for rcap in (100, 300, min(R, 1000)):
+    build_naive(rcap)
+print(""  -> le cout de construction croit lineairement en R x menus x plats x contraintes :"")
+print(""     a l'echelle reelle, le solveur n'a meme pas commence a chercher une solution."")",,,,,,,,75dcd1203fc3cfb0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,ec061c19,markdown,fr,83e464a439843168,"### 2.2 Théorie des tableaux — compact à écrire, mais insoluble
+
+La théorie des tableaux de Z3 (`Select`/`Store`, axiomes de McCarthy intégrés) exprime le
+mapping recette→nutrition de façon **R-indépendante** : un tableau par constituant, construit
+comme une chaîne de `R` `Store` concrets, lu par un **index symbolique** `pid[m][p]`. Compact
+à écrire... mais Z3 ne tranche pas les chaînes de `Store` symboliques empilées.",,,,,,,,83e464a439843168,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,d9b4ac19,code,fr,687d431717a41d75,"# Encodage B -- theorie des tableaux : compact, mais Z3 -> unknown sur de longues chaines de Store.
+from z3 import IntSort, IntVal, K, Store, Select, Distinct, Sum, unknown
+sb = Solver()
+sb.set(""timeout"", 15000)    # plafond 15s : on attend unknown
+arrs = []
+for (cc, lo, hi) in restr:
+    a = K(IntSort(), IntVal(0))                 # tableau constant 0
+    for r in range(R):                          # chaine de R Store concrets
+        a = Store(a, r, vint[cc][r])
+    arrs.append((cc, lo, hi, a))
+pid = [[Int(f""a_{m}_{p}"") for p in range(NPLATS)] for m in range(NMENUS)]
+flat = [pid[m][p] for m in range(NMENUS) for p in range(NPLATS)]
+for v in flat:
+    sb.add(v >= 0); sb.add(v < R)
+sb.add(Distinct(flat))                          # variete : indices distincts
+for m in range(NMENUS):
+    for (cc, lo, hi, a) in arrs:
+        tot = Sum([Select(a, pid[m][p]) for p in range(NPLATS)])
+        if lo >= 0: sb.add(tot >= lo)
+        if hi >= 0: sb.add(tot <= hi)
+t0 = time.perf_counter(); res = sb.check(); dt = time.perf_counter() - t0
+print(f""theorie des tableaux ({NMENUS*NPLATS} index, chaines de Store de longueur {R}) : {res} en {dt:.1f}s"")
+if res == unknown:
+    print(f""   (reason_unknown: {sb.reason_unknown()})"")
+print(""  -> compact a ECRIRE, mais insoluble : Z3 ne tranche pas les Store symboliques empiles. Compacite != resolubilite."")",,,,,,,,687d431717a41d75,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,c39ab82a,markdown,fr,1627397f0dac1aac,"### 2.3 One-hot pseudo-booléen — l'encodage qui passe à l'échelle
+
+L'encodage **one-hot** introduit un booléen `sel[m][p][r]` (« la recette `r` occupe le
+créneau `p` du menu `m` »). Trois familles de contraintes, toutes **pseudo-booléennes
+natives** de Z3 :
+
+- `PbEq(.,1)` par créneau : **exactement une** recette par créneau.
+- `PbLe(.,1)` par recette sur toute la semaine : chaque recette **au plus une fois** (= variété).
+- `PbGe` / `PbLe` **pondérés** par menu et par constituant : la fenêtre nutritionnelle devient
+  une **somme pondérée de booléens** (coefficient = valeur de la recette), traitée par le
+  **solveur pseudo-booléen** de Z3 — pas par l'arithmétique linéaire générale.
+
+C'est cet encodage qui passe à l'échelle : les recettes sont des **contraintes *enablantes***,
+le solveur trouve un modèle sans énumérer.
+
+> **Idiome z3-py.** `PbEq([(b1,c1), (b2,c2), ...], k)` = la somme pondérée des booléens
+> (coefficients `c_i`) égale `k`. La signature C# prend deux tableaux parallèles
+> `(coeffs[], args[], k)` ; z3-py fusionne en **une liste de paires `(booléen, coefficient)`**.",,,,,,,,1627397f0dac1aac,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,2cec85d4,code,fr,0c0a716bfa72bc51,"# Encodage C -- one-hot pseudo-booleen : exactly-one + variete + bandes ponderees.
+from z3 import Bool, PbEq, PbLe, PbGe, sat, is_true
+s = Solver()
+tB = time.perf_counter()
+# sel[m][p][r] : la recette r occupe le creneau p du menu m.
+sel = [[[Bool(f""s_{m}_{p}_{r}"") for r in range(R)] for p in range(NPLATS)] for m in range(NMENUS)]
+# exactement 1 recette / creneau  (PbEq, coeffs tous 1, k=1)
+for m in range(NMENUS):
+    for p in range(NPLATS):
+        s.add(PbEq([(sel[m][p][r], 1) for r in range(R)], 1))
+# variete : chaque recette <= 1x / semaine  (PbLe sur la colonne des menus x plats, pour un r fixe)
+for r in range(R):
+    s.add(PbLe([(sel[m][p][r], 1) for m in range(NMENUS) for p in range(NPLATS)], 1))
+# fenetre nutritionnelle = somme ponderee de booleens (PB native), coeff = valeur de la recette
+for m in range(NMENUS):
+    for (cc, lo, hi) in restr:
+        pairs = [(sel[m][p][r], int(vint[cc][r])) for p in range(NPLATS) for r in range(R)]
+        if hi >= 0: s.add(PbLe(pairs, hi))
+        if lo >= 0: s.add(PbGe(pairs, lo))
+dtB = time.perf_counter() - tB
+tS = time.perf_counter(); res = s.check(); dtS = time.perf_counter() - tS
+print(f""one-hot R={R} ({NMENUS*NPLATS*R} booleens) : construction {dtB:.1f}s, resolution {dtS:.1f}s -> {res}"")
+if res == sat:
+    mo = s.model()
+    for m in range(NMENUS):
+        names = []
+        for p in range(NPLATS):
+            for r in range(R):
+                if is_true(mo.eval(sel[m][p][r], model_completion=True)):
+                    names.append(plats[r][0])
+        print(f""  Menu {m+1} : "" + ""  |  "".join(n[:18] for n in names))",,,,,,,,0c0a716bfa72bc51,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,c6d39ed4,markdown,fr,f1de4eede8491744,"### Bilan des trois encodages
+
+| Encodage | Taille | Comportement à l'échelle réelle |
+|---|---|---|
+| **Naïf (disjonction)** | `menus × plats × R × C` assertions | **explose à la construction** |
+| **Théorie des tableaux** | compact (R-indépendant) | **`unknown`** — `Store` symboliques insolubles |
+| **One-hot pseudo-booléen** | `menus × plats × R` booléens | **construction + résolu** |
+
+> **Nuance (jusqu'au choix de la contrainte).** Même **au sein** du one-hot, le détail compte :
+> exprimer la fenêtre nutritionnelle comme une **contrainte pseudo-booléenne native**
+> (`PbGe` / `PbLe`, somme pondérée de booléens, traitée par le solveur PB) plutôt que comme une
+> **somme d'`If`-then-else** routée vers l'arithmétique linéaire générale change la résolution
+> d'un facteur **~150×** *(mesuré sur le port C# lors d'une itération précédente à ~1 000 recettes :
+> ~0,7 s contre ~110 s — non reproduit dans ce notebook Python ; le bon outil SMT pour une somme
+> pondérée de booléens est le solveur pseudo-booléen, pas le solveur LIA)*.
+
+> **Honnêteté de port.** Les timing absolus en Python sont plus lents qu'en C# (overhead
+> `ctypes` par assertion marshalling, ~10-20×) : la « construction quasi-instantanée » du C#
+> (~0,9 s) devient « quelques secondes » en Python. L'**ordre relatif** des trois encodages
+> (A ≫ B > C en coût de construction ; B `unknown` vs C `sat`) est **inchangé**, ce qui est
+> l'enseignement porté.",,,,,,,,f1de4eede8491744,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,c225ffae,markdown,fr,4e36c22355626621,"## 3. Partitionner par catégorie : un pool de recettes par créneau
+
+Le one-hot plat ci-dessus **peut empiler cinq desserts** dans un même menu (il n'impose aucune
+structure de *cours*). En partitionnant les recettes en `5` pools (`Entrée`, `Plat principal`,
+`Accompagnement`, `Pain`, `Dessert`) — un pool par créneau — on **réduit `R` par créneau** et
+la variété devient triviale (une recette ne peut apparaître qu'à un seul créneau).",,,,,,,,4e36c22355626621,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,9c9b4100,code,fr,b8f3237ced3683b8,"# Encodage C' -- partitionnement par categorie : un pool de recettes par creneau.
+COURSES = [""Entree"", ""Plat principal"", ""Accompagnement"", ""Pain"", ""Dessert""]
+COURSE_CATS = [
+    {""appetizers"", ""soups"", ""salads"", ""salad"", ""soup""},
+    {""main dish"", ""meats"", ""beef"", ""poultry"", ""seafood"", ""fish"", ""pasta"", ""casseroles"", ""chili"", ""pork"", ""chicken"", ""stews""},
+    {""vegetables"", ""vegetarian"", ""sauces"", ""sauce"", ""side dishes"", ""rice"", ""potatoes""},
+    {""breads"", ""bread"", ""muffins"", ""rolls"", ""biscuits""},
+    {""desserts"", ""cakes"", ""cake"", ""cookies"", ""chocolate"", ""fruits"", ""pies"", ""candy"", ""pastries""},
+]
+def course_of(cats):   # 1er <cat> reconnu gagne ; defaut = plat principal (index 1)
+    for cat in cats:
+        for k in range(5):
+            if cat.lower() in COURSE_CATS[k]:
+                return k
+    return 1
+pool = [[] for _ in range(5)]
+for r in range(R):
+    pool[course_of(plats[r][2])].append(r)   # chaque recette -> exactement un pool
+print(""Pools par creneau : "" + "", "".join(f""{COURSES[k]}={len(pool[k])}"" for k in range(5)))
+assert sum(len(pool[k]) for k in range(5)) == R, ""les pools doivent partitionner R""
+s3 = Solver()
+tB3 = time.perf_counter()
+# sel3[m][p][j] : le creneau p du menu m prend la j-eme recette DE pool[p]
+sel3 = [[[Bool(f""c_{m}_{p}_{j}"") for j in range(len(pool[p]))] for p in range(NPLATS)] for m in range(NMENUS)]
+for m in range(NMENUS):
+    for p in range(NPLATS):   # exactement 1 recette / creneau
+        s3.add(PbEq([(sel3[m][p][j], 1) for j in range(len(pool[p]))], 1))
+for p in range(NPLATS):       # variete : chaque recette <= 1x / semaine (colonne sur les menus)
+    for j in range(len(pool[p])):
+        s3.add(PbLe([(sel3[m][p][j], 1) for m in range(NMENUS)], 1))
+for m in range(NMENUS):       # memes bandes PB ponderees
+    for (cc, lo, hi) in restr:
+        pairs = [(sel3[m][p][j], int(vint[cc][pool[p][j]])) for p in range(NPLATS) for j in range(len(pool[p]))]
+        if hi >= 0: s3.add(PbLe(pairs, hi))
+        if lo >= 0: s3.add(PbGe(pairs, lo))
+dtB3 = time.perf_counter() - tB3
+total3 = NMENUS * sum(len(pool[p]) for p in range(NPLATS))   # = NMENUS x R (partition)
+tS3 = time.perf_counter(); res3 = s3.check(); dtS3 = time.perf_counter() - tS3
+print(f""course-onehot : {total3} booleens (contre {NMENUS*NPLATS*R} en one-hot plat) -- construction {dtB3:.1f}s, resolution {dtS3:.1f}s -> {res3}"")
+if res3 == sat:
+    mo3 = s3.model()
+    for m in range(3):
+        names = []
+        for p in range(NPLATS):
+            for j in range(len(pool[p])):
+                if is_true(mo3.eval(sel3[m][p][j], model_completion=True)):
+                    names.append(f""{COURSES[p]} : {plats[pool[p][j]][0]}"")
+        print(f""  Menu {m+1} -> "" + ""  |  "".join(n[:30] for n in names))",,,,,,,,b8f3237ced3683b8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,10bb6347,markdown,fr,a4743461027c8e2f,"## 4. Restriction patient : le menu végétarien
+
+Même encodage que §3 (pools + one-hot PB), avec une contrainte patient en sus : **interdire**
+toute recette viande/poisson. En one-hot, « interdire » = nier le booléen (`Not(sel[m][p][j])`).
+C'est l'avantage de l'encodage déclaratif : la restriction est une ligne, pas une re-construction.",,,,,,,,a4743461027c8e2f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,4a5a05c4,code,fr,231bed98b9223a30,"# Encodage C'' -- restriction patient : menu vegetarien (exclusion categorielle).
+from z3 import Not
+BANNED_VEG = {""meats"", ""beef"", ""poultry"", ""seafood"", ""fish"", ""pork"", ""chicken"", ""stews""}
+def is_meat(cats):
+    return any(c.lower() in BANNED_VEG for c in cats)
+n_forbidden = sum(1 for r in range(R) if is_meat(plats[r][2]))
+s5 = Solver()
+sel5 = [[[Bool(f""v_{m}_{p}_{j}"") for j in range(len(pool[p]))] for p in range(NPLATS)] for m in range(NMENUS)]
+for m in range(NMENUS):
+    for p in range(NPLATS):
+        s5.add(PbEq([(sel5[m][p][j], 1) for j in range(len(pool[p]))], 1))
+for p in range(NPLATS):
+    for j in range(len(pool[p])):
+        s5.add(PbLe([(sel5[m][p][j], 1) for m in range(NMENUS)], 1))
+for m in range(NMENUS):
+    for (cc, lo, hi) in restr:
+        pairs = [(sel5[m][p][j], int(vint[cc][pool[p][j]])) for p in range(NPLATS) for j in range(len(pool[p]))]
+        if hi >= 0: s5.add(PbLe(pairs, hi))
+        if lo >= 0: s5.add(PbGe(pairs, lo))
+# LA restriction : interdire toute recette viande/poisson dans chaque creneau ou elle pourrait apparaitre.
+for m in range(NMENUS):
+    for p in range(NPLATS):
+        for j in range(len(pool[p])):
+            if is_meat(plats[pool[p][j]][2]):
+                s5.add(Not(sel5[m][p][j]))
+tS5 = time.perf_counter(); res5 = s5.check(); dtS5 = time.perf_counter() - tS5
+print(f""vegetarien : {n_forbidden} recettes viande/poisson interdites -- resolution {dtS5:.1f}s -> {res5}"")
+if res5 == sat:
+    mo5 = s5.model()
+    names = []
+    for p in range(NPLATS):
+        for j in range(len(pool[p])):
+            if is_true(mo5.eval(sel5[0][p][j], model_completion=True)):
+                names.append(f""{COURSES[p]} : {plats[pool[p][j]][0]}"")
+    print(""  Menu vegetarien 1 -> "" + ""  |  "".join(n[:30] for n in names))",,,,,,,,231bed98b9223a30,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,3f287621,markdown,fr,9db0ad77c566f7ae,"## 5. Exercices
+
+Quatre exercices prolongent l'étude des encodages. Chacun manipule l'encodage **C** (one-hot
+pseudo-booléen) ou ses variantes `C'` / `C''`. Les variables `s`, `sel`, `vint`, `restr`,
+`plats`, `pool` restent en portée.
+
+### Exercice 1 — Serrer le plafond d'énergie jusqu'à `UNSAT`
+
+On a calibré `hiE` sur `P80(énergie)`. Que se passe-t-il si on **resserre** ce plafond
+(vers `P20`, puis `P10`) ? L'espace des modèles se vide : à partir d'un seuil, le théorème
+devient **insatisfiable**. Construisez l'encodage C avec un `hiE` paramétrique et
+tracez la frontière `SAT` → `UNSAT`.",,,,,,,,9db0ad77c566f7ae,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,2609586e,code,fr,f3aed03eb58e86f6,"# Exercice 1 -- serrer hiE jusqu'a UNSAT.
+# TODO: boucler sur des hiE decroissants (ex: P80, P50, P30, P20, P10), reconstruire l'encodage C,
+#       enregistrer le verdict (sat/unsat) et le temps, tracer la frontiere.
+print(""Exercice 1 a completer : frontiere SAT -> UNSAT quand hiE diminue."")",,,,,,,,f3aed03eb58e86f6,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,f625910c,markdown,fr,c82291947365f317,"### Exercice 2 — Plancher de glucides
+
+Le constituant glucides (index `2`) est **chargé mais non contraint** dans `restr`. Ajoutez
+un plancher `PbGe(pairs, GLUCIDES_MIN)` sur les glucides par menu (calibre sur `P30` des
+glucides).",,,,,,,,c82291947365f317,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,4c87ec98,code,fr,3ea7c059e5308f7a,"# Exercice 2 -- plancher de glucides (constituant index 2, non contraint dans restr).
+# TODO: definir GLUCIDES_MIN = NPLATS * int(pq(2, 0.30)), ajouter a l'encodage C la contrainte
+#       PbGe([(sel[m][p][r], int(vint[2][r])) for p in range(NPLATS) for r in range(R)], GLUCIDES_MIN).
+print(""Exercice 2 a completer : plancher de glucides par menu via PbGe."")",,,,,,,,3ea7c059e5308f7a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,30e73cd9,markdown,fr,b4f286d91d2fca98,"### Exercice 3 — Exclusion d'allergène (mot-clé)
+
+Sur le modèle de l'encodage C'' (végétarien), interdisez les recettes dont un ingrédient
+contient un mot-clé d'allergène (ex : `""gluten""`, `""dairy""`, `""peanut""`). En one-hot, cela se
+ramène à `Not(sel[m][p][j])` pour chaque recette touchée.",,,,,,,,b4f286d91d2fca98,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,a5a99e9e,code,fr,bdb790e3bdc94789,"# Exercice 3 -- exclusion d'allergene (mot-cle sur les cats / titre).
+# TODO: definir ALLERGENS = {""gluten"", ""dairy"", ""peanut""}, identifier les recettes touchees
+#       (plats[r][2] cats ou plats[r][0] titre), ajouter Not(sel[m][p][j]) comme en C''.
+print(""Exercice 3 a completer : exclusion d'allergenes via Not(sel)."")",,,,,,,,bdb790e3bdc94789,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,586daca6,markdown,fr,96296ccad999c500,"### Exercice 4 — Mesurer l'explosion
+
+L'encodage A « explose à la construction » ; le C « passe à l'échelle ». **Mesurez-le** :
+balayez `R` sur `{100, 300, R}` pour les deux encodages et tracez le coût de construction
+(naïf) vs résolution (one-hot) en fonction de `R`.",,,,,,,,96296ccad999c500,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,fdbed82f,code,fr,b5a98b5f4ee52a41,"# Exercice 4 -- mesurer l'explosion (sweep R pour A et C).
+# TODO: pour rcap dans (100, 300, R): mesurer build_naive(rcap) [construction] et un build+check
+#       one-hot sur rcap premieres recettes ; tracer R vs temps pour les deux encodages.
+print(""Exercice 4 a completer : sweep R, tracer construction (naif) vs resolution (one-hot)."")",,,,,,,,b5a98b5f4ee52a41,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb,32132eaf,markdown,fr,c82abfc458efb276,"## Synthèse — l'encodage décide de la tractabilité
+
+Le même théorème (`7 menus × 5 plats`, variété, fenêtre nutritionnelle), sur le **même**
+corpus réel, donne trois comportements radicalement différents selon l'encodage SMT :
+
+- l'**index + disjonction** naïf explose dès la **construction** (`O(menus × plats × R × C)`) ;
+- la **théorie des tableaux**, si compacte à écrire, reste **`unknown`** ;
+- le **one-hot pseudo-booléen** se construit et se résout, parce que la somme pondérée de
+  booléens est traitée par le **solveur pseudo-booléen natif** de Z3.
+
+**Leçon :** à l'échelle, ce n'est pas la puissance brute du solveur qui décide — c'est le
+choix d'**encodage**. Les recettes sont des contraintes *enablantes* ; l'encodage décide si
+l'espace qu'elles ouvrent est explorable. C'est la clôture du bloc meal-planner : de la
+modélisation jouet ([16](Z3-Python-16-Meal-Planner.ipynb)) à la donnée réelle ([16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb)),
+au capstone patient ([16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb)), jusqu'à la
+tractabilité à l'échelle (ce notebook).
+
+> **Honnêteté de port.** Ce notebook Python reproduit les **verdicts qualitatifs** du port
+> C# `09` (A explose, B `unknown`, C `sat`) sur le sous-ensemble de corpus produit par 16b.
+> Les **timing absolus** diffèrent (overhead `ctypes` Python ~10-20×), l'**ordre relatif** non.
+> Le pseudo-booléen (`PbEq` / `PbLe` / `PbGe`) fait ici son entrée dans la jambe Python-large.",,,,,,,,c82abfc458efb276,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,dc6364b8,markdown,fr,4ae4b2fa8909410c,"# Z3-Python-16e — Meal-Planner : l'optimisation (du SAT à l'OPT sur corpus réel)
+
+*Grain « non-miroir » de la jambe Python-large du planificateur #1206.*
+[16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) (capstone patient) et
+[16d](Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) (convergence à l'échelle)
+répondaient à la question de **satisfiabilité** : *existe-t-il un menu conforme ?*
+Ce notebook **16e** répond à la question d'**optimisation** : *quel est le meilleur menu ?*
+
+> **Ce que ce grain apporte de neuf (net-new).** Le corpus réel Ciqual × RecipeML
+> (cache de [16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb), R=594) n'avait jamais
+> été confié à un solveur d'**optimisation**. Ce notebook le fait, en réutilisant
+> l'encodage **one-hot pseudo-booléen** qui passe à l'échelle (leçon de 16d), et y
+> ajoute trois familles absentes de toute la track Python :
+>
+> - **`Optimize.minimize` / `maximize`** sur R=594 (le toy [16](Z3-Python-16-Meal-Planner.ipynb)
+>   ne le faisait que sur 24 plats) ;
+> - **`add_soft`** — l'API native de **MaxSAT pondéré** (zéro occurrence dans les
+>   notebooks Python du dépôt ; le notebook `Z3-Python-06` l'émule à la main avec des
+>   variables de relaxation) ;
+> - **`priority='pareto' | 'box'`** — les modes **multi-objectif natifs** de Z3,
+>   inutilisés jusqu'ici (le notebook 06 émule le front de Pareto par une boucle).
+>
+> **Ce n'est pas un port du C# `14_Optimize_MaxSAT`** (qui est DSL + toy corpus :
+> knapsack 5 objets, nurse-roster 3×3). Ici l'optimisation est construite **à frais
+> nouveaux** sur le corpus réel du meal-planner, en encodage PB brut.",,,,,,,,4ae4b2fa8909410c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,a9f205da,markdown,fr,c6a75ac048675267,"## Objectifs
+
+1. Passer du `Solver` (existe-t-il une solution ?) à l'`Optimize` (quelle est la **meilleure** ?).
+2. Démontrer `minimize` / `maximize` sur le corpus réel (R=594) — et pourquoi le **glouton** rate l'optimum global.
+3. Introduire **`add_soft`** : la préférence *souple* pondérée (≠ restriction *hard*), exprimée en une ligne via le solveur MaxSAT natif de Z3.
+4. Introduire le **multi-objectif natif** (`priority='pareto'` / `'box'`) pour explorer le compromis sel ↔ protéines.
+5. Lire la valeur de l'objectif depuis le solveur (`h.value()`) et ré-optimiser incrémentalement (`push`/`pop`).
+
+**Prérequis :** [16](Z3-Python-16-Meal-Planner.ipynb) (Optimize sur corpus jouet),
+[16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) (cache réel),
+[16d](Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) (encodage one-hot PB qui scale).",,,,,,,,c6a75ac048675267,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,94c11604,markdown,fr,c30fd3d7648c5674,"## 1. Données + encodage : on réutilise le cache réel et le one-hot partitionné
+
+Le cache de [16b](Z3-Python-16b-Meal-Planner-Data-External.ipynb) (R=594 recettes
+solveur-usables) et l'encodage **one-hot partitionné par cours** de
+[16d](Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) (un pool de recettes par
+créneau : Entrée, Plat principal, Accompagnement, Pain, Dessert) sont notre point de
+départ. Pourquoi les pools plutôt que le one-hot plat ? Parce qu'ils réduisent le
+nombre de booléens (~4158 contre ~20790) **sans perte d'expressivité** — et rendent
+l'optimisation **tractable** à cette échelle.",,,,,,,,c30fd3d7648c5674,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,0af29c65,code,fr,e7d8157372b8a2d8,"# Chargement du cache (16b) + partition par cours (16d) -- la base commune.
+import json, time
+from pathlib import Path
+from z3 import Optimize, Bool, PbEq, PbLe, PbGe, Or, Not, sat, is_true, Sum, IntVal
+
+CACHE = Path(""data/meals"") / ""mealplan_cache.json""
+assert CACHE.exists(), f""Cache absent : {CACHE} (executez 16b d'abord).""
+doc = json.loads(CACHE.read_text(encoding=""utf-8""))
+constituants = doc[""constituants""]; C = len(constituants)
+plats = [(r[""title""].strip()[:40], [float(v) for v in r[""vec""]], list(r[""cats""])) for r in doc[""recipes""]]
+R = len(plats)
+vint = [[int(round(p[1][c])) for p in plats] for c in range(C)]   # valeurs entieres (banker rounding)
+def pq(c, q):                       # quantile TRONQUE (pas interpole)
+    vals = sorted(p[1][c] for p in plats); return vals[int(q * (len(vals) - 1))]
+NMENUS, NPLATS = 7, 5
+loE = NPLATS * int(pq(0, 0.20)); hiE = NPLATS * int(pq(0, 0.80))
+loP = NPLATS * int(pq(1, 0.30));  hiS = max(1, NPLATS * int(pq(4, 0.70)))
+# restr = [(constituantIndex, lo, hi)], -1 = pas de borne de ce cote.
+restr = [(0, loE, hiE), (1, loP, -1), (4, -1, hiS)]
+# Partition par cours (meme logique que 16d cell C').
+COURSES = [""Entree"", ""Plat principal"", ""Accompagnement"", ""Pain"", ""Dessert""]
+COURSE_CATS = [
+    {""appetizers"", ""soups"", ""salads"", ""salad"", ""soup""},
+    {""main dish"", ""meats"", ""beef"", ""poultry"", ""seafood"", ""fish"", ""pasta"", ""casseroles"", ""chili"", ""pork"", ""chicken"", ""stews""},
+    {""vegetables"", ""vegetarian"", ""sauces"", ""sauce"", ""side dishes"", ""rice"", ""potatoes""},
+    {""breads"", ""bread"", ""muffins"", ""rolls"", ""biscuits""},
+    {""desserts"", ""cakes"", ""cake"", ""cookies"", ""chocolate"", ""fruits"", ""pies"", ""candy"", ""pastries""},
+]
+def course_of(cats):
+    for cat in cats:
+        for k in range(5):
+            if cat.lower() in COURSE_CATS[k]:
+                return k
+    return 1
+pool = [[] for _ in range(5)]
+for r in range(R):
+    pool[course_of(plats[r][2])].append(r)
+SEL, PROT, GLU, LIP = 4, 1, 2, 3   # alias de constituants (indices C)
+print(f""Cache : R={R} recettes, C={C} constituants. Pools : ""
+      + "", "".join(f""{COURSES[k]}={len(pool[k])}"" for k in range(5)) + ""."")
+print(f""Theoreme : {NMENUS} menus x {NPLATS} plats. bornes patient dynamiques : ""
+      f""energie[{loE},{hiE}], proteines>={loP}, sel<={hiS}."")",,,,,,,,e7d8157372b8a2d8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,6e6f52ea,markdown,fr,5cc025646986ea75,"## 2. `minimize` / `maximize` : le menu le moins salé, le plus protéiné
+
+`Optimize` sous-traite la recherche d'optimum : le solveur combine satisfiabilité et
+poursuite de l'objectif en **un appel** (algorithmes OBBTP/maxres). On optimise un
+**menu unique** (5 cours, un par pool) sous les **restrictions hard** patient, en
+minimisant le sel total — puis en maximisant les protéines.
+
+> **Pourquoi un seul menu ?** Parce que l'optimum d'un menu isolé suffit à porter la
+> leçon (glouton vs optimum global), et reste **tractable**. Le plan hebdomadaire
+> optimal (7 menus) vient au §5.",,,,,,,,5cc025646986ea75,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,cfeab817,code,fr,d044bc75cd66cd65,"# Optimize sur UN menu (5 cours) : minimiser le sel, puis maximiser les proteines.
+# sel[m_unused][p][j] : la j-eme recette du pool[p] occupe le cours p du menu 0.
+sel0 = [[Bool(f""o_{p}_{j}"") for j in range(len(pool[p]))] for p in range(NPLATS)]
+def hard_menu(opt):                          # restrictions hard patient + structure du menu
+    for p in range(NPLATS):                  # exactement 1 recette / cours
+        opt.add(PbEq([(sel0[p][j], 1) for j in range(len(pool[p]))], 1))
+    for (cc, lo, hi) in restr:               # fenetre nutritionnelle (borne sur le menu)
+        pairs = [(sel0[p][j], int(vint[cc][pool[p][j]])) for p in range(NPLATS) for j in range(len(pool[p]))]
+        if lo >= 0: opt.add(PbGe(pairs, lo))
+        if hi >= 0: opt.add(PbLe(pairs, hi))
+
+def sel_total(cc):                           # somme ponderee PB -> valeur du constituant cc sur le menu
+    return [(sel0[p][j], int(vint[cc][pool[p][j]])) for p in range(NPLATS) for j in range(len(pool[p]))]
+
+# --- (a) minimiser le sel ---
+opt_min = Optimize(); hard_menu(opt_min)
+h_sel = opt_min.minimize(Sum([sel0[p][j] * int(vint[SEL][pool[p][j]]) for p in range(NPLATS) for j in range(len(pool[p]))]))
+t0 = time.perf_counter(); st = opt_min.check(); dt = time.perf_counter() - t0
+print(f""MIN sel : {st} en {dt:.2f}s, valeur optimale = {h_sel.value()}"")
+m = opt_min.model()
+menu_min = [next(plats[pool[p][j]][0] for j in range(len(pool[p])) if is_true(m.eval(sel0[p][j]))) for p in range(NPLATS)]
+print(""  Menu min-sel : "" + "" | "".join(f""{COURSES[p]}: {n[:18]}"" for p, n in enumerate(menu_min)))
+
+# --- (b) maximiser les proteines ---
+opt_max = Optimize(); hard_menu(opt_max)
+h_prot = opt_max.maximize(Sum([sel0[p][j] * int(vint[PROT][pool[p][j]]) for p in range(NPLATS) for j in range(len(pool[p]))]))
+t0 = time.perf_counter(); st = opt_max.check(); dt = time.perf_counter() - t0
+print(f""MAX prot : {st} en {dt:.2f}s, valeur optimale = {h_prot.value()}"")
+m = opt_max.model()
+menu_max = [next(plats[pool[p][j]][0] for j in range(len(pool[p])) if is_true(m.eval(sel0[p][j]))) for p in range(NPLATS)]
+print(""  Menu max-prot : "" + "" | "".join(f""{COURSES[p]}: {n[:18]}"" for p, n in enumerate(menu_max)))",,,,,,,,d044bc75cd66cd65,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,1c6369ca,markdown,fr,09274948240beb38,"### Interprétation — pourquoi le glouton rate l'optimum global
+
+Un **glouton** choisirait, cours par cours, la recette la moins salée du pool — mais
+ce choix **local** ignore le **couplage nutritionnel** : la recette la moins salée en
+*plat principal* peut être si pauvre en protéines qu'elle force un *accompagnement*
+très salé pour atteindre le plancher `loP`. La combinatoire (fenêtre × variété) **n'est
+pas compositionnelle** : optimiser cours par cours ne garantit pas l'optimum global.
+`Optimize`, lui, considère les **5 cours simultanément** et trouve le vrai minimum.
+
+> **`minimize` vs dichotomie manuelle.** L'alternative sans `Optimize` serait une
+> dichotomie sur le seuil de sel (`Solver` + `sel <= mid`, resserrer `mid` jusqu'à
+> `unsat`) — N appels et une logique de boucle. `minimize` le fait en un appel.",,,,,,,,09274948240beb38,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,cbdefa78,markdown,fr,d799f7a8b082a0f0,"## 3. `add_soft` : la préférence souple pondérée (MaxSAT natif)
+
+Les restrictions **hard** patient (fenêtre énergétique, plancher protéique, plafond de
+sel) sont des contraintes *inviolables* : les violer rend le menu `unsat`. Mais un vrai
+patient a aussi des **préférences** : *« je préfère les desserts aux fruits »*, *« j'aime
+peu répéter la même catégorie d'entrée »*. Ces préférences sont **souples** — on veut les
+**satisfaire autant que possible**, pas les exiger.
+
+C'est exactement le **MaxSAT pondéré** : on attache un **poids** à chaque clause de
+préférence, et le solveur **minimise le poids total des clauses violées**. L'API native
+z3-py est `opt.add_soft(expr, weight, group)` — **une ligne par préférence**.
+
+> **Net-new.** Aucun notebook Python du dépôt n'utilise `add_soft` (le notebook
+> `Z3-Python-06` **émule** MaxSAT à la main : une variable de relaxation `r` par clause,
+> `Or(pref, r)` puis `minimize(Sum(If(r,1,0)))` — six lignes pour une préférence, et pas
+> de sémantique de `group`). `add_soft` fait la même chose en une ligne, via le solveur
+> MaxSAT natif de Z3 (MaxRes/OLL).",,,,,,,,d799f7a8b082a0f0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,56060010,code,fr,5cd0e35f931445d6,"# add_soft : preferences souples ponderees (MaxSAT natif) sur le menu.
+# On ajoute au menu hard des preferences patient : poids eleve = prefere fortement.
+opt_s = Optimize(); hard_menu(opt_s)
+# Pref 1 (poids 10) : le dessert devrait etre a base de fruits (cats contient ""fruits"" / ""fruits"").
+# Pref 2 (poids 3)  : l'accompagnement devrait etre vegetarien.
+# Pref 3 (poids 1)  : le pain ne devrait pas etre ""biscuits"" (penalite legere).
+def cats_of_course(p):
+    return [set(c.lower() for c in plats[pool[p][j]][2]) for j in range(len(pool[p]))]
+DESSERT, ACCOMP, PAIN = 4, 2, 3
+# Pref 1 : exactement un dessert-fruits (PbEq sur les dessert-fruit) -- encode comme soft clause ponderee.
+# On modelise ""il existe un dessert fruit"" comme une clause Or (soft).
+fruit_bools = [sel0[DESSERT][j] for j in range(len(pool[DESSERT])) if ""fruits"" in cats_of_course(DESSERT)[j]]
+if fruit_bools:
+    opt_s.add_soft(Or(fruit_bools), weight=10, id=""prefs"")
+veggie_bools = [sel0[ACCOMP][j] for j in range(len(pool[ACCOMP])) if ""vegetarian"" in cats_of_course(ACCOMP)[j]]
+if veggie_bools:
+    opt_s.add_soft(Or(veggie_bools), weight=3, id=""prefs"")
+# Pref 3 : penaliser le pain ""biscuits"" -- clause soft Nie chaque biscuit-pain.
+for j in range(len(pool[PAIN])):
+    if ""biscuits"" in cats_of_course(PAIN)[j]:
+        opt_s.add_soft(Not(sel0[PAIN][j]), weight=1, id=""prefs"")
+t0 = time.perf_counter(); st = opt_s.check(); dt = time.perf_counter() - t0
+print(f""Menu + soft prefs : {st} en {dt:.2f}s"")
+m = opt_s.model()
+menu_pref = [next(plats[pool[p][j]][0] for j in range(len(pool[p])) if is_true(m.eval(sel0[p][j]))) for p in range(NPLATS)]
+print(""  Menu preferentiel : "" + "" | "".join(f""{COURSES[p]}: {n[:18]}"" for p, n in enumerate(menu_pref)))
+print(""  (add_soft = MaxSAT natif : 1 ligne par preference, vs ~6 lignes de variable de relaxation a la main)"")",,,,,,,,5cd0e35f931445d6,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,094f05eb,markdown,fr,97cf93f43d302de7,"### Interprétation — `add_soft` et la sémantique de `group`
+
+`add_soft(expr, weight, group)` attache un **poids** à la clause `expr`. Le solveur
+minimise la **somme des poids des clauses violées**. Quand plusieurs clauses partagent
+le même `group`, Z3 ne compte que **la violation la plus coûteuse** du groupe (sémantique
+*max*), ce qui permet de modéliser « au moins une de ces préférences » sans pénaliser
+doublement. C'est une sémantique que l'émulation manuelle par variable de relaxation
+n'exprime pas naturellement.",,,,,,,,97cf93f43d302de7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,a1a3107c,markdown,fr,9f54c74fb97f94cb,"## 4. Multi-objectif : le compromis sel ↔ protéines (`box` + scalarisation)
+
+Minimiser le sel et **maximiser** les protéines sont deux objectifs **antagonistes** :
+le menu le moins salé n'est pas le plus protéiné. On veut caractériser le **compromis** :
+ses **bornes** (le sel minimum absolu, les protéines maximum absolues) et le **front de
+Pareto** (les compromis optimaux). Deux outils complémentaires :
+
+- **`priority='box'`** — chaque objectif optimisé **indépendamment**, en un seul `check()`
+  (renvoie les deux optima via les *handles*). Donne les **bornes** qui cadrent le compromis.
+- **Scalarisation** — on combine les objectifs en un seul scalaire `alpha·sel − (1−alpha)·prot`
+  et on balaie `alpha ∈ [0, 1]` ; chaque `alpha` est un single-objectif `minimize` (rapide),
+  et l'ensemble des solutions trace le **front de Pareto**.
+
+> **Net-new.** Le mode **`priority='box'`** est **inutilisé** dans tout le dépôt
+> (`priority` = 0 occurrence). Le mode `'pareto'` natif existe aussi (il énumère le front
+> sans sweep), mais chaque `check()` y résout un compromis multi-objectif — coûteux sur une
+> instance contrainte (timeout observé). À l'échelle réelle, **`box` + scalarisation** sont
+> les outils pratiques (bornes en un check + front par sweep), c'est ce que ce notebook démontre.",,,,,,,,9f54c74fb97f94cb,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,02f92f24,code,fr,2de3e915d860b2e0,"# Multi-objectif sur le corpus plein R=594 : (a) box pour les bornes, (b) scalarisation pour le front.
+expr_sel = Sum([sel0[p][j] * int(vint[SEL][pool[p][j]]) for p in range(NPLATS) for j in range(len(pool[p]))])
+expr_prot = Sum([sel0[p][j] * int(vint[PROT][pool[p][j]]) for p in range(NPLATS) for j in range(len(pool[p]))])
+# (a) BOX : min sel seul ET max prot seul, en UN check (deux optima independants lus via les handles).
+ob = Optimize(); hard_menu(ob); ob.set(""priority"", ""box"")
+hs = ob.minimize(expr_sel); hp = ob.maximize(expr_prot)
+t0 = time.perf_counter(); ob.check(); dt = time.perf_counter() - t0
+print(f""BOX (priority='box', 1 check, 2 optima independants) en {dt:.2f}s :"")
+print(f""   sel minimum absolu = {hs.value()} g  |  proteines maximum absolu = {hp.value()} g"")
+# (b) SCALARISATION : front de Pareto pratique (sweep pondere, chaque alpha = un single-objectif minimize).
+print(""Front de Pareto (scalarisation ponderee alpha*sel - (1-alpha)*prot) :"")
+print(""   alpha | sel(g) | prot(g)"")
+seen = set()
+for alpha in [i / 6 for i in range(7)]:
+    oc = Optimize(); hard_menu(oc); oc.set(""timeout"", 15000)
+    oc.minimize(expr_sel * int(round(alpha * 100)) - expr_prot * int(round((1 - alpha) * 100)))
+    if oc.check() == sat:
+        m = oc.model()
+        sv = sum(int(vint[SEL][pool[p][j]]) for p in range(NPLATS) for j in range(len(pool[p])) if is_true(m.eval(sel0[p][j])))
+        pv = sum(int(vint[PROT][pool[p][j]]) for p in range(NPLATS) for j in range(len(pool[p])) if is_true(m.eval(sel0[p][j])))
+        if (sv, pv) not in seen:
+            seen.add((sv, pv))
+            print(f""   {alpha:.2f}  | {sv:>5}  | {pv:>5}"")
+print(""  -> alpha=0 = maximise les proteines (sel libre) ; alpha=1 = minimise le sel (prot libre)."")",,,,,,,,2de3e915d860b2e0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,48ab288b,markdown,fr,07008a60dd92b031,"### Interprétation — bornes `box` et front de scalarisation
+
+`priority='box'` a livré en **un seul `check()`** les deux optima indépendants : le sel
+minimum absolu et les protéines maximum absolues — les **bornes** qui cadrent tout
+compromis possible. La **scalarisation** a ensuite tracé le **front de Pareto** : à mesure
+qu'on pénalise le sel (alpha croissant), le solveur accepte moins de protéines. Chaque
+point du front est un menu réel (5 cours) pour lequel aucun autre n'est *à la fois* moins
+salé **et** plus protéiné.
+
+> **Contraste avec l'émulation.** Le notebook `Z3-Python-06` trace ce front par une
+> **boucle Python** (sweep + dédoublonnage) sur un toy corpus ; ici la scalarisation court
+> sur le **corpus réel R=594**, et le mode natif **`box`** (qui n'a d'équivalent nulle part
+> dans le dépôt) donne les bornes en un check. Le mode `'pareto'` natif existe pour
+> énumérer le front sans sweep, mais reste coûteux par check sur instance contrainte.",,,,,,,,07008a60dd92b031,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,14a411f0,markdown,fr,56ccdbede5527718,"## 5. Lire l'objectif et ré-optimiser incrémentalement (`push`/`pop`)
+
+`opt.minimize(e)` / `opt.maximize(e)` renvoient un **handle** sur lequel on lit la valeur
+optimale (`h.value()`), la borne supérieure (`h.upper()`) ou inférieure (`h.lower()`).
+Et comme un `Solver`, un `Optimize` supporte `push()`/`pop()` : on **ajoute** temporairement
+une contrainte (ex. « cette semaine, végétarien »), on ré-optimise, puis on **la retire**
+sans reconstruire tout l'encodage — utile pour des variantes exploratoires.",,,,,,,,56ccdbede5527718,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,ab83f332,code,fr,52867a277ad5706d,"# Handle d'objectif + push/pop : re-optimiser sous une variante sans tout reconstruire.
+opt_h = Optimize(); hard_menu(opt_h)
+h = opt_h.minimize(Sum([sel0[p][j] * int(vint[SEL][pool[p][j]]) for p in range(NPLATS) for j in range(len(pool[p]))]))
+opt_h.check()
+print(f""Optimum sel (baseline) : valeur = {h.value()}, borne sup = {h.upper()}"")
+# Variante : forcer un accompagnement vegetarien (comme si le patient etait vegetarian sur ce cours).
+opt_h.push()
+VEGGIE_ACCOMP = [sel0[ACCOMP][j] for j in range(len(pool[ACCOMP])) if ""vegetarian"" in cats_of_course(ACCOMP)[j]]
+if VEGGIE_ACCOMP:
+    opt_h.add(Or(VEGGIE_ACCOMP))   # au moins un accompagnement vegetarien
+    st = opt_h.check()
+    print(f""Variante (accompagnement vegetarien force) : {st}, nouvel optimum sel = {h.value() if st == sat else 'N/A'}"")
+opt_h.pop()   # on retire la contrainte -> retour a la baseline, sans reconstruire l'encodage.
+# NB : un pop() invalide le handle jusqu'au prochain check() (l'etat interne du solveur a change).
+opt_h.check()   # re-optimiser la baseline : le handle h redevient lisible.
+print(f""Apres pop() + check() : retour a la baseline, optimum sel = {h.value()} (encodage preserve, pas regenere)."")",,,,,,,,52867a277ad5706d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,9162f542,markdown,fr,5077aee81785b63a,"## 6. Le plan hebdomadaire optimal : 7 menus au sel total minimal
+
+Pour clore, on optimise le **plan complet** (7 menus × 5 cours) : minimiser le sel total
+de la semaine, sous les restrictions hard patient **par menu** + la **variété**
+(chaque recette au plus une fois par semaine). C'est l'encodage C' de 16d (course-partitionné,
+~4158 booléens) confié à `Optimize` — la démonstration que l'optimisation reste tractable
+à l'échelle réelle grâce au bon encodage.",,,,,,,,5077aee81785b63a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,83137bc4,code,fr,f466f618d51c3bc9,"# Plan hebdomadaire optimal : 7 menus, minimiser le sel total de la semaine.
+opt_w = Optimize()
+opt_w.set(""timeout"", 120000)   # garde-fou : 2 min max pour l'optimum hebdo (souvent resolu en quelques s).
+selW = [[[Bool(f""w_{m}_{p}_{j}"") for j in range(len(pool[p]))] for p in range(NPLATS)] for m in range(NMENUS)]
+for m in range(NMENUS):
+    for p in range(NPLATS):   # exactement 1 recette / cours / menu
+        opt_w.add(PbEq([(selW[m][p][j], 1) for j in range(len(pool[p]))], 1))
+    for (cc, lo, hi) in restr:   # fenetre nutritionnelle par menu
+        pairs = [(selW[m][p][j], int(vint[cc][pool[p][j]])) for p in range(NPLATS) for j in range(len(pool[p]))]
+        if lo >= 0: opt_w.add(PbGe(pairs, lo))
+        if hi >= 0: opt_w.add(PbLe(pairs, hi))
+for p in range(NPLATS):       # variete : chaque recette <= 1x / semaine (colonne sur les menus)
+    for j in range(len(pool[p])):
+        opt_w.add(PbLe([(selW[m][p][j], 1) for m in range(NMENUS)], 1))
+week_sel = Sum([selW[m][p][j] * int(vint[SEL][pool[p][j]]) for m in range(NMENUS) for p in range(NPLATS) for j in range(len(pool[p]))])
+hw = opt_w.minimize(week_sel)
+t0 = time.perf_counter(); st = opt_w.check(); dt = time.perf_counter() - t0
+print(f""Plan hebdo optimal (min sel semaine) : {st} en {dt:.2f}s, sel total optimal = {hw.value()}"")
+mw = opt_w.model()
+for m in range(3):
+    names = [next(plats[pool[p][j]][0] for j in range(len(pool[p])) if is_true(mw.eval(selW[m][p][j]))) for p in range(NPLATS)]
+    print(f""  Menu {m+1} : "" + "" | "".join(f""{COURSES[p]}: {n[:16]}"" for p, n in enumerate(names)))
+print(f""  (... 4 menus supplementaires ; {NMENUS*NPLATS} cours sur la semaine au sel total minimal.)"")",,,,,,,,f466f618d51c3bc9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,ac069b63,markdown,fr,c7ddcaeed4265c35,"## Synthèse — du SAT à l'OPT sur corpus réel
+
+| Question | Notebook | API | Réponse |
+|---|---|---|---|
+| *Existe-t-il un menu conforme ?* | [16c](Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) / [16d](Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) | `Solver` | SAT / UNSAT |
+| ***Quel est le meilleur menu ?*** | **ce notebook** | `Optimize` | optimum + front de Pareto |
+
+**Le grain non-miroir de la track Python-large** : le corpus réel Ciqual × RecipeML
+(R=594) est confié pour la première fois à un solveur d'**optimisation**, en réutilisant
+l'encodage one-hot PB qui passe à l'échelle (16d). Trois familles font leur entrée dans
+la track Python :
+
+1. **`minimize` / `maximize`** — le solveur trouve l'optimum global en un appel (vs dichotomie, vs glouton sous-optimal).
+2. **`add_soft`** — MaxSAT pondéré **natif** (zéro occurrence Python repo-wide auparavant ; `Z3-Python-06` l'émulait à la main).
+3. **`priority='box'`** (bornes indépendantes en un check, **net-new** — inutilisé repo-wide) + **scalarisation** pour le front de Pareto pratique (06 l'émulait par boucle sur toy corpus ; ici sur R=594).
+
+> **Honnêteté de port.** Ce n'est pas un port du C# `14_Optimize_MaxSAT` (DSL + toy
+> knapsack/nurse-roster) : l'optimisation est construite à frais nouveaux sur le corpus
+> réel du meal-planner. Le toy [16](Z3-Python-16-Meal-Planner.ipynb) faisait déjà
+> `minimize(cost)` sur 24 plats — ce notebook étend à R=594 et ajoute `add_soft` + Pareto
+> natif, absents du toy. Les timing absolus dépendent de l'encodage (les pools rendent
+> l'optimum tractable en secondes) ; l'enseignement porté est le **passage SAT→OPT à l'échelle**.
+
+**Deep-queue #1206** : G1 (data-layer) → G2 (capstone) → G3 (convergence-scale) → **G4 (ce notebook)** → G5 (hygiène retrofit, LIGHT/dernier).",,,,,,,,c7ddcaeed4265c35,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,35992ba8,markdown,fr,2b3c2623d05596e8,"## 7. Exercices
+
+Les variables `sel0`, `selW`, `opt_*`, `pool`, `vint`, `restr`, `cats_of_course`,
+`SEL/PROT/GLU/LIP` restent en portée.
+
+### Exercice 1 — Minimiser le coût sous contrainte de variété maximale
+
+On a minimisé le sel. Définissez un « coût » arbitraire (ex. pénaliser les recettes dont
+le titre contient un mot-clé « cher » ou utiliser la couverture d'appariement `cover`
+comme proxy inverse de qualité) et minimisez-le, **tout en maximisant la variété** (nombre
+de catégories distinctes dans le menu).",,,,,,,,2b3c2623d05596e8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,8ebd35c4,code,fr,75a0519b50abf653,"# Exercice 1 -- minimiser un cout en maximisant la variete (multi-objectif).
+# TODO: definir une fonction de cout (ex: penaliser mots-cles, ou 1/cover comme proxy),
+#       opt.minimize(cout) + opt.maximize(variete), priority='pareto' pour le compromis.
+print(""Exercice 1 a completer : cout minimal vs variete maximale (front de Pareto)."")",,,,,,,,75a0519b50abf653,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,14b29f00,markdown,fr,df254765bc26c73b,"### Exercice 2 — Préférence patient multi-niveaux (MaxSAT hiérarchique)
+
+Le patient a des préférences **par ordre de priorité** : (1) aucun fruit à coque,
+(2) préfère le poisson à la viande rouge, (3) aime le chocolat. Modélisez-les avec
+`add_soft` à **poids croissants** (ex. 100 / 10 / 1) — le solveur satisfera d'abord les
+priorités élevées. Comparez avec `priority='lex'` (domination lexicographique stricte).",,,,,,,,df254765bc26c73b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,35020dd2,code,fr,d35f5483d78cd381,"# Exercice 2 -- preferences patient multi-niveaux (MaxSAT hierarchique).
+# TODO: 3 add_soft a poids croissants (100/10/1) sur des clauses de preference,
+#       puis comparer avec opt.set('priority','lex') pour une domination lexicographique stricte.
+print(""Exercice 2 a completer : MaxSAT hierarchique (poids croissants) vs priority='lex'."")",,,,,,,,d35f5483d78cd381,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,b905b16c,markdown,fr,87d06276181a7d7b,"### Exercice 3 — Optimiser le plan hebdomadaire en protéines (borne `box`)
+
+Le §6 minimise le sel du plan semaine. Utilisez `priority='box'` pour obtenir, sur le
+même encodage, le **maximum absolu de protéines** (sans égard au sel) ET le **minimum
+absolu de sel** — les deux bornes qui cadrent le compromis hebdomadaire.",,,,,,,,87d06276181a7d7b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb,da67109a,code,fr,bf2772f0758103c0,"# Exercice 3 -- bornes box sur le plan hebdomadaire.
+# TODO: reutiliser selW, opt.set('priority','box'), opt.minimize(week_sel) + opt.maximize(week_prot),
+#       lire h_sel.upper() et h_prot.upper() = les deux bornes independantes.
+print(""Exercice 3 a completer : bornes independantes (box) sel-min / prot-max du plan semaine."")",,,,,,,,bf2772f0758103c0,,,,,,,

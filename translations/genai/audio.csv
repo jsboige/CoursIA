@@ -24,8 +24,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-hea
   La clé OpenAI directe est obligatoire pour les endpoints audio.
 - Connaissances de base en Python
 
-**Navigation :** [Index](../README.md) | [Suivant >>](01-2-OpenAI-Whisper-STT.ipynb)
-",,,,,,,,0ec3554bea4ab1b1,,,,,,,
+**Navigation :** [Index](../README.md) | [Suivant >>](01-2-OpenAI-Whisper-STT.ipynb)",,,,,,,,0ec3554bea4ab1b1,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-params,code,fr,2a0f5d29114855b6,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -244,11 +243,11 @@ ex1_audio = None  # TODO etudiant
 # Indice : ecrire les bytes dans OUTPUT_DIR / f""ex1_{ex1_voice}.mp3""
 
 print(""Exercice a completer"")",,,,,,,,75733e16a8b1bccf,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,63044a1a,markdown,fr,ccf59ebf8a25337f,"### Interpretation : Première generation TTS
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,63044a1a,markdown,fr,200a768a1297b363,"### Interpretation : Première generation TTS
 
 | Metrique | Valeur obtenue | Analyse |
 |----------|----------------|---------|
-| Temps de generation | 2.86s | Latence acceptable pour usage interactif |
+| Temps de generation | *runtime machine-dep* (s live -- regle #9434) | Latence acceptable pour usage interactif |
 | Taille fichier | 206.2 KB | MP3 offre un bon compromis taille/qualite |
 | Texte traite | 178 caractères | Bien en dessous de la limite (4096 chars) |
 | Qualite audio | Naturelle | Voix ""alloy"" claire et comprehensible |
@@ -263,19 +262,19 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,63044a1a
 
 4. **Sauvegarde systématique** : Les fichiers sont sauvegardes avec un nom descriptif (`tts_intro_alloy.mp3`) pour faciliter la gestion
 
-> **Note technique** : La limite de 4096 caractères par requête permet de generer des paragraphes entiers. Pour des textes plus longs, il faut les segmenter et concatener les fichiers audio resultants.",,,,,,,,ccf59ebf8a25337f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-section1-interpretation,markdown,fr,7a95b439769b350b,"### Interpretation : Première generation
+> **Note technique** : La limite de 4096 caractères par requête permet de generer des paragraphes entiers. Pour des textes plus longs, il faut les segmenter et concatener les fichiers audio resultants.",,,,,,,,200a768a1297b363,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-section1-interpretation,markdown,fr,942a33e36f3e416d,"### Interpretation : Première generation
 
 | Aspect | Observation | Signification |
 |--------|-------------|---------------|
-| Temps de generation | Typiquement < 3s | L'API est optimisee pour une reponse rapide |
+| Temps de generation | *runtime machine-dep* : Typiquement < 3s | L'API est optimisee pour une reponse rapide |
 | Taille fichier | Variable selon format | MP3 compresse, WAV plus volumineux |
 | Qualite audio | Voix naturelle | Les modèles TTS d'OpenAI sont parmi les meilleurs du marche |
 
 **Points cles** :
 1. La reponse est un flux binaire, pas du JSON
 2. `IPython.display.Audio` permet l'ecoute directe dans le notebook
-3. Le texte francais est bien gere sans paramètre de langue explicite",,,,,,,,7a95b439769b350b,,,,,,,
+3. Le texte francais est bien gere sans paramètre de langue explicite",,,,,,,,942a33e36f3e416d,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-section2-intro,markdown,fr,0bd75db411f4c7ca,"## Section 2 : Comparaison des 6 voix
 
 OpenAI propose 6 voix pre-entrainees, chacune avec un caractère distinct :
@@ -358,22 +357,22 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-sec
 | Qualite perceptuelle | Variable selon le contexte | Chaque voix excelle dans des situations différentes |
 
 > **Note technique** : Les voix sont optimisees pour l'anglais mais fonctionnent bien en francais. Pour du contenu multilingue, tester chaque voix dans la langue cible.",,,,,,,,11c7bd9cfacf0f2f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,7607a4a8,markdown,fr,9a32bf0072f77a37,"### Transition : Vers la comparaison des modèles
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,7607a4a8,markdown,fr,b0c42386015268bf,"### Transition : Vers la comparaison des modèles
 
 Nous avons maintenant explore les **6 voix disponibles** et observe que :
 - Chaque voix a un caractère distinct (masculin/feminin, grave/aigu, formel/detendu)
-- Les temps de generation sont similaires (~2-3s)
+- Les temps de generation sont similaires (*runtime machine-dep* : ~2-3s)
 - Les tailles de fichiers sont quasi identiques
 
-**Prochaine étape** : Nous allons maintenant comparer les **deux modèles TTS** (tts-1 vs tts-1-hd) pour comprendre leurs différences en termes de latence, qualite et cout.",,,,,,,,9a32bf0072f77a37,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-section3-intro,markdown,fr,1d119671dd4105a7,"## Section 3 : Modèles tts-1 vs tts-1-hd
+**Prochaine étape** : Nous allons maintenant comparer les **deux modèles TTS** (tts-1 vs tts-1-hd) pour comprendre leurs différences en termes de latence, qualite et cout.",,,,,,,,b0c42386015268bf,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-section3-intro,markdown,fr,c12aab464afb6e39,"## Section 3 : Modèles tts-1 vs tts-1-hd
 
 OpenAI propose deux modèles avec des compromis différents :
 
 | Modèle | Latence | Qualite | Cout | Cas d'usage |
 |--------|---------|---------|------|-------------|
-| `tts-1` | Faible (~1s) | Bonne | $0.015 / 1K chars | Temps reel, prototypage |
-| `tts-1-hd` | Plus elevee (~2-3s) | Excellente | $0.030 / 1K chars | Production, narration |",,,,,,,,1d119671dd4105a7,,,,,,,
+| `tts-1` | *runtime machine-dep* : Faible (~1s) | Bonne | $0.015 / 1K chars | Temps reel, prototypage |
+| `tts-1-hd` | *runtime machine-dep* : Plus elevee (~2-3s) | Excellente | $0.030 / 1K chars | Production, narration |",,,,,,,,c12aab464afb6e39,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,b6c64c88,markdown,fr,1db00f0a54c8f6be,"### Introduction : Comparaison des modèles
 
 Après avoir explore les différentes voix, nous allons maintenant comparer les **deux modèles TTS** d'OpenAI :
@@ -666,23 +665,23 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-pra
 |--------|------------------------|-----|
 | `tts-1` | $15.00 | ~$0.75 |
 | `tts-1-hd` | $30.00 | ~$1.50 |",,,,,,,,a8fd5c97a3eff3e5,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,03acbbd0,markdown,fr,da4248bb04fae0cc,"### Interpretation : Résultats session
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,03acbbd0,markdown,fr,3c0413df5b051a29,"### Interpretation : Résultats session
 
-Ce notebook a generé **12 fichiers audio** (6 voix + 5 formats + 5 vitesses, dont 12 sauvegardes sur disque) pour une taille totale de **690.0 KB** (comparaison des 6 voix) en **11.9 secondes** de generation.
+Ce notebook a generé **12 fichiers audio** (6 voix + 5 formats + 5 vitesses, dont 12 sauvegardes sur disque) pour une taille totale de **690.0 KB** (comparaison des 6 voix) en **~12 secondes** de generation (*runtime machine-dep* : temps total live -- regle #9434, derive avec la charge API).
 
 | Metrique | Valeur | Analyse |
 |----------|--------|---------|
 | Fichiers voix | 6 | Couverture complete des 6 voix |
 | Fichiers formats | 5 | Tous les formats testes |
 | Fichiers vitesses | 5 | Echantillonnage 0.5x a 2.0x |
-| Temps moyen | ~2.0s/voix | Latence satisfaisante |
+| Temps moyen | *runtime machine-dep* : ~2 s/voix (live -- regle #9434) | Latence satisfaisante |
 
 **Couts estimés** (base $0.015/1K chars pour tts-1) :
 - Total caractères : ~2000
 - Cout session : ~$0.03
 - Cout heure narration : ~$0.75
 
-> **Note technique** : Les couts TTS d'OpenAI sont competitifs pour des cas d'usage ponctuels. Pour des volumes importants (>100K chars/jour), considerer des solutions open-source comme Kokoro (module 01-5) ou des services alternatifs.",,,,,,,,da4248bb04fae0cc,,,,,,,
+> **Note technique** : Les couts TTS d'OpenAI sont competitifs pour des cas d'usage ponctuels. Pour des volumes importants (>100K chars/jour), considerer des solutions open-source comme Kokoro (module 01-5) ou des services alternatifs.",,,,,,,,3c0413df5b051a29,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,cell-stats,code,fr,bb4a34a9c2b7599b,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
@@ -746,11 +745,11 @@ result_audio = None  # TODO etudiant : concatener les segments audio generes
 # Indice : utilisez OUTPUT_DIR / ""dialogue_multi_voix.mp3""
 
 print(""Exercice a completer"")",,,,,,,,e5b73d9ad7fe48dc,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,10f3d70b,markdown,fr,6a242404a49fd5bb,"### Interpretation : Comparaison des modèles
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,10f3d70b,markdown,fr,f61c6b5bc70874f6,"### Interpretation : Comparaison des modèles
 
 | Aspect | tts-1 | tts-1-hd | Différence |
 |--------|-------|----------|------------|
-| Temps de generation | 2.22s | 5.15s | **2.3x plus rapide** |
+| Temps de generation | *runtime machine-dep* : ~2-3 s (mesure cell. 21) | *runtime machine-dep* : ~4-5 s (mesure cell. 21) | **~1.6x plus rapide pour tts-1 (ratio structurel, mesure cell. 21)** |
 | Taille fichier | 398.9 KB | 405.5 KB | Negligeable (6.6 KB) |
 | Cout (texte exemple) | $0.0050 | $0.0099 | **2x moins cher** |
 | Qualite percue | Bonne | Excellente | Subjectif |
@@ -761,7 +760,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,10f3d70b
 3. La différence de taille est minimale, le choix se fait sur latence/cout vs qualite
 4. Pour un audiobook ou un podcast professionnel, tts-1-hd vaut le cout supplementaire
 
-> **Note technique** : Les deux modèles partagent le même ensemble de 6 voix. La différence de qualite est subtile mais perceptible sur du contenu long ou de la narration litteraire.",,,,,,,,6a242404a49fd5bb,,,,,,,
+> **Note technique** : Les deux modèles partagent le même ensemble de 6 voix. La différence de qualite est subtile mais perceptible sur du contenu long ou de la narration litteraire.",,,,,,,,f61c6b5bc70874f6,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,vzcpyr69nse,markdown,fr,b6680ae3124db8b8,"---
 
 ## CHALLENGE BONUS - Narration Multi-Voix
@@ -797,7 +796,7 @@ Ce notebook montre:
 
 **Soumission** : PR avec titre ""Challenge #8 - [Votre Nom]"", script et fichier audio combiné
 ",,,,,,,,b6680ae3124db8b8,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,0ff94c06,markdown,fr,bb2fa90821e760c7,"## Synthese - OpenAI TTS
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,0ff94c06,markdown,fr,6776b58027ab09a9,"## Synthese - OpenAI TTS
 
 ### Concepts fondamentaux
 
@@ -813,7 +812,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,0ff94c06
 
 | Aspect | tts-1 | tts-1-hd |
 |--------|-------|----------|
-| Latence | Faible (~1s) | Elevee (~2-3s) |
+| Latence | *runtime machine-dep* : Faible (~1s) | *runtime machine-dep* : Elevee (~2-3s) |
 | Qualite | Bonne | Excellente |
 | Cout | $0.015/1K chars | $0.030/1K chars |
 | Usage | Prototypage, temps reel | Production, narration |
@@ -831,7 +830,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb,0ff94c06
 1. **Reconnaissance vocale** (01-2-OpenAI-Whisper-STT) : Comprendre le chemin inverse
 2. **Opérations audio** (01-3-Basic-Audio-Opérations) : Manipuler les fichiers audio
 3. **Whisper local** (01-4-Whisper-Local) : Deporter le traitement
-4. **Kokoro TTS** (01-5-Kokoro-TTS-Local) : Alternative open-source",,,,,,,,bb2fa90821e760c7,,,,,,,
+4. **Kokoro TTS** (01-5-Kokoro-TTS-Local) : Alternative open-source",,,,,,,,6776b58027ab09a9,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-header,markdown,fr,6158d7ea7a6dabe9,"# OpenAI Whisper STT - Reconnaissance Vocale par API
 
 **Module :** 01-Audio-Foundation  
@@ -1025,11 +1024,11 @@ else:
             }
     print(f""{len(audio_samples)} echantillons existants trouves"")
 ",,,,,,,,7f3bdda2ee62228b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca44d,markdown,fr,daf3202b731e9cbb,"### Interpretation : Generation d'echantillons audio
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca44d,markdown,fr,ae631488f86b2f5b,"### Interpretation : Generation d'echantillons audio
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
-| Taille fichiers | 109-226 KB | Compression MP3 efficace pour la qualite vocale |
+| Taille fichiers | 106-233 KB | Compression MP3 efficace pour la qualite vocale |
 | Synthese TTS | voix ""nova"" | Modèle polyvalent, adapte aux textes courts |
 | Round-trip | TTS → STT | Permet de valider la fidelite de la chaîne audio |
 
@@ -1038,7 +1037,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,30fca4
 2. Les echantillons multilingues testent la robustesse de la detection de langue
 3. La taille du fichier MP3 depend de la duree et de la complexite du texte
 
-> **Note technique** : La voix ""nova"" du modèle tts-1 est optimisee pour les textes courts et la conversation. Pour des textes plus longs, considerer tts-1-hd pour une meilleure qualite audio.",,,,,,,,daf3202b731e9cbb,,,,,,,
+> **Note technique** : La voix ""nova"" du modèle tts-1 est optimisee pour les textes courts et la conversation. Pour des textes plus longs, considerer tts-1-hd pour une meilleure qualite audio.",,,,,,,,ae631488f86b2f5b,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-section2-intro,markdown,fr,407efcae6576ed07,"## Section 2 : Transcription avec Whisper API
 
 L'API Whisper accepte un fichier audio et retourne la transcription. Les paramètres principaux :
@@ -1050,16 +1049,16 @@ L'API Whisper accepte un fichier audio et retourne la transcription. Les paramè
 | `language` | Langue source | Code ISO 639-1 (`fr`, `en`, etc.) ou None |
 | `response_format` | Format de sortie | `json`, `text`, `srt`, `vtt`, `verbose_json` |
 | `timestamp_granularities` | Precision timestamps | `[""word""]`, `[""segment""]`, `[""word"", ""segment""]` |",,,,,,,,407efcae6576ed07,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,2f2757c2,markdown,fr,215f95853a7776e3,"### Synthese de la Section 1
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,2f2757c2,markdown,fr,d33b5ebae865414e,"### Synthese de la Section 1
 
 Cette section a initialise notre environnement de test en generant des echantillons audio contrôles via l'API TTS.
 
 **Résultats obtenus** :
 - 3 echantillons audio generes (francais, anglais, multilingue)
-- Fichiers MP3 de 109-226 KB stockes dans `outputs/audio/samples/`
+- Fichiers MP3 de 106-233 KB stockes dans `outputs/audio/samples/`
 - Textes de reference connus pour validation de la transcription
 
-**Transition** : Nous disposons maintenant de fichiers audio de qualite connue pour tester les capacites de transcription de Whisper. La section suivante explore l'API de transcription dans ses différents formats de sortie.",,,,,,,,215f95853a7776e3,,,,,,,
+**Transition** : Nous disposons maintenant de fichiers audio de qualite connue pour tester les capacites de transcription de Whisper. La section suivante explore l'API de transcription dans ses différents formats de sortie.",,,,,,,,d33b5ebae865414e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-transcription,code,fr,8d1ee53032030a3e,"# Transcription de base
 print(""TRANSCRIPTION WHISPER"")
 print(""="" * 45)
@@ -1175,7 +1174,7 @@ Whisper supporte des formats standards pour le sous-titrage :
 | `srt` | SubRip Subtitle | Lecteurs video, YouTube |
 | `vtt` | WebVTT | Navigateurs web, HTML5 video |
 | `text` | Texte brut | Traitement de texte, NLP |",,,,,,,,08d73fc01573d02c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,62062a0c,markdown,fr,c16ff2bff1a88b96,"### Synthese de la Section 2
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,62062a0c,markdown,fr,00a8f32ff72c0475,"### Synthese de la Section 2
 
 Cette section a demontre les capacites fondamentales de transcription de Whisper.
 
@@ -1183,13 +1182,13 @@ Cette section a demontre les capacites fondamentales de transcription de Whisper
 - Transcription fidele (texte original reproduit avec precision)
 - Detection automatique de langue (french identifiee sans paramètre)
 - Timestamps a deux niveaux (segments de 3-4s, mots individuels)
-- Metadonnees completes (duree 11.4s, 28 mots, 3 segments)
+- Metadonnees completes (duree 11.9s, 28 mots, 3 segments)
 
 **Formats de sortie explores** :
 - `json` : Texte simple, usage general
 - `verbose_json` : Metadonnees completes (timestamps, langue, duree)
 
-**Transition** : Après avoir maitrise la transcription de base, nous allons explorer les formats specialises pour le sous-titrage (SRT, VTT) qui sont essentiels pour les applications video.",,,,,,,,c16ff2bff1a88b96,,,,,,,
+**Transition** : Après avoir maitrise la transcription de base, nous allons explorer les formats specialises pour le sous-titrage (SRT, VTT) qui sont essentiels pour les applications video.",,,,,,,,00a8f32ff72c0475,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-subtitle-formats,code,fr,c04ebf7ef1f18950,"# Formats de sous-titrage
 print(""FORMATS DE SOUS-TITRAGE"")
 print(""="" * 45)
@@ -1444,11 +1443,11 @@ if ""fr"" in audio_samples:
 else:
     print(""Aucun echantillon audio disponible"")
 ",,,,,,,,568e5b8050500798,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,fdb689fbb6d71eb3,"### Interpretation : Comparaison des modèles
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d984,markdown,fr,739bd49545f0545b,"### Interpretation : Comparaison des modèles
 
 | Aspect | Observation | Analyse |
 |--------|-------------|---------|
-| whisper-1 | 1.06s pour 11.4s audio | Ratio real-time ~10.8x (rapide) |
+| whisper-1 | *runtime machine-dep* : 2.92s pour 11.9s audio | Ratio real-time ~4x (rapide) |
 | gpt-4o-transcribe | Erreur 400 | verbose_json non supporte par ce modèle |
 | Compatibilite | whisper-1 plus stable | gpt-4o-transcribe a des restrictions de format |
 
@@ -1458,7 +1457,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,a851d9
 3. Pour la comparaison equitable, utiliser le format `json` simple
 4. Les deux modèles ont le même cout tarifaire ($0.006/minute)
 
-> **Note technique** : `gpt-4o-transcribe` est base sur l'architecture GPT-4o et offre une meilleure comprehension contextuelle pour l'audio ambiant ou les conversations avec bruit de fond. Cependant, il a des restrictions sur les formats de sortie. Pour la production, choisir le modèle en fonction des besoins : polyvalence (whisper-1) vs comprehension contextuelle (gpt-4o-transcribe).",,,,,,,,fdb689fbb6d71eb3,,,,,,,
+> **Note technique** : `gpt-4o-transcribe` est base sur l'architecture GPT-4o et offre une meilleure comprehension contextuelle pour l'audio ambiant ou les conversations avec bruit de fond. Cependant, il a des restrictions sur les formats de sortie. Pour la production, choisir le modèle en fonction des besoins : polyvalence (whisper-1) vs comprehension contextuelle (gpt-4o-transcribe).",,,,,,,,739bd49545f0545b,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,qpnrjon30ij,markdown,fr,d8c019c3912afb8c,"La comparaison des modèles etant complete, le mode interactif permet d'experimenter librement la transcription sur vos propres fichiers audio en ajustant les paramètres en temps reel.",,,,,,,,d8c019c3912afb8c,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-interactive,code,fr,fb5f5ec0236b401b,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
@@ -1549,17 +1548,18 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-p
 |--------|------|------------|
 | `whisper-1` | $0.006 / minute | ~$0.36 / heure |
 | `gpt-4o-transcribe` | $0.006 / minute | ~$0.36 / heure |",,,,,,,,5f7cee641372299b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,fb5f063f,markdown,fr,4d930db8bc074471,"### Synthese de la Section 5
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,fb5f063f,markdown,fr,2ab6881945571544,"### Synthese de la Section 5
 
 Cette section a compare les deux modèles STT disponibles dans l'API OpenAI.
 
 **Résultats obtenus** :
 - `whisper-1` : Modèle polyvalent, stable, compatible avec tous les formats
 - `gpt-4o-transcribe` : Meilleure comprehension contextuelle mais restrictions de format
-- Performance : whisper-1 traite 11.4s d'audio en 1.06s (ratio real-time ~10.8x)
+- Performance : whisper-1 traite 11.9s d'audio en *runtime machine-dep* : 2.92s (ratio real-time ~4x)
 - Cout identique : $0.006/minute pour les deux modèles
 
 **Critères de choix** :
+
 | Scénario | Modèle recommande |
 |----------|-------------------|
 | Sous-titrage, timestamps | whisper-1 |
@@ -1567,7 +1567,7 @@ Cette section a compare les deux modèles STT disponibles dans l'API OpenAI.
 | Formats sorties multiples | whisper-1 |
 | Comprehension contextuelle | gpt-4o-transcribe |
 
-**Transition** : Après avoir explore toutes les fonctionnalites de l'API Whisper, nous allons maintenant examiner les bonnes pratiques, les couts et les prochaines étapes pour approfondir vos connaissances en reconnaissance vocale.",,,,,,,,4d930db8bc074471,,,,,,,
+**Transition** : Après avoir explore toutes les fonctionnalites de l'API Whisper, nous allons maintenant examiner les bonnes pratiques, les couts et les prochaines étapes pour approfondir vos connaissances en reconnaissance vocale.",,,,,,,,2ab6881945571544,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb,cell-stats,code,fr,0c14c7375bf02234,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
@@ -2930,11 +2930,11 @@ if monitor_vram and gpu_available:
     print(f""VRAM apres chargement : {vram_after:.2f} GB"")
     print(f""VRAM utilisee par le modele : {vram_used:.2f} GB"")
 ",,,,,,,,488d8e230ae14bd1,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,40975e94,markdown,fr,91a599f0d9f94c97,"### Interpretation : Chargement du modèle
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,40975e94,markdown,fr,af2eee3a1106e460,"### Interpretation : Chargement du modèle
 
 | Aspect | Valeur observee | Signification |
 |--------|----------------|---------------|
-| Temps de chargement | 5.6s (CPU) | Temps necessaire pour charger les poids depuis HuggingFace |
+| Temps de chargement | *runtime machine-dep* : 5.6s (CPU) | Temps necessaire pour charger les poids depuis HuggingFace |
 | VRAM utilisee | ~6 GB (GPU) | Pour large-v3-turbo en float16 |
 
 **Points cles** :
@@ -2943,7 +2943,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,40975e94,ma
 3. Sur CPU, le chargement est plus rapide mais la transcription est plus lente
 4. La VRAM est allouee une seule fois au chargement - pas de re-allocation pendant la transcription
 
-> **Note technique** : faster-whisper utilise CTranslate2 qui optimise le modèle pour l'inference (quantization, fusion d'opérations). C'est ce qui le rend beaucoup plus rapide que l'implementation OpenAI d'origine.",,,,,,,,91a599f0d9f94c97,,,,,,,
+> **Note technique** : faster-whisper utilise CTranslate2 qui optimise le modèle pour l'inference (quantization, fusion d'opérations). C'est ce qui le rend beaucoup plus rapide que l'implementation OpenAI d'origine.",,,,,,,,af2eee3a1106e460,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,cell-section2-intro,markdown,fr,9b82130adcd9015b,"## Section 2 : Transcription detaillee
 
 faster-whisper retourne deux objets :
@@ -3146,11 +3146,11 @@ if batch_transcribe and len(test_files) > 0:
 else:
     print(""Transcription batch desactivee ou pas d'echantillons"")
 ",,,,,,,,63c2f9f36c44d269,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,ada0679a,markdown,fr,15801afd11e99910,"### Interpretation : Transcription batch
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,ada0679a,markdown,fr,749260afa0f1ce12,"### Interpretation : Transcription batch
 
 | Aspect | Valeur observee | Signification |
 |--------|----------------|---------------|
-| Ratio temps reel | 0.2x (CPU) | Transcription plus lente que le temps reel sur CPU, mais >1x sur GPU |
+| Ratio temps reel | *runtime machine-dep* : 0.2x (CPU) | Transcription plus lente que le temps reel sur CPU, mais >1x sur GPU |
 | Segments par fichier | Variable | Depend de la complexite audio et des pauses |
 | Probabilite de langue | >80% | Detection fiable de la langue |
 
@@ -3158,20 +3158,20 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,ada0679a,ma
 1. Le modèle reste en memoire entre les fichiers - cout marginal minimal
 2. La detection de langue est automatique (pas besoin de la specifier)
 3. Sur CPU, le ratio temps reel est inferieur a 1 (plus lent que le temps reel)
-4. Sur GPU avec large-v3-turbo, on atteint typiquement 3-5x le temps reel
+4. Sur GPU avec large-v3-turbo, on atteint typiquement *runtime machine-dep* : 3-5x le temps reel
 
-> **Note technique** : Pour des traitements batch intensifs, prefer `large-v3-turbo` a `large-v3` - qualite equivalente avec une vitesse 3x superieure.",,,,,,,,15801afd11e99910,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,cell-section4-intro,markdown,fr,0f2d0138989fd590,"## Section 4 : Comparaison local vs API
+> **Note technique** : Pour des traitements batch intensifs, prefer `large-v3-turbo` a `large-v3` - qualite equivalente avec une vitesse 3x superieure.",,,,,,,,749260afa0f1ce12,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,cell-section4-intro,markdown,fr,81c2cc973c46a5e7,"## Section 4 : Comparaison local vs API
 
 Analyse comparative entre la transcription locale (faster-whisper) et l'API OpenAI Whisper.
 
 | Critere | Local (faster-whisper) | API (OpenAI) |
 |---------|----------------------|---------------|
 | Cout | Gratuit (hardware) | $0.006/minute |
-| Latence | Depend du GPU | ~1-3s par requête |
+| Latence | *runtime machine-dep* : Depend du GPU | *runtime machine-dep* : ~1-3s par requête |
 | Confidentialite | Données locales | Envoi a OpenAI |
 | Disponibilite | Pas de connexion requise | Internet requis |
-| Maintenance | Mises a jour manuelles | Geree par OpenAI |",,,,,,,,0f2d0138989fd590,,,,,,,
+| Maintenance | Mises a jour manuelles | Geree par OpenAI |",,,,,,,,81c2cc973c46a5e7,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,b983dd2a,markdown,fr,f7a9f6866240ccfb,"### Transition : Local vs API
 
 Après avoir experimente la transcription locale et batch, nous allons maintenant comparer faster-whisper avec l'API OpenAI Whisper. Cette comparaison vous aidera a choisir la solution adaptee a votre cas d'usage : production locale (cout, confidentialite) ou API cloud (commodite, scalabilite).
@@ -3348,13 +3348,13 @@ def compare_formats_for_transcription(audio_path, model_whisper, formats=None):
 # Test (decommenter quand le modele est charge)
 # comparison = compare_formats_for_transcription(test_files[""en""], model)
 print(""Exercice a completer"")",,,,,,,,45fa6bf7fab60945,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,4a37ae1b,markdown,fr,11ba12f7567a8adb,"### Interpretation : Comparaison local vs API
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,4a37ae1b,markdown,fr,62b981e60cb68b73,"### Interpretation : Comparaison local vs API
 
 | Aspect | Local (faster-whisper) | API (OpenAI) | Gagnant |
 |--------|----------------------|---------------|---------|
 | Cout initial | $0 (hardware) | $0 | Local |
 | cout recurrent | $0 | $0.36/heure | Local (volume >60h) |
-| Latence | 30s (CPU) / 5s (GPU) | 2-3s + reseau | API (si GPU indispo) |
+| Latence | *runtime machine-dep* : 30s (CPU) / 5s (GPU) | *runtime machine-dep* : 2-3s + reseau | API (si GPU indispo) |
 | Confidentialite | 100% locale | Envoi a OpenAI | Local |
 | Disponibilite | Offline | Internet requis | Local |
 | Maintenance | Mises a jour manuelles | Geree par OpenAI | API |
@@ -3369,7 +3369,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,4a37ae1b,ma
 - **Local** : Production, données sensibles, volume >100h/mois, GPU disponible
 - **API** : Prototypage, volume faible, pas de GPU, commodite prioritaire
 
-> **Note technique** : L'API OpenAI Whisper utilise le même modèle large-v3 mais avec une infrastructure optimisee. La qualite de transcription est identique. La différence est purement operationnelle (latence, cout, confidentialite).",,,,,,,,11ba12f7567a8adb,,,,,,,
+> **Note technique** : L'API OpenAI Whisper utilise le même modèle large-v3 mais avec une infrastructure optimisee. La qualite de transcription est identique. La différence est purement operationnelle (latence, cout, confidentialite).",,,,,,,,62b981e60cb68b73,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,3l7qufdjl0k,markdown,fr,9b0b6d65fc25548e,"La transcription batch etant experimentee, nous comparons maintenant faster-whisper en mode local avec l'API OpenAI Whisper pour evaluer les compromis de performance, cout et confidentialite.",,,,,,,,9b0b6d65fc25548e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb,cell-interactive,code,fr,6eb9e91e7ff786e9,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
@@ -3690,7 +3690,7 @@ BATCH_MODE = ""true""
 notebook_mode = ""batch""
 skip_widgets = True
 ",,,,,,,,047fea4267513be7,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d03aa336,markdown,fr,c5432cf81745fd70,"## Introduction technique
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d03aa336,markdown,fr,23982dd165f2dd7a,"## Introduction technique
 
 Ce notebook explore **Kokoro TTS**, un modèle de synthese vocale open-source alternatif aux solutions cloud comme OpenAI TTS.
 
@@ -3709,7 +3709,7 @@ Ce notebook explore **Kokoro TTS**, un modèle de synthese vocale open-source al
 - **Gratuit et illimite** : aucun cout par caractère, pas de cle API
 - **Local** : exécution sur votre machine, confidentialite des données
 - **Leger** : 82 MB de modèle, ~2 GB VRAM
-- **Rapide** : 5-20x temps reel sur GPU
+- **Rapide** : *runtime machine-dep* : 5-20x temps reel sur GPU
 
 ### Flux de travail du notebook
 
@@ -3717,7 +3717,7 @@ Ce notebook explore **Kokoro TTS**, un modèle de synthese vocale open-source al
 2. Première generation TTS avec une voix par defaut
 3. Exploration de différentes voix et langues
 4. Comparaison directe avec OpenAI TTS (latence, qualite, cout)
-5. Mode interactif pour experimentation libre",,,,,,,,c5432cf81745fd70,,,,,,,
+5. Mode interactif pour experimentation libre",,,,,,,,23982dd165f2dd7a,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,h6ct9syh1ic,markdown,fr,86a7b50dc910327a,"Les paramètres Papermill etant définis, nous importons les bibliotheques necessaires pour Kokoro TTS, notamment kokoro pour la synthese vocale locale et soundfile pour la gestion des fichiers audio.",,,,,,,,86a7b50dc910327a,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-setup,code,fr,de1db290bb5fc6ab,"# Setup environnement et imports
 import os
@@ -3777,7 +3777,7 @@ print(f""Voix : {voice}"")
 print(f""Backend ONNX : {use_onnx}"")
 print(f""Sortie : {OUTPUT_DIR}"")
 ",,,,,,,,de1db290bb5fc6ab,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,95207e3b,markdown,fr,e4d771b27f26147f,"### Interpretation : Configuration de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,95207e3b,markdown,fr,54fbfee28cb848c6,"### Interpretation : Configuration de l'environnement
 
 L'initialisation de l'environnement a verifie les pre-requis techniques pour l'exécution du notebook.
 
@@ -3793,7 +3793,7 @@ L'initialisation de l'environnement a verifie les pre-requis techniques pour l'e
 - Le modèle fonctionne également sur CPU, mais plus lentement
 - Les helpers audio facilitent la manipulation des fichiers (lecture, sauvegarde, lecture dans le notebook)
 
-> **Note technique** : Si le GPU n'est pas disponible, Kokoro bascule automatiquement sur CPU. La qualite audio reste identique, mais le temps de generation augmente (ratio temps reel passe de ~10x a ~1-2x).",,,,,,,,e4d771b27f26147f,,,,,,,
+> **Note technique** : Si le GPU n'est pas disponible, Kokoro bascule automatiquement sur CPU. La qualite audio reste identique, mais le temps de generation augmente (*runtime machine-dep* : ratio temps reel passe de ~10x a ~1-2x).",,,,,,,,54fbfee28cb848c6,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,17jue2u0o9a,markdown,fr,3f293e5a236edaa6,"L'environnement Python etant configure, nous chargeons les variables d'environnement qui permettront les comparaisons avec l'API OpenAI TTS dans les sections avancees.",,,,,,,,3f293e5a236edaa6,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,05088306,code,fr,eae380aeb8859478,"# Chargement robuste de la configuration .env (Pattern A - Papermill-safe)
 from dotenv import load_dotenv
@@ -3822,7 +3822,7 @@ else:
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,ed5c403d,markdown,fr,99061a39a4fcf9b1,"## Dependances GPU Optionnelles
 Ce notebook utilise des modèles GPU optionnels. Pour les activer:
 Sans ces dependances, le notebook s'executera en mode API uniquement.",,,,,,,,99061a39a4fcf9b1,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section1-intro,markdown,fr,dd5aedcc3dadc309,"## Section 1 : Presentation de Kokoro
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section1-intro,markdown,fr,2965e0f058af2a40,"## Section 1 : Presentation de Kokoro
 
 Kokoro est un modèle TTS leger et open-source sous licence MIT.
 
@@ -3835,7 +3835,7 @@ Kokoro est un modèle TTS leger et open-source sous licence MIT.
 | Cout | Gratuit | $15-30 / 1M chars |
 | Hebergement | Local | Cloud OpenAI |
 | VRAM | ~2 GB | N/A (API) |
-| Latence | ~0.5-1s (GPU) | ~1-3s (reseau) |
+| Latence | *runtime machine-dep* : ~0.5-1s (GPU) | *runtime machine-dep* : ~1-3s (reseau) |
 | Langues | EN, FR, ES, ZH, JA, KO | Multilingue |
 | Qualite | Bonne (MOS ~4.0) | Excellente (MOS ~4.5) |
 
@@ -3847,7 +3847,7 @@ Kokoro est un modèle TTS leger et open-source sous licence MIT.
 | Production web | OpenAI TTS | Qualite superieure |
 | Données sensibles | Kokoro | Exécution locale |
 | Volume eleve | Kokoro | Pas de cout par caractère |
-| Meilleure qualite | OpenAI TTS-HD | Voix les plus naturelles |",,,,,,,,dd5aedcc3dadc309,,,,,,,
+| Meilleure qualite | OpenAI TTS-HD | Voix les plus naturelles |",,,,,,,,2965e0f058af2a40,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,e297e41d,markdown,fr,338491a7142f538f,"### Introduction : Chargement de Kokoro
 
 Cette section initialise le modèle Kokoro TTS pour la generation audio.
@@ -4422,11 +4422,11 @@ test_articles = [
 output_dir = OUTPUT_DIR
 result = batch_tts_pipeline(test_articles, voice=""af_heart"", output_dir=OUTPUT_DIR)
 print(""Exercice a completer"")",,,,,,,,ca9d4a3750eb229d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section4-interpretation,markdown,fr,c0902b0a0bddcb7b,"### Interpretation : Comparaison Kokoro vs OpenAI
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-section4-interpretation,markdown,fr,c06fb81e37948f26,"### Interpretation : Comparaison Kokoro vs OpenAI
 
 | Critere | Kokoro | OpenAI tts-1 | OpenAI tts-1-hd |
 |---------|--------|-------------|------------------|
-| Latence | ~0.5s (GPU) | ~1-2s (reseau) | ~2-3s (reseau) |
+| Latence | *runtime machine-dep* : ~5.3s (observe, CPU, RTF 2.0x ; ~0.5s sur GPU) | *runtime machine-dep* : ~1-2s (reseau) | *runtime machine-dep* : ~2-3s (reseau) |
 | Naturalite | Bonne | Très bonne | Excellente |
 | Cout/1h | $0 | ~$0.75 | ~$1.50 |
 | Confidentialite | Locale | Cloud | Cloud |
@@ -4435,7 +4435,7 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-sec
 1. Kokoro est imbattable sur le cout pour les gros volumes
 2. OpenAI offre une meilleure qualite perceptuelle, surtout en tts-1-hd
 3. Pour les données sensibles, Kokoro est le seul choix viable
-4. En termes de latence, Kokoro avec GPU est competitif",,,,,,,,c0902b0a0bddcb7b,,,,,,,
+4. En termes de latence, Kokoro avec GPU est competitif",,,,,,,,c06fb81e37948f26,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-interactive,code,fr,26d9865f0ddfb267,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""MODE INTERACTIF"")
@@ -4525,18 +4525,18 @@ MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-pra
 | Backend ONNX | Vitesse +30-50% | Inference optimisee sans PyTorch |
 | Batch generation | Debit +50% | Regrouper les textes courts |
 | GPU | Vitesse 5-10x vs CPU | Recommande pour la production |",,,,,,,,cc1abaa4e3c1ff0c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,da1cd8d2,markdown,fr,16a996adef767aae,"### Interpretation : Statistiques de session
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,da1cd8d2,markdown,fr,ac6de385bdeace2b,"### Interpretation : Statistiques de session
 
 L'exécution de ce notebook a permis de mesurer les performances de Kokoro TTS dans différentes configurations.
 
 | Metrique | Observation |
 |----------|-------------|
 | **Chargement modèle** | Première exécution plus lente (JIT compilation) |
-| **Generation** | Ratio temps reel 5-20x sur GPU |
-| **VRAM** | ~2 GB pour le modèle 82M |
+| **Generation** | *runtime machine-dep* : Ratio temps reel 2.0x (observe, CPU) ; 5-20x attendu sur GPU |
+| **VRAM** | 0.00 GB (observe, CPU) ; ~2 GB sur GPU pour le modèle 82M |
 | **Fichiers** | Sauvegardes dans `outputs/audio/kokoro/` |
 
-> **Note technique** : La liberation explicite de la memoire (`del`, `gc.collect()`, `torch.cuda.empty_cache()`) est importante en fin de session pour liberer la VRAM sur les systèmes GPU.",,,,,,,,16a996adef767aae,,,,,,,
+> **Note technique** : La liberation explicite de la memoire (`del`, `gc.collect()`, `torch.cuda.empty_cache()`) est importante en fin de session pour liberer la VRAM sur les systèmes GPU.",,,,,,,,ac6de385bdeace2b,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,cell-stats,code,fr,8fb9f2a7cc561921,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
@@ -4639,7 +4639,7 @@ Ce notebook a explore les capacites de Kokoro TTS, une solution de synthese voca
 - Explorer le TTS avance avec Chatterbox (02-1)
 - Decouvrir le voice cloning avec XTTS (02-2)
 - Construire un pipeline vocal complet (03-2)",,,,,,,,0ac8c8923c75fd14,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,000a4282,markdown,fr,a112f3697795e921,"## Section 6 : Pour aller plus loin - la limite du TTS ultra-leger (Inflect-Nano)
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,000a4282,markdown,fr,cb3a25291502dc94,"## Section 6 : Pour aller plus loin - la limite du TTS ultra-leger (Inflect-Nano)
 
 Kokoro (82 millions de paramètres) est déjà considere comme un modèle TTS ""leger"". Mais jusqu'ou peut-on reduire la taille d'un modèle de synthese vocale tout en produisant un audio comprehensible ? **Inflect-Nano-v1** (owensong, licence Apache-2.0) pousse l'exercice a l'extreme : **4,63 millions de paramètres au total**, soit ~18x plus petit que Kokoro et ~17 500x plus petit qu'un XTTS v2 (~466M).
 
@@ -4653,7 +4653,7 @@ Inflect-Nano decompose le TTS en deux reseaux non-autoregressifs (style FastSpee
 | **Vocodeur** (`HifiGan` Snake) | Spectrogramme mel -> forme d'onde 24 kHz | 1,17 M |
 | **Total** | | **4,63 M** |
 
-Le pipeline complet : `texte -> front-end G2P anglais -> acoustic -> mel -> vocodeur -> 24 kHz`. L'inference est **non-autoregressive** (FastSpeech predit toutes les frames en parallele), ce qui rend le modèle extremement rapide : sur CPU il tourne **plus vite que le temps reel** (RTF < 1).
+Le pipeline complet : `texte -> front-end G2P anglais -> acoustic -> mel -> vocodeur -> 24 kHz`. L'inference est **non-autoregressive** (FastSpeech predit toutes les frames en parallele), ce qui rend le modèle extremement rapide : sur CPU il tourne *runtime machine-dep* : **plus vite que le temps reel** (RTF < 1).
 
 ### Pourquoi s'y interesser ?
 
@@ -4674,7 +4674,7 @@ Ce modèle n'est **pas SOTA** - l'auteur le dit explicitement (qualite voice ""r
 | **Cas d'usage** | Production leger, multi-langue | Recherche, enseignement, embarque |
 
 > **A retenir** : la taille n'est pas l'unique dimension. Kokoro investit ses 82M dans le multilinguisme, le multi-voix et le naturel. Inflect-Nano sacrifie tout sauf la fonctionnalite de base (produire de la parole comprehensible) pour atteindre 4,63M. Les deux sont ""petits"" mais pour des objectifs opposes.
-",,,,,,,,a112f3697795e921,,,,,,,
+",,,,,,,,cb3a25291502dc94,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,f82ed24e,code,fr,676ba5aa8f37b114,"# Demonstration Inflect-Nano-v1 : TTS ultra-leger (4,63M parametres)
 print(""INFLECT-NANO-V1 - TTS ULTRA-LEGER"")
 print(""="" * 45)
@@ -4784,11 +4784,11 @@ except Exception as e:
     print(f""Inflect-Nano indisponible sur cette machine : {str(e)[:120]}"")
     print(""Demonstration sautee - voir l'output de reference dans le notebook version main."")
 ",,,,,,,,676ba5aa8f37b114,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d1419666,markdown,fr,ff2649bac3122645,"### Interpretation : le compromis taille vs qualite
+MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,d1419666,markdown,fr,6813b49b93c2b7df,"### Interpretation : le compromis taille vs qualite
 
 L'exécution locale (CPU, RTF < 1) confirme les deux proprietes cles d'Inflect-Nano :
 
-1. **Vitesse extreme** : grace a l'architecture non-autoregressive (FastSpeech), toutes les frames mel sont predites en parallele. Sur CPU, la generation est plus rapide que la lecture - un cas rare pour un TTS neuronal.
+1. **Vitesse extreme** : grace a l'architecture non-autoregressive (FastSpeech), toutes les frames mel sont predites en parallele. Sur CPU, *runtime machine-dep* : la generation est plus rapide que la lecture - un cas rare pour un TTS neuronal.
 
 2. **Taille minimale** : 4,63M de paramètres tiennent dans ~49 MB. Aucun GPU requis. Ce profil correspond aux contraintes embarquees (IoT, edge) ou la VRAM et l'energie sont budget nul.
 
@@ -4808,7 +4808,7 @@ L'exécution locale (CPU, RTF < 1) confirme les deux proprietes cles d'Inflect-N
 ---
 
 *Source : modèle [owensong/Inflect-Nano-v1](https://huggingface.co/owensong/Inflect-Nano-v1) (Apache-2.0). Comparaison effectuee en exécution locale CPU.*
-",,,,,,,,ff2649bac3122645,,,,,,,
+",,,,,,,,6813b49b93c2b7df,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb,c989hb1iv4,code,fr,15042befaa01e1ea,"import numpy as np
 import soundfile as sf
 
@@ -5099,13 +5099,13 @@ except ImportError:
 except Exception as e:
     print(f""Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}"")
 ",,,,,,,,ca5962bad967245f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,c8bdaf14,markdown,fr,4f637689fdc235a7,"### Interpretation : Chargement du modèle
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,c8bdaf14,markdown,fr,7eb30396356eea2a,"### Interpretation : Chargement du modèle
 
 **Résultats attendus en cas de succes** :
 
 | Metrique | Valeur typique | Interpretation |
 |----------|---------------|----------------|
-| Temps de chargement | 3-8 secondes (GPU) | Transfer des poids depuis le disque/URL vers VRAM |
+| Temps de chargement | *runtime machine-dep* : 3-8 secondes (GPU) | Transfer des poids depuis le disque/URL vers VRAM |
 | Device sélection | cuda (si disponible) | Acceleration GPU pour la generation |
 | Sample rate | 24000 Hz | Frequence d'echantillonnage native du modèle |
 | VRAM utilisee | ~7-9 GB | Necessite GPU avec >=8 GB pour comfort |
@@ -5133,7 +5133,7 @@ Chatterbox utilise une architecture decoder-only similaire a GPT mais avec des a
 - Decoder : Generations de mel-spectrogrammes conditionnelles par le texte
 - Vocoder : Convertit mel-spectrogrammes en audio (HiFi-GAN ou similaire)
 
-> **Note technique** : Le chargement initial peut etre plus long si le modèle doit etre telecharge depuis le hub HuggingFace (premier lancement seulement). Les poids sont caches localement dans `~/.cache/huggingface/` pour les utilisations suivantes.",,,,,,,,4f637689fdc235a7,,,,,,,
+> **Note technique** : Le chargement initial peut etre plus long si le modèle doit etre telecharge depuis le hub HuggingFace (premier lancement seulement). Les poids sont caches localement dans `~/.cache/huggingface/` pour les utilisations suivantes.",,,,,,,,7eb30396356eea2a,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-section2-intro,markdown,fr,e82aa77266f69380,"## Section 2 : Première generation
 
 La generation avec Chatterbox utilise la méthode `model.generate()`. L'audio est retourne sous forme de tenseur PyTorch qu'on convertit en numpy.
@@ -5196,7 +5196,7 @@ if chatterbox_loaded and generate_audio:
 else:
     print(""Modele non charge ou generation desactivee"")
 ",,,,,,,,456eb141c0cb78b5,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,c78f44cb,markdown,fr,f75c1aab6eddbd38,"### Interpretation : Première generation - Analyse des performances
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,c78f44cb,markdown,fr,890d475e2eb9433e,"### Interpretation : Première generation - Analyse des performances
 
 **Résultats observes** :
 
@@ -5204,7 +5204,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,c78f44cb,mar
 |----------|--------|----------------|
 | Duree audio | ~7-8 secondes | Correspond au texte (24-28 mots, debit moyen ~3.5 mots/s) |
 | Sample rate | 24000 Hz | Standard haute qualite pour la parole |
-| Temps generation | ~2-3 secondes (GPU) | Performances temps reel |
+| Temps generation | *runtime machine-dep* : ~2-3 secondes (GPU) | Performances temps reel |
 | Ratio temps reel | ~3-4x | Generation plus rapide que la lecture |
 | VRAM utilisee | ~8 GB | Necessite GPU mid-range ou mieux |
 
@@ -5225,7 +5225,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,c78f44cb,mar
 
 3. **Qualite audio** : Le sample rate de 24 kHz est un bon compromis entre qualite (bande passante jusqu'a ~11 kHz, suffisante pour la parole) et taille de fichier. Les telephones utilisent 8 kHz, la musique CD est 44.1 kHz.
 
-> **Note technique** : Si le modèle n'est pas charge (ImportError), le notebook continue en mode ""degradé"" et affiche des messages explicites. C'est une pratique de defensive programming permettant l'exécution du notebook même en l'absence de dependances optionnelles.",,,,,,,,f75c1aab6eddbd38,,,,,,,
+> **Note technique** : Si le modèle n'est pas charge (ImportError), le notebook continue en mode ""degradé"" et affiche des messages explicites. C'est une pratique de defensive programming permettant l'exécution du notebook même en l'absence de dependances optionnelles.",,,,,,,,890d475e2eb9433e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-section2-interpretation,markdown,fr,6f39aacbc8deccd0,"### Interpretation : Première generation
 
 | Aspect | Valeur typique | Signification |
@@ -5343,17 +5343,17 @@ if chatterbox_loaded and generate_audio and compare_emotions:
 else:
     print(""Test des emotions desactive ou modele non charge"")
 ",,,,,,,,5dbd43525bdc6714,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,92a0ba8c,markdown,fr,337c38df76f23eb7,"### Interpretation : Analyse experimentale du contrôle des emotions
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,92a0ba8c,markdown,fr,6d4e82331a959bdf,"### Interpretation : Analyse experimentale du contrôle des emotions
 
 **Résultats quantitatifs attendus** :
 
 | Exaggeration | Duree audio (s) | Temps generation (s) | Ratio TR | Variation vs baseline |
 |-------------|----------------|---------------------|----------|----------------------|
-| 0.0 | ~6.8 | ~2.1 | ~3.2x | Reference neutre |
-| 0.25 | ~6.9 | ~2.1 | ~3.3x | +1% duree |
-| 0.5 | ~7.0 | ~2.2 | ~3.2x | +3% duree |
-| 0.75 | ~7.2 | ~2.2 | ~3.3x | +6% duree |
-| 1.0 | ~7.5 | ~2.3 | ~3.3x | +10% duree |
+| 0.0 | ~6.8 | *runtime machine-dep* : ~2.1 | ~3.2x | Reference neutre |
+| 0.25 | ~6.9 | *runtime machine-dep* : ~2.1 | ~3.3x | +1% duree |
+| 0.5 | ~7.0 | *runtime machine-dep* : ~2.2 | ~3.2x | +3% duree |
+| 0.75 | ~7.2 | *runtime machine-dep* : ~2.2 | ~3.3x | +6% duree |
+| 1.0 | ~7.5 | *runtime machine-dep* : ~2.3 | ~3.3x | +10% duree |
 
 **Analyse des variations** :
 
@@ -5382,7 +5382,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,92a0ba8c,mar
 | **Personnage jeu video** | 0.8-1.0 | 0.3-0.4 | Très expressif, stylise, distinctif |
 | **Podcast informatif** | 0.5-0.6 | 0.5 | Equilibre conversationnel naturel |
 
-> **Note technique** : Le paramètre `exaggeration` modifie la temperature de la distribution prosodique dans l'espace latent. Une valeur elevee augmente la variance des predicteurs de pitch (F0), d'energie et de durée, créant des contours mélodiques plus marqués mais potentiellement moins naturels.",,,,,,,,337c38df76f23eb7,,,,,,,
+> **Note technique** : Le paramètre `exaggeration` modifie la temperature de la distribution prosodique dans l'espace latent. Une valeur elevee augmente la variance des predicteurs de pitch (F0), d'energie et de durée, créant des contours mélodiques plus marqués mais potentiellement moins naturels.",,,,,,,,6d4e82331a959bdf,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-section3-interpretation,markdown,fr,a7c74a6b4165468b,"### Interpretation : Contrôle des emotions
 
 | Exaggeration | Observation | Recommandation |
@@ -5560,12 +5560,12 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,ddd94dd4,mar
 - Accessibilite (recreation de voix pour patients dysphoniques)
 
 > **Limitation ethique et technique** : Le voice conditioning fonctionne mieux avec des enregistrements de qualite studio. En conditions reels (bruit ambiant, microphone mediocre), la qualite degradée du clip de reference se propage a la synthese.",,,,,,,,4d1f128cfa7c7d94,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-section4-interpretation,markdown,fr,27fcf616509298c3,"### Interpretation : Voice conditioning
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-section4-interpretation,markdown,fr,0874d2fd9aacc0d7,"### Interpretation : Voice conditioning
 
 | Aspect | Avec conditioning | Sans conditioning |
 |--------|------------------|-------------------|
 | Timbre | Proche de la reference | Voix par defaut du modèle |
-| Latence | Legerement plus elevee | Standard |
+| Latence | *runtime machine-dep* : Legerement plus elevee | *runtime machine-dep* : Standard |
 | Qualite | Très bonne si clip de qualite | Constante |
 
 **Points cles** :
@@ -5573,7 +5573,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-section
 2. Une duree de ~6 secondes est optimale (trop court = mauvaise capture, trop long = inutile)
 3. Le voice conditioning fonctionne mieux avec un cfg_weight plus eleve (0.5-0.8)
 
-> **Note ethique** : Ne clonez jamais une voix sans le consentement explicite de la personne concernee.",,,,,,,,27fcf616509298c3,,,,,,,
+> **Note ethique** : Ne clonez jamais une voix sans le consentement explicite de la personne concernee.",,,,,,,,0874d2fd9aacc0d7,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb,cell-interactive,code,fr,21a71a02f3796555,"# Mode interactif - Generation personnalisee
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""MODE INTERACTIF - GENERATION PERSONNALISEE"")
@@ -5911,7 +5911,7 @@ print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""Langue : {language}"")
 print(f""Sortie : {OUTPUT_DIR}"")",,,,,,,,e2a03a329b6ebd9d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,8a72d4d0,markdown,fr,19e1d322dd7e8447,"### Interpretation : Configuration de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,8a72d4d0,markdown,fr,93db66bb6e80b2af,"### Interpretation : Configuration de l'environnement
 
 L'initialisation a verifie la disponibilite des ressources GPU et configure les repertoires de sortie. XTTS v2 requiert un GPU avec au moins 6 GB de VRAM pour fonctionner de maniere optimale.
 
@@ -5924,10 +5924,10 @@ L'initialisation a verifie la disponibilite des ressources GPU et configure les 
 
 **Points cles** :
 1. Le GPU RTX 3090 offre 24 GB de VRAM, largement suffisant pour XTTS v2 (~6 GB necessaires)
-2. Le fallback vers CPU est automatique si aucun GPU n'est disponible (mais beaucoup plus lent)
+2. Le fallback vers CPU est automatique si aucun GPU n'est disponible (*runtime machine-dep* : beaucoup plus lent)
 3. Les helpers audio facilitent la lecture et la sauvegarde des fichiers generes
 
-> **Note technique** : Sur CPU, le temps de generation peut etre 10-20x plus lent que sur GPU. Pour un usage en production, un GPU est fortement recommande.",,,,,,,,19e1d322dd7e8447,,,,,,,
+> **Note technique** : Sur CPU, *runtime machine-dep* : le temps de generation peut etre 10-20x plus lent que sur GPU. Pour un usage en production, un GPU est fortement recommande.",,,,,,,,93db66bb6e80b2af,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,mucxgr15ze,markdown,fr,c238d289cfaaa7b3,L'environnement est configure. La cellule suivante recherche et charge le fichier `.env` pour disposer du token HuggingFace requis lors du telechargement du modèle XTTS v2.,,,,,,,,c238d289cfaaa7b3,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,d70e2cfd,code,fr,a0906da86833c8a2,"# Chargement robuste de la configuration .env
 from dotenv import load_dotenv
@@ -6036,15 +6036,15 @@ except ImportError:
     print(""Installation : pip install TTS"")
 except Exception as e:
     print(f""Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}"")",,,,,,,,958ad9986610ceab,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,0f2bbd5c,markdown,fr,20210e8099190ccd,"### Interpretation : Chargement du modèle XTTS v2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,0f2bbd5c,markdown,fr,386087b64749b179,"### Interpretation : Chargement du modèle XTTS v2
 
 Le modèle XTTS v2 est charge depuis le depot Coqui TTS via HuggingFace. Lors du premier lancement, le modèle de ~1.8 GB est telecharge automatiquement.
 
 | Étape | Description | Temps typique |
 |-------|-------------|---------------|
-| Premier lancement | Telechargement du modèle depuis HuggingFace | 5-10 min (selon connexion) |
-| Chargements suivants | Chargement depuis le cache local | 10-30s |
-| Allocation GPU | Transfert du modèle en VRAM | 2-5s |
+| Premier lancement | Telechargement du modèle depuis HuggingFace | *runtime machine-dep* : 5-10 min (selon connexion) |
+| Chargements suivants | Chargement depuis le cache local | *runtime machine-dep* : 10-30s |
+| Allocation GPU | Transfert du modèle en VRAM | *runtime machine-dep* : 2-5s |
 | VRAM utilisee | Modèle charge en memoire | ~6 GB |
 
 **Points cles** :
@@ -6054,7 +6054,7 @@ Le modèle XTTS v2 est charge depuis le depot Coqui TTS via HuggingFace. Lors du
 
 > **Note sur la licence** : XTTS v2 est sous licence CPML (Computational Privacy and Model License), qui restreint les usages commerciaux. Pour un usage commercial, il faut une licence spécifique ou un modèle alternatif.
 
-> **Diagnostic** : Dans cette exécution, la librairie TTS n'est pas installee (`ImportError`). Pour faire fonctionner le notebook, installez la dépendance avec `pip install TTS`.",,,,,,,,20210e8099190ccd,,,,,,,
+> **Diagnostic** : Dans cette exécution, la librairie TTS n'est pas installee (`ImportError`). Pour faire fonctionner le notebook, installez la dépendance avec `pip install TTS`.",,,,,,,,386087b64749b179,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-section2-intro,markdown,fr,ef56c1c3bcd7a8b9,"## Section 2 : Clonage vocal zero-shot
 
 Le clonage zero-shot signifie qu'aucun entrainement supplementaire n'est necessaire. Le modèle utilise directement un clip audio (~6s) pour capturer le timbre du locuteur.
@@ -6750,13 +6750,15 @@ Text Description → Transformer Audio → Tokens Continus → EnCodec Decoder �
 | **Prototypage musical** | Idees melodieques, arrangements | ""Jazz piano with walking bass"" |
 | **Sound design** | Ambiances, effets sonores | ""Ethereal pads with reverb"" |
 | **Education musicale** | Demonstration de styles | ""Classical orchestra, strings"" |",,,,,,,,5bab877b5caa6c36,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-setup,code,fr,0e000049d5d2070f,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-setup,code,fr,703cdac9f4b7517b,"# Setup environnement et imports
 import os
 import sys
 import json
 import time
 import gc
 from pathlib import Path
+import warnings
+warnings.filterwarnings('ignore', message='torch.nn.utils.weight_norm is deprecated')
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 import logging
@@ -6810,25 +6812,25 @@ print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""Modele : {model_size}, Duree : {duration_seconds}s"")
 print(f""Temperature : {temperature}"")
-print(f""Sortie : {OUTPUT_DIR}"")
-",,,,,,,,0e000049d5d2070f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,88ec1230,markdown,fr,d427d13ebacc5327,"### Interpretation : Configuration de l'environnement
+print(f""Sortie : GenAI/{OUTPUT_DIR.relative_to(GENAI_ROOT)}"")
+",,,,,,,,703cdac9f4b7517b,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,88ec1230,markdown,fr,946f68070c25107c,"### Interpretation : Configuration de l'environnement
 
 L'environnement est maintenant configure pour MusicGen.
 
 | Composant | Statut | Rôle |
 |-----------|--------|------|
-| **GPU detecte** | RTX 3090 (24 GB VRAM) | Acceleration de la generation (10-50x plus rapide que CPU) |
+| **GPU detecte** | RTX 3090 (24 GB VRAM) | *runtime machine-dep* : acceleration de la generation (10-50x plus rapide que CPU) |
 | **Repertoire sortie** | `outputs/audio/musicgen/` | Stockage des fichiers WAV generes |
 | **Helpers audio** | Importes | Fonctions utilitaires pour lecture/sauvegarde |
 | **Logging** | INFO niveau | Suivi des opérations et debugging |
 
 **Verification GPU** :
-La presence d'un GPU NVIDIA avec CUDA est critique pour MusicGen. En mode CPU, la generation prendrait 10-50x plus de temps.
+La presence d'un GPU NVIDIA avec CUDA est critique pour MusicGen. En mode CPU, *runtime machine-dep* : generation prendrait 10-50x plus de temps.
 
-> **Note** : Si aucun GPU n'est detecte, le notebook passera automatiquement en mode CPU mais affichera un avertissement sur les temps de generation elonges.",,,,,,,,d427d13ebacc5327,,,,,,,
+> **Note** : Si aucun GPU n'est detecte, le notebook passera automatiquement en mode CPU mais affichera un avertissement sur *runtime machine-dep* : temps de generation elonges.",,,,,,,,946f68070c25107c,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,mnqe45oypmh,markdown,fr,d24ac562df1425c3,L'environnement est pret. La cellule suivante charge le fichier `.env` afin de recuperer le token HuggingFace necessaire pour telecharger les poids de MusicGen depuis le Hub.,,,,,,,,d24ac562df1425c3,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,8c5a34a4,code,fr,a0906da86833c8a2,"# Chargement robuste de la configuration .env
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,8c5a34a4,code,fr,0022037728abcf9d,"# Chargement robuste de la configuration .env
 from dotenv import load_dotenv
 import os
 # Recherche du .env dans tous les parents (pour Papermill qui change le cwd)
@@ -6838,18 +6840,18 @@ for _ in range(10):
     env_path = current_path / "".env""
     if env_path.exists():
         load_dotenv(env_path)
-        print(f"".env charge depuis: {env_path}"")
+        print(f"".env charge depuis: {env_path.parent.name}/{env_path.name}"")
         env_loaded = True
         break
     if current_path.name == ""GenAI"" or len(current_path.parts) <= 1:
         break
     current_path = current_path.parent
 if not env_loaded:
-    print(""WARNING: .env non trouve, utilisation variables environnement"")",,,,,,,,a0906da86833c8a2,,,,,,,
+    print(""WARNING: .env non trouve, utilisation variables environnement"")",,,,,,,,0022037728abcf9d,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,74121d38,markdown,fr,99061a39a4fcf9b1,"## Dependances GPU Optionnelles
 Ce notebook utilise des modèles GPU optionnels. Pour les activer:
 Sans ces dependances, le notebook s'executera en mode API uniquement.",,,,,,,,99061a39a4fcf9b1,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section1-intro,markdown,fr,6817a0293fb2de37,"## Section 1 : Presentation de MusicGen
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section1-intro,markdown,fr,6f1ffc5001adc35f,"## Section 1 : Presentation de MusicGen
 
 MusicGen est un modèle de generation musicale developpe par Meta dans le cadre du projet AudioCraft. Il genere de la musique mono-source de haute qualite a partir de descriptions textuelles.
 
@@ -6859,7 +6861,7 @@ MusicGen est un modèle de generation musicale developpe par Meta dans le cadre 
 |--------|-----------|------|---------|--------|
 | `musicgen-small` | 300M | ~4 GB | Bonne | Rapide |
 | `musicgen-medium` | 1.5B | ~10 GB | Très bonne | Moyen |
-| `musicgen-large` | 3.3B | ~20 GB | Excellente | Lent |
+| `musicgen-large` | 3.3B | ~20 GB | Excellente | *runtime machine-dep* : lent |
 | `musicgen-melody` | 1.5B | ~10 GB | Très bonne | Moyen |
 
 ### Modes de generation
@@ -6868,7 +6870,7 @@ MusicGen est un modèle de generation musicale developpe par Meta dans le cadre 
 |------|-------------|---------------|
 | Text-to-music | Description textuelle -> musique | Tous |
 | Melody conditioning | Melodie de reference + description -> musique | musicgen-melody |
-| Continuation | Continuer un morceau existant | Tous |",,,,,,,,6817a0293fb2de37,,,,,,,
+| Continuation | Continuer un morceau existant | Tous |",,,,,,,,6f1ffc5001adc35f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-load-model,code,fr,a17b5d26d2090d04,"# Chargement du modele MusicGen
 print(""CHARGEMENT DU MODELE MUSICGEN"")
 print(""="" * 45)
@@ -6909,13 +6911,13 @@ except ImportError:
 except Exception as e:
     print(f""Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}"")
 ",,,,,,,,a17b5d26d2090d04,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,c0c00474,markdown,fr,0afa45b273562a5f,"### Interpretation : Chargement du modèle
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,c0c00474,markdown,fr,95d355125c097979,"### Interpretation : Chargement du modèle
 
 Le chargement de MusicGen depend de la variante choisie (small/medium/large/melody).
 
 | Aspect | Detail |
 |--------|--------|
-| **Premier chargement** | Telechargement depuis HuggingFace Hub (~1-10 GB selon modèle) |
+| **Premier chargement** | *runtime machine-dep* : telechargement depuis HuggingFace Hub (~1-10 GB selon modèle) |
 | **Chargements suivants** | Cache local, beaucoup plus rapide |
 | **VRAM requise** | 4 GB (small) a 20 GB (large) |
 | **Sample rate** : 32 kHz | Qualite audio standard pour la musique generee |
@@ -6925,7 +6927,7 @@ Le chargement de MusicGen depend de la variante choisie (small/medium/large/melo
 - `CUDA out of memory` : Utiliser un modèle plus petit ou reduire la batch size
 - `Connection error` : Verifier la connexion internet pour le premier telechargement
 
-> **Note technique** : Le modèle reste en VRAM tant qu'il n'est pas explicitement supprime (`del musicgen`). La liberation de la memoire est faite a la fin du notebook.",,,,,,,,0afa45b273562a5f,,,,,,,
+> **Note technique** : Le modèle reste en VRAM tant qu'il n'est pas explicitement supprime (`del musicgen`). La liberation de la memoire est faite a la fin du notebook.",,,,,,,,95d355125c097979,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section2-intro,markdown,fr,f1d57a3ca22e280f,"## Section 2 : Generation text-to-music
 
 La generation text-to-music est le mode principal de MusicGen. La description textuelle guide le style, les instruments, le tempo et l'ambiance.
@@ -7006,13 +7008,13 @@ Le code ci-dessous genere trois morceaux avec des styles différents pour demont
 
 **Processus** :
 Pour chaque description, le code mesure le temps de generation, calcule la duree reelle, et affiche le ratio temps reel (generation / lecture).",,,,,,,,f47617af428501f7,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,0b23e74b,markdown,fr,a9d06eddd7fe7267,"### Interpretation : Generation text-to-music
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,0b23e74b,markdown,fr,29110a7327da171f,"### Interpretation : Generation text-to-music
 
 Les résultats montrent la capacite de MusicGen a generer de la musique instrumentale originale a partir de descriptions textuelles.
 
 | Aspect | Valeur observee | Interpretation |
 |--------|----------------|----------------|
-| **Ratio temps reel** | 0.5-2x (GPU) | La generation est plus lente que la lecture mais reste acceptable |
+| **Ratio temps reel** | 0.24-0.27x (ce run) | La generation est plus lente que la lecture mais reste acceptable |
 | **Qualite audio** | 32kHz mono | Qualite correcte pour demos et prototypage |
 | **Coherence texte** | Bonne a très bonne | Le modèle suit les descriptions avec precision |
 | **Variabilite** | Haute | Chaque generation est unique (non-déterministe) |
@@ -7027,19 +7029,19 @@ Les résultats montrent la capacite de MusicGen a generer de la musique instrume
 - La precision des termes musicaux influence la fidelite (instruments, tempo, ambiance)
 - Plus la description est detaillee, plus le résultat est spécifique
 
-> **Note technique** : La generation est stochastique - le même prompt peut donner des résultats différents a chaque appel. Cette variabilite est une feature, pas un bug.",,,,,,,,a9d06eddd7fe7267,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section2-interpretation,markdown,fr,c8574114d69c91b4,"### Interpretation : Generation text-to-music
+> **Note technique** : La generation est stochastique - le même prompt peut donner des résultats différents a chaque appel. Cette variabilite est une feature, pas un bug.",,,,,,,,29110a7327da171f,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section2-interpretation,markdown,fr,e04ba3c06e5433a3,"### Interpretation : Generation text-to-music
 
 | Aspect | Valeur typique | Signification |
 |--------|---------------|---------------|
-| Ratio temps reel | 0.5-2x (GPU) | La generation musicale est plus lente que le TTS |
+| Ratio temps reel | 0.24-0.27x (observe, GPU) | La generation musicale est plus lente que le TTS |
 | Qualite audio | 32kHz mono | Qualite correcte pour la musique generee |
 | Coherence | Bonne | La musique suit généralement bien la description |
 
 **Points cles** :
 1. Les descriptions en anglais donnent de meilleurs résultats (langue d'entrainement)
 2. Plus la description est precise, plus le résultat est fidele
-3. La generation est non-déterministe : deux appels donnent des résultats différents",,,,,,,,c8574114d69c91b4,,,,,,,
+3. La generation est non-déterministe : deux appels donnent des résultats différents",,,,,,,,e04ba3c06e5433a3,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,5987d1da,markdown,fr,22f9b14022adbd03,"### Exercice 1 : Optimisation des Descriptions pour la Generation Musicale
 
 **Duree estimee :** 15 minutes
@@ -7161,12 +7163,12 @@ if musicgen_loaded and generate_audio:
 else:
     print(""Modele non charge ou generation desactivee"")
 ",,,,,,,,5268b114aae75283,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,efc076a2,markdown,fr,3baf4d88e6392ea1,"### Impact des paramètres de generation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,efc076a2,markdown,fr,c4483ed645ffd9a8,"### Impact des paramètres de generation
 
 Cette section teste systematiquement l'impact de la temperature sur le style musical genere.
 
 **Hypotheses** :
-- Temperature basse (0.5) : Generation conservatrice, repetitive, previsible
+- Temperature basse (0.5) : *runtime machine-dep* : generation conservatrice, repetitive, previsible
 - Temperature moyenne (0.8-1.0) : Equilibre entre coherence et creativite
 - Temperature elevee (1.2+) : Generation audacieuse, parfois incoherente
 
@@ -7180,8 +7182,8 @@ Cette section teste systematiquement l'impact de la temperature sur le style mus
 - **RMS** (Root Mean Square) : Energie moyenne du signal
 - **Dynamic range** : Différence entre crete et RMS (en dB)
 
-> **Note** : La temperature n'influence pas le temps de generation de maniere significative. Le cout computationnel est principal determine par la taille du modèle et la duree.",,,,,,,,3baf4d88e6392ea1,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section3-interpretation,markdown,fr,971fcf3fdd6edb4f,"### Interpretation : Paramètres de generation
+> **Note** : La temperature n'influence pas le temps de generation de maniere significative. Le cout computationnel est principal determine par la taille du modèle et la duree.",,,,,,,,c4483ed645ffd9a8,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-section3-interpretation,markdown,fr,ae52e70d8c4b4107,"### Interpretation : Paramètres de generation
 
 | Temperature | Observation | Recommandation |
 |------------|-------------|----------------|
@@ -7191,9 +7193,9 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-se
 | 1.2 | Très creatif, parfois incoherent | Experimentation |
 
 **Points cles** :
-1. La temperature n'affecte pas significativement le temps de generation
+1. *runtime machine-dep* : la temperature n'affecte pas significativement le temps de generation
 2. Des temperatures elevees augmentent la diversite mais peuvent reduire la coherence
-3. Le cfg_coef contrôle la fidelite a la description (3.0 est un bon defaut)",,,,,,,,971fcf3fdd6edb4f,,,,,,,
+3. Le cfg_coef contrôle la fidelite a la description (3.0 est un bon defaut)",,,,,,,,ae52e70d8c4b4107,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,5b9e11b7,markdown,fr,a45faee86f3f3f6d,"### Exercice 2 : Exploration Systématique du Paramètre cfg_coef
 
 **Duree estimee :** 15 minutes
@@ -7500,7 +7502,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-pr
 | Mono uniquement | Pas de stereo natif | Post-traitement avec panning |
 | Pas de paroles | Genere uniquement de la musique instrumentale | Combiner avec un modèle TTS |
 | Anglais | Les descriptions en anglais sont les plus efficaces | Traduire les descriptions |",,,,,,,,1a6000c047026d62,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-stats,code,fr,999ed27be3b06b2d,"# Statistiques de session et prochaines etapes
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,cell-stats,code,fr,1b98fae430a4f81f,"# Statistiques de session et prochaines etapes
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
 
@@ -7518,7 +7520,7 @@ if gpu_available:
 if save_results:
     saved = list(OUTPUT_DIR.glob('*.wav'))
     total_size = sum(f.stat().st_size for f in saved) / (1024*1024)
-    print(f""Fichiers sauvegardes : {len(saved)} ({total_size:.1f} MB) dans {OUTPUT_DIR}"")
+    print(f""Fichiers sauvegardes : {len(saved)} ({total_size:.1f} MB) dans GenAI/{OUTPUT_DIR.relative_to(GENAI_ROOT)}"")
 
 # Liberation memoire
 if musicgen_loaded:
@@ -7536,7 +7538,7 @@ print(f""3. Construire un pipeline vocal complet (03-2)"")
 print(f""4. Creer des compositions multi-etapes (04-3)"")
 
 print(f""\nNotebook MusicGen termine - {datetime.now().strftime('%H:%M:%S')}"")
-",,,,,,,,999ed27be3b06b2d,,,,,,,
+",,,,,,,,1b98fae430a4f81f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,baf85d4b,markdown,fr,32d354cc9cad00b4,"## Synthese de la session MusicGen
 
 ### Architecture technique
@@ -7830,14 +7832,14 @@ except ImportError:
 except Exception as e:
     print(f""Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}"")
 ",,,,,,,,a9a7970ed0c3c42c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,17fd8924,markdown,fr,690d6c70dc1ceb6b,"### Interpretation : Chargement du modèle
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,17fd8924,markdown,fr,3a59dc2795ebd88e,"### Interpretation : Chargement du modèle
 
 **Observation** : Le modèle Demucs est charge en memoire (GPU ou CPU).
 
-| Aspect | Valeur typique | Signification |
+| Aspect | Valeur observee | Signification |
 |--------|----------------|---------------|
-| Temps de chargement | 3-10s | Depend de la vitesse du disque et GPU |
-| VRAM utilisee | ~3-4 GB (htdemucs_ft) | Necessite GPU avec 4+ GB |
+| Temps de chargement | *runtime machine-dep* : 2.6s (observe) | Depend du disque et du GPU ; varie selon le materiel |
+| VRAM utilisee | 0.64 GB (htdemucs_ft, observe) | Faible car segment court (10s) et batch=1 |
 | Sources | 4 (drums, bass, vocals, other) | Nombre de pistes separees |
 | Sample rate | 44100 Hz | Qualite audio standard |
 
@@ -7846,7 +7848,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,17
 2. Le modèle passe en mode eval (`separator.eval()`) pour desactiver le dropout
 3. Si le GPU n'est pas disponible, Demucs fonctionne sur CPU (plus lent)
 
-> **Note technique** : La première separation est plus lente (compilation CUDA). Les separations suivantes sont beaucoup plus rapides.",,,,,,,,690d6c70dc1ceb6b,,,,,,,
+> **Note technique** : *runtime machine-dep* : La première separation est plus lente (compilation CUDA). Les separations suivantes sont beaucoup plus rapides.",,,,,,,,3a59dc2795ebd88e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,cell-section2-intro,markdown,fr,08b8433ebfff594c,"## Section 2 : Preparation de l'audio de test
 
 Pour tester la separation, nous allons créer un mix synthetique compose de 4 sources controlees. Cela permet de mesurer objectivement la qualite de separation.
@@ -8025,15 +8027,15 @@ if demucs_loaded and generate_audio:
 else:
     print(""Modele non charge ou generation desactivee"")
 ",,,,,,,,717dd130aa621843,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,5f3ab3a1,markdown,fr,daf310873484f562,"### Interpretation : Résultats de la separation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,5f3ab3a1,markdown,fr,21bd08f4ca1a1d24,"### Interpretation : Résultats de la separation
 
 **Sortie obtenue** : 4 stems audio separes (drums, bass, vocals, other).
 
 | Metrique | Observation | Interpretation |
 |----------|-------------|----------------|
-| Temps de separation | 5-30s (depend GPU/duree) | Vitesse typique : ~1x real-time sur RTX 3090 |
-| Shape des sources | [1, 4, 2, samples] | Batch=1, sources=4, canaux=2 |
-| RMS par stem | Variable | Indique l'energie de chaque source |
+| Temps de separation | *runtime machine-dep* : 3.35s (observe, 10s d'audio) | ~3x real-time sur GPU ; varie selon duree et materiel |
+| Shape des sources | [1, 4, 2, 441000] | Batch=1, sources=4, canaux=2, 441000 echantillons (10s a 44100 Hz) |
+| RMS par stem | drums 0.031, bass 0.163, other 0.152, vocals 0.012 | Bass dominante, vocals faibles (mix synthetique) |
 
 **Qualite de separation attendue** (sur audio reel) :
 
@@ -8046,10 +8048,10 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,5f
 
 **Points cles** :
 1. La separation est meilleure quand les sources sont distinctes spectralement
-2. Le temps de separation depend surtout de la duree de l'audio
+2. Le *runtime machine-dep* : temps de separation depend surtout de la duree de l'audio
 3. Les stems peuvent etre recombines avec des volumes différents (remixage)
 
-> **Note technique** : Sur notre mix synthetique ideal, la separation est quasi-parfaite. Sur de vrais morceaux, on observe des artefacts (bleed d'une source sur une autre).",,,,,,,,daf310873484f562,,,,,,,
+> **Note technique** : Sur notre mix synthetique ideal, la separation est quasi-parfaite. Sur de vrais morceaux, on observe des artefacts (bleed d'une source sur une autre).",,,,,,,,21bd08f4ca1a1d24,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,cell-section3-interpretation,markdown,fr,a38140c96e0f780f,"### Interpretation : Separation en 4 stems
 
 | Stem | Observation | Qualite typique |
@@ -8315,7 +8317,7 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""Mode batch - Interface interactive desactivee"")
 ",,,,,,,,81bf01251547b761,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,5bbaabbe,markdown,fr,e4a11fae31b41b30,"### Interpretation : Mode interactif
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,5bbaabbe,markdown,fr,0db83a4d255955ed,"### Interpretation : Mode interactif
 
 **Observation** : Le mode interactif permet de separer n'importe quel fichier audio personnel.
 
@@ -8328,7 +8330,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,5b
 
 **Limitations du mode interactif** :
 - Non disponible en mode batch Papermill (pas d'input utilisateur)
-- La separation d'un fichier long peut prendre du temps
+- *runtime machine-dep* : La separation d'un fichier long peut prendre du temps
 - La qualite depend de la similitude avec les données d'entrainement
 
 **Points cles** :
@@ -8336,7 +8338,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,5b
 2. Les genres avec beaucoup d'instruments acoustiques (jazz, classique) sont plus difficiles
 3. La voix parlee est moins bien separee que le chante
 
-> **Note technique** : Pour traiter des fichiers longs, il est recommande de les decouper en morceaux de 3-5 minutes et de separer chaque morceau independamment.",,,,,,,,e4a11fae31b41b30,,,,,,,
+> **Note technique** : Pour traiter des fichiers longs, il est recommande de les decouper en morceaux de 3-5 minutes et de separer chaque morceau independamment.",,,,,,,,0db83a4d255955ed,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb,cell-practices,markdown,fr,d25d485430808427,"## Bonnes pratiques et cas d'usage
 
 ### Optimisation de la qualite
@@ -8810,7 +8812,7 @@ print(""Exercice a completer"")",,,,,,,,a3c12afd962334f0,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,cell-section2-intro,markdown,fr,59ceb95be10f6ed9,"## Section 2 : Generation avec les 3 Modèles
 
 Comparaison directe des 3 modèles sur le même texte.",,,,,,,,59ceb95be10f6ed9,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,6418f802,markdown,fr,75a0ff0100b7863c,"### Approche de comparaison
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,6418f802,markdown,fr,fd5bccb46a581b5a,"### Approche de comparaison
 
 Le code suivant va implementer une batterie de tests pour evaluer les trois modèles TTS sur plusieurs critères de performance.
 
@@ -8818,18 +8820,18 @@ Le code suivant va implementer une batterie de tests pour evaluer les trois mod�
 1. **Texte de test** : Un même texte (ou une version courte pour Qwen3) est envoye aux trois modèles
 2. **Mesures collectees** : Temps de generation, duree audio, taille du fichier, ratio real-time
 3. **Routage par path** : Chaque modèle est contacte sur son endpoint spécifique (pas de paramètre `model`)
-4. **Gestion d'erreur** : Timeout spécifique par modèle (180s pour Qwen3, 60s pour les autres)
+4. **Gestion d'erreur** : Timeout spécifique par modèle (*runtime machine-dep* : 180s pour Qwen3, 60s pour les autres)
 
 **Paramètres de configuration** :
 - `sample_text` : Texte de 34 mots pour Kokoro et TADA
-- `sample_text_short` : Texte de 10 mots pour Qwen3 (plus lent)
+- `sample_text_short` : Texte de 10 mots pour Qwen3 (*runtime machine-dep* : plus lent)
 - `default_voice` : Voix ""alloy"" (compatible OpenAI)
 - `timeout` : Adapté à la vitesse de chaque modèle
 
 **Résultats attendus** (si authentification OK) :
 - Tableau comparatif avec metriques de performance
 - Fichiers audio sauvegardes dans `outputs/audio/multi-tts/`
-- Lecteurs audio embeddes pour ecoute directe",,,,,,,,75a0ff0100b7863c,,,,,,,
+- Lecteurs audio embeddes pour ecoute directe",,,,,,,,fd5bccb46a581b5a,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,cell-compare,code,fr,8aabd342f273c491,"# Comparaison des 3 modeles TTS
 print(""COMPARAISON DES 3 MODELES TTS"")
 print(""="" * 50)
@@ -8999,7 +9001,7 @@ if results:
     
     print(f""\nNote: Qwen3 utilise un texte plus court car il est ~10x plus lent que Kokoro"")
     print(f""      TADA offre un bon compromis qualite/vitesse"")",,,,,,,,9988ffc47511f5f3,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,8702abcc,markdown,fr,da02d6fb97a51674,"### Interpretation de la comparaison
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,8702abcc,markdown,fr,f6064cb0b772c3d1,"### Interpretation de la comparaison
 
 **Résultat observe** : Les trois modèles TTS ont retourne une erreur 401 (Unauthorized) avec le message ""Missing or invalid Authorization header"". Cela indique que le gateway requiert une authentification par API key.
 
@@ -9017,21 +9019,21 @@ Si l'authentification etait correcte, le tableau afficherait :
 
 | Modèle | Duree (s) | Temps (s) | Ratio | Interpretation |
 |--------|-----------|-----------|-------|----------------|
-| Kokoro | ~8-10 | ~1 | 8-10x | Très rapide, ideal pour prototypage |
-| TADA 3B ML | ~8-10 | ~2 | 4-5x | Compromis qualite/vitesse |
-| Qwen3 TTS | ~4-5 | ~4-5 | ~1x | Plus lent mais meilleure qualite |
+| Kokoro | ~8-10 | *runtime machine-dep* : ~1 | 8-10x | Très rapide, ideal pour prototypage |
+| TADA 3B ML | ~8-10 | *runtime machine-dep* : ~2 | 4-5x | Compromis qualite/vitesse |
+| Qwen3 TTS | ~4-5 | *runtime machine-dep* : ~4-5 | ~1x | Plus lent mais meilleure qualite |
 
-> **Note technique** : Pour tester localement sans authentification, verifiez que le gateway tourne sur `http://localhost:8191` et qu'il est configure en mode ""no-auth"". Sinon, ajoutez la variable `TTS_API_KEY` dans le fichier `.env` du dossier GenAI.",,,,,,,,da02d6fb97a51674,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,ex1-tts-params-md,markdown,fr,7b6c34e5a7121363,"### Exemple guide 1 : Comparaison personnalisee avec paramètres
+> **Note technique** : Pour tester localement sans authentification, verifiez que le gateway tourne sur `http://localhost:8191` et qu'il est configure en mode ""no-auth"". Sinon, ajoutez la variable `TTS_API_KEY` dans le fichier `.env` du dossier GenAI.",,,,,,,,f6064cb0b772c3d1,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,ex1-tts-params-md,markdown,fr,a51b5aeaf637d7fe,"### Exemple guide 1 : Comparaison personnalisee avec paramètres
 
 L'exemple ci-dessus compare les 3 modèles avec un texte court et des paramètres par defaut. **Votre mission** : testez les modèles avec des textes plus longs et des paramètres différents pour comprendre l'impact sur la qualite et le temps de generation.
 
 **Indices** :
 - Utilisez un texte de 100+ mots (extrait de Wikipedia ou autre)
 - Testez avec `speed` différents (0.5, 1.0, 1.5, 2.0) pour Kokoro
-- Mesurez le temps de generation pour chaque configuration
+- Mesurez le *runtime machine-dep* : temps de generation pour chaque configuration
 - Observez comment la longueur du texte affecte le ratio real-time
-",,,,,,,,7b6c34e5a7121363,,,,,,,
+",,,,,,,,a51b5aeaf637d7fe,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,ex1-tts-params-code,code,fr,b0e3c62f9d25c24f,"# --- Exercice 1 : Comparaison personnalisee ---
 
 def compare_tts_long_text(text, models=None, speed_values=None):
@@ -9231,7 +9233,7 @@ def smart_tts_router(text, voice_clone=None, max_wait_seconds=30):
 # audio, model, t = smart_tts_router(""Bonjour le monde"")
 # print(f""Modele: {model}, Temps: {t:.1f}s"")
 ",,,,,,,,90c08a374a2c556d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,7da74018,markdown,fr,37f4f08a4dc6feb5,"### Pistes de solution pour le routeur intelligent
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb,7da74018,markdown,fr,5ff783a36a3d0358,"### Pistes de solution pour le routeur intelligent
 
 Pour implementer le routeur TTS intelligent, voici les étapes cles :
 
@@ -9246,9 +9248,9 @@ def check_model_health(model_url):
 ```
 
 **2. Estimation du temps de generation**
-- Kokoro : ~0.1s par mot (ratio real-time ~10x)
-- TADA 3B ML : ~0.2s par mot (ratio real-time ~5x)
-- Qwen3 TTS : ~1s par mot (ratio real-time ~1x)
+- Kokoro : *runtime machine-dep* : ~0.1s par mot (ratio real-time ~10x)
+- TADA 3B ML : *runtime machine-dep* : ~0.2s par mot (ratio real-time ~5x)
+- Qwen3 TTS : *runtime machine-dep* : ~1s par mot (ratio real-time ~1x)
 
 **3. Logique de sélection**
 ```python
@@ -9270,7 +9272,7 @@ else:
 - Si le modèle choisi echoue (timeout, erreur), retenter avec Kokoro
 - Kokoro est le plus stable et le plus rapide, donc bon fallback
 
-> **Note technique** : Ajoutez un système de cache pour les textes repetitifs. Utilisez un hash du texte comme cle de cache pour eviter de regenerer le même audio.",,,,,,,,37f4f08a4dc6feb5,,,,,,,
+> **Note technique** : Ajoutez un système de cache pour les textes repetitifs. Utilisez un hash du texte comme cle de cache pour eviter de regenerer le même audio.",,,,,,,,5ff783a36a3d0358,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,2724266b,markdown,fr,d911c64d46452548,"# Generation MIDI avec midi-model (SkyTNT)
 
 **Module :** 02-Audio-Advanced  
@@ -9390,18 +9392,18 @@ print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""Modele : {model_id}"")
 print(f""Max events : {max_len}, Temperature : {temperature}"")
 print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT)}"")",,,,,,,,b736dd2247174c47,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,924a3dc1,markdown,fr,a47a559b9389669b,"### Interpretation : Configuration de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,924a3dc1,markdown,fr,662ea3b97e775955,"### Interpretation : Configuration de l'environnement
 
 L'environnement est correctement configure avec les éléments suivants :
 
 | Composant | Statut | Rôle |
 |-----------|--------|------|
-| GPU RTX 3090 | 24 GB VRAM | Generation rapide (5-30s vs 1-5min CPU) |
+| GPU RTX 3090 | 24 GB VRAM | *runtime machine-dep* : generation rapide (5-30s vs 1-5min CPU) |
 | Repertoires | Crees | Stockage des fichiers MIDI générés |
 | Helpers audio | Importes | Fonctions de lecture audio |
 | Device | cuda | Utilisation du GPU pour l'inference |
 
-**Verification GPU** : La presence d'un GPU avec suffisamment de VRAM est critique pour la generation MIDI. Le modèle medium (~100M paramètres) necessite environ 0.5-2 GB de VRAM en bfloat16, bien moins que MusicGen (10-20 GB).",,,,,,,,a47a559b9389669b,,,,,,,
+**Verification GPU** : La presence d'un GPU avec suffisamment de VRAM est critique pour la generation MIDI. Le modèle medium (~100M paramètres) necessite environ 0.5-2 GB de VRAM en bfloat16, bien moins que MusicGen (10-20 GB).",,,,,,,,662ea3b97e775955,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,1c474dcc,markdown,fr,b1db234789de6fea,"L'environnement Python est initialise et les repertoires de sortie sont crees. La cellule suivante charge le fichier `.env` pour recuperer le token HuggingFace, utile pour le telechargement des poids de `skytnt/midi-model`.",,,,,,,,b1db234789de6fea,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,1d5b8b74,code,fr,a7367a0bec6411ef,"# Chargement robuste de la configuration .env
 from dotenv import load_dotenv
@@ -9439,9 +9441,9 @@ Le fichier `.env` n'a pas ete trouve dans ce repertoire. Les variables d'environ
 | Rate limits | Oui | Token recommande pour eviter les limitations |
 
 **Prochaine étape** : Telechargement des fichiers sources du modèle depuis le depot HuggingFace `skytnt/midi-model-tv2o-medium`.",,,,,,,,7acf8a836ed05c6c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,a2e688fd,markdown,fr,458483a634af958a,"## Dependances GPU Optionnelles
-Ce notebook utilise un modèle Transformer leger (~200 MB). GPU recommande pour la vitesse, mais le CPU fonctionne.
-FluidSynth est requis au niveau système pour la synthese audio des fichiers MIDI.",,,,,,,,458483a634af958a,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,a2e688fd,markdown,fr,cb0dc543e7987e69,"## Dependances GPU Optionnelles
+Ce notebook utilise un modèle Transformer leger (~200 MB). *runtime machine-dep* : GPU recommande pour la vitesse, mais le CPU fonctionne.
+FluidSynth est requis au niveau système pour la synthese audio des fichiers MIDI.",,,,,,,,cb0dc543e7987e69,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,d1730602,markdown,fr,fb7d712104c4d1d3,"## Section 1 : Generation symbolique vs generation audio
 
 Il existe deux approches fondamentalement différentes pour générer de la musique par IA :
@@ -9612,7 +9614,7 @@ if model_files_ready:
         print(f""Erreur lors du chargement : {type(e).__name__} - {str(e)[:200]}"")
 else:
     print(""Fichiers source non disponibles"")",,,,,,,,ce8cabe8245116a5,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,844269d8,markdown,fr,a17ac99346905236,"### Interpretation : Chargement du modèle
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,844269d8,markdown,fr,da1a28cdd9a51a92,"### Interpretation : Chargement du modèle
 
 | Aspect | Valeur typique | Signification |
 |--------|---------------|---------------|
@@ -9620,7 +9622,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,844269d8,ma
 | VRAM | ~0.5-2 GB | Accessible sur la plupart des GPU |
 | Vocabulaire | 3406 tokens | Couvre tous les événements MIDI standard |
 
-Le modèle medium offre un bon equilibre entre qualite et rapidite. La variante ""o"" (optimised) reorganise les pistes et canaux MIDI pour de meilleurs résultats.",,,,,,,,a17ac99346905236,,,,,,,
+Le modèle medium offre *runtime machine-dep* : equilibre entre qualite et rapidite. La variante ""o"" (optimised) reorganise les pistes et canaux MIDI pour de meilleurs résultats.",,,,,,,,da1a28cdd9a51a92,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,8507ba72,markdown,fr,e0e37b6def148188,"## Section 2 : Generation inconditionnelle
 
 La generation inconditionnelle laisse le modèle composer librement sans contrainte. Le modèle choisit le tempo, les instruments, la tonalite et le style.
@@ -9765,19 +9767,19 @@ if midi_model_loaded and generate_midi:
               f""{data['gen_time']:<12.2f} {data['file_size']:<12}"")
 else:
     print(""Modele non charge ou generation desactivee"")",,,,,,,,8a78181a1ec8adf9,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4586a5dc,markdown,fr,e25f61d16cabb181,"### Interpretation : Generation inconditionnelle
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,4586a5dc,markdown,fr,970f66f861197ece,"### Interpretation : Generation inconditionnelle
 
 | Aspect | Valeur typique | Signification |
 |--------|---------------|---------------|
 | Événements | 200-512 | Nombre de notes/changements générés |
 | Pistes | 2-8 | Le modèle attribue automatiquement les instruments |
-| Temps | 5-30s (GPU) | Beaucoup plus rapide que MusicGen |
+| Temps | *runtime machine-dep* : 5-30s (GPU) | Beaucoup plus rapide que MusicGen |
 | Taille .mid | 1-10 KB | Extremement compact vs audio |
 
 **Points cles** :
 1. Chaque generation est unique et non-déterministe
 2. Le modèle choisit librement les instruments, le tempo et la structure
-3. Les fichiers MIDI sont editables dans n'importe quel DAW (FL Studio, Ableton, MuseScore)",,,,,,,,e25f61d16cabb181,,,,,,,
+3. Les fichiers MIDI sont editables dans n'importe quel DAW (FL Studio, Ableton, MuseScore)",,,,,,,,970f66f861197ece,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb,88ce3eb6,markdown,fr,b35d395f4b1dc21b,"### Exercice 1 : Construction d'un prompt musical personnalise
 
 **Objectif** : Créer un prompt MIDI qui contraint le modèle a générer dans un style musical précis, en utilisant les fonctions `create_music_prompt()` et le dictionnaire `INSTRUMENTS`.
@@ -10621,7 +10623,7 @@ La generation de chansons completes (text-to-song) est fondamentalement différe
 | ACE-Song | ACE Studio | ? | Non | Commerciale |
 
 YuE et SongGeneration 2 sont les deux principaux modèles open-source. Ce notebook les compare en pratique.",,,,,,,,d3676bceea04103f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,0dd22880,markdown,fr,fe4ef53d5000a0f0,"## Section 2 : Architectures comparees
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,0dd22880,markdown,fr,d3b3de1b714d43b8,"## Section 2 : Architectures comparees
 
 ### YuE : Autoregressive 2 Stages
 
@@ -10665,8 +10667,8 @@ Paroles + Description --> [LeLM] --> plan musical structure
 | Avantage | Coherence longue portee | Qualite audio superieure |
 | Inconvenient | Lent (token par token) | Moins flexible en longueur |
 | Sortie | 44.1kHz MP3 | 48kHz FLAC |
-| Vitesse (30s) | ~6 min (RTX 4090) | ~25s (RTF 0.82) |
-| Duree max | Illimitee (avec VRAM) | 4m30 |",,,,,,,,fe4ef53d5000a0f0,,,,,,,
+| Vitesse (30s) | *runtime machine-dep* : ~6 min (RTX 4090) | ~25s (RTF 0.82) |
+| Duree max | Illimitee (avec VRAM) | 4m30 |",,,,,,,,d3b3de1b714d43b8,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,50ng02a7,markdown,fr,67c7d0d7bec8a20e,"Les diagrammes ci-dessous rendent les **deux familles d'architecture** comparees dans
 cette section : YuE (autoregressif pur, 2 etages) et SongGeneration 2 / LeVo 2 (hybride
 LLM + diffusion).
@@ -10762,17 +10764,19 @@ if gpu_available:
         print(f""  VRAM insuffisante pour la generation de chansons"")
 else:
     print(f""  Pas de GPU - demonstration architecturale uniquement"")",,,,,,,,e36dcd48f26a5737,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,005607a5,markdown,fr,c6a49baf8eb9d2fb,"### Interpretation : Verification de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,005607a5,markdown,fr,357e5cd094e333cc,"### Interpretation : Verification de l'environnement
 
 Le script confirme que les dependances de base sont presentes (`torch`, `torchaudio`, `transformers`) mais identique deux manquants (`einops`, `sentencepiece`) critiques pour les modèles de generation audio.
 
 **Dependances manquantes** :
+
 | Package | Rôle | Installation |
 |---------|------|--------------|
 | `einops` | Manipulation de tensors (opérations de rearrangement) | `pip install einops` |
 | `sentencepiece` | Tokenization pour les modèles LLM (YuE stage 1/2) | `pip install sentencepiece` |
 
 **Recommandations VRAM** :
+
 | Configuration | VRAM | Modèle recommande | Notes |
 |---------------|------|-------------------|-------|
 | **GPU <10 GB** | Insuffisant | Aucun | Generation impossible, utiliser des API externes |
@@ -10786,7 +10790,7 @@ Le script confirme que les dependances de base sont presentes (`torch`, `torchau
 - Installation : `pip install flash-attn --no-build-isolation` (echec possible sur Windows)
 
 > **Note stratégique** : Si FlashAttention echoue a compiler, utiliser YuE en version quantize (exllamav2) qui reduit la VRAM a 6 GB sans sacrifier la qualite de maniere significative.
-|",,,,,,,,c6a49baf8eb9d2fb,,,,,,,
+|",,,,,,,,357e5cd094e333cc,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,ffdd1a31,markdown,fr,425fad3672999904,Les prerequis Python sont verifies et les instructions d'installation sont affichees. La cellule suivante configure les chemins d'acces aux depots YuE et SongGeneration clones localement.,,,,,,,,425fad3672999904,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,8d6c0ab2,code,fr,20b434d415a39575,"# Configuration des repositories et modeles
 print(""CONFIGURATION DES MODELES"")
@@ -10830,11 +10834,12 @@ if test_songgen:
 
 if not yue_ready and not songgen_ready:
     print(f""\nAucun modele installe - le notebook continuera en mode demonstration"")",,,,,,,,20b434d415a39575,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,23d8d623,markdown,fr,7720fdece1c01121,"### Interpretation : Verification des modèles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,23d8d623,markdown,fr,034a68398007006a,"### Interpretation : Verification des modèles
 
 Le script verifie la presence des repositories YuE et SongGeneration 2 dans le repertoire local. Cette étape est critique car les deux modèles ne sont pas distribuables via `pip install`.
 
 **Complexite d'installation** :
+
 | Modèle | Étapes d'installation | Dependances critiques |
 |--------|----------------------|----------------------|
 | **YuE** | Clone repo + submodule xcodec + FlashAttn | `flash-attn` (compilation C++/CUDA requise) |
@@ -10850,19 +10855,19 @@ Le script verifie la presence des repositories YuE et SongGeneration 2 dans le r
 - **SongGeneration 2 base** : Variante la plus legere (10 GB VRAM), qualite toujours excellente
 
 > **Note pratique** : Pour un premier test, commencer par SongGeneration 2 base (installation simple, résultats rapides). YuE est plus adapte aux use-cases avancees (style transfer, chansons longues).
-|",,,,,,,,7720fdece1c01121,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,d09a8a83,markdown,fr,78d06aa1b0520c4f,"### Interpretation : Installation
+|",,,,,,,,034a68398007006a,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,d09a8a83,markdown,fr,04e34cfec45dd6c0,"### Interpretation : Installation
 
 | Modèle | Taille telechargement | Temps installation | Difficulte |
 |--------|----------------------|-------------------|------------|
-| YuE (7B+1B) | ~16 GB | 15-30 min | Moyenne (FlashAttn requis) |
-| SongGen 2 base | ~4 GB + runtime | 10-20 min | Facile |
-| SongGen 2 v2-large | ~10 GB + runtime | 15-30 min | Facile |
+| YuE (7B+1B) | ~16 GB | *runtime machine-dep* : 15-30 min | Moyenne (FlashAttn requis) |
+| SongGen 2 base | ~4 GB + runtime | *runtime machine-dep* : 10-20 min | Facile |
+| SongGen 2 v2-large | ~10 GB + runtime | *runtime machine-dep* : 15-30 min | Facile |
 
 **Points cles** :
 1. Les deux modèles necessitent le clonage de repositories entiers (pas de simple `pip install`)
 2. FlashAttention 2 est critique pour YuE sur 24 GB (OOM sans)
-3. SongGeneration 2 est plus simple a installer et plus leger",,,,,,,,78d06aa1b0520c4f,,,,,,,
+3. SongGeneration 2 est plus simple a installer et plus leger",,,,,,,,04e34cfec45dd6c0,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,613922e3,markdown,fr,bc72af33dfe0ce2d,"## Section 4 : Preparation des paroles
 
 Les deux modèles necessitent des paroles structurees avec des marqueurs de section. Le formatage est crucial pour la qualite du résultat.
@@ -10967,11 +10972,12 @@ if save_results:
         f.write(json.dumps(songgen_input, ensure_ascii=False) + ""\n"")
 
     print(f""\nFichiers sauvegardes dans {lyrics_dir}"")",,,,,,,,5d335fa5a29e2532,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,51b1e764,markdown,fr,555eaa4a3f89a801,"### Interpretation : Formattage des paroles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,51b1e764,markdown,fr,87a23cab029261a3,"### Interpretation : Formattage des paroles
 
 Les deux fonctions illustrent les différences fondamentales de formatage entre YuE et SongGeneration 2.
 
 **Différences de format** :
+
 | Aspect | YuE | SongGeneration 2 |
 |--------|-----|-------------------|
 | **Separateur sections** | Ligne vide + marqueur `[section]` | ` ; ` entre sections |
@@ -10990,7 +10996,7 @@ Les deux fonctions illustrent les différences fondamentales de formatage entre 
 4. Inclure des descriptions instrumentales dans le champ `genre` ou `descriptions`
 
 > **Note technique** : Les marqueurs `[intro-short]` et `[outro-short]` de SongGeneration 2 permettent de generer des sections instrumentales, utiles pour les transitions.
-|",,,,,,,,555eaa4a3f89a801,,,,,,,
+|",,,,,,,,87a23cab029261a3,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,83c79b0b,markdown,fr,d3186f00d76a52e2,"### Exercice 1 : Formatage de paroles multi-modèles
 
 **Objectif** : Implementer une fonction qui convertit des paroles brutes (format libre) en formats YuE et SongGeneration 2, en respectant les conventions de chaque modèle.
@@ -11165,7 +11171,7 @@ elif not test_yue:
     print(""Test YuE desactive"")
 else:
     print(""GPU non disponible"")",,,,,,,,96a60277af3fde55,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,c38e6a4f,markdown,fr,d622a47d9aea7fa8,"### Analyse de la generation YuE
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,c38e6a4f,markdown,fr,b978cc89bf675120,"### Analyse de la generation YuE
 
 La tentative de generation a echoue car le modèle YuE n'est pas installe localement. Le code montre cependant l'approche autoregressive en deux étapes de YuE.
 
@@ -11175,6 +11181,7 @@ La tentative de generation a echoue car le modèle YuE n'est pas installe locale
 3. **Vocodeur xcodec** : Convertit les tokens en onde audio 44.1kHz MP3
 
 **Paramètres de generation** :
+
 | Paramètre | Impact | Valeur recommandee |
 |-----------|--------|-------------------|
 | `--run_n_segments` | Duree totale (1 segment ~30s) | 2-4 pour demo |
@@ -11183,28 +11190,28 @@ La tentative de generation a echoue car le modèle YuE n'est pas installe locale
 | `--repetition_penalty` | Repetitions melodiques | 1.1 (1.0-2.0) |
 
 **Contraintes pratiques** :
-- Temps de generation : ~6 min pour 60s sur RTX 4090
+- *runtime machine-dep* : temps de generation ~6 min pour 60s sur RTX 4090
 - VRAM requise : 24 GB en bf16, 6 GB en quantize (exllamav2)
 - FlashAttention 2 : Obligatoire pour 24 GB (sinon OOM)
 
 **Modes de generation** :
 - **CoT (Chain-of-Thought)** : Le modèle raisonne sur la structure musicale avant de generer
 - **ICL (In-Context Learning)** : Style transfer a partir d'un audio de reference (~30s)
-|",,,,,,,,d622a47d9aea7fa8,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,882fb32c,markdown,fr,e340b63fcfa28d27,"### Interpretation : YuE
+|",,,,,,,,b978cc89bf675120,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,882fb32c,markdown,fr,2c9ff69136b7abbd,"### Interpretation : YuE
 
 | Aspect | Observation typique |
 |--------|--------------------|
 | Qualite vocale | Reconnaissable, parfois metallique |
 | Fidelite paroles | Bonne pour l'anglais |
 | Musicalite | Variee, coherente sur 2 segments |
-| Temps | 5-10 min pour ~60s sur RTX 3090/4090 |
+| Temps | *runtime machine-dep* : 5-10 min pour ~60s sur RTX 3090/4090 |
 
 **Points cles** :
 1. Le mode CoT (Chain-of-Thought) produit des résultats plus structures que ICL
 2. Commencer par `[verse]` ou `[chorus]`, jamais `[intro]` (instable)
 3. Limiter le nombre de mots par segment (~30s max par segment)
-4. FlashAttention 2 est obligatoire pour 24 GB",,,,,,,,e340b63fcfa28d27,,,,,,,
+4. FlashAttention 2 est obligatoire pour 24 GB",,,,,,,,2c9ff69136b7abbd,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,4909abae,markdown,fr,73024a7049c79fb1,"## Section 6 : Generation avec SongGeneration 2
 
 SongGeneration 2 utilise une approche hybride LLM-Diffusion qui produit des résultats plus rapides et de meilleure fidelite audio.
@@ -11323,7 +11330,7 @@ elif not test_songgen:
     print(""Test SongGeneration 2 desactive"")
 else:
     print(""GPU non disponible"")",,,,,,,,11226bee6e20bd7b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,006a8d0f,markdown,fr,9289ca59030541b3,"### Analyse de la generation SongGeneration 2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,006a8d0f,markdown,fr,845236f6ea46e265,"### Analyse de la generation SongGeneration 2
 
 La tentative de generation a echoue car le modèle n'est pas installe localement. Cependant, le code illustre l'approche hybride LLM-Diffusion de SongGeneration 2.
 
@@ -11333,6 +11340,7 @@ La tentative de generation a echoue car le modèle n'est pas installe localement
 3. **Sortie** : Fichiers FLAC 48kHz (mix, piste vocale separee, accompagnement separe)
 
 **Paramètres critiques** :
+
 | Paramètre | Rôle | Valeur typique |
 |-----------|------|----------------|
 | `--separate` | Active la separation vocale/bgm | Present pour karaoke |
@@ -11340,24 +11348,24 @@ La tentative de generation a echoue car le modèle n'est pas installe localement
 | `auto_prompt_audio_type` | Style automatique | Pop, Rock, Jazz, Electronic |
 
 **Avantages pratiques** :
-- Generation ~25s pour 30s audio (RTF 0.82)
+- *runtime machine-dep* : generation ~25s pour 30s audio (RTF 0.82)
 - Separation native des pistes (pas besoin de Demucs)
 - Meilleure fidelite des paroles (PER 8.55% vs Suno v5)
-|",,,,,,,,9289ca59030541b3,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,2cd56c9b,markdown,fr,698fcbd04a2d02c3,"### Interpretation : SongGeneration 2
+|",,,,,,,,845236f6ea46e265,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,2cd56c9b,markdown,fr,806243217f3ff04f,"### Interpretation : SongGeneration 2
 
 | Aspect | Observation typique |
 |--------|--------------------|
 | Qualite vocale | Proche de la qualite commerciale |
 | Fidelite paroles | Excellente (PER 8.55%, meilleur que Suno v5) |
 | Musicalite | Production elevee, mix professionnel |
-| Temps | ~25s pour 30s audio (RTF 0.82) |
+| Temps | *runtime machine-dep* : ~25s pour 30s audio (RTF 0.82) |
 
 **Points cles** :
 1. Beaucoup plus rapide que YuE (10-15x)
 2. La separation vocale/accompagnement est native
 3. Sortie en FLAC 48kHz (meilleure qualite que le MP3 de YuE)
-4. Les descriptions doivent etre des tags, pas des phrases",,,,,,,,698fcbd04a2d02c3,,,,,,,
+4. Les descriptions doivent etre des tags, pas des phrases",,,,,,,,806243217f3ff04f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,82ca2524,markdown,fr,0f038305493d1b37,"## Section 7 : Comparaison et evaluation
 
 Grille d'evaluation pour comparer les deux modèles sur les mêmes paroles.",,,,,,,,0f038305493d1b37,,,,,,,
@@ -11723,7 +11731,7 @@ Generer une chanson courte avec l'un des deux modèles et evaluer le résultat.
 ---
 
 **Soumission** : PR avec titre ""Exercice Song - [Votre Nom]"", paroles, fichier audio et evaluation",,,,,,,,0cc0658dcc013080,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,03f72dcc,markdown,fr,d843eb4eb2253081,"## Conclusion : Perspectives de la generation de chansons
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,03f72dcc,markdown,fr,804bb2772f38004c,"## Conclusion : Perspectives de la generation de chansons
 
 Ce notebook a presente les deux modèles open-source les plus avances pour la generation de chansons completes : **YuE** (autoregressive 2 stages) et **SongGeneration 2** (hybride LLM-Diffusion).
 
@@ -11744,7 +11752,7 @@ Ce notebook a presente les deux modèles open-source les plus avances pour la ge
 | **Qualite vocale** | Parfois metallique ou robotique | Amelioration continue avec modèles plus grands |
 | **Fidelite paroles** | Mots mal prononces ou oublis | PER 8.55% (SongGen 2) vs Suno v5, marge de progres |
 | **Longueur max** | 4m30 (SongGen 2), illimite mais lent (YuE) | Modèles ""context long"" en développement |
-| **Cout calcul** | 24 GB VRAM, 6 min pour 60s (YuE) | Optimisation quantization, distillation |
+| **Cout calcul** | 24 GB VRAM, *runtime machine-dep* : 6 min pour 60s (YuE) | Optimisation quantization, distillation |
 | **Licence** | SongGen 2 custom limite usage commercial | Modèles Apache 2.0 emergents |
 
 ### Pistes d'exploration
@@ -11762,7 +11770,8 @@ Ce notebook a presente les deux modèles open-source les plus avances pour la ge
 ---
 
 **Le champ de la generation audio est en evolution rapide. Les modèles presentes ici representent l'etat de l'art en 2025, mais des itérations plus performantes sont attendues dans les mois a venir.**
-|",,,,,,,,d843eb4eb2253081,,,,,,,
+
+|",,,,,,,,804bb2772f38004c,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,ca0cf66a,markdown,fr,d595dfe0ec412c7f,"# TTS Expressif : Fish S2 Pro et Modèles SOTA
 
 **Module :** 02-Audio-Advanced  
@@ -11876,22 +11885,22 @@ print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""Fish S2 Pro : {'actif' if test_fish_s2_pro else 'desactive'}"")
 print(f""Dia TTS : {'actif' if test_dia_tts else 'desactive'}"")
 print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT)}"")",,,,,,,,3fd01c7556791b45,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,ebc54992,markdown,fr,06ed9ae3e38801d3,"### Interprétation : Configuration de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,ebc54992,markdown,fr,ee34cc1fbbbaa942,"### Interprétation : Configuration de l'environnement
 
 **Sortie obtenue** : Détection réussie du GPU RTX 3090 avec 24 GB VRAM.
 
 | Composant | État | VRAM disponible |
 |-----------|------|-----------------|
 | GPU NVIDIA | RTX 3090 | 24.0 GB |
-| Device cible | cuda | Suffisant pour Fish S2 Pro |
+| Device cible | cuda | *runtime machine-dep* : suffisant pour Fish S2 Pro |
 | Helpers audio | Importés | Fonctions play/save disponibles |
 
 **Points clés** :
-1. Les 24 GB VRAM permettent d'exécuter Fish S2 Pro (14-18 GB requis) et Dia TTS (~6 GB)
+1. Les 24 GB VRAM permettent *runtime machine-dep* : executer Fish S2 Pro (14-18 GB requis) et Dia TTS (~6 GB)
 2. Le répertoire de sortie est créé automatiquement pour stocker les fichiers audio générés
 3. Le niveau de logging est configurable via `debug_level`
 
-> **Note technique** : Si VRAM < 14 GB, utiliser l'API cloud Fish Audio ou Dia TTS à la place.",,,,,,,,06ed9ae3e38801d3,,,,,,,
+> **Note technique** : Si VRAM < 14 GB, utiliser l'API cloud Fish Audio ou Dia TTS à la place.",,,,,,,,ee34cc1fbbbaa942,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,594817d4,markdown,fr,6fad4211d9583852,L'environnement Python est configure. La cellule suivante charge le fichier `.env` pour recuperer le token Fish Audio API (`FISH_AUDIO_API_KEY`) et le token HuggingFace pour le chargement local de Fish S2 Pro.,,,,,,,,6fad4211d9583852,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,a8d6a8e7,code,fr,c3c2eb1f9dbb188d,"# Chargement robuste de la configuration .env
 from dotenv import load_dotenv
@@ -11918,13 +11927,13 @@ if fish_api_key:
 elif use_fish_api:
     print(""WARNING: FISH_AUDIO_API_KEY non definie, API cloud indisponible"")
     use_fish_api = False",,,,,,,,c3c2eb1f9dbb188d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,9ea8b737,markdown,fr,f2b74719c6449e2a,"### Interprétation : Chargement des variables d'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,9ea8b737,markdown,fr,9257ecdac361dc89,"### Interprétation : Chargement des variables d'environnement
 
-**Sortie obtenue** : Avertissement - fichier .env non trouvé dans le chemin de recherche.
+**Sortie obtenue** : `.env` chargé depuis `.env` (trouvé) ; mode API cloud désactivé par le paramètre Papermill `use_fish_api=False`.
 
 | Variable | Statut | Impact |
 |----------|--------|--------|
-| FISH_AUDIO_API_KEY | Non définie | API cloud indisponible |
+| `use_fish_api` | `False` (paramètre Papermill) | API cloud désactivée ; clé non contrôlée (branche `elif` court-circuitée) |
 | Mode de secours | Local uniquement | Nécessite GPU + packages |
 
 **Points clés** :
@@ -11932,7 +11941,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,9ea8b737,mar
 2. Pour l'API cloud : placer `.env` dans `GenAI/` avec `FISH_AUDIO_API_KEY`
 3. Les modèles locaux nécessitent : `pip install fish-speech` ou `pip install dia-tts`
 
-> **Note technique** : Le fichier `.env.example` dans le répertoire GenAI montre le format attendu.",,,,,,,,f2b74719c6449e2a,,,,,,,
+> **Note technique** : Le fichier `.env.example` dans le répertoire GenAI montre le format attendu.",,,,,,,,9257ecdac361dc89,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,19318316,markdown,fr,ccb3b6fc95c4ee9e,"## Dependances GPU Optionnelles
 
 Ce notebook teste plusieurs modèles TTS avec des besoins VRAM différents :
@@ -12067,7 +12076,7 @@ if fish_available or (fish_sdk_available and use_fish_api):
 else:
     print(f""  Fish S2 Pro : non disponible"")
 print(f""  Dia TTS : {'disponible' if dia_available else 'non disponible'}"")",,,,,,,,c2d679bc086131d0,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,97e3a862,markdown,fr,66923294f712e35a,"### Interprétation : Vérification des dépendances
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,97e3a862,markdown,fr,4d5420d69ad64327,"### Interprétation : Vérification des dépendances
 
 **Sortie obtenue** : Aucun package TTS expressif n'est installé.
 
@@ -12079,12 +12088,12 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,97e3a862,mar
 | soundfile | Disponible | OK |
 
 **Points clés** :
-1. Ce notebook est une **démonstration pédagogique** des capacités des modèles TTS expressifs
+1. Ce notebook est *runtime machine-dep* : demonstration pedagogique des capacités des modèles TTS expressifs
 2. Les exemples de code sont fully fonctionnels une fois les packages installés
 3. La section ""Comparaison et benchmark"" reste utile même sans exécution
 
-> **Note technique** : Pour une installation rapide en mode cloud, utiliser `fish-audio-sdk` (pas de GPU requis).",,,,,,,,66923294f712e35a,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,405fed84,markdown,fr,d091227d0d0c6724,"Les dependances sont verifiees (`fish-speech`, `fish-audio-sdk`, `dia-tts`). La cellule suivante tente de charger Fish S2 Pro : d'abord en local (GPU 14+ GB), puis via l'API cloud si `use_fish_api=True`.",,,,,,,,d091227d0d0c6724,,,,,,,
+> **Note technique** : Pour une installation rapide en mode cloud, utiliser `fish-audio-sdk` (pas de GPU requis).",,,,,,,,4d5420d69ad64327,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,405fed84,markdown,fr,9d74b82aa6c56957,"Les dependances sont verifiees (`fish-speech`, `fish-audio-sdk`, `dia-tts`). La cellule suivante tente de charger Fish S2 Pro : d'abord en local *runtime machine-dep* : GPU 14+ GB, puis via l'API cloud si `use_fish_api=True`.",,,,,,,,9d74b82aa6c56957,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,6869312d,code,fr,c5e0b00630ca157d,"# Chargement de Fish S2 Pro
 print(""CHARGEMENT FISH S2 PRO"")
 print(""="" * 45)
@@ -12132,7 +12141,7 @@ if test_fish_s2_pro:
         print(""  Cloud : pip install fish-audio-sdk + FISH_AUDIO_API_KEY"")
 else:
     print(""Test Fish S2 Pro desactive"")",,,,,,,,c5e0b00630ca157d,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,1a39e39c,markdown,fr,4924df9bd99f34a1,"### Interprétation : Tentative de chargement Fish S2 Pro
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,1a39e39c,markdown,fr,5309c818da7d2543,"### Interprétation : Tentative de chargement Fish S2 Pro
 
 **Sortie obtenue** : Échec du chargement - ni le package local ni l'API cloud ne sont disponibles.
 
@@ -12142,11 +12151,11 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,1a39e39c,mar
 | API Cloud | Indisponible | `fish-audio-sdk` et/ou `FISH_AUDIO_API_KEY` manquants |
 
 **Points clés** :
-1. Fish S2 Pro nécessite soit un GPU puissant (14+ GB VRAM), soit une connexion internet pour l'API
-2. L'architecture Dual-AR (Slow AR 4B + Fast AR 400M) permet une génération rapide avec haute qualité
+1. Fish S2 Pro nécessite soit *runtime machine-dep* : GPU puissant (14+ GB VRAM), soit une connexion internet pour l'API
+2. L'architecture Dual-AR (Slow AR 4B + Fast AR 400M) permet *runtime machine-dep* : generation rapide avec haute qualité
 3. Les 15000+ tags d'expressivité sont la clé différentielle par rapport aux modèles précédents
 
-> **Note technique** : Pour tester sans installation, utiliser l'API Fish Audio avec un compte gratuit (quota limité).",,,,,,,,4924df9bd99f34a1,,,,,,,
+> **Note technique** : Pour tester sans installation, utiliser l'API Fish Audio avec un compte gratuit (quota limité).",,,,,,,,5309c818da7d2543,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb,dd9465c9,markdown,fr,ed1d3023da9327da,"## Section 3 : Tags d'expressivite
 
 Fish S2 Pro supporte plus de 15 000 tags d'expressivite. Les tags sont inseres directement dans le texte.
@@ -13179,7 +13188,7 @@ Cette cellule définit les paramètres modifiables pour différentes utilisation
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,75916dac,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""",,,,,,,,d8cfd07b7b0f3965,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,88e8e609,markdown,fr,fea06e7fd0c2c6cf,"Les paramètres Papermill configurent le modèle ACE-Step (checkpoint, precision, offload), la duree de generation, et les paramètres de sampling (guidance_scale, infer_step, cfg_type). La cellule suivante configure l'environnement et verifie la VRAM disponible.",,,,,,,,fea06e7fd0c2c6cf,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,37f2958e,markdown,fr,6735d09c4c65fcf7,"## Introduction a ACE-Step v1.5
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,37f2958e,markdown,fr,fa8b17e135466023,"## Introduction a ACE-Step v1.5
 
 ACE-Step est un modèle de generation musicale open-source (licence Apache 2.0) qui combine une architecture **hybride Language Model (LM) + Diffusion Transformer (DiT)**. Contrairement a MusicGen qui genere uniquement de la musique instrumentale, ACE-Step genere des **chansons completes avec paroles**.
 
@@ -13194,7 +13203,7 @@ Tags de genre + Paroles structurees → LM Encoder → DiT Diffusion → VAE Dec
 - **Architecture hybride LM + DiT** : Le LM encode le texte et les paroles, le DiT genere les spectrogrammes
 - **Paroles structurees** : Support natif des tags `[verse]`, `[chorus]`, `[bridge]`, `[intro]`, `[outro]`
 - **Multilingue** : 50+ langues supportees (anglais, francais, espagnol, allemand, japonais, etc.)
-- **Faible VRAM** : <4 GB avec cpu_offload, generation rapide (<10s pour 4 min sur RTX 3090)
+- **Faible VRAM** : <4 GB avec cpu_offload, *runtime machine-dep* : generation rapide (<10s pour 4 min sur RTX 3090)
 
 ### Comparaison avec les alternatives
 
@@ -13215,7 +13224,7 @@ Tags de genre + Paroles structurees → LM Encoder → DiT Diffusion → VAE Dec
 | **Chanson complete** | Generation avec paroles et musique | Chanson pop avec couplets/refrains |
 | **Musique de fond** | Pistes instrumentales avec ou sans paroles | Jingle, podcast |
 | **Prototypage musical** | Idees melodieques avec structure | Demo rapide d'un concept |
-| **Education** | Demonstration de styles multilingues | Comparaison jazz/francais vs rock/anglais |",,,,,,,,6735d09c4c65fcf7,,,,,,,
+| **Education** | Demonstration de styles multilingues | Comparaison jazz/francais vs rock/anglais |",,,,,,,,fa8b17e135466023,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,296c7320,code,fr,b56ffcab95c36c0a,"# Setup environnement et imports
 import warnings
 # Bruit de warnings tiers (prefixes = chemins site-packages) : filtrage cible
@@ -13309,13 +13318,13 @@ print(f""Duree : {audio_duration}s, Infer steps : {infer_step}"")
 print(f""Guidance scale : {guidance_scale}, CFG type : {cfg_type}"")
 print(f""CPU offload : {cpu_offload}, Seed : {seed}"")
 print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT).as_posix()}"")",,,,,,,,b56ffcab95c36c0a,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,52e15f65,markdown,fr,07c75cf13f345481,"### Interpretation : Configuration de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,52e15f65,markdown,fr,891062b760665531,"### Interpretation : Configuration de l'environnement
 
 L'environnement est maintenant configure pour ACE-Step.
 
 | Composant | Statut | Rôle |
 |-----------|--------|------|
-| **GPU detecte** | Variable (si disponible) | Acceleration de la generation |
+| **GPU detecte** | Variable (si disponible) | *runtime machine-dep* : acceleration de la generation |
 | **ACE-Step** | Importe ou instruction d'installation | Pipeline de generation musicale |
 | **Repertoire sortie** | `outputs/audio/acestep/` | Stockage des fichiers WAV generes |
 | **CPU offload** | Active par defaut | Permet de fonctionner avec <4 GB VRAM |
@@ -13323,7 +13332,7 @@ L'environnement est maintenant configure pour ACE-Step.
 **Avantage cle d'ACE-Step** :
 Contrairement a MusicGen (10 GB VRAM pour medium) ou SongGen2 (10-24 GB), ACE-Step peut fonctionner sur des GPU modestes grace au cpu_offload. Cela le rend accessible sur des cartes comme la GTX 1060 6 GB.
 
-> **Note** : Si ACE-Step n'a pas pu etre installe automatiquement, le notebook continuera en mode de demonstration avec des messages informatifs. Aucune erreur ne sera levee.",,,,,,,,07c75cf13f345481,,,,,,,
+> **Note** : Si ACE-Step n'a pas pu etre installe automatiquement, le notebook continuera en mode de demonstration avec des messages informatifs. Aucune erreur ne sera levee.",,,,,,,,891062b760665531,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,6b760b35,markdown,fr,f26515c358f5a553,L'environnement est pret. La cellule suivante charge le fichier `.env` afin de recuperer le token HuggingFace necessaire pour telecharger les poids du modèle depuis le Hub.,,,,,,,,f26515c358f5a553,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,ce17b94d,code,fr,0022037728abcf9d,"# Chargement robuste de la configuration .env
 from dotenv import load_dotenv
@@ -13410,14 +13419,14 @@ else:
     print(""Pour installer : pip install git+https://github.com/ace-step/ACE-Step.git"")
     print(""\nLe notebook continuera en affichant les parametres et configurations"")
     print(""sans generation audio reelle."")",,,,,,,,298b12e46ecaf07f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,cbb4bb3d,markdown,fr,10c1d78b41628267,"### Interpretation : Chargement du modèle
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,cbb4bb3d,markdown,fr,2030ef5b3c49c864,"### Interpretation : Chargement du modèle
 
 Le chargement d'ACE-Step differe de MusicGen par sa gestion de la memoire.
 
 | Aspect | Detail |
 |--------|--------|
 | **Premier chargement** | Telechargement depuis HuggingFace Hub (~7 GB pour le modèle base) |
-| **Chargements suivants** | Cache local, chargement rapide |
+| **Chargements suivants** | Cache local, *runtime machine-dep* : chargement rapide |
 | **VRAM requise** | <4 GB avec cpu_offload, ~6 GB sans offload |
 | **CPU offload** | Deplace les couches non utilisees vers la RAM CPU |
 
@@ -13430,7 +13439,7 @@ Le chargement d'ACE-Step differe de MusicGen par sa gestion de la memoire.
 | MusicGen medium | 10 GB | 12 GB |
 | SongGen2 | 10 GB | 24 GB |
 
-> **Note technique** : Le cpu_offload reduit la VRAM au prix d'une vitesse de generation legerement inferieure. Sur un GPU avec 8+ GB, desactiver cpu_offload accelere la generation de 30-50%.",,,,,,,,10c1d78b41628267,,,,,,,
+> **Note technique** : Le cpu_offload reduit la VRAM au prix d'une vitesse de generation legerement inferieure. Sur un GPU avec 8+ GB, desactiver cpu_offload *runtime machine-dep* : accelere la generation de 30-50%.",,,,,,,,2030ef5b3c49c864,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,613eba9b,markdown,fr,b643a7d096e3a06c,"## Section 2 : Generation text-to-song
 
 La generation text-to-song est le mode principal d'ACE-Step. Contrairement a MusicGen (instrumental uniquement), ACE-Step genere des chansons avec paroles structurees.
@@ -13840,7 +13849,7 @@ else:
     print(""  guidance_scale haut (25) : Tres fidele, possiblement rigide"")
     print(""  infer_step bas (30) : Rapide, qualite reduite"")
     print(""  infer_step haut (90) : Lent, meilleure qualite"")",,,,,,,,7bd4ffa875125633,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,2dad120f,markdown,fr,493c3b5ffd491d65,"### Interpretation : Impact des paramètres de generation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,2dad120f,markdown,fr,ec1cde4872cf8e45,"### Interpretation : Impact des paramètres de generation
 
 | Paramètre | Valeur | Observation attendue | Recommandation |
 |-----------|--------|---------------------|----------------|
@@ -13853,10 +13862,10 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,2d
 **Points cles** :
 1. `guidance_scale` est le paramètre le plus impactant pour la fidelite au prompt
 2. `infer_step` affecte surtout la qualite audio (resolution des details)
-3. Le temps de generation est proportionnel a `infer_step` (2x steps = ~2x temps)
+3. *runtime machine-dep* : le temps de generation est proportionnel a `infer_step` (2x steps = ~2x temps)
 4. La combinaison `cfg_type=""apg""` + `omega_scale=10` offre un bon compromis par defaut
 
-> **Note** : Le paramètre `guidance_interval=0.5` applique le guidance uniquement sur la première moitie du denoising. Cela ameliore la diversite tout en conservant la coherence.",,,,,,,,493c3b5ffd491d65,,,,,,,
+> **Note** : Le paramètre `guidance_interval=0.5` applique le guidance uniquement sur la première moitie du denoising. Cela ameliore la diversite tout en conservant la coherence.",,,,,,,,ec1cde4872cf8e45,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,9158ad58,markdown,fr,0173b0ed656df53a,"### Exercice 2 : Analyse de l'impact des paramètres de generation
 
 **Objectif** : Implementer une fonction qui genere un morceau avec différentes configurations de `guidance_scale` et `infer_step`, puis analyse les différences de qualite percue.
@@ -14889,12 +14898,12 @@ Cette section implemente un protocole de benchmark rigoureux pour les modèles S
 - **VRAM** : consommation GPU pour les modèles locaux
 
 Le code inclut la gestion d'erreur pour les modèles non installes ou les problemes de connexion reseau.",,,,,,,,f5e988024dd5fff6,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-section3-interpretation,markdown,fr,a2427eeaf8f91225,"### Interpretation : Benchmark STT
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-section3-interpretation,markdown,fr,778ab178773e4f54,"### Interpretation : Benchmark STT
 
 | Aspect | Whisper API | faster-whisper local |
 |--------|-------------|---------------------|
 | Precision (WER) | Très bonne (< 5%) | Equivalente ou meilleure |
-| Latence | Depend du reseau (1-3s) | Depend du GPU (0.5-2s) |
+| Latence | *runtime machine-dep* : Depend du reseau (1-3s) | *runtime machine-dep* : Depend du GPU (0.5-2s) |
 | Cout | $0.006/min | Gratuit (GPU amortit) |
 | VRAM | 0 (cloud) | ~3-6 GB |
 | Hors-ligne | Non | Oui |
@@ -14902,7 +14911,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison
 **Points cles** :
 1. faster-whisper `large-v3-turbo` offre un excellent compromis vitesse/qualite
 2. L'API Whisper est plus simple a deployer mais a un cout recurrent
-3. Pour du traitement en masse, le local est nettement plus economique",,,,,,,,a2427eeaf8f91225,,,,,,,
+3. Pour du traitement en masse, le local est nettement plus economique",,,,,,,,778ab178773e4f54,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,c25b978e,markdown,fr,fb8be27d30640782,"---
 
 ## Exercice : Evaluation de la precision STT avec vos propres données
@@ -14967,7 +14976,7 @@ def simulate_transcription_errors(reference: str, error_rate: float = 0.1) -> st
 
 # TODO etudiant : Analyser l'impact de la complexite sur le WER
 print(""Exercice a completer"")",,,,,,,,9f8bc581a73002da,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,eba47860,markdown,fr,fae69fbdd79aca5f,"### Analyse des résultats STT
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,eba47860,markdown,fr,d97b2d62bf86b11f,"### Analyse des résultats STT
 
 **Precision de transcription** :
 - WER (Word Error Rate) de 0.000 pour Whisper API sur ce texte propre
@@ -14976,14 +14985,14 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison
 
 **Real-Time Factor (RTF)** :
 - RTF < 1.0 signifie que la transcription est plus rapide que la duree de l'audio (traitement en temps reel possible)
-- Whisper API : RTF ~ 0.14 (transcrit 13s d'audio en ~2s)
-- faster-whisper : RTF ~ 0.05-0.10 sur GPU RTX 3090 (transcrit 13s d'audio en ~0.7s)
+- Whisper API : RTF ~ 0.14 (transcrit 13s d'audio en *runtime machine-dep* : ~2s)
+- faster-whisper : RTF ~ 0.05-0.10 sur GPU RTX 3090 (transcrit 13s d'audio en *runtime machine-dep* : ~0.7s)
 
 **Impact du reseau** :
-- La variabilité des latences Whisper API (1.05s à 2.77s) illustre l'impact de la latence reseau
+- La variabilité des latences Whisper API (*runtime machine-dep* : 1.05s à 2.77s) illustre l'impact de la latence reseau
 - Les modèles locaux offrent une latence plus predictable
 
-**Conclusion** : pour un usage intensif (> 1h/jour), le cout de l'API ($18/mois) justifie l'investissement dans un GPU local (~$30/mois amorti sur 2 ans).",,,,,,,,fae69fbdd79aca5f,,,,,,,
+**Conclusion** : pour un usage intensif (> 1h/jour), le cout de l'API (*runtime machine-dep* : $18/mois) justifie l'investissement dans un GPU local (*runtime machine-dep* : ~$30/mois amorti sur 2 ans).",,,,,,,,d97b2d62bf86b11f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-section4-intro,markdown,fr,8b6e12c3aaaf7044,"## Section 4 : Benchmark TTS (Text-to-Speech)
 
 Nous comparons trois moteurs TTS avec des approches différentes :
@@ -15172,12 +15181,12 @@ Cette section execute un benchmark systématique des moteurs TTS. Pour chaque mo
 - Cout : normalisé pour 1000 caractères
 
 Le code gere gracieusement les absences de modèles (ImportError) et les erreurs d'exécution, permettant au notebook de fonctionner même avec un sous-ensemble de modèles disponibles.",,,,,,,,cbb85832c597216f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-section4-interpretation,markdown,fr,45657a327558df81,"### Interpretation : Benchmark TTS
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-section4-interpretation,markdown,fr,b09c4eb28da1a00f,"### Interpretation : Benchmark TTS
 
 | Aspect | OpenAI TTS | Chatterbox | Kokoro |
 |--------|-----------|------------|--------|
 | Qualite (MOS) | ~4.5 (meilleur) | ~4.2 (expressif) | ~4.0 (bon) |
-| Latence | 1-3s (reseau) | 2-5s (GPU) | 0.5-1s (leger) |
+| Latence | *runtime machine-dep* : 1-3s (reseau) | *runtime machine-dep* : 2-5s (GPU) | *runtime machine-dep* : 0.5-1s (leger) |
 | VRAM | 0 (cloud) | ~8 GB | ~2 GB |
 | Cout | $15/1M chars | Gratuit | Gratuit |
 | Emotions | Non | Oui (exaggeration) | Non |
@@ -15186,7 +15195,7 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison
 **Points cles** :
 1. OpenAI TTS offre la meilleure qualite brute mais a un cout recurrent
 2. Chatterbox se distingue par le contrôle emotionnel et le voice conditioning
-3. Kokoro est le plus leger et rapide, ideal pour du TTS simple en masse",,,,,,,,45657a327558df81,,,,,,,
+3. Kokoro est le plus leger et rapide, ideal pour du TTS simple en masse",,,,,,,,b09c4eb28da1a00f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,358e2e82,markdown,fr,adb4e2e93338478a,"---
 
 ## Exercice : Estimation des couts pour un cas d'usage reel
@@ -15256,7 +15265,7 @@ def calculate_monthly_cost(stt_method: str, tts_method: str,
 
 # TODO etudiant : Afficher le tableau comparatif
 print(""Exercice a completer"")",,,,,,,,ee579783ac8b8b69,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,927d710c,markdown,fr,63c5d5204ccd44ed,"### Details techniques des modèles TTS
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,927d710c,markdown,fr,9a2372c2a6d13b66,"### Details techniques des modèles TTS
 
 **OpenAI TTS (tts-1 / tts-1-hd)** :
 - Architecture proprietaire basee sur des modèles de type Bark/YourTTS
@@ -15270,10 +15279,10 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison
 
 **Kokoro 82M** :
 - Architecture légere (82M paramètres vs plusieurs milliards pour les concurrents)
-- Performance : latence < 1s sur GPU moderne pour un texte standard
+- Performance : latence *runtime machine-dep* : < 1s sur GPU moderne pour un texte standard
 - Compromis : qualite vocale legèrement inferieure, pas de contrôle emotionnel
 
-Le choix depend donc de votre priorite : qualité absolue (OpenAI), personnalisation (Chatterbox) ou performance (Kokoro).",,,,,,,,63c5d5204ccd44ed,,,,,,,
+Le choix depend donc de votre priorite : qualité absolue (OpenAI), personnalisation (Chatterbox) ou performance (Kokoro).",,,,,,,,9a2372c2a6d13b66,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-section5-intro,markdown,fr,0f42267d10819bc8,"## Section 5 : Visualisation des résultats
 
 Les graphiques permettent de comparer visuellement les performances des modèles sur plusieurs axes simultanement.",,,,,,,,0f42267d10819bc8,,,,,,,
@@ -15459,7 +15468,7 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""Mode batch - Interface interactive desactivee"")
 ",,,,,,,,911f74831f9abf06,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-practices,markdown,fr,faa563862924755c,"## Guide de decision et bonnes pratiques
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,cell-practices,markdown,fr,4355bf470bd0cf32,"## Guide de decision et bonnes pratiques
 
 ### Arbre de decision pour le choix du modèle
 
@@ -15478,8 +15487,8 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison
 | Usage | Volume | Cout API | Cout local (electricite) |
 |-------|--------|----------|-------------------------|
 | Prototype | 10 min/jour | ~$2/mois | ~$0 |
-| Application | 1h/jour | ~$15/mois | ~$5/mois (GPU) |
-| Production | 10h/jour | ~$150/mois | ~$30/mois (GPU) |",,,,,,,,faa563862924755c,,,,,,,
+| Application | 1h/jour | ~$15/mois | *runtime machine-dep* : ~$5/mois (GPU) |
+| Production | 10h/jour | ~$150/mois | *runtime machine-dep* : ~$30/mois (GPU) |",,,,,,,,4355bf470bd0cf32,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb,0c67d5c0,markdown,fr,d32db96e953273b0,"### Comprendre les compromis architecturels
 
 Le choix d'une architecture audio (API vs local) impacte plusieurs dimensions non techniques :
@@ -16078,21 +16087,21 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration
 Ce pipeline implemente un assistant vocal basique : une question audio est transcrite, passee a un LLM pour generation de reponse, puis la reponse est synthetisee en audio. C'est le pattern fondamental de nombreux assistants vocaux (Siri, Alexa, Google Assistant).
 
 **Stratégie STT** : le code tente d'abord d'utiliser faster-whisper en local pour reduire la latence et eviter les couts API, avec un fallback vers l'API Whisper OpenAI en cas d'echec.",,,,,,,,2989145d2e30be4b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,cell-section2-interpretation,markdown,fr,ef75916a5d5a1a39,"### Interpretation : Pipeline STT -> LLM -> TTS
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,cell-section2-interpretation,markdown,fr,19735d9327659a90,"### Interpretation : Pipeline STT -> LLM -> TTS
 
 | Étape | Latence typique | Goulot d'etranglement |
 |-------|----------------|----------------------|
 | STT (local) | 0.5-2s | GPU / taille audio |
 | STT (API) | 1-3s | Reseau |
 | LLM | 1-3s | Generation de tokens |
-| TTS | 1-2s | Reseau / synthese |
-| **Total** | **3-8s** | **LLM souvent le plus lent** |
+| TTS | ~5s (runtime *machine-dep* : 5.02s) | Reseau / synthese — goulot principal ce run |
+| **Total** | **~8s (runtime *machine-dep* : 8.33s)** | **TTS le plus lent (runtime *machine-dep* : 5.02s vs LLM 1.72s vs STT 1.59s)** |
 
 **Points cles** :
 1. La latence totale du pipeline est la somme des latences individuelles
-2. Le LLM est souvent le goulot d'etranglement (generation autoregressive)
+2. Sur ce run, le TTS est le goulot d'etranglement (runtime *machine-dep* : 5.02s vs 1.72s pour le LLM) ; la synthese vocale via API depend fortement de la latence reseau
 3. Le retry exponentiel protege contre les erreurs transitoires
-4. Pour du temps reel, privilegier des modèles plus petits (gpt-4o-mini)",,,,,,,,ef75916a5d5a1a39,,,,,,,
+4. Pour du temps reel, privilegier des modèles plus petits (gpt-4o-mini)",,,,,,,,19735d9327659a90,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,cell-section3-intro,markdown,fr,b20fccbe3c7efcdb,"## Section 3 : Pipeline de traduction audio
 
 Ce pipeline traduit un message vocal d'une langue a une autre en combinant STT, traduction LLM et TTS.
@@ -16603,18 +16612,18 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration
 L'analyse des temps d'exécution par étape est essentielle pour identifier les goulots d'etranglement et optimiser les pipelines. Cette section visualise la repartition du temps entre STT, LLM et TTS pour chaque pipeline execute.
 
 **Indicateur cles** : le ratio duree_etape / duree_totale. Une étape qui consomme plus de 50% du temps total est un candidat prioritaire a l'optimisation (parallelisation, changement de modèle, caching).",,,,,,,,7d6b816dd165b34b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,te9yxzs4tt,markdown,fr,b364303abda8c1a0,"### Interpretation : Profilage
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,te9yxzs4tt,markdown,fr,e7fe9d051f64e7e6,"### Interpretation : Profilage
 
 | Pipeline | Étape la plus lente | Optimisation possible |
 |----------|--------------------|-----------------------|
-| STT->LLM->TTS | LLM (generation) | Utiliser gpt-4o-mini, reduire max_tokens |
+| STT->LLM->TTS | TTS (synthese, runtime *machine-dep* : 5.02s) | Reduire la longueur du texte a synthetiser, voix plus rapides |
 | Traduction | Comparable STT/LLM/TTS | Paralleliser STT et TTS si possible |
 | Podcast | TTS (N segments) | Paralleliser les appels TTS |
 
 **Points cles** :
-1. Le profilage revele que le LLM est souvent le goulot d'etranglement
+1. Le profilage revele que le TTS est le goulot d'etranglement (runtime *machine-dep* : 5.02s sur stt_llm_tts, 12.96s sur le podcast)
 2. La generation du podcast est dominee par les appels TTS séquentiels
-3. L'assemblage est negligeable par rapport aux appels API",,,,,,,,b364303abda8c1a0,,,,,,,
+3. L'assemblage est negligeable par rapport aux appels API",,,,,,,,e7fe9d051f64e7e6,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb,cell-interactive,code,fr,7db9196a63e2e466,"# Mode interactif - Pipeline personnalise
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""MODE INTERACTIF - PIPELINE PERSONNALISE"")
@@ -17012,7 +17021,7 @@ except ImportError:
 print(f""\nConfiguration :"")
 print(f""  API : {'OK' if openai_available else 'NON'}"")
 print(f""  WebSocket : {'OK' if websockets_available else 'NON'}"")",,,,,,,,a090994746c1df44,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section1-intro,markdown,fr,c58849df3f9b1500,"## Section 1 : Architecture de l'API Realtime
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section1-intro,markdown,fr,bffad7e390f18187,"## Section 1 : Architecture de l'API Realtime
 
 L'API Realtime d'OpenAI permet des conversations vocales bidirectionnelles en temps reel via WebSocket. Contrairement au pipeline STT->LLM->TTS, tout se fait dans un seul flux.
 
@@ -17020,7 +17029,7 @@ L'API Realtime d'OpenAI permet des conversations vocales bidirectionnelles en te
 
 | Aspect | Pipeline STT->LLM->TTS | API Realtime |
 |--------|----------------------|---------------|
-| Latence | 3-8s (somme des étapes) | 300-800ms (bout-en-bout) |
+| Latence | *runtime machine-dep* : 3-8s (somme des étapes) | *runtime machine-dep* : 300-800ms (bout-en-bout) |
 | Protocole | HTTP REST (3 appels) | WebSocket (1 connexion) |
 | Streaming | Non (sauf TTS) | Oui (entree et sortie) |
 | Detection parole | Manuelle | Automatique (VAD) |
@@ -17049,7 +17058,7 @@ L'API Realtime d'OpenAI permet des conversations vocales bidirectionnelles en te
 | Format | PCM 16-bit signed little-endian |
 | Sample rate | 24000 Hz |
 | Canaux | 1 (mono) |
-| Encodage WebSocket | base64 |",,,,,,,,c58849df3f9b1500,,,,,,,
+| Encodage WebSocket | base64 |",,,,,,,,bffad7e390f18187,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-session-config,code,fr,99a3b643c8fd5015,"# Configuration de session Realtime API
 print(""CONFIGURATION DE SESSION REALTIME"")
 print(""="" * 45)
@@ -17387,36 +17396,36 @@ except Exception as e:
         print(f""  User: {msg}"")
         print(f""  Assistant: [Simulation]"")
 ",,,,,,,,862885d9258b71fd,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,2a260091,markdown,fr,b36a90ac20648b88,"### Interpretation : Résultats de la conversation
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,2a260091,markdown,fr,d0c6f09a9ffd64b0,"### Interpretation : Résultats de la conversation
 
 Les 3 messages de test ont permis de valider le fonctionnement de l'API Realtime.
 
 | Message | Latence | Chunks audio | Function call |
 |---------|---------|--------------|---------------|
-| API Realtime vs Chat | 4.20s | 80 | Non |
-| Avantages modèles locaux | 4.28s | 80 | Non |
-| Whisper (avec tool) | 0.61s | 0 | Oui (get_model_info) |
+| API Realtime vs Chat | *runtime machine-dep* : 4.20s | 80 | Non |
+| Avantages modèles locaux | *runtime machine-dep* : 4.28s | 80 | Non |
+| Whisper (avec tool) | *runtime machine-dep* : 0.61s | 0 | Oui (get_model_info) |
 
 **Observations** :
-1. **Latence** : 4-5s pour une reponse complete, dont ~20s d'audio genere
-2. **Streaming** : 80 chunks de ~250ms chacun permettent un debut de lecture rapide
+1. **Latence** : *runtime machine-dep* : 4-5s pour une reponse complete, dont *runtime machine-dep* : ~20s d'audio genere
+2. **Streaming** : 80 chunks de *runtime machine-dep* : ~250ms chacun permettent un debut de lecture rapide
 3. **Function calling** : Le 3e message declenche un appel a `get_model_info`, qui retourne les infos sur Whisper avant que le modèle ne formule sa reponse
 4. **Transcription** : Chaque reponse audio est accompagnee de sa transcription texte en temps reel
 
-> **Point d'attention** : Le 3e message n'a pas genere d'audio après le function call. Cela peut arriver si le modèle decide de repondre par texte seulement, ou si la reponse est incomplete.",,,,,,,,b36a90ac20648b88,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section2-interpretation,markdown,fr,2528f168ec35c017,"### Interpretation : Conversation Realtime
+> **Point d'attention** : Le 3e message n'a pas genere d'audio après le function call. Cela peut arriver si le modèle decide de repondre par texte seulement, ou si la reponse est incomplete.",,,,,,,,d0c6f09a9ffd64b0,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section2-interpretation,markdown,fr,b1db020fcfbbd266,"### Interpretation : Conversation Realtime
 
 | Metrique | Valeur typique | Signification |
 |----------|---------------|---------------|
-| Latence premier chunk | 300-800ms | Temps avant le premier byte audio |
-| Latence totale | 1-3s | Temps de reponse complete |
+| Latence premier chunk | *runtime machine-dep* : 300-800ms | Temps avant le premier byte audio |
+| Latence totale | *runtime machine-dep* : 1-3s | Temps de reponse complete |
 | Chunks audio | 10-50 | Nombre de segments audio recus |
 | Format audio | PCM16 24kHz | Qualite CD (non compresse) |
 
 **Points cles** :
 1. L'API Realtime est significativement plus rapide que le pipeline STT->LLM->TTS
 2. Le streaming audio permet de commencer l'ecoute avant la fin de la generation
-3. Le function calling fonctionne de maniere transparente dans le flux vocal",,,,,,,,2528f168ec35c017,,,,,,,
+3. Le function calling fonctionne de maniere transparente dans le flux vocal",,,,,,,,b1db020fcfbbd266,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section3-intro,markdown,fr,3694dfaee2dba5cc,"## Section 3 : Envoi d'audio et streaming
 
 Pour une interaction vocale complete, on envoie de l'audio (PCM16, 24kHz) plutot que du texte. Voici comment convertir et envoyer un fichier audio.
@@ -17579,7 +17588,7 @@ def convert_to_realtime_format(audio_path: str, target_sr: int = 24000) -> dict:
 # result = convert_to_realtime_format(""test_audio.wav"")
 # print(f""Format converti : {len(result['samples'])} samples, {result['sample_rate']} Hz, {result['duration_s']:.2f}s"")
 print(""Exercice a completer"")",,,,,,,,4d39358c745e8445,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section4-intro,markdown,fr,90628895faa48440,"## Section 4 : Analyse des couts
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-section4-intro,markdown,fr,613c51b6c2a658e4,"## Section 4 : Analyse des couts
 
 L'API Realtime a une tarification différente des API standard. Elle facture par token audio (entree et sortie).
 
@@ -17596,9 +17605,9 @@ L'API Realtime a une tarification différente des API standard. Elle facture par
 
 | Approche | Cout pour 1 min conversation | Latence |
 |----------|----------------------------|---------|
-| Pipeline STT+LLM+TTS | ~$0.02-0.05 | 3-8s |
-| Realtime API | ~$0.30 | 0.3-0.8s |
-| Ratio | **6-15x plus cher** | **4-26x plus rapide** |",,,,,,,,90628895faa48440,,,,,,,
+| Pipeline STT+LLM+TTS | ~$0.02-0.05 | *runtime machine-dep* : 3-8s |
+| Realtime API | ~$0.30 | *runtime machine-dep* : 0.3-0.8s |
+| Ratio | **6-15x plus cher** | **4-26x plus rapide** |",,,,,,,,613c51b6c2a658e4,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,cell-cost-analysis,code,fr,38599b261c1dce1b,"# Analyse des couts Realtime vs Pipeline
 print(""ANALYSE DES COUTS"")
 print(""="" * 45)
@@ -18021,9 +18030,9 @@ MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,pdo
 - [ ] Implementer la detection de tour de parole (VAD)
 - [ ] Créer une interface graphique minimaliste (Tkinter/Gradio)
 - [ ] Benchmark latence Realtime API vs pipeline classique",,,,,,,,0b1e3cb3daa2039f,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,1c203960,markdown,fr,fbb07eae06a62e20,"## Synthese du notebook
+MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb,1c203960,markdown,fr,63b51645c441c264,"## Synthese du notebook
 
-L'API Realtime d'OpenAI represente une evolution majeure dans les interfaces vocales temps reel. En utilisant WebSocket et un pipeline unifie STT+LLM+TTS, elle permet d'atteindre des latences de 300-800ms, contre 3-8s pour un pipeline classique.
+L'API Realtime d'OpenAI represente une evolution majeure dans les interfaces vocales temps reel. En utilisant WebSocket et un pipeline unifie STT+LLM+TTS, elle permet d'atteindre des latences de *runtime machine-dep* : 300-800ms, contre *runtime machine-dep* : 3-8s pour un pipeline classique.
 
 ### Resume des acquis
 
@@ -18054,7 +18063,7 @@ L'API Realtime d'OpenAI represente une evolution majeure dans les interfaces voc
 
 ---
 
-**Note** : Ce notebook couvre les fondamentaux de l'API Realtime. Pour une utilisation en production, consultez la documentation officielle OpenAI pour les mises a jour de l'API et les bonnes pratiques de securite.",,,,,,,,fbb07eae06a62e20,,,,,,,
+**Note** : Ce notebook couvre les fondamentaux de l'API Realtime. Pour une utilisation en production, consultez la documentation officielle OpenAI pour les mises a jour de l'API et les bonnes pratiques de securite.",,,,,,,,63b51645c441c264,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-header,markdown,fr,e59fb5658f1d84d8,"# Creation de Contenu Audio Educatif
 
 **Module :** 04-Audio-Applications  
@@ -18293,11 +18302,11 @@ if generate_audio:
 else:
     print(""Generation desactivee (generate_audio=False)"")
 ",,,,,,,,d9c05ad4b1d75737,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,82133acb,markdown,fr,5eb60170c978a909,"### Interpretation : Generation de scripts par LLM
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,82133acb,markdown,fr,7616b91b588a7810,"### Interpretation : Generation de scripts par LLM
 
 | Aspect | Valeur observee | Analyse pedagogique |
 |--------|----------------|---------------------|
-| Temps de generation | ~8 secondes | Rapide, permet itérations et affinements |
+| Temps de generation | *runtime machine-dep* : ~8 secondes | Rapide, permet itérations et affinements |
 | Tokens utilises | 599 (input + output) | Economique pour GPT-4o-mini |
 | Longueur script | 1516 caractères | ~2x le texte source (adaptation ecrit->oral) |
 | Duree estimee | ~80 secondes | Format micro-module ideal |
@@ -18331,19 +18340,19 @@ Texte source (cours) -> LLM (GPT-4o-mini) -> Script narre avec marqueurs -> Pars
 | `[EXPERT]` | Voix d'autorite | Definitions, concepts techniques |
 | `[PAUSE]` | Silence naturel | Respiration, emphasis, transitions |
 
-Le LLM recoit le texte de cours et un prompt pedagogique specifiant le format de sortie, puis genere un script avec des indications de voix, pauses et intonation.",,,,,,,,5eb60170c978a909,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section1-interpretation,markdown,fr,b0b3a3ae7a430ca9,"### Interpretation : Generation de scripts
+Le LLM recoit le texte de cours et un prompt pedagogique specifiant le format de sortie, puis genere un script avec des indications de voix, pauses et intonation.",,,,,,,,7616b91b588a7810,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section1-interpretation,markdown,fr,7ecd0498045dd187,"### Interpretation : Generation de scripts
 
 | Aspect | Observation | Signification |
 |--------|-------------|---------------|
-| Temps LLM | Typiquement < 5s | GPT-4o-mini est rapide pour cette tâche |
+| Temps LLM | *runtime machine-dep* : Typiquement < 5s | GPT-4o-mini est rapide pour cette tâche |
 | Marqueurs | [PAUSE], [NARRATEUR], [EXPERT] | Permettent le contrôle fin de la narration |
 | Longueur | Script ~2x plus long que le texte source | L'oral necessite plus de mots que l'ecrit |
 
 **Points cles** :
 1. Le LLM adapte naturellement le registre ecrit vers l'oral
 2. Les marqueurs structurent le script pour le pipeline TTS
-3. La temperature 0.7 donne un bon equilibre naturel/fidele",,,,,,,,b0b3a3ae7a430ca9,,,,,,,
+3. La temperature 0.7 donne un bon equilibre naturel/fidele",,,,,,,,7ecd0498045dd187,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,a4c79308,markdown,fr,dd0af65b57c7aa84,"---
 
 ## Exercice : Prompt engineering pour scripts de narration
@@ -18526,14 +18535,14 @@ if generate_audio:
 else:
     print(""Generation desactivee"")
 ",,,,,,,,ad4a116fb68f1f70,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,31e6bae4,markdown,fr,7c4da4e7dc8368c5,"### Interpretation : Narration multi-voix
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,31e6bae4,markdown,fr,20b4be936292e415,"### Interpretation : Narration multi-voix
 
 | Aspect | Valeur observee | Analyse pedagogique |
 |--------|----------------|---------------------|
-| Segments generes | 9 segments (6 narrateur, 3 expert) | Equilibre narrateur/expert = 2:1, ideal pour l'apprentissage |
+| Segments generes | 5 segments (4 narrateur, 1 expert) | Equilibre narrateur/expert = 4:1, demonstration courte |
 | Voix utilisees | nova (narrateur), onyx (expert) | Differentiation claire, ton adapte au rôle |
-| Temps generation | ~28 secondes pour 9 segments | Performance adequate pour production batch |
-| Taille totale | 1.6 MB | Compact pour 90 secondes d'audio |
+| Temps generation | *runtime machine-dep* : ~20 secondes pour 5 segments (observe 19.7s) | Performance adequate pour production batch |
+| Taille totale | 1.6 MB (observe 1623.8 KB) | Compact pour ~20 secondes d'audio |
 
 **Points cles** :
 1. La multi-voix ameliore l'engagement en variant le timbre et le rythme
@@ -18557,19 +18566,19 @@ Un contenu educatif beneficie de plusieurs voix pour distinguer les rôles et ma
 | Expert / Citations | `onyx` (M) ou `fable` (N) | Definitions techniques, concepts cles, autorite |
 | Exemples / Illustrations | `echo` (F) ou `shimmer` (F) | Cas pratiques, analogies, ton plus leger |
 
-Nous allons parser le script genere par le LLM pour identifier les segments par rôle (marqueurs `[NARRATEUR]`, `[EXPERT]`), puis generer chaque segment avec la voix OpenAI appropriee.",,,,,,,,7c4da4e7dc8368c5,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section2-interpretation,markdown,fr,16f2caac217366d3,"### Interpretation : Narration multi-voix
+Nous allons parser le script genere par le LLM pour identifier les segments par rôle (marqueurs `[NARRATEUR]`, `[EXPERT]`), puis generer chaque segment avec la voix OpenAI appropriee.",,,,,,,,20b4be936292e415,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section2-interpretation,markdown,fr,b9ad89475b1887ba,"### Interpretation : Narration multi-voix
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
 | Segments | Variable (4-10 typique) | Chaque changement de rôle créé un segment |
-| Temps par segment | ~1-3s | L'API est rapide même pour du texte long |
+| Temps par segment | *runtime machine-dep* : ~1-3s | L'API est rapide même pour du texte long |
 | Differenciation | Voix distinctes par rôle | Ameliore la comprehension et l'engagement |
 
 **Points cles** :
 1. Le parsing des marqueurs [RÔLE] permet une attribution automatique des voix
 2. Les pauses [PAUSE] sont converties en ellipses pour un rythme naturel
-3. La multi-voix rend le contenu plus dynamique qu'un narrateur unique",,,,,,,,16f2caac217366d3,,,,,,,
+3. La multi-voix rend le contenu plus dynamique qu'un narrateur unique",,,,,,,,b9ad89475b1887ba,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section3-intro,markdown,fr,2528f45372e7229d,"## Section 3 : Contenu multilingue
 
 L'API OpenAI TTS gere nativement de nombreuses langues. Pour créer du contenu multilingue, deux approches :
@@ -18873,14 +18882,14 @@ else:
     else:
         print(""Assemblage ignore (pas de segments audio disponibles)"")
 ",,,,,,,,115e32dd0f211286,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,58fc0cde,markdown,fr,f4f371f622a4ef55,"### Interpretation : Assemblage du cours complet
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,58fc0cde,markdown,fr,4bf7d683d793a318,"### Interpretation : Assemblage du cours complet
 
 | Aspect | Valeur observee | Signification pedagogique |
 |--------|----------------|---------------------------|
 | Duree totale | ~90 secondes | Format ideal pour un micro-module |
 | Silences entre segments | 800-1500ms | Pauses naturelles pour la comprehension |
 | Normalisation volume | -20 dBFS | Volume confortable, ecoute prolongee possible |
-| Segments | 9 segments | Decoupage pedagogique efficace |
+| Segments | 5 segments | Decoupage pedagogique efficace |
 
 **Points cles** :
 1. L'assemblage avec pydub permet de créer un flux continu et naturel
@@ -18902,7 +18911,7 @@ L'assemblage final combine tous les segments audio en un fichier unique avec pyd
 4. **Normaliser** le volume global a -20 dBFS
 5. **Exporter** en format final (MP3 192kbps)
 
-Cette approche créé une expérience d'ecoute fluide et professionnelle.",,,,,,,,f4f371f622a4ef55,,,,,,,
+Cette approche créé une expérience d'ecoute fluide et professionnelle.",,,,,,,,4bf7d683d793a318,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,cell-section5-interpretation,markdown,fr,bf9056f7fbf5c240,"### Interpretation : Assemblage
 
 | Aspect | Valeur | Signification |
@@ -19161,7 +19170,7 @@ print(f""3. Synchroniser audio et video (04-4-Audio-Video-Sync)"")
 
 print(f""\nNotebook termine - {datetime.now().strftime('%H:%M:%S')}"")
 ",,,,,,,,ec6c1b758dde781b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,fd5a10e6,markdown,fr,a3d529a1646d9350,"---
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,fd5a10e6,markdown,fr,e03776fd78c2f3bc,"---
 
 ## Synthese des apprentissages
 
@@ -19188,8 +19197,8 @@ Ce notebook a presente un pipeline complet de creation de contenu audio educatif
 
 | Indicateur | Valeur typique | Commentaire |
 |------------|----------------|-------------|
-| Duree generation script | ~8s | Rapide, permet itérations |
-| Duree synthese TTS | ~30s pour 9 segments | Adequat pour production batch |
+| Duree generation script | *runtime machine-dep* : ~8s | Rapide, permet itérations |
+| Duree synthese TTS | *runtime machine-dep* : ~30s pour 9 segments | Adequat pour production batch |
 | Taille fichier final | ~1.8 MB pour 90s | Compromis qualite/taille acceptable |
 | Similarite round-trip | >95% | Fidelite excellente du pipeline |
 
@@ -19215,7 +19224,7 @@ Ce pipeline s'applique directement a :
 - **Corporate training** : Formation multilingue pour entreprises internationales
 - **Audiobooks pedagogiques** : Synthese de manuels et supports de cours
 
----",,,,,,,,a3d529a1646d9350,,,,,,,
+---",,,,,,,,e03776fd78c2f3bc,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,na6gf6vagv,markdown,fr,8446064be92f4a70,"---
 
 ## Exercice : Cours Audio Multilingue
@@ -19997,15 +20006,15 @@ print(f""Output dir: {TTS_OUTPUT_DIR.resolve()}"")
 print(f""Prosodic annotations: {PROSODIC_FILE.exists()}"")
 print(f""Voice config: {VOICE_CONFIG.exists()}"")
 print(f""Kokoro API key: {'set' if KOKORO_API_KEY else 'NOT SET'}"")",,,,,,,,d9f10436139a5577,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-11-Generation-TTS.ipynb,f2132600,markdown,fr,d046906e2153f90a,"## Architecture TTS
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-11-Generation-TTS.ipynb,f2132600,markdown,fr,7d8940c27c394099,"## Architecture TTS
 
 | Modèle | Statut | Qualite | Latence | Expressivite |
 |--------|--------|---------|---------|-------------|
-| **Kokoro** (local Docker) | Actif | Bonne | <2s | Tags base (speed, emotion) |
-| **FishAudio S2-Pro** | Non deploye | Excellente | ~3s | 15000+ tags expressifs |
-| **OpenAI TTS-1** | Cloud | Bonne | ~2s | 6 voix fixes |
+| **Kokoro** (local Docker) | Actif | Bonne | *runtime machine-dep* : <2s | Tags base (speed, emotion) |
+| **FishAudio S2-Pro** | Non deploye | Excellente | *runtime machine-dep* : ~3s | 15000+ tags expressifs |
+| **OpenAI TTS-1** | Cloud | Bonne | *runtime machine-dep* : ~2s | 6 voix fixes |
 
-Ce notebook utilise **Kokoro** pour la demo locale. Les tags expressifs FishAudio sont conserves dans les metadonnees pour generation production ultérieure.",,,,,,,,d046906e2153f90a,,,,,,,
+Ce notebook utilise **Kokoro** pour la demo locale. Les tags expressifs FishAudio sont conserves dans les metadonnees pour generation production ultérieure.",,,,,,,,7d8940c27c394099,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-11-Generation-TTS.ipynb,4da363c3,code,fr,c5abedc1544bf960,"def load_voice_config(path):
     """"""Load P2 voice casting configuration.""""""
     with open(path) as f:
@@ -21255,7 +21264,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ip
 - Service Whisper STT actif (Docker, port 8190)
 
 **Navigation :** [Index](../README.md) | [<< Précédent](04-12-Compilation-Audio.ipynb)",,,,,,,,b08aa036976cad17,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,893e7da1,code,fr,c89316546d899c63,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,893e7da1,code,fr,8310d1977781491a,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""
@@ -21265,7 +21274,7 @@ debug_level = ""INFO""
 # Parametres pipeline v4
 llm_model = ""gpt-4o-mini""
 demo_segment_start = 0
-demo_segment_end = 5  # Extraits courts pour la demonstration
+demo_segment_end = 3  # Extraits courts pour la demonstration (TTS couteux : ~3 min/segment)
 fishaudio_url = ""http://localhost:8197""
 whisper_url = ""http://localhost:8190/v1/audio/transcriptions""
 wer_threshold = 0.15  # 15% WER max acceptable
@@ -21279,7 +21288,8 @@ fishaudio_reference_ids = {
 
 # Configuration sauvegarde
 generate_audio = True
-save_audio_files = True",,,,,,,,c89316546d899c63,,,,,,,
+save_audio_files = True
+",,,,,,,,8310d1977781491a,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,933bd52b,code,fr,29efd7c63b6ebd56,"# Parameters
 BATCH_MODE = True
 skip_widgets = True",,,,,,,,29efd7c63b6ebd56,,,,,,,
@@ -21375,19 +21385,20 @@ boule_de_suif_full.txt (texte source)
 ```
 
 **Lecon critique (WER #1277/#1485)** : FishAudio S2-Pro *vocalise* le texte libre entre crochets au lieu de l'interpreter comme instruction vocale. Seuls les 29 tags officiels sont traites comme commandes de prosodie. Ce pipeline utilise exclusivement ces tags officiels.",,,,,,,,ae94b5053dc1e3ee,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,6997d88d,code,fr,578da430dfe1a4ae,"# Verification des services Docker
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,6997d88d,code,fr,bbe03cd1eeebdcab,"# Verification des services Docker
 import requests as req
 
 print(""VERIFICATION DES SERVICES"")
 print(""="" * 50)
 
-# FishAudio S2-Pro
+# FishAudio S2-Pro (probe par generation courte : le service n'expose pas de /health,
+# donc on effectue une micro-synthese ; la premiere requete peut etre lente a chaud)
 fishaudio_ok = False
 try:
     resp = req.post(
         f""{fishaudio_url}/v1/tts"",
         json={""text"": ""test"", ""reference_id"": ""v4_narrator_male_neutral""},
-        timeout=5
+        timeout=30,
     )
     fishaudio_ok = resp.status_code in (200, 400)  # 400 = bad params mais service actif
     print(f""FishAudio S2-Pro (port 8197) : {'ACTIF' if fishaudio_ok else 'INDISPONIBLE'}"")
@@ -21436,7 +21447,8 @@ else:
     if not whisper_ok: missing.append(""Whisper (docker start whisper-api)"")
     if not openai_ok: missing.append(""OpenAI API (.env)"")
     print(f""Services manquants : {', '.join(missing)}"")
-    print(""Certaines sections seront executees en mode demonstration"")",,,,,,,,578da430dfe1a4ae,,,,,,,
+    print(""Certaines sections seront executees en mode demonstration"")
+",,,,,,,,bbe03cd1eeebdcab,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,e79536ae,markdown,fr,0f63c6a3231ae245,"### Interpretation : Verification des services
 
 | Service | Port | Utilite dans le pipeline |
@@ -21587,25 +21599,25 @@ if openai_ok and generate_audio:
 else:
     print(""\nAnnotation sautee (OpenAI indisponible ou generate_audio=False)"")
     print(""Les segments seront utilises sans annotation prosodique."")",,,,,,,,e75492fdfeea2831,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,ba1f2018,markdown,fr,cc7da4167c24c33f,"### Interpretation : Annotation prosodique
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,ba1f2018,markdown,fr,d61d61a452896910,"### Interpretation : Annotation prosodique
 
 | Aspect | Observation | Remarque |
 |--------|------------|----------|
 | Tags par segment | 1-3 typiquement | Maximum recommande pour ne pas surcharger |
-| Tags officiels | 100% (après fix #1485) | Seuls les tags du Literal ProsodyTag sont generes |
-| Tags libres | 0 (après fix) | Le prompt interdit explicitement le langage naturel libre |
+| Tags officiels | attendus (fix #1485) | Seuls les 29 tags du Literal ProsodyTag sont valides |
+| Tags libres | a surveiller | gpt-4o-mini peut encore produire des directions en texte libre |
 | Couverture | Variable selon le type | Narration = pauses/sighs, Dialogue = emotions/voice style |
 
 **Ce qui a change avec le fix #1485** :
-- Avant : le LLM generait des instructions naturelles comme `(d'une voix tremblante)` que FishAudio vocalisait
-- Après : seuls les 29 tags officiels `[pause]`, `[sigh]`, `[whispering]`, etc. sont utilises
-- Résultat : WER moyen passe de 156% a 12% sur l'echantillon test
+- Avant : le LLM generait des instructions naturelles libres (ex. `(d'une voix tremblante)`) que FishAudio vocalisait mot a mot, faisant exploser le WER
+- Apres : le prompt demande les 29 tags officiels `[pause]`, `[sigh]`, `[whispering]`, etc.
+- **Sur le terrain (sortie P4 ci-dessus)** : l'annotation laisse parfois passer des directions en texte libre (ex. `[composed and neutral, even pace]`). Ces balises non-officielles sont vocalisees et degradent le WER -- c'est ce que mesure la validation P7 ci-apres.
 
 ---
 
 ## Section 4 : Generation TTS avec FishAudio S2-Pro (P5)
 
-FishAudio S2-Pro est un modèle TTS qui supporte le clonage vocal a partir de references audio courtes (3-10 secondes). Chaque personnage a une voix de reference unique, et les balises de prosodie sont incluses directement dans le texte a synthetiser.",,,,,,,,cc7da4167c24c33f,,,,,,,
+FishAudio S2-Pro est un modèle TTS qui supporte le clonage vocal a partir de references audio courtes (3-10 secondes). Chaque personnage a une voix de reference unique, et les balises de prosodie sont incluses directement dans le texte a synthetiser.",,,,,,,,d61d61a452896910,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,f44bc470,code,fr,ce0f09aa2155abc3,"# P5 : Generation TTS avec FishAudio S2-Pro
 from v4.p5_tts import _compose_tts_text
 from v4.fishaudio_client import fishaudio_tts, audio_duration_mp3
@@ -21809,86 +21821,95 @@ simulated_wers = None  # TODO etudiant : liste de WER en decimal
 pass_rates = None  # TODO etudiant : liste de pass rates
 
 print(""Exercice a completer"")",,,,,,,,70859caa2190530c,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,436d6b0b,markdown,fr,820e81b244ebaef8,"### Interpretation : Validation WER
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,436d6b0b,markdown,fr,f3575b3768edec72,"### Interpretation : Validation WER
 
 | Aspect | Observation | Remarque |
 |--------|------------|----------|
 | Seuil WER | 15% | Standard pour un audiobook de qualite |
 | Methodologie | Levenshtein mot a mot | Normalisation : minuscule, ponctuation supprimee |
-| Whisper model | large-v3-turbo | Rapide (~2s/segment) et précis en francais |
-| Cause d'echec typique | Segments longs (>400 chars) | TTS peut omettre ou paraphraser des passages |
+| Whisper model | large-v3-turbo | Rapide et precis en francais |
+| Cause d'echec typique | Tags/directions vocalises | Le texte libre entre crochets est prononce, pas interprete |
 
-**Avant/après le fix des tags officiels** :
+**Lecture du resultat live (cellule P7 ci-dessus)** : sur l'echantillon demo (3
+segments, execution fraiche), la validation donne un WER moyen de **37.83%** et un
+taux de conformite de **0%** (0/3 au seuil de 15%). Ce chiffre eleve n'est ni un
+symptome d'audio cassee ni une erreur de reconnaissance : Whisper transcrit
+correctement le francais -- la mesure etendue (cellule suivante) atteint 20.45% de
+WER moyen et les meilleurs segments sont a ~0%. Il s'explique directement par la
+**vocalisation des balises libres**.
 
-| Metrique | Avant (tags libres) | Après (29 tags officiels) | Amelioration |
-|----------|--------------------|--------------------------|-------------|
-| Pass rate (Act 1) | 66.7% | 76.2% | +9.5 points |
-| WER moyen (Act 1) | 16.35% | 12.07% | -26% |
-| Segments WER>100% | 98/385 | 61/385 | -38% |
+**Pourquoi le WER depasse parfois 100%** : le WER est le nombre d'insertions +
+substitutions + deletions rapporte au nombre de mots de reference. L'annotation P4
+produit ici des directions de jeu en texte libre (visibles dans l'aperçu TTS ci-dessus :
+« [composed and neutral, even pace] », « [ironic and dry, with a smirk] ») que
+FishAudio **vocalise litteralement** au lieu de les interpreter comme des commandes.
+La transcription Whisper contient alors tous ces mots en insertion, et le rapport
+explose -- c'est exactement le mecanisme qui poussait le WER au-dela de 100% dans
+l'etude offline citee precedemment. Seules les 29 balises officielles (`pause`,
+`sigh`, `whispering`, ...) sont traitees comme des commandes de prosodie ; tout
+texte libre est prononce mot a mot (incident #1277/#1485).
 
-L'amelioration est significative mais pas totale. Les segments restants a WER eleve sont principalement des segments longs (>400 caractères) ou la synthese TTS omet des passages.
+> **Lecon critique (WER #1277/#1485)** : les balises libres (non officielles) sont
+> vocalisees litteralement et font grimper le WER par insertion, parfois au-dela de
+> 100%. Le pipeline v4 doit n'injecter que les 29 tags officiels pour ramener la
+> narration a un WER qualitatif (mesure etendue dans la cellule suivante).
 
 ---
 
-## Section 6 : Résultats de la validation complete (385 segments)
+## Section 6 : Resultats de la validation WER
 
-La validation complete du pipeline a ete executee en dehors de ce notebook via des scripts dedies. Voici les résultats consolides.",,,,,,,,820e81b244ebaef8,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,61193934,code,fr,df7ba40726c63c84,"# Resultats de la validation complete (precalcules)
-print(""RESULTATS VALIDATION COMPLETE (385 segments)"")
+La validation etendue du pipeline a ete executee en dehors de ce notebook via les
+scripts dedies du pipeline v4. La cellule suivante presente les mesures reelles
+(artifact du pipeline + execution fraiche P7).",,,,,,,,f3575b3768edec72,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,61193934,code,fr,3f3cbacc822f391a,"# Resultats de la validation WER (mesures reelles : artifact + execution fraiche)
+print(""RESULTATS VALIDATION WER"")
 print(""="" * 50)
 
-# Charger les resultats de la validation complete si disponibles
-wer_post_fix = OUTPUT_DIR / ""wer_validation_post_fix.json""
-wer_tags_only = OUTPUT_DIR / ""wer_tags_only_test.json""
+# 1. Mesure etendue (artifact du pipeline v4, tags officiels)
+wer_ext_path = OUTPUT_DIR / ""verification_transcript.json""
+if wer_ext_path.exists():
+    with open(wer_ext_path, encoding=""utf-8"") as f:
+        ext = json.load(f)
+    print(""Mesure etendue (verification_transcript.json, tags officiels) :"")
+    print(f""  Segments verifies : {ext.get('verified')}/{ext.get('total_segments')}"")
+    print(f""  Pass rate (WER<={wer_threshold*100:.0f}%) : {ext.get('pass_rate')}%"")
+    print(f""  WER moyen : {ext.get('avg_wer')*100:.2f}%"")
+    print(f""  CER moyen : {ext.get('avg_cer')*100:.2f}%"")
+else:
+    print(""Mesure etendue : artifact verification_transcript.json absent"")
+    print(""  (genere par le pipeline v4 : python v4/p7_verify.py)"")
 
-results_loaded = False
+print()
 
-if wer_post_fix.exists():
-    with open(wer_post_fix, encoding=""utf-8"") as f:
-        post_fix = json.load(f)
-    results_loaded = True
+# 2. Mesure live (echantillon demo, cellule P7 ci-dessus, execution fraiche)
+if wer_results:
+    live_avg = sum(r[""wer""] for r in wer_results) / len(wer_results)
+    live_pass = 100 * sum(1 for r in wer_results if r[""conform""]) / len(wer_results)
+    print(""Mesure live P7 (echantillon demo, execution fraiche) :"")
+    print(f""  Segments verifies : {len(wer_results)}"")
+    print(f""  Pass rate (WER<={wer_threshold*100:.0f}%) : {live_pass:.1f}%"")
+    print(f""  WER moyen : {live_avg*100:.2f}%"")
+else:
+    print(""Mesure live P7 : sautee (services indisponibles, voir cellule P7 ci-dessus)"")
 
-    print(""Resultats POST-fix (385 segments, tags officiels uniquement) :"")
-    print(f""  Segments verifies : {post_fix.get('verified', 'N/A')}"")
-    print(f""  Pass rate : {post_fix.get('pass_rate_pct', 'N/A')}%"")
-    print(f""  WER moyen : {post_fix.get('avg_wer_pct', 'N/A')}%"")
-    print()
+print()
+print(""NOTE : valeurs sourcies (artifact reel + execution fraiche). Une version"")
+print(""anterieure citait un WER baseline de 156.96% (tags libres) issu d'une etude"")
+print(""offline dont l artifact (wer_validation_post_fix.json) n est pas present ici :"")
+print(""non reproduit. Le mecanisme -- les tags/texte libres sont vocalises par FishAudio"")
+print(""et font exploser le WER via des insertions -- est visible dans les segments"")
+print(""WER>100% : la transcription contient la direction de jeu pronouncee mot a mot."")
+",,,,,,,,3f3cbacc822f391a,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,ab24087a,markdown,fr,af8228820ebc825d,"### Interpretation : Resultats complets
 
-if wer_tags_only.exists():
-    with open(wer_tags_only, encoding=""utf-8"") as f:
-        tags_only = json.load(f)
-    print(""Resultats tags-only (segments 0-20, re-annotation fraiche) :"")
-    print(f""  Segments verifies : {tags_only.get('verified', 'N/A')}"")
-    print(f""  Pass rate : {tags_only.get('pass_rate_pct', 'N/A')}%"")
-    print(f""  WER moyen : {tags_only.get('avg_wer_pct', 'N/A')}%"")
-    print()
-
-if not results_loaded:
-    print(""Fichiers de resultats non trouves."")
-    print(""Executez les scripts de validation pour generer les donnees :"")
-    print(""  python v4/wer_validate_post_fix.py"")
-    print(""  python v4/test_tags_tts_wer.py"")
-
-# Tableau comparatif synthetique
-print(""\n"" + ""="" * 50)
-print(""TABLEAU COMPARATIF CONSOLIDE"")
-print(""="" * 50)
-comparison = """"""
-| Metrique                  | Baseline (pre-fix) | Post-fix (#1485) | Tags-only (P4 re-run) |
-|---------------------------|--------------------|------------------|-----------------------|
-| Segments verifies         | 309/385            | 371/385          | 21/21 (echantillon)   |
-| Pass rate (WER<=15%)      | 25.6%              | 43.7%            | 76.2%                 |
-| WER moyen                 | 156.96%            | 62.44%           | 12.07%                |
-| Segments WER>100%         | 98                 | 61               | 2                     |
-| Amelioration vs baseline  | --                 | +18.1pp / -60%   | +50.6pp / -92%        |
-
-Le pipeline v4 avec tags officiels uniquement atteint un WER moyen de 12% sur l'echantillon
-Act 1 (narrateur seul), ce qui est un niveau qualitatif pour un audiobook.
-""""""
-print(comparison)",,,,,,,,df7ba40726c63c84,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,ab24087a,markdown,fr,f30e404b5a3de4e7,"### Interpretation : Résultats complets
-
-L'amelioration majeure vient de l'elimination des balises libres. Le passage de 156% a 12% de WER moyen sur l'echantillon Act 1 confirme que FishAudio S2-Pro ne traite que les 29 balises officielles comme commandes de prosodie.
+La mesure etendue (22 segments en tags officiels, artifact `verification_transcript.json`)
+atteint un WER moyen de **20.45%** (pass-rate 54.5% au seuil de 15%) : un niveau modere
+qui confirme que FishAudio S2-Pro traite les 29 balises officielles comme des commandes
+de prosodie et retranscrit une narration francaise claire avec une bonne fidelite
+(meilleurs segments a ~0% de WER). La mesure live P7 (37.83% sur l'echantillon demo)
+est plus elevee parce que l'annotation P4 y a laisse passer des directions de jeu en
+texte libre, vocalisees mot a mot : c'est la signature du mecanisme #1277/#1485, et la
+raison pour laquelle le pipeline doit n'injecter que des balises officielles.
 
 **Limites identifiees** :
 1. **Segments longs (>400 chars)** : FishAudio peut omettre ou condenser des passages, causant un WER eleve
@@ -21908,21 +21929,21 @@ L'amelioration majeure vient de l'elimination des balises libres. Le passage de 
 | Section 3 | P4 | Annotation prosodique par LLM sur extrait demo |
 | Section 4 | P5 | Generation TTS avec clonage vocal FishAudio |
 | Section 5 | P7 | Validation WER avec Whisper STT |
-| Section 6 | Résultats | Tableau comparatif baseline/post-fix/tags-only |
+| Section 6 | Resultats | Mesures reelles (artifact + execution fraiche) |
 
 ### Lecons critiques
 
 1. **Tags officiels uniquement** : FishAudio S2-Pro vocalise le texte libre. Seules les 29 balises testees et validees fonctionnent comme commandes de prosodie
-2. **WER comme metrique de qualite** : La validation systématique par Whisper STT est essentielle pour detecter les regressions silencieuses
+2. **WER comme metrique de qualite** : La validation systematique par Whisper STT est essentielle pour detecter les regressions silencieuses
 3. **Clonage vocal** : FishAudio S2-Pro produit des voix distinctes et naturelles a partir de references de 3-10 secondes
-4. **Architecture modulaire** : Chaque phase (P0-P7) est independante et peut etre re-executee separement avec `--force`
+4. **Architecture modulaire** : Chaque phase (P0-P7) est independente et peut etre re-executee separement avec `--force`
 
 ### Extensions possibles
 
 - Integrer le contrôle du debit (vitesse de parole) dans les tags
 - Paralleliser la generation TTS avec `asyncio` pour accelerer le pipeline
 - Ajouter une passe de normalisation audio (loudness, EQ) avant compilation
-- Explorer les modèles de musique Ace-Step pour generer des jingles entre les chapitres",,,,,,,,f30e404b5a3de4e7,,,,,,,
+- Explorer les modèles de musique Ace-Step pour generer des jingles entre les chapitres",,,,,,,,af8228820ebc825d,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb,2c637c37,markdown,fr,4b10687f628cf4cc,"---
 
 ## Exercice : Explorer l'impact des balises de prosodie sur la qualite TTS
@@ -23469,18 +23490,18 @@ La generation musicale avec MusicGen commence par définir des descriptions text
 - ""powerful orchestral with drums and brass"" → Chorus epique
 
 La cellule suivante charge le modèle MusicGen et genere les sections définies dans `track_descriptions`.",,,,,,,,7a012c41f36907b0,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,cell-section1-interpretation,markdown,fr,257bda04d38f3b8d,"### Interpretation : Generation MusicGen
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,cell-section1-interpretation,markdown,fr,05660c159fb15ede,"### Interpretation : Generation MusicGen
 
 | Aspect | Valeur | Signification |
 |--------|--------|---------------|
-| Temps de generation | ~2-5s par section (small) | Rapide même pour de la musique complexe |
+| Temps de generation | *runtime machine-dep* : ~2-5s par section (small) | Rapide même pour de la musique complexe |
 | Qualite | 32kHz mono | Suffisante pour prototypage, pas pour production finale |
 | Contrôle | Via le prompt textuel | Le style depend fortement de la description |
 
 **Points cles** :
 1. Des prompts detailles (instrumentation, ambiance, tempo) ameliorent la qualite
 2. La generation est non-déterministe : chaque exécution produit un résultat différent
-3. Le modèle `large` offre une qualite significativement superieure au `small`",,,,,,,,257bda04d38f3b8d,,,,,,,
+3. Le modèle `large` offre une qualite significativement superieure au `small`",,,,,,,,05660c159fb15ede,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,cell-section2-intro,markdown,fr,3faa3bd74280f6ce,"## Section 2 : Separation de stems avec Demucs
 
 Demucs separe un mix musical en 4 stems :
@@ -23568,7 +23589,7 @@ elif not generated_tracks:
 else:
     print(""Separation desactivee"")
 ",,,,,,,,a8e024f554262977,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,c9b041b4,markdown,fr,61ebaac5ed451d2b,"### Preparation de la separation
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,c9b041b4,markdown,fr,08f8441f9a810e02,"### Preparation de la separation
 
 La separation de stems est une technologie qui permet d'isoler les différents éléments d'un mix audio. Demucs utilise des reseaux de neurones profonds pour cette tâche.
 
@@ -23583,7 +23604,7 @@ La separation de stems est une technologie qui permet d'isoler les différents �
 - **htdemucs_ft** : Version fine-tuned, meilleure qualite
 - **mdx_extra** : Modèle MDX, specialise pour certains types de musique
 
-La separation prend environ 10-30 secondes pour 8 secondes d'audio sur GPU, selon le modèle.",,,,,,,,61ebaac5ed451d2b,,,,,,,
+La separation prend environ *runtime machine-dep* : 10-30 secondes pour 8 secondes d'audio sur GPU, selon le modèle.",,,,,,,,08f8441f9a810e02,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-Music-Composition-Workflow.ipynb,cell-section2-interpretation,markdown,fr,a76b52d4b3351d65,"### Interpretation : Separation de stems
 
 | Stem | Energie RMS typique | Observation |
@@ -27180,13 +27201,13 @@ if generate_audio and client:
         print(f""Reponse brute : {analysis_raw[:200]}"")
 else:
     print(""Generation desactivee (generate_audio=False ou client indisponible)"")",,,,,,,,1ab337c68c1009cc,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,4c5ce4cf,markdown,fr,f3fe512224d727e3,"### Interpretation : Analyse du texte litteraire
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,4c5ce4cf,markdown,fr,900d720d7ab47182,"### Interpretation : Analyse du texte litteraire
 
 | Aspect | Valeur observee | Signification |
 |--------|----------------|---------------|
 | Personnages identifies | Variable (3-6 typique) | Le LLM detecte noms propres et pronoms |
 | Repliques extraites | Variable (1-5) | Dependant de la densite de dialogues |
-| Temps d'analyse | < 5 secondes | Rapide pour des extraits courts |
+| Temps d'analyse | *runtime machine-dep* : < 5 secondes | Rapide pour des extraits courts |
 | Precision | Bonne pour les noms propres | Peut manquer les personnages implicites |
 
 **Points cles** :
@@ -27195,7 +27216,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,4c5c
 3. Temperature basse (0.3) favorise la coherence et la fidelite au texte
 4. Le JSON structure permet un traitement automatique dans les passes suivantes
 
-> **Note technique** : Pour des textes plus longs (chapitres entiers), decouper en segments de 500-800 mots et fusionner les résultats en eliminant les doublons de personnages.",,,,,,,,f3fe512224d727e3,,,,,,,
+> **Note technique** : Pour des textes plus longs (chapitres entiers), decouper en segments de 500-800 mots et fusionner les résultats en eliminant les doublons de personnages.",,,,,,,,900d720d7ab47182,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,b7e575cb,markdown,fr,971cb6fc2c88d28b,"## Section 2 : Generation du script multi-voix
 
 A partir de l'analyse des personnages, cette passe genere un script de narration avec des marqueurs de locuteur. Chaque segment du script est etiquete avec le personnage qui le prononce :
@@ -27397,12 +27418,12 @@ if generate_audio and client:
         print(f""{i+1:<4} {seg['role']:<15} {seg['voice']:<10} {seg['size_kb']:<12.1f} {seg['time']:<10.1f}"")
 else:
     print(""Generation desactivee"")",,,,,,,,9d1b382872d8eb6b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,f438828a,markdown,fr,b17ef4194644b183,"### Interpretation : Synthese audio multi-voix
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,f438828a,markdown,fr,76828c48e60baa6b,"### Interpretation : Synthese audio multi-voix
 
 | Aspect | Valeur observee | Signification |
 |--------|----------------|---------------|
 | Segments generes | Variable | Chaque segment correspond a un bloc narration ou dialogue |
-| Temps par segment | 1-10s | Proportionnel a la longueur du texte |
+| Temps par segment | *runtime machine-dep* : 1-10s | Proportionnel a la longueur du texte |
 | Differentiation | Voix distinctes par rôle | L'auditeur peut distinguer narrateur et personnages |
 | Taille totale | Variable | Typiquement 0.5-2 MB pour un extrait court |
 
@@ -27410,9 +27431,9 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,f438
 1. Le mapping voix/personnage permet d'attribuer automatiquement la bonne voix a chaque segment
 2. Les voix OpenAI (nova, onyx, alloy) offrent une differentiation claire entre personnages
 3. Le fallback sur `narrator_voice` pour les rôles non mapes evite les erreurs
-4. La synthese est séquentielle mais rapide (< 30s pour un extrait de 300 mots)
+4. La synthese est séquentielle mais rapide (*runtime machine-dep* : < 30s pour un extrait de 300 mots)
 
-> **Note technique** : Pour une production a grande echelle, la synthese peut etre parallellisee avec `asyncio` et `aiohttp` pour reduire le temps total.",,,,,,,,b17ef4194644b183,,,,,,,
+> **Note technique** : Pour une production a grande echelle, la synthese peut etre parallellisee avec `asyncio` et `aiohttp` pour reduire le temps total.",,,,,,,,76828c48e60baa6b,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb,fccb66c7,markdown,fr,220177d1f7687a4a,"---
 
 ## Exercice : Evaluateur de qualite de synthese vocale
@@ -28341,26 +28362,26 @@ if len(ok_results) > 0:
 else:
     print(""Pas assez de donnees pour visualiser."")",,,,,,,,01a78eb139abef90,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,a05eae01,markdown,fr,886cef1b5a1f9914,## 9. Caractéristiques techniques des modèles,,,,,,,,886cef1b5a1f9914,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,5d8e4792,code,fr,293b847a75496e91,"model_specs = pd.DataFrame([
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,5d8e4792,code,fr,03ebb0188da47c66,"model_specs = pd.DataFrame([
     {""Modele"": ""Kokoro TTS"", ""Params"": ""82M"", ""VRAM"": ""~1GB"", ""Service"": ""Docker (port 8191)"",
-     ""Latence typ."": ""2-5s"", ""Voix FR"": ""8+"", ""Licence"": ""Apache 2.0"",
+     ""Latence typ."": ""*runtime machine-dep* : 2-5s"", ""Voix FR"": ""8+"", ""Licence"": ""Apache 2.0"",
      ""Force"": ""Rapide, leger, bonnes voix FR"", ""Faiblesse"": ""Expressivite limitee""},
     {""Modele"": ""Qwen3 TTS"", ""Params"": ""1.7B"", ""VRAM"": ""~4GB"", ""Service"": ""Docker/vLLM (port 8196)"",
-     ""Latence typ."": ""30-60s"", ""Voix FR"": ""6+"", ""Licence"": ""Apache 2.0"",
+     ""Latence typ."": ""*runtime machine-dep* : 30-60s"", ""Voix FR"": ""6+"", ""Licence"": ""Apache 2.0"",
      ""Force"": ""Haute qualite, voix personnalisables"", ""Faiblesse"": ""Tres lent (vLLM cold)""},
     {""Modele"": ""OpenAI TTS"", ""Params"": ""?"", ""VRAM"": ""Cloud"", ""Service"": ""API OpenAI (tts-1)"",
-     ""Latence typ."": ""1-3s"", ""Voix FR"": ""6"", ""Licence"": ""Commerciale"",
+     ""Latence typ."": ""*runtime machine-dep* : 1-3s"", ""Voix FR"": ""6"", ""Licence"": ""Commerciale"",
      ""Force"": ""Qualite reference, rapide"", ""Faiblesse"": ""Cout, pas de custom voice""},
     {""Modele"": ""TADA 3B"", ""Params"": ""3B"", ""VRAM"": ""~8GB"", ""Service"": ""Docker (503 au test)"",
      ""Latence typ."": ""?"", ""Voix FR"": ""?"", ""Licence"": ""HumeAI"",
      ""Force"": ""Avance, emotions"", ""Faiblesse"": ""Service instable, GPU lourd""},
     {""Modele"": ""Fish S2 Pro"", ""Params"": ""5B"", ""VRAM"": ""~14GB"", ""Service"": ""Non deploye"",
-     ""Latence typ."": ""5-15s"", ""Voix FR"": ""Oui"", ""Licence"": ""Fish Audio"",
+     ""Latence typ."": ""*runtime machine-dep* : 5-15s"", ""Voix FR"": ""Oui"", ""Licence"": ""Fish Audio"",
      ""Force"": ""Voice cloning, expressif"", ""Faiblesse"": ""VRAM eleve, API key requise""},
 ])
 
 print(""=== Specifications techniques des modeles TTS ===\n"")
-print(model_specs.to_string(index=False))",,,,,,,,293b847a75496e91,,,,,,,
+print(model_specs.to_string(index=False))",,,,,,,,03ebb0188da47c66,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,ef6c8004,markdown,fr,3e95abae112b7d77,"## 10. Grille d'evaluation subjective (MOS)
 
 Chaque echantillon est note sur 5 critères (echelle 1-5) :
@@ -28507,7 +28528,7 @@ print(f""\nFichiers audio generes dans {OUTPUT_DIR}/:"")
 for f in sorted(OUTPUT_DIR.glob(""*.mp3"")):
     size_kb = f.stat().st_size / 1024
     print(f""  {f.name:35s} {size_kb:8.1f} KB"")",,,,,,,,07c942b472b164e6,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,a94209c6,markdown,fr,500cd432c7b8ca23,"## 12. Conclusion et recommandations pour l'audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,a94209c6,markdown,fr,037ed8289b4a3f8f,"## 12. Conclusion et recommandations pour l'audiobook
 
 ### Recommandations pour l'Epic #1028 (Audiobook Agentique)
 
@@ -28518,7 +28539,7 @@ Base sur les mesures objectives (latence) et les caractéristiques techniques :
 | **Narrateur principal** | Kokoro ou OpenAI | Rapide, bonne qualite FR |
 | **Voix de personnage** | Qwen3 (custom voice) ou OpenAI | Voix distinctes par personnage |
 | **Generation batch (nuit)** | Qwen3 | Latence acceptable pour generation hors-ligne |
-| **Preview rapide** | Kokoro | Latence < 5s pour validation |
+| **Preview rapide** | Kokoro | Latence *runtime machine-dep* : < 5s pour validation |
 
 ### Architecture proposee pour P1-P5
 
@@ -28528,7 +28549,7 @@ Base sur les mesures objectives (latence) et les caractéristiques techniques :
 4. **P4 (Generation TTS)** : Synthetiser chaque segment avec la voix appropriee
 5. **P5 (Compilation)** : Assembler les segments audio avec ffmpeg/pydub
 
-Le choix du modèle TTS par segment dependra du budget temps : Kokoro pour l'itération rapide, Qwen3/OpenAI pour la production finale.",,,,,,,,500cd432c7b8ca23,,,,,,,
+Le choix du modèle TTS par segment dependra du budget temps : Kokoro pour l'itération rapide, Qwen3/OpenAI pour la production finale.",,,,,,,,037ed8289b4a3f8f,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-TTS-Voice-Benchmark.ipynb,f460bdb4,markdown,fr,36b022c9ebe7e282,"---
 
 ## Exercice : Architecture de pipeline TTS multi-modèle
@@ -29854,3 +29875,6 @@ Chaque personnage detecte en P1 a recu une voix TTS attribuee selon son profil (
 - **P3 — Annotation prosodique** : Enrichir le texte avec les tags expressifs FishAudio (`[laugh]`, `[whisper]`, `[sigh]`, `[gasp]`, `[pause]`, `[shout]`)
 - **P4 — Generation TTS** : Synthetiser les segments audio avec la voix appropriatee
 - **P5 — Compilation audio** : Assembler les chunks avec ffmpeg + mastering",,,,,,,,50d71c1fd69ee083,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb,24844352,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,

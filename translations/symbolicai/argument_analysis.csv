@@ -165,7 +165,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-0-init.
 # Etape 3 : query Tweety et positionner FOL_SMOKE_OK.
 result = None  # TODO etudiant
 print(""Exercice optionnel a completer : smoke test FOL (syllogisme oiseau/vole) avec SimpleFolReasoner"")",,,,,,,,01a8560df7ee4fac,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-header,markdown,fr,4d8b99757e2b2e13,"# Argument_Analysis_Agentic-1-informal : Detection de sophismes par taxonomie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-header,markdown,fr,a1177350739ca697,"# Argument_Analysis_Agentic-1-informal : Detection de sophismes par taxonomie
 
 **Navigation** : [README](./README.md) | [2-formal >>](./Argument_Analysis_Agentic-2-formal.ipynb)
 
@@ -182,7 +182,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-infor
 A la fin de ce notebook, vous saurez :
 
 - [ ] Charger la **taxonomie des sophismes** (CSV `argumentum_fallacies_taxonomy.csv`, 1408 lignes) et identifier les 7 familles de premier niveau
-- [ ] Charger la **taxonomie soeur des vertus argumentatives** (CSV `argumentum_virtues_taxonomy.csv`, 222 cartes, schema distinct) et constater la **divergence de schema** entre les deux CSV (deliberation upstream Argumentum)
+- [ ] Charger la **taxonomie soeur des vertus argumentatives** (CSV `argumentum_virtues_taxonomy.csv`, 223 cartes, schema distinct) et constater la **divergence de schema** entre les deux CSV (deliberation upstream Argumentum)
 - [ ] Descendre d'un niveau dans l'arbre taxonomique (depth=2) pour une famille donnee, via un filtre pandas
 - [ ] Construire un **detecteur déterministe** (sans LLM) base sur des mots-cles, et l'appliquer sur un texte synthetique neutre
 - [ ] Distinguer le rôle du detecteur par mots-cles (ce rung) du rôle du LLM (rungs ulterieurs) pour l'extraction sémantique
@@ -195,12 +195,12 @@ A la fin de ce notebook, vous saurez :
 
 > **Note anti-theatre** : ce rung charge **reellement** le CSV et execute un **vrai** filtrage pandas. Aucune sortie n'est simulee. Le detecteur par mots-cles est volontairement simpliste : son but est pedagogique (montrer la couche de matching), pas d'atteindre une haute precision. L'extraction sémantique robuste est l'objet des rungs suivants (LLM + logique formelle).
 
-> **Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteorologie, oiseaux, Socrate, phrases abstraites). Aucun corpus EPITA, aucun nom d'etudiant, aucun texte sensible. Le depot est public sur GitHub.",,,,,,,,4d8b99757e2b2e13,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-intro,markdown,fr,ee7bfa51186eb9f4,"## 1. Introduction : la taxonomie des sophismes
+> **Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteorologie, oiseaux, Socrate, phrases abstraites). Aucun corpus EPITA, aucun nom d'etudiant, aucun texte sensible. Le depot est public sur GitHub.",,,,,,,,a1177350739ca697,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-intro,markdown,fr,3cf94f0a6d89ea24,"## 1. Introduction : la taxonomie des sophismes
 
 Un **sophisme** (fallacy) est un argument qui semble valide mais qui ne l'est pas, soit parce que les premisses ne soutiennent pas la conclusion, soit parce qu'il manipule l'auditoire. Pour detecter automatiquement un sophisme, il faut d'abord une **taxonomie** : un arbre hierarchise qui classe les sophismes par familles, sous-familles, etc.
 
-Ce notebook utilise la taxonomie du projet *Argumentum* (1408 entrees, post-resync verbatim upstream ac33f607 -- voir `data/NOTICE` et `data/NOTICE-VIRTUES`). Une **taxonomie soeur** des vertus argumentatives (`argumentum_virtues_taxonomy.csv`, 222 cartes) vit dans le même dossier et partage la même structure d'arbre depth 0..7. Les deux CSV sont organises comme des arbres de profondeur variable :
+Ce notebook utilise la taxonomie du projet *Argumentum* (1408 entrees, post-resync verbatim upstream ac33f607 -- voir `data/NOTICE` et `data/NOTICE-VIRTUES`). Une **taxonomie soeur** des vertus argumentatives (`argumentum_virtues_taxonomy.csv`, 223 cartes) vit dans le même dossier et partage la même structure d'arbre depth 0..7. Les deux CSV sont organises comme des arbres de profondeur variable :
 
 | `depth` | Rôle | Exemple |
 |---------|------|--------|
@@ -215,7 +215,7 @@ Ce notebook utilise la taxonomie du projet *Argumentum* (1408 entrees, post-resy
 |-------|-------|---------------|
 | Texte naturel -> sophisme identifie | Detecteur mots-cles (ce rung) | Matching chaîne, déterministe, peu précis |
 | Texte naturel -> structure informelle | LLM (rung 3) | Extraction sémantique probabiliste |
-| Structure -> verification logique | Tweety (rung 2) | Preuve sound & complete |",,,,,,,,ee7bfa51186eb9f4,,,,,,,
+| Structure -> verification logique | Tweety (rung 2) | Preuve sound & complete |",,,,,,,,3cf94f0a6d89ea24,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-load-intro,markdown,fr,d05f2fb8f1f4f193,"## 2. Charger la taxonomie et identifier les 7 familles
 
 La cellule ci-dessous charge le CSV avec `pandas.read_csv(..., dtype=str)` — tout est traite comme chaîne pour eviter les coercitions numériques sur les colonnes `depth`, `path`, etc. On filtre ensuite `depth == '1'` pour obtenir les familles de premier niveau.
@@ -292,15 +292,15 @@ for i, row in vert_familles.iterrows():
     desc = row['description_fr'] if pd.notna(row['description_fr']) else '(pas de description)'
     print(f""  {num}. {row['family_fr']:<25} -- {desc}"")
 ",,,,,,,,cbf9350e9e72be64,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-schema-interp,markdown,fr,31033a104e5082b1,"### Interpretation : divergence de schema entre Fallacies et Vertues
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-schema-interp,markdown,fr,188ea9c14864167c,"### Interpretation : divergence de schema entre Fallacies et Vertues
 
-**Sortie obtenue** : 222 cartes Vertus, structure depth=0..7, avec une distribution pedagogiquement interessante (1 racine / 7 familles / 21 sous-familles / 63 ss-sous-familles, puis 69/28/15/19 aux niveaux 4..7). Cette distribution suit la **même progression que les Fallacies** pour les 3 premiers niveaux (1/7/21/63) mais diverge au-dela -- les Vertues sont un arbre **moins profond et moins dense**.
+**Sortie obtenue** : 223 cartes Vertus, structure depth=0..7, avec une distribution pedagogiquement interessante (1 racine / 7 familles / 21 sous-familles / 63 ss-sous-familles, puis 69/28/15/19 aux niveaux 4..7). Cette distribution suit la **même progression que les Fallacies** pour les 3 premiers niveaux (1/7/21/63) mais diverge au-dela -- les Vertues sont un arbre **moins profond et moins dense**.
 
 **Schema divergence** (deliberation upstream Argumentum -- preserve verbatim) :
 
 | Aspect | Fallacies (cell [3]) | Vertues (cell [4-bis]) |
 |--------|---------------------|------------------------|
-| Lignes totales | 1408 (PK 0..1407) | 222 (pk 0..221) |
+| Lignes totales | 1408 (PK 0..1407) | 223 (pk 0..222) |
 | Profondeur max | 10 (cas rares) | 7 |
 | **Header naming** | **PascalCase mixte** (`PK`, `Famille`, `Famille_camelCase`, `Sous-Famille`) | **snake_case unifie** (`pk`, `family_fr`, `subfamily_fr`, `subsubfamily_fr`) |
 | **Card body fields** | **multi-field** (`text_fr`, `LTfr`, `Lfr115`, `example_fr`, `Lxfr145` -- 6+ par langue) | **3-field simplifie** (`title_fr`, `description_fr`, `remark_fr`) |
@@ -311,7 +311,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-infor
 **Implication consumer** : le `family_fr` des Vertues N'EXISTE PAS comme `Famille` dans les Fallacies (la cle est en snake_case, pas PascalCase). Le `text_fr` multi-field des Fallacies N'EXISTE PAS comme `title_fr`/`description_fr` dans les Vertues. **Tout code qui presume un schema unifie tombera sur un KeyError**. Les loaders doivent dispatcher sur le **filename** (comme ici : Fallacies via `argumentum_fallacies_taxonomy.csv`, Vertues via `argumentum_virtues_taxonomy.csv`), pas assumer une liste de colonnes commune. Cette divergence est documentee verbatim dans `data/NOTICE-VIRTUES` pour eviter la surprise silencieuse cote consumer.
 
 > **Pourquoi `encoding=""utf-8-sig""` ici aussi ?** Même raison que pour les Fallacies (cell [3]) : les deux CSV sont consignes verbatim upstream ac33f607 avec leur BOM UTF-8 d'origine (bytes `0xEF 0xBB 0xBF` en debut de fichier). Pandas 2.x detecte ce BOM automatiquement avec `encoding='utf-8'`, mais specifier `encoding='utf-8-sig'` est **explicite et documente** (per ai-01 design-gate msg-20260703T110001-uqono0, 2026-07-03) et permet une portabilite vers d'autres readers Python (`csv.reader`, `open().readlines()`).
-",,,,,,,,31033a104e5082b1,,,,,,,
+",,,,,,,,188ea9c14864167c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-beam-intro,markdown,fr,a2343fd7b9aaf608,"## 3. Descente d'un niveau (depth=2) : la famille Obstruction
 
 Pour comprendre comment l'arbre se ramifie, on choisit une famille et on regarde ses **sous-familles directes** (depth=2). Prenons **Obstruction** : la famille qui regroupe les sophismes ou l'on empeche le debat d'avoir lieu normalement.
@@ -547,7 +547,7 @@ for fid, fdata in etat.identified_fallacies.items():
 print()
 print(""Cet etat est exactement la structure que le rung 3 (orchestration LLM)"")
 print(""remplira via un agent, et que le rung 2 (formel) enrichira de resultats de preuve."")",,,,,,,,3db4310dc40ba428,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-conclusion,markdown,fr,afdf705489ddde22,"## 6. Conclusion et recapitulatif
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-1-informal.ipynb,aa1i-conclusion,markdown,fr,03a9419df4c86764,"## 6. Conclusion et recapitulatif
 
 Ce rung a pose les **fondations taxonomiques** de la detection de sophismes : on charge un referentiel structure (le CSV), on descend dans l'arbre par filtre pandas, puis on construit une couche de matching mots-cles. La section 5 a de plus **branche cette baseline sur l'etat partage** de la serie (`RhetoricalAnalysisState`). Aucune LLM, aucune simulation : tout est déterministe et reproductible.
 
@@ -555,8 +555,8 @@ Ce rung a pose les **fondations taxonomiques** de la detection de sophismes : on
 
 | Étape | Outil | Force | Limite |
 |-------|-------|-------|-------|
-| **Charger la taxonomie** | `pandas.read_csv` + `argumentation_lib.get_data_dir()` | Referentiel de 1408 sophismes + 222 vertus verifiees, path cwd-robuste | Le CSV est vaste (1408 lignes), il faut filtrer |
-| **Charger la taxonomie soeur Vertues** | Même shim, dispatch filename-based | Schema distinct delibere (snake_case, 3-field body, 222 cartes) | Pas d'unified schema inter-CSV -- KeyError si presume |
+| **Charger la taxonomie** | `pandas.read_csv` + `argumentation_lib.get_data_dir()` | Referentiel de 1408 sophismes + 223 vertus verifiees, path cwd-robuste | Le CSV est vaste (1408 lignes), il faut filtrer |
+| **Charger la taxonomie soeur Vertues** | Même shim, dispatch filename-based | Schema distinct delibere (snake_case, 3-field body, 223 cartes) | Pas d'unified schema inter-CSV -- KeyError si presume |
 | **Descendre d'un niveau** | Filtre booléen `(Famille == X) & (depth == '2')` | Identification des sous-familles directes | Manuelle, famille par famille |
 | **Detection mots-cles** | Dictionnaire `{sophisme: [mots]}` + `in` | Déterministe, zero API, transparent | Pas de contexte, faible precision |
 | **Etats partage** | `RhetoricalAnalysisState.add_fallacy(...)` | Branche la baseline sur le pipeline multi-agents | La structure reste vide tant qu'aucun agent LLM ne l'enrichit |
@@ -574,7 +574,7 @@ Ce rung a pose les **fondations taxonomiques** de la detection de sophismes : on
 ### Prochaines étapes
 
 - [2-formal](./Argument_Analysis_Agentic-2-formal.ipynb) : une fois un argument identifie, verifier sa **validite logique** avec le raisonneur Tweety (PL, FOL, modal, argumentation de Dung).
-- [3-orchestration](./Argument_Analysis_Agentic-3-orchestration.ipynb) : remplacer la table mots-cles par un LLM qui extrait la structure informative, puis deleguer la verification a Tweety.",,,,,,,,afdf705489ddde22,,,,,,,
+- [3-orchestration](./Argument_Analysis_Agentic-3-orchestration.ipynb) : remplacer la table mots-cles par un LLM qui extrait la structure informative, puis deleguer la verification a Tweety.",,,,,,,,03a9419df4c86764,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-formal.ipynb,aa2f-header,markdown,fr,b9531c020ca7d7cc,"# Argument_Analysis_Agentic-2-formal : Verification Logique Formelle avec Tweety
 
 **Navigation** : [<< 1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb) | [README](./README.md) | [3-orchestration >>](./Argument_Analysis_Agentic-3-orchestration.ipynb)
@@ -605,7 +605,7 @@ A la fin de ce notebook, vous saurez :
 - Python 3.10+ ; le package `jpype` installe
 
 > **Note anti-theatre** : ce rung utilise **exclusivement le vrai raisonneur Java Tweety** via JPype. Aucune sortie n'est simulee. Si la JVM est absente, la cellule echoue explicitement (principe **fail-loud**) plutot que d'afficher un faux résultat. C'est le mandat coeur de l'Epic #2137 : la logique formelle se prouve, elle ne se raconte pas.",,,,,,,,b9531c020ca7d7cc,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-formal.ipynb,aa2f-intro,markdown,fr,fba66b19afbc6522,"## 1. Introduction : pourquoi la verification formelle ?
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-formal.ipynb,aa2f-intro,markdown,fr,11eaafe18c2a0993,"## 1. Introduction : pourquoi la verification formelle ?
 
 Dans le rung [1-informal](./Argument_Analysis_Agentic-1-informal_agent.ipynb), un LLM a extrait la **structure informelle** d'un argument (premisses, conclusion, schema). Mais un LLM peut halluciner un lien logique : il affirme ""donc"" la conclusion alors que l'entaillement ne tient pas formellement.
 
@@ -619,9 +619,9 @@ Le rung present **delegue la preuve a un solveur formel** : on encode l'argument
 
 ### Stance anti-theatre
 
-L'ancien materiel EPITA (et le `RECONSTRUCTION_PLAN.md` ""cause #2"") admettait un **mode degrade** ou le LLM simulait le résultat d'une requête PL (`if not jvm_ready: print(""simulated result ..."")`). **Ce mode est interdit dans cette serie.** Un résultat simule n'est pas une preuve : c'est du theatre qui s'affiche comme de la logique. Ce notebook echoue bruyamment si la JVM est absente, plutot que de mentir.
+L'ancien materiel EPITA admettait un **mode degrade** ou le LLM simulait le résultat d'une requête PL (`if not jvm_ready: print(""simulated result ..."")`). **Ce mode est interdit dans cette serie.** Un résultat simule n'est pas une preuve : c'est du theatre qui s'affiche comme de la logique. Ce notebook echoue bruyamment si la JVM est absente, plutot que de mentir.
 
-**Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteo : ""Si il pleut, alors le sol est mouille"" ; oiseaux : Tweety / pingouins ; syllogismes classiques de Socrate). Aucun corpus EPITA, aucun nom, aucun `raw_text`.",,,,,,,,fba66b19afbc6522,,,,,,,
+**Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteo : ""Si il pleut, alors le sol est mouille"" ; oiseaux : Tweety / pingouins ; syllogismes classiques de Socrate). Aucun corpus EPITA, aucun nom, aucun `raw_text`.",,,,,,,,11eaafe18c2a0993,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Agentic-2-formal.ipynb,aa2f-jvm-intro,markdown,fr,3ef002bc349f4fb6,"## 2. Demarrage de la JVM Tweety (prealable obligatoire)
 
 La cellule ci-dessous importe la shim `argumentation_lib` (couche de decouplage vendorsee pour la serie Argument_Analysis), puis appelle `initialize_jvm()` — le point d'entree **canonique et idempotent** (la JVM n'est demarree qu'une fois par processus, memoisee ensuite). Cette fonction localise `SymbolicAI/Tweety/`, l'ajoute au `sys.path`, s'y deplace (car `init_tweety` cherche `libs/` et `jdk-17-portable/` relativement au cwd), puis appelle `init_tweety()` qui :
@@ -2612,7 +2612,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile
 - Utiliser les méthodes cross-argument (`get_weak_arguments`, `get_fallacious_arguments`) pour trier un debat entier
 - **Auto-contenu** : aucun appel LLM, aucune donnee externe -- les analyses sont injectees deterministement pour se concentrer sur la *structure* du profil
 ",,,,,,,,6881660fc79caca0,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile.ipynb,6d64c072,markdown,fr,37f5949914cf9b5c,"## 1. Pourquoi un profil par argument ?
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile.ipynb,6d64c072,markdown,fr,f9371fe635b017e1,"## 1. Pourquoi un profil par argument ?
 
 Une analyse rhétorique complète produit plusieurs types de résultats — sophismes détectés, scores de qualité, contre-arguments générés, croyances d'un réseau JTMS, verdicts formels. Ces résultats vivent naturellement dans des **structures séparées** de l'état partagé (un dict de sophismes, un dict de scores, une liste de contre-arguments...).
 
@@ -2624,10 +2624,10 @@ Le problème : pour **raisonner sur un argument précis**, il faut réunir tout 
 | **Qualité** | `argument_quality_scores` | Est-il clair, bien fondé, pertinent ? |
 | **Contre-arguments** | `counter_arguments` (target) | Comment peut-on l'attaquer ? |
 | **Croyances JTMS** | `jtms_beliefs` | Est-il jugé valide dans le réseau de croyances ? |
-| **Résultats formels** | `formal_synthesis_reports` | Est-il logiquement valide ? |
+| **Résultats formels** | `propositional_analysis_results` / `fol_analysis_results` (par `arg_id`) | Est-il logiquement valide ? |
 
 Ces cinq verdicts sont **indépendants** : un argument peut etre formellement valide (pas d'erreur logique) mais rhétoriquement fallacieux (appel à l'autorité). Le profil est la seule vue qui les reunis.
-",,,,,,,,37f5949914cf9b5c,,,,,,,
+",,,,,,,,f9371fe635b017e1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile.ipynb,cab10f7c,code,fr,a17b68ef0add588f,"# --- Imports + texte du debat (deterministe, auto-contenu) ---
 import sys, logging
 from pathlib import Path
@@ -2849,12 +2849,12 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile
 # TODO etudiant : verdict_global(profil) combine les dimensions, classer les 3 arguments.
 print(""Exercice 3 a completer : verdict aggregge pondere des 5 dimensions."")
 ",,,,,,,,ac0a1edd6675df17,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile.ipynb,f61958aa,markdown,fr,c9fd74d043aee323,"## 6. Ponts avec la serie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile.ipynb,f61958aa,markdown,fr,764e01316d4e0efb,"## 6. Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
 | <-> Agentic-1-informal | [Detection de sophismes par taxonomie](Argument_Analysis_Agentic-1-informal.ipynb) | Couvre la **dimension 1** (sophismes). Ce notebook la reunis avec les 4 autres dans le profil. |
-| <-> Dung AF Semantics | [Sémantiques de Dung](Argument_Analysis_Dung_AF_Semantics.ipynb) | La **dimension formelle** (AF_Dung) alimente le champ `formal_results` du profil. |
+| <-> Dung AF Semantics | [Sémantiques de Dung](Argument_Analysis_Dung_AF_Semantics.ipynb) | Voisin conceptuel — les frameworks Dung vivent dans `dung_frameworks` (comptes dans les statistiques globales) et ne sont **pas** projetes dans le profil par argument (seuls les verdicts PL/FOL de la dimension 5 y entrent). |
 | <-> Restitution 3 Actes | [Restitution narrative](Argument_Analysis_Restitution_3_Actes.ipynb) | Le profil est l'unite de base restituee dans le recit en 3 actes (un argument = un personnage). |
 
 ## 7. Conclusion
@@ -2864,7 +2864,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_ArgumentProfile
 **Lecon centrale** : les dimensions sont **independantes**. Un argument peut etre formellement valide mais rhétoriquement fallacieux ; clair mais mal fondé ; attaqué mais vrai. Le profil est le seul endroit ou cette indépendance devient visible — c'est pourquoi il est l'unite canonique de l'analyse argumentative, et le point d'ancrage de toute restitution narrative (cf [Restitution 3 Actes](Argument_Analysis_Restitution_3_Actes.ipynb)).
 
 **Note d'honnetete (G.2)** : ce notebook injecte les analyses **deterministement** (pas d'appel LLM) pour se concentrer sur la *structure* du profil. En production, les dimensions sont peuplées par les agents (detection de sophismes CamemBERT, scoring LLM, solveurs Tweety) — mais le contrat du profil, lui, est invariant.
-",,,,,,,,c9fd74d043aee323,,,,,,,
+",,,,,,,,764e01316d4e0efb,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,3a27c319,markdown,fr,30c3ced3a0dbb515,"# Argumentation abstraite de Dung — sémantiques grounded, preferred, stable
 
 > **Notebook fondationnel** (non-agentique) de la série *Argument_Analysis*.
@@ -3193,12 +3193,12 @@ af2 = AF(
 # g2, p2, s2 = resume(af2, ""af2 (votre AF)"")
 # print(""stable == preferred ?"",
 #       set(s2) == set(p2))",,,,,,,,e562189f4cb8ac2a,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,cf787ad7,markdown,fr,6a5fbda8c375a7eb,"### Exercice 3 — Étiquetage IN / OUT / UNDEC
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,cf787ad7,markdown,fr,55cb3af2bd0b123f,"### Exercice 3 — Étiquetage IN / OUT / UNDEC
 
 Les sémantiques admettent une formulation équivalente en **étiquetages** : chaque
 argument reçoit l'étiquette IN (accepté), OUT (rejeté) ou UNDEC (indécidable), avec les
 règles : (i) $x$ est OUT si un IN l'attaque ; (ii) $x$ est IN si tous ses attaquants sont
-OUT. Le labeling grounded de `af1` devrait donner $d$=IN, $c$=OUT (auto-attaqué), et
+OUT. Le labeling grounded de `af1` devrait donner $d$=IN, $c$=UNDEC (auto-attaqué, mais rejeté par aucun IN), et
 $a, b$=UNDEC (le flottement non tranché).
 
 **Objectif** : implémenter `grounded_labeling(af)` renvoyant un dict `{arg: ""IN""/""OUT""/""UNDEC""}`,
@@ -3206,7 +3206,7 @@ et vérifier qu'il est cohérent avec `grounded(af)` (IN $=$ l'extension grounde
 quand aucun argument n'est UNDEC dans la grounded).
 
 *Indice* : OUT = attaqué par un IN ; IN = non attaqué, ou tous ses attaquants OUT ;
-UNDEC = ni IN ni OUT (le reste). Itérez jusqu'à stabilisation, comme pour le point fixe.",,,,,,,,6a5fbda8c375a7eb,,,,,,,
+UNDEC = ni IN ni OUT (le reste). Itérez jusqu'à stabilisation, comme pour le point fixe.",,,,,,,,55cb3af2bd0b123f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,128716c5,code,fr,04da9cef164b2e27,"# Exercice 3 : compléter le labeling grounded
 def grounded_labeling(af):
     """"""Renvoie {arg: 'IN'|'OUT'|'UNDEC'} selon le labeling grounded.""""""
@@ -3222,7 +3222,7 @@ def grounded_labeling(af):
 # lab = grounded_labeling(af1)
 # print(""Labeling grounded de af1 :"", lab)
 # print(""Cohérent avec grounded={d} ?"", set(a for a, l in lab.items() if l == ""IN"") == set(g1))",,,,,,,,04da9cef164b2e27,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,f7a83721,markdown,fr,a320c84641b808d4,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,f7a83721,markdown,fr,7f0d3af2550830ae,"## Conclusion
 
 Ce notebook a reconstruit, de zéro et en Python standard, les trois sémantiques
 fondatrices de l'argumentation abstraite de Dung :
@@ -3241,7 +3241,7 @@ l'acceptabilité argumentative.
 
 ### Prochaines étapes
 
-- **Utiliser le solveur** : [Tweety-5](../Tweety/Tweety-5b-Lean-Argumentation.ipynb)
+- **Utiliser le solveur** : [Tweety-5](../Tweety/Tweety-5-Abstract-Argumentation.ipynb)
   applique ces sémantiques via TweetyProject (JVM) sur des AF plus grands, où l'énumération
   exhaustive devient prohibitif. Le notebook [2-formal §6](Argument_Analysis_Agentic-2-formal.ipynb)
   en fait usage dans le pipeline agentique.
@@ -3250,7 +3250,7 @@ l'acceptabilité argumentative.
   conditions d'existence de la sémantique stable.
 - **Argumentation structurée** : le formalisme abstrait de Dung ignore le contenu des
   arguments. ASPIC+, ABA et DeLP (accessibles via Tweety) reconstruisent la relation
-  d'attaque à partir d'une logique sous-jacente — la série [Tweety](../Tweety/) les explore.",,,,,,,,a320c84641b808d4,,,,,,,
+  d'attaque à partir d'une logique sous-jacente — la série [Tweety](../Tweety/) les explore.",,,,,,,,7f0d3af2550830ae,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,10996590,markdown,fr,c4d48dc3e31708ac,"# 🚀 Analyse Rhétorique Collaborative par Agents IA - Exécuteur Principal
 
 
@@ -3332,8 +3332,8 @@ Le fichier `.env` centralise toutes les configurations sensibles et paramètres 
 | `BATCH_TEXT` | Texte personnalisé pour mode batch (optionnel) |
 
 > **Note de sécurité**: Le fichier `.env` ne doit jamais être versionné avec Git. Utilisez `.env.example` comme template.",,,,,,,,c0e035f428545553,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,c8c82597,code,fr,89e2a29b29667c88,"# Charger les variables d'environnement (résolution de chemin robuste)
-# CRITIQUE 1 (RECONSTRUCTION_PLAN.md) : find_dotenv() dépend du CWD courant,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,c8c82597,code,fr,46ba3e8ea6f4249b,"# Charger les variables d'environnement (résolution de chemin robuste)
+# CRITIQUE 1 : find_dotenv() dépend du CWD courant,
 # qui peut differer de Argument_Analysis/ (Papermill, MCP Jupyter, CI changent
 # le working directory). On localise Argument_Analysis/ par walk-up depuis le
 # CWD, puis on s'y positionne (os.chdir) pour que tous les %run relatifs, le
@@ -3368,7 +3368,7 @@ os.chdir(str(AA_DIR))  # %run relatifs + libs/ + data/ résolvent depuis ici
 loaded_env = load_dotenv(AA_DIR / "".env"", override=True)
 
 print(f""CWD -> {os.getcwd()}"")
-print(f"".env chargé: {loaded_env}"")  # True si le .env a été trouvé et chargé",,,,,,,,89e2a29b29667c88,,,,,,,
+print(f"".env chargé: {loaded_env}"")  # True si le .env a été trouvé et chargé",,,,,,,,46ba3e8ea6f4249b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,e6olkjrtk9p,markdown,fr,aad70f31789c4319,"### Interprétation du résultat
 
 **Sortie attendue**: `.env chargé: True`
@@ -3615,10 +3615,10 @@ Le système est structuré en **4 notebooks enfants** chargés dynamiquement via
 ```
 
 > **Note technique**: `%run` exécute le notebook dans le namespace courant. Toutes les variables définies dans les notebooks enfants (classes, fonctions) deviennent disponibles ici.",,,,,,,,deb2e808bfb0c466,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,7674a98e,code,fr,c1e2cffe79571cc0,"# Executer les notebooks enfants pour charger les definitions
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,7674a98e,code,fr,bc2f59b7f94d41ba,"# Executer les notebooks enfants pour charger les definitions
 # Seulement si un texte a ete prepare avec succes
 #
-# CRITIQUE 2 (RECONSTRUCTION_PLAN.md) : les notebooks enfants (notamment
+# CRITIQUE 2 : les notebooks enfants (notamment
 # 0-init_agent.ipynb) font leur propre os.chdir(TWEETY_DIR) pour localiser les
 # JARs. Ce chdir ""fuit"" hors du %run et corrompt le CWD pour les %run suivants
 # (relatifs a Argument_Analysis/) : 1-informal_agent.ipynb etait cherche dans
@@ -3626,7 +3626,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,
 # %run pour garantir que les chemins relatifs resolvent quel que soit l'endroit
 # ou l'enfant s'est positionne.
 #
-# CRITIQUE 3 (RECONSTRUCTION_PLAN.md) : la chaine %run doit etre COHERENTE.
+# CRITIQUE 3 : la chaine %run doit etre COHERENTE.
 # Les notebooks ""rungs"" recents (0-init.ipynb, 3-orchestration.ipynb) ne
 # construisent NI le service OpenAI NI run_analysis_conversation -- or la
 # cellule 18 appelle run_analysis_conversation() et les agents charges sont les
@@ -3660,7 +3660,7 @@ if 'texte_pour_analyse' in locals() and texte_pour_analyse:
         os.chdir(str(AA_DIR))
 else:
     print(""Skipping agent definition loading because no text was prepared."")
-",,,,,,,,c1e2cffe79571cc0,,,,,,,
+",,,,,,,,bc2f59b7f94d41ba,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Executor.ipynb,rh30f4ohrsa,markdown,fr,02c577a7def4f2b5,"### Architecture modulaire chargée
 
 **Notebooks chargés et leurs responsabilités**:
@@ -4267,7 +4267,7 @@ def naive_wired_only(cells):
     wired = [c for c in cells if c.wired]
     return len(wired), len(cells)
 ",,,,,,,,32c3e566a61030de,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Formal_Richness_Matrix.ipynb,789a4397,markdown,fr,c6ab74cb95618698,La mesure naïve ci-dessus est précisément ce qu'il faut **ne pas** faire. Elle répondrait « 40/40 capacités » alors que la moitié ne décide rien. Construisons l'instrument honnête : une fonction de **classification par la sortie**.,,,,,,,,c6ab74cb95618698,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Formal_Richness_Matrix.ipynb,789a4397,markdown,fr,eca53a84de8fe281,La mesure naïve ci-dessous est précisément ce qu'il faut **ne pas** faire. Elle répondrait « 24/24 capacités » alors que 10 cellules sur 24 ne décident rien de substantif (14 substantive / 6 honest_absent / 3 unavailable / 1 théâtre — tally cellule 9). Construisons l'instrument honnête : une fonction de **classification par la sortie**.,,,,,,,,eca53a84de8fe281,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Formal_Richness_Matrix.ipynb,5daacadb,markdown,fr,75b93afa2cba8a63,"## 2. Les quatre classes de verdict
 
 FP-23 classe chaque cellule (capacité × corpus) en **quatre catégories** selon ce que le moteur a *réellement* produit — jamais selon ce qui est câblé :
@@ -5225,7 +5225,7 @@ sortie executee honnete - c'est précisément ce que la sentinelle est faite pou
 
 - Issue #2137 - distillation de l'essence consolidee (doctrine anti-theatre / fail-loud).
 ",,,,,,,,a3e3e23710dd96bf,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-0,markdown,fr,34f64353d4199bb1,"# Ontologie AIF.owl -- l'architecture Argumentum des sophismes (OWL2 + annotation-space)
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-0,markdown,fr,ccfc455bf2df1b93,"# Ontologie AIF.owl -- l'architecture Argumentum des sophismes (OWL2 + annotation-space)
 
 > **EPIC #4960 -- Volet A, étape 1** (socle ontologique Argument_Analysis). Issue source : [#5721](https://github.com/jsboige/CoursIA/issues/5721).
 
@@ -5240,7 +5240,7 @@ Ce notebook explore `ontologies/argumentum_fallacies.owl` (OWL2/XML, ~6,0 MB) et
 3. Extraire les **labels multilingues** (`skos:prefLabel`, 2 816 = 1 408 FR + 1 408 EN) et reperer les **schemes de Walton** (100 classes de forme `*_Inference_*` materialisees depuis les mappings AIF_skos).
 4. Inventorier les **relations** (AnnotationAssertion-resource) : hiérarchie (`broader`/`narrower`/`inScheme`), **crossLink** (`mirrors`/`isRelatedTo`/`leverages`/… = 1 977) et **AIF attack** (`aifAttackedNode` = 93 → RA/I/CA-node).
 5. Construire le **sous-graphe de l'Equivoque** (`semanticAmbiguity`) et montrer qu'il est desormais **type par AIF** (`aifAttackedNode → RA-node`).
-6. Trois exercices formels (règle #2161).
+6. Quatre exercices formels (règle #2161).
 
 **Sommaire** :
 
@@ -5250,8 +5250,10 @@ Ce notebook explore `ontologies/argumentum_fallacies.owl` (OWL2/XML, ~6,0 MB) et
 4. Schemes de Walton (100 classes materialisees + labels)
 5. Relations : inventaire des AnnotationAssertion-resource (crossLink + AIF)
 6. Grappe Equivoque : sous-graphe type AIF
-7. Exercices
-8. Ponts avec la serie",,,,,,,,34f64353d4199bb1,,,,,,,
+7. Distribution des attaques AIF par type de node
+8. Scheme vs conflict : l'attaque AIF est-elle un scheme ou un conflit ?
+9. Exercices
+10. Ponts avec la serie",,,,,,,,ccfc455bf2df1b93,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-1,markdown,fr,eaa77380739b96b8,"## 1. Contexte : Argumentum, OWL2 et l'idiome annotation-space (#763)
 
 L'ontologie **Argumentum** (https://www.argumentum.games) encode une taxonomie des sophismes (fallacies) et des vertus argumentatives a destination du jeu serieux *Argumentum*. Le fichier `argumentum_fallacies.owl` est genere par le pipeline .NET (`OwlGeneratorConfig.cs`) a partir du CSV canonique.
@@ -5469,13 +5471,13 @@ for (subj, pred, obj), _ in G_equiv.items():
     tag = ""  <-- AIF attack"" if pred == 'aifAttackedNode' else """"
     print(f""  {subj[:32]:32s} --[{pred:16s}]--> {obj[:24]:24s}{tag}"")",,,,,,,,38d1b0ef93d8b22d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-16,markdown,fr,1cb44d9ba7c03114,"**Lecture** : le sous-graphe de `semanticAmbiguity` combine sa **hiérarchie** (parent `ambiguity`, enfants `vagueness` / `polysemicLexicalShift` / `polysemyBySemanticChange`) et son **typage AIF** (`aifAttackedNode → RA-node`). Le degré du noeud (11) melange donc des aretes taxonomiques et une arete AIF — c'est exactement la reconciliation que #763 apporte : une même entite porte simultanement sa place dans l'arbre SKOS et son rôle dans le modèle d'attaque AIF.",,,,,,,,1cb44d9ba7c03114,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-17,markdown,fr,987e3154161f234a,"## 7. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-17,markdown,fr,94b1d51d57ba172a,"## 9. Exercices
 
-Trois exercices formels (règle #2161 : >= 3 exos par notebook pedagogique). Chaque exercice est un *stub* `print(""Exercice a completer"")` que l'etudiant complete.
+Quatre exercices formels (règle #2161 : >= 3 exos par notebook pedagogique). Chaque exercice est un *stub* `print(""Exercice a completer"")` que l'etudiant complete.
 
 ### Exercice 1 -- Distribution des concepts par prefixe de scheme
 
-A partir de `arg_classes` (liste d'IRI de `owl:Class` Argumentum) et de `taxonomy` (dict localname -> labels), calculer combien de concepts sont des **classes materialisees de scheme** (`*_Inference_*` / `*_Conflict`) versus des sophismes simples. Renvoyer un `dict` {catégorie: compte} et l'afficher trie.",,,,,,,,987e3154161f234a,,,,,,,
+A partir de `arg_classes` (liste d'IRI de `owl:Class` Argumentum) et de `taxonomy` (dict localname -> labels), calculer combien de concepts sont des **classes materialisees de scheme** (`*_Inference_*` / `*_Conflict`) versus des sophismes simples. Renvoyer un `dict` {catégorie: compte} et l'afficher trie.",,,,,,,,94b1d51d57ba172a,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-18,code,fr,df70235428023cf7,"# Exercice 1 a completer
 # TODO etudiant : a partir de `arg_classes` (IRI de owl:Class) et de `taxonomy`
 # (dict localname -> labels), separer les classes materialisees de scheme
@@ -5499,7 +5501,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ip
 # un dict {local: [labels_matches]} sur les prefLabel fr/en. Bonus : croiser
 # avec AA_RES (predicat 'broader') pour afficher le parent de chaque match.
 print(""Exercice a completer"")",,,,,,,,c2585a668119ac2f,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-23,markdown,fr,9417d97d984fcbf0,"## 8. Ponts avec la serie
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,cell-23,markdown,fr,32b71536a0be22f1,"## 10. Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -5517,7 +5519,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ip
 
 4. **Ontologie soeur presente** : `argumentum_virtues.owl` est desormais dans `ontologies/` (aux cotes de `argumentum_fallacies.owl`). La note historique « argumentum_virtues.owl absente » est **obsolete**.
 
-5. **Idiome annotation-space** : toutes les relations sont des `AnnotationAssertion` (et non des `ObjectPropertyAssertion`), consequence du bug `SKOSHelper` d'OWLSharp. C'est un choix de serialisation du générateur, pas une limite de modelisation — les 10 `ObjectProperty` sont bien declarees.",,,,,,,,9417d97d984fcbf0,,,,,,,
+5. **Idiome annotation-space** : toutes les relations sont des `AnnotationAssertion` (et non des `ObjectPropertyAssertion`), consequence du bug `SKOSHelper` d'OWLSharp. C'est un choix de serialisation du générateur, pas une limite de modelisation — les 10 `ObjectProperty` sont bien declarees.",,,,,,,,32b71536a0be22f1,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,fea709ae,markdown,fr,0b271a5bba5ec46e,"# Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B #4960
 
 **Notebook pédagogique** : exploration du **CSV canonique Argumentum** (1553 lignes physiques → **1408 sophismes**), complémentaire à `Argument_Analysis_Ontology_AIF.ipynb` (PR-A, OWL2/XML).
@@ -5933,7 +5935,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 
 print(""Exercice a completer"")
 ",,,,,,,,12e54b45b74376ea,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1789b490,markdown,fr,8a174543de31dbf4,"**Exercice 2 — CrossLink discovery** : sur les 22 relations crossLink non-vides, identifier les paires de sophismes les plus liées (par exemple : `Pensée binaire` ↔ `Pensée binaire` est une relation `Mirrors` circulaire). Y a-t-il un pattern ? Les crossLinks sont-ils concentrés sur certaines familles (par exemple `abusDeLangage` qui se prête à l'équivoque) ?",,,,,,,,8a174543de31dbf4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,1789b490,markdown,fr,83c1c65843bb4e89,"**Exercice 2 — CrossLink discovery** : sur les 1 081 cellules crossLink non-vides (couvrant 844 sophismes), identifier les paires de sophismes les plus liées (par exemple : `Pensée binaire` ↔ `Pensée binaire` est une relation `Mirrors` circulaire). Y a-t-il un pattern ? Les crossLinks sont-ils concentrés sur certaines familles (par exemple `abusDeLangage` qui se prête à l'équivoque) ?",,,,,,,,83c1c65843bb4e89,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,87b99475,code,fr,5bf4ff933602a225,"# Exercice 2 : CrossLink discovery
 #
 # TODO :
@@ -5963,9 +5965,9 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 
 print(""Exercice a completer"")
 ",,,,,,,,41a6d78b09cf97d7,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,92ac11fa,markdown,fr,cd6bf631488897fb,"## 12. Conclusion + Ponts
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossLinks.ipynb,92ac11fa,markdown,fr,24c738feff41304d,"## 12. Conclusion + Ponts
 
-**Substance PR-B** : 1 408 sophismes canoniques, 8 langues (100% coverage), 8 familles, 9 niveaux, 70 AIF mappings vers 60 schemes Walton uniques, 22 relations crossLink (sparsité 1,5% = 22/1 408 sophismes ; 0,2% si mesuré sur la matrice 8 × 1 408 = 11 264). Le CSV canonique Argumentum est la **source curée à la main** d'où l'OWL est probablement généré par script.
+**Substance PR-B** : 1 408 sophismes canoniques, 8 langues (100% coverage), 8 familles, 9 niveaux, 70 AIF mappings vers 60 schemes Walton uniques, 1 081 cellules crossLink (couverture 59,9 % = 844/1 408 sophismes ; densité 9,6 % sur la matrice 8 × 1 408 = 11 264). Le CSV canonique Argumentum est la **source curée à la main** d'où l'OWL est probablement généré par script.
 
 **Complémentarité avec PR-A** :
 - PR-A expose la **substance OWL** (10 976 `NamedIndividual`, 4 183 `ObjectPropertyAssertion`, multilingue sparse).
@@ -5980,7 +5982,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_CrossL
 - **Argumentum upstream** (`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) — source canonique.
 - **Walton, Reed & Macagno 2008** — Argumentation Schemes (60 schemes référencés).
 
-**Limitations disclosed** : AIF mapping 5% (tâche d'annotation lourde), crossLink 1,5% (taxonomie plate), `argumentum_virtues.owl` absent upstream, `AIF_skosOther` toujours vide (réservé usage futur).",,,,,,,,cd6bf631488897fb,,,,,,,
+**Limitations disclosed** : AIF mapping 5% (tâche d'annotation lourde), crossLink 59,9 % de couverture (844/1 408 sophismes ; 40 % restants sans relation transversale, cf. §10), `argumentum_virtues.owl` absent upstream, `AIF_skosOther` toujours vide (réservé usage futur).",,,,,,,,24c738feff41304d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ranking_Semantics.ipynb,ea1ca9ca,markdown,fr,34ff3c686dd1f5e9,"# Argumentation graduée — sémantiques de classement (h-Categoriser & fardeau)
 
 Dans le notebook compagnon [`Argument_Analysis_Dung_AF_Semantics`](Argument_Analysis_Dung_AF_Semantics.ipynb),
@@ -7202,7 +7204,7 @@ EXTRACT_SOURCES = [
 # Sera mise à jour par load_extract_definitions lors de l'appel à configure_analysis_task
 current_extract_definitions = []
 
-print(f""Configuration UI chargée. {len(EXTRACT_SOURCES)} sources initiales définies."")",,,,,,,,7442f278097ebedb,,,,,,,
+print(f""Configuration UI chargée. {len(EXTRACT_SOURCES)} sources initiales définies."")",,,,,,,,7b8529dd20d5085e,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuration.ipynb,p0gm92tr7jp,markdown,fr,1f761d38f10dcadc,"### Analyse des résultats de configuration
 
 **Résultats observés** :
@@ -7224,7 +7226,7 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuratio
 La dissociation de l'URL en `schema`, `host_parts` et `path` permet :
 - Une meilleure traçabilité dans les logs (sans exposer les URLs complètes)
 - Une gestion flexible des changements de domaine
-- Un fallback plus robuste en cas d'indisponibilité d'une source",,,,,,,,9c0562c03cf79011,,,,,,,
+- Un fallback plus robuste en cas d'indisponibilité d'une source",,,,,,,,1f761d38f10dcadc,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuration.ipynb,ex-aa5-url-md,markdown,fr,2c34cb2537981290,"### Exercice 1 : Reconstitution d'URL
 
 La fonction `reconstruct_url` du module combine schema, host et path en URL. Reimplementez une version simplifiee.
@@ -8595,3 +8597,1629 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_Virtue
 **adapte a une taxonomie navigable et traduisible**, la ou l'ABox convient a un graphe dense de
 relations. Le choix depend de l'usage vise, pas d'une hiérarchie de valeur entre formalismes.
 ",,,,,,,,bd8a1965a083a638,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,cdce6826,markdown,fr,f70b3913bf87b230,"## Aller plus loin — la **trajectoire** d'étiquetage
+
+Tout ce qui précède calcule un étiquetage sur un AF **déjà complet** : tous les arguments
+sont posés, toutes les attaques sont connues, on cherche le point fixe. Mais un débat réel
+n'arrive pas d'un bloc — les arguments sont **énoncés l'un après l'autre**, et un argument
+ne peut pas être attaqué par un argument pas encore prononcé.
+
+Étiquetons donc après *chaque* arrivée, et regardons la **suite** d'étiquetages plutôt que
+le seul étiquetage final. Deux propriétés s'opposent :
+
+- l'étiquetage **final** ne dépend pas de l'ordre d'arrivée — Dung est *order-blind* ;
+- la **trajectoire**, elle, en dépend.
+
+La trajectoire porte donc exactement l'information que l'étiquetage statique jette : *quand*
+un argument a basculé, et sous l'effet de quelle arrivée. C'est aussi le lieu où se voit la
+**non-monotonie** — un argument accepté peut redevenir indécidable quand son attaquant arrive.
+",,,,,,,,f70b3913bf87b230,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,d628ee1f,code,fr,efc6c5aae1f7cbba,"# Raccourci assumé : on lit les étiquettes depuis `grounded()`, déjà fourni plus haut.
+# ⚠ Ce n'est PAS la solution de l'Exercice 3, qui demande la formulation par point fixe
+# (itération IN/OUT jusqu'à stabilisation) — celle-là reste à écrire.
+def labelling_depuis_grounded(af):
+    """"""{arg: 'IN'|'OUT'|'UNDEC'} dérivé de l'extension grounded de `af`.""""""
+    ext = grounded(af)
+    labels = {}
+    for x in af.args:
+        if x in ext:
+            labels[x] = ""IN""
+        elif any((a, x) in af.attacks for a in ext):
+            labels[x] = ""OUT""
+        else:
+            labels[x] = ""UNDEC""
+    return labels
+
+
+def trajectoire(af, ordre_arrivee):
+    """"""Étiquetage après chaque arrivée, sous un ordre de délivrance donné.
+
+    Une attaque ne devient ACTIVE que lorsque ses deux extrémités sont arrivées.
+    """"""
+    if set(ordre_arrivee) != af.args:
+        raise ValueError(""ordre_arrivee doit énumérer exactement af.args"")
+    etapes = []
+    for k in range(1, len(ordre_arrivee) + 1):
+        arrives = set(ordre_arrivee[:k])
+        actives = {(a, b) for (a, b) in af.attacks if a in arrives and b in arrives}
+        etapes.append(labelling_depuis_grounded(AF(arrives, actives)))
+    return etapes
+
+
+def montre(af, ordre):
+    print(f""Ordre d'arrivée : {' -> '.join(ordre)}"")
+    etapes = trajectoire(af, ordre)
+    for k, lab in enumerate(etapes, start=1):
+        vue = ""   "".join(f""{a}={lab[a]}"" for a in ordre[:k])
+        print(f""  étape {k} : {vue}"")
+    return etapes[-1]
+
+
+fin_1 = montre(af1, [""d"", ""c"", ""a"", ""b""])
+print()
+fin_2 = montre(af1, [""a"", ""b"", ""c"", ""d""])
+print()
+print(""Étiquetage FINAL identique ?"", fin_1 == fin_2)
+print(""Trajectoires identiques    ?"",
+      trajectoire(af1, [""d"", ""c"", ""a"", ""b""]) == trajectoire(af1, [""a"", ""b"", ""c"", ""d""]))
+",,,,,,,,efc6c5aae1f7cbba,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Dung_AF_Semantics.ipynb,b1e59d36,markdown,fr,a6a86c0d3fa278da,"### Ce que la trajectoire montre
+
+Les deux ordres convergent vers le **même** étiquetage final — $d$=IN, $c$=UNDEC, $a$ et
+$b$=UNDEC — mais par des chemins différents. Dans l'ordre $a \to b \to c \to d$, l'argument
+$a$ est **IN** tant qu'il est seul, puis bascule en **UNDEC** dès que son attaquant $b$
+arrive : l'acceptation est *révisée*, pas raffinée. C'est la non-monotonie, rendue visible
+par le seul fait d'avoir regardé la suite plutôt que sa limite.
+
+Deux remarques pour la suite :
+
+- **$c$ est UNDEC, pas OUT.** L'argument auto-attaqué n'est rejeté par personne — il
+  s'exclut lui-même sans qu'un IN ne l'attaque. La règle « OUT $=$ attaqué par un IN »
+  ne s'applique donc pas à lui, et c'est bien ce que l'énoncé de l'Exercice 3 anticipe.
+- **L'ordre est un paramètre, pas un détail.** Si la trajectoire dépend de l'ordre
+  d'arrivée, alors comparer deux protocoles de débat revient à comparer deux trajectoires
+  sur le *même* AF — ce que l'étiquetage final, à lui seul, ne permet pas.
+
+### Lien avec le substrat 2025-EPITA-IS
+
+Cette construction existe sous forme outillée dans le dépôt *2025-Epita-Intelligence-Symbolique*,
+en `abs_arg_dung/aif_adapter.py` : `aif_labelling_trajectory` construit la même suite
+d'étiquetages à partir d'un flux d'arguments et d'attaques **AIF** (undercut / undermine /
+rebut), avec `aif_label_transitions` pour extraire les basculements et `render_aif_trajectory`
+pour l'affichage. Chaque étape y est vérifiée contre les backends Dung (natif et TweetyProject)
+qui se servent mutuellement d'oracle.
+
+Le vocabulaire de sortie est le même à la casse près (`in` / `out` / `undec`), de sorte que
+les étiquetages produits ici et là-bas se comparent directement. La cellule ci-dessus reste
+volontairement **autonome** — Python standard, aucune dépendance — pour que le notebook
+s'exécute sans installer quoi que ce soit.
+
+Une conséquence de cette autonomie mérite d'être dite, pour que le motif de démo ne soit
+pas pris pour l'algorithme de production : `trajectoire` recalcule `grounded` **de zéro**
+à chaque arrivée, et `grounded` énumère les parties de l'ensemble d'arguments — le coût
+est donc exponentiel à chaque étape. C'est sans conséquence sur les quatre arguments
+canoniques, et rédhibitoire sur un flux réel. Le substrat 2025-EPITA-IS procède par
+**propagation incrémentale** des étiquettes : il met à jour l'étiquetage à partir du
+précédent au lieu de le recalculer, ce qui est précisément ce que la structure de
+trajectoire rend possible.
+",,,,,,,,a6a86c0d3fa278da,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,mir-intro,markdown,fr,0e5188b2a3930a83,"### 5.1 Focus sur `mirrors` (720) : une relation d'équivalence symétrique
+
+L'inventaire ci-dessus montre `mirrors` (720) comme le verbe **crossLink dominant**, loin devant `isRelatedTo` (642) ou `leverages` (402). Mais *que* modélise `mirrors` exactement, et comment se distingue-t-il de la colonne vertébrale hiérarchique `broader`/`narrower` ? Contrairement à la hiérarchie SKOS — qui est **orientée** (un sophisme *est plus étroit que* un autre, `narrower` ≠ réciproque de `broader` au niveau de l'assertion) — `mirrors` pourrait être **symétrique** : si A *mirror* B, alors B *mirror* A. Vérifions-le, et regardons quels sophismes forment les plus gros **clusters** de miroirs (groupes de sophismes essentiellement interchangeables / miroirs l'un de l'autre).
+",,,,,,,,0e5188b2a3930a83,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,mir-code,code,fr,66b920927aad260f,"# --- Audit du predicat mirrors (720) : symetrie + clusters ---
+from collections import Counter
+
+mirrors = [(subj_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1],
+            obj_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1])
+           for pred_iri, subj_iri, obj_iri in AA_RES
+           if pred_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1] == ""mirrors""]
+
+n = len(mirrors)
+pair_set = set(mirrors)
+n_symmetric = sum(1 for a, b in mirrors if (b, a) in pair_set)
+print(f""mirrors : {n} triplets au total"")
+print(f""  symetriques (a->b ET b->a presents) : {n_symmetric}/{n} ({n_symmetric/n:.0%})"")
+
+# top emetteurs = les sophismes qui mirror le plus d'autres (corps du cluster)
+src_count = Counter(s for s, _ in mirrors)
+print(f""\nTop 10 sophismes par nb de miroirs emis :"")
+for name, c in src_count.most_common(10):
+    print(f""   {c:>2d}  {name}"")
+",,,,,,,,66b920927aad260f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,mir-interp,markdown,fr,6497ac12e74a1a1f,"**Lecture — `mirrors` est une relation d'équivalence symétrique, pas hiérarchique.** Le compte est sans appel : **100 % des 720 `mirrors` sont symétriques** (a→b entraîne toujours b→a). C'est structurellement différent de la hiérarchie SKOS, où `narrower`/`broader` dessinent un arbre orienté parent→enfant. `mirrors` relie instead des **paires de sophismes interchangeables** — deux entrées qui capturent essentiellement la *même* faille sous deux angles (ex. `appealToMystery` ↔ `argumentFromIncredulity` : invoquer le mystère vs l'incrédulité mènent au même geste argumentatif).
+
+Le **top des émetteurs** révèle un **cluster de langage corporel / social** : `racism` (8), `bow`, `genuflection`, `curtsy`, `salute`, `theFinger` (gestes et signaux non verbaux), rejoints par `alphabetSoup` et `corporateJargon` (jargons). Ces sophismes se mirror massivement entre eux car ils sont des **variantes d'une même catégorie** (la soumission symbolique, le signal social vide). Le verbe `mirrors` encode donc, dans la taxonomie Argumentum, une **couche d'équivalence** transverse au graphe — un sophisme n'appartient pas qu'à une branche de l'arbre `broader`, il appartient aussi à un *cluster de miroirs* qui regroupe ses reformulations.
+
+> **Contraste avec le §7 (AIF attack) et le §8 (scheme-vs-conflict)** : la couche `mirrors` est purement **taxonomique** (quels sophismes se ressemblent), là où `aifAttackedNode` est **sémantique** (comment le sophisme attaque). Les deux sont transverses à l'arbre `broader`/`narrower`, mais orthogonal : l'une regroupe les *ressemblances*, l'autre les *attaques*.
+",,,,,,,,6497ac12e74a1a1f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-dist-intro,markdown,fr,bee92e3a4ac698b4,"## 7. Distribution des attaques AIF par type de node
+
+Le §5 a inventorié **93 `aifAttackedNode`** (la couche AIF attack de l'OWL). Mais *quel type d'attaque* chaque sophisme porte-t-il ? En AIF (Argument Interchange Format), un node attaqué peut l'être à trois endroits distincts de la structure argumentative :
+
+- **RA-node** (*Rule-Application*) : l'attaque vise la **règle d'inférence** elle-même — en ASPIC+, c'est un **undercut** (le raisonnement est défaillant, indépendamment de la vérité des prémisses) ;
+- **I-node** (*Information*) : l'attaque vise une **prémisse / information** — c'est un **undermine** (la donnée invoquée est fausse ou douteuse) ;
+- **CA-node** (*Conflict-Application*) : l'attaque vise la **conclusion** — c'est un **rebut** (on conteste la conclusion elle-même, sans toucher au raisonnement qui y mène).
+
+Compter la répartition de ces trois cibles révèle la **structure dominante** de la modélisation Argumentum : les sophismes attaquent-ils plutôt le raisonnement, la preuve, ou la conclusion ?
+",,,,,,,,bee92e3a4ac698b4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-dist-code,code,fr,85afa1c2eb2ff28e,"# --- Distribution des 93 aifAttackedNode par type de node AIF (RA / I / CA) ---
+from collections import Counter
+
+aif_target = Counter()
+for pred_iri, _subj, obj_iri in AA_RES:
+    pred = pred_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1]
+    if pred == ""aifAttackedNode"":
+        node_type = obj_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1]
+        aif_target[node_type] += 1
+
+total = sum(aif_target.values())
+print(f""aifAttackedNode total : {total}"")
+print(f""  RA-node (undercut, attaque l'inference)  : {aif_target['RA-node']:>3d}  ({aif_target['RA-node']/total:.0%})"")
+print(f""  I-node  (undermine, attaque la premisse) : {aif_target['I-node']:>3d}  ({aif_target['I-node']/total:.0%})"")
+print(f""  CA-node (rebut, attaque la conclusion)   : {aif_target['CA-node']:>3d}  ({aif_target['CA-node']/total:.0%})"")
+",,,,,,,,85afa1c2eb2ff28e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-dist-interp,markdown,fr,cddda330a950d38a,"**Lecture** : la modélisation AIF d'Argumentum est massivement dominée par l'**undercut** (RA-node = 61/93, ~66 %) — les sophismes attaquent le plus souvent la **règle d'inférence** (le raisonnement est défaillant), bien avant la **prémisse** (I-node = 29, undermine) et surtout la **conclusion** (CA-node = 3 seulement, rebut marginal). Cette structure (undercut ≫ undermine ≫ rebut) traduit l'orientation de la théorie de l'argumentation : un sophisme est d'abord un **défaut de raisonnement**, non pas simplement une conclusion fausse.
+
+> Lien avec le §6 : la grappe Equivoque (`semanticAmbiguity`) porte `aifAttackedNode → RA-node` — c'est bien un **undercut** (le sophisme d'équivoque attaque l'usage du terme *dans l'inférence*, pas la conclusion), ce que la distribution globale confirme comme le cas majoritaire. Le rebut (CA-node = 3) est rare : dans cette taxonomie, on conteste rarement une conclusion *sans* remettre en cause le raisonnement qui y mène.
+
+**Précaution méthodologique** : ce compte (93) reflète l'état de l'OWL **réellement commité** dans CoursIA (`ontologies/argumentum_fallacies.owl`). Des snapshots antérieurs du dépôt Argumentum portaient des nombres plus élevés (~145 nodes modélisés) ; l'écart s'explique par l'évolution du générateur OWL (#763) et la révision du submodule pin — toujours fonder l'analyse sur l'OWL réellement présent, jamais sur un nombre rapporté d'une révision externe.
+
+
+**Pourquoi le comptage brut sous-estime-t-il les attaques ?** La distribution ci-dessus (61/29/3) compte les `aifAttackedNode` **explicites** : un seul prédicat, pointant vers un type de node. L'audit structurel Argumentum (méthode 3-axes, [#847](https://github.com/ArgumentumGames/Argumentum/pull/847)) rapporte des comptes plus élevés par type d'attaque (~82 undercut / ~50 undermine / ~5 rebut) parce qu'il unionne, en mode *fail-loud*, deux sources d'attaque que le grep brut ne sépare pas : les **DirectRef** (référence directe à un scheme conflictuel) et les **ExceptionRef** (attaque référencée via une exception de scheme Walton). Ces attaques indirectes — portées par les schemes d'argumentation (§4) et la couche conflict (§8), pas par un `aifAttackedNode` isolé — gonflent l'undercut surtout, car la plupart des sophismes *entrent* dans un scheme Walton avant d'être contestés.
+
+> **Lecture** : 61 (grep OWL) vs ~82 (audit 3-axes) pour l'undercut illustre que la structure AIF d'Argumentum **déborde** le seul prédicat `aifAttackedNode`. Le grep donne le *squelette explicite* ; l'audit 3-axes reconstitue le *graphe complet* des attaques, y compris celles qui ne sont matérialisées que par un scheme ou un conflit. Les deux comptes sont cohérents : ils mesurent des choses différentes.
+
+> **Honnêteté (règle C.4)** : les valeurs ~82/~50/~5 sont des *measures* rapportées par l'audit Argumentum (PR #847, layer c #857 *closed non-merged*, « MEASURE not verdict »). Elles ne sont **pas reproductibles** depuis le seul OWL CoursIA (le générateur #763 ne sérialise que les `aifAttackedNode` explicites) ; la doc méthodologique `docs/taxonomy/aif-structural-audit-method.md` vit dans le dépôt Argumentum, pas dans CoursIA. Verdict : **CAUSE_DOCUMENTED_ONLY** — la décomposition 61/29/3 reste l'unique mesure vérifiable *ici*.
+
+",,,,,,,,cddda330a950d38a,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,sc-intro,markdown,fr,faaff2e68aa69193,"## 8. Scheme vs conflict : l'attaque AIF est-elle un *scheme* ou un *conflit* ?
+
+Le §7 a montré que les 93 `aifAttackedNode` se répartissent en trois cibles de **scheme** (RA-node / I-node / CA-node = undercut / undermine / rebut). Mais en AIF canonique, le **scheme** (le type du nœud attaqué) et le **conflit** (la relation d'attaque elle-même) sont deux couches distinctes : un conflit relie un *nœud attaquant* à un *nœud attaqué* via un nœud d'application (CA-node). L'OWL Argumentum possède-t-il une couche de conflit séparée, ou tout passe-t-il par le prédicat de scheme ?
+
+Pour le savoir, on croise dans `AA_RES` les prédicats candidats : `aifAttackedNode` (le scheme, mesuré au §7), `hasConflictedElement` (le prédicat de conflit *dédié*, déclaré dans le schéma) et `aifAttackingNode` (la *source* de l'attaque).
+",,,,,,,,faaff2e68aa69193,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,sc-code,code,fr,3147dc0543f4dc9b,"# --- Scheme vs conflict : aifAttackedNode (scheme) vs hasConflictedElement (conflit dédié) ---
+from collections import Counter
+
+scheme = Counter()     # aifAttackedNode      = la cible de scheme (RA/I/CA) -- vu au §7
+conflict = Counter()   # hasConflictedElement = le prédicat de conflit DEDIÉ
+has_attacking = 0      # aifAttackingNode     = la SOURCE de l'attaque (l'attaquant)
+
+for pred_iri, _subj, obj_iri in AA_RES:
+    pred = pred_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1]
+    if pred == ""aifAttackedNode"":
+        scheme[obj_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1]] += 1
+    elif pred == ""hasConflictedElement"":
+        conflict[obj_iri.rstrip(""#"").split(""#"")[-1].split(""/"")[-1]] += 1
+    elif pred == ""aifAttackingNode"":
+        has_attacking += 1
+
+n_scheme = sum(scheme.values())
+n_conflict = sum(conflict.values())
+print(f""SCHEME   aifAttackedNode (cible RA/I/CA) : {n_scheme} triplets instanciés"")
+for k in (""RA-node"", ""I-node"", ""CA-node""):
+    print(f""   {k:<8} : {scheme[k]:>3d}"")
+print(f""CONFLICT hasConflictedElement (dédié)    : {n_conflict} triplet instancié"")
+print(f""SOURCE   aifAttackingNode (l'attaquant)  : {has_attacking} triplet instancié"")
+print()
+print(""=> La couche de conflit dédiée (hasConflictedElement) est déclarée"")
+print(""   dans le schéma de l'OWL mais n'a AUCUN triplet instancié."")
+",,,,,,,,3147dc0543f4dc9b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,sc-interp,markdown,fr,b07adfbd5af552f8,"**Lecture — scheme et conflit ne sont pas séparés dans l'OWL Argumentum.** Le prédicat de scheme `aifAttackedNode` porte l'intégralité de la structure d'attaque (93 triplets, §7), tandis que le prédicat de conflit *dédié* `hasConflictedElement` — bien que **déclaré dans le schéma** (37 occurrences entre sa déclaration `ObjectProperty` et ses axiomes `subPropertyOf` / `domain` / `range`) — n'a **aucun triplet instancié** (0 sur les données). Symétriquement, il n'existe **pas de `aifAttackingNode`** : la *source* de l'attaque n'est pas modélisée.
+
+L'OWL ne distingue donc pas, en pratique, le *scheme* (le type du nœud attaqué) du *conflit* (la relation d'attaque) : **le scheme est le conflit**. Chaque sophisme est relié à un nœud cible typé (RA/I/CA), et c'est ce typage qui encode toute la sémantique d'attaque — il n'y a pas de graphe de conflit séparé. C'est un choix de modélisation délibéré : Argumentum capture la **sémantique** de l'attaque (undercut / undermine / rebut via le type de la cible) plutôt que sa **topologie** (qui attaque qui). Un moteur d'argumentation aval (ASPIC+, Dung) qui aurait besoin du graphe d'attaque complet devrait donc le **reconstruire** à partir des `aifAttackedNode`, la couche de conflit explicite étant absente.
+
+> **Note méthodologique (scope #802 / #4960).** La convention de référence « scheme-vs-conflict » est documentée dans `141-aif-stage3-adjudication.md` (répertoire `Argumentum`, submodule non initialisé dans CoursIA). Cet audit se fonde **exclusivement sur l'OWL réellement committé** (`ontologies/argumentum_fallacies.owl`) — jamais sur une révision externe du submodule ni sur des nombres rapportés — conformément à la discipline du §7 (#8319) et au périmètre « patrimoine technique stable » (#802 : sémantique d'attaque AIF, méthode d'audit, structure de taxonomie).
+",,,,,,,,b07adfbd5af552f8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-ex4-md,markdown,fr,8827f8001b760185,"### Exercice 4 -- Undercut vs undermine : quels sophismes attaquent la prémisse ?
+
+À partir de `AA_RES` et de la mesure du §7, lister les sophismes (par `localname` **et** `prefLabel` FR) dont l'attaque AIF cible un **I-node** (undermine) plutôt qu'un RA-node (undercut). Observer leur thème : l'undermine porte-t-il préférentiellement sur des sophismes de **preuve / témoignage** (où c'est l'*information* qui est attaquée) ?
+
+*Indice* : croiser `AA_RES` avec `taxonomy` (dict `localname → prefLabel`) pour récupérer les libellés. Bonus : afficher aussi le parent `broader` de chaque match (predicat `broader` dans `AA_RES`).
+",,,,,,,,8827f8001b760185,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Ontology_AIF.ipynb,aif-ex4-code,code,fr,3e94f1ce38700fea,"# Exercice 4 a completer
+# TODO etudiant : a partir de AA_RES, filtrer les aifAttackedNode -> I-node (undermine).
+# Croiser avec `taxonomy` (localname -> prefLabel) pour afficher le label FR de chaque match.
+# Bonus : afficher aussi le parent `broader` de chaque match (predicat 'broader' dans AA_RES).
+print(""Exercice a completer"")
+",,,,,,,,3e94f1ce38700fea,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,ea79369e,markdown,fr,3e5a9e32433114c6,"# Argument_Analysis — Le modèle de Toulmin (1958)
+
+[← Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb) | [↑ Argument_Analysis](README.md) | [Value_Based_AF →](Argument_Analysis_Value_Based_AF.ipynb)
+
+## Pourquoi ce notebook
+
+Les notebooks [Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb), [Value_Based_AF](Argument_Analysis_Value_Based_AF.ipynb) et [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) traitent l'argumentation **formelle/abstraite** : des arguments anonymes reliés par une relation d'attaque. Mais dans la pratique — un débat politique, un mémoire d'expertise, une plaidoirie — un argument n'est pas un nœud anonyme : il a une **structure interne**. Le philosophe **Stephen Toulmin** (1958, *The Uses of Argument*) a proposé une anatomie de cette structure, devenu l'outil de référence en analyse informelle de l'argumentation (rhétorique, droit, éthique appliquée, communication scientifique).
+
+Toulmin observe qu'un argument complet ne se résume pas à « voici des faits, donc voici une conclusion ». Entre les faits (*Data*) et la conclusion (*Claim*), il y a toujours une **inférence autorisée** — le *Warrant* — qui dit *pourquoi* ces faits autorisent cette conclusion. Et ce warrant repose lui-même sur un *Backing* (un fondement), tolère un *Qualifier* (une modalité), et affronte des *Rebuttals* (des exceptions). Omettre ces pièces, c'est produire un argument qui *paraît* solide mais dont la chaîne logique est invisible — donc impossible à contester précisément.
+
+Ce notebook reconstruit le **schéma à 6 composants** de Toulmin en pur Python (stdlib), montre comment **auditer la complétude** d'un argument, et — c'est le pont computationnel — comment **traduire un débat d'arguments Toulmin en un cadre de Dung** : les rebuttals deviennent des attaques, et les sémantiques (grounded, preferred) décident quels claims survivent.",,,,,,,,3e5a9e32433114c6,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,1e10d692,markdown,fr,88995441844ddd26,"## Le schéma à 6 composants
+
+Un argument, selon Toulmin, se déploie en six pièces. Les trois premières sont **essentielles** (sans elles, il n'y a pas d'argument) ; les trois dernières le **qualifient** et le **durcissent**.
+
+| Composant | Rôle | Question qu'il répond |
+|-----------|------|------------------------|
+| **Claim** (conclusion, *C*) | La thèse défendue | « Que veux-tu établir ? » |
+| **Data** (données, *D*) | Les faits/observations invoqués | « Sur quoi t'appuies-tu ? » |
+| **Warrant** (garant, *W*) | La règle d'inférence *D → C* | « Comment passes-tu de D à C ? » |
+| **Backing** (fondement, *B*) | Le support du warrant (loi, autorité, théorie) | « Pourquoi cette règle vaut-elle ? » |
+| **Qualifier** (modalité, *Q*) | La force de la conclusion (« nécessairement », « probablement ») | « Avec quelle certitude ? » |
+| **Rebuttal** (réfutation, *R*) | Les conditions d'exception | « Quand ton argument tombe-t-il ? » |
+
+La pièce **sous-enseignée** est le *Warrant*. Beaucoup d'arguments implicites sautent de *Data* à *Claim* sans expliciter la règle — et c'est précisément là que se logent les sophismes et les désaccords. Rendre le warrant explicite est l'acte analytique central du modèle Toulmin.",,,,,,,,88995441844ddd26,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,5ec201bf,markdown,fr,120b70b58c9c5808,"## Exemple concret : un argument complet
+
+Pour rendre les composants concrets, déployons un argument familier :
+
+> « *Le projet X doit probablement être financé, car son ROI projeté est de 15 % ; or les projets à ROI élevé méritent financement — principe d'allocation rationnelle du capital — sauf si la situation de défaut attendue le disqualifie. * »
+
+Décomposé selon Toulmin :
+
+- **Claim** : « Le projet X doit être financé »
+- **Data** : « X a un ROI projeté de 15 % »
+- **Warrant** : « Les projets à ROI élevé méritent financement »
+- **Backing** : « Principe d'allocation rationnelle du capital »
+- **Qualifier** : « probablement »
+- **Rebuttal** (condition d'exception) : « sauf si le risque de défaut est prohibitif »
+
+Implémentons ce schéma comme une classe Python, puis vérifions sa complétude.",,,,,,,,120b70b58c9c5808,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,d11bd3d0,code,fr,3d3d79c19bb95338,"# --- Le schema de Toulmin (1958), pure stdlib ---
+
+
+class ToulminArgument:
+    """"""Un argument structure selon le schema de Toulmin (6 composants).
+
+    Les 3 composants essentiels (claim, data, warrant) doivent etre non vides
+    pour que l'argument soit COMPLETE. Les 3 autres (backing, qualifier,
+    rebuttal_targets) le qualifient.
+    """"""
+
+    def __init__(self, name, claim, data, warrant, backing="""",
+                 qualifier="""", rebuttal_targets=()):
+        self.name = name
+        self.claim = claim
+        self.data = data
+        self.warrant = warrant
+        self.backing = backing
+        self.qualifier = qualifier
+        # rebuttal_targets = ensemble des NOMS d'arguments que celui-ci refute
+        self.rebuttal_targets = set(rebuttal_targets)
+
+    def is_complete(self):
+        """"""True si les 3 composants essentiels sont presents (claim/data/warrant).""""""
+        return bool(self.claim and self.data and self.warrant)
+
+    def missing_pieces(self):
+        """"""Liste des composants essentiels manquants (pour diagnostic).""""""
+        missing = []
+        if not self.claim:
+            missing.append(""claim"")
+        if not self.data:
+            missing.append(""data"")
+        if not self.warrant:
+            missing.append(""warrant"")
+        return missing
+
+    def describe(self):
+        """"""Affiche l'argument deploye en ses 6 pieces.""""""
+        lines = [f""[{self.name}] Argument Toulmin (complet: {self.is_complete()})""]
+        lines.append(f""  Claim    : {self.claim or '(manquant)'}"")
+        lines.append(f""  Data     : {self.data or '(manquant)'}"")
+        lines.append(f""  Warrant  : {self.warrant or '(manquant)'}"")
+        lines.append(f""  Backing  : {self.backing or '(non precise)'}"")
+        lines.append(f""  Qualifier: {self.qualifier or '(non precise)'}"")
+        rt = sorted(self.rebuttal_targets) if self.rebuttal_targets else [""(aucun)""]
+        lines.append(f""  Rebuttals cibles: {rt}"")
+        return ""\n"".join(lines)
+
+    def __repr__(self):
+        q = self.qualifier + "" "" if self.qualifier else """"
+        return f""[{self.name}] {q}{self.claim or '(incomplet)'}"".strip()
+
+
+# Deploiement de l'exemple ""projet X"".
+arg_X = ToulminArgument(
+    name=""X"",
+    claim=""Le projet X doit etre finance"",
+    data=""X a un ROI projete de 15%"",
+    warrant=""Les projets a ROI eleve meritent financement"",
+    backing=""Principe d'allocation rationnelle du capital"",
+    qualifier=""probablement"",
+    rebuttal_targets=set(),  # on ajoutera la cible plus tard, avec l'argument adverse
+)
+print(arg_X.describe())
+print()
+print(f""Complet ? {arg_X.is_complete()} ; pieces manquantes : {arg_X.missing_pieces()}"")",,,,,,,,3d3d79c19bb95338,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,64acaf7b,markdown,fr,a9153a2d47d3f4df,"## Auditer la complétude
+
+Le piège classique de l'argumentation implicite : un énoncé qui *ressemble* à un argument mais saute le warrant. « *X a un ROI de 15 %, donc X doit être financé* » omet la règle d'inférence — le lecteur doit la deviner. La fonction `missing_pieces` détecte ces trous, ce qui est précisément le travail d'un auditeur d'argumentation.",,,,,,,,a9153a2d47d3f4df,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,9c71e1a2,code,fr,b913e31e76a7ccca,"# Un argument INCOMPLET (warrant implicite) : diagnostic automatique.
+arg_leak = ToulminArgument(
+    name=""leak"",
+    claim=""X doit etre finance"",
+    data=""X a un ROI de 15%"",
+    warrant="""",  # le warrant est implicite -> trou analytique
+)
+print(arg_leak.describe())
+print()
+miss = arg_leak.missing_pieces()
+if miss:
+    print(f"">>> Argument INCOMPLET : piece(s) essentielle(s) manquante(s) = {miss}"")
+    print("">>> Le warrant (D -> C) doit etre explicite : sur quelle regle d'inference ""
+          ""passe-t-on du ROI a l'obligation de financer ?"")
+else:
+    print("">>> Argument complet."")",,,,,,,,b913e31e76a7ccca,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,f5f383e9,markdown,fr,fdf0ca4cfabcfd0f,"## Le pont vers Dung : rebuttals = attaques
+
+Voici le saut computationnel. Le modèle Toulmin décrit **un** argument isolé. Mais un débat réel en **confronte plusieurs** — et ces arguments se *réfutent* mutuellement (le composant Rebuttal). Or « *A réfute B* » est exactement « *A attaque B* » au sens de [Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb). Donc :
+
+1. On déploie chaque argument en sa forme Toulmin (6 composants).
+2. On lit les `rebuttal_targets` de chacun → on construit la relation d'attaque du cadre de Dung.
+3. On applique la sémantique *grounded* : les claims qui survivent sont ceux défendus dans le débat.
+
+Construisons un débat à deux arguments qui se réfutent mutuellement, puis regardons le verdict du grounded.",,,,,,,,fdf0ca4cfabcfd0f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,a41bea66,code,fr,357fe240a4f34cb7,"# Primitives de Dung (comme Dung_AF_Semantics / Value_Based_AF).
+class AF:
+    def __init__(self, args, attacks):
+        self.args = set(args); self.attacks = set(attacks)
+    def attackers(self, x):
+        return {a for (a, b) in self.attacks if b == x}
+
+def defeats(af, S, x):
+    return any((a, x) in af.attacks for a in S)
+
+def defends(af, S, x):
+    return all(defeats(af, S, b) for b in af.attackers(x))
+
+def grounded(af):
+    E = set()
+    while True:
+        E_new = E | {x for x in af.args if defends(af, E, x)}
+        if E_new == E:
+            return E
+        E = E_new
+
+
+def toulmin_debate_to_af(arguments):
+    """"""Traduit un debat d'arguments Toulmin en un cadre de Dung.
+
+    Chaque argument Toulmin devient un noeud ; chaque rebuttal_target
+    (A refute B) devient une attaque (A -> B) dans le AF.
+    """"""
+    names = {a.name for a in arguments}
+    attacks = set()
+    for a in arguments:
+        for tgt in a.rebuttal_targets:
+            if tgt in names:  # ne cree l'attaque que si la cible existe
+                attacks.add((a.name, tgt))
+    return AF(names, attacks)
+
+
+# Un debat a deux arguments qui se refutent mutuellement (pro/contra).
+A = ToulminArgument(
+    name=""A"",
+    claim=""Le projet X doit etre finance"",
+    data=""X a un ROI projete de 15%"",
+    warrant=""Les projets a ROI eleve meritent financement"",
+    backing=""Principe d'allocation rationnelle du capital"",
+    qualifier=""probablement"",
+    rebuttal_targets={""B""},   # A refute B
+)
+B = ToulminArgument(
+    name=""B"",
+    claim=""Le projet X ne doit pas etre finance"",
+    data=""X presente un risque de defaut de 40%"",
+    warrant=""Les projets trop risques doivent etre evites"",
+    backing=""Principe de prudence"",
+    qualifier=""possiblement"",
+    rebuttal_targets={""A""},   # B refute A
+)
+
+print(""=== Debat a 2 arguments (rebuttal mutuel) ==="")
+for arg in (A, B):
+    print(arg.describe()); print()
+
+af2 = toulmin_debate_to_af([A, B])
+print(f""Cadre de Dung : args={sorted(af2.args)}, attacks={sorted(af2.attacks)}"")
+g2 = grounded(af2)
+print(f""Extension grounded : {sorted(g2) if g2 else '{} (vide)'}"")
+print("">>> Verdict : A<->B forment un cycle. Ni l'un ni l'autre ne defend l'autre"")
+print(""    -> grounded VIDE = standoff, aucune conclusion ne survit seule."")",,,,,,,,357fe240a4f34cb7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,cdcaa3e3,markdown,fr,5a496994af9bc235,"## Le verdict bascule : introduire un arbitre
+
+Le standoff (grounded vide) est insatisfaisant : le débat est *indécis*. Mais ajoutons un **troisième argument** *C* qui réfute *B* seulement (sans toucher à *A*). Concrètement, *C* conteste le *Data* de *B* (le risque de défaut est sur-estimé). Le cycle se brise : *C* défait *B*, donc *B* n'attaque plus *A*, donc *A* redevient défendable.",,,,,,,,5a496994af9bc235,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,b1fa588d,code,fr,c00dce70108ded6d,"# On ajoute un 3e argument C qui refute B seulement (arbitre).
+C = ToulminArgument(
+    name=""C"",
+    claim=""Le risque de defaut de X est surestime"",
+    data=""L'historique montre 10% de defaut reel sur projets similaires"",
+    warrant=""Les projections de risque doivent etre calibrees sur donnees passees"",
+    backing=""Principe de calibration empirique"",
+    qualifier=""fortement"",
+    rebuttal_targets={""B""},   # C refute B, MAIS PAS A
+)
+
+print(""=== Debat a 3 arguments (C arbitre en refutant B) ==="")
+print(C.describe()); print()
+
+af3 = toulmin_debate_to_af([A, B, C])
+print(f""Cadre de Dung : args={sorted(af3.args)}"")
+print(f""                attacks={sorted(af3.attacks)}"")
+g3 = grounded(af3)
+print(f""Extension grounded : {sorted(g3)}"")
+print()
+print("">>> Lecture : C defait B -> B ne peut plus attaquer A -> A est defendu."")
+print(""    Les claims A et C survivent ; B (le contre-argument) est exclu."")
+print(""    Le warrant sous-jacent : un seul arbitre peut faire basculer un debat"")
+print(""    indécis vers une conclusion, SANS toucher aux arguments principaux."")",,,,,,,,c00dce70108ded6d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,262af63b,markdown,fr,82213395c0551f7f,"## Exercices
+
+Les trois exercices approfondissent le modèle. Chaque stub est à compléter — le notebook s'exécute de bout en bout même non complété (les exercices renvoient `None`/valeurs neutres et affichent un message).",,,,,,,,82213395c0551f7f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,70bb2ea0,markdown,fr,a0fe66fbb4ebdec9,"### Exercice 1 — Diagnostiquer un argument incomplet
+
+Étant donné un énoncé familier d'opinion, identifiez la pièce essentielle manquante et complétez l'argument Toulmin pour qu'il soit `is_complete() == True`.
+
+**Objectif** : prendre l'énoncé « *Il pleut, donc je prends mon parapluie* », le modéliser (claim + data fournis, warrant à expliciter), et le rendre complet.",,,,,,,,a0fe66fbb4ebdec9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,912fedab,code,fr,5688080a75f07a9f,"# Exercice 1 : a completer
+def argument_parapluie_complet():
+    """"""Renvoie un ToulminArgument complet modelisant : 'Il pleut, donc je
+    prends mon parapluie'.
+
+    Indice : le DATA = 'il pleut', le CLAIM = 'je prends mon parapluie'.
+    Etape 1 : quel est le WARRANT (regle D -> C) implicite ? L'expliciter.
+    Etape 2 : construire le ToulminArgument avec les 3 composants essentiels.
+    """"""
+    # TODO etudiant
+    return None
+
+
+# arg = argument_parapluie_complet()
+# if arg is not None:
+#     print(arg.describe())
+#     miss = arg.missing_pieces()
+#     if miss:
+#         print(f""ENCORE INCOMPLET : manque {miss}"")
+#     else:
+#         print(""SUCCES : argument complet (warrant explicite)."")
+# else:
+#     print(""Exercice a completer."")
+print(""Exercice 1 a completer."")",,,,,,,,5688080a75f07a9f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,ce9900f0,markdown,fr,71e0b861aad3fe07,"### Exercice 2 — Construire un débat équilibré (standoff)
+
+Construisez **deux** arguments Toulmin complets qui se réfutent mutuellement (comme A et B ci-dessus), sur un sujet de votre choix (ex. « *le télétravail devrait être la norme* »). Vérifiez via `toulmin_debate_to_af` + `grounded` que le débat est un **standoff** (grounded vide).
+
+**Objectif** : sentir que deux arguments *corrects* mais opposés produisent une indécision — c'est pourquoi un débat pur pro/contra est rarement tranché sans un troisième élément.",,,,,,,,71e0b861aad3fe07,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,02e437a0,code,fr,8bc752777bbb471e,"# Exercice 2 : a completer
+def debat_teletravail_standoff():
+    """"""Construisez deux ToulminArgument complets (PRO et CONTRA le teletravail
+    comme norme) qui se refutent mutuellement. Renvoie (pro, contra).
+
+    Indice : chaque argument doit avoir claim + data + warrant non vides, et
+    rebuttal_targets pointant vers le nom de l'autre.
+    """"""
+    # TODO etudiant
+    return None, None
+
+
+# pro, contra = debat_teletravail_standoff()
+# if pro is not None and contra is not None:
+#     af_ex2 = toulmin_debate_to_af([pro, contra])
+#     g_ex2 = grounded(af_ex2)
+#     print(f""Attaques : {sorted(af_ex2.attacks)}"")
+#     print(f""Grounded : {sorted(g_ex2) if g_ex2 else '{} (vide = standoff)'}"")
+#     if len(g_ex2) == 0:
+#         print(""SUCCES : standoff confirme (debat equilibre)."")
+# else:
+#     print(""Exercice a completer."")
+print(""Exercice 2 a completer."")",,,,,,,,8bc752777bbb471e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,7aa776ac,markdown,fr,6c0a5cb768645409,"### Exercice 3 — Trouver l'arbitre qui fait basculer le débat
+
+Reprenant votre débat de l'exercice 2 (pro/contra en standoff), construisez un **troisième** argument *C* qui réfute *un seul* des deux, de sorte que le grounded passe de vide à une conclusion non vide. Identifiez lequel des deux claims survit.
+
+**Objectif** : comprendre que la conclusion d'un débat Toulmin-Dung dépend de *où* l'arbitre frappe — réfuter *pro* fait gagner *contra*, et inversement.",,,,,,,,6c0a5cb768645409,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,90411a48,code,fr,1c763e3f978f4f55,"# Exercice 3 : a completer
+def arbitre_qui_bascule(pro, contra, cible):
+    """"""Construit un 3e argument C qui refute `cible` (parmi 'pro'/'contra')
+    et renvoie (C, ensemble_grounded_obtenu).
+
+    Indice : rebuttal_targets de C = {nom de l'argument cible}. Puis calculer
+    le grounded du debat a 3 arguments. Renvoyer (C, set(grounded)).
+    """"""
+    # TODO etudiant
+    return None, None
+
+
+# Supposons pro.name='PRO', contra.name='CONTRA' (a adapter a votre exo 2).
+# C, g = arbitre_qui_bascule(pro, contra, ""CONTRA"")
+# if C is not None:
+#     print(f""Arbitre C refute CONTRA -> grounded = {sorted(g)}"")
+#     print(""Le claim survivant est celui dont l'adversaire a ete refute."")
+# else:
+#     print(""Exercice a completer (depend de l'exercice 2)."")
+print(""Exercice 3 a completer."")",,,,,,,,1c763e3f978f4f55,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Toulmin_Model.ipynb,1d1a17bf,markdown,fr,f9393bc8126c713f,"## Conclusion
+
+### Ce que vous avez appris
+
+- Un argument n'est pas un bloc monolithique : le **schéma de Toulmin** le déploie en six pièces, dont trois **essentielles** (claim, data, warrant). Le *warrant* — la règle d'inférence *D → C* — est la pièce la plus souvent laissée implicite, et c'est précisément là que se logent les désaccords et les sophismes.
+- Auditer la complétude (`is_complete` / `missing_pieces`) est un acte analytique : il force à expliciter la chaîne logique plutôt qu'à la présupposer.
+- **Le pont vers Dung** : en déployant plusieurs arguments Toulmin et en lisant leurs rebuttals comme des attaques, on obtient un cadre de Dung. Les sémantiques (grounded) tranchent alors le débat — un standoff (grounded vide) signifie que le débat pro/contra est *structurellement* indécis, et qu'un troisième argument (un arbitre) peut seul le faire basculer.
+
+### Prochaines étapes
+
+- **Argumentation graduée** : plutôt qu'un verdict accepté/rejeté, [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) attribue une *force* numérique à chaque argument — utile quand un débat ne se résout pas par grounded seul.
+- **Valeurs et audiences** : les warrants reposent souvent sur des *valeurs* (cf. [Value_Based_AF](Argument_Analysis_Value_Based_AF.ipynb)) ; deux audiences aux valeurs différentes peuvent accepter le même *Data* mais rejeter le *Warrant* — d'où l'intérêt de croiser Toulmin (structure) et VAF (préférences).
+- **Argumentation bipolaire** : Toulmin distingue l'attaque (rebuttal) du *support* implicite entre data et claim ; les cadres bipolaires (Cayrol & Lagasquie-Schiex, 2005) modélisent explicitement une relation de support en plus de l'attaque.
+
+### Référence
+
+- Stephen Toulmin, *The Uses of Argument* (Cambridge University Press, 1958, mis à jour 2003) — le livre fondateur du schéma à six composants reconstruit ici.
+
+---
+
+*Notebook pédagogique — pur stdlib Python, déterministe, sans LLM ni solveur externe. Conforme C.1 (stubs sans erreur volontaire), C.2 (sorties réelles), exercices à compléter.*",,,,,,,,f9393bc8126c713f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,ae02fa53,markdown,fr,e3b1dc8a744cb870,"# Argument_Analysis — Argumentation basée sur les valeurs (VAF, Bench-Capon 2003)
+
+[← Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb) | [↑ Argument_Analysis](README.md) | [Ranking_Semantics →](Argument_Analysis_Ranking_Semantics.ipynb)
+
+## Pourquoi ce notebook
+
+Le notebook [Dung_AF_Semantics](Argument_Analysis_Dung_AF_Semantics.ipynb) reconstruit l'argumentation *abstraite* de Dung (1995) : des arguments s'attaquent, des sémantiques (grounded / preferred / stable) décident lesquels survivent. Mais dans ce cadre, **toutes les attaques réussissent** — un argument qui en attaque un autre le défait, un point c'est tout.
+
+La réalité du débat est différente. Considérez : « *Il faut réduire les impôts pour relancer la consommation* » (argument *A*, valeur **croissance**) attaque « *Il faut maintenir les impôts pour financer les services publics* » (argument *B*, valeur **solidarité**). L'attaque de *A* sur *B* doit-elle réussir ? Cela dépend de ce que **valorise l'auditoire** : un auditoire qui préfère la croissance à la solidarité laissera *A* défaire *B* ; un auditoire inverse laissera *B* résister à *A*. **Le même graphe d'attaques produit des conclusions différentes selon l'audience.**
+
+C'est le saut conceptuel de Trevor Bench-Capon dans *« A Value-Based Argumentation Framework »* (2003) : enrichir le cadre de Dung par des **valeurs** (ce que chaque argument promeut) et une **audience** (un ordre de préférence sur ces valeurs). Une attaque ne défait sa cible que si la valeur de l'attaquant est au moins aussi préférée que celle de l'attaqué, aux yeux de l'audience.
+
+Ce notebook reconstruit le cadre VAF de zéro en **pur Python (stdlib)**, à la suite de `Dung_AF_Semantics` dont il reprend les primitives. Objectif pédagogique : voir concrètement comment **trois audiences différentes** sur un même graphe d'attaques en cycle produisent **trois conclusions différentes** — et pourquoi ce phénomène connecte l'argumentation au choix social (préférences agrégées).",,,,,,,,e3b1dc8a744cb870,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,ddc76e42,markdown,fr,86740cb5e9a5712f,"## Le cadre VAF — définition
+
+Un **Value-based Argumentation Framework** (VAF) est un quintuplet $\langle \mathcal{A}, \mathcal{R}, V, \eta, \succcurlyeq_a \rangle$ où :
+
+- $\mathcal{A}$ est un ensemble d'arguments (comme chez Dung) ;
+- $\mathcal{R} \subseteq \mathcal{A} \times \mathcal{A}$ est la relation d'attaque (comme chez Dung) ;
+- $V$ est un ensemble de **valeurs** ;
+- $\eta : \mathcal{A} \to V$ associe à chaque argument la valeur qu'il promeut ;
+- $\succcurlyeq_a$ est l'**audience** : un ordre total (préférence) sur $V$.
+
+**Défaite dépendante de l'audience.** L'argument $x$ *défait* $y$ (l'attaque $x \to y$ réussit) si et seulement si :
+
+$$\eta(x) \succcurlyeq_a \eta(y)$$
+
+Sinon, $y$ **résiste** à $x$ : l'attaque échoue, $y$ n'est pas défait par $x$.
+
+Une fois cette relation de défaite audience-dépendante fixée, on réapplique les sémantiques de Dung (grounded, preferred, stable) dessus. Le résultat **dépend de l'audience** : changer l'ordre de préférence sur $V$ change qui défait qui, donc change les extensions.",,,,,,,,86740cb5e9a5712f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,513b482b,code,fr,50629b348c2313a8,"# Primitives de Dung (auto-contenues, comme Dung_AF_Semantics).
+from itertools import chain, combinations
+
+
+class AF:
+    """"""Cadre d'argumentation abstrait : arguments + relation d'attaque.
+
+    Ici `attacks` = relation de DEFAITE deja resolue (cf. af_from_audience
+    plus bas). On construit un AF a partir d'un VAF + une audience, puis on
+    lui applique les semantiques de Dung.
+    """"""
+
+    def __init__(self, args, attacks):
+        self.args = set(args)
+        self.attacks = set(attacks)  # couples (attaquant, attaque)
+
+    def attackers(self, x):
+        return {a for (a, b) in self.attacks if b == x}
+
+    def __repr__(self):
+        att = "", "".join(f""{a}->{b}"" for (a, b) in sorted(self.attacks))
+        return f""AF(args={sorted(self.args)}, attacks=[{att}])""
+
+
+def defeats(af, S, x):
+    """"""True si S defait x (au moins un membre de S attaque x).""""""
+    return any((a, x) in af.attacks for a in S)
+
+
+def defends(af, S, x):
+    """"""True si S defend x : tout attaquant de x est defait par S.""""""
+    return all(defeats(af, S, b) for b in af.attackers(x))
+
+
+def powerset(iterable):
+    s = list(iterable)
+    return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+
+
+def grounded(af):
+    """"""Extension grounded : plus petit point fixe de la fonction de defense.""""""
+    E = set()
+    while True:
+        E_new = E | {x for x in af.args if defends(af, E, x)}
+        if E_new == E:
+            return E
+        E = E_new
+
+
+print(""Primitives de Dung chargees. Smoke test:"")
+af_test = AF({""a"", ""b""}, {(""a"", ""b"")})
+print(f""  af_test = {af_test}"")
+print(f""  grounded(af_test) = {grounded(af_test)}  # a defendu, b defait par a"")",,,,,,,,50629b348c2313a8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,2822dbd2,code,fr,fe0b20eed3761ba0,"# --- Le cadre VAF (Bench-Capon 2003) ---
+
+
+class VAF:
+    """"""Value-based Argumentation Framework.
+
+    Attributs :
+        args     : ensemble d'arguments
+        attacks  : relation d'attaque (couples), COMME chez Dung
+        values   : mapping arg -> valeur (eta)
+        value_set: l'ensemble des valeurs V
+    """"""
+
+    def __init__(self, args, attacks, values):
+        self.args = set(args)
+        self.attacks = set(attacks)
+        self.values = dict(values)            # arg -> valeur
+        self.value_set = set(self.values.values())
+
+    def value_of(self, x):
+        return self.values[x]
+
+    def __repr__(self):
+        v = "", "".join(f""{a}:{val}"" for a, val in sorted(self.values.items()))
+        att = "", "".join(f""{a}->{b}"" for (a, b) in sorted(self.attacks))
+        return f""VAF(args={sorted(self.args)}, attacks=[{att}], values={{{v}}})""
+
+
+def audience_rank(audience, v):
+    """"""Rang d'une valeur v dans l'audience (0 = la plus preferee).
+
+    `audience` = liste ordonnee des valeurs, de la plus preferee a la moins preferee.
+    Plus le rang est PETIT, plus la valeur est preferee.
+    """"""
+    return audience.index(v)
+
+
+def defeats_under_audience(vaf, audience, x, y):
+    """"""True si l'attaque x->y reussit sous cette audience.
+
+    L'attaque reussit ssi value(x) est au moins aussi preferee que value(y).
+    On compare les RANGS : rang plus petit = plus prefere.
+    """"""
+    if (x, y) not in vaf.attacks:
+        return False
+    return audience_rank(audience, vaf.value_of(x)) <= audience_rank(audience, vaf.value_of(y))
+
+
+def af_from_audience(vaf, audience):
+    """"""Construit le AF (Dung) correspondant a un VAF sous une audience donnee.
+
+    On ne garde que les attaques qui REUSSISSENT sous l'audience. Les attaques
+    qui echouent (valeur de l'attaquant moins preferee) disparaissent : la
+    cible resiste.
+    """"""
+    surviving = {(x, y) for (x, y) in vaf.attacks
+                 if defeats_under_audience(vaf, audience, x, y)}
+    return AF(vaf.args, surviving)
+
+
+# Smoke test : un VAF minimal a 2 arguments, 1 valeur commune.
+vaf_test = VAF({""a"", ""b""}, {(""a"", ""b"")}, {""a"": ""v"", ""b"": ""v""})
+aud_test = [""v""]
+af_t = af_from_audience(vaf_test, aud_test)
+print(f""VAF test: {vaf_test}"")
+print(f""  audience {aud_test} -> AF survived attacks: {af_t.attacks}"")
+print(f""  grounded = {grounded(af_t)}  # valeurs egales -> attaque reussit -> a defait b"")",,,,,,,,fe0b20eed3761ba0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,3f5392eb,markdown,fr,ea4be640d9d607d1,"## Exemple canonique : le cycle à trois valeurs
+
+Voici le moment pédagogique clé. Prenons trois arguments en **cycle** ($a \to b \to c \to a$), chacun promouvant une **valeur distincte** :
+
+| Argument | Valeur promue |
+|----------|---------------|
+| $a$ | `verite` |
+| $b$ | `confiance` |
+| $c$ | `solidarite` |
+
+Chez Dung (sans valeurs), un cycle de longueur impaire n'a **pas d'extension stable** et son extension grounded est **vide** (personne n'est défendable : chacun est attaqué par un argument non défait). Mais avec des valeurs, **l'audience décide quelles attaques réussissent**, ce qui brise la symétrie du cycle.
+
+Construisons ce VAF et calculons ses extensions sous trois audiences distinctes.",,,,,,,,ea4be640d9d607d1,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,8f535a64,code,fr,d48c5a497d0bafc0,"# L'exemple canonique : cycle a->b->c->a, 3 valeurs distinctes.
+args = {""a"", ""b"", ""c""}
+attacks = {(""a"", ""b""), (""b"", ""c""), (""c"", ""a"")}
+values = {""a"": ""verite"", ""b"": ""confiance"", ""c"": ""solidarite""}
+
+vaf = VAF(args, attacks, values)
+print(""VAF canonique:"")
+print(f""  {vaf}"")
+print(f""  Valeurs: {sorted(vaf.value_set)}"")
+print()
+
+# Trois audiences = trois ordres totaux differents, chacun preferant une
+# valeur differente en tete.
+audiences = {
+    ""audience-1 (verite > confiance > solidarite)"": [""verite"", ""confiance"", ""solidarite""],
+    ""audience-2 (confiance > solidarite > verite)"": [""confiance"", ""solidarite"", ""verite""],
+    ""audience-3 (solidarite > verite > confiance)"": [""solidarite"", ""verite"", ""confiance""],
+}
+
+print(""Extensions grounded sous chaque audience :"")
+print(""-"" * 60)
+for label, aud in audiences.items():
+    af_aud = af_from_audience(vaf, aud)
+    g = grounded(af_aud)
+    survived = sorted(f""{x}->{y}"" for (x, y) in af_aud.attacks)
+    excluded = sorted(vaf.args - g)
+    print(f""{label}"")
+    print(f""    attaques reussissant: {survived}"")
+    print(f""    grounded = {sorted(g)}  (exclu: {excluded})"")
+    print()",,,,,,,,d48c5a497d0bafc0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,d381ee03,markdown,fr,9c3b519fc2a3fc84,"## Ce que la divergence nous apprend
+
+Les trois audiences produisent **trois extensions grounded différentes** sur le *même* graphe d'attaques :
+
+| Audience (valeur en tête) | Attaques qui réussissent | Extension grounded |
+|---------------------------|--------------------------|--------------------|
+| `verite` en tête | $a \to b$, $b \to c$ (mais $c \not\to a$) | **{a, c}** (b exclu) |
+| `confiance` en tête | $b \to c$, $c \to a$ (mais $a \not\to b$) | **{a, b}** (c exclu) |
+| `solidarite` en tête | $c \to a$, $a \to b$ (mais $b \not\to c$) | **{b, c}** (a exclu) |
+
+**Lecture** : sur ce cycle, le grounded contient toujours **deux** arguments sur trois — mais l'argument *exclu* change avec l'audience ($b$, puis $c$, puis $a$). Le mécanisme : l'argument dont la valeur est **la plus préférée** voit l'attaque dirigée contre lui échouer (son attaquant est moins préféré), donc il survit ; et comme sa propre attaque *vers le suivant* réussit, il élimine ce suivant. Le troisième argument survit alors par défense (le survivant principal défait l'attaquant du troisième). En résumé : **mettre une valeur en tête d'audience condamne l'argument que cette valeur attaque dans le cycle**.
+
+C'est le résultat central de Bench-Capon : **la conclusion d'un débat n'est pas déterminée par le graphe d'arguments seul, mais par le graphe ET les valeurs de l'audience**. Trois auditoires de valeurs différentes, confrontés aux *mêmes* arguments, excluent légitimement des arguments différents. Cela relie l'argumentation à la théorie du choix social : si plusieurs individus ont des audiences différentes, **agréger leurs préférences** (cf. [Tweety-9](../Tweety/Tweety-9-Preferences.ipynb), [GameTheory SocialChoice](../../GameTheory/)) devient la question centrale pour décider collectivement.",,,,,,,,9c3b519fc2a3fc84,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,0506af63,markdown,fr,e112eda91b5858f2,"## Sweep d'audiences : combien de conclusions distinctes ?
+
+Sur un VAF à $|V|$ valeurs, il y a $|V|!$ audiences possibles (tous les ordres totaux). Une question naturelle : parmi toutes ces audiences, **combien d'extensions grounded distinctes** obtient-on ? Si la réponse est 1, les valeurs sont décoratives (elles ne changent rien). Si la réponse est grande, le débat est *sensible* à l'audience — ce qui est précisément la situation où l'argumentation basée sur les valeurs apporte quelque chose que Dung pur ne peut pas exprimer.
+
+Énumérons toutes les audiences sur notre VAF à 3 valeurs et comptons les outcomes.",,,,,,,,e112eda91b5858f2,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,d85d421e,code,fr,4e2d41c3647c38f6,"from itertools import permutations
+
+# Sweep : toutes les audiences (ordres totaux sur les valeurs).
+print(""Sweep complet des audiences sur le VAF canonique (3! = 6 ordres):"")
+print(""-"" * 65)
+distinct_outcomes = {}
+for aud in permutations(sorted(vaf.value_set)):
+    af_aud = af_from_audience(vaf, list(aud))
+    g = grounded(af_aud)
+    key = tuple(sorted(g)) if g else ""()""
+    distinct_outcomes.setdefault(key, []).append(list(aud))
+    g_str = set(g) if g else ""{}""
+    print(f""  audience {list(aud)} -> grounded {g_str}"")
+
+print(""-"" * 65)
+print(f""Distinct grounded outcomes: {len(distinct_outcomes)}"")
+for outcome, auds in distinct_outcomes.items():
+    print(f""  {outcome} atteint par {len(auds)} audience(s)"")",,,,,,,,4e2d41c3647c38f6,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,45214f58,markdown,fr,fe22a44ce64f5c99,"**Résultat** : sur 6 audiences possibles, on obtient **3 conclusions distinctes** — {a, b}, {a, c}, {b, c} — chacune atteinte par **2** audiences. (Les deux audiences qui mettent la même valeur en tête convergent vers la même extension : seul compte quel argument est « en tête ».) Le débat est donc *fortement sensible* à l'audience : il n'y a pas de verdict universel, la conclusion dépend de qui écoute.
+
+C'est un diagnostic actionnable : si un médiateur veut faire converger un débat argumentatif bloqué en cycle, il doit d'abord **révéler les valeurs** des parties et chercher un compromis sur l'ordre de préférence — pas seulement sur les arguments eux-mêmes.",,,,,,,,fe22a44ce64f5c99,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,81d1354b,markdown,fr,07f15018e795dae8,"## Exercices
+
+Les trois exercices suivants approfondissent le cadre. Chaque stub est à compléter — le notebook s'exécute de bout en bout même non complété (les exercices renvoient `None` et affichent un message).",,,,,,,,07f15018e795dae8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,ab7ecc40,markdown,fr,0f1008e399d93789,"### Exercice 1 — Choisir une audience pour rejeter un argument donné
+
+On a vu que chaque audience exclut un argument différent du grounded. **Objectif** : écrire `audience_qui_rejette(vaf, cible)` qui renvoie *une* audience rendant `cible` **absent** du grounded (rejeté).
+
+Indice : d'après la lecture ci-dessus, l'argument exclu est celui **attaqué par l'argument dont la valeur est la plus préférée**. Donc, pour rejeter `cible`, il faut mettre en tête d'audience la valeur de son *attaquant* dans le graphe.",,,,,,,,0f1008e399d93789,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,b6eb51c1,code,fr,e9fa3add828555b2,"# Exercice 1 : a completer
+def audience_qui_rejette(vaf, cible):
+    """"""Renvoie une audience (liste ordonnee de valeurs) telle que `cible`
+    soit ABSENT de l'extension grounded (rejete).
+
+    Indice : identifier l'attaquant de `cible` dans le graphe d'attaque,
+    puis mettre la valeur de cet attaquant en tete d'audience.
+    Etape 1 : trouver x tel que (x, cible) in vaf.attacks.
+    Etape 2 : construire une audience avec value(x) en tete, puis le reste.
+    """"""
+    # TODO etudiant
+    return None
+
+
+# Verification (decommenter apres completion) :
+# aud = audience_qui_rejette(vaf, ""b"")
+# if aud is not None:
+#     af_aud = af_from_audience(vaf, aud)
+#     g = grounded(af_aud)
+#     print(f""Audience trouvee: {aud} -> grounded = {sorted(g)}"")
+#     assert ""b"" not in g, f""Echec: b devrait etre exclu, grounded = {g}""
+#     print(""SUCCES : b est rejete sous cette audience."")
+# else:
+#     print(""Exercice a completer."")
+print(""Exercice 1 a completer."")",,,,,,,,e9fa3add828555b2,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,6c58c990,markdown,fr,36dc21add114e137,"### Exercice 2 — Quand le VAF dégénère en Dung pur
+
+Sur le VAF canonique, les valeurs sont distinctes et l'audience brise le cycle. Mais que se passe-t-il si **tous les arguments partagent la même valeur** ? Alors toute attaque a un attaquant et une cible de valeur égale → toutes les attaques réussissent, et l'on retrouve exactement le cycle de Dung pur : le grounded est **vide**.
+
+**Objectif** : construire un VAF (cycle $a \to b \to c \to a$) où tous les arguments ont la même valeur, choisir une audience triviale, et vérifier que le grounded est bien vide — confirmant que le VAF *contient* Dung comme cas particulier (valeurs dégénérées).",,,,,,,,36dc21add114e137,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,5883f634,code,fr,34d67aaeff0bf68e,"# Exercice 2 : a completer
+def vaf_degenere_en_dung():
+    """"""Construisez un VAF (cycle a->b->c->a) ou tous les arguments partagent
+    la MEME valeur, et renvoyez (vaf, audience) tels que TOUTES les attaques
+    reussissent. Renvoie (None, None) tant que non complete.
+
+    Indice : values = {""a"":""v"",""b"":""v"",""c"":""v""} ; audience = [""v""].
+    Verifiez ensuite que grounded est vide (comme un cycle de Dung impair).
+    """"""
+    # TODO etudiant
+    return None, None
+
+
+# vaf2, aud2 = vaf_degenere_en_dung()
+# if vaf2 is not None:
+#     af2 = af_from_audience(vaf2, aud2)
+#     g2 = grounded(af2)
+#     print(f""Attaques reussissant: {sorted(af2.attacks)}"")
+#     print(f""Grounded: {sorted(g2) if g2 else '{} (vide)'}"")
+#     assert len(g2) == 0, ""Le grounded devrait etre vide (cycle impair de Dung)""
+#     print(""SUCCES : VAF degenere en Dung, grounded vide."")
+# else:
+#     print(""Exercice a completer."")
+print(""Exercice 2 a completer."")",,,,,,,,34d67aaeff0bf68e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,8c61b1b5,markdown,fr,3c1280e71e22945b,"### Exercice 3 — Cartographier toutes les conclusions d'un VAF plus large
+
+Généralisez le sweep : écrivez `toutes_les_conclusions(vaf)` qui renvoie un dictionnaire `{extension_grounded: [liste des audiences qui la produisent]}` pour **toutes** les audiences possibles.
+
+**Objectif** : appliquer à un VAF à **4 arguments** et **3 valeurs** (certains arguments partageant une valeur), et interpréter pourquoi le nombre de conclusions distinctes est (généralement) inférieur au nombre d'audiences.",,,,,,,,3c1280e71e22945b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,a38026f0,code,fr,80be062f3381f1c2,"# Exercice 3 : a completer
+def toutes_les_conclusions(vaf):
+    """"""Renvoie {tuple(sorted(grounded)): [audiences productrices]} pour toutes
+    les audiences possibles (tous les ordres totaux sur value_set).
+
+    Indice : itertools.permutations sur value_set ; pour chacune, calculer le
+    grounded via af_from_audience + grounded. Grouper par outcome. Une audience
+    vide () represente un grounded vide.
+    """"""
+    # TODO etudiant
+    return {}
+
+
+# Test sur le VAF canonique a 3 valeurs :
+# conclu = toutes_les_conclusions(vaf)
+# print(f""Le VAF canonique a {len(conclu)} conclusion(s) distincte(s):"")
+# for outcome, auds in conclu.items():
+#     lab = sorted(outcome) if outcome else ""{} (vide)""
+#     print(f""  {lab} <- {len(auds)} audience(s)"")
+# print()
+# # VAF plus large : 4 arguments, 3 valeurs (a et d partagent 'verite')
+# vaf_large = VAF({""a"",""b"",""c"",""d""}, {(""a"",""b""),(""b"",""c""),(""c"",""d""),(""d"",""a"")},
+#                 {""a"":""verite"",""b"":""confiance"",""c"":""solidarite"",""d"":""verite""})
+# conclu_large = toutes_les_conclusions(vaf_large)
+# print(f""Le VAF large (4 args, 3 valeurs) a {len(conclu_large)} conclusion(s) distincte(s)."")
+print(""Exercice 3 a completer."")",,,,,,,,80be062f3381f1c2,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Value_Based_AF.ipynb,a26766f9,markdown,fr,61d3de0ffb928de1,"## Conclusion
+
+### Ce que vous avez appris
+
+Le cadre de Dung (1995) dit *qui attaque qui*. Le cadre de Bench-Capon (2003) ajoute une couche critique : **qui défait qui dépend de ce que valorise l'audience**. Concrètement :
+
+- Une **attaque** $x \to y$ n'est pas automatiquement une **défaite** : elle ne réussit que si la valeur promue par $x$ est au moins aussi préférée (pour l'audience) que celle promue par $y$.
+- Changer l'audience change la relation de défaite, donc change les extensions (grounded / preferred / stable). Sur le cycle canonique, trois audiences excluent trois arguments différents — la signature d'un débat **sensible à l'audience**.
+- Cas limite : si tous les arguments partagent une même valeur, le VAF dégénère en cadre de Dung pur (toutes les attaques réussissent). Le cadre de Dung est donc un cas particulier du VAF.
+
+### Prochaines étapes
+
+- **Agrégation d'audiences → choix social** : si chaque individu a sa propre audience, comment décider collectivement ? C'est le pont vers [Tweety-9 (préférences)](../Tweety/Tweety-9-Preferences.ipynb) et [GameTheory / SocialChoice](../../GameTheory/) (théorèmes d'impossibilité d'Arrow, votations). La question « existe-t-il une agrégation d'audiences qui préserve la rationalité ? » est un analogue direct du paradoxe de Condorcet.
+- **Argumentation graduée** : plutôt qu'un ordre total sur les valeurs, [Ranking_Semantics](Argument_Analysis_Ranking_Semantics.ipynb) attribue une *force numérique* à chaque argument — une autre façon de départager ce que Dung laisse indécidé.
+- **Bipolarité** : les VAF gèrent les préférences, mais restent *attack-only*. Les cadres bipolaires (Cayrol & Lagasquie-Schiex, 2005) ajoutent une relation de **support** — un prolongement naturel au-delà de ce notebook.
+
+### Référence
+
+- Trevor J. M. Bench-Capon, *« A Value-Based Argumentation Framework »*, dans *Proceedings of the European Conference on Logics in Artificial Intelligence (JELIA)*, 2003 — le papier fondateur du cadre VAF reconstruit ici.
+
+---
+
+*Notebook pédagogique — pur stdlib Python, déterministe, sans LLM ni solveur externe. Conforme C.1 (stubs sans erreur volontaire), C.2 (sorties réelles), exercices à compléter.*",,,,,,,,61d3de0ffb928de1,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,bdd18d08,markdown,fr,17e4c06e849c40eb,"# I2 - Génération de contre-arguments par raisonnement formel
+
+
+
+Quand on a un argument, comment trouver automatiquement les arguments qui le contredisent ? C'est
+la question de départ de ce notebook.
+
+On utilise ASPIC+ pour écrire des arguments structurés (avec des prémisses et des règles), puis
+on génère leurs trois types de contre-arguments : undercut, rebut, undermine. 
+
+À partir de là on construit le graphe de Dung correspondant, on calcule ses extensions avec quatre sémantiques
+différentes, et on regarde quelles positions restent défendables. On finit par comparer
+ASPIC+ à un framework abstrait classique pour voir ce qu'il apporte en plus.
+
+Tout tourne avec TweetyProject (une librairie Java) qu'on pilote depuis Python grâce à
+JPype : c'est elle qui fait les calculs et garantit qu'ils sont corrects.
+
+
+
+#### Les 5 objectifs (validés tout au long du notebook)
+1. Formaliser en ASPIC+ — règles strictes/défaisables, base avec axiomes/présomptions → **§1**
+2. Générer automatiquement undercut / rebut / undermine depuis un argument cible → **§2**
+3. Calculer les extensions de Dung (grounded, complete, preferred, stable) → **§3**
+4. Évaluer la défendabilité des positions face aux contre-arguments → **§4**
+5. Comparer la richesse ASPIC+ vs frameworks abstraits → **§5**
+",,,,,,,,17e4c06e849c40eb,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,2d2b809b,markdown,fr,15d8ed74f15245f7,"## 0. Configuration de l'environnement
+
+TweetyProject est une bibliothèque **Java** : on démarre une JVM avec JPype en lui passant le JAR
+`tweety-full` (modules `arg.aspic`, `arg.dung`, `logics.pl`, ...). La JVM ne démarre qu'une fois
+par noyau, d'où la protection `isJVMStarted()`.
+",,,,,,,,15d8ed74f15245f7,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,c095f6a9,code,fr,6c5644a8b25a484c,"import os, glob
+import jpype
+import jpype.imports
+
+if not os.environ.get(""JAVA_HOME""):
+    jdk = glob.glob(r""C:\Program Files\Eclipse Adoptium\jdk*"")
+    if jdk:
+        os.environ[""JAVA_HOME""] = jdk[0]
+
+jar = glob.glob(os.path.join(os.getcwd(), ""lib"", ""tweety-full-*-with-dependencies.jar""))[0]
+
+if not jpype.isJVMStarted():
+    jpype.startJVM(classpath=[jar])
+
+print(""JVM demarree :"", jpype.isJVMStarted())
+print(""JAVA_HOME   :"", os.environ[""JAVA_HOME""])
+print(""JAR Tweety  :"", os.path.basename(jar))",,,,,,,,6c5644a8b25a484c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,b6f82a4b,code,fr,7d5a866d50e836c4,"from org.tweetyproject.arg.aspic.syntax import (AspicArgumentationTheory,
+                                                 DefeasibleInferenceRule,
+                                                 StrictInferenceRule)
+from org.tweetyproject.arg.aspic.ruleformulagenerator import PlFormulaGenerator
+from org.tweetyproject.logics.pl.parser import PlParser
+from org.tweetyproject.arg.dung.syntax import DungTheory, Argument, Attack
+from org.tweetyproject.arg.dung.reasoner import (SimpleGroundedReasoner,
+                                                 SimpleCompleteReasoner,
+                                                 SimplePreferredReasoner,
+                                                 SimpleStableReasoner)
+
+import matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyBboxPatch
+import networkx as nx
+import pandas as pd
+%matplotlib inline
+
+print(""Imports TweetyProject + visualisation OK."")",,,,,,,,7d5a866d50e836c4,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,c6436b72,markdown,fr,30ac29b83667c39f,"### Vue d'ensemble du raisonnement
+
+Le schéma ci-dessous résume la chaîne de traitement, de la base de connaissances jusqu'à la
+défendabilité des positions.
+",,,,,,,,30ac29b83667c39f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,089b348f,code,fr,5d47dc1734a483b9,"etapes = [
+    ""Base de connaissances\n(axiomes + presomptions)"",
+    ""Regles\n(strictes + defaisables)"",
+    ""Arguments\nASPIC+"",
+    ""Contre-arguments\nundercut/rebut/undermine"",
+    ""Framework\nde Dung"",
+    ""Extensions\n(4 semantiques)"",
+    ""Defendabilite\ndes positions"",
+]
+couleurs_pipe = [""#cfe2f3"", ""#cfe2f3"", ""#d9ead3"", ""#f9cb9c"", ""#d9d2e9"", ""#fff2cc"", ""#f4cccc""]
+
+fig, ax = plt.subplots(figsize=(15, 2.6))
+x = 0.0
+largeur, hauteur, ecart = 1.9, 1.0, 0.55
+for i, (txt, col) in enumerate(zip(etapes, couleurs_pipe)):
+    boite = FancyBboxPatch((x, 0), largeur, hauteur, boxstyle=""round,pad=0.06"",
+                           linewidth=1.4, edgecolor=""black"", facecolor=col)
+    ax.add_patch(boite)
+    ax.text(x + largeur / 2, hauteur / 2, txt, ha=""center"", va=""center"", fontsize=9.5)
+    if i < len(etapes) - 1:
+        ax.annotate("""", xy=(x + largeur + ecart, hauteur / 2),
+                    xytext=(x + largeur, hauteur / 2),
+                    arrowprops=dict(arrowstyle=""-|>"", lw=2, color=""#444""))
+    x += largeur + ecart
+ax.set_xlim(-0.2, x); ax.set_ylim(-0.3, 1.3); ax.axis(""off"")
+ax.set_title(""Pipeline : de la base de connaissances a la defendabilite"", fontsize=13)
+plt.tight_layout(); plt.show()",,,,,,,,5d47dc1734a483b9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,b112c103,markdown,fr,4c9ca94235a2aa09,"## 1. Formalisation en ASPIC+
+
+### 1.1 Rappel du formalisme
+
+Une théorie ASPIC+ repose sur :
+
+- une **base de connaissances** :
+  - **axiomes** : prémisses certaines, *non attaquables* ;
+  - **présomptions** (prémisses ordinaires) : prémisses plausibles, *attaquables* ;
+- des **règles d'inférence** :
+  - **règles strictes** `φ1,…,φn -> ψ` : inférences indiscutables ;
+  - **règles défaisables** `φ1,…,φn => ψ` : inférences plausibles, *attaquables*.
+
+Un **argument** chaîne prémisses et règles. Il est *strict/firm* s'il n'utilise que des axiomes et
+des règles strictes.
+
+### 1.2 Exemple support : la culpabilité d'un suspect
+
+| symbole | signification | type |
+|---|---|---|
+| `adn` | l'ADN du suspect est sur les lieux | **axiome** |
+| `t` | un témoin affirme avoir vu le suspect | présomption |
+| `m` | le témoin est myope sans lunettes | présomption |
+| `a` | le suspect dispose d'un alibi | présomption |
+| `pr` | le témoignage a été recueilli sous pression | présomption |
+| `labo` | doute sur la fiabilité du laboratoire ADN | présomption |
+| `cam` | une caméra contredit l'alibi | présomption |
+
+| règle | lecture | nature |
+|---|---|---|
+| `d1 : t => coupable` | le témoignage suggère la culpabilité | défaisable |
+| `d2 : adn => coupable` | l'ADN suggère la culpabilité | défaisable |
+| `d3 : m => ¬t` | myope ⇒ le témoin n'a pas vraiment vu | défaisable |
+| `d4 : a => ¬coupable` | l'alibi ⇒ non coupable | défaisable |
+| `d5 : pr => ¬d1` | sous pression ⇒ la règle `d1` ne s'applique pas | défaisable |
+| `d6 : labo => ¬d2` | labo douteux ⇒ la règle `d2` ne s'applique pas | défaisable |
+| `d7 : cam => ¬a` | caméra ⇒ l'alibi tombe | défaisable |
+| `s1 : coupable -> punissable` | définition légale | **stricte** |
+",,,,,,,,4c9ca94235a2aa09,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,2624c760,code,fr,ea474df2764f3021,"gen = PlFormulaGenerator()
+theorie = AspicArgumentationTheory(gen)
+theorie.setRuleFormulaGenerator(gen)
+parser = PlParser()
+
+def f(s):
+    return parser.parseFormula(s)
+
+theorie.addAxiom(f(""adn""))
+for p in [""t"", ""m"", ""a"", ""pr"", ""labo"", ""cam""]:
+    theorie.addOrdinaryPremise(f(p))
+
+def defeasible(nom, conclusion, premisse):
+    r = DefeasibleInferenceRule()
+    r.setName(nom); r.setConclusion(f(conclusion)); r.addPremise(f(premisse))
+    theorie.addRule(r); return r
+
+def stricte(nom, conclusion, premisse):
+    r = StrictInferenceRule()
+    r.setName(nom); r.setConclusion(f(conclusion)); r.addPremise(f(premisse))
+    theorie.addRule(r); return r
+
+d1 = defeasible(""d1"", ""coupable"", ""t"")
+d2 = defeasible(""d2"", ""coupable"", ""adn"")
+d3 = defeasible(""d3"", ""!t"", ""m"")
+d4 = defeasible(""d4"", ""!coupable"", ""a"")
+d5 = defeasible(""d5"", ""!d1"", ""pr"")
+d6 = defeasible(""d6"", ""!d2"", ""labo"")
+d7 = defeasible(""d7"", ""!a"", ""cam"")
+s1 = stricte(""s1"", ""punissable"", ""coupable"")
+
+print(""Theorie ASPIC+ construite -- 1 axiome, 6 presomptions,"",
+      ""7 regles defaisables, 1 regle stricte."")",,,,,,,,ea474df2764f3021,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,283fff76,markdown,fr,b9cad253b4692d69,"### 1.3 Arguments engendrés
+
+TweetyProject construit automatiquement tous les arguments dérivables. On leur donne un
+identifiant court (A0, A1, …).
+",,,,,,,,b9cad253b4692d69,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,ff53e7a4,code,fr,0fa1b5262ad96046,"def contraire(formule):
+    return formule.complement()
+
+def meme(x, y):
+    return x.equals(y)
+
+arguments = list(theorie.getArguments())
+arguments.sort(key=lambda a: str(a))
+ids = {str(a): ""A%d"" % i for i, a in enumerate(arguments)}
+def idof(a): return ids[str(a)]
+par_nom = {str(a): a for a in arguments}
+arg_par_id = {idof(a): a for a in arguments}
+
+print(""Nombre d'arguments :"", len(arguments), ""\n"")
+for a in arguments:
+    nature = ""firm/strict"" if a.isStrict() else ""defaisable ""
+    print(""%-4s [%s]  conclusion = %-10s  |  %s"" % (idof(a), nature, a.getConclusion(), a))",,,,,,,,0fa1b5262ad96046,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,524556d8,markdown,fr,9fe34668c742a552,"### 1.4 Structure interne d'un argument *(arbre de dérivation)*
+
+Contrairement à un framework abstrait, un argument ASPIC+ a une structure : un arbre dont les
+feuilles sont des prémisses (axiomes/présomptions) et les noeuds internes des applications de
+règles. C'est précisément cette structure qui rendra possible la génération ciblée des
+contre-arguments.
+
+*Couleurs : bleu clair = axiome / vert = présomption / bleu foncé = règle stricte / orange = règle défaisable.*
+",,,,,,,,9fe34668c742a552,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,eaf84c51,code,fr,952b9d5fe5580a8c,"def nom_regle(sub):
+    top = sub.getTopRule()
+    if top is None:
+        return None
+    nm = top.getName()
+    if nm is None or str(nm) in ("""", ""null""):
+        return None
+    return str(nm)
+
+COUL_CAT = {""axiome"": ""#cfe2f3"", ""presomption"": ""#d9ead3"",
+            ""stricte"": ""#a4c2f4"", ""defaisable"": ""#f9cb9c""}
+
+AXIOMES = {""adn""}
+
+def categorie(sub):
+    if not list(sub.getDirectSubs()):
+        return ""axiome"" if str(sub.getConclusion()) in AXIOMES else ""presomption""
+    top = sub.getTopRule()
+    return ""defaisable"" if (top is not None and top.isDefeasible()) else ""stricte""
+
+def construire_arbre(racine):
+    G = nx.DiGraph()
+    labels = {}
+    def rec(sub):
+        nid = str(sub)
+        r = nom_regle(sub)
+        labels[nid] = str(sub.getConclusion()) + ((""\n["" + r + ""]"") if r else """")
+        G.add_node(nid, cat=categorie(sub))
+        for d in sub.getDirectSubs():
+            G.add_edge(nid, str(d)); rec(d)
+    rec(racine)
+    return G, labels
+
+def positions_arbre(G, racine_id):
+    prof = nx.single_source_shortest_path_length(G, racine_id)
+    niveaux = {}
+    for n, p in prof.items():
+        niveaux.setdefault(p, []).append(n)
+    pos = {}
+    for p, ns in niveaux.items():
+        for i, n in enumerate(sorted(ns)):
+            pos[n] = (i - (len(ns) - 1) / 2.0, -p)
+    return pos
+
+def dessiner_arbre(racine, ax=None):
+    seul = ax is None
+    if seul:
+        fig, ax = plt.subplots(figsize=(7, 5))
+    G, labels = construire_arbre(racine)
+    pos = positions_arbre(G, str(racine))
+    cols = [COUL_CAT[G.nodes[n][""cat""]] for n in G.nodes]
+    nx.draw_networkx_nodes(G, pos, node_color=cols, node_size=2600,
+                           edgecolors=""black"", ax=ax)
+    nx.draw_networkx_edges(G, pos, arrowstyle=""-|>"", arrowsize=18,
+                           edge_color=""#555"", ax=ax)
+    nx.draw_networkx_labels(G, pos, labels, font_size=9, ax=ax)
+    presentes = set(G.nodes[n][""cat""] for n in G.nodes)
+    h = [mpatches.Patch(color=COUL_CAT[k], label=k) for k in
+         [""axiome"", ""presomption"", ""stricte"", ""defaisable""] if k in presentes]
+    ax.legend(handles=h, loc=""upper right"", fontsize=9)
+    ax.set_title(""Argument %s : conclusion %s"" % (idof(racine), racine.getConclusion()),
+                 fontsize=12)
+    ax.axis(""off"")
+    if seul:
+        plt.tight_layout(); plt.show()
+
+arg_punissable = None
+for a in arguments:
+    if meme(a.getConclusion(), f(""punissable"")):
+        noms = [str(r.getName()) for r in a.getAllRules()]
+        if ""d2"" in noms:
+            arg_punissable = a
+dessiner_arbre(arg_punissable)",,,,,,,,952b9d5fe5580a8c,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,f0ddbca7,markdown,fr,91fde4ef92b9b620,"Cet argument empile une règle stricte (s1, en bleu foncé) au-dessus d'une règle
+défaisable (d2, en orange) appliquée à l'axiome adn (en bleu clair). On voit
+directement les points attaquables (la partie défaisable) et les points sûrs (la partie firm).",,,,,,,,91fde4ef92b9b620,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,85359f65,markdown,fr,a492fc7a880f62a3," ### 1.5 **Démo Live** - explorateur de structure
+ on choisit n'importe quel argument : son arbre de dérivation s'affiche
+",,,,,,,,a492fc7a880f62a3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,5ca30854,code,fr,8c307a4c0c1b1274,"from ipywidgets import interact, Dropdown, IntSlider
+
+def explorer_structure(argument):
+    dessiner_arbre(arg_par_id[argument])
+
+interact(explorer_structure,
+         argument=Dropdown(options=[idof(a) for a in arguments],
+                           value=idof(arg_punissable), description=""Argument""));",,,,,,,,8c307a4c0c1b1274,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,46817497,markdown,fr,f0e751d47b0a317b,"## 2. Génération automatique des contre-arguments
+
+### 2.1 Les trois types d'attaque
+
+Selon le point visé dans la structure de l'argument cible :
+
+- **undermine** → une prémisse ordinaire (présomption) ;
+- **rebut** → la conclusion d'une règle défaisable ;
+- **undercut** → l'applicabilité d'une règle défaisable.
+
+Le schéma ci-dessous localise les trois attaques sur un argument générique.
+",,,,,,,,f0e751d47b0a317b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,c595a432,code,fr,f4665df21223c4bc,"fig, ax = plt.subplots(figsize=(9, 5.5))
+noeuds = {""concl"": (0, 2), ""regle"": (0, 1), ""prem"": (0, 0)}
+labels = {""concl"": ""conclusion\n(defaisable)"", ""regle"": ""regle\ndefaisable d"", ""prem"": ""premisse\nordinaire""}
+cols = {""concl"": ""#f9cb9c"", ""regle"": ""#fff2cc"", ""prem"": ""#d9ead3""}
+for k, (x, y) in noeuds.items():
+    ax.add_patch(FancyBboxPatch((x - 0.7, y - 0.28), 1.4, 0.56, boxstyle=""round,pad=0.05"",
+                                edgecolor=""black"", facecolor=cols[k], linewidth=1.4))
+    ax.text(x, y, labels[k], ha=""center"", va=""center"", fontsize=10)
+ax.annotate("""", xy=(0, 0.72), xytext=(0, 0.28), arrowprops=dict(arrowstyle=""-|>"", lw=1.6, color=""#555""))
+ax.annotate("""", xy=(0, 1.72), xytext=(0, 1.28), arrowprops=dict(arrowstyle=""-|>"", lw=1.6, color=""#555""))
+
+attaques_schema = [(""REBUT\nconclut le contraire\nde la conclusion"", 2, ""#cc0000""),
+                   (""UNDERCUT\nconclut le contraire\ndu nom de la regle"", 1, ""#cc0000""),
+                   (""UNDERMINE\nconclut le contraire\nde la premisse"", 0, ""#cc0000"")]
+for txt, y, col in attaques_schema:
+    ax.annotate("""", xy=(0.72, y), xytext=(2.6, y),
+                arrowprops=dict(arrowstyle=""-|>"", lw=2.2, color=col))
+    ax.text(2.7, y, txt, ha=""left"", va=""center"", fontsize=9.5, color=col, fontweight=""bold"")
+ax.set_xlim(-1.2, 5.4); ax.set_ylim(-0.6, 2.6); ax.axis(""off"")
+ax.set_title(""Les trois points d'attaque dans la structure d'un argument"", fontsize=13)
+plt.tight_layout(); plt.show()",,,,,,,,f4665df21223c4bc,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,0dc8e94f,markdown,fr,014aa16886ef3a6b,"### 2.2 Identification des points d'attaque
+
+On parcourt la structure de l'argument cible et on renvoie, pour chaque point, le type d'attaque
+et la formule qu'un contre-argument devrait conclure.
+",,,,,,,,014aa16886ef3a6b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,4b75037a,code,fr,258e12acca214789,"def points_attaque(arg):
+    points = []
+    for premisse in arg.getOrdinaryPremises():
+        points.append((""undermine"", ""premisse "" + str(premisse.getConclusion()),
+                       contraire(premisse.getConclusion())))
+    for sous in arg.getDefeasibleSubs():
+        points.append((""rebut"", ""conclusion "" + str(sous.getConclusion()),
+                       contraire(sous.getConclusion())))
+    for regle in arg.getDefeasibleRules():
+        points.append((""undercut"", ""regle "" + str(regle.getName()),
+                       contraire(gen.getRuleFormula(regle))))
+    return points
+
+cible = None
+for a in arguments:
+    top = a.getTopRule()
+    if meme(a.getConclusion(), f(""coupable"")) and top is not None and str(top.getName()) == ""d1"":
+        cible = a
+
+print(""Argument cible :"", idof(cible), ""="", cible)
+print(""(coupable, deduit du temoignage par d1)\n"")
+for typ, ou, besoin in points_attaque(cible):
+    print(""  - %-10s sur %-20s -> un contre-argument doit conclure : %s"" % (typ, ou, besoin))",,,,,,,,258e12acca214789,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,023c363e,markdown,fr,fa1f1eb6e88fc13b,"### 2.3 Génération et classification des contre-arguments
+
+On classe une attaque B -> A selon le point qu'elle vise, avec la précédence
+`undercut > rebut > undermine`.
+",,,,,,,,fa1f1eb6e88fc13b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,ed5f1a74,code,fr,b079be07eaade607,"def type_attaque(attaquant, cible):
+    c = attaquant.getConclusion()
+    for regle in cible.getDefeasibleRules():
+        if meme(c, contraire(gen.getRuleFormula(regle))):
+            return ""undercut""
+    for sous in cible.getDefeasibleSubs():
+        if meme(c, contraire(sous.getConclusion())):
+            return ""rebut""
+    for premisse in cible.getOrdinaryPremises():
+        if meme(c, contraire(premisse.getConclusion())):
+            return ""undermine""
+    return None
+
+dung = theorie.asDungTheory()
+
+contre = {""undermine"": [], ""rebut"": [], ""undercut"": []}
+for att in dung.getAttacks():
+    if str(att.getAttacked()) == str(cible):
+        b = par_nom[str(att.getAttacker())]
+        contre[type_attaque(b, cible)].append(b)
+
+print(""Contre-arguments generes contre"", idof(cible), ""(coupable via d1) :\n"")
+for typ in [""undermine"", ""rebut"", ""undercut""]:
+    print(""  [%s]"" % typ.upper())
+    for b in contre[typ]:
+        print(""     %-4s : %s   (conclut %s)"" % (idof(b), b, b.getConclusion()))",,,,,,,,b079be07eaade607,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,f4a0506d,markdown,fr,7f9cd778e8f1dab0,"Les 3 contre-arguments attendus sont bien générés automatiquement pour la cible
+« coupable via `d1` » :
+
+- **undermine** : `m => ¬t` attaque la présomption `t` ;
+- **rebut** : `a => ¬coupable` contredit la conclusion `coupable` ;
+- **undercut** : `pr => ¬d1` invalide l'application de la règle `d1`.
+",,,,,,,,7f9cd778e8f1dab0,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,6f41e557,markdown,fr,194089817bef2ff8,"### 2.4 Outillage de visualisation et classification globale
+
+On fixe une disposition du graphe (réutilisée partout pour garder la même forme), on étiquette
+chaque attaque du framework par son type, puis on affiche le graphe complet.
+",,,,,,,,194089817bef2ff8,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,2280bb41,code,fr,4a392c95eeb251ca,"attaques = []
+for att in dung.getAttacks():
+    b = par_nom[str(att.getAttacker())]
+    a = par_nom[str(att.getAttacked())]
+    attaques.append((b, a, type_attaque(b, a)))
+
+ATT = [(idof(b), idof(a)) for (b, a, _) in attaques]
+COUL_ATT = {""undermine"": ""tab:blue"", ""rebut"": ""tab:red"", ""undercut"": ""tab:green""}
+
+GBASE = nx.DiGraph()
+for a in arguments:
+    GBASE.add_node(idof(a))
+for (b, a, _) in attaques:
+    GBASE.add_edge(idof(b), idof(a))
+POS = nx.spring_layout(GBASE, seed=7, k=1.6)
+
+def dessiner_graphe(couleur=None, titre=""Framework d'argumentation"", ax=None, legende=""attaques""):
+    seul = ax is None
+    if seul:
+        fig, ax = plt.subplots(figsize=(13, 9))
+    couleur = couleur or {}
+    cols = [couleur.get(idof(a), ""#ffe9b3"") for a in arguments]
+    nx.draw_networkx_nodes(GBASE, POS, nodelist=[idof(a) for a in arguments],
+                           node_color=cols, node_size=1400, edgecolors=""black"", ax=ax)
+    nx.draw_networkx_labels(GBASE, POS, font_size=9, font_weight=""bold"", ax=ax)
+    for typ, c in COUL_ATT.items():
+        E = [(idof(b), idof(a)) for (b, a, t) in attaques if t == typ]
+        nx.draw_networkx_edges(GBASE, POS, edgelist=E, edge_color=c, width=2,
+                               arrowsize=18, connectionstyle=""arc3,rad=0.12"", ax=ax)
+    if legende == ""attaques"":
+        h = [plt.Line2D([0], [0], color=c, lw=2, label=t) for t, c in COUL_ATT.items()]
+        ax.legend(handles=h, loc=""upper right"", fontsize=10, title=""type d'attaque"")
+    elif legende == ""statuts"":
+        h = [mpatches.Patch(color=""#7fc97f"", label=""IN (accepte)""),
+             mpatches.Patch(color=""#e8736a"", label=""OUT (rejete)""),
+             mpatches.Patch(color=""#cfcfcf"", label=""UNDEC (indecis)"")]
+        ax.legend(handles=h, loc=""upper right"", fontsize=10, title=""statut"")
+    ax.set_title(titre, fontsize=13); ax.axis(""off"")
+    if seul:
+        plt.tight_layout(); plt.show()
+
+dessiner_graphe(titre=""Framework de Dung issu de la theorie ASPIC+"")
+print(""Legende des arguments :"")
+for a in arguments:
+    print(""  %-4s = %s"" % (idof(a), a))",,,,,,,,4a392c95eeb251ca,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,8bf6a514,code,fr,a2a7c208fbdbf6cd,"table = pd.DataFrame(
+    [(idof(b), str(b.getConclusion()), idof(a), str(a.getConclusion()), typ)
+     for (b, a, typ) in attaques],
+    columns=[""attaquant"", ""conclut"", ""cible"", ""conclut(cible)"", ""type""]
+).sort_values([""type"", ""attaquant""]).reset_index(drop=True)
+print(""Nombre total d'attaques :"", len(attaques), ""\n"")
+print(table.to_string(index=False))
+print(""\nRepartition par type :"")
+print(table[""type""].value_counts().to_string())",,,,,,,,a2a7c208fbdbf6cd,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,e5cf186c,markdown,fr,cfdc7a58043e9967,"### 2.5  **Démo Live** — explorateur de contre-arguments
+
+On choisit un argument cible : ses contre-arguments sont listés par type et mis en évidence
+sur le graphe (cible en orange, attaquants colorés selon le type d'attaque).
+
+Quelques cibles : 
+- `coupable` via `d1` (les 3 types)
+- `coupable` via `d2` (rebut + undercut, mais pas d'undermine car fondé sur l'axiome `adn`)
+- `¬coupable` (rebut + undermine de l'alibi).
+",,,,,,,,cfdc7a58043e9967,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,eb6b6d7d,code,fr,ca9c1a6ff26f9319,"COUL_NOEUD = {""undermine"": ""#6fa8dc"", ""rebut"": ""#ea9999"", ""undercut"": ""#93c47d""}
+
+def explorer_cible(argument):
+    c = arg_par_id[argument]
+    couleur = {argument: ""#ff8c00""}
+    info = {""undermine"": [], ""rebut"": [], ""undercut"": []}
+    for (b, a, t) in attaques:
+        if str(a) == str(c) and t is not None:
+            couleur[idof(b)] = COUL_NOEUD[t]
+            info[t].append(b)
+    print(""Cible %s : %s\n"" % (argument, c))
+    total = 0
+    for t in [""undermine"", ""rebut"", ""undercut""]:
+        noms = [idof(b) for b in info[t]] or [""(aucun)""]
+        print(""  %-10s : %s"" % (t, "", "".join(noms)))
+        total += len(info[t])
+    print(""\n  -> %d contre-argument(s) genere(s)."" % total)
+    dessiner_graphe(couleur, ""Contre-arguments de %s  (conclut %s)"" % (argument, c.getConclusion()))
+
+explorer_cible(idof(cible))",,,,,,,,ca9c1a6ff26f9319,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,1c12fc51,code,fr,7382cf42f2ad5aea,"interact(explorer_cible,
+         argument=Dropdown(options=[idof(a) for a in arguments],
+                           value=idof(cible), description=""Cible""));",,,,,,,,7382cf42f2ad5aea,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,64a7ff16,markdown,fr,a245eb7acfefce4b,"## 3. Framework de Dung et sémantiques
+
+### 3.1 Le framework abstrait obtenu
+
+Chaque argument structuré devient un nœud, chaque contre-argument une arête. On raisonne alors
+abstraitement « à la Dung ».
+",,,,,,,,a245eb7acfefce4b,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,a61ae516,code,fr,0d0ff392084d796d,"print(""Framework de Dung :"")
+print(""  arguments :"", dung.getNumberOfNodes())
+print(""  attaques  :"", len(dung.getAttacks()))",,,,,,,,0d0ff392084d796d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,3415e757,markdown,fr,92dee43096baae83,"### 3.2 Les quatre sémantiques
+
+Sur un ensemble E admissible (sans conflit et qui défend chacun de ses membres) :
+
+- **grounded** : la plus petite extension complète, raisonnement sceptique, unique 
+- **complete** : tout argument défendu par E est dans E 
+- **preferred** : extension admissible maximale (inclusion) 
+- **stable** : sans conflit et attaque tout argument extérieur
+",,,,,,,,92dee43096baae83,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,e51374a5,code,fr,287eab03e6d10489,"reasoners = {
+    ""grounded"":  SimpleGroundedReasoner(),
+    ""complete"":  SimpleCompleteReasoner(),
+    ""preferred"": SimplePreferredReasoner(),
+    ""stable"":    SimpleStableReasoner(),
+}
+sems = [""grounded"", ""complete"", ""preferred"", ""stable""]
+
+def noms(extension):
+    return set(str(x) for x in extension)
+
+extensions = {nom: [noms(e) for e in r.getModels(dung)] for nom, r in reasoners.items()}
+
+for nom in sems:
+    exts = extensions[nom]
+    print(""=== %s : %d extension(s) ==="" % (nom.upper(), len(exts)))
+    for E in exts:
+        courts = sorted(ids[n] for n in E)
+        concl = sorted(set(str(par_nom[n].getConclusion()) for n in E))
+        print(""   {%s}"" % "", "".join(courts))
+        print(""       conclusions :"", "", "".join(concl))
+    print()",,,,,,,,287eab03e6d10489,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,c0257d85,markdown,fr,203e9792b52a1472,"### 3.3 Étiquetage IN / OUT / UNDEC
+
+Pour une extension E, un argument est:
+- `IN` s'il est dans E
+- `OUT` s'il est attaqué par un membre de E 
+- `UNDEC` sinon
+
+On colore le graphe selon cet étiquetage (ici l'extension
+grounded).
+",,,,,,,,203e9792b52a1472,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,55317b7a,code,fr,7e9183325983022d,"def labelling(E):
+    membres = {ids[x] for x in E}
+    statut = {}
+    for a in arguments:
+        n = idof(a)
+        if n in membres:
+            statut[n] = ""IN""
+        else:
+            attaque = any(bb in membres and aa == n for (bb, aa) in ATT)
+            statut[n] = ""OUT"" if attaque else ""UNDEC""
+    return statut
+
+def couleur_extension(E):
+    m = {""IN"": ""#7fc97f"", ""OUT"": ""#e8736a"", ""UNDEC"": ""#cfcfcf""}
+    return {n: m[s] for n, s in labelling(E).items()}
+
+E0 = extensions[""grounded""][0]
+dessiner_graphe(couleur_extension(E0),
+                ""Etiquetage de l'extension grounded"", legende=""statuts"")",,,,,,,,7e9183325983022d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,b1dc7025,markdown,fr,7ea68db0363b6818,"### 3.4  **Démo Live** — explorateur de sémantiques
+
+On choisit la sémantique et l'indice d'extension : le graphe se recolore (IN/OUT/UNDEC) et
+les conclusions acceptées s'affichent
+",,,,,,,,7ea68db0363b6818,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,678a30ef,code,fr,395caf50f5ad424f,"def explorer_semantique(semantique, extension):
+    exts = extensions[semantique]
+    if not exts:
+        print(""Aucune extension pour"", semantique); return
+    E = exts[extension % len(exts)]
+    concl = sorted(set(str(par_nom[n].getConclusion()) for n in E)) or [""(vide)""]
+    print(""Semantique %s -- extension %d / %d"" % (semantique, extension % len(exts) + 1, len(exts)))
+    print(""Arguments IN :"", "", "".join(sorted(ids[n] for n in E)) or ""(aucun)"")
+    print(""Conclusions acceptees :"", "", "".join(concl))
+    dessiner_graphe(couleur_extension(E),
+                    ""%s -- extension %d/%d"" % (semantique, extension % len(exts) + 1, len(exts)),
+                    legende=""statuts"")
+
+maxext = max(len(extensions[s]) for s in sems)
+interact(explorer_semantique,
+         semantique=Dropdown(options=sems, value=""preferred"", description=""Semantique""),
+         extension=IntSlider(min=0, max=maxext - 1, value=0, description=""Extension""));",,,,,,,,395caf50f5ad424f,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,0594f913,markdown,fr,017448cefe2ebe42,"## 4. Défendabilité des positions 
+
+Une conclusion est   `sceptiquement` acceptée si soutenue dans toutes les extensions,
+ `crédulement` si dans au moins une,  `rejetée` sinon. On évalue ainsi les positions face
+aux contre-arguments générés.
+",,,,,,,,017448cefe2ebe42,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,dc3ac81b,code,fr,a613aa31f12d9525,"def support(formule):
+    cible = f(formule)
+    return {idof(a) for a in arguments if meme(a.getConclusion(), cible)}
+
+def statut(sup, liste_ext):
+    if not liste_ext:
+        return ""rejete""
+    pres = [bool(sup & {ids[x] for x in E}) for E in liste_ext]
+    if all(pres): return ""sceptique""
+    if any(pres): return ""credule""
+    return ""rejete""
+
+claims = [""coupable"", ""!coupable"", ""punissable"", ""t"", ""!t"", ""a"", ""!a"", ""!d1"", ""!d2"", ""adn""]
+lignes = [[c] + [statut(support(c), extensions[s]) for s in sems] for c in claims]
+defend = pd.DataFrame(lignes, columns=[""claim""] + sems)
+print(defend.to_string(index=False))",,,,,,,,a613aa31f12d9525,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,f49e1b1f,markdown,fr,1a2cbb509cce4efe,"### 4.1 Carte de défendabilité
+
+Visualisation : **vert = sceptique** / **jaune = crédule** / **rouge = rejeté**
+",,,,,,,,1a2cbb509cce4efe,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,4e6463c5,code,fr,1071ce970fd6d3e9,"niveau = {""rejete"": 0, ""credule"": 1, ""sceptique"": 2}
+M = [[niveau[statut(support(c), extensions[s])] for s in sems] for c in claims]
+
+fig, ax = plt.subplots(figsize=(8.5, 6))
+im = ax.imshow(M, cmap=""RdYlGn"", vmin=0, vmax=2, aspect=""auto"")
+ax.set_xticks(range(len(sems))); ax.set_xticklabels(sems, fontsize=11)
+ax.set_yticks(range(len(claims))); ax.set_yticklabels(claims, fontsize=11)
+for i in range(len(claims)):
+    for j in range(len(sems)):
+        nom = [k for k, v in niveau.items() if v == M[i][j]][0]
+        ax.text(j, i, nom, ha=""center"", va=""center"", fontsize=9)
+ax.set_title(""Defendabilite des positions selon la semantique"", fontsize=13)
+plt.tight_layout(); plt.show()",,,,,,,,1071ce970fd6d3e9,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,e871fe13,markdown,fr,79d5fcc4fd64f967,"Lecture :
+
+`adn`, `¬d1` et `¬d2` sont acceptés de façon  `sceptique` dans les quatre sémantiques, ce sont les positions les plus solides du graphe : leurs undercuts ne sont jamais contredits.
+
+Le plus intéressant : `coupable` est  `rejeté partout `. Les deux seules façons d'y arriver (via `d1`, le témoignage, ou via `d2`, l'ADN) sont chacune coupées par un undercut lui-même jamais attaqué (`¬d1` et `¬d2`). C'est l'undercut qui fait basculer le résultat.
+
+`¬coupable`, `t`, `a`... restent seulement  `crédules` : ce sont des conflits symétriques (rebut ou undermine, comme `a` contre `¬a`) que preferred et stable tranchent chacune à leur façon, sans qu'aucune sémantique ne les accepte de manière sceptique.
+
+**Bilan** : avec les contre-arguments générés, « le suspect est coupable » n'est plus défendable, alors qu'avant le doute sur le labo la voie de l'ADN restait ouverte. C'est exactement ce que l'analyse de défendabilité devait montrer.
+",,,,,,,,79d5fcc4fd64f967,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,b83b95f0,markdown,fr,7d80416b3544cdcf,"### 4.2  **Démo Live** — défendabilité d'une position
+
+On choisit une conclusion : son statut sous chaque sémantique s'affiche.
+",,,,,,,,7d80416b3544cdcf,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,f3af4af3,code,fr,698b9a57a5b8f94e,"def explorer_claim(claim):
+    sup = support(claim)
+    vals = [niveau[statut(sup, extensions[s])] for s in sems]
+    coul = {0: ""#e8736a"", 1: ""#ffd966"", 2: ""#7fc97f""}
+    fig, ax = plt.subplots(figsize=(8, 3.6))
+    barres = ax.bar(sems, vals, color=[coul[v] for v in vals], edgecolor=""black"")
+    for b, v in zip(barres, vals):
+        nom = [k for k, n in niveau.items() if n == v][0]
+        ax.text(b.get_x() + b.get_width() / 2, v + 0.05, nom, ha=""center"", fontsize=10)
+    ax.set_ylim(0, 2.5); ax.set_yticks([0, 1, 2])
+    ax.set_yticklabels([""rejete"", ""credule"", ""sceptique""])
+    ax.set_title(""Defendabilite de '%s'  (%d argument(s) la concluent)"" % (claim, len(sup)), fontsize=12)
+    plt.tight_layout(); plt.show()
+
+explorer_claim(""coupable"")",,,,,,,,698b9a57a5b8f94e,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,f5a0e123,code,fr,3e58c8b9a37b8023,"interact(explorer_claim,
+         claim=Dropdown(options=claims, value=""coupable"", description=""Conclusion""));",,,,,,,,3e58c8b9a37b8023,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,ea972754,markdown,fr,d6286f69e6439fd3,"## 5. Comparaison ASPIC+ VS frameworks abstraits 
+
+Un framework abstrait de Dung se donne directement comme des arguments « boîtes noires » et une
+relation d'attaque primitive. On modélise le même scénario en abstrait, en devant poser les
+attaques à la main, puis on compare les deux graphes côte à côte.
+",,,,,,,,d6286f69e6439fd3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,56138f79,code,fr,400efe9c2424d5f3,"abstrait = DungTheory()
+noeuds = {}
+for n in [""Coup_temoin"", ""Coup_adn"", ""NonT"", ""NonCoup"", ""NonD1"", ""NonD2"", ""NonA""]:
+    x = Argument(n); noeuds[n] = x; abstrait.add(x)
+
+paires = [(""NonT"", ""Coup_temoin""), (""Coup_temoin"", ""NonT""), (""NonD1"", ""Coup_temoin""),
+          (""NonCoup"", ""Coup_temoin""), (""Coup_temoin"", ""NonCoup""),
+          (""NonCoup"", ""Coup_adn""), (""Coup_adn"", ""NonCoup""),
+          (""NonD2"", ""Coup_adn""), (""NonA"", ""NonCoup"")]
+for u, v in paires:
+    abstrait.addAttack(noeuds[u], noeuds[v])
+
+print(""AF abstrait :"", abstrait.getNumberOfNodes(), ""arguments,"",
+      len(abstrait.getAttacks()), ""attaques posees manuellement\n"")
+for nom, r in reasoners.items():
+    exts = [sorted(str(x) for x in e) for e in r.getModels(abstrait)]
+    print(""%-9s : %d extension(s)"" % (nom, len(exts)))",,,,,,,,400efe9c2424d5f3,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,9107b3c2,code,fr,8ba2d528637f8d35,"Gabs = nx.DiGraph()
+for n in noeuds: Gabs.add_node(n)
+for u, v in paires: Gabs.add_edge(u, v)
+posabs = nx.spring_layout(Gabs, seed=3, k=1.5)
+
+fig, axes = plt.subplots(1, 2, figsize=(17, 7.5))
+dessiner_graphe(titre=""ASPIC+  (structure -> attaques typees, auto)"", ax=axes[0])
+nx.draw_networkx_nodes(Gabs, posabs, node_color=""#ffe0e0"", node_size=2200,
+                       edgecolors=""black"", ax=axes[1])
+nx.draw_networkx_labels(Gabs, posabs, font_size=9, ax=axes[1])
+nx.draw_networkx_edges(Gabs, posabs, edge_color=""#888"", width=2, arrowsize=20,
+                       connectionstyle=""arc3,rad=0.12"", ax=axes[1])
+axes[1].set_title(""Framework abstrait  (attaques uniformes, manuelles)"", fontsize=13)
+axes[1].axis(""off"")
+plt.tight_layout(); plt.show()",,,,,,,,8ba2d528637f8d35,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,d9da2f17,markdown,fr,1d33d84568950010,"### 5.1 Synthèse de la richesse
+",,,,,,,,1d33d84568950010,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,10036e19,code,fr,514b4fd516ed18ed,"comparaison = pd.DataFrame([
+    [""Structure interne des arguments"", ""Oui (premisses + regles)"", ""Non (boites noires)""],
+    [""Distinction axiome / presomption"", ""Oui"", ""Non""],
+    [""Distinction regle stricte / defaisable"", ""Oui"", ""Non""],
+    [""Generation auto des attaques"", ""Oui (depuis la structure)"", ""Non (a poser a la main)""],
+    [""Typage undercut / rebut / undermine"", ""Oui"", ""Non""],
+    [""Ordre de preference sur arguments"", ""Oui"", ""Non (au niveau du FW)""],
+    [""Calcul des extensions de Dung"", ""Oui"", ""Oui""],
+], columns=[""Critere"", ""ASPIC+"", ""Framework abstrait""])
+print(comparaison.to_string(index=False))",,,,,,,,514b4fd516ed18ed,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,daad99ec,markdown,fr,ce9e42eb9783b435,"**Conclusion:** 
+
+Le framework abstrait calcule bien des extensions, mais il suppose les attaques données. ASPIC+ est strictement plus riche : à partir de la seule base de connaissances et des
+règles, il engendre arguments et attaques, distingue les trois types de contre-arguments et
+permet d'exprimer des préférences. Cette granularité est indispensable pour générer
+automatiquement des contre-arguments, là où le formalisme abstrait ne peut que les évaluer.
+",,,,,,,,ce9e42eb9783b435,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb,1f349aca,markdown,fr,f3b9b833948e712f,"## 6. Bilan — objectifs validés
+
+| # | Objectif | Où | Statut |
+|---|---|---|---|
+| 1 | Formaliser en ASPIC+ (strictes/défaisables, axiomes/présomptions) | §1 | ✅ |
+| 2 | Générer automatiquement undercut / rebut / undermine | §2 | ✅ |
+| 3 | Calculer les extensions (grounded, complete, preferred, stable) | §3 | ✅ |
+| 4 | Évaluer la défendabilité des positions | §4 | ✅ |
+| 5 | Comparer ASPIC+ vs frameworks abstraits | §5 | ✅ |
+
+L'implémentation via TweetyProject garantit la correction formelle : construction des
+arguments, calcul des attaques et sémantiques de Dung sont assurés par la bibliothèque, tandis que
+notre code identifie les points d'attaque, classe les contre-arguments et pilote les visualisations.
+",,,,,,,,f3b9b833948e712f,,,,,,,
