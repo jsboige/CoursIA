@@ -264,6 +264,71 @@ def test_fr_contam_strict_blocks(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# FR_CONTAM native-English exception (#10298 Option A)
+# ---------------------------------------------------------------------------
+# A markdown cell whose SOURCE (FR) is itself English, and whose rendered text
+# equals the source, is NOT contamination -- it is a legitimate same-language
+# pass-through (the cell needed no translation). This catches deep_research
+# notebooks whose FR source was copy-pasted from an English research paper.
+
+_NATIVE_EN_PROSE = (
+    "## Research Findings\n\n"
+    "Based on the grid search, the optimal lookback window for the momentum "
+    "strategy balances signal stability against responsiveness. The VIX "
+    "threshold reduces drawdown at the cost of forgone upside."
+)
+
+
+def test_is_native_english_detects_english_prose():
+    """Long English prose with no French diacritics is native English."""
+    assert p._is_native_english(_NATIVE_EN_PROSE) is True
+
+
+def test_is_native_english_rejects_french_prose():
+    """Genuine French prose (with diacritics) is not native English."""
+    french = (
+        "## Résultats de recherche\n\n"
+        "D'après la recherche par grille, la fenêtre optimale pour la stratégie "
+        "équilibrre la stabilité du signal et la réactivité. Le seuil VIX réduit "
+        "le drawdown au coût d'un rendement sacrifié."
+    )
+    assert p._is_native_english(french) is False
+
+
+def test_is_native_english_rejects_short_ambiguous_cell():
+    """A short header like '## Introduction' is too ambiguous to whitelist
+    silently -- it stays in the normal FR_CONTAM path (could be French)."""
+    assert p._is_native_english("## Introduction") is False
+
+
+def test_fr_contam_native_english_not_flagged_strict(tmp_path):
+    """Under strict_fr, a markdown cell identical to its source where the
+    source is native English must NOT be flagged FR_CONTAM (#10298)."""
+    src_cells = [_md_cell("c1", _NATIVE_EN_PROSE)]
+    trd_cells = [_md_cell("c1", _NATIVE_EN_PROSE)]  # trd == src (same-language pass-through)
+    src, trd = _write_pair(tmp_path, "NativeEn-01", src_cells, trd_cells)
+    src_records, _ = p.load_cells(src)
+    trd_records, _ = p.load_cells(trd)
+    anomalies = p.check_invariants(src_records, trd_records, strict_fr=True)
+    fr_contam = [a for a in anomalies if a.verdict == "FR_CONTAM"]
+    assert fr_contam == [], (
+        f"native-English same-language cell must not be FR_CONTAM : {fr_contam}"
+    )
+
+
+def test_fr_contam_native_english_not_flagged_advisory(tmp_path):
+    """Same exception holds in advisory (default) mode."""
+    src_cells = [_md_cell("c1", _NATIVE_EN_PROSE)]
+    trd_cells = [_md_cell("c1", _NATIVE_EN_PROSE)]
+    src, trd = _write_pair(tmp_path, "NativeEn-01b", src_cells, trd_cells)
+    src_records, _ = p.load_cells(src)
+    trd_records, _ = p.load_cells(trd)
+    anomalies = p.check_invariants(src_records, trd_records)  # default strict_fr=False
+    fr_contam = [a for a in anomalies if a.verdict == "FR_CONTAM"]
+    assert fr_contam == []
+
+
+# ---------------------------------------------------------------------------
 # Legitimate case (corollaire D2) — FR text inside a CODE cell is OK
 # ---------------------------------------------------------------------------
 
