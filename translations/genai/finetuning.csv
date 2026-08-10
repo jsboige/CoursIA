@@ -3428,3 +3428,27 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing.ipynb,a7b8c9d0,mar
 ---
 
 **Navigation**: [FT-01](./FT-01-Introduction-FineTuning.ipynb) | [FT-02](./FT-02-QLoRA-Quantization.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT.ipynb) | [FT-04](./FT-04-RLHF-DPO.ipynb) | **FT-05**",,,,,,,fba0ed6dc054d6c2,32aa70165f06586f,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,ift02-gen,markdown,fr,69bc12e1fa974130,"### Lecture du résultat : la greffe stylistique du fine-tuning
+
+La génération `« Dans les rues sombres de Paris, Jean Valjean… »` prouve que le fine-tuning QLoRA a **modifié le comportement** du modèle. L'OPT-1.3B de base, entraîné sur un corpus anglophone générique, produit désormais du français qui réemploie le **lexique des *Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — la greffe du dataset de classiques français a pris. Mais observez aussi les **limites** : `« la sonne du consaveau »`, `« ce qu'il lui aveuglait »` sont des fragments grammaticalement incohérents. C'est le compromis attendu d'un modèle de **1,3 Md paramètres** fine-tuné sur **seulement 10 extraits** : l'imprégnation stylistique prend, la cohérence syntaxique profonde ne suit pas. C'est précisément ce déséquilibre que la cellule de comparaison suivante quantifie (qualité `~97-99%` du full fine-tuning).
+","### Reading the result: the stylistic graft of fine-tuning
+
+The generation `""Dans les rues sombres de Paris, Jean Valjean…""` proves that QLoRA fine-tuning has **modified the model's behavior**. The base OPT-1.3B, trained on a generic English-language corpus, now produces French that reuses the **vocabulary of *Les Misérables*** (`Jean Valjean`, `sombres rues de Paris`) — the graft of the French classics dataset has taken. But also observe the **limits**: `""la sonne du consaveau""`, `""ce qu'il lui aveuglait""` are fragments that are grammatically incoherent. This is the expected trade-off of a model of **1.3 B parameters** fine-tuned on **only 10 excerpts**: the stylistic imprint takes hold, deep syntactic coherence does not follow. This very imbalance is what the next comparison cell quantifies (quality `~97-99%` of full fine-tuning).",,,,,,,69bc12e1fa974130,d390fe2f06b3b1ee,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization.ipynb,ift02-cmp,markdown,fr,e9911e90f00518e1,"### Lecture du résultat : le triptyque VRAM / qualité / vitesse
+
+Le tableau récapitulatif condense la **promesse et le coût** de QLoRA sur trois axes :
+
+- **VRAM (le gain décisif)** : `~0,7 Go` (QLoRA) contre `~2,6 Go` (LoRA FP16), soit **~3,7× d'économie mémoire**. C'est ce qui rend un modèle de 1,3 Md fine-tunable sur une carte *consumer* (8-12 Go) au lieu d'une 24 Go. La clé : seuls les poids **NF4 (4 bits)** résident en VRAM ; les gradients et l'optimiseur ne portent que sur les **adaptateurs LoRA** (FP16), d'où la ligne `Grad + optimizer : FP16 (LoRA seul)` identique des deux côtés.
+- **Qualité (le prix à payer)** : `~97-99%` du full fine-tuning. La quantization NF4 préserve l'information car elle **concentre la précision** là où les poids sont denses (distribution gaussienne supposée), mais une dégradation de 1-3 % est intrinsèque à la perte d'information 16→4 bits.
+- **Vitesse (le coût caché)** : `~0,8×`, soit ~20 % de ralentissement. La **déquantization** NF4→FP16 à chaque *forward pass* a un surcoût de calcul — QLoRA n'est pas gratuit en temps d'entraînement.
+
+La **recommandation** qui clôt le tableau encode la règle de décision : LoRA (FP16) si la VRAM le permet (plus simple, plus rapide), QLoRA dès que le modèle dépasse ~1 Md de paramètres ou que la VRAM est contrainte. C'est ce positionnement — *fine-tuner de gros modèles sur du petit matériel* — qui a fait de QLoRA le standard du fine-tuning ouvert sur GPU *consumer*.
+","### Reading the result: the VRAM / quality / speed triptych
+
+The summary table condenses the **promise and the cost** of QLoRA along three axes:
+
+- **VRAM (the decisive gain)**: `~0.7 GB` (QLoRA) vs `~2.6 GB` (LoRA FP16), i.e. **~3.7× memory savings**. This is what makes a 1.3 B model fine-tunable on a *consumer* card (8-12 GB) instead of a 24 GB one. The key: only the **NF4 (4-bit)** weights live in VRAM; gradients and optimizer only carry the **LoRA adapters** (FP16), hence the line `Grad + optimizer: FP16 (LoRA only)` identical on both sides.
+- **Quality (the price to pay)**: `~97-99%` of full fine-tuning. NF4 quantization preserves information because it **concentrates precision** where weights are dense (assumed Gaussian distribution), but a 1-3% degradation is intrinsic to the 16→4-bit information loss.
+- **Speed (the hidden cost)**: `~0.8×`, i.e. ~20% slowdown. The NF4→FP16 **dequantization** at each *forward pass* has a computational overhead — QLoRA is not free in training time.
+
+The **recommendation** that closes the table encodes the decision rule: LoRA (FP16) if VRAM allows (simpler, faster), QLoRA as soon as the model exceeds ~1 B parameters or VRAM is constrained. This positioning — *fine-tuning large models on small hardware* — is what made QLoRA the open fine-tuning standard on *consumer* GPUs.",,,,,,,e9911e90f00518e1,f1f08b209b558bd3,,,,,,
