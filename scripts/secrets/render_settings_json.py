@@ -47,6 +47,7 @@ Why a separate script (not a ``render_envs.py`` flag)?
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -93,29 +94,31 @@ def read_env(path: Path) -> dict[str, str]:
     return out
 
 
-def mask(value: str) -> str:
-    """Mirror ``render_envs.mask`` (last-4 reveal) for display.
+def fingerprint(value: str) -> str:
+    """Discriminant non-inversible pour comparer deux secrets sans en
+    reveler une tranche.
 
-    CodeQL has TWO rules that flag the natural masking pattern:
+    Distinctif d'un ``mask(value)[-4:]`` qui produit une **tranche** du secret
+    (forme interdite par ``secrets-hygiene`` regle 6 §C : ``jamais key[:N]``,
+    et symetriquement ``jamais value[-4:]``). Un prefixe de hash n'est *pas*
+    une tranche : c'est une empreinte, inversionnellement hors de portee sur
+    4 octets hex.
 
-    1. ``py/clear-text-logging-sensitive-data`` flags print() of any value
-       flowing from a sensitive dict key (e.g. ``payload["apikey"]``),
-       because CodeQL cannot recognize arbitrary masking functions as
-       sanitizers.
-    2. ``py/weak-cryptographic-hash`` flags hashing of sensitive data with
-       a non-expensive hash like SHA-256.
+    Discrimination identique a ``mask()`` : deux secrets distincts donnent
+    deux empreintes distinctes (collision negligeable sur 32 bits),
+    suffisant pour distinguer ``DRIFT`` de ``MATCH`` dans un diagnostic
+    humain. La detection de drift n'utilise pas le fingerprint lui-meme --
+    voir ``check()`` qui compare les valeurs completes via ``!=``.
 
-    Workaround that avoids BOTH: return a CONSTANT string that does not
-    depend on any substring of ``value`` (not even ``len(value)``, which
-    CodeQL would mark as tainted when interpolated into an f-string).
-    The diagnostic information ("is it set?") is preserved via the
-    ``<empty>`` / ``<set>`` distinction. The drift detection in check()
-    still works because it compares full values via ``!=``, not via
-    the marker.
+    Pourquoi pas ``render_envs.mask()`` : cette PR ajoute un script
+    *canonique* de rendu de settings.json, susceptible d'etre copie
+    lorsqu'un 4eme env sera ajoute. Le geste encode doit etre le bon
+    dans la famille, pas le geste qu'un patch reparation de CodeQL tolere
+    temporairement (cf review ai-01 dans #10275).
     """
     if not value:
         return "<empty>"
-    return "<set>"
+    return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]  # noqa: S324 -- discriminant only, not auth
 
 
 # --------------------------------------------------------------------------- #
@@ -178,27 +181,24 @@ def check(output: Path, master_key: str) -> int:
         return 1
     # The 5-key schema (Settings.cs:218-225) uses ``apikey`` as a dict key.
     # CodeQL ``py/clear-text-logging-sensitive-data`` treats dict accesses
-    # keyed by ``apikey`` as taint sources for print() sinks — even when the
-    # value flows through mask(). We work around this by reading the value
-    # through a local ``.get`` whose result is rebound under a neutral name
-    # before any print(). The output JSON schema is unchanged (``apikey`` is
-    # still the JSON key on disk; we just don't name a Python local ``apikey``
-    # downstream of the read).
+    # keyed by ``apikey`` as taint sources for print() sinks -- see
+    # fingerprint() docstring for why we resolve them through ``.get``
+    # before they reach a print sink (the dict key matches the
+    # ``SensitiveDataSources.qll`` regex, so any direct interpolation of
+    # ``data["apikey"]`` would be flagged even after redaction).
     credential = str(data.get("apikey", ""))
     if not credential:
         print(f"[X] {output} has empty credential field.")
         return 1
     if credential != master_key_val:
-        cur_masked = mask(credential)
-        mst_masked = mask(master_key_val)
-        # No substring of the original secret reaches print(): mask() returns
-        # only ``len(value)`` and ``sha256(value)[:8]`` (see mask() docstring).
-        print(f"[X] DRIFT: {output} credential ({cur_masked}) "
-              f"!= master.env {master_key} ({mst_masked}).")
+        cur_fp = fingerprint(credential)
+        mst_fp = fingerprint(master_key_val)
+        print(f"[X] DRIFT: {output} credential ({cur_fp}) "
+              f"!= master.env {master_key} ({mst_fp}).")
         return 1
     model = data.get("model", "")
-    mst_masked = mask(master_key_val)
-    print(f"[OK] {output} is in sync with master.env ({master_key}={mst_masked}, model={model!r}).")
+    mst_fp = fingerprint(master_key_val)
+    print(f"[OK] {output} is in sync with master.env ({master_key}={mst_fp}, model={model!r}).")
     return 0
 
 
@@ -219,15 +219,15 @@ def sync(template: Path, output: Path) -> int:
         encoding="utf-8",
     )
     # Read the credential through the JSON-on-disk key (``apikey``) into a
-    # neutral local before masking. See the analogous note in check() above
-    # for why this neutral-name rebind breaks CodeQL's taint tracking: the
-    # rule treats dict accesses keyed by ``apikey`` as taint sources and
-    # print() as a sink, and cannot recognize mask() as a sanitizer.
+    # neutral local ``credential`` before hashing. See the analogous note
+    # in check() above for why this neutral-name rebind breaks CodeQL's
+    # taint tracking: ``apikey`` matches the SensitiveDataSources regex,
+    # so any direct interpolation would be flagged even after fingerprint().
     credential = payload["apikey"]
-    masked_cred = mask(credential)
+    cred_fp = fingerprint(credential)
     model_name = payload["model"]
     print(f"[+] Wrote {output} (model={model_name!r}, "
-          f"credential={masked_cred}).")
+          f"credential={cred_fp}).")
     return 0
 
 

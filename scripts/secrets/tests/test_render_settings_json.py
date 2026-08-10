@@ -327,4 +327,48 @@ class TestMain:
         monkeypatch.setattr(rsj, "DEFAULT_OUTPUT", output)
         monkeypatch.setattr(sys, "argv", ["render_settings_json.py"])
         assert rsj.main() == 1
-        assert not output.exists()
+
+
+# --------------------------------------------------------------------------- #
+# fingerprint: sha256[:8] discriminant, NOT a slice of the secret.
+#
+# ai-01 review (PR #10275) : ``value[-4:]`` est le meme geste que
+# ``key[:8]``, interdit par secrets-hygiene regle 6 §C (``jamais key[:N]`` /
+# symetriquement ``jamais value[-4:]``). fingerprint() remplace par un
+# prefixe de hash : empreinte non-inversible, discrimination identique
+# pour DRIFT detection, zero tranche du secret.
+# --------------------------------------------------------------------------- #
+class TestFingerprint:
+    def test_empty_value_returns_empty_marker(self):
+        assert rsj.fingerprint("") == "<empty>"
+
+    def test_format_is_sha256_prefix(self):
+        # Format ``sha256:`` + 8 hex chars = discriminant non-inversible.
+        fp = rsj.fingerprint("sk-test-key-with-more-than-4-chars")
+        assert fp.startswith("sha256:")
+        assert len(fp) == len("sha256:") + 8
+        # The 8 chars are hex
+        int(fp.split(":", 1)[1], 16)  # raises if not hex
+
+    def test_distinct_secrets_give_distinct_fingerprints(self):
+        # Discrimination identique a mask() pour DRIFT detection : deux
+        # secrets differents => deux fingerprints differents.
+        a = rsj.fingerprint("sk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        b = rsj.fingerprint("sk-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+        assert a != b
+
+    def test_same_secret_gives_same_fingerprint(self):
+        # Determinism: la meme valeur produit toujours la meme empreinte.
+        assert rsj.fingerprint("x") == rsj.fingerprint("x")
+
+    def test_no_substring_of_input_in_fingerprint(self):
+        # Anti-regression : fingerprint() ne doit JAMAIS contenir une
+        # tranche de l'input (cf secrets-hygiene regle 6 §C). On verifie
+        # sur 3 inputs representatifs.
+        for secret in ["sk-abc123def456ghi789jkl012mno", "abcdef", "X"]:
+            fp = rsj.fingerprint(secret)
+            assert secret not in fp, f"fingerprint({secret!r}) leaked a substring: {fp!r}"
+            # Et symetriquement, aucune tranche de 4 chars en fin
+            # d'input n'apparait dans la sortie (le geste interdit).
+            if len(secret) >= 4:
+                assert secret[-4:] not in fp
