@@ -257,9 +257,20 @@ jobs:
       # T4 — re-render the *_<lang>.ipynb of active languages from each CSV.
       # render_notebook.py takes --csv --notebook (source FR) --lang --out.
       # The source notebook path is read from the CSV's 'notebook' column.
-      # The active-language list is sourced from scripts/translation/check_perimeter.py
-      # via importlib.util.spec_from_file_location — single source of truth,
-      # post #10109 consolidation.
+      #
+      # Per-CSV active-language list is sourced from translations/PERIMETER.md
+      # via parse_perimeter() in scripts/translation/check_perimeter.py
+      # (single source of truth, post #10109 consolidation). Only langs
+      # explicitly declared in-scope in PERIMETER.md are rendered: a CSV not
+      # listed in the matrix renders zero langs (closed perimeter, see
+      # translations/PERIMETER.md §"Matrice").
+      #
+      # Issue #10349 sub-grain (po-2023): previously this step hardcoded
+      # active_langs = list(TARGET_LANGS), which issued render calls for
+      # out-of-scope langs (es/ar/fa/zh/pt) on every CSV. The guardrail
+      # (--require-translated, PR #10359 by po-2025) prevents writing a
+      # FR-clone, but the workflow still burned ~6 subprocess calls per
+      # notebook per CSV per run. parse_perimeter() filters upstream.
       # ------------------------------------------------------------------
       - name: T4 render translated notebooks
         if: steps.t1.outputs.has_translations == 'true'
@@ -277,11 +288,33 @@ jobs:
           # entiere echoue avant tout rendu (cause des 31 runs push / 0 succes, #10321).
           sys.modules[spec.name] = mod
           spec.loader.exec_module(mod)
-          active_langs = list(mod.TARGET_LANGS)
+
+          # Load PERIMETER.md once at step start. Returns {csv_path: {in_scope_langs}}.
+          # A CSV missing from the matrix renders zero langs (closed perimeter).
+          perimeter_path = pathlib.Path("translations/PERIMETER.md")
+          if not perimeter_path.exists():
+              print(f"T4 abort: PERIMETER.md not found at {perimeter_path}")
+              sys.exit(0)
+          scope = mod.parse_perimeter(perimeter_path)
+          print(f"T4 perimeter loaded: {len(scope)} CSV(s) declared.")
+          for csv_key, in_scope_langs in sorted(scope.items()):
+              langs_repr = ",".join(sorted(in_scope_langs)) if in_scope_langs else "(none)"
+              print(f"  - {csv_key}: {langs_repr}")
+
           troot = pathlib.Path("translations")
           if not troot.exists():
               sys.exit(0)
           for csv_path in troot.rglob("*.csv"):
+              rel_csv = csv_path.as_posix()
+              in_scope = scope.get(rel_csv)
+              if in_scope is None:
+                  # CSV not declared in PERIMETER.md => closed perimeter, no renders.
+                  print(f"T4 skip (no scope in PERIMETER.md): {rel_csv}")
+                  continue
+              if not in_scope:
+                  # CSV declared but all langs out-of-scope.
+                  print(f"T4 skip (0 in-scope langs): {rel_csv}")
+                  continue
               notebooks = set()
               with open(csv_path, newline="", encoding="utf-8") as fh:
                 for row in csv.DictReader(fh):
@@ -294,7 +327,7 @@ jobs:
                   continue
                 stem = pathlib.Path(nb).stem
                 outdir = pathlib.Path(nb).parent
-                for lang in active_langs:
+                for lang in sorted(in_scope):
                   out = outdir / f"{stem}_{lang}.ipynb"
                   r = subprocess.run(
                     ["python", "scripts/translation/render_notebook.py",
