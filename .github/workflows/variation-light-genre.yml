@@ -163,6 +163,17 @@ jobs:
           SIG_CAPEXC=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('CAP-EXCEEDED-BY-GENRE'))" 2>/dev/null || echo "False")
           SIG_MISMATCH=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-MISMATCH'))" 2>/dev/null || echo "False")
           TALLY=$(python3 -c "import json; t=json.load(open('/tmp/signals.json')).get('tally',{}); print(f\"declared={t.get('light_declared',0)} genre={t.get('light_genre',0)} cap={t.get('cap',1)}\")" 2>/dev/null || echo "inconnu")
+          # #10341 -- the three aggregate signals (TIER-INFLATION, GENRE-RUN,
+          # CAP-EXCEEDED-BY-GENRE) measure the LANE-DAY, not the candidate.
+          # When the OPEN PR is CONTENT (not a LIGHT-genre grain -- genai,
+          # lean, qc, notebook-...), it does NOT contribute to the pattern
+          # they denounce. Posing the aggregate label on it would let the
+          # merge-gate (which reads the LABEL, not the check state) HOLD the
+          # grain that REMEDIES the motif, while the META grains that caused
+          # the cap/run/inflation go untouched. GENRE-MISMATCH is exempt: it
+          # carries on the candidate by construction (declared genre vs the
+          # candidate's OWN diff paths), so it may label regardless.
+          CAND_LIGHT=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('candidate_is_light_genre'))" 2>/dev/null || echo "False")
 
           # Labels distincts (lisibles dans gh pr list --json labels). Chaque
           # classe de defaut a son propre label -- un seul label fourre-tout
@@ -187,13 +198,14 @@ jobs:
             # sont fixes (cf scripts/variation_light_cap.py), une table
             # explicite reste la lecture la moins fragile.
             case "$SIGNAL" in
-              TIER-INFLATION)        SIGVAR="SIG_INFLATION" ;;
-              GENRE-RUN)             SIGVAR="SIG_RUN" ;;
-              CAP-EXCEEDED-BY-GENRE) SIGVAR="SIG_CAPEXC" ;;
-              GENRE-MISMATCH)        SIGVAR="SIG_MISMATCH" ;;
+              TIER-INFLATION)        SIGVAR="SIG_INFLATION"; MAY_LABEL_INNOCENT="no" ;;
+              GENRE-RUN)             SIGVAR="SIG_RUN"; MAY_LABEL_INNOCENT="no" ;;
+              CAP-EXCEEDED-BY-GENRE) SIGVAR="SIG_CAPEXC"; MAY_LABEL_INNOCENT="no" ;;
+              GENRE-MISMATCH)        SIGVAR="SIG_MISMATCH"; MAY_LABEL_INNOCENT="yes" ;;
               *)
                 echo "Signal non reconnnu : ${SIGNAL} (PR ${PR_NUMBER})"
                 SIGVAR="__UNDEFINED__"
+                MAY_LABEL_INNOCENT="yes"
                 ;;
             esac
             if [ "$SIGVAR" = "__UNDEFINED__" ]; then
@@ -206,7 +218,17 @@ jobs:
               SIGVAL="${!SIGVAR:-False}"
             fi
             gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force 2>/dev/null || true
-            if [ "$SIGVAL" = "True" ]; then
+            # #10341 -- aggregate signals (MAY_LABEL_INNOCENT="no") must not
+            # label an innocent CONTENT candidate. The lane-day signal stays
+            # real (surfaced in the diagnostic comment below), but the LABEL
+            # -- which is what the merge-gate reads -- must not misattribute
+            # a META pattern (guard/docs/readme run or cap) to a CONTENT
+            # grain (genai/lean/qc/notebook-...) that does not carry it.
+            # GENRE-MISMATCH (MAY_LABEL_INNOCENT="yes") is exempt: its
+            # subject IS the candidate by construction. The else-branch also
+            # strips a label that a prior push had posed before the lane
+            # crossed the cap on META grains (idempotent re-eval).
+            if [ "$SIGVAL" = "True" ] && { [ "$MAY_LABEL_INNOCENT" = "yes" ] || [ "$CAND_LIGHT" = "True" ]; }; then
               gh pr edit "$PR_NUMBER" --add-label "$LABEL" 2>/dev/null || true
             else
               gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
@@ -227,6 +249,18 @@ jobs:
           - **CAP-EXCEEDED-BY-GENRE** : light_genre > cap partage G-VAR-2 (tally : ${TALLY})"
           [ "$SIG_MISMATCH" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
           - **GENRE-MISMATCH** : declared genre != genre infere depuis les chemins du diff"
+
+          # #10341 nuance : si la PR courante est CONTENU (non LIGHT-genre)
+          # et qu'un signal agrege est actif, le dire explicitement -- le
+          # motif lane-jour est reel (garde dans le commentaire pour le
+          # coordinateur), mais les labels agregees ne sont PAS poses sur
+          # cette PR, donc le merge-gate ne doit pas la HOLD pour ce motif.
+          if [ "$CAND_LIGHT" != "True" ]; then
+            if [ "$SIG_INFLATION" = "True" ] || [ "$SIG_RUN" = "True" ] || [ "$SIG_CAPEXC" = "True" ]; then
+              ACTIVE_LINES="${ACTIVE_LINES}
+          - **NOTE (#10341)** : la PR courante est de classe CONTENU (non LIGHT-genre) et ne contribue pas au motif ci-dessus -- les labels agregees ne sont PAS poses sur cette PR (le merge-gate ne doit pas la HOLD pour ce motif ; le coupable est parmi les grains META de la lane)."
+            fi
+          fi
 
           if [ -n "$ACTIVE_LINES" ]; then
             BODY="${MARK}
