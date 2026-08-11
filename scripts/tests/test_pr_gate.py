@@ -575,3 +575,45 @@ def test_fork_short_circuit_skips_the_canary(monkeypatch):
     monkeypatch.setattr(pr_gate, "derive_always_on_jobs", explode)
     code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", "--is-fork"])
     assert code == 0
+
+
+# --- stale rollup recovery (issue #10435, acceptance 3) ----------------------
+#
+# The defect #10435 documents is structural at the *workflow trigger* level
+# (pr-gate.yml never re-aggregates after a guard it depends on flips green, so
+# a PR stays BLOCKED until a manual `gh run rerun`). But the recovery mechanism
+# a rerun exploits is a PROPERTY of classify/verdict that must not silently
+# change: a required check that was in flight (pending) on the first rollup
+# must, on the re-rollup, be seen as settled-green and flip the verdict from
+# FAIL (timed out) to PASS -- WITHOUT a new commit push. This pins exactly that
+# scenario, which is what makes the manual rerun (and any future workflow_run
+# trigger) sufficient to unblock the PR.
+
+
+def test_inflight_required_check_settles_to_pass_on_reroll():
+    """A required check pending on rollup 1 settles green on rollup 2 -> PASS.
+
+    Mirrors the #10435 scenario: `Require Grain tag` (a required, non-advisory
+    guard) was IN_PROGRESS when the first PR-gate run aggregated, so the run
+    either timed out on it or (more commonly, since the tag was genuinely
+    missing) saw it fail. After the tag is edited into the body, the guard
+    re-runs and completes `success`. A `gh run rerun` of PR gate re-aggregates
+    the CURRENT check set: the same guard name now reports conclusion=success,
+    and classify must route it to `ok`, yielding verdict PASS -- no commit push
+    intervening.
+    """
+    name = "Require Grain tag (block on absent, ..."
+    inflight = run(name, conclusion=None, status="in_progress", rid=10)
+    settled_green = run(name, conclusion="success", status="completed", rid=11)
+
+    # Rollup 1: guard still in flight -> pending -> verdict timed out (FAIL).
+    pending1, bad1, ok1, _adv = pr_gate.classify([inflight], pr_gate.DEFAULT_SELF_NAME)
+    assert pending1 == [name] and not bad1 and not ok1
+    code1, _msg1 = pr_gate.verdict(pending1, bad1, settled=False)
+    assert code1 == 1
+
+    # Rollup 2 (rerun, no new commit): same guard now completed+success -> ok.
+    pending2, bad2, ok2, _adv = pr_gate.classify([settled_green], pr_gate.DEFAULT_SELF_NAME)
+    assert not pending2 and not bad2 and ok2 == [name]
+    code2, _msg2 = pr_gate.verdict(pending2, bad2, settled=True)
+    assert code2 == 0
