@@ -20,6 +20,10 @@ name: Catalog Guard
 # Exceptions:
 #   - github-actions[bot] (catalog-cron.yml, catalog-drift.yml auto-commits)
 #   - Manual workflow_dispatch (for emergency maintainer override)
+#   - Catalog vehicle chore/catalog-* whose diff is 100% catalog-owned (#10421):
+#     the long-lived catalog-refresh PR is human-authored when the bot hits a 403,
+#     so the author-based bypass cannot apply; the branch-name gate + content
+#     check recognize it without opening a #2632 poison vector on feature branches.
 
 on:
   pull_request:
@@ -60,6 +64,42 @@ jobs:
             echo "::notice title=Catalog guard::Manual dispatch — guard bypassed."
             echo "bypass=true" >> "$GITHUB_OUTPUT"
             exit 0
+          fi
+
+          # Catalog vehicle bypass (#10421). The long-lived catalog-refresh PR
+          # (chore/catalog-refresh-pending) is authored by a human (jsboige) when
+          # the bot cannot push (HTTP 403 on main), so the author-based bypass
+          # above does not apply and the guard FAILS on the very files the vehicle
+          # exists to update. Recognize the vehicle by its head branch AND a
+          # 100%-catalog-owned diff. The branch-name gate is load-bearing: an
+          # agent that regenerates the catalog on a feature branch (#2632 poison
+          # vector) is NOT on chore/catalog-* and is still caught below.
+          _catalog_owned() {
+            case "$1" in
+              COURSE_CATALOG.generated.json|COURSE_CATALOG.generated.md) return 0 ;;
+              README.md|*/README.md) return 0 ;;           # CATALOG-STATUS markers
+              docs/curriculum/*.md) return 0 ;;            # curriculum pages
+              docs/archive/reference/HEALTH_DASHBOARD.md) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+          HEAD_REF="${{ github.head_ref }}"
+          if [[ "$HEAD_REF" == chore/catalog-* ]]; then
+            ALL_CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" || true)
+            if [ -n "$ALL_CHANGED" ]; then
+              NON_CATALOG=""
+              while IFS= read -r f; do
+                [ -z "$f" ] && continue
+                if ! _catalog_owned "$f"; then NON_CATALOG="$NON_CATALOG $f"; fi
+              done <<< "$ALL_CHANGED"
+              if [ -z "$NON_CATALOG" ]; then
+                echo "::notice title=Catalog guard::Catalog vehicle ($HEAD_REF) — all changed files are catalog-owned, guard bypassed (#10421)."
+                echo "bypass=true" >> "$GITHUB_OUTPUT"
+                exit 0
+              else
+                echo "::warning title=Catalog guard::Branch $HEAD_REF looks like the catalog vehicle but carries non-catalog files ($NON_CATALOG) — guard runs normally."
+              fi
+            fi
           fi
 
           # 3-dot diff: changes on the PR branch that are not on the base.
