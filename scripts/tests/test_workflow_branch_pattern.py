@@ -71,6 +71,31 @@ def _extract_github_script_blocks(yaml_text: str) -> list[str]:
     return blocks
 
 
+# Any `git push ... origin ...`, options tolerated between the two words.
+#
+# Pinning the bare literal `git push origin` made this suite blind to a *more*
+# correct implementation: #10416 changed the push to
+# `git push --force-with-lease origin "HEAD:$BRANCH"` (mono-writer bot branch,
+# hard-fail on rejection) and the option slipped between `push` and `origin`,
+# so both pins below stopped finding any push block at all -- four red tests
+# for a change that satisfied what they assert. The forbidden-form pin at (1)
+# was already written option-tolerantly ("with any separator and any options");
+# this restores the same tolerance on the positive side. See #10416 (the change
+# that exposed the asymmetry) and #10145 (which introduced these pins).
+_PUSH_TO_ORIGIN = re.compile(r"git\s+push\b[^\n]*\borigin\b")
+
+
+def _find_push_block(blocks: list[str], *, exclude_main: bool = False) -> str | None:
+    """First run-block pushing to origin; optionally skip ones targeting main."""
+    for block in blocks:
+        if not _PUSH_TO_ORIGIN.search(block):
+            continue
+        if exclude_main and "HEAD:main" in block:
+            continue
+        return block
+    return None
+
+
 @pytest.fixture(scope="module")
 def catalog_cron_text() -> str:
     return _yaml_text(CATALOG_CRON)
@@ -132,11 +157,7 @@ def test_pushes_to_long_lived_branch(
     """
     text = _yaml_text(workflow_path)
     push_blocks = _extract_run_blocks(text)
-    push_block = None
-    for block in push_blocks:
-        if "git push origin" in block and "HEAD:main" not in block:
-            push_block = block
-            break
+    push_block = _find_push_block(push_blocks, exclude_main=True)
     assert push_block is not None, (
         f"{workflow_label}: no positive push block found (one that does not "
         f"target main)."
@@ -221,13 +242,9 @@ def test_push_hard_fails_on_rejection(
     """
     text = _yaml_text(workflow_path)
     blocks = _extract_run_blocks(text)
-    push_block = None
-    for block in blocks:
-        if "git push origin" in block:
-            push_block = block
-            break
+    push_block = _find_push_block(blocks)
     assert push_block is not None, (
-        f"{workflow_label}: no `git push origin` step found."
+        f"{workflow_label}: no `git push ... origin` step found."
     )
     # The push block must check the exit code (via `if !` or explicit $? test)
     # and exit 1 with an ::error annotation.
