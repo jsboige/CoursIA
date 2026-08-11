@@ -1029,3 +1029,174 @@ def test_truncation_flips_cap_verdict_on_the_10328_shape(tmp_path, capsys):
 
     assert cap_of(full)["cap"] == 3
     assert cap_of(lights)["cap"] == 1
+
+
+# --- #10480 : --check-pr consumes the GENRE cap as a single source -----------
+#
+# The defect (issue #10480, measured by ai-01 while merging #10468): on the
+# same lane-day, `--check-pr` returned `cap_reached: false` (the TIER axis was
+# empty -- 0 LIGHT declared) while `--genre-signals` returned
+# `CAP-EXCEEDED-BY-GENRE: true` (the GENRE axis was saturated by MED/readme
+# grains). The merge-gate reads `--check-pr`, so it let the bypass through: a
+# lane could declare MED on readme grains and never trip the cap. The fix makes
+# `--check-pr` consume BOTH axes (single source), discloses it via
+# `counts: "tier+genre"`, aligns the genre denominator on the tier CI window
+# (+1 open candidate), and #10341-guards the union so an innocent CONTENT
+# candidate is not held for a lane-day aggregate it does not carry.
+
+
+def test_check_pr_med_readme_on_saturated_lane_is_cap_reached(tmp_path, capsys):
+    # The #10480 defect, pinned. A lane with one MED/readme already merged;
+    # the OPEN candidate is also MED/readme. The TIER axis is empty (0 LIGHT
+    # declared) so the pre-fix --check-pr short-circuited `eff != "LIGHT"` to
+    # `cap_reached: false`. But the GENRE axis is saturated (light_genre=2 >
+    # cap=1) -- exactly what --genre-signals reported. The single-source fix
+    # makes --check-pr consume the genre axis: the MED/readme candidate IS a
+    # LIGHT-genre grain, so cap_reached must be True (the bypass is closed).
+    lane = "myia-ai-01:CoursIA"
+    merged = [
+        {"number": 1, "body": f"Grain: MED/readme -- lane {lane}",
+         "mergedAt": "2026-08-11T03:00:00Z"},
+    ]
+    body = f"Grain: MED/readme -- lane {lane}"
+    rc, res = _check_pr(tmp_path, merged, body, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is True               # the bypass is closed
+    assert res["tier_cap_reached"] is False         # 0 LIGHT declared
+    assert res["cap_exceeded_by_genre"] is True     # light_genre=2 > cap=1
+    assert res["counts"] == "tier+genre"
+    assert res["light_genre"] == 2                  # 1 merged + the candidate
+    assert res["genre_cap"] == 1
+
+
+def test_check_pr_counts_field_discloses_both_axes(tmp_path, capsys):
+    # Acceptance #1: the verdict discloses which axes were tallied via
+    # `counts`, so the workflow never mistakes a single-source verdict for a
+    # declared-only one (the defect's blind spot).
+    lane = "myia-po-2023:CoursIA"
+    merged = [{"number": 1, "body": BODY_EMDASH, "mergedAt": "2026-08-11T03:00:00Z"}]
+    rc, res = _check_pr(tmp_path, merged, BODY_EMDASH, capsys=capsys)
+    assert rc == 0
+    assert res["counts"] == "tier+genre"
+
+
+def test_check_pr_lane_grains_window_aligned_tier_genre(tmp_path, capsys):
+    # Acceptance #2: the TIER and GENRE axes share the SAME CI window
+    # (lane_grains + 1 -- the open candidate). Pre-fix, --check-pr's tier
+    # denominator was `len(merged) + 1` while --genre-signals' genre
+    # denominator was `len(merged)` (merged-only) -- two different windows
+    # for the same lane-day. The fix aligns the genre denominator on the
+    # tier window INSIDE --check-pr (CI semantics); --genre-signals keeps
+    # the merged-only window by design (audit path, day over).
+    lane = "myia-po-2023:CoursIA"
+    # 3 merged DEEP grains + the open LIGHT/guard candidate.
+    merged = [
+        {"number": i, "body": f"Grain: DEEP/lean -- lane {lane}",
+         "mergedAt": f"2026-08-11T0{i}:00:00Z"}
+        for i in range(1, 4)
+    ]
+    body = f"Grain: LIGHT/guard -- lane {lane}"
+    rc, res = _check_pr(tmp_path, merged, body, capsys=capsys)
+    assert rc == 0
+    assert res["lane_grains"] == 4          # 3 merged + candidate (shared window)
+    # budget (tier) and genre_cap both derive from light_budget(lane_grains+1).
+    assert res["budget"] == 1
+    assert res["genre_cap"] == 1
+    assert res["budget"] == res["genre_cap"]
+
+
+def test_check_pr_med_tooling_innocent_on_saturated_lane_not_flipped(tmp_path, capsys):
+    # #10341 non-regression inside the #10480 fix. The lane's genre-cap is
+    # saturated (2 MED/readme merged), but the OPEN candidate is MED/tooling
+    # -- a CONTENT genre that does NOT carry the LIGHT-genre motif. The
+    # aggregate pattern is real (surfaced via lane_genre_saturated) but the
+    # candidate is innocent: cap_reached stays False. Holding it would block
+    # the grain that REMEDIES the monoculture instead of the META grains
+    # that caused it.
+    lane = "myia-po-2023:CoursIA"
+    merged = [
+        {"number": 1, "body": f"Grain: MED/readme -- lane {lane}",
+         "mergedAt": "2026-08-11T01:00:00Z"},
+        {"number": 2, "body": f"Grain: MED/readme -- lane {lane}",
+         "mergedAt": "2026-08-11T02:00:00Z"},
+    ]
+    body = f"Grain: MED/tooling -- lane {lane}"
+    rc, res = _check_pr(tmp_path, merged, body, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is False                # innocent candidate
+    assert res["reason"].startswith("not LIGHT")      # historical verdict preserved
+    assert res.get("lane_genre_saturated") is True     # lane-day pattern surfaced
+
+
+def test_check_pr_light_non_light_genre_on_saturated_lane_not_genre_flipped(tmp_path, capsys):
+    # The #10341 guard in the OTHER direction: a LIGHT/tooling (tier LIGHT,
+    # genre NOT light-genre) on a readme-saturated lane. The tier axis
+    # assesses it normally (it IS a declared LIGHT); the genre axis reports
+    # the lane saturated (cap_exceeded_by_genre=True) but the UNION does not
+    # flip cap_reached -- the candidate does not carry the readme motif.
+    lane = "myia-po-2023:CoursIA"
+    merged = [
+        {"number": 1, "body": f"Grain: MED/readme -- lane {lane}",
+         "mergedAt": "2026-08-11T01:00:00Z"},
+        {"number": 2, "body": f"Grain: MED/readme -- lane {lane}",
+         "mergedAt": "2026-08-11T02:00:00Z"},
+    ]
+    body = f"Grain: LIGHT/tooling -- lane {lane}"
+    rc, res = _check_pr(tmp_path, merged, body, capsys=capsys)
+    assert rc == 0
+    assert res["tier_cap_reached"] is False           # 0 merged LIGHT, budget 1
+    assert res["cap_exceeded_by_genre"] is True       # the LANE is saturated
+    assert res["cap_reached"] is False                # but THIS candidate is innocent
+
+
+def test_check_pr_med_readme_first_of_lane_not_cap_reached(tmp_path, capsys):
+    # Falsification: a SINGLE MED/readme on an empty lane is within the floor
+    # budget (light_genre=1 == cap=1). The genre axis does not over-fire on
+    # the first grain -- the budget is permissive on purpose, only a
+    # SUSTAINED pattern is the defect.
+    lane = "myia-po-2023:CoursIA"
+    body = f"Grain: MED/readme -- lane {lane}"
+    rc, res = _check_pr(tmp_path, [], body, capsys=capsys)
+    assert rc == 0
+    assert res["cap_reached"] is False
+    assert res["cap_exceeded_by_genre"] is False      # light_genre=1 == cap=1
+    assert res["light_genre"] == 1
+    assert res["genre_cap"] == 1
+
+
+def test_check_pr_coherent_with_genre_signals_on_defect(tmp_path, capsys):
+    # Acceptance #3 (the pinning test): on a saturated lane-day, --check-pr
+    # and --genre-signals must NOT contradict each other. Pre-fix,
+    # --check-pr returned `cap_reached: false` while --genre-signals returned
+    # `CAP-EXCEEDED-BY-GENRE: true` -- the merge-gate let the bypass through.
+    # The single-source fix aligns them: when the candidate is a LIGHT-genre
+    # grain and the lane's genre count exceeds the cap, --check-pr's
+    # `cap_reached` agrees with the genre signal.
+    lane = "myia-ai-01:CoursIA"
+    merged = [
+        {"number": 1, "body": f"Grain: MED/readme -- lane {lane}",
+         "mergedAt": "2026-08-11T03:00:00Z"},
+        {"number": 2, "body": f"Grain: MED/readme -- lane {lane}",
+         "mergedAt": "2026-08-11T04:00:00Z"},
+    ]
+    mpath = tmp_path / "merged.json"
+    mpath.write_text(json.dumps(merged), encoding="utf-8")
+    bpath = tmp_path / "body.txt"
+    bpath.write_text(f"Grain: MED/readme -- lane {lane}", encoding="utf-8")
+    # --genre-signals: the audit verdict over the merged set (+candidate genre).
+    rc_g = vlc.main([
+        "--replay", str(mpath), "--genre-signals", "--lane", lane,
+        "--body-file", str(bpath),
+    ])
+    sig = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    # --check-pr: the CI verdict over the same lane-day.
+    rc_c = vlc.main([
+        "--replay", str(mpath), "--check-pr", "3", "--body-file", str(bpath),
+    ])
+    chk = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert rc_g == 0 and rc_c == 0
+    # Coherence: the genre axis is exceeded in BOTH verdicts, and because the
+    # candidate carries the motif (readme), --check-pr's union agrees.
+    assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is True
+    assert chk["cap_exceeded_by_genre"] is True
+    assert chk["cap_reached"] is True
