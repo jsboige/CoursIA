@@ -14,6 +14,12 @@
       csharp_sha: 52f7b50aa5d1f9553673ecce518df546dd4c1f93
       content_python_sha: b5cbd82694075843973d66e038023af6e204eb2c5ed5e46c8bdcaeec4f188ed6
       content_csharp_sha: c67f15539798cbcd5300e1b720a38a8b768191fb6ada5ba7ccf5f6936401a3d0
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: 9dccc85f12b400cdef4b3186016abcda10dffd0b
+      csharp_sha: 7b105336ba11fb4be0ae1c52458f068c3a051189
+      content_python_sha: b5cbd82694075843973d66e038023af6e204eb2c5ed5e46c8bdcaeec4f188ed6
+      content_csharp_sha: 7e7fad00ffe3c2fef8fe1c69973fee44dc25ab73f4516a5e859dc7fe8b44ea14
   known_differences:
     - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque OR-Tools CP-SAT (cp_model, 105 booleens x[n][d][s] + contraintes add(...), model.minimize pour les preferences) comme solveur SOTA. C# = deux tranches -- Tranche 1 (sections 2-5) reimplementation from-scratch pedagogique (3 solveurs : glouton, backtracking, Min-Conflicts, en BCL pure System.* 0 NuGet) PRESERVEE integralement ; Tranche 2 (PR #10382 cycle 13) ajoute Google.OrTools 9.15 (.NET natif, deja en service dans Sudoku-10/18, App-8, App-15b, App-1) avec le MEME modele canonique CP-SAT que le Python (4 contraintes C1-C4 : couverture Sum==demand, unicite Sum<=1, repos Nuit->Matin, charge max <= 5, sur 105 booleens x[n][d][s]) sur la MEME instance (5 infirmiers x 7 jours x 3 shifts). parite verifiee : status=Optimal (= Python OPTIMAL 30ms), 21/21 shifts assignes, charge [5,5,4,3,4] toutes <= 5. parity_level=native-both (Python/ortools ET C#/Google.OrTools atteignent chacun le moteur de production CP-SAT de leur ecosysteme)."
     - "Asymetrie de couverture : Python (matplotlib gantt + experimentation a grande echelle avec courbe de convergence CP-SAT + search_helpers) ; C# (27 cellules : 3 solveurs from-scratch Tranche 1 + pont CP-SAT Tranche 2 + 3 exercices + visualisation ASCII). La visualisation matplotlib et le benchmark a grande echelle restent propres au Python ; la parite porte sur le solveur SOTA (CP-SAT) et le socle theorique (C1-C4)."
