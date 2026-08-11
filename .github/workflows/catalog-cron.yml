@@ -167,8 +167,29 @@ jobs:
           # trigger never runs it (issue #10136, run 31293765051, 2026-08-09T04:03Z).
           # `[skip ci]` in the commit message also prevents this workflow from
           # re-firing when the bot pushes the branch.
-          if ! git push origin "HEAD:$BRANCH"; then
-            echo "::error title=Catalog push rejected::Could not push $BRANCH to origin. Check that github-actions[bot] has push rights on chore/* branches, then re-run this workflow."
+          #
+          # The push MUST be a force-with-lease, and that is not a shortcut:
+          # this job re-roots the branch on fresh main every run
+          # (`git checkout -B "$BRANCH" origin/main` above), so its HEAD is a
+          # sibling of -- never a descendant of -- whatever the branch already
+          # carries. A plain push therefore succeeds exactly once, on the run
+          # that creates the branch, and is rejected non-fast-forward on every
+          # run afterwards (measured: runs 31354714030 / 31439360626 /
+          # 31457376652, three consecutive failures once the branch held a
+          # commit, all three reported as a permission problem by the old
+          # message below -- which is what made this read as the #10136 403).
+          #
+          # Nothing is lost by overwriting: the branch is a materialized view,
+          # regenerated from scratch from main on each run, owned solely by the
+          # automation (agents are forbidden from pushing to it, see
+          # .claude/rules/catalog-pr-hygiene.md). git-workflow.md permits
+          # force-push on a single-owner PR branch with --force-with-lease --
+          # and the lease is what keeps it honest: fetching the branch first
+          # materializes refs/remotes/origin/$BRANCH, so the push refuses if
+          # anything pushed to it between that fetch and this push.
+          git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          if ! git push --force-with-lease origin "HEAD:$BRANCH"; then
+            echo "::error title=Catalog push rejected::Could not push $BRANCH to origin. The lease failed (someone pushed to $BRANCH after this run fetched it) or github-actions[bot] lacks push rights on chore/*. Re-run this workflow; if it repeats, inspect the branch tip."
             exit 1
           fi
           echo "::notice title=Catalog::$BRANCH pushed; PR open/update follows in next step."

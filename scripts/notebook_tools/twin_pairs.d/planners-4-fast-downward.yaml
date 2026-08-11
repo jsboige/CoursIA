@@ -2,13 +2,17 @@
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-07-23"
       by: po-2023
       python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
       csharp_sha: 71b179583900de65dc00fbe28ada0f088ec57253
+    - date: "2026-08-11"
+      by: myia-po-2024:CoursIA
+      python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
+      csharp_sha: defc0e484993e6dd8f966430dea7ea5c8f7430bc
   known_differences:
     - "Concept : planificateur classique Fast Downward (SAS+, heuristic search, A*/GBFS/EHC)."
-    - "Python : invoque le VRAI solveur SOTA Fast Downward via conteneur Docker (jsboige/coursia-fast-downward) + unified-planning. C# : from-scratch BCL .NET (reimplementation pedagogique, ne peut pas invoquer fast-downward)."
-    - "Asymetrie engine importante : Python = solveur SOTA reel ; C# = demo from-scratch. Parite CONCEPTUELLE (memes algorithmes A*/GBFS/EHC expliques), pas invocation du meme binaire."
+    - "Python : invoque le VRAI solveur SOTA Fast Downward via conteneur Docker (jsboige/coursia-fast-downward, API HTTP port 8200) + unified-planning. C# : deux tranches — Tranche 1 from-scratch BCL .NET (representation SAS+, heuristiques h^max/h^FF par relaxation de planning graph, recherche A*/GBFS/EHC, cells 0-27) + Tranche 2 Fast Downward natif via System.Net.Http.HttpClient sur l'API Docker du meme conteneur (port 8200, depuis 2026-08-11)."
+    - "Parite engine (native-both depuis 2026-08-11) : les deux cotes invoquent le moteur de production Fast Downward — Python via urllib, C# via HttpClient sur le MEME conteneur Docker (vraie parite lib-vs-lib, pas d'installation de binaire natif C#). Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382. Instance Blocks World PDDL canonique : plan optimal = 2 actions (pick-up a, stack a b), cout = 2, des deux cotes."
