@@ -1186,7 +1186,8 @@ private theorem jumpCaptured_iff (c : MacroCell) :
 
     **Re-signed (c.1035, finding #6724 — voie (a)).** The hypothesis was
     `BoxAssezGrandN g n`, which is **tautological** (proved by
-    `box_assez_grandN_trivial` in `JumpCapture.lean`) — so the old
+    `box_assez_grandN_trivial` in `Foundation.lean`, next to `BoxAssezGrandN` —
+    relocated c.8206 from `JumpCapture.lean` to break an import cycle) — so the old
     `p5_large_n_jumpN_iff_unconditional` showed the original statement carried
     zero information. Re-signed to consume `jumpCaptured
     (gridToMacroCellWithOffset g).2 = true` (inlined above to avoid the import
@@ -1216,7 +1217,7 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
 
     **Re-signed (c.1035, finding #6724).** The previous hypothesis
     `BoxAssezGrandN g n` was **tautological** (`box_assez_grandN_trivial`,
-    `JumpCapture.lean`) — it held for *every* `(g, n)` and thus carried no
+    `Foundation.lean` — relocated c.8206 from `JumpCapture.lean` to break an import cycle) — it held for *every* `(g, n)` and thus carried no
     information. The new hypothesis `jumpCaptured (gridToMacroCellWithOffset
     g).2 = true` is **non-tautological** (witnessed by `jumpCaptured_block`,
     `jumpCaptured_glider`, `jumpCaptured_not_trivial` in `JumpCapture.lean`)
