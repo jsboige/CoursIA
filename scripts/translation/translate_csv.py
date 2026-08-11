@@ -128,7 +128,22 @@ CSV_COLUMNS = [
     "notebook", "cell_id", "cell_type", "src_lang", "src_hash",
     "text_fr", "text_en", "text_es", "text_ar", "text_fa", "text_zh", "text_ru", "text_pt",
     "hash_fr", "hash_en", "hash_es", "hash_ar", "hash_fa", "hash_zh", "hash_ru", "hash_pt",
+    # translate_policy (#10326): per-row translation policy. Empty = default
+    # (translate if target empty or drifted). ``verbatim`` = never translate,
+    # ``text_<lang> := text_fr`` is preserved as-is (no LLM call) -- for cells
+    # whose pedagogical value is the source text itself (literary citation,
+    # idiomatic example, prompt/completion to reproduce verbatim). Declared on
+    # the source notebook cell (metadata) and carried through T1 --update; T3
+    # short-circuits before the eligibility test so an empty target on a
+    # verbatim row is never sent to the LLM. Backward compatible: a CSV without
+    # the column reads as empty (DictReader) = default translate.
+    "translate_policy",
 ]
+
+# Recognised translate_policy values (#10326). ``verbatim`` is honored by T3 in
+# this slice; ``verbatim-with-gloss`` (preserve FR + add a translated note) is a
+# follow-up (needs T4 renderer changes) and currently falls back to default.
+VERBATIM_POLICY = "verbatim"
 
 
 def load_csv(path: str) -> list[dict]:
@@ -259,6 +274,13 @@ def translation_plan(rows, langs, include_code=False, drifted=None):
         fr = row.get("text_fr", "")
         if not fr.strip():
             continue
+        # #10326 preserve-verbatim: a row marked ``verbatim`` is never eligible,
+        # even if its target is empty -- the source FR IS the deliverable for
+        # every lang (literary citation, idiomatic example, prompt to reproduce).
+        # Short-circuit BEFORE the target_empty/drifted test so an empty verbatim
+        # target is not sent to the LLM on the first pass.
+        if row.get("translate_policy", "").strip() == VERBATIM_POLICY:
+            continue
         for lang in langs:
             target_empty = not row.get(f"text_{lang}", "").strip()
             if target_empty:
@@ -384,6 +406,32 @@ def run_translations(rows, langs, include_code, out_path, smoke, limit=None, dri
         plan = plan[:limit]
     total = len(plan)
     print(f"[plan] {total} traductions à produire ({len(langs)} langue(s))", file=sys.stderr)
+
+    # #10326 preserve-verbatim (acceptance crit 1 + 5): a row marked ``verbatim``
+    # is never sent to the LLM. T3's contract for it is ``text_<lang> := text_fr``
+    # -- the source FR IS the deliverable for every lang (literary citation,
+    # idiomatic example, prompt to reproduce). We copy FR into each target here
+    # (no LLM call) and log every preserved cell so the count is visible, never
+    # silent. Safe at the CSV layer: parity (FR_CONTAM) runs on RENDERED _en
+    # notebooks (T4 pipeline, follow-up) not on the raw CSV, and sync drift is
+    # keyed on src_hash (unchanged). The rows were excluded from the plan above.
+    verbatim = [r for r in rows if r.get("translate_policy", "").strip() == VERBATIM_POLICY]
+    for r in verbatim:
+        fr_text = r.get("text_fr", "")
+        fr_hash = r.get("hash_fr") or cell_hash(fr_text)
+        for lang in langs:
+            r[f"text_{lang}"] = fr_text
+            r[f"hash_{lang}"] = fr_hash
+        print(f"[verbatim] {r.get('notebook','').split('/')[-1]} "
+              f"{r.get('cell_id','')[:8]} preserved (translate_policy=verbatim, "
+              f"text_<lang> := text_fr, no LLM call)", file=sys.stderr)
+    if verbatim:
+        print(f"[verbatim] {len(verbatim)} cellule(s) préservée(s) — "
+              f"aucune traduction (#10326)", file=sys.stderr)
+        # Persist the text_<lang> := text_fr copies even when the plan is empty
+        # (all cells verbatim): the resume-safe write_csv inside the plan loop
+        # never runs in that case, so the copies would stay in memory only.
+        write_csv(out_path, rows)
 
     done = fails = 0
     for idx, lang in plan:

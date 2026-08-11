@@ -80,7 +80,8 @@ jobs:
           set -uo pipefail
 
           # Added/modified *.ipynb in the PR (deletions excluded).
-          git diff --name-only --diff-filter=d "$BASE" "$HEAD" -- '*.ipynb' \
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.ipynb' \
             | grep -v $'\r$' > changed_ipynb.txt || true
           COUNT=$(wc -l < changed_ipynb.txt | tr -d ' ')
           echo "Modified *.ipynb in this PR: $COUNT"

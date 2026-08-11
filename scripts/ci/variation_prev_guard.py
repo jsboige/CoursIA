@@ -39,11 +39,11 @@ Exit codes:
 
 The existing `check-variation-tag` job is advisory (exit 0): it posts labels
 and lets the coordinator decide. That is correct for cosmetic tag defects
-(offlist genre, missing short-header). It is WRONG here because the failure is
-DESTRUCTIVE and happens AT MERGE TIME: the squash commit message is what
-GitHub parses, and an advisory label does not stop the merge. Only a required
-check that turns `PR gate` red before merge prevents the auto-close -- the
-same shape as `check-variation-tag-required` (#10045).
+(offlist genre). It is WRONG here because the failure is DESTRUCTIVE and
+happens AT MERGE TIME: the squash commit message is what GitHub parses,
+and an advisory label does not stop the merge. Only a required check that
+turns `PR gate` red before merge prevents the auto-close -- the same shape
+as `check-variation-tag-required` (#10045).
 
 ## Why it scans commit messages (not just the body)
 

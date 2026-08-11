@@ -178,9 +178,10 @@ def test_short_header_partial_two_of_three():
     assert sh["quoi"] == "doc-resync for #9756"
     assert sh["preuve"] == "diff --stat on README.md"
     assert sh["perimetre"] is None
-    # The guard checks `all three absent`: partial coverage does NOT trip the
-    # `variation-short-header-missing` label. (Hardening to "1 absent = flag"
-    # is a separate decision; see issue body.)
+    # The trio is partial: c.10330 / PR retired the `check-short-header` job
+    # that labelled `variation-short-header-missing` on PRs with all three keys
+    # absent. The parser here is still used (kept for a future convention
+    # rollout); what changed is the gating decision -- no job, no flag.
     assert not all(sh[k] is not None for k in ("quoi", "preuve", "perimetre"))
 
 

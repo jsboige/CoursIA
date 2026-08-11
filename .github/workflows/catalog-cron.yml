@@ -43,7 +43,10 @@ name: Catalog Auto-Regen (main, scheduled)
 # Instead, this workflow:
 #   (a) checks out the long-lived branch `chore/catalog-refresh-pending`
 #       (created from origin/main the first time, refreshed thereafter);
-#   (b) regenerates + commits the catalog on that branch with `[skip ci]`;
+#   (b) regenerates + commits the catalog on that branch (no `[skip ci]`
+#       since #10421: this workflow's `on:` lists no `push:` listener, so
+#       a self-trigger is structurally impossible; the directive was
+#       suppressing the required-check set on the long-lived PR);
 #   (c) pushes the branch to origin;
 #   (d) opens a PR via github-script if none exists yet, OR updates the
 #       existing PR's body / re-pings a maintainer on subsequent runs.
@@ -80,27 +83,23 @@ jobs:
           fetch-depth: 0          # full history so git-derived fields are exact
           persist-credentials: true
 
-      # Prepare the long-lived branch from origin/main. We checkout it directly
-      # when it exists; otherwise we create it from main. This step NEVER
-      # touches main -- it only operates on chore/catalog-refresh-pending.
+      # Prepare the long-lived branch from origin/main. We reset (not rebase)
+      # onto origin/main unconditionally. Catalog regen is fully idempotent and
+      # the previous bot commit holds no curated state worth preserving -- the
+      # --merge-curated-fields logic runs against origin/main at regeneration
+      # time, not against the prior bot commit. Rebasing instead yields the
+      # same structural add/add conflict pattern observed on translation-sync
+      # (issue #10373): any human PR that touches a catalog-derived file will
+      # block the cron until the bot commit is manually dropped.
+      # --force-with-lease is safe here: branch is mono-writer bot-owned
+      # (git-workflow.md allows it on lane-unique feature branches; main is
+      # untouched either way).
       - name: Prepare chore/catalog-refresh-pending branch
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
-            echo "Branch $BRANCH already exists on origin; checking it out."
-            git fetch origin "$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-            # Rebase on top of origin/main so the regen always starts from
-            # the freshest main (catalog regen is idempotent -- same main
-            # produces the same catalog, so rebase-and-retry is safe).
-            git fetch origin main
-            git rebase origin/main
-          else
-            echo "Branch $BRANCH does not exist on origin yet; creating it from origin/main."
-            git fetch origin main
-            git checkout -b "$BRANCH" origin/main
-          fi
+          git fetch origin main
+          git checkout -B "$BRANCH" origin/main
           echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
 
       - name: Set up Python
@@ -162,17 +161,44 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit \
-            -m "chore(catalog): scheduled auto-regenerate [skip ci]" \
+            -m "chore(catalog): scheduled auto-regenerate" \
             -m "Refresh COURSE_CATALOG.generated.{json,md} + CATALOG-STATUS markers." \
             -m "Catalog is owned by automation; agents must not regenerate it on feature branches (see .claude/rules/catalog-pr-hygiene.md, #2433, #10136)."
 
           # Push the long-lived branch. Direct push to main would trigger GH006
           # because the `PR gate` status check is required and a schedule
           # trigger never runs it (issue #10136, run 31293765051, 2026-08-09T04:03Z).
-          # `[skip ci]` in the commit message also prevents this workflow from
-          # re-firing when the bot pushes the branch.
-          if ! git push origin "HEAD:$BRANCH"; then
-            echo "::error title=Catalog push rejected::Could not push $BRANCH to origin. Check that github-actions[bot] has push rights on chore/* branches, then re-run this workflow."
+          # Note: prior versions carried `[skip ci]` in the commit message;
+          # removed in #10421. This workflow's `on:` block lists only
+          # `schedule:` and `workflow_dispatch:` (no `push:`), so the bot
+          # commit on `chore/catalog-refresh-pending` cannot re-trigger
+          # this workflow by construction. The `[skip ci]` paid for that
+          # non-risk by suppressing the entire required-check set on the
+          # long-lived PR, locking it in `BLOCKED` state indefinitely
+          # (measured firsthand, see #10421 acceptance note).
+          #
+          # The push MUST be a force-with-lease, and that is not a shortcut:
+          # this job re-roots the branch on fresh main every run
+          # (`git checkout -B "$BRANCH" origin/main` above), so its HEAD is a
+          # sibling of -- never a descendant of -- whatever the branch already
+          # carries. A plain push therefore succeeds exactly once, on the run
+          # that creates the branch, and is rejected non-fast-forward on every
+          # run afterwards (measured: runs 31354714030 / 31439360626 /
+          # 31457376652, three consecutive failures once the branch held a
+          # commit, all three reported as a permission problem by the old
+          # message below -- which is what made this read as the #10136 403).
+          #
+          # Nothing is lost by overwriting: the branch is a materialized view,
+          # regenerated from scratch from main on each run, owned solely by the
+          # automation (agents are forbidden from pushing to it, see
+          # .claude/rules/catalog-pr-hygiene.md). git-workflow.md permits
+          # force-push on a single-owner PR branch with --force-with-lease --
+          # and the lease is what keeps it honest: fetching the branch first
+          # materializes refs/remotes/origin/$BRANCH, so the push refuses if
+          # anything pushed to it between that fetch and this push.
+          git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          if ! git push --force-with-lease origin "HEAD:$BRANCH"; then
+            echo "::error title=Catalog push rejected::Could not push $BRANCH to origin. The lease failed (someone pushed to $BRANCH after this run fetched it) or github-actions[bot] lacks push rights on chore/*. Re-run this workflow; if it repeats, inspect the branch tip."
             exit 1
           fi
           echo "::notice title=Catalog::$BRANCH pushed; PR open/update follows in next step."

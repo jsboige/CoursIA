@@ -2,7 +2,7 @@
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-07-29"
       by: myia-po-2023:CoursIA-2
@@ -26,7 +26,13 @@
       csharp_sha: 94f0d6b6640128cda025b0988435209110697c9e
       content_python_sha: 205e5d9a1129f1a3ff53cea110b76145693b7a03e68ec8b3e3b88f71c3883561
       content_csharp_sha: 295b795c28ceda8216b7641e5cb868d8cba3ec2e373ab8f6d587a65f44e36c14
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: 2ea748802060b3ba1f51940aab49bd1251575aad
+      csharp_sha: 3ac26ab1c88bbdbf9161e2f834ada011ac9c49f3
+      content_python_sha: 205e5d9a1129f1a3ff53cea110b76145693b7a03e68ec8b3e3b88f71c3883561
+      content_csharp_sha: e5cc2163d6f6cbaea52f8d5d3c812c1de4be93fc75f0f48b8ea31798451d8d96
   known_differences:
     - "Socle pedagogique commun : jeux a somme nulle, theoreme minimax (valeur du jeu v), strategies mixtes optimales sigma/tau via programmation lineaire."
-    - "Idiomes framework : Python = `scipy.optimize.linprog` (solveur LP mature pour le minimax). C# = **Simplexe from-scratch** `SimplexMax` (methode de Dantzig + regle de Bland anti-cyclage) + `SolveMatrixGame` qui reduit le jeu matriciel a un LP et lit sigma dans les variables duales."
-    - "Asymetrie notable : le C# REIMPLEMENTE l'algorithme du simplexe a la main (valeur pedagogique : comprendre Dantzig + Bland) plutot que d'invoquer scipy.linprog. parity_level = semantic (meme theoreme minimax, meme reduction LP ; le solveur LP est from-scratch cote C# vs lib cote Python)."
+    - "parite lib-vs-lib native-both (#10382) : chaque cote atteint un moteur LP de production de son ecosysteme. Python = `scipy.optimize.linprog`. C# = `Google.OrTools.LinearSolver` solveur GLOP (NuGet, deja en service dans CSP-4/6/8), invoque en Tranche 2 (`SolveMinimaxOrTools`, formulation Row directe max v s.c. A^T sigma >= v, sum sigma = 1). Les DEUX moteurs convergent sur la meme valeur de jeu et la meme strategie (Matching Pennies v=0 sigma=[0.5,0.5] ; RPS v=0 sigma=[1/3,1/3,1/3] ; asymetrique 2x2 v=0.714 sigma=[0.571,0.429], |delta v| = 2e-16)."
+    - "Tranche 1 preservee byte-identique : le simplexe de Dantzig from-scratch (`SimplexMax` + regle de Bland anti-cyclage + `SolveMatrixGame` formulation Col+duales) reste comme moteur pedagogique, en PLUS du Glop industriel (Tranche 2). Mandat user : from scratch EN PLUS, jamais A LA PLACE. Croisement strict : deux moteurs (Dantzig vs Glop) ET deux formulations (Col+duales vs Row directe) donnent le meme resultat = controle le plus exigeant qu'on puisse ecrire sur ce theoreme."
