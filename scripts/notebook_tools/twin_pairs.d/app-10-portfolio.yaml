@@ -50,6 +50,12 @@
         csharp_sha: 8413a08b13a3f1d3350ca2fa61c5115200f11058
         content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
         content_csharp_sha: 2208eba59d6d7d0e5a7361811372e1627e7fbd6afe03524dfc1eb338d1374acd
+    -   date: '2026-08-11'
+        by: myia-po-2025:CoursIA-2
+        python_sha: 483c2648d7816ea12a3c3753a888e6e49cd8f3b0
+        csharp_sha: 7023d3ba7fe5e0ce0624ee2806ea06851c4e382e
+        content_python_sha: 059e3dd5a8806c9030dfaa55d8a13ca1c341ec33673c97f95ada57b92a5365be
+        content_csharp_sha: 879e4a17d56b5bcc6aa292f8a1ec1ea2d29c0988615fe47dd5385ddc54a348c2
     known_differences:
     - 'Socle pedagogique commun : Optimisation de portefeuille (convex opt cvxpy + GeneticSharp C#) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles.'
     - 'Idiomes framework : Python = cvxpy convex optimization + math.comb ; C# = GeneticSharp NuGet (GA).'
