@@ -64,9 +64,11 @@ décider **quand l'un est plus adapté que l'autre** pour un projet donné.
 
 ## Conception
 
-Une fois la plateforme choisie, une question de conception se pose à l'identique
-des deux côtés : **plusieurs assistants, un seul catalogue d'outils — comment
-cadre-t-on ce que chacun a le droit de faire ?**
+Une fois la plateforme choisie, les deux mêmes questions se posent de part et
+d'autre, et elles forment une paire : **ce que chaque assistant a le droit de
+faire**, et **qui il est réellement**.
+
+### Ce qu'il a le droit de faire
 
 [`cadrer-les-agents.md`](cadrer-les-agents.md) distingue les trois couches qu'on
 confond habituellement — l'intention (prompt système), la portée (catalogue
@@ -76,6 +78,22 @@ critère de décision : on apparie le mécanisme à la **réversibilité de l'ac
 Le document compare ce que chaque plateforme prend en charge nativement de la
 troisième couche, et fournit la manipulation permettant de le vérifier sur son
 propre déploiement.
+
+### Qui il est
+
+[`differencier-les-assistants.ipynb`](differencier-les-assistants.ipynb) traite
+l'autre moitié. Déclarer quatre assistants spécialisés ne les rend pas
+distincts : le prompt porte une intention, la spécialisation est une propriété
+des sorties. Le notebook construit la mesure — une batterie de sondes ambiguës,
+puis un test de discriminabilité qui demande si l'on peut retrouver l'auteur
+d'une réponse dont on a caché l'étiquette.
+
+Il est monté autour de deux contrôles placés exprès dans l'atelier, et le second
+donne le résultat le plus utile : une paraphrase stricte s'effondre — les deux
+assistants sont systématiquement pris l'un pour l'autre — tandis qu'un assistant
+partageant le **même terrain** mais adoptant une **posture** différente reste
+largement distinguable. Ce qu'un modèle restitue le plus fidèlement d'un prompt
+système est la position adoptée, pas le domaine annoncé.
 
 ---
 
