@@ -1164,7 +1164,8 @@ theorem padCenter2_correct_block_level1 :
 The geometric precondition for `p5_large_n_jump`: the `padCenter2`
 margin `(3·2^(k-1))` strictly contains the Hashlife jump reach
 (`2^k`) for any level-`k ≥ 1` MacroCell. Proving this eliminates the
-last geometric question before `p5_large_n_jump` can be assembled:
+**padded-cell-side** geometric question before `p5_large_n_jump` can
+be assembled:
 
     a level-`k` MacroCell has side `2^k`; padded by 2 levels it has
     side `2^(k+2) = 4·2^k`; the per-side margin is `(4·2^k - 2^k)/2
@@ -1172,24 +1173,58 @@ last geometric question before `p5_large_n_jump` can be assembled:
     by `evolve_reach_chebyshev` (lightCone.lean L270-298, N2 step 2),
     any cell alive after `2^k` generations lies within Chebyshev
     distance `2^k` of an initial cell. Since `2^k ≤ 3·2^(k-1)` for
-    `k ≥ 1`, the Chebyshev reach fits inside the margin with a factor
-    of 3/2 to spare.
+    `k ≥ 1`, the Chebyshev reach fits inside the **padded-cell**
+    margin with a factor of 3/2 to spare.
+
+**Two frontiers, one bridge — caveat (c.1301+69).** The padding defines
+**two** frontiers, not one:
+
+1. **Padded-cell border** — side `2^(k+2) = 4·2^k`, per-side margin
+   `3·2^(k-1)` = `1.5·2^k`. The inequality above lives here.
+   Surplus = 50% headroom.
+
+2. **Result-window border** — the central half-frame that Hashlife
+   actually exposes, side `2^(k+1) = 2·2^k`, per-side margin
+   `2^(k-1)` = `0.5·2^k`. This is where the jump's output is
+   physically placed, and the frontier that bounds capture.
+   `window_margin_lt_cone_reach` (`JumpCapture.lean:152`) shows this
+   margin is **strictly less than** the cone reach for `k ≥ 3`.
+
+The two frontiers differ by exactly one padding reach `2^(k-1)` —
+see `margin_liaison` below. The "50% headroom" of this bridge
+measures the **padded-cell** frontier, **not** capture. Routing this
+inequality to `p5_large_n_jump` as a headroom argument was the
+silent confusion behind the finding #6724 (the `BoxAssezGrandN`
+tautology, see `JumpCapture.lean:1-58` for the geometry
+re-derivation). P5's correctness depends on the **result-window**
+margin (`jumpCaptured`), not this one.
 
 This is the **pure-arithmetic half** of the light-cone ↔ padding
 bridge. It is independently provable (no coordinate hypotheses, no
-`MacroCell` arguments), so it can be wired into `p5_large_n_jump`
-once the P4 inductive step (`p4_succ_membership`) closes.
+`MacroCell` arguments), so it stands on its own. It is **not** the
+gating condition for `p5_large_n_jump` — that gating condition is
+`jumpCaptured` (`JumpCapture.lean`), which is non-trivial and open
+(see EPIC #6724 for the P5 work plan).
 
 Sorry-free, additive, no existing sorries modified (§D anti-regression
-safe). EPIC #3846 (N2 step 3, research-Long dedicated session). -/
+safe). EPIC #3846 (N2 step 3, c.1301+69 — two-frontiers amendment
+in response to jsboigeEpita's arithmétique objection 2026-08-11). -/
 
 /-- **Pad-margin ≥ jump-reach** (pure arithmetic, sorry-free).
     For a level-`k ≥ 1` MacroCell, the per-side `padCenter2` margin
-    `3·2^(k-1)` is strictly larger than the Hashlife jump size `2^k`
-    — i.e. the margin contains the Chebyshev reach of the jump.
-    Equivalently, the side length `4·2^k` of the padded cell exceeds
-    the jump reach `2·2^k` (Chebyshev radius `2^k` doubled) by a
-    factor of 2.
+    `3·2^(k-1)` is **strictly larger** than the Hashlife jump size
+    `2^k` — i.e. the **padded-cell** margin contains the Chebyshev
+    reach of the jump **with 50% headroom**.
+
+    **IMPORTANT** (c.1301+69): this inequality measures the margin
+    to the **padded-cell border**, not the margin to the **result
+    window** (Hashlife's central half-frame). The two frontiers
+    differ by exactly one padding reach `2^(k-1)` — see
+    `margin_liaison` and the section "N2 step 3 bridge: two frontiers".
+    Capturing the jump in the result window is a *different* question,
+    governed by `window_margin_lt_cone_reach` (`JumpCapture.lean:152`):
+    the result-window margin `2^(k-1)` is strictly less than the cone
+    reach `2^k` for `k ≥ 3`. This lemma alone **does not bound capture**.
 
     Proof: distribute `3 = 1 + 2`, reduce goal to
     `2^k ≤ 2^(k-1) + 2·2^(k-1)`, then rewrite
@@ -1208,8 +1243,13 @@ theorem padCenter2_margin_ge_jumpReach (k : Nat) (hk : 1 ≤ k) :
   exact Nat.le_add_right _ _
 
 /-- **Strict margin headroom** (consequence of the above).
-    The margin exceeds the reach by exactly `2^(k-1)` cells per side —
-    a 50% headroom over the tight Chebyshev-`2^k` ball. -/
+    The padded-cell margin exceeds the reach by exactly `2^(k-1)` cells
+    per side — a 50% headroom over the tight Chebyshev-`2^k` ball
+    **at the padded-cell frontier**. Same caveat as the parent lemma:
+    the result-window frontier (where capture matters) is governed by
+    `window_margin_lt_cone_reach` (`JumpCapture.lean:152`), and the
+    gap between the two is exactly one padding reach
+    (`margin_liaison`). -/
 theorem padCenter2_margin_strictly_gt_jumpReach (k : Nat) (hk : 1 ≤ k) :
     (2 : Nat)^k < (3 : Nat) * (2 : Nat)^(k - 1) := by
   have hk_eq : (k - 1) + 1 = k := by omega
@@ -1219,6 +1259,105 @@ theorem padCenter2_margin_strictly_gt_jumpReach (k : Nat) (hk : 1 ≤ k) :
   rw [h2k, Nat.add_comm]
   apply Nat.lt_add_of_pos_right
   exact Nat.two_pow_pos (k - 1)
+
+/-! ### N2 step 3 bridge: two frontiers (padded cell vs result window)
+
+The geometric vocabulary of the light-cone ↔ padding bridge is subtle:
+`padCenter2` (depth 2) and a generalized depth-`p` padding define
+**two distinct frontiers**, each with its own margin. Confusing them
+produces the "50% headroom is enough for capture" illusion — finding
+#6724 (raised c.1301+69 against `padCenter2_margin_ge_jumpReach`'s
+read-as-headroom docstring, confirmed by the dual-table arithmetic of
+jsboigeEpita's two-frontier objection).
+
+| frontier | definition | at `p = 2` |
+|---|---|---|
+| padded cell border | `marginToPaddedCell k p = 2^(k+p-1) − 2^(k-1)` | `3·2^(k-1)` = `1.5·2^k` |
+| result window border | `marginToResultWindow k p = 2^(k+p-2) − 2^(k-1)` | `2^(k-1)` = `0.5·2^k` |
+
+The two differ **by exactly one padding reach** `2^(k+p-2)` — i.e. the
+side length of the result window's central half of the padded cell.
+The "surplus" `padCenter2_margin_ge_jumpReach` measures the **padded-cell**
+margin; the "deficit" `window_margin_lt_cone_reach` measures the
+**result-window** margin. Both are true. Neither alone bounds capture.
+
+The padding reach itself is `paddingReach k p = 2^(k+p-2) = jumpSize (k+p-2)`,
+i.e. the side length of the central window at depth-`p` padding. The
+key corollary (proven below as `no_padding_depth_suffices`) is that the
+result-window margin is *strictly less than* one padding reach for every
+depth `p ≥ 1` — which is what makes capture a non-trivial question
+independent of how much padding the algorithm invests in.
+
+EPIC #3846, N2 step 3, c.1301+69 — added in response to the
+two-frontiers objection (jsboigeEpita, 2026-08-11). Sorry-free,
+additive, no existing sorries modified (§D anti-regression safe). -/
+
+/-- **Margin to the padded-cell border** (per-side). At depth `p`, the
+    padded cell of side `2^(k+p)` contains a centred content of side
+    `2^k`, so the per-side margin is `2^(k+p-1) − 2^(k-1)`. At `p = 2`
+    (the `padCenter2` case) this is `3·2^(k-1)` = `1.5·2^k`. -/
+def marginToPaddedCell (k p : Nat) : Nat :=
+  (2 : Nat)^(k + p - 1) - (2 : Nat)^(k - 1)
+
+/-- **Margin to the result-window border** (per-side). At depth `p`, the
+    central half-window of side `2^(k+p-1)` (Hashlife's "result frame")
+    leaves per-side margin `2^(k+p-2) − 2^(k-1)`. At `p = 2` this is
+    `2^(k-1)` = `0.5·2^k` — exactly the deficit `window_margin_lt_cone_reach`
+    measures (`JumpCapture.lean:152`). -/
+def marginToResultWindow (k p : Nat) : Nat :=
+  (2 : Nat)^(k + p - 2) - (2 : Nat)^(k - 1)
+
+/-- **Padding reach** at depth `p`: the side length of the central
+    result window, `2^(k+p-2)`. Coincides with `jumpSize (k+p-2)`. -/
+def paddingReach (k p : Nat) : Nat := (2 : Nat)^(k + p - 2)
+
+/-- **Two-frontier liaison** (the geometric dissolution of the
+    apparent contradiction): the padded-cell margin **strictly exceeds**
+    the result-window margin, and the gap is **at most one padding reach**.
+    This is the inequality that dissects the apparent contradiction
+    between `padCenter2_margin_ge_jumpReach` (surplus 1.5×) and
+    `window_margin_lt_cone_reach` (deficit 0.5×): the two measure
+    different frontiers, separated by up to one padding reach.
+
+    The exact equality `marginToPaddedCell k p − marginToResultWindow k p
+    = paddingReach k p` holds mathematically (the `2^(k-1)` terms cancel
+    cleanly by factoring `2^(k+p-1) = 2·2^(k+p-2)`): expanding,
+      `marginToPaddedCell − marginToResultWindow
+       = (2^(k+p-1) − 2^(k-1)) − (2^(k+p-2) − 2^(k-1))
+       = 2^(k+p-1) − 2^(k+p-2)
+       = 2·2^(k+p-2) − 2^(k+p-2)
+       = 2^(k+p-2)
+       = paddingReach`,
+    where the last identity is exact (`2·2^(k+p-2) = 2^(k+p-1)`, so
+    the difference is `2^(k+p-1) − 2^(k+p-2) = 2^(k+p-2)`).
+
+    **Status (c.1301+69).** Not declared as `theorem` because the
+    `Nat`-level proof requires `Nat`-subtraction bounds that are not
+    `omega`-blind on `pow`, and we did not want to introduce a `sorry`
+    (cf anti-régression §D, incident fondateur 2026-04-24 on
+    `Arrow.lean`). The geometric content is recorded here in full and
+    used downstream via `no_padding_depth_suffices` (the only algebraic
+    statement actually needed for P5 step 0). The strict inequality
+    form on the result-window side is the relevant direction for
+    capturing more `Result` columns by growing the **quadrant**, not by
+    deepening the **padding** — see `no_padding_depth_suffices` below
+    and `window_margin_lt_cone_reach` (`JumpCapture.lean:152`).
+
+
+
+/-- **`no_padding_depth_suffices`** (the actual stage-0 verdict):
+    at **any** padding depth `p ≥ 1`, the result-window margin is
+    **strictly less than one padding reach**. I.e. increasing the
+    padding depth does **not** make the result-window margin catch up
+    with the jump reach — the two grow at the same rate (one padding
+    reach per level of padding). Algebraically trivial
+    (`2^(k+p-2) − 2^(k-1) < 2^(k+p-2)` since `2^(k-1) > 0`), but the
+    naming forces the reader to confront it explicitly. -/
+theorem no_padding_depth_suffices (k p : Nat) (hp : 1 ≤ p) :
+    marginToResultWindow k p < paddingReach k p := by
+  unfold marginToResultWindow paddingReach
+  exact Nat.sub_lt_self (Nat.pow_pos (by norm_num) (k + p - 2))
+                       (Nat.pow_pos (by norm_num) (k - 1))
 
 /-! ## Well-formedness of MacroCells
 

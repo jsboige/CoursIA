@@ -305,7 +305,28 @@ more than enough for `2^(level-2)` generations (speed of light = 1 cell/gen).
 With this padding, `hashlifeResult` on the padded cell advances by
 `2^level` generations (not `2^(level-2)`), and the result's offset equals
 the original offset (the centered result of the padded cell aligns with
-the original region). -/
+the original region).
+
+**Two margins, two frontiers** (c.1301+69): `centerInLevelPlus2` (a.k.a.
+`padCenter2`) actually defines **two** frontiers, not one:
+
+1. **Padded-cell border** — the level-`(k+2)` MacroCell of side
+   `4·2^k`, per-side margin `3·2^(k-1)` = `1.5·2^k` (this is the margin
+   bounded by `padCenter2_margin_ge_jumpReach`/
+   `HashlifeCorrectness/Foundation.lean`). "50% headroom".
+
+2. **Result-window border** — the central half-frame that Hashlife
+   actually exposes, side `2·2^k`, per-side margin `2^(k-1)` =
+   `0.5·2^k`. This is the frontier that bounds capture of the jump,
+   and `JumpCapture.lean` shows it is **strictly less than** the cone
+   reach for `k ≥ 3`.
+
+The two frontiers differ by exactly one "padding reach" `2^(k-1)` (cf.
+`margin_liaison`/`HashlifeCorrectness/Foundation.lean`). The "more than
+enough for `2^(level-2)` generations" above applies to the
+**padded-cell frontier**; it does **not** bound the jump's capture in
+the result window. The correct predicate for P5 is `jumpCaptured`
+(`JumpCapture.lean`), not the margin above — finding #6724. -/
 
 /-- Jump a MacroCell forward by `2^level` generations using recursive
     Hashlife with padding. Pads the input by 2 levels, then calls

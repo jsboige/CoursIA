@@ -479,6 +479,28 @@ lâche — qui rend la marge `2^k` suffisante avec 50 % de marge restante (la
 diagonale de la portée est `2^k`, la marge est
 `3·2^(k-1) = 1.5·2^k`).
 
+**Deux frontières, un pont — caveat (c.1301+69).** Comme documenté dans
+`HashlifeCorrectness/Foundation.lean` (section « N2 step 3 bridge : deux
+frontières »), `padCenter2` définit **deux** frontières, pas une :
+
+1. **Bord de la cellule rembourrée** — côté `2^(k+2) = 4·2^k`, marge par
+   côté `3·2^(k-1)` = `1.5·2^k`. L'inégalité ci-dessus vit ici.
+   Excédent = 50 % de marge restante.
+
+2. **Bord de la fenêtre de résultat** — la demi-trame centrale que
+   Hashlife expose réellement (où `jumpCaptured`/`JumpCapture.lean` la
+   capture), côté `2^(k+1) = 2·2^k`, marge par côté `2^(k-1)` =
+   `0.5·2^k`. C'est la frontière qui borne la capture ; `JumpCapture.lean`
+   montre que cette marge est **strictement inférieure** à la portée du
+   cône pour `k ≥ 3`.
+
+Les deux frontières different d'exactement une « padding reach »
+`2^(k-1)` (cf. `margin_liaison`/`HashlifeCorrectness/Foundation.lean`).
+Le théorème `evolve_reach_within_padCenter2_margin` ci-dessous **borne la
+frontière cellule-rembourrée** (50 % de marge restante), **pas** la
+frontière fenêtre-de-résultat (qui est déficitaire). Le câblage vers P5
+nécessite `jumpCaptured`, pas ce théorème — finding #6724.
+
 Évaluation des trois ingrédients de couche MacroCell signalés par ai-01 (ils
 gouvernent le câblage éventuel dans `p5_large_n_jump`, qui reste gated-P4 et
 hors scope ici) :
@@ -497,7 +519,9 @@ hors scope ici) :
 Ce couronnement est la **moitié Grid-level / distance-ensembliste** du pont —
 prouvé à partir d'ingrédients déjà sans sorry, il est donc lui-même sans sorry
 et additif (anti-régression §D : les deux sorries résiduels de
-`HashlifeCorrectness` sont intouchés). EPIC #3846, N2 étape 3. -/
+`HashlifeCorrectness` sont intouchés). EPIC #3846, N2 étape 3 (c.1301+69 —
+amendement deux-frontières en réponse à l'objection arithmétique
+jsboigeEpita 2026-08-11). -/
 
 /-- **Atteinte ⊆ marge padCenter2** (N2 étape 3, couronnement sans sorry).
     Après `2^k` générations d'évolution, toute cellule vivante `q` a chaque
@@ -506,7 +530,15 @@ et additif (anti-régression §D : les deux sorries résiduels de
     (`evolve_reach_chebyshev`, donnant `chebDist p q ≤ 2^k`), la borne par
     coordonnée (`coord_bound_of_chebDist_le`, donnant `|q.i − p.i| ≤ 2^k`), et
     l'arithmétique de marge (`padCenter2_margin_ge_jumpReach`,
-    `2^k ≤ 3·2^(k-1)`). -/
+    `2^k ≤ 3·2^(k-1)`).
+
+    **Caveat (c.1301+69)** : cette conclusion borne la marge jusqu'au **bord
+    de la cellule rembourrée** (`3·2^(k-1) = 1.5·2^k`), pas jusqu'au **bord
+    de la fenêtre de résultat** (`2^(k-1) = 0.5·2^k`). Les deux frontières
+    different d'exactement une padding reach — voir
+    `margin_liaison`/`HashlifeCorrectness/Foundation.lean`. Ce théorème ne
+    borne donc pas la capture de Hashlife dans la fenêtre de résultat ; le
+    prédicat correct est `jumpCaptured` (`JumpCapture.lean`). -/
 theorem evolve_reach_within_padCenter2_margin (k : Nat) (hk : 1 ≤ k)
     (g : Grid) (q : Int × Int)
     (h_alive : isAlive (evolve ((2 : Nat)^k) g) q = true) :

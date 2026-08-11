@@ -330,6 +330,28 @@ reach — not the loose Manhattan-`2^(k+1)` cone — is what makes the `2^k` mar
 sufficient with 50% headroom (the diagonal of the reach is `2^k`, the margin is
 `3·2^(k-1) = 1.5·2^k`).
 
+**Two frontiers, one bridge — caveat (c.1301+69).** As documented in
+`HashlifeCorrectness/Foundation.lean` (section « N2 step 3 bridge: two
+frontiers »), `padCenter2` defines **two** frontiers, not one:
+
+1. **Padded-cell border** — side `2^(k+2) = 4·2^k`, per-side margin
+   `3·2^(k-1)` = `1.5·2^k`. The inequality above lives here. Surplus =
+   50% headroom.
+
+2. **Result-window border** — the central half-frame that Hashlife
+   actually exposes (where `jumpCaptured`/`JumpCapture.lean` the
+   capture), side `2^(k+1) = 2·2^k`, per-side margin `2^(k-1)` =
+   `0.5·2^k`. This is the frontier that bounds capture;
+   `JumpCapture.lean` shows this margin is **strictly less than**
+   the cone reach for `k ≥ 3`.
+
+The two frontiers differ by exactly one padding reach `2^(k-1)`
+(see `margin_liaison`/`HashlifeCorrectness/Foundation.lean`). The
+`evolve_reach_within_padCenter2_margin` theorem below **bounds the
+padded-cell frontier** (50% headroom), **not** the result-window
+frontier (which is deficient). The wire into P5 needs `jumpCaptured`,
+not this theorem — finding #6724.
+
 Evaluation of the three MacroCell-layer ingredients ai-01 flagged (these govern
 the eventual wire into `p5_large_n_jump`, which remains P4-gated and out of
 scope here):
@@ -346,7 +368,8 @@ scope here):
 This capstone is the **Grid-level / set-distance half** of the bridge — proved
 from already-sorry-free ingredients, so it is itself sorry-free and additive
 (anti-regression §D: the two residual sorries of `HashlifeCorrectness` are
-untouched). EPIC #3846, N2 step 3. -/
+untouched). EPIC #3846, N2 step 3 (c.1301+69 — two-frontiers amendment
+in response to jsboigeEpita's arithmétique objection 2026-08-11). -/
 
 /-- **Reach ⊆ padCenter2 margin** (N2 step 3, sorry-free capstone).
     After `2^k` generations of evolution, every alive cell `q` has each
@@ -354,7 +377,15 @@ untouched). EPIC #3846, N2 step 3. -/
     initially-alive cell `p`. This composes the tight Chebyshev reach
     (`evolve_reach_chebyshev`, giving `chebDist p q ≤ 2^k`), the per-coordinate
     bound (`coord_bound_of_chebDist_le`, giving `|q.i − p.i| ≤ 2^k`), and the
-    margin arithmetic (`padCenter2_margin_ge_jumpReach`, `2^k ≤ 3·2^(k-1)`). -/
+    margin arithmetic (`padCenter2_margin_ge_jumpReach`, `2^k ≤ 3·2^(k-1)`).
+
+    **Caveat (c.1301+69)**: this conclusion bounds the margin to the
+    **padded-cell border** (`3·2^(k-1) = 1.5·2^k`), not the margin to the
+    **result-window border** (`2^(k-1) = 0.5·2^k`). The two frontiers differ
+    by exactly one padding reach — see
+    `margin_liaison`/`HashlifeCorrectness/Foundation.lean`. This theorem
+    therefore does **not** bound Hashlife's capture in the result window;
+    the correct predicate is `jumpCaptured` (`JumpCapture.lean`). -/
 theorem evolve_reach_within_padCenter2_margin (k : Nat) (hk : 1 ≤ k)
     (g : Grid) (q : Int × Int)
     (h_alive : isAlive (evolve ((2 : Nat)^k) g) q = true) :

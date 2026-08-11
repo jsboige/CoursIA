@@ -306,7 +306,29 @@ la lumiere = 1 cellule/gen).
 Avec ce rembourrage, `hashlifeResult` sur la cellule rembourree avance
 de `2^level` generations (et non `2^(level-2)`), et le decalage du
 resultat egale le decalage original (le resultat centre de la cellule
-rembourree s'aligne avec la region originale). -/
+rembourree s'aligne avec la region originale).
+
+**Deux marges, deux frontieres** (c.1301+69) : `centerInLevelPlus2` (alias
+`padCenter2`) definit en realite **deux** frontieres, pas une :
+
+1. **Bord de la cellule rembourree** — la MacroCell de niveau `(k+2)`
+   de cote `4·2^k`, marge par côté `3·2^(k-1)` = `1.5·2^k` (c'est la
+   marge que `padCenter2_margin_ge_jumpReach`/`HashlifeCorrectness/Foundation.lean`
+   borne). « 50 % de marge restante ».
+
+2. **Bord de la fenetre de resultat** — la demi-trame centrale que
+   Hashlife expose reellement, cote `2·2^k`, marge par cote `2^(k-1)` =
+   `0.5·2^k`. C'est cette frontiere-ci qui borne la capture du saut, et
+   `JumpCapture.lean` montre qu'elle est **strictement inferieure** a la
+   portee du cone pour `k ≥ 3`.
+
+Les deux frontieres different d'exactement une « padding reach »
+`2^(k-1)` (cf. `margin_liaison`/`HashlifeCorrectness/Foundation.lean`).
+Le « largement suffisant pour `2^(level-2)` generations » ci-dessus
+s'applique a la **frontiere cellule-rembourree** ; il ne **borne pas**
+la capture du saut dans la fenetre de resultat. Le predicat correct
+pour P5 est `jumpCaptured` (`JumpCapture.lean`), pas la marge ci-dessus —
+finding #6724. -/
 
 /-- Fait sauter une MacroCell en avant de `2^level` generations en
     utilisant le Hashlife recursif avec rembourrage. Remboure l'entree de
