@@ -157,6 +157,50 @@ except ImportError:  # pragma: no cover
 # `last_audit` changent, commentaires du fichier preserves).
 DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.d"
 
+# Verdict de bridge SOTA (#10439). Orthogonal a `parity_level` (qui decrit la
+# correspondance des jumeaux) : ce champ decrit si un moteur SOTA est
+# branchable/branche du cote .NET, pour qu'un verdict INTRINSIC deja rendu en
+# prose cesse d'etre invisible aux detecteurs et de re-signaler la paire a
+# chaque scan. Enumeration = les 5 verdicts de sota-not-workaround.md.
+BRIDGE_VERDICTS = frozenset({
+    "SOTA-OK",
+    "RECOVERABLE-LOCAL",
+    "RECOVERABLE-MACHINE",
+    "RECOVERABLE-USER-HAND",
+    "INTRINSIC",
+})
+
+
+def validate_pair_fields(pair: dict) -> list[str]:
+    """Valide les champs structurels d'une paire. Retourne une liste d'erreurs
+    (vide = OK). Fail-loud sur `bridge_verdict` hors enum, ou `bridge_verdict:
+    INTRINSIC` sans `bridge_verdict_reason` (#10439).
+
+    Les champs `bridge_verdict` et `bridge_verdict_reason` sont OPTIONNELS : la
+    plupart des paires n'en portent pas (le verdict par defaut est "non-rompt",
+    la paire reste actionnable). Un INTRINSIC sans reason est interdit car le
+    verdict sans le raisonnement ne vaut rien (cf _schema.yaml + #10439).
+
+    Scope : ne valide QUE bridge_verdict (#10439). `parity_level` n'est pas
+    valide ici -- des fixtures de test utilisent des valeurs placeholders (ex.
+    'full') et l'enumeration reelle (surface/semantic/native-both) est deja
+    enforcee par revue + _schema.yaml.
+    """
+    errs: list[str] = []
+    name = pair.get("name", "?")
+    bv = pair.get("bridge_verdict")
+    if bv is not None:
+        if bv not in BRIDGE_VERDICTS:
+            errs.append(
+                f"{name}: bridge_verdict={bv!r} hors enum {sorted(BRIDGE_VERDICTS)}"
+            )
+        elif bv == "INTRINSIC" and not str(pair.get("bridge_verdict_reason", "")).strip():
+            errs.append(
+                f"{name}: bridge_verdict=INTRINSIC requiert bridge_verdict_reason "
+                f"(le verdict sans le raisonnement ne vaut rien, #10439)"
+            )
+    return errs
+
 
 def _slug(name: str) -> str:
     """Slug stable et deterministe du `name` d'une paire -> nom de fichier.
@@ -498,6 +542,7 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         "python": py,
         "csharp": cs,
         "parity_level": pair.get("parity_level", "?"),
+        "bridge_verdict": pair.get("bridge_verdict"),
         "status": status,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
@@ -1001,6 +1046,12 @@ def main(argv=None) -> int:
                         "(no-op = faux audit, --update devient facultatif). "
                         "Utilisez --force pour outrepasser avec un avertissement.")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
+    p.add_argument("--summary-by-verdict", action="store_true",
+                   help="Compte les paires par `bridge_verdict` (#10439) : SOTA-OK / "
+                        "RECOVERABLE-* / INTRINSIC / (non-rompu = actionnable). "
+                        "Le point du champ structurel : soustraire les verdicts "
+                        "INTRINSIC/SOTA-OK du denominateur 'actionnable' SANS "
+                        "intervention manuelle. Incompatible avec --update/--per-pair.")
     p.add_argument("--coverage", action="store_true",
                    help="Recense les notebooks C# versionnes NON couverts par le "
                         "registre (jumeau Python present mais paire non declaree). "
@@ -1051,6 +1102,10 @@ def main(argv=None) -> int:
     if args.coverage and (args.update or args.per_pair or args.base or args.verify_recorded_sha):
         p.error("--coverage est un mode de recensement seul : incompatible avec "
                 "--update / --per-pair / --base / --verify-recorded-sha.")
+    if args.summary_by_verdict and (args.update or args.per_pair or args.base
+                                    or args.verify_recorded_sha or args.coverage):
+        p.error("--summary-by-verdict est un mode de recensement seul : incompatible "
+                "avec --update / --per-pair / --base / --verify-recorded-sha / --coverage.")
     if args.per_pair and not args.base:
         p.error("--per-pair necessite --base <ref>")
     if args.base and not args.per_pair:
@@ -1086,6 +1141,47 @@ def main(argv=None) -> int:
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
+
+    # --- Mode --summary-by-verdict (#10439) : denominateur actionnable sans
+    # soustraction manuelle. Compte les paires par bridge_verdict ; les paires
+    # SANS verdict sont les 'actionnables' (ni INTRINSIC ni SOTA-OK declare). ---
+    if args.summary_by_verdict:
+        pairs = load_registry(reg_path)
+        # Fail-loud sur un bridge_verdict invalide avant de resumer : un resume
+        # qui ignore silencieusement une valeur hors enum est le defaut meme
+        # que #10439 vient corriger.
+        schema_errs = [e for pp in pairs for e in validate_pair_fields(pp)]
+        if schema_errs:
+            for e in schema_errs:
+                print(f"SCHEMA ERROR: {e}", file=sys.stderr)
+            return 2
+        counts: dict = {}
+        names_by: dict = {}
+        for pp in pairs:
+            bv = pp.get("bridge_verdict", "(non-rompu)")
+            counts[bv] = counts.get(bv, 0) + 1
+            names_by.setdefault(bv, []).append(pp.get("name", "?"))
+        actionable = sum(c for k, c in counts.items()
+                         if k not in ("INTRINSIC", "SOTA-OK"))
+        if args.json:
+            print(json.dumps({
+                "mode": "summary_by_verdict",
+                "registry": str(reg_path),
+                "total": len(pairs),
+                "counts": counts,
+                "actionable": actionable,
+            }, ensure_ascii=False, indent=2))
+        else:
+            order = ["(non-rompu)", "SOTA-OK", "RECOVERABLE-LOCAL",
+                     "RECOVERABLE-MACHINE", "RECOVERABLE-USER-HAND", "INTRINSIC"]
+            shown = [k for k in order if k in counts] + sorted(set(counts) - set(order))
+            print(f"Summary by bridge_verdict ({len(pairs)} paires) :")
+            for k in shown:
+                tag = " ACTIONNABLE" if k not in ("INTRINSIC", "SOTA-OK") else ""
+                print(f"  {k:<22} {counts[k]:>3}{tag}")
+            print(f"  {'actionnables (a bridger)':<22} {actionable:>3}"
+                  f"  = total - INTRINSIC - SOTA-OK")
+        return 0
 
     # --- Mode --coverage : angle mort du registre (paires jamais declarees) ---
     if args.coverage:
@@ -1224,6 +1320,17 @@ def main(argv=None) -> int:
 
     # --- Mode historique (fleet-wide) ---
     pairs = load_registry(reg_path)
+
+    # Validation schema (#10439) : fail-loud sur bridge_verdict/parity_level
+    # invalide. Une valeur hors enum ignorée silencieusement est precisement le
+    # defaut que le champ structurel vient corriger (verdict invisible aux
+    # detecteurs). S'applique aux modes check ET update (un update n'ecrit pas
+    # non plus par-dessus un schema error).
+    schema_errs = [e for pp in pairs for e in validate_pair_fields(pp)]
+    if schema_errs:
+        for e in schema_errs:
+            print(f"SCHEMA ERROR: {e}", file=sys.stderr)
+        return 2
 
     if args.family:
         pairs = [pp for pp in pairs if pp.get("family") == args.family]

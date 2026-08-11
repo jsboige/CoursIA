@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 7
-breakdown: PostTraining=7
-maturity: BETA=4, ALPHA=3
+pedagogical_count: 11
+breakdown: PostTraining=11
+maturity: BETA=8, ALPHA=3
 -->
 
 > **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks exécutés ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR → **GAE** et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative, un détecteur de reward hacking, et un notebook d'implémentation from-scratch de la famille "no critic" (GRPO/RLOO/GAE) sur toy env CPU, et de **deux notebooks appliqués Qwen3.5-0.8B + GRPO + reward vérifiable + rewardspy en ligne** (PT-11a Z3 CSP arithmétique + PT-11b SymPy arithmétique + Z3 N-queens) qui font sortir la série du toy env vers un vrai LLM, soit **12 notebooks** au total. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
