@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Part2-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : gambit-enummixed via CLI Process.Start sur les 4 jeux canoniques (RPS, RPS biaise, Prisonnier, Matching Pennies). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). nashpy (Python) et Gambit (McKelvey-McLennan-Page, CLI autonome GPL-2.0) sont deux libs differentes (axe 6) couvrant le meme role (support enumeration pour NE mixtes) -> pont desormais SYMETRIQUE. Comparaison numerique (cellule 24 du C#) : 4/4 equilibres gambit apparaillent le from-scratch BCL (dist < 1e-3) + exploitabilite = 0 partout (premier principe verifie). From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE."
   audits:
     - date: "2026-08-07"
       by: myia-po-2025:CoursIA
@@ -23,8 +25,16 @@
       csharp_sha: 0803644967201646eb00beb62327da4059e9bb29
       content_python_sha: b60792d2c1b041113ef870cf04c6eb17c1e31230115354571d25c7007a5cb2a9
       content_csharp_sha: f3431f222a16b4b4161785d0cf953b79f2670cb7bd27d8d821b56760ff760952
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: 13c27d9afd12ca9f9f5dc96c00aa761d8d5bb87c
+      csharp_sha: 10b8e4e17ac1cc612830d0c1f188cb9b8531bdea
+      content_python_sha: b60792d2c1b041113ef870cf04c6eb17c1e31230115354571d25c7007a5cb2a9
+      content_csharp_sha: 01f83eddcb3821b0dae4899b90d4b7545c70d8387afb9c7414f88e1d9d5c8ea9
+      note: "Pont SOTA Gambit rajoute cote C# (cellule 24) : gambit-enummixed via CLI Process.Start, 4/4 jeux CORRESPOND (dist < 1e-3, exploitabilite = 0). bridge_verdict SOTA-OK, pont symetrique avec nashpy cote Python. From-scratch BCL conserve."
+      bridge_verdict: SOTA-OK
   known_differences:
     - "Socle pedagogique commun : support enumeration des equilibres de Nash mixtes NxN (indifference + Gauss pivot partiel + best-response), sur 4 jeux canoniques (RPS, RPS biaise, Prisonnier, Matching Pennies) + 3 exercices (BoS, RPSLS, complexite)."
-    - "Idiomes framework : Python = `numpy` pur pour le from-scratch (meme algorithme que le C#), PLUS `nashpy` comme verification independante (pont SOTA, cell 8). C# = pur BCL .NET (System.*, pas de lib tiers), nashpy n'existe pas en .NET."
-    - "Pont de verification asymetrique : le twin Python dispose de `nashpy` (lib de reference) comme juge de paix — le from-scratch est verifie contre le vrai outil SOTA (verdict SOTA-OK #3801). Le twin C# n'a pas d'equivalent .NET, sa verification est la parite algorithmique avec le Python."
+    - "Idiomes framework : Python = `numpy` pur pour le from-scratch (meme algorithme que le C#), PLUS `nashpy` comme verification independante (pont SOTA, cell 8). C# = pur BCL .NET (System.*, pas de lib tiers) pour le from-scratch, PLUS `gambit-enummixed` via CLI Process.Start comme pont SOTA (cell 24). nashpy n'existe pas en .NET, mais Gambit (McKelvey-McLennan-Page, GPL-2.0) est l'outil de reference canonique et couvre le meme role (support enumeration pour NE mixtes)."
+    - "Pont de verification SYMETRIQUE : le twin Python dispose de `nashpy`, le twin C# dispose de `gambit-enummixed` (CLI) -- les deux from-scratch sont verifies contre leur outil SOTA respectif (verdict SOTA-OK #3801 des deux cotes). Correspondance 4/4 sur les jeux canoniques confirmee firsthand dans les deux twins."
     - "Resultats numeriquement identiques : RPS uniforme (1/3,1/3,1/3), RPS biaise Paper=0.500, Prisonnier (Defect,Defect), Matching Pennies (0.5,0.5) — confirmes firsthand dans les deux twins."

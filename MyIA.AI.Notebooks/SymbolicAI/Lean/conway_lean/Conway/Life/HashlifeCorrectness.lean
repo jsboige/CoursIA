@@ -1132,14 +1132,20 @@ progress; a vacuous-worthless proof would not be. -/
     concrete substrate that makes `hashlife_correctN` non-vacuous at the
     large-`n` regime (vs the fixed-frame `BoxAssezGrand block 8`, unsatisfiable
     by the `n ≤ 2` cap). It is the propositional twin of the Bool-form
-    `box_assez_grandN_block 8 = true` (proven above), discharged by
-    `native_decide` directly on the `BoxAssezGrandN` proposition via the
-    `Decidable (BoxAssezGrandN)` instance. -/
-theorem boxAssezGrandN_block_8 : BoxAssezGrandN block 8 := by native_decide
+    `box_assez_grandN_block 8 = true` (proven above), discharged by the
+    **triviality lemma** `boxAssezGrandN_trivial` (proved in `Foundation.lean`
+    next to `BoxAssezGrandN`) — which says `BoxAssezGrandN g n` holds for
+    **every** `g` and `n` because `gridFrameN n g` pads by `max 2 n ≥ n` on
+    every side and `cellMargin` is non-strict. So both this witness and the
+    analogous `boxAssezGrandN_glider_8` are now `forbidden-axiom-free` — the
+    old `by native_decide` was a redundant machine-check on a tautological
+    proposition (c.8207 sub-grain of #9568 cleanup). -/
+theorem boxAssezGrandN_block_8 : BoxAssezGrandN block 8 := boxAssezGrandN_trivial _ _
 
 /-- Same non-vacuity witness on the `glider` spaceship at `n = 8`
-    (propositional form). -/
-theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := by native_decide
+    (propositional form). Discharged by the triviality lemma — see
+    `boxAssezGrandN_block_8` docstring. -/
+theorem boxAssezGrandN_glider_8 : BoxAssezGrandN glider 8 := boxAssezGrandN_trivial _ _
 
 /-- **Confinement authentique du jump** (re-signed, inlined from
     `Conway.Life.JumpCapture` to avoid the A↔B import cycle that exists because
@@ -1186,7 +1192,8 @@ private theorem jumpCaptured_iff (c : MacroCell) :
 
     **Re-signed (c.1035, finding #6724 — voie (a)).** The hypothesis was
     `BoxAssezGrandN g n`, which is **tautological** (proved by
-    `box_assez_grandN_trivial` in `JumpCapture.lean`) — so the old
+    `box_assez_grandN_trivial` in `Foundation.lean`, next to `BoxAssezGrandN` —
+    relocated c.8206 from `JumpCapture.lean` to break an import cycle) — so the old
     `p5_large_n_jumpN_iff_unconditional` showed the original statement carried
     zero information. Re-signed to consume `jumpCaptured
     (gridToMacroCellWithOffset g).2 = true` (inlined above to avoid the import
@@ -1216,7 +1223,7 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
 
     **Re-signed (c.1035, finding #6724).** The previous hypothesis
     `BoxAssezGrandN g n` was **tautological** (`box_assez_grandN_trivial`,
-    `JumpCapture.lean`) — it held for *every* `(g, n)` and thus carried no
+    `Foundation.lean` — relocated c.8206 from `JumpCapture.lean` to break an import cycle) — it held for *every* `(g, n)` and thus carried no
     information. The new hypothesis `jumpCaptured (gridToMacroCellWithOffset
     g).2 = true` is **non-tautological** (witnessed by `jumpCaptured_block`,
     `jumpCaptured_glider`, `jumpCaptured_not_trivial` in `JumpCapture.lean`)
@@ -1236,13 +1243,23 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     required work *beyond* the jump. It does not.
 
     **Note (c.1035).** The non-vacuity witnesses
-    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` (L1138/L1142) are now
+    `boxAssezGrandN_block_8` / `boxAssezGrandN_glider_8` (around L1140) are now
     orphaned relative to this theorem, since the hypothesis they satisfied is
     gone. They still typecheck standalone and are kept for traceability of
     the c.95 / c.1035 evolution; their substantive role is superseded by
     `jumpCaptured_block` / `jumpCaptured_glider` in `JumpCapture.lean`. The
     `BoxAssezGrandN` predicate itself remains consumed by
-    `hashlife_correctN_le_two` (L1199), which keeps the witnesses honest. -/
+    `hashlife_correctN_le_two` (around L1270), which keeps the witnesses honest.
+
+    **Note (c.8207).** Both witnesses are now proved via `boxAssezGrandN_trivial`
+    (relocated c.8206 from `JumpCapture.lean` to `Foundation.lean` to break the
+    import cycle) instead of `by native_decide`. They were redundant machine
+    witnesses on a tautological proposition — `BoxAssezGrandN g n` holds for
+    every `g` and `n` by the construction of `gridFrameN` padding `max 2 n ≥ n`
+    and non-strict `cellMargin`. The forbidden-axiom class `native_decide.*`
+    (per pr-review-discipline §B) is now eliminated at these two sites
+    (c.8207 sub-grain of #9568 cleanup, follows the same pattern as the c.8205
+    drop on the 4 `supportInMargin_*_k*` sanity checks). -/
 theorem hashlife_correctN (n : Nat) (g : Grid)
     (hcap : jumpCaptured (gridToMacroCellWithOffset g).2 = true) :
     evolveHashlifeFast n g = evolve n g := by
