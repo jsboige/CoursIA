@@ -14,6 +14,12 @@
       csharp_sha: eb47af5f9ac0e8a1dab26989671bfd0b6baad2c4
       content_python_sha: 3e24a480f8e53f39fd6a0b83e2336142e72058e3b6b07d4b8f53bc1929a89e80
       content_csharp_sha: 2cbbb56683a8d47fb5ced20b221651eefca4c5ce04d2b6ee7ea77f6b4eeffc80
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 248ef9388438ac9084b64aac70db01492c6f31c5
+      csharp_sha: 75793322bc6b6f70a80511f2d0ea89682cfeeaff
+      content_python_sha: 3e24a480f8e53f39fd6a0b83e2336142e72058e3b6b07d4b8f53bc1929a89e80
+      content_csharp_sha: 17d344443aadb36e0ca8a4a0c71f13fcdfab29a18988d15ebecfebfe1209f766
   known_differences:
     - "Bibliotheque vs from-scratch : Python invoque NetworkX (librairie mature, algorithmes de graphes prets a l'emploi : plus courts chemins, centralites, flot max, Louvain, matching) ; C# implemente les algorithmes from-scratch sur une adjacency list maison (BFS, DFS, Dijkstra, Ford-Fulkerson). parity_level=surface (meme plan pedagogique, implementations independantes)."
     - "Asymetrie de couverture : Python (42 cellules, 21 code) couvre §1-10 (construction, visualisation matplotlib, plus courts chemins, centralites, flot maximum, detection de communautes Louvain, matching pondere, Prong-B #3801) ; C# (20 cellules, 9 code) couvre §1-6 (graphe pondere, BFS/DFS, Dijkstra, centralites, flot maximum Ford-Fulkerson, visualisation ASCII). Louvain, matching pondere et Prong-B sont absents du C#."
