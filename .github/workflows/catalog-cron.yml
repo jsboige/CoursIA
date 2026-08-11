@@ -43,7 +43,10 @@ name: Catalog Auto-Regen (main, scheduled)
 # Instead, this workflow:
 #   (a) checks out the long-lived branch `chore/catalog-refresh-pending`
 #       (created from origin/main the first time, refreshed thereafter);
-#   (b) regenerates + commits the catalog on that branch with `[skip ci]`;
+#   (b) regenerates + commits the catalog on that branch (no `[skip ci]`
+#       since #10421: this workflow's `on:` lists no `push:` listener, so
+#       a self-trigger is structurally impossible; the directive was
+#       suppressing the required-check set on the long-lived PR);
 #   (c) pushes the branch to origin;
 #   (d) opens a PR via github-script if none exists yet, OR updates the
 #       existing PR's body / re-pings a maintainer on subsequent runs.
@@ -158,15 +161,21 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit \
-            -m "chore(catalog): scheduled auto-regenerate [skip ci]" \
+            -m "chore(catalog): scheduled auto-regenerate" \
             -m "Refresh COURSE_CATALOG.generated.{json,md} + CATALOG-STATUS markers." \
             -m "Catalog is owned by automation; agents must not regenerate it on feature branches (see .claude/rules/catalog-pr-hygiene.md, #2433, #10136)."
 
           # Push the long-lived branch. Direct push to main would trigger GH006
           # because the `PR gate` status check is required and a schedule
           # trigger never runs it (issue #10136, run 31293765051, 2026-08-09T04:03Z).
-          # `[skip ci]` in the commit message also prevents this workflow from
-          # re-firing when the bot pushes the branch.
+          # Note: prior versions carried `[skip ci]` in the commit message;
+          # removed in #10421. This workflow's `on:` block lists only
+          # `schedule:` and `workflow_dispatch:` (no `push:`), so the bot
+          # commit on `chore/catalog-refresh-pending` cannot re-trigger
+          # this workflow by construction. The `[skip ci]` paid for that
+          # non-risk by suppressing the entire required-check set on the
+          # long-lived PR, locking it in `BLOCKED` state indefinitely
+          # (measured firsthand, see #10421 acceptance note).
           #
           # The push MUST be a force-with-lease, and that is not a shortcut:
           # this job re-roots the branch on fresh main every run
