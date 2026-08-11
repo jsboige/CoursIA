@@ -164,6 +164,26 @@ jobs:
 
         from lean_server import LeanVerifier  # noqa: E402
 
+        # `select_diagnostic_lines` is imported, not reimplemented here: the
+        # selection has to agree with the canonical diagnostic marker (#8694,
+        # shared with `prover.tools._parse_lean_errors`), and a YAML heredoc is
+        # the one place in this repo no test can reach. It lives in
+        # `lean_server.py`, pinned by `tests/test_error_marker_contract.py`.
+        #
+        # The fallback is not defensive habit, it answers a STRUCTURAL version
+        # skew: callers reference this file as `lean-axiom.yml@main`, so the
+        # workflow body is always `main`'s while `lean_server.py` comes from the
+        # caller's checkout. A branch that predates the selector must degrade to
+        # the previous behaviour (tail slice), never crash the gate on an
+        # ImportError -- a green-to-crashed gate on every in-flight Lean PR
+        # would be a far worse defect than the one being fixed here (#10486).
+        try:
+            from lean_server import select_diagnostic_lines  # noqa: E402
+        except ImportError:
+            def select_diagnostic_lines(raw_output, limit=12):
+                lines = (raw_output or "").strip().splitlines()
+                return lines[-20:], False, 0
+
         modules = [m.strip() for m in os.environ["MODULES"].split(",") if m.strip()]
         allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
         display_name = os.environ["DISPLAY_NAME"]
@@ -242,13 +262,29 @@ jobs:
             if result.get("error"):
                 print(f"  error: {result['error']}")
                 # `error` names the class of failure; `raw_output` names the
-                # cause. Without this tail, "build_failed_returncode_1" sends
-                # you to a local reproduction to learn what any CI log already
-                # had. Tail rather than head: Lean prints the failing
-                # declaration and its error last.
-                tail = (result.get("raw_output") or "").strip().splitlines()[-20:]
-                for line in tail:
+                # cause. Without it, "build_failed_returncode_1" sends you to a
+                # local reproduction to learn what any CI log already had.
+                #
+                # Select the DIAGNOSTIC lines, not the tail. This branch used to
+                # slice `raw_output[-20:]` on the rationale that "Lean prints
+                # the failing declaration and its error last" -- true when the
+                # MODULE fails to build, false for this checker, whose build is
+                # a batch of one `#print axioms` per declaration fed to
+                # `lean --stdin`. An error on command #7 of 537 prints near the
+                # TOP, so the tail showed 20 healthy `depends on axioms:` lines
+                # and the cause was invisible. Measured on #10486 (galois_lean,
+                # 537 declarations): the log carried `build_failed_returncode_1`
+                # and nothing else, and the worker was sent to reproduce a
+                # 4-minute Mathlib build to learn a name the runner already had.
+                sel, matched, omitted = select_diagnostic_lines(
+                    result.get("raw_output") or ""
+                )
+                if not matched:
+                    print("    | (no Lean diagnostic in capture -- last 20 lines follow)")
+                for line in sel:
                     print(f"    | {line}")
+                if omitted:
+                    print(f"    | ... (+{omitted} more diagnostic lines)")
             if result["has_sorry"]:
                 sorry_modules.append(mod)
 

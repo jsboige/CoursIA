@@ -217,6 +217,125 @@ def test_enumeration_skips_private_declarations(tmp_path):
     assert decls == ["Knots.public_thm", "Knots.prot_thm", "Knots.slow"]
 
 
+# ── #10486: Lean identifiers are Unicode, the enumerator was ASCII-only ────
+
+def test_enumeration_keeps_subscripts_and_suffixed_names(tmp_path):
+    """Truncation mode of #10486: an ASCII class cuts the name mid-identifier.
+
+    ``mapsElations₂_gen1`` was enumerated as ``mapsElations`` -- the ``₂``
+    (U+2082) ended the match. The truncated name reaches ``#print axioms``,
+    Lean answers ``unknown constant``, and #8681 voids the whole module: that
+    is the red observed on ``galois_lean``'s ``Sporadic.L34``.
+
+    The ``!``/``?`` suffixes truncate the same way. See the companion test
+    below for why that case is quieter, and worse.
+    """
+    src = (
+        "namespace Sporadic.L34\n"
+        "theorem mapsElations₂_gen1 : True := trivial\n"
+        "theorem h₁₂ : True := trivial\n"
+        "def parseRLE! (s : String) : Nat := 0\n"
+        "def head? (l : List Nat) : Option Nat := none\n"
+        "end Sporadic.L34\n"
+    )
+    (tmp_path / "M.lean").write_text(src, encoding="utf-8")
+    assert _enumerate_module_declarations(tmp_path, "M") == [
+        "Sporadic.L34.mapsElations₂_gen1",
+        "Sporadic.L34.h₁₂",
+        "Sporadic.L34.parseRLE!",
+        "Sporadic.L34.head?",
+    ]
+
+
+def test_enumeration_sees_names_starting_with_a_greek_letter(tmp_path):
+    """Silent half of #10486, and the dangerous one.
+
+    A name whose FIRST character is non-ASCII matched nothing at all, so the
+    declaration was never enumerated -- and a declaration that is never
+    enumerated is never axiom-checked. Nothing goes red: a ``sorry`` inside
+    ``π`` would have sailed through the gate. Measured on ``sensitivity_lean``,
+    which holds ``π``, ``ε`` and ``dualBases_e_ε``.
+    """
+    src = (
+        "namespace Sens\n"
+        "def π : Nat := 3\n"
+        "def ε : Nat := 0\n"
+        "theorem dualBases_e_ε : True := trivial\n"
+        "end Sens\n"
+    )
+    (tmp_path / "M.lean").write_text(src, encoding="utf-8")
+    assert _enumerate_module_declarations(tmp_path, "M") == [
+        "Sens.π",
+        "Sens.ε",
+        "Sens.dualBases_e_ε",
+    ]
+
+
+def test_enumeration_bang_variant_is_not_aliased_onto_its_sibling(tmp_path):
+    """The quiet mode of #10486, and the one that keeps a gate falsely green.
+
+    ``foo`` / ``foo!`` / ``foo?`` is a standard Lean idiom, so a truncation very
+    often lands on a *real* neighbouring declaration instead of on nothing. That
+    is the case live on ``main``: ``conway_lean``'s ``Conway.Life.RLE`` -- which
+    IS in the wired, blocking ``target-modules`` of ``lean-conway.yml`` --
+    declares ``parseRLE`` (line 188) and ``parseRLE!`` (line 199). The
+    enumerator emitted ``parseRLE`` twice and ``parseRLE!`` never, so the gate
+    checked one declaration twice, reported green, and never once inspected the
+    axiom closure of the other. No red, no signal, a hole.
+
+    Both must be emitted, distinctly.
+    """
+    src = (
+        "namespace Conway.Life.RLE\n"
+        "def parseRLE (s : String) : Except String Nat := .ok 0\n"
+        "def parseRLE! (s : String) : Nat := 0\n"
+        "end Conway.Life.RLE\n"
+    )
+    (tmp_path / "M.lean").write_text(src, encoding="utf-8")
+    decls = _enumerate_module_declarations(tmp_path, "M")
+    assert decls == [
+        "Conway.Life.RLE.parseRLE",
+        "Conway.Life.RLE.parseRLE!",
+    ]
+    assert len(set(decls)) == 2, "the ! variant must not collapse onto its sibling"
+
+
+def test_enumeration_tracks_an_accented_namespace(tmp_path):
+    """#10486, third site: a truncated NAMESPACE mis-qualifies its contents.
+
+    ``namespace imbriqué`` (real, in ``conway_lean``'s ``Conway.Doomsday``)
+    opened as ``imbriqu``. The stack itself stays balanced -- ``end imbriqué``
+    truncates identically, so the push and the pop agree -- which is precisely
+    why this went unnoticed: nothing looks structurally wrong. The damage is the
+    prefix handed to every declaration *inside* the block, which becomes a name
+    Lean does not know.
+    """
+    src = (
+        "namespace imbriqué\n"
+        "theorem inside : True := trivial\n"
+        "end imbriqué\n"
+        "theorem after : True := trivial\n"
+    )
+    (tmp_path / "M.lean").write_text(src, encoding="utf-8")
+    assert _enumerate_module_declarations(tmp_path, "M") == [
+        "imbriqué.inside",
+        "after",
+    ]
+
+
+def test_enumeration_name_quantifier_stays_greedy(tmp_path):
+    """Guards the fix against the lazy-quantifier "fix".
+
+    Making the name quantifier lazy (``*?``) satisfies every Unicode example
+    above while collapsing each name to its first character -- turning a handful
+    of phantom names into *all* names phantom. This pins the greedy behaviour so
+    that regression cannot land silently.
+    """
+    src = "theorem MapsElations : True := trivial\n"
+    (tmp_path / "M.lean").write_text(src, encoding="utf-8")
+    assert _enumerate_module_declarations(tmp_path, "M") == ["MapsElations"]
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # _extract_axioms
 # ──────────────────────────────────────────────────────────────────────────
