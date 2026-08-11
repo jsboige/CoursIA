@@ -40,6 +40,11 @@ Rules
   accidentally promoted to an oversized heading.
 - ``oversized_hint``         (WARN):  a hint/indice/astuce/note line written as an
   ``#``/``##``/``###`` header (renders larger than surrounding text).
+- ``source_list_missing_newlines`` (ERROR): markdown cell whose ``source`` is a list of
+  N>=2 elements carrying fewer ``\n`` than the structure implies (classic case: N elements,
+  0 ``\n``). ``_as_text`` joins the list verbatim, so the cell collapses to one giant line
+  and ALL downstream line-based rules see no structure to inspect -> silent 0-violation pass
+  on a cell that renders as a single malformed block. Caught here, before normalization (#10397).
 
 The correct fix for frontmatter cells is to move the metadata into the notebook
 ``metadata`` (invisible, machine-readable) OR render it inside a fenced ```yaml block
@@ -83,6 +88,7 @@ RULE_SEVERITY = {
     "frontmatter_rawyaml": ERROR,
     "setext_oversized": ERROR,
     "oversized_hint": WARN,
+    "source_list_missing_newlines": ERROR,
 }
 
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
@@ -216,6 +222,29 @@ def scan_cell(cell) -> list[dict]:
     text = _as_text(cell.get("source"))
     if not text.strip():
         return []
+    # ---- list-source without newlines (#10397) -----------------------------------
+    # A markdown cell whose `source` is a list of N>=2 elements but carries fewer
+    # '\n' than the element count implies collapses to one giant line when joined:
+    # all structure (headings, paragraphs, frontmatter) is lost, the cell renders
+    # as a single malformed block, and every downstream line-based rule sees one
+    # line -> silent 0-violation pass. Catch the structural loss BEFORE the
+    # line-based rules reason on the collapsed text.
+    src = cell.get("source")
+    if isinstance(src, list) and len(src) >= 2:
+        nonblank_elems = [s for s in src if s.strip()]
+        expected_breaks = max(0, len(nonblank_elems) - 1)
+        actual_breaks = text.count("\n")
+        if actual_breaks < expected_breaks and len(text.strip()) >= 40:
+            rule = "source_list_missing_newlines"
+            return [{
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": (f"markdown cell source is a list of {len(src)} elements with "
+                            f"{actual_breaks} '\\n' (renders as {actual_breaks + 1} line(s) "
+                            f"instead of ~{expected_breaks + 1}); line structure lost on join"),
+                "evidence": text.strip()[:100],
+                "hash": _cell_hash(rule, text),
+            }]
     lines = text.split("\n")
     # Lines inside a fenced-code block render verbatim: a `---`/`===` there is literal
     # text, not a setext underline. Computed once, reused by both setext rules.
