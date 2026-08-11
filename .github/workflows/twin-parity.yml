@@ -119,13 +119,25 @@ jobs:
             echo ""
             echo "  Re-audite la paire firsthand, puis lance exactement :"
             echo ""
-            python -c "import json; d=json.load(open('twin_parity_report.json')); ns=[p['name'] for p in d.get('pairs',[]) if p.get('verdict')=='DRIFT_INTRODUCED'] or ['<nom exact de l entree>']; [print('    python scripts/notebook_tools/check_twin_parity.py --update --pair \"%s\" --by \"<machine:workspace>\"' % n) for n in ns]"
+            # Capture the rebaseline command(s) so we can put them INTO the
+            # ::error annotation (#10391). The annotation is the ONLY output a
+            # lane sees without opening the job log -- four lanes stalled a
+            # night on this gate because the annotation said "see the log above"
+            # instead of carrying the command. The python one-liner is unchanged
+            # (the log stays the authoritative copy + the artifact JSON stays
+            # the source); we capture + interpolate.
+            CMDS=$(python -c "import json; d=json.load(open('twin_parity_report.json')); ns=[p['name'] for p in d.get('pairs',[]) if p.get('verdict')=='DRIFT_INTRODUCED'] or ['<nom exact de l entree>']; [print('python scripts/notebook_tools/check_twin_parity.py --update --pair \"%s\" --by \"<machine:workspace>\"' % n) for n in ns]")
+            echo "$CMDS" | sed 's/^/    /'
             echo "  L'ecriture est chirurgicale (#8570) : seules les lignes"
             echo "  last_audit de cette paire changent. Ajoute une ligne en tete"
             echo "  de known_differences expliquant l'edition, puis commit."
             echo "--------------------------------------------------------------"
             echo ""
-            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref origin/main. La commande de rebaseline exacte (avec le nom de la paire) est imprimee juste au-dessus dans ce log. Le selecteur --pair est obligatoire (#8508, lecons L963/L974) ; l'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
+            # Workflow-command escaping for the annotation body: %0A = newline,
+            # %25 = literal %, %0D = CR. Without %0A the annotation truncates at
+            # the first newline and the multi-line command is lost.
+            CMDS_ANN=${CMDS//$'\n'/%0A}
+            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref origin/main. Lance EXACTEMENT (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
             exit 1
           else
             echo "::error title=Twin parity tool error::Erreur d'execution du check (exit $EXIT). Voir les logs ci-dessus."
