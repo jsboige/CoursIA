@@ -22,13 +22,27 @@ name: PR gate
 #
 # Enabling it is a repository-settings change and therefore owner-only:
 #   Settings > Branches > main > Require status checks > add "PR gate"
-# Until that flip, this job is informative rather than blocking -- which is
-# precisely the half that does not need the owner, delivered so the flip is a
-# one-click action instead of a design problem.
+#
+# The owner has since flipped it to *required* on `main` (measured 2026-08-11,
+# issue #10433): #10423 sat BLOCKED with `PR gate` as its only non-SUCCESS
+# check and turned CLEAN the instant `PR gate` went green. So this job IS
+# blocking today; the branch-protection reasoning above (single requerrable
+# check, no `paths:` filter) is exactly why it is the safe one to require.
 
 on:
   pull_request:
     branches: [main]
+  # Issue #10433 -- the guard can re-qualify a tag by editing the PR body
+  # (variation-protocol §3), turning a previously-red "Require Grain tag" green
+  # AFTER this gate already aggregated. Because the gate fires on pull_request
+  # (no `edited` type), that stale FAILURE became permanent and the PR stayed
+  # BLOCKED until a manual `gh run rerun`. Adding `edited` alone does NOT fix it:
+  # the rollup re-fires in PARALLEL with the new guard run and can fail-fast on
+  # the stale conclusion before the green one surfaces. `workflow_run` fires only
+  # AFTER the guard completes, so the gate always aggregates a settled state.
+  workflow_run:
+    workflows: ["Variation Tag Guard"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       sha:
@@ -42,7 +56,12 @@ permissions:
   statuses: read
 
 concurrency:
-  group: pr-gate-${{ github.event.pull_request.number || github.ref }}
+  # SHA-keyed for workflow_run so two PRs' guard-completed re-triggers do not
+  # share a group (issue #10433); pull_request keeps the PR-number key (a re-push
+  # cancels the older run for the same PR). A same-SHA workflow_run fire cancels
+  # the stale run via cancel-in-progress -- exactly the desired behaviour: a
+  # fresh aggregation post-guard-completion supersedes the stale FAIL.
+  group: pr-gate-${{ github.event.pull_request.number || github.event.workflow_run.head_sha || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -74,6 +93,11 @@ jobs:
       - name: Aggregate check verdicts
         env:
           GH_TOKEN: ${{ github.token }}
+          # The head SHA is event-specific: pull_request gives the PR head;
+          # workflow_run (the #10433 guard-completed re-trigger) gives the
+          # completed run's head_sha; workflow_dispatch honours the input.
+          # Fallback to the ref the run is on.
+          EVENT_SHA: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha || github.event.inputs.sha || github.sha }}
           # Issue #10072 -- student PRs from forks must remain mergeable under
           # the benevolent-policy rule of .claude/rules/student-pr-reviews.md
           # ("Template vide + CI rouges = OK. Merge admin via gh auth switch -u
@@ -83,7 +107,12 @@ jobs:
           # variation-tag-guard.yml (L73-78) and translation-sync.yml (analog);
           # this script exposes --is-fork so the verdict is reported as PASS
           # without ever polling, keeping the "verdict on every PR" invariant.
-          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+          # Fork detection is event-specific too: pull_request exposes
+          # head.repo.fork directly; workflow_run fires from the base repo, so a
+          # guard that ran against a fork head is detected by head_repository
+          # != repository (both are checked -- the guard re-triggers this gate
+          # for same-repo PRs as well).
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork || (github.event.workflow_run.head_repository != null && github.event.workflow_run.head_repository != github.repository) }}
         run: |
           # Pass --is-fork only when IS_FORK is the literal string "true".
           # GitHub serialises booleans as "true"/"false" (always set), so the
@@ -93,9 +122,10 @@ jobs:
           else
             IS_FORK_ARG=""
           fi
+          SHA="${EVENT_SHA:-$GITHUB_SHA}"
           python scripts/pr_gate.py \
             --repo "${{ github.repository }}" \
-            --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
+            --sha "$SHA" \
             --self-name "PR gate" \
             --timeout-min 90 \
             --poll-sec 30 \

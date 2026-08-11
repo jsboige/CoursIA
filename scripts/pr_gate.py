@@ -468,6 +468,21 @@ def wait_and_decide(
     single quiet poll is not enough, because a workflow queued milliseconds ago
     has not surfaced yet and would be invisible.
 
+    Required checks still IN_PROGRESS/QUEUED (status in STATUS_PENDING, or a
+    `completed` run with a null conclusion -- a transient GitHub state) are
+    `pending`: this loop keeps polling them and NEVER verdicts PASS while a
+    required check is in flight, bounded by `timeout_min` (default 90 min). A
+    required check that never settles times out and FAILs (rule 1, bias to
+    fail). This is distinct from ADVISORY checks (rule 6), whose queued or
+    in-progress state is reported but never blocks. The decision is deliberate:
+    the only safe way to observe a required check that turns green AFTER the
+    first aggregation is to re-run the rollup once that check has COMPLETED --
+    which is why pr-gate.yml re-triggers this gate via `workflow_run` on the
+    guard's completion (issue #10433) rather than verdicting on a transient
+    in-flight state. (Adding `edited` to the pull_request trigger instead would
+    race: the rollup re-fires in parallel with the new guard run and can
+    fail-fast on the stale conclusion before the green one surfaces.)
+
     `always_on_jobs` arms the delivery canary (rule 8). None or empty disables
     it (the gate then behaves exactly as before this rule). Only consulted at
     settle time, so a freshly-opened PR keeps the `settle_polls` grace period for
