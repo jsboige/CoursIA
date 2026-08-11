@@ -20,6 +20,21 @@
       csharp_sha: b96a49ed4a02f4665860d2c39e61a0af67b33fec
       content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
       content_csharp_sha: 17e41645882658da3fbd271375669b346d05d02cad77084f2fda613095f7c030
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: e6218384997edcd0c9c84b8d61e1a08bf9d50db9
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 6c0f4b8dd48c059fce9bbbb31c2b38136a6b5556d394c4cc663f2c6e017b123b
+      modules_attested_sota_ok:
+        - arg.dung (SimpleGroundedReasoner sur DungTheory = extension {a,c})
+        - arg.weighted (WeightedGroundedReasoner sur WeightedDungTheory = extension vide {})
+        - arg.social (IssReasoner + SimpleProductSemantics(0.5, 0.5) sur SocialDungTheory = scores {a=0.857, b=0, c=0})
+      bridge:
+        - "csproj `dotnet-build/build-Tweety7aShade.csproj` : cible net8.0, IKVM 8.14.0 (max bytecode Java 8 = major 52), IkvmReference sur shade jar org.tweetyproject.tweety-7a-1.21.0-shaded.jar. Re-construction reproductible : dotnet build -> libs/org.tweetyproject.tweety-7a.dll (608 types, 740 KB)."
+        - "libs/ gitignored (convention Tweety/ standard) ; IKVM.Runtime/CoreLib/Java copies depuis nuget cache IKVM 8.15.0 (CS1701 cosmetic warning 8.14 vs 8.15 alignable ulterieurement)."
+        - "Cellule 21 (load) : Assembly.LoadFrom absolute path via Directory.GetCurrentDirectory() (kernel cwd = notebook dir, pas repo root)."
+        - "Cellules 23/24/25 (Dung/Weighted/Social) : directive `#r \"libs/org.tweetyproject.tweety-7a.dll\"` prepended pour exposer les types au compilateur C# (Assembly.LoadFrom seul ne suffit pas, cf L898-3 keyword=`tweety-7a`)."
   known_differences:
     - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."
