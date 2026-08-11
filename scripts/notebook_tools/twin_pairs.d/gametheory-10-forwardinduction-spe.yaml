@@ -18,6 +18,12 @@
       csharp_sha: 111bf7e843ba260a52ff4bb8abb585e1b34067d6
       content_python_sha: dbe58fe7c300d8c63cd5cf5801b691657f8f996d8e4eaf8a56ff2e82e3944a63
       content_csharp_sha: 07a4162c6350be87ef9c98daf7f578f67f14ae7f3213ed78db0680652b4d37a8
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: 71947cbdecde8ce79b25ec916fd4053c19d6365c
+      csharp_sha: 1097d4b5b0b02d7f809d29defaf8cb125382286e
+      content_python_sha: dbe58fe7c300d8c63cd5cf5801b691657f8f996d8e4eaf8a56ff2e82e3944a63
+      content_csharp_sha: c49e0baf733bc7af3ce8403b6cbc1b719cec7d4c77e3a2961b453b13262978eb
   known_differences:
     - "Socle pedagogique commun : les raffinements d'equilibre au-dela du SPE (Selten 1965) -- sous-jeux et equilibre parfait, menaces et promesses credibles, induction avant (forward induction), perfection en mains tremblantes (trembling-hand perfection, Selten 1975), application canonique du jeu du « Burn Money » (signal costly), comparaison des raffinements. Distinct du GT-9 (induction arriere + paradoxes) : le GT-10 porte sur les RAFFINEMENTS de la notion d'equilibre (forward induction, trembling-hand), pas sur l'algorithme de resolution."
     - "Idiomes framework : Python = `matplotlib` (patches `Ellipse` pour rendre les ensembles d'information / infosets sur l'arbre de jeu) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet** (modele d'arbre + sous-jeux + raffinements from-scratch, sortie console)."
