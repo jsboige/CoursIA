@@ -14,8 +14,15 @@
       csharp_sha: 810c48a5fee843782b9e7fed74130fed59a19fe5
       content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
       content_csharp_sha: 3c4bf9276953a8c66c247d2b4652d8948a44b2548a211c44c3366d2c2105fdfb
+    - date: "2026-08-11"
+      by: myia-ai-01:CoursIA
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: b96a49ed4a02f4665860d2c39e61a0af67b33fec
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 17e41645882658da3fbd271375669b346d05d02cad77084f2fda613095f7c030
   known_differences:
     - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
     - "Tranche 2 (2026-08-11, po-2023, #10381) : le C# branche la librairie Tweety via le pont IKVM (runtime Java 8, gabarit Tweety-6). Dung = SOTA-OK : SimpleGroundedReasoner (arg.dung dans conditional-logics.dll shade fat) calcule l'extension fondee {a,c}. ADF = librairie chargee (arg.adf = 125 types dans le meme shade fat) SOTA-OK sur la syntaxe ; le reasoner SAT complet (semantiques fondee/complete/stable) exige un IncrementalSatSolver natif (minisat/picosat/lingeling via java.library.path), meme pre-requis que le jumeau Python (Tweety-1-Setup -> NATIVE_LIBS_DIR) -> sonde firsthand sous IKVM : UnsatisfiedLinkError. Verdict scinde : Dung+ADF-syntaxe SOTA-OK ; reasoner ADF SAT + 5 modules absents (bipolar/setaf/weighted/social/extended) -> #10411 (RECOVERABLE-MACHINE). Tranche 1 from-scratch intacte."
+    - "Re-attestation 2026-08-11 (ai-01, #10410) : le blob SHA C# a bouge sous strip_probe_banner.py --apply (9 lignes probeAddresses injectees par le kernel .NET dans la cellule de restore #r nuget -- enumeration NetworkInterface du runner). Strip verifie firsthand : 9 lignes retirees, 9 lignes vides, aucune insertion ; la parite semantique est inchangee. --update relance EN DERNIER, apres le strip (cf #8957 : attester puis stripper invalide l'attestation)."
