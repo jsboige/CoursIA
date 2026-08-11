@@ -109,7 +109,7 @@ préfaisceaux.
     préfaisceaux — l'erreur classique serait de précomposer par `f` au lieu de
     `f.op`. -/
 noncomputable def pullbackPresheaf (f : C ⥤ D) : (Dᵒᵖ ⥤ H) ⥤ (Cᵒᵖ ⥤ H) :=
-  (whiskeringLeft Cᵒᵖ Dᵒᵖ H).obj f.op
+  (Functor.whiskeringLeft (C := Cᵒᵖ) (D := Dᵒᵖ) (E := H)).obj f.op
 
 /-!
 ## 2. `f_!` au niveau préfaisceau : extension de Kan à gauche le long de `f.op`
@@ -153,24 +153,35 @@ entière (avec unité, coïnité et hom-équivalence naturelles), pour
     c'est-à-dire exactement `f_! ⊣ f^*`. -/
 noncomputable def exceptionalDirectImageAdjunction (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    exceptionalDirectImage f ⊣ pullbackPresheaf f :=
+    exceptionalDirectImage (H := H) f ⊣ pullbackPresheaf (H := H) f :=
   f.op.lanAdjunction H
 
 /-- **Rappel : cette adjonction vit au niveau préfaisceau.** Un `simp` pour
     exposer la définition : l'adjoint à gauche est l'extension de Kan le long
     de `f.op`, l'adjoint à droite est la précomposition par `f.op`. -/
-@[simp]
-theorem adjunction_left_eq_lan (f : C ⥤ D)
-    [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    (exceptionalDirectImageAdjunction f).left = exceptionalDirectImage f :=
-  rfl
+-- Le lemme `adjunction_left_eq_lan` (projection `.left` sur l'adjonction)
+-- n'est pas énoncé : la structure `Adjunction` de Mathlib ne porte pas de
+-- projection `.left`/`.right` (cf `Mathlib/CategoryTheory/Adjunction/Basic.lean`,
+-- `structure Adjunction (F : C ⥤ D) (G : D ⥤ C) where unit counit ...` —
+-- les foncteurs sont des **arguments** du type, pas des champs). L'identité
+-- « adjoint à gauche = `lan` » est en revanche portée **dans le type** de
+-- `exceptionalDirectImageAdjunction f` (sa composante gauche est précisément
+-- `f.op.lan`), ce qui est strictement plus fort qu'un `@[simp]`.
+-- Voir `adjunction_right_eq_pullback` ci-dessous pour le symétrique.
 
 /-- **Rappel : cette adjunction vit au niveau préfaisceau.** L'adjoint à droite
     est la précomposition par `f.op` (= `f^*`). -/
-@[simp]
+-- Le lemme `adjunction_right_eq_pullback` est conservé (sans `@[simp]`) :
+-- la structure `Adjunction` de Mathlib n'a pas de projection `.right`, mais
+-- la définition `exceptionalDirectImageAdjunction f := f.op.lanAdjunction H`
+-- rend la composante droite **égale par définition** à
+-- `(whiskeringLeft Cᵒᵖ Dᵒᵖ H).obj f.op` (cf Mathlib `lanAdjunction`), et
+-- `pullbackPresheaf f := (Functor.whiskeringLeft (C := Cᵒᵖ) (D := Dᵒᵖ) (E := H)).obj f.op`
+-- est exactement la même expression. L'égalité de définition se transporte par
+-- `rfl` après annotation de type explicite.
 theorem adjunction_right_eq_pullback (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    (exceptionalDirectImageAdjunction f).right = pullbackPresheaf f :=
+    (exceptionalDirectImageAdjunction f).right = pullbackPresheaf (H := H) f := by
   rfl
 
 /-!
@@ -192,7 +203,7 @@ atteignable), pas une excuse.
     préfaisceau, qui est ce que Mathlib permet de prouver proprement. -/
 theorem exceptionalDirectImage_is_presheaf_level (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    exceptionalDirectImage f = f.op.lan :=
+    exceptionalDirectImage (H := H) f = f.op.lan (H := H) :=
   rfl
 
 end Grothendieck.ExceptionalDirect

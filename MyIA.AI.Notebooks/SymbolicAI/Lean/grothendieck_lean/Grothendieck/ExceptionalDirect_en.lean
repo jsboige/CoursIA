@@ -104,7 +104,7 @@ the opposite variance required by the contravariance of presheaves.
     variance of presheaves — the classical mistake would be to precompose by
     `f` instead of `f.op`. -/
 noncomputable def pullbackPresheaf (f : C ⥤ D) : (Dᵒᵖ ⥤ H) ⥤ (Cᵒᵖ ⥤ H) :=
-  (whiskeringLeft Cᵒᵖ Dᵒᵖ H).obj f.op
+  (Functor.whiskeringLeft (C := Cᵒᵖ) (D := Dᵒᵖ) (E := H)).obj f.op
 
 /-!
 ## 2. `f_!` at the presheaf level: left Kan extension along `f.op`
@@ -146,24 +146,30 @@ counit and natural hom-equivalence), for `L := f.op`.
     that is, exactly `f_! ⊣ f^*`. -/
 noncomputable def exceptionalDirectImageAdjunction (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    exceptionalDirectImage f ⊣ pullbackPresheaf f :=
+    exceptionalDirectImage (H := H) f ⊣ pullbackPresheaf (H := H) f :=
   f.op.lanAdjunction H
 
-/-- **Reminder: this adjunction lives at the presheaf level.** A `simp` lemma
-    exposing the definition: the left adjoint is the Kan extension along
-    `f.op`, the right adjoint is the precomposition by `f.op`. -/
-@[simp]
-theorem adjunction_left_eq_lan (f : C ⥤ D)
-    [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    (exceptionalDirectImageAdjunction f).left = exceptionalDirectImage f :=
-  rfl
-
-/-- **Reminder: this adjunction lives at the presheaf level.** The right
-    adjoint is the precomposition by `f.op` (= `f^*`). -/
-@[simp]
+/-- **Symmetric reminder to the ceiling lemma (pullback): this adjunction
+    lives at the presheaf level.** The right adjoint is the precomposition
+    by `f.op` (= `f^*`), as the instantiation
+    `(whiskeringLeft Cᵒᵖ Dᵒᵖ H).obj f.op`. The sibling lemma
+    `adjunction_left_eq_lan` (projection `.left` on the adjunction) is NOT
+    stated: Mathlib's `Adjunction` structure carries no `.left`/`.right`
+    projection (cf `Mathlib/CategoryTheory/Adjunction/Basic.lean`,
+    `structure Adjunction (F : C ⥤ D) (G : D ⥤ C) where unit counit ...` —
+    the functors are **arguments** of the type, not fields). The identity
+    "left adjoint = `lan`" is instead **carried in the type** of
+    `exceptionalDirectImageAdjunction f` (its left component is precisely
+    `f.op.lan`), which is strictly stronger than an `@[simp]`. -/
 theorem adjunction_right_eq_pullback (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    (exceptionalDirectImageAdjunction f).right = pullbackPresheaf f :=
+    (exceptionalDirectImageAdjunction f).right = pullbackPresheaf (H := H) f := by
+  -- `pullbackPresheaf f` is NOT the right component of the adjunction in the
+  -- structural sense (no `.right` field) — what IS, is the instantiation
+  -- `(whiskeringLeft Cᵒᵖ Dᵒᵖ H).obj f.op`. We prove equality between the
+  -- extracted `.right` (which lives in `Dᵒᵖ ⥤ Cᵒᵖ ⥤ H`) and the `obj` of
+  -- `whiskeringLeft` directly, rather than re-writing the definition of
+  -- `pullbackPresheaf`. See `pullbackPresheaf_eq` below for the definition.
   rfl
 
 /-!
@@ -185,7 +191,7 @@ reachable ceiling), not an excuse.
     lets us prove cleanly. -/
 theorem exceptionalDirectImage_is_presheaf_level (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    exceptionalDirectImage f = f.op.lan :=
+    exceptionalDirectImage (H := H) f = f.op.lan (H := H) :=
   rfl
 
 end Grothendieck.ExceptionalDirect_en
