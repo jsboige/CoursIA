@@ -418,5 +418,5 @@ Voir la licence du repository principal.
 series: IIT
 pedagogical_count: 53
 breakdown: ICT-Series=50, root=3
-maturity: BETA=48, DRAFT=4, ALPHA=1
+maturity: BETA=48, DRAFT=5
 -->
