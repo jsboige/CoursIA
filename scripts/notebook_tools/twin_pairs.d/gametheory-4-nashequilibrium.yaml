@@ -33,6 +33,18 @@
       csharp_sha: 06cf0927eaa9d2178ee469f83ca3d14beacb63bb
       content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
       content_csharp_sha: 21ad5c350618ea280d1370ed2d11977d9ecf06336fd095ed4cd6376b76e7ba77
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 86c8d1b7ce7893364cb8582bee19169374e703c0
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: b5fd643ce314b56010e53a3c04331fd7aa3011489f53bc69204aba24201bf9ae
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 2871c0d104edfcefe09c81fe6813d202363355b1
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: b803515e8d69793be33344dd5161cf55d6dc9e9e63ac4e76aa0b71dd4d8930be
   known_differences:
     - "2026-08-11 : C.4 enrichment du twin C# (2 cellules markdown interpretation apres les outputs Nash pur §2.1 + Nash mixte) pour egaler la densite pedagogique du twin Python (qui fournit deja ces lectures aux memes positions). Markdown-only, aucun changement d'engine/outputs. Parite semantique preservee (meme theorie, meme interpretation conceptuelle). Attestation rebaselinee par myia-po-2023:CoursIA-2 apres arbitrage ai-01 (DM 2026-08-11) — la PR jumelle #10351 (doublon) est retiree, #10352 est le canonique."
     - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
