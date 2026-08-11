@@ -299,14 +299,25 @@ L'idee clee : `hashlifeResult` sur une MacroCell de niveau `k` fait
 avancer la region centree de `2^(k-2)` generations. Pour garantir que le
 motif reste dans la region calculee, nous rembourrons la MacroCell de 2
 niveaux avec `centerInLevelPlus2`, qui place le motif au centre d'une
-cellule `(level + 2)`. Cela laisse `2^level` de marge de chaque cote, ce
-qui est largement suffisant pour `2^(level-2)` generations (vitesse de
-la lumiere = 1 cellule/gen).
+cellule `(level + 2)`, laissant `2^level` de marge de chaque cote.
 
-Avec ce rembourrage, `hashlifeResult` sur la cellule rembourree avance
-de `2^level` generations (et non `2^(level-2)`), et le decalage du
-resultat egale le decalage original (le resultat centre de la cellule
-rembourree s'aligne avec la region originale). -/
+Attention : ce rembourrage **augmente aussi la portee**. `hashlifeResult`
+sur la cellule rembourree avance de `2^level` generations (et non
+`2^(level-2)` comme la cellule non rembourree). La marge `2^level` se
+trouve donc comparee a une portee de `2^level` generations : le ratio est
+**tendu** (proche de 1), et non « largement suffisant » comme l'aurait
+laisse croire la portee naive `2^(level-2)`. Le theoreme
+`no_padding_depth_suffices` (cf. `JumpCapture.lean`) le formalise :
+`marginToResultWindow k p < jumpReach k p`, la marge restant strictement
+inferieure a la portee du cone de vitesse 1, l'ecart etant le clip de
+`2^(k-1)`.
+
+Le decalage du resultat egale le decalage original (le resultat centre de
+la cellule rembourree s'aligne avec la region originale). Desserrer ce
+ratio exigerait de decorreler la portee du niveau — le parametre `j` de
+Gosper (rembourrage plus profond que `+2`) ramene le ratio marge/portee
+a `2 - 2^(2-p)`, tendu a `p = 2` et surplus strict a `p >= 3` ; cette
+variante n'est pas implementee ici. -/
 
 /-- Fait sauter une MacroCell en avant de `2^level` generations en
     utilisant le Hashlife recursif avec rembourrage. Remboure l'entree de
