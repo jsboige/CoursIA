@@ -378,5 +378,53 @@ class TestFrontmatterRules:
         assert "frontmatter_rawyaml" in rules
 
 
+# --- source_list_missing_newlines (#10397) ---------------------------------
+
+
+class TestSourceListMissingNewlines:
+    """A markdown cell whose ``source`` is a list of N>=2 elements carrying
+    fewer ``\\n`` than the element count implies collapses to one giant line on
+    join (``_as_text`` concatenates verbatim) -> every downstream line-based
+    rule sees a single line and reports nothing. The structural loss must be
+    caught BEFORE normalization. Founding defect: #10305
+    ``02-7-CogVideoX-Text-to-Video.ipynb`` cell 21 (23 elements, 0 ``\\n``,
+    1509 chars) passed the guard with 0 violations."""
+
+    def _rules(self, cell):
+        return [f["rule"] for f in scan_cell(cell)]
+
+    def test_long_list_without_newlines_flagged(self):
+        # The canonical malformed case: multi-element list, zero newlines, long.
+        cell = _md(["## Titre ", "paragraphe un ", "paragraphe deux ",
+                    "paragraphe trois ", "paragraphe quatre fin du bloc"])
+        rules = self._rules(cell)
+        assert "source_list_missing_newlines" in rules
+
+    def test_well_formed_list_with_newlines_clean(self):
+        # Correct nbformat: each non-final element ends with '\n'. Joined text
+        # has as many breaks as elements-1 -> NOT flagged.
+        cell = _md(["## Titre\n", "paragraphe un\n", "paragraphe deux\n",
+                    "paragraphe trois\n", "paragraphe quatre fin du bloc"])
+        assert self._rules(cell) == []
+
+    def test_short_list_without_newlines_clean(self):
+        # < 40 chars: too short for the loss to matter (avoids noisy flags on
+        # trivial cells like ['a', 'b']).
+        cell = _md(["a ", "b ", "c"])
+        assert self._rules(cell) == []
+
+    def test_string_source_clean(self):
+        # String source (not a list) is never subject to the list-collapse bug.
+        assert self._rules(_cell("## Titre\ndu texte\nfin")) == []
+
+    def test_single_element_list_clean(self):
+        # A 1-element list cannot lose structure.
+        assert self._rules(_md(["un seul element assez long pour depasser quarante caracteres"])) == []
+
+    def test_non_markdown_cell_clean(self):
+        # Code cells are skipped entirely.
+        assert scan_cell({"cell_type": "code", "source": ["a", "b", "c"]}) == []
+
+
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
