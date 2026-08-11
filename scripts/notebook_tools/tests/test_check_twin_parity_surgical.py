@@ -454,3 +454,104 @@ def test_append_only_noop_does_not_grow_list():
     out, touched = ctp.surgical_rebaseline(raw, {"Paire-N": same})
     assert touched == 0
     assert out == raw, "un no-op sur la forme append-only doit etre byte-identique"
+
+
+# --- #10430 : indentation native 4 (audits: a indent 4) + coupure relative ---
+
+_INDENT4_RAW = (
+    "-   name: Indent4Pair\n"
+    "    family: Test\n"
+    "    python: a.ipynb\n"
+    "    csharp: b.ipynb\n"
+    "    parity_level: semantic\n"
+    "    audits:\n"
+    "    -   date: '2020-01-01'\n"
+    "        by: old-auditor\n"
+    "        python_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+    "        csharp_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+    "    known_differences:\n"
+    "    - 'note sibling qui ne doit pas etre avalee par le bloc audit'\n"
+)
+
+
+def test_indent4_audits_header_now_recognized_10430():
+    """Bug fondateur #10430 : `audits:` indent 4 etait invisible au regex \\s{2}.
+
+    Avant le fix, surgical_rebaseline renvoyait touched=0 (header non reconnu)
+    => no-op silencieux. Apres : le bloc est trouve, un SHA change declenche
+    l'append, touched=1.
+    """
+    new = {"date": "2026-08-11", "by": "test-lane",
+           "python_sha": "c" * 40,
+           "csharp_sha": "b" * 40}  # csharp inchange, python change -> drift
+    out, touched = ctp.surgical_rebaseline(_INDENT4_RAW, {"Indent4Pair": new})
+    assert touched == 1, "audits: a indent 4 doit desormais etre reconnu (#10430)"
+    # Append-only : le vieil enregistrement survive + un nouveau est ajoute.
+    assert out.count("-   date:") + out.count("- date:") >= 2
+
+
+def test_indent4_sibling_known_differences_not_consumed_10430():
+    """La coupure doit etre RELATIVE a l'indent de la cle, pas un seuil absolu.
+
+    Avec l'ancien `\\s{4,}\\S` pour les continuations, autoriser `audits:` a
+    indent 4 aurait etrangle la cle sibling `known_differences:` (aussi a
+    indent 4) dans le bloc audit -> faux drift + perte de la section. Le fix
+    coupe au premier non-item non-plus-indent-que-la-cle.
+    """
+    new = {"date": "2026-08-11", "by": "test-lane",
+           "python_sha": "c" * 40, "csharp_sha": "b" * 40}
+    out, touched = ctp.surgical_rebaseline(_INDENT4_RAW, {"Indent4Pair": new})
+    assert touched == 1
+    assert "known_differences:" in out, "la cle sibling doit survivre"
+    assert "note sibling qui ne doit pas etre avalee" in out, (
+        "le contenu de known_differences ne doit pas etre corrompu"
+    )
+
+
+def test_indent2_regression_normal_style_still_works():
+    """Regression : le style indent-2 (156 fichiers, la norme) reste reconnu.
+
+    Le passage a \\s{2,} + coupure relative ne doit pas casser la majorite des
+    registres. On verifie aussi qu'un sibling indent-2 (known_differences)
+    n'est pas consume dans ce format la non plus.
+    """
+    raw = (
+        "- name: Indent2Pair\n"
+        "  family: Test\n"
+        "  python: a.ipynb\n"
+        "  csharp: b.ipynb\n"
+        "  audits:\n"
+        "    - date: '2020-01-01'\n"
+        "      by: old-auditor\n"
+        "      python_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "      csharp_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+        "  known_differences:\n"
+        "    - 'sibling indent-2'\n"
+    )
+    new = {"date": "2026-08-11", "by": "test-lane",
+           "python_sha": "c" * 40, "csharp_sha": "b" * 40}
+    out, touched = ctp.surgical_rebaseline(raw, {"Indent2Pair": new})
+    assert touched == 1
+    assert "known_differences:" in out
+    assert "sibling indent-2" in out
+
+
+def test_touched_zero_when_header_genuinely_absent():
+    """Contrat dont depend la garde loud-failure (#10430) du chemin multi-fichiers.
+
+    Quand une paire n'a AUCUN bloc audit (ni audits:, ni last_audit:),
+    surgical_rebaseline renvoie touched=0. Le chemin CLI multi-fichiers
+    distinguait avant ce cas d'un no-op legit uniquement par cette valeur ;
+    on verifie le contrat unitairement.
+    """
+    raw = (
+        "- name: NoAuditPair\n"
+        "  family: Test\n"
+        "  python: a.ipynb\n"
+        "  csharp: b.ipynb\n"
+    )
+    new = {"date": "2026-08-11", "by": "test-lane",
+           "python_sha": "c" * 40, "csharp_sha": "b" * 40}
+    out, touched = ctp.surgical_rebaseline(raw, {"NoAuditPair": new})
+    assert touched == 0
+    assert out == raw, "aucun header => byte-identique (la CLI le signale en AVERTISSEMENT)"
