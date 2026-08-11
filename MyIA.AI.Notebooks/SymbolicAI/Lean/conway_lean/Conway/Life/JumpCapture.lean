@@ -223,12 +223,19 @@ def jumpReach (k p : Nat) : Nat :=
 theorem margin_liaison (k p : Nat) (hk : 1 ≤ k) (hp : 1 ≤ p) :
     marginToPaddedCell k p - marginToResultWindow k p = jumpReach k p := by
   unfold marginToPaddedCell marginToResultWindow jumpReach
-  have hk_pos : 0 < k - 1 + 1 := by omega
-  have hp_pos : 0 < k + p - 2 + 1 := by omega
-  have h1 : (2 : Nat) ^ (k + p - 1) = (2 : Nat) ^ (k + p - 2) * 2 := by
+  -- Objectif réduit : `(2^(k+p-1) - 2^(k-1)) - (2^(k+p-2) - 2^(k-1)) = 2^(k+p-2)`.
+  -- On étend les deux soustractions emboîtées en liftant `Nat → Int` :
+  -- `Nat.sub a b` (avec `b ≤ a`) devient `Int.ofNat a - Int.ofNat b`, et
+  -- `omega`/`ring` ferment la cible en arithmétique linéaire.
+  have hpos : (0 : Nat) < 2 ^ (k - 1) := Nat.two_pow_pos (k - 1)
+  have hbound : 2 ^ (k - 1) ≤ 2 ^ (k + p - 2) := by
+    apply Nat.pow_le_pow_right (by norm_num); omega
+  have hkey : (2 : Nat) ^ (k + p - 1) = 2 * 2 ^ (k + p - 2) := by
     conv_lhs => rw [show k + p - 1 = (k + p - 2) + 1 by omega]
     rw [pow_succ]
-  rw [h1]
+  rw [hkey, Int.ofNat_sub hbound, Int.ofNat_sub (Nat.le_trans hbound
+        (Nat.pow_le_pow_right (by norm_num) (by omega)))]
+  -- Goal in Int : (2 * 2^(k+p-2) - 2^(k-1)) - (2^(k+p-2) - 2^(k-1)) = 2^(k+p-2)
   ring
 
 /-- **Étape 0 — le rembourrage ne peut pas refermer l'écart** : pour
@@ -252,7 +259,14 @@ theorem margin_liaison (k p : Nat) (hk : 1 ≤ k) (hp : 1 ≤ p) :
 theorem no_padding_depth_suffices (k p : Nat) (hk : 1 ≤ k) (hp : 1 ≤ p) :
     marginToResultWindow k p < jumpReach k p := by
   unfold marginToResultWindow jumpReach
-  have hk_pos : (2 : Nat) ^ (k - 1) > 0 := Nat.two_pow_pos (k - 1)
+  -- L'inégalité après unfold est `2^(k+p-2) - 2^(k-1) < 2^(k+p-2)`.
+  -- On la réécrit via `Nat.lt_sub_iff_add_lt` (≤ au lieu de ≥) qui linéarise
+  -- vers `2^(k+p-2) < 2^(k+p-2) + 2^(k-1)` — trivial pour `omega` avec
+  -- l'hypothèse de stricte positivité `Nat.two_pow_pos`.
+  have hbound : (2 : Nat) ^ (k - 1) ≤ 2 ^ (k + p - 2) := by
+    apply Nat.pow_le_pow_right (by norm_num); omega
+  have hpos : (2 : Nat) ^ (k - 1) > 0 := Nat.two_pow_pos (k - 1)
+  rw [Nat.lt_sub_iff_add_lt hbound]
   omega
 
 /-! ## 4. Le clip transparent sous confinement -/
