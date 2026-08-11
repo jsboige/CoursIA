@@ -203,11 +203,12 @@ jobs:
           TOUCHED=()
           for t in "${TARGETS[@]}"; do
             dir="$(dirname "$t")"
-            if git diff --name-only --diff-filter=d "$BASE" "$HEAD" -- "$dir/" | grep -q .; then
+            if git diff --name-only --diff-filter=d "$BASE...$HEAD" -- "$dir/" | grep -q .; then
               TOUCHED+=("$t")
             fi
           done
-          SHARED=$(git diff --name-only --diff-filter=d "$BASE" "$HEAD" \
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          SHARED=$(git diff --name-only --diff-filter=d "$BASE...$HEAD" \
             -- 'slides/theme-ia101/' 'slides/package.json' 'slides/package-lock.json' \
             | head -1)
           if [ -n "$SHARED" ]; then
