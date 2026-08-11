@@ -22,9 +22,20 @@ name: PR gate
 #
 # Enabling it is a repository-settings change and therefore owner-only:
 #   Settings > Branches > main > Require status checks > add "PR gate"
-# Until that flip, this job is informative rather than blocking -- which is
-# precisely the half that does not need the owner, delivered so the flip is a
-# one-click action instead of a design problem.
+#
+# Status (measured firsthand 2026-08-11, issue #10435): the flip has happened.
+# `PR gate` is now a **required** status check on `main` -- a PR with `PR gate`
+# as the only non-SUCCESS check reports `BLOCKED`, not `UNSTABLE`. This is why
+# the stale-rollup defect (#10435) hurts: a required check that never
+# re-aggregates after a guard it depends on flips green leaves the PR BLOCKED
+# until a manual rerun (~180 merges/day, not tenable). The structural fix
+# (re-aggregate on guard completion via `workflow_run`) is non-trivial -- a
+# `workflow_run`-triggered job posts its check-run on the workflow's default
+# branch commit, NOT on the PR head SHA, so it is invisible to `gh pr checks`
+# and to mergeState until the job also POSTS a check-run onto the PR head SHA
+# via the Checks API. That posting step is deliberately deferred to a follow-up
+# grain (it needs `actions: write` and a posting script); this file documents
+# the gap rather than papering over it.
 
 on:
   pull_request:

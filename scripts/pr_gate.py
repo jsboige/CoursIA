@@ -323,6 +323,19 @@ def classify(
     what they actually reported -- and never reach `pending` or `bad`. They are
     kept separate rather than merged into `ok` so a caller can print "advisory
     X failed" instead of silently rewriting a failure into a pass.
+
+    Treatment of an IN_PROGRESS / QUEUED check (issue #10435, acceptance 2) --
+    a *required* check still in flight is treated exactly like an advisory in
+    flight: it lands in ``pending`` and the wait loop in ``wait_and_decide``
+    keeps polling until it reaches a terminal conclusion. The verdict returned
+    before the wait budget runs out is therefore "timed out waiting for
+    <name>", not "FAIL -- failing checks" (see ``verdict``). This choice --
+    bounded wait rather than re-queue or deferred verdict -- is what makes a
+    stale rollup recoverable by a plain ``gh run rerun``: the next run re-polls,
+    sees the now-terminal check, and settles. The defect #10435 documents is
+    NOT that classify mishandles in-flight checks (it waits on them correctly)
+    but that the *workflow trigger* never asks it to look again -- that trigger
+    fix lives in pr-gate.yml, not here.
     """
     pending: list[str] = []
     bad: list[str] = []
