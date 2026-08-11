@@ -48,6 +48,7 @@ import csv
 import hashlib
 import json
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -305,6 +306,56 @@ def csv_fill_stats(csv_path: Path) -> dict[str, dict[str, int]]:
     return stats
 
 
+def find_out_of_scope_notebooks(
+    notebooks_root: Path,
+    known_notebooks: set[str],
+) -> list[dict]:
+    """Scanne ``MyIA.AI.Notebooks/**/*.ipynb`` et identifie les notebooks FR
+    pivots qui ne sont référencés dans aucun CSV de ``translations/``.
+
+    Un notebook FR pivot = fichier ``.ipynb`` qui n'a pas de suffixe ``_<xx>``
+    ET dont le basename ne contient pas de marqueur de langue cible.
+
+    Cette fonction implémente l'étape 5 de #10329 : détecter la dérive
+    HORS-PÉRIMÈTRE — c'est-à-dire les notebooks FR qui ont été créés ou
+    modifiés sans qu'un run incrémental du pipeline T1 n'ait eu lieu (ex :
+    PR mergée directement sur ``main`` qui ajoute un notebook sans
+    déclencher le trigger ``push: paths: [MyIA.AI.Notebooks/**/*.ipynb]``
+    du workflow ``translation-sync``, ou notebooks d'une série qui n'est
+    couverte par AUCUN CSV).
+
+    Retourne une liste de ``{"notebook": str, "verdict": "MISSING_FROM_CSV"}``
+    pour chaque notebook FR pivot non-référencé.
+    """
+    SUFFIX_PATTERN = re.compile(
+        r"_(?:" + "|".join(sorted(ALL_LANGS, key=len, reverse=True)) + r")\.ipynb$",
+        re.IGNORECASE,
+    )
+    EXCLUDE_SUFFIXES = ("_output", "_agent", "-checkpoint", "_checkpoints")
+
+    out: list[dict] = []
+    if not notebooks_root.exists():
+        return out
+    notebooks_root = notebooks_root.resolve()
+    for nb_path in notebooks_root.rglob("*.ipynb"):
+        # Exclure les outputs / agents / checkpoints (cf iter_notebooks()).
+        if any(s in nb_path.stem for s in EXCLUDE_SUFFIXES):
+            continue
+        # Exclure les notebooks traduits (suffixe _xx).
+        if SUFFIX_PATTERN.search(nb_path.name):
+            continue
+        # Chemin RELATIF a notebooks_root (posix). Le caller (main) est
+        # responsable de la mise en correspondance avec ``known_notebooks``
+        # qui contient des paths relatifs au repo root.
+        try:
+            rel = nb_path.relative_to(notebooks_root).as_posix()
+        except ValueError:
+            rel = nb_path.as_posix()
+        if rel not in known_notebooks:
+            out.append({"notebook": rel, "verdict": "MISSING_FROM_CSV"})
+    return out
+
+
 def _fill_pct(filled: int, total: int) -> float:
     """Pourcentage floored à 1 décimale — jamais arrondi vers le haut.
 
@@ -359,6 +410,17 @@ def main() -> int:
         "--check", action="store_true",
         help="Mode CI non-bloquant : exit 0 même si drift détecté (le rapport va sur stderr/JSON).",
     )
+    parser.add_argument(
+        "--report-out-of-scope", action="store_true",
+        help="Étend le rapport avec un scan des notebooks FR dans "
+        "MyIA.AI.Notebooks/ qui ne sont référencés dans aucun CSV "
+        "(MISSING_FROM_CSV, étape 5 de #10329). Sortie JSON additionnelle, "
+        "non-bloquante : le verdict MISSING_FROM_COV n'influe pas sur exit code.",
+    )
+    parser.add_argument(
+        "--notebooks-root", type=Path, default=None,
+        help="Racine de scan des notebooks (défaut : <repo_root>/MyIA.AI.Notebooks).",
+    )
     args = parser.parse_args()
 
     if not args.input.exists():
@@ -375,9 +437,17 @@ def main() -> int:
 
     all_anomalies: list[dict] = []
     fill_by_csv: dict[str, dict[str, dict[str, int]]] = {}
+    known_notebooks: set[str] = set()
     for csv_path in csvs:
         all_anomalies.extend(check_csv(csv_path, repo_root))
         fill_by_csv[str(csv_path)] = csv_fill_stats(csv_path)
+        # Collecte des notebooks référencés (pour l'étape 5 : out-of-scope
+        # detection). On lit rapidement le CSV sans relancer check_csv.
+        with csv_path.open(encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                nb = row.get("notebook", "")
+                if nb:
+                    known_notebooks.add(nb)
 
     # Agrégation du taux de remplissage (#6949 point 1) : somme des filled/total
     # sur tous les CSV, pour un signal global honnête. Le pivot fr est à 100% par
@@ -414,6 +484,31 @@ def main() -> int:
         "anomaly_count": len(all_anomalies),
         "fill_rate": fill_report,
     }
+
+    # Étape 5 de #10329 : scan out-of-scope (option --report-out-of-scope).
+    # Ce scan n'est PAS bloquant (exit code inchangé) — c'est un signal
+    # diagnostique : les notebooks FR jamais indexés dans un CSV apparaissent
+    # ici, ce qui signifie qu'aucun T1 incrémental ne les a vus passer (créés
+    # hors trigger push, ou série non couverte par un CSV).
+    if args.report_out_of_scope:
+        notebooks_root = args.notebooks_root or (repo_root / "MyIA.AI.Notebooks")
+        oos = find_out_of_scope_notebooks(notebooks_root, known_notebooks)
+        # Normalisation : les chemins retournés sont relatifs à
+        # ``notebooks_root``, mais les consommateurs (dashboard, audit)
+        # s'attendent à des chemins relatifs au repo root. On préfixe.
+        if notebooks_root.is_absolute():
+            try:
+                rel_root = notebooks_root.relative_to(repo_root).as_posix()
+            except ValueError:
+                rel_root = None
+        else:
+            rel_root = notebooks_root.as_posix()
+        if rel_root and rel_root not in (".", ""):
+            for entry in oos:
+                entry["notebook"] = f"{rel_root}/{entry['notebook']}"
+        report["out_of_scope"] = oos
+        report["out_of_scope_count"] = len(oos)
+
     print(json.dumps(report, ensure_ascii=False, indent=2))
 
     # Signal honnête stderr : le taux de remplissage à côté du compte de drift,
@@ -425,6 +520,12 @@ def main() -> int:
 
     if not all_anomalies:
         print(f"OK : {len(csvs)} CSV vérifié(s), 0 drift.", file=sys.stderr)
+        if args.report_out_of_scope and report.get("out_of_scope_count", 0) > 0:
+            print(
+                f"  -> {report['out_of_scope_count']} notebook(s) FR hors-périmètre "
+                f"(MISSING_FROM_CSV). Pas de blocage mais signal d'attention.",
+                file=sys.stderr,
+            )
         return 0
 
     # Regroupement par verdict pour le rapport stderr.
