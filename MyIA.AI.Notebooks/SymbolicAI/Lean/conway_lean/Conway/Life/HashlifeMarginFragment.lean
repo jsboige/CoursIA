@@ -74,7 +74,6 @@ kernel) sur le bestiaire ci-dessous. EPIC #3846 / #6724 / #9568.
 
 import Conway.Life.AdversarialBattery
 import Conway.Life.HashlifeCorrectness
-import Conway.Life.JumpCapture
 
 namespace Conway
 namespace Life
@@ -103,6 +102,17 @@ def supportInMargin (c : MacroCell) (k : Nat) : Prop :=
     au-dessus de l'instance `Decidable` native — pattern canonique du codebase. -/
 instance (c : MacroCell) (k : Nat) : Decidable (supportInMargin c k) :=
   inferInstanceAs (Decidable (BoxAssezGrandN (c.toGrid (0, 0)) (2^k)))
+
+/-- **Trivialité du fragment** (relocalisé c.8206, #9568). `supportInMargin`
+    contient TOUTE MacroCell à TOUT horizon `k` — c'est une **tautologie**,
+    prouvé sur place depuis `boxAssezGrandN_trivial` (à côté de
+    `BoxAssezGrandN` dans `Foundation`, c.8206). L'hypothèse
+    `h_margin : supportInMargin c k` de `hashlife_correct_margin` ne restreint
+    donc rien ; voir la note *inconditionnel-en-attente* dans la docstring
+    de ce théorème. -/
+theorem supportInMargin_trivial (c : MacroCell) (k : Nat) :
+    supportInMargin c k :=
+  boxAssezGrandN_trivial _ _
 
 /-! ## L'énoncé-cadre `hashlife_correct_margin` (sorry documenté, INTRINSIC)
 

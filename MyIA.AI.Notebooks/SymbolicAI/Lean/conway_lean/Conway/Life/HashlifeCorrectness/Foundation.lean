@@ -270,6 +270,63 @@ theorem box_assez_grandN_glider_8 : box_assez_grandN glider 8 = true := by
 theorem box_assez_grand_single_cell_8_false : box_assez_grand [(0, 0)] 8 = false := by
   native_decide
 
+/-! ### `BoxAssezGrandN` is a tautology (relocated from `JumpCapture.lean`, c.8206, #9568)
+
+`box_assez_grandN` (the n-aware Boolean margin predicate) holds for **every**
+grid and **every** `n`, because `gridFrameN n g` pads every side by
+`max 2 n ≥ n` and `cellMargin` (near side, non-strict) demands exactly a
+margin `≥ n` — satisfied by construction for any live cell. The
+`ceilLog2_spec` rounding only enlarges the far side. This was originally
+proved in `JumpCapture.lean:71-105`, but that location created an import
+cycle (`JumpCapture` → `MarginFragment` for the c.95 re-signature on
+`hashlife_correctN`, but `MarginFragment` would have needed `JumpCapture`
+to reach this triviality proof in c.8205 #10465). Relocating the two
+lemmas next to `BoxAssezGrandN`'s own definition (here in `Foundation`)
+breaks the cycle and puts the triviality proof where the predicate lives. -/
+theorem box_assez_grandN_trivial (g : Grid) (n : Nat) :
+    box_assez_grandN g n = true := by
+  cases g with
+  | nil => rfl
+  | cons p₀ ps =>
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
+      gridColMin_le_gridColMax _ (List.cons_ne_nil _ _)
+    simp only [box_assez_grandN, gridFrameN, List.all_eq_true]
+    set rMin := gridRowMin (p₀ :: ps) with hrMin_def
+    set rMax := gridRowMax (p₀ :: ps) with hrMax_def
+    set cMin := gridColMin (p₀ :: ps) with hcMin_def
+    set cMax := gridColMax (p₀ :: ps) with hcMax_def
+    set pad := max 2 n with hpad_def
+    set height := (rMax - rMin + 1 + 2 * pad).toNat with hheight_def
+    set width := (cMax - cMin + 1 + 2 * pad).toNat with hwidth_def
+    set side := max height width with hside_def
+    set lvl := MacroCell.ceilLog2 side with hlvl_def
+    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have hw : width ≤ side := Nat.le_max_right _ _
+    have hn_pad : n ≤ pad := Nat.le_max_right _ _
+    have hsz_cast : ((2 : Int)) ^ lvl = ((2 ^ lvl : Nat) : Int) := by
+      push_cast
+      ring
+    intro x hx
+    obtain ⟨r, c⟩ := x
+    have hr1 : rMin ≤ r := gridRowMin_le_of_mem _ _ hx
+    have hr2 : r ≤ rMax := le_gridRowMax_of_mem _ _ hx
+    have hc1 : cMin ≤ c := gridColMin_le_of_mem _ _ hx
+    have hc2 : c ≤ cMax := le_gridColMax_of_mem _ _ hx
+    show cellMargin _ _ _ _ r c = true
+    rw [cellMargin_true_iff]
+    refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
+
+/-- Propositional twin of `box_assez_grandN_trivial`: `BoxAssezGrandN g n`
+    is true for every grid and every `n` — the hypothesis of
+    `hashlife_correctN` (and the n-aware P5 statements downstream) carries
+    no information, confirming `p5_large_n_jumpN_iff_unconditional` (finding
+    #6724, 2026-08-07). -/
+theorem boxAssezGrandN_trivial (g : Grid) (n : Nat) : BoxAssezGrandN g n :=
+  box_assez_grandN_trivial g n
+
 /-! ### Monotonicity of `box_assez_grand` in the padding parameter
 
 A grid that admits `n` cells of margin also admits any smaller amount `m ≤ n`:

@@ -61,54 +61,20 @@ namespace Life
 
 open MacroCell
 
-/-! ## 1. La tautologie `BoxAssezGrandN` -/
+/-! ## 1. La tautologie `BoxAssezGrandN` (relocalisée, c.8206, #9568)
 
-/-- **`box_assez_grandN` est une tautologie** : le cadre `gridFrameN n g`
-    rembourre chaque côté de `max 2 n ≥ n`, et `cellMargin` (côté proche non
-    strict) demande exactement une marge `≥ n` — satisfaite par construction
-    pour toute cellule vivante. L'arrondi du côté à `2^lvl`
-    (`ceilLog2_spec`) ne fait qu'agrandir la marge lointaine. -/
-theorem box_assez_grandN_trivial (g : Grid) (n : Nat) :
-    box_assez_grandN g n = true := by
-  cases g with
-  | nil => rfl
-  | cons p₀ ps =>
-    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
-      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
-    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
-      gridColMin_le_gridColMax _ (List.cons_ne_nil _ _)
-    simp only [box_assez_grandN, gridFrameN, List.all_eq_true]
-    set rMin := gridRowMin (p₀ :: ps) with hrMin_def
-    set rMax := gridRowMax (p₀ :: ps) with hrMax_def
-    set cMin := gridColMin (p₀ :: ps) with hcMin_def
-    set cMax := gridColMax (p₀ :: ps) with hcMax_def
-    set pad := max 2 n with hpad_def
-    set height := (rMax - rMin + 1 + 2 * pad).toNat with hheight_def
-    set width := (cMax - cMin + 1 + 2 * pad).toNat with hwidth_def
-    set side := max height width with hside_def
-    set lvl := MacroCell.ceilLog2 side with hlvl_def
-    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
-    have hh : height ≤ side := Nat.le_max_left _ _
-    have hw : width ≤ side := Nat.le_max_right _ _
-    have hn_pad : n ≤ pad := Nat.le_max_right _ _
-    have hsz_cast : ((2 : Int)) ^ lvl = ((2 ^ lvl : Nat) : Int) := by
-      push_cast
-      ring
-    intro x hx
-    obtain ⟨r, c⟩ := x
-    have hr1 : rMin ≤ r := gridRowMin_le_of_mem _ _ hx
-    have hr2 : r ≤ rMax := le_gridRowMax_of_mem _ _ hx
-    have hc1 : cMin ≤ c := gridColMin_le_of_mem _ _ hx
-    have hc2 : c ≤ cMax := le_gridColMax_of_mem _ _ hx
-    show cellMargin _ _ _ _ r c = true
-    rw [cellMargin_true_iff]
-    refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
-
-/-- Version propositionnelle : `BoxAssezGrandN g n` est vraie pour toute
-    grille et tout `n` — l'hypothèse des théorèmes P5 n-aware ne porte
-    aucune information. -/
-theorem boxAssezGrandN_trivial (g : Grid) (n : Nat) : BoxAssezGrandN g n :=
-  box_assez_grandN_trivial g n
+Les lemmes `box_assez_grandN_trivial` et `boxAssezGrandN_trivial` vivaient
+ici avant c.8206. Ils ont été relocalisés dans
+`Conway.Life.HashlifeCorrectness.Foundation` (à côté de `BoxAssezGrandN`,
+L161) pour casser un cycle d'import : `JumpCapture` importe
+`HashlifeMarginFragment` (pour la re-signature c.95 de
+`hashlife_correctN`), et `MarginFragment` aurait eu besoin de `JumpCapture`
+pour atteindre `supportInMargin_trivial`. La relocalisation place la
+preuve de trivialité à côté de la définition du prédicat, et les
+consommateurs existants — `supportInMargin_trivial` (ci-dessous), le
+`p5_large_n_jumpN_iff_unconditional` (L131), et les 4 sanity-checks du
+fragment — accèdent au lemme via l'import `Conway.Life.HashlifeCorrectness`
+déjà présent. -/
 
 /-- **Impact #9568** : le fragment `supportInMargin` de
     `HashlifeMarginFragment` hérite de la tautologie — il contient TOUTE
@@ -116,7 +82,8 @@ theorem boxAssezGrandN_trivial (g : Grid) (n : Nat) : BoxAssezGrandN g n :=
     `hashlife_correct_margin` ne restreint donc rien : la « relativisation
     géométrique » voulue par le fragment exige un prédicat mesuré contre le
     domaine propre de la cellule (cf `jumpCaptured` ci-dessous), pas contre
-    un cadre re-rembourré en fonction de `n`. -/
+    un cadre re-rembourré en fonction de `n`. Preuve sur place depuis
+    `boxAssezGrandN_trivial` (relocalisé dans `Foundation`). -/
 theorem supportInMargin_trivial (c : MacroCell) (k : Nat) :
     supportInMargin c k :=
   boxAssezGrandN_trivial _ _
