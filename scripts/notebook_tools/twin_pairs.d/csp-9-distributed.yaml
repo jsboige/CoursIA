@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design DES DEUX COTES (ABT/AWC/PrivacyPreserving from-scratch, ni OR-Tools ni Z3 ni Choco) : l'algorithme distribue EST le sujet (H1 C#), aucun moteur SOTA a bridger, aucune asymetrie de machinerie."
   audits:
     - date: "2026-08-01"
       by: myia-po-2024:CoursIA-2
