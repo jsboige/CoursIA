@@ -156,9 +156,10 @@ noncomputable def exceptionalDirectImageAdjunction (f : C ⥤ D)
     exceptionalDirectImage (H := H) f ⊣ pullbackPresheaf (H := H) f :=
   f.op.lanAdjunction H
 
-/-- **Rappel : cette adjonction vit au niveau préfaisceau.** Un `simp` pour
-    exposer la définition : l'adjoint à gauche est l'extension de Kan le long
-    de `f.op`, l'adjoint à droite est la précomposition par `f.op`. -/
+-- **Rappel : cette adjonction vit au niveau préfaisceau.** L'adjoint à gauche
+-- est l'extension de Kan le long de `f.op`, l'adjoint à droite la
+-- précomposition par `f.op`.
+--
 -- Le lemme `adjunction_left_eq_lan` (projection `.left` sur l'adjonction)
 -- n'est pas énoncé : la structure `Adjunction` de Mathlib ne porte pas de
 -- projection `.left`/`.right` (cf `Mathlib/CategoryTheory/Adjunction/Basic.lean`,
@@ -167,22 +168,14 @@ noncomputable def exceptionalDirectImageAdjunction (f : C ⥤ D)
 -- « adjoint à gauche = `lan` » est en revanche portée **dans le type** de
 -- `exceptionalDirectImageAdjunction f` (sa composante gauche est précisément
 -- `f.op.lan`), ce qui est strictement plus fort qu'un `@[simp]`.
--- Voir `adjunction_right_eq_pullback` ci-dessous pour le symétrique.
 
-/-- **Rappel : cette adjunction vit au niveau préfaisceau.** L'adjoint à droite
-    est la précomposition par `f.op` (= `f^*`). -/
--- Le lemme `adjunction_right_eq_pullback` est conservé (sans `@[simp]`) :
--- la structure `Adjunction` de Mathlib n'a pas de projection `.right`, mais
--- la définition `exceptionalDirectImageAdjunction f := f.op.lanAdjunction H`
--- rend la composante droite **égale par définition** à
--- `(whiskeringLeft Cᵒᵖ Dᵒᵖ H).obj f.op` (cf Mathlib `lanAdjunction`), et
--- `pullbackPresheaf f := (Functor.whiskeringLeft (C := Cᵒᵖ) (D := Dᵒᵖ) (E := H)).obj f.op`
--- est exactement la même expression. L'égalité de définition se transporte par
--- `rfl` après annotation de type explicite.
-theorem adjunction_right_eq_pullback (f : C ⥤ D)
-    [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F] :
-    (exceptionalDirectImageAdjunction f).right = pullbackPresheaf (H := H) f := by
-  rfl
+-- **Symétrique, même conclusion.** `adjunction_right_eq_pullback` n'est pas
+-- énoncé non plus, et pour la raison exacte qui tue `.left` : `.right` n'est pas
+-- davantage un champ de `Adjunction`. L'identité « adjoint à droite =
+-- `pullbackPresheaf` » est portée **dans le type** de
+-- `exceptionalDirectImageAdjunction` ci-dessus (`... ⊣ pullbackPresheaf (H := H) f`),
+-- donc vérifiée à l'élaboration de la définition elle-même. Rien n'est perdu :
+-- ce que le lemme aurait affirmé, la signature l'exige déjà.
 
 /-!
 ## 4. Le plafond : niveau préfaisceau, pas faisceautique
