@@ -21,6 +21,13 @@
       content_python_sha: e6065df8dca49799e2752b5b17a4ec6696419c859765963ff6b121bd60891c04
       content_csharp_sha: 9c26fe316e99874b2259aedf0ba6af060961e00ec442db4cf78548bce82da732
       reason: "tranche 2 IKVM causal shade (PR #10471, See #10381): cell 23 (markdown INTRO) rewritten to record INTRINSIC verdict (registre #3801) since IKVM 8.x materializes only 5/14 causal classes. Nav links (Tweety-11-Causal.ipynb + Do-Calculus-Bridge) restored after initial nav-loss triggered CI 'markdown content loss' gate. C# content drifts from 27917843 (base) to 52737aa2 (initial rewrite) to 9c26fe31 (after nav-restore). Python content untouched."
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
+      csharp_sha: 16793258b837c033e096329aeac479f2fe0558d4
+      content_python_sha: e6065df8dca49799e2752b5b17a4ec6696419c859765963ff6b121bd60891c04
+      content_csharp_sha: 6c4342e1686c19adf5bb745adb2f827818caca09115ff2d931a17f6f419f5e1a
+      reason: "ai-01 CHANGES_REQUESTED review on #10471 (2026-08-11T15:38Z): verdict markdown cell moved from idx 23 to notebook end (after the 4 IKVM diagnostic code cells) so the interpretation follows its evidence -- the 315 Types / 5-of-14 classes figures are produced by those code cells -- and the notebook ends on its synthesis instead of code. 3-pillars table (observe(X) / do(X) / contrefactuel <-> implemented semantics) restored into the moved verdict cell (only original-conclusion content still missing). Positional ref '(juste avant cette cellule)' -> '(voir le §1 ci-dessus)' since cell moved to end. Coquille 'Conclondant' -> 'Confondant' (Exercice 1, 3 occurrences). No re-exec (markdown move + edits, code cells ec 13-16 byte-identical only reordered). C# content drifts 9c26fe31 -> 6c4342e1. Python untouched."
   known_differences:
     - "Socle commun : inference causale et do-calculus (Pearl) sur modeles causaux structurels."
     - "Asymetrie de profondeur (surface) : le Python s'appuie sur la vraie bibliotheque Java Tweety `causal-1.30.jar` via JPype (`from org.tweetyproject.causal.reasoner import ArgumentationBasedCausal`) ; le C# est un jumeau **from-scratch** (titre explicite 'twin C# from-scratch', aucune reference a org.tweetyproject) qui reimplemente le do-calcul pedagogiquement. Parite `surface` (C# = pendant reimplante, pas de librairie)."
