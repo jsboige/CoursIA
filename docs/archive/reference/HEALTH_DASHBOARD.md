@@ -1,66 +1,64 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> **Archivé le 2026-08-08** : déplacé vers `docs/archive/reference/` (était `docs/reference/`). **Raison** : snapshot statique **auto-généré** (date catalogue 2026-08-07, 863 notebooks), dérivé de `COURSE_CATALOG.generated.json` par `scripts/notebook_tools/generate_health_dashboard.py` (acceptance #4 de [#4210](https://github.com/jsboige/CoursIA/issues/4210)). **Hors** de `docs/reference/` qui héberge la documentation **maintenue à la main**. **Mode** : preservation move (contenu inchangé, header de préservation). **Sub-issue** : triage `docs/reference/` (40 files, c.9872+28, myia-po-2023, [#7422](https://github.com/jsboige/CoursIA/issues/7422)) ; **issue dédiée** : [#9982](https://github.com/jsboige/CoursIA/issues/9982). **Statut** : record historique uniquement, **plus mis à jour** — la version vivante dérive du marqueur `CATALOG-STATUS` dans chaque README de série (cron `catalog-cron.yml` quotidien).
->
-> **Superseded par** [`COURSE_CATALOG.generated.md`](../../COURSE_CATALOG.generated.md) (généré quotidiennement par `catalog-cron.yml`). Pour régénérer ce snapshot ad-hoc : `python scripts/notebook_tools/generate_health_dashboard.py` (sortie : `docs/archive/reference/HEALTH_DASHBOARD.md` post-move).
-
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-07**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-11**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**863** notebooks référencés au catalogue.
+**886** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 716 | 83.0% |
-| DEMO | 145 | 16.8% |
+| READY | 731 | 82.5% |
+| DEMO | 153 | 17.3% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 549 |
+| **local** (exécutable sans GPU/cloud/WSL) | 556 |
 | WSL requis | 43 |
-| GPU requis | 93 |
-| Cloud requis (QC / GenAI Docker) | 106 |
-| API key requise | 135 |
+| GPU requis | 102 |
+| Cloud requis (QC / GenAI Docker) | 107 |
+| API key requise | 143 |
 
 ## Distribution par série
 
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| GameTheory | 55 | 0 | 0 | 55 | 100% |
-| GenAI | 57 | 82 | 2 | 141 | 40% |
+| GameTheory | 56 | 0 | 0 | 56 | 100% |
+| GenAI | 67 | 90 | 2 | 159 | 42% |
 | IIT | 53 | 0 | 0 | 53 | 100% |
 | ML | 45 | 3 | 0 | 48 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
 | QuantConnect | 58 | 48 | 0 | 106 | 55% |
 | RL | 16 | 1 | 0 | 17 | 94% |
-| Search | 116 | 0 | 0 | 116 | 100% |
+| Search | 118 | 0 | 0 | 118 | 100% |
 | Sudoku | 35 | 2 | 0 | 37 | 95% |
-| SymbolicAI | 217 | 9 | 0 | 226 | 96% |
+| SymbolicAI | 218 | 9 | 0 | 227 | 96% |
+| cross-series | 1 | 0 | 0 | 1 | 100% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 560 |
-| .NET (C#) | 229 |
-| Python 3 (ipykernel) | 20 |
+| Python 3 | 576 |
+| .NET (C#) | 230 |
+| Python 3 (ipykernel) | 22 |
 | Lean 4 (WSL) | 18 |
 | Python (GameTheory WSL + OpenSpiel) | 10 |
 | Python 3 (WSL) | 7 |
+| Python 3 (coursia-ml-training) | 4 |
 | Python 3 (PyPhi/IIT) | 4 |
 | Lean 4 | 3 |
-| Python 3 (coursia-ml-training) | 2 |
+| Python (coursia-ml-training) | 2 |
 | .venv | 2 |
+| coursia-ml-training | 1 |
 | unknown | 1 |
 | pyphi | 1 |
-| Python (coursia-ml-training) | 1 |
 | .venv (3.14.3) | 1 |
 | .venv (3.12.3) | 1 |
 | cours-ia | 1 |
