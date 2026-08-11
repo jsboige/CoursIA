@@ -2,7 +2,7 @@
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-07-31"
       by: po-2024
@@ -10,5 +10,6 @@
       csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
   known_differences:
     - "Concept : syntaxe PDDL (domain.pddl + problem.pddl), predicats, actions, etat initial/but."
-    - "Python : generation PDDL via unified-planning PDDLWriter + parsing. C# : from-scratch PDDL text builder/parser BCL."
+    - "Lib-vs-lib : Python invoque unified-planning (qui wrap Fast Downward). C# : Tranche 1 from-scratch (grounding + BFS forward, BCL .NET) + Tranche 2 invoque Fast Downward 24.06.1 via API Docker (port 8200). Mêmes domaines PDDL (Logistics, Gripper)."
+    - "Tranche 2 native-both (#10382, 2026-08-11 po-2024) : FD astar(lmcut()) confirme les plans optimaux du BFS from-scratch — Logistics cout 7 (contrainte empty = 1 colis a la fois), Gripper cout 5 (2 pinces paralleles). Verdict SOTA-OK (#3801) : moteur reel invoque (API Docker returncode 0), memes plans. Tranche 1 from-scratch preservee."
     - "Re-baseline 2026-07-31 (po-2024, #8052) : markdown-only correction cote Python (cell[59] downstream next-notebook list : nb4/nb5 titres transposes -> Planners-4-Fast-Downward / Planners-5-Heuristics, conformes aux fichiers sur disque). Paraphite-preservant : aucun output/code modifie, axe de parite semantic intact."
