@@ -826,6 +826,84 @@ def test_reducer_preserves_override_scope_payload():
     ]
 
 
+# --- reducer HONOURS the `paths:` clause on [OVERRIDE] (#10505) --------------
+#
+# Pre-#10505 the reducer did `state = {ev.lane: ev}` unconditionally -- a
+# scoped [OVERRIDE] read as epic-wide, silently closing every other lane's
+# claim (including scoped claims DISJOINT from the override). The four cases
+# below pin the corrected behaviour: a scoped override closes only claims
+# that intersect it. Intersection mirrors `_filter_by_claim_scope`: an
+# epic-wide claim (paths=None) intersects any scope (it claims everything);
+# a scoped claim is closed iff its paths match the override's (fnmatch).
+
+def _ev(action, lane, body, ts, paths_clause=None):
+    """Build a ClaimEvent straight from primitives (no comment parsing)."""
+    return clc.ClaimEvent(
+        lane=lane, action=action, marker={"open": "CLAIMED", "override": "OVERRIDE",
+                                          "close": "RELEASED"}[action],
+        created_at=ts, author="x", url=None,
+        paths=paths_clause, intent=None,
+    )
+
+
+def test_reducer_scoped_override_keeps_disjoint_scoped_claim():
+    # Override scoped to Lean/** ; a claim scoped to scripts/** is DISJOINT
+    # -> it MUST survive in the active state. Pre-#10505 it was closed (bug).
+    events = [
+        _ev("open", "A:CoursIA", "claim scripts", "2026-08-11T22:00:00Z",
+            paths_clause=["scripts/**"]),
+        _ev("override", "B:CoursIA", "reassign Lean only", "2026-08-11T22:30:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"A:CoursIA", "B:CoursIA"}  # both survive (disjoint)
+
+
+def test_reducer_scoped_override_closes_intersecting_scoped_claim():
+    # Override scoped to Lean/** ; a claim also scoped to Lean/** INTERSECTS
+    # -> it is closed. Same verdict as epic-wide, but via the scope rule.
+    events = [
+        _ev("open", "A:CoursIA", "claim Lean", "2026-08-11T22:00:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+        _ev("override", "B:CoursIA", "reassign Lean only", "2026-08-11T22:30:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"B:CoursIA"}  # A closed (intersecting scope)
+
+
+def test_reducer_scoped_override_closes_epic_wide_claim():
+    # Override scoped to Lean/** ; an EPIC-WIDE claim (paths=None) claims
+    # everything, so it intersects any scope -> closed. This is the rule the
+    # issue calls out explicitly (point 1): it keeps the #10289 behaviour
+    # identical (the epic-wide PT-11b claim was closed either way) but by an
+    # explicit, tested rule rather than an ignored scope.
+    events = [
+        _ev("open", "A:CoursIA", "claim all", "2026-08-11T22:00:00Z",
+            paths_clause=None),
+        _ev("override", "B:CoursIA", "reassign Lean only", "2026-08-11T22:30:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"B:CoursIA"}  # epic-wide A closed
+
+
+def test_reducer_epic_wide_override_closes_everything():
+    # Regression of #10223: an EPIC-WIDE override (no paths clause) closes
+    # every other lane, scoped or not. The scoped-override branch must not
+    # weaken the legacy behaviour.
+    events = [
+        _ev("open", "A:CoursIA", "claim Lean", "2026-08-11T22:00:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+        _ev("open", "C:CoursIA", "claim all", "2026-08-11T22:05:00Z",
+            paths_clause=None),
+        _ev("override", "B:CoursIA", "epic-wide reassign", "2026-08-11T22:30:00Z",
+            paths_clause=None),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"B:CoursIA"}  # every other lane closed
+
+
 # --- the actual SCOPE behaviour at the check layer ---------------------------
 
 def test_check_override_no_paths_preserves_legacy_epic_wide_behaviour(capsys):
