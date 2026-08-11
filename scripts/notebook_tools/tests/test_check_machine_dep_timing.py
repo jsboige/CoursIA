@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_machine_dep_timing import (  # noqa: E402
     _categorize,
+    _collect_targets,
     _scan_notebook,
     _is_range_bound,
     _is_detached_approximate,
@@ -1016,6 +1017,63 @@ def test_plan_cost_regex_does_not_overreach_real_wallclock() -> None:
     # Pas d'arithmetique de cout -> _categorize ne bascule pas en domain_quantity
     # via la branche plan-cost (WALLCLOCK_KEYWORDS 'execution' -> wallclock).
     assert _categorize(line, "2.4 s") == CATEGORY_WALLCLOCK
+
+
+# --------------------------------------------------------------------------- #
+#  CLI correctness #10445 (partie b) : --json/--check ne doivent pas jeter paths
+# --------------------------------------------------------------------------- #
+def _write_nb(path: Path, cells: list[dict] | None = None) -> Path:
+    """Ecrit un notebook JSON valide a un chemin precis (pour _collect_targets)."""
+    nb = {"cells": cells or [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    return path
+
+
+def test_collect_targets_honors_paths_with_json(tmp_path: Path, monkeypatch) -> None:
+    """``--json chemin.ipynb`` doit scanner le chemin, pas le repo entier (#10445 b).
+
+    Avant le fix, ``args.json`` dans la premiere branche de ``_collect_targets``
+    impliquait ``--all`` : le chemin explicite etait jete, le glob repo-entier
+    s'executait. Incident merge-gate #10442 : 215 timings repo attribues a 1
+    notebook qui en contribuait 0. Ce test epingle qu'un ``paths`` explicite
+    prime sur ``--json``, ET qu'un leurre sous le glob ``MyIA.AI.Notebooks/``
+    n'est PAS scanne.
+    """
+    import argparse
+
+    import check_machine_dep_timing as m
+
+    # Cible explicite (hors MyIA.AI.Notebooks/ -- pas sous le glob) + leurre
+    # sous le glob : avant le fix, le glob retournait [decoy] et ignorait target.
+    target = _write_nb(tmp_path / "nb_target.ipynb")
+    _write_nb(tmp_path / "MyIA.AI.Notebooks" / "famille" / "decoy.ipynb")
+    monkeypatch.setattr(m, "_repo_root", lambda: tmp_path)
+
+    args = argparse.Namespace(paths=[target], all=False, json=True, check=False)
+    out = _collect_targets(args)
+    # Un seul cible (target), le leurre sous le glob est exclu.
+    assert out == [target]
+
+
+def test_collect_targets_all_with_paths_warns(tmp_path: Path, monkeypatch, capsys) -> None:
+    """``--all`` + paths force l'inventaire mais ne jette pas paths en silence (#10445 b).
+
+    ``--all`` est le seul cas ou paths est legitimement ignore (semantique :
+    forcer le scan complet). La regle « ne jamais jeter un argument en silence »
+    exige un avertissement stderr explicite.
+    """
+    import argparse
+
+    import check_machine_dep_timing as m
+
+    target = _write_nb(tmp_path / "nb_target.ipynb")
+    monkeypatch.setattr(m, "_repo_root", lambda: tmp_path)
+
+    args = argparse.Namespace(paths=[target], all=True, json=False, check=False)
+    _collect_targets(args)  # glob vide sous tmp_path -> [] mais le warn est emis
+    err = capsys.readouterr().err
+    assert "paths" in err.lower() and "ignore" in err.lower()
 
 
 if __name__ == "__main__":

@@ -451,13 +451,24 @@ def _repo_root() -> Path:
 
 
 def _collect_targets(args: argparse.Namespace) -> list[Path]:
-    """Resout la liste des notebooks a scanner depuis la CLI."""
+    """Resout la liste des notebooks a scanner depuis la CLI.
+
+    Precedence (fix #10445 partie b) : des ``paths`` explicites sont TOUJOURS
+    honors, meme quand ``--json``/``--check`` sont passes. Avant, ``--json``
+    impliquait ``--all`` en silence (``if args.all or args.json or args.check``
+    en premiere branche) : un appel ``--json chemin.ipynb`` scannait les 1015
+    notebooks du depot et jetait ``chemin.ipynb`` sans un mot -- produisant des
+    mesures fausses chez tous les appelants (incident merge-gate #10442 : 215
+    timings du repo attribues a 1 notebook GameTheory qui en contribuait 0).
+    Un outil qui jette un argument en silence est un bug de correctness, pas
+    un defaut d'ergonomie ; on ne l'ignore donc jamais sans prevenir.
+    ``--all`` explicite force l'inventaire complet (sa semantique) meme si des
+    paths sont aussi donnes -- cas contradictoire qui emet un avertissement
+    stderr pour ne pas jeter ``paths`` en silence.
+    """
     root = _repo_root()
-    if args.all or args.json or args.check:
-        # Cible canonique : notebooks pedagogiques. Les READMEs et `assets/`
-        # sont exclus -- le scope de #10158 est uniquement les ``.ipynb``.
-        candidates = sorted(root.glob("MyIA.AI.Notebooks/**/*.ipynb"))
-    elif args.paths:
+    if args.paths and not args.all:
+        # paths explicites = scan cible, quel que soit --json/--check.
         candidates = []
         for p in args.paths:
             pp = Path(p)
@@ -465,6 +476,18 @@ def _collect_targets(args: argparse.Namespace) -> list[Path]:
                 candidates.append(pp)
             elif pp.is_dir():
                 candidates.extend(sorted(pp.rglob("*.ipynb")))
+    elif args.all or args.json or args.check:
+        # Cible canonique : notebooks pedagogiques. Les READMEs et `assets/`
+        # sont exclus -- le scope de #10158 est uniquement les ``.ipynb``.
+        if args.all and args.paths:
+            # --all force l'inventaire mais des paths etaient donnes : on ne
+            # les jette pas en silence (regle : ne jamais ignorer un argument).
+            print(
+                "Avertissement : --all force le scan repo-entier ; "
+                "les paths fournis sont ignores.",
+                file=sys.stderr,
+            )
+        candidates = sorted(root.glob("MyIA.AI.Notebooks/**/*.ipynb"))
     else:
         return []
     # Filtre sortie : cibles _output.ipynb (artefacts transitoires) et
