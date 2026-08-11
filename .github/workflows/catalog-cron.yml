@@ -80,27 +80,23 @@ jobs:
           fetch-depth: 0          # full history so git-derived fields are exact
           persist-credentials: true
 
-      # Prepare the long-lived branch from origin/main. We checkout it directly
-      # when it exists; otherwise we create it from main. This step NEVER
-      # touches main -- it only operates on chore/catalog-refresh-pending.
+      # Prepare the long-lived branch from origin/main. We reset (not rebase)
+      # onto origin/main unconditionally. Catalog regen is fully idempotent and
+      # the previous bot commit holds no curated state worth preserving -- the
+      # --merge-curated-fields logic runs against origin/main at regeneration
+      # time, not against the prior bot commit. Rebasing instead yields the
+      # same structural add/add conflict pattern observed on translation-sync
+      # (issue #10373): any human PR that touches a catalog-derived file will
+      # block the cron until the bot commit is manually dropped.
+      # --force-with-lease is safe here: branch is mono-writer bot-owned
+      # (git-workflow.md allows it on lane-unique feature branches; main is
+      # untouched either way).
       - name: Prepare chore/catalog-refresh-pending branch
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
-            echo "Branch $BRANCH already exists on origin; checking it out."
-            git fetch origin "$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-            # Rebase on top of origin/main so the regen always starts from
-            # the freshest main (catalog regen is idempotent -- same main
-            # produces the same catalog, so rebase-and-retry is safe).
-            git fetch origin main
-            git rebase origin/main
-          else
-            echo "Branch $BRANCH does not exist on origin yet; creating it from origin/main."
-            git fetch origin main
-            git checkout -b "$BRANCH" origin/main
-          fi
+          git fetch origin main
+          git checkout -B "$BRANCH" origin/main
           echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
 
       - name: Set up Python

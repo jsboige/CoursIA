@@ -283,3 +283,61 @@ def test_skip_ci_in_commit_message(
         f"{workflow_label}: bot commit message must contain `[skip ci]` to "
         f"prevent the workflow from re-firing on its own push."
     )
+
+
+# ---------------------------------------------------------------------------
+# (7) The `Prepare` step does NOT rebase on origin/main.
+#     Issue #10373 (12 failed runs 2026-08-10): rebasing the previous bot
+#     commit on a fresh main produces structural add/add conflicts as soon as
+#     any human PR lands a derived file (rendered notebook or CSV). The fix
+#     is an unconditional reset (`git checkout -B <branch> origin/main`) -- the
+#     bot commit holds no curated state worth preserving because T1->T4
+#     regenerate the full derived set, and the cron workflows regenerate the
+#     catalog from origin/main directly. This test pins that invariant.
+# ---------------------------------------------------------------------------
+
+PREPARE_STEP_RE = re.compile(
+    # `- name: Prepare ...` step, capture the run block following it
+    r"(?P<header>- name: Prepare [^\n]*\n\s+run:\s*\|\s*\n)"
+    r"(?P<body>(?:\s+.*\n?)+)"
+)
+
+
+def _prepare_run_block(yaml_text: str) -> str:
+    """Return the run block of the `Prepare chore/...-pending branch` step."""
+    match = PREPARE_STEP_RE.search(yaml_text)
+    assert match is not None, "no `Prepare ...-pending branch` step found"
+    return match.group("body")
+
+
+@pytest.mark.parametrize(
+    "workflow_path,workflow_label",
+    [(CATALOG_CRON, "catalog-cron.yml"), (TRANSLATION_SYNC, "translation-sync.yml")],
+)
+def test_prepare_step_does_not_rebase(
+    workflow_path: Path, workflow_label: str
+) -> None:
+    """The `Prepare` step must reset onto origin/main, never rebase.
+
+    Rebasing the previous bot commit onto a fresh main causes structural
+    add/add conflicts (issue #10373, 12 runs failed 2026-08-10). The bot
+    commit holds no curated state worth preserving -- the catalog workflows
+    regenerate from origin/main directly, and the translation workflow
+    regenerates derived files via T1->T4 on every run.
+    """
+    text = _yaml_text(workflow_path)
+    prepare_block = _prepare_run_block(text)
+    # Forbidden: `git rebase origin/main` -- the previous failure mode.
+    assert "git rebase origin/main" not in prepare_block, (
+        f"{workflow_label}: `Prepare` step uses `git rebase origin/main`. "
+        f"Issue #10373 shows this fails structurally as soon as any human PR "
+        f"touches a derived file. Use `git checkout -B <branch> origin/main` "
+        f"instead (unconditional reset). Found:\n{prepare_block}"
+    )
+    # Required: an unconditional reset to origin/main. Accept `checkout -B`
+    # (in-place branch reset) as the canonical form.
+    assert "git checkout -B" in prepare_block and "origin/main" in prepare_block, (
+        f"{workflow_label}: `Prepare` step must unconditionally reset the "
+        f"branch onto origin/main via `git checkout -B <branch> origin/main`. "
+        f"Found:\n{prepare_block}"
+    )
