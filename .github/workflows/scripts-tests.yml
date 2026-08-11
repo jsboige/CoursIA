@@ -25,6 +25,13 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      # test_workflow_branch_pattern.py (#10145) pins the SHELL TEXT of these
+      # two workflows, so editing them must run this suite. Without these two
+      # entries the pin is blind to its own subject: #10416 changed the push in
+      # catalog-cron.yml, no job ran, and the break only surfaced on the next
+      # unrelated PR that happened to touch scripts/**.
+      - '.github/workflows/catalog-cron.yml'
+      - '.github/workflows/translation-sync.yml'
       # #6790 prover tree-lock: the offline lock-lifecycle tests + the two
       # source files they guard (see the pytest step for why only this one
       # agent_tests file is included, not the whole dir).
@@ -43,6 +50,9 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
+      # See the push: block above for why these two are pinned here.
+      - '.github/workflows/catalog-cron.yml'
+      - '.github/workflows/translation-sync.yml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/tree_lock.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/run_prover_bg.py'

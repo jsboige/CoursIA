@@ -131,7 +131,15 @@ DISTRIBUTION_KEYWORDS = re.compile(
     r"\b(?:Gaussian|Normal|prior|posterior|posteriori|likelihood|vraisemblance|"
     r"moyenne|mean|std|sigma|sigma[_\s]?2|variance|precision|"
     r"distribution|mu_|sigma_|mixture|Dirichlet|Gamma|Beta|"
-    r"intervalle?\s+de\s+confiance|IC\s+\d|probabilit[ée]?)\b",
+    r"intervalle?\s+de\s+confiance|IC\s+\d|probabilit[ée]?|"
+    # #10178 Classe 5 (proposée po-2024, c.66 firsthand) : discriminants
+    # bayesiens qui signalent qu'une durée (N min / N minutes) est une
+    # quantité de domaine (composante de mélange, observation, trajet,
+    # écart-type de la postérieure) et NON un wallclock machine. Sans
+    # cette liste, les notebooks de Probas qui modélisent des grandeurs
+    # temporelles (durée trajet vélo, durée décision) sont flaggés à tort
+    # et un drain détruirait des paramètres du modèle (anti-regression §D).
+    r"composantes?|observations?|trajets?|ecarts?[\-\s]?types?)\b",
     re.IGNORECASE,
 )
 
