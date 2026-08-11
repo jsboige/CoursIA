@@ -176,7 +176,7 @@ fixed-frame `BoxAssezGrand`, possible here because `BoxAssezGrandN` pads by `max
 
 **Note (c.212, 2026-08-11)**: the `native_decide` axiom class is forbidden under
 `pr-review-discipline` §B. Yet `supportInMargin` is machine-proven **tautological** by
-`supportInMargin_trivial` (JumpCapture.lean:120) — true for **every** MacroCell and
+`supportInMargin_trivial` (L113 above) — true for **every** MacroCell and
 **every** horizon. The four witnesses below are therefore established for free by that
 general proof, without recourse to the native kernel. The historical `native_decide`
 attested to a tautology already demonstrated — clean removal, zero content loss,

@@ -176,7 +176,7 @@ plusieurs horizons, et le sanity `k2` exhibe `2^2 = 4` — impossible avec la fi
 
 **Note (c.212, 2026-08-11)** : la classe d'axiome `native_decide` est interdite au sens de
 `pr-review-discipline` §B (forbidden). Or `supportInMargin` est machine-prouvé
-**tautologique** par `supportInMargin_trivial` (JumpCapture.lean:120) — vraie pour **toute**
+**tautologique** par `supportInMargin_trivial` (L113 ci-dessus) — vraie pour **toute**
 MacroCell et **tout** horizon. Les quatre témoins ci-dessous sont donc établis gratuitement
 par cette preuve générale, sans recours au noyau natif. Le `native_decide` historique
 témoignait d'une tautologie déjà démontrée — retrait net, zéro perte de contenu, axiome

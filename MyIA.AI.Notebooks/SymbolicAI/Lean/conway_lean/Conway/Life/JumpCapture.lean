@@ -71,22 +71,11 @@ L161) pour casser un cycle d'import : `JumpCapture` importe
 `hashlife_correctN`), et `MarginFragment` aurait eu besoin de `JumpCapture`
 pour atteindre `supportInMargin_trivial`. La relocalisation place la
 preuve de trivialité à côté de la définition du prédicat, et les
-consommateurs existants — `supportInMargin_trivial` (ci-dessous), le
-`p5_large_n_jumpN_iff_unconditional` (L131), et les 4 sanity-checks du
-fragment — accèdent au lemme via l'import `Conway.Life.HashlifeCorrectness`
-déjà présent. -/
-
-/-- **Impact #9568** : le fragment `supportInMargin` de
-    `HashlifeMarginFragment` hérite de la tautologie — il contient TOUTE
-    MacroCell à TOUT horizon `k`. L'hypothèse `h_margin` de
-    `hashlife_correct_margin` ne restreint donc rien : la « relativisation
-    géométrique » voulue par le fragment exige un prédicat mesuré contre le
-    domaine propre de la cellule (cf `jumpCaptured` ci-dessous), pas contre
-    un cadre re-rembourré en fonction de `n`. Preuve sur place depuis
-    `boxAssezGrandN_trivial` (relocalisé dans `Foundation`). -/
-theorem supportInMargin_trivial (c : MacroCell) (k : Nat) :
-    supportInMargin c k :=
-  boxAssezGrandN_trivial _ _
+consommateurs existants — `p5_large_n_jumpN_iff_unconditional`, et les 4
+sanity-checks du fragment — accèdent au lemme via l'import
+`Conway.Life.HashlifeCorrectness` déjà présent. Le pendant
+`supportInMargin_trivial` vit dans `HashlifeMarginFragment` (même imported,
+L113). -/
 
 /-- **`p5_large_n_jumpN` équivaut à la correction inconditionnelle** : sa
     signature avec l'hypothèse tautologique `BoxAssezGrandN g n` a
