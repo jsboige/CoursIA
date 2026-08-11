@@ -106,19 +106,25 @@ _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
 # merged without a written adjudication). Additive: the existing markers keep
 # their semantics, so no prior test changes.
 #
-# `paths:` clause (#10342): an optional path scope after the lane token -- when
-# present, the override's "close all others" effect is BOUND to the listed paths
-# (fnmatch, comma-separated). Other lanes remain FREE on paths outside the
-# scope, which is the missing leg for step-bounded adjudications (e.g. an
-# override that reassigns ONE lake leaves other lakes' claims un-touched).
-# Syntax: `[OVERRIDE] lane <machine:workspace> -- paths: glob1, glob2`.
-# Without the clause, the override is EPIC-WIDE (legacy semantics, preserved).
+# `paths:` clause (#10342 for [OVERRIDE], extended to [CLAIMED]/[RELEASED] by
+# #10419): an optional path scope after the lane token. When present on an
+# [OVERRIDE], the "close all others" effect is BOUND to the listed paths
+# (fnmatch, comma-separated). When present on a [CLAIMED], the claim is SCOPED
+# to those paths -- two lanes whose scoped claims do NOT intersect are free to
+# work the same issue in parallel (the nominal pattern for multi-instance
+# audits like #10382, one lane per notebook). Other lanes remain FREE on paths
+# outside the scope. Syntax: `[CLAIMED] lane <machine:workspace> -- paths: g1, g2`.
+# Without the clause, the marker is EPIC-WIDE (legacy semantics, preserved):
+# an unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
+# every other lane -- exactly as before #10342/#10419.
 _OVERRIDE = {"OVERRIDE"}
 # The token is OPTIONAL; the lane stays REQUIRED (an override without a named
 # beneficiary is unattributed, per existing semantics). Capture groups:
 # 1 = comma-separated path list (already stripped of surrounding spaces).
-_OVERRIDE_PATHS_RE = re.compile(
-    r"(?im)^[ \t]*\[\s*OVERRIDE\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+# Recognised on [CLAIMED], [RELEASED] (attached; the reducer treats release as
+# a full lane-close, so the scope is informational there), and [OVERRIDE].
+_PATHS_CLAUSE_RE = re.compile(
+    r"(?im)^[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 
 
@@ -179,13 +185,14 @@ class ClaimEvent(dict):
 
     @property
     def paths(self) -> list[str] | None:
-        """Optional path scope (#10342); None when the override is epic-wide.
+        """Optional path scope (#10342 OVERRIDE, #10419 CLAIMED/RELEASED).
 
-        A non-None value means the override's "close all others" effect is bound
-        to the listed globs (fnmatch); lanes without claims intersecting them
-        remain free. The reducer and check honour this: `compute_active_claims`
-        always preserves the full `paths` payload, and the check filters the
-        `others` dict by `_path_matches` when the caller supplies `--paths`.
+        None when the marker is epic-wide (no `paths:` clause). A non-None value
+        on an [OVERRIDE] binds its "close all others" effect to the listed globs;
+        on a [CLAIMED] it SCOPES the claim, so two lanes whose paths do NOT
+        intersect (fnmatch, `_path_matches`) are free to work the same issue in
+        parallel. The reducer preserves the full `paths` payload; the check
+        filters `others` by scope intersection (`_filter_by_claim_scope`).
         """
         return self.get("paths")
 
@@ -198,10 +205,13 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     (surfaced as "unattributed", never guessed). The timestamp is the comment's
     server `createdAt` -- the Defaut-2 fix: body stamps are not trusted.
 
-    `#10342 scope`: when the marker is `[OVERRIDE]` and the body carries a
-    `paths: <comma-list>` clause, the parsed list is attached to the event as
-    `paths`. Other markers ignore the clause (claim/release/done are not
-    scope-bound; the path-mode guard handles file collisions separately, #9959).
+    `#10342`/`#10419 scope`: when the marker line carries a `paths: <comma-list>`
+    clause, the parsed list is attached to the event as `paths`. Originally
+    [OVERRIDE]-only (#10342); #10419 extended recognition to [CLAIMED] and
+    [RELEASED]. For [CLAIMED] the scope makes two lanes with DISJOINT paths free
+    to work the same issue in parallel (multi-instance audits, one lane per
+    notebook). For [RELEASED] the clause is attached for symmetry but the
+    reducer treats release as a full lane-close (partial release is a non-goal).
 
     `#10395 Variante 1`: the marker LINE (the line carrying the last bracketed
     marker, not the whole body) is also passed to `extract_lane` as the
@@ -226,8 +236,10 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     else:
         action = "close"
     author = (comment.get("author") or {}).get("login")
-    paths = _extract_override_paths(body) if action == "override" else None
     marker_line = _last_marker_line(body, marker)
+    # `paths:` clause (#10342 OVERRIDE, #10419 CLAIMED/RELEASED): parsed from the
+    # marker line so a stray `paths:` in body prose cannot arm a false scope.
+    paths = _extract_paths_clause(marker_line) if marker_line else None
     intent = _extract_marker_intent(body) if marker_line else None
     return ClaimEvent(
         lane=extract_lane(body, marker_line=marker_line),
@@ -299,16 +311,19 @@ def _extract_marker_intent(body: str) -> str | None:
     return text
 
 
-def _extract_override_paths(body: str) -> list[str] | None:
-    """Parse the optional `paths: <comma-list>` clause of an [OVERRIDE] body.
+def _extract_paths_clause(text: str | None) -> list[str] | None:
+    """Parse the optional `paths: <comma-list>` clause from a marker line.
 
-    Returns the trimmed path list, or None when the clause is absent (the
-    override is then EPIC-WIDE -- the legacy semantics, preserved for backward
-    compatibility: every prior override without scope continues to lock
-    every other lane out). Empty fragments from stray commas are dropped
-    (a worker pasting `paths: a, , b` gets `["a", "b"]`, not `["a", "", "b"]`).
+    Recognised on [CLAIMED], [RELEASED], and [OVERRIDE] marker lines (#10342
+    introduced the clause for [OVERRIDE]; #10419 extended it to [CLAIMED] and
+    [RELEASED] so disjoint scoped claims no longer false-block each other on a
+    multi-instance issue). Returns the trimmed path list, or None when the
+    clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
+    unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
+    every other lane). Empty fragments from stray commas are dropped (a worker
+    pasting `paths: a, , b` gets `["a", "b"]`, not `["a", "", "b"]`).
     """
-    m = _OVERRIDE_PATHS_RE.search(body or "")
+    m = _PATHS_CLAUSE_RE.search(text or "")
     if not m:
         return None
     raw = m.group(1)
@@ -522,11 +537,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             (but a warning is printed, #9812). None = legacy epic-wide block.
         now: injected `datetime` for stale calc (testability).
         my_paths: optional list of files the caller intends to edit (#10342).
-            When supplied, an `[OVERRIDE]` whose `paths:` clause does NOT
-            intersect `my_paths` is treated as if it does not exist for the
-            blocker test -- the override only locks the lanes it names the
-            paths for. Without `my_paths`, behaviour is unchanged (every
-            `[OVERRIDE]` is epic-wide, regardless of its scope clause).
+            Merged with the caller's OWN active-claim `paths:` clause (#10419)
+            to form `my_scope`. An `[OVERRIDE]` or `[CLAIMED]` whose `paths:`
+            clause does NOT intersect `my_scope` is treated as if it does not
+            exist for the blocker test -- the claim only locks the paths it
+            names. Without any declared scope (no `my_paths` AND no `paths:` on
+            the caller's own claim), behaviour is unchanged: every other active
+            claim blocks, regardless of its scope clause (we cannot prove
+            disjointness, so we conservatively over-block).
     """
     events = _sort_events(payload)
     active, unattributed = compute_active_claims(events)
@@ -538,7 +556,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # `my_paths`, we conservatively treat every scoped override as blocking
     # (the caller's intent is unknown -- better to over-block than silently
     # merge a write that should have pinged a held lane).
-    others = _filter_by_override_scope(others, my_paths)
+    others = _filter_by_claim_scope(others, my_paths, mine)
 
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
     # (age from the server createdAt, NEVER the body) is treated as STALE -- it
@@ -623,45 +641,44 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     return 0
 
 
-def _filter_by_override_scope(
+def _filter_by_claim_scope(
     others: dict[str, ClaimEvent],
     my_paths: list[str] | None,
+    mine: ClaimEvent | None,
 ) -> dict[str, ClaimEvent]:
-    """Drop `others` lanes whose `[OVERRIDE]` grant has a `paths:` scope that
-    does NOT intersect the caller's intended files (#10342).
+    """Drop `others` lanes whose scoped claim does NOT intersect my scope.
 
-    Rules:
-      - Plain `[CLAIMED]` events (no override) always stay in `others` --
-        their epic-wide semantics predate the scope feature.
-      - `[OVERRIDE]` events WITHOUT a `paths:` clause stay in `others` --
-        legacy epic-wide adjudication, preserved.
-      - `[OVERRIDE]` events WITH a `paths:` clause stay in `others` only when
-        at least one of `my_paths` matches the scope. When `my_paths` is
-        None (the caller did not declare intent), we conservatively keep the
-        lane in `others` -- better over-block than silent miss.
-      - The lane whose `event.marker == "OVERRIDE"` but has scope and DOES
-        NOT match `my_paths` is dropped: that lane was granted the claim on
-        a specific path range, the caller is working elsewhere, no collision.
+    `my_scope` (#10419) = the caller's `--paths` intent MERGED with the
+    `paths:` clause of the caller's OWN active claim (`mine`). When `my_scope`
+    is empty (the caller declared no path intent at all), every other lane is
+    kept -- we cannot prove disjointness, so we conservatively over-block
+    (legacy behaviour, preserved).
 
-    The reducer `compute_active_claims` already stored the override event
-    under its named lane (line `state = {ev.lane: ev}`); this filter only
-    prunes the `others` view, never the reducer output. The active_claims
-    summary keeps the full state, so the JSON output remains auditable.
+    Per other lane:
+      - No `paths:` clause (plain [CLAIMED], or epic-wide [OVERRIDE]) -> STAYS.
+        Its epic-wide semantics predate the scope feature (#10342/#10419).
+      - Has a `paths:` clause that INTERSECTS `my_scope` -> STAYS (real overlap).
+      - Has a `paths:` clause DISJOINT from `my_scope` -> DROPPED (free). This
+        is the #10419 fix: two lanes with disjoint scoped claims on the same
+        multi-instance issue no longer false-block each other.
+
+    The reducer `compute_active_claims` is untouched; this filter only prunes
+    the `others` view. The active_claims summary keeps the full state, so the
+    JSON output remains auditable.
     """
-    if not my_paths:
-        return others  # conservative legacy behaviour
+    mine_paths = (mine.get("paths") if mine else None) or []
+    my_scope = list(dict.fromkeys((my_paths or []) + mine_paths)) or None
+    if not my_scope:
+        return others  # no declared scope -> cannot prove disjointness
     filtered: dict[str, ClaimEvent] = {}
     for ln, ev in others.items():
-        if ev.marker != "OVERRIDE":
-            filtered[ln] = ev
-            continue
         scope = ev.get("paths")
         if not scope:
-            filtered[ln] = ev  # epic-wide override, preserved
+            filtered[ln] = ev  # epic-wide (plain CLAIMED or unscoped OVERRIDE)
             continue
-        if _path_matches_any(my_paths, scope):
-            filtered[ln] = ev  # scope covers at least one of my paths
-        # else: scope doesn't touch my paths -> free, drop from others
+        if _path_matches_any(my_scope, scope):
+            filtered[ln] = ev  # scopes intersect -> real collision
+        # else: both scoped, disjoint -> free, drop from others
     return filtered
 
 

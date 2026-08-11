@@ -894,9 +894,10 @@ def test_check_override_paths_keeps_other_lane_free_on_non_matching_path(capsys)
 
 
 def test_check_override_paths_keeps_plain_claimed_lane_blocking(capsys):
-    # Plain `[CLAIMED]` (not an override) is always epic-wide, even when the
-    # caller supplies `--paths`. The scope is a coordinator's adjudication
-    # tool; a worker's claim never carries it. This pins the boundary.
+    # A [CLAIMED] WITHOUT a `paths:` clause is epic-wide, even when the caller
+    # supplies `--paths`. (#10419 lets a worker SCOPE a [CLAIMED] with a
+    # `paths:` clause; this test pins the boundary for the UNSCOPED form,
+    # which stays global and blocks regardless of the caller's --paths.)
     p = payload(
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- original",
                 "2026-08-09T11:00:00Z"),
@@ -959,6 +960,200 @@ def test_active_claims_summary_exposes_paths(capsys):
     assert rc == 1  # override granted A, so B is blocked (epic-wide read)
     assert "Lean/**" in out
     assert "scripts/**" in out
+
+
+# --- [CLAIMED] paths: scope (#10419) -----------------------------------------
+# #10342 introduced the `paths:` clause for [OVERRIDE] only. #10419 extends
+# recognition to [CLAIMED] (and [RELEASED], by symmetry) so that the nominal
+# pattern of a multi-instance audit -- several lanes each scoping their [CLAIMED]
+# to a DISJOINT notebook on the same parapluie issue -- no longer raises a
+# false `lane-claim-conflict` on every PR. Before #10419, a worker's claim
+# "never carried" a scope (see the comment pinned by
+# test_check_override_paths_keeps_plain_claimed_lane_blocking); the protocol
+# (lane-claim-protocol.md rule 6) already DEMANDED per-file partitioning that
+# the organ could not read. These tests pin the three layers: parse, reducer
+# passthrough, and the scope-intersection check.
+
+
+def test_parse_claimed_with_paths_clause():
+    # [CLAIMED] carrying a `paths:` clause -> the scope is attached (#10419).
+    ev = clc.parse_claim_event(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA -- "
+            "paths: MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+            "2026-08-11T04:02:00Z",
+        )
+    )
+    assert ev is not None
+    assert ev.marker == "CLAIMED"
+    assert ev.is_open
+    assert ev.paths == [
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+    ]
+
+
+def test_parse_claimed_without_paths_clause_is_none():
+    # Plain [CLAIMED] (no scope) -> paths is None, NOT []. Legacy claim.
+    ev = clc.parse_claim_event(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA -- build the guard",
+                "2026-08-06T22:00:00Z")
+    )
+    assert ev is not None
+    assert ev.paths is None
+
+
+def test_parse_claimed_paths_clause_drops_empty_fragments():
+    # Same empty-fragment hygiene as [OVERRIDE]: stray commas are dropped.
+    ev = clc.parse_claim_event(
+        comment("[CLAIMED] lane A:CoursIA -- paths: a.py, , b.py, ",
+                "2026-08-11T04:02:00Z")
+    )
+    assert ev.paths == ["a.py", "b.py"]
+
+
+def test_parse_released_with_paths_clause_attached():
+    # [RELEASED] recognises the clause (symmetry with [CLAIMED], #10419). The
+    # reducer treats release as a full lane-close, so the scope is informational
+    # here -- but the PARSE layer must not silently drop it.
+    ev = clc.parse_claim_event(
+        comment("[RELEASED] lane A:CoursIA -- paths: a.py, b.py",
+                "2026-08-11T05:00:00Z")
+    )
+    assert ev is not None
+    assert ev.marker == "RELEASED"
+    assert ev.paths == ["a.py", "b.py"]
+
+
+def test_reducer_preserves_claimed_scope_payload():
+    # The active-claim reducer stores the scoped [CLAIMED] event intact, so the
+    # check layer can read `paths` off it (mirrors the OVERRIDE reducer test).
+    events = [
+        clc.parse_claim_event(
+            comment("[CLAIMED] lane A:CoursIA -- paths: Search/Search-3.ipynb",
+                    "2026-08-11T04:02:00Z")
+        ),
+    ]
+    active, unattributed = clc.compute_active_claims(events)
+    assert not unattributed
+    assert active["A:CoursIA"].paths == ["Search/Search-3.ipynb"]
+
+
+def test_check_claimed_disjoint_paths_dont_block(capsys):
+    # CORE #10419 fix: two lanes, each [CLAIMED] scoped to a DISJOINT notebook,
+    # neither passing --paths. Before #10419 both were BLOCKED (false conflict);
+    # after, each reads the OTHER's scope from its own active claim and sees CLEAR.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
+                "paths: Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
+                "paths: Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")  # no --paths
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert '"blocking_lanes": []' in out
+    # The other lane is still in the audit JSON (state preserved), just not blocking.
+    assert "myia-po-2023:CoursIA" in out
+
+
+def test_check_claimed_10382_five_disjoint_claims(capsys):
+    # Regression reproduction of the #10382 / #10419 motivating incident: 5
+    # lanes each scoped to a disjoint notebook on one parapluie issue. Every
+    # lane MUST see blocking_lanes: [] -- the artefactual `lane-claim-conflict`
+    # that fired on all ~51 PRs of the audit is gone.
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
+                "paths: Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
+                "paths: Planning/Planners-5-Heuristics-Csharp.ipynb",
+                "2026-08-11T04:03:00Z"),
+        comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
+                "paths: Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+                "2026-08-11T04:04:00Z"),
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- "
+                "paths: Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb",
+                "2026-08-11T04:05:00Z"),
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
+                "paths: GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb",
+                "2026-08-11T04:07:00Z"),
+    )
+    for lane in (
+        "myia-po-2023:CoursIA",
+        "myia-po-2024:CoursIA",
+        "myia-po-2025:CoursIA",
+        "myia-po-2025:CoursIA-2",
+        "myia-po-2026:CoursIA",
+    ):
+        rc = clc._run_check(p, lane)
+        assert rc == 0, f"{lane} should be CLEAR on disjoint scopes"
+        assert '"blocking_lanes": []' in capsys.readouterr().out
+
+
+def test_check_claimed_same_path_still_blocks(capsys):
+    # Two scoped claims on the SAME path -> real collision -> BLOCKED. The scope
+    # feature must not dissolve a genuine file-level conflict into a false clear.
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- paths: Sudoku/Sudoku-9.ipynb",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: Sudoku/Sudoku-9.ipynb",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "A:CoursIA")
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "BLOCKED" in err
+    assert "B:CoursIA-2" in err
+
+
+def test_check_claimed_one_scoped_one_plain_blocks(capsys):
+    # One scoped claim + one plain (epic-wide) claim -> BLOCKED. Disjointness is
+    # only honoured when BOTH sides declare a scope (acceptance #2 of #10419);
+    # a plain claim's intent is unknown, so it conservatively blocks.
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- paths: Search/Search-3.ipynb",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane B:CoursIA-2 -- working on Sudoku",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "A:CoursIA")
+    assert rc == 1
+    assert "B:CoursIA-2" in capsys.readouterr().err
+
+
+def test_check_my_claim_scope_derived_from_claim_not_just_cli(capsys):
+    # my_scope is built from the caller's OWN [CLAIMED] paths clause, NOT only
+    # from --paths. A lane that posted a scoped [CLAIMED] but calls the check
+    # without --paths still gets disjointness honoured against another scoped
+    # lane. This is the leg that makes the #10419 fix usable without forcing
+    # every worker to pass --paths on every invocation.
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- paths: Lean/Foo.lean",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/foo.py",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "A:CoursIA")  # NO my_paths
+    assert rc == 0
+    assert '"blocking_lanes": []' in capsys.readouterr().out
+
+
+def test_check_claimed_paths_merged_with_cli_widen_scope(capsys):
+    # my_scope MERGES --paths with the caller's claim clause (defensive: a lane
+    # blocks if it touches ANY file I declared, by either channel). Here the
+    # other lane's scope intersects my CLI --paths but NOT my claim clause --
+    # the merge still catches the overlap and BLOCKS.
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- paths: Lean/Foo.lean",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/bar.py",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "A:CoursIA", my_paths=["scripts/bar.py"])
+    assert rc == 1
+    assert "B:CoursIA-2" in capsys.readouterr().err
 
 
 # --- #10395 Variante 2: claim-scope mesh (intent in BLOCKED verdict) ---------
