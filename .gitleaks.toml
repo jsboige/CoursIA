@@ -92,6 +92,18 @@ paths = [
     # test, the tokens inside ARE synthetic by construction"), not a
     # content bypass.
     '''scripts/secrets/tests/test_gitleaks_.*\.py$''',
+    # --- #10381 Tweety causal shade rebuild script (Maven Central URL scope marker) ---
+    # The rebuild-causal.sh script downloads pinned-version Maven Central JARs
+    # (slf4j-api, commons-math, ojalgo, sat4j, Jama) by literal URL. These
+    # public URLs are NOT secrets: every entry is a version-pinned
+    # repository1.maven.org URL with no credentials. The `generic-api-key`
+    # entropy heuristic FPs on the alphanum-heavy version strings
+    # (e.g. "slf4j-api-1.7.36.jar" reads as a 20-char key). Scope marker:
+    # this file IS a build recipe, the URLs ARE public by construction.
+    # A REAL secret committed to the same file STILL rougir via the custom
+    # qwen-api-token rule and any other regex-based rule (paths only suppress
+    # the generic entropy heuristic on this file).
+    '''MyIA\.AI\.Notebooks/SymbolicAI/Tweety/dotnet-build/rebuild-causal\.sh$''',
 ]
 
 # Notebooks: do NOT blanket-exclude .ipynb — secrets inline in code cells are a real vector.
