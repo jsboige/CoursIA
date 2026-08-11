@@ -2,7 +2,7 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -16,5 +16,5 @@
       content_csharp_sha: 1eaef55790de690842740d1c89cde1e542cca34bae710ea8b3b45bb80339c28b
   known_differences:
     - "Socle pedagogique commun : TSP / Voyageur de commerce (metaheuristiques + OR-Tools routing) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
-    - "Idiomes framework : Python = OR-Tools constraint_solver routing + permutations ; C# = BCL pure (System.*), 0 NuGet."
-    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+    - "Idiomes framework : Python = OR-Tools constraint_solver routing (pywrapcp/RoutingModel + GLS) + permutations ; C# = Tranche 1 from-scratch BCL pure (System.*, 0 NuGet) PRESERVEE + Tranche 2 Google.OrTools ConstraintSolver routing (RoutingModel + recherche locale guidee GLS), miroir du twin Python (#10382). Parite native-both."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (Tranche 1 PRESERVEE) + Tranche 2 binding NuGet Google.OrTools routing (le meme moteur que le twin Python, #10382), presentation compacte. Meme socle theorique, leviers de demonstration differents."
