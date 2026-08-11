@@ -73,6 +73,7 @@ bestiary below. EPIC #3846 / #6724 / #9568.
 
 import Conway.Life.AdversarialBattery_en
 import Conway.Life.HashlifeCorrectness
+import Conway.Life.JumpCapture
 
 namespace Conway_en
 open Conway
@@ -132,7 +133,18 @@ recursion, the margin containing the light-cone at every jump. Framework stateme
     to global grid equality requires the bounded P4/P5 assembly — `p4_nw_overlap_wall` and
     its 4-stage helper ladder (PR #9745/#9760, ai-01 c.92–c.94, sorry 10→9). This is the
     open research heart; this statement is its honest framework (acceptance B: documented
-    sorry acceptable at first commit). -/
+    sorry acceptable at first commit).
+
+    **Framing note (c.212, 2026-08-11) — *unconditional-in-waiting*.** The predicate
+    `supportInMargin` is a **tautology** (proven by `supportInMargin_trivial`,
+    JumpCapture.lean:120): `gridFrameN n g` pads by `max 2 n ≥ n` and the near-side
+    `cellMargin` is non-strict, so `BoxAssezGrandN g n` holds for **every** grid and **every**
+    `n`. The hypothesis `h_margin : supportInMargin c k` therefore constrains nothing — the
+    effective statement is the full unconditional, under geometric dressing that does not
+    relativize. The true relativization lives elsewhere (predicate `jumpCaptured`,
+    JumpCapture.lean §3, with witness `jumpCaptured_not_trivial`). This `sorry` therefore
+    remains the **open research heart**, regardless of the fragility of its dressing — the
+    INTRINSIC verdict is preserved, scientific content unweakened by this observation. -/
 theorem hashlife_correct_margin (c : MacroCell) (k : Nat)
     (h_margin : supportInMargin c k) (h_central : centralCorrect c k) :
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) := by
@@ -144,37 +156,51 @@ theorem hashlife_correct_margin (c : MacroCell) (k : Nat)
   -- open P4/P5 heart — documented sorry (acceptance B).
   sorry
 
-/-! ## Sanity checks on the bestiary (kernel `native_decide`)
+/-! ## Sanity checks on the bestiary
 
 The fragment `supportInMargin` is **decidable** (instance `Decidable (BoxAssezGrandN)`,
 HashlifeCorrectness L227) and **non-empty** on the bestiary witnesses. These lemmas are the
 real (honest) sanity checks of the fragment: the 2×2 block and the empty cell satisfy the
 margin at several horizons, and the `k2` sanity exhibits `2^2 = 4` — impossible with the
-fixed-frame `BoxAssezGrand`, possible here because `BoxAssezGrandN` pads by `max 2 4 = 4`. -/
+fixed-frame `BoxAssezGrand`, possible here because `BoxAssezGrandN` pads by `max 2 4 = 4`.
+
+**Note (c.212, 2026-08-11)**: the `native_decide` axiom class is forbidden under
+`pr-review-discipline` §B. Yet `supportInMargin` is machine-proven **tautological** by
+`supportInMargin_trivial` (JumpCapture.lean:120) — true for **every** MacroCell and
+**every** horizon. The four witnesses below are therefore established for free by that
+general proof, without recourse to the native kernel. The historical `native_decide`
+attested to a tautology already demonstrated — clean removal, zero content loss,
+forbidden axiom excised. -/
 
 /-- **Sanity**: the 2×2 block (`cexBlock1`) satisfies the fragment at horizon `2^0 = 1`
     (margin ≥ 1). Non-vacuity of the fragment. -/
-theorem cexBlock1_supportInMargin_k0 : supportInMargin cexBlock1 0 := by native_decide
+theorem cexBlock1_supportInMargin_k0 : supportInMargin cexBlock1 0 :=
+  supportInMargin_trivial _ _
 
 /-- **Sanity**: the 2×2 block satisfies the fragment at horizon `2^1 = 2` (margin ≥ 2).
     This is the cap of the fixed-frame `BoxAssezGrand` (`boxAssezGrand_nonempty_le_two`). -/
-theorem cexBlock1_supportInMargin_k1 : supportInMargin cexBlock1 1 := by native_decide
+theorem cexBlock1_supportInMargin_k1 : supportInMargin cexBlock1 1 :=
+  supportInMargin_trivial _ _
 
 /-- **Sanity (n-aware)**: the 2×2 block satisfies the fragment at horizon `2^2 = 4`
     (margin ≥ 4) — IMPOSSIBLE with the fixed-frame `BoxAssezGrand` (capped at 2), possible
     here because `BoxAssezGrandN` pads by `max 2 4 = 4`. This is the reason for the n-aware
     choice: without it, the "choose `k` by horizon" sufficiency argument would collapse. -/
-theorem cexBlock1_supportInMargin_k2 : supportInMargin cexBlock1 2 := by native_decide
+theorem cexBlock1_supportInMargin_k2 : supportInMargin cexBlock1 2 :=
+  supportInMargin_trivial _ _
 
 /-- **Sanity**: the empty cell (`cexEmpty1`) satisfies the fragment at horizon `2^0 = 1`
     (no live cells to constrain — `List.all` over `[]` is vacuously true). -/
-theorem cexEmpty1_supportInMargin_k0 : supportInMargin cexEmpty1 0 := by native_decide
+theorem cexEmpty1_supportInMargin_k0 : supportInMargin cexEmpty1 0 :=
+  supportInMargin_trivial _ _
 
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 
 `supportInMargin` is decidable and witnessed on the bestiary (above). The framework
-statement `hashlife_correct_margin` carries the fragment-relative correctness; its `sorry`
-openly documents the still-open bounded P4/P5 assembly (`p4_nw_overlap_wall`, ai-01 c.94).
+statement `hashlife_correct_margin` carries the fragment-relative correctness (in dressing
+— see *unconditional-in-waiting* note in its docstring: the predicate is tautological, the
+research heart remains the bounded P4/P5 assembly); its `sorry` openly documents the
+still-open bounded P4/P5 assembly (`p4_nw_overlap_wall`, ai-01 c.94).
 Strategy confirmed for the rest of #6724: close the bounded NE/SW/SE walls, then wire the
 P4.4 assembly that will discharge the `sorry` of `hashlife_correct_margin`.
 -/
