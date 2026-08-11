@@ -3,8 +3,6 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: INTRINSIC
-  bridge_verdict_reason: "axelrod = lib Python pure (Knight, Glynatsi et al.) ; aucun binding .NET, pas CLI invocable (usage exclusif via import axl), IKVM ponte Java pas Python (cf Tweety)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

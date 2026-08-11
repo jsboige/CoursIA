@@ -3,8 +3,6 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: INTRINSIC
-  bridge_verdict_reason: "pas de binding .NET officiel OpenSpiel ; alternatives .NET (QuikGraph/Accord/Flee/ML.NET) ne couvrent pas la logique de jeu ; le jumeau Python deploie lui-meme un repli INTRINSIC en contexte natif (cellule 16 try/except ImportError pyspiel). PR #10390."
   audits:
     - date: "2026-08-01"
       by: myia-po-2024:CoursIA-2
