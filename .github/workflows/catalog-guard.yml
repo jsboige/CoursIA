@@ -18,8 +18,21 @@ name: Catalog Guard
 #   Manual de-poisoning does not scale (8+ branches across 2 cron cycles).
 #
 # Exceptions:
-#   - github-actions[bot] (catalog-cron.yml, catalog-drift.yml auto-commits)
+#   - The long-lived automation branches `chore/catalog-refresh-pending`
+#     and `chore/translation-sync-pending` — these carry the catalog
+#     regeneration that catalog-cron.yml and translation-sync.yml push.
+#     Author-based exemption was tried first, but the GH006 cap on
+#     github-actions[bot] creating PRs (#10136) forces a human author
+#     to open the long-lived PR — see #10421 acceptance note.
+#   - github-actions[bot] (legacy belt-and-braces; catalog-drift.yml
+#     was made read-only by #2744 so no current workflow exercises
+#     this path, but the bypass costs nothing and matches the prior
+#     contract).
 #   - Manual workflow_dispatch (for emergency maintainer override)
+#
+# Head ref is passed via `env` ($PR_HEAD_REF), never interpolated inline
+# into the `run:` — the push author controls the ref, and `${{ }}` in a
+# bash `run:` is script-injection territory.
 
 on:
   pull_request:
@@ -45,10 +58,32 @@ jobs:
         env:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set -euo pipefail
 
-          # Allow the scheduled bot to bypass this check entirely.
+          # Automation-owned branches carry the catalog regeneration that
+          # the cron/translation workflow pushes. Exempting them by branch
+          # (rather than by author) is necessary because the GH006 cap on
+          # the bot (#10136) forces a human author to open the long-lived
+          # PR — see #10421 acceptance note. The head ref is passed via
+          # env, never interpolated into the script: the push author
+          # controls the ref, and `${{ }}` inside a `run:` is script-
+          # injection territory (`$PR_HEAD_REF` via env is safe — no
+          # second parse pass).
+          case "$PR_HEAD_REF" in
+            chore/catalog-refresh-pending|chore/translation-sync-pending)
+              echo "::notice title=Catalog guard::Head branch $PR_HEAD_REF is automation-owned — guard bypassed."
+              echo "bypass=true" >> "$GITHUB_OUTPUT"
+              exit 0 ;;
+          esac
+
+          # Belt-and-braces: if a catalog regeneration is ever pushed
+          # directly by github-actions[bot] (e.g., a future workflow that
+          # writes from the bot account rather than via the long-lived
+          # branch), allow it through. Currently no workflow does this
+          # — catalog-drift.yml was made read-only by #2744 — but the
+          # bypass costs nothing and matches the prior contract.
           if [ "$PR_AUTHOR" = "github-actions[bot]" ]; then
             echo "::notice title=Catalog guard::Author is github-actions[bot] (automation) — guard bypassed."
             echo "bypass=true" >> "$GITHUB_OUTPUT"
