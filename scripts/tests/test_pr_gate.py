@@ -617,3 +617,123 @@ def test_inflight_required_check_settles_to_pass_on_reroll():
     assert not pending2 and not bad2 and ok2 == [name]
     code2, _msg2 = pr_gate.verdict(pending2, bad2, settled=True)
     assert code2 == 0
+
+
+# --- workflow_run re-aggregation: post the verdict onto the PR head (#10433) -
+#
+# item-1 of #10433: the workflow_run trigger re-runs the verdict but its auto
+# check-run lands on the default-branch commit (GITHUB_SHA), invisible to the
+# PR head's mergeState. The fix is to POST a fresh check-run onto the PR head
+# SHA. These tests pin (a) the payload shape, (b) that --post-check-run fires
+# on every verdict path, and (c) that a POST failure never flips the exit code.
+
+
+def test_post_check_run_payload_on_pass():
+    """A success verdict POSTs conclusion=success onto the head SHA."""
+    captured = {}
+
+    def fake_poster(path, fields):
+        captured["path"] = path
+        captured["fields"] = fields
+        return {"id": 42}
+
+    out = pr_gate.post_check_run(
+        "o/r", "abc1234", "PR gate", 0, "PASS -- 3 checks green", poster=fake_poster
+    )
+    assert out == {"id": 42}
+    assert captured["path"] == "repos/o/r/check-runs"
+    f = captured["fields"]
+    assert f["name"] == "PR gate"
+    assert f["head_sha"] == "abc1234"
+    assert f["status"] == "completed"
+    assert f["conclusion"] == "success"
+    assert f["output[title]"].startswith("PR gate: PASS")
+    assert f["output[summary]"] == "PASS -- 3 checks green"
+
+
+def test_post_check_run_payload_on_fail():
+    """A failure verdict POSTs conclusion=failure, not silently success."""
+    captured = {}
+
+    def fake_poster(_path, fields):
+        captured["fields"] = fields
+        return {}
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 1, "FAIL -- Lean CI", poster=fake_poster)
+    assert captured["fields"]["conclusion"] == "failure"
+
+
+def test_main_posts_on_pass_when_flag_set(monkeypatch):
+    """--post-check-run POSTs the success verdict onto the head SHA."""
+    monkeypatch.setattr(
+        pr_gate,
+        "wait_and_decide",
+        lambda *_a, **_kw: (0, "PASS -- no failing checks"),
+    )
+    posted = {}
+    monkeypatch.setattr(pr_gate, "_gh_api_post", lambda path, fields: posted.update({"path": path, "fields": fields}) or {})
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
+    )
+    assert code == 0
+    assert posted["fields"]["head_sha"] == "deadbeef"
+    assert posted["fields"]["conclusion"] == "success"
+
+
+def test_main_posts_on_fail_when_flag_set(monkeypatch):
+    """--post-check-run POSTs the failure verdict too (not a silent skip)."""
+    monkeypatch.setattr(
+        pr_gate,
+        "wait_and_decide",
+        lambda *_a, **_kw: (1, "FAIL -- failing checks: Lean CI"),
+    )
+    posted = {}
+    monkeypatch.setattr(pr_gate, "_gh_api_post", lambda path, fields: posted.update({"conclusion": fields["conclusion"]}) or {})
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
+    )
+    assert code == 1
+    assert posted["conclusion"] == "failure"
+
+
+def test_main_posts_success_on_fork_with_flag(monkeypatch):
+    """Fork + --post-check-run surfaces success on the head SHA (#10072).
+
+    The workflow_run job runs on the default branch and cannot read the fork
+    flag from the pull_request payload; it still POSTs, and the fork path must
+    POST success (matching the --is-fork short-circuit), not a stale FAIL.
+    """
+    monkeypatch.setattr(
+        pr_gate,
+        "wait_and_decide",
+        lambda *_a, **_kw: (_ for _ in ()).throw(AssertionError("fork must not poll")),
+    )
+    posted = {}
+    monkeypatch.setattr(pr_gate, "_gh_api_post", lambda path, fields: posted.update({"conclusion": fields["conclusion"]}) or {})
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--is-fork", "--post-check-run"]
+    )
+    assert code == 0
+    assert posted["conclusion"] == "success"
+
+
+def test_post_failure_is_non_fatal(monkeypatch, capsys):
+    """A failed POST leaves the stale check (status quo), never flips the code."""
+    monkeypatch.setattr(
+        pr_gate,
+        "wait_and_decide",
+        lambda *_a, **_kw: (0, "PASS -- no failing checks"),
+    )
+
+    def failing_poster(_path, _fields):
+        raise pr_gate.GateError("403 forbidden")
+
+    monkeypatch.setattr(pr_gate, "_gh_api_post", failing_poster)
+    code = pr_gate.main(
+        ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
+    )
+    # The verdict is still PASS (exit 0); only the POST failed.
+    assert code == 0
+    err = capsys.readouterr().err
+    assert "check-run POST failed" in err
+    assert "stale check stays" in err
