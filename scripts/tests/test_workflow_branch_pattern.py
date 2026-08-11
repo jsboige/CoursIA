@@ -71,6 +71,31 @@ def _extract_github_script_blocks(yaml_text: str) -> list[str]:
     return blocks
 
 
+# Any `git push ... origin ...`, options tolerated between the two words.
+#
+# Pinning the bare literal `git push origin` made this suite blind to a *more*
+# correct implementation: #10416 changed the push to
+# `git push --force-with-lease origin "HEAD:$BRANCH"` (mono-writer bot branch,
+# hard-fail on rejection) and the option slipped between `push` and `origin`,
+# so both pins below stopped finding any push block at all -- four red tests
+# for a change that satisfied what they assert. The forbidden-form pin at (1)
+# was already written option-tolerantly ("with any separator and any options");
+# this restores the same tolerance on the positive side. See #10416 (the change
+# that exposed the asymmetry) and #10145 (which introduced these pins).
+_PUSH_TO_ORIGIN = re.compile(r"git\s+push\b[^\n]*\borigin\b")
+
+
+def _find_push_block(blocks: list[str], *, exclude_main: bool = False) -> str | None:
+    """First run-block pushing to origin; optionally skip ones targeting main."""
+    for block in blocks:
+        if not _PUSH_TO_ORIGIN.search(block):
+            continue
+        if exclude_main and "HEAD:main" in block:
+            continue
+        return block
+    return None
+
+
 @pytest.fixture(scope="module")
 def catalog_cron_text() -> str:
     return _yaml_text(CATALOG_CRON)
@@ -132,11 +157,7 @@ def test_pushes_to_long_lived_branch(
     """
     text = _yaml_text(workflow_path)
     push_blocks = _extract_run_blocks(text)
-    push_block = None
-    for block in push_blocks:
-        if "git push origin" in block and "HEAD:main" not in block:
-            push_block = block
-            break
+    push_block = _find_push_block(push_blocks, exclude_main=True)
     assert push_block is not None, (
         f"{workflow_label}: no positive push block found (one that does not "
         f"target main)."
@@ -221,13 +242,9 @@ def test_push_hard_fails_on_rejection(
     """
     text = _yaml_text(workflow_path)
     blocks = _extract_run_blocks(text)
-    push_block = None
-    for block in blocks:
-        if "git push origin" in block:
-            push_block = block
-            break
+    push_block = _find_push_block(blocks)
     assert push_block is not None, (
-        f"{workflow_label}: no `git push origin` step found."
+        f"{workflow_label}: no `git push ... origin` step found."
     )
     # The push block must check the exit code (via `if !` or explicit $? test)
     # and exit 1 with an ::error annotation.
@@ -282,4 +299,62 @@ def test_skip_ci_in_commit_message(
     assert "[skip ci]" in text, (
         f"{workflow_label}: bot commit message must contain `[skip ci]` to "
         f"prevent the workflow from re-firing on its own push."
+    )
+
+
+# ---------------------------------------------------------------------------
+# (7) The `Prepare` step does NOT rebase on origin/main.
+#     Issue #10373 (12 failed runs 2026-08-10): rebasing the previous bot
+#     commit on a fresh main produces structural add/add conflicts as soon as
+#     any human PR lands a derived file (rendered notebook or CSV). The fix
+#     is an unconditional reset (`git checkout -B <branch> origin/main`) -- the
+#     bot commit holds no curated state worth preserving because T1->T4
+#     regenerate the full derived set, and the cron workflows regenerate the
+#     catalog from origin/main directly. This test pins that invariant.
+# ---------------------------------------------------------------------------
+
+PREPARE_STEP_RE = re.compile(
+    # `- name: Prepare ...` step, capture the run block following it
+    r"(?P<header>- name: Prepare [^\n]*\n\s+run:\s*\|\s*\n)"
+    r"(?P<body>(?:\s+.*\n?)+)"
+)
+
+
+def _prepare_run_block(yaml_text: str) -> str:
+    """Return the run block of the `Prepare chore/...-pending branch` step."""
+    match = PREPARE_STEP_RE.search(yaml_text)
+    assert match is not None, "no `Prepare ...-pending branch` step found"
+    return match.group("body")
+
+
+@pytest.mark.parametrize(
+    "workflow_path,workflow_label",
+    [(CATALOG_CRON, "catalog-cron.yml"), (TRANSLATION_SYNC, "translation-sync.yml")],
+)
+def test_prepare_step_does_not_rebase(
+    workflow_path: Path, workflow_label: str
+) -> None:
+    """The `Prepare` step must reset onto origin/main, never rebase.
+
+    Rebasing the previous bot commit onto a fresh main causes structural
+    add/add conflicts (issue #10373, 12 runs failed 2026-08-10). The bot
+    commit holds no curated state worth preserving -- the catalog workflows
+    regenerate from origin/main directly, and the translation workflow
+    regenerates derived files via T1->T4 on every run.
+    """
+    text = _yaml_text(workflow_path)
+    prepare_block = _prepare_run_block(text)
+    # Forbidden: `git rebase origin/main` -- the previous failure mode.
+    assert "git rebase origin/main" not in prepare_block, (
+        f"{workflow_label}: `Prepare` step uses `git rebase origin/main`. "
+        f"Issue #10373 shows this fails structurally as soon as any human PR "
+        f"touches a derived file. Use `git checkout -B <branch> origin/main` "
+        f"instead (unconditional reset). Found:\n{prepare_block}"
+    )
+    # Required: an unconditional reset to origin/main. Accept `checkout -B`
+    # (in-place branch reset) as the canonical form.
+    assert "git checkout -B" in prepare_block and "origin/main" in prepare_block, (
+        f"{workflow_label}: `Prepare` step must unconditionally reset the "
+        f"branch onto origin/main via `git checkout -B <branch> origin/main`. "
+        f"Found:\n{prepare_block}"
     )

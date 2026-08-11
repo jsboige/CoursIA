@@ -28,10 +28,9 @@ Exit codes:
 ## Design rules that matter
 
 1. **The blocking decision is a one-line guard**: `present AND lane`. Nothing
-   else. The advisory job has the full nuance (GENRE offlist, short-header
-   trio, malformed TIER) -- this one only blocks the two cases that make the
-   grain STRUCTURALLY UNACCOUNTABLE (#9485 -- "incomptable" = a cap that cannot
-   be computed).
+   else. The advisory job has the full nuance (GENRE offlist, malformed TIER)
+   -- this one only blocks the two cases that make the grain STRUCTURALLY
+   UNACCOUNTABLE (#9485 -- "incomptable" = a cap that cannot be computed).
 2. **The check is run by the existing `scripts/grain_tag.py` extractor** (the
    single source of truth, #9485). A separate regex is a divergence waiting
    to happen; if the toleration surface moves (e.g. a new form survives),
@@ -68,11 +67,11 @@ at review time.
   decides whether the tag is REQUIRED to be present. The advisory job
   stays advisory even if this one is removed.
 - Workflow YAML stays thin: the bash block calls one Python script. The
-  same shape as the existing `check-short-header` job.
+  same shape as the remaining always-on jobs.
 - Testability: a CLI with a stdout JSON contract is trivial to assert on.
   Workflow-only logic (paths-filter check, fork exclusion) is YAML and
-  relies on the same harness-hygiene review that landed the existing
-  three jobs.
+  relies on the same harness-hygiene review that landed the remaining
+  always-on jobs.
 
 ## Run locally
 

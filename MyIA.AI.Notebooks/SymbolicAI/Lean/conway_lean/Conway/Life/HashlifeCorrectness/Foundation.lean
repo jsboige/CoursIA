@@ -1191,6 +1191,17 @@ safe). EPIC #3846 (N2 step 3, research-Long dedicated session). -/
     the jump reach `2·2^k` (Chebyshev radius `2^k` doubled) by a
     factor of 2.
 
+    **Marge jusqu'au bord de la cellule rembourrée, pas jusqu'à la
+    fenêtre de résultat ; ne borne pas la capture.** Ce lemme mesure la
+    distance du contenu au bord de la cellule paddée (`3·2^(k-1)`) ;
+    il ne dit rien sur la distance à la fenêtre centrale que P4
+    clippe (`2^(k-1)` par côté, voir `marginToResultWindow` dans
+    `JumpCapture.lean`). Le surplus 1.5× est **définitionnel** — la
+    fenêtre est insérée d'une portée entière à l'intérieur de la
+    cellule — et ne porte aucune information sur la capture
+    (`margin_liaison`, `no_padding_depth_suffices` dans
+    `JumpCapture.lean`, finding #6724 du 2026-08-10).
+
     Proof: distribute `3 = 1 + 2`, reduce goal to
     `2^k ≤ 2^(k-1) + 2·2^(k-1)`, then rewrite
     `2·2^(k-1) = 2^((k-1)+1) = 2^k` via `pow_succ'` and the

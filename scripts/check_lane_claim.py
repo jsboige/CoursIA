@@ -105,15 +105,39 @@ _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
 # coordinator merging against a held claim (the gap that let #10169 / #10161 be
 # merged without a written adjudication). Additive: the existing markers keep
 # their semantics, so no prior test changes.
+#
+# `paths:` clause (#10342 for [OVERRIDE], extended to [CLAIMED]/[RELEASED] by
+# #10419): an optional path scope after the lane token. When present on an
+# [OVERRIDE], the "close all others" effect is BOUND to the listed paths
+# (fnmatch, comma-separated). When present on a [CLAIMED], the claim is SCOPED
+# to those paths -- two lanes whose scoped claims do NOT intersect are free to
+# work the same issue in parallel (the nominal pattern for multi-instance
+# audits like #10382, one lane per notebook). Other lanes remain FREE on paths
+# outside the scope. Syntax: `[CLAIMED] lane <machine:workspace> -- paths: g1, g2`.
+# Without the clause, the marker is EPIC-WIDE (legacy semantics, preserved):
+# an unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
+# every other lane -- exactly as before #10342/#10419.
 _OVERRIDE = {"OVERRIDE"}
+# The token is OPTIONAL; the lane stays REQUIRED (an override without a named
+# beneficiary is unattributed, per existing semantics). Capture groups:
+# 1 = comma-separated path list (already stripped of surrounding spaces).
+# Recognised on [CLAIMED], [RELEASED] (attached; the reducer treats release as
+# a full lane-close, so the scope is informational there), and [OVERRIDE].
+_PATHS_CLAUSE_RE = re.compile(
+    r"(?im)^[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+)
 
 
 class ClaimEvent(dict):
     """Typed-ish view over a parsed claim event.
 
     Keys: lane (str|None), action ("open"|"close"|"override"), marker (str upper),
-    created_at (str ISO, server UTC), author (str|None), url (str|None).
-    `created_at` comes from the comment's server field, never from the body.
+    created_at (str ISO, server UTC), author (str|None), url (str|None),
+    intent (str|None). `created_at` comes from the comment's server field, never
+    from the body. `intent` is the marker line without the bracket prefix --
+    the human-readable scope announcement that turns a BLOCKED verdict
+    (otherwise opaque) into an actionable list of disjoint intentions (#10395
+    Variante 2).
     """
 
     @property
@@ -127,6 +151,21 @@ class ClaimEvent(dict):
     @property
     def is_override(self) -> bool:
         return self.get("action") == "override"
+
+    @property
+    def intent(self) -> str | None:
+        """Marker-line body excerpt (#10395 Variante 2).
+
+        The portion of the comment AFTER the bracketed marker, with leading
+        punctuation / spaces stripped, capped at ~120 characters. The point
+        is to give a BLOCKED message enough context to discriminate "two
+        lanes working on disjoint notebooks of the same EPIC" (legitimate
+        collision detection) from "two lanes working on the same file"
+        (real collision). The marker is stripped so the excerpt reads
+        naturally -- `lanes myia-po-2025:CoursIA-2 — taxonomy coverage
+        analysis notebook` is the intent that justifies the claim.
+        """
+        return self.get("intent")
 
     @property
     def created_at(self) -> str | None:
@@ -144,6 +183,19 @@ class ClaimEvent(dict):
     def url(self) -> str | None:
         return self.get("url")
 
+    @property
+    def paths(self) -> list[str] | None:
+        """Optional path scope (#10342 OVERRIDE, #10419 CLAIMED/RELEASED).
+
+        None when the marker is epic-wide (no `paths:` clause). A non-None value
+        on an [OVERRIDE] binds its "close all others" effect to the listed globs;
+        on a [CLAIMED] it SCOPES the claim, so two lanes whose paths do NOT
+        intersect (fnmatch, `_path_matches`) are free to work the same issue in
+        parallel. The reducer preserves the full `paths` payload; the check
+        filters `others` by scope intersection (`_filter_by_claim_scope`).
+        """
+        return self.get("paths")
+
 
 def parse_claim_event(comment: dict) -> ClaimEvent | None:
     """Classify one issue comment into a claim event, or None if not a marker.
@@ -152,6 +204,25 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     The lane is read by `extract_lane`; None when the body carries no lane token
     (surfaced as "unattributed", never guessed). The timestamp is the comment's
     server `createdAt` -- the Defaut-2 fix: body stamps are not trusted.
+
+    `#10342`/`#10419 scope`: when the marker line carries a `paths: <comma-list>`
+    clause, the parsed list is attached to the event as `paths`. Originally
+    [OVERRIDE]-only (#10342); #10419 extended recognition to [CLAIMED] and
+    [RELEASED]. For [CLAIMED] the scope makes two lanes with DISJOINT paths free
+    to work the same issue in parallel (multi-instance audits, one lane per
+    notebook). For [RELEASED] the clause is attached for symmetry but the
+    reducer treats release as a full lane-close (partial release is a non-goal).
+
+    `#10395 Variante 1`: the marker LINE (the line carrying the last bracketed
+    marker, not the whole body) is also passed to `extract_lane` as the
+    fallback search scope. Comment forms that omit the literal `lane` keyword
+    -- e.g. `[CLAIMED] #9764 - myia-po-2025:CoursIA 2026-08-07T00:52Z` --
+    are recognised by their marker-line token instead of being mis-attributed.
+
+    `#10395 Variante 2`: the marker-line body excerpt (with the `[MARKER]`
+    stripped) is attached as `intent` -- gives a BLOCKED verdict enough
+    context to discriminate "two lanes on disjoint notebooks of the same EPIC"
+    (legitimate) from "two lanes on the same file" (real collision).
     """
     body = comment.get("body") or ""
     marks = _MARKER_RE.findall(body)
@@ -165,14 +236,100 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     else:
         action = "close"
     author = (comment.get("author") or {}).get("login")
+    marker_line = _last_marker_line(body, marker)
+    # `paths:` clause (#10342 OVERRIDE, #10419 CLAIMED/RELEASED): parsed from the
+    # marker line so a stray `paths:` in body prose cannot arm a false scope.
+    paths = _extract_paths_clause(marker_line) if marker_line else None
+    intent = _extract_marker_intent(body) if marker_line else None
     return ClaimEvent(
-        lane=extract_lane(body),
+        lane=extract_lane(body, marker_line=marker_line),
         action=action,
         marker=marker,
         created_at=comment.get("createdAt"),
         author=author,
         url=comment.get("url"),
+        paths=paths,
+        intent=intent,
     )
+
+
+def _last_marker_line(body: str, marker_upper: str) -> str | None:
+    r"""Return the line (verbatim, including the marker) that carries the LAST
+    ``[MARKER]`` in `body`, restricted to the canonical marker set
+    (CLAIMED/RELEASED/CANCELLED/ABANDONED/DONE/OVERRIDE). Returns None if the
+    last bracketed marker does not match the canonical set.
+
+    Used by `parse_claim_event` to scope the `#10395 Variante 1` fallback
+    search: the marker line is the human-stated intent of the claim, and
+    restricting the fallback to that line keeps URLs / time stamps / code
+    tokens that contain colons from being mistaken for lane IDs.
+    """
+    last_line: str | None = None
+    for m in _MARKER_RE.finditer(body):
+        # Group 1 carries the marker text (case-insensitive matched by the
+        # compiled regex; uppercase it for the comparison).
+        if m.group(1).upper() == marker_upper:
+            last_line = m.group(0)
+            # Walk forward to the end of the line so the fallback sees any
+            # trailing content (e.g. `[CLAIMED] #9764 - myia-po-2025:CoursIA`).
+            tail = body[m.end():]
+            nl = tail.find("\n")
+            last_line = (m.group(0) + (tail if nl == -1 else tail[:nl])).rstrip("\r")
+    return last_line
+
+
+def _extract_marker_intent(body: str) -> str | None:
+    r"""Extract the human-readable INTENT of a claim comment (#10395 Variante 2).
+
+    The intent is the marker line with the bracketed marker stripped, leading
+    punctuation / whitespace trimmed, and capped at 120 chars. Examples:
+
+      `[CLAIMED] lane myia-po-2025:CoursIA-2 — taxonomy coverage analysis notebook`
+        -> `lane myia-po-2025:CoursIA-2 — taxonomy coverage analysis notebook`
+
+    The point is to make a BLOCKED verdict actionable: instead of saying
+    "another lane holds an active claim on #10355", the tool can show the
+    claim's scope ("taxonomy coverage analysis notebook") so a coordinator
+    reads "three disjoint notebooks on the same EPIC" instead of "three
+    blocking claims". Returns None when the body carries no bracketed marker.
+    """
+    last_marker: tuple[str, int, int] | None = None
+    for m in _MARKER_RE.finditer(body or ""):
+        last_marker = (m.group(1).upper(), m.end(), m.end())
+    if last_marker is None:
+        return None
+    _, after_marker, _ = last_marker
+    # Walk forward to the end of the same line.
+    tail = body[after_marker:]
+    nl = tail.find("\n")
+    text = tail if nl == -1 else tail[:nl]
+    text = text.strip().lstrip(":—-•| ").strip()
+    if not text:
+        return None
+    if len(text) > 120:
+        text = text[:120].rstrip() + "…"
+    return text
+
+
+def _extract_paths_clause(text: str | None) -> list[str] | None:
+    """Parse the optional `paths: <comma-list>` clause from a marker line.
+
+    Recognised on [CLAIMED], [RELEASED], and [OVERRIDE] marker lines (#10342
+    introduced the clause for [OVERRIDE]; #10419 extended it to [CLAIMED] and
+    [RELEASED] so disjoint scoped claims no longer false-block each other on a
+    multi-instance issue). Returns the trimmed path list, or None when the
+    clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
+    unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
+    every other lane). Empty fragments from stray commas are dropped (a worker
+    pasting `paths: a, , b` gets `["a", "b"]`, not `["a", "", "b"]`).
+    """
+    m = _PATHS_CLAUSE_RE.search(text or "")
+    if not m:
+        return None
+    raw = m.group(1)
+    parts = [p.strip() for p in raw.split(",")]
+    parts = [p for p in parts if p]
+    return parts or None
 
 
 def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEvent]]:
@@ -369,11 +526,37 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
-               now: datetime | None = None) -> int:
+               now: datetime | None = None,
+               my_paths: list[str] | None = None) -> int:
+    """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
+
+    Args:
+        payload: `gh issue view --json ...` payload (or `from-json`).
+        my_lane: caller lane `machine:workspace`.
+        stale_threshold: optional hours; claims older than this DO NOT block
+            (but a warning is printed, #9812). None = legacy epic-wide block.
+        now: injected `datetime` for stale calc (testability).
+        my_paths: optional list of files the caller intends to edit (#10342).
+            Merged with the caller's OWN active-claim `paths:` clause (#10419)
+            to form `my_scope`. An `[OVERRIDE]` or `[CLAIMED]` whose `paths:`
+            clause does NOT intersect `my_scope` is treated as if it does not
+            exist for the blocker test -- the claim only locks the paths it
+            names. Without any declared scope (no `my_paths` AND no `paths:` on
+            the caller's own claim), behaviour is unchanged: every other active
+            claim blocks, regardless of its scope clause (we cannot prove
+            disjointness, so we conservatively over-block).
+    """
     events = _sort_events(payload)
     active, unattributed = compute_active_claims(events)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
+
+    # Override-scope filter (#10342): an `[OVERRIDE]` with a `paths:` clause
+    # only locks lanes whose intended files intersect the scope. Without
+    # `my_paths`, we conservatively treat every scoped override as blocking
+    # (the caller's intent is unknown -- better to over-block than silently
+    # merge a write that should have pinged a held lane).
+    others = _filter_by_claim_scope(others, my_paths, mine)
 
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
     # (age from the server createdAt, NEVER the body) is treated as STALE -- it
@@ -402,6 +585,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "by": ev.author,
                 "marker": ev.marker,
                 "url": ev.url,
+                "paths": ev.get("paths"),
             }
             for ln, ev in sorted(active.items())
         },
@@ -425,10 +609,25 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         who = ", ".join(
             f"{ln} (@{_fmt_active(ev)})" for ln, ev in sorted(others.items())
         )
+        # #10395 Variante 2: display the intentions side-by-side when the
+        # comments carry them. A bare `BLOCKED` is not actionable on a
+        # multi-lane EPIC where two lanes might be working on disjoint
+        # notebooks -- surfacing the marker-line excerpts lets a coordinator
+        # (or the worker themselves) read disjoint intent at a glance and
+        # either narrow the claim's scope, post a `[RELEASED]`, or escalate.
+        intent_lines: list[str] = []
+        for ln, ev in sorted(others.items()):
+            tag = f"  - {ln}: "
+            excerpt = (ev.get("intent") if hasattr(ev, "get") else None) or "(no intent)"
+            intent_lines.append(f"{tag}{excerpt}")
+        intent_block = "\n".join(intent_lines)
         print(
             f"\nBLOCKED: another lane holds an active claim on "
             f"#{payload.get('number')}: {who}.\n"
-            f"Do not start -- pick another grain, or wait for release.",
+            f"Claimed scopes (marker-line excerpts -- #10395 Variante 2):\n"
+            f"{intent_block}\n"
+            f"Do not start -- pick another grain, post a scope-narrowing "
+            f"`[CLAIMED] paths: ...`, or wait for release.",
             file=sys.stderr,
         )
         return 1
@@ -440,6 +639,55 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     note = f" ({'; '.join(parts)})" if parts else ""
     print(f"\nCLEAR: no other lane claims #{payload.get('number')}{note}.")
     return 0
+
+
+def _filter_by_claim_scope(
+    others: dict[str, ClaimEvent],
+    my_paths: list[str] | None,
+    mine: ClaimEvent | None,
+) -> dict[str, ClaimEvent]:
+    """Drop `others` lanes whose scoped claim does NOT intersect my scope.
+
+    `my_scope` (#10419) = the caller's `--paths` intent MERGED with the
+    `paths:` clause of the caller's OWN active claim (`mine`). When `my_scope`
+    is empty (the caller declared no path intent at all), every other lane is
+    kept -- we cannot prove disjointness, so we conservatively over-block
+    (legacy behaviour, preserved).
+
+    Per other lane:
+      - No `paths:` clause (plain [CLAIMED], or epic-wide [OVERRIDE]) -> STAYS.
+        Its epic-wide semantics predate the scope feature (#10342/#10419).
+      - Has a `paths:` clause that INTERSECTS `my_scope` -> STAYS (real overlap).
+      - Has a `paths:` clause DISJOINT from `my_scope` -> DROPPED (free). This
+        is the #10419 fix: two lanes with disjoint scoped claims on the same
+        multi-instance issue no longer false-block each other.
+
+    The reducer `compute_active_claims` is untouched; this filter only prunes
+    the `others` view. The active_claims summary keeps the full state, so the
+    JSON output remains auditable.
+    """
+    mine_paths = (mine.get("paths") if mine else None) or []
+    my_scope = list(dict.fromkeys((my_paths or []) + mine_paths)) or None
+    if not my_scope:
+        return others  # no declared scope -> cannot prove disjointness
+    filtered: dict[str, ClaimEvent] = {}
+    for ln, ev in others.items():
+        scope = ev.get("paths")
+        if not scope:
+            filtered[ln] = ev  # epic-wide (plain CLAIMED or unscoped OVERRIDE)
+            continue
+        if _path_matches_any(my_scope, scope):
+            filtered[ln] = ev  # scopes intersect -> real collision
+        # else: both scoped, disjoint -> free, drop from others
+    return filtered
+
+
+def _path_matches_any(paths: list[str], patterns: list[str]) -> bool:
+    """Return True if any of `paths` matches any of `patterns` (fnmatch glob)."""
+    for p in paths:
+        if _path_matches(p, patterns):
+            return True
+    return False
 
 
 def _fmt_active(ev: ClaimEvent) -> str:
@@ -632,7 +880,15 @@ def main(argv: list[str] | None = None) -> int:
                         "Exits 0 if no collision, 1 on usage/`gh` failure. "
                         "Lane key is full `machine:workspace` (same-machine "
                         "different-workspace counts as different lane). "
-                        "Complements the issue-claim check, does not replace.")
+                        "Complements the issue-claim check, does not replace. "
+                        "When supplied TOGETHER with an issue number "
+                        "(`check_lane_claim ISSUE --paths PATH ...`), the "
+                        "scope is also applied to `[OVERRIDE]` markers that "
+                        "carry a `paths:` clause (#10342): an override whose "
+                        "scope does not intersect the caller's paths is "
+                        "treated as if it did not exist for the blocker "
+                        "decision. Without `--paths`, override scope is "
+                        "ignored (legacy epic-wide behaviour, preserved).")
     act = p.add_mutually_exclusive_group()
     act.add_argument("--claim", metavar="INTENTION",
                      help="post a [CLAIMED] comment for your lane")
@@ -640,12 +896,13 @@ def main(argv: list[str] | None = None) -> int:
                      metavar="NOTE", help="post a [RELEASED] comment")
     args = p.parse_args(argv)
 
-    # Path mode (#9959) does NOT require an issue number -- it is the missing
-    # leg of L898 dispatched pre-claim to detect cross-lane PR collisions on
-    # the same files. Posting modes (--claim/--release) and the default check
-    # mode still require an issue. We branch on --paths first so callers do
-    # not have to fabricate a placeholder issue.
-    if args.paths is not None:
+    # Path-only mode (#9959) does NOT require an issue number -- it is the
+    # missing leg of L898 dispatched pre-claim to detect cross-lane PR
+    # collisions on the same files. We branch here when `--paths` is supplied
+    # WITHOUT an issue; when both are present we go through the issue-claim
+    # check with `my_paths` (the `--paths` are then used to scope-bind any
+    # `[OVERRIDE]` markers, #10342).
+    if args.paths is not None and args.issue is None:
         return _run_check_paths(args.paths, args.lane)
 
     # Posting modes: short-circuit before any read. Both require an issue.
@@ -673,7 +930,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"posted [RELEASED] lane {args.lane} on #{args.issue}")
         return 0
 
-    # Check mode (default).
+    # Check mode (default). `--paths` (when supplied with an issue) threads
+    # through to `_run_check` as `my_paths` -- it scopes `[OVERRIDE]` blockers
+    # by intersection. Posting modes already returned above, so `args.paths`
+    # here is unambiguously the scope-binding form.
     try:
         if args.from_json:
             payload = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
@@ -682,7 +942,12 @@ def main(argv: list[str] | None = None) -> int:
     except (RuntimeError, json.JSONDecodeError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    return _run_check(payload, args.lane, stale_threshold=args.stale_threshold)
+    return _run_check(
+        payload,
+        args.lane,
+        stale_threshold=args.stale_threshold,
+        my_paths=args.paths,
+    )
 
 
 if __name__ == "__main__":

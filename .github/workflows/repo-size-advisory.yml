@@ -50,7 +50,10 @@ jobs:
               echo "::warning file=${path}::Blob ajoute de ${mb} MiB (> seuil advisory 10 MiB). Policy docs/reference/repo-size-policy.md : LFS candidate ou justification pedagogique requise."
               found=1
             fi
-          done < <(git diff --raw --diff-filter=A "${BASE}" "${HEAD}" 2>/dev/null)
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport
+          # (a 2-point "${BASE}" "${HEAD}" would also flag blobs main gained
+          # since the branch point, which this PR never touched).
+          done < <(git diff --raw --diff-filter=A "${BASE}...${HEAD}" 2>/dev/null)
           if [ "$found" -eq 1 ]; then
             echo "ATTENTION : un ou plusieurs blobs depassent le seuil advisory. Voir policy docs/reference/repo-size-policy.md."
           else

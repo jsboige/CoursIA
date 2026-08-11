@@ -620,6 +620,80 @@ def test_compute_signals_po2025_inflation_and_cap_exceeded():
     assert sig["inferred_genre_from_paths"] is None
 
 
+# --- #10341 : aggregate signals are lane-day, the label target is the candidate -
+#
+# The three aggregate signals (TIER-INFLATION, GENRE-RUN, CAP-EXCEEDED-BY-GENRE)
+# trip on the lane's MERGED set of the day. The label, however, is posed on the
+# OPEN candidate -- which may be CONTENT (genai/lean/qc/notebook-.../) and thus
+# NOT contribute to the pattern. compute_signals must keep the lane-day signals
+# TRUE (the comment surfaces the real pattern to the coordinator) AND expose
+# `candidate_is_light_genre` so the workflow can suppress the aggregate LABEL on
+# an innocent CONTENT candidate (#10341 -- the merge-gate reads the LABEL, not
+# the check state; posing it would HOLD the grain that REMEDIES the motif
+# instead of the META grains that caused it). GENRE-MISMATCH is the one signal
+# whose subject IS the candidate by construction, so it labels regardless.
+
+def test_compute_signals_candidate_is_light_genre_content_vs_meta():
+    # The OPEN candidate's contribution flag (#10341): CONTENT genres do not
+    # contribute to the LIGHT-genre pattern, META LIGHT genres do, and aliases
+    # canonicalise before the membership test. No candidate_genre -> False.
+    lane = _P_2025_C2
+    prs = [_tag_pr(1, "MED", "guard", lane=lane, at="2026-08-08T01:00:00Z")]
+    assert vlc.compute_signals(prs, lane, candidate_genre="genai")["candidate_is_light_genre"] is False
+    assert vlc.compute_signals(prs, lane, candidate_genre="qc")["candidate_is_light_genre"] is False
+    assert vlc.compute_signals(prs, lane, candidate_genre="readme")["candidate_is_light_genre"] is True
+    assert vlc.compute_signals(prs, lane, candidate_genre="docs")["candidate_is_light_genre"] is True
+    # Alias canonicalisation: lean-ci -> guard -> LIGHT-genre (#10020 alias table).
+    assert vlc.compute_signals(prs, lane, candidate_genre="lean-ci")["candidate_is_light_genre"] is True
+    # No candidate_genre at all (untagged open PR, or the lane-only call path):
+    # cannot contribute -> False.
+    assert vlc.compute_signals(prs, lane)["candidate_is_light_genre"] is False
+
+
+def test_aggregate_signals_real_but_candidate_innocent_10341():
+    # #10312 / #10341 founding case: the lane-day trips CAP-EXCEEDED-BY-GENRE,
+    # TIER-INFLATION and GENRE-RUN on META grains (6 guard + 3 docs), but the
+    # OPEN candidate is CONTENT (genai) -- it contributes to none of them.
+    lane = "myia-po-2023:CoursIA-2"
+    prs = [
+        _tag_pr(1, "MED", "guard", lane=lane, at="2026-08-10T01:00:00Z"),
+        _tag_pr(2, "MED", "guard", lane=lane, at="2026-08-10T02:00:00Z"),
+        _tag_pr(3, "MED", "guard", lane=lane, at="2026-08-10T03:00:00Z"),
+        _tag_pr(4, "MED", "guard", lane=lane, at="2026-08-10T04:00:00Z"),
+        _tag_pr(5, "MED", "guard", lane=lane, at="2026-08-10T05:00:00Z"),
+        _tag_pr(6, "MED", "guard", lane=lane, at="2026-08-10T06:00:00Z"),
+        _tag_pr(7, "MED", "docs", lane=lane, at="2026-08-10T07:00:00Z"),
+        _tag_pr(8, "MED", "docs", lane=lane, at="2026-08-10T08:00:00Z"),
+        _tag_pr(9, "MED", "docs", lane=lane, at="2026-08-10T09:00:00Z"),
+        # 10 grains total; light_genre = 9 (guard 6 + docs 3); the 10th is lean
+        # (CONTENT, META-silenced) so the cap arithmetic is explicit.
+        _tag_pr(10, "DEEP", "lean", lane=lane, at="2026-08-10T10:00:00Z"),
+    ]
+    # cap = max(1, 10 // 3) = 3; light_declared = 0 (all MED); light_genre = 9.
+    sig = vlc.compute_signals(prs, lane, candidate_genre="genai")
+    # Lane-day signals are REAL -- the lane truly exceeds, and the diagnostic
+    # comment must surface the pattern to the coordinator.
+    assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is True    # 9 > 3
+    assert sig["signals"]["TIER-INFLATION"] is True           # 9 > 0 + 1
+    assert sig["signals"]["GENRE-RUN"] is True                # 6-guard run >= 2
+    # ...but the OPEN candidate is CONTENT and does not carry the motif.
+    assert sig["candidate_is_light_genre"] is False
+    # The workflow's suppression gate keys off this flag (see the
+    # MAY_LABEL_INNOCENT branch in variation-light-genre.yml, #10341): the
+    # aggregate LABEL is NOT posed on this PR even though the signal is True.
+
+
+def test_candidate_light_genre_true_for_guilty_meta_candidate():
+    # Non-regression: when the OPEN candidate IS itself a LIGHT-genre grain
+    # (e.g. MED/readme), candidate_is_light_genre=True -- the #10341
+    # suppression gate must NOT silence the label on a contributor. The
+    # aggregate signal is both real AND carried by this candidate.
+    lane = _P_2025_C2
+    prs = [_tag_pr(1, "MED", "guard", lane=lane, at="2026-08-10T01:00:00Z")]
+    sig = vlc.compute_signals(prs, lane, candidate_genre="readme")
+    assert sig["candidate_is_light_genre"] is True
+
+
 # --- FALSIFICATION TESTS (issue #10020 §Acceptance, #10016 model) ---------
 #
 # The detector must stay SILENT in non-monoculture cases. Two cases are
@@ -904,3 +978,54 @@ def test_po2025_replay_signals_genre_run_via_cli(tmp_path, capsys):
     # The long_run carries the 5 readme numbers from the issue acceptance.
     assert out["long_runs"][0]["count"] == 5
     assert out["long_runs"][0]["numbers"] == [9960, 9965, 9966, 9969, 9977]
+
+
+# --- troncature du dataset (#10328, 2026-08-10) ----------------------------
+# `gh pr list` pagine a 30 sans le dire. La troncature attaque le DENOMINATEUR
+# du ratio G-VAR-2 : le cap retombe a son plancher de 1 et l'organe accuse de
+# CAP-EXCEEDED la lane la plus productive. Les deux tests ci-dessous encadrent
+# le tell : il tire a exactement 30 (page par defaut) et se tait sinon.
+
+def _grain(n: int, tier: str, genre: str, lane: str) -> dict:
+    return {"number": n, "mergedAt": f"2026-08-10T{n % 24:02d}:00:00Z",
+            "body": f"Grain: {tier}/{genre} - lane {lane} - prev: MED/guard #1\n",
+            "labels": []}
+
+
+def test_load_warns_when_dataset_is_exactly_the_gh_default_page(tmp_path, capsys):
+    lane = "myia-po-2024:CoursIA"
+    data = [_grain(9000 + i, "MED", "notebook-python", lane) for i in range(30)]
+    p = tmp_path / "merged.json"
+    p.write_text(json.dumps(data), encoding="utf-8")
+    assert len(vlc._load(str(p))) == 30
+    err = capsys.readouterr().err
+    assert "TRONQUE" in err and "30" in err
+
+
+def test_load_silent_when_dataset_is_not_a_full_default_page(tmp_path, capsys):
+    lane = "myia-po-2024:CoursIA"
+    for n in (29, 31, 60):
+        p = tmp_path / f"m{n}.json"
+        p.write_text(json.dumps([_grain(9000 + i, "MED", "notebook-python", lane)
+                                 for i in range(n)]), encoding="utf-8")
+        vlc._load(str(p))
+        assert "TRONQUE" not in capsys.readouterr().err, n
+
+
+def test_truncation_flips_cap_verdict_on_the_10328_shape(tmp_path, capsys):
+    # Forme reelle du 2026-08-10 : la lane po-2024:CoursIA a merge 11 grains
+    # dont 2 LIGHT. Cap correct = max(1, 11 // 3) = 3 -> les 2 LIGHT passent.
+    # Vue tronquee ou seuls les 2 LIGHT survivent : cap = max(1, 2 // 3) = 1
+    # -> le 2e LIGHT est declare cap-reached. C'est le faux positif observe.
+    lane = "myia-po-2024:CoursIA"
+    lights = [_grain(10291, "LIGHT", "guard", lane), _grain(10279, "LIGHT", "docs", lane)]
+    full = lights + [_grain(10250 + i, "MED", "notebook-python", lane) for i in range(9)]
+
+    def cap_of(dataset):
+        p = tmp_path / f"d{len(dataset)}.json"
+        p.write_text(json.dumps(dataset), encoding="utf-8")
+        vlc.main(["--replay", str(p), "--genre-signals", "--lane", lane])
+        return json.loads(capsys.readouterr().out.strip().splitlines()[-1])["tally"]
+
+    assert cap_of(full)["cap"] == 3
+    assert cap_of(lights)["cap"] == 1
