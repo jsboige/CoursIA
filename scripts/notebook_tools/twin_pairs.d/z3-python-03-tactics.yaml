@@ -3,11 +3,19 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Z3 EST le moteur SOTA, branche NATIVEMENT des deux cotes : Microsoft.Z3 (NuGet officiel) et pyz3 sont les deux bindings de la meme lib C++ Z3 sous-jacente (pas un pont intermediaire type IKVM/PythonNet). Parite firsthand sur Tactic('simplify') cellule 1 des deux notebooks : meme output SMT-LIB canonique — C# '(not (<= x 0))' == Python 'Not(x <= 0)' et C# '(= y (+ 5 x))' == Python 'y == 1 + x'. Aucune asymetrie de machinerie a corriger."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
       python_sha: 596992096613fb08367a5e41fae56b1b01254572
       csharp_sha: 414f62ee58470a82f189ed74cc5c46a12692648a
+    - date: "2026-08-11"
+      by: myia-po-2026:CoursIA
+      python_sha: 596992096613fb08367a5e41fae56b1b01254572
+      csharp_sha: 414f62ee58470a82f189ed74cc5c46a12692648a
+      content_python_sha: 3f590d25ba1cfb7125b7cc0409c0510c4b5a4d6cbe0a85645068c27977c5d095
+      content_csharp_sha: 06fef20e6776d5520ff1c5e0e0c667d11d719dea44f28632e1ba47768ade2064
   known_differences:
     - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
     - "Concept demontre (simplify elimine une redondance, ctx-solver-simplify la garde) verifie firsthand cote Python (NB-03 CLEAN)."
