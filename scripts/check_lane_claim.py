@@ -354,9 +354,32 @@ def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEve
             unattributed.append(ev)
             continue
         if ev.is_override:
-            # Coordinator adjudication (#10223): grant to this lane, close all
-            # others. Later events (open/close) still apply on top in walk order.
-            state = {ev.lane: ev}
+            # Coordinator adjudication (#10223): grant to this lane. The
+            # optional `paths:` clause (#10342, #10505) BOUNDS the "close
+            # others" effect to the override's scope instead of closing every
+            # other lane unconditionally. An unscoped override keeps the legacy
+            # epic-wide semantics (closes all). A scoped override closes only
+            # claims that INTERSECT it -- where intersection reuses the same
+            # convention as `_filter_by_claim_scope`: a claim with no `paths`
+            # clause is epic-wide (claims everything) so it intersects any
+            # scope and is closed; a scoped claim is closed iff its paths
+            # match the override's (fnmatch via `_path_matches_any`). The
+            # symmetry is deliberate: disjointness must require BOTH sides to
+            # declare a scope, at the reducer just as at the filter.
+            # Later events (open/close) still apply on top in walk order.
+            scope = ev.get("paths")
+            if not scope:
+                state = {ev.lane: ev}
+            else:
+                state = {
+                    ln: e for ln, e in state.items()
+                    if ln == ev.lane
+                    or (
+                        e.get("paths") is not None
+                        and not _path_matches_any(scope, e.get("paths") or [])
+                    )
+                }
+                state[ev.lane] = ev
         elif ev.is_open:
             state[ev.lane] = ev
         else:
