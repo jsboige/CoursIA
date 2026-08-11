@@ -2,7 +2,7 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-4-JobShopScheduling.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-4b-JobShopScheduling-CSharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -14,7 +14,13 @@
       csharp_sha: e16eeb2276ddc4c9edb0d8c4b7505691d88f7e35
       content_python_sha: 913f9921fd3c5220b8980601dd68df89430ead8a089f49c846501af6614dff1e
       content_csharp_sha: 4aacdd3215c8b9661fe4644e1b8ee9a0c11fb53aa4639771aff9ba2704d381bd
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: 7c6fdea713ce9eff4a2fc782ae90c3f5e020304c
+      csharp_sha: 1632b5ea3a9b2bf7abb81950a25f0fea2c0d5310
+      content_python_sha: 913f9921fd3c5220b8980601dd68df89430ead8a089f49c846501af6614dff1e
+      content_csharp_sha: b2d1ad64f287b783e0f0cef85ca0686026dee181ae779a06ec696478e3a38455
   known_differences:
-    - "Socle pedagogique commun : Job-shop scheduling (CSP : ordonnancement machines, makespan minimal) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
-    - "Idiomes framework : Python = OR-Tools CP-SAT + deepcopy/state + search_helpers ; C# = BCL pure (System.*), 0 NuGet."
-    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+    - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque OR-Tools CP-SAT (IntervalVar + AddNoOverlap + Minimize makespan) comme solveur SOTA. C# = deux tranches -- Tranche 1 (sections 3-4) reimplementation from-scratch pedagogique (5 regles de dispatching glouton + branch-and-bound, en BCL pure System.* 0 NuGet) PRESERVEE integralement ; Tranche 2 (PR #10382 cycle 14) ajoute Google.OrTools 9.15 (.NET natif, deja en service dans Sudoku-10/18, App-8, App-15b, App-1, App-3) avec le MEME modele canonique CP-SAT que le Python (IntervalVar par operation, precedence end<=start entre operations d'un job, AddNoOverlap par machine, AddMaxEquality+Minimize makespan) sur la MEME instance ft03 (3 jobs x 3 machines). parite verifiee : status=Optimal, makespan=11 (= Python OPTIMAL 11 ; LB=10, le moteur prouve l'optimum global). parity_level=native-both (Python/ortools ET C#/Google.OrTools atteignent chacun le moteur de production CP-SAT de leur ecosysteme)."
+    - "Asymetrie de couverture : Python (visualisation matplotlib gantt + experimentation a grande echelle avec courbe de convergence CP-SAT + search_helpers) ; C# (25 cellules : heuristiques from-scratch Tranche 1 + pont CP-SAT Tranche 2 + 3 exercices + visualisation ASCII). La visualisation matplotlib et le benchmark a grande echelle restent propres au Python ; la parite porte sur le solveur SOTA (CP-SAT) et le socle theorique (IntervalVar + NoOverlap + makespan)."
+    - "Idiomes framework : Python = OR-Tools CP-SAT (cp_model.CpModel, model.NewIntervalVar, model.AddNoOverlap, model.Minimize) ; C# = Google.OrTools.Sat (CpModel, model.NewIntervalVar, model.AddNoOverlap, model.AddMaxEquality, model.Minimize) + from-scratch System.*. Meme socle theorique (Job-Shop Scheduling, intervalles, precedence, non-chevauchement machine, makespan). Le C# valorise la reimplementation pedagogique (Tranche 1) ET l'invocation du moteur SOTA (Tranche 2) -- les intervalles etant la brique CP-SAT que les N-Reines (App-1) et le Nurse-Rostering (App-3) en booléens n'exercent pas."

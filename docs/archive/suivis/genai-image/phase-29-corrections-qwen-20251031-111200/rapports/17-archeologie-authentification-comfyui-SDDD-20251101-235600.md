@@ -14,7 +14,7 @@
 ### Problème Initial
 L'authentification ComfyUI Qwen échoue systématiquement avec **HTTP 401 Unauthorized** malgré :
 - ✅ Hash bcrypt correct dans le container : `$2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5M2`
-- ✅ Token brut synchronisé : `LEAKED-PENDING-ROTATION 7a052dd4aeb4`
+- ✅ Token brut synchronisé : `ROTATED 2026-08-11 7a052dd4aeb4`
 - ✅ Fichier `.secrets/qwen-api-user.token` correctement monté
 
 ### Découverte Archéologique Majeure
@@ -214,7 +214,7 @@ bash -c "
 #### Token Brut (Client)
 **Fichier** : `.secrets/.env.generated`
 ```env
-QWEN_API_USER_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4
+QWEN_API_USER_TOKEN=ROTATED 2026-08-11 7a052dd4aeb4
 ```
 ✅ **Disponible et correct**
 
@@ -230,7 +230,7 @@ $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5M2
 # Test bcrypt hash vs raw token
 python3 -c "
 import bcrypt
-raw_token = b'LEAKED-PENDING-ROTATION 7a052dd4aeb4'
+raw_token = b'ROTATED 2026-08-11 7a052dd4aeb4'
 stored_hash = b'$2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5M2'
 print(bcrypt.checkpw(raw_token, stored_hash))
 "
@@ -248,7 +248,7 @@ L'erreur **HTTP 401 Unauthorized** se produit car :
 
 1. **Le client Python envoie correctement** :
    ```
-   Authorization: Bearer LEAKED-PENDING-ROTATION 7a052dd4aeb4
+   Authorization: Bearer ROTATED 2026-08-11 7a052dd4aeb4
    ```
 
 2. **Le serveur ComfyUI reçoit la requête** avec le header d'authentification.
@@ -417,7 +417,7 @@ curl -X GET \
 **Test 3 : Avec token correct (doit réussir)** ✅
 ```bash
 curl -X GET \
-  -H "Authorization: Bearer LEAKED-PENDING-ROTATION 7a052dd4aeb4" \
+  -H "Authorization: Bearer ROTATED 2026-08-11 7a052dd4aeb4" \
   http://localhost:8188/system_stats
 # Attendu: HTTP 200 OK + JSON stats
 ```

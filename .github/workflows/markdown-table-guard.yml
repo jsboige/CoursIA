@@ -77,7 +77,8 @@ jobs:
           # Added/modified *.ipynb + *.md + README* in the PR (deletions
           # excluded). Skip vendored / archived trees where we do not enforce
           # this (.lake/ Mathlib, docs/_archives/, node_modules).
-          git diff --name-only --diff-filter=d "$BASE" "$HEAD" \
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" \
             -- '*.ipynb' '*.md' '*README*' \
             | grep -v -E '^(\.lake/|docs/_archives/|node_modules/)' \
             | grep -v $'\r$' > changed.txt || true

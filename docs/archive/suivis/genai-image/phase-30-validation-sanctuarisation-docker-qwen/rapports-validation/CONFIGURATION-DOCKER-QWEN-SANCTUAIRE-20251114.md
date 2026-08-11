@@ -70,7 +70,7 @@ services:
       # Tokens pour téléchargement des modèles
       - CIVITAI_TOKEN=ROTATED 2026-08-10
       - HF_TOKEN=HF_TOKEN_REDACTED
-      - QWEN_API_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4
+      - QWEN_API_TOKEN=ROTATED 2026-08-11 7a052dd4aeb4
       
     working_dir: /workspace/ComfyUI
     
@@ -146,7 +146,7 @@ HF_TOKEN=HF_TOKEN_REDACTED
 # QWEN API CONFIGURATION
 # =============================================================================
 # API Authentication token for Qwen model access
-QWEN_API_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4
+QWEN_API_TOKEN=ROTATED 2026-08-11 7a052dd4aeb4
 
 # =============================================================================
 # GPU CONFIGURATION

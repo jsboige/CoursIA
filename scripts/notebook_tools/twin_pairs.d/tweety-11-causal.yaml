@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
       csharp_sha: d60c424c0e1334c0dbf3f9fa6b9376bad215c330
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
+      csharp_sha: 2e6264b157267b42a40a4ed9ca31ba37308ff9c2
+      content_python_sha: e6065df8dca49799e2752b5b17a4ec6696419c859765963ff6b121bd60891c04
+      content_csharp_sha: 279178432baf6e7607182165acfed96f83446f9b40449806f681fb1d4dc2ac87
   known_differences:
     - "Socle commun : inference causale et do-calculus (Pearl) sur modeles causaux structurels."
     - "Asymetrie de profondeur (surface) : le Python s'appuie sur la vraie bibliotheque Java Tweety `causal-1.30.jar` via JPype (`from org.tweetyproject.causal.reasoner import ArgumentationBasedCausal`) ; le C# est un jumeau **from-scratch** (titre explicite 'twin C# from-scratch', aucune reference a org.tweetyproject) qui reimplemente le do-calcul pedagogiquement. Parite `surface` (C# = pendant reimplante, pas de librairie)."

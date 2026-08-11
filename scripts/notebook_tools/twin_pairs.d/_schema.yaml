@@ -40,6 +40,27 @@
 #   semantic    = meme contenu mathematique/conceptuel, API idiomatique differente
 #   native-both = traduction fidele cellule-par-cellule (rare)
 #
+# bridge_verdict (OPTIONNEL, #10439) : orthogonal a parity_level. Decrit si un
+# moteur SOTA est branchable/branche du cote .NET, pour qu'un verdict INTRINSIC
+# deja rendu en prose (dans known_differences) cesse d'etre invisible aux
+# detecteurs et de re-signaler la paire comme "ecart de parite" a chaque scan.
+# Enumeration = les 5 verdicts de .claude/rules/sota-not-workaround.md :
+#   SOTA-OK              = le vrai outil SOTA est proprement branche (ou la paire
+#                          est solver-free by design des deux cotes, aucune
+#                          asymetrie de machinerie a corriger)
+#   RECOVERABLE-LOCAL    = outil installable/invoquable sur la machine du worker
+#   RECOVERABLE-MACHINE  = reachle sur une machine specifique (GenAI/GPU/Lean/...)
+#   RECOVERABLE-USER-HAND = action user one-time requise (token, OAuth, hardware)
+#   INTRINSIC            = aucun chemin SOTA reel (lib non-bridgeable, limite prouvee)
+# Quand bridge_verdict: INTRINSIC, bridge_verdict_reason: est OBLIGATOIRE (le
+# verdict sans le raisonnement ne vaut rien ; la prose detaillee reste dans
+# known_differences, le reason est un resume court). La plupart des paires ne
+# portent PAS bridge_verdict (non-rompu = actionnable, candidat a un pont).
+# `check_twin_parity.py --summary-by-verdict` compte les paires par verdict et
+# soustrait INTRINSIC + SOTA-OK du denominateur "actionnable" sans intervention
+# manuelle. Validation fail-loud : une valeur hors enum fait sortir le check en
+# code 2 (jamais ignoree silencieusement).
+#
 # PILOTE (po-2024, 2026-07-23) : famille SMT/Z3-API (6 paires, NB-01..06).
 # Familles suivantes peuplees dans des PRs ulterieurs : Search/Part1-Part2 (c.802/#8079, 7 paires)
 # + ML.NET/Python (c.803, 8 paires ; ML-6 ONNX exclu = format d'echange, SKIP per #4956 CLOSED)

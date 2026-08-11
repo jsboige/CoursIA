@@ -36,7 +36,7 @@ L'ancienne rédaction interdisait `--force` **partout**, urgence-user comprise. 
 
 | Cible | Règle | Ce qui la porte |
 |---|---|---|
-| **`main`** | **INTERDIT**, sans exception d'urgence | `allow_force_pushes: false` dans la protection de branche — GitHub **refuse** le push. Ce n'est pas qu'une consigne (vérifiable : `gh api repos/jsboige/CoursIA/branches/main/protection -q .allow_force_pushes`) |
+| **`main`** | **INTERDIT**, sans exception d'urgence | `allow_force_pushes: false` dans la protection de branche — GitHub **refuse** le push. Ce n'est pas qu'une consigne, c'est le serveur qui tranche (voir la note de vérifiabilité ci-dessous) |
 | **Branche de PR (`feature/*`, `fix/*`, `docs/*`) à lane unique** | **AUTORISÉ**, `--force-with-lease` préféré | aucune protection côté plateforme : c'est la discipline de lane qui répond |
 | **Branche manipulée par plusieurs agents de front** | **INTERDIT** | un `[CLAIMED]` d'une autre lane sur l'issue vaut « plusieurs agents » → [lane-claim-protocol.md](lane-claim-protocol.md) |
 
@@ -44,6 +44,8 @@ L'ancienne rédaction interdisait `--force` **partout**, urgence-user comprise. 
 - **`--force-with-lease` plutôt que `--force`** : il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
 - **Jamais de `reset --hard`** sur `main` ni sur une branche partagée.
 - **Un secret déjà commité ne se répare PAS par réécriture d'historique** : branche propre + cherry-pick, et **rotation de la clé** (cf [secrets-hygiene.md](secrets-hygiene.md) règle 5).
+
+**Note de vérifiabilité — `allow_force_pushes` n'est PAS lisible sans droit admin.** Une version antérieure de la ligne `main` ci-dessus donnait `gh api repos/jsboige/CoursIA/branches/main/protection -q .allow_force_pushes` comme preuve à portée de main. Cet endpoint renvoie **404 sans droit admin sur le dépôt** (constaté sous `myia-ai-01`, cf #9991) : le compte admin `jsboige` est requis pour **lire** la protection, alors qu'il ne l'est pas pour merger. Un 404 y est donc **une question, pas une absence mesurée** — et un agent qui l'interprète comme « pas de protection configurée » conclut l'inverse de la vérité. Ce que chaque lane peut vérifier sans droit admin, c'est le comportement : un `git push --force` sur `main` est **rejeté par le serveur**. La règle ne dépend pas de la lisibilité de la config.
 
 ---
 

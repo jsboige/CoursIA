@@ -134,6 +134,7 @@ def render(
     *,
     dry_run: bool = False,
     verbose: bool = False,
+    require_translated: bool = False,
 ) -> RenderResult:
     """Render the notebook at ``nb_path`` to ``out_path`` in language ``lang``.
 
@@ -221,6 +222,20 @@ def render(
 
     out_nb["cells"] = new_cells
 
+    # Guardrail (#10349) : refuse to write a language render whose CSV carried
+    # ZERO translated markdown cells. Such a render is a verbatim FR clone (every
+    # cell fell back to source) — a garbage file, not a translation. Opt-in via
+    # ``require_translated`` : the default (False) preserves the idempotent
+    # re-render contract where an untranslated in-scope lang renders as a FR
+    # placeholder (#10039 criterion 3). The check sits BEFORE the atomic write so
+    # no partial/clone file reaches disk.
+    if require_translated and stats.n_md_cells > 0 and stats.n_translated == 0:
+        raise ValueError(
+            f"--require-translated : 0 cellule markdown traduite sur "
+            f"{stats.n_md_cells} (lang={lang}, {csv_path.name}). "
+            f"Refus d'ecrire un clone FR verbatim."
+        )
+
     if not dry_run and out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         # Atomic write : write to a sibling .tmp then rename. This prevents
@@ -289,6 +304,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--out", type=Path, help="Output notebook path (e.g. X_en.ipynb)")
     p.add_argument("--dry-run", action="store_true", help="Compute diff/stats, do not write")
     p.add_argument("--verbose", action="store_true", help="Print per-cell diagnostics")
+    p.add_argument(
+        "--require-translated", action="store_true",
+        help="Refuse a render whose CSV carried 0 translated markdown cells "
+             "(guardrail against FR-clone files, #10349). Default off: preserves "
+             "the FR-placeholder re-render contract (#10039 criterion 3).",
+    )
     args = p.parse_args(argv)
 
     dry_run = args.dry_run or args.out is None
@@ -303,6 +324,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             out_path=args.out,
             dry_run=dry_run,
             verbose=args.verbose,
+            require_translated=args.require_translated,
         )
     except (FileNotFoundError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)

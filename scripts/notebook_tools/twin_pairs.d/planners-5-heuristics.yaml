@@ -2,14 +2,20 @@
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2026:CoursIA
       python_sha: 8101b548a7ae06bfa2e807a7cf658583c01a32fa
       csharp_sha: 38fbe3dd8890dae8c1e0772807baed5762eb1eda
+    - date: "2026-08-11"
+      by: myia-po-2024:CoursIA
+      python_sha: 8101b548a7ae06bfa2e807a7cf658583c01a32fa
+      csharp_sha: da470fa5549ed8ee1cb3c8c8182f10f0686f3663
+      note: "Tranche 2 (#10382) : C# invoque Fast Downward (API Docker, HttpClient.PostAsync) sur Blocks World h*=4, compare lmcut/hmax/ff/add en noeuds expanses. Python = pyperplan (unified-planning). Les DEUX cotes appelent un engine de production -> native-both."
   known_differences:
     - "Concept : heuristiques admissibles (relaxation, h_add, h_max, delete-relaxation)."
-    - "Python : unified-planning + fast-downward heuristics. C# : from-scratch delete-relaxation BCL."
+    - "Python : unified-planning + pyperplan (engine production, cell 46). C# : Tranche 1 from-scratch (h_max/h_add/h_FF/landmarks) + Tranche 2 Fast Downward via API Docker (cell 6.2)."
     - "po-2025 a verifie firsthand (c.678) la parite conceptuelle : les deux cotes gerent la degenerescence via une instance discriminante (h^add > h*)."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python+C# avance depuis l'audit 2026-07-23 via #8336+#8340 (Prong-B heuristic-guided benchmark ajoute aux DEUX cotes (enrichissement parallele)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+    - "Tranche 2 2026-08-11 (po-2024, #10382) : ajout cell 6.2 C# (Fast Downward HttpClient) preservant la Tranche 1 from-scratch intacte. Parite native-both : lmcut=6 expanses < hmax=8 (signature attendue). Python_sha inchange (Python deja engine-production via pyperplan)."

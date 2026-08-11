@@ -2,7 +2,7 @@
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -14,8 +14,15 @@
       csharp_sha: a2cea4c4062bedc965149e009e8d5e1533194a53
       content_python_sha: eebe1fa4c322c88714c81bbb9f57be98e19b5dcb9ce12c84be2881d577b9c37e
       content_csharp_sha: 08224b2172924f6834029fd0ec845aae22a44fc662145213c42c0c4b685b3981
+    - date: "2026-08-11"
+      by: myia-po-2024:CoursIA
+      python_sha: fd56ce8d6a417cf0054bbf300d9f933ba63abf3e
+      csharp_sha: 3fa6407a8adc8d0964573cea36d8baaebb032c41
+      content_python_sha: eebe1fa4c322c88714c81bbb9f57be98e19b5dcb9ce12c84be2881d577b9c37e
+      content_csharp_sha: 0a2d9dc84310962dd7d8dda05567e2ecc8cfce6dbb6a6b96ff18ee8d4b5bafec
   known_differences:
     - "Concept : domaines classiques de planification (Block World, Logistics, Gripper, Ferry, Hanoi)."
-    - "Python : modelisation unified-planning des domaines canoniques. C# : from-scratch BCL .NET (meme domaines de reference)."
+    - "Lib-vs-lib : Python modelise les domaines canoniques via unified-planning/pyperplan. C# : Tranche 1 from-scratch BCL .NET (meme domaines de reference) + Tranche 2 invoque Fast Downward 24.06.1 via API Docker (port 8200)."
+    - "Tranche 2 native-both (#10382, 2026-08-11 po-2024) : FD astar(lmcut()) confirme les plans optimaux du BFS from-scratch sur 3 domaines (Block World tour 4 + reverse 8, Hanoi 3 disques 7 = 2^3-1, Gripper 5). Verdict SOTA-OK (#3801) : moteur reel invoque (API Docker returncode 0), memes plans (jusqu'aux sequences d'actions identiques, ex. blocks-reverse). Tranche 1 from-scratch preservee."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA C# avance depuis l'audit 2026-07-23 via #8361 (4 cellules d'interpretation ajoutees au twin C# (aligne sur l'interp Python existante)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
     - "Re-baseline 2026-07-31 (po-2024, #8052) : markdown+print-literal corrections cote Python (4 cells : Ferry plan-complexity O(n^2) -> O(n) dans cell[48] prose + cell[52] table + cell[54] dict+output + cell[55] table ; grounding Planners-4 cell[48] 3n+(n-1)=4n-1=O(n)). Paraphite-preservant : aucun code/heuristic/state modifie, axe de parite semantic (modelisation des domaines) intact ; Block World O(n^2) preserves."

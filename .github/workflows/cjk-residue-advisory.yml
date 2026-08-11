@@ -58,6 +58,12 @@ jobs:
     steps:
       - name: Checkout PR
         uses: actions/checkout@v4
+        with:
+          # Need full history: the 3-point "$BASE...$HEAD" diff below resolves
+          # the merge-base of BASE and HEAD (#10403). fetch-depth 1 would miss
+          # the merge-base and the diff would fail instead of scoping to this
+          # PR's own apport.
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -83,7 +89,10 @@ jobs:
           # files, which is learned-to-be-ignored even faster than #8822's
           # "label survives its cause". The fleet scan stays (informational
           # notice below); only the PR's own apport can trigger its label.
-          git diff --name-only --diff-filter=d "$BASE" "$HEAD" > changed.txt || true
+          # 3-point diff (#10403): "$BASE...$HEAD" diffs from the merge-base of
+          # BASE and HEAD, i.e. strictly what THIS branch introduced -- not the
+          # union of both directions that a 2-point "$BASE" "$HEAD" reports.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" > changed.txt || true
 
           python scripts/notebook_tools/detect_cjk_residue.py --json --check --stdin \
             < changed.txt > pr_payload.json 2> pr_scan.log || true

@@ -18,7 +18,7 @@ Apr√®s **10 scripts transients successifs** et diagnostic complet, conclusion d√
 
 ### Token Brut (Client)
 ```
-LEAKED-PENDING-ROTATION 7a052dd4aeb4
+ROTATED 2026-08-11 7a052dd4aeb4
 ```
 
 ### Hash Bcrypt (Serveur Attendu)

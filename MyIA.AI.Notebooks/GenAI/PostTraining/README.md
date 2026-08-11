@@ -4,12 +4,12 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 7
-breakdown: PostTraining=7
-maturity: BETA=4, ALPHA=3
+pedagogical_count: 11
+breakdown: PostTraining=11
+maturity: BETA=8, ALPHA=3
 -->
 
-> **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks exécutés ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR → **GAE** et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative, un détecteur de reward hacking, et un notebook d'implémentation from-scratch de la famille "no critic" (GRPO/RLOO/GAE) sur toy env CPU, et d'un notebook appliqué **Qwen3.5-0.8B + GRPO + reward vérifiable Z3 + rewardspy en ligne** (PT-11) qui fait sortir la série du toy env vers un vrai LLM, soit **11 notebooks** au total. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
+> **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks exécutés ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR → **GAE** et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative, un détecteur de reward hacking, et un notebook d'implémentation from-scratch de la famille "no critic" (GRPO/RLOO/GAE) sur toy env CPU, et de **deux notebooks appliqués Qwen3.5-0.8B + GRPO + reward vérifiable + rewardspy en ligne** (PT-11a Z3 CSP arithmétique + PT-11b SymPy arithmétique + Z3 N-queens) qui font sortir la série du toy env vers un vrai LLM, soit **12 notebooks** au total. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
 
 Série pédagogique dédiée aux techniques de **post-training** des LMs ouverts : SFT, DPO, GRPO, RLVR. L'objectif est de comprendre pourquoi 2024-2025 marque une rupture pédagogique dans la façon dont les modèles de langue passent du pre-training brut à un assistant utile, et comment cette chaîne s'est simplifiée depuis la cascade RLHF historique jusqu'aux méthodes "direct" récentes.
 
@@ -37,7 +37,8 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 | PT-08 | `PT_08_grpo_from_scratch_toy_env.ipynb` | GRPO **from scratch** (toy env CPU) — mécanique du group-relative advantage, écart PPO↔GRPO, comparaison « avec vs sans critic » | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
 | PT-09 | `PT_09_rloo_from_scratch_toy_env.ipynb` | RLOO **from scratch** (toy env CPU) — leave-one-out baseline, **biais-variance** vs GRPO, sibling de PT-08 | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
 | PT-10 | `PT_10_gae_from_scratch_toy_env.ipynb` | GAE **from scratch** (toy env CPU) — mini-critic + λ-bias/variance, **1-step collapse** diagnostique empirique, justifie le choix no-critic de DeepSeek R1 | `torch` from-scratch (no `trl`) | MLP jouet + value head (CPU, ~5.7k params) | See #1454 |
-| PT-11 | `PT_11_grpo_qwen35_rlvr.ipynb` | GRPO + RLVR sur **vrai LLM** (Qwen3.5-0.8B QLoRA 4-bit) — reward vérifiable Z3 (CSP), rewardspy **en ligne**, sortie du toy env | `trl.GRPOTrainer` + Z3 + `rewardspy.watch_trl` | Qwen3.5-0.8B (QLoRA 4-bit, GPU 8 Go) | See #10289 |
+| PT-11a | `PT_11_grpo_qwen35_rlvr.ipynb` | GRPO + RLVR sur **vrai LLM** (Qwen3.5-0.8B QLoRA 4-bit) — reward vérifiable Z3 (CSP arithmétique), rewardspy **en ligne**, sortie du toy env | `trl.GRPOTrainer` + Z3 + `rewardspy.watch_trl` | Qwen3.5-0.8B (QLoRA 4-bit, GPU 8 Go) | See #10289 (#10302) |
+| PT-11b | `PT_11_grpo_qwen_rlvr_on_verifiers.ipynb` | GRPO + RLVR + rewardspy **en ligne** — la pile complète sur petit modèle Qwen3.5-0.8B QLoRA, **Tier 1 SymPy (arithmétique) + Tier 2 Z3 (N-queens)**, détecteur Goodhart live, 100 steps réels — variante à verifiers complémentaires (sibling de PT-11a) | `trl.GRPOTrainer` + `rewardspy.watch_trl` (integration trl 1.9.2) | Qwen3.5-0.8B (QLoRA 4-bit) | See #10289 |
 
 > **Migration vers Qwen3.5 (en cours).** Qwen2.5 est *superseded* par [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-0.8B) (modèle vision-langage unifié, multimodal). **PT-03 est migré** vers Qwen3.5-0.8B (#5078) : l'évaluation DPO est désormais une vraie *forward pass* (accuracy mesurée 40 % sur 10 préférences *held-out*, vs 50 % aléatoire — le DPO n'a pas convergé sur 50 exemples, verdict honnête documenté dans le notebook) qui remplace l'ancienne accuracy *hardcodée* à 72 %. **PT-02 / PT-04 / PT-05 / PT-06** utilisent encore Qwen2.5-0.5B et restent à migrer (entraînement GPU) — les références Qwen2.5 dans le reste de ce README décrivent l'état actuel de ces notebooks. Architecture Qwen3.5 multimodale (`Qwen3_5ForConditionalGeneration`) chargée via `AutoModelForImageTextToText` (et non `AutoModelForCausalLM`).
 

@@ -36,11 +36,12 @@ discipline). Each key is a single line, anywhere after the Grain tag:
     Perimetre:  <one-line -- files/domain touched, and what is explicitly
                          out of scope>
 
-Tolerant to bold (`**Quoi** :`), case, and extra whitespace. The trio is
-**advisory** at first: the guard flags `variation-short-header-missing` only
-when ALL THREE are absent (so existing PRs do not suddenly turn red the day
-the convention is rolled out). Hardening to "1 absent = flag" is a separate
-gate, after the convention has spread.
+Tolerant to bold (`**Quoi** :`), case, and extra whitespace. c.10330 / PR
+retired the `check-short-header` CI job that labelled `variation-short-header-missing`
+on 69 % of PRs without the convention ever being promulgated in the harness
+(#10330). The parser stays in place (pure function, no cost when no caller
+invokes it); a future convention rollout would re-cable a job and pair it
+with a harnais rule.
 
 `parse_short_header` returns {quoi, preuve, perimetre} (each | None).
 `parse_grain_tag` is unchanged (back-compat for the variation_light_cap organ).
@@ -140,6 +141,25 @@ _GRAIN_FULL_RE = re.compile(
 # independently of the Grain line (#9485 point 4).
 _LANE_RE = re.compile(
     r"lane\s*:?\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)", re.IGNORECASE
+)
+
+# Fallback lane token for claim comments that omit the `lane` keyword (#10395
+# Variante 1). The repository has `scripts/check_lane_claim.py` parsers, and
+# the historical dashboards had legitimate forms like
+# `[CLAIMED] #9764 - myia-po-2025:CoursIA 2026-08-07T00:52Z`. Requiring the
+# literal `lane` token made those claims invisible (counted as unattributed),
+# and the reducer then blocked the author on its own issue. Per
+# [variation-protocol.md](../../.claude/rules/variation-protocol.md), the
+# decisive check is the SUBSTANCE: a `<machine>:<workspace>` token in the line
+# carrying the marker IS a lane attribution.
+#
+# The fallback regex is intentionally stricter than `_LANE_RE` (no leading
+# word-boundary bypass for arbitrary colon-pairs), and the caller MUST scope
+# the search to the marker line -- URLs, time stamps and code tokens that
+# happen to contain a colon are NOT lane IDs. Token shape: `myia-<slug>:<ws>`
+# (lowercase, hyphens allowed) or any single-word `lower:Pascal` pair.
+_LANE_FALLBACK_RE = re.compile(
+    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-z][A-Za-z0-9._-]*)\b"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME
@@ -309,7 +329,7 @@ def parse_grain_tag(body: str | None) -> dict | None:
     }
 
 
-def extract_lane(body: str | None) -> str | None:
+def extract_lane(body: str | None, marker_line: str | None = None) -> str | None:
     """Extract the `<machine>:<workspace>` lane token from any text.
 
     Same reader as `parse_grain_tag` (the single lane extractor, #9485): shared
@@ -319,14 +339,32 @@ def extract_lane(body: str | None) -> str | None:
     go through `parse_grain_tag`; this wrapper reuses the exact same compiled
     `_LANE_RE` so the two contexts never drift on what a lane token is.
 
-    Returns the `machine:workspace` string, or None when the body carries no
-    `lane <machine:workspace>` token.
+    `#10395 Variante 1` fallback: when `marker_line` is supplied (the line of
+    the bracketed marker, stripped by the caller), and the primary `lane <x>`
+    regex misses on the whole body, the function searches ONLY that line for
+    a `<machine>:<workspace>` token matching `_LANE_FALLBACK_RE`. The marker
+    line scope is what keeps URLs / time stamps / code tokens that contain
+    colons from false-positiving -- the marker line is the human-stated intent
+    of the claim, not arbitrary prose. Without `marker_line`, behaviour is
+    unchanged (legacy callers like `parse_grain_tag` are unaffected).
+
+    Returns the `machine:workspace` string, or None when no lane token is
+    found.
     """
     if not body:
         return None
     flat = _strip_title_hashes(body.translate(_NOISE))
     m = _LANE_RE.search(flat)
-    return m.group(1) if m else None
+    if m:
+        return m.group(1)
+    # Fallback for claim comments that omit the literal `lane` keyword (#10395
+    # Variante 1). Restricted to the marker line by the caller -- see docstring.
+    if marker_line is not None:
+        flat_line = _strip_title_hashes(marker_line.translate(_NOISE))
+        m2 = _LANE_FALLBACK_RE.search(flat_line)
+        if m2:
+            return m2.group(1)
+    return None
 
 
 # --- short-header trio (#9861) ----------------------------------------------
@@ -340,12 +378,13 @@ def extract_lane(body: str | None) -> str | None:
 #
 # The detailed body below stays authorised and welcome (audit value) -- the
 # goal is NOT to censor the argument, it is to guarantee the reviewer finds
-# those three answers AT THE TOP, in three lines. The trio is advisory at
-# rollout (issue spec: "rougit sur une PR dont le body n'a pas les trois
-# cles"), so we flag `variation-short-header-missing` only when ALL THREE
-# are absent -- existing PRs that have none of the three keys still pass,
-# so the convention spreads without churn. Hardening to "1 absent = flag"
-# is a separate decision, taken when the fleet has adopted the convention.
+# those three answers AT THE TOP, in three lines.
+#
+# c.10330 / PR retired the `check-short-header` CI job: the convention was
+# voluntarily not promulgated (cf. issue title "pas une nouvelle regle") but
+# the organ was cabled and labelled 69 % of PRs without ever discriminating
+# anything. The function `parse_short_header` below stays in place as a pure
+# parser -- available if a future harness rule ever adopts the convention.
 #
 # Same noise discipline as `_GRAIN_FULL_RE` / `_LANE_RE`: bold (`**`), backticks
 # (`` ` ``), title hashes (`#`), blockquotes (`>`) are stripped BEFORE matching.
@@ -369,10 +408,12 @@ def parse_short_header(body: str | None) -> dict:
     """Extract the {Quoi, Preuve, Perimetre} short-header trio (#9861).
 
     Each key is independent: a body can carry one, two, or all three -- the
-    caller decides what to do with the partial coverage. The CI guard
-    (`check-short-header` job in `variation-tag-guard.yml`) flags a PR only
-    when **all three are absent**, by design (existing PRs have none of the
-    three and must not suddenly turn red).
+    caller decides what to do with the partial coverage. c.10330 / PR retired
+    the `check-short-header` CI job (#10330): the convention was not
+    promulgated in the harness, so the label `variation-short-header-missing`
+    flagged 69 % of PRs without ever discriminating anything. The function
+    stays in place -- pure parser, no cost when no caller invokes it,
+    available if the convention is one day promulgated.
 
     Two presentation forms are recognised (#10163 acceptance):
 

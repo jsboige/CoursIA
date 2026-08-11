@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: INTRINSIC
+  bridge_verdict_reason: "limite academique SFAz3+Z3 'monstre regex tronque' = INTRINSIC disclosed (SOTA ledger Entry #008) : limite prouvee, pas un workaround degrade."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
