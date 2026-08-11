@@ -21,7 +21,14 @@
       csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
       content_python_sha: c2ddea196ff10b47a322101b679c750010012729ac02e145ba068e97309a5d8a
       content_csharp_sha: f7ddc0d8a5bcf736054db534ecb6c3dd8400b660517e2c99e41bbc551869a30d
+    - date: "2026-08-11"
+      by: myia-ai-01:CoursIA
+      python_sha: 123d7ca9e97743eeff91d045e08808e6287a4477
+      csharp_sha: 4096d74c1b63d5ab1c43a8cdd0e03630934ce1de
+      content_python_sha: f362072fd499336bfe0143e9c7a664dbdafb1265f9f6beaadf203976a15321a0
+      content_csharp_sha: f7ddc0d8a5bcf736054db534ecb6c3dd8400b660517e2c99e41bbc551869a30d
   known_differences:
     - "Socle pedagogique commun : jeux de reputation dans les interactions repetees sous information incomplete -- pourquoi la reputation change tout, cheap talk (communication non couteuse), modele de Kreps-Wilson (reputation du « tough incumbent » dans la chaine de magasins), Gang of Four / KMRW (cooperation emergente dans le dilemme du prisonnier fini), equilibre bayesien parfait (PBE). Suit naturellement le GT-11 (jeux bayesiens) en appliquant le BNE aux dynamiques de reputation."
-    - "Idiomes framework : Python = `scipy.optimize.fsolve` (resolution des conditions d'equilibre Kreps-Wilson) + `matplotlib` (courbes de gain / trajectoires de reputation) + `@dataclass`. C# = **BCL .NET pur 0 NuGet tiers** avec une **simulation numerique Monte-Carlo from-scratch** (Random + System.Math, etude de l'impact du parametre epsilon sur les gains)."
-    - "Asymetrie methodologique notable : le C# (23 cellules) met l'accent sur la simulation Monte-Carlo from-scratch (tirages aleatoires pour estimer l'effet d'epsilon) ; le Python (29 cellules : 13 code + 16 markdown, 7 sections + exercice Chain-Store) priviliegie la resolution analytique via scipy.fsolve + visualisation matplotlib. Meme theorie (Kreps-Wilson 1982, KMRW), leviers de validation differents (scipy analytique cote Python, Monte-Carlo empirique cote C#)."
+    - "2026-08-11 (ai-01) : correction d'honnetete -- l'entree precedente creditait `scipy.optimize.fsolve` de la resolution des conditions d'equilibre Kreps-Wilson. C'etait un import MORT (zero appel), retire par #10438 : les conditions sont resolues analytiquement. Cf #10382 §2 -- l'entree avait ete redigee depuis la liste d'imports, pas depuis les appels."
+    - "Idiomes framework : Python = `matplotlib` (courbes de gain / trajectoires de reputation) + `@dataclass` + resolution analytique. C# = **BCL .NET pur 0 NuGet tiers** avec une **simulation numerique Monte-Carlo from-scratch** (Random + System.Math, etude de l'impact du parametre epsilon sur les gains)."
+    - "Asymetrie methodologique notable : le C# (23 cellules) met l'accent sur la simulation Monte-Carlo from-scratch (tirages aleatoires pour estimer l'effet d'epsilon) ; le Python (29 cellules : 13 code + 16 markdown, 7 sections + exercice Chain-Store) privilegie la resolution analytique (a la main, pas via scipy -- cf correction du 2026-08-11) + visualisation matplotlib. Meme theorie (Kreps-Wilson 1982, KMRW), leviers de validation differents (analytique cote Python, Monte-Carlo empirique cote C#)."

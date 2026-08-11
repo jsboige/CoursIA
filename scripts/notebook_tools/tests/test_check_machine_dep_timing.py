@@ -28,6 +28,7 @@ from check_machine_dep_timing import (  # noqa: E402
     _repo_root,
     PROTOCOL_KEYWORDS,
     CONTENT_DURATION_CONSTRAINT_RE,
+    DISTRIBUTION_KEYWORDS,
     CATEGORY_WALLCLOCK,
     CATEGORY_DISTRIBUTION,
     CATEGORY_AMBIGUOUS,
@@ -373,13 +374,19 @@ def test_domain_quantity_propagation_in_cell() -> None:
     utilise ces parametres comme variable modelisee -- ex '15 min de moins
     que la moyenne'. Les '15 min' de la 2eme ligne sont la variable
     modelisee (domain_quantity), pas une mesure wallclock.
+
+    NB (#10178 Classe 5, c.1301+64) : on enleve les discriminants bayesiens
+    ('trajet', 'observations', etc.) des lignes 2/3 pour tester la
+    propagation per-cell en isolation. Sinon, la ligne 2 serait classee
+    distribution_param DIRECTEMENT par les nouveaux discriminants, sans
+    laisser la propagation s'exprimer.
     """
     nb = _make_nb([
         _md_cell(
             "Le modele suit une Gaussian de moyenne 15.33 min et sigma 1.32 min.\n"
             "\n"
             "La duree typique observee est de l'ordre de 15 minutes par trajet.\n"
-            "La proportion de trajets de moins de 15 min est la metrique cle."
+            "La proportion de moins de 15 min est la metrique cle."
         ),
     ])
     try:
@@ -390,8 +397,10 @@ def test_domain_quantity_propagation_in_cell() -> None:
             f["category"] == CATEGORY_DISTRIBUTION for f in findings
         )
         assert has_distribution, f"Attendu >=1 distribution_param, categories={findings}"
-        # Au moins un finding wallclock avant propagation (les '15 minutes' /
-        # '15 min' des autres lignes).
+        # Au moins un finding wallclock avant propagation (le '15 minutes' de
+        # la ligne 2 -- pas de mot-cle distribution direct sur cette ligne,
+        # donc reste wallclock au niveau ligne, et la propagation per-cell
+        # doit basculer en domain_quantity).
         has_wallclock_before = any(
             f["category"] == CATEGORY_WALLCLOCK for f in findings
         )
@@ -578,6 +587,137 @@ def test_categorize_ambiguous_only_when_neither() -> None:
 
 
 # --------------------------------------------------------------------------- #
+#  #10178 Classe 5 : discriminants bayesiens routent les durees de domaine
+#                   (composante de melange, observation, trajet, ecart-type)
+#                   vers distribution_param, pas wallclock.
+#  Proposee par po-2024, c.66 (comment #5232772579) sur 14 + 45 findings FP
+#  dans Infer-101 / Infer-2 (durees trajet velo). Falsifiable :
+#    - PyMC-2 cell[17] : 3 wallclock -> 0 (composantes, observations)
+#    - DecInfer-4 cell[18] : 2 wallclock -> 0 (Trajet: 60min -> 10min)
+# --------------------------------------------------------------------------- #
+def test_class5_distribution_keywords_composante_observation_trajet_ecarttype() -> None:
+    """Les discriminants bayesiens sont detectes par DISTRIBUTION_KEYWORDS.
+
+    Rationnel : un notebook qui modelise une grandeur temporelle (duree
+    trajet, duree decision) voit ses N min/matches en wallclock alors que
+    ce sont des parametres de domaine. La regex doit reconnaitre les
+    discriminants bayesiens (composantes, observations, trajets,
+    ecarts-types) comme contexte de distribution.
+
+    Cas verbatim :
+    - PyMC-2 cell[17] : 'La composante "normale" capture les trajets de
+      11 a 20 minutes' (composantes + trajets)
+    - DecInfer-4 cell[18] : 'Trajet: 60min -> 10min' (Trajet)
+    - 'observations (13, 17, 16 min)' (observations)
+    - 'ecart-type 4.14 min' (ecart-type)
+    """
+    assert DISTRIBUTION_KEYWORDS.search("composante normale")
+    assert DISTRIBUTION_KEYWORDS.search("composantes de melange")
+    assert DISTRIBUTION_KEYWORDS.search("observations (13, 17, 16 min)")
+    assert DISTRIBUTION_KEYWORDS.search("5 nouveaux trajets (18, 25, 30)")
+    assert DISTRIBUTION_KEYWORDS.search("Trajet: 60min -> 10min")
+    assert DISTRIBUTION_KEYWORDS.search("ecart-type 4.14 min")
+    assert DISTRIBUTION_KEYWORDS.search("ecart type de la posterieure")
+    # Variantes avec trait d'union / sans trait d'union
+    assert DISTRIBUTION_KEYWORDS.search("ecart-type")
+    assert DISTRIBUTION_KEYWORDS.search("ecart type")
+
+
+def test_class5_pymc2_composante_routed_to_distribution() -> None:
+    """Verbatim PyMC-2 cell[17] : 3 wallclock 'X min(utes)' -> distribution_param.
+
+    Cas reels (paraphrase conforme) :
+    - 'La composante "normale" capture les trajets de 11 a 20 minutes'
+    - 'La composante "exceptionnelle" capture les trajets de 28 a 35 minutes'
+    - 'Les 3 observations extremes (28, 32, 35 min)'
+
+    Apres le fix Classe 5 : tous les 'minutes' / 'min' dans une ligne qui
+    contient 'composantes' / 'observations' / 'trajets' doivent etre
+    classifies distribution_param.
+    """
+    line_a = (
+        "La composante \"normale\" capture les trajets de 11 a 20 minutes"
+    )
+    assert _categorize(line_a, "20 minutes") == CATEGORY_DISTRIBUTION
+    line_b = (
+        "La composante \"exceptionnelle\" capture les trajets de 28 a 35 minutes"
+    )
+    assert _categorize(line_b, "35 minutes") == CATEGORY_DISTRIBUTION
+    line_c = "Les 3 observations extremes (28, 32, 35 min)"
+    assert _categorize(line_c, "35 min") == CATEGORY_DISTRIBUTION
+
+
+def test_class5_decinfer4_trajet_routed_to_distribution() -> None:
+    """Verbatim DecInfer-4 cell[18] : 'Trajet: 60min -> 10min' -> distribution_param.
+
+    Cas reel (#10178 Classe 5, indice 2 notebook pedagogique) : un swing
+    decisionnel sur la duree de trajet n'est pas un wallclock, c'est une
+    quantite de domaine (attribut de la fonction de decision multi-criteres).
+    """
+    line = (
+        "Un swing \"Prix: 500k -> 200k\" peut etre plus ou moins important "
+        "qu'un swing \"Trajet: 60min -> 10min\""
+    )
+    # Premier match dans la ligne (regex cherche le 1er digit pattern).
+    assert _categorize(line, "60min") == CATEGORY_DISTRIBUTION
+
+
+def test_class5_does_not_break_sudoku13_control() -> None:
+    """Le controle positif Sudoku-13 reste detecte apres le fix Classe 5.
+
+    Falsifiable : les wallclock STRICTS (TIMEOUT > 60 s, duree execution
+    2.4 s) ne contiennent PAS de discriminant bayesien (composantes,
+    observations, trajets, ecart-type) et restent classes wallclock.
+
+    Verifie directement sur le notebook reel (path canonique cote owner).
+    Si le path n'existe pas (autre machine que po-2025), skip avec un
+    message clair -- le test est skip-able par design (CONTEXT-DEPENDENT).
+    """
+    nb_path = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "MyIA.AI.Notebooks"
+        / "Sudoku"
+        / "Sudoku-13-SymbolicAutomata-Csharp.ipynb"
+    )
+    if not nb_path.exists():
+        import pytest
+        pytest.skip(f"Notebook reel non trouve cote worker : {nb_path}")
+    findings = _scan_notebook(nb_path)
+    wc = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+    # Falsifiable : wallclock count = 28 (avant et apres fix Classe 5).
+    # Tolerance +-0 : le fix ne doit pas modifier ce compte.
+    assert len(wc) >= 25, (
+        f"Controle positif Sudoku-13 degrade : wallclock={len(wc)} "
+        f"(attendu >=25). Le fix Classe 5 a modifie un cas non-cible."
+    )
+
+
+def test_class5_pymc2_real_notebook_silenced() -> None:
+    """Le notebook reel PyMC-2 cell[17] passe de 3 wallclock -> 0.
+
+    Verifie directement sur le notebook reel cote owner. Skip si absent.
+    """
+    nb_path = (
+        Path(__file__).resolve().parent.parent.parent.parent
+        / "MyIA.AI.Notebooks"
+        / "Probas"
+        / "PyMC"
+        / "PyMC-2-Gaussian-Mixtures.ipynb"
+    )
+    if not nb_path.exists():
+        import pytest
+        pytest.skip(f"Notebook reel non trouve cote worker : {nb_path}")
+    findings = _scan_notebook(nb_path)
+    # Filtre sur cell[17] uniquement (cas verbatim Classe 5).
+    cell17 = [f for f in findings if f.get("cell_index") == 17]
+    wc = [f for f in cell17 if f["category"] == CATEGORY_WALLCLOCK]
+    # Falsifiable : 0 wallclock sur cell[17] apres le fix.
+    assert wc == [], (
+        f"PyMC-2 cell[17] wallclock NON silencie : {[(f['snippet'], f['line'][:80]) for f in wc]}"
+    )
+
+
+# --------------------------------------------------------------------------- #
 #  Edge case : notebook PII-governed
 # --------------------------------------------------------------------------- #
 def test_pii_governed_notebook_skipped(tmp_path: Path) -> None:
@@ -650,6 +790,11 @@ def test_silence_per_notebook_propagation_residu1() -> None:
     d'une cellule. Cas reel Infer-2-Gaussian-Mixtures : les moyennes ajustees
     ``| Ordinaire | 15.07 min |`` / ``| Extraordinaire | 26.69 min |`` sont la
     SORTIE du modele (obtenue par inference), pas une mesure d'execution.
+
+    NB (#10178 Classe 5, c.1301+64) : on enleve les discriminants bayesiens
+    ('Trajets') du texte de la cellule 2 pour tester la propagation
+    per-NOTEBOOK en isolation. Sinon, 'Trajets normaux' serait classee
+    distribution_param DIRECTEMENT par DISTRIBUTION_KEYWORDS Classe 5.
     """
     nb = _make_nb([
         # Cellule 1 : declare les parametres de la distribution (distribution_param).
@@ -657,13 +802,13 @@ def test_silence_per_notebook_propagation_residu1() -> None:
             "## Modele\n"
             "Le melange suit une Gaussian de moyenne 15.33 min et sigma 1.32 min."
         ),
-        # Cellule 2 : SEPARATE, sans mot-cle stat. Sans la passe per-notebook,
-        # les 15.07 / 26.69 resteraient wallclock (la cellule 2 n'a pas de
-        # mot-cle distribution pour declencher la passe per-cell).
+        # Cellule 2 : SEPARATE, sans mot-cle stat ni discriminant Classe 5.
+        # Sans la passe per-notebook, les 15.07 / 26.69 resteraient wallclock
+        # (la cellule 2 n'a aucun discriminant distribution).
         _md_cell(
             "## Resultats ajustes\n"
-            "| Ordinaire | 15.07 min | Trajets normaux : {13, 17, 16} |\n"
-            "| Extraordinaire | 26.69 min | Trajets longs : {20, 25, 25, 30} |"
+            "| Ordinaire | 15.07 min | Normaux : {13, 17, 16} |\n"
+            "| Extraordinaire | 26.69 min | Longs : {20, 25, 25, 30} |"
         ),
     ])
     try:

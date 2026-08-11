@@ -664,6 +664,17 @@ def compute_signals(
                                     `_genre_from_paths(candidate_files)` is
                                     not None AND the two disagree.
 
+    Three of the four signals (TIER-INFLATION, GENRE-RUN, CAP-EXCEEDED-BY-
+    GENRE) are LANE-DAY aggregates: they are True when the lane's merged
+    set of the day trips the rule, regardless of whether the OPEN
+    candidate contributes. GENRE-MISMATCH alone carries on the candidate
+    (declared genre vs its own diff paths). The return therefore also
+    exposes `candidate_is_light_genre` so the workflow can avoid posing
+    an aggregate label on a CONTENT candidate that does not contribute to
+    the pattern it denounces (#10341 -- otherwise the merge-gate, which
+    reads the LABEL, would HOLD the grain that REMEDIES the motif instead
+    of the META grains that caused it).
+
     The function returns the tally, the list of runs, and the four signals
     ON the tally/candidate -- the workflow decides what to label. The
     G-VAR-2 organ (the original `light_cap_status`) is unchanged: a PR
@@ -709,6 +720,15 @@ def compute_signals(
         "long_runs": long_runs,
         "inferred_genre_from_paths": inferred,
         "candidate_genre_canonical": can_canon,
+        # Whether the OPEN candidate is itself a LIGHT-genre grain, i.e. a
+        # CONTRIBUTOR to the pattern the three aggregate signals denounce.
+        # False when the candidate is CONTENT (genai/lean/qc/notebook-.../)
+        # or carries no readable genre -- in both cases it cannot contribute
+        # to light_genre / a genre-run / the cap numerator, so an aggregate
+        # label posed on it would misattribute a lane-day pattern to a grain
+        # that does not carry it (#10341). GENRE-MISMATCH is unaffected: it
+        # is the one signal whose subject IS the candidate by construction.
+        "candidate_is_light_genre": can_canon in LIGHT_GENRES,
     }
 
 

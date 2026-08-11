@@ -14,9 +14,11 @@ name: Translation Sync
 #       cells => N API calls, not the full corpus.
 #   T4  re-renders the *_<lang>.ipynb of active languages (render_notebook.py)
 #   then commits the derived files (CSV + rendered notebooks) to the long-lived
-#   branch `chore/translation-sync-pending` as github-actions[bot], tagged
-#   `[skip ci]`. A PR is opened (or updated) targeting main; merging the PR
-#   refreshes main. The bot NEVER pushes to main itself.
+#   branch `chore/translation-sync-pending` as github-actions[bot] (no `[skip ci]`
+#   since #10421: bot pushes to a branch not in `on.push.branches` = [main], so a
+#   self-trigger is structurally impossible). A PR is opened (or updated)
+#   targeting main; merging the PR refreshes main. The bot NEVER pushes to
+#   main itself.
 #
 # Why POST-MERGE on `main` (not per-PR on the PR branch)
 # ------------------------------------------------------
@@ -101,6 +103,15 @@ on:
       - 'translations/**'
       - 'scripts/translation/**'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "T1 mode : 'incremental' (changed notebooks only, default) ou 'full' (plein perimetre, etape 2 de #10329)."
+        type: choice
+        required: false
+        default: incremental
+        options:
+          - incremental
+          - full
 
 permissions:
   contents: write   # bot commit to chore/translation-sync-pending
@@ -115,8 +126,12 @@ jobs:
     name: "Translation auto-sync (long-lived PR)"
     runs-on: ubuntu-latest
     # workflow_dispatch (manual maintainer trigger) always allowed.
-    # push events from github-actions[bot] are skipped automatically via
-    # [skip ci] in the commit message — defense in depth.
+    # Note: prior versions carried `[skip ci]` in the bot commit message;
+    # removed in #10421. The bot pushes to `chore/translation-sync-pending`,
+    # which is NOT in this workflow's `on.push.branches` list (only `main`
+    # is) — so the bot commit cannot self-re-trigger by construction. The
+    # `[skip ci]` only suppressed the required-check set on the long-lived
+    # PR (same pathology as catalog-cron, see #10421).
 
     steps:
       - name: Checkout main (history only)
@@ -132,21 +147,17 @@ jobs:
         run: |
           set -euo pipefail
           BRANCH="chore/translation-sync-pending"
-          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
-            echo "Branch $BRANCH already exists on origin; checking it out."
-            git fetch origin "$BRANCH"
-            git checkout -B "$BRANCH" "origin/$BRANCH"
-            # Rebase on top of origin/main so T1 sees the freshest set of
-            # changed notebooks. Translation re-render is idempotent -- same
-            # main + same source produces the same output, so rebase-and-retry
-            # is safe.
-            git fetch origin main
-            git rebase origin/main
-          else
-            echo "Branch $BRANCH does not exist on origin yet; creating it from origin/main."
-            git fetch origin main
-            git checkout -b "$BRANCH" origin/main
-          fi
+          git fetch origin main
+          # Reset (not rebase) onto origin/main unconditionally. T1->T4
+          # regenerate the entire derived set on every run, so the previous
+          # bot commit holds no information worth preserving -- rebasing it
+          # instead yields structural add/add conflicts as soon as any human
+          # PR lands a rendered notebook or CSV (see issue #10373: 12 runs
+          # failed 2026-08-10 on add/add for FT-02_en + finetuning.csv).
+          # --force-with-lease is safe here: branch is mono-writer bot-owned
+          # (git-workflow.md allows it on lane-unique feature branches; main
+          # is untouched either way).
+          git checkout -B "$BRANCH" origin/main
           echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
 
       - name: Set up Python
@@ -172,6 +183,10 @@ jobs:
       # ------------------------------------------------------------------
       - name: T1 re-extract (refresh src_hash for changed notebooks)
         id: t1
+        env:
+          # Mode T1 : 'incremental' (changed-only, default push) ou 'full'
+          # (plein perimetre, etape 2 de #10329).
+          T1_MODE: ${{ github.event.inputs.mode || 'incremental' }}
         run: |
           set -euo pipefail
           if [ ! -d translations ]; then
@@ -180,23 +195,43 @@ jobs:
             exit 0
           fi
           echo "has_translations=true" >> "$GITHUB_OUTPUT"
-          # Notebooks touched by the most recent commit on main (single push
-          # event). If the push contains many files, this may be empty (e.g.
-          # a workflow-only commit) — T1 then no-ops and T4 idempotently
-          # re-renders all known *_<lang>.ipynb from the existing CSVs.
-          CHANGED_NB=$(git log -1 --name-only --pretty=format: -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
-          if [ -z "$CHANGED_NB" ]; then
-            echo "No in-scope notebook changed in the latest commit. T1 will no-op (idempotent re-extract skipped)."
-          else
-            echo "Changed notebooks in the latest commit:"
-            echo "$CHANGED_NB" | sed 's/^/  - /'
-            # --update refreshes src_hash in existing CSVs without clobbering T3 columns.
-            for nb in $CHANGED_NB; do
-              [ -f "$nb" ] || continue
-              python scripts/translation/extract_cells_to_csv.py "$nb" --update --repo-root . || {
-                echo "::warning title=T1 extract::Failed to re-extract $nb (may be out-of-scope / code-only). Continuing.";
+          echo "T1 mode: $T1_MODE"
+
+          # Itérer sur les CSV déclarés et passer --full uniquement en mode
+          # full. Sans --full (mode incremental), on respecte le comportement
+          # historique : seuls les notebooks passés en input (les CHANGED_NB)
+          # sont rafraîchis.
+          if [ "$T1_MODE" = "full" ]; then
+            echo "T1 FULL mode (#10329 etape 2) : refresh src_hash pour TOUS les notebooks referencees dans chaque CSV."
+            # On itère sur les CSV du perimetre canonique (translations/) et
+            # on lance extract_cells_to_csv.py --update --full pour chacun.
+            # Note : extract_cells_to_csv.py --update --full rafraichit
+            # TOUTES les lignes d'un CSV en un seul appel, ce qui comble la
+            # dette structurelle (78 cellules desynchronisees detectees
+            # par c.199 / PR #10347).
+            for csv in translations/*.csv translations/**/*.csv; do
+              [ -f "$csv" ] || continue
+              # On prend le CSV le plus haut-niveau (celui sous translations/<serie>/).
+              # Evitons les faux positifs : --update --full accepte un CSV.
+              python scripts/translation/extract_cells_to_csv.py "MyIA.AI.Notebooks" --update "$csv" --full --repo-root . || {
+                echo "::warning title=T1 extract full::Failed on $csv. Continuing.";
               }
             done
+          else
+            # Mode incremental (defaut, post-#4957) : notebooks du dernier push.
+            CHANGED_NB=$(git log -1 --name-only --pretty=format: -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+            if [ -z "$CHANGED_NB" ]; then
+              echo "No in-scope notebook changed in the latest commit. T1 will no-op (idempotent re-extract skipped)."
+            else
+              echo "Changed notebooks in the latest commit:"
+              echo "$CHANGED_NB" | sed 's/^/  - /'
+              for nb in $CHANGED_NB; do
+                [ -f "$nb" ] || continue
+                python scripts/translation/extract_cells_to_csv.py "$nb" --update --repo-root . || {
+                  echo "::warning title=T1 extract::Failed to re-extract $nb (may be out-of-scope / code-only). Continuing.";
+                }
+              done
+            fi
           fi
 
       # ------------------------------------------------------------------
@@ -206,9 +241,18 @@ jobs:
       - name: T2 detect drift
         id: t2
         if: steps.t1.outputs.has_translations == 'true'
+        env:
+          T1_MODE: ${{ github.event.inputs.mode || 'incremental' }}
         run: |
           set -euo pipefail
-          REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>/dev/null || true)"
+          # En mode full, on active aussi le scan out-of-scope (etape 5 de
+          # #10329) : notebooks FR dans MyIA.AI.Notebooks/ qui ne sont
+          # dans aucun CSV. Ce scan est diagnostique, non-bloquant.
+          if [ "$T1_MODE" = "full" ]; then
+            REPORT="$(python scripts/translation/check_translation_sync.py translations --check --report-out-of-scope --repo-root . 2>/dev/null || true)"
+          else
+            REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>/dev/null || true)"
+          fi
           if [ -z "$REPORT" ]; then
             echo "drift_count=0" >> "$GITHUB_OUTPUT"
             echo "No drift detected (or no filled translations to drift against)."
@@ -218,6 +262,13 @@ jobs:
           echo "drift_count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "Drift anomalies: $COUNT"
           echo "$REPORT"
+          # Etape 5 de #10329 : archiver le rapport out-of-scope (si active)
+          # comme artefact de run pour audit. Non-bloquant.
+          if [ "$T1_MODE" = "full" ]; then
+            echo "$REPORT" > translation-sync-report.json
+            OOS_COUNT="$(echo "$REPORT" | python -c 'import sys,json; r=json.load(sys.stdin); print(r.get("out_of_scope_count",0))' 2>/dev/null || echo 0)"
+            echo "::notice title=T2 out-of-scope::${OOS_COUNT} notebook(s) MISSING_FROM_CSV (etape 5 #10329)."
+          fi
 
       # ------------------------------------------------------------------
       # T3 — translate CHANGED CELLS ONLY. ACTIVATED (grain D #10055 landed the
@@ -341,9 +392,9 @@ jobs:
 
       # ------------------------------------------------------------------
       # Commit derived files to chore/translation-sync-pending as
-      # github-actions[bot], tagged `[skip ci]`. Direct push to main is
-      # blocked by GH006 (PR gate required) -- the long-lived PR is the
-      # structurally viable delivery vehicle (issue #10136).
+      # github-actions[bot]. Direct push to main is blocked by GH006
+      # (PR gate required) -- the long-lived PR is the structurally
+      # viable delivery vehicle (issue #10136).
       # ------------------------------------------------------------------
       - name: Commit + push derived translations to chore/translation-sync-pending
         id: drift
@@ -367,12 +418,20 @@ jobs:
           git diff --cached --name-only
 
           git commit \
-            -m "chore(translation): auto-sync derived translations [bot] [skip ci]" \
+            -m "chore(translation): auto-sync derived translations [bot]" \
             -m "See #10038 #10042 #10055; T3 activated (en, finetuning perimeter); long-lived PR delivery (See #10133 #10136)." \
             -m "Generated by translation-sync.yml on push to main. Direct push to main blocked by GH006 (PR gate required); this commit lives on chore/translation-sync-pending until a maintainer merges the long-lived PR."
 
-          if ! git push origin "HEAD:$BRANCH"; then
-            echo "::error title=Translation push rejected::Could not push $BRANCH to origin. Check that github-actions[bot] has push rights on chore/* branches, then re-run this workflow."
+          # force-with-lease, same reason as catalog-cron.yml: this job re-roots
+          # the branch on fresh main (`git checkout -B "$BRANCH" origin/main`),
+          # so HEAD is a sibling of the existing branch tip and a plain push is
+          # rejected non-fast-forward on every run after the one that created
+          # the branch. The branch is a materialized view owned solely by the
+          # automation; the lease (fetched just below) refuses the push if
+          # anything else touched it in the meantime.
+          git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          if ! git push --force-with-lease origin "HEAD:$BRANCH"; then
+            echo "::error title=Translation push rejected::Could not push $BRANCH to origin. The lease failed (someone pushed to $BRANCH after this run fetched it) or github-actions[bot] lacks push rights on chore/*. Re-run this workflow; if it repeats, inspect the branch tip."
             exit 1
           fi
           echo "::notice title=Translation sync::$BRANCH pushed; PR open/update follows in next step."

@@ -913,15 +913,33 @@ def surgical_rebaseline(raw: str, updates: dict[str, dict], force: bool = False)
             i += 1
             continue
 
-        m_hdr = re.match(r"^\s{2}(last_audit|audits):\s*$", line)
+        # Quantificateur \s{2,} (pas \s{2} exact) + coupure RELATIVE a
+        # l'indentation de la cle (#10430) : un fichier a indentation native 4
+        # (ex. app-10-portfolio.yaml, `audits:` a 4 espaces) voyait son en-tete
+        # reste invisible avec \s{2} exact -> surgical_rebaseline renvoyait
+        # touched=0 SANS erreur (header introuvable = no-op silencieux).
+        m_hdr = re.match(r"^(\s{2,})(last_audit|audits):\s*$", line)
         if m_hdr and current in updates:
-            form = m_hdr.group(1)
-            # Corps du bloc = lignes suivantes indentees a 4+ espaces.
+            hdr_indent = len(m_hdr.group(1))
+            form = m_hdr.group(2)
+            # Corps du bloc : coupure RELATIVE (pas le seuil absolu \s{4,}
+            # d'avant, qui etrangle la cle sibling `known_differences:` quand
+            # `audits:` est a indent 4). Continuation = strictement plus indent
+            # que la cle, OU un item de sequence `-` a indent >= cle (YAML
+            # autorise un block sequence a la meme indent que sa cle parent).
             block = [line]
             j = i + 1
-            while j < n and re.match(r"^\s{4,}\S", lines[j]):
-                block.append(lines[j])
-                j += 1
+            while j < n:
+                nxt = lines[j]
+                if not nxt.strip():
+                    break
+                lead = len(nxt) - len(nxt.lstrip(" "))
+                is_seq = nxt.lstrip(" ").startswith("-")
+                if lead > hdr_indent or (is_seq and lead >= hdr_indent):
+                    block.append(nxt)
+                    j += 1
+                else:
+                    break
             new_block, did = _transform_audit_block(form, block, updates[current], force=force)
             if did:
                 touched.add(current)
@@ -1265,6 +1283,7 @@ def main(argv=None) -> int:
         # commentaires + casserait le quoting `date: "..."` -> datetime.date.)
         if reg_path.is_dir():
             written = 0
+            missing_header = []
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
@@ -1272,16 +1291,43 @@ def main(argv=None) -> int:
                           f"(attendu : {pfile.name}).", file=sys.stderr)
                     continue
                 raw = pfile.read_text(encoding="utf-8")
-                new_raw, _ = surgical_rebaseline(raw, {name: audit}, force=args.force)
+                # On capture `touched` (#10430) : avant, le compteur etait jete
+                # (`_`) et « header introuvable » (indent non reconnue, paire
+                # absente du fichier) produisait exactement la meme sortie qu'un
+                # no-op legit (« SHAs deja a jour ») -- un organe d'attestation
+                # qui echoue en silence. Les paires no-op legit sont deja
+                # filtree en amont (branche `no_op`/`forced_no_op`), donc
+                # touched==0 ici signifie reellement « header non reconnu ».
+                new_raw, touched = surgical_rebaseline(raw, {name: audit}, force=args.force)
+                if touched == 0:
+                    missing_header.append(name)
+                    continue
                 if new_raw != raw:
                     write_registry_text(pfile, new_raw)
                     written += 1
             updated = written
+            if missing_header:
+                print(
+                    f"AVERTISSEMENT : {len(missing_header)} paire(s) a rebaseliner "
+                    f"MAIS aucun bloc d'audit reconnu (audits:/last_audit: "
+                    f"introuvable ou indentation non reconnue) dans leur fichier "
+                    f"-- rebaseline IGNORE. Ce N'est PAS un no-op legit (les "
+                    f"SHAs different). Verifier l'indentation du fichier : "
+                    f"{', '.join(missing_header)}",
+                    file=sys.stderr,
+                )
         else:
             # mono-fichier legacy (--registry <file.yaml>)
             raw = reg_path.read_text(encoding="utf-8")
             new_raw, updated = surgical_rebaseline(raw, updates, force=args.force)
             write_registry_text(reg_path, new_raw)
+            if updated < len(updates):
+                print(
+                    f"AVERTISSEMENT : {len(updates) - updated} paire(s) a "
+                    f"rebaseliner sans bloc d'audit reconnu dans {reg_path.name} "
+                    f"-- rebaseline IGNORE pour elles (header introuvable).",
+                    file=sys.stderr,
+                )
         if skipped:
             print(
                 f"Ignorees (notebook absent de git) : {', '.join(skipped)}",

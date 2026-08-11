@@ -108,22 +108,44 @@ def _compute_advisory_labels(
 ) -> list[str]:
     r"""Advisory labels for adoption telemetry (#10223 Task 4) -- never block.
 
-    Two labels, surfaced so the coordinator can read the adoption curve at the
-    merge-gate without the gate reddening:
+    One label survives, the others were retired:
 
       - ``lane-claim-absent``  -- a CLOSING-referenced issue carries NO active
         claim at all. The protocol wants a claim before editing; measuring it
         without blocking gives the curve (most of the historical backlog was
         taken without a claim, and a hard gate here would redden massively and
         teach nothing).
-      - ``lane-claim-conflict`` -- a NON-closing reference (See/Part of #N)
-        points to an issue another lane actively claims. Multi-lane by
-        construction on an EPIC, so advisory only (the closing variant blocks).
 
-    Reuses the SAME reducer (``check_lane_claim.compute_active_claims``) and the
-    SAME scanners (``grain_tag.find_close_keyword_pr_refs`` /
-    ``find_non_closing_refs``) -- no competing logic. Fetch failures are
-    skipped: an advisory label must not crash the job on a network blip.
+    ``lane-claim-conflict`` (RETIRED, #10395 Variante 3, 2026-08-11): the old
+    label fired on any non-closing reference (``See #N`` / ``Part of #N``) to
+    an issue another lane claimed. Three independent measurements showed it
+    labelled **conformant** lanes as in conflict:
+
+      1. The blocking path is the one that should police lane collisions, and
+         it is locked to closing refs by construction (the job's name ends in
+         ``-required`` and the comment text says "no closing-ref against
+         another lane active claim"). A non-closing ref is structurally NOT a
+         collision -- the merge-gate will not close the cited issue.
+      2. Issue #10370 carried the label because its body cited ``See #2161``
+         (the "3 exercises per notebook" EPIC). The same body shape, with a
+         different lane, would have been label-free (cf. #10353, same passing
+         archive, zero labels). The only difference between "conforme" and
+         "en conflit" was the order of arrival on a SHARED EPIC.
+      3. [catalog-pr-hygiene.md](../../.claude/rules/catalog-pr-hygiene.md)
+         rule 4 prescribes ``See #X`` / ``refs #X`` for partial epic
+         contributions: the label penalised the very gesture the protocol
+         exists to encourage, and the only way to silence it would be to
+         degrade traceability.
+
+    The label is therefore removed. The ``lane-claim-conflict`` GitHub label
+    is left in place (any existing instances stay as historical markers) but
+    no longer produced by this function. The discriminator stays: the closing
+    path still blocks; the non-closing path is silent.
+
+    Reuses the SAME reducer (``check_lane_claim.compute_active_claims``) and
+    the SAME scanner (``grain_tag.find_close_keyword_pr_refs``) -- no
+    competing logic. Fetch failures are skipped: an advisory label must not
+    crash the job on a network blip.
 
     ``pr_closing_refs`` (#10323): the issue numbers GitHub resolved as closing
     refs for this PR (``closingIssuesReferences``). A closing keyword inside a
@@ -145,15 +167,10 @@ def _compute_advisory_labels(
         active, _unattrib = clc.compute_active_claims(events)
         if not active:
             labels.add("lane-claim-absent")
-    # lane-claim-conflict: a non-closing ref whose issue another lane claims.
-    for h in gt.find_non_closing_refs(pr_body):
-        payload = issue_fetcher(h["number"])
-        if payload is None:
-            continue
-        events = clc._sort_events(payload)
-        active, _unattrib = clc.compute_active_claims(events)
-        if any(ln != pr_lane for ln in active):
-            labels.add("lane-claim-conflict")
+    # `lane-claim-conflict` was removed in #10395 Variante 3: see docstring
+    # above for the three measurements that retired it. The reduce-on-See
+    # loop is gone; the blocking path (`close-keyword guards`) keeps the
+    # only signal that actually closes an issue.
     return sorted(labels)
 
 
