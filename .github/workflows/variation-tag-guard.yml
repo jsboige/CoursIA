@@ -284,10 +284,15 @@ jobs:
           gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
             printf '[]' > /tmp/pr_labels.json
 
-          # ADVISORY : le script sort toujours en 0. Si le TIER EFFECTIF n'est
-          # pas LIGHT (declare LIGHT re-qualifie up, ou declare non-LIGHT sans
-          # down-qualif) ou la lane absente, il renvoie cap_reached=false et le
-          # label est retire (un label colle par un push anterieur ne survit pas).
+          # ADVISORY : le script sort toujours en 0. cap_reached consomme les
+          # DEUX axes du cap G-VAR-2 (#10480) : le TIER (LIGHT declare/effectif)
+          # ET le GENRE (light-genre -- readme/docs/guard/ledger/test -- quel
+          # que soit le tier declare). Un MED/readme peut donc faire cap_reached
+          # =true meme si 0 LIGHT declare (ferme le bypass ou --check-pr disait
+          # false et --genre-signals disait CAP-EXCEEDED-BY-GENRE sur la meme
+          # lane-day). Un non-LIGHT non-light-genre (DEEP/lean, MED/tooling) ou
+          # une lane absente renvoie cap_reached=false/None et le label est
+          # retire (un label colle par un push anterieur ne survit pas).
           python3 scripts/variation_light_cap.py \
             --replay /tmp/merged.json \
             --check-pr "$PR_NUMBER" \

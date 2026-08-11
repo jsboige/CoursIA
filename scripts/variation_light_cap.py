@@ -29,9 +29,17 @@ Modes
 
   --check-pr <N>       CI mode (the current PR): report whether PR <N> would be
                        cap-reached given the already-merged PRs in <file>.
-                       Emits machine-readable fields for the workflow to label
-                       and comment: `cap_reached`, `lane`, `consumed_by` (the
-                       earlier LIGHT that spent the budget, with its merge time).
+                       Consumes BOTH cap axes as a single source (#10480): the
+                       TIER cap (declared/effective LIGHT count) AND the GENRE
+                       cap (LIGHT-genre count, regardless of declared tier). A
+                       MED/readme can therefore be `cap_reached` even though its
+                       declared tier never spends the TIER budget -- closing the
+                       bypass where --check-pr returned `false` while
+                       --genre-signals returned `CAP-EXCEEDED-BY-GENRE` on the
+                       same lane-day. Emits `cap_reached` (the union, when the
+                       candidate carries the LIGHT-genre motif, #10341),
+                       `tier_cap_reached`, `cap_exceeded_by_genre`, `lane`,
+                       `consumed_by`, and a `counts: "tier+genre"` disclosure.
 
 Parsing
 -------
@@ -809,6 +817,20 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.check_pr is not None:
         # CI mode: the current PR is OPEN, so its body is NOT in the merged set.
+        #
+        # G-VAR-2 by GENRE (#10480): the verdict consumes BOTH cap axes -- the
+        # TIER cap (declared/effective LIGHT count, `light_cap_status`) AND the
+        # GENRE cap (LIGHT-genre count, `lane_genre_tally`). The defect this
+        # closes: a lane declared MED on readme grains saw `cap_reached: false`
+        # from --check-pr (the tier axis was empty) while --genre-signals
+        # screamed `CAP-EXCEEDED-BY-GENRE` (the genre axis was saturated) --
+        # same lane, same day, same script, contradictory verdicts, and the
+        # merge-gate (which reads --check-pr) let the bypass through. The
+        # single-source fix: --check-pr surfaces both axes, the `counts` field
+        # discloses which were tallied, and `cap_reached` is the UNION when the
+        # candidate itself carries the LIGHT-genre motif (#10341 preserves the
+        # innocent-CONTENT candidate from a lane-day aggregate it does not
+        # contribute to).
         body = None
         if args.body is not None:
             body = args.body
@@ -820,9 +842,15 @@ def main(argv: list[str] | None = None) -> int:
         if args.labels_file:
             cur_labels = load_labels_file(Path(args.labels_file))
         # Effective tier (#8970): a requalification label overrides the declared
-        # one. Only an EFFECTIVE LIGHT is assessed against the cap.
+        # one. Only an EFFECTIVE LIGHT spends the TIER budget. The GENRE budget
+        # is read off the declared genre (`effective_genre`), which a
+        # requalification label does NOT override -- the genre is the worker's
+        # substance claim, not a coordinator re-qualification field.
         eff = effective_tier(body, cur_labels)
         g = parse_grain(body)
+        cand_genre = effective_genre(body, cur_labels)
+        candidate_is_light_genre = cand_genre in LIGHT_GENRES
+
         # UNASSESSABLE vs ASSESSED (#9465). `cap_reached: false` must mean one
         # thing only: "assessed, and within budget". A body with no readable
         # tag, or a tag without a lane, is not an exemption -- it is a
@@ -836,26 +864,69 @@ def main(argv: list[str] | None = None) -> int:
                 "reason": "unassessable -- no Grain: tag in body",
             }))
             return 0
-        if eff != "LIGHT":
-            # A KNOWN non-LIGHT tier is a genuine assessment, lane or not: a
-            # MED/DEEP grain never spends the LIGHT budget. Only the lane's
-            # denominator suffers, and that is `unattributed`'s business.
-            print(json.dumps({"cap_reached": False, "reason": f"not LIGHT (effective {eff})"}))
+        lane = g["lane"]
+        # A non-LIGHT tier never spends the TIER budget; a non-LIGHT-GENRE
+        # grain never spends the GENRE budget. A candidate that carries
+        # NEITHER axis (DEEP/lean, MED/tooling) gets the historical "not
+        # LIGHT" verdict -- the #10341 guard: a lane-day aggregate pattern
+        # must not be posed on a CONTENT candidate that does not carry it.
+        # Only a non-LIGHT tier that IS a LIGHT-genre (the MED/readme defect
+        # case) falls through to the structured assessment where the genre
+        # cap can flip `cap_reached`.
+        if eff != "LIGHT" and not candidate_is_light_genre:
+            out: dict = {"cap_reached": False, "reason": f"not LIGHT (effective {eff})"}
+            if lane:
+                # The lane's genre-cap may already be saturated by OTHER
+                # grains of the day. Surface it informationally (it does NOT
+                # flip `cap_reached` -- this candidate does not carry the
+                # motif) so the coordinator sees the lane-day pattern at
+                # merge time without the gate holding an innocent grain.
+                tally_info = lane_genre_tally(merged, lane)
+                if tally_info["light_genre"] > tally_info["cap"]:
+                    out["lane_genre_saturated"] = True
+            print(json.dumps(out))
             return 0
-        if not g["lane"]:
-            # An effective LIGHT with no lane is the one case where the tier is
-            # known and the answer still cannot be computed: the budget is
-            # per-lane, so without a lane there is no denominator to compare to.
+        if not lane:
+            # An effective LIGHT (or a LIGHT-genre MED) with no lane is the one
+            # case where an axis is known and the answer still cannot be
+            # computed: both budgets are per-lane, so without a lane there is
+            # no denominator to compare to on either axis.
             print(json.dumps({
                 "cap_reached": None,
-                "reason": "unassessable -- effective LIGHT but no lane in tag",
+                "reason": "unassessable -- LIGHT (or LIGHT-genre) but no lane in tag",
             }))
             return 0
-        status = light_cap_status(merged, g["lane"])
+        # Structured assessment: effective LIGHT, OR a LIGHT-genre MED/DEEP.
+        # The two cap axes share the SAME CI window (lane_grains + 1 -- the
+        # open candidate is itself a grain of the day, counted in both
+        # denominators). The GENRE axis is aligned on the TIER window here;
+        # --genre-signals (the audit path) keeps the merged-only window
+        # because the day is over there and the denominator is KNOWN.
+        status = light_cap_status(merged, lane)
+        tally = lane_genre_tally(merged, lane)
+        light_genre_count = tally["light_genre"] + (1 if candidate_is_light_genre else 0)
+        genre_cap = light_budget(tally["lane_grains"] + 1)  # +1 candidate, aligned
+        cap_exceeded_by_genre = light_genre_count > genre_cap
+        tier_cap_reached = status["cap_reached"]
+        # UNION only when the candidate carries the genre motif (#10341): a
+        # LIGHT/tooling (tier LIGHT, genre not LIGHT) cannot trip the genre
+        # cap; a MED/readme (tier MED, genre LIGHT) can. Both directions of
+        # the defect are closed -- the declared-MED bypass AND the coherence
+        # with --genre-signals.
+        cap_reached = tier_cap_reached or (cap_exceeded_by_genre and candidate_is_light_genre)
         print(json.dumps({
             "pr": args.check_pr,
-            "lane": g["lane"],
-            **status,
+            "lane": lane,
+            "cap_reached": cap_reached,
+            "tier_cap_reached": tier_cap_reached,
+            "cap_exceeded_by_genre": cap_exceeded_by_genre,
+            "budget": status["budget"],
+            "spent": status["spent"],
+            "light_genre": light_genre_count,
+            "genre_cap": genre_cap,
+            "lane_grains": status["lane_grains"],
+            "consumed_by": status["consumed_by"],
+            "counts": "tier+genre",
         }))
         return 0
 
