@@ -74,7 +74,7 @@ curl -H 'Authorization: Bearer $2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYy
 
 ### ❌ **Endpoint avec bearer token (généré par ComfyUI-Login)**
 ```bash
-curl -H 'Authorization: Bearer b2NWTdQ/zSFsWQ/JwCHyK/egVV6jpIssX0htD16.HtoBNRWpX993mTW' http://localhost:8188/system_stats
+curl -H 'Authorization: Bearer ROTATED 2026-08-11 f0cfe4627455' http://localhost:8188/system_stats
 # Résultat: {"error": "Authentication required."}
 ```
 **Statut**: ❌ **Échec** - Même le token généré automatiquement n'est pas reconnu
@@ -118,12 +118,12 @@ GPU name: NVIDIA GeForce RTX 3090
 Un fichier de configuration a été généré automatiquement :
 ```
 /workspace/ComfyUI/custom_nodes/ComfyUI-Login/password/password.txt
-Contenu: b2NWTdQ/zSFsWQ/JwCHyK/egVV6jpIssX0htD16.HtoBNRWpX993mTW
+Contenu: REDACTED-DEAD-2026-08-11
 ```
 
 ### 🔄 **Incohérence des tokens**
 - **Token dans .env**: `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.`
-- **Token généré par ComfyUI-Login**: `b2NWTdQ/zSFsWQ/JwCHyK/egVV6jpIssX0htD16.HtoBNRWpX993mTW`
+- **Token généré par ComfyUI-Login**: `REDACTED-DEAD-2026-08-11`
 - **Problème**: Les deux tokens ne correspondent pas
 
 ### 🐛 **Causes probables**

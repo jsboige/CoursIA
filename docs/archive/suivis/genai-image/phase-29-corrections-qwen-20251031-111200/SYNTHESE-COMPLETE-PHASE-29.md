@@ -153,7 +153,7 @@ Installation complète du custom node ComfyUI-Login via script master [`scripts/
 
 1. Clone repository dans `/workspace/ComfyUI/custom_nodes/`
 2. Installation dépendances : `bcrypt`, `python-dotenv`
-3. Génération token sécurisé : `LEAKED-PENDING-ROTATION 7a052dd4aeb4`
+3. Génération token sécurisé : `ROTATED 2026-08-11 7a052dd4aeb4`
 4. Hachage bcrypt (12 rounds) : `$2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5M2`
 5. Sauvegarde multi-emplacements (Windows + WSL)
 6. Redémarrage container : `docker-compose restart`

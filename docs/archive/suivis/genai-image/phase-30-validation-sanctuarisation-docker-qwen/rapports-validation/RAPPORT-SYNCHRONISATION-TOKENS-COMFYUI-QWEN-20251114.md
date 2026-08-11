@@ -23,7 +23,7 @@ Le problème identifié : **les trois hash étaient différents**, empêchant la
 ### Tokens Avant Synchronisation
 ```bash
 # Token brut (inchangé)
-QWEN_API_USER_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4
+QWEN_API_USER_TOKEN=ROTATED 2026-08-11 7a052dd4aeb4
 
 # Hash serveur (ancien)
 $2b$12$4NWTdQ/zSFsWQ/JwCHyK/egV6jpIssX0htD16.HtoBNRWpX993mTW
@@ -47,7 +47,7 @@ $2b$12$6kSChnnUFiCUPfyAllJPoHm.9O9LL9KnIlX88zomudAiJDvMRoJ3uOXa
 
 ```python
 # Token brut conservé
-token_brut = "LEAKED-PENDING-ROTATION 7a052dd4aeb4"
+token_brut = "ROTATED 2026-08-11 7a052dd4aeb4"
 
 # Génération hash bcrypt
 salt = bcrypt.gensalt()
@@ -79,7 +79,7 @@ validation = bcrypt.checkpw(token_brut.encode('utf-8'), hash_bcrypt)
 
 3. **`.secrets/.env.generated`**
    - **Statut** : Inchangé (token brut préservé)
-   - **Contenu** : `QWEN_API_USER_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4`
+   - **Contenu** : `QWEN_API_USER_TOKEN=ROTATED 2026-08-11 7a052dd4aeb4`
 
 ### 3. Synchronisation avec Container Docker
 
@@ -108,7 +108,7 @@ docker-compose down && docker-compose up -d
 2. **Test avec token brut** :
    ```bash
    curl -X GET 'http://localhost:8188/system_stats' \
-        -H 'Authorization: Bearer LEAKED-PENDING-ROTATION 7a052dd4aeb4' \
+        -H 'Authorization: Bearer ROTATED 2026-08-11 7a052dd4aeb4' \
         -H 'Content-Type: application/json'
    ```
    **Résultat** : `{"error": "Authentication required."}`
@@ -153,14 +153,14 @@ Statut: SUCCESS
 ### Tokens Synchronisés ✅
 | Emplacement | Contenu | Statut |
 |------------|---------|--------|
-| `.secrets/.env.generated` | `LEAKED-PENDING-ROTATION 7a052dd4aeb4` | ✅ Token brut préservé |
+| `.secrets/.env.generated` | `ROTATED 2026-08-11 7a052dd4aeb4` | ✅ Token brut préservé |
 | `.secrets/qwen-api-user.token` | `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.` | ✅ Hash mis à jour |
 | `docker-configurations/services/comfyui-qwen/.env` | `$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr.` | ✅ Hash synchronisé |
 
 ### Validation Technique ✅
 ```python
 # Test de correspondance
-token_brut = "LEAKED-PENDING-ROTATION 7a052dd4aeb4"
+token_brut = "ROTATED 2026-08-11 7a052dd4aeb4"
 hash_bcrypt = "$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr."
 validation = bcrypt.checkpw(token_brut.encode('utf-8'), hash_bcrypt.encode('utf-8'))
 # Résultat : True ✅
