@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: INTRINSIC
+  bridge_verdict_reason: "OpenSpiel = lib C++ bindings Python uniquement (pyspiel) ; aucun binding .NET, pas CLI invocable, pas IKVM-able (IKVM ponte Java pas C++) ; pont C++->.NET non viable (cf GT-17 meme verdict, #10454)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2024:CoursIA-2
