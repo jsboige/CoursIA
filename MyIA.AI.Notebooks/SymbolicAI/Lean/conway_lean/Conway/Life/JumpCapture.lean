@@ -166,7 +166,96 @@ theorem window_margin_lt_cone_reach {k : Nat} (hk : 3 ≤ k) :
 theorem window_margin_eq_cone_reach_at_two :
     2 ^ (2 - 1) + 2 = 2 ^ 2 := by norm_num
 
-/-! ## 3. Le clip transparent sous confinement -/
+/-! ## 3. Marges nommées (route P5 étape 0, finding #6724 du 2026-08-10)
+
+Le lake contient deux lemmes de marge, tous deux prouvés sorry-free, dont
+les verdicts paraissent opposés parce qu'ils mesurent vers **deux
+frontières différentes** :
+
+| lemme | marge jusqu'à | valeur | vs portée `2^k` |
+|---|---|---|---|
+| `padCenter2_margin_ge_jumpReach` (Foundation:1201) | bord de la **cellule rembourrée** | `3·2^(k-1)` = `1.5·2^k` | surplus 1.5× |
+| `window_margin_lt_cone_reach` (JumpCapture:152) | bord de la **fenêtre de résultat** | `2^(k-1)` (+2) = `0.5·2^k` | déficit 0.5× |
+
+`2^(k+p-1) − 2^(k+p-2) = 2^(k+p-2)` = exactement une portée : le bord de
+fenêtre est en retrait d'une portée entière par rapport au bord de
+cellule, d'où deux ratios qui diffèrent exactement de 1
+(`2 − 2^(1-p)` contre `1 − 2^(1-p)`). Corollaire : le surplus de
+Foundation est **définitionnel** et ne porte aucune information sur la
+capture — « le cône reste dans la cellule rembourrée » est
+automatiquement vrai dès que « le cône reste dans la fenêtre » échoue
+de moins d'une portée.
+
+L'étape 0 **nomme les deux frontières** et ferme leur arithmétique
+pour rendre l'illusion non reproductible (cf `supportInMargin` #9568,
+même classe de piège — un énoncé vrai qui paraît dire plus qu'il ne
+dit). -/
+
+/-- **Marge du contenu au bord de la cellule rembourrée** (profondeur de
+    rembourrage `p ≥ 1`). La cellule paddée fait `2^(k+p)` cellules de
+    côté, le contenu (original) fait `2^k` cellules de côté centré. La
+    distance du bord du contenu au bord de la cellule est donc
+    `(2^(k+p) − 2^k) / 2 = 2^(k+p-1) − 2^(k-1)`. -/
+def marginToPaddedCell (k p : Nat) : Nat :=
+  2 ^ (k + p - 1) - 2 ^ (k - 1)
+
+/-- **Marge du contenu au bord de la fenêtre de résultat** (profondeur
+    `p`). La fenêtre centrale fait `2^(k+p-1)` cellules de côté
+    (`hashlifeResult` sur la cellule paddée de niveau `k+p`), centrée
+    sur `[2^(k+p-2), 3·2^(k+p-2))`. Le contenu reste centré sur
+    `[2^(k-1), 2^k + 2^(k-1))`. La distance du bord du contenu au bord
+    gauche de la fenêtre est donc `2^(k+p-2) − 2^(k-1)`. -/
+def marginToResultWindow (k p : Nat) : Nat :=
+  2 ^ (k + p - 2) - 2 ^ (k - 1)
+
+/-- **Portée du cône de vitesse 1 sur le jump Hashlife** : `hashlifeResult`
+    sur une cellule de niveau `k+p` avance `2^(k+p-2)` générations, et la
+    vitesse c=1 (cône de lumière du Game of Life) atteint donc cette
+    distance au bord. -/
+def jumpReach (k p : Nat) : Nat :=
+  2 ^ (k + p - 2)
+
+/-- **Lemme de liaison** : la différence entre marge de cellule et
+    marge de fenêtre vaut exactement la portée du cône. C'est ce qui
+    rend les deux ratios (`2 − 2^(1-p)` et `1 − 2^(1-p)`) séparés
+    d'exactement 1 — non une coïncidence, mais la définition de la
+    fenêtre comme moitié centrale de la cellule. -/
+theorem margin_liaison (k p : Nat) (hk : 1 ≤ k) (hp : 1 ≤ p) :
+    marginToPaddedCell k p - marginToResultWindow k p = jumpReach k p := by
+  unfold marginToPaddedCell marginToResultWindow jumpReach
+  have hk_pos : 0 < k - 1 + 1 := by omega
+  have hp_pos : 0 < k + p - 2 + 1 := by omega
+  have h1 : (2 : Nat) ^ (k + p - 1) = (2 : Nat) ^ (k + p - 2) * 2 := by
+    conv_lhs => rw [show k + p - 1 = (k + p - 2) + 1 by omega]
+    rw [pow_succ]
+  rw [h1]
+  ring
+
+/-- **Étape 0 — le rembourrage ne peut pas refermer l'écart** : pour
+    toute profondeur `p ≥ 1`, la marge de fenêtre reste strictement
+    inférieure à la portée du cône. Formellement :
+    `marginToResultWindow k p < jumpReach k p`, soit
+    `2^(k+p-2) − 2^(k-1) < 2^(k+p-2)`. Découle immédiatement de
+    `2^(k-1) > 0`.
+
+    **Ce que ça décide** : la profondeur de rembourrage ne peut pas
+    suffire à elle seule à fermer la capture. Le levier restant est
+    **décorréler la portée du niveau**, via un paramètre `j` de Gosper
+    (`hashlifeResultAt j`, à `j = level-3` au lieu de `level-2` :
+    portée `2^(k-1)` au lieu de `2^(k+p-2)`, marge `2^(k-1) + 2` alors
+    strictement **supérieure**). À `j = level-3` le ratio marge/portée
+    devient `2 − 2^(2-p)` : **tendu à `p=2`**, **surplus strict à
+    `p ≥ 3`** — `j` et rembourrage travaillent **ensemble**, ce que la
+    formulation initiale « la profondeur de rembourrage ne peut pas
+    aider » disait trop sèchement. Cette étape 2 fera l'objet d'une
+    PR distincte ; elle n'est pas livrée ici. -/
+theorem no_padding_depth_suffices (k p : Nat) (hk : 1 ≤ k) (hp : 1 ≤ p) :
+    marginToResultWindow k p < jumpReach k p := by
+  unfold marginToResultWindow jumpReach
+  have hk_pos : (2 : Nat) ^ (k - 1) > 0 := Nat.two_pow_pos (k - 1)
+  omega
+
+/-! ## 4. Le clip transparent sous confinement -/
 
 /-- `restrictGridTo` est l'identité quand toutes les cellules vivantes sont
     déjà dans la fenêtre : c'est le pont qui rend le clip de P4 transparent
