@@ -2,13 +2,20 @@
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
       python_sha: dea984c63c87f8fd18e79a7c3a679f8afeb75605
       csharp_sha: 131d4a0bea72a0ad043ed44798468fd98dd7a2e5
+    - date: "2026-08-11"
+      by: myia-po-2024:CoursIA
+      python_sha: dea984c63c87f8fd18e79a7c3a679f8afeb75605
+      csharp_sha: 2ebcbc046b781ee49449dc216402b603d5e7fb4b
+      content_python_sha: cc583657ae2a15b36e01b29bcf1f639b6fa93359f42635aaa6554b08d153d175
+      content_csharp_sha: 536a248cb5af410b7867159f605d558bedc8eecc39c0827d93480d736b820bb4
   known_differences:
     - "Concept : planification temporelle (actions duratives, ordonnancement avec parallelisme)."
-    - "Python : unified-planning temporal + CP-SAT + Gantt. C# : from-scratch BCL .NET (ordonnancement usine)."
+    - "Python : unified-planning temporal + CP-SAT + Gantt. C# : deux tranches — Tranche 1 from-scratch BCL .NET (PDDL duratives, Allen, STN Floyd-Warshall, RCPSP glouton LPT) + Tranche 2 Google.OrTools CP-SAT natif .NET (moteur de production, depuis 2026-08-11, contrainte cumulative AddCumulative)."
+    - "Parite engine (native-both depuis 2026-08-11) : les deux cotes atteignent un moteur CP-SAT de production (Python OR-Tools, C# Google.OrTools). Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382. Instance d'atelier : makespan optimal = 10 des deux cotes (le glouton LPT etait deja optimal, CP-SAT le PROUVE et explique pourquoi le chemin critique 7 est inaccessible via la contention de ressource)."
     - "po-2025 a verifie firsthand (c.678) : probleme temporel genuine avec parallelisme inherant (pas un cas degenere)."
