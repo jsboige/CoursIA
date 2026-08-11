@@ -62,6 +62,23 @@ décider **quand l'un est plus adapté que l'autre** pour un projet donné.
 
 ---
 
+## Conception
+
+Une fois la plateforme choisie, une question de conception se pose à l'identique
+des deux côtés : **plusieurs assistants, un seul catalogue d'outils — comment
+cadre-t-on ce que chacun a le droit de faire ?**
+
+[`cadrer-les-agents.md`](cadrer-les-agents.md) distingue les trois couches qu'on
+confond habituellement — l'intention (prompt système), la portée (catalogue
+attaché) et l'autorité (vérification au moment de l'appel) — montre pourquoi le
+cloisonnement par persona n'est **pas** une frontière de sécurité, et donne le
+critère de décision : on apparie le mécanisme à la **réversibilité de l'action**.
+Le document compare ce que chaque plateforme prend en charge nativement de la
+troisième couche, et fournit la manipulation permettant de le vérifier sur son
+propre déploiement.
+
+---
+
 ## Étendre la catégorie
 
 La catégorie est nommée pour accueillir sans réécriture un troisième membre :
