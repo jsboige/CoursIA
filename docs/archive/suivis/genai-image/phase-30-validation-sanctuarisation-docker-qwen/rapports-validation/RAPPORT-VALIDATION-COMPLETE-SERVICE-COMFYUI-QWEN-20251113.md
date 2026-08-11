@@ -74,7 +74,7 @@ curl -H 'Authorization: Bearer $2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYy
 
 ### ❌ **Endpoint avec bearer token (généré par ComfyUI-Login)**
 ```bash
-curl -H 'Authorization: Bearer REDACTED-DEAD-2026-08-11' http://localhost:8188/system_stats
+curl -H 'Authorization: Bearer ROTATED 2026-08-11 f0cfe4627455' http://localhost:8188/system_stats
 # Résultat: {"error": "Authentication required."}
 ```
 **Statut**: ❌ **Échec** - Même le token généré automatiquement n'est pas reconnu
