@@ -12,7 +12,8 @@ import sys
 import time
 from pathlib import Path
 
-WORK_DIR = Path(r"C:/dev/CoursIA-2-c1331x77-multiseed").resolve()
+# Repo root: scripts/PostTraining/PT-11b/run_pt11b_chain.py -> <root>/scripts/PostTraining/PT-11b
+WORK_DIR = Path(__file__).resolve().parents[3]
 
 SEEDS = [int(s) for s in sys.argv[1:]] or [0, 1, 7, 42]
 RUNNER = WORK_DIR / "run_pt11b.py"

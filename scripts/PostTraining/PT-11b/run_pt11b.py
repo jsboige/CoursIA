@@ -15,7 +15,10 @@ import papermill as pm
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("seed", type=int, nargs="?", default=42)
-    parser.add_argument("--work-dir", default=r"C:/dev/CoursIA-2-c1331x77-multiseed")
+    # Repo root computed from this script's location:
+    # scripts/PostTraining/PT-11b/run_pt11b.py -> <root>/scripts/PostTraining/PT-11b
+    default_work_dir = str(Path(__file__).resolve().parents[3])
+    parser.add_argument("--work-dir", default=default_work_dir)
     parser.add_argument("--notebook", default="MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb")
     parser.add_argument("--output-dir-suffix", default="")
     args = parser.parse_args()

@@ -9,9 +9,11 @@ matplotlib.use("Agg")  # non-interactive backend, no blocking
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-OUTPUT_DIR = Path("./pt11b_multiseed_output")
+# Repo root: scripts/PostTraining/PT-11b/regenerate_plot.py -> <root>/scripts/PostTraining/PT-11b
+REPO_ROOT = Path(__file__).resolve().parents[3]
+OUTPUT_DIR = REPO_ROOT / "pt11b_multiseed_output"
 JSONL_PATH = OUTPUT_DIR / "pt11b_per_seed_metrics.jsonl"
-PNG_PATH = Path("MyIA.AI.Notebooks/GenAI/PostTraining/pt11b_reward_curves.png")
+PNG_PATH = REPO_ROOT / "MyIA.AI.Notebooks" / "GenAI" / "PostTraining" / "pt11b_reward_curves.png"
 
 per_seed_metrics = []
 with open(JSONL_PATH) as f:

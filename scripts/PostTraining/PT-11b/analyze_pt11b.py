@@ -10,7 +10,8 @@ from pathlib import Path
 
 import numpy as np
 
-WORK_DIR = Path(r"C:/dev/CoursIA-2-c1331x77-multiseed").resolve()
+# Repo root: scripts/PostTraining/PT-11b/analyze_pt11b.py -> <root>/scripts/PostTraining/PT-11b
+WORK_DIR = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(WORK_DIR / "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts"))
 from dm_test import diebold_mariano_test
 
