@@ -229,6 +229,11 @@ theorem margin_liaison (k p : Nat) (hk : 1 ≤ k) (hp : 1 ≤ p) :
   -- 2^(k+p-2)` (= `k-1 ≤ k+p-2` = `hp`) sous la forme que `omega` consomme.
   have hle : (2 : Nat) ^ (k - 1) ≤ (2 : Nat) ^ (k + p - 2) :=
     Nat.pow_le_pow_right (by norm_num) (by omega)
+  -- `omega` traite `2^e` comme un ATOME opaque : sans ce pont, `2^(k+p-1)` et
+  -- `2^(k+p-2)` sont deux inconnues sans relation, et la cible est hors de portee.
+  have hkey : (2 : Nat) ^ (k + p - 1) = 2 * 2 ^ (k + p - 2) := by
+    conv_lhs => rw [show k + p - 1 = (k + p - 2) + 1 by omega]
+    ring
   omega
 
 /-- **Étape 0 — le rembourrage ne peut pas refermer l'écart** : pour
@@ -260,7 +265,6 @@ theorem no_padding_depth_suffices (k p : Nat) (hk : 1 ≤ k) (hp : 1 ≤ p) :
     apply Nat.pow_le_pow_right (by norm_num); omega
   have hpos : (2 : Nat) ^ (k - 1) > 0 := Nat.two_pow_pos (k - 1)
   have hjump_pos : (2 : Nat) ^ (k + p - 2) > 0 := Nat.two_pow_pos (k + p - 2)
-  rw [Nat.lt_sub_iff_add_lt hbound]
   omega
 
 /-! ## 4. Le clip transparent sous confinement -/
