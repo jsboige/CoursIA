@@ -98,9 +98,11 @@ plateforme expose aussi ses outils par un **endpoint destiné aux machines** —
 un serveur MCP, une API d'outils — cet endpoint est une **seconde porte**, et
 elle ne passe par aucun assistant.
 
-Relevé sur une installation AI-Engine 3.4.1 : six assistants configurés
-déclarent respectivement 0, 5, 5, 5, 5 et 12 fonctions. Le même déploiement
-expose **88 outils** sur son endpoint MCP à qui présente un jeton valide.
+Relevé le **11 août 2026** sur une installation AI-Engine 3.4.1 : six assistants
+configurés déclarent respectivement 0, 5, 5, 5, 5 et 12 fonctions. Le même
+déploiement expose **88 outils** sur son endpoint MCP à qui présente un jeton
+valide. La date compte : ces nombres bougent à chaque extension installée et à
+chaque montée de version — c'est l'**écart** qui est la mesure, pas les nombres.
 
 Restreindre un assistant change donc ce que **le modèle** se propose
 spontanément de faire. Cela ne change rien pour **qui détient le jeton**.
@@ -221,10 +223,12 @@ une sonde qui répond vert parce qu'elle mesure autre chose que ce qu'on croit.
   authentifié.
 - **Il ne remplace pas une revue de sécurité.** Les trois couches sont un cadre
   de conception, pas une liste de contrôle exhaustive.
-- **La mesure citée** (six assistants face à 88 outils) est un relevé sur une
-  installation, pas une propriété du produit. Elle illustre l'écart ; la section
-  précédente donne le moyen de la refaire chez soi, ce qui est la seule façon
-  honnête de s'en servir.
+- **La mesure citée** (six assistants face à 88 outils, 11 août 2026) est un
+  relevé daté sur une installation, pas une propriété du produit — et elle
+  périme. Elle illustre l'écart ; la section précédente donne le moyen de la
+  refaire chez soi, ce qui est la seule façon honnête de s'en servir. Si votre
+  relevé donne d'autres nombres, c'est attendu : seul le signe de l'écart est
+  la thèse.
 
 ---
 
