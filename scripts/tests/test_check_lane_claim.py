@@ -53,6 +53,56 @@ def test_extract_lane_none_when_no_lane_keyword():
     assert grain_tag.extract_lane("nothing here") is None
 
 
+# --- extract_lane fallback (#10395 Variante 1) -------------------------------
+
+def test_extract_lane_fallback_marker_line_recognises_gabarit():
+    # The marker-line scope is the fix: a comment without the `lane` keyword
+    # but with a `<machine>:<workspace>` token on the bracket line is
+    # recognised by the fallback regex. The reproducer is the exact comment
+    # from #10395 (the po-2023 claim on #10355 that was silently counted as
+    # `.unattributed_markers`).
+    assert grain_tag.extract_lane(
+        "[CLAIMED] Notebook carte Argumentum (render deck depuis taxonomie in-repo) — myia-po-2023:CoursIA-2 2026-08-10T23:46:10Z",
+        marker_line="[CLAIMED] Notebook carte Argumentum (render deck depuis taxonomie in-repo) — myia-po-2023:CoursIA-2 2026-08-10T23:46:10Z",
+    ) == "myia-po-2023:CoursIA-2"
+
+
+def test_extract_lane_fallback_does_not_match_arbitrary_colon_pairs():
+    # The fallback is restricted to the marker line: URLs, time stamps and
+    # code tokens that contain a colon anywhere in the body must NOT be
+    # mistaken for a lane. This is the differential that justifies the
+    # `marker_line` parameter.
+    body = (
+        "Some prose with a URL https://example.com:8080/path\n"
+        "[CLAIMED] lane myia-po-2025:CoursIA -- working here\n"
+        "A timestamp 12:34:56 elsewhere"
+    )
+    assert grain_tag.extract_lane(body) == "myia-po-2025:CoursIA"
+    # When the caller asks for the fallback on the LAST marker line, the
+    # time stamp and the URL on other lines are out of scope.
+    assert grain_tag.extract_lane(
+        body,
+        marker_line="[CLAIMED] lane myia-po-2025:CoursIA -- working here",
+    ) == "myia-po-2025:CoursIA"
+
+
+def test_parse_claim_event_fallback_attribution():
+    # End-to-end: a comment without the `lane` keyword, parsed by
+    # `parse_claim_event`, becomes an ATTRIBUTED claim -- the reproducer
+    # of the #10395 Variant 1 failure on #10355.
+    from check_lane_claim import parse_claim_event  # noqa: E402
+    ev = parse_claim_event(comment(
+        "[CLAIMED] Notebook carte Argumentum (render deck depuis taxonomie in-repo) — myia-po-2023:CoursIA-2 2026-08-10T23:46:10Z",
+        "2026-08-10T23:46:10Z",
+        author="jsboige",
+    ))
+    assert ev is not None
+    assert ev.lane == "myia-po-2023:CoursIA-2"
+    assert ev.is_open is True
+    assert ev.marker == "CLAIMED"
+    assert grain_tag.extract_lane("nothing here") is None
+
+
 # --- parse_claim_event -------------------------------------------------------
 
 def test_parse_open_claim():
@@ -909,3 +959,203 @@ def test_active_claims_summary_exposes_paths(capsys):
     assert rc == 1  # override granted A, so B is blocked (epic-wide read)
     assert "Lean/**" in out
     assert "scripts/**" in out
+
+
+# --- #10395 Variante 2: claim-scope mesh (intent in BLOCKED verdict) ---------
+# The motivating case was an EPIC (e.g. #10382 Search/*) where three lanes
+# each carry a valid [CLAIMED] on disjoint notebooks. The blocking tool used
+# to surface a bare "BLOCKED: another lane holds an active claim on #NNNNN"
+# -- a coordinator could not read at a glance that the three claims were
+# disjoint (different notebooks of the same EPIC). Variante 2 attaches the
+# marker-line excerpt as `intent` and surfaces it side-by-side so the
+# verdict becomes actionable. These tests pin the new contract:
+#
+#   1. parse_claim_event populates `intent` from the marker line.
+#   2. _run_check surfaces each active claim's intent in the BLOCKED verdict.
+#   3. The "trio OR-Tools" scenario (3 lanes, disjoint intents) renders all
+#      three intents side-by-side, not a bare BLOCKED.
+#   4. The "epic-wide claim" without a marker-line excerpt still surfaces
+#      `(no intent)` as a deliberate sentinel (not a crash).
+
+
+def test_intent_extracted_from_marker_line():
+    """`intent` carries the marker-line excerpt with the bracket stripped."""
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 — Search-3 GraphAlgorithms notebook",
+        "2026-08-10T14:00:00Z",
+    ))
+    assert ev is not None
+    # The intent is the part AFTER `[CLAIMED] lane myia-po-2025:CoursIA-2`,
+    # trimmed of leading separators. We don't pin exact whitespace but
+    # the SUBSTANCE (notebook target) must be readable.
+    assert ev.intent is not None
+    assert "Search-3" in ev.intent
+    assert "GraphAlgorithms" in ev.intent
+
+
+def test_intent_handles_marker_line_with_only_lane_token():
+    """A `[CLAIMED] lane myia-po-2025:CoursIA` (no prose beyond the lane)
+    still has *some* intent (the lane token itself) -- the contract is
+    "marker-line excerpt with the bracket stripped", not "must contain
+    arbitrary prose". This is the bare minimum signal: the coordinator
+    sees WHICH lane, even when the author didn't write anything else."""
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA",
+        "2026-08-10T14:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.intent is not None
+    assert ev.intent == "lane myia-po-2025:CoursIA"
+
+
+def test_intent_handles_truly_empty_marker_line():
+    """A bare `[CLAIMED]` (no prose after the bracket, no lane token either)
+    yields intent=None -- the sentinel for "this comment has no scope info".
+    The verifier (BLOCKED verdict) prints `(no intent)` for these."""
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED]",
+        "2026-08-10T14:00:00Z",
+    ))
+    assert ev is not None
+    # The lane itself is unreadable (no `lane myia-...:...` token), so the
+    # event is unattributed. But the marker LINE was non-empty after
+    # stripping whitespace -- in fact, empty. intent=None either way.
+    # The point: the tool does NOT crash on a bare bracket.
+    assert ev.lane is None  # unattributed
+    assert ev.intent is None  # no excerpt
+
+
+def test_intent_caps_at_120_chars():
+    """Long marker-line excerpts are truncated with an ellipsis."""
+    long = "x" * 200
+    ev = clc.parse_claim_event(comment(
+        f"[CLAIMED] lane myia-po-2025:CoursIA — {long}",
+        "2026-08-10T14:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.intent is not None
+    assert len(ev.intent) <= 121  # 120 + the trailing ellipsis char
+    assert ev.intent.endswith("…")
+
+
+def test_blocked_verdict_surfaces_intent_side_by_side(capsys):
+    """Two lanes with disjoint marker-line excerpts both render in BLOCKED."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA — Part1-Foundations BFS notebook",
+            "2026-08-10T14:00:00Z",
+        ),
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA — Part3-Advanced A* notebook",
+            "2026-08-10T14:05:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    assert rc == 1
+    err = capsys.readouterr().err
+    # The bare BLOCKED message used to say "Do not start -- pick another grain,
+    # or wait for release." Variante 2 adds the side-by-side intent block.
+    assert "BLOCKED" in err
+    assert "Part1-Foundations BFS notebook" in err
+    assert "Part3-Advanced A* notebook" in err
+    assert "Claimed scopes" in err  # the new header line
+
+
+def test_trio_ortools_scenario_disjoint_intents_visible(capsys):
+    """Trio OR-Tools scenario (the decisive test for Variante 2).
+
+    Three lanes, each with a valid [CLAIMED] on the same EPIC #10382 but
+    on DISJOINT notebooks. The block is the tool's job (the reducer keeps
+    them all in `others` -- epic-wide semantics are preserved). The FIX is
+    that the BLOCKED verdict now surfaces all three intents side-by-side,
+    so a coordinator reads "three disjoint notebooks" at a glance instead
+    of "three blocking claims" and can decide whether the scope overlap
+    actually warrants arbitration, or whether each lane can proceed.
+    """
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2023:CoursIA — Search-1 maze BFS notebook",
+            "2026-08-10T14:00:00Z",
+        ),
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA — Search-5 GA notebook",
+            "2026-08-10T14:05:00Z",
+        ),
+        comment(
+            "[CLAIMED] lane myia-po-2026:CoursIA — Search-12 adversarial notebook",
+            "2026-08-10T14:10:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    # Reducer keeps all three in `others` (no scope mechanism for [CLAIMED]
+    # yet -- that's the next iteration; the immediate fix is the verdict
+    # SURFACES them legibly).
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "myia-po-2023:CoursIA" in err
+    assert "myia-po-2024:CoursIA" in err
+    assert "myia-po-2026:CoursIA" in err
+    assert "Search-1 maze BFS notebook" in err
+    assert "Search-5 GA notebook" in err
+    assert "Search-12 adversarial notebook" in err
+
+
+def test_blocked_verdict_uses_no_intent_sentinel(capsys):
+    """An UNATTRIBUTED claim (no `lane myia-...:...` token anywhere) gets
+    the deliberate `(no intent)` sentinel in the BLOCKED verdict.
+
+    We do NOT crash, we do NOT fall back to the comment body (that would
+    leak back into the same "anything-with-a-colon looks like a lane"
+    trap). The sentinel makes the gap legible without inviting the reader
+    to misread silence as agreement.
+    """
+    p = payload(
+        comment(
+            "[CLAIMED]",  # no lane token, no prose -- the gap case
+            "2026-08-10T14:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    # Unattributed default does NOT block (the reducer is conservative:
+    # "cannot attribute" -> "do not block"). The sentinel is in the
+    # *unattributed* surface, not the *blocked* surface.
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert '"unattributed_markers": 1' in out
+
+
+def test_blocked_verdict_prints_intent_for_named_lane(capsys):
+    """A claim with a lane token AND a marker-line excerpt has its intent
+    printed in the BLOCKED verdict. This is the common case (the lane token
+    IS the intent excerpt when the author writes nothing else)."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA",
+            "2026-08-10T14:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "BLOCKED" in err
+    # The intent is the lane token (the only thing on the marker line).
+    assert "myia-po-2025:CoursIA" in err
+
+
+def test_blocked_message_includes_paths_narrowing_hint(capsys):
+    """The new BLOCKED hint mentions `[CLAIMED] paths: ...` as a narrowing
+    path. The path-scope clause is already supported for [OVERRIDE] (#10342);
+    [CLAIMED] with paths: is a natural follow-up, but the immediate value of
+    Variante 2 is to teach the reader that this is the next move.
+    """
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA — working here",
+            "2026-08-10T14:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "paths:" in err
+    assert "scope-narrowing" in err

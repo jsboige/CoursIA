@@ -126,8 +126,12 @@ class ClaimEvent(dict):
     """Typed-ish view over a parsed claim event.
 
     Keys: lane (str|None), action ("open"|"close"|"override"), marker (str upper),
-    created_at (str ISO, server UTC), author (str|None), url (str|None).
-    `created_at` comes from the comment's server field, never from the body.
+    created_at (str ISO, server UTC), author (str|None), url (str|None),
+    intent (str|None). `created_at` comes from the comment's server field, never
+    from the body. `intent` is the marker line without the bracket prefix --
+    the human-readable scope announcement that turns a BLOCKED verdict
+    (otherwise opaque) into an actionable list of disjoint intentions (#10395
+    Variante 2).
     """
 
     @property
@@ -141,6 +145,21 @@ class ClaimEvent(dict):
     @property
     def is_override(self) -> bool:
         return self.get("action") == "override"
+
+    @property
+    def intent(self) -> str | None:
+        """Marker-line body excerpt (#10395 Variante 2).
+
+        The portion of the comment AFTER the bracketed marker, with leading
+        punctuation / spaces stripped, capped at ~120 characters. The point
+        is to give a BLOCKED message enough context to discriminate "two
+        lanes working on disjoint notebooks of the same EPIC" (legitimate
+        collision detection) from "two lanes working on the same file"
+        (real collision). The marker is stripped so the excerpt reads
+        naturally -- `lanes myia-po-2025:CoursIA-2 — taxonomy coverage
+        analysis notebook` is the intent that justifies the claim.
+        """
+        return self.get("intent")
 
     @property
     def created_at(self) -> str | None:
@@ -183,6 +202,17 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
     `paths: <comma-list>` clause, the parsed list is attached to the event as
     `paths`. Other markers ignore the clause (claim/release/done are not
     scope-bound; the path-mode guard handles file collisions separately, #9959).
+
+    `#10395 Variante 1`: the marker LINE (the line carrying the last bracketed
+    marker, not the whole body) is also passed to `extract_lane` as the
+    fallback search scope. Comment forms that omit the literal `lane` keyword
+    -- e.g. `[CLAIMED] #9764 - myia-po-2025:CoursIA 2026-08-07T00:52Z` --
+    are recognised by their marker-line token instead of being mis-attributed.
+
+    `#10395 Variante 2`: the marker-line body excerpt (with the `[MARKER]`
+    stripped) is attached as `intent` -- gives a BLOCKED verdict enough
+    context to discriminate "two lanes on disjoint notebooks of the same EPIC"
+    (legitimate) from "two lanes on the same file" (real collision).
     """
     body = comment.get("body") or ""
     marks = _MARKER_RE.findall(body)
@@ -197,15 +227,76 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
         action = "close"
     author = (comment.get("author") or {}).get("login")
     paths = _extract_override_paths(body) if action == "override" else None
+    marker_line = _last_marker_line(body, marker)
+    intent = _extract_marker_intent(body) if marker_line else None
     return ClaimEvent(
-        lane=extract_lane(body),
+        lane=extract_lane(body, marker_line=marker_line),
         action=action,
         marker=marker,
         created_at=comment.get("createdAt"),
         author=author,
         url=comment.get("url"),
         paths=paths,
+        intent=intent,
     )
+
+
+def _last_marker_line(body: str, marker_upper: str) -> str | None:
+    r"""Return the line (verbatim, including the marker) that carries the LAST
+    ``[MARKER]`` in `body`, restricted to the canonical marker set
+    (CLAIMED/RELEASED/CANCELLED/ABANDONED/DONE/OVERRIDE). Returns None if the
+    last bracketed marker does not match the canonical set.
+
+    Used by `parse_claim_event` to scope the `#10395 Variante 1` fallback
+    search: the marker line is the human-stated intent of the claim, and
+    restricting the fallback to that line keeps URLs / time stamps / code
+    tokens that contain colons from being mistaken for lane IDs.
+    """
+    last_line: str | None = None
+    for m in _MARKER_RE.finditer(body):
+        # Group 1 carries the marker text (case-insensitive matched by the
+        # compiled regex; uppercase it for the comparison).
+        if m.group(1).upper() == marker_upper:
+            last_line = m.group(0)
+            # Walk forward to the end of the line so the fallback sees any
+            # trailing content (e.g. `[CLAIMED] #9764 - myia-po-2025:CoursIA`).
+            tail = body[m.end():]
+            nl = tail.find("\n")
+            last_line = (m.group(0) + (tail if nl == -1 else tail[:nl])).rstrip("\r")
+    return last_line
+
+
+def _extract_marker_intent(body: str) -> str | None:
+    r"""Extract the human-readable INTENT of a claim comment (#10395 Variante 2).
+
+    The intent is the marker line with the bracketed marker stripped, leading
+    punctuation / whitespace trimmed, and capped at 120 chars. Examples:
+
+      `[CLAIMED] lane myia-po-2025:CoursIA-2 — taxonomy coverage analysis notebook`
+        -> `lane myia-po-2025:CoursIA-2 — taxonomy coverage analysis notebook`
+
+    The point is to make a BLOCKED verdict actionable: instead of saying
+    "another lane holds an active claim on #10355", the tool can show the
+    claim's scope ("taxonomy coverage analysis notebook") so a coordinator
+    reads "three disjoint notebooks on the same EPIC" instead of "three
+    blocking claims". Returns None when the body carries no bracketed marker.
+    """
+    last_marker: tuple[str, int, int] | None = None
+    for m in _MARKER_RE.finditer(body or ""):
+        last_marker = (m.group(1).upper(), m.end(), m.end())
+    if last_marker is None:
+        return None
+    _, after_marker, _ = last_marker
+    # Walk forward to the end of the same line.
+    tail = body[after_marker:]
+    nl = tail.find("\n")
+    text = tail if nl == -1 else tail[:nl]
+    text = text.strip().lstrip(":—-•| ").strip()
+    if not text:
+        return None
+    if len(text) > 120:
+        text = text[:120].rstrip() + "…"
+    return text
 
 
 def _extract_override_paths(body: str) -> list[str] | None:
@@ -500,10 +591,25 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         who = ", ".join(
             f"{ln} (@{_fmt_active(ev)})" for ln, ev in sorted(others.items())
         )
+        # #10395 Variante 2: display the intentions side-by-side when the
+        # comments carry them. A bare `BLOCKED` is not actionable on a
+        # multi-lane EPIC where two lanes might be working on disjoint
+        # notebooks -- surfacing the marker-line excerpts lets a coordinator
+        # (or the worker themselves) read disjoint intent at a glance and
+        # either narrow the claim's scope, post a `[RELEASED]`, or escalate.
+        intent_lines: list[str] = []
+        for ln, ev in sorted(others.items()):
+            tag = f"  - {ln}: "
+            excerpt = (ev.get("intent") if hasattr(ev, "get") else None) or "(no intent)"
+            intent_lines.append(f"{tag}{excerpt}")
+        intent_block = "\n".join(intent_lines)
         print(
             f"\nBLOCKED: another lane holds an active claim on "
             f"#{payload.get('number')}: {who}.\n"
-            f"Do not start -- pick another grain, or wait for release.",
+            f"Claimed scopes (marker-line excerpts -- #10395 Variante 2):\n"
+            f"{intent_block}\n"
+            f"Do not start -- pick another grain, post a scope-narrowing "
+            f"`[CLAIMED] paths: ...`, or wait for release.",
             file=sys.stderr,
         )
         return 1

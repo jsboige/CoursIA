@@ -100,7 +100,11 @@ def test_c_other_lane_claim_on_closing_ref_is_block():
 def test_d_same_conflict_on_non_closing_ref_is_pass():
     # (d) Same conflict but on a NON-closing reference (See #N) -> pass.
     # find_close_keyword_pr_refs only matches closing keywords, so See/Part of
-    # never reach the blocking path.
+    # never reach the blocking path. #10395 Variante 3: the old
+    # `lane-claim-conflict` advisory label was RETIRED -- the only correct
+    # response to a non-closing mention of an issue another lane claims is
+    # silence. The blocking path is the only signal that actually closes an
+    # issue, and it stayed locked to closing refs.
     body = pr_body("myia-po-2026:CoursIA", "See #10169 -- contributes to the epic")
     fetch = fetcher_from({10169: issue_payload(
         comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- working here",
@@ -109,8 +113,9 @@ def test_d_same_conflict_on_non_closing_ref_is_pass():
     v = lcr.check(body, fetch, now=NOW)
     assert v["guard_pass"] is True
     assert v["closing_issues"] == []  # See #N is not closing -> not scanned
-    # Criterion (d): non-closing conflict -> pass + ADVISORY label (Task 4).
-    assert "lane-claim-conflict" in v["advisory_labels"]
+    # #10395 Variante 3: the advisory label is gone -- a See #N is by
+    # construction the protocol-prescribed way to mention a multi-lane EPIC.
+    assert "lane-claim-conflict" not in v["advisory_labels"]
 
 
 def test_e_released_claim_is_pass():
@@ -236,9 +241,13 @@ def test_advisory_lane_claim_absent_when_closing_issue_has_no_claim():
 
 
 def test_advisory_lane_claim_conflict_on_see_ref():
-    # See #N (non-closing) where another lane claims #N -> advisory label; the
-    # closing variant of the same conflict would block. A multi-lane EPIC is
-    # advisory by construction.
+    # #10395 Variante 3 -- the legacy `lane-claim-conflict` label was RETIRED.
+    # The reproducer (See #10169 where another lane claims #10169) is the
+    # exact #10370 fixture: the label was being read as a verdict on the PR,
+    # and the only way to avoid it was to stop citing the EPIC -- which would
+    # degrade the very traceability the protocol exists to keep. The blocking
+    # path is the only meaningful signal on a closing ref; the non-closing
+    # path is silent.
     body = pr_body("myia-po-2026:CoursIA", "See #10169 -- part of the epic")
     fetch = fetcher_from({10169: issue_payload(
         comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- working here",
@@ -247,7 +256,39 @@ def test_advisory_lane_claim_conflict_on_see_ref():
     v = lcr.check(body, fetch, now=NOW)
     assert v["guard_pass"] is True
     assert v["closing_issues"] == []  # non-closing -> not scanned for blocking
-    assert "lane-claim-conflict" in v["advisory_labels"]
+    assert "lane-claim-conflict" not in v["advisory_labels"]
+
+
+# --- #10395 Variante 3 : the #10353/#10370 asymmetry regression ------------
+#
+# Two PRs cited `See #2161` (the "3 exercises per notebook" EPIC). Same body
+# shape, different lane. The pre-fix gate labelled #10370 (po-2024) and let
+# #10353 (po-2025, the claim holder) pass: the only difference was the order
+# of arrival on a SHARED EPIC. Both must now produce the SAME verdict.
+
+def test_10395_v3_10353_vs_10370_asymmetry_eliminated():
+    # #10353 -- the lane that holds the claim on #2161.
+    body_a = pr_body("myia-po-2025:CoursIA-2", "See #2161 -- epic contribution")
+    fetch_a = fetcher_from({2161: issue_payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- exercises rule",
+                "2026-08-09T09:00:00Z"),
+        number=2161,
+    )})
+    v_a = lcr.check(body_a, fetch_a, now=NOW)
+    # #10370 -- a different lane citing the same EPIC.
+    body_b = pr_body("myia-po-2024:CoursIA", "See #2161 -- contribution to the rule")
+    fetch_b = fetcher_from({2161: issue_payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- exercises rule",
+                "2026-08-09T09:00:00Z"),
+        number=2161,
+    )})
+    v_b = lcr.check(body_b, fetch_b, now=NOW)
+    # The two verdicts must be IDENTICAL -- a non-closing ref to a shared EPIC
+    # is the same situation regardless of which lane is citing it.
+    assert v_a["guard_pass"] == v_b["guard_pass"] is True
+    assert v_a["advisory_labels"] == v_b["advisory_labels"]
+    assert "lane-claim-conflict" not in v_a["advisory_labels"]
+    assert "lane-claim-conflict" not in v_b["advisory_labels"]
 
 
 def test_advisory_labels_empty_when_no_refs():

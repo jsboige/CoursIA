@@ -16,8 +16,12 @@ name: Lane Claim Guard
 # Discriminant = mots-cles fermants UNIQUEMENT. Un `See #N` / `Part of #N` sur
 # une EPIC est multi-lane par construction (#1454, #1027, #3801 portent des
 # claims concurrents legitimes) et bloquer dessus rougirait la moitie du depot.
-# Les renvois non-fermants donnent un LABEL advisory seul (Tache 4), jamais un
-# block.
+# Les renvois non-fermants etaient un label advisory seul (`lane-claim-
+# conflict`, Tache 4) ; retire en #10395 Variante 3 (2026-08-11) parce que
+# trois mesures (#10370, le trio OR-Tools, et le miroir #10353/#10370) ont
+# montre qu'il etait pose sur des PRs protocol-conformes. Seul `lane-claim-
+# absent` (closing ref sans claim) survit ; le blocage reste sur chemin
+# fermant.
 #
 # Architecture = le motif etabli par les quatre gates de variation-tag-guard.yml
 # : decision dans `scripts/ci/lane_claim_required.py` (testable, verdict JSON
@@ -208,24 +212,33 @@ jobs:
             --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
             > /tmp/verdict.json 2>/tmp/verdict.err || true
 
-          # Creation idempotente des deux labels.
+          # Creation idempotente du seul label survivant. `lane-claim-conflict`
+          # a ete RETIRE en #10395 Variante 3 (2026-08-11) : trois mesures
+          # (#10370, #10353 et le trio OR-Tools) ont montre qu'il etait pose
+          # sur des PRs protocol-conformes (les See #N sur EPIC multi-lane
+          # sont le geste prescrit). Les labels existants restent sur le
+          # travail passe comme marqueurs historiques; aucun nouveau n'est
+          # pose par ce job.
           mk_label() {
             gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
           }
-          mk_label "lane-claim-conflict" "Non-closing ref to an issue another lane claims (#10223)" "d93f0b"
-          mk_label "lane-claim-absent"   "Closing issue carries no claim at all (#10223)" "fbca04"
+          mk_label "lane-claim-absent" "Closing issue carries no claim at all (#10223)" "fbca04"
 
           set_label()   { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
 
-          # Reflete advisory_labels : pose si present, retire sinon (un
-          # synchronize qui resout le conflit nettoie le label). Fail-safe : si
-          # le verdict est illisible (caller error), aucun label n'est dans la
-          # liste -> on retire les deux.
+          # Reflete advisory_labels : pose si present, retire sinon. Fail-safe
+          # : si le verdict est illisible (caller error), aucun label n'est
+          # dans la liste -> on retire lane-claim-absent.
           has() { python3 -c "import json,sys; sys.exit(0 if '$1' in json.load(open('/tmp/verdict.json')).get('advisory_labels',[]) else 1)" 2>/dev/null; }
 
-          if has "lane-claim-conflict"; then set_label "lane-claim-conflict"; else unset_label "lane-claim-conflict"; fi
-          if has "lane-claim-absent";   then set_label "lane-claim-absent";   else unset_label "lane-claim-absent";   fi
+          if has "lane-claim-absent"; then set_label "lane-claim-absent"; else unset_label "lane-claim-absent"; fi
+
+          # Nettoyage a la volee des anciens labels `lane-claim-conflict` qui
+          # auraient pu etre poses par les versions precedentes du job; on
+          # les retire systematiquement pour ne pas laisser un marqueur
+          # trompeur sur les PRs recentes.
+          unset_label "lane-claim-conflict"
 
           echo "advisory labels applied."
           exit 0
