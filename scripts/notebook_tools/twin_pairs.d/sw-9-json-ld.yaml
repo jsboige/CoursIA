@@ -8,6 +8,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
       csharp_sha: 3caa1ec0ce4787f1c7b8a222a370c0cca24e8dbe
+    - date: "2026-08-11"
+      by: myia-po-2024:CoursIA
+      python_sha: 3c4a93bbf202cea7b12de79ff69d36291c49fc0b
+      csharp_sha: cebabdcadc7ff30a695dd7cc780b1b0e0d6929c7
+      content_python_sha: 0f6206639ecbb79a2c4dd7411309972e7e73545f9a7469f54b6a48efbc513ee9
+      content_csharp_sha: a8760e6e1ca7234c6a557248c2fd6fd71db7d391c6e643d475ed61709833661a
   known_differences:
     - "Socle commun : serialisation JSON-LD (Linked Data en JSON, W3C) d'un graphe RDF."
     - "Lib-vs-lib : C# = `dotNetRDF` (`VDS.RDF.Writing` JsonLdWriter). Python = `rdflib` (plugin JSON-LD via `rdflib-jsonld` integre, `graph.serialize(format='json-ld')`)."
