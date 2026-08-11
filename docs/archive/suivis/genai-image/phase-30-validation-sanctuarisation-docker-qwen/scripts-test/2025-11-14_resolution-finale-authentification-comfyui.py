@@ -47,7 +47,7 @@ def test_api_access():
     env_token = "$2b$12$ubd9tM4L2pvqB/peVpwvyuASqddG9WVoNj0NaAPHYyH57LW.vVjr."
     
     # Token généré par ComfyUI-Login (token brut)
-    comfyui_token = "b2NWTdQ/zSFsWQ/JwCHyK/egVV6jpIssX0htD16.HtoBNRWpX993mTW"
+    comfyui_token = "REDACTED-DEAD-2026-08-11"
     
     headers = {
         'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ def create_password_file():
     print_section("📁 CRÉATION DU FICHIER PASSWORD")
     
     # Le token généré par ComfyUI-Login est le bon format pour l'API
-    token = "b2NWTdQ/zSFsWQ/JwCHyK/egVV6jpIssX0htD16.HtoBNRWpX993mTW"
+    token = "REDACTED-DEAD-2026-08-11"
     
     # Créer le fichier PASSWORD à l'emplacement attendu par ComfyUI-Login
     password_path = "/workspace/ComfyUI/login/PASSWORD"
