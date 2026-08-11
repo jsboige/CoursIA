@@ -131,15 +131,48 @@ def _find_lake_root(start: Path) -> Optional[Path]:
 # declaration is fortuitously named `Basic`. To feed real declaration names we
 # parse the module source, tracking `namespace`/`end` blocks so each name is
 # emitted fully qualified. See pr-review-discipline.md §B.3 / issue #8677.
+# Lean 4 identifiers are Unicode, and ours actually use it: Greek letters as
+# names (`π`, `ε`), subscripts (`h₁₂`, `mapsElations₂_gen1`), accents in
+# namespaces (`imbriqué`), and the `!`/`?` suffixes of the partial and optional
+# variants (`parseRLE!`, `head?`). An ASCII-only character class fails on those
+# in three distinct ways, all measured on our own lakes (#10486). Only the first
+# is visible; the other two keep the gate green while it checks nothing:
+#
+#   * LOUD PHANTOM -- the truncated name matches no declaration at all
+#     (`mapsElations₂_gen1` -> `mapsElations`, `dualBases_e_ε` ->
+#     `dualBases_e_`). `#print axioms` answers `unknown constant`, the run exits
+#     non-zero and #8681 voids the module. This is #10486's red.
+#   * SILENT ALIAS -- the truncated name matches a *different real* declaration.
+#     `foo`/`foo!`/`foo?` is a standard Lean idiom, so this is the common case:
+#     `Conway.Life.RLE` (wired and blocking) declares both `parseRLE` and
+#     `parseRLE!`, so the gate emitted the former twice, the latter never, and
+#     reported green having never inspected `parseRLE!`'s axiom closure.
+#   * SILENT MISS -- a name whose FIRST character is non-ASCII (`π`, `ε`) matches
+#     nothing, so the declaration is never enumerated. A `sorry` or a
+#     `native_decide` inside it passes unseen, with nothing going red to say so.
+#
+# `[^\W\d]` is "word character that is not a decimal digit" == letter or `_`,
+# Unicode-aware under Python 3's default `str` semantics -- so no `regex`
+# dependency is needed, and `\w` already covers subscripts (`'₂'.isalnum()` is
+# True) without spelling their code-point ranges out. The quantifier must stay
+# GREEDY: a lazy `*?` here matches a single character and turns every name into
+# a phantom, which is strictly worse than the bug it would be fixing.
+#
+# Over-acceptance is harmless in this direction -- the enumerator only ever
+# reads names that Lean itself already accepted -- whereas under-acceptance is
+# exactly what breaks the gate. Pinned by tests/test_check_axioms.py.
+_LEAN_ID = r"[^\W\d][\w'.!?]*"
+_LEAN_NS = r"[^\W\d][\w'.]*"
+
 _DECL_HEAD_RE = re.compile(
     r"^(?:@\[[^\]]*\]\s*)*"                                     # attributes (zero or more)
     r"(?P<mods>(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*)"
     r"(?:theorem|lemma|def|opaque|axiom|abbrev|structure|inductive|class)\s+"
-    r"(?P<name>[A-Za-z_][A-Za-z0-9_'.]*)",
+    r"(?P<name>" + _LEAN_ID + r")",
     re.MULTILINE,
 )
-_NS_OPEN_RE = re.compile(r"^\s*namespace\s+(?P<ns>[A-Za-z_][A-Za-z0-9_.]*)")
-_NS_CLOSE_RE = re.compile(r"^\s*end\s+(?P<ns>[A-Za-z_][A-Za-z0-9_.]*)")
+_NS_OPEN_RE = re.compile(r"^\s*namespace\s+(?P<ns>" + _LEAN_NS + r")")
+_NS_CLOSE_RE = re.compile(r"^\s*end\s+(?P<ns>" + _LEAN_NS + r")")
 
 # Canonical Lean/Lake error marker (#8694). Lean 4 spells a diagnostic either
 # bare (``error:``) or tagged with a diagnostic class
