@@ -14,6 +14,12 @@
       csharp_sha: 171e603bfe70da08a111e39141fc90776d75ccf9
       content_python_sha: e378481d3ed19eeb0c5e9e25ec78253680172fa26e26666e850ea614afa4b05b
       content_csharp_sha: 1d6f4000f1d208b8b79964208d169144a348d2025d419709a1ad8ee8e51e5214
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: ed308f9e16da32919d2cebbe1e760f2f61d59d89
+      csharp_sha: 2d31663b98ffbc21a5fff97413c2b285e7af9a1f
+      content_python_sha: e378481d3ed19eeb0c5e9e25ec78253680172fa26e26666e850ea614afa4b05b
+      content_csharp_sha: 44592f012943c0966583a0e847d5b5c5cf539d82c1cc1b8786e45dac5d3a1199
   known_differences:
     - "Socle commun : argumentation structuree (ASPIC+, construction d'arguments a partir de regles)."
     - "Parite native-both (PR #10385, 2026-08-11) : les deux cotes chargent la vraie lib Tweety (org.tweetyproject.arg.aspic.*) -- le Python via JPype (cell 4.2.1), le C# via le pont IKVM (tranche 2, #r org.tweetyproject.tweety-aspic.dll + AspicArgumentationTheory.asDungTheory()). Parite 3-voies PROUVEE firsthand : C# from-scratch (tranche 1) <=> C# IKVM (tranche 2) <=> Python JPype convergent sur le meme AAF (5 args, 2 attaques symetriques b=>d vs a=>!d, meme extension fondee). Le C# conserve sa tranche 1 from-scratch pedagogique EN PLUS de la tranche 2 lib (gabarit Tweety-5-Csharp) -> `native-both`."
