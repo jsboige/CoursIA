@@ -938,3 +938,43 @@ class LeanVerifier:
             if _ERROR_MARKER_RE.search(stripped):
                 errors.append(stripped)
         return errors
+
+
+# Number of trailing lines shown when a capture holds no diagnostic at all.
+_DIAGNOSTIC_TAIL_LINES = 20
+
+
+def select_diagnostic_lines(
+    raw_output: str, limit: int = 12
+) -> Tuple[List[str], bool, int]:
+    """Pick the lines that name the CAUSE out of a failed Lean/Lake capture.
+
+    Returns ``(lines, matched, omitted)``.  ``matched`` is ``True`` when at
+    least one line carried a diagnostic marker, in which case ``lines`` holds
+    up to ``limit`` of them and ``omitted`` counts the rest.  ``matched`` is
+    ``False`` when the capture holds no diagnostic at all -- lake resolution
+    failure, missing toolchain, a timeout kill -- and ``lines`` falls back to
+    the last :data:`_DIAGNOSTIC_TAIL_LINES` lines.
+
+    Why selection and not a tail slice (#10486).  :meth:`check_axioms` does not
+    run ``lake build``: it feeds ``lean --stdin`` an ``import`` plus one
+    ``#print axioms`` per declaration.  The reporting side of the axiom gate
+    used to print ``raw_output[-20:]``, on the reasoning that Lean prints the
+    failing declaration last -- true when the MODULE fails to build, false
+    here.  Measured on ``galois_lean`` (537 declarations): the failure came
+    from an early command, so the tail showed twenty healthy
+    ``depends on axioms:`` lines and the CI log carried only
+    ``build_failed_returncode_1``.  The name sat in the capture the runner
+    already had, in the part nobody printed, and the worker was sent to
+    reproduce a 4-minute Mathlib build to learn it.
+
+    Delegates to :meth:`LeanVerifier._extract_errors` rather than re-matching
+    the marker, so a new Lean spelling reaches every consumer at once -- the
+    duplication-by-prose that reopened #6790 through a class-tagged
+    diagnostic.  Pinned by ``tests/test_error_marker_contract.py``.
+    """
+    lines = (raw_output or "").strip().splitlines()
+    hits = LeanVerifier._extract_errors("\n".join(lines))
+    if hits:
+        return hits[:limit], True, max(0, len(hits) - limit)
+    return lines[-_DIAGNOSTIC_TAIL_LINES:], False, 0
