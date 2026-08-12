@@ -225,3 +225,38 @@ def test_cli_check_exit_one_on_drift(tmp_path):
     assert r.returncode == 1
     payload = json.loads(r.stdout)
     assert payload["records"][0]["verdict"] == "DRIFT"
+
+
+def test_cli_directory_arg_scans_tree_not_crash(tmp_path):
+    """Un chemin de répertoire scanne tous les .ipynb dedans (acceptance #10230 :
+    « lancer sur l'arbre QC entier ») au lieu de crasher en ERREUR.
+
+    Régression : avant ce fix, ``main`` appelait ``classify_notebook(dir_path)``
+    qui faisait ``dir.read_text()`` -> IsADirectoryError -> verdict ERREUR.
+    """
+    import subprocess
+    # arbre synthétique : 2 notebooks (1 DRIFT timedelta, 1 N-A sans API QC)
+    # + un sous-dossier + un .ipynb_checkpoints (qui doit être exclu).
+    sub = tmp_path / "sub"
+    sub.mkdir()
+    drift_cells = [("code", "qb = QuantBook()\nh = qb.History('SPY', timedelta(365), Resolution.Daily)")]
+    na_cells = [("code", "import pandas as pd\nprint('no QC api here')")]
+    (tmp_path / "drift.ipynb").write_text(json.dumps(_nb(drift_cells)), encoding="utf-8")
+    (sub / "na.ipynb").write_text(json.dumps(_nb(na_cells)), encoding="utf-8")
+    checkpoints = tmp_path / ".ipynb_checkpoints"
+    checkpoints.mkdir()
+    (checkpoints / "ignored.ipynb").write_text(json.dumps(_nb(drift_cells)), encoding="utf-8")
+
+    r = subprocess.run(
+        [sys.executable, str(Path(__file__).resolve().parent.parent / "scan_window_drift.py"),
+         str(tmp_path), "--json"],
+        capture_output=True, text=True,
+    )
+    assert r.returncode == 0, f"directory scan crashed: {r.stderr}"
+    payload = json.loads(r.stdout)
+    records = payload["records"]
+    # 2 notebooks classés (le checkpoints est exclu), aucun verdict ERREUR.
+    assert len(records) == 2, f"expected 2 records (checkpoints excluded), got {len(records)}: {records}"
+    verdicts = {rec["verdict"] for rec in records}
+    assert "ERREUR" not in verdicts, f"directory path crashed a record: {records}"
+    assert verdicts == {"DRIFT", "N-A"}, f"expected DRIFT+N-A, got {verdicts}"

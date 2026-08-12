@@ -165,4 +165,56 @@ noncomputable def fully_faithful_of_counit_iso {L : C ⥤ D} {R : D ⥤ C} (h : 
     [IsIso h.counit] : R.FullyFaithful :=
   h.fullyFaithfulROfIsIsoCounit
 
+/-!
+## 7. Théorèmes ponts : identités triangulaires et équivalences symétriques
+
+Les **identités triangulaires** (`left_triangle` et `right_triangle`) sont
+les relations fondamentales entre l'unité `η` et la coïnité `ε` d'une
+adjonction : elles garantissent que `ε ∘ L(η) = 𝟙_L` et `R(ε) ∘ η = 𝟙_R`,
+rendant l'équivalence `Hom(L X, Y) ≃ Hom(X, R Y)` cohérente en les deux
+variables. Les lemmes `homEquiv_unit` / `homEquiv_counit` explicitent la
+bijection naturelle sur les composantes.
+
+Les triangles **pointwise** `left_triangle_components` / `right_triangle_components`
+sont des **champs de la structure `Adjunction`** (accessibles directement via
+`h.left_triangle_components X`) ; les lemmes `homEquiv_unit` / `homEquiv_counit`
+sont des **namespace theorems** à 4 arguments explicites, applicables
+directement (`Adjunction.homEquiv_unit h X Y f`). Préférer les champs
+pointwise pour les bridges pédagogiques (plus simples structurellement,
+pas d'inférence d'instance).
+-/
+
+/-- Pont : composante pointwise de l'identité triangulaire gauche — pour
+    tout objet `X : C`, la coïnité après `L.map` de l'unité vaut l'identité
+    sur `L.obj X`. C'est la relation qui rend `L ⊣ R` cohérente au niveau
+    des morphismes individuels (vs la version NatTrans `Adjunction.left_triangle`). -/
+theorem left_triangle_components_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) :
+    L.map (h.unit.app X) ≫ h.counit.app (L.obj X) = 𝟙 (L.obj X) :=
+  h.left_triangle_components X
+
+/-- Pont : composante pointwise de l'identité triangulaire droite — pour
+    tout objet `Y : D`, l'unité après `R.map` de la coïnité vaut l'identité
+    sur `R.obj Y`. Duale de `left_triangle_components_apply`. -/
+theorem right_triangle_components_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (Y : D) :
+    h.unit.app (R.obj Y) ≫ R.map (h.counit.app Y) = 𝟙 (R.obj Y) :=
+  h.right_triangle_components Y
+
+/-- Pont : composante de la bijection naturelle `Hom(L X, Y) ≃ Hom(X, R Y)`
+    envoyant `f : L.obj X ⟶ Y` sur `η.app X ≫ R.map f`. C'est la formule
+    concrète reliant `L ⊣ R` à ses transformations naturelles. -/
+theorem homEquiv_unit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (f : L.obj X ⟶ Y) :
+    (h.homEquiv X Y) f = h.unit.app X ≫ R.map f :=
+  Adjunction.homEquiv_unit h X Y f
+
+/-- Pont : composante inverse de la bijection naturelle `Hom(L X, Y) ≃ Hom(X, R Y)`,
+    envoyant `g : X ⟶ R.obj Y` sur `L.map g ≫ ε.app Y`. Duale de
+    `homEquiv_unit_apply`, elle décrit la direction `Hom(X, R Y) → Hom(L X, Y)`. -/
+theorem homEquiv_counit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (g : X ⟶ R.obj Y) :
+    (h.homEquiv X Y).symm g = L.map g ≫ h.counit.app Y :=
+  Adjunction.homEquiv_counit h X Y g
+
 end Grothendieck.Adjunction

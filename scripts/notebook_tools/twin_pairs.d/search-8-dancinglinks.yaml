@@ -21,6 +21,9 @@
       csharp_sha: 6f8406e999d2e74ff5e615e32efb8c7342396c73
       content_python_sha: 4ae14edaa6b184ac39e85554d5a5006f99472eb4bca0c053dd44130b157f3e9a
       content_csharp_sha: 67f0e2537692300f2ef1e246f3f8a06b368d2d11c60758541778cc210f147959
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: |
+    Python = DLX from-scratch (Knuth Algorithm X + doubly-linked list node {L,R,U,D,C}, no SOTA lib invoquee). C# = DLX from-scratch (meme structure doubly-linked list manuelle, no NuGet SOTA). Both cote from-scratch on the DLX coeur -- algorithm = sujet, pas de solveur tiers a brancher. matplotlib cote Python pour viz polyominos, ASCII art cote C# (asymetrie viz, pas algo). Verdict RECOVERABLE-LOCAL (both from-scratch pedagogical assume).
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle commun : probleme de couverture exacte, algorithme X de Knuth, structure de donnees Dancing Links (DLX), implementation DLX, application polyominos, comparaison de performances DLX vs backtracking."
