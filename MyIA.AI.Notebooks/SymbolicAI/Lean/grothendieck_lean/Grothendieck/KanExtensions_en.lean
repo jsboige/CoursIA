@@ -67,6 +67,7 @@ import Mathlib.CategoryTheory.Functor.KanExtension.Basic
 import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 import Mathlib.CategoryTheory.Functor.KanExtension.Pointwise
 import Mathlib.CategoryTheory.Functor.KanExtension.Dense
+import Mathlib.CategoryTheory.Whiskering
 
 universe v₁ v₂ v₃ u₁ u₂ u₃
 
@@ -281,14 +282,13 @@ theorem lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
 
 /-- Bridge: the unit of the adjunction `lan ⊣ precomp L` is exactly
     `L.lanUnit`. This is Mathlib's `@[simp]` lemma — `lanAdjunction_unit`
-    asserts that the two natural transformations coincide definitionally
-    (one is `F ⟶ L ⋙ L.leftKanExtension F` for any `F`, the other is
-    `𝟭 (C ⥤ H) ⟶ L.lan ⋙ precomp L` projected). `rfl` is a sufficient
-    bridge: the equality is definitional by `@[simp]`. -/
+    is a **theorem** (NOT a definitional equality), so we use it as the
+    proof body. (L902 ★ EXTENDED c.8224 reaffirmed: `rfl` does NOT work
+    for `@[simp]` lemmas, must use the theorem.) -/
 theorem lan_unit_eq_lan_adjunction_unit (L : C ⥤ D) (H : Type u₃)
     [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
     (L.lanAdjunction H).unit = L.lanUnit :=
-  rfl
+  CategoryTheory.Functor.lanAdjunction_unit
 
 /-- Bridge: the universal descent `kan_descent` satisfies the
     factorization condition — this is the naturality of the adjunction.
@@ -304,8 +304,8 @@ theorem kan_descent_fac {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     itself is isomorphic to the identity on `D`. This is the formulation
     of density of `L` (the special Yoneda case: the identity is its own
     Kan extension along itself). -/
-theorem dense_functor_left_kan_extension_iso_id [L.IsDense] (F : C ⥤ H) :
-    L.leftKanExtension F ≅ 𝟭 D :=
-  F.leftKanExtensionIso
+theorem dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDense] :
+    F.leftKanExtension F ≅ 𝟭 D :=
+  CategoryTheory.Functor.IsDense.leftKanExtensionIso
 
 end Grothendieck.KanExtensions_en

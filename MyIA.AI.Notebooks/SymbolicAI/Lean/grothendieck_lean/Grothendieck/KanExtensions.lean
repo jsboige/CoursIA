@@ -70,6 +70,7 @@ import Mathlib.CategoryTheory.Functor.KanExtension.Basic
 import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 import Mathlib.CategoryTheory.Functor.KanExtension.Pointwise
 import Mathlib.CategoryTheory.Functor.KanExtension.Dense
+import Mathlib.CategoryTheory.Whiskering
 
 universe v₁ v₂ v₃ u₁ u₂ u₃
 
@@ -287,14 +288,13 @@ theorem lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
 
 /-- Pont : l'unité de l'adjonction `lan ⊣ precomp L` est exactement
     `L.lanUnit`. C'est le `@[simp]` lemma de Mathlib — `lanAdjunction_unit`
-    affirme que les deux transformations naturelles coïncident définition-
-    nellement (l'une est `F ⟶ L ⋙ L.leftKanExtension F` pour tout `F`,
-    l'autre est `𝟭 (C ⥤ H) ⟶ L.lan ⋙ precomp L` projetée). `rfl` est pont
-    suffisant : l'égalité est définitionnelle par `@[simp]`. -/
+    est un **théorème** (pas une égalité définitionnelle), donc on
+    l'utilise comme corps de la preuve. (L902 ★ ÉTENDU c.8224 reaffirmed :
+    `rfl` ne marche PAS pour `simp` lemmas, il faut le théorème.) -/
 theorem lan_unit_eq_lan_adjunction_unit (L : C ⥤ D) (H : Type u₃)
     [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
     (L.lanAdjunction H).unit = L.lanUnit :=
-  rfl
+  CategoryTheory.Functor.lanAdjunction_unit
 
 /-- Pont : la descente universelle `kan_descent` vérifie la condition
     de factorisation — c'est la naturalité de l'adjonction. Le morphisme
@@ -310,8 +310,8 @@ theorem kan_descent_fac {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     gauche le long de lui-même est isomorphe à l'identité sur `D`. C'est
     la formulation de la densité de `L` (le cas particulier de Yoneda :
     l'identité est sa propre extension de Kan le long d'elle-même). -/
-theorem dense_functor_left_kan_extension_iso_id [L.IsDense] (F : C ⥤ H) :
-    L.leftKanExtension F ≅ 𝟭 D :=
-  F.leftKanExtensionIso
+theorem dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDense] :
+    F.leftKanExtension F ≅ 𝟭 D :=
+  CategoryTheory.Functor.IsDense.leftKanExtensionIso
 
 end Grothendieck.KanExtensions
