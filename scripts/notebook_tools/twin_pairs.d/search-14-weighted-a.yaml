@@ -8,6 +8,9 @@
       by: myia-po-2023:CoursIA
       python_sha: b97a441e1192d137bf999626a8685d071fc2056f
       csharp_sha: dd94da21212e5d8179c62068e111d4caa6ced713
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: |
+    Python = heapq (min-heap) + itertools.product + random.Random(seed) -- pedagogique from-scratch, pas de SOTA tier (Weighted A* = algorithme pedagogique, pas de solveur tiers applicable). C# = PriorityQueue<T, double> (.NET 6+) + Random(seed) -- pedagogique from-scratch, pas de NuGet SOTA. Both cote from-scratch sur Weighted A* (best-first sur f(n)=g(n)+W*h(n), balayage W, garantie sous-optimalite bornee). Asymetrie RNG verifiee firsthand (random.Random(42) Python != new Random(42) .NET, terrains 25x25 differents -- parite conceptuelle, pas numerique). Verdict RECOVERABLE-LOCAL (both from-scratch pedagogical assume, pas de SOTA tier applicable a Weighted A*).
   known_differences:
     - "Socle pedagogique commun : Weighted A* (best-first sur f(n)=g(n)+W*h(n), W>=1) sur un terrain pondere, balayage de W, garantie de sous-optimalite bornee cout <= W*C* (Pohl 1970)."
     - "Idiomes framework : Python = `heapq` (min-heap, re-push sur meilleur g) + `itertools.product` + `random.Random(seed)` (Mersenne Twister). C# = `PriorityQueue<T, double>` (.NET 6+, min-heap natif) + `Random(seed)` (.NET PRNG, distinct du Mersenne Twister Python)."
