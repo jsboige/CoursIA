@@ -270,12 +270,12 @@ noncomputable def colimit_desc_eq (F : J ⥤ C) [HasColimit F] (c : Cocone F) :
   CategoryTheory.Limits.colimit.desc F c
 
 /-- Bridge: naturality of the colimit cocone's injections — for any arrow
-    `f : j ⟶ j'` of the diagram, `F.map f ≫ colimit.ι F j' = colimit.ι F j`. This
+    `f : j' ⟶ j` of the diagram, `F.map f ≫ colimit.ι F j = colimit.ι F j'`. This
     is the **naturality equality** of the natural transformation `colimit.ι`,
     witnessed by the theorem `@[simp] lemma CategoryTheory.Limits.colimit.w
-    F j j' f`. -/
-theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j ⟶ j') :
-    F.map f ≫ colimit.ι F j' = colimit.ι F j :=
+    F j j' f` (note: the arrow goes from `j'` to `j`, dual of `limit.w`). -/
+theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j' ⟶ j) :
+    F.map f ≫ colimit.ι F j = colimit.ι F j' :=
   CategoryTheory.Limits.colimit.w F j j' f
 
 end Grothendieck.Limits_en

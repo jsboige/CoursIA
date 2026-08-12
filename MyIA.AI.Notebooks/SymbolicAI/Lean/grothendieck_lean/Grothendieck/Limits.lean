@@ -272,12 +272,12 @@ noncomputable def colimit_desc_eq (F : J ⥤ C) [HasColimit F] (c : Cocone F) :
   CategoryTheory.Limits.colimit.desc F c
 
 /-- Pont : la naturalité des injections du cocône colimite — pour toute flèche
-    `f : j ⟶ j'` du diagramme, `F.map f ≫ colimit.ι F j' = colimit.ι F j`. C'est
+    `f : j' ⟶ j` du diagramme, `F.map f ≫ colimit.ι F j = colimit.ι F j'`. C'est
     l'**égalité de naturalité** de la transformation naturelle `colimit.ι`,
     prouvée par le théorème `@[simp] lemma CategoryTheory.Limits.colimit.w
-    F j j' f`. -/
-theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j ⟶ j') :
-    F.map f ≫ colimit.ι F j' = colimit.ι F j :=
+    F j j' f` (note : la flèche va de `j'` vers `j`, duale de `limit.w`). -/
+theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j' ⟶ j) :
+    F.map f ≫ colimit.ι F j = colimit.ι F j' :=
   CategoryTheory.Limits.colimit.w F j j' f
 
 end Grothendieck.Limits
