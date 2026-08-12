@@ -96,6 +96,86 @@ class C { void M(string name) { File.ReadAllText(name); } }";
         Assert.Equal(DiagnosticSeverity.Warning, d.Severity);
     }
 
+    // -------- AGSEC004: HttpClient non-constant URL (sub-grain #10500c) --------
+
+    [Fact]
+    public async Task AGSEC004_NoDiagnostic_OnConstantUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M() { await _client.GetAsync(""https://api.example.com/health""); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC004);
+    }
+
+    [Fact]
+    public async Task AGSEC004_Diagnostic_OnAttackerControlledUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M(string userInput) { await _client.GetAsync(userInput); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        var d = Assert.Single(diags, x => x.Id == AgentSafetyAnalyzer.AGSEC004);
+        Assert.Equal(DiagnosticSeverity.Warning, d.Severity);
+        Assert.Contains("GetAsync", d.GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC004_Diagnostic_OnPostAsync_NonConstantUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M(string url) { await _client.PostAsync(url, null); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        var d = Assert.Single(diags, x => x.Id == AgentSafetyAnalyzer.AGSEC004);
+        Assert.Contains("PostAsync", d.GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC004_Diagnostic_OnSendAsync_NonConstantUrl()
+    {
+        // SendAsync requires an HttpRequestMessage, so we build one with an
+        // attacker-controlled URL. The diagnostic fires on the URI string itself.
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M(string userUrl) {
+        var req = new HttpRequestMessage(HttpMethod.Get, userUrl);
+        await _client.SendAsync(req);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC004);
+    }
+
+    [Fact]
+    public async Task AGSEC004_NoDiagnostic_OnGetStringAsync_ConstantUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M() { await _client.GetStringAsync(""https://api.example.com/""); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC004);
+    }
+
     // -------- AGSEC002 CodeFixProvider: concatenation -> interpolated string --------
 
     [Fact]

@@ -1,10 +1,11 @@
 // AgentSafetyAnalyzer.cs — Roslyn DiagnosticAnalyzer as compile-time guardrail
 // for agent-generated C# code (Epic #10473, axe Roslyn, sub-grain #10500d).
 //
-// Three semantic rules inspired by the OWASP Agentic Security Top-10 patterns:
+// Four semantic rules inspired by the OWASP Agentic Security Top-10 patterns:
 //   AGSEC001 — Process.Start with non-constant first argument (command injection)
 //   AGSEC002 — SQL string concatenation (use SqlParameter instead)
 //   AGSEC003 — File.* operations on non-constant paths (path traversal)
+//   AGSEC004 — HttpClient.Get*/Post*/Put*/Delete*/Send* with non-constant URL
 //
 // The semantic key (the value grep cannot provide) is `SemanticModel.GetConstantValue`:
 // a literal literal is safe; an attacker-controlled variable collapses to no constant
@@ -45,6 +46,7 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
     public const string AGSEC001 = "AGSEC001"; // Process.Start non-constant
     public const string AGSEC002 = "AGSEC002"; // SQL concatenation
     public const string AGSEC003 = "AGSEC003"; // File.* path non-constant
+    public const string AGSEC004 = "AGSEC004"; // HttpClient.Get*/Post*/... non-constant URL
 
     internal static readonly DiagnosticDescriptor Rule001 = new(
         AGSEC001,
@@ -76,8 +78,18 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
         description: "Detects File.Read/Write/Delete on a non-constant path. Validate the path against an allow-list before access.",
         helpLinkUri: "https://github.com/jsboige/CoursIA/issues/10500");
 
+    internal static readonly DiagnosticDescriptor Rule004 = new(
+        AGSEC004,
+        "HTTP request: non-constant URL",
+        "HttpClient.{0} called with non-constant URL '{1}': validate the URL against an allow-list (scheme + host + path) before sending",
+        "Security",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Detects HttpClient requests whose URL is not a compile-time constant. SSRF (Server-Side Request Forgery) is the canonical risk: an attacker-controlled URL may target internal services.",
+        helpLinkUri: "https://github.com/jsboige/CoursIA/issues/10500");
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Rule001, Rule002, Rule003);
+        ImmutableArray.Create(Rule001, Rule002, Rule003, Rule004);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -103,6 +115,11 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
             && args.Count > 0 && !IsConstant(ctx, args[0].Expression)
             && !IsSuppressedByPragma(inv, AGSEC003))
             ctx.ReportDiagnostic(Diagnostic.Create(Rule003, args[0].GetLocation(), args[0].Expression));
+
+        // AGSEC004: HttpClient.Get*/Post*/Put*/Delete*/Send* on a non-constant URL
+        if (IsHttpClientCall(name) && args.Count > 0 && !IsConstant(ctx, args[0].Expression)
+            && !IsSuppressedByPragma(inv, AGSEC004))
+            ctx.ReportDiagnostic(Diagnostic.Create(Rule004, args[0].GetLocation(), ExtractMethodName(name), args[0].Expression));
     }
 
     private static void AnalyzeAdd(SyntaxNodeAnalysisContext ctx)
@@ -116,6 +133,37 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
         if (IsSuppressedByPragma(add, AGSEC002))
             return;
         ctx.ReportDiagnostic(Diagnostic.Create(Rule002, add.GetLocation(), add.Right));
+    }
+
+    // AGSEC004: Heuristic detection of HttpClient request methods. Matches:
+    //   HttpClient.GetAsync / GetStringAsync / PostAsync / PutAsync / DeleteAsync
+    //   HttpClient.SendAsync
+    // Plus the synchronous variants (GetByteArray, etc.) when invoked on an
+    // HttpClient field. The pattern is intentionally narrow: only invocation
+    // expressions whose callee ends in one of the canonical request methods.
+    private static bool IsHttpClientCall(string name)
+    {
+        // The expression may be `httpClient.GetAsync` (MemberAccessExpression)
+        // or `client.GetStringAsync(url)` — match by suffix.
+        foreach (var suffix in HttpClientMethodSuffixes)
+        {
+            if (name.EndsWith("." + suffix, System.StringComparison.Ordinal))
+                return true;
+        }
+        return false;
+    }
+
+    private static readonly string[] HttpClientMethodSuffixes = new[]
+    {
+        "GetAsync", "GetStringAsync", "GetByteArrayAsync", "GetStreamAsync",
+        "PostAsync", "PutAsync", "DeleteAsync", "PatchAsync", "HeadAsync",
+        "SendAsync",
+    };
+
+    private static string ExtractMethodName(string name)
+    {
+        var dot = name.LastIndexOf('.');
+        return dot >= 0 ? name.Substring(dot + 1) : name;
     }
 
     // The semantic key: ask the compiler whether the expression folds to a constant.
