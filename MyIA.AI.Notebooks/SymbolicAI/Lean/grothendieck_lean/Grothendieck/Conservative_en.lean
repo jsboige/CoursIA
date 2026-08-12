@@ -258,7 +258,7 @@ theorem jointly_reflect_mono_bridge {A : Type u'} [Category.{v'} A]
     (hP : P.IsConservativeFamilyOfPoints) :
     JointlyReflectMonomorphisms
       (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
-  hP.jointlyReflectMonomorphisms
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectMonomorphisms
 
 /-- Bridge theorem: when P is a conservative family of points and A admits weak
     sheafification and w-indexed products, the fiber functors jointly reflect
@@ -275,7 +275,7 @@ theorem jointly_reflect_epi_bridge {A : Type u'} [Category.{v'} A]
     (hP : P.IsConservativeFamilyOfPoints) :
     JointlyReflectEpimorphisms
       (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
-  hP.jointlyReflectEpimorphisms
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectEpimorphisms
 
 /-- Bridge construction: the skyscraper presheaf adjunction for a point Phi.
     Phi.presheafFiber is left adjoint to Phi.skyscraperPresheafFunctor,
@@ -304,6 +304,6 @@ noncomputable def presheaf_to_sheaf_comp_iso_bridge {A : Type u'} [Category.{v'}
     [HasWeakSheafify J A]
     (Φ : GrothendieckTopology.Point.{w} J) :
     presheafToSheaf J A ⋙ Φ.sheafFiber ≅ Φ.presheafFiber :=
-  Φ.presheafToSheafCompSheafFiberIso
+  Φ.presheafToSheafCompSheafFiberIso A
 
 end Grothendieck_en.Conservative

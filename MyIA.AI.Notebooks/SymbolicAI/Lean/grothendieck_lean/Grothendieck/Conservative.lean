@@ -250,7 +250,7 @@ theorem jointly_reflect_mono_bridge {A : Type u'} [Category.{v'} A]
     (hP : P.IsConservativeFamilyOfPoints) :
     JointlyReflectMonomorphisms
       (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
-  hP.jointlyReflectMonomorphisms
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectMonomorphisms
 
 /-- Theoreme pont : quand P est une famille conservative de points et que A admet
     la faisceautisation faible et les produits w-indexes, les foncteurs fibres
@@ -267,7 +267,7 @@ theorem jointly_reflect_epi_bridge {A : Type u'} [Category.{v'} A]
     (hP : P.IsConservativeFamilyOfPoints) :
     JointlyReflectEpimorphisms
       (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
-  hP.jointlyReflectEpimorphisms
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectEpimorphisms
 
 /-- Construction pont : l'adjonction prefaisceau gratte-ciel pour un point Phi.
     Phi.presheafFiber est adjoint a gauche de Phi.skyscraperPresheafFunctor,
@@ -296,6 +296,6 @@ noncomputable def presheaf_to_sheaf_comp_iso_bridge {A : Type u'} [Category.{v'}
     [HasWeakSheafify J A]
     (Φ : GrothendieckTopology.Point.{w} J) :
     presheafToSheaf J A ⋙ Φ.sheafFiber ≅ Φ.presheafFiber :=
-  Φ.presheafToSheafCompSheafFiberIso
+  Φ.presheafToSheafCompSheafFiberIso A
 
 end Grothendieck.Conservative
