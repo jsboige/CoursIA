@@ -180,8 +180,7 @@ theorem ext_bridge {X Y : CategoryTheory.Grothendieck F}
     modification. -/
 theorem functor_comp_forget_bridge {G : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ G) :
     CategoryTheory.Grothendieck.map α ⋙ CategoryTheory.Grothendieck.forget G =
-      CategoryTheory.Grothendieck.forget F :=
-  @CategoryTheory.Grothendieck.functor_comp_forget _ _ α
+      CategoryTheory.Grothendieck.forget F := rfl
 
 /-- Bridge theorem: `Grothendieck.map` sends the natural identity to the
     functorial identity. This is the compatibility between the identity of

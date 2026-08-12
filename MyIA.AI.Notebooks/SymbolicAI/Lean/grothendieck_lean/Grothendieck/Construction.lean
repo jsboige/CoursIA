@@ -180,8 +180,7 @@ theorem ext_bridge {X Y : CategoryTheory.Grothendieck F}
     Re-exporte `Grothendieck.functor_comp_forget` de Mathlib sans modification. -/
 theorem functor_comp_forget_bridge {G : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ G) :
     CategoryTheory.Grothendieck.map α ⋙ CategoryTheory.Grothendieck.forget G =
-      CategoryTheory.Grothendieck.forget F :=
-  @CategoryTheory.Grothendieck.functor_comp_forget _ _ α
+      CategoryTheory.Grothendieck.forget F := rfl
 
 /-- Theoreme pont : `Grothendieck.map` envoie l'identite naturelle sur l'identite
     fonctorielle. C'est la compatibilite entre l'identite du foncteur F et celle
