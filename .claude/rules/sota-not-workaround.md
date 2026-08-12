@@ -31,7 +31,7 @@ Un verdict `INTRINSIC` est le plus restrictif des 5 (il declare une impossibilit
 | 1 | **Binding .NET / NuGet** | Un package officiel existe-t-il pour la cible ? (ex : `OR-Tools`, `Accord.NET`) |
 | 2 | **`P/Invoke`** | Une API C stable est-elle exposee par la lib ? (cf `libtesseract`, `libsodium`) |
 | 3 | **CLI `Process.Start`** | Un binaire invocable existe-t-il ? (ex : `gambit`, `minizinc`, `clingo`) |
-| 4 | **`IKVM`** (pont Java) | La lib est-elle en Java ? Si oui, est-elle deja shadee ? ([`docs/ledgers/`](docs/ledgers/3801-sota-axe2.md)) |
+| 4 | **`IKVM`** (pont Java) | La lib est-elle en Java ? Si oui, est-elle deja shadee ? ([`../../docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md)) |
 | 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
 | 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
 
