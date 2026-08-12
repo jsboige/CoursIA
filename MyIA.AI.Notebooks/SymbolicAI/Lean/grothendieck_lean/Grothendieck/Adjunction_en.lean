@@ -179,29 +179,30 @@ on the `{X Y}` arguments, which makes them unsuitable for direct application
 infers the implicits from the goal LHS/RHS (cf lesson L902 ★★ Tier 4).
 -/
 
-/-- Bridge: first triangle identity of an adjunction L ⊣ R — the counit after
-    `L` of the unit equals the identity on `L`. This is the relation making
-    `L ⊣ R` coherent with the identity seen in `Hom(L X, L X)`. -/
-theorem left_triangle_identity {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
-    (L.whiskerRight h.unit L) ≫ (L.associator R L).hom ≫ (L.whiskerLeft h.counit) =
-      L.leftUnitor.hom ≫ L.rightUnitor.inv := by
-  rw [Adjunction.left_triangle]
+/-- Bridge: pointwise component of the left triangle identity — for every
+    object `X : C`, the counit after `L.map` of the unit equals the identity
+    on `L.obj X`. This is the relation making `L ⊣ R` coherent at the
+    individual morphism level (vs the NatTrans version `Adjunction.left_triangle`). -/
+theorem left_triangle_components_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) :
+    L.map (h.unit.app X) ≫ h.counit.app (L.obj X) = 𝟙 (L.obj X) :=
+  h.left_triangle_components X
 
-/-- Bridge: second triangle identity of an adjunction L ⊣ R — the unit after
-    `R` of the counit equals the identity on `R`. Dual of the first, it
-    guarantees coherence on the `Hom(R Y, R Y)` side. -/
-theorem right_triangle_identity {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
-    (R.whiskerLeft h.unit) ≫ (R.associator L R).inv ≫ (R.whiskerRight h.counit R) =
-      R.rightUnitor.hom ≫ R.leftUnitor.inv := by
-  rw [Adjunction.right_triangle]
+/-- Bridge: pointwise component of the right triangle identity — for every
+    object `Y : D`, the unit after `R.map` of the counit equals the identity
+    on `R.obj Y`. Dual of `left_triangle_components_apply`. -/
+theorem right_triangle_components_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (Y : D) :
+    h.unit.app (R.obj Y) ≫ R.map (h.counit.app Y) = 𝟙 (R.obj Y) :=
+  h.right_triangle_components Y
 
 /-- Bridge: component of the natural bijection `Hom(L X, Y) ≃ Hom(X, R Y)`
     sending `f : L.obj X ⟶ Y` to `η.app X ≫ R.map f`. The concrete formula
     linking `L ⊣ R` to its natural transformations. -/
 theorem homEquiv_unit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
     (X : C) (Y : D) (f : L.obj X ⟶ Y) :
-    (h.homEquiv X Y) f = h.unit.app X ≫ R.map f := by
-  rw [Adjunction.homEquiv_unit]
+    (h.homEquiv X Y) f = h.unit.app X ≫ R.map f :=
+  Adjunction.homEquiv_unit h X Y f
 
 /-- Bridge: inverse component of the natural bijection `Hom(L X, Y) ≃ Hom(X, R Y)`,
     sending `g : X ⟶ R.obj Y` to `L.map g ≫ ε.app Y`. Dual of
@@ -209,7 +210,7 @@ theorem homEquiv_unit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
     `Hom(X, R Y) → Hom(L X, Y)`. -/
 theorem homEquiv_counit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
     (X : C) (Y : D) (g : X ⟶ R.obj Y) :
-    (h.homEquiv X Y).symm g = L.map g ≫ h.counit.app Y := by
-  rw [Adjunction.homEquiv_counit]
+    (h.homEquiv X Y).symm g = L.map g ≫ h.counit.app Y :=
+  Adjunction.homEquiv_counit h X Y g
 
 end Grothendieck.Adjunction_en
