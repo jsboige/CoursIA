@@ -170,4 +170,67 @@ theorem sheafHomSectionsEquiv_roundtrip_symm (F G : Sheaf J A)
   dsimp [sheafHomSectionOfHom, sheafHomOfSection]
   exact (sheafHomSectionsEquiv F G).right_inv φ
 
+/-!
+## 5. Theoremes ponts additionnels : presheafHom, sheafHom, equivalences, lemmes simp
+
+Ponts complementaires connectant le hom interne des faisceaux aux theoremes
+et constructions Namespace Mathlib 4 deja exposes comme `#check` plus haut.
+Ces bridges suivent le pattern des Sections 2-4 : application directe des
+lems Namespace (L902 ★★ Tier 5).
+
+Pour les theoremes Mathlib 4 a args explicites, l'application directe `name args`
+est l'idiotisme canonique : pas `by rw [name]` (Type equality non-rfl-fermable,
+cf L902 ★★ Tier 5 c.8232). Pour les `def` (`presheafHom`, `presheafHomSectionsEquiv`,
+`sheafHom`, `sheafHom'`), l'application directe preserve la structure au namespace
+pres (anti-§D byte-identity preserve).
+-/
+
+/-- Construction pont : le prefaisceau hom interne `presheafHom F G`. Ses
+    sections sur X sont les morphismes entre les restrictions de F et G a
+    `Over X`. Re-exporte `presheafHom` de Mathlib (def, `@[simps! obj]`). -/
+noncomputable def presheaf_hom_bridge (F G : Cᵒᵖ ⥤ A) : Cᵒᵖ ⥤ Type _ :=
+  presheafHom F G
+
+/-- Construction pont : l'equivalence entre les sections du hom interne
+    prefaisceau et les morphismes F ⟶ G. C'est la bijection
+    `(presheafHom F G).sections ≃ (F ⟶ G)`, au coeur de l'interpretation du
+    hom interne comme un foncteur representable. -/
+noncomputable def presheaf_hom_sections_equiv_bridge (F G : Cᵒᵖ ⥤ A) :
+    (presheafHom F G).sections ≃ (F ⟶ G) :=
+  presheafHomSectionsEquiv F G
+
+/-- Lemme pont : la loi de l'application du foncteur `presheafHom` sur les
+    fleches de la categorie des morphismes (Over). Pour `f : Z ⟶ Y`,
+    `g : Y ⟶ X`, `h : Z ⟶ X` avec `f ≫ g = h`, l'egalite
+    `((presheafHom F G).map g.op α).app (op (Over.mk f)) = α.app (op (Over.mk h))`
+    est preservee. C'est la naturalite du hom interne prefaisceau.
+    Re-exporte `presheafHom_map_app` de Mathlib. -/
+lemma presheaf_hom_map_app_bridge {X Y Z : C} (F G : Cᵒᵖ ⥤ A)
+    (f : Z ⟶ Y) (g : Y ⟶ X) (h : Z ⟶ X) (w : f ≫ g = h)
+    (α : (presheafHom F G).obj (op X)) :
+    ((presheafHom F G).map g.op α).app (op (Over.mk f)) = α.app (op (Over.mk h)) :=
+  @CategoryTheory.presheafHom_map_app _ _ _ _ _ _ _ _ _ _ f g h w α
+
+/-- Lemme pont (@[simp]) : la loi d'application specialisee sur l'identite
+    `Over.mk (𝟙 Y)` donne un morphisme `Y ⟶ X`. Re-exporte
+    `presheafHom_map_app_op_mk_id` de Mathlib (@[simp]). -/
+@[simp]
+lemma presheaf_hom_map_app_op_mk_id_bridge {X Y : C} (F G : Cᵒᵖ ⥤ A)
+    (g : Y ⟶ X)
+    (α : (presheafHom F G).obj (op X)) :
+    dsimp% ((presheafHom F G).map g.op α).app (op (Over.mk (𝟙 Y))) = α.app (op (Over.mk g)) :=
+  @CategoryTheory.presheafHom_map_app_op_mk_id _ _ _ _ _ _ _ _ _ g α
+
+/-- Construction pont : le faisceau hom interne `sheafHom F G`, vivant dans
+    `Sheaf J (Type _)`. Ses sections s'identifient aux morphismes de faisceaux
+    `F ⟶ G`. Re-exporte `sheafHom` de Mathlib (def). -/
+noncomputable def sheaf_hom_bridge (F G : Sheaf J A) : Sheaf J (Type _) :=
+  sheafHom F G
+
+/-- Construction pont : le prefaisceau sous-jacent du faisceau hom interne.
+    `sheafHom' F G : Cᵒᵖ ⥤ Type _` est l'objet prefaisceau de `sheafHom F G`.
+    Re-exporte `sheafHom'` de Mathlib (def). -/
+noncomputable def sheaf_hom_underscore_bridge (F G : Sheaf J A) : Cᵒᵖ ⥤ Type _ :=
+  sheafHom' F G
+
 end Grothendieck.SheafHom
