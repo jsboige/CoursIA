@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools.sat.python.cp_model` (Google, Apache-2.0, CP-SAT SOTA temporal : `CpModel()` + `NewIntervalVar` + `AddNoOverlap2D` pour timeline + Allen algebra composition table 13x13=169 relations + `solver.Solve()` pour feasibility d'un calendrier temporel). C# = `Google.OrTools` NuGet (Google, Apache-2.0, meme solveur CP-SAT : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;` + `CpModel()` + `AddBoolVar` + `AddNoOverlap`) + `ScottPlot` NuGet 5.0.55 (MIT-license, timeline gantt chart : `#r \"nuget: ScottPlot, 5.0.55\"` + `using ScottPlot;` + `Plot()` render timeline) + `Microsoft.DotNet.Interactive.Formatting` (output kernel). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 tranche 2 lib-vs-lib) : les DEUX cotes utilisent LE MEME solveur Google OR-Tools CP-SAT natif, modelisation CSP temporel (variables d'intervalle, contraintes non-chevauchement, Allen algebra composition), bridge direct sans glue non-SOTA. Substantive : parite bit-identique sur les solutions de planning (meme solveur, meme encoding), seule asymetrie est la convention snake_case (Python) vs PascalCase (C#) + ScottPlot vs matplotlib viz. `parity_level: semantic` preserve : parite sur les concepts cibles (CSP temporel, Allen algebra) malgre l'asymetrie de viz."
   audits:
     - date: "2026-08-04"
       by: myia-po-2024:CoursIA-2

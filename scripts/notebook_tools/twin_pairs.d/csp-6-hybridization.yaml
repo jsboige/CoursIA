@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools.sat.python.cp_model` + `cp_model_helper` (Google, Apache-2.0, CP-SAT SOTA hybrid : `CpModel()` + variables + `AddMaxEquality` + `model.Minimize(obj)` + `solver.Solve()` pour hybrid CP-SAT + heuristique de recherche). C# = `Google.OrTools` NuGet (Google, Apache-2.0, meme solveur CP-SAT : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;` + `CpModel()` + `AddBoolVar` + `AddMaxEquality` + `solver.Solve()`) + `ScottPlot` NuGet 5.0.55 (MIT-license, viz gantt chart). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 tranche 2 lib-vs-lib) : les DEUX cotes utilisent LE MEME solveur Google OR-Tools CP-SAT natif (meme binding C++ sous-jacent, API symetrique entre les bindings PyPI + NuGet officiels Google), bridge direct sans glue non-SOTA. Asymetrie documentee : ScottPlot cote C# = helper viz uniquement (le PY utilise matplotlib heatmap equivalent, asymetrie mineure de lib viz n'impactant pas le semantisme). `parity_level: semantic` preserve : parite sur les concepts cibles (hybridation CP-SAT, modele relaxe) malgre l'asymetrie de viz."
   audits:
     - date: "2026-08-04"
       by: myia-po-2024:CoursIA-2
