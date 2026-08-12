@@ -129,8 +129,71 @@ jobs:
             echo "violated=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Fail if violated
+      # Override path (#10332): when the violation path fires, the override
+      # gate consults the dual-key (label `translation-override` AND comment
+      # marker `[TRANSLATION-OVERRIDE] <motif>`). Both required -- the
+      # cliquet is not disarmed. The decision lives in
+      # `scripts/ci/translation_override_required.py` (testable, injectable
+      # fetchers -- unit tests never touch the network).
+      - name: Resolve translation-guard override (#10332)
+        id: override
         if: steps.check.outputs.violated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          echo "::error title=Translation guard FAILED::This PR modifies translation-owned (derived) files. Restore them with: git checkout origin/main -- translations/ <lang-notebooks>, and edit the source notebook instead."
+          set -uo pipefail
+          python3 scripts/ci/translation_override_required.py \
+            --pr-number "$PR_NUMBER" > /tmp/override.json
+          RC=$?
+          echo "--- override verdict ---"
+          cat /tmp/override.json
+          OVERRIDE_APPLIED=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('override_applied', False))")
+          if [ "$OVERRIDE_APPLIED" = "True" ]; then
+            MOTIF=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('motif',''))")
+            echo "override_applied=true" >> "$GITHUB_OUTPUT"
+            echo "motif=$MOTIF" >> "$GITHUB_OUTPUT"
+          else
+            echo "override_applied=false" >> "$GITHUB_OUTPUT"
+          fi
+          # Exit code of the python script decides: 0 = pass, 1 = block.
+          # We always proceed to the next step so we can print a structured
+          # log either way; the `Fail if violated (or unsatisfied override)`
+          # step below reads `override_applied`.
+          exit 0
+
+      - name: Fail if violated (or unsatisfied override)
+        if: steps.check.outputs.violated == 'true' && steps.override.outputs.override_applied != 'true'
+        run: |
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error title=Translation guard FAILED::$REASON"
+          gh pr comment "${{ github.event.pull_request.number }}" --body "$(cat <<EOF
+          <!-- translation-guard-violation -->
+          **Translation guard violation (#10332).**
+
+          $REASON
+
+          Three exits to clear this gate:
+          1. Restore the derived files (\`git checkout origin/main -- translations/ <lang-notebooks>\`) and edit the source notebook instead -- the bot re-derives.
+          2. Add the **\`translation-override\` label** AND a PR comment whose FIRST line is **\`[TRANSLATION-OVERRIDE] <motif>\`** (both required -- dual-key, see #10332).
+          3. Ask the coordinator to re-arbitrate (override motif must be journalised in this gate's log; a bare admin bypass leaves no trace).
+
+          See #10332 for the override protocol.
+          EOF
+          )" 2>/dev/null || true
           exit 1
+
+      - name: Journalise accepted override (#10332)
+        if: steps.override.outputs.override_applied == 'true'
+        run: |
+          MOTIF="${{ steps.override.outputs.motif }}"
+          echo "::notice title=Translation guard::OVERRIDE accepted -- motif: $MOTIF. The override is auditable; see #10332."
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Translation Guard OVERRIDE accepted (#10332)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Dual-key satisfied: label \`translation-override\` AND comment marker \`[TRANSLATION-OVERRIDE]\`." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Motif:** $MOTIF" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "See [#10332](https://github.com/${{ github.repository }}/issues/10332) for the override protocol." >> "$GITHUB_STEP_SUMMARY"

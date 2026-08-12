@@ -161,3 +161,69 @@ def test_real_jwt_stays_flagged_next_to_truncated_example(tmp_path):
         "the truncated JWT teaching example was flagged -- the allowlist regex "
         "eyJ...XVCJ9\\.{3} is not suppressing the truncated class"
     )
+
+
+# --------------------------------------------------------------------------- #
+# #10595 negative control: `[allowlist].paths` is a CONTENT BYPASS, not a
+# scope marker. The previous version of the .gitleaks.toml comment block
+# above `scripts/secrets/tests/test_gitleaks_.*\.py$` claimed gitleaks
+# evaluated `paths` AFTER `[[rules]]` so a real secret in the same file
+# would still rougir. Measured (gitleaks 8.24.3, the version pinned in
+# both .pre-commit-config.yaml and secret-scan.yml), this is INVERTED: the
+# file is NEVER READ, so NO rule can fire on its contents.
+#
+# This test pins the behavior so any future change to gitleaks (or a
+# mistaken rephrase of the allowlist) is caught at CI. If the test stops
+# holding (the file under the allowlist starts getting flagged), either
+# gitleaks changed semantics -- which would be a major-version note --
+# or someone removed the paths entry, and we want to know about it.
+# --------------------------------------------------------------------------- #
+@requires_gitleaks
+def test_real_secret_under_path_allowlist_is_invisible(tmp_path):
+    """#10595 measured behavior: a real secret in a path-allowlisted file
+    is NOT flagged. This is the structural cost of the `test_gitleaks_*.py`
+    paths entry (see comment block in `.gitleaks.toml` lines 83-100)."""
+    # Build a directory tree that matches the production paths allowlist:
+    # tmp_path/scripts/secrets/tests/test_gitleaks_X.py
+    allowed_dir = tmp_path / "scripts" / "secrets" / "tests"
+    allowed_dir.mkdir(parents=True)
+    allowed_file = allowed_dir / "test_gitleaks_real_secret_under_allowlist.py"
+    allowed_file.write_text(
+        f"QWEN_API_TOKEN={REAL_OPENROUTER_HEX}\n",  # 73-char value, qwen-api-token pattern
+        encoding="utf-8",
+    )
+
+    # Scan the tmp_path with the PRODUCTION config (not a mirror).
+    findings = _run_gitleaks(tmp_path, PRODUCTION_CONFIG)
+
+    # The real secret MUST NOT appear in findings -- this is the bypass.
+    # If the assert fires, EITHER gitleaks semantics changed (check release
+    # notes -- a major version bump) OR the paths entry was removed from
+    # production `.gitleaks.toml` (rerun `git log -p .gitleaks.toml` to find
+    # when). Neither is a reason to delete this test; in both cases the
+    # reviewer should be alerted.
+    assert not _secrets_containing(findings, REAL_OPENROUTER_HEX), (
+        "a real secret placed under scripts/secrets/tests/ WAS flagged -- "
+        "the production paths-allowlist has changed semantics (#10595). "
+        "Check gitleaks changelog AND the current .gitleaks.toml paths entry."
+    )
+
+
+@requires_gitleaks
+def test_real_secret_outside_path_allowlist_is_flagged(tmp_path):
+    """#10595 mirror control: the same secret, under a path NOT in the
+    allowlist, IS flagged. Pins the symmetric property so the bypass is
+    scoped (only paths-listed files are invisible)."""
+    outside_file = tmp_path / "leak.txt"
+    outside_file.write_text(
+        f"QWEN_API_TOKEN={REAL_OPENROUTER_HEX}\n",
+        encoding="utf-8",
+    )
+
+    findings = _run_gitleaks(tmp_path, PRODUCTION_CONFIG)
+
+    assert _secrets_containing(findings, REAL_OPENROUTER_HEX), (
+        "the real secret outside the paths-allowlist was NOT flagged -- "
+        "the qwen-api-token rule itself may be misconfigured (no longer "
+        "matches the test value)."
+    )

@@ -96,6 +96,86 @@ class C { void M(string name) { File.ReadAllText(name); } }";
         Assert.Equal(DiagnosticSeverity.Warning, d.Severity);
     }
 
+    // -------- AGSEC004: HttpClient non-constant URL (sub-grain #10500c) --------
+
+    [Fact]
+    public async Task AGSEC004_NoDiagnostic_OnConstantUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M() { await _client.GetAsync(""https://api.example.com/health""); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC004);
+    }
+
+    [Fact]
+    public async Task AGSEC004_Diagnostic_OnAttackerControlledUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M(string userInput) { await _client.GetAsync(userInput); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        var d = Assert.Single(diags, x => x.Id == AgentSafetyAnalyzer.AGSEC004);
+        Assert.Equal(DiagnosticSeverity.Warning, d.Severity);
+        Assert.Contains("GetAsync", d.GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC004_Diagnostic_OnPostAsync_NonConstantUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M(string url) { await _client.PostAsync(url, null); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        var d = Assert.Single(diags, x => x.Id == AgentSafetyAnalyzer.AGSEC004);
+        Assert.Contains("PostAsync", d.GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC004_Diagnostic_OnSendAsync_NonConstantUrl()
+    {
+        // SendAsync requires an HttpRequestMessage, so we build one with an
+        // attacker-controlled URL. The diagnostic fires on the URI string itself.
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M(string userUrl) {
+        var req = new HttpRequestMessage(HttpMethod.Get, userUrl);
+        await _client.SendAsync(req);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC004);
+    }
+
+    [Fact]
+    public async Task AGSEC004_NoDiagnostic_OnGetStringAsync_ConstantUrl()
+    {
+        const string source = @"
+using System.Net.Http;
+using System.Threading.Tasks;
+class C {
+    HttpClient _client = new HttpClient();
+    public async Task M() { await _client.GetStringAsync(""https://api.example.com/""); }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC004);
+    }
+
     // -------- AGSEC002 CodeFixProvider: concatenation -> interpolated string --------
 
     [Fact]
@@ -124,6 +204,100 @@ class C { void M(string userInput) { var q = ""SELECT * FROM users WHERE name = 
         // on a hand-rolled snippet -- the structural fact is that the concat is gone.
         Assert.Contains("SELECT * FROM users WHERE name = '{userInput}", newText.ToString());
         Assert.DoesNotContain("\" + userInput", newText.ToString());
+    }
+
+    // -------- AGSEC pragma suppression (sub-grain #10500d) --------
+
+    [Fact]
+    public async Task AGSEC001_NoDiagnostic_OnPragmaDisable_ForSameRule()
+    {
+        // `#pragma warning disable AGSEC001` immediately above the call silences
+        // the rule for that one site (per-rule contract).
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput) {
+#pragma warning disable AGSEC001
+        Process.Start(userInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC001);
+    }
+
+    [Fact]
+    public async Task AGSEC001_StillDiagnostic_OnPragmaDisable_ForOtherRule()
+    {
+        // Disabling AGSEC003 must NOT silence AGSEC001 — per-rule suppression is
+        // the documented contract. A naive "any pragma ⇒ all off" implementation
+        // would incorrectly suppress this one.
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput) {
+#pragma warning disable AGSEC003
+        Process.Start(userInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC001);
+    }
+
+    [Fact]
+    public async Task AGSEC001_NoDiagnostic_OnBarePragmaDisable()
+    {
+        // A bare `#pragma warning disable` (no rule ids) suppresses every AGSEC*
+        // rule at the site — same semantics as the C# compiler for CS-warnings.
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput) {
+#pragma warning disable
+        Process.Start(userInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC001);
+    }
+
+    [Fact]
+    public async Task AGSEC001_Diagnostic_OnPragmaRestoreAfterDisable()
+    {
+        // A `#pragma warning restore AGSEC001` between two calls unsilences the
+        // second call. This is the documented pragma contract and matches the
+        // C# compiler's behavior for its own diagnostics.
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput, string anotherInput) {
+#pragma warning disable AGSEC001
+        Process.Start(userInput);
+#pragma warning restore AGSEC001
+        Process.Start(anotherInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        // Exactly one AGSEC001 — the second (un-suppressed) call.
+        var d001 = diags.Where(x => x.Id == AgentSafetyAnalyzer.AGSEC001).ToList();
+        Assert.Single(d001);
+        Assert.Contains("anotherInput", d001[0].GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC002_NoDiagnostic_OnPragmaDisable_ForSqlConcat()
+    {
+        // AGSEC002 fires on a `BinaryExpressionSyntax` (AddExpression), not on an
+        // invocation. Suppression should still work — same trivia-walking logic,
+        // same per-rule contract.
+        const string source = @"
+class C {
+    void M(string userInput) {
+#pragma warning disable AGSEC002
+        var q = ""SELECT * FROM users WHERE name = '"" + userInput;
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC002);
     }
 
     // -------- AGSEC005: hardcoded credential detection (sub-grain #10500e) --------
@@ -212,6 +386,7 @@ class C {
         var diags = await GetDiagnosticsAsync(source);
         Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005);
     }
+
 
     // -------- Helpers --------
 
