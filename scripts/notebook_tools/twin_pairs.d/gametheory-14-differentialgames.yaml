@@ -7,6 +7,8 @@
     - date: "2026-08-04"
       python_sha: 924092dad22d0d395af77067e636d92d773484ec
       csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = scipy.integrate.odeint (integration ODE) + scipy.optimize.minimize (optimisation) + numpy + matplotlib ; resolution numerique du duopole Stackelberg (von Stackelberg 1934) vs Cournot. C# = BCL .NET 9 pur, 0 NuGet, 0 numpy, 0 scipy, integrateur RK4 from-scratch (section 'Pourquoi RK4 et pas Euler ?') + formes analytiques Stackelberg/Cournot. Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (jeux differentiels, Stackelberg leader-follower, comparaison Cournot), l'asymetrie reside dans la MACHINERIE numerique : scipy (ODE + optimisation) cote Python vs RK4 from-scratch + formes analytiques cote C#. Le C# privilegie les formes analytiques du duopole la ou le Python resout numeriquement. Les deux methodes obtiennent les memes resultats (Stackelberg follower = Cournot). parity_level: semantic preserve."
   known_differences:
     - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."
     - "Idiomes framework : Python = `scipy.integrate.odeint` (integration ODE) + `scipy.optimize.minimize` + `numpy` + `matplotlib`. C# = BCL .NET 9 pur (`System.*`, 0 NuGet, 0 numpy, 0 scipy), integrateur RK4 from-scratch (section 'Pourquoi RK4 et pas Euler ?') + formes analytiques Stackelberg/Cournot."

@@ -14,6 +14,8 @@
       csharp_sha: fd5fd04b331a2cbef35868a55e5e25436493b00f
       content_python_sha: 755a1c6d45c7f8ed17bdfd7702c2adb8884b75cfe2e97cd6c6dbbdacdeeaab90
       content_csharp_sha: 5b633d69dd7f89285c2aa11ac88fa81966fc3558d83c394f940ffbca17331237
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = numpy + matplotlib + abc (classes abstraites de mecanismes) + itertools, resolution from-scratch : principe de revelation, encheres premier et second prix, Vickrey 1961, mecanisme VCG (Vickrey-Clarke-Groves) et regle de Clarke. C# = BCL .NET 9 pur, 0 NuGet, encheres et VCG from-scratch (System.Linq, System.Text) avec exemples complementaires : Gale-Shapley (mariages stables, 1962) et double auction (echange bilateral). Verdict RECOVERABLE-LOCAL : socle pedagogique commun (theorie des mecanismes, principe de revelation, VCG). L'asymetrie est dans la COUVERTURE : le Python couvre davantage les principes fondamentaux et le theoreme de revelation ; le C# ajoute Gale-Shapley et double auction comme exemples travailles distincts. Meme theorie centrale (revelation/Vickrey/VCG), exemples complementaires cote C#. parity_level: semantic preserve."
   known_differences:
     - "Socle pedagogique commun : theorie des mecanismes et principe de revelation, encheres premier et second prix, Vickrey 1961 (sincerite de l'enchere au second prix), mecanisme VCG (Vickrey-Clarke-Groves) et regle de Clarke."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `abc`/`itertools` (classes abstraites de mecanismes). C# = BCL .NET 9 pur (`System.Linq`, `System.Text`, 0 NuGet), encheres et VCG from-scratch avec lecture-interpreter des resultats."
