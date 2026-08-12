@@ -134,21 +134,27 @@ section Naturality
 
 /-- Théorème (naturalité de l'identité) : le foncteur `cechComplexFunctor U`
     préserve l'identité. Pour tout préfaisceau `P : Cᵒᵖ ⥤ A`,
-    `(cechComplexFunctor U).map (𝟙 P) = 𝟙 ((cechComplexFunctor U).obj P)`. -/
+    `(cechComplexFunctor U).map (𝟙 P) = 𝟙 ((cechComplexFunctor U).obj P)`.
+    Preuve par application directe du champ de structure `Functor.map_id`
+    de `CategoryTheory.cechComplexFunctor`. -/
 theorem cechComplexFunctor_map_id (U : ι → C) (P : Cᵒᵖ ⥤ A) :
     (CategoryTheory.cechComplexFunctor U).map (𝟙 P) =
-      𝟙 ((CategoryTheory.cechComplexFunctor U).obj P) := rfl
+      𝟙 ((CategoryTheory.cechComplexFunctor U).obj P) :=
+  (CategoryTheory.cechComplexFunctor U).map_id P
 
 /-- Théorème (naturalité de la composition) : le foncteur
     `cechComplexFunctor U` préserve la composition. Pour tous morphismes
     `f : P ⟶ Q` et `g : Q ⟶ R` de préfaisceaux,
     `(cechComplexFunctor U).map (f ≫ g) =
-      (cechComplexFunctor U).map f ≫ (cechComplexFunctor U).map g`. -/
+      (cechComplexFunctor U).map f ≫ (cechComplexFunctor U).map g`.
+    Preuve par application directe du champ de structure `Functor.map_comp`
+    de `CategoryTheory.cechComplexFunctor`. -/
 theorem cechComplexFunctor_map_comp (U : ι → C) {P Q R : Cᵒᵖ ⥤ A}
     (f : P ⟶ Q) (g : Q ⟶ R) :
     (CategoryTheory.cechComplexFunctor U).map (f ≫ g) =
       (CategoryTheory.cechComplexFunctor U).map f ≫
-        (CategoryTheory.cechComplexFunctor U).map g := rfl
+        (CategoryTheory.cechComplexFunctor U).map g :=
+  (CategoryTheory.cechComplexFunctor U).map_comp f g
 
 end Naturality
 
