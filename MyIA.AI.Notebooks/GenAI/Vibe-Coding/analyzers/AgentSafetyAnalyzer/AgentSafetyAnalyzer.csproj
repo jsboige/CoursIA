@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>true</IsPackable>
+    <PackageId>MyIA.AgentSafetyAnalyzer</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>MyIA</Authors>
+    <Description>Roslyn DiagnosticAnalyzer + CodeFixProvider as compile-time guardrails for agent-generated C# code (3 rules: Process.Start injection, SQL concatenation, file path traversal).</Description>
+    <IncludeBuildOutput>true</IncludeBuildOutput>
+    <!-- DiagnosticAnalyzer houses must NOT depend on newer .NET than the consumers -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.12.0" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>
