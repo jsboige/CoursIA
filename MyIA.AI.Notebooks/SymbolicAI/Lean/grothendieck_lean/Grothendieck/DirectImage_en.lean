@@ -147,4 +147,53 @@ since `f^*` is contravariant in `f`).
 -- f^* of the composite: pullback g then pullback f = pullback (f ≫ g) (reversed order, contravariance).
 #check pullbackComp f g
 
+/-!
+## Section 7: Bridge theorems: functorial law on pushforward and pullback
+
+The functors `pushforward f` and `pullback f` are full-fledged `Functor`s:
+they preserve identities and composition (the `Functor.map_id` and
+`Functor.map_comp` fields of the structure). The 4 bridges below join
+the module's definitions with the underlying Mathlib 4 facts:
+
+  - `pushforward_map_id` / `pushforward_map_comp`: structure fields of
+    the `pushforward f` functor (direct access
+    `(pushforward f).map_id X` / `(pushforward f).map_comp f g`).
+  - `pullback_map_id` / `pullback_map_comp`: symmetric structure fields
+    of the `pullback f` functor.
+
+For `Functor` structure fields (L902 ★★ Tier 5), direct application
+`(F).map_id X` / `(F).map_comp f g` is the canonical idiom (not
+`by rw [Functor.map_id]`, which defeats the LHS but doesn't close the
+goal on Type equality, nor `rfl`, which is PROVABLE only for
+definitional equalities).
+-/
+
+/-- Bridge: the `pushforward f` functor preserves identities. This is the
+    `Functor.map_id` structure field, directly accessible. -/
+theorem pushforward_map_id {X Y : Scheme.{u}} (f : X ⟶ Y) (M : X.Modules) :
+    (pushforward f).map (𝟙 M) = 𝟙 ((pushforward f).obj M) :=
+  (pushforward f).map_id M
+
+/-- Bridge: the `pushforward f` functor preserves composition of morphisms.
+    Structure field `Functor.map_comp`. -/
+theorem pushforward_map_comp {X Y : Scheme.{u}} (f : X ⟶ Y)
+    {M N P : X.Modules} (φ : M ⟶ N) (ψ : N ⟶ P) :
+    (pushforward f).map (φ ≫ ψ) =
+      (pushforward f).map φ ≫ (pushforward f).map ψ :=
+  (pushforward f).map_comp φ ψ
+
+/-- Bridge: the `pullback f` functor preserves identities. Structure field
+    `Functor.map_id`. Dual of `pushforward_map_id`. -/
+theorem pullback_map_id {X Y : Scheme.{u}} (f : X ⟶ Y) (G : Y.Modules) :
+    (pullback f).map (𝟙 G) = 𝟙 ((pullback f).obj G) :=
+  (pullback f).map_id G
+
+/-- Bridge: the `pullback f` functor preserves composition of morphisms.
+    Structure field `Functor.map_comp`. Dual of `pushforward_map_comp`. -/
+theorem pullback_map_comp {X Y : Scheme.{u}} (f : X ⟶ Y)
+    {G H K : Y.Modules} (φ : G ⟶ H) (ψ : H ⟶ K) :
+    (pullback f).map (φ ≫ ψ) =
+      (pullback f).map φ ≫ (pullback f).map ψ :=
+  (pullback f).map_comp φ ψ
+
 end Grothendieck.DirectImage_en
