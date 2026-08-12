@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Z3 optimization (MaxSAT / objectifs hierarchiques / front de Pareto) branchee NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkOptimize/MkMaximize/MkAssertSoft) et pyz3 (`from z3 import *`, Optimize/maximize/assert_soft) sont les deux bindings officiels du meme coeur C++ Z3 — pas un pont intermediaire. Concept porte au twin C# c.8052/#3801 (capstone budget 100->80, cas non-degenere, DRIFT resorbe). Aucune asymetrie de machinerie a corriger."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
