@@ -1432,3 +1432,115 @@ def test_blocked_message_includes_paths_narrowing_hint(capsys):
     err = capsys.readouterr().err
     assert "paths:" in err
     assert "scope-narrowing" in err
+
+
+# --- brace-group path scopes (#10597) ----------------------------------------
+#
+# A `paths:` clause written in brace syntax -- `search-{6,8,9}-*.yaml`, the
+# natural form several lanes already used -- was silently EPIC-WIDE: the naive
+# comma split fragmented it into `["search-{6", "8", "9}-*.yaml"]`, none of
+# which fnmatch ever matches. Two fixes: the splitter is now brace-aware, and
+# each brace group expands to sibling globs. These tests pin the #10597
+# reproduction and the edge cases.
+
+
+def test_paths_clause_brace_aware_split():
+    # The reproduction from #10597: a brace group must survive the comma
+    # split as ONE pattern, then expand to three sibling globs.
+    line = ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml")
+    got = clc._extract_paths_clause(line)
+    assert got == [
+        "scripts/notebook_tools/twin_pairs.d/search-6-*.yaml",
+        "scripts/notebook_tools/twin_pairs.d/search-8-*.yaml",
+        "scripts/notebook_tools/twin_pairs.d/search-9-*.yaml",
+    ]
+
+
+def test_paths_clause_brace_scope_now_blocks():
+    # Before #10597 the expanded scope was `["search-{6", "8", "9}-*.yaml"]`
+    # and _path_matches_any returned False for the very file the claim aimed
+    # at -- the claim was silently non-blocking. After the fix the intended
+    # file intersects and an out-of-group file still does not.
+    line = ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml")
+    scope = clc._extract_paths_clause(line)
+    assert clc._path_matches_any(
+        ["scripts/notebook_tools/twin_pairs.d/search-6-astar.yaml"], scope)
+    assert not clc._path_matches_any(
+        ["scripts/notebook_tools/twin_pairs.d/app-20-sudokubenchmark.yaml"],
+        scope)
+
+
+def test_paths_clause_brace_two_separate_globs_each_expand():
+    # Two comma-separated globs, each carrying its own single brace group
+    # (the fleet form): split brace-aware, then each group expands. Nested
+    # groups are NOT expanded (no scope in the fleet nests them) -- the
+    # split simply keeps the group intact so the scope stays readable.
+    line = ("[CLAIMED] lane X:CoursIA -- "
+            "paths: twin_pairs.d/app-{17,18}-*.yaml, twin_pairs.d/search-{6,8}-*.yaml")
+    got = clc._extract_paths_clause(line)
+    assert got == [
+        "twin_pairs.d/app-17-*.yaml",
+        "twin_pairs.d/app-18-*.yaml",
+        "twin_pairs.d/search-6-*.yaml",
+        "twin_pairs.d/search-8-*.yaml",
+    ]
+
+
+def test_paths_clause_mixed_brace_and_plain():
+    # A clause mixing brace groups and plain globs keeps both.
+    line = ("[CLAIMED] lane X:CoursIA -- "
+            "paths: scripts/check_lane_claim.py, twin_pairs.d/{6,8}-*.yaml")
+    got = clc._extract_paths_clause(line)
+    assert got == [
+        "scripts/check_lane_claim.py",
+        "twin_pairs.d/6-*.yaml",
+        "twin_pairs.d/8-*.yaml",
+    ]
+
+
+def test_paths_clause_brace_still_drops_empty_fragments():
+    # Stray commas outside braces keep the existing drop-empty behaviour.
+    line = ("[CLAIMED] lane X:CoursIA -- "
+            "paths: a.py, , b.py, ")
+    assert clc._extract_paths_clause(line) == ["a.py", "b.py"]
+
+
+def test_paths_match_brace_in_paths_mode():
+    # `--paths` mode accepts brace syntax too (a worker pastes the fs-shell
+    # glob they mean). Full-path and basename anchors both apply.
+    assert clc._path_matches(
+        "scripts/notebook_tools/twin_pairs.d/search-8-mcts.yaml",
+        ["scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml"])
+    assert not clc._path_matches(
+        "scripts/notebook_tools/twin_pairs.d/search-7-mcts.yaml",
+        ["scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml"])
+    assert clc._path_matches(
+        "anywhere/search-8-mcts.yaml", ["search-{6,8,9}-*.yaml"])
+
+
+def test_paths_match_brace_no_group_is_unchanged():
+    # Patterns without braces are handled exactly as before.
+    assert clc._path_matches("scripts/foo.py", ["scripts/*.py"])
+    assert clc._expand_brace_groups("plain.py") == ["plain.py"]
+    assert clc._expand_brace_groups("a{}.lean") == ["a{}.lean"]
+
+
+def test_paths_clause_brace_scope_disjoint_across_claims(capsys):
+    # Two lanes claim disjoint BRACE scopes on the same issue: neither's
+    # files fall in the other's (expanded) scope, so neither blocks the
+    # other -- the #10419 disjointness guarantee holds through the brace
+    # expansion (#10597).
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
+                "paths: twin_pairs.d/gametheory-{7,8,9}-*.yaml",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
+                "paths: twin_pairs.d/app-{17,18,19}-*.yaml",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA")
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert '"blocking_lanes": []' in out

@@ -311,6 +311,55 @@ def _extract_marker_intent(body: str) -> str | None:
     return text
 
 
+def _split_paths_brace_aware(raw: str) -> list[str]:
+    """Split a comma-separated path list on commas OUTSIDE `{...}` groups.
+
+    A scope like `search-{6,8,9}-*.yaml` uses commas as brace alternatives,
+    not as list separators. A naive `raw.split(",")` fragments it into
+    `["search-{6", "8", "9}-*.yaml"]` -- three invalid globs that `fnmatch`
+    will never match, so the claim silently ends up EPIC-WIDE by accident
+    (#10597). This splitter tracks brace depth and only splits on depth-0
+    commas, keeping each brace group intact. Empty fragments from stray
+    commas are dropped (`paths: a, , b` -> `["a", "b"]`).
+    """
+    parts: list[str] = []
+    buf: list[str] = []
+    depth = 0
+    for ch in raw:
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth = max(0, depth - 1)
+        if ch == "," and depth == 0:
+            parts.append("".join(buf).strip())
+            buf = []
+        else:
+            buf.append(ch)
+    parts.append("".join(buf).strip())
+    return [p for p in parts if p]
+
+
+def _expand_brace_groups(pattern: str) -> list[str]:
+    """Expand a single `{a,b,c}` group into plain globs.
+
+    fnmatch supports `*`, `?`, `[seq]`, `[!seq]` but NOT `{a,b}`. A pattern
+    like `search-{6,8,9}-*.yaml` therefore matches nothing via fnmatch.
+    This expands the FIRST brace group into sibling globs
+    (`search-6-*.yaml`, `search-8-*.yaml`, `search-9-*.yaml`); nested
+    groups would need recursion, but no scope in the fleet uses nesting.
+    Patterns without braces are returned unchanged.
+    """
+    m = re.search(r"\{([^{}]*)\}", pattern)
+    if not m:
+        return [pattern]
+    alts = [a for a in m.group(1).split(",") if a]
+    if not alts:
+        return [pattern]
+    return [
+        f"{pattern[:m.start()]}{alt}{pattern[m.end():]}" for alt in alts
+    ]
+
+
 def _extract_paths_clause(text: str | None) -> list[str] | None:
     """Parse the optional `paths: <comma-list>` clause from a marker line.
 
@@ -320,16 +369,20 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
     multi-instance issue). Returns the trimmed path list, or None when the
     clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
     unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
-    every other lane). Empty fragments from stray commas are dropped (a worker
-    pasting `paths: a, , b` gets `["a", "b"]`, not `["a", "", "b"]`).
+    every other lane). Brace groups are expanded to sibling globs so that
+    `paths: search-{6,8,9}-*.yaml` yields three matchable patterns instead of
+    one silently-EPIC-WIDE accident (#10597).
     """
     m = _PATHS_CLAUSE_RE.search(text or "")
     if not m:
         return None
     raw = m.group(1)
-    parts = [p.strip() for p in raw.split(",")]
-    parts = [p for p in parts if p]
-    return parts or None
+    parts = _split_paths_brace_aware(raw)
+    expanded: list[str] = []
+    for p in parts:
+        for e in _expand_brace_groups(p):
+            expanded.append(e)
+    return expanded or None
 
 
 def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEvent]]:
@@ -483,6 +536,10 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     UI's PR-files search treats "filter" input -- a worker who filters the
     web UI by filename and pastes the result here gets the same matches.
 
+    Brace groups (`{a,b}`) are expanded first, so `--paths
+    'sel/{6,8}-*.yaml'` behaves like the fs-shell glob a worker means
+    (#10597) instead of silently matching nothing.
+
     The fnmatch patterns are anchored to the basename of the path AND to
     the full path, so a pattern like `*.lean` matches `knot_lean/Foo.lean`
     AND `Foo.lean` alone. This is the same convenience offered by the
@@ -492,8 +549,9 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     from fnmatch import fnmatch
     basename = path.rsplit("/", 1)[-1]
     for pat in patterns:
-        if fnmatch(path, pat) or fnmatch(basename, pat):
-            return True
+        for p in _expand_brace_groups(pat):
+            if fnmatch(path, p) or fnmatch(basename, p):
+                return True
     return False
 
 
