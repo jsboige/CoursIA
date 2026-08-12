@@ -292,7 +292,7 @@ noncomputable def lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type
 theorem lan_unit_eq_lan_adjunction_unit (L : C ⥤ D) (H : Type u₃)
     [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
     (L.lanAdjunction H).unit = L.lanUnit :=
-  CategoryTheory.Functor.lanAdjunction_unit
+  CategoryTheory.Functor.lanAdjunction_unit L H
 
 /-- Bridge: the universal descent `kan_descent` satisfies the
     factorization condition — this is the naturality of the adjunction.
@@ -316,6 +316,6 @@ theorem kan_descent_fac {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     as type, which `≅` is not. -/
 noncomputable def dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDense] :
     F.leftKanExtension F ≅ 𝟭 D :=
-  CategoryTheory.Functor.IsDense.leftKanExtensionIso
+  CategoryTheory.Functor.IsDense.leftKanExtensionIso F
 
 end Grothendieck.KanExtensions_en
