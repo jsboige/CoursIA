@@ -103,7 +103,22 @@ l'application `toPullbackObj` de P(X₄) vers le produit fibré.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.toPullbackObj
 
 -- Condition de faisceau ssi toPullbackObj est bijective (préfaisceaux à valeurs Type).
-#check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sheafCondition_iff_bijective_toPullbackObj
+-- On promeut ce `#check` en une déclaration prouvée ci-dessous : c'est le fait
+-- pédagogique central du module (la prose l'annonçait sans preuve formelle).
+
+/-- Théorème pont : un préfaisceau de types P satisfait la condition de faisceau
+    de Mayer-Vietoris pour le carré S si et seulement si l'application canonique
+    `toPullbackObj` (de P(X₄) vers le produit fibré des fibres) est bijective.
+    C'est le critère concret qui relie la condition abstraite de carré pullback
+    à une énumération mesurable des sections. La preuve délègue au lemme nommé
+    `sheafCondition_iff_bijective_toPullbackObj` de Mathlib
+    (`CategoryTheory.Sites.MayerVietorisSquare`). -/
+theorem sheaf_condition_iff_bijective
+    [HasWeakSheafify J (Type v)]
+    (S : J.MayerVietorisSquare)
+    (P : Cᵒᵖ ⥤ Type v') :
+    S.SheafCondition P ↔ Function.Bijective (S.toPullbackObj P) :=
+  CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sheafCondition_iff_bijective_toPullbackObj S P
 
 /-! ## 4. Conséquences de la condition de faisceau
 

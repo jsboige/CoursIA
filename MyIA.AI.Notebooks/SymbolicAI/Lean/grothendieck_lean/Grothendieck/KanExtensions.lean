@@ -5,6 +5,13 @@ Alexandre Grothendieck (1928-2014).
 
 Extension Phase 2+ (#2159, Epic #1646).
 
+Tous les `sorry` éliminés à la création (c.8228) : 0/0 sorry, 4/4 theorems
+propres (cast sur les définitions et théorèmes Mathlib 4 v4.31.0-rc1,
+sans tactique non triviale). Ponts vers `Mathlib.CategoryTheory.Functor.KanExtension.{Basic,Adjunction,Pointwise,Dense}`
+via `L.lanAdjunction`, `lanAdjunction_unit`, `descOfIsLeftKanExtension_fac`,
+`leftKanExtensionIso`. Voir c.8224 (leçon L902 ★ ÉTENDU : `rfl` est pont
+suffisant quand l'égalité est définitionnelle ou quand on **est** la valeur).
+
 L'extension de Kan est l'une des constructions les plus universelles de la
 théorie des catégories : elle « étend » un foncteur `F : C ⥤ H` le long d'un
 foncteur `L : C ⥤ D`, produisant un foncteur `D ⥤ H` qui est le « meilleur
@@ -63,6 +70,7 @@ import Mathlib.CategoryTheory.Functor.KanExtension.Basic
 import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 import Mathlib.CategoryTheory.Functor.KanExtension.Pointwise
 import Mathlib.CategoryTheory.Functor.KanExtension.Dense
+import Mathlib.CategoryTheory.Whiskering
 
 universe v₁ v₂ v₃ u₁ u₂ u₃
 
@@ -266,5 +274,54 @@ noncomputable def kan_descent {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     (η : F ⟶ L ⋙ F') [F'.IsLeftKanExtension η] (G : D ⥤ H) (β : F ⟶ L ⋙ G) :
     F' ⟶ G :=
   F'.descOfIsLeftKanExtension η G β
+
+/-- Pont : `L.lan` est adjoint à gauche du foncteur de précomposition
+    `(whiskeringLeft C D H).obj L : (D ⥤ H) ⥤ (C ⥤ H)`. C'est la
+    formulation en catégorie de foncteurs du lemme « l'extension de Kan
+    gauche est le meilleur relèvement à gauche » — Mathlib attache
+    directement l'adjonction à `L` via la classe `L.HasLeftKanExtension`
+    une fois pour toutes.
+
+    Note : `noncomputable def` (pas `theorem`) parce que le type
+    `L.lan ⊣ (Functor.whiskeringLeft C D H).obj L` est une **adjonction**
+    (data : un objet avec unit + counit + homEquiv), pas une Prop. -/
+noncomputable def lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
+    [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
+    L.lan ⊣ (Functor.whiskeringLeft C D H).obj L :=
+  L.lanAdjunction H
+
+/-- Pont : l'unité de l'adjonction `lan ⊣ precomp L` est exactement
+    `L.lanUnit`. C'est le `@[simp]` lemma de Mathlib — `lanAdjunction_unit`
+    est un **théorème** (pas une égalité définitionnelle), donc on
+    l'utilise comme corps de la preuve. (L902 ★ ÉTENDU c.8224 reaffirmed :
+    `rfl` ne marche PAS pour `simp` lemmas, il faut le théorème.) -/
+theorem lan_unit_eq_lan_adjunction_unit (L : C ⥤ D) (H : Type u₃)
+    [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
+    (L.lanAdjunction H).unit = L.lanUnit :=
+  CategoryTheory.Functor.lanAdjunction_unit L H
+
+/-- Pont : la descente universelle `kan_descent` vérifie la condition
+    de factorisation — c'est la naturalité de l'adjonction. Le morphisme
+    `F' ⟶ G` produit par `descOfIsLeftKanExtension` rend `η` et `β`
+    compatibles via whiskering : `α ≫ L.whiskerLeft (F'.descOfIsLeftKanExtension
+    α G β) = β`. -/
+theorem kan_descent_fac {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
+    (η : F ⟶ L ⋙ F') [F'.IsLeftKanExtension η] (G : D ⥤ H) (β : F ⟶ L ⋙ G) :
+    η ≫ L.whiskerLeft (F'.descOfIsLeftKanExtension η G β) = β :=
+  F'.descOfIsLeftKanExtension_fac η G β
+
+/-- Pont : si `L` est un foncteur dense, alors son extension de Kan
+    gauche le long de lui-même est isomorphe à l'identité sur `D`. C'est
+    la formulation de la densité de `L` (le cas particulier de Yoneda :
+    l'identité est sa propre extension de Kan le long d'elle-même).
+
+    Note : on utilise `noncomputable def` (pas `theorem`) parce que le
+    type `F.leftKanExtension F ≅ 𝟭 D` est une **structure** (data), pas
+    une proposition — le théorème Mathlib `IsDense.leftKanExtensionIso`
+    est lui-même `noncomputable def`. Un `theorem ... := x` exige une
+    Prop comme type, ce que `≅` n'est pas. -/
+noncomputable def dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDense] :
+    F.leftKanExtension F ≅ 𝟭 D :=
+  CategoryTheory.Functor.IsDense.leftKanExtensionIso F
 
 end Grothendieck.KanExtensions

@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-2-Basic-Logics-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (Thimm 2012) : C# branche IKVM 8.15.0 + tweety-pl.dll (tracked 0,55 Mo) + 7 refs `org.tweetyproject.*` actifs (using + classes instantiatees), bytecode Java traduit en .NET sans JVM au runtime. Python branche JPype + `from org.tweetyproject.logics.pl.* import` + `from org.tweetyproject.logics.fol.* import`. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : les deux cotes invoquent la meme bibliotheque Java TweetyProject (sat solvers FOL, parser FOPL, raisonneur), seules les idioms de pont different (bytecode .NET vs JVM runtime). DLL source-recompilee (release 8) selon pattern c.220 IKVM causal causal rebuild — pas de maven-shade bytecode 59."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -10,6 +12,12 @@
       csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
     - date: "2026-08-06"
       by: myia-po-2023:CoursIA
+      python_sha: db6e66674e180e9146b7698a17549da121b99df1
+      csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
+      content_python_sha: 9ea706f03d4f0eb8408bda6760ace8de24c999a3bdc75019d713633ad2031ad1
+      content_csharp_sha: 28db117646b3940d869d29bccaa6ad4fda169c22af3d0443a17876c36a8ac998
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
       python_sha: db6e66674e180e9146b7698a17549da121b99df1
       csharp_sha: 91f537b4dabe9e9846e6474d42af960bf5288122
       content_python_sha: 9ea706f03d4f0eb8408bda6760ace8de24c999a3bdc75019d713633ad2031ad1

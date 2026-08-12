@@ -406,7 +406,18 @@ def main(argv: list[str] | None = None) -> int:
         nb_path = Path(args.notebook)
         if not nb_path.is_absolute():
             nb_path = root / args.notebook
-        records = [classify_notebook(nb_path)]
+        if nb_path.is_dir():
+            # Acceptance #10230 : « lancer sur l'arbre QC entier ». Un chemin de
+            # répertoire scanne tous les .ipynb qu'il contient (hors checkpoints),
+            # au lieu de crasher en ERREUR (read_text sur un dir).
+            paths = [p for p in sorted(nb_path.rglob("*.ipynb"))
+                     if ".ipynb_checkpoints" not in p.parts]
+            if not paths:
+                print(f"[scan_window_drift] aucun notebook sous {nb_path}", file=sys.stderr)
+                return 2
+            records = [classify_notebook(p) for p in paths]
+        else:
+            records = [classify_notebook(nb_path)]
     else:
         paths = list(_iter_notebooks(root, args.family))
         if not paths:
