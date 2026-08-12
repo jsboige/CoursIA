@@ -126,6 +126,187 @@ class C { void M(string userInput) { var q = ""SELECT * FROM users WHERE name = 
         Assert.DoesNotContain("\" + userInput", newText.ToString());
     }
 
+    // -------- AGSEC005: hardcoded credential detection (sub-grain #10500e + #10500f) --------
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnOpenAIStyleKey()
+    {
+        // `sk-` is the OpenAI/Anthropic key prefix. A literal that starts with
+        // `sk-` is almost certainly a real leaked key.
+        const string source = @"
+class C {
+    const string apiKey = ""sk-proj-AbCdEf1234567890abcdefghij"";
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        var d = Assert.Single(diags, x => x.Id == AgentSafetyAnalyzer.AGSEC005);
+        Assert.Equal(DiagnosticSeverity.Warning, d.Severity);
+        // The diagnostic message names the matched prefix so the developer
+        // knows which provider's secret leaked.
+        Assert.Contains("sk-", d.GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnGitHubPat()
+    {
+        // `ghp_` is the GitHub Personal Access Token prefix.
+        const string source = @"
+class C {
+    const string token = ""ghp_AbCdEf1234567890abcdefghijklmnopqrstUV"";
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005 && d.GetMessage().Contains("ghp_"));
+    }
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnAwsAccessKeyId()
+    {
+        // `AKIA` is the AWS Access Key ID prefix (the long-form secret follows
+        // separately and is not covered here).
+        const string source = @"
+class C {
+    const string awsKey = ""AKIAIOSFODNN7EXAMPLE"";
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005 && d.GetMessage().Contains("AKIA"));
+    }
+
+    [Fact]
+    public async Task AGSEC005_NoDiagnostic_OnPlainLiteral()
+    {
+        // A literal that doesn't start with any known provider prefix is left
+        // alone — even if it might *be* a secret, without the prefix hint we
+        // can't be sure enough to flag it (false-positive cost > false-negative
+        // cost for unknown shapes).
+        const string source = @"
+class C {
+    const string greeting = ""hello world"";
+    const string endpoint = ""https://api.example.com/v1/messages"";
+    const string skPrefix = ""sk-"";
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+    }
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnAnthropicStyleKey()
+    {
+        // `sk-ant-` is the more specific Anthropic prefix. The table is
+        // ordered most-specific-first, so `sk-ant-` wins over `sk-` and the
+        // diagnostic message references the Anthropic-shaped prefix.
+        const string source = @"
+class C {
+    const string anthropicKey = ""sk-ant-api03-AbCdEf1234567890abcdefghijklmnopqr"";
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005 && d.GetMessage().Contains("sk-ant-"));
+    }
+
+    [Fact]
+    public async Task AGSEC005_NoDiagnostic_OnEmptyLiteral()
+    {
+        // An empty string has no prefix; trivially not a credential.
+        const string source = @"
+class C {
+    string M() { return """"; }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+    }
+
+    // -------- AGSEC005 CodeFixProvider (sub-grain #10500f) --------
+
+    [Fact]
+    public async Task AGSEC005_CodeFix_ReplacesOpenAIKeyWithEnvVarLookup()
+    {
+        const string before = @"
+class C {
+    const string openaiKey = ""sk-proj-AbCdEf1234567890abcdefghij"";
+}";
+
+        var document = await CreateDocumentAsync(before);
+        var analyzerDiags = await GetDiagnosticsFromDocumentAsync(document);
+        var rule005 = analyzerDiags.First(d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+
+        var actions = new List<CodeAction>();
+        var context = new CodeFixContext(document, rule005, (a, _) => actions.Add(a), CancellationToken.None);
+        var fixProvider = new HardcodedCredentialCodeFixProvider();
+        await fixProvider.RegisterCodeFixesAsync(context);
+
+        var action = Assert.Single(actions);
+        var operations = await action.GetOperationsAsync(CancellationToken.None);
+        var applyOperation = Assert.Single(operations.OfType<ApplyChangesOperation>());
+
+        var newSolution = applyOperation.ChangedSolution;
+        var newDocument = newSolution.GetDocument(document.Id);
+        var newText = await newDocument!.GetTextAsync();
+
+        // The hardcoded literal is gone; replaced by an env-var lookup keyed
+        // on the conventional OPENAI_API_KEY name. The `?? ""` keeps the
+        // variable's effective type `string` (never null), so downstream
+        // consumers are unaffected.
+        Assert.DoesNotContain("\"sk-proj-AbCdEf1234567890abcdefghij\"", newText.ToString());
+        Assert.Contains("OPENAI_API_KEY", newText.ToString());
+        Assert.Contains("Environment.GetEnvironmentVariable", newText.ToString());
+        Assert.Contains("?? \"\"", newText.ToString());
+    }
+
+    [Fact]
+    public async Task AGSEC005_CodeFix_PicksCorrectEnvVarPerProvider()
+    {
+        // For each prefix in the table, the CodeFix picks the canonical
+        // env-var name (most-specific-first ordering is honoured). GitHub
+        // Personal Access Tokens (`ghp_`) get `GITHUB_TOKEN`, AWS Access
+        // Key IDs (`AKIA`) get `AWS_ACCESS_KEY_ID`, and Anthropic-shaped
+        // keys (`sk-ant-`) get `ANTHROPIC_API_KEY` rather than the
+        // more generic `OPENAI_API_KEY`.
+        var cases = new[]
+        {
+            ("\"ghp_AbCdEf1234567890abcdefghijklmnopqrstUV\"", "GITHUB_TOKEN"),
+            ("\"AKIAIOSFODNN7EXAMPLE\"",                          "AWS_ACCESS_KEY_ID"),
+            ("\"sk-ant-api03-AbCdEf1234567890abcdefghijklmnopqr\"", "ANTHROPIC_API_KEY"),
+        };
+
+        foreach (var (literal, expectedEnvVar) in cases)
+        {
+            var source = $"class C {{ const string k = {literal}; }}";
+            var document = await CreateDocumentAsync(source);
+            var analyzerDiags = await GetDiagnosticsFromDocumentAsync(document);
+            var rule005 = analyzerDiags.First(d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+
+            var actions = new List<CodeAction>();
+            var context = new CodeFixContext(document, rule005, (a, _) => actions.Add(a), CancellationToken.None);
+            var fixProvider = new HardcodedCredentialCodeFixProvider();
+            await fixProvider.RegisterCodeFixesAsync(context);
+
+            var action = Assert.Single(actions);
+            var operations = await action.GetOperationsAsync(CancellationToken.None);
+            var applyOperation = Assert.Single(operations.OfType<ApplyChangesOperation>());
+
+            var newSolution = applyOperation.ChangedSolution;
+            var newDocument = newSolution.GetDocument(document.Id);
+            var newText = await newDocument!.GetTextAsync();
+
+            Assert.Contains(expectedEnvVar, newText.ToString());
+            Assert.DoesNotContain(literal, newText.ToString());
+        }
+    }
+
+    [Fact]
+    public async Task AGSEC005_CodeFix_DoesNotMatchLiteralWithoutKnownPrefix()
+    {
+        // Sanity check: the CodeFix only fires on literals that the
+        // analyzer has flagged. A plain literal (no credential prefix)
+        // doesn't trigger a diagnostic in the first place, so there's
+        // nothing for the CodeFix to act on.
+        const string source = @"
+class C {
+    const string greeting = ""hello world"";
+}";
+        var document = await CreateDocumentAsync(source);
+        var analyzerDiags = await GetDiagnosticsFromDocumentAsync(document);
+        Assert.DoesNotContain(analyzerDiags, d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+    }
+
     // -------- Helpers --------
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source)
