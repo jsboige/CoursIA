@@ -29,14 +29,25 @@ relative : passer `--layer-frac 0.5` pour une intention transposable. Les gardes
 correspondantes vivent dans `ict/sae_traces.py` (pures, testables sans GPU) et
 sont appliquees ici AVANT tout chargement de poids.
 
+Deux largeurs SAE par modele cible (#10289 etape 2) : le meme depot
+`Qwen/SAE-Res-Qwen3.5-2B-Base-W32K` est publie en deux versions, `L0_50` et
+`L0_100`, qui different par le top-k d'encodage (50 vs 100). Le k est lu
+depuis le `config.json` du depot ; `--k` explicite DOIT y correspondre, la
+garde `assert_sae_topk_compatible` refuse tout desaccord (un `topk(50)`
+sur un SAE `L0_100` produirait une mesure a moitie de la release
+officielle, silencieusement).
+
 Usage (GPU 2 d'ai-01 STRICT — vLLM tient GPU 0-1) :
     CUDA_VISIBLE_DEVICES=2 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
       python extract_sae_traces.py --stage smoke
     ... --stage full --variant trained
     ... --stage full --variant control
-    # echelle 2B, mi-reseau, SAE apparie :
+    # echelle 2B, mi-reseau, SAE L0_50 (defaut auto-detecte depuis config.json) :
     ... --model Qwen/Qwen3.5-2B-Base --layer-frac 0.5 \
         --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50 --stage full
+    # echelle 2B, SAE L0_100 (meme modele, top-k=100 detecte auto) :
+    ... --model Qwen/Qwen3.5-2B-Base --layer-frac 0.5 \
+        --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_100 --stage full
 """
 from __future__ import annotations
 
@@ -56,6 +67,7 @@ import torch
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from ict.sae_traces import (  # noqa: E402  (necessairement apres sys.path)
     assert_bf16_readout,
+    assert_sae_topk_compatible,
     check_sae_model_match,
     resolve_capture_layer,
     trace_filename,
@@ -335,6 +347,18 @@ def parse_args() -> argparse.Namespace:
                         "defaut refusee : les SAE sont entraines sur le residual "
                         "stream pleine precision, donc un differentiel mesure en "
                         "4-bit melangerait l'effet cherche et l'arrondi NF4.")
+    p.add_argument("--k", type=int, default=None,
+                   help="top-k d'encodage SAE. Si omis, lu depuis "
+                        "config.json du depot --sae-repo (defaut officiel : "
+                        "50 pour L0_50, 100 pour L0_100). Doit correspondre "
+                        "au k officiel — la garde assert_sae_topk_compatible "
+                        "refuse tout desaccord sans --allow-k-override.")
+    p.add_argument("--allow-k-override", action="store_true",
+                   help="autorise --k a desobeir au k officiel du SAE. "
+                        "INTERDIT en pratique : un top-k explicite inferieur "
+                        "tronque silencieusement un L0_100, le resultat n'est "
+                        "plus comparable a la release officielle. Reserve a "
+                        "l'exploration assumee et documentee.")
     p.add_argument("--overwrite", action="store_true",
                    help="autorise l'ecrasement d'une trace existante (refuse par defaut)")
     return p.parse_args()
@@ -395,6 +419,42 @@ def find_decoder_layers(model: torch.nn.Module, n_layers_hint: int | None) -> to
     return layers
 
 
+def fetch_sae_config(sae_repo: str) -> dict:
+    """Telcharge le ``config.json`` du depot SAE et rend ses champs-cles.
+
+    Le depot Qwen-Scope publie un ``config.json`` a la racine (cf ``app.py``
+    officiel) avec au moins ``d_model``, ``d_sae``, ``k``, ``num_layers``,
+    ``hook_point``. On isole ces quatre champs-ci : le script d'extraction
+    n'en a besoin que pour verifier la compatibilite top-k (ce depot =
+    L0_50 ou L0_100 ?) et le d_model (deja couvert par
+    :func:`ict.sae_traces.check_sae_model_match`, mais ici on en a besoin
+    avant le telechargement du ``layer{L}.sae.pt``).
+
+    Echec reseau : la garde ``assert_sae_topk_compatible`` devient
+    inapplicable, donc on le dit a l'appelant plutot que de deriver en
+    silence sur un defaut hardcode (k=50) — c'est precisement le defaut
+    silencieux que la garde ferme.
+    """
+    from huggingface_hub import hf_hub_download
+    try:
+        cfg_path = hf_hub_download(sae_repo, "config.json")
+    except Exception as exc:
+        raise FileNotFoundError(
+            f"impossible de telecharger config.json du depot SAE {sae_repo!r} : "
+            f"{exc}. La detection automatique du k officiel necessite ce "
+            f"fichier ; sans lui, --k doit etre passe en CLI explicitement "
+            f"et --allow-k-override active (cf etape 2 PT-12, #10289)."
+        ) from exc
+    with open(cfg_path) as f:
+        cfg = json.load(f)
+    return {
+        "d_model": int(cfg["d_model"]),
+        "d_sae": int(cfg["d_sae"]),
+        "k": int(cfg.get("k", cfg.get("top_k", 50))),
+        "num_layers": int(cfg.get("num_layers", cfg.get("n_layers", 0))),
+    }
+
+
 def load_sae(sae_repo: str, layer: int, device: torch.device):
     """Telecharge et charge le checkpoint SAE de la couche demandee.
 
@@ -416,8 +476,12 @@ def load_sae(sae_repo: str, layer: int, device: torch.device):
 def sae_encode_topk(hidden: torch.Tensor, sae: dict, k: int = 50):
     """Encode top-k fidele a app.py : pre = h @ W_enc.T + b_enc ; relu ; top-k.
 
-    hidden : [T, d_model] float32 (CPU). Retourne (ids [T,k] int32, vals [T,k] float32),
-    tries par activation decroissante ; les valeurs nulles marquent un L0 < k."""
+    ``k`` est explicite : la valeur par defaut (50) reflete le depot de
+    reference ``W64K-L0_50``, mais un appelant qui passe un SAE
+    ``W32K-L0_100`` DOIT specifier ``k=100`` — la garde
+    :func:`ict.sae_traces.assert_sae_topk_compatible` refuse le
+    desaccord avant d'arriver ici.
+    """
     pre = hidden @ sae["W_enc"].T + sae["b_enc"]     # [T, d_sae]
     acts = torch.relu(pre)
     vals, ids = torch.topk(acts, k, dim=-1)
@@ -497,6 +561,24 @@ def main() -> None:
            getattr(cfg, "quantization_config", None),
            args.allow_quantized_readout)
 
+    # --- Garde cross-L0 (L0_50 vs L0_100) : le k encode DOIT etre le k ---- #
+    # officiel du SAE. Defaut silencieux ferme ici, cf etape 2 PT-12 #10289.
+    # On recupere le k officiel via config.json (qq Ko) avant tout chargement
+    # de poids — un refus ici ne coute rien.
+    sae_cfg = _guard(fetch_sae_config, args.sae_repo)
+    k_official = int(sae_cfg["k"])
+    if args.k is None:
+        k = k_official
+        print(f"[k] auto-detecte depuis {args.sae_repo} : k={k}")
+    else:
+        k = int(args.k)
+        if not args.allow_k_override:
+            _guard(assert_sae_topk_compatible, k_official, k)
+            print(f"[k] explicite {k} = officiel {args.sae_repo} : OK")
+        else:
+            print(f"[k] OVERRIDE explicite {k} != officiel {k_official} : "
+                  f"sortie non comparable a la release officielle")
+
     out_path: Path | None = None
     if args.stage == "full":
         out_dir = Path(args.out_dir)
@@ -547,7 +629,7 @@ def main() -> None:
             with torch.no_grad():
                 model(**enc)
             hidden = capture.hidden                      # [T, d_model] fp32 CPU
-            ids, vals = sae_encode_topk(hidden, sae, k=50)
+            ids, vals = sae_encode_topk(hidden, sae, k=k)
             l0 = (vals > 0).sum(dim=-1).float()
             l0_all.append(l0)
             tok_total += hidden.shape[0]
@@ -577,7 +659,7 @@ def main() -> None:
 
     l0_cat = torch.cat(l0_all)
     print(f"\n[sanity] {tok_total} tokens, L0 moyen={l0_cat.mean():.2f} "
-          f"(attendu ~50), min={l0_cat.min():.0f}, max={l0_cat.max():.0f}")
+          f"(attendu ~{k}), min={l0_cat.min():.0f}, max={l0_cat.max():.0f}")
     print(f"[sanity] vram pic={torch.cuda.max_memory_allocated() / 2**30:.1f} GiB")
 
     if args.stage == "full":
@@ -588,11 +670,13 @@ def main() -> None:
             # traces d'echelles differentes comparables (#5105 / #7396).
             "n_layers": int(n_layers), "layer_frac": depth["layer_frac"],
             # d_sae EST la largeur du SAE (65536 pour W64K, 32768 pour W32K) :
-            # pas de second champ synonyme, qui divergerait un jour.
-            "k": 50, "d_sae": int(sae["W_enc"].shape[0]), "d_model": int(d_model),
+            # pas de second champ synonyme, qui divergerait un jour. k EST le
+            # top-k d'encodage (50 ou 100) capture ici, PAS recalcule a la lecture.
+            "k": int(k), "k_official": int(k_official),
+            "d_sae": int(sae["W_enc"].shape[0]), "d_model": int(d_model),
             "quantized_readout": bool(args.allow_quantized_readout),
             "variant": args.variant, "seed": args.seed, "clamp_ids": clamp_ids,
-            "encode_convention": "pre = h @ W_enc.T + b_enc ; relu ; topk(50) "
+            "encode_convention": f"pre = h @ W_enc.T + b_enc ; relu ; topk({k}) "
                                  "(app.py officiel Qwen-Scope, pas de b_dec a l'encode)",
             "control_convention": "permutation seedee des lignes d'input embeddings",
             "prompt_sets": {k: len(v) for k, v in sets.items()},

@@ -73,6 +73,16 @@ Deux conséquences pratiques :
    distincte (voir Parcours 3). Les deux sens du protocole ne se
    configurent pas au même endroit — confusion fréquente.
 
+> **Notebook compagnon.** [`consommer-vs-exposer-le-mcp.ipynb`](consommer-vs-exposer-le-mcp.ipynb)
+> rend exécutable cette distinction : il monte les **deux côtés du fil** sur un
+> même fixture synthétique (Maison Valmont) — un mini-serveur MCP exposé et un
+> mini-client MCP consommé — et mesure le chevauchement fonctionnel
+> cross-catalogue. La question opérationnelle qu'il formalise : *faut-il
+> brancher ce serveur MCP externe, ou ses outils sont-ils déjà couverts par le
+> catalogue interne ?* Indice de Jaccard sur les signatures `(verbe, cible)`,
+> avec un accent sur le sous-ensemble écriture (le double-écrit, risque réel
+> même sous un chevauchement global faible).
+
 ---
 
 ## Parcours 1 — Copilot pour l'éditeur WordPress
@@ -183,6 +193,13 @@ En revanche, la notion d'**environnements multiples** au sein d'une
 même instance est plus explicite côté AI-Engine, où elle est un
 champ de configuration de premier niveau.
 
+> [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb)
+> convertit les deux défaillances ci-dessus en **mesures reproductibles** :
+> sur un vector store synthétique partitionné en six régimes d'accès, il
+> démontre la fuite cross-environnement (taux de chunks réservés renvoyés
+> à un visiteur public) et l'accident de réindexation silencieux
+> (comptage du corpus voisin écrasé). Déterministe, sans clé ni réseau.
+
 ---
 
 ## Parcours 3 — WordPress comme serveur MCP métier
@@ -244,6 +261,14 @@ schéma de la base ; il n'a même pas la possibilité de le contourner.
 C'est le point transposable à n'importe quel projet MCP, quel que
 soit le CMS ou le langage : la valeur d'un serveur MCP se mesure à
 la distance entre ses outils et le schéma de persistance.
+
+> **Compagnon exécutable.** Le notebook
+> [`auditer-un-serveur-mcp.ipynb`](auditer-un-serveur-mcp.ipynb) convertit
+> cette leçon en une mesure reproductible : il classe chaque outil d'un
+> catalogue en CRUD générique ou verbe métier et calcule sa distance au
+> schéma de persistance à partir du seul `inputSchema`. Le catalogue audité
+> y est synthétique (Maison Valmont) — aucun outil réel du site n'y figure —
+> et un chemin live optionnel permet de le rejouer sur son propre serveur.
 
 ### Comparaison OWUI
 

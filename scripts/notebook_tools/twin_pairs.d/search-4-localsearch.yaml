@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-4-LocalSearch-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = stdlib only (random + math + copy.deepcopy state cloning + numpy helper) + helpers from-scratch (`search_helpers` module interne). Pas de lib SOTA-tier pour local search en Python pur (`simanneal` est un jouet non-maintained, la reference AIMA 3e ed. ch.4 est pedagogique from-scratch). C# = BCL pure (Stack<T> + List<T> + Random.Shared .NET 9 + LinkedList<T> state space from-scratch, 0 NuGet SOTA tiers). Les DEUX cotes sont en from-scratch pedagogique (Hill-Climbing / Simulated Annealing / Local Beam Search -- algos classiques AIMA ch.4), portabilite cross-lang directe. Verdict RECOVERABLE-LOCAL (from-scratch from-scratch assume pedagogique, lib SOTA non requise pour ces algos)."
   audits:
     - date: "2026-08-01"
       by: myia-po-2023:CoursIA

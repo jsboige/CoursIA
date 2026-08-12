@@ -56,7 +56,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
-from lean_server import LeanVerifier, select_diagnostic_lines  # noqa: E402
+from lean_server import LeanVerifier, axiom_lookup_anomalies, select_diagnostic_lines  # noqa: E402
 from prover.tools import _parse_lean_errors  # noqa: E402
 
 
@@ -245,3 +245,54 @@ def test_empty_capture_is_not_a_crash():
         lines, matched, omitted = select_diagnostic_lines(empty)
         assert matched is False and omitted == 0
         assert lines in ([], [""])
+
+
+# --- axiom_lookup_anomalies: complement filter for the axiom gate (#10486) ---
+#
+# The build_failed_returncode_* path of check_axioms feeds lean --stdin one
+# `#print axioms` per declaration. select_diagnostic_lines misses an `unknown
+# constant` (no `error:` marker) and falls back to a tail slice, which on a
+# 537-command batch shows healthy verdicts and hides the cause. The complement
+# filter returns whatever is NOT a healthy verdict -- the cause, wherever it
+# sits. Pinned here so the filter's contract (healthy -> [], broken -> cause)
+# does not silently drift.
+
+
+def test_axiom_anomalies_healthy_capture_returns_empty():
+    """A capture of all-healthy verdicts yields nothing to print."""
+    healthy = (
+        "'Sporadic.card_M23' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+        "'Sporadic.id' does not depend on any axioms\n"
+        "'Sporadic.simple_M23' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+    )
+    assert axiom_lookup_anomalies(healthy) == []
+
+
+def test_axiom_anomalies_unknown_constant_is_surfaced_wherever_it_sits():
+    """An `unknown constant` (no `error:` prefix) is the #10486 cause.
+
+    The whole point of the complement filter: select_diagnostic_lines misses
+    this line and falls back to a tail. The complement filter returns it by
+    position, not marker.
+    """
+    capture = (
+        "'Sporadic.card_M22' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+        "unknown constant 'Sporadic.L34.mapsElations'\n"
+        "'Sporadic.simple_M22' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+    )
+    assert axiom_lookup_anomalies(capture) == ["unknown constant 'Sporadic.L34.mapsElations'"]
+
+
+def test_axiom_anomalies_empty_capture_is_empty():
+    """Empty/None raw_output -> no anomalies (failure left no trace)."""
+    for empty in ("", "   \n\n", None):
+        assert axiom_lookup_anomalies(empty) == []
+
+
+def test_axiom_anomalies_respects_the_limit():
+    """A catastrophically broken capture is bounded, with a truncation marker."""
+    # 60 anomaly lines; limit default 50 -> 50 lines + truncation marker.
+    capture = "".join(f"bogus line {i}\n" for i in range(60))
+    out = axiom_lookup_anomalies(capture)
+    assert len(out) == 51  # 50 anomalies + 1 truncation marker
+    assert "truncated at 50" in out[-1]

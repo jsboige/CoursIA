@@ -1,0 +1,82 @@
+name: Lean Galois CI
+
+# CI for galois_lean (SymbolicAI/Lean/galois_lean).
+# Inverse Galois problem / M23 — proof layer for the Lean-19 notebook.
+# Rule lean-merge-discipline: lake build SUCCESS local OBLIGATOIRE avant merge.
+#
+# Migrated to the reusable lean-build.yml per ai-01 DRY decision (option 2: matrix).
+# Behavior is identical to the former inline check-sorry + build jobs.
+#
+# Sorry profile (`real` mode, baseline=0): the only .lean module is the vendored
+# M23Lean4Web.lean (8115 lines, upstream KitaKen1/finite-simple-groups-lean,
+# Apache-2.0). Feasibility gate (c.1039, po-2026) measured 0 real tactic `sorry`,
+# 0 `native_decide` across the file — the 12 raw `sorry` mentions are prose in
+# the upstream docstring block ("The final `#print axioms` commands should not
+# show `sorryAx`"). `real` mode strips comments before counting, so docstring
+# edits cannot flip the counter. Mirrors grothendieck_lean / knot_lean (#6186).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lean-toolchain'
+      - '.github/workflows/lean-galois.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/lean-toolchain'
+      # The gate must run on the PR that introduces or changes it (cf #8712).
+      - '.github/workflows/lean-galois.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean
+      display-name: galois_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # Closes #8677: catches forbidden axioms (incl. transitive `sorryAx`) the
+  # textual sorry counter cannot see. Mirrors the câblage in lean-grothendieck.yml
+  # / lean-knot.yml / lean-conway.yml.
+  #
+  # Why this lake is the easy one (firsthand verified c.1039 feasibility gate):
+  # 0 real tactic `sorry`, 0 `native_decide` in the vendored M23Lean4Web.lean.
+  # `#print axioms Sporadic.card_M23` / `simple_M23` (and the M22 pair) return
+  # only `{propext, Classical.choice, Quot.sound}` — exactly the whitelist §B,
+  # which lean-axiom.yml grants for free (L49). So:
+  #   - allow-axioms: "" -- only the reusable-workflow defaults
+  #   - fail-on-sorry: true -- the lake is fully proven; a transitive sorryAx
+  #     must hard-fail, not be tolerated.
+  #   - target-modules: the COMPLETE module set (the single vendored module),
+  #     so the gate is not "vert hors-cible" (cf #8782).
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean
+      display-name: galois_lean
+      target-modules: "Galois.M23Lean4Web"
+      allow-axioms: ""
+      fail-on-sorry: true

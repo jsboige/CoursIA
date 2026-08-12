@@ -15,7 +15,7 @@ breakdown: SymbolicAI=227, GenAI=159, Search=118, QuantConnect=106, Probas=58, G
 maturity: BETA=807, ALPHA=47, DRAFT=28, TEMPLATE=4
 -->
 
-<sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-guard.yml` (catalog-pr-hygiene R1).*</sub>
+<sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-pr-guard.yml` (catalog-pr-hygiene R1).*</sub>
 
 Dernière mise à jour : 2026-08-05
 
