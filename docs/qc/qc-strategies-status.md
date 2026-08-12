@@ -477,7 +477,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 ## Travaux connexes
 
 - **Checkpoints ML** : `ML-Training-Pipeline/` (444 MB `.pt`, 137 modèles) — migration Git LFS + purge des obsolètes = gated user (mandat 2026-05-27). Non livré.
-- **Papertrading** : `Python/QC-Py-40-PaperTrading-Binance.ipynb`, `Python/QC-Py-41-PaperTrading-IBKR.ipynb` — statut à confirmer (gate [#1027](https://github.com/jsboige/CoursIA/issues/1027)).
+- **Papertrading** : `Python/QC-Py-40-PaperTrading-Binance.ipynb`, `Python/QC-Py-41-PaperTrading-IBKR.ipynb` — **mockups pédagogiques standalone, non déployés**. Audit firsthand : 0 `QuantBook()` dans les deux ; `QC-Py-41` cell[18] porte une config IBKR en template (`"ib-password": "<password>"` = placeholder pédagogique, pas un secret). Les deux sont des notebooks de cours montrant l'API papertrading (partiellement exécutés : QC-Py-40 10/12 cellules, QC-Py-41 9/12), **jamais branchés à un environnement live**. Le gate [#1027](https://github.com/jsboige/CoursIA/issues/1027) (IBKR KYC + Coinbase) reste ouvert pour un éventuel déploiement paper/live réel.
 - **Notebooks cours** : `Python/QC-Py-01..35` + `Cloud-01..07` + companion `Python/research/` (QC-Py-19/22) — cohérents, audit prod-ready à part.
 
 ## Voir aussi
@@ -818,7 +818,7 @@ Entrées où le statut *best-guess* était le plus fragile (divergence nom de do
 ## Travaux connexes
 
 - **Checkpoints ML** : `ML-Training-Pipeline/` (444 MB `.pt`, 137 modèles) — migration Git LFS + purge des obsolètes = gated user (mandat 2026-05-27). Non livré.
-- **Papertrading** : `Python/QC-Py-40-PaperTrading-Binance.ipynb`, `Python/QC-Py-41-PaperTrading-IBKR.ipynb` — statut à confirmer (gate [#1027](https://github.com/jsboige/CoursIA/issues/1027)).
+- **Papertrading** : `Python/QC-Py-40-PaperTrading-Binance.ipynb`, `Python/QC-Py-41-PaperTrading-IBKR.ipynb` — **mockups pédagogiques standalone, non déployés**. Audit firsthand : 0 `QuantBook()` dans les deux ; `QC-Py-41` cell[18] porte une config IBKR en template (`"ib-password": "<password>"` = placeholder pédagogique, pas un secret). Les deux sont des notebooks de cours montrant l'API papertrading (partiellement exécutés : QC-Py-40 10/12 cellules, QC-Py-41 9/12), **jamais branchés à un environnement live**. Le gate [#1027](https://github.com/jsboige/CoursIA/issues/1027) (IBKR KYC + Coinbase) reste ouvert pour un éventuel déploiement paper/live réel.
 - **Notebooks cours** : `Python/QC-Py-01..35` + `Cloud-01..07` + companion `Python/research/` (QC-Py-19/22) — cohérents, audit prod-ready à part.
 
 ## Voir aussi

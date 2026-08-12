@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `ortools.sat.python.cp_model` (Google, Apache-2.0, CP-SAT SOTA specialise scheduling : `CpModel()` + `NewIntervalVar` + `AddNoOverlap` pour machines + `AddMaxEquality` pour makespan + `solver.Solve()` pour makespan minimisation). C# = Choco-solver 4.10.17 (Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711) avec `org.chocosolver.solver.Model` + `IntVar` + `Task` + `getSolver().findSchedule()` avec precedence constraints + makespan optimisation. Verdict RECOVERABLE-LOCAL : ASYMETRIE DE MACHINERIE -- PY = Google OR-Tools CP-SAT (moteur C++ SOTA specialise scheduling, `AddNoOverlap2D` nativement) vs C# = Choco (moteur Java SOTA specialise scheduling via IKVM, `getSolver().findSchedule()`). Les DEUX cotes sont SOTA-TIER mais DIFFERENTS moteurs. Meme substance : precedence constraints, no-overlap sur machines, makespan minimise -- c'est une comparaison pedagogique OR-Tools vs Choco sur scheduling, pas un bridge direct. `parity_level: semantic` preserve : parite sur les concepts cibles (scheduling, makespan, precedence) malgre l'asymetrie de solveur."
   audits:
     - date: "2026-08-01"
       by: myia-po-2024:CoursIA-2

@@ -1011,3 +1011,49 @@ def select_diagnostic_lines(
     if hits:
         return hits[:limit], True, max(0, len(hits) - limit)
     return lines[-_DIAGNOSTIC_TAIL_LINES:], False, 0
+
+
+# Healthy forms of a `#print axioms` response (one per declaration fed to
+# `lean --stdin`). Used by :func:`axiom_lookup_anomalies` as the complement
+# filter for the ``build_failed_returncode_*`` path (#10486, ai-01 c.1044).
+_AXIOM_VERDICT_RE = re.compile(
+    r"^'.*'\s+depends on axioms: \[.*\]$"
+    r"|^'.*'\s+does not depend on any axioms$"
+)
+
+
+def axiom_lookup_anomalies(raw_output: str, limit: int = 50) -> List[str]:
+    """Non-verdict lines in a ``#print axioms`` capture (complement filter).
+
+    :meth:`LeanVerifier.check_axioms` feeds ``lean --stdin`` an ``import``
+    plus one ``#print axioms <decl>`` per declaration. A healthy response is
+    exactly two shapes::
+
+        'Ns.decl' depends on axioms: [propext, Classical.choice, Quot.sound]
+        'Ns.decl' does not depend on any axioms
+
+    Anything else in the capture is the cause of the non-zero returncode -- an
+    ``unknown constant``, a type error, a stack trace. This returns those lines
+    (the COMPLEMENT of the healthy form), so a failed run prints the cause
+    wherever it sits in the stream. A tail slice misses it: the error of
+    command #7 of 537 sits near the top, the tail is twenty healthy verdicts.
+
+    Returns ``[]`` on a healthy capture (every non-blank line is a verdict) --
+    the signal that the failure left no trace in this capture (e.g. the process
+    was killed before printing). Bulletproof by position, unlike
+    marker-matching which an ``unknown constant`` (no ``error:`` prefix) slips
+    past -- that is the gap :func:`select_diagnostic_lines` leaves open on this
+    path. Bounded by ``limit`` so a catastrophically broken capture does not
+    flood the log.
+    """
+    out: List[str] = []
+    for line in (raw_output or "").splitlines():
+        if not line.strip():
+            continue
+        if _AXIOM_VERDICT_RE.match(line):
+            continue
+        out.append(line)
+        if len(out) >= limit:
+            out.append(f"... (+more, truncated at {limit} lines)")
+            break
+    return out

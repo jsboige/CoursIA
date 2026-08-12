@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = networkx (lib SOTA, graphe des topologies 2x2 PD/Chicken/Stag-Hunt/Coordination, viz des regions d'equilibre Nash). C# = from-scratch en pur Linq (4 types 2x2 enumeres a la main, 0 NuGet SOTA tiers). Lib SOTA .NET existe (QuickGraph, MIT-license, mature) et peut etre branchee. RECOVERABLE-LOCAL = pont faisable, pas encore wire. parite semantique preservee (meme socle theorique : taxonomie des 4 topologies 2x2, prediction analytique des conditions de cooperation)."
   audits:
     - python_sha: ac9b8aee4ae0785bfefe6c10f64cfb3e13a38c54
       csharp_sha: b09da0acd68389084b6ff1fac9c565169a85ab06

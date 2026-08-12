@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation-Python.ipynb
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb
   parity_level: surface
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
   audits:
     - date: "2026-08-02"
       by: myia-po-2024:CoursIA-2

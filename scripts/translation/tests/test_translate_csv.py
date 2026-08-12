@@ -911,11 +911,17 @@ def test_translate_policy_in_both_t1_and_t3_schema():
     assert "translate_policy" in t3.CSV_COLUMNS
 
 
-def test_translate_policy_not_in_t1_pivot_cols():
-    """Acceptance #10326 critère 2 (précondition) : ``translate_policy`` n'est
-    PAS dans ``PIVOT_COLS``, donc T1 ``--update`` ne l'écrase PAS sur une ligne
-    existante -- une valeur posée à la main survive. (Le test fonctionnel de
-    survie est ``test_t1_update_preserves_translate_policy`` ci-dessous.)"""
+def test_translate_policy_in_t1_pivot_cols():
+    """Acceptance #10326 critère 2 — point de conception tranché en tranche 2
+    (#10369) : ``translate_policy`` EST dans ``PIVOT_COLS``, donc T1 ``--update``
+    rafraîchit la politique depuis ``cell.metadata.translate`` sur une ligne
+    existante. Le notebook source est la vérité (#10326 point 4 : « durable à
+    travers une régénération ») — un auteur qui ajoute
+    ``metadata.translate = "verbatim"`` veut voir la politique prendre effet
+    immédiatement, pas rester cachée derrière un ``""`` legacy. Tranche 1
+    (#10335) gardait la colonne hors pivot faute de lecteur metadata ; le
+    lecteur arrive ici et le pivot suit. (Le test fonctionnel du rafraîchissement
+    est ``test_t1_update_refreshes_translate_policy_from_metadata`` ci-dessous.)"""
     import extract_cells_to_csv as t1
     import inspect
     src = inspect.getsource(t1.update_existing_csv)
@@ -924,27 +930,29 @@ def test_translate_policy_not_in_t1_pivot_cols():
     m = re.search(r'PIVOT_COLS\s*=\s*\(([^)]*)\)', src)
     assert m, "PIVOT_COLS introuvable dans update_existing_csv"
     pivot = m.group(1)
-    assert "translate_policy" not in pivot
+    assert "translate_policy" in pivot
 
 
-def test_t1_update_preserves_translate_policy(tmp_path):
-    """Acceptance #10326 critère 2 (fonctionnel) : la politique survit à un
-    ``extract_cells_to_csv.py --update``. On part d'une ligne existante avec
-    ``translate_policy=verbatim``, on passe un fresh_row (re-extraction, qui
-    amène ``translate_policy=""`` par défaut), et on vérifie que la valeur
-    verbatim posée à la main EST PRÉSERVÉE (non écrasée)."""
+def test_t1_update_refreshes_translate_policy_from_metadata(tmp_path):
+    """Acceptance #10326 critère 2 (fonctionnel, tranche 2) : la politique
+    déclarée dans ``cell.metadata.translate`` du notebook source est recopiée
+    dans le CSV par ``extract_cells_to_csv.py --update``. On part d'une ligne
+    existante avec ``translate_policy=""`` (extraction pré-marqueur), on passe
+    un fresh_row qui amène ``translate_policy="verbatim"`` (marqueur ajouté
+    depuis), et on vérifie que la politique EST rafraîchie — la déclaration
+    notebook prend effet sans édition manuelle du CSV (guard author-based)."""
     import extract_cells_to_csv as t1
 
     citation = "Ô Civile ! ô Baptistine !"
-    existing = [_row_t1("c1", citation, translate_policy="verbatim")]
-    # fresh_rows : re-extraction simulée, translate_policy="" par défaut.
-    fresh = [_row_t1("c1", citation, translate_policy="")]
+    existing = [_row_t1("c1", citation, translate_policy="")]
+    # fresh_rows : re-extraction simulée APRÈS ajout de metadata.translate.
+    fresh = [_row_t1("c1", citation, translate_policy="verbatim")]
 
     updated, stats = t1.update_existing_csv(
         existing, fresh, target_notebooks={"nb.ipynb"})
 
-    assert stats["updated"] == 0  # PIVOT_COLS inchangés (même source)
-    assert updated[0]["translate_policy"] == "verbatim"  # PRÉSERVÉ, pas écrasé
+    assert stats["updated"] == 1  # PIVOT_COLS modifiés (politique rafraîchie)
+    assert updated[0]["translate_policy"] == "verbatim"  # déclaration appliquée
     assert updated[0]["text_fr"] == citation  # contenu intact
 
 
