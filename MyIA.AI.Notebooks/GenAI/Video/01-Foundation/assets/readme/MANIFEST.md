@@ -34,6 +34,7 @@ Bornes EPIC #5654 P1 respectées : ≤200 KB/fichier, ≤1200 px max-dim.
 
 **🔁 Doublons intentionnels inter-arborescences (audit c.657, doctrine #5780)** :
 Deux des 6 PNG de ce dossier sont des **doublons exacts** (SHA1 identique) avec la racine `assets/readme/` de `GenAI/Video/` :
+
 | Figure locale | Figure racine | SHA1 (vérifié 2026-07-19) | Statut doctrine #5780 |
 |--------------|---------------|---------------------------|------------------------|
 | `vid1-esrgan.png` (01-Foundation) | `video4-esrgan.png` (racine Video) | `620f78d33b723f8a1ddf4cf54eed79e308a66945` (byte-identique) | **Doublon intentionnel** : 01-Foundation README illustre la figure dans le contexte pédagogique « Enhancement ESRGAN » (référence cellule 8 output 3 du notebook `01-4-Video-Enhancement-ESRGAN.ipynb`) ; racine Video README illustre la **même** figure dans le contexte narratif « 04-Orchestration multi-modèles ». Les deux READMEs ont des **alt-texts légèrement différents** (01-Foundation : « comparaison côte-à-côte HR/LR », racine : « comparaison HR vs LR à résolution identique, aucune démo d'upscaling visuel ») — c'est normal et voulu : chaque README adapte son alt-text à la section narrative où la figure est placée, doctrine #5780. Pas une erreur à corriger, juste un **disclosure** explicite pour éviter qu'un futur audit croisé redécouvre la duplication et la signale comme defect (cycle d'audit redondant). |
