@@ -3,6 +3,9 @@
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries-Python.ipynb
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb
   parity_level: surface
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, algorithmes differents) : C# = Microsoft.ML.Transforms.TimeSeries ForecastBySsa (Singular Spectrum Analysis, ML.NET-native) et Python = statsmodels (STL decomposition + SARIMAX, native Python) -- familles algorithmiques differentes (SSA vs SARIMAX) mais CHAQUE COTE atteint un moteur SOTA de forecast saisonnier de son ecosysteme. Aucun pont intermediaire, aucune reimplementation from-scratch. Verifie firsthand C# + exec, Python statsmodels imports."
+
   audits:
     - date: "2026-08-04"
       by: myia-po-2024:CoursIA-2

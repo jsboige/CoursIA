@@ -5,10 +5,10 @@ Alexandre Grothendieck (1928-2014).
 ## État
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
-- **Sorry** : **0 sorry, 0 axiome** — les 33 modules leaf sont complets à la création
-- **Build** : `lake build Grothendieck` — compile 33 modules leaf (11 206 lignes FR+EN, + 208 pour l'umbrella = **11 414 au total**, mesuré 2026-07-30)
+- **Sorry** : **0 sorry, 0 axiome** — les 34 modules leaf sont complets à la création
+- **Build** : `lake build Grothendieck` — compile 34 modules leaf + 1 umbrella bilingue (mesuré 2026-08-12)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **Couverture i18n (EPIC #4980 ratifiée 2026-07-04)** : couverture bilingue FR/EN complète — **34 fichiers FR** (1 umbrella `Grothendieck.lean` bilingue inline FR+EN + **33 modules leaf** FR canonique) + **33 siblings `_en.lean`** sur `main` (les 33 modules leaf uniquement ; l'umbrella est bilingue inline). Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN pour les leafs), **tous les 33 modules leaf** sont déjà bilingues au pattern A (namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). L'umbrella `Grothendieck.lean` est bilingue inline (FR canonique d'abord, EN en miroir, cf doctring final du fichier) — c'est *by design*, pas un gap i18n. **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
+- **Couverture i18n (EPIC #4980 ratifiée 2026-07-04)** : couverture bilingue FR/EN complète — **36 fichiers FR** (1 umbrella `Grothendieck.lean` bilingue inline FR+EN + **34 modules leaf** FR canonique, dont `ExceptionalDirect.lean` Partie 34 ajouté via #10357 le 2026-08-11) + **34 siblings `_en.lean`** sur `main` (les 34 modules leaf uniquement ; l'umbrella est bilingue inline). Conformément à la convention ratifiée (Option A : `Foo.lean` FR canonique + `Foo_en.lean` miroir EN pour les leafs), **tous les 34 modules leaf** sont déjà bilingues au pattern A (namespaces `_en` anti-collision, contenu non-docstring byte-identique détectable par CI). L'umbrella `Grothendieck.lean` est bilingue inline (FR canonique d'abord, EN en miroir, cf doctring final du fichier) — c'est *by design*, pas un gap i18n. **`README.en.md`** présent (miroir EN du présent fichier). Hors-scope : `.lake/packages/`, libs vendored.
 
 ## Objectif
 
@@ -27,8 +27,14 @@ Le but est d'offrir aux apprenants un point d'entrée curaté vers :
 
 ## Structure
 
-La formalisation couvre **33 modules leaf (11 206 lignes FR+EN, 0 sorry)**,
-importés dans l'ordre par le parapluie `Grothendieck.lean` (qui est lui-même bilingue inline FR/EN, pas de sibling `_en` pour l'umbrella).
+La formalisation couvre **34 modules leaf (0 sorry)** + **3 sous-modules
+SheafCohomology/** (Basic + MayerVietoris + Cech, déjà comptés dans la Partie
+20-22), importés dans l'ordre par le parapluie `Grothendieck.lean` (qui est
+lui-même bilingue inline FR/EN, pas de sibling `_en` pour l'umbrella). La Partie
+34 (`ExceptionalDirect.lean`) a été ajoutée par **PR #10357 (MERGED 2026-08-11)** —
+extension Phase 2 de l'Epic #2159 qui formalise l'image directe exceptionnelle
+`f_!` au niveau préfaisceau et son adjonction `f_! ⊣ f^*` (extension de Kan
+à gauche de `f^*` le long de `f`).
 
 *La trajectoire pédagogique des 33 modules leaf — des sites et cribles jusqu'à la cohomologie, avec schémas/Zariski et carte Mathlib en ancrage :*
 
@@ -80,25 +86,30 @@ flowchart LR
 | 31 | `Grothendieck/KanExtensions.lean` | `KanExtensions_en.lean` | Extensions de Kan (limites/colimites généralisées) | 270 |
 | 32 | `Grothendieck/MonoidalCategories.lean` | `MonoidalCategories_en.lean` | Catégories monoïdales, tenseur, unité, associateur | 244 |
 | 33 | `Grothendieck/DirectImage.lean` | `DirectImage_en.lean` | Index `#check` (8) de l'adjonction `f^* ⊣ f_*` — image directe / réciproque des faisceaux de modules (#8882) | 152 |
+| 34 | `Grothendieck/ExceptionalDirect.lean` | `ExceptionalDirect_en.lean` | Image directe exceptionnelle `f_!` au niveau préfaisceau et son adjonction `f_! ⊣ f^*` — extension de Kan à gauche de `f^*` le long de `f` (#10357, Phase 2 de #2159) | 202 |
 
 *La colonne `Lignes` compte le **fichier FR seul** ; le total FR+EN est le double approximatif.*
 
-L'extension a été développée sous l'Issue #2159 / Epic #1646 : les 33 modules leaf
-sont mergés + 1 umbrella bilingue, 0 `sorry`, 0 axiome ajouté.
+L'extension a été développée sous l'Issue #2159 / Epic #1646 : les **34 modules leaf**
+sont mergés + 1 umbrella bilingue, 0 `sorry`, 0 axiome ajouté. **Phase 2** (Partie 34
+`f_! ⊣ f^*`) livrée par PR #10357 (MERGED 2026-08-11) ; **Phase 1** (Parties 1-33)
+précédemment shippée par vagues de PRs (#2675, #8882, etc.).
 
 ## Build
 
 ```bash
 # Depuis ce répertoire (WSL requis)
 lake build Grothendieck
-# Compile les 33 modules leaf + 1 umbrella bilingue (11 414 lignes FR+EN au total)
-# Dernier build vérifié : 2026-07-30, « Build completed successfully (2821 jobs) »
+# Compile les 34 modules leaf + 1 umbrella bilingue
+# Dernier build vérifié : 2026-08-12, « Build completed successfully »
 ```
 
 ## Compte de sorry
 
-**0 sorry, 0 axiome** — tous les 33 modules leaf sont complets à la création
-(l'umbrella `Grothendieck.lean` est imports-only sans déclaration).
+**0 sorry, 0 axiome** — tous les 34 modules leaf sont complets à la création
+(l'umbrella `Grothendieck.lean` est imports-only sans déclaration). La Partie 34
+`ExceptionalDirect.lean` (#10357) cite `sorry` deux fois en prose docstring
+(marque de la formalisation bornée) mais ne contient **aucun sorry tactic**.
 
 ## Toolchain
 
@@ -119,8 +130,9 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 ## Voir aussi
 
 - Epic #1646 (hommage à Grothendieck)
-- Issue #2159 (profondeur de formalisation Grothendieck)
+- Issue #2159 (profondeur de formalisation Grothendieck — Phase 1 shippée, **Phase 2** livrée par #10357 le 2026-08-11 : `f_! ⊣ f^*` au niveau préfaisceau = Partie 34 `ExceptionalDirect.lean`)
 - PR #2675 (Phases 4-6 : SieveOps + CoverageGen + CanonicalProps)
+- **PR #10357** (Phase 2 #2159 : exceptional direct image `f_! ⊣ f^*` au niveau préfaisceau, formalisation bornée du chaînon manquant entre `f^*` et `f_*`)
 - Epic #1453 (calibration du harnais prouveur)
 - Workspace hommage Conway (`../conway_lean/`)
 - **EPIC #4980** — convention i18n Lean (Option A sibling pair post-2026-07-04 ; 33 siblings `_en.lean` sur `main` dans cette lake + 1 umbrella bilingue inline)
@@ -130,10 +142,11 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 
 ## Conclusion
 
-Cet hommage est une **visite pédagogique complète** (33 modules leaf + 1 umbrella bilingue, 11 414 lignes FR+EN,
-0 `sorry`, 0 axiome ajouté) montrant comment le langage de Grothendieck — sites,
-faisceaux, faisceautisation, points, cohomologie, Yoneda, images directes — vit déjà dans Mathlib 4. Ce
-n'est délibérément **pas** une formalisation d'EGA/SGA ; c'est un index curaté
+Cet hommage est une **visite pédagogique complète** (34 modules leaf + 1 umbrella bilingue, 0
+`sorry`, 0 axiome ajouté) montrant comment le langage de Grothendieck — sites,
+faisceaux, faisceautisation, points, cohomologie, Yoneda, images directes,
+image directe exceptionnelle `f_!` — vit déjà dans Mathlib 4. Ce n'est
+délibérément **pas** une formalisation d'EGA/SGA ; c'est un index curaté
 qui laisse les apprenants voir la bibliothèque à travers des yeux grothendieckiens.
 
 ### La trajectoire
@@ -143,7 +156,7 @@ Les modules tracent un chemin cohérent : **sites et cribles** (Parties 1, 6, 8,
 **faisceautisation et son exactitude à gauche** (13, 14) → **points et familles
 conservatrices** (15, 19) → **cohomologie des faisceaux, Mayer-Vietoris et Čech**
 (20-23), avec **schémas et site de Zariski** (2, 3), une **carte Mathlib** (4)
-et le **lemme de Yoneda** (24) ancrant la visite à la bibliothèque qu'elle indexe. Les bases catégorielles (Adjonction, Équivalences, Monades) aux Parties 25, 29, 26 soutiennent toute la formalisation. Enfin, `DirectImage.lean` indexe l'adjonction `f^* ⊣ f_*` — l'instance la plus simple des « six opérations », qui transporte les faisceaux le long des morphismes de schémas.
+et le **lemme de Yoneda** (24) ancrant la visite à la bibliothèque qu'elle indexe. Les bases catégorielles (Adjonction, Équivalences, Monades) aux Parties 25, 29, 26 soutiennent toute la formalisation. `DirectImage.lean` (Partie 33) indexe l'adjonction `f^* ⊣ f_*` — l'instance la plus simple des « six opérations », qui transporte les faisceaux le long des morphismes de schémas. Enfin, `ExceptionalDirect.lean` (Partie 34, #10357) franchit un échelon en formalisant `f_! ⊣ f^*` au niveau préfaisceau — l'image directe *à support propre* comme extension de Kan à gauche de `f^*`, chaînon manquant entre `f^*` (inverse-image) et `f_*` (image directe).
 
 *La construction verticale « faisceau » — chaque couche bâtie sur la précédente, de la donnée du site jusqu'à la cohomologie :*
 

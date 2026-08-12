@@ -1,4 +1,4 @@
-"""Tests for the catalog-guard.yml bypass logic (issue #10421).
+"""Tests for the catalog-pr-guard.yml bypass logic (issue #10421).
 
 The guard used to exempt by author (`github-actions[bot]`) only. The
 GH006 cap on the bot creating PRs (#10136) forces a human author to open
@@ -8,7 +8,7 @@ the bot pushed, but rejected it when a human re-pushed the same branch
 under #10348. Issue #10421 adds a branch-based exemption (the PR head
 ref) and keeps the author-based bypass as belt-and-braces.
 
-These tests are schema-yaml (the run block of catalog-guard.yml lives
+These tests are schema-yaml (the run block of catalog-pr-guard.yml lives
 inline and isn't a Python module), so they exercise the bypass logic via
 a subprocess that runs the script fragment with controlled env. The
 fragment is extracted from the YAML at test setup so the tests stay
@@ -33,7 +33,10 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-GUARD_YAML = REPO_ROOT / ".github/workflows/catalog-guard.yml"
+# Renamed from catalog-guard.yml -> catalog-pr-guard.yml (#10453): the old
+# path had an orphaned GitHub workflow entity firing phantom push runs.
+# The content/triggers are unchanged; only the path moved.
+GUARD_YAML = REPO_ROOT / ".github/workflows/catalog-pr-guard.yml"
 
 
 def _run_block() -> str:
@@ -51,7 +54,7 @@ def _run_block() -> str:
         re.MULTILINE | re.DOTALL,
     )
     if not m:
-        raise RuntimeError("could not parse catalog-guard.yml `check` step")
+        raise RuntimeError("could not parse catalog-pr-guard.yml `check` step")
     return m.group("body")
 
 

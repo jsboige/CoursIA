@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools` PyPI (Google, Apache-2.0, CP-SAT solver SOTA-tier : `from ortools.sat.python import cp_model` + `CpModel()` + `AddBoolVar` + `AddAllDifferent` + `solver.Solve()`). C# = `Google.OrTools` NuGet (Google, Apache-2.0, meme solver CP-SAT natif : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;` + `CpModel()` + `AddBoolVar` + `AddAllDifferent` + `solver.Solve()`). Verdict SOTA-OK (modele owner PR #10392 MERGED 2026-08-11 tranche 2 lib-vs-lib) : les DEUX cotes utilisent LE MEME solveur Google OR-Tools CP-SAT natif (meme binding C++ sous-jacent), API symetrique (Python `cp_model` <-> C# `Sat.CpModel`), bridge direct sans glue non-SOTA. Parite native-both substancee : le solveur EST le meme, la modelisation N-Queens (variables bool/int par ligne, contraintes AllDifferent par colonne/diagonale) est identique, les outputs (status OPTIMAL/UNSAT, solution matrice) sont bit-compatibles. Asymetrie mineure : API surface differente (Python methodes snake_case, C# PascalCase), portabilite triviale."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
