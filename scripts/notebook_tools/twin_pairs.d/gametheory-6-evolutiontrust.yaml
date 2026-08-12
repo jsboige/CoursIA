@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: INTRINSIC
+  bridge_verdict_reason: "Python = axelrod (Knight, Glynatsi et al., lib Python pure : `import axelrod as axl`, 200+ strategies IPD, axl.Tournament, axl.Match). C# = pur System.* + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod), 0 NuGet tiers. Verdict INTRINSIC (deja documente prose-only dans known_differences, PR #10406 MERGED 2026-08-11 -- conclusion markdown) : la lib axelrod est Python pure, aucun binding .NET (pas de NuGet), pas un binaire CLI invocable (usage exclusif via `import` -- `import axl`/`axl.Tournament`/`axl.Match`), et ce n'est pas du Java (IKVM ponte Java pas Python). Pont Python->.NET pas viable. from-scratch C# EST la contrepartie legitime et definitive : parite semantique preservee (meme socle theorique IPD/Axelrod/Moran), asymetrie axelrod fermee comme intrinseque."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
