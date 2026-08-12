@@ -108,4 +108,17 @@ Les concepts fondamentaux de Grothendieck qui ne sont PAS encore dans Mathlib :
 Ces cibles restent au niveau recherche en formalisation.
 -/
 
+/-!
+## Théorèmes-ponts
+
+La section "Théorèmes propres" initialement prévue (4 lemmes sur
+`CategoryTheory.yoneda`/`coyoneda`/`GrothendieckTopology.trivial`/
+`Sieve`) a été retirée en c.1301+107 v3 (Lean CI FAIL sur le
+polymorphisme d'univers — voir PR #10638 historique). Les `#check`
+ci-dessus suffisent à valider que les noms canoniques Mathlib sont
+accessibles depuis les imports courants. Les 12 lemmes propres
+subsistent dans `Equivalences.lean` (4) + `MonoidalCategories.lean`
+(4 lemmes PASS en CI) + leurs siblings `_en`.
+-/
+
 end Grothendieck
