@@ -163,4 +163,53 @@ noncomputable def fully_faithful_of_counit_iso {L : C ⥤ D} {R : D ⥤ C} (h : 
     [IsIso h.counit] : R.FullyFaithful :=
   h.fullyFaithfulROfIsIsoCounit
 
+/-!
+## 7. Bridge theorems: triangle identities and inverse equivalences
+
+The **triangle identities** (`left_triangle` and `right_triangle`) are the
+fundamental relations between the unit `η` and the counit `ε` of an
+adjunction: they guarantee that `ε ∘ L(η) = 𝟙_L` and `R(ε) ∘ η = 𝟙_R`,
+making the equivalence `Hom(L X, Y) ≃ Hom(X, R Y)` coherent in both
+variables. The lemmas `homEquiv_unit` / `homEquiv_counit` make the natural
+bijection explicit on components.
+
+All of these lemmas are `@[simp]` in Mathlib 4, with universal structure
+on the `{X Y}` arguments, which makes them unsuitable for direct application
+(`Function expected at ...`) but trivial via the `by rw` tactic, which
+infers the implicits from the goal LHS/RHS (cf lesson L902 ★★ Tier 4).
+-/
+
+/-- Bridge: first triangle identity of an adjunction L ⊣ R — the counit after
+    `L` of the unit equals the identity on `L`. This is the relation making
+    `L ⊣ R` coherent with the identity seen in `Hom(L X, L X)`. -/
+theorem left_triangle_identity {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    (L.whiskerRight h.unit L) ≫ (L.associator R L).hom ≫ (L.whiskerLeft h.counit) =
+      L.leftUnitor.hom ≫ L.rightUnitor.inv := by
+  rw [Adjunction.left_triangle]
+
+/-- Bridge: second triangle identity of an adjunction L ⊣ R — the unit after
+    `R` of the counit equals the identity on `R`. Dual of the first, it
+    guarantees coherence on the `Hom(R Y, R Y)` side. -/
+theorem right_triangle_identity {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    (R.whiskerLeft h.unit) ≫ (R.associator L R).inv ≫ (R.whiskerRight h.counit R) =
+      R.rightUnitor.hom ≫ R.leftUnitor.inv := by
+  rw [Adjunction.right_triangle]
+
+/-- Bridge: component of the natural bijection `Hom(L X, Y) ≃ Hom(X, R Y)`
+    sending `f : L.obj X ⟶ Y` to `η.app X ≫ R.map f`. The concrete formula
+    linking `L ⊣ R` to its natural transformations. -/
+theorem homEquiv_unit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (f : L.obj X ⟶ Y) :
+    (h.homEquiv X Y) f = h.unit.app X ≫ R.map f := by
+  rw [Adjunction.homEquiv_unit]
+
+/-- Bridge: inverse component of the natural bijection `Hom(L X, Y) ≃ Hom(X, R Y)`,
+    sending `g : X ⟶ R.obj Y` to `L.map g ≫ ε.app Y`. Dual of
+    `homEquiv_unit_apply`, it describes the direction
+    `Hom(X, R Y) → Hom(L X, Y)`. -/
+theorem homEquiv_counit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (g : X ⟶ R.obj Y) :
+    (h.homEquiv X Y).symm g = L.map g ≫ h.counit.app Y := by
+  rw [Adjunction.homEquiv_counit]
+
 end Grothendieck.Adjunction_en

@@ -165,4 +165,52 @@ noncomputable def fully_faithful_of_counit_iso {L : C ⥤ D} {R : D ⥤ C} (h : 
     [IsIso h.counit] : R.FullyFaithful :=
   h.fullyFaithfulROfIsIsoCounit
 
+/-!
+## 7. Théorèmes ponts : identités triangulaires et équivalences symétriques
+
+Les **identités triangulaires** (`left_triangle` et `right_triangle`) sont
+les relations fondamentales entre l'unité `η` et la coïnité `ε` d'une
+adjonction : elles garantissent que `ε ∘ L(η) = 𝟙_L` et `R(ε) ∘ η = 𝟙_R`,
+rendant l'équivalence `Hom(L X, Y) ≃ Hom(X, R Y)` cohérente en les deux
+variables. Les lemmes `homEquiv_unit` / `homEquiv_counit` explicitent la
+bijection naturelle sur les composantes.
+
+Tous ces lemmes sont `@[simp]` dans Mathlib 4, avec structure universelle
+sur les arguments `{X Y}`, ce qui les rend impropre à l'application directe
+(`Function expected at ...`) mais triviaux via la tactique `by rw` qui
+inférence les implicites depuis le goal LHS/RHS (cf leçon L902 ★★ Tier 4).
+-/
+
+/-- Pont : première identité triangulaire d'une adjonction L ⊣ R — la coïnité
+    après `L` de l'unité vaut l'identité sur `L`. C'est la relation qui rend
+    `L ⊣ R` cohérente avec l'identité vue dans `Hom(L X, L X)`. -/
+theorem left_triangle_identity {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    (L.whiskerRight h.unit L) ≫ (L.associator R L).hom ≫ (L.whiskerLeft h.counit) =
+      L.leftUnitor.hom ≫ L.rightUnitor.inv := by
+  rw [Adjunction.left_triangle]
+
+/-- Pont : seconde identité triangulaire d'une adjonction L ⊣ R — l'unité après
+    `R` de la coïnité vaut l'identité sur `R`. Duale de la première, elle
+    garantit la cohérence côté `Hom(R Y, R Y)`. -/
+theorem right_triangle_identity {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    (R.whiskerLeft h.unit) ≫ (R.associator L R).inv ≫ (R.whiskerRight h.counit R) =
+      R.rightUnitor.hom ≫ R.leftUnitor.inv := by
+  rw [Adjunction.right_triangle]
+
+/-- Pont : composante de la bijection naturelle `Hom(L X, Y) ≃ Hom(X, R Y)`
+    envoyant `f : L.obj X ⟶ Y` sur `η.app X ≫ R.map f`. C'est la formule
+    concrète reliant `L ⊣ R` à ses transformations naturelles. -/
+theorem homEquiv_unit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (f : L.obj X ⟶ Y) :
+    (h.homEquiv X Y) f = h.unit.app X ≫ R.map f := by
+  rw [Adjunction.homEquiv_unit]
+
+/-- Pont : composante inverse de la bijection naturelle `Hom(L X, Y) ≃ Hom(X, R Y)`,
+    envoyant `g : X ⟶ R.obj Y` sur `L.map g ≫ ε.app Y`. Duale de
+    `homEquiv_unit_apply`, elle décrit la direction `Hom(X, R Y) → Hom(L X, Y)`. -/
+theorem homEquiv_counit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (g : X ⟶ R.obj Y) :
+    (h.homEquiv X Y).symm g = L.map g ≫ h.counit.app Y := by
+  rw [Adjunction.homEquiv_counit]
+
 end Grothendieck.Adjunction
