@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib (modele owner #10382 'PyMC vs Infer' analytics transpose en GT : nashpy+OR-Tools GLOP). Python = nashpy (SOTA, lemke-howson + support enumeration) + scipy.optimize.linprog (LP battle-tested). C# = Google.OrTools.LinearSolver (SOTA, PR #10443 MERGED, GLOP solver). Les deux cotes atteignent le moteur SOTA de leur ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch. Asymetrie d'ecosysteme documentee (nashpy CLI vs OR-Tools NuGet) fermee par la maturite des deux libs. Verifie firsthand : C# `using Google.OrTools.LinearSolver` + `#r \"nuget: Google.OrTools\"` + execution_count, Python `import nashpy as nash` + `nash.Game(...)`."
   audits:
     - date: "2026-07-29"
       by: myia-po-2023:CoursIA-2

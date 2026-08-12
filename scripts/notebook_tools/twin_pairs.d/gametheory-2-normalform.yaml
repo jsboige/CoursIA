@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = nashpy (lib SOTA, `import nashpy as nash`, calcule Nash purs/mixtes via support enumeration, leader-follower). C# = BestResponseRow from-scratch en pur Linq (BCL pure 0 NuGet SOTA tiers). Lib SOTA .NET existe (GameTheory NuGet, John H. Lindsey / MIT-license) et peut etre branchee (PR #10483 a ajoute le pont Gambit sur GT-2 part-2 ; la meme approche Process.Start + parsing texte est applicable a nashpy CLI ou a la lib GameTheory.NET). RECOVERABLE-LOCAL = le pont est faisable, pas encore wire sur la joute pure. parite semantique preservee (meme socle theorique : calcul des equilibres de Nash purs + mixtes)."
   audits:
     - date: "2026-08-02"
       by: myia-po-2024:CoursIA-2
