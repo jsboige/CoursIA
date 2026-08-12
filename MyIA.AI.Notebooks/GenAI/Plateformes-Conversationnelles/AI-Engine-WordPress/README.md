@@ -86,6 +86,14 @@ CRUD générique ou verbe métier et mesure sa distance au schéma de
 persistance. Le catalogue audité est synthétique (Maison Valmont) ; un
 chemin live optionnel permet de le rejouer sur son propre serveur via `.env`.
 
+Un quatrième notebook [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb)
+traite le contrôle d'accès du vector store : **pourquoi on sépare un corpus en
+environnements d'embeddings distincts**. Il montre déterministiquement — sur six
+clusters synthétiques — qu'un retrieval sans filtre laisse fuiter le contenu
+entre régimes d'accès (un visiteur public récupère du contenu réservé au comité
+interne), et qu'une réindexation sans cible explicite écrase silencieusement un
+corpus voisin. Aucune clé, aucun réseau : `numpy` seul.
+
 ---
 
 ## Sections

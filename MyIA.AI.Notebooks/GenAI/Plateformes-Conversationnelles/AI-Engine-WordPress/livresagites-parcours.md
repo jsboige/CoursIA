@@ -171,6 +171,13 @@ lancée sans préciser l'environnement cible écrase un corpus voisin.
 Sur une instance servant du contenu en ligne, la perte est immédiate
 et silencieuse.
 
+> **Notebook compagnon.** [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb)
+> rend les deux défaillances ci-dessus **exécutables et mesurables** sur six
+> clusters synthétiques : un taux de fuite (fraction du top-k hors environnement
+> autorisé) passe de 100 % sans filtre à 0 % avec filtre, et une réindexation
+> sans cible écrase silencieusement un environnement voisin (10 → 2 vecteurs).
+> Aucune donnée client, aucun réseau — `numpy` seul.
+
 ### Comparaison OWUI
 
 Open WebUI a une pile RAG équivalente (**Knowledge** : upload de
