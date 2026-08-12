@@ -280,8 +280,12 @@ noncomputable def kan_descent {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     formulation en catégorie de foncteurs du lemme « l'extension de Kan
     gauche est le meilleur relèvement à gauche » — Mathlib attache
     directement l'adjonction à `L` via la classe `L.HasLeftKanExtension`
-    une fois pour toutes. -/
-theorem lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
+    une fois pour toutes.
+
+    Note : `noncomputable def` (pas `theorem`) parce que le type
+    `L.lan ⊣ (Functor.whiskeringLeft C D H).obj L` est une **adjonction**
+    (data : un objet avec unit + counit + homEquiv), pas une Prop. -/
+noncomputable def lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
     [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
     L.lan ⊣ (Functor.whiskeringLeft C D H).obj L :=
   L.lanAdjunction H

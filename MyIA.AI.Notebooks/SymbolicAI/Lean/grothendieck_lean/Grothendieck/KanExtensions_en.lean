@@ -274,8 +274,12 @@ noncomputable def kan_descent {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     `(whiskeringLeft C D H).obj L : (D ⥤ H) ⥤ (C ⥤ H)`. This is the
     formulation in functor categories of the lemma "the left Kan
     extension is the best left lifting" — Mathlib attaches the adjunction
-    directly to `L` via the class `L.HasLeftKanExtension` once and for all. -/
-theorem lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
+    directly to `L` via the class `L.HasLeftKanExtension` once and for all.
+
+    Note: `noncomputable def` (not `theorem`) because the type
+    `L.lan ⊣ (Functor.whiskeringLeft C D H).obj L` is an **adjunction**
+    (data: object with unit + counit + homEquiv), not a `Prop`. -/
+noncomputable def lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
     [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
     L.lan ⊣ (Functor.whiskeringLeft C D H).obj L :=
   L.lanAdjunction H
