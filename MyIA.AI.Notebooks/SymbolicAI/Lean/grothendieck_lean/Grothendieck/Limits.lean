@@ -239,4 +239,45 @@ noncomputable def cone_factorisation (F : J ⥤ C) [HasLimit F] (c : Cone F) : c
 noncomputable def cocone_factorisation (F : J ⥤ C) [HasColimit F] (c : Cocone F) : colimit F ⟶ c.pt :=
   colimit.desc F c
 
+/-!
+## 8. Théorèmes ponts : naturalité des projections et injections
+
+Les projections `limit.π F j` et injections `colimit.ι F j` ne sont pas de simples
+familles de morphismes : ce sont des **transformations naturelles** en l'indice
+`j`. La naturalité est certifiée par les théorèmes Mathlib 4 `limit.w` et
+`colimit.w` (chacun `@[simp]`). On les ré-expose ici comme bridges vers le
+namespace du projet, avec application de leurs arguments explicites (L902 ★★
+ÉTENDUE c.8228 : un théorème Mathlib à arguments explicites doit être APPLIQUÉ
+dans le corps, sinon c'est un `∀` qui produit `Type mismatch`).
+-/
+
+/-- Pont : la factorisation universelle `cone_factorisation` est une reformulation
+    directe du `limit.lift` Mathlib 4. Cast par application de l'argument `F`. -/
+noncomputable def limit_lift_eq (F : J ⥤ C) [HasLimit F] (c : Cone F) :
+    c.pt ⟶ limit F :=
+  CategoryTheory.Limits.limit.lift F c
+
+/-- Pont : la naturalité des projections du cône limite — pour toute flèche
+    `f : j ⟶ j'` du diagramme, `limit.π F j ≫ F.map f = limit.π F j'`. C'est
+    l'**égalité de naturalité** de la transformation naturelle `limit.π`, prouvée
+    par le théorème `@[simp] lemma CategoryTheory.Limits.limit.w F j j' f`. -/
+theorem limit_w_natural (F : J ⥤ C) [HasLimit F] {j j' : J} (f : j ⟶ j') :
+    limit.π F j ≫ F.map f = limit.π F j' :=
+  CategoryTheory.Limits.limit.w F j j' f
+
+/-- Pont : la factorisation universelle `cocone_factorisation` est une reformulation
+    directe du `colimit.desc` Mathlib 4. Cast par application de l'argument `F`. -/
+noncomputable def colimit_desc_eq (F : J ⥤ C) [HasColimit F] (c : Cocone F) :
+    colimit F ⟶ c.pt :=
+  CategoryTheory.Limits.colimit.desc F c
+
+/-- Pont : la naturalité des injections du cocône colimite — pour toute flèche
+    `f : j ⟶ j'` du diagramme, `F.map f ≫ colimit.ι F j' = colimit.ι F j`. C'est
+    l'**égalité de naturalité** de la transformation naturelle `colimit.ι`,
+    prouvée par le théorème `@[simp] lemma CategoryTheory.Limits.colimit.w
+    F j j' f`. -/
+theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j ⟶ j') :
+    F.map f ≫ colimit.ι F j' = colimit.ι F j :=
+  CategoryTheory.Limits.colimit.w F j j' f
+
 end Grothendieck.Limits
