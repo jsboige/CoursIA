@@ -97,7 +97,22 @@ making it a key tool in sheaf cohomology.
 
 -- The sheaf fiber functor: evaluates sheaves at a point.
 -- This is the restriction of presheafFiber to the full subcategory of sheaves.
-#check @GrothendieckTopology.Point.sheafFiber
+-- Concretely `sheafFiber = sheafToPresheaf ⋙ presheafFiber` BY DEFINITION
+-- (Mathlib `CategoryTheory.Sites.Point.Basic`): evaluating a sheaf at a point Φ
+-- is evaluating its underlying presheaf at Φ. We promote the `#check` into a
+-- proven canonical iso below.
+
+/-- The sheaf fiber functor factors through the presheaf fiber functor via
+    the embedding "sheaf ↦ underlying presheaf" `sheafToPresheaf`. Evaluating
+    a sheaf at a point therefore amounts to evaluating the underlying presheaf
+    at that same point: this is exactly the definition of `sheafFiber` as
+    `sheafToPresheaf ⋙ presheafFiber` given by Mathlib in
+    `CategoryTheory.Sites.Point.Basic`. The canonical iso is obtained via
+    `sheafToPresheafCompPresheafFiberIso` (a reflexivity). -/
+noncomputable def sheaf_fiber_presheaf_fiber_iso {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} (Φ : GrothendieckTopology.Point.{w} J) :
+    sheafToPresheaf J (Type (max u w)) ⋙ Φ.presheafFiber ≅ Φ.sheafFiber :=
+  Φ.sheafToPresheafCompPresheafFiberIso
 
 /-!
 ## Morphisms between points

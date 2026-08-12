@@ -16,16 +16,24 @@ from pathlib import Path
 WORK_DIR = Path(__file__).resolve().parents[3]
 
 SEEDS = [int(s) for s in sys.argv[1:]] or [0, 1, 7, 42]
-RUNNER = WORK_DIR / "run_pt11b.py"
+# run_pt11b.py lives NEXT TO this chain runner (scripts/PostTraining/PT-11b/),
+# not at the repo root. WORK_DIR / "run_pt11b.py" was a path bug (rc=2, file not found).
+RUNNER = Path(__file__).resolve().parent / "run_pt11b.py"
 
 
 def run_seed(seed: int) -> tuple[int, float]:
     print(f"\n{'=' * 70}\n SEED {seed}\n{'=' * 70}")
     t_start = time.perf_counter()
+    # use sys.executable (conda env python), NOT literal "python" which resolves to
+    # system Python and fails (rc=2, no trl/torch). Inherit full env so CUDA + conda
+    # paths propagate.
+    import os as _os
+    _env = dict(_os.environ)
+    _env["PYTHONUNBUFFERED"] = "1"
     rc = subprocess.call(
-        ["python", str(RUNNER), str(seed)],
+        [sys.executable, str(RUNNER), str(seed)],
         cwd=str(WORK_DIR),
-        env={"PYTHONUNBUFFERED": "1", "PATH": __import__("os").environ.get("PATH", "")},
+        env=_env,
     )
     elapsed = time.perf_counter() - t_start
     return rc, elapsed
