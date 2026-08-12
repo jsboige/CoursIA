@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `networkx` (BSD-3-Clause) + `matplotlib.pyplot` (viz heatmap terrain pondere 11x11, contours obstacles, trace BFS/A*) + stdlib pure pour la modelisation `Node/Cost/Successor` + `heapq` (priority queue A*). C# = from-scratch BCL .NET 9 + `System.Collections.Generic.PriorityQueue<TElement, TPriority>` (.NET 9 generic API, meme algorithme A*/BFS/DFS/Greedy) + matplotlib-equivalent via `ScottPlot` 5.0.55 (MIT, heatmap terrain). Verdict RECOVERABLE-LOCAL : le coeur pedagogique (BFS/DFS/Greedy/A* sur graphe d'etats reachables, heuristique euclidienne, terrain pondere) est PARITABLE des deux cotes (memes algorithmes, meme correction off-by-one fixee en c.908 : BFS cout 55 / A* cout 16 = Python twin, signature `CoutChemin(path.Sum)` -> `path.Skip(1).Sum`), seule l'asymetrie reside dans la lib de viz (matplotlib PY vs ScottPlot C#) + lib de graphe (networkx PY vs BCL from-scratch C#). Le C# pourrait installer `QuikGraph` (MIT, NuGet) pour atteindre une parite complete de lib de graphe, mais le notebook preserve le socle BCL comme choix pedagogique assume (fondations = implementer BFS/A* from-scratch avant d'utiliser une lib). `parity_level: semantic` preserve : parite sur les concepts cibles (recherche dans l'espace d'etats, Prong-B terrain pondere discriminant) malgre l'asymetrie de libs."
   audits:
     - date: "2026-08-01"
       by: myia-po-2026:CoursIA 2026-08-01
