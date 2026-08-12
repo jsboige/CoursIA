@@ -369,17 +369,17 @@ s'installent directement via leur `requirements.txt`.
 | Série | Notebook de mise en route | Préparation dédiée |
 |-------|---------------------------|--------------------|
 | GenAI | `GenAI/00-GenAI-Environment/` (6 notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
-| GameTheory | `GameTheory/GameTheory-1-Setup.ipynb` | `scripts/setup_wsl_openspiel.sh`, `setup_wsl_lean4.sh`, `setup_lean4_kernel.ps1` |
+| GameTheory | `GameTheory/GameTheory-1-Setup.ipynb` | `GameTheory/scripts/setup_wsl_openspiel.sh`, `GameTheory/scripts/setup_wsl_lean4.sh`, `GameTheory/scripts/setup_lean4_kernel.ps1` |
 | Sudoku | `Sudoku/Sudoku-0-Environment-Csharp.ipynb` | kernel .NET Interactive |
-| Probas | `Probas/Infer/Infer-1-Setup.ipynb`, `Probas/PyMC/PyMC-1-Setup.ipynb` | `Infer/scripts/setup_environment.ps1` |
+| Probas | `Probas/Infer/Infer-1-Setup.ipynb`, `Probas/PyMC/PyMC-1-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
 | QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
 | Lean | `SymbolicAI/Lean/Lean-1-Setup.ipynb` | `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `SymbolicAI/Lean/scripts/validate_lean_setup.py` |
 | Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
 | SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
-| SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-1-Setup-Foundry.ipynb`, `SC-2-Setup-Web3py.ipynb` | `setup_env.py`, `scripts/setup_wsl_smartcontracts.sh` |
+| SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-1-Setup-Foundry.ipynb`, `SC-2-Setup-Web3py.ipynb` | `SymbolicAI/SmartContracts/setup_env.py`, `SymbolicAI/SmartContracts/scripts/setup_wsl_smartcontracts.sh` |
 | Tweety | `SymbolicAI/Tweety/Tweety-1-Setup.ipynb` | `tweety_init.py` (JDK auto-télécharge) |
 | Argument Analysis | `SymbolicAI/Argument_Analysis/Argument_Analysis_UI_configuration.ipynb` | `install_jdk_portable.py` |
-| IIT | `requirements.txt` | `scripts/setup_pyphi_env.ps1` |
+| IIT | `requirements.txt` | `IIT/scripts/setup_pyphi_env.ps1` |
 | Search / RL / CaseStudies | `requirements.txt` | -- |
 | cross-series | `requirements.txt` | `cross-series/matching-cv/scripts/install_deps.sh` |
 
@@ -404,10 +404,10 @@ Les séries Search, Sudoku, ML.Net, Probas (Infer.NET), Tweety, SemanticWeb et P
 | Lean | `SymbolicAI/Lean/.env` | `OPENAI_API_KEY`, `GITHUB_TOKEN` |
 | Argument Analysis | `SymbolicAI/Argument_Analysis/.env` | `OPENAI_API_KEY` |
 | QuantConnect | `QuantConnect/.env` | `QC_API_USER_ID`, `QC_API_ACCESS_TOKEN` |
-| C# Notebooks | `Config/settings.json` | `apikey`, `model` |
-| Docker ComfyUI | `comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN` |
+| C# Notebooks | `Config/settings.json` (exemples : `settings.json.openai-example`, `settings.json.azure-example`) | `apikey`, `model` |
+| Docker ComfyUI | `docker-configurations/services/comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN` |
 
-Chaque dossier contient un `.env.example` documentant les variables. Copier et éditer :
+Chaque dossier contient un fichier d'exemple documentant les variables (`.env.example`, ou `settings.json.openai-example` / `.azure-example` pour `Config/`). Copier et éditer :
 
 ```bash
 cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
