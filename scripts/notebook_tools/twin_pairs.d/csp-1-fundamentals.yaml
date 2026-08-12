@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `search_helpers.draw_csp_graph` (custom local) + stdlib pure (dict/list, itertools.product) + matplotlib viz (graphe de contraintes, trace de backtracking). C# = Choco-solver 4.10.17 (Java SOTA, Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711, AppContext['IKVM.Home'] recursive copy) avec `org.chocosolver.solver.Model` + `IntVar` + `arithm` + `getSolver().findAllSolutions()` pour coloration Australie / 8-Reines / enumeration exhaustive. Verdict RECOVERABLE-LOCAL : le coeur pedagogique CSP (classe generique, backtracking, MRV, value-ordering LCV) est PARITABLE des deux cotes (PY = pur Python, C# = `Dictionary`/`List` generique) ; l'asymetrie reside dans l'extension solveur cote C# uniquement (Choco via IKVM, pas d'equivalent direct cote PY). Le PY pourrait installer `python-constraint` (PyPI MIT, recemment ajoute dans CSP-3) ou `pychoco` (PyPI binding natif Choco Python, MIT) pour atteindre la parite complete, mais le notebook CSP-1 preserve le socle from-scratch comme choix pedagogique assumme (fundamentals = construire la classe a la main avant d'utiliser une lib). `parity_level: semantic` preserve : parite sur les concepts cibles (CSP, backtracking, MRV, LCV) malgre l'asymetrie d'extension."
   audits:
     - date: "2026-07-29"
       by: myia-po-2023:CoursIA-2

@@ -5,49 +5,53 @@ avec sorry stratégiques commentés (références papier + prérequis Mathlib).
 
 Epic #2874 (Phase 5 en cours). Toolchain `v4.31.0-rc1`.
 
-## État des sorries (vérifié 2026-07-06, re-confirmé 2026-07-12, **17 réels** — 15 + 2 du transfer backward PARTIEL #3124, `num` prouvé)
+## État des sorries (vérifié 2026-08-12 contre `origin/main`, **16 réels**)
 
-Deux comptes, selon le filtre :
+Deux comptes, selon le filtre CI :
 
 | Fichier | sorry réels | sorry (prose, CI) |
 |---------|------------|-------------------|
 | `Knots/Basic.lean` | 0 | 1 |
 | `Knots/Reidemeister.lean` | 2 | 2 |
-| `Knots/Invariant.lean` | 5 | 6 |
+| `Knots/Invariant.lean` | **4** | 6 |
 | `Knots/Conway.lean` | 8 | 11 |
 | `Knots/Lidman.lean` | 2 | 4 |
 | `Knots/MathlibPrerequisites.lean` | 0 | 2 |
-| **Total** | **17** | **26** |
+| **Total** | **16** | **26** |
 
-- **sorry réels** (`exact sorry`, `:= sorry`, `:= by sorry`) = ce qui manque
-  vraiment comme preuve. **17** au total — 15 stables + **2 du transfer backward
-  PARTIEL `tricolorable_backward` (#3124)** : sous-buts `fox`/`col` laissés en
-  sorry après décomposition (`num` PROUVÉ par parité `wf`, cf. § Phase 5 ;
-  cœur `hcolPres` prouvé). Un sorry de scaffolding Lidman (diagramme L39) a été
-  éliminé par **#4899** (PD-code 11n102 depuis KnotInfo, MERGED 2026-07-02) :
-  Lidman passe de 3 à 2 réels.
-- **Reidemeister.lean à 2 sorries réels** (recompté firsthand 2026-07-15 avec
-  l'awk CI real-mode : `sorry -- ambient_isotopic k₁ k₂` L554 *et* `exact sorry`
-  L558 ; le mot-bounded `\bsorry\b` compte la ligne dont seul le `-- ...` est
-  strippé, donc l'occurrence bare `sorry` au L554 reste un real-mode sorry.
-  Le README précédent (re-comptage 2026-07-06) datait d'avant le switch CI
-  prose-header→real de 2026-07-11, sous-comptait de 1).
-- **sorry prose** (toute ligne contenant `sorry`, filtre CI `prose-header`) =
-  **26** actuellement. La CI `lean-knot.yml` a basculé en mode **`real`**
-  (sorry-baseline: `"17"`) le 2026-07-11 (auparavant prose-header baseline
-  28) ; le mode real strippe les commentaires `--` et `/- -/`, puis compte le
-  mot-bounded `\bsorry\b` — c'est désormais le seul mode CI officiel pour
-  knot_lean. Le compte 26 est conservé à titre indicatif (raw, any-line
-  matchant `sorry`). Ce compte inclut les occurrences dans les commentaires
-  de diagnostic (ex. le commentaire sur `KnotDiagram.wf` dans `Basic.lean`).
+- **sorry réels** = ce qui manque vraiment comme preuve. **16** au total — 14
+  stables + **2 du transfer backward PARTIEL `tricolorable_backward` (#3124)** :
+  sous-buts `fox`/`col` laissés en sorry après décomposition (`num` PROUVÉ par
+  parité `wf`, cf. § Phase 5 ; cœur `hcolPres` prouvé).
+- **Baisse historique 17 → 16** (#8766) : `trefoil_not_unknot` est désormais
+  **PROUVÉ** par composition de `tricolorable_invariant` (sorry-bearing) +
+  `trefoil_tricolorable` + `unknot_not_tricolorable`. Voir « Prouvés »
+  ci-dessous — le README précédent listait `trefoil_not_unknot` à tort comme
+  scaffolding.
+- **Reidemeister.lean à 2 sorries réels** : `reidemeister_theorem` ×2
+  (topologie PL des 3-variétés, hors portée Mathlib actuel).
+- **sorry prose** = **26** (raw, any-line matchant `sorry`). Le mode CI
+  officiel est **`real`** : strippe `--` et `/- -/`, puis compte le mot-bounded
+  `\bsorry\b`. La CI gate sur baseline **16** (pas 17 comme avant #8766).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 17**
-depuis le switch 2026-07-11 (historique : prose-header 25→28 dans #3124 pour
-la décomposition du transfer backward, baissé à 27 après la preuve `num`
-#3163, re-bumpé à 28 par le suivi GF(3) #3003 ; puis switch prose-header→real
-à baseline 17 le 2026-07-11 quand le compte brute a divergé du compte real) :
-toute PR qui ajoute un sorry réel fait monter le compte real et échoue la CI,
-sauf justification documentée dans le body PR.
+La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 16**
+depuis #8766 (auparavant 17 ; historique antérieur : prose-header 25→28 dans
+#3124, baissée à 27 après #3163, re-bumpée à 28 par #3003 ; puis switch
+prose-header→real à baseline 17 le 2026-07-11 ; puis 16 après que #8766 ait
+dischargé `trefoil_not_unknot`) : toute PR qui ajoute un sorry réel fait
+monter le compte real et échoue la CI, sauf justification documentée dans le
+body PR.
+
+**Corridor Reidemeister #8696** (c.8162-c.8169, 5 PRs MERGED 2026-07-29 →
+2026-08-08) : les **6 sites** où le move-surgery `with` était utilisé ont été
+remplacés par des **égalités de champs** (`Reidemeister1.symm`,
+`Reidemeister1'.implies_reidemeister1`, `Reidemeister2.symm`,
+`Reidemeister1Connected.{shares_edge, crossings_eq}`,
+`Reidemeister3Determined.implies_reidemeister3`). Conséquence pratique :
+preuve directe par `⟨rfl, rfl⟩` au lieu du `obtain ⟨rfl⟩ := hsurg` (L887 ★★).
+Le compte `sorry` reste à 2 dans `Reidemeister.lean` (le pair
+`reidemeister_theorem`) — le corridor ne visait pas la fermeture du
+`reidemeister_theorem` lui-même, qui reste gated sur la topologie PL.
 
 ## Résultats par statut réel (vérifié contre le code)
 
@@ -64,7 +68,9 @@ sauf justification documentée dans le body PR.
   réfutant `tricolorable_invariant` sous le modèle PR1 (diagnostic, cf. § Phase 5)
 - [x] `trefoil_wf`, `unknot_wf`, `figureEight_wf` — les 3 diagrammes nommés satisfont la parité PD de `KnotDiagram.wf`
 - [x] `Reidemeister1Connected.tricolorable_forward` (#3000, MERGED) — transfer **forward** de la 3-colorabilité d₁→d₂ sous le modèle R1 connecté (`Invariant.lean` L478, preuve complète sans sorry via `hcolF1`/`hcolF2b`/`hcolF2c`)
+- [x] `trefoil_not_unknot` (#8766, MERGED) — corollaire : le trèfle n'est pas l'unknot, **PROUVÉ** par composition de `tricolorable_invariant` (sorry-bearing) + `trefoil_tricolorable` + `unknot_not_tricolorable`. Le son du corollary est réduit à l'invariant transfer sorry — pas d'sorry indépendant propre.
 - [~] `Reidemeister1Connected.tricolorable_backward` (#3124, MERGED, **PARTIEL**) — transfer **backward** d₂→d₁ : `hcolPres` (préservation des couleurs sur les labels préservés, cœur constructif) **PROUVÉ** ; `num` PROUVÉ #3163 (parité `wf`) ; `fox` #3154 + `col` #3168 partiellement prouvés (un sous-cas chacun clos) ; **2 résiduels §9.1** restent en sorry (crossing modifié `Y` + kink all-distinct)
+- [x] **Corridor Reidemeister #8696** (#9807 / #9873 / #9901 / #9913 / #9955, 5 PRs MERGED) — `Reidemeister1.symm`, `Reidemeister1'.implies_reidemeister1`, `Reidemeister2.symm`, `Reidemeister1Connected.{shares_edge, crossings_eq}`, `Reidemeister3Determined.implies_reidemeister3` : proofs par `⟨rfl, rfl⟩` après field-eqs refactor. **Aucun sorry ajouté**, **aucun sorry éliminé** (le corridor visait la clarté structurelle, pas la fermeture de théorèmes — `reidemeister_theorem` reste gated sur la topologie PL).
 
 ### Scaffolding (sorry, cible formelle)
 
@@ -72,8 +78,6 @@ sauf justification documentée dans le body PR.
   (sous **Path B** le modèle EST le Fox classique : énoncé sain et non trivial —
   distinguera trèfle/unknot/figure-8 une fois clos. GATED sur les 2 résiduels §9.1
   du backward transfer, cf. § Path B / § Phase 5)
-- [ ] `trefoil_not_unknot` — corollaire : le trèfle n'est pas l'unknot (dépend de
-  `tricolorable_invariant`)
 - [ ] `unknottingNumber` — définition + calcul (nécessite minimisation sur classes
   d'équivalence, Phase 4+)
 - [ ] Conway (11n34) : `conway_not_smoothly_slice` (Piccirillo 2018/Annals 2020),
@@ -84,30 +88,36 @@ sauf justification documentée dans le body PR.
 - [ ] `reidemeister_theorem` — équivalence Reidemeister ↔ isotopie ambiante
   (topologie PL des 3-variétés, hors portée Mathlib actuel) — 2 sorry, permanent
 
-### Verdict par sorry (audit G.1, 2026-06-23)
+### Verdict par sorry (audit G.1, 2026-08-12 — actualisé)
 
 Re-vérification firsthand contre le code (`Reidemeister.lean` + `Invariant.lean`),
-par sorry réel des 5 feuilles ouvertes d'`Invariant.lean`. Classe chaque feuille
+par sorry réel des **4** feuilles ouvertes d'`Invariant.lean` (descendu de 5
+après #8766 qui a discharged `trefoil_not_unknot`). Classe chaque feuille
 en **PROUVEABLE** / **REFUTÉ** / **RESEARCH-HOLD** / **INFRASTRUCTURE** — l'état
-formel réel, couple aux preuves :
+formel réel, couplé aux preuves :
 
 | Ligne | Théorème | Verdict | Débloqueur |
 |-------|----------|---------|------------|
-| L238 | `tricolorable_invariant` | **OPEN (`sorry`)** | Plus réfuté après le rewire Stage 2 (#3999) : `ReidemeisterStep.r1` est recâblé vers la fermeture symétrique du move géométriquement connecté `Reidemeister1Connected`. Le contre-exemple libre-en-ρ `tricolorable_invariant_fails_under_pr1_model` (L342, witness `(d₁={⟨1,2,1,2⟩,2}, d₂={⟨1,2,1,2⟩,⟨3,4,3,4⟩,4})`) vit sur le move RAW `Reidemeister1` et n'est plus `ReidemeisterEquiv`-atteignable (`pr1_counterexample_excluded_under_connected` L508). Décision coord (C) **exécutée** (trio #3997/#3999/#4003 merged). Reste OPEN sur le transfer FORWARD à travers un curl R1 connecté (les 2 arêtes fraîches héritent `color a`). |
-| L944 | `trefoil_not_unknot` | **OPEN (`sorry`)** | Plus « réfuté par procuration ». La route naturelle (`tricolorable_invariant` + `trefoil_tricolorable` + `unknot_not_tricolorable`) est gated par le transfer forward de L238. Les deux pièces composantes sont prouvées sous la vraie condition de Fox (Path B) — atterrit dès que L238 lands. |
-| L1006 | `Knot.unknottingNumber` | **INFRASTRUCTURE (NP-dur)** | Minimisation sur les classes d'équivalence ; gated sur une `ReidemeisterEquiv` non-triviale (fork L238). Scaffolding permanent. |
-| L1581 | `fox` all-distinct §9.1 | **OPEN (`sorry`)** | Héritage Fox du crossing modifié `Y'` sous kink all-distinct. #3003 (Path B, contrainte d'arc-equality) **SHIPPED** ; le résiduel est le **transfert classique backward** genuinely dur (BG-prover ai-01, cible research originelle #2874). Sous-cas **all-equal PROUVÉ** dans le corps de `tricolorable_backward` (L1373). |
-| L1731 | `col` all-distinct §9.1 | **OPEN (`sorry`)** | Lift ≥ 2 couleurs : la restriction naïve `col₁` peut être **monochrome** si toute la variation chromatique de `col₂` vit sur les arêtes fraîches `{n+1, n+2}` (pathologie du kink disjoint). #3003 (Path B) **SHIPPED** ; résiduel = transfert classique backward (BG-prover #2874). Sous-cas **all-equal PROUVÉ** (par l'absurde via `h2col₂`, dans `tricolorable_backward` L1373). |
+| L341-350 | `tricolorable_invariant` | **OPEN (`sorry`)** | Plus réfuté après le rewire Stage 2 (#3999) : `ReidemeisterStep.r1` est recâblé vers la fermeture symétrique du move géométriquement connecté `Reidemeister1Connected`. Le contre-exemple libre-en-ρ `tricolorable_invariant_fails_under_pr1_model` (L342, witness `(d₁={⟨1,2,1,2⟩,2}, d₂={⟨1,2,1,2⟩,⟨3,4,3,4⟩,4})`) vit sur le move RAW `Reidemeister1` et n'est plus `ReidemeisterEquiv`-atteignable (`pr1_counterexample_excluded_under_connected` L508). Décision coord (C) **exécutée** (trio #3997/#3999/#4003 merged). Reste OPEN sur le transfer FORWARD à travers un curl R1 connecté (les 2 arêtes fraîches héritent `color a`). |
+| ~L1549-1567 | `trefoil_not_unknot` | **PROUVÉ (#8766)** | Plus en sorry : corollaire dérivé par composition de `tricolorable_invariant` (sorry-bearing, L334) + `trefoil_tricolorable` + `unknot_not_tricolorable`, sans sorry indépendant propre. Le wrapper forward porte EXACTEMENT cette conjonction (cf. docstring L1549-1567). |
+| ~L1006 | `Knot.unknottingNumber` | **INFRASTRUCTURE (NP-dur)** | Minimisation sur les classes d'équivalence ; gated sur une `ReidemeisterEquiv` non-triviale (fork L238). Scaffolding permanent. |
+| ~L1581 | `fox` all-distinct §9.1 | **OPEN (`sorry`)** | Héritage Fox du crossing modifié `Y'` sous kink all-distinct. #3003 (Path B, contrainte d'arc-equality) **SHIPPED** ; le résiduel est le **transfert classique backward** genuinely dur (BG-prover ai-01, cible research originelle #2874). Sous-cas **all-equal PROUVÉ** dans le corps de `tricolorable_backward` (L1373). |
+| ~L1731 | `col` all-distinct §9.1 | **OPEN (`sorry`)** | Lift ≥ 2 couleurs : la restriction naïve `col₁` peut être **monochrome** si toute la variation chromatique de `col₂` vit sur les arêtes fraîches `{n+1, n+2}` (pathologie du kink disjoint). #3003 (Path B) **SHIPPED** ; résiduel = transfert classique backward (BG-prover #2874). Sous-cas **all-equal PROUVÉ** (par l'absurde via `h2col₂`, dans `tricolorable_backward` L1373). |
 
-**Conclusion de l'audit (post-trio #3997/#3999/#4003, post-Path B #3003).**
-`tricolorable_invariant` (L238) et `trefoil_not_unknot` (L944) ne sont **plus
-réfutés** — le rewire connecté a exclu le witness libre-en-ρ, ils sont OPEN sur le
-transfer FORWARD. Les deux résiduels §9.1 (L1581 fox / L1731 col) restent le **noyau
-research-level irréductible** : transfert classique backward all-distinct (BG-prover
-ai-01, cible #2874), l'arc-equality #3003 étant désormais shipped. `Knot.unknottingNumber`
-(L1006) = infrastructure NP-dure. Le transfer R1 backward est en revanche **complet
-sur son sous-cas all-equal** (`fox`+`col` PROUVÉS) et sur `num` (parité `wf`, #3163)
-— seuls les modes all-distinct du kink restent ouverts.
+**Conclusion de l'audit (post-#8766, post-corridor #8696).**
+`tricolorable_invariant` (L341) reste OPEN sur le transfer FORWARD sous le
+modèle connecté — c'est le **seul** sorry OPEN d'`Invariant.lean` côté
+**invariant** lui-même (les 2 résiduels §9.1 `fox`/`col` sont le backward
+transfer, pas l'invariant direct). `trefoil_not_unknot` est désormais
+**PROUVÉ** par composition — l'audit du 2026-06-23 est obsolète sur ce
+point (le README historique le listait à tort comme scaffolding, drift
+corrigé). Les deux résiduels §9.1 (fox/col) restent le **noyau
+research-level irréductible** : transfert classique backward all-distinct
+(BG-prover ai-01, cible #2874), l'arc-equality #3003 étant désormais
+shipped. `Knot.unknottingNumber` = infrastructure NP-dure. Le transfer R1
+backward est en revanche **complet sur son sous-cas all-equal**
+(`fox`+`col` PROUVÉS) et sur `num` (parité `wf`, #3163) — seuls les modes
+all-distinct du kink restent ouverts.
 
 ## Path B : modèle de Fox classique restauré (2026-06-23, #3003)
 
@@ -304,6 +314,8 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 ## Voir aussi
 
 - **Epic #2874** — Cette Epic (Phase 5)
+- **#8766** PR : décharge `trefoil_not_unknot` (sorry 5→4) — la bascule README 17→16
+- **#8696** Epic : corridor Reidemeister field-eqs (5 PRs MERGED : #9807/#9873/#9901/#9913/#9955) — proof clarity, pas de sorry change
 - **#1647** Conway Phase 2 (jeux combinatoires, GoL)
 - **#1646** Grothendieck Phase 1
 - **`conway_cgt_lean/`** — Tour des résultats `vihdzp/combinatorial-games`
@@ -328,7 +340,16 @@ clôture réflexive-transitive des moves, et la *well-formedness* paritaire
 3-colorabilité sous R1 connecté (`#3000`) est **prouvé** sans sorry, et le
 **transfer backward** (`#3124`) est **partiellement** établi : le cœur
 constructif `hcolPres` et le sous-but `num` (parité `wf`, `#3163`) sont clos,
-ainsi qu'un sous-cas chacun de `fox` (`#3154`) et `col` (`#3168`).
+ainsi qu'un sous-cas chacun de `fox` (`#3154`) et `col` (`#3168`). Le
+**corollaire `trefoil_not_unknot`** (#8766) est désormais **prouvé** par
+composition de l'invariant (sorry-bearing) et des deux lemmes composants —
+c'est la **bascule 5→4 sorries réels d'`Invariant.lean`** (baseline CI 16).
+
+Le **corridor Reidemeister #8696** (5 PRs MERGED, c.8162-c.8169) a par
+ailleurs clarifié la structure des 6 sites de move-surgery en `Reidemeister.lean` :
+preuves directes par `⟨rfl, rfl⟩` après field-eqs refactor — gain de lisibilité,
+**zéro impact** sur le compte sorry (le corridor ne visait pas la fermeture
+des théorèmes gated PL).
 
 ### Le verrou
 
@@ -336,10 +357,11 @@ Le marquee `tricolorable_invariant` reste **gated** sur deux sous-buts résiduel
 §9.1 du backward : la symétrie des couleurs sur le crossing modifié `Y` (`fox`) et
 le lift « all-distinct » hors range du diagramme source (`col`). Leur clôture
 permettrait de composer forward + backward en une bi-implication R1 connectée
-(**17 sorry réels** au total). Les résultats « lointains » — Conway non-slice
-(Piccirillo), unknotting number de Lidman, théorème Reidemeister ↔ isotopie
-ambiante — restent du **scaffolding permanent** : ils excèdent la portée actuelle
-de Mathlib (topologie PL des 3-variétés, Heegaard-Floer).
+(**16 sorry réels** au total, baseline CI #8766). Les résultats « lointains » —
+Conway non-slice (Piccirillo), unknotting number de Lidman, théorème
+Reidemeister ↔ isotopie ambiante — restent du **scaffolding permanent** : ils
+excèdent la portée actuelle de Mathlib (topologie PL des 3-variétés,
+Heegaard-Floer).
 
 ### Leçons méthodologiques
 

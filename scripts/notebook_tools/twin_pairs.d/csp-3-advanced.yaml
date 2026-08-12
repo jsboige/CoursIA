@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `python-constraint` (PyPI, MIT, Gustavo Niemeyer) pour Problem/AllDifferentConstraint + `ortools.sat.python.cp_model` (Google, Apache-2.0, CP-SAT SOTA) + `search_helpers.benchmark_table` + `itertools.permutations`/`combinations` + `dataclasses`. C# = Choco-solver 4.10.17 (Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711) avec `org.chocosolver.solver.Model` + `IntVar` + `arithm` + `getSolver().findSolution()` + benchmark Choco vs backtracking from-scratch. Verdict RECOVERABLE-LOCAL : ASYMETRIE DE MACHINERIE DEUX COTES -- PY utilise DEUX libs SOTA cote PY (`python-constraint` MIT + `ortools` Apache-2.0 SOTA CP-SAT) cote PY vs `Choco` (Java SOTA Apache-2.0) cote C# via IKVM. Les DEUX cotes ont un solveur SOTA Tier -- mais DIFFERENTS (OR-Tools CP-SAT PY vs Choco Choco C#), pas le meme moteur. `pychoco` (PyPI binding natif Choco Python, MIT) rebrancherait le C# Choco sur PY pour matcher exactement ; `ortools` (deja present PY) a un mirror `Google.OrTools` NuGet (Apache-2.0, deja en service dans App-1/3/4/11/15 cf c.217 PR #10557) que le C# pourrait adopter. Le notebook preserve le pattern actuel (PY = python-constraint pedagogique + OR-Tools SOTA, C# = Choco IKVM SOTA) comme double-lib pedagogique. `parity_level: semantic` preserve : parite sur les concepts cibles (advanced propagation, global constraints, SOTA benchmark)."
   audits:
     - date: "2026-08-01"
       by: myia-po-2023:CoursIA
