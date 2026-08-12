@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Z3 string/regex theory (SeqSort) branchee NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkRange/MkConcat/MkRe/MkInRe sur Seq) et pyz3 (`from z3 import *`, Range/Concat/Plus/Re/InRe sur Seq) sont les deux bindings officiels du meme coeur C++ Z3 sous-jacent — pas un pont intermediaire type IKVM/PythonNet. Concept string-regex (date AAAA-MM-JJ sous-contrainte en groupes longueur-fixe) demontre des deux cotes. Aucune asymetrie de machinerie a corriger."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

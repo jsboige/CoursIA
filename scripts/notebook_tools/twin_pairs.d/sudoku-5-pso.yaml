@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-5-PSO-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `mealpy` PyPI (Hong Viet Nguyen et al., MIT-license, 233+ metaheuristiques dont PSO variants : BasePSO, ImprovedPSO, CPSO, HPSO, etc., `from mealpy.swarm_based import PSO` ou `from mealpy import PSO` selon la version, interface uniforme `model.solve(problem)`). C# = BCL pure from-scratch (Particle + Swarm + position/velocity/pbest/gbest from-scratch, 0 NuGet PSO SOTA tiers). Pas de lib SOTA PSO .NET equivalente : `AForge.NET` est generic-machine-learning mais n'a pas de PSO canonique, `Accord.NET` ne couvre pas PSO en 2024-2026. Verdict RECOVERABLE-LOCAL (asymetrie assumee : lib SOTA cote PY, from-scratch cote C# -- un bridge utile serait d'ajouter `PSO` via Accord.Extensions si dispo, mais pas une lib SOTA officielle). La portabilite de l'algo PSO est OK (def standard, equations standards), la complexite est dans le tuning (inertia/c1/c2), pas dans la lib."
   audits:
     - date: "2026-07-30"
       by: myia-po-2023:CoursIA-2

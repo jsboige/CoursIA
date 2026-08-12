@@ -3,20 +3,26 @@ name: machine-dep-timing-advisory
 # Organe de signalisation (label-driven) pour le drainage progressif des temps
 # d'horloge machine-dependants en prose de notebook (cf. EPIC #9434 + #10158).
 #
-# Mode advisory : exit 0 en TOUTE circonstance, le signal est porte par un
-# label ``machine-dep-timing-count`` sur la PR. Bloquer le merge sur ce label
-# releve de la politique de la lane, pas du CI.
+# Mode advisory : exit 0 en TOUTE circonstance, le signal est porte par deux
+# labels sur la PR. Bloquer le merge sur ces labels releve de la politique de
+# la lane, pas du CI.
 #
 # Pourquoi advisory : #9434 inventorie 1397 findings wallclock a drainer dans
 # 355 notebooks -- un check bloquant fermerait systematiquement toutes les
-# PRs touchant la prose. Le drainage est progressif (cf. backlog dedie), et
-# ce workflow sert de jauge d'avancement (le label baisse a mesure qu'on
-# draine) plutot que de porte bloquante.
+# PRs touchant la prose. Le drainage est progressif (cf. backlog dedie).
+#
+# Deux signaux distincts (fix #10445 partie a) :
+#   * ``machine-dep-timing-inventory: <N>`` -- total absolu du depot (jauge de
+#     drainage flotte-wide ; baisse a mesure qu'on draine).
+#   * ``machine-dep-timing-delta: <sign>N (<M> files)`` -- findings wallclock
+#     ajoutes (+) / draines (-) par les .ipynb de la PR elle-meme, vs main.
+#     0 files = PR sans .ipynb ; delta 0 = PR neutre pour le drainage.
+# Avant, un seul label ``count`` portait le total absolu sur chaque PR --
+# identique sur 2 PRs sans rapport (#10442 1 notebook, #10357 39 notebooks =
+# meme valeur) -- et trompait le reviewer au merge-gate.
 #
 # Origine du design : aligne sur prose-counts-guard.yml (le garde de la
 # regex canonique) + exercises-advisory.yml (le modele advisory label-only).
-# Sortie : label `machine-dep-timing-count: <N>` pour traçabilite de la
-# regression / drainage.
 
 on:
     pull_request:
@@ -50,35 +56,76 @@ jobs:
               id: scan
               run: |
                   set +e
-                  # On scanne TOUT le repo (mode inventaire) ; le delta vs main
-                  # sera porte par le label, pas par le check.
-                  python scripts/notebook_tools/check_machine_dep_timing.py --all --json > /tmp/machine_dep_timing.json
-                  rc=$?
-                  set -e
-                  # MEME si le detector retourne 1 (mode --check future), on
-                  # laisse le job advisory passer -- c'est le label qui parle.
-                  echo "detector exit (ignored in advisory mode): $rc"
-                  # Compter les findings wallclock (cible drainage #9434).
-                  wallclock=$(python -c "import json; d=json.load(open('/tmp/machine_dep_timing.json')); print(d['summary']['wallclock'])")
-                  distribution=$(python -c "import json; d=json.load(open('/tmp/machine_dep_timing.json')); print(d['summary']['distribution_param'])")
-                  ambiguous=$(python -c "import json; d=json.load(open('/tmp/machine_dep_timing.json')); print(d['summary']['ambiguous'])")
-                  echo "wallclock=$wallclock distribution=$distribution ambiguous=$ambiguous"
-                  echo "wallclock_count=$wallclock" >> "$GITHUB_OUTPUT"
+                  # ====================================================================
+                  # Deux signaux distincts (fix #10445 partie a) :
+                  #   1. INVENTAIRE --all : total absolu du depot (jauge de drainage
+                  #      flotte-wide, EPIC #9434). Baisse au fur et a mesure qu'on draine.
+                  #   2. DELTA signe sur les fichiers .ipynb modifies par la PR : ce que
+                  #      la PR change reellement (+N ajouts, -N drainage, 0 neutre).
+                  # Avant, un seul label `count` portait le total absolu sur chaque PR --
+                  # identique sur 2 PRs radicalement differentes (#10442 1 notebook qui
+                  # contribuait 0, #10357 39 notebooks = 215 sur les 2) et trompait le
+                  # reviewer au merge-gate. Le commentaire original disait « delta vs main
+                  # porte par le label » : le code mentait, on le rend honnete.
+                  # ====================================================================
+                  python scripts/notebook_tools/check_machine_dep_timing.py --all --json > /tmp/inventory.json
+                  rc_inv=$?
+                  echo "inventory detector exit (ignored in advisory mode): $rc_inv"
+                  inventory=$(python -c "import json; d=json.load(open('/tmp/inventory.json')); print(d['summary']['wallclock'])")
+                  echo "inventory_wallclock=$inventory" >> "$GITHUB_OUTPUT"
 
-            - name: Apply signal label (advisory)
+                  # Delta signe : pour chaque .ipynb modifie par la PR, comparer le
+                  # compte de findings wallclock sur la version PR (HEAD) vs la version
+                  # main (merge-base). diff 2-points sur merge-base = perimetre correct
+                  # (contrairement au bug #10403 base.sha..HEAD qui tirait main dedans).
+                  MERGE_BASE=$(git merge-base origin/main HEAD)
+                  mapfile -t PR_FILES < <(git diff --name-only --diff-filter=d "$MERGE_BASE" HEAD -- '*.ipynb' | sort -u)
+                  pr_wall=0; main_wall=0; nb_scanned=0
+                  for f in "${PR_FILES[@]}"; do
+                      [ -z "$f" ] && continue
+                      nb_scanned=$((nb_scanned + 1))
+                      # Version PR (HEAD).
+                      if git show "HEAD:$f" > /tmp/_pr_nb.ipynb 2>/dev/null; then
+                          p=$(python scripts/notebook_tools/check_machine_dep_timing.py --json /tmp/_pr_nb.ipynb 2>/dev/null \
+                              | python -c "import json,sys; print(json.load(sys.stdin)['summary']['wallclock'])" 2>/dev/null || echo 0)
+                          pr_wall=$((pr_wall + p))
+                      fi
+                      # Version main (merge-base) -- absent si le notebook est cree par la PR.
+                      if git show "$MERGE_BASE:$f" > /tmp/_main_nb.ipynb 2>/dev/null; then
+                          m=$(python scripts/notebook_tools/check_machine_dep_timing.py --json /tmp/_main_nb.ipynb 2>/dev/null \
+                              | python -c "import json,sys; print(json.load(sys.stdin)['summary']['wallclock'])" 2>/dev/null || echo 0)
+                          main_wall=$((main_wall + m))
+                      fi
+                  done
+                  delta=$((pr_wall - main_wall))
+                  if [ "$delta" -gt 0 ]; then delta_sign="+"; else delta_sign=""; fi
+                  echo "PR .ipynb scanned: $nb_scanned | PR wallclock: $pr_wall | main wallclock: $main_wall | delta: ${delta_sign}${delta}"
+                  echo "delta_wallclock=$delta" >> "$GITHUB_OUTPUT"
+                  echo "delta_sign=$delta_sign" >> "$GITHUB_OUTPUT"
+                  echo "pr_files=$nb_scanned" >> "$GITHUB_OUTPUT"
+                  set -e
+
+            - name: Apply signal labels (advisory)
               uses: actions/github-script@v7
               with:
                   script: |
                       // ========================================================================
-                      // Apply signal label (advisory, never blocking)
+                      // Apply signal labels (advisory, never blocking) -- fix #10445 partie a
                       // ========================================================================
-                      // actions/github-script@v7 expose `github.rest` (Octokit REST), PAS
-                      // `github.api`. La premiere version du script utilisait `github.api.issues.*`
-                      // qui est undefined, d'ou l'erreur "Cannot read properties of undefined".
-                      // Cf. c.1331+57-L1 du worker po-2024 pour le fix.
+                      // Deux labels sementiquement honnetes (avant, un seul label `count`
+                      // portait le total absolu -- identique sur des PRs sans rapport, et
+                      // trompait le reviewer au merge-gate). actions/github-script@v7 expose
+                      // `github.rest` (Octokit REST), PAS `github.api`.
                       // ========================================================================
-                      const count = '${{ steps.scan.outputs.wallclock_count }}';
-                      const label = `machine-dep-timing-count: ${count}`;
+                      const inventory = '${{ steps.scan.outputs.inventory_wallclock }}';
+                      const delta = '${{ steps.scan.outputs.delta_wallclock }}';
+                      const deltaSign = '${{ steps.scan.outputs.delta_sign }}';
+                      const prFiles = '${{ steps.scan.outputs.pr_files }}';
+
+                      const inventoryLabel = `machine-dep-timing-inventory: ${inventory}`;
+                      // Delta signe : +N (ajouts), -N (drainage), 0 (neutre). Le nombre de
+                      // fichiers scannes donne le contexte (0 = PR sans .ipynb -> delta 0).
+                      const deltaLabel = `machine-dep-timing-delta: ${deltaSign}${delta} (${prFiles} files)`;
 
                       // Helper : liste des labels existants sur cette PR.
                       const listLabels = async () => {
@@ -90,7 +137,8 @@ jobs:
                           return data;
                       };
 
-                      // Cleanup : retirer les anciens labels machine-dep-timing-count:*
+                      // Cleanup : retirer les anciens labels machine-dep-timing-*
+                      // (count:* = ancien nom trompeur ; inventory/delta = runs precedents).
                       let existing = [];
                       try {
                           existing = await listLabels();
@@ -98,7 +146,7 @@ jobs:
                           core.warning(`listLabelsOnIssue failed: ${e.message}`);
                       }
                       const toRemove = existing
-                          .filter(l => l.name && l.name.startsWith('machine-dep-timing-count:'))
+                          .filter(l => l.name && l.name.startsWith('machine-dep-timing-'))
                           .map(l => l.name);
                       for (const name of toRemove) {
                           try {
@@ -114,18 +162,20 @@ jobs:
                           }
                       }
 
-                      // Poser le nouveau label.
-                      try {
-                          await github.rest.issues.addLabels({
-                              owner: context.repo.owner,
-                              repo: context.repo.repo,
-                              issue_number: context.issue.number,
-                              labels: [label],
-                          });
-                      } catch (e) {
-                          // Le label n'existe pas encore dans le repo (premiere
-                          // utilisation). On ne fait pas crasher le job advisory.
-                          core.warning(`addLabels "${label}" failed (label may not exist yet): ${e.message}`);
+                      // Poser les deux nouveaux labels.
+                      for (const label of [inventoryLabel, deltaLabel]) {
+                          try {
+                              await github.rest.issues.addLabels({
+                                  owner: context.repo.owner,
+                                  repo: context.repo.repo,
+                                  issue_number: context.issue.number,
+                                  labels: [label],
+                              });
+                          } catch (e) {
+                              // Le label n'existe pas encore dans le repo (premiere
+                              // utilisation). On ne fait pas crasher le job advisory.
+                              core.warning(`addLabels "${label}" failed (label may not exist yet): ${e.message}`);
+                          }
                       }
 
-                      core.info(`Advisory label set: ${label}`);
+                      core.info(`Advisory labels set: ${inventoryLabel} | ${deltaLabel}`);
