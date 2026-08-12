@@ -183,6 +183,13 @@ En revanche, la notion d'**environnements multiples** au sein d'une
 même instance est plus explicite côté AI-Engine, où elle est un
 champ de configuration de premier niveau.
 
+> [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb)
+> convertit les deux défaillances ci-dessus en **mesures reproductibles** :
+> sur un vector store synthétique partitionné en six régimes d'accès, il
+> démontre la fuite cross-environnement (taux de chunks réservés renvoyés
+> à un visiteur public) et l'accident de réindexation silencieux
+> (comptage du corpus voisin écrasé). Déterministe, sans clé ni réseau.
+
 ---
 
 ## Parcours 3 — WordPress comme serveur MCP métier
