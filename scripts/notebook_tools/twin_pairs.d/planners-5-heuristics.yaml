@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `unified-planning` + `pyperplan` (engine de production PDDL standalone, cell 46, MIT-license, Fichte et al.) : heuristiques admissibles delete-relaxation (h_add/h_max) + extraction de plans. C# = Tranche 1 from-scratch BCL .NET (heuristiques h_max/h_add/h_FF/landmarks via relaxation de planning graph) + Tranche 2 Fast Downward 24.06.1 via API Docker HttpClient (cell 6.2, depuis 2026-08-11, comparaison lmcut vs hmax vs ff vs add en noeuds expanses). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 App tranche 4 lib-vs-lib + PR #10413 Planners-5 Tranche 2 MERGED substance Fast Downward validee firsthand instance Blocks World h*=4 : lmcut=6 expanses < hmax=8, signature attendue, po-2025 c.678 verifie la degenerescence via instance discriminante h^add > h*) : les DEUX cotes invoquent un engine de production (Python = pyperplan standalone, C# = Fast Downward via Docker API), bridge direct sans glue non-SOTA. Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382 : enseignement des heuristiques admissibles avant l'invocation du moteur. `parity_level: native-both` preserve : parite engine + from-scratch pedagogique."
   audits:
     - date: "2026-08-04"
       by: myia-po-2026:CoursIA

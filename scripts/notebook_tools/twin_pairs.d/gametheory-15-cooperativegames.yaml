@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -14,6 +16,8 @@
       csharp_sha: 7d0fca43674a5478f7a96de1af75ffe165005a2f
       content_python_sha: abc64ad748b456153cff4fe6af3a4b8017a11f1a053dec9f4c0fd3655f409de2
       content_csharp_sha: beb9eb6d1f081e52a33cbe880ae0659ac31a65ef2468a4439f4113f0c77a65cd
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = numpy + matplotlib + module local `cooperative_games` + itertools (enumeration des coalitions/permutations, 54 cellules dont 25 code). C# = BCL .NET 9 pur (System.Linq, System.Collections.Generic, 0 NuGet), calcul de Shapley from-scratch via permutations Linq (34 cellules dont 13 code). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (Shapley 1953, axiomes efficacite/symetrie/joueur nul/additivite, glove game canonique). L'asymetrie reside dans la couverture -- Python dispose d'un module local dedie + visualisations matplotlib + proprietes additionnelles des jeux cooperatifs ; C# se concentre sur le glove game et le calcul de Shapley from-scratch. Aucune lib SOTA partagee (numpy vs System.Linq from-scratch). parity_level: semantic preserve."
   known_differences:
     - "2026-08-08 (po-2025) #8052 secrets-hygiene : cell[1] import imprimait le chemin absolu resolu du module (_gametheory_dir) dans l'output committé -> leak de worktree machine (D:\\Dev\\CoursIA-gt15-shapley-exo\\...). Fix source {_gametheory_dir.name}/cooperative_games/ + re-exec genuine (Stop&Repair, pas de scrub). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
     - "Socle pedagogique commun : jeux cooperatifs a utilite transferable, fonction caracteristique et coalitions, valeur de Shapley (Shapley 1953) et ses axiomes (efficacite, symetrie, joueur nul, additivite), glove game (jeu des gants) comme exemple canonique."
