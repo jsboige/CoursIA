@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `unified-planning` (AIplan4EU, API moderne : `Fluent`, `Action`, `InstantaneousAction`, `Problem`, `OneshotPlanner`) ; le solveur sous-jacent est enveloppe via `up.engines.factory` (pyperplan ou Fast Downward selon la config). C# = `from-scratch BCL .NET` pur (System.Collections.Generic.Dictionary + List + Action/State dataclasses, 0 NuGet de planification) sur les memes concepts (domaine/probleme/plan/sequence d'actions). Verdict RECOVERABLE-LOCAL : le coeur pedagogique (modelisation domaine+probleme, recherche de plan, instanciation) est PARITABLE des deux cotes (PY = pur Python, C# = BCL generique), l'asymetrie reside dans l'extension solveur cote PY uniquement (unified-planning wrap des moteurs de production, pas d'equivalent direct cote C# sans NuGet Fast-Downward). Le C# preserve le socle from-scratch comme choix pedagogique assumme (fondations = construire la classe a la main avant d'utiliser une lib, cf meme logique que CSP-1/Sudoku-1). Le PY pourrait installer `pddl-fluent-parser` (PyPI MIT, pure-Python, jansucan) ou `pddl-parser` (PyPI MIT) pour atteindre une parite complete de parsing, mais le notebook preserve le socle from-scratch. `parity_level: semantic` preserve : parite sur les concepts cibles (planification classique, modelisation domaine/probleme) malgre l'asymetrie d'extension solveur."
   audits:
     - date: "2026-08-02"
       by: myia-po-2024:CoursIA-2
