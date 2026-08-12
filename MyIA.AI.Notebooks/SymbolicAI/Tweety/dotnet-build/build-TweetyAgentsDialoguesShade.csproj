@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- IKVM converter: builds the .NET runtime DLL for the Tweety agents+dialogues
+       cluster from the shaded fat-jar produced by build-tweety-agents-dialogues-shade.pom.xml.
+       Clones the proven dung csproj (#8060). The fat-jar (tweety-agents-dialogues-full-1.30.jar)
+       is produced first via `mvn package -f build-tweety-agents-dialogues-shade.pom.xml`,
+       then this project converts it to org.tweetyproject.tweety-agents-dialogues.dll. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RestoreAdditionalProjectSources></RestoreAdditionalProjectSources>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="IKVM" Version="8.15.0" />
+    <PackageReference Include="IKVM.MSBuild" Version="8.15.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <IkvmReference Include="tweety-agents-dialogues-full-1.30.jar">
+      <AssemblyName>org.tweetyproject.tweety-agents-dialogues</AssemblyName>
+      <AssemblyVersion>1.30.0.0</AssemblyVersion>
+      <AssemblyFileVersion>1.30.0.0</AssemblyFileVersion>
+    </IkvmReference>
+  </ItemGroup>
+</Project>
