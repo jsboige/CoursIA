@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -196,6 +197,18 @@ class ClaimEvent(dict):
         """
         return self.get("paths")
 
+    @property
+    def unparseable_scope(self) -> list[str]:
+        """Subset of `paths` that survived parse but still contain `{` or `}`.
+
+        #10597 hardener: a lane that writes `paths: foo-{a,b-*.yaml`
+        (unclosed brace) yields fnmatch-garbage on expansion. The safe read
+        is to treat the claim as EPIC-WIDE (`conservateur: in case of doubt,
+        block rather than let through`) -- `_run_check` reads this list and
+        lifts the scope back to epic-wide when non-empty.
+        """
+        return self.get("unparseable_scope") or []
+
 
 def parse_claim_event(comment: dict) -> ClaimEvent | None:
     """Classify one issue comment into a claim event, or None if not a marker.
@@ -249,6 +262,13 @@ def parse_claim_event(comment: dict) -> ClaimEvent | None:
         author=author,
         url=comment.get("url"),
         paths=paths,
+        # #10597 hardener -- preserve the unparseable subset of the scope
+        # (residual `{` or `}` after `_expand_brace_groups`). The reducer
+        # and check layer use this to lift the claim back to EPIC-WIDE
+        # when the scope cannot be matched by fnmatch. Without this field
+        # an unclosed-brace scope would silently degrade to "non-blocking
+        # accidental empty" -- the exact defect that motivated #10597.
+        unparseable_scope=_unparseable_scope_in(paths) if paths else [],
         intent=intent,
     )
 
@@ -372,6 +392,13 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
     every other lane). Brace groups are expanded to sibling globs so that
     `paths: search-{6,8,9}-*.yaml` yields three matchable patterns instead of
     one silently-EPIC-WIDE accident (#10597).
+
+    #10597 -- hardener: a scope containing UNCLOSED braces (e.g.
+    `paths: foo-{a,b-*.yaml`) cannot be parsed to a matchable glob set.
+    After expansion, any pattern still containing `{` or `}` is reported
+    via `_unparseable_scope_in`; the caller MUST treat such a claim as
+    EPIC-WIDE (conservateur: in case of doubt, block rather than let
+    through). See `_run_check` for the integration.
     """
     m = _PATHS_CLAUSE_RE.search(text or "")
     if not m:
@@ -383,6 +410,22 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
         for e in _expand_brace_groups(p):
             expanded.append(e)
     return expanded or None
+
+
+def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
+    """Return the subset of `parts` that still contain literal `{` or `}`.
+
+    After `_extract_paths_clause` and `_expand_brace_groups`, any pattern
+    residue containing braces is a SCOPE THAT FNMATCH WILL NEVER MATCH
+    (fnmatch knows `*` `?` `[seq]` `[!seq]` -- not `{a,b}`). The safe
+    read is to treat the claim as epic-wide (conservateur -- #10597
+    acceptance #2). The list returned here is the witness, so the
+    reducer and the JSON audit can surface it without re-parsing.
+    Empty when the scope is fully parseable.
+    """
+    if not parts:
+        return []
+    return [p for p in parts if "{" in p or "}" in p]
 
 
 def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEvent]]:
@@ -571,6 +614,48 @@ def _fmt_utc(iso: str | None) -> str:
     return (iso or "?").replace("T", " ").replace("Z", " UTC")
 
 
+def _scope_zero_coverage_warning(
+    scope: list[str] | None,
+    repo_root: str | None = None,
+) -> dict | None:
+    """Return a warning dict if `scope` matches zero tracked files. None otherwise.
+
+    #10597 bonus -- a lane declaring a scope that matches nothing is
+    INDISTINGUISHABLE from a legitimately-empty scope (both read "the
+    globs do not cover any file"). Without a positive control the lane
+    never learns its lock is empty until the next round of arbitration.
+    Walk the tracked files under `repo_root` (default: cwd) and return
+    a structured warning when none match. Non-blocking by design: the
+    gate is the structured claim, this is a usability hint.
+
+    The walk is best-effort: when not in a git repo, or when the walk
+    fails for any reason, return None. The warning is a polite nudge,
+    not a structural guarantee.
+    """
+    if not scope:
+        return None  # unscoped -> nothing to warn about
+    if repo_root is None:
+        repo_root = os.getcwd()
+    try:
+        proc = subprocess.run(
+            ["git", "-C", repo_root, "ls-files"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    tracked = [ln for ln in proc.stdout.splitlines() if ln]
+    if not tracked:
+        return None
+    # Apply fnmatch (with brace expansion) per file. The first hit
+    # short-circuits -- we only need to know "at least one file matches".
+    for path in tracked:
+        if _path_matches(path, scope):
+            return None
+    return {"scope": scope, "tracked_count": len(tracked)}
+
+
 # --- modes -------------------------------------------------------------------
 
 def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
@@ -667,6 +752,12 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "marker": ev.marker,
                 "url": ev.url,
                 "paths": ev.get("paths"),
+                # #10597 hardener -- surface the witness list of residual
+                # `{`/`}` so a human reviewer can see WHY an unparseable claim
+                # is being treated as epic-wide. The list may be empty (the
+                # scope is fully parseable) or non-empty (the claim carries
+                # patterns fnmatch cannot match).
+                "unparseable_scope": ev.get("unparseable_scope") or [],
             }
             for ln, ev in sorted(active.items())
         },
@@ -674,6 +765,26 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "blocked": bool(others),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+    # #10597 bonus -- SCOPE_ZERO_COVERAGE warning. When a lane declares a
+    # SCOPED claim whose expanded globs do not match any tracked file in
+    # the repo, the declaring lane gets a loud-but-non-blocking warning.
+    # The motivation is the same as the positive control: a glob that
+    # matches nothing is INDISTINGUISHABLE from a legitimately-empty
+    # scope, so the lane learns at the call site that its declared lock
+    # is empty and reissues with a valid glob. Best-effort: when the
+    # file walk fails (e.g. not in a git repo), we skip silently -- the
+    # warning is a usability hint, not a gate.
+    if not others and not stale_others and mine is not None:
+        warn = _scope_zero_coverage_warning(mine.get("paths"))
+        if warn is not None:
+            print(
+                f"SCOPE_ZERO_COVERAGE: your declared claim scope "
+                f"{warn['scope']!r} matches zero tracked files in the "
+                f"repo. The claim is recorded, but the lock is empty -- "
+                f"reissue with valid globs.",
+                file=sys.stderr,
+            )
 
     # Stale warnings -- non-blocking, but loud enough to prompt a fresh claim.
     for ln, ev in sorted(stale_others.items()):
@@ -742,6 +853,13 @@ def _filter_by_claim_scope(
       - Has a `paths:` clause DISJOINT from `my_scope` -> DROPPED (free). This
         is the #10419 fix: two lanes with disjoint scoped claims on the same
         multi-instance issue no longer false-block each other.
+      - #10597 hardener: scope carries an `unparseable_scope` (residual `{` or
+        `}` after brace expansion) -> STAYS. The read is conservative: an
+        unparseable scope is fnmatch-garbage, so we cannot prove the lane's
+        intent; better to over-block than to silently clear. The witness list
+        is surfaced in the JSON summary under `unparseable_scopes` so the
+        declaring lane sees the defect and reissues the claim with valid
+        syntax.
 
     The reducer `compute_active_claims` is untouched; this filter only prunes
     the `others` view. The active_claims summary keeps the full state, so the
@@ -756,6 +874,15 @@ def _filter_by_claim_scope(
         scope = ev.get("paths")
         if not scope:
             filtered[ln] = ev  # epic-wide (plain CLAIMED or unscoped OVERRIDE)
+            continue
+        # #10597 hardener -- unparseable scope (residual braces) lifts the
+        # claim back to epic-wide BEFORE we attempt the disjointness test.
+        # fnmatch on residual `{`/`}` is guaranteed to miss every file, so
+        # a "scoped disjoint" read here would silently clear the lane. The
+        # witness list is surfaced via `ev.get("unparseable_scope")` for
+        # the JSON audit (see _run_check summary).
+        if ev.get("unparseable_scope"):
+            filtered[ln] = ev  # lifted to epic-wide -- always blocking
             continue
         if _path_matches_any(my_scope, scope):
             filtered[ln] = ev  # scopes intersect -> real collision
