@@ -261,7 +261,7 @@ noncomputable def limit_lift_eq (F : J ⥤ C) [HasLimit F] (c : Cone F) :
     F j j' f`. -/
 theorem limit_w_natural (F : J ⥤ C) [HasLimit F] {j j' : J} (f : j ⟶ j') :
     limit.π F j ≫ F.map f = limit.π F j' :=
-  CategoryTheory.Limits.limit.w F j j' f
+  @CategoryTheory.Limits.limit.w _ _ _ _ _ _ _ _ F j j' f
 
 /-- Bridge: the universal factorisation `cocone_factorisation` is a direct
     reformulation of Mathlib 4's `colimit.desc`. Cast by application of `F`. -/
@@ -276,6 +276,6 @@ noncomputable def colimit_desc_eq (F : J ⥤ C) [HasColimit F] (c : Cocone F) :
     F j j' f` (note: the arrow goes from `j'` to `j`, dual of `limit.w`). -/
 theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j' ⟶ j) :
     F.map f ≫ colimit.ι F j = colimit.ι F j' :=
-  CategoryTheory.Limits.colimit.w F j j' f
+  @CategoryTheory.Limits.colimit.w _ _ _ _ _ _ _ _ F j j' f
 
 end Grothendieck.Limits_en
