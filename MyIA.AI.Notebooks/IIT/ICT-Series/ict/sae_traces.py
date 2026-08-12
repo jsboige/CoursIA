@@ -46,6 +46,7 @@ __all__ = [
     "resolve_capture_layer",
     "check_sae_model_match",
     "assert_bf16_readout",
+    "assert_sae_topk_compatible",
     "trace_filename",
 ]
 
@@ -263,6 +264,44 @@ def assert_bf16_readout(quantization_config: object | None,
             "melangerait l'effet du post-training et l'erreur d'arrondi NF4. "
             "Recharger base+adapters fusionnes en bf16, ou passer "
             "--allow-quantized-readout pour une exploration assumee.")
+
+
+# --------------------------------------------------------------------------- #
+# Garde-fou cross-L0 (L0_50 <-> L0_100) — etape 2 PT-12 (#10289)
+#
+# Meme modele, meme d_sae (32 768), mais le top-k officiel du SAE change
+# (50 vs 100). Si le script d'extraction encode en top-k=50 sur un SAE
+# officiellement L0_100, on perd la moitie des activations et la lecture
+# n'est plus comparable a la release officielle — sans erreur, juste une
+# mesure degradee. Cette garde refuse systematiquement le desaccord.
+# --------------------------------------------------------------------------- #
+def assert_sae_topk_compatible(k_sae: int, k_requested: int) -> None:
+    """Refuse un encodage top-k qui ne respecte pas le k officiel du SAE.
+
+    Le defaut silencieux que cette fonction ferme : passer ``k=50`` a
+    :func:`sae_encode_topk` sur un depot ``L0_100`` ne leve pas d'erreur,
+    ``torch.topk`` rend simplement les 50 premieres activations sur 100,
+    et tout le reste du pipeline (densification, panel, sortie) tourne
+    une mesure **a la moitie de la largeur officielle** — silencieusement,
+    sans bandeau, sans garde-fou. C'est exactement le mode de defaillance
+    que la note PT-12 de #10289 pointe comme « piege a ne pas rater ».
+
+    La garde impose -- et la garde seule -- que ``k_requested`` egale
+    ``k_sae`` (le ``k`` du ``config.json`` du depot SAE). Une exception
+    documentee (``--allow-k-override``) est implementee cote CLI dans
+    ``extract_sae_traces.py`` pour permettre un encodage non comparable a
+    la release (usage recherche explicite uniquement).
+    """
+    if int(k_sae) != int(k_requested):
+        raise ValueError(
+            f"top-k incompatible : le SAE est officiellement k={k_sae} (sa "
+            f"config.json), la requete est k={k_requested}. Encodage "
+            f"silencieusement degrade sinon (top-{k_requested} sur "
+            f"top-{k_sae}), sortie non comparable a la release officielle. "
+            f"Deux repos distincts sur le meme modele : "
+            f"Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50 (k=50) et "
+            f"Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_100 (k=100). "
+            f"Realigner --k ou --sae-repo et relancer.")
 
 
 def trace_filename(variant: str, layer: int, *, model: str = "",
