@@ -12,6 +12,8 @@
       csharp_sha: 7435be2a68253f66e9e4a6639efc2a44d4aab4bd
       content_python_sha: 978d28eba04e9e4b4a0ad721fabcd6fbdf4065369283ba1161fbd9af8bc5f361
       content_csharp_sha: 67526f92dd60d122ab1a83fbd913a601453037c2ff6e312733849351dc5b7f87
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = python-constraint (lib python CSP, ExactSum par constraints summing, https://github.com/python-constraint/python-constraint, LGPL-3.0) + OR-Tools CP-SAT + matplotlib (23 cellules code). C# = BCL pure (System.*, 0 NuGet, from-scratch) pour la resolution Demineur (contraintes sommes exactes implemented from-scratch). Verdict RECOVERABLE-LOCAL : socle pedagogique identique (CSP : contraintes sommes exactes, formulation variables/domaines/contraintes, resolution, experimentation). L'asymetrie reside dans la machinerie : Python invoque python-constraint (lib CSP specialisee) + OR-Tools CP-SAT ; le C# implemente la resolution from-scratch. Le port de python-constraint vers C# est faisable (Python-constraint est petit et pure python) mais hors scope du C# pedagogical -- le C# demontre l'implementation from-scratch en BCL pure, presentation compacte. parity_level: semantic preserve."
   known_differences:
     - "Socle pedagogique commun : Demineur (CSP : contraintes sommes exactes, library python-constraint) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = library python-constraint (ExactSum) + OR-Tools ; C# = BCL pure (System.*), 0 NuGet."
