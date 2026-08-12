@@ -68,6 +68,18 @@ La rupture mémoire de 2024. PPO classique nécessite (1) la policy, (2) une cop
 
 L'innovation méthodologique de 2025. Au lieu d'apprendre un Reward Model sur des préférences (cycle long, biaisé par les annotateurs), on utilise des tâches dont la réponse est vérifiable **algorithmiquement** : équations math (`sympy.simplify(answer - target) == 0`), code (`exec(code); assert tests`), traduction (`bleu_score(translation, référence) > seuil`). Le RM devient un vérificateur exact, ce qui élimine toute la complexité RLHF en aval. C'est ce qui a rendu possible Deepseek-R1 : combiné avec GRPO, on entraîne sur des prompts math/code sans aucune annotation humaine, et le modèle développe spontanément des chains-of-thought longs. Limite : applicable uniquement aux tâches vérifiables (math, code, logique formelle), pas aux tâches subjectives (écriture créative, conseil).
 
+#### Corpus de vérificateurs RLVR (issue #10289)
+
+Notre corpus RLVR séquence les vérificateurs mécaniques par coût de rollout. Chaque vérificateur est un module Python testable sur CPU, consommable par `trl.GRPOTrainer` via un adapteur de signature `reward(prompts, completions, **kwargs) -> list[float]`.
+
+| Tier | Vérificateur | Coût / rollout | Livrable | PR |
+|---|---|---|---|---|
+| **1** | SymPy (arithmétique) | µs-ms | `PT_05` (inline) | #10487 |
+| **1** | Z3 / CSP (arithmétique, N-queens) | µs-ms | `PT_11a`/`PT_11b` (inline) | #10317 |
+| **2** | **Lean** : élaboration `lake env lean` + oracle d'axiomes `#print axioms` | ~s | **`verifiers/lean_rlvr_verifier.py`** | #10539 |
+
+Le vérificateur **Lean** (Tier 2, `verifiers/lean_rlvr_verifier.py`) est le composant *distinctif* du corpus : un modèle qui apprend à émettre `by sorry` pour toucher la récompense est le cas d'école de Goodhart, et nos règles Lean (`lean-axiom.yml`) énumèrent *déjà* les exploits (`sorry`, `sorryAx` transitif, `native_decide`/`Lean.ofReduceBool`, axiomes hors whitelist). Le vérificateur les **détecte** (oracle de reward hacking) plutôt que les récompenser — récompense binaire 1.0 ssi la preuve compile sans sorry ni axiome interdit. Il réutilise le mécanisme `LeanVerifier.check_axioms` de `agent_tests/lean_server.py` (#8680), aucune logique de détection réécrite. Prérequis : `elan` (règle F, vrai moteur). Tests : `pytest verifiers/test_lean_rlvr_verifier.py` (10 contrôles positifs/négatifs/oracle sur le vrai Lean 4).
+
 ### GAE — Generalized Advantage Estimation (Schulman 2015, retour pédagogique)
 
 Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pratique dans PPO** : Generalized Advantage Estimation (Schulman et al., 2015) interpole entre TD(0) (λ=0, bas biais, haute variance) et Monte-Carlo (λ=1, haut biais, basse variance) via une moyenne géométrique des n-step TD-errors pondérée par λ. La formule canonique : $A_t^{GAE} = \sum_{l=0}^{T-t} (\gamma\lambda)^l \delta_{t+l}$ avec $\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$. Le mini-critic (1 value head) est entraîné via MSE sur les **returns** bootstrappés. La série PT-08/09/10 montre empiriquement que sur un env **1-step sparse-reward** (cas typique du LLM génération courte), GAE collapse en TD(0) et n'apporte **aucun bénéfice mesurable** par rapport à REINFORCE+baseline, justifiant *a posteriori* la décision de Deepseek-R1 de remplacer le critic par une baseline intra-groupe. Sur du **multi-step** (chain-of-thought long), GAE retrouve son intérêt car λ-bootstrapping réduit la variance du gradient. PT-10 (CPU toy env) illustre la symétrie : no-critic GRPO/RLOO dominent en 1-step, GAE redevient discriminant en multi-step.

@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `deap` (Distributed Evolutionary Algorithms in Python, Fortin et al. 2012, MIT-license, lib SOTA GA Python : toolbox + creator + base + fitness maximization via `creator.FitnessMax` + algorithms.eaSimple / eaMuPlusLambda) + `pygad` (Ahmed Gad, MIT-license, GA Python SOTA-tier, interface haut-niveau `pygad.GA(...)` + run()). C# = `MetaGeneticSharp` local (wrapper .NET 9 sur GeneticSharp, MIT-license, 4 DLLs : GeneticSharp.Domain.dll + GeneticSharp.Infrastructure.Framework.dll + MetaGeneticSharp.Domain.dll + GeneticSharp.Infrastructure.dll) + `GeneticSharp` NuGet (dbarbosettig, MIT-license, lib SOTA GA .NET). Verdict SOTA-OK (modèle owner PR #10420 MERGED pour Search-11 tranche 2 + PR #10523 c.215 pour Sudoku-3 Genetic) : les DEUX cotes utilisent une vraie lib GA SOTA (deap+pygad cote PY, GeneticSharp+MetaGeneticSharp cote C#), couverture fonctionnelle equivalente (population / fitness / selection / crossover / mutation / elitism), bridge direct sans glue non-SOTA. Asymetrie documentee : PY a 2 libs (deap bas-niveau + pygad haut-niveau) vs C# 2 DLLs (GeneticSharp base + MetaGeneticSharp wrapper), l'API surface est differente (deap toolbox vs GeneticSharp fluent) mais le potentiel est equivalent."
   audits:
     - date: "2026-08-01"
       by: myia-po-2026:CoursIA
