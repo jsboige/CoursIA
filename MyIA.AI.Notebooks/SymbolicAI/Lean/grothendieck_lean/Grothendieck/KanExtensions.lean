@@ -283,7 +283,7 @@ noncomputable def kan_descent {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     une fois pour toutes. -/
 theorem lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
     [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
-    L.lan ⊣ (whiskeringLeft C D H).obj L :=
+    L.lan ⊣ (Functor.whiskeringLeft C D H).obj L :=
   L.lanAdjunction H
 
 /-- Pont : l'unité de l'adjonction `lan ⊣ precomp L` est exactement
@@ -309,8 +309,14 @@ theorem kan_descent_fac {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
 /-- Pont : si `L` est un foncteur dense, alors son extension de Kan
     gauche le long de lui-même est isomorphe à l'identité sur `D`. C'est
     la formulation de la densité de `L` (le cas particulier de Yoneda :
-    l'identité est sa propre extension de Kan le long d'elle-même). -/
-theorem dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDense] :
+    l'identité est sa propre extension de Kan le long d'elle-même).
+
+    Note : on utilise `noncomputable def` (pas `theorem`) parce que le
+    type `F.leftKanExtension F ≅ 𝟭 D` est une **structure** (data), pas
+    une proposition — le théorème Mathlib `IsDense.leftKanExtensionIso`
+    est lui-même `noncomputable def`. Un `theorem ... := x` exige une
+    Prop comme type, ce que `≅` n'est pas. -/
+noncomputable def dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDense] :
     F.leftKanExtension F ≅ 𝟭 D :=
   CategoryTheory.Functor.IsDense.leftKanExtensionIso
 
