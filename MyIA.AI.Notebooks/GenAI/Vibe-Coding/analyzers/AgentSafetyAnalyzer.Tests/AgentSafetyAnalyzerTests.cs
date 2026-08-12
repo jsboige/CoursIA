@@ -126,6 +126,93 @@ class C { void M(string userInput) { var q = ""SELECT * FROM users WHERE name = 
         Assert.DoesNotContain("\" + userInput", newText.ToString());
     }
 
+    // -------- AGSEC005: hardcoded credential detection (sub-grain #10500e) --------
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnOpenAIStyleKey()
+    {
+        // `sk-` is the OpenAI/Anthropic key prefix. A literal that starts with
+        // `sk-` is almost certainly a real leaked key.
+        const string source = @"
+class C {
+    const string apiKey = ""sk-proj-AbCdEf1234567890abcdefghij"";
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        var d = Assert.Single(diags, x => x.Id == AgentSafetyAnalyzer.AGSEC005);
+        Assert.Equal(DiagnosticSeverity.Warning, d.Severity);
+        // The diagnostic message names the matched prefix so the developer
+        // knows which provider's secret leaked.
+        Assert.Contains("sk-", d.GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnGitHubPat()
+    {
+        // `ghp_` is the GitHub Personal Access Token prefix.
+        const string source = @"
+class C {
+    const string token = ""ghp_AbCdEf1234567890abcdefghijklmnopqrstUV"";  // 40 chars
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005 && d.GetMessage().Contains("ghp_"));
+    }
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnAwsAccessKeyId()
+    {
+        // `AKIA` is the AWS Access Key ID prefix (the long-form secret follows
+        // separately and is not covered here).
+        const string source = @"
+class C {
+    const string awsKey = ""AKIAIOSFODNN7EXAMPLE"";
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005 && d.GetMessage().Contains("AKIA"));
+    }
+
+    [Fact]
+    public async Task AGSEC005_NoDiagnostic_OnPlainLiteral()
+    {
+        // A literal that doesn't start with any known provider prefix is left
+        // alone — even if it might *be* a secret, without the prefix hint we
+        // can't be sure enough to flag it (false-positive cost > false-negative
+        // cost for unknown shapes).
+        const string source = @"
+class C {
+    const string greeting = ""hello world"";
+    const string endpoint = ""https://api.example.com/v1/messages"";
+    const string skPrefix = ""sk-"";   // too short to be a key (length < 4 chars? actually 3 — no match)
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+    }
+
+    [Fact]
+    public async Task AGSEC005_Diagnostic_OnAnthropicStyleKey()
+    {
+        // `sk-ant-` is the more specific Anthropic prefix. The table is
+        // ordered most-specific-first, so `sk-ant-` wins over `sk-` and the
+        // diagnostic message references the Anthropic-shaped prefix.
+        const string source = @"
+class C {
+    const string anthropicKey = ""sk-ant-api03-AbCdEf1234567890abcdefghijklmnopqr"";  // placeholder shape
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005 && d.GetMessage().Contains("sk-ant-"));
+    }
+
+    [Fact]
+    public async Task AGSEC005_NoDiagnostic_OnEmptyLiteral()
+    {
+        // An empty string has no prefix; trivially not a credential.
+        const string source = @"
+class C {
+    string M() { return """"; }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+    }
+
     // -------- Helpers --------
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source)
