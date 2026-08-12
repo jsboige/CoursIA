@@ -295,6 +295,70 @@ Deux remarques valables pour tout déploiement :
 
 ---
 
+## Parcours 4 — AI Forms, ou le formulaire comme machine à états
+
+### Ce que c'est
+
+**AI Forms** est le module d'AI-Engine qui pousse les formulaires WordPress
+au-delà de la collecte passive. Deux propriétés le distinguent d'un
+formulaire WordPress classique :
+
+1. **Logique conditionnelle** — la visibilité d'un champ dépend des
+   réponses données aux champs antérieurs. Un même formulaire présente des
+   « pages » différentes selon qui le remplit et comment.
+2. **Traitement LLM à la soumission** — chaque soumission peut être
+   synthétisée, classée, traduite ou enrichie par un LLM avant stockage ou
+   notification.
+
+### Comment ça marche
+
+Le rédacteur du formulaire déclare une liste de champs, chacun avec une
+*règle de visibilité* (un prédicat sur les réponses antérieures) et,
+optionnellement, une *action* déclenchée à la soumission. À l'exécution,
+le moteur évalue chaque règle à mesure que l'utilisateur répond : un champ
+apparaît, disparaît, ou rend une section entière pertinente ou caduque.
+
+Le piège conceptuel est que **ce moteur est une machine à états implicite**.
+Chaque règle de visibilité est un point de branchement ; le formulaire
+effectif — l'ensemble des chemins qu'un utilisateur peut réellement
+emprunter — n'est pas la liste des champs déclarés, mais le graphe qu'ils
+engendrent. Et ce graphe, rien ne l'expose : il se calcule.
+
+### Comparaison OWUI
+
+Open WebUI **n'a pas d'équivalent** : c'est un client de conversation, pas
+un moteur de formulaires. Le parcours équivalent supposerait un formulaire
+externe (Typeform, Tally) connecté à OWUI par webhook — un assemblage qu'AI
+Forms évite en intégrant les deux couches dans WordPress.
+
+### Ce que l'installation observée en fait
+
+Le cas d'usage naturel dans une maison d'édition est le **formulaire de
+soumission de manuscrit** : l'autrice décrit son projet (genre, longueur,
+statut d'édition), et des champs conditionnels adaptent la suite — un
+résumé long n'est demandé que pour les manuscrits épais, le nom de l'éditeur
+précédent n'apparaît que pour la prose déjà publiée. À la soumission, un
+LLM peut synthétiser le résumé ou vérifier la cohérence des métadonnées,
+soulageant le comité de lecture d'un premier tri.
+
+La leçon structurelle vaut pour tout formulaire administratif conditionnel :
+**le schéma n'est pas le formulaire**. Trois grandeurs sont émergentes et
+non lisibles sur la définition statique — le nombre de chemins terminaux
+atteignables, le coût en appels LLM de chacun, et les champs déclarés mais
+jamais visibles (branches mortes). Auditer un formulaire conditionnel
+suppose d'énumérer ses chemins, pas de relire ses champs.
+
+> **Notebook compagnon.** [`auditer-un-formulaire-conditionnel.ipynb`](auditer-un-formulaire-conditionnel.ipynb)
+> rend cette leçon exécutable : il monte un formulaire de soumission
+> synthétique (Maison Valmont) à sept champs conditionnels et **énumère les
+> chemins terminaux**. Sept champs engendrent treize états distincts (contre
+> un produit cartésien brut de plus de cent), dont près des deux tiers
+> déclenchent un appel LLM, et un champ déclaré n'apparaît sur aucun chemin
+> — un champ mort que la lecture du schéma compterait à tort comme
+> fonctionnel. stdlib pure, aucune clé, aucun réseau.
+
+---
+
 ## Note de méthode — pourquoi il n'y a aucune capture
 
 Ce dossier ne contient **aucune capture d'écran**, et c'est un choix

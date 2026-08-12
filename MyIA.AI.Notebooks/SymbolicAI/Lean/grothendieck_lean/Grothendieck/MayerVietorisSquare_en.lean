@@ -112,7 +112,22 @@ map `toPullbackObj P` from P(X₄) to the fiber product.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.toPullbackObj
 
 -- Sheaf condition iff toPullbackObj is bijective (Type-valued presheaves).
-#check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sheafCondition_iff_bijective_toPullbackObj
+-- We promote this `#check` into a proven declaration below: it is the central
+-- pedagogical fact of the module (the prose announced it without formal proof).
+
+/-- Bridge theorem: a Type-valued presheaf P satisfies the Mayer-Vietoris sheaf
+    condition for the square S if and only if the canonical map `toPullbackObj`
+    (from P(X₄) to the fiber product of the fibers) is bijective. This is the
+    concrete criterion relating the abstract pullback-square condition to a
+    measurable enumeration of sections. The proof delegates to the named lemma
+    `sheafCondition_iff_bijective_toPullbackObj` of Mathlib
+    (`CategoryTheory.Sites.MayerVietorisSquare`). -/
+theorem sheaf_condition_iff_bijective
+    [HasWeakSheafify J (Type v)]
+    (S : J.MayerVietorisSquare)
+    (P : Cᵒᵖ ⥤ Type v') :
+    S.SheafCondition P ↔ Function.Bijective (S.toPullbackObj P) :=
+  CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sheafCondition_iff_bijective_toPullbackObj S P
 
 /-! ## 4. Consequences of the sheaf condition
 
