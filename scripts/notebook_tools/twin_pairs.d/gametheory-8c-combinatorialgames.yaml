@@ -3,8 +3,6 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
