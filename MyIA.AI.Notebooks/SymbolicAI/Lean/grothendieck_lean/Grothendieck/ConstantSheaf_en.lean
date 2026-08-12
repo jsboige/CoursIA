@@ -120,7 +120,7 @@ This is a property, not structure — constancy is a proposition.
 /-- Bridge: a constant sheaf F projects into the essential image of the
     constant sheaf functor. Uses `Sheaf.mem_essImage_of_isConstant`. -/
 theorem mem_essImage_of_isConstant_bridge (F : Sheaf J D)
-    [CategoryTheory.Sheaf.IsConstant J F] :
+    [Sheaf.IsConstant J F] :
     (constantSheaf J D).essImage F :=
   CategoryTheory.Sheaf.mem_essImage_of_isConstant J F
 
@@ -162,15 +162,16 @@ is constant.
 
 /-- Bridge: the property of being constant is invariant under equivalence of
     sheaf categories induced by a dense subsite morphism G. If F is a sheaf on
-    (C', K), then its pullback by `sheafEquiv J K G D` is constant on (C, J)
+    (C', K), then its pullback by `sheafEquiv G J K D` is constant on (C, J)
     if and only if F is constant on (C', K).
     Uses `Sheaf.isConstant_iff_of_equivalence`. -/
+open IsDenseSubsite in
 theorem isConstant_iff_of_equivalence_bridge {C' : Type*} [Category* C']
     (K : GrothendieckTopology C') [HasWeakSheafify K D]
     (G : C ⥤ C') [G.IsDenseSubsite J K] (F : Sheaf K D) :
-    ((CategoryTheory.sheafEquiv J K G D).inverse.obj F).IsConstant J ↔
-      CategoryTheory.Sheaf.IsConstant K F :=
-  CategoryTheory.Sheaf.isConstant_iff_of_equivalence J K G F
+    ((sheafEquiv G J K D).inverse.obj F).IsConstant J ↔
+      Sheaf.IsConstant K F :=
+  Sheaf.isConstant_iff_of_equivalence J K G F
 
 /-! ## 7. Constancy through forgetful functors
 
@@ -188,14 +189,14 @@ sheafCompose reflects isomorphisms).
 theorem isConstant_iff_forget_bridge {B : Type*} [Category* B]
     [HasWeakSheafify J B]
     (U : D ⥤ B) [J.PreservesSheafification U] [J.HasSheafCompose U]
-    [((CategoryTheory.sheafCompose J U)).ReflectsIsomorphisms]
+    [(sheafCompose J U).ReflectsIsomorphisms]
     (F : Sheaf J D)
-    [hfull : (constantSheaf J D).Faithful] [hfull' : (constantSheaf J D).Full]
-    [hfullB : (constantSheaf J B).Faithful] [hfullB' : (constantSheaf J B).Full]
+    [constantSheaf J D |>.Faithful] [constantSheaf J D |>.Full]
+    [constantSheaf J B |>.Faithful] [constantSheaf J B |>.Full]
     {T : C} (hT : IsTerminal T) :
     F.IsConstant J ↔
-      ((CategoryTheory.sheafCompose J U).obj F).IsConstant J :=
-  CategoryTheory.Sheaf.isConstant_iff_forget J U F hT
+      ((sheafCompose J U).obj F).IsConstant J :=
+  Sheaf.isConstant_iff_forget J U F hT
 
 /-! ## 8. Commutation with sheafCompose
 
@@ -209,8 +210,9 @@ isomorphism, provided that U preserves sheafification.
     up to isomorphism, provided U preserves sheafification. The natural
     identity `constantSheaf J D ⋙ sheafCompose J U ≅ U ⋙ constantSheaf J B`. -/
 noncomputable def constantCommuteComposeBridge {B : Type*} [Category* B]
-    [HasWeakSheafify J B] (U : D ⥤ B) [J.PreservesSheafification U] :
-    constantSheaf J D ⋙ CategoryTheory.sheafCompose J U ≅
+    [HasWeakSheafify J B] (U : D ⥤ B) [J.PreservesSheafification U]
+    [J.HasSheafCompose U] :
+    constantSheaf J D ⋙ sheafCompose J U ≅
       U ⋙ constantSheaf J B :=
   constantCommuteCompose J U
 
