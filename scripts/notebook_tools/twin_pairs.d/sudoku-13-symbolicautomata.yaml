@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: INTRINSIC
-  bridge_verdict_reason: "limite academique SFAz3+Z3 'monstre regex tronque' = INTRINSIC disclosed (SOTA ledger Entry #008) : limite prouvee, pas un workaround degrade."
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Microsoft.Z3 (NuGet officiel, axe 1 du registre #3801) atteint la theorie des chaines et resout la **contrainte d'automate symbolique** via `str.in_re` / `re.++` / `re.*` / `str.to_re`. Annexe S10 du notebook C# (cellules 46-48) : constructeur d'automate symbolique inline (StringBuilder SMT-LIB 2.6) -> temoin mesure en ~133 ms (Z3 4.12.2.0). Le plafond SFAz3+Z3 'monstre regex tronque' (issue AutomataDotNet/Automata#6) reste une limite **academique et documentee** : elle vit dans `known_differences` et ne peut pas motiver un verdict de parite (les deux jumeaux sont frappes a l'identique, voir precedent GT-17 #10464 / GT-13 #10470)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -16,7 +16,14 @@
       csharp_sha: 8a7dfd7b5ce75f36eaa13cd61736cf54e9efbdf6
       content_python_sha: d0e0b4554b17c2f92c33e82a9c1a165a16e45508894a6c561d2a72e86791f2de
       content_csharp_sha: fa8855b97bd81e24a3f9f2aa75b568c85661c8d5a09c9a93224f0a2bceec0088
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: f2171a8b02c88b0727db809bf176f11a6c31f59d
+      csharp_sha: 8a7dfd7b5ce75f36eaa13cd61736cf54e9efbdf6
+      content_python_sha: d0e0b4554b17c2f92c33e82a9c1a165a16e45508894a6c561d2a72e86791f2de
+      content_csharp_sha: fa8855b97bd81e24a3f9f2aa75b568c85661c8d5a09c9a93224f0a2bceec0088
   known_differences:
     - "Socle pedagogique commun : automates symboliques et resolution de Sudoku via Z3 (automates finis symboliques, representation symbolique des contraintes, liens avec SMT). Meme concept (automates symboliques + Z3 comme backend de decision), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, symbolic, Solver."
-    - "Divergence d'implementation : le C# (pur System.* stdlib, 0 NuGet, 18 cellules code) construit la logique d'automate symbolique from scratch avec references a Z3 ; le Python (pyz3, 10 cellules code) utilise les bindings Z3 directement pour la partie symbolique. Meme enseignement (automates symboliques + Z3), deux niveaux : construction from scratch cote C# vs bindings Z3 cote Python."
-    - "Idiomes framework : C# = pur System.* (System / System.Linq), 0 NuGet, 18 cellules code ; Python = pyz3, 10 cellules code. Meme concept (automates symboliques), implementations independantes. Note per SOTA ledger Entry #008 : limite academique SFAz3+Z3 'monstre regex tronque' = INTRINSIC disclosed (limite prouvee, pas un workaround)."
+    - "Divergence d'implementation : le C# (Microsoft.Z3 via NuGet + auto-suffisant en annexe S10, 19 cellules code apres #10459) utilise la theorie des chaines Z3 et la regle `re.++` / `re.*` / `re.range` / `str.to_re` pour la partie symbolique. Le Python (pyz3, 10 cellules code) utilise les bindings Z3 directement. Meme enseignement (automates symboliques + Z3), deux niveaux."
+    - "Plafond academique documente (issue AutomataDotNet/Automata#6, voir SOTA ledger Entry #008) : la voie SFAz3 d'origine a un cap du temoin a ~21 caracteres (SFAz3 + Z3 'monstre regex tronque'). Ce plafond est **academique** et frappe les deux jumeaux a l'identique ; il est documente ici et **ne peut pas** motiver un verdict de parite. Le contournement par la theorie des chaines directe (annexe S10 du notebook C#) montre la lib Microsoft.Z3 sans ce plafond."
+    - "Idiomes framework : C# = Microsoft.Z3 (NuGet, registre #3801 axe 1) + System.* stdlib + Annexe S10 cellule auto-suffisante ; Python = pyz3. Meme concept (automates symboliques), implementations avec le meme moteur (Z3)."
