@@ -4,11 +4,10 @@
 
 repos:
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.21.2
+    rev: v8.24.3
     hooks:
       - id: gitleaks
         name: Secret scanner (gitleaks)
-        args: ['detect', '--no-git', '--redact']
 
   # Local hooks: notebook hygiene + structural integrity. These run on the
   # worker's machine without external dependencies. See
