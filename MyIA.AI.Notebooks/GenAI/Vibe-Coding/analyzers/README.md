@@ -6,6 +6,7 @@
 > `.csproj` standalone des analyseurs prototypés dans
 > [`Roslyn-Code-Guardrails.ipynb`](../docs/Roslyn-Code-Guardrails.ipynb) (PR #10502).
 > Sub-grain #10500c — extension `AGSEC004` (HttpClient non-constant URL).
+> Sub-grain #10500d — registry de suppressions `#pragma warning disable AGSECxxx`.
 
 ## Pourquoi ce dossier
 
@@ -34,17 +35,43 @@ constante et déclenche le diagnostic avec localisation précise. C'est exacteme
 la capacité distinctive que l'axe Roslyn de l'Epic met en avant : la vérification
 se fait **dans la compilation**, pas en post-processing.
 
+## Registry de suppressions par `#pragma warning` (sub-grain #10500d)
+
+Quand un appel **délibéré et audité** doit malgré tout passer un argument
+non-constant (par exemple un `Path.Combine(baseDir, userInput)` validé par une
+allow-list en amont), le développeur peut silencer la règle localement avec
+la directive standard du compilateur C# :
+
+```csharp
+#pragma warning disable AGSEC001
+Process.Start("/usr/bin/safe-tool", "--safe-flag", userInput);  // reviewed: whitelisted exe + safe args
+#pragma warning restore AGSEC001
+```
+
+Le contrat est **per-rule** : `disable AGSEC001` n'affecte que AGSEC001. Une
+directive **sans** identifiant (`#pragma warning disable`) éteint toutes les
+règles AGSEC* à ce site. Les séquences `disable … restore …` à l'intérieur
+d'un même bloc sont honorées (la dernière directive qui couvre la règle
+l'emporte). C'est exactement la sémantique que le compilateur applique aux
+CS-warnings ; la cohérence entre diagnostics compilateur et diagnostics
+analyzer est volontaire.
+
+L'implémentation (méthode `IsSuppressedByPragma`) marche les *leading trivia*
+du `SyntaxNode` suspect et cherche les `PragmaWarningDirectiveTrivia`
+correspondantes. C'est le pattern recommandé dans la doc Roslyn pour les
+`DiagnosticSuppressor`.
+
 ## Structure
 
 ```
 analyzers/
 ├── AgentSafetyAnalyzer/                  # netstandard2.0, IsPackable=true
 │   ├── AgentSafetyAnalyzer.csproj
-│   ├── AgentSafetyAnalyzer.cs            # 3 règles (AGSEC001/002/003)
+│   ├── AgentSafetyAnalyzer.cs            # 4 règles + IsSuppressedByPragma
 │   └── SqlConcatCodeFixProvider.cs       # Correctif auto pour AGSEC002
 └── AgentSafetyAnalyzer.Tests/            # net8.0, xUnit
     ├── AgentSafetyAnalyzer.Tests.csproj
-    └── AgentSafetyAnalyzerTests.cs       # 8 tests (6 analyseur + 2 codefix)
+    └── AgentSafetyAnalyzerTests.cs       # 17 tests (6 analyseur + 5 AGSEC004 + 1 codefix + 5 pragma)
 ```
 
 ## Build & test (CPU-only, pas d'Aspire requis)
@@ -54,10 +81,13 @@ cd analyzers/AgentSafetyAnalyzer && dotnet build
 cd ../AgentSafetyAnalyzer.Tests && dotnet test
 ```
 
-Résultat attendu : **12 tests verts**, dont
-- 6 tests analyzer (3 règles × 2 — discriminant littéral littéral vs variable attaquant-contrôlée)
-- 5 tests AGSEC004 (HttpClient no-diagnostic + 4 variants `GetAsync`/`PostAsync`/`SendAsync`/`GetStringAsync`)
-- 1 test codefix (`AGSEC002_CodeFix_TransformsConcatToInterpolatedString`).
+Résultat attendu : **17 tests verts**, dont
+- 6 tests analyzer (3 règles × 2 — discriminant littéral littéral vs variable attaquant-contrôlée) ;
+- 5 tests AGSEC004 (HttpClient no-diagnostic + 4 variants `GetAsync`/`PostAsync`/`SendAsync`/`GetStringAsync`) ;
+- 1 test codefix (`AGSEC002_CodeFix_TransformsConcatToInterpolatedString`) ;
+- 5 tests suppression par pragma (`AGSEC001_NoDiagnostic_OnPragmaDisable_ForSameRule`,
+  `…StillDiagnostic_OnPragmaDisable_ForOtherRule`, `…NoDiagnostic_OnBarePragmaDisable`,
+  `…Diagnostic_OnPragmaRestoreAfterDisable`, `AGSEC002_NoDiagnostic_OnPragmaDisable_ForSqlConcat`).
 
 ## Comparaison avec le notebook
 
@@ -76,10 +106,10 @@ reader apprend avec l'un et embarque l'autre.
 
 ## Sub-grains du ticket parent [#10500](https://github.com/jsboige/CoursIA/issues/10500)
 
-- `10500b` (PR #10559) : packaging `.csproj` standalone — **livré** (7 tests).
-- `10500c` (PR #1056x, ce grain) : `HttpClient.Get*/Post*/Put*/Delete*/Send*` URL non-constante (SSRF) — **livré** (12 tests au total).
-- `10500d` : registry de suppressions `#pragma warning disable AGSEC001` pour les
-  faux positifs assumés.
+- `10500b` (PR #10559) : packaging `.csproj` standalone — **livré**.
+- `10500c` (ce grain, PR #10563) : `HttpClient.Get*/Post*/Put*/Delete*/Send*` URL non-constante (SSRF, AGSEC004) — **livré**.
+- `10500d` (PR #10571) : registry de suppressions `#pragma warning disable
+  AGSECxxx` pour les faux positifs assumés — **livré**.
 - `10500e` : analyzer `==` sur secrets hardcodés (BinaryExpressionSyntax sur
   string littéraux avec préfixes `sk-`, `ghp_`, etc.).
 
@@ -88,9 +118,10 @@ reader apprend avec l'un et embarque l'autre.
 - **Prong A** : vrai `Microsoft.CodeAnalysis` 4.12 (`netstandard2.0` compatible),
   verdict **SOTA-OK** (cf. infra de test `Microsoft.CodeAnalysis.CSharp.Analyzer.Testing`
   et `CSharpCodeFixTest`).
-- **Prong B** : discrimination sémantique sur les 3 règles (chaque règle a son
+- **Prong B** : discrimination sémantique sur les 4 règles (chaque règle a son
   test « no diagnostic sur littéral littéral » ET « diagnostic sur variable
-  attaquant-contrôlée »).
+  attaquant-contrôlée ») + discrimination de la suppression (per-rule vs all,
+  disable vs restore).
 - **C.1** : pas d'erreur volontaire, `Build` et `Test` Successful attendus.
 - **C.2** : n/a (pas de notebook ici — `.cs` + `.csproj`).
 - **three-exercises-per-notebook** : n/a (pas un notebook).

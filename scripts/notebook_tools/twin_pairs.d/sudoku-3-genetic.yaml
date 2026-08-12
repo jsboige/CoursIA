@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-3-Genetic-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `pygad` PyPI (Ahmed Gad, MIT-license, GA library SOTA-tier : population, crossover, mutation, fitness, selection ; `import pygad`, `ga_instance = pygad.GA(...)`, `ga_instance.run()`, logging interface). C# = `GeneticSharp` NuGet (dbarbosettig, MIT-license, GA library SOTA-tier .NET : GeneticAlgorithm + Chromosome + Fitness + Operator ; `using GeneticSharp;` + `ga = new GeneticAlgorithm(population, fitness, selection, crossover, mutation)`). Verdict SOTA-OK : les DEUX cotes utilisent une vraie lib GA SOTA (pygad cote PY, GeneticSharp cote C#), couverture fonctionnelle equivalente (population / fitness / selection / crossover / mutation), bridge direct sans glue non-SOTA. Le notebook PY standardise les parametres via `pygad.GA(num_generations=N, ...)` ; le notebook C# fait la meme chose via les proprietes de `GeneticAlgorithm`. Asymetrie mineure : API surface differente (pygad callback-based, GeneticSharp fluent), meme algo."
   audits:
     - date: "2026-08-03"
       by: myia-po-2024:CoursIA-2

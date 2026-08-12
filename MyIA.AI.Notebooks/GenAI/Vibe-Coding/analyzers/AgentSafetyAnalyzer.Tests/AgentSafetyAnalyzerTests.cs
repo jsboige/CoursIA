@@ -206,6 +206,100 @@ class C { void M(string userInput) { var q = ""SELECT * FROM users WHERE name = 
         Assert.DoesNotContain("\" + userInput", newText.ToString());
     }
 
+    // -------- AGSEC pragma suppression (sub-grain #10500d) --------
+
+    [Fact]
+    public async Task AGSEC001_NoDiagnostic_OnPragmaDisable_ForSameRule()
+    {
+        // `#pragma warning disable AGSEC001` immediately above the call silences
+        // the rule for that one site (per-rule contract).
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput) {
+#pragma warning disable AGSEC001
+        Process.Start(userInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC001);
+    }
+
+    [Fact]
+    public async Task AGSEC001_StillDiagnostic_OnPragmaDisable_ForOtherRule()
+    {
+        // Disabling AGSEC003 must NOT silence AGSEC001 — per-rule suppression is
+        // the documented contract. A naive "any pragma ⇒ all off" implementation
+        // would incorrectly suppress this one.
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput) {
+#pragma warning disable AGSEC003
+        Process.Start(userInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.Contains(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC001);
+    }
+
+    [Fact]
+    public async Task AGSEC001_NoDiagnostic_OnBarePragmaDisable()
+    {
+        // A bare `#pragma warning disable` (no rule ids) suppresses every AGSEC*
+        // rule at the site — same semantics as the C# compiler for CS-warnings.
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput) {
+#pragma warning disable
+        Process.Start(userInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC001);
+    }
+
+    [Fact]
+    public async Task AGSEC001_Diagnostic_OnPragmaRestoreAfterDisable()
+    {
+        // A `#pragma warning restore AGSEC001` between two calls unsilences the
+        // second call. This is the documented pragma contract and matches the
+        // C# compiler's behavior for its own diagnostics.
+        const string source = @"
+using System.Diagnostics;
+class C {
+    void M(string userInput, string anotherInput) {
+#pragma warning disable AGSEC001
+        Process.Start(userInput);
+#pragma warning restore AGSEC001
+        Process.Start(anotherInput);
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        // Exactly one AGSEC001 — the second (un-suppressed) call.
+        var d001 = diags.Where(x => x.Id == AgentSafetyAnalyzer.AGSEC001).ToList();
+        Assert.Single(d001);
+        Assert.Contains("anotherInput", d001[0].GetMessage());
+    }
+
+    [Fact]
+    public async Task AGSEC002_NoDiagnostic_OnPragmaDisable_ForSqlConcat()
+    {
+        // AGSEC002 fires on a `BinaryExpressionSyntax` (AddExpression), not on an
+        // invocation. Suppression should still work — same trivia-walking logic,
+        // same per-rule contract.
+        const string source = @"
+class C {
+    void M(string userInput) {
+#pragma warning disable AGSEC002
+        var q = ""SELECT * FROM users WHERE name = '"" + userInput;
+    }
+}";
+        var diags = await GetDiagnosticsAsync(source);
+        Assert.DoesNotContain(diags, d => d.Id == AgentSafetyAnalyzer.AGSEC002);
+    }
+
     // -------- Helpers --------
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source)
