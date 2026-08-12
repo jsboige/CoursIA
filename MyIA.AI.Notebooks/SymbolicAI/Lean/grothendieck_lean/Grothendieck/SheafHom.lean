@@ -209,7 +209,7 @@ lemma presheaf_hom_map_app_bridge {X Y Z : C} (F G : Cᵒᵖ ⥤ A)
     (f : Z ⟶ Y) (g : Y ⟶ X) (h : Z ⟶ X) (w : f ≫ g = h)
     (α : (presheafHom F G).obj (op X)) :
     ((presheafHom F G).map g.op α).app (op (Over.mk f)) = α.app (op (Over.mk h)) :=
-  @CategoryTheory.presheafHom_map_app _ _ _ _ _ _ _ _ _ _ f g h w α
+  presheafHom_map_app f g h w α
 
 /-- Lemme pont (@[simp]) : la loi d'application specialisee sur l'identite
     `Over.mk (𝟙 Y)` donne un morphisme `Y ⟶ X`. Re-exporte
@@ -219,7 +219,7 @@ lemma presheaf_hom_map_app_op_mk_id_bridge {X Y : C} (F G : Cᵒᵖ ⥤ A)
     (g : Y ⟶ X)
     (α : (presheafHom F G).obj (op X)) :
     dsimp% ((presheafHom F G).map g.op α).app (op (Over.mk (𝟙 Y))) = α.app (op (Over.mk g)) :=
-  @CategoryTheory.presheafHom_map_app_op_mk_id _ _ _ _ _ _ _ _ _ g α
+  presheafHom_map_app (𝟙 Y) g g (by simp) α
 
 /-- Construction pont : le faisceau hom interne `sheafHom F G`, vivant dans
     `Sheaf J (Type _)`. Ses sections s'identifient aux morphismes de faisceaux

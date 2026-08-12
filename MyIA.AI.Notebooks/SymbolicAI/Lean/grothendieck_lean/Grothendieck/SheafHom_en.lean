@@ -208,7 +208,7 @@ lemma presheaf_hom_map_app_bridge {X Y Z : C} (F G : Cᵒᵖ ⥤ A)
     (f : Z ⟶ Y) (g : Y ⟶ X) (h : Z ⟶ X) (w : f ≫ g = h)
     (α : (presheafHom F G).obj (op X)) :
     ((presheafHom F G).map g.op α).app (op (Over.mk f)) = α.app (op (Over.mk h)) :=
-  @CategoryTheory.presheafHom_map_app _ _ _ _ _ _ _ _ _ _ f g h w α
+  presheafHom_map_app f g h w α
 
 /-- Bridge lemma (@[simp]): the application law specialised on the identity
     `Over.mk (𝟙 Y)` gives a morphism `Y ⟶ X`. Re-exports
@@ -218,7 +218,7 @@ lemma presheaf_hom_map_app_op_mk_id_bridge {X Y : C} (F G : Cᵒᵖ ⥤ A)
     (g : Y ⟶ X)
     (α : (presheafHom F G).obj (op X)) :
     dsimp% ((presheafHom F G).map g.op α).app (op (Over.mk (𝟙 Y))) = α.app (op (Over.mk g)) :=
-  @CategoryTheory.presheafHom_map_app_op_mk_id _ _ _ _ _ _ _ _ _ g α
+  presheafHom_map_app (𝟙 Y) g g (by simp) α
 
 /-- Bridge construction: the sheaf internal hom `sheafHom F G`, living in
     `Sheaf J (Type _)`. Its sections identify to sheaf morphisms
