@@ -86,6 +86,27 @@ CRUD générique ou verbe métier et mesure sa distance au schéma de
 persistance. Le catalogue audité est synthétique (Maison Valmont) ; un
 chemin live optionnel permet de le rejouer sur son propre serveur via `.env`.
 
+Un notebook compagnon [`consommer-vs-exposer-le-mcp.ipynb`](consommer-vs-exposer-le-mcp.ipynb)
+traite la confusion la plus fréquente du dossier — *les deux sens du fil MCP*.
+AI-Engine expose WordPress comme serveur MCP **et** consomme des serveurs MCP
+externes (module Orchestration). Le notebook monte les deux côtés sur le même
+fixture synthétique (Maison Valmont) et mesure le **chevauchement
+cross-catalogue** : quand un outil exposé et un outil consommé font la même
+chose, l'agent doit choisir, et le double-écrit devient un risque. Indice de
+Jaccard sur les signatures normalisées `(verbe, cible)` pour distinguer la
+redondance de lecture (tolérable) de la redondance d'écriture (dangereuse).
+
+Un quatrième notebook [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb)
+est le compagnon exécutable du Parcours 2 (RAG et piège du
+multi-environnement). Il convertit en **mesures reproductibles** les deux
+défaillances que la prose décrit : étant donné un vector store partitionné
+en six régimes d'accès, il démontre (1) la **fuite cross-environnement**
+— un retrieval émis sans filtre renvoie des chunks d'un régime réservé,
+mesurée par un taux de fuite — et (2) **l'accident de réindexation** —
+`reindexer(..., environnement=None)` écrase silencieusement un corpus
+voisin. Déterministe, numpy, sans clé ni réseau ; fixture synthétique à 100 %
+(Maison Valmont).
+
 ---
 
 ## Sections
@@ -199,6 +220,10 @@ attendues.
   ingestion RAG d'un corpus long structuré, chunking naïf vs par chapitre
 - [`auditer-un-serveur-mcp.ipynb`](auditer-un-serveur-mcp.ipynb) —
   classifier CRUD générique vs verbes métier, mesurer la distance au schéma
+- [`consommer-vs-exposer-le-mcp.ipynb`](consommer-vs-exposer-le-mcp.ipynb) —
+  les deux sens du fil MCP, chevauchement cross-catalogue et risque de double-écrit
+- [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb) —
+  fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

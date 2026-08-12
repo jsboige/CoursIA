@@ -417,7 +417,7 @@ Cette série suppose une **maîtrise de base en probabilités et statistiques** 
 |---------|---------------------|------------------|
 | Variables aléatoires (discrètes/continues) | Partout, notebook 1+ | Loi de proba, espérance, variance |
 | Distributions usuelles (Bernoulli, Gaussian, Beta, Gamma) | Notebook 1 (Beta-Bernoulli), 2 (Gaussian) | Paramètres, formes, conjugaison |
-| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A|B), théorème de Bayes |
+| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A\|B), théorème de Bayes |
 | Indépendance conditionnelle | Notebook 3 (Monty Hall), 4 (D-separation) | Collider, explaining away |
 | Espérance mathématique | Partout (calcul de EU) | E[X] = sum x*P(x) ou intégrale |
 | Distributions conjuguées | Notebook 1 (Beta-Bernoulli), 9 (Dirichlet-Discrète) | Prior + likelihood = posterior (famille même) |
