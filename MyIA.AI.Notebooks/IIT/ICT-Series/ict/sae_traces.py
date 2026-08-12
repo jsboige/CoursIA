@@ -288,9 +288,9 @@ def assert_sae_topk_compatible(k_sae: int, k_requested: int) -> None:
 
     La garde impose -- et la garde seule -- que ``k_requested`` egale
     ``k_sae`` (le ``k`` du ``config.json`` du depot SAE). Une exception
-    documentee (``--k-sae-override``) reste imaginable a l'avenir mais
-    n'est PAS implementer ici : ajouter la feature plus tard si un cas
-    reel se presente, pas avant.
+    documentee (``--allow-k-override``) est implementee cote CLI dans
+    ``extract_sae_traces.py`` pour permettre un encodage non comparable a
+    la release (usage recherche explicite uniquement).
     """
     if int(k_sae) != int(k_requested):
         raise ValueError(

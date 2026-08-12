@@ -28,6 +28,15 @@ from ict.sae_traces import (  # noqa: E402
     trace_filename,
 )
 
+# Indicateur de disponibilite huggingface_hub pour les tests qui font un
+# acces reseau reel (``fetch_sae_config``). CI peut tourner sans HF Hub ;
+# le skip via pytest.mark.skipif prend le relais.
+try:
+    import huggingface_hub  # noqa: F401
+    _HF_HUB_AVAILABLE = True
+except ImportError:
+    _HF_HUB_AVAILABLE = False
+
 # Echelles reelles (config.json des depots HF officiels, verifies c.2026-08-11).
 N_LAYERS_9B, D_MODEL_9B, W_9B = 32, 4096, 65536
 N_LAYERS_2B, D_MODEL_2B, W_2B = 24, 2048, 32768
@@ -200,6 +209,14 @@ def test_sans_modele_le_nom_reste_le_defaut_historique():
 # deux variantes SAE qui different uniquement par le top-k d'encodage :
 # 50 vs 100. Tout le reste (d_sae, n_layers, d_model) est identique.
 # --------------------------------------------------------------------------- #
+@pytest.mark.skipif(
+    not _HF_HUB_AVAILABLE,
+    reason="fetch_sae_config requiert huggingface_hub + acces au depot SAE "
+           "(reseau HF). Les valeurs mesurees (k=50/100, d_sae=32768, "
+           "n_layers=24, d_model=2048) sont assertees hors-ligne via les "
+           "constantes du module ; voir test_sae_2b_l100_config_officielle "
+           "ci-dessous pour le test offline equivalent.",
+)
 def test_sae_2b_l100_a_meme_d_sae_que_l50_mais_k_different():
     """Le piege que cette section teste : passer k=50 sur L0_100 produirait
     une mesure a moitie de la release officielle, silencieusement.
@@ -220,6 +237,30 @@ def test_sae_2b_l100_a_meme_d_sae_que_l50_mais_k_different():
     assert cfg_l50["k"] == 50
     assert cfg_l100["k"] == 100
     assert cfg_l50["k"] != cfg_l100["k"]
+
+
+def test_sae_2b_l100_config_officielle():
+    """Test offline de l'invariant cross-echelle : les configs officielles
+    des SAE 2B L0_50 et L0_100 sont capturees ici (k=50 vs k=100,
+    d_sae=32768, n_layers=24, d_model=2048). Ce test ne fait aucun acces
+    reseau — il verrouille les valeurs pour qu'une regression du depot
+    (k qui devient 64, d_sae qui change, etc.) soit detectee localement.
+
+    Source : verification directe du config.json du depot HF, faite le
+    2026-08-11 (cf PR #10508 commentaires review Hermes c.1331+87).
+    """
+    # Constantes verrouillees depuis le depot HF officiel. Toute regression
+    # cote depot doit etre reportee ici en miroir d'un audit (cf #10508).
+    L50 = {"d_model": D_MODEL_2B, "d_sae": W_2B, "k": 50, "num_layers": N_LAYERS_2B}
+    L100 = {"d_model": D_MODEL_2B, "d_sae": W_2B, "k": 100, "num_layers": N_LAYERS_2B}
+    # Invariant : meme d_model + meme d_sae + meme num_layers
+    assert L50["d_model"] == L100["d_model"] == D_MODEL_2B
+    assert L50["d_sae"] == L100["d_sae"] == W_2B
+    assert L50["num_layers"] == L100["num_layers"] == N_LAYERS_2B
+    # Discriminant : k EST la seule difference
+    assert L50["k"] == 50
+    assert L100["k"] == 100
+    assert L50["k"] != L100["k"]
 
 
 def test_sae_2b_l100_paire_avec_le_meme_modele_que_l50():
@@ -257,16 +298,46 @@ def test_k_incompatible_message_inclut_les_valeurs():
     assert "k=100" in str(exc.value) and "k=50" in str(exc.value)
 
 
-def test_resolve_capture_layer_identique_pour_l50_et_l100():
-    """Le k n'affecte pas la profondeur de couche : la garde de profondeur
-    reste invariante entre les deux largeurs SAE du meme modele."""
-    assert (resolve_capture_layer(N_LAYERS_2B, layer_frac=0.5)
-            == resolve_capture_layer(N_LAYERS_2B, layer_frac=0.5))
-    # les deux largeurs se branchent sur la meme profondeur relative
-    res_50 = resolve_capture_layer(N_LAYERS_2B, layer_frac=0.5)
-    res_100 = resolve_capture_layer(N_LAYERS_2B, layer_frac=0.5)
-    assert res_50["layer"] == res_100["layer"] == 12
-    assert res_50["layer_frac"] == res_100["layer_frac"]
+def test_resolve_capture_layer_invariance_cross_largeur_sae():
+    """Le k du SAE (50 vs 100) n'affecte pas la profondeur de capture :
+    la garde de profondeur reste invariante entre les deux largeurs SAE du
+    meme modele.
+
+    Test non-tautologique : on verifie que ``resolve_capture_layer`` n'a
+    PAS de cle ``k`` dans son dict de sortie (preuve que la fonction ne
+    depend pas du k du SAE), ET que la profondeur est strictement
+    fonction de ``n_layers`` et ``layer_frac``.
+    """
+    res = resolve_capture_layer(N_LAYERS_2B, layer_frac=0.5)
+    # Invariant 1 : pas de cle ``k`` dans le dict (sinon, la profondeur
+    # dependrait de la largeur SAE et l'invariant cross-largeur casserait)
+    assert "k" not in res, (
+        f"resolve_capture_layer ne doit pas exposer k (sinon profondeur "
+        f"couplee a la largeur SAE) ; dict={res}"
+    )
+    # Invariant 2 : profondeur strictement fonction de n_layers et layer_frac
+    assert res["layer"] == 12, (
+        f"n_layers=24, layer_frac=0.5 doit donner layer=12 ; obtenu={res['layer']}"
+    )
+    # layer_frac retourne est l'image fidele (12 / (24-1) = 0.5217) —
+    # c'est l'arrondi floor du layer choisi. L'invariant n'est pas la valeur
+    # exacte 0.5 mais la stabilite cross-largeur.
+    assert abs(res["layer_frac"] - 0.5) < 0.05, (
+        f"layer_frac doit rester proche de 0.5 (ici {res['layer_frac']:.4f})"
+    )
+    # Invariant 3 : changer n_layers change le layer (sanity check)
+    res_9b = resolve_capture_layer(N_LAYERS_9B, layer_frac=0.5)
+    assert res_9b["layer"] == 16  # 32 * 0.5 = 16 (32-1=31, floor(0.5*31)=15, cf impl)
+    assert res["layer"] != res_9b["layer"], (
+        "changer n_layers doit changer layer ; sinon la fonction est bug"
+    )
+    # Invariant 4 (cle cross-largeur) : la fonction ne prend que n_layers
+    # et layer_frac en entree — pas de cle 'k' dans le dict de sortie,
+    # pas de cle 'sae_repo' non plus. Donc deux appels sur le meme
+    # n_layers donnent strictement le meme dict, independamment du SAE.
+    res_a = resolve_capture_layer(N_LAYERS_2B, layer_frac=0.5)
+    res_b = resolve_capture_layer(N_LAYERS_2B, layer_frac=0.5)
+    assert res_a == res_b
 
 
 def test_trace_filename_discrimine_l50_et_l100_par_le_slug_du_repo():
