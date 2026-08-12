@@ -111,9 +111,9 @@ This is a property, not structure — constancy is a proposition.
 -/
 
 -- A sheaf is constant if it is in the essential image of constantSheaf.
--- The predicate `CategoryTheory.Sheaf.IsConstant J F` is used directly
--- (no local abbrev, which shadows the Mathlib class name and blocks
--- instance synthesis — lesson c.1331+104-L1 ★ post-fix CI FAIL).
+-- The predicate `Sheaf.IsConstant J F` is used directly (no local abbrev,
+-- which shadows the Mathlib class name and blocks instance synthesis —
+-- lesson c.1331+104-L1 ★ post-fix CI FAIL).
 
 -- If F is constant, it lies in the essential image of constantSheaf.
 

@@ -107,9 +107,9 @@ C'est une propriété, non une structure — la constance est une proposition.
 -/
 
 -- Un faisceau est constant s'il est dans l'image essentielle de constantSheaf.
--- Le prédicat `CategoryTheory.Sheaf.IsConstant J F` est utilisé directement
--- (pas d'abbrev locale, qui shadow le nom de classe Mathlib et bloque la
--- synthèse d'instance — leçon c.1331+104-L1 ★ post-fix CI FAIL).
+-- Le prédicat `Sheaf.IsConstant J F` est utilisé directement (pas d'abbrev
+-- locale, qui shadow le nom de classe Mathlib et bloque la synthèse
+-- d'instance — leçon c.1331+104-L1 ★ post-fix CI FAIL).
 
 -- Si F est constant, il se trouve dans l'image essentielle de constantSheaf.
 
