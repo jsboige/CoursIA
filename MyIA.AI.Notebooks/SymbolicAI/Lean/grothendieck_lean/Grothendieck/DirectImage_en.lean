@@ -185,15 +185,17 @@ theorem pushforward_map_comp {X Y : Scheme.{u}} (f : X ⟶ Y)
 /-- Bridge: the `pullback f` functor preserves identities. Structure field
     `Functor.map_id`. Dual of `pushforward_map_id`. -/
 theorem pullback_map_id {X Y : Scheme.{u}} (f : X ⟶ Y) (G : Y.Modules) :
-    (pullback f).map (𝟙 G) = 𝟙 ((pullback f).obj G) :=
-  (pullback f).map_id G
+    (pullback f : Y.Modules ⥤ X.Modules).map (𝟙 G) =
+      𝟙 ((pullback f : Y.Modules ⥤ X.Modules).obj G) :=
+  (pullback f : Y.Modules ⥤ X.Modules).map_id G
 
 /-- Bridge: the `pullback f` functor preserves composition of morphisms.
     Structure field `Functor.map_comp`. Dual of `pushforward_map_comp`. -/
 theorem pullback_map_comp {X Y : Scheme.{u}} (f : X ⟶ Y)
     {G H K : Y.Modules} (φ : G ⟶ H) (ψ : H ⟶ K) :
-    (pullback f).map (φ ≫ ψ) =
-      (pullback f).map φ ≫ (pullback f).map ψ :=
-  (pullback f).map_comp φ ψ
+    (pullback f : Y.Modules ⥤ X.Modules).map (φ ≫ ψ) =
+      (pullback f : Y.Modules ⥤ X.Modules).map φ ≫
+        (pullback f : Y.Modules ⥤ X.Modules).map ψ :=
+  (pullback f : Y.Modules ⥤ X.Modules).map_comp φ ψ
 
 end Grothendieck.DirectImage_en
