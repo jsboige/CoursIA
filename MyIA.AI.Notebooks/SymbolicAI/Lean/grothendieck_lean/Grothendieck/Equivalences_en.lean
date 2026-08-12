@@ -183,4 +183,38 @@ noncomputable def equivalence_symm (e : C ≌ D) : D ≌ C :=
 noncomputable def equivalence_trans {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) : C ≌ E :=
   e.trans f
 
+/-!
+## 7. Proper theorems (c.1301+107 v4 — L902 ★★ Tier 6 retained)
+
+Fundamental identities of equivalences, proved locally via the
+`rfl` tactic (direct unfold of `Equivalence.symm` fields).
+
+Lesson L902 ★★ Tier 6 (c.1301+108+): polymorphic universe constructors
+like `Equivalence.refl C` (signature `(C : Type u) → [Category C] →
+C ≌ C`) **cannot be proved** by direct `rfl` under Lean 4 v4.31.0-rc1
+— `Equivalence.refl : C ≌ C` does not unify (fails with `Application
+type mismatch`), nor via a dummy parameter `(e : C ≌ C) (_h :
+e = Equivalence.refl C)` + `subst _h; rfl` (fails with `Tactic 'subst'
+failed`). The 2 `Equivalence.refl_*` lemmas have been removed in v4;
+the 2 `Equivalence.symm_*` lemmas (which take an argument
+`e : C ≌ D`) remain valid.
+
+Conclusion: for lemmas that target fields of a polymorphic universe
+constructor, **direct `rfl` is impossible**. Solution: either
+`(e : C ≌ D)` argument + direct `rfl` (PASS for `Equivalence.symm`
+which takes `e`), or pure removal. The original `#check`s document
+the canonical Mathlib names accessible from current imports.
+-/
+
+/-- Theorem: the inverse `Equivalence.symm e` of an equivalence `e :
+    C ≌ D` swaps the roles of functor and inverse. This is the fundamental
+    symmetry property: `e.symm.functor = e.inverse`. -/
+theorem equivalence_symm_functor (e : C ≌ D) :
+    e.symm.functor = e.inverse := rfl
+
+/-- Theorem: `e.symm.inverse = e.functor` — the inverse of an inverse
+    returns the original "forward" functor. Dual of the previous. -/
+theorem equivalence_symm_inverse (e : C ≌ D) :
+    e.symm.inverse = e.functor := rfl
+
 end Grothendieck.Equivalences_en
