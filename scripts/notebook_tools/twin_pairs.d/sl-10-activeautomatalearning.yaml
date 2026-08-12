@@ -8,8 +8,10 @@
       by: myia-po-2023:CoursIA
       python_sha: fdeaf01f01084c49f4a24079d8191092609312b8
       csharp_sha: 329bc61e49b55b0261a76bb80305f29d4556d67c
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = BCL Python from-scratch (dataclasses + frozenset pour les ensembles d'etats hashables) pour L* (Angluin 1987) + MAT (Minimally Adequate Teacher) + table d'observation + oracle d'equivalence + pont Infer.NET (DFA exact a reconnaissance probabiliste). C# = BCL .NET from-scratch (`HashSet<T>` + `Dictionary<TKey,TValue>` + `List<T>`) pour L* + MAT + table d'observation + oracle d'equivalence + meme pont Infer.NET. Verdict SOTA-OK (native-both) : substance from-scratch quasi-identique des deux cotes (45 cellules, 17 code, 28 markdown, memes 9 sections, meme ordre -- c'est le twin le plus proche cellule-a-cellule de la famille SL). Idiomes framework different (dataclasses/frozenset vs HashSet/Dictionary) mais la logique algorithmique est equivalente. z Aucun SOTA externe : L* from-scratch + Infer.NET sont les outils SOTA canoniques (pas de remplacement SOTA installable). Aucune asymetrie de couverture. `parity_level: native-both` preserve."
   known_differences:
     - "Socle commun : apprentissage actif d'automates -- algorithme L* d'Angluin, modele MAT (Minimally Adequate Teacher), table d'observation, oracle d'equivalence, pont vers Infer.NET (DFA exact a reconnaissance probabiliste)."
     - "Structure quasi-identique : 45 cellules les deux cotes (17 code, 28 markdown), memes 9 sections dans le meme ordre -- c'est le twin le plus proche cellule-a-cellule de la famille SL (parite native-both)."
-    - "Implementation from-scratch les deux cotes (pas de librairie L* tierce) -- L*, table d'observation, oracle d'equivalence codés a la main. Aucune asymetrie de couverture."
+    - "Implementation from-scratch les deux cotes (pas de librairie L* tierce) -- L*, table d'observation, oracle d'equivalence codes a la main. Aucune asymetrie de couverture."
     - "Idiomes framework : Python (dataclasses, frozenset pour les ensembles d'etats hashables) ; C# (HashSet<T>, Dictionary). Logique algorithmique equivalente."

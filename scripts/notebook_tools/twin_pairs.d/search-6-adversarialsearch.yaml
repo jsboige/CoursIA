@@ -14,6 +14,9 @@
       csharp_sha: a1d30fc3fabf281b7f7297e79718c7a63c2c1de4
       content_python_sha: b58c19f3a58a465842be9ef7c2c68f06146edef0353a163966f3b63acdd8aefe
       content_csharp_sha: 7a7860990ddbaea6bbe17c1d17c72526a8cfec74a74edfc124fd78451fc52ec4
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: |
+    Python = BCL-style from-scratch pedagogical (numpy/matplotlib + dict/list for minimax/alpha-beta, transposition table). C# = from-scratch BCL (System.Collections.Generic Dictionary/Stack for game tree, no NuGet SOTA). Both cote from-scratch on the coeur algorithmique (minimax, alpha-beta, iterative deepening) -- no third-party solver invoked, no SOTA bridge applicable (minimax is the sujet, pas le sub-strat). Verdict RECOVERABLE-LOCAL (both from-scratch pedagogical assume).
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle commun : jeux a somme nulle a information parfaite (Tic-Tac-Toe/Morpion), minimax, elagage alpha-beta, iterative deepening, tables de transposition."

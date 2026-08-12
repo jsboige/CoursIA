@@ -155,22 +155,55 @@ def issue_detail(repo: str, number: int) -> dict:
     }
 
 
-def cross_refs_via_search(repo: str, number: int) -> list[dict]:
-    """Cross-referenced PRs with merged_at, via the search/issues endpoint.
+def _parse_cross_ref_events(events: list[dict]) -> list[dict]:
+    """Extract ``(pr_number, merged_at)`` refs from raw cross-referenced events.
 
-    The timeline endpoint is paginated and returns a stream that is awkward to
-    parse in one shot; the search endpoint returns a clean JSON object of items
-    that reference ``#N`` and are PRs. We then fetch each PR's ``merged_at``.
+    Pure (network-free) -- factored out of :func:`cross_refs_via_timeline` so the
+    GitHub payload-shape handling is unit-tested independently of the network.
+    Each event's ``source.issue`` carries a ``pull_request`` sub-object iff the
+    referrer is a PR; ``merged_at`` on that sub-object is set iff the PR merged.
+    Non-PR refs (an *issue* citing this one) yield ``merged_at: None`` and are
+    ignored downstream by :func:`classify`, which counts only refs with a merge.
+    Events missing a source issue number are dropped.
     """
-    # search/issues finds issues+PRs whose text mentions #N.
-    q = f"repo:{repo} is:pr is:merged #{number}"
-    items = _gh_json(["api", "-X", "GET", "search/issues", "-f", f"q={q}", "-q", ".items"])
-    items = items or []
     refs = []
-    for it in items:
-        pr = it.get("pull_request") or {}
-        refs.append({"pr_number": it.get("number"), "merged_at": pr.get("merged_at")})
+    for ev in events or []:
+        src = (ev.get("source") or {}).get("issue") or {}
+        if src.get("number") is None:
+            continue
+        pr = src.get("pull_request") or {}
+        refs.append({"pr_number": src["number"], "merged_at": pr.get("merged_at")})
     return refs
+
+
+def cross_refs_via_timeline(repo: str, number: int) -> list[dict]:
+    """Cross-referenced PRs with merged_at, via the issue **timeline** endpoint.
+
+    The timeline endpoint (``repos/{owner}/{repo}/issues/{n}/timeline``) is
+    **repo-scoped**, so it answers reliably to the ``GITHUB_TOKEN`` that the CI
+    cron carries. The ``search/issues`` endpoint used in the first cut is a
+    *global* search and silently returns an empty result set (HTTP 200,
+    ``total_count: 0``) under the soft rate-limit / scoped-token states the
+    daily cron hits -- causing the **64 -> 0 candidate regression** measured
+    2026-08-12 (CI run 31568734417 returned ``candidate: 0`` where the manual
+    dry-run with a full-scope token found 64). The timeline endpoint does not
+    have that failure mode: it is the same auth path as ``issue view``.
+
+    ``gh api --paginate`` walks the Link headers and merges the raw timeline
+    into ONE clean JSON array. A ``-q`` filter is deliberately NOT used here:
+    with ``--paginate``, gh applies the query **per page** and prints each
+    page's result separately (e.g. ``[page1 events][page2 events]``), which is
+    invalid JSON and made ``json.loads`` raise ``Extra data`` on the largest
+    timelines (#10488, 102 events) -- silently SKIPping them as no_delivery.
+    The event-type filter is applied in Python instead. :func:`_parse_cross_ref_events`
+    then extracts the PR number and merge timestamp from each event's
+    ``source.issue`` payload.
+    """
+    events = _gh_json([
+        "api", f"repos/{repo}/issues/{number}/timeline", "--paginate",
+    ])
+    xrefs = [ev for ev in (events or []) if ev.get("event") == "cross-referenced"]
+    return _parse_cross_ref_events(xrefs)
 
 
 def ensure_label(repo: str, name: str, dry_run: bool) -> None:
@@ -214,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--label", default=LABEL_DEFAULT, help=f"label name (default: {LABEL_DEFAULT})")
     ap.add_argument("--limit", type=int, default=0, help="cap issues processed (0 = all)")
     ap.add_argument("--sleep", type=float, default=1.5,
-                    help="seconds between issues (search API is rate-limited ~30 req/min)")
+                    help="seconds between issues (timeline API is REST-rate-limited)")
     args = ap.parse_args(argv)
 
     repo = args.repo or (subprocess.run(
@@ -235,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
     for issue in issues:
         number = issue["number"]
         try:
-            refs = cross_refs_via_search(repo, number)
+            refs = cross_refs_via_timeline(repo, number)
             detail = issue_detail(repo, number)
         except Exception as exc:  # network/gh hiccup -- skip, do not crash the sweep
             print(f"  #{number:<6} SKIP  ({exc})")

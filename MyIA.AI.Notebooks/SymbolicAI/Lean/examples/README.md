@@ -7,6 +7,7 @@ Fichiers `.lean` autonomes à usage pédagogique, exécutés via le kernel Jupyt
 
 - **Type** : Fichiers autonomes (pas de lakefile — exécutés cellule par cellule via le kernel Jupyter)
 - **Compte de sorry** : 2 (dans `llm_assisted_proof.lean` — exemple pédagogique intentionnel)
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — **5 modules .lean FR canonique** + **5 siblings `*_en.lean` miroirs sur `main`** (`basic_logic_en.lean`, `llm_assisted_proof_en.lean`, `mathlib_examples_en.lean`, `quantifiers_en.lean`, `tactics_demo_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques — vérifié par `scripts/lean/check_i18n_siblings.py` : **6/6 paires byte-identical, 0 drift, 0 orphan**.
 
 ## Fichiers
 

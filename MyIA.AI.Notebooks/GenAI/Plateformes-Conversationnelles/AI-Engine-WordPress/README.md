@@ -107,6 +107,18 @@ mesurée par un taux de fuite — et (2) **l'accident de réindexation** —
 voisin. Déterministe, numpy, sans clé ni réseau ; fixture synthétique à 100 %
 (Maison Valmont).
 
+Un notebook compagnon [`auditer-un-formulaire-conditionnel.ipynb`](auditer-un-formulaire-conditionnel.ipynb)
+traite la feature **AI Forms** — l'une des deux fonctionnalités GenAI cœur
+qui n'avait ni section de parcours ni notebook. Thèse : *un formulaire à
+logique de branchement est une machine à états implicite*. Le notebook
+construit un formulaire de soumission synthétique (Maison Valmont) à champs
+conditionnels et **énumère les chemins terminaux atteignables** : sept
+champs engendrent treize états distincts, dont près des deux tiers
+déclenchent un appel LLM, et un champ déclaré n'est visible sur aucun
+chemin (champ mort). La leçon : le schéma n'est pas le formulaire — les
+trois grandeurs (chemins, coût LLM, champs morts) sont émergentes. stdlib
+pure, aucune clé, aucun réseau.
+
 ---
 
 ## Sections
@@ -224,6 +236,8 @@ attendues.
   les deux sens du fil MCP, chevauchement cross-catalogue et risque de double-écrit
 - [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb) —
   fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
+- [`auditer-un-formulaire-conditionnel.ipynb`](auditer-un-formulaire-conditionnel.ipynb) —
+  AI Forms conditionnelles comme machine à états, énumération des chemins et champs morts
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
