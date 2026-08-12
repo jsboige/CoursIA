@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "C# branche IKVM 8.15.0 + `tweety-mln.dll` (DLL source-recompilee, tracked sur disque) + 43 refs `org.tweetyproject.*` actifs (29 cellules avec `using org.tweetyproject.logics.{mln,fol,commons}.*` explicite). MAIS : le reasoner Java `org.tweetyproject.logics.mln.reasoner.ApproximateNaiveMlnReasoner` est bloque par un bug IKVM 8.15 sur le MCMC (cell 6 documente l'erreur). Pour le cas trivial 1-atome MLN `{<P(a),w>}`, le C# contourne en factorisant la fonction de partition analytiquement : Z(w) = exp(w)+1, P(P(a)) = sigma(w) = exp(w)/(1+exp(w)) (calcule exact via Math.Exp, PAS un workaround degrade au sens de sota-not-workaround.md -- la forme fermee est le resultat mathematiquement exact pour ce domaine). Python branche JPype + `from org.tweetyproject.logics.mln.syntax import MlnFormula, MarkovLogicNetwork` + meme moteur Java, et utilise `ApproximateNaiveMlnReasoner` directement pour le cas general N-atomes (deterministe sur ce subset, cf audit 2026-08-05). Verdict RECOVERABLE-LOCAL : la lib est invocable (les classes syntax sont chargees et instantiatees des deux cotes) MAIS le reasoner C# est partiellement bloque (MCMC multi-atomes). Action : mise a jour IKVM vers 8.16+ ou portage vers une autre implementation MCMC (e.g., `org.tweetyproject.logics.mln.reasoner.SatNaiveMlnReasoner` qui prend un SAT solver en argument, contourne possiblement le bug MCMC IKVM). Verdict distinct de INTRINSIC : le pipeline est fonctionnel pour le cas trivial 1-atome, le cas general est juste gêté."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -32,6 +34,12 @@
       csharp_sha: cfbb0578df2cf99d6f81afb28fed2eb491cc810f
       content_python_sha: dffc5c0672b52e4ad26a94825d7bcfa293a04b3b1f977f4edf9dd03187bdf9de
       content_csharp_sha: ef670bb7bb3afda89ee38bd24540b03b07cc77a52d9175ae12416b69e647a251
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 0b8424146fabc62f85057308ae843ad0a64d16cd40bd12848acabe9af3dc2ac7
+      csharp_sha: 75d22e6533028f9317cec58f7b1becfa9dd8da1449196b80e45f0bf34f4ec3bb
+      content_python_sha: d4e38d3b5e42c8532d5abbc8723b988d07f409370befce62f1d7c848c197a1d9
+      content_csharp_sha: c61158dd1feeeb3f0669fc3ab9b3a155b34318c1b2a3822d571ecb07ad53fce2
   known_differences:
     - "Rebaseline 2026-08-05 : cote Python deplace par re-alignement du tableau de balayage cell[12] sur la sortie commitee cell[11] (arrondis ~0.58 -> ~0.60 etc.). Edition markdown-only, parite semantique inchangee (aucune cellule code / sortie / exec_count touchee) ; cote C# non modifie. NOTE (verdict firsthand #9466 volet 1) : le reasoner ApproximateNaiveMlnReasoner est DETERMINISTE sur ce domaine (DefaultSubsetIterator, 2^N <= 200000 atomes, enumeration exhaustive) -- l hypothese MCMC-non-seede de #9466 volet(1) est INVALIDEE (delta=0 sur 2 runs cross-JVM). Les marginales sont reproductibles a 4 decimales : ce re-alignement est PERMANENT, non cyclique (pas de derive recurrente)."
     - "Rebaseline 2026-08-05 : cote C# deplace par remplacement des 4 WriteLine litteraux de cell[11] (effet du poids w sur P(a)) par le calcul EXACT en forme fermee sigma(w)=exp(w)/(1+exp(w)) via Math.Exp (decision Prong-A #9466/#3801 : le reasoner MCMC ApproximateNaiveMlnReasoner reste bloque par le bug IKVM 8.15, mais le MLN trivial {<P(a),w>} a 1 atome admet une factorisation analytique exacte -- pas de workaround degrade, pas de litteral faux w=0.5->0.5). Edition code cell[11] (re-executed, ec=4, outputs reels) + markdown cells[6]/[12] (correction formule, note forme fermee). Parite semantique inchangee (aucune autre cellule touchee) ; cote Python non modifie (python_sha 0b35a8ae herite de #9459)."

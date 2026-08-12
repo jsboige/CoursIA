@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (argumentation abstraite de Dung + semantique CF2 + 11 notions d'equivalence) : C# branche IKVM 8.15.0 avec `tweety-dung.dll` + `tweety-rpcl.dll` (DLLs source-recompilees selon pattern c.220 IKVM causal rebuild, tracked sur disque) + 30 refs `org.tweetyproject.*` (cell 26 SccCF2Reasoner cell 28 11 notions equivalence via Assembly.LoadFrom + reflection IKVM sur les types exposes par les DLLs shade). Python branche JPype + `from org.tweetyproject.arg.dung.syntax import DungTheory, Argument` + meme moteur Java. Verifie firsthand (c.229, 2026-08-12, po-2023:CoursIA-2) : DLLs source compilees (pas bytecode 59 maven-shade), C# `Console.WriteLine` confirme `DLL tweety-dung chargee : ... v1.30.0`, Python `jpype.getDefaultJVMPath()` + init JVM. NB : le C# N'UTILISE PAS de `using org.tweetyproject` explicite mais instancie les types via reflection `Assembly.LoadFrom(...).GetType(...)` (pattern IKVM 8.x : IKVM traduit les packages Java en types .NET, accessibles par reflection sans `using` direct). Pont IKVM-bytecode .NET vs JPype-JVM-runtime sur le meme moteur Java."
   audits:
     - date: "2026-08-04"
       by: myia-po-2026:CoursIA
@@ -14,6 +16,16 @@
       csharp_sha: 1cb02535990e166e31594dd2d5b852dd04877aff
       content_python_sha: e7b00864506b27c1b7840f0b8b6fabc792d256b0607d7b01c18ed3da9c7f70f1
       content_csharp_sha: 2b766fb4ebc5f6c7b97d4acf0996cf2b023b46063778f938737d648ac15e37a6
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 03fa7063a773b6600aeb75afd2484679948f385945e75cd653406b60a6f7dfd7
+      csharp_sha: 31513f66fedbb66fedea302d337d7512dbe2fc4ed47a0939b7acb04d1bf2727e
+      content_python_sha: 646e471c53ff285cce9d30a5bb3fe1ada7e1fe1e4f8899ea13caee27800fe3bc
+      content_csharp_sha: bc6473837073aa04db031416adfa55713b3770cae38f6dd05c6655e3c98354d5
+      modules_attested_sota_ok:
+        - arg.dung.reasoner.SccCF2Reasoner (cell 26 : decompose en SCC, role sur cycle impair 5-args a->b->c->d->e->a + e->f, retourne des extensions CF2)
+        - arg.dung.equivalence.11 notions (cell 28 : Syntactic/Strong(CO,GR)/Standard(PR,CO)/StrongExp(GR)/NormalExp(CO)/WeakExp(CO)/LocalExp(GR)/NormalDel(CO)/Serialisation(CO) sur AF1<=>AF3 = True pour toutes, AF1<=>AF2 = False pour Syntactic)
+        - arg.dung.syntax.DungTheory + Argument ctor(String) (le seul ctor public IKVM, package-private EmptyArgument contourne)
   known_differences:
     - "Socle commun : argumentation abstraite de Dung (semantiques grounded/preferred/stable) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-dung.dll\"`). Python via JPype (`from java.util import Collection, HashSet`). Meme moteur Dung de TweetyProject."
