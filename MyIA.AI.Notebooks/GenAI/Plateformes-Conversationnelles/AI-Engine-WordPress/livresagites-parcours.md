@@ -73,6 +73,16 @@ Deux conséquences pratiques :
    distincte (voir Parcours 3). Les deux sens du protocole ne se
    configurent pas au même endroit — confusion fréquente.
 
+> **Notebook compagnon.** [`consommer-vs-exposer-le-mcp.ipynb`](consommer-vs-exposer-le-mcp.ipynb)
+> rend exécutable cette distinction : il monte les **deux côtés du fil** sur un
+> même fixture synthétique (Maison Valmont) — un mini-serveur MCP exposé et un
+> mini-client MCP consommé — et mesure le chevauchement fonctionnel
+> cross-catalogue. La question opérationnelle qu'il formalise : *faut-il
+> brancher ce serveur MCP externe, ou ses outils sont-ils déjà couverts par le
+> catalogue interne ?* Indice de Jaccard sur les signatures `(verbe, cible)`,
+> avec un accent sur le sous-ensemble écriture (le double-écrit, risque réel
+> même sous un chevauchement global faible).
+
 ---
 
 ## Parcours 1 — Copilot pour l'éditeur WordPress
