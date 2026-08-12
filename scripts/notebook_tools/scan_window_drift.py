@@ -224,11 +224,23 @@ def classify_notebook(path: Path) -> dict[str, Any]:
         return rec
 
     cells = nb.get("cells", []) or []
-    code_cells = [
-        (i, "".join(c.get("source", [])))
-        for i, c in enumerate(cells)
-        if c.get("cell_type") == "code"
-    ]
+    code_cells = []
+    for i, c in enumerate(cells):
+        if c.get("cell_type") != "code":
+            continue
+        src = c.get("source")
+        # Defensive: tolerate `source: None` (one source-like field was None) and
+        # `source: [None, "x = 1\n"]` (list with None entries). nbformat spec
+        # says source is a string OR a list of strings; some notebooks produced
+        # by older tooling violate it. Without this guard the tree-scan
+        # crashes on a TypeError, masking the whole tree (#10230 follow-up).
+        if src is None:
+            src_text = ""
+        elif isinstance(src, list):
+            src_text = "".join(s for s in src if isinstance(s, str))
+        else:
+            src_text = src if isinstance(src, str) else ""
+        code_cells.append((i, src_text))
     full_code = "\n".join(src for _, src in code_cells)
 
     has_qc_api = bool(RE_QC_API.search(full_code))

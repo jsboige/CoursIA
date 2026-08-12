@@ -225,3 +225,75 @@ def test_cli_check_exit_one_on_drift(tmp_path):
     assert r.returncode == 1
     payload = json.loads(r.stdout)
     assert payload["records"][0]["verdict"] == "DRIFT"
+
+
+# --- Toleration notebooks partiellement malformes (defensive) ----------
+
+def test_tolerate_source_none(tmp_path):
+    """Un notebook avec `source: None` ne doit PAS faire crasher le scan.
+
+    Bug trouve firsthand ce cycle (#10230 follow-up) : le tree-scan crashait
+    sur tout notebook dont une cellule code avait `source: None` au lieu de
+    `[]` ou d'une liste de chaines. Sans garde defensive, `"".join(None)`
+    leve `TypeError: can only join an iterable`, et le directory-scan s'arrete
+    net -> acceptance "lancer sur l'arbre QC entier" non couverte.
+    """
+    p = tmp_path / "nb.ipynb"
+    p.write_text(json.dumps({
+        "cells": [
+            {"cell_type": "code", "source": None, "metadata": {}, "outputs": []},
+        ],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }))
+    r = classify_notebook(p)
+    assert r["error"] is None
+    assert r["verdict"] == "N-A"  # pas d'API QC dans une source vide
+
+
+def test_tolerate_source_list_with_none_entries(tmp_path):
+    """Une cellule `source: [None, 'x = 1\\n']` ne doit PAS crasher non plus.
+
+    nbformat spec autorise `string | list[string]` ; en pratique on trouve
+    des listes mixtes (None + str) sur des notebooks generes par d'anciens
+    pipelines. Le filtre `s for s in src if isinstance(s, str)` tombe en
+    cascade sur la liste et preserve les chaines exploitables.
+    """
+    p = tmp_path / "nb.ipynb"
+    p.write_text(json.dumps({
+        "cells": [
+            {"cell_type": "code", "source": [None, "qb = QuantBook()\n"],
+             "metadata": {}, "outputs": []},
+        ],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }))
+    r = classify_notebook(p)
+    assert r["error"] is None
+    # qb = QuantBook() matche l'API QC -> verdict != N-A
+    assert r["verdict"] in {"DRIFT", "PINNED", "INDÉTERMINÉ"}
+
+
+def test_tolerate_mixed_cells_in_tree(tmp_path):
+    """Un repertoire mixte (notebooks valides + cellules None-source) scanne
+    sans crash et produit un record par notebook (#10230 follow-up acceptance
+    'lancer sur l'arbre QC entier')."""
+    # 3 notebooks : valide + None-source + list-None-source
+    for name, src in [
+        ("a.ipynb", "qb = QuantBook()\nh = qb.History('SPY', timedelta(365), Resolution.Daily)"),
+        ("b.ipynb", None),  # source: None
+        ("c.ipynb", [None, "qb = QuantBook()\n"]),
+    ]:
+        if isinstance(src, str):
+            cells = [{"cell_type": "code", "source": src.splitlines(keepends=True),
+                      "metadata": {}, "outputs": []}]
+        else:
+            cells = [{"cell_type": "code", "source": src, "metadata": {}, "outputs": []}]
+        (tmp_path / name).write_text(json.dumps({
+            "cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+        }))
+
+    # Simulate tree-scan : itere, classifie chacun
+    results = [classify_notebook(p) for p in sorted(tmp_path.rglob("*.ipynb"))]
+    assert len(results) == 3
+    # Aucun crash, tous ont un verdict
+    assert all(r["error"] is None for r in results)
+    assert all(r["verdict"] is not None for r in results)
