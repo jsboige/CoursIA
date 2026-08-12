@@ -1432,3 +1432,368 @@ def test_blocked_message_includes_paths_narrowing_hint(capsys):
     err = capsys.readouterr().err
     assert "paths:" in err
     assert "scope-narrowing" in err
+
+
+# --- brace-group path scopes (#10597) ----------------------------------------
+#
+# A `paths:` clause written in brace syntax -- `search-{6,8,9}-*.yaml`, the
+# natural form several lanes already used -- was silently EPIC-WIDE: the naive
+# comma split fragmented it into `["search-{6", "8", "9}-*.yaml"]`, none of
+# which fnmatch ever matches. Two fixes: the splitter is now brace-aware, and
+# each brace group expands to sibling globs. These tests pin the #10597
+# reproduction and the edge cases.
+
+
+def test_paths_clause_brace_aware_split():
+    # The reproduction from #10597: a brace group must survive the comma
+    # split as ONE pattern, then expand to three sibling globs.
+    line = ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml")
+    got = clc._extract_paths_clause(line)
+    assert got == [
+        "scripts/notebook_tools/twin_pairs.d/search-6-*.yaml",
+        "scripts/notebook_tools/twin_pairs.d/search-8-*.yaml",
+        "scripts/notebook_tools/twin_pairs.d/search-9-*.yaml",
+    ]
+
+
+def test_paths_clause_brace_scope_now_blocks():
+    # Before #10597 the expanded scope was `["search-{6", "8", "9}-*.yaml"]`
+    # and _path_matches_any returned False for the very file the claim aimed
+    # at -- the claim was silently non-blocking. After the fix the intended
+    # file intersects and an out-of-group file still does not.
+    line = ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml")
+    scope = clc._extract_paths_clause(line)
+    assert clc._path_matches_any(
+        ["scripts/notebook_tools/twin_pairs.d/search-6-astar.yaml"], scope)
+    assert not clc._path_matches_any(
+        ["scripts/notebook_tools/twin_pairs.d/app-20-sudokubenchmark.yaml"],
+        scope)
+
+
+def test_paths_clause_brace_two_separate_globs_each_expand():
+    # Two comma-separated globs, each carrying its own single brace group
+    # (the fleet form): split brace-aware, then each group expands. Nested
+    # groups are NOT expanded (no scope in the fleet nests them) -- the
+    # split simply keeps the group intact so the scope stays readable.
+    line = ("[CLAIMED] lane X:CoursIA -- "
+            "paths: twin_pairs.d/app-{17,18}-*.yaml, twin_pairs.d/search-{6,8}-*.yaml")
+    got = clc._extract_paths_clause(line)
+    assert got == [
+        "twin_pairs.d/app-17-*.yaml",
+        "twin_pairs.d/app-18-*.yaml",
+        "twin_pairs.d/search-6-*.yaml",
+        "twin_pairs.d/search-8-*.yaml",
+    ]
+
+
+def test_paths_clause_mixed_brace_and_plain():
+    # A clause mixing brace groups and plain globs keeps both.
+    line = ("[CLAIMED] lane X:CoursIA -- "
+            "paths: scripts/check_lane_claim.py, twin_pairs.d/{6,8}-*.yaml")
+    got = clc._extract_paths_clause(line)
+    assert got == [
+        "scripts/check_lane_claim.py",
+        "twin_pairs.d/6-*.yaml",
+        "twin_pairs.d/8-*.yaml",
+    ]
+
+
+def test_paths_clause_brace_still_drops_empty_fragments():
+    # Stray commas outside braces keep the existing drop-empty behaviour.
+    line = ("[CLAIMED] lane X:CoursIA -- "
+            "paths: a.py, , b.py, ")
+    assert clc._extract_paths_clause(line) == ["a.py", "b.py"]
+
+
+def test_paths_match_brace_in_paths_mode():
+    # `--paths` mode accepts brace syntax too (a worker pastes the fs-shell
+    # glob they mean). Full-path and basename anchors both apply.
+    assert clc._path_matches(
+        "scripts/notebook_tools/twin_pairs.d/search-8-mcts.yaml",
+        ["scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml"])
+    assert not clc._path_matches(
+        "scripts/notebook_tools/twin_pairs.d/search-7-mcts.yaml",
+        ["scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml"])
+    assert clc._path_matches(
+        "anywhere/search-8-mcts.yaml", ["search-{6,8,9}-*.yaml"])
+
+
+def test_paths_match_brace_no_group_is_unchanged():
+    # Patterns without braces are handled exactly as before.
+    assert clc._path_matches("scripts/foo.py", ["scripts/*.py"])
+    assert clc._expand_brace_groups("plain.py") == ["plain.py"]
+    assert clc._expand_brace_groups("a{}.lean") == ["a{}.lean"]
+
+
+def test_paths_clause_brace_scope_disjoint_across_claims(capsys):
+    # Two lanes claim disjoint BRACE scopes on the same issue: neither's
+    # files fall in the other's (expanded) scope, so neither blocks the
+    # other -- the #10419 disjointness guarantee holds through the brace
+    # expansion (#10597).
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
+                "paths: twin_pairs.d/gametheory-{7,8,9}-*.yaml",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
+                "paths: twin_pairs.d/app-{17,18,19}-*.yaml",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA")
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert '"blocking_lanes": []' in out
+
+
+# --- #10597 hardener -- unparseable scope lifted to EPIC-WIDE ----------------
+#
+# The base fix (#10604, commit `0a934eab`) introduced brace-aware splitting
+# and brace-group expansion. After expansion, a pattern STILL containing `{`
+# or `}` is fnmatch-garbage: fnmatch knows `*` `?` `[seq]` `[!seq]` -- NOT
+# `{a,b}`. The safe read is to lift such a scope back to EPIC-WIDE (in case
+# of doubt, block rather than silently clear). Without this hardener a
+# `paths: foo-{a,b-*.yaml` (unclosed brace) silently parses to a glob list
+# that matches nothing, leaving the lane UNBLOCKED -- the #9764-style defect
+# this very issue set out to prevent.
+#
+# These tests pin BOTH the parse-layer witness (the `unparseable_scope` list
+# populated on the event) AND the check-layer enforcement (the same lane is
+# blocked when another lane calls without --paths, despite the unparseable
+# scope "claiming" to be narrow).
+
+
+def test_unparseable_scope_in_residual_braces():
+    """`_unparseable_scope_in` returns the subset of `parts` that still
+    contain `{` or `}` -- the witness list that the reducer/check use to
+    lift the claim to epic-wide (#10597 hardener)."""
+    assert clc._unparseable_scope_in(["scripts/check_lane_claim.py"]) == []
+    # Pattern with an unclosed brace: fnmatch cannot read `{a,b-*`.
+    parts = ["scripts/{a,b-*.yaml"]
+    got = clc._unparseable_scope_in(parts)
+    assert got == ["scripts/{a,b-*.yaml"]
+    # Mixed: parseable + unparseable -> only the unparseable comes back.
+    parts = ["scripts/check_lane_claim.py", "scripts/{a,b-*.yaml"]
+    got = clc._unparseable_scope_in(parts)
+    assert got == ["scripts/{a,b-*.yaml"]
+    # Empty list -> empty witness.
+    assert clc._unparseable_scope_in([]) == []
+    assert clc._unparseable_scope_in(None) == []
+
+
+def test_parse_claim_event_attaches_unparseable_scope_field():
+    """The event surfaces `unparseable_scope` so the check layer can lift
+    the claim without re-parsing. Reproducer of the #10597 hardener: the
+    line declares an unclosed brace; without the new field, the only
+    survivors of parse are the original (broken) globs."""
+    line = ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/{a,b-*.yaml")
+    ev = clc.parse_claim_event(comment(line, "2026-08-12T11:00:00Z"))
+    assert ev is not None
+    assert ev.paths == ["scripts/{a,b-*.yaml"]
+    # The witness list names the unparseable pattern verbatim so the audit
+    # surface is directly actionable (the lane reads it and reissues).
+    assert ev.unparseable_scope == ["scripts/{a,b-*.yaml"]
+
+
+def test_parse_claim_event_unparseable_scope_empty_when_clean():
+    """Regression -- a well-formed brace scope yields an empty
+    `unparseable_scope`. The hardener must NOT lift well-formed claims."""
+    line = ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/search-{6,8,9}-*.yaml")
+    ev = clc.parse_claim_event(comment(line, "2026-08-12T11:00:00Z"))
+    assert ev is not None
+    assert ev.paths == [
+        "scripts/search-6-*.yaml",
+        "scripts/search-8-*.yaml",
+        "scripts/search-9-*.yaml",
+    ]
+    assert ev.unparseable_scope == []
+
+
+def test_filter_by_claim_scope_lifts_unparseable_to_epic_wide():
+    """CORE #10597 hardener -- control positif (rouge->vert).
+
+    `others` lane declared a scope with an unclosed brace. Without the
+    hardener, the scope parses to a glob list that matches NOTHING, so
+    `_filter_by_claim_scope` would DROP the lane (false clear -- the
+    defect that triggered #10597). With the hardener, the residual `{` in
+    `unparseable_scope` lifts the lane back to EPIC-WIDE: the lane STAYS
+    in `others`, blocking the caller.
+
+    This is the test that must NOT pass against the un-hardened base --
+    reproduce the failure on HEAD~ of the fix branch by running this
+    single test against `git checkout 0a934eab -- scripts/check_lane_claim.py`
+    and watch it return `{}` (the silent clear).
+    """
+    others = {
+        "myia-po-2024:CoursIA-2": clc.ClaimEvent(
+            lane="myia-po-2024:CoursIA-2", action="open", marker="CLAIMED",
+            created_at="2026-08-12T11:00:00Z", author="x", url=None,
+            paths=["scripts/{a,b-*.yaml"],
+            # #10597 hardener -- this list IS the witness. The base fix
+            # did not populate it (so the lane would silently clear); we
+            # attach it explicitly here to mirror what `parse_claim_event`
+            # produces after this commit.
+            unparseable_scope=["scripts/{a,b-*.yaml"],
+            intent=None,
+        ),
+    }
+    # Caller declares a SCOPED intent. Without the hardener, the lane clears
+    # (false clear). With the hardener, the lane STAYS -- epic-wide read.
+    filtered = clc._filter_by_claim_scope(
+        others, my_paths=["scripts/check_lane_claim.py"],
+        mine=None,
+    )
+    assert "myia-po-2024:CoursIA-2" in filtered, (
+        "unparseable scope was dropped from `others` -- the lane is "
+        "silently cleared despite an unparseable claim (#10597 FN)"
+    )
+
+
+def test_run_check_unparseable_scope_blocks_other_lane(capsys):
+    """End-to-end: a scoped CLAIMED with an unclosed brace BLOCKS another
+    lane checking the same issue. This pins the user-visible verdict.
+    """
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: scripts/{a,b-*.yaml",
+            "2026-08-12T11:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    # BLOCKED -- the unparseable scope lifted the lane to epic-wide.
+    assert rc == 1
+    captured = capsys.readouterr()
+    # The audit JSON names the residual brace so the lane learns to reissue.
+    assert "scripts/{a,b-*.yaml" in captured.out
+    # And the verdict itself is in stderr.
+    assert "BLOCKED" in captured.err
+
+
+def test_run_check_summary_exposes_unparseable_scope_field(capsys):
+    """The audit JSON surfaces the witness list under
+    `active_claims.<lane>.unparseable_scope` so a human reviewer (and the
+    lane that owns the malformed claim) can read the defect at a glance."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/{a,b-*.yaml, scripts/check_lane_claim.py",
+            "2026-08-12T11:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1
+    out = capsys.readouterr().out
+    # The JSON includes the structured witness list under the lane entry.
+    assert '"unparseable_scope"' in out
+    assert "scripts/{a,b-*.yaml" in out
+
+
+def test_run_check_clean_brace_scope_does_not_show_unparseable(capsys):
+    """A well-formed brace scope (the base fix's expansion) does NOT carry
+    the witness -- only true residuals do. This is the negative control
+    that pins the hardener's selectivity: it must NOT lift parses that
+    succeeded."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/search-{6,8,9}-*.yaml",
+            "2026-08-12T11:00:00Z",
+        ),
+    )
+    # Caller scope is disjoint from claim scope -> CLEAR (base fix, not
+    # negated by the hardener).
+    rc = clc._run_check(
+        p, "myia-po-2025:CoursIA",
+        my_paths=["scripts/check_lane_claim.py"],
+    )
+    assert rc == 0
+    out = capsys.readouterr().out
+    # The witness is empty; the JSON still surfaces the field for
+    # consistency, but its value is the empty list, not a residual brace.
+    assert '"unparseable_scope": []' in out
+
+
+# --- #10597 bonus -- SCOPE_ZERO_COVERAGE warning ------------------------------
+#
+# When the caller's own claim carries a SCOPE that matches zero tracked
+# files in the repo, `_scope_zero_coverage_warning` emits a
+# `SCOPE_ZERO_COVERAGE:` line on stderr. The intent is the same as the
+# positive-control test: a glob that matches nothing is INDISTINGUISHABLE
+# from a legitimately-empty scope -- the lane learns at the call site
+# that its declared lock is empty.
+#
+# Note: the warning only fires when the caller is CLEAR (no other-lane
+# collision) and the caller's own claim is scoped. That's the natural
+# moment to nudge -- the lane has just declared its scope and is
+# checking the field. We pin both paths below.
+
+
+def test_scope_zero_coverage_warning_unit():
+    """`_scope_zero_coverage_warning` returns a warning dict when the
+    scope matches zero tracked files in the supplied repo_root. We use
+    `D:/Dev/CoursIA-2-c226-lane-claim-paths-accolades` (this worktree) so
+    the assertion is hermetic -- the walk is over a real git tree, but
+    the scope `definitely-not-a-real-glob-*.zxyq` cannot match any file.
+    """
+    scope = ["definitely-not-a-real-glob-*.zxyq"]
+    repo_root = str(Path(__file__).resolve().parents[2])  # the worktree root
+    warn = clc._scope_zero_coverage_warning(scope, repo_root=repo_root)
+    assert warn is not None
+    assert warn["scope"] == scope
+    assert warn["tracked_count"] > 0  # the worktree has tracked files
+
+
+def test_scope_zero_coverage_warning_unit_with_matching_scope():
+    """A scope that DOES match a tracked file returns None -- no warning.
+    Pins the selectivity of the check: a valid lock is not nagged."""
+    scope = ["scripts/check_lane_claim.py"]  # exists in the worktree
+    repo_root = str(Path(__file__).resolve().parents[2])
+    assert clc._scope_zero_coverage_warning(scope, repo_root=repo_root) is None
+
+
+def test_run_check_emits_scope_zero_coverage_warning(capsys):
+    """End-to-end: the lane declares a scoped claim whose globs match
+    no real file, then calls `_run_check` for its OWN claim -- the
+    `SCOPE_ZERO_COVERAGE` line lands on stderr. This pins the user-visible
+    UX of the bonus hardener."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: definitely-not-a-real-glob-*.zxyq",
+            "2026-08-12T11:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")  # own lane, CLEAR
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "SCOPE_ZERO_COVERAGE" in captured.err
+    # The scope itself is named verbatim so the lane can reissue.
+    assert "definitely-not-a-real-glob-*.zxyq" in captured.err
+
+
+def test_run_check_no_warning_when_scope_matches_files(capsys):
+    """Negative control -- a scoped claim whose globs DO match a tracked
+    file does NOT emit the warning. Selectivity pin."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/check_lane_claim.py",
+            "2026-08-12T11:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "SCOPE_ZERO_COVERAGE" not in captured.err
+
+
+def test_run_check_no_warning_when_no_active_claim(capsys):
+    """No active claim -> no scope -> no warning. Symmetry pin: the
+    warning is only emitted when there IS a claim to warn about."""
+    p = payload()  # empty -- no comments
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "SCOPE_ZERO_COVERAGE" not in captured.err
