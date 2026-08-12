@@ -262,8 +262,7 @@ noncomputable def limit_lift_eq (F : J ⥤ C) [HasLimit F] (c : Cone F) :
     l'**égalité de naturalité** de la transformation naturelle `limit.π`, prouvée
     par le théorème `@[simp] lemma CategoryTheory.Limits.limit.w F j j' f`. -/
 theorem limit_w_natural (F : J ⥤ C) [HasLimit F] {j j' : J} (f : j ⟶ j') :
-    limit.π F j ≫ F.map f = limit.π F j' :=
-  @CategoryTheory.Limits.limit.w _ _ _ _ _ _ _ F f
+    limit.π F j ≫ F.map f = limit.π F j' := rfl
 
 /-- Pont : la factorisation universelle `cocone_factorisation` est une reformulation
     directe du `colimit.desc` Mathlib 4. Cast par application de l'argument `F`. -/
@@ -277,7 +276,6 @@ noncomputable def colimit_desc_eq (F : J ⥤ C) [HasColimit F] (c : Cocone F) :
     prouvée par le théorème `@[simp] lemma CategoryTheory.Limits.colimit.w
     F j j' f` (note : la flèche va de `j'` vers `j`, duale de `limit.w`). -/
 theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j' ⟶ j) :
-    F.map f ≫ colimit.ι F j = colimit.ι F j' :=
-  @CategoryTheory.Limits.colimit.w _ _ _ _ _ _ _ F f
+    F.map f ≫ colimit.ι F j = colimit.ι F j' := rfl
 
 end Grothendieck.Limits
