@@ -52,7 +52,13 @@ This adjunction lifts to sheaves via sheafification.
 
 -- The constant presheaf functor is left adjoint to evaluation at a terminal object.
 -- constantPresheafAdj : Functor.const Cᵒᵖ ⊣ (evaluation Cᵒᵖ D).obj (op T)
-#check @constantPresheafAdj
+
+/-- Bridge: given a terminal object T, the constant presheaf functor
+    `Functor.const Cᵒᵖ` is left adjoint to evaluation at T. This is the
+    constant presheaf adjunction, lifted to sheaves via sheafification. -/
+noncomputable def constantPresheafAdjBridge {T : C} (hT : IsTerminal T) :
+    Functor.const Cᵒᵖ ⊣ (evaluation Cᵒᵖ D).obj (op T) :=
+  constantPresheafAdj D hT
 
 /-! ## 2. The constant sheaf functor
 
@@ -105,10 +111,21 @@ This is a property, not structure — constancy is a proposition.
 -/
 
 -- A sheaf is constant if it is in the essential image of constantSheaf.
-#check @Sheaf.IsConstant
+
+/-- Bridge: the `Sheaf.IsConstant` class characterizes sheaves in the essential
+    image of the constant sheaf functor. Re-export of the Mathlib type under
+    the Grothendieck.ConstantSheaf namespace. -/
+abbrev IsConstant (F : Sheaf J D) : Prop :=
+  CategoryTheory.Sheaf.IsConstant J F
 
 -- If F is constant, it lies in the essential image of constantSheaf.
-#check @Sheaf.mem_essImage_of_isConstant
+
+/-- Bridge: a constant sheaf F projects into the essential image of the
+    constant sheaf functor. Uses `Sheaf.mem_essImage_of_isConstant`. -/
+theorem mem_essImage_of_isConstant_bridge (F : Sheaf J D)
+    [CategoryTheory.Sheaf.IsConstant J F] :
+    (constantSheaf J D).essImage F :=
+  CategoryTheory.Sheaf.mem_essImage_of_isConstant J F
 
 -- Isomorphisms preserve constancy.
 #check @Sheaf.isConstant_congr
@@ -145,7 +162,17 @@ is constant.
 -/
 
 -- Constancy is invariant under equivalence of sheaf categories.
-#check @Sheaf.isConstant_iff_of_equivalence
+
+/-- Bridge: the property of being constant is invariant under equivalence of
+    sheaf categories induced by a dense subsite morphism G. If F is a sheaf on
+    (C', K), then its pullback by `sheafEquiv J K G D` is constant on (C, J)
+    if and only if F is constant on (C', K).
+    Uses `Sheaf.isConstant_iff_of_equivalence`. -/
+theorem isConstant_iff_of_equivalence_bridge {K : GrothendieckTopology C'}
+    {G : C ⥤ C'} (G_dense : G.dense J K) (F : Sheaf K D) :
+    ((CategoryTheory.sheafEquiv J K G D).inverse.obj F).IsConstant J ↔
+      CategoryTheory.Sheaf.IsConstant K F :=
+  CategoryTheory.Sheaf.isConstant_iff_of_equivalence J K G G_dense F
 
 /-! ## 7. Constancy through forgetful functors
 
@@ -155,7 +182,20 @@ sheafCompose reflects isomorphisms).
 -/
 
 -- Constancy detected through forgetful functors.
-#check @Sheaf.isConstant_iff_forget
+
+/-- Bridge: given a forgetful functor U : D ⥤ B preserving sheafification and
+    such that `sheafCompose J U` reflects isomorphisms, constancy is detected
+    by post-composition with U. F is constant iff `sheafCompose J U).obj F` is
+    constant. Uses `Sheaf.isConstant_iff_forget`. -/
+theorem isConstant_iff_forget_bridge {B : Type u'} [Category.{v'} B]
+    (U : D ⥤ B) [PreservesSheafification J U]
+    [(CategoryTheory.sheafCompose J U).ReflectsIsomorphisms]
+    {F : Sheaf J D} {T : C} (hT : IsTerminal T)
+    [hfull : (constantSheaf J D).Faithful] [hfull' : (constantSheaf J D).Full]
+    [hfullB : (constantSheaf J B).Faithful] [hfullB' : (constantSheaf J B).Full] :
+    F.IsConstant J ↔
+      ((CategoryTheory.sheafCompose J U).obj F).IsConstant J :=
+  CategoryTheory.Sheaf.isConstant_iff_forget J U F hT
 
 /-! ## 8. Commutation with sheafCompose
 
@@ -164,7 +204,15 @@ isomorphism, provided that U preserves sheafification.
 -/
 
 -- constantSheaf commutes with sheafCompose up to iso.
-#check @constantCommuteCompose
+
+/-- Bridge: commutation of the constant sheaf functor with `sheafCompose J U`
+    up to isomorphism, provided U preserves sheafification. The natural
+    identity `constantSheaf J D ⋙ sheafCompose J U ≅ U ⋙ constantSheaf J B`. -/
+noncomputable def constantCommuteComposeBridge {B : Type u'} [Category.{v'} B]
+    (U : D ⥤ B) [PreservesSheafification J U] :
+    constantSheaf J D ⋙ CategoryTheory.sheafCompose J U ≅
+      U ⋙ constantSheaf J B :=
+  constantCommuteCompose J U
 
 /-! ## 9. Bridge theorems: essential image and roundtrips
 
