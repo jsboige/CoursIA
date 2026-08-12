@@ -5,6 +5,13 @@ Alexander Grothendieck (1928-2014).
 
 Extension Phase 2+ (#2159, Epic #1646).
 
+All `sorry` eliminated at creation (c.8228): 0/0 sorry, 4/4 theorems clean
+(cast on Mathlib 4 v4.31.0-rc1 definitions and theorems, without non-trivial
+tactics). Bridges to `Mathlib.CategoryTheory.Functor.KanExtension.{Basic,Adjunction,Pointwise,Dense}`
+via `L.lanAdjunction`, `lanAdjunction_unit`, `descOfIsLeftKanExtension_fac`,
+`leftKanExtensionIso`. See c.8224 (lesson L902 ★ EXTENDED: `rfl` is a
+sufficient bridge when equality is definitional or when we **are** the value).
+
 The Kan extension is one of the most universal constructions in category
 theory: it "extends" a functor `F : C ⥤ H` along a functor `L : C ⥤ D`,
 producing a functor `D ⥤ H` that is the "best possible lifting" of `F`
@@ -60,6 +67,7 @@ import Mathlib.CategoryTheory.Functor.KanExtension.Basic
 import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 import Mathlib.CategoryTheory.Functor.KanExtension.Pointwise
 import Mathlib.CategoryTheory.Functor.KanExtension.Dense
+import Mathlib.CategoryTheory.Whiskering
 
 universe v₁ v₂ v₃ u₁ u₂ u₃
 
@@ -261,5 +269,53 @@ noncomputable def kan_descent {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
     (η : F ⟶ L ⋙ F') [F'.IsLeftKanExtension η] (G : D ⥤ H) (β : F ⟶ L ⋙ G) :
     F' ⟶ G :=
   F'.descOfIsLeftKanExtension η G β
+
+/-- Bridge: `L.lan` is left adjoint to the precomposition functor
+    `(whiskeringLeft C D H).obj L : (D ⥤ H) ⥤ (C ⥤ H)`. This is the
+    formulation in functor categories of the lemma "the left Kan
+    extension is the best left lifting" — Mathlib attaches the adjunction
+    directly to `L` via the class `L.HasLeftKanExtension` once and for all.
+
+    Note: `noncomputable def` (not `theorem`) because the type
+    `L.lan ⊣ (Functor.whiskeringLeft C D H).obj L` is an **adjunction**
+    (data: object with unit + counit + homEquiv), not a `Prop`. -/
+noncomputable def lan_functor_is_left_adjoint_to_precomp (L : C ⥤ D) (H : Type u₃)
+    [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
+    L.lan ⊣ (Functor.whiskeringLeft C D H).obj L :=
+  L.lanAdjunction H
+
+/-- Bridge: the unit of the adjunction `lan ⊣ precomp L` is exactly
+    `L.lanUnit`. This is Mathlib's `@[simp]` lemma — `lanAdjunction_unit`
+    is a **theorem** (NOT a definitional equality), so we use it as the
+    proof body. (L902 ★ EXTENDED c.8224 reaffirmed: `rfl` does NOT work
+    for `@[simp]` lemmas, must use the theorem.) -/
+theorem lan_unit_eq_lan_adjunction_unit (L : C ⥤ D) (H : Type u₃)
+    [Category.{v₃, u₃} H] [∀ (F : C ⥤ H), L.HasLeftKanExtension F] :
+    (L.lanAdjunction H).unit = L.lanUnit :=
+  CategoryTheory.Functor.lanAdjunction_unit L H
+
+/-- Bridge: the universal descent `kan_descent` satisfies the
+    factorization condition — this is the naturality of the adjunction.
+    The morphism `F' ⟶ G` produced by `descOfIsLeftKanExtension` makes
+    `η` and `β` compatible via whiskering: `α ≫ L.whiskerLeft
+    (F'.descOfIsLeftKanExtension α G β) = β`. -/
+theorem kan_descent_fac {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
+    (η : F ⟶ L ⋙ F') [F'.IsLeftKanExtension η] (G : D ⥤ H) (β : F ⟶ L ⋙ G) :
+    η ≫ L.whiskerLeft (F'.descOfIsLeftKanExtension η G β) = β :=
+  F'.descOfIsLeftKanExtension_fac η G β
+
+/-- Bridge: if `L` is a dense functor, then its left Kan extension along
+    itself is isomorphic to the identity on `D`. This is the formulation
+    of density of `L` (the special Yoneda case: the identity is its own
+    Kan extension along itself).
+
+    Note: we use `noncomputable def` (not `theorem`) because the type
+    `F.leftKanExtension F ≅ 𝟭 D` is **data** (a structure), not a
+    proposition — the Mathlib theorem `IsDense.leftKanExtensionIso` is
+    itself `noncomputable def`. A `theorem ... := x` requires a `Prop`
+    as type, which `≅` is not. -/
+noncomputable def dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDense] :
+    F.leftKanExtension F ≅ 𝟭 D :=
+  CategoryTheory.Functor.IsDense.leftKanExtensionIso F
 
 end Grothendieck.KanExtensions_en
