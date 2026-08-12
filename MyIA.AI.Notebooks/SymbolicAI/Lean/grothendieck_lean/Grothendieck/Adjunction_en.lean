@@ -173,10 +173,12 @@ making the equivalence `Hom(L X, Y) ≃ Hom(X, R Y)` coherent in both
 variables. The lemmas `homEquiv_unit` / `homEquiv_counit` make the natural
 bijection explicit on components.
 
-All of these lemmas are `@[simp]` in Mathlib 4, with universal structure
-on the `{X Y}` arguments, which makes them unsuitable for direct application
-(`Function expected at ...`) but trivial via the `by rw` tactic, which
-infers the implicits from the goal LHS/RHS (cf lesson L902 ★★ Tier 4).
+The **pointwise** triangles `left_triangle_components` / `right_triangle_components`
+are **fields of the `Adjunction` structure** (directly accessible via
+`h.left_triangle_components X`); the lemmas `homEquiv_unit` / `homEquiv_counit`
+are **namespace theorems** with 4 explicit arguments, applied directly
+(`Adjunction.homEquiv_unit h X Y f`). Prefer pointwise fields for pedagogical
+bridges (structurally simpler, no instance inference).
 -/
 
 /-- Bridge: pointwise component of the left triangle identity — for every

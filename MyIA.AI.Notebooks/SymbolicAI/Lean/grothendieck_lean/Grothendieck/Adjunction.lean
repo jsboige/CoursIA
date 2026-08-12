@@ -175,10 +175,13 @@ rendant l'équivalence `Hom(L X, Y) ≃ Hom(X, R Y)` cohérente en les deux
 variables. Les lemmes `homEquiv_unit` / `homEquiv_counit` explicitent la
 bijection naturelle sur les composantes.
 
-Tous ces lemmes sont `@[simp]` dans Mathlib 4, avec structure universelle
-sur les arguments `{X Y}`, ce qui les rend impropre à l'application directe
-(`Function expected at ...`) mais triviaux via la tactique `by rw` qui
-inférence les implicites depuis le goal LHS/RHS (cf leçon L902 ★★ Tier 4).
+Les triangles **pointwise** `left_triangle_components` / `right_triangle_components`
+sont des **champs de la structure `Adjunction`** (accessibles directement via
+`h.left_triangle_components X`) ; les lemmes `homEquiv_unit` / `homEquiv_counit`
+sont des **namespace theorems** à 4 arguments explicites, applicables
+directement (`Adjunction.homEquiv_unit h X Y f`). Préférer les champs
+pointwise pour les bridges pédagogiques (plus simples structurellement,
+pas d'inférence d'instance).
 -/
 
 /-- Pont : composante pointwise de l'identité triangulaire gauche — pour
