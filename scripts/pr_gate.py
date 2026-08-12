@@ -425,6 +425,77 @@ def _gh_api(path: str) -> object:
         raise GateError(f"gh api {path} returned non-JSON: {exc}") from exc
 
 
+def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
+    """Call `gh api -X POST <path>` with one `-f key=value` per field.
+
+    Mirror of :func:`_gh_api` for the Checks-API writes the re-aggregation path
+    needs (#10433 item-1). Any failure is fatal to the caller (rule 1); the
+    orchestrator wraps it so a POST failure never flips a verdict.
+    """
+    cmd = ["gh", "api", "-X", "POST", path]
+    for key, value in fields.items():
+        cmd += ["-f", f"{key}={value}"]
+    try:
+        completed = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError as exc:  # pragma: no cover - environment problem
+        raise GateError(f"gh CLI not available: {exc}") from exc
+
+    if completed.returncode != 0:
+        raise GateError(
+            f"gh api -X POST {path} failed (exit {completed.returncode}): "
+            f"{completed.stderr.strip()[:400]}"
+        )
+    body = completed.stdout.strip()
+    if not body:
+        return {}
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError as exc:
+        raise GateError(f"gh api -X POST {path} returned non-JSON: {exc}") from exc
+
+
+def post_check_run(
+    repo: str,
+    sha: str,
+    name: str,
+    code: int,
+    message: str,
+    *,
+    poster=None,
+) -> dict:
+    """POST a completed check-run onto ``sha`` via the Checks API.
+
+    The ``workflow_run`` re-aggregation job (#10433 item-1) re-runs the verdict
+    but cannot rely on the job's auto check-run: for ``workflow_run``,
+    ``GITHUB_SHA`` is the *default-branch* commit, so the auto check-run lands
+    there and is invisible to the PR head's ``mergeState``. This POSTs a fresh
+    check-run onto the PR head SHA (``head_sha``) so the re-aggregated
+    conclusion surfaces on the PR.
+
+    ``code`` follows :func:`main`'s convention: 0 = success, 1 = failure.
+    ``poster`` is injectable so unit tests can assert the payload without the
+    network. Resolved at call time (not bound at definition) so monkeypatching
+    ``pr_gate._gh_api_post`` is seen by the default path.
+    """
+    if poster is None:
+        poster = _gh_api_post
+    title = message.splitlines()[0] if message else name
+    fields = {
+        "name": name,
+        "head_sha": sha,
+        "status": "completed",
+        "conclusion": "success" if code == 0 else "failure",
+        "output[title]": f"{name}: {title}"[:255],
+        "output[summary]": message or title,
+    }
+    return poster(f"repos/{repo}/check-runs", fields)
+
+
 def fetch_checks(repo: str, sha: str) -> list[dict]:
     """Union of check runs and legacy commit statuses for one SHA."""
     checks: list[dict] = []
@@ -560,6 +631,17 @@ def main(argv: Iterable[str] | None = None) -> int:
         action="store_true",
         help="Disable the rule-8 delivery canary (escape hatch only).",
     )
+    parser.add_argument(
+        "--post-check-run",
+        action="store_true",
+        help=(
+            "POST the verdict as a completed check-run onto --sha via the "
+            "Checks API. Used by the workflow_run re-aggregation job (#10433 "
+            "item-1): that job's auto check-run lands on the default-branch "
+            "commit, not the PR head, so without this POST the re-aggregated "
+            "verdict is invisible to the PR's mergeState."
+        ),
+    )
     args = parser.parse_args(list(argv) if argv is not None else None)
 
     if args.is_fork:
@@ -570,6 +652,13 @@ def main(argv: Iterable[str] | None = None) -> int:
             "[pr-gate] fork PR -- out of scope (issue #10072); "
             "reporting PASS without polling.",
             flush=True,
+        )
+        # The workflow_run re-aggregation path runs on the default branch, so it
+        # cannot read the fork flag from the pull_request payload. It still POSTs
+        # here: a fork PR must surface `success` on its head SHA to match the
+        # --is-fork short-circuit (#10072), not a stale aggregated FAIL.
+        _maybe_post_check_run(
+            args, 0, "PASS -- fork PR short-circuit (issue #10072)"
         )
         return 0
 
@@ -598,10 +687,38 @@ def main(argv: Iterable[str] | None = None) -> int:
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass.
         print(f"[pr-gate] FAIL -- cannot establish check state: {exc}", file=sys.stderr)
+        _maybe_post_check_run(args, 1, f"FAIL -- cannot establish check state: {exc}")
         return 1
 
     print(f"[pr-gate] {message}", flush=True)
+    _maybe_post_check_run(args, code, message)
     return code
+
+
+def _maybe_post_check_run(args, code: int, message: str) -> None:
+    """POST the verdict as a check-run if ``--post-check-run`` was given.
+
+    The wrapper around :func:`post_check_run` that makes a POST failure
+    non-fatal: a failed POST leaves the stale check in place (the status quo
+    before #10433 item-1), never a false PASS. The exit code already reflects
+    the verdict; this only concerns whether the fresh verdict *surfaces* on the
+    PR head.
+    """
+    if not args.post_check_run:
+        return
+    try:
+        post_check_run(args.repo, args.sha, args.self_name, code, message)
+    except GateError as exc:
+        print(
+            f"[pr-gate] WARN -- check-run POST failed, stale check stays: {exc}",
+            file=sys.stderr,
+        )
+        return
+    conclusion = "success" if code == 0 else "failure"
+    print(
+        f"[pr-gate] posted check-run on {args.sha[:7]} (conclusion={conclusion})",
+        flush=True,
+    )
 
 
 if __name__ == "__main__":

@@ -77,6 +77,15 @@ naïf (taille fixe) à un chunking structuré (par chapitre) et montre que la
 dégradation du retrieval vient du découpage, pas du modèle d'embeddings —
 démontré avec un vectoriseur TF-IDF déterministe, sans clé d'API.
 
+Un troisième notebook [`auditer-un-serveur-mcp.ipynb`](auditer-un-serveur-mcp.ipynb)
+est le compagnon exécutable du Parcours 3 (WordPress comme serveur MCP). Il
+convertit en **mesure reproductible** la leçon centrale du dossier — *un
+serveur MCP utile expose les verbes du métier, pas les tables de la base* :
+étant donné le catalogue d'outils d'un serveur, il classe chaque outil en
+CRUD générique ou verbe métier et mesure sa distance au schéma de
+persistance. Le catalogue audité est synthétique (Maison Valmont) ; un
+chemin live optionnel permet de le rejouer sur son propre serveur via `.env`.
+
 ---
 
 ## Sections
@@ -188,6 +197,8 @@ attendues.
   banc d'évaluation reproductible, cinq propriétés discriminantes
 - [`ingestion-corpus-long-rag.ipynb`](ingestion-corpus-long-rag.ipynb) —
   ingestion RAG d'un corpus long structuré, chunking naïf vs par chapitre
+- [`auditer-un-serveur-mcp.ipynb`](auditer-un-serveur-mcp.ipynb) —
+  classifier CRUD générique vs verbes métier, mesurer la distance au schéma
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

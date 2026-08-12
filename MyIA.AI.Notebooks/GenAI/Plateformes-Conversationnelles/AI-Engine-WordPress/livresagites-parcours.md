@@ -245,6 +245,14 @@ C'est le point transposable à n'importe quel projet MCP, quel que
 soit le CMS ou le langage : la valeur d'un serveur MCP se mesure à
 la distance entre ses outils et le schéma de persistance.
 
+> **Compagnon exécutable.** Le notebook
+> [`auditer-un-serveur-mcp.ipynb`](auditer-un-serveur-mcp.ipynb) convertit
+> cette leçon en une mesure reproductible : il classe chaque outil d'un
+> catalogue en CRUD générique ou verbe métier et calcule sa distance au
+> schéma de persistance à partir du seul `inputSchema`. Le catalogue audité
+> y est synthétique (Maison Valmont) — aucun outil réel du site n'y figure —
+> et un chemin live optionnel permet de le rejouer sur son propre serveur.
+
 ### Comparaison OWUI
 
 C'est ici qu'AI-Engine se distingue le plus franchement. Open WebUI

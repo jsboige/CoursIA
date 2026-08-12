@@ -33,9 +33,12 @@ name: PR gate
 # `workflow_run`-triggered job posts its check-run on the workflow's default
 # branch commit, NOT on the PR head SHA, so it is invisible to `gh pr checks`
 # and to mergeState until the job also POSTS a check-run onto the PR head SHA
-# via the Checks API. That posting step is deliberately deferred to a follow-up
-# grain (it needs `actions: write` and a posting script); this file documents
-# the gap rather than papering over it.
+# via the Checks API. That posting step is implemented in the sister workflow
+# pr-gate-rerun.yml (#10433 item-1): a `workflow_run` trigger on Variation Tag
+# Guard completion + `--post-check-run` in pr_gate.py POSTs the re-aggregated
+# conclusion onto github.event.workflow_run.head_sha. Kept in a separate file
+# so this workflow's pull_request trigger does not make the delivery canary
+# (derive_always_on_jobs) wait for a workflow_run-only job on every PR.
 
 on:
   pull_request:
