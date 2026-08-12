@@ -22,6 +22,25 @@ Avant de committer une sortie degradee, repondre **par ecrit (body PR)** par 1 d
 
 Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'kernel not available locally' ») committe **sans avoir verifie RECOVERABLE-*** = manquement grave.
 
+### Procedure d'etablissement INTRINSIC — checklist 6 axes obligatoire (NEW c.8243, #10459)
+
+Un verdict `INTRINSIC` est le plus restrictif des 5 (il declare une impossibilite), et c'est **le plus dangéreux** a laisser passer sans verification : il justifie une substitution durable dans le code, qui devient invisible pour les auditeurs suivants. Pour cette raison, **chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
+
+| # | Axe | Question a repondre dans le body PR |
+|---|---|---|
+| 1 | **Binding .NET / NuGet** | Un package officiel existe-t-il pour la cible ? (ex : `OR-Tools`, `Accord.NET`) |
+| 2 | **`P/Invoke`** | Une API C stable est-elle exposee par la lib ? (cf `libtesseract`, `libsodium`) |
+| 3 | **CLI `Process.Start`** | Un binaire invocable existe-t-il ? (ex : `gambit`, `minizinc`, `clingo`) |
+| 4 | **`IKVM`** (pont Java) | La lib est-elle en Java ? Si oui, est-elle deja shadee ? ([`docs/ledgers/`](docs/ledgers/3801-sota-axe2.md)) |
+| 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
+| 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
+
+**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI/X au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La liste des 5 verdicts est conservee, c'est **la procedure d'etablissement** d'`INTRINSIC` qui se durcit.
+
+**Origine de la 6ᵉ entree** (incident fondateur #10459) : trois verdicts `INTRINSIC` OpenSpiel convergent dans 3 PRs distinctes (#10390/#10394/#10454) — aucun n'avait examine l'axe PythonNet. Le depot certifiait deja le pont ailleurs (`MyIA.AI.Notebooks/GenAI/SemanticKernel/09-SemanticKernel-Building-CLR.ipynb`, `SOTA-OK` au ledger #3801), et le user l'a rappele verbatim 2026-08-11 (« PythonNet pour bridger est tout a fait acceptable, fonctionne plutot bien … overhead negligeable »). La deuxieme omission d'axe (la premiere etait `IKVM`) demontre qu'une regle non explicite ne se corrige pas par plus de vigilance : elle demande un **organe** (la checklist).
+
+**Preuve d'execution par l'axe 5** : voir #10464/#10470/#10496/#10585/#10598 — 5 PRs MERGED sur `main` posant le pont `.NET → CPython → pyspiel` (CFR expl 0.008226, MCTS action=4, rollout Kuhn, kuhn_poker NashConv 0.0230, axelrod strategie). Plus la precedente SK-09 (PythonNet 3.0.5 + DLL loading SOTA-OK, documente au ledger #3801). La porte etait fermee a tort ; elle est desormais **prouvee**, avec cinq mesures distinctes.
+
 ### Stop & Repair — JAMAIS hand-editer une sortie de cellule (mandat user 2026-06-22)
 
 Le workaround le plus insidieux = **scrubber / hand-editer la SORTIE de cellule committee** (redacter chemin machine / prefixe de cle / render casse dans `outputs`) au lieu de re-executer = **falsifier la preuve d'execution = malhonnete, BANNI**. On **repare la cause** (env/cwd, outil manquant, source qui imprime) et on **RE-EXECUTE** — jamais maquiller. Seules exceptions : quantbooks QC (non-executables via MCP) + `metadata.papermill.input/output_path` au `basename`. Une PR qui hand-edite une sortie hors ces deux cas = `CHANGES_REQUESTED` (`APPROVED` = complaisance). Regle complete (triage cause A/B/C + incidents) : [secrets-hygiene.md](secrets-hygiene.md) regle 6 + [[feedback-no-cell-output-scrubbing]].
@@ -59,3 +78,4 @@ Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/c
 - [anti-regression.md](anti-regression.md) — ne pas stripper le code reel
 - [three-exercises-per-notebook.md](three-exercises-per-notebook.md) — richesse pedagogique (exercices)
 - **EPIC #3801** — registre axe-2 SOTA + problem-richness, par famille (GenAI/po-2023 en tete)
+- **#10459** — omission d'axe PythonNet dans la taxonomie bucket-3 (3 verdicts INTRINSIC OpenSpiel reclasses, 5 PRs livrees). La checklist 6 axes de ce fichier est l'organe qui ferme la classe d'incidents.
