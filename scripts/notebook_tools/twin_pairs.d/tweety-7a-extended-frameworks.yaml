@@ -45,10 +45,10 @@
       content_csharp_sha: 1d14a985ff5f4adedd0f8c1c662ebfb71ebfb733d02d499fb4741e2112065e30
     - date: "2026-08-12"
       by: myia-po-2023:CoursIA-2
-      python_sha: 279b33ab77b1f32fd2b2380a1131372a587f9b70ceadd62a05345d6d50fe3d62
-      csharp_sha: 30e9186f41db56921ab96023fd54a4976a93237453d27def64ce0dc1a52656aa
-      content_python_sha: 959d694c815d56e903bf5f291d09198804f5ab8d6b995d7036510b31bff150f7
-      content_csharp_sha: e5bc937aef385ab8775bf50ccdc95f95c57836b1cb996abe34e4ad3688c50320
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: e61bed63a509773591f6115a4a127526a4c4afef
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 1d14a985ff5f4adedd0f8c1c662ebfb71ebfb733d02d499fb4741e2112065e30
   known_differences:
     - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."

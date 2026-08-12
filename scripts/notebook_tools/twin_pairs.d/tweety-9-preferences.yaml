@@ -12,10 +12,10 @@
       csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
     - date: "2026-08-12"
       by: myia-po-2023:CoursIA-2
-      python_sha: f51b57eb8b950fa956be39d470289c933b0f2bbf77bb067cb6a525dfbfe60651
-      csharp_sha: 79e8c2084432473bfce9c64a70f78741fdafafea1af94af0fe35c0bde45bf68b
-      content_python_sha: 6595750b1c571120eaaa98fc56eafd9a87082dd7fad17a3fb466f1e9ffc89f89
-      content_csharp_sha: f49a46cb2b20a64183a3e99987c3a2db586e6e65fce0073d1c80970cd436908b
+      python_sha: c2f0fd49cc676439ac5d626abd51f39dca5680a0
+      csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
+      content_python_sha: 29245004b87519c32cb37bed43227fd2b8af2ade9de7a368a9ddad76dd67e2e9
+      content_csharp_sha: 5a7dfff560e3dc513ce623f8ccc6c4f91962cc442f38c0abcec33afe3a73257b
   known_differences:
     - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"` + Assembly.LoadFrom tweety-preferences.dll). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."
