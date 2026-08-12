@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools` (Google, Apache-2.0, PyPI officiel Google, CP-SAT SOTA Job-Shop scheduling : `CpModel()` + `NewIntervalVar` + `AddNoOverlap` + `model.Minimize(makespan)` + `solver.Solve()` pour ft06/ft03 instances canoniques). C# = `Google.OrTools` NuGet (Google, Apache-2.0, NuGet officiel Google, MEME solveur CP-SAT natif : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;` + `CpModel()` + `AddBoolVar` + `AddNoOverlap` + `solver.Solve()`). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 App tranche 4 lib-vs-lib + PR #10386 Planners-7 Tranche 2 MERGED substance Google.OrTools validee firsthand instance ft3 : makespan optimal = 11 des deux cotes, memes plans) : les DEUX cotes utilisent LE MEME solveur Google OR-Tools CP-SAT natif (meme binding C++ sous-jacent, API symetrique entre les bindings PyPI + NuGet officiels Google), bridge direct sans glue non-SOTA. Asymetrie documentee : ScottPlot cote C# = helper viz gantt uniquement (le PY utilise matplotlib heatmap equivalent, asymetrie mineure de lib viz n'impactant pas le semantisme). `parity_level: native-both` preserve : parite engine."
   audits:
     - date: "2026-08-02"
       by: myia-po-2024:CoursIA-2

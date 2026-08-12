@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `unified-planning` + `urllib.request` POST sur le conteneur Docker `jsboige/coursia-fast-downward` (API HTTP port 8200, JSON PDDL domain+problem -> plan+cost) ; unified-planning wrap en interne Fast Downward 24.06.1. C# = Tranche 1 from-scratch BCL .NET (representation SAS+ planning graphs, heuristiques h^max/h^FF, recherche A*/GBFS/EHC sur la Tranche 1 SAS+, cells 0-27) + Tranche 2 Fast Downward natif via `System.Net.Http.HttpClient` sur le MEME conteneur Docker (meme API, port 8200, depuis 2026-08-11). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 App tranche 4 lib-vs-lib + PR #10401 Planners-4 Tranche 2 MERGED substance Fast Downward validee firsthand instance Blocks World : plan optimal = 2 actions pick-up+stack, cout = 2, des deux cotes) : les DEUX cotes invoquent LE MEME moteur de production Fast Downward natif (meme solveur C++ natif, API symetrique entre les bindings Python urllib + C# HttpClient), bridge direct sans glue non-SOTA. Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382 : enseignement des mecanismes SAS+ avant l'invocation du moteur. `parity_level: native-both` preserve : parite engine + from-scratch pedagogique."
   audits:
     - date: "2026-07-23"
       by: po-2023

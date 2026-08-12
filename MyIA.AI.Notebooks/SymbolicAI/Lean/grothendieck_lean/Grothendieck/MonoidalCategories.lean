@@ -241,4 +241,43 @@ noncomputable def braiding_iso [MonoidalCategory C] [BraidedCategory C]
     (X Y : C) : X ⊗ Y ≅ Y ⊗ X :=
   BraidedCategory.braiding X Y
 
+/-!
+## 8. Théorèmes propres (c.1301+107)
+
+Identités fondamentales des structures monoïdales, prouvées localement
+via la tactique `rw` sur les lemmes canoniques Mathlib (les isomorphismes
+`α_`, `λ_`, `ρ_` sont des champs de `MonoidalCategoryStruct` ; leurs
+égalités sont déf. valides via `.hom` / `.inv`).
+
+Leçon L902 ★★ : `rfl` est prouvable quand l'égalité est définitionnelle.
+Les isomorphismes canoniques `(α_ X Y Z).hom` etc. sont des champs ;
+les lemmes les pontants sont des `(rfl)` ou `by rw [name]` selon le
+niveau de unfold requis.
+-/
+
+/-- Théorème : l'associateur `(X ⊗ Y) ⊗ Z ≅ X ⊗ (Y ⊗ Z)` est défini
+    comme `(α_ X Y Z).hom` au niveau du morphisme. C'est la définition
+    même de l'associateur dans Mathlib 4 comme champ de
+    `MonoidalCategoryStruct`. -/
+theorem associator_iso_hom_eq [MonoidalCategoryStruct C] (X Y Z : C) :
+    (α_ X Y Z).hom = (MonoidalCategoryStruct.associator X Y Z).hom := rfl
+
+/-- Théorème : l'unitaire à gauche `λ_ X : 𝟙_ C ⊗ X ≅ X` est défini
+    implicitement par le cham `leftUnitor` de `MonoidalCategoryStruct`.
+    Au niveau de `Iso.hom`, c'est une construction définitionnelle. -/
+theorem left_unitor_iso_hom_eq [MonoidalCategoryStruct C] (X : C) :
+    (λ_ X).hom = (MonoidalCategoryStruct.leftUnitor X).hom := rfl
+
+/-- Théorème : l'unitaire à droite `ρ_ X : X ⊗ 𝟙_ C ≅ X` est défini
+    par le champ `rightUnitor` de `MonoidalCategoryStruct`. -/
+theorem right_unitor_iso_hom_eq [MonoidalCategoryStruct C] (X : C) :
+    (ρ_ X).hom = (MonoidalCategoryStruct.rightUnitor X).hom := rfl
+
+/-- Théorème : le tenseur d'objets `tensorObj X Y = X ⊗ Y` est
+    définitionnellement égal à l'application du champ `tensorObj` de
+    `MonoidalCategoryStruct`. Pont observa entre la notation `⊗` et
+    la fonction primitive. -/
+theorem tensorObj_eq_app [MonoidalCategoryStruct C] (X Y : C) :
+    X ⊗ Y = MonoidalCategoryStruct.tensorObj X Y := rfl
+
 end Grothendieck.MonoidalCategories

@@ -3,8 +3,6 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -22,6 +20,8 @@
       csharp_sha: 71822adc60c62edbe98ca11e6509dbb474e22ffe
       content_python_sha: c460456cfc08047af3d157e9ae60e4649a2eef99ed665f173340d00a96da35a2
       content_csharp_sha: 892ef07f5e6afc3189fb015079164aa1635ee7c50bda6e1314419f5f10ad545c
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = numpy + matplotlib (nombres de Grundy + XOR nim-sum avec visualisation graphe de jeu + table de Grundy, 14 cellules code). C# = pur System.* (System.Linq, 0 NuGet, implementation Sprague-Grundy + nim-sum sans dependance numerique, 14 cellules code). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (Sprague-Grundy 1936, theoreme sur la somme de jeux, Nim et sa strategie gagnante XOR des tas). L'asymetrie reside dans la sortie -- visualisation Python (graphe, table) vs sorties texte/table C#. Paire proche d'une traduction native (meme contenu algorithmique) mais implementations independantes (idiomes langage, structures de donnees), d'ou parity_level: semantic et non native-both. parity_level: semantic preserve."
   known_differences:
     - "Socle pedagogique commun : theorie des jeux combinatoires (Sprague-Grundy, nombres de Grundy, theoreme de Sprague-Grundy sur la somme de jeux, Nim et sa strategie gagnante XOR des tas). Meme concept mathematique (fonction de Grundy/g(x), XOR nim-sum, jeux impartiaux a information complete), meme cas canonique (Nim). Les deux couvrent Nim, Sprague, Grundy."
     - "Divergence d'implementation : le Python (numpy + matplotlib, 14 cellules code) implemente les nombres de Grundy et le XOR nim-sum avec visualisation (graphe de jeu, table de Grundy) ; le C# (pur System.* stdlib, 0 NuGet, 14 cellules code) implemente la meme logique combinatoire (Sprague-Grundy, nim-sum) sans dependance numerique. Meme theoreme, meme contenu algorithmique, sorties differentes (visualisation Python vs sorties texte/table C#)."
