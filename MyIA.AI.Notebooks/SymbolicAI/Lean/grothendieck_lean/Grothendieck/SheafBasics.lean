@@ -46,6 +46,8 @@ import Mathlib.CategoryTheory.Sites.Canonical
 
 namespace Grothendieck
 
+universe v u w w'
+
 open CategoryTheory
 
 /-!
@@ -145,5 +147,85 @@ theorem trivial_subcanonical {C : Type*} [Category C] :
     @GrothendieckTopology.Subcanonical C _ (⊥ : GrothendieckTopology C) :=
   GrothendieckTopology.Subcanonical.of_isSheaf_yoneda_obj ⊥
     (fun _ => Presieve.isSheaf_bot)
+
+/-!
+## Préservation des conditions de faisceau par isomorphismes de préfaisceaux
+
+Les conditions `IsSheaf` et `IsSeparated` sont des **propriétés de la classe
+d'isomorphie** du préfaisceau. Si `P ≅ P'`, alors `P` est un faisceau (resp.
+séparé) si et seulement si `P'` l'est. Cette invariance est nécessaire pour
+toute la théorie : les faisceaux forment une sous-catégorie pleine de la
+catégorie des préfaisceaux, et la pleine-fidélité exige que les isomorphismes
+entre objets préservent la propriété.
+
+Ce sont `isSheaf_iso` et `isSeparated_iso` de Mathlib (`SheafOfTypes.lean`).
+-/
+
+/-- La condition `IsSheaf` est préservée par isomorphisme de préfaisceaux :
+    si `P ≅ P'` et `P` est un faisceau, alors `P'` est un faisceau. C'est
+    la stabilité des faisceaux sous les isomorphismes — propriété nécessaire
+    pour la pleine-fidélité de l'inclusion `Sheaf J A ↪ Presheaf A`.
+    Utilise `Presieve.isSheaf_iso` de Mathlib. -/
+theorem isSheaf_iso {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) {P P' : Cᵒᵖ ⥤ Type w}
+    (i : P ≅ P') (h : Presieve.IsSheaf J P) :
+    Presieve.IsSheaf J P' :=
+  Presieve.isSheaf_iso J i h
+
+/-- La condition `IsSeparated` est préservée par isomorphisme de préfaisceaux :
+    si `P ≅ P'` et `P` est séparé, alors `P'` est séparé. Symétrique de
+    `isSheaf_iso` pour la séparation. Utilise `Presieve.isSeparated_iso`
+    de Mathlib. -/
+theorem isSeparated_iso {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) {P P' : Cᵒᵖ ⥤ Type w}
+    (i : P ≅ P') (hP : Presieve.IsSeparated J P) :
+    Presieve.IsSeparated J P' :=
+  Presieve.isSeparated_iso J i hP
+
+/-!
+## Symétrie : la séparation descend le long des comparaisons de topologies
+
+Tout comme `IsSheaf` descend le long de `J₁ ≤ J₂` (cf. `isSheaf_of_le`),
+la condition `IsSeparated` descend aussi. Plus la topologie est grossière,
+plus il est facile d'être séparé.
+
+C'est `isSeparated_of_le` de Mathlib (`SheafOfTypes.lean`).
+-/
+
+/-- La condition `IsSeparated` descend le long des comparaisons de topologies :
+    si `J₁ ≤ J₂` et `P` est séparé pour `J₂`, alors `P` est séparé pour `J₁`.
+    Symétrique de `isSheaf_of_le` pour la séparation. Utilise
+    `Presieve.isSeparated_of_le` de Mathlib. -/
+theorem isSeparated_of_le {C : Type u} [Category.{v} C]
+    {J₁ J₂ : GrothendieckTopology C}
+    (P : Cᵒᵖ ⥤ Type w) (h : J₁ ≤ J₂)
+    (hP : Presieve.IsSeparated J₂ P) :
+    Presieve.IsSeparated J₁ P :=
+  Presieve.isSeparated_of_le P h hP
+
+/-!
+## Équivalence de IsSheaf via équivalence naturelle de préfaisceaux
+
+Une **équivalence naturelle** entre préfaisceaux `e : P₁ ≅ P₂` (un isomorphisme
+naturel, i.e. composant par composant) préserve aussi la condition `IsSheaf`,
+et ce **dans les deux sens**. C'est strictement plus fort que l'invariance
+par un isomorphisme global de préfaisceaux : on a `IsSheaf J P₁ ↔ IsSheaf J P₂`
+via une équivalence naturelle.
+
+C'est `isSheaf_iff_of_nat_equiv` de Mathlib (`SheafOfTypes.lean`).
+-/
+
+/-- Une équivalence naturelle entre préfaisceaux préserve la condition
+    `IsSheaf` dans les deux sens : `IsSheaf J P₁ ↔ IsSheaf J P₂` via une
+    famille d'équivalences composant par composant. Plus fort qu'un isomorphisme
+    global de préfaisceaux : la condition est préservée composant par composant.
+    Utilise `Presieve.isSheaf_iff_of_nat_equiv` de Mathlib. -/
+theorem isSheaf_iff_of_nat_equiv {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) {P₁ : Cᵒᵖ ⥤ Type w} {P₂ : Cᵒᵖ ⥤ Type w'}
+    (e : ∀ ⦃X : C⦄, P₁.obj (Opposite.op X) ≃ P₂.obj (Opposite.op X))
+    (he : ∀ ⦃X Y : C⦄ (f : X ⟶ Y) (x : P₁.obj (Opposite.op Y)),
+      e (P₁.map f.op x) = P₂.map f.op (e x)) :
+    Presieve.IsSheaf J P₁ ↔ Presieve.IsSheaf J P₂ :=
+  Presieve.isSheaf_iff_of_nat_equiv e he
 
 end Grothendieck
