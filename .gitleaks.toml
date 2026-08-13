@@ -237,4 +237,11 @@ stopwords = [
     "votre_token_copie_ici",
     "your_bearer_token_here",
     "your_qwen_api_token_here",
+    # --- #10575 AGSEC005 test fixtures (placeholder credentials in xUnit tests) ---
+    # AgentSafetyAnalyzerTests.cs exercises the credential-prefix detector with
+    # CANONICAL placeholder values. None is a real secret; all are re-read at
+    # source 2026-08-12. Kept as stopwords (substring on the finding) so a REAL
+    # credential in the same test file still fails the scan.
+    "AbCdEf1234567890",       # common placeholder segment across sk-/ghp_-shaped test fixtures
+    "AKIAIOSFODNN7EXAMPLE",   # AWS documentation example key (canonical placeholder, not rotatable)
 ]

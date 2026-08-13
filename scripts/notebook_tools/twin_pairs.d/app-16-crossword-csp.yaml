@@ -14,6 +14,8 @@
       csharp_sha: b11d4b644822042d6fd815a4b497a6a818a7f025
       content_python_sha: a704ada4e839ed0d263cffa38cacd6f9ed3022a8e93f514085cf6f5a7f34b1bb
       content_csharp_sha: d907f3d29190e7c73fcbeaff09749bc83dd432cb7680309e0d9c6c09a759e7ed
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = OR-Tools CP-SAT (cp_model + AddElement/inter constraints, dataclass) + numpy + matplotlib (11 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (System.Linq/Text, 0 NuGet) PRESERVEE (12 cellules code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur grids 15x15 -- exact SOLUTION_OPTIMAL, backtracking from-scratch timeout sur les grands grilles -- discrimination mesuree. Tranche 1 from-scratch preservee intacte (byte-identique a main). Python met l'accent sur SOTA + viz matplotlib + experimentation comparative ; C# demontre from-scratch + binding NuGet. parity_level: native-both preserve."
   known_differences:
     - "Socle pedagogique commun : Generateur de mots croises (CSP : slots, intersections, dictionnaire) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = OR-Tools CP-SAT (cp_model + AddElement) + dataclass + viz grille ; C# = Tranche 1 from-scratch BCL pure (System.Linq/Text, 0 NuGet) PRESERVEE + Tranche 2 Google.OrTools CP-SAT (cp_model + AddElement), miroir du twin Python (#10382). Parite native-both."
