@@ -82,6 +82,14 @@ categories, parametres par un morphisme de schemas `f : X ⟶ Y`.
 -- La categorie des 𝒪ₓ-modules sur un schema X (categorie abelienne).
 #check (Scheme.Modules X : Type _)
 
+/-- Construction pont : la categorie abelienne `Scheme.Modules X` des
+    faisceaux de modules sur le schema X (les `𝒪ₓ`-modules). C'est le cadre
+    ou vivent l'image directe et l'image reciproque : ce sont des foncteurs
+    entre de telles categories. Re-export de la structure `Scheme.Modules`
+    (Mathlib `AlgebraicGeometry.Modules.Sheaf`). -/
+def modules_category_field (X : Scheme.{u}) : Type _ :=
+  Scheme.Modules X
+
 /-!
 ## Section 2 : L'image directe (pushforward, `f_*`)
 
@@ -95,6 +103,15 @@ C'est la facon naturelle de *pousser en avant* un faisceau le long de `f`.
 -- Le foncteur image directe f_* : des 𝒪ₓ-modules vers les 𝒪_Y-modules.
 #check (pushforward f : X.Modules ⥤ Y.Modules)
 
+/-- Construction pont : le foncteur **image directe** `pushforward f :
+    X.Modules ⥤ Y.Modules` le long du morphisme de schemas `f : X ⟶ Y`. Il
+    envoie un `𝒪ₓ`-module M sur le `𝒪_Y`-module `f_* M` (sections sur U =
+    sections de M sur `f ⁻¹ U`). Re-export de `pushforward` (def,
+    `noncomputable`). -/
+noncomputable def pushforward_functor_field {X Y : Scheme.{u}} (f : X ⟶ Y) :
+    X.Modules ⥤ Y.Modules :=
+  pushforward f
+
 /-!
 ## Section 3 : L'image reciproque (pullback, `f^*`)
 
@@ -105,6 +122,14 @@ le faisceau `G` vu sur l'espace source `X` via le morphisme `f`.
 
 -- Le foncteur image reciproque f^* : des 𝒪_Y-modules vers les 𝒪ₓ-modules.
 #check (pullback f : Y.Modules ⥤ X.Modules)
+
+/-- Construction pont : le foncteur **image reciproque** `pullback f :
+    Y.Modules ⥤ X.Modules`, adjoint a gauche de l'image directe. Il *tire en
+    arriere* un `𝒪_Y`-module sur X. Re-export de `pullback` (def,
+    `noncomputable`). -/
+noncomputable def pullback_functor_field {X Y : Scheme.{u}} (f : X ⟶ Y) :
+    Y.Modules ⥤ X.Modules :=
+  pullback f
 
 /-!
 ## Section 4 : L'adjonction fondamentale `f^* ⊣ f_*`
@@ -119,6 +144,15 @@ le plus simple du formalisme des six operations de Grothendieck.
 -- L'adjonction fondamentale : f^* est adjoint a gauche de f_*.
 #check (pullbackPushforwardAdjunction f : pullback f ⊣ pushforward f)
 
+/-- Construction pont : l'**adjonction fondamentale** `pullback f ⊣ pushforward f`
+    : les morphismes de `𝒪ₓ`-modules `f^* G ⟶ M` correspondent naturellement
+    aux morphismes de `𝒪_Y`-modules `G ⟶ f_* M`. C'est l'ancetre le plus simple
+    du formalisme des six operations de Grothendieck. Re-export de
+    `pullbackPushforwardAdjunction` (def, `noncomputable`). -/
+noncomputable def pullback_pushforward_adjunction_field {X Y : Scheme.{u}}
+    (f : X ⟶ Y) : pullback f ⊣ pushforward f :=
+  pullbackPushforwardAdjunction f
+
 /-!
 ## Section 5 : Identites de fonctorialite de l'image directe `f_*`
 
@@ -131,8 +165,23 @@ pushforward le long de la composee `f ≫ g`.
 -- f_* le long de l'identite s'identifie au foncteur identite.
 #check (pushforwardId X : pushforward (𝟙 X) ≅ 𝟭 _)
 
+/-- Construction pont : l'image directe le long de l'identite s'identifie au
+    foncteur identite : `pushforward (𝟙 X) ≅ 𝟭`. Re-export de `pushforwardId`
+    (def, `noncomputable`). -/
+noncomputable def pushforward_id_field (X : Scheme.{u}) :
+    pushforward (𝟙 X) ≅ 𝟭 _ :=
+  pushforwardId X
+
 -- f_* puis g_* s'identifie au pushforward de la composee (f ≫ g)_*.
 #check (pushforwardComp f g : pushforward f ⋙ pushforward g ≅ pushforward (f ≫ g))
+
+/-- Construction pont : l'image directe est fonctorielle en le morphisme de
+    schemas : `pushforward f ⋙ pushforward g ≅ pushforward (f ≫ g)` (pousser
+    en avant le long de f puis g s'identifie au pushforward le long de la
+    composee). Re-export de `pushforwardComp` (def, `noncomputable`). -/
+noncomputable def pushforward_comp_field {X Y Z : Scheme.{u}} (f : X ⟶ Y)
+    (g : Y ⟶ Z) : pushforward f ⋙ pushforward g ≅ pushforward (f ≫ g) :=
+  pushforwardComp f g
 
 /-!
 ## Section 6 : Identites de fonctorialite de l'image reciproque `f^*`
@@ -146,8 +195,25 @@ s'identifie a tirer en arriere selon `g` puis `f` (notez l'ordre renverse :
 -- f^* le long de l'identite s'identifie au foncteur identite.
 #check pullbackId X
 
+/-- Construction pont : l'image reciproque le long de l'identite s'identifie
+    au foncteur identite : `pullback (𝟙 X) ≅ 𝟭`. Re-export de `pullbackId`
+    (def, `noncomputable`). Le qualifieur `Modules.pullback` leve l'ambiguite
+    avec `Limits.pullback` (pullback categorique). -/
+noncomputable def pullback_id_field (X : Scheme.{u}) :
+    Modules.pullback (𝟙 X) ≅ 𝟭 _ :=
+  pullbackId X
+
 -- f^* de la composee : pullback g puis pullback f = pullback (f ≫ g) (ordre renverse, contravariance).
 #check pullbackComp f g
+
+/-- Construction pont : l'image reciproque est contravariante en le morphisme
+    de schemas : `pullback g ⋙ pullback f ≅ pullback (f ≫ g)` — tirer en
+    arriere le long de `f ≫ g` s'identifie a tirer en arriere selon `g` puis
+    `f` (ordre renverse). Re-export de `pullbackComp` (def, `noncomputable`). -/
+noncomputable def pullback_comp_field {X Y Z : Scheme.{u}} (f : X ⟶ Y)
+    (g : Y ⟶ Z) : Modules.pullback g ⋙ Modules.pullback f ≅
+      Modules.pullback (f ≫ g) :=
+  pullbackComp f g
 
 /-!
 ## Section 7 : Theoremes ponts : loi fonctorielle sur pushforward et pullback
