@@ -217,4 +217,60 @@ theorem equivalence_symm_functor (e : C ≌ D) :
 theorem equivalence_symm_inverse (e : C ≌ D) :
     e.symm.inverse = e.functor := rfl
 
+/-!
+## 8. Proper theorems (c.1301+121 — additions on fields `e.unitIso` /
+##     `e.counitIso` / `e.trans`)
+
+Direct continuation of the `equivalence_symm_*` lemmas above: we now
+prove that the natural isomorphisms `unitIso` / `counitIso` on one
+hand, and the `trans` composition on the other, are coherent in the
+sense of the fields of `Equivalence`. All lemmas below take an
+argument `e : C ≌ D` (never a polymorphic universe constructor like
+`Equivalence.refl C`); L902 ★★ is thus trivially satisfied. Proofs use
+direct `rfl` after unfolding the fields of `Equivalence`.
+
+**Origin** (issue #2159 dispatch ai-01 msg-20260812T140023-6qzcmj,
+c.1301+121): replace `#check` with proper theorems in at least 1 of
+the 3 claimed modules (`Equivalences.lean`, `MonoidalCategories.lean`,
+`MathlibMap.lean`). `MathlibMap.lean` is catalog-only (see PR #10638
+historical — pragmatic removal), hence out of scope; the present
+sub-grain picks `Equivalences.lean` (and `MonoidalCategories.lean`
+separately).
+-/
+
+/-- Theorem: the inverse of `Equivalence.symm e` recovers the identity.
+    This is the involutivity law of `Equivalence.symm` at the object
+    level of the (2-)groupoid: `(e.symm).symm = e`. Proof: direct
+    unfold of the `symm` field of `Equivalence`. -/
+theorem equivalence_symm_symm (e : C ≌ D) :
+    e.symm.symm = e := rfl
+
+/-- Theorem: the composition `Equivalence.trans` has left functor
+    `e.functor` and right functor `f.functor`. This is the "direct"
+    composition law of the underlying functors to the composed
+    equivalence. Proof: direct unfold of the `functor` field of
+    `Equivalence.trans`. -/
+theorem equivalence_trans_functor {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) :
+    (e.trans f).functor = e.functor ⋙ f.functor := rfl
+
+/-- Theorem: the composition `Equivalence.trans` has left inverse
+    `f.inverse` and right inverse `e.inverse`. Dual of the previous:
+    "reversing the composition" = composing the inverses in reverse
+    order. Proof: direct unfold of the `inverse` field of
+    `Equivalence.trans`. -/
+theorem equivalence_trans_inverse {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) :
+    (e.trans f).inverse = f.inverse ⋙ e.inverse := rfl
+
+/-- Theorem: the unit of `Equivalence.symm e` (the morphism
+    `(e.symm).unitIso : 𝟭 D ≅ e.symm.functor ⋙ e.symm.inverse`)
+    corresponds canonically to the counit of `e` in the sense of the
+    bijection 𝟭 D ≅ e.inverse ⋙ e.functor. This is the natural
+    "duality" between unit and counit on one hand, and symmetry on
+    the other. Proof: direct unfold of the `unitIso` field of
+    `Equivalence.symm`. -/
+theorem equivalence_symm_unit (e : C ≌ D) :
+    e.symm.unitIso = e.counitIso.symm := by
+  cases e
+  rfl
+
 end Grothendieck.Equivalences_en
