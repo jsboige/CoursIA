@@ -127,6 +127,12 @@ Pour les visualisations de factor graphs dans les notebooks 11, 14-19 :
 # Windows (chocolatey)
 choco install graphviz
 
+# macOS (via Homebrew)
+brew install graphviz
+
+# Linux (Debian/Ubuntu)
+sudo apt install graphviz
+
 # Ou téléchargement direct depuis https://graphviz.org/download/
 ```
 

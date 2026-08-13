@@ -6,7 +6,9 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 |--------|------|
 | `setup_lean4_all.py` | Installation initiale des toolchains Lean via `elan` pour tous les projets |
 | `setup_native_lean4_import.py` | Kernel `lean4-wsl` natif (jupyter-WSL bridge, sans `wsl()` subprocess) |
-| `setup_shared_mathlib.ps1` | Mutualisation des checkouts Mathlib via junctions NTFS (voir ci-dessous) |
+| `setup_shared_mathlib.ps1` | Mutualisation des checkouts Mathlib via junctions NTFS (Windows, voir ci-dessous) |
+| `setup_shared_mathlib.sh` | Jumeau Linux/macOS du `.ps1` (mode Scan portable ; Apply/Rollback = `RECOVERABLE-USER-HAND`, voir ci-dessous) |
+| `setup_shared_mathlib_scan.py` | Helper Python du `.sh` (discovery TSV cross-OS, évite les pièges `os.path.join` MSYS) |
 | `lean_kernel_check.py` | Diagnostic kernel Lean (toolchain, oleans, env Python) |
 | `smoke_test_epita_is.py` | Smoke tests du parcours EPITA-IS (notebooks + preuves) |
 | `check_public_anchor.py` | Detecte les `sorry` qu'aucune declaration publique n'atteint — l'angle mort residuel du gate `proof-integrity` (voir ci-dessous) |
@@ -273,6 +275,41 @@ nécessite `lake update`.
   [`docs/lean/coordinator-workflow.md`](../../docs/lean/coordinator-workflow.md)
   (oleans cherchés dans le répertoire source au lieu de `.lake/build/lib/lean/`).
 
+### Jumeau Linux/macOS — `setup_shared_mathlib.sh` (PR #10664+)
+
+L'EPIC #10643 (Support multiplateforme) introduit un jumeau bash pour les
+workers Mac/Linux. Différences structurelles vs le `.ps1` :
+
+| Aspect | Windows (NTFS junction) | Linux/macOS |
+|--------|-------------------------|-------------|
+| Lien vers le cache partagé | NTFS junction (`mklink /J`) | `ln -s` (mode Scan) ou bind mount (`mount --bind`, sudo) |
+| Suppression du lien seul | `cmd /c rmdir` | `rm <symlink>` (le cache survit) |
+| Suppression longue-path | `robocopy /MIR` depuis un dossier vide | `rm -rf` (FS Unix gère nativement) |
+| Mode Scan (lecture seule) | OK | OK, 100% portable |
+| Mode Apply | OK, sans élévation | **`RECOVERABLE-USER-HAND`** : bind mount requiert sudo, symlink absolu macOS risque avec outils natifs Xcode |
+| Mode Rollback | Lit `share-state.json`, restore depuis `.bak-2611` | TODO partiel — `--rollback-via-restore-from-backup` exigé |
+
+**Verdict SOTA-OK sur le mode Scan** : le scan énumère les lakes, groupe par
+(toolchain, transitive deps), affiche l'économie potentielle. Aucune écriture,
+aucun sudo. Le seul couplage OS est `os.path.islink()` (POSIX) pour détecter
+les symlinks existants.
+
+**Verdict RECOVERABLE-USER-HAND sur les modes Apply/Rollback** : par défaut,
+le script sort en code 2 avec un message explicite si `--allow-bind-mount-with-sudo`
+(Linux) ou `--allow-abs-symlink` (macOS) manque. Le user prend la décision.
+
+```
+./scripts/lean/setup_shared_mathlib.sh --scan
+./scripts/lean/setup_shared_mathlib.sh --apply --allow-bind-mount-with-sudo --build
+./scripts/lean/setup_shared_mathlib.sh --rollback --rollback-via-restore-from-backup
+```
+
+**Helper Python** : `setup_shared_mathlib_scan.py` est invoqué par le `.sh`
+pour énumérer les lakes. Il utilise un `pj()` POSIX manuel (concaténation
+avec `/`) au lieu de `os.path.join` car Git Bash MSYS détecte `os.sep = '\\'`
+mais reçoit des paths POSIX-style en entrée (`REPO_ROOT=/c/...`). Bug mesuré :
+`os.path.join('/c/repo', 'a/b')` produit `/c/repo\\a/b` qui n'existe pas.
+
 ### Histoire des issues
 
 - **#2611** — outillage initial, alignement des manifests (fermé).
@@ -283,6 +320,8 @@ nécessite `lake update`.
 - **#4363** — cette mutualisation (19/19 lakes actifs).
 - **#4365** — regroupement des lakes cohésifs post-convergence (Phase 4 de
   #4362, OPTIONNEL après convergence complète).
+- **#10643 EPIC** — Support multiplateforme Linux/macOS (sub-issue #10644 :
+  scripts d'environnement + tooling `scripts/`, livrable #10664+).
 
 Voir aussi : `lean-wdac-olean-wholesale-copy.md`, `lean-knot-build-windows-cache.md`,
 `lean-rc1-convergence-method.md` dans `~/.claude/projects/c--dev-CoursIA-2/memory/`.

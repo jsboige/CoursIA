@@ -170,4 +170,74 @@ theorem generate_eq_bot_iff {C : Type*} [Category C] {X : C} (R : Presieve X) :
     Sieve.generate R = ⊥ ↔ R = ⊥ :=
   Sieve.generate_eq_bot_iff R
 
+/-!
+## Théorèmes propres (c.1301+129)
+
+Les théorèmes ci-dessous *prouvent* des égalités définitionnelles et des
+équivalences définitionnelles que les fields/lemmas de la structure
+`Sieve X` exposent dans `Mathlib/CategoryTheory/Sites/Sieves.lean`.
+Tous ces fields opèrent sur la structure résidente `Sieve X` non
+polymorphe d'univers — donc **L902 ★★ SAFE** (cf c.1301+108-L1 ★★ :
+les constructors polymorphes d'univers sont à proscrire, contrairement
+aux fields résidents sur X).
+
+1. `id_mem_iff_eq_top_field` : restatement de `Sieve.id_mem_iff_eq_top`
+   (`S (𝟙 X) ↔ S = ⊤`, caractérise les cribles maximaux par l'identité).
+2. `generate_of_contains_isSplitEpi_field` : restatement de
+   `Sieve.generate_of_contains_isSplitEpi` (un préfaisceau qui contient
+   un épimorphisme scindé engendre le crible maximal).
+3. `generate_of_singleton_isSplitEpi_field` : restatement de
+   `Sieve.generate_of_singleton_isSplitEpi` (cas particulier du précédent
+   pour un préfaisceau singleton d'un épimorphisme scindé).
+4. `arrows_eq_bot_iff_field` : restatement de `Sieve.arrows_eq_bot_iff`
+   (`S.arrows = ⊥ ↔ S = ⊥`, caractérise le crible vide par ses arrows).
+5. `comp_mem_iff_field` : restatement de `Sieve.comp_mem_iff` (pour un
+   iso `i`, `S (i ≫ f) ↔ S f` : la composition avec un iso préserve
+   l'appartenance à un crible).
+
+Ce sont des théorèmes « vitrines » qui certifient que ces fields/lemmas
+de la structure `Sieve X` sont effectivement calculables dans la même
+exécution Lean.
+-/
+
+/-- Théorème : `S (𝟙 X) ↔ S = ⊤` — un crible contient l'identité ssi
+    il est le crible maximal. β-équivalent au lemma
+    `Sieve.id_mem_iff_eq_top`. -/
+theorem id_mem_iff_eq_top_field {C : Type*} [Category C]
+    {X : C} {S : Sieve X} :
+    S (𝟙 X) ↔ S = ⊤ :=
+  Sieve.id_mem_iff_eq_top
+
+/-- Théorème : `Sieve.generate R = ⊤` dès que `R` contient un
+    épimorphisme scindé. β-équivalent au lemma
+    `Sieve.generate_of_contains_isSplitEpi`. -/
+theorem generate_of_contains_isSplitEpi_field {C : Type*} [Category C]
+    {X Y : C} {R : Presieve X} (f : Y ⟶ X) [IsSplitEpi f] (hf : R f) :
+    Sieve.generate R = ⊤ :=
+  Sieve.generate_of_contains_isSplitEpi f hf
+
+/-- Théorème : `Sieve.generate (Presieve.singleton f) = ⊤` pour tout
+    épimorphisme scindé `f`. Cas particulier du précédent. β-équivalent
+    au lemma `Sieve.generate_of_singleton_isSplitEpi`. -/
+theorem generate_of_singleton_isSplitEpi_field {C : Type*} [Category C]
+    {X Y : C} (f : Y ⟶ X) [IsSplitEpi f] :
+    Sieve.generate (Presieve.singleton f) = ⊤ :=
+  Sieve.generate_of_singleton_isSplitEpi f
+
+/-- Théorème : `S.arrows = ⊥ ↔ S = ⊥` — le crible a ses arrows vides
+    ssi c'est le crible vide. β-équivalent au lemma
+    `Sieve.arrows_eq_bot_iff`. -/
+theorem arrows_eq_bot_iff_field {C : Type*} [Category C]
+    {X : C} {S : Sieve X} :
+    S.arrows = ⊥ ↔ S = ⊥ :=
+  Sieve.arrows_eq_bot_iff
+
+/-- Théorème : pour un iso `i`, `S (i ≫ f) ↔ S f`. La composition avec
+    un iso préserve l'appartenance à un crible. β-équivalent au lemma
+    `Sieve.comp_mem_iff`. -/
+theorem comp_mem_iff_field {C : Type*} [Category C]
+    {X Y Z : C} (i : X ⟶ Y) (f : Y ⟶ Z) [IsIso i] (S : Sieve Z) :
+    S (i ≫ f) ↔ S f :=
+  Sieve.comp_mem_iff i f S
+
 end Grothendieck

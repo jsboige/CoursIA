@@ -276,4 +276,41 @@ theorem right_unitor_iso_hom_eq [MonoidalCategoryStruct C] (X : C) :
 theorem tensorObj_eq_app [MonoidalCategoryStruct C] (X Y : C) :
     X ⊗ Y = MonoidalCategoryStruct.tensorObj X Y := rfl
 
+/-!
+## 9. Proper theorems (c.1301+121 — additions on fields `whiskerLeft` /
+##     `whiskerRight`)
+
+Direct continuation of the 4 lemmas above: we now prove that the
+fields `whiskerLeft`, `whiskerRight` of `MonoidalCategoryStruct` are
+definitionally related to their Lean notations `◁`, `▷`. These
+equalities are trivial unfolds after `rfl`; L902 ★★ is not concerned
+(no polymorphic universe constructor: `MonoidalCategoryStruct` is a
+class of type `Type → Type`).
+
+**Note**: an analogous lemma on `tensorHom f g` is SKIPPED — the
+notation `f ▷ g` uses `whiskerRight` (morphism `f`, object `g`) but
+not `tensorHom` (which takes morphism `f` AND morphism `g`). A
+`tensorHom_eq_app` lemma could be added in a later PR if an infix
+notation `f ⊗ g` for morphisms is extended to Mathlib.
+
+**Origin** (issue #2159 dispatch ai-01, c.1301+121): same scope as
+the `Equivalences.lean` additions. Sub-grain 2/2.
+-/
+
+/-- Theorem: the left whiskering `whiskerLeft X f = X ◁ f` is
+    definitionally equal to the `whiskerLeft` field of
+    `MonoidalCategoryStruct`. Bridge between the `◁` notation and the
+    primitive function. -/
+theorem whiskerLeft_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
+    (f : Y ⟶ Z) :
+    X ◁ f = MonoidalCategoryStruct.whiskerLeft X f := rfl
+
+/-- Theorem: the right whiskering `whiskerRight f Z = f ▷ Z` is
+    definitionally equal to the `whiskerRight` field of
+    `MonoidalCategoryStruct`. Bridge between the `▷` notation (with
+    object argument) and the primitive function. -/
+theorem whiskerRight_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
+    (f : X ⟶ Y) :
+    f ▷ Z = MonoidalCategoryStruct.whiskerRight f Z := rfl
+
 end Grothendieck.MonoidalCategories_en
