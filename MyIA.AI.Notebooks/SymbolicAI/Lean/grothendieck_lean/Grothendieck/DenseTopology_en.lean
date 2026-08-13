@@ -126,4 +126,66 @@ theorem dense_pullback_stable {C : Type*} [Category C] {X Y : C}
     Sieve.pullback f S ∈ GrothendieckTopology.dense Y :=
   GrothendieckTopology.dense.pullback_stable f hS
 
+/-!
+## Proper theorems (c.1301+126)
+
+The theorems below *prove* definitional equalities exposed by the fields
+of the structure `GrothendieckTopology C` via the `dense` topology
+(a namespace-level `def`). They exploit:
+- `GrothendieckTopology.dense.top_mem X`: user-facing lemma (simp+grind
+  tagged) on the dense topology, β-equivalent to `dense.top_mem' X`
+- `GrothendieckTopology.dense.pullback_stable f hS`: user-facing lemma
+  on pullback stability
+- `GrothendieckTopology.dense_covering`: `iff` characterizing
+  membership `S ∈ GrothendieckTopology.dense X`
+
+All these fields/lemmas operate on the resident structure
+`GrothendieckTopology C` non polymorphic over universes — so
+**L902 ★★ SAFE** (cf. c.1301+108-L1 ★★ : polymorphic universe
+constructors are to be proscribed, unlike resident fields on C).
+
+1. `dense_top_mem_field`: restatement of `dense_top_mem` that uses
+   directly the Mathlib lemma `GrothendieckTopology.dense.top_mem X`.
+2. `dense_pullback_stable_field`: restatement of `dense_pullback_stable`
+   that uses directly the Mathlib lemma
+   `GrothendieckTopology.dense.pullback_stable f hS`.
+3. `mem_dense_iff_forall_refines`: restatement of the characterization
+   `mem_dense_of_refines` (forward) and `dense_refines_of_mem` (backward)
+   combined into a `↔` via `GrothendieckTopology.dense_covering.symm`.
+
+These are "showcase" theorems that certify the fields/lemmas of the
+`GrothendieckTopology C` structure are effectively computable in the
+same Lean execution.
+-/
+
+/-- Theorem: the maximal sieve is dense-covering in the sense of the
+    `top_mem` field of the `dense` topology. Direct restatement of the
+    lemma `GrothendieckTopology.dense.top_mem X` (itself β-equivalent
+    to `dense.top_mem' X`, the identity axiom of the resident structure
+    `GrothendieckTopology C`). -/
+theorem dense_top_mem_field {C : Type*} [Category C] (X : C) :
+    (⊤ : Sieve X) ∈ GrothendieckTopology.dense X :=
+  GrothendieckTopology.dense.top_mem X
+
+/-- Theorem: pullback stability of the dense-covering sieve, via the
+    Mathlib lemma `GrothendieckTopology.dense.pullback_stable`
+    (itself β-equivalent to `dense.pullback_stable' f hS`, the
+    stability axiom of the resident structure `GrothendieckTopology C`). -/
+theorem dense_pullback_stable_field {C : Type*} [Category C] {X Y : C}
+    {S : Sieve X} (hS : S ∈ GrothendieckTopology.dense X) (f : Y ⟶ X) :
+    Sieve.pullback f S ∈ GrothendieckTopology.dense Y :=
+  GrothendieckTopology.dense.pullback_stable f hS
+
+/-- Theorem: explicit membership characterization of a dense-covering
+    sieve, as a biconditional equivalence between `S ∈ GrothendieckTopology.dense X`
+    and the universal property "every incoming arrow admits a refinement
+    in S". This is the statement `GrothendieckTopology.dense_covering.symm`
+    (the forward and backward directions are already proven by
+    `mem_dense_of_refines` and `dense_refines_of_mem` respectively). -/
+theorem mem_dense_iff_forall_refines {C : Type*} [Category C] {X : C}
+    {S : Sieve X} :
+    (S ∈ GrothendieckTopology.dense X) ↔
+      ∀ {Y : C} (f : Y ⟶ X), ∃ (Z : _) (g : Z ⟶ Y), S.arrows (g ≫ f) :=
+  GrothendieckTopology.dense_covering.symm
+
 end Grothendieck.DenseTopology_en
