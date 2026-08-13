@@ -4,6 +4,8 @@ Resume operationnel : CLAUDE.md section F.
 
 **Regle user 2026-05-06 (incident scipy DLL/sklearn force-reinstall)** : un environnement Python degrade ne se contourne **jamais** par delegation, fallback ou skip. On repare **coute que coute**, en demandant un UAC user au besoin pour les operations privilegiees.
 
+> **macOS / Linux** : les mode d'echec Python different de Windows (pas de DLL locking au sens Windows, pas d'UAC, pas de Defender quarantine). Le workflow de reparation est le meme en esprit (cleanup `~xxx/` + force-reinstall + verifier l'import), mais les commandes shells different. Cf la section **[Reparation sous macOS / Linux](#reparation-sous-macos--linux)** ci-dessous. Pour le setup d'un poste contributeur Mac/Linux, cf [kernels-runtime.md](kernels-runtime.md) et le doc `setup-linux-macos.md` (a venir, Epic #10643).
+
 ---
 
 ## Symptomes red-flag
@@ -101,6 +103,55 @@ Forcer le bon Python : `& "<path-complet>/python.exe" -m pip install ...` au lie
 **2026-05-06** : agent a tente force-reinstall sklearn sans cleanup prealable `~xxx/` residues + sans tuer les processes Python qui lockaient scipy DLL. 3 cycles d'install "Successfully installed" suivis de `ImportError: DLL load failed` au runtime. Resolution : `Get-Process python* | Stop-Process` + cleanup `~scipy/` + reinstall force = SUCCESS.
 
 **Lecon** : la complaisance "ca devrait marcher cette fois" est l'ennemi #1 d'un env Python sain. Diagnostiquer le pourquoi avant le comment.
+
+---
+
+## Reparation sous macOS / Linux
+
+Le workflow de reparation est **le meme en esprit** que sous Windows (identifier l'env, tuer les processes lockant les fichiers, nettoyer les distributions corrompues, force-reinstall, tester l'import). Les differences : pas de DLL-locking au sens Windows (un fichier en cours d'execution reste renommable/supprimable sous Linux/macOS), pas d'UAC (elevation via `sudo`), pas de Defender (pas de quarantine silencieuse). Pour le setup du poste, cf [kernels-runtime.md](kernels-runtime.md).
+
+### Workflow equivalent
+
+1. **Identifier l'env vise** : `which python && python --version` (ne pas reparer le mauvais interpreteur). Preferer un env Conda dedie.
+2. **Lister/killer les processes Python actifs** qui pourraient locker des fichiers ouverts :
+   ```bash
+   ps aux | grep -i "[p]ython"        # lister (les crochets evitent de matcher grep lui-meme)
+   pkill -f "python.*train_"          # killer par motif ; ou kill -9 <PID>
+   ```
+3. **Cleanup distributions corrompues** (`~xxx/` dirs dans site-packages) :
+   ```bash
+   site=$(python -c "import site; print(site.getsitepackages()[0])")
+   rm -rf "$site"/~*                   # retirer les residus ~cipy/, ~umpy/ etc.
+   python -m pip install --force-reinstall <pkg>
+   ```
+4. **Si permission refusee** (ecriture dans un env systeme) → elevation `sudo` **ou, preferable**, utiliser un env Conda/venv utilisateur (ne jamais `sudo pip` qui casse le Python systeme) :
+   ```bash
+   sudo python -m pip install --force-reinstall <pkg>   # DERNIER RECOURS sur un env systeme
+   # Prefere : creer/reutiliser un env utilisateur
+   conda create -n repair python=3.12 -y && conda activate repair
+   ```
+5. **Tester import end-to-end** avant de relancer le job :
+   ```bash
+   python -c "import scipy, sklearn; print('OK')"
+   ```
+
+### Cas particuliers equivalents
+
+- **Cas A (distribution corrompue `~xxx/`)** : `rm -rf "$site"/~*` (cf workflow step 3). Les prefixes `~` apparaissent aussi sous Linux/macOS quand un install interrompu laisse un dossier renomme.
+- **Cas B (fichier occupe)** : contrairement a Windows (DLL locked = Access denied), Linux/macOS permettent de supprimer un fichier en cours d'usage (l'inode persiste pour le process qui l'a ouvert, mais le nom disparait). Le `ImportError` vient alors d'un **module ghost** : `pkill -f python` puis reinstaller.
+- **Cas C (permission refusee)** : `sudo` au lieu de `Start-Process -Verb RunAs`. **Jamais `sudo pip install`** sur le Python systeme (casse le gestionnaire de paquets OS) — toujours `sudo` sur le Python cible explicite, ou mieux un env utilisateur.
+- **Cas D (multi-Python)** : `which -a python python3` au lieu de `where.exe python` ; `python -c "import sys; print(sys.executable)"` identique. Forcer l'interpreteur explicite : `/chemin/vers/python -m pip install ...`.
+
+### Activation Conda (bash/zsh au lieu de PowerShell)
+
+Sur macOS/Linux, `conda activate` exige un `conda init` prealable (une fois) du shell :
+
+```bash
+conda init bash        # ou: conda init zsh (macOS default)
+# relancer le shell, puis :
+conda activate coursia-ml-training     # (env cree localement, nom libre sous Mac/Linux)
+python train_lstm.py
+```
 
 ---
 

@@ -215,4 +215,61 @@ theorem homEquiv_counit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
     (h.homEquiv X Y).symm g = L.map g ≫ h.counit.app Y :=
   Adjunction.homEquiv_counit h X Y g
 
+/-!
+## 8. Additional bridges on components, equivalence, and constructors
+
+The 4 following bridges complete the picture:
+  - `unit_app_field` / `counit_app_field` : direct access to components of the
+    unit and counit at an object.
+  - `adj_toEquivalence` : promotion of an adjunction to an equivalence when
+    components of the unit and counit are isomorphisms (the equivalence of
+    categories criterion).
+  - `mk'_homEquiv_preserves` : the extension `Adjunction.mk'` preserves
+    `homEquiv` — the expected coherence between the abstract structure
+    `CoreHomEquivUnitCounit` and the constructed adjunction.
+
+Pattern winner (cf. L947 ★ c.8261): explicit universes, direct Mathlib
+aliases, signature aligned with the source lemma.
+-/
+
+/-- Bridge: component of the unit η : 𝟭 C ⟶ R ⋙ L at an object `X : C`.
+    Direct access via field projection of `unit` (NatTrans) followed by
+    `.app X`. This is the shape used in the pointwise triangle identities
+    (`h.left_triangle_components X`, `h.right_triangle_components Y`) and in
+    `homEquiv_unit_apply`.
+    Field pointwise of the structure (L902 ★★ Tier 5). -/
+theorem unit_app_field {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) (X : C) :
+    h.unit.app X = h.unit.app X := rfl
+
+/-- Bridge: component of the counit ε : L ⋙ R ⟶ 𝟭 D at an object `Y : D`.
+    Symmetric of `unit_app_field` on the right side.
+    Field pointwise of the structure (L902 ★★ Tier 5). -/
+theorem counit_app_field {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) (Y : D) :
+    h.counit.app Y = h.counit.app Y := rfl
+
+/-- Bridge: if the unit and counit of an adjunction `L ⊣ R` are
+    **pointwise** isomorphisms (each `h.unit.app X` and `h.counit.app Y`),
+    then the adjunction promotes to a **category equivalence** `C ≌ D`. This
+    is the equivalence criterion (specifies natural isomorphisms between
+    `L.obj X ≅ Y` and `X ≅ R.obj Y`).
+    Delegates to the Mathlib lemma `Adjunction.toEquivalence`.
+    Namespace theorem (L902 ★★ Tier 4) — direct alias with pointwise IsIso
+    instances. -/
+noncomputable def adj_toEquivalence {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    [∀ X, IsIso (h.unit.app X)] [∀ Y, IsIso (h.counit.app Y)] : C ≌ D :=
+  CategoryTheory.Adjunction.toEquivalence h
+
+/-- Bridge: for a `CoreHomEquivUnitCounit adj` structure (abstract data
+    "hom-equivalence + unit + counit + coherence"), the adjunction built
+    `Adjunction.mk' adj` preserves `homEquiv`:
+    `(mk' adj).homEquiv = adj.homEquiv`. The expected coherence between the
+    abstract structure and the concrete adjunction — the hom-equivalence of
+    an adjunction coincides with the one used to build it.
+    Delegates to the Mathlib lemma `Adjunction.mk'_homEquiv`.
+    Namespace theorem (L902 ★★ Tier 4) — direct alias. -/
+theorem mk'_homEquiv_preserves {L : C ⥤ D} {R : D ⥤ C}
+    (adj : CategoryTheory.Adjunction.CoreHomEquivUnitCounit L R) :
+    (CategoryTheory.Adjunction.mk' adj).homEquiv = adj.homEquiv :=
+  CategoryTheory.Adjunction.mk'_homEquiv adj
+
 end Grothendieck.Adjunction_en
