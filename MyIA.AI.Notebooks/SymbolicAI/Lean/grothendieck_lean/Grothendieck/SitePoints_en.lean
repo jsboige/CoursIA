@@ -233,4 +233,76 @@ theorem presheaf_fiber_hom_ext {C : Type u} [Category.{v} C]
     f = g :=
   Φ.presheafFiber_hom_ext h
 
+/-!
+## Naturality of `toPresheafFiber` along morphisms of `C`
+
+For any morphism `f : X ⟶ Y` in the base category and any element
+`x : Φ.fiber.obj X`, the application `toPresheavFiber X x P : P.obj (op X) ⟶ Φ.fiber`
+commutes with `P.map f.op`. This is the naturality of the cocone `presheafFiberCocone`
+with respect to morphisms of `C`.
+
+This is `toPresheafFiber_w` from Mathlib.
+-/
+
+/-- Naturality of `toPresheafFiber` along a morphism of the base category:
+    for `f : X ⟶ Y` and `x : Φ.fiber.obj X`, the equality
+    `P.map f.op ≫ toPresheafFiber X x = toPresheafFiber Y (Φ.fiber.map f x)`
+    relates the action of the presheaf (pullback P.map) to the fiber functor.
+    Uses `toPresheafFiber_w` from Mathlib. -/
+theorem to_presheaf_fiber_w {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    (Φ : GrothendieckTopology.Point.{w} J) {X Y : C} (f : X ⟶ Y)
+    (x : Φ.fiber.obj X) (P : Cᵒᵖ ⥤ Type (max u w)) :
+    P.map f.op ≫ Φ.toPresheafFiber X x P = Φ.toPresheafFiber Y (Φ.fiber.map f x) P :=
+  Φ.toPresheafFiber_w f x P
+
+/-!
+## Naturality of `toPresheafFiber` along presheaf morphisms
+
+For any presheaf morphism `g : P ⟶ Q`, the inclusion into the fiber
+`toPresheafFiber X x` commutes with `presheafFiber.map g`. This is the naturality
+of the colimit cocone with respect to presheaf morphisms.
+
+This is `toPresheafFiber_naturality` from Mathlib.
+-/
+
+/-- Naturality of `toPresheafFiber` along a presheaf morphism:
+    for `g : P ⟶ Q`, we have `toPresheafFiber X x P ≫ presheafFiber.map g =
+    g.app (op X) ≫ toPresheafFiber X x Q`.
+    Uses `toPresheafFiber_naturality` from Mathlib. -/
+theorem to_presheaf_fiber_naturality {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    (Φ : GrothendieckTopology.Point.{w} J) {P Q : Cᵒᵖ ⥤ Type (max u w)}
+    (g : P ⟶ Q) (X : C) (x : Φ.fiber.obj X) :
+    Φ.toPresheafFiber X x P ≫ Φ.presheafFiber.map g =
+      g.app (Opposite.op X) ≫ Φ.toPresheafFiber X x Q :=
+  Φ.toPresheafFiber_naturality g X x
+
+/-!
+## The trivial and discrete topologies in the topology lattice
+
+The trivial topology (the coarsest) coincides with the minimum element
+of the lattice of Grothendieck topologies; the discrete topology (the finest)
+coincides with the maximum element. These two identities anchor the extreme
+topologies in the language of order, making their canonical role transparent.
+
+These are `trivial_eq_bot` and `discrete_eq_top` from Mathlib (CategoryTheory.Sites.Grothendieck).
+-/
+
+/-- The trivial topology is the minimum element of the topology lattice:
+    `trivial C = ⊥`. Every set is covering for the trivial topology, so
+    every presheaf is a sheaf — which makes the trivial topology "the coarsest".
+    Uses `trivial_eq_bot` from Mathlib. -/
+theorem trivial_topology_eq_bot (C : Type u) [Category.{v} C] :
+    GrothendieckTopology.trivial C = ⊥ :=
+  CategoryTheory.GrothendieckTopology.trivial_eq_bot
+
+/-- The discrete topology is the maximum element of the topology lattice:
+    `discrete C = ⊤`. Only the maximal sieve is covering, so only the
+    terminal presheaf is a sheaf — which makes the discrete topology "the finest".
+    Uses `discrete_eq_top` from Mathlib. -/
+theorem discrete_topology_eq_top (C : Type u) [Category.{v} C] :
+    GrothendieckTopology.discrete C = ⊤ :=
+  CategoryTheory.GrothendieckTopology.discrete_eq_top
+
 end Grothendieck_en

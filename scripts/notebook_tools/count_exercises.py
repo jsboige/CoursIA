@@ -116,6 +116,7 @@ NON_PEDAGOGICAL_DIRS = {
     "semantic-fleet",  # vendored sub-repo under GenAI/SemanticKernel/
     "ML-Training-Pipeline",  # QC model-training research, not a taught series
     "Research-Executor",  # QC batch-run harness (`runner.ipynb`)
+    "FallacyDetection",  # Epic #10355 R&D deliverables (Phase 1: SOTA survey, datasets landscape, taxonomy gap), not a taught series
 }
 
 #: Minimum exercise count per notebook kind, transcribed from the rule's
