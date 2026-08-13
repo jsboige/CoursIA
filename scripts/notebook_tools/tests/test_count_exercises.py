@@ -1062,6 +1062,24 @@ class TestCorpusScope:
         found = {p.name for p in iter_pedagogical_notebooks(tmp_path)}
         assert found == {"SW-4-Ontologies.ipynb"}
 
+    def test_research_dirs_are_out_of_corpus(self, tmp_path):
+        """NON_PEDAGOGICAL_DIRS hold R&D deliverables, not taught series, so
+        their notebooks carry no exercise budget. Locks the FallacyDetection
+        exclusion (#10355 Phase 1 notebooks -- SOTA survey, datasets landscape,
+        taxonomy coverage-gap -- that were falsely flagged sub-threshold) and
+        the existing ML-Training-Pipeline / Research-Executor exclusions."""
+        cells = [_md("## Exercice 1"), _code("pass")]
+        for d in ("FallacyDetection", "ML-Training-Pipeline", "Research-Executor"):
+            _write_nb(tmp_path / d / "some_research.ipynb", cells)
+        for d in ("FallacyDetection", "ML-Training-Pipeline", "Research-Executor"):
+            nb = tmp_path / d / "some_research.ipynb"
+            kind, threshold = _classify(nb, standard_threshold=3, root=tmp_path)
+            assert threshold is None, f"{d} should carry no exercise budget"
+            assert kind in OUT_OF_CORPUS_KINDS, f"{d} should be out of corpus"
+        # iter_pedagogical_notebooks skips the whole excluded directory
+        assert {p.name for p in iter_pedagogical_notebooks(tmp_path)} == set()
+
+
     def test_gate_can_still_fail_positive_control(self, tmp_path):
         """The control that matters for any scope-NARROWING change.
 
