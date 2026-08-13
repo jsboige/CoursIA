@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : les deux jumeaux implementent les BDD/MDD (Binary/Multi-valued Decision Diagrams) from-scratch en pure stdlib. Python = `__future__/dataclasses/time/typing` uniquement (zero solveur externe, confirme par grep `import`/`from` = {`__future__`, `dataclasses`, `time`, `typing`}, aucune lib BDD tierce). C# = `System.Collections.Generic/System.Diagnostics/System.Linq` uniquement (zero solveur externe, confirme par grep `using` = {`System.Collections.Generic`, `System.Diagnostics`, `System.Linq`}, aucune lib BDD tierce). Verifie firsthand (c.235 audit 2026-08-12, myia-po-2023:CoursIA-2) : 33 cells Python / 40 cells C#, divergence d'implementation documentee dans known_differences (Python hand-roll, C# hand-roll avec idiomes differents). Pas de moteur SOTA a brancher : les BDD sont la demonstration (construction recursive de l'arbre de decisions, application des contraintes Sudoku comme noeuds BDD, evaluation par reduction). Verdict SOTA-OK : solver-free by design des deux cotes, aucune asymetrie de machinerie a corriger. parity_level `semantic` confirmee par audit (meme concept BDD, implementation differente)."
   audits:
     - date: "2026-08-03"
       by: myia-po-2023:CoursIA
