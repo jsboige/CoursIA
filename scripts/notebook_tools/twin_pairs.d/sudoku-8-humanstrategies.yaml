@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-8-HumanStrategies-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Strategie pedagogique solver-free : les deux jumeaux implementent des techniques d'inference humaines (naked/hidden singles, pointing pairs, box-line) en from-scratch sur chaque stack. Python = stdlib pur + numpy pour le benchmark (zero solveur externe, strategies de deduction logique pure). C# = stdlib System.* uniquement (0 `using` solver -- confirme par grep audit c.234 : `using` set = {System.Collections.Generic, System.Diagnostics, System.Linq}, aucun solveur CSP/SMT/GA importe). Pas de moteur SOTA a brancher : les strategies sont la demonstration elle-meme (chainage de deductions logiques sur la grille, pas une recherche arborescente). Verdict SOTA-OK par construction (solver-free by design des deux cotes, aucune asymetrie de machinerie a corriger). Idiom divergence visible dans la visualisation : Python utilise networkx pour le graphe de contraintes, C# reste sur System.*."
   audits:
     - date: "2026-08-03"
       by: myia-po-2023:CoursIA
