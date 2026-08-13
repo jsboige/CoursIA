@@ -298,4 +298,91 @@ noncomputable def presheaf_to_sheaf_comp_iso_bridge {A : Type u'} [Category.{v'}
     presheafToSheaf J A ⋙ Φ.sheafFiber ≅ Φ.presheafFiber :=
   Φ.presheafToSheafCompSheafFiberIso A
 
+/-!
+## 12. Ponts sur le critere pratique (SGA 4 IV 6.5) et HasEnoughPoints
+
+Les sections 3-7 ont documente par `#check` le critere pratique de conservativite
+(SGA 4 IV 6.5 (a)) : une famille P de points est conservative ssi la condition
+de tamis couvrant est detectable point par point. Ce grain ajoute les bridges
+propres sur les constructions centrales restees documentaires :
+
+  - `conservative_family_field` : la structure elle-meme (re-export type-sig) ;
+  - `jointly_reflect_ofArrows_mem_field` : un tamis engendre par une famille
+    de fleches est J-couvrant ssi les fleches sont conjointement surjectives
+    sur chaque fibre (le coeur de SGA 4 IV 6.5) ;
+  - `jointly_reflect_ofArrows_mem_of_small_field` : variante pour les petites
+    familles de points ;
+  - `W_iff_field` : f ∈ J.W ssi f induit un iso sur chaque fibre — la
+    caracterisation stalk-a-stalk de la classe des morphismes inverses par la
+    faisceautisation ;
+  - `has_enough_points_field` : le site a suffisamment de points (existence
+    d'une petite famille conservative).
+
+Tous les bridges sont L902 ★★ Tier 5 : args residents, instances structurelles,
+pas de constructeur polymorphe d'univers.
+-/
+
+/-- Pont : la famille conservative de points — la structure centrale du module :
+    les foncteurs fibres `Sheaf J (Type w) ⥤ Type w` aux points de P refletent
+    conjointement les isomorphismes (Stacks 00YK (1)). Re-export direct de la
+    structure Mathlib `ObjectProperty.IsConservativeFamilyOfPoints`.
+    Type-sig bridge (L902 ★★ Tier 5) — re-export direct de la structure Prop. -/
+def conservative_family_field : Prop :=
+  P.IsConservativeFamilyOfPoints
+
+/-- Pont : la detection des tamis couvrants via les points (SGA 4 IV 6.5) —
+    un tamis engendre par `{f : U i ⟶ X}` est J-couvrant ssi, pour chaque
+    point Phi de P et chaque x dans la fibre de X, une fleche `f i` atteint x.
+    Delegue directement au lemme Mathlib `jointly_reflect_ofArrows_mem`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents. -/
+theorem jointly_reflect_ofArrows_mem_field [LocallySmall.{w} C]
+    [HasSheafify J (Type w)] [J.WEqualsLocallyBijective (Type w)]
+    (hP : P.IsConservativeFamilyOfPoints)
+    {X : C} {ι : Type*} [Small.{w} ι] {U : ι → C} (f : ∀ i, U i ⟶ X) :
+    Sieve.ofArrows _ f ∈ J X ↔
+      ∀ (Φ : P.FullSubcategory) (x : Φ.obj.fiber.obj X),
+        ∃ (i : ι) (y : Φ.obj.fiber.obj (U i)), Φ.obj.fiber.map (f i) y = x :=
+  ObjectProperty.IsConservativeFamilyOfPoints.jointly_reflect_ofArrows_mem hP f
+
+/-- Pont : la variante pour les petites familles de points — meme detection
+    des tamis couvrants, avec `[ObjectProperty.Small.{w} P]` au lieu de
+    `[Small.{w} ι]`. Delegue au lemme Mathlib
+    `jointly_reflect_ofArrows_mem_of_small`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents. -/
+theorem jointly_reflect_ofArrows_mem_of_small_field [LocallySmall.{w} C]
+    [HasSheafify J (Type w)] [J.WEqualsLocallyBijective (Type w)]
+    (hP : P.IsConservativeFamilyOfPoints) [ObjectProperty.Small.{w} P]
+    {X : C} {ι : Type*} {U : ι → C} (f : ∀ i, U i ⟶ X) :
+    Sieve.ofArrows _ f ∈ J X ↔
+      ∀ (Φ : P.FullSubcategory) (x : Φ.obj.fiber.obj X),
+        ∃ (i : ι) (y : Φ.obj.fiber.obj (U i)), Φ.obj.fiber.map (f i) y = x :=
+  ObjectProperty.IsConservativeFamilyOfPoints.jointly_reflect_ofArrows_mem_of_small hP f
+
+/-- Pont : la caracterisation stalk-a-stalk de J.W — un morphisme f appartient
+    a J.W (la classe des morphismes inverses par la faisceautisation) ssi il
+    induit un iso sur la fibre en chaque point de la famille conservative P.
+    Delegue directement au lemme Mathlib `W_iff`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+theorem W_iff_field {A : Type u'} [Category.{v'} A]
+    [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
+    {FC : A → A → Type*} {CC : A → Type w}
+    [∀ (X Y : A), FunLike (FC X Y) (CC X) (CC Y)]
+    [ConcreteCategory.{w} A FC]
+    [(forget A).ReflectsIsomorphisms]
+    [PreservesFilteredColimitsOfSize.{w, w} (forget A)]
+    [J.HasSheafCompose (forget A)]
+    (hP : P.IsConservativeFamilyOfPoints)
+    [HasWeakSheafify J A] [HasProducts.{w} A]
+    {F G : Cᵒᵖ ⥤ A} (f : F ⟶ G) :
+    J.W f ↔ ∀ (Φ : P.FullSubcategory), IsIso (Φ.obj.presheafFiber.map f) :=
+  ObjectProperty.IsConservativeFamilyOfPoints.W_iff hP f
+
+/-- Pont : le site (C, J) a suffisamment de points — la classe Prop
+    `GrothendieckTopology.HasEnoughPoints` : l'existence d'une petite famille
+    conservative de points. C'est la condition garantissant que le raisonnement
+    stalk par stalk est complet. Re-export direct de la classe Mathlib.
+    Type-sig bridge (L902 ★★ Tier 5) — re-export direct de la classe Prop. -/
+def has_enough_points_field (J : GrothendieckTopology C) : Prop :=
+  GrothendieckTopology.HasEnoughPoints.{w, v, u} J
+
 end Grothendieck.Conservative
