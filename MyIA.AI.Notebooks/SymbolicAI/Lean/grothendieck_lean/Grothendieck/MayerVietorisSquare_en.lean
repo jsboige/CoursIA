@@ -304,4 +304,43 @@ theorem shortComplex_shortExact_field
     S.shortComplex.ShortExact :=
   CategoryTheory.GrothendieckTopology.MayerVietorisSquare.shortComplex_shortExact S
 
+/-!
+## 8. Additional bridges (defs)
+
+Two definitional bridges complete the picture. The gluing-restriction theorems
+(`map_f₂₄_op_glue` / `map_f₃₄_op_glue`) were already delivered by #10743 under
+the names `sheafCondition_map_f₂₄_op_glue_field` and
+`sheafCondition_map_f₃₄_op_glue_field` — they are not duplicated here.
+
+  - `to_pullback_obj`: the canonical map from P(X₄) to the fiber product.
+  - `mv_short_complex`: the short complex ℤ[X₁] ⟶ ℤ[X₂] ⊞ ℤ[X₃] ⟶ ℤ[X₄].
+
+Pattern winner (cf. L947 ★ c.8261): explicit universes, direct Mathlib aliases.
+-/
+
+/-- Bridge: the canonical map from P(X₄) to the fiber product of the
+    fibers of the presheaf P along `P.map S.f₁₂.op` and `P.map S.f₁₃.op`.
+    This is the map whose bijectivity is equivalent to the sheaf condition
+    (cf. `sheaf_condition_iff_bijective`).
+    Uses `MayerVietorisSquare.toPullbackObj` from Mathlib. -/
+noncomputable def to_pullback_obj
+    [HasWeakSheafify J (Type v)]
+    (S : J.MayerVietorisSquare)
+    (P : Cᵒᵖ ⥤ Type v') :
+    P.obj (op S.X₄) →
+      CategoryTheory.Limits.Types.PullbackObj (P.map S.f₁₂.op) (P.map S.f₁₃.op) :=
+  S.toPullbackObj P
+
+
+/-- Bridge: the short complex ℤ[X₁] ⟶ ℤ[X₂] ⊞ ℤ[X₃] ⟶ ℤ[X₄] associated to a
+    Mayer-Vietoris square S. This is the input for the Mayer-Vietoris long
+    exact sequence in sheaf cohomology (Part 22).
+    Uses `MayerVietorisSquare.shortComplex` from Mathlib. -/
+noncomputable def mv_short_complex
+    [HasWeakSheafify J (Type v)]
+    [HasSheafify J AddCommGrpCat.{v}]
+    (S : J.MayerVietorisSquare) :
+    ShortComplex (Sheaf J AddCommGrpCat.{v}) :=
+  S.shortComplex
+
 end Grothendieck_en.MayerVietorisSquare
