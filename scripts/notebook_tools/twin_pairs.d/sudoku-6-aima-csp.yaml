@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-6-AIMA-CSP-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "CSP/AIMA est un enseignement algorithmique, pas une dependance a un solveur SOTA externe. AC-3 (Mackworth 1977) + backtracking + MRV/LCV = etat de l'art canonique pour la satisfaction de contraintes (cf. Russell & Norvig AIMA 4ed ch.6). Les 2 jumeaux implementent le meme framework AIMA from scratch (Python = numpy 19 cellules ; C# = System.* stdlib 0 NuGet 18 cellules) -- l'enseignement EST l'implementation, pas un wrapper sur OR-Tools/Gecode/Choco. Choix pedagogique assume par les 2 notebooks, divergence pedagogique nulle. Pas de moteur SOTA 'mieux branchable' qui changerait la valeur enseignee."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
