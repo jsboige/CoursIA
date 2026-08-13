@@ -223,4 +223,79 @@ noncomputable def skyscraper_adjunction_bridge {A : Type u'} [Category.{v'} A]
     Φ.sheafFiber (A := A) ⊣ Φ.skyscraperSheafFunctor :=
   Φ.skyscraperSheafAdjunction
 
+/-! ## 11. Theoremes ponts additionnels : monos, epis, prefaisceau gratte-ciel, fibre = localisation
+
+Ponts complementaires connectant la conservativite aux theoremes Namespace Mathlib
+deja exposes comme `#check` plus haut. Ces bridges suivent le pattern de la
+Section 10 : application directe des lemmes Namespace (L902 ★★ Tier 5).
+
+Pour les theoremes Mathlib a args explicites, l'application directe `name args`
+est l'idiotisme canonique : pas `by rw [name]` (Type equality non-rfl-fermable,
+cf L902 ★★ Tier 5 c.8232).
+-/
+
+/-- Theoreme pont : quand P est une famille conservative de points et que la
+    categorie de coefficients A satisfait AB5, les foncteurs fibres aux points de P
+    reflechissent conjointement les monomorphismes. C'est le pendant pour les
+    monos du `jointly_reflect_iso_bridge`. -/
+theorem jointly_reflect_mono_bridge {A : Type u'} [Category.{v'} A]
+    [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
+    {FC : A → A → Type*} {CC : A → Type w}
+    [∀ (X Y : A), FunLike (FC X Y) (CC X) (CC Y)]
+    [ConcreteCategory.{w} A FC]
+    [(forget A).ReflectsIsomorphisms]
+    [PreservesFilteredColimitsOfSize.{w, w} (forget A)]
+    [J.HasSheafCompose (forget A)]
+    [AB5OfSize.{w, w} A] [HasFiniteLimits A]
+    (hP : P.IsConservativeFamilyOfPoints) :
+    JointlyReflectMonomorphisms
+      (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectMonomorphisms
+
+/-- Theoreme pont : quand P est une famille conservative de points et que A admet
+    la faisceautisation faible et les produits w-indexes, les foncteurs fibres
+    refletent conjointement les epimorphismes. -/
+theorem jointly_reflect_epi_bridge {A : Type u'} [Category.{v'} A]
+    [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
+    {FC : A → A → Type*} {CC : A → Type w}
+    [∀ (X Y : A), FunLike (FC X Y) (CC X) (CC Y)]
+    [ConcreteCategory.{w} A FC]
+    [(forget A).ReflectsIsomorphisms]
+    [PreservesFilteredColimitsOfSize.{w, w} (forget A)]
+    [J.HasSheafCompose (forget A)]
+    [HasWeakSheafify J A] [HasProducts.{w} A]
+    (hP : P.IsConservativeFamilyOfPoints) :
+    JointlyReflectEpimorphisms
+      (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectEpimorphisms
+
+/-- Construction pont : l'adjonction prefaisceau gratte-ciel pour un point Phi.
+    Phi.presheafFiber est adjoint a gauche de Phi.skyscraperPresheafFunctor,
+    au niveau prefaisceau (avant faisceautisation). -/
+noncomputable def skyscraper_presheaf_adjunction_bridge {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    Φ.presheafFiber (A := A) ⊣ Φ.skyscraperPresheafFunctor :=
+  Φ.skyscraperPresheafAdjunction
+
+/-- Lemme pont : le prefaisceau gratte-ciel de valeur M est un faisceau pour J.
+    C'est ce qui permet d'identifier le faisceau gratte-ciel `skyscraperSheaf M`
+    comme le faisceau associe au prefaisceau gratte-ciel. -/
+theorem skyscraper_presheaf_is_sheaf_bridge {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) (M : A) :
+    Presheaf.IsSheaf J (Φ.skyscraperPresheaf M) :=
+  Φ.isSheaf_skyscraperPresheaf M
+
+/-- Iso pont : le foncteur fibre sur les faisceaux s'obtient a partir du foncteur
+    fibre sur les prefaisceaux par localisation relativement a J.W.
+    `presheafToSheaf J A ⋙ Φ.sheafFiber ≅ Φ.presheafFiber` temoigne que
+    le foncteur fibre prefaisceau factorise a travers la faisceautisation. -/
+noncomputable def presheaf_to_sheaf_comp_iso_bridge {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    [HasWeakSheafify J A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    presheafToSheaf J A ⋙ Φ.sheafFiber ≅ Φ.presheafFiber :=
+  Φ.presheafToSheafCompSheafFiberIso A
+
 end Grothendieck.Conservative

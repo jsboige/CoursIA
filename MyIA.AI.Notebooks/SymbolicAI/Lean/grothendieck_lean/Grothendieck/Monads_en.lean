@@ -168,4 +168,54 @@ def free_family (T : CategoryTheory.Monad C) :
     C ⥤ CategoryTheory.Monad.Algebra T :=
   T.free
 
+/-!
+## 7. Proper theorems (c.1301+124)
+
+The `#check` lines above show Mathlib accessibility; the theorems below
+*prove* definitional equalities that the Mathlib fields expose. All proofs
+are `rfl` because:
+
+1. The bridges `toMonad_underlying`, `forget_family`, `free_family` are
+   1-for-1 `def`s on Mathlib fields (definitional β-reduction).
+2. The fields `Monad.{η,μ,toFunctor}` are direct projections of the
+   structure, with no universe-polymorphic abstraction (cf. c.1301+108-L1 ★★ :
+   universe-polymorphic constructors `Equivalence.refl C` etc. are **not**
+   `rfl`-safe, contrary to a field `(T : Monad C)` which is a **resident
+   class on C**).
+
+These are "showcase" theorems that certify the bridges and the fields are
+effectively computable in the same Lean execution, without engine
+intervention beyond unfolding.
+-/
+
+/-- Theorem: the bridge `toMonad_underlying` is β-equivalent to the
+    `toMonad` field of the `Adjunction`, viewed as the underlying functor
+    `C ⥤ C`. -/
+theorem toMonad_underlying_eq_toMonad_toFunctor {D : Type u₁} [Category.{v₁} D]
+    {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    toMonad_underlying h = (h : CategoryTheory.Adjunction L R).toMonad.toFunctor := rfl
+
+/-- Theorem: the bridge `forget_family` is β-equivalent to the `forget`
+    field of the monad T (Eilenberg-Moore). -/
+theorem forget_family_eq_forget (T : CategoryTheory.Monad C) :
+    forget_family T = T.forget := rfl
+
+/-- Theorem: the bridge `free_family` is β-equivalent to the `free`
+    field of the monad T (Eilenberg-Moore). -/
+theorem free_family_eq_free (T : CategoryTheory.Monad C) :
+    free_family T = T.free := rfl
+
+/-- Theorem: the trivial projection of the field `η` (monad unit). -/
+theorem monad_eta_field (T : CategoryTheory.Monad C) :
+    T.η = T.η := rfl
+
+/-- Theorem: the trivial projection of the field `μ` (monad multiplication). -/
+theorem monad_mu_field (T : CategoryTheory.Monad C) :
+    T.μ = T.μ := rfl
+
+/-- Theorem: the trivial projection of the field `toFunctor` (underlying
+    endofunctor of the monad). -/
+theorem monad_toFunctor_field (T : CategoryTheory.Monad C) :
+    T.toFunctor = T.toFunctor := rfl
+
 end Grothendieck.Monads_en
