@@ -35,6 +35,17 @@ Toute modification d'une stratégie QC (main.py, paramètres, périodes) **DOIT*
 
 **Changer une date ou un paramètre sans backtest = travail invalide.**
 
+### Convention `SetEndDate` — fenêtre figée vs flottante (mécanisme D2, #9768)
+
+L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pas toujours un défaut** : elle ouvre la fenêtre de backtest à la date courante, ce qui est un comportement légitime **selon le type de notebook**. La classification (audit #9772 Phase 0) distingue deux régimes :
+
+| Régime | Environnement | `SetEndDate` attendu | Raison |
+|--------|---------------|----------------------|--------|
+| **Déploiement** (`class X(QCAlgorithm)`, dossier `projects/`) | QC Cloud / Live / Paper | **Requis** (fenêtre figée) | Reproductibilité du backtest de production — sans date fixée, le résultat dérive à chaque exécution |
+| **Recherche** (`QuantBook()`, dossier `ML-Training-Pipeline/`) | Research env | **Flottant par design** (légitime) | Notebooks exploratoires : la fenêtre flottante est une feature, le notebook n'est pas un livrable reproductible |
+
+**Avant de « corriger » un notebook QC sans `SetEndDate`** : vérifier son régime. Un notebook de recherche `QuantBook` sans date figée **n'est pas un defect D2**. Un notebook de déploiement `QCAlgorithm` (surtout dans `projects/`) sans `SetStartDate`/`SetEndDate` **est un defect** à figer (exception : Paper Trading explicite, où l'absence de dates = live par construction, ex. `QC-Py-27`). Le détecteur canonique est `scripts/notebook_tools/scan_window_drift.py` (#10230/#10627, qui remplace le `grep -L set_end_date` brut — ce dernier sur-compte d'un ordre de grandeur en mélangeant les deux régimes).
+
 ## QC Cloud API - Accès via MCP Docker (OBLIGATOIRE)
 
 **Méthode d'accès** : Utiliser le MCP Docker `quantconnect/mcp-server` configure dans `.mcp.json` a la racine du projet.

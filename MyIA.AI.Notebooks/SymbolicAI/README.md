@@ -481,6 +481,8 @@ dotnet interactive jupyter install
 
 > **Windows Policy** : Si `dotnet-interactive.exe` est bloque (Win32Exception 4551), exécuter en admin PowerShell :
 > `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` puis relancer.
+>
+> **macOS / Linux** : pas de politique d'exécution de scripts — le workaround Windows ne s'applique pas. Setup complet du poste contributeur : [setup-linux-macos.md](../../docs/reference/setup-linux-macos.md).
 
 ### Tweety
 
