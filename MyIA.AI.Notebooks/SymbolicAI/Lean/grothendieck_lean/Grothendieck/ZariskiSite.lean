@@ -24,6 +24,8 @@ bloc d'en-tête diffèrent entre les deux fichiers.
 
 import Mathlib.AlgebraicGeometry.Sites.BigZariski
 
+universe v u
+
 namespace Grothendieck
 
 open AlgebraicGeometry CategoryTheory
@@ -89,5 +91,87 @@ recouvrement de Zariski par forget est un crible de recouvrement dans TopCat.
 example : Scheme.forgetToTop.IsContinuous
     Scheme.zariskiTopology TopCat.grothendieckTopology :=
   inferInstance
+
+/-! ## 5. Bridges Mathlib canoniques (hommage Grothendieck)
+
+Ponts vers les 9 constructeurs canoniques de `Mathlib/AlgebraicGeometry/Sites/BigZariski.lean`
+qui étendent le namespace `Grothendieck` avec les opérateurs fondamentaux du site de Zariski :
+(5.1) la prétopologie et la topologie, (5.2) les instances Subcanonical et continuité du foncteur
+d'oubli, (5.3) l'hypercover affine, (5.4) les lemmes de préservation de limites et d'inclusion
+de cribles, (5.5) la condition de faisceau pour les recouvrements sigma. -/
+
+/-! ### 5.1 Pont-def : la prétopologie et la topologie de Zariski
+
+Le bridge-lemma expose `zariskiPretopology` (la prétopologie sous-jacente) et `zariskiTopology`
+(la topologie de Grothendieck dérivée) directement sous `Grothendieck.Scheme`. -/
+
+/-- Pont-def : re-export de la prétopologie de Zariski sur la catégorie des schémas. -/
+def zariskiPretopology_field : Pretopology Scheme.{u} :=
+  Scheme.zariskiPretopology
+
+/-- Pont-def : re-export de la topologie de Zariski (topologie de Grothendieck dérivée). -/
+abbrev zariskiTopology_field : GrothendieckTopology Scheme.{u} :=
+  Scheme.zariskiTopology
+
+/-! ### 5.2 Pont-instance : Zariski sous-canonique et foncteur d'oubli continu
+
+L'instance Subcanonical sur la topologie de Zariski (cf. Subcanonical.lean Partie 16) et
+l'instance de continuité du foncteur d'oubli vers TopCat. -/
+
+/-- Pont-instance : la topologie de Zariski est sous-canonique. -/
+instance subcanonical_zariskiTopology_field : Scheme.zariskiTopology.Subcanonical :=
+  Scheme.subcanonical_zariskiTopology
+
+/-- Pont-instance : le foncteur d'oubli vers TopCat est continu vis-à-vis de Zariski. -/
+instance forgetToTop_continuous_zariskiTopology :
+    Scheme.forgetToTop.IsContinuous Scheme.zariskiTopology TopCat.grothendieckTopology :=
+  inferInstance
+
+/-! ### 5.3 Pont-def : hypercover affine (1-hypercover)
+
+Pour tout schéma X, le 1-hypercover de Zariski dont tous les composantes sont affines.
+C'est l'outil de base pour la cohomologie de Zariski. -/
+
+/-- Pont-def : 1-hypercover de Zariski dont toutes les composantes sont affines. -/
+noncomputable def affineOneHypercover_field (X : Scheme.{u}) :
+    Scheme.zariskiTopology.OneHypercover X :=
+  Scheme.affineOneHypercover X
+
+/-! ### 5.4 Pont-lemma : préservation de limites et inclusion de cribles
+
+Pour un préfaisceau Zariski-faisceau, préservation des limites discrètes ; pour un
+diagramme localement dirigé d'immersions ouvertes, les inclusions dans la colimite
+forment un recouvrement de Zariski. -/
+
+/-- Pont-lemma : les Zariski-faisceaux préservent les limites de forme discrète. -/
+lemma preservesLimitsOfShape_discrete_of_isSheaf_zariskiTopology_field
+    {F : Scheme.{u}ᵒᵖ ⥤ Type v} {ι : Type*} [Small.{u} ι] [Small.{v} ι]
+    (hF : Presieve.IsSheaf Scheme.zariskiTopology F) :
+    PreservesLimitsOfShape (Discrete ι) F :=
+  Scheme.preservesLimitsOfShape_discrete_of_isSheaf_zariskiTopology hF
+
+/-- Pont-lemma : pour un diagramme localement dirigé d'immersions ouvertes, les
+    inclusions dans la colimite forment un recouvrement de Zariski. -/
+lemma ofArrows_ι_mem_zariskiTopology_of_isColimit_field {J : Type*} [Category J]
+    (F : J ⥤ Scheme.{u}) [∀ {i j : J} (f : i ⟶ j), IsOpenImmersion (F.map f)]
+    [(F.comp Scheme.forget).IsLocallyDirected] [Quiver.IsThin J] [Small.{u} J]
+    (c : Cocone F) (hc : IsColimit c) :
+    Sieve.ofArrows _ c.ι.app ∈ Scheme.zariskiTopology c.pt :=
+  Scheme.ofArrows_ι_mem_zariskiTopology_of_isColimit F c hc
+
+/-! ### 5.5 Pont-lemma : condition de faisceau pour les recouvrements sigma
+
+Pour un recouvrement `S.Cover (precoverage P)` (où P est Zariski-local à la source),
+la condition de faisceau pour le recouvrement sigma est équivalente à la condition
+de faisceau pour le recouvrement initial. -/
+
+/-- Pont-lemma : pour un S.Cover, IsSheafFor sigma iff IsSheafFor initial. -/
+lemma Cover_isSheafFor_sigma_iff_field {P : MorphismProperty Scheme.{u}}
+    {F : Scheme.{u}ᵒᵖ ⥤ Type*} [IsZariskiLocalAtSource P]
+    (hF : Presieve.IsSheaf Scheme.zariskiTopology F)
+    {S : Scheme.{u}} (𝒰 : S.Cover (precoverage P)) [Finite 𝒰.I₀] :
+    Presieve.IsSheafFor F (.ofArrows 𝒰.sigma.X 𝒰.sigma.f) ↔
+      Presieve.IsSheafFor F (.ofArrows 𝒰.X 𝒰.f) :=
+  Scheme.Cover.isSheafFor_sigma_iff hF 𝒰
 
 end Grothendieck
