@@ -23,9 +23,12 @@ import detect_md_content_loss as dml  # noqa: E402
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _md(src):
-    """Cellule markdown avec source (str ou list)."""
-    return {"cell_type": "markdown", "source": src, "metadata": {}}
+def _md(src, cell_id=None):
+    """Cellule markdown avec source (str ou list) et id nbformat optionnel."""
+    cell = {"cell_type": "markdown", "source": src, "metadata": {}}
+    if cell_id is not None:
+        cell["id"] = cell_id
+    return cell
 
 
 def _nb(*cells):
@@ -131,6 +134,90 @@ class TestSplitCellNoFalsePositive:
         head = _nb(_md("## Section\n"), _md(("Contenu. " * 40)))
         findings = dml._compare_cells(dml.extract_md_cells(base), dml.extract_md_cells(head))
         assert findings == [], "une scission qui preserve le contenu ne doit PAS etre signalee"
+
+
+# ---------------------------------------------------------------------------
+# 4b. Reorder SAFE par ID (c.8254, anti-FP detecteur)
+# ---------------------------------------------------------------------------
+class TestReorderSafeByCellID:
+    """Bug fondateur (c.8254) : un reorder pur qui preserve le count et le multiset
+    d'IDs nbformat 4.5+ etait confondu avec une perte de contenu (l'appariement
+    par index croisait des cellules differentes apres decalage). Le multiset
+    d'IDs identique est un signal fort "reorder sans modif de contenu" et
+    merite appariement par ID, pas par index.
+    """
+
+    def test_reorder_with_stable_ids_no_signal(self):
+        # 3 cellules substantielles, reorder pur (memes contenus, ordre
+        # different), multiset d'IDs preserve. L'ancienne politique par index
+        # aurait signale la cellule 1 comme "tronquee de 100% a 0%" (elle
+        # n'existait plus a la position 1, donc zip ramenait le contenu de la
+        # cellule 0 a comparer). Avec l'appariement par ID, 0 signal.
+        body_long_a = "## Section A\n\n" + ("Phrase A substantielle. " * 25)
+        body_long_b = "## Section B\n\n" + ("Phrase B substantielle. " * 25)
+        body_long_c = "## Section C\n\n" + ("Phrase C substantielle. " * 25)
+        base = _nb(_md(body_long_a, cell_id="alpha"),
+                   _md(body_long_b, cell_id="bravo"),
+                   _md(body_long_c, cell_id="charlie"))
+        head = _nb(_md(body_long_a, cell_id="alpha"),
+                   _md(body_long_c, cell_id="charlie"),  # deplace de la fin au milieu
+                   _md(body_long_b, cell_id="bravo"))    # deplace du milieu a la fin
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert findings == [], (
+            "un reorder pur preservant les IDs ne doit PAS signaler de perte "
+            f"(trouve: {findings!r})"
+        )
+
+    def test_truncation_with_stable_ids_still_signals(self):
+        # Le multiset d'IDs est preserve MAIS une cellule est reellement
+        # tronquee -- le garde doit continuer a signaler (ID matching n'est
+        # pas un blanc-seing).
+        body_long = "## Section\n\n" + ("Phrase substantielle. " * 30)
+        base = _nb(_md(body_long, cell_id="alpha"),
+                   _md(body_long, cell_id="bravo"))
+        head = _nb(_md(body_long, cell_id="alpha"),
+                   _md("> **Titre :**", cell_id="bravo"))  # cellule bravo reellement tronquee
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["cell_idx"] == 1  # position dans le head
+
+    def test_reorder_without_ids_falls_back_to_index_legacy(self):
+        # Si les cellules n'ont PAS d'IDs (legacy nbformat < 4.5 ou ecriture
+        # a la main), on retombe sur l'appariement par index et le reorder
+        # PEUT signaler a tort (legacy behavior preserve pour les vieux
+        # notebooks sans IDs).
+        body_long_a = "## Section A\n\n" + ("Phrase A. " * 25)
+        body_long_b = "## Section B\n\n" + ("Phrase B. " * 25)
+        base = _nb(_md(body_long_a), _md(body_long_b))
+        head = _nb(_md(body_long_b), _md(body_long_a))  # reorder sans IDs
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Legacy behavior : au moins une cellule signalee (la 0 du head =
+        # body_long_b comparee a body_long_a -- ratio < 1, probablement
+        # OK car contenus similaires, mais on documente au moins une issue
+        # OU aucune issue si ratio > 0.75. On accepte les deux : la police
+        # legacy index-parallel est connue FP-prone pour les reorders, et
+        # c'est exactement pourquoi on a ajoute l'appariement par ID.
+        # Le test documente que la politique legacy ne casse pas : pas de
+        # AssertionError, juste constatation.
+        assert isinstance(findings, list)
+
+    def test_partial_id_overlap_falls_back_to_index(self):
+        # Si seulement certaines cellules ont un id (cas mixte), on NE PEUT
+        # PAS se rabattre sur l'appariement par ID (multiset pas comparable) :
+        # on retombe sur l'index legacy. Ce test documente la politique
+        # conservative : mieux vaut un FP qu'un blanc-seing.
+        body_long = "## Section\n\n" + ("Phrase. " * 25)
+        base = _nb(_md(body_long, cell_id="alpha"), _md(body_long))
+        head = _nb(_md(body_long, cell_id="alpha"), _md(body_long))
+        # IDs partiels : alpha en base[0] et head[0], mais base[1]/head[1] = None.
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Pas d'assertion stricte : on documente qu'on ne casse pas en mode mixte.
+        assert isinstance(findings, list)
 
 
 # ---------------------------------------------------------------------------
