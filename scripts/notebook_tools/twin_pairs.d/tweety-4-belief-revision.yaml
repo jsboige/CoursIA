@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-4-Belief-Revision-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (revision des croyances AGM, contraction/revision) : C# branche IKVM 8.15.0 + tweety-beliefdynamics.dll (tracked) + 8 refs `org.tweetyproject.*` actifs (3 cellules avec using explicite + classes Java `SimpleKbReiter`, `DefaultRevisionOperator` invoquees). Python branche JPype + `from java.util import ArrayList, HashSet` + `from org.tweetyproject.beliefdynamics.* import` + meme bibliotheque Java TweetyProject. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : les deux cotes operent sur la meme base de connaissances Java (BeliefSet) avec les memes operateurs de revision, pont IKVM-bytecode vs JPype-JVM-runtime."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -12,6 +14,12 @@
       by: myia-po-2024:CoursIA
       python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
       csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 9199041fda10f4ea0691c2130d0b77b7530ffea6
+      csharp_sha: a1787c539d0e66bfb4f097a519e55c15dfb9e217
+      content_python_sha: 3397c3499d41f331f9917039d1b006be638d069490079ec8567b04cd826c64c4
+      content_csharp_sha: 56beaf6154fcb031066bc2c38ade50dc672fd7a8ff2d70e419c6b78d2f56a20b
   known_differences:
     - "Socle commun : revision des croyances (AGM, contraction/revision) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`using org.tweetyproject.*`). Python via JPype (`from java.util import ArrayList, HashSet` + `from jpype.types import *`). Meme fondement Java, idiomatique de pont differente."

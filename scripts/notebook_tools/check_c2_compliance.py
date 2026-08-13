@@ -101,6 +101,23 @@ def check_notebook(nb_path: Path) -> dict:
                 })
             continue
 
+        # Skip "[REFERENCE QC]" / "Code a copier" / "non executable" cells
+        # in BOTH branches (missing exec_count AND no outputs): they exist
+        # as pedagogical reference material, not to run.
+        if any(marker in source for marker in
+               ("[REFERENCE QC]", "Code a copier", "non executable")):
+            continue
+
+        # Skip papermill parameter cells in BOTH branches: papermill injects
+        # values via API at execution time, the cell intentionally produces
+        # no output. Both GenAI convention ("# Parametres Papermill -
+        # JAMAIS modifier ce commentaire" + BATCH_MODE) and qc-strategies
+        # convention ("# Parameters" / "# Parametres notebook paper").
+        if any(marker in source for marker in
+               ("Parametres Papermill", "JAMAIS modifier", "# Parameters",
+                "BATCH_MODE =", "notebook_mode =")):
+            continue
+
         if exec_count is None:
             violations.append({
                 "cell_index": i,
@@ -109,20 +126,94 @@ def check_notebook(nb_path: Path) -> dict:
                 "source_preview": source[:80].replace("\n", " "),
             })
         elif not outputs and source.strip():
-            # Code cell with execution_count but no outputs
-            # Only flag if the cell should produce output (print, return, expression)
-            has_output_statement = any(
-                kw in source for kw in
-                ["print(", "display(", "plt.", "fig", "return ", "="]
+            # Code cell with execution_count but no outputs. Only flag if the
+            # cell SHOULD produce output (top-level print/display/figure call,
+            # expression statement, or function with `return`); pedagogical
+            # stubs (def/class/C#-declaration) are not violations.
+            # Papermill and REFERENCE-QC cells are skipped upstream (single
+            # guard, covers both branches).
+            stripped = source.strip()
+
+            # Skip pure import statements (no output expected by design).
+            is_import = stripped.startswith(("import ", "from "))
+
+            # Detect if this cell's top-level statement should produce output.
+            # "Top-level" = first non-comment, non-empty line; we inspect that
+            # line plus any expression statement appearing after a comment block.
+            #
+            # An "expression that produces output" in Jupyter is:
+            #   - a function call: foo(), obj.method(), etc.
+            #   - a top-level expression: value, df.head(), ...
+            # Function/class definitions (def/class) without `return` are stubs.
+            lines = [
+                l for l in source.split("\n")
+                if l.strip() and not l.strip().startswith(("#", "//"))
+            ]
+            first_meaningful = lines[0] if lines else ""
+            is_function_def = first_meaningful.startswith("def ")
+            is_class_def = first_meaningful.startswith("class ")
+
+            # Skip top-level C# / .NET Interactive declarations: `using …;`,
+            # `namespace …`, `public enum …`, `public class …` (already covered
+            # by `is_class_def` but `enum`/`struct`/`record` are not), and the
+            # `#r "nuget: …"` package references. These are top-of-file
+            # boilerplate that the kernel consumes without producing output.
+            is_csharp_declaration = first_meaningful.startswith(
+                ("using ", "namespace ", "public ", "private ", "internal ",
+                 "protected ", "@", "#r ", "static ", "var ", "const ",
+                 "[", "//", "/// ", "/*")
+            ) or first_meaningful.startswith("enum ") or first_meaningful.startswith("struct ")
+
+            # A function definition with `return` is not a stub — the function
+            # was meant to be called and produce a value. Skip only the no-
+            # return variant (stub).
+            is_function_stub = is_function_def and "return " not in source
+
+            # Detect output-producing top-level expression. A top-level call
+            # (`foo()`, `obj.bar()`, `df.head()`) or top-level `print/display`
+            # call is what triggers Jupyter's auto-output. Only column-0
+            # (non-indented) occurrences count: a `print(` nested inside a
+            # def/class body produces no output until the function is called
+            # (PRINT_IN_DEF_FP — 73 cells flagged pre-fix were pure function
+            # definitions whose body happened to call print).
+            output_keywords = ("print(", "display(", "plt.", "fig", "IPython.")
+            toplevel_source = "\n".join(
+                line for line in source.split("\n")
+                if line and not line[0].isspace()
             )
-            # Skip cells that might legitimately have no output (imports, assignments)
-            is_import = source.strip().startswith(("import ", "from "))
-            is_assignment = (
-                "=" in source
-                and not any(kw in source for kw in ["print(", "display(", "plt."])
+            has_output_call = any(kw in toplevel_source for kw in output_keywords)
+            # `return` outside a function = a Jupyter cell that should output
+            # something — but typically `return` only appears inside a `def`,
+            # so this is mostly a smoke-check.
+            has_top_level_return = "\nreturn " in ("\n" + source) or source.startswith("return ")
+
+            # Top-level expression statement (not assignment): Jupyter prints
+            # the value. Detected by looking at first meaningful line — if
+            # it's NOT a `def`/`class`/assignment/import/C#-decl, it's an
+            # expression.
+            is_expression_statement = (
+                bool(first_meaningful)
+                and not is_function_def
+                and not is_class_def
+                and "=" not in first_meaningful.split("#")[0]  # not an assignment
+                and not first_meaningful.startswith(("import ", "from ", "if ", "for ", "while ", "with ", "try:", "return ", "yield ", "raise ", "pass", "del ", "using ", "namespace ", "public ", "private ", "internal ", "protected ", "@", "#r ", "static ", "var ", "const ", "[", "enum ", "struct "))
             )
 
-            if has_output_statement and not is_import:
+            expects_output = (
+                has_output_call
+                or has_top_level_return
+                or is_expression_statement
+            )
+
+            # Skip legitimate no-output cells (C.1 stubs + C# declarations).
+            skip = (
+                is_import
+                or is_function_stub
+                or is_class_def
+                or is_csharp_declaration
+            )
+
+            if expects_output and not skip:
                 violations.append({
                     "cell_index": i,
                     "code_cell": code_idx,

@@ -40,6 +40,24 @@ Rules
   accidentally promoted to an oversized heading.
 - ``oversized_hint``         (WARN):  a hint/indice/astuce/note line written as an
   ``#``/``##``/``###`` header (renders larger than surrounding text).
+- ``source_list_missing_newlines`` (ERROR): markdown cell whose ``source`` lost the
+  ``\n`` that its structure implies. Two manifestations of the same newline-stripping
+  artifact, both caught here BEFORE ``_as_text`` joins the list verbatim (which would
+  collapse the cell to one giant line and leave every downstream line-based rule with no
+  structure to inspect -> silent 0-violation pass on a cell that renders as a single
+  malformed block):
+  - **multi-element** (N>=2 elements, fewer ``\n`` than the element count implies — e.g.
+    N elements, 0 ``\n``). The original #10397 case (#10423).
+  - **single-element** (``len(src) == 1`` string of >= 80 chars with 0 ``\n`` that starts
+    with an ATX heading ``#{1,6}\\s+``). All line breaks were lost into one string, so
+    the heading + body + list items are glued (``"## RésuméCe notebook"``,
+    ``"profondeur**Objectif**"``) and the cell renders as one giant heading. A real ATX
+    heading is a short single line, so 80+ chars / no ``\n`` / heading-start = heading
+    with body glued. Exemplar: PR #10399 Argumentum_Cards cells 12/15/18 (876/1161/1085
+    chars). Scoped to heading-start on purpose: legit single-line ``> blockquote`` /
+    ``**bold**`` paragraphs are common and must NOT be flagged. A corpus sweep found ~43
+    pre-existing single-element instances (Tweety-10, CSP-9, Planners, Lean-8) in addition
+    to the multi-element ones — all baselined for burn-down.
 
 The correct fix for frontmatter cells is to move the metadata into the notebook
 ``metadata`` (invisible, machine-readable) OR render it inside a fenced ```yaml block
@@ -83,6 +101,7 @@ RULE_SEVERITY = {
     "frontmatter_rawyaml": ERROR,
     "setext_oversized": ERROR,
     "oversized_hint": WARN,
+    "source_list_missing_newlines": ERROR,
 }
 
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
@@ -99,6 +118,14 @@ _YAML_KV_RE = re.compile(r"^\s*[A-Za-z_][\w .\-]*:\s?(\S.*)?$")
 # (those are legitimate section headings, not the oversized-hint defect).
 _HINT_RE = re.compile(r"\b(indice|indices|astuce|astuces|hint|hints)\b", re.IGNORECASE)
 _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
+
+# single-element newline-stripping artifact: a markdown cell whose `source` is a
+# one-element list whose string has 0 '\n', starts with an ATX heading, and is long.
+# A real ATX heading is a short single line; 80+ chars / no '\n' / heading-start =
+# heading + body content glued (all newlines lost into one string). See #10397
+# single-element case, exemplar PR #10399.
+_COLLAPSED_HEADING_START_RE = re.compile(r"^\s{0,3}#{1,6}\s+\S")
+_COLLAPSED_SINGLE_MIN_LEN = 80
 
 
 def _as_text(source) -> str:
@@ -216,6 +243,47 @@ def scan_cell(cell) -> list[dict]:
     text = _as_text(cell.get("source"))
     if not text.strip():
         return []
+    # ---- list-source without newlines (#10397) -----------------------------------
+    # A markdown cell whose `source` is a list of N>=2 elements but carries fewer
+    # '\n' than the element count implies collapses to one giant line when joined:
+    # all structure (headings, paragraphs, frontmatter) is lost, the cell renders
+    # as a single malformed block, and every downstream line-based rule sees one
+    # line -> silent 0-violation pass. Catch the structural loss BEFORE the
+    # line-based rules reason on the collapsed text.
+    src = cell.get("source")
+    if isinstance(src, list) and len(src) >= 2:
+        nonblank_elems = [s for s in src if s.strip()]
+        expected_breaks = max(0, len(nonblank_elems) - 1)
+        actual_breaks = text.count("\n")
+        if actual_breaks < expected_breaks and len(text.strip()) >= 40:
+            rule = "source_list_missing_newlines"
+            return [{
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": (f"markdown cell source is a list of {len(src)} elements with "
+                            f"{actual_breaks} '\\n' (renders as {actual_breaks + 1} line(s) "
+                            f"instead of ~{expected_breaks + 1}); line structure lost on join"),
+                "evidence": text.strip()[:100],
+                "hash": _cell_hash(rule, text),
+            }]
+    elif isinstance(src, list) and len(src) == 1:
+        # single-element newline-stripping artifact: the whole cell is one string whose
+        # '\n' were all lost. A legit single-line ATX heading is short; >=80 chars with
+        # 0 '\n' and a heading-start = heading + body glued -> renders as one giant
+        # heading. Heading-start scoping avoids FP on legit single-line `>`/`**` cells.
+        single = src[0]
+        if ("\n" not in single and len(single.strip()) >= _COLLAPSED_SINGLE_MIN_LEN
+                and _COLLAPSED_HEADING_START_RE.match(single)):
+            rule = "source_list_missing_newlines"
+            return [{
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": (f"markdown cell source is a single-element list of {len(single)} "
+                            f"chars with no '\\n' (heading + body collapsed into one string, "
+                            f"renders as a giant heading); line structure lost"),
+                "evidence": single.strip()[:100],
+                "hash": _cell_hash(rule, text),
+            }]
     lines = text.split("\n")
     # Lines inside a fenced-code block render verbatim: a `---`/`===` there is literal
     # text, not a setext underline. Computed once, reused by both setext rules.

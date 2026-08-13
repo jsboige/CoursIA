@@ -28,7 +28,35 @@ Si vous n'avez qu'une cle OpenRouter, passez au notebook 01-2 (GPT-5 analyse d'i
 
 
 **Ancrage savant.** DALL-E 3 n'a pas de papier scientifique dedie ; OpenAI l'a annonce dans un billet de blog (octobre 2023) accompagne d'une *System Card* officielle. Sa principale innovation -- la **reecriture automatique des prompts** (la fameuse prompt revision enseignee plus bas) -- provient d'un modele de langage (GPT-4) qui densifie la description, et d'un **entrainement sur captions ameliorees** (recaptioning) : voir la *DALL-E 3 System Card* (OpenAI, 2023) et, pour la filiation architecturale (CLIP latents + diffusion), le papier DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].
-",,,,,,,,e0252278972e9573,,,,,,,
+",,,,,,"# OpenAI DALL-E 3 - Генерация изображений
+
+**Навигация** : [Индекс](../README.md) | [Далее >>](01-2-GPT-5-Image-Generation.ipynb)
+
+**Модуль :** 01-Images-Foundation  
+**Уровень :** Начинающий  
+**Технологии :** OpenAI DALL-E 3, прямой API OpenAI  
+**Оценочная длительность :** 25 минут  
+
+## Цели обучения
+
+- [ ] Настроить доступ к DALL-E 3 через API OpenAI
+- [ ] Освоить техники prompting для изображений
+- [ ] Генерировать изображения высокого качества
+- [ ] Оптимизировать параметры генерации
+- [ ] Анализировать и сохранять результаты
+
+## Предварительные требования
+
+- Environment Setup (module 00) завершен
+- Ключ API OpenAI настроен (`OPENAI_API_KEY` dans `.env`)
+- Базовые знания prompting
+
+**Важное примечание :** DALL-E 3 требует прямой API OpenAI (`api.openai.com`).
+OpenRouter НЕ поддерживает endpoint `/v1/images/generations`.
+Если у вас есть только ключ OpenRouter, перейдите к notebook 01-2 (анализ изображений GPT-5).
+
+
+**Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,e0252278972e9573,,,,,,ad347d002848efb9,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,02190507,code,fr,d52f2bacce950345,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration generation
@@ -53,7 +81,9 @@ BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,m2r7m8j3kkb,markdown,fr,3cc2cbe9854ecb9a,"## Setup de l'environnement
 
-Installation des dependances, chargement de la configuration API, et preparation des utilitaires de generation.",,,,,,,,3cc2cbe9854ecb9a,,,,,,,
+Installation des dependances, chargement de la configuration API, et preparation des utilitaires de generation.",,,,,,"## Настройка окружения
+
+Установка зависимостей, загрузка конфигурации API и подготовка утилит для генерации.",,3cc2cbe9854ecb9a,,,,,,88b7e513c6d15a74,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,b42e153d,code,fr,ee35442567e000a4,"# Import guards - availability flags for external dependencies
 
 try:
@@ -129,7 +159,7 @@ logger = logging.getLogger('dalle3_generation')
 print(f""🎨 OpenAI DALL-E 3 - Génération d'Images"")
 print(f""📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""🔧 Mode: {notebook_mode}, Qualité: {image_quality}, Style: {image_style}"")",,,,,,,,ee35442567e000a4,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,gtgdldnbxwh,markdown,fr,ebdf3fa7fa7d0502,L'environnement Python est initialise. La cellule suivante configure l'authentification aupres de l'API OpenAI directe et verifie que le modele DALL-E 3 est accessible.,,,,,,,,ebdf3fa7fa7d0502,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,gtgdldnbxwh,markdown,fr,ebdf3fa7fa7d0502,L'environnement Python est initialise. La cellule suivante configure l'authentification aupres de l'API OpenAI directe et verifie que le modele DALL-E 3 est accessible.,,,,,,"Среда Python инициализирована. Следующая ячейка настраивает аутентификацию в прямом API OpenAI и проверяет, что модель DALL-E 3 доступна.",,ebdf3fa7fa7d0502,,,,,,2829765925f146c8,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,a11e36a0,code,fr,349266f32f7d59a2,"# Configuration API OpenAI pour DALL-E 3
 # IMPORTANT: DALL-E 3 necessite l'API OpenAI directe (pas OpenRouter)
 # OpenRouter ne supporte PAS le endpoint /v1/images/generations
@@ -201,7 +231,9 @@ print(f""API: {api_base_url}"")
 ",,,,,,,,349266f32f7d59a2,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,dwxu8jge49o,markdown,fr,75e016ffd126d1be,"### Fonction de generation et prompts
 
-Definissons la fonction d'appel a l'API DALL-E 3, puis preparons un ensemble de prompts optimises illustrant differents styles (photorealiste, artistique, technique).",,,,,,,,75e016ffd126d1be,,,,,,,
+Definissons la fonction d'appel a l'API DALL-E 3, puis preparons un ensemble de prompts optimises illustrant differents styles (photorealiste, artistique, technique).",,,,,,"### Функция генерации и промпты
+
+Определим функцию вызова API DALL-E 3, затем подготовим набор оптимизированных промптов, иллюстрирующих различные стили (фотореалистичный, художественный, технический).",,75e016ffd126d1be,,,,,,ae0dafc647d7955b,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,7087aa90,code,fr,5ef652d3b02d2c10,"# Fonction de génération DALL-E 3
 def generate_dalle3_image(prompt: str, 
                          size: str = ""1024x1024"",
@@ -282,7 +314,9 @@ def generate_dalle3_image(prompt: str,
 print(""✅ Fonction de génération DALL-E 3 prête"")",,,,,,,,5ef652d3b02d2c10,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,hvtdmnal8gg,markdown,fr,5d0129264ed6d283,"### Generation et analyse des resultats
 
-Lancons la generation d'images avec les prompts optimises ci-dessus, puis analysons la qualite des resultats et les strategies d'amelioration iterative des prompts.",,,,,,,,5d0129264ed6d283,,,,,,,
+Lancons la generation d'images avec les prompts optimises ci-dessus, puis analysons la qualite des resultats et les strategies d'amelioration iterative des prompts.",,,,,,"### Генерация и анализ результатов
+
+Запустим генерацию изображений с оптимизированными выше промптами, затем проанализируем качество результатов и стратегии итеративного улучшения промптов.",,5d0129264ed6d283,,,,,,f87342d61eee1538,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,be1ddafb,code,fr,cde1c2f4dd924500,"# Exemples de prompts optimisés pour DALL-E 3
 print(""\n🎯 EXEMPLES DE GÉNÉRATION DALL-E 3"")
 print(""="" * 45)
@@ -335,7 +369,19 @@ Le prompting pour la generation d'images est un art iteratif. Partir d'une descr
 3. Ajoutez des details techniques (resolution, composition, palette de couleurs)
 4. Comparez les trois prompts et identifiez quels elements ont le plus d'impact
 
-**Indice** : Les termes techniques comme ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"" guident DALL-E 3 vers un rendu plus professionnel.",,,,,,,,0d7e4dca91a583de,,,,,,,
+**Indice** : Les termes techniques comme ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"" guident DALL-E 3 vers un rendu plus professionnel.",,,,,,"### Упражнение 1 : Постепенное построение промптов
+
+Промптинг для генерации изображений — это итеративное искусство. Начав с базового описания и постепенно добавляя уточнения (стиль, освещение, композиция), можно значительно улучшить качество результата.
+
+**Цель** : Построить промпт в 3 последовательных итерациях для генерации изображения «робот-ассистент в современном офисе».
+
+**Этапы** :
+1. Напишите минималистичный промпт (базовое описание объекта)
+2. Добавьте уточнения об художественном стиле и освещении
+3. Добавьте технические детали (разрешение, композиция, цветовая палитра)
+4. Сравните три промпта и определите, какие элементы оказали наибольшее влияние
+
+**Подсказка** : Технические термины, такие как ""cinematic lighting"", ""ultra-detailed"", ""8K"", ""shallow depth of field"", направляют DALL-E 3 к более профессиональному рендерингу.",,0d7e4dca91a583de,,,,,,1113ce73c942fa9c,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,61d83ca5,code,fr,f7049987c1e03261,"# Exercice 1 : Construction progressive de prompts
 
 # Etape 1 : Prompt minimaliste
@@ -362,7 +408,7 @@ prompt_niveau_3 = ""...""  # TODO etudiant : ajoutez des precisions techniques
 observations = None  # TODO etudiant : notez vos observations
 
 print(""Exercice a completer"")",,,,,,,,f7049987c1e03261,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,o127drbt8o,markdown,fr,beda8a635ec9a5f4,Les exemples de prompts precedents illustrent les differentes categories stylistiques. Passons maintenant a la generation effective : la cellule suivante envoie la requete a l'API DALL-E 3 et affiche l'image produite.,,,,,,,,beda8a635ec9a5f4,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,o127drbt8o,markdown,fr,beda8a635ec9a5f4,Les exemples de prompts precedents illustrent les differentes categories stylistiques. Passons maintenant a la generation effective : la cellule suivante envoie la requete a l'API DALL-E 3 et affiche l'image produite.,,,,,,Предыдущие примеры промптов иллюстрируют различные стилистические категории. Теперь перейдём к фактической генерации: следующая ячейка отправляет запрос к API DALL-E 3 и отображает полученное изображение.,,beda8a635ec9a5f4,,,,,,b7221fb54cb01ab9,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,82075ed6,code,fr,4c6ca3f74bc0f24a,"# Génération d'images avec les exemples
 print(""\n🚀 GÉNÉRATION D'IMAGES - DÉMONSTRATION"")
 print(""="" * 50)
@@ -460,7 +506,20 @@ DALL-E 3 offre plusieurs parametres qui influencent le resultat final : `size`, 
 4. Comparez les deux images et le prompt revise dans chaque cas
 5. Synthetisez vos observations dans un tableau comparatif
 
-**Indice** : Le style ""vivid"" produit des couleurs plus saturees et un rendu plus dramatique. Le style ""natural"" vise un rendu photographique plus discret.",,,,,,,,d1a57fefcb67c8be,,,,,,,
+**Indice** : Le style ""vivid"" produit des couleurs plus saturees et un rendu plus dramatique. Le style ""natural"" vise un rendu photographique plus discret.",,,,,,"### Упражнение 2: Исследование параметров генерации
+
+DALL-E 3 предлагает несколько параметров, которые влияют на итоговый результат: `size`, `quality` и `style`. Цель — сгенерировать ОДНО И ТО ЖЕ изображение с разными конфигурациями и наблюдать влияние на визуальный результат.
+
+**Контекст**: Вам нужно подготовить визуал для клиента, который колеблется между стилем «яркий и креативный» и стилем «естественный и реалистичный». Вы сравните два подхода.
+
+**Этапы**:
+1. Выберите prompt из приведённых выше примеров (или создайте свой)
+2. Сгенерируйте с `style=""vivid""` и отметьте цвета, контраст, атмосферу
+3. Сгенерируйте с `style=""natural""` для того же prompt
+4. Сравните два изображения и пересмотренный prompt в каждом случае
+5. Обобщите свои наблюдения в сравнительной таблице
+
+**Подсказка**: Стиль ""vivid"" даёт более насыщенные цвета и более драматичный результат. Стиль ""natural"" нацелен на более сдержанный фотографический результат.",,d1a57fefcb67c8be,,,,,,a17b839b106e66b2,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,081a2f47,code,fr,2a0869148aa53046,"# Exercice 2 : Exploration des parametres de generation
 
 # Etape 1 : Choix du prompt (utilisez un des exemples ou creez le votre)
@@ -496,7 +555,7 @@ comparaison = {
 }
 
 print(""Exercice a completer"")",,,,,,,,2a0869148aa53046,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,rfbj2tyfgwf,markdown,fr,8040fe428c49df5b,"Une fois la generation de demonstration executee, le mode interactif vous invite a tester vos propres prompts avec les parametres de votre choix.",,,,,,,,8040fe428c49df5b,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,rfbj2tyfgwf,markdown,fr,8040fe428c49df5b,"Une fois la generation de demonstration executee, le mode interactif vous invite a tester vos propres prompts avec les parametres de votre choix.",,,,,,После выполнения генерации демонстрации интерактивный режим предлагает вам протестировать собственные промпты с параметрами по вашему выбору.,,8040fe428c49df5b,,,,,,e642a36f32d6d30c,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,6e3ba2ff,code,fr,6c18cbdc0bff76b5,"# Mode interactif - Génération personnalisée
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n🎨 MODE INTERACTIF - GÉNÉRATION PERSONNALISÉE"")
@@ -555,7 +614,7 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""\n🤖 Mode batch - Interface interactive désactivée"")
     print(""💡 Pour mode interactif: notebook_mode = 'interactive'"")",,,,,,,,6c18cbdc0bff76b5,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,e0dstl5fn6,markdown,fr,615a9630f4a94969,L'interface interactive permet d'experimenter librement avec ses propres prompts. La cellule suivante recapitule les bonnes pratiques et les parametres optimaux identifies lors de cette session.,,,,,,,,615a9630f4a94969,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,e0dstl5fn6,markdown,fr,615a9630f4a94969,L'interface interactive permet d'experimenter librement avec ses propres prompts. La cellule suivante recapitule les bonnes pratiques et les parametres optimaux identifies lors de cette session.,,,,,,"Интерактивный интерфейс позволяет свободно экспериментировать со своими собственными промптами. Следующая ячейка резюмирует лучшие практики и оптимальные параметры, выявленные в ходе этой сессии.",,615a9630f4a94969,,,,,,ee9872fe7d2d2d2e,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,f28d27b1,code,fr,129f92786d0d494e,"# Analyse et optimisation des résultats
 print(""\n📊 ANALYSE ET BONNES PRATIQUES DALL-E 3"")
 print(""="" * 50)
@@ -652,7 +711,48 @@ La Section 5 montre des prompts optimisés avec:
 - **OpenAI** (2023). *DALL-E 3 System Card*. — Documente la reecriture automatique des prompts via GPT-4 et l'entrainement sur captions ameliorees (recaptioning), caracteristiques centrales du modele enseignees dans ce notebook.
 - **Ramesh, A. et al.** (2022). *Hierarchical Text-Conditional Image Generation with CLIP Latents* (DALL-E 2). arXiv:2204.06125. — Filiation architecturale : CLIP latents + processus de diffusion, socle sur lequel DALL-E 3 s'appuie.
 - **OpenAI** (2021). *DALL-E: Creating Images from Text* (DALL-E 1, Ramesh et al.). arXiv:2102.12092. — Precurseur : auto-regressive transformer dVAE, origine de la lignee DALL-E.
-",,,,,,,,8810be6ada9cd97e,,,,,,,
+",,,,,,"## БОНУСНЫЙ ЧЕЛЛЕНДЖ — Генерация иконки для приложения
+
+**Баллы: 0.5 pts**
+
+## Цель
+
+Сгенерировать **иконку приложения** в стиле ""app store"" для технического проекта.
+
+## Что вы изучили
+
+Раздел 5 показывает оптимизированные промпты с:
+- Подробным описанием объекта
+- Художественным стилем (""cinematic"", ""professional"")
+- Техническими характеристиками (""8K"", ""ultra-detailed"")
+
+## Критерии успеха
+
+- [ ] Выбрать ОДИН тип приложения из:
+  - ""Ассистент продуктивности""
+  - ""Приложение для фитнеса/спорта""
+  - ""Инструмент для note-taking""
+- [ ] Сгенерировать **квадратную** иконку с:
+  - Однотонным фоном или простым градиентом
+  - Узнаваемым центральным символом
+  - Стилем ""flat design"" или ""3D isometric""
+- [ ] Параметры: `size=""1024x1024""`, `style=""vivid""`
+- [ ] Сохранить и сравнить ваш промпт с промптом, пересмотренным DALL-E 3
+
+## Технические ограничения
+
+- Иконка должна быть пригодной для использования (простой фон для лёгкой интеграции)
+- Рекомендуется промпт на английском
+- Отобразить пересмотренный промпт, чтобы понять интерпретацию DALL-E 3
+
+---
+
+**Отправка**: PR с заголовком ""Challenge #4 - [Ваше имя]"", выбранным типом приложения, промптами и сгенерированным изображением
+### 📖 Научные источники
+
+- **OpenAI** (2023). *DALL-E 3 System Card*. — Документирует автоматическую перепись промптов через GPT-4 и обучение на улучшенных подписях (recaptioning), центральные характеристики модели, преподаваемые в этом ноутбуке.
+- **Ramesh, A. et al.** (2022). *Hierarchical Text-Conditional Image Generation with CLIP Latents* (DALL-E 2). arXiv:2204.06125. — Архитектурная преемственность: CLIP latents + процесс диффузии, основа, на которую опирается DALL-E 3.
+- **OpenAI** (2021). *DALL-E: Creating Images from Text* (DALL-E 1, Ramesh et al.). arXiv:2102.12092. — Предшественник: авторегрессионный трансформер dVAE, исток линейки DALL-E.",,8810be6ada9cd97e,,,,,,694e631078baaea7,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,776936fd,markdown,fr,12f590fc87fb998a,"### Exercice 3 : Optimisation de prompts pour un cas d'usage professionnel
 
 DALL-E 3 revisite automatiquement les prompts pour ameliorer la qualite de generation. L'objectif de cet exercice est de concevoir un prompt pour un cas d'usage concret (illustration d'article, visuel reseau social, mockup produit) et d'analyser la revision effectuee par le modele.
@@ -666,7 +766,20 @@ DALL-E 3 revisite automatiquement les prompts pour ameliorer la qualite de gener
 4. Identifiez les elements ajoutes (eclairage, style, details techniques)
 5. Redigez un second prompt ""ameliore"" en integrant ces lecons, et regenerez
 
-**Indice** : Observez comment DALL-E 3 ajoute systematiquement des precisions sur l'eclairage, la composition et le niveau de detail.",,,,,,,,12f590fc87fb998a,,,,,,,
+**Indice** : Observez comment DALL-E 3 ajoute systematiquement des precisions sur l'eclairage, la composition et le niveau de detail.",,,,,,"### Упражнение 3 : Оптимизация промптов для профессионального сценария использования
+
+DALL-E 3 автоматически пересматривает промпты, чтобы улучшить качество генерации. Цель этого упражнения — разработать промпт для конкретного сценария использования (иллюстрация к статье, визуал для социальной сети, мокап продукта) и проанализировать ревизию, выполненную моделью.
+
+**Контекст** : Вы работаете в стартапе, которому нужен визуал для главной страницы. Тема — ""сотрудничество человека и технологии"".
+
+**Этапы** :
+1. Напишите начальный промпт на английском, намеренно простой (1–2 предложения)
+2. Вызовите `generate_dalle3_image()` с этим промптом
+3. Сравните исходный промпт с `revised_prompt`, возвращённым DALL-E 3
+4. Определите добавленные элементы (освещение, стиль, технические детали)
+5. Напишите второй, ""улучшенный"" промпт, интегрировав эти уроки, и сгенерируйте заново
+
+**Подсказка** : Обратите внимание, как DALL-E 3 систематически добавляет уточнения об освещении, композиции и уровне детализации.",,12f590fc87fb998a,,,,,,f9c1e7dde6502d1c,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,21ab51ad,code,fr,ec558d6185cd0ab6,"# Exercice 3 : Optimisation de prompts pour un cas d'usage professionnel
 
 # Etape 1 : Prompt initial simple
@@ -720,7 +833,36 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Multimodal** : Conversation texte + image simultanée
 - **Contexte étendu** : Jusqu'à 400K tokens [OpenAI 2025]
 - **Raisonnement** : Analyse complexe et déductive
-- **Éducatif** : Parfait pour l'enseignement",,,,,,,,51f3e5bd3d2fca5e,,,,,,,
+- **Éducatif** : Parfait pour l'enseignement",,,,,,"**Навигация** : [Индекс](../../README.md) | [<< Назад](01-1-OpenAI-DALL-E-3.ipynb) | [Далее >>](01-3-Basic-Image-Operations.ipynb)
+
+# 🤖 GPT-5 Мультимодальный - Анализ и генерация изображений
+
+**Модуль :** 01-Images-Foundation  
+**Уровень :** 🟢 Начинающий  
+**Технологии :** GPT-5, OpenRouter API, Vision AI  
+**Оценочная длительность :** 30 минут  
+
+## 🎯 Цели обучения
+
+- [ ] Настроить GPT-5 через OpenRouter для анализа изображений
+- [ ] Освоить мультимодальные диалоги текст + изображение
+- [ ] Анализировать и описывать изображения с точностью
+- [ ] Создавать оптимизированные промпты для визуального анализа
+- [ ] Интегрировать GPT-5 в педагогические сценарии использования
+
+## 📚 Предварительные требования
+
+- Environment Setup (модуль 00) завершён
+- Ключ API OpenRouter настроен
+- Базовые знания в области мультимодального ИИ
+
+## ⚡ Возможности GPT-5
+
+- **Продвинутое зрение** : Детальный анализ изображений
+- **Мультимодальность** : Одновременный диалог текст + изображение
+- **Расширенный контекст** : До 400K токенов [OpenAI 2025]
+- **Рассуждение** : Сложный и дедуктивный анализ
+- **Образование** : Идеально для обучения",,51f3e5bd3d2fca5e,,,,,,f06c734fb9d4e3bc,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,21befb91,code,fr,67bdbb608fac2cb4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration conversation
@@ -750,7 +892,9 @@ BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,yz3v2xhzft,markdown,fr,ac5a1198eb931bae,"## Setup de l'environnement
 
-Chargeons les dependances, configurons l'API OpenRouter pour acceder a GPT-5, et preparons les fonctions utilitaires pour le traitement d'images.",,,,,,,,ac5a1198eb931bae,,,,,,,
+Chargeons les dependances, configurons l'API OpenRouter pour acceder a GPT-5, et preparons les fonctions utilitaires pour le traitement d'images.",,,,,,"## Настройка окружения
+
+Загрузим зависимости, настроим API OpenRouter для доступа к GPT-5 и подготовим вспомогательные функции для обработки изображений.",,ac5a1198eb931bae,,,,,,b2617542436c6e0d,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,e7d160d7,code,fr,98c192db6e0a735e,"# Verification des dependances externes
 import importlib
 
@@ -841,7 +985,7 @@ print(f""GPT-5 Multimodal - Analyse et Generation d'Images"")
 print(f""{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode: {notebook_mode}, Analyse: {analysis_mode}, Niveau: {educational_level}"")
 print(f""Langue: {language}, Max tokens: {max_tokens}"")",,,,,,,,98c192db6e0a735e,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,on4ridys1z,markdown,fr,f26caebc3b760e1d,L'environnement est initialise. La cellule suivante configure l'acces a l'API OpenRouter et verifie que le modele GPT-5 est disponible pour les requetes multimodales.,,,,,,,,f26caebc3b760e1d,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,on4ridys1z,markdown,fr,f26caebc3b760e1d,L'environnement est initialise. La cellule suivante configure l'acces a l'API OpenRouter et verifie que le modele GPT-5 est disponible pour les requetes multimodales.,,,,,,"Окружение инициализировано. Следующая ячейка настраивает доступ к API OpenRouter и проверяет, что модель GPT-5 доступна для мультимодальных запросов.",,f26caebc3b760e1d,,,,,,a911c4e1d37b5a22,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,6005d149,code,fr,200eedfda142d11e,"# Configuration API OpenRouter pour GPT-5
 print(""\n🔑 CONFIGURATION GPT-5 MULTIMODAL"")
 print(""="" * 42)
@@ -899,7 +1043,7 @@ print(f""\n🎯 Modèle sélectionné: {model_name}"")
 print(f""⚙️  Paramètres: Temperature={temperature}, Max tokens={max_tokens}"")
 print(f""📊 Mode d'analyse: {analysis_mode}"")
 ",,,,,,,,200eedfda142d11e,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c9dx4xmi4ka,markdown,fr,3e599905963fb4f4,L'API est configuree et la connexion validee. La cellule suivante definit les fonctions d'analyse multimodale qui encapsulent les appels a GPT-5 avec encodage des images en base64.,,,,,,,,3e599905963fb4f4,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c9dx4xmi4ka,markdown,fr,3e599905963fb4f4,L'API est configuree et la connexion validee. La cellule suivante definit les fonctions d'analyse multimodale qui encapsulent les appels a GPT-5 avec encodage des images en base64.,,,,,,"API настроен, и соединение проверено. Следующая ячейка определяет функции мультимодального анализа, которые инкапсулируют вызовы GPT-5 с кодированием изображений в base64.",,3e599905963fb4f4,,,,,,a557bf216994fd90,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ec1512a5,code,fr,33a4d8cf7e230a88,"# Fonctions utilitaires pour traitement d'images
 def encode_image_base64(image_path: Union[str, Path]) -> str:
     """"""
@@ -984,7 +1128,9 @@ def prepare_image_for_gpt5(image_source: Union[str, Path]) -> Dict[str, str]:
 print(""✅ Fonctions utilitaires images prêtes"")",,,,,,,,33a4d8cf7e230a88,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9un0u6qzrtv,markdown,fr,0a2cdab2a18fea79,"### Fonction d'analyse et images de demonstration
 
-La cellule suivante definit la fonction principale `analyze_image_with_gpt5()` qui encode une image en base64 et l'envoie a l'API multimodale. On prepare ensuite un ensemble d'images de test.",,,,,,,,0a2cdab2a18fea79,,,,,,,
+La cellule suivante definit la fonction principale `analyze_image_with_gpt5()` qui encode une image en base64 et l'envoie a l'API multimodale. On prepare ensuite un ensemble d'images de test.",,,,,,"### Функция анализа и демонстрационные изображения
+
+Следующая ячейка определяет основную функцию `analyze_image_with_gpt5()`, которая кодирует изображение в base64 и отправляет его в мультимодальный API. Затем мы подготавливаем набор тестовых изображений.",,0a2cdab2a18fea79,,,,,,e70c00663d1bb024,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c95a0959,code,fr,add01a9d7ba21508,"# Fonction principale d'analyse d'image avec GPT-5
 def analyze_image_with_gpt5(image_source: Union[str, Path], 
                            prompt: str = None,
@@ -1129,7 +1275,7 @@ Adapte ton vocabulaire au niveau {educational_level}.""""""
         }
 
 print(""✅ Fonction d'analyse GPT-5 prête"")",,,,,,,,add01a9d7ba21508,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,r56pmixdacs,markdown,fr,a1ec90886855770f,"Les exemples d'images et les prompts pedagogiques sont definis. La cellule suivante lance l'analyse de demonstration en testant les trois modes (quick, detailed, educational) sur une image concrete.",,,,,,,,a1ec90886855770f,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,r56pmixdacs,markdown,fr,a1ec90886855770f,"Les exemples d'images et les prompts pedagogiques sont definis. La cellule suivante lance l'analyse de demonstration en testant les trois modes (quick, detailed, educational) sur une image concrete.",,,,,,"Примеры изображений и педагогические промпты определены. Следующая ячейка запускает демонстрационный анализ, тестируя три режима (quick, detailed, educational) на конкретном изображении.",,a1ec90886855770f,,,,,,c12933ddd2ff637c,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,66a1b41e,code,fr,f4c5761ce8cf97ca,"# Exemples d'images pour démonstration
 print(""\n🖼️  EXEMPLES D'ANALYSE GPT-5"")
 print(""="" * 40)
@@ -1177,7 +1323,9 @@ print(f""• Combinez analyse textuelle et visuelle"")
 print(f""• Adaptez le niveau de complexité"")",,,,,,,,f4c5761ce8cf97ca,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,vkgiro82pk7,markdown,fr,0d2e952d82ab6a0b,"### Test : analyse d'une image de demonstration
 
-Testons la fonction d'analyse sur une image concrete. GPT-5 va decrire le contenu, identifier les elements visuels, et fournir une analyse structuree.",,,,,,,,0d2e952d82ab6a0b,,,,,,,
+Testons la fonction d'analyse sur une image concrete. GPT-5 va decrire le contenu, identifier les elements visuels, et fournir une analyse structuree.",,,,,,"### Тест: анализ демонстрационного изображения
+
+Протестируем функцию анализа на конкретном изображении. GPT-5 опишет содержимое, определит визуальные элементы и предоставит структурированный анализ.",,0d2e952d82ab6a0b,,,,,,2093ef69e281bd4f,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,368e963b,code,fr,d4e94d8c40e61cf0,"# Analyse d'une image de démonstration
 print(""\n🚀 ANALYSE DE DÉMONSTRATION - GPT-5"")
 print(""="" * 50)
@@ -1247,7 +1395,19 @@ Les trois modes d'analyse (quick, detailed, educational) couvrent des usages gen
 3. Creez votre propre prompt qui inclut : description technique, vocabulaire specifique au domaine, et 3 questions guides
 4. Testez votre prompt sur l'image de demonstration et evaluez la qualite de la reponse
 
-**Indice** : Un bon prompt d'analyse definit le role (""Tu es un professeur expert en...""), le format de sortie attendu (sections, puces), et le niveau de detail. Inspirez-vous du mode ""educational"".",,,,,,,,6f0d7ddd409da782,,,,,,,
+**Indice** : Un bon prompt d'analyse definit le role (""Tu es un professeur expert en...""), le format de sortie attendu (sections, puces), et le niveau de detail. Inspirez-vous du mode ""educational"".",,,,,,"### Упражнение 1 : Создание персонализированного промпта для анализа
+
+Три режима анализа (quick, detailed, educational) покрывают общие варианты использования, но реальные случаи часто требуют специализированных промптов. Цель — создать промпт, оптимизированный для конкретной области.
+
+**Контекст** : Вы преподаватель и хотите использовать GPT-5 для анализа изображений в классе. Вы должны создать промпт, который формирует структурированный анализ, адаптированный к вашей дисциплине.
+
+**Этапы** :
+1. Выберите область (История, Науки, География, Искусство или Медицина)
+2. Изучите существующие промпты в `analyze_image_with_gpt5()`, чтобы понять структуру
+3. Создайте собственный промпт, который включает: техническое описание, специфическую для области лексику и 3 направляющих вопроса
+4. Протестируйте ваш промпт на демонстрационном изображении и оцените качество ответа
+
+**Подсказка** : Хороший промпт для анализа определяет роль (""Ты эксперт-преподаватель по...""), ожидаемый формат вывода (разделы, пункты) и уровень детализации. Ориентируйтесь на режим ""educational"".",,6f0d7ddd409da782,,,,,,92893da34527924a,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b87e983b,code,fr,f28cd708ceeb4cef,"# Exercice 1 : Creation d'un prompt d'analyse personnalise
 
 # Etape 1 : Choix du domaine
@@ -1276,7 +1436,11 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jx
 
 GPT-5 excelle dans deux cas d'usage concrets :
 - **Alt text** : generer automatiquement des descriptions d'accessibilite pour les images web
-- **Analyse pedagogique** : utiliser la vision multimodale pour creer du contenu educatif a partir d'images",,,,,,,,3bc8e6ac07031e84,,,,,,,
+- **Analyse pedagogique** : utiliser la vision multimodale pour creer du contenu educatif a partir d'images",,,,,,"### Практические применения: доступность и педагогика
+
+GPT-5 отлично справляется с двумя конкретными сценариями использования:
+- **Alt text**: автоматическая генерация описаний доступности для веб-изображений
+- **Педагогический анализ**: использование мультимодального зрения для создания образовательного контента на основе изображений",,3bc8e6ac07031e84,,,,,,5ad1325b55a0897d,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
 if generate_alt_text and analysis_results:
     print(""\n♿ GÉNÉRATION DE DESCRIPTIONS D'ACCESSIBILITÉ"")
@@ -1328,7 +1492,20 @@ L'accessibilite web exige des textes alternatifs (alt text) adaptes au contexte.
 4. Generez un resume pedagogique adapte au niveau ""secondary""
 5. Verifiez que chaque description est factuelle et objective
 
-**Indice** : Contruisez des prompts specifiques pour chaque niveau de description. Specifiez explicitement la longueur maximale et le contexte d'utilisation dans le prompt.",,,,,,,,0a9383ea7c5271a5,,,,,,,
+**Indice** : Contruisez des prompts specifiques pour chaque niveau de description. Specifiez explicitement la longueur maximale et le contexte d'utilisation dans le prompt.",,,,,,"### Упражнение 2 : Генерация многоуровневых описаний доступности
+
+Веб-доступность требует альтернативных текстов (alt text), адаптированных к контексту. Одно и то же изображение может требовать описаний разной длины в зависимости от использования: быстрая навигация (125 символов), подробное описание (для программ чтения с экрана) или педагогическое резюме.
+
+**Цель** : Для изображения по вашему выбору сгенерировать три уровня описаний доступности с помощью GPT-5 и оценить их качество.
+
+**Этапы** :
+1. Выберите изображение из примеров или предоставьте собственный URL
+2. Сгенерируйте короткий alt text (<= 125 символов) для быстрой навигации
+3. Сгенерируйте подробное описание (200-400 символов) для программ чтения с экрана
+4. Сгенерируйте педагогическое резюме, адаптированное к уровню ""secondary""
+5. Проверьте, что каждое описание является фактическим и объективным
+
+**Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,0a9383ea7c5271a5,,,,,,12029e1026361450,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,01e1a458,code,fr,514737d6192e76aa,"# Exercice 2 : Generation de descriptions d'accessibilite multi-niveaux
 
 # Etape 1 : Choix de l'image
@@ -1361,7 +1538,7 @@ prompt_pedago = ""...""  # TODO etudiant : prompt adapte a des eleves du seconda
 # TODO etudiant : verifiez que les descriptions sont factuelles (pas d'interpretation subjective)
 
 print(""Exercice a completer"")",,,,,,,,514737d6192e76aa,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,htbu4le2fb,markdown,fr,32bbcd099b6439f2,Les analyses de demonstration sont completes. Le mode interactif ci-dessous permet d'experimenter avec vos propres images et prompts d'analyse personnalises.,,,,,,,,32bbcd099b6439f2,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,htbu4le2fb,markdown,fr,32bbcd099b6439f2,Les analyses de demonstration sont completes. Le mode interactif ci-dessous permet d'experimenter avec vos propres images et prompts d'analyse personnalises.,,,,,,Демонстрационные анализы завершены. Интерактивный режим ниже позволяет экспериментировать с вашими собственными изображениями и персонализированными подсказками для анализа.,,32bbcd099b6439f2,,,,,,0335eca0bf3723aa,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,0bc5a8f8,code,fr,5bb341f4638450f9,"# Mode interactif - Analyse d'image personnalisée
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n🎨 MODE INTERACTIF - ANALYSE PERSONNALISÉE"")
@@ -1441,7 +1618,7 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""\n🤖 Mode batch - Interface interactive désactivée"")
     print(""💡 Pour mode interactif: notebook_mode = 'interactive'"")",,,,,,,,5bb341f4638450f9,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,a8aa31416d79dea3,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.",,,,,,,,a8aa31416d79dea3,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,a8aa31416d79dea3,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.",,,,,,После рассмотрения интерактивного режима следующая ячейка представляет основные прикладные сценарии использования визуального анализа с помощью GPT-5 в профессиональном и педагогическом контексте.,,a8aa31416d79dea3,,,,,,e5cc4b48072a5407,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
 print(""\n🎓 CAS D'USAGE PÉDAGOGIQUES GPT-5"")
 print(""="" * 45)
@@ -1544,7 +1721,51 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a0
 
 - **OpenAI** (2025). *GPT-5 System Card & Model Page*. — Modèle multimodal (texte + vision), fenêtre de contexte **400 000 tokens**, 128 000 tokens de sortie maximum. Sources officielles : openai.com/gpt-5/ et developers.openai.com/api/docs/models/gpt-5.
 - **OpenAI** (2024). *GPT-4o System Card*. — Précurseur multimodal de GPT-5 (vision + texte unifiés), base de l'API multimodale utilisée via OpenRouter dans ce notebook.
-",,,,,,,,70173ee4915c2fb6,,,,,,,
+",,,,,,"## 🎯 Резюме и лучшие практики
+
+### ✅ Что вы изучили
+
+- [ ] **Конфигурация GPT-5** : OpenRouter API и оптимальные параметры
+- [ ] **Мультимодальный анализ** : Сочетание текста + изображения
+- [ ] **Образовательные промпты** : Адаптация к уровню обучения
+- [ ] **Педагогические сценарии использования** : Практические применения по областям
+- [ ] **Оптимизация** : Параметры качества и производительности
+
+### 🚀 Следующие шаги
+
+1. **Экспериментируйте** со своими собственными образовательными изображениями
+2. **Тестируйте** разные уровни анализа в зависимости от вашей аудитории
+3. **Интегрируйте** GPT-5 в ваши педагогические workflows
+4. **Комбинируйте** с DALL-E 3 для генерации + анализа
+5. **Изучайте** продвинутые notebooks (Module 02)
+
+### 💡 Советы по использованию
+
+**✅ Лучшие практики:**
+- Используйте изображения высокого качества
+- Адаптируйте prompt к образовательному уровню
+- Сочетайте визуальный и контекстный анализ
+- Генерируйте педагогические вопросы
+- Сохраняйте успешные анализы
+
+**❌ Избегайте:**
+- Слишком маленьких или некачественных изображений
+- Расплывчатых или общих prompts
+- Забывать об образовательном контексте
+- Игнорировать ограничения модели
+- Не проверять фактическую точность
+
+### 🔗 Дополнительные ресурсы
+
+- **Документация OpenRouter** : [openrouter.ai](https://openrouter.ai)
+- **Руководство GPT-5** : Мультимодальные возможности
+- **Образовательные шаблоны** : `docs/genai-phase2-templates.md`
+- **Стандарты CoursIA** : `docs/genai-images-development-standards.md`
+
+### 📖 Научные ссылки
+
+- **OpenAI** (2025). *GPT-5 System Card & Model Page*. — Мультимодальная модель (текст + зрение), окно контекста **400 000 tokens**, максимум 128 000 tokens на выходе. Официальные источники : openai.com/gpt-5/ и developers.openai.com/api/docs/models/gpt-5.
+- **OpenAI** (2024). *GPT-4o System Card*. — Мультимодальный предшественник GPT-5 (объединённые зрение + текст), основа мультимодального API, используемого через OpenRouter в этом notebook.",,70173ee4915c2fb6,,,,,,1c023411cc7b0966,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,85635ba21bab5fc9,"---
 
 ### Exercice 3 : Synthèse — Workflow d’analyse multimodale complet
@@ -1567,7 +1788,27 @@ Créer un workflow d'analyse d'image personnalisé avec GPT-5 pour un cas d'usag
 
 - Indice 1 : Utilisez la fonction `analyze_image_with_gpt5()` avec le paramètre `prompt` pour votre prompt personnalisé
 - Indice 2 : Le mode ""educational"" génère automatiquement 3 questions de réflexion pour étudiants
-- Indice 3 : Adaptez le vocabulaire du prompt au niveau (elementary, secondary, university)",,,,,,,,85635ba21bab5fc9,,,,,,,
+- Indice 3 : Adaptez le vocabulaire du prompt au niveau (elementary, secondary, university)",,,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
+
+**Оценочная продолжительность:** 15-20 минут
+
+### Цель
+
+Создать персонализированный workflow анализа изображений с GPT-5 для конкретного педагогического сценария использования (история, науки, география, искусство или медицина).
+
+### Инструкции
+
+1. **Выберите область** из 5 педагогических сценариев использования, представленных в notebook
+2. **Выберите изображение**, релевантное для этой области (публичный URL или локальное изображение)
+3. **Создайте персонализированный prompt**, адаптированный к целевому образовательному уровню
+4. **Реализуйте функцию анализа**, которая сочетает 3 режима (quick, detailed, educational)
+5. **Сгенерируйте педагогические вопросы**, которые GPT-5 предлагает для студентов
+
+### Подсказки
+
+- Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
+- Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
+- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,85635ba21bab5fc9,,,,,,6b20b97c4063d231,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,4af6ad01b49719ee,"# TODO: Implémentez l'analyse personnalisée pour votre domaine
 
 # 1. Sélection du domaine et configuration

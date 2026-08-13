@@ -20,10 +20,10 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 221 |
+| Notebooks | 224 |
 | PRODUCTION | 0 |
-| BETA | 215 |
-| ALPHA | 6 |
+| BETA | 217 |
+| ALPHA | 7 |
 
 ## SymbolicAI (1 notebooks)
 
@@ -31,7 +31,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 |---|----------|----------|------------|
 | 1 | Configuration de l'environnement C# | BETA | Oui |
 
-## SymbolicAI/Argument_Analysis (21 notebooks)
+## SymbolicAI/Argument_Analysis (24 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -46,16 +46,19 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 9 | Argument_Analysis_Agentic-4-capstone : capstone d'integ | BETA | Oui |
 | 10 | Argument_Analysis_Agentic-5-jtms : Truth Maintenance Sy | BETA | Oui |
 | 11 | ArgumentProfile : la fiche d'identite multidimensionnel | BETA | Oui |
-| 12 | Argumentation abstraite de Dung — sémantiques grounded, | BETA | Oui |
-| 13 | 🚀 Analyse Rhétorique Collaborative par Agents IA - Exéc | BETA | Non |
-| 14 | Routage multi-backend : decider ou echouer bruyamment | BETA | Oui |
-| 15 | Ontologie AIF.owl -- l'architecture Argumentum des soph | ALPHA | Oui |
-| 16 | Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B #496 | BETA | Oui |
-| 17 | Ontologie des vertus argumentatives -- le pole miroir d | BETA | Oui |
-| 18 | Argumentation graduée — sémantiques de classement (h-Ca | BETA | Oui |
-| 19 | Restitution en 3 actes — scaffold déterministe, narrati | BETA | Non |
-| 20 | Interface de Configuration et Préparation du Texte | BETA | Oui |
-| 21 | I2 - Génération de contre-arguments par raisonnement fo | ALPHA | Oui |
+| 12 | Argumentum : la carte de sophisme, du nœud de taxonomie | BETA | Oui |
+| 13 | Argumentation abstraite de Dung — sémantiques grounded, | BETA | Oui |
+| 14 | 🚀 Analyse Rhétorique Collaborative par Agents IA - Exéc | BETA | Non |
+| 15 | Routage multi-backend : decider ou echouer bruyamment | BETA | Oui |
+| 16 | Ontologie AIF.owl -- l'architecture Argumentum des soph | ALPHA | Oui |
+| 17 | Argument_Analysis_Ontology_CrossLinks.ipynb — PR-B #496 | BETA | Oui |
+| 18 | Ontologie des vertus argumentatives -- le pole miroir d | BETA | Oui |
+| 19 | Argumentation graduée — sémantiques de classement (h-Ca | BETA | Oui |
+| 20 | Restitution en 3 actes — scaffold déterministe, narrati | BETA | Non |
+| 21 | Argument_Analysis — Le modèle de Toulmin (1958) | BETA | Oui |
+| 22 | Interface de Configuration et Préparation du Texte | BETA | Oui |
+| 23 | Argument_Analysis — Argumentation basée sur les valeurs | BETA | Oui |
+| 24 | I2 - Génération de contre-arguments par raisonnement fo | ALPHA | Oui |
 
 ## SymbolicAI/Lean (27 notebooks)
 
@@ -194,7 +197,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 21 | SW-7b-Python-OWL | BETA | Non |
 | 22 | SW-8-CSharp-SHACL | BETA | Oui |
 | 23 | SW-8-Python-SHACL | BETA | Oui |
-| 24 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | BETA | Oui |
+| 24 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin C#) | ALPHA | Oui |
 | 25 | SW-9-Python-JSONLD | BETA | Oui |
 
 ## SymbolicAI/SmartContracts (27 notebooks)

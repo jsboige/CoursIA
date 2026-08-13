@@ -330,7 +330,7 @@ Les **27 notebooks Infer.NET C#** (19 du corpus bayésien + 8 de l'arc décision
 
 ## Série PyMC (19 corpus notebooks, Python + 7 extraits DecisionTheory/PyMC)
 
-Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3 = notebooks 1-3, modèles classiques 4-13 = notebooks 4 (Bayesian Networks), 5 (IRT), 6 (TrueSkill), 7 (Classification), 8 (Model Sélection), 9 (Topic Models), 10 (Crowdsourcing), 11 (Séquences), 12 (Recommenders), 13 (Debugging), inférence causale 14 = notebook 5, processus gaussien épars 15 = notebook 16, modèles hiérarchiques 16 = notebook 12, filtre de Kalman 17 = notebook 17, change-point 18 = notebook 18, analyse de survie 19 = notebook 19) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
+Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La série `PyMC/` suit la même numérotation linéaire 1-19 que la série Infer — fondations 1-3, modèles classiques 4-13 (réseaux bayésiens, inférence causale, debugging, IRT, TrueSkill, classification, sélection de modèles, topic models, modèles hiérarchiques, crowdsourcing), puis frontières 14-19 (séquences/HMM, recommandation, processus gaussien épars, filtre de Kalman, change-point, analyse de survie) ; l'apport pédagogique de chacun est détaillé dans le [tableau de la série PyMC](#série-pymc) ci-dessus. Le cœur de l'arc décision vit dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
 
 ### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
@@ -417,7 +417,7 @@ Cette série suppose une **maîtrise de base en probabilités et statistiques** 
 |---------|---------------------|------------------|
 | Variables aléatoires (discrètes/continues) | Partout, notebook 1+ | Loi de proba, espérance, variance |
 | Distributions usuelles (Bernoulli, Gaussian, Beta, Gamma) | Notebook 1 (Beta-Bernoulli), 2 (Gaussian) | Paramètres, formes, conjugaison |
-| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A|B), théorème de Bayes |
+| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A\|B), théorème de Bayes |
 | Indépendance conditionnelle | Notebook 3 (Monty Hall), 4 (D-separation) | Collider, explaining away |
 | Espérance mathématique | Partout (calcul de EU) | E[X] = sum x*P(x) ou intégrale |
 | Distributions conjuguées | Notebook 1 (Beta-Bernoulli), 9 (Dirichlet-Discrète) | Prior + likelihood = posterior (famille même) |

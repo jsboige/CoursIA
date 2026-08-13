@@ -29,12 +29,18 @@ import extract_cells_to_csv as e  # noqa: E402
 # --------------------------------------------------------------------------
 
 def _nb(cells, **meta):
-    """Construit un notebook minimal. cells = liste de dicts {id,type,source}."""
+    """Construit un notebook minimal. cells = liste de dicts {id,type,source}.
+
+    Chaque dict de cellule peut optionnellement porter ``meta`` (dict) qui sera
+    pose sur ``cell.metadata`` — utile pour tester la lecture de
+    ``cell.metadata.translate`` (#10326).
+    """
     return {
         "cells": [
             {"id": c["id"], "cell_type": c["type"], "source": c["source"],
-             "metadata": {}, **({"outputs": [], "execution_count": None}
-                                if c["type"] == "code" else {})}
+             "metadata": dict(c.get("meta", {})),
+             **({"outputs": [], "execution_count": None}
+                if c["type"] == "code" else {})}
             for c in cells
         ],
         "metadata": meta,
@@ -344,6 +350,103 @@ def test_write_csv_stdout(capsys):
 
 
 # --------------------------------------------------------------------------
+# _read_translate_policy + colonne translate_policy (#10326 tranche 2)
+# --------------------------------------------------------------------------
+
+def test_read_translate_policy_verbatim():
+    """cell.metadata.translate = "verbatim" -> lu verbatim."""
+    cell = {"metadata": {"translate": "verbatim"}}
+    assert e._read_translate_policy(cell) == "verbatim"
+
+
+def test_read_translate_policy_missing_defaults_empty():
+    """Pas de clé metadata.translate -> chaîne vide (default = traduire)."""
+    assert e._read_translate_policy({"metadata": {}}) == ""
+    assert e._read_translate_policy({}) == ""  # pas de metadata du tout
+
+
+def test_read_translate_policy_non_string_defaults_empty():
+    """Valeur non-string (None, int, list, dict) -> chaîne vide (defensive)."""
+    for bad in (None, 0, 1, ["verbatim"], {"k": "v"}, True):
+        assert e._read_translate_policy({"metadata": {"translate": bad}}) == ""
+
+
+def test_read_translate_policy_strips_whitespace():
+    """Whitespace autour de "verbatim" -> strippé."""
+    assert e._read_translate_policy({"metadata": {"translate": "  verbatim  "}}) == "verbatim"
+
+
+def test_extract_metadata_translate_verbatim_propagates_to_csv(tmp_path):
+    """Une cellule avec metadata.translate="verbatim" -> row translate_policy=verbatim."""
+    p = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "c1", "type": "markdown", "source": ["une citation Hugo"],
+         "meta": {"translate": "verbatim"}},
+    ])
+    rows = e.extract_notebook(p.resolve(), tmp_path.resolve(), "fr")
+    assert rows[0]["translate_policy"] == "verbatim"
+
+
+def test_extract_no_metadata_translate_defaults_to_empty(tmp_path):
+    """Cellule standard (pas de metadata.translate) -> translate_policy=""
+
+    Le défaut sémantique = "traduire" (T3 se comporte comme avant)."""
+    p = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "c1", "type": "markdown", "source": ["du contenu normal"]},
+    ])
+    rows = e.extract_notebook(p.resolve(), tmp_path.resolve(), "fr")
+    assert rows[0]["translate_policy"] == ""
+
+
+def test_extract_unknown_policy_value_falls_back_to_empty(tmp_path):
+    """Valeur inconnue (ex. "verbatim-with-gloss") -> chaîne vide.
+
+    T1 ne connaît pas la sémantique future — son rôle = transporter un marqueur.
+    Une valeur non-reconnue EST le défaut chaîne vide pour T3 (qui lit
+    explicitement == "verbatim" ; toute autre valeur = défaut "traduire").
+    Une politique additionnelle ne casse pas les anciennes extractions."""
+    p = _write_nb(tmp_path, "nb.ipynb", [
+        {"id": "c1", "type": "markdown", "source": ["x"],
+         "meta": {"translate": "verbatim-with-gloss"}},
+    ])
+    rows = e.extract_notebook(p.resolve(), tmp_path.resolve(), "fr")
+    # Transport strict : la valeur déclarée est transportée telle quelle.
+    assert rows[0]["translate_policy"] == "verbatim-with-gloss"
+
+
+def test_extract_translate_policy_is_pivot_in_update(tmp_path):
+    """translate_policy rejoint PIVOT_COLS — un changement de politique
+    propage dans le CSV existant (sinon l'éditeur du notebook ajoute
+    "verbatim" et la politique ne s'applique jamais)."""
+    existing = [_row("nb.ipynb", "c1")]   # translate_policy = ""
+    fresh = [_row("nb.ipynb", "c1", translate_policy="verbatim")]
+    _, stats = e.update_existing_csv(list(existing), fresh, {"nb.ipynb"})
+    assert stats["updated"] == 1  # compté comme un vrai changement
+
+
+def test_extract_translate_policy_unchanged_is_in_sync(tmp_path):
+    """Pas de changement de politique -> unchanged.
+
+    Sans ce test, un run qui ne touche pas au notebook signalerait des
+    « updated » fantômes."""
+    existing = [_row("nb.ipynb", "c1", translate_policy="verbatim")]
+    fresh = [_row("nb.ipynb", "c1", translate_policy="verbatim")]
+    _, stats = e.update_existing_csv(list(existing), fresh, {"nb.ipynb"})
+    assert stats["updated"] == 0
+    assert stats["unchanged"] == 1
+
+
+def test_extract_translate_policy_drops_when_metadata_removed():
+    """Retirer metadata.translate du notebook -> CSV sync sur "" également.
+
+    L'auteur du notebook a explicitement enlevé la politique ; le CSV doit le
+    suivre (et T3 retombera sur le défaut « traduire »)."""
+    existing = [_row("nb.ipynb", "c1", translate_policy="verbatim")]
+    fresh = [_row("nb.ipynb", "c1", translate_policy="")]
+    _, stats = e.update_existing_csv(list(existing), fresh, {"nb.ipynb"})
+    assert stats["updated"] == 1
+
+
+# --------------------------------------------------------------------------
 # Constants — schéma ratifié #4957
 # --------------------------------------------------------------------------
 
@@ -357,10 +460,14 @@ def test_target_langs_seven():
 
 def test_columns_order_and_completeness():
     # Schéma ratifié : notebook, cell_id, cell_type, src_lang, src_hash, puis
-    # text_<lang> pour [fr]+TARGET, puis hash_<lang> pour [fr]+TARGET.
+    # text_<lang> pour [fr]+TARGET, puis hash_<lang> pour [fr]+TARGET, puis
+    # translate_policy (#10326 : politique per-row, lue par T1 depuis
+    # cell.metadata.translate, honorée par T3) en queue pour rester
+    # rétro-compatible avec les CSV générés par la tranche 1.
     expected = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]
     expected += [f"text_{l}" for l in ["fr"] + e.TARGET_LANGS]
     expected += [f"hash_{l}" for l in ["fr"] + e.TARGET_LANGS]
+    expected += ["translate_policy"]
     assert e.COLUMNS == expected
 
 

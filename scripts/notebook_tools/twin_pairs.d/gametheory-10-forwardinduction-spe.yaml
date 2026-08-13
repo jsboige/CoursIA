@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
   audits:
     - python_sha: 71947cbdecde8ce79b25ec916fd4053c19d6365c
       csharp_sha: 111bf7e843ba260a52ff4bb8abb585e1b34067d6
@@ -18,6 +20,24 @@
       csharp_sha: 111bf7e843ba260a52ff4bb8abb585e1b34067d6
       content_python_sha: dbe58fe7c300d8c63cd5cf5801b691657f8f996d8e4eaf8a56ff2e82e3944a63
       content_csharp_sha: 07a4162c6350be87ef9c98daf7f578f67f14ae7f3213ed78db0680652b4d37a8
+    - date: "2026-08-11"
+      by: myia-ai-01:CoursIA
+      python_sha: 71947cbdecde8ce79b25ec916fd4053c19d6365c
+      csharp_sha: 1097d4b5b0b02d7f809d29defaf8cb125382286e
+      content_python_sha: dbe58fe7c300d8c63cd5cf5801b691657f8f996d8e4eaf8a56ff2e82e3944a63
+      content_csharp_sha: c49e0baf733bc7af3ce8403b6cbc1b719cec7d4c77e3a2961b453b13262978eb
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 71947cbdecde8ce79b25ec916fd4053c19d6365c
+      csharp_sha: 3b475e6d9fba8d3228bd7fb4f35b29dd9e7c19e8
+      content_python_sha: dbe58fe7c300d8c63cd5cf5801b691657f8f996d8e4eaf8a56ff2e82e3944a63
+      content_csharp_sha: 16504c71f73b8e616d2b44226bb2e16e2d0993f544faae7c6ec79d00fa136792
+    - date: "2026-08-12"
+      by: myia-ai-01:CoursIA
+      python_sha: 71947cbdecde8ce79b25ec916fd4053c19d6365c
+      csharp_sha: 1781f236d84da2f05a986811ed7e1a7653e217ec
+      content_python_sha: dbe58fe7c300d8c63cd5cf5801b691657f8f996d8e4eaf8a56ff2e82e3944a63
+      content_csharp_sha: cafbba865800bc9a93dbe3bfa86560da0dcc7e120459926898408cf5c639a607
   known_differences:
     - "Socle pedagogique commun : les raffinements d'equilibre au-dela du SPE (Selten 1965) -- sous-jeux et equilibre parfait, menaces et promesses credibles, induction avant (forward induction), perfection en mains tremblantes (trembling-hand perfection, Selten 1975), application canonique du jeu du « Burn Money » (signal costly), comparaison des raffinements. Distinct du GT-9 (induction arriere + paradoxes) : le GT-10 porte sur les RAFFINEMENTS de la notion d'equilibre (forward induction, trembling-hand), pas sur l'algorithme de resolution."
     - "Idiomes framework : Python = `matplotlib` (patches `Ellipse` pour rendre les ensembles d'information / infosets sur l'arbre de jeu) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet** (modele d'arbre + sous-jeux + raffinements from-scratch, sortie console)."

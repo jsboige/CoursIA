@@ -1,0 +1,17 @@
+{
+  "video_id": "video_6a79f8d87f3c81918e793ec26a594b1d05c0761e757a25a1",
+  "model": "sora-2",
+  "scenario": "text_to_video",
+  "prompt": "A single red apple resting on a white table; slow gentle push-in.",
+  "seconds": "4",
+  "size": "1280x720",
+  "status": "completed",
+  "keyframes": [
+    "keyframe_01.png",
+    "keyframe_02.png",
+    "keyframe_03.png",
+    "keyframe_04.png"
+  ],
+  "generated_at_utc": "2026-08-10T18:15Z",
+  "verdict": "SOTA-OK (firsthand, #10315)"
+}

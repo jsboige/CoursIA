@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Verdict a deux niveaux (reclassification #10459 : axe PythonNet omis de la taxonomie bucket-3 #10382, axelrod inclus -- l angle mort qui avait fait conclure INTRINSIC a tort en #10406). (1) axelrod-la-lib : PONT .NET demontre en annexe du notebook C# (cellule 30) via PythonNet (.NET -> Python.Runtime -> CPython 3.11.9 -> axelrod 4.14.0, meme axe que GT-13 pyspiel CFR, GT-17 pyspiel rollout, Search-7 pyspiel MCTS) -- axl.Tournament(Cooperator, Defector, TitForTat, Grudger) invoque depuis C# (20 tours x 3 reps) + classement IPD reel commite (TitForTat/Grudger strategies nice dominent le round-robin, resultat Axelrod 1980 TFT champion). Pont installe (pythonnet NuGet 3.0.5 + axelrod pip 4.14.0, regle F) et branche : SOTA-OK pour ce role. (2) From-scratch C# (sections 3-9) : reste la contrepartie pedagogique (niveau semantic) -- le pont est EN PLUS jamais A LA PLACE (mandat #10382). L integralite d axelrod cote Python est desormais reachable via le pont ; aucun reste INTRINSIC."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -20,7 +22,20 @@
       csharp_sha: b1352e95a88555910b1b7bcfb90feb12891dc752
       content_python_sha: eccc57ad4442f22d1265df4a1350df0e8cbeba2414bb232daab4d3ec5085723b
       content_csharp_sha: a4375abf7c054c784da7754716810ee0a34dd1bd31d5a9e27034782e42ae6973
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: db8f5ea35f0f891863bcf212bc112b031cafa494
+      csharp_sha: 86bb63cf6ba54b85b0d6ee67348f81db377f2f8d
+      content_python_sha: eccc57ad4442f22d1265df4a1350df0e8cbeba2414bb232daab4d3ec5085723b
+      content_csharp_sha: fd6487e762f7c7f4ca1d52d42c62819a1c3efad8af1930420733a1225c2e12bd
+    - date: "2026-08-12"
+      by: myia-po-2026:CoursIA
+      python_sha: db8f5ea35f0f891863bcf212bc112b031cafa494
+      csharp_sha: 5c5aeff5bff301e7b14099fbd7bd4008ee264f29
+      content_python_sha: eccc57ad4442f22d1265df4a1350df0e8cbeba2414bb232daab4d3ec5085723b
+      content_csharp_sha: aeb8e7b1bdbb792a3c4dc50ba91a7e10c183093d39a00f6c978d86e71a47ec8e
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."
     - "Asymetrie pedagogique : Python utilise matplotlib.animation pour la viz dynamique (gif-like) du tournoi + process de Moran ; le C# travaille en pur System.* sans viz dynamique (asci-art + tableaux). Meme socle theorique (Axelrod + Moran), leviers de demonstration differents (viz riche cote Python, code from-scratch minimaliste cote C#)."
+    - "Verdict RECOVERABLE-LOCAL bucket-3 (#10382, reclassification #10459 2026-08-12) : la librairie `axelrod` (Knight, Glynatsi et al.) est Python pure MAIS pontable via PythonNet (.NET -> Python.Runtime -> CPython -> axelrod), meme axe que GT-13/GT-17/Search-7. Le verdict INTRINSIC initial (#10406, 2026-08-11) concluait 'pont pas viable' car axelrod est 'usage exclusif via import' -- c'etait l angle mort taxonomique #10459 (axe PythonNet omis de la bucket-3). Pont demontre en annexe C# (cellule 30 : axl.Tournament invoque depuis C#, sortie commitee). Le from-scratch C# reste la contrepartie pedagogique principale (niveau semantic) ; le pont est EN PLUS jamais A LA PLACE (mandat #10382)."

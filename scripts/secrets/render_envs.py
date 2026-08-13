@@ -82,6 +82,38 @@ TARGET_ENVS = [
     # edit master.env + render. The credential was lost 3x when it lived only in a
     # per-machine .env with no canonical anchor -- master.env is now that anchor.
     REPO_ROOT / "MyIA.AI.Notebooks" / "QuantConnect" / "projects" / "Portfolio-IBKR-Coinbase-Hybrid" / ".env",
+    # --- Notebook-side .env targets (#9929, c.10186) -----------------------
+    # Closes the structural blind-spot documented in ai-01's c.9929 finding:
+    # `--check` reports `[OK] No drift` whenever a `.env` is **absent** from
+    # TARGET_ENVS, even if it carries a stale shared key (e.g. a revoked
+    # OpenAI token duplicated into two series, sha=4a2fac0e1714 -> HTTP 401).
+    # Six escalations in a row (#6255 #8519 #8624 #9059 #9929 + the
+    # GPU-1 "vLLM DOWN" phantom) evaporated to a 10-second measurement that
+    # TARGET_ENVS would have surfaced. The lists below are **optional**: a
+    # path that does not exist on the current machine is silently skipped
+    # (see ``sync()``'s ``if not env.exists(): continue``), so adding them is
+    # a no-op on machines where the series is absent and a real check on
+    # machines where the series is present (e.g. ai-01 confirmed SmartContracts
+    # + QuantConnect + SymbolicLearning carry real OPENAI/OPENROUTER keys).
+    # Per-series rationale lives in the comments above each entry below.
+    # AgenticDataScience (ML/DataScienceWithAgents series). ECE TP uses
+    # OPENAI_API_KEY + OPENAI_BASE_URL; OPENROUTER is a duplicate alias.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "AgenticDataScience" / ".env",
+    # SemanticKernel notebooks (.NET Interactive). 0-AI-settings.ipynb +
+    # 09-SemanticKernel-Building-CLR consume this via Settings.LoadFromFile
+    # (config/settings.json is gitignored and derived from this key -- see
+    # render_settings_json.py).
+    REPO_ROOT / "MyIA.AI.Notebooks" / "SemanticKernel" / ".env",
+    # SmartContracts series (Solidity, foundry). OPENAI_API_KEY is an
+    # OpenRouter-key alias used by SC-11 LLM-Assisted notebook.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "SmartContracts" / ".env",
+    # QuantConnect series. May carry OPENAI_API_KEY on machines that use
+    # OpenAI for QC LLM summaries (not all do -- some route via QC Cloud).
+    REPO_ROOT / "MyIA.AI.Notebooks" / "QuantConnect" / ".env",
+    # SymbolicLearning series. SL-* notebooks may consume OPENAI/OPENROUTER
+    # for LLM-assisted proof search. Path may not exist on machines that
+    # never provisioned it.
+    REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "SymbolicLearning" / ".env",
 ]
 
 # Keys whose VALUE is a shared secret and must be synced from master.env.
@@ -98,6 +130,13 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "HF_TOKEN", "HUGGINGFACE_TOKEN",
     # Paid LLM APIs (centrally managed, rotation-sensitive)
     "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "OPENROUTER_API_KEY", "MISTRAL_API_KEY",
+    # MiniMax cloud (Hailuo Video API, #10244). Le fournisseur n'emet **qu'une
+    # seule** cle par souscription : elle est donc plus sensible que les autres,
+    # pas moins -- la perdre coute l'acces API de l'abonnement entier.
+    # Le suffixe _GENAI est la convention deja recue par la flotte : il distingue
+    # cette cle de souscription du credential MiniMax *texte* servi via claudish,
+    # qui ne porte aucun entitlement video.
+    "MINIMAX_GENAI_API_KEY",
     # Model hubs / git
     "CIVITAI_TOKEN", "GITHUB_TOKEN", "GITHUB_ACCESS_TOKEN",
     # Per-service client API keys (server defines the value; clients must match)
@@ -115,6 +154,17 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree)
     "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN",
+    # Qwen / ComfyUI-Login bearer token (#10265). Consumed by:
+    #   - MyIA.AI.Notebooks/GenAI/00-5-ComfyUI-Local-Test.ipynb cell as
+    #     ``os.getenv("COMFYUI_API_TOKEN") or os.getenv("QWEN_API_TOKEN")``
+    #   - scripts/genai-stack/core/auth_manager.py:281
+    #   - scripts/genai-stack/_archive/utils/reconstruct_env.py:46 (legacy
+    #     sync path used in Phase 30 docs)
+    # Real auth is via the bind-mounted .secrets/qwen-api-user.token (ComfyUI-Login
+    # middleware reads it directly); the env-var form is a notebook-side fallback.
+    # Both env-var names (``QWEN_API_TOKEN`` / ``QWEN_API_USER_TOKEN`` legacy)
+    # carry the same value -- see ALIASES below.
+    "QWEN_API_TOKEN",
     # IBKR paper/simulated trading login (Portfolio-IBKR-Coinbase-Hybrid, #1199).
     # A single shared credential (not per-instance) -> centralized so a re-provision
     # is edit-master + render, never a scattered per-machine .env that gets lost.
@@ -132,6 +182,11 @@ SECRET_KEYS: frozenset[str] = frozenset({
 ALIASES: dict[str, str] = {
     "HUGGINGFACE_TOKEN": "HF_TOKEN",
     "GITHUB_ACCESS_TOKEN": "GITHUB_TOKEN",
+    # ComfyUI-Login bearer -- the legacy env-var name used by
+    # scripts/genai-stack/core/auth_manager.py:233 (still referenced as
+    # ``QWEN_API_USER_TOKEN`` in legacy code paths). Both names MUST
+    # carry the same value; bootstrap enforces this on first sync. #10265.
+    "QWEN_API_USER_TOKEN": "QWEN_API_TOKEN",
 }
 
 
@@ -369,14 +424,17 @@ def _service_compose_paths(service_dir: Path) -> list[Path]:
 
 
 def bootstrap_missing_envs(
-    services_root: Path = SERVICES_ROOT,
-    master_path: Path = MASTER_ENV,
-    secret_keys: frozenset[str] = SECRET_KEYS,
-) -> list[str]:
+    services_root: Path | None = None,
+    master_path: Path | None = None,
+    secret_keys: frozenset[str] | None = None,
+) -> list[str] | None:
     """Auto-create .env for services whose compose file references a SECRET_KEY
     but who lack a .env. Returns the list of service-dir names that were
-    newly written. Dry-run path for tests: caller can monkeypatch
-    ``services_root`` / ``master_path`` / ``secret_keys``.
+    newly written. Hermetic test paths: (a) caller passes ``services_root`` /
+    ``master_path`` / ``secret_keys`` explicitly, OR (b) caller monkeypatches
+    the module globals (``render_envs.MASTER_ENV`` / ``SERVICES_ROOT``) and
+    invokes via ``main()`` — the ``None`` defaults below defer to the LIVE
+    module globals at call time, so such monkeypatches bite.
 
     Precedence: if the service already has an .env, it is left untouched
     (sync() handles updates). If the service has NO .env but has at least one
@@ -389,6 +447,22 @@ def bootstrap_missing_envs(
     need filling), so the CLI can distinguish "no-op success" from "cannot
     run" via different exit codes.
     """
+    # Resolve module globals at CALL TIME, not import time. Binding these as
+    # default args (= SERVICES_ROOT / MASTER_ENV / SECRET_KEYS) would freeze
+    # them to their import-time values, making a test's
+    # ``monkeypatch.setattr(render_envs, "MASTER_ENV", tmp_path/...)`` INERT --
+    # the #10085 hermeticity defect: the function read the REAL master.env on
+    # every cluster machine (writing real service .env files with live key
+    # material) while CI stayed spuriously green only because it owns no
+    # master.env. The None-sentinel defers to the live module global so test
+    # monkeypatches bite; explicit callers (tests passing tmp_path) override
+    # exactly as before.
+    if services_root is None:
+        services_root = SERVICES_ROOT
+    if master_path is None:
+        master_path = MASTER_ENV
+    if secret_keys is None:
+        secret_keys = SECRET_KEYS
     if not master_path.exists():
         print(f"[X] {master_path} not found. Run with --bootstrap first.")
         return None

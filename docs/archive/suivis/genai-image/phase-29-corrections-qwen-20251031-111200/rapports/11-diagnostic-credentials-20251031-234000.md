@@ -24,7 +24,7 @@ Les tests d'authentification échouent car les scripts clients utilisent le **ha
 **Fichier** : `.secrets/.env.generated`  
 **Contenu** :
 ```env
-QWEN_API_USER_TOKEN=@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf
+QWEN_API_USER_TOKEN=LEAKED-PENDING-ROTATION 2e5dd4339ca9
 ```
 **Format** : Token brut de 32 caractères  
 **Usage** : ✅ Doit être utilisé par les clients pour l'authentification
@@ -63,7 +63,7 @@ environment:
 #### ❌ Incohérence #3 : Token brut non utilisé
 **Fichier** : `.secrets/.env.generated`
 ```env
-QWEN_API_USER_TOKEN=@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf
+QWEN_API_USER_TOKEN=LEAKED-PENDING-ROTATION 2e5dd4339ca9
 ```
 **Problème** : Token brut disponible mais jamais utilisé  
 **Impact** : ⚠️ Credential valide inutilisé
@@ -123,14 +123,14 @@ self.api_key = "2b$12$UDceblhZeEySDwVMC0ccN.IaQmMBfKdTY.aAE3poXcq1zsOP6coni"
 
 # APRÈS (✅ CORRECT)
 import os
-self.api_key = os.getenv("QWEN_API_USER_TOKEN") or "@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf"
+self.api_key = os.getenv("QWEN_API_USER_TOKEN") or "LEAKED-PENDING-ROTATION 2e5dd4339ca9"
 ```
 
 ### Étape 2 : Configurer Docker
 **Ajouter dans `docker-configurations/services/comfyui-qwen/.env`** :
 ```env
 # API Authentication Token
-QWEN_API_TOKEN=@TKEoMzUx&)F@B$^1O3hkt&VkDWp0JXf
+QWEN_API_TOKEN=LEAKED-PENDING-ROTATION 2e5dd4339ca9
 COMFYUI_AUTH_TOKEN_FILE=/workspace/ComfyUI/.secrets/qwen-api-user.token
 ```
 

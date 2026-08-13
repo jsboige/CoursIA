@@ -8,6 +8,15 @@
       by: myia-po-2023:CoursIA
       python_sha: 5542ba3e5ac011dbb7e9af495067833f0f75e28c
       csharp_sha: 922dc82ca0574bbc967eff0b6070b9408a0c022c
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 00f8753cfa5921b66e93958f53acacadfabd18fb
+      csharp_sha: 922dc82ca0574bbc967eff0b6070b9408a0c022c
+      content_python_sha: b7da5dd5ae15529afa95589d98d31e864e2c8fbde05d7bb531e2ab5b783ff3bb
+      content_csharp_sha: 8f166b1cf589204f6537ad628c8ac9be581b9d18522316f60b2c192fa69f6c68
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: |
+    Python = automata-lib (librairie mature DFA/NFA) + z3-solver (Z3 SOTA SMT) -- deux libs natives branchees. C# = Microsoft.Z3 (NuGet 4.12.2, meme solveur SOTA) + from-scratch DFA/NFA classes manuelles (valeur pedagogique). Z3 SOTA-OK des deux cotes (meme version majeure 4.12.2). automata-lib sans equivalent .NET mature actuellement (ecosystem gap -- pas de port reconnu SOTA-grade pour DFA/NFA sur .NET). Asymetrie de couverture forte : Python paragraphe 1-9 (91 cells) vs C# paragraphe 1-4 (39 cells), surface parity assumee par conception (titre C# porte (tranche 1) + conclusion Bilan (tranches 1 + 2)). Verdict RECOVERABLE-LOCAL (Z3 SOTA-OK, automata-lib .NET gap = intrinsic mais partiel).
   known_differences:
     - "AVERTISSEMENT DE PERIMETRE : le jumeau C# est explicitement un twin PARTIEL -- son titre porte '(tranche 1)' et sa conclusion s'intitule 'Bilan (tranches 1 + 2)'. parity_level=surface (pas semantic) car la couverture C# est incomplete vs Python."
     - "Asymetrie de couverture forte : Python (91 cellules, 24 code) couvre §1-9 (automates finis avec automata-lib, automates symboliques avec Z3, verification de proprietes, lien Sudoku, Automata.Net) ; C# (39 cellules, 14 code) couvre §1-4 uniquement (automates finis a la main, automates symboliques avec Microsoft.Z3). Les sections 'verification de proprietes', 'lien Sudoku', 'Automata.Net' sont absentes du C#."

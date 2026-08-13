@@ -1200,3 +1200,48 @@ class TestPathFormInvariance:
         absolute = (root / "GradeBook.ipynb").resolve()
         assert _classify(rel, standard_threshold=3, root=root) == ("tooling", None)
         assert _classify(absolute, standard_threshold=3, root=root) == ("tooling", None)
+
+    def test_family_dir_scanned_as_root_is_not_emptied(self, tmp_path, monkeypatch):
+        """#2161 false-negative: scanning a FAMILY directory as the scan root
+        silently emptied the corpus.
+
+        The top-of-tree ``tooling`` rule (catching ``GradeBook.ipynb`` directly
+        under ``NOTEBOOKS_DIR``) was gated on ``len(_scope_parts(path, root)) == 1``.
+        ``_scope_parts`` relativizes to the scan ``root``, so when a family dir
+        was the scan target, EVERY notebook in it sat at relative-depth-1 and
+        was false-classified ``tooling`` -- the whole family dropped out of the
+        corpus, ``--check`` saw nothing, and returned a trivially-green exit 0.
+        Observed on ``Sudoku/``, ``IIT/``, ``ML/`` scanned alone. The fix anchors
+        the top-of-tree check on ``NOTEBOOKS_DIR`` specifically (not the scan
+        root), mirroring how the other directory rules already key off ``parts``.
+        """
+        root = tmp_path / "nb_root"
+        family = root / "Sudoku"
+        family.mkdir(parents=True)
+        _write_nb(family / "Sudoku-1-Backtracking-Csharp.ipynb", [])
+        _write_nb(family / "Sudoku-0-Environment-Csharp.ipynb", [])
+        _write_nb(root / "GradeBook.ipynb", [])  # the only TRUE top-of-tree file
+        monkeypatch.setattr(count_exercises, "NOTEBOOKS_DIR", root)
+
+        # Scanning the FAMILY dir as root must still see its notebooks -- they
+        # are NOT top-of-tree (GradeBook is). On buggy code both returned
+        # ("tooling", None) and corpus_scope(family) yielded an empty list.
+        assert _classify(
+            family / "Sudoku-1-Backtracking-Csharp.ipynb",
+            standard_threshold=3, root=family,
+        ) == ("standard", 3)
+        assert _classify(
+            family / "Sudoku-0-Environment-Csharp.ipynb",
+            standard_threshold=3, root=family,
+        ) == ("setup", 0)
+        corpus, removed = corpus_scope(family)
+        assert len(corpus) == 2, (
+            f"family scanned as root was emptied (corpus={len(corpus)}, "
+            f"removed={removed}) -- the #2161 false-negative"
+        )
+
+        # The genuine top-of-tree file is still tooling (regression guard on
+        # the fix itself -- anchoring on NOTEBOOKS_DIR must not over-correct).
+        assert _classify(
+            root / "GradeBook.ipynb", standard_threshold=3, root=root,
+        ) == ("tooling", None)

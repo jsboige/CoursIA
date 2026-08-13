@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Google OR-Tools (3 sous-modules : ConstraintSolver routing, LinearSolver LP, Sat CP-SAT) : Python = `ortools` PyPI package (`from ortools.sat.python import cp_model`, `from ortools.linear_solver import pywraplp`, `from ortools.constraint_solver import pywrapcp`). C# = `Google.OrTools.{Sat,LinearSolver,ConstraintSolver}` NuGet packages (bindings SWIG officiels). Meme solveur C++ natif upstreams de Google Operations Research, accessible via les bindings Python (.whl) et C# (.nupkg). Verifie firsthand (c.235 audit 2026-08-12, myia-po-2023:CoursIA-2) : Python 30 cells / C# 35 cells, structure pedagogique symetrique (memes configurations de puzzles, memes benchmarks CP-SAT, memes options solver). Pont cross-stack impossible : bindings SWIG non bridgeables (meme pattern que Sudoku-18 precedent c.234). Parite semantique mecaniquement preservee tant que les versions PyPI/NuGet restent synchronisees. Verdict SOTA-OK : OR-Tools est la SOTA OR solver pour les deux stacks."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -13,6 +15,12 @@
       python_sha: c3d705c2d272864a8f0ebf1d9b0edd9e58c8ae29
       csharp_sha: 6e23876720519849d48a72d95365cc0cc95384bd
       content_python_sha: 788279cb59ac803935c5f773cc78f5ae11f7b835d85ed00b98a08c976b8afd0b
+      content_csharp_sha: 29d18d7333c963eb28db859345c80d2780575821951bb9949b61a9b29115bc5d
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: c8c2ec124d09f584695f9d558844f9872881fad0
+      csharp_sha: 6e23876720519849d48a72d95365cc0cc95384bd
+      content_python_sha: d92e182e73475c406e83183108173390ab257c2805b25cfa0fa8b71ef60412c8
       content_csharp_sha: 29d18d7333c963eb28db859345c80d2780575821951bb9949b61a9b29115bc5d
   known_differences:
     - "Socle pedagogique commun : resolution du Sudoku par programmation par contraintes avec OR-Tools CP-SAT (Google.OrTools), meme solveur sous-jacent, meme modelisation (variables IntVar par case, contraintes AllDifferent sur lignes/colonnes/blocs, objectif de satisfaction)."

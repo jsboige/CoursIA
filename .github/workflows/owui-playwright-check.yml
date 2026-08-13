@@ -17,18 +17,18 @@ on:
   push:
     branches: [main]
     paths:
-      - 'MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI/**'
+      - 'MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/**'
       - '.github/workflows/owui-playwright-check.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI/**'
+      - 'MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/**'
       - '.github/workflows/owui-playwright-check.yml'
   workflow_dispatch:
 
 defaults:
   run:
-    working-directory: MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI
+    working-directory: MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI
 
 permissions:
   contents: read
@@ -46,7 +46,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: MyIA.AI.Notebooks/GenAI/Open-WebUI/Playwright-OWUI/package-lock.json
+          cache-dependency-path: MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/package-lock.json
 
       - name: Install dependencies
         run: npm ci

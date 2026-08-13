@@ -12,6 +12,17 @@ import statistics
 
 TRACE_DIR = os.path.join(os.path.dirname(__file__), "traces")
 
+# Result-JSON wrappers (run_prover_bg per-run summaries, Epic #1453) live
+# alongside raw traces. Two layouts exist across the fleet: co-located with the
+# OTel *.spans.jsonl in TRACE_DIR (baselines/traces/), or in the sibling parent
+# dir (agent_tests/prover/traces/). Section 11 reads them from whichever holds
+# *_result.json; TRACE_DIR remains the fallback for forward compatibility.
+RESULT_DIR = next(
+    (d for d in (TRACE_DIR, os.path.join(os.path.dirname(__file__), "..", "traces"))
+     if glob.glob(os.path.join(d, "*_result.json"))),
+    TRACE_DIR,
+)
+
 # Recency filter (#1453 forensic). Traces accumulate across harness versions,
 # and pre-fix artifacts skew every metric below when mixed with current traces.
 # Concrete case: 10 "a coroutine was expected" stalls from 2026-05 (autonomous
@@ -111,6 +122,42 @@ if _stale:
           f"2700s wall-clock cap (#3837) and skew duration/outlier metrics.")
     print(f"        Re-run with --since 2026-06-01 to scope to the current harness.")
 print()
+
+def _derive_result_kind(result, final_sorry, original_sorry):
+    """Canonical run verdict — mirror of run_prover_bg._derive_result_kind (#1453).
+
+    Applied retroactively in Section 11 to the legacy *_result.json wrappers that
+    predate the ``result_kind`` field (added 2026-07-02): 67 of 76 wrappers carry
+    neither ``result_kind`` nor the diagnostic fields the span-substring
+    classifier (Section 9) reads. Mirrored rather than imported because
+    run_prover_bg pulls prover.config / lean_utils / tree_lock at module load —
+    heavy and side-effectful outside the harness runtime — and this re-derivation
+    is pure dict logic. Keep the 9-branch precedence in sync with the canonical
+    ``run_prover_bg._derive_result_kind`` when it changes.
+
+    Precedence (first match wins): crashed > sorry_decreased > structural_only >
+    provider_outage > correctly_refused > heartbeat_budget_exceeded >
+    decomposition_regression > reasoning_budget_exceeded > no_progress.
+    """
+    if isinstance(result, dict) and result.get("error"):
+        return "crashed"
+    if (final_sorry is not None and original_sorry is not None
+            and final_sorry < original_sorry):
+        return "sorry_decreased"
+    if isinstance(result, dict) and result.get("structural_progress"):
+        return "structural_only"
+    if isinstance(result, dict) and result.get("provider_outage"):
+        return "provider_outage"
+    if isinstance(result, dict) and result.get("intractable"):
+        return "correctly_refused"
+    if isinstance(result, dict) and result.get("heartbeat_budget_exceeded"):
+        return "heartbeat_budget_exceeded"
+    if isinstance(result, dict) and result.get("decomposition_regression"):
+        return "decomposition_regression"
+    if isinstance(result, dict) and result.get("reasoning_budget_exceeded"):
+        return "reasoning_budget_exceeded"
+    return "no_progress"
+
 
 def extract_target(filename):
     base = filename.replace(".spans.jsonl", "")
@@ -500,3 +547,76 @@ for mode in ["auto", "multi", "custom"]:
     err_pct = d["errors"] / max(1, d["spans"]) * 100
     avg_dur = d["total_duration_s"] / max(1, d["files"])
     print(f"{mode:<10} {d['files']:>6} {d['spans']:>8} {d['errors']:>8} {err_pct:>5.1f}% {d['total_duration_s']:>9.0f}s {avg_dur:>7.0f}s")
+
+# ===== 11. RESULT-JSON VERDICTS (canonical re-derivation, #1453 forensic P1) =====
+print("\n" + "="*80)
+print("11. RESULT-JSON VERDICTS (canonical, retroactive)")
+print("="*80)
+# The span-substring outcome classifier (Section 9) reads guard span-names that
+# the current harness emits rarely (delta0_stagnation_yield: 1/163 span files;
+# buildfail_stagnation / wallclock_cap / provider_outage / heartbeat_*: 0/163
+# each). The canonical verdict lives in run_prover_bg._derive_result_kind and was
+# written to the result-JSON wrapper only from 2026-07-02; 67 of 76 legacy
+# wrappers carry neither result_kind nor the diagnostic fields the classifier
+# keys on, so every consumer re-derived its own verdict from sorry_delta alone —
+# collapsing 40 of 76 runs into one undifferentiated "sorry_delta == 0" bucket.
+# This section re-derives the canonical verdict for ALL result files (a present
+# result_kind is reused, an absent one is re-derived via _derive_result_kind) so
+# the macro signal a coordinator dispatches on carries a real termination
+# taxonomy (sorry_decreased / structural_only / provider_outage / crashed /
+# no_progress / ...) instead of a 53%-delta-0 blob.
+result_files = sorted(glob.glob(os.path.join(RESULT_DIR, "*_result.json")))
+_verdicts = defaultdict(lambda: {"count": 0, "elapsed": [], "preset": 0, "rederived": 0})
+_by_mode = defaultdict(lambda: defaultdict(int))
+_total = 0
+for _rf in result_files:
+    try:
+        with open(_rf, "r", encoding="utf-8") as _fh:
+            _d = json.load(_fh)
+    except (OSError, ValueError):
+        continue
+    if _args.since:  # honor the same recency window as the span sections
+        _ts = str(_d.get("timestamp", ""))[:10]
+        if _ts and _ts < _args.since:
+            continue
+    _mode = str(_d.get("mode", ""))
+    _mode = "auto" if _mode.startswith("auto") else "multi" if _mode.startswith("multi") else "custom"
+    _preset = _d.get("result_kind")
+    if _preset:
+        _kind = _preset
+        _verdicts[_kind]["preset"] += 1
+    else:
+        _kind = _derive_result_kind(_d.get("result", {}), _d.get("final_sorry"), _d.get("original_sorry"))
+        _verdicts[_kind]["rederived"] += 1
+    _verdicts[_kind]["count"] += 1
+    _el = _d.get("elapsed_s")
+    if isinstance(_el, (int, float)):
+        _verdicts[_kind]["elapsed"].append(_el)
+    _by_mode[_mode][_kind] += 1
+    _total += 1
+
+_preset_n = sum(v["preset"] for v in _verdicts.values())
+_rederived_n = sum(v["rederived"] for v in _verdicts.values())
+print(f"\n{_total} result files classified ({_preset_n} preset result_kind, "
+      f"{_rederived_n} re-derived from legacy wrappers lacking the field).")
+_VERDICT_ORDER = [
+    "sorry_decreased", "structural_only", "correctly_refused",
+    "heartbeat_budget_exceeded", "decomposition_regression",
+    "reasoning_budget_exceeded", "provider_outage", "crashed", "no_progress",
+]
+print(f"\n{'Verdict':<28} {'Count':>6} {'MeanEl':>9} {'Preset':>7} {'Rederived':>10}")
+print("-" * 70)
+for _kind in _VERDICT_ORDER + [k for k in _verdicts if k not in _VERDICT_ORDER]:
+    _v = _verdicts.get(_kind)
+    if not _v or _v["count"] == 0:
+        continue
+    _mean = sum(_v["elapsed"]) / len(_v["elapsed"]) if _v["elapsed"] else 0
+    print(f"{_kind:<28} {_v['count']:>6} {_mean:>8.0f}s {_v['preset']:>7} {_v['rederived']:>10}")
+if _total:
+    _delta0_share = _verdicts.get("no_progress", {}).get("count", 0) / _total * 100
+    print(f"\nno_progress share: {_delta0_share:.0f}% of {_total} — previously the "
+          f"undifferentiated 'sorry_delta==0' bucket; structural_only / "
+          f"provider_outage / heartbeat_budget_exceeded above now sub-classify it.")
+if _by_mode:
+    print("By mode: " + " | ".join(
+        f"{_m}={sum(_by_mode[_m].values())}" for _m in sorted(_by_mode)))

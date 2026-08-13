@@ -140,7 +140,7 @@ Pour les praticiens intéressés par les applications multi-agents :
 
 | # | Notebook                                  | Thème                                                          | Durée   | Stack  |
 |---|-------------------------------------------|----------------------------------------------------------------|---------|--------|
-| **Fondations** |
+| **Fondations** |   |   |   |   |
 | 1  | [Tweety-1-Setup](Tweety-1-Setup.ipynb)    | Configuration JVM, JARs, outils externes                       | 20 min  | Python |
 | 2  | [Tweety-2-Basic-Logics](Tweety-2-Basic-Logics.ipynb) | Logique Propositionnelle et FOL                          | 45 min  | Python |
 | 2a | [Tweety-2-Basic-Logics-Csharp](Tweety-2-Basic-Logics-Csharp.ipynb) | Logique propositionnelle .NET (IKVM, port pilot #4792) | 30 min | C# PROD |
@@ -152,11 +152,11 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 3c-Dung | [Tweety-3-Dung-Csharp](Tweety-3-Dung-Csharp.ipynb) | Argumentation de Dung .NET (IKVM, c.182 PR #5194)   | 25 min  | C# PROD |
 | 3c-ML | [Tweety-3-ModalLogic-Csharp](Tweety-3-ModalLogic-Csharp.ipynb) | Logique modale .NET (IKVM)                       | 25 min  | C# PROD |
 | 3c-QBF | [Tweety-3-QBF-Csharp](Tweety-3-QBF-Csharp.ipynb) | QBF .NET (IKVM, c.185 PR #5202)                       | 25 min  | C# PROD |
-| **Révision de Croyances** |
+| **Révision de Croyances** |   |   |   |   |
 | 4  | [Tweety-4-Belief-Revision](Tweety-4-Belief-Revision.ipynb) | CrMas, MUS, MaxSAT, Mesures d'incohérence         | 50 min  | Python |
 | 4c-BR | [Tweety-4-Belief-Revision-Csharp](Tweety-4-Belief-Revision-Csharp.ipynb) | Belief Revision .NET (IKVM)                | 35 min  | C# BETA |
 | 4c-Aspic | [Tweety-4-Aspic-Csharp](Tweety-4-Aspic-Csharp.ipynb) | ASPIC+ .NET (IKVM)                                | 30 min  | C# BETA |
-| **Argumentation** |
+| **Argumentation** |   |   |   |   |
 | 5  | [Tweety-5-Abstract-Argumentation](Tweety-5-Abstract-Argumentation.ipynb) | Dung AF, Sémantiques, CF2, Génération         | 55 min  | Python |
 | 5b | [Tweety-5b-Lean-Argumentation](Tweety-5b-Lean-Argumentation.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean` (grounded = point fixe Knaster–Tarski), `#check` + `#print axioms` in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min  | Lean BETA |
 | 5c | [Tweety-5-Abstract-Argumentation-Csharp](Tweety-5-Abstract-Argumentation-Csharp.ipynb) | Twin C# Dung AF **from-scratch** (BCL .NET uniquement, pas IKVM/JVM) : fonction caractéristique, acceptabilité, ensembles admissibles/complets, sémantiques grounded (plus petit point fixe) / stable / preferred, labeling 3 valeurs (in/out/undec), génération aléatoire de cadres, 3 exercices. Complémentarité from-scratch ↔ Python/IKVM (marathon #4956, §3801) | 50 min | C# BETA |
@@ -166,12 +166,12 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-7a-Extended-Frameworks-Csharp.ipynb) | Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued, 0 jpype/JVM ; See #4956) | 55 min | C# PROD |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
 | 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
-| **Applications** |
+| **Applications** |   |   |   |   |
 | 8  | [Tweety-8-Agent-Dialogues](Tweety-8-Agent-Dialogues.ipynb) | Agents, Dialogues argumentatifs, Loteries            | 35 min  | Python |
 | 8c | [Tweety-8-Agent-Dialogues-Csharp](Tweety-8-Agent-Dialogues-Csharp.ipynb) | Twin C# dialogues argumentatifs from-scratch (BCL .NET, pas IKVM/JVM ; Dung AF + agents + protocole Claim/Argue/Concede/Retract + loterie argumentative Monte-Carlo) | 35 min | C# PROD |
 | 9  | [Tweety-9-Preferences](Tweety-9-Preferences.ipynb) | Préférences, Théorie du vote                          | 30 min  | Python |
 | 9c | [Tweety-9-Preferences-Csharp](Tweety-9-Preferences-Csharp.ipynb) | Préférences .NET (IKVM, c.180 PR #5268)            | 30 min  | C# PROD |
-| **Synthèse** |
+| **Synthèse** |   |   |   |   |
 | 10 | [Tweety-10-MLN](Tweety-10-MLN.ipynb)       | Markov Logic Networks (FOL pondérée)                      | 50 min  | Python |
 | 10c | [Tweety-10-MLN-Csharp](Tweety-10-MLN-Csharp.ipynb) | MLN porté .NET (IKVM, c.188 PR #5209)                | 30 min  | C# PROD |
 | 11 | [Tweety-11-Causal](Tweety-11-Causal.ipynb) | Raisonnement causal : do-calculus, interventions, contrefactuels | 50 min  | Python |

@@ -55,21 +55,29 @@ variable {n : Nat} [NeZero n]
 /--
 The Gale-Shapley algorithm terminates.
 At most n^2 proposals can occur (each man proposes to each woman at most once).
-
-TODO: formalize the algorithm as a step relation and prove termination.
+The state machine `gsRunSteps`, run up to the bound `gsProposalBound n`, reaches
+a terminated state (`gsTerminated`); termination is proved by
+`gsTerminated_runSteps_bound`.
 -/
 theorem gale_shapley_terminates (prof : PrefProfile n) :
-    True := by
-  trivial
+    gsTerminated prof (gsRunSteps prof (gsProposalBound n)) := by
+  exact gsTerminated_runSteps_bound prof
 
 /--
-The Gale-Shapley algorithm produces a valid matching (bijection).
-The identity matching is a witness (any bijection on Fin n suffices for the
-existential statement; here we use `id`).
+The Gale-Shapley algorithm produces a state in which every man is matched:
+at the bound `gsProposalBound n`, each man `m` has a partner
+(`menMatch m ≠ none`). This completeness is the condition that lets us extract a
+`Matching n` (bijection) via `gsFinalMatching` — it is the intermediate link
+between termination (`gale_shapley_terminates`) and stability
+(`gale_shapley_stable`), proved via `gsTerminated_allMenMatched`.
 -/
 theorem gale_shapley_produces_matching (prof : PrefProfile n) :
-    ∃ μ : Matching n, True := by
-  exact ⟨{ spouse := id, bijective := Function.bijective_id }, trivial⟩
+    ∀ m : Fin n, (gsRunSteps prof (gsProposalBound n)).matching.menMatch m ≠ none := by
+  intro m
+  exact gsTerminated_allMenMatched prof
+    (gsTerminated_runSteps_bound prof)
+    (womenProposedImpliesMatched.runSteps prof (gsProposalBound n))
+    (GSConsistent.runSteps prof (gsProposalBound n)) m
 
 /--
 The Gale-Shapley algorithm produces a stable matching.

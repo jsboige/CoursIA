@@ -71,18 +71,37 @@ def Feasible (g : PrisonersDilemma) (u_row u_col : ℝ) : Prop :=
     u_row = pCC * g.R + pCD * g.S + pDC * g.T + pDD * g.P ∧
     u_col = pCC * g.R + pCD * g.T + pDC * g.S + pDD * g.P
 
+/-- Paiement actualisé du joueur de référence (ligne) sous une trajectoire
+    d'actions conjointes `a` et facteur d'escompte `δ`. Généralise
+    `coopValue` / `deviateValue` (cas particuliers stationnaires) à une
+    trajectoire arbitraire : `Σ' n, δⁿ · stagePayoff g (a n).1 (a n).2`.
+    Le paiement du joueur colonne sous la même trajectoire s'obtient en
+    échangeant les composantes de l'action conjointe (voir
+    `folk_theorem_discounted`). -/
+noncomputable def discountedPayoff (g : PrisonersDilemma) (δ : ℝ)
+    (a : ℕ → PDAction × PDAction) : ℝ :=
+  ∑' n : ℕ, δ^n * stagePayoff g (a n).1 (a n).2
+
 /-- Le théorème de Folk ACTUALISÉ (Fudenberg–Maskin 1986, simplifié pour 2x2) :
 
       Pour tout paiement faisable strictement individuellement rationnel
-      `u`, il existe δ* < 1 et un profil de stratégies tels que pour tout
-      δ ≥ δ* le paiement de l'unique équilibre sous-jeu-parfait est `u`.
+      `u = (u_row, u_col)`, il existe δ* < 1 tel que pour tout δ ≥ δ* le
+      vecteur `u` est réalisé comme paiement actualisé d'une trajectoire
+      d'actions conjointes.
 
-    `sorry` (STRETCH) — requiert la convexité et la machinerie des points
-    extrêmes ; priorité BG FAIBLE (cf critères de clôture Issue #4880 1,
-    seul `grim_trigger_sustains_iff` est requis). La direction difficile est
-    l'existence du profil de stratégies étant donné les contraintes de
-    polytope ; la preuve de Fudenberg–Maskin 1986 s'étend sur plusieurs
-    pages et n'est pas affaire d'une seule tactique. -/
+    La conclusion est une **équation réelle** (`discountedPayoff … = u_row ∧
+    … = u_col`), pas un `True` : le `sorry` porte donc la dette authentique
+    (existence de la trajectoire réalisant le vecteur cible — construction de
+    Fudenberg–Maskin par alternance action-cible / phase de punition, avec la
+    convexité du polytope des paiements faisables). Ne PAS fermer sur `True` :
+    la conclusion étant alors triviale, le `sorry` produirait un « −1 » sans
+    mathématique (leçon #10188). La couche plus profonde — résistance à la
+    déviation unilatérale en un coup (sustainment comme SPNE) — est le mur
+    Fudenberg–Maskin complet, hors périmètre de ce grain (cf
+    `grim_trigger_sustains_iff` pour le cas particulier grim trigger, prouvé).
+
+    STRETCH authentique : priorité BG FAIBLE (cf critères de clôture Issue
+    #4880 1). -/
 theorem folk_theorem_discounted (g : PrisonersDilemma) :
     ∀ (u_row u_col : ℝ),
       IndividuallyRational g u_row u_col →
@@ -90,16 +109,24 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
       u_row > g.P ∧ u_col > g.P →  -- strict IR
       ∃ (δ_star : ℝ), δ_star < 1 ∧
         ∀ (d : ℝ), d ≥ δ_star →
-          ∃ (_stratProfile : List (PDAction × PDAction) → PDAction × PDAction),
-            True := by
+          ∃ (a : ℕ → PDAction × PDAction),
+            discountedPayoff g d a = u_row ∧
+            discountedPayoff g d (fun n => ((a n).2, (a n).1)) = u_col := by
+  -- STRETCH (Fudenberg–Maskin 1986) : existence d'une trajectoire d'actions
+  -- conjointes réalisant le vecteur de paiement cible (u_row, u_col) comme
+  -- paiement actualisé, pour tout δ assez proche de 1. Requiert la convexité
+  -- du polytope des paiements faisables et un argument de point extrême ;
+  -- preuve de plusieurs pages, pas une seule tactique.
   sorry
 
-/-- Un corollaire dégénéré : quand δ = 0, le seul équilibre sous-jeu-parfait
-    de la DP répétée est l'équilibre de Nash en un coup (défection, défection),
-    donnant le paiement (P, P). C'est le cas limite du théorème de Folk et il
-    aide à ancrer la construction (la preuve se réduit à un argument à 1
-    étape). Trivial et prouvé : l'hypothèse est déchargée directement. -/
+/-- Cas limite δ = 0 : sans poids sur le futur, les valeurs actualisées se
+    réduisent aux paiements de stage — le jeu répété collapse au jeu one-shot.
+    C'est le cas frontière du théorème de Folk (le seul équilibre de Nash
+    one-shot est (Défection, Défection) de paiement (P, P)) et il ancre la
+    construction. Prouvé : formes closes de `coopValue` / `deviateValue` en
+    δ = 0 (`coopValue R 0 = R / (1 − 0) = R`, `deviateValue T P 0 = T + 0 = T`). -/
 theorem folk_theorem_boundary (g : PrisonersDilemma) :
-    True := by trivial
+    coopValue g.R 0 = g.R ∧ coopValue g.P 0 = g.P ∧ deviateValue g.T g.P 0 = g.T := by
+  simp [coopValue, deviateValue]
 
 end RepeatedGames

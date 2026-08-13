@@ -127,18 +127,36 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
     bh_g = gross_returns(bh_pos, test_returns_full)
 
     dm = None
+    dm_mom = None
     if len(dt_n) > 30:
+        # loss_fn="linear" (#10228): mse/mae are symmetric ((-r)**2 == r**2)
+        # and made the test sign-blind -- a winning and a losing return series
+        # got bit-identical dm_stat. Linear loss L(e) = e preserves the sign,
+        # so d = (-bh_g) - (-dt_n) = dt_n - bh_g and E[d] < 0 <=> DT beats BH.
         try:
-            r = DM.diebold_mariano_test(-dt_n, -bh_g, loss_fn="mse", hln_correction=True)
+            r = DM.diebold_mariano_test(-dt_n, -bh_g, loss_fn="linear", hln_correction=True)
             dm = {"dm_stat": round(r.dm_statistic, 4), "p_value": round(r.p_value, 4),
                   "n_obs": int(r.n_observations)}
         except Exception as e:
             dm = {"error": str(e)}
+        # Momentum is the real adversary: BH is degenerate when the asset falls
+        # (fresh-window BH sharpe was -1.80). A DM vs naked momentum is what
+        # makes the third conjunct of pr-review-discipline section C informative.
+        try:
+            r_mom = DM.diebold_mariano_test(-dt_n, -mom_n, loss_fn="linear", hln_correction=True)
+            dm_mom = {"dm_stat": round(r_mom.dm_statistic, 4), "p_value": round(r_mom.p_value, 4),
+                      "n_obs": int(r_mom.n_observations)}
+        except Exception as e:
+            dm_mom = {"error": str(e)}
 
     del model, result
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
+    # Persist the per-seed return series so the DM p-values stay recalculable
+    # post hoc: today only aggregated Sharpes are saved, which froze the p-value
+    # at the buggy mse value and prevented correcting it without a rerun.
+    # ~300 obs x 3 series x 5 seeds stays small.
     return {
         "seed": seed,
         "n_holdout_obs": int(len(dt_n)),
@@ -147,6 +165,10 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
         "momentum_naked_net_sharpe": round(sharpe(mom_n), 4),
         "bh_sharpe": round(sharpe(bh_g), 4),
         "dm_dt_vs_bh": dm,
+        "dm_dt_vs_momentum": dm_mom,
+        "dt_net": [round(float(x), 6) for x in dt_n],
+        "bh_gross": [round(float(x), 6) for x in bh_g],
+        "momentum_net": [round(float(x), 6) for x in mom_n],
     }
 
 

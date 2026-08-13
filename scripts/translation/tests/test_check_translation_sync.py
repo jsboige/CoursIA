@@ -135,6 +135,29 @@ def test_expected_script_legit_translation_is_true():
     assert t._has_expected_script("ru", "Привет 42") is True
 
 
+def test_expected_script_fa_latin_only_is_wrong():
+    # Persian (fa) copier-coller de FR/EN : aucun caractère dans les plages
+    # Arabic/Arabic-Supplement/Persian → WRONG_SCRIPT (#10066 tranche 4 :
+    # couverture explicite de fa, distinct de ar).
+    assert t._has_expected_script("fa", "bonjour") is False
+    assert t._has_expected_script("fa", "hello world 123") is False
+
+
+def test_expected_script_markdown_wrapped_latin_is_wrong():
+    # Markdown (headers, listes) copié-collé dans une colonne zh : aucun CJK,
+    # verdict WRONG_SCRIPT (#10066 tranche 4 : garde le bruit markdown hors
+    # du verdict — un texte n'est pas légitime juste parce qu'il a l'air long).
+    md = "# Titre\n\n- item 1\n- item 2\n\n**bold**"
+    assert t._has_expected_script("zh", md) is False
+
+
+def test_expected_script_unknown_lang_passthrough():
+    # Langue inconnue de LANG_SCRIPT_RANGES : pas de verdict (pas de plages
+    # attendues, rien à vérifier — le détecteur laisse passer).
+    assert t._has_expected_script("xx", "anything goes") is True
+    assert t._has_expected_script("zz", "bonjour") is True
+
+
 def test_expected_script_persian_uses_arabic_ranges():
     # fa partage les plages Arabic (le persan s'écrit en script arabe).
     assert t._has_expected_script("fa", "سلام") is True
@@ -342,6 +365,23 @@ def test_check_csv_skips_rows_without_notebook_or_cell_id(tmp_path):
         encoding="utf-8",
     )
     assert t.check_csv(csv_path, tmp_path) == []
+
+
+def test_check_csv_wrong_script_all_non_latin(tmp_path):
+    # #10066 tranche 4 : sweep multi-lang. Toutes les colonnes non-Latines
+    # (ar/fa/zh/ru) copie-collées de FR remontent WRONG_SCRIPT, les Latines
+    # (en/es/pt) restent muettes (meme avec du FR leaké — par design).
+    _write_nb(tmp_path, "nb.ipynb", [{"id": "c1", "type": "markdown", "source": ["Bonjour"]}])
+    csv_path = _write_csv(tmp_path / "sync.csv", [
+        _row("c1", t.cell_hash("Bonjour"),
+             text_ar="bonjour", text_fa="bonjour", text_zh="bonjour", text_ru="bonjour",
+             text_en="bonjour", text_es="bonjour", text_pt="bonjour"),
+    ])
+    anomalies = t.check_csv(csv_path, tmp_path)
+    wrong = sorted(a["lang"] for a in anomalies if a["verdict"] == "WRONG_SCRIPT")
+    assert wrong == ["ar", "fa", "ru", "zh"], (
+        f"seules les non-Latines doivent etre flag WRONG_SCRIPT, got {wrong} (full={anomalies})"
+    )
 
 
 # --------------------------------------------------------------------------

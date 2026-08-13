@@ -88,8 +88,8 @@ def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ c : PDCrossing,
      ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       d₂ = { d₁ with crossings := d₁.crossings ++ [c], numEdges := d₁.numEdges + 2 } ∨
-       d₁ = { d₂ with crossings := d₂.crossings ++ [c], numEdges := d₂.numEdges + 2 })
+       (d₂.crossings = d₁.crossings ++ [c] ∧ d₂.numEdges = d₁.numEdges + 2) ∨
+       (d₁.crossings = d₂.crossings ++ [c] ∧ d₁.numEdges = d₂.numEdges + 2))
 
 /-- R1 est symétrique : échanger `d₁`/`d₂` permute les deux bras de la
 disjonction de chirurgie ; le renommage dirigé par `min`/`max` est invariant
@@ -134,24 +134,37 @@ L'équivalence remodelée et le lemme de transfert (PR2) seront construits sur
     nouveau croisement a la forme `⟨a, a, n+1, n+2⟩` : le brin anciennement
     labelisé `a` est le brin bouclé, et `{n+1, n+2}` sont les deux arêtes
     fraîches de la boucle. L'arc `a` vit dans `[1, numEdges]` du diagramme le
-    plus petit (labels PD 1-indexés, cohérents avec `KnotDiagram.wf`). -/
+    plus petit (labels PD 1-indexés, cohérents avec `KnotDiagram.wf`).
+
+    **Migration #8696 fenêtre 2/9** : la chirurgie `with`-surgery
+    `d₂ = { d₁ with ... }` est remplacée par une conjonction d'égalités de
+    champs `(d₂.crossings = ... ∧ d₂.numEdges = ...)` — pattern uniforme avec
+    `Reidemeister1` (fenêtre 1/9). Bénéfice : la def **contraint** un
+    diagramme donné (au lieu de construire un témoin hypothétique), ce qui
+    rend le champ d'invariant `wf` portable (cf acceptance #8696 §4). -/
 def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ a : Nat,
      1 ≤ a ∧ a ≤ min d₁.numEdges d₂.numEdges ∧
      (∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       (d₂ = { d₁ with crossings := d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩],
-                            numEdges := d₁.numEdges + 2 } ∨
-        d₁ = { d₂ with crossings := d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩],
-                            numEdges := d₂.numEdges + 2 })))
+       (d₂.crossings = d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩] ∧
+        d₂.numEdges = d₁.numEdges + 2) ∨
+       (d₁.crossings = d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩] ∧
+        d₁.numEdges = d₂.numEdges + 2)))
 
 /-- `Reidemeister1'` est un renforcement de `Reidemeister1` : toute boucle
     ρ-déterminée est, en particulier, un mouvement R1 (libre) avec `wf` des deux
     côtés. Le nouveau croisement `⟨a, a, n+1, n+2⟩` est le témoin de
-    l'existentiel indépendant `∃ c` dans `Reidemeister1`. -/
+    l'existentiel indépendant `∃ c` dans `Reidemeister1`.
+
+    **Migration #8696 fenêtre 2/9** : post-migration field-equalities, le bridge
+    est trivial : chaque branche de la disjonction est `(h_cross ∧ h_num)`,
+    donc `rfl` sur `h_cross` ET `h_num` simultanément suffit à fermer
+    `Or.inl/inr ⟨rfl, rfl⟩` vers la cible R1 (qui est aussi en field-eqs). -/
 theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1' d₁ d₂) : Reidemeister1 d₁ d₂ := by
-  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, surgery|surgery))`.
+  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, ⟨h_cross,h_num⟩ | ⟨h_cross,h_num⟩))`.
+  -- After field-eqs migration, `hsurg` is a 2-conj consumed by `⟨rfl, rfl⟩`.
   obtain ⟨hwf₁, hwf₂, a, _hrange₁, _hrange₂, ρ, hsurg | hsurg⟩ := h
   · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
   · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
@@ -254,9 +267,9 @@ def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
      a ∈ d₁.edges ∧
      (∃ (j : Fin d₁.crossings.length), j ≠ i ∧ (d₁.crossings.get j).hasEdge a) ∧
      Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1) ∧
-     d₂ = { d₁ with crossings := d₁.crossings.set i.val Y' ++
-                       [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩],
-                    numEdges := d₁.numEdges + 2 })
+     d₂.crossings = d₁.crossings.set i.val Y' ++
+       [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] ∧
+     d₂.numEdges = d₁.numEdges + 2)
 
 /-- `Reidemeister1Connected` n'est PAS vide (contrairement à
     `Reidemeister1'`) : une torsion connectée concrète `d₁ → d₂` avec
@@ -289,7 +302,7 @@ theorem reidemeister1Connected_satisfiable :
     --   j=0 ≠ i=1, witnessed explicitly; `hasEdge` unfolded + `decide`.
     exact ⟨by decide, by decide, by decide,
            ⟨⟨0, by decide⟩, by decide, by unfold PDCrossing.hasEdge; decide⟩,
-           by unfold PDCrossing.isRenameOf; decide, rfl⟩
+           by unfold PDCrossing.isRenameOf; decide, ⟨rfl, rfl⟩⟩
 
 /-! ### Lemmes d'API pour `Reidemeister1Connected` (infrastructure option C pour PR2)
 
@@ -306,18 +319,16 @@ mitent le style d'API de projection `trefoil_wf` / `unknot_wf` de `Basic.lean`.
     disjoint mais via une insertion connectée. -/
 theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 2 := by
-  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
-  have hne := congrArg (·.numEdges) hsurg
-  simpa using hne
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, _h_cross, h_num⟩ := h
+  exact h_num
 
 /-- Une torsion R1 connectée ajoute exactement un croisement (la boucle `C`) ;
     le croisement d'extrémité existant `Y` est renuméroté sur place (`List.set`
     préserve la longueur), non dupliqué. -/
 theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 1 := by
-  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
-  have hcl := congrArg (fun d => d.crossings.length) hsurg
-  simpa [List.length_set, List.length_append] using hcl
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, h_cross, _h_num⟩ := h
+  rw [h_cross]; simp [List.length_set, List.length_append]
 
 /-- L'arc `a` recevant la torsion est une arête authentique de `d₁` (hypothèse
     de connectivité) : le nouveau croisement `C = ⟨a, b, c, c⟩` partage l'arête
@@ -342,9 +353,8 @@ theorem Reidemeister1Connected.crossings_eq {d₁ d₂ : KnotDiagram}
       i < d₁.crossings.length ∧
       d₂.crossings = d₁.crossings.set i Y' ++
         [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
-  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, hsurg⟩ := h
-  refine ⟨i.val, Y', a, i.isLt, ?_⟩
-  simpa using congrArg (·.crossings) hsurg
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, h_cross, _h_num⟩ := h
+  exact ⟨i.val, Y', a, i.isLt, h_cross⟩
 
 /-- R2 (Pique/Dépiqué) : ajout ou suppression de deux croisements consécutifs
 de signe opposé.
@@ -365,8 +375,8 @@ def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.wf = true ∧ d₂.wf = true ∧
   (∃ c₁ c₂ : PDCrossing,
      ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
-       d₂ = { d₁ with crossings := d₁.crossings ++ [c₁, c₂], numEdges := d₁.numEdges + 4 } ∨
-       d₁ = { d₂ with crossings := d₂.crossings ++ [c₁, c₂], numEdges := d₂.numEdges + 4 })
+       (d₂.crossings = d₁.crossings ++ [c₁, c₂] ∧ d₂.numEdges = d₁.numEdges + 4) ∨
+       (d₁.crossings = d₂.crossings ++ [c₁, c₂] ∧ d₁.numEdges = d₂.numEdges + 4))
 
 /-- R2 est symétrique : même construction que R1 (transport le long de
 `Nat.min_comm`/`Nat.max_comm`). -/
@@ -397,8 +407,8 @@ ici comme une injection `Fin d₁.numEdges ↪ Fin d₂.numEdges` (avec dimensio
 def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
   ∃ i c, ∃ ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges,
-    (d₂ = { d₁ with crossings := d₁.crossings.set i c } ∨
-     d₁ = { d₂ with crossings := d₂.crossings.set i c }) ∧
+    (d₂.crossings = d₁.crossings.set i c ∨
+     d₁.crossings = d₂.crossings.set i c) ∧
     d₁.wf = true ∧ d₂.wf = true
 
 /-- R3 est symétrique par construction : la disjonction de chirurgie est
@@ -468,19 +478,25 @@ def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
   (∃ (i : Fin d₁.crossings.length) (c : PDCrossing)
      (ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges),
      c.isSlotPermOf (d₁.crossings.get i) ∧
-     (d₂ = { d₁ with crossings := d₁.crossings.set i.val c } ∨
-      d₁ = { d₂ with crossings := d₂.crossings.set i.val c }) ∧
+     (d₂.crossings = d₁.crossings.set i.val c ∨
+      d₁.crossings = d₂.crossings.set i.val c) ∧
      d₁.wf = true ∧ d₂.wf = true)
 
 /-- `Reidemeister3Determined` est un renforcement de `Reidemeister3` : un
     glissement slot-déterminé est, en particulier, un mouvement R3 (à `c`
     libre). Le croisement témoin `c` et le renommage `ρ` sont fournis
-    directement ; l'équation de chirurgie est inchangée (`set i.val c` avec
-    `i.val` le `Nat` sous-jacent). -/
+    directement. L'équation de chirurgie est maintenant une **égalité de
+    champ** `d₂.crossings = d₁.crossings.set i.val c` (cohérente avec
+    `Reidemeister3` post-migration field-eqs, plus de `with`-surgery).
+    Le témoin `numEdges` de R3D est garanti par `he` du destructuring. -/
 theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
     (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
   obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
-  · exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
+  · -- `hsurg : d₂.crossings = d₁.crossings.set i.val c` est déjà une
+    -- égalité de champ : on l'injecte directement dans R3 via `Or.inl`
+    -- (plus de projection `congrArg` nécessaire, R3D et R3 partagent
+    -- désormais la même signature field-eq).
+    exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
   · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
 
 /-- `Reidemeister3Determined` n'est PAS vide : un glissement slot-déterminé
@@ -501,8 +517,13 @@ theorem reidemeister3Determined_satisfiable :
     -- `isSlotPermOf` is a raw `def` (no Decidable instance), so unfold it first to
     -- the underlying `List.Perm` on `List Nat`, which IS decidable.
     exact by unfold PDCrossing.isSlotPermOf; decide
-  · -- surgery, left arm: d₂ = {d₁ with crossings := d₁.crossings.set 0 ⟨1,3,2,4⟩}
-    exact Or.inl rfl
+  · -- surgery, left arm: d₂.crossings = d₁.crossings.set 0 ⟨1,3,2,4⟩.
+    -- `d₁.crossings` et `d₂.crossings` sont concrets (`simp only [List.set]`
+    -- unfold les deux et réduit `set 0` sur la liste `[_, _]` au but
+    -- defeq `[c', b] = [c', b]`). Pas besoin de `DecidableEq (List PDCrossing)`
+    -- (instance absente ; `decide` échouerait avec `failed to synthesize
+    -- Decidable`).
+    exact Or.inl (by simp only [List.set])
   · -- d₁.wf = true (each of {1,2,3,4} appears exactly twice)
     exact by decide
   · -- d₂.wf = true (multiset unchanged by the slot swap)

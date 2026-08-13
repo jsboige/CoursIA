@@ -39,7 +39,7 @@ Pour chaque PR ouverte, dans l'ordre d'anciennete :
 2. Verifier l'etat A L'INSTANT-T : `gh pr view N --json state,mergedAt,mergeStateStatus,reviews` (jamais depuis le dashboard ou le cycle N-1 — lecon phantom-steer #5563).
    **`mergeStateStatus` ne dit RIEN de l'etat des reviews** : `reviews[].state` est un champ **separe**, et `CLEAN` coexiste parfaitement avec un `CHANGES_REQUESTED` non leve (le global `~/.claude/CLAUDE.md` l'exige deja : « le `mergeStateStatus` seul n'est pas une review »). Un `CHANGES_REQUESTED` non suivi d'un commit **ou** d'un commentaire de levee = **ne pas merger** — y compris quand la review est la sienne, qui ne s'auto-leve pas par ecoulement du temps (incident #8821).
 3. Gates : H.4 (notebooks : checkout + Papermill local OU log dans le body), catalogue byte-identique a main (`gh pr view N --json files` — lecon stale-catalog), scope reel = titre, criteres [pr-review-discipline](../../rules/pr-review-discipline.md).
-4. Merge : compte `jsboige` (defaut, seul compte avec MergePullRequest), `--squash` par defaut, `--merge` (preserve-SHA) pour la base d'un stack, **JAMAIS `--delete-branch`**.
+4. Merge : directement sous `myia-ai-01` (a le droit `MergePullRequest`, verifie firsthand 2026-08-08 ; `gh auth switch -u jsboige` reserve a la lecture/ecriture de la protection de branche, cf [coordinator-discipline.md](../../rules/coordinator-discipline.md) Regle 1), `--squash` par defaut, `--merge` (preserve-SHA) pour la base d'un stack, **JAMAIS `--delete-branch`**.
 
 ### Phase 4 - Steers et design-gates
 
@@ -59,7 +59,7 @@ Regles completes : [coordinator-discipline.md](../../rules/coordinator-disciplin
 
 ## Regles importantes
 
-- **Jamais de force push** — cf [git-workflow.md](../../rules/git-workflow.md)
+- **Force push** : jamais sur `main` ; autorisé sur une branche de PR à lane unique — cf [git-workflow.md](../../rules/git-workflow.md)
 - **Coordination via RooSync uniquement** — aucun fichier de coordination/rapport dans git
 - **Deux dashboards workspace, coordonnes independamment** — `workspace-CoursIA` et `workspace-CoursIA-2` sont co-egaux ; lire et poster un contenu lane-specific sur CHACUN a chaque cycle, jamais de broadcast miroir, jamais "le mien vs celui des workers".
 - **Issues + PRs** — chaque tache = issue, chaque livraison = PR avec review

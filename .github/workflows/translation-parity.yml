@@ -1,0 +1,102 @@
+name: Translation parity gate (advisory)
+
+# Epic #10038 grain B — parity gate for xxx_<lang>.ipynb provenance.
+# Cf. issue #10041 acceptance : workflow advisory (label, exit 0 phase 1).
+# Phase 1 promotion criterion (B -> A) : 0 false-positif in 14 j sur PR touchant
+# xxx_<lang>.ipynb. Tant que non promu, ce workflow est advisory et ne bloque
+# PAS la PR (continue-on-error: true, no fail-fast).
+#
+# Reads:
+#   - scripts/translation/check_translation_parity.py
+#   - xxx_<lang>.ipynb pairs on disk
+# Writes:
+#   - workflow run annotations (label-only, exit 0)
+# Promotes to required when the 14-day advisory period reports 0 defects.
+
+on:
+  pull_request:
+    paths:
+      - "*.ipynb"
+      - "scripts/translation/check_translation_parity.py"
+      - ".github/workflows/translation-parity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compute parity on native pairs (advisory)
+        id: parity
+        continue-on-error: true
+        run: |
+          python scripts/translation/check_translation_parity.py --json-only > parity-report.json
+          cat parity-report.json
+
+      - name: Annote verdict on PR
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let report = null;
+            try {
+              report = JSON.parse(fs.readFileSync('parity-report.json', 'utf8'));
+            } catch (e) {
+              core.warning('parity-report.json absent ou illisible : ' + e.message);
+              return;
+            }
+            if (!report) return;
+            const verdict = report.verdict;
+            const blocking = report.blocking_count;
+            const advisory = report.advisory_count;
+            const pairs = report.pair_count;
+            const label = verdict === 'OK' ? 'parity-ok'
+              : verdict === 'OK_WITH_ADVISORIES' ? 'parity-advisory'
+              : 'parity-violation';
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: [label],
+              });
+            } catch (e) {
+              core.warning('Label add failed : ' + e.message);
+            }
+            if (verdict !== 'OK') {
+              const lines = report.pairs
+                .filter(p => p.verdict !== 'OK')
+                .slice(0, 10)
+                .map(p => `- \`${p.translation}\` (lang=${p.lang}) — ${p.verdict} (${(p.anomalies || []).length} anomalies)`);
+              const body = [
+                `**Translation parity gate (advisory, grain B Epic #10038)**`,
+                ``,
+                `- verdict: \`${verdict}\``,
+                `- pairs scanned: ${pairs}`,
+                `- blocking: ${blocking}`,
+                `- advisory: ${advisory}`,
+                ``,
+                ...lines,
+                ``,
+                `Re-run with \`python scripts/translation/check_translation_parity.py\` locally.`,
+                `Promotion to blocking planned after 14j advisory post-merge.`,
+              ].join('\n');
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

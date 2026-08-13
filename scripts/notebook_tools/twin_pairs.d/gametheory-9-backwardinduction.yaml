@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-9-BackwardInduction.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-9-BackwardInduction-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -20,7 +22,14 @@
       csharp_sha: a76af28befd0e36fe0209bbb401852bcbc9c2c41
       content_python_sha: d86cdc416849127311518d7f5c420c4dc2cab72d9d5d96c1f82b1f81d63538ce
       content_csharp_sha: c4c4463c7d242163f86a654493f6c2c1df74ee27ad5c6182ef12d3e39ff73967
+    - date: "2026-08-11"
+      by: myia-ai-01:CoursIA
+      python_sha: 0f9aeb21af0997e334ee215da2d387cc024675d3
+      csharp_sha: a76af28befd0e36fe0209bbb401852bcbc9c2c41
+      content_python_sha: 48aad24ad7fb9fe793a131d471b4f4cf639c2a9ec5738c33a8047b63212393e2
+      content_csharp_sha: c4c4463c7d242163f86a654493f6c2c1df74ee27ad5c6182ef12d3e39ff73967
   known_differences:
     - "Socle pedagogique commun : l'algorithme d'induction en arriere (backward induction) pour resoudre les jeux sequentiels et calculer les equilibres de sous-jeu parfait (SPE, Selten 1965), applique aux paradoxes canoniques : jeu du mille-pattes (Centipede Game), guerre d'usure (War of Attrition), paradoxe de la chaine de magasins (Chain-Store paradox, Selten 1978). Distinct du GT-7 ExtensiveForm (qui pose la formalisme extensive-form + reduction extensive-vers-normale) : le GT-9 centre l'algorithme d'induction arriere et les paradoxes qu'il fait surgir."
-    - "Idiomes framework : Python = `networkx` (arbre de jeu) + `numpy` + `matplotlib` (rendu graphique des arbres et des trajectoires d'induction) + `@dataclass` + implementation manuelle de l'induction arriere. C# = **BCL .NET pur 0 NuGet** (modele d'arbre de jeu from-scratch + section dediee « Visualisation ASCII de l'arbre de jeu » en sortie console)."
+    - "2026-08-11 (ai-01) : correction d'honnetete -- l'entree precedente creditait `networkx` de l'arbre de jeu cote Python. C'etait un import MORT (zero reference `nx.`), retire par #10438. L'arbre de jeu est from-scratch DES DEUX COTES ; il n'y a jamais eu d'asymetrie de librairie de graphes ici. Le defaut d'origine : l'entree a ete redigee depuis la LISTE D'IMPORTS, pas depuis les appels. Cf #10382 §2."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` (rendu graphique des arbres et des trajectoires d'induction) + `@dataclass` + implementation manuelle de l'induction arriere. C# = **BCL .NET pur 0 NuGet** (modele d'arbre de jeu from-scratch + section dediee « Visualisation ASCII de l'arbre de jeu » en sortie console). Asymetrie de RENDU restante et actionnable : matplotlib cote Python vs ASCII cote C#, alors que ScottPlot est disponible et deja en service dans le depot (CSP-8-Csharp) -- candidat de grain, sous reserve du jugement 'l'arbre ASCII est-il une forme pedagogique deliberee ?'."
     - "Asymetrie de couverture pedagogique : le C# (26 cellules, 10 sections) couvre davantage de paradoxes explicitement (entree sur marche, Centipede, War of Attrition, Chain-Store + efficacite/rationalite limitee + viz ASCII) ; le Python (35 cellules, 7 sections + 4 exercices) detal l'algorithme, les limites de l'induction arriere et un resume. Meme theorie (Selten 1965 SPE, Selten 1978 Chain-Store), structuration pedagogique differente (Python focalise algorithme+limites, C# focalise catalogage des paradoxes + viz ASCII)."

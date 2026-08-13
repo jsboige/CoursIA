@@ -8,3 +8,11 @@ target/
 tweety-preferences-full-1.30.jar
 # DLL IKVM output (rebuilt by `dotnet build`)
 *.dll
+# Maven shade plugin output (committed JARs live in ../libs/, not here)
+META-INF/
+# Maven local cache + extracted sources (rebuilt by rebuild-5shades.sh / rebuild-causal.sh)
+.5shades-build/
+.causal-build/
+.sources-extracted/
+.sources-jar/
+.jars/

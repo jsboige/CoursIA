@@ -8,6 +8,9 @@
       by: myia-po-2023:CoursIA-2
       python_sha: d1d4f36599e49147f58195e85a475476d269680c
       csharp_sha: a6d7a7a59ded4ba7732054d17a66c5e40bb80c9f
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Python = PuLP (interface declarative, solveur CBC par defaut) -- vrai SOTA industriel LP/MIP. C# = Google.OrTools (GLOP simplexe pour PL continue, CBC pour PLNE) -- vrai SOTA industriel LP/MIP. Les DEUX cotes branchent un solveur SOTA via une lib native de leur ecosysteme (PuLP MIT-CONTRACT, OrTools Apache-2.0). Parite native-both (lib-vs-lib), parite semantique pedagogique des exercices alignee post-c.913 + #8676 (Transport + multi-depots + melange-industriel + set-cover). Verdict SOTA-OK.
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Solveur SOTA distinct : Python = PuLP (interface declarative, solveur CBC par defaut) ; C# = Google.OrTools (GLOP simplexe pour PL continue, CBC pour PLNE). Les deux invoquent un vrai solveur industriel -- parite SOTA, pas reimplementation."

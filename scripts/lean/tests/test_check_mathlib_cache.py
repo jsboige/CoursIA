@@ -224,3 +224,46 @@ class TestAnalyseLake:
         lake = _make_lake(tmp_path, "MyLake", body='require mathlib from git')
         r = analyse_lake(lake, {})
         assert str(lake) == r["lake"]
+
+
+# ---------------------------------------------------------------------------
+# main() CLI routing
+#
+# Ported from the deleted legacy scripts/tests/test_check_mathlib_cache.py
+# shadow (#10066 consolidation). The canon tested every helper (find_lakes /
+# count_oleans / declares_mathlib / analyse_lake) but never exercised the
+# ``main()`` entry point — the advisory-vs-strict exit-code contract and the
+# ``--repo-path`` git-root validation. The module collision (both files shared
+# basename ``test_check_mathlib_cache``) meant the canon's 26 helper tests were
+# DEAD in CI whenever both ran; deleting the legacy after porting these 2 CLI
+# tests resurrects the 26 AND unifies main()-coverage in the canonical home.
+# ---------------------------------------------------------------------------
+
+
+class TestMainCli:
+    def test_advisory_zero_strict_one_when_cold(self, tmp_path):
+        """``main()`` returns 0 by default (advisory) even with a cold lake;
+        1 with ``--strict``. ``--json-out`` carries the per-lake verdict."""
+        import json
+        import check_mathlib_cache as mod
+
+        # main() requires a git root (else exit 2) -- make one.
+        (tmp_path / ".git").mkdir()
+        lake = _make_lake(tmp_path, "L", body='require mathlib from git')
+        # mathlib dir present but EMPTY -> cold (not absent).
+        (lake / ".lake" / "packages" / "mathlib").mkdir(parents=True)
+
+        out = tmp_path / "out.json"
+        argv = ["--repo-path", str(tmp_path), "--json-out", str(out)]
+
+        assert mod.main(argv) == 0
+        assert mod.main(argv + ["--strict"]) == 1
+
+        payload = json.loads(out.read_text(encoding="utf-8"))
+        assert [r["status"] for r in payload["results"]] == ["cold"], payload
+
+    def test_bad_repo_path_exits_2(self, tmp_path):
+        """``--repo-path`` pointing at a non-git directory exits 2."""
+        import check_mathlib_cache as mod
+
+        assert mod.main(["--repo-path", str(tmp_path / "nope")]) == 2

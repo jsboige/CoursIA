@@ -431,7 +431,7 @@ Systematic evaluation of trading signal generation approaches, 7 hard discipline
 | L1 | TSMOM | Time-series momentum | NO BEATS | net Sharpe -2.26 to -2.56 (costs kill the signal) | `docs/L1_tsmom.md` |
 | L2 | CS+DM | Carry + dual momentum | NO BEATS | best CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
 | L3 | Trend | Regime + trend long-horizon | NO BEATS | 0/75 signal, median AUC 0.509, 300 combos | `results/l3_trend_long_horizon/` |
-| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** | **24/26, median AUC 0.558** | `docs/STAGE7_DECISION_TRANSFORMER.md` |
+| **L4** | **Decision Transformer** | **Action-based (buy/hold/sell)** | **BEATS** (panel @10bps) | **24/26, median AUC 0.558** ; @50bps INCONCLUSIVE ; 06/08 temporal holdout not reproduced (-6.63σ internal) | `docs/L4_decision_transformer.md` |
 | L5 | Vol-targeted composite | Trend filter + 10% vol-targeting on S7 composite | NO BEATS | delta -0.236 vs S4 v2 (t=-2.49), DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
 | (side) | PatchTST | Forecast-based (return prediction) — mislabeled "L5" before 2026-06-12 | NO BEATS | 0/26, median AUC 0.501 | `results/l5_patchtst/` |
 

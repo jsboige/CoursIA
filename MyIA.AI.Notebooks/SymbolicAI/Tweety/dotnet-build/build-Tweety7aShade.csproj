@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RestoreAdditionalProjectSources></RestoreAdditionalProjectSources>
+    <NoWarn>IKVM0101</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="IKVM" Version="8.14.0" />
+    <PackageReference Include="IKVM.MSBuild" Version="8.14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Placeholder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Tweety-7a shade aggregator built from Java 8 source-recompiled classes.
+      Pipeline: commons 1.19 sources patchees (isBlank/strip/Path.of : Java 8) then
+      javac release 8 produces commons bytecode major 52; inject into the
+      extensional shade jar; IKVM 8.14 compiles to a single assembly
+      org.tweetyproject.tweety-7a containing ALL bytecode-major-52 types from
+      math 1.19 + math-1.27 + graphs 1.21 + dung 1.21 + adf 1.21 + social 1.21
+      + weighted 1.26.
+
+      Setaf 1.20 / bipolar 1.19 / weighted-1.25 transitive dependencies use Java 9+
+      features (lambdas Kotlin) that IKVM 8.x cannot compile (IKVM0101 silently drops).
+      Setaf 1.20, eaf 1.21, extended 1.27, bipolar 1.19 are therefore excluded; those
+      frameworks are NOT in the resulting DLL. The tranche 1 (from-scratch) covers the
+      pedagogical need for those frameworks.
+
+      Build: see rebuild-7a.sh recipe at MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md.
+      Output: ..\libs\org.tweetyproject.tweety-7a-java8-shade.jar (gitignored, rebuildable),
+      then bin\Release\net8.0\org.tweetyproject.tweety-7a.dll
+    -->
+    <IkvmReference Include="..\libs\org.tweetyproject.tweety-7a-java8-shade.jar">
+      <AssemblyName>org.tweetyproject.tweety-7a</AssemblyName>
+      <AssemblyVersion>1.19.0.0</AssemblyVersion>
+      <AssemblyFileVersion>1.19.0.0</AssemblyFileVersion>
+    </IkvmReference>
+  </ItemGroup>
+</Project>

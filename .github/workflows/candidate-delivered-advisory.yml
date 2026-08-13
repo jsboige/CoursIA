@@ -1,0 +1,66 @@
+name: Candidate-Delivered Advisory
+
+# The missing ORGAN for issue #10466: the pool `gh issue list --state open` is
+# saturated with work already delivered but not closed (delivery PRs write
+# `See #N` even when they fully resolve the issue, so GitHub does not close it).
+# The next worker re-picks it in duplicate -- measured firsthand on #9568
+# (delivered 2026-08-06, then two post-delivery `[CLAIMED]` landed on it, one
+# +4 days after the merge).
+#
+# This scheduled sweep labels OPEN non-EPIC issues that are referenced by a
+# MERGED PR and have had NO comment activity since that merge. The pool scan
+# then becomes a filter:
+#     gh issue list --state open --search '-label:candidate-delivered'
+#
+# ADVISORY, never blocking (#10466 "Ce que l'organe ne doit pas faire"):
+#   - The job ALWAYS exits 0. The actionable payload is the
+#     `candidate-delivered` LABEL, NEVER the green conclusion.
+#   - It does NOT auto-close. Closing requires reading the body + confronting
+#     the verdict (G.9); the label signals, a human (or ai-01) decides.
+#   - Only a PR whose state is MERGED counts.
+#   - EPICs are excluded (title/label contains "epic"): a living EPIC
+#     referenced by a merged PR stays open correctly. The checkbox heuristic
+#     suggested in #10466 was measured firsthand and is UNRELIABLE (EPIC #1454
+#     has no checkboxes; delivered leaf #10143 has 4) -- title/label is the
+#     robust signal. See scripts/candidate_delivered.py.
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede). 05:37 UTC.
+    - cron: '37 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log only, apply no labels'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: candidate-delivered-advisory
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Label delivered-but-unclosed issues (advisory)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run sweep
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          python scripts/candidate_delivered.py $DRY --sleep 2.0

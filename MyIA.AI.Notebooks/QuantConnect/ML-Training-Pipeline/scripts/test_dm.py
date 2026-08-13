@@ -94,6 +94,27 @@ class TestDieboldMarianoTest:
         with pytest.raises(ValueError, match="loss_fn"):
             diebold_mariano_test(np.ones(50), np.ones(50), loss_fn="rmse")
 
+    def test_linear_loss_distinguishes_opposite_series(self):
+        """Regression #10228: mse loss is sign-blind.
+
+        A forecast-error series and its exact opposite are bit-identical
+        under mse (squaring cancels the sign), so the DM test cannot tell a
+        winning forecast from a losing one. Only the signed linear loss
+        L(e) = e restores sign-sensitivity.
+        """
+        rng2 = np.random.default_rng(7)
+        e = rng2.normal(0.5, 1.0, 500)  # nonzero mean so d_mean != 0
+        zero = np.zeros_like(e)
+        # mse is symmetric: e and -e give the same statistic.
+        r_mse_pos = diebold_mariano_test(e, zero, loss_fn="mse")
+        r_mse_neg = diebold_mariano_test(-e, zero, loss_fn="mse")
+        assert r_mse_pos.dm_statistic == pytest.approx(r_mse_neg.dm_statistic)
+        # linear preserves the sign: e and -e give opposite-sign statistics.
+        r_lin_pos = diebold_mariano_test(e, zero, loss_fn="linear")
+        r_lin_neg = diebold_mariano_test(-e, zero, loss_fn="linear")
+        assert r_lin_pos.dm_statistic != pytest.approx(r_lin_neg.dm_statistic)
+        assert r_lin_pos.dm_statistic * r_lin_neg.dm_statistic < 0
+
 
 class TestDmVerdict:
     def test_model_wins(self):

@@ -227,6 +227,35 @@ def _normalize_bs(text):
 # as **not** a leak on the next scan — making ``--apply-all`` idempotent.
 REDACTED_PATH = "<USER_PATH>"
 
+# Numeric process IDs that change on every kernel launch. Unlike the
+# username prefix (a stable per-worker leak) a PID is **per-execution**:
+# the same notebook re-executed twice emits two different
+# ``ipykernel_<N>`` temp paths, producing a spurious ``git diff`` even
+# after the username has been redacted. Normalizing the PID to a stable
+# placeholder makes the redacted output byte-identical across re-execs
+# (motivation: #10061 — the 10 notebooks sharing an ``ipykernel_<N>``
+# numeric churn). The PID carries no pedagogy, unlike the trailing
+# per-cell source hash (``<hash>.py``), which is stable per cell and is
+# left untouched. Currently scoped to the ipykernel family (the proven
+# churn source); ``/proc/<N>`` / ``pid=<N>`` are deferred to a follow-up
+# — they are rarer in notebook outputs and broader matching risks
+# normalizing legitimate numeric literals.
+_IPYKERNEL_PID_PATTERN = re.compile(r"ipykernel_\d+")
+
+
+def _normalize_runtime_pids(text):
+    """Replace per-execution numeric PIDs with stable placeholders.
+
+    Covers the ipykernel per-cell temp directory (``ipykernel_<N>``) so that
+    two re-executions of the same notebook redact to the same
+    ``ipykernel_<pid>`` form instead of differing on the PID. Applied after
+    the username-redaction loop in :func:`_redact_line`, so every caller of
+    the strip pipeline benefits from a single normalization site.
+    """
+    if not isinstance(text, str):
+        return text
+    return _IPYKERNEL_PID_PATTERN.sub("ipykernel_<pid>", text)
+
 # Output fields that can carry the leak:
 # - ``data["text/plain"]`` / ``data["text/html"]`` for ``display_data`` /
 #   ``execute_result`` outputs.
@@ -366,7 +395,10 @@ def _redact_line(text):
         # may be mid-line; bytes before it carry the first runtime prefix
         # that we want to keep in the output).
         out = out[:drive_start] + REDACTED_PATH + "\\" + out[after_marker:]
-    return out
+    # Normalize per-execution PIDs (e.g. ``ipykernel_30104`` -> ``ipykernel_<pid>``)
+    # so two re-execs redact to the same form (no spurious diff). Applied after the
+    # username loop so the redacted trailing path is normalized too.
+    return _normalize_runtime_pids(out)
 
 
 def _field_value(out, key):
@@ -751,8 +783,10 @@ def main():
                        help="dry-run scan a file or dir; list leak outputs")
     group.add_argument("--scan-all", action="store_true",
                        help="dry-run scan repo-wide")
-    group.add_argument("--apply", metavar="PATH",
-                       help="fix a file in place (strip leaks)")
+    group.add_argument("--apply", metavar="PATH", nargs="+",
+                       help="fix file(s) in place (strip leaks); accepts one or more "
+                            "paths so the pre-commit hook (which appends every staged "
+                            ".ipynb) does not hit argparse on >=2 files")
     group.add_argument("--apply-all", action="store_true",
                        help="fix repo-wide in place")
     parser.add_argument("--check", action="store_true",
@@ -773,17 +807,22 @@ def main():
     nb_root = os.path.join(repo_root, "MyIA.AI.Notebooks")
 
     do_apply = args.apply is not None or args.apply_all
-    target = args.apply if args.apply else (args.scan if args.scan else nb_root)
 
     paths = []
     if args.scan_all or args.apply_all:
         paths = list(iter_notebooks(nb_root))
-    elif os.path.isdir(target):
-        paths = list(iter_notebooks(target))
-    elif os.path.isfile(target):
-        paths = [target]
     else:
-        parser.error("path not found: %s" % target)
+        # --apply is nargs="+" (a list; a pre-commit hook appends the staged
+        # notebooks here). --scan is a single path. Default to the notebook root.
+        targets = args.apply if args.apply else ([args.scan] if args.scan else [nb_root])
+        for target in targets:
+            if os.path.isdir(target):
+                paths.extend(iter_notebooks(target))
+            elif os.path.isfile(target):
+                paths.append(target)
+            else:
+                parser.error("path not found: %s" % target)
+        paths = list(dict.fromkeys(paths))  # de-dup while preserving order
 
     total_files = 0
     total_found = 0
@@ -799,7 +838,12 @@ def main():
         total_files += 1
         total_found += found
         total_fixed += fixed
-        rel = os.path.relpath(p, repo_root)
+        try:
+            rel = os.path.relpath(p, repo_root)
+        except ValueError:
+            # Windows: p et repo_root sur des volumes differents (D: vs C:).
+            # Aucun chemin relatif n'existe alors ; l'absolu reste affichable.
+            rel = os.path.abspath(p)
         if do_apply:
             tag = "FIXED" if fixed == found else ("PARTIAL" if fixed else "SKIP")
             print("[%s] %s  (%d leak line(s), %d fixed)" % (tag, rel, found, fixed))

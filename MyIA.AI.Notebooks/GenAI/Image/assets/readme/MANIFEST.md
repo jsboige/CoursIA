@@ -74,6 +74,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 **🔁 Doublons intentionnels inter-arborescences (audit c.657, doctrine #5780)** :
 Une figure de cette racine est un **doublon exact** (SHA1 identique) avec le dossier `01-Foundation/assets/readme/` ; une autre a un **jumeau pédagogique distinct** (binaires différents, même intention pédagogique) :
+
 | Figure racine | Figure 01-Foundation | SHA1 (vérifié 2026-07-19) | Statut doctrine #5780 |
 |--------------|----------------------|---------------------------|------------------------|
 | `dalle3-cover.webp` (racine Image) | `img1-dalle3.webp` (01-Foundation) | `980a806ed4dbfaa7aae53ff7d0ac89ac3975bfa5` (byte-identique, régénéré c.977) | **Doublon intentionnel** : racine Image README illustre la figure dans le contexte introductif « 01-Foundation - Modèles de base » ; 01-Foundation README l'illustre dans le contexte « DALL-E 3 cellule 14 output 3 ». Doctrine #5780. **Mise à jour c.977** : SHA1 antérieur `9a4ad6da93dc811c18df80c28c87fafa50a8d311` (c.657 2026-07-19) — la racine n'avait pas été régénérée c.928 et restait sur le legacy `746×789` + glyphe □ + titre « DALL-E 3 ». c.977 aligne les deux fichiers (même burn, même SHA1 `980a806e...`, modèle correctement attribué `gpt-image-1`). |

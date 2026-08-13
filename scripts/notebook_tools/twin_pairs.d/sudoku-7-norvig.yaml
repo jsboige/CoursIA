@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-7-Norvig-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = stdlib only (pathlib/time/typing ; pure recursion Norvig from-scratch : assign + eliminate + search backtracking avec propagation de contraintes, port direct de https://norvig.com/sudoku.html). Pas de lib SOTA-tier en Python pour Norvig Solver (la ref est le code Norvig lui-meme, les forks comme `sudoku-solver` ne sont pas maintained et n'apportent rien de plus). C# = BCL pure from-scratch (Stack<T> + HashSet<int> + recursion port exact Norvig, 0 NuGet SOTA tiers). Les DEUX cotes sont des ports directs from-scratch du Norvig reference implementation (la portabilite cross-lang est dans l'algo specifie par Norvig 2006, pas dans une lib). Verdict RECOVERABLE-LOCAL (from-scratch from-scratch assume pedagogique, lib SOTA non requise pour cet algo specifie)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

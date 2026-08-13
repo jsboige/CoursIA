@@ -2,13 +2,29 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
       python_sha: a80035cb146ea49ef5901ddb940cf573e600017f
       csharp_sha: 1df664fbb228832fec6d05c12efe390465bd65c0
+    - date: "2026-08-08"
+      by: myia-po-2024:CoursIA
+      python_sha: f86c512657965de508bfef73f94fd81adf13a3a8
+      csharp_sha: 1df664fbb228832fec6d05c12efe390465bd65c0
+      content_python_sha: e3138b0bbcc57898cb78a3e3be17edefd3b13501a30f3bd6ef20ce9b943a1e6e
+      content_csharp_sha: 1cdbcf8ff9091c8d28496ae42c40f6a6a9b2bc9afd0be44388f7ae9de3497191
+    - date: "2026-08-11"
+      by: myia-po-2024:CoursIA
+      python_sha: f86c512657965de508bfef73f94fd81adf13a3a8
+      csharp_sha: 64c768889121cb7d1f0413def68048cc76fbc1d5
+      content_python_sha: e3138b0bbcc57898cb78a3e3be17edefd3b13501a30f3bd6ef20ce9b943a1e6e
+      content_csharp_sha: 09619085c916f39b0d6958d90a6ae1692c8fe099b6a22d32ab5d29b71e944451
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = OR-Tools CP-SAT (cp_model + cp_solver) + itertools + matplotlib (formulation CSP : creneaux, salles, conflits, S1 penalite apres-midi). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (MRV + B&B, System.*, 0 NuGet) PRESERVEE. Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : discrimination mesuree -- glouton MRV = 2 cours en apres-midi (compacte sur Lundi), CP-SAT = 0 (Optimal, 47 ms), objectif apres-midi = 0 (toutes contraintes dures respectees). Tranche 1 from-scratch preservee intacte (6 cellules code byte-identiques a main). Python met l'accent sur solveur SOTA + viz matplotlib + experimentation comparative ; C# demontre implementation from-scratch en BCL pure + binding NuGet. parity_level: native-both preserve."
   known_differences:
+    - "Tranche 2 native-both (#10382, 2026-08-11 po-2024) : C# branche Google.OrTools CP-SAT 9.11 (meme engine que ortools.sat.python.cp_model cote Python). Miroir de solve_timetable_cpsat : slot/room vars, C1 conflit salle (reification), C2 conflit enseignant, S1 penalite apres-midi, model.Minimize(penalty). Validation firsthand : statut Optimal (47 ms), objectif apres-midi = 0 (toutes contraintes dures respectees). Prong-B (#3801) : glouton MRV = 2 cours en apres-midi (compacte sur Lundi), CP-SAT = 0 (Optimal) -- discrimination faisabilite-vs-optimisation mesuree. Verdict SOTA-OK : moteur reel invoque (statut Optimal). Tranche 1 from-scratch (MRV + B&B) preservee intacte (6 cellules code byte-identiques a main)."
+    - "Edition 2026-08-08 (myia-po-2024:CoursIA, #9434 item 3) : drainage markdown-only d'une ligne de tableau dans la prose d'interpretation du twin Python (cell[22]) : les valeurs runtime absolues '< 1 ms' (Glouton) et '≈ 30 ms' (CP-SAT) remplacees par des descripteurs qualitatifs pointant vers les cellules de mesure live (cell[12] greedy 'Temps : 0.07 ms', cell[19] CP-SAT 'Temps de calcul : 32.5 ms'). Le twin C# (App-5-Timetabling-CSharp) n'est PAS touche (asymetrie pedagogique deja documentee ci-dessous : le C# demontre l'implementation from-scratch, ses propres valeurs de timing sont distinctes). Parite semantique preservee : socle theorique et concepts cibles inchanges ; seul le notebook Python a bouge, d'ou le re-baseline de son python_sha. Verifie firsthand : les cellules code de mesure au-dessus impriment toujours les runtimes live, la prose pointe desormais qualitativement vers elles (#9434)."
     - "Socle pedagogique commun : Emploi du temps / Timetabling (CSP : creneaux, salles, conflits) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
-    - "Idiomes framework : Python = OR-Tools CP-SAT + itertools combinations + search_helpers ; C# = BCL pure (System.*), 0 NuGet."
+    - "Idiomes framework : Python = OR-Tools CP-SAT + itertools combinations + search_helpers ; C# Tranche 1 = BCL pure (System.*, 0 NuGet) pour le from-scratch (MRV glouton + Branch-and-Bound) ; C# Tranche 2 = Google.OrTools CP-SAT 9.11 (meme engine que ortools.sat.python.cp_model, minimize penalite apres-midi)."
     - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."

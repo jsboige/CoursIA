@@ -1,0 +1,244 @@
+name: Lane Claim Guard
+
+# Organe debloquant (#10223): un renvoi FERMANT (`Closes|Fixes|Resolves #N`)
+# dans le body d'une PR ne doit pas fermer une issue qu'une autre lane detient
+# en claim actif. Deux collisions le meme jour (2026-08-09, #10169 puis #10161)
+# -- dans les deux la lane doublee (po-2025) etait protocol-conforme et a ete
+# doublee quand meme, parce que `scripts/check_lane_claim.py` (livre en #9775,
+# l'outil qui les aurait attrapees) n'etait appele par personne. Ce gate en est
+# le consommateur obligatoire.
+#
+# Le gate ne peut pas EMPECHER la collision (au moment ou la PR existe, le
+# travail est deja ecrit) : il rend impossible de la MERGER sans arbitrage
+# ecrit. Cet arbitrage est le marqueur `[OVERRIDE]` (Tache 2 de #10223) -- sans
+# lui, un coordinateur ne peut pas merger contre un claim detenu.
+#
+# Discriminant = mots-cles fermants UNIQUEMENT. Un `See #N` / `Part of #N` sur
+# une EPIC est multi-lane par construction (#1454, #1027, #3801 portent des
+# claims concurrents legitimes) et bloquer dessus rougirait la moitie du depot.
+# Les renvois non-fermants etaient un label advisory seul (`lane-claim-
+# conflict`, Tache 4) ; retire en #10395 Variante 3 (2026-08-11) parce que
+# trois mesures (#10370, le trio OR-Tools, et le miroir #10353/#10370) ont
+# montre qu'il etait pose sur des PRs protocol-conformes. Seul `lane-claim-
+# absent` (closing ref sans claim) survit ; le blocage reste sur chemin
+# fermant.
+#
+# Architecture = le motif etabli par les quatre gates de variation-tag-guard.yml
+# : decision dans `scripts/ci/lane_claim_required.py` (testable, verdict JSON
+# une ligne, fetcher de commentaires injectable -- les tests ne touchent jamais
+# le reseau), YAML reduit a la plomberie, suffixe `-required` sur le nom du job
+# pour que `is_advisory()` de scripts/pr_gate.py ne le neutralise pas.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  # Blocking. Nom portant `-required` -> is_advisory() = False (pr_gate.py).
+  # Pas de filtre `paths:` : un job filtre par chemin reste `pending` a vie sur
+  # les PR hors scope, et un `pending` sur un check requis vaut BLOCKED a vie
+  # (cf pr-gate.yml, #10045 regle 2).
+  check-lane-claim-required:
+    name: 'Require no closing-ref against another lane active claim (block on lane collision, #10223)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the lane-claim helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/lane_claim_required.py
+            scripts/check_lane_claim.py
+            scripts/grain_tag.py
+      - name: 'Resolve closing-ref vs other lanes active claims (block on collision)'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # ATTENTION au shell reel : GitHub invoque ce bloc avec
+          # `/usr/bin/bash -e {0}` -- l'errexit est actif, et `set -uo pipefail`
+          # ne l'annule pas (cf variation-tag-guard.yml). Ce qui garde ce job
+          # correct n'est pas l'absence de `-e`, c'est que chaque commande
+          # faillible est dans une condition (`if`/`case`, exempts d'errexit)
+          # ou suffixee `|| true`. Jamais `|| true` sur la capture d'un code de
+          # retour (`rc=$?` apres `cmd || true` lit le 0 de `true`, pas celui
+          # de `cmd` -- desarme le controle en permanence).
+
+          # Hors scope : bots (catalogue auto-regenere) et forks (PRs
+          # etudiantes, cf student-pr-reviews.md -- review bienveillante, aucun
+          # critere interne ne s'y applique).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issuee d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Body -> fichier. printf '%s' preserve verbatim (pas de newline
+          # ajoute, pas d'interpretation des backslash).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # #10323: GitHub-authoritative closing refs. closingIssuesReferences
+          # est ce que GitHub fermera REELLEMENT au merge ; le finder regex
+          # seul false-positivait sur un mot-cle fermant dans un code span /
+          # une negation ("NOT closing #N") que le parser de GitHub ignore. On
+          # fetch une fois et on passe au helper. Sur ECHEC du fetch, on omet
+          # l'arg -> le helper retombe sur le regex + warn (ne desarme pas le
+          # gate sur un blip reseau). `gh ... --jq` sort 0 sur un set vide
+          # (chaine vide), non-zero sur auth/erreur -> le `if` discrimine.
+          if PR_CLOSING_REFS=$(gh pr view "$PR_NUMBER" \
+              --json closingIssuesReferences \
+              --jq '[.closingIssuesReferences[].number] | join(",")' 2>/dev/null); then
+            PR_CREFS_ARG=(--pr-closing-refs "$PR_CLOSING_REFS")
+          else
+            PR_CREFS_ARG=()
+            echo "::warning::closingIssuesReferences fetch failed; falling back to regex finder (#10323)."
+          fi
+
+          # Le helper fetch chaque issue referencee par mot-cle fermant via
+          # `gh issue view`, reduit l'etat des claims, et sort 0 (pass /
+          # fail-open) ou 1 (block sur un claim frais d'une autre lane).
+          # stderr exempte pour debug.
+          python3 scripts/ci/lane_claim_required.py \
+            --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
+            > /tmp/verdict.json 2>/tmp/verdict.err
+          RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          # Surface des warnings fail-open meme sur le chemin pass (claim
+          # perime, echec de fetch) pour que l'auteur voie le vide.
+          python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Aucun claim frais d'une autre lane sur un renvoi fermant -- job passes."
+            exit 0
+          fi
+
+          # Chemin bloquant. Commentaire idempotent via le marqueur HTML
+          # invisible (un `synchronize` ne doit pas re-spammer).
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::collision de lane sur une reference fermante: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- lane-claim-conflict -->
+          **Collision de lane sur une reference fermante (#10223).**
+
+          ${REASON}
+
+          Une autre lane detient un claim actif sur une issue que cette PR ferme par mot-cle (\`Closes\`/\`Fixes\`/\`Resolves #N\`). Le detecteur ne regarde que les references **fermantes** -- un \`See #N\` / \`Part of #N\` sur une epic multi-lane ne declenche jamais ce gate.
+
+          Les **trois sorties** pour passer ce gate :
+          - la lane detenrice **relache** son claim (\`[RELEASED] lane <machine:workspace>\` sur l'issue concernee), ou
+          - le **coordinateur ecrit** un arbitrage (\`[OVERRIDE] lane <cette lane>\` -- c'est la trace qui rend l'override mecaniquement traçable, #10223 Tache 2), ou
+          - le claim atteint **48 h** de peremption (le protocole re-arbitre les claims d'une lane inactive).
+
+          Voir #10223 et \`lane-claim-protocol.md\`.
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+  # Advisory (#10223 Tache 4) : pose deux labels pour mesurer l'adoption du
+  # protocole de claim SANS jamais bloquer. Nom portant "advisory" ->
+  # is_advisory() = True (pr_gate.py ne compte pas ce job dans le gate
+  # required). Le helper sort son verdict (guard_pass + advisory_labels) ; ce
+  # job exit 0 quoi qu'il arrive et ne fait que refleter advisory_labels en
+  # labels GitHub. Creation idempotente des labels (deja presents -> no-op),
+  # pattern des autres jobs advisory (exercises-advisory, markdown-table-guard).
+  check-lane-claim-advisory:
+    name: 'Advisory lane-claim labels (adoption telemetry, non-blocking, #10223)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the lane-claim helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/lane_claim_required.py
+            scripts/check_lane_claim.py
+            scripts/grain_tag.py
+      - name: 'Apply lane-claim advisory labels'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Hors scope : bots et forks (meme gating que le job required).
+          case "$PR_AUTHOR" in
+            *"[bot]") exit 0 ;;
+          esac
+          [ "$IS_FORK" = "true" ] && exit 0
+
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # #10323: meme cross-check closingIssuesReferences que le job required,
+          # pour que lane-claim-absent ne se declenche pas sur un mot-cle fermant
+          # dans un code span/negation que GitHub ignore.
+          if PR_CLOSING_REFS=$(gh pr view "$PR_NUMBER" \
+              --json closingIssuesReferences \
+              --jq '[.closingIssuesReferences[].number] | join(",")' 2>/dev/null); then
+            PR_CREFS_ARG=(--pr-closing-refs "$PR_CLOSING_REFS")
+          else
+            PR_CREFS_ARG=()
+          fi
+
+          # Le helper sort 0/1/2 ; ici on ignore le code (advisory) et on ne
+          # lit que advisory_labels. `|| true` garde le job vert meme sur un
+          # block du sibling required (le verdict JSON est ecrit sur stdout
+          # avant l'exit 1 du block path).
+          python3 scripts/ci/lane_claim_required.py \
+            --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
+            > /tmp/verdict.json 2>/tmp/verdict.err || true
+
+          # Creation idempotente du seul label survivant. `lane-claim-conflict`
+          # a ete RETIRE en #10395 Variante 3 (2026-08-11) : trois mesures
+          # (#10370, #10353 et le trio OR-Tools) ont montre qu'il etait pose
+          # sur des PRs protocol-conformes (les See #N sur EPIC multi-lane
+          # sont le geste prescrit). Les labels existants restent sur le
+          # travail passe comme marqueurs historiques; aucun nouveau n'est
+          # pose par ce job.
+          mk_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          mk_label "lane-claim-absent" "Closing issue carries no claim at all (#10223)" "fbca04"
+
+          set_label()   { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          # Reflete advisory_labels : pose si present, retire sinon. Fail-safe
+          # : si le verdict est illisible (caller error), aucun label n'est
+          # dans la liste -> on retire lane-claim-absent.
+          has() { python3 -c "import json,sys; sys.exit(0 if '$1' in json.load(open('/tmp/verdict.json')).get('advisory_labels',[]) else 1)" 2>/dev/null; }
+
+          if has "lane-claim-absent"; then set_label "lane-claim-absent"; else unset_label "lane-claim-absent"; fi
+
+          # Nettoyage a la volee des anciens labels `lane-claim-conflict` qui
+          # auraient pu etre poses par les versions precedentes du job; on
+          # les retire systematiquement pour ne pas laisser un marqueur
+          # trompeur sur les PRs recentes.
+          unset_label "lane-claim-conflict"
+
+          echo "advisory labels applied."
+          exit 0

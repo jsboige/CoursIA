@@ -87,8 +87,12 @@ jobs:
         # are DUPLICATES of the FR file's, not new debt. Counting both double-inflates
         # the total above baseline (e.g. knot_lean: Reidemeister.lean(2) +
         # Reidemeister_en.lean(2) => 19 > baseline 17, a false FAIL — C513-L1, #6429).
-        # FR<->EN divergence is caught separately by the i18n drift CI, so nothing is
-        # hidden. This exclusion only ever LOWERS a count, never breaks a green lake.
+        # FR<->EN body divergence is caught separately by the dedicated job
+        # `.github/workflows/lean-i18n-drift.yml` (#10007), which invokes
+        # `scripts/lean/check_i18n_siblings.py --all` and FAILs on real drift /
+        # orphan / non-whitelisted unbuilt. The exemption list lives there,
+        # NAMED (PetersTour_en, #7081 INTRINSIC). This exclusion only ever LOWERS
+        # a count here, never breaks a green lake.
         for f in $(find . -name '*.lean' ! -name '*_en.lean' -not -path './.lake/*'); do
           if [ -f "$f" ]; then
             case "$MODE" in
@@ -177,6 +181,42 @@ jobs:
         path: ${{ inputs.project-path }}/.lake
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
+
+    - name: Add swap space
+      # Hosted ubuntu-latest runners have 16 GB RAM. Full (cache-miss) elaboration
+      # of a large local module can exceed that: the VM OOMs and the provisioner
+      # tears the runner down mid-build ("The runner has received a shutdown
+      # signal", exit 143, ~4 min after the Mathlib cache download completes).
+      # Observed 3x on PR #9798 (runs 31139*, 31141*, 31147588612, 2026-08-07)
+      # while the sibling PR #9806 — same lake, cache HIT on the big module —
+      # passed in ~6 min: the discriminant is the actions/cache miss, not the
+      # code. Swap absorbs the elaboration peak; on incremental (cache-hit) runs
+      # this step costs ~5 s and the swap is idle.
+      #
+      # History (2026-08-07): PR #9840 (+756 lines of heartbeat-heavy P4 wall
+      # proofs) pushed the monolithic HashlifeCorrectness.lean past the 16 GB
+      # ceiling — `Add swap space` green but `Lake build` killed ~4 min 50 s after
+      # `Decompressed 8477 file(s)` (run 31161731891), zero error line. At the
+      # time the elaboration peak sat in ONE module, so lowering `lake -j` could
+      # not split it and more swap was the only lever.
+      #
+      # RESOLVED by the split (#9863, PR #9897 + follow-ups, 2026-08-07):
+      # HashlifeCorrectness.lean is now an aggregator (1285 lines) over
+      # Foundation.lean + Walls/{NE,NW,SE,SW}.lean. The peak is distributed across
+      # modules that `lake -j` elaborates in SEPARATE processes, so the runner no
+      # longer OOMs a single address space — conway_lean CI is green on main
+      # (runs of 2026-08-09). This swap step stays as cheap insurance against a
+      # future cache-miss peak; it is no longer the only mitigation. The same
+      # commit elaborates clean on WSL (`lake build` exit 0) — the ceiling was
+      # the runner's 16 GB RAM, not the proof. /mnt on ubuntu-latest carries
+      # ~70 GB free, so 32 G is affordable; `df -h /mnt` keeps that auditable.
+      run: |
+        df -h /mnt
+        sudo fallocate -l 32G /mnt/lean-swap
+        sudo chmod 600 /mnt/lean-swap
+        sudo mkswap /mnt/lean-swap
+        sudo swapon /mnt/lean-swap
+        free -h
 
     - name: Lake build
       working-directory: ${{ inputs.project-path }}

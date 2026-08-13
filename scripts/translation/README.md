@@ -8,7 +8,7 @@ Infrastructure de synchronisation multilingue pour les notebooks pédagogiques. 
 |--------|--------|------|--------|
 | **T1** | `extract_cells_to_csv.py` | Extrait les cellules des notebooks vers le CSV (langue pivot `fr`) | Livré |
 | **T2** | `check_translation_sync.py` | Détecte le drift (source modifiée / trad éditée / cellule supprimée) | Livré (non-bloquant, CI) |
-| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Starter livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976)), gated `ENABLED=False` + `--dry-run` défaut — activation après GO user, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
+| **T3** | `translate_csv.py` | Traduit les cellules `text_fr` vers les 7 langues cibles (`text_<lang>` + `hash_<lang>`) | Moteur livré ([#6976](https://github.com/jsboige/CoursIA/pull/6976)) + activation **env-controlled** (grain D [#10043](https://github.com/jsboige/CoursIA/issues/10043), umbrella [#10038](https://github.com/jsboige/CoursIA/issues/10038)) : gate `TRANSLATE_ENABLED` (off par défaut) + `--dry-run` défaut + cap `--max-cells`. Premier `--apply` réel = mandat user (clé API env, [#6949](https://github.com/jsboige/CoursIA/issues/6949)) |
 
 ## Issue #6949 — Status de clôture (2026-07-22, c.757)
 
@@ -28,7 +28,7 @@ Travaux d'harmonisation shipped post-issue (PRs additionnelles non-comptées dan
 - [#7731](https://github.com/jsboige/CoursIA/pull/7731) — verdict `FR_CONTAM` (4e classe Argumentum alignée, c.738).
 
 **Hors-scope explicite** (gated) :
-- **Activation T3** (`ENABLED=True` + premier run `--apply`) — mandat user requis, déclencheur Phase 1 de l'épic [#1650](https://github.com/jsboige/CoursIA/issues/1650). Le moteur reste **gated** intentionnellement : la pre-flight account/mandat (coût API, choix LLM en prod, stratégie de quota) sort du périmètre d'une PR de code.
+- **Activation T3** — le **mécanisme** (gate `TRANSLATE_ENABLED` env, cap `--max-cells`, dégradation propre, cache `src_hash`) est livré par le grain D [#10043](https://github.com/jsboige/CoursIA/issues/10043) de l'umbrella [#10038](https://github.com/jsboige/CoursIA/issues/10038) ; le moteur reste **gated** (off par défaut). Le **premier run `--apply` réel** = mandat user (clé `OPENAI_API_KEY` env + GO), déclencheur Phase 1 de l'épic [#1650](https://github.com/jsboige/CoursIA/issues/1650) : la pre-flight account (coût API prod, choix LLM prod, stratégie de quota) sort du périmètre d'une PR de code.
 - **T4 — re-import CSV → notebooks traduits** (papermill `--language <lang>`) — travail post-activation, dépendant du retour d'expérience du premier run T3 réel.
 
 Cible de revue cross-doc (à matérialiser au merge de la PR de clôture c.757) : `docs/translation/argumentum-fork-mapping.md` porte la même déclaration de clôture.
@@ -83,6 +83,8 @@ python scripts/translation/check_translation_sync.py translations/ --check
 ```
 
 En phase POC (T1, seule la colonne pivot est remplie), le script ne remonte que du `SRC_DRIFT` éventuel ; l'absence de traductions déposées n'est pas un drift (c'est l'état attendu pré-T3). Le pivot (`fr`) étant le notebook source lui-même, sa cohérence est couverte par `SRC_DRIFT` — pas de faux `MISSING_LANG` sur le pivot.
+
+**Advisory resync-only** (`scripts/translation/check_resync_only.py`, #6949 second half) : un PR qui ne touche QUE `translations/**/*.csv` ET n'ajoute aucun contenu `text_<lang>`/`hash_<lang>` (lang ∈ {en,es,ar,fa,zh,ru,pt}) est signalé `::notice` non-bloquant (cf [ruling coordinateur 2026-07-28](https://github.com/jsboige/CoursIA/issues/6949#issuecomment-2328497962) — « plus de PR resync-only jusqu'au GO moteur »). Le pivot `text_fr`/`hash_fr` reste autorisé (but légitime du resync).
 
 **Harmonisation taxonomie Argumentum (#6949)** : ce script couvre désormais 4 des 5 classes de drift du fork `multilingual-drift-audit.py` — `MISSING`/`ORPHAN` (MISSING_LANG/ORPHAN_ROW), `WRONG_SCRIPT` (script Unicode attendu absent, c.734 #7714), `FR_CONTAM` (c.738). La 5e classe `COGNATE` (noms propres / faux-amis légitimement répétés, `kind == "name"`, **informationnelle** — hors `total_drift` dans le fork) est **N/A** par construction : notre modèle est cell-based (pas de distinction name/prose).
 

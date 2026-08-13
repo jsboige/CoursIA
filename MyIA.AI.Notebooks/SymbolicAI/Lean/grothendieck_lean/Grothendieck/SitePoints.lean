@@ -99,7 +99,22 @@ ce qui en fait un outil clé en cohomologie des faisceaux.
 
 -- The sheaf fiber functor: evaluates sheaves at a point.
 -- This is the restriction of presheafFiber to the full subcategory of sheaves.
-#check @GrothendieckTopology.Point.sheafFiber
+-- Concretely `sheafFiber = sheafToPresheaf ⋙ presheafFiber` BY DEFINITION
+-- (Mathlib `CategoryTheory.Sites.Point.Basic`): evaluating a sheaf at a point Φ
+-- is evaluating its underlying presheaf at Φ. We promote the `#check` into a
+-- proven canonical iso below.
+
+/-- Le foncteur fibre des faisceaux se factorise par le foncteur fibre des
+    préfaisceaux via le plongement « faisceau ↦ préfaisceau sous-jacent »
+    `sheafToPresheaf`. Évaluer un faisceau en un point revient donc à évaluer
+    le préfaisceau sous-jacent en ce même point : c'est exactement la
+    définition de `sheafFiber` comme `sheafToPresheaf ⋙ presheafFiber` donnée
+    par Mathlib dans `CategoryTheory.Sites.Point.Basic`. On obtient l'iso
+    canonique via `sheafToPresheafCompPresheafFiberIso` (une réflexion). -/
+noncomputable def sheaf_fiber_presheaf_fiber_iso {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} (Φ : GrothendieckTopology.Point.{w} J) :
+    sheafToPresheaf J (Type (max u w)) ⋙ Φ.presheafFiber ≅ Φ.sheafFiber :=
+  Φ.sheafToPresheafCompPresheafFiberIso
 
 /-!
 ## Morphismes entre points

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """#4210 acceptance #4 — derive a public health dashboard from COURSE_CATALOG.generated.json.
 Snapshot doc (generated, not hand-maintained). Mirrors docs/archive/qc-strategies-status.md precedent.
-Read-only generator -> writes docs/reference/HEALTH_DASHBOARD.md."""
+Read-only generator -> writes docs/archive/reference/HEALTH_DASHBOARD.md (snapshot statique, archivé 2026-08-08, superseded pour usage live par le marqueur `CATALOG-STATUS` dans chaque README de série)."""
 import json, pathlib, collections, datetime
 
 CAT = pathlib.Path("COURSE_CATALOG.generated.json")
-OUT = pathlib.Path("docs/reference/HEALTH_DASHBOARD.md")
+OUT = pathlib.Path("docs/archive/reference/HEALTH_DASHBOARD.md")
 
 d = json.loads(CAT.read_text(encoding="utf-8"))
 assert isinstance(d, list) and d, "catalog must be a non-empty list"

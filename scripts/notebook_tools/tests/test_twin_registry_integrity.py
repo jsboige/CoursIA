@@ -48,6 +48,9 @@ REQUIRED_KEYS = {"name", "family", "python", "csharp", "parity_level"}
 ALLOWED_KEYS = {
     "name", "family", "python", "csharp", "parity_level",
     "last_audit", "audits", "known_differences",
+    # Optionnel (#10439) : verdict de bridge SOTA structure (INTRINSIC/SOTA-OK/
+    # RECOVERABLE-*), orthogonal a parity_level. La plupart des paires n'en portent pas.
+    "bridge_verdict", "bridge_verdict_reason",
 }
 # Plancher d'entrees (post-migration #8542 : 116 paires sur origin/main). En
 # mode file-per-entry, une entree perdue = un fichier supprime ; ce plancher le

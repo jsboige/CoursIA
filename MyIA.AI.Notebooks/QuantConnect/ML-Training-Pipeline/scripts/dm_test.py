@@ -84,7 +84,13 @@ def diebold_mariano_test(
     errors_b : np.ndarray
         Forecast errors from model B (1-D), same length as errors_a.
     loss_fn : str
-        "mse" for squared-error loss, "mae" for absolute-error loss.
+        "mse" for squared-error loss, "mae" for absolute-error loss,
+        "linear" for signed linear loss L(e) = e. Only "linear" is
+        sign-sensitive: mse and mae are symmetric ((-r)**2 == r**2 and
+        |-r| == |r|), so a forecast and its exact opposite are
+        bit-identical under mse/mae. Use "linear" when the sign of the
+        error carries information (e.g. forecasting returns rather than
+        volatility) -- see #10228.
     hln_correction : bool
         Apply Harvey-Leybourne-Newbold (1997) small-sample correction.
     max_lag : int | None
@@ -114,8 +120,14 @@ def diebold_mariano_test(
     elif loss_fn == "mae":
         loss_a = np.abs(errors_a)
         loss_b = np.abs(errors_b)
+    elif loss_fn == "linear":
+        # Signed linear loss L(e) = e. Unlike mse/mae (symmetric), linear
+        # preserves the sign of the error: it is the only option that lets the
+        # DM test tell a winning forecast from its exact opposite (#10228).
+        loss_a = errors_a
+        loss_b = errors_b
     else:
-        raise ValueError(f"loss_fn must be 'mse' or 'mae', got '{loss_fn}'")
+        raise ValueError(f"loss_fn must be 'mse', 'mae' or 'linear', got '{loss_fn}'")
 
     d = loss_a - loss_b
     d_mean = float(np.mean(d))

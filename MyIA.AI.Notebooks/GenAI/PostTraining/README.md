@@ -4,12 +4,12 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 7
-breakdown: PostTraining=7
-maturity: BETA=4, ALPHA=3
+pedagogical_count: 11
+breakdown: PostTraining=11
+maturity: BETA=8, ALPHA=3
 -->
 
-> **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks exécutés ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative et un détecteur de reward hacking, soit **7 notebooks** au total. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
+> **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) sur 5 notebooks exécutés ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR → **GAE** et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative, un détecteur de reward hacking, et un notebook d'implémentation from-scratch de la famille "no critic" (GRPO/RLOO/GAE) sur toy env CPU, et de **deux notebooks appliqués Qwen3.5-0.8B + GRPO + reward vérifiable + rewardspy en ligne** (PT-11a Z3 CSP arithmétique + PT-11b SymPy arithmétique + Z3 N-queens) qui font sortir la série du toy env vers un vrai LLM, soit **12 notebooks** au total. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
 
 Série pédagogique dédiée aux techniques de **post-training** des LMs ouverts : SFT, DPO, GRPO, RLVR. L'objectif est de comprendre pourquoi 2024-2025 marque une rupture pédagogique dans la façon dont les modèles de langue passent du pre-training brut à un assistant utile, et comment cette chaîne s'est simplifiée depuis la cascade RLHF historique jusqu'aux méthodes "direct" récentes.
 
@@ -34,6 +34,11 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 | PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen2.5-0.5B | #1771 |
 | PT-06 | `PT_06_eval_comparative.ipynb` | Évaluation comparative SFT vs DPO vs GRPO vs RLVR | Tableaux, chart, framework décision | tous | #1772 |
 | PT-07 | `PT_07_rewardspy_reward_hacking.ipynb` | Détecter le reward hacking (Goodhart) — observabilité reward | `rewardspy.watch`/`audit` (offline, sans GPU) | N/A (offline) | #4538 |
+| PT-08 | `PT_08_grpo_from_scratch_toy_env.ipynb` | GRPO **from scratch** (toy env CPU) — mécanique du group-relative advantage, écart PPO↔GRPO, comparaison « avec vs sans critic » | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
+| PT-09 | `PT_09_rloo_from_scratch_toy_env.ipynb` | RLOO **from scratch** (toy env CPU) — leave-one-out baseline, **biais-variance** vs GRPO, sibling de PT-08 | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
+| PT-10 | `PT_10_gae_from_scratch_toy_env.ipynb` | GAE **from scratch** (toy env CPU) — mini-critic + λ-bias/variance, **1-step collapse** diagnostique empirique, justifie le choix no-critic de DeepSeek R1 | `torch` from-scratch (no `trl`) | MLP jouet + value head (CPU, ~5.7k params) | See #1454 |
+| PT-11a | `PT_11_grpo_qwen35_rlvr.ipynb` | GRPO + RLVR sur **vrai LLM** (Qwen3.5-0.8B QLoRA 4-bit) — reward vérifiable Z3 (CSP arithmétique), rewardspy **en ligne**, sortie du toy env | `trl.GRPOTrainer` + Z3 + `rewardspy.watch_trl` | Qwen3.5-0.8B (QLoRA 4-bit, GPU 8 Go) | See #10289 (#10302) |
+| PT-11b | `PT_11_grpo_qwen_rlvr_on_verifiers.ipynb` | GRPO + RLVR + rewardspy **en ligne** — la pile complète sur petit modèle Qwen3.5-0.8B QLoRA, **Tier 1 SymPy (arithmétique) + Tier 2 Z3 (N-queens)**, détecteur Goodhart live, 100 steps réels — variante à verifiers complémentaires (sibling de PT-11a) | `trl.GRPOTrainer` + `rewardspy.watch_trl` (integration trl 1.9.2) | Qwen3.5-0.8B (QLoRA 4-bit) | See #10289 |
 
 > **Migration vers Qwen3.5 (en cours).** Qwen2.5 est *superseded* par [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-0.8B) (modèle vision-langage unifié, multimodal). **PT-03 est migré** vers Qwen3.5-0.8B (#5078) : l'évaluation DPO est désormais une vraie *forward pass* (accuracy mesurée 40 % sur 10 préférences *held-out*, vs 50 % aléatoire — le DPO n'a pas convergé sur 50 exemples, verdict honnête documenté dans le notebook) qui remplace l'ancienne accuracy *hardcodée* à 72 %. **PT-02 / PT-04 / PT-05 / PT-06** utilisent encore Qwen2.5-0.5B et restent à migrer (entraînement GPU) — les références Qwen2.5 dans le reste de ce README décrivent l'état actuel de ces notebooks. Architecture Qwen3.5 multimodale (`Qwen3_5ForConditionalGeneration`) chargée via `AutoModelForImageTextToText` (et non `AutoModelForCausalLM`).
 
@@ -62,6 +67,22 @@ La rupture mémoire de 2024. PPO classique nécessite (1) la policy, (2) une cop
 ### RLVR — RL with Verifiable Rewards (Deepseek-R1 2025)
 
 L'innovation méthodologique de 2025. Au lieu d'apprendre un Reward Model sur des préférences (cycle long, biaisé par les annotateurs), on utilise des tâches dont la réponse est vérifiable **algorithmiquement** : équations math (`sympy.simplify(answer - target) == 0`), code (`exec(code); assert tests`), traduction (`bleu_score(translation, référence) > seuil`). Le RM devient un vérificateur exact, ce qui élimine toute la complexité RLHF en aval. C'est ce qui a rendu possible Deepseek-R1 : combiné avec GRPO, on entraîne sur des prompts math/code sans aucune annotation humaine, et le modèle développe spontanément des chains-of-thought longs. Limite : applicable uniquement aux tâches vérifiables (math, code, logique formelle), pas aux tâches subjectives (écriture créative, conseil).
+
+#### Corpus de vérificateurs RLVR (issue #10289)
+
+Notre corpus RLVR séquence les vérificateurs mécaniques par coût de rollout. Chaque vérificateur est un module Python testable sur CPU, consommable par `trl.GRPOTrainer` via un adapteur de signature `reward(prompts, completions, **kwargs) -> list[float]`.
+
+| Tier | Vérificateur | Coût / rollout | Livrable | PR |
+|---|---|---|---|---|
+| **1** | SymPy (arithmétique) | µs-ms | `PT_05` (inline) | #10487 |
+| **1** | Z3 / CSP (arithmétique, N-queens) | µs-ms | `PT_11a`/`PT_11b` (inline) | #10317 |
+| **2** | **Lean** : élaboration `lake env lean` + oracle d'axiomes `#print axioms` | ~s | **`verifiers/lean_rlvr_verifier.py`** | #10539 |
+
+Le vérificateur **Lean** (Tier 2, `verifiers/lean_rlvr_verifier.py`) est le composant *distinctif* du corpus : un modèle qui apprend à émettre `by sorry` pour toucher la récompense est le cas d'école de Goodhart, et nos règles Lean (`lean-axiom.yml`) énumèrent *déjà* les exploits (`sorry`, `sorryAx` transitif, `native_decide`/`Lean.ofReduceBool`, axiomes hors whitelist). Le vérificateur les **détecte** (oracle de reward hacking) plutôt que les récompenser — récompense binaire 1.0 ssi la preuve compile sans sorry ni axiome interdit. Il réutilise le mécanisme `LeanVerifier.check_axioms` de `agent_tests/lean_server.py` (#8680), aucune logique de détection réécrite. Prérequis : `elan` (règle F, vrai moteur). Tests : `pytest verifiers/test_lean_rlvr_verifier.py` (10 contrôles positifs/négatifs/oracle sur le vrai Lean 4).
+
+### GAE — Generalized Advantage Estimation (Schulman 2015, retour pédagogique)
+
+Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pratique dans PPO** : Generalized Advantage Estimation (Schulman et al., 2015) interpole entre TD(0) (λ=0, bas biais, haute variance) et Monte-Carlo (λ=1, haut biais, basse variance) via une moyenne géométrique des n-step TD-errors pondérée par λ. La formule canonique : $A_t^{GAE} = \sum_{l=0}^{T-t} (\gamma\lambda)^l \delta_{t+l}$ avec $\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$. Le mini-critic (1 value head) est entraîné via MSE sur les **returns** bootstrappés. La série PT-08/09/10 montre empiriquement que sur un env **1-step sparse-reward** (cas typique du LLM génération courte), GAE collapse en TD(0) et n'apporte **aucun bénéfice mesurable** par rapport à REINFORCE+baseline, justifiant *a posteriori* la décision de Deepseek-R1 de remplacer le critic par une baseline intra-groupe. Sur du **multi-step** (chain-of-thought long), GAE retrouve son intérêt car λ-bootstrapping réduit la variance du gradient. PT-10 (CPU toy env) illustre la symétrie : no-critic GRPO/RLOO dominent en 1-step, GAE redevient discriminant en multi-step.
 
 ## Architecture conceptuelle
 
@@ -164,7 +185,7 @@ PT-06 documente le pipeline d'évaluation complet et produit un tableau comparat
 | **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
 | **[RL — rl_9 offline](../../RL/rl_9_offline_rl.ipynb)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
 | **[RL — rl_10 reward shaping](../../RL/rl_10_reward_shaping.ipynb)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.ipynb). |
-| **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique (7 notebooks), FineTuning = recettes exécutables. |
+| **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique (11 notebooks), FineTuning = recettes exécutables. |
 
 ## Contexte industriel et historique 2017-2025
 

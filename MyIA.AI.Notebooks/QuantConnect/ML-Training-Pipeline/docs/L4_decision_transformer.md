@@ -1,8 +1,8 @@
 # L4 — Decision Transformer (Offline RL action-based, Panier Anti-Biais 25 Symboles)
 
-## Verdict : BEATS
+## Verdict : BEATS (panel @10bps)
 
-**Seul échelon du ladder (Epic #1409) qui batte le buy-and-hold.** Un Decision Transformer
+**Seul échelon du ladder (Epic #1409) qui batte le buy-and-hold** — *en coupe transversale / panel @10bps uniquement* ; l'edge ne se reproduit pas en holdout temporel (cf. section dédiée ci-dessous). Un Decision Transformer
 (Chen et al. 2021) entraîné en **offline RL** apprend directement une **action**
 (buy/hold/sell) à partir de trajectoires, au lieu de prévoir un *retour* (L3) ou un *signe
 de momentum* (L1/L2). Sur le panier anti-biais (25 symboles, 7 classes, sans FAANG/Mag7),
@@ -68,6 +68,32 @@ court terme à faible trend, déjà pire cellule de L3).
   `DecisionTransformerModel` de `train_rl_dt.py`).
 - Notebook : `research_l4_decision_transformer.ipynb` + figure `research_l4_dt_results.png`.
 
+## Holdout temporel 06/08 — portée du BEATS
+
+Le verdict panel ci-dessus (24/26, edge 9.98σ cross-seed, 5/5 seeds @10bps edge 3.84σ
+DM p 0.024) a été testé en **holdout temporel** le 06/08 (`scripts/validate_xrp_dt_holdout.py`,
+XRP, période jamais touchée par le walk-forward) — **l'edge ne se reproduit pas dans le
+temps** :
+
+| Run holdout (06/08) | Split | seeds > BH | `edge_sigma` | DM p médian | Verdict |
+|---|---|---:|---:|---:|---|
+| `holdout_internal_20260806_093143` | interne (train .. train-end ; holdout = train-end+gap .. fin) | 0/5 | **−6.63** | 0.0847 | **NO-BEATS** |
+| `holdout_fresh_20260806_094210` | split frais (jamais vu) | 5/5 | **+19.97** | 0.236 | INCONCLUSIVE |
+
+Le `+19.97σ` du split frais **ne valide pas** l'edge : la dispersion du dénominateur
+`edge_sigma` est *inter-seeds* (reproductibilité de la procédure), pas la significativité
+de l'edge — c'est pourquoi le test de Diebold-Mariano (p 0.236) ne rejette pas. Nos deux
+tests répondent à des questions distinctes ; seul le panel/cross-section est enregistré
+comme BEATS.
+
+**Portée réelle de L4 :** BEATS en cross-section/panel @10bps · INCONCLUSIVE @50bps ·
+**NO-BEATS en holdout temporel interne** · INCONCLUSIVE en holdout frais. L'edge n'est pas
+réfuté, mais **borné** : il vit dans la coupe transversale, pas encore confirmé hors-échantillon
+dans le temps. Le BEATS du ladder est donc **(panel @10bps)**, pas absolu.
+
+Résultats détaillés : `results/xrp_dt_validation/holdout_internal_20260806_093143.json` et
+`holdout_fresh_20260806_094210.json` (gitignored, machine d'entraînement).
+
 ## Implication pour le ladder
 
 | Échelon | Paradigme | Verdict |
@@ -75,7 +101,7 @@ court terme à faible trend, déjà pire cellule de L3).
 | L1 TSMOM | momentum temporelle (signe) | NO BEATS (coûts de rotation) |
 | L2 CS+DM | momentum cross-sectionnelle | NO BEATS (B&H dominant) |
 | L3 LSTM | prévision de **direction/retour** | NO BEATS (AUC ≡ hasard) |
-| **L4 Decision Transformer** | **prévision d'action** (offline RL) | **BEATS** |
+| **L4 Decision Transformer** | **prévision d'action** (offline RL) | **BEATS (panel @10bps)** |
 
 L1/L2/L3 échouent pour des raisons distinctes (coûts, B&H, imprédictibilité directionnelle)
 mais convergent : **prédire un retour ou un signe ne suffit pas**. L4 confirme que **la

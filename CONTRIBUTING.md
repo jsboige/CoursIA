@@ -103,6 +103,39 @@ python scripts/notebook_tools/notebook_tools.py execute <path>
 python scripts/notebook_tools/notebook_tools.py analyze <path>
 ```
 
+### Hooks pre-commit (securite + H.3)
+
+Le depot embarque un harnais `pre-commit` (`.pre-commit-config.yaml`) qui
+intercepte les problemes **au commit**, avant qu'un secret ou un notebook
+non-execute n'entre dans l'historique :
+
+- **gitleaks** (scanner de secrets) — un secret est arrete localement (edition,
+  zero trace) plutot qu'apres le push (ou sa rotation devient obligatoire).
+- **H.3 `check-null-exec`** — refuse un notebook dont une cellule code a
+  `execution_count: null` + `outputs: []` (re-utilise les memes tolerances que
+  le gate CI : kernels lean, QC Cloud, `metadata.pii_no_output`).
+- hooks de strip (banniere probeAddresses, chemin cache NuGet, chemins
+  papermill) + garde de rendu markdown.
+
+Ces hooks sont **declare mais inactifs** tant que `pre-commit` n'est pas
+installe. Activation idempotente (a faire une fois par machine) :
+
+```bash
+python scripts/setup_hooks.py            # installe pre-commit + wire le hook + warm gitleaks
+python scripts/setup_hooks.py --check    # releve d'etat de la machine (harnais actif ?)
+python scripts/setup_hooks.py --check-parity  # hooks declares vs executables
+```
+
+Verifier que le harnais arrete bien un faux secret :
+
+```bash
+echo 'AKIA000TEST000KEY000A' > /tmp/fake_secret.txt && git add /tmp/fake_secret.txt
+git commit -m "test"   # doit echouer : gitleaks detecte le faux secret
+git reset /tmp/fake_secret.txt && rm /tmp/fake_secret.txt
+```
+
+Execution manuelle sur tout le depot : `python -m pre_commit run --all-files`.
+
 ### Conventions notebooks
 
 - **Pas d'erreur volontaire** : `raise NotImplementedError`, `assert False`, `1/0` sont interdits. Les cellules d'exercice utilisent `pass`, `print("Exercice a completer")`, ou `return None`
