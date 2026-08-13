@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-8-Agent-Dialogues-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (agents/dialogues/oppmodels + ExecutableExtension de Thimm 2012) : C# branche IKVM 8.14.0 avec `org.tweetyproject.tweety-dialogues.dll` source-recompilee depuis agents/dialogues-1.30 (Java 8 pure, no records/switch-expr, recompilee avec javac --release 8) + 1 `#r` directive cell 5 + 1 `Assembly.LoadFrom(...).GetType(\"org.tweetyproject.agents.dialogues.ExecutableExtension\")` (pattern IKVM 8.x : packages Java traduits en types .NET, accessibles par reflection sans `using` direct). Python branche JPype + `from org.tweetyproject.agents.dialogues import ExecutableExtension` + meme moteur Java runtime. Verifie firsthand (PR #10544 MERGED 2026-08-12T17:56:10Z par ai-01, c.231 myia-po-2023:CoursIA-2) : DLL trackee sur disque, kernel .NET Interactive execute le twin C# avec vraie instantiation du type `ExecutableExtension` et debat grounded. NB : le C# N'UTILISE PAS de `using org.tweetyproject` explicite (0 refs) mais instancie les types via reflection IKVM 8.x. Pont IKVM-bytecode .NET vs JPype-JVM-runtime sur le meme moteur Java. Verdict RECOVERABLE-LOCAL : source-recompile Java 8 necessite un JDK 8+ (etape `javac --release 8`) sur la machine du worker, actionnable localement. Refute le verdict INTRINSIC de #10537 (po-2025) : la DLL fonctionne, le build IKVM est valide, le kernel execute. Build command documente dans `dotnet-build/rebuild-dialogues.sh`."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

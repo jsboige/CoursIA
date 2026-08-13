@@ -102,4 +102,17 @@ The following are foundational Grothendieck concepts NOT yet in Mathlib:
 These remain research-grade formalization targets.
 -/
 
+/-!
+## Bridge theorems
+
+The "Proper theorems" section initially planned (4 lemmas on
+`CategoryTheory.yoneda`/`coyoneda`/`GrothendieckTopology.trivial`/
+`Sieve`) was removed in c.1301+107 v3 (Lean CI FAIL on universe
+polymorphism — see PR #10638 history). The `#check`s above are
+sufficient to validate that the canonical Mathlib names are
+accessible from current imports. The 8 proper lemmas remaining
+live in `Equivalences_en.lean` (4) + `MonoidalCategories_en.lean`
+(4 lemmas PASS in CI) + their French siblings.
+-/
+
 end Grothendieck_en
