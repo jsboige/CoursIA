@@ -218,4 +218,39 @@ def iso_mk_bridge {X Y : CategoryTheory.Grothendieck F}
     X ≅ Y :=
   CategoryTheory.Grothendieck.isoMk e₁ e₂
 
+/-!
+## 8. Bridges finaux : la structure de la catégorie totale et ses morphismes
+
+Les 2 bridges ci-dessous ferment le répertoire `#check` documentaire du
+module : la **structure** `Grothendieck F` (la catégorie totale ∫ F dont les
+objets sont les couples `(c, x)` avec `c : C` et `x : F(c)`) et les
+**morphismes** `Grothendieck.Hom X Y` (les couples `(f, φ)` — flèche de base
+et flèche de fibre). Chacun est un re-export type-sig (pattern winner L902 ★★
+Tier 5) : variables résidentes du module (`{C F}`), instances structurelles
+uniquement, zéro constructeur polymorphe d'univers.
+
+Note d'univers (leçon c.1301+144-L1) : `Grothendieck F` vit dans
+`Type (max u u₂)` (les univers de la base `C` et de la catégorie cible de
+`F : C ⥤ Cat.{v₂, u₂}`) et `Grothendieck.Hom X Y` dans `Type (max v v₂)` —
+le `Type _` du type-sig les infère tous, alignés sur les univers résidents
+du module.
+-/
+
+/-- Bridge : la **structure de la catégorie totale** ∫ F de la construction de
+    Grothendieck — les objets sont les couples `(c, x)` avec `c : C` et
+    `x : F(c)`, où `F : C ⥤ Cat`. C'est la réification des familles
+    paramétrées d'objets : une famille indexée par les objets de C devient un
+    objet interne de ∫ F. Type-sig re-export de `CategoryTheory.Grothendieck F`. -/
+def grothendieck_field : Type _ :=
+  CategoryTheory.Grothendieck F
+
+/-- Bridge : les **morphismes de la catégorie totale** ∫ F — pour `X Y : ∫ F`,
+    un morphisme `X ⟶ Y` est un couple `(f, φ)` avec `f : X.base ⟶ Y.base`
+    dans C (flèche de base) et `φ : X.fiber ⟶ (F.map f).toFunctor.obj Y.fiber`
+    dans la fibre (flèche de fibre). C'est la donnée qui fait de la
+    construction de Grothendieck une catégorie fibrée. Type-sig re-export de
+    `CategoryTheory.Grothendieck.Hom`. -/
+def grothendieck_hom_field (X Y : CategoryTheory.Grothendieck F) : Type _ :=
+  CategoryTheory.Grothendieck.Hom X Y
+
 end Grothendieck.Construction
