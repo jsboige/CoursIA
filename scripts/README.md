@@ -23,11 +23,13 @@ scripts/
 │   ├── scripts/                 # Scripts de diagnostic
 │   └── config/                  # Variables critiques
 │
-├── environment/                 # Scripts environnement
-│   ├── audit_environment.ps1    # Audit environnement Windows
-│   ├── setup_environment.ps1    # Setup environnement Windows
-│   ├── install-ffmpeg.ps1       # Installation FFmpeg Windows
-│   └── install-ffmpeg.sh        # Installation FFmpeg Linux/macOS
+├── environment/                 # Scripts environnement (jumeaux .ps1/.sh)
+│   ├── setup_environment.{ps1,sh}    # Setup de base (Python, .NET, kernels)
+│   ├── audit_environment.{ps1,sh}    # Diagnostic de l'environnement
+│   ├── automata-build-deploy.{ps1,sh}  # Build/déploiement des automates
+│   ├── install-ffmpeg.{ps1,sh}       # Installation FFmpeg
+│   ├── z3-build-deploy.{ps1,sh}      # Build du wrapper Z3.Linq forké
+│   └── README.md                # Équivalences Linux/macOS (#10644)
 │
 ├── translation/                 # Synchro traduction multilingue (#4957 / #1650)
 │   └── extract_cells_to_csv.py  # Extraction cellules -> CSV (drift-detection)
@@ -105,15 +107,21 @@ resync par le moteur Argumentum (T3, gated #1650 Phase 1) viennent dans les tran
 ## Installation
 
 ```bash
-# Windows - FFmpeg
+# Windows (PowerShell) — FFmpeg + audit + setup de base
 ./scripts/environment/install-ffmpeg.ps1
-
-# Audit environnement
 ./scripts/environment/audit_environment.ps1
-
-# Setup environnement
 ./scripts/environment/setup_environment.ps1
+
+# Linux / macOS (bash) — jumeaux équivalents
+./scripts/environment/install-ffmpeg.sh
+./scripts/environment/audit_environment.sh
+./scripts/environment/setup_environment.sh --auto-fix
 ```
+
+Chaque script PowerShell possède un jumeau bash de comportement équivalent
+(`scripts/environment/README.md` documente les différences de port). Le seul
+script Windows-only du dépôt est `scripts/genai-stack/Configure-IISAuthentication.ps1`
+(IIS n'existe pas sur Mac/Linux) — pas de jumeau bash prévu.
 
 ## Validation Lean
 

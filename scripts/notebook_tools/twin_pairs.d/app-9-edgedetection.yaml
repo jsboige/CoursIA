@@ -8,6 +8,8 @@
       by: myia-po-2023:CoursIA
       python_sha: 5aa7d42e6e941a86dfcedbb3c9aded569d32d2b4
       csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = DEAP (Distributed Evolutionary Algorithms in Python, MIT, https://github.com/DEAP/deap, Fortin 2012) + scipy.signal.sobel (filtre sobel pour detection de contours) + pygad (Python Genetic Algorithm, MIT) + matplotlib + numpy (17 cellules code). C# = Emgu.CV (wrapper C# OpenCV 4.x, Apache-2.0, https://github.com/emgucv/emgucv) + SkiaSharp (binding .NET Skia, MIT, https://github.com/mono/SkiaSharp) + GeneticSharp (lib C# algorithmes genetiques, MIT, https://github.com/giacomelli/GeneticSharp) (12 cellules code). Verdict SOTA-OK (lib-vs-lib, deux ecosystemes natifs) : Python utilise l'ecosysteme SciPy + DEAP (lib SOTA evolutionary computation) + scipy.signal (filtre sobel) ; C# utilise l'ecosysteme OpenCV via Emgu.CV (lib SOTA computer vision) + SkiaSharp (bitmaps) + GeneticSharp (algorithmes genetiques). Les deux ecosystemes invoquent de vraies libs SOTA de leur stack natif (Python scientifique / C# computer vision). Detection de contours = application canonique des deux cotes. parity_level: semantic preserve."
   known_differences:
     - "Socle pedagogique commun : Detection de contours / Edge detection (metaheuristique DEAP + scipy sobel) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = DEAP metaheuristique + scipy.signal/sobel + matplotlib ; C# = System.Net.Http + SkiaSharp (traitement bitmap)."

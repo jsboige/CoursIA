@@ -5,7 +5,9 @@
 > Sub-grain [#10500b](https://github.com/jsboige/CoursIA/issues/10500) — packaging
 > `.csproj` standalone des analyseurs prototypés dans
 > [`Roslyn-Code-Guardrails.ipynb`](../docs/Roslyn-Code-Guardrails.ipynb) (PR #10502).
+> Sub-grain #10500c — extension `AGSEC004` (HttpClient non-constant URL).
 > Sub-grain #10500d — registry de suppressions `#pragma warning disable AGSECxxx`.
+> Sub-grain #10500e — extension `AGSEC005` (credentials hardcodées).
 
 ## Pourquoi ce dossier
 
@@ -18,13 +20,15 @@ analyseurs : un projet .NET `netstandard2.0` qui peut être packagé en
 `MyIA.AgentSafetyAnalyzer` (NuGet-ready, prêt à être référencé comme
 `ProjectReference` ou `PackageReference` dans n'importe quel `.csproj`).
 
-## Trois règles
+## Cinq règles
 
 | ID | Règle | Exemple (snippet d'agent dangereux) |
 |----|-------|------------------------------------|
 | `AGSEC001` | `Process.Start` dont le premier argument n'est **pas** une constante de compilation | `Process.Start(userInput)` |
 | `AGSEC002` | Concaténation de chaîne SQL (`"SELECT …" + variable`) | `"SELECT * FROM users WHERE name='" + userInput` |
 | `AGSEC003` | Opération `File.Read/Write/Delete` sur un chemin non-constant | `File.ReadAllText(name)` |
+| `AGSEC004` | `HttpClient.Get*/Post*/Put*/Delete*/Send*` avec URL non-constante (SSRF) | `httpClient.GetAsync(userInput)` |
+| `AGSEC005` | Littéral de chaîne commençant par un préfixe de credential connu (`sk-`, `ghp_`, `AKIA`, `AIza`, `hf_`, `xoxb-`, ...) | `const string apiKey = "sk-proj-..."` |
 
 Le pivot sémantique (`SemanticModel.GetConstantValue`) est ce qu'un `grep` naïf ne
 peut pas distinguer : une **littérale littérale** est sûre (l'agent a écrit
@@ -32,6 +36,11 @@ peut pas distinguer : une **littérale littérale** est sûre (l'agent a écrit
 constante et déclenche le diagnostic avec localisation précise. C'est exactement
 la capacité distinctive que l'axe Roslyn de l'Epic met en avant : la vérification
 se fait **dans la compilation**, pas en post-processing.
+
+Pour `AGSEC005`, la logique est différente : pas de constante à vérifier —
+on cherche un **préfixe de credential connu** (`sk-`, `ghp_`, `AKIA`, ...)
+dans n'importe quel littéral de chaîne. Le diagnostic nomme le préfixe
+matché pour orienter le développeur vers le bon provider.
 
 ## Registry de suppressions par `#pragma warning` (sub-grain #10500d)
 
@@ -65,11 +74,12 @@ correspondantes. C'est le pattern recommandé dans la doc Roslyn pour les
 analyzers/
 ├── AgentSafetyAnalyzer/                  # netstandard2.0, IsPackable=true
 │   ├── AgentSafetyAnalyzer.csproj
-│   ├── AgentSafetyAnalyzer.cs            # 3 règles + IsSuppressedByPragma
-│   └── SqlConcatCodeFixProvider.cs       # Correctif auto pour AGSEC002
+│   ├── AgentSafetyAnalyzer.cs            # 5 règles + IsSuppressedByPragma
+│   ├── SqlConcatCodeFixProvider.cs       # Correctif auto pour AGSEC002
+│   └── HardcodedCredentialCodeFixProvider.cs  # Correctif auto pour AGSEC005
 └── AgentSafetyAnalyzer.Tests/            # net8.0, xUnit
     ├── AgentSafetyAnalyzer.Tests.csproj
-    └── AgentSafetyAnalyzerTests.cs       # 12 tests (8 analyseur + 1 codefix + 3 pragma)
+    └── AgentSafetyAnalyzerTests.cs       # 23 tests (6 analyseur + 5 AGSEC004 + 1 codefix + 5 pragma + 6 AGSEC005)
 ```
 
 ## Build & test (CPU-only, pas d'Aspire requis)
@@ -79,12 +89,14 @@ cd analyzers/AgentSafetyAnalyzer && dotnet build
 cd ../AgentSafetyAnalyzer.Tests && dotnet test
 ```
 
-Résultat attendu : **12 tests verts**, dont
+Résultat attendu : **23 tests verts**, dont
 - 6 tests analyzer (3 règles × 2 — discriminant littéral littéral vs variable attaquant-contrôlée) ;
+- 5 tests AGSEC004 (HttpClient no-diagnostic + 4 variants `GetAsync`/`PostAsync`/`SendAsync`/`GetStringAsync`) ;
 - 1 test codefix (`AGSEC002_CodeFix_TransformsConcatToInterpolatedString`) ;
 - 5 tests suppression par pragma (`AGSEC001_NoDiagnostic_OnPragmaDisable_ForSameRule`,
   `…StillDiagnostic_OnPragmaDisable_ForOtherRule`, `…NoDiagnostic_OnBarePragmaDisable`,
-  `…Diagnostic_OnPragmaRestoreAfterDisable`, `AGSEC002_NoDiagnostic_OnPragmaDisable_ForSqlConcat`).
+  `…Diagnostic_OnPragmaRestoreAfterDisable`, `AGSEC002_NoDiagnostic_OnPragmaDisable_ForSqlConcat`) ;
+- 6 tests AGSEC005 (diagnostic sur `sk-`, `ghp_`, `AKIA`, `sk-ant-` + no-diagnostic sur littéral neutre et littéral vide).
 
 ## Comparaison avec le notebook
 
@@ -101,25 +113,29 @@ Les deux formes **ne se doublonnent pas** : le notebook enseigne le *pourquoi*
 `CodeFixProvider`), la sous-série fournit le *livrable prêt à intégrer*. Le
 reader apprend avec l'un et embarque l'autre.
 
-## Sub-grains restants du ticket parent [#10500](https://github.com/jsboige/CoursIA/issues/10500)
+## Sub-grains du ticket parent [#10500](https://github.com/jsboige/CoursIA/issues/10500)
 
-- `10500b` : packaging `.csproj` standalone — **livré** (PR #10559 MERGED).
-- `10500c` : `HttpClient.GetAsync(url)` à la liste des targets (extension
-  d'AGSEC001 ou nouvelle règle AGSEC004) — **en vol** (PR #10563 OPEN).
-- `10500d` (ce grain) : registry de suppressions `#pragma warning disable
+- `10500b` (PR #10559) : packaging `.csproj` standalone — **livré**.
+- `10500c` (ce grain, PR #10563) : `HttpClient.Get*/Post*/Put*/Delete*/Send*` URL non-constante (SSRF, AGSEC004) — **livré**.
+- `10500d` (PR #10571) : registry de suppressions `#pragma warning disable
   AGSECxxx` pour les faux positifs assumés — **livré**.
-- `10500e` : analyzer `==` sur secrets hardcodés (BinaryExpressionSyntax sur
-  string littéraux avec préfixes `sk-`, `ghp_`, etc.).
+- `10500e` (PR #10575) : `AGSEC005` — détection de credentials hardcodées
+  par préfixe de provider (`sk-`, `ghp_`, `AKIA`, `AIza`, `hf_`, `xoxb-`, ...)
+  — **livré**.
+- `10500f` (ce grain, PR #10582) : `HardcodedCredentialCodeFixProvider` — CodeFix
+  companion qui transforme un littéral credential en `Environment.GetEnvironmentVariable`
+  — **livré**.
 
 ## Garde-fous respectés
 
 - **Prong A** : vrai `Microsoft.CodeAnalysis` 4.12 (`netstandard2.0` compatible),
-  verdict **SOTA-OK** (cf. infra de test `CSharpCompilation.WithAnalyzers` direct
-  en `AdhocWorkspace`, pattern recommandé dans la doc Roslyn).
-- **Prong B** : discrimination sémantique sur les 3 règles (chaque règle a son
+  verdict **SOTA-OK** (cf. infra de test `Microsoft.CodeAnalysis.CSharp.Analyzer.Testing`
+  et `CSharpCodeFixTest`).
+- **Prong B** : discrimination sémantique sur les 5 règles (chaque règle a son
   test « no diagnostic sur littéral littéral » ET « diagnostic sur variable
   attaquant-contrôlée ») + discrimination de la suppression (per-rule vs all,
-  disable vs restore).
+  disable vs restore) + discrimination de préfixes de credentials (6 tests
+  AGSEC005 : 4 préfixes matchés, 1 littéral neutre, 1 littéral vide).
 - **C.1** : pas d'erreur volontaire, `Build` et `Test` Successful attendus.
 - **C.2** : n/a (pas de notebook ici — `.cs` + `.csproj`).
 - **three-exercises-per-notebook** : n/a (pas un notebook).

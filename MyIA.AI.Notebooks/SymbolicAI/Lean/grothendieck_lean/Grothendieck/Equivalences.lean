@@ -186,4 +186,95 @@ noncomputable def equivalence_symm (e : C ≌ D) : D ≌ C :=
 noncomputable def equivalence_trans {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) : C ≌ E :=
   e.trans f
 
+/-!
+## 7. Théorèmes propres (c.1301+107 v4 — L902 ★★ Tier 6 retenu)
+
+Identités fondamentales des équivalences, prouvées localement via
+la tactique `rfl` (unfold direct des fields `Equivalence.symm`).
+
+Leçon L902 ★★ Tier 6 (c.1301+108+) : les constructors polymorphes
+d'univers comme `Equivalence.refl C` (signature `(C : Type u) →
+[Category C] → C ≌ C`) **ne se prouvent pas** par `rfl` direct sous
+Lean 4 v4.31.0-rc1 — `Equivalence.refl : C ≌ C` ne s'unifie pas
+(échoue à `Application type mismatch`), ni via dummy param
+`(e : C ≌ C) (_h : e = Equivalence.refl C)` + `subst _h; rfl`
+(échoue à `Tactic 'subst' failed`). Les 2 lemmes `Equivalence.refl_*`
+ont donc été retirés en v4 ; les 2 lemmes `Equivalence.symm_*` (qui
+prennent un argument `e : C ≌ D`) restent valides.
+
+Conclusion : pour les lemmes portant sur les fields d'un constructor
+polymorphe d'univers, **le `rfl` direct est impossible**. Solution :
+soit `(e : C ≌ D)` argument et `rfl` direct (PASS pour `Equivalence.symm`
+qui prend `e`), soit retrait pur. Les `#check` originaux documentent
+que les noms canoniques Mathlib sont accessibles depuis les imports.
+-/
+
+/-- Théorème : l'inverse `Equivalence.symm e` d'une équivalence `e :
+    C ≌ D` échange les rôles de functor et inverse. C'est la propriété
+    fondamentale de la symétrie : `e.symm.functor = e.inverse`. -/
+theorem equivalence_symm_functor (e : C ≌ D) :
+    e.symm.functor = e.inverse := rfl
+
+/-- Théorème : `e.symm.inverse = e.functor` — l'inverse d'un inverse
+    rend le foncteur « aller » original. Duale du précédent. -/
+theorem equivalence_symm_inverse (e : C ≌ D) :
+    e.symm.inverse = e.functor := rfl
+
+/-!
+## 8. Théorèmes propres (c.1301+121 — ajouts sur les fields `e.unitIso` /
+##     `e.counitIso` / `e.trans`)
+
+Suite logique directe des lemmes `equivalence_symm_*` ci-dessus : on
+prouve maintenant que les isomorphismes naturels `unitIso` /
+`counitIso` d'une part, et la composition `trans` d'autre part, sont
+cohérents au sens des fields de `Equivalence`. Tous les lemmes
+ci-dessous prennent un argument `e : C ≌ D` (jamais un constructeur
+polymorphe d'univers comme `Equivalence.refl C`) ; L902 ★★ est donc
+trivially satisfaite. Les preuves utilisent `rfl` direct après unfold
+des fields de `Equivalence`.
+
+**Origine** (issue #2159 dispatch ai-01 msg-20260812T140023-6qzcmj,
+c.1301+121) : remplacer les `#check` par de vrais theoremes propres
+dans au moins 1 des 3 modules du claim (`Equivalences.lean`,
+`MonoidalCategories.lean`, `MathlibMap.lean`). `MathlibMap.lean` est
+catalog-only (cf. PR #10638 historique — retrait pragmatique), donc
+hors scope ; le présent sous-grain choisit `Equivalences.lean` et
+(`MonoidalCategories.lean` séparément).
+-/
+
+/-- Théorème : l'inverse de `Equivalence.symm e` retrouve l'identite.
+    C'est la loi d'involutivité du `Equivalence.symm` au niveau des
+    objets du (2-)groupeoïde : `(e.symm).symm = e`. Démonstration :
+    unfold direct du field `symm` de `Equivalence`. -/
+theorem equivalence_symm_symm (e : C ≌ D) :
+    e.symm.symm = e := rfl
+
+/-- Théorème : la composition `Equivalence.trans` a pour functor
+    gauche `e.functor` et pour functor droit `f.functor`. C'est la
+    loi de composition « direct » des foncteurs sous-jacents à
+    l'équivalence composée. Démonstration : unfold direct du field
+    `functor` de `Equivalence.trans`. -/
+theorem equivalence_trans_functor {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) :
+    (e.trans f).functor = e.functor ⋙ f.functor := rfl
+
+/-- Théorème : la composition `Equivalence.trans` a pour inverse
+    gauche `f.inverse` et inverse droit `e.inverse`. Dual du précédent :
+    « retourner la composition » = composer les inverses en sens
+    inverse. Démonstration : unfold direct du field `inverse` de
+    `Equivalence.trans`. -/
+theorem equivalence_trans_inverse {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) :
+    (e.trans f).inverse = f.inverse ⋙ e.inverse := rfl
+
+/-- Théorème : l'unité de `Equivalence.symm e` (le morphisme
+    `(e.symm).unitIso : 𝟭 D ≅ e.symm.functor ⋙ e.symm.inverse`)
+    correspond canoniquement à la coïnité de `e` au sens de la
+    bijection 𝟭 D ≅ e.inverse ⋙ e.functor. C'est la « dualité »
+    naturelle entre unité et coïnité d'une part, et symétrie
+    d'autre part. Démonstration : unfold direct du field `unitIso`
+    de `Equivalence.symm`. -/
+theorem equivalence_symm_unit (e : C ≌ D) :
+    e.symm.unitIso = e.counitIso.symm := by
+  cases e
+  rfl
+
 end Grothendieck.Equivalences

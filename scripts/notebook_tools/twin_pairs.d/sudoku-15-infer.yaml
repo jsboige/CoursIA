@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib idiomatic-stack probabiliste : Python = NumPyro (SOTA Python probabilistic programming framework sur JAX, MCMC + inference variationnelle, stochastic). C# = Infer.NET (Microsoft Research legacy, SOTA .NET probabilistic programming framework, MCMC + expectation propagation + variational message passing, deterministic compilation). Les deux utilisent la SOTA PPL de leur stack respective. Pont cross-stack impossible : NumPyro est JAX-based (Python only, JAX compile XLA), Infer.NET est .NET only (compilation deterministe vers C#). Aucun bytecode commun bridgeable (pas de JPype, pas d'IKVM -- les deux PPL sont compiles dans leur stack respective). Verifie firsthand (c.235 audit 2026-08-12, myia-po-2023:CoursIA-2) : Python 34 cells / C# 47 cells, structure pedagogique symetrique (modele probabiliste Sudoku, observations, inference posterior). Asymetrie : Python = stochastic MCMC (echantillonnage NUTS), C# = deterministic variational message passing (EP/VMP). Les deux methodes sont SOTA dans leur stack, et l'objectif pedagogique (modeliser l'incertitude sur les valeurs Sudoku) est tenu. Verdict SOTA-OK : lib-vs-lib idiomatic-stack PPL, aucune asymetrie engine-mismatch a corriger."
   audits:
     - date: "2026-08-03"
       by: myia-po-2023:CoursIA

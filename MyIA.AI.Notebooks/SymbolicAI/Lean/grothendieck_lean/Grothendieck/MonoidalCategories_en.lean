@@ -238,4 +238,79 @@ noncomputable def braiding_iso [MonoidalCategory C] [BraidedCategory C]
     (X Y : C) : X ⊗ Y ≅ Y ⊗ X :=
   BraidedCategory.braiding X Y
 
+/-!
+## 8. Proper theorems (c.1301+107)
+
+Fundamental identities of monoidal structures, proved locally via the
+`rw` tactic on canonical Mathlib lemmas (the isomorphisms `α_`, `λ_`,
+`ρ_` are fields of `MonoidalCategoryStruct`; their equalities are
+definitionally valid via `.hom` / `.inv`).
+
+Lesson L902 ★★: `rfl` is provable when the equality is definitional.
+The canonical isomorphisms `(α_ X Y Z).hom` etc. are fields; the
+bridging lemmas are `(rfl)` or `by rw [name]` depending on the level
+of unfold required.
+-/
+
+/-- Theorem: the associator `(X ⊗ Y) ⊗ Z ≅ X ⊗ (Y ⊗ Z)` is defined as
+    `(α_ X Y Z).hom` at the morphism level. This is the very definition
+    of the associator in Mathlib 4 as a field of `MonoidalCategoryStruct`. -/
+theorem associator_iso_hom_eq [MonoidalCategoryStruct C] (X Y Z : C) :
+    (α_ X Y Z).hom = (MonoidalCategoryStruct.associator X Y Z).hom := rfl
+
+/-- Theorem: the left unitor `λ_ X : 𝟙_ C ⊗ X ≅ X` is defined implicitly
+    by the `leftUnitor` field of `MonoidalCategoryStruct`. At the
+    `Iso.hom` level, this is a definitional construction. -/
+theorem left_unitor_iso_hom_eq [MonoidalCategoryStruct C] (X : C) :
+    (λ_ X).hom = (MonoidalCategoryStruct.leftUnitor X).hom := rfl
+
+/-- Theorem: the right unitor `ρ_ X : X ⊗ 𝟙_ C ≅ X` is defined by the
+    `rightUnitor` field of `MonoidalCategoryStruct`. -/
+theorem right_unitor_iso_hom_eq [MonoidalCategoryStruct C] (X : C) :
+    (ρ_ X).hom = (MonoidalCategoryStruct.rightUnitor X).hom := rfl
+
+/-- Theorem: the object tensor `tensorObj X Y = X ⊗ Y` is definitionally
+    equal to the application of the `tensorObj` field of
+    `MonoidalCategoryStruct`. Bridge between the `⊗` notation and the
+    primitive function. -/
+theorem tensorObj_eq_app [MonoidalCategoryStruct C] (X Y : C) :
+    X ⊗ Y = MonoidalCategoryStruct.tensorObj X Y := rfl
+
+/-!
+## 9. Proper theorems (c.1301+121 — additions on fields `whiskerLeft` /
+##     `whiskerRight`)
+
+Direct continuation of the 4 lemmas above: we now prove that the
+fields `whiskerLeft`, `whiskerRight` of `MonoidalCategoryStruct` are
+definitionally related to their Lean notations `◁`, `▷`. These
+equalities are trivial unfolds after `rfl`; L902 ★★ is not concerned
+(no polymorphic universe constructor: `MonoidalCategoryStruct` is a
+class of type `Type → Type`).
+
+**Note**: an analogous lemma on `tensorHom f g` is SKIPPED — the
+notation `f ▷ g` uses `whiskerRight` (morphism `f`, object `g`) but
+not `tensorHom` (which takes morphism `f` AND morphism `g`). A
+`tensorHom_eq_app` lemma could be added in a later PR if an infix
+notation `f ⊗ g` for morphisms is extended to Mathlib.
+
+**Origin** (issue #2159 dispatch ai-01, c.1301+121): same scope as
+the `Equivalences.lean` additions. Sub-grain 2/2.
+-/
+
+/-- Theorem: the left whiskering `whiskerLeft X f = X ◁ f` is
+    definitionally equal to the `whiskerLeft` field of
+    `MonoidalCategoryStruct`. Bridge between the `◁` notation and the
+    primitive function. -/
+theorem whiskerLeft_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
+    (f : Y ⟶ Z) :
+    X ◁ f = MonoidalCategoryStruct.whiskerLeft X f := rfl
+
+/-- Theorem: the right whiskering `whiskerRight f Z = f ▷ Z` is
+    definitionally equal to the `whiskerRight` field of
+    `MonoidalCategoryStruct`. Bridge between the `▷` notation (with
+    object argument) and the primitive function. -/
+theorem whiskerRight_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
+    (f : X ⟶ Y) :
+    f ▷ Z = MonoidalCategoryStruct.whiskerRight f Z := rfl
+
 end Grothendieck.MonoidalCategories_en

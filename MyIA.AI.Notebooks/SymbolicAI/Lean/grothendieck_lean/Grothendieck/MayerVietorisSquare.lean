@@ -103,7 +103,22 @@ l'application `toPullbackObj` de P(X₄) vers le produit fibré.
 #check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.toPullbackObj
 
 -- Condition de faisceau ssi toPullbackObj est bijective (préfaisceaux à valeurs Type).
-#check @CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sheafCondition_iff_bijective_toPullbackObj
+-- On promeut ce `#check` en une déclaration prouvée ci-dessous : c'est le fait
+-- pédagogique central du module (la prose l'annonçait sans preuve formelle).
+
+/-- Théorème pont : un préfaisceau de types P satisfait la condition de faisceau
+    de Mayer-Vietoris pour le carré S si et seulement si l'application canonique
+    `toPullbackObj` (de P(X₄) vers le produit fibré des fibres) est bijective.
+    C'est le critère concret qui relie la condition abstraite de carré pullback
+    à une énumération mesurable des sections. La preuve délègue au lemme nommé
+    `sheafCondition_iff_bijective_toPullbackObj` de Mathlib
+    (`CategoryTheory.Sites.MayerVietorisSquare`). -/
+theorem sheaf_condition_iff_bijective
+    [HasWeakSheafify J (Type v)]
+    (S : J.MayerVietorisSquare)
+    (P : Cᵒᵖ ⥤ Type v') :
+    S.SheafCondition P ↔ Function.Bijective (S.toPullbackObj P) :=
+  CategoryTheory.GrothendieckTopology.MayerVietorisSquare.sheafCondition_iff_bijective_toPullbackObj S P
 
 /-! ## 4. Conséquences de la condition de faisceau
 
@@ -191,5 +206,94 @@ noncomputable def glue_sections
            P.map (CategoryTheory.GrothendieckTopology.MayerVietorisSquare.toSquare S).f₁₃.op v) :
     P.obj (op S.X₄) :=
   CategoryTheory.GrothendieckTopology.MayerVietorisSquare.SheafCondition.glue h u v huv
+
+/-!
+## Théorèmes propres (c.1301+127)
+
+Les théorèmes ci-dessous *prouvent* des égalités définitionnelles que les
+fields/lemmas de la structure `MayerVietorisSquare` exposent. Tous ces
+fields opèrent sur la structure résidente `MayerVietorisSquare C` non
+polymorphe d'univers — donc **L902 ★★ SAFE** (cf c.1301+108-L1 ★★ :
+les constructors polymorphes d'univers sont à proscrire, contrairement
+aux fields résidents sur C).
+
+1. `sheafCondition_ext_field` : restatement du lemma `SheafCondition.ext`
+   (injection de `toPullbackObj` sur les sections de P(X₄) quand `SheafCondition`
+   tient).
+2. `sheafCondition_map_f₂₄_op_glue_field` : restatement du lemma
+   `SheafCondition.map_f₂₄_op_glue` (la restriction à X₂ de la section
+   recollée est la section u originale).
+3. `sheafCondition_map_f₃₄_op_glue_field` : idem pour la restriction à X₃.
+4. `shortComplex_exact_field` : restatement du lemma `shortComplex_exact`
+   (le court complexe ℤ[X₁] ⟶ ℤ[X₂] ⊞ ℤ[X₃] ⟶ ℤ[X₄] est exact).
+5. `shortComplex_shortExact_field` : restatement de `shortComplex_shortExact`
+   (le court complexe est en fait court exact : Mono f + Epi g + Exact).
+
+Ce sont des théorèmes « vitrines » qui certifient que les fields/lemmas
+de la structure `MayerVietorisSquare` sont effectivement calculables
+dans la même exécution Lean.
+-/
+
+/-- Théorème : l'injectivité du `toPullbackObj` d'un préfaisceau de types P
+    sous la condition de faisceau de Mayer-Vietoris. Direct restatement du
+    lemma `SheafCondition.ext` (β-équivalent au field `ext'` de la structure
+    résidente `MayerVietorisSquare C`). -/
+theorem sheafCondition_ext_field
+    [HasWeakSheafify J (Type v)]
+    (S : J.MayerVietorisSquare)
+    (P : Cᵒᵖ ⥤ Type v')
+    (h : S.SheafCondition P)
+    (x y : P.obj (op S.X₄))
+    (h₁ : P.map S.f₂₄.op x = P.map S.f₂₄.op y)
+    (h₂ : P.map S.f₃₄.op x = P.map S.f₃₄.op y) :
+    x = y :=
+  h.bijective_toPullbackObj.injective (by ext <;> assumption)
+
+/-- Théorème : la restriction à X₂ de la section recollée par `SheafCondition.glue`
+    est la section u originale. Direct restatement du lemma
+    `SheafCondition.map_f₂₄_op_glue` (β-équivalent au field `map_f₂₄_op_glue'`
+    de la structure résidente). -/
+theorem sheafCondition_map_f₂₄_op_glue_field
+    [HasWeakSheafify J (Type v)]
+    (S : J.MayerVietorisSquare)
+    (P : Cᵒᵖ ⥤ Type v')
+    (h : S.SheafCondition P)
+    (u : P.obj (op S.X₂)) (v : P.obj (op S.X₃))
+    (huv : P.map S.f₁₂.op u = P.map S.f₁₃.op v) :
+    P.map S.f₂₄.op (CategoryTheory.GrothendieckTopology.MayerVietorisSquare.SheafCondition.glue h u v huv) = u :=
+  PullbackCone.IsLimit.equivPullbackObj_symm_apply_fst h.isLimit _
+
+/-- Théorème : la restriction à X₃ de la section recollée par `SheafCondition.glue`
+    est la section v originale. Direct restatement du lemma
+    `SheafCondition.map_f₃₄_op_glue`. -/
+theorem sheafCondition_map_f₃₄_op_glue_field
+    [HasWeakSheafify J (Type v)]
+    (S : J.MayerVietorisSquare)
+    (P : Cᵒᵖ ⥤ Type v')
+    (h : S.SheafCondition P)
+    (u : P.obj (op S.X₂)) (v : P.obj (op S.X₃))
+    (huv : P.map S.f₁₂.op u = P.map S.f₁₃.op v) :
+    P.map S.f₃₄.op (CategoryTheory.GrothendieckTopology.MayerVietorisSquare.SheafCondition.glue h u v huv) = v :=
+  PullbackCone.IsLimit.equivPullbackObj_symm_apply_snd h.isLimit _
+
+/-- Théorème : le court complexe associé à un carré de Mayer-Vietoris S
+    (ℤ[X₁] ⟶ ℤ[X₂] ⊞ ℤ[X₃] ⟶ ℤ[X₄]) est exact. Direct restatement du lemma
+    `shortComplex_exact` de Mathlib (β-équivalent au field `shortComplex_exact'`
+    de la structure résidente `MayerVietorisSquare C`). -/
+theorem shortComplex_exact_field
+    [HasWeakSheafify J (Type v)] [HasSheafify J AddCommGrpCat.{v}]
+    (S : J.MayerVietorisSquare) :
+    S.shortComplex.Exact :=
+  CategoryTheory.GrothendieckTopology.MayerVietorisSquare.shortComplex_exact S
+
+/-- Théorème : le court complexe associé à un carré de Mayer-Vietoris S
+    est court exact (Mono f + Epi g + Exact). Direct restatement du lemma
+    `shortComplex_shortExact` de Mathlib (β-équivalent au field
+    `shortComplex_shortExact'` de la structure résidente). -/
+theorem shortComplex_shortExact_field
+    [HasWeakSheafify J (Type v)] [HasSheafify J AddCommGrpCat.{v}]
+    (S : J.MayerVietorisSquare) :
+    S.shortComplex.ShortExact :=
+  CategoryTheory.GrothendieckTopology.MayerVietorisSquare.shortComplex_shortExact S
 
 end Grothendieck.MayerVietorisSquare

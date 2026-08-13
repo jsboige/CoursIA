@@ -99,7 +99,22 @@ ce qui en fait un outil clé en cohomologie des faisceaux.
 
 -- The sheaf fiber functor: evaluates sheaves at a point.
 -- This is the restriction of presheafFiber to the full subcategory of sheaves.
-#check @GrothendieckTopology.Point.sheafFiber
+-- Concretely `sheafFiber = sheafToPresheaf ⋙ presheafFiber` BY DEFINITION
+-- (Mathlib `CategoryTheory.Sites.Point.Basic`): evaluating a sheaf at a point Φ
+-- is evaluating its underlying presheaf at Φ. We promote the `#check` into a
+-- proven canonical iso below.
+
+/-- Le foncteur fibre des faisceaux se factorise par le foncteur fibre des
+    préfaisceaux via le plongement « faisceau ↦ préfaisceau sous-jacent »
+    `sheafToPresheaf`. Évaluer un faisceau en un point revient donc à évaluer
+    le préfaisceau sous-jacent en ce même point : c'est exactement la
+    définition de `sheafFiber` comme `sheafToPresheaf ⋙ presheafFiber` donnée
+    par Mathlib dans `CategoryTheory.Sites.Point.Basic`. On obtient l'iso
+    canonique via `sheafToPresheafCompPresheafFiberIso` (une réflexion). -/
+noncomputable def sheaf_fiber_presheaf_fiber_iso {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} (Φ : GrothendieckTopology.Point.{w} J) :
+    sheafToPresheaf J (Type (max u w)) ⋙ Φ.presheafFiber ≅ Φ.sheafFiber :=
+  Φ.sheafToPresheafCompPresheafFiberIso
 
 /-!
 ## Morphismes entre points
@@ -223,5 +238,78 @@ theorem presheaf_fiber_hom_ext {C : Type u} [Category.{v} C]
       Φ.toPresheafFiber X x P ≫ f = Φ.toPresheafFiber X x P ≫ g) :
     f = g :=
   Φ.presheafFiber_hom_ext h
+
+/-!
+## Naturalité de `toPresheafFiber` le long des morphismes de `C`
+
+Pour tout morphisme `f : X ⟶ Y` dans la catégorie de base et tout élément
+`x : Φ.fiber.obj X`, l'application `toPresheavFiber X x P : P.obj (op X) ⟶ Φ.fiber`
+commute avec `P.map f.op`. C'est la naturalité du cocône `presheafFiberCocone`
+par rapport aux morphismes de `C`.
+
+C'est `toPresheafFiber_w` de Mathlib.
+-/
+
+/-- Naturalité de `toPresheafFiber` le long d'un morphisme de la catégorie
+    de base : pour `f : X ⟶ Y` et `x : Φ.fiber.obj X`, l'égalité
+    `P.map f.op ≫ toPresheafFiber X x = toPresheafFiber Y (Φ.fiber.map f x)`
+    relie l'action du préfaisceau (pullback P.map) au foncteur fibre.
+    Utilise `toPresheafFiber_w` de Mathlib. -/
+theorem to_presheaf_fiber_w {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    (Φ : GrothendieckTopology.Point.{w} J) {X Y : C} (f : X ⟶ Y)
+    (x : Φ.fiber.obj X) (P : Cᵒᵖ ⥤ Type (max u w)) :
+    P.map f.op ≫ Φ.toPresheafFiber X x P = Φ.toPresheafFiber Y (Φ.fiber.map f x) P :=
+  Φ.toPresheafFiber_w f x P
+
+/-!
+## Naturalité de `toPresheafFiber` le long des morphismes de préfaisceaux
+
+Pour tout morphisme de préfaisceaux `g : P ⟶ Q`, l'inclusion dans la fibre
+`toPresheafFiber X x` commute avec `presheafFiber.map g`. C'est la naturalité
+du cocône colimite par rapport aux morphismes de préfaisceaux.
+
+C'est `toPresheafFiber_naturality` de Mathlib.
+-/
+
+/-- Naturalité de `toPresheafFiber` le long d'un morphisme de préfaisceaux :
+    pour `g : P ⟶ Q`, on a `toPresheafFiber X x P ≫ presheafFiber.map g =
+    g.app (op X) ≫ toPresheafFiber X x Q`.
+    Utilise `toPresheafFiber_naturality` de Mathlib. -/
+theorem to_presheaf_fiber_naturality {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    (Φ : GrothendieckTopology.Point.{w} J) {P Q : Cᵒᵖ ⥤ Type (max u w)}
+    (g : P ⟶ Q) (X : C) (x : Φ.fiber.obj X) :
+    Φ.toPresheafFiber X x P ≫ Φ.presheafFiber.map g =
+      g.app (Opposite.op X) ≫ Φ.toPresheafFiber X x Q :=
+  Φ.toPresheafFiber_naturality g X x
+
+/-!
+## Les topologies triviale et discrète dans le treillis des topologies
+
+La topologie triviale (la plus grossière) coïncide avec l'élément minimum
+du treillis des topologies de Grothendieck ; la topologie discrète (la plus
+fine) coïncide avec l'élément maximum. Ces deux identités ancrent les
+topologies extrêmes dans le langage de l'ordre, ce qui rend leur rôle
+canonique transparent.
+
+Ce sont `trivial_eq_bot` et `discrete_eq_top` de Mathlib (CategoryTheory.Sites.Grothendieck).
+-/
+
+/-- La topologie triviale est l'élément minimum du treillis des topologies :
+    `trivial C = ⊥`. Chaque ensemble est couvrant pour la topologie triviale,
+    donc tout préfaisceau est un faisceau — c'est ce qui rend la topologie
+    triviale « la plus grossière ». Utilise `trivial_eq_bot` de Mathlib. -/
+theorem trivial_topology_eq_bot (C : Type u) [Category.{v} C] :
+    GrothendieckTopology.trivial C = ⊥ :=
+  CategoryTheory.GrothendieckTopology.trivial_eq_bot
+
+/-- La topologie discrète est l'élément maximum du treillis des topologies :
+    `discrete C = ⊤`. Seul le crible maximal est couvrant, donc seul
+    le préfaisceau terminal est un faisceau — c'est ce qui rend la topologie
+    discrète « la plus fine ». Utilise `discrete_eq_top` de Mathlib. -/
+theorem discrete_topology_eq_top (C : Type u) [Category.{v} C] :
+    GrothendieckTopology.discrete C = ⊤ :=
+  CategoryTheory.GrothendieckTopology.discrete_eq_top
 
 end Grothendieck
