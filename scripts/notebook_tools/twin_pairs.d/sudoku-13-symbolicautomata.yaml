@@ -29,6 +29,12 @@
       content_python_sha: d0e0b4554b17c2f92c33e82a9c1a165a16e45508894a6c561d2a72e86791f2de
       content_csharp_sha: 486cafd6c67b5b273494cbead7fa1147c11f6d0d11f2e40de883b599e4cf5843
     - date: "2026-08-13"
+      by: myia-po-2025:CoursIA-2
+      python_sha: f2171a8b02c88b0727db809bf176f11a6c31f59d
+      csharp_sha: 7f5bf2ce801183ca7c1187a3af3d3d18ba7b9553
+      content_python_sha: d0e0b4554b17c2f92c33e82a9c1a165a16e45508894a6c561d2a72e86791f2de
+      content_csharp_sha: c73fc6bad8946134f77bf52fd30fb8c98f234ec06d9fca8b7a091d5ce83ab100
+    - date: "2026-08-13"
       by: myia-po-2024:CoursIA
       python_sha: a3331dc6870317f09bb8c980e68c48e76490db4a
       csharp_sha: b3fe8510f7b31031e9725948bd45a094d377294d

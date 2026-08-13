@@ -232,4 +232,78 @@ noncomputable def skyscraper_adjunction_bridge {A : Type u'} [Category.{v'} A]
     Φ.sheafFiber (A := A) ⊣ Φ.skyscraperSheafFunctor :=
   Φ.skyscraperSheafAdjunction
 
+/-! ## 11. Additional bridge theorems: monos, epis, skyscraper presheaf, fiber as localization
+
+Additional bridges connecting conservativity to the Mathlib Namespace theorems
+already exposed as `#check` above. These bridges follow the Section 10 pattern:
+direct application of Namespace lemmas (L902 ★★ Tier 5).
+
+For Mathlib theorems with explicit args, direct application `name args` is
+the canonical idiom: not `by rw [name]` (Type equality non-rfl-fermable,
+cf L902 ★★ Tier 5 c.8232).
+-/
+
+/-- Bridge theorem: when P is a conservative family of points and the coefficient
+    category A satisfies AB5, the fiber functors at points in P jointly reflect
+    monomorphisms. This is the monomorphism counterpart of `jointly_reflect_iso_bridge`. -/
+theorem jointly_reflect_mono_bridge {A : Type u'} [Category.{v'} A]
+    [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
+    {FC : A → A → Type*} {CC : A → Type w}
+    [∀ (X Y : A), FunLike (FC X Y) (CC X) (CC Y)]
+    [ConcreteCategory.{w} A FC]
+    [(forget A).ReflectsIsomorphisms]
+    [PreservesFilteredColimitsOfSize.{w, w} (forget A)]
+    [J.HasSheafCompose (forget A)]
+    [AB5OfSize.{w, w} A] [HasFiniteLimits A]
+    (hP : P.IsConservativeFamilyOfPoints) :
+    JointlyReflectMonomorphisms
+      (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectMonomorphisms
+
+/-- Bridge theorem: when P is a conservative family of points and A admits weak
+    sheafification and w-indexed products, the fiber functors jointly reflect
+    epimorphisms. -/
+theorem jointly_reflect_epi_bridge {A : Type u'} [Category.{v'} A]
+    [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
+    {FC : A → A → Type*} {CC : A → Type w}
+    [∀ (X Y : A), FunLike (FC X Y) (CC X) (CC Y)]
+    [ConcreteCategory.{w} A FC]
+    [(forget A).ReflectsIsomorphisms]
+    [PreservesFilteredColimitsOfSize.{w, w} (forget A)]
+    [J.HasSheafCompose (forget A)]
+    [HasWeakSheafify J A] [HasProducts.{w} A]
+    (hP : P.IsConservativeFamilyOfPoints) :
+    JointlyReflectEpimorphisms
+      (fun (Φ : P.FullSubcategory) ↦ Φ.obj.sheafFiber (A := A)) :=
+  (hP.jointlyReflectIsomorphisms A).jointlyReflectEpimorphisms
+
+/-- Bridge construction: the skyscraper presheaf adjunction for a point Phi.
+    Phi.presheafFiber is left adjoint to Phi.skyscraperPresheafFunctor,
+    at the presheaf level (before sheafification). -/
+noncomputable def skyscraper_presheaf_adjunction_bridge {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    Φ.presheafFiber (A := A) ⊣ Φ.skyscraperPresheafFunctor :=
+  Φ.skyscraperPresheafAdjunction
+
+/-- Bridge lemma: the skyscraper presheaf with value M is a sheaf for J.
+    This lets us identify the skyscraper sheaf `skyscraperSheaf M` as the
+    sheafification of the skyscraper presheaf. -/
+theorem skyscraper_presheaf_is_sheaf_bridge {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) (M : A) :
+    Presheaf.IsSheaf J (Φ.skyscraperPresheaf M) :=
+  Φ.isSheaf_skyscraperPresheaf M
+
+/-- Bridge iso: the fiber functor on sheaves is obtained from the fiber functor
+    on presheaves by localization with respect to J.W.
+    `presheafToSheaf J A ⋙ Φ.sheafFiber ≅ Φ.presheafFiber` witnesses that
+    the presheaf fiber functor factors through sheafification. -/
+noncomputable def presheaf_to_sheaf_comp_iso_bridge {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    [HasWeakSheafify J A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    presheafToSheaf J A ⋙ Φ.sheafFiber ≅ Φ.presheafFiber :=
+  Φ.presheafToSheafCompSheafFiberIso A
+
 end Grothendieck_en.Conservative
