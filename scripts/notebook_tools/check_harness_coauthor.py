@@ -85,6 +85,10 @@ from pathlib import Path
 # - `Claude-3.5-Sonnet` (model name with version) is NOT matched here; this
 #   pattern is targeted at the *trailer* identifier, not the model spec.
 # - Whitespace between tokens is liberal (1+ spaces).
+# - `4.6.1` is matched on its prefix `4.6` (regex `\d+\.\d+` stops at the
+#   second component). Defensive against future 3-part Anthropic versions.
+# - The pattern is LAZY: it matches even without a trailing email address.
+#   Targets the stale model+version identifier, not the full RFC5322 form.
 PATTERN = re.compile(
     r"Co-Authored-By:\s*Claude\s+(Opus|Sonnet|Haiku)\s+(\d+\.\d+)",
     re.IGNORECASE,
