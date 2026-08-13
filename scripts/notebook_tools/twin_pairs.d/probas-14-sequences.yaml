@@ -10,6 +10,12 @@
       by: myia-po-2023:CoursIA
       python_sha: 81c45947b4322974083d5dedaff85a5aa8dc97d8
       csharp_sha: 1780a6871a8dd4eb0d5fbc8a8a137c229bf67ae7
+    - date: "2026-08-13"
+      by: myia-ai-01:CoursIA
+      python_sha: fc662a501dc293442f03ed0736cb5d77680c5358
+      csharp_sha: 1780a6871a8dd4eb0d5fbc8a8a137c229bf67ae7
+      content_python_sha: 540ed1f01cccd6ae7e9373ba529535efbf3296d5a37657c69583870facf3f730
+      content_csharp_sha: fa14bf0b264bfabdcc190ba03c58b8a2e6de6528d621d23eeec83956932e5cb5
   known_differences:
   - 'Socle pedagogique commun : modeles de sequences (chaines de Markov cachees / HMM) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational

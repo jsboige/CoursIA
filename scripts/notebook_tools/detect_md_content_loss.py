@@ -314,15 +314,24 @@ def _norm_len(md_text: str) -> int:
     return len(_normalize(md_text))
 
 
-def extract_md_cells(nb: dict) -> list[tuple[int, str]]:
-    """Retourne [(cell_idx, source_str)] pour les cellules markdown seulement."""
+def extract_md_cells(nb: dict) -> list[tuple[int, str | None, str]]:
+    """Retourne [(cell_idx, cell_id, source_str)] pour les cellules markdown.
+
+    ``cell_id`` est l'attribut ``id`` nbformat 4.5+ quand present, sinon ``None``.
+    L'ID est utilise par ``_compare_cells`` pour matcher cellule-par-cellule
+    quand les reorderings preservent les IDs (cf. c.8254, bug fondateur : un
+    reorder pur qui preserve le count + le multiset d'IDs etait signale a tort
+    comme truncated parce que la comparaison index-par-index croisait des cellules
+    differentes apres decalage).
+    """
     out = []
     for idx, c in enumerate(nb.get("cells", [])):
         if c.get("cell_type") != "markdown":
             continue
         src = c.get("source", [])
         src = "".join(src) if isinstance(src, list) else (src or "")
-        out.append((idx, src))
+        cid = c.get("id") or None
+        out.append((idx, cid, src))
     return out
 
 
@@ -333,7 +342,7 @@ def _collect_motifs(nb: dict) -> dict:
     base/head revelera les motifs disparus (count tombe a 0).
     """
     counts: dict = {}
-    full_md = "\n".join(src for _, src in extract_md_cells(nb))
+    full_md = "\n".join(src for _, _, src in extract_md_cells(nb))
     for pat, label in MOTIF_PATTERNS:
         counts[label] = len(pat.findall(full_md))
     counts["nav_links"] = len(NAV_LINK_RE.findall(full_md))
@@ -404,8 +413,8 @@ def ref_resolves(ref: str) -> bool:
     return out.returncode == 0
 
 
-def _compare_cells(base_md: list[tuple[int, str]],
-                   head_md: list[tuple[int, str]],
+def _compare_cells(base_md: list[tuple[int, str | None, str]],
+                   head_md: list[tuple[int, str | None, str]],
                    head_cost: dict | None = None) -> list[dict]:
     """Compare cellule-par-cellule (INDEX STABLE requis, design #1 #8655).
 
@@ -413,6 +422,17 @@ def _compare_cells(base_md: list[tuple[int, str]],
     inchange entre base et head ; sinon une fusion/scission decale les index et
     produirait des faux positifs position-par-position (26 FP observes sur
     10_LocalLlama.ipynb, cite dans l'issue). Retourne les cellules tronquees.
+
+    **c.8254 (reorder-safe matching)** : si base et head exposent un ``cell_id``
+    (attribut nbformat 4.5+ ``id``) **et** que le multiset d'IDs est identique
+    entre les deux versions, on apparie par ID -- un reorder pur qui preserve
+    les IDs (cf. EPIC #10678 Phase 2, ordonner des cellules pour respecter la
+    convention "interp follows the code it interprets") n'est plus confondu
+    avec une perte de contenu. Sinon on retombe sur l'appariement par index
+    (legacy). Cette double politique preservee car le multiset-stable est un
+    signal fort : "la PR a reordonne, sans toucher au contenu" vs "la PR a
+    ajoute/supprime une cellule, l'index-parallel n'est pas une hypothese
+    sure".
 
     ``head_cost`` = ``nb_head['metadata']['cost']`` : permet de reconnaitre une
     migration LEGITIME frontmatter ``cost:`` -> ``metadata.cost`` (issue #8919).
@@ -433,47 +453,80 @@ def _compare_cells(base_md: list[tuple[int, str]],
     findings: list[dict] = []
     if len(base_md) != len(head_md):
         return findings  # compte modifie -> la comparaison fichier suffit
-    for (b_idx, b_src), (h_idx, h_src) in zip(base_md, head_md):
-        # Migration frontmatter cost -> metadata.cost (#8919) : si la cellule base
-        # porte un bloc cost equivalent au head_cost, on retire le frontmatter du
-        # ratio. #8921-4 : on ne le fait QUE si aucune cle informative colocataire
-        # (ex: ``notes:``) n'est reste sur le carreau -- sinon le strip retirait le
-        # frontmatter ENTIER et faisait disparaitre ``notes:`` en silence (Claudish).
-        b_src_ratio = b_src
-        divergent_cost: list[str] | None = None
-        base_cost = _parse_frontmatter_cost(b_src)
-        if base_cost is not None:
-            equiv, divergent = _cost_equivalent(base_cost, head_cost)
-            unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
-                           if not (head_cost and k in head_cost)]
-            if equiv and not unmigrated:
-                b_src_ratio = FRONTMATTER_RE.sub("", b_src, count=1)
-            else:
-                divergent_cost = divergent + unmigrated
-        b_norm = _norm_len(b_src_ratio)
-        h_norm = _norm_len(h_src)
-        if b_norm < MIN_ORIG_CHARS:
-            continue  # cellule d'origine trop courte pour qu'une chute soit du bruit
-        if h_norm < DROP_THRESHOLD * b_norm:
-            ratio = (h_norm / b_norm) if b_norm else 0.0
-            findings.append({
-                "kind": "TRUNCATED_CELL",
-                "cell_idx": h_idx,
-                "before_chars": b_norm,
-                "after_chars": h_norm,
-                "ratio": round(ratio, 3),
-                "before_excerpt": b_src.strip().split("\n", 1)[0][:90],
-                "after_excerpt": h_src.strip().split("\n", 1)[0][:90],
-            })
-        if divergent_cost:
-            # Le bloc cost a disparu de la cellule SANS migration equivalente :
-            # perte reelle de cost (le squelette metadata.cost ne suffit pas).
-            findings.append({
-                "kind": "FRONTMATTER_COST_DIVERGENCE",
-                "cell_idx": h_idx,
-                "divergent_fields": divergent_cost,
-            })
+
+    # c.8254 : choisir la strategie d'appariement (ID si stable, sinon index).
+    base_ids = [cid for _, cid, _ in base_md]
+    head_ids = [cid for _, cid, _ in head_md]
+    ids_available = (
+        all(cid is not None for cid in base_ids)
+        and all(cid is not None for cid in head_ids)
+    )
+    if ids_available and sorted(base_ids) == sorted(head_ids):
+        # Multiset d'IDs identique : on apparie par ID. Un reorder pur (memes
+        # cellules, ordre different) ne produit plus de faux positifs.
+        base_by_id = {cid: (b_idx, b_src) for b_idx, cid, b_src in base_md}
+        # On itere sur head_md (ordre head, donc h_idx = position actuelle de
+        # la cellule dans le notebook modifie, ce que le reviewer veut voir)
+        # et on retrouve le couple (b_idx, b_src) par ID.
+        for h_idx, h_cid, h_src in head_md:
+            b_idx, b_src = base_by_id[h_cid]
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+    else:
+        # Pas d'IDs exploitables : appariement par index (legacy).
+        for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_md, head_md):
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
     return findings
+
+
+def _emit_cell_finding(b_idx: int, b_src: str,
+                       h_idx: int, h_src: str,
+                       head_cost: dict | None,
+                       findings: list[dict]) -> None:
+    """Emet un finding TRUNCATED_CELL ou FRONTMATTER_COST_DIVERGENCE si applicable.
+
+    Facteur commun aux deux strategies d'appariement (ID stable / index legacy)
+    dans ``_compare_cells``. La migration frontmatter cost (#8919) et le strip
+    des cles informatives colocataires (#8921) s'appliquent identiquement.
+    """
+    # Migration frontmatter cost -> metadata.cost (#8919) : si la cellule base
+    # porte un bloc cost equivalent au head_cost, on retire le frontmatter du
+    # ratio. #8921-4 : on ne le fait QUE si aucune cle informative colocataire
+    # (ex: ``notes:``) n'est reste sur le carreau -- sinon le strip retirait le
+    # frontmatter ENTIER et faisait disparaitre ``notes:`` en silence (Claudish).
+    b_src_ratio = b_src
+    divergent_cost: list[str] | None = None
+    base_cost = _parse_frontmatter_cost(b_src)
+    if base_cost is not None:
+        equiv, divergent = _cost_equivalent(base_cost, head_cost)
+        unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
+                       if not (head_cost and k in head_cost)]
+        if equiv and not unmigrated:
+            b_src_ratio = FRONTMATTER_RE.sub("", b_src, count=1)
+        else:
+            divergent_cost = divergent + unmigrated
+    b_norm = _norm_len(b_src_ratio)
+    h_norm = _norm_len(h_src)
+    if b_norm < MIN_ORIG_CHARS:
+        return  # cellule d'origine trop courte pour qu'une chute soit du bruit
+    if h_norm < DROP_THRESHOLD * b_norm:
+        ratio = (h_norm / b_norm) if b_norm else 0.0
+        findings.append({
+            "kind": "TRUNCATED_CELL",
+            "cell_idx": h_idx,
+            "before_chars": b_norm,
+            "after_chars": h_norm,
+            "ratio": round(ratio, 3),
+            "before_excerpt": b_src.strip().split("\n", 1)[0][:90],
+            "after_excerpt": h_src.strip().split("\n", 1)[0][:90],
+        })
+    if divergent_cost:
+        # Le bloc cost a disparu de la cellule SANS migration equivalente :
+        # perte reelle de cost (le squelette metadata.cost ne suffit pas).
+        findings.append({
+            "kind": "FRONTMATTER_COST_DIVERGENCE",
+            "cell_idx": h_idx,
+            "divergent_fields": divergent_cost,
+        })
 
 
 def _compare_motifs(base_counts: dict, head_counts: dict) -> list[dict]:
@@ -527,7 +580,7 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     # anti-auto-desarmement (#8655/#8662) sur toute creation de notebook.
     if not path_exists_at_ref(nb_path, base_ref):
         head_md_new = extract_md_cells(nb_head)
-        head_total_new = sum(_norm_len(s) for _, s in head_md_new)
+        head_total_new = sum(_norm_len(s) for _, _, s in head_md_new)
         return {
             "notebook": str(nb_path),
             "base_ref": base_ref,
@@ -558,8 +611,8 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None) -> 
     findings.extend(_compare_cells(base_md, head_md, head_cost))
     findings.extend(_compare_motifs(_collect_motifs(nb_base), _collect_motifs(nb_head)))
 
-    base_total = sum(_norm_len(s) for _, s in base_md)
-    head_total = sum(_norm_len(s) for _, s in head_md)
+    base_total = sum(_norm_len(s) for _, _, s in base_md)
+    head_total = sum(_norm_len(s) for _, _, s in head_md)
 
     return {
         "notebook": str(nb_path),

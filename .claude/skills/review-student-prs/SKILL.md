@@ -129,7 +129,7 @@ For each VALID exercise (skip if `--dry-run`):
    - Reviewed and validated during TP <date>
 
    Co-Authored-By: <Student Name> <student-email-if-available>
-   Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+   Co-Authored-By: Claude-Code <noreply@anthropic.com>
    ```
 
 5. **Push** to main (after all PRs for the session are processed)
