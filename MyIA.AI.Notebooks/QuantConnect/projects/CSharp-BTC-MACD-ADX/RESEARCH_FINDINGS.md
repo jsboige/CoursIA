@@ -389,7 +389,7 @@ But remember: **Complexity is not always better**. The research proves it.
 **Execution Time**: ~3 minutes
 **Data Source**: Yahoo Finance (BTC-USD)
 **Period**: 2019-01-01 → 2026-02-17 (2417 days)
-**Author**: Claude Opus 4.6 (qc-research-notebook agent)
+**Author**: Claude-Code (qc-research-notebook agent)
 **Date**: 2026-02-17
 
 ---
