@@ -119,6 +119,20 @@ chemin (champ mort). La leçon : le schéma n'est pas le formulaire — les
 trois grandeurs (chemins, coût LLM, champs morts) sont émergentes. stdlib
 pure, aucune clé, aucun réseau.
 
+Un dernier notebook compagnon [`mesurer-la-derive-dun-copilot.ipynb`](mesurer-la-derive-dun-copilot.ipynb)
+traite le **Copilot Gutenberg** (Parcours 1) — la seconde et dernière
+fonctionnalité GenAI cœur qui restait sans notebook. Thèse : *le gate humain
+à chaque étape ne protège pas de la dérive d'une chaîne*. Les six
+transformations du Copilot (résumé, enhancement, traduction, rewriting,
+image, alt text) ont des effets informationnels distincts — certaines
+ajoutent, d'autres réécrivent, d'autres **détruisent** (résumé, traduction).
+Le notebook modélise chaque transformation comme une fonction vectorielle
+déterministe et mesure le **rappel de l'original** (projection normalisée,
+bornée) après des séquences validées : une chaîne de transformations
+destructrices complémentaires perd environ la moitié du document, quand une
+chaîne de réversibles préserve 100 % — alors que chaque étape, isolément,
+passait le gate. numpy, sans clé ni réseau ; fixture synthétique 100 %.
+
 ---
 
 ## Sections
@@ -238,6 +252,8 @@ attendues.
   fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
 - [`auditer-un-formulaire-conditionnel.ipynb`](auditer-un-formulaire-conditionnel.ipynb) —
   AI Forms conditionnelles comme machine à états, énumération des chemins et champs morts
+- [`mesurer-la-derive-dun-copilot.ipynb`](mesurer-la-derive-dun-copilot.ipynb) —
+  Copilot Gutenberg : dérive d'une chaîne de transformations, le gate par étape ne protège pas la chaîne
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

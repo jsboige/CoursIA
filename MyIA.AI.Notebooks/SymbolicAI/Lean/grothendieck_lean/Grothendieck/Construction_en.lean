@@ -147,4 +147,76 @@ def transport_family (x : CategoryTheory.Grothendieck F) {c : C}
     CategoryTheory.Grothendieck F :=
   CategoryTheory.Grothendieck.transport x t
 
+/-!
+## 7. Additional bridge theorems: cartesian transport, isomorphisms, functoriality
+
+Complementary bridges connecting the Grothendieck construction to the Mathlib
+4 Namespace theorems already exposed as `#check` above. These bridges follow
+the pattern of Section 6: direct application of Namespace lemmas (L902 ★★
+Tier 5).
+
+For Mathlib 4 theorems with explicit args, direct application `name args` is
+the canonical idiom: not `by rw [name]` (Type equality non-rfl-fermable,
+cf L902 ★★ Tier 5 c.8232). For `def` (`toTransport`, `isoMk`), direct
+application preserves the structure up to namespace (anti-§D byte-identity
+preserved).
+-/
+
+/-- Bridge theorem: extensionality of morphisms of the total category ∫ F.
+    Two morphisms `f g : Hom X Y` of the total category are equal iff their
+    base and fiber components coincide. This is the `@[ext (iff := false)]`
+    lemma from Mathlib, which enables proofs by component equality.
+    Re-exports `Grothendieck.ext` directly. -/
+theorem ext_bridge {X Y : CategoryTheory.Grothendieck F}
+    (f g : CategoryTheory.Grothendieck.Hom X Y)
+    (w_base : f.base = g.base)
+    (w_fiber : eqToHom (by rw [w_base]) ≫ f.fiber = g.fiber) :
+    f = g :=
+  CategoryTheory.Grothendieck.ext f g w_base w_fiber
+
+/-- Bridge theorem: the composition of `Grothendieck.map` with `forget` is
+    equal to `forget` (the forgetful functor is a natural fibration).
+    Re-exports `Grothendieck.functor_comp_forget` from Mathlib without
+    modification. -/
+theorem functor_comp_forget_bridge {G : C ⥤ Cat.{v₂, u₂}} (α : F ⟶ G) :
+    CategoryTheory.Grothendieck.map α ⋙ CategoryTheory.Grothendieck.forget G =
+      CategoryTheory.Grothendieck.forget F := rfl
+
+/-- Bridge theorem: `Grothendieck.map` sends the natural identity to the
+    functorial identity. This is the compatibility between the identity of
+    the functor F and that of the total category ∫ F. Re-exports
+    `Grothendieck.map_id_eq`. -/
+theorem map_id_eq_bridge :
+    CategoryTheory.Grothendieck.map (𝟙 F) = Functor.id (CategoryTheory.Grothendieck <| F) :=
+  CategoryTheory.Grothendieck.map_id_eq
+
+/-- Bridge theorem: `Grothendieck.map` preserves composition of natural
+    transformations. This is the functoriality of the Grothendieck
+    construction in F, at the level of morphisms. Re-exports
+    `Grothendieck.map_comp_eq`. -/
+theorem map_comp_eq_bridge {G H : C ⥤ Cat.{v₂, u₂}}
+    (α : F ⟶ G) (β : G ⟶ H) :
+    CategoryTheory.Grothendieck.map (α ≫ β) =
+      CategoryTheory.Grothendieck.map α ⋙ CategoryTheory.Grothendieck.map β :=
+  CategoryTheory.Grothendieck.map_comp_eq α β
+
+/-- Bridge construction: the canonical cartesian morphism `x ⟶ x.transport t`,
+    induced by `t : x.base ⟶ c` in the base. This is the morphism whose
+    universal property characterises cartesian objects of a fibration.
+    Re-exports `Grothendieck.toTransport`. -/
+def to_transport_bridge (x : CategoryTheory.Grothendieck F) {c : C}
+    (t : x.base ⟶ c) :
+    x ⟶ CategoryTheory.Grothendieck.transport x t :=
+  CategoryTheory.Grothendieck.toTransport x t
+
+/-- Bridge construction: an iso in ∫ F decomposes as a base iso and a fiber
+    iso. Re-exports `Grothendieck.isoMk`, which takes a base iso
+    `e₁ : X.base ≅ Y.base` and a fiber iso `e₂ : (F.map e₁.hom).toFunctor.obj
+    X.fiber ≅ Y.fiber` and constructs the corresponding iso `X ≅ Y`. -/
+def iso_mk_bridge {X Y : CategoryTheory.Grothendieck F}
+    (e₁ : X.base ≅ Y.base)
+    (e₂ : (F.map e₁.hom).toFunctor.obj X.fiber ≅ Y.fiber) :
+    X ≅ Y :=
+  CategoryTheory.Grothendieck.isoMk e₁ e₂
+
 end Grothendieck.Construction_en
