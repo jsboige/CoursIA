@@ -201,4 +201,59 @@ theorem pullback_map_comp {X Y : Scheme.{u}} (f : X ⟶ Y)
         (pullback f : Y.Modules ⥤ X.Modules).map ψ :=
   (pullback f : Y.Modules ⥤ X.Modules).map_comp φ ψ
 
+
+/-- Bridge : l'identité de la catégorie `X.Modules` appliquée aux sections
+    vaut l'identité de l'anneau de sections. C'est le lemme
+    `AlgebraicGeometry.Scheme.Modules.Hom.id_app` de Mathlib 4 :
+    `((𝟙 M : M ⟶ N).app U = 𝟙 _)`. -/
+
+theorem id_app_field (X : Scheme.{u}) (M : X.Modules) (U : X.Opens) :
+    (𝟙 M : M ⟶ M).app U = 𝟙 (Γ(M, U)) :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.id_app X U M
+
+/-- Bridge : la composition des morphismes de `X.Modules` est calculée
+    pointwise comme la composition des morphismes de sections. C'est le lemme
+    `Hom.comp_app` de Mathlib 4 : `(φ ≫ ψ).app U = φ.app U ≫ ψ.app U`. -/
+
+theorem comp_app_field (X : Scheme.{u}) {M N K : X.Modules} (φ : M ⟶ N)
+    (ψ : N ⟶ K) (U : X.Opens) :
+    (φ ≫ ψ).app U = φ.app U ≫ ψ.app U :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.comp_app X M N K U φ ψ
+
+/-- Bridge : l'addition des morphismes de `X.Modules` est calculée
+    pointwise comme l'addition des morphismes de sections. C'est le lemme
+    `Hom.add_app` de Mathlib 4 : `(φ + ψ).app U = φ.app U + ψ.app U`. -/
+
+theorem add_app_field (X : Scheme.{u}) {M N : X.Modules} (φ ψ : M ⟶ N)
+    (U : X.Opens) :
+    (φ + ψ).app U = φ.app U + ψ.app U :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.add_app X M N U φ ψ
+
+/-- Bridge : l'action scalaire d'une section de l'anneau structural sur un
+    morphisme de `X.Modules` est calculée pointwise. C'est le lemme
+    `Hom.app_smul` de Mathlib 4 : `φ.app U (r • x) = r • φ.app U x`. -/
+
+theorem app_smul_field (X : Scheme.{u}) {M N : X.Modules} (φ : M ⟶ N)
+    (U : X.Opens) (r : Γ(X, U)) (x : Γ(M, U)) :
+    φ.app U (r • x) = r • φ.app U x :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.app_smul X M N U φ r x
+
+/-- Bridge : le morphisme nul `0 : M ⟶ N` applique à l'identité nulle sur
+    les sections. C'est le lemme `Hom.zero_app` de Mathlib 4 :
+    `(0 : M ⟶ N).app U = 0`. -/
+
+theorem zero_app_field (X : Scheme.{u}) {M N : X.Modules} (U : X.Opens) :
+    (0 : M ⟶ N).app U = 0 :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.zero_app X M N U
+
+/-- Bridge : un morphisme de `X.Modules` est un isomorphisme ssi ses
+    composantes sur chaque ouvert sont des isomorphismes d'anneaux de
+    sections. C'est le lemme `Hom.isIso_iff_isIso_app` de Mathlib 4 :
+    `IsIso φ ↔ ∀ U, IsIso (φ.app U)`. -/
+
+theorem isIso_iff_isIso_app_field (X : Scheme.{u}) {M N : X.Modules}
+    (φ : M ⟶ N) :
+    IsIso φ ↔ ∀ (U : X.Opens), IsIso (φ.app U) :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.isIso_iff_isIso_app X M N φ
+
 end Grothendieck.DirectImage
