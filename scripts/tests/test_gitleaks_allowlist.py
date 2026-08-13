@@ -112,7 +112,13 @@ REAL_KEYS = [
     # real Stripe shape (random entropy, distinct from the TEST-key stopword).
     "sk_" + "live_abcDEF1234567890ghijKLmnopQRSTuvwx",
     # real OpenAI shape.
-    "sk-pro" + "j-AbCdEf1234567890GhIjKlMnOpQrStUvWxYz",
+    # NOTE: do NOT use 'AbCdEf1234567890' here -- it is a substring of the
+    # .gitleaks.toml [allowlist].stopwords entry that suppresses the
+    # AgentSafetyAnalyzerTests.cs placeholder fixtures (#10575 AGSEC005).
+    # Using it here would DISARM the positive control (test_real_keys_contain_no_stopword
+    # would FAIL because a real-looking key gets substring-suppressed).
+    # Substituted to 'XyZwVu9876543210' -- c.1331+106 fix (PR #10691).
+    "sk-pro" + "j-XyZwVu9876543210GhIjKlMnOpQrStUvWxYz",
     # JWT HS256 real-formed (header.payload.signature). #10201 keeps the jwt
     # detector ARMED by deliberately NOT allowlisting the standard header
     # (it is a prefix of every real JWT; substring-allowlisting it disarms the
