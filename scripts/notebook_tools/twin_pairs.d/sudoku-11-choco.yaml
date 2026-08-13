@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java Choco-Solver : C# branche IKVM-Choco via DLL `org.chocosolver.solver.dll` trackee sur disque (Choco 4.10.17, IKVM 8.15.0) + 5 `using org.choco.*` explicites + 18 refs `IKVM` runtime + cells 12. Python branche JPype + 11 refs `choco` + 19 refs `jpype` + `from org.chocosolver.solver import Model` runtime. Meme moteur Java Choco-Solver 4.10.17 des deux cotes, accessible via deux chemins distincts (JPype-JVM-runtime cote Python, IKVM-bytecode .NET cote C#). Verifie firsthand (c.234 audit 2026-08-12, myia-po-2023:CoursIA-2) : DLL trackee, csproj IKVM-Choco deja construit (c.218 PR #10561 \"tranche 5 CSP\" a couvert 5 paires dont Choco-bridgeable), kernel .NET Interactive execute le twin C#. Pont IKVM-bytecode .NET vs JPype-JVM-runtime sur le meme moteur Java. Verdict SOTA-OK : Choco-Solver est la SOTA CSP solver pour les deux stacks, aucun autre solveur ne le remplacerait avantageusement. Build IKVM deja fait sur le runner (DLL trackee = artefact build, pas a reconstruire)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
