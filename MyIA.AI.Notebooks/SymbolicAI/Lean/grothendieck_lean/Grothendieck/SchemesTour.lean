@@ -183,7 +183,7 @@ theorem scheme_forgetToTop_comp_forget :
     `(f ≫ g)⁻¹ᵁ U = f⁻¹ᵁ (g⁻¹ᵁ U)`. -/
 theorem scheme_comp_preimage {X Y Z : Scheme} (f : X ⟶ Y) (g : Y ⟶ Z) (U : Z.Opens) :
     (f ≫ g) ⁻¹ᵁ U = f ⁻¹ᵁ (g ⁻¹ᵁ U) :=
-  Scheme.comp_preimage f g U
+  Scheme.Hom.comp_preimage f g U
 
 /-- **Identité du foncteur Spec sur les objets.** Le morphisme de schémas
     `Spec.topMap (𝟙 R)` coïncide avec l'identité sur `Spec R` — c'est la
