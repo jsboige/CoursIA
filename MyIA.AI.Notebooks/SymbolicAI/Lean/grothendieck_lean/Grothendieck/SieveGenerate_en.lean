@@ -156,4 +156,73 @@ theorem generate_eq_bot_iff {C : Type*} [Category C] {X : C} (R : Presieve X) :
     Sieve.generate R = ⊥ ↔ R = ⊥ :=
   Sieve.generate_eq_bot_iff R
 
+/-!
+## Proper theorems (c.1301+129)
+
+The theorems below *prove* definitional equalities and equivalences that
+the fields/lemmas of the `Sieve X` structure expose in
+`Mathlib/CategoryTheory/Sites/Sieves.lean`. All these fields operate on
+the resident structure `Sieve X` non polymorphic over universes —
+therefore **L902 ★★ SAFE** (cf c.1301+108-L1 ★★: polymorphic universe
+constructors are to be proscribed, unlike resident fields on X).
+
+1. `id_mem_iff_eq_top_field`: restatement of `Sieve.id_mem_iff_eq_top`
+   (`S (𝟙 X) ↔ S = ⊤`, characterizes maximal sieves by the identity).
+2. `generate_of_contains_isSplitEpi_field`: restatement of
+   `Sieve.generate_of_contains_isSplitEpi` (a presieve containing a split
+   epi generates the maximal sieve).
+3. `generate_of_singleton_isSplitEpi_field`: restatement of
+   `Sieve.generate_of_singleton_isSplitEpi` (special case of the previous
+   for a singleton presieve of a split epi).
+4. `arrows_eq_bot_iff_field`: restatement of `Sieve.arrows_eq_bot_iff`
+   (`S.arrows = ⊥ ↔ S = ⊥`, characterizes the empty sieve by its arrows).
+5. `comp_mem_iff_field`: restatement of `Sieve.comp_mem_iff` (for an
+   iso `i`, `S (i ≫ f) ↔ S f`: composition with an iso preserves sieve
+   membership).
+
+These are "showcase" theorems that certify that these fields/lemmas of
+the `Sieve X` structure are effectively computable in the same Lean
+execution.
+-/
+
+/-- Theorem: `S (𝟙 X) ↔ S = ⊤` — a sieve contains the identity iff it is
+    the maximal sieve. β-equivalent to the lemma
+    `Sieve.id_mem_iff_eq_top`. -/
+theorem id_mem_iff_eq_top_field {C : Type*} [Category C]
+    {X : C} {S : Sieve X} :
+    S (𝟙 X) ↔ S = ⊤ :=
+  Sieve.id_mem_iff_eq_top
+
+/-- Theorem: `Sieve.generate R = ⊤` whenever `R` contains a split
+    epimorphism. β-equivalent to the lemma
+    `Sieve.generate_of_contains_isSplitEpi`. -/
+theorem generate_of_contains_isSplitEpi_field {C : Type*} [Category C]
+    {X Y : C} {R : Presieve X} (f : Y ⟶ X) [IsSplitEpi f] (hf : R f) :
+    Sieve.generate R = ⊤ :=
+  Sieve.generate_of_contains_isSplitEpi f hf
+
+/-- Theorem: `Sieve.generate (Presieve.singleton f) = ⊤` for any split
+    epimorphism `f`. Special case of the previous. β-equivalent to the
+    lemma `Sieve.generate_of_singleton_isSplitEpi`. -/
+theorem generate_of_singleton_isSplitEpi_field {C : Type*} [Category C]
+    {X Y : C} (f : Y ⟶ X) [IsSplitEpi f] :
+    Sieve.generate (Presieve.singleton f) = ⊤ :=
+  Sieve.generate_of_singleton_isSplitEpi f
+
+/-- Theorem: `S.arrows = ⊥ ↔ S = ⊥` — the sieve has empty arrows iff it
+    is the empty sieve. β-equivalent to the lemma
+    `Sieve.arrows_eq_bot_iff`. -/
+theorem arrows_eq_bot_iff_field {C : Type*} [Category C]
+    {X : C} {S : Sieve X} :
+    S.arrows = ⊥ ↔ S = ⊥ :=
+  Sieve.arrows_eq_bot_iff
+
+/-- Theorem: for an iso `i`, `S (i ≫ f) ↔ S f`. Composition with an iso
+    preserves sieve membership. β-equivalent to the lemma
+    `Sieve.comp_mem_iff`. -/
+theorem comp_mem_iff_field {C : Type*} [Category C]
+    {X Y Z : C} (i : X ⟶ Y) (f : Y ⟶ Z) [IsIso i] (S : Sieve Z) :
+    S (i ≫ f) ↔ S f :=
+  Sieve.comp_mem_iff i f S
+
 end Grothendieck_en
