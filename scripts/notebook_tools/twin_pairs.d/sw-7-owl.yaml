@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7b-Python-OWL.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "OWL dispose de 2 moteurs SOTA de reference, un par ecosysteme : Python = owlready2 (Lamy 2017, reference OWL en Python, world/Thing/Property API nativement orientee OWL ; citee par la doc officielle W3C OWL RL examples) ; .NET = dotNetRDF (VDS.RDF.Ontology, librairie .NET de reference pour RDF+OWL depuis 2010, ~100k lignes, OntologyGraph + OwlReasoner). Les 2 jumeaux branchent leur moteur SOTA natif respectif sur le meme enseignement OWL (classes/proprietes/restrictions/axiomes). Verdict SOTA-OK des deux cotes."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
