@@ -121,4 +121,69 @@ theorem top_mem_trivial {C : Type*} [Category C] (X : C) :
     (⊤ : Sieve X) ∈ GrothendieckTopology.trivial C X :=
   (GrothendieckTopology.trivial C).top_mem X
 
+/-!
+## Proper theorems (c.1301+128)
+
+The theorems below *prove* definitional equalities that the fields/lemmas
+of the `GrothendieckTopology C` structure expose. All these fields operate
+on the resident structure `GrothendieckTopology C` non polymorphic over
+universes — therefore **L902 ★★ SAFE** (cf c.1301+108-L1 ★★: polymorphic
+universe constructors are to be proscribed, unlike resident fields on C).
+
+1. `covering_of_eq_top_field`: restatement of the lemma `covering_of_eq_top`
+   (forward: `S = ⊤ → S ∈ J X`).
+2. `covers_iff_field`: restatement of the lemma `covers_iff`
+   (`J.Covers S f ↔ S.pullback f ∈ J Y`, reflexive in `Iff.rfl`).
+3. `covering_iff_covers_id_field`: restatement of `covering_iff_covers_id`
+   (`S ∈ J X ↔ J.Covers S (𝟙 X)`, proved by `simp [covers_iff]`).
+4. `top_covering_field`: restatement of `top_covering`
+   (`S ∈ (⊤ : GrothendieckTopology C) X`, trivial by `⟨⟩`).
+5. `bot_covering_iff_top_field`: restatement of `bot_covering`
+   (`S ∈ (⊥ : GrothendieckTopology C) X ↔ S = ⊤`, symm of `trivial_covering`).
+
+These are "showcase" theorems that certify the fields/lemmas of the
+`GrothendieckTopology C` structure are effectively computable in the same
+Lean execution.
+-/
+
+/-- Theorem: forward direction of `top_mem` — if a sieve `S` equals the
+    maximal sieve `⊤`, then `S` covers `X` for any topology `J`. β-equivalent
+    to the lemma `GrothendieckTopology.covering_of_eq_top`. -/
+theorem covering_of_eq_top_field {C : Type*} [Category C]
+    {J : GrothendieckTopology C} {X : C} {S : Sieve X}
+    (h : S = ⊤) : S ∈ J X :=
+  J.covering_of_eq_top h
+
+/-- Theorem: `J.Covers S f` iff the pullback of `S` by `f` covers `Y`.
+    β-equivalent to the lemma `GrothendieckTopology.covers_iff` (reflexive
+    in `Iff.rfl`). -/
+theorem covers_iff_field {C : Type*} [Category C]
+    {J : GrothendieckTopology C} {X Y : C} {S : Sieve X} (f : Y ⟶ X) :
+    J.Covers S f ↔ S.pullback f ∈ J Y :=
+  J.covers_iff S f
+
+/-- Theorem: a sieve `S` covers `X` iff `J.Covers S (𝟙 X)`. β-equivalent
+    to the lemma `GrothendieckTopology.covering_iff_covers_id` (proved by
+    `simp [covers_iff]`). -/
+theorem covering_iff_covers_id_field {C : Type*} [Category C]
+    {J : GrothendieckTopology C} {X : C} {S : Sieve X} :
+    S ∈ J X ↔ J.Covers S (𝟙 X) :=
+  J.covering_iff_covers_id S
+
+/-- Theorem: any sieve `S` belongs to the discrete topology (⊤) at any
+    object. β-equivalent to the lemma `GrothendieckTopology.top_covering`
+    (trivial by `⟨⟩`). -/
+theorem top_covering_field {C : Type*} [Category C]
+    {X : C} {S : Sieve X} :
+    S ∈ (⊤ : GrothendieckTopology C) X :=
+  GrothendieckTopology.top_covering
+
+/-- Theorem: a sieve `S` belongs to the trivial topology (⊥) at `X` iff
+    `S = ⊤`. β-equivalent to the lemma `GrothendieckTopology.bot_covering`
+    (symm of `trivial_covering`). -/
+theorem bot_covering_iff_top_field {C : Type*} [Category C]
+    {X : C} {S : Sieve X} :
+    S ∈ (⊥ : GrothendieckTopology C) X ↔ S = ⊤ :=
+  GrothendieckTopology.bot_covering
+
 end Grothendieck_en

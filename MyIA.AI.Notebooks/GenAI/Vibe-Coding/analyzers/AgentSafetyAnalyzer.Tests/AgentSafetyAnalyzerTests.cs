@@ -388,6 +388,87 @@ class C {
     }
 
 
+
+    // -------- AGSEC005 CodeFixProvider (sub-grain #10500f) --------
+
+    [Fact]
+    public async Task AGSEC005_CodeFix_ReplacesOpenAIKeyWithEnvVarLookup()
+    {
+        const string before = @"
+class C {
+    const string openaiKey = ""sk-proj-AbCdEf1234567890abcdefghij"";
+}";
+
+        var document = await CreateDocumentAsync(before);
+        var analyzerDiags = await GetDiagnosticsFromDocumentAsync(document);
+        var rule005 = analyzerDiags.First(d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+
+        var actions = new List<CodeAction>();
+        var context = new CodeFixContext(document, rule005, (a, _) => actions.Add(a), CancellationToken.None);
+        var fixProvider = new HardcodedCredentialCodeFixProvider();
+        await fixProvider.RegisterCodeFixesAsync(context);
+
+        var action = Assert.Single(actions);
+        var operations = await action.GetOperationsAsync(CancellationToken.None);
+        var applyOperation = Assert.Single(operations.OfType<ApplyChangesOperation>());
+
+        var newSolution = applyOperation.ChangedSolution;
+        var newDocument = newSolution.GetDocument(document.Id);
+        var newText = await newDocument!.GetTextAsync();
+
+        Assert.DoesNotContain("\"sk-proj-AbCdEf1234567890abcdefghij\"", newText.ToString());
+        Assert.Contains("OPENAI_API_KEY", newText.ToString());
+        Assert.Contains("Environment.GetEnvironmentVariable", newText.ToString());
+        Assert.Contains("?? \"\"", newText.ToString());
+    }
+
+    [Fact]
+    public async Task AGSEC005_CodeFix_PicksCorrectEnvVarPerProvider()
+    {
+        var cases = new[]
+        {
+            ("\"ghp_AbCdEf1234567890abcdefghijklmnopqrstUV\"", "GITHUB_TOKEN"),
+            ("\"AKIAIOSFODNN7EXAMPLE\"",                          "AWS_ACCESS_KEY_ID"),
+            ("\"sk-ant-api03-AbCdEf1234567890abcdefghijklmnopqr\"", "ANTHROPIC_API_KEY"),
+        };
+
+        foreach (var (literal, expectedEnvVar) in cases)
+        {
+            var source = $"class C {{ const string k = {literal}; }}";
+            var document = await CreateDocumentAsync(source);
+            var analyzerDiags = await GetDiagnosticsFromDocumentAsync(document);
+            var rule005 = analyzerDiags.First(d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+
+            var actions = new List<CodeAction>();
+            var context = new CodeFixContext(document, rule005, (a, _) => actions.Add(a), CancellationToken.None);
+            var fixProvider = new HardcodedCredentialCodeFixProvider();
+            await fixProvider.RegisterCodeFixesAsync(context);
+
+            var action = Assert.Single(actions);
+            var operations = await action.GetOperationsAsync(CancellationToken.None);
+            var applyOperation = Assert.Single(operations.OfType<ApplyChangesOperation>());
+
+            var newSolution = applyOperation.ChangedSolution;
+            var newDocument = newSolution.GetDocument(document.Id);
+            var newText = await newDocument!.GetTextAsync();
+
+            Assert.Contains(expectedEnvVar, newText.ToString());
+            Assert.DoesNotContain(literal, newText.ToString());
+        }
+    }
+
+    [Fact]
+    public async Task AGSEC005_CodeFix_DoesNotMatchLiteralWithoutKnownPrefix()
+    {
+        const string source = @"
+class C {
+    const string greeting = ""hello world"";
+}";
+        var document = await CreateDocumentAsync(source);
+        var analyzerDiags = await GetDiagnosticsFromDocumentAsync(document);
+        Assert.DoesNotContain(analyzerDiags, d => d.Id == AgentSafetyAnalyzer.AGSEC005);
+    }
+
     // -------- Helpers --------
 
     private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsAsync(string source)

@@ -174,4 +174,60 @@ theorem sieve_generate_covering {C : Type*} [Category C]
     Sieve.generate R ∈ Coverage.toGrothendieck K X :=
   Coverage.Saturate.of _ _ hR
 
+/-!
+## Théorèmes propres (c.1301+125)
+
+Les théorèmes ci-dessous *prouvent* des égalités définitionnelles que les
+`def`s et `lemma`s Mathlib exposent dans `CategoryTheory.Sites.Coverage` :
+`Coverage.toGrothendieck` (β-réduction définitionnelle via `Coverage.copy`),
+`Coverage.mem_toGrothendieck` (β-réduction vers `Saturate`),
+`Coverage.toGrothendieck_toPrecoverage` (relation entre `toGrothendieck`
+post-extends et `toPrecoverage.toGrothendieck`).
+
+Toutes ces `def`s/`lemma`s opèrent sur des structures résidentes
+`(C : Type u) [Category C]` non polymorphes d'univers — donc
+**L902 ★★ SAFE** (cf. c.1301+108-L1 ★★ : les constructors polymorphes
+d'univers sont à proscrire, contrairement aux fields résidents sur C).
+
+1. `coverageToTopology_eq_toGrothendieck` : β-réduction du `abbrev`
+   `coverageToTopology` (corps de l'abbrev = projection définitionnelle
+   du `def` `Coverage.toGrothendieck K`).
+2. `mem_toGrothendieck_iff` : restatement de `Coverage.mem_toGrothendieck`
+   qui est une β-réduction (`S ∈ K.toGrothendieck X ↔ Saturate K X S`).
+3. `toGrothendieck_toPrecoverage` : restatement du lemma
+   `Coverage.toGrothendieck_toPrecoverage` (relation entre la version
+   `extends`-induite et la version via `toPrecoverage`).
+
+Ce sont des théorèmes « vitrines » qui certifient que les bridges et les
+fields des structures résidentes `Coverage C` et `GrothendieckTopology C`
+sont effectivement calculables dans la même exécution Lean.
+-/
+
+/-- Théorème : le bridge `coverageToTopology` (défini comme
+    `Coverage.toGrothendieck K`) est β-équivalent à l'application
+    `Coverage.toGrothendieck K` (préfixe du même `def`). -/
+theorem coverageToTopology_eq_toGrothendieck {C : Type*} [Category C]
+    (K : Coverage C) :
+    coverageToTopology K = Coverage.toGrothendieck K := by
+  show K.toPrecoverage.toGrothendieck.copy _ _ = K.toPrecoverage.toGrothendieck.copy _ _
+  rfl
+
+/-- Théorème : restatement de `Coverage.mem_toGrothendieck` (ligne 262
+    de Mathlib) qui est une β-réduction directe
+    (`S ∈ K.toGrothendieck X ↔ Saturate K X S`). -/
+theorem mem_toGrothendieck_iff {C : Type*} [Category C]
+    (K : Coverage C) {X : C} {S : Sieve X} :
+    S ∈ K.toGrothendieck X ↔ Coverage.Saturate K X S :=
+  Coverage.mem_toGrothendieck
+
+/-- Théorème : restatement de `Coverage.toGrothendieck_toPrecoverage`
+    (ligne 389 de Mathlib) qui établit la cohérence entre la
+    `Coverage.toGrothendieck` post-extends et l'application
+    `toPrecoverage.toGrothendieck` — c'est la clé du lemme
+    `saturate_iff_saturate_toPrecoverage`. -/
+theorem toGrothendieck_toPrecoverage {C : Type*} [Category C]
+    (K : Coverage C) :
+    K.toPrecoverage.toGrothendieck = K.toGrothendieck :=
+  Coverage.toGrothendieck_toPrecoverage K
+
 end Grothendieck
