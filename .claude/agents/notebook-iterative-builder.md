@@ -673,7 +673,7 @@ if auto_commit and current_score >= quality_target:
 - Cells modified: {cells_modified}
 - Cells added: {cells_added}
 
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+Co-Authored-By: Claude-Code <noreply@anthropic.com>
 """
 
     run_command(f"git add {notebook_path}")

@@ -324,4 +324,76 @@ noncomputable def dense_functor_left_kan_extension_iso_id (F : C ⥤ D) [F.IsDen
     F.leftKanExtension F ≅ 𝟭 D :=
   CategoryTheory.Functor.IsDense.leftKanExtensionIso F
 
+/-!
+## 9. Ponts additionnels : factorisation duale, bijection naturelle, densité Yoneda
+
+Les 4 ponts suivants complètent le tableau des lemmes Mathlib 4 fondamentaux
+sur les extensions de Kan, en couvrant les branches symétriques des bridges
+existants (10 → 14 theoremes/decls) :
+  - `kan_lift_fac` : dual côté **droite** de `kan_descent_fac` — la factorisation
+    universelle d'un Kan droite vérifie sa condition de factorisation.
+  - `kan_right_hom_equiv` : bijection naturelle `(G ⟶ F') ≃ (L ⋙ G ⟶ F)` pour
+    une Kan droite — symétrique pointwise du `homEquiv` de l'adjonction.
+  - `dense_left_kan_unit_iso` : pour un foncteur dense `F`, l'unité de son
+    extension de Kan gauche le long de lui-même composée avec l'isomorphisme
+    `leftKanExtension F ≅ 𝟭 D` vaut `rightUnitor.inv` (NatTrans-level).
+  - `dense_left_kan_unit_iso_app` : version pointwise du précédent, descendu
+    à `app X` pour `X : C` — la cohérence vue sur chaque objet.
+
+Pattern winner (L902 ★★ c.8261) : univers explicites, alias directs Mathlib,
+signatures alignées sur le lemme source. Pour les lemmes dans `section`
+Mathlib (lift/homEquiv sont sous `variable (F') {L F} (α) [IsRightKanExtension α]`)
+on **doit** passer toutes les variables en argument.
+-/
+
+/-- Pont : dual côté **droite** de `kan_descent_fac` — pour une extension de
+    Kan à droite `(F', α)`, la factorisation universelle
+    `liftOfIsRightKanExtension α G β : G ⟶ F'` vérifie sa condition de
+    factorisation `whiskerLeft L (lift) ≫ α = β`. C'est le symétrique
+    de `kan_descent_fac` (côté gauche), démontré par le lemme Mathlib
+    `@[reassoc, simp] lemma CategoryTheory.Functor.liftOfIsRightKanExtension_fac`.
+    Namespace theorem (L902 ★★ Tier 4) — alias direct avec args explicites
+    (lemme dans une `section` Mathlib, toutes les variables doivent
+    être passées). -/
+theorem kan_lift_fac {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
+    (α : L ⋙ F' ⟶ F) [F'.IsRightKanExtension α] (G : D ⥤ H) (β : L ⋙ G ⟶ F) :
+    CategoryTheory.Functor.whiskerLeft L (F'.liftOfIsRightKanExtension α G β) ≫ α = β :=
+  CategoryTheory.Functor.liftOfIsRightKanExtension_fac F' α G β
+
+/-- Pont : bijection naturelle `(G ⟶ F') ≃ (L ⋙ G ⟶ F)` pour une extension
+    de Kan à droite `(F', α)`. Symétrique pointwise de l'homEquiv d'une
+    adjonction — la propriété universelle encodée comme **équivalence**
+    (et non comme deux flèches adjointes). C'est le lemme Mathlib
+    `@[simps!] noncomputable def CategoryTheory.Functor.homEquivOfIsRightKanExtension`.
+    Namespace def (L902 ★★ Tier 4) — alias direct, args explicites. -/
+noncomputable def kan_right_hom_equiv {L : C ⥤ D} {F : C ⥤ H} {F' : D ⥤ H}
+    (α : L ⋙ F' ⟶ F) [F'.IsRightKanExtension α] (G : D ⥤ H) :
+    (G ⟶ F') ≃ (L ⋙ G ⟶ F) :=
+  CategoryTheory.Functor.homEquivOfIsRightKanExtension F' α G
+
+/-- Pont : pour un foncteur dense `F : C ⥤ D`, l'unité de son extension de
+    Kan gauche le long de lui-même composée avec l'isomorphisme
+    `leftKanExtension F ≅ 𝟭 D` vaut `rightUnitor.inv` au niveau NatTrans.
+    C'est le lemme Mathlib
+    `@[reassoc, simp] lemma CategoryTheory.Functor.IsDense.leftKanExtensionUnit_leftKanExtensionIso_hom`.
+    Namespace theorem (L902 ★★ Tier 4) — alias direct. -/
+theorem dense_left_kan_unit_iso (F : C ⥤ D) [F.IsDense] :
+    F.leftKanExtensionUnit F ≫
+      F.whiskerLeft (Functor.IsDense.leftKanExtensionIso F).hom = F.rightUnitor.inv :=
+  CategoryTheory.Functor.IsDense.leftKanExtensionUnit_leftKanExtensionIso_hom F
+
+/-- Pont : version pointwise de `dense_left_kan_unit_iso` — descendu à
+    `app X` pour `X : C`, la cohérence devient :
+    `(leftKanExtensionUnit F).app X ≫ (leftKanExtensionIso F).hom.app (F.obj X)
+     = F.rightUnitor.inv.app X`.
+    C'est le lemme Mathlib
+    `@[reassoc, simp] lemma CategoryTheory.Functor.IsDense.leftKanExtensionUnit_leftKanExtensionIso_hom_app`.
+    Namespace theorem (L902 ★★ Tier 4) — alias direct. Le `{F.IsDense}`
+    implicite est auto-déduit du scope du bridge. -/
+theorem dense_left_kan_unit_iso_app (F : C ⥤ D) [F.IsDense] (X : C) :
+    (F.leftKanExtensionUnit F).app X ≫
+      (Functor.IsDense.leftKanExtensionIso F).hom.app (F.obj X) =
+        F.rightUnitor.inv.app X :=
+  CategoryTheory.Functor.IsDense.leftKanExtensionUnit_leftKanExtensionIso_hom_app F X
+
 end Grothendieck.KanExtensions

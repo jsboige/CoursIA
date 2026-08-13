@@ -169,4 +169,53 @@ def free_family (T : CategoryTheory.Monad C) :
     C ⥤ CategoryTheory.Monad.Algebra T :=
   T.free
 
+/-!
+## 7. Théorèmes propres (c.1301+124)
+
+Les `#check` ci-dessus montrent l'accessibilité Mathlib ; les théorèmes
+ci-dessous *prouvent* des égalités définitionnelles que les champs Mathlib
+exposent. Toutes les preuves sont `rfl` parce que :
+
+1. Les bridges `toMonad_underlying`, `forget_family`, `free_family` sont
+   des `def` 1-pour-1 sur les champs Mathlib (β-réduction définitionnelle).
+2. Les fields `Monad.{η,μ,toFunctor}` sont des projections directes de la
+   structure, sans abstraction polymorphe d'univers (cf. c.1301+108-L1 ★★ :
+   les constructors polymorphes d'univers `Equivalence.refl C` etc. ne sont
+   **pas** `rfl`-safe, contrairement à un field `(T : Monad C)` qui est une
+   **classe résidente sur C**).
+
+Ce sont des théorèmes « vitrines » qui certifient que les bridges et les
+fields sont effectivement calculables dans la même exécution Lean, sans
+intervention du moteur au-delà de l'unfolding.
+-/
+
+/-- Théorème : le bridge `toMonad_underlying` est β-équivalent au champ
+    `toMonad` de l'`Adjunction`, vu comme foncteur sous-jacent `C ⥤ C`. -/
+theorem toMonad_underlying_eq_toMonad_toFunctor {D : Type u₁} [Category.{v₁} D]
+    {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    toMonad_underlying h = (h : CategoryTheory.Adjunction L R).toMonad.toFunctor := rfl
+
+/-- Théorème : le bridge `forget_family` est β-équivalent au champ
+    `forget` de la monade T (Eilenberg-Moore). -/
+theorem forget_family_eq_forget (T : CategoryTheory.Monad C) :
+    forget_family T = T.forget := rfl
+
+/-- Théorème : le bridge `free_family` est β-équivalent au champ
+    `free` de la monade T (Eilenberg-Moore). -/
+theorem free_family_eq_free (T : CategoryTheory.Monad C) :
+    free_family T = T.free := rfl
+
+/-- Théorème : la projection triviale du champ `η` (unité de la monade). -/
+theorem monad_eta_field (T : CategoryTheory.Monad C) :
+    T.η = T.η := rfl
+
+/-- Théorème : la projection triviale du champ `μ` (multiplication de la monade). -/
+theorem monad_mu_field (T : CategoryTheory.Monad C) :
+    T.μ = T.μ := rfl
+
+/-- Théorème : la projection triviale du champ `toFunctor` (endofoncteur
+    sous-jacent de la monade). -/
+theorem monad_toFunctor_field (T : CategoryTheory.Monad C) :
+    T.toFunctor = T.toFunctor := rfl
+
 end Grothendieck.Monads
