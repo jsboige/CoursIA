@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RestoreAdditionalProjectSources></RestoreAdditionalProjectSources>
+    <NoWarn>IKVM0101</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="IKVM" Version="8.14.0" />
+    <PackageReference Include="IKVM.MSBuild" Version="8.14.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Placeholder.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Tweety dialogues shade aggregator built from Java 8 source-recompiled classes
+      (issue #10381, Tweety-8 Agent Dialogues twin).
+
+      Pipeline: the Maven Central agents/prob/dialogues-1.30 jars are bytecode
+      major 59 (Java 15), which IKVM 8.x silently drops. Source-recompile the full
+      dep chain (math/commons/graphs/logics.commons/logics.pl 1.21 + dung/agents/
+      prob/dialogues 1.30) with javac release 8 (c211 dung-1.30 patches reused
+      from rebuild-5shades.sh), then shade into a single Java-8 fat-jar.
+
+      Scan confirmed agents/prob/dialogues-1.30 sources are Java 8 pure (no
+      records, no switch expressions, no var, no Set.of, no instanceof pattern).
+      Only the dung-1.30 layer needs its known c211 patches.
+
+      Build: see rebuild-dialogues.sh recipe.
+      Output: ..\libs\org.tweetyproject.tweety-dialogues-java8-shade.jar
+      (gitignored, rebuildable), then bin\Release\net8.0\org.tweetyproject.tweety-dialogues.dll
+
+      Consumed by Tweety-8-Agent-Dialogues-Csharp.ipynb Tranche 2:
+        #r "org.tweetyproject.tweety-dialogues.dll"
+        org.tweetyproject.agents.dialogues.oppmodels.ArguingAgent
+        org.tweetyproject.agents.dialogues.oppmodels.GroundedGameSystem
+    -->
+    <IkvmReference Include="..\libs\org.tweetyproject.tweety-dialogues-java8-shade.jar">
+      <AssemblyName>org.tweetyproject.tweety-dialogues</AssemblyName>
+      <AssemblyVersion>1.30.0.0</AssemblyVersion>
+      <AssemblyFileVersion>1.30.0.0</AssemblyFileVersion>
+    </IkvmReference>
+  </ItemGroup>
+</Project>

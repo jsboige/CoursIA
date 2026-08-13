@@ -20,10 +20,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 135 |
+| Notebooks | 151 |
 | PRODUCTION | 0 |
-| BETA | 125 |
-| ALPHA | 10 |
+| BETA | 140 |
+| ALPHA | 11 |
 
 ## GenAI (1 notebooks)
 
@@ -77,23 +77,31 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 29 | Lecture Analytique pour Audiobook | BETA | Oui |
 | 30 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
 
-## GenAI/CaseStudies (3 notebooks)
+## GenAI/CaseStudies (6 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Duel Verbal : Barbie vs l'Âne de Shrek | BETA | Non |
-| 2 | Docteur vs ChatGPT : Chatbot medical multi-agent | BETA | Non |
-| 3 | Générateur de Recettes PDF | BETA | Non |
+| 2 | Verbal Duel: Barbie vs Shrek's Donkey | BETA | Non |
+| 3 | Docteur vs ChatGPT : Chatbot medical multi-agent | BETA | Non |
+| 4 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | ALPHA | Non |
+| 5 | Générateur de Recettes PDF | BETA | Non |
+| 6 | PDF Recipe Generator | BETA | Non |
 
-## GenAI/FineTuning (5 notebooks)
+## GenAI/FineTuning (10 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | FT-01 : Introduction au Fine-Tuning | BETA | Non |
-| 2 | FT-02 : QLoRA — Fine-Tuning avec Quantization | BETA | Non |
-| 3 | FT-03 : Supervised Fine-Tuning (SFT) — Instruction Foll | BETA | Non |
-| 4 | FT-04 : RLHF et Alignement — Préférences Humaines et DP | BETA | Non |
-| 5 | FT-05 : Fusion et Routage de Modèles -- Combiner les Ex | BETA | Non |
+| 2 | FT-01: Introduction to Fine-Tuning | BETA | Non |
+| 3 | FT-02 : QLoRA — Fine-Tuning avec Quantization | BETA | Non |
+| 4 | FT-02: QLoRA — Fine-Tuning with Quantization | BETA | Non |
+| 5 | FT-03 : Supervised Fine-Tuning (SFT) — Instruction Foll | BETA | Non |
+| 6 | FT-03: Supervised Fine-Tuning (SFT) — Instruction Follo | BETA | Non |
+| 7 | FT-04 : RLHF et Alignement — Préférences Humaines et DP | BETA | Non |
+| 8 | FT-04: RLHF and Alignment — Human Preferences and DPO | BETA | Non |
+| 9 | FT-05 : Fusion et Routage de Modèles -- Combiner les Ex | BETA | Non |
+| 10 | FT-05: Model Merging and Routing -- Combining Expertise | BETA | Non |
 
 ## GenAI/Image (17 notebooks)
 
@@ -117,19 +125,21 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | 🏭 Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une | ALPHA | Non |
 
-## GenAI/Open-WebUI (7 notebooks)
+## GenAI/Plateformes-Conversationnelles (9 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
-| 2 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
-| 3 | Module 02 — Navigation & Authentification | BETA | Oui |
-| 4 | Module 03 — Chat & Streaming LLM | BETA | Oui |
-| 5 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
-| 6 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
-| 7 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
+| 1 | Choisir le modèle derrière son chatbot — une mini-évalu | BETA | Non |
+| 2 | Ingestion RAG d'un corpus long structure | BETA | Oui |
+| 3 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
+| 4 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
+| 5 | Module 02 — Navigation & Authentification | BETA | Oui |
+| 6 | Module 03 — Chat & Streaming LLM | BETA | Oui |
+| 7 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
+| 8 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
+| 9 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
 
-## GenAI/PostTraining (7 notebooks)
+## GenAI/PostTraining (11 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -140,6 +150,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | PT-05 — Reinforcement Learning with Verifiable Rewards  | ALPHA | Non |
 | 6 | PT-06 — Evaluation Comparative du Post-Training | BETA | Non |
 | 7 | PT-07 — Détecter le reward hacking avec rewardspy | BETA | Oui |
+| 8 | PT-08 — GRPO from scratch : la mécanique du signal de r | BETA | Non |
+| 9 | PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch : l | BETA | Oui |
+| 10 | PT-10 — GAE from scratch : pourquoi un mini-critic ? (e | BETA | Non |
+| 11 | PT-11 — GRPO + RLVR sur Qwen3.5-0.8B : la série PostTra | BETA | Non |
 
 ## GenAI/RAG-et-Memoire-Semantique (1 notebooks)
 
@@ -203,7 +217,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | Claude CLI - Automatisation Avancee | BETA | Non |
 | 6 | Claude Code via Claudish | BETA | Non |
 
-## GenAI/Video (17 notebooks)
+## GenAI/Video (19 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -217,10 +231,12 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 8 | Wan 2.1/2.2 - Generation Video Multilingue | BETA | Non |
 | 9 | SVD - Stable Video Diffusion (Image-to-Video) | ALPHA | Non |
 | 10 | LTX-2 - Generation Audiovisuelle Conjointe (Video + Aud | BETA | Non |
-| 11 | Comparaison Multi-Modèles de Generation Video | BETA | Non |
-| 12 | Orchestration de Pipelines Video | ALPHA | Non |
-| 13 | ComfyUI - Workflows Video via API | BETA | Non |
-| 14 | Generation de Videos Educatives | BETA | Non |
-| 15 | Workflows Video Creatifs | BETA | Non |
-| 16 | Sora API - Generation Video Cloud | BETA | Non |
-| 17 | Pipeline Video de Production | BETA | Non |
+| 11 | MiniMax H3 (Hailuo 3.0) — Architecture, capacités… et u | BETA | Non |
+| 12 | Comparaison Multi-Modèles de Generation Video | BETA | Non |
+| 13 | Orchestration de Pipelines Video | ALPHA | Non |
+| 14 | ComfyUI - Workflows Video via API | BETA | Non |
+| 15 | Generation de Videos Educatives | BETA | Non |
+| 16 | Workflows Video Creatifs | BETA | Non |
+| 17 | Sora API - Generation Video Cloud | BETA | Non |
+| 18 | Pipeline Video de Production | BETA | Non |
+| 19 | MiniMax H3 (Hailuo) — Génération vidéo par le service c | BETA | Non |

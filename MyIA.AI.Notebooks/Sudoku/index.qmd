@@ -1,6 +1,6 @@
 ---
 title: "Sudoku — Le laboratoire multi-paradigmes de résolution de contraintes"
-subtitle: "Série pédagogique — 19 approches du même problème, en C# .NET, Python et Lean 4"
+subtitle: "Série pédagogique — 19 approches + 1 companion statistique, en C# .NET, Python et Lean 4 (37 notebooks)"
 description: "La série Sudoku de CoursIA : un seul problème (la grille 9×9) résolu par 19 paradigmes complémentaires — backtracking, dancing links, métaheuristiques, CSP, solveurs (OR-Tools, Choco, Z3), automates symboliques, BDD, Infer.NET, réseaux de neurones, LLM, et une preuve Lean 4 de propagation. Dual-track C# .NET Interactive + Python."
 listing:
   - id: dotnet
@@ -16,14 +16,14 @@ listing:
 ---
 
 ::: {.series-banner}
-# Sudoku — Un problème, dix-neuf paradigmes
+# Sudoku — Un problème, dix-neuf paradigmes + un compagnon statistique
 
-**Le Sudoku comme fil rouge pédagogique.** La grille 9×9 est un écrin assez riche pour exercer chaque famille d'algorithmes d'IA, assez contraint pour que chaque solveur produise une solution, et assez emblématique pour qu'on reconnaisse immédiatement le problème. Cette série résout **le même Sudoku** par **19 approches complémentaires**, présentées en **double track C# .NET Interactive et Python**, jusqu'à une **preuve formelle Lean 4** de la propagation de contraintes.
+**Le Sudoku comme fil rouge pédagogique.** La grille 9×9 est un écrin assez riche pour exercer chaque famille d'algorithmes d'IA, assez contraint pour que chaque solveur produise une solution, et assez emblématique pour qu'on reconnaisse immédiatement le problème. Cette série résout **le même Sudoku** par **19 approches complémentaires** (16 paires miroir C#/Python + 1 NN + 1 LLM + 1 Lean) plus **un companion statistique** (Sudoku-18b, méthodologie formelle pour les benchmarks), présentés en **double track C# .NET Interactive et Python**, jusqu'à une **preuve formelle Lean 4** de la propagation de contraintes.
 :::
 
 ## Vue d'ensemble
 
-La série compte **33 notebooks** : 16 méthodes déclinées en C# .NET et Python (dual-track), plus `Sudoku-19` en Lean 4. Chaque notebook est exécuté et commité avec ses sorties (règle C.2), avec entrées/sorties réelles.
+La série compte **37 notebooks canoniques** : 16 méthodes déclinées en C# .NET et Python (dual-track, notebooks 1 à 15 et le benchmark 18), **1 notebook C# uniquement** (0-Environment), **3 notebooks Python uniquement** (16-NeuralNetwork, 17-LLM, 18b-Statistical-Comparison), et **`Sudoku-19` en Lean 4**. Chaque notebook est exécuté et commité avec ses sorties (règle C.2), avec entrées/sorties réelles.
 
 | Axe pédagogique | Numéros | Méthodes |
 |-----------------|---------|----------|
@@ -32,7 +32,7 @@ La série compte **33 notebooks** : 16 méthodes déclinées en C# .NET et Pytho
 | **CSP classique** | 6–9 | AIMA-CSP (backtracking + AC3), Norvig, Stratégies humaines, Coloration de graphe |
 | **Solveurs déclaratifs** | 10–15 | OR-Tools, Choco, Z3 (SMT), Automates symboliques, BDD, Infer.NET (probabiliste) |
 | **Apprentissage** | 16–17 | Réseau de neurones (solveur appris), LLM (prompting) |
-| **Synthèse & preuve** | 18–19 | Comparaison cross-moteurs, Propagation Lean 4 (prouvée) |
+| **Synthèse & preuve** | 18–19 | Comparaison cross-moteurs, Companion statistique (18b, variance/IC/Mann-Whitney), Propagation Lean 4 (prouvée) |
 
 **Kernels** : `.net-csharp` (track C#) · `python3` (track Python) · `lean4-wsl` (Sudoku-19) · **GPU** : non · **Prérequis** : la série Search (algorithmes de recherche) aide, mais le Sudoku-0 remet tout à plat.
 
@@ -79,7 +79,7 @@ jupyter kernelspec list             # vérifier la présence de .net-csharp
 
 ## Pour aller plus loin
 
-Une fois les 19 approches comparées, les prolongements naturels sont :
+Une fois les 19 approches comparées (et la méthodologie statistique de 18b acquise), les prolongements naturels sont :
 
 1. **Vers la preuve formelle** : Sudoku-19 (Lean 4) ouvre la série SymbolicAI/Lean — la propagation devient un théorème.
 2. **Vers les solveurs SMT** : [SMT/Z3 (README)](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md) — Z3, le moteur du Sudoku-12, appliqué à l'ordonnancement, la cryptarithmétique, les bit-vectors.

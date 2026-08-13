@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
   audits:
     - date: "2026-07-31"
       by: myia-po-2024:CoursIA-2
@@ -15,6 +17,12 @@
       csharp_sha: cc944d052d3f64d4d72e0c0a833a0a637746a62b
       content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
       content_csharp_sha: 2c593b51f0144ed0a7b21cbd230719916fca3744e9ef9cfba0b6ca2fadf9041b
+    - date: "2026-08-08"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: c5be5734167b73aa31abb84da4d00165a3612552
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: 86f24846bc1a8aec98d49b592ea36d0ec471eb0e065eb44bb3f48cfe1a8649cb
   known_differences:
     - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
     - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."

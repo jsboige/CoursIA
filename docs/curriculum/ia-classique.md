@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 143 |
+| Notebooks | 147 |
 | PRODUCTION | 0 |
-| BETA | 143 |
+| BETA | 147 |
 | ALPHA | 0 |
 
-## Search/Applications (39 notebooks)
+## Search/Applications (42 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -39,35 +39,38 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 8 | App-19 (C#) — Génération procédurale par Wave Function  | BETA | Oui |
 | 9 | App-19 — Génération procédurale de niveaux via WFC + CP | BETA | Oui |
 | 10 | App-1b : Le problème des N-Reines — Jumeau C# | BETA | Oui |
-| 11 | App-2 : Coloration de Graphes | BETA | Oui |
-| 12 | App-20 — Benchmark comparatif des solveurs Sudoku Pytho | BETA | Oui |
-| 13 | App-20b : Benchmark compare des solveurs Sudoku (jumeau | BETA | Oui |
-| 14 | App-2b : Coloration de graphes — Jumeau C# | BETA | Oui |
-| 15 | App-3 : Nurse Scheduling (Planification des horaires in | BETA | Oui |
-| 16 | App-3b : Nurse Scheduling — Twin C# (planification de g | BETA | Oui |
-| 17 | App-4 : Job-Shop Scheduling | BETA | Oui |
-| 18 | App-4b : Job-Shop Scheduling — Twin C# (ordonnancement  | BETA | Oui |
-| 19 | App-5 : Emploi du temps universitaire — Twin C# (Univer | BETA | Oui |
-| 20 | App-5 : Emploi du temps universitaire (University Timet | BETA | Oui |
-| 21 | App-6 - Demineur : CSP, Probabilites et NP-completude | BETA | Oui |
-| 22 | App-7 : Wordle Solver -- CSP et théorie de l'informatio | BETA | Oui |
-| 23 | App-7b : Solveur Wordle -- CSP et théorie de l'informat | BETA | Oui |
-| 24 | App-8 : Modelisation declarative par contraintes (twin  | BETA | Oui |
-| 25 | App-8-MiniZinc : Modelisation declarative par contraint | BETA | Oui |
-| 26 | App-10 : Optimisation de portefeuille par algorithme gé | BETA | Oui |
-| 27 | App-10b : Optimisation de portefeuille par algorithme g | BETA | Oui |
-| 28 | App-13 : Le Problème du Voyageur de Commerce (TSP) | BETA | Oui |
-| 29 | App-13b : TSP (Voyageur de Commerce) — Jumeau C# | BETA | Oui |
-| 30 | App-17 : Vehicle Routing Problem (VRP) | BETA | Oui |
-| 31 | App-17b : Vehicle Routing Problem (VRP) — Twin C# (méta | BETA | Oui |
-| 32 | App-18: Optimisation d'Hyperparametres - Approches Hybr | BETA | Oui |
-| 33 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
-| 34 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
-| 35 | TP : Conception d'Algorithmes Génétiques avec GeneticSh | BETA | Oui |
-| 36 | App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes  | BETA | Oui |
-| 37 | App-12 : Puissance 4 -- Comparaison d'algorithmes IA (B | BETA | Oui |
-| 38 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : rec | BETA | Oui |
-| 39 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
+| 11 | Coloration de graphes — validité statistique d'une comp | BETA | Oui |
+| 12 | App-2 : Coloration de Graphes | BETA | Oui |
+| 13 | App-20 — Benchmark comparatif des solveurs Sudoku Pytho | BETA | Oui |
+| 14 | App-20b : Benchmark compare des solveurs Sudoku (jumeau | BETA | Oui |
+| 15 | App-2b : Coloration de graphes — Jumeau C# | BETA | Oui |
+| 16 | App-3 : Nurse Scheduling (Planification des horaires in | BETA | Oui |
+| 17 | App-3b : Nurse Scheduling — Twin C# (planification de g | BETA | Oui |
+| 18 | App-4 : Job-Shop Scheduling | BETA | Oui |
+| 19 | App-4b : Job-Shop Scheduling — Twin C# (ordonnancement  | BETA | Oui |
+| 20 | App-5 : Emploi du temps universitaire — Twin C# (Univer | BETA | Oui |
+| 21 | App-5 : Emploi du temps universitaire (University Timet | BETA | Oui |
+| 22 | App-6 - Demineur : CSP, Probabilites et NP-completude | BETA | Oui |
+| 23 | App-7 : Wordle Solver -- CSP et théorie de l'informatio | BETA | Oui |
+| 24 | App-7b : Solveur Wordle -- CSP et théorie de l'informat | BETA | Oui |
+| 25 | App-8 : Modelisation declarative par contraintes (twin  | BETA | Oui |
+| 26 | App-8-MiniZinc : Modelisation declarative par contraint | BETA | Oui |
+| 27 | App-10 : Optimisation de portefeuille par algorithme gé | BETA | Oui |
+| 28 | App-10b : Optimisation de portefeuille par algorithme g | BETA | Oui |
+| 29 | App-13 : Le Problème du Voyageur de Commerce (TSP) | BETA | Oui |
+| 30 | App-13b : TSP (Voyageur de Commerce) — Jumeau C# | BETA | Oui |
+| 31 | App-17 : Vehicle Routing Problem (VRP) | BETA | Oui |
+| 32 | App-17b : Vehicle Routing Problem (VRP) — Twin C# (méta | BETA | Oui |
+| 33 | App-17b : Vehicle Routing Problem (VRP) — Twin Python ( | BETA | Oui |
+| 34 | App-18: Optimisation d'Hyperparametres - Approches Hybr | BETA | Oui |
+| 35 | App-18b : Optimisation d'Hyperparametres - Jumeau C# | BETA | Oui |
+| 36 | App-18b : Optimisation d'Hyperparametres (Python — From | BETA | Oui |
+| 37 | App-9 : Detection de bords par algorithmes génétiques | BETA | Oui |
+| 38 | TP : Conception d'Algorithmes Génétiques avec GeneticSh | BETA | Oui |
+| 39 | App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes  | BETA | Oui |
+| 40 | App-12 : Puissance 4 -- Comparaison d'algorithmes IA (B | BETA | Oui |
+| 41 | App-14-ConnectFour-Adversarial-CSharp — Jumeau C# : rec | BETA | Oui |
+| 42 | App-14 - Connect Four : Benchmark Adversarial Search | BETA | Oui |
 
 ## Search/Part1-Foundations (29 notebooks)
 
@@ -157,7 +160,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 14 | MGS-8 : Fitness Landscape Explorer -- voir la surface p | BETA | Oui |
 | 15 | MGS-9 - Trouver l'Everest : relief reel et bassins d'at | BETA | Oui |
 
-## Sudoku (36 notebooks)
+## Sudoku (37 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -180,20 +183,21 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 17 | Notebook 17: Resolution de Sudoku avec Large Language M | BETA | Non |
 | 18 | Comparaison des Solveurs de Sudoku | BETA | Oui |
 | 19 | Comparaison des Solveurs de Sudoku | BETA | Oui |
-| 20 | Sudoku-7b — Soundness de la propagation de contraintes  | BETA | Oui |
-| 21 | Résolution de Sudoku avec Algorithm X et Dancing Links | BETA | Oui |
-| 22 | Sudoku-Python-DancingLinks : Dancing Links / Algorithm  | BETA | Oui |
-| 23 | Sudoku-3 : Résolution par Algorithme Génétique (C#) | BETA | Oui |
-| 24 | Sudoku-Python-Genetic : Algorithme Génétique (Python) | BETA | Oui |
-| 25 | Résolution de Sudoku par Recuit Simulé | BETA | Oui |
-| 26 | Sudoku-4 : Recuit Simule (Python) | BETA | Oui |
-| 27 | Sudoku-5 : Particle Swarm Optimization (PSO) | BETA | Oui |
-| 28 | Sudoku-5 : Particle Swarm Optimization (Python) | BETA | Oui |
-| 29 | Sudoku-6 : Résolution par CSP Académique (AIMA) | BETA | Oui |
-| 30 | Sudoku-6 : Résolution par CSP Académique (Python) | BETA | Oui |
-| 31 | Sudoku-7 : Résolution par Propagation de Contraintes (N | BETA | Oui |
+| 20 | Sudoku-18b - Comparaison statistique honnête de solveur | BETA | Oui |
+| 21 | Sudoku-7b — Soundness de la propagation de contraintes  | BETA | Oui |
+| 22 | Résolution de Sudoku avec Algorithm X et Dancing Links | BETA | Oui |
+| 23 | Sudoku-Python-DancingLinks : Dancing Links / Algorithm  | BETA | Oui |
+| 24 | Sudoku-3 : Résolution par Algorithme Génétique (C#) | BETA | Oui |
+| 25 | Sudoku-Python-Genetic : Algorithme Génétique (Python) | BETA | Oui |
+| 26 | Résolution de Sudoku par Recuit Simulé | BETA | Oui |
+| 27 | Sudoku-4 : Recuit Simule (Python) | BETA | Oui |
+| 28 | Sudoku-5 : Particle Swarm Optimization (PSO) | BETA | Oui |
+| 29 | Sudoku-5 : Particle Swarm Optimization (Python) | BETA | Oui |
+| 30 | Sudoku-6 : Résolution par CSP Académique (AIMA) | BETA | Oui |
+| 31 | Sudoku-6 : Résolution par CSP Académique (Python) | BETA | Oui |
 | 32 | Sudoku-7 : Résolution par Propagation de Contraintes (N | BETA | Oui |
-| 33 | Résolution de Sudoku par Stratégies Humaines | BETA | Oui |
-| 34 | Sudoku-8 : Resolution par Stratégies Humaines (Python) | BETA | Oui |
-| 35 | Notebook 9: Résolution de Sudoku par Coloration de Grap | BETA | Oui |
-| 36 | Sudoku-9 : Coloration de Graphe (Python) | BETA | Oui |
+| 33 | Sudoku-7 : Résolution par Propagation de Contraintes (N | BETA | Oui |
+| 34 | Résolution de Sudoku par Stratégies Humaines | BETA | Oui |
+| 35 | Sudoku-8 : Resolution par Stratégies Humaines (Python) | BETA | Oui |
+| 36 | Notebook 9: Résolution de Sudoku par Coloration de Grap | BETA | Oui |
+| 37 | Sudoku-9 : Coloration de Graphe (Python) | BETA | Oui |

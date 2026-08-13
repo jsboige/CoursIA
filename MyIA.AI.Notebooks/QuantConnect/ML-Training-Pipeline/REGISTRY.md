@@ -17,11 +17,11 @@ honest verdict). Full method + results per rung: `docs/L<n>_*.md` + `scripts/res
 | L1 | TSMOM multi-asset | NO BEATS | net Sharpe -2.26 to -2.56 (costs kill) | `docs/L1_tsmom.md` |
 | L2 | Carry + dual momentum | NO BEATS | best CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
 | L3 | Trend long-horizon | NO BEATS | 0/75 signal, median AUC 0.509 | `results/l3_trend_long_horizon/` |
-| **L4** | **Decision Transformer (action-based)** | **BEATS** | **24/26, median AUC 0.558** | `docs/STAGE7_DECISION_TRANSFORMER.md` |
+| **L4** | **Decision Transformer (action-based)** | **BEATS** (panel @10bps) | **24/26, median AUC 0.558** ; @50bps INCONCLUSIVE ; holdout temporel 06/08 non reproduit (interne -6.63σ DM p 0.085, frais +19.97σ DM p 0.236) | `docs/L4_decision_transformer.md` |
 | L5 | Vol-targeted trend composite | NO BEATS | delta -0.236 vs S4 v2, t=-2.49, DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
 | (side) | PatchTST forecast-based (mislabeled "L5" before 2026-06-12) | NO BEATS | 0/26, median AUC 0.501 | `results/l5_patchtst/` |
 
-Conclusion: alpha on this universe comes from learned action policies (L4), not trend
+Conclusion: alpha on this universe comes from learned action policies (L4) — **in cross-section / panel only (@10bps)**; the L4 edge does NOT survive temporal holdout (internal split 06/08: -6.63σ, DM p 0.085) — not trend
 overlays or vol conditioning on risk-based allocation. Vol-targeting achieves its 10%
 risk target at ~zero Sharpe cost — keep as a *risk* overlay on production candidates
 (S3 HMM + S4 v2 Ridge KEEPERS), not as an alpha source.

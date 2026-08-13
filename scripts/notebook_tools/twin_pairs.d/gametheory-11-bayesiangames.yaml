@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2024:CoursIA-2
@@ -30,7 +32,14 @@
       csharp_sha: 2072a62551b3f6bf76d586ca3b0305fb8e33f450
       content_python_sha: ec5b9159fd5f9279afcc1e8efdc53696432b525f949c4bd6ef90191397f6904e
       content_csharp_sha: 5baef6163f1899fc9a73b0f8c86e1a3c89f04bf9c6c686e48b50ed1f494dacaf
+    - date: "2026-08-11"
+      by: myia-ai-01:CoursIA
+      python_sha: d63767975a1b44371cb1283716b681c0e0c4b42d
+      csharp_sha: 2072a62551b3f6bf76d586ca3b0305fb8e33f450
+      content_python_sha: ec81b389742bd0e2f23b0edf1b770b13f663580382eddc73754668b4de7b5570
+      content_csharp_sha: 5baef6163f1899fc9a73b0f8c86e1a3c89f04bf9c6c686e48b50ed1f494dacaf
   known_differences:
     - "Socle pedagogique commun : jeux bayesiens (information incomplete / types et croyances), equilibre bayesien de Nash (BNE), applications canoniques : Bataille des Sexes avec incertitude, Cournot avec couts incertains, encheres a valeurs privees (first-price/second-price), introduction aux jeux de signalisation (signaling). Distinct des GT precedents (jeux a information complete) : le GT-11 introduit la « typologie des joueurs » et le calcul d'equilibre sous croyances."
-    - "Idiomes framework : Python = `scipy` (`integrate` pour les integrales d'esperance sur les types continus, `optimize.fsolve`/`minimize` pour resoudre les conditions du BNE) + `itertools` + `@dataclass`. C# = **BCL .NET pur 0 NuGet tiers** (le `#r \"Microsoft.DotNet.Interactive\"` est le kernel lui-meme, pas une dependance ; resolution analytique from-scratch via System.Math)."
-    - "Asymetrie de couverture et de puissance de calcul : le Python (48 cellules : 15 code + 33 markdown, 7 sections) exploite scipy pour les equilibres numeriques (Bataille des Sexes + Cournot + encheres resolus a la machine) ; le C# (26 cellules : 13 code + 13 markdown, meme canevas + References academiques) reste sur la resolution analytique manuelle (System.Math), couverture +compacte. Meme theorie (Harsanyi 1967-68 BNE), leviers numeriques differents (scipy vs from-scratch analytique)."
+    - "2026-08-11 (ai-01) : correction d'honnetete -- l'entree precedente creditait `scipy.optimize.fsolve`/`minimize` de la resolution du BNE cote Python. C'etait un import MORT, retire par #10438, et une cellule porte meme le commentaire explicite « plutot que par fsolve iteratif (qui avertit de convergence sur systeme lineaire) » : l'auteur avait DELIBEREMENT resolu analytiquement et laisse l'import derriere lui. Les equilibres sont donc analytiques DES DEUX COTES."
+    - "Idiomes framework : Python = `itertools` + `@dataclass` + resolution analytique ; seul `from scipy import integrate` subsiste, volontairement, DANS UN STUB D'EXERCICE (« Exercice 4 : Calcul d'un BNE ») ou il est du scaffolding pour l'etudiant et non du code appele. C# = **BCL .NET pur 0 NuGet tiers** (le `#r \"Microsoft.DotNet.Interactive\"` est le kernel lui-meme, pas une dependance ; resolution analytique from-scratch via System.Math)."
+    - "Asymetrie de COUVERTURE (et non de puissance de calcul, contrairement a ce que cette entree affirmait avant le 2026-08-11) : le Python (48 cellules : 15 code + 33 markdown, 7 sections) developpe davantage la prose et les exercices ; le C# (26 cellules : 13 code + 13 markdown, meme canevas + References academiques) est +compact. Les DEUX resolvent analytiquement via leur bibliotheque mathematique standard -- il n'y a pas de « levier numerique scipy vs from-scratch », c'etait un artefact de la lecture des imports. Meme theorie (Harsanyi 1967-68 BNE)."

@@ -1,5 +1,5 @@
-transformers>=4.45.0
-trl>=0.12.0
+transformers>=5.15.0
+trl>=1.9.2
 peft>=0.13.0
 accelerate>=1.0.0
 datasets>=3.0.0
@@ -9,3 +9,8 @@ numpy
 pandas
 matplotlib
 ipywidgets
+z3-solver
+sympy
+# rewardspy absent de PyPI ; installer depuis GitHub :
+#   pip install git+https://github.com/AvAdiii/rewardspy.git
+rewardspy

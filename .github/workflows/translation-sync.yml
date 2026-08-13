@@ -1,0 +1,504 @@
+name: Translation Sync
+
+# Purpose
+# -------
+# Autonomous CI that keeps translations synchronized with notebook sources.
+# When a commit lands on `main` that touches an in-scope notebook (any language
+# — the mandate requires symmetry), this workflow:
+#   T1  re-extracts the changed cells -> refreshes src_hash in the sync CSV
+#       (extract_cells_to_csv.py --update preserves existing translations)
+#   T2  detects drift (check_translation_sync.py: SRC_DRIFT = source moved)
+#   T3  translates CHANGED CELLS ONLY (translate_csv.py --apply). Indexed by
+#       src_hash -> only cells whose source actually changed are re-submitted,
+#       never the whole CSV. This is the cost-marginal property (D4): N changed
+#       cells => N API calls, not the full corpus.
+#   T4  re-renders the *_<lang>.ipynb of active languages (render_notebook.py)
+#   then commits the derived files (CSV + rendered notebooks) to the long-lived
+#   branch `chore/translation-sync-pending` as github-actions[bot] (no `[skip ci]`
+#   since #10421: bot pushes to a branch not in `on.push.branches` = [main], so a
+#   self-trigger is structurally impossible). A PR is opened (or updated)
+#   targeting main; merging the PR refreshes main. The bot NEVER pushes to
+#   main itself.
+#
+# Why POST-MERGE on `main` (not per-PR on the PR branch)
+# ------------------------------------------------------
+# This workflow previously fired on `pull_request` and committed derived files
+# back to the PR branch as github-actions[bot] (issue #10067, MERGED 2026-07-19).
+# That design had two structural problems (issue #10133):
+#
+#   1. The bot commit moves the PR head SHA, which re-creates the entire check
+#      roster on a new SHA. The `PR gate` (the only required status check on
+#      main's branch protection) parks in `action_required` while 37+ queued
+#      runs drain. Result: `mergeable_state=blocked` permanent, visually
+#      indistinguishable from "still running". This affected 7+ PRs at the
+#      time of the report (#10110 #10116 #10117 #10118 #10119 #10122 #10125)
+#      and grew linearly in notebook PRs.
+#
+#   2. Auto-committing on a PR branch conflicts with the policy that PRs are
+#      reviewed for source-language intent only (cf #10042, decision #2632
+#      extended). A reviewer-facing diff that contains bot-generated
+#      translations invites review of artifacts the reviewer never wrote.
+#
+# Why a long-lived PR (not direct push to main) -- issue #10136
+# -------------------------------------------------------------
+# The earlier proposal in #10133 was "post-merge on `main`, mirroring
+# catalog-cron.yml". That proposal is non-viable as written: main's branch
+# protection requires the `PR gate` status check on EVERY push to main, and
+# the `push` event for a workflow that runs on `push` to `main` itself never
+# produces a `PR gate` run. Result: GH006 ("Required status check 'PR gate' is
+# expected"). catalog-cron.yml hit this on run 31293765051, 2026-08-09T04:03Z;
+# translation-sync.yml would hit the exact same barrier.
+#
+# Resolution: the bot pushes to a long-lived branch (`chore/translation-sync-pending`)
+# and opens (or updates) a PR targeting main. The PR goes through normal
+# checks; merging it is what refreshes main. This is the same structural
+# pattern as catalog-cron.yml post-#10136.
+#
+# The detection story is preserved by:
+#   - translation-guard.yml  (FAIL on hand-edited *_<lang>.ipynb / CSV -- unchanged)
+#   - translation-drift.yml  (read-only drift notice on PR -- unchanged)
+# So a PR with out-of-sync translations still surfaces drift to the reviewer
+# via translation-drift.yml, but the regeneration now happens via this long-lived
+# PR after the source-language change has landed on main.
+#
+# Coupling / honest current state:
+#   - T3 (translate_csv.py) is ACTIVATED. Grain D (#10055, MERGED) landed the
+#     TRANSLATE_ENABLED env gate + --max-cells hard cap; this workflow now wires
+#     them. INITIAL ACTIVATION PERIMETER (ai-01 dispatch #10042 items 5-7): en
+#     only, genai/finetuning series (161 cells, 71 text_en still empty). The
+#     hand-rendered FT-01-Introduction-FineTuning_en.ipynb serves as positive
+#     control — the bot must reproduce an equivalent file. Widen the perimeter
+#     (more series, more langs) only after the positive control passes.
+#   - The translation API key comes from GitHub secrets (never a literal, never
+#     logged — secrets-hygiene §1-3): secrets.OPENAI_API_KEY (primary) /
+#     secrets.OPENROUTER_API_KEY (fallback). A repo admin must add the secret.
+#   - This workflow SUPERSEDES the per-PR design of #10067 (MERGED 2026-07-19)
+#     and the post-merge-on-main proposal of #10133 / PR #10135. Both earlier
+#     designs hit structural barriers (#10067: check roster re-creation;
+#     #10133: GH006 on main). The replacement is verified by issue #10136.
+#
+# Reconciliation with the previous bot design:
+#   - #10067 (MERGED, the original per-PR auto-commit bot) is structurally
+#     superseded: the workflow it added is replaced by this one.
+#   - #10127 (OPEN, `concurrency` block on the per-PR design) is superseded
+#     by the trigger change itself — concurrency only mattered because the
+#     bot kept pushing on PR branches. After this change there is no per-PR
+#     push to serialize.
+#   - PR #10135 (OPEN, post-merge on main) is superseded by this design:
+#     push on main is blocked by GH006; the long-lived PR is the structurally
+#     viable variant.
+#   - translation-guard.yml and translation-drift.yml are kept AS-IS. Their
+#     job is unchanged and they correctly exempt github-actions[bot] when the
+#     bot now commits to chore/translation-sync-pending (the guard's check is
+#     path-based, not branch-based — bot commits to the long-lived branch do
+#     not appear on a feature branch's diff in the first place).
+#
+# See #10038, #10042, #4957, #1650, #6949, #10133, #10136.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'translations/**'
+      - 'scripts/translation/**'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "T1 mode : 'incremental' (changed notebooks only, default) ou 'full' (plein perimetre, etape 2 de #10329)."
+        type: choice
+        required: false
+        default: incremental
+        options:
+          - incremental
+          - full
+
+permissions:
+  contents: write   # bot commit to chore/translation-sync-pending
+  pull-requests: write   # open/update the long-lived PR via github-script
+
+concurrency:
+  group: translation-sync-main
+  cancel-in-progress: false
+
+jobs:
+  translation-sync:
+    name: "Translation auto-sync (long-lived PR)"
+    runs-on: ubuntu-latest
+    # workflow_dispatch (manual maintainer trigger) always allowed.
+    # Note: prior versions carried `[skip ci]` in the bot commit message;
+    # removed in #10421. The bot pushes to `chore/translation-sync-pending`,
+    # which is NOT in this workflow's `on.push.branches` list (only `main`
+    # is) — so the bot commit cannot self-re-trigger by construction. The
+    # `[skip ci]` only suppressed the required-check set on the long-lived
+    # PR (same pathology as catalog-cron, see #10421).
+
+    steps:
+      - name: Checkout main (history only)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true
+
+      # Prepare the long-lived branch from origin/main. The bot NEVER touches
+      # main directly — it only operates on chore/translation-sync-pending.
+      - name: Prepare chore/translation-sync-pending branch
+        run: |
+          set -euo pipefail
+          BRANCH="chore/translation-sync-pending"
+          git fetch origin main
+          # Reset (not rebase) onto origin/main unconditionally. T1->T4
+          # regenerate the entire derived set on every run, so the previous
+          # bot commit holds no information worth preserving -- rebasing it
+          # instead yields structural add/add conflicts as soon as any human
+          # PR lands a rendered notebook or CSV (see issue #10373: 12 runs
+          # failed 2026-08-10 on add/add for FT-02_en + finetuning.csv).
+          # --force-with-lease is safe here: branch is mono-writer bot-owned
+          # (git-workflow.md allows it on lane-unique feature branches; main
+          # is untouched either way).
+          git checkout -B "$BRANCH" origin/main
+          echo "Working on branch: $(git rev-parse --abbrev-ref HEAD) at $(git rev-parse --short HEAD)"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install translation toolchain deps
+        run: pip install nbformat
+
+      - name: Configure git for bot commits
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # ------------------------------------------------------------------
+      # T1 — re-extract changed notebooks to refresh src_hash in their CSVs.
+      # On main we don't know which notebooks "changed" relative to a base
+      # (we ARE the base); instead we sweep the in-scope set identified by
+      # `git log -1 --name-only` for the latest push. The script is
+      # idempotent and --update preserves existing translations: unchanged
+      # cells with existing text_<lang>/hash_<lang> are never re-submitted.
+      # ------------------------------------------------------------------
+      - name: T1 re-extract (refresh src_hash for changed notebooks)
+        id: t1
+        env:
+          # Mode T1 : 'incremental' (changed-only, default push) ou 'full'
+          # (plein perimetre, etape 2 de #10329).
+          T1_MODE: ${{ github.event.inputs.mode || 'incremental' }}
+        run: |
+          set -euo pipefail
+          if [ ! -d translations ]; then
+            echo "::notice title=Translation sync::No translations/ directory yet (pre-T1 phase). Skipping."
+            echo "has_translations=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "has_translations=true" >> "$GITHUB_OUTPUT"
+          echo "T1 mode: $T1_MODE"
+
+          # Itérer sur les CSV déclarés et passer --full uniquement en mode
+          # full. Sans --full (mode incremental), on respecte le comportement
+          # historique : seuls les notebooks passés en input (les CHANGED_NB)
+          # sont rafraîchis.
+          if [ "$T1_MODE" = "full" ]; then
+            echo "T1 FULL mode (#10329 etape 2) : refresh src_hash pour TOUS les notebooks referencees dans chaque CSV."
+            # On itère sur les CSV du perimetre canonique (translations/) et
+            # on lance extract_cells_to_csv.py --update --full pour chacun.
+            # Note : extract_cells_to_csv.py --update --full rafraichit
+            # TOUTES les lignes d'un CSV en un seul appel, ce qui comble la
+            # dette structurelle (78 cellules desynchronisees detectees
+            # par c.199 / PR #10347).
+            for csv in translations/*.csv translations/**/*.csv; do
+              [ -f "$csv" ] || continue
+              # On prend le CSV le plus haut-niveau (celui sous translations/<serie>/).
+              # Evitons les faux positifs : --update --full accepte un CSV.
+              python scripts/translation/extract_cells_to_csv.py "MyIA.AI.Notebooks" --update "$csv" --full --repo-root . || {
+                echo "::warning title=T1 extract full::Failed on $csv. Continuing.";
+              }
+            done
+          else
+            # Mode incremental (defaut, post-#4957) : notebooks du dernier push.
+            CHANGED_NB=$(git log -1 --name-only --pretty=format: -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+            if [ -z "$CHANGED_NB" ]; then
+              echo "No in-scope notebook changed in the latest commit. T1 will no-op (idempotent re-extract skipped)."
+            else
+              echo "Changed notebooks in the latest commit:"
+              echo "$CHANGED_NB" | sed 's/^/  - /'
+              for nb in $CHANGED_NB; do
+                [ -f "$nb" ] || continue
+                python scripts/translation/extract_cells_to_csv.py "$nb" --update --repo-root . || {
+                  echo "::warning title=T1 extract::Failed to re-extract $nb (may be out-of-scope / code-only). Continuing.";
+                }
+              done
+            fi
+          fi
+
+      # ------------------------------------------------------------------
+      # T2 — detect drift across all CSVs (SRC_DRIFT = source moved since last
+      # sync). The JSON report tells us which cells/CSVs need re-translation.
+      # ------------------------------------------------------------------
+      - name: T2 detect drift
+        id: t2
+        if: steps.t1.outputs.has_translations == 'true'
+        env:
+          T1_MODE: ${{ github.event.inputs.mode || 'incremental' }}
+        run: |
+          set -euo pipefail
+          # En mode full, on active aussi le scan out-of-scope (etape 5 de
+          # #10329) : notebooks FR dans MyIA.AI.Notebooks/ qui ne sont
+          # dans aucun CSV. Ce scan est diagnostique, non-bloquant.
+          if [ "$T1_MODE" = "full" ]; then
+            REPORT="$(python scripts/translation/check_translation_sync.py translations --check --report-out-of-scope --repo-root . 2>/dev/null || true)"
+          else
+            REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>/dev/null || true)"
+          fi
+          if [ -z "$REPORT" ]; then
+            echo "drift_count=0" >> "$GITHUB_OUTPUT"
+            echo "No drift detected (or no filled translations to drift against)."
+            exit 0
+          fi
+          COUNT="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin).get("anomaly_count",0))' 2>/dev/null || echo 0)"
+          echo "drift_count=$COUNT" >> "$GITHUB_OUTPUT"
+          echo "Drift anomalies: $COUNT"
+          echo "$REPORT"
+          # Etape 5 de #10329 : archiver le rapport out-of-scope (si active)
+          # comme artefact de run pour audit. Non-bloquant.
+          if [ "$T1_MODE" = "full" ]; then
+            echo "$REPORT" > translation-sync-report.json
+            OOS_COUNT="$(echo "$REPORT" | python -c 'import sys,json; r=json.load(sys.stdin); print(r.get("out_of_scope_count",0))' 2>/dev/null || echo 0)"
+            echo "::notice title=T2 out-of-scope::${OOS_COUNT} notebook(s) MISSING_FROM_CSV (etape 5 #10329)."
+          fi
+
+      # ------------------------------------------------------------------
+      # T3 — translate CHANGED CELLS ONLY. ACTIVATED (grain D #10055 landed the
+      # TRANSLATE_ENABLED gate + --max-cells cap; this step wires them). Initial
+      # activation perimeter (ai-01 dispatch #10042 items 5-7): en only,
+      # genai/finetuning series. translate_csv.py only translates MARKDOWN cells
+      # whose text_<lang> is empty (cost-marginal property, D4). The 90 markdown
+      # text_en cells are already filled (#10018) -> T3 plans 0 new translations
+      # on the first run; the 71 code cells stay untranslated (include_code=False).
+      # A future change to a finetuning markdown cell re-activates T3 for THAT
+      # cell only. The env carries the API key from GitHub secrets (never literal).
+      # ------------------------------------------------------------------
+      - name: T3 translate changed cells (en, finetuning perimeter)
+        if: steps.t1.outputs.has_translations == 'true'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          TRANSLATE_ENABLED: "1"
+          TRANSLATE_MAX_CELLS: "100"
+        run: |
+          set -euo pipefail
+          echo "T3 status: ACTIVATED (TRANSLATE_ENABLED=1). Perimeter = en, genai/finetuning. Hard cap = ${TRANSLATE_MAX_CELLS} cells/run."
+          # Initial activation perimeter (ai-01 #10042): en only, finetuning.csv.
+          # Widen (more CSVs, more langs) only after FT-01_en positive control passes.
+          csv="translations/genai/finetuning.csv"
+          if [ ! -f "$csv" ]; then
+            echo "T3 skip: $csv not on this branch. No-op, continuing."
+          else
+            echo "T3 processing: $csv (--lang en, --max-cells ${TRANSLATE_MAX_CELLS})"
+            python scripts/translation/translate_csv.py --csv "$csv" --apply --lang en --max-cells "${TRANSLATE_MAX_CELLS}" || {
+              echo "::notice title=T3 translate::failed for $csv (missing API key, rate-limited, or cap reached). Derived files unaffected — T4 re-renders existing translations only. Continuing.";
+            }
+          fi
+          echo "T3 done."
+
+      # ------------------------------------------------------------------
+      # T4 — re-render the *_<lang>.ipynb of active languages from each CSV.
+      # render_notebook.py takes --csv --notebook (source FR) --lang --out.
+      # The source notebook path is read from the CSV's 'notebook' column.
+      #
+      # Per-CSV active-language list is sourced from translations/PERIMETER.md
+      # via parse_perimeter() in scripts/translation/check_perimeter.py
+      # (single source of truth, post #10109 consolidation). Only langs
+      # explicitly declared in-scope in PERIMETER.md are rendered: a CSV not
+      # listed in the matrix renders zero langs (closed perimeter, see
+      # translations/PERIMETER.md §"Matrice").
+      #
+      # Issue #10349 sub-grain (po-2023): previously this step hardcoded
+      # active_langs = list(TARGET_LANGS), which issued render calls for
+      # out-of-scope langs (es/ar/fa/zh/pt) on every CSV. The guardrail
+      # (--require-translated, PR #10359 by po-2025) prevents writing a
+      # FR-clone, but the workflow still burned ~6 subprocess calls per
+      # notebook per CSV per run. parse_perimeter() filters upstream.
+      # ------------------------------------------------------------------
+      - name: T4 render translated notebooks
+        if: steps.t1.outputs.has_translations == 'true'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import csv, pathlib, subprocess, sys
+          import importlib.util
+          spec = importlib.util.spec_from_file_location(
+              "check_perimeter", "scripts/translation/check_perimeter.py")
+          mod = importlib.util.module_from_spec(spec)
+          # OBLIGATOIRE avant exec_module : check_perimeter.py definit un @dataclass,
+          # et dataclasses._is_type resout sys.modules.get(cls.__module__).__dict__.
+          # Sans cet enregistrement le lookup rend None -> AttributeError, et l'etape
+          # entiere echoue avant tout rendu (cause des 31 runs push / 0 succes, #10321).
+          sys.modules[spec.name] = mod
+          spec.loader.exec_module(mod)
+
+          # Load PERIMETER.md once at step start. Returns {csv_path: {in_scope_langs}}.
+          # A CSV missing from the matrix renders zero langs (closed perimeter).
+          perimeter_path = pathlib.Path("translations/PERIMETER.md")
+          if not perimeter_path.exists():
+              print(f"T4 abort: PERIMETER.md not found at {perimeter_path}")
+              sys.exit(0)
+          scope = mod.parse_perimeter(perimeter_path)
+          print(f"T4 perimeter loaded: {len(scope)} CSV(s) declared.")
+          for csv_key, in_scope_langs in sorted(scope.items()):
+              langs_repr = ",".join(sorted(in_scope_langs)) if in_scope_langs else "(none)"
+              print(f"  - {csv_key}: {langs_repr}")
+
+          troot = pathlib.Path("translations")
+          if not troot.exists():
+              sys.exit(0)
+          for csv_path in troot.rglob("*.csv"):
+              rel_csv = csv_path.as_posix()
+              in_scope = scope.get(rel_csv)
+              if in_scope is None:
+                  # CSV not declared in PERIMETER.md => closed perimeter, no renders.
+                  print(f"T4 skip (no scope in PERIMETER.md): {rel_csv}")
+                  continue
+              if not in_scope:
+                  # CSV declared but all langs out-of-scope.
+                  print(f"T4 skip (0 in-scope langs): {rel_csv}")
+                  continue
+              notebooks = set()
+              with open(csv_path, newline="", encoding="utf-8") as fh:
+                for row in csv.DictReader(fh):
+                  nb = (row.get("notebook") or "").strip()
+                  if nb:
+                    notebooks.add(nb)
+              for nb in sorted(notebooks):
+                if not pathlib.Path(nb).exists():
+                  print(f"T4 skip (source missing): {nb}")
+                  continue
+                stem = pathlib.Path(nb).stem
+                outdir = pathlib.Path(nb).parent
+                for lang in sorted(in_scope):
+                  out = outdir / f"{stem}_{lang}.ipynb"
+                  r = subprocess.run(
+                    ["python", "scripts/translation/render_notebook.py",
+                     "--csv", str(csv_path), "--notebook", nb,
+                     "--lang", lang, "--out", str(out)],
+                    capture_output=True, text=True)
+                  if r.returncode != 0:
+                    print(f"T4 render {nb} -> {lang}: non-zero (may have 0 translated cells). {r.stderr[:160]}")
+          print("T4 render pass complete.")
+          PY
+
+      # ------------------------------------------------------------------
+      # Commit derived files to chore/translation-sync-pending as
+      # github-actions[bot]. Direct push to main is blocked by GH006
+      # (PR gate required) -- the long-lived PR is the structurally
+      # viable delivery vehicle (issue #10136).
+      # ------------------------------------------------------------------
+      - name: Commit + push derived translations to chore/translation-sync-pending
+        id: drift
+        run: |
+          set -euo pipefail
+          BRANCH="chore/translation-sync-pending"
+          git add translations 'MyIA.AI.Notebooks/**/*_en.ipynb' 'MyIA.AI.Notebooks/**/*_ru.ipynb' \
+              'MyIA.AI.Notebooks/**/*_pt.ipynb' 'MyIA.AI.Notebooks/**/*_es.ipynb' \
+              'MyIA.AI.Notebooks/**/*_ar.ipynb' 'MyIA.AI.Notebooks/**/*_fa.ipynb' \
+              'MyIA.AI.Notebooks/**/*_zh.ipynb' 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "::notice title=Translation sync::No derived-translation changes to commit. main already in sync."
+            echo "drift_detected=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "drift_detected=true" >> "$GITHUB_OUTPUT"
+
+          CHANGED_COUNT=$(git diff --cached --name-only | wc -l)
+          echo "Pushing $CHANGED_COUNT derived-translation file(s) to $BRANCH."
+          git diff --cached --name-only
+
+          git commit \
+            -m "chore(translation): auto-sync derived translations [bot]" \
+            -m "See #10038 #10042 #10055; T3 activated (en, finetuning perimeter); long-lived PR delivery (See #10133 #10136)." \
+            -m "Generated by translation-sync.yml on push to main. Direct push to main blocked by GH006 (PR gate required); this commit lives on chore/translation-sync-pending until a maintainer merges the long-lived PR."
+
+          # force-with-lease, same reason as catalog-cron.yml: this job re-roots
+          # the branch on fresh main (`git checkout -B "$BRANCH" origin/main`),
+          # so HEAD is a sibling of the existing branch tip and a plain push is
+          # rejected non-fast-forward on every run after the one that created
+          # the branch. The branch is a materialized view owned solely by the
+          # automation; the lease (fetched just below) refuses the push if
+          # anything else touched it in the meantime.
+          git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
+          if ! git push --force-with-lease origin "HEAD:$BRANCH"; then
+            echo "::error title=Translation push rejected::Could not push $BRANCH to origin. The lease failed (someone pushed to $BRANCH after this run fetched it) or github-actions[bot] lacks push rights on chore/*. Re-run this workflow; if it repeats, inspect the branch tip."
+            exit 1
+          fi
+          echo "::notice title=Translation sync::$BRANCH pushed; PR open/update follows in next step."
+
+      # Open the long-lived PR if it does not exist yet; otherwise, ping a
+      # maintainer comment on the existing PR to signal a new push is ready.
+      - name: Open or update the translation-sync PR
+        if: steps.drift.outputs.drift_detected == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const branch = 'chore/translation-sync-pending';
+            const prTitle = 'chore(translation): auto-sync derived translations (long-lived PR)';
+            const prBody = [
+              '## Purpose',
+              '',
+              'Long-lived PR refreshed on every push to `main` (or via `workflow_dispatch`) by `translation-sync.yml`.',
+              'Keeps `translations/*.csv` + `MyIA.AI.Notebooks/**/*_<lang>.ipynb` synchronized with the source notebooks',
+              'on the latest `main` (grain C of #10038).',
+              '',
+              '**Maintainer review only — no direct push to `main`** (issue #10136). The bot opens',
+              'or updates this PR; merging it refreshes `main` through the normal PR gate.',
+              '',
+              '## What to review',
+              '',
+              '- `translations/*.csv` `src_hash` rows updated for cells whose source actually changed.',
+              '- `text_<lang>` / `hash_<lang>` columns preserved on unchanged cells (T3 incremental contract, D4).',
+              '- Re-rendered `*_<lang>.ipynb` files match the freshly-extracted CSVs.',
+              '',
+              '## Close policy',
+              '',
+              'When the pipeline produces no changes (the workflow runs `::notice title=Translation sync::No derived-translation changes to commit. main already in sync.`)',
+              'this PR will be auto-closed by `translation-pr-close.yml`. Subsequent drift reopens it under the same branch.',
+              '',
+              'See `.claude/rules/secrets-hygiene.md` for the API key handling, and #10038, #10042, #10043, #10133, #10136.',
+            ].join('\n');
+
+            const existing = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', head: `${owner}:${branch}`, per_page: 1,
+            });
+            if (existing.length > 0) {
+              const pr = existing[0];
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: pr.number,
+                body: [
+                  `New commit pushed on \`${branch}\` by translation-sync (run \`${context.runId}\`).`,
+                  `Last commit SHA: \`${context.sha.slice(0, 12)}\`.`,
+                  'Derived translations refreshed. Maintainer: please review + merge when convenient.',
+                ].join('\n'),
+              });
+              core.info(`Updated existing PR #${pr.number} (${pr.html_url})`);
+              return;
+            }
+
+            const created = await github.rest.pulls.create({
+              owner, repo,
+              title: prTitle,
+              head: branch,
+              base: 'main',
+              body: prBody,
+              maintainer_can_modify: true,
+            });
+            await github.rest.issues.addLabels({
+              owner, repo,
+              issue_number: created.data.number,
+              labels: ['translation-sync', 'automation'],
+            });
+            core.info(`Opened new PR #${created.data.number} (${created.data.html_url})`);

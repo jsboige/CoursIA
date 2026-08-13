@@ -20,12 +20,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 177 |
+| Notebooks | 179 |
 | PRODUCTION | 0 |
-| BETA | 173 |
-| ALPHA | 4 |
+| BETA | 176 |
+| ALPHA | 3 |
 
-## GameTheory (48 notebooks)
+## GameTheory (49 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -52,31 +52,32 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 21 | GameTheory-17 : Apprentissage par Renforcement Multi-Ag | BETA | Oui |
 | 22 | GameTheory-2 (Part 2) : Support Enumeration — Équilibre | BETA | Oui |
 | 23 | GameTheory-2 : Jeux sous forme normale (C# / .NET) — Tr | BETA | Oui |
-| 24 | GameTheory-2-NormalForm | BETA | Oui |
-| 25 | GameTheory 2b - Formalisation Lean : Definitions de Bas | BETA | Non |
-| 26 | GameTheory-3 : Topologie des Jeux 2×2 — Twin C# (classi | BETA | Oui |
-| 27 | GameTheory-3-Topology2x2 | BETA | Oui |
-| 28 | GameTheory-4-NashEquilibrium (C#) | BETA | Oui |
-| 29 | GameTheory-4-NashEquilibrium | BETA | Oui |
-| 30 | GameTheory 4b - Theoreme d'Existence de Nash (Lean) | BETA | Non |
-| 31 | GameTheory 4c - Théorème d'Existence de Nash (C#) | ALPHA | Oui |
-| 32 | GameTheory 4c - Theoreme d'Existence de Nash (Python) | BETA | Non |
-| 33 | GameTheory-5-ZeroSum-Minimax (Twin C#) | BETA | Oui |
-| 34 | GameTheory-5-ZeroSum-Minimax | BETA | Oui |
-| 35 | GameTheory-5b — Théorème minimax de von Neumann (compan | BETA | Non |
-| 36 | GameTheory-6 : Évolution et Confiance — Twin C# (tourno | BETA | Oui |
-| 37 | GameTheory-6-EvolutionTrust | BETA | Oui |
-| 38 | GameTheory-6c (C#) : Jeux Repetes et Theoreme Folk | BETA | Oui |
-| 39 | GameTheory-6c : Jeux Répétés et Théorème Folk (Folk The | BETA | Oui |
-| 40 | GameTheory-7-ExtensiveForm (Twin C#) | BETA | Oui |
-| 41 | GameTheory-7-ExtensiveForm | BETA | Oui |
-| 42 | GameTheory-8-CombinatorialGames (C#) | BETA | Oui |
-| 43 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
-| 44 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
-| 45 | GameTheory 8c - Jeux Combinatoires : Approfondissement  | BETA | Oui |
+| 24 | GameTheory-2 (Part 2) : Support Enumeration — Équilibre | BETA | Oui |
+| 25 | GameTheory-2-NormalForm | BETA | Oui |
+| 26 | GameTheory 2b - Formalisation Lean : Definitions de Bas | BETA | Non |
+| 27 | GameTheory-3 : Topologie des Jeux 2×2 — Twin C# (classi | BETA | Oui |
+| 28 | GameTheory-3-Topology2x2 | BETA | Oui |
+| 29 | GameTheory-4-NashEquilibrium (C#) | BETA | Oui |
+| 30 | GameTheory-4-NashEquilibrium | BETA | Oui |
+| 31 | GameTheory 4b - Theoreme d'Existence de Nash (Lean) | BETA | Non |
+| 32 | GameTheory 4c - Théorème d'Existence de Nash (C#) | ALPHA | Oui |
+| 33 | GameTheory 4c - Theoreme d'Existence de Nash (Python) | BETA | Non |
+| 34 | GameTheory-5-ZeroSum-Minimax (Twin C#) | BETA | Oui |
+| 35 | GameTheory-5-ZeroSum-Minimax | BETA | Oui |
+| 36 | GameTheory-5b — Théorème minimax de von Neumann (compan | BETA | Non |
+| 37 | GameTheory-6 : Évolution et Confiance — Twin C# (tourno | BETA | Oui |
+| 38 | GameTheory-6-EvolutionTrust | BETA | Oui |
+| 39 | GameTheory-6c (C#) : Jeux Repetes et Theoreme Folk | BETA | Oui |
+| 40 | GameTheory-6c : Jeux Répétés et Théorème Folk (Folk The | BETA | Oui |
+| 41 | GameTheory-7-ExtensiveForm (Twin C#) | BETA | Oui |
+| 42 | GameTheory-7-ExtensiveForm | BETA | Oui |
+| 43 | GameTheory-8-CombinatorialGames (C#) | BETA | Oui |
+| 44 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
+| 45 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
 | 46 | GameTheory 8c - Jeux Combinatoires : Approfondissement  | BETA | Oui |
-| 47 | GameTheory-9-BackwardInduction (C#) | ALPHA | Oui |
-| 48 | GameTheory-9-BackwardInduction | BETA | Oui |
+| 47 | GameTheory 8c - Jeux Combinatoires : Approfondissement  | BETA | Oui |
+| 48 | GameTheory-9-BackwardInduction (C#) | ALPHA | Oui |
+| 49 | GameTheory-9-BackwardInduction | BETA | Oui |
 
 ## GameTheory/SocialChoice (7 notebooks)
 
@@ -98,7 +99,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 2 | IIT - Sujets Avances : Partitionnement, Repertoires Cau | BETA | Oui |
 | 3 | IIT-3. Coarse-graining, blackboxing et l'échelle du $\P | BETA | Oui |
 
-## IIT/ICT-Series (44 notebooks)
+## IIT/ICT-Series (45 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -112,40 +113,41 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 8 | ICT-13 — Morphodynamique stratégique : une stratégie es | BETA | Oui |
 | 9 | ICT-14 — Énergie libre et surprise du représentant inte | BETA | Oui |
 | 10 | ICT-15 — Integrated Complexity : convergence Φ / F / K  | BETA | Oui |
-| 11 | ICT-15c — Méta-proxy d'obstruction : structure des désa | ALPHA | Oui |
-| 12 | ICT-15d — Cochaîne de Čech pondérée : obstruction intra | BETA | Oui |
-| 13 | ICT-15e -- Bridge #2 : recouvrabilite *est* agentivite  | BETA | Oui |
-| 14 | ICT-15f -- Pont #1-bis : la famille decouplee tranche l | BETA | Oui |
-| 15 | ICT-16 — MDL / code en deux parties et bosse complexite | BETA | Oui |
-| 16 | Grokking et compression-progress : la jambe K à l'épreu | BETA | Oui |
-| 17 | ICT-18 -- Fleche du temps et reversibilisation (strate  | BETA | Oui |
-| 18 | ICT-18b — Budget de réversibilité : la jambe « fin » de | BETA | Oui |
-| 19 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur  | BETA | Oui |
-| 20 | ICT-19 — Raffinement et résolution des stubs (tranche 3 | BETA | Non |
-| 21 | ICT-2 — Le tri comme morphogenèse minimale (self-sortin | BETA | Oui |
-| 22 | ICT-20 — FeatureCatastrophes : *calibration de méthode* | BETA | Non |
-| 23 | ICT-21 — SAETrajectoires : le substrat S4 entre au banc | BETA | Non |
-| 24 | ICT-22 — LLMSubstrat : le transformer comme quatrième s | BETA | Non |
-| 25 | ICT-23 — PersonaCatastrophe : la fronce de Thom appliqu | BETA | Oui |
-| 26 | ICT-24 — WorkspaceIgnition : l'axe Global Workspace et  | BETA | Non |
-| 27 | ICT-25 — InoculationRL : GRPO à récompense *hackable*,  | BETA | Non |
-| 28 | ICT-26 — Convention de signalisation (expérience A, str | BETA | Oui |
-| 29 | ICT-27 — Invention de symboles (expérience B, strate 7) | BETA | Oui |
-| 30 | ICT-28 — Adoption collective et seuil de performativité | BETA | Oui |
-| 31 | ICT-29 — Inoculation d'un concept (expérience D, strate | BETA | Oui |
-| 32 | ICT-3 — Robustesse & délai de gratification : étude qua | BETA | Oui |
-| 33 | ICT-30 — Invention inhibée (expérience E, strate 7) | BETA | Oui |
-| 34 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
-| 35 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
-| 36 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
-| 37 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
-| 38 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | BETA | Oui |
-| 39 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | BETA | Oui |
-| 40 | ICT — Substrat argumentation : trajectoires de croyance | BETA | Oui |
-| 41 | Boucle auto-referentielle p_hat (case 2 / Epic #9533) | BETA | Oui |
-| 42 | ICT -- Dissociation saillance / pregnance (case `s ⟂ π` | BETA | Oui |
-| 43 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | BETA | Non |
-| 44 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
+| 11 | ICT-15d — Cochaîne de Čech pondérée : obstruction intra | BETA | Oui |
+| 12 | ICT-15e -- Bridge #2 : recouvrabilite *est* agentivite  | BETA | Oui |
+| 13 | ICT-15f -- Pont #1-bis : la famille decouplee tranche l | BETA | Oui |
+| 14 | ICT-15g -- Pont #1-bis (chantier 2/3) : le regime asyme | BETA | Oui |
+| 15 | ICT-15h -- Pont #1-bis : le paysage 2D anisotrope clot  | BETA | Oui |
+| 16 | ICT-16 — MDL / code en deux parties et bosse complexite | BETA | Oui |
+| 17 | ICT-17b — Grokking et compression-progress : la jambe K | BETA | Oui |
+| 18 | ICT-18 -- Fleche du temps et reversibilisation (strate  | BETA | Oui |
+| 19 | ICT-18b — Budget de réversibilité : la jambe « fin » de | BETA | Oui |
+| 20 | ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur  | BETA | Oui |
+| 21 | ICT-19b — Raffinement et résolution des stubs (tranche  | BETA | Non |
+| 22 | ICT-2 — Le tri comme morphogenèse minimale (self-sortin | BETA | Oui |
+| 23 | ICT-20 — FeatureCatastrophes : *calibration de méthode* | BETA | Non |
+| 24 | ICT-21 — SAETrajectoires : le substrat S4 entre au banc | BETA | Non |
+| 25 | ICT-22 — LLMSubstrat : le transformer comme quatrième s | BETA | Non |
+| 26 | ICT-23 — PersonaCatastrophe : la fronce de Thom appliqu | BETA | Oui |
+| 27 | ICT-24 — WorkspaceIgnition : l'axe Global Workspace et  | BETA | Non |
+| 28 | ICT-25 — InoculationRL : GRPO à récompense *hackable*,  | BETA | Non |
+| 29 | ICT-26 — Convention de signalisation (expérience A, str | BETA | Oui |
+| 30 | ICT-27 — Invention de symboles (expérience B, strate 7) | BETA | Oui |
+| 31 | ICT-28 — Adoption collective et seuil de performativité | BETA | Oui |
+| 32 | ICT-29 — Inoculation d'un concept (expérience D, strate | BETA | Oui |
+| 33 | ICT-3 — Robustesse & délai de gratification : étude qua | BETA | Oui |
+| 34 | ICT-30 — Invention inhibée (expérience E, strate 7) | BETA | Oui |
+| 35 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
+| 36 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
+| 37 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
+| 38 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
+| 39 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | BETA | Oui |
+| 40 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | BETA | Oui |
+| 41 | ICT — Substrat argumentation : trajectoires de croyance | BETA | Oui |
+| 42 | Boucle auto-referentielle p_hat (case 2 / Epic #9533) | BETA | Oui |
+| 43 | ICT -- Dissociation saillance / pregnance (case `s ⟂ π` | BETA | Oui |
+| 44 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | BETA | Non |
+| 45 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
 
 ## Probas (2 notebooks)
 

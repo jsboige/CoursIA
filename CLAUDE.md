@@ -28,7 +28,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/procedures-recurrentes.md](docs/reference/procedures-recurrentes.md) | Workflow PR, dispatch, validation notebook, audit anti-régression, pre-commit H.3 |
 | [reference/subagents-reference.md](docs/reference/subagents-reference.md) | 21 sous-agents + 17 skills, mapping side-tracks, usage async |
 | [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
-| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Architecture MCP roo-state-manager (34 outils, RooSync) |
+| [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
 | [reference/env-python-reparation.md](docs/reference/env-python-reparation.md) | Réparation env Python (règle F) |
 | [reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) · [orphan-branch-scan-l576.md](docs/reference/orphan-branch-scan-l576.md) | Scans anti-phantom (drift, branche orpheline) |
@@ -38,7 +38,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 ## Règles modulaires `.claude/rules/` (auto-loaded chaque session)
 
-`git-workflow` (branches, commits, force push) · `pr-review-discipline` (critères CHANGES_REQUESTED) · `anti-regression` (patterns red-flag) · `notebook-conventions` (structure, exécution kernel) · `exercise-example-labeling` (content-based, stop flip-flop) · `code-style` (PEP 8, .NET 9, no emojis) · `genai-config` · `wsl-kernels` · `student-pr-reviews` (anti-fuite soutenance) · `lean-merge-discipline` · `secrets-hygiene` · `secrets-roosync-policy` · `audit-reassessment` · `audit-cross-source-distillation` · `verify-before-claiming` · `coordinator-discipline` · `proactive-coordination` · `user-blocker-signaling` · `harness-hygiene` · `catalog-pr-hygiene` · `model-delegation` · `three-exercises-per-notebook` · `sota-not-workaround` · `readme-french-first` · `variation-protocol`.
+`git-workflow` (branches, commits, force push) · `pr-review-discipline` (critères CHANGES_REQUESTED) · `anti-regression` (patterns red-flag) · `notebook-conventions` (structure, exécution kernel) · `exercise-example-labeling` (content-based, stop flip-flop) · `code-style` (PEP 8, .NET 9, no emojis) · `genai-config` · `wsl-kernels` · `student-pr-reviews` (anti-fuite soutenance) · `lean-merge-discipline` · `secrets-hygiene` · `secrets-roosync-policy` · `audit-reassessment` · `audit-cross-source-distillation` · `verify-before-claiming` · `coordinator-discipline` · `proactive-coordination` · `user-blocker-signaling` · `harness-hygiene` · `catalog-pr-hygiene` · `model-delegation` · `three-exercises-per-notebook` · `sota-not-workaround` · `readme-french-first` · `variation-protocol` · `lane-claim-protocol` (claim = commentaire d'issue, anti-collision cross-lane).
 
 ---
 
@@ -52,7 +52,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Reporting dashboard** : poster au minimum début/livraison/fin de session. > 30 min sans post = signe d'isolement. Posts `[INFO]` courts > silence.
 
-**Git** : pas de push direct sur `main`, pas de force push (`--force` / `--force-with-lease`) ni `reset --hard` sans validation user. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. Cf [git-workflow.md](.claude/rules/git-workflow.md).
+**Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. Cf [git-workflow.md](.claude/rules/git-workflow.md).
 
 ### B. Reviews PR (5 points obligatoires)
 

@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-9-HTN-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `unified-planning.engines.HTN` (API HTN : `HierarchicalPlanningProblem` + `Method` + `Task` + `Subtask` + `htn_planner` solveur, avec enrichissement method-selection demonstration backtracking cote Python instance discriminante m_deliver_direct vs m_deliver_via_intermediate, PR #8173 MERGED). C# = from-scratch BCL .NET (`Predicat` grounde, `Etat`, decomposition de methodes via backtracking maison, cell[41] methode `grind_beans` corrigee en c.678 sur le cote Python, parite semantique preservee). Verdict RECOVERABLE-LOCAL : le coeur pedagogique (HTN : Hierarchical Task Network, decomposition de taches, methodes, backtracking sur selection de methodes) est PARITABLE des deux cotes (memes concepts, meme discrimination method-selection via instance discriminante), l'asymetrie reside dans l'enrichissement cote PY uniquement (unified-planning.engines.HTN expose des helpers de method decomposition non reproduits cote C#). Le C# preserve le socle from-scratch comme choix pedagogique assumme (HTN foundations = construire la decomposition de methodes a la main avant d'utiliser une lib). Le PY pourrait installer `pddl-fluent-parser` (PyPI MIT, pure-Python, jansucan) pour ajouter le parsing HTN natif, mais le notebook preserve unified-planning. `parity_level: semantic` preserve : parite sur les concepts cibles (HTN, method selection, backtracking) malgre l'asymetrie d'enrichissement."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

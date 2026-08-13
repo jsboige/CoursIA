@@ -3,13 +3,22 @@
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-9-Classification.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-9-Classification.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   audits:
     - date: "2026-07-29"
       by: myia-po-2023:CoursIA-2
       python_sha: 5171f5eac673b08f03930ad3cf8ba67516cea121
       csharp_sha: 536e512f086a44306ebfb1bf241536c5055a8123
+    - date: "2026-08-09"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 5171f5eac673b08f03930ad3cf8ba67516cea121
+      csharp_sha: beebb734aaa685b1f5df23d23a5a41bcb03deabc
+      content_python_sha: 9a7b9da90854d32395899656b2015f1ba5f8fdbce76090c80d0438669f0ca1ea
+      content_csharp_sha: 55696e6883f73cdad3dab1dff4b9d80afa7e3c18d19f3dc8d097d1a42b5251c9
   known_differences:
   - 'Socle pedagogique commun : classification bayesienne modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - 'Re-baseline 2026-08-09 (myia-po-2025:CoursIA-2, #10170) : SHA C# avance 536e512f -> beebb734 (insertion d''une ligne vide avant un tableau markdown GFM -- fix MD028 blanks-around-tables, le tableau collait au paragraphe precedent). Markdown-only typographique (structure de tableau), ne touche pas l''axe de parite semantic (Infer.NET EP + classification bayesienne inchanges). Drift verifie parite-preserving.'

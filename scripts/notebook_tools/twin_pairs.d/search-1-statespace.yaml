@@ -3,13 +3,28 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = stdlib only (collections.deque BFS + copy.deepcopy state cloning + math/numpy helper viz). Pas de lib SOTA-tier pour state-space search en Python pur (la reference AIMA 3e ed. est pedagogique from-scratch). C# = BCL pure (Queue<T> BFS + Stack<T> DFS + LinkedList<T> state space from-scratch, 0 NuGet SOTA tiers). Les DEUX cotes sont en from-scratch pedagogique (BFS / DFS sur etats explicites, algos classiques AIMA ch.3), la portabilite cross-lang est dans l'algo (file d'attente + set de visites + fonction successeur), pas dans une lib. Verdict RECOVERABLE-LOCAL (from-scratch from-scratch assume pedagogique)."
   audits:
     - date: "2026-08-01"
       by: myia-po-2023:CoursIA-2
       python_sha: eec0668ba49d9b95a067fafc1674a83edccdb055
       csharp_sha: 1b1fc49cdd3b82a9d6af5c15829256ab5a183c17
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: eec0668ba49d9b95a067fafc1674a83edccdb055
+      csharp_sha: 38676a8110145c472b74dcd2eb4974587a76828c
+      content_python_sha: 9343e056e8d143cf6c527273ac8af7ea4f23c7d598234a35c69676dca1e3b8fa
+      content_csharp_sha: 03186c4d9e8724d7f284963abcd3171d9ef5b9af47b194ae4915826b73458949
+    - date: "2026-08-11"
+      by: myia-ai-01:CoursIA
+      python_sha: 8e1df7f36a493d598be04e79ee3e78c8721ee539
+      csharp_sha: 38676a8110145c472b74dcd2eb4974587a76828c
+      content_python_sha: 9506313cddec55398a9a51bdc17906d276d055b7f61bacfc6187654ac3685cef
+      content_csharp_sha: 03186c4d9e8724d7f284963abcd3171d9ef5b9af47b194ae4915826b73458949
   known_differences:
     - "Socle pedagogique commun : modelisation d'un espace d'etats (noeuds, aretes, etat initial, etat but, successeurs). Exemples : grille 8-puzzle, monde du aspirateur, labyrinthe."
     - "Idiomes framework distincts : Python = dataclasses + frozenset pour etats hashables + `import typing`. C# = `using System.Collections.Generic;` (HashSet<T> pour etats visites, Dictionary<TState, IEnumerable<TState>> pour successeurs, struct/record pour etat)."
     - "Pas d'extension solveur tiers cote C# sur ce notebook (uniquement depuis CSP-1+) - implementation from-scratch sur les deux cotes."
+    - "2026-08-11 (ai-01) : l'affirmation ci-dessus est desormais vraie SANS reserve. Le cote Python portait un bloc `try/except` d'import networkx optionnel dont le drapeau `HAS_NETWORKX` etait ecrit dans les deux branches et LU NULLE PART -- donc l'import, le drapeau et le message d'installation ne pouvaient rien produire. Bloc entier retire par #10438 : retirer le seul import aurait laisse un drapeau orphelin. Cf #10382 §2."
     - "Visualisation : Python = matplotlib (grille 8-puzzle animee, graphe d'etats). C# = sortie textuelle des traces (Console.WriteLine des etats successeurs explorés)."

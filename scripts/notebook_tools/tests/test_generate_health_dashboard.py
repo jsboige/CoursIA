@@ -4,7 +4,7 @@ generator (issue #4210 acceptance #4).
 Why this test file exists
 -------------------------
 ``generate_health_dashboard.py`` derives a public health snapshot from
-``COURSE_CATALOG.generated.json`` and writes ``docs/reference/HEALTH_DASHBOARD.md``.
+``COURSE_CATALOG.generated.json`` and writes ``docs/archive/reference/HEALTH_DASHBOARD.md``.
 It is the *consumption* counterpart of the catalog generator (cron-driven,
 ``catalog-cron.yml``): where ``generate_catalog.py`` *writes* the catalogue,
 ``generate_health_dashboard.py`` *reads* it and produces a curated prose view.
@@ -15,7 +15,7 @@ with ``tmp_path`` + ``monkeypatch.chdir``:
 
   * write a synthesised catalogue to ``tmp_path/COURSE_CATALOG.generated.json``
   * run ``python scripts/notebook_tools/generate_health_dashboard.py`` in tmp_path
-  * assert stdout, exit code, and ``tmp_path/docs/reference/HEALTH_DASHBOARD.md``
+  * assert stdout, exit code, and ``tmp_path/docs/archive/reference/HEALTH_DASHBOARD.md``
 
 This matches the SOTA-not-workaround verdict of c.632: SOTA-OK = the tested code
 is the canonical module, not a re-implementation toy. The module is pure-stdlib
@@ -98,7 +98,7 @@ def _write_catalogue(tmp_path: Path, entries: list[dict]) -> Path:
 
 def _run_generator(tmp_path: Path, entries: list[dict]) -> subprocess.CompletedProcess:
     """Run the generator as a subprocess, chdir=tmp_path so relative paths
-    (``COURSE_CATALOG.generated.json`` in / ``docs/reference/HEALTH_DASHBOARD.md``
+    (``COURSE_CATALOG.generated.json`` in / ``docs/archive/reference/HEALTH_DASHBOARD.md``
     out) resolve there."""
     _write_catalogue(tmp_path, entries)
     return subprocess.run(
@@ -133,7 +133,7 @@ class TestCatalogParsing:
         entries = [_nb(title=f"n{i:02d}", last_validation="") for i in range(3)]
         result = _run_generator(tmp_path, entries)
         assert result.returncode == 0
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "n/a" in out  # snapshot_date fallback rendered
 
     def test_mixed_dates_picks_max(self, tmp_path):
@@ -146,7 +146,7 @@ class TestCatalogParsing:
         ]
         result = _run_generator(tmp_path, entries)
         assert result.returncode == 0
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "2026-07-19T12:00:00Z" in out
 
     def test_status_counter_unknown_fallback(self, tmp_path):
@@ -159,7 +159,7 @@ class TestCatalogParsing:
         ]
         result = _run_generator(tmp_path, entries)
         assert result.returncode == 0
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         # Status table renders READY but WEIRD is NOT in the explicit loop;
         # only the 3 documented statuses get rows (READY/DEMO/BROKEN).
         assert "| READY |" in out
@@ -180,7 +180,7 @@ class TestStatusAggregation:
         entries = [_nb(title=f"n{i:02d}", status=status) for i in range(n)]
         result = _run_generator(tmp_path, entries)
         assert result.returncode == 0
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         # The status table renders ``| {status} | {n} | {pct:.1f}% |``
         assert f"| {status} | {n} |" in out
 
@@ -192,7 +192,7 @@ class TestStatusAggregation:
             + [_nb(title="broken", status="BROKEN")]
         )
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "| BROKEN | 1 | 33.3% |" in out
         assert "| READY | 2 | 66.7% |" in out
 
@@ -204,7 +204,7 @@ class TestStatusAggregation:
             _nb(title="r", status="READY"),
         ]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         # ARCHIVED never rendered as a table row
         assert "| ARCHIVED |" not in out
         assert "| READY | 1 |" in out
@@ -232,7 +232,7 @@ class TestMaturityKernel:
             _nb(title="lean1", kernel="lean4"),
         ]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         # python3 first (5), then dotnet-interactive (2), then lean4 (1)
         py_idx = out.find("| python3 |")
         cs_idx = out.find("| dotnet-interactive |")
@@ -254,7 +254,7 @@ class TestRequirementBadges:
             _nb(title="cloud1", executable_locally=False, requires_cloud=True),
         ]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "| **local** (exécutable sans GPU/cloud/WSL) | 2 |" in out
         assert "| GPU requis | 1 |" in out
         assert "| Cloud requis (QC / GenAI Docker) | 1 |" in out
@@ -268,14 +268,14 @@ class TestRequirementBadges:
             _nb(title="wsl-only", requires_wsl=True),
         ]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "| GPU requis | 2 |" in out
         assert "| WSL requis | 2 |" in out
 
     def test_all_zero_requirements_renders_clean(self, tmp_path):
         entries = [_nb(title=f"n{i}", executable_locally=True) for i in range(4)]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "| **local** (exécutable sans GPU/cloud/WSL) | 4 |" in out
         assert "| GPU requis | 0 |" in out
 
@@ -292,7 +292,7 @@ class TestSeriesBreakdown:
             _nb(serie="ML", title="m1", status="DEMO"),
         ]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         audio_idx = out.find("| Audio |")
         ml_idx = out.find("| ML |")
         search_idx = out.find("| Search |")
@@ -309,7 +309,7 @@ class TestSeriesBreakdown:
             _nb(serie="Probas", title="b1", status="BROKEN"),
         ]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "| Probas | 2 | 0 | 1 | 3 | 67% |" in out
 
     def test_series_total_zero_pct_no_crash(self, tmp_path):
@@ -319,7 +319,7 @@ class TestSeriesBreakdown:
         bucket, but we can assert total >= 1 in every rendered row."""
         entries = [_nb(serie="Empty", title="x", status="DEMO")]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "| Empty | 0 | 1 | 0 | 1 | 0% |" in out
 
 
@@ -332,7 +332,7 @@ class TestBrokenSection:
         (no table, no header)."""
         entries = [_nb(title=f"n{i}", status="READY") for i in range(3)]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "## BROKEN" not in out
 
     def test_broken_section_lists_each_entry(self, tmp_path):
@@ -342,7 +342,7 @@ class TestBrokenSection:
             _nb(serie="Search", title="n02-stuck", status="BROKEN", maturity="LEGACY", last_validation="2025-11-03T19:42:00Z"),
         ]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "## BROKEN (2 — à traiter en priorité)" in out
         assert "| Probas | n01-broken | POC | 2026-01-15T08:00:00Z |" in out
         assert "| Search | n02-stuck | LEGACY | 2025-11-03T19:42:00Z |" in out
@@ -351,7 +351,7 @@ class TestBrokenSection:
         """The section header includes the live count between parens."""
         entries = [_nb(title=f"b{i}", status="BROKEN") for i in range(4)]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "## BROKEN (4 — à traiter en priorité)" in out
 
 
@@ -364,7 +364,7 @@ class TestOutputStructure:
         See #4208 (CoursIA → référence publique)."""
         entries = [_nb(title="n1")]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "acceptance #4 de #4210" in out
         assert "See #4208" in out
         assert "See #4210" in out
@@ -374,7 +374,7 @@ class TestOutputStructure:
         for the doc being non-hand-maintained."""
         entries = [_nb(title="n1")]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         # The disclaimer wraps "n'est pas maintenu à la main" in ``**...**`` bold.
         assert "**n'est pas maintenu à la main**" in out
         assert "python scripts/notebook_tools/generate_health_dashboard.py" in out
@@ -382,14 +382,14 @@ class TestOutputStructure:
     def test_total_notebooks_count_in_intro(self, tmp_path):
         entries = [_nb(title=f"n{i:02d}") for i in range(7)]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "**7** notebooks référencés au catalogue." in out
 
     def test_voir_aussi_block_includes_catalogue_source(self, tmp_path):
         """The footer anchors the catalogue source."""
         entries = [_nb(title="n1")]
         result = _run_generator(tmp_path, entries)
-        out = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        out = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert "## Voir aussi" in out
         assert "COURSE_CATALOG.generated.md" in out
         assert "catalog-cron.yml" in out
@@ -407,17 +407,17 @@ class TestRunScript:
     def test_run_creates_output_file(self, tmp_path):
         entries = [_nb(title="n1")]
         _run_generator(tmp_path, entries)
-        out_path = tmp_path / "docs/reference/HEALTH_DASHBOARD.md"
+        out_path = tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md"
         assert out_path.exists()
         assert out_path.stat().st_size > 0
 
     def test_run_creates_parent_directories(self, tmp_path):
         """``OUT.parent.mkdir(parents=True, exist_ok=True)`` must create nested
-        docs/reference/ even when tmp_path is empty."""
+        docs/archive/reference/ even when tmp_path is empty."""
         entries = [_nb(title="n1")]
         result = _run_generator(tmp_path, entries)
         assert result.returncode == 0
-        assert (tmp_path / "docs/reference").is_dir()
+        assert (tmp_path / "docs/archive/reference").is_dir()
 
     def test_stdout_includes_wrote_line_and_totals(self, tmp_path):
         """The script prints two summary lines on stdout:
@@ -444,9 +444,9 @@ class TestRunScript:
         output (deterministic — no timestamp, no random)."""
         entries = [_nb(title=f"n{i}") for i in range(3)]
         _run_generator(tmp_path, entries)
-        first = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        first = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         _run_generator(tmp_path, entries)
-        second = (tmp_path / "docs/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
+        second = (tmp_path / "docs/archive/reference/HEALTH_DASHBOARD.md").read_text(encoding="utf-8")
         assert first == second
 
     def test_run_missing_catalogue_crashes_with_read_error(self, tmp_path):

@@ -24,6 +24,14 @@
       csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
       content_python_sha: fd3f5f82524aac3d82f9c32fd061b39913804a83556105968d0399442f453477
       content_csharp_sha: 2c3db01c13d46ede8e7eba70b16ad0dd2d29399c59be643f5c56c9077a0eca87
+    - date: "2026-08-08"
+      by: myia-po-2023:CoursIA-2
+      python_sha: f5ba87aff008ac80053688f52f1ac66658fb6944
+      csharp_sha: 2c8194226c9eabf6906fc907455aae6190dc571b
+      content_python_sha: 243d9eef2b0b77c2f6adde6f8719764599ac301b40d9f2036b2f21cd4c40d498
+      content_csharp_sha: 2c3db01c13d46ede8e7eba70b16ad0dd2d29399c59be643f5c56c9077a0eca87
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = collections + math + matplotlib + numpy + random (Counter/typing + matplotlib viz, logique deductive + feedback, theorie de l'information, 21 cellules code). C# = BCL pure (System.IO + System.Collections.Generic + Microsoft.DotNet.Interactive.Formatting, 0 NuGet, from-scratch, 19 cellules code). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (Wordle, theorie de l'information + feedback deductive), pas de SOTA lib requise pour ce chapitre (les deux cotes implement from-scratch). L'asymetrie de portage (matplotlib cote Python, format texte cote C#) est mineure. parity_level: semantic preserve."
   known_differences:
     - "Socle pedagogique commun : Wordle (logique deductive + feedback, theorie de l'information) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = Counter/typing + matplotlib viz ; C# = System.IO + Microsoft.DotNet.Interactive formatting."

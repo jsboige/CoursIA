@@ -157,6 +157,50 @@ except ImportError:  # pragma: no cover
 # `last_audit` changent, commentaires du fichier preserves).
 DEFAULT_REGISTRY = Path(__file__).resolve().parent / "twin_pairs.d"
 
+# Verdict de bridge SOTA (#10439). Orthogonal a `parity_level` (qui decrit la
+# correspondance des jumeaux) : ce champ decrit si un moteur SOTA est
+# branchable/branche du cote .NET, pour qu'un verdict INTRINSIC deja rendu en
+# prose cesse d'etre invisible aux detecteurs et de re-signaler la paire a
+# chaque scan. Enumeration = les 5 verdicts de sota-not-workaround.md.
+BRIDGE_VERDICTS = frozenset({
+    "SOTA-OK",
+    "RECOVERABLE-LOCAL",
+    "RECOVERABLE-MACHINE",
+    "RECOVERABLE-USER-HAND",
+    "INTRINSIC",
+})
+
+
+def validate_pair_fields(pair: dict) -> list[str]:
+    """Valide les champs structurels d'une paire. Retourne une liste d'erreurs
+    (vide = OK). Fail-loud sur `bridge_verdict` hors enum, ou `bridge_verdict:
+    INTRINSIC` sans `bridge_verdict_reason` (#10439).
+
+    Les champs `bridge_verdict` et `bridge_verdict_reason` sont OPTIONNELS : la
+    plupart des paires n'en portent pas (le verdict par defaut est "non-rompt",
+    la paire reste actionnable). Un INTRINSIC sans reason est interdit car le
+    verdict sans le raisonnement ne vaut rien (cf _schema.yaml + #10439).
+
+    Scope : ne valide QUE bridge_verdict (#10439). `parity_level` n'est pas
+    valide ici -- des fixtures de test utilisent des valeurs placeholders (ex.
+    'full') et l'enumeration reelle (surface/semantic/native-both) est deja
+    enforcee par revue + _schema.yaml.
+    """
+    errs: list[str] = []
+    name = pair.get("name", "?")
+    bv = pair.get("bridge_verdict")
+    if bv is not None:
+        if bv not in BRIDGE_VERDICTS:
+            errs.append(
+                f"{name}: bridge_verdict={bv!r} hors enum {sorted(BRIDGE_VERDICTS)}"
+            )
+        elif bv == "INTRINSIC" and not str(pair.get("bridge_verdict_reason", "")).strip():
+            errs.append(
+                f"{name}: bridge_verdict=INTRINSIC requiert bridge_verdict_reason "
+                f"(le verdict sans le raisonnement ne vaut rien, #10439)"
+            )
+    return errs
+
 
 def _slug(name: str) -> str:
     """Slug stable et deterministe du `name` d'une paire -> nom de fichier.
@@ -498,6 +542,7 @@ def check_pair(repo_root: Path, pair: dict, git_ref: str = "HEAD") -> dict:
         "python": py,
         "csharp": cs,
         "parity_level": pair.get("parity_level", "?"),
+        "bridge_verdict": pair.get("bridge_verdict"),
         "status": status,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
@@ -913,15 +958,33 @@ def surgical_rebaseline(raw: str, updates: dict[str, dict], force: bool = False)
             i += 1
             continue
 
-        m_hdr = re.match(r"^\s{2}(last_audit|audits):\s*$", line)
+        # Quantificateur \s{2,} (pas \s{2} exact) + coupure RELATIVE a
+        # l'indentation de la cle (#10430) : un fichier a indentation native 4
+        # (ex. app-10-portfolio.yaml, `audits:` a 4 espaces) voyait son en-tete
+        # reste invisible avec \s{2} exact -> surgical_rebaseline renvoyait
+        # touched=0 SANS erreur (header introuvable = no-op silencieux).
+        m_hdr = re.match(r"^(\s{2,})(last_audit|audits):\s*$", line)
         if m_hdr and current in updates:
-            form = m_hdr.group(1)
-            # Corps du bloc = lignes suivantes indentees a 4+ espaces.
+            hdr_indent = len(m_hdr.group(1))
+            form = m_hdr.group(2)
+            # Corps du bloc : coupure RELATIVE (pas le seuil absolu \s{4,}
+            # d'avant, qui etrangle la cle sibling `known_differences:` quand
+            # `audits:` est a indent 4). Continuation = strictement plus indent
+            # que la cle, OU un item de sequence `-` a indent >= cle (YAML
+            # autorise un block sequence a la meme indent que sa cle parent).
             block = [line]
             j = i + 1
-            while j < n and re.match(r"^\s{4,}\S", lines[j]):
-                block.append(lines[j])
-                j += 1
+            while j < n:
+                nxt = lines[j]
+                if not nxt.strip():
+                    break
+                lead = len(nxt) - len(nxt.lstrip(" "))
+                is_seq = nxt.lstrip(" ").startswith("-")
+                if lead > hdr_indent or (is_seq and lead >= hdr_indent):
+                    block.append(nxt)
+                    j += 1
+                else:
+                    break
             new_block, did = _transform_audit_block(form, block, updates[current], force=force)
             if did:
                 touched.add(current)
@@ -983,6 +1046,12 @@ def main(argv=None) -> int:
                         "(no-op = faux audit, --update devient facultatif). "
                         "Utilisez --force pour outrepasser avec un avertissement.")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
+    p.add_argument("--summary-by-verdict", action="store_true",
+                   help="Compte les paires par `bridge_verdict` (#10439) : SOTA-OK / "
+                        "RECOVERABLE-* / INTRINSIC / (non-rompu = actionnable). "
+                        "Le point du champ structurel : soustraire les verdicts "
+                        "INTRINSIC/SOTA-OK du denominateur 'actionnable' SANS "
+                        "intervention manuelle. Incompatible avec --update/--per-pair.")
     p.add_argument("--coverage", action="store_true",
                    help="Recense les notebooks C# versionnes NON couverts par le "
                         "registre (jumeau Python present mais paire non declaree). "
@@ -1033,6 +1102,10 @@ def main(argv=None) -> int:
     if args.coverage and (args.update or args.per_pair or args.base or args.verify_recorded_sha):
         p.error("--coverage est un mode de recensement seul : incompatible avec "
                 "--update / --per-pair / --base / --verify-recorded-sha.")
+    if args.summary_by_verdict and (args.update or args.per_pair or args.base
+                                    or args.verify_recorded_sha or args.coverage):
+        p.error("--summary-by-verdict est un mode de recensement seul : incompatible "
+                "avec --update / --per-pair / --base / --verify-recorded-sha / --coverage.")
     if args.per_pair and not args.base:
         p.error("--per-pair necessite --base <ref>")
     if args.base and not args.per_pair:
@@ -1068,6 +1141,47 @@ def main(argv=None) -> int:
 
     repo_root = Path(args.repo_root) if args.repo_root else _repo_root()
     reg_path = Path(args.registry)
+
+    # --- Mode --summary-by-verdict (#10439) : denominateur actionnable sans
+    # soustraction manuelle. Compte les paires par bridge_verdict ; les paires
+    # SANS verdict sont les 'actionnables' (ni INTRINSIC ni SOTA-OK declare). ---
+    if args.summary_by_verdict:
+        pairs = load_registry(reg_path)
+        # Fail-loud sur un bridge_verdict invalide avant de resumer : un resume
+        # qui ignore silencieusement une valeur hors enum est le defaut meme
+        # que #10439 vient corriger.
+        schema_errs = [e for pp in pairs for e in validate_pair_fields(pp)]
+        if schema_errs:
+            for e in schema_errs:
+                print(f"SCHEMA ERROR: {e}", file=sys.stderr)
+            return 2
+        counts: dict = {}
+        names_by: dict = {}
+        for pp in pairs:
+            bv = pp.get("bridge_verdict", "(non-rompu)")
+            counts[bv] = counts.get(bv, 0) + 1
+            names_by.setdefault(bv, []).append(pp.get("name", "?"))
+        actionable = sum(c for k, c in counts.items()
+                         if k not in ("INTRINSIC", "SOTA-OK"))
+        if args.json:
+            print(json.dumps({
+                "mode": "summary_by_verdict",
+                "registry": str(reg_path),
+                "total": len(pairs),
+                "counts": counts,
+                "actionable": actionable,
+            }, ensure_ascii=False, indent=2))
+        else:
+            order = ["(non-rompu)", "SOTA-OK", "RECOVERABLE-LOCAL",
+                     "RECOVERABLE-MACHINE", "RECOVERABLE-USER-HAND", "INTRINSIC"]
+            shown = [k for k in order if k in counts] + sorted(set(counts) - set(order))
+            print(f"Summary by bridge_verdict ({len(pairs)} paires) :")
+            for k in shown:
+                tag = " ACTIONNABLE" if k not in ("INTRINSIC", "SOTA-OK") else ""
+                print(f"  {k:<22} {counts[k]:>3}{tag}")
+            print(f"  {'actionnables (a bridger)':<22} {actionable:>3}"
+                  f"  = total - INTRINSIC - SOTA-OK")
+        return 0
 
     # --- Mode --coverage : angle mort du registre (paires jamais declarees) ---
     if args.coverage:
@@ -1207,6 +1321,17 @@ def main(argv=None) -> int:
     # --- Mode historique (fleet-wide) ---
     pairs = load_registry(reg_path)
 
+    # Validation schema (#10439) : fail-loud sur bridge_verdict/parity_level
+    # invalide. Une valeur hors enum ignorée silencieusement est precisement le
+    # defaut que le champ structurel vient corriger (verdict invisible aux
+    # detecteurs). S'applique aux modes check ET update (un update n'ecrit pas
+    # non plus par-dessus un schema error).
+    schema_errs = [e for pp in pairs for e in validate_pair_fields(pp)]
+    if schema_errs:
+        for e in schema_errs:
+            print(f"SCHEMA ERROR: {e}", file=sys.stderr)
+        return 2
+
     if args.family:
         pairs = [pp for pp in pairs if pp.get("family") == args.family]
         if not pairs:
@@ -1265,6 +1390,7 @@ def main(argv=None) -> int:
         # commentaires + casserait le quoting `date: "..."` -> datetime.date.)
         if reg_path.is_dir():
             written = 0
+            missing_header = []
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
@@ -1272,16 +1398,43 @@ def main(argv=None) -> int:
                           f"(attendu : {pfile.name}).", file=sys.stderr)
                     continue
                 raw = pfile.read_text(encoding="utf-8")
-                new_raw, _ = surgical_rebaseline(raw, {name: audit}, force=args.force)
+                # On capture `touched` (#10430) : avant, le compteur etait jete
+                # (`_`) et « header introuvable » (indent non reconnue, paire
+                # absente du fichier) produisait exactement la meme sortie qu'un
+                # no-op legit (« SHAs deja a jour ») -- un organe d'attestation
+                # qui echoue en silence. Les paires no-op legit sont deja
+                # filtree en amont (branche `no_op`/`forced_no_op`), donc
+                # touched==0 ici signifie reellement « header non reconnu ».
+                new_raw, touched = surgical_rebaseline(raw, {name: audit}, force=args.force)
+                if touched == 0:
+                    missing_header.append(name)
+                    continue
                 if new_raw != raw:
                     write_registry_text(pfile, new_raw)
                     written += 1
             updated = written
+            if missing_header:
+                print(
+                    f"AVERTISSEMENT : {len(missing_header)} paire(s) a rebaseliner "
+                    f"MAIS aucun bloc d'audit reconnu (audits:/last_audit: "
+                    f"introuvable ou indentation non reconnue) dans leur fichier "
+                    f"-- rebaseline IGNORE. Ce N'est PAS un no-op legit (les "
+                    f"SHAs different). Verifier l'indentation du fichier : "
+                    f"{', '.join(missing_header)}",
+                    file=sys.stderr,
+                )
         else:
             # mono-fichier legacy (--registry <file.yaml>)
             raw = reg_path.read_text(encoding="utf-8")
             new_raw, updated = surgical_rebaseline(raw, updates, force=args.force)
             write_registry_text(reg_path, new_raw)
+            if updated < len(updates):
+                print(
+                    f"AVERTISSEMENT : {len(updates) - updated} paire(s) a "
+                    f"rebaseliner sans bloc d'audit reconnu dans {reg_path.name} "
+                    f"-- rebaseline IGNORE pour elles (header introuvable).",
+                    file=sys.stderr,
+                )
         if skipped:
             print(
                 f"Ignorees (notebook absent de git) : {', '.join(skipped)}",
@@ -1465,12 +1618,30 @@ def main(argv=None) -> int:
                 if content_py_drift or content_cs_drift:
                     cat["n_drift_content"] += 1
                 elif blob_py_drift or blob_cs_drift:
-                    # Strip outille probable (volet c detecte le strip)
+                    # Churn metadata-only carnet : INFORMATIF, jamais bloquant.
+                    # `_content_sha` hache les cellules ET leurs outputs, en
+                    # n'excluant que `nb["metadata"]` (cost / papermill /
+                    # kernelspec / language_info). Donc « blob bouge, content
+                    # identique » ne peut signifier QUE du churn de metadata
+                    # carnet -- exactement le faux positif que le volet c a ete
+                    # construit pour tuer (cf docstring de `_content_sha`).
+                    # Rougir ici le re-fabriquerait au niveau du cron : incident
+                    # du 2026-08-07, cron rouge sur main pour Sudoku-8/14 BDD --
+                    # les 2 paires nommees dans cette meme docstring -- avec un
+                    # `::error ...::<none>` qui ne designait aucune paire (leur
+                    # `status` reste OK, donc `_cron_extract_drift` n'en listait
+                    # aucune). Et le remede prescrit (`--update`) est un NO-OP
+                    # par design puisque `_shas_match` compare les content_sha :
+                    # un gate que son propre remede ne peut pas eteindre.
                     cat["n_drift_legacy_after_content"] += 1
+                    entry_ci["metadata_only_blob_drift"] = True
                     entry_ci["details"].append(
-                        "blob SHA drift MAIS content_sha OK : strip outille probable "
-                        "(strip_probe_banner / strip_machine_paths / scrub_papermill) "
-                        "sans --update ulterieur. Refaire --update en dernier, cf #8957."
+                        "blob SHA drift MAIS content_sha OK : churn metadata-only "
+                        "(metadata.cost / papermill / kernelspec) -- aucune divergence "
+                        "pedagogique. INFORMATIF : ne fait pas rougir le gate. "
+                        "`--update` est un no-op par design ici (il compare les "
+                        "content_sha) ; re-tamponner le blob SHA exigerait --force et "
+                        "n'apporterait aucune information nouvelle (cf #9399 critere 2)."
                     )
                 else:
                     cat["n_ok_content"] += 1
@@ -1482,10 +1653,15 @@ def main(argv=None) -> int:
 
             ci_results.append(entry_ci)
 
-        n_total_drift = (cat["n_drift_blob"] + cat["n_drift_content"]
-                         + cat["n_drift_legacy_after_content"]
-                         + cat["n_missing_python"] + cat["n_missing_csharp"]
-                         + cat["n_no_audit"])
+        # Anomalies BLOQUANTES (celles qui font rougir le gate).
+        # `n_drift_legacy_after_content` en est volontairement EXCLU : blob
+        # bouge + content identique == churn metadata-only, informatif (cf la
+        # classification ci-dessus). `n_total_drift` reste le total de TOUTES
+        # les anomalies, pour le reporting.
+        n_blocking_drift = (cat["n_drift_blob"] + cat["n_drift_content"]
+                            + cat["n_missing_python"] + cat["n_missing_csharp"]
+                            + cat["n_no_audit"])
+        n_total_drift = n_blocking_drift + cat["n_drift_legacy_after_content"]
 
         if args.json:
             out = {
@@ -1497,6 +1673,7 @@ def main(argv=None) -> int:
                 "missing_total": n_missing,
                 "ci_strict": cat,
                 "n_total_drift": n_total_drift,
+                "n_blocking_drift": n_blocking_drift,
                 "pairs": ci_results,
             }
             print(json.dumps(out, ensure_ascii=False, indent=2))
@@ -1512,9 +1689,22 @@ def main(argv=None) -> int:
                     print(f"  [{r['status']}] {r['name']} ({r['family']}, {r['parity_level']})")
                     for d in r["details"]:
                         print(f"       - {d}")
+            # Les paires en churn metadata-only gardent `status == OK` (aucune
+            # divergence pedagogique) : sans cette boucle elles ne seraient
+            # nommees NULLE PART, et un compteur non nul sans nom n'est pas
+            # actionnable (c'est le `::error ...::<none>` du 2026-08-07).
+            for r in ci_results:
+                if r.get("metadata_only_blob_drift"):
+                    print(f"  [INFO metadata-only] {r['name']} "
+                          f"({r['family']}, {r['parity_level']})")
+                    for d in r["details"]:
+                        print(f"       - {d}")
 
-        # CI gate : rouge sur n'importe quel drift (le but du cron fleet-wide)
-        if args.check and n_total_drift > 0:
+        # CI gate : rouge sur les anomalies BLOQUANTES uniquement (le but du
+        # cron fleet-wide). Le churn metadata-only est compte et nomme, mais
+        # ne rougit pas -- sinon on re-fabrique le faux positif que le volet c
+        # a elimine, et sur un gate dont le remede prescrit est un no-op.
+        if args.check and n_blocking_drift > 0:
             return 1
         return 0
 

@@ -299,13 +299,24 @@ The key insight: `hashlifeResult` on a level-`k` MacroCell advances the
 centered region by `2^(k-2)` generations. To ensure the pattern stays
 within the computed region, we pad the MacroCell by 2 levels using
 `centerInLevelPlus2`, which places the pattern at the center of a
-`(level + 2)` cell. This gives `2^level` margin on each side, which is
-more than enough for `2^(level-2)` generations (speed of light = 1 cell/gen).
+`(level + 2)` cell, leaving `2^level` margin on each side.
 
-With this padding, `hashlifeResult` on the padded cell advances by
-`2^level` generations (not `2^(level-2)`), and the result's offset equals
-the original offset (the centered result of the padded cell aligns with
-the original region). -/
+Note that this padding **also increases the reach**: `hashlifeResult` on
+the padded cell advances by `2^level` generations (not `2^(level-2)` as
+the unpadded cell would). The `2^level` margin is therefore measured
+against a reach of `2^level` generations: the ratio is **tight** (close
+to 1), not "more than enough" as the naive `2^(level-2)` reach would
+suggest. The theorem `no_padding_depth_suffices` (see `JumpCapture.lean`)
+formalizes this: `marginToResultWindow k p < jumpReach k p`, the margin
+remaining strictly below the speed-of-light cone's reach, the gap being
+the `2^(k-1)` clip.
+
+The result's offset equals the original offset (the centered result of
+the padded cell aligns with the original region). Loosening this ratio
+would require decoupling the reach from the level — Gosper's `j`
+parameter (padding deeper than `+2`) brings the margin/reach ratio to
+`2 - 2^(2-p)`, tight at `p = 2` and a strict surplus at `p >= 3`; this
+variant is not implemented here. -/
 
 /-- Jump a MacroCell forward by `2^level` generations using recursive
     Hashlife with padding. Pads the input by 2 levels, then calls

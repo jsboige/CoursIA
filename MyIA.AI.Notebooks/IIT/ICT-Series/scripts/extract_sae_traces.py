@@ -22,11 +22,32 @@ Hook de clamp (Gate 24 de #5635, phase 2 — NON exECUTE dans cette issue) :
 `--clamp-ids` force un sous-ensemble de features SAE a zero en soustrayant leur
 contribution decodeur du residual stream (necessite W_dec dans le checkpoint).
 
+Deux echelles (#5105 / #7396) : le couple de reference est 9B-Base x W64K, mais
+l'arc post-training PT-12 lit aussi Qwen3.5-2B(-Base) x W32K. Les deux profondeurs
+different (32 vs 24 couches), donc `--layer 16` ne designe PAS la meme position
+relative : passer `--layer-frac 0.5` pour une intention transposable. Les gardes
+correspondantes vivent dans `ict/sae_traces.py` (pures, testables sans GPU) et
+sont appliquees ici AVANT tout chargement de poids.
+
+Deux largeurs SAE par modele cible (#10289 etape 2) : le meme depot
+`Qwen/SAE-Res-Qwen3.5-2B-Base-W32K` est publie en deux versions, `L0_50` et
+`L0_100`, qui different par le top-k d'encodage (50 vs 100). Le k est lu
+depuis le `config.json` du depot ; `--k` explicite DOIT y correspondre, la
+garde `assert_sae_topk_compatible` refuse tout desaccord (un `topk(50)`
+sur un SAE `L0_100` produirait une mesure a moitie de la release
+officielle, silencieusement).
+
 Usage (GPU 2 d'ai-01 STRICT — vLLM tient GPU 0-1) :
     CUDA_VISIBLE_DEVICES=2 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True \
       python extract_sae_traces.py --stage smoke
     ... --stage full --variant trained
     ... --stage full --variant control
+    # echelle 2B, mi-reseau, SAE L0_50 (defaut auto-detecte depuis config.json) :
+    ... --model Qwen/Qwen3.5-2B-Base --layer-frac 0.5 \
+        --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_50 --stage full
+    # echelle 2B, SAE L0_100 (meme modele, top-k=100 detecte auto) :
+    ... --model Qwen/Qwen3.5-2B-Base --layer-frac 0.5 \
+        --sae-repo Qwen/SAE-Res-Qwen3.5-2B-Base-W32K-L0_100 --stage full
 """
 from __future__ import annotations
 
@@ -39,6 +60,18 @@ from pathlib import Path
 
 import numpy as np
 import torch
+
+# Le package ``ict/`` reste numpy-only : l'importer ici ne fait PAS entrer torch
+# dans la bibliotheque — c'est ce script qui confine torch (cf docstring). Les
+# garde-fous cross-echelle vivent la-bas precisement pour etre testables sans GPU.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from ict.sae_traces import (  # noqa: E402  (necessairement apres sys.path)
+    assert_bf16_readout,
+    assert_sae_topk_compatible,
+    check_sae_model_match,
+    resolve_capture_layer,
+    trace_filename,
+)
 
 # ---------------------------------------------------------------------------
 # Jeux de prompts contrastifs (>=5 jeux = multi-graines du Gate 12, cf #5102).
@@ -278,6 +311,7 @@ PROMPT_SETS: dict[str, list[str]] = {
 
 DEFAULT_MODEL = "Qwen/Qwen3.5-9B-Base"
 DEFAULT_SAE_REPO = "Qwen/SAE-Res-Qwen3.5-9B-Base-W64K-L0_50"
+DEFAULT_LAYER = 16
 
 
 def parse_args() -> argparse.Namespace:
@@ -285,8 +319,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--stage", choices=["smoke", "full"], default="smoke")
     p.add_argument("--variant", choices=["trained", "control"], default="trained",
                    help="control = permutation seedee des lignes d'input embeddings")
-    p.add_argument("--layer", type=int, default=16,
-                   help="couche du resid_post capture (defaut 16 = mi-reseau, 0-31)")
+    # --layer et --layer-frac s'excluent : passer les deux serait une intention
+    # ambigue, et la resolution vit dans ict.sae_traces.resolve_capture_layer
+    # (qui refuse aussi le cas, pour l'appel bibliotheque hors CLI).
+    depth = p.add_mutually_exclusive_group()
+    depth.add_argument("--layer", type=int, default=None,
+                      help=f"index absolu du resid_post capture (defaut "
+                           f"{DEFAULT_LAYER}, valide pour un modele 32 couches). "
+                           "Un index n'est PAS comparable d'une echelle a "
+                           "l'autre : preferer --layer-frac pour un modele "
+                           "d'une autre profondeur.")
+    depth.add_argument("--layer-frac", type=float, default=None,
+                      help="profondeur RELATIVE dans [0, 1] (0.5 = mi-reseau). "
+                           "Transposable entre echelles : 0.5 donne 16 sur un "
+                           "32 couches, 12 sur un 24 couches.")
     p.add_argument("--model", default=DEFAULT_MODEL)
     p.add_argument("--sae-repo", default=DEFAULT_SAE_REPO)
     p.add_argument("--out-dir", default=str(Path(__file__).resolve().parent.parent / "traces"))
@@ -296,7 +342,39 @@ def parse_args() -> argparse.Namespace:
                         "(Gate 24 #5635, phase 2) — liste separee par des virgules")
     p.add_argument("--attn", default=None,
                    help="attn_implementation a forcer (ex: eager) si le defaut echoue")
+    p.add_argument("--allow-quantized-readout", action="store_true",
+                   help="autorise la lecture SAE d'un checkpoint quantifie. Par "
+                        "defaut refusee : les SAE sont entraines sur le residual "
+                        "stream pleine precision, donc un differentiel mesure en "
+                        "4-bit melangerait l'effet cherche et l'arrondi NF4.")
+    p.add_argument("--k", type=int, default=None,
+                   help="top-k d'encodage SAE. Si omis, lu depuis "
+                        "config.json du depot --sae-repo (defaut officiel : "
+                        "50 pour L0_50, 100 pour L0_100). Doit correspondre "
+                        "au k officiel — la garde assert_sae_topk_compatible "
+                        "refuse tout desaccord sans --allow-k-override.")
+    p.add_argument("--allow-k-override", action="store_true",
+                   help="autorise --k a desobeir au k officiel du SAE. "
+                        "INTERDIT en pratique : un top-k explicite inferieur "
+                        "tronque silencieusement un L0_100, le resultat n'est "
+                        "plus comparable a la release officielle. Reserve a "
+                        "l'exploration assumee et documentee.")
+    p.add_argument("--overwrite", action="store_true",
+                   help="autorise l'ecrasement d'une trace existante (refuse par defaut)")
     return p.parse_args()
+
+
+def _guard(fn, *a, **kw):
+    """Traduit une ``ValueError`` de garde-fou en sortie CLI actionnable.
+
+    Les garde-fous d':mod:`ict.sae_traces` levent des exceptions (testables,
+    reutilisables hors CLI) ; en ligne de commande, une trace Python nue est un
+    mauvais message d'erreur. Ce wrapper garde les deux usages.
+    """
+    try:
+        return fn(*a, **kw)
+    except ValueError as exc:
+        sys.exit(f"ERREUR: {exc}")
 
 
 def guard_single_gpu() -> torch.device:
@@ -341,6 +419,42 @@ def find_decoder_layers(model: torch.nn.Module, n_layers_hint: int | None) -> to
     return layers
 
 
+def fetch_sae_config(sae_repo: str) -> dict:
+    """Telcharge le ``config.json`` du depot SAE et rend ses champs-cles.
+
+    Le depot Qwen-Scope publie un ``config.json`` a la racine (cf ``app.py``
+    officiel) avec au moins ``d_model``, ``d_sae``, ``k``, ``num_layers``,
+    ``hook_point``. On isole ces quatre champs-ci : le script d'extraction
+    n'en a besoin que pour verifier la compatibilite top-k (ce depot =
+    L0_50 ou L0_100 ?) et le d_model (deja couvert par
+    :func:`ict.sae_traces.check_sae_model_match`, mais ici on en a besoin
+    avant le telechargement du ``layer{L}.sae.pt``).
+
+    Echec reseau : la garde ``assert_sae_topk_compatible`` devient
+    inapplicable, donc on le dit a l'appelant plutot que de deriver en
+    silence sur un defaut hardcode (k=50) — c'est precisement le defaut
+    silencieux que la garde ferme.
+    """
+    from huggingface_hub import hf_hub_download
+    try:
+        cfg_path = hf_hub_download(sae_repo, "config.json")
+    except Exception as exc:
+        raise FileNotFoundError(
+            f"impossible de telecharger config.json du depot SAE {sae_repo!r} : "
+            f"{exc}. La detection automatique du k officiel necessite ce "
+            f"fichier ; sans lui, --k doit etre passe en CLI explicitement "
+            f"et --allow-k-override active (cf etape 2 PT-12, #10289)."
+        ) from exc
+    with open(cfg_path) as f:
+        cfg = json.load(f)
+    return {
+        "d_model": int(cfg["d_model"]),
+        "d_sae": int(cfg["d_sae"]),
+        "k": int(cfg.get("k", cfg.get("top_k", 50))),
+        "num_layers": int(cfg.get("num_layers", cfg.get("n_layers", 0))),
+    }
+
+
 def load_sae(sae_repo: str, layer: int, device: torch.device):
     """Telecharge et charge le checkpoint SAE de la couche demandee.
 
@@ -362,8 +476,12 @@ def load_sae(sae_repo: str, layer: int, device: torch.device):
 def sae_encode_topk(hidden: torch.Tensor, sae: dict, k: int = 50):
     """Encode top-k fidele a app.py : pre = h @ W_enc.T + b_enc ; relu ; top-k.
 
-    hidden : [T, d_model] float32 (CPU). Retourne (ids [T,k] int32, vals [T,k] float32),
-    tries par activation decroissante ; les valeurs nulles marquent un L0 < k."""
+    ``k`` est explicite : la valeur par defaut (50) reflete le depot de
+    reference ``W64K-L0_50``, mais un appelant qui passe un SAE
+    ``W32K-L0_100`` DOIT specifier ``k=100`` — la garde
+    :func:`ict.sae_traces.assert_sae_topk_compatible` refuse le
+    desaccord avant d'arriver ici.
+    """
     pre = hidden @ sae["W_enc"].T + sae["b_enc"]     # [T, d_sae]
     acts = torch.relu(pre)
     vals, ids = torch.topk(acts, k, dim=-1)
@@ -421,13 +539,61 @@ def main() -> None:
 
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
-    print(f"[load] {args.model} (bf16, forward-only) ...")
+    print(f"[load] config {args.model} ...")
     cfg = AutoConfig.from_pretrained(args.model)
     text_cfg = getattr(cfg, "text_config", cfg)
     n_layers = getattr(text_cfg, "num_hidden_layers", None)
     d_model = getattr(text_cfg, "hidden_size", None)
     print(f"[model] model_type={cfg.model_type} n_layers={n_layers} d_model={d_model}")
 
+    # --- Gardes cross-echelle, AVANT tout chargement de poids -------------- #
+    # Toutes echouent sur la seule config (quelques Ko) : un mauvais couple
+    # couche/echelle, un checkpoint quantifie ou une trace deja presente sont
+    # detectes en secondes, pas apres 20 GiB de poids et une passe complete.
+    depth = _guard(resolve_capture_layer, n_layers, args.layer, args.layer_frac) \
+        if (args.layer is not None or args.layer_frac is not None) \
+        else _guard(resolve_capture_layer, n_layers, DEFAULT_LAYER, None)
+    layer = depth["layer"]
+    print(f"[depth] couche {layer}/{n_layers - 1} "
+          f"(profondeur relative {depth['layer_frac']:.3f})")
+
+    _guard(assert_bf16_readout,
+           getattr(cfg, "quantization_config", None),
+           args.allow_quantized_readout)
+
+    # --- Garde cross-L0 (L0_50 vs L0_100) : le k encode DOIT etre le k ---- #
+    # officiel du SAE. Defaut silencieux ferme ici, cf etape 2 PT-12 #10289.
+    # On recupere le k officiel via config.json (qq Ko) avant tout chargement
+    # de poids — un refus ici ne coute rien.
+    sae_cfg = _guard(fetch_sae_config, args.sae_repo)
+    k_official = int(sae_cfg["k"])
+    if args.k is None:
+        k = k_official
+        print(f"[k] auto-detecte depuis {args.sae_repo} : k={k}")
+    else:
+        k = int(args.k)
+        if not args.allow_k_override:
+            _guard(assert_sae_topk_compatible, k_official, k)
+            print(f"[k] explicite {k} = officiel {args.sae_repo} : OK")
+        else:
+            print(f"[k] OVERRIDE explicite {k} != officiel {k_official} : "
+                  f"sortie non comparable a la release officielle")
+
+    out_path: Path | None = None
+    if args.stage == "full":
+        out_dir = Path(args.out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / trace_filename(
+            args.variant, layer, model=args.model, default_model=DEFAULT_MODEL,
+            n_layers=n_layers, n_clamp=len(clamp_ids))
+        if out_path.exists() and not args.overwrite:
+            sys.exit(f"ERREUR: {out_path} existe deja. Deux runs d'echelles "
+                     "differentes ne doivent jamais partager un nom : verifier "
+                     "que --model/--layer sont ceux voulus, puis --overwrite "
+                     "pour ecraser deliberement.")
+        print(f"[out] cible {out_path.name}")
+
+    print(f"[load] {args.model} (bf16, forward-only) ...")
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     kwargs: dict = {"dtype": torch.bfloat16}
     if args.attn:
@@ -440,13 +606,15 @@ def main() -> None:
     if args.variant == "control":
         apply_control_permutation(model, args.seed)
 
-    sae = load_sae(args.sae_repo, args.layer, device)
-    assert sae["W_enc"].shape[1] == d_model, \
-        f"d_model SAE {sae['W_enc'].shape[1]} != modele {d_model}"
+    sae = load_sae(args.sae_repo, layer, device)
+    # Remplace un ``assert`` nu : il disparaissait sous ``python -O`` et son
+    # message ne disait pas quoi apparier.
+    _guard(check_sae_model_match, int(sae["W_enc"].shape[1]), int(d_model),
+           args.sae_repo, args.model)
 
     layers = find_decoder_layers(model, n_layers)
     capture = ResidCapture(sae=sae, clamp_ids=clamp_ids)
-    handle = layers[args.layer].register_forward_hook(capture)
+    handle = layers[layer].register_forward_hook(capture)
 
     sets = PROMPT_SETS
     if args.stage == "smoke":
@@ -461,7 +629,7 @@ def main() -> None:
             with torch.no_grad():
                 model(**enc)
             hidden = capture.hidden                      # [T, d_model] fp32 CPU
-            ids, vals = sae_encode_topk(hidden, sae, k=50)
+            ids, vals = sae_encode_topk(hidden, sae, k=k)
             l0 = (vals > 0).sum(dim=-1).float()
             l0_all.append(l0)
             tok_total += hidden.shape[0]
@@ -491,19 +659,24 @@ def main() -> None:
 
     l0_cat = torch.cat(l0_all)
     print(f"\n[sanity] {tok_total} tokens, L0 moyen={l0_cat.mean():.2f} "
-          f"(attendu ~50), min={l0_cat.min():.0f}, max={l0_cat.max():.0f}")
+          f"(attendu ~{k}), min={l0_cat.min():.0f}, max={l0_cat.max():.0f}")
     print(f"[sanity] vram pic={torch.cuda.max_memory_allocated() / 2**30:.1f} GiB")
 
     if args.stage == "full":
-        out_dir = Path(args.out_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
-        suffix = f"_clamp{len(clamp_ids)}" if clamp_ids else ""
-        out = out_dir / f"ict21_sae_layer{args.layer}_{args.variant}{suffix}.npz"
+        out = out_path                       # resolu et verifie avant le chargement
         meta = {
-            "model": args.model, "sae_repo": args.sae_repo, "layer": args.layer,
-            "k": 50, "d_sae": int(sae["W_enc"].shape[0]), "d_model": int(d_model),
+            "model": args.model, "sae_repo": args.sae_repo, "layer": layer,
+            # Profondeur RELATIVE : c'est elle, pas l'index absolu, qui rend deux
+            # traces d'echelles differentes comparables (#5105 / #7396).
+            "n_layers": int(n_layers), "layer_frac": depth["layer_frac"],
+            # d_sae EST la largeur du SAE (65536 pour W64K, 32768 pour W32K) :
+            # pas de second champ synonyme, qui divergerait un jour. k EST le
+            # top-k d'encodage (50 ou 100) capture ici, PAS recalcule a la lecture.
+            "k": int(k), "k_official": int(k_official),
+            "d_sae": int(sae["W_enc"].shape[0]), "d_model": int(d_model),
+            "quantized_readout": bool(args.allow_quantized_readout),
             "variant": args.variant, "seed": args.seed, "clamp_ids": clamp_ids,
-            "encode_convention": "pre = h @ W_enc.T + b_enc ; relu ; topk(50) "
+            "encode_convention": f"pre = h @ W_enc.T + b_enc ; relu ; topk({k}) "
                                  "(app.py officiel Qwen-Scope, pas de b_dec a l'encode)",
             "control_convention": "permutation seedee des lignes d'input embeddings",
             "prompt_sets": {k: len(v) for k, v in sets.items()},

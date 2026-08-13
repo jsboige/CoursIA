@@ -140,6 +140,36 @@ class TestExtract:
         out = capsys.readouterr().out
         assert "1: Main Title" in out
 
+    # --- ported from the deleted legacy scripts/tests/test_extract_pptx_titles.py
+    # (#10066 consolidation). These two assertions were UNIQUE to the legacy file:
+    # the canonical suite did not cover truncation (impl L37 `s[:80]`) nor the
+    # first-of-multiple-h1 ordering. Ported verbatim before deleting the shadow. ---
+
+    def test_truncation_at_80(self, tmp_path, capsys):
+        """No-h1 title is truncated to 80 chars (impl: f\"[no-h1] {s[:80]}\")."""
+        long_line = "x" * 100
+        content = f"<!-- Slide number: 1 -->\n{long_line}\n"
+        f = tmp_path / "test.md"
+        f.write_text(content, encoding="utf-8")
+        extract(f)
+        out = capsys.readouterr().out
+        # Title portion should be <= 80 chars (plus the "[no-h1] " prefix).
+        title_line = out.strip().split(": ", 1)[1]
+        assert len(title_line) <= len("[no-h1] ") + 80
+
+    def test_first_h1_wins(self, tmp_path, capsys):
+        """When two h1 headings follow a marker, the first is used as title."""
+        content = (
+            "<!-- Slide number: 1 -->\n"
+            "# First\n"
+            "# Second\n"
+        )
+        f = tmp_path / "test.md"
+        f.write_text(content, encoding="utf-8")
+        extract(f)
+        out = capsys.readouterr().out
+        assert "1: First" in out
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

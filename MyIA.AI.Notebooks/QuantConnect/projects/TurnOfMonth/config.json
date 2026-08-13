@@ -1,5 +1,7 @@
 {
     "algorithm-language": "Python",
+    "name": "TurnOfMonth",
+    "id": 1,
     "parameters": {},
     "description": "Turn-of-month calendar effect: long SPY+QQQ over the last 4 + first 4 trading days with 1.5x leverage and an SMA200 regime filter.",
     "organization-id": "d600793ee4caecb03441a09fc2d00f7f"

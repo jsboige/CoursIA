@@ -2,7 +2,9 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools` PyPI (Google, Apache-2.0, CP-SAT solver SOTA-tier : `from ortools.sat.python import cp_model` + `CpModel()` + `AddBoolVar` + `AddAllDifferent` + `solver.Solve()`). C# = `Google.OrTools` NuGet (Google, Apache-2.0, meme solver CP-SAT natif : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;` + `CpModel()` + `AddBoolVar` + `AddAllDifferent` + `solver.Solve()`). Verdict SOTA-OK (modele owner PR #10392 MERGED 2026-08-11 tranche 2 lib-vs-lib) : les DEUX cotes utilisent LE MEME solveur Google OR-Tools CP-SAT natif (meme binding C++ sous-jacent), API symetrique (Python `cp_model` <-> C# `Sat.CpModel`), bridge direct sans glue non-SOTA. Parite native-both substancee : le solveur EST le meme, la modelisation N-Queens (variables bool/int par ligne, contraintes AllDifferent par colonne/diagonale) est identique, les outputs (status OPTIMAL/UNSAT, solution matrice) sont bit-compatibles. Asymetrie mineure : API surface differente (Python methodes snake_case, C# PascalCase), portabilite triviale."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -15,7 +17,13 @@
       csharp_sha: 17128d989d96c86221f698d1586f00ddf5f6feb1
       content_python_sha: ad70343ffa9d6a0de5d499a7ff54663b1de01e30c1bb10220d632246318a2a86
       content_csharp_sha: 1c2eccf226436990afd5030959607150bc49647dae0df5845713a38825023f2a
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: 09311f6bce8aa693233194a8ffbffa1c0bc37347
+      csharp_sha: ad89fd658bf2e427c50d29a24f66cae0d0fd84aa
+      content_python_sha: ad70343ffa9d6a0de5d499a7ff54663b1de01e30c1bb10220d632246318a2a86
+      content_csharp_sha: b00f93effc7751b76b5ba6f902fbcf4d66f2d2b0e43ea273574a89ad8e62d676
   known_differences:
-    - "Socle pedagogique commun : N-Reines comme CSP canonique — formulation (variables Reines, domaines 1..N, contraintes alldifferent lignes/colonnes/diagonales), resolution par plusieurs approches. Les deux twins couvrent Backtracking + Min-Conflicts (recherche locale) ; Python ajoute OR-Tools CP-SAT (3eme approche) + section comparative, C# ajoute l'enumeration exhaustive de toutes les solutions."
-    - "Idiomes framework : Python = OR-Tools CP-SAT (CpModel, AddAllDifferent) + backtracking/min-conflicts from-scratch, 54 cellules (formulation CSP, 3 approches, comparaison, exemple guide). C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 5 using, 28 cellules (backtracking + min-conflicts + enumeration from-scratch, presentation compacte)."
-    - "Asymetrie pedagogique : Python met l'accent sur la comparaison empirique des 3 solveurs (backtracking vs min-conflicts vs CP-SAT) avec timings ; le C# demontre l'enumeration exhaustive complementaire en BCL pure sans dependance externe. Meme socle theorique (CSP N-Reines, propagation de contraintes), leviers de demonstration differents."
+    - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque OR-Tools CP-SAT (CpModel, AddAllDifferent sur lignes + 2 diagonales) comme 3e approche au cote de backtracking/min-conflicts from-scratch. C# = deux tranches -- Tranche 1 (sections 1-4) reimplementation from-scratch pedagogique (backtracking simple + MRV + Forward Checking + Min-Conflicts + enumeration exhaustive avec brisure de symetrie, en System.* pur) PRESERVEE integralement ; Tranche 2 (PR #10382 cycle 12) ajoute Google.OrTools 9.15 (.NET natif, deja en service dans Sudoku-10/18, App-8, App-15b) avec le MEME modele canonique CP-SAT que le Python (3 x AddAllDifferent) sur N=8 -- parite verifiee chiffre a chiffre : l'enumeration CP-SAT retourne 92 solutions (valeur classique, = Tranche 1 section 4 = Python). parity_level=native-both (Python/ortools ET C#/Google.OrTools atteignent chacun le moteur de production CP-SAT de leur ecosysteme)."
+    - "Asymetrie de couverture : Python (54 cellules) couvre la formulation CSP + 3 approches + section comparative + exemple guide ; C# (31 cellules) couvre les memes approches from-scratch (Tranche 1) + le pont CP-SAT (Tranche 2) + 3 exercices. Le benchmark CP-SAT [8,50,100,500] est reproduit des deux cotes ; N=500 = UNKNOWN au-dela de 60s des deux cotes (parite honnete : la recherche complete CP-SAT ne passe pas a l'echelle aussi bien que Min-Conflicts, demontre Tranche 1 section 3.1)."
+    - "Idiomes framework : Python = OR-Tools CP-SAT (cp_model.CpModel, solver.parameters.max_time_in_seconds) + from-scratch ; C# = Google.OrTools.Sat (CpModel, solver.StringParameters='max_time_in_seconds:N') + from-scratch System.*. Meme socle theorique (CSP N-Reines, propagation de contraintes, 3 x AddAllDifferent). Le C# valorise la reimplementation pedagogique (Tranche 1) ET l'invocation du moteur SOTA (Tranche 2) -- la ou le Python valorise l'invocation de la lib."

@@ -56,7 +56,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
-from lean_server import LeanVerifier  # noqa: E402
+from lean_server import LeanVerifier, axiom_lookup_anomalies, select_diagnostic_lines  # noqa: E402
 from prover.tools import _parse_lean_errors  # noqa: E402
 
 
@@ -153,3 +153,146 @@ def test_legacy_module_level_still_parsed():
     assert _parse_lean_errors(line) == [
         {"line": None, "message": "cannot synthesize type"}
     ]
+
+
+# ---------------------------------------------------------------------------
+# Reporting side: which lines the axiom gate prints when the batch fails.
+#
+# `check_axioms` feeds `lean --stdin` an `import` plus one `#print axioms` per
+# declaration, so a capture from a FAILED run interleaves healthy
+# `depends on axioms:` answers with the diagnostic. The gate's reporting used
+# to slice the last 20 lines; on #10486 (galois_lean, 537 declarations) the
+# failure came early, the tail was 20 healthy declarations, and the CI log said
+# only `build_failed_returncode_1`. These tests pin the selection so that
+# regression cannot come back silently -- the reporting itself lives in a YAML
+# heredoc (`.github/workflows/lean-axiom.yml`) which no test can import.
+# ---------------------------------------------------------------------------
+
+
+def _batch_capture(n_healthy_after: int) -> str:
+    """A `#print axioms` batch capture: one early error, then healthy answers.
+
+    The diagnostic line is verbatim from ``REAL_BROKEN_BUILD`` -- the same
+    `unknown constant` shape a stale or unaddressable declaration name
+    produces, which is exactly the #10486 failure mode.
+    """
+    head = (
+        "<stdin>:8:14: error(lean.unknownIdentifier): "
+        "Unknown constant `Sporadic.gone`\n"
+    )
+    healthy = "".join(
+        f"'Galois.decl{i}' depends on axioms: "
+        "[propext, Classical.choice, Quot.sound]\n"
+        for i in range(n_healthy_after)
+    )
+    return head + healthy
+
+
+def test_early_diagnostic_survives_a_long_healthy_batch():
+    """The #10486 regression: a tail slice would show only healthy lines."""
+    capture = _batch_capture(n_healthy_after=40)
+    lines, matched, omitted = select_diagnostic_lines(capture)
+    assert matched is True
+    assert omitted == 0
+    assert len(lines) == 1
+    assert "Unknown constant `Sporadic.gone`" in lines[0]
+    # The defect being pinned, stated as a measurement rather than as prose:
+    # the old reporting sliced [-20:], which on this capture is all healthy.
+    assert all(
+        "error" not in ln for ln in capture.strip().splitlines()[-20:]
+    ), "fixture no longer reproduces the tail-slice blind spot"
+
+
+def test_every_real_diagnostic_is_selected():
+    """Selection agrees with the authority on real Lean output."""
+    lines, matched, omitted = select_diagnostic_lines(REAL_BROKEN_BUILD)
+    assert matched is True
+    assert lines == LeanVerifier._extract_errors(REAL_BROKEN_BUILD)
+    assert len(lines) == 3 and omitted == 0
+    assert not any("warning:" in ln for ln in lines)
+
+
+def test_limit_truncates_and_counts_the_remainder():
+    """A firehose is capped, and the cap says how much it hid."""
+    capture = "".join(
+        f"F.lean:{i}:0: error: boom {i}\n" for i in range(30)
+    )
+    lines, matched, omitted = select_diagnostic_lines(capture, limit=12)
+    assert matched is True
+    assert len(lines) == 12
+    assert omitted == 18
+    assert "boom 0" in lines[0]
+
+
+def test_falls_back_to_the_tail_when_no_diagnostic_exists():
+    """No marker at all (lake resolution, toolchain, timeout kill).
+
+    The fallback must be flagged as such: `matched is False` is what makes the
+    gate print "no Lean diagnostic in capture" rather than presenting a tail as
+    if it were the cause.
+    """
+    capture = "".join(f"info: building step {i}\n" for i in range(50))
+    lines, matched, omitted = select_diagnostic_lines(capture)
+    assert matched is False
+    assert omitted == 0
+    assert len(lines) == 20
+    assert lines[-1] == "info: building step 49"
+
+
+def test_empty_capture_is_not_a_crash():
+    """`raw_output` is empty on FileNotFoundError / timeout paths."""
+    for empty in ("", "   \n\n", None):
+        lines, matched, omitted = select_diagnostic_lines(empty)
+        assert matched is False and omitted == 0
+        assert lines in ([], [""])
+
+
+# --- axiom_lookup_anomalies: complement filter for the axiom gate (#10486) ---
+#
+# The build_failed_returncode_* path of check_axioms feeds lean --stdin one
+# `#print axioms` per declaration. select_diagnostic_lines misses an `unknown
+# constant` (no `error:` marker) and falls back to a tail slice, which on a
+# 537-command batch shows healthy verdicts and hides the cause. The complement
+# filter returns whatever is NOT a healthy verdict -- the cause, wherever it
+# sits. Pinned here so the filter's contract (healthy -> [], broken -> cause)
+# does not silently drift.
+
+
+def test_axiom_anomalies_healthy_capture_returns_empty():
+    """A capture of all-healthy verdicts yields nothing to print."""
+    healthy = (
+        "'Sporadic.card_M23' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+        "'Sporadic.id' does not depend on any axioms\n"
+        "'Sporadic.simple_M23' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+    )
+    assert axiom_lookup_anomalies(healthy) == []
+
+
+def test_axiom_anomalies_unknown_constant_is_surfaced_wherever_it_sits():
+    """An `unknown constant` (no `error:` prefix) is the #10486 cause.
+
+    The whole point of the complement filter: select_diagnostic_lines misses
+    this line and falls back to a tail. The complement filter returns it by
+    position, not marker.
+    """
+    capture = (
+        "'Sporadic.card_M22' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+        "unknown constant 'Sporadic.L34.mapsElations'\n"
+        "'Sporadic.simple_M22' depends on axioms: [propext, Classical.choice, Quot.sound]\n"
+    )
+    assert axiom_lookup_anomalies(capture) == ["unknown constant 'Sporadic.L34.mapsElations'"]
+
+
+def test_axiom_anomalies_empty_capture_is_empty():
+    """Empty/None raw_output -> no anomalies (failure left no trace)."""
+    for empty in ("", "   \n\n", None):
+        assert axiom_lookup_anomalies(empty) == []
+
+
+def test_axiom_anomalies_respects_the_limit():
+    """A catastrophically broken capture is bounded, with a truncation marker."""
+    # 60 anomaly lines; limit default 50 -> 50 lines + truncation marker.
+    capture = "".join(f"bogus line {i}\n" for i in range(60))
+    out = axiom_lookup_anomalies(capture)
+    assert len(out) == 51  # 50 anomalies + 1 truncation marker
+    assert "truncated at 50" in out[-1]

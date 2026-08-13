@@ -28,13 +28,24 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 
 ## Safety Rules
 
-### 🚨 CRITICAL - NEVER FORCE PUSH
+### Force push — interdit sur `main`, autorisé sur une branche de PR à lane unique
 
-**INCIDENT 2026-03-13** : Force push sur main a potentiellement écrasé des commits
-- **Règle** : `git push --force` et `--force-with-lease` sont INTERDITS
-- **Exception** : Uniquement urgence extrême avec validation explicite du user AU PRÉALABLE
-- **Alternative** : Créer feature branch, cherry-pick, revert, ou nouveaux commits
-- **Si PR nécessaire** : Créer feature branch FROM main, ne JAMAIS reset main
+**Décision user 2026-08-08** (verbatim) : « *Je ne suis pas fan des force-pushs, on a déjà perdu pas mal de contenu dans le passé à cause de ça, et il existe généralement une alternative à base de merge. Mais pour une branche de feature qui n'est pas manipulée par plusieurs agents de front, ça n'est pas la même histoire. Donc en gros si on interdit sur main et on permet sur des branches de PRs, ça me va.* »
+
+L'ancienne rédaction interdisait `--force` **partout**, urgence-user comprise. Elle est remplacée par un **périmètre**, parce que les deux cas n'ont pas la même conséquence : sur `main` un force-push écrase du contenu partagé et déjà consommé par ~95 forks étudiants (incident **2026-03-13**, commits potentiellement perdus) ; sur une branche de feature qu'une seule lane manipule, il ne réécrit que le travail non mergé de cette lane.
+
+| Cible | Règle | Ce qui la porte |
+|---|---|---|
+| **`main`** | **INTERDIT**, sans exception d'urgence | `allow_force_pushes: false` dans la protection de branche — GitHub **refuse** le push. Ce n'est pas qu'une consigne, c'est le serveur qui tranche (voir la note de vérifiabilité ci-dessous) |
+| **Branche de PR (`feature/*`, `fix/*`, `docs/*`) à lane unique** | **AUTORISÉ**, `--force-with-lease` préféré | aucune protection côté plateforme : c'est la discipline de lane qui répond |
+| **Branche manipulée par plusieurs agents de front** | **INTERDIT** | un `[CLAIMED]` d'une autre lane sur l'issue vaut « plusieurs agents » → [lane-claim-protocol.md](lane-claim-protocol.md) |
+
+- **L'alternative merge d'abord, quand elle existe** : `git merge origin/main`, `gh pr update-branch`, cherry-pick, revert, nouveaux commits. Le force-push est le dernier recours, jamais le réflexe de rebase par défaut.
+- **`--force-with-lease` plutôt que `--force`** : il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
+- **Jamais de `reset --hard`** sur `main` ni sur une branche partagée.
+- **Un secret déjà commité ne se répare PAS par réécriture d'historique** : branche propre + cherry-pick, et **rotation de la clé** (cf [secrets-hygiene.md](secrets-hygiene.md) règle 5).
+
+**Note de vérifiabilité — `allow_force_pushes` n'est PAS lisible sans droit admin.** Une version antérieure de la ligne `main` ci-dessus donnait `gh api repos/jsboige/CoursIA/branches/main/protection -q .allow_force_pushes` comme preuve à portée de main. Cet endpoint renvoie **404 sans droit admin sur le dépôt** (constaté sous `myia-ai-01`, cf #9991) : le compte admin `jsboige` est requis pour **lire** la protection, alors qu'il ne l'est pas pour merger. Un 404 y est donc **une question, pas une absence mesurée** — et un agent qui l'interprète comme « pas de protection configurée » conclut l'inverse de la vérité. Ce que chaque lane peut vérifier sans droit admin, c'est le comportement : un `git push --force` sur `main` est **rejeté par le serveur**. La règle ne dépend pas de la lisibilité de la config.
 
 ---
 
@@ -80,7 +91,7 @@ gh pr list --state all --search "head:<branch>" --json number,state -q '.[].numb
 
 **Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul. Gate 3 est autoritatif ; l'investigation prend ~10 secondes et elimine le risque de double-pickup.
 
-**Voir aussi** : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md) (detail fondateur + symtome 5 branches `jsboige/*` decouvertes c.576 / attachees a #7086-#7091). *Ce detail a longtemps ete cite a l'URL `.claude/memory/lecon-L576-...md` : ce chemin est ignore par `.gitignore` (ligne 651, etat local par machine), donc il ne peut jamais exister sur `main` et le lien etait mort par construction. Ne pas le retablir — la doc perenne vit dans `docs/`, cf [harness-hygiene.md](harness-hygiene.md).* Sub-grain 5/5 de l'epic #7423 « revue globale du harnais » (boucle vertueuse close par cette PR — dernier orphelin L576 ancre dans git-workflow ; reste 5 orphelines pour futurs grains cross-famille : L574 / L751 / L770 / L771 / L772+L789+L790+L791).
+**Voir aussi** : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md) (detail fondateur + symtome 5 branches `jsboige/*` decouvertes c.576 / attachees a #7086-#7091). *Ce detail a longtemps ete cite a l'URL `.claude/memory/lecon-L576-...md` : ce chemin est ignore par `.gitignore` (ligne 651, etat local par machine), donc il ne peut jamais exister sur `main` et le lien etait mort par construction. Ne pas le retablir — la doc perenne vit dans `docs/`, cf [harness-hygiene.md](harness-hygiene.md).* Sub-grain 5/5 de l'epic #7423 « revue globale du harnais » (boucle vertueuse close par cette PR — dernier orphelin L576 ancre dans git-workflow ; reste 4 orphelines pour futurs grains cross-famille : L751 / L770 / L771 / L772+L789+L790+L791. L574 ★★ a été ancrée entre-temps dans [notebook-conventions.md](notebook-conventions.md) §QuantConnect (quantbook re-exec = QC Cloud uniquement via MCP `qc-mcp`)).
 ## PR Body Generation
 
 **Leçon ancrée** — L677-L4 ★★ (c.680, voir aussi c.683/c.684/c.685/c.686/c.687/c.688/c.689/c.690 réutilisations ; détail en mémoire locale per-machine) : le **body de PR se génère HORS worktree**, jamais dans un fichier du worktree (qui finirait stageé par `git add .` ou committe accidentellement).

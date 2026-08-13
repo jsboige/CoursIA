@@ -36,7 +36,7 @@ Catalogue des 21 sous-agents et 17 skills Claude Code, mapping Epic → speciali
 
 ### [Architecture MCP roo-state-manager](reference/architecture_mcp_roo.md)
 
-Architecture du MCP roo-state-manager (34 outils, RooSync), dashboards, coordination inter-machines.
+Architecture du MCP roo-state-manager (15 outils multi-actions, RooSync), dashboards, coordination inter-machines.
 
 ### [Subagents reference](reference/subagents-reference.md)
 

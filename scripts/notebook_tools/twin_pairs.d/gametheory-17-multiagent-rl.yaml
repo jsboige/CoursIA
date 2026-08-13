@@ -3,13 +3,42 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Verdict a deux niveaux (reclassification #10459 : axe PythonNet omis de la taxonomie bucket-3). (1) OpenSpiel-la-lib : PONT .NET demontre en annexe S10 du notebook C# via PythonNet (.NET -> Python.Runtime -> pyspiel -> OpenSpiel C++, meme axe que SemanticKernel-09 et que le moteur QuantConnect/Lean) -- load_game('kuhn_poker') + rollout reel executes depuis C#, sortie commitee (joueurs=2, actions=2, gains=[-2,2]). Pont installe (pythonnet NuGet + open_spiel pip, regle F) et branche : SOTA-OK pour ce role. (2) NFSP/AlphaZero neuronaux (PyTorch/TF + MCTS) : reste INTRINSIC (pas d'equivalent .NET unifie pour le RL neuronal a grande echelle) ; la version table-based couverte sections 3-7 reste portable. From-scratch C# = contrepartie pedagogique, le pont est EN PLUS jamais A LA PLACE (mandat #10382)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
       python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
       csharp_sha: 45c01bd69738c1140eba9b6702718861db90c816
       reason: "rebaseline python apres fix forward-ref cellule 37 resume (#8052) : la ligne disait 'Notebooks suivants : Serie Lean 4 pour les formalisations (Notebooks 16-19)' mais la serie compte 17 notebooks (pas de 18/19, cf #9149 GT-1), 'Serie Lean 4' est un faux label (Lean = notebooks b-suffixes 2b/4b/5b/8b/11b/15b), et 'suivants' est faux car GT-17 est le dernier (#17). Fix -> pointe vers la serie RL/ (README L136 'fait le pont avec l'apprentissage par renforcement') + liste les vrais notebooks Lean. Python-only, csharp_sha unchanged, parite semantique preservee."
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
+      csharp_sha: f5575431de800bb7cbb9fda4cc5b139465e2fc47
+      content_python_sha: bf57152719535bdd1d7d0742ece0dfd0bd4b07fbf5ec8443c26870744e377912
+      content_csharp_sha: c293a9c4d6751f5a8ba8c8163113bc7861e575f01093a440ac778a91bc5de264
+      reason: "Verdict INTRINSIC bucket-3 (#10382) : corrige RECOVERABLE-MACHINE -> INTRINSIC (OpenSpiel = lib C++ non-bridgeable en .NET : aucun binding .NET, pas CLI invocable, pas IKVM-able, pont C++->.NET non viable). Markdown-only section 8 Verdict SOTA + Conclusion table row + Parity block du notebook C#. Calque GT-13 (PR #10394, meme verdict OpenSpiel CFR). csharp_sha avance 45c01bd6 -> f5575431 (3 lignes markdown), python_sha unchanged d4ac08ac. Exception C.2 markdown-only : aucun code/sortie/exec_count touche, re-exec non requise. parite semantique preservee. Verdict INTRINSIC cible OpenSpiel-la-librairie (aucun pont .NET) ; axe lib-differente laisse OUVERT (candidat Gambit CLI, cf GameTheory-4 #10442). Corrige le wording 'definitive' (trop fort) signale par ai-01 review (msg-20260811T121823)."
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
+      csharp_sha: 26a421dd5962e5f1722f8ff4c310b41ef51a6648
+      content_python_sha: bf57152719535bdd1d7d0742ece0dfd0bd4b07fbf5ec8443c26870744e377912
+      content_csharp_sha: babbc7ee9410a2cfd7f9014eaf5e06d6d6d8e61e6e9a51af8ed5f9d0ac73030b
+      reason: "Review ai-01 #10454 (msg-20260811T121823) : corrige 'definitive' (trop fort). Le mandat #10382 demande un moteur SOTA .NET pour le ROLE, pas un pont vers CETTE lib. Contre-exemple mesure meme serie : GT-4 cell25 (#10442, commit 136ce03f4) invoque Gambit via Process.Start pour exploitabilite/distance-a-Nash -- axe que le GT-17 C# from-scratch calcule aussi (Exploitability section 5, BestResponse 16 occ). Donc axe exploitabilite a une contrepartie .NET prouvee. Verdict INTRINSIC reste pour OpenSpiel-la-librairie (aucun pont .NET vers CETTE lib), MAIS axe lib-differente laisse OUVERT (candidat Gambit CLI non teste). Markdown-only section 8 + Conclusion. csharp_sha avance f5575431 -> 26a421dd (2 lignes markdown), python_sha unchanged d4ac08ac. Note : le calque GT-13 (#10394) porte le meme wording 'definitive' trop fort -- follow-up pour coherence."
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
+      csharp_sha: cb1db7b80bfbd552777da99e6bec090e8e9c8a15
+      content_python_sha: bf57152719535bdd1d7d0742ece0dfd0bd4b07fbf5ec8443c26870744e377912
+      content_csharp_sha: 9a74249f946427094283aa0be285b353b74862adf91ba936686b58730892486c
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: d4ac08ac2355bc71628bbaab8934d54e94b010bd
+      csharp_sha: 2af65a7418cdf9a7d3237471402ab8a3d1f2217c
+      content_python_sha: bf57152719535bdd1d7d0742ece0dfd0bd4b07fbf5ec8443c26870744e377912
+      content_csharp_sha: cdcacca361a7a6f2f94456e21cad63b1f9627aab83672189525ba6a86f098911
   known_differences:
     - "Socle pedagogique commun : apprentissage par renforcement multi-agent (MARL), self-play et auto-competition, fictitious play (Brown 1951), exploitabilite / distance a Nash, Neural Fictitious Self-Play (NFSP, Heinrich & Silver 2016), PSRO (Policy-Space Response Oracles, Lanctot et al. 2017)."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `pyspiel` (OpenSpiel) + `tqdm` (integration framework MARL a l'echelle). C# = BCL .NET 9 pur (`System.Linq`, 0 NuGet), fictitious play / NFSP table-based / PSRO from-scratch."
-    - "Asymetrie de couverture : Python (38 cellules, 12 code) s'appuie sur l'ecosysteme OpenSpiel/pyspiel ; C# (24 cellules, 11 code) implémente FP/NFSP/PSRO from-scratch en version table-based avec une section 'Verdict SOTA' honnete sur la portabilite (le NFSP neuronal n'est pas repliquable sans framework ML -> version table-based). Meme theorie centrale (self-play/FP/NFSP/PSRO), leviers d'implementation differents (framework OpenSpiel cote Python vs from-scratch minimaliste cote C#)."
+    - "Asymetrie de couverture : Python (38 cellules, 12 code) s'appuie sur l'ecosysteme OpenSpiel/pyspiel ; C# (26 cellules, 12 code) implémente FP/NFSP/PSRO from-scratch en version table-based. Pont .NET vers OpenSpiel demontre en annexe S10 via PythonNet (reclassification #10459 : OpenSpiel n'est plus INTRINSIC mais RECOVERABLE-LOCAL, le vrai pyspiel est invocable depuis C# et execute dans la cellule annexe). Le NFSP neuronal (PyTorch/TF) reste INTRINSIC. Meme theorie centrale (self-play/FP/NFSP/PSRO), leviers d'implementation differents (framework OpenSpiel cote Python vs from-scratch minimaliste cote C#, desormais reliés par le pont PythonNet pour OpenSpiel-la-lib)."
+    - "Verdict bucket-3 reclassifie RECOVERABLE-LOCAL (#10459, 2026-08-11) : le verdict INTRINSIC precedent (#10382, c.26a421dd) omettait l'axe PythonNet de la taxonomie -- '.NET -> Python.Runtime -> pyspiel -> OpenSpiel C++'. Le pont est desormais demontre en annexe S10 du notebook C# (pythonnet NuGet + open_spiel pip, regle F) : load_game('kuhn_poker') + rollout reel executes depuis C#, sortie commitee. OpenSpiel-la-librairie n'est plus INTRINSIC mais RECOVERABLE-LOCAL (SOTA-OK pour ce role, pont branche). Reste INTRINSIC : NFSP/AlphaZero neuronaux (PyTorch/TF + MCTS, pas d'equivalent .NET unifie pour le RL neuronal a grande echelle). Le from-scratch C# reste la contrepartie pedagogique (niveau semantic) -- le pont est EN PLUS jamais A LA PLACE (mandat #10382). L'axe lib-differente (Gambit CLI, #10442) reste ouvert pour l'equilibre de Nash mais le pont PythonNet est plus direct pour OpenSpiel-la-lib. Note : GT-13 (CFR, #10394) porte le meme verdict INTRINSIC herite et devra suivre la meme reclassification."

@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7b-Ranking-Probabilistic-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (semantiques de rangement ranking + probabilistes + division) : C# branche IKVM 8.14.0 + tweety-rpcl.dll (tracked) + 23 refs `org.tweetyproject.*` actifs (3 cellules avec using explicite, classes Dung Division, RankingSemantics Java invoquees). Python branche JPype + `from org.tweetyproject.arg.dung.divisions import Division` + meme moteur Java. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : 23 refs = la plus grosse utilisation TweetyProject parmi les paires Tweety du registre (audited individu M-XX), les deux cotes operent sur les memes semantiques ranking (Categorizer-based, Burden-based) avec les memes theorems de comparaison."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -12,6 +14,12 @@
       by: myia-po-2024:CoursIA
       python_sha: fb7670e9ebe474a93db4534f4f76ded9f8c0e581
       csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: fb7670e9ebe474a93db4534f4f76ded9f8c0e581
+      csharp_sha: c0b08647723dabc8be38dde312640cc43ea67a96
+      content_python_sha: aa2249365da0a457aed062df1dd745cbeeddb781e7e582c0bd7d6d4c2d5b932c
+      content_csharp_sha: 054003552b11b663d7de0056c2e460a6c75ae0cff647ad8b03ca24e2d477a9b4
   known_differences:
     - "Socle commun : semantiques de rangement et probabilistes (ranking, division) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-rpcl.dll\"`). Python via JPype (`from org.tweetyproject.arg.dung.divisions import Division`). Meme moteur Java."

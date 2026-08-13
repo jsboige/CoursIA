@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `sklearn` (RandomForestClassifier, GradientBoostingClassifier, SVC, cross_val_score, Pipeline, StandardScaler) + `optuna` (optimisation d'hyperparametres SOTA) + `scipy.optimize`/`scipy.stats` + stdlib. C# = BCL pure (0 NuGet, 0 reference externe) : grid-search/random-search from-scratch. Verdict RECOVERABLE-LOCAL : `sklearn`/`optuna` implementent les concepts enseignes (classifieurs + tuning d'hyperparametres) et ML.NET est deja en service dans le depot (serie ML.NET, SL-3 RelevanceLearning — cf bucket-1 #10382) — le C# pourrait brancher ML.NET (AutoML / contexte de tuning) pour la parite lib-vs-lib. Le from-scratch (grid search manuel) reste pedagogique mais la tranche 2 ML.NET est recuperable localement. parity_level: semantic preserve."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -14,7 +16,20 @@
       csharp_sha: b1153dbca5286ac4f8d140d63a067b3dcc1f211e
       content_python_sha: 4f011a2bf5a16d2106e22829186d206782cee507c9aef6e0879026abb61de5d1
       content_csharp_sha: 8ea2f1d19f52fe1e6313e8f8ef858ed072d086e6cb05e45a2ac6570590da7710
+    - date: "2026-08-08"
+      by: myia-po-2024:CoursIA
+      python_sha: 49aeadb7ca4e19417b562e50a495a7ea55f7413f
+      csharp_sha: c927aed935e215e5e3733c3f8568c3673d32e2d6
+      content_python_sha: 4f011a2bf5a16d2106e22829186d206782cee507c9aef6e0879026abb61de5d1
+      content_csharp_sha: efda6e7bf94adacc3222559ffde9f7de3427a8161cf42543e6f84dc621e52e2c
+    - date: "2026-08-08"
+      by: myia-po-2026:CoursIA
+      python_sha: 17ba5d66c7ff9ea1eae59c503364c77210b9c50a
+      csharp_sha: c927aed935e215e5e3733c3f8568c3673d32e2d6
+      content_python_sha: 73920f7e8592771a8d78b6b7e285242e81f2e5c883da5d5ba5097102d78ce505
+      content_csharp_sha: efda6e7bf94adacc3222559ffde9f7de3427a8161cf42543e6f84dc621e52e2c
   known_differences:
+    - "Edition Prong B #10019/#3801 (2026-08-08, po-2026) : le jumeau Python remplace Breast Cancer (dataset saturant, ecart 0,0022 = bruit) par un make_classification dur (flip_y 0,20, class_sep 0,55, desequilibre) pour rendre le RandomForest sensible a ses hyperparametres (paysage rugueux, ecart 0,021 entre les 5 optimiseurs). Le modele (RF) est INCHANGE donc le md[0] C# 'App-18 optimise un Random Forest' reste exact. Le C# twin (k-NN + gaussiens chevauchants) etait deja discriminant, non touche. Parite semantique preservee : les deux demontrent le tuning d'hyperparametres sur un paysage accidente."
     - "Socle pedagogique commun : Hyperparameter tuning (scipy.optimize + Gaussian Process / Bayes opt) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
     - "Idiomes framework : Python = scipy.optimize + scipy.stats norm + sklearn ; C# = BCL pure (System.*), 0 NuGet."
     - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."

@@ -12,8 +12,9 @@ name: Lean Knot CI
 #
 # Uses the shared lean-build.yml reusable workflow.
 #
-# Sorry profile (switched 2026-07-11 to `real` mode, baseline=16; was prose-header/28,
-# then 17 until #8766 discharged trefoil_not_unknot [sorry 5->4]):
+# Sorry profile (switched 2026-07-11 to `real` mode, baseline=17; was prose-header/28,
+# then 16 after #8766 discharged trefoil_not_unknot [sorry 5->4], raised back to 17 by
+# PR #9966 which adds the characterized wrapper front tricolorable_forward_r1 [sorry 4->5]):
 # knot_lean's docstrings legitimately reference "sorry" (Phase-1 scaffolding prose:
 # "sorry permanent", "sorry commentés", "chaque sorry", the MathlibPrerequisites
 # roadmap index, the TODO on well-formedness). Under `prose-header` mode these
@@ -27,16 +28,23 @@ name: Lean Knot CI
 # compiled-tactic sorries, immune to docstring edits.
 # Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
 #   - Conway.lean:              8 (Conway knot 11n34, Kinoshita-Terasaka, mutation)
-#   - Invariant.lean:           4 (tricolorable_invariant residual fox/col tactics;
+#   - Invariant.lean:           5 (tricolorable_invariant residual fox/col tactics;
 #                                  trefoil_not_unknot DISCHARGED by #8766 [sorry 5->4];
-#                                  the Fox linearity bridge + num are PROVEN — see
-#                                  Invariant.lean docstring for the resolved/open split)
+#                                  tricolorable_forward_r1 wrapper front added by #9966
+#                                  [sorry 4->5] — characterized ∀c∈d₂.crossings wall,
+#                                  2/3 sub-cases PROVEN (newKink c.987, unchanged c.988),
+#                                  ai-01 multi-cycle acceptance; the Fox linearity bridge
+#                                  + num are PROVEN — see Invariant.lean docstring for
+#                                  the resolved/open split)
 #   - Lidman.lean:              2 (11n102 unknotting number = 2 — Heegaard-Floer)
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 16 (re-verified 2026-07-29: canonical count_real_sorries
-# replica + CI run 30465509621 both report 16; was 17 before #8766's discharge).
+# Total real tactic sorry = 16 (lowered from 17: the tricolorable_forward_r1
+# wrapper ∀c∈d₂.crossings wall is now DISCHARGED — append decomposition +
+# Lean core lemma List.mem_or_eq_of_mem_set + 3 proven sub-lemmas (_renamed,
+# _unchanged, _newKink) + nomatch on the singleton tail; was 17 raised by
+# #9966 which fronted the wall; 16 after #8766 discharged trefoil_not_unknot).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 

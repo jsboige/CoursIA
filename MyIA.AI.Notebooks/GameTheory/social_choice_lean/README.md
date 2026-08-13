@@ -1,20 +1,22 @@
 # Théorie du Choix Social — Formulations Lean 4
 
-> **⚑ Archive — home canonique déplacé.** Depuis la PR [#6058](https://github.com/jsboige/CoursIA/pull/6058)
+> **⚑ Tombstone documentaire — home canonique déplacé.** Depuis la PR [#6058](https://github.com/jsboige/CoursIA/pull/6058)
 > (EPIC [#4365](https://github.com/jsboige/CoursIA/issues/4365) Phase-4, 2026-07-11), les sept modules
 > (Basic, Framework, Arrow, Sen, Voting, MechanismDesign, SortedListCounting) ont été **absorbés
 > byte-identique** dans **[`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/)**
 > (FR canonique + miroirs `_en.lean` Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)),
 > qui est désormais le home canonique (`@[default_target] lean_lib SocialChoice` dans le lakefile de
-> `game_theory_lean`). Ce répertoire `social_choice_lean/` est conservé comme **coquille archive** :
-> son `package`, son `require mathlib`, son manifest et sa documentation restent préservés, mais la
-> `lean_lib` est **neutralisée** dans le `lakefile.lean` (ses `globs` pointaient vers des sources
-> déplacées et provoquaient une collision de module-path). La certification no-sorry et le build Lake
-> sont repris par `game_theory_lean` via `.github/workflows/lean-social-choice.yml`.
+> `game_theory_lean`). La certification no-sorry et le build Lake y sont repris via
+> `.github/workflows/lean-social-choice.yml`.
 >
-> La suite de ce README décrit les formalisations telles qu'elles existent **historiquement** ici —
-> le contenu mathématique (théorèmes, preuves, choix de design) reste **entièrement valable** et se
-> retrouve à l'identique dans le home canonique.
+> **Ce répertoire n'est plus un lake.** La coquille technique (`lakefile.lean`, `lean-toolchain`,
+> `lake-manifest.json`) a été retirée (follow-up #4365) : elle faisait passer le dossier pour un lake
+> vivant auprès de tout outil énumérant les lakes par leur `lakefile*` (p. ex. `check_i18n_siblings`),
+> alors qu'il ne contenait **plus aucun module** depuis l'absorption. Ne subsistent que les 4
+> markdown (`README`, `STATUS`, `NOTICE`, `LEAN_PREREQUISITES`) — documentation historique, choix de
+> design et prérequis pédagogiques — conservés intentionnellement comme tombstone. Le contenu
+> mathématique (théorèmes, preuves) vit dans le home canonique ; la suite de ce README le décrit
+> tel qu'il existait **historiquement** ici, et reste **entièrement valable**.
 
 Ce répertoire est l'**archive** des formalisations mathématiques de la théorie du choix social en Lean 4, développées dans le cadre de la série GameTheory. Les sources actives vivent dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/).
 
@@ -154,19 +156,18 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 > Depuis l'absorption [#6058](https://github.com/jsboige/CoursIA/pull/6058), les fichiers
 > `SocialChoice.lean`, `SocialChoice/*.lean` et `examples/*.lean` ne sont **plus présents
 > ici** : ils vivent dans [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/).
-> Seuls `README.md`, `lakefile.lean` (lib neutralisée), `lean-toolchain`, `lake-manifest.json`,
-> `STATUS.md`, `NOTICE.md` et `LEAN_PREREQUISITES.md` subsistent comme coquille archive.
+> La coquille technique (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json`) a en outre été
+> retirée (follow-up #4365) : ce répertoire n'est plus un lake. Ne subsistent que les 4 markdown
+> (`README.md`, `STATUS.md`, `NOTICE.md`, `LEAN_PREREQUISITES.md`) comme tombstone documentaire.
 
 ```text
-social_choice_lean/                     (archive — coquille)
-├── README.md                          # Documentation générale (cette archive)
-├── lakefile.lean                      # package + require mathlib ; lean_lib NEUTRALISÉE
-├── lake-manifest.json                 # Manifest préservé
-├── lean-toolchain                     # Version de Lean (v4.31.0-rc1)
-├── STATUS.md                          # Statut (historique)
+social_choice_lean/                     (tombstone documentaire — plus un lake)
+├── README.md                          # Documentation historique (cette tombstone)
+├── STATUS.md                          # Statut (historique, figé à l'absorption)
 ├── NOTICE.md                          # Licence MIT (DominikPeters)
-├── LEAN_PREREQUISITES.md              # Prérequis Lean
+├── LEAN_PREREQUISITES.md              # Prérequis pédagogiques Lean 4 / Mathlib
 │
+│   ── retiré (follow-up #4365) : lakefile.lean, lean-toolchain, lake-manifest.json ──
 │   ── sources déplacées vers game_theory_lean/SocialChoice/ (PR #6058) ──
 │
 ├── SocialChoice.lean                  # [DÉPLACÉ] Fichier d'imports principaux
@@ -227,21 +228,16 @@ Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/a
 
 ## Construction et compilation
 
-> **⚑ Archive** — depuis [#6058](https://github.com/jsboige/CoursIA/pull/6058), la `lean_lib` est
-> **neutralisée** dans ce lakefile : `lake build` **ne compile plus la lib** ici (les sources ont
-> été déplacées). Pour compiler et vérifier les preuves, utiliser le home canonique
-> [`game_theory_lean/`](../game_theory_lean/) (`lake build SocialChoice`). Les commandes
-> ci-dessous restent documentées à titre historique.
+> **⚑ N'est plus un lake.** Depuis [#6058](https://github.com/jsboige/CoursIA/pull/6058), les sources
+> ont été déplacées ; depuis le follow-up #4365, la coquille technique (`lakefile.lean`,
+> `lean-toolchain`, `lake-manifest.json`) a été retirée. **`lake build` n'a plus d'effet ici** (plus
+> de lakefile). Pour compiler et vérifier les preuves, utiliser le home canonique
+> [`game_theory_lean/`](../game_theory_lean/) :
 
 ```bash
-# Récupérer le cache Mathlib (première fois)
-lake exe cache get
-
-# Compiler le projet (archive : lib neutralisée — utiliser game_theory_lean pour compiler)
-lake build
-
-# Exécuter les tests
-lake test
+cd MyIA.AI.Notebooks/GameTheory/game_theory_lean
+lake exe cache get      # cache Mathlib (première fois)
+lake build SocialChoice # compile les 7 modules absorbés (0 sorry)
 ```
 
 ## Concepts clés formels
@@ -282,8 +278,8 @@ Ce projet formalise en Lean 4 (**0 `sorry`**, 76 théorèmes/lemmas sur 7 module
 résultats fondateurs de la théorie du choix social : le **théorème d'impossibilité
 d'Arrow**, le **paradoxe libéral de Sen**, la **théorie du vote** (Condorcet, électeur
 médian, Split Cycle) et la **véridicité de l'enchère de Vickrey** (théorie des mécanismes).
-Tous les modules sont FORMAL-CERTIFIED et recompilables via `lake build` sur la toolchain
-`v4.31.0-rc1`.
+Tous les modules sont FORMAL-CERTIFIED et recompilables via `lake build SocialChoice` dans le home
+canonique [`game_theory_lean/`](../game_theory_lean/) (toolchain `v4.31.0-rc1`).
 
 ### Ce qui est prouvé
 

@@ -91,6 +91,24 @@ jobs:
         key: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-
 
+    - name: Add swap space
+      # Same OOM guard as lean-build.yml (see the comment there): a cache-miss
+      # build of a large local module (conway_lean HashlifeCorrectness.lean)
+      # exceeds the 16 GB of hosted runners and the VM is torn down with exit 143.
+      # This workflow rebuilds the lake too (its cache key differs from
+      # lean-build's, so it can miss independently) — observed on PR #9798 where
+      # BOTH proof-integrity jobs died at exit 143 alongside the build job.
+      # 16 G -> 32 G (2026-08-07, PR #9840): teardown recurred with the swap step
+      # green, and the peak is inside a SINGLE module — see the long note in
+      # lean-build.yml for the measurements.
+      run: |
+        df -h /mnt
+        sudo fallocate -l 32G /mnt/lean-swap
+        sudo chmod 600 /mnt/lean-swap
+        sudo mkswap /mnt/lean-swap
+        sudo swapon /mnt/lean-swap
+        free -h
+
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
@@ -145,6 +163,22 @@ jobs:
         sys.path.insert(0, str(repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "agent_tests"))
 
         from lean_server import LeanVerifier  # noqa: E402
+
+        # `axiom_lookup_anomalies` is the complement filter for the
+        # build_failed_returncode_* path (#10486, ai-01 c.1044). It returns the
+        # lines of raw_output that are NOT healthy `#print axioms` verdicts --
+        # i.e. the actual error (unknown constant, type error) wherever it sits
+        # in the stream. select_diagnostic_lines misses `unknown constant`
+        # (no `error:` prefix) and falls back to a tail slice, which on a batch
+        # of 537 commands shows twenty healthy verdicts and hides the cause.
+        # Same version-skew fallback as above: degrade to the tail slice, never
+        # crash the gate on an ImportError from an older caller checkout.
+        try:
+            from lean_server import axiom_lookup_anomalies  # noqa: E402
+        except ImportError:
+            def axiom_lookup_anomalies(raw_output, limit=50):
+                lines = (raw_output or "").strip().splitlines()
+                return lines[-20:]
 
         modules = [m.strip() for m in os.environ["MODULES"].split(",") if m.strip()]
         allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
@@ -213,9 +247,21 @@ jobs:
             else:
                 print(f"  enumerated decls: (none -- module is 'non applicable', "
                       f"a gate that inspected nothing)")
-            print(f"  axioms: {result['axioms']}")
-            print(f"  forbidden: {result['forbidden']}")
-            print(f"  has_sorry: {result['has_sorry']}")
+            # On the build_failed_returncode_* path, check_axioms reads the
+            # returncode BEFORE parsing (lean_server.py:760), so axioms are
+            # NEVER collected -- `axioms: []` / `forbidden: []` /
+            # `has_sorry: False` are the path's hardcoded defaults, not
+            # measurements. Printing them bare made a dead build read as
+            # "no forbidden axioms, no sorry" (ai-01 c.1044 on #10486: the gate
+            # said "couldn't measure", not "clean despite flake"). Say so.
+            if result.get("error"):
+                print(f"  axioms: (non mesuré -- échec de lookup, see error below)")
+                print(f"  forbidden: (non mesuré -- échec de lookup)")
+                print(f"  has_sorry: (non mesuré -- échec de lookup)")
+            else:
+                print(f"  axioms: {result['axioms']}")
+                print(f"  forbidden: {result['forbidden']}")
+                print(f"  has_sorry: {result['has_sorry']}")
             # `error` is the ONLY field that separates "the lake did not build /
             # was not found" from "a forbidden axiom was reached". Omitting it
             # made a dead build indistinguishable from a real violation in the
@@ -224,13 +270,28 @@ jobs:
             if result.get("error"):
                 print(f"  error: {result['error']}")
                 # `error` names the class of failure; `raw_output` names the
-                # cause. Without this tail, "build_failed_returncode_1" sends
-                # you to a local reproduction to learn what any CI log already
-                # had. Tail rather than head: Lean prints the failing
-                # declaration and its error last.
-                tail = (result.get("raw_output") or "").strip().splitlines()[-20:]
-                for line in tail:
-                    print(f"    | {line}")
+                # cause. Without it, "build_failed_returncode_1" sends you to a
+                # local reproduction to learn what any CI log already had.
+                #
+                # Print the COMPLEMENT of the healthy form (ai-01 c.1044 on
+                # #10486): any non-blank line of raw_output that is NOT a
+                # `'decl' depends on axioms: [...]` / `does not depend on any
+                # axioms` verdict. On a healthy run this prints nothing. On a
+                # failed run it prints the cause (`unknown constant`, type
+                # error) wherever it sits in the stream -- bulletproof by
+                # position, unlike select_diagnostic_lines which matches the
+                # `error:` marker that an `unknown constant` lacks and then
+                # falls back to a tail slice. On #10486 (galois_lean, 537
+                # declarations) the tail was twenty healthy verdicts and the
+                # cause sat near the top, invisible.
+                anomalies = axiom_lookup_anomalies(result.get("raw_output") or "")
+                if anomalies:
+                    print(f"    | non-verdict lines in raw_output ({len(anomalies)} shown):")
+                    for line in anomalies:
+                        print(f"    | {line}")
+                else:
+                    print("    | (no non-verdict lines -- raw_output is all healthy"
+                          " axioms verdicts; failure left no trace in this capture)")
             if result["has_sorry"]:
                 sorry_modules.append(mod)
 
