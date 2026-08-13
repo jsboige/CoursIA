@@ -35,11 +35,42 @@ so they run without the gitleaks binary (CI only has gitleaks-action).
 """
 from __future__ import annotations
 
+import json
 import re
+import shutil
+import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 GITLEAKS_TOML = REPO_ROOT / ".gitleaks.toml"
+
+# Pinned by `.github/workflows/secret-scan.yml` and `.pre-commit-config.yaml`
+# (the two pins must agree, see `check_hooks_parity.py`). The test below
+# invokes the gitleaks binary directly to assert the `paths` allowlist is a
+# documented CONTENT BYPASS (#10595), so the version must match.
+EXPECTED_GITLEAKS_VERSION = "8.24.3"
+
+
+def _gitleaks_binary() -> str | None:
+    """Locate the gitleaks binary, or None if unavailable.
+
+    The CI uses Docker (`docker run zricethezav/gitleaks:v${GITLEAKS_VERSION}`);
+    locally, we accept either a `gitleaks` on PATH or the Windows binary if
+    installed. The skip is graceful: absence of the binary does NOT mean the
+    config is healthy, it means this class of assertion cannot be evaluated
+    here. CI still runs the same check via the gitleaks-action step."""
+    found = shutil.which("gitleaks")
+    if found:
+        return found
+    # Windows: fall back to a known install location if present.
+    if sys.platform == "win32":
+        candidate = Path("C:/Program Files/GitTools/gitleaks/gitleaks.exe")
+        if candidate.exists():
+            return str(candidate)
+    return None
 
 
 def _load_allowlist_regexes() -> list[str]:
@@ -326,3 +357,167 @@ class TestRevocationDiscipline:
                 f"{prefix}... is both REVOKED_ALLOWLISTED and inside a positive "
                 f"control {collides} -> the control can no longer detect a disarm"
             )
+
+
+# ---------------------------------------------------------------------------
+# Paths allowlist = CONTENT BYPASS (c.1331+107/#10595).
+# Documented structural tradeoff: the allowlist entry
+#   scripts/secrets/tests/test_gitleaks_.*\.py$
+# skips the scanner on the directory that hosts the gitleaks regression suite
+# itself — otherwise the synthetic `qwen-api-token` fixtures (c.10265) would
+# produce 14+ noise findings per CI run. The price is that ANY secret under
+# `scripts/secrets/tests/test_gitleaks_*.py` is invisible to the scanner.
+#
+# This class asserts TWO properties simultaneously so that future maintainers
+# cannot regress either side unknowingly:
+#
+#   1. The bypass HOLDS today — a real-shaped secret under the allowlisted
+#      path is NOT flagged. Removing the `paths` entry would break this
+#      assertion, forcing the maintainer to consciously reintroduce the
+#      bypass or fix the underlying noise problem.
+#   2. The detector stays ARMED in general — the same real-shaped secret in a
+#      sibling file OUTSIDE the allowlist IS flagged. This is the positive
+#      control: if the detector were silently disabled everywhere, both
+#      assertions would (wrongly) pass.
+#
+# The test invokes the gitleaks binary directly — text-only parsing of the
+# TOML cannot test a runtime bypass — which is why it skips gracefully when
+# gitleaks is unavailable (CI does NOT run this class locally; the gate is
+# the gitleaks-action scan on the actual PR). The point of the test is the
+# NAME: it documents the bypass with a runnable invariant instead of leaving
+# it as a comment in `.gitleaks.toml` only.
+# ---------------------------------------------------------------------------
+class TestPathsAllowlistBypass:
+    """Asserts the structural tradeoff: ``[allowlist].paths`` skips the scanner
+    on the allowlisted path, AND the detector stays armed everywhere else.
+
+    Tradeoff rationale: ``scripts/secrets/tests/test_gitleaks_*.py$`` is the
+    directory hosting the gitleaks regression suite itself. The synthetic
+    ``qwen-api-token`` fixtures (c.10265) live there; allowing the scanner to
+    read them would produce 14+ noise findings per CI run, defeating the
+    signal-to-noise ratio. The cost is that this directory is opaque to the
+    scanner. Any future LIVE secret accidentally committed under this path
+    would be invisible. See #10595 for the reproduction and the structural
+    audit. The positive control here ensures the detector still works on
+    byte-identical content under a non-allowlisted path, so a future global
+    disarm cannot pass silently.
+    """
+
+    @pytest.fixture(scope="class")
+    def gitleaks_bin(self):
+        bin_path = _gitleaks_binary()
+        if bin_path is None:
+            pytest.skip(
+                "gitleaks binary not on PATH; the runtime-bypass assertion "
+                "cannot be evaluated here. CI still runs this check via "
+                "the gitleaks-action step on the actual PR."
+            )
+        return bin_path
+
+    def test_gitleaks_version_matches_pin(self, gitleaks_bin):
+        """Version drift between the two pins (workflow + pre-commit) re-uses
+        a stale binary and silently changes which findings surface. This
+        test catches drift EARLY: if the local binary is not the pinned one,
+        the assertions below measure a different scanner than CI will run.
+        """
+        proc = subprocess.run(
+            [gitleaks_bin, "version"],
+            capture_output=True, text=True, timeout=15,
+        )
+        actual = proc.stdout.strip().splitlines()[-1] if proc.stdout else ""
+        assert EXPECTED_GITLEAKS_VERSION in actual, (
+            f"local gitleaks reports {actual!r}, expected the pinned "
+            f"{EXPECTED_GITLEAKS_VERSION}. Update `.github/workflows/"
+            f"secret-scan.yml` AND `.pre-commit-config.yaml` together "
+            f"(see check_hooks_parity.py for the drift check), then re-run."
+        )
+
+    def test_real_secret_under_path_allowlist_is_invisible(self, gitleaks_bin, tmp_path):
+        """The bypass HOLDS: a real-shaped secret under
+        ``scripts/secrets/tests/test_gitleaks_*.py`` is NOT flagged.
+
+        This is the **mirrored assertion** that gives the documented
+        tradeoff a runnable name. Removing the ``paths`` entry would break
+        this assertion (the file becomes detectable), forcing the maintainer
+        to consciously reintroduce the bypass or fix the underlying noise
+        from the synthetic fixtures.
+        """
+        # Build the allowlisted tree + a control tree in tmp_path, both with
+        # byte-identical content for the secret. The relative paths inside
+        # tmp_path mirror the production structure (the `paths` entry is a
+        # regex against the file path RELATIVE TO --source, not absolute).
+        src_dir = tmp_path / "scripts" / "secrets" / "tests"
+        src_dir.mkdir(parents=True)
+        allowed_file = src_dir / "test_gitleaks_c1331x107_probe.py"
+        control_file = src_dir / "test_gitleaks_c1331x107_probe.txt"  # .txt ≠ .py
+
+        # Synthetic real-shaped secret: built from concatenation so the PR
+        # diff of this test file is not itself gitleaks-flagged. The shape
+        # matches `generic-api-key` (entropy >= 4, lowercase hex suffix).
+        real_secret = "sk-" + "or" + "-v1-" + "9a3f7c2e1b8d4e6f0a2c5b9d" \
+                      + "7e1f3a4c6b8d0e2f4a6c8e0d2b4f6a8c0"
+        secret_line = f'API_KEY = "{real_secret}"\n'
+
+        allowed_file.write_text(secret_line, encoding="utf-8")
+        control_file.write_text(secret_line, encoding="utf-8")
+
+        # Invoke gitleaks on the allowlisted tree. We expect 1 finding (the
+        # .txt control file) and 0 findings on the .py file — the structural
+        # bypass.
+        proc = subprocess.run(
+            [
+                gitleaks_bin, "detect",
+                "--no-git",
+                "--source", str(tmp_path),
+                "--config", str(GITLEAKS_TOML),
+                "--no-banner",
+                "--exit-code", "0",  # do not raise; we parse the JSON report
+                "--report-format", "json",
+                "--report-path", str(tmp_path / "out.json"),
+            ],
+            capture_output=True, text=True, timeout=30,
+        )
+        assert proc.returncode == 0, (
+            f"gitleaks invocation failed (exit {proc.returncode}): "
+            f"{proc.stderr.strip()[:300]}"
+        )
+
+        report_path = tmp_path / "out.json"
+        assert report_path.exists(), "gitleaks did not produce a JSON report"
+        try:
+            findings = json.loads(report_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            pytest.fail(f"gitleaks output is not valid JSON: {e}")
+
+        flagged = [f for f in findings if f.get("Secret") == real_secret]
+
+        # Positive control: the detector is armed in general — same content,
+        # same scanner, only the path differs. The .txt control file MUST be
+        # flagged; if it isn't, the bypass assertion will read as green while
+        # the scanner is actually silently disabled everywhere (the dangerous
+        # case).
+        control_flagged = any("probe.txt" in (f.get("File") or "") for f in flagged)
+        assert control_flagged, (
+            "POSITIVE CONTROL FAILED: the synthetic real-shaped secret was "
+            "NOT flagged under the .txt control file (different path, same "
+            "content). This means the detector is silently disabled, not "
+            "selectively bypassed — the bypass assertion below would read "
+            "green while the scanner is broken. Refusing to assert the "
+            "bypass until the detector is restored."
+        )
+
+        # Bypass assertion: the .py file MUST NOT be flagged (the documented
+        # structural tradeoff). If it IS flagged, the `paths` allowlist entry
+        # was removed — a maintainer must consciously reintroduce the bypass
+        # (or fix the noise problem that motivated it).
+        allowed_flagged = any("probe.py" in (f.get("File") or "") for f in flagged)
+        assert not allowed_flagged, (
+            "BYPASS ASSERTION FAILED: a real-shaped secret under "
+            "scripts/secrets/tests/test_gitleaks_*.py IS flagged by gitleaks. "
+            "The documented structural tradeoff (#10595) is no longer in "
+            "effect — either the `paths` allowlist entry was removed (and the "
+            "synthetic qwen-api-token fixtures now produce 14+ noise findings "
+            "per CI run), or the bypass is being silently widened. Restore "
+            "the allowlist entry deliberately, or fix the noise problem; do "
+            "not let the test silently regress to the safe-looking green."
+        )
