@@ -19,6 +19,7 @@ from scan_cell_ordering import (  # noqa: E402
     scan_exercise_order,
     scan_enchainement,
     scan_consecutive_code,
+    scan_interp_output_anchor,
     scan_notebook,
     find_notebooks,
 )
@@ -264,3 +265,102 @@ class TestFindNotebooksSkipdirParent:
         with patch.object(sco, "NOTEBOOKS_DIR", nb_root):
             found = sco.find_notebooks()
         assert [p.name for p in found] == ["nb.ipynb"]
+
+
+# ---------------------------------------------------------------------------
+# INTERP_BEFORE_CODE recognition of #10488 canonical headers (#10678)
+# ---------------------------------------------------------------------------
+
+class TestInterpHeaderRecognition:
+    """The density-enrichment Epic #10488 introduced canonical interpretation
+    headers ('### Lecture du résultat : …', '### Interprétation : …'). These
+    must be recognised by the structural INTERP_BEFORE_CODE check (a header
+    interp that precedes its code is misplaced), with ZERO false positives on
+    a correctly-placed header (it follows the code). The semantic
+    'wrong-code-anchor' case is deliberately NOT auto-detected (see
+    scan_interp_output_anchor, a triage tool with ~99% FP)."""
+
+    def test_lecture_header_before_code_flagged(self):
+        cells = [
+            _md("### Lecture du résultat : données\nL'output montre 8 obs."),
+            _code("n_users = 4"),
+        ]
+        cats = _cats(scan_enchainement(cells))
+        assert "INTERP_BEFORE_CODE" in cats
+
+    def test_interpretation_header_before_code_flagged(self):
+        cells = [
+            _md("### Interprétation : le diagnostic\nLe score 0.89."),
+            _code("compute()"),
+        ]
+        cats = _cats(scan_enchainement(cells))
+        assert "INTERP_BEFORE_CODE" in cats
+
+    def test_header_after_code_not_flagged(self):
+        # Correctly placed: header follows the code output -> zero FP.
+        cells = [
+            _code("n_users = 4"),
+            _md("### Lecture du résultat : données\nL'output montre 8 obs."),
+        ]
+        cats = _cats(scan_enchainement(cells))
+        assert "INTERP_BEFORE_CODE" not in cats
+
+
+class TestInterpOutputAnchorTriage:
+    """scan_interp_output_anchor is an opt-in TRIAGE helper (NOT a CI gate).
+    It flags a canonical interp header whose cited decimal score is absent from
+    the adjacent code output. Measured ~99% FP on real notebooks (cited
+    decimals live in plots/DataFrames/neighbours), so it is never wired into
+    scan_notebook by default -- these tests lock the mechanics only."""
+
+    def _nb_with_exec(self, cells):
+        # ensure code cells carry non-trivial output (> _MIN_OUTPUT_LEN) so the
+        # anchor check does not skip on "too-small output". _code() defaults
+        # outputs to [], so override with a substantial filler when absent/empty.
+        out = [{"text": "x " * 80}]
+        return [{"cell_type": c["cell_type"],
+                 "source": c.get("source", []),
+                 "execution_count": c.get("execution_count", 1),
+                 "outputs": c.get("outputs") or out}
+                if c["cell_type"] == "code" else
+                {"cell_type": "markdown", "source": c.get("source", [])}
+                for c in cells]
+
+    def test_mismatched_anchor_flagged(self):
+        # Interp cites 3.192 but the adjacent (wrong) code output has no such decimal.
+        # Realistic order: [code, interp] -- the interp follows (the wrong) code.
+        cells = self._nb_with_exec([
+            _code("define_model()"),  # output default filler, no 3.192
+            _md("### Lecture du résultat : score\nLe score est 3.192."),
+        ])
+        cats = _cats(scan_interp_output_anchor(cells))
+        assert "INTERP_OUTPUT_MISMATCH" in cats
+
+    def test_anchored_score_not_flagged(self):
+        # Interp cites 3.192 AND the adjacent code output contains 3.192 -> OK.
+        cells = [
+            {"cell_type": "code", "source": ["score = predict()"],
+             "execution_count": 1, "outputs": [{"text": "score = 3.192 " + "x " * 70}]},
+            {"cell_type": "markdown", "source": ["### Lecture du résultat : score\nLe score est 3.192."]},
+        ]
+        cats = _cats(scan_interp_output_anchor(cells))
+        assert "INTERP_OUTPUT_MISMATCH" not in cats
+
+    def test_conceptual_interp_not_flagged(self):
+        # No decimal cited -> cannot anchor -> skipped (precision-first).
+        cells = self._nb_with_exec([
+            _code("compute()"),
+            _md("### Lecture du résultat : diagnostic\nLa leçon est conceptuelle."),
+        ])
+        cats = _cats(scan_interp_output_anchor(cells))
+        assert "INTERP_OUTPUT_MISMATCH" not in cats
+
+    def test_version_triple_not_treated_as_score(self):
+        # "0.8.28" must not yield "8.28" as a measured-score candidate.
+        cells = self._nb_with_exec([
+            _code("compile()"),
+            _md("### Lecture du résultat : pragma\nSolidity ^0.8.28."),
+        ])
+        cats = _cats(scan_interp_output_anchor(cells))
+        assert "INTERP_OUTPUT_MISMATCH" not in cats
+

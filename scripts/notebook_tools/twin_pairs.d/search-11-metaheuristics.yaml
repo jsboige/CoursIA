@@ -25,6 +25,12 @@
       csharp_sha: ac366782eb567725eea37d1aa9fe0264a3ab1541
       content_python_sha: f32ad054a97210011f3cb1b6d3776a0c85521c28c813183d6d319277a64fb6ca
       content_csharp_sha: dce689a469dd323686332ca9508192b5f6f410f7511d562dc87bbead6c45dcc8
+    - date: "2026-08-12"
+      by: myia-po-2025:CoursIA
+      python_sha: cf7c0c90de2c19135cf22e6274fa4e3e8ef971b1
+      csharp_sha: ac366782eb567725eea37d1aa9fe0264a3ab1541
+      content_python_sha: ce983432ad9240c487af0a22fd4cae25fa7e6ff8a3e69af5316a0bebdc35e5a6
+      content_csharp_sha: dce689a469dd323686332ca9508192b5f6f410f7511d562dc87bbead6c45dcc8
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Python = MEALPy (librairie metaheuristique 40+ algos, MIT) -- vrai SOTA ecosysteme Python. C# = GeneticSharp (librairie .NET GA/evolutionnaire reference, LGPL) post Tranche 2 -- vrai SOTA ecosysteme .NET. Les DEUX cotes branchent une librairie native de leur ecosysteme (mealpy + geneticsharp). Tranche 1 C# from-scratch (PSO/SA/GA) preservee + Tranche 2 ajoute GeneticSharp sur 4 fonctions benchmark -- lib-vs-lib cote-a-cote avec from-scratch. Asymetrie de couverture (ABC + BRO cote Python, GA + TSP cote C#) asumee native-both parity_level. Verdict SOTA-OK.
@@ -33,3 +39,4 @@
     - "Bibliotheque vs from-scratch : Python invoque MEALPy (librairie metaheuristique, 40+ algorithmes) pour PSO/ABC/SA/BRO ; C# implemente PSO/SA/GA from-scratch PUIS, en Tranche 2 (§10), branche GeneticSharp (librairie .NET de reference pour l'evolutionnaire, socle de MetaGeneticSharp) sur les 4 fonctions de benchmark -- lib-vs-lib cote-a-cote avec le from-scratch. Les deux jumeaux invoquent desormais une librairie native (mealpy cote Python, GeneticSharp cote C#)."
     - "Asymetrie de couverture algorithmique : Python couvre PSO + ABC (Artificial Bee Colony) + SA + BRO (Brownian) via MEALPy ; C# couvre PSO + SA + GA (Genetic Algorithm) + un exemple TSP (recuit simule). GA et TSP sont propres au C# ; ABC et BRO sont propres au Python."
     - "Stochasticite : les deux cotes sont sedeables mais non deterministes (optimisation stochastique) -- parite conceptuelle (meme famille d'algorithmes, memes fonctions de benchmark), pas bitwise."
+    - "Intro Prong-B catch-up (2026-08-12, #3801) : l'intro MEALPy Python (cellule mealpy-basics) portait PSO sur Sphere 2D (degenere -- optimum unique convexe, la capacite swarm d'echapper aux optima locaux invisible). Remplacee par Rastrigin 2D (multimodale, 10n + sum(x^2-10cos(2pi*x)), bornes [-5.12,5.12]) -- G.9 mesure 3/5 runs pieges sur un optimum local (fitness ~1-2, pas 0). C# twin INCHANGE ce grain (pas de cellule intro Sphere equivalente modifiee). Les cellules 11-13 Python (benchmarks) utilisaient deja Rastrigin -- l'intro etait l'incoherence residuelle."
