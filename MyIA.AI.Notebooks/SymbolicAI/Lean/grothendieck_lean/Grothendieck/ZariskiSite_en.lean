@@ -92,11 +92,10 @@ example : Scheme.forgetToTop.IsContinuous
 
 /-! ## 5. Canonical Mathlib bridges (Grothendieck tribute)
 
-Bridges to the 9 canonical constructors in `Mathlib/AlgebraicGeometry/Sites/BigZariski.lean`
+Bridges to the 5 canonical constructors in `Mathlib/AlgebraicGeometry/Sites/BigZariski.lean`
 extending the namespace `Grothendieck` with the foundational operators of the Zariski site:
 (5.1) the pretopology and topology, (5.2) the Subcanonical instance and continuity of the
-forgetful functor, (5.3) the affine hypercover, (5.4) the limits preservation and sieve
-inclusion lemmas, (5.5) the sheaf condition for sigma covers. -/
+forgetful functor, (5.3) the affine hypercover. -/
 
 /-! ### 5.1 Bridge-def : the Zariski pretopology and topology
 
@@ -134,42 +133,5 @@ The basic tool for Zariski cohomology. -/
 noncomputable def affineOneHypercover_field (X : Scheme.{u}) :
     Scheme.zariskiTopology.OneHypercover X :=
   Scheme.affineOneHypercover X
-
-/-! ### 5.4 Bridge-lemma : limits preservation and sieve inclusion
-
-For a Zariski-sheaf presheaf, preservation of discrete-shaped limits; for a
-locally directed diagram of open immersions, the colimit inclusions form a
-Zariski covering. -/
-
-/-- Bridge-lemma : Zariski-sheaves preserve discrete-shaped limits. -/
-lemma preservesLimitsOfShape_discrete_of_isSheaf_zariskiTopology_field
-    {F : Scheme.{u}ᵒᵖ ⥤ Type v} {ι : Type*} [Small.{u} ι] [Small.{v} ι]
-    (hF : Presieve.IsSheaf Scheme.zariskiTopology F) :
-    PreservesLimitsOfShape (Discrete ι) F :=
-  Scheme.preservesLimitsOfShape_discrete_of_isSheaf_zariskiTopology hF
-
-/-- Bridge-lemma : for a locally directed diagram of open immersions, the
-    colimit inclusions form a Zariski covering. -/
-lemma ofArrows_ι_mem_zariskiTopology_of_isColimit_field {J : Type*} [Category J]
-    (F : J ⥤ Scheme.{u}) [∀ {i j : J} (f : i ⟶ j), IsOpenImmersion (F.map f)]
-    [(F.comp Scheme.forget).IsLocallyDirected] [Quiver.IsThin J] [Small.{u} J]
-    (c : Cocone F) (hc : IsColimit c) :
-    Sieve.ofArrows _ c.ι.app ∈ Scheme.zariskiTopology c.pt :=
-  Scheme.ofArrows_ι_mem_zariskiTopology_of_isColimit F c hc
-
-/-! ### 5.5 Bridge-lemma : sheaf condition for sigma covers
-
-For an `S.Cover (precoverage P)` (where P is Zariski-local-at-source), the
-sheaf condition for the sigma cover is equivalent to the sheaf condition for
-the initial cover. -/
-
-/-- Bridge-lemma : for an S.Cover, IsSheafFor sigma iff IsSheafFor initial. -/
-lemma Cover_isSheafFor_sigma_iff_field {P : MorphismProperty Scheme.{u}}
-    {F : Scheme.{u}ᵒᵖ ⥤ Type*} [IsZariskiLocalAtSource P]
-    (hF : Presieve.IsSheaf Scheme.zariskiTopology F)
-    {S : Scheme.{u}} (𝒰 : S.Cover (precoverage P)) [Finite 𝒰.I₀] :
-    Presieve.IsSheafFor F (.ofArrows 𝒰.sigma.X 𝒰.sigma.f) ↔
-      Presieve.IsSheafFor F (.ofArrows 𝒰.X 𝒰.f) :=
-  Scheme.Cover.isSheafFor_sigma_iff hF 𝒰
 
 end Grothendieck_en
