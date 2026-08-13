@@ -28,6 +28,8 @@ import Mathlib.CategoryTheory.Sites.Canonical
 
 namespace Grothendieck_en
 
+universe v u w w'
+
 open CategoryTheory
 
 /-!
@@ -124,5 +126,84 @@ theorem trivial_subcanonical {C : Type*} [Category C] :
     @GrothendieckTopology.Subcanonical C _ (⊥ : GrothendieckTopology C) :=
   GrothendieckTopology.Subcanonical.of_isSheaf_yoneda_obj ⊥
     (fun _ => Presieve.isSheaf_bot)
+
+/-!
+## Preservation of sheaf conditions via presheaf isomorphisms
+
+The conditions `IsSheaf` and `IsSeparated` are **properties of the isomorphism
+class** of the presheaf. If `P ≅ P'`, then `P` is a sheaf (resp. separated)
+if and only if `P'` is. This invariance is necessary for the full theory:
+sheaves form a full subcategory of the presheaf category, and full-faithfulness
+requires isomorphisms between objects to preserve the property.
+
+These are `isSheaf_iso` and `isSeparated_iso` from Mathlib (`SheafOfTypes.lean`).
+-/
+
+/-- The condition `IsSheaf` is preserved by presheaf isomorphism:
+    if `P ≅ P'` and `P` is a sheaf, then `P'` is a sheaf. This is the
+    stability of sheaves under isomorphisms — a property needed for
+    full-faithfulness of the inclusion `Sheaf J A ↪ Presheaf A`.
+    Uses `Presieve.isSheaf_iso` from Mathlib. -/
+theorem isSheaf_iso {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) {P P' : Cᵒᵖ ⥤ Type w}
+    (i : P ≅ P') (h : Presieve.IsSheaf J P) :
+    Presieve.IsSheaf J P' :=
+  Presieve.isSheaf_iso J i h
+
+/-- The condition `IsSeparated` is preserved by presheaf isomorphism:
+    if `P ≅ P'` and `P` is separated, then `P'` is separated. Symmetric to
+    `isSheaf_iso` for separation. Uses `Presieve.isSeparated_iso`
+    from Mathlib. -/
+theorem isSeparated_iso {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) {P P' : Cᵒᵖ ⥤ Type w}
+    (i : P ≅ P') (hP : Presieve.IsSeparated J P) :
+    Presieve.IsSeparated J P' :=
+  Presieve.isSeparated_iso J i hP
+
+/-!
+## Symmetry: separation descends along topology comparisons
+
+Just as `IsSheaf` descends along `J₁ ≤ J₂` (cf. `isSheaf_of_le`),
+the condition `IsSeparated` also descends. The coarser the topology,
+the easier it is to be separated.
+
+This is `isSeparated_of_le` from Mathlib (`SheafOfTypes.lean`).
+-/
+
+/-- The condition `IsSeparated` descends along topology comparisons:
+    if `J₁ ≤ J₂` and `P` is separated for `J₂`, then `P` is separated for `J₁`.
+    Symmetric to `isSheaf_of_le` for separation. Uses
+    `Presieve.isSeparated_of_le` from Mathlib. -/
+theorem isSeparated_of_le {C : Type u} [Category.{v} C]
+    {J₁ J₂ : GrothendieckTopology C}
+    (P : Cᵒᵖ ⥤ Type w) (h : J₁ ≤ J₂)
+    (hP : Presieve.IsSeparated J₂ P) :
+    Presieve.IsSeparated J₁ P :=
+  Presieve.isSeparated_of_le P h hP
+
+/-!
+## Equivalence of IsSheaf via natural equivalence of presheaves
+
+A **natural equivalence** between presheaves `e : P₁ ≅ P₂` (a natural
+isomorphism, i.e. component-by-component) also preserves the condition
+`IsSheaf`, and this in **both directions**. This is strictly stronger than
+invariance under a global presheaf isomorphism: we have
+`IsSheaf J P₁ ↔ IsSheaf J P₂` via a natural equivalence.
+
+This is `isSheaf_iff_of_nat_equiv` from Mathlib (`SheafOfTypes.lean`).
+-/
+
+/-- A natural equivalence between presheaves preserves the condition
+    `IsSheaf` in both directions: `IsSheaf J P₁ ↔ IsSheaf J P₂` via a
+    family of component-by-component equivalences. Stronger than a global
+    presheaf isomorphism: the condition is preserved component-by-component.
+    Uses `Presieve.isSheaf_iff_of_nat_equiv` from Mathlib. -/
+theorem isSheaf_iff_of_nat_equiv {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) {P₁ : Cᵒᵖ ⥤ Type w} {P₂ : Cᵒᵖ ⥤ Type w'}
+    (e : ∀ ⦃X : C⦄, P₁.obj (Opposite.op X) ≃ P₂.obj (Opposite.op X))
+    (he : ∀ ⦃X Y : C⦄ (f : X ⟶ Y) (x : P₁.obj (Opposite.op Y)),
+      e (P₁.map f.op x) = P₂.map f.op (e x)) :
+    Presieve.IsSheaf J P₁ ↔ Presieve.IsSheaf J P₂ :=
+  Presieve.isSheaf_iff_of_nat_equiv e he
 
 end Grothendieck_en
