@@ -130,6 +130,19 @@ catalogue), pas pour le cœur éditorial.
 > la valeur dans un déploiement donné. Cartographier les *flux de
 > texte réels* avant de choisir les modules à activer.
 
+> **Notebook compagnon.** [`mesurer-la-derive-dun-copilot.ipynb`](mesurer-la-derive-dun-copilot.ipynb)
+> creuse le **gate humain** du Copilot (« valide ou rejette »). Les six
+> transformations n'ont pas le même effet informationnel : certaines
+> ajoutent (image, alt text), d'autres réécrivent sans perdre (enhancement,
+> rewriting), d'autres **détruisent** de l'information (résumé, traduction).
+> Le notebook modélise chaque transformation par une fonction vectorielle
+> déterministe (fixture Maison Valmont) et mesure le **rappel de l'original**
+> après des séquences validées. Leçon : une chaîne de transformations
+> destructrices complémentaires perd près de la moitié du document, quand
+> une chaîne de réversibles en préserve l'intégralité — alors que chaque
+> étape, isolément, passait le gate. *Le gate est local (étape par étape) ;
+> la dérive est globale (chaîne).*
+
 ---
 
 ## Parcours 2 — RAG sur corpus, et le piège du multi-environnement

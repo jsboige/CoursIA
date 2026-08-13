@@ -8,7 +8,14 @@
       by: myia-po-2023:CoursIA
       python_sha: fe336af927a925430b9b91f845559017e8caddbc
       csharp_sha: 5fcb492875082155fdb8d9b04c7ce0fb450dfbb5
+    - date: "2026-08-12"
+      by: myia-po-2025:CoursIA
+      python_sha: fe336af927a925430b9b91f845559017e8caddbc
+      csharp_sha: f49a3f524bde652f648bf1723642b0c0e04be872
+      content_python_sha: 1005d0eeed15d6c02f845f062f3038639890e4248be4454e71a37f8c7eeb9820
+      content_csharp_sha: a3a208cc87cbcdb3d4a162facf7278097165110fced07fa99d946f9313107e64
   known_differences:
+    - "Edition C# twin 2026-08-12 (myia-po-2025:CoursIA, #10488 density ratchet) : enrichissement markdown du jumeau C# seul (641->834 c/cell, 6 en-tetes WHAT->WHAT+WHY : theorie CSP/backtracking -- genericite-abstraction, backtracking-naif comme baseline mesuree, MRV fail-fast + LCV leave-options-open, forward checking un niveau plus tot, ROI du framework AIMA, benchmark rend les gains visibles). Rattrapage PARTIEL du Python twin, deja dense (1011 c/cell, sections 'Interpretation' natives que le C# n'avait pas). Aucune divergence algorithmique : C.3 byte-identique (0 cellule code touchee, sources+outputs+exec_count inchanges) -- divergence markdown-only, le C# comble son retard pedagogique vers le Python, pas l'inverse."
     - "Socle pedagogique commun : resolution de Sudoku comme probleme de satisfaction de contraintes (CSP), suivant le formalisme AIMA (Artificial Intelligence: A Modern Approach) -- AC-3 (arc consistency / propagation de contraintes), backtracking avec heuristiques (MRV, LCV), assign/eliminate (Norvig-style propagation). Meme concept mathematique (variables, domaines, contraintes binaires, arc consistency), meme cas canonique (Sudoku). Les deux couvrent AC3, backtracking, Norvig, AIMA, csp."
     - "Divergence d'implementation : le Python (numpy, 19 cellules code) implemente le framework CSP a la AIMA (classe CSP, AC-3, backtracking) ; le C# (pur System.* stdlib, 0 NuGet, 18 cellules code) implemente le meme framework CSP (AC-3, backtracking, assign/eliminate) sans dependance externe. Paire proche d'une traduction native (meme algorithmes, meme structure AIMA), mais les 2 implementations restent independantes (idiomes langage, structures de donnees), d'ou parity_level semantic et non native-both."
     - "Idiomes framework : Python = numpy, 19 cellules code ; C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 18 cellules code. Meme enseignement (CSP AIMA + AC-3 + backtracking), implementations independantes."
