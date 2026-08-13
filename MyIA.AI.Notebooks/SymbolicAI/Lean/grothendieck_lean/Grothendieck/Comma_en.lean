@@ -125,4 +125,51 @@ morphism in algebraic geometry (bundles, stacks).
 #check @CategoryTheory.Over
 #check @CategoryTheory.StructuredArrow
 
+/-!
+## 4. Bridge theorems: functorial law and natural transformation component
+
+The comma category `Comma L R` is a full-fledged category: the projections
+`fst` and `snd` are functors, and the canonical natural transformation
+`natTrans : fst ⋙ L ⟶ snd ⋙ R` admits explicit components. The 4 bridges
+below join the module's definitions with the underlying Mathlib 4 facts:
+
+  - `map_id` / `map_comp`: structure fields of the `fstFunctor` (direct
+    access `(fstFunctor).map_id X` / `(fstFunctor).map_comp f g`).
+  - `natTrans_app`: `@[simp]` namespace lemma of `Mathlib.CategoryTheory.Comma`
+    with 3 explicit arguments (`L R X`) — direct application.
+  - `snd_map_comp`: explicit composition of the snd projection.
+
+Namespace lemmas with explicit args = direct application (cf. lesson
+L902 ★★ Tier 5: a `by rw [...]` defeats the LHS but doesn't generally
+close the morphism equality). Functor structure fields are accessible
+without prefix (`h.map_id X` vs `Functor.map_id h X`).
+-/
+
+/-- Bridge: the `Comma.fst` functor preserves identities. This is the
+    `Functor.map_id` structure field, directly accessible. -/
+theorem fst_map_id {X : CategoryTheory.Comma L R} :
+    (fstFunctor).map (𝟙 X) = 𝟙 ((fstFunctor).obj X) :=
+  (fstFunctor).map_id X
+
+/-- Bridge: the `Comma.fst` functor preserves composition of morphisms.
+    Structure field `Functor.map_comp`. -/
+theorem fst_map_comp {X Y Z : CategoryTheory.Comma L R} (f : X ⟶ Y) (g : Y ⟶ Z) :
+    (fstFunctor).map (f ≫ g) = (fstFunctor).map f ≫ (fstFunctor).map g :=
+  (fstFunctor).map_comp f g
+
+/-- Bridge: the component of `natTrans : fst ⋙ L ⟶ snd ⋙ R` at an object
+    `(a, b, f)` is the arrow `f` itself. Namespace lemma `@[simp]`
+    `Comma.natTrans_app` with 3 explicit arguments, direct application. -/
+theorem natTrans_app_apply (X : CategoryTheory.Comma L R) :
+    (natTransCanonical).app X = X.hom :=
+  CategoryTheory.Comma.natTrans_app L R X
+
+/-- Bridge: the composition `snd` (the second projection) on a morphism
+    of `Comma L R` is the right component of the commutative square.
+    This is the second half of the structure: the target category
+    projection also preserves identities and composition. -/
+theorem snd_map_comp {X Y Z : CategoryTheory.Comma L R} (f : X ⟶ Y) (g : Y ⟶ Z) :
+    (sndFunctor).map (f ≫ g) = (sndFunctor).map f ≫ (sndFunctor).map g :=
+  (sndFunctor).map_comp f g
+
 end Grothendieck.Comma_en
