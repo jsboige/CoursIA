@@ -447,7 +447,7 @@ cp .env.example .env
 | `dotNetRDF` NuGet restore échoue | Vérifier .NET SDK 9.0+ (`dotnet --version`). Relancer la cellule d'import. |
 | Endpoint DBpedia/Wikidata timeout | Les endpoints publics ont des limites. Ajouter `LIMIT 100` aux requêtes. Réessayer hors heures de pointe. |
 | pySHACL validation vide | Vérifier que les préfixes du graphe de données correspondent aux shapes (même `ex:` namespace). |
-| OWLReady2 Java bridge error | Installer JDK 11+ (OWlReady2 utilise HermiT en Java). Sur Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. |
+| OWLReady2 Java bridge error | Installer JDK 11+ (OWlReady2 utilise HermiT en Java). Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. macOS : `brew install --cask temurin@11`. Linux : `sudo apt install openjdk-17-jdk`. |
 | RDF-Star syntax non reconnue | rdflib 7.x supporte RDF-Star en mode expérimental. Vérifier `rdflib.__version__ >= 7.0`. |
 | GraphRAG : `OPENAI_API_KEY` manquant | SW-12 requiert une clé LLM (OpenAI ou Anthropic). Configurer `.env` (voir `.env.example`). Les notebooks SW-1 à SW-11 n'ont pas besoin de clé. |
 

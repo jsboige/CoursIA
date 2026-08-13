@@ -176,4 +176,69 @@ theorem toSheafify_natural {C : Type u} [Category.{v} C]
     η ≫ toSheafify J Q = toSheafify J P ≫ sheafifyMap J η :=
   toSheafify_naturality J η
 
+/-!
+## Section 8 : Bridge theorems : hom/inv components and sheafifyMap functorial law
+
+Sheafification `sheafify` and its endofunctor `sheafification` have a
+deep structure: the isomorphism `isoSheafify J hP : P ≅ sheafify J P` is
+an explicit bridge between a presheaf and its sheafification, and the
+map `sheafifyMap J η : sheafify P ⟶ sheafify Q` is the pointwise action
+of the endofunctor on morphisms. The 4 bridges below make the jointure
+between the module's definitions and the underlying Mathlib 4 facts:
+
+  - `isoSheafify_hom` : extract the `hom` component of the isomorphism
+  - `isoSheafify_inv` : extract the `inv` component (via `sheafifyLift`)
+  - `sheafifyMap_id` : identity of the pointwise functorial law
+  - `sheafifyMap_comp` : composition of the pointwise functorial law
+
+For the @[simp] Mathlib 4 theorems on isomorphism components and the
+functorial law (L902 ★★ Tier 5), direct application `isoSheafify_hom J hP`
+is the canonical idiom (the `Iso.hom`/`Iso.inv` are structure fields,
+but the `@[simp]`-tagged lemmas are namespace theorems).
+-/
+
+/-- Bridge: the `hom` component of the isomorphism `isoSheafify` is the
+    canonical map `toSheafify`. Uses `isoSheafify_hom` from Mathlib via
+    fully-qualified name (`CategoryTheory.isoSheafify_hom`) to avoid the
+    name shadow in the `Grothendieck` namespace. -/
+theorem isoSheafify_hom {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    {P : Cᵒᵖ ⥤ Type (max u v)}
+    [HasWeakSheafify J (Type (max u v))]
+    (hP : Presheaf.IsSheaf J P) :
+    (isoSheafify J hP).hom = toSheafify J P :=
+  @CategoryTheory.isoSheafify_hom C _ J (Type (max u v)) _ _ P hP
+
+/-- Bridge: the `inv` component of the isomorphism `isoSheafify` is the
+    map `sheafifyLift` of the identity. Uses `isoSheafify_inv` from Mathlib
+    via fully-qualified name to avoid the shadow. -/
+theorem isoSheafify_inv {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    {P : Cᵒᵖ ⥤ Type (max u v)}
+    [HasWeakSheafify J (Type (max u v))]
+    (hP : Presheaf.IsSheaf J P) :
+    (isoSheafify J hP).inv = sheafifyLift J (𝟙 P) hP :=
+  @CategoryTheory.isoSheafify_inv C _ J (Type (max u v)) _ _ P hP
+
+/-- Bridge: `sheafifyMap` preserves identities (pointwise functorial law).
+    Analogue of `Functor.map_id` for the sheafification endofunctor.
+    Uses `sheafifyMap_id` from Mathlib via fully-qualified name. -/
+theorem sheafifyMap_id {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    {P : Cᵒᵖ ⥤ Type (max u v)}
+    [HasWeakSheafify J (Type (max u v))] :
+    sheafifyMap J (𝟙 P) = 𝟙 (sheafify J P) :=
+  @CategoryTheory.sheafifyMap_id C _ J (Type (max u v)) _ _ P
+
+/-- Bridge: `sheafifyMap` preserves composition (pointwise functorial law).
+    Analogue of `Functor.map_comp` for the sheafification endofunctor.
+    Uses `sheafifyMap_comp` from Mathlib via fully-qualified name. -/
+theorem sheafifyMap_comp {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C}
+    {P Q R : Cᵒᵖ ⥤ Type (max u v)}
+    [HasWeakSheafify J (Type (max u v))]
+    (η : P ⟶ Q) (θ : Q ⟶ R) :
+    sheafifyMap J (η ≫ θ) = sheafifyMap J η ≫ sheafifyMap J θ :=
+  @CategoryTheory.sheafifyMap_comp C _ J (Type (max u v)) _ _ P Q R η θ
+
 end Grothendieck_en
