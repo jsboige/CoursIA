@@ -316,6 +316,8 @@ cd MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code
 ./Scripts/prepare-workspaces.ps1 -UserName "VotreNom"
 ```
 
+> **macOS / Linux** : `prepare-workspaces.ps1` est un script PowerShell (Windows-only). Le setup du poste contributeur Mac/Linux (kernels, clés, stack GenAI) : [setup-linux-macos.md](../../../docs/reference/setup-linux-macos.md).
+
 Si `UserName` contient des espaces, l'entourer de guillemets. Les workspaces sont créés dans le dossier `workspaces/` de chaque sous-répertoire (Claude Code et Roo Code séparent leurs espaces).
 
 ### NanoClaw / OpenClaw : comment déployer un agent autonome ?
