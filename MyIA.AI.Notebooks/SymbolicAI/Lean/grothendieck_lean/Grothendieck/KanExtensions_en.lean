@@ -390,4 +390,83 @@ theorem dense_left_kan_unit_iso_app (F : C ⥤ D) [F.IsDense] (X : C) :
         F.rightUnitor.inv.app X :=
   CategoryTheory.Functor.IsDense.leftKanExtensionUnit_leftKanExtensionIso_hom_app F X
 
+/-!
+## 9. Bridges on extension categories, universal properties and density
+
+The 7 bridges below close sections 1-3 and 7 of the `#check` documentary
+repertoire: the **extension categories** (`LeftExtension`/`RightExtension`),
+the **universal properties** (`IsLeftKanExtension`/`IsRightKanExtension`),
+the **existence typeclasses** (`HasLeftKanExtension`/`HasRightKanExtension`),
+and **density** (`IsDense`) which ties Yoneda to Kan extensions. The chosen
+extensions, units/counits, descent, the adjunction bijection and the `lan`
+functor are already bridged by section 8 (existing decls); these 7 bridges
+complete the picture with the **abstract form** (categories, Propositions,
+typeclasses) on which the chosen form rests.
+
+Retained form (L902 ★★ Tier 5): the two categories are type-sig re-exports of
+data (`Type _` inferred), the two universal properties are Props with explicit
+args (`F'` then `η`/`ε`, applied as `F'.IsLeftKanExtension η`), the two
+existence typeclasses are type-sig Props (pattern `has_enough_points_field`
+c.1301+139), and density is a type-sig Prop on `F : C ⥤ D` (Mathlib class,
+`F.IsDense`). Resident arguments (universes `v₁ v₂ v₃ u₁ u₂ u₃`), structural
+instances, no polymorphic universe constructor.
+-/
+
+/-- Bridge: the **category of left extensions** of `F` along `L` — pairs
+    `(F' : D ⥤ H, η : F ⟶ L ⋙ F')`, whose initial objects are exactly the
+    left Kan extensions. Type-sig re-export of the Mathlib category
+    `CategoryTheory.Functor.LeftExtension L F`. -/
+def left_extension_field (L : C ⥤ D) (F : C ⥤ H) : Type _ :=
+  CategoryTheory.Functor.LeftExtension L F
+
+/-- Bridge: the **category of right extensions** of `F` along `L` — pairs
+    `(F' : D ⥤ H, ε : L ⋙ F' ⟶ F)`, whose terminal objects are exactly the
+    right Kan extensions. Dual of `left_extension_field`, type-sig re-export
+    of the Mathlib category `CategoryTheory.Functor.RightExtension L F`. -/
+def right_extension_field (L : C ⥤ D) (F : C ⥤ H) : Type _ :=
+  CategoryTheory.Functor.RightExtension L F
+
+/-- Bridge: the **universal property of being a left Kan extension** —
+    `(F', η)` is **initial** in `LeftExtension L F`: for every concurrent
+    `(G, F ⟶ L ⋙ G)`, there is a unique morphism `F' ⟶ G` factoring the
+    transformation. Type-sig re-export of the Mathlib Prop
+    `F'.IsLeftKanExtension η` (uniqueness is part of the definition).
+    Explicit args: `F'` then `η`. -/
+def is_left_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) (F' : D ⥤ H) (η : F ⟶ L ⋙ F') : Prop :=
+  F'.IsLeftKanExtension η
+
+/-- Bridge: the **universal property of being a right Kan extension** —
+    `(F', ε)` is **terminal** in `RightExtension L F`: every concurrent
+    factors uniquely through `F'`. Dual of `is_left_kan_extension_field`,
+    type-sig re-export of the Mathlib Prop `F'.IsRightKanExtension ε`.
+    Explicit args: `F'` then `ε`. -/
+def is_right_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) (F' : D ⥤ H) (ε : L ⋙ F' ⟶ F) : Prop :=
+  F'.IsRightKanExtension ε
+
+/-- Bridge: the **existence typeclass** — `F` has a left Kan extension along
+    `L`, i.e. `HasInitial (LeftExtension L F)`: the category of left
+    extensions has an initial object. This is not guaranteed in general (it
+    depends on the completeness of `H`). Type-sig re-export of the Mathlib
+    Prop `HasLeftKanExtension L F`, on which the **chosen** extension
+    `kan_extension_left` (section 8) rests. -/
+def has_left_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) : Prop :=
+  CategoryTheory.Functor.HasLeftKanExtension L F
+
+/-- Bridge: the dual **existence typeclass** — `F` has a right Kan extension
+    along `L` (`HasTerminal (RightExtension L F)`). Type-sig re-export of the
+    Mathlib Prop `HasRightKanExtension L F`, on which the chosen extension
+    `kan_extension_right` (section 8) rests. -/
+def has_right_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) : Prop :=
+  CategoryTheory.Functor.HasRightKanExtension L F
+
+/-- Bridge: **density** — `F : C ⥤ D` is dense if the identity of `D` is a
+    left Kan extension of `F` along itself. This is the fundamental fact
+    tying Yoneda to Kan extensions: the Yoneda embedding is dense, so every
+    functor on `C` is recovered as a Kan extension (weighted colimit) of the
+    embedding — the objects of `C` "generate" every presheaf. Type-sig
+    re-export of the Mathlib class `F.IsDense` (used as a bracket by
+    `dense_left_kan_unit_iso`/`_app`, section 8). -/
+def is_dense_field (F : C ⥤ D) : Prop :=
+  F.IsDense
+
 end Grothendieck.KanExtensions_en
