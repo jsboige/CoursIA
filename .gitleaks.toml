@@ -242,6 +242,6 @@ stopwords = [
     # CANONICAL placeholder values. None is a real secret; all are re-read at
     # source 2026-08-12. Kept as stopwords (substring on the finding) so a REAL
     # credential in the same test file still fails the scan.
-    "AbCdEf1234567890",       # common placeholder segment across sk-/ghp_-shaped test fixtures
+    "XyZwVu9876543210",       # c.1331+106 stopword substitution -- avoids collision with REAL_KEYS[2]='sk-proj-AbCdEf1234567890G...' fixture
     "AKIAIOSFODNN7EXAMPLE",   # AWS documentation example key (canonical placeholder, not rotatable)
 ]
