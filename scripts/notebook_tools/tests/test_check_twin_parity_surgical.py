@@ -580,7 +580,7 @@ def test_cli_exit_nonzero_when_header_missing(tmp_path):
     reg = repo / "twin_pairs.d"
     reg.mkdir()
     (reg / "_schema.yaml").write_text("# schema\n", encoding="utf-8")
-    target = reg / "NoAuditPair.yaml"
+    target = reg / "noauditpair.yaml"
     target.write_text(
         "- name: NoAuditPair\n"
         "  family: Test\n"
@@ -633,7 +633,7 @@ def test_cli_exit_zero_when_header_present_noop(tmp_path):
     (reg / "_schema.yaml").write_text("# schema\n", encoding="utf-8")
     sha_a = "a" * 40
     sha_b = "b" * 40
-    (reg / "OkPair.yaml").write_text(
+    (reg / "okpair.yaml").write_text(
         f"- name: OkPair\n"
         f"  family: Test\n"
         f"  python: a.ipynb\n"
