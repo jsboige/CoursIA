@@ -164,4 +164,72 @@ theorem mv_fromBiprod_delta_eq_zero
     S.fromBiprod F n₀ ≫ S.δ F n₀ n₁ h = 0 :=
   S.fromBiprod_δ F n₀ n₁ h
 
+/-!
+## Bridges propres (c.1301+131)
+
+Les définitions et théorèmes ci-dessous *re-exportent* les fields de la
+structure `J.MayerVietorisSquare` exposés dans
+`Mathlib/CategoryTheory/Sites/SheafCohomology/MayerVietoris.lean`. Tous ces
+fields opèrent sur la structure résidente `J.MayerVietorisSquare` non
+polymorphe d'univers — donc **L902 ★★ SAFE** (cf c.1301+108-L1 ★★ : les
+constructors polymorphes d'univers sont à proscrire, contrairement aux
+fields résidents sur X).
+
+1. `mv_toBiprod_field` : restatement de `S.toBiprod F n` (déf, somme des
+   restrictions H^n(X₄) → H^n(X₂) ⊞ H^n(X₃)).
+2. `mv_fromBiprod_field` : restatement de `S.fromBiprod F n` (déf,
+   différence des restrictions H^n(X₂) ⊞ H^n(X₃) → H^n(X₁)).
+3. `mv_delta_field` : restatement de `S.δ F n₀ n₁ h` (déf, homomorphisme de
+   connexion H^{n₀}(X₁) → H^{n₁}(X₄)).
+4. `mv_sequence_field` : restatement de `S.sequence F n₀ n₁ h` (déf, la
+   suite exacte longue ComposableArrows AddCommGrpCat.{w} 5).
+5. `mv_toBiprod_fromBiprod_field` : restatement de `S.toBiprod_fromBiprod F
+   n` (theorem, composition toBiprod >> fromBiprod = 0 — la condition
+   de nullité).
+
+Ce sont des bridges « vitrines » qui certifient que ces fields de la
+structure `J.MayerVietorisSquare` sont effectivement calculables dans la
+même exécution Lean.
+-/
+
+/-- Bridge : la somme des restrictions H^n(X₄) → H^n(X₂) ⊞ H^n(X₃).
+    β-équivalent au field `S.toBiprod F n`. -/
+noncomputable def mv_toBiprod_field
+    (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
+    (n : ℕ) :
+    F.H' n S.X₄ ⟶ F.H' n S.X₂ ⊞ F.H' n S.X₃ :=
+  S.toBiprod F n
+
+/-- Bridge : la différence des restrictions H^n(X₂) ⊞ H^n(X₃) → H^n(X₁).
+    β-équivalent au field `S.fromBiprod F n`. -/
+noncomputable def mv_fromBiprod_field
+    (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
+    (n : ℕ) :
+    F.H' n S.X₂ ⊞ F.H' n S.X₃ ⟶ F.H' n S.X₁ :=
+  S.fromBiprod F n
+
+/-- Bridge : l'homomorphisme de connexion H^{n₀}(X₁) → H^{n₁}(X₄).
+    β-équivalent au field `S.δ F n₀ n₁ h`. -/
+noncomputable def mv_delta_field
+    (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
+    (n₀ n₁ : ℕ) (h : n₀ + 1 = n₁) :
+    F.H' n₀ S.X₁ ⟶ F.H' n₁ S.X₄ :=
+  S.δ F n₀ n₁ h
+
+/-- Bridge : la suite exacte longue de Mayer-Vietoris (ComposableArrows
+    AddCommGrpCat.{w} 5). β-équivalent à `S.sequence F n₀ n₁ h`. -/
+noncomputable def mv_sequence_field
+    (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
+    (n₀ n₁ : ℕ) (h : n₀ + 1 = n₁) :
+    ComposableArrows AddCommGrpCat.{w} 5 :=
+  S.sequence F n₀ n₁ h
+
+/-- Bridge : la composition toBiprod >> fromBiprod est nulle.
+    β-équivalent au lemma `S.toBiprod_fromBiprod F n`. -/
+theorem mv_toBiprod_fromBiprod_field
+    (S : J.MayerVietorisSquare) (F : Sheaf J AddCommGrpCat.{v})
+    (n : ℕ) :
+    S.toBiprod F n ≫ S.fromBiprod F n = 0 :=
+  S.toBiprod_fromBiprod F n
+
 end Grothendieck.SheafCohomology.MayerVietoris

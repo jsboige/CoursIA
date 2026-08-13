@@ -184,4 +184,70 @@ theorem mem_iff_pullback_eq_top {C : Type*} [Category C] {X Y : C}
     S f ↔ Sieve.pullback f S = ⊤ :=
   Sieve.mem_iff_pullback_eq_top f
 
+/-!
+## Théorèmes propres (c.1301+130)
+
+Les théorèmes ci-dessous *prouvent* des égalités définitionnelles et des
+équivalences définitionnelles que les fields/lemmas de la structure
+`Sieve X` exposent dans `Mathlib/CategoryTheory/Sites/Sieves.lean`.
+Tous ces fields opèrent sur la structure résidente `Sieve X` non
+polymorphe d'univers — donc **L902 ★★ SAFE** (cf c.1301+108-L1 ★★ :
+les constructors polymorphes d'univers sont à proscrire, contrairement
+aux fields résidents sur X).
+
+1. `pullback_eq_top_of_mem_field` : restatement du lemma
+   `Sieve.pullback_eq_top_of_mem` (sens direct de
+   `mem_iff_pullback_eq_top` : `S f → S.pullback f = ⊤`).
+2. `top_apply_field` : restatement du lemma `Sieve.top_apply` (le
+   crible maximal contient toute flèche).
+3. `bot_apply_field` : restatement du lemma `Sieve.bot_apply` (le
+   crible vide ne contient aucune flèche).
+4. `inter_apply_field` : restatement du lemma `Sieve.inter_apply`
+   (l'intersection de deux cribles contient `f` ssi chaque crible
+   contient `f`).
+5. `union_apply_field` : restatement du lemma `Sieve.union_apply`
+   (la réunion de deux cribles contient `f` ssi l'un des deux
+   contient `f`).
+
+Ce sont des théorèmes « vitrines » qui certifient que ces fields/lemmas
+de la structure `Sieve X` sont effectivement calculables dans la même
+exécution Lean.
+-/
+
+/-- Théorème : sens direct de `mem_iff_pullback_eq_top` — si `f ∈ S`
+    alors `Sieve.pullback f S = ⊤`. β-équivalent au lemma
+    `Sieve.pullback_eq_top_of_mem`. -/
+theorem pullback_eq_top_of_mem_field {C : Type*} [Category C] {X Y : C}
+    {S : Sieve X} {f : Y ⟶ X} (hf : S f) :
+    Sieve.pullback f S = ⊤ :=
+  Sieve.pullback_eq_top_of_mem S hf
+
+/-- Théorème : le crible maximal contient toute flèche. β-équivalent au
+    lemma `Sieve.top_apply`. -/
+theorem top_apply_field {C : Type*} [Category C] {X Y : C}
+    (f : Y ⟶ X) :
+    (⊤ : Sieve X) f :=
+  Sieve.top_apply f
+
+/-- Théorème : le crible vide ne contient aucune flèche. β-équivalent
+    au lemma `Sieve.bot_apply`. -/
+theorem bot_apply_field {C : Type*} [Category C] {X Y : C}
+    (f : Y ⟶ X) :
+    (⊥ : Sieve X) f ↔ False :=
+  Sieve.bot_apply f
+
+/-- Théorème : l'intersection de deux cribles contient `f` ssi chaque
+    crible contient `f`. β-équivalent au lemma `Sieve.inter_apply`. -/
+theorem inter_apply_field {C : Type*} [Category C] {X Y : C}
+    {R S : Sieve X} (f : Y ⟶ X) :
+    (R ⊓ S) f ↔ R f ∧ S f :=
+  Sieve.inter_apply f
+
+/-- Théorème : la réunion de deux cribles contient `f` ssi l'un des
+    deux contient `f`. β-équivalent au lemma `Sieve.union_apply`. -/
+theorem union_apply_field {C : Type*} [Category C] {X Y : C}
+    {R S : Sieve X} (f : Y ⟶ X) :
+    (R ⊔ S) f ↔ R f ∨ S f :=
+  Sieve.union_apply f
+
 end Grothendieck
