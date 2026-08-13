@@ -1474,12 +1474,28 @@ def main(argv=None) -> int:
             "normaliser (strip_probe_banner / strip_machine_paths / scrub_papermill), "
             "refaites --update en dernier, apres (cf #8957)."
         )
-        # Exit code : 0 si tout va bien (ecrit + no_op informatif). Mais si
-        # TOUTES les paires cibles sont en no-op refusees (donc 0 ecrit, 0
-        # skipped, >0 refusees), c'est un signal que --update etait inutile
-        # -- on retourne 0 quand meme (le worker a fait ce qu'il a demande,
-        # on l'a juste informe que c'etait un no-op). Exit code 1 reserve
-        # aux erreurs (cf path `Aucune paire nommee` au-dessus).
+        # Exit code (#10430 acceptance) :
+        #   0 = ecrit OK (peut inclure des no_op informes sur stderr)
+        #   1 = au moins une paire DEMANDEE n'a pas pu etre ecrite parce que
+        #       son bloc d'audit etait introuvable / indentation non reconnue.
+        #       L'AVERTISSEMENT ci-dessus a deja liste les paires concernees ;
+        #       l'exit non-zero est le signal que le worker doit inspecter
+        #       l'indentation et relancer --update (ou investiguer le fichier).
+        #   2 = aucun nom de paire trouve (path `Aucune paire nommee` plus haut).
+        # Le commentaire historique qui disait « 0 meme si toutes les cibles
+        # etaient no-op » est REVOQUE ici : un worker qui voit exit=0 et 0
+        # ligne ecrite conclut legitimement « rien a faire ». Si le probleme
+        # reel est que le scanner est aveugle (entrees manquees), c'est
+        # INVISIBLE. L'exit 1 ferme la boucle.
+        # Garder la garde sur les paires skippees (`notebook absent de git`)
+        # en dehors de cette logique : ce n'est PAS un failed-rebaseline, juste
+        # une mise en garde environnementale.
+        if reg_path.is_dir():
+            if missing_header:
+                return 1
+        else:
+            if updated < len(updates):
+                return 1
         return 0
 
     # --- Mode --verify-recorded-sha : gate CI (#9399 volet b) ---

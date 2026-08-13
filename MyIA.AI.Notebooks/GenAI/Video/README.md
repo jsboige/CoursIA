@@ -38,6 +38,12 @@ FFmpeg doit être installé sur le système :
 ```bash
 # Windows (via winget)
 winget install FFmpeg
+
+# macOS (via Homebrew)
+brew install ffmpeg
+
+# Linux (Debian/Ubuntu)
+sudo apt install ffmpeg
 ```
 
 ## Progression par niveau

@@ -2,9 +2,12 @@
 
 ## Environment Setup
 
+Ce document est centré Windows (paths `C:\`, `venv\Scripts`). Pour le setup d'un poste contributeur **macOS / Linux** (équivalents `brew`/`apt` des commandes `winget`/`choco`, `elan` Lean sans WSL, backend MPS sur Apple Silicon), cf [setup-linux-macos.md](setup-linux-macos.md). Les kernels .NET Interactive, Python et Lean 4 sont cross-OS ; les notebooks s'exécutent à l'identique modulo le backend GPU.
+
 ```bash
 # Python
-python -m venv venv && venv\Scripts\activate
+python -m venv venv && venv\Scripts\activate   # Windows
+# python -m venv venv && source venv/bin/activate   # macOS / Linux
 pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
 
 # C# (.NET 9.0)

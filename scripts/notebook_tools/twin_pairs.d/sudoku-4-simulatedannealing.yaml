@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib native-both : Python = `simanneal` PyPI package (SOTA Python Simulated Annealing framework, recuit simule avec schema de refroidissement, temperature initiale, lambda, equilibre). C# = `GeneticSharp` NuGet package (SOTA .NET Genetic Algorithm framework). Les deux utilisent la SOTA metaheuristique de leur stack, et le mandat #10382 explicite cette configuration native-both comme valide (chaque cote atteint un moteur metaheuristique de production de son ecosysteme). Asymetrie d'algorithme documentee dans known_differences : SA cote Python vs GA cote C#, mais les deux algorithmes sont des methodes de recherche stochastique voisines (voisinage par mutation locale, exploration/exploitation via temperature vs selection). Pont cross-stack impossible : simanneal pur Python (C-extension), GeneticSharp pur .NET. Verdict SOTA-OK par construction native-both (#10382). Pas de moteur commun a brancher, pas d'asymetrie engine-mismatch a corriger."
   audits:
     - date: "2026-07-29"
       by: myia-po-2023:CoursIA-2
