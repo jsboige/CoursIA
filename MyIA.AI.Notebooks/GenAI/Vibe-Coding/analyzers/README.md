@@ -75,7 +75,8 @@ analyzers/
 ├── AgentSafetyAnalyzer/                  # netstandard2.0, IsPackable=true
 │   ├── AgentSafetyAnalyzer.csproj
 │   ├── AgentSafetyAnalyzer.cs            # 5 règles + IsSuppressedByPragma
-│   └── SqlConcatCodeFixProvider.cs       # Correctif auto pour AGSEC002
+│   ├── SqlConcatCodeFixProvider.cs       # Correctif auto pour AGSEC002
+│   └── HardcodedCredentialCodeFixProvider.cs  # Correctif auto pour AGSEC005
 └── AgentSafetyAnalyzer.Tests/            # net8.0, xUnit
     ├── AgentSafetyAnalyzer.Tests.csproj
     └── AgentSafetyAnalyzerTests.cs       # 23 tests (6 analyseur + 5 AGSEC004 + 1 codefix + 5 pragma + 6 AGSEC005)
@@ -118,8 +119,11 @@ reader apprend avec l'un et embarque l'autre.
 - `10500c` (ce grain, PR #10563) : `HttpClient.Get*/Post*/Put*/Delete*/Send*` URL non-constante (SSRF, AGSEC004) — **livré**.
 - `10500d` (PR #10571) : registry de suppressions `#pragma warning disable
   AGSECxxx` pour les faux positifs assumés — **livré**.
-- `10500e` (ce grain, PR #10575) : `AGSEC005` — détection de credentials hardcodées
+- `10500e` (PR #10575) : `AGSEC005` — détection de credentials hardcodées
   par préfixe de provider (`sk-`, `ghp_`, `AKIA`, `AIza`, `hf_`, `xoxb-`, ...)
+  — **livré**.
+- `10500f` (ce grain, PR #10582) : `HardcodedCredentialCodeFixProvider` — CodeFix
+  companion qui transforme un littéral credential en `Environment.GetEnvironmentVariable`
   — **livré**.
 
 ## Garde-fous respectés
