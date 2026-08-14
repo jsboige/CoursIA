@@ -395,46 +395,62 @@ Cette section **ajoute** la variante consciente de n sans toucher a
 `evolveHashlifeFast` ni a aucun de ses 50+ sites d'appel / preuves :
 
 - `evolveHashlifeFastAuxN` / `evolveHashlifeFastN` — meme recursion que
-  `evolveHashlifeFastAux`, mais la MacroCell initiale est construite avec
-  le cadre conscient de n `gridToMacroCellWithOffsetN n g`. Les iterations
-  ulterieures utilisent le constructeur a cadre fixe (N3 = "tramer sans
-  re-cadrer", selon le commentaire de conception N1 a MacroCell L634).
+  `evolveHashlifeFastAux`, mais chaque iteration re-cadre via le
+  constructeur conscient de n `gridToMacroCellWithOffsetN` : l'appel
+  recursif `evolveHashlifeFastAuxN fuel (n - js) g'` re-entre dans
+  `gridToMacroCellWithOffsetN (n - js) g'` sur la grille sautee. (Le
+  commentaire de conception N1 a MacroCell L634 decrivait un tramage
+  "sans re-cadrer" ; le code, lui, re-cadre a chaque iteration — c'est
+  le code qui fait foi, la doc a ete alignee.)
 - `evolveHashlifeFastN_zero` — verification triviale : `n = 0` renvoie `g`.
+- `evolveHashlifeFastAuxN_eq_evolve` / `evolveHashlifeFastN_eq_evolve` —
+  **tranche (b2), #6724 : le garde de saut N3 est mort.** Le rembourrage
+  `max 2 n` de `gridFrameN` force `2 ^ lvl ≥ side ≥ 2 * n + 1 > n`
+  (`gridToMacroCellWithOffsetN_level_gt_n`, MacroCell), donc le garde
+  `lvl ≥ 2 ∧ n ≥ jumpSize lvl` est insatisfait pour toute grille non
+  vide (et `lvl = 0 < 2` pour la vide) : la branche de saut ne tire
+  jamais et la variante N3 degénère en le `evolve` de reference.
 
-Le **pont** `evolveHashlifeFastN n g = evolveHashlifeFast n g` pour `n ≤ 2`
-(via `gridToMacroCellWithOffsetN_le_two_eq` + induction structurelle sur
-`fuel`) est **reporte** a un cycle ulterieur, jumele avec le deblocage
-P4 : il exige le demontage complet du corps dans le style
-`evolveHashlifeFastMemo_eq_evolveHashlifeFast`, qu'il est preferable
-d'assembler une fois le harnais Lean LSP (terrain d'ai-01, apres le fix
-H) de retour a une interactivite complete. Documenter ici l'obligation
-de preuve garde le plan de refonte P5 honnete et evite un stub creux. -/
+Le **pont** `evolveHashlifeFastN n g = evolve n g` est donc prouve pour
+TOUT n comme corollaire immediat du garde mort — plus fort que le pont
+`n ≤ 2` vers `evolveHashlifeFast` initialement reporte (la composante
+Hashlife est simplement inactive, au prix honnete de l'acceleration).
+Le dejouement pour la refonte P5 : couvrir le cone des n generations
+restantes par le rembourrage est auto-sabotant — le cadre gonfle au-dela
+du horizon du saut qu'il conditionne. La sortie identifiee (amendement
+j/p>=3, tranche par le coordinateur sur #6724) est la decorrelation j de
+Gosper (`hashlifeResultAt j`, a implémenter) : a j = level-3 la portee
+du saut retombe sous la marge de fenetre quelle que soit la profondeur
+de rembourrage (`jumpReach`/`marginToResultWindow` dans `JumpCapture`,
+etape 2), ce qui rend `jumpCaptured` tenable par cone avec un
+rembourrage petit et un garde vivable. -/
 
 /-- Auxiliaire trame N3 pour `evolveHashlifeFastN` : meme recursion que
-    `evolveHashlifeFastAux`, mais la MacroCell initiale est construite
-    avec le cadre conscient de n `gridToMacroCellWithOffsetN n g`. Les
-    appels recursifs ulterieurs (la branche `n - js`) utilisent le
-    constructeur a cadre fixe — N3 trame le cadre *sans* re-cadrer a
-    chaque iteration (selon le commentaire de conception N1 a MacroCell
-    L634). -/
+    `evolveHashlifeFastAux`, mais chaque iteration re-cadre via le
+    constructeur conscient de n `gridToMacroCellWithOffsetN` — l'appel
+    recursif sur `n - js` re-entre dans le cadrage conscient du n restant
+    sur la grille sautee. Attention (tranche (b2), #6724) : sous ce
+    cadrage, le garde de saut `lvl ≥ 2 ∧ n ≥ js` est structurellement
+    mort — voir `evolveHashlifeFastAuxN_eq_evolve` ci-dessous. -/
 def evolveHashlifeFastAuxN : Nat → Nat → Grid → Grid
   | _, 0, g => g
   | 0, _, g => g  -- fuel epuise : retourner l'etat courant
   | fuel + 1, n, g =>
-    -- Substitution N3 : cadre conscient de n sur la MacroCell initiale seulement.
+    -- Cadrage conscient de n a CHAQUE iteration : l'appel recursif de la
+    -- branche de saut re-entre dans gridToMacroCellWithOffsetN (n - js).
     let (off, mc) := gridToMacroCellWithOffsetN n g
     let lvl := mc.level
     let js := jumpSize lvl
     if lvl >= 2 && n >= js then
       -- Saut en avant de `2^lvl` generations avec Hashlife rembourre,
-      -- puis re-cadrage a partir du cadre fixe de la nouvelle grille (sautee).
+      -- puis re-cadrage conscient du n restant sur la grille sautee.
+      -- NB (tranche (b2), #6724) : branche actuellement MORTE —
+      -- `gridToMacroCellWithOffsetN_level_gt_n` (MacroCell) force
+      -- `2^lvl > n = js`, le garde ne peut jamais tirer tant que le
+      -- rembourrage `max 2 n` gouverne le niveau du cadre.
       let jumped := hashlifeJump mc
       let newOff := jumpResultOff off lvl
       let g' := jumped.toGrid newOff
-      -- Les iterations ulterieures utilisent le constructeur a cadre fixe,
-      -- PAS le conscient de n — le parametre n est deja consomme par `n - js`,
-      -- et re-cadrer avec le *nouveau* `n` gonflerait inutilement le
-      -- rembourrage alors que la boite englobante a retreci apres le saut.
       evolveHashlifeFastAuxN fuel (n - js) g'
     else
       -- Petit n ou petit motif : utiliser le evolve de reference.
@@ -454,6 +470,52 @@ def evolveHashlifeFastN (n : Nat) (g : Grid) : Grid :=
 @[simp]
 theorem evolveHashlifeFastN_zero (g : Grid) :
     evolveHashlifeFastN 0 g = g := rfl
+
+/-- **Tranche (b2), #6724 : le garde de saut N3 est mort.** Pour toute
+    grille, le garde `lvl ≥ 2 ∧ n ≥ jumpSize lvl` de la branche de saut
+    est insatisfait : grille vide → `lvl = 0 < 2` ; grille non vide →
+    `gridToMacroCellWithOffsetN_level_gt_n` donne `2 ^ lvl > n` alors que
+    `jumpSize lvl = 2 ^ lvl`. La branche de saut ne tire donc jamais, et
+    l'auxiliaire N3 rend exactement le `evolve` de reference. -/
+theorem evolveHashlifeFastAuxN_eq_evolve (fuel n : Nat) (g : Grid)
+    (hfuel : 1 ≤ fuel) :
+    evolveHashlifeFastAuxN fuel n g = evolve n g := by
+  obtain ⟨fuel', rfl⟩ : ∃ k, fuel = k + 1 := ⟨fuel - 1, by omega⟩
+  cases n with
+  | zero => rfl
+  | succ m =>
+    simp only [evolveHashlifeFastAuxN]
+    split
+    · next hcond =>
+      exfalso
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
+      cases g with
+      | nil =>
+        rw [show (gridToMacroCellWithOffsetN (m + 1) []).2.level = 0 from by
+              simp [gridToMacroCellWithOffsetN, gridFrameN,
+                MacroCell.level_buildFromGrid]] at hcond
+        omega
+      | cons p₀ ps =>
+        have hgt := gridToMacroCellWithOffsetN_level_gt_n (m + 1) (p₀ :: ps)
+          (List.cons_ne_nil _ _)
+        simp only [jumpSize] at hcond
+        omega
+    · rfl
+
+/-- **Pont valable pour TOUT n (b3 anticipe)** : `evolveHashlifeFastN`
+    coincide avec le `evolve` de reference — corollaire direct du garde
+    mort (`evolveHashlifeFastAuxN_eq_evolve`) : la variante N3 ne saute
+    jamais. Ce pont etait initialement prevu (reporte) pour `n ≤ 2`
+    seulement, vers `evolveHashlifeFast` ; il est en realite
+    inconditionnel vers `evolve`, au prix honnete de l'acceleration
+    Hashlife (inactive tant que le garde est mort — docstring de section
+    ci-dessus pour la sortie via la decorrelation j de Gosper). -/
+theorem evolveHashlifeFastN_eq_evolve (n : Nat) (g : Grid) :
+    evolveHashlifeFastN n g = evolve n g := by
+  cases n with
+  | zero => rfl
+  | succ m =>
+    exact evolveHashlifeFastAuxN_eq_evolve (m + 1) (m + 1) g (by omega)
 
 /-- Calcule `evolve n g` avec Hashlife. Fait un aller-retour a travers
     la representation `MacroCell` a chaque generation, en exercant
