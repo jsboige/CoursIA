@@ -3,8 +3,45 @@
 Auto-generated: 2026-05-03 22:29
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
 Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
+Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais révélé par loss_fn=linear)
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M4 DLinear-vol — entrée §C (2026-08-14) — issue #10908
+
+Première entrée du registre conforme **intégralement** au barème `pr-review-discipline.md` §C :
+walk-forward ≥ 5 folds, ≥ 4 seeds, Diebold-Mariano `loss_fn="linear"` (perte signée), conjonction
+edge ≥ 2σ **et** `dm_p_median < 0,05` (reportés séparément), baselines + coûts documentés, verdict
+honnête. Notebook : `m4_dlinear_vol_sc_validation.ipynb` (outputs C.2, 0 erreur).
+
+**Modèle** : DLinear (Zeng et al. AAAI 2023) — `y_hat = Linear(seq_len=22 -> horizon)`, ~22 params.
+**Univers** : BTC-USD (Bitstamp hourly 2014→2024, 2278 jours de RV). Coin le plus riche du panel
+M4 (les autres ~725 j restent hors barème §C).
+**Cible** : log-RV quotidien. **Baselines** : HAR (Corsi 2009, benchmark de référence) +
+persistence (random walk, mesurée section 4 du notebook). **DM** : `scripts/dm_test.py`,
+HAC Newey-West + correction HLN, `loss_fn="linear"` (#10228).
+
+| Horizon | edge (red MSE moy, %) | σ cross-seed | dm_p_median | Verdict §C |
+|---------|----------------------|--------------|-------------|------------|
+| h=1 | +15,3 % | 0,04 | 0,00e+00 | **NO BEATS** |
+| h=5 | +28,3 % | 0,10 | 0,00e+00 | **NO BEATS** |
+| h=10 | +38,3 % | 0,20 | 0,00e+00 | **NO BEATS** |
+
+**Lecture honnête (le piège §C, dans le bon sens)** : DLinear réduit le MSE de 15 à 38 % (perte
+symétrique), mais la perte **signée** (`linear`) révèle un **biais systématique** de prévision —
+`dm_mean_loss_diff ≈ +0,22` log-RV (h=1) : DLinear sur-prévient log-RV par rapport à HAR (OLS,
+non biaisé). Le DM signé le détecte à 39-47σ, p = 0,00 — **BEATEN BY baseline** sur les 4 seeds
+de chaque horizon. Un « edge » MSE porté par un forecaster biaisé n'est pas un edge exploitable.
+**Verdict §C : NO BEATS (3/3 horizons)** — règle de dominance (seed BEATEN → NO BEATS) appliquée.
+**Coûts de transaction** : prévision (MSE log-RV), **aucune stratégie dérivée** → coût non imputé ;
+borne crypto 10 bps si conversion future en overlay de vol-timing (note, pas un claim).
+**Persistence MSE** (même série, même découpage) : h=1 `1,173` · h=5 `0,968` · h=10 `0,930` —
+DLinear et HAR battent tous deux le plancher naïf.
+
+- **Data hash** : `sha256 38a4e973955cf9f8527c3096931aa958bfae09580737c909450504b21502c573`
+  (`Bitstamp_BTCUSD_1h_2014-20240808.csv`, CryptoDataDownload)
+- **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn linear --skip-remote --coins BTC-USD --out-json results/m4_dlinear_vol_btc_sc.json` (3508 s)
+- **Verdict global** : 0/3 BEATS, 0/3 INCONCLUSIVE, **3/3 NO BEATS**
 
 ## Ladder #1409 — Final Verdicts (2026-06-12)
 
