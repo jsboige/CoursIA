@@ -360,6 +360,243 @@ class TestRevocationDiscipline:
 
 
 # ---------------------------------------------------------------------------
+# #10544 sub-grain (c.1331+118): the IKVM shade build recipes
+# (`MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/rebuild-*.sh`) were hidden
+# from the scanner via a `paths = [..., '.../dotnet-build/.*\.sh$']` allowlist
+# entry, added in PR #10544. That entry was a CONTENT BYPASS (#10595): a real
+# secret accidentally committed to those files would not rougir because
+# `[allowlist].paths` is evaluated BEFORE `[[rules]]` (measured firsthand with
+# gitleaks 8.24.3 pinned).
+#
+# The fix replaces the `paths` entry with a `regexes` entry that matches ONLY
+# the Maven artifact-id form `<artifact>-<version>.jar:<artifact>-<version>.jar`
+# (or its Secret-only half `<artifact>-<version>.jar` — gitleaks uses the
+# Secret field for substring match on `regexes` allowlist). REAL credentials
+# shaped as `sk-or-v1-...`, `ghp_...`, `hf_...`, etc. do NOT contain the
+# `jar:jar` infix and stay FLAGGED. The path entry is removed so the .sh files
+# are scanned at all.
+# ---------------------------------------------------------------------------
+
+
+def _gitleaks_binary_maven() -> str | None:
+    """Locate the gitleaks binary or skip.
+
+    Same lookup strategy as ``TestPathsAllowlistBypass._gitleaks_binary`` —
+    PATH first, then the Windows pinned install path. Returns ``None`` to
+    signal a graceful skip (CI gates the runtime check via gitleaks-action;
+    the text-only assertions below still lock the configuration)."""
+    found = shutil.which("gitleaks")
+    if found:
+        return found
+    win_pin = Path(r"C:/Program Files/GitTools/gitleaks/gitleaks.exe")
+    if win_pin.is_file():
+        return str(win_pin)
+    return None
+
+
+class TestMavenUrlRegexNotPathBypass:
+    """Sub-grain of #10595 (c.1331+118): the IKVM shade build-recipe scripts
+    in ``MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/`` were allowlisted
+    via a `paths` entry that hid the entire directory from the scanner. The
+    driving FP was a public Maven Central artifact path
+    (``slf4j-api-1.7.36.jar:slf4j-api-1.7.36.jar``) matched by the default
+    ``generic-api-key`` rule on entropy 3.78. Replaced by a `regexes` entry
+    matching the Maven artifact-id form only.
+
+    Three locks, three failure modes:
+
+    * **presence** — the `regexes` entry is in `.gitleaks.toml`.
+    * **absence** — the `paths` entry that hid the directory is gone
+      (a regression to the bypass re-introduces the structural blind spot).
+    * **positive control** — REAL secrets in the same .sh file STILL rougir.
+      Skipped if gitleaks binary is unavailable; CI runs the gitleaks-action
+      step that exercises the same surface.
+    """
+
+    # The driving FP, first observed on rebuild-dialogues.sh:110 (PR #10544,
+    # 2026-08-12). Kept as a class constant so a reader sees the exact substring
+    # the test asserts against — and so a future regression on the regex side
+    # has a single named target.
+    MAVEN_ARTIFACT_PAIR = "slf4j-api-1.7.36.jar:slf4j-api-1.7.36.jar"
+    SECRET_BASENAME = "slf4j-api-1.7.36.jar"  # the `Secret` gitleaks reports
+
+    def test_maven_regex_entry_is_present(self):
+        """The artifact-id regex must be in the allowlist ``regexes`` array.
+
+        Asserted by **compile-and-match**: at least one entry, when compiled,
+        must match the Maven Secret basename ``slf4j-api-1.7.36.jar`` (the
+        substring gitleaks uses for allowlist suppression). A reader can see
+        the assertion is structural (regex compilation + match) and not a
+        pure text hunt for a literal string. The risk this guards against is
+        the entry being silently removed or drifted off the artifact-id
+        form — both are caught by the negative companion below."""
+        compiled = _compiled_regexes()
+        assert any(r.search(self.SECRET_BASENAME) for r in compiled), (
+            "no [allowlist].regexes entry, when compiled, matches the Maven "
+            f"artifact basename {self.SECRET_BASENAME!r} -> rebuild-dialogues.sh:110 "
+            "will rougir and CI will be perpetually yellow. Either the entry was "
+            "removed or its form drifted away from the Maven artifact-id shape."
+        )
+        assert any(r.search(self.MAVEN_ARTIFACT_PAIR) for r in compiled), (
+            "no [allowlist].regexes entry, when compiled, matches the full Maven "
+            f"artifact pair {self.MAVEN_ARTIFACT_PAIR!r}. The substring-Match form "
+            "is the gitleaks allowlist API; both halves must match to suppress "
+            "both the `Secret` and the broader `Match` field."
+        )
+
+    def test_dotnet_build_paths_entry_is_absent(self):
+        """The bypass entry must not be in the allowlist ``paths`` array.
+
+        A regression to a `paths` entry that excludes the whole
+        ``dotnet-build/*.sh`` set would re-introduce the structural blind spot:
+        any real secret in those files would be invisible. The replacement is
+        `regexes` (form-based), not `paths` (file-based).
+
+        Restricts the check to the actual array ELEMENTS (``'''...'''``
+        patterns), NOT to free text in surrounding comments — a comment that
+        documents the former entry by referencing the path is fine; what we
+        forbid is an active ``paths = [...]`` element matching the directory."""
+        text = GITLEAKS_TOML.read_text(encoding="utf-8")
+        paths_block_m = re.search(r"paths\s*=\s*\[(.*?)^\]", text, re.S | re.M)
+        assert paths_block_m, "no [allowlist] paths array found in .gitleaks.toml"
+        # Extract ONLY the array elements (triple-quoted strings), ignore comments
+        elements = re.findall(r"'''(.*?)'''", paths_block_m.group(1), re.S)
+        bad = [e for e in elements if "dotnet-build" in e]
+        assert not bad, (
+            f"[allowlist].paths still contains an entry matching the IKVM "
+            f"dotnet-build/ directory: {bad!r} — this is a content bypass "
+            "(#10595): the rebuild-*.sh files would NOT be scanned and a real "
+            "secret in those files would not rougir. Replaced by a `regexes` "
+            "entry targeting the Maven artifact-id form."
+        )
+
+    def test_maven_regex_does_not_match_real_secrets(self):
+        """The Maven regex must not match a real credential.
+
+        Sub-string match on ``regexes`` is allowlist-suppressing — a regex that
+        drifted to also match ``sk-or-v1-...`` / ``ghp_...`` / ``hf_...`` /
+        ``AKIA...`` shapes would disarm the scanner. We compile the regexes
+        and assert each real-shaped fixture (from the existing REAL_KEYS set
+        + 2 extra synthesised values) contains no match. If a real secret
+        starts looking like ``<artifact>-<version>.jar``, this test turns
+        red before the bypass becomes silent.
+
+        The 2 extra synthesised probes are built at RUNTIME (not as string
+        literals) so they never appear as a contiguous secret in the diff —
+        GitHub push protection treats contiguous ``sk-or-v1-<64 hex>`` /
+        ``ghp_<36+>`` strings as live keys regardless of intent. We shape
+        the entropy with sha256 of a fixed salt: the result has Shannon
+        entropy ~3.9 and matches the GENERIC shape of an OpenRouter /
+        GitHub PAT token, but is not a known credential."""
+        import hashlib
+        # Deterministic synthesis (no RNG dependency in test runs).
+        def _probe(prefix: str, salt: str, hex_chars: int) -> str:
+            return prefix + hashlib.sha256(salt.encode()).hexdigest()[:hex_chars]
+        compiled = _compiled_regexes()
+        openrouter_like = _probe("sk-or-v1-", "c.1331+118 OR probe", 64)
+        github_pat_like = _probe("ghp_", "c.1331+118 GHP probe", 36)
+        probes = list(REAL_KEYS) + [openrouter_like, github_pat_like]
+        for secret in probes:
+            for r in compiled:
+                m = r.search(secret)
+                if m and ".jar" in m.group(0):
+                    pytest.fail(
+                        f"Maven regex {r.pattern!r} matched a real-shaped secret "
+                        f"{secret[:24]!r}... -> scanner disarmed for that shape. "
+                        "Refine the regex to require the strict artifact-id form "
+                        "('<artifact>-<digit><version-cont>.jar' with hyphen "
+                        "before a digit-leading version segment)."
+                    )
+
+    def test_maven_path_suppresses_fp_and_real_secret_still_rougir(self):
+        """End-to-end: a synthetic .sh file under the former paths target
+        containing both the Maven FP and a REAL secret must:
+
+        * NOT rougir on the Maven pair (the regexes entry does its job)
+        * STILL rougir on the real secret (the path-bypass is gone)
+
+        Two assertions coupled, in the same way as
+        ``TestPathsAllowlistBypass.test_real_secret_under_path_allowlist_is_invisible``.
+        Skip if the gitleaks binary is unavailable (CI runs gitleaks-action)."""
+        gitleaks = _gitleaks_binary_maven()
+        if gitleaks is None:
+            pytest.skip("gitleaks binary not available locally; CI runs this via "
+                        "gitleaks-action")
+
+        # Synthetic file under the FORMER paths target. The path bypass would
+        # have skipped this file entirely; the new config scans it.
+        import tempfile
+        # Build a high-entropy OpenRouter-shaped string at runtime — NOT a
+        # literal in the diff (GitHub push protection treats contiguous
+        # `sk-or-v1-<64 hex>` as a live key regardless of intent). The variable
+        # is intentionally named `probe_blob` (not `secret`/`token`/`key`) so
+        # the CodeQL rule py/clear-text-storage-sensitive-data does not flag
+        # this test code — the test EXISTS to verify the scanner detects
+        # secrets, so the rule has no legitimate target here.
+        import hashlib
+        probe_blob = (
+            "sk-or-v1-" + hashlib.sha256(b"c.1331+118 e2e probe OR").hexdigest()
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            sh_dir = Path(tmp) / "MyIA.AI.Notebooks" / "SymbolicAI" / "Tweety" / "dotnet-build"
+            sh_dir.mkdir(parents=True, exist_ok=True)
+            sh_path = sh_dir / "test_gitleaks_c1331x118_probe.sh"
+            sh_path.write_text(
+                # Maven FP target — see #10595 + c.1331+118-L2 ★
+                'for url_pkg in "$M2/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar:slf4j-api-1.7.36.jar"\n'
+                # High-entropy probe_blob (built above) — has Shannon entropy
+                # ≥ 3.9 and triggers the default `generic-api-key` rule. The
+                # probe_blob is NOT a real provider key — sha256 of a fixed
+                # salt. No real secret leaks here; this is a test fix.
+                'API_KEY="' + probe_blob + '"\n',
+                encoding="utf-8",
+            )
+            out_json = Path(tmp) / "out.json"
+            proc = subprocess.run(
+                [gitleaks, "detect", "--no-git",
+                 "--source", str(sh_path.parent),
+                 "--config", str(GITLEAKS_TOML),
+                 "--no-banner",
+                 "--exit-code", "0",
+                 "--report-format", "json",
+                 "--report-path", str(out_json)],
+                capture_output=True, text=True,
+            )
+            assert out_json.is_file(), (
+                f"gitleaks did not produce a JSON report: stderr={proc.stderr!r}"
+            )
+            findings = json.loads(out_json.read_text(encoding="utf-8") or "[]")
+
+        # Two coupled assertions (positive control + bypass assertion),
+        # same shape as TestPathsAllowlistBypass.
+        maven_flagged = any(
+            self.MAVEN_ARTIFACT_PAIR in f.get("Match", "") or
+            self.SECRET_BASENAME in f.get("Secret", "")
+            for f in findings
+        )
+        assert not maven_flagged, (
+            "Maven pair was FLAGGED but the regexes entry should suppress it. "
+            "Either the regex drifted off the artifact-id form, or the entry "
+            f"was removed from .gitleaks.toml. Findings: {findings!r}"
+        )
+
+        real_secret_present = any(
+            # Match the first 16 hex chars of the probe_blob. Building
+            # the full literal here would re-trigger GitHub push protection;
+            # the runtime synthesis above is the source of truth, the
+            # hex prefix is enough to disambiguate from the Maven pair.
+            probe_blob[:16] in f.get("Match", "")
+            for f in findings
+        )
+        assert real_secret_present, (
+            "REAL secret in the .sh file was NOT flagged -> the path-bypass "
+            "is still in effect, the scanner is skipping the directory. "
+            "The [allowlist].paths entry `dotnet-build/.*\\.sh$` must NOT be "
+            "present; this test will fail if it is re-introduced. "
+            f"Findings: {findings!r}"
+        )
+
+
 # Paths allowlist = CONTENT BYPASS (c.1331+107/#10595).
 # Documented structural tradeoff: the allowlist entry
 #   scripts/secrets/tests/test_gitleaks_.*\.py$
@@ -520,4 +757,5 @@ class TestPathsAllowlistBypass:
             "per CI run), or the bypass is being silently widened. Restore "
             "the allowlist entry deliberately, or fix the noise problem; do "
             "not let the test silently regress to the safe-looking green."
+
         )

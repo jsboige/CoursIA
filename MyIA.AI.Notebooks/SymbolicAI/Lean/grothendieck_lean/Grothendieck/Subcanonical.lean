@@ -30,7 +30,7 @@ Ce module substantiel est apparié avec son jumeau anglais dans le fichier sibli
 
 import Mathlib.CategoryTheory.Sites.Subcanonical
 
-universe w v u
+universe v' w v u
 
 namespace Grothendieck.Subcanonical
 
@@ -149,5 +149,84 @@ topologie engendrée par les représentables). -/
 theorem isSheaf_yoneda_obj_canonical {C : Type u} [Category.{v} C] (X : C) :
     Presieve.IsSheaf (canonicalTopology C) (yoneda.obj X) :=
   isSheaf_yoneda_obj X
+
+/-! ### 5.4 Ponts d'équivalence de Yoneda (champs yonedaEquiv / uliftYonedaEquiv)
+
+Bridges vers les équivalences explicites de Yoneda pour les faisceaux :
+`GrothendieckTopology.yonedaEquiv` (β-équivalences aux lemmas Mathlib). -/
+
+/-- Bridge : l'application explicite de l'équivalence de Yoneda pour les faisceaux.
+    Pour J une topologie sous-canonique et un morphisme `f : J.yoneda.obj X ⟶ F`,
+    `J.toGrothendieckTopology.yonedaEquiv f = f.hom.app (op X) (𝟙 X)` (notation
+    `J.yonedaEquiv` = sugar pour `GrothendieckTopology.yonedaEquiv J`).
+    β-equivalent au lemma `CategoryTheory.GrothendieckTopology.yonedaEquiv_apply`. -/
+
+theorem yonedaEquiv_apply_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [Subcanonical J]
+    {X : C} {F : Sheaf J (Type v)}
+    (f : J.yoneda.obj X ⟶ F) :
+    GrothendieckTopology.yonedaEquiv J f = f.hom.app (op X) (𝟙 X) :=
+  CategoryTheory.GrothendieckTopology.yonedaEquiv_apply J f
+
+/-- Bridge : compatibilité de l'équivalence de Yoneda avec la composition de morphismes.
+    Pour J une topologie sous-canonique et `α : J.yoneda.obj X ⟶ F`, `β : F ⟶ G`,
+    `GrothendieckTopology.yonedaEquiv J (α ≫ β) = β.hom.app (op X) (GrothendieckTopology.yonedaEquiv J α)`.
+    β-equivalent au lemma `CategoryTheory.GrothendieckTopology.yonedaEquiv_comp`. -/
+
+theorem yonedaEquiv_comp_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [Subcanonical J]
+    {X : C} {F G : Sheaf J (Type v)}
+    (α : J.yoneda.obj X ⟶ F) (β : F ⟶ G) :
+    GrothendieckTopology.yonedaEquiv J (α ≫ β) =
+      β.hom.app (op X) (GrothendieckTopology.yonedaEquiv J α) :=
+  CategoryTheory.GrothendieckTopology.yonedaEquiv_comp J α β
+
+/-- Bridge : la version "ulift" de l'application explicite de l'équivalence de Yoneda.
+    Pour J une topologie sous-canonique et un morphisme
+    `f : J.uliftYoneda.obj X ⟶ F`, `GrothendieckTopology.uliftYonedaEquiv J f = f.hom.app (op X) ⟨𝟙 X⟩`.
+    β-equivalent au theorem `CategoryTheory.GrothendieckTopology.uliftYonedaEquiv_apply`. -/
+
+theorem uliftYonedaEquiv_apply_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [Subcanonical J]
+    {X : C} {F : Sheaf J (Type max v v')}
+    (f : J.uliftYoneda.obj X ⟶ F) :
+    GrothendieckTopology.uliftYonedaEquiv J f = f.hom.app (op X) ⟨𝟙 X⟩ :=
+  CategoryTheory.GrothendieckTopology.uliftYonedaEquiv_apply J f
+
+/-- Bridge : compatibilité de l'équivalence `uliftYoneda` avec la composition.
+    Pour J une topologie sous-canonique et `α : J.uliftYoneda.obj X ⟶ F`, `β : F ⟶ G`,
+    `GrothendieckTopology.uliftYonedaEquiv J (α ≫ β) = β.hom.app (op X) (GrothendieckTopology.uliftYonedaEquiv J α)`.
+    β-equivalent au lemma `CategoryTheory.GrothendieckTopology.uliftYonedaEquiv_comp`. -/
+
+theorem uliftYonedaEquiv_comp_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [Subcanonical J]
+    {X : C} {F G : Sheaf J (Type max v v')}
+    (α : J.uliftYoneda.obj X ⟶ F) (β : F ⟶ G) :
+    GrothendieckTopology.uliftYonedaEquiv J (α ≫ β) =
+      β.hom.app (op X) (GrothendieckTopology.uliftYonedaEquiv J α) :=
+  CategoryTheory.GrothendieckTopology.uliftYonedaEquiv_comp J α β
+
+/-- Bridge : l'isomorphisme de Yoneda pour les faisceaux (variante op-comp-coyoneda).
+    Pour J une topologie sous-canonique,
+    `J.yoneda.op ⋙ coyoneda ≅ evaluation Cᵒᵖ (Type v) ⋙ uliftFunctor ⋙ sheafToPresheaf`.
+    β-equivalent au def `CategoryTheory.GrothendieckTopology.yonedaOpCompCoyoneda`. -/
+
+noncomputable def yonedaOpCompCoyoneda_field {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) [Subcanonical J] :
+    J.yoneda.op ⋙ coyoneda ≅
+      evaluation Cᵒᵖ (Type v) ⋙ (whiskeringRight _ _ _).obj uliftFunctor.{u} ⋙
+        (whiskeringLeft _ _ _).obj (sheafToPresheaf J _) :=
+  CategoryTheory.GrothendieckTopology.yonedaOpCompCoyoneda J
+
+/-- Bridge : extension d'unicité via yoneda (hom_ext). Deux morphismes de faisceaux
+    `f g : P ⟶ Q` sont égaux si pour tout `X : C` et `p : J.yoneda.obj X ⟶ P`,
+    `p ≫ f = p ≫ g`. β-equivalent au lemma `CategoryTheory.GrothendieckTopology.hom_ext_yoneda`. -/
+
+theorem hom_ext_yoneda_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [Subcanonical J]
+    {P Q : Sheaf J (Type v)} {f g : P ⟶ Q}
+    (h : ∀ (X : C) (p : J.yoneda.obj X ⟶ P), p ≫ f = p ≫ g) :
+    f = g :=
+  CategoryTheory.GrothendieckTopology.hom_ext_yoneda J h
 
 end Grothendieck.Subcanonical

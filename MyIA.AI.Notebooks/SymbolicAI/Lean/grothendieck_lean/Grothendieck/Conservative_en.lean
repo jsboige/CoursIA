@@ -393,4 +393,117 @@ theorem W_iff_field {A : Type u'} [Category.{v'} A]
 def has_enough_points_field (J : GrothendieckTopology C) : Prop :=
   GrothendieckTopology.HasEnoughPoints.{w, v, u} J
 
+/-!
+## 13. Bridges on the SGA 4 IV 6.5 constructor, local surjectivity, and skyscrapers
+
+Sections 3-7 documented by `#check` the rest of the conservativity cycle.
+This grain adds the proper bridges on the constructions that remained documentary:
+
+  - `mk'_field`: the constructor for conservative families via the covering-sieve
+    condition (SGA 4 IV 6.5 (a)) — the constructive counterpart of
+    `jointly_reflect_ofArrows_mem_field` (Section 12);
+  - `jointly_reflect_isLocallySurjective_field`: a morphism of presheaves is
+    locally surjective for J iff it is surjective on fibers at every point of
+    the conservative family P;
+  - `skyscraper_presheaf_functor_field` / `skyscraper_presheaf_field` /
+    `skyscraper_sheaf_functor_field` / `skyscraper_sheaf_field`: the four
+    skyscraper constructions (presheaf/sheaf, functor/object) of Section 8;
+  - `W_isInvertedBy_presheafFiber_field`: the class J.W is inverted by the
+    presheaf fiber functor — the counterpart of Section 9 (fiber as localization).
+
+All bridges are L902 ★★ Tier 5: resident args, structural instances, no
+polymorphic universe constructor.
+-/
+
+/-- Bridge: the constructor for conservative families via the covering-sieve
+    condition (SGA 4 IV 6.5 (a)) — P is conservative iff, for any sieve S on X,
+    if the arrows of S are jointly surjective on fibers at every point of P,
+    then S is J-covering. This is the constructive counterpart of the
+    detection of covering sieves via points.
+    Delegates directly to the Mathlib lemma `mk'`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args, structural instances. -/
+theorem mk'_field [LocallySmall.{w} C] [HasSheafify J (Type w)]
+    (hP : ∀ ⦃X : C⦄ (S : Sieve X),
+      (∀ (Φ : P.FullSubcategory) (x : Φ.obj.fiber.obj X),
+        ∃ (Y : C) (g : Y ⟶ X) (_ : S g) (y : Φ.obj.fiber.obj Y),
+          Φ.obj.fiber.map g y = x) → S ∈ J X) :
+    P.IsConservativeFamilyOfPoints :=
+  ObjectProperty.IsConservativeFamilyOfPoints.mk' hP
+
+/-- Bridge: the detection of local surjectivity via the points — a morphism of
+    presheaves f is locally surjective for J iff it is surjective on fibers at
+    every point of the conservative family P. This is the counterpart for
+    morphisms of `jointly_reflect_ofArrows_mem_field`.
+    Delegates directly to the Mathlib lemma `jointly_reflect_isLocallySurjective`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args, structural instances. -/
+theorem jointly_reflect_isLocallySurjective_field {A : Type u'} [Category.{v'} A]
+    [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
+    {FC : A → A → Type*} {CC : A → Type w}
+    [∀ (X Y : A), FunLike (FC X Y) (CC X) (CC Y)]
+    [ConcreteCategory.{w} A FC]
+    [PreservesFilteredColimitsOfSize.{w, w} (forget A)]
+    [J.WEqualsLocallyBijective (Type w)] [HasSheafify J (Type w)]
+    (hP : P.IsConservativeFamilyOfPoints)
+    {X Y : Cᵒᵖ ⥤ A} (f : X ⟶ Y)
+    (hf : ∀ (Φ : P.FullSubcategory), Function.Surjective (Φ.obj.presheafFiber.map f)) :
+    Presheaf.IsLocallySurjective J f :=
+  ObjectProperty.IsConservativeFamilyOfPoints.jointly_reflect_isLocallySurjective hP f hf
+
+/-- Bridge: the skyscraper presheaf functor for a point Phi —
+    `A ⥤ Cᵒᵖ ⥤ A` sends M to the presheaf mapping each X : C to the product
+    of copies of M indexed by `Phi.fiber.obj X`. Direct re-export of the
+    Mathlib def `GrothendieckTopology.Point.skyscraperPresheafFunctor`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args, structural instances. -/
+noncomputable def skyscraper_presheaf_functor_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    A ⥤ Cᵒᵖ ⥤ A :=
+  GrothendieckTopology.Point.skyscraperPresheafFunctor Φ
+
+/-- Bridge: the skyscraper presheaf with value M for a point Phi —
+    `Cᵒᵖ ⥤ A` sends X to the product of copies of M indexed by
+    `Phi.fiber.obj X`. Direct re-export of the Mathlib abbrev
+    `GrothendieckTopology.Point.skyscraperPresheaf`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args, structural instances. -/
+noncomputable def skyscraper_presheaf_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) (M : A) :
+    Cᵒᵖ ⥤ A :=
+  GrothendieckTopology.Point.skyscraperPresheaf Φ M
+
+/-- Bridge: the skyscraper sheaf functor for a point Phi — `A ⥤ Sheaf J A`
+    sends M to the skyscraper sheaf (the skyscraper presheaf is a sheaf for J,
+    cf `skyscraper_presheaf_is_sheaf_bridge` Section 11).
+    Direct re-export of the Mathlib def
+    `GrothendieckTopology.Point.skyscraperSheafFunctor`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args, structural instances. -/
+noncomputable def skyscraper_sheaf_functor_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    A ⥤ Sheaf J A :=
+  GrothendieckTopology.Point.skyscraperSheafFunctor Φ
+
+/-- Bridge: the skyscraper sheaf with value M for a point Phi — `Sheaf J A`
+    sends X to the product of copies of M indexed by `Phi.fiber.obj X`.
+    Direct re-export of the Mathlib abbrev
+    `GrothendieckTopology.Point.skyscraperSheaf`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args, structural instances. -/
+noncomputable def skyscraper_sheaf_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) (M : A) :
+    Sheaf J A :=
+  GrothendieckTopology.Point.skyscraperSheaf Φ M
+
+/-- Bridge: the class J.W is inverted by the presheaf fiber functor — any
+    morphism in J.W is mapped to an iso by `Phi.presheafFiber`. This is the
+    counterpart of Section 9: the presheaf fiber functor factors the
+    localization by J.W.
+    Delegates directly to the Mathlib lemma `W_isInvertedBy_presheafFiber`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args, structural instances. -/
+theorem W_isInvertedBy_presheafFiber_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    J.W.IsInvertedBy (Φ.presheafFiber (A := A)) :=
+  GrothendieckTopology.Point.W_isInvertedBy_presheafFiber Φ
+
 end Grothendieck_en.Conservative
