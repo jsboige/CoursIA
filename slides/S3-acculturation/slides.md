@@ -2064,6 +2064,9 @@ Un seul paradigme, plusieurs modalités — un modèle peut générer et compren
 - **Audio** : synthèse vocale et transcription (`GenAI/Audio/` — Whisper, Kokoro, XTTS)
 - **Vidéo** : génération et analyse (`GenAI/Video/` — Hunyuan, LTX, AnimateDiff)
 
+<img src="./images/img_102.png" style="position:absolute; top:150px; right:20px; width:240px;" alt="Portraits generes par StyleGAN" />
+<img src="./images/img_103.png" style="position:absolute; top:150px; right:280px; width:240px;" alt="Visages synthetiques" />
+
 ```mermaid
 graph TD
     A[Modèle de fondation multimodal] --> B[Texte]
@@ -2084,6 +2087,11 @@ graph TD
 - Phase retour : le modèle apprend à retirer le bruit pas à pas
 - À partir d'un bruit pur, il reconstruit une image cohérente
 - Diffusion latente : opérer dans un espace compact (moins de calcul)
+
+<img src="./images/img_110.png" style="position:absolute; top:160px; right:20px; width:220px;" alt="Generation par diffusion" />
+<img src="./images/img_111.png" style="position:absolute; top:160px; right:260px; width:220px;" alt="Exemples de resultats" />
+<img src="./images/img_112.png" style="position:absolute; top:270px; right:20px; width:220px;" alt="Diffusion latente" />
+<img src="./images/img_113.png" style="position:absolute; top:270px; right:260px; width:220px;" alt="Conditionnement multimodal" />
 
 ```mermaid
 graph LR
