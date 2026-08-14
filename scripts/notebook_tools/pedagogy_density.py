@@ -95,6 +95,14 @@ LABEL_NAME = "pedagogy-density-below-threshold"
 #: collapsed into the below-threshold label.
 LABEL_UNMEASURED = "pedagogy-density-unmeasured"
 
+#: Baseline file (issue #10479 amendment, 2026-08-11 19:31Z): the tool records
+#: the density of every tracked pedagogical notebook from Phase 1 onward, so
+#: the Phase-2 regression ratchet ("do not grow") is never retro-fitted on an
+#: already-reworked corpus. The metric is CONTINUOUS (float per notebook), not
+#: a set of hashes. Population derives from `git ls-files` (amendment
+#: 19:40Z), never an rglob -- untracked files would silently skew it.
+BASELINE_FILE = _TOOLS_DIR / "pedagogy_density_baseline.json"
+
 
 @dataclass
 class DensityVerdict:
@@ -306,6 +314,83 @@ def _glob_notebooks(directory: Path) -> list[Path]:
     return out
 
 
+def _baseline_population() -> list[Path]:
+    """Tracked pedagogical notebooks, derived from ``git ls-files``.
+
+    The population of the density baseline (#10479 amendment 19:40Z): exactly
+    the notebooks git tracks, never an rglob -- untracked files (papermill
+    ``_output.ipynb``, scratchpads) would inflate the population and skew the
+    stored values. The kind filter (density-judged kinds only: standard +
+    lean) drops setup and out-of-corpus notebooks, mirroring the 859
+    "notebooks suivis" figure of the amendment.
+    """
+    import subprocess
+
+    repo_root = _TOOLS_DIR.parents[1]  # scripts/notebook_tools -> repo root
+    listed = subprocess.run(
+        ["git", "-C", str(repo_root), "ls-files", "--", "MyIA.AI.Notebooks/**/*.ipynb"],
+        capture_output=True, text=True, check=True,
+    ).stdout.splitlines()
+    out: list[Path] = []
+    for line in listed:
+        p = Path(line)
+        if any(part in EXCLUDE_DIRS for part in p.parts):
+            continue
+        kind, _ = classify_notebook(p)
+        if kind in DENSITY_JUDGED_KINDS:
+            out.append(p)
+    return out
+
+
+def _update_baseline() -> int:
+    """Write :data:`BASELINE_FILE` with one float per tracked notebook.
+
+    The float is the CONTINUOUS metric (prose_chars / code_cells), not the
+    integer floor the advisory label uses -- the Phase-2 regression ratchet
+    compares continuous densities. Notebooks that cannot be measured (parse
+    failure, zero code cells) have no float and are recorded separately: a
+    continuous metric with a hole is not continuous.
+    """
+    population = _baseline_population()
+    values: dict[str, float] = {}
+    unmeasured: list[dict[str, str]] = []
+    for path in population:
+        try:
+            prose_chars, _code_chars, n_code, _n_md = _measure(path)
+        except ValueError as exc:
+            unmeasured.append({"path": str(path), "detail": str(exc)})
+            continue
+        if n_code == 0:
+            unmeasured.append(
+                {"path": str(path), "detail": "no code cell to divide by"}
+            )
+            continue
+        values[str(path).replace("\\", "/")] = round(prose_chars / n_code, 3)
+    payload = {
+        "_comment": (
+            "Pedagogy-density baseline (#10479). Burn down, do not grow. "
+            "One float per TRACKED pedagogical notebook: chars of markdown "
+            "prose per code cell (continuous metric). Population: "
+            "`git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS "
+            "minus setup/out-of-corpus kinds. Regenerate with: "
+            "python scripts/notebook_tools/pedagogy_density.py --update-baseline"
+        ),
+        "metric": "prose_chars / code_cells",
+        "count": len(values),
+        "notebooks": dict(sorted(values.items())),
+    }
+    if unmeasured:
+        payload["unmeasured"] = unmeasured
+    BASELINE_FILE.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    print(f"Baseline written: {BASELINE_FILE}")
+    print(f"Notebooks recorded : {len(values)}")
+    print(f"Unmeasured (no float): {len(unmeasured)}")
+    return 0
+
+
 def _render_text(result: DensityResult) -> str:
     """Human-readable summary (the workflow log; the labels are separate).
 
@@ -372,10 +457,22 @@ def main(argv: list[str] | None = None) -> int:
         "--json", dest="json_out", action="store_true",
         help="Emit machine-readable JSON (the workflow parses this for the label).",
     )
+    parser.add_argument(
+        "--update-baseline", action="store_true",
+        help=(
+            "Rewrite the density baseline (#10479 amendment 19:31Z). Population "
+            "= tracked pedagogical notebooks (git ls-files, never rglob), one "
+            "CONTINUOUS float per notebook. Records Phase-1 densities so the "
+            "Phase-2 regression ratchet is never retro-fitted."
+        ),
+    )
     # The floor is deliberately NOT a CLI flag: it is locked by calibration
     # against the #10479 table. A mutable threshold would silently change what
     # the label means from one invocation to the next.
     args = parser.parse_args(argv)
+
+    if args.update_baseline:
+        return _update_baseline()
 
     targets = list(args.paths) + list(args.targets)
     if not targets and not args.stdin:
