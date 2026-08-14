@@ -24,18 +24,20 @@ Project 30822855. Upload `main.py`, compile and run a backtest, passing the `ver
 
 ## Backtest Metrics
 
-Fresh backtest via QC Cloud MCP, 2026-08-07 (`MeanReversion-v1-honest-read-2026-08`, project 30822855, compile `BuildSuccess`, parameter `version=v1`, 2768 tradeable dates, 417 orders):
+Fresh backtest via QC Cloud MCP, 2026-08-14 (`MeanReversion-v1-2018-2025-aligned-status-2026-08`, project 30822855, compile `BuildSuccess`, parameter `version=v1`, **1761 tradeable dates — #1630-aligned 2018-2025 baseline**, 273 orders):
 
 | Indicator | Value | Reading |
 |---|---|---|
-| Sharpe ratio | **0.176** | weakly positive |
-| CAGR | **4.961%** | below buy-and-hold SPY over the period |
+| Sharpe ratio | **0.067** | near zero |
+| CAGR | **3.793%** | below buy-and-hold SPY over the period |
 | Max drawdown | **41.700%** | catastrophic (> 2× SPY) |
-| Total net profit | **70.392%** (+$77,345) | over the period |
-| PSR (Probabilistic Sharpe Ratio) | **0.052%** | indistinguishable from noise |
-| Orders | 417 | real backtest |
+| Total net profit | **29.789%** (+$35,082) | over the period |
+| PSR (Probabilistic Sharpe Ratio) | **0.147%** | indistinguishable from noise |
+| Orders | 273 | real backtest |
 
-**Verdict: NO-BEATS.** Sharpe 0.176, CAGR ~5% for a 41.7% drawdown, PSR ≈ 0: the strategy underperforms buy-and-hold SPY (double-digit CAGR over 2018-2025) with materially higher risk.
+**Verdict: NO-BEATS.** Sharpe 0.067, CAGR ~3.8% for a 41.7% drawdown, PSR ≈ 0: the strategy underperforms buy-and-hold SPY (double-digit CAGR over 2018-2025) with materially higher risk.
+
+> **Measurement history (traceability):** (1) 2026-04-28 run on pre-#1630 code (2014-2025, 2768 days): v1 Sharpe 0.288 / DD 42.4%, v2 0.214, **v3 0.278 / DD 14.7%**; (2) 2026-08-07 run on the same stale code: v1 0.176 / DD 41.7%; (3) **the 2026-08-14 run above — the first on the #1630-aligned code (2018-2025)**: v1 0.067. The alignment drops the strong 2014-2017 years; pre-August figures cited in old catalogs (0.278 / 14.7%) are the **v3** variant over 2014-2025 — NO-BEATS holds across every window and variant, but the numbers are incomparable without a variant + period label.
 
 ## Honest read (v1 variant)
 

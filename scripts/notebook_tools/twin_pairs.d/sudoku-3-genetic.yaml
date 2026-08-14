@@ -16,7 +16,14 @@
       csharp_sha: c54a7433ad47c9d4d405aeee9911f9a348507e13
       content_python_sha: 571fa09b7bd2ce230fce6e729ab92d1840da397b629fed482a1be6b93280b5bd
       content_csharp_sha: 7c7a393c4a20945acf7bfce925a9e6d7662e94248bf58d80dee0882e42296623
+    - date: "2026-08-14"
+      by: myia-po-2024:CoursIA
+      python_sha: 6bbc77e5c678aa6808a639631e7fb5486c97bc1a
+      csharp_sha: c54a7433ad47c9d4d405aeee9911f9a348507e13
+      content_python_sha: 358036e791ea7b7f747222a762b398a7aa3d2b063bd625840e2f213e46964f37
+      content_csharp_sha: 7c7a393c4a20945acf7bfce925a9e6d7662e94248bf58d80dee0882e42296623
   known_differences:
+    - "Rebaseline 2026-08-14 : cote Python deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
     - "Socle pedagogique commun : algorithme genetique (GA) applique au Sudoku -- population d'individus, selection, crossover, mutation, fonction de fitness (nombre de conflits). Meme concept evolutionnaire, meme cas d'application (resolution/amelioration d'une grille de Sudoku). Les deux exposent les memes primitives : Population, Crossover, Mutation, GeneticAlgorithm."
     - "Divergence d'implementation : le C# delegue a la lib GeneticSharp (NuGet, expose GeneticAlgorithm/Population/Crossover/Mutation au niveau framework) ; le Python implemente le GA from scratch sur numpy (Population/Crossover/Mutation codes a la main, fitness a base de conflits). Meme paradigme genetique, deux niveaux d'abstraction : framework SOTA cote C# vs reconstruction pedagogique a la main cote Python."
     - "Idiomes framework : C# = GeneticSharp (Nuget) + System.*, 13 cellules code ; Python = numpy (stdlib), 12 cellules code. Asymetrie attendue (lib dediee vs implmentation didactique), meme enseignement algorithmique sous-jacent."

@@ -16,7 +16,14 @@
       csharp_sha: f1ff5df6a78d6e57050c38a17ef37073494ffce3
       content_python_sha: 1da65bd6906c2ecba081c7c39516840e26ba9fb8b73f060d48adbf22ea0a27fa
       content_csharp_sha: 8ae8347f665729ac29554fd252aeb26e2b3d3195d4e45ef6e68680f80c23ba0e
+    - date: "2026-08-14"
+      by: myia-po-2024:CoursIA
+      python_sha: c8977d56354726ca6349bb2b47fa67bd1f2b16e2
+      csharp_sha: b158670a31d10d9a71a33e3d9fac94c5870b175a
+      content_python_sha: 1da65bd6906c2ecba081c7c39516840e26ba9fb8b73f060d48adbf22ea0a27fa
+      content_csharp_sha: bc1fdea1895a2a608a1f3608f7b6d41a6f7e4bc734e095524b5dd038af59ab9c
   known_differences:
+    - "Rebaseline 2026-08-14 : cote C# deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Socle pedagogique commun : solveur de Sudoku de Peter Norvig (combinaison de constraint propagation + search) -- fonctions assign (assigner une valeur en eliminant des candidats) et eliminate (propager les contraintes via les unites/peers), backtracking search quand la propagation seule ne suffit pas. Meme algorithme (Norvig's solver), meme cas canonique (Sudoku). Les deux couvrent backtracking, Norvig, eliminate, assign."
     - "Implementation from scratch des deux cotes (NI lib dediee C# NI framework Python) : le C# est pur stdlib System.* (0 NuGet, 15 cellules code) ; le Python est aussi pur stdlib (0 numpy, 12 cellules code). C'est la paire la plus proche d'une traduction native : les deux codent assign/eliminate/search manuellement selon l'algorithme de Norvig. Mais les 2 implementations restent independantes (idiomes langage : dict/sets cote Python vs Dictionary/HashSet cote C#), d'ou parity_level semantic et non native-both."
     - "Idiomes framework : C# = pur System.* (System / System.Collections.Generic / System.Linq), 0 NuGet, 15 cellules code ; Python = pur stdlib (0 dependance numerique), 12 cellules code. Meme algorithme de Norvig, implementations didactiques independantes des deux cotes."
