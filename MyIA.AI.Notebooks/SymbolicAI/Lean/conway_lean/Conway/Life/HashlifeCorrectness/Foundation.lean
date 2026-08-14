@@ -2070,8 +2070,12 @@ sorry-free body), which gathers the four sub-lemmas below. The aggregator's
 `hashlifeResult_central_correct` consumes it via `p4_ext_bridge` (proven here):
 its `k → k+1` case applies `p4_ext_bridge` to the `p4_succ_membership`
 biconditional to close. The **live open target** is now the P5 large-`n` jump
-`p5_large_n_jumpN` (aggregator, `:= by sorry`), which is P4-gated on exactly
-this inductive step being closed.
+`p5_large_n_jumpN` (aggregator, `:= by sorry`). Correction (2026-08-14): this
+used to read "P4-gated on exactly this inductive step being closed" — that
+gate has fallen with the proof of `p4_succ_membership` above; the sorry is now
+gated on the locality bridge (padded-grid ↔ `g` agreement via
+`evolve_cone_agree` + margin bounds) and the multi-jump recursion invariant,
+documented at the theorem in `HashlifeCorrectness.lean`.
 
 NOTE for readers/provers: earlier drafts carried the biconditional as
 `p4_ext_bridge c (k+1) (fun p => by sorry)` — that sorry is gone (the call-site
