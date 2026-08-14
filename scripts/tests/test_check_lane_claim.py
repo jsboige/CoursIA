@@ -10,6 +10,7 @@ These tests replay that exact trap and assert the tool is not fooled.
 
 Run: python -m pytest scripts/tests/test_check_lane_claim.py
 """
+import fnmatch
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -162,6 +163,121 @@ def test_parse_instructional_marker_in_prose_ignored():
     assert ev.is_open is True              # NOT closed by the mid-prose mention
     assert ev.marker == "CLAIMED"
     assert ev.lane == "myia-po-2025:CoursIA-2"
+
+
+# --- markdown decoration tolerance (#10906) ----------------------------------
+
+# The 8 voided markers on 70 issues: issue comments are markdown-rendered, and
+# agents post `**[CLAIMED] ...**`, `## [CLAIMED] ...`, `- [CLAIMED] ...` etc.
+# The legacy `^[ \t]*\[` anchor voided every such marker -- the claim existed
+# on the issue but the reducer never saw it. These tests pin the tolerance and
+# the mid-prose non-regression.
+
+def test_parse_marker_bold_decorated():
+    # The exact shape of po-2024's inert claim on #10043 (markdown bold wrap).
+    ev = clc.parse_claim_event(comment(
+        "**[CLAIMED] #10043 grain D (T3 activation) — lane myia-po-2024:CoursIA — 2026-08-08T12:36Z**",
+        "2026-08-08T12:37:14Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2024:CoursIA"
+
+
+def test_parse_marker_underscore_bold_decorated():
+    ev = clc.parse_claim_event(comment(
+        "__[CLAIMED] lane myia-po-2023:CoursIA-2 — underscore bold__",
+        "2026-08-08T13:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2023:CoursIA-2"
+
+
+def test_parse_marker_heading_decorated():
+    ev = clc.parse_claim_event(comment(
+        "## [CLAIMED] lane myia-po-2025:CoursIA-2 -- heading form",
+        "2026-08-08T13:01:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2025:CoursIA-2"
+
+
+def test_parse_marker_bullet_decorated():
+    for bullet in ("- ", "+ ", "* "):
+        ev = clc.parse_claim_event(comment(
+            f"{bullet}[CLAIMED] lane myia-po-2024:CoursIA -- bullet form",
+            "2026-08-08T13:02:00Z",
+        ))
+        assert ev is not None, bullet
+        assert ev.is_open is True, bullet
+        assert ev.lane == "myia-po-2024:CoursIA", bullet
+
+
+def test_parse_marker_blockquote_decorated():
+    ev = clc.parse_claim_event(comment(
+        "> [CLAIMED] lane myia-po-2026:CoursIA-2 -- blockquote form",
+        "2026-08-08T13:03:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2026:CoursIA-2"
+
+
+def test_parse_marker_nested_list_decorated():
+    ev = clc.parse_claim_event(comment(
+        "  - > **[CLAIMED] lane myia-po-2024:CoursIA-2 -- nested bullet + bold**",
+        "2026-08-08T13:04:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_parse_decorated_marker_in_prose_still_ignored():
+    # Mid-line mentions remain non-events even inside a bullet: the `[` must
+    # sit at a decorator position, not after prose.
+    body = (
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 -- real claim\n"
+        "- **Release with `[RELEASED]` when your PR lands** (instructional)"
+    )
+    ev = clc.parse_claim_event(comment(body, "2026-08-09T21:20:00Z"))
+    assert ev is not None
+    assert ev.is_open is True      # NOT closed by the decorated prose mention
+    assert ev.marker == "CLAIMED"
+
+
+def test_parse_decorated_release_closes():
+    ev = clc.parse_claim_event(comment(
+        "**[CLAIMED] lane myia-po-2024:CoursIA -- work**\n"
+        "**[RELEASED] lane myia-po-2024:CoursIA -- landed**",
+        "2026-08-08T14:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is False
+    assert ev.marker == "RELEASED"
+
+
+def test_decorated_paths_clause_scopes_claim():
+    # A bold-wrapped claim carrying `paths:` keeps its scope (#10419 semantics)
+    # through the decorated marker -- disjoint scoped claims stay parallel. The
+    # closing `**` is captured into the last path (`b.ipynb**`): stripping it by
+    # suffix alone is unsafe (`paths: dir/**` is a legitimate recursive glob),
+    # and fnmatch trailing `*` matches empty, so the scope still covers the
+    # intended path (see `_PATHS_CLAUSE_RE` comment in check_lane_claim.py).
+    ev = clc.parse_claim_event(comment(
+        "- **[CLAIMED] lane myia-po-2024:CoursIA-2 — paths: notebooks/a.ipynb, notebooks/b.ipynb**",
+        "2026-08-08T14:05:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+    assert ev.paths is not None
+    assert ev.paths[0] == "notebooks/a.ipynb"
+    assert fnmatch.fnmatch("notebooks/b.ipynb", ev.paths[1])
+    assert fnmatch.fnmatch("notebooks/b.ipynb", "notebooks/b.ipynb**")  # invariant
 
 
 def test_check_blocked_when_claim_comment_mentions_marker_in_prose(capsys):

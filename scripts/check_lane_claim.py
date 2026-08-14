@@ -83,8 +83,8 @@ from grain_tag import extract_lane
 # `[DONE]`/`[RELEASED]`/`[CANCELLED]`/`[ABANDONED]` close a claim; `[CLAIMED]`
 # opens one. Read on ISSUE comments (the claim registry per #9774), not on the
 # dashboard. Case-insensitive, tolerates inner spaces.
-# Line-anchored (`(?m)^[ \t]*\[...`): a marker only enacts a state change when
-# it STARTS a line -- the convention of every `--claim`/`--release` post and every
+# Line-anchored (`(?m)^...`): a marker only enacts a state change when it
+# STARTS a line -- the convention of every `--claim`/`--release` post and every
 # coordinator dispatch. A marker MENTIONED mid-sentence in prose is not an event.
 # Closes the #10228 false-negative: ai-01's claim comment ended with the
 # instructional sentence "Release with `[RELEASED]` when your PR lands" -- the
@@ -93,8 +93,17 @@ from grain_tag import extract_lane
 # lane held an active claim. `findall` still returns markers in order, so the
 # legitimate "last marker wins" design (a `[CLAIMED]\n[DONE]` edit sequence on
 # separate lines) is preserved -- only mid-line mentions are rejected.
+# Decoration tolerance (#10906): issue comments are markdown-rendered, and
+# agents legitimately post `**[CLAIMED] ...**`, `## [CLAIMED] ...`, `- [CLAIMED]
+# ...`, `> [CLAIMED] ...` etc. The legacy `^[ \t]*\[` anchor voided every such
+# marker (8 voided on 70 issues, including po-2024's [CLAIMED] on #10043 and
+# po-2025's on #10038). The prefix group eats up to 6 leading `#>*+-` chars
+# (headings / bullets / blockquotes / nested lists), then an optional `**`/`__`
+# bold pair opener, then whitespace, then the bracket. A `[` NOT immediately at
+# a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
+# match -- the mid-prose non-regression property is preserved.
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
+    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
     re.IGNORECASE,
 )
 _OPEN = {"CLAIMED"}
@@ -124,8 +133,16 @@ _OVERRIDE = {"OVERRIDE"}
 # 1 = comma-separated path list (already stripped of surrounding spaces).
 # Recognised on [CLAIMED], [RELEASED] (attached; the reducer treats release as
 # a full lane-close, so the scope is informational there), and [OVERRIDE].
+# Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
+# reducer feeds this regex the `_line_for_match` output (which starts at the
+# `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
+# defense-in-depth for direct calls on a full decorated marker line. The path
+# list capture deliberately does NOT strip a trailing `**`/`__` (closing pair
+# of a bold-wrapped claim): `paths: dir/**` is a legitimate recursive glob,
+# indistinguishable from a closing decorator by suffix alone. Trailing `*` in
+# fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 
 
