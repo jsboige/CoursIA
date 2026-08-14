@@ -36,6 +36,8 @@ La série compte **37 notebooks canoniques** : 16 méthodes déclinées en C# .N
 
 **Kernels** : `.net-csharp` (track C#) · `python3` (track Python) · `lean4-wsl` (Sudoku-19) · **GPU** : non · **Prérequis** : la série Search (algorithmes de recherche) aide, mais le Sudoku-0 remet tout à plat.
 
+**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) (track Python) · [Parcours 2 — ML.NET + Symbolic](../../parcours.qmd) (track C#) · niveau 1
+
 ## Pourquoi un double track C# / Python ?
 
 Chaque méthode (du backtracking au Z3) est implémentée **deux fois**, dans le même esprit, en C# .NET Interactive et en Python. Le track C# .NET illustre l'écosystème .NET (OR-Tools .NET, Microsoft.SolverFoundation, AutomataDotNet, Infer.NET) ; le track Python colle aux usages data-science (Z3-Python, pulp, NetworkX). Comparer les deux implémentations d'un même solveur est en soi un exercice pédagogique : on y voit ce qui relève de l'algorithme (identique) et ce qui relève de l'écosystème (idiomes, perf, API).

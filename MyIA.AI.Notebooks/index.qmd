@@ -8,6 +8,8 @@ description: "Liste des 12 séries niveau 1 du dépôt CoursIA — Search, Sudok
 
 Chaque série est un dossier thématique sous `MyIA.AI.Notebooks/`. Chaque série a son propre README avec table des matières, prérequis, et durée estimée.
 
+**Vous débutez ?** Suivez l'un des [trois parcours d'apprentissage](../parcours.qmd) — chaque série ci-dessous indique son parcours et son niveau.
+
 ## Vue d'ensemble
 
 ::: {.series-card}
