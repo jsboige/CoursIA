@@ -22,21 +22,62 @@ le protocole OTLP — un standard de l'OpenTelemetry.
 ## Prérequis
 
 - SDK **.NET 10** (`dotnet --version` ≥ 10.0.110)
-- Package **Aspire.Hosting.AppHost** 13.4.6 (livré via NuGet — l'ancienne
-  « charge de travail » (workload) Aspire est dépréciée sous .NET 10 ; ce
-  projet ne la requiert pas).
+- CLI Aspire : `dotnet tool install --global aspire.cli` (fournit `aspire` ;
+  l'ancienne « charge de travail » (workload) Aspire est dépréciée sous
+  .NET 10)
+- Package **Aspire.Hosting.AppHost** 13.4.6 (livré via NuGet via le
+  `#:sdk` de `apphost.cs`).
 
-## Démarrage
+## Démarrage — mode standalone (recommandé pour le notebook)
+
+Le dashboard Aspire embarque un mode **standalone**, conçu précisément
+pour recevoir la télémétrie d'applications **externes** (ici, le notebook
+Python) :
 
 ```bash
-cd SkOtel.AppHost
-dotnet run
+aspire dashboard run \
+  --allow-anonymous \
+  --otlp-grpc-url http://localhost:4317 \
+  --frontend-url http://localhost:18888 \
+  --non-interactive --nologo \
+  -- --Dashboard:Api:Enabled=true --Dashboard:Api:AuthMode=Unsecured
 ```
 
-Au démarrage, la console affiche l'URL du dashboard (typiquement
-`http://localhost:18888`) et l'endpoint OTLP gravé dans
-`ASPIRE_ENDPOINT` / OTLP. Le notebook Python cible alors cet endpoint
-pour exporter ses spans.
+- `http://localhost:4317` : endpoint OTLP gRPC que cible le notebook ;
+- `http://localhost:18888` : UI du dashboard **et** son API de télémétrie
+  (`/api/telemetry/spans`), que la cellule de relecture du notebook
+  interroge pour relire les spans ;
+- `--Dashboard:Api:*` active l'API HTTP de télémétrie sans authentification.
+
+> Avertissement sécurité : ce mode laisse l'endpoint OTLP **sans
+> authentification** — acceptable en boucle locale (`localhost`) sur un
+> poste de dev, à ne pas exposer au-delà (cf. [considérations de sécurité
+> du dashboard
+> Aspire](https://learn.microsoft.com/dotnet/aspire/fundamentals/dashboard/security-considerations)).
+
+Vérification en ligne de commande (retrouve les spans `gen_ai` envoyés
+par le notebook) :
+
+```bash
+aspire otel spans --dashboard-url http://localhost:18888 --search gen_ai --non-interactive --nologo
+```
+
+## Démarrage — mode AppHost (`aspire run`)
+
+Le dossier [`SkOtel.AppHost/`](SkOtel.AppHost/) contient l'**AppHost
+minimal** (application *file-based* .NET 10, `apphost.cs` sans ressource) :
+c'est le modèle de code de référence — un orchestrateur Aspire qui n'héberge
+rien et ne fait que servir le dashboard. On le lance avec la CLI Aspire :
+
+```bash
+aspire run --apphost SkOtel.AppHost/apphost.cs
+```
+
+Pour le **notebook**, préférez le mode standalone ci-dessus : en mode
+CLI-managed, l'endpoint OTLP est automatiquement sécurisé par une clé
+d'API (les variables `ASPIRE_DASHBOARD_OTLP_*` sont ignorées), ce qui
+convient aux ressources .NET de l'AppHost mais pas à un client Python
+externe sans provisionnement de clé.
 
 ## Voir aussi
 
