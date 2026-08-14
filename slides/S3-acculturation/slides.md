@@ -2064,6 +2064,9 @@ Un seul paradigme, plusieurs modalités — un modèle peut générer et compren
 - **Audio** : synthèse vocale et transcription (`GenAI/Audio/` — Whisper, Kokoro, XTTS)
 - **Vidéo** : génération et analyse (`GenAI/Video/` — Hunyuan, LTX, AnimateDiff)
 
+<img src="./images/img_111.png" style="position:absolute; top:150px; right:20px; width:360px;" alt="Architecture CLIP : encodeurs texte et image alignes dans un espace partage" />
+<img src="./images/img_110.png" style="position:absolute; top:380px; right:20px; width:360px;" alt="Paires image-legende : le modele relie chaque image a sa description textuelle" />
+
 ```mermaid
 graph TD
     A[Modèle de fondation multimodal] --> B[Texte]
@@ -2084,6 +2087,9 @@ graph TD
 - Phase retour : le modèle apprend à retirer le bruit pas à pas
 - À partir d'un bruit pur, il reconstruit une image cohérente
 - Diffusion latente : opérer dans un espace compact (moins de calcul)
+
+<img src="./images/img_112.png" style="position:absolute; top:150px; right:20px; width:500px;" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
+<img src="./images/img_113.png" style="position:absolute; top:380px; right:20px; width:360px;" alt="Architecture latent diffusion : encodeur, U-Net de debruitage dans l'espace latent, decodeur" />
 
 ```mermaid
 graph LR

@@ -89,20 +89,17 @@ description = "Global allowlist for known false positives"
 paths = [
     '''\.env\.example$''',   # Template: this file is NOT scanned at all (deliberate)
     '''\.env\.template$''',  # Template: this file is NOT scanned at all (deliberate)
-    # --- #10544 IKVM shade build scripts (POSITIVE controls: rebuild-5shades.sh /
-    # rebuild-dialogues.sh) — the `:slf4j-api-1.7.36.jar` Maven URL inside a
-    # `for url_pkg in \"$M2/.../foo.jar:foo.jar\"` list is matched by the default
-    # `generic-api-key` rule on the `prefix:secret` shape (entropy 3.78,
-    # finding first observed 2026-08-12 on rebuild-dialogues.sh:110). The
-    # `slf4j-api` token is a PUBLIC Maven Central artifact path
-    # (org/slf4j/slf4j-api/1.7.36/), not a credential — gitleaks redaction
-    # masks it in the public log but the value is path-shaped. These scripts
-    # live under `dotnet-build/`, are 100% IKVM source-recompile recipes
-    # (JDK 17 + Maven 3.9 + .NET 8), and do NOT contain any runtime API
-    # token, OAuth secret, or credential. A REAL secret accidentally
-    # committed to the same file WOULD still rougir via the regex allowlist
-    # evaluated AFTER paths (no content bypass). Scope = build recipes only.
-    '''MyIA\.AI\.Notebooks/SymbolicAI/Tweety/dotnet-build/.*\.sh$''',
+    # The previous paths entry `MyIA\.AI\.Notebooks/SymbolicAI/Tweety/dotnet-build/.*\.sh$`
+    # (added by PR #10544, 2026-08-12) was a content bypass: it excluded 3 IKVM shade
+    # build recipe scripts from the scan entirely. The driving FP was
+    # `slf4j-api-1.7.36.jar:slf4j-api-1.7.36.jar` on `rebuild-dialogues.sh:110`
+    # (and 5 sibling lines) — a public Maven Central artifact path, matched by the
+    # default `generic-api-key` rule on the `prefix:secret` shape (entropy 3.78).
+    # Replaced by a regexes entry below that matches ONLY the Maven artifact-id
+    # form `<artifact>-<version>.jar:<artifact>-<version>.jar`. Sub-grain of #10595
+    # (PR #10606 handles the 3 main entries; this one was left untouched).
+    # Verified by `TestMavenUrlRegexNotPathBypass` in
+    # scripts/tests/test_gitleaks_allowlist.py (this PR, c.1331+118).
 ]
 
 # Notebooks: do NOT blanket-exclude .ipynb — secrets inline in code cells are a real vector.
@@ -137,6 +134,21 @@ regexes = [
     # → the real JWT stays FLAGGED, the truncated example is SUPPRESSED. Detector armed.
     # Covers 2 findings (×7 under translation-sync #10133 if these docs are translated).
     '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.''',
+    # --- #10544 Maven artifact `jar:jar` shape (IKVM shade build recipes) ---
+    # The 3 scripts `MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/rebuild-*.sh`
+    # enumerate Java/Maven dependencies as `<artifact>-<version>.jar:<artifact>-<version>.jar`
+    # pairs (the suffix is the classpath basename). The `generic-api-key` rule
+    # matches the substring `slf4j-api-1.7.36.jar:slf4j-api-1.7.36.jar` on entropy
+    # 3.78 (a public Maven Central artifact path — NOT a credential). The regex
+    # below targets the strict Maven basename form: `<artifact-name-with-hyphens>
+    # -<digit-leading-version>.jar:<artifact-name-with-hyphens>-<digit-leading-version>.jar`.
+    # The `-(?=\d)` lookahead enforces a numeric version segment (real jars always
+    # have one: `1.7.36`, `45.1.1`, `2.3.1`) and protects against false matches on
+    # shaped-but-non-Maven strings. A REAL OpenRouter / GitHub / Stripe / HF token
+    # placed in the same .sh file does NOT contain the `jar:jar` infix and stays
+    # FLAGGED. Positive control: `TestMavenUrlRegexNotPathBypass` in
+    # scripts/tests/test_gitleaks_allowlist.py (c.1331+118, this PR). See #10595.
+    '''[\w.-]+-[\d][\w.-]*\.jar:[\w./$-]+-[\d][\w.-]*\.jar|[\w.-]+-[\d][\w.-]*\.jar''',
 ]
 
 # Teaching placeholders and model identifiers that `generic-api-key` reads as

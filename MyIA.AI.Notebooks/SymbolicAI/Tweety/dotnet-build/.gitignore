@@ -8,11 +8,14 @@ target/
 tweety-preferences-full-1.30.jar
 # DLL IKVM output (rebuilt by `dotnet build`)
 *.dll
+# IKVM working dir produced at build time (ikvmc output, ~330 MB, never tracked)
+lib-ikvm/
 # Maven shade plugin output (committed JARs live in ../libs/, not here)
 META-INF/
-# Maven local cache + extracted sources (rebuilt by rebuild-5shades.sh / rebuild-causal.sh)
+# Maven local cache + extracted sources (rebuilt by rebuild-5shades.sh / rebuild-causal.sh / rebuild-7a.sh)
 .5shades-build/
 .causal-build/
+.7a-build/
 .sources-extracted/
 .sources-jar/
 .jars/

@@ -14,6 +14,12 @@
       csharp_sha: 2ec088ff8d391f7e8bc39e967730ca6c7c821b01
       content_python_sha: 0d78a79a6eebc9b67bfabaf672db29c5234839f181fa7aa0530e399896d430a3
       content_csharp_sha: 05c4ceeb8195f16696d454bfeeebb757fcd886c9e2edab6240dcb96f6cff148b
+    - date: "2026-08-14"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 651c26698806a76a278f5b7a15f82949944b97a4
+      csharp_sha: 2ec088ff8d391f7e8bc39e967730ca6c7c821b01
+      content_python_sha: f042bb4c91dc7dbbd8a5648e3deb94a11a9f97ec17b86c444cce712c179f4580
+      content_csharp_sha: 05c4ceeb8195f16696d454bfeeebb757fcd886c9e2edab6240dcb96f6cff148b
   bridge_verdict: RECOVERABLE-LOCAL
   bridge_verdict_reason: "Python = collections + typing (variant Connect-4 adversarial, 18 cellules code). C# = BCL pure (System.*, 0 NuGet, from-scratch, 10 cellules code) pour Connect-4 adversarial. Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (Puissance 4 adversarial, IA jeux combinatoires variant). L'asymetrie reside dans la couverture (Python 18 cellules code avec viz matplotlib/pandas, C# 10 cellules compactes BCL pure) mais ni Python ni C# n'invoque de moteur SOTA partage -- les deux cotes implement l'algorithme adversariale from-scratch (minimax/alpha-beta). parity_level: semantic preserve."
   known_differences:

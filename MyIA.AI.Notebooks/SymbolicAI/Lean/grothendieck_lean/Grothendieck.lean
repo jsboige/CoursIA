@@ -6,7 +6,9 @@ import Grothendieck.Comma
 import Grothendieck.Conservative
 import Grothendieck.ConstantSheaf
 import Grothendieck.Construction
+import Grothendieck.Cover
 import Grothendieck.CoverageGen
+import Grothendieck.CoversArrow
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.Equivalences

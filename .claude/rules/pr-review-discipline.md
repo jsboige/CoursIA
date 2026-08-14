@@ -23,7 +23,7 @@ Un reviewer **DOIT** poster `state: CHANGES_REQUESTED` (pas COMMENTED, pas APPRO
 
 Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le body :
 
-1. `grep -c sorry` avant/après par fichier modifié
+1. Compte de `sorry` **réel** avant/après — `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry`. **Pas `grep -c sorry`** : il compte la prose (docstrings, `-- commentaires`, feuilles de route), et les modules Lean du dépôt documentent précisément leur propre absence de `sorry`. Mesuré le 2026-08-14 sur les 21 lakes : **484 naïfs pour 21 réels (23×)**, dont **9 lakes à 0 réel** — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` dans `grothendieck_lean`, qui n'en a aucun. Le gate CI mesure déjà juste (`sorry-filter-mode: real` de `lean-axiom.yml`) : c'est le texte de cette règle qui pointait le mauvais instrument.
 2. Lien vers `Lake build SUCCESS` (CI ou commit local prouvable)
 3. Lien vers `Proof integrity SUCCESS` (job CI `proof-integrity` → `LeanVerifier.check_axioms(module, fail_on_sorry=True)`)
 4. Si refactor du prover Python : justifier pourquoi il est nécessaire au claim Lean (sinon split)
