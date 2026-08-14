@@ -1,0 +1,87 @@
+# Instance jetable « Maison Valmont » — pile WordPress + AI Engine pour la
+# serie de notebooks de presentation (presenter-ai-engine-par-son-api.ipynb).
+#
+# Usage :
+#   1. cp .env.example .env   (remplir les variables, dont l'URL du LLM local)
+#   2. docker compose -f docker-compose.jetable.example.yml up -d
+#   3. suivre instance-jetable/README.md (etapes 3 a 5 : install WP, seed, app password)
+#
+# L'instance est 100 % jetable : docker compose -f ... down -v detruit volumes
+# et donnees. Aucune donnee cliente — corpus synthetique « Maison Valmont ».
+# Le provider LLM (Ollama, vLLM, ...) doit etre compatible OpenAI
+# (/v1/chat/completions) et joignable depuis le conteneur wordpress :
+#   - Docker Desktop (Windows/macOS) : http://host.docker.internal:<port>/v1
+#   - Linux natif : IP de la passerelle, ex. http://172.17.0.1:<port>/v1
+
+services:
+  wordpress:
+    image: wordpress:6.8.3-php8.2-apache
+    container_name: valmont-wordpress-1
+    restart: unless-stopped
+    ports:
+      - "${VALMONT_PORT:-8093}:80"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: ${VALMONT_DB_USER:-valmont}
+      WORDPRESS_DB_PASSWORD: ${VALMONT_DB_PASSWORD:-valmont_db_pass}
+      WORDPRESS_DB_NAME: ${VALMONT_DB_NAME:-valmont}
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_MEMORY_LIMIT', '512M');
+        define('WP_MAX_MEMORY_LIMIT', '512M');
+        @ini_set('display_errors', 0);
+        define('FORCE_SSL_ADMIN', false);
+    volumes:
+      - valmont-wp-data:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: mariadb:10.11
+    container_name: valmont-db-1
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${VALMONT_DB_ROOT_PASSWORD:-valmont_root_pass}
+      MYSQL_DATABASE: ${VALMONT_DB_NAME:-valmont}
+      MYSQL_USER: ${VALMONT_DB_USER:-valmont}
+      MYSQL_PASSWORD: ${VALMONT_DB_PASSWORD:-valmont_db_pass}
+    volumes:
+      - valmont-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${VALMONT_DB_ROOT_PASSWORD:-valmont_root_pass}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  wordpress_cli:
+    image: wordpress:cli-2.9.0-php8.2
+    container_name: valmont-wordpress_cli-1
+    restart: unless-stopped
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["tail -f /dev/null"]
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: ${VALMONT_DB_USER:-valmont}
+      WORDPRESS_DB_PASSWORD: ${VALMONT_DB_PASSWORD:-valmont_db_pass}
+      WORDPRESS_DB_NAME: ${VALMONT_DB_NAME:-valmont}
+      VALMONT_LLM_BASE_URL: ${VALMONT_LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      VALMONT_LLM_API_KEY: ${VALMONT_LLM_API_KEY:-sk-local}
+      VALMONT_LLM_MODEL: ${VALMONT_LLM_MODEL:-qwen3.6-35b-a3b}
+      VALMONT_LLM_MODEL_NAME: ${VALMONT_LLM_MODEL_NAME:-Qwen 3.6 35B A3B}
+    volumes:
+      - valmont-wp-data:/var/www/html
+    depends_on:
+      - db
+      - wordpress
+
+volumes:
+  valmont-db-data:
+    driver: local
+  valmont-wp-data:
+    driver: local

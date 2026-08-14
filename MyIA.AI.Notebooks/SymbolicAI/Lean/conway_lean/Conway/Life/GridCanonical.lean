@@ -395,6 +395,35 @@ theorem evolve_shift (v : Int × Int) (n : Nat) (g : Grid) :
   | zero => simp [evolve]
   | succ k ih => rw [evolve_succ, step_shift, ih, ← evolve_succ]
 
+/-- Composition des translations : appliquer `w` puis `v` equivaut a la
+    translation de somme composante par composante. Enonce avec composantes
+    explicites (plutot qu'en paires) pour que la reecriture produise des
+    sommes directement, sans projections `(a, b).1`. -/
+theorem shift_shift (a1 a2 b1 b2 : Int) (g : Grid) :
+    shift (a1, a2) (shift (b1, b2) g) = shift (a1 + b1, a2 + b2) g := by
+  apply Canonical.ext
+  · exact canonical_shift (a1, a2) (shift (b1, b2) g)
+  · exact canonical_shift (a1 + b1, a2 + b2) g
+  · intro p
+    rw [mem_shift, mem_shift, mem_shift]
+    have hp : ((p.1 - a1) - b1, (p.2 - a2) - b2)
+        = (p.1 - (a1 + b1), p.2 - (a2 + b2)) := by ext <;> omega
+    rw [hp]
+
+/-- Translater de zero est l'identite sur les grilles canoniques : le
+    `sortDedup` de `shift` re-trie une liste deja triee sans doublons. Inset
+    du pont de localite (a) de #6724 : la composition des trois translations
+    du saut unique s'annule en le vecteur nul, et c'est `shift_zero` qui
+    elimine cette identite residuelle. -/
+theorem shift_zero {g : Grid} (hg : Canonical g) : shift (0, 0) g = g := by
+  apply Canonical.ext
+  · exact canonical_shift (0, 0) g
+  · exact hg
+  · intro p
+    rw [mem_shift]
+    have hp : (p.1 - 0, p.2 - 0) = p := by ext <;> omega
+    rw [hp]
+
 /-! ## Congruence extensionnelle de `step` / `evolve`
 
 Deux grilles à appartenance extensionnellement egale (meme ensemble de

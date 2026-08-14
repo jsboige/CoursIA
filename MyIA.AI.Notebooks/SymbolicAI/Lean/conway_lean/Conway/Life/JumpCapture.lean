@@ -346,5 +346,90 @@ theorem hashlifeJump_correct_of_captured (c : MacroCell)
     _ = evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)) :=
         restrictGridTo_eq_self _ _ _ ((jumpCaptured_iff c).mp hcap)
 
+/-! ### BR4a : assemblage du saut unique (pont de localite (a), #6724)
+
+La brique `hashlifeJump_correct_of_captured` ci-dessus est ancree sur
+`(2^k, 2^k)` avec l'entree rembourree `(padCenter2 c).toGrid (0, 0)`. Le
+moteur, lui, calcule `(hashlifeJump mc).toGrid (jumpResultOff off k)` a
+partir de la grille originale `g`. Cet assemblage rejoint les deux par la
+chaine complete du pont de localite (a) :
+
+- BR2 (`toGrid_shift_grid`) re-ancre la sortie du saut de `jumpResultOff`
+  vers `(2^k, 2^k)` en une translation `δ = newOff − (2^k, 2^k)` ;
+- BR3 (`padCenter2_toGrid_shift`) deplie le rembourrage en une translation
+  `pad = 3·2^(k−1)` ; `evolve_shift` la fait sortir de `evolve` ;
+- BR2 a nouveau exprime `mc.toGrid (0, 0)` comme translation `−off` de
+  `mc.toGrid off` ; `evolve_shift` la fait sortir ;
+- BR5 (`evolve_congr`, #10895) + BR1 convertissent l'equivalence
+  d'appartenance `mc.toGrid off ↔ g` en egalite des trajectoires `evolve` ;
+- la composition `shift_shift` des trois translations donne le vecteur net
+  `δ + pad + (−off)` dont chaque coordonnee s'annule EXACTEMENT
+  (`−2^(k−1) − 2^k + 3·2^(k−1) = 2·2^(k−1) − 2^k = 0` pour `k ≥ 1`), et
+  `shift_zero` elimine l'identite residuelle sur la grille canonique
+  `evolve (2^k) g`.
+
+Reste ouvert pour `p5_large_n_jumpN` : l'invariant multi-sauts (b) — la
+preservation de `jumpCaptured` a travers le re-tramage — puis l'induction
+sur le fuel de `evolveHashlifeFastAux`. -/
+
+/-- **Assemblage du saut unique** : pour toute `MacroCell` `mc` dont l'image
+    `toGrid off` a la meme appartenance que `g` (hypothese fournie par BR1,
+    `mem_toGrid_gridToMacroCellWithOffset`), bien formee, de niveau ≥ 1 et
+    sous capture, le saut du moteur produit exactement `evolve (jumpSize k) g`
+    — la generation cible du saut, sans translation residuelle. C'est la
+    forme exacte du bras de saut de `evolveHashlifeFastAux` (Hashlife.lean,
+    `g' := jumped.toGrid newOff`). -/
+theorem one_jump_toGrid_correct (g : Grid) (off : Int × Int) (mc : MacroCell)
+    (hmem : ∀ p, p ∈ mc.toGrid off ↔ p ∈ g)
+    (hwf : mc.wf = true) (hlvl : 1 ≤ mc.level)
+    (hcap : jumpCaptured mc = true) :
+    (hashlifeJump mc).toGrid (jumpResultOff off mc.level)
+      = evolve (jumpSize mc.level) g := by
+  have hk1 : mc.level - 1 + 1 = mc.level := by omega
+  have hnjs : 0 < 2 ^ mc.level := Nat.two_pow_pos _
+  have h1js : 1 ≤ 2 ^ mc.level := by omega
+  have h2k : ((2 ^ mc.level : Nat) : Int)
+      = 2 * ((2 ^ (mc.level - 1) : Nat) : Int) := by
+    have hp : (2 : Nat) ^ (mc.level - 1 + 1) = 2 ^ (mc.level - 1) * 2 := by
+      rw [Nat.pow_succ]
+    rw [hk1] at hp
+    rw [hp, Nat.cast_mul]
+    push_cast
+    ring
+  have hbrick := hashlifeJump_correct_of_captured mc hwf hlvl hcap
+  have hnew : jumpResultOff off mc.level
+      = (off.1 - (2 ^ (mc.level - 1) : Nat),
+         off.2 - (2 ^ (mc.level - 1) : Nat)) := by
+    unfold jumpResultOff
+    split
+    · next h0 =>
+        exfalso
+        have hb : Nat.beq mc.level 0 = true := by simpa [BEq] using h0
+        have hz : mc.level = 0 := Nat.eq_of_beq_eq_true hb
+        omega
+    · rfl
+  have hmc0 : mc.toGrid (0, 0)
+      = shift (0 - off.1, 0 - off.2) (mc.toGrid (off.1, off.2)) :=
+    toGrid_shift_grid mc 0 0 off.1 off.2
+  have hmem' : ∀ p, p ∈ mc.toGrid (off.1, off.2) ↔ p ∈ g := by
+    simpa using hmem
+  simp only [jumpSize]
+  rw [hnew,
+    toGrid_shift_grid (hashlifeJump mc) _ _ (2 ^ mc.level : Nat)
+      (2 ^ mc.level : Nat),
+    hbrick, padCenter2_toGrid_shift mc hlvl, ← evolve_shift, hmc0,
+    ← evolve_shift, evolve_congr hmem' h1js, shift_shift, shift_shift]
+  have hpow : (2 : Int) ^ (mc.level - 1) = ((2 ^ (mc.level - 1) : Nat) : Int) := by
+    exact (Nat.cast_pow (2 : Nat) (mc.level - 1)).symm
+  have hz1 : (off.1 - (2 ^ (mc.level - 1) : Nat)) - (2 ^ mc.level : Nat)
+      + 3 * (2 ^ (mc.level - 1) : Int) + (0 - off.1) = 0 := by
+    rw [hpow, h2k]
+    omega
+  have hz2 : (off.2 - (2 ^ (mc.level - 1) : Nat)) - (2 ^ mc.level : Nat)
+      + 3 * (2 ^ (mc.level - 1) : Int) + (0 - off.2) = 0 := by
+    rw [hpow, h2k]
+    omega
+  rw [hz1, hz2, shift_zero (canonical_evolve_of_pos hnjs g)]
+
 end Life
 end Conway
