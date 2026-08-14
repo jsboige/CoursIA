@@ -26,6 +26,12 @@
       csharp_sha: 3c555b635512478b89a1610fcc607e77574e83a7
       content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
       content_csharp_sha: aabf9f42a6ebae75fe6f64abcc18e77105832b93f5eadd320ae26493a7a30808
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 0b4e212a66f03f2eec2247e17f55db061bd2b247
+      csharp_sha: be1ecc18050cbcafcae61de8875b24baad31fccf
+      content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
+      content_csharp_sha: 89371c541374137ca6e5b07ebe25d8ac7d2b186c1fcd08073857bf5d6ff0d5ca
   bridge_verdict: RECOVERABLE-LOCAL
   bridge_verdict_reason: "Python = demonstrations riches (44 cellules, classe Profile from-scratch dataclass-like + simulation Arrow + Lady Chatterley/Sen). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization, 0 NuGet, 29 cellules, implementation compacte presentation tabulaire autour de 10 sections canoniques). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (theorie du choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs). Meme socle theorique, parite algorithmique sur les regles de vote from-scratch (Plurality/Borda/Condorcet/IRV/Copeland). L'asymetrie reside dans la LEVEE pedagogique -- simulation empirique d'Arrow + contexte litteraire cote Python vs structure tabulaire compacte BCL pure sans viz cote C#. Aucune lib SOTA partagee (numpy vs System.Linq from-scratch). parity_level: semantic preserve."
   known_differences:
