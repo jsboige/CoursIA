@@ -16,8 +16,15 @@
       csharp_sha: 3e015103eb4cddb301a19f10dd1b8940eefe0fbb
       content_python_sha: 29245004b87519c32cb37bed43227fd2b8af2ade9de7a368a9ddad76dd67e2e9
       content_csharp_sha: 5a7dfff560e3dc513ce623f8ccc6c4f91962cc442f38c0abcec33afe3a73257b
+    - date: "2026-08-14"
+      by: myia-ai-01:CoursIA
+      python_sha: 1c000b05a020e453460d147199c69b529fa14bf1
+      csharp_sha: 1bcd8a14a94a5eba71fd390fc8addc5575fe3a30
+      content_python_sha: 705236dcb08121f1cd55c974690996a0cecc470681db2424c46cc5ae21868674
+      content_csharp_sha: a41d0bfd2051b86250ca965a30f8c2335eb97ede736154081d565472bdba6afa
   known_differences:
     - "Socle commun : argumentation preferentielle (PreferenceReasoner) via TweetyProject."
     - "Lib-vs-lib : C# via IKVM (`#r \"nuget: IKVM.Image, 8.15.0\"` + Assembly.LoadFrom tweety-preferences.dll). Python via JPype (`from org.tweetyproject.arg.dung.reasoner import SimplePreferredReasoner`). Meme moteur Java."
     - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
     - "DLL C# tweety-preferences non built sur disque (c.229, 2026-08-12) : le csproj IKVM shade existe (build-TweetyPreferencesShade.csproj) + le pattern de build est documente (twins `tweety-{dung,pl,rpcl,etc}.dll` deja livres par c.220 #10544 et c.208 #10499), mais le jar source `tweety-preferences-full-1.30.jar` n'est pas telecharge. Action RECOVERABLE-LOCAL sur la machine worker : telecharger le jar depuis Maven Central ou compiler depuis les sources, puis `dotnet build` le csproj, puis re-exec le notebook C# pour verifier la parite lib-vs-lib (les 2 cotes appellent les memes classes Java `org.tweetyproject.preferences.*` instantiatees via IKVM ou JPype)."
+    - "Re-baseline 2026-08-14 (ai-01, PR #10943) : les deux SHAs de contenu avancent via la correction markdown-only `org.tweetyproject.préférences` -> `org.tweetyproject.preferences` (identifiant Java accentué par la passe #2876/#7261, `ModuleNotFoundError` garanti pour l'étudiant qui recopiait l'indice). Drift vérifié parité-préservant firsthand : 11 lignes, toutes des identifiants/noms d'artefacts entre backticks ; la prose française « préférence(s) » (le mot) est intacte. Les 4 corrections supplémentaires côté C# seul (`tweety-preferences.dll`, `tweety-preferences-full-1.30.jar`) portent sur des noms d'artefacts qui n'existent que de ce côté -- asymétrie attendue, déjà documentée ci-dessus. L'axe de parité sémantique (IKVM vs JPype sur le même moteur Java) est inchangé."
