@@ -253,18 +253,15 @@ jobs:
       - name: T2 detect drift
         id: t2
         if: steps.t1.outputs.has_translations == 'true'
-        env:
-          T1_MODE: ${{ github.event.inputs.mode || 'incremental' }}
         run: |
           set -euo pipefail
-          # En mode full, on active aussi le scan out-of-scope (etape 5 de
-          # #10329) : notebooks FR dans MyIA.AI.Notebooks/ qui ne sont
-          # dans aucun CSV. Ce scan est diagnostique, non-bloquant.
-          if [ "$T1_MODE" = "full" ]; then
-            REPORT="$(python scripts/translation/check_translation_sync.py translations --check --report-out-of-scope --repo-root . 2>/dev/null || true)"
-          else
-            REPORT="$(python scripts/translation/check_translation_sync.py translations --check --repo-root . 2>/dev/null || true)"
-          fi
+          # Scan out-of-scope (etape 5 de #10329) INCONDITIONNEL : notebooks
+          # FR dans MyIA.AI.Notebooks/ qui ne sont dans aucun CSV de
+          # translations/. Critere 6 de #10329 : « T2 journalise la derive
+          # hors-perimetre a chaque run » — un run incremental ne doit pas
+          # avoir de zone aveugle. Ce scan est diagnostique, non-bloquant
+          # (pas de LLM, pas de reseau : simple lecture disque).
+          REPORT="$(python scripts/translation/check_translation_sync.py translations --check --report-out-of-scope --repo-root . 2>/dev/null || true)"
           if [ -z "$REPORT" ]; then
             echo "drift_count=0" >> "$GITHUB_OUTPUT"
             echo "No drift detected (or no filled translations to drift against)."
@@ -274,13 +271,14 @@ jobs:
           echo "drift_count=$COUNT" >> "$GITHUB_OUTPUT"
           echo "Drift anomalies: $COUNT"
           echo "$REPORT"
-          # Etape 5 de #10329 : archiver le rapport out-of-scope (si active)
-          # comme artefact de run pour audit. Non-bloquant.
-          if [ "$T1_MODE" = "full" ]; then
-            echo "$REPORT" > translation-sync-report.json
-            OOS_COUNT="$(echo "$REPORT" | python -c 'import sys,json; r=json.load(sys.stdin); print(r.get("out_of_scope_count",0))' 2>/dev/null || echo 0)"
-            echo "::notice title=T2 out-of-scope::${OOS_COUNT} notebook(s) MISSING_FROM_CSV (etape 5 #10329)."
-          fi
+          # Etape 5 de #10329 : archiver le rapport out-of-scope comme
+          # artefact de run pour audit, et emettre le notice a CHAQUE run
+          # (pas seulement --full) — c'est le garde-fou contre la recidive :
+          # un notebook FR enrichi sans pipeline reste visible au run
+          # suivant. Non-bloquant.
+          echo "$REPORT" > translation-sync-report.json
+          OOS_COUNT="$(echo "$REPORT" | python -c 'import sys,json; r=json.load(sys.stdin); print(r.get("out_of_scope_count",0))' 2>/dev/null || echo 0)"
+          echo "::notice title=T2 out-of-scope::${OOS_COUNT} notebook(s) MISSING_FROM_CSV (etape 5 #10329)."
 
       # ------------------------------------------------------------------
       # T3 — translate CHANGED CELLS ONLY. ACTIVATED (grain D #10055 landed the

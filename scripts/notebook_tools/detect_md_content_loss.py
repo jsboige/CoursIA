@@ -458,6 +458,24 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     if len(base_md) != len(head_md):
         return findings  # compte modifie -> la comparaison fichier suffit
 
+    # Fix #10873 (court-circuit multiset) : si le multiset des contenus
+    # normalises est identique entre base et head, aucune perte de contenu
+    # n'est possible -- c'est une permutation pure. On retourne zero finding
+    # AVANT toute strategie d'appariement (il subsume le cas id-e sans le
+    # contredire) : une strategie d'appariement ne peut produire un finding
+    # que si un contenu a change, et un multiset identique garantit que
+    # chaque contenu est preserve. Une vraie troncature ou substitution
+    # produit une chaine differente, donc un multiset different, et le
+    # court-circuit ne s'arme pas (le gate reste mordant).
+    # NB : egalite du MULTISET DES CHAINES (tri des contenus normalises),
+    # PAS des totaux de caracteres -- deux chaines distinctes peuvent
+    # totaliser la meme longueur (une substitution meme-longueur serait un
+    # blanc-seing sur un critere de totaux, cf #10873 commentaire 08:09).
+    base_multiset = sorted(_normalize(b_src) for _, _, b_src in base_md)
+    head_multiset = sorted(_normalize(h_src) for _, _, h_src in head_md)
+    if base_multiset == head_multiset:
+        return findings
+
     # c.8254 + fix #10873 : apparier par ID le sous-ensemble id-e stable
     # (cellules exposant un ``cell_id``), par index le residu (cellules sans
     # id). L'ancienne politique all-or-nothing basculait le notebook entier en

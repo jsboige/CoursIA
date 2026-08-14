@@ -163,7 +163,7 @@ Pour les praticiens intéressés par les applications multi-agents :
 | 6  | [Tweety-6-Structured-Argumentation](Tweety-6-Structured-Argumentation.ipynb) | ASPIC+, DeLP, ABA, ASP                            | 60 min  | Python |
 | 6c | [Tweety-6-Structured-Argumentation-Csharp](Tweety-6-Structured-Argumentation-Csharp.ipynb) | Twin C# ASPIC+ from-scratch (BCL, pas IKVM ; DeLP/ABA/ASP conceptuel) | 35 min | C# PROD |
 | 7a | [Tweety-7a-Extended-Frameworks](Tweety-7a-Extended-Frameworks.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended             | 50 min  | Python |
-| 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-7a-Extended-Frameworks-Csharp.ipynb) | Twin C# ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued, 0 jpype/JVM ; See #4956) | 55 min | C# PROD |
+| 7ac | [Tweety-7a-Extended-Frameworks-Csharp](Tweety-7a-Extended-Frameworks-Csharp.ipynb) | Twin C# hybride : ADF/SetAF/EAF/VAF from-scratch (BCL, Kleene 3-valued) + tranche 2 lib Tweety reelle via IKVM (DLL shade 7a versionnee a la racine, rebuildable dotnet-build/rebuild-7a.sh ; See #4956) | 55 min | C# PROD |
 | 7b | [Tweety-7b-Ranking-Probabilistic](Tweety-7b-Ranking-Probabilistic.ipynb) | Ranking Semantics, Probabiliste                   | 40 min  | Python |
 | 7bc | [Tweety-7b-Ranking-Probabilistic-Csharp](Tweety-7b-Ranking-Probabilistic-Csharp.ipynb) | Ranking/Probabiliste .NET (IKVM, c.179 PR #5231) | 30 min  | C# PROD |
 | **Applications** |   |   |   |   |
@@ -205,7 +205,7 @@ Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau
 | 6  | Structured Argumentation      | Comparaison ASPIC+/DeLP/ABA/ASP — le cadre idéal selon le domaine      |
 | 6c | Structured Argumentation (C#) | ASPIC+ **from-scratch** BCL .NET (sans IKVM) — DeLP/ABA/ASP en contrepoint conceptuel |
 | 7a | Extended Frameworks           | Au-delà de Dung : ADF, bipolarité, attaques pondérées et collectives   |
-| 7ac| Extended Frameworks (C#)      | ADF/SetAF/EAF/VAF **from-scratch** BCL .NET — logique de Kleene 3 valeurs, sans JVM |
+| 7ac| Extended Frameworks (C#)      | Hybride : ADF/SetAF/EAF/VAF **from-scratch** BCL .NET (logique de Kleene 3 valeurs) + tranche 2 Dung/Weighted/Social/ADF via la lib Tweety reelle (IKVM, DLL shade 7a versionnee) |
 | 7b | Ranking & Probabilistic       | Classement graduel des arguments + incertitude sur les arguments        |
 | 7bc| Ranking & Probabilistic (C#)  | Ranking/Probabiliste .NET (IKVM) — `Ranking`, `SubgraphProbability` réels |
 | 8  | Agent Dialogues               | Protocoles d'échange entre agents + négociation argumentative          |

@@ -59,6 +59,8 @@ La série GameTheory comporte **27 notebooks racine + 4 SocialChoice** répartis
 
 **Kernels** : python3 · .net-csharp (notebooks 2-12) · lean4 (side tracks `*-Lean-*` via WSL) · **GPU** : non · **Prérequis** : algèbre linéaire, probabilités de base. Aucun prérequis en théorie des jeux : les concepts sont introduits depuis les matrices de gains.
 
+**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 2
+
 ## Phase 1 — Fondations statiques et équilibre de Nash (Notebooks 1-6)
 
 Notebooks 1 à 6 + side tracks Lean (définitions, existence de Nash, minimax) et Python (existence Nash).
@@ -113,7 +115,7 @@ Pour les side tracks **Lean 4** (`*-Lean-*.ipynb`) : WSL + elan toolchain + kern
 
 - **Catalogue** : `COURSE_CATALOG.generated.md` — inventaire exhaustif de la série avec statuts READY/DEMO, kernels, GPU.
 - **README de série** : [GameTheory/README.md](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/README.md) — table des matières détaillée, structure pédagogique complète, side tracks Lean/Python.
-- **Séries connexes** : [Search](../Search/index.qmd) (BFS/A*/MCTS, certains algorithmes sont des cas particuliers de théorie des jeux), [Sudoku](../Sudoku/index.qmd) (CSP, vus comme jeux à un joueur), [SymbolicAI/Planning](../../SymbolicAI/Planning/index.qmd) (planification, théorie de la décision).
+- **Séries connexes** : [Search](../Search/index.qmd) (BFS/A*/MCTS, certains algorithmes sont des cas particuliers de théorie des jeux), [Sudoku](../Sudoku/index.qmd) (CSP, vus comme jeux à un joueur), [SymbolicAI/Planners](../SymbolicAI/Planners/README.md) (planification, théorie de la décision).
 
 ## Note sur le rendu Quarto (.NET + Lean)
 
@@ -123,10 +125,10 @@ Cette page Quarto rend les **notebooks Python natifs** (et leurs `_output.ipynb`
 
 Une fois la série GameTheory maîtrisée, les parcours conseillés sont :
 
-1. **Vers l'apprentissage par renforcement** : [RL](../RL/index.qmd) — multi-agent RL, équilibres appris, CFR approfondi
+1. **Vers l'apprentissage par renforcement** : [RL](../RL/README.md) — multi-agent RL, équilibres appris, CFR approfondi
 2. **Vers le choix social et la décision collective** : sous-série [SocialChoice](SocialChoice/README.md) — Arrow, Sen, Condorcet
-3. **Vers la formalisation** : [SymbolicAI/Lean](../../SymbolicAI/Lean/index.qmd) — preuves formelles en Lean 4
-4. **Vers l'optimisation et la planification** : [SymbolicAI/Planning](../../SymbolicAI/Planning/index.qmd) — planificateurs, OR-tools
+3. **Vers la formalisation** : [SymbolicAI/Lean](../SymbolicAI/Lean/README.md) — preuves formelles en Lean 4
+4. **Vers l'optimisation et la planification** : [SymbolicAI/Planners](../SymbolicAI/Planners/README.md) — planificateurs, OR-tools
 
 <!-- CATALOG-STATUS
 series: GameTheory

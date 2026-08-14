@@ -1,0 +1,35 @@
+name: testpaths-coverage-guard
+
+on:
+  pull_request:
+    paths:
+      - 'pytest.ini'
+      - 'scripts/check_testpaths_coverage.py'
+      - '.github/workflows/scripts-tests.yml'
+      - '.github/workflows/ml-tests.yml'
+      - '.github/workflows/secret-scan.yml'
+      - '.github/workflows/ict-tests.yml'
+      - '.github/workflows/testpaths-coverage-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    name: testpaths vs CI coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check testpaths coverage
+        # Garde de dérive (#10903) : tout testpath pytest.ini ni couvert par un
+        # workflow pytest ni déclaré `# CI-EXCLUDED: <path> — <raison>` fait
+        # échouer la PR. Le script vérifie aussi que chaque cible déclarée
+        # apparaît verbatim dans son workflow (dérive dans les deux sens).
+        run: python scripts/check_testpaths_coverage.py --verbose

@@ -92,15 +92,21 @@ jobs:
   #     enumerate 19 native_decide allow-axiom names -- grothendieck has none.
   #   - fail-on-sorry: true -- the lake is fully proven (sorry-baseline 0
   #     above); a transitive sorryAx must hard-fail, not be tolerated.
-  #   - target-modules: the COMPLETE module set (all 34 own Grothendieck.*
-  #     modules), so the gate is not "vert hors-cible" (cf #8782): no module
-  #     compiles out of the gate's view.
+  #   - target-modules: "*" -- the module list is derived at runtime from the
+  #     lake contents (issue #10889), so a hand-maintained list can never
+  #     drift out of the gate's view again ("vert hors-cible", cf #8782).
+  # NOTE: `uses: ./...` (not `@main`) -- this PR is what gives lean-axiom.yml
+  # the `"*"` sentinel; resolving the callee from `main` would run the old
+  # script, which treats `"*"` as a literal module, enumerates 0 declarations
+  # and hard-fails lake non-vacuity. `./` resolves the callee per-PR (same
+  # pattern as lean-knot.yml). Keep `./` until #10889 lands, then either form
+  # is correct.
   proof-integrity:
-    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    uses: ./.github/workflows/lean-axiom.yml
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean
       display-name: grothendieck_lean
-      target-modules: "Grothendieck,Grothendieck.Adjunction,Grothendieck.Calibration,Grothendieck.CanonicalProps,Grothendieck.CategoryAndSites,Grothendieck.Comma,Grothendieck.Conservative,Grothendieck.ConstantSheaf,Grothendieck.Construction,Grothendieck.CoverageGen,Grothendieck.DenseTopology,Grothendieck.DirectImage,Grothendieck.Equivalences,Grothendieck.KanExtensions,Grothendieck.LeftExact,Grothendieck.Limits,Grothendieck.MathlibMap,Grothendieck.MayerVietorisSquare,Grothendieck.Monads,Grothendieck.MonoidalCategories,Grothendieck.SchemesTour,Grothendieck.SheafBasics,Grothendieck.SheafCohomology.Basic,Grothendieck.SheafCohomology.Cech,Grothendieck.SheafCohomology.MayerVietoris,Grothendieck.SheafHom,Grothendieck.Sheafification,Grothendieck.SieveGenerate,Grothendieck.SieveLattice,Grothendieck.SieveOps,Grothendieck.SitePoints,Grothendieck.Subcanonical,Grothendieck.YonedaLemma,Grothendieck.ZariskiSite"
+      target-modules: "*"
       allow-axioms: ""
       fail-on-sorry: true
 

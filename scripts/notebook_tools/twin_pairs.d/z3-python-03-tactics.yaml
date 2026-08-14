@@ -22,6 +22,12 @@
       csharp_sha: fa950aa71cb7c7fd8561173309bd51dbbf21d425
       content_python_sha: 3f590d25ba1cfb7125b7cc0409c0510c4b5a4d6cbe0a85645068c27977c5d095
       content_csharp_sha: 5dca15c6a9ca7b904bdd874191b6652baf1d64eb86754c3b5a7ddbf6fddd0856
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 596992096613fb08367a5e41fae56b1b01254572
+      csharp_sha: e6afd62be0a2544fd62cc7f9013fa370adc0cafd
+      content_python_sha: 3f590d25ba1cfb7125b7cc0409c0510c4b5a4d6cbe0a85645068c27977c5d095
+      content_csharp_sha: 512dc4d1c58e544e05133833e533d538747046f0e2f0f66ca49d3afaa119badf
   known_differences:
     - "Python : pyz3 (Tactic('simplify'), Then(), With()). C# : Microsoft.Z3 .NET (Tactic(ctx, ...))."
     - "Concept demontre (simplify elimine une redondance, ctx-solver-simplify la garde) verifie firsthand cote Python (NB-03 CLEAN)."

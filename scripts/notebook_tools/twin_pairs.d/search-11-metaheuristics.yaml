@@ -31,6 +31,12 @@
       csharp_sha: ac366782eb567725eea37d1aa9fe0264a3ab1541
       content_python_sha: ce983432ad9240c487af0a22fd4cae25fa7e6ff8a3e69af5316a0bebdc35e5a6
       content_csharp_sha: dce689a469dd323686332ca9508192b5f6f410f7511d562dc87bbead6c45dcc8
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 5e3885f50518d04ad15578d1d2ae3640c6044f4d
+      csharp_sha: ac366782eb567725eea37d1aa9fe0264a3ab1541
+      content_python_sha: 4ce8da48465e96479c46f68575e93ba9f43ab08895faced3039afb2fb15d49bc
+      content_csharp_sha: dce689a469dd323686332ca9508192b5f6f410f7511d562dc87bbead6c45dcc8
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Python = MEALPy (librairie metaheuristique 40+ algos, MIT) -- vrai SOTA ecosysteme Python. C# = GeneticSharp (librairie .NET GA/evolutionnaire reference, LGPL) post Tranche 2 -- vrai SOTA ecosysteme .NET. Les DEUX cotes branchent une librairie native de leur ecosysteme (mealpy + geneticsharp). Tranche 1 C# from-scratch (PSO/SA/GA) preservee + Tranche 2 ajoute GeneticSharp sur 4 fonctions benchmark -- lib-vs-lib cote-a-cote avec from-scratch. Asymetrie de couverture (ABC + BRO cote Python, GA + TSP cote C#) asumee native-both parity_level. Verdict SOTA-OK.

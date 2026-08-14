@@ -14,23 +14,28 @@
   </ItemGroup>
   <ItemGroup>
     <!--
-      Tweety-7a shade aggregator built from Java 8 source-recompiled classes.
-      Pipeline: commons 1.19 sources patchees (isBlank/strip/Path.of : Java 8) then
-      javac release 8 produces commons bytecode major 52; inject into the
-      extensional shade jar; IKVM 8.14 compiles to a single assembly
-      org.tweetyproject.tweety-7a containing ALL bytecode-major-52 types from
-      math 1.19 + math-1.27 + graphs 1.21 + dung 1.21 + adf 1.21 + social 1.21
-      + weighted 1.26.
+      Tweety-7a shade aggregator built from Java 8 source-recompiled classes
+      (bytecode major 52 — the Maven Central jars are Java 15+, which IKVM 8.x
+      silently drops). Recipe: dotnet-build/rebuild-7a.sh (reproducible).
+      Module chain source-recompiled with javac targeting Java 8:
+        commons 1.21 (GitHub tarball, Parser.java downgraded to Java 8)
+        + math 1.27 (has algebra/Semiring natively) + graphs 1.21
+        + logics.commons 1.21 + logics.pl 1.21 (dung 1.21 imports them)
+        + dung 1.21 + adf 1.21 + social 1.21 + weighted 1.26.
+      IKVM 8.14 compiles the shade to the single assembly
+      org.tweetyproject.tweety-7a.
 
-      Setaf 1.20 / bipolar 1.19 / weighted-1.25 transitive dependencies use Java 9+
-      features (lambdas Kotlin) that IKVM 8.x cannot compile (IKVM0101 silently drops).
-      Setaf 1.20, eaf 1.21, extended 1.27, bipolar 1.19 are therefore excluded; those
-      frameworks are NOT in the resulting DLL. The tranche 1 (from-scratch) covers the
-      pedagogical need for those frameworks.
+      Setaf 1.20 / eaf 1.21 / extended 1.27 / bipolar 1.19 are EXCLUDED: their
+      sources use Java 9+ Kotlin-style lambdas IKVM 8.x cannot compile (IKVM0101
+      silently drops); those frameworks are NOT in the resulting DLL. The
+      tranche 1 (from-scratch, BCL) of the Tweety-7a notebook covers their
+      pedagogical need.
 
-      Build: see rebuild-7a.sh recipe at MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md.
-      Output: ..\libs\org.tweetyproject.tweety-7a-java8-shade.jar (gitignored, rebuildable),
-      then bin\Release\net8.0\org.tweetyproject.tweety-7a.dll
+      Build: bash dotnet-build/rebuild-7a.sh  (jars -> ../libs/ shade jar)
+      then:  dotnet build dotnet-build/build-Tweety7aShade.csproj -c Release
+      Output: ..\libs\org.tweetyproject.tweety-7a-java8-shade.jar (gitignored,
+      rebuildable), then bin\Release\net8.0\org.tweetyproject.tweety-7a.dll
+      (copied to the Tweety root and versioned).
     -->
     <IkvmReference Include="..\libs\org.tweetyproject.tweety-7a-java8-shade.jar">
       <AssemblyName>org.tweetyproject.tweety-7a</AssemblyName>

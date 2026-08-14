@@ -667,7 +667,12 @@ de marge devient alors satisfiable pour tout `n` (pas seulement `n ≤ 2`) —
 voir le temoin `box_assez_grandN_single_cell_3` dans
 `HashlifeCorrectness`, le dual honnete du plafond insat
 `boxAssezGrand_nonempty_le_two`. N1 garde `evolveHashlifeFast` inchange ;
-N2 trame ce cadre a travers la boucle sans re-cadrer. -/
+N2 trame ce cadre a travers la boucle en re-cadrant a chaque iteration —
+l'appel recursif `evolveHashlifeFastAuxN fuel (n - js) g'` re-entre dans
+`gridToMacroCellWithOffsetN (n - js) g'` sur la grille sautee (Hashlife).
+Contrepartie tranchee en (b2) : sous ce rembourrage, le garde de saut est
+structurellement mort (`gridToMacroCellWithOffsetN_level_gt_n`) — le cote
+`bbox + 2 * max 2 n` force `2 ^ lvl > n = js`. -/
 
 /-- Comme `gridFrame` mais avec un rembourrage `max 2 n` (au lieu du `2`
     fixe) de chaque cote, donc la marge du cone de lumiere est au moins
@@ -788,6 +793,46 @@ theorem gridToMacroCellWithOffsetN_le_two_eq (n : Nat) (g : Grid) (hn : n ≤ 2)
     gridToMacroCellWithOffsetN n g = gridToMacroCellWithOffset g := by
   unfold gridToMacroCellWithOffsetN gridToMacroCellWithOffset
   rw [gridFrameN_le_two_eq_gridFrame n g hn]
+
+/-- **Garde N3 mort (tranche (b2), #6724).** Pour une grille non vide, le
+    niveau du cadre conscient de n domine toujours le horizon de saut :
+    `2 ^ lvl ≥ side ≥ height = (rMax - rMin + 1 + 2 * max 2 n).toNat ≥ 2 * n + 1 > n`,
+    donc le garde de saut `lvl ≥ 2 ∧ n ≥ jumpSize lvl` (`= 2 ^ lvl`) de
+    `evolveHashlifeFastAuxN` est structurellement insatisfait : le
+    rembourrage `max 2 n`, concu pour couvrir le cone de lumiere des `n`
+    generations restantes, gonfle le cadre au-dela du horizon du saut
+    qu'il conditionne. La branche de saut N3 ne peut jamais tirer ; la
+    preservation de `jumpCaptured` a travers le re-cadrage N est donc
+    VACUE tant que ce garde est mort — voir `evolveHashlifeFastAuxN_eq_evolve`
+    (Hashlife) pour la consequence comportementale et la docstring de
+    section de `Hashlife.lean` pour la sortie identifiee (decorrelation j
+    de Gosper, `jumpReach`/`marginToResultWindow` dans `JumpCapture`). -/
+theorem gridToMacroCellWithOffsetN_level_gt_n (n : Nat) (g : Grid) (hg : g ≠ []) :
+    n < 2 ^ (gridToMacroCellWithOffsetN n g).2.level := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    simp only [gridToMacroCellWithOffsetN]
+    rw [MacroCell.level_buildFromGrid]
+    simp only [gridFrameN]
+    set rMin := gridRowMin (p₀ :: ps)
+    set rMax := gridRowMax (p₀ :: ps)
+    set cMin := gridColMin (p₀ :: ps)
+    set cMax := gridColMax (p₀ :: ps)
+    set pad := max 2 n
+    set height := (rMax - rMin + 1 + 2 * pad).toNat
+    set width := (cMax - cMin + 1 + 2 * pad).toNat
+    set side := max height width
+    set lvl := MacroCell.ceilLog2 side
+    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have hH : 1 + 2 * max 2 n ≤ height := by
+      have hnn : 0 ≤ rMax - rMin + 1 + 2 * pad := by omega
+      simp only [height]
+      omega
+    omega
 
 /-- Convertit un `Grid` en `MacroCell`, en jetant le decalage (par defaut
     `(0, 0)` pour l'aller-retour). Pour les besoins d'aller-retour, preferer

@@ -664,33 +664,45 @@ def test_class5_decinfer4_trajet_routed_to_distribution() -> None:
 
 
 def test_class5_does_not_break_sudoku13_control() -> None:
-    """Le controle positif Sudoku-13 reste detecte apres le fix Classe 5.
+    """Les wallclock STRICTS Sudoku-13 restent detectes apres le fix Classe 5.
 
     Falsifiable : les wallclock STRICTS (TIMEOUT > 60 s, duree execution
-    2.4 s) ne contiennent PAS de discriminant bayesien (composantes,
-    observations, trajets, ecart-type) et restent classes wallclock.
+    2.4 s, temps de banc d'essai en ms) ne contiennent PAS de discriminant
+    bayesien (composantes, observations, trajets, ecart-type) et restent
+    classes wallclock.
 
-    Verifie directement sur le notebook reel (path canonique cote owner).
-    Si le path n'existe pas (autre machine que po-2025), skip avec un
-    message clair -- le test est skip-able par design (CONTEXT-DEPENDENT).
+    Controle synthetique sur lignes verbatim de la cellule 43 de
+    Sudoku-13-SymbolicAutomata-Csharp (banc d'essai). L'ancienne version
+    scannait le notebook reel (attendu >= 25 wallclock) ; la vague #9434
+    draine la serie Sudoku en continu (26 -> 0 sur ce notebook), un
+    controle sur fichier reel re-casserait a chaque drain. Le sens du test
+    (le fix Classe 5 ne recategorise pas les wallclock STRICTS non-bayesiens)
+    est preserve tel quel.
     """
-    nb_path = (
-        Path(__file__).resolve().parent.parent.parent.parent
-        / "MyIA.AI.Notebooks"
-        / "Sudoku"
-        / "Sudoku-13-SymbolicAutomata-Csharp.ipynb"
-    )
-    if not nb_path.exists():
-        import pytest
-        pytest.skip(f"Notebook reel non trouve cote worker : {nb_path}")
-    findings = _scan_notebook(nb_path)
-    wc = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
-    # Falsifiable : wallclock count = 28 (avant et apres fix Classe 5).
-    # Tolerance +-0 : le fix ne doit pas modifier ce compte.
-    assert len(wc) >= 25, (
-        f"Controle positif Sudoku-13 degrade : wallclock={len(wc)} "
-        f"(attendu >=25). Le fix Classe 5 a modifie un cas non-cible."
-    )
+    # Lignes verbatim c43 (pre-drain) : aucun discriminant bayesien.
+    strict_cases = [
+        (
+            "| Naif recursif | **C#** | 1,1 ms | **0,1 ms** | 2,4 ms |",
+            "2,4 ms",
+        ),
+        (
+            "| Naif recursif | Python | 16,3 ms | 1,7 ms | 43,8 ms |",
+            "43,8 ms",
+        ),
+        (
+            "| P1 Z3 `Distinct` (entiers) | z3-py | 23,3 ms | **25,2 s** | 74,4 ms |",
+            "25,2 s",
+        ),
+        (
+            "**unknown** (> 60 s) : la resolution ne se termine pas",
+            "60 s",
+        ),
+    ]
+    for line, snippet in strict_cases:
+        assert _categorize(line, snippet) == CATEGORY_WALLCLOCK, (
+            f"wallclock strict recategorise par le fix Classe 5 : "
+            f"{_categorize(line, snippet)} pour {line!r}"
+        )
 
 
 def test_class5_pymc2_real_notebook_silenced() -> None:

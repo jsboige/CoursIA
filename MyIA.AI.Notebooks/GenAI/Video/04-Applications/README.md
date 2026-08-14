@@ -10,7 +10,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 5 |
+| Notebooks | 6 |
 | Kernel | Python 3 |
 | Durée estimée | ~6-8h |
 | GPU requis | 0-24GB |
@@ -24,6 +24,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 | 3 | [04-3-Sora-API-Cloud-Video](04-3-Sora-API-Cloud-Video.ipynb) | Sora API cloud | OpenAI API | 0 |
 | 4 | [04-4-Production-Video-Pipeline](04-4-Production-Video-Pipeline.ipynb) | Pipeline production | Mixed | ~18GB |
 | 5 | [04-5-MiniMax-H3-Cloud-Video](04-5-MiniMax-H3-Cloud-Video.ipynb) | Hailuo API, HD/2K + audio natif | MiniMax API | 0 |
+| 6 | [04-6-MiniMax-video-01-v1-Cloud-Video](04-6-MiniMax-video-01-v1-Cloud-Video.ipynb) | Hailuo API v1, video muette plan-couvert UE, key-gated + sonde non-brûlante | MiniMax API | 0 |
 
 **[04-1](04-1-Educational-Video-Generation.ipynb) — Contenu éducatif.** Le notebook génère automatiquement une vidéo pédagogique à partir d'un script textuel : le panorama de frames ci-dessous atteste que la chaîne (script → prompts → frames → vidéo) produit un rendu visuellement cohérent :
 
@@ -71,7 +72,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 ```bash
 # Dans GenAI/.env
 OPENAI_API_KEY=sk-...
-MINIMAX_GENAI_API_KEY=...   # 04-5 : service cloud Hailuo (5 générations HD/jour)
+MINIMAX_GENAI_API_KEY=...   # 04-5 (H3/v2 HD/2K + audio) et 04-6 (video-01/v1 muet) : même clé, services cloud Hailuo (5 générations HD/jour)
 ```
 
 ### Docker Services (optionnel)
@@ -113,6 +114,11 @@ pip install -r requirements-video.txt
 - **Objectif** : Vidéo HD/2K + audio natif via le service cloud Hailuo
 - **Technologies** : Hailuo Video API + loader idempotent + sidecar `task_id`
 - **Applications** : Contenu HD audio-synchronisé inaccessible en local UE
+
+### 04-6 MiniMax video-01 v1 Cloud Video
+- **Objectif** : Vidéo muette via le service cloud Hailuo `/v1/video_generation`, plan-couvert UE
+- **Technologies** : MiniMax Hailuo API v1 + `video-01` + sonde POST non-brûlante + 3 exercices (predict_verdict, daily_debit_count, build_cloud_video_comparison_table)
+- **Applications** : Quand l'audio natif n'est pas requis (storyboards, prévisualisation, clips muets pédagogiques). Alternative immédiate à 04-5 quand la série H3 est bloquée 2013 TokenPlan.
 
 ## Workflows
 

@@ -516,7 +516,7 @@ class TestMavenUrlRegexNotPathBypass:
         * STILL rougir on the real secret (the path-bypass is gone)
 
         Two assertions coupled, in the same way as
-        ``TestPathsAllowlistBypass.test_real_secret_under_path_allowlist_is_invisible``.
+        ``TestPathsAllowlistBypass.test_secret_under_former_allowlisted_test_path_is_now_flagged``.
         Skip if the gitleaks binary is unavailable (CI runs gitleaks-action)."""
         gitleaks = _gitleaks_binary_maven()
         if gitleaks is None:
@@ -669,20 +669,22 @@ class TestPathsAllowlistBypass:
             f"(see check_hooks_parity.py for the drift check), then re-run."
         )
 
-    def test_real_secret_under_path_allowlist_is_invisible(self, gitleaks_bin, tmp_path):
-        """The bypass HOLDS: a real-shaped secret under
-        ``scripts/secrets/tests/test_gitleaks_*.py`` is NOT flagged.
+    def test_secret_under_former_allowlisted_test_path_is_now_flagged(self, gitleaks_bin, tmp_path):
+        """#10595 regression: the ``paths`` bypass is GONE — a real-shaped
+        secret under ``scripts/secrets/tests/test_gitleaks_*.py`` IS flagged.
 
-        This is the **mirrored assertion** that gives the documented
-        tradeoff a runnable name. Removing the ``paths`` entry would break
-        this assertion (the file becomes detectable), forcing the maintainer
-        to consciously reintroduce the bypass or fix the underlying noise
-        from the synthetic fixtures.
+        This is the **mirrored assertion** of the former canary (which held
+        that the bypass kept such files invisible). #10595 removed the
+        ``scripts/secrets/tests/test_gitleaks_.*\\.py$`` paths entry: the
+        directory is scanned again, and the synthetic qwen fixtures are
+        suppressed by stopwords instead. This test was RED on main (the
+        bypass held) and must be GREEN here.
         """
-        # Build the allowlisted tree + a control tree in tmp_path, both with
-        # byte-identical content for the secret. The relative paths inside
-        # tmp_path mirror the production structure (the `paths` entry is a
-        # regex against the file path RELATIVE TO --source, not absolute).
+        # Build the tree that matches the FORMER paths allowlist + a control
+        # tree in tmp_path, both with byte-identical content for the secret.
+        # The relative paths inside tmp_path mirror the production structure
+        # (the former `paths` entry was a regex against the file path
+        # RELATIVE TO --source, not absolute).
         src_dir = tmp_path / "scripts" / "secrets" / "tests"
         src_dir.mkdir(parents=True)
         allowed_file = src_dir / "test_gitleaks_c1331x107_probe.py"
@@ -698,9 +700,9 @@ class TestPathsAllowlistBypass:
         allowed_file.write_text(secret_line, encoding="utf-8")
         control_file.write_text(secret_line, encoding="utf-8")
 
-        # Invoke gitleaks on the allowlisted tree. We expect 1 finding (the
-        # .txt control file) and 0 findings on the .py file — the structural
-        # bypass.
+        # Invoke gitleaks on the tree. We expect 2 findings (the .txt control
+        # file AND the .py probe file) — the path bypass no longer shields
+        # the .py file.
         proc = subprocess.run(
             [
                 gitleaks_bin, "detect",
@@ -743,19 +745,18 @@ class TestPathsAllowlistBypass:
             "bypass until the detector is restored."
         )
 
-        # Bypass assertion: the .py file MUST NOT be flagged (the documented
-        # structural tradeoff). If it IS flagged, the `paths` allowlist entry
-        # was removed — a maintainer must consciously reintroduce the bypass
-        # (or fix the noise problem that motivated it).
+        # Regression assertion (#10595): the .py probe file MUST now be
+        # flagged — the former `paths` entry that skipped it before rule
+        # evaluation is removed, so the directory is scanned again. If it is
+        # NOT flagged, the bypass crept back (or a path entry was re-added) —
+        # a real secret dropped under scripts/secrets/tests/ would be
+        # invisible again.
         allowed_flagged = any("probe.py" in (f.get("File") or "") for f in flagged)
-        assert not allowed_flagged, (
-            "BYPASS ASSERTION FAILED: a real-shaped secret under "
-            "scripts/secrets/tests/test_gitleaks_*.py IS flagged by gitleaks. "
-            "The documented structural tradeoff (#10595) is no longer in "
-            "effect — either the `paths` allowlist entry was removed (and the "
-            "synthetic qwen-api-token fixtures now produce 14+ noise findings "
-            "per CI run), or the bypass is being silently widened. Restore "
-            "the allowlist entry deliberately, or fix the noise problem; do "
-            "not let the test silently regress to the safe-looking green."
-
+        assert allowed_flagged, (
+            "REGRESSION ASSERTION FAILED: a real-shaped secret under "
+            "scripts/secrets/tests/test_gitleaks_*.py is NOT flagged by "
+            "gitleaks. #10595 removed the `paths` content bypass for this "
+            "directory — the file must be scanned again. Either a `paths` "
+            "entry was re-added, or the config no longer reaches the file. "
+            "Restore the scan; do not let the bypass regress silently."
         )

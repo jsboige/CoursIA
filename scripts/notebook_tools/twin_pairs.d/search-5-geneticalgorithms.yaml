@@ -32,6 +32,12 @@
       csharp_sha: 170b3b0e01df913cfdaad144abf74b1dfc1d66d1
       content_python_sha: 44108fd716bcd2a746f0e086d284965a4c7646193c9affb9761b98c0b8c73b2f
       content_csharp_sha: c4a27b485a4907417a317fc4ea0f2f63d288b5e2f7e8ff0a4b4fd0cb3840cd3c
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: df5622e442621da5383052c2e617995fa4ab8304
+      csharp_sha: 9c6f6e3484a3ffdb41d97a2a136fe622a905ea77
+      content_python_sha: 0f6e3ace78ae686d93165943dc1d1ee46686a76c5917c9451a5bee0fcf052ac3
+      content_csharp_sha: 8b43b3bacd9c22b67365b878b3bbb6c7d20db0d2dbfbd052f3b694996afd1dfe
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle pedagogique commun : algorithmes genetiques (AG) — composants d'un AG (population, fonction de fitness, selection (roulette/tournoi), crossover, mutation), schemas d'evolution, probleme OneMax. Les deux twins implementent le cycle evolutionnaire from-scratch (population initiale → evaluation fitness → selection → croisement → mutation → nouvelle generation)."

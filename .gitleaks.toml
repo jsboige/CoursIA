@@ -63,9 +63,11 @@ description = "Qwen / ComfyUI-Login bearer token (env-var form, #10265)"
 regex = '''(?i)(?:qwen_api_token|qwen_api_user_token)\s*[:=]\s*['"]?([A-Za-z0-9!@#\$%^&*()\-_=+.]{20,})['"]?'''
 # entropy = 0 disables the Shannon-entropy filter that would otherwise drop
 # low-entropy pedagogical placeholders ("abcd1234...") AND many real secrets
-# whose generated alphabet compresses well. The path-allowlist (``.env.example``,
-# ``.env.template``, ``docs/suivis/.*\.md$``) handles the FP surface; the
-# stopwords handle the LEAKED-PENDING-ROTATION sha256[:12] redaction markers.
+# whose generated alphabet compresses well. The stopwords handle both the
+# LEAKED-PENDING-ROTATION sha256[:12] redaction markers and the synthetic
+# test-fixture values (see the stopwords list at the bottom); the path
+# allowlist is limited to whole-file exclusions (``.env.example``,
+# ``.env.template``) -- NOT used to suppress finding shapes (see #10595).
 entropy = 0
 keywords = [
     "qwen_api_token",
@@ -75,37 +77,18 @@ keywords = [
 
 [allowlist]
 description = "Global allowlist for known false positives"
+# WARNING -- `[allowlist].paths` is a CONTENT BYPASS, not a scope marker
+# (#10595, measured gitleaks 8.24.3): a file matching `paths` is skipped by
+# gitleaks BEFORE [[rules]] evaluation -- it is not even read. Keep path
+# entries ONLY where excluding the whole file is genuinely intended (template
+# files below). Never use `paths` to suppress a finding SHAPE: that belongs in
+# `regexes`/`stopwords`, which leave the detector armed on the same file.
+# (The previous `docs/suivis/.*\.md$`, `\.gitleaks\.toml$` and
+# `scripts/secrets/tests/test_gitleaks_.*\.py$` entries were removed after
+# verifying the content they shielded is fully covered by stopwords below.)
 paths = [
-    '''\.env\.example$''',
-    '''\.env\.template$''',
-    '''docs/suivis/.*\.md$''',  # Historical docs with rotated/stale credentials
-    '''\.gitleaks\.toml$''',
-    # --- #10265 synthetic test fixtures (POSITIVE controls for qwen-api-token rule) ---
-    # The custom `qwen-api-token` rule MUST rougir on synthetic tokens to prove
-    # the gate works (c.10139-L4 ★★: gate that can't rougir isn't a gate).
-    # These fixtures are explicitly designed to LOOK like real 32-char
-    # generated tokens (entropy >= 4.8, full alphabet coverage) so the test
-    # validates the production regex -- not a model of it.
-    #
-    # SCOPE TRUTH (#10595, measured firsthand with gitleaks 8.24.3 pinned):
-    # `[allowlist].paths` is a CONTENT BYPASS -- gitleaks reads it BEFORE
-    # evaluating `[[rules]]`, so a file matched here is **not scanned at all**.
-    # A REAL secret accidentally committed under `scripts/secrets/tests/`
-    # would NOT rougir, because gitleaks evaluates `paths` BEFORE `[[rules]]`
-    # (the order claimed in the previous version of this comment was inverted).
-    # Two files byte-identical except for their path: the file under this
-    # allowlist stays silent, the control outside is FLAGGED. See #10595.
-    #
-    # We keep this paths entry because the tests themselves contain synthetic
-    # QWEN_API_TOKEN fixtures (c.10265 verification, NOT live credentials) and
-    # scanning them would produce 14+ noise findings per CI run, defeating
-    # the signal-to-noise ratio. The structural tradeoff is ASSUMED, not
-    # disguised: **this directory is not scanned**. Any future live secret in
-    # a `test_gitleaks_*.py` file would be invisible to CI -- the price of
-    # having hermetic positive controls. Documented in #10595 + the new
-    # `test_real_secret_under_path_allowlist_is_invisible` control (the
-    # mirror of this property: it asserts the bypass and gives it a name).
-    '''scripts/secrets/tests/test_gitleaks_.*\.py$''',
+    '''\.env\.example$''',   # Template: this file is NOT scanned at all (deliberate)
+    '''\.env\.template$''',  # Template: this file is NOT scanned at all (deliberate)
     # The previous paths entry `MyIA\.AI\.Notebooks/SymbolicAI/Tweety/dotnet-build/.*\.sh$`
     # (added by PR #10544, 2026-08-12) was a content bypass: it excluded 3 IKVM shade
     # build recipe scripts from the scan entirely. The driving FP was
@@ -256,4 +239,17 @@ stopwords = [
     # credential in the same test file still fails the scan.
     "AbCdEf1234567890",       # common placeholder segment across sk-/ghp_-shaped test fixtures
     "AKIAIOSFODNN7EXAMPLE",   # AWS documentation example key (canonical placeholder, not rotatable)
+    # --- #10595 synthetic qwen fixtures (scripts/secrets/tests/test_gitleaks_qwen_rule.py) ---
+    # The path entry `scripts/secrets/tests/test_gitleaks_.*\.py$` used to make
+    # gitleaks skip these files ENTIRELY -- a content bypass that also silenced
+    # a real secret accidentally dropped into the same directory (#10595). The
+    # path entry is removed; the four synthetic fixture VALUES the custom
+    # `qwen-api-token` rule flags in test_gitleaks_qwen_rule.py are instead
+    # suppressed here, as stopwords (substring on the finding) -- the file is
+    # now scanned, and any token OTHER than these exact literals still rougir.
+    # Each value re-read at its source in the test file before listing:
+    "xK9mZ3vL7nQ2pR8tY4wU6jH1bN5cF0eG",              # canonical QWEN_API_TOKEN fixture (L158/L216)
+    "aB3xZ9kL7mN2pQ8vR5tY4wU6jH1nC0e",               # legacy QWEN_API_USER_TOKEN fixture (L171)
+    "2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij",              # redacted alphabet sample reused as fixture (L200)
+    "NOT_A_REAL_TOKEN_BUT_LONG_ENOUGH_TO_MATCH",     # explicit placeholder fixture (L269)
 ]
