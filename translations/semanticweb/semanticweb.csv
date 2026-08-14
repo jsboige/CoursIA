@@ -1685,13 +1685,13 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,summary-titl
 - [SPARQL 1.2 Query](https://www.w3.org/TR/sparql12-query/) - Extension SPARQL-Star
 - [Olaf Hartig - RDF* and SPARQL*](https://arxiv.org/abs/1406.3399) - Article fondateur
 - [rdflib documentation](https://rdflib.readthedocs.io/) - Guide rdflib",,,,,,,,4bde3708970b8c53,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,footer-nav,markdown,fr,c2d70f0a6235a7b7,"---
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,footer-nav,markdown,fr,bbe402684d88fd03,"---
 
 Le notebook suivant explore les graphes de connaissances (Knowledge Graphs), en combinant les technologies RDF, SPARQL et les patterns vus dans cette serie.
 
 ---
 
-**Navigation** : [<< 9-JSONLD](SW-9-Python-JSONLD.ipynb) | [Index](README.md) | [11-KnowledgeGraphs >>](SW-11-Python-KnowledgeGraphs.ipynb)",,,,,,,,c2d70f0a6235a7b7,,,,,,,
+**Navigation** : [<< 10-JSONLD](SW-9-Python-JSONLD.ipynb) | [Index](README.md) | [12-KnowledgeGraphs >>](SW-11-Python-KnowledgeGraphs.ipynb)",,,,,,,,bbe402684d88fd03,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-Python-RDFStar.ipynb,exemples-guides-sosolalt,markdown,fr,929c7b30cd81bee1,"---
 
 ## Exemples guides (solutions proposees par @Sosolalt)
@@ -3165,7 +3165,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,owlr
         print(f""  {ind.name} (type: {', '.join(types)})"")
 else:
     print(""OWLReady2 non disponible. Section ignoree."")",,,,,,,,0b910cbf705a1918,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,owlready-explore-interp,markdown,fr,55f74c0b4c983e2e,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,owlready-explore-interp,markdown,fr,0abc67af437c592f,"### Interpretation
 
 L'ontologie universitaire contient une hiérarchie de classes bien structuree :
 
@@ -3183,10 +3183,10 @@ Thing
 |---------|--------|----------|
 | Classes | 6 | Person, Student, GraduateStudent, Professor, Course, Department |
 | Object Properties | 4 | enrolledIn, teaches, memberOf, advisedBy |
-| Datatype Properties | 2 | fullName, credits |
-| Instances | 6 | prof_dupont, course_ia, course_web_sem, dept_info, etud_martin, etud_bernard |
+| Datatype Properties | 2 | name, credits |
+| Instances | 0 | (aucune instance declaree dans ce fichier OWL d'exemple) |
 
-> **Point cle** : La contrainte `disjointWith` entre Professor et Student signifie qu'une personne ne peut pas etre les deux a la fois. Le raisonneur peut detecter des violations de cette contrainte.",,,,,,,,55f74c0b4c983e2e,,,,,,,
+> **Point cle** : La contrainte `disjointWith` entre Professor et Student signifie qu'une personne ne peut pas etre les deux a la fois. Le raisonneur peut detecter des violations de cette contrainte.",,,,,,,,0abc67af437c592f,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,section5-reasoner-intro,markdown,fr,1ca0593fd1b243af,"### 5.3 Raisonnement avec HermiT
 
 Le raisonneur **HermiT** est un raisonneur OWL 2 DL complet, integre a OWLReady2 (via Java). Il peut :
@@ -3251,7 +3251,7 @@ Un raisonneur OWL comme HermiT effectue plusieurs types d'inferences :
 3. En production, le raisonnement est souvent execute hors-ligne (materialisation) plutot qu'a la volee
 
 > **Note technique** : HermiT necessite une JVM (JRE Java). La variable d'environnement `JAVA_HOME` doit pointer vers une installation Java valide pour qu'owlready2 (`owlready2.JAVA_EXE`) puisse l'invoquer. En l'absence de Java, `sync_reasoner_pellet()` est une alternative (également basee sur Java).",,,,,,,,8f871047595bd0c9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,section6-title,markdown,fr,be69ab7a922dacd0,"---
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,section6-title,markdown,fr,5cd63e2a9e53bf73,"---
 
 ## 6. Qualite et validation d'un Knowledge Graph
 
@@ -3264,7 +3264,7 @@ Un Knowledge Graph n'a de valeur que si ses données sont **completes**, **coher
 | Completude | Y a-t-il des données manquantes ? | SPARQL OPTIONAL + COUNT |
 | Coherence | Les valeurs sont-elles valides ? | Contraintes de domaine/range |
 | Unicite | Y a-t-il des doublons ? | SPARQL COUNT + GROUP BY |
-| Conformite | Le KG respecte-t-il son schema ? | SHACL (cf. SW-8) |",,,,,,,,be69ab7a922dacd0,,,,,,,
+| Conformite | Le KG respecte-t-il son schema ? | SHACL (cf. SW-9) |",,,,,,,,5cd63e2a9e53bf73,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,section6-completeness-intro,markdown,fr,e50bc786ddd854ad,"### 6.1 Verification de completude
 
 Verifions si tous les films ont un realisateur, un genre et une note.",,,,,,,,e50bc786ddd854ad,,,,,,,
@@ -3306,7 +3306,7 @@ for row in results:
     print(f""{str(row.title):<30} {has_dir:<13} {has_rat:<8} {has_gen:<8} {nb_act}"")
 
 print(f""\nCompletude : {complete}/{total} films complets ({100*complete/total:.0f}%)"")",,,,,,,,f6ed1d96cdf98f7d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,quality-completeness-interp,markdown,fr,113625b9664e4185,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,quality-completeness-interp,markdown,fr,783147060910d73d,"### Interpretation
 
 La verification montre que notre KG est complet pour les proprietes verifiees. Tous les films ont :
 - Un realisateur
@@ -3319,7 +3319,7 @@ En production, les KG sont rarement complets a 100%. Les lacunes typiques inclue
 - Acteurs secondaires non renseignes
 - Genres multiples non captures (un film peut etre a la fois Action et Science-Fiction)
 
-> **Lien avec SW-8** : La validation SHACL permet de formaliser ces règles de completude sous forme de ""shapes"" (contraintes declaratives) plutot que de requêtes ad-hoc.",,,,,,,,113625b9664e4185,,,,,,,
+> **Lien avec SW-9** : La validation SHACL permet de formaliser ces règles de completude sous forme de ""shapes"" (contraintes declaratives) plutot que de requêtes ad-hoc.",,,,,,,,783147060910d73d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,section6-consistency-intro,markdown,fr,19db15bf4df452bc,"### 6.2 Verification de coherence
 
 Verifions que les valeurs sont dans des plages raisonnables (annees, notes) et que les genres sont valides.",,,,,,,,19db15bf4df452bc,,,,,,,
@@ -3407,7 +3407,7 @@ for check_name, passed, detail in consistency_checks:
 
 total_pass = sum(1 for _, p, _ in consistency_checks if p)
 print(f""\nResultat : {total_pass}/{len(consistency_checks)} verifications reussies"")",,,,,,,,092c3e764f9056d1,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,quality-consistency-interp,markdown,fr,e4743ae56a504cd2,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,quality-consistency-interp,markdown,fr,593ebaaf593a6108,"### Interpretation
 
 Le rapport de coherence verifie quatre aspects cles :
 
@@ -3419,11 +3419,11 @@ Le rapport de coherence verifie quatre aspects cles :
 | Genres définis | Genres sans label | `sh:minCount 1` sur rdfs:label |
 
 **Points cles** :
-1. Ces verifications ad-hoc sont utiles en développement, mais en production on prefere **SHACL** (cf. SW-8)
+1. Ces verifications ad-hoc sont utiles en développement, mais en production on prefere **SHACL** (cf. SW-9)
 2. La qualite d'un KG est un processus continu, pas un contrôle ponctuel
 3. Les pipelines de construction de KG incluent systematiquement une étape de validation
 
-> **Bonne pratique** : Définir les règles de qualite en SHACL des la conception du KG, et les executer a chaque mise a jour (CI/CD sémantique).",,,,,,,,e4743ae56a504cd2,,,,,,,
+> **Bonne pratique** : Définir les règles de qualite en SHACL des la conception du KG, et les executer a chaque mise a jour (CI/CD sémantique).",,,,,,,,593ebaaf593a6108,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,section6-stats-intro,markdown,fr,deefaf2b8436da1c,"### 6.3 Statistiques globales du Knowledge Graph
 
 Pour completer l'analyse, calculons des metriques structurelles du KG.",,,,,,,,deefaf2b8436da1c,,,,,,,
@@ -5780,13 +5780,13 @@ Ce notebook a couvert les concepts fondamentaux du GraphRAG, de l'extraction d'e
 - [LangChain GraphRAG](https://python.langchain.com/docs/use_cases/graph/) - Integration LangChain
 - [Neo4j GraphRAG](https://neo4j.com/developer-blog/graphrag/) - Approche Neo4j
 - [Leiden Algorithm (paper)](https://arxiv.org/abs/1810.08473) - Detection de communautes",,,,,,,,d43319735fd326fb,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,footer-nav,markdown,fr,fcf3cef48a0a7c27,"---
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,footer-nav,markdown,fr,e40028dd96da3b54,"---
 
 Ce notebook conclut la serie Semantic Web. Vous avez parcouru l'ensemble de la pile technologique du Web sémantique, depuis les bases RDF (SW-1) jusqu'a l'integration avec les grands modèles de langage (SW-13).
 
 ---
 
-**Navigation** : [<< 11-KnowledgeGraphs](SW-11-Python-KnowledgeGraphs.ipynb) | [Index](README.md)",,,,,,,,fcf3cef48a0a7c27,,,,,,,
+**Navigation** : [<< 12-KnowledgeGraphs](SW-11-Python-KnowledgeGraphs.ipynb) | [Index](README.md)",,,,,,,,e40028dd96da3b54,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,exemples-guides-sosolalt,markdown,fr,929c7b30cd81bee1,"---
 
 ## Exemples guides (solutions proposees par @Sosolalt)
@@ -6292,22 +6292,22 @@ custom_text = """"""
 # ... (adapter le code de la section 4)
 
 print(""Decommentez et completez le code ci-dessus."")",,,,,,,,062d1c7ea2aca6c2,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,exercise2-title,markdown,fr,65d30761faabe0dc,"### Exercice 5 : Construire un mini-KG thematique
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,exercise2-title,markdown,fr,08ec58a960fca86d,"### Exercice 5 : Construire un mini-KG thematique
 
-A partir du fichier `data/movies.csv` (utilise dans SW-11), construisez un KG et utilisez-le pour repondre a la question : ""Quels realisateurs ont dirige des acteurs en commun ?""
+A partir du fichier `data/movies.csv` (utilise dans SW-12), construisez un KG et utilisez-le pour repondre a la question : ""Quels realisateurs ont dirige des acteurs en commun ?""
 
 **Indices** :
-- Reutilisez le code de construction de KG de SW-11
+- Reutilisez le code de construction de KG de SW-12
 - Ecrivez une requête SPARQL pour trouver les chemins realisateur -> film -> acteur -> film -> realisateur
-- Formatez le résultat comme contexte pour un prompt LLM",,,,,,,,65d30761faabe0dc,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,exercise2,code,fr,b29e6a2ec649e03f,"# Exercice 5 : KG thematique a partir de movies.csv
+- Formatez le résultat comme contexte pour un prompt LLM",,,,,,,,08ec58a960fca86d,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,exercise2,code,fr,dfb64603ff4f803d,"# Exercice 5 : KG thematique a partir de movies.csv
 import pandas as pd
 
-# Exercice : chargez data/movies.csv puis construisez le graphe RDF en adaptant le code de SW-11
+# Exercice : chargez data/movies.csv puis construisez le graphe RDF en adaptant le code de SW-12
 # Puis : ecrivez une requete SPARQL trouvant les realisateurs partageant des acteurs
 # Enfin : formatez le resultat comme contexte GraphRAG et generez une reponse via safe_llm_call
 
-print(""Decommentez et completez le code ci-dessus."")",,,,,,,,b29e6a2ec649e03f,,,,,,,
+print(""Decommentez et completez le code ci-dessus."")",,,,,,,,dfb64603ff4f803d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb,exercise3-title,markdown,fr,c5fcccf0a3f6c5d4,"### Exercice 6 : Question multi-hop avec GraphRAG
 
 Implementez une version amelioree de `graphrag_query` qui supporte les questions multi-hop (profondeur > 1). Testez avec la question : ""Quel est le genre des films ou jouent les acteurs diriges par Nolan ?""
@@ -6577,15 +6577,15 @@ print(f""✓ Temps owlrl: {time_owlrl:.4f} secondes"")
 print(f""✓ Triples avant raisonnement: {len(g)}"")
 print(f""✓ Triples après raisonnement: {triples_owlrl}"")
 print(f""✓ Triples inférés: {inferred_owlrl}"")",,,,,,,,3d49ffea06cf0376,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,cb9c6fb4,markdown,fr,a5420fb15006d12a,"### Interpretation : Résultats du raisonnement owlrl
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,cb9c6fb4,markdown,fr,5455db15a25b228c,"### Interpretation : Résultats du raisonnement owlrl
 
-**Sortie obtenue** : Le raisonneur owlrl a traite l'ontologie en *runtime machine-dep* : ~60 ms, passant de 40 a 251 triples (211 triples inférés, ratio d'expansion 6.3x).
+**Sortie obtenue** : Le raisonneur owlrl a traite l'ontologie en 0.1479 secondes, passant de 40 a 251 triples (211 triples inférés, ratio d'expansion 6.3x).
 
 | Métrique | Valeur | Signification |
 |----------|--------|---------------|
-| Temps d'exécution | *runtime machine-dep* : ~60 ms | Performance Python interprete (wall-clock, varie par machine) |
+| Temps d'exécution | 0.1479s | Performance Python interprete |
 | Triples initiaux | 40 | Ontologie pizza manuelle |
-",,,,,,,,a5420fb15006d12a,,,,,,,
+",,,,,,,,5455db15a25b228c,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,trans-011,markdown,fr,ad5da8ce37289761,Affichage d'exemples de triplets inferences par owlrl pour illustrer les résultats du raisonnement OWL 2 RL.,,,,,,,,ad5da8ce37289761,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,17d2d96d,code,fr,f2b82eeb61cc6287,"# Exemples de triples inférés
 print(""--- Exemples de triples inférés par owlrl ---"")
@@ -6746,15 +6746,15 @@ else:
     time_hermit = None
     triples_hermit = None
     print(""⚠ Test HermiT skip (OWLReady2 non disponible)"")",,,,,,,,179ef1f3a2b5c923,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,3fe185b2,markdown,fr,47dc23671cad7dab,"### Interpretation : Résultats du raisonneur HermiT (OWL 2 DL)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,3fe185b2,markdown,fr,6874977525ffce09,"### Interpretation : Résultats du raisonneur HermiT (OWL 2 DL)
 
-**Sortie obtenue** : HermiT a termine le raisonnement en *runtime machine-dep* : ~1,4 s, produisant 43 triples au total.
+**Sortie obtenue** : HermiT a termine le raisonnement en 1.2873 secondes, produisant 43 triples au total.
 
 | Métrique | Valeur | Analyse |
 |----------|--------|---------|
-| Temps d'exécution | *runtime machine-dep* : ~1,4 s | Plus lent qu'owlrl (inclus cold start JVM) |
+| Temps d'exécution | 1.2873s | Plus lent qu'owlrl (inclus cold start JVM) |
 | Triples totaux | 43 | Structure OWL de base (vs 251 avec owlrl) |
-",,,,,,,,47dc23671cad7dab,,,,,,,
+",,,,,,,,6874977525ffce09,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,316bcd32,markdown,fr,b6fe7e200b4735e6,"### Analyse des résultats HermiT
 
 HermiT est l'un des raisonneurs OWL 2 DL les plus performants. Il utilise un algorithme de tableaux optimisé.
@@ -6809,25 +6809,25 @@ else:
     triples_reasonable = None
     inferred_reasonable = None
     print(""⚠ Test reasonable skip (non disponible)"")",,,,,,,,f2a9bdbcaae5acd1,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,e2f3b3a2,markdown,fr,a85bc2192050e325,"### Interpretation : Résultats du raisonneur reasonable
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,e2f3b3a2,markdown,fr,18777db0fe964127,"### Interpretation : Résultats du raisonneur reasonable
 
-**Sortie obtenue** : Le raisonneur reasonable a infere **42 triples** en *runtime machine-dep* : ~1,5 ms (40 -> 82 triples, ratio d'expansion ~2x).
+**Sortie obtenue** : Le raisonneur reasonable a infere **42 triples** en **0.0092 secondes** (40 -> 82 triples, ratio d'expansion 2.1x).
 
 | Métrique | Valeur | Comparaison |
 |----------|--------|-------------|
-| Temps d'exécution | *runtime machine-dep* : ~1,5 ms | ~40x plus rapide qu'owlrl (*runtime machine-dep* : ~60 ms) |
+| Temps d'exécution | 0.0092s | ~16x plus rapide qu'owlrl (0.1479s) |
 | Triples inférés | 42 | ~5x moins qu'owlrl (211) |
-| Ratio d'expansion | ~2x | Sémantique substantielle |
+| Ratio d'expansion | 2.1x | Sémantique substantielle |
 | Langage | Rust compilé | Performance native |
 
 **Points cles** :
-1. **Vitesse et complétude combinées** : reasonable (Rust compilé) reste le raisonneur le plus rapide **tout en inférant 42 triples** -- soit l'essentiel des inférences utiles d'owlrl, pour ~40x moins de temps
+1. **Vitesse et complétude combinées** : reasonable (Rust compilé) reste le raisonneur le plus rapide **tout en inférant 42 triples** -- soit l'essentiel des inférences utiles d'owlrl, pour ~16x moins de temps
 2. **Inférences proches d'owlrl** : 42 triples inférés vs 211 pour owlrl -- reasonable couvre la majorité des règles OWL 2 RL utiles en pratique, l'écart porte surtout sur les inférences de type/sous-type transitifs exhaustifs
 3. **Philosophie pragmatique** : reasonable cible les règles OWL 2 RL les plus fréquemment utiles, optimisées pour la performance Rust, plutôt que la spécification W3C exhaustive (~300 règles)
 4. **Cas d'usage idéal** : applications temps réel, microservices, architectures serverless où l'on veut à la fois rapidité ET une bonne couverture sémantique
 
 > **Note technique** : reasonable utilise l'algorithme de chase optimisé pour OWL 2 RL. Contrairement a owlrl qui implémente toutes les règles W3C (~300 règles), reasonable se concentre sur les règles les plus fréquemment utilisées. L'écart d'inférences (42 vs 211) porte principalement sur les fermetures transitives exhaustives. Pour la plupart des applications pratiques, reasonable suffit largement ; si vous avez besoin de complétude sémantique totale (ex: validation d'ontologie), préférez owlrl.
-",,,,,,,,a85bc2192050e325,,,,,,,
+",,,,,,,,18777db0fe964127,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,f5776cf1,markdown,fr,7cf0c3adebf7be29,"### Analyse des résultats reasonable
 
 reasonable offre généralement des performances comparables ou supérieures à owlrl grâce à son implémentation en Rust.",,,,,,,,7cf0c3adebf7be29,,,,,,,
@@ -6954,24 +6954,24 @@ if time_growl is not None:
 df = pd.DataFrame(results)
 print(""=== Tableau comparatif ==="")
 print(df.to_string(index=False))",,,,,,,,8741e05eb8dbd325,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,dd5fb775,markdown,fr,e69590da2f45d6ee,"### Interpretation : Tableau comparatif des raisonneurs
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,dd5fb775,markdown,fr,f4a9c19acab41707,"### Interpretation : Tableau comparatif des raisonneurs
 
-**Sortie obtenue** : DataFrame pandas (cellule précédente) comparant les **deux raisonneurs OWL 2 RL** — owlrl (Python) et reasonable (Rust) — sur temps, nombre de triples et triples inférés. HermiT (profil OWL 2 **DL**, mesuré séparément en cellule 30) est ajouté au tableau ci-dessous pour référence, mais n'appartient pas au DataFrame comparatif : profil et type de sortie différents (cf. note technique, et cellule suivante).
+**Sortie obtenue** : DataFrame pandas synthétisant les résultats (temps, nombre de triples, triples inférés) pour chaque raisonneur testé.
 
 | Raisonneur | Profil OWL | Temps | Triples finaux | Inférés | Ratio d'expansion |
 |-----------|-----------|-------|----------------|---------|------------------|
-| owlrl | RL | *runtime machine-dep* : ~60 ms | 251 | 211 | 6.3x |
-| HermiT | DL | *runtime machine-dep* : ~1,4 s | 43 | N/A | 1.1x (structure) |
-| reasonable | RL | *runtime machine-dep* : ~1,5 ms | 82 | 42 | ~2x |
+| owlrl | RL | 0.148s | 251 | 211 | 6.3x |
+| HermiT | DL | 1.287s | 43 | N/A | 1.1x (structure) |
+| reasonable | RL | 0.009s | 82 | 42 | 2.1x |
 
 **Points cles** :
 1. **Divergence d'approche** : owlrl maximise les inférences (211 triples), reasonable reste pragmatique (42 triples) tout en étant le plus rapide
 2. **Profil OWL impacte la structure** : HermiT (DL) ne produit pas le même type de sortie que les raisonneurs RL
-3. **Performance vs complétude** : reasonable est ~40x plus rapide qu'owlrl tout en inférant ~5x moins de triples (mais reste substantiel : 42)
+3. **Performance vs complétude** : reasonable est ~16x plus rapide qu'owlrl tout en inférant ~5x moins de triples (mais reste substantiel : 42)
 4. **Cas d'usage** : owlrl pour analyses sémantiques complètes, reasonable pour applications temps réel avec bonne couverture
 
 > **Note technique** : Les valeurs ""Inférés"" pour HermiT sont marquées N/A car OWLReady2 ne sépare pas les triples inférés des triples originaux de la même manière que RDFLib. La comparaison directe du nombre de triples entre HermiT et les raisonneurs RL n'est donc pas pertinente. Ce qui compte pour HermiT, c'est la capacité à raisonner sur OWL 2 DL complet (restrictions complexes, hiérarchies profondes).
-",,,,,,,,e69590da2f45d6ee,,,,,,,
+",,,,,,,,f4a9c19acab41707,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,trans-031,markdown,fr,1e86206acd4d62db,Visualisation des temps d'exécution de chaque raisonneur sous forme de graphique.,,,,,,,,1e86206acd4d62db,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,cd7352e6,code,fr,2ac10d84582270e9,"# Visualisation des temps d'exécution
 if len(results) > 0:
@@ -6997,25 +6997,24 @@ if len(results) > 0:
     plt.show()
 else:
     print(""Pas assez de données pour le graphique"")",,,,,,,,2ac10d84582270e9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,fbe693b0,markdown,fr,19176a35e27280a2,"### Interpretation : Visualisation des performances
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,fbe693b0,markdown,fr,44ce7955b82de208,"### Interpretation : Visualisation des performances
 
-**Sortie obtenue** : Graphique à barres montrant les temps d'exécution des deux raisonneurs OWL 2 RL compares (owlrl en Python et reasonable en Rust).
+**Sortie obtenue** : Graphique à barres montrant les temps d'exécution des raisonneurs OWL testés.
 
 | Raisonneur | Temps (s) | Classe de performance | Facteur vs plus rapide |
 |-----------|-----------|----------------------|------------------------|
-| reasonable | *runtime machine-dep* : ~1,5 ms | Ultra-rapide (Rust compile) | 1x (reference) |
-| owlrl | *runtime machine-dep* : ~60 ms | Modere (Python interprete) | ~40x plus lent |
-
-> **Note** : HermiT (cellule precedente, *runtime machine-dep* : ~1.4 s via OWLReady2) est mesure separement et n'apparait PAS dans ce graphique de comparaison : il implemente le profil OWL 2 DL (expressivite superieure) et passe par un cold start de la JVM, ce qui le rend non comparable directement aux deux raisonneurs OWL 2 RL ci-dessus.
+| reasonable | 0.0092 | Ultra-rapide (Rust compilé) | 1x (référence) |
+| owlrl | 0.1479 | Modéré (Python interprété) | ~16x plus lent |
+| HermiT | 1.2873 | Lent (JVM cold start) | ~140x plus lent |
 
 **Points cles** :
-1. **Ordre de grandeur** : reasonable (Rust) est ~40x plus rapide qu'owlrl (Python) sur le meme profil OWL 2 RL et la meme tache
-2. **Impact du langage** : l'implementation compilee (Rust) surclasse largement l'implementation interpretee (Python) pour le meme algorithme de raisonnement
-3. **Profil d'usage** : pour des raisonnements frequents en production, privilegier reasonable ; pour le prototypage pedagogique, owlrl suffit
-4. **Comparaison non-equivalente pour HermiT** : HermiT (OWL 2 DL complet) est plus expressif mais plus lent (*runtime machine-dep* : ~1.4 s, dont une large part de cold start JVM) ; il n'est pas inclus dans la comparaison RL ci-dessus car il resout un probleme different (inferences plus riches)
+1. **Ordre de grandeur** : reasonable (Rust) est ~16x plus rapide que owlrl (Python) et ~140x plus rapide que HermiT (Java avec cold start)
+2. **Coût de l'expressivité** : HermiT (OWL 2 DL complet) est ~9x plus lent qu'owlrl (OWL 2 RL) mais offre une expressivité supérieure
+3. **Impact du langage** : les implémentations compilées (Rust, C, Java) surclassent largement Python interprété
+4. **Profil d'usage** : pour des raisonnements fréquents en production, privilégiez reasonable ; pour le prototypage, owlrl suffit
 
-> **Note technique** : le temps d'HermiT (*runtime machine-dep* : ~1.4 s) inclut le cold start de la JVM. Les appels suivants seraient beaucoup plus rapides (*runtime machine-dep* : ~0.1-0.2 s). Pour des comparaisons equitables entre raisonneurs, il faudrait executer HermiT plusieurs fois et ne mesurer que les executions « a chaud ». Cependant, en pratique, le cold start est inevitable lors du premier raisonnement, ce qui explique pourquoi le benchmark ci-dessus se concentre sur les deux raisonneurs OWL 2 RL (mesures stables, sans cold start). Par ailleurs, les temps wall-clock absolus cites dans ce notebook (owlrl *runtime machine-dep* : ~0,06 s, reasonable *runtime machine-dep* : ~1,5 ms, HermiT *runtime machine-dep* : ~1.4 s) sont mesures sur une execution unique et varient avec la machine et la charge systeme ; seul l'ordre de grandeur (reasonable ≪ owlrl ≪ HermiT) est reproductible d'une machine a l'autre. Les valeurs numeriques exactes des sorties de code (cellules 16, 30, 37, 46) font foi ; un ecart de temps lors d'une re-execution n'est PAS une regression.
-",,,,,,,,19176a35e27280a2,,,,,,,
+> **Note technique** : Le temps d'HermiT inclut le cold start de la JVM (~0.5-0.8s). Les appels suivants seraient beaucoup plus rapides (~0.1-0.2s). Pour des comparaisons équitables, il faudrait exécuter HermiT plusieurs fois et ne mesurer que les exécutions ""à chaud"". Cependant, en pratique, le cold start est inévitable lors du premier raisonnement.
+",,,,,,,,44ce7955b82de208,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,trans-032,markdown,fr,c76c8cdba485b06d,Comparaison du nombre de triplets inferences par les raisonneurs compatibles OWL 2 RL.,,,,,,,,c76c8cdba485b06d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,fc8adb55,code,fr,acb475d6e22c890b,"# Comparaison des triples inférés (RL uniquement)
 rl_results = [r for r in results if r[""OWL Profile""] == ""RL"" and r[""Inférés""] is not None]
@@ -7045,14 +7044,14 @@ if len(rl_results) >= 2:
     plt.show()
 else:
     print(""Pas assez de données RL pour la comparaison"")",,,,,,,,acb475d6e22c890b,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,31881ba2,markdown,fr,7fab99f71c0998f7,"### Interpretation : Comparaison des triples inférés (OWL 2 RL)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,31881ba2,markdown,fr,5169a597918cf452,"### Interpretation : Comparaison des triples inférés (OWL 2 RL)
 
 **Sortie obtenue** : Graphique à barres comparant le nombre de triples inférés par les raisonneurs OWL 2 RL compatibles (owlrl, reasonable).
 
 | Raisonneur | Triples inférés | Ratio d'expansion | Signification |
 |-----------|----------------|------------------|---------------|
 | owlrl | 211 | 6.3x (40->251) | Implémente toutes les règles OWL 2 RL + RDFS |
-| reasonable | 42 | ~2x (40->82) | Couverture pragmatique des règles utiles |
+| reasonable | 42 | 2.1x (40->82) | Couverture pragmatique des règles utiles |
 
 **Points cles** :
 1. **Écart modéré** : owlrl infère ~5x plus de triples que reasonable (211 vs 42), l'écart porte sur les fermetures transitives exhaustives
@@ -7061,7 +7060,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,31881ba2,m
 4. **Choix du raisonneur** : dépend de l'expressivité requise (owlrl pour complétude exhaustive, reasonable pour performance avec bonne couverture)
 
 > **Note technique** : La différence de nombre de triples inférés ne signifie pas que reasonable est ""moins correct"". Les deux raisonneurs sont conformes à OWL 2 RL, mais owlrl inclut des règles optionnelles et des inférences de type/sous-type transitifs que l'implémentation reasonable ne dérive pas par défaut. Vérifiez toujours les triples spécifiques dont vous avez besoin pour votre application.
-",,,,,,,,7fab99f71c0998f7,,,,,,,
+",,,,,,,,5169a597918cf452,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,a80aceaa,markdown,fr,b7fed6d40f6ad9bc,"### Analyse comparative
 
 **Performances**:
@@ -7773,24 +7772,24 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,7a9d8adc,c
 # print(f""Transitive A->C : {bool(r1)}, Symetrique B->A : {bool(r2)}, Inverse B->A : {bool(r3)}"")
 
 print(""Exercice a completer : axiomes TransitiveProperty + SymmetricProperty + inverseOf"")",,,,,,,,22ed030c3487be7c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,08ce383a,markdown,fr,2934784a5a08880d,"### Exercice 6 : Comparaison expressivite OWL 2 RL vs OWL 2 DL (someValuesFrom)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,08ce383a,markdown,fr,7073f5bd0964934d,"### Exercice 6 : Comparaison expressivite OWL 2 RL vs OWL 2 DL (someValuesFrom)
 
-Les profils OWL 2 RL (owlrl, reasonable) et OWL 2 DL (HermiT) différent en **expressivite**. Une différence cle réside dans la portée des restrictions de classe couvertes : explorez d'abord `someValuesFrom`, puis `minCardinality`, pour localiser où le profil RL atteint sa limite. Verifiez empiriquement cette différence.
+Les profils OWL 2 RL (owlrl, reasonable) et OWL 2 DL (HermiT) différent en **expressivite**. Une différence cle : la **classification automatique d'instances** par restrictions de classe (`someValuesFrom`). Verifiez empiriquement cette différence.
 
 **Consignes :**
 1. Construire une ontologie avec :
    - Classe `MeatPizza` définie comme **equivalente** a `Pizza et (hasTopping some MeatTopping)`
    - Instance `pizza1` declaree `Pizza` avec `pizza1 hasTopping topping1` ou `topping1 a MeatTopping`
 2. Appliquer **HermiT** (via OWLReady2) : `pizza1` doit etre **automatiquement classifiee** comme `MeatPizza`
-3. Appliquer **owlrl** (profil RL) sur le même KG transcrit en rdflib : contrairement à une idée répandue, owlrl **supporte** la classification `someValuesFrom` (via la règle cls-svf1 d'OWL 2 RL) — c'est sur la `minCardinality` (cf. `BigFamily = hasChild min 2`) que le profil RL montre sa limite
-4. Conclure : RL suffit pour la classification `someValuesFrom` et la materialisation rapide de hiérarchies subClassOf + propertyChainAxiom ; DL reste nécessaire pour les constructions hors-profil-RL (cardinalités minimales, unions complexes)
+3. Appliquer **owlrl** (profil RL) sur le même KG transcrit en rdflib : la classification automatique via `someValuesFrom` **n'est PAS supportee** en profil RL standard
+4. Conclure : pour la classification riche par restrictions, DL est necessaire ; pour la materialisation rapide de hiérarchies subClassOf + propertyChainAxiom, RL suffit et est plus rapide
 
 **Indices :**
 - OWLReady2 : `class MeatPizza(Pizza): equivalent_to = [Pizza & hasTopping.some(MeatTopping)]`
 - Après `sync_reasoner_hermit()`, verifier `MeatPizza in pizza1.is_a` ou `pizza1 in MeatPizza.instances()`
-- En rdflib + owlrl : declarer `MeatPizza owl:equivalentClass [a owl:Restriction ; owl:onProperty :hasTopping ; owl:someValuesFrom :MeatTopping]` puis verifier la **présence** de l'inference `pizza1 a MeatPizza` après expansion (règle cls-svf1) ; comparer avec la cardinalité `min 2` (`BigFamily`) que seul HermiT dérive
+- En rdflib + owlrl : declarer `MeatPizza owl:equivalentClass [a owl:Restriction ; owl:onProperty :hasTopping ; owl:someValuesFrom :MeatTopping]` puis verifier l'absence de l'inference `pizza1 a MeatPizza` après expansion
 - Pour rester clair pedagogiquement : afficher un mini-tableau avec `RL infere classification ?` vs `DL infere classification ?`
-- Question pedagogique : quel(s) profil(s) OWL 2 supporte(nt) `someValuesFrom` dans les axiomes d'equivalence ?",,,,,,,,2934784a5a08880d,,,,,,,
+- Question pedagogique : quel(s) profil(s) OWL 2 supporte(nt) `someValuesFrom` dans les axiomes d'equivalence ?",,,,,,,,7073f5bd0964934d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,626076ee,code,fr,c0d958c8ec3e222a,"# Exercice 6 : OWL 2 RL vs OWL 2 DL sur someValuesFrom (classification automatique)
 
 # TODO etudiant : construire l'ontologie pizza avec OWLReady2 (DL)
@@ -7872,13 +7871,13 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,2fbcec7d,m
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,7oyuh5l3sdw,markdown,fr,2d61655a40806464,"---
 
 **Navigation** : [<< 13-GraphRAG](SW-12-Python-GraphRAG.ipynb) | [Index](README.md)",,,,,,,,2d61655a40806464,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,69c7dbc6,markdown,fr,d052d25e7c3ac41c,"## Resume et perspectives
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,69c7dbc6,markdown,fr,14bc5de7cc1ff42d,"## Resume et perspectives
 
-Ce notebook a compare quatre raisonneurs OWL couvrant un spectre allant de l'implementation Python pure au code compile en Rust et en C, avec des profils OWL allant de RL (polynomial) a DL (NExpTime-complet). Les benchmarks sur l'ontologie pizza ont revele des ecarts de performance considerables : reasonable (Rust) est environ 70 fois plus rapide qu'owlrl (Python) sur l'ontologie pizza complete (et ~40 fois sur l'ontologie de test reduite a 40 triples), tandis qu'HermiT (Java, OWL 2 DL complet) offre une expressivite superieure au prix d'un temps d'exécution plus eleve.
+Ce notebook a compare quatre raisonneurs OWL couvrant un spectre allant de l'implementation Python pure au code compile en Rust et en C, avec des profils OWL allant de RL (polynomial) a DL (NExpTime-complet). Les benchmarks sur l'ontologie pizza ont revele des ecarts de performance considerables : reasonable (Rust) est environ 20 fois plus rapide qu'owlrl (Python), tandis qu'HermiT (Java, OWL 2 DL complet) offre une expressivite superieure au prix d'un temps d'exécution plus eleve.
 
-La différence majeure entre les profils OWL 2 RL et OWL 2 DL a ete illustree par les exercices : le profil RL (owlrl, reasonable) materialise efficacement les hiérarchies de classes, les proprietes transitives et les inferences de base, et couvre la classification `someValuesFrom` via la règle cls-svf1 d'OWL 2 RL (cf. exemple 6 : `pizza1` est bien classifiée `MeatPizza` par owlrl). Sa limite réelle se manifeste sur des constructions DL plus riches comme la `minCardinality` en position de super-classe, que seul un raisonneur DL (HermiT) traite intégralement. Le profil DL (HermiT) detecte les incoherences ontologiques et classifie les instances selon des règles complexes, ce qui est indispensable dans les domaines critiques (medecine, industrie). Le choix du raisonneur depend donc du compromis entre expressivite requise et performances acceptables.
+La différence majeure entre les profils OWL 2 RL et OWL 2 DL a ete illustree par les exercices : le profil RL (owlrl, reasonable) materialise efficacement les hiérarchies de classes, les proprietes transitives et les inferences de base, mais ne supporte pas la classification automatique par restrictions `someValuesFrom`. Le profil DL (HermiT) detecte les incoherences ontologiques et classifie les instances selon des règles complexes, ce qui est indispensable dans les domaines critiques (medecine, industrie). Le choix du raisonneur depend donc du compromis entre expressivite requise et performances acceptables.
 
-Ce notebook conclut la serie Semantic Web. Au fil des 13 notebooks, vous avez parcouru l'ensemble de la pile technologique : les triplets RDF (SW-1 a SW-3), les requêtes SPARQL (SW-4 a SW-5), les schemas et ontologies RDFS/OWL (SW-6 a SW-7), la validation SHACL (SW-8), les formats modernes JSON-LD et RDF-Star (SW-9 a SW-10), les graphes de connaissances (SW-11), l'integration avec les LLMs via GraphRAG (SW-12), et enfin les moteurs d'inference (SW-13).",,,,,,,,d052d25e7c3ac41c,,,,,,,
+Ce notebook conclut la serie Semantic Web. Au fil des 13 notebooks, vous avez parcouru l'ensemble de la pile technologique : les triplets RDF (SW-1 a SW-3), les requêtes SPARQL (SW-4 a SW-5), les schemas et ontologies RDFS/OWL (SW-6 a SW-7), la validation SHACL (SW-8), les formats modernes JSON-LD et RDF-Star (SW-9 a SW-10), les graphes de connaissances (SW-11), l'integration avec les LLMs via GraphRAG (SW-12), et enfin les moteurs d'inference (SW-13).",,,,,,,,14bc5de7cc1ff42d,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,9886dde6,markdown,fr,9ac27fca7e40910e,"# SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des connaissances
 
 **Twin C# (.NET Interactive / dotNetRDF) du notebook Python [SW-13-Python-Reasoners](SW-13-Python-Reasoners.ipynb)** (owlrl, owlready2+HermiT, reasonable).
@@ -7961,14 +7960,14 @@ int before = g.Triples.Count;
 reasoner.Apply(g);
 int after = g.Triples.Count;
 Console.WriteLine(""Triplets : "" + before + "" explicites -> "" + after + "" apres raisonnement ("" + (after-before) + "" inferez)"");",,,,,,,,6b7edcd60f9f91e2,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,bee267a2,markdown,fr,61e5ec34b71f8d76,"### 3.1 Triples inferez : qu'a-t-on deduit ?
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,bee267a2,markdown,fr,4c0777ada7e7c225,"### 3.1 Triples inferez : qu'a-t-on deduit ?
 
 Examinons les inferences cles. D'après les règles RDFS, on s'attend a :
 - **rdfs9** : `Alice` (Etudiant ⊂ Personne) → `Alice rdf:type Personne` ; `Bob` (Professeur ⊂ Personne) → `Bob rdf:type Personne`.
 - **rdfs2/rdfs3** (domain/range) : `Bob enseigne Maths` + `enseigne range Cours` → `Maths rdf:type Cours` ; `Alice suit Maths` + `suit range Cours` → `Maths rdf:type Cours` (deduplique).
 
-> **G.1 self-correction (verifie firsthand)** : la sortie montre `Etudiant subClassOf Etudiant (rdfs10) = False`. Le `StaticRdfsReasoner` de dotNetRDF **ne materialise pas** la règle reflexive rdfs10 sur les classes (ni la cloture transitive complete des sous-classes). Les 5 triplets inferez ici sont des inferences de type / domain-range. La cellule suivante en verifie 3 (Alice→Personne et Bob→Personne via rdfs9, Maths→Cours via rdfs2/rdfs3) et affiche `Sous-proprietes inferez : 0` : le raisonneur ne materialise donc **pas** la reflexivite des proprietes (`enseigne ⊂ enseigne` et `suit ⊂ suit` absents du graphe). C'est un under-approximation volontaire : RDFS complet (avec reflexivite + cloture transitive) ajouterait du bruit peu utile. owlrl (twin Python) applique davantage de règles — c'est un ecart documente honnetement, pas un bug.
-",,,,,,,,61e5ec34b71f8d76,,,,,,,
+> **G.1 self-correction (verifie firsthand)** : la sortie montre `Etudiant subClassOf Etudiant (rdfs10) = False`. Le `StaticRdfsReasoner` de dotNetRDF **ne materialise pas** la règle reflexive rdfs10 sur les classes (ni la cloture transitive complete des sous-classes). Les 5 triplets inferez ici = propagation des types (Alice/Bob → Personne, Maths → Cours) + reflexivite des **proprietes** (enseigne ⊂ enseigne, suit ⊂ suit). C'est un under-approximation volontaire : RDFS complet (avec reflexivite + cloture transitive) ajouterait du bruit peu utile. owlrl (twin Python) applique davantage de règles — c'est un ecart documente honnetement, pas un bug.
+",,,,,,,,4c0777ada7e7c225,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,ac25f189,code,fr,95d150427f30a189,"Console.WriteLine(""--- Verifications d inferences (re-derivees a la main) ---"");
 bool Chk(string s, string p, string o) => g.ContainsTriple(new Triple(U(g,s), U(g,p), U(g,o)));
 Console.WriteLine(""Alice rdf:type Personne  (rdfs9) : "" + Chk(""ex:Alice"",""rdf:type"",""ex:Personne""));
@@ -8016,12 +8015,12 @@ foreach (int depth in new[] { 5, 10, 20, 40, 80 }) {
     int inferred = bg.Triples.Count - explicitCount;
     Console.WriteLine(depth + ""            "" + explicitCount + ""         "" + inferred + ""        "" + sw.Elapsed.TotalMilliseconds.ToString(""F2""));
 }",,,,,,,,a6a75d32eb12d6e9,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,2875293e,markdown,fr,4f4f680ba56e3610,"### 5.1 Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,2875293e,markdown,fr,4d78842cb2a2da94,"### 5.1 Interpretation
 
 Le benchmark montre une croissance **lineaire** : pour une chaîne de profondeur `D` avec 1 instance, le nombre de triplets inferez est ~`2 x D` (propagation du type `inst rdf:type Ci` le long de la chaîne par rdfs9 iteratif + un nombre borne de triplets auxiliaires).
 
-> **G.1 self-correction (verifie firsthand)** : contrairement a une intuition RDFS « complete », `StaticRdfsReasoner` ne materialise PAS la cloture transitive quadratique `~D(D+1)/2` des sous-classes ni la reflexivite rdfs10 des classes. Il fait un **forward-chaining borne** (quelques passes fixes) — d'ou la croissance lineaire observee (ms live -- regle #9434, profondeurs D=5 et D=80) plutot que quadratique. C'est un choix d'implementation : rapide et suffisant pour les cas pedagogiques, au prix d'une completion partielle. Les raisonneurs OWL 2 DL (HermiT, section 4) font la cloture complete mais sont nettement plus lents.
-",,,,,,,,4f4f680ba56e3610,,,,,,,
+> **G.1 self-correction (verifie firsthand)** : contrairement a une intuition RDFS « complete », `StaticRdfsReasoner` ne materialise PAS la cloture transitive quadratique `~D(D+1)/2` des sous-classes ni la reflexivite rdfs10 des classes. Il fait un **forward-chaining borne** (quelques passes fixes) — d'ou la croissance lineaire observee (0.09 ms a D=5, 0.40 ms a D=80) plutot que quadratique. C'est un choix d'implementation : rapide et suffisant pour les cas pedagogiques, au prix d'une completion partielle. Les raisonneurs OWL 2 DL (HermiT, section 4) font la cloture complete mais sont nettement plus lents.
+",,,,,,,,4d78842cb2a2da94,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,b9919823,markdown,fr,d73ef2787b4d1498,"---
 
 ## 6. Caractéristiques de proprietes : transitivite
@@ -8112,7 +8111,7 @@ A la fin de ce notebook, vous saurez :
 - Aucune connaissance prealable en Web sémantique requise
 
 ### Duree estimee : 20 minutes",,,,,,,,0b6f44025e084782,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,41f77862,markdown,fr,2817cc8a22a21e1c,"---
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,41f77862,markdown,fr,c310e05ad40a3d05,"---
 
 ## 1. Contexte historique du Web sémantique
 
@@ -8157,13 +8156,13 @@ Le W3C (World Wide Web Consortium) a défini une architecture en couches pour le
 | **Identifiants** | URI / IRI | Nommer de facon unique chaque ressource | SW-2 |
 | **Modèle de données** | RDF | Representer l'information en triplets | SW-2, SW-3 |
 | **Schema** | RDFS | Définir des classes et proprietes | SW-6 |
-| **Requêtes** | SPARQL | Interroger des graphes RDF | SW-4 |
+| **Requêtes** | SPARQL | Interroger des graphes RDF | SW-5 |
 | **Ontologies** | OWL | Raisonnement logique sur les données | SW-7 |
 | **Contraintes** | SHACL | Valider la conformite des données | SW-8 |
 
 > **Point cle** : Chaque couche s'appuie sur les précédentes. RDF est la fondation sur laquelle repose tout le reste.
 
-> La couche **RDF** (Resource Description Framework) repose sur le modèle abstrait défini dans **RDF 1.1 Concepts and Abstract Syntax** (Cyganiak, Wood, Lanthaler (eds.), Recommandation W3C, 25 février 2014) : un graphe est un ensemble de *triplets* (sujet-prédicat-objet) dont les composants sont des IRI, des blank nodes ou des littéraux. Ce modèle est celui que la bibliothèque **dotNetRDF** (`dotnetrdf.org`, open-source) implémente et que ce notebook manipule.",,,,,,,,2817cc8a22a21e1c,,,,,,,
+> La couche **RDF** (Resource Description Framework) repose sur le modèle abstrait défini dans **RDF 1.1 Concepts and Abstract Syntax** (Cyganiak, Wood, Lanthaler (eds.), Recommandation W3C, 25 février 2014) : un graphe est un ensemble de *triplets* (sujet-prédicat-objet) dont les composants sont des IRI, des blank nodes ou des littéraux. Ce modèle est celui que la bibliothèque **dotNetRDF** (`dotnetrdf.org`, open-source) implémente et que ce notebook manipule.",,,,,,,,c310e05ad40a3d05,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,c3f3a0b6,markdown,fr,648cc69ba2cfd4cc,"### Pourquoi le Web sémantique ?
 
 Le Web sémantique repond a plusieurs besoins concrets :
@@ -8302,7 +8301,7 @@ Nous avons créé un graphe contenant **deux triplets** qui partagent le même s
 > **Point cle** : La méthode `g.Assert()` ajoute un triplet au graphe. La méthode `UriFactory.Create()` interne les URIs pour optimiser la memoire et les comparaisons d'egalite.
 
 > **Attention** : La sortie affichée par `ToString()` n'est pas une syntaxe RDF standard. C'est une representation de debogage. Pour une serialisation conforme, il faut utiliser un Writer (cf. SW-2).",,,,,,,,2603d04d84b4fb46,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,11b846cd,markdown,fr,baa1fe18a7583fd7,"---
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,11b846cd,markdown,fr,e133fb75cecd0c1b,"---
 
 ## 4. Vue d'ensemble de la serie Semantic Web
 
@@ -8329,19 +8328,19 @@ Ce notebook est le premier d'une serie de **13 notebooks** progressifs organises
 
 | # | Notebook | Duree | Sujet |
 |---|----------|-------|-------|
-| 8 | [SW-8-Python-SHACL](SW-8-Python-SHACL.ipynb) | 50 min | SHACL : validation et qualite des donnees RDF |
-| 9 | [SW-9-Python-JSONLD](SW-9-Python-JSONLD.ipynb) | 45 min | JSON-LD : le Web semantique rencontre JSON |
-| 10 | [SW-10-Python-RDFStar](SW-10-Python-RDFStar.ipynb) | 40 min | RDF 1.2 (RDF-Star) : assertions sur des assertions |
-| 11 | [SW-11-Python-KnowledgeGraphs](SW-11-Python-KnowledgeGraphs.ipynb) | 40 min | Graphes de connaissances : construction et exploration |
+| 8 | [SW-8-PythonRDF](SW-8-Python-SHACL.ipynb) | 50 min | rdflib, SPARQLWrapper, comparaison .NET/Python |
+| 9 | [SW-9-SHACL](SW-9-Python-JSONLD.ipynb) | 45 min | Validation pySHACL, qualite des données |
+| 10 | [SW-10-JSONLD](SW-10-Python-RDFStar.ipynb) | 40 min | JSON-LD, Schema.org, SEO sémantique |
+| 11 | [SW-11-RDFStar](SW-11-Python-KnowledgeGraphs.ipynb) | 40 min | RDF 1.2, quoted triples, SPARQL-Star |
 
 ### Partie 4 : Graphes de Connaissances et IA
 
 | # | Notebook | Duree | Sujet |
 |---|----------|-------|-------|
-| 12 | [SW-12-Python-GraphRAG](SW-12-Python-GraphRAG.ipynb) | 55 min | GraphRAG : graphes de connaissances et LLMs |
-| 13 | [SW-13-Python-Reasoners](SW-13-Python-Reasoners.ipynb) | 50 min | Comparaison des raisonneurs OWL |
+| 12 | [SW-12-KnowledgeGraphs](SW-12-Python-GraphRAG.ipynb) | 55 min | Construction KGs, OWLReady2, visualisation |
+| 13 | [SW-13-GraphRAG](SW-13-Python-Reasoners.ipynb) | 50 min | KG + LLMs, extraction d'entites, RAG |
 
-> **Duree totale estimee** : environ 10 heures de travail pratique.",,,,,,,,baa1fe18a7583fd7,,,,,,,
+> **Duree totale estimee** : environ 10 heures de travail pratique.",,,,,,,,e133fb75cecd0c1b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb,64752199,markdown,fr,885ffb137b46d607,"---
 
 ## Resume
@@ -9705,7 +9704,7 @@ jsonLdWriter.Save(jsonStore, jsonSw);
 string jsonOutput = jsonSw.ToString();
 string jsonRatio = ntSize > 0 ? $""{(double)jsonOutput.Length / ntSize:P0}"" : ""---"";
 Console.WriteLine($""{""JSON-LD"",-12} {jsonOutput.Length,-15} {jsonOutput.Split('\n').Length,-10} {jsonRatio,-15}"");",,,,,,,,9b3857adce78594d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb,ef7ab444,markdown,fr,70e9c6fdc8ac1b47,"### Interpretation de l'Exemple guide 2
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb,ef7ab444,markdown,fr,84ce29337e712aac,"### Interpretation de l'Exemple guide 2
 
 **Résultats attendus** (les valeurs exactes varient selon le graphe) :
 
@@ -9713,14 +9712,14 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb,ef7ab444,ma
 |--------|----------------|--------|
 | NTriples | 100% (reference) | Aucune compression, URIs completes repetees |
 | Turtle | ~40-60% | Prefixes, regroupement par sujet, raccourci `a` |
-| RDF/XML | ~95% | Espaces de noms XML, structure verbose (proche de NTriples sur ce graphe) |
-| JSON-LD | ~126% | Contexte JSON, structure d'objets (plus verbose que NTriples ici, format le plus lourd) |
+| RDF/XML | ~70-90% | Espaces de noms XML, structure verbose |
+| JSON-LD | ~60-80% | Contexte JSON, structure d'objets |
 
 **Conclusion** : Turtle est presque toujours le format le plus compact grace aux prefixes et aux abreviations syntaxiques. Le choix du format depend de l'usage :
 - **Documentation et lecture humaine** : Turtle
 - **Echange machine / streaming** : NTriples
 - **APIs Web et SEO** : JSON-LD
-- **Integration XML** : RDF/XML",,,,,,,,70e9c6fdc8ac1b47,,,,,,,
+- **Integration XML** : RDF/XML",,,,,,,,84ce29337e712aac,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2-CSharp-RDFBasics.ipynb,ab4412b7,markdown,fr,d2b64df15a26cb49,"---
 
 ## 7. Exercice : a vous de jouer
@@ -10525,13 +10524,13 @@ Console.WriteLine(VDS.RDF.Writing.StringWriter.Write(g, new NTriplesWriter()));
 
 Console.WriteLine(""=== Turtle Compresse ==="");
 Console.WriteLine(VDS.RDF.Writing.StringWriter.Write(g, new CompressingTurtleWriter()));",,,,,,,,d19ccccb2a6c26e5,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,a904fd5c,markdown,fr,5aa8f83db3aef7da,"#### Interpretation : Comparaison des formats de sortie
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,a904fd5c,markdown,fr,b227347a8c854bc3,"#### Interpretation : Comparaison des formats de sortie
 
 **NTriples** : format verbeux — chaque triplet occupe une ligne complete avec les URIs en entier. 4 triplets = 4 lignes. Pas de prefixe, pas de compression.
 
-**Turtle compresse** : format compact — les prefixes sont définis une fois (`@prefix`), les noeuds blancs sont regroupes avec `;` (même sujet) et les proprietes sont imbriquees avec `[...]`. Les 4 triplets NTriples sont regroupes en une seule instruction Turtle, mais les 5 déclarations `@prefix` s'ajoutent en tête : sur ce petit graphe, le résultat fait 8 lignes au total (plus que les 4 de NTriples).
+**Turtle compresse** : format compact — les prefixes sont définis une fois (`@prefix`), les noeuds blancs sont regroupes avec `;` (même sujet) et les proprietes sont imbriquees avec `[...]`. Le même graphe tient en 3 lignes au lieu de 4.
 
-Sur ce tout petit graphe, Turtle est paradoxalement PLUS long que NTriples (531 caractères vs 448) : les 5 déclarations `@prefix` coûtent plus qu'elles ne rapportent. La compression n'apparaît qu'à partir de graphes plus grands, avec beaucoup de prefixes réutilisés — où le gain peut alors atteindre 5:1 ou plus.",,,,,,,,5aa8f83db3aef7da,,,,,,,
+Le ratio de compression est ici d'environ 2:1 (NTriples ~400 caractères vs Turtle ~300 caractères). Sur des graphes plus grands avec beaucoup de prefixes, le gain peut atteindre 5:1 ou plus.",,,,,,,,b227347a8c854bc3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,1e591449,markdown,fr,0ce26b3ac98d08bc,Serialisation du graphe en RDF/XML via deux méthodes equivalentes : helper statique et StringWriter explicite.,,,,,,,,0ce26b3ac98d08bc,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,2005646e,code,fr,e1a8a1740566f009,"// 2.2 RDF/XML : deux methodes pour obtenir une chaine
 var rdfxmlwriter = new RdfXmlWriter();
@@ -10697,16 +10696,16 @@ Console.WriteLine($""AssertList    : [{string.Join("", "", g.GetListItems(newRoo
 int avant = g.Triples.Count;
 g.RetractList(newRoot);
 Console.WriteLine($""RetractList   : {avant} -> {g.Triples.Count} triplets"");",,,,,,,,573e7ac23042105d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,bf47d2cb,markdown,fr,b0979c8f0b9e6185,"#### Interpretation : Creation et suppression de liste
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,bf47d2cb,markdown,fr,2ae7902e66ca5a0b,"#### Interpretation : Creation et suppression de liste
 
 **Résultat obtenu** : `AssertList` créé une liste `[true, false]` en generant des noeuds blancs et triplets associes. `RetractList` supprime tous les triplets de la liste.
 
 | Opération | Triplets avant | Triplets après | Delta |
 |-----------|----------------|----------------|-------|
-| AssertList | 7 (1 ancrage + liste 1,2,3) | 11 (+2 éléments = +4 triplets: 2x rdf:first + 2x rdf:rest) | +4 |
+| AssertList | 9 (liste initiale 1,2,3) | 11 (+2 éléments = +4 triplets: 2x rdf:first + 2x rdf:rest) | +4 |
 | RetractList | 11 | 7 | -4 |
 
-Chaque élément de liste coute 2 triplets (`rdf:first` + `rdf:rest`), sauf le dernier qui pointe vers `rdf:nil`.",,,,,,,,b0979c8f0b9e6185,,,,,,,
+Chaque élément de liste coute 2 triplets (`rdf:first` + `rdf:rest`), sauf le dernier qui pointe vers `rdf:nil`.",,,,,,,,2ae7902e66ca5a0b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,45ad79cd,markdown,fr,0e22a5280a6b3515,Ajout et suppression d'éléments dans une liste RDF existante avec AddToList et RemoveFromList.,,,,,,,,0e22a5280a6b3515,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-3-CSharp-GraphOperations.ipynb,bf9eb926,code,fr,f0c8ada7fbf4e7bb,"// 5.3 AddToList et RemoveFromList
 Console.WriteLine($""Avant         : [{string.Join("", "", g.GetListItems(root))}]"");
@@ -11490,13 +11489,13 @@ var queryBuilder = QueryBuilder
 var query = queryBuilder.BuildQuery();
 Console.WriteLine(""=== Requete generee ==="");
 Console.WriteLine(query.ToString());",,,,,,,,3872fa7bd49aa21d,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb,5813280c,markdown,fr,dd639bd8a0708242,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb,5813280c,markdown,fr,7e9e2ace4de35f53,"### Interpretation
 
 La requête generee correspond a :
 ```sparql
 SELECT ?x
 WHERE {
-    ?x <http://www.w3.org/2001/vcard-rdf/3.0#FN> ?John Smith .
+    ?x <http://www.w3.org/2001/vcard-rdf/3.0#FN> ""John Smith"" .
 }
 ```
 
@@ -11505,9 +11504,7 @@ WHERE {
 | Variables retournees | `.Select(new[] { ""x"" })` | `SELECT ?x` |
 | Pattern sujet | `.Subject(x)` | `?x` (variable) |
 | Pattern predicat | `.PredicateUri(uri)` | `<uri>` (URI fixe) |
-| Pattern objet | `.Object(""John Smith"")` | `?John Smith` (variable) |
-
-> **Piege QueryBuilder** : `.Object(""John Smith"")` (string simple) est lu comme un **nom de variable** (`?John Smith`), pas comme un litteral. Pour filtrer sur la valeur litterale `""John Smith""`, il faut un noeud typé (ex. `NodeFactory.CreateLiteralNode(""John Smith"")`).",,,,,,,,dd639bd8a0708242,,,,,,,
+| Pattern objet | `.Object(""John Smith"")` | `""John Smith""` (litteral) |",,,,,,,,7e9e2ace4de35f53,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb,fa1daf7c,code,fr,5056d080614eeb7c,"// 2.2 PREFIX avec plusieurs patterns de triplets
 var prefixes = new NamespaceMapper(true);
 prefixes.AddNamespace(""vcard"", new Uri(""http://www.w3.org/2001/vcard-rdf/3.0#""));
@@ -11527,7 +11524,7 @@ qb.Prefixes = prefixes;
 
 Console.WriteLine(""=== SELECT avec PREFIX ==="");
 Console.WriteLine(qb.BuildQuery().ToString());",,,,,,,,5056d080614eeb7c,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb,ebdb96a6,markdown,fr,f6458cf491ab9267,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb,ebdb96a6,markdown,fr,a7e46f704c26bff6,"### Interpretation
 
 Les **prefixes** abregent les URIs longues :
 
@@ -11541,10 +11538,10 @@ Plusieurs patterns dans le même `Where()` créent une **conjonction** (AND) : l
 PREFIX vcard: <http://www.w3.org/2001/vcard-rdf/3.0#>
 SELECT ?givenName
 WHERE {
-    ?y vcard:Family ?Smith .
+    ?y vcard:Family ""Smith"" .
     ?y vcard:Given ?givenName .
 }
-```",,,,,,,,f6458cf491ab9267,,,,,,,
+```",,,,,,,,a7e46f704c26bff6,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-4-CSharp-SPARQL.ipynb,2a38bf05,markdown,fr,b65b1aaefb17a95b,"---
 
 ## 3. FILTER et OPTIONAL
@@ -14198,7 +14195,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6b-Python-RDFS.ipynb,193898f2,code,f
 
 print(""Exercice 1 a completer : vocabulaire RDFS pour une bibliotheque"")
 ",,,,,,,,d9cdecf88166d973,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6b-Python-RDFS.ipynb,b016946a,markdown,fr,b8725a60267e24f5,"### Exercice 2 : Requête SPARQL avec inference RDFS
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6b-Python-RDFS.ipynb,b016946a,markdown,fr,7227b2ce1ea6d9ab,"### Exercice 2 : Requête SPARQL avec inference RDFS
 
 Les sections précédentes ont montre le raisonneur owlrl et les requêtes SPARQL. Reproduisez le pattern complet sur le fichier `data/animals.ttl` :
 
@@ -14206,7 +14203,7 @@ Les sections précédentes ont montre le raisonneur owlrl et les requêtes SPARQ
 - Chargez `data/animals.ttl` dans un graphe frais avec `g.parse(...)`.
 - Appliquez owlrl : `owlrl.DeductiveClosure(owlrl.RDFS_Semantics).expand(g)`.
 - Ecrivez une requête SPARQL qui retourne **tous les animaux dont le cri contient la lettre ""o""** (indice : `FILTER(CONTAINS(LCASE(?sound), ""o""))`).
-- Verifiez que le résultat inclut aussi bien `rex` (Dog) que `buddy` (Dog) et `coco` (Parrot) -- tous trois typés `Animal` par inference, même si `rex` et `buddy` sont declares explicitement comme Dog dans le fichier source.",,,,,,,,b8725a60267e24f5,,,,,,,
+- Verifiez que le résultat inclut aussi bien `rex` (Dog) que `buddy` (Dog) et `coco` (Parrot) -- tous trois typés `Animal` par inference, même si seul `rex` est declare explicitement comme Dog dans le fichier source.",,,,,,,,7227b2ce1ea6d9ab,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-6b-Python-RDFS.ipynb,552a9040,code,fr,3c51f76a8ed10c34,"# Exercice 2 : Requete SPARQL sur donnees enrichies par owlrl
 # TODO etudiant : charger animals.ttl, appliquer owlrl, executer une SPARQL
 #
@@ -15975,7 +15972,7 @@ L'espace de noms `VDS.RDF.Ontology` est la cle pour travailler avec OWL dans dot
 | `OntologyClass` | Represente une classe OWL (avec super/sous-classes, instances) |
 | `OntologyProperty` | Represente une propriete OWL (avec domaine, portee) |
 | `OntologyResource` | Classe de base pour les ressources ontologiques |",,,,,,,,8adefd72fe5f8e76,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb,5478b351,markdown,fr,429023e3f36857e2,"---
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb,5478b351,markdown,fr,083134973d088ea3,"---
 
 ## 1. Introduction a OWL 2 : au-dela de RDFS
 
@@ -16002,7 +15999,7 @@ Dans le notebook précédent (SW-6), nous avons vu que RDFS permet de définir d
 
 ```
      +------------------+
-     |   SHACL (SW-8)   |  <- Validation
+     |   SHACL (SW-9)   |  <- Validation
      +------------------+
      |   OWL 2 (SW-7)   |  <- Logique descriptive  <-- Nous sommes ici
      +------------------+
@@ -16022,7 +16019,7 @@ Dans le notebook précédent (SW-6), nous avons vu que RDFS permet de définir d
 | Rôle | `owl:ObjectProperty` | enseigne, inscritA |
 | Individu | Instance | prof_dupont, etud_martin |
 | TBox | Axiomes terminologiques | ""Un Professeur est une Personne"" |
-| ABox | Assertions individuelles | ""prof_dupont est un Professeur"" |",,,,,,,,429023e3f36857e2,,,,,,,
+| ABox | Assertions individuelles | ""prof_dupont est un Professeur"" |",,,,,,,,083134973d088ea3,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-7-CSharp-OWL.ipynb,b8f01b54,markdown,fr,92a5727cf5722854,"---
 
 ## 2. OntologyGraph : la classe specialisee de dotNetRDF
@@ -17798,13 +17795,13 @@ A la fin de ce notebook, vous saurez :
 ### Prerequis
 - Notebook SW-7b-OWL complete
 ### Duree estimee : 45 minutes",,,,,,,,adc461dad06eca88,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb,install-intro,markdown,fr,3651862c083fc824,"---
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb,install-intro,markdown,fr,c6c72cf9755cfa26,"---
 
 ## 0. Installation des dependances
 
 Installons les deux bibliotheques necessaires :
-- **rdflib** : manipulation de graphes RDF (déjà utilisee dans SW-2b)
-- **pyshacl** : moteur de validation SHACL pour Python",,,,,,,,3651862c083fc824,,,,,,,
+- **rdflib** : manipulation de graphes RDF (déjà utilisee dans SW-8)
+- **pyshacl** : moteur de validation SHACL pour Python",,,,,,,,c6c72cf9755cfa26,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb,install-deps,code,fr,c642c9edea4ef41b,"# Dependances pre-provisionnees (rdflib pyshacl) : voir SemanticWeb/requirements.txt ; imports dans les cellules suivantes.
 ",,,,,,,,c642c9edea4ef41b,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb,9gb0g4mto9,markdown,fr,e873a53e8b908e1b,Verifions que les installations se sont bien passees en important les modules et en affichant leurs versions.,,,,,,,,e873a53e8b908e1b,,,,,,,
@@ -24200,56 +24197,3 @@ Les fonctionnalités de Trinity RDF et les capacités d'inférence d'OWL dans RD
 ---
 
 **Retour au sommaire** : [Index SemanticWeb](../README.md)",,,,,,,,bfd9d411218dfd99,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,sw11interp1,markdown,fr,c115dd21f2677f7e,"**Interprétation — Exemple 1.** Cette requête mesure une *affinité cinématographique* entre réalisateurs : combien de genres deux réalisateurs partagent-ils, tous films confondus ?
-
-Trois astuces SPARQL méritent d'être soulignées :
-
-1. **Le motif de jointure** `?f1 ex:hasGenre ?g . ?f2 ex:hasGenre ?g` relie deux films `f1` et `f2` dès qu'ils partagent au moins un genre `?g`. Les réalisateurs `?d1`, `?d2` sont récupérés via `directedBy`. C'est le bloc de base d'une mesure de similarité « contenu partagé ».
-2. **`FILTER(STR(?d1) < STR(?d2))`** est crucial : sans lui, chaque paire apparaîtrait **deux fois** ((Cameron, Nolan) *et* (Nolan, Cameron)) et chaque réalisateur serait apparié **avec lui-même**. La comparaison lexicographique stricte ne conserve que l'ordonnancement canonique de la paire — l'équivalent SPARQL d'une demi-matrice triangulaire.
-3. **`COUNT(DISTINCT ?g) AS ?shared`** + `GROUP BY ?d1 ?d2` agrège : on compte les genres *distincts* partagés par chaque paire, puis `ORDER BY DESC(?shared)` trie les paires les plus proches stylistiquement en premier.
-
-**Lecture du résultat** (genres vérifiés sur le graphe source, cellule 7) : Cameron (*Avatar* : SciFi, Action) et Nolan (*Inception*, *Interstellar* : SciFi, …) partagent **SciFi + Action** — le cinéma de spectacle à grand budget. Bong (*Parasite*, *Memories of Murder*) et Tarantino (*Pulp Fiction*, *Django*) partagent **Crime + Drama** — le polar dramatique. Les deux paires à 1 genre commun (Bong & Nolan, Nolan & Tarantino) ne croisent que sur **Drama**, qui est aussi le genre le plus représenté du graphe (6 films sur 8). Sur un graphe de milliers de films, cette même requête alimente un *recommender system* de type filtrage collaboratif basé sur les attributs.",,,,,,,,c115dd21f2677f7e,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,sw11interp2,markdown,fr,9aecfdbeabbc5c68,"**Interprétation — Exemple 2.** Cette requête produit, pour chaque film de Bong Joon-ho, la liste agrégée de ses genres sur une seule ligne.
-
-- **`GROUP_CONCAT(DISTINCT ?g; SEPARATOR="", "") AS ?genres`** est l'opérateur-clé : il *aplatit* les plusieurs lignes `(film, genre)` d'un même film en une unique chaîne `""Crime, Drama""`. `DISTINCT` dédoublonne les genres répétés ; le `SEPARATOR` contrôle le séparateur affiché.
-- **`GROUP BY ?film`** garantit une ligne de sortie **par film** (sans lui, `GROUP_CONCAT` fusionnerait tous les genres de toute la filmographie en une seule chaîne).
-- **Piège C# rappelé en commentaire** : la requête est insérée dans une chaîne *verbatim* `@""...""`. En C#, un `""` littéral s'y écrit `""""` (doubled). Donc `SEPARATOR="""", """"` dans le source C# devient `SEPARATOR="", ""` côté SPARQL. C'est cette mécanique d'échappement qu'il faut avoir en tête quand on relit la requête.
-
-**Lecture du résultat** : *Memories of Murder* (Crime, Drama) puis *Parasite* (Drama, Thriller). Le genre **Drama** est le fil conducteur — le invariant de la filmographie de Bong — autour duquel il greffe tour àtour du polar et du thriller. Cette évolution génree par génree est précisément ce que l'agrégation `GROUP_CONCAT` rend lisible en un coup d'œil.",,,,,,,,9aecfdbeabbc5c68,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb,sw13-ex2-equivalence-reading,markdown,fr,50167e8b1b1f2217,"### Lecture de l'exemple 2 : une divergence qui n'en est pas vraiment une
-
-La sortie ci-dessus répond crûment à la question « owlrl et reasonable produisent-ils les mêmes triples ? » : **non**. Mais le **détail** des triples révèle que ce « non » est trompeur.
-
-**Les chiffres bruts sont alarmants** : owlrl infère 211 triples, reasonable 42, et leur intersection ne contient que **26** triples communs — d'où une différence symétrique de **201**. Vu de loin, les deux raisonner OWL 2 RL semblent diverger massivement.
-
-**Mais la divergence est bidirectionnelle et, des deux côtés, constituée de bruit de bas niveau** :
-
-| Côté | Nb | Nature des triples (exemples réels) |
-|------|-----|--------------------------------------|
-| Uniquement owlrl | 185 | **Réflexivité** (`owl:Thing owl:sameAs owl:Thing`, `xsd:long owl:sameAs xsd:long`) + **typage XSD** (`langString rdf:type rdfs:Datatype`) |
-| Uniquement reasonable | 16 | **Typage d'appartenance** (`PizzaBase rdf:type owl:Thing`, `NonVegetarianPizza rdf:type owl:Thing`) |
-
-Aucune des deux listes ne contient du *raisononnement* au sens utile (classification d'instances, chaînes de propriétés, restrictions) — seulement des **assertions structurelles** que tout graphe OWL satisfait trivialement. owlrl materialise l'intégralité des règles W3C (réflexivité `sameAs`, typage XSD exhaustif) ; reasonable adopte une convention différente (expliciter l'appartenance à `owl:Thing`). Les deux approches sont **cohérentes**, elles diffèrent juste sur *quelles* tautologies expliciter.
-
-> **Leçon** : comparer des raisonner OWL 2 RL **au nombre de triples inférés** est trompeur. Ce qui compte n'est pas le volume, mais la **couverture des règles substantielles** (hiérarchie de classes, restrictions, consistance). Sur ce critère, owlrl et reasonable **convergent** : leurs 26 triples communs portent l'essentiel du raisonnement utile. La différence de 201 est un artefact de configuration, pas un désaccord sémantique.
-
-> **Nuance vs la comparaison générique** (§Comparaison) : le tableau cellule 53 expliquait l'écart par les « fermetures transitives exhaustives » — la lecture concrète ici précise qu'il s'agit en fait de **réflexivité et de typage**, et révèle un aspect que cette explication générique taisait : reasonable produit aussi des triples qu'owlrl ne produit pas (les 16 `type owl:Thing`). L'exercice 2 (indice cellule 75) n'adressait lui aussi que les extras d'owlrl.",,,,,,,,50167e8b1b1f2217,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-8-Python-SHACL.ipynb,9b53391a,markdown,fr,161e953ed19f262d,"### Interprétation : que dit ce rapport de validation à sévérités multiples ?
-
-Le rapport renvoyé par `pyshacl` mélange **trois niveaux de sévérité** sur le produit invalide `ex:prod2`. Cette hiérarchie est centrale pour comprendre comment SHACL sépare le *blocage* de la *simple remarque*.
-
-**1. Pourquoi `conforms = False` alors qu'il y a 5 résultats ?**
-Le booléen `conforms` est piloté **uniquement par les `sh:Violation`**. Ici on en compte trois : le nom trop court (`""X""`), le prix hors bornes (`200000`) et l'absence simultanée de marque **et** de fabricant. Les `sh:Warning` (catégorie manquante) et `sh:Info` (description trop courte) sont bien présents dans le rapport mais **ne font pas basculer** `conforms` : ils informent l'utilisateur sans invalider la donnée. C'est ce qui distingue une *erreur fatale* d'une *alerte* ou d'une *suggestion*.
-
-**2. Le rôle de `sh:or` (contrainte logique OU).**
-La troisième Violation provient d'un `sh:or` : la forme exige qu'un produit ait **soit** une `schema:brand` **soit** un `schema:manufacturer`. Comme `prod2` n'a ni l'un ni l'autre, aucune branche du OU n'est satisfaite → Violation. Si `prod2` avait eu seulement une marque, la contrainte serait passée. `sh:or` (comme `sh:and`, `sh:not`, `sh:xone`) permet d'exprimer des combinaisons logiques que des contraintes atomiques ne sauraient capturer.
-
-**3. Le design intentionnel des trois sévérités.**
-
-| Sévérité | Sémantique | Effet sur `conforms` | Cas typique |
-|----------|------------|---------------------|-------------|
-| `sh:Violation` (défaut) | Contrainte dure violée | `False` | Champ obligatoire absent, type incorrect |
-| `sh:Warning` | Anomalie suspecte | inchangé | Donnée facultative mais recommandée absente |
-| `sh:Info` | Remarque informative | inchangé | Convention de style non respectée |
-
-> **À retenir** : un `conforms = True` ne signifie **pas** « zéro résultat dans le rapport » — il signifie « zéro `sh:Violation` ». Pour un audit complet, il faut donc lire le rapport entier (Violations + Warnings + Infos), pas seulement le booléen. Inversement, un pipeline automatisé qui rejette les données peut se contenter de `conforms` : les Warning/Info sont destinés à un humain, pas à un gate automatique.",,,,,,,,161e953ed19f262d,,,,,,,

@@ -102,9 +102,9 @@ with pm.Model() as two_coins:
 print(f""Prior: Beta(1, 1)"")
 print(f""Posterior analytique: Beta({1 + n_faces}, {1 + n_lancers - n_faces})"")
 print(f""E[theta] = {(1 + n_faces) / (2 + n_lancers):.3f}"")",,,,,,,,391bf8882d28aa21,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,2a1ef25d,markdown,fr,6e74a8530742c5fd,"### Interpretation de l'echantillonnage
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,2a1ef25d,markdown,fr,72e838efb7da1177,"### Interpretation de l'echantillonnage
 
-L'echantillonneur NUTS (*No-U-Turn Sampler*, Hoffman & Gelman 2014) a genere 4 chaînes de 2000 echantillons chacune (plus 1000 de warmup), pour un total de 8000 tirages du posterior. Le posterior analytique est **Beta(8, 4)** car le prior Beta(1,1) se combine avec 7 faces et 3 piles.
+L'echantillonneur NUTS (*No-U-Turn Sampler*, Hoffman & Gelman 2014) a genere 4 chaînes de 2000 echantillons chacune (plus 1000 de warmup), pour un total de 8000 tirages du posterior en 21 secondes. Le posterior analytique est **Beta(8, 4)** car le prior Beta(1,1) se combine avec 7 faces et 3 piles.
 
 | Paramètre | Prior | Données | Posterior analytique | Estime MCMC |
 |-----------|-------|---------|---------------------|-------------|
@@ -112,7 +112,7 @@ L'echantillonneur NUTS (*No-U-Turn Sampler*, Hoffman & Gelman 2014) a genere 4 c
 | beta | 1 | +3 piles | 4 | convergent |
 | E[theta] | 0.500 | -- | 0.667 | 0.667 |
 
-La cellule suivante affiche la distribution posterior complete via ArviZ, incluant la densite, la moyenne et l'intervalle de credibilite a 94%.",,,,,,,,6e74a8530742c5fd,,,,,,,
+La cellule suivante affiche la distribution posterior complete via ArviZ, incluant la densite, la moyenne et l'intervalle de credibilite a 94%.",,,,,,,,72e838efb7da1177,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb,b5495e80,code,fr,ae0275a1754e5d31,"# Visualisation du posterior
 az.plot_posterior(trace, var_names=['theta'])
 plt.suptitle('Posterior de theta (probabilite de face)', y=1.02)
@@ -602,15 +602,15 @@ data_outliers = np.concatenate([data_clean, [15.0, -8.0, 12.0]])
 
 result_compare = None  # TODO etudiant : remplacer par az.compare(...)
 print(""Exercice a completer"")",,,,,,,,6d7ffba66ea6c976,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,d0e1f2a9,markdown,fr,f4c1e15f841d5b12,"## 3. Sélection de Composantes sur Données Bimodales
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,d0e1f2a9,markdown,fr,d266d07e96ed406b,"## 3. Sélection de Composantes sur Données Bimodales
 
 Maintenant, testons avec des données bimodales. Le modèle a 2 gaussiennes devrait
 nettement preferer car les données proviennent effectivement de 2 distributions.
 
-Cela correspond a l'exemple Infer-10 ou :
+Cela correspond a l'exemple Infer-8 ou :
 - 1 composante : log evidence = -45.89
 - 2 composantes : log evidence = -31.35
-- Différence : 14.54 (decisif pour 2 composantes)",,,,,,,,f4c1e15f841d5b12,,,,,,,
+- Différence : 14.54 (decisif pour 2 composantes)",,,,,,,,d266d07e96ed406b,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,e1f2a3b0,code,fr,558e7bd846b1418a,"# Modele 1 gaussienne sur donnees bimodales
 with pm.Model() as model_1g_bi:
     mu = pm.Normal('mu', mu=0, sigma=10)
@@ -1020,7 +1020,7 @@ C'est une representation simple mais efficace pour decouvrir des thèmes.
 - Recommandation d'articles
 - Analyse de tendances dans les reseaux sociaux
 - Decouverte de thèmes dans des corpus academiques",,,,,,,,f2c22d7ede97a091,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,d4e5f6a3,markdown,fr,6fc39493f7fa82d2,"## 2. Le Modèle Generatif LDA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,d4e5f6a3,markdown,fr,8a65f60a20138bde,"## 2. Le Modèle Generatif LDA
 
 La **Latent Dirichlet Allocation** (LDA) est le modèle de sujet le plus courant.
 > **Source primaire** : Blei, D. M., Ng, A. Y. & Jordan, M. I. (2003), *Latent Dirichlet Allocation*, Journal of Machine Learning Research 3:993-1022. C'est ce papier qui formalise le modèle generatif ci-dessous (priors Dirichlet phi sur les distributions de mots et theta sur les proportions de sujets, variable latente z assignant chaque mot a un sujet) --- l'un des modèles probabilistes les plus cites en informatique.
@@ -1054,15 +1054,7 @@ Pour chaque document d :
 | Algorithme | VMP (Variational Message Passing) | NUTS (No-U-Turn Sampler) |
 | Variables discretes | Natif (Categorical, Discrete) | Via CategoricalGibbsMetropolis |
 | Rupture de symetrie | Priors asymetriques sur phi | Pareil, ou initialisation |
-| Performance | Rapide pour modèles discrets | Plus lent mais plus general |
-
-### Références canoniques complémentaires
-
-Le papier fondateur de LDA est déjà cité ci-dessus. Sources canoniques complémentaires :
-
-- **MBML — *How to Read a Model*** → sub-page [ModelAnalysis_Latent_Dirichlet_Allocation.html](https://www.mbmlbook.com/ModelAnalysis_Latent_Dirichlet_Allocation.html). Winn, J., Bishop, C. M., & Diethe, T. Lecture pédagogique équivalente avec factor graphs discrets, dans le **Ch.8 *How to Read a Model*** (interlude du MBML, pas un chapitre numéroté). **Note de mapping** : MBML n'a pas de « Chapitre 10 » — c'est une erreur du mapping fondateur #8087. La référence canonique pour LDA dans MBML est la sub-page Ch.8, pointée ici pour corriger le mapping (cf. sub-issue #8205).
-- **Pritchard, J. K., Stephens, M., & Donnelly, P. (2000).** *Inference of population structure using multilocus genotype data*. Genetics, 155(2), 945-959. **L'ancêtre population-genetics** du modèle à mélange de Dirichlet — formalise le prior Dirichlet sur les proportions de mélange (équivalent du θ_d du LDA).
-- **Wang, X., & Grimson, E. (2007).** *Spatial Latent Dirichlet Allocation*. NIPS 2007. Extension spatiale de LDA — exemple canonique d'extension structurellement compatible avec le framework Dirichlet-Multinomial.",,,,,,,,6fc39493f7fa82d2,,,,,,,
+| Performance | Rapide pour modèles discrets | Plus lent mais plus general |",,,,,,,,8a65f60a20138bde,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,e5f6a7b4,code,fr,f1e9146240507a06,"# Creation d'un corpus synthetique simple
 # 3 sujets : S1=""Science"", S2=""Sport"", S3=""Cuisine""
 # 9 mots dans le vocabulaire
@@ -1160,11 +1152,11 @@ with pm.Model() as lda_symmetric:
     trace_sym = pm.sample(2000, random_seed=42, return_inferencedata=True)
 
 print(""Echantillonnage LDA symetrique termine."")",,,,,,,,e1456bb9518af02d,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,933dc3c8,markdown,fr,fc23a7a958118911,"### Interpretation de l'echantillonnage avec priors symetriques
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,933dc3c8,markdown,fr,611fd0a207ec1665,"### Interpretation de l'echantillonnage avec priors symetriques
 
-L'echantillonnage NUTS a converge avec des priors uniformes (Dirichlet(1,...,1)) sur phi et theta. En sortie, les trois sujets presentent des distributions de mots quasi-identiques, avec les mêmes mots dominants (atome, recette, four) dans des proportions similaires (~0.11-0.15). Les proportions theta sont également uniformes (~0.33 par sujet pour chaque document).
+L'echantillonnage NUTS a converge en 56 secondes avec des priors uniformes (Dirichlet(1,...,1)) sur phi et theta. En sortie, les trois sujets presentent des distributions de mots quasi-identiques, avec les mêmes mots dominants (atome, recette, four) dans des proportions similaires (~0.11-0.15). Les proportions theta sont également uniformes (~0.33 par sujet pour chaque document).
 
-Ce résultat est le **problème de symetrie** attendu : sans information a priori pour differencier les sujets, l'echantillonneur ne peut pas les distinguer et converge vers une solution ou tous les sujets sont identiques. La cellule suivante affiche les distributions estimees et confirme cette non-differenciation.",,,,,,,,fc23a7a958118911,,,,,,,
+Ce résultat est le **problème de symetrie** attendu : sans information a priori pour differencier les sujets, l'echantillonneur ne peut pas les distinguer et converge vers une solution ou tous les sujets sont identiques. La cellule suivante affiche les distributions estimees et confirme cette non-differenciation.",,,,,,,,611fd0a207ec1665,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,c9d0e1f8,code,fr,bf97ef9059df1cbd,"# Resultats avec priors symetriques
 phi_sym = trace_sym.posterior['phi'].values.mean(axis=(0, 1))
 
@@ -1721,11 +1713,9 @@ print(f""PyMC version: {pm.__version__}"")
 print(f""ArviZ version: {az.__version__}"")
 print(f""NumPy version: {np.__version__}"")
 print(""\nTous les packages necessaires sont charges."")",,,,,,,,f7e7f4f3ca8848de,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,ba095669,markdown,fr,3d84853d603274b3,"## 1. Le Problème du Crowdsourcing
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,ba095669,markdown,fr,1d967e50e7ee2351,"## 1. Le Problème du Crowdsourcing
 
 ### Contexte
-
-**Pourquoi ce probleme compte.** Le chapitre 7 « Harnessing the Crowd » de *Model-Based Machine Learning* (Winn & Bishop), dont cette serie est distillee, ouvre sur un cas concret : lors du **seisme de 2010 en Haiti** (magnitude 7.0), des dizaines de milliers de messages, SMS et tweets envoyes depuis le terrain ont ete tries et categorises a la main par des volontaires aux competences et biais variables. La plateforme **Ushahidi** (« temoignage » en swahili), creee en **2008** lors des violences post-electorales au Kenya pour cartographier les temoignages, y a ete deployee pour collecter et diffuser l'information de crise (utilisee par l'armee, l'ONU et les ONG). Le defi : a partir de **rapports contradictoires et bruites** emanant de travailleurs de fiabilite inegale, **inferer la situation reelle sur le terrain**. C'est precisement le probleme modelise dans ce notebook. Le meme principe s'applique a des taches plus routinieres.
 
 On veut annoter un grand nombre d'items (images, textes, etc.) en utilisant des travailleurs de qualite variable. Le defi est d'agreger ces annotations pour inferer les vrais labels.
 
@@ -1737,7 +1727,7 @@ On veut annoter un grand nombre d'items (images, textes, etc.) en utilisant des 
 - $t_i \in \{1, \ldots, K\}$ le vrai label de l'item $i$
 - $\theta_j$ la fiabilite du travailleur $j$
 
-**Objectif** : estimer $P(t_i | l_{1:N, 1:M})$ en integrant l'incertitude sur les fiabilites.",,,,,,,,3d84853d603274b3,,,,,,,
+**Objectif** : estimer $P(t_i | l_{1:N, 1:M})$ en integrant l'incertitude sur les fiabilites.",,,,,,,,1d967e50e7ee2351,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,44120f38,markdown,fr,e9a4c57977f411a9,"## 2. Données de Crowdsourcing
 
 Nous utilisons un petit jeu de données avec 5 items, 4 travailleurs et 2 classes pour illustrer les modèles.",,,,,,,,e9a4c57977f411a9,,,,,,,
@@ -1776,16 +1766,16 @@ for i in range(n_items):
     n1 = np.sum(votes == 1)
     accord = ""consensus"" if n0 == 0 or n1 == 0 else ""desaccord""
     print(f""Item {i} : {n0} votes 0, {n1} votes 1 ({accord})"")",,,,,,,,3727f7963b940d14,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,aab34424,markdown,fr,f32458fcce4476b0,"### Lecture des données
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,aab34424,markdown,fr,01a7c53ad3e01c2c,"### Lecture des données
 
 Le tableau montre un scénario typique de crowdsourcing :
 
 | Pattern | Items | Observation |
 |---------|-------|-------------|
-| Consensus (4/4) | Item 1 | Les 4 workers d'accord, haute confiance |
-| Majorite (3/1) | Item 0, 2, 3, 4 | Un worker diverge, le modèle doit ponderer |
+| Consensus (4/4) | Item 0, Item 1 | Tous d'accord, haute confiance |
+| Majorite (3/1) | Item 2, 3, 4 | Un worker diverge, le modèle doit ponderer |
 
-Sur chaque item en desaccord (3/1), exactement un worker se trompe : le Worker 4 sur l'Item 0 (W4=0 alors que vrai=1), le Worker 3 sur l'Item 2 (W3=0 alors que vrai=1), et le Worker 2 sur les Items 3 et 4. W2 cumule deux erreurs sur cinq --- c'est le worker le plus souvent en desaccord, un bon candidat pour tester la detection de workers biaisés.",,,,,,,,f32458fcce4476b0,,,,,,,
+Le Worker 4 (W4) est le seul a se tromper sur les Items 0 et 2 — c'est un bon candidat pour tester la detection de workers biaisés.",,,,,,,,01a7c53ad3e01c2c,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,f2072d1f,markdown,fr,d9c23de598fd5e12,"## 3. Vote Majoritaire (Baseline)
 
 Avant d'utiliser des modèles bayesiens, etablissons une baseline avec le vote majoritaire.",,,,,,,,d9c23de598fd5e12,,,,,,,
@@ -2698,7 +2688,7 @@ $$P(z_t = k | x_{1:T}) \propto \alpha_t(k) \cdot \beta_t(k)$$
 
 > L'algorithme Forward-Backward a ete formalise par **Baum, Petrie, Soules & Weiss (1970)** (*A Maximization Technique Occurring in the Statistical Analysis of Probabilistic Functions of Markov Chains*, Annals of Mathematical Statistics 41(1)). Il est un cas special du cadre EM general de **Dempster, Laird & Rubin (1977)** (*Maximum Likelihood from Incomplete Data via the EM Algorithm*, JRSS B 39(1)).
 ",,,,,,,,f9437314f57eb97c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,a75fe048,code,fr,1dd582a01365b9bf,"def forward_backward(observations, means, sigmas, trans_mat, prior):
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,a75fe048,code,fr,f5c10d6973a553cb,"def forward_backward(observations, means, sigmas, trans_mat, prior):
     """"""
     Algorithme Forward-Backward pour un HMM a emissions gaussiennes.
     
@@ -2750,7 +2740,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,a75fe048,code,fr,1dd582a01
 
 
 # Test avec donnees incluant des points ambigus
-obs_ambiguous = np.array([25.0, 26.1, 17.5, 24.5, 25.3, 9.5, 17.5, 10.8])
+obs_ambiguous = np.array([9.5, 11.2, 17.0, 24.5, 26.1, 18.0, 10.1, 9.8])
 
 # Matrice de transition : forte persistance (les regimes changent rarement)
 trans_mat = np.array([
@@ -2775,11 +2765,11 @@ print(""="" * 65)
 print(f""{'t':>2} {'x':>5} | {'P_bas(indep)':>12} {'P_bas(FB)':>10} | {'P_haut(indep)':>13} {'P_haut(FB)':>11}"")
 print(""-"" * 65)
 for t in range(len(obs_ambiguous)):
-    print(f""{t:2d} {obs_ambiguous[t]:5.1f} | {indep_posteriors[t,0]:12.4f} {fb_posteriors[t,0]:10.4f} | {indep_posteriors[t,1]:13.4f} {fb_posteriors[t,1]:11.4f}"")",,,,,,,,1dd582a01365b9bf,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,50124b39,markdown,fr,ec4bc95189a0a700,"### Comparaison visuelle : independante vs Forward-Backward
+    print(f""{t:2d} {obs_ambiguous[t]:5.1f} | {indep_posteriors[t,0]:12.4f} {fb_posteriors[t,0]:10.4f} | {indep_posteriors[t,1]:13.4f} {fb_posteriors[t,1]:11.4f}"")",,,,,,,,f5c10d6973a553cb,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,50124b39,markdown,fr,3387b7009315fad5,"### Comparaison visuelle : independante vs Forward-Backward
 
-Ce graphique compare les deux approches sur les donnees ambigues. Les deux points ambigus ($x=17.5$, exactement a la frontiere entre les deux regimes) sont laisses a $0.50/0.50$ par la classification independante et tranche par le Forward-Backward selon leur contexte temporel.",,,,,,,,ec4bc95189a0a700,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,5e2e2470,code,fr,056ac2bbd20627cc,"# Visualisation comparative
+Ce graphique compare les deux approches sur les données ambigues. Les points ambigus ($x=17$, $x=18$) sont mieux classes par le Forward-Backward grace au contexte temporel.",,,,,,,,3387b7009315fad5,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,5e2e2470,code,fr,b00441e2452edd06,"# Visualisation comparative
 fig, axes = plt.subplots(2, 1, figsize=(10, 5), sharex=True)
 
 time = range(len(obs_ambiguous))
@@ -2800,22 +2790,19 @@ axes[1].set_xlabel('Temps')
 axes[1].legend(fontsize=9)
 
 # Marquer les points ambigus
-for t in [2, 6]:
+for t in [2, 5]:
     axes[0].annotate('ambigu', xy=(t, 0.5), fontsize=8, color='red', ha='center')
     axes[1].annotate('lisse', xy=(t, 0.5), fontsize=8, color='green', ha='center')
 
 plt.tight_layout()
-plt.show()",,,,,,,,056ac2bbd20627cc,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,f0150f16,markdown,fr,faf22cd83d32c1af,"### Interpretation
+plt.show()",,,,,,,,b00441e2452edd06,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,f0150f16,markdown,fr,2d4475e13ad63c5f,"### Interpretation
 
-Les deux points ambigus ($x = 17.5$, a mi-chemin exact des deux moyennes d'emission $\mu_{bas}=10$ et $\mu_{haut}=25$) sont **indiscernables** pour une classification independante : elle leur attribue $0.50/0.50$.
+Pour les observations ambigues ($x = 17.0$ et $x = 18.0$) :
+- La **classification independante** leur attribue des probabilites proches de 50/50
+- Le **Forward-Backward** utilise le contexte temporel : $x=17.0$ est entre deux observations hautes, donc le lissage favorise l'etat haut
 
-Le **Forward-Backward** exploite le contexte temporel pour les trancher, et le verdict depend du voisinage :
-
-- $x = 17.5$ a $t=2$, entoure d'observations hautes ($26.1$, $24.5$) $\Rightarrow$ lissage vers l'etat haut, $P(haut) = 0.988$
-- $x = 17.5$ a $t=6$, entoure d'observations basses ($9.5$, $10.8$) $\Rightarrow$ lissage vers l'etat bas, $P(bas) = 0.988$
-
-Deux observations **identiques** ($x=17.5$), deux verdicts **opposes** : c'est l'avantage cle du HMM. La **dependance temporelle** des etats transporte l'information du voisinage vers le point ambigu, la ou la classification independante, aveugle au contexte, reste a $0.50/0.50$.",,,,,,,,faf22cd83d32c1af,,,,,,,
+C'est l'avantage cle du HMM : la **dépendance temporelle** des etats ameliore la classification des points ambigus.",,,,,,,,2d4475e13ad63c5f,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-14-Sequences.ipynb,b86d12a5,markdown,fr,a1acadf982be5d10,"## 4. Detection de Regimes Meteo
 
 Application : detecter les jours de soleil vs pluie a partir de temperatures.
@@ -3241,11 +3228,10 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,3d633d35,markdown,fr,23
 Le filtrage collaboratif predit les préférences d'un utilisateur en se basant sur les préférences d'utilisateurs similaires. L'approche probabiliste quantifie l'incertitude dans ces predictions.
 
 **Idee cle** : Si deux utilisateurs ont des gouts similaires sur des items connus, leurs préférences sur des items inconnus seront probablement similaires aussi.",,,,,,,,2314d7462ff2c101,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,7f6144d8,markdown,fr,36afd18a40cf71e4,"## 2. Factorisation Matricielle Bayesienne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,7f6144d8,markdown,fr,a65710f064638fc0,"## 2. Factorisation Matricielle Bayesienne
 
 > **Origine de la méthode** : la factorisation matricielle *probabiliste* implementee ici est le modèle **PMF** (Probabilistic Matrix Factorization) de **Salakhutdinov & Mnih (2008)**, qui a formalise l'inference bayesienne (MCMC) des traits latents. Le principe general de factorisation pour la recommandation s'est impose lors du **Netflix Prize** (2006-2009), notamment via la decomposition SVD de **Simon Funk (2006)** et la synthese de **Koren, Bell & Volinsky (2009)**. Ce notebook suit la formulation bayesienne de PMF.
 
-> *Papier précurseur.* La formulation probabiliste originelle de la factorisation matricielle pour la recommandation est introduite par **Mnih & Salakhutdinov (2007)**, « *Probabilistic Matrix Factorization* », *NIPS'07*, 1257-1264. Ce papier précurseur propose le modèle de base (prior gaussien isotropique sur les traits latents, vraisemblance gaussienne sur les notes) que Salakhutdinov & Mnih (2008) etendent ensuite au cadre bayesien complet avec inference MCMC. Le modèle PMF originel (2007) n'utilise pas de MCMC — il optimise directement le posterior par **maximum a posteriori (MAP)** — mais il pose les bases du formalisme probabiliste. C'est ce formalisme que PyMC implement ici en inference MCMC complete (NUTS), comme l'illustre le code ci-dessous.
 ### Fondements mathematiques
 
 La factorisation matricielle decompose la matrice de notes $R$ (users $\times$ items) en produit de deux matrices de traits latents :
@@ -3261,7 +3247,7 @@ La note predite pour l'utilisateur $u$ sur l'item $i$ est :
 
 $$\hat{r}_{ui} = \mathbf{u}_u^T \cdot \mathbf{v}_i + \epsilon$$
 
-avec $\epsilon \sim \mathcal{N}(0, \sigma^2)$ le bruit d'observation. Dans PMF, les facteurs latents $\mathbf{u}_u, \mathbf{v}_i$ portent des priors gaussiens et l'inference (ici NUTS) estime leur posterieur — quantifiant l'incertitude sur chaque prediction.",,,,,,,,36afd18a40cf71e4,,,,,,,
+avec $\epsilon \sim \mathcal{N}(0, \sigma^2)$ le bruit d'observation. Dans PMF, les facteurs latents $\mathbf{u}_u, \mathbf{v}_i$ portent des priors gaussiens et l'inference (ici NUTS) estime leur posterieur — quantifiant l'incertitude sur chaque prediction.",,,,,,,,a65710f064638fc0,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,9535b416,markdown,fr,f0ab0d889389aedd,"### Preparation des données
 
 Nous definissons une matrice de notes **partiellement observee** (8 notes sur 20 possibles).",,,,,,,,f0ab0d889389aedd,,,,,,,
@@ -3279,13 +3265,13 @@ n_obs = len(rating_obs)
 print(f""{n_obs} observations (user, item, note)"")
 for u, i, r in zip(user_obs, item_obs, rating_obs):
     print(f""  User {u} -> Item {i} : {r}/5"")",,,,,,,,6d0c1900644f6b0c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,42700676,markdown,fr,355a8d750c3bd069,"### Interpretation des données
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,42700676,markdown,fr,6cbc6c2417396c94,"### Interpretation des données
 
 | Statistique | Valeur |
 |-------------|--------|
 | Observations | 8 sur 20 possibles (40%) |
-| Moyenne | 3.38 |
-| Ecart-type | 1.32 |",,,,,,,,355a8d750c3bd069,,,,,,,
+| Moyenne | {moyenne} |
+| Ecart-type | {ecart_type} |",,,,,,,,6cbc6c2417396c94,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,420163a9,markdown,fr,1aab6144bd65a68e,"### Modèle PyMC de factorisation
 
 Le modèle définit des priors gaussiens sur les matrices latentes et connecte les observations.",,,,,,,,1aab6144bd65a68e,,,,,,,
@@ -3466,10 +3452,8 @@ print(""(* = observation, autres = prediction)"")
 
 rmse = np.sqrt(np.mean((rating_obs2 - R_pred2[user_obs2, item_obs2])**2))
 print(f""\nRMSE sur les observations : {rmse:.3f}"")",,,,,,,,2c39ff507f0d5738,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,6b703a65,markdown,fr,5f8e6c6a9ed79c2b,"## Exercice 1 : Cold-start avec features supplementaires
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,6b703a65,markdown,fr,b2c1f3564755647c,"## Exercice 1 : Cold-start avec features supplementaires
 
-
-> *Référence.* Le cadre canonique du **cold-start** (utilisateur ou item sans historique) est formalisé par **Schein, Popescul, Ungar, Pennock & Rifkin (2002)**, « *Methods and Metrics for Cold-Start Recommendations* », *SIGIR '02*, 253-260. Ces auteurs proposent l'approche **CBFR** (Content-Based Filtering Recommendation) combinant factorisation matricielle et regression sur les features demographiques / contenu — c'est exactement la formulation hybride implementee plus bas (md[28-35]). La métrique d'évaluation « cold-start coverage » qu'ils introduisent reste la reference pour comparer les strategies hybrides.
 Le modèle cold-start précédent utilise uniquement l'age et le genre comme
 features utilisateur. Etendez-le en ajoutant des features supplementaires
 (par exemple, une note moyenne sur les items déjà vus) pour ameliorer les
@@ -3479,7 +3463,7 @@ predictions pour les nouveaux utilisateurs.
 - Ajouter un feature `avg_rating` (note moyenne observee, 0 si pas d'historique)
 - Définir `w_extra = pm.Normal('w_extra', mu=0, sigma=1)` pour le poids supplementaire
 - La prediction combinee : `latent + feat_user + feat_item + w_extra * avg_rating`
-- Comparer les recommandations avec et sans le feature supplementaire",,,,,,,,5f8e6c6a9ed79c2b,,,,,,,
+- Comparer les recommandations avec et sans le feature supplementaire",,,,,,,,b2c1f3564755647c,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,2f65797c,code,fr,049c4588a7c1bba5,"# TODO etudiant : etendre le modele cold-start pour un nouvel utilisateur avec features
 # Etape 1 : definir les features d'un nouvel utilisateur (age, genre)
 # Etape 2 : utiliser les poids de regression appris (w_user_post, w_item_post)
@@ -3488,15 +3472,15 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,2f65797c,code,fr,049c45
 
 result = None  # TODO etudiant : remplacer par le modele etendu
 print(""Exercice a completer"")",,,,,,,,049c4588a7c1bba5,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,88307b4e,markdown,fr,965dc7a2bf7ee5c1,"### Comparaison avant/après correction
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,88307b4e,markdown,fr,2c68eb725959f539,"### Comparaison avant/après correction
 
 | Aspect | Avant | Après |
 |--------|-------|-------|
 | Observations | 8 | 25 |
 | Biais U/I | Non | Oui |
 | Priors sigma | 1.0 | 0.5 |
-| RMSE | Élevé (effondrement vers 0) | Variable |
-| Predictions | Toutes ~0.0 | Differentiees |",,,,,,,,965dc7a2bf7ee5c1,,,,,,,
+| RMSE | ~0.0 (surajustement) | Variable |
+| Predictions | Toutes ~0.0 | Differentiees |",,,,,,,,2c68eb725959f539,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,8656b90f,markdown,fr,eba67f15d96454a2,"## 4. Cold-Start avec Features
 
 Le problème du **cold-start** : comment recommander pour un nouvel utilisateur ou item sans historique ?
@@ -3616,10 +3600,8 @@ print(""Exercice a completer"")",,,,,,,,2c859c9030176227,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,ba98300f,markdown,fr,a17618a403f578f8,"### Analyse cold-start
 
 Sans historique, le modèle utilise uniquement les **poids de regression sur les features**. C'est une prediction basee sur les caractéristiques observees, moins precise mais toujours informative.",,,,,,,,a17618a403f578f8,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,0405b7fd,markdown,fr,0f0cda6a42a549bb,"## 5. Click Model : Sources Multiples
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,0405b7fd,markdown,fr,b7f0c93719575472,"## 5. Click Model : Sources Multiples
 
-
-> *Origine.* Le modèle dynamique de clic pour la recherche Web est formalisé par **Chapelle & Zhang (2009)**, « *A Dynamic Bayesian Network Click Model for Web Search Ranking* », *WWW '09*, 1-10. Le **DBCM** (Dynamic Bayesian Click Model) introduit un score latent depend du temps (perception + attractivité) qui genere à la fois les jugements editoriaux et les observations de clics — fusionnant plusieurs sources d'information sur la qualité d'un document. C'est exactement le modèle implementee ici (code[18-22]) avec un score latent unique et deux vraisemblances (jugements + clics).
 ### Problème
 
 Comment reconcilier plusieurs sources d'information sur la qualite d'un document ?
@@ -3628,7 +3610,7 @@ Le modèle suppose un **score latent** (qualite vraie) qui genere les deux obser
 
 $$s_d \sim \mathcal{N}(\mu_s, \sigma_s^2)$$
 $$judgement_d \sim \mathcal{N}(s_d, \sigma_j^2)$$
-$$clicks_d \sim \mathcal{N}(s_d \cdot \alpha, \sigma_c^2)$$",,,,,,,,0f0cda6a42a549bb,,,,,,,
+$$clicks_d \sim \mathcal{N}(s_d \cdot \alpha, \sigma_c^2)$$",,,,,,,,b7f0c93719575472,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,de30873f,code,fr,b7998e0c8bdc1123,"# Click Model simplifie
 n_docs = 6
 
@@ -3837,7 +3819,7 @@ print(f""Observations: {len(m_ratings)} notes"")
 # Etape 3 : definir la vraisemblance
 # Etape 4 : echantillonner avec pm.sample()
 # Etape 5 : afficher les predictions et recommandations",,,,,,,,0759df5a91fbb9f0,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,f5156a33,markdown,fr,b1d16198d7e6e55f,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,f5156a33,markdown,fr,01db8a048c542e93,"## Conclusion
 
 Les systèmes de recommandation bayesiens estiment les préférences utilisateur a partir d'interactions observees, avec une quantification de l'incertitude.
 
@@ -3848,44 +3830,14 @@ Les systèmes de recommandation bayesiens estiment les préférences utilisateur
 
 ---
 
-**Navigation**### References
-
-**Sources fondatrices (papiers primaires).**
-
-- **Mnih & Salakhutdinov (2007)**, « *Probabilistic Matrix Factorization* », *NIPS'07*, 1257-1264. Papier précurseur de PMF — modèle probabiliste de base avec vraisemblance gaussienne, optimisation MAP. Le formalisme probabiliste qu'il pose est ensuite étendu au cadre bayesien MCMC par Salakhutdinov & Mnih (2008).
-- **Salakhutdinov & Mnih (2008)**, « *Bayesian Probabilistic Matrix Factorization using Markov Chain Monte Carlo* », *ICML'08*, 880-887. Extension bayesienne complete de PMF avec inference MCMC sur les priors des traits latents. C'est la formulation implementee ici (NUTS sur PyMC).
-- **Schein, Popescul, Ungar, Pennock & Rifkin (2002)**, « *Methods and Metrics for Cold-Start Recommendations* », *SIGIR'02*, 253-260. Cadre canonique du cold-start hybride (CBFR) combinant factorisation et regression sur features demographiques.
-- **Chapelle & Zhang (2009)**, « *A Dynamic Bayesian Network Click Model for Web Search Ranking* », *WWW'09*, 1-10. Modèle DBCM de fusion multi-sources (jugements + clics) via score latent dynamique.
-
-**Sources secondaires (ecosysteme PyMC).**
-
-- **Koren, Bell & Volinsky (2009)**, « *Matrix Factorization Techniques for Recommender Systems* », *IEEE Computer* 42(8):30-37. Synthèse technique du Netflix Prize (2006-2009), incluant SVD, Funk SVD, et PMF. Lecture complementaire pour le contexte algorithmique.
-- **Salvatier J., Wiecki T.V., Fonnesbeck C. (2016)**, « *Probabilistic programming in Python using PyMC3* », *PeerJ Computer Science* 2:e55. Manuel de reference pour l'implementation PyMC (NUTS, distributions, inference).
-- **Gelman A., Carlin J.B., Stern H.S., Dunson D.B., Vehtari A., Rubin D.B. (2013)**, « *Bayesian Data Analysis, Third Edition* », Chapman & Hall/CRC. Reference générale pour l'inference bayesienne (Chapter 11: MCMC, Chapter 13: Hierarchical models).
-
-**Relations à la série.**
-
-- **PyMC-15 ↔ Infer-15** (jumeau .NET) : PR #8331 (c.850) ajoute les mêmes références canoniques au notebook C# (Infer.NET), avec en supplement Minka 2001 (EP) et Wang-Blei 2011 (collaborative topic modeling). Le jumeau PyMC (ici) utilise **NUTS** sur PMF ; le jumeau Infer.NET utilise **EP** sur Variable.Gaussian + Factorisation. Stack et algorithme distincts, substance coherente.
-- **PyMC-15 ↔ PyMC-19** (Survival Analysis) : PR #8302 (c.844) ajoute Kaplan-Meier 1958 + Cox 1972 + Weibull 1951 — pattern axis-1 appliqué au sub-grain survival.
-- **PyMC-15 ↔ PyMC-18** (Change-Point) : PR #8314 (c.847) ajoute Adams & MacKay 2007 + Western & Harrison 1989 + Fearnhead 2006 — pattern axis-1 applique au sub-grain change-point.
-
-**Pour aller plus loin.**
-
-- **Hoffman M.D., Gelman A. (2014)**, « *The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo* », *JMLR* 15(47):1593-1623. Article fondateur de **NUTS** (No-U-Turn Sampler) — l'algorithme d'inference utilisé ici pour PMF. Lecture recommandée pour comprendre le comportement de l'inference (path length adaptatif, stopping criterion).
-- **Vehtari A., Gelman A., Gabry J. (2017)**, « *Practical Bayesian Model Evaluation Using Leave-One-Out Cross-Validation and WAIC* », *Statistics and Computing* 27:1413-1432. PSIS-LOO (Pareto-Smoothed Importance Sampling Leave-One-Out) pour la selection de modele et la validation hors-échantillon des modèles bayesiens — applicable ici pour comparer le modèle PMF de base aux variantes cold-start / click model.
-- **Koren Y. (2008)**, « *Factorization Meets the Neighborhood: a Multifaceted Collaborative Filtering Model* », *KDD'08*, 426-434. Modele hybride combinant factorisation matricielle et neighborhood-based filtering — extension naturelle du modèle de base implemente ici.
-- **MBML Ch.13** (Kor believability) du cours MBML en ligne de Cusack et al. — chapitre de reference sur la modélisation des préférences utilisateur avec traits latents.
-
----
-
- : [PyMC-14-Sequences](PyMC-14-Sequences.ipynb) | [Index](README.md)",,,,,,,,b1d16198d7e6e55f,,,,,,,
+**Navigation** : [PyMC-14-Sequences](PyMC-14-Sequences.ipynb) | [Index](README.md)",,,,,,,,01db8a048c542e93,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb,ref-pmf-recommenders,markdown,fr,49b001633bb6d41c,"
 ## References
 
 - **Salakhutdinov, R. and Mnih, A. (2008).** *Bayesian Probabilistic Matrix Factorization Using Markov Chain Monte Carlo.* In Proceedings of the 25th International Conference on Machine Learning (ICML '08), 880-887. doi:10.1145/1390156.1390267 — Le modèle PMF bayesien (priors gaussiens sur les facteurs U, V, inference MCMC) implemente dans ce notebook.
 - **Koren, Y., Bell, R. and Volinsky, C. (2009).** *Matrix Factorization Techniques for Recommender Systems.* IEEE Computer, 42(8), 30-37. doi:10.1109/MC.2009.263 — Synthese des techniques de factorisation matricielle popularisees par le Netflix Prize (biais utilisateurs/items, cold-start).
 - **Funk, S. (2006).** *Netflix Update: Try This at Home.* (Blog) — La decomposition SVD appliquee aux recommandations, originelle du Netflix Prize.",,,,,,,,49b001633bb6d41c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,65abe950,markdown,fr,e521fa45db9e707b,"# PyMC-16 : Processus Gaussiens et frontières non linéaires
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,65abe950,markdown,fr,731cfac86e179aa1,"# PyMC-16 : Processus Gaussiens et frontières non linéaires
 
 **Navigation** : [Index](../README.md) | [<< PyMC-15](PyMC-15-Recommenders.ipynb) | [PyMC-17 >>](PyMC-17-Kalman-Filter.ipynb)
 
@@ -3901,13 +3853,13 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,65abe950,mar
 
 - Comprendre le **processus gaussien** comme une distribution sur des fonctions
 - Construire un prior via un **noyau** (kernel RBF / squared-exponential)
-- Implementer la **classification GP** (modèle logistique / lien logit) sur des données non linéairement séparables
+- Implementer la **classification GP** (modèle probit) sur des données non linéairement séparables
 - Visualiser la **frontière de decision** non linéaire et les zones d'incertitude
 - Comparer l'effet de la **longueur de corrélation** (length-scale) du noyau
 
 > Ce notebook est le port Python (PyMC) du notebook Infer.NET [Infer-16-Sparse-Gaussian-Process](../Infer/Infer-16-Sparse-Gaussian-Process.ipynb). L'API PyMC (`pm.gp`) diffère de l'API Infer.NET (`SparseGP`) mais le paradigme — un prior gaussien sur les fonctions, bruité puis seuillée pour la classification — est identique.
-",,,,,,,,e521fa45db9e707b,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,1f6d5047,markdown,fr,3de9d1414711aff2,"## 1. Le processus gaussien : un prior sur des fonctions
+",,,,,,,,731cfac86e179aa1,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,1f6d5047,markdown,fr,638c73b6126d6d6c,"## 1. Le processus gaussien : un prior sur des fonctions
 
 Un **processus gaussien (GP)** est une distribution de probabilité sur des fonctions : pour tout ensemble fini de points, les valeurs de la fonction suivent conjointement une loi gaussienne. Le GP est specifie par sa fonction **moyenne** $m(x)$ (souvent nulle) et sa fonction de **covariance** $k(x, x')$ — le **noyau**.
 
@@ -3915,9 +3867,7 @@ Le noyau le plus courant est le **RBF** (squared-exponential) :
 
 $$k(x, x') = \exp\left(-\frac{\|x - x'\|^2}{2 \, \ell^2}\right)$$
 
-ou $\ell$ est la **longueur de corrélation** (length-scale). Deux points proches ($\|x-x'\| \ll \ell$) sont fortement corrélés ; deux points éloignés ($\|x-x'\| \gg \ell$) sont quasi-indépendants. Le noyau mesure donc la **similitude** entre points.
-
-> *Référence fondatrice.* Le **livre de référence** sur les GP pour le machine learning est Rasmussen & Williams (Rasmussen, C. E. & Williams, C. K. I., 2006, *Gaussian Processes for Machine Learning*, MIT Press, isbn:9780262182539, [www.gaussianprocess.org/gpml/](https://www.gaussianprocess.org/gpml/)). Le **chapitre 1** introduit les GP comme distributions gaussiennes indexées par les entrées, le **chapitre 2** detaille la prediction (loi conditionnelle gaussienne) et le **chapitre 3** les modeles de classification (lien probit/logit, Laplace approximation, EP). Pour une introduction alternative, le **chapitre 45 de MacKay** (MacKay, D. J. C., 2003, *Information Theory, Inference, and Learning Algorithms*, Cambridge University Press, [www.inference.org.uk/itila/book.html](https://www.inference.org.uk/itila/book.html)) presente les GP comme des reseaux de neurones infinis (largeur -> infinie) — une perspective complementaire qui eclaire les liens avec les RN classiques.",,,,,,,,3de9d1414711aff2,,,,,,,
+ou $\ell$ est la **longueur de corrélation** (length-scale). Deux points proches ($\|x-x'\| \ll \ell$) sont fortement corrélés ; deux points éloignés ($\|x-x'\| \gg \ell$) sont quasi-indépendants. Le noyau mesure donc la **similitude** entre points.",,,,,,,,638c73b6126d6d6c,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,fa066866,code,fr,54d09fb7a6b34d1e,"# Imports : PyMC (pm.gp), ArviZ, NumPy, Matplotlib.
 import numpy as np
 import matplotlib.pyplot as plt
@@ -4001,20 +3951,16 @@ plt.ylabel(""x2"")
 plt.tight_layout()
 plt.show()
 ",,,,,,,,953dfa67958b904c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,95d51c4c,markdown,fr,03444e0f1e862e34,"## 3. Modèle : classification GP logistique (lien logit)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,95d51c4c,markdown,fr,acb1f645f23dc0e2,"## 3. Modèle : classification GP probit
 
-On pose un **prior GP** sur la fonction de score $f(x)$, de moyenne nulle et de covariance RBF. La classification est **logistique** (lien **logit**) : la probabilité de la classe 1 est $\sigma(f(x)) = 1/(1+e^{-f(x)})$ (sigmoïde logistique).
-
-> **Ne pas confondre avec le probit.** Le lien *probit* utilise $p = \Phi(f)$ (CDF de la loi normale centrée réduite), qui est le lien du jumeau Infer.NET (`GaussianFromMeanAndVariance > 0`, « bruit gaussien seuillé à 0 »). Logit ($\sigma$) et probit ($\Phi$) sont numériquement proches mais distincts (Rasmussen & Williams 2006, §3.9).
+On pose un **prior GP** sur la fonction de score $f(x)$, de moyenne nulle et de covariance RBF. La classification est **probit** : la probabilité de la classe 1 est $\sigma(f(x))$ (ou $\sigma$ est la sigmoïde, équivalente a un bruit gaussien seuillée a 0 comme dans Infer.NET).
 
 Le paramètre critique est la **longueur de corrélation** $\ell$ : on lui met un prior faible (`LogNormal`) pour que le GP l'apprenne depuis les données plutot que de le fixer arbitrairement.
 
 $$f \sim \mathcal{GP}(0, k_{\text{RBF}}), \qquad y_i \sim \text{Bernoulli}(\sigma(f(x_i)))$$
 
-PyMC fournit `pm.gp.Latent` pour un GP sur une variable latente (non conjuguee — NUTS requis, contrairement a la régression GP conjuguee).
-
-> *Origine.* Le **cadre canonique du classifieur GP** a ete formalise par Williams & Barber (Williams, C. K. I. & Barber, D., 1998, ""Bayesian Classification with Gaussian Processes"", *IEEE Transactions on Pattern Analysis and Machine Intelligence* 20(12):1342-1351, doi:10.1109/34.735807) en utilisant l'**approximation de Laplace** pour rendre le posterior sur la fonction latente $f$ tractable. Leur article introduit la formulation qui est devenue standard : prior GP + vraisemblance non-gaussienne (logit, probit, softmax) + approximation de Laplace ou EP pour l'inference. PyMC utilise aujourd'hui **NUTS** (plus precis, plus flexible pour des hyperparametres inconnus comme $\ell$) plutot que Laplace/EP, mais le modele probabiliste sous-jacent est identique.",,,,,,,,03444e0f1e862e34,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,bf64fd5b,code,fr,871c961026b7c3aa,"# Modele : classification GP logistique (lien logit) sur le donut.
+PyMC fournit `pm.gp.Latent` pour un GP sur une variable latente (non conjuguee — NUTS requis, contrairement a la régression GP conjuguee).",,,,,,,,acb1f645f23dc0e2,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,bf64fd5b,code,fr,e7f4cf88434d0697,"# Modele : classification GP probit sur le donut.
 with pm.Model() as gp_model:
     # Prior sur la longueur de correlation (apprise, non fixee).
     ls = pm.LogNormal(""ls"", mu=0.0, sigma=0.5)
@@ -4023,15 +3969,14 @@ with pm.Model() as gp_model:
     gp = pm.gp.Latent(cov_func=cov)
     # Fonction latente f aux points d'observation.
     f = gp.prior(""f"", X=X_donut)
-    # Likelihood logit : p = sigmoid(f), via Bernoulli(logit_p=f).
-    # (Distinct du probit du jumeau Infer.NET, ou p = Phi(f) : RW2006 §3.9.)
+    # Likelihood probit : logit(f) = f, equivalente au modele probit d'Infer.NET.
     pm.Bernoulli(""y"", logit_p=f, observed=y_donut)
 
-print(""Modele GP logistique construit."")
+print(""Modele GP probit construit."")
 print(""  Prior sur ls : LogNormal(0, 0.5)"")
 print(""  Noyau : ExpQuad (RBF) 2D"")
-print(""  Likelihood : Bernoulli(logit_p=f) -- lien logit, p = sigmoid(f)"")
-",,,,,,,,871c961026b7c3aa,,,,,,,
+print(""  Likelihood : Bernoulli(logit_p=f) -- equivalent probit Infer.NET"")
+",,,,,,,,e7f4cf88434d0697,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,420b74eb,markdown,fr,0a95b1299eefe3d0,"### Inference : NUTS
 
 Le GP latent etant non conjugue, on échantillonne par **NUTS**. Sur 16 points c'est rapide (la complexite dominante est la factorisation de Cholesky de la matrice de covariance $16 \times 16$).",,,,,,,,0a95b1299eefe3d0,,,,,,,
@@ -4048,7 +3993,7 @@ print(f""ls posterior : moyenne = {az.summary(idata, var_names=['ls'])['mean'].i
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,754027d1,markdown,fr,1dc3a582e54a23f6,"## 4. Predictions et frontière de decision
 
 Pour predire en de nouveaux points $x_*$, on tire $f_*$ du GP **conditionnel** aux observations. La probabilité predite est $\sigma(f_*)$. On visualise la frontière de decision sur une grille — elle doit suivre l'anneau du donut.",,,,,,,,1dc3a582e54a23f6,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,2f4738a3,code,fr,0f1dc401eb07d282,"# Grille de prediction pour visualiser la frontiere de decision.
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,2f4738a3,code,fr,8200c656df531ef5,"# Grille de prediction pour visualiser la frontiere de decision.
 grid_1d = np.linspace(-2, 2, 20)
 G1, G2 = np.meshgrid(grid_1d, grid_1d)
 X_grid = np.column_stack([G1.ravel(), G2.ravel()])
@@ -4081,12 +4026,12 @@ axes[1].scatter(X_donut[y_donut == 1, 0], X_donut[y_donut == 1, 1], c=""k"", s=4
 axes[1].set_title(""Incertitude (ecart-type de f*)"")
 axes[1].set_xlabel(""x1""); axes[1].set_ylabel(""x2""); axes[1].set_aspect(""equal"")
 fig.colorbar(cs, ax=axes[1])
-fig.suptitle(""Classification GP logistique sur le donut"", y=1.01)
+fig.suptitle(""Classification GP probit sur le donut"", y=1.01)
 plt.tight_layout()
 plt.show()
 print(""La frontiere (ligne noire, P=0.5) suit l'anneau du donut : non lineaire."")
 print(""L'incertitude est maximale entre les deux classes (zone d'indetermination)."")
-",,,,,,,,0f1dc401eb07d282,,,,,,,
+",,,,,,,,8200c656df531ef5,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,f367ff43,markdown,fr,72abcf76100ce5db,"### Accuracy et predictions sur points test
 
 On verifie l'accuracy sur le training set et on predit en quelques points test : au centre (doit etre classe 0), a mi-rayon (incertain), sur l'anneau (classe 1).",,,,,,,,72abcf76100ce5db,,,,,,,
@@ -4109,7 +4054,7 @@ for tp, p in zip(test_points, p_test):
     print(f""  x={tp} : P(classe 1) = {p:.2f} -> classe {int(p > 0.5)}"")
 print(""\nLecture : centre -> classe 0, anneau -> classe 1, mi-rayon -> incertain."")
 ",,,,,,,,91b19fcb48a8b668,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,72efa4e4,markdown,fr,f5315343524e4555,"## 5. Effet de la longueur de corrélation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,72efa4e4,markdown,fr,aba2ce9ad2477387,"## 5. Effet de la longueur de corrélation
 
 La longueur de corrélation $\ell$ contrôle la **souplesse** de la frontière :
 
@@ -4117,16 +4062,14 @@ La longueur de corrélation $\ell$ contrôle la **souplesse** de la frontière :
 - $\ell$ **grand** ($\gg 1$) : fonctions très lisses, frontière quasi-linéaire — risque de **sous-apprentissage** (panneau `ls=5.0` de la section 1).
 - $\ell$ **apris** : le prior `LogNormal` + NUTS laisse les données choisir le $\ell$ optimal (moyenne posterieure affichée après l'inference ci-dessus).
 
-C'est l'un des avantages du GP **bayesien** sur un noyau a hyperparamètre fixe : l'incertitude sur $\ell$ est propagee dans les predictions, et le modèle peut desactiver de lui-même les echelles de bruit inutiles (Automatic Relevance Determination, cf. [PyMC-10](PyMC-10-Model-Selection.ipynb)). L'exercice 3 ci-dessous invite a verifier empiriquement l'effet d'un prior concentré sur $\ell$.
-
-> *Origine.* L'**Automatic Relevance Determination** (ARD) — un hyperparametre $\ell_d$ distinct par dimension d'entree $d$, permettant au modele de desactiver de lui-meme les dimensions non-pertinentes — a ete formalise par Neal (Neal, R. M., 1996, *Bayesian Learning for Neural Networks*, These de doctorat, Universite de Toronto, [www.cs.toronto.edu/~radford/bnval.html](https://www.cs.toronto.edu/~radford/bnval.html), §3.4.2 + §5.7.4) dans le cadre des reseaux de neurones bayesiens avec priors sur les hyperparametres d'echelle. Ce notebook utilise un seul $\ell$ partage pour toutes les dimensions (modele simplifie) ; le passage a l'ARD consiste a remplacer le scalar `ell` par un vecteur `ells = [ell_1, ..., ell_D]` avec un prior par dimension. Rasmussen & Williams 2006 §5.1 detaille la formulation ARD complete pour les GP.",,,,,,,,f5315343524e4555,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,8cc890a3,markdown,fr,e46abb93eca333b5,"## 6. Synthese
+C'est l'un des avantages du GP **bayesien** sur un noyau a hyperparamètre fixe : l'incertitude sur $\ell$ est propagee dans les predictions, et le modèle peut desactiver de lui-même les echelles de bruit inutiles (Automatic Relevance Determination, cf. [PyMC-10](PyMC-10-Model-Selection.ipynb)). L'exercice 3 ci-dessous invite a verifier empiriquement l'effet d'un prior concentré sur $\ell$.",,,,,,,,aba2ce9ad2477387,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,8cc890a3,markdown,fr,9dfaed2de5efc9b9,"## 6. Synthese
 
 | Aspect | Infer.NET (Infer-16) | PyMC (ce notebook) |
 |--------|----------------------|---------------------|
 | API | `SparseGP`, `Variable.FunctionEvaluate` | `pm.gp.Latent`, `gp.prior` |
 | Inference | EP (Expectation Propagation) | NUTS (MCMC) |
-| Likelihood | `GaussianFromMeanAndVariance > 0` (**probit** : $p=\Phi(f)$) | `Bernoulli(logit_p=f)` (**logit** : $p=\sigma(f)$) |
+| Likelihood | `GaussianFromMeanAndVariance > 0` (probit) | `Bernoulli(logit_p=f)` (probit) |
 | Noyau | `SquaredExponential` | `pm.gp.cov.ExpQuad` |
 | Hyperparametre ls | fixe | appris (`LogNormal` prior) |
 
@@ -4138,36 +4081,12 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,8cc890a3,mar
 
 Le paradigme est le même en Infer.NET et PyMC ; seule l'API et la méthode d'inference (EP vs NUTS) différent.
 
-### References
-
-**Sources fondatrices (papiers primaires).**
-
-- Williams, C. K. I. & Barber, D. (1998), ""Bayesian Classification with Gaussian Processes"", *IEEE Transactions on Pattern Analysis and Machine Intelligence* 20(12):1342-1351, doi:10.1109/34.735807 — formalisation du classifieur GP avec approximation de Laplace (section 3, modele $\sigma(f)$).
-- Neal, R. M. (1996), *Bayesian Learning for Neural Networks*, These de doctorat, Universite de Toronto — formalisation de l'**Automatic Relevance Determination** (ARD) avec un $\ell_d$ par dimension d'entree (section 5.7.4).
-- Rasmussen, C. E. & Williams, C. K. I. (2006), *Gaussian Processes for Machine Learning*, MIT Press, isbn:9780262182539 — livre de reference canonique (chap. 1-2 GP, chap. 3 classification, chap. 5 selection de modele ARD, chap. 8 sparse approximations).
-- Snelson, E. & Ghahramani, Z. (2006), ""Sparse Gaussian Processes using Pseudo-Inputs"", *Advances in Neural Information Processing Systems 18 (NeurIPS '06)* — introduction des **inducing points** $M \ll N$ pour reduire $O(N^3)$ a $O(NM^2)$ (section ""Pour aller plus loin"").
-
-**Sources secondaires (contexte methodologique).**
-
-- MacKay, D. J. C. (2003), *Information Theory, Inference, and Learning Algorithms*, Cambridge University Press — chap. 45 : GP comme reseaux de neurones de largeur infinie (perspective complementaire a R&W).
-- Quinonero-Candela, J. & Rasmussen, C. E. (2005), ""A Unifying View of Sparse Approximate Gaussian Process Regression"", *Journal of Machine Learning Research* 6:1939-1959 — synthese des methodes sparse (DTC, FITC, VFE).
-- Titsias, M. K. (2009), ""Variational Learning of Inducing Variables in Sparse Gaussian Processes"", *Proceedings of the 12th International Conference on Artificial Intelligence and Statistics (AISTATS '09)* — formalisation variationnelle de la sparse GP (Titsias trick).
-- Hensman, J., Fusi, N. & Lawrence, N. D. (2013), ""Gaussian Processes for Big Data"", *Proceedings of the 29th Conference on Uncertainty in Artificial Intelligence (UAI '13)* — passage a l'echelle des GP via la stochastique variational inference.
-- Ruitort-Mayol, J., Solin, A., Särkkä, A. et al. (2023), ""Hilbert Space Methods for Reduced-Rank Gaussian Process Regression"", *Proceedings of the 26th International Conference on Artificial Intelligence and Statistics (AISTATS '23)* — approximation HSGP (Hilbert Space GP), methode SOTA pour les GP a grande echelle.
-
-**Relation a la serie.**
-
-- Jumeau C# : [Infer-16-Sparse-Gaussian-Process](../Infer/Infer-16-Sparse-Gaussian-Process.ipynb) (Infer.NET, EP, SparseGP, jumeau Probit).
-- Theme connexe : [PyMC-11-Topic-Models](PyMC-11-Topic-Models.ipynb) (LDA, modele hierarchique different, voir Quinonero-Candela & Rasmussen 2005 §6.2 sur les priors hierarchiques).
-- Theme connexe : [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) (selection bayesienne de modele, lie a ARD).
-- Theme connexe : [PyMC-15-Recommenders](PyMC-15-Recommenders.ipynb) (Recommenders, factorisation matricielle, methode complementaire pour donnees de grande dimension).
-
 ---
 
 ## Exercices
 
 > Les exercices sont stubbes (convention C.1) : le notebook s'execute de bout en bout même non complétée. Conservez les `# TODO` et `# Indice`.
-",,,,,,,,e46abb93eca333b5,,,,,,,
+",,,,,,,,9dfaed2de5efc9b9,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e01d2267,code,fr,b681e431c8e9fe9c,"# Exercice 1 : noyau Matern au lieu de RBF.
 # Remplacez le noyau ExpQuad (RBF) par un noyau Matern (pm.gp.cov.Matern52) et comparez
 # la frontière de décision. Le Matern est moins lisse — la frontière devrait l'être aussi.
@@ -4198,18 +4117,16 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e1cc9158,cod
 
 prior_ls_result = None  # TODO étudiant : modèle avec prior concentré grand sur ls
 print(""Exercice 3 à compléter : effet du prior sur la longueur de corrélation."")",,,,,,,,d21e444fb7dad881,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e7e17984,markdown,fr,7aceefb04389dc75,"---
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,e7e17984,markdown,fr,a178a44b2364f2f9,"---
 
 ## Pour aller plus loin
 
 - **Regression GP** (target réel au lieu de classe) : remplacez `Bernoulli` par `Normal` et utilisez `pm.gp.Marginal` (conjugue, plus rapide).
 - **Sparse GP** : sur de grands datasets ($N > 1000$), la factorisation $O(N^3)$ devient prohibitive. PyMC fournit `pm.gp.MarginalSparse` (inducing points) et `pm.gp.HSGP` (approximation Hilbert) pour $O(NM^2)$.
-- **HSGP** : voir Ruitort-Mayol et al. (2023), implemente dans PyMC comme `pm.gp.HSGP` — la méthode SOTA pour les GP a grande echelle.
-- **Sparse GP variational** : voir Titsias (2009) pour la formulation variationnelle des inducing points (Titsias trick), et Hensman et al. (2013) pour le passage a l'echelle via la stochastique variational inference (utilise par PyMC pour les grandes datasets).
-- **Unifying view** : Quinonero-Candela & Rasmussen (2005) propose une synthese comparative des methodes sparse (DTC, FITC, VFE) qui aide a choisir entre inducing points, HSGP et marginal sparse selon le contexte.
+- **HSGP** : voir Ruitort-Mayol et al. (2023), implemente dans PyMC comme `pm.gp.HSGP` — la méthode SOTA pour les GP a grande échelle.
 
 **Navigation** : [Index](../README.md) | [<< PyMC-15](PyMC-15-Recommenders.ipynb) | [PyMC-17 >>](PyMC-17-Kalman-Filter.ipynb)
-",,,,,,,,7aceefb04389dc75,,,,,,,
+",,,,,,,,a178a44b2364f2f9,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,69155af3,markdown,fr,c072eb9138fddf33,"# 17. Filtre de Kalman : systèmes dynamiques lineaires gaussiens (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de
@@ -4229,7 +4146,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,69155af3,markdown,fr,c
 - **Mesurer** l'apport du filtre : MSE filtree < MSE brute, variance posterieure bornee
 - **Value-add PyMC** : estimer $Q$, $R$ et le drift par MCMC (NUTS) au lieu de les supposer connus
 ",,,,,,,,c072eb9138fddf33,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,2d6746bb,markdown,fr,5826e84fcdb00a86,"## 1. Motivation : le HMM a etat continu
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,2d6746bb,markdown,fr,41fd6cd083e2df57,"## 1. Motivation : le HMM a etat continu
 
 [PyMC-14](PyMC-14-Sequences.ipynb) modelisait des sequences ou l'etat cache etait
 **discret** (quel temps, quel mot de la phrase). Mais de nombreux systèmes suivent une
@@ -4246,8 +4163,7 @@ $$y_t = x_t + \mathcal{N}(0, R) \quad \text{(equation d'observation)}$$
 Parce que tout est **gaussien et lineaire**, l'inference reste **exactement conjuguee** :
 le posterieur est gaussien a chaque pas, calculable en temps ferme. C'est le cas d'école
 ou la recursion fermee (et l'EP d'Infer.NET) resout l'inference **de maniere exacte**.
-> *Papier fondateur.* Le **filtre de Kalman** est introduit par **Kalman, R. E. (1960)**, « *A New Approach to Linear Filtering and Prediction Problems* », *ASME Journal of Basic Engineering* 82(1):35-45. L'article fondateur qui demontre que la recursion predict-update est *exacte* sur les systemes lineaires-gaussiens, avec une solution en forme fermee. **Rauch, H. E., Tung, F. & Striebel, C. T. (1965)**, « *Maximum likelihood estimates of linear dynamic systems* », *AIAA Journal* 3(8):1445-1450, introduisent le **lisseur RTS** (Rauch-Tung-Striebel) qui utilise aussi les observations *futures* pour re-estimer chaque etat, avec une MSE lisse inferieure a la MSE filtree. **Sage, A. P. & Melsa, J. L. (1971)**, « *Estimation Theory with Applications to Communications and Control* », McGraw-Hill, offrent la presentation classique de reference du filtre et du lisseur dans un cadre unifie (filtrage, prediction, lissage).
-",,,,,,,,5826e84fcdb00a86,,,,,,,
+",,,,,,,,41fd6cd083e2df57,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,b5637151,code,fr,6799d0abcdecd424,"# --- Imports + terrain de jeu (IDENTIQUE a Infer-17 pour comparabilite) ---
 import numpy as np
 import pymc as pm
@@ -4279,7 +4195,7 @@ print(f""Trajectoire generee : T={T} pas, drift={drift}, Q={processVar}, R={obsV
 print(f""R >> Q : le capteur est tres bruite -> le filtre a beaucoup de marge pour aider."")
 print(f""5 premieres observations : {', '.join(f'{v:.2f}' for v in obs[:5])}"")
 ",,,,,,,,6799d0abcdecd424,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,3d3c8157,markdown,fr,d912b6c59b69efa9,"## 2. La recursion de Kalman = filtrage bayesien pas-a-pas
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,3d3c8157,markdown,fr,f3a4fcc60d824521,"## 2. La recursion de Kalman = filtrage bayesien pas-a-pas
 
 Le filtre de Kalman est la **recurrence bayesienne** sur l'etat continu. A chaque pas :
 
@@ -4297,8 +4213,7 @@ $$\text{gain } K_t = \frac{\sigma^2_{\text{pred}}}{\sigma^2_{\text{pred}} + R}, 
 
 C'est l'exact equivalent de ce que resout l'EP d'Infer.NET (voir [Infer-17](../Infer/Infer-17-Kalman-Filter.ipynb))
 -- ici implemente a la main, sans compilateur de modèle.
-> *Reference de cours.* La recursion predict-update est developpee en detail dans **Maybeck, P. S. (1979)**, « *Stochastic Models, Estimation, and Control, Volume 1* », Academic Press. Chap. 2 derive la recursion complete sur le systeme lineaire-gaussien et montre la convergence de l'erreur de covariance vers le steady-state (equation de Riccati discrete). Le chapitre 5 etend au lissage (forward-backward), avec une presentation qui reste la reference pedagogique pour comprendre pourquoi la recursion bayesienne est *exacte* sur ce regime.
-",,,,,,,,d912b6c59b69efa9,,,,,,,
+",,,,,,,,f3a4fcc60d824521,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,c5dbd097,code,fr,4427a87128c5962c,"# --- Recursion du filtre de Kalman en forme fermee (equivalent exact de l'EP Infer.NET) ---
 filtMean = np.empty(T)
 filtVar = np.empty(T)
@@ -4380,7 +4295,7 @@ Deux mécanismes sont visibles dans le graphe ASCII :
   bien sous $R$ : après une breve phase d'initialisation, le filtre « sait » ou il en est,
   et cette connaissance ne se degrade pas avec le temps (equation de Riccati discrete).
 ",,,,,,,,48a3699634bcc7d5,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,fa741adf,markdown,fr,04236009908d66f9,"## 4. Value-add PyMC : estimer $Q$, $R$ et le drift par MCMC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,fa741adf,markdown,fr,4fb983ebac00bd39,"## 4. Value-add PyMC : estimer $Q$, $R$ et le drift par MCMC
 
 Jusqu'ici, comme Infer-17, on a **suppose connus** $Q$, $R$ et le drift. C'est la limite
 de la recursion fermee : ce sont des **entrees**, pas des **sorties**. En pratique, on
@@ -4397,9 +4312,7 @@ Le modèle :
 
 $$\sigma_Q, \sigma_R \sim \text{HalfNormal}(2), \quad d \sim \mathcal{N}(0, 1)$$
 $$\Delta x_t \sim \mathcal{N}(d, \sigma_Q), \quad x_t = \sum_{s \le t} \Delta x_s, \quad y_t \sim \mathcal{N}(x_t, \sigma_R)$$
-
-> *Implementation PyMC + NUTS.* Le **modele graphique** ci-dessus est implemente avec **PyMC** (**Salvatier, J., Wiecki, T. V. & Fonnesbeck, C. (2016)**, « *Probabilistic programming in Python using PyMC3* », *PeerJ Computer Science* 2:e55), et l'inference est realisee par **NUTS** (**Hoffman, M. D. & Gelman, A. (2014)**, « *The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo* », *JMLR* 15(47):1593-1623). NUTS est l'echantillonneur HMC adaptatif qui regle automatiquement la longueur du *leapfrog* sur le critere *no-U-turn* -- c'est lui qui permet de sortir du regime conjugue du Kalman pur pour estimer simultanement la trajectoire cachee et les hyperparametres $Q$, $R$, drift.
-",,,,,,,,04236009908d66f9,,,,,,,
+",,,,,,,,4fb983ebac00bd39,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,1c3fb51b,code,fr,e199aa81bc466724,"# --- Modele graphique joint : NUTS estime Q, R ET le drift (value-add PyMC) ---
 coords = {""t"": np.arange(T)}
 with pm.Model(coords=coords) as modele_joint:
@@ -4455,7 +4368,7 @@ paramètres connus, la forme fermee gagne ; le MCMC joint devient indispensable 
 sort du regime conjugue (non-linearites, distributions non gaussiennes) ou des qu'on veut
 **estimer** les hyperparametres -- c'est toute la puissance d'un echantillonneur generique.
 ",,,,,,,,a4d977d59bbe59fc,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,3ee12005,markdown,fr,b308120e84499fd4,"## 5. Pourquoi ca marche : conjugaison exacte et borne de variance
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,3ee12005,markdown,fr,1957321dcd87281a,"## 5. Pourquoi ca marche : conjugaison exacte et borne de variance
 
 Le filtre de Kalman tire sa puissance d'une propriete **exacte** : tout etant gaussien et
 lineaire, **chaque posterieur est gaussien et calculable en forme fermee**. La recursion
@@ -4475,9 +4388,7 @@ certaine.
 
 La **borne de variance** (equation de Riccati) garantit que l'incertitude residuelle
 *plafonne* plutot que d'exploser -- c'est ce qui rend le filtre fiable sur le long terme.
-
-> *Borne de variance et stabilite.* L'**equation de Riccati discrete** qui regit la covariance d'erreur est analysee en profondeur dans **Jazwinski, A. H. (1970)**, « *Stochastic Processes and Filtering Theory* », Academic Press. Le chapitre 7 montre sous quelles conditions (observabilite + commandabilite du systeme lineaire) le filtre de Kalman est **stable** : la covariance d'erreur converge vers un *steady-state* unique, et l'incertitude residuelle reste bornee sur horizon infini. C'est ce resultat qui garantit qu'on peut deployer le filtre sur des trajectoire tres longues (centaines de pas) sans derive catastrophique -- chaque pas *reduit* l'incertitude au-dela de ce que la dynamique seule pourrait accumuler.
-",,,,,,,,b308120e84499fd4,,,,,,,
+",,,,,,,,1957321dcd87281a,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,d9ef48e9,markdown,fr,958ef9de5ca53bd9,"## 6. Exercices
 
 ### Exercice 1 -- Sensibilite au bruit de dynamique (Q)
@@ -4508,22 +4419,21 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,33efa60e,code,fr,2c67e
 # TODO etudiant : etat vectoriel (pos, vit), matrice de transition A, observer uniquement la position.
 print(""Exercice 2 a completer : filtre de Kalman vectoriel (position + vitesse)."")
 ",,,,,,,,2c67ea69245d180d,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,05246f8f,markdown,fr,1f9f0fc99c456afa,"### Exercice 3 -- Lissage (RTS smoother)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,05246f8f,markdown,fr,3b7091e78d13374d,"### Exercice 3 -- Lissage (RTS smoother)
 Le filtre ci-dessus est **séquentiel** (un pas a la fois : il n'utilise que les
 observations passees). Le **lissage** utilise aussi les observations **futures** pour
 re-estimer chaque etat -- d'ou une MSE lisse $\leq$ MSE filtree.
-> *Reference canonique.* Le **lisseur Rauch-Tung-Striebel** est formalise par **Rauch, H. E., Tung, F. & Striebel, C. T. (1965)**, « *Maximum likelihood estimates of linear dynamic systems* », *AIAA Journal* 3(8):1445-1450. Il opere en deux passes : un **forward pass** (filtre de Kalman standard, section 2) suivi d'un **backward pass** qui propage l'information des observations futures en sens inverse. Le resultat : une estimation lisse $x_t^{\text{smooth}}$ qui utilise *toute* la sequence $[y_1, \ldots, y_T]$ au pas $t$, pas seulement $[y_1, \ldots, y_t]$. La MSE lisse est toujours $\leq$ MSE filtree, avec un gain substantiel quand le SNR est eleve.
 - **Indice :** le lisseur RTS (Rauch-Tung-Striebel) remonte la trajectoire filtrée a
   rebours. Alternative plus simple en PyMC : le **modèle graphique joint** de la section 4
   effectue déjà un lissage (le posterieur sur `state` conditionne par toutes les
   observations) -- comparez sa MSE a la MSE filtree.
-",,,,,,,,1f9f0fc99c456afa,,,,,,,
+",,,,,,,,3b7091e78d13374d,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,374d16a8,code,fr,d1ddbd71e084b516,"# Exercice 3 a completer
 # TODO etudiant : calculer la MSE lisse (modeles joint section 4) vs MSE filtree (section 2).
 # Indice : state_mean = float(trace_joint.posterior['state'].mean(axis=(0,1))) ; comparer sa MSE.
 print(""Exercice 3 a completer : comparer MSE lisse (joint) vs MSE filtree (sequentiel)."")
 ",,,,,,,,d1ddbd71e084b516,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,9d255904,markdown,fr,29038b73805f7fdd,"## Ponts avec la serie
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,9d255904,markdown,fr,4c56908c836966b1,"## Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -4535,38 +4445,6 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-17-Kalman-Filter.ipynb,9d255904,markdown,fr,2
 **Reference fondatrice** : Kalman, R. E. (1960) -- *A New Approach to Linear Filtering and
 Prediction Problems*, ASME Journal of Basic Engineering 82(1). L'article fondateur du
 filtre de Kalman -- l'algorithme d'estimation le plus repandu en pratique.
-
-### References
-
-**Sources fondatrices (papiers primaires).**
-
-- **Kalman, R. E. (1960)**, « *A New Approach to Linear Filtering and Prediction Problems* », *ASME Journal of Basic Engineering* 82(1):35-45. Article fondateur du filtre de Kalman. Demontre que sur les systemes lineaires-gaussiens, la recursion predict-update est *exacte* avec une solution en forme fermee en $O(T)$.
-- **Rauch, H. E., Tung, F. & Striebel, C. T. (1965)**, « *Maximum likelihood estimates of linear dynamic systems* », *AIAA Journal* 3(8):1445-1450. Formalisation du **lisseur RTS** (Rauch-Tung-Striebel) qui utilise les observations futures pour re-estimer chaque etat. C'est l'algorithme derriere l'exercice 3 (lissage).
-- **Sage, A. P. & Melsa, J. L. (1971)**, « *Estimation Theory with Applications to Communications and Control* », McGraw-Hill. Presentation classique de reference du filtrage, prediction et lissage dans un cadre unifie pour les systemes lineaires.
-- **Jazwinski, A. H. (1970)**, « *Stochastic Processes and Filtering Theory* », Academic Press. Chap. 7 etablit les conditions de stabilite du filtre de Kalman (observabilite + commandabilite) et la convergence de la covariance vers un steady-state borne. Justifie la *borne de variance* evoquee section 5.
-- **Maybeck, P. S. (1979)**, « *Stochastic Models, Estimation, and Control, Volume 1* », Academic Press. Chap. 2-5 derivent la recursion complete, le steady-state de Riccati et le lissage forward-backward. Reference pedagogique classique pour comprendre pourquoi la recursion bayesienne est exacte sur ce regime.
-- **Hoffman, M. D. & Gelman, A. (2014)**, « *The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo* », *JMLR* 15(47):1593-1623. Article fondateur de **NUTS** -- l'echantillonneur HMC adaptatif utilise par PyMC pour estimer les hyperparametres $Q, R$, drift dans la section 4 (value-add PyMC).
-
-**Sources secondaires (ecosysteme PyMC).**
-
-- **Salvatier, J., Wiecki, T. V. & Fonnesbeck, C. (2016)**, « *Probabilistic programming in Python using PyMC3* », *PeerJ Computer Science* 2:e55. Manuel de reference pour l'implementation PyMC (NUTS, distributions, inference). Cite pour la section 4 (modele graphique joint).
-- **Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A. & Rubin, D. B. (2013)**, « *Bayesian Data Analysis, Third Edition* », Chapman & Hall/CRC. Reference generale pour l'inference bayesienne (Chapter 18: Gibbs sampler & MCMC diagnostics -- applicable aux divergences NUTS signalees section 4).
-- **Bishop, C. M. (2006)**, « *Pattern Recognition and Machine Learning* », Springer. Section 13.3 presente le filtre de Kalman comme cas particulier de modele graphique dynamique (linera Gaussian state-space model) -- le meme formalisme que la section 4 implemente en PyMC.
-
-**Relations a la serie.**
-
-- **PyMC-17 <-> Infer-17** (jumeau .NET) : PR complementaire (c.852 cycle suivant) ajoute les memes references canoniques au notebook C# (Infer.NET), avec les adaptations necessaires au moteur EP / Variable.Gaussian au lieu de NUTS. Le jumeau PyMC (ici) utilise **NUTS joint** pour estimer les hyperparametres ; le jumeau Infer.NET utilise la recursion fermee avec **EP** sur parametres supposes connus.
-- **PyMC-17 <-> PyMC-14** (Sequences HMM) : HMM a etat discret <-> filtre de Kalman a etat continu. Meme squelette markovien (etat cache + observation), nature de l'etat differente (discret vs continu). PR #8302 (c.844) ajoute Kaplan-Meier + Cox + Weibull pour la branche survival -- pattern axis-1 transpose au sub-grain sequences.
-- **PyMC-17 <-> PyMC-15** (Recommenders) : PR #8334 (c.851) ajoute Mnih-Salakhutdinov 2007 + Schein 2002 + Chapelle 2009 sur le sub-grain recommender. Meme pattern axis-1 (citations canoniques inline + References sub-section).
-- **PyMC-17 <-> PyMC-18** (Change-Point) : PR #8314 (c.847) ajoute Adams-MacKay 2007 + Western-Harrison 1989 sur le sub-grain change-point. Meme pattern axis-1 transpose au sub-grain change-point.
-- **PyMC-17 <-> PyMC-19** (Survival Analysis) : PR #8302 (c.844) ajoute Kaplan-Meier 1958 + Cox 1972 + Weibull 1951 sur le sub-grain survival. Meme pattern axis-1 transpose au sub-grain survival.
-
-**Pour aller plus loin.**
-
-- **Anderson, B. D. O. & Moore, J. B. (1979)**, « *Optimal Filtering* », Prentice-Hall. Livre de reference sur le filtre de Kalman et ses extensions (filtre de Kalman etendu EKF, filtre de Kalman sans parfum UKF). A consulter pour la sortie du regime lineaire-gaussien (non-linearites).
-- **Harvey, A. C. (1989)**, « *Forecasting, Structural Time Series Models and the Kalman Filter* », Cambridge University Press. Chap. 3-4 appliquent le filtre de Kalman aux series temporelles economiques (modeles structurels univarie/multivaries).
-- **Simon, D. (2006)**, « *Optimal State Estimation: Kalman, H-infinity, and Nonlinear Approaches* », Wiley-Interscience. Couvre le filtre de Kalman, H-infinity, et les approches non-lineaires (EKF, UKF, particle filter). Pour une vue complete de l'estimation d'etat.
-- **MBML (Model-Based Machine Learning, Winn & Bishop / Diethe / Guiver / Zaykov)**, [mbmlbook.com](https://mbmlbook.com/) -- site pedagogique de reference en ML bayesien applique. *Note : la version en ligne comporte 7 chapitres (A Murder Mystery, Assessing Peoples Skills, Meeting Your Match, Uncluttering Your Inbox, Making Recommendations, Understanding Asthma, Harnessing the Crowd), aucun consacre aux series temporelles ni au filtre de Kalman -- la reference ""Ch.18 (Time series)"" qui figurait ici etait erronee (correction c.876, audit cross-source #8081).*
 
 ## Conclusion
 
@@ -4584,7 +4462,7 @@ nul besoin de MCMC -- la forme fermee suffit. C'est en **sortant** de ce regime
 (non-linearites, distributions non gaussiennes, paramètres **a estimer**) que le modèle
 graphique joint et NUTS deviennent necessaires -- et c'est précisément l'angle mort de la
 recursion fermee que PyMC couvre nativement.
-",,,,,,,,29038b73805f7fdd,,,,,,,
+",,,,,,,,4c56908c836966b1,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,53395130,markdown,fr,e9aee5b56c89100c,"# 18. Detection de Rupture (Change-Point) : inferer le moment d'un changement de regime (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de `Infer-18-Change-Point.ipynb` (Infer.NET / C#, inférence EP). La specification probabiliste est **identique** ; seul le moteur d'inférence change : EP analytique cote .NET, échantillonnage **CompoundStep** (NUTS + Metropolis) cote Python, car la localisation `cp` est une variable **discrète**.
@@ -4592,14 +4470,11 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,53395130,markdown,fr,e9
 Ce notebook complète la famille des « séquences dans le temps » : il étend [PyMC-14 (Séquences / HMM)](PyMC-14-Sequences.ipynb) au cas où ce n'est pas l'état qui change à chaque instant, mais la **structure** du processus qui bascule **une seule fois** à un instant inconnu.
 
 **Durée estimée** : 50 minutes | **Prérequis** : [PyMC-14-Sequences](PyMC-14-Sequences.ipynb) (HMM).",,,,,,,,e9aee5b56c89100c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,8271b35b,markdown,fr,da2e96e08fd023f2,"## 1. Motivation : la où le HMM et le filtre de Kalman s'arrêtent
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,8271b35b,markdown,fr,b5a23ce5a7494a9d,"## 1. Motivation : la où le HMM et le filtre de Kalman s'arrêtent
 
 [PyMC-14](PyMC-14-Sequences.ipynb) modélise une séquence où l'état caché est **discret** et change à **chaque instant**. Le filtre de Kalman ([Infer-17](../Infer/Infer-17-Kalman-Filter.ipynb)) en est le pendant **continu**. Les deux infèrent un état **récurrent** — un par pas de temps.
 
-Le **point de rupture** est différent : l'inconnue n'est pas une trajectoire d'états, mais **un unique entier** `cp in {0, ..., N-1}` — l'indice où le processus bascule. On veut le postérieur $p(cp \mid y)$ sur cette **unique** variable structurelle, et les paramètres des deux régimes qu'elle sépare.
-
-> *Origine.* Le **change-point bayésien** a été formalisé en message-passing sur la distribution du *run-length* par Adams & MacKay (Adams & MacKay, 2007, « Bayesian Online Change-Point Detection », *arXiv:0710.3742*). Ce notebook en est l'équivalent **off-line** : PyMC retourne d'un coup la distribution a posteriori sur la localisation de la rupture, là où Adams-MacKay fait du streaming.
-",,,,,,,,da2e96e08fd023f2,,,,,,,
+Le **point de rupture** est différent : l'inconnue n'est pas une trajectoire d'états, mais **un unique entier** `cp in {0, ..., N-1}` — l'indice où le processus bascule. On veut le postérieur $p(cp \mid y)$ sur cette **unique** variable structurelle, et les paramètres des deux régimes qu'elle sépare.",,,,,,,,b5a23ce5a7494a9d,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,b8f8f126,code,fr,2e74afccea2932b7,"import numpy as np
 import pymc as pm
 import pytensor.tensor as pt
@@ -4619,15 +4494,13 @@ sigma = 1.5                       # bruit d'observation
 t_idx = np.arange(N)
 data = np.where(t_idx <= vrai_cp, mu_avant, mu_apres) + sigma * np.random.randn(N)
 print(f""Serie generee : N={N} points, vrai cp cache a t={vrai_cp} (mu {mu_avant} -> {mu_apres}, sigma={sigma})"")",,,,,,,,2e74afccea2932b7,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,f3e24918,markdown,fr,4736e287b3b90510,"## 2. Le modèle de point de rupture gaussien
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,f3e24918,markdown,fr,f3c589e208eda8b6,"## 2. Le modèle de point de rupture gaussien
 
 On déclare `cp` comme un entier d'*a priori* uniforme sur `{0, ..., N-1}`, deux moyennes de segment (*a priori* gaussiens vagues) et une précision commune. Pour chaque instant `t`, on **branche** la vraisemblance selon la position de `cp` : gaussienne de moyenne `mean1` avant la rupture, `mean2` après. L'idiome PyMC est `pm.math.switch(t <= cp, mean1, mean2)` — equivalent exact du `Variable.If/IfNot(block.Index <= cp)` d'Infer.NET.
 
-> *Référence.* Le choix d'un *a priori* uniforme sur `cp` correspond à la fonction de risque (hazard) **constante** du modèle de run-length d'Adams-MacKay (Adams & MacKay, 2007, *arXiv:0710.3742*, §2 « The constant-hazard model »). C'est la paramétrisation par défaut de la famille DLM (Dynamic Linear Models) de Western & Harrison (Western & Harrison, 1989, *Bayesian Forecasting and Dynamic Models*, Springer, chap. 12 « Outliers and Structural Changes »), qui sert de référence canonique dans la littérature de la prévision bayésienne.
-
 ### PyMC <=> Infer.NET : CompoundStep au lieu de EP
 
-Comme `cp` est **discrète** et les moyennes/précision **continues**, PyMC ne peut pas utiliser NUTS seul (NUTS exige des variables différentiables). Il compose automatiquement un **CompoundStep** : NUTS pour `(mean1, mean2, precision)` + Metropolis pour `cp`. EP, lui, propage les messages analytiquement sur le graphe de facteurs.",,,,,,,,4736e287b3b90510,,,,,,,
+Comme `cp` est **discrète** et les moyennes/précision **continues**, PyMC ne peut pas utiliser NUTS seul (NUTS exige des variables différentiables). Il compose automatiquement un **CompoundStep** : NUTS pour `(mean1, mean2, precision)` + Metropolis pour `cp`. EP, lui, propage les messages analytiquement sur le graphe de facteurs.",,,,,,,,f3c589e208eda8b6,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,52d1acc3,code,fr,5b9c5fc686faa044,"# --- Modele de change-point gaussien ---
 coords = {""t"": t_idx}
 with pm.Model(coords=coords) as modele_cp:
@@ -4687,14 +4560,11 @@ print(""Voir graphique ci-dessus pour la distribution complete."")",,,,,,,,58021
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,b8bc0c10,markdown,fr,3f060f3179fbf9d7,"### Lecture
 
 Le **mode** du postérieur sur `cp` tombe **très près** du vrai point caché (50), et les moyennes de segment approchent les vraies valeurs (2 et 7). Le signal étant fort (`|mu_apres - mu_avant| = 5 >> sigma`), le postérieur se concentre sur **quelques indices** autour du vrai `cp`.",,,,,,,,3f060f3179fbf9d7,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,729a39ae,markdown,fr,58b9086ef7c7f9a0,"## 3. Le cas canonique : les catastrophes minieres (loi de Poisson)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,729a39ae,markdown,fr,d003371c51966920,"## 3. Le cas canonique : les catastrophes minieres (loi de Poisson)
 
 Le jeu de données historique du change-point bayésien est la série annuelle des **catastrophes de mines de charbon** en Grande-Bretagne (1851–1962, Jarrett 1979). Il s'agit de **comptes** : le modèle naturel est une loi de **Poisson** dont le *taux* bascule une fois — de ~3 accidents/an avant la réforme de sécurité des années 1880 à ~1/an après.
 
-C'est **l'exemple introductif canonique** de la documentation PyMC. Même idiome que le cas gaussien : `DiscreteUniform` sur l'année de rupture, `switch` sur la plage des années, mais `pm.Poisson(taux)` en lieu et place de la gaussienne.
-
-> *Sources.* La **série de comptages** des catastrophes minières britanniques 1851-1962 est due à Jarrett (Jarrett, R. F., 1979, « A note on the discontinuities in the series of British disaster data », *The Statistician* 28(2):141-143) ; elle a été reprise comme **banc d'essai canonique** par Carlin, Gelfand & Smith (Carlin, B. P., Gelfand, A. E. & Smith, A. F. M., 1992, « Hierarchical Bayesian Analysis of Changepoint Problems », *J. Royal Statistical Society, Series C (Applied Statistics)* 41(2):389-405), qui sert de référence standard à toute la famille des modèles de change-point bayésiens (PyMC, Stan, Infer.NET).
-",,,,,,,,58b9086ef7c7f9a0,,,,,,,
+C'est **l'exemple introductif canonique** de la documentation PyMC. Même idiome que le cas gaussien : `DiscreteUniform` sur l'année de rupture, `switch` sur la plage des années, mais `pm.Poisson(taux)` en lieu et place de la gaussienne.",,,,,,,,d003371c51966920,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,b28d33d5,code,fr,e60590977d644fd4,"# --- Catastrophes minieres britanniques, 1851-1962 (Jarrett 1979) ---
 disasters = np.array([
     4,5,4,0,1,4,3,4,0,6, 3,3,4,0,2,6,3,3,5,4,
@@ -4728,12 +4598,9 @@ print(f""\nAnnee de rupture detectee : {1851 + cp2_mode}  (indice {cp2_mode})"")
 print(f""Taux AVANT  : {er:5.2f} catastrophes/an"")
 print(f""Taux APRES  : {lr:5.2f} catastrophes/an"")
 print(f""Rapport de taux : {er / max(lr, 1e-6):.1f}x"")",,,,,,,,e60590977d644fd4,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,2c9227df,markdown,fr,b923e56283c991a9,"### Lecture
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,2c9227df,markdown,fr,06174131cceb484a,"### Lecture
 
-Le postérieur concentre la rupture autour de **1890–1891** — soit exactement la période des grandes réformes de sécurité dans les mines britanniques. Le taux passe de ~3,1 à ~0,9 catastrophe par an, un rapport de ~3,3×. C'est le résultat historique de la littérature sur les modèles de point de rupture (Carlin, Gelfand & Smith 1992 ; PyMC en fait son exemple introductif). Cote Infer.NET ce sont des **messages EP** qui resolvait le postérieur ; cote PyMC c'est l'**échantillonnage CompoundStep** (NUTS + Metropolis sur `cp`).
-
-> *Pourquoi cette date.* La rupture estimée vers 1890-1891 coincide avec le **Coal Mines Regulation Act 1887** et la création des inspectors districts, qui ont impose des normes de sécurité et de ventilation. C'est cette **concordance entre un changement structurel mesuré statistiquement et un fait historique documenté** qui fait de la série Jarrett 1979 le banc d'essai préféré des modèles de change-point bayésiens.
-",,,,,,,,b923e56283c991a9,,,,,,,
+Le postérieur concentre la rupture autour de **1890–1891** — soit exactement la période des grandes réformes de sécurité dans les mines britanniques. Le taux passe de ~3,1 à ~0,9 catastrophe par an, un rapport de ~3,3×. C'est le résultat historique de la littérature sur les modèles de point de rupture (Carlin, Gelfand & Smith 1992 ; PyMC en fait son exemple introductif). Cote Infer.NET ce sont des **messages EP** qui resolvait le postérieur ; cote PyMC c'est l'**échantillonnage CompoundStep** (NUTS + Metropolis sur `cp`).",,,,,,,,06174131cceb484a,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,2c56694e,markdown,fr,2bc4c51554396b7c,"## 4. Vraie rupture ou caprice du bruit ? Le piege de la flexibilite
 
 Un modèle de point de rupture est **flexible** : il peut, si on le laisse faire, trouver une « meilleure » coupure dans n'importe quelle série — y compris du pur bruit. C'est le piège du surajustement. Pour le mesurer, on génère une série **sans rupture** (moyenne constante) et on lui applique le **même** modèle. On quantifie la concentration du postérieur sur `cp` par son **entropie** $H$ (en bits) : $H_{max} = \log_2 N$ pour un postérieur plat (aucune idée sur la localisation), $H \to 0$ pour un postérieur piqué sur un seul indice.",,,,,,,,2bc4c51554396b7c,,,,,,,
@@ -4821,7 +4688,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,572aaed8,markdown,fr,3c
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,2d59af55,code,fr,9d277c8598011193,"# Exercice 3 : robustesse au signal et a N (a completer)
 # TODO etudiant : boucler sur delta dans {1, 2, 4}, mesurer H(cp) a chaque fois.
 print(""Exercice 3 a completer : robustesse du posterieur au signal et a la taille."")",,,,,,,,9d277c8598011193,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,d8873019,markdown,fr,19c8897db41643bc,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-18-Change-Point.ipynb,d8873019,markdown,fr,87182551996432eb,"## Conclusion
 
 Le **point de rupture** complète la famille des séquences temporelles :
 
@@ -4833,28 +4700,7 @@ Le **point de rupture** complète la famille des séquences temporelles :
 
 Le trait distinctif : l'inconnue est un **indice structurel** couplé à toute la série via `pm.math.switch`. Cote PyMC, la discreteness de `cp` impose un **CompoundStep** (NUTS + Metropolis), la où EP (cote Infer.NET) propageait les messages analytiquement. Le piège épistémologique (surajustement d'une coupure spurieuse) est universel : seul le **Bayes factor** tranche.
 
-**Pour aller plus loin.** Plusieurs ruptures (exercice 1) ; ruptures de variance (exercice 2) ; Barry & Hartigan (Barry, D. & Hartigan, J. A., 1993, « A Bayesian Analysis for Change Point Problems », *J. American Statistical Association* 88(421):309-319) proposent le **Product Partition Model** (PPM), une distribution a priori sur les partitions qui généralise le choix du nombre de ruptures ; Fearnhead (Fearnhead, P., 2006, « Exact and Efficient Bayesian Inference for Multiple Change-point Problems », *Statistics and Computing* 16(2):203-213) donne un algorithme exact et efficace pour un nombre quelconque de ruptures ; ou la **détection en ligne** (filtering) plutôt qu'off-line (Adams & MacKay 2007, *arXiv:0710.3742*, §3 « Sequential inference »).
-
-> **Jumeau de** [`Infer-18-Change-Point.ipynb`](../Infer/Infer-18-Change-Point.ipynb) *(Infer.NET / C#, inférence EP)* -- Epic [#4956](https://github.com/jsboige/CoursIA/issues/4956).
-
----
-
-### References
-
-**Sources fondatrices (papiers primaires).**
-
-- Adams, R. P. & MacKay, D. J. C. (2007), « Bayesian Online Change-Point Detection », *arXiv:0710.3742* — le cadre canonique du change-point bayésien en ligne, basé sur un message-passing sur la distribution du *run-length* (sections 1 et 3).
-- Carlin, B. P., Gelfand, A. E. & Smith, A. F. M. (1992), « Hierarchical Bayesian Analysis of Changepoint Problems », *J. Royal Statistical Society, Series C (Applied Statistics)* 41(2):389-405 — référence standard pour la série des catastrophes minières (section 3).
-- Western, B. & Harrison, P. J. (1989), *Bayesian Forecasting and Dynamic Models*, Springer, chap. 12 « Outliers and Structural Changes » — paramétrisation par défaut de la famille DLM avec changement structurel (section 2).
-- Barry, D. & Hartigan, J. A. (1993), « A Bayesian Analysis for Change Point Problems », *J. American Statistical Association* 88(421):309-319 — Product Partition Model (PPM) pour un nombre inconnu de ruptures (Conclusion « Pour aller plus loin »).
-- Fearnhead, P. (2006), « Exact and Efficient Bayesian Inference for Multiple Change-point Problems », *Statistics and Computing* 16(2):203-213 — algorithme exact pour le cas multi-ruptures (Conclusion « Pour aller plus loin »).
-- Jarrett, R. F. (1979), « A note on the discontinuities in the series of British disaster data », *The Statistician* 28(2):141-143 — source primaire de la série 1851-1962 utilisée en section 3.
-
-
-- Salvatier J., Wiecki T. V., Fonnesbeck C. (2016), « Probabilistic programming in Python using PyMC3 », *PeerJ Computer Science* 2:e55 — moteur NUTS+Metropolis utilisé ici (CompoundStep).
-- Gelman A. et al., *Bayesian Data Analysis* (3e ed.), chap. « Hierarchical models » — context général sur l'inférence MCMC.
-- Relation à la série : [PyMC-14 (HMM)](PyMC-14-Sequences.ipynb) et [PyMC-19 (Survival)](PyMC-19-Survival-Analysis.ipynb) (le *run-length* se termine par un événement de durée), [PyMC-12 (Hierarchical)](PyMC-12-Modeles-Hierarchiques.ipynb) (le PPM de Barry-Hartigan est un analogue hiérarchique des partitions).
-",,,,,,,,19c8897db41643bc,,,,,,,
+> **Jumeau de** [`Infer-18-Change-Point.ipynb`](../Infer/Infer-18-Change-Point.ipynb) *(Infer.NET / C#, inférence EP)* -- Epic [#4956](https://github.com/jsboige/CoursIA/issues/4956).",,,,,,,,87182551996432eb,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,14f058d8,markdown,fr,ec0a693783e467fa,"# 19. Analyse de survie / fiabilite bayesienne : inferer le temps jusqu'a un événement (jumeau PyMC)
 
 > **Serie Parite .NET <=> Python (#4956).** Ce notebook est le **jumeau Python** de
@@ -4986,12 +4832,10 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,6a0da06a,markdown,
   ou peu de données constrainent -- c'est précisément la region fiabilite critique, et le bayesien
   y donne une reponse **honnete** (pas un chiffre unique trompeur).
 ",,,,,,,,712ecdc08aa0e620,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,1132539a,markdown,fr,cadb8bd3b9b396b9,"## 4. Value-add PyMC : inferer DIRECTEMENT la forme Weibull `k`
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,1132539a,markdown,fr,1195a16192218c59,"## 4. Value-add PyMC : inferer DIRECTEMENT la forme Weibull `k`
 
 L'exponentielle suppose un taux **constant**. La loi de Weibull generalise :
 $T \sim \text{Weibull}(k, \eta)$, $S(t) = \exp(-(t/\eta)^k)$.
-
-> *Origine.* La loi de Weibull a ete proposee par Waloddi Weibull (Weibull, 1951, *J. Applied Mechanics* 18(3):293-297) pour decrire la resistance des materiaux. Sa richesse tient a la **forme** `k` : `k < 1` modelise un defaut initial (mortalite precoce), `k = 1` redonne l'exponentielle (taux constant), `k > 1` une usure accumulee -- c'est ce meme `k` que la section 5 (cellule de LOO) retrouve par comparaison de modeles.
 
 **Infer-19 (Infer.NET) evite d'inferer la forme `k`** : la vraisemblance de Weibull n'est conjuguee
 a aucun prior usuel, et l'EP sur la forme est notoirement instable. L'astuce d'Infer-19 est de
@@ -5002,7 +4846,7 @@ sur une grille (7 compilations de modèle).
 avec des priors sur `k` et `eta`. C'est l'apport d'un echantillonneur generique : pas de conjugaison
 requise. On inferere simultanement `k` et `eta`, et le postérieur sur `k` nous dit si le regime est
 a usure ($k > 1$), constant ($k = 1$) ou mortalite infantile ($k < 1$).
-",,,,,,,,cadb8bd3b9b396b9,,,,,,,
+",,,,,,,,1195a16192218c59,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,21bf3a8a,code,fr,e8d15a347971fd4c,"# --- Value-add : Weibull avec forme k INFEREE directement (NUTS) ---
 with pm.Model() as modele_wei:
     # Priors : k positif (HalfNormal), eta positif large.
@@ -5054,22 +4898,19 @@ print(""\nLe poids (weight) indique la confiance accordee a chaque modele. Weibu
 print(""doit dominer sur le jeu Weibull (vrai k=1.8) -- la selection automatique retrouve le verdict"")
 print(""qu'Infer-19 obtenait par balayage manuel."")
 ",,,,,,,,598a0510c156afcb,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,542819a8,markdown,fr,9150ee8786bc3806,"## 6. Exercices
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,542819a8,markdown,fr,09bc73b120125914,"## 6. Exercices
 
 ### Exercice 1 -- Censure a droite (données tronquees)
 En fiabilite reelle, beaucoup de composants **survivent** a la fin du test : on n'observe pas leur
 duree exacte $T_i$, seulement qu'elle depasse la duree du test $c_i$. C'est la **censure a droite**.
 La contribution de vraisemblance d'un point censure est la survie $S(c_i) = e^{-\lambda c_i}$, pas
 la densite.
-
-> *Reference.* L'estimateur non-parametrique classique pour donnees censurees a droite est le **Kaplan-Meier** (Kaplan & Meier, 1958, *JASA* 53(282):457-481). Le present exercice en est l'analogue parametrique bayesien : la vraisemblance de survie `S(c_i)` remplace le comptage empirique de l'estimateur en escalier.
-
 - **Indice :** separez indices observes / censures. Pour les observes, `pm.Exponential`. Pour les
   censures, utiliser `pm.Potential` avec la log-survie $-\lambda c_i$, ou modeliser un indicateur.
   Comparez le postérieur obtenu avec/sans censure.
 - **Étape 1 :** créez un tableau `censored` (booléen) et des durees tronquees.
 - **Étape 2 :** ajoutez le terme de vraisemblance pour les censures via `pm.Potential`.
-",,,,,,,,9150ee8786bc3806,,,,,,,
+",,,,,,,,09bc73b120125914,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,8186d793,code,fr,38e0fffae2f222ff,"# Exercice 1 a completer
 # TODO etudiant : censure a droite. Separer observes/censures, ajouter pm.Potential log-survie.
 print(""Exercice 1 a completer : modele exponentiel avec censure a droite."")
@@ -5096,7 +4937,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,b7c72f31,code,fr,a
 # TODO etudiant : boucler sur N, calculer le poids LOO du Weibull, trouver le seuil N.
 print(""Exercice 3 a completer : a partir de quel N le Weibull est-il decisiivement prefere ?"")
 ",,,,,,,,a443996a815f303c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,27390f5d,markdown,fr,74ae56d36999b9d7,"## Ponts avec la serie
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb,27390f5d,markdown,fr,76b5dff712d88cfd,"## Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -5119,47 +4960,24 @@ La lecon : sur un modèle **conjugue** simple (exponentiel), l'EP d'Infer.NET es
 rapidite et exactitude fermee. Des qu'on veut inferer une **forme non-conjuguee** (Weibull `k`)
 ou **comparer des modèles**, le MCMC generique de PyMC devient l'outil naturel -- c'est la
 complementarite des deux moteurs sur la même famille de problemes.
-
-**Pour aller plus loin.** La censure a gauche/par intervalle, les modèles a **risques proportionnels**
-(Cox, 1972, *JRSS Series B* 34(2):187-220), les modèles a risques concurrents (competing risks)
-et les modèles de fragilite partagee (frailty, analogue hiérarchique de
-[PyMC-12](PyMC-12-Modeles-Hierarchiques.ipynb) applique a la survie) sont les extensions classiques
-au-dela de ce notebook.
-
----
-
-### References
-
-**Sources fondatrices (papiers primaires).**
-
-- Weibull, W. (1951), « A Statistical Distribution Function of Wide Applicability », *Journal of Applied Mechanics* 18(3):293-297 — origine de la loi de Weibull (section 4).
-- Kaplan, E. L. & Meier, P. (1958), « Nonparametric Estimation from Incomplete Observations », *JASA* 53(282):457-481 — estimateur de survie sous censure à droite (exercice 1).
-- Cox, D. R. (1972), « Regression Models and Life-Tables », *JRSS Series B* 34(2):187-220 — modèle à risques proportionnels, l'extension de référence pour la régression sur la survie (au-delà du présent notebook).
-
-
-- Gelman A. et al., *Bayesian Data Analysis* (3e ed.), chap. « Survival models ».
-- Lawless J. F., *Statistical Models and Methods for Lifetime Data* — reference pour Weibull / AFT / censure.
-- Salvatier J., Wiecki T. V., Fonnesbeck C. (2016), « Probabilistic programming in Python using PyMC3 », *PeerJ Computer Science* 2:e55 — moteur NUTS utilisé ici.
-- Relation a la serie : [PyMC-12](PyMC-12-Modeles-Hierarchiques.ipynb) (modèles hiérarchiques),
-  [PyMC-18](PyMC-18-Change-Point.ipynb) (rupture — ou le taux change brusquement).
-",,,,,,,,74ae56d36999b9d7,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,fde6ae1d,markdown,fr,5b836551dfeec468,"# PyMC-2 : Distributions Gaussiennes et Mélanges
+",,,,,,,,76b5dff712d88cfd,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,fde6ae1d,markdown,fr,6e255b3c4d7d2512,"# PyMC-2 : Distributions Gaussiennes et Melanges
 
 **Navigation** : [Index](../README.md) | [<< PyMC-1](PyMC-1-Setup.ipynb) | [PyMC-3 >>](PyMC-3-Factor-Graphs.ipynb)
 
 **Equivalent Infer.NET** : [Infer-2-Gaussian-Mixtures](../Infer/Infer-2-Gaussian-Mixtures.ipynb)
 
 
-**Durée estimée** : 45 minutes
+**Duree estimee** : 45 minutes
 **Objectifs** :
 - Modeliser des données gaussiennes avec PyMC
-- Implémenter le scénario du cycliste (temps de trajet)
-- Comprendre les priors conjugués Normal-Gamma
+- Implementer le scénario du cycliste (temps de trajet)
+- Comprendre les priors conjugues Normal-Gamma
 - Predire et calculer des probabilites
-- Implémenter un mélange de gaussiennes (GMM) pour gérer les événements extraordinaires
+- Implementer un melange de gaussiennes (GMM) pour gerer les événements extraordinaires
 
 **Prerequis** : PyMC-1, bases de statistique (loi normale, prior conjugue)
-",,,,,,,,5b836551dfeec468,,,,,,,
+",,,,,,,,6e255b3c4d7d2512,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,9d4770c2,markdown,fr,bfc97493c12de271,"## 1. Le Scénario du Cycliste
 
 Vous vous rendez au travail a velo chaque jour. Votre temps de trajet varie.
@@ -5332,7 +5150,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,851b9f2e,code,fr,62
 
 result = None  # TODO etudiant : remplacer par le modele et l'echantillonnage
 print(""Exercice a completer"")",,,,,,,,62bf96145b17e383,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,59fe8f27,markdown,fr,bf1179ec23341c3d,"## 5. Melange de Gaussiennes (GMM)
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,59fe8f27,markdown,fr,db9aeeeb9d3551ea,"## 5. Melange de Gaussiennes (GMM)
 
 Les données contiennent des événements extraordinaires (jours ou le trajet est beaucoup plus long). Un melange de gaussiennes capture cette structure :
 - **Composante 1** : trajet normal (moyenne ~15 min)
@@ -5342,25 +5160,14 @@ Les données contiennent des événements extraordinaires (jours ou le trajet es
 
 | Concept | Infer.NET | PyMC |
 |---------|-----------|------|
-| Variable de mélange | `Variable.Switch(idx, components)` | `pm.Mixture` ou `pm.NormalMixture` |
+| Variable de melange | `Variable.Switch(idx, components)` | `pm.Mixture` ou `pm.NormalMixture` |
 | Poids du melange | `Variable.Discrete(probs)` | `pm.Categorical` (interne a Mixture) |
 | Composantes | Array de Gaussiennes | Liste de distributions |
 
 ### Origine du modèle
 
-Les mélanges de gaussiennes sont étudiés depuis Pearson (1894) ; le traitement moderne de reference est **McLachlan & Peel (2000)**, *Finite Mixture Models* (Wiley), et **Titterington, Smith & Makov (1985)**, *Statistical Analysis of Finite Mixture Distributions* (Wiley). L'algorithme classique d'estimation par maximum de vraisemblance est **EM** (Dempster, Laird & Rubin, 1977) ; ici, a la place d'EM, nous inferons le modèle en Bayesien via MCMC (`pm.sample`), ce qui fournit des intervalles de credibilite sur les poids et les paramètres de chaque composante.
-
-
-### References canoniques complementaires
-
-Au-dela des references classiques ci-dessus (Pearson 1894, EM Dempster-Laird-Rubin 1977, McLachlan & Peel 2000, Titterington-Smith-Makov 1985), le traitement canonique moderne des melanges gaussiens se trouve dans les ouvrages de reference :
-
-1. **Bishop (2006).** *Pattern Recognition and Machine Learning*, Springer. **§9.2** ""Mixtures of Gaussians"", **§9.2.2** ""EM for mixtures"" (derivee EM + lower-bound maximization + closed-form M-step pour gaussiennes), **§10.7** ""Expectation Propagation"" (variante pour melanges non-conjugues, voir cellule suivante).
-2. **Murphy (2012).** *Machine Learning: A Probabilistic Perspective*, MIT Press. **§11.4** ""Mixture models and the EM algorithm"" (traitement unifie EM + variational EM + accelerated EM via sufficient statistics).
-3. **Tipping & Bishop (1999).** *Mixtures of probabilistic principal component analyzers*, Neural Computation 11(2), 443-482. Variante bayesienne variationnelle melangeant PCA probabiliste -- pertinent si on etend le GMM a des observations de haute dimension.
-4. **Ghahramani & Beal (2000).** *Variational inference for Bayesian mixtures of factor analysers*, NIPS 1999. Inference variationnelle pour melanges bayesiens -- alternative au MCMC `pm.sample` utilise dans ce notebook.
-
-Ces references completent le socle Pearson/EM/McLachlan-Stephens cite dans le notebook et permettent au lecteur d'approfondir selon l'angle (theorie de l'information, inference variationnelle, ou extension haute-dimension).",,,,,,,,bf1179ec23341c3d,,,,,,,
+Les melanges de gaussiennes sont etudies depuis Pearson (1894) ; le traitement moderne de reference est **McLachlan & Peel (2000)**, *Finite Mixture Models* (Wiley), et **Titterington, Smith & Makov (1985)**, *Statistical Analysis of Finite Mixture Distributions* (Wiley). L'algorithme classique d'estimation par maximum de vraisemblance est **EM** (Dempster, Laird & Rubin, 1977) ; ici, a la place d'EM, nous inferons le modèle en Bayesien via MCMC (`pm.sample`), ce qui fournit des intervalles de credibilite sur les poids et les paramètres de chaque composante.
+",,,,,,,,db9aeeeb9d3551ea,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,791be0b9,code,fr,126d37d011355993,"# Donnees avec evenements extraordinaires
 donnees_mixtes = np.array([13.0, 17.0, 20.0, 25.0, 16.0, 11.0, 16.0, 14.0, 13.0, 32.0, 35.0, 28.0])
 
@@ -5387,9 +5194,9 @@ with pm.Model() as cycliste_mixte:
     trajets = pm.Normal('trajets', mu=mu_obs, sigma=sigma_obs, observed=donnees_mixtes)
     
     trace_mixte = pm.sample(3000, random_seed=42, return_inferencedata=True)",,,,,,,,126d37d011355993,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,61bdfe5c,markdown,fr,ef9ae868683a7bd0,"### Interpretation de l'echantillonnage GMM
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,61bdfe5c,markdown,fr,dbdae43c0ceabd85,"### Interpretation de l'echantillonnage GMM
 
-Le modèle de mélange à 2 composantes a été échantillonné avec un algorithme hybride : NUTS pour les paramètres continus (poids, moyennes, ecarts-types) et BinaryGibbsMetropolis pour les assignations discretes (z). Les **271 divergences** et les **warnings rhat/ESS** signalent un problème d'echantillonnage classique dans les modèles de melange : les changements de label entre les composantes rendent le paysage posterior multimodal.
+Le modèle de melange a 2 composantes a ete echantillonne avec un algorithme hybride : NUTS pour les paramètres continus (poids, moyennes, ecarts-types) et BinaryGibbsMetropolis pour les assignations discretes (z). Les **271 divergences** et les **warnings rhat/ESS** signalent un problème d'echantillonnage classique dans les modèles de melange : les changements de label entre les composantes rendent le paysage posterior multimodal.
 
 Malgre ces avertissements, le modèle a converge. On observe que :
 - La composante ""normale"" capture les trajets de 11 a 20 minutes
@@ -5399,7 +5206,7 @@ Malgre ces avertissements, le modèle a converge. On observe que :
 La cellule suivante extrait les moyennes, ecarts-types et poids posterior de chaque composante, identifie les composantes par ordre de moyenne, et visualise le melange ajuste sur l'histogramme des données.
 
 Ce phenomene de permutation des etiquettes (*label switching*) est inherent a l'identifiabilite des melanges (**Redner & Walker, 1984** ; **Stephens, 2000**).
-",,,,,,,,ef9ae868683a7bd0,,,,,,,
+",,,,,,,,dbdae43c0ceabd85,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,164a548e,code,fr,d853755b206a75a6,"# Resultats du melange
 mu_comp = trace_mixte.posterior['mu_components'].values.reshape(-1, K)
 sigma_comp = trace_mixte.posterior['sigma_components'].values.reshape(-1, K)
@@ -5467,9 +5274,9 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,be434f27,markdown,f
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,4a83cbc5fa5d3a53,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,1ae37a49,markdown,fr,2e521bf09f37634e,"## Exercice : Melange a 3 Composantes
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,1ae37a49,markdown,fr,f3a4c644fd8ea241,"## Exercice : Melange a 3 Composantes
 
-Modifiez le modèle de mélange pour utiliser 3 composantes au lieu de 2 :
+Modifiez le modèle de melange pour utiliser 3 composantes au lieu de 2 :
 - Composante 1 : trajets rapides (~10 min)
 - Composante 2 : trajets normaux (~16 min)
 - Composante 3 : trajets lents (~30 min)
@@ -5477,7 +5284,7 @@ Modifiez le modèle de mélange pour utiliser 3 composantes au lieu de 2 :
 **Indices** :
 - Changer `K = 3`
 - Ajuster les priors : `mu=np.array([10, 16, 30])`
-- Utiliser `pm.NormalMixture` comme dans la section 6",,,,,,,,2e521bf09f37634e,,,,,,,
+- Utiliser `pm.NormalMixture` comme dans la section 6",,,,,,,,f3a4c644fd8ea241,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,479b72bf,code,fr,b822b81674791235,"# TODO etudiant : implementer le melange a 3 composantes
 # Resultat attendu : 3 composantes avec moyennes proches de 10, 16 et 30 min
 
@@ -5554,7 +5361,7 @@ if NUMPY_AVAILABLE and PYMC_AVAILABLE:
     print(f""PyMC version: {pm.__version__}"")
 else:
     print(""PyMC n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,ca447f6593790106,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,86532f58,markdown,fr,0223917c07b177bb,"## 1. Le Problème Murder Mystery
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,86532f58,markdown,fr,53bf0ddd86330ec6,"## 1. Le Problème Murder Mystery
 
 ### Histoire
 
@@ -5566,9 +5373,7 @@ On sait que :
 - Colonel Mustard avait un motif (P = 0.3)
 - Mrs. Peacock avait un motif (P = 0.1)
 
-On decouvre que le **revolver appartient a Colonel Mustard**. Qui est le coupable ?
-
-> *Source.* Le « Murder Mystery » (M. Boddy, Miss Scarlet, Colonel Mustard, Mrs. Peacock) est l'exemple introductif phare du **chapitre 1** de Winn & Bishop, *Model-Based Machine Learning* (2019, [mbmlbook.com](https://www.mbmlbook.com)) — conçu pour faire émerger l'inférence bayésienne *via* un récit, sans équation, en révisant itérativement les *a priori* à chaque indice. Le notebook en reprend l'énoncé et le résout en PyMC (`pm.Categorical` + vraisemblance conditionnelle) ; le twin Infer.NET utilise `Variable.Discrete` + `Variable.If/Case` (voir [Infer-3](../Infer/Infer-3-Factor-Graphs.ipynb)).",,,,,,,,0223917c07b177bb,,,,,,,
+On decouvre que le **revolver appartient a Colonel Mustard**. Qui est le coupable ?",,,,,,,,53bf0ddd86330ec6,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,a7fc7c4a,code,fr,4bb3ab3acb7f19fc,"# Modele Murder Mystery avec PyMC
 # Equivalent Infer.NET : Variable.Discrete + Variable.If/Case
 
@@ -5642,11 +5447,9 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,a4f90840,code,fr,ae428c
 
 result = None  # TODO etudiant : remplacer par le modele et l'inference
 print(""Exercice a completer"")",,,,,,,,ae428ca924f084cb,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,3c8c3c62,markdown,fr,7057bda7b9c7ac26,"## 2. Explaining Away
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,3c8c3c62,markdown,fr,af104e24a1f16ff5,"## 2. Explaining Away
 
-Le phenomene d'**explaining away** : quand on observe l'arme de Mustard, la probabilite que Scarlet soit coupable diminue, car l'observation ""explique"" le crime par Mustard.
-
-> *Référence.* Le mécanisme d'« explaining away » est propre aux structures en V (colliders) : deux causes partagent un effet commun, et observer l'effet les rend *compétitives*. Formalisé par Pearl (1988), *Probabilistic Reasoning in Intelligent Systems* (Morgan Kaufmann), §3.3 — c'est l'une des structures élémentaires de la propagation d'information dans un réseau bayésien (chaîne, fourche, collider).",,,,,,,,7057bda7b9c7ac26,,,,,,,
+Le phenomene d'**explaining away** : quand on observe l'arme de Mustard, la probabilite que Scarlet soit coupable diminue, car l'observation ""explique"" le crime par Mustard.",,,,,,,,af104e24a1f16ff5,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,ecca77c2,code,fr,dd19b2ebb6acbe0a,"# Avant observation
 print(""Prior (avant observation de l'arme):"")
 print(f""  P(Scarlet) = 0.6, P(Mustard) = 0.3, P(Peacock) = 0.1"")
@@ -5656,7 +5459,7 @@ for i, name in enumerate(suspects):
     print(f""  P({name}) = {(probs == i).mean():.3f}"")
 print()
 print(""Explaining away : P(Scarlet) a diminue car Mustard 'explique' le crime"")",,,,,,,,dd19b2ebb6acbe0a,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,e1ab7aeb,markdown,fr,ffa633c3040b246a,"## 3. Paradoxe de Monty Hall
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,e1ab7aeb,markdown,fr,cbd184981515f274,"## 3. Paradoxe de Monty Hall
 
 ### Le problème
 
@@ -5664,9 +5467,6 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,e1ab7aeb,markdown,fr,ff
 1. Le joueur choisit une porte (disons la porte 0)
 2. Monty ouvre une autre porte qui contient une chevre
 3. Le joueur doit-il garder son choix ou changer ?
-
-
-> *Source.* Le paradoxe de Monty Hall a été popularisé par Marilyn vos Savant (*Parade Magazine*, 1990). Sa résolution bayésienne et la controverse qu'elle suscita sont analysées dans Gill (2011), *The Monty Hall Problem is not a Probability Puzzle* (Comptes Rendus Mathématique **349**(23-24):1325-1330) — il illustre comment le conditionnement sur l'information *que Monty a révélé une chèvre* (et non sur la porte ouverte elle-même) renverse l'intuition (P(gagner en changeant) = 2/3).
 
 ### Infer.NET : `Variable.Case`
 ```csharp
@@ -5677,7 +5477,7 @@ using (Variable.Case(door, 1)) { monty = 2; }
 using (Variable.Case(door, 2)) { monty = 1; }
 ```
 
-### PyMC : `pm.Categorical` + `pt.switch`",,,,,,,,ffa633c3040b246a,,,,,,,
+### PyMC : `pm.Categorical` + `pt.switch`",,,,,,,,cbd184981515f274,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,bc07ac6b,code,fr,f94876c2042f3478,"# Monty Hall avec PyMC
 # porte 0, 1, 2 ; la voiture est derriere une porte aleatoire
 
@@ -5773,7 +5573,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,f7337618,code,fr,74f2b0
 # Resultat attendu : environ 8.7% (paradoxe de la prevalence)
 
 print(""Exercice a completer"")",,,,,,,,74f2b0aa89ddedfe,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,185bb59c,markdown,fr,27e38b9aefb60dfc,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb,185bb59c,markdown,fr,c826f33a131dd066,"## Conclusion
 
 Les graphes de facteurs offrent une representation visuelle et algorithmique des modèles probabilistes, decomposant la distribution jointe en facteurs locaux.
 
@@ -5782,12 +5582,9 @@ Les graphes de facteurs offrent une representation visuelle et algorithmique des
 - Sur ces modèles discrets, PyMC resout l'inference par **echantillonnage MCMC** (CategoricalGibbsMetropolis) : une approximation Monte-Carlo du calcul exact qu'un **passage de messages** (sum-product) realiserait directement sur le graphe de facteurs quand celui-ci est un arbre
 - Les graphes de facteurs generalisent les reseaux bayesiens et les chaînes de Markov
 
-
-> *Références.* Les graphes de facteurs et le passage de messages *sum-product* sont formalisés dans Kschischang, Frey & Loeliger (2001), *Factor Graphs and the Sum-Product Algorithm* (IEEE Transactions on Information Theory **47**(2):498-519), et exposés de référence dans Bishop (2006), *Pattern Recognition and Machine Learning* [PRML], §8.4. L'algorithme calcule les marginales *exactement* en temps fini sur un arbre de facteurs ; PyMC l'approche ici par échantillonnage MCMC (CategoricalGibbsMetropolis) — une approximation Monte-Carlo du même calcul, là où Infer.NET propage les messages analytiquement via Expectation Propagation (EP).
-
 ---
 
-**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,27e38b9aefb60dfc,,,,,,,
+**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,c826f33a131dd066,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,6ddc2b96,markdown,fr,a8ce08ea6eae70cb,"# PyMC-4 : Reseaux Bayesiens
 
 **Navigation** : [Index](../README.md) | [<< PyMC-3](PyMC-3-Factor-Graphs.ipynb) | [PyMC-5 >>](PyMC-5-Causal-Inference.ipynb)
@@ -6113,7 +5910,7 @@ for bar, val in zip(bars, values):
             f'{val:.3f}', ha='center', fontsize=12)
 plt.tight_layout()
 plt.show()",,,,,,,,40ce659b4c8b45a0,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,4c9f1798,markdown,fr,1efc60a4b6bb5633,"## 7. D-Separation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,4c9f1798,markdown,fr,c14969e88f8b8f48,"## 7. D-Separation
 
 La **D-separation** determine si deux variables sont independantes conditionnellement a un ensemble de variables observees.
 
@@ -6124,13 +5921,11 @@ La **D-separation** determine si deux variables sont independantes conditionnell
    - En observant C : S et R deviennent independants (D-separes)
 
 2. **Collision** (Collider) : Sprinkler --> WetGrass <-- Rain
-   - Sans observation : S et R sont independants (regle du collider PUR, valide quand il n'existe **aucun autre chemin** entre eux)
+   - Sans observation : S et R sont independants
    - En observant W : S et R deviennent dependants (explaining away)
 
-   **Nuance -- reseau Wet Grass complet** : S et R partagent AUSSI la cause commune Cloudy (fourche S <-- C --> R), qui reste un chemin ouvert. La regle d'independence du collider ne s'applique donc pas telle quelle : S et R restent marginalement DEPENDANTS via C. C'est ce que mesure la cellule suivante (correlation -0.263 sans observation). L'effet PROPRE du collider n'apparait qu'en comparant cette correlation marginale a la correlation sachant W=1 (-0.740) : l'ecart supplementaire est l'explaining away.
-
 La D-separation est formalisee par **Pearl, Geiger & Verma (1989)** et **Verma & Pearl (1988)**, *Causal Networks: Semantics and Expressiveness*.
-",,,,,,,,1efc60a4b6bb5633,,,,,,,
+",,,,,,,,c14969e88f8b8f48,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-4-Bayesian-Networks.ipynb,c8a3722a,code,fr,727f6e3afe1970f0,"# Verification de la D-separation par correlation
 from scipy.stats import pearsonr
 
@@ -6882,7 +6677,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,9a6f1cae,markdown,fr,d8e694
 - Prior sur l'ecart-type : HalfNormal(10)
 
 Ce type de modèle (données gaussiennes avec paramètres inconnus) est un cas classique ou NUTS et ADVI donnent des résultats comparables mais avec des niveaux d'incertitude différents.",,,,,,,,d8e69429f45e4104,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,b51fae2c,code,fr,6c1fb680ee938b50,"# Comparaison NUTS vs ADVI sur un modele simple
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,b51fae2c,code,fr,ed0e31d48178a2ca,"# Comparaison NUTS vs ADVI sur un modele simple
 
 print(""=== Comparaison NUTS vs ADVI ==="")
 print()
@@ -6909,7 +6704,7 @@ with pm.Model() as model_advi:
     sigma = pm.HalfNormal(""sigma"", sigma=10)
     obs = pm.Normal(""obs"", mu=mean, sigma=sigma, observed=observations)
     approx = pm.fit(
-        method=""advi"", n=100000, random_seed=RANDOM_SEED,
+        method=""advi"", n=10000, random_seed=RANDOM_SEED,
         progressbar=False
     )
     trace_advi = approx.sample(2000)
@@ -6923,28 +6718,28 @@ print(f""  NUTS : mean = {nuts_mean.mean():.3f}, std = {nuts_mean.std():.4f}"")
 print(f""  ADVI : mean = {advi_mean.mean():.3f}, std = {advi_mean.std():.4f}"")
 print()
 print(""Note : ADVI tend a avoir une variance plus faible (sous-estime l'incertitude)"")
-print(""       car il approxime par une distribution gaussienne factorisee."")",,,,,,,,6c1fb680ee938b50,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,565c2293,markdown,fr,e0d847e53cad5f37,"**interprétation des résultats NUTS vs ADVI** :
+print(""       car il approxime par une distribution gaussienne factorisee."")",,,,,,,,ed0e31d48178a2ca,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,565c2293,markdown,fr,2179bb28fed9fe03,"**interprétation des résultats NUTS vs ADVI** :
 
-Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne empirique 2.050), avec un accord quasi-parfait sur l'estimation ponctuelle : NUTS `mean=2.049` et ADVI `mean=2.047`. Les deux std postérieures (`NUTS=0.111`, `ADVI=0.099`) sont également très proches et sous-estiment légèrement l'écart-type empirique (les 6 observations donnent un écart-type d'échantillon ~0.18), ce qui est attendu avec un prior aussi vague et peu de données.
+Les deux algorithmes estiment la moyenne autour de 2.05 (proche de la moyenne empirique), mais avec des caractéristiques différentes :
 
 | Metrique | NUTS | ADVI | interprétation |
 |----------|------|------|----------------|
 | Moyenne postérieure | ~2.05 | ~2.05 | Accord sur l'estimation ponctuelle |
-| Ecart-type postérieur | ~0.11 | ~0.10 | ADVI légèrement plus petit (sous-estimation marginale de l'incertitude) |
+| Ecart-type postérieur | ~0.13 (observe) | ~1.00 (observe) | Sur cet exemple n=6, ADVI deplace sa moyenne (1.56 vs 2.04) et sa variance marginale est plus large - voir note ci-dessous |
 
 > **Pourquoi ADVI sous-estime l'incertitude ?**
 > 
-> ADVI (Automatic Differentiation Variational Inférence, Kucukelbir et al. 2017) approxime le posterior par une distribution gaussienne factorisée (""mean-field""). Cette hypothèse d'indépendance ignore les corrélations entre variables, ce qui conduit **en général (asymptotiquement)** à des posteriors trop ""confiants"" (variance sous-estimée).
+> ADVI (Automatic Differentiation Variational inférence, Kucukelbir et al. 2017) approxime le posterior par une distribution gaussienne factorisee (""mean-field""). Cette hypothese d'indépendance ignore les corrélations entre variables, ce qui conduit **en général (asymptotiquement)** a des posteriors trop ""confiants"" (variance sous-estimee).
 >
-> **Important — convergence d'ADVI** : ADVI fait de la descente de gradient stochastique ; il faut **suffisamment d'itérations** pour converger. Avec trop peu d'itérations (par ex. `n=10000` ici), la moyenne postérieure d'ADVI reste éloignée de la vraie valeur (~1.56 au lieu de ~2.05) et sa variance marginale explose — l'inverse de la tendance asymptotique. C'est pourquoi cette cellule lance `n=100000` itérations : à convergence, ADVI et NUTS sont d'accord sur la moyenne (2.047 vs 2.049), et l'écart-type ADVI (0.099) est seulement légèrement plus petit que celui de NUTS (0.111) — la sous-estimation mean-field est ici marginale. **Leçon de debugging** : un désaccord marqué entre NUTS et ADVI sur un modèle simple est souvent le signe d'une ADVI sous-convergée (augmenter `n`), pas d'un bug du modèle.
+> **Sur ce petit exemple (n=6)** : l'output montre l'inverse - `ADVI: std=0.9984` vs `NUTS: std=0.1321`. La cause est qu'ADVI deplace sa moyenne (1.56 vs 2.04) sur aussi peu de données, ce qui gonfle la variance marginale. Ce cas illustre que la sous-estimation ADVI est une **tendance asymptotique**, pas une garantie sur chaque run. Pour un diagnostic fiable, utiliser un plus grand n ou comparer les intervalles de prediction.
 >
-> NUTS (No-U-Turn Sampler) échantillonne directement du posterior, capturant les corrélations et produisant des estimations d'incertitude plus fiables (et sans paramètre `n` à régler).
+> NUTS (No-U-Turn Sampler) echantillonne directement du posterior, capturant les corrélations et produisant des estimations d'incertitude plus fiables.
 
-**Quand cela importe** : La sous-estimation de l'incertitude par ADVI peut être problématique pour :
-- La prise de décision sous incertitude
-- Les intervalles de prédiction
-- La propagation de l'incertitude dans des modèles hiérarchiques",,,,,,,,e0d847e53cad5f37,,,,,,,
+**Quand cela importe** : La sous-estimation de l'incertitude par ADVI peut etre problematique pour :
+- La prise de decision sous incertitude
+- Les intervalles de prediction
+- La propagation de l'incertitude dans des modèles hiérarchiques",,,,,,,,2179bb28fed9fe03,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,8d8cbdfe,markdown,fr,4d521b7b1f6846fe,"## 4. Outils de Diagnostic avec ArviZ
 
 ### 4.1 Indicateurs cles
@@ -7284,37 +7079,29 @@ La fonction `diagnose_trace` vérifie les conditions de sante du posterior :
 | **HalfNormal** | (sigma,) | Ecarts-types, variances (positifs) |
 | **Beta** | (alpha, beta) | probabilités binomiales, proportions |
 | **Binomial** | (n, p) | Comptages de succes |",,,,,,,,0084207fa4bfcb51,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,098d43bf,markdown,fr,078c13b70fab6f30,"## 7. Exemple guide : Debugger un Modele
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,098d43bf,markdown,fr,2b5474001abb20aa,"## 7. Exemple guide : Debugger un Modèle
 
-### Le modele sain (reference)
+### Enonce
 
-Avant de deboguer un modele casse, fixons la cible : a quoi ressemble un modele d'estimation **bien specifie** ? La cellule ci-dessous estime la moyenne et l'ecart-type de 30 mesures. Trois choix sont essentiels pour que l'echantillonnage NUTS se passe proprement :
+Le modèle ci-dessous est déjà corrige. Il montre comment spécifier correctement un modèle d'estimation.",,,,,,,,2b5474001abb20aa,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c1b60f75,code,fr,59570c4db5d1baca,"# Exemple guide : Modele d'estimation bien specifie
 
-- **Prior large sur la moyenne** (`sigma=50`) : il laisse la donnee parler.
-- **`HalfNormal` pour l'ecart-type** : un ecart-type est strictement positif ; une `Normal` autoriserait des valeurs negatives.
-- **Assez d'observations** (`n=30`) : avec une *seule* observation, $\sigma$ serait sous-determine et l'echantillonneur divergerait (funnel, voir §2.2).
-
-Les diagnostics (divergences, $\hat{R}$, ESS) doivent etre propres -- c'est le signe que le modele est sain.
-",,,,,,,,078c13b70fab6f30,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c1b60f75,code,fr,52f2c3896ee82b29,"# Exemple guide : Modele d'estimation bien specifie.
-# IMPORTANT : on observe n=30 mesures (et non 1 seule) pour que sigma soit IDENTIFIABLE.
-# Avec une observation unique, sigma est sous-determine -> NUTS diverge (funnel, voir §2.2).
-print(""=== Exemple : Modele bien specifie (n=30 observations) ==="")
+print(""=== Exemple : Modele bien specifie ==="")
 print()
 
-# 30 mesures d'une quantite autour de 25 (ecart-type reel ~8).
-rng_obs = np.random.default_rng(RANDOM_SEED)
-donnees = rng_obs.normal(loc=25.0, scale=8.0, size=30)
-
 with pm.Model() as model_corrige:
-    moyenne = pm.Normal(""moyenne"", mu=25, sigma=50)       # prior large
-    sigma = pm.HalfNormal(""sigma"", sigma=10)              # strictement positif
-    obs = pm.Normal(""obs"", mu=moyenne, sigma=sigma, observed=donnees)
+    # Prior large sur la moyenne (centree vers les donnees attendues)
+    moyenne = pm.Normal(""moyenne"", mu=25, sigma=50)
+    # Prior sur l'ecart-type
+    sigma = pm.HalfNormal(""sigma"", sigma=10)
+    # Observation
+    obs = pm.Normal(""obs"", mu=moyenne, sigma=sigma, observed=50)
     trace_corrige = pm.sample(
-        draws=2000, chains=4, cores=1, random_seed=RANDOM_SEED, target_accept=0.95,
+        draws=2000, chains=4, random_seed=RANDOM_SEED,
         progressbar=False, return_inferencedata=True
     )
 
+# Diagnostic
 summary_corrige = az.summary(trace_corrige)
 print(""Resultats :"")
 hdi_cols = [c for c in summary_corrige.columns if 'hdi' in c.lower()]
@@ -7325,68 +7112,54 @@ print(""Diagnostics :"")
 n_div = int(trace_corrige.sample_stats[""diverging""].sum().values)
 print(f""  Divergences : {n_div}"")
 print(f""  R-hat max : {float(summary_corrige['r_hat'].max()):.4f}"")
-print(f""  ESS bulk min : {float(summary_corrige['ess_bulk'].min()):.0f}"")
-",,,,,,,,52f2c3896ee82b29,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,d8874600,markdown,fr,e9fb179ffb49574e,"### A votre tour : un modele bugge
+print(f""  ESS bulk min : {float(summary_corrige['ess_bulk'].min()):.0f}"")",,,,,,,,59570c4db5d1baca,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,d8874600,markdown,fr,b112c6baa253f39f,A votre tour : identifiez les problèmes dans le modèle suivant.,,,,,,,,b112c6baa253f39f,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a4e92b89,code,fr,739e93b4891415d0,"# Exemple guide : Trouvez les problemes dans ce modele
 
-La cellule suivante comporte **trois erreurs classiques** de specification. On la fait tourner pour en observer les *symptomes*, puis on applique les corrections et on relance pour verifier que le modele sain est retrouve.
-",,,,,,,,e9fb179ffb49574e,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,a4e92b89,code,fr,8aa961d1836918f5,"# Exemple guide : Debuggons un modele BUGGE, puis corrigeons-le.
-print(""=== Debug : modele bugge, puis corrige ==="")
-print(f""Rappel : les donnees (n=30) ont une moyenne empirique de {donnees.mean():.1f}."")
+print(""=== Exercice : Debugger ce modele ==="")
 print()
 
-print(""-- Modele bugge (3 erreurs) --"")
-with pm.Model() as model_buggy:
-    m = pm.Normal(""m"", mu=0, sigma=0.01)       # Erreur 1 : prior hyper-concentre
-    s = pm.Normal(""s"", mu=0, sigma=1)           # Erreur 2 : non contraint > 0
-    obs = pm.Normal(""obs"", mu=m, sigma=s, observed=donnees)
-    trace_buggy = pm.sample(
-        draws=1000, chains=2, cores=1, random_seed=RANDOM_SEED,
-        progressbar=False, return_inferencedata=True
-    )
-m_buggy = float(trace_buggy.posterior[""m""].mean())
-s_buggy = float(trace_buggy.posterior[""s""].mean())
-n_div_buggy = int(trace_buggy.sample_stats[""diverging""].sum().values)
-print(f""  Posterior de la moyenne : m ~ {m_buggy:.3f}"")
-print(f""    --> CONTRADICTION : la donnee vaut ~{donnees.mean():.1f}, mais la posterior reste a ~0."")
-print(f""        Le prior Normal(0, sigma=0.01) est si concentre qu'il ECRASE la donnee."")
-print(f""  Posterior de l'ecart-type : s ~ {s_buggy:.2f} (modélisé par une Normal, non contraint > 0)."")
-print(f""  Divergences NUTS : {n_div_buggy}  -- attention, 0 divergence ne signifie pas 'modele correct' !"")
-print()
+# Probleme 1 : Prior trop etroit pour les observations
+# Probleme 2 : Mauvaise distribution pour un ecart-type (peut etre negatif)
+# Probleme 3 : Parametrisation confuse
 
-print(""-- Modele corrige --"")
+# Modele original (avec erreurs) : DECOMMENTEZ POUR VOIR LES PROBLEMES
+# with pm.Model() as model_buggy:
+#     m = pm.Normal(""m"", mu=0, sigma=0.01)        # Prior trop concentre
+#     s = pm.Normal(""s"", mu=0, sigma=1)            # Peut etre negatif !
+#     obs = pm.Normal(""obs"", mu=m, sigma=s, observed=50)
+
+# Version corrigee
 with pm.Model() as model_corrige_ex:
+    # Correction 1 : Prior large (sigma=50 au lieu de 0.01)
     moyenne = pm.Normal(""moyenne"", mu=25, sigma=50)
+    # Correction 2 : HalfNormal pour un ecart-type (strictement positif)
     sigma = pm.HalfNormal(""sigma"", sigma=10)
-    obs = pm.Normal(""obs"", mu=moyenne, sigma=sigma, observed=donnees)
+    # Correction 3 : Parametrisation claire
+    obs = pm.Normal(""obs"", mu=moyenne, sigma=sigma, observed=50)
     trace_ex = pm.sample(
-        draws=2000, chains=2, cores=1, random_seed=RANDOM_SEED, target_accept=0.95,
+        draws=2000, chains=2, random_seed=RANDOM_SEED,
         progressbar=False, return_inferencedata=True
     )
-print(f""  Posterior de la moyenne : moyenne ~ {float(trace_ex.posterior['moyenne'].mean().values):.1f}  (recovere la donnee)"")
-print(f""  Posterior de l'ecart-type : sigma ~ {float(trace_ex.posterior['sigma'].mean().values):.1f}  (HalfNormal, > 0)"")
-n_div_ex = int(trace_ex.sample_stats[""diverging""].sum().values)
-print(f""  Divergences : {n_div_ex}"")
+
+print(""Corrections appliquees :"")
+print(""1. Prior sur moyenne : sigma=50 (large) au lieu de sigma=0.01 (etroit)"")
+print(""2. Distribution sigma : HalfNormal (positif) au lieu de Normal"")
+print(""3. Parametrisation claire avec noms explicites"")
 print()
-print(""=> Le reflexe debug : comparer la posterior a la DONNEE, pas seulement aux divergences."")
-print(""   Ici les deux modeles ont 0 divergence -- c'est l'ecart m~0 vs donnee~25 qui revele le bug."")
-",,,,,,,,8aa961d1836918f5,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,818b9439,markdown,fr,cbcf7e50e5efaf5c,"**Analyse des corrections** :
+print(f""Resultats : moyenne ~ {trace_ex.posterior['moyenne'].mean().values:.1f}, ""
+      f""sigma ~ {trace_ex.posterior['sigma'].mean().values:.1f}"")",,,,,,,,739e93b4891415d0,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,818b9439,markdown,fr,fe0d3d98d13237bd,"**Analyse des corrections** :
 
-| probleme original | consequence observee | correction appliquee |
-|-------------------|----------------------|----------------------|
-| `m = Normal(0, sigma=0.01)` | Prior hyper-concentre : la posterior reste a ~0 et **ignore la donnee** (~25) | `moyenne = Normal(25, sigma=50)` (prior large) |
-| `s = Normal(0, sigma=1)` | L'ecart-type n'est pas contraint a rester positif | `sigma = HalfNormal(10)` (strictement positif) |
-| variables anonymes (`m`, `s`) | Lecture difficile des resultats | Nommage explicite (`moyenne`, `sigma`) |
+| problème original | Consequence | Correction appliquée |
+|-------------------|-------------|----------------------|
+| sigma=0.01 sur le prior | Prior concentre autour de 0 (ecart-type ~0.01) | sigma=50 (ecart-type large) |
+| Normal pour l'ecart-type | Peut générer des valeurs negatives (invalides) | HalfNormal (strictement positif) |
+| variables anonymes | Difficulte a interpréter les résultats | Nommage explicite |
 
-Le contraste entre les deux executions est frappant :
-
-- **Modele bugge** : la posterior de la moyenne reste a ~0 -- le prior a **ecrase la donnee** -- alors que les donnees valent ~25. Pourtant, NUTS ne signale **aucune divergence**.
-- **Modele corrige** : la moyenne se recovere autour de ~25 (la donnee l'emporte), $\sigma$ est estime proprement, et les diagnostics restent propres.
-
-> **Lecon de debogage** : un prior trop concentre est un piege *silencieux*. Le sampler peut tourner sans divergence apparente, pourtant la posterior ignore la donnee. Le reflexe : **comparer la posterior a la donnee empirique** (et non se fier uniquement aux divergences / $\hat{R}$ / ESS, qui peuvent rester bonnes).
-",,,,,,,,cbcf7e50e5efaf5c,,,,,,,
+Le résultat corrige montre :
+- **Moyenne ~50** : proche de l'observation car le prior est large
+- **Sigma** : estime avec incertitude a partir d'une seule observation",,,,,,,,fe0d3d98d13237bd,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb,c47c65da,markdown,fr,864d6eb7b34a5b07,"### Points cles a retenir
 
 > **stratégie de debugging en 3 étapes** :
@@ -7637,11 +7410,9 @@ print(""Difficultes estimees (moyenne posterior):"")
 diff_means = difficulty_post.mean(axis=0)
 for j in range(n_questions):
     print(f""  Question {j}: {diff_means[j]:+.2f}"")",,,,,,,,d8a9991a49871655,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,4f1ff051,markdown,fr,9086b978cb619005,"### Interpretation de l'echantillonnage
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,4f1ff051,markdown,fr,429d261bc0bd64c2,"### Interpretation de l'echantillonnage
 
-L'echantillonnage MCMC a converge (duree mesurable en direct par la cellule de sampling ci-dessus — machine-dependante, non reproductible d'une machine a l'autre) avec 4 chaînes. Le modèle IRT utilise un lien probit (fonction inverse de la distribution normale cumulative) pour modeliser la probabilite de reponse correcte en fonction de la différence entre capacite de l'etudiant et difficulte de la question.
-
-La **discrimination** posterieure est estimee a ~0,30 -- une valeur **faible**. Dans le modele IRT a 2 parametres (2PL), la discrimination est la pente de la courbe P(correct) = Phi( discrimination x (capacite - difficulte) ) : une pente elevee signifie que la probabilite de reussite augmente vite avec la capacite (la question distingue nettement les etudiants forts des faibles), tandis qu'une pente faible (~0,30 ici) << aplatit >> la courbe -- les questions reussissent presque independamment du niveau de l'etudiant, donc elles **discriminent peu**. C'est coherent avec les donnees : le taux de reussite moyen (0,52) et la presence d'un etudiant total (5/5) comme d'un etudiant nul (0/5) laissent une marge d'incertitude sur l'ordre reel des difficultes, que le modele traduit par une faible discrimination. Un Q-concept clair : **mesurer la discrimination** (et pas seulement les capacites/difficultes) est ce qui permet de detecter les questions mal calibrees.",,,,,,,,9086b978cb619005,,,,,,,
+L'echantillonnage MCMC a converge en 37 secondes avec 4 chaînes. Le modèle IRT utilise un lien probit (fonction inverse de la distribution normale cumulative) pour modeliser la probabilite de reponse correcte en fonction de la différence entre capacite de l'etudiant et difficulte de la question.",,,,,,,,429d261bc0bd64c2,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,76b12769,code,fr,d9e809bd0055afe7,"# Visualisation capacites vs difficultes
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
@@ -7828,9 +7599,9 @@ print()
 print(""Parametres de guess (chance si non-competent):"")
 for j in range(n_quest_dina):
     print(f""  Question {j}: guess={guess_post[:,j].mean():.3f}"")",,,,,,,,28d0cd17c409ffb8,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,63d1c599,markdown,fr,14c68afc044a2062,"### Interpretation de l'echantillonnage DINA
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,63d1c599,markdown,fr,020088bb09ea936f,"### Interpretation de l'echantillonnage DINA
 
-L'echantillonnage (duree mesurable en direct par la cellule de sampling ci-dessus — machine-dependante) utilise un algorithme hybride : BinaryGibbsMetropolis pour les competences binaires (alpha) et NUTS pour les paramètres continus (slip, guess). Cette combinaison est necessaire car les variables competences sont discretes tandis que slip et guess sont continus.",,,,,,,,14c68afc044a2062,,,,,,,
+L'echantillonnage a pris 46 secondes avec un algorithme hybride : BinaryGibbsMetropolis pour les competences binaires (alpha) et NUTS pour les paramètres continus (slip, guess). Cette combinaison est necessaire car les variables competences sont discretes tandis que slip et guess sont continus.",,,,,,,,020088bb09ea936f,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,82004c14,code,fr,ff710093ea0bc3f7,"# Visualisation des competences DINA
 fig, ax = plt.subplots(1, 1, figsize=(8, 5))
 im = ax.imshow(alpha_mean, cmap='RdYlGn', vmin=0, vmax=1, aspect='auto')
@@ -8380,7 +8151,7 @@ de Gaussiennes de maniere analytique. PyMC est plus general mais plus lent pour 
 ---
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,3d6a03475f09adde,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ca1eafe9,markdown,fr,d69d61c4ff346be2,"## 7 bis. Le coeur de TrueSkill : EP, formules V(t)/W(t) et dynamique
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ca1eafe9,markdown,fr,28bb4d2200932db2,"## 7 bis. Le coeur de TrueSkill : EP, formules V(t)/W(t) et dynamique
 
 Jusqu'ici nous avons laisse PyMC (NUTS) calculer les posteriors des skills par echantillonnage. C'est correct mais cache **la vraie contribution du papier TrueSkill** : un algorithme analytique qui rend la mise a jour **exacte et O(1) par match**. C'est ce qui rend TrueSkill deployable en production sur des millions de joueurs. Cette section l'explicite.
 
@@ -8400,9 +8171,7 @@ ou $\mathcal{N}$ et $\Phi$ sont la densite et la CDF Gaussiennes. Les mises a jo
 
 $$\mu_w' = \mu_w + \sigma_w^2 \cdot \frac{V(t)}{c}, \qquad \mu_l' = \mu_l - \sigma_l^2 \cdot \frac{V(t)}{c}$$
 
-$$(\sigma_w^2)' = \sigma_w^2 \Big(1 - \tfrac{\sigma_w^2}{c^2}\, W(t)\Big), \qquad (\sigma_l^2)' = \sigma_l^2 \Big(1 - \tfrac{\sigma_l^2}{c^2}\, W(t)\Big)$$
-
-> **Détail subtil** : la variance se contracte du facteur $\tfrac{\sigma^2}{c^2}\, W(t)$, et **non** de $W(t)$ seul — le ratio $\sigma^2/c^2 < 1$ borne la contraction (un prior très confiant $\sigma^2 \ll c^2$ ne peut guère se resserrer). La cellule numérique suivante le vérifie : $\sigma$ passe de 8,33 à **7,19**, cohérent avec le moteur EP du jumeau C# (Infer-8 cellule 16 : $N(29{,}21,\,7{,}19)$).
+$$(\sigma_w^2)' = \sigma_w^2 \big(1 - W(t)\big), \qquad (\sigma_l^2)' = \sigma_l^2 \big(1 - W(t)\big)$$
 
 **Interpretation** : $V(t)$ mesure a quel point la comparaison etait informative — un match equilibre ($t\approx 0$) instruit beaucoup (grand $V$), une victoire evidente ($t\gg 0$) instruit peu. La variance $\sigma^2$ se contracte d'autant. C'est l'equivalent analytique exact de ce que NUTS approxime par echantillonnage dans les sections précédentes.
 
@@ -8422,7 +8191,7 @@ Un detail essentiel, absent des sections précédentes : en production, TrueSkil
 
 ---
 
-**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,d69d61c4ff346be2,,,,,,,
+**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,28bb4d2200932db2,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,1e2770fb,markdown,fr,e6082501a6c63039,"## Exercice 2 : Tournoi Simule avec Vrais Skills
 
 Créez 6 joueurs avec des ""vrais skills"" connus. Simulez 15 matchs aleatoires
@@ -8855,308 +8624,3 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,p16frmwidp3,
 **Objectif** : mesurer comment un prior *très concentré* sur une grande longueur $\ell$ force le GP vers un modèle quasi linéaire (sous-apprentissage). C'est la vérification empirique promise en section 5.
 
 **Indices** : passez de `pm.LogNormal(""ls"", mu=0.0, ...)` à `mu=2.0, sigma=0.1`. Étapes : (1) ré-entraînez avec ce prior concentré grand ; (2) comparez la frontière (qui doit devenir quasi-linéaire) et l'accuracy. **Question** : que se passe-t-il avec un prior concentré *petit* (`mu=-1.5`) ?",,,,,,,,3f84a6cc775ec81f,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,pymc11_phi_viz_interp,markdown,fr,4483133667ac5c83,"**Interprétation — la distribution Phi révèle la contamination inter-sujets.**
-
-Le seuil rouge/gris de la visualisation (P(mot|sujet) > 0,1) isole les mots qui *définissent* chaque sujet :
-les pics rouges sont nets — `atome` (0,41), `experience` (0,24), `theorie` (0,16) pour la Science ;
-`ballon` (0,33), `equipe` (0,25) pour le Sport ; `recette` (0,36), `ingredient` (0,26) pour la Cuisine.
-Cette concentration sur quelques mots dominants est précisément ce que le **prior de Dirichlet asymétrique**
-a forcé (cellule précédente) : en pénalisant les distributions plates, il pousse chaque sujet vers un *pic*.
-
-Mais la visualisation expose aussi ce que le tableau des 4 mots dominants masque : la **contamination**.
-
-1. **`four` est rouge dans DEUX sujets** — Cuisine (0,185, l'« oven », sémantiquement correct) **et** Sport (0,114).
-   Le modèle n'a pas pu attribuer ce mot à un seul sujet : il est polysémique (ou bruité), et LDA le
-   « partage » entre les deux. C'est inhérent au modèle de sac de mots, qui ignore le contexte.
-2. **`match` fuit dans les trois sujets** — rouge en Sport (0,169, son sens dominant « match sportif »),
-   mais gris en Science (0,046) et Cuisine (0,053). Sa présence faible hors-Sport est l'empreinte du
-   lissage du prior : aucun mot n'a une probabilité strictement nulle sous Dirichlet.
-
-**Leçon** : les sujets LDA ne sont jamais *purs*. La lecture des distributions Phi complètes (et non
-seulement des mots dominants) révèle les mots-frontières — ceux qui résistent à la classification unique.
-Ces mots partagés sont aussi les premiers candidats à une **fusion de sujets** si l'on augmente le nombre
-de documents ou diminue le nombre de sujets K.",,,,,,,,4483133667ac5c83,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,fixed-id-null,markdown,fr,2d602e4c39ead06b,"## Références
-
-| Référence | Section / Numéro | Lien au notebook |
-|-----------|------------------|-------------------|
-| Blei, Ng & Jordan (2003), *JMLR* 3:993-1022, ""Latent Dirichlet Allocation"" | — | Article fondateur de LDA (modèle génératif documents-topics-mots) |
-| Pritchard, Stephens & Donnelly (2000), *Genetics* 155:945-959 | — | Version ancestrale (LDA-like) avec priors Pritchard-Stephens-Donnelly |
-| Heinrich (2005) ""Parameter estimation for text analysis"" | Technical report | Tutorial LDA + Gibbs sampling + variational |
-| MBML ""Latent Dirichlet Allocation"" (sub-page) | — | Portage MBML-IDIAP du modèle LDA — version courte canonique suivant Blei 2003 |
-
-> **Note pedagogique** : PyMC utilise NUTS (No-U-Turn Sampler, Hoffman & Gelman 2014) pour explorer le posterior LDA. Pour comparer NUTS ↔ VMP d'Infer.NET, voir la note technique de Heinrich (2005) et le §25.5 de *Probabilistic Machine Learning* (Murphy 2023).",,,,,,,,2d602e4c39ead06b,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-12-Modeles-Hierarchiques.ipynb,references-pymc12-8081,markdown,fr,f51e1f03716b795c,"## Références
-
-Ce notebook est le **jumeau Python** (PyMC v5 / NUTS) de `Infer-12-Modèles-Hiérarchiques` (Infer.NET / EP, parité #4956). La théorie du pooling partiel et de la rétraction est **identique** ; les références canoniques sont reprises ci-dessous, augmentées des sources spécifiques à l'inférence par échantillonnage (NUTS, funnel, paramétrisation non-centrée).
-
-| Référence | Lien au notebook |
-|-----------|-------------------|
-| Gelman, Carlin, Stern, Dunson, Vehtari & Rubin, *Bayesian Data Analysis* (3rd ed., 2014), chap. 5 | Modèles hiérarchiques : structure, prior de population, shrinkage, exemple « 8 écoles » §5.5 |
-| Rubin (1981), *J. Educ. Stat.* 6:377-401 | Estimation multi-niveaux — exemple fondateur des « 8 écoles » (rétraction des estimations par groupe clairsemé) |
-| Efron & Morris (1975), *J. Am. Stat. Assoc.* 70:311-319, « Stein's Paradox in Statistics » | James-Stein shrinkage : pooling empirique bayésien |
-| James & Stein (1961), *Proc. Berkeley Symp. Math. Stat. Prob.* | Estimateur James-Stein : origine théorique de la rétraction |
-| Gelman (2006), *Technometrics* 48:241-255, « Prior distributions for variance parameters in hierarchical models » | Choix des priors sur σ, τ (half-Cauchy / half-Normal) |
-| Hoffman & Gelman (2014), *JMLR* 15(47):1593-1623, « The No-U-Turn Sampler » | **NUTS** — l'échantillonneur Hamiltonien adaptatif utilisé par PyMC (§5, « NUTS au lieu de EP ») |
-| Betancourt & Girolami (2013), arXiv:1312.0906, « Hamiltonian Monte Carlo for Hierarchical Models » | Pathologie du **funnel de Neal** et **paramétrisation non-centrée** qui la corrige (§10) |
-
-> **Note pédagogique** : l'exemple « 8 écoles » de Rubin (1981), repris dans BDA3 §5.5, est le test canonique du pooling partiel. La spécification probabiliste est ici **identique** au jumeau Infer.NET ; la différence est le moteur — EP analytique côté .NET, échantillonnage NUTS côté PyMC. Le **non-centrage** (§10) n'est nécessaire *que* pour l'échantillonnage : NUTS souffre du funnel sur les modèles centrés, là où l'EP d'Infer.NET est naturellement robuste.
-",,,,,,,,f51e1f03716b795c,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,sources-canoniques-pymc,markdown,fr,251d4ba8424604cc,"### Sources canoniques
-
-Ce notebook s'inscrit dans la tradition de l'inférence par maximum de vraisemblance puis bayésienne pour les réponses d'annotateurs multiples, développée ici en **PyMC** pour sa formulation probabiliste moderne (variables latentes + MCMC / EM).
-
-| Source | Année | Rôle dans ce notebook |
-|--------|-------|----------------------|
-| Dawid & Skene, *Maximum likelihood estimation of observer error-rates using the EM algorithm*, JRSS-A | 1979 | Inspire les modèles de matrice de confusion par worker (Honest Worker, Biased Worker) — cf. section 5 |
-| Raykar et al., *Learning from Crowds*, JMLR 11:1297-1332 | 2010 | Formalisation bayésienne du prior sur la matrice de confusion, inspire le modèle Biased Worker |
-| Karger, Oh & Shah, *Iterative Learning from Crowds*, NIPS Workshop on Crowdsourcing | 2011 | Algorithme itératif pour l'apprentissage actif avec convergence garantie |
-| Whitehill et al., *Whose Vote Should Count More*, NIPS | 2009 | GLAD : ajoute la difficulté par item |
-| Kim & Ghahramani, *Bayesian Classifier Combination*, ICML | 2012 | BCC = version bayésienne de Dawid-Skene |
-| MBML Book, *Harnessing the Crowd* (Chap. 7) | en ligne | Présentation pédagogique d'ensemble sur mbmlbook.com — cf. contexte §1 |
-
-> **Note de fidélité** : le notebook développe les formalismes en PyMC (MCMC `CategoricalGibbsMetropolis` pour les labels discrets, EM pour Dawid-Skene), pas avec les algorithmes EM historiques de Dawid-Skene 1979. Les **équations** sont alignées sur Dawid-Skene 1979 et Raykar 2010 ; les **choix d'architecture** (Beta prior, Dirichlet confusion matrix, hiérarchie Community) reflètent la pratique probabiliste moderne issue de Raykar 2010 et Karger 2011.",,,,,,,,251d4ba8424604cc,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,dsb-intro,markdown,fr,3c8f2fe6aa2a46b6,"### Quand Dawid-Skene surpasse-t-il VRAIMENT le vote majoritaire ?
-
-Sur le jeu de données ci-dessus (§5), le vote majoritaire et Dawid-Skene atteignent **tous les deux 100 %** de précision : les quatre workers sont fiables, le problème est trop facile pour que le modèle de Dawid-Skene montre sa valeur. La table de comparaison ci-dessous affirme « Dawid-Skene souvent meilleur », mais rien dans les sorties commitées ne le **démontre** — les deux méthodes y sont ex aequo.
-
-Pour rendre la capacité distinctive de Dawid-Skene **visible dans les nombres**, il faut un problème où le vote majoritaire a quelque chose à **perdre** : un jeu de données contaminé par des *workers biaisés*. C'est précisément la situation omniprésente dans le vrai crowdsourcing (annotateurs inattentifs, bots, spammeurs). Construisons ce cas : 3 workers fiables + 2 « spammers » qui votent toujours 1.",,,,,,,,3c8f2fe6aa2a46b6,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,dsb-code,code,fr,0b434c677983d633,"# --- Cas discriminant : workers biaisés (le vote majoritaire echoue) ---
-# Sur le jeu de donnees precedent (section 5), Dawid-Skene ET le vote majoritaire
-# atteignent 100 % : les workers sont fiables, le probleme est trop facile pour
-# que le modele de Dawid-Skene montre sa valeur. Construisons un cas ou des
-# workers biaisés (des ""spammers"" qui votent toujours 1) font echouer le vote
-# majoritaire, et regardons si Dawid-Skene recupere les vrais labels.
-
-# 3 workers fiables (avec quelques erreurs honnetes) + 2 spammers (toujours 1)
-vrais_labels_biais = np.array([1, 0, 1, 0, 1, 0, 1, 0])
-n_items_biais = len(vrais_labels_biais)
-W1 = vrais_labels_biais.copy()              # worker fiable parfait
-W2 = vrais_labels_biais.copy(); W2[3] = 1   # erreur honnete (vrai=0 -> 1)
-W3 = vrais_labels_biais.copy(); W3[7] = 1   # erreur honnete (vrai=0 -> 1)
-W4 = np.ones(n_items_biais, dtype=int)      # spammer : vote toujours 1
-W5 = np.ones(n_items_biais, dtype=int)      # spammer : vote toujours 1
-labels_biais = np.stack([W1, W2, W3, W4, W5], axis=1)
-
-print(""=== Cas discriminant : 3 workers fiables + 2 spammers (toujours 1) ==="")
-print(""            W1 W2 W3 W4 W5 | Vrai"")
-for i in range(n_items_biais):
-    print(""  Item {} :  {}  |  {}"".format(
-        i, ""  "".join(str(int(labels_biais[i, w])) for w in range(5)),
-        vrais_labels_biais[i]))
-
-# Vote majoritaire (baseline)
-preds_mv_biais = np.array([1 if np.sum(labels_biais[i] == 1) > np.sum(labels_biais[i] == 0) else 0
-                           for i in range(n_items_biais)])
-acc_mv_biais = np.mean(preds_mv_biais == vrais_labels_biais)
-print(""\n--- Vote majoritaire (baseline) ---"")
-print(""Predictions : {}"".format(preds_mv_biais.tolist()))
-print(""Precision   : {:.1%} ({} / {})"".format(acc_mv_biais,
-      int(np.sum(preds_mv_biais == vrais_labels_biais)), n_items_biais))
-print(""Items en erreur : {}"".format(np.where(preds_mv_biais != vrais_labels_biais)[0].tolist()))
-
-# Dawid-Skene : modelise le biais de chaque worker via sa matrice de confusion
-print(""\n--- Dawid-Skene (EM) ---"")
-class_probs_biais, confusion_biais = dawid_skene_em(labels_biais, n_classes=2)
-preds_ds_biais = np.argmax(class_probs_biais, axis=1)
-acc_ds_biais = np.mean(preds_ds_biais == vrais_labels_biais)
-print(""Predictions : {}"".format(preds_ds_biais.tolist()))
-print(""Precision   : {:.1%} ({} / {})"".format(acc_ds_biais,
-      int(np.sum(preds_ds_biais == vrais_labels_biais)), n_items_biais))
-
-gain = int(np.sum(preds_ds_biais == vrais_labels_biais)) - int(np.sum(preds_mv_biais == vrais_labels_biais))
-print(""\n>>> Dawid-Skene recupere {} item(s) que le vote majoritaire ratait ""
-      ""({:.1%} vs {:.1%})."".format(gain, acc_ds_biais, acc_mv_biais))
-
-print(""\n--- Matrices de confusion estimees (le biais des spammers est reconnu) ---"")
-for w in range(labels_biais.shape[1]):
-    nom = ""W{} (SPAMMER)"".format(w + 1) if w >= 3 else ""W{}"".format(w + 1)
-    print(""\n{} :"".format(nom))
-    print(""           Pred 0   Pred 1"")
-    print(""  Vrai 0 :  {:.2f}     {:.2f}"".format(confusion_biais[w, 0, 0], confusion_biais[w, 0, 1]))
-    print(""  Vrai 1 :  {:.2f}     {:.2f}"".format(confusion_biais[w, 1, 0], confusion_biais[w, 1, 1]))
-",,,,,,,,0b434c677983d633,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-13-Crowdsourcing.ipynb,dsb-interp,markdown,fr,1b1f12d76b3067b4,"**Lecture — Dawid-Skene récupère ce que le vote majoritaire rate.** Le contraste est net : sur les 8 items, le vote majoritaire tombe à **75 %** (il se trompe sur les items 3 et 7, où les 2 spammers + une erreur honnête d'un worker fiable font basculer la majorité vers 1 alors que le vrai label est 0), tandis que Dawid-Skene **retrouve les 8 vrais labels (100 %)** — soit **+2 items récupérés**.
-
-Le mécanisme est lisible dans les **matrices de confusion estimées** : le modèle a reconnu que W4 et W5 votent *toujours* 1, indépendamment de la vérité ($P(\text{pred}=1 \mid \text{vrai}=0) = 1{,}0$ **et** $P(\text{pred}=1 \mid \text{vrai}=1) = 1{,}0$ — un vote qui ne transporte **aucune information** sur le vrai label). Dawid-Skene *déprécie* donc ces workers (leurs votes ne pèsent plus dans l'estimation) et s'appuie sur les workers fiables W1–W3 pour reconstruire la vérité. Le vote majoritaire, lui, traite tous les votes à parts égales — il est aveugle au biais.
-
-C'est la raison d'être du modèle de Dawid-Skene (Dawid & Skene, 1979) : ce n'est pas sur les données propres qu'il surpasse la baseline, mais **sur les données bruitées et biaisées** — exactement ce que l'on rencontre en production (étiquetage humain à grande échelle, annotation médicale multi-experts, modération de contenu).
-
-> **Lien pratique** : la capacité démontrée ici (identifier et déprécier les workers non informatifs) est aussi ce qui permet à l'**apprentissage actif** (§7) de cibler les items où annoter davantage apporterait le plus d'information — et au modèle **Community** (§6) de regrouper les workers par profil de fiabilité plutôt que de les traiter individuellement.",,,,,,,,1b1f12d76b3067b4,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb,ipmc16-ls,markdown,fr,11e2b7ce4d2ec493,"### Lecture des trois panneaux : la longueur de corr&eacute;lation commande le lissage
-
-Les trois sous-graphiques tracent des fonctions tir&eacute;es du **m&ecirc;me prior GP** (moyenne nulle, m&ecirc;me noyau RBF) &mdash; seul `ls` change. C'est donc le seul r&eacute;glage qui distingue une fonction tr&egrave;s oscillante (`ls=0.2`) d'une quasi-lin&eacute;aire (`ls=5.0`). Trois lectures convergentes :
-
-- **`ls=0.2` (tr&egrave;s wiggly)** : la covariance $K$ est quasi-diagonale &mdash; deux points distants de $0{,}4$ sont d&eacute;j&agrave; d&eacute;corr&eacute;l&eacute;s. Le GP est libre d'osciller rapidement : il peut **&eacute;pouser le bruit local** (sur-apprentissage), au prix d'une variance &eacute;lev&eacute;e entre points voisins.
-- **`ls=5.0` (tr&egrave;s lisse)** : $K$ est presque la matrice unit&eacute; &mdash; sur tout l'intervalle $[0,5]$, les points restent corr&eacute;l&eacute;s. Les tirages &laquo; collent &raquo; &agrave; une tendance globale et **ne capturent aucune structure locale** (sous-apprentissage).
-- **`ls=1.0` (mod&eacute;r&eacute;)** : c'est exactement la matrice de la cellule pr&eacute;c&eacute;dente &mdash; covariance $0{,}882$ &agrave; distance $1$, $0{,}135$ &agrave; distance $4$. La corr&eacute;lation d&eacute;cro&icirc;t sur une &eacute;chelle comparable &agrave; celle des donn&eacute;es.
-
-C'est le **compromis biais-variance du GP** exprim&eacute; via le noyau : `ls` trop petit = variance &eacute;lev&eacute;e (wiggly, sur-apprend) ; `ls` trop grand = biais &eacute;lev&eacute; (lisse, sous-apprend). Sur le dataset &laquo; donut &raquo; qui suit, PyMC va **apprendre `ls` depuis les donn&eacute;es** : trop petit, il &eacute;pouse le bruit de l'anneau ; trop grand, il ne s&eacute;pare plus le disque de l'anneau. Le &laquo; sparse &raquo; du titre d&eacute;signe l'astuce computationnelle (points induits) qui rend ce tirage d'&eacute;chelle abordable quand $N$ grandit.
-",,,,,,,,11e2b7ce4d2ec493,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,ppc-check-intro-8081,markdown,fr,e0e2b2a9cc3e90d9,"### D'abord : la Gaussienne unique suffit-elle ? (controle predictif)
-
-Avant d'introduire le melange, une etape cle de la demarche *model-based* (Winn & Bishop, MBML Ch.1) reste implicite dans ce notebook : **controler que le modele simple rend bien compte des donnees**. La section 3 utilise la distribution predictive pour *predire le temps de demain*, mais jamais pour **diagnostiquer un mauvais ajustement**.
-
-On reprend ici les donnees bimodales (jours normaux + jours exceptionnels) et on ajuste dessus une **Gaussienne unique**, puis on compare sa distribution predictive aux donnees observees (posterior predictive check). La predictive d'une Gaussienne a moyenne et variance inconnues (prior conjugue vague) est une **Student-t** fermee, donc ce controle est analytique — il n'exige pas d'echantillonnage MCMC.
-
-> **Note (#8081)** : ce controle predictif etait absent de la distillation. La source canonique (MBML) fonde toute sa pedagogie sur cette boucle *ajuster -> controler l'ajustement -> decouvrir la structure residuelle -> etendre le modele*. Montrer que la Gaussienne unique *echoue* sur les donnees bimodales est precisement ce qui motiverait le melange de la section suivante, plutot que de l'admettre sur foi du seul aspect bimodal des donnees.
-",,,,,,,,e0e2b2a9cc3e90d9,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-2-Gaussian-Mixtures.ipynb,ppc-check-8081,code,fr,4f1571ddb09a455a,"# Controle predictif (posterior predictive check) : la Gaussienne unique suffit-elle ?
-# On ajuste une Gaussienne UNIQUE sur les donnees bimodales (jours normaux + exceptionnels)
-# et on compare sa distribution predictive aux donnees observees.
-# La predictive d'une Gaussienne a moyenne+variance inconnues (prior conjugue vague)
-# est une Student-t fermee : x_new ~ t_{n-1}(xbar, s*sqrt(1+1/n)). Pas besoin d'echantillonner.
-donnees_mixtes = np.array([13.0, 17.0, 20.0, 25.0, 16.0, 11.0, 16.0, 14.0, 13.0, 32.0, 35.0, 28.0])
-n_mix = len(donnees_mixtes)
-xbar_mix = donnees_mixtes.mean()
-s_mix = donnees_mixtes.std(ddof=1)
-df_mix = n_mix - 1
-scale_mix = s_mix * np.sqrt(1.0 + 1.0 / n_mix)
-predictive_gauss = stats.t(df=df_mix, loc=xbar_mix, scale=scale_mix)
-
-# Visuel : donnees observees (bimodales) vs densite predictive (unimodale)
-fig, ax = plt.subplots(figsize=(9, 3.6))
-ax.hist(donnees_mixtes, bins=np.arange(8, 40, 3), density=True, alpha=0.55,
-        color=""dimgray"", label=""Donnees observees (bimodal)"")
-xs = np.linspace(-2, 45, 400)
-ax.plot(xs, predictive_gauss.pdf(xs), color=""crimson"", lw=2.2,
-        label=""Predictive Gaussienne unique (unimodal)"")
-gap_lo, gap_hi = 21.0, 27.0
-ax.axvspan(gap_lo, gap_hi, color=""gold"", alpha=0.30,
-           label=f""Creux [{gap_lo:.0f},{gap_hi:.0f}] min"")
-ax.set_xlabel(""Temps de trajet (min)"")
-ax.set_ylabel(""Densite"")
-ax.set_title(""Controle predictif : la Gaussienne unique ne capte pas la bimodalite"")
-ax.legend(loc=""upper right"", fontsize=8)
-plt.tight_layout()
-plt.show()
-
-# Diagnostic quantitatif sur le creux inter-clusters
-obs_gap = np.mean((donnees_mixtes >= gap_lo) & (donnees_mixtes <= gap_hi))
-pred_gap = predictive_gauss.cdf(gap_hi) - predictive_gauss.cdf(gap_lo)
-print(f""Gaussienne unique sur les donnees bimodales :"")
-print(f""  moyenne = {xbar_mix:.2f} min,  ecart-type = {s_mix:.2f} min"")
-print(f""  predictive = Student-t(df={df_mix}, loc={xbar_mix:.2f}, scale={scale_mix:.2f})"")
-print(f""\nCreux [{gap_lo:.0f},{gap_hi:.0f}] min (entre jours normaux et exceptionnels) :"")
-print(f""  fraction OBSERVEE = {obs_gap:.3f} ({int(obs_gap*n_mix)}/{n_mix})"")
-print(f""  fraction PREDITE  = {pred_gap:.3f}"")
-print(f""  => la Gaussienne unique attend ~{pred_gap/max(obs_gap,1e-9):.1f}x plus de trajets dans le creux."")
-print(""\nLa Gaussienne unique lisse le creux entre les deux regimes ; elle ne peut pas"")
-print(""representer a la fois les jours normaux (~15 min) et exceptionnels (~32 min)."")
-print(""C'est ce diagnostic d'ajustement qui justifie le passage a un melange (section 5)."")
-",,,,,,,,4f1571ddb09a455a,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-7-Skills-IRT.ipynb,origine-mbml-ch2-pymc,markdown,fr,efe34c484859d16e,"### Origine pédagogique : Model-Based Machine Learning (Chap. 2)
-
-Ce notebook est une **distillation pratique en PyMC** du **Chapitre 2 — *Assessing People's Skills*** de *Model-Based Machine Learning* (Winn, Bishop, Diethe, Guiver & Zaykov, 2020 — [mbmlbook.com](https://mbmlbook.com/LearningSkills.html)), qui résout le même problème : **inférer les compétences d'un candidat à partir de ses réponses à un test**, en modélisant capacité latente, difficulté des questions et bruit d'observation (slip/guess).
-
-> Les **racines académiques** du modèle — Rasch (1960), Lord (1980), Birnbaum (1968) pour l'IRT, Junker & Sijtsma (2001) pour le DINA — sont détaillées dans les sections 2 et 4 ci-dessous, afin d'éviter de dupliquer ici le pedigree. La structure pédagogique (problème → défis → modèle) reprend la démarche de modélisation du chapitre MBML ; les scénarios numériques et l'inférence PyMC (MCMC NUTS + Gibbs pour les variables latentes binaires) sont propres au notebook.",,,,,,,,efe34c484859d16e,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,89b5a9f5,markdown,fr,bbd08e67b1d96934,"### Elo : le predecesseur deterministe que TrueSkill generalise
-
-Avant TrueSkill, le classement competitif etait domine par **Elo** (chess, 1960s), que la cellule suivante implemente from-scratch. Chaque joueur y est represente par un **unique scalaire** $R$ (son rating) :
-
-$$E_A = \frac{1}{1 + 10^{(R_B - R_A)/400}}, \qquad R_A \leftarrow R_A + K \cdot (S_A - E_A)$$
-
-- $E_A$ : score **attendu** de A (probabilite de victoire implicite),
-- $S_A$ : score **observe** (1 = gagne, 0 = perd, 0.5 = nul),
-- $K$ : facteur de mise a jour **FIXE** (typiquement 16 a 32).
-
-Elo est simple, robuste et eprouve. Mais il est **deterministe et ponctuel** : il ne modelise pas son incertitude. La cellule suivante montre concretement ce que cela implique, et pourquoi Microsoft a developpe TrueSkill pour Xbox Live.",,,,,,,,bbd08e67b1d96934,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,9c8620b6,code,fr,a4b0f67ee99d3b26,"# Elo : le systeme de classement deterministe que TrueSkill generalise.
-# Implementation from-scratch (pure Python, deterministe) pour servir de baseline.
-import math
-
-def expected_score(rating_a, rating_b):
-    """"""Score attendu de A contre B (formule Elo standard, echelle 400).""""""
-    return 1.0 / (1.0 + 10 ** ((rating_b - rating_a) / 400.0))
-
-def update_elo(rating_a, rating_b, score_a, K=32):
-    """"""Mise a jour Elo : R_a += K * (resultat - attendu). K est FIXE.""""""
-    ea = expected_score(rating_a, rating_b)
-    return rating_a + K * (score_a - ea), rating_b - K * (score_a - ea)  # somme nulle
-
-print(""ELO : LE PREDECESSEUR DETERMINISTE"")
-print(""="" * 60)
-# Deux nouveaux joueurs, meme rating initial (convention Elo : 1500).
-R1, R2 = 1500.0, 1500.0
-print(f""Avant : R1 = {R1:.1f}, R2 = {R2:.1f}  (deux nouveaux joueurs)"")
-print(f""  Score attendu de J1 : E = {expected_score(R1, R2):.3f}"")
-# Joueur 1 gagne (resultat = 1).
-R1, R2 = update_elo(R1, R2, score_a=1.0)
-print(f""Apres (J1 gagne) : R1 = {R1:.1f}, R2 = {R2:.1f}  (Delta = +16.0 / -16.0)"")
-
-print()
-print(""CECITE A L'INCERTITUDE : Elo applique le meme K en permanence"")
-print(""-"" * 60)
-# Une serie de 5 victoires consecutives de J1.
-R1, R2 = 1500.0, 1500.0
-prev = R1
-for k in range(1, 6):
-    R1, R2 = update_elo(R1, R2, score_a=1.0)
-    delta = R1 - prev
-    print(f""  Victoire {k} : R1 = {R1:7.1f}  (increment +{delta:.1f})"")
-    prev = R1
-print()
-print("">>> Elo ne SAIT PAS qu'il est incertain. Un nouveau joueur et un"")
-print(""    veteran de 1000 matchs au meme rating sont traites identiquement."")
-print(""    C'est ce defaut que TrueSkill corrige en modelisant sigma."")",,,,,,,,a4b0f67ee99d3b26,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,7ca5818a,markdown,fr,c0eba88a30314845,"### Interpretation : les 4 limites d'Elo que TrueSkill corrige
-
-La serie de 5 victoires ci-dessus revele une chose subtile et essentielle :
-
-- **L'increment RETRECIT au fil des victoires** (16.0 $\rightarrow$ 14.5 $\rightarrow$ 13.2 $\rightarrow$ 12.1 $\rightarrow$ 11.0). Ce n'est PAS Elo qui apprend a etre confiant : c'est une consequence mecanique du fait que, son rating montant, son **score attendu** $E$ augmente, donc une victoire le surprend moins. C'est un proxy *tres* grossier de la confiance.
-
-- **Mais ce proxy est le meme pour un nouveau et un veteran** : deux joueurs au meme rating recoivent le meme traitement, quel que soit leur nombre de matchs joues. Elo ne distingue pas « 1500 apres 1 partie » de « 1500 apres 1000 parties ». **C'est le defaut fondamental** que TrueSkill corrige avec $\sigma$ (incertitude) : un nouveau joueur a grand $\sigma$ (ses updates sont grandes), un veteran a faible $\sigma$ (ses updates sont petites) — et c'est explicitement modelise, pas un effet de bord.
-
-TrueSkill generalise Elo sur **quatre axes** concrets :
-
-| Limite Elo | Comment TrueSkill y repond |
-|------------|----------------------------|
-| Pas d'incertitude modelisee (rating ponctuel) | Distribution $\mathcal{N}(\mu, \sigma^2)$ : $\sigma$ quantifie la confiance |
-| $K$ fixe (convergence lente, non adaptee) | Update **adaptee a $\sigma$** : grande quand incertain, petite quand confiant |
-| Equipes = moyenne (lossy) | Performance d'equipe = **somme** des performances, propagation bayesienne aux individus |
-| Matchs nuls / multi-joueurs (bidouilles) | **Draw margin** $\epsilon$ et contraintes d'ordre (free-for-all) nativement |
-
-La section suivante construit le modele TrueSkill 1v1 et montre la **premiere** de ces ameliorations : un match fait passer $\mathcal{N}(25, 8.33^2) \rightarrow \mathcal{N}(29.09, 7.19^2)$ — notez que **$\sigma$ diminue** (de 8.33 a 7.19), ce qu'Elo est incapable d'exprimer.",,,,,,,,c0eba88a30314845,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ep-closedform-demo,code,fr,37d184480aeb32c8,"# Demonstration numerique : la mise a jour closed-form EP (V(t), W(t)) de la section 7 bis.
-# On calcule l'equivalent analytique exact de ce que NUTS approxime par echantillonnage plus haut.
-from scipy.stats import norm
-from math import sqrt
-
-# Memes parametres qu'a l'initialisation (cellule 7) : mu=25, sigma=25/3, beta=sigma/2
-mu_w, mu_l = 25.0, 25.0          # un match entre deux joueurs de skill identique (priors egaux)
-sig_w = sig_l = 25.0 / 3.0       # sigma initial
-beta = (25.0 / 3.0) / 2.0
-
-# Fonctions de troncature de la Gaussienne centree reduite (formules de la section 7 bis)
-c = sqrt(2 * beta**2 + sig_w**2 + sig_l**2)   # denominateur commun
-t = (mu_w - mu_l) / c                          # ecart standardise
-V = norm.pdf(t) / norm.cdf(t)                  # V(t)
-W = V * (V + t)                                # W(t)
-
-# Mises a jour closed-form (formes fermees de Herbrich-Minka-Graepel 2007)
-mu_w_new = mu_w + sig_w**2 * V / c
-mu_l_new = mu_l - sig_l**2 * V / c
-# Fermeture canonique (Herbrich-Minka-Graepel 2007) : la variance se contracte
-# du facteur (sigma^2 / c^2) * W(t), et NON de W(t) seul (sinon sigma -> 5.02 au lieu de 7.19).
-sig_w_new = sqrt(sig_w**2 * (1 - (sig_w**2 / c**2) * W))
-sig_l_new = sqrt(sig_l**2 * (1 - (sig_l**2 / c**2) * W))
-
-print(""Mise a jour closed-form EP sur un match (priors egaux, mu=25, sigma=8.33)"")
-print(f""  c = {c:.4f}   t = {t:.4f}   V(t) = {V:.4f}   W(t) = {W:.4f}"")
-print(f""  GAGNANT : mu {mu_w:.2f} -> {mu_w_new:.2f}   sigma {sig_w:.2f} -> {sig_w_new:.2f}"")
-print(f""  PERDANT  : mu {mu_l:.2f} -> {mu_l_new:.2f}   sigma {sig_l:.2f} -> {sig_l_new:.2f}"")
-print(""Constate : le gagnant monte, le perdant descend, l'incertitude (sigma) se contracte"")
-print(""des deux cotes -- exactement la dynamique qu'on retrouve dans les sorties NUTS des sections 2-3,"")
-print(""mais ici en O(1) analytique (aucun echantillonnage)."")
-",,,,,,,,37d184480aeb32c8,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb,ep-closedform-interp,markdown,fr,e998429ad008c940,"### Interpretation : la mise a jour analytique EP
-
-La cellule precedente calcule en forme fermee (O(1), aucun echantillonnage) ce que NUTS
-approxime par tirages Monte Carlo dans les sections 2-3. Sur un match a priors egaux,
-l'ecart standardise est nul ($t = 0$) : le match est maximalement informatif ($V(0) \approx 0{,}80$),
-d'ou un deplacement important du skill ($\pm 4{,}2$ points) et une contraction de
-l'incertitude ($\sigma$ : $8{,}33 \to 7{,}19$, soit $-13{,}7\,\%$). C'est le meme raisonnement qui produit,
-apres plusieurs matchs successifs, la hierarchie Alice $\mu = 33{,}3$ observee en section 4 --
-mais ici chaque mise a jour coute une multiplication plutot qu'une serie de tirages.
-C'est ce cout O(1) qui rend TrueSkill deployable a l'echelle de millions de joueurs.
-",,,,,,,,e998429ad008c940,,,,,,,

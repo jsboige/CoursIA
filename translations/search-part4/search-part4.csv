@@ -777,19 +777,19 @@ foreach (var g in byOpt)
     display(HTML($""<div>{sb}</div>""));
 }
 ",,,,,,,,2599e71ee8af8eea,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c09,markdown,fr,2844c7a69e00a44d,"## Lecture : que dit réellement le delta ?
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c09,markdown,fr,cd6cc33948914724,"## Lecture : que dit réellement le delta ?
 
 Le tableau révèle une histoire **plus nuancée** que le scénario « propre » (Random ≈ 0, tous les autres ≫ 0) — et c'est précisément cette nuance qui fait la valeur du protocole. Trois régimes apparaissent, selon que l'optimiseur **résout ou non** la fonction à ce budget (NFE = 5000, dimension 5) :
 
-1. **L'optimiseur est robuste au déplacement** → $\Delta \approx 0$ : il atteint une qualité **similaire** centré ou déplacé. C'est le cas du **GA (uniform)** (Sphere $+0{,}005$, Rastrigin $-0{,}8$, Ackley $+0{,}4$) et surtout de **DE** (Sphere $\approx 0$, Rastrigin $-6{,}4$, Ackley $\approx 0$). Ces deux assemblages **non métaphoriques** n'ont aucune préférence centrale — DE trouve même un *meilleur* optimum déplacé sur Rastrigin ($\Delta < 0$). EO et FBI résolvent eux aussi Sphere et Ackley ($\Delta \approx 0$ sur ces deux).
+1. **L'optimiseur est robuste au déplacement** → $\Delta \approx 0$ : il atteint une qualité **similaire** centré ou déplacé. C'est le cas du **GA (uniform)** (Sphere $-0{,}003$, Rastrigin $0{,}7$, Ackley $-1{,}0$) et surtout de **DE** (Sphere $\approx 0$, Rastrigin $-0{,}9$, Ackley $\approx 0$). Ces deux assemblages **non métaphoriques** n'ont aucune préférence centrale — DE trouve même un *meilleur* optimum déplacé sur Rastrigin ($\Delta < 0$). EO et FBI résolvent eux aussi Sphere et Ackley ($\Delta \approx 0$ sur ces deux).
 
-2. **L'optimiseur résout le cas centré mais échoue déplacé** → $\Delta \gg 0$ : c'est la **signature nette du biais central**. Le cas le plus franc est **WOA sur Ackley** : centré, WOA atteint $0{,}0$ (l'optimum central) ; déplacé, il plonge à $4{,}3$. Son *bubble-net* converge vers la région centrale et rate l'optimum relocalisé. EO montre le même phénomène sur Rastrigin : il y trouve l'optimum centré ($0{,}0$) mais échoue déplacé ($2{,}0$). FBI, lui, résout Rastrigin centré ($0{,}0$) ET déplacé ($\approx 0{,}0$) : il est robuste, pas biaisé.
+2. **L'optimiseur résout le cas centré mais échoue déplacé** → $\Delta \gg 0$ : c'est la **signature nette du biais central**. Le cas le plus franc est **WOA sur Ackley** : centré, WOA atteint $0{,}0$ (l'optimum central) ; déplacé, il plonge à $4{,}3$. Son *bubble-net* converge vers la région centrale et rate l'optimum relocalisé. EO et FBI montrent le même phénomène sur Rastrigin : EO y trouve l'optimum centré ($0{,}0$) mais échoue déplacé ($3{,}0$) ; FBI résout le centré ($0{,}0$) mais plafonne déplacé ($2{,}0$).
 
 3. **L'optimiseur est trop faible pour résoudre la fonction** → $\Delta$ est du **bruit**, pas un biais. C'est le **Random (control)** sur Rastrigin ($\Delta = 7{,}9$) : la recherche aléatoire n'atteint jamais l'optimum (meilleur $\approx 19{-}27$), donc son $\Delta$ reflète la variance d'échantillonnage, **pas** une préférence pour le centre. Sur Sphere et Ackley en revanche, son $\Delta$ est petit ($0{,}20$ et $0{,}12$) : l'échantillonnage uniforme n'a pas de préférence centrale, donc il obtient un résultat *similaire* (médiocre, mais semblable) centré ou déplacé.
 
 **Leçon.** Le biais central n'est ni universel ni absolu : à ce budget, le **GA** et **DE** y échappent (ils résolvent ou approchent le problème sans préférence centrale), tandis que les composés **métaphoriques** (WOA, EO, FBI) en sont victimes sur au moins une fonction. Or **DE est lui aussi un composé géométrique** — même couche que WOA/EO/FBI (`GeometricCrossover`, `MatchMetaHeuristic`) — mais son opérateur est une **arithmétique nue** ($v = r_1 + F \cdot (r_2 - r_3)$), sans métaphore. Sa robustesse ($\Delta \approx 0$) isole donc la cause du biais : ce n'est pas la **composition géométrique** qui biaise vers le centre, c'est la **métaphore**. **$\Delta$ ne se lit pas seul** : il faut le confronter à la performance absolue (la valeur centrée). Un $\Delta$ élevé signe un biais seulement si l'optimiseur résolvait le cas centré ; sinon, il signe juste de la faiblesse. C'est cette lecture croisée — pas le $\Delta$ brut — qui rend la critique de Kudela (2022) falsifiable.
 
-> **Confirmer le biais.** La signature $\Delta$ des composés métaphoriques (WOA/Ackley $4{,}3$, EO/Rastrigin $3{,}0$, FBI/Rastrigin $2{,}0$) est partiellement amplifiée par l'amorce « adam au centre » (l'individu initial est à l'optimum exact dans le cas centré) et varie d'une graine à l'autre : voir l'exercice 1 (multi-graine) et l'exercice 2 (amplitude du déplacement) pour vérifier que le biais est **structurel**, pas un artefact du tirage ou de l'amorce.",,,,,,,,2844c7a69e00a44d,,,,,,,
+> **Confirmer le biais.** La signature $\Delta$ des composés métaphoriques (WOA/Ackley $4{,}3$, EO/Rastrigin $3{,}0$, FBI/Rastrigin $2{,}0$) est partiellement amplifiée par l'amorce « adam au centre » (l'individu initial est à l'optimum exact dans le cas centré) et varie d'une graine à l'autre : voir l'exercice 1 (multi-graine) et l'exercice 2 (amplitude du déplacement) pour vérifier que le biais est **structurel**, pas un artefact du tirage ou de l'amorce.",,,,,,,,cd6cc33948914724,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c10,markdown,fr,9fd869bdec7679ff,"## Conclusion : le biais central, preuve additionnelle pour « components over metaphors »
 
 MGS-6 montrait qu'aucune métaheuristique « publiée » ne bat systématiquement la composition. MGS-10 ajoute une **seconde preuve**, plus profonde : le banc centré-vs-déplacé (Kudela 2022) révèle que les composés **métaphoriques** (WOA, EO, FBI) — reconstruits depuis leurs équations image (*bubble-net*, équilibre, enquête) — sont **biaisés vers le centre** ($\bar\Delta$ positif, jusqu'à $\Delta = 4{,}3$ sur WOA/Ackley), tandis que les assemblages **non métaphoriques** (GA, DE) sont **robustes au déplacement** ($\bar\Delta \approx 0$).
@@ -2778,13 +2778,13 @@ bool selHitsR = rbRows.OrderBy(x => x.R.Delta).Take(3).Any(x => selR.Contains(x.
 Console.WriteLine(""\nOracle Rosenbrock top-3 : "" + oracleTop3R);
 Console.WriteLine(""Sélecteur recommandait   : "" + selR);
 Console.WriteLine(""=> "" + (selHitsR ? ""ALIGNÉ (recommandation dans le top-3 réel)"" : ""DÉSALIGNÉ — generalization gap""));",,,,,,,,db10ee5e7abe6d49,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-16b,markdown,fr,c54a06c4f4ae7902,"### 10.1 Leçon honnête : la prédiction transfère, mais le FDC se trompe sur Rosenbrock
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-16b,markdown,fr,7c38216bd8c782c3,"### 10.1 Leçon honnête : la prédiction transfère, mais le FDC se trompe sur Rosenbrock
 
 Rosenbrock est révélateur. Ses features : **ρ₁ ≈ 0,98** (paysage *très lisse*, marche fortement corrélée) mais **FDC ≈ 0,71** (modéré). Or Rosenbrock est **unimodale** — ce n'est pas un paysage multimodal. Pourquoi ce FDC trompeur ? Parce que le FDC mesure la corrélation entre fitness brute et **distance radiale à l'origine**, alors que l'optimum de Rosenbrock est en $(1,\dots,1)$ et surtout sa *vallée est courbe* : le chemin vers l'optimum n'est pas radial, la fitness ne pointe pas vers le but. Le sélecteur, voyant « FDC modéré », classe Rosenbrock dans la branche *multimodale* et recommande DE/BBPSO/FBI.
 
-**Verdict oracle** : la recommandation **atterrit quand même dans le top-3 réel** (DE et BBPSO y figurent) — les features transfèrent donc *raisonnablement*. La recommandation est toutefois **partiellement contaminée** : le sélecteur recommande aussi FBI, qui est en réalité le 2ᵉ pire sur Rosenbrock (+2,13, juste devant EO à +2,74) — un optimiseur qui s'y effondre, glissé dans la recommandation par le FDC trompeur. Le contrôle **Random**, lui, gagne curieusement (delta le plus négatif) : sur cette fonction difficile, tous les optimiseurs peinent en absolu, et la différence centré/déplacé est dominée par la variance de tirage plutôt que par la qualité de l'algorithme — un rappel que le delta n'est un signal fiable que sur les fonctions assez faciles pour être résolues (cf MGS-10 sur Rastrigin).
+**Verdict oracle** : la recommandation **atterrit quand même dans le top-3 réel** (DE et BBPSO y figurent) — les features transfèrent donc *raisonnablement*, et le sélecteur évite correctement les pires (EO, FBI en bas de tableau sur Rosenbrock). Mais le contrôle **Random** gagne curieusement (delta le plus négatif) : sur cette fonction difficile, tous les optimiseurs peinent en absolu, et la différence centré/déplacé est dominée par la variance de tirage plutôt que par la qualité de l'algorithme — un rappel que le delta n'est un signal fiable que sur les fonctions assez faciles pour être résolues (cf MGS-10 sur Rastrigin).
 
-C'est l'enseignement honnête : **les features de paysage sont une heuristique, pas un oracle**. Elles excellent à écarter les catastrophes évidentes (éviter WOA sur Ackley) et orientent vers les optimiseurs robustes (DE/BBPSO), mais elles **manquent la géométrie directionnelle** (vallée courbe) : un FDC bas signifie tantôt « multimodal » (Rastrigin) tantôt « courbé » (Rosenbrock), et la feature seule ne distingue pas les deux. Les approches modernes (apprentissage de méta-caractéristiques sur un grand jeu de paysages, features directionnelles, coûts d'évaluation adaptatifs) poussent plus loin — c'est l'objet de l'exercice 4.",,,,,,,,c54a06c4f4ae7902,,,,,,,
+C'est l'enseignement honnête : **les features de paysage sont une heuristique, pas un oracle**. Elles excellent à écarter les catastrophes évidentes (éviter WOA sur Ackley) et orientent vers les optimiseurs robustes (DE/BBPSO), mais elles **manquent la géométrie directionnelle** (vallée courbe) : un FDC bas signifie tantôt « multimodal » (Rastrigin) tantôt « courbé » (Rosenbrock), et la feature seule ne distingue pas les deux. Les approches modernes (apprentissage de méta-caractéristiques sur un grand jeu de paysages, features directionnelles, coûts d'évaluation adaptatifs) poussent plus loin — c'est l'objet de l'exercice 4.",,,,,,,,7c38216bd8c782c3,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-17,markdown,fr,8caca99526aa03a0,"## 11. Synthèse — du sélecteur à l'hyper-heuristique
 
 Le sélecteur de Rice que nous avons construit est une **hyper-heuristique de sélection** : il ne résout pas le problème lui-même, il *choisit* quel solveur appliquer. C'est l'aboutissement naturel de la Partie 4 :
@@ -3411,12 +3411,12 @@ Rosenbrock est **unimodale mais courbee** : son optimum est au fond d'une vallee
 ",,,,,,,,9b2e7cde26cca7ec,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,c07,code,fr,80ca7ef0b2690490,"RunBanc(new RosenbrockFitness(), ""Rosenbrock"");
 ",,,,,,,,80ca7ef0b2690490,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,m7,markdown,fr,ff3faa97dc3f9c5e,"## Synthese — la these structurelle eprouvee sous le protocole CEC complet
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,m7,markdown,fr,a5585bf02187f2fe,"## Synthese — la these structurelle eprouvee sous le protocole CEC complet
 
 La table de pire-cas (max sur Ackley + Rosenbrock × 4 variantes) **confirme la these structurelle** : **DE** (pire-cas Rosenbrock 1,71) est l'optimiseur le plus robuste du portefeuille ; **WOA** est **a eviter** (6,91 sur Rosenbrock combine). Les optimiseurs a arithmetique vectorielle (DE, SA) resistent ; l'ancrage central (WOA) et le composante-par-composant (GA) ne tiennent pas sous le protocole complet.
 
-**Le fait subtil que le banc consolide est seul a reveler.** La generalisation a Rosenbrock montre un regime absent sur Ackley : pour WOA, `combined` (6,91) y est **pire que chacun des deux biais isoles** (`shifted` 5,19, `rotated` 3,13) — alors que sur Ackley `combined` restait inferieur au biais dominant `shifted` (2,97). Sur Ackley a l'inverse, le même WOA etait sous-additif (déjà effondre sur le decalage, la rotation n'ajoutait rien). Le combine n'est donec ni universellement pire ni inoffensif : **sa severite depend du paysage**. C'est précisément ce que le banc isole (un seul biais a la fois) ne pouvait pas montrer.
-",,,,,,,,ff3faa97dc3f9c5e,,,,,,,
+**Le fait subtil que le banc consolide est seul a reveler.** La generalisation a Rosenbrock montre un regime absent sur Ackley : pour WOA, `combined` (6,91) y est **pire que chacun des deux biais isoles** (`shifted` 5,19, `rotated` 3,13) — une interaction **super-additive** (+1,41). Sur Ackley a l'inverse, le même WOA etait sous-additif (déjà effondre sur le decalage, la rotation n'ajoutait rien). Le combine n'est donec ni universellement pire ni inoffensif : **sa severite depend du paysage**. C'est précisément ce que le banc isole (un seul biais a la fois) ne pouvait pas montrer.
+",,,,,,,,a5585bf02187f2fe,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,c08,code,fr,2450ee1ec0278339,"// Tableau de synthese : pire-cas de chaque optimiseur sur l ENSEMBLE (Ackley + Rosenbrock, 4 variantes).
 // Le pire-cas (max) est le signal de robustesse fiable (lecon MGS-16 : la moyenne est bruitee).
 Console.WriteLine(""===== Synthese robustesse CEC : pire-cas (max) sur Ackley+Rosenbrock x 4 variantes ====="");
@@ -4883,20 +4883,20 @@ Console.WriteLine(""GAUCHE : population monochrome (on ne distingue pas les iles
 DisplayPng(monoPng, widthPx: 360);
 Console.WriteLine(""DROITE : population coloree par ile -- chaque couleur revele un bassin d'attraction."");
 DisplayPng(coloredPng, widthPx: 360);",,,,,,,,12abac116943ea1f,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,76c9db1c,markdown,fr,63422c2be4c33611,"### Interpretation : les iles dessinent leurs bassins
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,76c9db1c,markdown,fr,cd17aa591d959023,"### Interpretation : les iles dessinent leurs bassins
 
-**Sortie obtenue** : sur le paysage Rastrigin (`f(0,0)=0` est l'optimum global, `f(1,1)=2` est un pit local typique), le GA insulaire a tourné 40 générations sur 4 îles de 15 individus. Le meilleur individu tombe à `(0.950, -1.010)` avec une fitness de `-2.432` (Rastrigin = 2.432) — **un pit local**, pas l'optimum global exact. C'est précisément le piège multimodal que Rastrigin tend : les coordonnées `x≈1` et `y≈-1` placent l'individu dans le nœud `(1,-1)` (un pit où f=2), loin de l'optimum global `(0,0)`. La population finale (60 individus) est rendue deux fois : monochrome à gauche, colorée par île à droite.
+**Sortie obtenue** : sur le paysage Rastrigin (`f(0,0)=0` est l'optimum global, `f(1,1)=2` est un pit local typique), le GA insulaire a tourné 40 générations sur 4 îles de 15 individus. Le meilleur individu tombe à `(0.04, 0.98)` avec une fitness de `-1.36` — **un pit local**, pas l'optimum global exact. C'est précisément le piège multimodal que Rastrigin tend : la coordonnée `x≈0` est proche de l'optimum, mais `y≈1` est coincée dans le premier pit. La population finale (60 individus) est rendue deux fois : monochrome à gauche, colorée par île à droite.
 
 **Ce que la couleur révèle que le mono cache** : dans le rendu monochrome, les 60 individus forment des tâches `BlueViolet` dont on ne peut pas dire si elles viennent d'une même île ou de plusieurs. Dès qu'on colore par île, la structure apparaît — chaque couleur s'agglutine dans une région distincte. C'est la signature d'un **bassin d'attraction** : une île, évoluant quasi-isolément (migration `RandomRing` toutes les 8 générations seulement), est tombée dans un optimum local et y est restée, ses individus convergeant les uns vers les autres.
 
 **Pourquoi c'est l'avantage insulaire rendu visible** :
 1. **Niches préservées** — chaque couleur occupe un puits différent. Une population panmictique aurait convergé vers *un seul* puits (le premier trouvé), perdant les autres.
 2. **Diversité globale** — bien que chaque île soit peu diverse *en interne*, l'archipel couvre collectivement plusieurs optima. C'est la diversité *entre* îles que le modèle protège.
-3. **Le meilleur (marqueur `Aqua`)** — il se trouve dans le pit `(0.950, -1.010)` (proche du nœud `(1,-1)`, où f=2), mais il coexiste avec des individus d'autres couleurs piégés ailleurs. La migration n'a pas encore tout homogénéisé.
+3. **Le meilleur (marqueur `Aqua`)** — il se trouve dans le pit `(0.04, 0.98)`, l'un des plus proches de l'origine (donc des plus profonds), mais il coexiste avec des individus d'autres couleurs piégés ailleurs. La migration n'a pas encore tout homogénéisé.
 
-**Lien avec la section 3** : la comparaison numérique (insulaire bat panmictique sur la moyenne des distances) prenait tout son sens ici. Sur un paysage unimodal (cône de la section 3), les îles n'apportent rien de visible — un seul bassin, un seul optimum. Sur Rastrigin, la multimodalité donne aux îles l'occasion de montrer leur force : **explorer en parallèle plusieurs régions prometteuses** plutôt que de miser tout sur une seule. Le fait que le meilleur reste à `fitness=-2.432` (et non `0`) illustre aussi la difficulté résiduelle : les îles aident à *explorer*, mais le raffinement fin vers `(0,0)` demande plus de générations ou une mutation plus agressive.
+**Lien avec la section 3** : la comparaison numérique (insulaire bat panmictique sur la moyenne des distances) prenait tout son sens ici. Sur un paysage unimodal (cône de la section 3), les îles n'apportent rien de visible — un seul bassin, un seul optimum. Sur Rastrigin, la multimodalité donne aux îles l'occasion de montrer leur force : **explorer en parallèle plusieurs régions prometteuses** plutôt que de miser tout sur une seule. Le fait que le meilleur reste à `fitness=-1.36` (et non `0`) illustre aussi la difficulté résiduelle : les îles aident à *explorer*, mais le raffinement fin vers `(0,0)` demande plus de générations ou une mutation plus agressive.
 
-> **Limite honnête (No-Free-Lunch).** Si la migration est trop forte (`LargeMigrationRate`, période courte), les îles s'homogénéisent et la carte redevient quasi-monochrome — l'effet archipel s'efface. Si elle est nulle (`MigrationMode.None`), les îles sont si petites (15 individus) qu'elles dérivent fortuitement, parfois vers de mauvais puits. L'overlay coloré est aussi un **outil de diagnostic** : il montre visuellement si votre taux de migration est bien calibré.",,,,,,,,63422c2be4c33611,,,,,,,
+> **Limite honnête (No-Free-Lunch).** Si la migration est trop forte (`LargeMigrationRate`, période courte), les îles s'homogénéisent et la carte redevient quasi-monochrome — l'effet archipel s'efface. Si elle est nulle (`MigrationMode.None`), les îles sont si petites (15 individus) qu'elles dérivent fortuitement, parfois vers de mauvais puits. L'overlay coloré est aussi un **outil de diagnostic** : il montre visuellement si votre taux de migration est bien calibré.",,,,,,,,cd17aa591d959023,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb,mgs4-gif-md,markdown,fr,02e347d3762ed62b,"## Synergie exploration / exploitation — flipbook de convergence animé
 
 Les instantanés statiques ci-dessus (cellule précédente) figent l'**état final** : 4 amas colorés, un par bassin d'attraction. Pour *voir* la synergie entre iles — le bon mélange d'exploration et d'exploitation que cherche le modèle insulaire — il faut animer **toute** la course.
@@ -5869,11 +5869,11 @@ foreach (var (name, type) in benchmarks)
 
 Console.WriteLine(""\n--- Done: 10 functions x 3 configurations ---"");
 ",,,,,,,,9a3b9b257d8e16ac,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-008,markdown,fr,9442f360962a67a9,"## Lecture des résultats : que dit le banc d'essai ?
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-008,markdown,fr,fd9a88e3fa354f90,"## Lecture des résultats : que dit le banc d'essai ?
 
 La grille ci-dessus répond directement à la critique *""metaphor exposed""*. Trois enseignements ressortent typiquement d'un tel banc :
 
-1. **Aucune configuration ne domine partout.** C'est le théorème *No Free Lunch* (Wolpert & Macready, 1997) rendu tangible. Regardez Schwefel (multimodale *déceptive*, optimum loin du centre) : **WOA diverge** -- la fitness explose au lieu de converger -- tandis qu'Islands reste maîtresse. À l'inverse, sur Sphere (unimodale lisse) WOA converge à `0.00000` (`-2,72e-09`) quand Uniform s'arrête à `-0,0217` et Islands à `-0,0069`. **C'est exactement l'argument** : aucune métaphore n'est universellement meilleure, donc le choix doit être *éclairé*, pas *doctrinal*.
+1. **Aucune configuration ne domine partout.** C'est le théorème *No Free Lunch* (Wolpert & Macready, 1997) rendu tangible. Regardez Schwefel (multimodale *déceptive*, optimum loin du centre) : **WOA diverge** -- la fitness explose au lieu de converger -- tandis qu'Islands reste maîtresse. À l'inverse, sur Sphere (unimodale lisse) WOA converge à `0.00000` quand Uniform et Islands s'arrêtent à `-0.004`. **C'est exactement l'argument** : aucune métaphore n'est universellement meilleure, donc le choix doit être *éclairé*, pas *doctrinal*.
 
    > **Pourquoi WOA explose-t-elle sur Schwefel ?** Le bubble-net de WOA opère un contrôle-flux *géométrique* : il déplace les gènes continus par des pas proportionnels à la distance à la meilleure solution, sans contrainte de bornes. Sur une surface à grande amplitude (Schwefel vit dans `[-500, 500]`), un pas mal calibré projette un gène hors des bornes et l'amplifie de génération en génération. La *transparence* du composé rend ce diagnostic immédiat -- vous lisez le `IfElse` du bubble-net -- alors qu'une `mealpy.WOA()` vous laisserait devant un résultat absurde sans explication. C'est le gain d'ingénierie de l'approche primitives-based.
 
@@ -5882,7 +5882,7 @@ La grille ci-dessus répond directement à la critique *""metaphor exposed""*. T
 3. **La composition est inspectable.** Là où un `mealpy.WOA()` cache tout dans une fonction, `new WhaleOptimisationAlgorithm().Build()` expose chaque primitive (`Match`, `IfElse`, `GeometricCrossover`). Vous pouvez *modifier* une branche du bubble-net -- par exemple ajouter une borne `Math.Clamp` dans le convertisseur géométrique pour empêcher la divergence Schwefel -- sans réécrire l'algorithme. C'est le gain d'ingénierie que la métaphore opaque refuse.
 
 L'exercice 2 vous demande d'identifier, sur VOS résultats, quelle configuration gagne sur les multimodales vs les unimodales -- et de confronter cette observation au théorème No Free Lunch.
-",,,,,,,,9442f360962a67a9,,,,,,,
+",,,,,,,,fd9a88e3fa354f90,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-6-Benchmarks.ipynb,cell-009,markdown,fr,02df59afb5814367,"## Conclusion : components over metaphors
 
 Ce banc d'essai est la démonstration que le pari architectural de MetaGeneticSharp tient : **reconstruire les métaheuristiques publiées à partir de primitives composables** n'est pas un exercice académique -- ça produit des solveurs compétitifs, *tout en restant ouverts à l'inspection et à la modification*.
@@ -7295,7 +7295,7 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,921b9b1d
 //   }
 
 Console.WriteLine(""Exercice a completer : taux de reussite vs budget NFE (region Everest)."");",,,,,,,,2034ea821b759bf7,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,cb43fa1a,markdown,fr,efced1fcf8bf6b1f,"## Conclusion
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,cb43fa1a,markdown,fr,02a977441d76e1d6,"## Conclusion
 
 | Élément | Ce que MGS-9 montre |
 |---------|---------------------|
@@ -7303,7 +7303,8 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb,cb43fa1a
 | Rendu | heatmap graphique PNG via le `LandscapeRenderer` du fork, coherent avec MGS-8 ; le sommet (max) porte le marqueur noir, en vraie resolution (~2560 px) |
 | Moteur | GA / WOA / EO via le **vrai** `MetaGeneticAlgorithm` + compounds geometriques |
 | Baseline | PSO externe explicite (le fork n'a pas de PSO) - contrôle a budget egal |
-| Lecon | **bassin d'attraction vs taille de l'espace** : le sommet se resserre avec le zoom, et aucune méthode ne gagne partout (**No Free Lunch**) |
+| Lecon | **bassin d'attraction vs taille de l'espace** : le sommet se resserre avec le zoom,
+  et aucune méthode ne gagne partout (**No Free Lunch**) |
 
 **Pour aller plus loin** : [MGS-6 - Benchmarks](MGS-6-Benchmarks.ipynb) (WOA vs Islands sur
 fonctions analytiques), [MGS-8 - Landscape Explorer](MGS-8-LandscapeExplorer.ipynb) (paysages
@@ -7311,7 +7312,7 @@ synthetiques et biais de centre).
 
 *Données : cartes d'altitude `KnownHeightMap` (jsboige), ressources PNG embarquees du fork
 `MetaGeneticSharp.Extensions` (~2560 px), lues via `ImageHeightMapFunction` verbatim @ `d05826fd`.*
-",,,,,,,,efced1fcf8bf6b1f,,,,,,,
+",,,,,,,,02a977441d76e1d6,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-47fd9648,markdown,fr,3a02151f4f5409ea,"# MGS-19 — Recuit simulé décomposé : l'opérateur de Metropolis isolé
 
 [↑ Partie 4](README.md) | [← MGS-18 — Banc CEC](MGS-18-CecBanc.ipynb)
@@ -7532,848 +7533,3 @@ correspondant. Le scaling est-il lineaire, sous-lineaire, ou a seuil ?
 - Ajustez `Gens = nfe / Pop` (gardez `Pop` fixe), relancez `Rate(everestRegion, ...)`.
 - Un seuil (`NFE` minimal pour atteindre le sommet) est plus informatif qu'une pente lineaire.
 - Comparez la forme de la courbe WOA a celle d'un hill-climber (exercice 2).",,,,,,,,ed7971d31e30ac7b,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,measure-hetero-question,markdown,fr,cb823659aa054cde,"### Mesure : la configuration Default+NoOp peut-elle gagner ?
-
-La cellule precedente montre l'heterogene (Default+NoOp) perdante de plus de 440x sur le cone lisse (Amelioration -44066,7% a la cellule precedente). La prose ci-dessus suggerait que l'heterogene devient pertinente ""quand les dimensions ont des caracteristiques tres differentes"". Verifions cette affirmation **empiriquement** : construisons un paysage ou la position est **rugueuse** (Rastrigin1D, nombreux optima locaux) et la vitesse est un **pic etroit** (Gaussienne centree en 25), puis comparons Default+NoOp vs Default+Default en balayant la largeur du pic. Si l'heterogene a un avantage structurel, il devrait apparaitre sur au moins une de ces largeurs.",,,,,,,,cb823659aa054cde,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,measure-hetero-experiment,code,fr,32cf73d63fe93f72,"// Mesure empirique : Default+NoOp (heterogene) vs Default+Default (uniforme)
-// sur un paysage position-rugueuse + vitesse-pic-etroit, en balayant sigma (largeur du pic).
-// Reutilise BuildEukaryote() (Default+NoOp) et BuildEukaryoteUniform() (Default+Default)
-// definis dans la cellule de setup.
-double Rastrigin1D(double x) => 10.0 + (x - 50) * (x - 50) - 10.0 * Math.Cos(2 * Math.PI * (x - 50));
-double PeakMiss(double v, double sigma) => 1.0 - Math.Exp(-((v - 25) / sigma) * ((v - 25) / sigma));
-
-// Objectif combine (lower = better) : Rastrigin/100 (position) + PeakMiss*10 (vitesse)
-double RunObjective(IMetaHeuristic mh, double sigma)
-{
-    var adam = new FloatingPointChromosome(new double[] { 0, 0 }, new double[] { 100, 100 }, new int[] { 16, 16 }, new int[] { 2, 2 });
-    var pop = new MetaPopulation(40, 40, adam);
-    var ga = new MetaGeneticAlgorithm(pop,
-        new FuncFitness(c =>
-        {
-            var g = ((FloatingPointChromosome)c).ToFloatingPoints();
-            return -(Rastrigin1D(g[0]) / 100.0 + PeakMiss(g[1], sigma) * 10.0);
-        }),
-        new EliteSelection(), new UniformCrossover(0.5f), new UniformMutation(true), mh);
-    ga.Termination = new GenerationNumberTermination(50);
-    ga.Start();
-    var b = ((FloatingPointChromosome)ga.BestChromosome).ToFloatingPoints();
-    return Rastrigin1D(b[0]) / 100.0 + PeakMiss(b[1], sigma) * 10.0;
-}
-
-Console.WriteLine(""Paysage : position=Rastrigin1D (rugueux), vitesse=pic Gaussien etroit en 25"");
-Console.WriteLine(""Objectif combine (lower = better). Moyenne sur 3 runs, 50 generations."");
-Console.WriteLine(new string('-', 52));
-Console.WriteLine(string.Format(""{0,-8} {1,-14} {2,-14} {3,-12}"", ""sigma"", ""Uniform"", ""Hetero"", ""Gagnant""));
-Console.WriteLine(new string('-', 52));
-foreach (var sigma in new double[] { 0.5, 1.0, 2.0, 5.0 })
-{
-    double u = 0, h = 0;
-    for (int i = 0; i < 3; i++)
-    {
-        u += RunObjective(BuildEukaryoteUniform(), sigma) / 3.0;
-        h += RunObjective(BuildEukaryote(), sigma) / 3.0;
-    }
-    Console.WriteLine(string.Format(""{0,-8} {1,-14:F3} {2,-14:F3} {3,-12}"", sigma, u, h, u < h ? ""Uniform"" : ""Hetero""));
-}
-Console.WriteLine(new string('-', 52));",,,,,,,,32cf73d63fe93f72,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-3-Eukaryote.ipynb,measure-hetero-interpretation,markdown,fr,03c28933764c1c6b,"### Interpretation : NoOp est un handicap structurel, pas une specialisation
-
-**Resultat** : sur **chaque** largeur de pic (sigma 0.5 a 5), l'uniforme (Default+Default) bat l'heterogene (Default+NoOp). La vitesse figee par `NoOpMetaHeuristic` ne peut pas atteindre un pic etroit que la vitesse evoluee (`DefaultMetaHeuristic`) rejoint systematiquement : l'elitisme combine au crossover fait converger Default vers la cible meme sous mutation, tandis que NoOp fige la vitesse a sa valeur initiale et ne peut l'ameliorer.
-
-**Conclusion mesuree** : le couplage Default+NoOp utilise dans ce notebook est **structurellement desavantage** sur toute dimension a cible unique. Il ne peut donc PAS illustrer la victoire heterogene decrite dans la prose ci-dessus. L'ecart de -44066,7% observe sur le cone lisse n'est pas un defaut du moteur eukaryote : c'est la consequence attendue d'avoir assigne `NoOpMetaHeuristic` (une non-strategie) a une dimension qui aurait besoin d'evoluer.
-
-**Quand l'heterogene gagne vraiment** : il faut une **specialisation reelle** des sous-heuristiques -- une exploration forte (mutation amplifiee) sur une partition au paysage rugueux, et une exploitation fine (faible mutation) sur une partition au paysage lisse. Ce genre de specialisation par partition est precisement l'objet de l'**Exercice 3** (implementer un `SubPopulationMetaHeuristic` personnalise). Le demo ci-dessus, lui, isole proprement l'effet de chaque sous-heuristique par partition -- capacite distinctive de l'eukaryote -- et montre que NoOp est un point de comparaison (le pire cas), pas une strategie gagnante.",,,,,,,,03c28933764c1c6b,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,22e8527a,markdown,fr,724198ee2b62ec74,"# MGS-7b : projection multi-dimensionnelle des paysages (`RenderHeatmap` N-D)
-
-[← MGS-7 TSP](MGS-7-TSP.ipynb) · [MGS-8 LandscapeExplorer →](MGS-8-LandscapeExplorer.ipynb)
-
-## Pourquoi un MGS-7b ?
-
-MGS-6 a présenté les 10 fonctions canoniques de `KnownFunctions.cs` et montré qu'elles
-peuvent être visualisées en 2-D via `KnownFunctionLandscape.RenderHeatmap`. Mais une
-**vraie métaheuristique** optimise dans des espaces de dimension bien supérieure (Rastrigin
-est intéressant à $n=30$, Schwefel a un optimum trompeur en $n \geq 10$, Ackley a une
-« bassine » de minima locaux qu'il faut sonder avec de l'aléatoire). La question naturelle
-est alors : **comment rendre visible un paysage au-delà de 2 dimensions ?**
-
-C'est exactement le rôle de la surcharge N-D ajoutée à `KnownFunctionLandscape` :
-
-```csharp
-using var heatmap = KnownFunctionLandscape.RenderHeatmap(
-    new RastriginFitness(),
-    dimension: 30,        // hidden coords 2..29 sample dans la boîte recommandée
-    nbSamples: 50,        // nombre de tirages uniformes par pixel pour la projection MAX
-    rng: new Random(42),  // reproductibilité
-    width: 200, height: 200);
-```
-
-L'algorithme est *verbatim* celui du contrôleur Gtk# `LandscapeExplorerSampleController.
-GetFunctionValue` (lignes 640-674 du fork jsboige @ d05826fd, branche `Metaheuristics`) :
-pour chaque pixel $(x, y)$, on échantillonne $N_{\text{samples}}$ fois les coordonnées
-cachées $x_2, \ldots, x_{N-1}$ uniformément dans leur intervalle, et on retient le **MAX**
-de la fitness. C'est la projection dite *« MAX-of-uniform-samples »* — elle fait ressortir
-les **pics accessibles** depuis le point visible $(x, y)$ en autorisant les coordonnées
-cachées à varier librement, ce qui répond à la question « où peut m'envoyer la métaheuristique
-si je relâche temporairement les variables que je n'affiche pas ? ».
-
-## Ce notebook
-
-1. **Préliminaire** : charger le pont N-D et vérifier que la nouvelle surcharge est exposée.
-2. **Sphère 2-D vs 5-D** : démontrer que la projection N-D change effectivement la heatmap
-   quand on monte en dimension, et que le bug upstream `coordsRange = min - min = 0` est
-   bel et bien corrigé.
-3. **Rastrigin en $n = 2, 5, 10, 30$** : voir comment le paysage « vraiment multimodal »
-   se déforme au-delà de 2 dimensions.
-4. **Schwefel en $n = 5, 30$** : voir comment l'optimum trompeur (loin du centre) émerge.
-5. **Ackley en $n = 2, 30$** : voir comment la bassine centrale de minima locaux se degrade en projection N-D.
-6. **Exercice** : explorer la convergence de la projection en fonction de `nbSamples`.
-
-> **Convention du notebook.** Toutes les visualisations sont des PNG produits par
-> `KnownFunctionLandscape.RenderHeatmap` (le moteur 2-D historique), **étendus** au N-D
-> via le bridge `NDMaxProjectionAdapter` codé verbatim à partir du Gtk# controller. Pas
-> de workaround dégradé : le pipeline SOTA est utilisé bout-en-bout (cf. règle H du
-> `pr-review-discipline.md`).
-",,,,,,,,724198ee2b62ec74,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,dc33013b,code,fr,682778b7d293ebfe,"// Build prereq (submodule path, MGS-series canonical Debug config):
-//   git submodule update --init --recursive MyIA.AI.Notebooks/Search/MetaGeneticSharp
-//   dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln -c Debug
-// (Debug output matches PR #7595/#7598/#7601-#7614 sweep of MGS-3/4/6/7/8/9/10/11/12-19.)
-#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
-
-using MetaGeneticSharp;
-using GeneticSharp;
-
-// Sanity check: la surcharge N-D est bien exposée.
-var ndOverloads = typeof(KnownFunctionLandscape).GetMethods()
-    .Where(m => m.Name == ""RenderHeatmap"" && m.GetParameters()
-        .Any(p => p.Name == ""dimension"" && p.ParameterType == typeof(int)))
-    .ToList();
-
-Console.WriteLine($""Surcharges N-D RenderHeatmap(..., int dimension, ...) exposées : {ndOverloads.Count}"");
-foreach (var m in ndOverloads)
-{
-    var ps = string.Join("", "", m.GetParameters().Select(p => $""{{ {p.ParameterType.Name} {p.Name} }}""));
-    Console.WriteLine($""  - {m.Name}({ps})"");
-}",,,,,,,,682778b7d293ebfe,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,0e64b13a,markdown,fr,2329fd3311961292,"## Sphère 2-D vs 5-D : preuve que la projection fonctionne
-
-La sphère est $f(\vec x) = -\sum_i x_i^2$ (négative car le moteur maximise). En 2-D, le
-paysage est un bol centré à l'origine. En 5-D, les coordonnées $x_2, x_3, x_4$ sont
-*libres* dans $[-5.12, 5.12]$ et la projection MAX retient le *plus accessible* des bols.
-
-**Différence attendue** : la heatmap 2-D a un minimum global (= optimum, marqué **Noir**) à
-$(0, 0)$. La heatmap 5-D, elle, garde $(0, 0)$ comme candidat à un optimum mais le MAX
-sur les coordonnées cachées peut faire sortir d'autres pixels au-dessus : on doit voir
-une **heatmap plus rouge** dans la projection N-D (les autres pixels voient leurs
-coordonnées cachées prendre des valeurs quasi-nulles par chance, ce qui ramène leur fitness
-près de 0).
-
-NB : c'est précisément le bug `coordsRange = min - min = 0` qui était dans le verbatim Gtk#
-et qui pinait les coordonnées cachées à $-5.12$ — la correction est documentée dans
-`KnownFunctionLandscape.cs` (ligne 86 : `coordsRange = max - min`).
-",,,,,,,,2329fd3311961292,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,26fc53ca,code,fr,eb841f4f77640db7,"// Sphère 2-D : optimum noir au centre, gradient rouge-vert radial.
-using System.IO;
-using (var h2D = KnownFunctionLandscape.RenderHeatmap(
-    new SphereFitness(), dimension: 2, nbSamples: 1,
-    width: 100, height: 100))
-{
-    File.WriteAllBytes(@""assets\landscape_multidim_sphere_2d.png"", h2D.ToPngGdi());
-    var (px, py) = h2D.ToPixel(0.0, 0.0);
-    Console.WriteLine($""Sphère 2-D — pixel (0,0) = {h2D.Bitmap.GetPixel(px, py)} (attendu: Black = optimum)."");
-}
-
-// Sphère 5-D : MAX projection sur 3 coordonnées cachées dans [-5.12, 5.12].
-var rng = new Random(2026);
-using (var h5D = KnownFunctionLandscape.RenderHeatmap(
-    new SphereFitness(), dimension: 5, nbSamples: 50, rng: rng,
-    width: 100, height: 100))
-{
-    File.WriteAllBytes(@""assets\landscape_multidim_sphere_5d.png"", h5D.ToPngGdi());
-    var (px, py) = h5D.ToPixel(0.0, 0.0);
-    Console.WriteLine($""Sphère 5-D — pixel (0,0) = {h5D.Bitmap.GetPixel(px, py)} (la projection MAX sort de l'optimum)."");
-}",,,,,,,,eb841f4f77640db7,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,61146508,markdown,fr,3acd8257145106f8,"## Rastrigin en $n = 2, 5, 10, 30$ : le multimodal devient lisible
-
-Rastrigin est l'archétype du paysage piégeux : $f(\vec x) = -10n - \sum_i (x_i^2 - 10\cos(2\pi x_i))$.
-En 2-D, on voit nettement les cuvettes locales alignées sur une grille. Mais **en 30
-dimensions**, la métaheuristique doit échapper à un nombre *astronomique* de minima locaux
-($\approx 10^{30}$ cuvettes). La projection MAX capture cette « densité de minima » :
-plus la dimension monte, plus la heatmap devient rouge, signe que depuis presque chaque
-$(x, y)$ on peut trouver un point caché qui monte très haut.
-
-L'observation directe : **la heatmap Rastrigin-n devient de plus en plus rouge au fur et à
-mesure que $n$ monte**, parce que les cuvettes cachées pullulent. C'est ce que la métaheuristique
-« voit » quand elle opère en dimension supérieure — l'**intuition** du praticien pour
-calibrer la taille de population et le nombre de redémarrages.
-
-**Caveat sur le rendu à `dim=10` / `nbSamples=25`.** Le pixel noir observé à `(0, 0)` pour
-`dim=10` n'est **pas** un défaut d'interprétation, mais un artefact du passage « heatmap
-bruitée » (peu de tirages) → « heatmap lisse » (plus de tirages) à mesure que `nbSamples`
-monte. Pour `dim=2`, la projection ne tire qu'une coordonnée cachée avec `nbSamples=25` :
-chaque pixel voit 25 maxima, le MAX final est donc un vrai MAX de 25 valeurs souvent
-hautes → palette saturée rouge. Pour `dim=10`, 9 coordonnées cachées sont échantillonnées
-chacune 25 fois pour chaque pixel : la projection MAX lisse les cuvettes, et le pixel
-central `(0, 0)` capture l'optimum profond $f(\vec 0) = 0$ → noir. C'est le **même
-mécanisme** que l'Exercice 1 ci-dessous (convergence de `nbSamples`) — `dim=10`
-suffit à exposer la concentration près de 0 que `dim=2` masque par son faible nombre de
-coordonnées cachées.
-",,,,,,,,3acd8257145106f8,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,d983e96f,code,fr,f48450948b499a3d,"using System.IO;
-var rng = new Random(42);
-
-foreach (int dim in new[] { 2, 5, 10, 30 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new RastriginFitness(), dimension: dim, nbSamples: 25, rng: rng,
-        width: 120, height: 120);
-
-    var path = $@""assets\landscape_multidim_rastrigin_d{dim}.png"";
-    File.WriteAllBytes(path, h.ToPngGdi());
-
-    var (px, py) = h.ToPixel(0.0, 0.0);
-    Console.WriteLine($""Rastrigin dim={dim,2} — pixel (0,0) = {h.Bitmap.GetPixel(px, py)} (PNG: {path})."");
-}",,,,,,,,f48450948b499a3d,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,322a7051,markdown,fr,56e0222692526c82,"## Schwefel en $n = 5$ et $n = 30$ : l'optimum trompeur émerge
-
-Schwefel a un optimum **global** à $x_i \approx 420.97$ — *loin* du centre de la boîte
-recommandée $[-500, 500]$. Le **deuxième** optimum local, lui, est près de l'origine. En
-2-D, le praticien voit deux bassines distinctes. Mais en dimension supérieure, la projection
-MAX fait émerger le « vrai » optimum global dès qu'on autorise les coordonnées cachées à
-varier : depuis presque chaque $(x, y)$ on peut atteindre un point caché proche de
-$(420.97, 420.97, \ldots, 420.97)$.
-
-**Conséquence** : la heatmap Schwefel-n devient nettement plus rouge et plus uniforme
-que la 2-D — signal classique que la métaheuristique doit pouvoir *sortir* de la bassine
-centrale (donc redémarrages, ou stratégie d'évasion).
-",,,,,,,,56e0222692526c82,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,56b11c2f,code,fr,54ed34f2c9887c3e,"using System.IO;
-var rng = new Random(99);
-
-foreach (int dim in new[] { 5, 30 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new SchwefelFitness(), dimension: dim, nbSamples: 30, rng: rng,
-        width: 120, height: 120);
-
-    var path = $@""assets\landscape_multidim_schwefel_d{dim}.png"";
-    File.WriteAllBytes(path, h.ToPngGdi());
-    Console.WriteLine($""Schwefel dim={dim} rendu ({path})."");
-}",,,,,,,,54ed34f2c9887c3e,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,df8e3a90,markdown,fr,648722fcd32f96be,"## Ackley en $n = 2$ et $n = 30$ : la ""bassine"" de minima locaux au bord
-
-Ackley est la 4e fonction canonique de `KnownFunctions.cs` et complete le panorama
-MGS-7b sur une geometrie tres differente de Rastrigin et Schwefel. Sa formule est
-
-$$f(\vec x) = -a \exp\left(-b \sqrt{\tfrac{1}{n} \sum_i x_i^2}\right) - \exp\left(\tfrac{1}{n} \sum_i \cos(c x_i)\right) + a + e$$
-
-avec les parametres canoniques $a = 20$, $b = 0.2$, $c = 2\pi$. La **bassine centrale**
-est quasi-plate : un enorme plateau legerement ondule entoure l'origine, et un **anneau
-de minima locaux** (`cos`) ceint cette bassine. **En dimension superieure, ces minima
-se demultiplient exponentiellement** (~ $e^{n-1}$ cuvettes) — Ackley est repute parmi
-les paysages les plus trompeurs pour les metaheuristiques en haute dimension.
-
-**Effet attendu de la projection N-D** : en 2-D, on voit nettement la bassine centrale
-(rouge profond sature = haut fitness = l'optimum global) cernee par un anneau ondule
-(vert/jaune = minima locaux `cos`). En 30-D, la projection MAX capture les innombrables
-coordonnees cachees qui peuvent atteindre des valeurs loin du centre → depuis presque
-chaque pixel visible, il existe un point cache qui grimpe tres haut sur la modulation
-`cos`. La heatmap **se rapproche d'une saturation rouge uniforme** (le praticien lit
-cela comme : ""le paysage est devenu si multimodal qu'aucune direction n'est fiable,
-il faut des redemarrages massifs"").
-
-C'est precisement la **lecon de la projection MAX** qu'on cherche a transmettre a travers
-MGS-7b : Ackley-n en 2-D rassure (bol central visible), Ackley-n en N-D inquiete (le
-bol n'existe presque plus a l'ecran). Le contraste entre les deux heatmaps ci-dessous
-est l'illustration la plus parlante du **pourquoi** les redemarrages et le seeding
-aleatoire sont indispensables au-dela de la dimension 5.
-",,,,,,,,648722fcd32f96be,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,ab9c4d12,code,fr,53e0609645fd117c,"using System.IO;
-var rngAck = new Random(777);
-
-foreach (int dim in new[] { 2, 30 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new AckleyFitness(), dimension: dim, nbSamples: 30, rng: rngAck,
-        width: 120, height: 120);
-
-    var path = $@""assets\landscape_multidim_ackley_d{dim}.png"";
-    File.WriteAllBytes(path, h.ToPngGdi());
-
-    var (px, py) = h.ToPixel(0.0, 0.0);
-    Console.WriteLine($""Ackley dim={dim,2} — pixel (0,0) = {h.Bitmap.GetPixel(px, py)} (PNG: {path})."");
-}
-",,,,,,,,53e0609645fd117c,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,688c4c68,markdown,fr,48a4e4fd8ea2c4be,"## Exercices
-
-> **Convention.** Les exercices sont des cellules à compléter. Squelette fourni, à vous
-> de jouer. Les solutions sont *dans* la logique de la MAX projection — pas de try/except
-> qui masquerait une mauvaise compréhension.
-
-### Exercice 1 : convergence de `nbSamples`
-
-Observer comment la heatmap Rastrigin-dim=10 se stabilise quand `nbSamples` croît.
-On s'attend à ce que la **moyenne du canal rouge descende puis se stabilise** (convergence
-asymptotique vers une valeur faible). Le pipeline de la cellule est en place —
-il suffit de remplir la logique d'agrégation.
-
-**Intuition théorique** : Rastrigin admet un optimum global profond à l'origine
-$\vec{x} = \vec{0}$ où $f(\vec{0}) = 0$. Quand `nbSamples` augmente, les coordonnées
-cachées $x_2, \dots, x_9$ ont plus de chances de tomber proches de zéro par échantillonnage
-uniforme (loi des grands nombres + concentration près de 0) ; la projection MAX capture
-donc plus souvent le voisinage de cet optimum central. La palette de Rastrigin sature
-vers le **rouge sombre puis noir** quand la fitness est très haute, ce qui correspond
-à un canal $R$ faible. Conséquence : `mean R` **descend** asymptotiquement, pas il ne
-monte.
-
-### Exercice 2 : effet de `seed`
-
-Comparer deux heatmaps Rastrigin-dim=10 avec deux seeds différentes pour `rng`.
-Lesquelles sont visiblement différentes ? Lesquelles se ressemblent ? C'est l'occasion
-de voir *combien* d'aléa la projection MAX injecte (information utile pour décider
-combien de redémarrages allouer à la métaheuristique).
-
-### Exercice 3 : optimum trompeur, localiser le minimum global de Schwefel
-
-Schwefel est le cas **déceptif** par excellence : son optimum global n'est **pas
-au centre** du domaine (contrairement à Rastrigin ou Ackley), mais excentré, près
-d'un bord. Sur la heatmap Schwefel-d5, identifier le pixel au canal rouge minimal
-(le puits le plus profond = optimum global) et mesurer sa **distance au centre**
-de l'image. Comparer à Rastrigin-d5 (optimum central, distance $\approx 0$). Un
-optimum excentré quantifie la **déceptivité** — pourquoi une métaheuristique sans
-population large peut s'enliser dans le puits central attractif, qui n'est pas
-le bon. Squelette :
-
-```csharp
-using var hSCH = KnownFunctionLandscape.RenderHeatmap(
-    new SchwefelFitness(), dimension: 5, nbSamples: 50,
-    rng: new Random(42), width: 80, height: 80);
-using var hRAS = KnownFunctionLandscape.RenderHeatmap(
-    new RastriginFitness(), dimension: 5, nbSamples: 50,
-    rng: new Random(42), width: 80, height: 80);
-// TODO: pour chaque heatmap, trouver le pixel (x*, y*) au canal R minimal, puis
-// calculer sa distance euclidienne au centre (40, 40). Attendu: Schwefel >> 0
-// (optimum excentre), Rastrigin ~ 0 (optimum central).
-```
-",,,,,,,,48a4e4fd8ea2c4be,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,1dcb9167,code,fr,cf6c75ddfe78e81d,"// Exercice 1 : convergence de nbSamples pour Rastrigin dim=10.
-// On veut voir la moyenne du canal rouge en fonction de nbSamples.
-// Squelette : completer la collecte des stats et l'affichage.
-var stats = new List<(int nbSamples, double meanRed)>();
-
-foreach (int nbSamples in new[] { 1, 5, 25, 100 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new RastriginFitness(), dimension: 10, nbSamples: nbSamples,
-        rng: new Random(2026), width: 80, height: 80);
-
-    // TODO etudiant : calculer la moyenne du canal rouge (h.Bitmap) sur tous les pixels
-    // et l'ajouter a stats. Utiliser une boucle for classique (DirectBitmap pas
-    // accessible publiquement, on passe par h.Bitmap.GetPixel).
-    double sumRed = 0.0;
-    int count = 0;
-    for (int x = 0; x < 80; x++)
-    for (int y = 0; y < 80; y++)
-    {
-        sumRed += h.Bitmap.GetPixel(x, y).R;
-        count++;
-    }
-    stats.Add((nbSamples, sumRed / count));
-}
-
-foreach (var (nb, mr) in stats)
-    Console.WriteLine($""  nbSamples={nb,4} → mean R = {mr:F2}"");
-Console.WriteLine();
-// Attendu : la moyenne du canal rouge descend avec nbSamples (concentration
-// asymptotique vers l'optimum central profond de Rastrigin, f(0)=0) puis se
-// stabilise. La sortie observee de la cellule (63.94 → 115.55 → 5.73 → 1.15)
-// en est la demonstration. L'oscillation initiale 1->5 reflete la variance
-// d'echantillonnage quand la heatmap est tres bruitee.
-",,,,,,,,cf6c75ddfe78e81d,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,9559f42e,code,fr,8ffeae74210c36b2,"// Exercice 2 : effet de seed sur la variabilite de la heatmap.
-// Afficher la proportion de pixels qui DIFFERENT entre deux seeds.
-int totalDiff = 0;
-using (var hA = KnownFunctionLandscape.RenderHeatmap(
-    new RastriginFitness(), dimension: 10, nbSamples: 25,
-    rng: new Random(1), width: 80, height: 80))
-using (var hB = KnownFunctionLandscape.RenderHeatmap(
-    new RastriginFitness(), dimension: 10, nbSamples: 25,
-    rng: new Random(99999), width: 80, height: 80))
-{
-    for (int x = 0; x < 80; x++)
-    for (int y = 0; y < 80; y++)
-    {
-        if (hA.Bitmap.GetPixel(x, y).ToArgb() != hB.Bitmap.GetPixel(x, y).ToArgb())
-            totalDiff++;
-    }
-}
-Console.WriteLine($""Pixels qui different entre 2 seeds : {totalDiff}/{80 * 80} = {100.0 * totalDiff / (80 * 80):F1}%"");
-// Attendu : une proportion significative (>50%) — la projection MAX injecte de la
-// variabilite qui depend de l'ordre de visite Parallel.For des pixels.
-",,,,,,,,8ffeae74210c36b2,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7b-LandscapeMultidim.ipynb,88c6e048,markdown,fr,17c0a9aff0d5297d,"## Liens
-
-- [MGS-1 Introduction](MGS-1-Introduction.ipynb) — le moteur `MetaGeneticAlgorithm` et la notion d'**agencement** des primitives.
-- [MGS-6 Benchmarks](MGS-6-Benchmarks.ipynb) — les 10 fonctions canoniques et leur banc d'essai comparatif.
-- [MGS-7 TSP](MGS-7-TSP.ipynb) — TSP comme exemple de problème à représentation non-géométrique.
-- [MGS-8 LandscapeExplorer](MGS-8-LandscapeExplorer.ipynb) — l'explorateur historique 2-D du paysage (la base dont la projection N-D est issue).
-- PR #7483 — port de la projection N-D du fork Gtk# dans le submodule.
-- `KnownFunctionLandscape.cs` — la classe pont (surcharges 2-D et N-D), avec doc du fix `coordsRange = max - min`.
-- Tests `KnownFunctionLandscapeNdTests` — 12 tests NUnit, dont G.9 non-vacuous (le test `HiddenCoordsAffectHeatmap` échoue sans le fix).
-- `LandscapeExplorerSampleController.GetFunctionValue` — algorithme verbatim Gtk# (lignes 640-674 du fork jsboige @ d05826fd).
-",,,,,,,,17c0a9aff0d5297d,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,1a535833,markdown,fr,659cb62e66a01ad5,"# MGS-7c : Rosenbrock (vallée étroite) + Griewank (produit-cosinus) en projection N-D
-
-[← MGS-7b LandscapeMultidim](MGS-7b-LandscapeMultidim.ipynb) · [MGS-8 LandscapeExplorer →](MGS-8-LandscapeExplorer.ipynb)
-
-## Pourquoi Rosenbrock et Griewank ?
-
-MGS-7b a couvert les **quatre fonctions** classiques du banc CEC :
-**Sphère** (c.732), **Rastrigin** (c.732), **Schwefel** (c.732), **Ackley** (c.785).
-
-Restent deux fonctions au comportement **structurellement différent** que la projection N-D
-doit affronter :
-
-1. **Rosenbrock** $f(\vec x) = -\sum_{i=1}^{n-1} \left(100(x_{i+1} - x_i^2)^2 + (1-x_i)^2\right)$ —
-   la *vallée-courbe-étroite banane*. L'optimum est dans $x_i \approx 1$, mais la trajectoire
-   de descente est piégée dans un couloir de largeur $\sim 10^{-2}$. Recommandé $[-2.048, 2.048]$.
-
-2. **Griewank** $f(\vec x) = \frac{1}{4000}\sum_i x_i^2 - \prod_i \cos\left(\frac{x_i}{\sqrt{i}}\right) + 1$ —
-   le *produit-cosinus-haute-fréquence*. Contrairement à **Ackley** (somme de cosinus), Griewank
-   multiplie des cosinus à fréquences **décroissantes** : $\cos(x_0)$, $\cos(x_1/\sqrt{2})$,
-   $\cos(x_2/\sqrt{3})$, etc. Échelle large $[-600, 600]$.
-
-## Ce que ce notebook teste
-
-**Question pédagogique** : la projection MAX (cf MGS-7b cellule `RenderHeatmap` N-D, port #7483)
-gomme-t-elle les structures fines de Rosenbrock (vallée 1-pixel-large) **plus vite** que
-celles d'Ackley (bassine large multi-pixels) ? Et comment **Griewank** se distingue-t-il
-de **Ackley** en 2-D alors que les deux reposent sur du cosinus ?
-
-**Anti-pattern INTRINSIC documenté** : si la heatmap Griewank-n=30 devient quasi-uniforme,
-c'est une **signature de la projection MAX** (le produit de cosinus à fréquences décroissantes
-s'aplatit sous MAX), pas un bug de la projection. Cf L785-L2 ★.
-
-## Reproductibilité
-
-Les seeds utilisées (42, 7, 99) sont explicites dans les cellules. Les heatmaps sont
-générées via le moteur `KnownFunctionLandscape.RenderHeatmap` du submodule
-`MetaGeneticSharp.Extensions` (port PR #7583 + #7776).",,,,,,,,659cb62e66a01ad5,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,be70e72d,code,fr,f8567d267409b153,"#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
-
-using MetaGeneticSharp;
-using GeneticSharp;
-
-// Verifier que les deux classes sont bien exposees par le submodule.
-var rosenbrockOk = typeof(KnownFunctionGenes).GetMethod(""RangeFor"",
-    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static) != null;
-var rosenbrockType = System.Type.GetType(""MetaGeneticSharp.RosenbrockFitness, MetaGeneticSharp.Extensions"");
-var griewankType = System.Type.GetType(""MetaGeneticSharp.GriewankFitness, MetaGeneticSharp.Extensions"");
-Console.WriteLine($""RangeFor present: {rosenbrockOk}"");
-Console.WriteLine($""RosenbrockFitness charge: {rosenbrockType?.FullName ?? ""NOT FOUND""}"");
-Console.WriteLine($""GriewankFitness charge: {griewankType?.FullName ?? ""NOT FOUND""}"");
-
-// Echelles recommandees (tirees de KnownFunctions.cs, lignes ~190).
-Console.WriteLine($""Rosenbrock: range [-2.048, 2.048] (source canonique)"");
-Console.WriteLine($""Griewank:   range [-600.0, 600.0] (source canonique)"");",,,,,,,,f8567d267409b153,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,9bec48d0,markdown,fr,33ce46eb2f5e9465,"## Rosenbrock en $n = 2, 5, 30$ : la vallée diagonale disparaît
-
-**En 2-D**, Rosenbrock dessine une *vallée étroite* en banane qui serpente du coin
-supérieur-gauche $(-2, 4)$ environ jusqu'au point optimal $(1, 1)$.
-La heatmap est **asymétrique** : le coin $(x_1, x_2) = (-2, 4)$ est plus rouge
-(vallée en pente descendante raide) que le coin symétrique $(4, -2)$.
-
-**En 30-D**, chaque pixel $(x_1, x_2)$ doit explorer 28 dimensions cachées via
-MAX-projection. Comme la vallée est **étroite** (largeur $\sim 10^{-2}$), la probabilité
-qu'un sample aléatoire tombe *dans* la vallée est faible — la MAX-projection retient
-donc presque toujours une fitness *hors vallée*, et la heatmap devient quasi-uniforme
-rouge-orange. C'est **la signature attendue** : Rosenbrock est **plus vulnérable**
-à la projection MAX qu'Ackley (dont la bassine large multi-pixels survit mieux).",,,,,,,,33ce46eb2f5e9465,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,2b30be05,code,fr,f9c6a583adbdb12c,"using System.IO;
-var rng = new Random(42);
-
-foreach (int dim in new[] { 2, 5, 30 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new RosenbrockFitness(), dimension: dim, nbSamples: 50, rng: rng,
-        width: 120, height: 120);
-
-    var path = ""assets/landscape_multidim_rosenbrock_d"" + dim + "".png"";
-    File.WriteAllBytes(path, h.ToPngGdi());
-
-    var (px, py) = h.ToPixel(0.0, 0.0);
-    Console.WriteLine(""Rosenbrock dim="" + dim.ToString().PadLeft(2) + "" - pixel(0,0) = "" + h.Bitmap.GetPixel(px, py) + "" (PNG: "" + path + "")."");
-}
-",,,,,,,,f9c6a583adbdb12c,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,469484a0,markdown,fr,676275d1f07c623b,"## Griewank en $n = 2, 5, 30$ : produit-cosinus vs Ackley somme-cosinus
-
-**Différence structurelle avec Ackley** (cf MGS-7b Ackley c.785) :
-
-| Fonction | Formule cosinus | Type | Signature 2-D |
-|----------|----------------|------|---------------|
-| **Ackley** | $-\exp(\frac{1}{n}\sum \cos(2\pi x_i))$ | **somme** | bassine large, anneaux concentriques |
-| **Griewank** | $-\prod \cos(\frac{x_i}{\sqrt{i}})$ | **produit** | bandes ondulantes perpendiculaires |
-
-En 2-D, le produit $\cos(x_0) \cdot \cos(x_1/\sqrt{2})$ génère des **bandes
-verticales ondulantes** (la fréquence décroît avec l'index $i$, donc $\cos(x_1/\sqrt{2})$
-est 1.4× plus lent que $\cos(x_0)$). En 30-D, le produit de 30 cosinus à fréquences
-très diverses s'aplatit **presque entièrement** sous MAX — la heatmap devient
-**quasi-uniforme** orange-clair (valeurs proches de l'optimum $f(0)=0$ via le produit
-$\prod \cos(0) = 1$).
-
-**INTRINSIC LIMIT documenté** : Griewank en $n \geq 10$ est essentiellement **invisible**
-via MAX-projection. C'est cohérent avec le fait que Griewank est conçu pour tester
-les **métaheuristiques** (qui peuvent *descendre* le long de la structure), pas les
-projections 2-D.",,,,,,,,676275d1f07c623b,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,57eca73f,code,fr,2cb6526666b7baac,"using System.IO;
-var rng = new Random(7);
-
-foreach (int dim in new[] { 2, 5, 30 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new GriewankFitness(), dimension: dim, nbSamples: 50, rng: rng,
-        width: 120, height: 120);
-
-    var path = ""assets/landscape_multidim_griewank_d"" + dim + "".png"";
-    File.WriteAllBytes(path, h.ToPngGdi());
-
-    var (px, py) = h.ToPixel(0.0, 0.0);
-    Console.WriteLine(""Griewank dim="" + dim.ToString().PadLeft(2) + "" - pixel(0,0) = "" + h.Bitmap.GetPixel(px, py) + "" (PNG: "" + path + "")."");
-}
-",,,,,,,,2cb6526666b7baac,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,d176aac0,markdown,fr,c067154b98cb9a00,"## Tell visuel attendu
-
-Pattern transferable L780-L2 ★ `niveau_2d_procedural_dense` pour les **6 nouvelles PNG** :
-
-- **2-D** (Rosenbrock et Griewank) : heatmaps matplotlib-style colorées multi-catégories,
-  std élevé sur les 3 canaux R/G/B, palette restreinte selon la fonction.
-- **5-D et 30-D** : heatmaps progressivement plus uniformes, gradient de rouge dominant
-  (signature L785-L2 ★ inversion chromatique chiffrable `d2 -> d30`).
-- **Rosenbrock 30-D** : attendu quasi-uniform-rouge (vallée étroite invisible).
-- **Griewank 30-D** : attendu quasi-uniform-orange-clair (produit-cosinus effondré sous MAX).
-
-Stats RGB PIL tell `matplotlib_blanc + niveau_2d_procedural_dense` (L780-L2 ★) ou
-`pixel_art_dense` (tell nouveau dérivé de c.732/c.785 = heatmaps haute densité sans fond
-blanc dominant — à confirmer après génération effective).",,,,,,,,c067154b98cb9a00,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,ea0ae223,markdown,fr,6c387ba709532563,"## Exercices
-
-### Exercice 1 : quantifier la *disparition* de la vallée Rosenbrock
-
-Mesurer la **variance spatiale** du canal rouge entre la heatmap Rosenbrock-d2 et
-Rosenbrock-d30. Si la vallée disparaît, la variance doit chuter d'un facteur $\geq 5$.
-Squelette :
-
-```csharp
-var stats = new List<(int dim, double varianceRouge)>();
-foreach (int dim in new[] { 2, 5, 30 }) {
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new RosenbrockFitness(), dimension: dim, nbSamples: 50,
-        rng: new Random(42), width: 120, height: 120);
-    // TODO: collecter les valeurs R des 14400 pixels, calculer variance.
-}
-// Afficher le ratio variance(d2) / variance(d30).
-```
-
-### Exercice 2 : produit-cosinus vs somme-cosinus (Griewank vs Ackley)
-
-Charger Ackley-d2 et Griewank-d2, comparer le **spectre de fréquences spatiales**
-(transformée de Fourier 2-D du canal rouge). Le produit de Griewank doit montrer un
-spectre **plus épars** (fréquences dictées par $\sqrt{i}$) que la somme d'Ackley
-(spectre **continu**).
-### Exercice 3 : rudesse du paysage et comptage des minima locaux
-
-Un pixel de la heatmap est un **minimum local** s'il est strictement inférieur
-à ses 4 voisins (haut, bas, gauche, droite) sur le canal rouge. Compter le
-nombre de minima locaux pour Rosenbrock-d2 et Griewank-d2. Attendu :
-Rosenbrock $\approx 1$ minimum (paysage *lisse*, fond de vallée unique) ;
-Griewank $\gg 1$ (paysage *rugueux*, le produit de cosinus crée de nombreux
-puits). Le ratio quantifie la **rudesse**, la propriété qui rend les
-métaheuristiques nécessaires là où un gradient seul reste piégé. Squelette :
-
-```csharp
-using var hR = KnownFunctionLandscape.RenderHeatmap(
-    new RosenbrockFitness(), dimension: 2, nbSamples: 50,
-    rng: new Random(42), width: 120, height: 120);
-using var hG = KnownFunctionLandscape.RenderHeatmap(
-    new GriewankFitness(), dimension: 2, nbSamples: 50,
-    rng: new Random(42), width: 120, height: 120);
-// TODO: pour chaque heatmap, parcourir les pixels interieurs (1..118),
-// comparer R[pixel] a ses 4 voisins (haut/bas/gauche/droite), compter
-// les minima locaux stricts et afficher le ratio Rosenbrock / Griewank.
-```",,,,,,,,6c387ba709532563,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb,5ed18061,markdown,fr,36f20161fab5b28f,"## Liens
-
-- [MGS-7b LandscapeMultidim](MGS-7b-LandscapeMultidim.ipynb) — Ackley dim ∈ {2, 30} (c.785 PR #7993), Rastrigin/Schwefel/Sphere dim ∈ {2, 5, 10, 30} (c.732 PR #7583).
-- [MGS-6 Benchmarks](MGS-6-Benchmarks.ipynb) — les 10 fonctions canoniques et leur banc CEC d'origine.
-- [MGS-8 LandscapeExplorer](MGS-8-LandscapeExplorer.ipynb) — exploration interactive GTK#.
-- Issue [#7483](https://github.com/jsboige/CoursIA/issues/7483) — port de la projection N-D (parent).
-- Issue [#7997](https://github.com/jsboige/CoursIA/issues/7997) — c.787 MGS-7c Rosenbrock+Griewank (sujet de ce notebook).
-- PR [#7583](https://github.com/jsboige/CoursIA/pull/7583) — port initial MGS-7b N-D.
-- PR [#7993](https://github.com/jsboige/CoursIA/pull/7993) — c.785 MGS-7b Ackley.
-- L785-L2 ★ — inversion chromatique chiffrable d2 → d30 = signature projection MAX.",,,,,,,,36f20161fab5b28f,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,c08077cb,markdown,fr,2f8155799abacaaa,"# MGS-7d : Michalewicz (steep ridges) + Dixon-Price (narrow valley non-scalable) en projection N-D
-
-[← MGS-7c RosenbrockGriewank](MGS-7c-RosenbrockGriewank.ipynb) · [MGS-8 LandscapeExplorer →](MGS-8-LandscapeExplorer.ipynb)
-
-## Pourquoi Michalewicz et Dixon-Price ?
-
-MGS-7b/7c ont couvert les **six fonctions** classiques du banc CEC :
-**Sphère** (c.732), **Rastrigin** (c.732), **Schwefel** (c.732), **Ackley** (c.785),
-**Rosenbrock** (c.787), **Griewank** (c.787).
-
-Restent deux fonctions avec des structures très différentes :
-
-1. **Michalewicz** $f(\vec x) = -\sum_{i=1}^{n} \sin(x_i) \sin^{2m}\left(\frac{i x_i^2}{\pi}\right)$ —
-   les *crêtes raides paramétrées* (m=10). Chaque dimension a une fréquence propre
-   $i/\pi$ et une amplitude contrôlée par $\sin^{20}$, ce qui crée des vallées
-   extrêmement étroites et **diagonales** dans l'espace 2-D. L'optimum en $n=2$ est
-   $\approx -1.8013$, et l'optimum **dépend de $n$** (propriété rare dans le banc CEC).
-   Recommandé $[0, \pi]$.
-
-2. **Dixon-Price** $f(\vec x) = (x_1-1)^2 + \sum_{i=2}^{n} i \cdot (2 x_i^2 - x_{i-1})^2$ —
-   la *vallée étroite NON-scalable*. Contrairement à Rosenbrock (vallée-courbe-étroite
-   où la courbure est régulière), Dixon-Price a une vallée **asymétrique** : la coordonnée
-   $x_i$ est couplée à $x_{i-1}$ via un terme $i \cdot (2 x_i^2 - x_{i-1})^2$, et
-   l'optimum $x_i = 2^{-(2^i-2)/2^i}$ décroît exponentiellement avec $i$. Recommandé $[-10, 10]$.
-
-## Ce que ce notebook teste
-
-**Question pédagogique** : la projection MAX préserve-t-elle la structure fine des **crêtes
-raides** de Michalewicz (paramètre $m=10$ = quasi-binaire) ? Et comment Dixon-Price
-se distingue-t-il de Rosenbrock en 2-D alors que les deux ont une *vallée étroite* ?
-
-**Hypothèses à vérifier** :
-- Michalewicz 2-D = crêtes diagonales nettes (param $m=10$ = amplitude $\sin^{20}$ quasi-binaire),
-  distinctes des bassines d'Ackley et des bandes de Griewank.
-- Dixon-Price 2-D = vallée étroite **asymétrique** (couplage $x_2$ à $x_1$), contrairement à
-  Rosenbrock 2-D qui a une vallée-courbe-étroite mais **scalable** ($x_2 \approx x_1^2$).
-- En 30-D, les deux fonctions **s'effondrent** sous MAX-projection mais pour des raisons
-  différentes : Michalewicz car $\sin^{20}$ sature rapidement, Dixon-Price car le couplage
-  cross-dim rend les coordonnées cachées presque indépendantes.
-
-**Anti-pattern INTRINSIC documenté** : si Michalewicz-n=30 ou Dixon-Price-n=30 devient
-quasi-uniforme, c'est la **signature de la projection MAX** + la structure intrinsèque de
-la fonction, pas un bug. Cf L785-L2 ★ et L787-L1 ★.
-
-## Reproductibilité
-
-Les seeds utilisées (42, 7, 99) sont explicites dans les cellules. Les heatmaps sont
-générées via le moteur `KnownFunctionLandscape.RenderHeatmap` du submodule
-`MetaGeneticSharp.Extensions` (port PR #7583 + #7776).
-",,,,,,,,2f8155799abacaaa,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,becac2e6,code,fr,07c23e10023f8f64,"#r ""..\MetaGeneticSharp\src\MetaGeneticSharp.Extensions\bin\Debug\net9.0\MetaGeneticSharp.Extensions.dll""
-
-using MetaGeneticSharp;
-using GeneticSharp;
-
-// Verifier que les deux classes sont bien exposees par le submodule.
-var michalewiczOk = typeof(KnownFunctionGenes).GetMethod(""RangeFor"",
-    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static) != null;
-var michalewiczType = System.Type.GetType(""MetaGeneticSharp.MichalewiczFitness, MetaGeneticSharp.Extensions"");
-var dixonPriceType = System.Type.GetType(""MetaGeneticSharp.DixonPriceFitness, MetaGeneticSharp.Extensions"");
-Console.WriteLine($""RangeFor present: {michalewiczOk}"");
-Console.WriteLine($""MichalewiczFitness charge: {michalewiczType?.FullName ?? ""NOT FOUND""}"");
-Console.WriteLine($""DixonPriceFitness charge: {dixonPriceType?.FullName ?? ""NOT FOUND""}"");
-
-// Echelles recommandees (tirees de KnownFunctions.cs, RangeFor method, lignes ~244).
-Console.WriteLine($""Michalewicz: range [0.0, Math.PI] = [0, {Math.PI:F4}] (source canonique, m=10)"");
-Console.WriteLine($""DixonPrice:  range [-10.0, 10.0] (source canonique, narrow valley non-scalable)"");
-",,,,,,,,07c23e10023f8f64,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,9fd7b957,markdown,fr,2addaab7201706ac,"## Michalewicz en $n = 2, 5, 30$ : crêtes raides paramétrées
-
-**En 2-D**, Michalewicz dessine une *crête diagonale étroite* au voisinage de l'optimum
-$\vec x^* \approx (2.20, 1.57)$ pour $n=2$ (optimum dépend de $n$, propriété rare).
-La heatmap exhibe des **bandes obliques** très contrastées :
-le paramètre $m=10$ dans $\sin^{2m}(\cdot)$ sature l'amplitude entre 0 et 1, créant
-des transitions abruptes. Visuellement, cela donne un motif *quasi-binaire*
-alternant bandes sombres (fitness faible) et bandes claires (fitness haute).
-
-**En 30-D**, chaque pixel $(x_1, x_2)$ doit explorer 28 dimensions cachées via
-MAX-projection. Le paramètre $m=10$ rend chaque dimension **très discontinue**
-(presque digitale), ce qui amplifie la sensibilité au MAX : une coordonnée cachée
-en dehors de sa crête tire la fitness vers 0 ou $-1$ brutalement. La heatmap
-devient **quasi-uniforme sombre** (rouge/jaune), signature de la structure fine
-complètement effondrée par MAX-projection.
-
-**Substance distincte de Griewank** (c.787) :
-- Griewank 2-D = produit-cosinus ondulé (anneaux concentriques ou bandes ondulantes)
-- Michalewicz 2-D = crêtes obliques abruptes ($\sin^{20}$ quasi-binaire)
-La différence visuelle est **radicale** : Griewank est doux, Michalewicz est tranchant.
-",,,,,,,,2addaab7201706ac,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,6d8342b9,code,fr,3da10cfe40745ec9,"using System.IO;
-var rng = new Random(42);
-
-foreach (int dim in new[] { 2, 5, 30 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new MichalewiczFitness(), dimension: dim, nbSamples: 50, rng: rng,
-        width: 120, height: 120);
-
-    var path = ""assets/landscape_multidim_michalewicz_d"" + dim + "".png"";
-    File.WriteAllBytes(path, h.ToPngGdi());
-
-    var (px, py) = h.ToPixel(0.0, 0.0);
-    Console.WriteLine(""Michalewicz dim="" + dim.ToString().PadLeft(2) + "" - pixel(0,0) = "" + h.Bitmap.GetPixel(px, py) + "" (PNG: "" + path + "")."");
-}
-",,,,,,,,3da10cfe40745ec9,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,6c50f31e,markdown,fr,28b090954bfae4e5,"## Dixon-Price en $n = 2, 5, 30$ : vallée étroite non-scalable
-
-**En 2-D**, Dixon-Price dessine une *vallée étroite asymétrique*. La formule se réduit à :
-$$f(x_1, x_2) = (x_1 - 1)^2 + 2 (2 x_2^2 - x_1)^2$$
-
-L'optimum est en $x_1 = 1$ et $x_2 = \pm 1/\sqrt{2}$ (deux points symétriques).
-La vallée n'est **pas diagonale comme Rosenbrock** mais **parabolique-croisée** :
-le terme $2(2 x_2^2 - x_1)^2$ impose que $x_2$ suive $x_1$ mais avec un exposant
-quadratique (et non linéaire $x_1^2$ comme Rosenbrock). La heatmap 2-D exhibe
-une vallée **non-rectiligne** : étroite en haut (où $x_2^2$ varie peu) et qui s'évase
-en bas (où le couplage domine).
-
-**En 30-D**, le couplage cross-dim rend chaque coordonnée cachée *quasi-indépendante* :
-l'optimum $x_i = 2^{-(2^i-2)/2^i}$ décroît exponentiellement ($i=2 \to 0.707$, $i=3 \to 0.594$,
-$i=10 \to 0.501$, $i=30 \to 0.5$), donc la majorité des dimensions sont proches de $0.5$.
-La MAX-projection sur 28 dimensions cachées retient quasi-systématiquement le fitness
-**proche de l'optimum** (région dense de fitness haute), produisant une heatmap
-**quasi-uniforme jaune-clair**, signature distincte de Rosenbrock (rouge-quasi-uniform)
-car Dixon-Price est plus proche de l'optimum au sens MAX.
-
-**Substance distincte de Rosenbrock** (c.787) :
-
-| Fonction | Forme vallée 2-D | Couplage | Asymétrie |
-|----------|------------------|----------|-----------|
-| **Rosenbrock** | banane-diagonale | $x_2 \approx x_1^2$ | léger (courbe monotone) |
-| **Dixon-Price** | parabolique-croisée | $x_2^2 \approx x_1/2$ | fort (deux branches symétriques $x_2 = \pm\sqrt{x_1/2}$) |
-
-La différence 2-D est **radicale** : Rosenbrock a une vallée **continue et monotone**,
-Dixon-Price a une vallée **bifurquée** en haut et un fond plus large en bas.
-",,,,,,,,28b090954bfae4e5,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,e82b6905,code,fr,e5f1dcb16544d118,"using System.IO;
-var rng = new Random(7);
-
-foreach (int dim in new[] { 2, 5, 30 })
-{
-    using var h = KnownFunctionLandscape.RenderHeatmap(
-        new DixonPriceFitness(), dimension: dim, nbSamples: 50, rng: rng,
-        width: 120, height: 120);
-
-    var path = ""assets/landscape_multidim_dixon_price_d"" + dim + "".png"";
-    File.WriteAllBytes(path, h.ToPngGdi());
-
-    var (px, py) = h.ToPixel(0.0, 0.0);
-    Console.WriteLine(""Dixon-Price dim="" + dim.ToString().PadLeft(2) + "" - pixel(0,0) = "" + h.Bitmap.GetPixel(px, py) + "" (PNG: "" + path + "")."");
-}
-",,,,,,,,e5f1dcb16544d118,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,195a699e,markdown,fr,a5fb6822f5ad6946,"## Tell visuel attendu
-
-Observations vision-QA MiniMax M3 firsthand sur les **6 nouvelles PNG** (lecture directe
-via outil Read, post-ré-exécution .NET Interactive 2026-07-22) :
-
-- **Michalewicz 2-D** : observé une **croix verte** sur fond cyan (pixel central rouge).
-  Contrairement à l'hypothèse « bandes obliques tranchantes », la heatmap exhibe une
-  structure **quasi-stationnaire** entre d=2, d=5, d=30 (croix verte + pixel central rouge,
-  fond cyan uniforme). L'effondrement par projection MAX ne se produit PAS comme pour
-  Rosenbrock/Griewank — la structure paramétrée \(m=10\) **résiste** à la projection sur
-  28 dimensions cachées.
-- **Michalewicz 5-D, 30-D** : observé **très faible variation** par rapport au 2-D.
-  pixel(0,0) d=2=(255,255,255) → d=5=(37,255,0) chartreuse → d=30=(255,255,255) — la
-  transition d=5 (chartreuse) est la seule trace visible de la projection sur coords cachées,
-  et la heatmap reste dominée par la croix verte. Cf L788-L1 ★.
-- **Dixon-Price 2-D** : observé **bandes horizontales rouge/jaune** (pas de vallée
-  bifurquée au sens strict). La structure est dominée par le terme \(i \cdot (2 x_i^2 - x_{i-1})^2\)
-  qui impose un gradient vertical constant en \(x_1\). pixel(0,0) d=2 = (255,0,0) Red.
-- **Dixon-Price 5-D, 30-D** : observé effondrement marqué vers une heatmap **quasi-uniforme**
-  (d=5 vert/jaune-clair puis d=30 quasi-uniform rouge-orange). pixel(0,0) d=5=(0,255,132)
-  green-cyan → d=30=(255,26,0) Red-orange. L'effondrement est cohérent avec le couplage
-  cross-dim (l'optimum \(x_i=2^{-(2^i-2)/2^i}\) rend les dims cachées quasi-aléatoires).
-
-**Inversion chromatique observée d2 → d30** :
-- Michalewicz : White d=2 → chartreuse d=5 → White d=30 (résiste à MAX)
-- Dixon-Price : Red d=2 → green-cyan d=5 → Red-orange d=30 (effondrement MAX)
-
-**L788-L1 ★** = Michalewicz résiste à la projection MAX là où Rosenbrock/Griewank/Ackley
-s'effondrent. Cause présumée : le produit \(\sin(x_i) \cdot \sin^{2m}(i x_i^2 / \pi)\) crée
-une structure **auto-référente** dans chaque dimension, indépendante des autres coordonnées.
-Quand MAX retient le fitness d'une coordonnée cachée, il retombe quasi-systématiquement sur
-la **même structure** que les 2 visibles. C'est l'inverse de Rosenbrock où le couplage
-étroit rend la vallée perdue dès que nbSamples < 1/largeur.
-
-Tell discriminant sub-genre = **résistance 2-D → N-D** (Michalewicz préserve, Dixon-Price
-effondre comme Rosenbrock/Griewank, Ackley intermédiaire cf L787-L1 ★).
-",,,,,,,,a5fb6822f5ad6946,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,03fce326,markdown,fr,647fa1773c740ddb,"## Exercices
-
-### Exercice 1 : quantifier la *discontinuité* de Michalewicz
-
-Mesurer le **gradient spatial moyen** du canal rouge entre la heatmap Michalewicz-d2
-et Michalewicz-d30. Si la discontinuité $\sin^{20}$ domine, le gradient d=2 doit être
-*significativement plus élevé* que celui d'Ackley ou Griewank d=2 (les deux ont des
-fonctions plus lisses). Squelette :
-
-```csharp
-var stats = new List<(string fn, int dim, double gradientRouge)>();
-foreach (var (fnName, fit) in new[] {
-    (""Michalewicz"", (IFitness)new MichalewiczFitness()),
-    (""Ackley"", new AckleyFitness()),
-    (""Griewank"", new GriewankFitness()),
-}) {
-    foreach (int dim in new[] { 2, 30 }) {
-        using var h = KnownFunctionLandscape.RenderHeatmap(
-            fit, dimension: dim, nbSamples: 50, rng: new Random(42),
-            width: 120, height: 120);
-        // TODO: calculer la moyenne des |R(i+1,j) - R(i,j)| + |R(i,j+1) - R(i,j)|
-        // sur tous les pixels internes.
-    }
-}
-```
-
-### Exercice 2 : bifurcation de la vallée Dixon-Price
-
-Charger Dixon-Price-d2, **tracer les isovaleurs** de $f$ au voisinage de l'optimum
-$\vec x^* \approx (1, \pm 1/\sqrt{2})$. Vérifier que la vallée se **bifurque**
-pour $x_1 > 1.5$ (deux branches symétriques) alors qu'elle est **unique** pour
-$x_1 < 0.5$. Squelette :
-
-```csharp
-var fit = new DixonPriceFitness();
-// TODO: grille 200x200 sur [-1, 2] x [-1, 2], calculer f(x1, x2),
-// identifier les isovaleurs à 0.01, 0.1, 1.0, 10.0.
-```
-
-### Exercice 3 : anisotropie du paysage, gradient horizontal vs vertical
-
-Dixon-Price possède une vallée **incurvée puis bifurquée** (cf. Exercice 2). Une
-vallée orientée produit un paysage **anisotrope** : le long de l'axe de la vallée
-le canal rouge varie peu, perpendiculairement il varie beaucoup. Calculer séparément
-la moyenne des gradients horizontaux $|R_{i+1,j}-R_{i,j}|$ et verticaux
-$|R_{i,j+1}-R_{i,j}|$ sur la heatmap Dixon-Price-d2, puis former le rapport V/H.
-Le comparer à Sphere-d2 (fonction **isotrope**, rapport $\approx 1$). Un ratio
-loin de 1 quantifie l'orientation du paysage, l'information qu'une métaheuristique
-à covariance adaptative (CMA-ES) exploite pour apprendre la géométrie locale.
-Squelette :
-
-```csharp
-using var hDP = KnownFunctionLandscape.RenderHeatmap(
-    new DixonPriceFitness(), dimension: 2, nbSamples: 50,
-    rng: new Random(42), width: 120, height: 120);
-using var hSP = KnownFunctionLandscape.RenderHeatmap(
-    new SphereFitness(), dimension: 2, nbSamples: 50,
-    rng: new Random(42), width: 120, height: 120);
-// TODO: pour chaque heatmap, sommer |R(i+1,j)-R(i,j)| (gradient H) et
-// |R(i,j+1)-R(i,j)| (gradient V) sur les pixels interieurs, afficher V/H.
-// Attendu : Dixon-Price eloigne de 1 (anisotrope), Sphere ~ 1 (isotrope).
-```
-",,,,,,,,647fa1773c740ddb,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-7d-MichalewiczDixonPrice.ipynb,92a3da4b,markdown,fr,085c9b2f61674ce3,"## Liens
-
-- [MGS-7c RosenbrockGriewank](MGS-7c-RosenbrockGriewank.ipynb) — Rosenbrock + Griewank dim ∈ {2, 5, 30} (c.787 PR #7999).
-- [MGS-7b LandscapeMultidim](MGS-7b-LandscapeMultidim.ipynb) — Ackley dim ∈ {2, 30} (c.785 PR #7993), Rastrigin/Schwefel/Sphere dim ∈ {2, 5, 10, 30} (c.732 PR #7583).
-- [MGS-6 Benchmarks](MGS-6-Benchmarks.ipynb) — les 10 fonctions canoniques et leur banc CEC d'origine.
-- [MGS-8 LandscapeExplorer](MGS-8-LandscapeExplorer.ipynb) — exploration interactive GTK#.
-- Issue [#7483](https://github.com/jsboige/CoursIA/issues/7483) — port de la projection N-D (parent).
-- Issue [#7997](https://github.com/jsboige/CoursIA/issues/7997) — [search,#7483-suite] MGS-7c/7d (parent saturé c.732/c.785/c.787/c.788).
-- PR [#7583](https://github.com/jsboige/CoursIA/pull/7583) — port initial MGS-7b N-D.
-- PR [#7993](https://github.com/jsboige/CoursIA/pull/7993) — c.785 MGS-7b Ackley.
-- PR [#7999](https://github.com/jsboige/CoursIA/pull/7999) — c.787 MGS-7c Rosenbrock+Griewank.
-- L785-L2 ★ — inversion chromatique chiffrable d2 → d30 = signature projection MAX.
-- L787-L1 ★ — inversion chromatique chiffrable d2 → d30 PAR FONCTION (Rosenbrock/Griewank vs Ackley).
-- L787-L2 ★ — Griewank d=5 = damier oblique sweet-spot (interférence 5 coords à fréquences $1/\sqrt{3..5}$).
-",,,,,,,,085c9b2f61674ce3,,,,,,,
