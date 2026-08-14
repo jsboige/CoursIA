@@ -27,15 +27,15 @@ HAC Newey-West + correction HLN, `loss_fn="linear"` (#10228).
 | h=5 | +28,3 % | 0,10 | 0,00e+00 | **NO BEATS** |
 | h=10 | +38,3 % | 0,20 | 0,00e+00 | **NO BEATS** |
 
-**Lecture honnête (le piège §C, dans le bon sens)** : DLinear bat HAR de 15 à 38 % en MSE (perte
-symétrique), mais la perte **signée** (`linear`) révèle un **biais systématique** de prévision —
-`dm_mean_loss_diff ≈ +0,22` log-RV (h=1) : DLinear sur-prévient log-RV par rapport à HAR (OLS,
-non biaisé). Le DM signé le détecte à 39-47σ, p = 0,00 — **BEATEN BY baseline** sur les 4 seeds
-de chaque horizon. Ce biais est **quasi déterministe** (σ/moyenne = 0,39 % sur 4 seeds, monotone
-en horizon : 0,22 → 0,35 → 0,45) : un décalage constant par horizon, donc **corrigible** — il
-plafonne l'avantage MSE de DLinear, il ne le fabrique pas. `MSE = biais² + variance` : retirer le
-biais² porterait l'edge estimé à ~21/52/74 % (h=1/5/10) — **hypothèse à mesurer** (issue #10938),
-pas un résultat. Sous §C tel qu'écrit, la conjonction n'est pas tenue.
+**Lecture honnête (le piège §C, mesure #10938)** : DLinear bat HAR de 15 à 38 % en MSE (perte
+symétrique). Sous la perte **signée** (`linear`), `d_mean = biais_DL − biais_HAR` (identité
+dm_test.py L123-135) : le différentiel `dm_mean_loss_diff ≈ +0,22` log-RV (h=1) est **porté par
+le biais de HAR**, pas par DLinear. Mesuré (run dé-biaisé #10938) : `har_bias_oos = −0,227`
+(h=1, HAR **sous-prévient** log-RV), `bias_DL = dm_mean_loss_diff + har_bias_oos ≈ 0` (DLinear
+**non biaisé**). L'hypothèse initiale « retirer le biais² porterait l'edge à ~21/52/74 % » est
+**réfutée** : le biais² (~0,051 h=1) est dans le MSE de **HAR**, pas dans celui de DLinear —
+dé-biaiser DLinear ne libère rien (MSE brut = dé-biaisé, bit-identique), dé-biaiser HAR ramènerait
+son MSE à ~0,836 et l'edge à ~10 %. Sous §C tel qu'écrit, la conjonction n'est pas tenue.
 **Verdict §C : NO BEATS (3/3 horizons)** — règle de dominance (seed BEATEN → NO BEATS) appliquée.
 **Coûts de transaction** : prévision (MSE log-RV), **aucune stratégie dérivée** → coût non imputé ;
 borne crypto 10 bps si conversion future en overlay de vol-timing (note, pas un claim).
@@ -46,6 +46,33 @@ DLinear et HAR battent tous deux le plancher naïf.
   (`Bitstamp_BTCUSD_1h_2014-20240808.csv`, CryptoDataDownload)
 - **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn linear --skip-remote --coins BTC-USD --out-json results/m4_dlinear_vol_btc_sc.json` (3508 s)
 - **Verdict global** : 0/3 BEATS, 0/3 INCONCLUSIVE, **3/3 NO BEATS**
+
+### M4 DLinear-vol — re-run §C dé-biaisé (2026-08-14, issue #10938)
+
+Re-run du barème §C avec dé-biaisage explicite (mesure acceptance #1 de #10938 : attribution du
+`dm_mean_loss_diff` sous perte signée). Verdict inchangé — l'attribution de la « Lecture honnête »
+ci-dessus est la **correction** mesurée.
+
+**Méthode** : `_train_bias` estime le biais signé moyen modèle-vs-cible **sur fold train uniquement**
+(jamais sur test, acceptance #2) ; il est soustrait aux prédictions de test ; le biais OOS de HAR
+(`har_bias_oos`) est persisté par horizon. Config identique au run brut (`refit_every` 22, 4 seeds,
+5 folds).
+
+| Horizon | `dm_mean_loss_diff` | `har_bias_oos` | ⇒ `bias_DL` dérivé | MSE DL dé-biaisé vs brut |
+|---------|--------------------:|---------------:|--------------------|--------------------------|
+| h=1 | +0,2282 | −0,2266 | ≈ 0 (+0,002) | 0,7516 = 0,7516 (bit-identique) |
+| h=5 | +0,3512 | −0,3432 | ≈ 0 (+0,008) | 0,3740 = 0,3740 |
+| h=10 | +0,4513 | −0,4502 | ≈ 0 (+0,001) | 0,3521 = 0,3521 |
+
+**Lecture** : `d_mean = biais_DL − biais_HAR` — le différentiel linéaire est porté par le biais de
+**HAR** (sous-prévision log-RV −0,23 à −0,45 selon l'horizon) ; DLinear est **non biaisé**
+(`bias_DL ≈ 0` sur les 3 horizons). Dé-biaiser DLinear ne change rien (son MSE est déjà dé-biaisé
+au 1/1000ᵉ) ; dé-biaiser HAR ramènerait son MSE de ~0,888 à ~0,836 (h=1) et l'edge de ~15 % à
+~10 %. L'hypothèse « retirer le biais² → edge ~21/52/74 % » est **réfutée** par la mesure.
+
+- **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn linear --skip-remote --coins BTC-USD --debias --out-json results/m4_dlinear_vol_btc_sc_debiased.json` (3963,8 s)
+- **Notebook** : section 7 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction + décomposition, outputs C.2)
+- **Verdict §C dé-biaisé** : **3/3 NO BEATS** — identique au brut (la dominance seed-BEATEN est une propriété du MSE, pas du biais).
 
 ## Ladder #1409 — Final Verdicts (2026-06-12)
 
