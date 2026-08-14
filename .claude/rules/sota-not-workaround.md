@@ -1,10 +1,8 @@
 # SOTA : vrai outil + probleme non-trivial — install/invoke/re-plug, faire valoir le moteur (HARD)
 
-S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21 (3 messages). Registre = **EPIC #3801**. Consolide et durcit : CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
+S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21 (3 messages : outil **installe ou invoque**, sinon **branche/rebranche** — au besoin sur la machine au bon env ; tenir un **registre** + resserrer le harnais ET les bots, le **reflexe workaround degrade** etant le defaut a corriger ; **problemes trop basiques** a complexifier pour faire valoir les moteurs). Registre = **EPIC #3801**. Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
 
-> [msg1] outil SOTA approprie proprement **installe ou invoque** s'il s'agit d'un service ; sinon, **le brancher avec un coup de main user**, ou **le rebrancher** s'il l'a ete dans le passe, typiquement sur une **machine particuliere avec le bon environnement**.
-> [msg2] tenir un **registre** et **resserrer le harnais ET le comportement de review des bots** (le leur signaler) — pour l'heure le **reflexe reste de chercher des workarounds degrades** plutot qu'installer et corriger ce qu'il faut.
-> [msg3] **qualite des problemes souvent trop basiques** (cf BFS vs A*) — complexifier les pbs actuels ou proposer des pbs additionnels plus complexes pour **faire valoir toutes les capacites des moteurs externes**, la ou des exemples triviaux ne les mettent pas en valeur ; **modulo un temps de traitement raisonnable**.
+**Verbatims du mandat, incidents d'axes, mesures anti-fabrication** : [docs/reference/sota-verdicts-detail.md](../../docs/reference/sota-verdicts-detail.md).
 
 ## Prong A — Vrai outil SOTA, jamais workaround degrade
 
@@ -35,11 +33,9 @@ Un verdict `INTRINSIC` est le plus restrictif des 5 (il declare une impossibilit
 | 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
 | 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
 
-**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI/X au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La liste des 5 verdicts est conservee, c'est **la procedure d'etablissement** d'`INTRINSIC` qui se durcit.
+**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La liste des 5 verdicts est conservee ; c'est **la procedure d'etablissement** d'`INTRINSIC` qui se durcit.
 
-**Origine de la 6ᵉ entree** (incident fondateur #10459) : trois verdicts `INTRINSIC` OpenSpiel convergent dans 3 PRs distinctes (#10390/#10394/#10454) — aucun n'avait examine l'axe PythonNet. Le depot certifiait deja le pont ailleurs (`MyIA.AI.Notebooks/GenAI/SemanticKernel/09-SemanticKernel-Building-CLR.ipynb`, `SOTA-OK` au ledger #3801), et le user l'a rappele verbatim 2026-08-11 (« PythonNet pour bridger est tout a fait acceptable, fonctionne plutot bien … overhead negligeable »). La deuxieme omission d'axe (la premiere etait `IKVM`) demontre qu'une regle non explicite ne se corrige pas par plus de vigilance : elle demande un **organe** (la checklist).
-
-**Preuve d'execution par l'axe 5** : voir #10464/#10470/#10496/#10585/#10598 — 5 PRs MERGED sur `main` posant le pont `.NET → CPython → pyspiel` (CFR expl 0.008226, MCTS action=4, rollout Kuhn, kuhn_poker NashConv 0.0230, axelrod strategie). Plus la precedente SK-09 (PythonNet 3.0.5 + DLL loading SOTA-OK, documente au ledger #3801). La porte etait fermee a tort ; elle est desormais **prouvee**, avec cinq mesures distinctes.
+**Origine de la 6ᵉ entree** (#10459) : trois verdicts `INTRINSIC` OpenSpiel convergents dans 3 PRs distinctes, aucun n'ayant examine l'axe PythonNet — alors que le depot certifiait deja le pont (SK-09, `SOTA-OK` au ledger #3801). L'axe est desormais **prouve** par 5 PRs mergees posant le pont `.NET → CPython → pyspiel`. Deuxieme omission d'axe apres `IKVM` : une regle non explicite ne se corrige pas par plus de vigilance, elle demande un **organe** (la checklist). Verbatim user, PRs et mesures : [sota-verdicts-detail.md §2](../../docs/reference/sota-verdicts-detail.md).
 
 ### Stop & Repair — JAMAIS hand-editer une sortie de cellule (mandat user 2026-06-22)
 
@@ -55,11 +51,9 @@ Action : **complexifier le probleme existant** OU **ajouter un probleme addition
 
 ### Verification anti-fabrication — mesurer la discrimination AVANT de clamer « heuristique X echoue »
 
-Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** (« les heuristiques gloutonnes rattrapent le nombre chromatique sur les graphes de Mycielski, donc CP-SAT est essentiel ») : on **mesure** d'abord la discrimination firsthand (installer le solveur, regle F, comparer resultat-heuristique vs χ exact sur le graphe candidat). Un pitch non mesure = violation G.9 en attente d'etre livree.
+Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact sur le graphe candidat). Un pitch non mesure = violation G.9 en attente d'etre livree.
 
-**Anti-exemple verifie firsthand (c.598, ortools 9.15 + networkx 3.4.2)** : sur les graphes de Mycielski standard M_3 (C5), M_4 (Grotzsch), M_5, la coloration gloutonne **et** DSATUR **avec l'ordre networkx par defaut** trouvent **le** χ (3/4/5) — le folklore « greedy rattrape sur Mycielski » **ne reproduit pas** ici (il exige des ordres de sommets adversariaux). S'en servir comme cas Prong-B de coloration = fabriquer un enrichissement faux. Le vrai cas discriminant pour CP-SAT en coloration est le **graphe aleatoire dense Erdos-Renyi G(n, p>=0.3)** (greedy utilise strictement plus de couleurs que χ) — et App-2-GraphColoring le demontre deja (cell benchmark : n=200, greedy=22 / DSATUR=19 / CP-SAT=18).
-
-**Faux signal technique** : un notebook MiniZinc couvre l'optimisation via la syntaxe `solve minimize obj;` (chaine dans le modele), **pas** via `.minimize(` Python — un `grep '.minimize('` renvoie `opt=0` sur des notebooks qui traitent bel et bien l'optimisation. Pour MiniZinc, grepper `solve (min|max)imize` dans les chaines de modele.
+Anti-exemple mesure (Mycielski : greedy ET DSATUR trouvent χ, le folklore ne reproduit PAS — le vrai cas discriminant est Erdos-Renyi dense) + faux signal de grep MiniZinc (`solve minimize` dans la chaine de modele, pas `.minimize(`) : [sota-verdicts-detail.md §3](../../docs/reference/sota-verdicts-detail.md).
 
 ## Comportement des bots reviewers (signaler + enforce)
 

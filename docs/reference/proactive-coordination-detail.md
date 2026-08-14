@@ -105,3 +105,23 @@ Séquence constatée : le worker audite la tranche README de **sa seule famille*
 Un audit de tranche étroite qui se termine en ASK **est le silo, pas de la proactivité**. C'est l'origine de la formulation R5 « le pool n'est PAS ta famille » et de la clause « le coordinateur n'est PAS un distributeur de grains ».
 
 Exemple chiffré du même registre (2026-07-19) : la famille ICT offrait à elle seule **≥6 grains CPU frais non-claimés** pendant que **4 lanes** se déclaraient « drained ».
+
+## Picker — pondération, graine, mesures (organe #10853)
+
+Détail de la R5 « le pool se tire ». La règle porte l'usage et les trois urnes ; ce qui suit sert quand on veut comprendre ou ajuster le tirage.
+
+**Mesure fondatrice (2026-08-14).** Pool de 140 issues ouvertes, dont **89 créées dans les 7 derniers jours**. `gh issue list` plafonnant à 30 résultats triés par récence, la fenêtre visible s'arrêtait à **~6 jours** — le worker repiochait mécaniquement dans ce que le coordinateur venait de créer. Partition du même pool : **44 grains unitaires · 29 EPIC/umbrella · 67 `candidate-delivered`**.
+
+**Pourquoi trois urnes et pas une.** Au moment de la mesure, **aucun** grain unitaire n'avait plus de 30 jours : tout l'ancien (#1453 prover, #1454 training, #2159 Grothendieck, #2874 Knot, #1621 QC, #1206 Z3.Linq) était umbrella. Une urne unique ne l'aurait jamais montré, quel que soit le poids donné à l'ancienneté. L'urne `delivered` est ce qui fait *refluer* le compte sans batch-close aveugle — le batch-close endort une série (précédent ICT : 24 fermetures justifiées item par item, série ensuite dormante).
+
+**Pondération** — trois facteurs doux, tous imprimés à côté du candidat :
+
+| Facteur | Formule | Ce qu'il sert |
+|---|---|---|
+| ancienneté | `1 + log2(1 + jours/7)` | « faire refluer doucement » — la traîne est là où le compte s'accumule ; 6 mois pèsent ~4× une issue de la semaine |
+| anti-adjacence | `×0.25` si le genre égale `--prev-genre` | **G-VAR-3 au tirage**, plutôt qu'en HOLD a posteriori |
+| contenu | `×2` si le genre est CONTENU | **G-VAR-1 au tirage** |
+
+Tirage pondéré **sans remise** (Efraimidis-Spirakis : clé `u^(1/w)`, top-k). Plus de pondération reproduirait une monoculture avec des étapes en plus : on se limite à ce que les gates du variation-protocol demandent déjà.
+
+**Graine** = `sha256(lane | heure UTC | reroll)`. Deux lanes tirent des candidats différents à la même minute ; une même lane qui relance dans l'heure retrouve son tirage (idempotent, pas de thrash) ; `--reroll N` redistribue. Le genre affiché est **inféré** par regex sur titre+labels : c'est une aide au tri, pas un verdict — l'agent pose le vrai tag `Grain:` lui-même.
