@@ -438,6 +438,16 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     ajoute/supprime une cellule, l'index-parallel n'est pas une hypothese
     sure".
 
+    **c.96 (fix #10873, complement zero-id)** : dans ce cas legacy, un
+    court-circuit multiset disculpe d'abord. Quand le TOTAL de caracteres
+    normalises est identique (et le compte de cellules stable -- garanti par le
+    garde de longueur), le multiset des contenus est preserve : toute divergence
+    par index est une permutation, pas une perte. Une vraie troncature deplace
+    le compte de caracteres et continue de signaler (non-blanc-seing). Le
+    short-circuit n'est atteint QUE quand l'appariement par ID ne s'applique
+    pas, pour ne pas masquer les cas que le remede B (ID matching) traite deja
+    mieux (ex. troncature compensee sur notebook id-e).
+
     ``head_cost`` = ``nb_head['metadata']['cost']`` : permet de reconnaitre une
     migration LEGITIME frontmatter ``cost:`` -> ``metadata.cost`` (issue #8919).
     Quand la cellule base porte un bloc ``cost:`` equivalent champ-par-champ au
@@ -482,6 +492,19 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
             _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
     else:
+        # IDs absents ou ensembles differents : le multiset-stable est un signal
+        # fort "la PR a reordonne sans toucher au contenu" vs "ajout/suppression".
+        # Court-circuit multiset (fix #10873, re-scope ai-01 c.96) : atteint
+        # UNIQUEMENT quand l'appariement par ID ne s'applique pas (il reste plus
+        # precis quand les IDs existent). Le garde de longueur ci-dessus garantit
+        # deja md_cells_stable ; si le TOTAL de caracteres normalises est
+        # identique (la ligne [STATS] l'imprime deja : 13809->13809 et
+        # 30450->30450 sur #10785/#10810, au caractere pres), le multiset des
+        # contenus est preserve -> toute difference par index est une
+        # PERMUTATION, pas une perte. Une vraie troncature deplace le compte de
+        # caracteres -> pas de court-circuit -> le legacy index signale.
+        if sum(_norm_len(s) for _, _, s in base_md) == sum(_norm_len(s) for _, _, s in head_md):
+            return []  # multiset preserve -> aucune perte de contenu
         # IDs absents ou ensembles differents : appariement par index (legacy).
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_md, head_md):
             _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)

@@ -269,6 +269,109 @@ class TestReorderSafeByCellID:
 
 
 # ---------------------------------------------------------------------------
+# 4c. Court-circuit multiset zero-id (fix #10873, complement c.96)
+# ---------------------------------------------------------------------------
+class TestMultisetShortCircuit:
+    """Re-scope ai-01 (c.96) : sur un notebook SANS ids (legacy), un reorder pur
+    etait encore signale a tort par l'appariement par index (classe de FP
+    #10725/#10785/#10810). Quand le TOTAL de caracteres normalises est identique
+    (et le compte de cellules stable -- garanti par le garde de longueur), le
+    multiset des contenus est preserve : toute difference par index est une
+    permutation, pas une perte -> court-circuit avant le legacy index. Une vraie
+    troncature deplace le compte -> pas de court-circuit -> le signal persiste
+    (non-blanc-seing). Le short-circuit n'est atteint QUE quand l'appariement
+    par ID ne s'applique pas (il ne masque pas les cas que le remede B traite
+    mieux : troncature compensee sur notebook id-e).
+    """
+
+    def test_zero_id_pure_reorder_no_signal(self):
+        # #10873 : notebook 0 id-ede, pur reorder (longue <-> courte). Pre-fix,
+        # le legacy index croisait la longue cellule A (base) avec la courte B
+        # (head, remontee en tete) -> faux positif TRUNCATED_CELL (ratio ~0.1
+        # < 0.75). Post-fix, les totaux normalises sont identiques (meme
+        # multiset) -> court-circuit -> 0 finding.
+        a = "## Section A\n\n" + ("Phrase A substantielle. " * 30)   # ~730c normalises
+        b = "## Bref rappel\n\n" + ("Rappel bref. " * 6)             # ~77c, < MIN_ORIG_CHARS
+        base = _nb(_md(a), _md(b))
+        head = _nb(_md(b), _md(a))  # reorder pur : B remonte en tete
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert findings == [], (
+            "un reorder pur 0-id ne doit PAS signaler de perte avec le "
+            f"court-circuit multiset (trouve: {findings!r})"
+        )
+
+    def test_zero_id_true_truncation_still_signals(self):
+        # Non-blanc-seing : une vraie troncature sur notebook 0-id deplace le
+        # compte de caracteres -> pas de court-circuit -> TRUNCATED_CELL.
+        base = _nb(_md(EXERCISE_BODY))
+        head = _nb(_md("> **Indices :**"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["ratio"] < dml.DROP_THRESHOLD
+
+    def test_zero_id_compensated_truncation_is_accepted_limitation(self):
+        # LIMITE ASSUMEE du critere total-chars (re-scope ai-01 c.96) : sur un
+        # notebook 0-id, une troncature COMPENSEE (une cellule perd, une autre
+        # gagne exactement autant) laisse le total identique -> le court-circuit
+        # s'applique -> pas de signal. Le critere c.96 garanti seulement qu'une
+        # troncature qui DEPLACE le compte signale. Ce coin est documente ici
+        # noir sur blanc : le notebook id-e est lui protege (l'appariement par
+        # ID, qui passe AVANT le court-circuit, attrape le cas compense -- test
+        # suivant). Ne pas « corriger » ce test en faisant signaler le cas
+        # compense 0-id : ce serait re-introduire la classe de FP zero-id que le
+        # short-circuit existe pour fermer (#10725/#10785/#10810).
+        a = "## Section A\n\n" + ("Phrase A substantielle. " * 30)   # 638c normalises
+        b = "## Section B\n\n" + ("Phrase B substantielle. " * 30)   # 638c normalises
+        a_grow = a + "\n\n" + ("Supplement substantiel. " * 25)      # +550c
+        b_shrink = "## Section B\n\n" + ("Phrase B. " * 10)          # -550c
+        base = _nb(_md(a), _md(b))
+        head = _nb(_md(a_grow), _md(b_shrink))
+        assert dml._norm_len(a) + dml._norm_len(b) == \
+            dml._norm_len(a_grow) + dml._norm_len(b_shrink), "pre-condition: totaux egaux"
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert findings == [], (
+            "cas compense 0-id = coin accepte du critere total-chars (c.96)"
+        )
+
+    def test_id_ed_compensated_truncation_caught_by_id_matching(self):
+        # Ordre du short-circuit (c.96) : sur un notebook id-e, l'appariement
+        # par ID passe AVANT le court-circuit et attrape une troncature
+        # compensee que l'egalite des totaux cacherait. Le court-circuit ne
+        # masque donc pas les cas que le remede B traite mieux.
+        a = "## Section A\n\n" + ("Phrase A substantielle. " * 30)   # 638c normalises
+        b = "## Section B\n\n" + ("Phrase B substantielle. " * 30)   # 638c normalises
+        a_grow = a + "\n\n" + ("Supplement substantiel. " * 25)      # +550c
+        b_shrink = "## Section B\n\n" + ("Phrase B. " * 10)          # -550c
+        base = _nb(_md(a, cell_id="alpha"), _md(b, cell_id="bravo"))
+        head = _nb(_md(a_grow, cell_id="alpha"), _md(b_shrink, cell_id="bravo"))
+        assert dml._norm_len(a) + dml._norm_len(b) == \
+            dml._norm_len(a_grow) + dml._norm_len(b_shrink), "pre-condition: totaux egaux"
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert any(f["kind"] == "TRUNCATED_CELL" for f in findings), (
+            "l'appariement par ID doit attraper une troncature compensee id-e "
+            "avant tout court-circuit (remede B preserve)"
+        )
+
+    # --- end-to-end via scan_notebook (ce que la CI execute) ---
+    def test_zero_id_reorder_end_to_end(self, tmp_path):
+        a = "## Section A\n\n" + ("Phrase A substantielle. " * 30)
+        b = "## Bref rappel\n\n" + ("Rappel bref. " * 6)
+        p = tmp_path / "x.ipynb"
+        p.write_text(json.dumps(_nb(_md(b), _md(a))), encoding="utf-8")
+        with mock.patch.object(dml, "read_notebook_at_ref",
+                               return_value=_nb(_md(a), _md(b))), \
+             mock.patch.object(dml, "ref_resolves", return_value=True), \
+             mock.patch.object(dml, "path_exists_at_ref", return_value=True):
+            r = dml.scan_notebook(p, base_ref="MOCK_BASE", head_ref=None)
+        assert r["stats"]["findings_count"] == 0, r["findings"]
+
+
+# ---------------------------------------------------------------------------
 # 5. Reformulation neutre (PAS de signal, design #4)
 # ---------------------------------------------------------------------------
 class TestNeutralRephraseNoSignal:
