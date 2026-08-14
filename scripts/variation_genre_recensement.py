@@ -44,6 +44,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import random
 import re
 import sys
@@ -51,18 +52,23 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-# --- grain parsing (shared vocabulary) ---------------------------------------
+# Ensure the sibling `grain_tag` module (canonical `Grain:` reader, #9485) is
+# importable whether this file is run as a script (scripts/ auto on sys.path)
+# or imported from elsewhere (e.g. from scripts/tests/).
+try:
+    from grain_tag import parse_grain_tag
+except ImportError:  # pragma: no cover - path bootstrap for non-script invocation
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from grain_tag import parse_grain_tag
 
-# Same shapes accepted by scripts/variation_light_cap.py:
-#   Grain: LIGHT/guard -- lane myia-po-2023:CoursIA      (em-dash)
-#   **Grain:** LIGHT/guard - lane myia-ai-01:CoursIA     (bold, hyphen)
-#   `Grain: LIGHT/refs` . **Lane:** myia-po-2024:CoursIA-2  (backticks, middot)
-_GRAIN_RE = re.compile(
-    r"[`*]?\s*Grain\s*:\s*[`*]?\s*"
-    r"(?P<tier>DEEP|MED|LIGHT)\s*/\s*(?P<genre>[\w-]+)"
-    r"\s*[`*]?",
-    re.IGNORECASE,
-)
+# --- grain parsing (shared vocabulary) ---------------------------------------
+# The `Grain:` tag is read by the CANONICAL form-tolerant reader
+# `grain_tag.parse_grain_tag` (single source of truth, #9485), which handles
+# every tolerated form (`**Grain:**`, `## Grain`, `` `Grain` `` no-colon).
+# This module previously carried its own `_GRAIN_RE` that diverged from the
+# canonical reader and silently dropped those forms — undercounting the census
+# universe and biasing the monoculture analysis that motivated
+# variation-protocol.md. `parse_grain` below delegates to the canonical reader.
 
 # Subset of genres that are LIGHT per G-VAR-2 (#10031, #10285):
 # guard / ledger / docs / readme / test / refs.
@@ -101,11 +107,18 @@ class PRRow:
 
 
 def parse_grain(body: str) -> tuple[str | None, str | None]:
-    """Return (tier, genre) from `Grain:` tag in body, or (None, None)."""
-    m = _GRAIN_RE.search(body or "")
-    if not m:
+    """Return (tier, genre) from `Grain:` tag in body, or (None, None).
+
+    Delegates to the canonical form-tolerant reader `grain_tag.parse_grain_tag`
+    (#9485) so the census agrees with the CI guard on EVERY tolerated form
+    (`**Grain:**`, `## Grain`, `` `Grain` `` no-colon). The local `_GRAIN_RE`
+    that used to live here diverged and undercounted those forms, biasing the
+    monoculture census.
+    """
+    tag = parse_grain_tag(body or "")
+    if not tag:
         return None, None
-    return m.group("tier").upper(), m.group("genre").lower()
+    return tag["tier"], tag["genre"]
 
 
 def file_family(paths: list[str]) -> str | None:
