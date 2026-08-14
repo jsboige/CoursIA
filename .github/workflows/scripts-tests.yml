@@ -111,6 +111,11 @@ jobs:
           # (scripts/genai-stack/requirements.txt). Lets us re-include the
           # genai test suites that were excluded as missing-dep (#2871 part 2).
           pip install papermill nbformat
+          # nbconvert: scripts/notebook_tools/render_oversized_nbconvert.py +
+          # scripts/tests/test_render_oversized_nbconvert.py (#10969). The
+          # fail_non_notebook test asserts the real nbformat NotJSONError text,
+          # so the env must have nbconvert installed (rule F, not a skipif).
+          pip install nbconvert
           # torch (CPU) is needed at collection time by the Sudoku/RRN test
           # modules under scripts/tests/ (they `import torch` at top level and
           # skip themselves at runtime when CUDA is absent). Without it those
