@@ -83,6 +83,8 @@ La série Probas comporte **4 sous-séries principales + 1 racine standalone**, 
 
 **Kernels** : `dotnet-csharp` · `python3` · `lean4` (side tracks Lean via WSL, cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md)) · **GPU** : non (Infer.NET/PyMC CPU-only) · **Prérequis** : algèbre linéaire, probabilités de base (variables aléatoires, Bayes), Python intermédiaire.
 
+**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 2
+
 ## Corpus bayésien — Infer.NET (C#/.NET Interactive)
 
 19 notebooks en `.NET Interactive` : du Setup aux frontières (causalité, GP, hiérarchiques, Kalman). Le moteur Infer.NET utilise **EP/VMP** (expectation propagation / variational message passing), donnant des résultats **déterministes** et rapides sur les modèles compatibles.
@@ -184,7 +186,7 @@ jupyter notebook MyIA.AI.Notebooks/Probas/PyMC/
 - **Séries connexes** :
   - [GameTheory](../GameTheory/index.qmd) — théorie des jeux bayésienne (jeux bayésiens, jeux de réputation), certaines preuves Lean voisinent celles de `decision_theory_lean/`.
   - [Search](../Search/index.qmd) — algorithmes de recherche, CSP, MCTS (certains algorithmes probabilistes en bandit).
-  - [ML](../ML/index.qmd) — machine learning, où les modèles probabilistes (Gaussian Processes, LDA) rejoignent les modèles discriminatifs.
+  - [ML](../ML/README.md) — machine learning, où les modèles probabilistes (Gaussian Processes, LDA) rejoignent les modèles discriminatifs.
 
 ## Note sur le rendu Quarto (.NET + Lean + Python)
 
@@ -196,9 +198,9 @@ Une fois la série Probas maîtrisée, les parcours conseillés sont :
 
 1. **Vers l'inférence causale** : [DecisionTheory/Causal-Bridges](DecisionTheory/Causal-Bridges/) — Do-Calculus, raisonnement causal.
 2. **Vers la théorie des jeux** : [GameTheory](../GameTheory/index.qmd) — équilibres bayésiens, jeux de réputation.
-3. **Vers le machine learning discriminant** : [ML](../ML/index.qmd) — régression/probabilités conditionnelles, où les modèles probabilistes rejoignent le deep learning.
+3. **Vers le machine learning discriminant** : [ML](../ML/README.md) — régression/probabilités conditionnelles, où les modèles probabilistes rejoignent le deep learning.
 4. **Vers la formalisation** : [decision_theory_lean/](decision_theory_lean/) — preuves formelles en Lean 4 des identités d'escompte et de Gittins.
-5. **Vers la simulation multi-agent** : [IIT](../IIT/index.qmd) — PyPhi, integrated information, où la théorie de la décision probabiliste alimente la théorie de l'information intégrée.
+5. **Vers la simulation multi-agent** : [IIT](../IIT/README.md) — PyPhi, integrated information, où la théorie de la décision probabiliste alimente la théorie de l'information intégrée.
 
 <!-- CATALOG-STATUS
 series: Probas
