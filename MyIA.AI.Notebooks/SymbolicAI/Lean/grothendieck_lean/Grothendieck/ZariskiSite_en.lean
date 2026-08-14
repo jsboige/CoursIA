@@ -24,6 +24,8 @@ Epic #1646. All `sorry`s eliminated at creation.
 
 import Mathlib.AlgebraicGeometry.Sites.BigZariski
 
+universe v u
+
 namespace Grothendieck_en
 
 open AlgebraicGeometry CategoryTheory
@@ -87,5 +89,49 @@ forget is a covering sieve in TopCat.
 example : Scheme.forgetToTop.IsContinuous
     Scheme.zariskiTopology TopCat.grothendieckTopology :=
   inferInstance
+
+/-! ## 5. Canonical Mathlib bridges (Grothendieck tribute)
+
+Bridges to the 5 canonical constructors in `Mathlib/AlgebraicGeometry/Sites/BigZariski.lean`
+extending the namespace `Grothendieck` with the foundational operators of the Zariski site:
+(5.1) the pretopology and topology, (5.2) the Subcanonical instance and continuity of the
+forgetful functor, (5.3) the affine hypercover. -/
+
+/-! ### 5.1 Bridge-def : the Zariski pretopology and topology
+
+The bridge-lemma exposes `zariskiPretopology` (the underlying pretopology) and
+`zariskiTopology` (the derived Grothendieck topology) directly under `Grothendieck.Scheme`. -/
+
+/-- Bridge-def : re-export of the Zariski pretopology on the category of schemes. -/
+def zariskiPretopology_field : Pretopology Scheme.{u} :=
+  Scheme.zariskiPretopology
+
+/-- Bridge-def : re-export of the Zariski topology (the derived Grothendieck topology). -/
+abbrev zariskiTopology_field : GrothendieckTopology Scheme.{u} :=
+  Scheme.zariskiTopology
+
+/-! ### 5.2 Bridge-instance : Zariski subcanonical and forgetful functor continuous
+
+The Subcanonical instance on the Zariski topology (cf. Subcanonical.lean Part 16) and
+the continuity instance of the forgetful functor to TopCat. -/
+
+/-- Bridge-instance : the Zariski topology is subcanonical. -/
+instance subcanonical_zariskiTopology_field : Scheme.zariskiTopology.Subcanonical :=
+  Scheme.subcanonical_zariskiTopology
+
+/-- Bridge-instance : the forgetful functor to TopCat is continuous w.r.t. Zariski. -/
+instance forgetToTop_continuous_zariskiTopology :
+    Scheme.forgetToTop.IsContinuous Scheme.zariskiTopology TopCat.grothendieckTopology :=
+  inferInstance
+
+/-! ### 5.3 Bridge-def : affine hypercover (1-hypercover)
+
+For any scheme X, the Zariski 1-hypercover whose all components are affine.
+The basic tool for Zariski cohomology. -/
+
+/-- Bridge-def : Zariski 1-hypercover whose all components are affine. -/
+noncomputable def affineOneHypercover_field (X : Scheme.{u}) :
+    Scheme.zariskiTopology.OneHypercover X :=
+  Scheme.affineOneHypercover X
 
 end Grothendieck_en

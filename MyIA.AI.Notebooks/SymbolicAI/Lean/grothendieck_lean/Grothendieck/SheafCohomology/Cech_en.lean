@@ -45,6 +45,21 @@ cited from Mathlib):
 4. `cechComplexFunctor_map_comp`: naturality towards composition:
    `(cechComplexFunctor U).map (f ≫ g) = (cechComplexFunctor U).map f ≫ (cechComplexFunctor U).map g`.
 
+**Enrichment c.1301+135 (issue #2159, DEEP/lean grain)**
+
+The two constructions `cosimplicialObjectFunctor` and
+`cochainComplexFunctor` (sections 1-2, until now documented by plain
+`#check`s) are now exposed by the proper bridges
+`cosimplicialObjectFunctor_type` and `cochainComplexFunctor_type` in
+section 4 (direct re-export from Mathlib, explicit argument `E`,
+`C` and `A` inferred from context):
+
+  - `cosimplicialObjectFunctor_type`: the first step of the Čech
+    construction -- the cosimplicial object of evaluations.
+  - `cochainComplexFunctor_type`: the second step -- the cochain
+    complex obtained via the alternating coface map complex
+    (preadditivity of `A` required).
+
 The French sibling `Cech.lean` is kept in sync (Pattern A: only the
 docstrings diverge).
 
@@ -97,6 +112,32 @@ noncomputable def cechComplexFunctor_type
     [HasFiniteProducts C] {ι : Type w} (U : ι → C) :
     (Cᵒᵖ ⥤ A) ⥤ CochainComplex A ℕ :=
   CategoryTheory.cechComplexFunctor U
+
+/-- Bridge: the Čech cosimplicial-object functor. This is Mathlib 4's
+    `FormalCoproduct.cosimplicialObjectFunctor`: given a simplicial
+    object `E` in the free formal coproduct completion
+    `FormalCoproduct C`, it sends a presheaf `P : Cᵒᵖ ⥤ A` to the
+    cosimplicial object of evaluations of `P` on the parts of `E`.
+    This is the first step of the Čech construction (the cosimplicial
+    object, before the alternating complex is applied). -/
+noncomputable def cosimplicialObjectFunctor_type
+    {A : Type u'} [Category.{v'} A] [HasProducts.{w} A]
+    (E : SimplicialObject (FormalCoproduct.{w} C)) :
+    (Cᵒᵖ ⥤ A) ⥤ CosimplicialObject A :=
+  CategoryTheory.Limits.FormalCoproduct.cosimplicialObjectFunctor E
+
+/-- Bridge: the Čech cochain-complex functor. This is Mathlib 4's
+    `FormalCoproduct.cochainComplexFunctor`: given a simplicial object
+    `E` in `FormalCoproduct C`, it sends a presheaf `P : Cᵒᵖ ⥤ A` to
+    the cochain complex whose degree-n part is the evaluation of `P`
+    on `E _⦋n⦌`. It is the composite of the cosimplicial-object
+    functor with the alternating coface map complex (preadditive
+    category required). -/
+noncomputable def cochainComplexFunctor_type
+    {A : Type u'} [Category.{v'} A] [HasProducts.{w} A] [Preadditive A]
+    (E : SimplicialObject (FormalCoproduct.{w} C)) :
+    (Cᵒᵖ ⥤ A) ⥤ CochainComplex A ℕ :=
+  CategoryTheory.Limits.FormalCoproduct.cochainComplexFunctor E
 
 /-! ## 5. Proper theorems (c.8223)
 

@@ -396,4 +396,86 @@ theorem dense_left_kan_unit_iso_app (F : C ⥤ D) [F.IsDense] (X : C) :
         F.rightUnitor.inv.app X :=
   CategoryTheory.Functor.IsDense.leftKanExtensionUnit_leftKanExtensionIso_hom_app F X
 
+/-!
+## 9. Ponts sur les catégories d'extensions, les propriétés universelles et la densité
+
+Les 7 bridges suivants ferment les sections 1-3 et 7 du répertoire documentaire
+(`#check`) : les **catégories d'extensions** (`LeftExtension`/`RightExtension`),
+les **propriétés universelles** (`IsLeftKanExtension`/`IsRightKanExtension`)
+et les **typeclasses d'existence** (`HasLeftKanExtension`/`HasRightKanExtension`),
+plus la **densité** (`IsDense`) qui relie Yoneda aux extensions de Kan. Les
+extensions choisies, unités/coïnités, la descente, la bijection d'adjonction
+et le foncteur `lan` sont déjà bridgés par les sections 8 (decls existantes) ;
+ces 7 bridges complètent le tableau par la **forme abstraite** (catégories,
+Propositions, typeclasses) sur laquelle la forme choisie repose.
+
+Forme retenue (L902 ★★ Tier 5) : les deux catégories sont des re-exports
+type-sig de data (`Type _` inféré), les deux propriétés universelles sont des
+Prop à args explicites (`F'` puis `η`/`ε`, appliquées par `F'.IsLeftKanExtension
+η`), les deux typeclasses d'existence sont des Prop type-sig (pattern
+`has_enough_points_field` c.1301+139), et la densité est une Prop type-sig sur
+`F : C ⥤ D` (classe Mathlib, `F.IsDense`). Args résidents (univers
+`v₁ v₂ v₃ u₁ u₂ u₃`), instances structurelles, pas de constructeur polymorphe
+d'univers.
+-/
+
+/-- Pont : la **catégorie des extensions à gauche** de `F` le long de `L` —
+    les paires `(F' : D ⥤ H, η : F ⟶ L ⋙ F')`, dont les objets initiaux sont
+    exactement les extensions de Kan à gauche. Re-export type-sig de la
+    catégorie Mathlib `CategoryTheory.Functor.LeftExtension L F`. -/
+def left_extension_field (L : C ⥤ D) (F : C ⥤ H) : Type _ :=
+  CategoryTheory.Functor.LeftExtension L F
+
+/-- Pont : la **catégorie des extensions à droite** de `F` le long de `L` —
+    les paires `(F' : D ⥤ H, ε : L ⋙ F' ⟶ F)`, dont les objets terminaux
+    sont exactement les extensions de Kan à droite. Duale de
+    `left_extension_field`, re-export type-sig de la catégorie Mathlib
+    `CategoryTheory.Functor.RightExtension L F`. -/
+def right_extension_field (L : C ⥤ D) (F : C ⥤ H) : Type _ :=
+  CategoryTheory.Functor.RightExtension L F
+
+/-- Pont : la **propriété universelle d'être une extension de Kan à gauche** —
+    `(F', η)` est **initial** dans `LeftExtension L F` : pour tout concurrent
+    `(G, F ⟶ L ⋙ G)`, il existe un unique morphisme `F' ⟶ G` factorisant la
+    transformation. Re-export type-sig de la Prop Mathlib
+    `F'.IsLeftKanExtension η` (l'unicité est partie de la définition).
+    Args explicites : `F'` puis `η`. -/
+def is_left_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) (F' : D ⥤ H) (η : F ⟶ L ⋙ F') : Prop :=
+  F'.IsLeftKanExtension η
+
+/-- Pont : la **propriété universelle d'être une extension de Kan à droite** —
+    `(F', ε)` est **terminal** dans `RightExtension L F` : tout concurrent
+    se factorise de manière unique à travers `F'`. Duale de
+    `is_left_kan_extension_field`, re-export type-sig de la Prop Mathlib
+    `F'.IsRightKanExtension ε`. Args explicites : `F'` puis `ε`. -/
+def is_right_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) (F' : D ⥤ H) (ε : L ⋙ F' ⟶ F) : Prop :=
+  F'.IsRightKanExtension ε
+
+/-- Pont : la **typeclasse d'existence** `F` admet une extension de Kan à
+    gauche le long de `L` — `HasInitial (LeftExtension L F)` : la catégorie
+    des extensions à gauche a un objet initial. Ce n'est pas garanti en
+    général (cela dépend de la complétude de `H`). Re-export type-sig de la
+    Prop Mathlib `HasLeftKanExtension L F`, sur laquelle repose l'extension
+    **choisie** `kan_extension_left` (section 8). -/
+def has_left_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) : Prop :=
+  CategoryTheory.Functor.HasLeftKanExtension L F
+
+/-- Pont : la **typeclasse d'existence** duale — `F` admet une extension de
+    Kan à droite le long de `L` (`HasTerminal (RightExtension L F)`).
+    Re-export type-sig de la Prop Mathlib `HasRightKanExtension L F`, sur
+    laquelle repose l'extension choisie `kan_extension_right` (section 8). -/
+def has_right_kan_extension_field (L : C ⥤ D) (F : C ⥤ H) : Prop :=
+  CategoryTheory.Functor.HasRightKanExtension L F
+
+/-- Pont : la **densité** — `F : C ⥤ D` est dense si l'identité de `D` est
+    une extension de Kan à gauche de `F` le long de lui-même. C'est le fait
+    fondamental qui relie Yoneda aux extensions de Kan : le plongement de
+    Yoneda est dense, donc tout foncteur sur `C` se récupère comme extension
+    de Kan (colimite pondérée) du plongement — les objets de `C`
+    « engendrent » tout préfaisceau. Re-export type-sig de la classe Mathlib
+    `F.IsDense` (utilisée en bracket par `dense_left_kan_unit_iso`/`_app`,
+    section 8). -/
+def is_dense_field (F : C ⥤ D) : Prop :=
+  F.IsDense
+
 end Grothendieck.KanExtensions
