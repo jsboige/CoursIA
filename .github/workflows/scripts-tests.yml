@@ -124,9 +124,10 @@ jobs:
 
       - name: Run tests
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
-        # The repo-wide pytest.ini testpaths also list tests/, GameTheory/tests,
-        # and QuantConnect/scripts/tests; those are included below as they share
-        # the same lightweight dep profile. The ML-Training-Pipeline suite is
+        # The repo-wide pytest.ini testpaths also list GameTheory/tests,
+        # QuantConnect/scripts/tests and DataScienceWithAgents/tests; those are
+        # included below as they share the same lightweight dep profile. The
+        # ML-Training-Pipeline suite is
         # owned by ml-tests.yml and intentionally excluded here (it duplicates
         # torch on its own job).
         #
@@ -157,4 +158,14 @@ jobs:
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
+            MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
             --tb=short -q
+      # CI-EXCLUDED — testpaths pytest.ini non couverts par ce run, garde #10903.
+      # Retirer la ligne du répertoire câblé (et l'ajouter au run ci-dessus) quand
+      # l'herméticité est démontrée sur runner nu. Chaque raison est vérifiée
+      # firsthand (2026-08-14, po-2024) :
+      # CI-EXCLUDED: scripts/audit/tests — 4 échecs env-dépendants (test_regen_img1_dalle3.py, clé DALLE-3/OpenAI requise), 405 passent
+      # CI-EXCLUDED: scripts/translation/tests — 1 échec STRUCTURE_DRIFT actif (test_full_repo_state_passes_parity, cellule supprimée 71023d39) — drift à résoudre avant câblage
+      # CI-EXCLUDED: scripts/quantconnect/tests — deps yfinance + fichiers de données externes, non hermétique sur runner nu
+      # CI-EXCLUDED: scripts/secrets/tests — 4/6 fichiers non couverts par secret-scan.yml (render_envs/render_settings_json) ; scan gitleaks = 2 fichiers dédiés
+      # CI-EXCLUDED: GradeBookApp — deps openpyxl/rapidfuzz/unidecode non installées dans ce job ; PII grading hors CI publique
