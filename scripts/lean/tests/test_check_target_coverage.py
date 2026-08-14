@@ -11,7 +11,12 @@ Locks the advisory contract of the conway proof-integrity gate coverage check:
   - lib-root scoping (``<lib>/`` subdir + ``<lib>.lean`` umbrella + ``<lib>_en.lean`` sibling);
   - maximal walk excludes build cache / lakefile / toolchain;
   - ``--from-workflow`` unions the target list over every gate job, so the report
-    cannot hold a stale copy of it (#8782).
+    cannot hold a stale copy of it (#8782);
+  - ``target-modules: "*"`` (issue #10889) is a runtime-derivation directive:
+    the gate walks the lake itself (``discover_modules``) and drops ``_en`` i18n
+    siblings by default (``filter_i18n_siblings``), so every compiled module is
+    inspected by construction -- a hand-maintained list can never drift out of
+    the gate's view again ("vert hors-cible", cf #8782).
 """
 from __future__ import annotations
 
@@ -26,6 +31,7 @@ from check_target_coverage import (  # noqa: E402
     _EXCLUDE_TOP_DIRS,
     _uses_lean_axiom,
     discover_modules,
+    filter_i18n_siblings,
     main,
     parse_target_modules,
     targets_from_workflow,
@@ -355,6 +361,69 @@ jobs:
             main(["--project-path", str(lake)])
 
 
+# ---------------------------------------------------------------------------
+# Runtime derivation (issue #10889) -- `target-modules: "*"`
+# ---------------------------------------------------------------------------
+
+class TestRuntimeDerivation:
+    """The gate's ``"*"`` directive derives its module list at runtime.
+
+    ``lean-axiom.yml`` walks the lake (``discover_modules``) and drops ``_en``
+    i18n siblings by default (``filter_i18n_siblings``) unless a caller opts
+    into the full bilingual surface via ``include-i18n-siblings: "true"``.
+    These tests lock the two functions the workflow imports, so the exact
+    filter the gate applies is unit-tested against the walk.
+    """
+
+    def test_walk_finds_en_in_root_stem_and_non_root_dir(self, tmp_path):
+        lake = _make_lake(tmp_path)
+        # a non-root `_en` DIRECTORY (Conway/Life_en/...) -- the segment filter
+        # must catch it too, not only the root stem `<lib>_en.lean`.
+        (lake / "Conway" / "Life_en").mkdir()
+        (lake / "Conway" / "Life_en" / "GridCanonical_en.lean").write_text(
+            "-- en\n", encoding="utf-8"
+        )
+        mods = discover_modules(lake, None)
+        assert "Conway_en" in mods                       # root stem sibling
+        assert "Conway.Life_en.GridCanonical_en" in mods  # non-root dir sibling
+        assert "Conway.Life.GridCanonical" in mods         # FR kept by the walk
+
+    def test_filter_drops_both_en_forms_keeps_fr(self, tmp_path):
+        lake = _make_lake(tmp_path)
+        (lake / "Conway" / "Life_en").mkdir()
+        (lake / "Conway" / "Life_en" / "GridCanonical_en.lean").write_text(
+            "-- en\n", encoding="utf-8"
+        )
+        mods = discover_modules(lake, None)
+        fr = filter_i18n_siblings(mods)
+        assert "Conway_en" not in fr
+        assert "Conway.Life_en.GridCanonical_en" not in fr
+        assert "Conway" in fr
+        assert "Conway.Life.GridCanonical" in fr
+        assert "Conway.KochenSpecker" in fr
+
+    def test_filter_is_noop_without_en(self, tmp_path):
+        # `include-i18n-siblings: "true"` skips the filter entirely; a lake
+        # with no `_en` at all is the same set either way (idempotence of the
+        # default path).
+        lake = _make_lake(tmp_path)
+        (lake / "Conway_en.lean").unlink()
+        mods = discover_modules(lake, None)
+        assert mods == filter_i18n_siblings(mods)
+
+    def test_star_covers_everything_no_blind_spot(self, tmp_path, capsys):
+        # "*" is a directive, not a module name: the advisory reports 100% by
+        # construction and never a blind spot or a phantom.
+        lake = _make_lake(tmp_path)
+        rc = main(["--project-path", str(lake), "--target-modules", "*"])
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "OK: target-modules=\"*\"" in out
+        assert "100.0%" in out
+        assert "BLIND SPOT" not in out
+        assert "PHANTOM" not in out
+
+
 class TestRealWorkflowRegression:
     """The report this mode exists to stop having emitted.
 
@@ -382,7 +451,10 @@ class TestRealWorkflowRegression:
             pytest.skip(f"workflow not present: {wf}")
         union, per_job = targets_from_workflow(wf)
         assert per_job, "lean-knot.yml has a proof-integrity job; it must be found"
-        assert "Knots.Basic" in union
+        # Post-#10889 the knot gate derives its module list at runtime (`"*"`):
+        # the union is the sentinel, not an enumerated module. Either form means
+        # the gate inspects the whole lake, which is what this test guards.
+        assert "*" in union or "Knots.Basic" in union
 
 
 if __name__ == "__main__":

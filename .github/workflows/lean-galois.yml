@@ -70,13 +70,14 @@ jobs:
   #   - allow-axioms: "" -- only the reusable-workflow defaults
   #   - fail-on-sorry: true -- the lake is fully proven; a transitive sorryAx
   #     must hard-fail, not be tolerated.
-  #   - target-modules: the COMPLETE module set (the single vendored module),
-  #     so the gate is not "vert hors-cible" (cf #8782).
+  #   - target-modules: "*" -- the module list is derived at runtime from the
+  #     lake contents (issue #10889), so a hand-maintained list can never
+  #     drift out of the gate's view again ("vert hors-cible", cf #8782).
   proof-integrity:
     uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean
       display-name: galois_lean
-      target-modules: "Galois.M23Lean4Web"
+      target-modules: "*"
       allow-axioms: ""
       fail-on-sorry: true
