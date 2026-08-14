@@ -2088,7 +2088,7 @@ graph TD
 - À partir d'un bruit pur, il reconstruit une image cohérente
 - Diffusion latente : opérer dans un espace compact (moins de calcul)
 
-<img src="./images/img_112.png" style="position:absolute; top:150px; right:20px; width:360px;" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
+<img src="./images/img_112.png" style="position:absolute; top:150px; right:20px; width:500px;" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
 <img src="./images/img_113.png" style="position:absolute; top:380px; right:20px; width:360px;" alt="Architecture latent diffusion : encodeur, U-Net de debruitage dans l'espace latent, decodeur" />
 
 ```mermaid
