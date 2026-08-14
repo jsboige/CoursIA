@@ -8,7 +8,7 @@ S'applique a **toute PR touchant `*.lean`** + au **coordinateur ai-01** pour BG 
 
 ## 1. Lake build SUCCESS local OBLIGATOIRE avant merge (HARD)
 
-Avant CHAQUE merge Lean : `lake build <module>` LOCAL par ai-01. Le claim "lake build SUCCESS Xs" dans le body PR n'est **PAS suffisant** (trust mais verifie). Pas d'env Lean local : dispatcher po-2026 avec build log complet + `grep -c sorry` avant/apres + diff sur defs partagees.
+Avant CHAQUE merge Lean : `lake build <module>` LOCAL par ai-01. Le claim "lake build SUCCESS Xs" dans le body PR n'est **PAS suffisant** (trust mais verifie). Pas d'env Lean local : dispatcher po-2026 avec build log complet + compte de `sorry` **reel** avant/apres (`count_code_sorry.py`, cf [pr-review-discipline](pr-review-discipline.md) B.1 — jamais `grep -c sorry`, qui sur-compte la prose d'un facteur 23) + diff sur defs partagees.
 
 **CI != Lake build local** : `lean-social-choice.yml` ne build PAS Voting.lean. CI SUCCESS != module compile.
 
