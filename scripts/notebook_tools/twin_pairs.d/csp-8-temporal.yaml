@@ -17,6 +17,12 @@
       csharp_sha: 3859f46c9ec9b09dbbc50e7fc344d8844f82796b
       content_python_sha: fbf34f37c075498c8d094876deab45c4ff9a5e072e3e0204deb015d99da61ea0
       content_csharp_sha: 2aa8cecab9c6d7fe31513e4c65dc9511a9a1d521d86c84d45852204b1175126a
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 861917eef8cf7c0eb4dff0c137b2d1981ac40564
+      csharp_sha: 30f285ee17bff43f06bb4ede8f8ad015b865e3f6
+      content_python_sha: 5cd4eade8c04fd873006c5cda5a4b1d951657dfe9c3339acdb5b7eddaa4f4ec5
+      content_csharp_sha: 85548bd13459b7abf0361d296ff2f62af25a7121d0e7ea8ff94ee38ff8cff0a8
   known_differences:
     - "Socle commun : algebre d'intervalle d'Allen (13 relations), STP (Simple Temporal Problem) avec Floyd-Warshall, TCSP (Temporal CSP a intervalles multiples), application planification de reunion. Couverture conceptuelle COMPLETE des deux cotes (le twin le plus proche de la famille CSP au sens cellule-a-cellule : 42 vs 41 cellules, 17 vs 16 code)."
     - "Meme famille de solveur SOTA, bindings natifs : Python = ortools.sat.cp_model ; C# = Google.OrTools.Sat. Les deux cotes invoquent OR-Tools CP-SAT (moteur SAT-based identique) -- parite de solveur confirmee, pas de divergence de machinerie."

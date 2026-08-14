@@ -11,6 +11,12 @@
       python_sha: 20b459c9021a688c4bb67adc3bbf36c273d6445d
       csharp_sha: 1453d9a535aaad7d4c4f8d72b9fdff44c9dbbba3
       reason: "c.1126 #8052 C# c13/15/16/17 exercise+verdict cell-ref off-by-2 (cellule 6/8/10 -> 8/10/12 after OR-Tools config cells inserted); PY twin clean (0 cellule refs)"
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: fedaed668e1a585ca09b5ed76f79b51c0f93deec
+      csharp_sha: 1453d9a535aaad7d4c4f8d72b9fdff44c9dbbba3
+      content_python_sha: 0202e1d5294f250ca750453dd1965f7c144babe93ddb64ea69817cc2e023a622
+      content_csharp_sha: ccebfcc545376a4aeadcbce8882f698c2cd1e35845b06a2e4afbae139a680ebf
   known_differences:
     - "Socle pedagogique commun : interval scheduling + cumulative constraints + disjunctive (no-overlap) + precedence constraints."
     - "Cote C# : Choco-solver via IKVM (Cumulative, Disjunctive, precedence). Cote Python = from-scratch (classe Task avec start/end/duration, propagation par difference constraints)."

@@ -24,6 +24,12 @@
       csharp_sha: 92daf0e4e4656e7797a270dea53821f61da04c5e
       content_python_sha: 978d28eba04e9e4b4a0ad721fabcd6fbdf4065369283ba1161fbd9af8bc5f361
       content_csharp_sha: 553aef7ba8521eafc3026b1ec6c8e6bb94254acb958682c72c5d5cfa932c80dd
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: e7984cacc3623eb4f1a781a01227e6e114f69dcf
+      csharp_sha: 92daf0e4e4656e7797a270dea53821f61da04c5e
+      content_python_sha: 24c7bb05646af00cdc1568a92608a306c7419678a5f0ea32b33626e624cf2a45
+      content_csharp_sha: 553aef7ba8521eafc3026b1ec6c8e6bb94254acb958682c72c5d5cfa932c80dd
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Resolved 2026-08-12 (myia-po-2023:CoursIA, tranche 2). Le C# desormais branche Google.OR-Tools CP-SAT (#r nuget:Google.OrTools), le meme solveur de production que le twin Python. Le verdict RECOVERABLE-LOCAL pose par #10588 (ecart = NuGet first-class manquant) est clot : le port est livre. Le solveur from-scratch (section 4) reste pour enseigner la mecanique ; la tranche 2 (section 4bis) demontre la deduction par propagation UNSAT + la contrainte globale total-mines (Exercice 1), deux capacites que le backtracking manuel n'a pas. parity_level passe semantic -> native-both : les deux twins invoquent maintenant le solveur natif de leur ecosysteme (OR-Tools)."
   known_differences:
