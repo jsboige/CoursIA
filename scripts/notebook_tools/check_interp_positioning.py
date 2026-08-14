@@ -142,7 +142,9 @@ LEGIT_FOLLOWING_HEADER_RE = re.compile(
 # Pattern ancree pour detecter une cellule de debut de section (la condition 2).
 # Note : on accepte uniquement ## et ### (les h2/h3) -- le # (h1) est reserve au
 # titre du notebook dans la convention CoursIA, pas aux sections internes.
-SECTION_HEADER_RE = re.compile(r"^\s*#{2,3}\s+\S")
+# Le groupe capture le nombre de `#` pour le niveau (utilise par
+# `_top_level` / `_is_section_boundary`, cf #10910).
+SECTION_HEADER_RE = re.compile(r"^\s*(#{2,3})\s+\S")
 
 # ------------------------------------------------------------------ helpers
 
@@ -189,19 +191,62 @@ def _is_legit_following_header(text: str) -> bool:
     return bool(LEGIT_FOLLOWING_HEADER_RE.match(first))
 
 
+def _header_level(text: str) -> int | None:
+    """Niveau du premier header de section h2/h3 de `text`, None sinon.
+
+    Factorise le parsing de `SECTION_HEADER_RE` pour les deux predicats qui
+    partagent la notion de "header de section" mais pas le meme seuil : la
+    condition 2 accepte `##` ET `###`, la condition 4 seulement les niveaux
+    `<= _top_level(notebook)` (cf #10910).
+    """
+    first = _first_line(text)
+    m = SECTION_HEADER_RE.match(first)
+    return len(m.group(1)) if m else None
+
+
 def _is_section_header(text: str) -> bool:
     """Vrai si la cellule est un header de section `## ` ou `### ` (condition 2)."""
-    first = _first_line(text)
-    return bool(SECTION_HEADER_RE.match(first))
+    return _header_level(text) is not None
 
 
-def _is_anchored_to_code(cells: list, i: int) -> bool:
+def _top_level(cells: list) -> int:
+    """Niveau structurel du notebook : le plus haut niveau de header employe.
+
+    2 pour un notebook structure en `## `, 3 pour un notebook entierement en
+    `### ` (cas QC-Py-08 / #10785). Defaut 2 si aucun header h2/h3.
+    """
+    level: int | None = None
+    for cell in cells:
+        if cell.get("cell_type") != "markdown":
+            continue
+        lvl = _header_level(_as_text(cell.get("source", [])))
+        if lvl is not None:
+            level = lvl if level is None else min(level, lvl)
+    return level if level is not None else 2
+
+
+def _is_section_boundary(text: str, top: int) -> bool:
+    """Frontiere de SECTION pour la remontee de condition 4.
+
+    Distinct de `_is_section_header` (condition 2, qui matche `##` ET `###`) :
+    un sous-header PLUS PROFOND que le niveau structurel appartient a la MEME
+    section et ne doit pas interrompre la remontee. Sur un notebook structure
+    en `##`, un `###` entre le code et son interp est *dans* la section — la
+    remontee continue jusqu'au code. Sur un notebook entierement en `###`, le
+    `###` EST la frontiere et le guard reste actif. Cf #10910.
+    """
+    lvl = _header_level(text)
+    return lvl is not None and lvl <= top
+
+
+def _is_anchored_to_code(cells: list, i: int, top: int) -> bool:
     """Vrai si l'interp en position `i` suit le code dont elle commente la sortie.
 
     On remonte depuis `i - 1` : si on atteint une cellule de code AVANT de
-    rencontrer un header de section, l'interp est correctement ancree — elle
-    clot sa section, et le header qui la SUIT ouvre simplement la suivante.
-    C'est la forme normale d'un notebook bien structure, pas un defaut.
+    rencontrer une frontiere de section, l'interp est correctement ancree —
+    elle clot sa section, et le header qui la SUIT ouvre simplement la
+    suivante. C'est la forme normale d'un notebook bien structure, pas un
+    defaut.
 
     Sans ce test, le detecteur ne regardait que ce qui SUIT l'interp et
     signalait toute interp terminant sa section. FP mesures c.95 sur
@@ -211,13 +256,18 @@ def _is_anchored_to_code(cells: list, i: int) -> bool:
 
     Le vrai defaut vise par `misplaced_before_section` (une interp parachutee
     entre deux headers, loin de tout code — incident PyMC-15 #10580) continue
-    de rougir : en remontant, on y rencontre un header avant tout code.
+    de rougir : en remontant, on y rencontre une frontiere avant tout code.
+
+    La frontiere est le niveau structurel du notebook (`_top_level`), pas
+    `##` en absolu : un notebook entierement en `###` (QC-Py-08 / #10785)
+    n'a que ce niveau pour delimiter ses sections, et le guard doit y rester
+    actif. Cf #10910.
     """
     for j in range(i - 1, -1, -1):
         cell = cells[j]
         if cell.get("cell_type") == "code":
             return True
-        if _is_section_header(_as_text(cell.get("source", []))):
+        if _is_section_boundary(_as_text(cell.get("source", [])), top):
             return False
     return False
 
@@ -258,6 +308,7 @@ def scan_notebook(path: Path) -> list[dict]:
 
     cells = nb.get("cells", [])
     findings: list[dict] = []
+    top = _top_level(cells)
 
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
@@ -289,7 +340,7 @@ def scan_notebook(path: Path) -> list[dict]:
         # Condition 4 : l'interp suit-elle le code dont elle commente la
         # sortie ? Si oui elle est correctement ancree -- le header qui suit
         # ouvre juste la section suivante (cf `_is_anchored_to_code`).
-        if _is_anchored_to_code(cells, i):
+        if _is_anchored_to_code(cells, i, top):
             continue
 
         # Les 3 conditions sont reunies -> MISPLACED.
