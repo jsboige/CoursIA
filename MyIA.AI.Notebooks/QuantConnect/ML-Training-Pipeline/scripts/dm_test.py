@@ -85,12 +85,14 @@ def diebold_mariano_test(
         Forecast errors from model B (1-D), same length as errors_a.
     loss_fn : str
         "mse" for squared-error loss, "mae" for absolute-error loss,
-        "linear" for signed linear loss L(e) = e. Only "linear" is
-        sign-sensitive: mse and mae are symmetric ((-r)**2 == r**2 and
-        |-r| == |r|), so a forecast and its exact opposite are
-        bit-identical under mse/mae. Use "linear" when the sign of the
-        error carries information (e.g. forecasting returns rather than
-        volatility) -- see #10228.
+        "linear" for signed linear loss L(e) = e.
+        mse/mae measure PRECISION and are symmetric in sign: a forecast-error
+        series and its exact opposite are bit-identical (equally precise), by
+        construction. "linear" computes d_mean = mean(e_a) - mean(e_b) =
+        bias_a - bias_b: it compares BIASES, not precision -- it is blind to
+        dispersion, and a strictly more precise forecast can lose the test to
+        a more biased one (#10956). Do NOT use "linear" as the precision jambe
+        of a verdict; it is a bias-differential diagnostic only.
     hln_correction : bool
         Apply Harvey-Leybourne-Newbold (1997) small-sample correction.
     max_lag : int | None
@@ -121,9 +123,10 @@ def diebold_mariano_test(
         loss_a = np.abs(errors_a)
         loss_b = np.abs(errors_b)
     elif loss_fn == "linear":
-        # Signed linear loss L(e) = e. Unlike mse/mae (symmetric), linear
-        # preserves the sign of the error: it is the only option that lets the
-        # DM test tell a winning forecast from its exact opposite (#10228).
+        # Signed linear loss L(e) = e. d_mean = mean(e_a) - mean(e_b) is a
+        # BIAS differential (bias_a - bias_b), not a precision measure: blind
+        # to dispersion, a strictly more precise forecast can lose to a more
+        # biased one (#10956). Bias diagnostic only -- not a §C precision jambe.
         loss_a = errors_a
         loss_b = errors_b
     else:

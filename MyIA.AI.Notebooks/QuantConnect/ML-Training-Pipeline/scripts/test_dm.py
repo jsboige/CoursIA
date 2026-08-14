@@ -95,12 +95,13 @@ class TestDieboldMarianoTest:
             diebold_mariano_test(np.ones(50), np.ones(50), loss_fn="rmse")
 
     def test_linear_loss_distinguishes_opposite_series(self):
-        """Regression #10228: mse loss is sign-blind.
+        """Regression #10228 relue (#10956): linear distinguishes e from -e.
 
-        A forecast-error series and its exact opposite are bit-identical
-        under mse (squaring cancels the sign), so the DM test cannot tell a
-        winning forecast from a losing one. Only the signed linear loss
-        L(e) = e restores sign-sensitivity.
+        Under mse, a forecast-error series and its exact opposite are
+        bit-identical -- correct behavior: the two are equally precise. Under
+        linear, d_mean = bias_a - bias_b gives them opposite signs, but that
+        sign is a BIAS statement, not a precision statement (linear is blind
+        to dispersion; see test_linear_loss_is_bias_differential).
         """
         rng2 = np.random.default_rng(7)
         e = rng2.normal(0.5, 1.0, 500)  # nonzero mean so d_mean != 0
@@ -114,6 +115,48 @@ class TestDieboldMarianoTest:
         r_lin_neg = diebold_mariano_test(-e, zero, loss_fn="linear")
         assert r_lin_pos.dm_statistic != pytest.approx(r_lin_neg.dm_statistic)
         assert r_lin_pos.dm_statistic * r_lin_neg.dm_statistic < 0
+
+    def test_linear_loss_is_bias_differential(self):
+        """Regression #10956: d_mean = bias_a - bias_b, blind to dispersion.
+
+        Model A (MSE ~0.009, bias ~0) vs baseline B (MSE ~0.103, bias -0.3):
+        mse correctly declares A the winner; linear reports d_mean > 0, which
+        the verdict convention reads as "BEATEN BY baseline". A strictly more
+        precise forecast loses under linear -- exactly the measured
+        HAR-vs-DLinear case (#10938).
+        """
+        rng3 = np.random.default_rng(42)
+        e_a = rng3.normal(0, 0.1, 500)         # precise, unbiased
+        e_b = -0.3 + rng3.normal(0, 0.1, 500)  # ~11x less precise, biased
+        r_mse = diebold_mariano_test(e_a, e_b, loss_fn="mse")
+        r_lin = diebold_mariano_test(e_a, e_b, loss_fn="linear")
+        assert r_mse.mean_loss_diff < 0                 # A wins under mse
+        assert r_lin.mean_loss_diff > 0                 # same pair "loses" under linear
+        assert r_lin.mean_loss_diff == pytest.approx(
+            np.mean(e_a) - np.mean(e_b)
+        )
+
+    def test_linear_loss_blind_to_dispersion(self):
+        """Regression #10956: identical bias, radically different precision.
+
+        Two forecasts with identical bias (0.5) but ~15x different MSE give
+        d_mean = 0 and p = 1 under linear (INCONCLUSIVE), even though one is
+        far more precise. mse detects the gap.
+        """
+        rng4 = np.random.default_rng(7)
+        n = 500
+        u = rng4.normal(0, 0.1, n)
+        v = rng4.normal(0, 2.0, n)
+        e_a = 0.5 + (u - u.mean())             # sample bias exactly 0.5
+        e_b = 0.5 + (v - v.mean())
+        assert np.isclose(np.mean(e_a), np.mean(e_b))
+        assert np.mean(e_a ** 2) < np.mean(e_b ** 2) / 10
+        r_lin = diebold_mariano_test(e_a, e_b, loss_fn="linear")
+        r_mse = diebold_mariano_test(e_a, e_b, loss_fn="mse")
+        assert abs(r_lin.mean_loss_diff) < 1e-12  # d_mean = bias_a - bias_b = 0
+        assert r_lin.p_value > 0.05
+        assert r_mse.mean_loss_diff < 0
+        assert r_mse.p_value < 0.01
 
 
 class TestDmVerdict:
