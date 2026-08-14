@@ -15,23 +15,13 @@ S'applique à **tous les workers du cluster CoursIA** (po-2023/2024/2025/2026) e
 
 **Filtre `candidate-delivered` (#10466)** : une part du pool ouvert est du travail **déjà livré mais non fermé** (la PR de livraison écrit `See #N` même en cas de résolution complète → GitHub ne ferme pas). Le workflow `candidate-delivered-advisory.yml` pose le label `candidate-delivered` sur ces issues (référencées par une PR **merged** + aucune activité post-merge, EPICs exclus). Le label **signale**, il ne ferme pas — ai-01 tranche en lecture body (G.9). Ne pas re-piocher une issue `candidate-delivered` sans avoir vérifié firsthand qu'elle est vivante.
 
-**Le pool ne se scanne plus à la main — il se TIRE (mandat user 2026-08-14).** `gh issue list` plafonne à **30 résultats**, triés par récence. Mesuré le 2026-08-14 sur un pool de 140 : **89 issues créées dans les 7 derniers jours**, donc un worker qui « scanne le pool » ne voit **rien de plus vieux que ~6 jours** — il repioche mécaniquement dans ce que le coordinateur vient de créer, ce qui referme la boucle de monoculture que [variation-protocol.md](variation-protocol.md) cherche à ouvrir. La troncature ne se corrige pas par plus de vigilance : elle demande un organe.
+**Le pool ne se scanne plus à la main — il se TIRE (mandat user 2026-08-14).** `gh issue list` plafonne à **30 résultats**, triés par récence : sur un pool de 140 dont 89 créées dans les 7 derniers jours, un worker qui « scanne le pool » ne voit **rien de plus vieux que ~6 jours** — il repioche mécaniquement dans ce que le coordinateur vient de créer, ce qui referme la boucle de monoculture. La troncature ne se corrige pas par plus de vigilance : elle demande un organe.
 
 ```bash
 python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre du grain précédent>
 ```
 
-Le picker fait **une** requête à `--limit 300` (troncature défaite par construction) et tire une poignée de candidats dans **trois urnes**, parce que le pool n'est pas homogène — même mesure : 44 grains unitaires, 29 EPIC/umbrella, 67 `candidate-delivered`.
-
-| Urne | Ce que le tirage rend | Ce que l'agent en fait |
-|---|---|---|
-| **grain** | issue unitaire exécutable | la livrer |
-| **umbrella** | un EPIC | piocher ou **créer un sous-grain dedans** — jamais claim l'EPIC entier |
-| **delivered** | une issue `candidate-delivered` | vérifier firsthand que la PR livrante satisfait l'acceptance → `gh issue close` avec preuve, **sinon retirer le label en disant pourquoi** |
-
-L'urne **umbrella** est ce qui rend la variété atteignable : au 2026-08-14, **aucun** grain unitaire du pool n'avait plus de 30 jours — tout l'ancien (#1453 prover, #1454 training, #2159 Grothendieck, #2874 Knot, #1621 QC, #1206 Z3.Linq) est umbrella. Une urne unique ne l'aurait jamais montré. L'urne **delivered** est ce qui fait *refluer* le compte sans batch-close aveugle (le batch-close endort une série — cf. précédent ICT).
-
-Pondération : trois facteurs doux, tous imprimés à côté du candidat — ancienneté (`1+log2(1+j/7)`), pénalité ×0.25 sur le genre du grain précédent (**G-VAR-3 au tirage** plutôt qu'en HOLD a posteriori), bonus ×2 aux genres CONTENU (**G-VAR-1 au tirage**). Graine = `(lane, heure UTC, reroll)` : deux lanes tirent différemment à la même minute, une même lane retrouve son tirage dans l'heure (idempotent), `--reroll N` redistribue.
+Une requête à `--limit 300` (troncature défaite par construction), un tirage pondéré dans **trois urnes** : **grain** (issue unitaire → la livrer) · **umbrella** (un EPIC → piocher ou **créer un sous-grain dedans**, jamais claim l'EPIC entier) · **delivered** (une `candidate-delivered` → vérifier firsthand puis fermer avec preuve, **sinon retirer le label en disant pourquoi**). L'urne umbrella est ce qui rend la variété atteignable — tout l'ancien du pool y est ; l'urne delivered est ce qui fait *refluer* le compte sans batch-close aveugle. Pondération, graine déterministe et mesures : [détail §Picker](../../docs/reference/proactive-coordination-detail.md).
 
 **Le picker ne décide pas.** Il propose ; l'agent tranche selon les critères de variété de sa lane, et pose son `[CLAIMED]` (`check_lane_claim.py` avant d'**éditer**, cf [lane-claim-protocol.md](lane-claim-protocol.md)). Un tirage dont aucun candidat ne convient se rejoue (`--reroll`) — il ne justifie **jamais** un `[ASK coordinator]` ni un statut idle.
 
