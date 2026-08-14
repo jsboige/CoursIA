@@ -2,7 +2,7 @@
 
 **Classe d'actifs :** Multi-actifs (Actions, Obligations, Matières premières)
 
-**ID projet Cloud :** N/A
+**ID projet Cloud :** 30820857
 
 ## Description
 
@@ -16,9 +16,22 @@ lean backtest --algorithm Cloud-RiskParity-Composite/main.py
 ```
 
 ### QC Cloud
-Créer un nouveau projet, téléverser `main.py`, compiler et lancer un backtest (défaut : 2015-01-01 au 2024-12-31).
+Projet 30820857. Téléverser `main.py`, compiler et lancer un backtest. Période codée en dur : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630). Paramètre optionnel `rebalance_days` (défaut 30).
 
 ## Métriques de backtest
+
+Backtest frais via QC Cloud MCP, 2026-08-14 (`RiskParity-Composite-2018-2025-aligned-status-2026-08`, projet 30820857, compile `BuildSuccess`, 1761 dates négociables, 297 ordres) :
+
+| Indicateur | Valeur | Lecture |
+|---|---|---|
+| Ratio de Sharpe | **0,027** | quasi nul |
+| CAGR | **3,50 %** | sous le buy-hold SPY sur la période |
+| Drawdown max | **24,400 %** | élevé |
+| Profit net total | **27,282 %** (+17 435 $) | sur la période |
+| PSR | **0,094 %** | non distinguable du bruit |
+| Ordres | 297 | backtest réel |
+
+**Verdict : NO-BEATS.** Sharpe 0,027, CAGR ~3,5 % : la rotation à double filtre sur cette fenêtre ne bat pas le buy-and-hold SPY (CAGR à deux chiffres 2018-2025). Le plafond structurel du trend-following égal-pondéré sans levier est confirmé (cf catalogue `qc-strategies-status.md` : « contre-exemple pédagogique »).
 
 | Méthode | Rebalance | Paramètres clés |
 |---------|-----------|-----------------|

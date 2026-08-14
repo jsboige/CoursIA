@@ -22,18 +22,20 @@ Projet 30822855. Téléverser `main.py`, compiler et lancer un backtest en passa
 
 ## Métriques de backtest
 
-Backtest frais via QC Cloud MCP, 2026-08-07 (`MeanReversion-v1-honest-read-2026-08`, projet 30822855, compile `BuildSuccess`, paramètre `version=v1`, 2768 dates négociables, 417 ordres) :
+Backtest frais via QC Cloud MCP, 2026-08-14 (`MeanReversion-v1-2018-2025-aligned-status-2026-08`, projet 30822855, compile `BuildSuccess`, paramètre `version=v1`, **1761 dates négociables — baseline #1630 alignée 2018-2025**, 273 ordres) :
 
 | Indicateur | Valeur | Lecture |
 |---|---|---|
-| Ratio de Sharpe | **0,176** | faible positif |
-| CAGR | **4,961 %** | sous le buy-hold SPY sur la période |
+| Ratio de Sharpe | **0,067** | quasi nul |
+| CAGR | **3,793 %** | sous le buy-hold SPY sur la période |
 | Drawdown max | **41,700 %** | catastrophique (> 2× SPY) |
-| Profit net total | **70,392 %** (+77 345 $) | sur la période |
-| PSR (Probabilistic Sharpe Ratio) | **0,052 %** | non distinguable du bruit |
-| Ordres | 417 | backtest réel |
+| Profit net total | **29,789 %** (+35 082 $) | sur la période |
+| PSR (Probabilistic Sharpe Ratio) | **0,147 %** | non distinguable du bruit |
+| Ordres | 273 | backtest réel |
 
-**Verdict : NO-BEATS.** Sharpe 0,176, CAGR ~5 % pour un drawdown de 41,7 %, PSR ≈ 0 : la stratégie sous-performe le buy-and-hold SPY (CAGR à deux chiffres sur 2018-2025) avec un risque bien supérieur.
+**Verdict : NO-BEATS.** Sharpe 0,067, CAGR ~3,8 % pour un drawdown de 41,7 %, PSR ≈ 0 : la stratégie sous-performe le buy-and-hold SPY (CAGR à deux chiffres sur 2018-2025) avec un risque bien supérieur.
+
+> **Historique des mesures (traçabilité)** : (1) run du 2026-04-28 sur code pré-#1630 (2014-2025, 2768 j.) : v1 Sharpe 0,288 / DD 42,4 %, v2 0,214, **v3 0,278 / DD 14,7 %** ; (2) run du 2026-08-07 même code stale : v1 0,176 / DD 41,7 % ; (3) **run 2026-08-14 ci-dessus, premier sur le code aligné 2018-2025 (#1630)** : v1 0,067. L'alignement retire les années fastes 2014-2017 et dégrade le v1 ; les chiffres d'avant août 2024 cités dans d'anciens catalogues (0,278 / 14,7 %) sont ceux du **v3** sur période 2014-2025 — toujours NO-BEATS sur toutes les fenêtres et variantes, mais incomparables entre eux sans étiquette variante + période.
 
 ## Lecture honnête (variante v1)
 

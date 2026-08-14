@@ -40,7 +40,7 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `ML-RandomForest` | ML supervisé (RF) | US large-cap | **Alive** | Figure #5747 |
 | `ML-XGBoost` | ML supervisé (XGBoost) | US large-cap | **Alive** | Figure #5749 |
 | `ForexCarry` | FX carry/momentum | G10 FX | **Alive** | Figure #5748 |
-| `RiskParity` / `Cloud-RiskParity-Composite` | Inverse-vol risk-parity | Multi-actifs | **Needs-improvement** (plafond structurel) | Sharpe 0.399 (contre-exemple pédagogique) ; figure #5753 |
+| `RiskParity` / `Cloud-RiskParity-Composite` | Inverse-vol risk-parity | Multi-actifs | **Needs-improvement** (plafond structurel) | Sharpe 0.399 (contre-exemple pédagogique, figure #5753) ; **run frais 2026-08-14 baseline #1630 : 0.027** (tranche 24 ci-dessous) |
 | `DualMomentum` | Momentum dual-asset | Multi-actifs | **Superseded** | Échec TLT 2022 → remplacé par `DualMomentumNoTLT` |
 | `DualMomentumNoTLT` | Momentum (sans TLT) | Multi-actifs | **Alive** (remplacement) | Figure #5754 |
 
@@ -108,7 +108,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
 | `AllWeather` | `projects/AllWeather/` | Multi-asset risk-parity | Vérifié | tableau « Stratégies vérifiées » ci-dessus (figure #5743) |
-| `Cloud-RiskParity-Composite` | `projects/Cloud-RiskParity-Composite/` | Inverse-vol risk-parity | Vérifié | tableau vérifié ci-dessus (Needs-improvement) |
+| `Cloud-RiskParity-Composite` | `projects/Cloud-RiskParity-Composite/` | Inverse-vol risk-parity | Vérifié | run frais 2026-08-14 baseline #1630 (voir tranche « statut réel Cloud-* » ci-dessous : Sharpe 0.027, Needs-improvement confirmé) |
 | `DualMomentum` | `projects/DualMomentum/` | Momentum dual-asset | Vérifié | tableau vérifié ci-dessus (Superseded) |
 | `DualMomentumNoTLT` | `projects/DualMomentumNoTLT/` | Momentum (sans TLT) | Vérifié | tableau vérifié ci-dessus (Alive) |
 | `DynamicVIXSpyRegime-QC` | `projects/DynamicVIXSpyRegime-QC/` | Régime VIX | Vérifié | tableau vérifié ci-dessus (69.4 %) |
@@ -153,7 +153,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `composite-c2-equityfactor` | `projects/composite-c2-equityfactor/` | Composite equity/factor | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.574 ; CAGR 11.94 % ; MaxDD 18.6 % ; PSR 25.8 % ; NP 120.4 % ($105 319) — décent mais edge non significative |
 | `AssetClassMomentum-QC` | `projects/AssetClassMomentum-QC/` | Cross-asset momentum | **Needs-improvement** | 2018–2025 (1761 j.) ; Sharpe 0.22 ; CAGR 6.64 % ; MaxDD 28.1 % ; PSR 3.8 % ; NP 56.9 % ($43 119) — edge nul, drawdown élevé |
 | `MomentumRegime-AdaptiveWeights` | `projects/MomentumRegime-AdaptiveWeights/` | Momentum / Régime | **Needs-improvement / near-cash** | 2018–2025 (1761 j.) ; **Sharpe −0.729** ; CAGR 1.88 % ; MaxDD 4.3 % ; PSR 17.4 % ; NP 13.9 % — Sharpe négatif (sous le sans-risque), quasi-flat |
-| `Cloud-SectorRotation-Momentum` | `projects/Cloud-SectorRotation-Momentum/` | Rotation sectorielle | **BROKEN** | 2018–2025 (1761 j.) ; **Sharpe −0.029** ; CAGR 2.13 % ; **MaxDD 42.7 %** ; PSR 0.5 % ; NP 15.9 % — flat + drawdown catastrophique, edge nul |
+| `Cloud-SectorRotation-Momentum` | `projects/Cloud-SectorRotation-Momentum/` | Rotation sectorielle | **BROKEN** | 2018–2025 (1761 j., run frais 2026-08-14 baseline #1630, 345 ordres, backtest `SectorRotation-Momentum-2018-2025-aligned-status-2026-08`, **reproduit exactement le run précédent**) ; **Sharpe −0.029** ; CAGR 2.12 % ; **MaxDD 42.7 %** ; PSR 0.050 % ; NP 15.8 % ($12 369) — flat + drawdown catastrophique, edge nul |
 
 #### Vérifié (tranche 4, backtests QC Cloud via MCP) (5)
 
@@ -171,7 +171,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `MacroFactorRotation-QC` | `projects/MacroFactorRotation-QC/` | Rotation actions/obligations | **Needs-improvement** | 3651 j. ; Sharpe 0.731 ; CAGR 22.63 % ; **MaxDD 42.0 %** ; PSR 23.8 % ; NP 669.2 % ($720 114) — CAGR élevé mais drawdown inacceptable, edge non significative |
 | `Multi-Layer-EMA` | `projects/Multi-Layer-EMA/` | Crypto multi-indicateurs | **Needs-improvement** | 2557 j. ; Sharpe 0.798 ; CAGR 24.99 % ; **MaxDD 57.1 %** ; PSR 23.9 % ; NP 377.4 % (₮385 063) — **revendication README « Verified on QC Cloud » confirmée firsthand** (project 28433748) mais drawdown crypto 57 % = inacceptable |
 | `AdaptiveAssetAllocation` | `projects/AdaptiveAssetAllocation/` | Multi-asset allocation | **Needs-improvement** | 2008–2024 (4639 j.) ; Sharpe 0.509 ; CAGR 8.01 % ; MaxDD 18.9 % ; PSR 10.6 % ; NP 314.4 % ($315 339) — long-terme décent mais edge non significative |
-| `Cloud-MeanReversion-Sectors` | `projects/Cloud-MeanReversion-Sectors/` | Mean reversion secteurs | **Needs-improvement / near-cash** | 2768 j. ; Sharpe 0.278 ; CAGR 5.60 % ; MaxDD 14.7 % ; PSR 3.7 % ; NP 82.1 % — edge nul, sous-performant |
+| `Cloud-MeanReversion-Sectors` | `projects/Cloud-MeanReversion-Sectors/` | Mean reversion secteurs | **Needs-improvement / near-cash** | 2018–2025 (1761 j., run frais 2026-08-14 baseline #1630, v1, 273 ordres, backtest `MeanReversion-v1-2018-2025-aligned-status-2026-08`) ; **Sharpe 0.067** ; CAGR 3.79 % ; **MaxDD 41.7 %** ; PSR 0.147 % ; NP 29.8 % ($35 082) — edge nul, sous-performant. **Correction 2026-08-14** : la ligne précédente citait 2768 j. / 0.278 / 14.7 % = le run **v3** du 2026-04-28 (`1bd5ee14…`) sur code cloud **stale 2014-2025** (pré-alignement #1630), variante non étiquetée — l'alignement 2018 retire les années fastes 2014-2017 et dégrade toutes les métriques (v1 passe de 0.176 → 0.067) |
 | `MeanReversion` | `projects/MeanReversion/` | Mean reversion | **BROKEN** | 2845 j. ; **Sharpe −0.082** ; CAGR 3.00 % ; MaxDD 17.5 % ; PSR 1.3 % ; NP 39.7 % — Sharpe négatif, edge nul |
 
 #### Vérifié (tranche 5, backtests QC Cloud via MCP) (5)
@@ -208,7 +208,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `HMM-KMeans-Voting` | `projects/HMM-KMeans-Voting/` | Régime (HMM) | **Needs-improvement** | 3522 j. ; Sharpe 0.488 ; CAGR 6.99 % ; MaxDD 23.8 % ; PSR 6.9 % ; NP 157.5 % ($144 661) — edge non significative |
 | `Markov-Regime-Detection` | `projects/Markov-Regime-Detection/` | Régime (Markov) | **Needs-improvement** | 2766 j. ; Sharpe 0.375 ; CAGR 8.44 % ; MaxDD 24.4 % ; PSR 5.8 % ; NP 144.0 % ($98 214) — edge non significative |
 | `HighBookToMarketFScore-QC` | `projects/HighBookToMarketFScore-QC/` | Factor (Piotroski) | **Needs-improvement** | période post-#2801 (tradeableDates=0, anomalie champ MCP ; ~2018–2025 aligned) ; Sharpe 0.411 ; CAGR 14.51 % ; **MaxDD 60.4 %** ; PSR 4.5 % ; NP 195.9 % ($17 992 007) — CAGR décent mais drawdown catastrophique |
-| `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 2.4 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
+| `Cloud-VolTargeting` | `projects/Cloud-VolTargeting/` | Vol targeting | **Needs-improvement / near-cash** | 1761 j. (2018–2025, run frais 2026-08-14 baseline #1630, v1, 54 ordres, backtest `VolTargeting-v1-2018-2025-aligned-status-2026-08`, **reproduit exactement le run précédent**) ; Sharpe 0.207 ; CAGR 6.72 % ; MaxDD 38.2 % ; PSR 0.557 % ; NP 57.7 % ($32 854) — quasi-cash + drawddown élevé |
 | `LeveragedETFMomentum-QC` | `projects/LeveragedETFMomentum-QC/` | Leveraged ETF momentum | **Alive (edge candidat, levier) ★** | 2011 j. ; **Sharpe 1.779** ; CAGR 126.39 % ; **MaxDD 53.3 %** ; **PSR 79.8 %** ; NP 69 153 % ($59 508 108) — **2ᵉ PSR > 50 % toutes tranches (après BlackLitterman 51 %)**, MAIS ETF leveraged (levier amplifie gains ET drawdown) → edge à confirmer en walk-forward OOS, pas du skill pur |
 
 #### Vérifié (tranche 7, backtests QC Cloud via MCP) (5)
@@ -637,6 +637,31 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | 31996999 | `Equity Aroon Trend 1` (clone) | 0.225 | 6.35 % | 37.70 % | 0.79 % | $76,351 | NI | freshly-discovered, second clone Equity Aroon Trend ; Sharpe/MaxDD quasi-identique au clone 31932810 (diff ~0.4 % = même moteur, projectId distinct = tests param variants) |
 
 **Synthèse cohorte** : **0 edge + 1 BROKEN empty + 4 NI** (PSR max 23.81 % vs cap 50 %) ; **2 post-#2801 freshly-discovered** (CausalEventAlpha + MacroFactorRotation) confirment robustesse méthodologique #2801 ; **2 Equity Aroon Trend clones** = profil médiocre post-#2801 (Sharpe ~0.225, PSR < 1 %) ; **1 BROKEN empty Multi-Layer-EMA-Crypto** = homonymie QC Cloud distincte du tr.4 `Multi-Layer-EMA`.
+
+#### Vérifié (tranche 24, statut réel Cloud-* — sync + backtests frais baseline #1630) (4)
+
+**Scope** : dispatch ai-01 c.96 — statut réel (`alive` / `archived` / `superseded` / `broken` / `duplicate`) des 6 projets `Cloud-*` QC Cloud par compilation + backtest réels via MCP. Deux constats structurels d'abord :
+
+1. **Divergence code cloud ↔ local** : les 6 projets QC Cloud (créés 2026-04-28) portaient encore le code **pré-alignement #1630** (`set_start_date(2014)`) alors que le repo local a l'alignement 2018-2025 depuis juin (commits #3893-#3907). Le code local (source de vérité) a été re-poussé vers les 4 projets du scope ; compile `BuildSuccess` 4/4.
+2. **`read_project` renvoie `files: []`** pour ces projets alors qu'ils ne sont PAS vides — artefact de listing du champ `files` ; `read_file` (sans `name`) révèle le contenu réel. Ne jamais conclure « projet vide » sur `read_project.files` seul.
+
+| ProjetId | Nom projet | Param run | Ordres | Sharpe | CAGR | MaxDD | PSR | NP | Verdict | Notes |
+|----------|------------|-----------|--------|--------|------|-------|-----|----|---------|-------|
+| 30822855 | `Cloud-MeanReversion-Sectors` v1 | `version=v1` | 273 | **0.067** | 3.79 % | 41.70 % | 0.147 % | $35 082 | NI / near-cash | run frais 2026-08-14 `MeanReversion-v1-2018-2025-aligned-status-2026-08`, 1761 j. — **corrige la ligne tranche 4** qui citait le run v3 d'avril sur code stale 2014 |
+| 30820857 | `Cloud-RiskParity-Composite` | `rebalance_days=30` (défaut) | 297 | **0.027** | 3.50 % | 24.40 % | 0.094 % | $17 435 | NI (plafond structurel confirmé) | run frais 2026-08-14 `RiskParity-Composite-2018-2025-aligned-status-2026-08`, 1761 j. — bien sous le 0.399 de la figure #5753 (univers/code différent) |
+| 30821748 | `Cloud-SectorRotation-Momentum` | — | 345 | **−0.029** | 2.12 % | 42.70 % | 0.050 % | $12 369 | **BROKEN (confirmé)** | run frais 2026-08-14 `SectorRotation-Momentum-2018-2025-aligned-status-2026-08`, 1761 j. — **reproduit exactement** le run précédent du catalogue (Sharpe/CAGR/MaxDD/NP identiques) |
+| 30823587 | `Cloud-VolTargeting` v1 | `version=1` | 54 | **0.207** | 6.72 % | 38.20 % | 0.557 % | $32 854 | NI / near-cash (confirmé) | run frais 2026-08-14 `VolTargeting-v1-2018-2025-aligned-status-2026-08`, 1761 j. — **reproduit exactement** le run précédent (le catalogue tr.7 avait déjà la bonne période) |
+
+**Statuts réels établis** : les 4 projets `Cloud-*` locaux = **alive, compilable, backtestable** (BuildSuccess + run Completed chacun) — aucun archived/superseded/duplicate/broken-côté-outil ; `Cloud-SectorRotation-Momentum` = BROKEN **côté edge** (Sharpe négatif, confirmé sur run frais baseline #1630). Les 2 projets cloud-only restants (`Cloud-RegimeSwitching` 30823208, `Cloud-DualMomentum-NoTLT` 30822524) = doublons cloud des projets locaux sans préfixe (`RegimeSwitching`, `DualMomentumNoTLT`, déjà catalogués) — laissés hors du présent scope (tranche bornée).
+
+**Ledger mapping cloud → local (décision ai-01 c.96, 2026-08-14 : doublons CONSERVÉS — l'historique de runs cloud est la pièce à conviction de #1621, suppression irreversible au bénéfice nul)** :
+
+```
+30823208  Cloud-RegimeSwitching       -> projects/RegimeSwitching        (doublon cloud, conservé)
+30822524  Cloud-DualMomentum-NoTLT    -> projects/DualMomentumNoTLT      (doublon cloud, conservé)
+```
+
+**Synthèse cohorte** : **0 edge + 1 BROKEN + 3 NI** (PSR max 0.557 % ≪ cap 50 %) ; la correction clé de la tranche = **MeanReversion-Sectors** : la métrique 0.278/14.7 % citée depuis juillet provenait du run **v3** sur code **stale 2014-2025** — sur la baseline #1630 alignée, v1 tombe à 0.067 (l'alignement retire les années fastes 2014-2017). Leçon de méthode (pour toute relecture de tranche 4) : **toujours étiqueter variante + période d'un run cité** — deux runs du même projet peuvent différer d'un facteur 4 en Sharpe sans que rien ne le signale dans le catalogue.
 
 **Leçons c.714** :
 
