@@ -4,6 +4,10 @@ Document de référence détaillant l'inventaire kernels obligatoire sur toute m
 
 **Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
 
+## Setup macOS / Linux (poste contributeur)
+
+Ce document est centré cluster Windows. Pour le setup d'un poste contributeur **macOS / Linux** (équivalents `brew`/`apt` des commandes `winget`/`choco`, `elan` Lean sans WSL, backend MPS sur Apple Silicon), cf [setup-linux-macos.md](setup-linux-macos.md). Les kernels .NET Interactive, Python et Lean 4 sont cross-OS ; les notebooks s'exécutent à l'identique modulo le backend GPU.
+
 ## .NET Interactive (C# notebooks)
 
 Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`, `Sudoku/`, `ML/`, `Probas/`.

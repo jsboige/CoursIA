@@ -76,6 +76,21 @@ python -c "from lean_server import LeanVerifier; print(LeanVerifier('<lake-root>
 
 `allow-axioms` liste les axiomes tolérés **un par un**. C'est un mécanisme à cliquet : tout nouveau `native_decide` introduit produit un nom **absent de la liste**, donc le gate rougit. Un motif générique (`*native_decide*`) détruirait cette propriété — le gate ne pourrait plus jamais rougir sur la classe qu'il est censé attraper, et un gate qui ne peut plus rougir n'est pas un gate.
 
+### C — les deux contre-exemples ML inscrits (σ sans DM, et DM sur une perte symétrique)
+
+**(1) `edge_sigma` seul ne prouve rien.** `edge_sigma = +19.97σ` avec `DM p = 0.236` n'est **pas** un BEATS (`validate_xrp_dt_holdout.py`, holdout_fresh du 06/08). Le dénominateur de `edge_sigma` mesure la dispersion **inter-seeds** — c'est-à-dire la *reproductibilité de la procédure*, pas la *significativité de l'edge*. σ croît donc sans borne quand les seeds s'accordent, que l'edge soit réel ou non. Un σ élevé sans DM est un flag « noise », jamais une preuve.
+
+**(2) Le test DM doit porter sur une perte qui préserve le signe.** `mse` et `mae` sont **symétriques** (`(-e)² = e²`, `|-e| = |e|`) : elles rendent des `dm_stat` / `p_value` **bit-identiques** pour une série et son exact opposé — un test incapable de distinguer un modèle gagnant de son inverse ne teste rien.
+
+Mesure d'intégration (#10232), série gagnante `e` vs son opposé `-e` contre baseline nulle :
+
+| `loss_fn` | `dm_stat` pour `e` | `dm_stat` pour `-e` | Discriminant ? |
+|---|---|---|---|
+| `mse` | 10.0754 | 10.0754 | **non** |
+| `linear` | −0.1771 | +0.1771 | **oui** (signes opposés) |
+
+D'où l'exigence `loss_fn="linear"` dans `scripts/dm_test.py` (additif à `mse`/`mae`). Pin de régression : `test_dm.py::test_linear_loss_distinguishes_opposite_series`.
+
 ### D.5 — #8479 MusicGen : l'alignement qui enshrine un nombre périssable
 
 Notebook MusicGen 02-3 : le RTF documenté `0.5-2x` a été « aligné » en `0.21-0.24x` **sur un run non-optimisé**, alors qu'une re-exécution Stop-&-Repair était **déjà due** sur ce notebook (cellule cassée).

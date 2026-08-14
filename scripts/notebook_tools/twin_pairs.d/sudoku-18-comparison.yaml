@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Google OR-Tools CP-SAT : Python = `ortools` PyPI package (CP-SAT via `from ortools.sat.python import cp_model`, 21 refs `ortools` runtime). C# = `Google.OrTools` NuGet package (CP-SAT via `Google.OrTools.Sat.CpModel`, 15 refs `ortools` + 5 `Google.OrTools` namespace). Meme solveur CP-SAT upstreams de Google Operations Research, accessible via les bindings officiels Python (.whl) et C# (.nupkg). Verifie firsthand (c.234 audit 2026-08-12, myia-po-2023:CoursIA-2) : 68 cells Python / 68 cells C#, structure symetrique (memes benchmarks, memes configurations, memes hard puzzles). Pont cross-stack impossible : CP-SAT est un moteur C++ natif, les deux bindings sont des wrappers SWIG officiels (cp_model.py = SWIG-generated, Google.OrTools.Sat.CpModel = SWIG-generated). Pas de bytecode Python ↔ C# bridgeable ; la parite est garantie par le fait que les deux utilisent la meme version du meme solveur upstream. Verdict SOTA-OK : OR-Tools CP-SAT est la SOTA CP-SAT solver pour les deux stacks, et la parite semantique est mecaniquement preservee tant que les deux versions PyPI/NuGet restent synchronisees (cf c.217 PR #10557 App-tranche-4 precedent qui a verifie 5 paires A-1/3/4/11/15 sur le meme pattern `ortools` ↔ `Google.OrTools`). parity_level `semantic` coherente : idiomes differents (Python dynamique vs C# statique) mais moteur commun."
   audits:
     - date: "2026-08-03"
       by: myia-po-2023:CoursIA

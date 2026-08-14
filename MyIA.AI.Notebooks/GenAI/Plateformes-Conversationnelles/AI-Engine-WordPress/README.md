@@ -107,6 +107,46 @@ mesurée par un taux de fuite — et (2) **l'accident de réindexation** —
 voisin. Déterministe, numpy, sans clé ni réseau ; fixture synthétique à 100 %
 (Maison Valmont).
 
+Un notebook compagnon [`auditer-un-formulaire-conditionnel.ipynb`](auditer-un-formulaire-conditionnel.ipynb)
+traite la feature **AI Forms** — l'une des deux fonctionnalités GenAI cœur
+qui n'avait ni section de parcours ni notebook. Thèse : *un formulaire à
+logique de branchement est une machine à états implicite*. Le notebook
+construit un formulaire de soumission synthétique (Maison Valmont) à champs
+conditionnels et **énumère les chemins terminaux atteignables** : sept
+champs engendrent treize états distincts, dont près des deux tiers
+déclenchent un appel LLM, et un champ déclaré n'est visible sur aucun
+chemin (champ mort). La leçon : le schéma n'est pas le formulaire — les
+trois grandeurs (chemins, coût LLM, champs morts) sont émergentes. stdlib
+pure, aucune clé, aucun réseau.
+
+Un dernier notebook compagnon [`mesurer-la-derive-dun-copilot.ipynb`](mesurer-la-derive-dun-copilot.ipynb)
+traite le **Copilot Gutenberg** (Parcours 1) — la seconde et dernière
+fonctionnalité GenAI cœur qui restait sans notebook. Thèse : *le gate humain
+à chaque étape ne protège pas de la dérive d'une chaîne*. Les six
+transformations du Copilot (résumé, enhancement, traduction, rewriting,
+image, alt text) ont des effets informationnels distincts — certaines
+ajoutent, d'autres réécrivent, d'autres **détruisent** (résumé, traduction).
+Le notebook modélise chaque transformation comme une fonction vectorielle
+déterministe et mesure le **rappel de l'original** (projection normalisée,
+bornée) après des séquences validées : une chaîne de transformations
+destructrices complémentaires perd environ la moitié du document, quand une
+chaîne de réversibles préserve 100 % — alors que chaque étape, isolément,
+passait le gate. numpy, sans clé ni réseau ; fixture synthétique 100 %.
+
+Un notebook transversal [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.ipynb)
+traite non pas une fonctionnalité mais une **classe de défaut** que toutes
+partagent : *le rendu visuel*. Un smoke test structurel (statut 200, balise
+`<main>` non vide, élément d'action présent) passe sur une page dont le rendu
+viole la charte — CTA en bleu Bootstrap, texte sous le seuil de contraste
+WCAG, lien semi-transparent sans affordance de bouton. Le notebook construit
+quatre pages synthétiques (Maison Valmont) portant une violation délibérée
+chacune, écrit trois détecteurs dédiés (contraste WCAG par luminance,
+dominance des primaires, affordance des CTA), et montre que le smoke test est
+aveugle aux trois classes de défauts. C'est la classe *visuelle* du motif « la
+sonde ment » documenté pour la classe *système* dans
+[`verification-verte-systeme-casse.md`](../../../../docs/reference/verification-verte-systeme-casse.md).
+stdlib pur, sans clé ni réseau.
+
 ---
 
 ## Sections
@@ -224,6 +264,12 @@ attendues.
   les deux sens du fil MCP, chevauchement cross-catalogue et risque de double-écrit
 - [`separer-les-environnements-de-vecteurs.ipynb`](separer-les-environnements-de-vecteurs.ipynb) —
   fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
+- [`auditer-un-formulaire-conditionnel.ipynb`](auditer-un-formulaire-conditionnel.ipynb) —
+  AI Forms conditionnelles comme machine à états, énumération des chemins et champs morts
+- [`mesurer-la-derive-dun-copilot.ipynb`](mesurer-la-derive-dun-copilot.ipynb) —
+  Copilot Gutenberg : dérive d'une chaîne de transformations, le gate par étape ne protège pas la chaîne
+- [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.ipynb) —
+  smoke test structurel vs conformité visuelle : contraste WCAG, primaires Bootstrap, affordance des CTA
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-6-Structured-Argumentation-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (argumentation structuree ASPIC+) : C# branche IKVM 8.15.0 + tweety-aspic.dll (tracked) + 8 refs `org.tweetyproject.arg.aspic.*` actifs (2 cellules avec using explicite + `AspicArgumentationTheory.asDungTheory()` invoquee). Python branche JPype + `from org.tweetyproject.arg.aspic.* import` + meme bibliotheque Java. Verifie firsthand (c.227, 2026-08-12, po-2023:CoursIA-2) : la paire est deja documentee native-both (PR #10385, 2026-08-11) avec parite 3-voies PROUVEE (C# from-scratch <=> C# IKVM <=> Python JPype convergent sur le meme AAF). Verdict SOTA-OK : lib-vs-lib meme moteur, le C# preserve en plus la tranche from-scratch pedagogique (gabarit Tweety-5-Csharp)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

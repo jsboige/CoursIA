@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb
   parity_level: semantic
+  bridge_verdict: RECOVERABLE-MACHINE
+  bridge_verdict_reason: "Lib-vs-lib MEME moteur Java TweetyProject MAIS shade fat jar C# pas livre dans le repo (libs/ gitignored, dotnet-build/build-Tweety7aShade.csproj exige JAVA_HOME + `dotnet build` pour produire libs/org.tweetyproject.tweety-7a.dll = 608 types, 740 KB, cf PR #10499 pour 5 modules individuels et PR #10410 pour le verdict RECOVERABLE-MACHINE precedent). C# branche IKVM 8.15.0 + shade DLL attendue + 113 refs `org.tweetyproject.*` actifs (14 cellules avec `using org.tweetyproject.arg.{dung,adf,weighted,social}` explicite) + patterns cell 23/24/25 (Dung/Weighted/Social) executes par c.208/c.209 (attestation `modules_attested_sota_ok`). Python branche JPype + `from org.tweetyproject.arg.dung.reasoner import SimpleGroundedReasoner` (cf cell 17) + meme bibliotheque Java. Verdict RECOVERABLE-MACHINE (et non RECOVERABLE-LOCAL) : le shade fat jar est deja livre en PR #10499 via shade Maven IKVM, mais la DLL finale n'est pas sur disque dans la machine worker (cf constat c.229, 2026-08-12, po-2023:CoursIA-2) -- action = `cd MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build && dotnet build build-Tweety7aShade.csproj -c Release` sur la machine qui livrera les demos (po-2023 ou po-2024 avec JAVA_HOME=/path/to/jdk). Verdict distinct de INTRINSIC : la lib est invocable, juste pas buildable localement. Sub-grain ADF SAT reste INTRINSIC (UnsatisfiedLinkError sur NativeLingelingSolver, pre-requis IncrementalSatSolver natif)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -36,6 +38,12 @@
         - "Cellule 21 (load) : Assembly.LoadFrom absolute path via Directory.GetCurrentDirectory() (kernel cwd = notebook dir, pas repo root)."
         - "Cellules 23/24/25 (Dung/Weighted/Social) : directive `#r \"libs/org.tweetyproject.tweety-7a.dll\"` prepended pour exposer les types au compilateur C# (Assembly.LoadFrom seul ne suffit pas, cf L898-3 keyword=`tweety-7a`)."
     - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: e61bed63a509773591f6115a4a127526a4c4afef
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 1d14a985ff5f4adedd0f8c1c662ebfb71ebfb733d02d499fb4741e2112065e30
+    - date: "2026-08-12"
       by: myia-po-2023:CoursIA-2
       python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
       csharp_sha: e61bed63a509773591f6115a4a127526a4c4afef

@@ -1,0 +1,111 @@
+name: workflow-path-filter-audit
+
+# Advisory (jamais un gate strict) : verifie qu'aucun workflow n'a ete ajoute
+# sans filtre `paths:`/`paths-ignore:` depuis le dernier audit de reference.
+# Issue de reference : #10600.
+#
+# Declenche : schedule quotidien (05:37 UTC, decale de catalog-cron 03:37 UTC)
+#             + workflow_dispatch (audit manuel).
+#
+# Ne check PAS sur `pull_request` : l'audit scanne tous les workflows, ce qui
+# declencherait un cycle de fan-out. Le schedule quotidien suffit pour detecter
+# les regressions en temps utile (les merges mergent dans la journee, l'audit
+# quotidien flag le lendemain matin).
+
+on:
+  schedule:
+    # 05:37 UTC quotidien (apres catalog-cron 03:37)
+    - cron: "37 5 * * *"
+  workflow_dispatch:
+    inputs:
+      check_regression:
+        description: "Compare against previous audit (FAIL on regression)"
+        required: false
+        type: boolean
+        default: true
+      quiet:
+        description: "Minimal console output"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  audit-workflow-path-filters:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Pas besoin de git history complet pour l'audit
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install PyYAML
+        run: python -m pip install --quiet pyyaml
+
+      - name: Run audit
+        id: audit
+        run: |
+          AUDIT_DIR="docs/audit/workflow-path-filters"
+          if [ "${{ inputs.check_regression }}" = "true" ] && [ -f "${AUDIT_DIR}/latest.json" ]; then
+            python scripts/notebook_tools/audit_workflow_path_filters.py \
+              --audit-dir "${AUDIT_DIR}" \
+              --check-regression "${AUDIT_DIR}/latest.json" \
+              --quiet
+          else
+            python scripts/notebook_tools/audit_workflow_path_filters.py \
+              --audit-dir "${AUDIT_DIR}" \
+              --quiet
+          fi
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-path-filter-audit
+          path: docs/audit/workflow-path-filters/audit-*.{json,md}
+          if-no-files-found: ignore
+
+      - name: Comment PR on regression
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const auditDir = 'docs/audit/workflow-path-filters';
+            const reports = fs.readdirSync(auditDir).filter(f => f.endsWith('.json') && f !== 'latest.json');
+            if (reports.length === 0) {
+              core.info('No audit reports found');
+              return;
+            }
+            const latest = reports.sort().reverse()[0];
+            const report = JSON.parse(fs.readFileSync(path.join(auditDir, latest), 'utf-8'));
+            const summary = report.summary;
+            const body = [
+              '## Workflow path-filter audit',
+              '',
+              '| Metrique | Valeur |',
+              '|---|---|',
+              `| Total workflows | ${summary.total} |`,
+              `| PR-triggered | ${summary.with_pr_trigger} |`,
+              `| Filtered | ${summary.filtered} |`,
+              `| Unfiltered (required) | ${summary.unfiltered_required} |`,
+              `| **Unfiltered (optional - regression!)** | **${summary.unfiltered_optional}** |`,
+              '',
+              'Voir `docs/audit/workflow-path-filters/audit-*.md` pour detail.',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });

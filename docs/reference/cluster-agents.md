@@ -240,6 +240,31 @@ Pour tout sprint / curriculum >= 3 étapes, creer **Epic GitHub** + sub-issues n
 
 **Exception** : missions one-shot < 30 min ou hotfix urgent restent en RooSync direct.
 
+## Délégation — mapping `model` → moteur, par machine
+
+Le mapping du `model` explicite (`sonnet` / `haiku`) vers le moteur sous-jacent dépend de la machine d'exécution. Raisonner en **tiers** (intermédiaire / léger), pas en nom de modèle : le principe de [`model-delegation.md`](../../.claude/rules/model-delegation.md) — déléguer le read-heavy borné, garder la décision, modèle explicite obligatoire — est invariant.
+
+| Machine | `sonnet` (tier intermédiaire) | `haiku` (tier léger) |
+|---|---|---|
+| ai-01 | GLM-5.1 | Qwen 3.6 local |
+| po-2023 | ZAI GLM-5.1 | MiniMax M3 |
+| autres workers po-* | voir `roosync_inventory` | voir `roosync_inventory` |
+
+MiniMax M3 (déployé sur `po-2023` depuis 2026-07-02, mandat user) remplace Qwen 3.6 sur le tier `haiku` pour cette lane : les sous-agents `model: "haiku"` invoqués depuis po-2023 sont exécutés par MiniMax M3. Seul le moteur change, pas la règle de qualité.
+
+## Capacité vision — router le QA visuel vers MiniMax (lanes CoursIA-2) ou ai-01, jamais GLM
+
+Mandat user 2026-07-11. **MiniMax M3** (main-loop de toutes les lanes CoursIA-2 depuis le mandat du 02/07) et **ai-01** (Opus) ont des capacités de **vision** que **ZAI GLM-5.1** (lanes CoursIA) n'a pas. Objectif : que nos README et notebooks **rendent bien visuellement**.
+
+**Routage capability-driven, PAS token-driven.** Distinct de [[feedback-token-economy-anthropic-only]] : on route vers MiniMax **pour sa vision** — une capacité que GLM n'a pas — pas pour économiser. C'est le cas légitime « meilleur outil pour la tâche », pas un fallback dégradé.
+
+- **Règle.** Toute tâche dont la valeur dépend du **rendu visuel** (galeries de figures README, plots générés par notebook, sorties d'images GenAI, layout de slides, diagrammes) voit son **QA visuel** routé vers une lane **CoursIA-2 (MiniMax)** ou vers **ai-01**. **Jamais** vérifié text-only sur une lane GLM : elle ne voit pas.
+- **Mécanisme concret.** Un `Read` sur un fichier image (`.png`/`.webp`/`.jpg`), ou sur un screenshot (Playwright render → screenshot → `Read`, ou `mcp__sk-agent__analyze_image`), insère des blocs image que MiniMax/Opus interprètent. Un `test -f` confirme l'**existence**, PAS le **rendu** — seul le regard distingue une vraie figure d'un placeholder plat, blanc ou cassé.
+- **Couplage ai-01 ↔ MiniMax (la « double vision » du mandat).** MiniMax fait le **balayage en volume** (audit read-only de N figures → liste de défauts : cassées / blanches / placeholder / alt-text incohérent / overflow slide) ; ai-01 **valide la liste et tranche au merge-gate** (regarde effectivement les figures d'une PR avant merge). Déléguer le sweep borné, garder le jugement — le sweep visuel est read-only, donc **sans collision** avec la lane qui possède la substance : le fix repart au owner.
+- **Classe de défaut à attraper** (cf [`sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) Prong A) : une figure réduite à des blocs de couleur plats / image blanche / placeholder / render cassé **alors que le vrai outil était invocable** (stack GenAI, matplotlib, solveur) → verdict RECOVERABLE-MACHINE ou -LOCAL, **régénérer**, jamais consacrer.
+
+**Incident fondateur** : `GenAI/Image/assets/readme/workflow-orchestration.png` — 3 blocs plats olive/violet/vert labellisés « sd35 photorealistic / watercolor / anime », c'est-à-dire une sortie dégénérée et non des images générées. Le fichier a passé le gate « existe sur disque » sans encombre ; il a été attrapé au **premier regard** (ai-01, 2026-07-11).
+
 ## Pointeurs cross-doc
 
 - Cycle de vie / diagnostic des serveurs MCP : [architecture_mcp_roo.md](architecture_mcp_roo.md) — inventaire des 15 outils roo-state-manager : [HARNESS-OVERVIEW.md §2](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md)

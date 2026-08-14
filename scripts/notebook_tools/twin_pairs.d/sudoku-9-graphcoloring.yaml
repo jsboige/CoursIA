@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib idiomatic-stack : Python = networkx (SOTA Python graph library, `nx.sudoku_graph()` construit le graphe de contraintes 81 sommets / 810 aretes, `nx.connected_components` verifie la connexite, coloration via hand-written backtracking/MRV/DSATUR au-dessus). C# = QuikGraph 2.5.0 (SOTA .NET graph library, `UndirectedGraph<int, Edge<int>>` + `ConnectedComponentsAlgorithm` -- equivalent .NET de networkx documente en tranche 2 c.211 #10412). Les deux jumeaux utilisent la SOTA graph library de leur stack respective. Pont cross-stack impossible : networkx est pur Python (CPython C-extension), QuikGraph est pur .NET ; aucun bytecode commun bridgeable (pas d'IKVM/JPype path). Pas de \"vrai\" solveur SOTA a brancher -- la coloration est hand-written des deux cotes (networkx ne resout pas la coloration, QuikGraph non plus). Verdict SOTA-OK : chaque jumeau utilise la SOTA lib de son ecosystme, asymetrie d'ecosysteme pas d'engine-mismatch. parity_level `native-both` confirmee par ai-01 #10412 (QuikGraph proprement reference, algorithme ConnectedComponents invoque)."
   audits:
     - date: "2026-08-03"
       by: myia-po-2023:CoursIA

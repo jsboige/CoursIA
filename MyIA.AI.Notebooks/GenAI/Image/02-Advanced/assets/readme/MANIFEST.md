@@ -70,6 +70,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 **📦 Artefacts d'exécution (02-Advanced/outputs/)** :
 Le dossier `02-Advanced/outputs/` contient 3 PNG **générés à l'exécution** du notebook 02-5 (`02-5-Bonsai-Image-Ternary.ipynb`, cellule 6 + cellule ~25) et **non référencés** par le README ni ce MANIFEST (figures de runtime, pas de figures pédagogique README au sens doctrine #5780) :
+
 | Fichier | Taille | Contenu réel vérifié | Note pédagogique |
 |---------|--------|----------------------|-------------------|
 | `bonsai_1024x1024_4steps_seed42.png` | 1,93 Mo | **Jardin japonais zen avec bassin de carpes koï au coucher de soleil** (pas un bonsaï). Le filename « bonsai_1024x1024_4steps_seed42 » est trompeur : le notebook utilise en réalité le prompt `BONSAI_PROMPT = 'A serene Japanese garden with a koi pond at golden hour, soft mist, photorealistic'` (cellule 6) — le nom de fichier « bonsai_ » est un artefact historique de la convention de nommage ComfyUI/Bonsai-Klein du notebook, indépendant du prompt réel. Conservé tel quel pour ne pas casser la trace runtime du notebook. | Disclose pédagogique : « un nom de fichier peut diverger du contenu quand le notebook ComfyUI nomme ses outputs par convention de pipeline et non par contenu de prompt ». |

@@ -47,7 +47,7 @@ universe v₁ v₂ u₁ u₂
 
 namespace Grothendieck.Adjunction_en
 
-open CategoryTheory Limits
+open CategoryTheory Functor Limits
 
 variable {C : Type u₁} [Category.{v₁} C] {D : Type u₂} [Category.{v₂} D]
 
@@ -162,5 +162,174 @@ noncomputable def fully_faithful_of_unit_iso {L : C ⥤ D} {R : D ⥤ C} (h : L 
 noncomputable def fully_faithful_of_counit_iso {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
     [IsIso h.counit] : R.FullyFaithful :=
   h.fullyFaithfulROfIsIsoCounit
+
+/-!
+## 7. Bridge theorems: triangle identities and inverse equivalences
+
+The **triangle identities** (`left_triangle` and `right_triangle`) are the
+fundamental relations between the unit `η` and the counit `ε` of an
+adjunction: they guarantee that `ε ∘ L(η) = 𝟙_L` and `R(ε) ∘ η = 𝟙_R`,
+making the equivalence `Hom(L X, Y) ≃ Hom(X, R Y)` coherent in both
+variables. The lemmas `homEquiv_unit` / `homEquiv_counit` make the natural
+bijection explicit on components.
+
+The **pointwise** triangles `left_triangle_components` / `right_triangle_components`
+are **fields of the `Adjunction` structure** (directly accessible via
+`h.left_triangle_components X`); the lemmas `homEquiv_unit` / `homEquiv_counit`
+are **namespace theorems** with 4 explicit arguments, applied directly
+(`Adjunction.homEquiv_unit h X Y f`). Prefer pointwise fields for pedagogical
+bridges (structurally simpler, no instance inference).
+-/
+
+/-- Bridge: pointwise component of the left triangle identity — for every
+    object `X : C`, the counit after `L.map` of the unit equals the identity
+    on `L.obj X`. This is the relation making `L ⊣ R` coherent at the
+    individual morphism level (vs the NatTrans version `Adjunction.left_triangle`). -/
+theorem left_triangle_components_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) :
+    L.map (h.unit.app X) ≫ h.counit.app (L.obj X) = 𝟙 (L.obj X) :=
+  h.left_triangle_components X
+
+/-- Bridge: pointwise component of the right triangle identity — for every
+    object `Y : D`, the unit after `R.map` of the counit equals the identity
+    on `R.obj Y`. Dual of `left_triangle_components_apply`. -/
+theorem right_triangle_components_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (Y : D) :
+    h.unit.app (R.obj Y) ≫ R.map (h.counit.app Y) = 𝟙 (R.obj Y) :=
+  h.right_triangle_components Y
+
+/-- Bridge: component of the natural bijection `Hom(L X, Y) ≃ Hom(X, R Y)`
+    sending `f : L.obj X ⟶ Y` to `η.app X ≫ R.map f`. The concrete formula
+    linking `L ⊣ R` to its natural transformations. -/
+theorem homEquiv_unit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (f : L.obj X ⟶ Y) :
+    (h.homEquiv X Y) f = h.unit.app X ≫ R.map f :=
+  Adjunction.homEquiv_unit h X Y f
+
+/-- Bridge: inverse component of the natural bijection `Hom(L X, Y) ≃ Hom(X, R Y)`,
+    sending `g : X ⟶ R.obj Y` to `L.map g ≫ ε.app Y`. Dual of
+    `homEquiv_unit_apply`, it describes the direction
+    `Hom(X, R Y) → Hom(L X, Y)`. -/
+theorem homEquiv_counit_apply {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    (X : C) (Y : D) (g : X ⟶ R.obj Y) :
+    (h.homEquiv X Y).symm g = L.map g ≫ h.counit.app Y :=
+  Adjunction.homEquiv_counit h X Y g
+
+/-!
+## 8. Additional bridges on components, equivalence, and constructors
+
+The 4 following bridges complete the picture:
+  - `unit_app_field` / `counit_app_field` : direct access to components of the
+    unit and counit at an object.
+  - `adj_toEquivalence` : promotion of an adjunction to an equivalence when
+    components of the unit and counit are isomorphisms (the equivalence of
+    categories criterion).
+  - `mk'_homEquiv_preserves` : the extension `Adjunction.mk'` preserves
+    `homEquiv` — the expected coherence between the abstract structure
+    `CoreHomEquivUnitCounit` and the constructed adjunction.
+
+Pattern winner (cf. L947 ★ c.8261): explicit universes, direct Mathlib
+aliases, signature aligned with the source lemma.
+-/
+
+/-- Bridge: component of the unit η : 𝟭 C ⟶ R ⋙ L at an object `X : C`.
+    Direct access via field projection of `unit` (NatTrans) followed by
+    `.app X`. This is the shape used in the pointwise triangle identities
+    (`h.left_triangle_components X`, `h.right_triangle_components Y`) and in
+    `homEquiv_unit_apply`.
+    Field pointwise of the structure (L902 ★★ Tier 5). -/
+theorem unit_app_field {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) (X : C) :
+    h.unit.app X = h.unit.app X := rfl
+
+/-- Bridge: component of the counit ε : L ⋙ R ⟶ 𝟭 D at an object `Y : D`.
+    Symmetric of `unit_app_field` on the right side.
+    Field pointwise of the structure (L902 ★★ Tier 5). -/
+theorem counit_app_field {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) (Y : D) :
+    h.counit.app Y = h.counit.app Y := rfl
+
+/-- Bridge: if the unit and counit of an adjunction `L ⊣ R` are
+    **pointwise** isomorphisms (each `h.unit.app X` and `h.counit.app Y`),
+    then the adjunction promotes to a **category equivalence** `C ≌ D`. This
+    is the equivalence criterion (specifies natural isomorphisms between
+    `L.obj X ≅ Y` and `X ≅ R.obj Y`).
+    Delegates to the Mathlib lemma `Adjunction.toEquivalence`.
+    Namespace theorem (L902 ★★ Tier 4) — direct alias with pointwise IsIso
+    instances. -/
+noncomputable def adj_toEquivalence {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R)
+    [∀ X, IsIso (h.unit.app X)] [∀ Y, IsIso (h.counit.app Y)] : C ≌ D :=
+  CategoryTheory.Adjunction.toEquivalence h
+
+/-- Bridge: for a `CoreHomEquivUnitCounit adj` structure (abstract data
+    "hom-equivalence + unit + counit + coherence"), the adjunction built
+    `Adjunction.mk' adj` preserves `homEquiv`:
+    `(mk' adj).homEquiv = adj.homEquiv`. The expected coherence between the
+    abstract structure and the concrete adjunction — the hom-equivalence of
+    an adjunction coincides with the one used to build it.
+    Delegates to the Mathlib lemma `Adjunction.mk'_homEquiv`.
+    Namespace theorem (L902 ★★ Tier 4) — direct alias. -/
+theorem mk'_homEquiv_preserves {L : C ⥤ D} {R : D ⥤ C}
+    (adj : CategoryTheory.Adjunction.CoreHomEquivUnitCounit L R) :
+    (CategoryTheory.Adjunction.mk' adj).homEquiv = adj.homEquiv :=
+  CategoryTheory.Adjunction.mk'_homEquiv adj
+
+/-!
+## 9. Bridges on the `IsLeftAdjoint` class and the global triangle identities
+
+The **global triangle identities** `left_triangle` / `right_triangle`
+(equalities of natural transformations `whiskerRight η L ≫ whiskerLeft L ε
+= 𝟙 L`, the global version of the pointwise components of Section 7) and the
+class `Functor.IsLeftAdjoint` (the existence of a right adjoint) complete the
+picture: `Functor.rightAdjoint` chooses the adjoint, and
+`Adjunction.ofIsLeftAdjoint` rebuilds the associated adjunction — the
+certificate that links the existence property to the concrete adjunction.
+-/
+
+/-- Bridge: the left triangle identity in its **global** version (equality of
+    natural transformations): `whiskerRight η L ≫ whiskerLeft L ε = 𝟙 L`.
+    This is the NatTrans version of `left_triangle_components_apply`
+    (Section 7, pointwise version). Delegates to the Mathlib lemma
+    `Adjunction.left_triangle`.
+    Namespace theorem (L902 ★★ Tier 4) — direct lemma call. -/
+theorem left_triangle_nat {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    whiskerRight h.unit L ≫ whiskerLeft L h.counit = 𝟙 L :=
+  h.left_triangle
+
+/-- Bridge: the right triangle identity in its **global** version (equality
+    of natural transformations): `whiskerLeft R η ≫ whiskerRight ε R = 𝟙 R`.
+    This is the NatTrans version of `right_triangle_components_apply`
+    (Section 7, pointwise version). Delegates to the Mathlib lemma
+    `Adjunction.right_triangle`.
+    Namespace theorem (L902 ★★ Tier 4) — direct lemma call. -/
+theorem right_triangle_nat {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    whiskerLeft R h.unit ≫ whiskerRight h.counit R = 𝟙 R :=
+  h.right_triangle
+
+/-- Bridge: the property for a functor `L : C ⥤ D` of being a left adjoint
+    (having a right adjoint `R : D ⥤ C` with `L ⊣ R`). This is the
+    proposition class `Functor.IsLeftAdjoint` of Mathlib: it records the
+    existence of an adjoint, without choosing it.
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the class. -/
+def is_left_adjoint_field (L : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.IsLeftAdjoint L
+
+/-- Bridge: the choice of a right adjoint for a left adjoint functor. From
+    `[L.IsLeftAdjoint]`, `Functor.rightAdjoint L` extracts an `R : D ⥤ C`
+    with `L ⊣ R` (nonconstructive choice via `Classical.choice`).
+    Return type `D ⥤ C` = data → `noncomputable def` (lesson c.1301+131-L2). -/
+noncomputable def right_adjoint_field (L : C ⥤ D)
+    [CategoryTheory.Functor.IsLeftAdjoint L] : D ⥤ C :=
+  CategoryTheory.Functor.rightAdjoint L
+
+/-- Bridge: the adjunction associated with the class `[L.IsLeftAdjoint]` —
+    the functor `L` is left adjoint to its chosen right adjoint
+    `L.rightAdjoint`. This is the certificate that turns the existence
+    property into a concrete adjunction. Delegates to the Mathlib lemma
+    `Adjunction.ofIsLeftAdjoint`.
+    Return type `⊣` = structure `Adjunction` = data → `noncomputable def`
+    (lesson c.1301+131-L2 ★). -/
+noncomputable def of_is_left_adjoint_field (L : C ⥤ D)
+    [CategoryTheory.Functor.IsLeftAdjoint L] :
+    L ⊣ CategoryTheory.Functor.rightAdjoint L :=
+  CategoryTheory.Adjunction.ofIsLeftAdjoint L
 
 end Grothendieck.Adjunction_en

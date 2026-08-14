@@ -1996,6 +1996,267 @@ layout: section
 
 
 ---
+layout: section
+---
+
+
+# IA générative & vibe coding
+
+- 2022-2026 : la révolution des modèles de fondation
+- LLMs, IA générative multimodale, agents et vibe coding
+- Notre expérience : notebooks GenAI et stack self-hosted
+
+
+---
+
+
+# La révolution des modèles de fondation
+
+**Le tournant : la « mise à l'échelle » (scaling)**
+
+- Plus de données, plus de calcul, plus de paramètres
+- Des capacités nouvelles émergent au-delà d'un seuil
+  - Comprendre, traduire, résumer, écrire du code
+- Ces modèles deviennent la base (« fondation ») de nombreuses applications
+
+```mermaid
+graph LR
+    A[Données massives] --> C[Modèle de fondation]
+    B[Calcul massif] --> C
+    C --> D[Capacités émergentes]
+    D --> E[GPT, Claude, Gemini...]
+```
+
+> Pour approfondir : notebooks `GenAI/Texte/`
+
+
+---
+
+
+# LLMs & ChatGPT : l'IA grand public
+
+- 2017 : Transformers (« Attention is All You Need ») — le fondement
+- 2020 : GPT-3 — des capacités qui émergent à l'échelle
+- 2022 : ChatGPT — l'IA conversationnelle grand public
+- 2023-2026 : GPT-4/5, Claude, Gemini, modèles open-source
+
+**Alignement par instruction**
+
+```mermaid
+graph LR
+    A[Pré-entraînement<br/>corpus massif] --> B[Fine-tuning supervisé<br/>exemples d'instructions]
+    B --> C[RLHF<br/>retour humain]
+    C --> D[Assistant aligné]
+```
+
+> ChatGPT a atteint 100 millions d'utilisateurs en 2 mois : l'IA devient un produit de masse
+
+
+---
+
+
+# IA générative multimodale
+
+Un seul paradigme, plusieurs modalités — un modèle peut générer et comprendre différents types de contenus :
+
+- **Texte** : rédaction, traduction, résumé, code (`GenAI/Texte/`)
+- **Image** : génération et édition (`GenAI/Image/` — DALL-E, Qwen-Image-Edit, SDXL)
+- **Audio** : synthèse vocale et transcription (`GenAI/Audio/` — Whisper, Kokoro, XTTS)
+- **Vidéo** : génération et analyse (`GenAI/Video/` — Hunyuan, LTX, AnimateDiff)
+
+```mermaid
+graph TD
+    A[Modèle de fondation multimodal] --> B[Texte]
+    A --> C[Image]
+    A --> D[Audio]
+    A --> E[Vidéo]
+```
+
+
+---
+
+
+# Modèles de diffusion : générer une image
+
+**Principe : apprendre à débruiter**
+
+- Phase aller : on ajoute progressivement du bruit à une image
+- Phase retour : le modèle apprend à retirer le bruit pas à pas
+- À partir d'un bruit pur, il reconstruit une image cohérente
+- Diffusion latente : opérer dans un espace compact (moins de calcul)
+
+```mermaid
+graph LR
+    A[Image] --> B[+ bruit<br/>aller] --> C[Bruit pur]
+    C --> D[- bruit<br/>retour appris] --> E[Nouvelle image]
+```
+
+> Les générateurs d'images (DALL-E, Stable Diffusion, Midjourney) reposent sur ce principe
+
+
+---
+
+
+# RAG : connecter un LLM à vos données
+
+- Le LLM seul connaît ses données d'entraînement (fenêtre de connaissance figée)
+- RAG = Retrieval Augmented Generation — « génération augmentée par la récupération »
+  - Les documents sont indexés en vecteurs (embeddings)
+  - À chaque question, on récupère les passages les plus pertinents
+  - On les injecte dans le prompt, puis le LLM génère une réponse fondée
+- Effets : réponses à jour, traçables, moins d'hallucinations
+
+```mermaid
+graph LR
+    A[Documents] --> B[Embeddings<br/>vecteurs]
+    B --> C[(Base vectorielle)]
+    D[Question] --> E[Récupération<br/>top-k]
+    C --> E
+    E --> F[Prompt enrichi]
+    F --> G[Réponse fondée]
+```
+
+> Notebook : `GenAI/RAG-et-Memoire-Semantique/`
+
+
+---
+
+
+# Agents IA : au-delà du chatbot
+
+- Un agent = un LLM + des outils + une boucle de raisonnement
+- Le modèle décide quand utiliser un outil (code, web, API, fichier)
+- Boucle **ReAct** : Raisonner → Agir → Observer → Raisonner…
+
+```mermaid
+graph TD
+    A[Percevoir<br/>demande utilisateur] --> B[Raisonner<br/>LLM + plan]
+    B --> C[Agir<br/>outil : code, web, API]
+    C --> D[Observer<br/>résultat]
+    D --> B
+```
+
+- Cas d'usage : recherche web, exécution de code, orchestration de tâches
+- Le chatbot devient un **agent actif** qui accomplit des tâches
+
+> Notebooks : `GenAI/SemanticKernel/` (20 notebooks)
+
+
+---
+
+
+# Vibe coding : programmer par intention
+
+- Terme popularisé par Andrej Karpathy (2025)
+- On décrit ce que l'on veut **en langage naturel**, l'IA écrit le code
+- Le développeur devient architecte et relecteur plutôt que dactylographe
+- Limite : il faut savoir **relire et tester** ce que l'IA produit
+
+```mermaid
+graph LR
+    A[Idée en langage naturel] --> B[L'IA génère le code]
+    B --> C[Exécution + tests]
+    C --> D[Revue humaine]
+    D --> B
+```
+
+> Curriculum : `GenAI/Vibe-Coding/`
+
+
+---
+
+
+# Vibe coding en pratique
+
+- **Outils** : Claude Code, GitHub Copilot, Cursor, Windsurf
+- **Bonnes pratiques**
+  - `CLAUDE.md` : documenter le contexte et les règles du projet
+  - Agents et skills spécialisés : déléguer les tâches répétitives
+  - Itération serrée : petites tâches, vérification continue
+- **Notre infrastructure** : un cluster d'agents (coordinateur + workers) qui
+  explorent, produisent, reviewent et fusionnent des PRs
+
+```mermaid
+graph TD
+    U[Utilisateur] --> C[Coordinateur]
+    C --> W1[Worker 1]
+    C --> W2[Worker 2]
+    C --> W3[Worker 3]
+    W1 --> R[PR + rapports]
+    W2 --> R
+    W3 --> R
+    R --> U
+```
+
+> Curriculum : `GenAI/Vibe-Coding/Claude-Code/`
+
+
+---
+
+
+# Adapter un modèle de fondation
+
+- Un modèle de fondation est générique : on l'**adapte** à un domaine
+- **Fine-tuning** : ré-entraînement supervisé sur des données spécialisées
+- **LoRA** : n'adapter qu'un petit nombre de paramètres (économie de calcul)
+- **Quantization** (INT4, FP8) : réduire la mémoire pour l'inférence
+- **DPO / RLHF** : aligner le comportement sur des préférences humaines
+
+```mermaid
+graph LR
+    A[Modèle de fondation<br/>générique] --> B[Adaptation<br/>LoRA / fine-tuning]
+    B --> C[Modèle spécialisé]
+    C --> D[Quantization<br/>INT4 / FP8]
+    D --> E[Inférence efficace]
+```
+
+> Notebooks : `GenAI/PostTraining/`, `GenAI/FineTuning/`
+
+
+---
+
+
+# Notre stack GenAI (self-hosted)
+
+- Services Docker dédiés, orchestrés et validés sur nos machines
+  - **ComfyUI** : workflows de génération d'images
+  - **Qwen / Lumina / Z-Image** : modèles de fondation open-source
+  - **Open-WebUI** : interface conversationnelle
+- GPU avec allocation et idle management (quantization par service)
+- La même stack alimente les notebooks `GenAI/{Image,Audio,Video}`
+
+```mermaid
+graph TD
+    A[Notebooks GenAI] --> B[API commune]
+    B --> C[ComfyUI]
+    B --> D[Qwen / Lumina]
+    B --> E[Open-WebUI]
+    C --> F[(GPU)]
+    D --> F
+    E --> F
+```
+
+> Référence : `docs/genai/genai-services.md`
+
+
+---
+
+
+# Enjeux : hallucinations, alignement, régulation
+
+- **Hallucinations** : un LLM peut affirmer avec assurance une chose fausse
+  - Atténuation : RAG, vérification, raisonnement pas à pas
+- **Alignement** : s'assurer que le modèle suit l'intention humaine
+  - RLHF, DPO, garde-fous, supervision
+- **Régulation** : l'AI Act européen encadre les usages à risque
+  - Transparence, documentation, obligations pour l'IA généraliste
+- **Sécurité** : les clés et secrets vivent dans des fichiers protégés,
+  jamais dans le code, les prompts ou les sorties
+
+> Un outil puissant appelle une utilisation **responsable**
+
+
+---
 
 
 # Pour aller plus loin : Notebooks
@@ -2004,7 +2265,8 @@ Ce deck couvre tous les domaines de l'IA. Pour approfondir avec des exemples pra
 
 > **GenAI - IA Generative**
 > `MyIA.AI.Notebooks/GenAI/`
-> Transformers, diffusion models, LLMs, génération d'images
+> Transformers, diffusion, LLMs, génération d'images, audio, vidéo
+> `GenAI/Vibe-Coding/` : programmation par intention (Claude Code)
 
 > **Search - Recherche et Optimisation**
 > `MyIA.AI.Notebooks/Search/`
