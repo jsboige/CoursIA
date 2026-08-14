@@ -348,8 +348,17 @@ def _build_blob_history(repo_root: Path) -> tuple[dict, dict]:
     """
     import subprocess
 
+    # ``-m`` : montre le diff des merge commits contre chaque parent. Sans cette
+    # option, ``git log --raw`` supprime les diffs de merge -> un blob dont la
+    # premiere apparition est le RESULTAT d'une resolution de merge (typique des
+    # PRs twin ou un merge ``origin/main`` combine un header-hoist + un fix de
+    # runtime en un nouveau blob unique) est invisible au walker, et la rebaseline
+    # de ce blob echoue sur ``test_audit_shas_exist_in_file_history`` alors que le
+    # sha est un vrai blob git (``git cat-file`` / ``git ls-tree`` le confirment).
+    # ``-m`` reste dans les ancetres de HEAD (determinisme CI/local preserve, cf
+    # note supra sur le rejet de ``--all``) ; le parser deduplique via ``set()``.
     proc = subprocess.run(
-        ["git", "log", "HEAD", "--raw", "--no-renames", "--abbrev=40", "--format="],
+        ["git", "log", "HEAD", "-m", "--raw", "--no-renames", "--abbrev=40", "--format="],
         cwd=repo_root, capture_output=True, text=True,
     )
     path_blobs: dict[str, set[str]] = {}
@@ -908,3 +917,57 @@ def test_update_pair_partial_drift_is_not_noop(tmp_path, monkeypatch):
         "Partial drift (one side content_sha differs) is a real change "
         "and must NOT be flagged as no-op."
     )
+
+
+def test_build_blob_history_sees_merge_introduced_blob(tmp_path):
+    """Regression #10732 : un blob dont la 1re apparition est le RESULTAT d'un
+    merge commit doit etre vu par ``_build_blob_history``.
+
+    Sans ``-m``, ``git log --raw`` supprime les diffs de merge -> le walker ne
+    voit jamais le blob merge-resolved, et ``test_audit_shas_exist_in_file_history``
+    le classe ``fabricated`` (alors que ``git cat-file`` / ``git ls-tree`` le
+    confirment reel). Ce scenario est quotidien sur les PRs twin ou un merge
+    ``origin/main`` combine un header-hoist + un fix de runtime en un nouveau
+    blob. Constructeur : deux branches divergent editent le meme fichier, le
+    merge est resolu en un contenu unique absent des deux parents.
+    """
+    import subprocess
+
+    def _git(*args):
+        return subprocess.run(
+            ["git", *args], cwd=tmp_path, capture_output=True, text=True, check=True,
+        )
+
+    _git("init", "-q")
+    _git("config", "user.email", "t@t"); _git("config", "user.name", "t")
+    _git("config", "commit.gpgsign", "false")
+    (tmp_path / "f.txt").write_text("line1\nline3\n", encoding="utf-8")
+    _git("add", "f.txt"); _git("commit", "-qm", "init")
+    main_branch = _git("symbolic-ref", "--short", "HEAD").stdout.strip()
+    _git("checkout", "-q", "-b", "branch")
+    (tmp_path / "f.txt").write_text("line1\nlineB\nline3\n", encoding="utf-8")
+    _git("commit", "-qam", "branch edit")
+    _git("checkout", "-q", main_branch)
+    # divergence cote main pour forcer un vrai merge a 2 parents
+    (tmp_path / "f.txt").write_text("lineMAIN1\nline3\n", encoding="utf-8")
+    _git("commit", "-qam", "main edit")
+    # le merge produit un conflit (sortie non-zero attendue) -> etat de merge
+    subprocess.run(
+        ["git", "merge", "-q", "--no-ff", "branch"],
+        cwd=tmp_path, capture_output=True, text=True,
+    )
+    # resolution manuelle en un CONTENU UNIQUE absent des deux parents
+    (tmp_path / "f.txt").write_text("lineMAIN1\nlineB\nline3\nMERGED-UNIQUE\n", encoding="utf-8")
+    _git("add", "f.txt"); _git("commit", "-qm", "merge resolved unique")
+    merge_blob = _git("rev-parse", "HEAD:f.txt").stdout.strip()
+    assert len(merge_blob) == 40, "blob SHA attendu (40 hex)"
+
+    path_blobs, _blob_paths = _build_blob_history(tmp_path)
+    assert merge_blob in path_blobs.get("f.txt", set()), (
+        f"le blob merge-introduced {merge_blob[:12]} est invisible au walker "
+        f"(f.txt a eu les blobs {sorted(s[:12] for s in path_blobs.get('f.txt', set()))}). "
+        f"Cause : ``git log --raw`` sans ``-m`` supprime les diffs de merge -> un sha "
+        f"atteste dont la 1re apparition est une resolution de merge est classe "
+        f"``fabricated`` a tort par ``test_audit_shas_exist_in_file_history``."
+    )
+

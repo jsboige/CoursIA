@@ -2,7 +2,10 @@
   family: ML.NET/Python
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX-Python.ipynb
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb
-  parity_level: semantic
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Les DEUX cotes pontent le MEME engine d'inference ONNX Runtime (par Microsoft) via les bindings officiels natifs de leur ecosysteme. Python = onnxruntime (20 refs sur 6 cells : InferenceSession, inference iris_model.onnx) + skl2onnx (export) + onnx (inspection). C# = #r "nuget: Microsoft.ML.OnnxRuntime, 1.16.0" + Microsoft.ML.OnnxTransformer 3.0.0 + using Microsoft.ML.Transforms.Onnx, exec_count=1/2 (ApplyOnnxModel sur iris_model.onnx reellement execute). Verdict SOTA-OK : vrai moteur SOTA installe ET invoque des deux cotes (regle sota-not-workaround Prong A). Reclass semantic -> native-both : les deux jumeaux invoquent un engine externe de production (le critere #10382). L'asymetrie export-vs-load (Python producteur via skl2onnx, C# consommateur) reste documentee dans known_differences et n'affecte pas le pont inference (le coeur SOTA). Firsthand G.1 worktree origin/main, myia-po-2025:CoursIA 2026-08-12.
   audits:
     - date: "2026-08-04"
       by: myia-po-2024:CoursIA-2

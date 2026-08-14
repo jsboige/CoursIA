@@ -152,4 +152,67 @@ theorem dense_pullback_stable {C : Type*} [Category C] {X Y : C}
     Sieve.pullback f S ∈ GrothendieckTopology.dense Y :=
   GrothendieckTopology.dense.pullback_stable f hS
 
+/-!
+## Théorèmes propres (c.1301+126)
+
+Les théorèmes ci-dessous *prouvent* des égalités définitionnelles que les
+fields de la structure `GrothendieckTopology C` exposent via la topologie
+`dense` (un `def` au niveau du namespace). Ils exploitent :
+- `GrothendieckTopology.dense.top_mem X` : lemma user-facing (simp+grind)
+  sur la topologie dense, qui est β-équivalent à `dense.top_mem' X`
+- `GrothendieckTopology.dense.pullback_stable f hS` : lemma user-facing
+  sur la stabilité par pullback
+- `GrothendieckTopology.dense_covering` : `iff` qui caractérise
+  l'appartenance `S ∈ GrothendieckTopology.dense X`
+
+Tous ces fields/lemmas opèrent sur la structure résidente
+`GrothendieckTopology C` non polymorphe d'univers — donc **L902 ★★ SAFE**
+(cf. c.1301+108-L1 ★★ : les constructors polymorphes d'univers sont à
+proscrire, contrairement aux fields résidents sur C).
+
+1. `dense_top_mem_field` : restatement de `dense_top_mem` qui utilise
+   directement le lemma Mathlib `GrothendieckTopology.dense.top_mem X`.
+2. `dense_pullback_stable_field` : restatement de `dense_pullback_stable`
+   qui utilise directement le lemma Mathlib
+   `GrothendieckTopology.dense.pullback_stable f hS`.
+3. `mem_dense_iff_forall_refines` : restatement de la caractérisation
+   `mem_dense_of_refines` (aller) et `dense_refines_of_mem` (retour)
+   combinés en un `↔` via `GrothendieckTopology.dense_covering.symm`.
+
+Ce sont des théorèmes « vitrines » qui certifient que les fields/lemmas
+de la structure `GrothendieckTopology C` sont effectivement calculables
+dans la même exécution Lean.
+-/
+
+/-- Théorème : le crible maximal est dense-couvrant au sens du field
+    `top_mem` de la topologie `dense`. Restatement direct du lemma
+    `GrothendieckTopology.dense.top_mem X` (qui est lui-même β-équivalent
+    à `dense.top_mem' X`, l'axiome d'identité de la structure résidente
+    `GrothendieckTopology C`). -/
+theorem dense_top_mem_field {C : Type*} [Category C] (X : C) :
+    (⊤ : Sieve X) ∈ GrothendieckTopology.dense X :=
+  GrothendieckTopology.dense.top_mem X
+
+/-- Théorème : la stabilité par pullback du crible dense-couvrant, via
+    le lemma Mathlib `GrothendieckTopology.dense.pullback_stable`
+    (lui-même β-équivalent à `dense.pullback_stable' f hS`, l'axiome de
+    stabilité de la structure résidente `GrothendieckTopology C`). -/
+theorem dense_pullback_stable_field {C : Type*} [Category C] {X Y : C}
+    {S : Sieve X} (hS : S ∈ GrothendieckTopology.dense X) (f : Y ⟶ X) :
+    Sieve.pullback f S ∈ GrothendieckTopology.dense Y :=
+  GrothendieckTopology.dense.pullback_stable f hS
+
+/-- Théorème : caractérisation d'appartenance explicite d'un crible
+    dense-couvrant, sous forme d'équivalence biconditionnelle entre
+    `S ∈ GrothendieckTopology.dense X` et la propriété universelle
+    « toute flèche entrante admet un raffinement dans S ». C'est
+    l'énoncé `GrothendieckTopology.dense_covering.symm` (les directions
+    aller et retour sont déjà prouvées par `mem_dense_of_refines` et
+    `dense_refines_of_mem` respectivement). -/
+theorem mem_dense_iff_forall_refines {C : Type*} [Category C] {X : C}
+    {S : Sieve X} :
+    (S ∈ GrothendieckTopology.dense X) ↔
+      ∀ {Y : C} (f : Y ⟶ X), ∃ (Z : _) (g : Z ⟶ Y), S.arrows (g ≫ f) :=
+  GrothendieckTopology.dense_covering.symm
+
 end Grothendieck.DenseTopology

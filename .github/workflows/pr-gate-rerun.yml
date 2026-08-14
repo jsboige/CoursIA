@@ -12,10 +12,22 @@ name: PR gate (re-aggregate)
 # from _pull_request_trigger and continues).
 #
 # What this fixes: pr-gate.yml aggregates once on pull_request with up to a
-# 90-min settle window. If a required guard (Variation Tag Guard) flips green
-# AFTER that aggregation, the PR stays BLOCKED on a stale FAIL until a manual
-# `gh run rerun`. This workflow re-aggregates the CURRENT check set when that
-# guard completes and POSTs the fresh verdict onto the PR head SHA.
+# 90-min settle window. If a required guard (Variation Tag Guard, Lane Claim
+# Guard) flips green AFTER that aggregation, the PR stays BLOCKED on a stale
+# FAIL until a manual `gh run rerun`. This workflow re-aggregates the CURRENT
+# check set when such a guard completes and POSTs the fresh verdict onto the
+# PR head SHA.
+#
+# Why Lane Claim Guard is also a trigger (#10433 follow-up): lane-claim-guard
+# listens to the `edited` activity type, so it re-runs when a PR body is
+# edited (e.g. a closing-ref `Closes #N` fixed to `See #N` to resolve a
+# lane collision). pr-gate.yml does NOT listen to `edited` (its trigger is
+# the default opened/synchronize/reopened), so its aggregate stays stale on
+# the pre-edit FAIL even though lane-claim-guard now passes. Without this
+# re-aggregation trigger, the PR stays falsely BLOCKED until a manual rerun
+# -- observed 4x on 2026-08-12 (twin-parite tranches #10588/#10592/#10599/
+# #10601, unblocked by hand). Re-aggregating on Lane Claim Guard completion
+# closes the loop automatically.
 #
 # Why an explicit check-run POST (not the job's auto check-run): a workflow_run
 # job runs on the DEFAULT branch, so GITHUB_SHA is the default-branch commit and
@@ -26,7 +38,7 @@ name: PR gate (re-aggregate)
 
 on:
   workflow_run:
-    workflows: ["Variation Tag Guard"]
+    workflows: ["Variation Tag Guard", "Lane Claim Guard"]
     types: [completed]
   # Manual dispatch for testing the re-aggregation path without waiting for a
   # guard run. PR_NUMBER/HEAD_SHA default to empty; the job then no-ops unless

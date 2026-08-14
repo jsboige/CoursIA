@@ -85,13 +85,41 @@ paths = [
     # the gate works (c.10139-L4 ★★: gate that can't rougir isn't a gate).
     # These fixtures are explicitly designed to LOOK like real 32-char
     # generated tokens (entropy >= 4.8, full alphabet coverage) so the test
-    # validates the production regex -- not a model of it. A REAL secret
-    # accidentally committed to the same file WILL still rougir via the
-    # custom rule, because gitleaks evaluates `paths` AFTER `[[rules]]`
-    # matches. This path-allowlist is a SCOPE marker ("this file IS a
-    # test, the tokens inside ARE synthetic by construction"), not a
-    # content bypass.
+    # validates the production regex -- not a model of it.
+    #
+    # SCOPE TRUTH (#10595, measured firsthand with gitleaks 8.24.3 pinned):
+    # `[allowlist].paths` is a CONTENT BYPASS -- gitleaks reads it BEFORE
+    # evaluating `[[rules]]`, so a file matched here is **not scanned at all**.
+    # A REAL secret accidentally committed under `scripts/secrets/tests/`
+    # would NOT rougir, because gitleaks evaluates `paths` BEFORE `[[rules]]`
+    # (the order claimed in the previous version of this comment was inverted).
+    # Two files byte-identical except for their path: the file under this
+    # allowlist stays silent, the control outside is FLAGGED. See #10595.
+    #
+    # We keep this paths entry because the tests themselves contain synthetic
+    # QWEN_API_TOKEN fixtures (c.10265 verification, NOT live credentials) and
+    # scanning them would produce 14+ noise findings per CI run, defeating
+    # the signal-to-noise ratio. The structural tradeoff is ASSUMED, not
+    # disguised: **this directory is not scanned**. Any future live secret in
+    # a `test_gitleaks_*.py` file would be invisible to CI -- the price of
+    # having hermetic positive controls. Documented in #10595 + the new
+    # `test_real_secret_under_path_allowlist_is_invisible` control (the
+    # mirror of this property: it asserts the bypass and gives it a name).
     '''scripts/secrets/tests/test_gitleaks_.*\.py$''',
+    # --- #10544 IKVM shade build scripts (POSITIVE controls: rebuild-5shades.sh /
+    # rebuild-dialogues.sh) — the `:slf4j-api-1.7.36.jar` Maven URL inside a
+    # `for url_pkg in \"$M2/.../foo.jar:foo.jar\"` list is matched by the default
+    # `generic-api-key` rule on the `prefix:secret` shape (entropy 3.78,
+    # finding first observed 2026-08-12 on rebuild-dialogues.sh:110). The
+    # `slf4j-api` token is a PUBLIC Maven Central artifact path
+    # (org/slf4j/slf4j-api/1.7.36/), not a credential — gitleaks redaction
+    # masks it in the public log but the value is path-shaped. These scripts
+    # live under `dotnet-build/`, are 100% IKVM source-recompile recipes
+    # (JDK 17 + Maven 3.9 + .NET 8), and do NOT contain any runtime API
+    # token, OAuth secret, or credential. A REAL secret accidentally
+    # committed to the same file WOULD still rougir via the regex allowlist
+    # evaluated AFTER paths (no content bypass). Scope = build recipes only.
+    '''MyIA\.AI\.Notebooks/SymbolicAI/Tweety/dotnet-build/.*\.sh$''',
 ]
 
 # Notebooks: do NOT blanket-exclude .ipynb — secrets inline in code cells are a real vector.
@@ -209,4 +237,11 @@ stopwords = [
     "votre_token_copie_ici",
     "your_bearer_token_here",
     "your_qwen_api_token_here",
+    # --- #10575 AGSEC005 test fixtures (placeholder credentials in xUnit tests) ---
+    # AgentSafetyAnalyzerTests.cs exercises the credential-prefix detector with
+    # CANONICAL placeholder values. None is a real secret; all are re-read at
+    # source 2026-08-12. Kept as stopwords (substring on the finding) so a REAL
+    # credential in the same test file still fails the scan.
+    "AbCdEf1234567890",       # common placeholder segment across sk-/ghp_-shaped test fixtures
+    "AKIAIOSFODNN7EXAMPLE",   # AWS documentation example key (canonical placeholder, not rotatable)
 ]

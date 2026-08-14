@@ -125,4 +125,113 @@ morphism in algebraic geometry (bundles, stacks).
 #check @CategoryTheory.Over
 #check @CategoryTheory.StructuredArrow
 
+/-!
+## 4. Bridge theorems: functorial law and natural transformation component
+
+The comma category `Comma L R` is a full-fledged category: the projections
+`fst` and `snd` are functors, and the canonical natural transformation
+`natTrans : fst ⋙ L ⟶ snd ⋙ R` admits explicit components. The 4 bridges
+below join the module's definitions with the underlying Mathlib 4 facts:
+
+  - `map_id` / `map_comp`: structure fields of the `fstFunctor` (direct
+    access `(fstFunctor).map_id X` / `(fstFunctor).map_comp f g`).
+  - `natTrans_app`: `@[simp]` namespace lemma of `Mathlib.CategoryTheory.Comma`
+    with 3 explicit arguments (`L R X`) — direct application.
+  - `snd_map_comp`: explicit composition of the snd projection.
+
+Namespace lemmas with explicit args = direct application (cf. lesson
+L902 ★★ Tier 5: a `by rw [...]` defeats the LHS but doesn't generally
+close the morphism equality). Functor structure fields are accessible
+without prefix (`h.map_id X` vs `Functor.map_id h X`).
+-/
+
+/-- Bridge: the `Comma.fst` functor preserves identities. This is the
+    `Functor.map_id` structure field, directly accessible. -/
+theorem fst_map_id {X : CategoryTheory.Comma L R} :
+    (fstFunctor).map (𝟙 X) = 𝟙 ((fstFunctor).obj X) :=
+  (fstFunctor).map_id X
+
+/-- Bridge: the `Comma.fst` functor preserves composition of morphisms.
+    Structure field `Functor.map_comp`. -/
+theorem fst_map_comp {X Y Z : CategoryTheory.Comma L R} (f : X ⟶ Y) (g : Y ⟶ Z) :
+    (fstFunctor).map (f ≫ g) = (fstFunctor).map f ≫ (fstFunctor).map g :=
+  (fstFunctor).map_comp f g
+
+/-- Bridge: the component of `natTrans : fst ⋙ L ⟶ snd ⋙ R` at an object
+    `(a, b, f)` is the arrow `f` itself. Namespace lemma `@[simp]`
+    `Comma.natTrans_app` with 3 explicit arguments, direct application. -/
+theorem natTrans_app_apply (X : CategoryTheory.Comma L R) :
+    (natTransCanonical).app X = X.hom :=
+  CategoryTheory.Comma.natTrans_app L R X
+
+/-- Bridge: the composition `snd` (the second projection) on a morphism
+    of `Comma L R` is the right component of the commutative square.
+    This is the second half of the structure: the target category
+    projection also preserves identities and composition. -/
+theorem snd_map_comp {X Y Z : CategoryTheory.Comma L R} (f : X ⟶ Y) (g : Y ⟶ Z) :
+    (sndFunctor).map (f ≫ g) = (sndFunctor).map f ≫ (sndFunctor).map g :=
+  (sndFunctor).map_comp f g
+
+/-!
+## 5. Bridges: the comma structures and their classical special cases
+
+The 5 bridges below close the `#check` documentary repertoire of this
+module: the **structure** `Comma L R` (objects = triples `(a, b, f)` with
+`f : L.obj a ⟶ R.obj b`), the **morphisms** `CommaMorphism` (commutative
+squares), the **category instance** `commaCategory`, and the two canonical
+special cases — the **slice category** `Over X` and the **structured
+arrows** `StructuredArrow S F`. Each is a type-sig re-export of the
+Mathlib API (pattern winner L902 ★★ Tier 5): the resident variables of the
+module (`{A B T L R}`), structural instances only, no polymorphic universe
+constructor.
+
+Universe note (lesson c.1301+144-L1): `Comma L R` lives in
+`Type (max u₁ u₂ v₃)` — the universes of the two source categories and of
+the morphisms of the target; `CommaMorphism X Y` lives in
+`Type (max v₁ v₂)`, and `Over X` / `StructuredArrow S F` in
+`Type (max u₃ v₃)`. All aligned on the resident universes of the module —
+no additional universe.
+-/
+
+/-- Bridge: the **comma object structure** — a triple `(a, b, f)` with
+    `a : A`, `b : B` and `f : L.obj a ⟶ R.obj b` (a morphism of `T`).
+    This encodes an arrow "with source in the image of `L`, target in the
+    image of `R`" — the universal datum of families indexed by a morphism.
+    Type-sig re-export of `CategoryTheory.Comma L R`. -/
+def comma_field : Type _ :=
+  CategoryTheory.Comma L R
+
+/-- Bridge: the **morphisms of the comma category** — a commutative square
+    between two comma objects `X` and `Y`: a pair `(left, right)` of arrows
+    `X.left ⟶ Y.left` in `A` and `X.right ⟶ Y.right` in `B` such that
+    `L.map left ≫ Y.hom = X.hom ≫ R.map right`. Type-sig re-export of
+    `CategoryTheory.CommaMorphism`. -/
+def comma_morphism_field (X Y : CategoryTheory.Comma L R) : Type _ :=
+  CategoryTheory.CommaMorphism X Y
+
+/-- Bridge: the structure of `Comma L R` as a **category** — identities,
+    composition, and the category laws. Mathlib instance `commaCategory`,
+    re-exported as a `@[reducible]` `def` (a def of class type must be
+    marked `@[reducible]` to satisfy the linter). This is what makes all
+    morphisms of `Comma L R` composable. -/
+@[reducible] def comma_category_field : Category (CategoryTheory.Comma L R) :=
+  CategoryTheory.commaCategory
+
+/-- Bridge: the **slice category** `Over X` — the special case of comma
+    category `Comma (𝟙 T) (const X)` whose objects are the arrows `Y ⟶ X`
+    in `T` and whose morphisms are the commutative triangles. This is the
+    standard encoding of objects "over X" (fiber bundles, spaces over a
+    scheme). Type-sig re-export of `CategoryTheory.Over X`. -/
+def over_field (X : T) : Type _ :=
+  CategoryTheory.Over X
+
+/-- Bridge: the **structured arrows** `StructuredArrow S F` — the special
+    case of comma category `Comma (const S) F` whose objects are the arrows
+    `S ⟶ F.obj Y` in `T` and whose morphisms are the commutative triangles.
+    This is the encoding of "arrows with fixed source S" (pointed, initial,
+    base). Type-sig re-export of `CategoryTheory.StructuredArrow S F` for an
+    endofunctor `F : T ⥤ T`. -/
+def structured_arrow_field (S : T) (F : T ⥤ T) : Type _ :=
+  CategoryTheory.StructuredArrow S F
+
 end Grothendieck.Comma_en

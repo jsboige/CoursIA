@@ -36,6 +36,7 @@ expect(users.length).toBeGreaterThan(0);
 ```
 
 **Quand utiliser l'API vs le navigateur :**
+
 | Scénario | Approche |
 |----------|----------|
 | Vérifier un rendu visuel | Navigateur (page) |

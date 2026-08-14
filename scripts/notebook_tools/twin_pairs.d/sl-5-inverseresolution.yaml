@@ -8,7 +8,16 @@
       by: myia-po-2023:CoursIA
       python_sha: c132ed57588fa697b3725533daeeb2d21816c7f5
       csharp_sha: 4b57327282a8e9eddace41724e021c03a05d30b9
+    - date: "2026-08-13"
+      by: myia-po-2025:CoursIA
+      python_sha: e28b82f9ff80b8ad67ecec64085f7cc0a8455426
+      csharp_sha: 4b57327282a8e9eddace41724e021c03a05d30b9
+      content_python_sha: c28029108d18bf81ea0889e66c0e53165d040492f1188efc3fe8f9589d9d5af2
+      content_csharp_sha: 54c71238739789b5c722067606554b231272a92b7f19e539a1215706aa332601
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `pyswip` (SWI-Prolog binding) pour resolution/unification reelle + section dediee a `Aleph` (moteur ILP SOTA, SrinS-2) + LGG (Plotkin 1970) + theta-subsomption + clause bottom + recherche a la Progol. C# = BCL .NET from-scratch pour LGG + theta-subsomption + clause bottom (saturation bornee) + recherche Progol + exemple guide grandmother/2. Verdict RECOVERABLE-LOCAL : le coeur pedagogique (resolution inverse, LGG = Least General Generalization, theta-subsomption, clause bottom, recherche a la Progol) est PARITABLE des deux cotes (memes concepts AIMA + Plotkin), l'asymetrie reside dans la MACHINERIE : Python invoque un VRAI moteur Prolog SOTA (SWI-Prolog + Aleph) tandis que le C# reimplemente from-scratch. Aleph est presente en prose Python mais pas implante cote C# -- le C# est honnete sur le fait qu'il est une baseline pedagogique. `parity_level: surface` preserve (machineries distinctes, concepts paritables)."
   known_differences:
+    - "Edition 2026-08-13 (po-2025, xplat #10646) : cote Python uniquement, ajout d'un indice d'installation SWI-Prolog macOS (brew) dans la cellule 20, alongside Windows/Linux existants. Branche non-firing (swipl detecte). Coeur pedagogique (resolution inverse, Aleph, LGG, theta-sousomption) inchange. C# non touche. Parity_level surface preserve."
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Python INVOQUE SWI-Prolog (moteur reel) pour la resolution et l'unification ; C# reimplemente LGG (Plotkin), theta-subsomption, clause bottom from-scratch."
     - "Socle commun : resolution inverse, LGG (Least General Generalization, Plotkin 1970), theta-subsomption (ordre du treillis), clause bottom (saturation), recherche a la Progol."
     - "Asymetrie de couverture : Python (40 cellules, 14 code) couvre inverser la deduction + representation/couverture + LGG + theta-subsomption + clause bottom + recherche Progol + section dediee au vrai moteur Aleph ; C# (19 cellules, 9 code) couvre representation + LGG + theta-subsomption + clause bottom (saturation bornee) + recherche Progol + exemple guide grandmother/2."

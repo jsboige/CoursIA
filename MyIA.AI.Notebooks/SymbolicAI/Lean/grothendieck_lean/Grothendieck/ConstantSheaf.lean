@@ -47,7 +47,14 @@ Cette adjonction se relève aux faisceaux via la faisceautisation.
 
 -- Le foncteur préfaisceau constant est adjoint à gauche de l'évaluation en un objet terminal.
 -- constantPresheafAdj : Functor.const Cᵒᵖ ⊣ (evaluation Cᵒᵖ D).obj (op T)
-#check @constantPresheafAdj
+
+/-- Pont : étant donné un objet terminal T, le foncteur préfaisceau constant
+    `Functor.const Cᵒᵖ` est adjoint à gauche de l'évaluation en T. C'est
+    l'adjonction préfaisceau constante, relevée ensuite aux faisceaux via la
+    faisceautisation. -/
+noncomputable def constantPresheafAdjBridge {T : C} (hT : IsTerminal T) :
+    Functor.const Cᵒᵖ ⊣ (evaluation Cᵒᵖ D).obj (op T) :=
+  constantPresheafAdj D hT
 
 /-! ## 2. Le foncteur faisceau constant
 
@@ -68,6 +75,17 @@ Cela requiert `HasWeakSheafify J D` (existence de la faisceautisation).
 noncomputable def constantSheafObj (X : D) [HasWeakSheafify J D] :
     Sheaf J D :=
   (constantSheaf J D).obj X
+
+/-- Construction pont : le **foncteur faisceau constant** `constantSheaf J D :
+    D ⥤ Sheaf J D`, défini comme la faisceautisation du préfaisceau constant
+    (`constantSheaf J D = Functor.const Cᵒᵖ ⋙ presheafToSheaf J D`). Il envoie
+    un objet X : D sur la faisceautisation du préfaisceau constant en X, et son
+    adjoint à gauche est l'évaluation en un objet terminal (`constantSheafAdj`).
+    Re-export de `constantSheaf` (def, `noncomputable`). -/
+noncomputable def constantSheaf_functor_field
+    (J : GrothendieckTopology C) (D : Type u') [Category.{v'} D]
+    [HasWeakSheafify J D] : D ⥤ Sheaf J D :=
+  constantSheaf J D
 
 /-! ## 3. L'adjonction du faisceau constant
 
@@ -100,10 +118,19 @@ C'est une propriété, non une structure — la constance est une proposition.
 -/
 
 -- Un faisceau est constant s'il est dans l'image essentielle de constantSheaf.
-#check @Sheaf.IsConstant
+-- Le prédicat `Sheaf.IsConstant J F` est utilisé directement (pas d'abbrev
+-- locale, qui shadow le nom de classe Mathlib et bloque la synthèse
+-- d'instance — leçon c.1331+104-L1 ★ post-fix CI FAIL).
 
 -- Si F est constant, il se trouve dans l'image essentielle de constantSheaf.
-#check @Sheaf.mem_essImage_of_isConstant
+
+/-- Pont : un faisceau constant F se projette dans l'image essentielle du
+    foncteur faisceau constant. Utilise `Sheaf.mem_essImage_of_isConstant`. -/
+theorem mem_essImage_of_isConstant_bridge [HasWeakSheafify J D]
+    (F : Sheaf J D)
+    [Sheaf.IsConstant J F] :
+    (constantSheaf J D).essImage F :=
+  CategoryTheory.Sheaf.mem_essImage_of_isConstant J F
 
 -- Les isomorphismes préservent la constance.
 #check @Sheaf.isConstant_congr
@@ -140,7 +167,21 @@ son image réciproque sur (C, J) est constant.
 -/
 
 -- La constance est invariante par équivalence de catégories de faisceaux.
-#check @Sheaf.isConstant_iff_of_equivalence
+
+/-- Pont : la propriété d'être constant est invariante par équivalence de
+    catégories de faisceaux induite par un morphisme de sous-site dense G.
+    Si F est un faisceau sur (C', K), alors son image réciproque par
+    `sheafEquiv J K G D` est constante sur (C, J) si et seulement si F
+    est constant sur (C', K). Utilise `Sheaf.isConstant_iff_of_equivalence`. -/
+theorem isConstant_iff_of_equivalence_bridge [HasWeakSheafify J D]
+    {C' : Type*} [Category* C']
+    (K : GrothendieckTopology C') [HasWeakSheafify K D]
+    (G : C ⥤ C') [G.IsDenseSubsite J K]
+    [∀ (X : (C')ᵒᵖ), HasLimitsOfShape (StructuredArrow X G.op) D]
+    (F : Sheaf K D) {T : C} (hT : IsTerminal T) (hT' : IsTerminal (G.obj T)) :
+    ((IsDenseSubsite.sheafEquiv J K G D).inverse.obj F).IsConstant J ↔
+      Sheaf.IsConstant K F :=
+  CategoryTheory.Sheaf.isConstant_iff_of_equivalence J K G hT hT' F
 
 /-! ## 7. Constance à travers les foncteurs d'oubli
 
@@ -150,7 +191,23 @@ que sheafCompose reflète les isomorphismes).
 -/
 
 -- Constance détectée à travers les foncteurs d'oubli.
-#check @Sheaf.isConstant_iff_forget
+
+/-- Pont : étant donné un foncteur d'oubli U : D ⥤ B préservant la
+    faisceautisation et tel que `sheafCompose J U` réfléchisse les isomorphismes,
+    la propriété d'être constant est détectée par post-composition avec U.
+    F est constant si et seulement si `sheafCompose J U).obj F` est constant.
+    Utilise `Sheaf.isConstant_iff_forget`. -/
+theorem isConstant_iff_forget_bridge [HasWeakSheafify J D]
+    {B : Type*} [Category* B]
+    [HasWeakSheafify J B]
+    (U : D ⥤ B) [J.PreservesSheafification U] [J.HasSheafCompose U]
+    [hD : (constantSheaf J D).Faithful] [hD' : (constantSheaf J D).Full]
+    [hB : (constantSheaf J B).Faithful] [hB' : (constantSheaf J B).Full]
+    [hR : (sheafCompose J U).ReflectsIsomorphisms]
+    (F : Sheaf J D) {T : C} (hT : IsTerminal T) :
+    F.IsConstant J ↔
+      ((sheafCompose J U).obj F).IsConstant J :=
+  Sheaf.isConstant_iff_forget J U F hT
 
 /-! ## 8. Commutation avec sheafCompose
 
@@ -159,7 +216,17 @@ près, pourvu que U préserve la faisceautisation.
 -/
 
 -- constantSheaf commute avec sheafCompose à iso près.
-#check @constantCommuteCompose
+
+/-- Pont : commutation du foncteur faisceau constant avec `sheafCompose J U`
+    à isomorphisme près, pourvu que U préserve la faisceautisation. C'est
+    l'identité naturelle `constantSheaf J D ⋙ sheafCompose J U ≅ U ⋙ constantSheaf J B`. -/
+noncomputable def constantCommuteComposeBridge [HasWeakSheafify J D]
+    {B : Type*} [Category* B]
+    [HasWeakSheafify J B] (U : D ⥤ B) [J.PreservesSheafification U]
+    [J.HasSheafCompose U] :
+    constantSheaf J D ⋙ sheafCompose J U ≅
+      U ⋙ constantSheaf J B :=
+  constantCommuteCompose J U
 
 /-! ## 9. Théorèmes pont : image essentielle et allers-retours
 

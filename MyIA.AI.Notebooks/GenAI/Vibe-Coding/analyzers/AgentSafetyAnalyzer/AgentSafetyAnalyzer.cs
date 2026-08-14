@@ -1,10 +1,13 @@
 // AgentSafetyAnalyzer.cs — Roslyn DiagnosticAnalyzer as compile-time guardrail
 // for agent-generated C# code (Epic #10473, axe Roslyn, sub-grain #10500d).
 //
-// Three semantic rules inspired by the OWASP Agentic Security Top-10 patterns:
+// Four semantic rules inspired by the OWASP Agentic Security Top-10 patterns:
 //   AGSEC001 — Process.Start with non-constant first argument (command injection)
 //   AGSEC002 — SQL string concatenation (use SqlParameter instead)
 //   AGSEC003 — File.* operations on non-constant paths (path traversal)
+//   AGSEC004 — HttpClient.Get*/Post*/Put*/Delete*/Send* with non-constant URL
+//   AGSEC005 — Hardcoded credentials (string literals starting with a known
+//              provider prefix: sk-, ghp_, AKIA, AIza, hf_, xoxb-, ...)
 //
 // The semantic key (the value grep cannot provide) is `SemanticModel.GetConstantValue`:
 // a literal literal is safe; an attacker-controlled variable collapses to no constant
@@ -45,6 +48,8 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
     public const string AGSEC001 = "AGSEC001"; // Process.Start non-constant
     public const string AGSEC002 = "AGSEC002"; // SQL concatenation
     public const string AGSEC003 = "AGSEC003"; // File.* path non-constant
+    public const string AGSEC004 = "AGSEC004"; // HttpClient.Get*/Post*/... non-constant URL
+    public const string AGSEC005 = "AGSEC005"; // Hardcoded credential prefix
 
     internal static readonly DiagnosticDescriptor Rule001 = new(
         AGSEC001,
@@ -76,8 +81,28 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
         description: "Detects File.Read/Write/Delete on a non-constant path. Validate the path against an allow-list before access.",
         helpLinkUri: "https://github.com/jsboige/CoursIA/issues/10500");
 
+    internal static readonly DiagnosticDescriptor Rule004 = new(
+        AGSEC004,
+        "HTTP request: non-constant URL",
+        "HttpClient.{0} called with non-constant URL '{1}': validate the URL against an allow-list (scheme + host + path) before sending",
+        "Security",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Detects HttpClient requests whose URL is not a compile-time constant. SSRF (Server-Side Request Forgery) is the canonical risk: an attacker-controlled URL may target internal services.",
+        helpLinkUri: "https://github.com/jsboige/CoursIA/issues/10500");
+
+    internal static readonly DiagnosticDescriptor Rule005 = new(
+        AGSEC005,
+        "Hardcoded credential detected",
+        "String literal '{0}' starts with a known provider prefix ('{1}'): this is almost certainly a hardcoded API key/token — load via os.getenv(...) or a secret manager instead",
+        "Security",
+        DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "Detects string literals whose prefix matches a well-known credential provider (OpenAI, Anthropic, GitHub, AWS, Google, HuggingFace, Slack, GitLab, Perplexity). See CWE-798 — Use of Hardcoded Credentials.",
+        helpLinkUri: "https://github.com/jsboige/CoursIA/issues/10500");
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
-        ImmutableArray.Create(Rule001, Rule002, Rule003);
+        ImmutableArray.Create(Rule001, Rule002, Rule003, Rule004, Rule005);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -85,6 +110,7 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
         context.EnableConcurrentExecution();
         context.RegisterSyntaxNodeAction(AnalyzeInvocation, SyntaxKind.InvocationExpression);
         context.RegisterSyntaxNodeAction(AnalyzeAdd, SyntaxKind.AddExpression);
+        context.RegisterSyntaxNodeAction(AnalyzeLiteral, SyntaxKind.StringLiteralExpression);
     }
 
     private static void AnalyzeInvocation(SyntaxNodeAnalysisContext ctx)
@@ -103,6 +129,11 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
             && args.Count > 0 && !IsConstant(ctx, args[0].Expression)
             && !IsSuppressedByPragma(inv, AGSEC003))
             ctx.ReportDiagnostic(Diagnostic.Create(Rule003, args[0].GetLocation(), args[0].Expression));
+
+        // AGSEC004: HttpClient.Get*/Post*/Put*/Delete*/Send* on a non-constant URL
+        if (IsHttpClientCall(name) && args.Count > 0 && !IsConstant(ctx, args[0].Expression)
+            && !IsSuppressedByPragma(inv, AGSEC004))
+            ctx.ReportDiagnostic(Diagnostic.Create(Rule004, args[0].GetLocation(), ExtractMethodName(name), args[0].Expression));
     }
 
     private static void AnalyzeAdd(SyntaxNodeAnalysisContext ctx)
@@ -117,6 +148,110 @@ public sealed class AgentSafetyAnalyzer : DiagnosticAnalyzer
             return;
         ctx.ReportDiagnostic(Diagnostic.Create(Rule002, add.GetLocation(), add.Right));
     }
+
+    // AGSEC004: Heuristic detection of HttpClient request methods. Matches:
+    //   HttpClient.GetAsync / GetStringAsync / PostAsync / PutAsync / DeleteAsync
+    //   HttpClient.SendAsync
+    // Plus the synchronous variants (GetByteArray, etc.) when invoked on an
+    // HttpClient field. The pattern is intentionally narrow: only invocation
+    // expressions whose callee ends in one of the canonical request methods.
+    private static bool IsHttpClientCall(string name)
+    {
+        // The expression may be `httpClient.GetAsync` (MemberAccessExpression)
+        // or `client.GetStringAsync(url)` — match by suffix.
+        foreach (var suffix in HttpClientMethodSuffixes)
+        {
+            if (name.EndsWith("." + suffix, System.StringComparison.Ordinal))
+                return true;
+        }
+        return false;
+    }
+
+    private static readonly string[] HttpClientMethodSuffixes = new[]
+    {
+        "GetAsync", "GetStringAsync", "GetByteArrayAsync", "GetStreamAsync",
+        "PostAsync", "PutAsync", "DeleteAsync", "PatchAsync", "HeadAsync",
+        "SendAsync",
+    };
+
+    private static string ExtractMethodName(string name)
+    {
+        var dot = name.LastIndexOf('.');
+        return dot >= 0 ? name.Substring(dot + 1) : name;
+    }
+
+    private static void AnalyzeLiteral(SyntaxNodeAnalysisContext ctx)
+    {
+        // AGSEC005: hardcoded credential detection. The literal must be a
+        // *plain* string literal (not interpolated, not a concatenation
+        // fragment). String literal values whose leading characters match one
+        // of the well-known credential prefixes are flagged with the matched
+        // prefix name so the message points the developer at the right
+        // provider (sk- → OpenAI/Anthropic, ghp_ → GitHub, etc.).
+        var lit = (LiteralExpressionSyntax)ctx.Node;
+        var value = lit.Token.ValueText;
+        if (string.IsNullOrEmpty(value) || value.Length < 4)
+            return;
+        var match = MatchCredentialPrefix(value);
+        if (match is null)
+            return;
+        ctx.ReportDiagnostic(Diagnostic.Create(Rule005, lit.GetLocation(), TruncateForMessage(value), match));
+    }
+
+    // AGSEC005 prefix table. Order: most specific first (so `sk-ant-` wins
+    // over `sk-`). Each entry is (prefix, friendly-name). The friendly name
+    // appears in the diagnostic message so the developer knows which provider
+    // leaked the key.
+    private static readonly (string Prefix, string Provider)[] CredentialPrefixes = new[]
+    {
+        ("sk-ant-",  "Anthropic"),
+        ("sk-",      "OpenAI / Anthropic (sk-)"),
+        ("ghp_",     "GitHub Personal Access Token"),
+        ("gho_",     "GitHub OAuth token"),
+        ("ghs_",     "GitHub server token"),
+        ("ghr_",     "GitHub refresh token"),
+        ("glpat-",   "GitLab Personal Access Token"),
+        ("xoxb-",    "Slack Bot token"),
+        ("xoxp-",    "Slack User token"),
+        ("xoxa-",    "Slack App token"),
+        ("AIza",     "Google API key"),
+        ("AKIA",     "AWS Access Key ID"),
+        ("ASIA",     "AWS STS Access Key ID"),
+        ("hf_",      "HuggingFace token"),
+        ("pplx-",    "Perplexity API key"),
+        ("dapi",     "Databricks token"),
+        ("ddp_",     "Datadog API key"),
+    };
+
+    private static string? MatchCredentialPrefix(string s)
+    {
+        foreach (var (prefix, _) in CredentialPrefixes)
+        {
+            if (s.StartsWith(prefix, System.StringComparison.Ordinal))
+                return prefix;
+        }
+        return null;
+    }
+
+    private static string MatchCredentialProvider(string s)
+    {
+        foreach (var (prefix, provider) in CredentialPrefixes)
+        {
+            if (s.StartsWith(prefix, System.StringComparison.Ordinal))
+                return provider;
+        }
+        return "unknown provider";
+    }
+
+    // The diagnostic message embeds the literal value (truncated for safety
+    // — 16 chars head + ellipsis) so the developer can identify which literal
+    // triggered the rule. CWE-798 forbids displaying the secret, but the
+    // leading prefix is enough to recognise it; the rest is masked.
+    private static string TruncateForMessage(string s) =>
+        s.Length <= 16 ? s : s.Substring(0, 12) + "…";
+
+    // Public helper for tests: returns the provider name for a matched value.
+    internal static string ProviderFor(string s) => MatchCredentialProvider(s);
 
     // The semantic key: ask the compiler whether the expression folds to a constant.
     // A literal literal is safe; an attacker-controlled variable collapses to no value

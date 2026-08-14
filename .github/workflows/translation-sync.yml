@@ -94,14 +94,26 @@ name: Translation Sync
 #     not appear on a feature branch's diff in the first place).
 #
 # See #10038, #10042, #4957, #1650, #6949, #10133, #10136.
+#
+# HOLD — décision user 2026-08-12 (ratifiée en session 2026-08-13) — trigger `push` neutralisé
+# ---------------------------------------------------------------------------------------------
+# Le user a confirmé le hold de la production de notebooks traduits tant que :
+#   (1) le proto n'est pas au point — seules les cellules markdown sont traduites,
+#       les cellules de code ne le sont pas (Invariant #2 du render, insuffisant) ;
+#   (2) le contenu des notebooks bouge trop (campagne d'enrichissement FR #10488 en
+#       cours) — chaque rendu *_<lang>.ipynb diverge immédiatement de sa source.
+# Conséquences immédiates :
+#   - plus de déclenchement automatique sur push → `main` : `workflow_dispatch`
+#     manuel uniquement (un agent peut lancer un run s'il le faut) ;
+#   - PAS de mise à jour des CSV de traduction tant que le contenu bouge
+#     (consigne user explicite) ;
+#   - réactivation du trigger `push` à la reprise, APRÈS : proto au point
+#     (cellules de code traduites), modèle sous-répertoires validé
+#     (`<série>/i18n/<lang>/` — décision user + ai-01), 8 langues cibles
+#     (en/es/ar/fa/zh/ru/pt, mêmes qu'Argumentum).
+# Voir #10038 (Epic), #1650 (Epic traduction), #10373 (bot Prepare), #10488.
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'translations/**'
-      - 'scripts/translation/**'
   workflow_dispatch:
     inputs:
       mode:

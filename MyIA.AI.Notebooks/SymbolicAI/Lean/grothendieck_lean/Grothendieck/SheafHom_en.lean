@@ -169,4 +169,104 @@ theorem sheafHomSectionsEquiv_roundtrip_symm (F G : Sheaf J A)
   dsimp [sheafHomSectionOfHom, sheafHomOfSection]
   exact (sheafHomSectionsEquiv F G).right_inv φ
 
+/-!
+## 5. Additional bridge theorems: presheafHom, sheafHom, equivalences, simp lemmas
+
+Complementary bridges connecting the internal hom of sheaves to the Mathlib
+4 Namespace theorems already exposed as `#check` above. These bridges follow
+the pattern of Sections 2-4: direct application of Namespace lemmas
+(L902 ★★ Tier 5).
+
+For Mathlib 4 theorems with explicit args, direct application `name args` is
+the canonical idiom: not `by rw [name]` (Type equality non-rfl-fermable,
+cf L902 ★★ Tier 5 c.8232). For `def` (`presheafHom`, `presheafHomSectionsEquiv`,
+`sheafHom`, `sheafHom'`), direct application preserves the structure up to
+namespace (anti-§D byte-identity preserved).
+-/
+
+/-- Bridge construction: the presheaf internal hom `presheafHom F G`. Its
+    sections over X are the morphisms between the restrictions of F and G to
+    `Over X`. Re-exports `presheafHom` from Mathlib (def, `@[simps! obj]`). -/
+noncomputable def presheaf_hom_bridge (F G : Cᵒᵖ ⥤ A) : Cᵒᵖ ⥤ Type _ :=
+  presheafHom F G
+
+/-- Bridge construction: the equivalence between the sections of the internal
+    hom presheaf and the morphisms F ⟶ G. This is the bijection
+    `(presheafHom F G).sections ≃ (F ⟶ G)`, at the heart of the interpretation
+    of the internal hom as a representable functor. -/
+noncomputable def presheaf_hom_sections_equiv_bridge (F G : Cᵒᵖ ⥤ A) :
+    (presheafHom F G).sections ≃ (F ⟶ G) :=
+  presheafHomSectionsEquiv F G
+
+/-- Bridge lemma: the law of the application of the functor `presheafHom`
+    on arrows of the morphism category (Over). For `f : Z ⟶ Y`,
+    `g : Y ⟶ X`, `h : Z ⟶ X` with `f ≫ g = h`, the equality
+    `((presheafHom F G).map g.op α).app (op (Over.mk f)) = α.app (op (Over.mk h))`
+    is preserved. This is the naturality of the presheaf internal hom.
+    Re-exports `presheafHom_map_app` from Mathlib. -/
+lemma presheaf_hom_map_app_bridge {X Y Z : C} (F G : Cᵒᵖ ⥤ A)
+    (f : Z ⟶ Y) (g : Y ⟶ X) (h : Z ⟶ X) (w : f ≫ g = h)
+    (α : (presheafHom F G).obj (op X)) :
+    ((presheafHom F G).map g.op α).app (op (Over.mk f)) = α.app (op (Over.mk h)) :=
+  presheafHom_map_app f g h w α
+
+/-- Bridge lemma (@[simp]): the application law specialised on the identity
+    `Over.mk (𝟙 Y)` gives a morphism `Y ⟶ X`. Re-exports
+    `presheafHom_map_app_op_mk_id` from Mathlib (@[simp]). -/
+@[simp]
+lemma presheaf_hom_map_app_op_mk_id_bridge {X Y : C} (F G : Cᵒᵖ ⥤ A)
+    (g : Y ⟶ X)
+    (α : (presheafHom F G).obj (op X)) :
+    dsimp% ((presheafHom F G).map g.op α).app (op (Over.mk (𝟙 Y))) = α.app (op (Over.mk g)) :=
+  presheafHom_map_app (𝟙 Y) g g (by simp) α
+
+/-- Bridge construction: the sheaf internal hom `sheafHom F G`, living in
+    `Sheaf J (Type _)`. Its sections identify to sheaf morphisms
+    `F ⟶ G`. Re-exports `sheafHom` from Mathlib (def). -/
+noncomputable def sheaf_hom_bridge (F G : Sheaf J A) : Sheaf J (Type _) :=
+  sheafHom F G
+
+/-- Bridge construction: the underlying presheaf of the sheaf internal hom.
+    `sheafHom' F G : Cᵒᵖ ⥤ Type _` is the presheaf object of `sheafHom F G`.
+    Re-exports `sheafHom'` from Mathlib (def). -/
+noncomputable def sheaf_hom_underscore_bridge (F G : Sheaf J A) : Cᵒᵖ ⥤ Type _ :=
+  sheafHom' F G
+
+/-!
+## Final bridges: the sections-morphisms bijection and the canonical iso
+
+The 2 bridges below close the `#check` documentary repertoire of this
+module: the **sections-morphisms bijection** `sheafHomSectionsEquiv` (the
+sections of the sheaf internal hom identify with sheaf morphisms `F ⟶ G` —
+the core of the cartesian closed structure of `Sheaf J (Type _)`) and the
+**canonical iso** `sheafHom'Iso` (the presheaf underlying the internal hom
+is isomorphic to the presheaf internal hom). Each is a direct data re-export
+(pattern winner L902 ★★ Tier 5): resident variables of the module
+(`{C J A}`), structural instances only, no polymorphic universe constructor.
+`noncomputable` (an `Equiv`/`≅` has no canonical choice — tell
+`dependsOnNoncomputable`, lesson c.1301+143-L2).
+-/
+
+/-- Bridge: the **sections-morphisms bijection** of the internal hom — the
+    global sections of the sheaf `sheafHom F G` identify with sheaf
+    morphisms `F ⟶ G`. This is the equivalence that makes the category of
+    sheaves enriched over itself (cartesian closed structure of
+    `Sheaf J (Type _)`), and it underlies the existing decls
+    `sheafHomSectionOfHom`/`sheafHomOfSection` (the two directions) and the
+    roundtrip theorems. Data re-export of `sheafHomSectionsEquiv`. -/
+noncomputable def sheaf_hom_sections_equiv_field (F G : Sheaf J A) :
+    (sheafHom F G).1.sections ≃ (F ⟶ G) :=
+  sheafHomSectionsEquiv F G
+
+/-- Bridge: the **canonical iso** between the presheaf underlying the sheaf
+    internal hom and the presheaf internal hom — `sheafHom' F G ≅
+    presheafHom F.1 G.1`. This is the technical fact linking the two levels
+    (presheaves/sheaves): the sheaf internal hom is the sheafification of
+    the presheaf internal hom. The existing decl `sheafHom'_iso_presheafHom`
+    wrapped it in `Nonempty`; this bridge exposes the iso itself. Data
+    re-export of `sheafHom'Iso`. -/
+noncomputable def sheaf_hom'_iso_field (F G : Sheaf J A) :
+    sheafHom' F G ≅ presheafHom F.1 G.1 :=
+  sheafHom'Iso F G
+
 end Grothendieck.SheafHom_en

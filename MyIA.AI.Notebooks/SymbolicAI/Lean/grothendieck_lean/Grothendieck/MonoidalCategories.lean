@@ -66,7 +66,7 @@ import Mathlib.CategoryTheory.Monoidal.Category
 import Mathlib.CategoryTheory.Monoidal.Braided.Basic
 import Mathlib.CategoryTheory.Monoidal.Discrete
 
-universe v u
+universe v u u₁ u₂ v₁ v₂
 
 namespace Grothendieck.MonoidalCategories
 
@@ -240,5 +240,158 @@ noncomputable def right_unitor_iso [MonoidalCategory C] (X : C) :
 noncomputable def braiding_iso [MonoidalCategory C] [BraidedCategory C]
     (X Y : C) : X ⊗ Y ≅ Y ⊗ X :=
   BraidedCategory.braiding X Y
+
+/-!
+## 8. Théorèmes propres (c.1301+107)
+
+Identités fondamentales des structures monoïdales, prouvées localement
+via la tactique `rw` sur les lemmes canoniques Mathlib (les isomorphismes
+`α_`, `λ_`, `ρ_` sont des champs de `MonoidalCategoryStruct` ; leurs
+égalités sont déf. valides via `.hom` / `.inv`).
+
+Leçon L902 ★★ : `rfl` est prouvable quand l'égalité est définitionnelle.
+Les isomorphismes canoniques `(α_ X Y Z).hom` etc. sont des champs ;
+les lemmes les pontants sont des `(rfl)` ou `by rw [name]` selon le
+niveau de unfold requis.
+-/
+
+/-- Théorème : l'associateur `(X ⊗ Y) ⊗ Z ≅ X ⊗ (Y ⊗ Z)` est défini
+    comme `(α_ X Y Z).hom` au niveau du morphisme. C'est la définition
+    même de l'associateur dans Mathlib 4 comme champ de
+    `MonoidalCategoryStruct`. -/
+theorem associator_iso_hom_eq [MonoidalCategoryStruct C] (X Y Z : C) :
+    (α_ X Y Z).hom = (MonoidalCategoryStruct.associator X Y Z).hom := rfl
+
+/-- Théorème : l'unitaire à gauche `λ_ X : 𝟙_ C ⊗ X ≅ X` est défini
+    implicitement par le cham `leftUnitor` de `MonoidalCategoryStruct`.
+    Au niveau de `Iso.hom`, c'est une construction définitionnelle. -/
+theorem left_unitor_iso_hom_eq [MonoidalCategoryStruct C] (X : C) :
+    (λ_ X).hom = (MonoidalCategoryStruct.leftUnitor X).hom := rfl
+
+/-- Théorème : l'unitaire à droite `ρ_ X : X ⊗ 𝟙_ C ≅ X` est défini
+    par le champ `rightUnitor` de `MonoidalCategoryStruct`. -/
+theorem right_unitor_iso_hom_eq [MonoidalCategoryStruct C] (X : C) :
+    (ρ_ X).hom = (MonoidalCategoryStruct.rightUnitor X).hom := rfl
+
+/-- Théorème : le tenseur d'objets `tensorObj X Y = X ⊗ Y` est
+    définitionnellement égal à l'application du champ `tensorObj` de
+    `MonoidalCategoryStruct`. Pont observa entre la notation `⊗` et
+    la fonction primitive. -/
+theorem tensorObj_eq_app [MonoidalCategoryStruct C] (X Y : C) :
+    X ⊗ Y = MonoidalCategoryStruct.tensorObj X Y := rfl
+
+/-!
+## 9. Théorèmes propres (c.1301+121 — ajouts sur les fields `whiskerLeft` /
+##     `whiskerRight`)
+
+Suite logique directe des 4 lemmes ci-dessus : on prouve maintenant
+que les champs `whiskerLeft`, `whiskerRight` de
+`MonoidalCategoryStruct` sont reliés définitionnellement à leurs
+notations Lean `◁`, `▷`. Ces égalités sont des unfolds triviaux
+après `rfl` ; L902 ★★ n'est pas concernée (pas de polymorphic
+universe constructor : `MonoidalCategoryStruct` est une classe de
+type `Type → Type`).
+
+**Note** : un lemme analogue sur `tensorHom f g` est SKIPPED — la
+notation `f ▷ g` utilise `whiskerRight` (morphisme `f`, objet `g`)
+mais pas `tensorHom` (qui prend morphisme `f` ET morphisme `g`).
+Un lemme `tensorHom_eq_app` analogue pourrait être ajouté dans
+une PR ultérieure si une notation infixe `f ⊗ g` pour morphismes
+est étendue à Mathlib.
+
+**Origine** (issue #2159 dispatch ai-01, c.1301+121) : même scope que
+les ajouts `Equivalences.lean`. Sous-grain microscopique 2/2.
+-/
+
+/-- Théorème : le whiskering gauche `whiskerLeft X f = X ◁ f`
+    est définitionnellement égal au champ `whiskerLeft` de
+    `MonoidalCategoryStruct`. Pont entre la notation `◁` et la
+    fonction primitive. -/
+theorem whiskerLeft_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
+    (f : Y ⟶ Z) :
+    X ◁ f = MonoidalCategoryStruct.whiskerLeft X f := rfl
+
+/-- Théorème : le whiskering droit `whiskerRight f Z = f ▷ Z`
+    est définitionnellement égal au champ `whiskerRight` de
+    `MonoidalCategoryStruct`. Pont entre la notation `▷` (avec
+    argument objet) et la fonction primitive. -/
+theorem whiskerRight_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
+    (f : X ⟶ Y) :
+    f ▷ Z = MonoidalCategoryStruct.whiskerRight f Z := rfl
+
+/-!
+## 10. Ponts sur la cohérence (pentagone + triangle) et les exemples canoniques
+
+Les **deux axiomes de cohérence** exigés par la classe `MonoidalCategory`
+— le pentagone `Pentagon` (cohérence de l'associativité) et l'identité
+triangulaire `triangle_assoc_comp_right` (cohérence unité-associateur)
+— sont les `Prop` de la section 3. Le pont `pentagon_field` expose la
+définition du pentagone comme type ; le pont `triangle_field` prouve
+l'identité triangulaire par appel direct au lemme Mathlib. Les
+**exemples canoniques** des sections 4-6 complètent le tableau : le
+produit de deux catégories monoïdales (`prod_monoidal_field`), la
+classe symétrique (`symmetric_category_field`) et la catégorification
+minimale d'un monoïde (`discrete_monoidal_field`).
+
+Le pont `prod_monoidal_field` requiert deux univers distincts `u₁ u₂`
+(les univers des objets de `C₁` et `C₂`), déclarés au scope module —
+L902 ★★ reste satisfaite (args résidents `(C₁ : Type u₁)` /
+`(C₂ : Type u₂)`, instances `Category`/`MonoidalCategory` structurelles).
+-/
+
+/-- Pont : le diagramme du pentagone de Mac Lane — la cohérence de
+    l'associativité exigée par la classe `MonoidalCategory`. Pour quatre
+    objets `Y₁ Y₂ Y₃ Y₄`, les deux chemins de réassociation
+    `((Y₁ ⊗ Y₂) ⊗ Y₃) ⊗ Y₄` et `Y₁ ⊗ (Y₂ ⊗ (Y₃ ⊗ Y₄))` coïncident.
+    Re-export direct de la def Mathlib `MonoidalCategory.Pentagon`.
+    Type-sig bridge (L902 ★★ Tier 5) — re-export direct de la def Prop. -/
+def pentagon_field [MonoidalCategoryStruct C] (Y₁ Y₂ Y₃ Y₄ : C) : Prop :=
+  MonoidalCategory.Pentagon Y₁ Y₂ Y₃ Y₄
+
+/-- Pont : l'identité triangulaire de la catégorie monoïdale — la
+    compatibilité entre l'associateur et les unitaires :
+    `(α_ X (𝟙_ C) Y).inv ≫ ((ρ_ X).hom ▷ Y) = X ◁ (λ_ Y).hom`.
+    C'est la version « associateur-inverse + unitaire droit » du
+    triangle de Mac Lane. Délègue directement au lemme Mathlib
+    `MonoidalCategory.triangle_assoc_comp_right`.
+    Lemma call direct (L902 ★★ Tier 5) — args résidents `(X Y : C)`. -/
+theorem triangle_field [MonoidalCategory C] (X Y : C) :
+    (α_ X (𝟙_ C) Y).inv ≫ ((ρ_ X).hom ▷ Y) = X ◁ (λ_ Y).hom :=
+  MonoidalCategory.triangle_assoc_comp_right X Y
+
+/-- Pont : le produit de deux catégories monoïdales — l'instance
+    canonique `MonoidalCategory (C₁ × C₂)` : le tenseur et l'unité se
+    calculent composante par composante. Re-export direct de l'instance
+    Mathlib `MonoidalCategory.prodMonoidal`.
+    Type retour `MonoidalCategory` = classe data → `noncomputable def`
+    (leçon c.1301+131-L2 ★). Args : `(C₁ : Type u₁)` `(C₂ : Type u₂)`
+    — univers distincts déclarés au scope module. -/
+@[reducible]
+noncomputable def prod_monoidal_field (C₁ : Type u₁) [Category.{v₁} C₁]
+    [MonoidalCategory.{v₁} C₁] (C₂ : Type u₂) [Category.{v₂} C₂]
+    [MonoidalCategory.{v₂} C₂] : MonoidalCategory (C₁ × C₂) :=
+  MonoidalCategory.prodMonoidal C₁ C₂
+
+/-- Pont : la classe `SymmetricCategory` — une catégorie monoïdale
+    tressée dont le tressage est involutif (`β_ X Y ≫ β_ Y X = 𝟙`).
+    C'est la structure « symétrique » de la section 5, cadre des
+    produits tensoriels de faisceaux. Re-export direct de la classe
+    Mathlib `CategoryTheory.SymmetricCategory`.
+    Type-sig bridge (L902 ★★ Tier 5) — re-export direct de la classe. -/
+def symmetric_category_field (C : Type u) [Category.{v} C]
+    [MonoidalCategory.{v} C] : Type _ :=
+  CategoryTheory.SymmetricCategory C
+
+/-- Pont : la catégorification minimale d'un monoïde — l'instance
+    canonique `MonoidalCategory (Discrete M)` : les objets sont les
+    éléments de `M`, le tenseur est la multiplication, l'unité est `1`.
+    C'est le lien « monoïde → catégorie monoïdale » de la section 6.
+    Re-export direct de l'instance Mathlib `Discrete.monoidal`.
+    Type retour `MonoidalCategory` = classe data → `noncomputable def`
+    (leçon c.1301+131-L2 ★). -/
+@[reducible]
+noncomputable def discrete_monoidal_field (M : Type u) [Monoid M] :
+    MonoidalCategory (Discrete M) :=
+  CategoryTheory.Discrete.monoidal M
 
 end Grothendieck.MonoidalCategories

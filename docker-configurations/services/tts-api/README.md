@@ -116,7 +116,7 @@ Les voix Kokoro natives (`af_sky`, `af_bella`, `am_adam`, `am_michael`) sont aus
 ## Architecture
 
 - **Chargement paresseux** : le modele est charge au premier appel et decharge automatiquement apres la periode d'inactivite (`IDLE_TIMEOUT`). Un checker en arriere-plan tourne toutes les 60 s.
-- **Modules partages** : utilise `../shared/` pour `lazy_model.py` (gestion du cycle de vie) et `auth_middleware.py` (authentification Bearer).
+- **Modules partages** : utilise `../shared/` pour `lazy_model.py` (gestion du cycle de vie) et `auth_middleware.py` (authentification Bearer). Ces modules sont fournis par **bind-mount** dans `docker-compose*.yml` (convention stack, partagee par 6 services : demucs, funasr, musicgen, qwen-asr, tts, whisper) : le Dockerfile seul ne les inclut pas, l'API ne demarre pas en build pur (`docker compose up` est le chemin canonique).
 - **Fallback CUDA** : si CUDA n'est pas disponible, le modele bascule sur CPU (`TTS_DEVICE=cpu`).
 
 ## Fichiers
