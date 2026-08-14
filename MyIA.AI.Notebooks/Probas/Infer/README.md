@@ -98,13 +98,22 @@ dotnet tool install -g Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 ```
 
-### 3. Ou utiliser le script PowerShell (recommandé)
+### 3. Ou utiliser le script d'environnement (recommandé)
 
 ```bash
-# Installe dotnet-interactive, papermill et enregistre les kernels :
+# Windows (PowerShell) — installe dotnet-interactive, papermill et enregistre les kernels :
 cd MyIA.AI.Notebooks/Probas/Infer/scripts
 .\setup_environment.ps1
+
+# Linux / macOS (bash) — jumeau du dépôt (même périmètre : dotnet-interactive,
+# papermill, kernels Jupyter) :
+./scripts/environment/setup_environment.sh --auto-fix
 ```
+
+> Le script de série `setup_environment.ps1` est Windows-only. Sur Linux/macOS, le
+> jumeau [`setup_environment.sh`](../../../scripts/environment/setup_environment.sh)
+> couvre le même setup. Guide d'installation complet 3 OS :
+> [`docs/reference/setup-linux-macos.md`](../../../docs/reference/setup-linux-macos.md).
 
 ### 4. Extension VS Code
 
