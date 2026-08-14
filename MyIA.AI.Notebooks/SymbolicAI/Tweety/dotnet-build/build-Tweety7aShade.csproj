@@ -28,7 +28,9 @@
       frameworks are NOT in the resulting DLL. The tranche 1 (from-scratch) covers the
       pedagogical need for those frameworks.
 
-      Build: see rebuild-7a.sh recipe at MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md.
+      Build: see dotnet-build/rebuild-7a.sh (issue #10450, design-gate
+      2026-08-14) — recompilation source `javac --release 8` des 8 modules,
+      puis shade jar dans ..\libs\ (gitignored).
       Output: ..\libs\org.tweetyproject.tweety-7a-java8-shade.jar (gitignored, rebuildable),
       then bin\Release\net8.0\org.tweetyproject.tweety-7a.dll
     -->
