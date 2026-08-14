@@ -280,4 +280,63 @@ theorem colimit_w_natural (F : J ⥤ C) [HasColimit F] {j j' : J} (f : j' ⟶ j)
     F.map f ≫ colimit.ι F j = colimit.ι F j' := by
   rw [CategoryTheory.Limits.colimit.w]
 
+/-!
+## 9. Ponts additionnels : factorisation des cônes, extension, et cônes limites
+
+Les 4 ponts suivants complètent le tableau des lemmes Mathlib 4 fondamentaux
+sur les limites et colimites :
+  - `limit_lift_π` : la projection `limit.π F j` après « lift » d'un cône
+    arbitraire redonne exactement la composante du cône — tige que fournit
+    tout cône sur `F`.
+  - `limit_hom_ext_apply` : critère d'extension « **deux morphismes dans la
+    limite qui coïncident sur chaque projection sont égaux** », application
+    du `@[ext] lemma limit.hom_ext`.
+  - `limit_lift_cone` : le « lift » du cône limite est l'identité — la limite
+    est **point fixe** de sa propre opération de factorisation.
+  - `colimit_ι_desc` : dual côté colimites — l'« desc » suivi de `colimit.ι F j`
+    d'un cocône arbitraire redonne la composante du cocône.
+
+Pattern winner (L902 ★★ c.8261) : univers explicites, alias directs Mathlib,
+signatures alignées sur le lemme source. Pour `limit.hom_ext` (`@[ext]`),
+l'application donne le lemme d'égalité, pas une fonction — on l'écrit
+explicitement avec ses args pointwise.
+-/
+
+/-- Pont : pour tout cône `c` sur `F`, la projection `limit.π F j` composée
+    avec le `limit.lift F c` redonne la `j`-ème composante du cône. C'est la
+    **tige que fournit tout cône** sur le diagramme, démontré par le lemme
+    Mathlib `@[reassoc, simp] lemma CategoryTheory.Limits.limit.lift_π F c j`.
+    Namespace theorem (L902 ★★ Tier 4) — alias direct. -/
+theorem limit_lift_π (F : J ⥤ C) [HasLimit F] (c : Cone F) (j : J) :
+    limit.lift F c ≫ limit.π F j = c.π.app j :=
+  CategoryTheory.Limits.limit.lift_π c j
+
+/-- Pont : critère d'extension entre la limite et le cône — étant donné
+    deux morphismes `f, f' : X ⟶ limit F`, s'ils coïncident sur chaque
+    projection `limit.π F j`, alors `f = f'`. C'est le lemme
+    `@[ext] lemma CategoryTheory.Limits.limit.hom_ext F {X} (w : ∀ j, ...) :
+    f = f'`. Namespace theorem (L902 ★★ Tier 4) — alias direct. -/
+theorem limit_hom_ext_apply (F : J ⥤ C) [HasLimit F] {X : C} {f f' : X ⟶ limit F}
+    (w : ∀ j, f ≫ limit.π F j = f' ≫ limit.π F j) : f = f' :=
+  CategoryTheory.Limits.limit.hom_ext w
+
+/-- Pont : le `limit.lift` du cône limite est l'identité — la limite est
+    point fixe de sa propre factorisation. Démontré par le lemme Mathlib
+    `@[simp] lemma CategoryTheory.Limits.limit.lift_cone {F : J ⥤ C}
+    [HasLimit F] : limit.lift F (limit.cone F) = 𝟙 (limit F)`. Le `F` est
+    implicite — on omet l'argument explicite pour laisser Lean l'unifier. -/
+theorem limit_lift_cone (F : J ⥤ C) [HasLimit F] :
+    limit.lift F (limit.cone F) = 𝟙 (limit F) :=
+  CategoryTheory.Limits.limit.lift_cone
+
+/-- Pont : dual côté colimites — pour tout cocône `c` sur `F`, l'injection
+    `colimit.ι F j` composée avec le `colimit.desc F c` redonne la `j`-ème
+    composante du cocône. C'est la **tige que fournit tout cocône** sur le
+    diagramme, démontré par le lemme Mathlib
+    `@[reassoc, simp] lemma CategoryTheory.Limits.colimit.ι_desc F c j`.
+    Namespace theorem (L902 ★★ Tier 4) — alias direct. -/
+theorem colimit_ι_desc (F : J ⥤ C) [HasColimit F] (c : Cocone F) (j : J) :
+    colimit.ι F j ≫ colimit.desc F c = c.ι.app j :=
+  CategoryTheory.Limits.colimit.ι_desc c j
+
 end Grothendieck.Limits
