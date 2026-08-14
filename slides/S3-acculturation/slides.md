@@ -2135,10 +2135,11 @@ graph LR
 - Boucle **ReAct** : Raisonner → Agir → Observer → Raisonner…
 
 ```mermaid
-graph TD
-    A[Percevoir<br/>demande utilisateur] --> B[Raisonner<br/>LLM + plan]
-    B --> C[Agir<br/>outil : code, web, API]
-    C --> D[Observer<br/>résultat]
+%%{init: {"flowchart": {"nodeSpacing": 30, "rankSpacing": 35, "curve": "linear"}, "themeVariables": {"fontSize": "14px"}}}%%
+graph LR
+    A[Percevoir] --> B[Raisonner]
+    B --> C[Agir]
+    C --> D[Observer]
     D --> B
 ```
 
@@ -2183,7 +2184,8 @@ graph LR
   explorent, produisent, reviewent et fusionnent des PRs
 
 ```mermaid
-graph TD
+%%{init: {"flowchart": {"nodeSpacing": 18, "rankSpacing": 25, "curve": "linear"}, "themeVariables": {"fontSize": "12px"}}}%%
+graph LR
     U[Utilisateur] --> C[Coordinateur]
     C --> W1[Worker 1]
     C --> W2[Worker 2]
@@ -2232,7 +2234,8 @@ graph LR
 - La même stack alimente les notebooks `GenAI/{Image,Audio,Video}`
 
 ```mermaid
-graph TD
+%%{init: {"flowchart": {"nodeSpacing": 25, "rankSpacing": 30, "curve": "linear"}, "themeVariables": {"fontSize": "13px"}}}%%
+graph LR
     A[Notebooks GenAI] --> B[API commune]
     B --> C[ComfyUI]
     B --> D[Qwen / Lumina]
