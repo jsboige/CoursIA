@@ -20,6 +20,12 @@
       csharp_sha: 64c768889121cb7d1f0413def68048cc76fbc1d5
       content_python_sha: e3138b0bbcc57898cb78a3e3be17edefd3b13501a30f3bd6ef20ce9b943a1e6e
       content_csharp_sha: 09619085c916f39b0d6958d90a6ae1692c8fe099b6a22d32ab5d29b71e944451
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 63a0bb7f77ef4b5103c436c1dc9976d394b2e45c
+      csharp_sha: 8a208caa1bdb906beeea01c0ce6ea3dd7d837546
+      content_python_sha: 1aa065cca423e8805bb8b7c38339b9b0364c5fc0c4c831c3e9458a51168d76ee
+      content_csharp_sha: 7a05cba3fe37501ea360dfa843e26886a6eb2444b93272bdd48a0fc5a624688c
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = OR-Tools CP-SAT (cp_model + cp_solver) + itertools + matplotlib (formulation CSP : creneaux, salles, conflits, S1 penalite apres-midi). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (MRV + B&B, System.*, 0 NuGet) PRESERVEE. Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : discrimination mesuree -- glouton MRV = 2 cours en apres-midi (compacte sur Lundi), CP-SAT = 0 (Optimal, 47 ms), objectif apres-midi = 0 (toutes contraintes dures respectees). Tranche 1 from-scratch preservee intacte (6 cellules code byte-identiques a main). Python met l'accent sur solveur SOTA + viz matplotlib + experimentation comparative ; C# demontre implementation from-scratch en BCL pure + binding NuGet. parity_level: native-both preserve."
   known_differences:

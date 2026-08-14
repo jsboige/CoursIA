@@ -40,6 +40,12 @@
       csharp_sha: 7a43c3a06569b03dddbeb014d7eb3678c1a97542
       content_python_sha: cf8d8ea4d7840a6f5d5fe7a230464cae750f4ac259311d58e3863fad155f5370
       content_csharp_sha: 8d8a6671bbd2b6278c88014eb61e5487fd794b0ff070e94c0ce9fde5fce42b01
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 27aa0b4a749c466db321f13bf66c7b136de90a6d
+      csharp_sha: 7a43c3a06569b03dddbeb014d7eb3678c1a97542
+      content_python_sha: 7fd91444f20e1c987b51721b30e8c86c3bc76f59b1223a03655e2150a938e4c3
+      content_csharp_sha: 8d8a6671bbd2b6278c88014eb61e5487fd794b0ff070e94c0ce9fde5fce42b01
   known_differences:
     - "Socle pedagogique commun : node consistency + AC-3 + Forward Checking + MAC, implementes from-scratch des deux cotes."
     - "Cote C# : extension Choco-solver 4.10.17 via IKVM 8.15.0 (memes recettes infrastructure que CSP-1) pour comparer les algorithmes custom avec la propagation native de Choco (variable x, contrainte arithmetique, model.getSolver().propagate())."

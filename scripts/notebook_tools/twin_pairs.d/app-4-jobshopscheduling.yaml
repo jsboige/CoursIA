@@ -22,6 +22,12 @@
       csharp_sha: 1632b5ea3a9b2bf7abb81950a25f0fea2c0d5310
       content_python_sha: 913f9921fd3c5220b8980601dd68df89430ead8a089f49c846501af6614dff1e
       content_csharp_sha: b2d1ad64f287b783e0f0cef85ca0686026dee181ae779a06ec696478e3a38455
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 802fe37b80dee6bbdfa56eacda5fe6d6ddf03ca0
+      csharp_sha: 0ca94d2d687fda1ac46ac30dbe9725fcd9909a55
+      content_python_sha: 2d56d0d06c7f1c46694c7a5b1937871fcd52aea60f86342f6ea2a2efe6699ff9
+      content_csharp_sha: de4ac2bc97146f900428902a07385a8c74b41cb9898707dd38ccb9462d9a343d
   known_differences:
     - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque OR-Tools CP-SAT (IntervalVar + AddNoOverlap + Minimize makespan) comme solveur SOTA. C# = deux tranches -- Tranche 1 (sections 3-4) reimplementation from-scratch pedagogique (5 regles de dispatching glouton + branch-and-bound, en BCL pure System.* 0 NuGet) PRESERVEE integralement ; Tranche 2 (PR #10382 cycle 14) ajoute Google.OrTools 9.15 (.NET natif, deja en service dans Sudoku-10/18, App-8, App-15b, App-1, App-3) avec le MEME modele canonique CP-SAT que le Python (IntervalVar par operation, precedence end<=start entre operations d'un job, AddNoOverlap par machine, AddMaxEquality+Minimize makespan) sur la MEME instance ft03 (3 jobs x 3 machines). parite verifiee : status=Optimal, makespan=11 (= Python OPTIMAL 11 ; LB=10, le moteur prouve l'optimum global). parity_level=native-both (Python/ortools ET C#/Google.OrTools atteignent chacun le moteur de production CP-SAT de leur ecosysteme)."
     - "Asymetrie de couverture : Python (visualisation matplotlib gantt + experimentation a grande echelle avec courbe de convergence CP-SAT + search_helpers) ; C# (25 cellules : heuristiques from-scratch Tranche 1 + pont CP-SAT Tranche 2 + 3 exercices + visualisation ASCII). La visualisation matplotlib et le benchmark a grande echelle restent propres au Python ; la parite porte sur le solveur SOTA (CP-SAT) et le socle theorique (IntervalVar + NoOverlap + makespan)."
