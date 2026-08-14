@@ -6,13 +6,11 @@ Detail complet (workflow batch merge + commandes + audit pre-merge + incidents +
 
 ## Regle 1 : ai-01 merge activement sous `myia-ai-01`
 
-Le compte `myia-ai-01` **a** le droit `MergePullRequest` sur `jsboige/CoursIA` — verifie firsthand cycle 2026-08-08 : 6 merges consecutifs reussis sous `myia-ai-01` sans aucun `gh auth switch` (#10087, #10086, #10055, #10015, #10061, #10080). La protection de branche (etat `required_status_check`, lecture via `gh api .../branch_protection`) renvoie `404` sous `myia-ai-01` (cf #9991) : le compte admin `jsboige` est requis pour **lire/modifier cette protection**, PAS pour merger.
+Le compte `myia-ai-01` **a** le droit `MergePullRequest` sur `jsboige/CoursIA` (verifie firsthand 2026-08-08 : 6 merges consecutifs sans aucun `gh auth switch`). Le `404` sur la protection de branche (#9991) dit que `jsboige` est requis pour **lire/modifier cette protection**, PAS pour merger — ne pas confondre.
 
-Quand 1+ PR(s) CLEAN MERGEABLE + APPROVED s'accumulent : merger directement sous `myia-ai-01` (`gh pr merge <N> --squash`), puis post dashboard ack. **Pas** de "pending user merge" dans le todo. Ne pas confondre "permissions GitHub absent" avec "interdiction de merger". Reserver `gh auth switch -u jsboige` aux operations qui l'exigent reellement : lecture/ecriture de la protection de branche, et le cas des PRs etudiantes (couvert par [student-pr-reviews.md](student-pr-reviews.md)).
+Quand 1+ PR(s) CLEAN MERGEABLE + APPROVED s'accumulent : merger directement sous `myia-ai-01` (`gh pr merge <N> --squash`), puis post dashboard ack. **Pas** de "pending user merge" dans le todo. Reserver `gh auth switch -u jsboige` aux operations qui l'exigent : protection de branche, et PRs etudiantes ([student-pr-reviews.md](student-pr-reviews.md)) — le switch mute un etat **global au process `gh`** qui entre en course avec toute autre session appelant `gh` ([model-delegation.md](model-delegation.md) regle 6), donc le prescrire inutilement est un risque net.
 
-**JAMAIS `--delete-branch`** au merge (cf [SKILL.md](../skills/coordinate/SKILL.md) et incident #10093) : la branche est ce qui permet de rouvrir une PR fermee par erreur — #10067 a survecu a une fermeture involontaire uniquement parce que sa branche etait intacte.
-
-**Note historique** : une version anterieure affirmait que `myia-ai-01` n'avait pas le droit `MergePullRequest` (constate absent le 2026-05-19 sur #1278/#1279/#1281) et prescrivait le rituel `gh auth switch -u jsboige` -> merge -> switch back. Le droit a ete accorde entre temps ; le switch mute en outre un etat **global au process `gh`** qui entre en course avec toute autre session ou sous-agent appelant `gh` (cf [model-delegation.md](model-delegation.md) regle 6) — le prescrire inutilement imposait un risque de corruption d'auth sans contrepartie.
+**JAMAIS `--delete-branch`** au merge (incident #10093) : la branche est ce qui permet de rouvrir une PR fermee par erreur — #10067 n'a survecu a une fermeture involontaire que parce que sa branche etait intacte.
 
 **Exception** : PR notebook -> regle H.4 (`git checkout` + Papermill local + verify `execution_count`) AVANT merge.
 

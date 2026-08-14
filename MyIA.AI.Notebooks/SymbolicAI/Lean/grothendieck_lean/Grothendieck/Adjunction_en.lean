@@ -47,7 +47,7 @@ universe v₁ v₂ u₁ u₂
 
 namespace Grothendieck.Adjunction_en
 
-open CategoryTheory Limits
+open CategoryTheory Functor Limits
 
 variable {C : Type u₁} [Category.{v₁} C] {D : Type u₂} [Category.{v₂} D]
 
@@ -271,5 +271,65 @@ theorem mk'_homEquiv_preserves {L : C ⥤ D} {R : D ⥤ C}
     (adj : CategoryTheory.Adjunction.CoreHomEquivUnitCounit L R) :
     (CategoryTheory.Adjunction.mk' adj).homEquiv = adj.homEquiv :=
   CategoryTheory.Adjunction.mk'_homEquiv adj
+
+/-!
+## 9. Bridges on the `IsLeftAdjoint` class and the global triangle identities
+
+The **global triangle identities** `left_triangle` / `right_triangle`
+(equalities of natural transformations `whiskerRight η L ≫ whiskerLeft L ε
+= 𝟙 L`, the global version of the pointwise components of Section 7) and the
+class `Functor.IsLeftAdjoint` (the existence of a right adjoint) complete the
+picture: `Functor.rightAdjoint` chooses the adjoint, and
+`Adjunction.ofIsLeftAdjoint` rebuilds the associated adjunction — the
+certificate that links the existence property to the concrete adjunction.
+-/
+
+/-- Bridge: the left triangle identity in its **global** version (equality of
+    natural transformations): `whiskerRight η L ≫ whiskerLeft L ε = 𝟙 L`.
+    This is the NatTrans version of `left_triangle_components_apply`
+    (Section 7, pointwise version). Delegates to the Mathlib lemma
+    `Adjunction.left_triangle`.
+    Namespace theorem (L902 ★★ Tier 4) — direct lemma call. -/
+theorem left_triangle_nat {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    whiskerRight h.unit L ≫ whiskerLeft L h.counit = 𝟙 L :=
+  h.left_triangle
+
+/-- Bridge: the right triangle identity in its **global** version (equality
+    of natural transformations): `whiskerLeft R η ≫ whiskerRight ε R = 𝟙 R`.
+    This is the NatTrans version of `right_triangle_components_apply`
+    (Section 7, pointwise version). Delegates to the Mathlib lemma
+    `Adjunction.right_triangle`.
+    Namespace theorem (L902 ★★ Tier 4) — direct lemma call. -/
+theorem right_triangle_nat {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
+    whiskerLeft R h.unit ≫ whiskerRight h.counit R = 𝟙 R :=
+  h.right_triangle
+
+/-- Bridge: the property for a functor `L : C ⥤ D` of being a left adjoint
+    (having a right adjoint `R : D ⥤ C` with `L ⊣ R`). This is the
+    proposition class `Functor.IsLeftAdjoint` of Mathlib: it records the
+    existence of an adjoint, without choosing it.
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the class. -/
+def is_left_adjoint_field (L : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.IsLeftAdjoint L
+
+/-- Bridge: the choice of a right adjoint for a left adjoint functor. From
+    `[L.IsLeftAdjoint]`, `Functor.rightAdjoint L` extracts an `R : D ⥤ C`
+    with `L ⊣ R` (nonconstructive choice via `Classical.choice`).
+    Return type `D ⥤ C` = data → `noncomputable def` (lesson c.1301+131-L2). -/
+noncomputable def right_adjoint_field (L : C ⥤ D)
+    [CategoryTheory.Functor.IsLeftAdjoint L] : D ⥤ C :=
+  CategoryTheory.Functor.rightAdjoint L
+
+/-- Bridge: the adjunction associated with the class `[L.IsLeftAdjoint]` —
+    the functor `L` is left adjoint to its chosen right adjoint
+    `L.rightAdjoint`. This is the certificate that turns the existence
+    property into a concrete adjunction. Delegates to the Mathlib lemma
+    `Adjunction.ofIsLeftAdjoint`.
+    Return type `⊣` = structure `Adjunction` = data → `noncomputable def`
+    (lesson c.1301+131-L2 ★). -/
+noncomputable def of_is_left_adjoint_field (L : C ⥤ D)
+    [CategoryTheory.Functor.IsLeftAdjoint L] :
+    L ⊣ CategoryTheory.Functor.rightAdjoint L :=
+  CategoryTheory.Adjunction.ofIsLeftAdjoint L
 
 end Grothendieck.Adjunction_en

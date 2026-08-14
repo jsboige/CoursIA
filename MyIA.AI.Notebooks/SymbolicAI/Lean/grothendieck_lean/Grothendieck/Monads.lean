@@ -169,6 +169,38 @@ def free_family (T : CategoryTheory.Monad C) :
     C ⥤ CategoryTheory.Monad.Algebra T :=
   T.free
 
+/-- Pont : le type des algèbres de la monade T (catégorie d'Eilenberg-Moore).
+    C'est la structure `Monad.Algebra` de Mathlib : une T-algèbre est un objet
+    `A` muni d'une action `a : T A ⟶ A` compatible avec l'unité `η` et la
+    multiplication `μ`. C'est la « solution universelle » au problème de
+    factoriser la monade T à travers une adjonction. -/
+def algebra_type (T : CategoryTheory.Monad C) : Type (max u₁ v₁) :=
+  T.Algebra
+
+/-- Pont : la catégorie de Kleisli de la monade T. C'est la structure
+    `CategoryTheory.Kleisli` de Mathlib : un objet de `Kleisli T` est un objet
+    de C, et un morphisme `A ⟶ B` est une flèche `A ⟶ T B` dans C.
+    Symétrique d'Eilenberg-Moore : c'est l'autre solution universelle
+    (initiale) du problème de factorisation de T. -/
+def kleisli_type (T : CategoryTheory.Monad C) : Type u₁ :=
+  CategoryTheory.Kleisli T
+
+/-- Pont : l'adjonction libre ⊣ oubli d'Eilenberg-Moore. C'est le `Monad.adj`
+    de Mathlib : le foncteur algèbre libre `T.free` est adjoint à gauche du
+    foncteur d'oubli `T.forget`, et la monade induite par cette adjonction est
+    la monade d'origine — la factorisation canonique d'Eilenberg-Moore. -/
+noncomputable def monad_adj_field (T : CategoryTheory.Monad C) :
+    T.free ⊣ T.forget :=
+  CategoryTheory.Monad.adj T
+
+/-- Pont : la monade induite par l'adjonction d'Eilenberg-Moore s'identifie à
+    la monade d'origine. C'est l'`Adjunction.adjToMonadIso` de Mathlib :
+    `T.adj.toMonad ≅ T` — la correspondance adjonction ↔ monade boucle
+    (toute monade provient de son adjonction canonique, à isomorphisme près). -/
+noncomputable def adjToMonadIso_field (T : CategoryTheory.Monad C) :
+    T.adj.toMonad ≅ T :=
+  CategoryTheory.Adjunction.adjToMonadIso T
+
 /-!
 ## 7. Théorèmes propres (c.1301+124)
 

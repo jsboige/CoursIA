@@ -36,9 +36,9 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 
 Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
 
-## Règles modulaires `.claude/rules/` (auto-loaded chaque session)
+## Règles modulaires `.claude/rules/`
 
-`git-workflow` (branches, commits, force push) · `pr-review-discipline` (critères CHANGES_REQUESTED) · `anti-regression` (patterns red-flag) · `notebook-conventions` (structure, exécution kernel) · `exercise-example-labeling` (content-based, stop flip-flop) · `code-style` (PEP 8, .NET 9, no emojis) · `genai-config` · `wsl-kernels` · `student-pr-reviews` (anti-fuite soutenance) · `lean-merge-discipline` · `secrets-hygiene` · `secrets-roosync-policy` · `audit-reassessment` · `audit-cross-source-distillation` · `verify-before-claiming` · `coordinator-discipline` · `proactive-coordination` · `user-blocker-signaling` · `harness-hygiene` · `catalog-pr-hygiene` · `model-delegation` · `three-exercises-per-notebook` · `sota-not-workaround` · `readme-french-first` · `variation-protocol` · `lane-claim-protocol` (claim = commentaire d'issue, anti-collision cross-lane).
+Les 27 règles sont **auto-chargées à chaque session** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. Inventaire « quelle règle porte quel sujet » (pour lecture hors session) : [claude-code-config.md §Rules](docs/reference/claude-code-config.md).
 
 ---
 
@@ -76,11 +76,13 @@ Avant tout merge (y compris ses propres PRs) :
 
 ### C. Notebooks (3 règles user 2026-04-26)
 
-**C.1 — Pas d'erreur volontaire.** `raise NotImplementedError`, `assert False`, `1/0` et toute erreur intentionnelle sont **INTERDITS partout** (top-level, méthode, fonction utilitaire). Stubs corrects : `pass`, `print("Exercice a completer")`, `return None`, `result = None  # TODO etudiant`. Conserver `# TODO`, `# Indice`, `# Etape N`. Le notebook doit s'exécuter de bout en bout même exercices non complétés. Détail : [notebook-conventions.md](.claude/rules/notebook-conventions.md).
+**C.1 — Pas d'erreur volontaire.** `raise NotImplementedError`, `assert False`, `1/0` : **INTERDITS partout** (top-level, méthode, fonction utilitaire). Stubs corrects : `pass`, `print("Exercice a completer")`, `return None`, `result = None  # TODO etudiant` — en conservant `# TODO` / `# Indice` / `# Etape N`. Le notebook doit s'exécuter de bout en bout même exercices non complétés.
 
-**C.2 — Notebooks committés AVEC outputs.** `execution_count: <int>` + `outputs: [...]` cohérents pour chaque cellule code exécutable. Modification d'une cellule code = re-exécution complète avant commit. Notebook non-exécutable en local (kernel manquant, GPU requis) : documenter, exécuter ailleurs, committer avec outputs réels. Exception : modifs uniquement markdown. Quantbooks = exigence d'exécution **via QC Cloud** (MCP qc-mcp / Playwright en fallback), pas de « markdown explicatif » comme contournement.
+**C.2 — Notebooks committés AVEC outputs.** `execution_count: <int>` + `outputs: [...]` cohérents pour chaque cellule code exécutable ; modifier une cellule code = re-exécuter avant commit. Non-exécutable en local (GPU requis) : documenter, exécuter ailleurs, committer les outputs réels. Exception : modifs uniquement markdown. Quantbooks = exécution **via QC Cloud** (MCP `qc-mcp`, Playwright en fallback), jamais un « markdown explicatif » de contournement.
 
-**C.3 — Scope strict des re-exécutions Papermill.** Un agent ne commit QUE les notebooks dont il a modifié une cellule source (`git diff "$nb" | grep -cE '^\+\s*"source"' > 0`). Audit/inventaire : Papermill dans `/tmp/audit_<famille>_$(date +%s)/`, rapport sur dashboard, pas dans le repo. Incidents 2026-04-25 : 2 collisions de PR par re-exécutions parallèles (#540 vs #541, #541 vs #542).
+**C.3 — Scope strict des re-exécutions Papermill.** Un agent ne commit QUE les notebooks dont il a modifié une cellule source (`git diff "$nb" | grep -cE '^\+\s*"source"' > 0`). Audit/inventaire : Papermill hors repo, rapport sur dashboard. Deux collisions de PR par re-exécutions parallèles en 2026-04-25 fondent cette règle.
+
+C.4 (diagnostic dérive) et C.5 (prose quantitative), détail complet : [notebook-conventions.md](.claude/rules/notebook-conventions.md).
 
 ### D. Anti-régression (code de production)
 
@@ -104,13 +106,13 @@ Détail (+ convention i18n Lean FR/EN siblings) : [code-style.md](.claude/rules/
 
 ### F. Environnement — RÉPARER, ne JAMAIS contourner (HARD)
 
-**Règle user 2026-05-06 (Python) + 2026-05-26 (kernels)** : un env dégradé ou un kernel manquant ne se contourne **jamais** par délégation, fallback ou skip. On **installe** le kernel/env manquant sur la machine locale, on demande UAC user au besoin.
+**Règle user 2026-05-06 (Python) + 2026-05-26 (kernels)** : un env dégradé ou un kernel manquant ne se contourne **jamais** par délégation, fallback ou skip. On **installe** le kernel/env manquant localement, on demande UAC user au besoin.
 
-**Kernels installables partout** : .NET Interactive (`dotnet tool install --global Microsoft.dotnet-interactive`), Python 3 (conda env dédié), Lean 4 (`elan toolchain install stable`). Vérification : `jupyter kernelspec list`. Versions/paths + envs Conda : [kernels-runtime.md](docs/reference/kernels-runtime.md).
+**Installables partout** : .NET Interactive (`dotnet tool install --global Microsoft.dotnet-interactive`), Python 3 (conda env dédié), Lean 4 (`elan toolchain install stable`). Vérifier : `jupyter kernelspec list`. Versions/paths + envs Conda : [kernels-runtime.md](docs/reference/kernels-runtime.md).
 
-**Anti-patterns INTERDITS** : « kernel not available locally » dans un body PR = **manquement grave à H.2** · déléguer la re-exécution à ai-01 au lieu d'installer = **contournement** · committer un notebook sans re-exécuter les cellules modifiées = violation C.2 · « je n'ai pas le temps d'installer » · skip env local + délégation · `except Exception: pass` sur imports.
+**Anti-patterns INTERDITS** : « kernel not available locally » dans un body PR (= manquement grave à H.2) · déléguer la re-exécution au lieu d'installer · committer sans re-exécuter les cellules modifiées (viole C.2) · « je n'ai pas le temps d'installer » · `except Exception: pass` sur imports.
 
-**Exception** : GPU-only notebooks (CUDA requis sur machine CPU-only) — documenter et demander re-exécution sur machine GPU. Mais .NET Interactive, Python, Lean = installables **partout**.
+**Seule exception** : GPU-only (CUDA requis sur machine CPU-only) — documenter et router vers une machine GPU.
 
 ### G. Vigilance permanente — anti-complaisance
 
@@ -147,35 +149,23 @@ Détail H.1-H.7 + plan P0-P4 + script pre-commit : [regles-validation-detail.md]
 ## CARTOGRAPHIE & OUTILS
 
 ```
-MyIA.AI.Notebooks/                      # Séries pédagogiques par thème
-- GenAI/{Image,Audio,Video,Texte}/      # 60+ notebooks Python
-- ML/                                    # ML.NET tutorials (.NET C#)
-- Search/{Part1-Foundations,Part2-CSP,Part3-Advanced}/
-- Sudoku/                                # Constraint solving (.NET C#)
-- SymbolicAI/{Lean,Tweety,SemanticWeb,Planning,SmartContract}/
-- Probas/                                # Infer.NET probabilistic (.NET C#)
-- GameTheory/                            # OpenSpiel + Lean (social_choice_lean/)
-- IIT/                                   # PyPhi (Python)
-- QuantConnect/                          # 27 notebooks + 50 stratégies
-- Config/settings.json
-
-scripts/notebook_tools/notebook_tools.py # CLI multi-famille (validate/execute/skeleton/analyze)
-scripts/genai-stack/genai.py             # GenAI Docker + validation
-.claude/{agents,skills,rules}/           # 21 sous-agents, 17 skills, rules auto-loaded
-GradeBookApp/                            # Notation étudiants (pipelines/données privés GDrive)
-docker-configurations/                   # ComfyUI + Qwen Docker
-docs/                                    # Documentation déportée de ce fichier
+MyIA.AI.Notebooks/          # Séries pédagogiques : GenAI/{Image,Audio,Video,Texte},
+                            # ML (ML.NET C#), Search, Sudoku, SymbolicAI/{Lean,Tweety,
+                            # SemanticWeb,Planning,SmartContract}, Probas (Infer.NET),
+                            # GameTheory (OpenSpiel + Lean), IIT (PyPhi), QuantConnect
+scripts/notebook_tools/     # CLI multi-famille (validate/execute/skeleton/analyze)
+scripts/genai-stack/        # GenAI Docker + validation
+.claude/{agents,skills,rules}/
+GradeBookApp/               # Notation étudiants (pipelines/données privés GDrive)
+docker-configurations/      # ComfyUI + Qwen Docker
+docs/                       # Documentation déportée de ce fichier
 ```
 
 **Règle générale outils** : ne jamais écrire un script ad-hoc d'exécution/validation — il existe presque toujours un outil dédié dans `scripts/notebook_tools/`. Si manquant, l'ajouter **là** (pas dans la racine `scripts/`).
 
 ### Catalogue agents / skills / scripts — USAGE MANDATÉ
 
-**Règle HARD.** Là où un **sous-agent** spécialiste, un **skill** slash-command, ou un **script** dédié couvre une tâche, **l'utiliser plutôt que de réimproviser le workflow**. Les Epics side-tracks **DOIVENT** déléguer aux sous-agents async (`run_in_background: true`) quand un specialist existe.
-
-- **Sous-agents** : `Agent(subagent_type: "<nom>")`. Roster + mapping side-track : [subagents-reference.md](docs/reference/subagents-reference.md).
-- **Skills** : slash-command `/<nom>` (`/coordinate`, `/review-student-prs`, `/build-notebook`, `/enrich-notebooks`, …).
-- **Scripts** : catalogue complet → [scripts-reference.md](docs/reference/scripts-reference.md). **Ne jamais** réécrire un script d'exécution/validation/maintenance.
+**Règle HARD.** Là où un **sous-agent** spécialiste, un **skill** slash-command, ou un **script** dédié couvre une tâche, **l'utiliser plutôt que de réimproviser le workflow**. Les Epics side-tracks **DOIVENT** déléguer aux sous-agents async (`run_in_background: true`) quand un specialist existe. Roster + skills + catalogue de scripts : [subagents-reference.md](docs/reference/subagents-reference.md) · [scripts-reference.md](docs/reference/scripts-reference.md).
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 

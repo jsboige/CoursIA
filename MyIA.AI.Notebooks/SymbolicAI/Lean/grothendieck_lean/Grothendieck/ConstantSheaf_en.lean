@@ -80,6 +80,17 @@ noncomputable def constantSheafObj (X : D) [HasWeakSheafify J D] :
     Sheaf J D :=
   (constantSheaf J D).obj X
 
+/-- Bridge construction: the **constant sheaf functor** `constantSheaf J D :
+    D ⥤ Sheaf J D`, defined as the sheafification of the constant presheaf
+    (`constantSheaf J D = Functor.const Cᵒᵖ ⋙ presheafToSheaf J D`). It sends
+    an object X : D to the sheafification of the constant presheaf at X, and
+    its left adjoint is the evaluation at a terminal object (`constantSheafAdj`).
+    Re-exports `constantSheaf` (def, `noncomputable`). -/
+noncomputable def constantSheaf_functor_field
+    (J : GrothendieckTopology C) (D : Type u') [Category.{v'} D]
+    [HasWeakSheafify J D] : D ⥤ Sheaf J D :=
+  constantSheaf J D
+
 /-! ## 3. The constant sheaf adjunction
 
 When C has a terminal object T, the constant sheaf functor is left adjoint

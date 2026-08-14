@@ -34,7 +34,14 @@
       csharp_sha: 22df0cb4ff61c48cf8218610b8675cd881255873
       content_python_sha: d55d8f692dc1a40ab7daab05f80a30312174bbf88e6d37d615a7ebb2570a1911
       content_csharp_sha: 57046760de9937df38ec74e13b2d2d720321c65e3d648909bfabcbf249278bb6
+    - date: "2026-08-14"
+      by: myia-po-2024:CoursIA
+      python_sha: 8468688beb8513f870e571c57eded9224f2c9cb7
+      csharp_sha: a85be3bea58feec1831dcc4da4a0906d9c79c9bd
+      content_python_sha: d55d8f692dc1a40ab7daab05f80a30312174bbf88e6d37d615a7ebb2570a1911
+      content_csharp_sha: c4d39aced1d0aed0b39b80e81489fb8be35356694461bfd124f80da9b2e6858c
   known_differences:
+    - "Rebaseline 2026-08-14 : cote C# deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Socle pedagogique commun : reformulation du Sudoku comme un probleme de coloration de graphe (une cellule = un noeud, le graphe de contraintes Sudoku, coloration propre a 9 couleurs), meme concept mathematique (graphe de conflits, coloration propre), meme cas d'application."
     - "Idiomes framework : Python = networkx (construction du graphe via nx.sudoku_graph(), 81 sommets / 810 aretes) ; la coloration (backtracking / MRV / DSATUR) est hand-written au-dessus. C# = stdlib System.* (construction + solveur from-scratch, tranche 1). [Corrige 2026-08-11 : une mention anterieure a OR-Tools CP-SAT etait inexacte -- le jumeau Python n'importe ni ortools ni cp_model, seul networkx est present.]"
     - "Tranche 2 (2026-08-11, po-2023) : le C# delegue desormais la structure du graphe de contraintes a QuikGraph 2.5.0 (UndirectedGraph<int,Edge<int>>) -- equivalent .NET de networkx. Algorithme QuikGraph reel invoque : composantes connexes (ConnectedComponentsAlgorithm -> 1 composante, graphe connexe). La coloration reste hand-written des deux cotes (networkx non plus ne resout pas la coloration). Verdict SOTA SOTA-OK (QuikGraph proprement reference, graphe construit, algorithme invoque). parity_level semantic -> native-both."

@@ -339,4 +339,83 @@ theorem colimit_ι_desc (F : J ⥤ C) [HasColimit F] (c : Cocone F) (j : J) :
     colimit.ι F j ≫ colimit.desc F c = c.ι.app j :=
   CategoryTheory.Limits.colimit.ι_desc c j
 
+/-!
+## 10. Ponts sur les classes de complétude et de préservation
+
+Les 7 bridges suivants ferment les sections 4-6 du répertoire documentaire
+(`#check`) : les classes de **complétude** (`HasLimitsOfSize`/
+`HasColimitsOfSize`), les **formes classiques** (`HasProducts`/
+`HasBinaryProducts`/`HasEqualizers`) et la **préservation** des limites
+(`PreservesLimitsOfSize`/`PreservesColimitsOfSize`). Chacun est un re-export
+type-sig de la classe Prop Mathlib (pattern winner L902 ★★ Tier 5) : args
+résidents (les univers du diagramme `v v' u u'`), instances structurelles
+uniquement, pas de constructeur polymorphe d'univers.
+
+Note univers (leçon c.1301+141-L1) : `HasLimitsOfSize.{u, v} C` prend **deux**
+univers explicites — l'univers du Shape (`J : Type u`) et l'univers des
+morphismes du Shape (`[Category.{v} J]`) — et couvre exactement nos diagrammes.
+`HasProducts.{u} C` prend **un** univers explicite (l'univers des types
+d'indices du produit, `HasProducts := ∀ J : Type w, HasLimitsOfShape
+(Discrete J) C`), aligné sur notre Shape univers ; l'omettre produit
+`universe level metavariables`. `HasBinaryProducts`/`HasEqualizers` ont des
+shapes fixes (`Discrete WalkingPair`/`WalkingParallelPair`) — aucun univers
+explicite.
+-/
+
+/-- Pont : la catégorie `C` est **complete** — tout diagramme indexé par une
+    petite catégorie de notre Shape univers (`J : Type u` avec
+    `[Category.{v} J]`) admet une limite. C'est l'assertion de complétude des
+    catégories de diagrammes de taille `(u, v)`, re-export type-sig de la
+    classe Mathlib `HasLimitsOfSize.{u, v} C`. Les limites y sont stables par
+    les constructions catégoriques utiles (catégories de faisceaux, catégories
+    de foncteurs). -/
+def has_limits_of_size_field : Prop :=
+  HasLimitsOfSize.{u, v} C
+
+/-- Pont : la catégorie `C` est **cocomplete** — tout diagramme indexé par une
+    petite catégorie de notre Shape univers admet une colimite. Duale de
+    `has_limits_of_size_field`, re-export type-sig de la classe Mathlib
+    `HasColimitsOfSize.{u, v} C`. -/
+def has_colimits_of_size_field : Prop :=
+  HasColimitsOfSize.{u, v} C
+
+/-- Pont : la catégorie `C` a tous les **produits** indexés par des types de
+    notre Shape univers — les limites sur les types discrétisés `Discrete J`
+    avec `J : Type u`. Un théorème de Freyd ramène la complétude (petite) à
+    l'existence des produits et des égaliseurs — d'où leur centralité.
+    Re-export type-sig de la classe Mathlib `HasProducts.{u} C`. -/
+def has_products_field : Prop :=
+  HasProducts.{u} C
+
+/-- Pont : la catégorie `C` a tous les **produits binaires** — les limites
+    sur le shape fixe `Discrete WalkingPair` (la paire à deux objets).
+    Re-export type-sig de la classe Mathlib `HasBinaryProducts C` (aucun
+    univers explicite : le shape est fixe). -/
+def has_binary_products_field : Prop :=
+  HasBinaryProducts C
+
+/-- Pont : la catégorie `C` a tous les **égaliseurs** — les limites sur le
+    shape fixe `WalkingParallelPair` (la paire de flèches parallèles), la
+    seconde brique du théorème de Freyd avec les produits. Re-export type-sig
+    de la classe Mathlib `HasEqualizers C` (aucun univers explicite). -/
+def has_equalizers_field : Prop :=
+  HasEqualizers C
+
+/-- Pont : un endofoncteur `F : C ⥤ C` **préserve les limites** de taille
+    `(u, v)` — l'image par `F` d'un cône limite en est encore une. C'est
+    précisément la propriété des adjoints à droite (cf module
+    `Grothendieck.Adjunction`) : le foncteur « sections globales » Γ préserve
+    ainsi les limites de faisceaux. Re-export type-sig de la classe Mathlib
+    `PreservesLimitsOfSize.{u, v} F`. -/
+def preserves_limits_of_size_field (F : C ⥤ C) : Prop :=
+  PreservesLimitsOfSize.{u, v} F
+
+/-- Pont : un endofoncteur `F : C ⥤ C` **préserve les colimites** de taille
+    `(u, v)` — l'image par `F` d'un cocône colimite en est encore une. C'est
+    la propriété des adjoints à gauche. Duale de
+    `preserves_limits_of_size_field`, re-export type-sig de la classe Mathlib
+    `PreservesColimitsOfSize.{u, v} F`. -/
+def preserves_colimits_of_size_field (F : C ⥤ C) : Prop :=
+  PreservesColimitsOfSize.{u, v} F
+
 end Grothendieck.Limits

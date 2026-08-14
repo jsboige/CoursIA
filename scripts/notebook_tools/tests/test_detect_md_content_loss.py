@@ -145,6 +145,12 @@ class TestReorderSafeByCellID:
     par index croisait des cellules differentes apres decalage). Le multiset
     d'IDs identique est un signal fort "reorder sans modif de contenu" et
     merite appariement par ID, pas par index.
+
+    Fix #10873 : l'appariement par ID porte sur le **sous-ensemble id-e stable**
+    (cellules exposant un ``id``) ; les cellules sans id (residu) restent
+    appariees par index. L'ancienne politique all-or-nothing basculait le
+    notebook entier en mode index des qu'une cellule md etait sans id
+    (150/1017 notebooks exposes, FP #10725).
     """
 
     def test_reorder_with_stable_ids_no_signal(self):
@@ -184,40 +190,118 @@ class TestReorderSafeByCellID:
         assert findings[0]["kind"] == "TRUNCATED_CELL"
         assert findings[0]["cell_idx"] == 1  # position dans le head
 
-    def test_reorder_without_ids_falls_back_to_index_legacy(self):
-        # Si les cellules n'ont PAS d'IDs (legacy nbformat < 4.5 ou ecriture
-        # a la main), on retombe sur l'appariement par index et le reorder
-        # PEUT signaler a tort (legacy behavior preserve pour les vieux
-        # notebooks sans IDs).
-        body_long_a = "## Section A\n\n" + ("Phrase A. " * 25)
-        body_long_b = "## Section B\n\n" + ("Phrase B. " * 25)
-        base = _nb(_md(body_long_a), _md(body_long_b))
-        head = _nb(_md(body_long_b), _md(body_long_a))  # reorder sans IDs
+    def test_reorder_with_single_missing_id_no_signal(self):
+        # #10873 : une SEULE cellule md sans id (residu) ne doit plus basculer
+        # le notebook entier en mode index. L'ancienne politique all-or-nothing
+        # (`ids_available` exigeait que TOUTES les cellules aient un id)
+        # retombait en index : la position 0 pairerait la LONGUE cellule A
+        # (base) avec la COURTE cellule B (head, remontee en tete par le
+        # reorder) -> faux positif TRUNCATED_CELL. Le fix apparie le
+        # sous-ensemble id-e (alpha, charlie) par id et le residu (b, sans
+        # id) par index -> 0 finding.
+        a = "## Section A\n\n" + ("Phrase A substantielle. " * 30)   # ~730c normalises
+        b = "## Bref rappel\n\n" + ("Rappel bref. " * 6)             # ~90c, sans id
+        c = "## Section C\n\n" + ("Phrase C substantielle. " * 30)   # ~730c
+        base = _nb(_md(a, cell_id="alpha"),
+                   _md(b),                     # residu sans id
+                   _md(c, cell_id="charlie"))
+        head = _nb(_md(b),                     # reorder pur : B remonte en tete
+                   _md(a, cell_id="alpha"),
+                   _md(c, cell_id="charlie"))
         findings = dml._compare_cells(dml.extract_md_cells(base),
                                       dml.extract_md_cells(head))
-        # Legacy behavior : au moins une cellule signalee (la 0 du head =
-        # body_long_b comparee a body_long_a -- ratio < 1, probablement
-        # OK car contenus similaires, mais on documente au moins une issue
-        # OU aucune issue si ratio > 0.75. On accepte les deux : la police
-        # legacy index-parallel est connue FP-prone pour les reorders, et
-        # c'est exactement pourquoi on a ajoute l'appariement par ID.
-        # Le test documente que la politique legacy ne casse pas : pas de
-        # AssertionError, juste constatation.
-        assert isinstance(findings, list)
+        assert findings == [], (
+            "un reorder pur avec 1 cellule md sans id ne doit PAS signaler "
+            f"(trouve: {findings!r})"
+        )
 
-    def test_partial_id_overlap_falls_back_to_index(self):
-        # Si seulement certaines cellules ont un id (cas mixte), on NE PEUT
-        # PAS se rabattre sur l'appariement par ID (multiset pas comparable) :
-        # on retombe sur l'index legacy. Ce test documente la politique
-        # conservative : mieux vaut un FP qu'un blanc-seing.
+    def test_partial_id_truncation_still_signals(self):
+        # #10873 : le sous-ensemble id-e est apparie par id, mais une vraie
+        # troncature sur une cellule id-e doit continuer a signaler (le fix
+        # n'est pas un blanc-seing pour la cellule id-e elle-meme).
+        body_long = "## Section\n\n" + ("Phrase substantielle. " * 30)
+        base = _nb(_md(body_long, cell_id="alpha"),
+                   _md(body_long))                # residu sans id
+        head = _nb(_md("> **Titre :**", cell_id="alpha"),  # alpha reellement tronquee
+                   _md(body_long))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["cell_idx"] == 0  # position dans le head
+
+    def test_zero_id_pure_reorder_no_signal(self):
+        # #10873 court-circuit multiset : un notebook AUCUNE cellule md id-ee
+        # (classe QC-Py-07/08/10, 0/52 et 0/50 ids) + reorder pur doit rendre
+        # 0 finding. Les longuetres tres differentes garantissent que le code
+        # PRE-court-circuit produisait bien un FP index (long base[0] paire
+        # avec court head[0]) -- ce test echoue contre le code post-#10885
+        # sans le court-circuit.
+        body_long = "## Section A\n\n" + ("Phrase A substantielle. " * 30)   # ~730c
+        body_short = "## Section B\n\n" + ("Phrase B plus courte. " * 12)     # ~280c
+        base = _nb(_md(body_long), _md(body_short))
+        head = _nb(_md(body_short), _md(body_long))  # reorder pur sans ids
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert findings == [], (
+            "un reorder pur sur un notebook zero-id ne doit PAS signaler "
+            f"(court-circuit multiset, trouve: {findings!r})"
+        )
+
+    def test_zero_id_real_truncation_still_signals(self):
+        # #10873 non-blanc-seing : le court-circuit multiset ne desarme pas le
+        # gate sur une VRAIE troncature en notebook zero-id -- la chaine
+        # tronquee differe, le multiset differe, le court-circuit ne s'arme
+        # pas et l'appariement index legacy signale.
+        body_long = "## Section\n\n" + ("Phrase substantielle. " * 30)
+        base = _nb(_md(body_long), _md(body_long))
+        head = _nb(_md(body_long), _md("> **Titre :**"))  # vraie troncature
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["cell_idx"] == 1
+
+    def test_zero_id_same_length_substitution_still_signals(self):
+        # #10873 garde anti-blanc-seing des TOTAUX : substitution + reorder.
+        # base = [X (L), Y (S)], head = [Y (S), X' (L)] ou X' est DISTINCT de
+        # X mais de MEME longueur normalisee (mots de meme longueur). Les
+        # TOTAUX sont egaux au caractere pres -- un critere sur les totaux
+        # disculperait a tort (blanc-seing). Le critere implemente est le
+        # MULTISET des chaines : il differe, le court-circuit ne s'arme pas,
+        # l'appariement index signale le desalignement (X perdu, X' apparu).
+        x = "## Analyse technique\n\n" + ("Regarder la volatilite. " * 20)
+        x_prime = "## Analyse technique\n\n" + ("Analyser la volatilite. " * 20)
+        y = "## Section breve\n\n" + ("Rappel court. " * 12)
+        assert len(dml._normalize(x)) == len(dml._normalize(x_prime)), (
+            "fixtures: X et X' doivent totaliser la meme longueur normalisee "
+            "pour que ce test prouve multiset != totaux"
+        )
+        base = _nb(_md(x), _md(y))
+        head = _nb(_md(y), _md(x_prime))  # X substitue par X' + reorder
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) >= 1, (
+            "une substitution meme-longueur + reorder doit signaler (multiset "
+            f"different, totaux egaux -- trouve: {findings!r})"
+        )
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+
+    def test_partial_ids_use_subset_matching(self):
+        # #10873 : si seulement certaines cellules ont un id (cas mixte),
+        # l'appariement par ID porte sur le sous-ensemble id-e (alpha),
+        # l'index sur le residu sans id. Notebooks identiques -> 0 finding
+        # (l'ancienne politique all-or-nothing retombait en mode index).
         body_long = "## Section\n\n" + ("Phrase. " * 25)
         base = _nb(_md(body_long, cell_id="alpha"), _md(body_long))
         head = _nb(_md(body_long, cell_id="alpha"), _md(body_long))
         # IDs partiels : alpha en base[0] et head[0], mais base[1]/head[1] = None.
         findings = dml._compare_cells(dml.extract_md_cells(base),
                                       dml.extract_md_cells(head))
-        # Pas d'assertion stricte : on documente qu'on ne casse pas en mode mixte.
-        assert isinstance(findings, list)
+        assert findings == [], (
+            "un notebook mixte identique ne doit PAS signaler avec le subset "
+            f"matching (trouve: {findings!r})"
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -857,9 +857,12 @@ cell containing `g` with enough padding). Two cases:
 
 ### Dependency
 
-`p5_large_n_jump` (P5.2) calls `hashlifeResult_central_correct` (P4) — so P5
-is **blocked until P4's inductive step is proven**. But `p5_small_n_fallback`
-(P5.1) is independent of P4 and can be proven now. The full
+`p5_large_n_jump` (P5.2) calls `hashlifeResult_central_correct` (P4) — P4
+is now **proved** (`p4_succ_membership`, sorry-free), so this dependency no
+longer blocks anything (gate-status correction, 2026-08-14). What still gates
+the genuine `p5_large_n_jumpN` sorry is the locality bridge + multi-jump
+recursion invariant documented at the theorem. `p5_small_n_fallback`
+(P5.1) is independent of P4 and already proven. The full
 `p5_inductive_step` glues the two cases; it stays `sorry` until both sub-lemmas
 are ready.
 
@@ -1121,9 +1124,11 @@ concrete Game-of-Life patterns by `box_assez_grandN_block_8` /
 on the *spec* (a non-vacuous large-`n` correctness statement, witnessed at
 `n = 8` on real patterns) and is the honest framing of the remaining work. The
 genuine large-`n` Hashlife jump, however, remains an **open named sorry**
-`p5_large_n_jumpN` (P5.2, P4-gated) — it is **not** closed by any vacuity
-argument, and its body is `sorry` pending the P4 unlock (`p4_succ_membership`,
-the offset-matching assembly, ai-01 turf). A gated-meaningful sorry is honest
+`p5_large_n_jumpN` (P5.2) — it is **not** closed by any vacuity
+argument. The old "pending the P4 unlock (`p4_succ_membership`)" reservation
+is void: P4 is proved, and the sorry is now gated on the locality bridge +
+multi-jump recursion invariant (see the gate-status note at the theorem,
+2026-08-14). A gated-meaningful sorry is honest
 progress; a vacuous-worthless proof would not be. -/
 
 /-- **Non-vacuity witness, propositional form (gate W2, ai-01 garde-fou 1).**
@@ -1179,7 +1184,7 @@ private theorem jumpCaptured_iff (c : MacroCell) :
     simp only [Bool.and_eq_true, decide_eq_true_eq]
     tauto
 
-/-- **P5.2 genuine large-`n` jump (N2, P4-gated) — the sole remaining open
+/-- **P5.2 genuine large-`n` jump (N2) — the sole remaining open
     target of the P5 layer.** When `n ≥ jumpSize lvl` (the MacroCell level)
     on the n-aware frame, `evolveHashlifeFast` makes one Hashlife jump of
     `jumpSize lvl = 2^lvl` generations (via `hashlifeJump = hashlifeResult
@@ -1187,8 +1192,35 @@ private theorem jumpCaptured_iff (c : MacroCell) :
     `hashlifeResult_central_correct`) then recurses on `n - jumpSize lvl`,
     with the light cone staying inside the `gridFrameN` margin
     (`window_cheb_cone_in_domain`, now in `Conway.Life.ConeGeometry`). This is
-    the real P5.2 target — **open named sorry, P4-gated** (`p4_succ_membership`,
-    ai-01 turf), NOT closed by vacuity.
+    the real P5.2 target — **open named sorry** (see the gate-status note
+    below), NOT closed by vacuity.
+
+    **Gate status corrected (c.po-2025, 2026-08-14).** The docstring used to
+    say "P4-gated (`p4_succ_membership`, ai-01 turf)". That gate has FALLEN:
+    `p4_succ_membership` is proved sorry-free, so **nothing about P4 blocks
+    this sorry anymore** — the note cost weeks of misplaced reservation and
+    is corrected here in the same diff cycle that measured it. The remaining
+    open content, mapped firsthand (po-2025, all ingredients verified on
+    `main`):
+    - the **one-jump brick already exists and is proved**:
+      `hashlifeJump_correct_of_captured` (`JumpCapture.lean` §5) composes P4
+      (`hashlifeResult_central_correct`), `wf_padCenter2`/`level_padCenter2`
+      and `restrictGridTo_eq_self` into
+      `(hashlifeJump c).toGrid (2^c.level, 2^c.level)
+        = evolve (2^c.level) ((padCenter2 c).toGrid (0, 0))` under
+      `c.wf = true`, `1 ≤ c.level`, `jumpCaptured c = true`;
+    - still missing: (a) the **locality bridge** from the padded cell's grid
+      to `g` — agreement of `evolve (2^lvl) ((padCenter2 mc).toGrid (0,0))`
+      with `evolve (2^lvl) g` on the central window, assemblable from
+      `evolve_cone_agree` + `padCenter2_margin_ge_jumpReach` (margin
+      `3·2^(k-1) ≥ 2^k` reach) + `toGrid_shift_between` offset algebra, in
+      the style of `p4_succ_membership` (which took 542 lines); and
+      (b) the **multi-jump recursion invariant** — the recursive call needs
+      `jumpCaptured` for the jumped grid `g'`, which is an independent
+      geometric fact, not derivable from the initial `hcap`; it requires the
+      light-cone preservation argument through `gridFrameN` margins
+      (`window_cheb_cone_in_domain`), i.e. the frame redesign flagged in the
+      N1 sub-claim audit below.
 
     **Re-signed (c.1035, finding #6724 — voie (a)).** The hypothesis was
     `BoxAssezGrandN g n`, which is **tautological** (proved by
@@ -1202,8 +1234,12 @@ private theorem jumpCaptured_iff (c : MacroCell) :
     hypothesis is **non-tautological** (witnessed by `jumpCaptured_block`,
     `jumpCaptured_glider`, `jumpCaptured_not_trivial` in `JumpCapture.lean`),
     so this restatement carries real geometric content. Body remains `sorry`
-    (P4-gated); `restrictGridTo_eq_self` lives in `JumpCapture.lean` (not
-    Foundation), tracked as a known constraint for the eventual sorry discharge.
+    (no longer P4-gated — see the gate-status correction above);
+    `restrictGridTo_eq_self` lives in `JumpCapture.lean` (not Foundation),
+    tracked as a known constraint for the eventual sorry discharge — though
+    the one-jump brick that consumes it (`hashlifeJump_correct_of_captured`)
+    is already proved there, so an eventual discharge here can inline it
+    (byte-identical term, same pattern as the `jumpCaptured` inlining above).
 
     **Moved above `hashlife_correctN` (c.95)** so the latter can consume it: the
     N-frame statement is now *derived* from this jump plus the padding-free
@@ -1233,7 +1269,9 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     own. Splitting on the jump guard discharges it entirely:
     - `n < jumpSize` : `p5_small_n_fallback`, which takes **no padding
       hypothesis whatsoever** — it holds on any frame, the n-aware one included;
-    - `n ≥ jumpSize` : `p5_large_n_jumpN`, the genuine P4-gated jump, which
+    - `n ≥ jumpSize` : `p5_large_n_jumpN`, the genuine large-`n` jump (P4
+      dependency now discharged — remaining gates are the locality bridge +
+      multi-jump recursion invariant, see its doc), which
       now also consumes `jumpCaptured` (see its doc above).
 
     This is a structural reduction, **not** a vacuity closure: the whole
