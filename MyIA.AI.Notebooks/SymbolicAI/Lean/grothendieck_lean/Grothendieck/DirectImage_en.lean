@@ -198,4 +198,59 @@ theorem pullback_map_comp {X Y : Scheme.{u}} (f : X ⟶ Y)
         (pullback f : Y.Modules ⥤ X.Modules).map ψ :=
   (pullback f : Y.Modules ⥤ X.Modules).map_comp φ ψ
 
+
+/-- Bridge: the identity morphism of the category `X.Modules` applied to
+    sections equals the identity of the section ring. This is Mathlib 4's
+    `AlgebraicGeometry.Scheme.Modules.Hom.id_app` lemma:
+    `((𝟙 M : M ⟶ N).app U = 𝟙 _)`. -/
+
+theorem id_app_field (X : Scheme.{u}) (M : X.Modules) (U : X.Opens) :
+    (𝟙 M : M ⟶ M).app U = 𝟙 (Γ(M, U)) :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.id_app X U M
+
+/-- Bridge: the composition of morphisms of `X.Modules` is computed
+    pointwise as the composition of section morphisms. This is Mathlib 4's
+    `Hom.comp_app` lemma: `(φ ≫ ψ).app U = φ.app U ≫ ψ.app U`. -/
+
+theorem comp_app_field (X : Scheme.{u}) {M N K : X.Modules} (φ : M ⟶ N)
+    (ψ : N ⟶ K) (U : X.Opens) :
+    (φ ≫ ψ).app U = φ.app U ≫ ψ.app U :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.comp_app X M N K U φ ψ
+
+/-- Bridge: the addition of morphisms of `X.Modules` is computed
+    pointwise as the addition of section morphisms. This is Mathlib 4's
+    `Hom.add_app` lemma: `(φ + ψ).app U = φ.app U + ψ.app U`. -/
+
+theorem add_app_field (X : Scheme.{u}) {M N : X.Modules} (φ ψ : M ⟶ N)
+    (U : X.Opens) :
+    (φ + ψ).app U = φ.app U + ψ.app U :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.add_app X M N U φ ψ
+
+/-- Bridge: the scalar action of a structure-sheaf section on a morphism of
+    `X.Modules` is computed pointwise. This is Mathlib 4's `Hom.app_smul`
+    lemma: `φ.app U (r • x) = r • φ.app U x`. -/
+
+theorem app_smul_field (X : Scheme.{u}) {M N : X.Modules} (φ : M ⟶ N)
+    (U : X.Opens) (r : Γ(X, U)) (x : Γ(M, U)) :
+    φ.app U (r • x) = r • φ.app U x :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.app_smul X M N U φ r x
+
+/-- Bridge: the zero morphism `0 : M ⟶ N` applies to the zero of sections.
+    This is Mathlib 4's `Hom.zero_app` lemma:
+    `(0 : M ⟶ N).app U = 0`. -/
+
+theorem zero_app_field (X : Scheme.{u}) {M N : X.Modules} (U : X.Opens) :
+    (0 : M ⟶ N).app U = 0 :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.zero_app X M N U
+
+/-- Bridge: a morphism of `X.Modules` is an isomorphism iff its
+    components on each open set are isomorphisms of section rings. This is
+    Mathlib 4's `Hom.isIso_iff_isIso_app` lemma:
+    `IsIso φ ↔ ∀ U, IsIso (φ.app U)`. -/
+
+theorem isIso_iff_isIso_app_field (X : Scheme.{u}) {M N : X.Modules}
+    (φ : M ⟶ N) :
+    IsIso φ ↔ ∀ (U : X.Opens), IsIso (φ.app U) :=
+  @AlgebraicGeometry.Scheme.Modules.Hom.isIso_iff_isIso_app X M N φ
+
 end Grothendieck.DirectImage_en
