@@ -27,11 +27,15 @@ HAC Newey-West + correction HLN, `loss_fn="linear"` (#10228).
 | h=5 | +28,3 % | 0,10 | 0,00e+00 | **NO BEATS** |
 | h=10 | +38,3 % | 0,20 | 0,00e+00 | **NO BEATS** |
 
-**Lecture honnête (le piège §C, dans le bon sens)** : DLinear réduit le MSE de 15 à 38 % (perte
+**Lecture honnête (le piège §C, dans le bon sens)** : DLinear bat HAR de 15 à 38 % en MSE (perte
 symétrique), mais la perte **signée** (`linear`) révèle un **biais systématique** de prévision —
 `dm_mean_loss_diff ≈ +0,22` log-RV (h=1) : DLinear sur-prévient log-RV par rapport à HAR (OLS,
 non biaisé). Le DM signé le détecte à 39-47σ, p = 0,00 — **BEATEN BY baseline** sur les 4 seeds
-de chaque horizon. Un « edge » MSE porté par un forecaster biaisé n'est pas un edge exploitable.
+de chaque horizon. Ce biais est **quasi déterministe** (σ/moyenne = 0,39 % sur 4 seeds, monotone
+en horizon : 0,22 → 0,35 → 0,45) : un décalage constant par horizon, donc **corrigible** — il
+plafonne l'avantage MSE de DLinear, il ne le fabrique pas. `MSE = biais² + variance` : retirer le
+biais² porterait l'edge estimé à ~21/52/74 % (h=1/5/10) — **hypothèse à mesurer** (issue #10938),
+pas un résultat. Sous §C tel qu'écrit, la conjonction n'est pas tenue.
 **Verdict §C : NO BEATS (3/3 horizons)** — règle de dominance (seed BEATEN → NO BEATS) appliquée.
 **Coûts de transaction** : prévision (MSE log-RV), **aucune stratégie dérivée** → coût non imputé ;
 borne crypto 10 bps si conversion future en overlay de vol-timing (note, pas un claim).

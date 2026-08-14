@@ -176,7 +176,10 @@ def dm_verdict(
 ) -> dict:
     """Run DM test and return a verdict dict with human-readable result.
 
-    Positive mean_loss_diff means baseline has higher loss (model wins).
+    mean_loss_diff = mean(loss_a - loss_b) with a = model, b = baseline:
+    NEGATIVE means the model has lower loss (model wins); positive means
+    the baseline wins. With loss_fn="linear" the DM differential compares
+    raw signed errors, so mean_loss_diff is the model-vs-baseline bias gap.
 
     ``loss_fn`` selects the loss applied to forecast errors before the DM
     differential: ``"mse"`` (squared), ``"mae"`` (absolute), ``"linear"``
