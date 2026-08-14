@@ -12,9 +12,15 @@ preserving the rest of ``_quarto.yml`` byte-for-byte. It is meant to be run:
   - on CI as a pre-render step of ``quarto-pages-deploy.yml`` (so new READMEs
     appear on the site without a manual regen commit).
 
-The .ipynb notebooks are intentionally NOT added: ``notebook-preview: false``
-+ ``freeze: auto`` keep them copied verbatim with their committed outputs
-(rule C.2), without kernel re-execution on CI.
+Since EPIC #10921 (pilot Phase A #10923), the ``Search/`` notebook series is
+additionally rendered as HTML: ``notebook-preview: false`` only governs the
+preview of an embedded notebook, not membership in the render list, and
+``freeze: auto`` keeps CI from executing any kernel (outputs are committed,
+rule C.2). The series-specific ``echo: true`` / ``execute: enabled: false``
+override lives in ``MyIA.AI.Notebooks/Search/_metadata.yml`` — a
+directory-level metadata file, NOT ``_quarto.yml`` (a nested ``_quarto.yml``
+would create a nested Quarto project boundary and hijack the site render
+into sidecar HTML next to the sources).
 
 Usage:
     python scripts/regen_quarto_render.py            # rewrite _quarto.yml in place
@@ -54,6 +60,42 @@ EXCLUDE_MARKERS = (
     "/archive/",           # any archive/ subdir (notebook families, scripts)
     "\\archive\\",
 )
+
+
+# Notebook series rendered as HTML (EPIC #10921, pilot Phase A #10923).
+# Quarto 1.7 expands ``**`` for .ipynb globs in project.render — matching both
+# direct children and nested subdirectories (validated locally against
+# 1.7.32). Per-series globs instead of ``Search/**``: the single glob would
+# also match ``Search/_archive`` (internal history, excluded like the README
+# archives above) and stay readable in the diff. The subtree override
+# (echo: true, execute: enabled: false) lives in
+# ``MyIA.AI.Notebooks/Search/_metadata.yml`` (directory-level metadata).
+NOTEBOOK_RENDER_GLOBS = [
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/**/*.ipynb",
+    "MyIA.AI.Notebooks/Search/Part2-CSP/**/*.ipynb",
+    "MyIA.AI.Notebooks/Search/Part3-Advanced/**/*.ipynb",
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**/*.ipynb",
+    "MyIA.AI.Notebooks/Search/Applications/**/*.ipynb",
+]
+
+# Notebooks excluded from the render via ``!`` negation (applied after the
+# positive globs). Each carries a GIF image embedded as a base64 data URI in a
+# ``text/html`` output cell of 212-795 KB: the Quarto/pandoc 1.7 renderer hangs
+# indefinitely on it (isolated repro: solo ``quarto render`` times out at 150s,
+# rc=124; the same notebook without that single output renders in seconds.
+# Boundary probed: <=24 KB renders fine, >=212 KB hangs). The ``.ipynb`` files
+# stay served raw by the site (status quo for them). Lifting one exclusion
+# requires first fixing the renderer hang (output externalization or a Quarto
+# filter), tracked on EPIC #10921 Phase B.
+NOTEBOOK_EXCLUDE_GLOBS = [
+    "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb",
+    "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb",
+    "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb",
+    "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb",
+    "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb",
+    "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb",
+    "!MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb",
+]
 
 
 def git_tracked_readmes() -> list[str]:
@@ -100,6 +142,20 @@ def build_render_block() -> list[str]:
     lines.append('    - "README.md"')
     for p in readmes:
         lines.append(f'    - "{p}"')
+    # Notebooks .ipynb rendus en HTML (pilote Phase A #10923).
+    lines.append("    # Notebooks .ipynb rendus en HTML (EPIC #10921, pilote Phase A #10923).")
+    lines.append("    # Globs par sous-serie (pas Search/**) : exclut Search/_archive.")
+    lines.append(f"    # {len(NOTEBOOK_RENDER_GLOBS)} globs de serie.")
+    for g in NOTEBOOK_RENDER_GLOBS:
+        lines.append(f'    - "{g}"')
+    # Notebooks excluded via ! negation (renderer hang, see NOTEBOOK_EXCLUDE_GLOBS).
+    lines.append("    # 7 notebooks exclu du rendu : output image GIF encode en base64 dans un")
+    lines.append("    # output text/html de 212 a 795 KB -> le renderer Quarto/pandoc 1.7 boucle")
+    lines.append("    # indefiniment (repro isolee : solo render timeout 150s, rc=124 ; sans cet")
+    lines.append("    # output le notebook rend en quelques secondes). Seuil : <=24 KB OK,")
+    lines.append("    # >=212 KB hang. Les fichiers .ipynb restent servis bruts (statu quo).")
+    for g in NOTEBOOK_EXCLUDE_GLOBS:
+        lines.append(f'    - "{g}"')
     return lines
 
 
