@@ -7,13 +7,19 @@ sur tout testpath ni couvert ni déclaré CI-EXCLUDED.
 
 from __future__ import annotations
 
-from scripts.check_testpaths_coverage import (
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from check_testpaths_coverage import (  # noqa: E402
+    REPO_ROOT,
+    WORKFLOW_COVERAGE,
     extract_run_targets,
     is_covered,
     load_ci_excluded,
     load_testpaths,
 )
-from scripts.check_testpaths_coverage import REPO_ROOT
 
 
 def test_extract_run_targets_multiline_backslash() -> None:
@@ -61,7 +67,6 @@ def test_guard_green_on_current_main() -> None:
     """Sur l'état actuel, tous les testpaths sont couverts ou exclus."""
     testpaths = load_testpaths(REPO_ROOT / "pytest.ini")
     excluded = load_ci_excluded(REPO_ROOT)
-    from scripts.check_testpaths_coverage import WORKFLOW_COVERAGE
 
     covered_dirs = sorted(
         {
