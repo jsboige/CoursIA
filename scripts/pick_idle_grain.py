@@ -162,17 +162,56 @@ def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None) 
     return picked
 
 
-def check_claims(numbers: list[int]) -> dict[int, str]:
-    """Verif claims sur les seuls candidats tires (N appels, pas 140)."""
+def _summarize_claim(out: str, returncode: int) -> str:
+    """Reduit la sortie de ``check_lane_claim.py`` a un verdict d'une ligne.
+
+    La sortie melange une phrase humaine (uniquement quand c'est bloque) puis
+    un objet JSON. Prendre la premiere ligne telle quelle affichait ``{`` des
+    que le grain etait libre -- soit exactement le cas ou le tirage a besoin
+    d'un verdict lisible. On lit donc le JSON, qui porte les deux cas.
+    """
+    brace = out.find("{")
+    if brace != -1:
+        # ``raw_decode`` et pas ``loads`` : la sortie porte une phrase humaine
+        # APRES l'objet (``CLEAR: no other lane claims #N.``), et ``loads``
+        # echoue sur ce suffixe -- c'est ce qui laissait passer un ``{``.
+        try:
+            data, _ = json.JSONDecoder().raw_decode(out[brace:])
+        except json.JSONDecodeError:
+            data = None
+        if isinstance(data, dict):
+            blocking = data.get("blocking_lanes") or []
+            if blocking:
+                return "BLOQUE par " + ", ".join(blocking)
+            if data.get("my_active_claim"):
+                return "deja claim par cette lane"
+            stale = data.get("stale_claims") or []
+            if stale:
+                return f"libre (claim perime : {', '.join(map(str, stale))})"
+            return "libre"
+    first = out.strip().splitlines()
+    if first:
+        return first[0][:60]
+    return f"exit={returncode}"
+
+
+def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
+    """Verif claims sur les seuls candidats tires (N appels, pas 140).
+
+    ``--lane`` est **requis** par ``check_lane_claim.py`` : sans lui, l'appel
+    sort en erreur d'usage et chaque candidat affichait ``usage: ...`` a la
+    place de son verdict -- un check qui ne peut pas rougir, donc pas un check.
+    """
     verdicts = {}
     for n in numbers:
         try:
             r = subprocess.run(
-                [sys.executable, "scripts/check_lane_claim.py", str(n)],
+                [sys.executable, "scripts/check_lane_claim.py",
+                 "--lane", lane, str(n)],
                 capture_output=True, text=True, encoding="utf-8", timeout=60,
             )
-            head = (r.stdout or r.stderr or "").strip().splitlines()
-            verdicts[n] = head[0][:60] if head else f"exit={r.returncode}"
+            verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
+                                           r.returncode)
         except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
             verdicts[n] = f"(check indisponible: {type(exc).__name__})"
     return verdicts
@@ -209,7 +248,7 @@ def main() -> int:
         + draw(by_class["delivered"], args.delivered, rng, None)
     )
 
-    claims = check_claims([p["number"] for p in picks]) if args.check_claims else {}
+    claims = check_claims([p["number"] for p in picks], args.lane) if args.check_claims else {}
 
     if args.json:
         print(json.dumps({
@@ -241,7 +280,7 @@ def main() -> int:
     print("umbrella  -> pioche ou cree un SOUS-grain dedans, ne claim pas l'EPIC entier.")
     print("delivered -> verifie firsthand que la PR livrante satisfait l'acceptance :")
     print("             si oui `gh issue close`, sinon retire le label en disant pourquoi.")
-    print("Avant d'EDITER : python scripts/check_lane_claim.py <N>  (lane-claim-protocol).")
+    print("Avant d'EDITER : python scripts/check_lane_claim.py --lane <machine:workspace> <N>")
     return 0
 
 
