@@ -1238,10 +1238,12 @@ def test_check_claimed_disjoint_paths_dont_block(capsys):
     # after, each reads the OTHER's scope from its own active claim and sees CLEAR.
     p = payload(
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
-                "paths: Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+                "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
+                "Search-3-Informed-Csharp.ipynb",
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
-                "paths: Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+                "paths: MyIA.AI.Notebooks/Sudoku/"
+                "Sudoku-9-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA")  # no --paths
@@ -1259,19 +1261,24 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     # that fired on all ~51 PRs of the audit is gone.
     p = payload(
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
-                "paths: Sudoku/Sudoku-9-GraphColoring-Csharp.ipynb",
+                "paths: MyIA.AI.Notebooks/Sudoku/"
+                "Sudoku-9-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
-                "paths: Planning/Planners-5-Heuristics-Csharp.ipynb",
+                "paths: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
+                "Planners-5-Heuristics-Csharp.ipynb",
                 "2026-08-11T04:03:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
-                "paths: Search/Part1-Foundations/Search-3-Informed-Csharp.ipynb",
+                "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
+                "Search-3-Informed-Csharp.ipynb",
                 "2026-08-11T04:04:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- "
-                "paths: Search/Part1-Foundations/Search-5-GeneticAlgorithms-Csharp.ipynb",
+                "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
+                "Search-5-GeneticAlgorithms-Csharp.ipynb",
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
-                "paths: GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb",
+                "paths: MyIA.AI.Notebooks/GameTheory/"
+                "GameTheory-4-NashEquilibrium-Csharp.ipynb",
                 "2026-08-11T04:07:00Z"),
     )
     for lane in (
@@ -1290,9 +1297,11 @@ def test_check_claimed_same_path_still_blocks(capsys):
     # Two scoped claims on the SAME path -> real collision -> BLOCKED. The scope
     # feature must not dissolve a genuine file-level conflict into a false clear.
     p = payload(
-        comment("[CLAIMED] lane A:CoursIA -- paths: Sudoku/Sudoku-9.ipynb",
+        comment("[CLAIMED] lane A:CoursIA -- paths: MyIA.AI.Notebooks/Sudoku/"
+                "Sudoku-9-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:02:00Z"),
-        comment("[CLAIMED] lane B:CoursIA-2 -- paths: Sudoku/Sudoku-9.ipynb",
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: MyIA.AI.Notebooks/Sudoku/"
+                "Sudoku-9-GraphColoring-Csharp.ipynb",
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
@@ -1324,9 +1333,9 @@ def test_check_my_claim_scope_derived_from_claim_not_just_cli(capsys):
     # lane. This is the leg that makes the #10419 fix usable without forcing
     # every worker to pass --paths on every invocation.
     p = payload(
-        comment("[CLAIMED] lane A:CoursIA -- paths: Lean/Foo.lean",
+        comment("[CLAIMED] lane A:CoursIA -- paths: scripts/check_lane_claim.py",
                 "2026-08-11T04:02:00Z"),
-        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/foo.py",
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/grain_tag.py",
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")  # NO my_paths
@@ -1340,12 +1349,12 @@ def test_check_claimed_paths_merged_with_cli_widen_scope(capsys):
     # other lane's scope intersects my CLI --paths but NOT my claim clause --
     # the merge still catches the overlap and BLOCKS.
     p = payload(
-        comment("[CLAIMED] lane A:CoursIA -- paths: Lean/Foo.lean",
+        comment("[CLAIMED] lane A:CoursIA -- paths: scripts/check_lane_claim.py",
                 "2026-08-11T04:02:00Z"),
-        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/bar.py",
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/grain_tag.py",
                 "2026-08-11T04:05:00Z"),
     )
-    rc = clc._run_check(p, "A:CoursIA", my_paths=["scripts/bar.py"])
+    rc = clc._run_check(p, "A:CoursIA", my_paths=["scripts/grain_tag.py"])
     assert rc == 1
     assert "B:CoursIA-2" in capsys.readouterr().err
 
@@ -1650,10 +1659,12 @@ def test_paths_clause_brace_scope_disjoint_across_claims(capsys):
     # expansion (#10597).
     p = payload(
         comment("[CLAIMED] lane myia-po-2023:CoursIA -- "
-                "paths: twin_pairs.d/gametheory-{7,8,9}-*.yaml",
+                "paths: scripts/notebook_tools/twin_pairs.d/"
+                "gametheory-{7,8,9}-*.yaml",
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
-                "paths: twin_pairs.d/app-{17,18,19}-*.yaml",
+                "paths: scripts/notebook_tools/twin_pairs.d/"
+                "app-{17,18,19}-*.yaml",
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "myia-po-2023:CoursIA")
@@ -1814,7 +1825,7 @@ def test_run_check_clean_brace_scope_does_not_show_unparseable(capsys):
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
-            "paths: scripts/search-{6,8,9}-*.yaml",
+            "paths: scripts/notebook_tools/twin_pairs.d/search-{6,8,9}-*.yaml",
             "2026-08-12T11:00:00Z",
         ),
     )
@@ -1829,6 +1840,144 @@ def test_run_check_clean_brace_scope_does_not_show_unparseable(capsys):
     # The witness is empty; the JSON still surfaces the field for
     # consistency, but its value is the empty list, not a residual brace.
     assert '"unparseable_scope": []' in out
+
+
+# --- #10958 fail-safe -- annotation suffix + entirely-dead scope ---------------
+#
+# Two defect classes, one root cause: a trailing annotation after the glob
+# list (`paths: a/** -- 2026-08-11T18:10Z` fleet body-timestamp, or
+# `paths: .../** — Phase 2 : prose` rationale) was swallowed into the LAST
+# glob by the line-greedy clause regex. The glob then matches zero tracked
+# files -- a dead lock -- and the OLD read was fail-open: a dead scope
+# intersected nothing, so the claim cleared every other lane (#9764-style
+# false CLEAR). #10958 fixes both layers:
+#   1. PARSE: `_extract_paths_clause` truncates the suffix at the FIRST
+#      whitespace-delimited ` -- `/` — `/` – ` separator.
+#   2. CHECK: a scope whose globs are ALL dead (post-truncation: a typo, not
+#      a suffix) is a BROKEN claim, not a permissive one -- lifted to
+#      epic-wide (fail-safe), mirroring the #10597 hardener. The witness
+#      (`empty_scope`) rides the JSON so the declaring lane can reissue.
+
+
+def test_paths_clause_truncates_annotation_suffix_three_forms():
+    """Acceptance form tests: `paths: a/**`, `paths: a/**, b/**`, and the
+    #10958 reproducer `paths: a/** -- 2026-08-11T18:10Z` all parse to the
+    same clean glob list."""
+    base = "[CLAIMED] lane L:CoursIA -- paths: {}"
+    # Form 1 -- single glob, no suffix.
+    assert clc._extract_paths_clause(base.format("scripts/*.py")) == \
+        ["scripts/*.py"]
+    # Form 2 -- comma list, no suffix.
+    assert clc._extract_paths_clause(
+        base.format("scripts/*.py, docs/**/*.md")) == \
+        ["scripts/*.py", "docs/**/*.md"]
+    # Form 3 -- trailing ` -- <timestamp>` (the fleet body-timestamp form).
+    assert clc._extract_paths_clause(
+        base.format("scripts/*.py -- 2026-08-11T18:10Z")) == ["scripts/*.py"]
+    # Em-dash prose annotation truncates identically.
+    assert clc._extract_paths_clause(
+        base.format("MyIA.AI.Notebooks/Sudoku/** — Phase 2 : prose")) == \
+        ["MyIA.AI.Notebooks/Sudoku/**"]
+    # Truncation happens at the FIRST separator only -- the glob list never
+    # keeps anything past it.
+    assert clc._extract_paths_clause(
+        base.format("scripts/*.py -- ts -- more words")) == ["scripts/*.py"]
+
+
+def test_paths_clause_keeps_non_spaced_separator_inside_glob():
+    """The separator needs whitespace on BOTH sides. `foo--bar.py` (double
+    dash, no spaces) is a legitimate filename character sequence and must
+    survive the truncation untouched."""
+    assert clc._extract_paths_clause(
+        "[CLAIMED] lane L:CoursIA -- paths: docs/foo--bar.md, scripts/a.py") \
+        == ["docs/foo--bar.md", "scripts/a.py"]
+
+
+def test_empty_scope_in_witness():
+    """`_empty_scope_in` returns the globs matching ZERO tracked files (the
+    #10958 witness). None tracked (no repo walk) -> no witness, no lift."""
+    tracked = ["scripts/check_lane_claim.py", "scripts/grain_tag.py"]
+    assert clc._empty_scope_in(["scripts/check_lane_claim.py"], tracked) == []
+    assert clc._empty_scope_in(["nowhere/typo.py"], tracked) == \
+        ["nowhere/typo.py"]
+    # Mixed live/dead -> only the dead subset comes back (partial witness).
+    assert clc._empty_scope_in(
+        ["scripts/check_lane_claim.py", "nowhere/typo.py"], tracked) == \
+        ["nowhere/typo.py"]
+    assert clc._empty_scope_in([], tracked) == []
+    # No walk -> we cannot prove deadness -> empty witness (no lift).
+    assert clc._empty_scope_in(["nowhere/typo.py"], None) == []
+
+
+def test_run_check_dead_scope_blocks_other_lane(capsys):
+    """CORE #10958 fail-safe, end-to-end: a scoped claim whose every glob is
+    dead (here a typo'd path, WITH the ` -- ts` suffix the truncation now
+    handles) is lifted to epic-wide and BLOCKS another lane checking the
+    same issue. Pre-fix this was the #9764-style false CLEAR."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: scripts/nowhere/typo.py -- 2026-08-11T18:10Z",
+            "2026-08-12T11:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1  # lifted to epic-wide -> blocks
+    captured = capsys.readouterr()
+    assert "BLOCKED" in captured.err
+    # The audit JSON names the dead glob so the lane learns to reissue.
+    assert '"empty_scope"' in captured.out
+    assert "scripts/nowhere/typo.py" in captured.out
+
+
+def test_run_check_summary_exposes_empty_scope_field(capsys):
+    """Acceptance: dead globs surface in the audit JSON under
+    `active_claims.<lane>.empty_scope`, not only as a stderr WARN. A
+    PARTIALLY dead scope still surfaces its dead glob without lifting."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+            "scripts/check_lane_claim.py, scripts/nowhere/typo.py",
+            "2026-08-12T11:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1  # no my_scope -> the scoped claim still blocks
+    out = capsys.readouterr().out
+    assert '"empty_scope"' in out
+    assert "scripts/nowhere/typo.py" in out
+
+
+def test_run_check_my_dead_scope_keeps_others(capsys):
+    """Caller-side guard: when MY OWN scope is entirely dead, I cannot use
+    disjointness to clear another lane -- globs that lock nothing prove
+    nothing. Every other lane stays -> BLOCKED until my claim is reissued."""
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- paths: scripts/nowhere/typo.py",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/grain_tag.py",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "A:CoursIA")
+    assert rc == 1
+    assert "BLOCKED" in capsys.readouterr().err
+
+
+def test_run_check_partially_dead_scope_stays_scoped(capsys):
+    """A PARTIALLY dead scope (at least one live glob) is NOT lifted: the
+    lock is real on its live part. Two lanes on disjoint live parts still
+    clear each other -- the fail-safe must not recreate epic-wide blocking
+    for a mostly-correct claim."""
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- paths: scripts/nowhere/typo.py, "
+                "scripts/check_lane_claim.py",
+                "2026-08-11T04:02:00Z"),
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/grain_tag.py",
+                "2026-08-11T04:05:00Z"),
+    )
+    rc = clc._run_check(p, "A:CoursIA")
+    assert rc == 0
+    assert '"blocking_lanes": []' in capsys.readouterr().out
 
 
 # --- #10597 bonus -- SCOPE_ZERO_COVERAGE warning ------------------------------
@@ -1984,19 +2133,29 @@ def test_lint_override_without_paths_emits_info(capsys):
     assert "il bloque toutes les autres lanes sur #10678" in err
 
 
-def test_lint_prose_after_clause_warns_suspect_and_dead_globs(capsys):
-    # F2 -- the 06:41:00Z [CLAIMED]: prose after the clause was swallowed as
-    # three parasite globs; the last real glob (`Sudoku/** — Phase 2 : ...`)
-    # is dead. The lint must WARN citing the faulty excerpt verbatim.
+def test_lint_f2_prose_suffix_now_truncated_silent(capsys):
+    # F2 -- the 06:41:00Z [CLAIMED]: prose after the clause used to be
+    # swallowed into the last glob (`Sudoku/** — Phase 2 : ...`), which the
+    # #10881 lint could only WARN about. #10958 fixes the defect AT PARSE:
+    # `_extract_paths_clause` truncates the ` — <annotation>` suffix, so the
+    # glob list comes out clean (9 family globs, all alive) and the lint is
+    # SILENT on this form -- the defect class no longer exists to detect.
+    # F4 below still pins the lint's own value: prose WITHOUT a
+    # whitespace-delimited ` -- `/` — ` separator is still swallowed and
+    # still WARNs.
     p = payload(comment(F2_PROSE_AFTER_CLAUSE, "2026-08-14T06:41:00Z"),
                 number=10678)
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1  # verdict unchanged
+    assert rc == 1  # verdict unchanged: po-2024's scoped claim blocks
     err = capsys.readouterr().err
-    assert "WARN: glob suspect (prose avalée ?)" in err
-    assert "Sudoku/** — Phase 2 : repositionnement des 39 interps survivants" in err
-    assert "WARN: glob sans correspondance" in err
-    assert "markdown-only" in err
+    assert "WARN:" not in err
+    # The parse-layer proof: the truncated clause keeps exactly the 9 family
+    # globs and drops the ` — Phase 2 : ...` annotation entirely.
+    evs = clc._parse_claim_events(comment(F2_PROSE_AFTER_CLAUSE,
+                                          "2026-08-14T06:41:00Z"))
+    got = evs[-1].paths
+    assert got[-1] == "MyIA.AI.Notebooks/Sudoku/**"
+    assert all("—" not in g and ":" not in g for g in got), got
 
 
 def test_lint_family_globs_are_silent(capsys):
@@ -2150,7 +2309,8 @@ def test_third_lane_disjoint_paths_clear_after_release_reclaim(capsys):
     )
     rc = clc._run_check(
         p, "myia-po-2026:CoursIA",
-        my_paths=["MyIA.AI.Notebooks/Sudoku/Sudoku-9.ipynb"],
+        my_paths=["MyIA.AI.Notebooks/Sudoku/"
+                  "Sudoku-9-GraphColoring-Csharp.ipynb"],
     )
     assert rc == 0
     captured = capsys.readouterr()
