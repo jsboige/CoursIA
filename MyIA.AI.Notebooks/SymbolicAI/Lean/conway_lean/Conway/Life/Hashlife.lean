@@ -419,11 +419,11 @@ Le dejouement pour la refonte P5 : couvrir le cone des n generations
 restantes par le rembourrage est auto-sabotant — le cadre gonfle au-dela
 du horizon du saut qu'il conditionne. La sortie identifiee (amendement
 j/p>=3, tranche par le coordinateur sur #6724) est la decorrelation j de
-Gosper (`hashlifeResultAt j`, a implémenter) : a j = level-3 la portee
-du saut retombe sous la marge de fenetre quelle que soit la profondeur
-de rembourrage (`jumpReach`/`marginToResultWindow` dans `JumpCapture`,
-etape 2), ce qui rend `jumpCaptured` tenable par cone avec un
-rembourrage petit et un garde vivable. -/
+Gosper (`hashlifeResultAt j`, implementee dans la section suivante) : a
+j = lvl-2 sur la cellule paddede, le comptage centre de la bbox rend la
+capture consequence du seul invariant du cadre
+(`jumpAt_capture_centered`), avec un garde viable
+(`guardAt_viable_glider`). -/
 
 /-- Auxiliaire trame N3 pour `evolveHashlifeFastN` : meme recursion que
     `evolveHashlifeFastAux`, mais chaque iteration re-cadre via le
@@ -516,6 +516,229 @@ theorem evolveHashlifeFastN_eq_evolve (n : Nat) (g : Grid) :
   | zero => rfl
   | succ m =>
     exact evolveHashlifeFastAuxN_eq_evolve (m + 1) (m + 1) g (by omega)
+
+/-! ## Saut a portee decorrelee : `hashlifeResultAt j` — porte (b2') de #6724
+
+**Arithmetique decidee AVANT l'implementation** (exigence coordinateur,
+cycle c.1044). Rappel (b2) : `hashlifeResult` sur une cellule de niveau
+`M` avance `2^(M-2)` generations et rend la fenetre centrale `2^(M-1)` ;
+sa demi-largeur EGALE l'avancement — pour tout contenu de demi-largeur
+`b > 0`, le cone depasse la fenetre d'exactement `b`, quel que soit le
+rembourrage (`no_padding_depth_suffices` : le deficit est `b`, constant).
+La decorrelation exige d'avancer MOINS que `2^(M-2)` sur une cellule
+padee de niveau `M` : fenetre grande, portee petite.
+
+**Comptage centre (corrige apres temoin falsifiant)** : la premiere mise
+par ecrit comptait la bbox contre le bord GAUCHE de la fenetre (« le
+garde EST la capture a p = 2 ») ; le temoin computationnel a falsifie
+l'assemblage initial, et la re-derivation corrige le modele.
+`padCenter2` CENTRE le cadre : dans la cellule paddede de niveau
+`lvl+2` (cote `4*2^lvl`), le cadre de cote `2^lvl` occupe
+`[3*2^(lvl-1), 5*2^(lvl-1))`, donc la bbox `[pad, B+pad)` du cadre
+occupe `[3*2^(lvl-1)+pad, 3*2^(lvl-1)+pad+B)`. La fenetre de sortie de
+`hashlifeResultAt j` (geometrie independante de j) est la moitie
+centrale `[2*2^(lvl-1), 6*2^(lvl-1))`. Marges : gauche
+`2^(lvl-1)+pad`, droite `3*2^(lvl-1)-pad-B`. La capture par cone de
+portee `2^j = 2^(lvl-2)` suit alors du SEUL invariant du cadre
+`B + 2*pad <= 2^lvl` (`jumpAt_capture_centered`) : le garde
+`n >= 2^(lvl-2)` ne conditionne plus la capture, seulement l'avancee
+demandee. Le ratio tendu `2 - 2^(2-p)` du docstring de marge comptait
+la bbox sans le decalage de centrage `2^(lvl-1)` de `padCenter2`.
+
+**Viabilite du garde** : `2^lvl >= B + 2*max 2 n` et garde
+`n >= 2^(lvl-2)` coexistent (temoin : glider `B = 3`, `n = 8` donne
+`lvl = 5`, `j = 3`, `2^3 = 8 <= 8` : le garde TIRE, voir
+`guardAt_viable_glider` et les evals de temoin ci-dessous).
+
+**Geometrie de l'assemblage mono-ronde** : les neuf resultats recursifs
+`r_i` (fenetres centrales des `n_i`, chacune avancee de `2^j`) pavent la
+region `[2^(M-3), 7*2^(M-3))^2` — pas de chevauchement, pas de trou,
+pas `2^(M-2)` de pas — mais la fenetre de sortie
+`[2^(M-2), 3*2^(M-2))^2` est DECALEE de `2^(M-3)` de la grille des
+`r_i` : l'assemblage se fait donc en SOUS-QUADRANTS des `r_i` (16
+extraits de quadrant), pas en `r_i` entiers — l'assemblage initial par
+`r_i` entiers titait `r5` quatre fois (temoin falsifiant).
+
+**Honnetete du perimetre** : la correction de `hashlifeResultAt` contre
+`evolve` n'est pas ici formellement prouvee (terrain P4, comme pour le
+`hashlifeJump` existant) ; elle est verifiee computationnellement sur
+temoins (`evolveHashlifeFastAtN k g = evolve k g` sur glider/blinker/
+ligne, un saut et deux sauts). Les theoremes livres sont arithmetiques :
+viabilite du garde (temoin concret) et capture centree (chaine de
+marge). -/
+
+/-- Accesseurs de quadrant pour l'assemblage mono-ronde : extraient le
+    quadrant demande d'une cellule de niveau >= 1. Le cas feuille
+    renvoie la feuille telle quelle — impossible dans l'assemblage, ou
+    chaque `r_i` est de niveau `M-2 >= 1`, mais exigee par l'exhaustivite
+    du filtrage. -/
+def subNW (c : MacroCell) : MacroCell :=
+  match c with
+  | node q _ _ _ => q
+  | _ => c
+
+def subNE (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ q _ _ => q
+  | _ => c
+
+def subSW (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ _ q _ => q
+  | _ => c
+
+def subSE (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ _ _ q => q
+  | _ => c
+
+/-- Auxiliaire pour `hashlifeResultAt` : recursion structurelle sur
+    `fuel`, cible de portee `j`. Sur une cellule de niveau `M = j + 2`,
+    effectue le Hashlife standard (double ronde, avance `2^j`). Sur une
+    cellule de niveau `M > j + 2`, effectue UNE SEULE ronde : les neuf
+    sous-cellules `n_i` avancees recursivement de `2^j` chacune, la
+    sortie assemblee en SOUS-QUADRANTS des `r_i`, SANS seconde ronde —
+    la portee reste `2^j` au lieu de doubler a `2^(M-2)` : c'est la
+    decorrelation de Gosper. La sortie est la fenetre centrale (niveau
+    `M-1`), l'etat a `t = 2^j` — les `r_i` pavent
+    `[2^(M-3), 7*2^(M-3))^2` mais la fenetre `[2^(M-2), 3*2^(M-2))^2`
+    est decalee de `2^(M-3)` de leur grille, d'ou l'assemblage par
+    quadrants (cf. docstring de section). -/
+def hashlifeResultAtAux : Nat → Nat → MacroCell → MacroCell
+  | 0, _, _ => deadLeaf  -- fuel epuise : renvoyer la valeur par defaut
+  | fuel + 1, j, c@(node (node nw_nw nw_ne nw_sw nw_se)
+                      (node ne_nw ne_ne ne_sw ne_se)
+                      (node sw_nw sw_ne sw_sw sw_se)
+                      (node se_nw se_ne se_sw se_se)) =>
+    if c.level == j + 2 then
+      hashlifeResultAux (fuel + 1) c
+    else
+      let n1 := node nw_nw nw_ne nw_sw nw_se
+      let n2 := node nw_ne ne_nw nw_se ne_sw
+      let n3 := node ne_nw ne_ne ne_sw ne_se
+      let n4 := node nw_sw nw_se sw_nw sw_ne
+      let n5 := node nw_se ne_sw sw_ne se_nw
+      let n6 := node ne_sw ne_se se_nw se_ne
+      let n7 := node sw_nw sw_ne sw_sw sw_se
+      let n8 := node sw_ne se_nw sw_se se_sw
+      let n9 := node se_nw se_ne se_sw se_se
+      let r1 := hashlifeResultAtAux fuel j n1
+      let r2 := hashlifeResultAtAux fuel j n2
+      let r3 := hashlifeResultAtAux fuel j n3
+      let r4 := hashlifeResultAtAux fuel j n4
+      let r5 := hashlifeResultAtAux fuel j n5
+      let r6 := hashlifeResultAtAux fuel j n6
+      let r7 := hashlifeResultAtAux fuel j n7
+      let r8 := hashlifeResultAtAux fuel j n8
+      let r9 := hashlifeResultAtAux fuel j n9
+      -- Assemblage a t = 2^j en SOUS-QUADRANTS des r_i, PAS de seconde
+      -- ronde : portee = 2^j. La fenetre centrale `[2^(M-2), 3*2^(M-2))^2`
+      -- est decalee de `2^(M-3)` de la grille des r_i : chaque quadrant de
+      -- la sortie se recompose depuis un quadrant de chacun des quatre r_i
+      -- couvrants (l'assemblage initial par r_i entiers titait r5 quatre
+      -- fois — temoin falsifiant).
+      node (node (subSE r1) (subSW r2) (subNE r4) (subNW r5))
+           (node (subSE r2) (subSW r3) (subNE r5) (subNW r6))
+           (node (subSE r4) (subSW r5) (subNE r7) (subNW r8))
+           (node (subSE r5) (subSW r6) (subNE r8) (subNW r9))
+  | _ + 1, _, c =>
+    -- Malforme : pas un noeud de niveau >= 2 compose de noeuds.
+    if c.level == 0 then deadLeaf
+    else emptyOfLevel (c.level - 1)
+
+/-- Hashlife a portee decorrelee : avance exactement `2^j` generations
+    (j independant du niveau `M >= j + 2` de la cellule), rend la
+    fenetre centrale `2^(M-1)` a `t = 2^j`. La demi-largeur de fenetre
+    `2^(M-2)` excede la portee `2^j` d'un facteur `2^(M-2-j)` : le
+    deficit structurel du Hashlife standard (fenetre = portee) est
+    dissous, la capture devient possible. -/
+def hashlifeResultAt (j : Nat) (c : MacroCell) : MacroCell :=
+  hashlifeResultAtAux c.level j c
+
+/-- Saut Hashlife a portee decorrelee : remboure `c` (niveau `lvl`) de
+    2 niveaux puis avance de `2^j` generations (`j <= lvl`), fenetre
+    centrale `2^(lvl+1)` de la cellule paddede. Decalage du resultat :
+    `padCenter2` centre le cadre a `[3*2^(lvl-1), 5*2^(lvl-1))` et la
+    fenetre demarre a `2^(lvl-1)` — le coin du resultat est donc decale
+    de `-2^(lvl-1)` par rapport au decalage d'entree, la meme formule
+    que `jumpResultOff off lvl` du saut plein. -/
+def hashlifeJumpAt (j : Nat) (c : MacroCell) : MacroCell :=
+  hashlifeResultAt j (padCenter2 c)
+
+/-- Taille du saut decorrele pour un cadre de niveau `lvl` (piste
+    Gosper validee par l'arithmetique (b2')) : `2^(lvl - 2)`. -/
+def jumpSizeAt (lvl : Nat) : Nat := 2 ^ (lvl - 2)
+
+/-- **Capture centree : l'invariant du cadre suffit.** Sous les
+    invariants du cadre `gridFrameN` — bbox de cote `B` logee a
+    `[3*2^(lvl-1)+pad, 3*2^(lvl-1)+pad+B]^2` de la cellule paddede
+    `padCenter2` (cote `2^(lvl+2)`), fenetre de sortie
+    `[2*2^(lvl-1), 6*2^(lvl-1)]^2` — le saut decorrele de `2^(lvl-2)`
+    generations est capturant des que `B + 2*pad <= 2^lvl` et
+    `lvl >= 2` : la marge gauche `2^(lvl-1)+pad` et la marge droite
+    `3*2^(lvl-1)-pad-B` couvrent chacune la portee `2^(lvl-2)`. Le garde
+    `n >= 2^(lvl-2)` ne conditionne que l'avancee demandee, pas la
+    capture — correction du modele bord-gauche initial (« le garde EST
+    la capture a p = 2 »), qui comptait la bbox sans le decalage de
+    centrage `2^(lvl-1)` de `padCenter2`. -/
+theorem jumpAt_capture_centered (lvl B pad : Nat)
+    (hlvl : 2 ≤ lvl) (hframe : B + 2 * pad ≤ 2 ^ lvl) :
+    2 ^ (lvl - 2) ≤ 2 ^ (lvl - 1) + pad ∧
+    2 ^ (lvl - 2) ≤ 3 * 2 ^ (lvl - 1) - pad - B := by
+  obtain ⟨m, rfl⟩ : ∃ k, lvl = k + 2 := ⟨lvl - 2, by omega⟩
+  have h1 : (2:Nat) ^ (m + 2 - 2) = 2 ^ m := by rw [Nat.add_sub_cancel]
+  have h2 : (2:Nat) ^ (m + 2 - 1) = 2 * 2 ^ m := by
+    rw [show m + 2 - 1 = m + 1 from by omega, Nat.pow_succ]; ring
+  have h4 : (2:Nat) ^ (m + 2) = 4 * 2 ^ m := by
+    rw [Nat.pow_add, Nat.pow_two]; ring
+  rw [h4] at hframe
+  rw [h1, h2]
+  omega
+
+/-- Le garde decorrele est VIABLE : temoin concret (glider, n = 8) ou
+    le niveau du cadre conscient de n est exactement `5`, donc
+    `jumpSizeAt 5 = 2^3 = 8 <= 8 = n` — la branche de saut TIRE, contra
+    du garde (b2) mort pour toute grille. -/
+theorem guardAt_viable_glider :
+    (gridToMacroCellWithOffsetN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2.level = 5
+    ∧ jumpSizeAt
+        (gridToMacroCellWithOffsetN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2.level
+      ≤ 8 := by
+  decide
+
+/-- Variante N3 a portee decorrelee : chaque iteration re-cadre via
+    `gridToMacroCellWithOffsetN` (invariant auto-regenerant, (b2)), puis
+    saute de `jumpSizeAt lvl = 2^(lvl-2)` generations via
+    `hashlifeJumpAt` si le garde `lvl >= 2 ∧ n >= 2^(lvl-2)` tire —
+    VIABLE cette fois (cf `guardAt_viable_glider`), contra du garde
+    plein `2^lvl` prouve mort en (b2). Decalage du resultat :
+    `jumpResultOff off lvl` (coin decale de `-2^(lvl-1)`, cf
+    `hashlifeJumpAt`). Capture gardee par le seul invariant du cadre
+    (`jumpAt_capture_centered`). Le reste de la recursion est identique
+    a `evolveHashlifeFastAuxN`. -/
+def evolveHashlifeFastAtAuxN : Nat → Nat → Grid → Grid
+  | _, 0, g => g
+  | 0, _, g => g  -- fuel epuise : retourner l'etat courant
+  | fuel + 1, n, g =>
+    let (off, mc) := gridToMacroCellWithOffsetN n g
+    let lvl := mc.level
+    let js := jumpSizeAt lvl
+    if lvl >= 2 && n >= js then
+      -- Saut decorrele : capture gardee par l'invariant du cadre
+      -- (`jumpAt_capture_centered`), le garde `n >= js` ne conditionne
+      -- que l'avancee demandee. Le coin du resultat est decale de
+      -- `-2^(lvl-1)` (centrage padCenter2 vs fenetre).
+      let jumped := hashlifeJumpAt (lvl - 2) mc
+      let newOff := jumpResultOff off lvl
+      let g' := jumped.toGrid newOff
+      evolveHashlifeFastAtAuxN fuel (n - js) g'
+    else
+      -- Petit n ou grand motif : evolve de reference.
+      evolve n g
+
+/-- API publique de la variante a portee decorrelee. -/
+def evolveHashlifeFastAtN (n : Nat) (g : Grid) : Grid :=
+  evolveHashlifeFastAtAuxN n n g
 
 /-- Calcule `evolve n g` avec Hashlife. Fait un aller-retour a travers
     la representation `MacroCell` a chaque generation, en exercant
