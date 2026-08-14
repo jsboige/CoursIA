@@ -11,7 +11,14 @@
       python_sha: 060c0e79c3e5c800eee790bddccf0f1462cce4d7
       csharp_sha: f249f653b3d7572d14f7c5cb1ec12a3da74a4cb8
       reason: "rebase c.1241: Python prose-difficulty fix (cells 20/25, #8052) + C# c31 COUNT off-by-one 10->9 (cell 27 loop t=1..9); both twins fixed, parity preserved"
+    - date: "2026-08-14"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 060c0e79c3e5c800eee790bddccf0f1462cce4d7
+      csharp_sha: 90a7e5d2452e029ec98a1e1b331492a17ba843a1
+      content_python_sha: ef5db2fe7bab3fc9315b08473383910f29dff981e2afa26ea22ac4932efdd297
+      content_csharp_sha: f07dae31acf85984c673bad28030fc0998281eda61b44c35a4aee62059ee7734
   known_differences:
+    - "Re-baseline 2026-08-14 (myia-po-2024:CoursIA-2, #10878) : SHA C# avance f249f653 -> 90a7e5d2 (repositionnement cellule d'interp markdown C1 post-hoc — interp scores sous le code prediction, #10678). Markdown-only, aucun code touche, axe de parite semantic (PCA + scoring) inchange. Drift verifie parite-preserving."
     - "metadata.cost ajoute symetriquement aux deux jumeaux (#8445, po-2023) : valeurs identiques (api_usd_est=0.0, gpu_required=false, vram_tier=NONE, free_alternative=self) — addition metadata-only, n'affecte pas la parite comportementale."
     - "Socle pedagogique commun : detection d'anomalies par PCA (Analyse en Composantes Principales) sur donnees capteurs."
     - "Idiomes framework : C# = `mlContext.AnomalyDetection.Trainers.RandomizedPca` (trainer dedie qui encapsule le scoring d'anomalie). Python = `sklearn.decomposition.PCA` brut (l'utilisateur construit le score d'erreur de reconstruction manuellement) + `roc_auc_score`."
