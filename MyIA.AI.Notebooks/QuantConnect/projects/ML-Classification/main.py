@@ -32,7 +32,7 @@ class MLClassificationAlgorithm(QCAlgorithm):
 
     def Initialize(self):
         """Initialisation de l'algorithme."""
-        self.SetStartDate(2015, 1, 1)
+        self.SetStartDate(2018, 1, 1)
         self.SetEndDate(2025, 1, 1)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
