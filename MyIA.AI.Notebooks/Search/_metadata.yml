@@ -1,0 +1,9 @@
+# EPIC #10921 — pilote Phase A (#10923) : notebooks Search/ rendus en HTML.
+# - echo: true : override du `execute.echo: false` global — les cellules de
+#   code doivent etre visibles sur la page rendue (sinon pire que le JSON brut).
+# - enabled: false : jamais d'execution de kernel — le rendu consomme les
+#   outputs commites (regle C.2), compatible avec la CI (freeze, pas de kernel).
+execute:
+  echo: true
+  enabled: false
+  warning: false

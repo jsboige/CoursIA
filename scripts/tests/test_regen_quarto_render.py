@@ -303,6 +303,56 @@ class TestLandingPages:
 
 
 # ---------------------------------------------------------------------------
+# NOTEBOOK_RENDER_GLOBS — Search/ series rendered as HTML (EPIC #10921, #10923)
+# ---------------------------------------------------------------------------
+
+class TestNotebookRenderGlobs:
+    def test_globs_after_readmes_in_render_block(self, monkeypatch):
+        """The notebook globs are emitted by build_render_block() — without
+        them, the CI pre-render regen strips the Search/ notebooks from
+        project.render and the site stops rendering them (#10923)."""
+        monkeypatch.setattr(rqr, 'git_tracked_readmes', lambda: [
+            'MyIA.AI.Notebooks/Search/README.md'])
+        lines = rqr.build_render_block()
+        first_glob = lines.index(f'    - "{rqr.NOTEBOOK_RENDER_GLOBS[0]}"')
+        readme_line = lines.index('    - "MyIA.AI.Notebooks/Search/README.md"')
+        assert first_glob > readme_line
+
+    def test_all_globs_emitted(self, monkeypatch):
+        monkeypatch.setattr(rqr, 'git_tracked_readmes', lambda: [])
+        block = '\n'.join(rqr.build_render_block())
+        for g in rqr.NOTEBOOK_RENDER_GLOBS:
+            assert f'    - "{g}"' in block
+
+    def test_globs_exclude_archive(self):
+        # Per-series globs, never a bare Search/** which would match _archive
+        for g in rqr.NOTEBOOK_RENDER_GLOBS:
+            assert 'Search/**' not in g
+            assert g.startswith('MyIA.AI.Notebooks/Search/')
+
+    def test_exclude_negations_emitted_after_globs(self, monkeypatch):
+        """The 7 renderer-hang notebooks are excluded via ! negation, emitted
+        by build_render_block() — without this, the CI pre-render regen drops
+        the negations and the deploy hangs on those notebooks (#10923)."""
+        monkeypatch.setattr(rqr, 'git_tracked_readmes', lambda: [])
+        lines = rqr.build_render_block()
+        last_glob = max(lines.index(f'    - "{g}"') for g in rqr.NOTEBOOK_RENDER_GLOBS)
+        for g in rqr.NOTEBOOK_EXCLUDE_GLOBS:
+            assert g.startswith('!')
+            assert lines.index(f'    - "{g}"') > last_glob
+
+    def test_exclude_negations_target_known_hangs(self):
+        # Every negation must match a file the positive globs would render:
+        # a stale negation path silently excludes nothing (or the wrong file).
+        import re
+        positive = [re.escape(g).replace(r"\*\*/", "(?:.*/)?").replace(r"\*", "[^/]*")
+                    for g in rqr.NOTEBOOK_RENDER_GLOBS]
+        for g in rqr.NOTEBOOK_EXCLUDE_GLOBS:
+            path = g[1:]
+            assert any(re.fullmatch(p, path) for p in positive), path
+
+
+# ---------------------------------------------------------------------------
 # argparse — --check flag
 # ---------------------------------------------------------------------------
 

@@ -397,6 +397,26 @@ project:
     - "slides/S6-tweety/README.md"
     - "slides/S7-lean/README.md"
     - "slides/S8-semantic-web/README.md"
+    # Notebooks .ipynb rendus en HTML (EPIC #10921, pilote Phase A #10923).
+    # Globs par sous-serie (pas Search/**) : exclut Search/_archive.
+    # 5 globs de serie.
+    - "MyIA.AI.Notebooks/Search/Part1-Foundations/**/*.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part2-CSP/**/*.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part3-Advanced/**/*.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**/*.ipynb"
+    - "MyIA.AI.Notebooks/Search/Applications/**/*.ipynb"
+    # 7 notebooks exclu du rendu : output image GIF encode en base64 dans un
+    # output text/html de 212 a 795 KB -> le renderer Quarto/pandoc 1.7 boucle
+    # indefiniment (repro isolee : solo render timeout 150s, rc=124 ; sans cet
+    # output le notebook rend en quelques secondes). Seuil : <=24 KB OK,
+    # >=212 KB hang. Les fichiers .ipynb restent servis bruts (statu quo).
+    - "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb"
+    - "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb"
+    - "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb"
+    - "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb"
+    - "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb"
+    - "!MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb"
+    - "!MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb"
 site:
   title: "CoursIA"
   description: "Apprendre l'intelligence artificielle par la pratique, des fondements théoriques aux applications avancées."
