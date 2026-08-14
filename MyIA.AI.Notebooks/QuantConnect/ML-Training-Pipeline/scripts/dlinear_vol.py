@@ -152,6 +152,28 @@ def predict_dlinear(
     return pred
 
 
+def _train_bias(
+    model: DLinearVol,
+    x_train: np.ndarray,
+    y_train: np.ndarray,
+    horizon: int,
+) -> float:
+    """Mean signed error of the model on its TRAIN slice, in normalized space.
+
+    Estimated on the training fold only (never on test — see #10938): the
+    same x_train/y_train the model was fit on. Applied to test forecasts as
+    ``pred_raw -= bias_norm * train_std`` (bias is an additive shift of the
+    target, so scaling by train_std converts normed error to raw log-RV).
+    """
+    pred = predict_dlinear(model, x_train, horizon)
+    if horizon > 1:
+        pred = pred.mean(axis=1)
+        y = y_train.mean(axis=1)
+    else:
+        y = y_train.squeeze(-1)
+    return float(np.mean(pred - y))
+
+
 def _make_split_indices(n: int, n_splits: int) -> list[tuple[int, int, int]]:
     if n_splits < 2:
         raise ValueError("n_splits must be >= 2")
@@ -178,6 +200,7 @@ def walk_forward_dlinear(
     lr: float = 1e-3,
     decompose: bool = False,
     seed: int = 0,
+    debias: bool = False,
 ) -> dict:
     n = len(log_rv)
     if n < seq_len + horizon + 100:
@@ -191,6 +214,8 @@ def walk_forward_dlinear(
     preds: list[float] = []
     truths: list[float] = []
     pred_dates: list[pd.Timestamp] = []
+    bias_norm: float = 0.0  # signed train error (normed space); subtracted from test if debias
+    biases_applied: list[float] = []
 
     for fold_idx, (train_end, test_start, test_end) in enumerate(splits):
         if test_end - horizon < test_start + 1:
@@ -214,6 +239,8 @@ def walk_forward_dlinear(
             x_train, y_train, seq_len, horizon,
             decompose=decompose, epochs=epochs, lr=lr, seed=seed,
         )
+        if debias:
+            bias_norm = _train_bias(model, x_train, y_train, horizon)
 
         for i in range(test_start, test_end - horizon):
             idx_in_seq = i - seq_len - horizon + 1
@@ -226,6 +253,8 @@ def walk_forward_dlinear(
                 pred_raw = float(pred_normed[0]) * train_std + train_mean
             else:
                 pred_raw = float(np.mean(pred_normed[0])) * train_std + train_mean
+            if debias:
+                pred_raw -= bias_norm * train_std
 
             target_window = float(np.mean(log_rv[i:i + horizon]))
 
@@ -241,11 +270,14 @@ def walk_forward_dlinear(
                 x_all, y_all = create_sequences(normed, seq_len, horizon)
                 refit_end = i - seq_len - horizon + 1
                 if refit_end > 10:
+                    x_tr = x_all[:refit_end]
+                    y_tr = y_all[:refit_end]
                     model = train_dlinear(
-                        x_all[:refit_end], y_all[:refit_end],
-                        seq_len, horizon,
+                        x_tr, y_tr, seq_len, horizon,
                         decompose=decompose, epochs=epochs, lr=lr, seed=seed,
                     )
+                    if debias:
+                        bias_norm = _train_bias(model, x_tr, y_tr, horizon)
 
     preds_arr = np.asarray(preds)
     truths_arr = np.asarray(truths)
@@ -262,6 +294,8 @@ def walk_forward_dlinear(
         "n_splits": n_splits,
         "n_total_preds": len(preds_arr),
         "aggregate_mse_logrv": aggregate_mse,
+        "debias": debias,
+        "bias_norm": bias_norm,
         "forecasts": forecasts,
         "targets": targets,
     }
@@ -374,6 +408,7 @@ def _eval_one_coin(
     epochs: int = 100,
     decompose: bool = False,
     loss_fn: str = "mse",
+    debias: bool = False,
 ) -> list[dict]:
     rv = daily_realized_variance(hourly_rets)
     if len(rv) < 300:
@@ -396,7 +431,9 @@ def _eval_one_coin(
             har_forecasts = har_out["forecasts"]
             har_targets = har_out["targets"]
             har_errors = (har_forecasts - har_targets).dropna().values
-            print(f"  h={h} HAR baseline MSE={har_mse:.5f} ({har_out['n_total_preds']} preds)")
+            har_bias_oos = float(np.mean(har_errors)) if len(har_errors) else float("nan")
+            print(f"  h={h} HAR baseline MSE={har_mse:.5f} bias_OOS={har_bias_oos:+.5f} "
+                  f"({har_out['n_total_preds']} preds)")
         except Exception as exc:
             print(f"  h={h} HAR baseline FAILED: {exc}")
             har_mse = float("nan")
@@ -414,6 +451,7 @@ def _eval_one_coin(
                     epochs=epochs,
                     decompose=decompose,
                     seed=seed,
+                    debias=debias,
                 )
                 dl_mse = dl_out["aggregate_mse_logrv"]
                 dl_forecasts = dl_out["forecasts"]
@@ -455,6 +493,8 @@ def _eval_one_coin(
                 "seed": seed,
                 "seq_len": seq_len,
                 "decompose": decompose,
+                "debias": debias,
+                "har_bias_oos": har_bias_oos,
                 "n_rv_days": int(len(rv)),
                 "n_predictions": int(dl_out["n_total_preds"]),
                 "dlinear_mse_logrv": float(dl_mse),
@@ -474,6 +514,10 @@ def main() -> None:
     parser.add_argument("--n-splits", type=int, default=5)
     parser.add_argument("--refit-every", type=int, default=22)
     parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--debias", action="store_true",
+                        help=("Subtract the train-only estimated signed error from test forecasts "
+                              "(#10938). The bias is estimated on each fold's train slice, never on "
+                              "test.")),
     parser.add_argument("--decompose", action="store_true",
                         help="Enable trend/seasonal decomposition")
     parser.add_argument("--skip-remote", action="store_true")
@@ -503,6 +547,7 @@ def main() -> None:
             epochs=args.epochs,
             decompose=args.decompose,
             loss_fn=args.loss_fn,
+            debias=args.debias,
         )
         all_rows.extend(rows)
 
@@ -533,6 +578,7 @@ def main() -> None:
             "refit_every": args.refit_every,
             "epochs": args.epochs,
             "decompose": args.decompose,
+            "debias": args.debias,
             "loss_fn": args.loss_fn,
         },
     }, indent=2))
