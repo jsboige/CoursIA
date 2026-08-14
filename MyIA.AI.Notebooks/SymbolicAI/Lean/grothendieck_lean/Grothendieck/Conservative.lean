@@ -385,4 +385,117 @@ theorem W_iff_field {A : Type u'} [Category.{v'} A]
 def has_enough_points_field (J : GrothendieckTopology C) : Prop :=
   GrothendieckTopology.HasEnoughPoints.{w, v, u} J
 
+/-!
+## 13. Ponts sur le constructeur SGA 4 IV 6.5, la surjectivite locale et les gratte-ciel
+
+Les sections 3-7 ont documente par `#check` le reste du cycle de conservativite.
+Ce grain ajoute les bridges propres sur les constructions restees documentaires :
+
+  - `mk'_field` : le constructeur de famille conservative via la condition de
+    tamis couvrant (SGA 4 IV 6.5 (a)) — la contrepartie constructive de
+    `jointly_reflect_ofArrows_mem_field` (section 12) ;
+  - `jointly_reflect_isLocallySurjective_field` : un morphisme de prefaisceaux
+    est localement surjectif pour J ssi il est surjectif sur les fibres en
+    chaque point de la famille conservative P ;
+  - `skyscraper_presheaf_functor_field` / `skyscraper_presheaf_field` /
+    `skyscraper_sheaf_functor_field` / `skyscraper_sheaf_field` : les quatre
+    constructions gratte-ciel (prefaisceau/faisceau, foncteur/objet) de la
+    section 8 ;
+  - `W_isInvertedBy_presheafFiber_field` : la classe J.W est inversee par la
+    fibre prefaisceau — le pendant de la section 9 (fibre comme localisation).
+
+Tous les bridges sont L902 ★★ Tier 5 : args residents, instances structurelles,
+pas de constructeur polymorphe d'univers.
+-/
+
+/-- Pont : le constructeur de famille conservative via la condition de tamis
+    couvrant (SGA 4 IV 6.5 (a)) — P est conservative ssi, pour tout tamis S
+    sur X, si les fleches de S sont conjointement surjectives sur les fibres
+    en chaque point de P, alors S est J-couvrant. C'est la contrepartie
+    constructive de la detection des tamis couvrants via les points.
+    Delegue directement au lemme Mathlib `mk'`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+theorem mk'_field [LocallySmall.{w} C] [HasSheafify J (Type w)]
+    (hP : ∀ ⦃X : C⦄ (S : Sieve X),
+      (∀ (Φ : P.FullSubcategory) (x : Φ.obj.fiber.obj X),
+        ∃ (Y : C) (g : Y ⟶ X) (_ : S g) (y : Φ.obj.fiber.obj Y),
+          Φ.obj.fiber.map g y = x) → S ∈ J X) :
+    P.IsConservativeFamilyOfPoints :=
+  ObjectProperty.IsConservativeFamilyOfPoints.mk' hP
+
+/-- Pont : la detection de la surjectivite locale via les points — un morphisme
+    de prefaisceaux f est localement surjectif pour J ssi il est surjectif sur
+    les fibres en chaque point de la famille conservative P. C'est le pendant
+    pour les morphismes de `jointly_reflect_ofArrows_mem_field`.
+    Delegue directement au lemme Mathlib `jointly_reflect_isLocallySurjective`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+theorem jointly_reflect_isLocallySurjective_field {A : Type u'} [Category.{v'} A]
+    [LocallySmall.{w} C] [HasColimitsOfSize.{w, w} A]
+    {FC : A → A → Type*} {CC : A → Type w}
+    [∀ (X Y : A), FunLike (FC X Y) (CC X) (CC Y)]
+    [ConcreteCategory.{w} A FC]
+    [PreservesFilteredColimitsOfSize.{w, w} (forget A)]
+    [J.WEqualsLocallyBijective (Type w)] [HasSheafify J (Type w)]
+    (hP : P.IsConservativeFamilyOfPoints)
+    {X Y : Cᵒᵖ ⥤ A} (f : X ⟶ Y)
+    (hf : ∀ (Φ : P.FullSubcategory), Function.Surjective (Φ.obj.presheafFiber.map f)) :
+    Presheaf.IsLocallySurjective J f :=
+  ObjectProperty.IsConservativeFamilyOfPoints.jointly_reflect_isLocallySurjective hP f hf
+
+/-- Pont : le foncteur prefaisceau gratte-ciel pour un point Phi —
+    `A ⥤ Cᵒᵖ ⥤ A` envoie M sur le prefaisceau qui a chaque X : C le produit
+    de copies de M indexe par `Phi.fiber.obj X`. Re-export direct de la def
+    Mathlib `GrothendieckTopology.Point.skyscraperPresheafFunctor`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+noncomputable def skyscraper_presheaf_functor_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    A ⥤ Cᵒᵖ ⥤ A :=
+  GrothendieckTopology.Point.skyscraperPresheafFunctor Φ
+
+/-- Pont : le prefaisceau gratte-ciel de valeur M pour un point Phi —
+    `Cᵒᵖ ⥤ A` envoie X sur le produit de copies de M indexe par
+    `Phi.fiber.obj X`. Re-export direct de l'abbrev Mathlib
+    `GrothendieckTopology.Point.skyscraperPresheaf`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+noncomputable def skyscraper_presheaf_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) (M : A) :
+    Cᵒᵖ ⥤ A :=
+  GrothendieckTopology.Point.skyscraperPresheaf Φ M
+
+/-- Pont : le foncteur faisceau gratte-ciel pour un point Phi — `A ⥤ Sheaf J A`
+    envoie M sur le faisceau gratte-ciel (le prefaisceau gratte-ciel est un
+    faisceau pour J, cf `skyscraper_presheaf_is_sheaf_bridge` section 11).
+    Re-export direct de la def Mathlib
+    `GrothendieckTopology.Point.skyscraperSheafFunctor`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+noncomputable def skyscraper_sheaf_functor_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    A ⥤ Sheaf J A :=
+  GrothendieckTopology.Point.skyscraperSheafFunctor Φ
+
+/-- Pont : le faisceau gratte-ciel de valeur M pour un point Phi — `Sheaf J A`
+    envoie X sur le produit de copies de M indexe par `Phi.fiber.obj X`.
+    Re-export direct de l'abbrev Mathlib
+    `GrothendieckTopology.Point.skyscraperSheaf`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+noncomputable def skyscraper_sheaf_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) (M : A) :
+    Sheaf J A :=
+  GrothendieckTopology.Point.skyscraperSheaf Φ M
+
+/-- Pont : la classe J.W est inversee par la fibre prefaisceau — tout morphisme
+    de J.W est envoye sur un iso par `Phi.presheafFiber`. C'est le pendant de
+    la section 9 : la fibre prefaisceau factorise la localisation par J.W.
+    Delegue directement au lemme Mathlib `W_isInvertedBy_presheafFiber`.
+    Lemma call direct (L902 ★★ Tier 5) — args residents, instances structurelles. -/
+theorem W_isInvertedBy_presheafFiber_field {A : Type u'} [Category.{v'} A]
+    [HasProducts.{w} A] [HasColimitsOfSize.{w, w} A]
+    (Φ : GrothendieckTopology.Point.{w} J) :
+    J.W.IsInvertedBy (Φ.presheafFiber (A := A)) :=
+  GrothendieckTopology.Point.W_isInvertedBy_presheafFiber Φ
+
 end Grothendieck.Conservative
