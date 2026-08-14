@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """c.8258 reorder script for Voting-Methods-Csharp.ipynb.
 
-Reorder 5 cells (indices 9, 12, 21, 24, 27 in original order) to canonical positions.
-Pattern: hoist `## N.` headers above their code+interp blocks (5 sections bugged:
-§2, §3, §6, §7, §8).
+Reorder 7 cells (indices 9, 12, 14, 17, 21, 24, 27 in original order) to canonical positions.
+Pattern: hoist `## N.` headers above their code+interp blocks (7 sections bugged:
+§2, §3, §4, §5, §6, §7, §8). §4/§5 (code->header->interp, interp in section-final
+position) were added on the check_interp_positioning fix: hoisting §6's header
+exposed §5's interp as section-final followed by a header, and §4 has the same
+layout one step up.
 
 Walk-and-emit pattern (L933 ★): pop REVERSE order, insert TARGET POSITION order.
 Markdown-only, no code cell touched (C.3 exception).
@@ -23,6 +26,10 @@ MOVES = [
     (24, 22),
     # Move §6 header [21] before [19] (its code)
     (21, 19),
+    # Move §5 header [17] before [16] (its code)
+    (17, 16),
+    # Move §4 header [14] before [13] (its code)
+    (14, 13),
     # Move §3 header [12] before [10] (its code)
     (12, 10),
     # Move §2 header [9] before [7] (its code)
@@ -58,11 +65,11 @@ def main():
         (10, "## 3"),
         (11, "code §3"),
         (12, "### Lecture du résultat : symétrie"),
-        (13, "code §4"),
-        (14, "## 4"),
+        (13, "## 4"),
+        (14, "code §4"),
         (15, "### Interprétation : la règle"),
-        (16, "code §5"),
-        (17, "## 5"),
+        (16, "## 5"),
+        (17, "code §5"),
         (18, "### Interprétation : liberté"),
         (19, "## 6"),
         (20, "code §6"),
