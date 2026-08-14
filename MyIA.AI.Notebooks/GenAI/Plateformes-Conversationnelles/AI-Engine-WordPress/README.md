@@ -133,6 +133,20 @@ destructrices complémentaires perd environ la moitié du document, quand une
 chaîne de réversibles préserve 100 % — alors que chaque étape, isolément,
 passait le gate. numpy, sans clé ni réseau ; fixture synthétique 100 %.
 
+Un notebook transversal [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.ipynb)
+traite non pas une fonctionnalité mais une **classe de défaut** que toutes
+partagent : *le rendu visuel*. Un smoke test structurel (statut 200, balise
+`<main>` non vide, élément d'action présent) passe sur une page dont le rendu
+viole la charte — CTA en bleu Bootstrap, texte sous le seuil de contraste
+WCAG, lien semi-transparent sans affordance de bouton. Le notebook construit
+quatre pages synthétiques (Maison Valmont) portant une violation délibérée
+chacune, écrit trois détecteurs dédiés (contraste WCAG par luminance,
+dominance des primaires, affordance des CTA), et montre que le smoke test est
+aveugle aux trois classes de défauts. C'est la classe *visuelle* du motif « la
+sonde ment » documenté pour la classe *système* dans
+[`verification-verte-systeme-casse.md`](../../../../docs/reference/verification-verte-systeme-casse.md).
+stdlib pur, sans clé ni réseau.
+
 ---
 
 ## Sections
@@ -254,6 +268,8 @@ attendues.
   AI Forms conditionnelles comme machine à états, énumération des chemins et champs morts
 - [`mesurer-la-derive-dun-copilot.ipynb`](mesurer-la-derive-dun-copilot.ipynb) —
   Copilot Gutenberg : dérive d'une chaîne de transformations, le gate par étape ne protège pas la chaîne
+- [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.ipynb) —
+  smoke test structurel vs conformité visuelle : contraste WCAG, primaires Bootstrap, affordance des CTA
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
