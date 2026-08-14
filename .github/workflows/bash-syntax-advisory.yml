@@ -1,0 +1,91 @@
+name: Bash Syntax Advisory
+
+# Advisory organ for the Linux/macOS .sh companions (#10644, EPIC #10643).
+# Closes the two remaining acceptance criteria of #10644:
+#   1. "bash -n syntax check OK sur tous les nouveaux .sh" -- no organ ever
+#      ran `bash -n` on scripts/**/*.sh. A broken .sh (the bash analog of the
+#      .ps1 `[Text.Encoding]::Latin1` bug tracked in #10840) would survive on
+#      main until a manual run.
+#   2. "dry-run advisory en CI ubuntu-latest" -- non-blocking advisory signal,
+#      following the repo pattern of stale-base-warning.yml (warning + PR
+#      comment, never a hard failure on the advisory path).
+#
+# Layering:
+#   - syntax-check: FAILS on a broken .sh (that is the point -- it must be
+#     visible), but it is paths-scoped to scripts/** so it only gates PRs
+#     that touch scripts/.
+#   - shebang-dry-run-advisory: continue-on-error -- never fails the PR;
+#     warns + posts a PR comment when a shebang / executable-bit issue is
+#     found, and dry-runs the one script that exposes a no-build `check`
+#     mode (build_advisory.sh check).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/bash-syntax-advisory.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/bash-syntax-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  syntax-check:
+    name: bash -n every scripts .sh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash -n
+        run: |
+          set -euo pipefail
+          FAILED=0
+          while IFS= read -r f; do
+            if bash -n "$f"; then
+              echo "OK: $f"
+            else
+              echo "::error::bash syntax error: $f"
+              FAILED=1
+            fi
+          done < <(find scripts -name '*.sh' -type f | sort)
+          exit "$FAILED"
+
+  shebang-dry-run-advisory:
+    name: Shebang + dry-run advisory (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Shebang + executable-bit audit
+        id: audit
+        run: |
+          set -euo pipefail
+          WARN=0
+          while IFS= read -r f; do
+            if ! head -1 "$f" | grep -qE '^#!(/usr/bin/env bash|/bin/bash)$'; then
+              echo "::warning::non-bash shebang or missing: $f"
+              WARN=1
+            fi
+            if [ ! -x "$f" ]; then
+              echo "::warning::not executable (chmod +x): $f"
+              WARN=1
+            fi
+          done < <(find scripts -name '*.sh' -type f | sort)
+          echo "warnings=$WARN" >> "$GITHUB_OUTPUT"
+      - name: Dry-run build_advisory.sh check (no build)
+        run: |
+          bash scripts/slides/build_advisory.sh check
+      - name: Post advisory comment on PR
+        if: steps.audit.outputs.warnings == '1' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body "## Bash Syntax Advisory — shebang / executable-bit warnings
+          See the \`Shebang + dry-run advisory\` job log for the per-file \`::warning::\` lines. Non-blocking."
