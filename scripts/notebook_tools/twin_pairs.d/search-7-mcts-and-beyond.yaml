@@ -35,6 +35,12 @@
       csharp_sha: 5c68b6972b30c8c861f178e7f0558dc32845c6b5
       content_python_sha: 1690e5b5ff5bb49eeef75351cf7d6b4f8013fb9f82878a85707f047caf23342e
       content_csharp_sha: 379d37d246d2ec255a28916c2fda90abfce2283af0efa177a1df7a57020f1b9c
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 8358cc6edc019c5d10d0bf9649aa666cd65127f9
+      csharp_sha: 08a7a815eb1e675364277d6a32db6584bb710db0
+      content_python_sha: 1690e5b5ff5bb49eeef75351cf7d6b4f8013fb9f82878a85707f047caf23342e
+      content_csharp_sha: 33e1ac0fe30bbc90855f66ff8ce90f0f36a75f8635db3fb060d2d73816a6aa15
   known_differences:
     - "Rebaseline c.34 (ai-01) : #8697 a insere le bloc `metadata.cost` (#8056) a l'identique sur les DEUX jumeaux — les deux blob SHA ont bouge, la parite semantique est inchangee. Attestation de parite, pas reparation."
     - "Socle commun : limites de minimax, algorithme MCTS (selection/expansion/simulation/retropropagation), test sur Tic-Tac-Toe, comparaison MCTS vs minimax, framework OpenSpiel, AlphaGo/AlphaZero, extensions avancees. Structure des sections quasi-identique (le jumeau le plus proche cellule-a-cellule de la famille)."

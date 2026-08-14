@@ -26,6 +26,12 @@
       csharp_sha: 22e2fc6ce9e9f7ede40e2a4fad5ad3ed9be6bae6
       content_python_sha: bdf2afe35859b03eff172e592b6dfcd37cb1bfedf900fa5256b878e27de69c30
       content_csharp_sha: 6350312e6a7a26343458ac1ef037cae7617a227de491d23de5c8c71260e60999
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: ba57543f048fd01b2ea2d5059b37581877c683dc
+      csharp_sha: 12e541a0551b79ab86fa4782918f368d1704967b
+      content_python_sha: bdf2afe35859b03eff172e592b6dfcd37cb1bfedf900fa5256b878e27de69c30
+      content_csharp_sha: 435212faa6505cd87fd4588683d89d35aa9f9c212e24a590486ccae6f02638d9
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = ortools.sat.python.cp_model (OR-Tools CP-SAT 9.11, engine SOTA) + numpy + matplotlib + networkx (56 cellules : 26 code + 30 markdown, formulation CSP, 3 heuristiques Greedy/DSATUR/Welsh-Powell + CP-SAT exact, enumeration solutions, benchmark G(n,p) Erdos-Renyi). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (CanColor / k-coloriable, 0 NuGet) PRESERVEE (26 cellules : 12 code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur Erdos-Renyi G(25,0.5) -- Greedy sub-optimal (8-9), DSATUR=chi=7, CP-SAT prouve chi=7 Optimal. Le C# ajoute une section dediee paradoxe de Mycielski (graphes triangle-free) absente cote Python. parity_level: native-both preserve."
   known_differences:
