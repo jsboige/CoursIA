@@ -653,6 +653,13 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 
 **Statuts réels établis** : les 4 projets `Cloud-*` locaux = **alive, compilable, backtestable** (BuildSuccess + run Completed chacun) — aucun archived/superseded/duplicate/broken-côté-outil ; `Cloud-SectorRotation-Momentum` = BROKEN **côté edge** (Sharpe négatif, confirmé sur run frais baseline #1630). Les 2 projets cloud-only restants (`Cloud-RegimeSwitching` 30823208, `Cloud-DualMomentum-NoTLT` 30822524) = doublons cloud des projets locaux sans préfixe (`RegimeSwitching`, `DualMomentumNoTLT`, déjà catalogués) — laissés hors du présent scope (tranche bornée).
 
+**Ledger mapping cloud → local (décision ai-01 c.96, 2026-08-14 : doublons CONSERVÉS — l'historique de runs cloud est la pièce à conviction de #1621, suppression irreversible au bénéfice nul)** :
+
+```
+30823208  Cloud-RegimeSwitching       -> projects/RegimeSwitching        (doublon cloud, conservé)
+30822524  Cloud-DualMomentum-NoTLT    -> projects/DualMomentumNoTLT      (doublon cloud, conservé)
+```
+
 **Synthèse cohorte** : **0 edge + 1 BROKEN + 3 NI** (PSR max 0.557 % ≪ cap 50 %) ; la correction clé de la tranche = **MeanReversion-Sectors** : la métrique 0.278/14.7 % citée depuis juillet provenait du run **v3** sur code **stale 2014-2025** — sur la baseline #1630 alignée, v1 tombe à 0.067 (l'alignement retire les années fastes 2014-2017). Leçon de méthode (pour toute relecture de tranche 4) : **toujours étiqueter variante + période d'un run cité** — deux runs du même projet peuvent différer d'un facteur 4 en Sharpe sans que rien ne le signale dans le catalogue.
 
 **Leçons c.714** :
