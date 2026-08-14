@@ -125,6 +125,7 @@ Les trois derniers notebooks et le notebook de synchronisation audio-vidéo conc
 | [04-3-Sora-API-Cloud-Video](04-Applications/04-3-Sora-API-Cloud-Video.ipynb) | Sora 2 API, cloud vs local | OpenAI API | 0 |
 | [04-4-Production-Video-Pipeline](04-Applications/04-4-Production-Video-Pipeline.ipynb) | Pipeline complet bout-en-bout | Mixed | ~18 GB |
 | [04-5-MiniMax-H3-Cloud-Video](04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb) | Hailuo API, HD/2K + audio natif, key-gated | MiniMax API | 0 |
+| [04-6-MiniMax-video-01-v1-Cloud-Video](04-Applications/04-6-MiniMax-video-01-v1-Cloud-Video.ipynb) | Hailuo API v1, video muette plan-couvert UE, sonde non-brûlante | MiniMax API | 0 |
 
 ## Recette : construire un pipeline texte vers vidéo pédagogique
 
@@ -193,7 +194,7 @@ flowchart TD
 | **MiniMax H3 (Hailuo 3.0)** | 02-6 | Descriptif — licence des poids exclut l'UE (bifurcation §Section 6 ; voie cloud réalisable : `04-5`) |
 | **ComfyUI Video** | 03-3 | Docker, nodes vidéo |
 | **OpenAI Sora 2** | 04-3 | `OPENAI_API_KEY` |
-| **Hailuo Video API** | 04-5 | `MINIMAX_GENAI_API_KEY`, 5 gén/jour, HD/2K + audio stéréo natif |
+| **Hailuo Video API** | 04-5, 04-6 | `MINIMAX_GENAI_API_KEY`, 5 gén/jour, HD/2K + audio stéréo natif (04-5) ou video muette plan-couvert UE (04-6) |
 
 ## Parcours recommandé
 
