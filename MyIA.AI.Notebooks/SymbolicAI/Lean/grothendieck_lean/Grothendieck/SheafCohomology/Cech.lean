@@ -46,6 +46,21 @@ localement, non cités depuis Mathlib) :
 4. `cechComplexFunctor_map_comp` : la naturalité face à la composition :
    `(cechComplexFunctor U).map (f ≫ g) = (cechComplexFunctor U).map f ≫ (cechComplexFunctor U).map g`.
 
+**Enrichissement c.1301+135 (issue #2159, grain DEEP/lean)**
+
+Les deux constructions `cosimplicialObjectFunctor` et
+`cochainComplexFunctor` (sections 1-2, jusque-là documentées par de
+simples `#check`) sont désormais exposées par les bridges propres
+`cosimplicialObjectFunctor_type` et `cochainComplexFunctor_type` dans
+la section 4 (re-export direct de Mathlib, argument `E` explicite,
+`C` et `A` inférés du contexte) :
+
+  - `cosimplicialObjectFunctor_type` : la première étape de la
+    construction de Čech -- l'objet cosimplicial des évaluations.
+  - `cochainComplexFunctor_type` : la seconde étape -- le complexe de
+    cochaînes obtenu par le complexe des cofaces alternées (nécessite
+    la préadditivité de `A`).
+
 Le sibling `Cech_en.lean` est maintenu synchronisé (Pattern A : seules
 les docstrings divergent).
 
@@ -99,6 +114,33 @@ noncomputable def cechComplexFunctor_type
     [HasFiniteProducts C] {ι : Type w} (U : ι → C) :
     (Cᵒᵖ ⥤ A) ⥤ CochainComplex A ℕ :=
   CategoryTheory.cechComplexFunctor U
+
+/-- Bridge : le foncteur en objet cosimplicial de Čech. C'est le
+    `FormalCoproduct.cosimplicialObjectFunctor` de Mathlib : étant
+    donné un objet simplicial `E` dans la complétion par coproduits
+    formels `FormalCoproduct C`, il envoie un préfaisceau
+    `P : Cᵒᵖ ⥤ A` sur l'objet cosimplicial des évaluations de `P`
+    sur les parties de `E`. C'est la première étape de la construction
+    du complexe de Čech (l'objet cosimplicial, avant l'application du
+    complexe alterné). -/
+noncomputable def cosimplicialObjectFunctor_type
+    {A : Type u'} [Category.{v'} A] [HasProducts.{w} A]
+    (E : SimplicialObject (FormalCoproduct.{w} C)) :
+    (Cᵒᵖ ⥤ A) ⥤ CosimplicialObject A :=
+  CategoryTheory.Limits.FormalCoproduct.cosimplicialObjectFunctor E
+
+/-- Bridge : le foncteur en complexe de cochaînes de Čech. C'est le
+    `FormalCoproduct.cochainComplexFunctor` de Mathlib : étant donné
+    un objet simplicial `E` dans `FormalCoproduct C`, il envoie un
+    préfaisceau `P : Cᵒᵖ ⥤ A` sur le complexe de cochaînes dont le
+    degré n consiste en l'évaluation de `P` sur `E _⦋n⦌`. C'est la
+    composée du foncteur en objet cosimplicial et du complexe des
+    cofaces alternées (catégorie préadditive requise). -/
+noncomputable def cochainComplexFunctor_type
+    {A : Type u'} [Category.{v'} A] [HasProducts.{w} A] [Preadditive A]
+    (E : SimplicialObject (FormalCoproduct.{w} C)) :
+    (Cᵒᵖ ⥤ A) ⥤ CochainComplex A ℕ :=
+  CategoryTheory.Limits.FormalCoproduct.cochainComplexFunctor E
 
 /-! ## 5. Théorèmes propres (c.8223)
 
