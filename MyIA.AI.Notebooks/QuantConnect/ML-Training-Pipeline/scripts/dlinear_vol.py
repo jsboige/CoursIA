@@ -315,6 +315,12 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         std_dl = float(np.nanstd(dl_mses))
         mean_reduction = (mean_har - mean_dl) / mean_har * 100 if mean_har > 0 else 0.0
 
+        # pr-review §C conjunction: edge >= 2*std cross-seed AND dm_p_median < 0.05.
+        # sigma alone measures inter-seed dispersion, not significance (#10228).
+        reduction_pcts = [r.get("mse_reduction_pct", float("nan")) for r in seeds_rows]
+        edge_std_pct = float(np.nanstd(reduction_pcts)) if len(reduction_pcts) > 1 else 0.0
+        dm_p_median = float(np.nanmedian(p_values))
+
         n_beats = sum(1 for v in verdicts if "BEATS" in v and "BEATEN" not in v)
         n_beaten = sum(1 for v in verdicts if "BEATEN" in v)
         n_inconclusive = sum(1 for v in verdicts if v == "INCONCLUSIVE")
@@ -328,6 +334,14 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
         else:
             agg_verdict = "INCONCLUSIVE"
 
+        # §C conjunction verdict (kept alongside legacy "verdict" for diff stability).
+        if n_beaten > 0:
+            verdict_sc = "NO BEATS"
+        elif mean_reduction >= 2.0 * edge_std_pct and dm_p_median < 0.05:
+            verdict_sc = "BEATS"
+        else:
+            verdict_sc = "INCONCLUSIVE"
+
         results.append({
             "coin": coin,
             "horizon": h,
@@ -336,11 +350,14 @@ def aggregate_verdicts(rows: list[dict]) -> list[dict]:
             "std_dlinear_mse": std_dl,
             "mean_har_mse": mean_har,
             "mean_reduction_pct": mean_reduction,
+            "edge_std_pct": edge_std_pct,
+            "dm_p_median": dm_p_median,
             "n_beats": n_beats,
             "n_beaten": n_beaten,
             "n_inconclusive": n_inconclusive,
             "mean_dm_pvalue": float(np.nanmean(p_values)),
             "verdict": agg_verdict,
+            "verdict_sc": verdict_sc,
         })
 
     return results
@@ -356,6 +373,7 @@ def _eval_one_coin(
     refit_every: int = 22,
     epochs: int = 100,
     decompose: bool = False,
+    loss_fn: str = "mse",
 ) -> list[dict]:
     rv = daily_realized_variance(hourly_rets)
     if len(rv) < 300:
@@ -415,7 +433,7 @@ def _eval_one_coin(
             if har_errors is not None and len(dl_errors) >= 10 and len(har_errors) >= 10:
                 min_len = min(len(dl_errors), len(har_errors))
                 try:
-                    dm = dm_verdict(dl_errors[:min_len], har_errors[:min_len], horizon=h)
+                    dm = dm_verdict(dl_errors[:min_len], har_errors[:min_len], horizon=h, loss_fn=loss_fn)
                     dm_info = {
                         "dm_stat": dm["dm_statistic"],
                         "dm_pvalue": dm["p_value"],
@@ -460,11 +478,17 @@ def main() -> None:
                         help="Enable trend/seasonal decomposition")
     parser.add_argument("--skip-remote", action="store_true")
     parser.add_argument("--extra-coins", type=str, nargs="*", default=None)
+    parser.add_argument("--coins", type=str, nargs="*", default=None,
+                        help="Restrict evaluation to these panel keys (default: all loaded)")
+    parser.add_argument("--loss-fn", type=str, choices=["mse", "mae", "linear"], default="mse",
+                        help="Loss applied to forecast errors before the DM test (pr-review §C requires 'linear' for sign-preservation)")
     parser.add_argument("--out-json", type=str, default="results/m4_dlinear_vol.json")
     args = parser.parse_args()
 
     t0 = time.time()
     panel = _load_panel(args.skip_remote, extra_coins=args.extra_coins)
+    if args.coins:
+        panel = {c: rets for c, rets in panel.items() if c in args.coins}
 
     all_rows: list[dict] = []
     for coin, rets in panel.items():
@@ -478,6 +502,7 @@ def main() -> None:
             refit_every=args.refit_every,
             epochs=args.epochs,
             decompose=args.decompose,
+            loss_fn=args.loss_fn,
         )
         all_rows.extend(rows)
 
@@ -508,6 +533,7 @@ def main() -> None:
             "refit_every": args.refit_every,
             "epochs": args.epochs,
             "decompose": args.decompose,
+            "loss_fn": args.loss_fn,
         },
     }, indent=2))
     print(f"\n[done] {time.time() - t0:.1f}s -- wrote {out_path}")

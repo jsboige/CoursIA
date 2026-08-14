@@ -1409,6 +1409,22 @@ theorem wf_of_cellWf {c : MacroCell} (h : cellWf c) : c.wf = true := by
     simp only [MacroCell.wf, ihnw, ihne, ihsw, ihse, ← hne_lvl, ← hsw_lvl, ← hse_lvl,
                beq_self_eq_true, Bool.true_and, Bool.and_true]
 
+/-- Tout `buildFromGrid` produit une `MacroCell` bien formee : les quatre
+    sous-arbres sont construits au meme niveau (donc de niveaux egaux par
+    `level_buildFromGrid`) et recursivement bien formes. Inset manquant du
+    pont de localite (a) de #6724 : la brique un-saut
+    `hashlifeJump_correct_of_captured` exige `c.wf = true`, et le moteur
+    alimente `hashlifeJump` avec `gridToMacroCellWithOffset g` — un
+    `buildFromGrid` sur le cadre de `g`. (Place ici, pas dans
+    `MacroCell.lean`, car `MacroCell.wf` est defini dans ce fichier qui
+    importe MacroCell — l'inverse serait circulaire.) -/
+theorem buildFromGrid_wf (g : Grid) (r0 c0 : Int) (lvl : Nat) :
+    (MacroCell.buildFromGrid g r0 c0 lvl).wf = true := by
+  induction lvl generalizing r0 c0 with
+  | zero => rfl
+  | succ n ih =>
+      simp [MacroCell.buildFromGrid, MacroCell.wf, ih, level_buildFromGrid]
+
 /-- A malformed level-2 cell: `nw` is a level-1 node but `ne`/`sw`/`se`
     are bare leaves. `level` only inspects `nw`, so
     `malformedLevel2.level = 2` satisfies the unrestricted P4 hypothesis
