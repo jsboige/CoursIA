@@ -41,31 +41,21 @@ Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, 
 | **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
 | **META** | `guard` · `tooling` · `ledger` · `docs` · `readme` · `test` · `refactor` | l'outillage, les garde-fous et la prose *autour* du contenu — nécessaire, jamais suffisant |
 
-Un genre META n'est pas un genre inférieur : un guard qui rougit au bon moment vaut mieux qu'un notebook de plus. Mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
+Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
 
-Un genre hors liste est un **alias** que le merge-gate normalise avant d'appliquer les gates — pas une violation, le worker n'est ni repris ni HOLD. La fermeture n'est pas du vocabulaire : l'adjacence compare des genres, et un vocabulaire ouvert rend G-VAR-3 inatteignable par simple choix de mot.
+Un genre hors liste est un **alias** que le merge-gate normalise : pas une violation, le worker n'est ni repris ni HOLD. La fermeture protège G-VAR-3, qu'un vocabulaire ouvert rendrait inatteignable par simple choix de mot.
 
-**Le GENRE est le TYPE DE TRAVAIL, jamais la famille où vivent les fichiers.** Test : *si le prochain grain de ce rollout tombait dans une autre famille, changerais-je le GENRE ?* Si oui, le genre décrit le répertoire — reprendre celui du travail. Même chose pour le composé `<famille>-<genre>` (`lean-ci`, `cjk-ci`, `audit-tooling`) : **il se réduit toujours à sa tête**, la famille se lit déjà dans les chemins du diff.
-
-| Écrit | Canonique | Motif |
-|---|---|---|
-| `lean-ci`, `lean-tooling`, `cjk-ci`, `audit-tooling` | `guard` ou `tooling` (cf. discriminant) | composé `<famille>-<genre>` |
-| `test-coverage` | `test` | synonyme — sinon le ban `test` est inatteignable |
-| `refs`, `documentation` | `docs` | synonyme |
-| `data` | `ledger` | tranché par l'incident #8056 |
-| `Lean` | `lean` | genres en minuscules |
+**Le GENRE est le TYPE DE TRAVAIL, jamais la famille où vivent les fichiers.** Test : *si le prochain grain de ce rollout tombait dans une autre famille, changerais-je le GENRE ?* Si oui, le genre décrit le répertoire — reprendre celui du travail. Le composé `<famille>-<genre>` (`lean-ci`, `cjk-ci`, `audit-tooling`) **se réduit toujours à sa tête** ; les synonymes (`test-coverage` → `test`, `documentation` → `docs`, `data` → `ledger`) se normalisent. Table d'alias complète : [détail §Alias](../../docs/reference/variation-protocol-detail.md).
 
 **`guard` vs `tooling` — le discriminant est « est-ce que ça peut rougir ».** Un check susceptible de passer au rouge est `guard` ; un script/helper/convertisseur sans statut d'échec propre est `tooling`.
 
-**Entrer dans la liste LIGHT de G-VAR-3 se mesure, jamais s'intuitionne** : un genre y entre dès **≥ 2 grains LIGHT mergés**. Au 2026-07-30, `tooling` est à 5 MED sur 5 et `research-code` à 1 DEEP sur 1 — aucun ne qualifie.
+**Entrer dans la liste LIGHT de G-VAR-3 se mesure, jamais s'intuitionne** : un genre y entre dès **≥ 2 grains LIGHT mergés**.
 
 ## 2. Les trois gates durs
 
 - **G-VAR-1 — Plat principal DEEP ou MED, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP ou MED **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier.** Le pool global porte toujours du DEEP/MED de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
 
-  **Pourquoi la clause de genre a été ajoutée (2026-08-10).** Le tier seul laissait une porte ouverte, et la flotte l'a prise sans jamais mentir : un grain `tooling`/`guard` qui attrape un vrai défaut « change quelque chose », donc le tag **MED** est défendable, donc le plancher est tenu — plancher vert, variété verte, adjacence verte, et **zéro contenu livré**. Mesuré sur six semaines de commits : la part `scripts/` est passée de 3 % à **45 %** et la part code-de-série (hors notebooks) de **51 % à 18 %**, à volume de PR constant (S29 = 994, S32 = 917 PR mergées). Le préfixe `fix` est monté de 29 % à 44 % pendant que `feat` tombait de 26 % à 15 %. Aucun gate n'avait rougi : l'échappatoire était dans la spécification, pas dans la discipline des lanes.
-
-  Un cycle dont le plat principal est META **n'a pas de plancher tenu** — même avec dix PR livrées. Le remède n'est pas de bannir le META (il reste bienvenu au-delà du plancher, sous budget G-VAR-2 pour ses composantes LIGHT) mais d'exiger qu'**au moins un** grain de contenu porte le cycle.
+  **Pourquoi la clause de genre existe** : le tier seul laissait une porte que la flotte a prise sans jamais mentir — un `tooling`/`guard` qui attrape un vrai défaut « change quelque chose », donc **MED** est défendable, donc le plancher paraît tenu, et **zéro contenu livré** (mesuré sur six semaines, aucun gate n'a rougi : [chiffres](../../docs/reference/variation-protocol-detail.md)). Un cycle dont le plat principal est META **n'a pas de plancher tenu**, même avec dix PR livrées. Le remède n'est pas de bannir le META (bienvenu au-delà du plancher, sous budget G-VAR-2 pour ses composantes LIGHT) mais d'exiger qu'**au moins un** grain de contenu porte le cycle.
 - **G-VAR-2 — Budget LIGHT proportionnel : `max(1, grains_mergés_du_jour // 3)`**, par lane et par jour, **toutes catégories LIGHT confondues**. Une lane à 1-5 grains garde l'ancien plafond d'une LIGHT ; à 6 elle en a deux, à 19 elle en a six. Au-delà : la LIGHT attend demain ou cède la place à du DEEP/MED. Le budget se **calcule** — [`scripts/variation_light_cap.py`](../../scripts/variation_light_cap.py) — il ne se déclare pas.
 - **G-VAR-3 — Pas deux fois le même GENRE LIGHT consécutif.** Ban **absolu** sur les genres LIGHT (`guard` · `ledger` · `docs` · `readme` · `test`) : bloqué dès 2. Pour un genre **DEEP ou MED dans le domaine-cœur d'une lane spécialiste**, deux consécutifs sont autorisés **si chacun est une substance genuinement distincte** — théorème/module/résultat différent, produit par du raisonnement neuf. Un spécialiste Lean qui enchaîne deux preuves DEEP distinctes n'est **pas** la monoculture visée. Tell décisif : le litmus LIGHT — générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP**.
 
@@ -92,9 +82,8 @@ Le HOLD **ne sanctionne jamais la lane en idle** ([coordinator-discipline.md](co
 
 La cause racine est **autant** un défaut de provisionnement qu'un réflexe de facilité worker : sans substance stockée, le worker tombe sur les veines faciles. Chaque cycle `/coordinate`, `ai-01` :
 
-1. **Provisionne ≥1 grain DEEP/MED de CONTENU par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre. Un provisionnement composé uniquement de `guard`/`tooling`/`docs` ne satisfait pas cette obligation — il garantit au contraire que toutes les lanes manqueront leur plancher.
-   **Corollaire mesuré : agréger les GENRES des merges récents avant de provisionner**, pas seulement leurs tiers. « 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook`. Le tier ne dit rien de ce qui a été construit.
-   **Un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle : compter ce qui reste OPEN **et exécutable seul** dans la famille fermée, et créer si le reste est intégralement gaté (précédent ICT : 24 fermetures justifiées item par item entre le 04 et le 06/08, 14 issues restantes toutes dures/gatées, série endormie).
+1. **Provisionne ≥1 grain DEEP/MED de CONTENU par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre. Un provisionnement uniquement `guard`/`tooling`/`docs` ne satisfait pas l'obligation — il garantit que toutes les lanes manqueront leur plancher.
+   Deux corollaires mesurés : **agréger les GENRES des merges récents** avant de provisionner, pas seulement leurs tiers (« 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook`) ; et **un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle (précédent ICT).
 2. **Varie la loterie** d'un cycle à l'autre — le coordinateur applique G-VAR-3 à son propre dispatch.
 
 Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige.

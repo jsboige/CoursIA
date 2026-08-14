@@ -94,7 +94,7 @@ if (-not (Test-Path $builtWrapper)) {
 }
 
 # Sanity: confirm the fork feature (CollectionHandling) is in the built DLL.
-$bytes = [System.IO.File]::ReadAllText($builtWrapper, [System.Text.Encoding]::Latin1)
+$bytes = [System.IO.File]::ReadAllText($builtWrapper, [System.Text.Encoding]::GetEncoding(28591))
 if ($bytes -notmatch "CollectionHandling") {
     Write-Host "WARNING: built Z3.Linq.dll lacks CollectionHandling — is the submodule at the fork commit?" -ForegroundColor Yellow
     Write-Host "  Expected commit 096a6383 (MyIntelligenceAgency/Z3.Linq int[][] fork)." -ForegroundColor Gray

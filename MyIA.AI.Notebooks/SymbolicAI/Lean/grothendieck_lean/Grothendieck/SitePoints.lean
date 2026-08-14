@@ -312,4 +312,100 @@ theorem discrete_topology_eq_top (C : Type u) [Category.{v} C] :
     GrothendieckTopology.discrete C = ⊤ :=
   CategoryTheory.GrothendieckTopology.discrete_eq_top
 
+/-!
+## 10. Bridges : la forme abstraite des points de Grothendieck
+
+Les 7 bridges ci-dessous ferment le répertoire `#check` documentaire du
+module : la **structure** `Point` (le « foncteur tige » `Φ.fiber` cofiltre
+rencontrant tout crible couvrant), le **foncteur fibre préfaisceau**
+`Φ.presheafFiber` (la colimite sur la catégorie des éléments) et son
+**inclusion canonique** `Φ.toPresheafFiber`, la **catégorie des points**
+`Point.Hom` (les morphismes entre points, SGA 4 IV 3.2), les topologies
+**triviale** et **discrète**, et la **condition de couverture**
+`jointly_surjective` (SGA 4 IV 6.3). Chacun est un re-export type-sig de
+l'API Mathlib (pattern winner L902 ★★ Tier 5) : args résidents
+(`{C : Type u} [Category.{v} C]` + `(Φ : GrothendieckTopology.Point.{w} J)`),
+instances structurelles uniquement, zéro constructeur polymorphe d'univers.
+
+Universe note (leçon c.1301+143-L1) : `Point.{w} J` vit dans
+`Type (max (max u v) (w + 1))` — le 3ᵉ univers `w` est celui des fibres
+(`Φ.fiber : C ⥤ Type w`). Le foncteur fibre préfaisceau exige en sus la
+cocomplétude de la cible (`HasColimitsOfSize`), que la catégorie des types
+`Type (max u w)` satisfait toujours ; il est `noncomputable` (le colimite
+n'a pas de choix canonique).
+-/
+
+/-- Bridge : la **structure de point** d'un site `(C, J)` — un foncteur
+    `Φ.fiber : C ⥤ Type w` dont la catégorie des éléments est cofiltre
+    (ce qui assure l'exactitude : commutation aux limites finies) et qui
+    rencontre tout crible couvrant. C'est la généralisation
+    grothendieckienne du point d'un espace topologique (SGA 4 IV 6.3).
+    Type-sig re-export de `GrothendieckTopology.Point.{w} J`. -/
+def point_field {C : Type u} [Category.{v} C]
+    (J : GrothendieckTopology C) : Type _ :=
+  GrothendieckTopology.Point.{w} J
+
+/-- Bridge : le **foncteur fibre des préfaisceaux** en un point `Φ` —
+    évalue un préfaisceau `P` en prenant la colimite de `P` sur la
+    catégorie des éléments de `Φ.fiber`. Intuitivement, `presheafFiber.obj P`
+    est la « tige de P en Φ », la colimite filtrée sur toutes les paires
+    `(X, x)` avec `x : Φ.fiber.obj X`. Re-export type-sig de
+    `GrothendieckTopology.Point.presheafFiber` (le type cible est la
+    catégorie des types de notre univers fibre `Type (max u w)`). -/
+noncomputable def presheaf_fiber_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} (Φ : GrothendieckTopology.Point.{w} J) :
+    (Cᵒᵖ ⥤ Type (max u w)) ⥤ Type (max u w) :=
+  Φ.presheafFiber
+
+/-- Bridge : l'**inclusion canonique** dans la fibre — pour un témoin
+    `x : Φ.fiber.obj X`, le morphisme `P.obj (op X) ⟶ Φ.presheafFiber.obj P`
+    envoyant une section en la classe de `(X, x)` dans la colimite. C'est
+    la lég du cocône colimite qui définit `presheafFiber`. Re-export
+    type-sig de `GrothendieckTopology.Point.toPresheafFiber`. -/
+noncomputable def to_presheaf_fiber_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} (Φ : GrothendieckTopology.Point.{w} J)
+    (X : C) (x : Φ.fiber.obj X) (P : Cᵒᵖ ⥤ Type (max u w)) :
+    P.obj (Opposite.op X) ⟶ Φ.presheafFiber.obj P :=
+  Φ.toPresheafFiber X x P
+
+/-- Bridge : les **morphismes entre points** d'un site — une
+    transformation naturelle en sens inverse entre les foncteurs fibres
+    (SGA 4 IV 3.2). Les points d'un site forment une catégorie : c'est ce
+    qui permet de comparer les « sondes » d'un site entre elles.
+    Type-sig re-export de `GrothendieckTopology.Point.Hom`. -/
+def point_hom_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} (Φ₁ Φ₂ : GrothendieckTopology.Point.{w} J) :
+    Type _ :=
+  GrothendieckTopology.Point.Hom Φ₁ Φ₂
+
+/-- Bridge : la **topologie triviale** sur `C` — la plus grossière : tout
+    crible est couvrant, donc tout préfaisceau est un faisceau (cf
+    `trivial_topology_eq_bot` : `trivial C = ⊥`). Re-export type-sig de
+    `GrothendieckTopology.trivial`. -/
+def trivial_field (C : Type u) [Category.{v} C] :
+    GrothendieckTopology C :=
+  GrothendieckTopology.trivial C
+
+/-- Bridge : la **topologie discrète** sur `C` — la plus fine : seul le
+    crible maximal est couvrant, donc seul le préfaisceau terminal est un
+    faisceau (cf `discrete_topology_eq_top` : `discrete C = ⊤`). Re-export
+    type-sig de `GrothendieckTopology.discrete`. -/
+def discrete_field (C : Type u) [Category.{v} C] :
+    GrothendieckTopology C :=
+  GrothendieckTopology.discrete C
+
+/-- Bridge : la **condition de couverture** d'un point (SGA 4 IV 6.3) —
+    pour tout objet `X` et tout crible couvrant `R ∈ J X`, tout élément
+    `x : Φ.fiber.obj X` provient d'un élément de la fibre au-dessus d'une
+    flèche couvrante : `∃ Y f, R.arrows f ∧ ∃ y, Φ.fiber.map f y = x`.
+    C'est ce qui relie la topologie au foncteur fibre — sans elle, le
+    foncteur fibre ne « verrait » pas les recouvrements. Re-export type-sig
+    du champ `GrothendieckTopology.Point.jointly_surjective`. -/
+def jointly_surjective_field {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} (Φ : GrothendieckTopology.Point.{w} J) :
+    ∀ {X : C}, ∀ R ∈ J X, ∀ x : Φ.fiber.obj X,
+      ∃ (Y : C) (f : Y ⟶ X), ∃ (_ : R.arrows f), ∃ y : Φ.fiber.obj Y,
+        Φ.fiber.map f y = x :=
+  Φ.jointly_surjective
+
 end Grothendieck

@@ -1,0 +1,160 @@
+name: Pedagogy Density Advisory
+
+# The missing ORGAN for the pedagogy-density convention (#10479 Grain 2).
+# The user's observation (2026-08-11) -- introductive series notebooks can lack
+# pedagogical prose -- was measured (the markdown-share metric cannot
+# discriminate) and the discriminating metric (chars of prose per code cell,
+# floor 1200) was calibrated exactly against the issue table. This workflow
+# wires that measure to a PR, exactly as exercises-advisory.yml did for the
+# ">= 3 exercises" convention (#8814): a below-threshold notebook becomes
+# VISIBLE on the PR that touches it.
+#
+# ADVISORY, never blocking (issue #10479 acceptance): the job ALWAYS exits 0.
+# The actionable payload is the `pedagogy-density-below-threshold` LABEL, NEVER
+# the green conclusion of the job (green by construction -- the same trap that
+# let a non-conforming PR through in #8797).
+#
+# Per-PR scope (acceptance): runs pedagogy_density.py ONLY on the *.ipynb
+# modified by the PR, not a repo-wide scan on every push. The corpus/kind
+# classification (out-of-corpus artifacts, setup) is CONSUMED from
+# count_exercises.py THROUGH pedagogy_density.py -- never re-implemented here,
+# so the label and the canonical tool cannot diverge.
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
+# benevolent review applies, no internal content criterion runs against them.
+#
+# Promoting to a blocking gate is a separate decision, to revisit only once the
+# residual is at 0 and stable (issue #10479 "Hors scope").
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*.ipynb'
+      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
+      # else it cannot re-run (so cannot remove its own label) once the matching
+      # paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
+      - '.github/workflows/pedagogy-density-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pedagogy-density-advisory:
+    name: "Pedagogy density >= 1200 c/cell advisory (label, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Need base..head history for `git diff` of changed notebooks.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on modified notebooks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without a git context GH_REPO, `gh pr edit` / `gh label create`
+          # cannot infer the target repo and fail silently (variation-tag-guard
+          # documented this trap firsthand after #8765).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_BELOW: pedagogy-density-below-threshold
+          LABEL_UNMEASURED: pedagogy-density-unmeasured
+        run: |
+          set -uo pipefail
+
+          # Added/modified *.ipynb in the PR (deletions excluded -- a deleted
+          # notebook has nothing to measure).
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.ipynb' \
+            | grep -v $'\r$' > changed_ipynb.txt || true
+          COUNT=$(wc -l < changed_ipynb.txt | tr -d ' ')
+          echo "Modified *.ipynb in this PR: $COUNT"
+
+          # Helper: ensure a label exists (idempotent), then add/remove it.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No modified notebooks to check."
+            unset_label "$LABEL_BELOW"; unset_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          # Advisory: ALWAYS exit 0. The job never fails; the actionable signal
+          # is the pair of LABELS decided from the JSON payload below.
+          python scripts/notebook_tools/pedagogy_density.py --json --stdin \
+            < changed_ipynb.txt > payload.json
+          cat payload.json
+
+          SUB=$(python -c "import json; print(json.load(open('payload.json'))['summary']['below_threshold'])")
+          UNM=$(python -c "import json; print(json.load(open('payload.json'))['summary']['unmeasured'])")
+          echo "Below-threshold notebooks: $SUB"
+          echo "Unmeasured (parse errors / no code cell): $UNM"
+
+          # Issue #8819 applied to density: TWO distinct labels. "Could not
+          # measure" and "measured, below threshold" call for different
+          # reactions, so they never collapse into one. Each label is raised
+          # when its count > 0 and cleared otherwise (a stale label from an
+          # earlier push must not stick).
+          ensure_label "$LABEL_BELOW" \
+            "A modified notebook measures below the 1200 chars-of-prose-per-code-cell floor (#10479)" "D93F0B"
+          ensure_label "$LABEL_UNMEASURED" \
+            "A modified notebook could not be measured -- NOT verified (#8819)" "BFD4F2"
+
+          # The #8819 guard: if pedagogy_density.py died (truncated JSON,
+          # ImportError, OOM), payload.json is unreadable, the two python -c
+          # above fail, and SUB/UNM are not integers. With only
+          # `set -uo pipefail` (no -e), each `[ "" -gt 0 ]` below exits rc=2 --
+          # which falls into the else branch, UNSETS both labels, and asserts
+          # verified conformity on a measurement that never happened. NOT
+          # measured => NOT verified: pose the unmeasured label and a loud
+          # ::error::, never a green claim.
+          if ! [ "${SUB:-}" -eq "${SUB:-}" ] 2>/dev/null \
+             || ! [ "${UNM:-}" -eq "${UNM:-}" ] 2>/dev/null; then
+            echo "::error::pedagogy-density payload illisible (pedagogy_density.py produced no usable JSON) -- the gate measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNMEASURED"
+            exit 0
+          fi
+
+          if [ "$SUB" -gt 0 ]; then
+            echo "::notice::$SUB modified notebook(s) below the 1200 chars-of-prose-per-code-cell floor (#10479). See the '$LABEL_BELOW' label."
+            set_label "$LABEL_BELOW"
+          else
+            unset_label "$LABEL_BELOW"
+          fi
+
+          if [ "$UNM" -gt 0 ]; then
+            echo "::warning::$UNM modified notebook(s) could not be measured -- NOT verified by the density advisory (#8819). See the '$LABEL_UNMEASURED' label."
+            set_label "$LABEL_UNMEASURED"
+          else
+            unset_label "$LABEL_UNMEASURED"
+          fi
+
+          # The closing line asserts ONLY what was measured (issue #8819). The
+          # job never claims "all conform" while unmeasured > 0.
+          if [ "$UNM" -gt 0 ]; then
+            echo "RESULT: $UNM notebook(s) NOT measured -- conformity neither claimed nor denied."
+          elif [ "$SUB" -gt 0 ]; then
+            echo "RESULT: $SUB notebook(s) below threshold -- labelled."
+          else
+            echo "RESULT: all in-corpus modified notebooks meet the density floor (verified)."
+          fi
+          exit 0

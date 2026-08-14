@@ -273,4 +273,62 @@ theorem equivalence_symm_unit (e : C ≌ D) :
   cases e
   rfl
 
+/-!
+## 9. Bridges on the equivalence criterion and the triangle identity
+
+The **practical equivalence criterion** (Section 4) is the class
+`Functor.IsEquivalence F` = `F.Faithful` + `F.Full` + `F.EssSurj`: a
+functor is an equivalence iff it is fully faithful and essentially
+surjective. The classes `FullyFaithful` (data structure containing the
+preimages) and `EssSurj` (Prop class) are its two ingredients. The
+**triangle identity** `functor_unitIso_comp` (pointwise field of the
+`Equivalence` structure) relates the unit and counit along the functor:
+it is the equivalence analogue of `left_triangle` for adjunctions.
+`Equivalence.refl` gives the identity equivalence 𝟭 C.
+-/
+
+/-- Bridge: the triangle identity of an equivalence, in its **pointwise**
+    version (component at an object): `functor.map (unitIso.hom.app X) ≫
+    counitIso.hom.app (functor.obj X) = 𝟙 (functor.obj X)`. This is the
+    `functor_unitIso_comp` field of the `Equivalence` structure — the exact
+    analogue, for equivalences, of the left triangle identity of adjunctions
+    (`Grothendieck.Adjunction.left_triangle`). Delegates directly to the field.
+    Pointwise field of the structure (L902 ★★ Tier 5). -/
+theorem equivalence_triangle_field (e : C ≌ D) (X : C) :
+    e.functor.map (e.unitIso.hom.app X) ≫ e.counitIso.hom.app (e.functor.obj X) =
+      𝟙 (e.functor.obj X) :=
+  e.functor_unitIso_comp X
+
+/-- Bridge: the identity equivalence `𝟭 C ≌ 𝟭 C` via `Equivalence.refl`. It
+    is the neutral element of the (2-)groupoid structure of categories.
+    Direct re-export of the Mathlib def `Equivalence.refl`.
+    Return type `≌` = structure `Equivalence` = data → `noncomputable def`
+    (lesson c.1301+131-L2 ★). -/
+noncomputable def equivalence_refl_field (C : Type u₁) [Category.{v₁} C] : C ≌ C :=
+  CategoryTheory.Equivalence.refl (C := C)
+
+/-- Bridge: the structure `Functor.FullyFaithful` — the data witness that a
+    functor bijects the Homs (with the preimages `preimage`, `map_preimage`,
+    `preimage_map`). This is the "full and faithful" half of the equivalence
+    criterion (together with `EssSurj`).
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the structure. -/
+def fully_faithful_field (F : C ⥤ D) : Type _ :=
+  CategoryTheory.Functor.FullyFaithful F
+
+/-- Bridge: the class `Functor.EssSurj` — the property for a functor of being
+    essentially surjective (every object of D is isomorphic to the image of an
+    object of C). This is the "surjectivity" half of the equivalence criterion.
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the class. -/
+def ess_surj_field (F : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.EssSurj F
+
+/-- Bridge: the class `Functor.IsEquivalence` — the property for a functor of
+    being an equivalence (full `F.Full` + faithful `F.Faithful` +
+    essentially surjective `F.EssSurj`). This is the exact statement of the
+    practical criterion: "a functor is an equivalence iff it is fully faithful
+    and essentially surjective".
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the class. -/
+def is_equivalence_field (F : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.IsEquivalence F
+
 end Grothendieck.Equivalences_en

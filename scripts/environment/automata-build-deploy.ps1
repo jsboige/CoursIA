@@ -94,7 +94,7 @@ if (-not (Test-Path $builtDll)) {
 }
 
 # Sanity: confirm the fork core (CharSetSolver) is in the built DLL.
-$bytes = [System.IO.File]::ReadAllText($builtDll, [System.Text.Encoding]::Latin1)
+$bytes = [System.IO.File]::ReadAllText($builtDll, [System.Text.Encoding]::GetEncoding(28591))
 if ($bytes -notmatch "CharSetSolver") {
     Write-Host "WARNING: built Microsoft.Automata.dll lacks CharSetSolver — is the submodule at the fork commit?" -ForegroundColor Yellow
     Write-Host "  Expected commit 4a7b7f0 (MyIntelligenceAgency/Automata, surface &/~ + uncapped witness)." -ForegroundColor Gray

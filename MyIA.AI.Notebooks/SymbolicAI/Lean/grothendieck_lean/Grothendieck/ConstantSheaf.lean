@@ -76,6 +76,17 @@ noncomputable def constantSheafObj (X : D) [HasWeakSheafify J D] :
     Sheaf J D :=
   (constantSheaf J D).obj X
 
+/-- Construction pont : le **foncteur faisceau constant** `constantSheaf J D :
+    D ⥤ Sheaf J D`, défini comme la faisceautisation du préfaisceau constant
+    (`constantSheaf J D = Functor.const Cᵒᵖ ⋙ presheafToSheaf J D`). Il envoie
+    un objet X : D sur la faisceautisation du préfaisceau constant en X, et son
+    adjoint à gauche est l'évaluation en un objet terminal (`constantSheafAdj`).
+    Re-export de `constantSheaf` (def, `noncomputable`). -/
+noncomputable def constantSheaf_functor_field
+    (J : GrothendieckTopology C) (D : Type u') [Category.{v'} D]
+    [HasWeakSheafify J D] : D ⥤ Sheaf J D :=
+  constantSheaf J D
+
 /-! ## 3. L'adjonction du faisceau constant
 
 Lorsque C possède un objet terminal T, le foncteur faisceau constant est adjoint

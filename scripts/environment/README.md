@@ -12,14 +12,14 @@ jumeau bash (`.sh`, Linux/macOS) de comportement équivalent.
 | Script | Windows | Linux / macOS | Rôle |
 |--------|---------|---------------|------|
 | Setup de base | `setup_environment.ps1` | `setup_environment.sh` | Installe packages Python, .NET Interactive, kernels Jupyter (checkpoints/resume) |
-| Audit | `audit_environment.ps1` | `_audit_environment.sh` *(à venir)* | Diagnostic complet de l'environnement |
-| Automata (build/déploiement) | `automata-build-deploy.ps1` | `_automata-build-deploy.sh` *(à venir)* | Build et déploiement des automates |
+| Audit | `audit_environment.ps1` | `audit_environment.sh` | Diagnostic complet de l'environnement |
+| Automata (build/déploiement) | `automata-build-deploy.ps1` | `automata-build-deploy.sh` | Build et déploiement des automates |
 | FFmpeg | `install-ffmpeg.ps1` | `install-ffmpeg.sh` | Installation de FFmpeg |
 | Z3 (build fork) | `z3-build-deploy.ps1` | `z3-build-deploy.sh` | Build du wrapper Z3.Linq forké |
 
-Les lignes « *(à venir)* » sont des jumeaux bash pas encore écrits — suivis
-dans #10644. Les scripts préfixés `_` ci-dessus sont des placeholders
-indicatifs, **ils ne sont pas commités** tant que le jumeau n'est pas écrit.
+Les cinq jumeaux bash sont **livrés et commités** (PRs #10650, #10657, #10670,
+#10673 + FFmpeg/Z3 préexistants). Le préfixe `_` « placeholder » est désormais
+obsolète : tous les scripts ci-dessus existent sur `main`.
 
 ## Usage
 
