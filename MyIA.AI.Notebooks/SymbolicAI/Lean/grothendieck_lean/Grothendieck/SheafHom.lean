@@ -233,4 +233,41 @@ noncomputable def sheaf_hom_bridge (F G : Sheaf J A) : Sheaf J (Type _) :=
 noncomputable def sheaf_hom_underscore_bridge (F G : Sheaf J A) : Cᵒᵖ ⥤ Type _ :=
   sheafHom' F G
 
+/-!
+## Bridges finaux : la bijection sections-morphismes et l'iso canonique
+
+Les 2 bridges ci-dessous ferment le répertoire `#check` documentaire du
+module : la **bijection sections-morphismes** `sheafHomSectionsEquiv` (les
+sections du faisceau hom interne s'identifient aux morphismes de faisceaux
+`F ⟶ G` — le cœur de la structure cartésienne fermée de `Sheaf J (Type _)`)
+et l'**iso canonique** `sheafHom'Iso` (le préfaisceau sous-jacent du hom
+interne est isomorphe au hom interne de préfaisceaux). Chacun est un
+re-export direct data (pattern winner L902 ★★ Tier 5) : variables résidentes
+du module (`{C J A}`), instances structurelles uniquement, zéro constructeur
+polymorphe d'univers. `noncomputable` (un `Equiv`/`≅` n'a pas de choix
+canonique — tell `dependsOnNoncomputable`, leçon c.1301+143-L2).
+-/
+
+/-- Bridge : la **bijection sections-morphismes** du hom interne — les
+    sections globales du faisceau `sheafHom F G` s'identifient aux
+    morphismes de faisceaux `F ⟶ G`. C'est l'équivalence qui rend la
+    catégorie des faisceaux enrichie sur elle-même (structure cartésienne
+    fermée de `Sheaf J (Type _)`), et qui fonde les decls existantes
+    `sheafHomSectionOfHom`/`sheafHomOfSection` (les deux directions) et les
+    roundtrip theorems. Re-export data de `sheafHomSectionsEquiv`. -/
+noncomputable def sheaf_hom_sections_equiv_field (F G : Sheaf J A) :
+    (sheafHom F G).1.sections ≃ (F ⟶ G) :=
+  sheafHomSectionsEquiv F G
+
+/-- Bridge : l'**iso canonique** entre le préfaisceau sous-jacent du hom
+    interne de faisceaux et le hom interne de préfaisceaux —
+    `sheafHom' F G ≅ presheafHom F.1 G.1`. C'est le fait technique qui
+    relie les deux niveaux (préfaisceaux/faisceaux) : le hom interne de
+    faisceaux est le faisceautisé du hom interne de préfaisceaux. La decl
+    existante `sheafHom'_iso_presheafHom` l'enveloppait dans `Nonempty` ;
+    ce bridge expose l'iso lui-même. Re-export data de `sheafHom'Iso`. -/
+noncomputable def sheaf_hom'_iso_field (F G : Sheaf J A) :
+    sheafHom' F G ≅ presheafHom F.1 G.1 :=
+  sheafHom'Iso F G
+
 end Grothendieck.SheafHom

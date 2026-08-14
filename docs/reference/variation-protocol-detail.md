@@ -123,6 +123,34 @@ Le mandat 2026-07-21 dit « steere **mieux** », pas « constate la vague au mer
 
 Détail du mécanisme (loterie substance, variation du dispatch d'un cycle à l'autre) : mémoire locale `feedback-substance-lottery-provisioning.md`. Le principe qui lie le coordinateur : **sous-provisionner puis merger la monoculture qui en résulte est le manquement que ce protocole corrige.**
 
+## 10. Alias — table de normalisation du GENRE
+
+Le GENRE est le **type de travail**, jamais la famille où vivent les fichiers. Le merge-gate normalise avant d'appliquer les gates ; le worker n'est ni repris ni HOLD pour un alias.
+
+| Écrit | Canonique | Motif |
+|---|---|---|
+| `lean-ci`, `lean-tooling`, `cjk-ci`, `audit-tooling` | `guard` ou `tooling` (cf. discriminant « est-ce que ça peut rougir ») | composé `<famille>-<genre>` : il se réduit toujours à sa tête, la famille se lit déjà dans les chemins du diff |
+| `test-coverage` | `test` | synonyme — sinon le ban `test` de G-VAR-3 est inatteignable |
+| `refs`, `documentation` | `docs` | synonyme |
+| `data` | `ledger` | tranché par l'incident #8056 |
+| `content` | `docs` ou `notebook-python` selon le travail réel | genre **hors énumération** — six grains consécutifs de `po-2023:CoursIA` l'ont porté (#10745, #10742, #10733, #10727, #10712, #10711), rendant l'adjacence G-VAR-3 inatteignable : un genre hors liste ne collisionne avec rien |
+| `Lean` | `lean` | genres en minuscules |
+
+**Entrer dans la liste LIGHT de G-VAR-3 se mesure, jamais s'intuitionne** : un genre y entre dès **≥ 2 grains LIGHT mergés**. Au 2026-07-30, `tooling` était à 5 MED sur 5 et `research-code` à 1 DEEP sur 1 — aucun ne qualifiait.
+
+## 11. Chiffres de la clause CONTENU/META (mesure 2026-08-10)
+
+Justification complète de la clause de genre de G-VAR-1. Mesuré sur six semaines de commits, à volume de PR quasi constant (**S29 = 994**, **S32 = 917** PR mergées) :
+
+| Indicateur | S29 | S32 |
+|---|---|---|
+| part `scripts/` dans les commits | 3 % | **45 %** |
+| part code-de-série (hors notebooks) | 51 % | **18 %** |
+| préfixe `fix` | 29 % | **44 %** |
+| préfixe `feat` | 26 % | **15 %** |
+
+Aucun gate n'avait rougi pendant cette dérive, et aucune lane n'avait menti : un grain `tooling`/`guard` qui attrape un vrai défaut « change quelque chose », donc **MED** est défendable, donc le plancher paraît tenu. L'échappatoire était dans la **spécification**, pas dans la discipline des lanes — d'où la clause de genre plutôt qu'un re-steer.
+
 ## Voir aussi
 
 - [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) — la règle (tag, 3 gates, merge-gate, provisionnement)

@@ -46,8 +46,8 @@ class MLDeepLearningAlgorithm(QCAlgorithm):
     """
 
     def Initialize(self):
-        self.SetStartDate(2015, 1, 1)
-        self.SetEndDate(2024, 12, 31)
+        self.SetStartDate(2018, 1, 1)
+        self.SetEndDate(2025, 1, 1)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 

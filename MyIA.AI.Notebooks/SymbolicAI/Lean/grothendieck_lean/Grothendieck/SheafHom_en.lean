@@ -232,4 +232,41 @@ noncomputable def sheaf_hom_bridge (F G : Sheaf J A) : Sheaf J (Type _) :=
 noncomputable def sheaf_hom_underscore_bridge (F G : Sheaf J A) : Cᵒᵖ ⥤ Type _ :=
   sheafHom' F G
 
+/-!
+## Final bridges: the sections-morphisms bijection and the canonical iso
+
+The 2 bridges below close the `#check` documentary repertoire of this
+module: the **sections-morphisms bijection** `sheafHomSectionsEquiv` (the
+sections of the sheaf internal hom identify with sheaf morphisms `F ⟶ G` —
+the core of the cartesian closed structure of `Sheaf J (Type _)`) and the
+**canonical iso** `sheafHom'Iso` (the presheaf underlying the internal hom
+is isomorphic to the presheaf internal hom). Each is a direct data re-export
+(pattern winner L902 ★★ Tier 5): resident variables of the module
+(`{C J A}`), structural instances only, no polymorphic universe constructor.
+`noncomputable` (an `Equiv`/`≅` has no canonical choice — tell
+`dependsOnNoncomputable`, lesson c.1301+143-L2).
+-/
+
+/-- Bridge: the **sections-morphisms bijection** of the internal hom — the
+    global sections of the sheaf `sheafHom F G` identify with sheaf
+    morphisms `F ⟶ G`. This is the equivalence that makes the category of
+    sheaves enriched over itself (cartesian closed structure of
+    `Sheaf J (Type _)`), and it underlies the existing decls
+    `sheafHomSectionOfHom`/`sheafHomOfSection` (the two directions) and the
+    roundtrip theorems. Data re-export of `sheafHomSectionsEquiv`. -/
+noncomputable def sheaf_hom_sections_equiv_field (F G : Sheaf J A) :
+    (sheafHom F G).1.sections ≃ (F ⟶ G) :=
+  sheafHomSectionsEquiv F G
+
+/-- Bridge: the **canonical iso** between the presheaf underlying the sheaf
+    internal hom and the presheaf internal hom — `sheafHom' F G ≅
+    presheafHom F.1 G.1`. This is the technical fact linking the two levels
+    (presheaves/sheaves): the sheaf internal hom is the sheafification of
+    the presheaf internal hom. The existing decl `sheafHom'_iso_presheafHom`
+    wrapped it in `Nonempty`; this bridge exposes the iso itself. Data
+    re-export of `sheafHom'Iso`. -/
+noncomputable def sheaf_hom'_iso_field (F G : Sheaf J A) :
+    sheafHom' F G ≅ presheafHom F.1 G.1 :=
+  sheafHom'Iso F G
+
 end Grothendieck.SheafHom_en

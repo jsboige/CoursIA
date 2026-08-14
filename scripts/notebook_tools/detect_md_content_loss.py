@@ -423,14 +423,18 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     produirait des faux positifs position-par-position (26 FP observes sur
     10_LocalLlama.ipynb, cite dans l'issue). Retourne les cellules tronquees.
 
-    **c.8254 (reorder-safe matching)** : si base et head exposent un ``cell_id``
-    (attribut nbformat 4.5+ ``id``) **et** que le multiset d'IDs est identique
-    entre les deux versions, on apparie par ID -- un reorder pur qui preserve
-    les IDs (cf. EPIC #10678 Phase 2, ordonner des cellules pour respecter la
-    convention "interp follows the code it interprets") n'est plus confondu
-    avec une perte de contenu. Sinon on retombe sur l'appariement par index
-    (legacy). Cette double politique preservee car le multiset-stable est un
-    signal fort : "la PR a reordonne, sans toucher au contenu" vs "la PR a
+    **c.8254 (reorder-safe matching)** : l'appariement par ``cell_id``
+    (attribut nbformat 4.5+ ``id``) porte sur le **sous-ensemble id-e stable** :
+    les cellules qui exposent un ``id`` sont appariees par ID quand les deux
+    versions ont le **meme ensemble** d'IDs (non vide) ; les cellules **sans
+    id** (le residu) sont appariees par index. Un reorder pur n'est donc plus
+    confondu avec une perte de contenu **meme quand une seule cellule markdown
+    manque d'``id``** (fix #10873) -- l'ancienne politique all-or-nothing
+    basculait le notebook entier en mode index des qu'une cellule etait sans
+    id (150/1017 notebooks exposes, FP #10725). Si les ensembles d'IDs
+    different ou sont vides des deux cotes (substitution, ajout/suppression),
+    on retombe sur l'appariement par index (legacy) : le multiset-stable est
+    un signal fort "la PR a reordonne, sans toucher au contenu" vs "la PR a
     ajoute/supprime une cellule, l'index-parallel n'est pas une hypothese
     sure".
 
@@ -454,25 +458,49 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     if len(base_md) != len(head_md):
         return findings  # compte modifie -> la comparaison fichier suffit
 
-    # c.8254 : choisir la strategie d'appariement (ID si stable, sinon index).
-    base_ids = [cid for _, cid, _ in base_md]
-    head_ids = [cid for _, cid, _ in head_md]
-    ids_available = (
-        all(cid is not None for cid in base_ids)
-        and all(cid is not None for cid in head_ids)
-    )
-    if ids_available and sorted(base_ids) == sorted(head_ids):
-        # Multiset d'IDs identique : on apparie par ID. Un reorder pur (memes
-        # cellules, ordre different) ne produit plus de faux positifs.
-        base_by_id = {cid: (b_idx, b_src) for b_idx, cid, b_src in base_md}
-        # On itere sur head_md (ordre head, donc h_idx = position actuelle de
-        # la cellule dans le notebook modifie, ce que le reviewer veut voir)
-        # et on retrouve le couple (b_idx, b_src) par ID.
-        for h_idx, h_cid, h_src in head_md:
+    # Fix #10873 (court-circuit multiset) : si le multiset des contenus
+    # normalises est identique entre base et head, aucune perte de contenu
+    # n'est possible -- c'est une permutation pure. On retourne zero finding
+    # AVANT toute strategie d'appariement (il subsume le cas id-e sans le
+    # contredire) : une strategie d'appariement ne peut produire un finding
+    # que si un contenu a change, et un multiset identique garantit que
+    # chaque contenu est preserve. Une vraie troncature ou substitution
+    # produit une chaine differente, donc un multiset different, et le
+    # court-circuit ne s'arme pas (le gate reste mordant).
+    # NB : egalite du MULTISET DES CHAINES (tri des contenus normalises),
+    # PAS des totaux de caracteres -- deux chaines distinctes peuvent
+    # totaliser la meme longueur (une substitution meme-longueur serait un
+    # blanc-seing sur un critere de totaux, cf #10873 commentaire 08:09).
+    base_multiset = sorted(_normalize(b_src) for _, _, b_src in base_md)
+    head_multiset = sorted(_normalize(h_src) for _, _, h_src in head_md)
+    if base_multiset == head_multiset:
+        return findings
+
+    # c.8254 + fix #10873 : apparier par ID le sous-ensemble id-e stable
+    # (cellules exposant un ``cell_id``), par index le residu (cellules sans
+    # id). L'ancienne politique all-or-nothing basculait le notebook entier en
+    # mode index des qu'une cellule md etait sans id.
+    base_with_id = [(b_idx, cid, b_src) for b_idx, cid, b_src in base_md if cid is not None]
+    head_with_id = [(h_idx, cid, h_src) for h_idx, cid, h_src in head_md if cid is not None]
+    base_id_set = {cid for _, cid, _ in base_with_id}
+    head_id_set = {cid for _, cid, _ in head_with_id}
+    if base_id_set == head_id_set and base_id_set:
+        # Meme ensemble d'IDs (non vide) : on apparie par ID le sous-ensemble
+        # id-e (iterant sur head, donc h_idx = position actuelle dans le
+        # notebook modifie, ce que le reviewer veut voir), puis par index le
+        # residu sans id (compte identique garanti par le garde de longueur
+        # ci-dessus : len(base_with_id) == len(head_with_id) car les deux
+        # ensembles d'IDs sont egaux et de meme cardinal).
+        base_by_id = {cid: (b_idx, b_src) for b_idx, cid, b_src in base_with_id}
+        for h_idx, h_cid, h_src in head_with_id:
             b_idx, b_src = base_by_id[h_cid]
             _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
+        base_residue = [t for t in base_md if t[1] is None]
+        head_residue = [t for t in head_md if t[1] is None]
+        for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_residue, head_residue):
+            _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
     else:
-        # Pas d'IDs exploitables : appariement par index (legacy).
+        # IDs absents ou ensembles differents : appariement par index (legacy).
         for (b_idx, _, b_src), (h_idx, _, h_src) in zip(base_md, head_md):
             _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings)
     return findings

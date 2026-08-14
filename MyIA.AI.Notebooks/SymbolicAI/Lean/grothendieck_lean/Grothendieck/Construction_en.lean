@@ -219,4 +219,39 @@ def iso_mk_bridge {X Y : CategoryTheory.Grothendieck F}
     X ≅ Y :=
   CategoryTheory.Grothendieck.isoMk e₁ e₂
 
+/-!
+## 8. Final bridges: the total category structure and its morphisms
+
+The 2 bridges below close the `#check` documentary repertoire of this
+module: the **structure** `Grothendieck F` (the total category ∫ F whose
+objects are the pairs `(c, x)` with `c : C` and `x : F(c)`) and the
+**morphisms** `Grothendieck.Hom X Y` (the pairs `(f, φ)` — base arrow and
+fiber arrow). Each is a type-sig re-export (pattern winner L902 ★★ Tier 5):
+resident variables of the module (`{C F}`), structural instances only, no
+polymorphic universe constructor.
+
+Universe note (lesson c.1301+144-L1): `Grothendieck F` lives in
+`Type (max u u₂)` (the universes of the base `C` and of the target category
+of `F : C ⥤ Cat.{v₂, u₂}`) and `Grothendieck.Hom X Y` in `Type (max v v₂)` —
+the `Type _` of the type-sig infers them all, aligned on the resident
+universes of the module.
+-/
+
+/-- Bridge: the **structure of the total category** ∫ F of the Grothendieck
+    construction — objects are pairs `(c, x)` with `c : C` and `x : F(c)`,
+    where `F : C ⥤ Cat`. This is the reification of parametrized families of
+    objects: a family indexed by the objects of C becomes an internal object
+    of ∫ F. Type-sig re-export of `CategoryTheory.Grothendieck F`. -/
+def grothendieck_field : Type _ :=
+  CategoryTheory.Grothendieck F
+
+/-- Bridge: the **morphisms of the total category** ∫ F — for `X Y : ∫ F`, a
+    morphism `X ⟶ Y` is a pair `(f, φ)` with `f : X.base ⟶ Y.base` in C
+    (base arrow) and `φ : X.fiber ⟶ (F.map f).toFunctor.obj Y.fiber` in the
+    fiber (fiber arrow). This is the datum that makes the Grothendieck
+    construction a fibered category. Type-sig re-export of
+    `CategoryTheory.Grothendieck.Hom`. -/
+def grothendieck_hom_field (X Y : CategoryTheory.Grothendieck F) : Type _ :=
+  CategoryTheory.Grothendieck.Hom X Y
+
 end Grothendieck.Construction_en

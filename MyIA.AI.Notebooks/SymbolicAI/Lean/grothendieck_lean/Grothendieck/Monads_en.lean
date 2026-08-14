@@ -168,6 +168,38 @@ def free_family (T : CategoryTheory.Monad C) :
     C ⥤ CategoryTheory.Monad.Algebra T :=
   T.free
 
+/-- Bridge: the type of algebras of the monad T (Eilenberg-Moore category).
+    This is Mathlib's `Monad.Algebra` structure: a T-algebra is an object `A`
+    equipped with an action `a : T A ⟶ A` compatible with the unit `η` and
+    the multiplication `μ`. It is the "universal solution" to the problem of
+    factoring the monad T through an adjunction. -/
+def algebra_type (T : CategoryTheory.Monad C) : Type (max u₁ v₁) :=
+  T.Algebra
+
+/-- Bridge: the Kleisli category of the monad T. This is Mathlib's
+    `CategoryTheory.Kleisli` structure: an object of `Kleisli T` is an object
+    of C, and a morphism `A ⟶ B` is a morphism `A ⟶ T B` in C.
+    The dual of Eilenberg-Moore: it is the other (initial) universal
+    solution to the factorization problem of T. -/
+def kleisli_type (T : CategoryTheory.Monad C) : Type u₁ :=
+  CategoryTheory.Kleisli T
+
+/-- Bridge: the free ⊣ forget Eilenberg-Moore adjunction. This is Mathlib's
+    `Monad.adj`: the free algebra functor `T.free` is left adjoint to the
+    forgetful functor `T.forget`, and the monad induced by this adjunction is
+    the original monad -- the canonical Eilenberg-Moore factorization. -/
+noncomputable def monad_adj_field (T : CategoryTheory.Monad C) :
+    T.free ⊣ T.forget :=
+  CategoryTheory.Monad.adj T
+
+/-- Bridge: the monad induced by the Eilenberg-Moore adjunction identifies
+    with the original monad. This is Mathlib's `Adjunction.adjToMonadIso`:
+    `T.adj.toMonad ≅ T` -- the adjunction ↔ monad correspondence loops back
+    (every monad arises from its canonical adjunction, up to isomorphism). -/
+noncomputable def adjToMonadIso_field (T : CategoryTheory.Monad C) :
+    T.adj.toMonad ≅ T :=
+  CategoryTheory.Adjunction.adjToMonadIso T
+
 /-!
 ## 7. Proper theorems (c.1301+124)
 

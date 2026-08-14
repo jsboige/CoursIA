@@ -63,7 +63,7 @@ import Mathlib.CategoryTheory.Monoidal.Category
 import Mathlib.CategoryTheory.Monoidal.Braided.Basic
 import Mathlib.CategoryTheory.Monoidal.Discrete
 
-universe v u
+universe v u u₁ u₂ v₁ v₂
 
 namespace Grothendieck.MonoidalCategories_en
 
@@ -312,5 +312,80 @@ theorem whiskerLeft_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
 theorem whiskerRight_eq_app [MonoidalCategoryStruct C] {X Y Z : C}
     (f : X ⟶ Y) :
     f ▷ Z = MonoidalCategoryStruct.whiskerRight f Z := rfl
+
+/-!
+## 10. Bridges on coherence (pentagon + triangle) and the canonical examples
+
+The **two coherence axioms** required by the `MonoidalCategory` class
+— the pentagon `Pentagon` (associativity coherence) and the triangle
+identity `triangle_assoc_comp_right` (unit-associator coherence) — are
+the `Prop`s of Section 3. The bridge `pentagon_field` exposes the
+definition of the pentagon as a type; the bridge `triangle_field`
+proves the triangle identity by a direct call to the Mathlib lemma.
+The **canonical examples** of Sections 4-6 complete the picture: the
+product of two monoidal categories (`prod_monoidal_field`), the
+symmetric class (`symmetric_category_field`) and the minimal
+categorification of a monoid (`discrete_monoidal_field`).
+
+The bridge `prod_monoidal_field` requires two distinct universes
+`u₁ u₂` (the object universes of `C₁` and `C₂`), declared at module
+scope — L902 ★★ remains satisfied (resident args `(C₁ : Type u₁)` /
+`(C₂ : Type u₂)`, structural `Category`/`MonoidalCategory` instances).
+-/
+
+/-- Bridge: Mac Lane's pentagon diagram — the associativity coherence
+    required by the `MonoidalCategory` class. For four objects
+    `Y₁ Y₂ Y₃ Y₄`, the two reassociation paths `((Y₁ ⊗ Y₂) ⊗ Y₃) ⊗ Y₄`
+    and `Y₁ ⊗ (Y₂ ⊗ (Y₃ ⊗ Y₄))` coincide. Direct re-export of the
+    Mathlib def `MonoidalCategory.Pentagon`.
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the def Prop. -/
+def pentagon_field [MonoidalCategoryStruct C] (Y₁ Y₂ Y₃ Y₄ : C) : Prop :=
+  MonoidalCategory.Pentagon Y₁ Y₂ Y₃ Y₄
+
+/-- Bridge: the triangle identity of the monoidal category — the
+    compatibility between the associator and the unitors:
+    `(α_ X (𝟙_ C) Y).inv ≫ ((ρ_ X).hom ▷ Y) = X ◁ (λ_ Y).hom`.
+    This is the "inverse-associator + right-unitor" version of Mac
+    Lane's triangle. Delegates directly to the Mathlib lemma
+    `MonoidalCategory.triangle_assoc_comp_right`.
+    Lemma call direct (L902 ★★ Tier 5) — resident args `(X Y : C)`. -/
+theorem triangle_field [MonoidalCategory C] (X Y : C) :
+    (α_ X (𝟙_ C) Y).inv ≫ ((ρ_ X).hom ▷ Y) = X ◁ (λ_ Y).hom :=
+  MonoidalCategory.triangle_assoc_comp_right X Y
+
+/-- Bridge: the product of two monoidal categories — the canonical
+    instance `MonoidalCategory (C₁ × C₂)` : the tensor and the unit are
+    computed componentwise. Direct re-export of the Mathlib instance
+    `MonoidalCategory.prodMonoidal`.
+    Return type `MonoidalCategory` = class data → `noncomputable def`
+    (lesson c.1301+131-L2 ★). Args: `(C₁ : Type u₁)` `(C₂ : Type u₂)`
+    — distinct universes declared at module scope. -/
+@[reducible]
+noncomputable def prod_monoidal_field (C₁ : Type u₁) [Category.{v₁} C₁]
+    [MonoidalCategory.{v₁} C₁] (C₂ : Type u₂) [Category.{v₂} C₂]
+    [MonoidalCategory.{v₂} C₂] : MonoidalCategory (C₁ × C₂) :=
+  MonoidalCategory.prodMonoidal C₁ C₂
+
+/-- Bridge: the `SymmetricCategory` class — a braided monoidal
+    category whose braiding is involutive (`β_ X Y ≫ β_ Y X = 𝟙`).
+    This is the "symmetric" structure of Section 5, the setting of
+    sheaf tensor products. Direct re-export of the Mathlib class
+    `CategoryTheory.SymmetricCategory`.
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the class. -/
+def symmetric_category_field (C : Type u) [Category.{v} C]
+    [MonoidalCategory.{v} C] : Type _ :=
+  CategoryTheory.SymmetricCategory C
+
+/-- Bridge: the minimal categorification of a monoid — the canonical
+    instance `MonoidalCategory (Discrete M)`: the objects are the
+    elements of `M`, the tensor is the multiplication, the unit is `1`.
+    This is the "monoid → monoidal category" link of Section 6. Direct
+    re-export of the Mathlib instance `Discrete.monoidal`.
+    Return type `MonoidalCategory` = class data → `noncomputable def`
+    (lesson c.1301+131-L2 ★). -/
+@[reducible]
+noncomputable def discrete_monoidal_field (M : Type u) [Monoid M] :
+    MonoidalCategory (Discrete M) :=
+  CategoryTheory.Discrete.monoidal M
 
 end Grothendieck.MonoidalCategories_en

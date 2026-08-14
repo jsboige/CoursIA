@@ -338,4 +338,81 @@ theorem colimit_ι_desc (F : J ⥤ C) [HasColimit F] (c : Cocone F) (j : J) :
     colimit.ι F j ≫ colimit.desc F c = c.ι.app j :=
   CategoryTheory.Limits.colimit.ι_desc c j
 
+/-!
+## 10. Bridges on completeness and preservation classes
+
+The 7 bridges below close sections 4-6 of the `#check` documentary
+repertoire: the **completeness** classes (`HasLimitsOfSize`/
+`HasColimitsOfSize`), the **classical shapes** (`HasProducts`/
+`HasBinaryProducts`/`HasEqualizers`) and **preservation** of limits
+(`PreservesLimitsOfSize`/`PreservesColimitsOfSize`). Each is a type-sig
+re-export of the Mathlib Prop class (pattern winner L902 ★★ Tier 5): resident
+arguments (the diagram universes `v v' u u'`), structural instances only, no
+polymorphic universe constructor.
+
+Universe note (lesson c.1301+141-L1): `HasLimitsOfSize.{u, v} C` takes **two**
+explicit universes — the Shape universe (`J : Type u`) and the Shape morphism
+universe (`[Category.{v} J]`) — and covers exactly our diagrams.
+`HasProducts.{u} C` takes **one** explicit universe (the universe of product
+index types, `HasProducts := ∀ J : Type w, HasLimitsOfShape (Discrete J) C`),
+aligned on our Shape universe; omitting it yields `universe level
+metavariables`. `HasBinaryProducts`/`HasEqualizers` have fixed shapes
+(`Discrete WalkingPair`/`WalkingParallelPair`) — no explicit universe.
+-/
+
+/-- Bridge: the category `C` is **complete** — every diagram indexed by a
+    small category in our Shape universe (`J : Type u` with
+    `[Category.{v} J]`) has a limit. This is the completeness assertion for
+    diagram categories of size `(u, v)`, a type-sig re-export of the Mathlib
+    class `HasLimitsOfSize.{u, v} C`. Completeness is stable under the
+    useful categorical constructions (sheaf categories, functor categories). -/
+def has_limits_of_size_field : Prop :=
+  HasLimitsOfSize.{u, v} C
+
+/-- Bridge: the category `C` is **cocomplete** — every diagram indexed by a
+    small category in our Shape universe has a colimit. Dual of
+    `has_limits_of_size_field`, type-sig re-export of the Mathlib class
+    `HasColimitsOfSize.{u, v} C`. -/
+def has_colimits_of_size_field : Prop :=
+  HasColimitsOfSize.{u, v} C
+
+/-- Bridge: the category `C` has all **products** indexed by types in our
+    Shape universe — limits over the discretised types `Discrete J` with
+    `J : Type u`. A Freyd theorem reduces (small) completeness to products
+    and equalizers — hence their centrality. Type-sig re-export of the
+    Mathlib class `HasProducts.{u} C`. -/
+def has_products_field : Prop :=
+  HasProducts.{u} C
+
+/-- Bridge: the category `C` has all **binary products** — limits over the
+    fixed shape `Discrete WalkingPair` (the two-object pair). Type-sig
+    re-export of the Mathlib class `HasBinaryProducts C` (no explicit
+    universe: the shape is fixed). -/
+def has_binary_products_field : Prop :=
+  HasBinaryProducts C
+
+/-- Bridge: the category `C` has all **equalizers** — limits over the fixed
+    shape `WalkingParallelPair` (the parallel-arrow pair), the second brick
+    of the Freyd theorem together with products. Type-sig re-export of the
+    Mathlib class `HasEqualizers C` (no explicit universe). -/
+def has_equalizers_field : Prop :=
+  HasEqualizers C
+
+/-- Bridge: an endofunctor `F : C ⥤ C` **preserves limits** of size `(u, v)`
+    — the image by `F` of a limit cone is still a limit cone. This is
+    precisely the property of right adjoints (cf the `Grothendieck.Adjunction`
+    module): the "global sections" functor Γ thus preserves limits of
+    sheaves. Type-sig re-export of the Mathlib class
+    `PreservesLimitsOfSize.{u, v} F`. -/
+def preserves_limits_of_size_field (F : C ⥤ C) : Prop :=
+  PreservesLimitsOfSize.{u, v} F
+
+/-- Bridge: an endofunctor `F : C ⥤ C` **preserves colimits** of size `(u, v)`
+    — the image by `F` of a colimit cocone is still a colimit cocone. This is
+    the property of left adjoints. Dual of `preserves_limits_of_size_field`,
+    type-sig re-export of the Mathlib class
+    `PreservesColimitsOfSize.{u, v} F`. -/
+def preserves_colimits_of_size_field (F : C ⥤ C) : Prop :=
+  PreservesColimitsOfSize.{u, v} F
+
 end Grothendieck.Limits_en
