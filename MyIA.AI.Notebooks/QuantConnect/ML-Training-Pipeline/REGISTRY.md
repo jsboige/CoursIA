@@ -4,7 +4,7 @@ Auto-generated: 2026-05-03 22:29
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
 Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
 Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais révélé par loss_fn=linear)
-Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais de niveau, même structure que M4)
+Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -100,12 +100,15 @@ HAC Newey-West + correction HLN, `loss_fn="linear"` (#10228).
 | h=10 | +20,1 % | 4,11 | 0,00e+00 | **NO BEATS** |
 
 **Lecture honnête (le piège §C, même structure que M4)** : LSTM bat HAR de 13 à 20 % en MSE sur
-h=5/h=10 (perte symétrique) mais la perte **signée** (`linear`) révèle un **biais systématique** de
-prévision — les 4 seeds de chaque horizon sont **BEATEN BY baseline** (`dm_p_median < 3,1e-09`).
+h=5/h=10 (perte symétrique) mais la perte **signée** (`linear`) révèle un **biais différentiel**
+LSTM−HAR — les 4 seeds de chaque horizon sont **BEATEN BY baseline** (`dm_p_median < 3,1e-09`).
 h=1 est plus ambigu : 2 seeds améliorent le MSE (−2,7/−3,9 %) mais 2 seeds le dégradent (+3,6/+4,4 %)
-→ edge moyen ≈ 0 (−0,4 %). Le DM signé détecte le biais de niveau des prévisions LSTM exactement
-comme pour DLinear : sous `loss_fn="linear"`, un modèle qui sous-prévoit log-RV est mécaniquement
-« battu » — l'edge MSE réel ne se convertit pas en verdict §C. Conjonction non tenue partout.
+→ edge moyen ≈ 0 (−0,4 %). Le DM signé détecte ce biais de niveau des prévisions (différentiel
+LSTM−HAR) exactement comme pour DLinear : sous `loss_fn="linear"`, un modèle qui sous-prévoit
+log-RV est mécaniquement « battu » — l'edge MSE réel ne se convertit pas en verdict §C. Conjonction
+non tenue partout. **Attribution du biais non mesurée dans ce run** (`mean_loss_diff = bias_LSTM −
+bias_HAR`, `har_bias_oos` non persisté ici) : cf #10938/#10966 où HAR porte l'essentiel sur la même
+cible.
 **Verdict §C : NO BEATS (3/3 horizons)** — règle de dominance (seed BEATEN → NO BEATS) appliquée.
 **Coûts de transaction** : prévision (MSE log-RV), **aucune stratégie dérivée** → coût non imputé ;
 borne crypto 10 bps si conversion future en overlay de vol-timing (note, pas un claim).
