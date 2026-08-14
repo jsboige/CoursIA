@@ -1,7 +1,7 @@
 ---
 title: "Notebooks"
-subtitle: "13 séries pédagogiques niveau 1"
-description: "Liste des 13 séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT, SemanticKernel, FallacyDetection."
+subtitle: "12 séries pédagogiques niveau 1"
+description: "Liste des 12 séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT, FallacyDetection. SemanticKernel est une sous-série de GenAI (couverte par le README GenAI)."
 ---
 
 # Séries de notebooks
@@ -96,14 +96,6 @@ Diagnostic médical, oncology planning, Barbie-Schreck, Fort-Boyard, Recipe-Make
 PyPhi, φ (phi) computation, causal analysis, théorème de Tononi.
 
 **Notebooks** : 4+ · **Kernels** : python3 · **GPU** : non
-:::
-
-::: {.series-card}
-### [SemanticKernel](GenAI/SemanticKernel/README.md) — Microsoft Semantic Kernel
-
-SDK agents IA Microsoft, planners, memory connectors, function calling.
-
-**Notebooks** : 5+ · **Kernels** : python3, .net-csharp · **GPU** : non
 :::
 
 ::: {.series-card}
