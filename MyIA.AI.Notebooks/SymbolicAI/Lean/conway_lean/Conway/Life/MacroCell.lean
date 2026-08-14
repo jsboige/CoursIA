@@ -795,6 +795,38 @@ theorem gridToMacroCellWithOffsetN_le_two_eq (n : Nat) (g : Grid) (hn : n ≤ 2)
 def gridToMacroCell (g : Grid) : MacroCell :=
   (gridToMacroCellWithOffset g).2
 
+/-- **Aller-retour Grid -> MacroCell -> Grid (appartenance)** : pour tout
+    point `p`, `p` est vivant dans la grille reconstruite
+    `(gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1`
+    ssi `p` est vivant dans `g`. C'est la forme generale du but annonce par
+    le docstring de `gridToMacroCellWithOffset`, jusqu'ici verifie seulement
+    par `#eval` sur les motifs canoniques (Tests de coherence ci-dessous).
+
+    Assemble `mem_toCellsAux_buildFromGrid` (l'enumeration de
+    `buildFromGrid` dans le carre couvert est exactement `inRegion /\ p ∈ g`)
+    avec `gridFrame_contains_g` (toute cellule vivante de `g` est dans le
+    carre du cadre). Direction -> : les membres de l'enumeration sont dans
+    `g`. Direction <- : les membres de `g` sont dans le carre, donc dans
+    l'enumeration.
+
+    C'est la brique BR1 du pont de localite (a) de `p5_large_n_jumpN`
+    (#6724) : elle identifie `mc.toGrid off` a `g` au niveau des membres,
+    ce qui permet de transporter les evolutions de l'un a l'autre via
+    `toGrid_shift_between` (Foundation) et `evolve_shift` (GridCanonical). -/
+theorem mem_toGrid_gridToMacroCellWithOffset (g : Grid) (p : Int × Int) :
+    p ∈ (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1 ↔ p ∈ g := by
+  cases hF : gridFrame g with
+  | mk off lvl =>
+    simp only [gridToMacroCellWithOffset, hF, MacroCell.toGrid, mem_sortDedup]
+    rw [MacroCell.mem_toCellsAux_buildFromGrid g lvl off.1 off.2 p]
+    constructor
+    · exact fun h => h.2
+    · intro hp
+      refine ⟨?_, hp⟩
+      have hreg := gridFrame_contains_g g p hp
+      rw [hF] at hreg
+      exact hreg
+
 /-! ## Tests de coherence
 
 Nous verifions que l'aller-retour `Grid -> MacroCell -> Grid` preserve les
