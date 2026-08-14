@@ -143,6 +143,20 @@ catalogue), pas pour le cœur éditorial.
 > étape, isolément, passait le gate. *Le gate est local (étape par étape) ;
 > la dérive est globale (chaîne).*
 
+> **Notebook compagnon (axe conformité).** [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.ipynb)
+> traite l'autre moitié du Copilot : non plus la *dérive du contenu* sur une
+> chaîne, mais la *conformité visuelle* du rendu final. Un smoke test
+> structurel (statut 200, `<main>` non vide, élément d'action présent) passe
+> sur une page dont le rendu viole la charte — CTA en bleu Bootstrap, texte
+> sous le seuil WCAG, lien semi-transparent sans affordance. Le notebook
+> construit les détecteurs dédiés (contraste WCAG par luminance, dominance
+> des primaires Bootstrap, affordance des CTA) sur une charte synthétique
+> (Maison Valmont) et montre que le smoke test est aveugle aux trois classes
+> de défauts visuels. *Le gate « la page est servie » ne certifie pas « le
+> rendu est conforme ».* C'est la classe visuelle du motif « la sonde ment »
+> documenté pour la classe système dans
+> [`verification-verte-systeme-casse.md`](../../../../docs/reference/verification-verte-systeme-casse.md).
+
 ---
 
 ## Parcours 2 — RAG sur corpus, et le piège du multi-environnement

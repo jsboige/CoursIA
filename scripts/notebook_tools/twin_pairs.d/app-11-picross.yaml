@@ -36,6 +36,12 @@
       csharp_sha: 8d846989b99c422c5120058b34587dc867d727ae
       content_python_sha: 21747b67fd599b723623df551732ce17d023a6dccf2bb168170cabe33663ba70
       content_csharp_sha: ebb52be03179a467da6d32fd0e0df44e5f60172d7a8a01378e6507b7fce42f5d
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA
+      python_sha: deaf3c954e6962a984199275bc556d7871b4878d
+      csharp_sha: 8d846989b99c422c5120058b34587dc867d727ae
+      content_python_sha: d38c7d745d13697cb6544e71caa1fdea24c8778bfd03489d8b4c1f8ad8160970
+      content_csharp_sha: ebb52be03179a467da6d32fd0e0df44e5f60172d7a8a01378e6507b7fce42f5d
   known_differences:
     - "Tranche 2 native-both (#10382, 2026-08-11 po-2024) : C# branche Google.OrTools CP-SAT 9.11 (meme engine que ortools.sat.python.cp_model cote Python). Miroir de solve_cpsat : BoolVar par cellule, contraintes de runs par variables de position de bloc (reification couverture). Validation firsthand : 3 diamants (5x5/10x10/15x15) statut Optimal, parite propagation from-scratch §3. Prong-B (#3801) : naif cartesien 4,1e12 produits (infaisable), propagation 0,26 ms (specialise), CP-SAT ~28 ms (general SAT). Verdict SOTA-OK : moteur reel invoque. Tranche 1 from-scratch preservee intacte (8/8 cellules byte-identiques main)."
     - "Edition 2026-08-08 (myia-po-2024:CoursIA, #9434 item 3) : drainage markdown-only des valeurs de runtime absolues (~0.5 ms, 0.15 s, < 1 ms) de la prose d'interpretation du twin Python, remplacees par des descripteurs qualitatifs pointant vers la cellule de mesure live. Le twin C# (App-11b) n'est PAS touche (asymetrie pedagogique deja documentee ci-dessous : le C# demontre l'implementation from-scratch, ses propres valeurs de timing sont distinctes). Parite semantique preservee : le socle theorique et les concepts cibles sont inchanges ; seul le notebook Python a bouge, d'ou le re-baseline de son python_sha. Verifie firsthand : cellule code de mesure au-dessus imprime toujours le runtime live, la prose pointe desormais qualitativement vers elle (#9434)."

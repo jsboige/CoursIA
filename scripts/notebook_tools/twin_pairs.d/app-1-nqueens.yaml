@@ -23,6 +23,12 @@
       csharp_sha: ad89fd658bf2e427c50d29a24f66cae0d0fd84aa
       content_python_sha: ad70343ffa9d6a0de5d499a7ff54663b1de01e30c1bb10220d632246318a2a86
       content_csharp_sha: b00f93effc7751b76b5ba6f902fbcf4d66f2d2b0e43ea273574a89ad8e62d676
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA
+      python_sha: 0632a99fe8c48c2fb76967c3e7c6241870fc2987
+      csharp_sha: ad89fd658bf2e427c50d29a24f66cae0d0fd84aa
+      content_python_sha: 53d42bf32a36163b528b18239ada3d58f11212355ca5bf8518cc162d5e447d3f
+      content_csharp_sha: b00f93effc7751b76b5ba6f902fbcf4d66f2d2b0e43ea273574a89ad8e62d676
   known_differences:
     - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque OR-Tools CP-SAT (CpModel, AddAllDifferent sur lignes + 2 diagonales) comme 3e approche au cote de backtracking/min-conflicts from-scratch. C# = deux tranches -- Tranche 1 (sections 1-4) reimplementation from-scratch pedagogique (backtracking simple + MRV + Forward Checking + Min-Conflicts + enumeration exhaustive avec brisure de symetrie, en System.* pur) PRESERVEE integralement ; Tranche 2 (PR #10382 cycle 12) ajoute Google.OrTools 9.15 (.NET natif, deja en service dans Sudoku-10/18, App-8, App-15b) avec le MEME modele canonique CP-SAT que le Python (3 x AddAllDifferent) sur N=8 -- parite verifiee chiffre a chiffre : l'enumeration CP-SAT retourne 92 solutions (valeur classique, = Tranche 1 section 4 = Python). parity_level=native-both (Python/ortools ET C#/Google.OrTools atteignent chacun le moteur de production CP-SAT de leur ecosysteme)."
     - "Asymetrie de couverture : Python (54 cellules) couvre la formulation CSP + 3 approches + section comparative + exemple guide ; C# (31 cellules) couvre les memes approches from-scratch (Tranche 1) + le pont CP-SAT (Tranche 2) + 3 exercices. Le benchmark CP-SAT [8,50,100,500] est reproduit des deux cotes ; N=500 = UNKNOWN au-dela de 60s des deux cotes (parite honnete : la recherche complete CP-SAT ne passe pas a l'echelle aussi bien que Min-Conflicts, demontre Tranche 1 section 3.1)."

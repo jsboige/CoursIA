@@ -277,4 +277,62 @@ theorem equivalence_symm_unit (e : C ≌ D) :
   cases e
   rfl
 
+/-!
+## 9. Ponts sur le critère d'équivalence et l'identité triangulaire
+
+Le **critère pratique d'équivalence** (section 4) est la classe
+`Functor.IsEquivalence F` = `F.Faithful` + `F.Full` + `F.EssSurj` : un
+foncteur est une équivalence ssi il est pleinement fidèle et essentiellement
+surjectif. Les classes `FullyFaithful` (structure data contenant les
+preimages) et `EssSurj` (classe Prop) en sont les deux ingrédients.
+L'**identité triangulaire** `functor_unitIso_comp` (field pointwise de la
+structure `Equivalence`) relie l'unité et la coïnité le long du foncteur :
+c'est l'analogue pour les équivalences de `left_triangle` pour les
+adjonctions. `Equivalence.refl` donne l'équivalence identité 𝟭 C.
+-/
+
+/-- Pont : l'identité triangulaire d'une équivalence, en version **pointwise**
+    (composante en un objet) : `functor.map (unitIso.hom.app X) ≫
+    counitIso.hom.app (functor.obj X) = 𝟙 (functor.obj X)`. C'est le field
+    `functor_unitIso_comp` de la structure `Equivalence` — l'analogue exact,
+    pour les équivalences, de l'identité triangulaire gauche des adjonctions
+    (`Grothendieck.Adjunction.left_triangle`). Délègue directement au field.
+    Field pointwise de la structure (L902 ★★ Tier 5). -/
+theorem equivalence_triangle_field (e : C ≌ D) (X : C) :
+    e.functor.map (e.unitIso.hom.app X) ≫ e.counitIso.hom.app (e.functor.obj X) =
+      𝟙 (e.functor.obj X) :=
+  e.functor_unitIso_comp X
+
+/-- Pont : l'équivalence identité `𝟭 C ≌ 𝟭 C` via `Equivalence.refl`. C'est
+    l'élément neutre de la structure de (2-)groupeoïde des catégories. Re-export
+    direct de la def Mathlib `Equivalence.refl`.
+    Type retour `≌` = structure `Equivalence` = data → `noncomputable def`
+    (leçon c.1301+131-L2 ★). -/
+noncomputable def equivalence_refl_field (C : Type u₁) [Category.{v₁} C] : C ≌ C :=
+  CategoryTheory.Equivalence.refl (C := C)
+
+/-- Pont : la structure `Functor.FullyFaithful` — le témoignage data qu'un
+    foncteur bijecte les Hom (avec les preimages `preimage`, `map_preimage`,
+    `preimage_map`). C'est la moitié « pleine et fidèle » du critère
+    d'équivalence (avec `EssSurj`).
+    Type-sig bridge (L902 ★★ Tier 5) — re-export direct de la structure. -/
+def fully_faithful_field (F : C ⥤ D) : Type _ :=
+  CategoryTheory.Functor.FullyFaithful F
+
+/-- Pont : la classe `Functor.EssSurj` — la propriété pour un foncteur d'être
+    essentiellement surjectif (tout objet de D est isomorphe à l'image d'un
+    objet de C). C'est la moitié « surjectivité » du critère d'équivalence.
+    Type-sig bridge (L902 ★★ Tier 5) — re-export direct de la classe. -/
+def ess_surj_field (F : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.EssSurj F
+
+/-- Pont : la classe `Functor.IsEquivalence` — la propriété pour un foncteur
+    d'être une équivalence (plein `F.Full` + fidèle `F.Faithful` +
+    essentiellement surjectif `F.EssSurj`). C'est l'énoncé exact du critère
+    pratique : « un foncteur est une équivalence ssi il est pleinement fidèle
+    et essentiellement surjectif ».
+    Type-sig bridge (L902 ★★ Tier 5) — re-export direct de la classe. -/
+def is_equivalence_field (F : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.IsEquivalence F
+
 end Grothendieck.Equivalences

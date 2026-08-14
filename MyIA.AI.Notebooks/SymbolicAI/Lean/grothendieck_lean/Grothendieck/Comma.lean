@@ -174,4 +174,66 @@ theorem snd_map_comp {X Y Z : CategoryTheory.Comma L R} (f : X ⟶ Y) (g : Y ⟶
     (sndFunctor).map (f ≫ g) = (sndFunctor).map f ≫ (sndFunctor).map g :=
   (sndFunctor).map_comp f g
 
+/-!
+## 5. Bridges : les structures comma et leurs cas particuliers
+
+Les 5 bridges ci-dessous ferment le répertoire `#check` documentaire du
+module : la **structure** `Comma L R` (objets = triplets `(a, b, f)` avec
+`f : L.obj a ⟶ R.obj b`), les **morphismes** `CommaMorphism` (carrés
+commutatifs), l'**instance de catégorie** `commaCategory`, et les deux cas
+particuliers canoniques — la **catégorie slice** `Over X` et les **flèches
+structurées** `StructuredArrow S F`. Chacun est un re-export type-sig de
+l'API Mathlib (pattern winner L902 ★★ Tier 5) : les variables résidentes du
+module (`{A B T L R}`), instances structurelles uniquement, zéro
+constructeur polymorphe d'univers.
+
+Universe note (leçon c.1301+144-L1) : `Comma L R` vit dans
+`Type (max u₁ u₂ v₃)` — les univers des deux catégories sources et celui
+des morphismes du but ; `CommaMorphism X Y` dans `Type (max v₁ v₂)`, et
+`Over X` / `StructuredArrow S F` dans `Type (max u₃ v₃)`. Tous alignés
+sur les univers résidents du module — aucun univers supplémentaire.
+-/
+
+/-- Bridge : la **structure d'objet comma** — un triplet `(a, b, f)` avec
+    `a : A`, `b : B` et `f : L.obj a ⟶ R.obj b` (un morphisme de `T`).
+    C'est l'encodage d'une flèche « à source dans l'image de `L`, à but
+    dans l'image de `R` » — la donnée universelle des familles indexées par
+    un morphisme. Type-sig re-export de `CategoryTheory.Comma L R`. -/
+def comma_field : Type _ :=
+  CategoryTheory.Comma L R
+
+/-- Bridge : les **morphismes de la catégorie comma** — un carré commutatif
+    entre deux objets comma `X` et `Y` : un couple `(left, right)` de
+    flèches `X.left ⟶ Y.left` dans `A` et `X.right ⟶ Y.right` dans `B` tel
+    que `L.map left ≫ Y.hom = X.hom ≫ R.map right`. Type-sig re-export de
+    `CategoryTheory.CommaMorphism`. -/
+def comma_morphism_field (X Y : CategoryTheory.Comma L R) : Type _ :=
+  CategoryTheory.CommaMorphism X Y
+
+/-- Bridge : la donnée de `Comma L R` comme **catégorie** — identités,
+    composition, et lois de catégorie. Instance Mathlib `commaCategory`,
+    re-exportée en `def` `@[reducible]` (une def de type classe doit être
+    marquée `@[reducible]` pour satisfaire le linter). C'est ce qui rend
+    tous les morphismes de `Comma L R` composables. -/
+@[reducible] def comma_category_field : Category (CategoryTheory.Comma L R) :=
+  CategoryTheory.commaCategory
+
+/-- Bridge : la **catégorie slice** `Over X` — le cas particulier de
+    catégorie comma `Comma (𝟙 T) (const X)` dont les objets sont les
+    flèches `Y ⟶ X` dans `T` et les morphismes les triangles commutatifs.
+    C'est l'encodage standard des objets « au-dessus de X » (fibrés,
+    espaces au-dessus d'un schéma). Type-sig re-export de
+    `CategoryTheory.Over X`. -/
+def over_field (X : T) : Type _ :=
+  CategoryTheory.Over X
+
+/-- Bridge : les **flèches structurées** `StructuredArrow S F` — le cas
+    particulier de catégorie comma `Comma (const S) F` dont les objets sont
+    les flèches `S ⟶ F.obj Y` dans `T` et les morphismes les triangles
+    commutatifs. C'est l'encodage des « flèches à source fixe S » (pointé,
+    initial, base). Type-sig re-export de
+    `CategoryTheory.StructuredArrow S F` pour un endofoncteur `F : T ⥤ T`. -/
+def structured_arrow_field (S : T) (F : T ⥤ T) : Type _ :=
+  CategoryTheory.StructuredArrow S F
+
 end Grothendieck.Comma
