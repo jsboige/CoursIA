@@ -14,7 +14,7 @@ project:
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
-    # 382 READMEs (racine + arborescence, hors archives).
+    # 383 READMEs (racine + arborescence, hors archives).
     - "README.md"
     - "docker-configurations/docs/README.md"
     - "docker-configurations/notebook-runner/README.md"
@@ -45,6 +45,7 @@ project:
     - "MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/README.md"
     - "MyIA.AI.Notebooks/cross-series/matching-cv/README.md"
     - "MyIA.AI.Notebooks/cross-series/README.md"
+    - "MyIA.AI.Notebooks/FallacyDetection/README.md"
     - "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/cooperative_games_lean/README.md"
     - "MyIA.AI.Notebooks/GameTheory/lean_game_defs/README.md"

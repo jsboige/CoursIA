@@ -10,6 +10,7 @@ These tests replay that exact trap and assert the tool is not fooled.
 
 Run: python -m pytest scripts/tests/test_check_lane_claim.py
 """
+import fnmatch
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -162,6 +163,121 @@ def test_parse_instructional_marker_in_prose_ignored():
     assert ev.is_open is True              # NOT closed by the mid-prose mention
     assert ev.marker == "CLAIMED"
     assert ev.lane == "myia-po-2025:CoursIA-2"
+
+
+# --- markdown decoration tolerance (#10906) ----------------------------------
+
+# The 8 voided markers on 70 issues: issue comments are markdown-rendered, and
+# agents post `**[CLAIMED] ...**`, `## [CLAIMED] ...`, `- [CLAIMED] ...` etc.
+# The legacy `^[ \t]*\[` anchor voided every such marker -- the claim existed
+# on the issue but the reducer never saw it. These tests pin the tolerance and
+# the mid-prose non-regression.
+
+def test_parse_marker_bold_decorated():
+    # The exact shape of po-2024's inert claim on #10043 (markdown bold wrap).
+    ev = clc.parse_claim_event(comment(
+        "**[CLAIMED] #10043 grain D (T3 activation) — lane myia-po-2024:CoursIA — 2026-08-08T12:36Z**",
+        "2026-08-08T12:37:14Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2024:CoursIA"
+
+
+def test_parse_marker_underscore_bold_decorated():
+    ev = clc.parse_claim_event(comment(
+        "__[CLAIMED] lane myia-po-2023:CoursIA-2 — underscore bold__",
+        "2026-08-08T13:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2023:CoursIA-2"
+
+
+def test_parse_marker_heading_decorated():
+    ev = clc.parse_claim_event(comment(
+        "## [CLAIMED] lane myia-po-2025:CoursIA-2 -- heading form",
+        "2026-08-08T13:01:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2025:CoursIA-2"
+
+
+def test_parse_marker_bullet_decorated():
+    for bullet in ("- ", "+ ", "* "):
+        ev = clc.parse_claim_event(comment(
+            f"{bullet}[CLAIMED] lane myia-po-2024:CoursIA -- bullet form",
+            "2026-08-08T13:02:00Z",
+        ))
+        assert ev is not None, bullet
+        assert ev.is_open is True, bullet
+        assert ev.lane == "myia-po-2024:CoursIA", bullet
+
+
+def test_parse_marker_blockquote_decorated():
+    ev = clc.parse_claim_event(comment(
+        "> [CLAIMED] lane myia-po-2026:CoursIA-2 -- blockquote form",
+        "2026-08-08T13:03:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2026:CoursIA-2"
+
+
+def test_parse_marker_nested_list_decorated():
+    ev = clc.parse_claim_event(comment(
+        "  - > **[CLAIMED] lane myia-po-2024:CoursIA-2 -- nested bullet + bold**",
+        "2026-08-08T13:04:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+
+
+def test_parse_decorated_marker_in_prose_still_ignored():
+    # Mid-line mentions remain non-events even inside a bullet: the `[` must
+    # sit at a decorator position, not after prose.
+    body = (
+        "[CLAIMED] lane myia-po-2025:CoursIA-2 -- real claim\n"
+        "- **Release with `[RELEASED]` when your PR lands** (instructional)"
+    )
+    ev = clc.parse_claim_event(comment(body, "2026-08-09T21:20:00Z"))
+    assert ev is not None
+    assert ev.is_open is True      # NOT closed by the decorated prose mention
+    assert ev.marker == "CLAIMED"
+
+
+def test_parse_decorated_release_closes():
+    ev = clc.parse_claim_event(comment(
+        "**[CLAIMED] lane myia-po-2024:CoursIA -- work**\n"
+        "**[RELEASED] lane myia-po-2024:CoursIA -- landed**",
+        "2026-08-08T14:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is False
+    assert ev.marker == "RELEASED"
+
+
+def test_decorated_paths_clause_scopes_claim():
+    # A bold-wrapped claim carrying `paths:` keeps its scope (#10419 semantics)
+    # through the decorated marker -- disjoint scoped claims stay parallel. The
+    # closing `**` is captured into the last path (`b.ipynb**`): stripping it by
+    # suffix alone is unsafe (`paths: dir/**` is a legitimate recursive glob),
+    # and fnmatch trailing `*` matches empty, so the scope still covers the
+    # intended path (see `_PATHS_CLAUSE_RE` comment in check_lane_claim.py).
+    ev = clc.parse_claim_event(comment(
+        "- **[CLAIMED] lane myia-po-2024:CoursIA-2 — paths: notebooks/a.ipynb, notebooks/b.ipynb**",
+        "2026-08-08T14:05:00Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.lane == "myia-po-2024:CoursIA-2"
+    assert ev.paths is not None
+    assert ev.paths[0] == "notebooks/a.ipynb"
+    assert fnmatch.fnmatch("notebooks/b.ipynb", ev.paths[1])
+    assert fnmatch.fnmatch("notebooks/b.ipynb", "notebooks/b.ipynb**")  # invariant
 
 
 def test_check_blocked_when_claim_comment_mentions_marker_in_prose(capsys):
@@ -1797,3 +1913,299 @@ def test_run_check_no_warning_when_no_active_claim(capsys):
     assert rc == 0
     captured = capsys.readouterr()
     assert "SCOPE_ZERO_COVERAGE" not in captured.err
+
+
+# --- #10881: lint of malformed paths: clauses ---------------------------------
+#
+# 2026-08-14 morning on #10678: four markers, all misread SILENTLY, two lanes
+# blocked 1.5h. The lint fires on stderr when a marker is READ -- visible to
+# every lane running the check, NEVER changing a verdict. Fixtures are the
+# REAL comment bodies (marker lines verbatim from #10678). The acceptance's
+# decisive half ("la moitié qui compte") is the negative: a well-formed marker
+# (`paths: <two existing files>`) produces NOTHING -- a lint that yells at
+# correct markers would be worse than no lint.
+
+F1_OVERRIDE_NO_PATHS = (
+    "[OVERRIDE] lane myia-ai-01:CoursIA — arbitrage sur le gate interp "
+    "(`check_interp_positioning.py` + `interp_positioning_baseline.json`)\n\n"
+    "Deux PRs ont vise le meme blocage a 4 minutes d'intervalle. Je tranche "
+    "ici, et je commence par ce qui n'est pas en cause.\n"
+)
+
+F2_PROSE_AFTER_CLAUSE = (
+    "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+    "MyIA.AI.Notebooks/GameTheory/**, MyIA.AI.Notebooks/GenAI/**, "
+    "MyIA.AI.Notebooks/SymbolicAI/**, MyIA.AI.Notebooks/Probas/**, "
+    "MyIA.AI.Notebooks/Search/**, MyIA.AI.Notebooks/ML/**, "
+    "MyIA.AI.Notebooks/QuantConnect/**, MyIA.AI.Notebooks/RL/**, "
+    "MyIA.AI.Notebooks/Sudoku/** — Phase 2 : repositionnement des 39 interps "
+    "survivants (baseline #10864) sur 29 notebooks, markdown-only, partition "
+    "par famille (G.4). Scope notebooks disjoint du gate couvert par "
+    "l'override ai-01 (`check_interp_positioning.py` + "
+    "`interp_positioning_baseline.json`).\n"
+)
+
+F3_FAMILY_GLOBS = (
+    "[CLAIMED] lane myia-po-2023:CoursIA-2 -- paths: "
+    "MyIA.AI.Notebooks/GameTheory/**, MyIA.AI.Notebooks/SymbolicAI/**, "
+    "MyIA.AI.Notebooks/Search/**, MyIA.AI.Notebooks/QuantConnect/**, "
+    "MyIA.AI.Notebooks/Sudoku/**\n\n"
+    "Claim paths-scoped conforme a la partition de l'arbitrage ai-01 : mes 15 "
+    "findings / 14 notebooks des familles GameTheory, SymbolicAI, Search, "
+    "QuantConnect, Sudoku.\n"
+)
+
+F4_PROSE_GRABBED_AS_CLAUSE = (
+    "[CLAIMED] lane myia-ai-01:CoursIA -- arbitrage du gate interp uniquement "
+    "(correctif #10864 + baseline 39) -- scope-narrowing de mon [OVERRIDE] du "
+    "05:53:20Z, qui n'avait pas de clause paths: et bloquait donc les deux "
+    "lanes epic-wide. Les tranches notebooks de la Phase 2 ne m'appartiennent "
+    "pas : elles sont partitionnees entre po-2024:CoursIA-2 (GenAI/Probas/ML/"
+    "RL) et po-2023:CoursIA-2 (GameTheory/SymbolicAI/Search/QuantConnect/"
+    "Sudoku).\r\n\r\n(check_lane_claim #9774 -- server-stamped UTC.)\r\n"
+)
+
+WELL_FORMED_MARKER = (
+    "[CLAIMED] lane myia-po-2024:CoursIA -- paths: "
+    "scripts/check_lane_claim.py, scripts/grain_tag.py"
+)
+
+
+def test_lint_override_without_paths_emits_info(capsys):
+    # F1 -- the 05:53:20Z [OVERRIDE]: no `paths:` clause -> epic-wide. The
+    # INFO line names the blocking effect; the verdict itself is unchanged
+    # (the override still blocks a third lane).
+    p = payload(comment(F1_OVERRIDE_NO_PATHS, "2026-08-14T05:53:20Z"),
+                number=10678)
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    assert rc == 1  # verdict unchanged: the override blocks
+    err = capsys.readouterr().err
+    assert "INFO: marqueur OVERRIDE epic-wide (pas de clause paths:)" in err
+    assert "il bloque toutes les autres lanes sur #10678" in err
+
+
+def test_lint_prose_after_clause_warns_suspect_and_dead_globs(capsys):
+    # F2 -- the 06:41:00Z [CLAIMED]: prose after the clause was swallowed as
+    # three parasite globs; the last real glob (`Sudoku/** — Phase 2 : ...`)
+    # is dead. The lint must WARN citing the faulty excerpt verbatim.
+    p = payload(comment(F2_PROSE_AFTER_CLAUSE, "2026-08-14T06:41:00Z"),
+                number=10678)
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1  # verdict unchanged
+    err = capsys.readouterr().err
+    assert "WARN: glob suspect (prose avalée ?)" in err
+    assert "Sudoku/** — Phase 2 : repositionnement des 39 interps survivants" in err
+    assert "WARN: glob sans correspondance" in err
+    assert "markdown-only" in err
+
+
+def test_lint_family_globs_are_silent(capsys):
+    # F3 -- the 06:55:07Z [CLAIMED]: family globs, all matching tracked files,
+    # prose on a SEPARATE line (not swallowed). The lint must be SILENT: the
+    # defect here is over-breadth (the globs catch unrelated OPEN PRs), which
+    # is a SEMANTIC judgement the lint deliberately does not make -- this is
+    # exactly the selectivity the acceptance's "la moitié qui compte" pins.
+    p = payload(comment(F3_FAMILY_GLOBS, "2026-08-14T06:55:07Z"), number=10678)
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1  # verdict unchanged: po-2023's claim blocks
+    err = capsys.readouterr().err
+    assert "WARN:" not in err
+    assert "INFO:" not in err
+
+
+def test_lint_prose_mentioning_paths_warns_suspect(capsys):
+    # F4 -- the 07:06:23Z [CLAIMED]: the prose literally says "clause paths:"
+    # and `_PATHS_CLAUSE_RE` grabs everything after it as ONE bogus glob. The
+    # lint surfaces it as a swallowed-prose WARN (the machine reads a clause
+    # where the author wrote prose -- not the INFO path, but the defect is
+    # caught and named).
+    p = payload(comment(F4_PROSE_GRABBED_AS_CLAUSE, "2026-08-14T07:06:23Z"),
+                number=10678)
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1  # verdict unchanged
+    err = capsys.readouterr().err
+    assert "WARN: glob suspect (prose avalée ?)" in err
+    assert "et bloquait donc les deux lanes epic-wide" in err
+    assert "WARN: glob sans correspondance" in err
+
+
+def test_lint_well_formed_marker_produces_nothing(capsys):
+    # The acceptance's decisive negative: a well-formed marker with two
+    # EXISTING files produces NO warning at all -- the lint must not cry wolf
+    # on correct markers.
+    p = payload(comment(WELL_FORMED_MARKER, "2026-08-14T08:00:00Z"),
+                number=10678)
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1  # verdict unchanged: the claim blocks
+    err = capsys.readouterr().err
+    assert "WARN:" not in err
+    assert "INFO:" not in err
+
+
+# --- #10881 addendum: multi-marker comments reduce per line ------------------
+#
+# A comment can LEGITIMATELY carry markers for several lanes -- the natural
+# shape of a coordinator arbitration. The legacy single-event reader kept
+# only the LAST marker: every marker was attributed to ONE lane (the first
+# `lane <token>` of the body) with the LAST marker's paths clause, and
+# intermediate `[RELEASED]`s were lost. Acceptance (11): `[RELEASED] lane A`
+# + `[CLAIMED] lane B -- paths: X` must produce exactly "A released, B
+# claims X".
+
+def test_release_a_claim_b_reduces_exactly():
+    # Acceptance (11) verbatim. Pre-fix this produced ONE event with
+    # lane=A:CoursIA and paths=X (A holding B's scope, B never claiming).
+    body = (
+        "[RELEASED] lane A:CoursIA -- done\n"
+        "[CLAIMED] lane B:CoursIA-2 -- paths: scripts/foo.py\n"
+    )
+    events = clc._parse_claim_events(comment(body, "2026-08-14T07:30:08Z"))
+    assert [(e.marker, e.lane) for e in events] == [
+        ("RELEASED", "A:CoursIA"),
+        ("CLAIMED", "B:CoursIA-2"),
+    ]
+    assert events[1].paths == ["scripts/foo.py"]
+    active, unattrib = clc.compute_active_claims(events)
+    assert not unattrib
+    assert set(active) == {"B:CoursIA-2"}
+    assert active["B:CoursIA-2"].paths == ["scripts/foo.py"]
+
+
+def test_coordinator_arbitration_comment_reduces_per_lane():
+    # The L22/L31/L33 shape ai-01 measured on #10678 (its own account): one
+    # comment releasing lane A, claiming lane B (the ML/RL notebooks), and
+    # re-claiming lane A scoped to the gate files. Legacy: ONE event with
+    # lane=po-2024:CoursIA-2 (first body token) and paths=the gate files
+    # (last marker) -- po-2024 credited with ai-01's scope, ai-01's epic-wide
+    # 07:06:23Z claim left ACTIVE against every other lane, and the ML/RL
+    # notebooks claimed by no one. Multi-event: po-2024 owns the notebooks,
+    # ai-01 owns the gate files only.
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+        "paths: MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb, "
+        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb\n"
+        "[RELEASED] lane myia-ai-01:CoursIA — annule mes marqueurs du "
+        "05:53:20Z et du 07:06:23Z\n"
+        "[CLAIMED] lane myia-ai-01:CoursIA -- "
+        "paths: scripts/notebook_tools/check_interp_positioning.py, "
+        "scripts/notebook_tools/interp_positioning_baseline.json\n"
+    )
+    events = clc._parse_claim_events(comment(body, "2026-08-14T07:30:08Z"))
+    assert [(e.marker, e.lane) for e in events] == [
+        ("CLAIMED", "myia-po-2024:CoursIA-2"),
+        ("RELEASED", "myia-ai-01:CoursIA"),
+        ("CLAIMED", "myia-ai-01:CoursIA"),
+    ]
+    assert events[0].paths == [
+        "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb",
+        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+    ]
+    assert events[2].paths == [
+        "scripts/notebook_tools/check_interp_positioning.py",
+        "scripts/notebook_tools/interp_positioning_baseline.json",
+    ]
+    # Full issue state: ai-01's prior epic-wide override + claim, then this
+    # arbitration comment. Walk order releases the epic-wide claims and opens
+    # the two scoped claims -- the exact final state ai-01 then had to build
+    # by hand with three separate comments.
+    p = payload(
+        comment("[OVERRIDE] lane myia-ai-01:CoursIA — arbitrage",
+                "2026-08-14T05:53:20Z"),
+        comment("[CLAIMED] lane myia-ai-01:CoursIA -- arbitrage",
+                "2026-08-14T07:06:23Z"),
+        comment(body, "2026-08-14T07:30:08Z"),
+        number=10678,
+    )
+    active, unattrib = clc.compute_active_claims(clc._sort_events(p))
+    assert not unattrib
+    assert set(active) == {"myia-po-2024:CoursIA-2", "myia-ai-01:CoursIA"}
+    assert active["myia-po-2024:CoursIA-2"].paths == [
+        "MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb",
+        "MyIA.AI.Notebooks/RL/rl_4_multi_armed_bandits.ipynb",
+    ]
+    assert active["myia-ai-01:CoursIA"].paths == [
+        "scripts/notebook_tools/check_interp_positioning.py",
+        "scripts/notebook_tools/interp_positioning_baseline.json",
+    ]
+
+
+def test_third_lane_disjoint_paths_clear_after_release_reclaim(capsys):
+    # Practical consequence of the addendum: the released epic-wide claim no
+    # longer ghosts against a THIRD lane. Post-fix, ai-01's scoped gate claim
+    # does not block a lane whose `--paths` are disjoint from the gate files.
+    body = (
+        "[RELEASED] lane myia-ai-01:CoursIA — annule et remplace mes "
+        "marqueurs du 05:53:20Z et du 07:06:23Z\n"
+        "\n"
+        "[CLAIMED] lane myia-ai-01:CoursIA -- paths: "
+        "scripts/notebook_tools/check_interp_positioning.py\n"
+    )
+    p = payload(
+        comment("[OVERRIDE] lane myia-ai-01:CoursIA — arbitrage",
+                "2026-08-14T05:53:20Z"),
+        comment("[CLAIMED] lane myia-ai-01:CoursIA -- arbitrage",
+                "2026-08-14T07:06:23Z"),
+        comment(body, "2026-08-14T07:30:08Z"),
+        number=10678,
+    )
+    rc = clc._run_check(
+        p, "myia-po-2026:CoursIA",
+        my_paths=["MyIA.AI.Notebooks/Sudoku/Sudoku-9.ipynb"],
+    )
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "CLEAR" in captured.out
+    assert "BLOCKED" not in captured.err
+
+
+def test_parse_claim_event_legacy_returns_last_event():
+    # parse_claim_event (the backward-compatible wrapper) still answers the
+    # "final intent" question for callers that read one event per comment,
+    # with the lane of ITS OWN line.
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED] lane X:CoursIA -- oops\n[DONE] lane X:CoursIA",
+        "2026-08-14T07:30:08Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is False
+    assert ev.marker == "DONE"
+    assert ev.lane == "X:CoursIA"
+
+
+# --- #10881: --paths bare-integer trap ---------------------------------------
+# `--paths` uses `nargs='+'` and swallows a TRAILING positional issue number:
+# `--lane X --paths a b 10678` puts `"10678"` into the paths list, switches to
+# path mode, and prints a reassuring CLEAR that measured nothing. The correct
+# form is the positional FIRST. The lint warns on bare-integer entries.
+
+def test_warn_bare_integer_paths_helper():
+    assert clc._warn_bare_integer_paths(
+        ["scripts/foo.py", "10678", "a/b.py"]) == ["10678"]
+    assert clc._warn_bare_integer_paths(["scripts/foo.py", "a/b.py"]) == []
+    assert clc._warn_bare_integer_paths([]) == []
+
+
+def test_main_paths_bare_integer_warns(monkeypatch, capsys):
+    # The exact trap from the issue: `--paths a.py 10678` (no positional).
+    # The warning must fire before the path-mode branch, so it is visible
+    # whatever the mode does next.
+    monkeypatch.setattr(clc, "_run_check_paths",
+                        lambda paths, my_lane, **kw: 0)
+    rc = clc.main(["--lane", "myia-po-2024:CoursIA",
+                   "--paths", "a.py", "10678"])
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "bare integer" in err
+    assert "10678" in err
+    assert "positional FIRST" in err
+
+
+def test_main_paths_correct_form_no_warning(monkeypatch, capsys):
+    # Correct form (positional issue FIRST, no bare integer in paths) emits
+    # no trap warning.
+    monkeypatch.setattr(clc, "_run_check_paths",
+                        lambda paths, my_lane, **kw: 0)
+    rc = clc.main(["--lane", "myia-po-2024:CoursIA",
+                   "--paths", "a.py", "b.py"])
+    assert rc == 0
+    assert "bare integer" not in capsys.readouterr().err

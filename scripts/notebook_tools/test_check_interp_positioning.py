@@ -3,14 +3,18 @@
 
 Couvre les invariants de la regle de detection :
 - INTERP_HEADER_RE reconnait les 4 variantes documentees
-- _is_legit_following_header couvre Exercices / Conclusion / Pour aller plus loin
+- _is_legit_following_header couvre Exercices / Conclusion / Pour aller plus loin,
+  numerotes (`## 7. Exercices`) comme non numerotes
+- _is_anchored_to_code : code avant l'interp dans sa section => pas un defaut
 - _stable_finding_hash est deterministe + depend de l'index
 - scan_notebook OK: interp suivie d'un code cell
 - scan_notebook OK: interp suivie de ## Exercices (transition legitime)
-- scan_notebook BUG: interp suivie de ## N. Section suivante (mesure PyMC-15)
-- scan_notebook BUG: interp suivie de ### 1. Intro (mesure GameTheory-10)
+- scan_notebook OK: code -> interp -> ## N. Section suivante (placement CANONIQUE)
+- scan_notebook BUG: interp parachutee entre deux headers, sans code dans sa section
 - scan_notebook OK: interp en fin de notebook (pas de cellule suivante)
-- Integration : PyMC-15 contient >= 3 misplaced, GameTheory-10 <= 1
+- Integration : 3 pins de non-regression FP (GameTheory-16, Aspire-01, Z3-09,
+  les notebooks que le gate a fait echouer a tort) + 1 pin de detection reelle
+  (PyMC-15 cell#9)
 
 Run : python scripts/notebook_tools/test_check_interp_positioning.py
 """
@@ -31,8 +35,10 @@ from check_interp_positioning import (  # noqa: E402
     _first_line,
     _is_interp_cell,
     _is_legit_following_header,
+    _is_section_boundary,
     _is_section_header,
     _stable_finding_hash,
+    _top_level,
     scan_notebook,
 )
 
@@ -148,6 +154,15 @@ class TestLegitFollowingHeader(unittest.TestCase):
         self.assertTrue(_is_legit_following_header("### Bibliography"))
         self.assertTrue(_is_legit_following_header("### Bibliographie"))
 
+    def test_numbered_prefix_accepted(self):
+        # Forme DOMINANTE dans CoursIA. Sans le prefixe optionnel dans la
+        # whitelist, `## 7. Exercices` etait signale comme defaut (FP mesure
+        # sur GameTheory-16 cell#46, run CI 31769853464).
+        self.assertTrue(_is_legit_following_header("## 7. Exercices"))
+        self.assertTrue(_is_legit_following_header("### 4.2 Conclusion"))
+        self.assertTrue(_is_legit_following_header("## 8. Pour aller plus loin"))
+        self.assertTrue(_is_legit_following_header("### 9. Références"))
+
     def test_not_legit(self):
         self.assertFalse(_is_legit_following_header("## 1. Section suivante"))
         self.assertFalse(_is_legit_following_header("### 2. Méthode"))
@@ -167,6 +182,53 @@ class TestSectionHeader(unittest.TestCase):
 
     def test_with_leading_whitespace(self):
         self.assertTrue(_is_section_header("\n  ## Section"))
+
+
+class TestTopLevelAndBoundary(unittest.TestCase):
+    """Niveau structurel relatif du notebook (correctif #10910).
+
+    La condition 4 arrete la remontee sur un header de niveau `<=` au niveau
+    structurel du notebook (`_top_level`), PAS sur tout `###` : un sous-header
+    plus profond que la structure appartient a la MEME section.
+    """
+
+    def test_top_level_h2_notebook(self):
+        cells = [
+            _md("## 1. Section"),
+            _md("### 1.1 Sous-section"),
+            _md("### 1.2 Sous-section"),
+        ]
+        self.assertEqual(_top_level(cells), 2)
+
+    def test_top_level_h3_only_notebook(self):
+        # Notebook entierement en ### (cas QC-Py-08 / #10785) : le niveau
+        # structurel est 3, pas 2 -- sinon le guard serait desarme.
+        cells = [
+            _md("### 1. Section"),
+            _md("### 1.1 Sous-section"),
+            _md("### 2. Section"),
+        ]
+        self.assertEqual(_top_level(cells), 3)
+
+    def test_top_level_default_when_no_header(self):
+        cells = [_md("paragraphe"), _md("liste")]
+        self.assertEqual(_top_level(cells), 2)
+
+    def test_top_level_ignores_code_and_plain_md(self):
+        cells = [_code("# code"), _md("## 1. Section"), _md("texte libre")]
+        self.assertEqual(_top_level(cells), 2)
+
+    def test_boundary_stops_on_top_level(self):
+        self.assertTrue(_is_section_boundary("## 1. Section", top=2))
+        self.assertTrue(_is_section_boundary("### 1. Section", top=3))
+
+    def test_boundary_ignores_deeper_than_top(self):
+        # Dans un notebook structure en ##, un ### n'est PAS une frontiere.
+        self.assertFalse(_is_section_boundary("### 1.1 Sous-section", top=2))
+
+    def test_boundary_rejects_non_header(self):
+        self.assertFalse(_is_section_boundary("paragraphe", top=2))
+        self.assertFalse(_is_section_boundary("# Titre", top=2))
 
 
 class TestStableFindingHash(unittest.TestCase):
@@ -231,14 +293,45 @@ class TestScanNotebookOkCases(unittest.TestCase):
         ])
         self.assertEqual(_scan(nb), [])
 
+    def test_interp_anchored_across_sibling_subheader(self):
+        """Acceptance 2(a) : code -> ### sous-header -> interp -> ## header.
+
+        Cas de 03-Voting-Methods cell#4..7 (#10910) : le sous-header `###`
+        entre le code et l'interp est DANS la meme section (notebook structure
+        en `##`) -- la remontee de la condition 4 doit le traverser et
+        atteindre le code, donc ABSOUDRE l'interp.
+        """
+        nb = _make_nb([
+            _md("## 1. Methode de vote"),                 # cell[0]
+            _code("# duels pairwise"),                    # cell[1]
+            _md("### Cycle de Condorcet"),                # cell[2] sous-header frere
+            _md("### Interprétation : majorite intransitive"),  # cell[3]
+            _md("## 2. Gagnant de Condorcet"),            # cell[4]
+        ])
+        self.assertEqual(_scan(nb), [])
+
 
 class TestScanNotebookBuggyCases(unittest.TestCase):
-    def test_interp_followed_by_new_h2_section(self):
-        # Bug fondateur : interp suivie de ## 1. Section suivante
+    """Le defaut vise : une interp PARACHUTEE entre deux headers.
+
+    Forme caracteristique -- il n'y a AUCUNE cellule code entre le header qui
+    ouvre la section et l'interp, donc l'interp n'a rien a interpreter la ou
+    elle se trouve :
+
+        ## 1. Section
+        [prose eventuelle]
+        ### Lecture du resultat : ...   <- parachutee, aucun code au-dessus
+        ## 2. Section suivante
+
+    A ne PAS confondre avec `code -> interp -> header suivant`, qui est le
+    placement CANONIQUE (cf TestScanNotebookOkCases + condition 4).
+    """
+
+    def test_interp_parachuted_before_new_h2_section(self):
         nb = _make_nb([
-            _code("# imports"),
+            _md("## 1. Section"),
             _md("### Lecture du résultat : convergence OK"),  # cell[1] misplaced
-            _md("## 1. Section suivante"),                    # cell[2]
+            _md("## 2. Section suivante"),                    # cell[2]
             _code("# code section suivante"),
         ])
         findings = _scan(nb)
@@ -246,9 +339,9 @@ class TestScanNotebookBuggyCases(unittest.TestCase):
         self.assertEqual(findings[0]["rule"], "misplaced_before_section")
         self.assertEqual(findings[0]["cell_index"], 1)
 
-    def test_interp_followed_by_h3_subsection(self):
+    def test_interp_parachuted_before_h3_subsection(self):
         nb = _make_nb([
-            _code("# etape 1"),
+            _md("## 1. Section"),
             _md("### Interprétation des résultats"),  # cell[1] misplaced
             _md("### 1. Sous-section"),                # cell[2]
         ])
@@ -256,23 +349,41 @@ class TestScanNotebookBuggyCases(unittest.TestCase):
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["cell_index"], 1)
 
+    def test_interp_parachuted_in_h3_only_notebook(self):
+        """Acceptance 2(d) : notebook SANS aucun `##` (100% `###`).
+
+        Cas QC-Py-08 / #10785 : le niveau structurel est 3, donc `###` EST la
+        frontiere. Code -> ### orphelin -> interp -> ### : la remontee
+        s'arrete sur le ### orphelin avant le code -> toujours flagge.
+        """
+        nb = _make_nb([
+            _md("### 1. Section"),                       # cell[0] top=3
+            _code("# code de la section"),               # cell[1]
+            _md("### bloc orphelin"),                    # cell[2] frontiere
+            _md("### Interprétation des données"),       # cell[3] misplaced
+            _md("### 2. Section suivante"),              # cell[4]
+        ])
+        findings = _scan(nb)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["cell_index"], 3)
+
     def test_interp_followed_by_pour_aller_plus_loin_excluded(self):
         # "Pour aller plus loin" est legitime -> pas un bug
         nb = _make_nb([
-            _code("# etape 1"),
+            _md("## 1. Section"),
             _md("### Interprétation"),
             _md("## Pour aller plus loin"),
         ])
         self.assertEqual(_scan(nb), [])
 
     def test_multiple_misplaced_in_sequence(self):
-        # PyMC-15 mesure : plusieurs cellules interp enchainent des bugs
+        # Deux interps parachutees d'affilee, chacune ouvrant sa section
         nb = _make_nb([
-            _code("# cell[0] code"),
-            _md("### Lecture du résultat : cell[1]"),  # bug
-            _md("## 2. Section"),                       # cell[2]
+            _md("## 1. Section"),                        # cell[0]
+            _md("### Lecture du résultat : cell[1]"),    # bug
+            _md("## 2. Section"),                        # cell[2]
             _md("### Lecture des résultats : cell[3]"),  # bug
-            _md("## 3. Section"),                       # cell[4]
+            _md("## 3. Section"),                        # cell[4]
         ])
         findings = _scan(nb)
         self.assertEqual(len(findings), 2)
@@ -281,47 +392,86 @@ class TestScanNotebookBuggyCases(unittest.TestCase):
     def test_interp_with_accent_in_text(self):
         # Verification que INTERP_HEADER_RE gere l'accent francais
         nb = _make_nb([
-            _code("# code"),
+            _md("## 1. Section"),
             _md("### Interprétation des résultats : 163 divergences"),  # accent
             _md("## 2. Amélioration du modèle"),
         ])
         findings = _scan(nb)
         self.assertEqual(len(findings), 1)
 
+    def test_code_in_section_disarms_the_finding(self):
+        """Meme sequence que ci-dessus + une cellule code dans la section.
+
+        C'est la ligne de partage de la condition 4 : le seul ajout d'un code
+        cell entre le header et l'interp fait passer le verdict de misplaced a
+        correctement ancre.
+        """
+        nb = _make_nb([
+            _md("## 1. Section"),
+            _code("# ce code produit l'output commente juste apres"),
+            _md("### Lecture du résultat : convergence OK"),
+            _md("## 2. Section suivante"),
+        ])
+        self.assertEqual(_scan(nb), [])
+
 
 class TestRealNotebooks(unittest.TestCase):
-    """Tests integration sur les notebooks reels mesures dans #10678."""
+    """Integration sur des notebooks reels -- pins de non-regression c.95.
+
+    Les 3 premiers pins sont les notebooks que le gate a REELLEMENT fait
+    echouer (run 31769853464, PR #10856, 2026-08-14) : trois interps
+    correctement ancrees a un code cell, signalees a tort, bloquant toute PR
+    de contenu notebook. Ils doivent rester a 0.
+
+    Le 4e pin (PyMC-15 cell#9) prouve que le detecteur n'est pas devenu
+    aveugle : ce notebook garde son defaut reel -- deux cellules interp
+    consecutives, la seconde n'ayant aucun code dans sa section.
+    """
 
     def setUp(self):
-        # Resoudre le chemin du repo depuis l'emplacement du test
         self.repo_root = SCRIPTS_DIR.parent.parent
-        self.nb_pyMC15 = self.repo_root / "MyIA.AI.Notebooks" / "Probas" / "PyMC" / "PyMC-15-Recommenders.ipynb"
-        self.nb_gt10 = self.repo_root / "MyIA.AI.Notebooks" / "GameTheory" / "GameTheory-10-ForwardInduction-SPE-Csharp.ipynb"
 
-    def test_pymc15_has_misplaced_interps(self):
-        """#10678 mesure : PyMC-15 a 5 interps buguees (cell[4], [9], [13], [18], [25])."""
-        if not self.nb_pyMC15.exists():
-            self.skipTest(f"notebook not present: {self.nb_pyMC15}")
-        findings = scan_notebook(self.nb_pyMC15)
-        misplaced = [f for f in findings if f["rule"] == "misplaced_before_section"]
-        self.assertGreaterEqual(
-            len(misplaced), 3,
-            f"PyMC-15 devrait avoir >=3 interps buguees, trouve {len(misplaced)}",
-        )
+    def _misplaced(self, relpath: str) -> list[dict] | None:
+        nb = self.repo_root / relpath
+        if not nb.exists():
+            return None
+        return [f for f in scan_notebook(nb) if f["rule"] == "misplaced_before_section"]
 
-    def test_pymc15_has_more_than_gametheory10(self):
-        """#10678 signal : PyMC-15 est plus affecte que GameTheory-10 (relatif)."""
-        if not (self.nb_pyMC15.exists() and self.nb_gt10.exists()):
-            self.skipTest("PyMC-15 ou GameTheory-10 absent")
-        pyMC = scan_notebook(self.nb_pyMC15)
-        gt10 = scan_notebook(self.nb_gt10)
-        pyMC_n = sum(1 for f in pyMC if f["rule"] == "misplaced_before_section")
-        gt10_n = sum(1 for f in gt10 if f["rule"] == "misplaced_before_section")
-        # PyMC-15 (5/5 dans #10678) > GameTheory-10 (~2). Relatif, pas absolu.
-        self.assertGreater(
-            pyMC_n, gt10_n,
-            f"PyMC-15 devrait avoir plus de misplaced ({pyMC_n}) que GameTheory-10 ({gt10_n})",
+    def test_gametheory16_numbered_exercices_is_not_a_finding(self):
+        """`## 7. Exercices` est une transition legitime -- le prefixe numerote aussi."""
+        found = self._misplaced("MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign.ipynb")
+        if found is None:
+            self.skipTest("GameTheory-16 absent")
+        self.assertEqual(found, [], f"FP c.95 reintroduit : {found}")
+
+    def test_aspire01_interps_anchored_to_code_are_not_findings(self):
+        """cell#12 (code a 3 outputs) et cell#17 (7 outputs) : ancrees, donc OK."""
+        found = self._misplaced("MyIA.AI.Notebooks/GenAI/Aspire/01-Aspire-Orchestration-GenAi.ipynb")
+        if found is None:
+            self.skipTest("Aspire-01 absent")
+        self.assertEqual(found, [], f"FP c.95 reintroduit : {found}")
+
+    def test_z3_meal_planner_interp_anchored_to_code_is_not_a_finding(self):
+        """cell#18 suit un code a 5 outputs -- placement canonique."""
+        found = self._misplaced(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb"
         )
+        if found is None:
+            self.skipTest("Z3-09 absent")
+        self.assertEqual(found, [], f"FP c.95 reintroduit : {found}")
+
+    def test_pymc15_repaired_is_clean(self):
+        """PyMC-15 a ete repare sur main (#10687 + #10876) : 0 finding.
+
+        Le pin de detection reelle de c.95 (cell#9) est obsolete -- le
+        notebook a depuis ete reordonne. La non-cecite du detecteur est
+        couverte par les cas synthetiques (parachute entre deux headers) et
+        par les findings live de la baseline.
+        """
+        found = self._misplaced("MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb")
+        if found is None:
+            self.skipTest("PyMC-15 absent")
+        self.assertEqual(found, [], "PyMC-15 ne doit plus avoir de finding (repare c.96)")
 
 
 if __name__ == "__main__":

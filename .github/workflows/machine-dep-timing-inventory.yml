@@ -1,0 +1,119 @@
+name: machine-dep-timing-inventory
+
+# Jauge d'inventaire depot-entier des temps d'horloge machine-dependants en
+# prose de notebook (EPIC #9434). Fix #10445 partie (c) : la jauge NE SE LIT
+# PAS sur une PR -- elle mesure la flotte, pas le grain, et un label identique
+# sur des PRs sans rapport (#10442 1 notebook, #10357 39 notebooks = meme
+# valeur) apprenait au lecteur a ignorer le signal. Elle vit dans un
+# commentaire periodique sur l'EPIC #9434, mis a jour par CE workflow (edit du
+# meme commentaire marque, pas un nouveau par run -- decision ai-01
+# 2026-08-14).
+#
+# Le label par-PR ne garde que le delta signe -- porte par
+# machine-dep-timing-advisory.yml, qui a ete allegera : le scan --all
+# depot-entier (le plus cher) est desormais la seule responsabilite de ce job
+# quotidien, plus execute sur chaque PR.
+#
+# Mode advisory : exit 0 en TOUTE circonstance. Le commentaire est de la
+# signalisation, pas un gate.
+
+on:
+  schedule:
+    # Quotidien, hors creneau catalog-cron (37 3 * * *) et hors heures rondes.
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run inventory scan (advisory, exit 0)
+        id: scan
+        run: |
+          set +e
+          python scripts/notebook_tools/check_machine_dep_timing.py --all --json > /tmp/inventory.json
+          rc=$?
+          echo "inventory detector exit (ignored in advisory mode): $rc"
+          python -c "import json; d=json.load(open('/tmp/inventory.json')); print('scanned:', d['scanned'], '| wallclock:', d['summary']['wallclock'], '| total:', d['summary']['total'])"
+          set -e
+
+      - name: Upsert periodic comment on EPIC #9434
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // ========================================================================
+            // Edit du MEME commentaire marque, pas un nouveau par run (#10445 partie
+            // c). Pattern d'upsert : notebook-execution-required.yml (listComments ->
+            // updateComment / createComment). Contexte = evenement schedule : pas de
+            // context.issue, l'EPIC est une constante.
+            // ========================================================================
+            const EPIC = 9434;
+            const MARKER = '<!-- MACHINE-DEP-TIMING-INVENTORY:START -->';
+
+            const fs = require('fs');
+            const inv = JSON.parse(fs.readFileSync('/tmp/inventory.json', 'utf8'));
+            const s = inv.summary;
+            const filesWithFindings = Object.keys(inv.findings || {}).length;
+
+            const body = [
+              MARKER,
+              '## Jauge machine-dep-timing (inventaire depot-entier)',
+              '',
+              '_Commentaire periodique, mis a jour par `machine-dep-timing-inventory.yml`',
+              '_(quotidien, edit du meme commentaire -- fix #10445 partie c). La jauge mesure',
+              '_la flotte (EPIC #9434), pas un grain : elle ne parait pas sur les PRs._',
+              '',
+              '| Metrique | Valeur |',
+              '|---|---|',
+              `| findings wallclock (cible drainage) | ${s.wallclock} |`,
+              `| distribution_param | ${s.distribution_param} |`,
+              `| domain_quantity | ${s.domain_quantity} |`,
+              `| ambiguous | ${s.ambiguous} |`,
+              `| total findings | ${s.total} |`,
+              `| notebooks scannes | ${inv.scanned} |`,
+              `| fichiers avec findings | ${filesWithFindings} |`,
+              '',
+              `Derniere mise a jour : ${new Date().toISOString()} (UTC).`,
+              '',
+              'Le label par-PR `machine-dep-timing-delta` (machine-dep-timing-advisory.yml)',
+              'porte seul le delta signe de chaque PR : +N ajouts, -N drainage, 0 neutre.',
+              '<!-- MACHINE-DEP-TIMING-INVENTORY:END -->',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: EPIC,
+            });
+            const botComment = comments.find(
+              (c) => c.user.type === 'Bot' && c.body.includes(MARKER)
+            );
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body,
+              });
+              core.info(`inventory comment updated: ${botComment.html_url}`);
+            } else {
+              const { data: created } = await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: EPIC,
+                body: body,
+              });
+              core.info(`inventory comment created: ${created.html_url}`);
+            }

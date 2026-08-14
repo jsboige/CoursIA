@@ -26,22 +26,36 @@ H.1/H.3/C.1, golden-set H.7 reproductibilite seulement).
 
 Regle detectee
 --------------
-Une cellule d'interpretation est **misplaced** si les 3 conditions sont reunies :
+Une cellule d'interpretation est **misplaced** si les 4 conditions sont reunies :
   1. Son `source` commence par un header reconnu (`### Lecture du resultat`,
      `### Lecture des resultats`, `### Interpretation` ou `### Interpretation des
      resultats`) -- le pattern exact est detectable par regex ancree.
   2. La cellule **suivante** est une cellule markdown debutant par `## ` ou
-     `### ` (nouvelle section / sous-section) -- le tell structurel du bug :
-     une interp qui precede directement un titre de section est positionnee
-     AVANT la section, pas apres le code de la section.
+     `### ` (nouvelle section / sous-section).
   3. Le titre de la section suivante n'est PAS un marqueur de fin de
-     document (`### Exercices`, `### Conclusion`, `### Pour aller plus loin`)
-     -- sinon c'est legitime (l'interp clot la section avant les exercices).
+     document (`### Exercices`, `## 7. Exercices`, `### Conclusion`,
+     `### Pour aller plus loin`) -- sinon c'est legitime.
+  4. **Aucune cellule code ne precede l'interp dans sa propre section** : en
+     remontant depuis l'interp, on rencontre un header de section AVANT toute
+     cellule code (cf `_is_anchored_to_code`). C'est cette condition qui
+     distingue le defaut d'une interp normale.
 
-Cette triple condition vise a **reduire les faux positifs** : la regle naive
-"interp suivi d'un heading = bug" produit ~70% de faux positifs (les interps
-qui clotent une section avant `## N. Section suivante` ou avant `###
-Exercices` sont OK). La condition 3 elimine la majorite.
+Pourquoi la condition 4 (correctif c.95)
+----------------------------------------
+Les conditions 1-3 ne regardent que ce qui SUIT l'interp. Or la forme
+CANONIQUE et CORRECTE -- celle que `.claude/rules/cell-interpretation-ordering.md`
+prescrit -- est precisement :
+
+    [cellule code produisant l'output]
+    ### Lecture du resultat : <commente cet output>     <- placement CORRECT
+    ## N. Section suivante                              <- la section suivante s'ouvre
+
+Les conditions 1-3 signalent cette forme. Mesure firsthand sur `origin/main`
+(c.95) : **1185 findings, dont 1146 de cette forme** -- soit ~97% de faux
+positifs, sur un gate BLOQUANT scope `MyIA.AI.Notebooks/**/*.ipynb`, donc
+bloquant toute PR de contenu notebook. La condition 4 ramene le scan a **39
+findings, 0 nouveau** : il ne reste que les interps parachutees entre deux
+headers, sans code dans leur section -- le defaut reellement decrit ci-dessus.
 
 Ce qui est **hors scope** par design (v1, EPIC #10678 Phase 3) :
 - DETECTION SEMANTIQUE du lien interp <-> output (NLP) : trop fragile.
@@ -56,12 +70,14 @@ Ce qui est **hors scope** par design (v1, EPIC #10678 Phase 3) :
 
 Baseline
 --------
-Le corpus porte deja ~250 cellules d'interpretation ; le scan v1 sur
-`origin/main` identifie ~150 cellules a verifier visuellement (un tiers sont
-probablement des FP, deux tiers de vrais MISPLACED). Pour ne PAS bloquer les
-PRs non concernees, `--check` se compare a une baseline commitee
+`--check` se compare a une baseline commitee
 (`scripts/notebook_tools/interp_positioning_baseline.json`) ; seules les
-NOUVELLES findings font echouer la gate.
+NOUVELLES findings font echouer la gate, pour ne pas bloquer les PRs non
+concernees. La baseline v1 portait **1184 hashes** -- des FP a ~97% (cf
+"Pourquoi la condition 4"), donc une dette illusoire qu'aucune Phase 4 ne
+pouvait bruler. Regeneree a **39** apres le correctif : c'est desormais une
+liste de travail reelle, conforme a son propre en-tete ("Burn down, do not
+grow").
 
 Usage
 -----
@@ -110,8 +126,13 @@ INTERP_HEADER_RE = re.compile(
 # Pattern pour detecter une cellule de fin de document legitime (la condition 3
 # du misplaced). Ces cellules sont des separateurs de section et l'interp qui
 # les precede clot la section precedente -- pas un bug.
+# Le prefixe numerote (`## 7. Exercices`, `### 4.2 Conclusion`) est la forme
+# DOMINANTE dans CoursIA : sans `(?:\d+(?:\.\d+)*\.?\s+)?`, la whitelist ne
+# matchait aucun header numerote et un `## 7. Exercices` etait signale comme
+# defaut (FP mesure sur GameTheory-16 cell#46, c.95).
 LEGIT_FOLLOWING_HEADER_RE = re.compile(
     r"^\s*#{2,4}\s+"
+    r"(?:\d+(?:\.\d+)*\.?\s+)?"
     r"(Exercice[s]?|Conclusion[s]?|Pour aller plus loin|R[ée]f[ée]rences?|Annexes?|Ressources|"
     r"Bibliography|Bibliographie|Summary|R[é]sum[ée]|Questions?|Quiz)"
     r"\b",
@@ -121,7 +142,9 @@ LEGIT_FOLLOWING_HEADER_RE = re.compile(
 # Pattern ancree pour detecter une cellule de debut de section (la condition 2).
 # Note : on accepte uniquement ## et ### (les h2/h3) -- le # (h1) est reserve au
 # titre du notebook dans la convention CoursIA, pas aux sections internes.
-SECTION_HEADER_RE = re.compile(r"^\s*#{2,3}\s+\S")
+# Le groupe capture le nombre de `#` pour le niveau (utilise par
+# `_top_level` / `_is_section_boundary`, cf #10910).
+SECTION_HEADER_RE = re.compile(r"^\s*(#{2,3})\s+\S")
 
 # ------------------------------------------------------------------ helpers
 
@@ -168,10 +191,85 @@ def _is_legit_following_header(text: str) -> bool:
     return bool(LEGIT_FOLLOWING_HEADER_RE.match(first))
 
 
+def _header_level(text: str) -> int | None:
+    """Niveau du premier header de section h2/h3 de `text`, None sinon.
+
+    Factorise le parsing de `SECTION_HEADER_RE` pour les deux predicats qui
+    partagent la notion de "header de section" mais pas le meme seuil : la
+    condition 2 accepte `##` ET `###`, la condition 4 seulement les niveaux
+    `<= _top_level(notebook)` (cf #10910).
+    """
+    first = _first_line(text)
+    m = SECTION_HEADER_RE.match(first)
+    return len(m.group(1)) if m else None
+
+
 def _is_section_header(text: str) -> bool:
     """Vrai si la cellule est un header de section `## ` ou `### ` (condition 2)."""
-    first = _first_line(text)
-    return bool(SECTION_HEADER_RE.match(first))
+    return _header_level(text) is not None
+
+
+def _top_level(cells: list) -> int:
+    """Niveau structurel du notebook : le plus haut niveau de header employe.
+
+    2 pour un notebook structure en `## `, 3 pour un notebook entierement en
+    `### ` (cas QC-Py-08 / #10785). Defaut 2 si aucun header h2/h3.
+    """
+    level: int | None = None
+    for cell in cells:
+        if cell.get("cell_type") != "markdown":
+            continue
+        lvl = _header_level(_as_text(cell.get("source", [])))
+        if lvl is not None:
+            level = lvl if level is None else min(level, lvl)
+    return level if level is not None else 2
+
+
+def _is_section_boundary(text: str, top: int) -> bool:
+    """Frontiere de SECTION pour la remontee de condition 4.
+
+    Distinct de `_is_section_header` (condition 2, qui matche `##` ET `###`) :
+    un sous-header PLUS PROFOND que le niveau structurel appartient a la MEME
+    section et ne doit pas interrompre la remontee. Sur un notebook structure
+    en `##`, un `###` entre le code et son interp est *dans* la section — la
+    remontee continue jusqu'au code. Sur un notebook entierement en `###`, le
+    `###` EST la frontiere et le guard reste actif. Cf #10910.
+    """
+    lvl = _header_level(text)
+    return lvl is not None and lvl <= top
+
+
+def _is_anchored_to_code(cells: list, i: int, top: int) -> bool:
+    """Vrai si l'interp en position `i` suit le code dont elle commente la sortie.
+
+    On remonte depuis `i - 1` : si on atteint une cellule de code AVANT de
+    rencontrer une frontiere de section, l'interp est correctement ancree —
+    elle clot sa section, et le header qui la SUIT ouvre simplement la
+    suivante. C'est la forme normale d'un notebook bien structure, pas un
+    defaut.
+
+    Sans ce test, le detecteur ne regardait que ce qui SUIT l'interp et
+    signalait toute interp terminant sa section. FP mesures c.95 sur
+    `GenAI/Aspire/01` cell#12 (suit un code a 3 outputs) et cell#17 (7
+    outputs), `Z3-Linq2Z3/09` cell#18 (5 outputs) — trois cellules
+    correctement placees, qui bloquaient toute PR touchant un notebook.
+
+    Le vrai defaut vise par `misplaced_before_section` (une interp parachutee
+    entre deux headers, loin de tout code — incident PyMC-15 #10580) continue
+    de rougir : en remontant, on y rencontre une frontiere avant tout code.
+
+    La frontiere est le niveau structurel du notebook (`_top_level`), pas
+    `##` en absolu : un notebook entierement en `###` (QC-Py-08 / #10785)
+    n'a que ce niveau pour delimiter ses sections, et le guard doit y rester
+    actif. Cf #10910.
+    """
+    for j in range(i - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") == "code":
+            return True
+        if _is_section_boundary(_as_text(cell.get("source", [])), top):
+            return False
+    return False
 
 
 def _stable_finding_hash(rule: str, file: str, cell_index: int, header: str) -> str:
@@ -210,6 +308,7 @@ def scan_notebook(path: Path) -> list[dict]:
 
     cells = nb.get("cells", [])
     findings: list[dict] = []
+    top = _top_level(cells)
 
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
@@ -236,6 +335,12 @@ def scan_notebook(path: Path) -> list[dict]:
         # Condition 3 : le header suivant est-il un separateur legitime ?
         # Si oui, l'interp clot la section avant un nouveau registre.
         if _is_legit_following_header(nxt_text):
+            continue
+
+        # Condition 4 : l'interp suit-elle le code dont elle commente la
+        # sortie ? Si oui elle est correctement ancree -- le header qui suit
+        # ouvre juste la section suivante (cf `_is_anchored_to_code`).
+        if _is_anchored_to_code(cells, i, top):
             continue
 
         # Les 3 conditions sont reunies -> MISPLACED.

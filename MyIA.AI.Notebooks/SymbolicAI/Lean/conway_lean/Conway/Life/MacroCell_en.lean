@@ -772,6 +772,37 @@ theorem gridToMacroCellWithOffsetN_le_two_eq (n : Nat) (g : Grid) (hn : n ≤ 2)
 def gridToMacroCell (g : Grid) : MacroCell :=
   (gridToMacroCellWithOffset g).2
 
+/-- **Grid -> MacroCell -> Grid round trip (membership)**: for any point
+    `p`, `p` is alive in the reconstructed grid
+    `(gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1`
+    iff `p` is alive in `g`. This is the general form of the goal announced
+    by the docstring of `gridToMacroCellWithOffset`, previously verified
+    only via `#eval` on the canonical patterns (Sanity checks below).
+
+    Assembles `mem_toCellsAux_buildFromGrid` (the enumeration of
+    `buildFromGrid` inside the covered square is exactly `inRegion /\ p ∈ g`)
+    with `gridFrame_contains_g` (every live cell of `g` lies inside the
+    frame square). Forward direction: enumerated members are in `g`.
+    Backward: members of `g` are inside the square, hence enumerated.
+
+    This is brick BR1 of the locality bridge (a) of `p5_large_n_jumpN`
+    (#6724): it identifies `mc.toGrid off` with `g` at the membership
+    level, letting evolutions be transported between the two via
+    `toGrid_shift_between` (Foundation) and `evolve_shift` (GridCanonical). -/
+theorem mem_toGrid_gridToMacroCellWithOffset (g : Grid) (p : Int × Int) :
+    p ∈ (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1 ↔ p ∈ g := by
+  cases hF : gridFrame g with
+  | mk off lvl =>
+    simp only [gridToMacroCellWithOffset, hF, MacroCell.toGrid, mem_sortDedup]
+    rw [MacroCell.mem_toCellsAux_buildFromGrid g lvl off.1 off.2 p]
+    constructor
+    · exact fun h => h.2
+    · intro hp
+      refine ⟨?_, hp⟩
+      have hreg := gridFrame_contains_g g p hp
+      rw [hF] at hreg
+      exact hreg
+
 /-! ## Sanity checks
 
 We verify that the round trip `Grid -> MacroCell -> Grid` preserves the
