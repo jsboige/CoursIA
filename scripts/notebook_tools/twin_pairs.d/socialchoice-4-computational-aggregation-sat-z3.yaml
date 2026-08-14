@@ -18,6 +18,15 @@
       csharp_sha: 1d6c34998a7a2dea80e2b4362daae247d9bb3227
       content_python_sha: 27551984fc79a82c6bd43760d48cf2e37a0a437819b98c2957bf5a98a1ac9a35
       content_csharp_sha: 28562df3c1f0e4f3f168812c1860e8b75d85279a78ec9abefd69c48b6fef4969
+    - date: "2026-08-13"
+      by: myia-po-2024:CoursIA
+      python_sha: 55b19576fd2c02160625ca3eebeaf023bce06c2b
+      csharp_sha: 1d6c34998a7a2dea80e2b4362daae247d9bb3227
+      content_python_sha: 37c4109217426d7764ea33d4a406423a7f4fc5d7df5762838dd2e2a05f7115d4
+      content_csharp_sha: 28562df3c1f0e4f3f168812c1860e8b75d85279a78ec9abefd69c48b6fef4969
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = PySAT (3 vrais solveurs SAT industriels Glucose3/Minisat22/Cadical103) + z3-py pour SMT + matplotlib/numpy (68 cellules, 21 code). C# = Microsoft.Z3 4.12.2 (1 NuGet) pour SMT + DPLL from-scratch pour SAT, 0 autre NuGet, 33 cellules, 12 code. Verdict RECOVERABLE-LOCAL : la branche SMT est native-both (SOTA-OK sur Z3, Python z3-py <-> C# Microsoft.Z3 4.12.2 meme protocole). MAIS la branche SAT, qui est le coeur du notebook (Arrow/Sen computational aggregation), est asymetrique : Python invoque 3 solveurs SAT industriels reels via PySAT, alors que C# reimplemente DPLL from-scratch sans NuGet de solveur SAT. DPLL from-scratch n'est PAS un substitut SOTA aux solveurs modernes (Glucose3/Minisat22/Cadical103) -- c'est explicitement declare dans la section 'Verdict SOTA (EPIC #3801)' du C# comme une 'Limite honnete (Prong B)'. RECOVERABLE-LOCAL s'applique : un solveur SAT NuGet (Microsoft.Z3 sat solver, ou Google.OrTools sat) est installable/invocable pour combler ce gap, mais pas tente dans cette PR (le notebook C# est honnete sur sa limite). Aucune lib SOTA partagee sur l'axe SAT. Axes de benchmark differents : Python bench les SOLVERS sur l'encodage d'Arrow ; C# bench STRUCTURELLEMENT Arrow vs Sen. parity_level: surface preserve."
+
   known_differences:
     - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Asymetrie de solveur SAT : le jumeau Python INVOQUE 3 vrais solveurs SAT industriels via PySAT (Glucose3, Minisat22, Cadical103) et les benchmark en §6 ; le C# reimplémente DPLL from-scratch (§1.1) sans NuGet de solveur SAT. Meme concept (agregation computationnelle d'Arrow/Sen), machineries SAT differentes."
     - "Le C# est HONNETE sur ce point : il contient une section dediee '§5 Verdict SOTA (EPIC #3801)' qui auto-declare que DPLL from-scratch n'est pas un substitut SOTA aux solveurs modernes, plus une 'Limite honnête (Prong B)' sous la conclusion. Ce point SOTA est un candidat d'enrichissement future (brancher un vrai solveur SAT NuGet), pas un verdict parity."

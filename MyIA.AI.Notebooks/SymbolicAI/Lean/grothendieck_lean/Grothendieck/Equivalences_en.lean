@@ -183,4 +183,152 @@ noncomputable def equivalence_symm (e : C ≌ D) : D ≌ C :=
 noncomputable def equivalence_trans {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) : C ≌ E :=
   e.trans f
 
+/-!
+## 7. Proper theorems (c.1301+107 v4 — L902 ★★ Tier 6 retained)
+
+Fundamental identities of equivalences, proved locally via the
+`rfl` tactic (direct unfold of `Equivalence.symm` fields).
+
+Lesson L902 ★★ Tier 6 (c.1301+108+): polymorphic universe constructors
+like `Equivalence.refl C` (signature `(C : Type u) → [Category C] →
+C ≌ C`) **cannot be proved** by direct `rfl` under Lean 4 v4.31.0-rc1
+— `Equivalence.refl : C ≌ C` does not unify (fails with `Application
+type mismatch`), nor via a dummy parameter `(e : C ≌ C) (_h :
+e = Equivalence.refl C)` + `subst _h; rfl` (fails with `Tactic 'subst'
+failed`). The 2 `Equivalence.refl_*` lemmas have been removed in v4;
+the 2 `Equivalence.symm_*` lemmas (which take an argument
+`e : C ≌ D`) remain valid.
+
+Conclusion: for lemmas that target fields of a polymorphic universe
+constructor, **direct `rfl` is impossible**. Solution: either
+`(e : C ≌ D)` argument + direct `rfl` (PASS for `Equivalence.symm`
+which takes `e`), or pure removal. The original `#check`s document
+the canonical Mathlib names accessible from current imports.
+-/
+
+/-- Theorem: the inverse `Equivalence.symm e` of an equivalence `e :
+    C ≌ D` swaps the roles of functor and inverse. This is the fundamental
+    symmetry property: `e.symm.functor = e.inverse`. -/
+theorem equivalence_symm_functor (e : C ≌ D) :
+    e.symm.functor = e.inverse := rfl
+
+/-- Theorem: `e.symm.inverse = e.functor` — the inverse of an inverse
+    returns the original "forward" functor. Dual of the previous. -/
+theorem equivalence_symm_inverse (e : C ≌ D) :
+    e.symm.inverse = e.functor := rfl
+
+/-!
+## 8. Proper theorems (c.1301+121 — additions on fields `e.unitIso` /
+##     `e.counitIso` / `e.trans`)
+
+Direct continuation of the `equivalence_symm_*` lemmas above: we now
+prove that the natural isomorphisms `unitIso` / `counitIso` on one
+hand, and the `trans` composition on the other, are coherent in the
+sense of the fields of `Equivalence`. All lemmas below take an
+argument `e : C ≌ D` (never a polymorphic universe constructor like
+`Equivalence.refl C`); L902 ★★ is thus trivially satisfied. Proofs use
+direct `rfl` after unfolding the fields of `Equivalence`.
+
+**Origin** (issue #2159 dispatch ai-01 msg-20260812T140023-6qzcmj,
+c.1301+121): replace `#check` with proper theorems in at least 1 of
+the 3 claimed modules (`Equivalences.lean`, `MonoidalCategories.lean`,
+`MathlibMap.lean`). `MathlibMap.lean` is catalog-only (see PR #10638
+historical — pragmatic removal), hence out of scope; the present
+sub-grain picks `Equivalences.lean` (and `MonoidalCategories.lean`
+separately).
+-/
+
+/-- Theorem: the inverse of `Equivalence.symm e` recovers the identity.
+    This is the involutivity law of `Equivalence.symm` at the object
+    level of the (2-)groupoid: `(e.symm).symm = e`. Proof: direct
+    unfold of the `symm` field of `Equivalence`. -/
+theorem equivalence_symm_symm (e : C ≌ D) :
+    e.symm.symm = e := rfl
+
+/-- Theorem: the composition `Equivalence.trans` has left functor
+    `e.functor` and right functor `f.functor`. This is the "direct"
+    composition law of the underlying functors to the composed
+    equivalence. Proof: direct unfold of the `functor` field of
+    `Equivalence.trans`. -/
+theorem equivalence_trans_functor {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) :
+    (e.trans f).functor = e.functor ⋙ f.functor := rfl
+
+/-- Theorem: the composition `Equivalence.trans` has left inverse
+    `f.inverse` and right inverse `e.inverse`. Dual of the previous:
+    "reversing the composition" = composing the inverses in reverse
+    order. Proof: direct unfold of the `inverse` field of
+    `Equivalence.trans`. -/
+theorem equivalence_trans_inverse {E : Type*} [Category E] (e : C ≌ D) (f : D ≌ E) :
+    (e.trans f).inverse = f.inverse ⋙ e.inverse := rfl
+
+/-- Theorem: the unit of `Equivalence.symm e` (the morphism
+    `(e.symm).unitIso : 𝟭 D ≅ e.symm.functor ⋙ e.symm.inverse`)
+    corresponds canonically to the counit of `e` in the sense of the
+    bijection 𝟭 D ≅ e.inverse ⋙ e.functor. This is the natural
+    "duality" between unit and counit on one hand, and symmetry on
+    the other. Proof: direct unfold of the `unitIso` field of
+    `Equivalence.symm`. -/
+theorem equivalence_symm_unit (e : C ≌ D) :
+    e.symm.unitIso = e.counitIso.symm := by
+  cases e
+  rfl
+
+/-!
+## 9. Bridges on the equivalence criterion and the triangle identity
+
+The **practical equivalence criterion** (Section 4) is the class
+`Functor.IsEquivalence F` = `F.Faithful` + `F.Full` + `F.EssSurj`: a
+functor is an equivalence iff it is fully faithful and essentially
+surjective. The classes `FullyFaithful` (data structure containing the
+preimages) and `EssSurj` (Prop class) are its two ingredients. The
+**triangle identity** `functor_unitIso_comp` (pointwise field of the
+`Equivalence` structure) relates the unit and counit along the functor:
+it is the equivalence analogue of `left_triangle` for adjunctions.
+`Equivalence.refl` gives the identity equivalence 𝟭 C.
+-/
+
+/-- Bridge: the triangle identity of an equivalence, in its **pointwise**
+    version (component at an object): `functor.map (unitIso.hom.app X) ≫
+    counitIso.hom.app (functor.obj X) = 𝟙 (functor.obj X)`. This is the
+    `functor_unitIso_comp` field of the `Equivalence` structure — the exact
+    analogue, for equivalences, of the left triangle identity of adjunctions
+    (`Grothendieck.Adjunction.left_triangle`). Delegates directly to the field.
+    Pointwise field of the structure (L902 ★★ Tier 5). -/
+theorem equivalence_triangle_field (e : C ≌ D) (X : C) :
+    e.functor.map (e.unitIso.hom.app X) ≫ e.counitIso.hom.app (e.functor.obj X) =
+      𝟙 (e.functor.obj X) :=
+  e.functor_unitIso_comp X
+
+/-- Bridge: the identity equivalence `𝟭 C ≌ 𝟭 C` via `Equivalence.refl`. It
+    is the neutral element of the (2-)groupoid structure of categories.
+    Direct re-export of the Mathlib def `Equivalence.refl`.
+    Return type `≌` = structure `Equivalence` = data → `noncomputable def`
+    (lesson c.1301+131-L2 ★). -/
+noncomputable def equivalence_refl_field (C : Type u₁) [Category.{v₁} C] : C ≌ C :=
+  CategoryTheory.Equivalence.refl (C := C)
+
+/-- Bridge: the structure `Functor.FullyFaithful` — the data witness that a
+    functor bijects the Homs (with the preimages `preimage`, `map_preimage`,
+    `preimage_map`). This is the "full and faithful" half of the equivalence
+    criterion (together with `EssSurj`).
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the structure. -/
+def fully_faithful_field (F : C ⥤ D) : Type _ :=
+  CategoryTheory.Functor.FullyFaithful F
+
+/-- Bridge: the class `Functor.EssSurj` — the property for a functor of being
+    essentially surjective (every object of D is isomorphic to the image of an
+    object of C). This is the "surjectivity" half of the equivalence criterion.
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the class. -/
+def ess_surj_field (F : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.EssSurj F
+
+/-- Bridge: the class `Functor.IsEquivalence` — the property for a functor of
+    being an equivalence (full `F.Full` + faithful `F.Faithful` +
+    essentially surjective `F.EssSurj`). This is the exact statement of the
+    practical criterion: "a functor is an equivalence iff it is fully faithful
+    and essentially surjective".
+    Type-sig bridge (L902 ★★ Tier 5) — direct re-export of the class. -/
+def is_equivalence_field (F : C ⥤ D) : Prop :=
+  CategoryTheory.Functor.IsEquivalence F
+
 end Grothendieck.Equivalences_en

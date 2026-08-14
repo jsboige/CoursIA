@@ -43,6 +43,7 @@ from __future__ import annotations
 import datetime as dt
 import importlib.util
 import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -555,3 +556,129 @@ def test_touched_zero_when_header_genuinely_absent():
     out, touched = ctp.surgical_rebaseline(raw, {"NoAuditPair": new})
     assert touched == 0
     assert out == raw, "aucun header => byte-identique (la CLI le signale en AVERTISSEMENT)"
+
+
+def test_cli_exit_nonzero_when_header_missing(tmp_path):
+    """#10430 acceptance residuelle : la CLI doit exit 1 (pas 0) quand une
+    paire demandee n'a pas pu etre ecrite parce que son bloc audit est absent.
+
+    C'est la moitie de l'acceptance que PR #10434 n'a pas livree : elle a
+    corrige le regex + loud-fail imprimant AVERTISSEMENT, mais le return 0
+    final laisse le worker conclure « rien a faire » quand le scanner est
+    aveugle. Le residu est comble ici : exit=1 si `missing_header`,
+    exit=0 sinon (no_op legit tolere).
+
+    Le notebook existe dans git ; seul le YAML de la paire perd son bloc
+    audit. C'est exactement le scenario #10430 (`app-10-portfolio`).
+    """
+    import subprocess
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "a.ipynb").write_text("{}", encoding="utf-8")
+    (repo / "b.ipynb").write_text("{}", encoding="utf-8")
+    reg = repo / "twin_pairs.d"
+    reg.mkdir()
+    (reg / "_schema.yaml").write_text("# schema\n", encoding="utf-8")
+    target = reg / "noauditpair.yaml"
+    target.write_text(
+        "- name: NoAuditPair\n"
+        "  family: Test\n"
+        "  python: a.ipynb\n"
+        "  csharp: b.ipynb\n",
+        encoding="utf-8",
+    )
+    # git init + commit pour que `_git_blob_sha` puisse rendre un SHA non-None
+    # (sinon la CLI court-circuite en skipped -> 'Ignorees' -> pas loud-fail).
+    _git_init_commit(repo)
+
+    out = subprocess.run(
+        [sys.executable, str(SCRIPT),
+         "--repo-root", str(repo),
+         "--registry", str(reg),
+         "--update", "--pair", "NoAuditPair", "--by", "test-lane"],
+        capture_output=True, text=True,
+    )
+    # AVERTISSEMENT loud doit etre sur stderr.
+    assert "AVERTISSEMENT" in out.stderr or "AVERTISSEMENT" in out.stdout, (
+        f"AVERTISSEMENT attendu ; stdout={out.stdout!r} stderr={out.stderr!r}"
+    )
+    # Exit code NON-ZERO : c'est la moitie manquante du fix #10430.
+    assert out.returncode == 1, (
+        f"exit code attendu = 1 (header introuvable), "
+        f"obtenu = {out.returncode}. stdout={out.stdout!r} stderr={out.stderr!r}"
+    )
+    # Et le fichier n'a pas ete reecrit (no write on silent fail).
+    assert "NoAuditPair" in target.read_text(encoding="utf-8")
+    assert "audits:" not in target.read_text(encoding="utf-8"), (
+        "le scanner n'aurait pas du inventer un bloc audit sur un fichier qui "
+        "n'en avait pas -- exit 1 sans ecriture"
+    )
+
+
+def test_cli_exit_zero_when_header_present_noop(tmp_path):
+    """Compagnon du test precedent : un no-op legit (SHAs deja a jour) doit
+    rester exit=0. La nouvelle regle exit=1 ne doit pas se declencher quand
+    le scanner fait son travail correctement et trouve le bloc audit (meme
+    si l'entree est deja a jour).
+    """
+    import subprocess
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "a.ipynb").write_text("{}", encoding="utf-8")
+    (repo / "b.ipynb").write_text("{}", encoding="utf-8")
+    reg = repo / "twin_pairs.d"
+    reg.mkdir()
+    (reg / "_schema.yaml").write_text("# schema\n", encoding="utf-8")
+    sha_a = "a" * 40
+    sha_b = "b" * 40
+    (reg / "okpair.yaml").write_text(
+        f"- name: OkPair\n"
+        f"  family: Test\n"
+        f"  python: a.ipynb\n"
+        f"  csharp: b.ipynb\n"
+        f"  audits:\n"
+        f"    - date: '2026-01-01'\n"
+        f"      by: lane-prev:CoursIA\n"
+        f"      python_sha: {sha_a}\n"
+        f"      csharp_sha: {sha_b}\n",
+        encoding="utf-8",
+    )
+    _git_init_commit(repo)
+
+    out = subprocess.run(
+        [sys.executable, str(SCRIPT),
+         "--repo-root", str(repo),
+         "--registry", str(reg),
+         "--update", "--pair", "OkPair", "--by", "test-lane"],
+        capture_output=True, text=True,
+    )
+    # Pas d'AVERTISSEMENT loud-fail, pas d'exit non-zero.
+    assert "AVERTISSEMENT" not in out.stderr, (
+        f"AVERTISSEMENT inattendu sur stderr : {out.stderr!r}"
+    )
+    assert out.returncode == 0, (
+        f"no-op legit doit garder exit=0 ; obtenu = {out.returncode}. "
+        f"stdout={out.stdout!r} stderr={out.stderr!r}"
+    )
+
+
+def _git_init_commit(repo: Path):
+    """Helper : initialise un repo git et commit tous les fichiers dans repo.
+
+    Necessaire pour que `_git_blob_sha` (via `git show <ref>:path`) rende
+    un SHA non-None ; sinon la CLI court-circuite toutes les paires en
+    `skipped` (notebook absent de git) AVANT d'arriver au bloc loud-fail
+    que ce test veut exercer.
+    """
+    import subprocess
+
+    subprocess.run(["git", "init", "-q"], cwd=str(repo), check=True)
+    subprocess.run(["git", "config", "user.email", "test@x"], cwd=str(repo), check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=str(repo), check=True)
+    subprocess.run(["git", "add", "-A"], cwd=str(repo), check=True)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "init for twin parity test"],
+        cwd=str(repo), check=True,
+    )

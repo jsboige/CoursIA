@@ -3,6 +3,8 @@
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-8-Temporal-Csharp.ipynb
   parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools` (Google, Apache-2.0, CP-SAT SOTA temporal : `CpModel()` + `NewIntervalVar` + `AddCumulative` + `AddNoOverlap2D` + `model.Minimize(makespan)` + `solver.Solve()` pour atelier job-shop RCPSP). C# = Tranche 1 from-scratch BCL .NET (PDDL duratives, Allen algebra 13 relations, STN Floyd-Warshall, RCPSP glouton LPT) + Tranche 2 `Google.OrTools` NuGet (Google, Apache-2.0, MEME solveur CP-SAT : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;` + `CpModel()` + `AddBoolVar` + `AddCumulative` + `solver.Solve()`) + `ScottPlot` NuGet 5.0.55 (MIT-license, timeline gantt chart). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 App tranche 4 lib-vs-lib + PR #10389 Planners-8 Tranche 2 MERGED substance Google.OrTools validee firsthand instance d'atelier : makespan optimal = 10 des deux cotes, le glouton LPT etait deja optimal, CP-SAT le PROUVE et explique pourquoi le chemin critique 7 est inaccessible via la contention de ressource) : les DEUX cotes atteignent un moteur CP-SAT de production (Python OR-Tools, C# Google.OrTools), bridge direct sans glue non-SOTA. Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382. `parity_level: native-both` preserve : parite engine + from-scratch pedagogique."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

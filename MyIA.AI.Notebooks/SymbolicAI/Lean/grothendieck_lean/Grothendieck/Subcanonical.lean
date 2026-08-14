@@ -30,11 +30,11 @@ Ce module substantiel est apparié avec son jumeau anglais dans le fichier sibli
 
 import Mathlib.CategoryTheory.Sites.Subcanonical
 
-universe v u
+universe w v u
 
 namespace Grothendieck.Subcanonical
 
-open CategoryTheory GrothendieckTopology Opposite Functor
+open CategoryTheory GrothendieckTopology Opposite Functor Sheaf
 
 /-! ## 1. Hypothèse de sous-canonicalité et ordre
 
@@ -101,5 +101,53 @@ theorem subcanonical_pullback {C : Type u} [Category.{v} C]
     (J : GrothendieckTopology C) (K : GrothendieckTopology D)
     [F.Full] [F.Faithful] [F.IsContinuous J K] [K.Subcanonical] :
     J.Subcanonical := subcanonical_of_full_of_faithful F J K
+
+/-! ## 5. Bridges Mathlib canoniques (hommage Grothendieck)
+
+Ponts vers les 4 constructeurs canoniques de `Mathlib/CategoryTheory/Sites/Canonical.lean`
+qui étendent le namespace `Grothendieck` avec les opérateurs fondamentaux de la sous-canonicalité :
+(5.1) instance Subcanonical sur la topologie canonique + extraction du champ `le_canonical`,
+(5.2) les foncteurs `J.yoneda` / `J.uliftYoneda` qui relient la catégorie C à la catégorie
+des J-faisceaux, et (5.3) le théorème `isSheaf_yoneda_obj` pour la topologie canonique. -/
+
+/-! ### 5.1 Pont-instance : la topologie canonique est sous-canonique
+
+La topologie canonique `canonicalTopology C` est la **plus fine** sous-canonique
+(la borne supérieure des topologies sous-canoniques sur C). -/
+instance subcanonical_canonical {C : Type u} [Category.{v} C] :
+    (canonicalTopology C).Subcanonical :=
+  inferInstance
+
+/-- Pont-lemma : extraction du champ `le_canonical` d'une instance Subcanonical. -/
+theorem subcanonical_le_canonical {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [Subcanonical J] :
+    J ≤ canonicalTopology C :=
+  Subcanonical.le_canonical
+
+/-! ### 5.2 Pont-def : le foncteur de Yoneda vers la catégorie des J-faisceaux
+
+Pour une topologie J sous-canonique, le plongement de Yoneda se factorise à
+travers la catégorie des J-faisceaux : l'opérateur `J.yoneda` retourne
+explicitement un foncteur `C ⥤ Sheaf J (Type v)`. -/
+noncomputable def subcanonical_yoneda {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [h : Subcanonical J] :
+    C ⥤ Sheaf J (Type v) :=
+  J.yoneda
+
+/-- Variante ulift du plongement de Yoneda vers la catégorie des J-faisceaux,
+permettant une montée en univers vers `Sheaf J (Type (max v w))`. -/
+noncomputable def subcanonical_uliftYoneda {C : Type u} [Category.{v} C]
+    {J : GrothendieckTopology C} [Subcanonical J] :
+    C ⥤ Sheaf J (Type (max v w)) :=
+  J.uliftYoneda
+
+/-! ### 5.3 Pont-theorem : yoneda.obj est faisceau pour la topologie canonique
+
+Pour la topologie canonique, tout objet `yoneda.obj X` est automatiquement un
+faisceau (point clé : c'est la définition de `canonicalTopology C` comme
+topologie engendrée par les représentables). -/
+theorem isSheaf_yoneda_obj_canonical {C : Type u} [Category.{v} C] (X : C) :
+    Presieve.IsSheaf (canonicalTopology C) (yoneda.obj X) :=
+  isSheaf_yoneda_obj X
 
 end Grothendieck.Subcanonical

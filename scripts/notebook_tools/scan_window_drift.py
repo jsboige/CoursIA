@@ -224,11 +224,23 @@ def classify_notebook(path: Path) -> dict[str, Any]:
         return rec
 
     cells = nb.get("cells", []) or []
-    code_cells = [
-        (i, "".join(c.get("source", [])))
-        for i, c in enumerate(cells)
-        if c.get("cell_type") == "code"
-    ]
+    code_cells = []
+    for i, c in enumerate(cells):
+        if c.get("cell_type") != "code":
+            continue
+        src = c.get("source")
+        # Defensive: tolerate `source: None` (one source-like field was None) and
+        # `source: [None, "x = 1\n"]` (list with None entries). nbformat spec
+        # says source is a string OR a list of strings; some notebooks produced
+        # by older tooling violate it. Without this guard the tree-scan
+        # crashes on a TypeError, masking the whole tree (#10230 follow-up).
+        if src is None:
+            src_text = ""
+        elif isinstance(src, list):
+            src_text = "".join(s for s in src if isinstance(s, str))
+        else:
+            src_text = src if isinstance(src, str) else ""
+        code_cells.append((i, src_text))
     full_code = "\n".join(src for _, src in code_cells)
 
     has_qc_api = bool(RE_QC_API.search(full_code))
@@ -406,7 +418,18 @@ def main(argv: list[str] | None = None) -> int:
         nb_path = Path(args.notebook)
         if not nb_path.is_absolute():
             nb_path = root / args.notebook
-        records = [classify_notebook(nb_path)]
+        if nb_path.is_dir():
+            # Acceptance #10230 : « lancer sur l'arbre QC entier ». Un chemin de
+            # répertoire scanne tous les .ipynb qu'il contient (hors checkpoints),
+            # au lieu de crasher en ERREUR (read_text sur un dir).
+            paths = [p for p in sorted(nb_path.rglob("*.ipynb"))
+                     if ".ipynb_checkpoints" not in p.parts]
+            if not paths:
+                print(f"[scan_window_drift] aucun notebook sous {nb_path}", file=sys.stderr)
+                return 2
+            records = [classify_notebook(p) for p in paths]
+        else:
+            records = [classify_notebook(nb_path)]
     else:
         paths = list(_iter_notebooks(root, args.family))
         if not paths:

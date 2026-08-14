@@ -14,6 +14,14 @@
       csharp_sha: 22e2fc6ce9e9f7ede40e2a4fad5ad3ed9be6bae6
       content_python_sha: 4d1190d632cd31f22c497e6634783cb95a68661d0c63377376c6f2ccae9f0889
       content_csharp_sha: 6350312e6a7a26343458ac1ef037cae7617a227de491d23de5c8c71260e60999
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA
+      python_sha: fc7b4f5c9f49974a7391abcc2bfab48031e3199a
+      csharp_sha: 22e2fc6ce9e9f7ede40e2a4fad5ad3ed9be6bae6
+      content_python_sha: 0c3404524ae2a25169455192d20ea1f918df2b0ce127128801060757b86ea485
+      content_csharp_sha: 6350312e6a7a26343458ac1ef037cae7617a227de491d23de5c8c71260e60999
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = ortools.sat.python.cp_model (OR-Tools CP-SAT 9.11, engine SOTA) + numpy + matplotlib + networkx (56 cellules : 26 code + 30 markdown, formulation CSP, 3 heuristiques Greedy/DSATUR/Welsh-Powell + CP-SAT exact, enumeration solutions, benchmark G(n,p) Erdos-Renyi). C# = Google.OrTools.Sat (NuGet, C# binding du MEME engine OR-Tools CP-SAT 9.11) + Tranche 1 from-scratch BCL pure (CanColor / k-coloriable, 0 NuGet) PRESERVEE (26 cellules : 12 code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur CP-SAT 9.11 (ortools.sat.python.cp_model <-> Google.OrTools.Sat.CpModel). Prong-B (#3801) : hierarchie sur Erdos-Renyi G(25,0.5) -- Greedy sub-optimal (8-9), DSATUR=chi=7, CP-SAT prouve chi=7 Optimal. Le C# ajoute une section dediee paradoxe de Mycielski (graphes triangle-free) absente cote Python. parity_level: native-both preserve."
   known_differences:
     - "Socle pedagogique commun : coloration de graphes comme CSP canonique -- formulation (variable couleur par sommet, domaines 1..k, contraintes != sur les aretes), heuristiques (Greedy, DSATUR, Welsh-Powell) + calcul exact du nombre chromatique chi. Cas d'etude partagees : graphe de Petersen, dodecaedre, graphes aleatoires G(n,p) (benchmark Erdos-Renyi)."
     - "Lib-vs-lib : Python ET C# atteignent un moteur CP-SAT de production. Tranche 1 C# = backtracking from-scratch (CanColor / k-coloriable, 0 NuGet) ; Tranche 2 C# (#10382, 2026-08-11 po-2024) = Google.OrTools CP-SAT 9.11 (meme engine que ortools.sat.python.cp_model cote Python, minimize max_color + brisure de symetrie)."

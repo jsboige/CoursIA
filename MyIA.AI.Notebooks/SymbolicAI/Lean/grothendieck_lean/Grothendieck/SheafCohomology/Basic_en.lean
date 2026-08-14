@@ -240,6 +240,88 @@ theorem H_map_id (F : Sheaf J AddCommGrpCat.{w})
     CategoryTheory.Sheaf.H.map (𝟙 F) n x = x :=
   CategoryTheory.Sheaf.H.map_id_apply x
 
+
+/-- Bridge: the cohomology presheaf bifunctor
+    `(F, U) ↦ Ext^n(free(yoneda U), F)`. β-equivalent to the field
+    `Sheaf.cohomologyPresheafFunctor`. -/
+
+noncomputable def cohomologyPresheafFunctor_field
+    [HasSheafify J AddCommGrpCat.{v}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{v})]
+    (n : ℕ) :
+    Sheaf J AddCommGrpCat.{v} ⥤ Cᵒᵖ ⥤ AddCommGrpCat.{w'} :=
+  CategoryTheory.Sheaf.cohomologyPresheafFunctor J n
+
+/-- Bridge: the cohomology presheaf
+    `U ↦ Ext^n(free(yoneda U), F)`. β-equivalent to the field
+    `Sheaf.cohomologyPresheaf`. -/
+
+noncomputable def cohomologyPresheaf_field
+    (F : Sheaf J AddCommGrpCat.{v})
+    [HasSheafify J AddCommGrpCat.{v}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{v})]
+    (n : ℕ) :
+    Cᵒᵖ ⥤ AddCommGrpCat.{w'} :=
+  CategoryTheory.Sheaf.cohomologyPresheaf F n
+
+/-- Bridge: naturality of the equivalence H^0 =+ Gamma. For a morphism
+    f : F ⟶ G of abelian sheaves, and an element x : H^0(F),
+    `f.hom.app (op T) (H.equiv_0 F hT x) = H.equiv_0 G hT (H.map f 0 x)`.
+    β-equivalent to the lemma `Sheaf.H.equiv_0_naturality`. -/
+
+theorem equiv₀_naturality_field
+    [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
+    {T : C} (hT : IsTerminal T) {F G : Sheaf J AddCommGrpCat.{w}} (f : F ⟶ G)
+    (x : CategoryTheory.Sheaf.H F 0) :
+    f.hom.app (op T) (CategoryTheory.Sheaf.H.equiv₀ F hT x) =
+      CategoryTheory.Sheaf.H.equiv₀ G hT (CategoryTheory.Sheaf.H.map f 0 x) :=
+  CategoryTheory.Sheaf.H.equiv₀_naturality hT f x
+
+/-- Bridge: naturality of the symm of the equivalence H^0 =+ Gamma. For a
+    morphism f : F ⟶ G, and an element x : F(T),
+    `H.map f 0 ((H.equiv_0 F hT).symm x) = (H.equiv_0 G hT).symm (f.hom.app (op T) x)`.
+    β-equivalent to the lemma `Sheaf.H.equiv_0_symm_naturality`. -/
+
+theorem equiv₀_symm_naturality_field
+    [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
+    {T : C} (hT : IsTerminal T) {F G : Sheaf J AddCommGrpCat.{w}} (f : F ⟶ G)
+    (x : F.obj.obj (op T)) :
+    CategoryTheory.Sheaf.H.map f 0 ((CategoryTheory.Sheaf.H.equiv₀ F hT).symm x) =
+      (CategoryTheory.Sheaf.H.equiv₀ G hT).symm (f.hom.app (op T) x) :=
+  CategoryTheory.Sheaf.H.equiv₀_symm_naturality hT f x
+
+/-- Bridge: explicit unfolding of H.map. For f : F ⟶ G, n : ℕ and
+    x : H^n(F), `H.map f n x = x.comp (Ext.mk_0 f) (add_zero n)`.
+    β-equivalent to the lemma `Sheaf.H.map_apply`. -/
+
+theorem map_apply_field {F G : Sheaf J AddCommGrpCat.{w}}
+    [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
+    (f : F ⟶ G) {n : ℕ} (x : CategoryTheory.Sheaf.H F n) :
+    CategoryTheory.Sheaf.H.map f n x =
+      x.comp (CategoryTheory.Abelian.Ext.mk₀ f) (add_zero n) :=
+  CategoryTheory.Sheaf.H.map_apply f x
+
+/-- Bridge: simps lemma for the cohomology functor. For J a Grothendieck
+    topology, n : ℕ and f : F ⟶ G,
+    `(functorH J n).map f = ofHom (H.map f n)`.
+    β-equivalent to the lemma `Sheaf.functorH_map`. -/
+
+theorem functorH_map_field (J : GrothendieckTopology C)
+    [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
+    {F G : Sheaf J AddCommGrpCat.{w}} (f : F ⟶ G) {n : ℕ} :
+    (CategoryTheory.Sheaf.functorH J n).map f =
+      AddCommGrpCat.ofHom (CategoryTheory.Sheaf.H.map f n) :=
+  CategoryTheory.Sheaf.functorH_map J n f
+
+/-- Bridge: zero sheaf -> Subsingleton H^n(F). For F a zero abelian sheaf and
+    n : ℕ, H^n(F) is a Subsingleton (the cohomology of the zero sheaf vanishes
+    in all degrees). β-equivalent to the lemma
+    `Sheaf.subsingleton_H_of_isZero`. -/
+
+theorem subsingleton_H_of_isZero_field
+    [HasSheafify J AddCommGrpCat.{w}] [HasExt.{w'} (Sheaf J AddCommGrpCat.{w})]
+    {F : Sheaf J AddCommGrpCat.{w}} (h : Limits.IsZero F) (n : ℕ) :
+    Subsingleton (CategoryTheory.Sheaf.H F n) :=
+  CategoryTheory.Sheaf.subsingleton_H_of_isZero h n
+
 /-- Bridge construction: the cohomology presheaf at an object X.
     This is `(F.cohomologyPresheaf n).obj (op X)`, the degree-n
     cohomology of X with values in F. -/
