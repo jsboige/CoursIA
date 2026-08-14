@@ -70,7 +70,7 @@ Helper `_interp_matches_code(source_interp, source_code)` : tokenize les 2 sourc
 - **c.240-L2 ★** : Toujours classifier AVANT de commit un scan. La confiance naïve en un "détecteur élargi" génère des faux positifs massifs (21/21 ici). Vérification cell-by-cell obligatoire (c.239-L2 reaffirmé + c.237-L1 reaffirmed).
 - **c.240-L3 ★ NEW** : `gap_after = None` est un signal positionnel mais **PAS sémantique**. Le classificateur position-based rate les orphan sémantiques (interp qui parle d'un sujet différent du code adjacent). Solution = heuristique sémantique keywords ↔ code contenu (à venir dans PR #10682).
 
-Voir aussi : [rapport c.237 original](docs/ledgers/10678-interp-positioning-audit.md) (24 CHECK) + [topic file c.237-c.239](../topic-c237-c239-interp-positioning-rollout-10678.md).
+Voir aussi : [rapport c.237 original](10678-interp-positioning-audit.md) (24 CHECK).
 
 
 ## Orphelins détectés
@@ -301,7 +301,7 @@ Voir aussi : [rapport c.237 original](docs/ledgers/10678-interp-positioning-audi
 - **idx** : 21 / 26 total cells
 - **prev_code_idx** : 20 (seul code avant l'interp)
 - **is_last_cell** : False
-- **last_cell_preview** : `--- /  / [<< Cypherpunk Origins](SC-0-Cypherpunk-Origins.ipynb) | [Suivant : Setup W`
+- **last_cell_preview** : `--- /  / [<< Cypherpunk Origins](../../MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb) | [Suivant : Setup W`
 - **interp_preview** : `### Interprétation : Résumé de l'environnement /  / **Sortie obtenue** : Résumé complet de l'environnement de développement `
 - **Sévérité** : **HIGH** (orphan de fin = l'interp n'est jamais lue, donc jamais validée par un code qu'elle interprète)
 - **Action Phase 2** : relocaliser la cellule juste après le code référencé (prev_code_idx+1)
