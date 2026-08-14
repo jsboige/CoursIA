@@ -1201,6 +1201,59 @@ theorem padCenter2_correct (c : MacroCell) (hk : 1 ≤ c.level) :
       · congr 1 <;> push_cast <;> ring_nf
     · congr 1 <;> push_cast <;> ring_nf
 
+/-- **Contenu de `padCenter2` comme translation du contenu** : la grille
+    rembourree `(padCenter2 c).toGrid (0, 0)` est exactement `c.toGrid (0, 0)`
+    translatee de `3·2^(k-1)` sur chaque axe, ou `k = c.level`. C'est le
+    resultat `padCenter2_correct` (egalite des enumerations `toCellsAux` au
+    decalage corrige `-(3·2^(k-1))`, cf #2197) remonte au niveau `toGrid`
+    via `mem_toCellsAux_shift` (MacroCell). Brique BR3 du pont de localite
+    (a) de `p5_large_n_jumpN` (#6724) : avec BR2 (`toGrid_shift_grid`) et
+    BR1 (`mem_toGrid_gridToMacroCellWithOffset`, MacroCell), elle identifie
+    `(padCenter2 mc).toGrid (0, 0)` a la grille d'entree `g` translatee de
+    `3·2^(k-1) - off`, preparant l'annulation exacte des decalages du saut
+    (le placement `jumpResultOff off lvl = off - 2^(lvl-1)` annule
+    precisement la translation residuelle). -/
+theorem padCenter2_toGrid_shift (c : MacroCell) (hk : 1 ≤ c.level) :
+    (padCenter2 c).toGrid (0, 0)
+      = shift ((3 * 2 ^ (c.level - 1) : Int), (3 * 2 ^ (c.level - 1) : Int))
+          (c.toGrid (0, 0)) := by
+  apply Canonical.ext
+  · exact canonical_sortDedup _
+  · exact canonical_shift _ _
+  · intro p
+    simp only [MacroCell.toGrid, mem_sortDedup, mem_shift, Prod.fst, Prod.snd]
+    have hpad : (padCenter2 c).toCellsAux (-(3 * 2 ^ (c.level - 1) : Int))
+                                     (-(3 * 2 ^ (c.level - 1) : Int))
+      = c.toCellsAux 0 0 := by
+      have h := padCenter2_correct c hk
+      simpa only using h
+    have hshift : ∀ q : Int × Int,
+        q ∈ (padCenter2 c).toCellsAux (-(3 * 2 ^ (c.level - 1) : Int))
+                                      (-(3 * 2 ^ (c.level - 1) : Int)) ↔
+        (q.1 - (-(3 * 2 ^ (c.level - 1) : Int)),
+         q.2 - (-(3 * 2 ^ (c.level - 1) : Int))) ∈ (padCenter2 c).toCellsAux 0 0 :=
+      fun q => MacroCell.mem_toCellsAux_shift (c := padCenter2 c)
+        (r0 := -(3 * 2 ^ (c.level - 1) : Int))
+        (c0 := -(3 * 2 ^ (c.level - 1) : Int)) (p := q)
+    constructor
+    · intro h
+      have hq2 : ((p.1 - (3 * 2 ^ (c.level - 1) : Int)) - (-(3 * 2 ^ (c.level - 1) : Int)),
+                  (p.2 - (3 * 2 ^ (c.level - 1) : Int)) - (-(3 * 2 ^ (c.level - 1) : Int)))
+                 = p := by ext <;> omega
+      have h1 := (hshift (p.1 - (3 * 2 ^ (c.level - 1) : Int),
+                          p.2 - (3 * 2 ^ (c.level - 1) : Int))).mpr (by rw [hq2]; exact h)
+      rw [hpad] at h1
+      exact h1
+    · intro h
+      rw [← hpad] at h
+      have hq2 : ((p.1 - (3 * 2 ^ (c.level - 1) : Int)) - (-(3 * 2 ^ (c.level - 1) : Int)),
+                  (p.2 - (3 * 2 ^ (c.level - 1) : Int)) - (-(3 * 2 ^ (c.level - 1) : Int)))
+                 = p := by ext <;> omega
+      have h1 := (hshift (p.1 - (3 * 2 ^ (c.level - 1) : Int),
+                          p.2 - (3 * 2 ^ (c.level - 1) : Int))).mp h
+      rw [hq2] at h1
+      exact h1
+
 /-- WITNESS for P3 on a 2×2 block (level 1, shift = 3·2^0 = 3).
 
     Empirically proven via `native_decide`: the corrected statement
@@ -1471,6 +1524,32 @@ theorem toGrid_shift_between {c : MacroCell} {a b a' b' : Int} {p : Int × Int} 
     rw [mem_toGrid_shift] at h
     have he : (p.1 - a, p.2 - b) = (p.1 - a + a' - a', p.2 - b + b' - b') := by ext <;> ring
     rw [he]; exact h
+
+/-- **Decalage de `toGrid` comme decalage de grille** : la grille
+    reconstruite `c.toGrid (a, b)` est exactement `c.toGrid (a', b')`
+    translatee par la difference `(a - a', b - b')` (egalite de listes via
+    la rigidite canonique, `Canonical.ext`). Forme liste de
+    `toGrid_shift_between`, directement composable avec `evolve_shift`
+    (GridCanonical) pour transporter les evolutions d'un decalage a
+    l'autre. Brique BR2 du pont de localite (a) de `p5_large_n_jumpN`
+    (#6724). -/
+theorem toGrid_shift_grid (c : MacroCell) (a b a' b' : Int) :
+    c.toGrid (a, b) = shift (a - a', b - b') (c.toGrid (a', b')) := by
+  apply Canonical.ext
+  · exact canonical_sortDedup _
+  · exact canonical_shift _ _
+  · intro p
+    simp only [mem_shift, Prod.fst, Prod.snd]
+    have he : (p.1 - (a - a'), p.2 - (b - b')) = (p.1 - a + a', p.2 - b + b') := by
+      ext <;> omega
+    constructor
+    · intro h
+      rw [toGrid_shift_between (c := c) (p := p) (a := a) (b := b) (a' := a') (b' := b')] at h
+      rw [he]; exact h
+    · intro h
+      rw [he] at h
+      rw [← toGrid_shift_between (c := c) (p := p) (a := a) (b := b) (a' := a') (b' := b')] at h
+      exact h
 
 /-- **G3 infrastructure (toGrid node-decomposition).** Membership in a `node`
     cell's grid decomposes into membership in the four children's grids, with
