@@ -143,6 +143,21 @@ def test_commit_message_only_blocks():
     assert verdict["hits"][0]["location"] == "commit[1]"
 
 
+# --- extra: clean body + offending commit -> BLOCK (#10953) -----------------
+# The exact vector #10101 exists to catch: the squash message is rebuilt from
+# branch commits, so a `Closes #N` that only lives in a commit message would
+# auto-close a PR on merge. A spotless body must NOT clear it.
+
+def test_clean_body_offending_commit_blocks():
+    body = "Enrichissement pedagogique, aucun close-keyword, See #10488"
+    commits = ["docs: prose", "feat: contenu\n\nCloses #10067 a la livraison"]
+    verdict = pkg.check(body, commits=commits,
+                        resolver=_table_resolver({10067: "pr"}))
+    assert verdict["guard_pass"] is False
+    assert verdict["hits"][0]["location"] == "commit[1]"
+    assert verdict["hits"][0]["number"] == 10067
+
+
 # --- extra: CLI end-to-end with a table resolver monkeypatch ----------------
 
 def test_cli_blocks_on_pr(tmp_path, monkeypatch):
