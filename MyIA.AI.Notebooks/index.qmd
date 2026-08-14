@@ -1,7 +1,7 @@
 ---
 title: "Notebooks"
-subtitle: "12 séries pédagogiques niveau 1"
-description: "Liste des 12 séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT, SemanticKernel."
+subtitle: "13 séries pédagogiques niveau 1"
+description: "Liste des 13 séries niveau 1 du dépôt CoursIA — Search, Sudoku, ML, RL, GameTheory, GenAI, Probas, SymbolicAI, QuantConnect, CaseStudies, IIT, SemanticKernel, FallacyDetection."
 ---
 
 # Séries de notebooks
@@ -104,6 +104,14 @@ PyPhi, φ (phi) computation, causal analysis, théorème de Tononi.
 SDK agents IA Microsoft, planners, memory connectors, function calling.
 
 **Notebooks** : 5+ · **Kernels** : python3, .net-csharp · **GPU** : non
+:::
+
+::: {.series-card}
+### [FallacyDetection](FallacyDetection/README.md) — Détection de sophismes (Qwen FT + PT)
+
+Classification de sophismes par Qwen 3.5/3.6 : fine-tuning (mémorisation du motif « général → particulier ») vs post-training, interprétabilité par sparse autoencoders (SAE). Série en construction — EPIC #10355, phases survey et datasets livrées.
+
+**Notebooks** : 2 · **Kernels** : python3 · **GPU** : oui
 :::
 
 ## Cross-series
