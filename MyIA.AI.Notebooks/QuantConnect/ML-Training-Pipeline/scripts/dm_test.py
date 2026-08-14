@@ -172,12 +172,21 @@ def dm_verdict(
     errors_baseline: np.ndarray,
     alpha: float = 0.05,
     horizon: int = 1,
+    loss_fn: str = "mse",
 ) -> dict:
     """Run DM test and return a verdict dict with human-readable result.
 
-    Positive mean_loss_diff means baseline has higher loss (model wins).
+    mean_loss_diff = mean(loss_a - loss_b) with a = model, b = baseline:
+    NEGATIVE means the model has lower loss (model wins); positive means
+    the baseline wins. With loss_fn="linear" the DM differential compares
+    raw signed errors, so mean_loss_diff is the model-vs-baseline bias gap.
+
+    ``loss_fn`` selects the loss applied to forecast errors before the DM
+    differential: ``"mse"`` (squared), ``"mae"`` (absolute), ``"linear"``
+    (raw errors, sign-preserving — required by pr-review §C for
+    return/strategy series; ``mse`` squares away the sign).
     """
-    result = diebold_mariano_test(errors_model, errors_baseline, loss_fn="mse", horizon=horizon)
+    result = diebold_mariano_test(errors_model, errors_baseline, loss_fn=loss_fn, horizon=horizon)
     if result.p_value < alpha and result.mean_loss_diff < 0:
         verdict = "BEATS baseline"
     elif result.p_value < alpha and result.mean_loss_diff > 0:

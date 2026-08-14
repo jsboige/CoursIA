@@ -254,6 +254,35 @@ theorem evolve_shift (v : Int × Int) (n : Nat) (g : Grid) :
   | zero => simp [evolve]
   | succ k ih => rw [evolve_succ, step_shift, ih, ← evolve_succ]
 
+/-- Composition of translations: applying `w` then `v` equals the
+    componentwise-sum translation. Stated with explicit components (rather
+    than pairs) so that rewriting produces sums directly, without `(a, b).1`
+    projections. -/
+theorem shift_shift (a1 a2 b1 b2 : Int) (g : Grid) :
+    shift (a1, a2) (shift (b1, b2) g) = shift (a1 + b1, a2 + b2) g := by
+  apply Canonical.ext
+  · exact canonical_shift (a1, a2) (shift (b1, b2) g)
+  · exact canonical_shift (a1 + b1, a2 + b2) g
+  · intro p
+    rw [mem_shift, mem_shift, mem_shift]
+    have hp : ((p.1 - a1) - b1, (p.2 - a2) - b2)
+        = (p.1 - (a1 + b1), p.2 - (a2 + b2)) := by ext <;> omega
+    rw [hp]
+
+/-- Translating by zero is the identity on canonical grids: the `sortDedup`
+    of `shift` re-sorts an already sorted duplicate-free list. Inset of the
+    locality bridge (a) of #6724: the composition of the one-jump's three
+    translations cancels to the zero vector, and `shift_zero` eliminates
+    that residual identity. -/
+theorem shift_zero {g : Grid} (hg : Canonical g) : shift (0, 0) g = g := by
+  apply Canonical.ext
+  · exact canonical_shift (0, 0) g
+  · exact hg
+  · intro p
+    rw [mem_shift]
+    have hp : (p.1 - 0, p.2 - 0) = p := by ext <;> omega
+    rw [hp]
+
 /-! ## Extensional congruence of `step` / `evolve`
 
 Two grids with extensionally equal membership (same set of live cells,

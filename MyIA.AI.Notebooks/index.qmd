@@ -51,7 +51,7 @@ Jeux combinatoires, équilibre de Nash, théorème de Folk, choix social (Arrow,
 :::
 
 ::: {.series-card}
-### [GenAI](../GenAI/README.md) — IA générative multimodale
+### [GenAI](GenAI/README.md) — IA générative multimodale
 
 Image (Stable Diffusion, FLUX, Qwen-VL), audio (Whisper, music), texte (transformers, agents), vibe-coding.
 
@@ -59,7 +59,7 @@ Image (Stable Diffusion, FLUX, Qwen-VL), audio (Whisper, music), texte (transfor
 :::
 
 ::: {.series-card}
-### [Probas](../Probas/README.md) — Probabilités & décision
+### [Probas](Probas/README.md) — Probabilités & décision
 
 Infer.NET (modèles graphiques), PyMC (MCMC, NUTS, ArviZ), Decision Theory (EVPI, EVPII), théorie de la décision bayésienne.
 
@@ -67,7 +67,7 @@ Infer.NET (modèles graphiques), PyMC (MCMC, NUTS, ArviZ), Decision Theory (EVPI
 :::
 
 ::: {.series-card}
-### [SymbolicAI](../SymbolicAI/README.md) — Raisonnement formel
+### [SymbolicAI](SymbolicAI/README.md) — Raisonnement formel
 
 Lean 4 (preuves formelles), Tweety (argumentation), SemanticWeb (RDF, OWL), Planning (OR-tools), SmartContract (Solidity).
 
@@ -75,7 +75,7 @@ Lean 4 (preuves formelles), Tweety (argumentation), SemanticWeb (RDF, OWL), Plan
 :::
 
 ::: {.series-card}
-### [QuantConnect](../QuantConnect/README.md) — Trading algorithmique
+### [QuantConnect](QuantConnect/README.md) — Trading algorithmique
 
 50+ stratégies (Alpha, Momentum, Trend-Following, Options, Mean-Reversion), 27 notebooks, backtest Sharpe/CAGR/MaxDD.
 
@@ -83,7 +83,7 @@ Lean 4 (preuves formelles), Tweety (argumentation), SemanticWeb (RDF, OWL), Plan
 :::
 
 ::: {.series-card}
-### [CaseStudies](../CaseStudies/README.md) — Études de cas transverses
+### [CaseStudies](CaseStudies/README.md) — Études de cas transverses
 
 Diagnostic médical, oncology planning, Barbie-Schreck, Fort-Boyard, Recipe-Maker, SmartGrid.
 
@@ -91,7 +91,7 @@ Diagnostic médical, oncology planning, Barbie-Schreck, Fort-Boyard, Recipe-Make
 :::
 
 ::: {.series-card}
-### [IIT](../IIT/README.md) — Integrated Information Theory
+### [IIT](IIT/README.md) — Integrated Information Theory
 
 PyPhi, φ (phi) computation, causal analysis, théorème de Tononi.
 
@@ -99,7 +99,7 @@ PyPhi, φ (phi) computation, causal analysis, théorème de Tononi.
 :::
 
 ::: {.series-card}
-### [SemanticKernel](../SemanticKernel/README.md) — Microsoft Semantic Kernel
+### [SemanticKernel](GenAI/SemanticKernel/README.md) — Microsoft Semantic Kernel
 
 SDK agents IA Microsoft, planners, memory connectors, function calling.
 
@@ -108,4 +108,4 @@ SDK agents IA Microsoft, planners, memory connectors, function calling.
 
 ## Cross-series
 
-[`cross-series/`](../cross-series/README.md) — notebooks transverses (multi-séries) : agents de coordination, IPC, validation inter-langages.
+[`cross-series/`](cross-series/README.md) — notebooks transverses (multi-séries) : agents de coordination, IPC, validation inter-langages.

@@ -58,9 +58,11 @@ class MLClassificationAlgorithm(QCAlgorithm):
             if not self.ObjectStore.ContainsKey(self.MODEL_KEY):
                 raise Exception(f"Modele non trouve dans ObjectStore: {self.MODEL_KEY}")
 
-            # Charger le modele
+            # Charger le modele (producer = pickle.dumps dans quantbook.ipynb;
+            # joblib.load lit un flux pickle, contrairement a joblib.loads qui
+            # n'existe pas)
             model_bytes = self.ObjectStore.ReadBytes(self.MODEL_KEY)
-            self.model = joblib.loads(bytes(model_bytes))
+            self.model = joblib.load(BytesIO(bytes(model_bytes)))
 
             # Charger la configuration
             if self.ObjectStore.ContainsKey(self.CONFIG_KEY):
@@ -88,16 +90,16 @@ class MLClassificationAlgorithm(QCAlgorithm):
 
     def setup_indicators(self):
         """Configurer les indicateurs techniques pour les features."""
-        # RSI
-        self.rsi = self.RSI(self.symbol, 14, Resolution.Daily)
+        # RSI (resolution en mot-cle: 3e positionnel = moving_average_type)
+        self.rsi = self.RSI(self.symbol, 14, resolution=Resolution.Daily)
 
         # EMA
         self.ema10 = self.EMA(self.symbol, 10, Resolution.Daily)
         self.ema20 = self.EMA(self.symbol, 20, Resolution.Daily)
         self.ema50 = self.EMA(self.symbol, 50, Resolution.Daily)
 
-        # MACD
-        self.macd = self.MACD(self.symbol, 12, 26, 9, Resolution.Daily)
+        # MACD (resolution en mot-cle: 5e positionnel = moving_average_type)
+        self.macd = self.MACD(self.symbol, 12, 26, 9, resolution=Resolution.Daily)
 
         # Historique des prix pour les returns et volatilite
         self.price_history = []
@@ -111,7 +113,8 @@ class MLClassificationAlgorithm(QCAlgorithm):
         if self.IsWarmingUp or self.model is None:
             return
 
-        if not data.ContainsKey(self.symbol):
+        # ContainsKey peut etre True avec une valeur None (jour de gap/delist)
+        if not data.ContainsKey(self.symbol) or data[self.symbol] is None:
             return
 
         # Mettre a jour l'historique des prix
