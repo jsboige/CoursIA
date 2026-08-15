@@ -22,6 +22,12 @@
       csharp_sha: 7a3184f1a7a528da990e1587f859954daae91096
       content_python_sha: cdf5b893c9170134c94e1344bd6a6be9e78a55af1062d2aa68c0395b637e6ac0
       content_csharp_sha: 51b00ddd94d6e1eb1fb7d7922872c2e571021f27dee7d1db486bea6ab2fa3543
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 430afccc5a4826bee7f8d6f5a199bb3f2bb42c56
+      csharp_sha: 083699f5dd70eae53f1d5a64ac8e93717a766d2c
+      content_python_sha: cdf5b893c9170134c94e1344bd6a6be9e78a55af1062d2aa68c0395b637e6ac0
+      content_csharp_sha: 4816d5ca2db8a4db7a3fc98240fb346381e62245ec15d1f449e85a92c3e5494c
   known_differences:
     - "2026-08-08 (po-2025) #9975 grain B Prong-B : instance VRP rendue discriminante + 2-opt retargete vers NN. Cause racine (verifiee firsthand sur 1400+ instances) : CI (Cheapest-Insertion) est insertion-optimale par construction -> 2-opt-on-CI est structurellement nul (0/1400 instances avec gain>1). L'ancienne instance donnait NN=415,63 / CI=413,69 / +2-opt=413,69 (gain EXACTEMENT nul) -> l'etape 2-opt ne demontrait aucune amelioration locale. Fix : (1) nouvelle instance (15 clients, memes demands/cap/veh) ou NN produit des croisements d'aretes ; (2) 2-opt retargete vers le tour NN (la cible canonique de la recherche locale, contrairement a CI deja localement optimale). Resultat re-execute (C# via .NET Interactive 1.0.552801, Python via nbconvert, regle F) : NN=595,83 -> NN+2-opt=583,03 (gain -2,1%, STRICTEMENT positif) -> SA=569,24 ; CI+2-opt=585,89 (0,0%, rappel de l'insertion-optimalite de CI). Divergence SA C#/Python de l'ancienne instance (403,45 vs 410,59) RECONCILIEE : sur la nouvelle instance les deux recuits convergent vers 569,24 (meme bassin) ; la divergence etait RNG-pilotée (System.Random vs PCG64, meme seed=42) et dependante du paysage, non un bug. csharp_sha rebaseline (blob pre-commit) ; python_sha inchange (App-17 OR-Tools non touche). App-17b-Python (vrai twin from-scratch) n'est PAS dans ce registre (gap pre-existant, hors scope grain B)."
     - "Socle pedagogique commun : VRP / Routing logistique (CSP + OR-Tools routing, distances) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
