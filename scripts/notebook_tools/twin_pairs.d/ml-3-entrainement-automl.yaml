@@ -23,6 +23,12 @@
       csharp_sha: c5be5734167b73aa31abb84da4d00165a3612552
       content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
       content_csharp_sha: 86f24846bc1a8aec98d49b592ea36d0ec471eb0e065eb44bb3f48cfe1a8649cb
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: 8312994b018141ee792668a10d4badc1818b32a3
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: 5e3eaddd134b346c59036a1e2ac05412f1685d24dffd4697e794b5fe9b84831c
   known_differences:
     - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
     - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
