@@ -9,6 +9,7 @@ import Grothendieck.Construction
 import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
+import Grothendieck.CoversPullback
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.Equivalences
