@@ -15,7 +15,7 @@ notification to its author. A closed PR reads exactly like an abandoned one.
 
 The `prev:` field (variation-protocol.md §1) is mandatory for tracing genre
 adjacency. Its genre slot reuses the same enumeration as the leading tag. The
-14 canonical genres contain NO GitHub closing keyword, so a `prev:` whose genre
+15 canonical genres contain NO GitHub closing keyword, so a `prev:` whose genre
 is `fix`/`close`/`resolve` (or inflections) is ALWAYS a misuse -- the worker
 meant `refactor`, `guard`, or `tooling`. The danger is that the `genre #N`
 tail is a valid auto-close instruction when the text lands in a commit

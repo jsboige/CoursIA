@@ -149,7 +149,7 @@ jobs:
               note_defect variation-tag-malformed
             fi
             if [ "$GENRE_VALID" != "True" ]; then
-              echo "::warning::GENRE '${GENRE:-vide}' hors enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
+              echo "::warning::GENRE '${GENRE:-vide}' hors enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
               note_defect variation-tag-genre-offlist
             fi
             if [ -z "$LANE" ] || [ "$LANE" = "None" ]; then
@@ -470,7 +470,7 @@ jobs:
           Grain: <DEEP|MED|LIGHT>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>
           \`\`\`
 
-          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
+          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
           EOF
           )" 2>/dev/null || true
 

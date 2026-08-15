@@ -32,20 +32,22 @@ Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, 
 
 ### GENRE — énumération CLOSE
 
-`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test` · `tooling` · `research-code`.
+`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `slides` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test` · `tooling` · `research-code`.
 
 **L'énumération se partitionne en deux, et la frontière porte G-VAR-1 :**
 
 | Classe | Genres | Ce qu'un grain y produit |
 |---|---|---|
-| **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
+| **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `slides` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
 | **META** | `guard` · `tooling` · `ledger` · `docs` · `readme` · `test` · `refactor` | l'outillage, les garde-fous et la prose *autour* du contenu — nécessaire, jamais suffisant |
 
 Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
 
+**`slides` reste CONTENU quand le grain écrit ou enrichit le contenu du deck** (12 slides de cours neuves = CONTENU, pas `docs`) ; un grain slides qui fait autre chose garde son genre de type de travail — `guard` pour un gate CI de build Slidev, `refactor` pour un script, `tooling` pour un convertisseur.
+
 Un genre hors liste est un **alias** que le merge-gate normalise : pas une violation, le worker n'est ni repris ni HOLD. La fermeture protège G-VAR-3, qu'un vocabulaire ouvert rendrait inatteignable par simple choix de mot.
 
-**Le GENRE est le TYPE DE TRAVAIL, jamais la famille où vivent les fichiers.** Test : *si le prochain grain de ce rollout tombait dans une autre famille, changerais-je le GENRE ?* Si oui, le genre décrit le répertoire — reprendre celui du travail. Le composé `<famille>-<genre>` (`lean-ci`, `cjk-ci`, `audit-tooling`) **se réduit toujours à sa tête** ; les synonymes (`test-coverage` → `test`, `documentation` → `docs`, `data` → `ledger`) se normalisent. Table d'alias complète : [détail §Alias](../../docs/reference/variation-protocol-detail.md).
+**Le GENRE est le TYPE DE TRAVAIL, jamais la famille où vivent les fichiers.** Test : *si le prochain grain de ce rollout tombait dans une autre famille, changerais-je le GENRE ?* Si oui, le genre décrit le répertoire — reprendre celui du travail. Le composé `<famille>-<genre>` (`lean-ci`, `cjk-ci`, `audit-tooling`) **se réduit toujours à sa tête** ; les synonymes (`test-coverage` → `test`, `documentation` → `docs`, `data` → `ledger`, `slidev` → `slides`) se normalisent. Table d'alias complète : [détail §Alias](../../docs/reference/variation-protocol-detail.md).
 
 **`guard` vs `tooling` — le discriminant est « est-ce que ça peut rougir ».** Un check susceptible de passer au rouge est `guard` ; un script/helper/convertisseur sans statut d'échec propre est `tooling`.
 

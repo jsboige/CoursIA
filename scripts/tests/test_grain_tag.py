@@ -415,7 +415,7 @@ def test_short_header_section_form_first_paragraph_no_value():
 # find_prev_close_keywords() scans any text (body OR commit message) for a
 # `prev: <TIER>/<genre>` whose genre is a GitHub closing keyword. The #10093
 # incident: a commit `prev: MED/fix #10067` made GitHub auto-close #10067 at
-# squash-merge. The 14 canonical genres contain no closing keyword, so a
+# squash-merge. The 15 canonical genres contain no closing keyword, so a
 # closing-keyword genre in prev: is ALWAYS a misuse.
 
 def test_prev_close_keyword_fix_detected():
@@ -437,10 +437,10 @@ def test_prev_close_keyword_all_inflections():
 
 
 def test_prev_canonical_genres_pass():
-    # The 14 canonical genres contain NO closing keyword -> all pass.
+    # The 15 canonical genres contain NO closing keyword -> all pass.
     for genre in ("lean", "qc", "training", "genai", "notebook-python",
-                  "notebook-dotnet", "docs", "guard", "refactor", "ledger",
-                  "readme", "test", "tooling", "research-code"):
+                  "notebook-dotnet", "slides", "docs", "guard", "refactor",
+                  "ledger", "readme", "test", "tooling", "research-code"):
         hits = gt.find_prev_close_keywords(f"prev: MED/{genre} #100")
         assert hits == [], f"canonical genre {genre} must NOT be flagged"
 

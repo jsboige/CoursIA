@@ -80,7 +80,7 @@ def test_all_canonical_genres_in_prev_pass():
     # Every canonical genre in a prev: field passes (no closing keyword).
     for genre in ("lean", "guard", "refactor", "tooling", "docs", "test",
                   "readme", "ledger", "qc", "training", "genai",
-                  "notebook-python", "notebook-dotnet", "research-code"):
+                  "notebook-python", "notebook-dotnet", "slides", "research-code"):
         v = vpg.check(f"prev: MED/{genre} #100")
         assert v["guard_pass"] is True, f"canonical genre {genre} must pass"
 
