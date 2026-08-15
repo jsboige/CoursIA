@@ -51,7 +51,7 @@ Le saut **SAT → SMT** : plutôt que d'encoder un problème en variables boolé
 | Série | Langage / Binding | Style | Notebooks | Statut |
 |-------|-------------------|-------|-----------|--------|
 | [**Z3-Linq2Z3/**](Z3-Linq2Z3/README.md) | C# .NET 9 / **Z3.Linq** | Déclaratif borné : on traduit des expressions LINQ en formules SMT — avec bascule sur l'API .NET brute `Microsoft.Z3` quand la démonstration l'exige (notebooks `09`, `15`-`17`) | 18 (`01` -> `18`) | PRODUCTION / BETA |
-| [**Z3-API/**](Z3-API/README.md) | Python / **z3-py** (+ 6 twins C# parité `Microsoft.Z3`) | Impératif complet : accès à l'API intégrale du solveur | 24 (18 Python `01`->`18` + 6 twins C# `01ᶜˢ`->`06ᶜˢ`) | PRODUCTION |
+| [**Z3-API/**](Z3-API/README.md) | Python / **z3-py** (+ 6 twins C# parité `Microsoft.Z3`) | Impératif complet : accès à l'API intégrale du solveur | 28 (18 Python `01`->`18` + 4 compagnons Meal-Planner `16b`->`16e` + 6 twins C# `01ᶜˢ`->`06ᶜˢ`) | PRODUCTION |
 
 ### Z3.Linq (C#) — la porte d'entrée déclarative
 
@@ -67,8 +67,6 @@ Le saut **SAT → SMT** : plutôt que d'encoder un problème en variables boolé
 
 - **Découvrir le paradigme déclaratif en C# / .NET** : commencer par [Z3-Linq2Z3/](Z3-Linq2Z3/README.md). Idéal si vous venez de l'écosystème .NET (Sudoku, Search/CSP du dépôt).
 - **Exploiter toute la puissance de Z3 en Python** : aller vers [Z3-API/](Z3-API/README.md). Idéal pour la recherche, le prototypage rapide et les théories avancées (BitVec, Array, tactiques).
-
-Les deux séries traitent volontairement des **mêmes problèmes phares** (théorèmes linéaires, Sudoku comme CSP) afin de rendre la comparaison déclaratif/impératif explicite d'un binding à l'autre.
 
 ## Voir aussi
 
@@ -92,7 +90,7 @@ La thèse est puissante et honnêtement présentée : il n'existe pas de « bon 
 ### Prochaines étapes
 
 - **Z3 en C# déclaratif (Z3.Linq)** : la série [Z3-Linq2Z3/](Z3-Linq2Z3/README.md) (18 notebooks, .NET 9) est la porte d'entrée idéale si vous venez de l'écosystème .NET — patron `Theorem<T>`, théorie des tableaux, planificateur de repas à l'échelle réelle (bloc 06→09 sur corpus RecipeML × Ciqual), ordonnancement, coloration, cryptarithmes, MaxSAT, puis bit-vectors, réels exacts et UNSAT cores via l'API brute.
-- **Z3 en Python (z3-py)** : la série [Z3-API/](Z3-API/README.md) (24 notebooks : 18 Python + 6 twins C# parité `Microsoft.Z3`) ouvre l'API complète — tactiques, `BitVec`/`Array`/`String`, quantificateurs, preuve par réfutation, optimisation Pareto/MaxSAT.
+- **Z3 en Python (z3-py)** : la série [Z3-API/](Z3-API/README.md) (28 notebooks : 18 Python + 4 compagnons Meal-Planner + 6 twins C# parité `Microsoft.Z3`) ouvre l'API complète — tactiques, `BitVec`/`Array`/`String`, quantificateurs, preuve par réfutation, optimisation Pareto/MaxSAT.
 - **Z3 parmi d'autres paradigmes** : la [série Sudoku](../../Sudoku/README.md) compare Z3 à une dizaine d'autres approches algorithmiques (backtracking, DLX, métaheuristiques, inférence probabiliste, réseaux de neurones) sur un même problème NP-complet — le terrain idéal pour situer la résolution SMT dans le spectre des solveurs.
 - **Programmation par contraintes industrielle** : la série [Search / CSP](../../Search/README.md) généralise la modélisation par contraintes (OR-Tools CP-SAT) à une famille plus large de problèmes d'optimisation et d'ordonnancement, avec un solveur complémentaire de Z3.
 
