@@ -329,3 +329,41 @@ def test_verdict_emis_sans_fleche_flagge():
     assert mod.classify(
         "jsboige", "Verdict : CHANGES_REQUESTED — la cellule 12 casse le kernel."
     ) == "BOT-CONCERN"
+
+
+# --- Fenetre 05-22..05-28 (triage po-2023) : la RETRACTION narree. Le
+# coordinateur retire SA PROPRE reserve anterieure — le commentaire qui
+# retracte ne peut pas etre une nouvelle emission.
+
+
+def test_retraction_earlier_ne_flagge_pas():
+    """FP #1458 : « my earlier CHANGES_REQUESTED was a FALSE POSITIVE
+    (retracted) » + APPROVED « Supersedes my earlier false-positive
+    CHANGES_REQUESTED » + « **Retracting CHANGES_REQUESTED → approving.** ».
+    « earlier »/« false-positive »/« retracting » ne peuvent que narrer un
+    verdict passe."""
+    assert mod.classify(
+        "myia-ai-01", "## Correction — my earlier CHANGES_REQUESTED was a "
+        "FALSE POSITIVE (retracted). That claim was wrong.") is None
+    assert mod.classify(
+        "myia-ai-01", "Approved after merge-tree verification. Supersedes my "
+        "earlier false-positive CHANGES_REQUESTED.") is None
+    assert mod.classify(
+        "myia-ai-01", "True post-merge delta verified. **Retracting "
+        "CHANGES_REQUESTED → approving.** Mea culpa.") is None
+
+
+def test_supersede_possessif_ne_flagge_pas():
+    """FP #1442 : « APPROVE (supersedes my CHANGES_REQUESTED of 03:21) » —
+    la nouvelle review REMPLACE l'ancienne reserve, elle n'en emet pas."""
+    assert mod.classify(
+        "myia-ai-01", "**ai-01 — APPROVE (supersedes my CHANGES_REQUESTED "
+        "of 03:21).** All three blockers are resolved.") is None
+
+
+def test_my_concern_emis_flagge_malgre_citer():
+    """Garde-fou anti-surcorrection : « my » nu n'est PAS un citer (forme
+    bi-mot « supersedes my » uniquement) — « my CONCERNS: » est une emission."""
+    assert mod.classify(
+        "jsboige", "my CONCERNS: the attribution in cell 0 is still wrong."
+    ) == "BOT-CONCERN"

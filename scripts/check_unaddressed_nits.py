@@ -140,6 +140,21 @@ CITERS = (
     # fleche devant le marqueur est une derivation, pas une emission — les
     # verdicts reels s'ecrivent « Verdict : X » ou dans le state de la review.
     # Traite hors CITERS (voir _is_cited) car la fleche n'est pas un mot.
+    # Fenetre 05-22..05-28 (triage po-2023, #11044) — la RETRACTION narree :
+    # « my earlier CHANGES_REQUESTED was a FALSE POSITIVE (retracted) » puis
+    # « Supersedes my earlier false-positive CHANGES_REQUESTED » (#1458), et
+    # « supersedes my CHANGES_REQUESTED of 03:21 » (#1442). Comme « previous »,
+    # ces mots ne peuvent que narrer un verdict passe ; une emission s'ecrit
+    # « CHANGES_REQUESTED: » ou passe par le state de la review. « supersedes
+    # my » en deux mots (pas « my » nu : « my CONCERN is... » est une vraie
+    # emission).
+    "earlier",
+    "false-positive",
+    "supersedes my",
+    # « **Retracting CHANGES_REQUESTED → approving.** » (#1458, meme
+    # commentaire) : le gerondif de retraction ne peut qu'annuler sa propre
+    # reserve passee.
+    "retracting",
 )
 
 
