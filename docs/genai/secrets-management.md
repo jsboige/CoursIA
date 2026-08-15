@@ -57,7 +57,13 @@ python scripts/secrets/render_envs.py --check
 | Tokens client ComfyUI | `COMFYUI_VIDEO_TOKEN`, `COMFYUI_API_TOKEN` | notebooks → services ComfyUI | Moyen |
 | Session | `SECRET_KEY` | 1 service | Oui |
 
-**Alias :** `HF_TOKEN`/`HUGGINGFACE_TOKEN` et `GITHUB_TOKEN`/`GITHUB_ACCESS_TOKEN` désignent le MÊME secret sous deux noms (services vs notebooks). Le render écrit la même valeur des deux côtés ; le bootstrap vérifie leur cohérence (abort si divergence).
+**Alias :** `HF_TOKEN`/`HUGGINGFACE_TOKEN` et `GITHUB_TOKEN`/`GITHUB_ACCESS_TOKEN` désignent le MÊME secret sous deux noms (services vs notebooks). Le bootstrap vérifie leur cohérence (abort si divergence).
+
+**L'alias ne fabrique PAS le nom manquant — les deux doivent être écrits dans `master.env`.** `ALIASES` (render_envs.py) déclare la paire ; il ne dérive pas `HF_TOKEN` d'un `HUGGINGFACE_TOKEN` présent seul. Un `master.env` qui ne porte qu'un des deux noms laisse l'autre dans la liste `declared SECRET keys are absent from master.env (left untouched in services)` de `--check`, et **aucun consommateur ne le reçoit** — alors que le token existe et est valide. Mesuré le 2026-08-15 : `HUGGINGFACE_TOKEN` présent + `HF_TOKEN` absent, pour **655 sites de code lisant `HF_TOKEN`** contre 144 lisant `HUGGINGFACE_TOKEN`. Remède : écrire les deux lignes dans `master.env`, puis `render_envs.py`.
+
+**`sync()` rafraîchit, il n'insère pas.** Une clé absente d'un `.env` cible n'y est pas ajoutée par le render : seules les clés **déjà déclarées** y sont réécrites depuis master (le gap-fill n'existe que pour un service *sans* `.env`, à partir des `${KEY}` de sa compose). Pour un `.env` côté notebooks (pas de compose), déclarer la ligne vide `CLE=` puis lancer le render.
+
+**Un 403 sur un repo *gated* n'est pas un défaut de token.** Discriminer avant d'escalader — repo non-gated **avec** token → `206` (le token lit) ; repo gated **sans** token → `401` ; repo gated **avec** token → `403` = authentifié mais non autorisé, c'est-à-dire licence non acceptée par le compte porteur **ou** scope « read gated repos » absent du token fine-grained. Les deux se règlent sur huggingface.co, pas dans `master.env`.
 
 ### Qdrant — convention client vs serveur (cross-repo)
 
