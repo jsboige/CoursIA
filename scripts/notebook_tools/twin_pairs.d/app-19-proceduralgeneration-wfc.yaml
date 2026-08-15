@@ -2,9 +2,9 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-Csharp.ipynb
-  parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = `wfc_cpsat` (module local `wfc_cpsat.py` qui wrappe `ortools` CP-SAT : solveur SOTA wave-function-collapse) + `ipywidgets` interactif + matplotlib viz. C# = BCL pure (0 NuGet) : WFC from-scratch (System.Text). Verdict RECOVERABLE-LOCAL : le coeur Python repose sur OR-Tools CP-SAT (moteur de production), et Google.OrTools est deja en service dans le depot (CSP-4/6/8, Sudoku-10/18, Search-9, App-8, App-15b) — le C# pourrait brancher Google.OrTools CP-SAT pour la parite lib-vs-lib sur la resolution WFC. Le from-scratch BCL (contraintes locales + backtracking) reste pedagogique mais la tranche 2 Google.OrTools est recuperable localement. parity_level: semantic preserve."
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `wfc_cpsat` (module local qui wrappe `ortools` CP-SAT, moteur de production) + ipywidgets + matplotlib viz. C# = WFC from-scratch BCL pure (sections 1-8) + Tranche 2 : binding officiel **Google.OrTools CP-SAT** (NuGet 9.11.4210) portant le meme modele que le jumeau — adjacence par disjonction AddBoolOr, ratio sol 30-60 %, densite ennemis 5-20 %, comptes cles/coffres exacts, relaxation flow connectivite (source (0,0) forcee sol + arcs entrants), objectif variete via AddElement. Mesure 12x12 seed 42, instance identique au jumeau (cell 10) : 43 cases sol (30 %), 3 ennemis (7,0 % du sol), 1 cle, 1 coffre, connectivite BFS 7 % des cases sol (relaxation flow — meme ordre de grandeur que le ~7 % observe du jumeau), OPTIMAL ~1,5 s. Prong B : les contraintes globales (ratio, densite, comptes, connectivite) sont hors de portee du WFC pur (contraintes locales + backtracking) — le passage au solveur industriel fait valoir le moteur. parity_level: native-both : les deux cotes atteignent un moteur de production (OR-Tools CP-SAT)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -16,7 +16,13 @@
       csharp_sha: 7422b47e09f277958bd16c05b60e45fbda93fdd1
       content_python_sha: 5eeb0ebe92fc1fe92e8161cf6a7526462e4f66401fd38191124dff03dee5916b
       content_csharp_sha: 3d72f7773bde856485ee8846c75bb4bb5d17538e886a3f4afd1bfc078111875a
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 691f6efefc54e709b9d132ff486dc54807ef82fa
+      content_python_sha: 147bd7f478156aeb460d3b290c788d6cd159083348993f33015ab389313edc3e
+      csharp_sha: 26fd3dad52bc96f2cb9ae00568f2cee9cfe64be7
+      content_csharp_sha: c89a97eb0835dee557f0fd2d5c068ca6e523643ee319d1e018e5c06f2c2421ca
   known_differences:
     - "Socle pedagogique commun : Generation procedurale WFC / Wave Function Collapse (CSP + ipywidgets interactif) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
-    - "Idiomes framework : Python = WFC + ipywidgets interactif + matplotlib GridSpec ; C# = BCL pure (System.Text), 0 NuGet."
-    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
+    - "Idiomes framework : Python = WFC + ipywidgets interactif + matplotlib GridSpec ; C# = BCL pure (System.Text) pour le from-scratch (sections 1-8) + Google.OrTools CP-SAT (Tranche 2)."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (sections 1-8) ET branche le meme moteur (Google.OrTools, Tranche 2), presentation compacte. Meme socle theorique, leviers de demonstration differents."
