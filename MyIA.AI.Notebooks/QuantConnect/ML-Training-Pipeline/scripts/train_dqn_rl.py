@@ -356,7 +356,12 @@ def evaluate_dqn(
     device: str = "cpu",
     num_episodes: int = 10,
 ) -> dict:
-    """Evaluate a trained DQN on a test environment (greedy policy, no exploration)."""
+    """Evaluate a trained DQN on a test environment (greedy policy, no exploration).
+
+    ``oos_sharpe`` is a per-episode ratio (mean episode reward / std across
+    episodes), not an annualized per-step financial Sharpe -- do not compare
+    it directly to backtest Sharpe ratios.
+    """
     import torch
 
     rewards = []
