@@ -79,6 +79,11 @@ CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "NEEDS_CHANGES", "CONCERNS",
     "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
     "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
+    # Miroir anglais de « avant merge » : fenetre 04-23..04-30 (triage po-2023,
+    # #11044) — 2 faux negatifs mesures, PRs mergees sans aucune levee :
+    # #594 « issues that should be addressed before merge » et #590
+    # « CRITICAL — Must fix before merge ». Une seule addition couvre les deux.
+    "before merge",
 )
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est

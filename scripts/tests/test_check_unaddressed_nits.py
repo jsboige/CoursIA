@@ -237,3 +237,27 @@ def test_changes_requested_emis_flagge_toujours():
         "jsboige", "CHANGES_REQUESTED: la cellule 12 casse le kernel.") == "BOT-CONCERN"
     assert mod.classify(
         "jsboige", "2 CONCERNS ouverts, non adressés avant merge.") == "BOT-CONCERN"
+
+
+# --- FN window 04-23..04-30 (triage po-2023 sur #11044) : la classe critique
+# echappait a l'organe. Les 2 PRs ci-dessous ont ete mergees sans AUCUNE levee
+# (0 commentaire, 0 commit post-review) avec des demandes CRITIQUES dans la
+# review — et l'organe renvoyait 0 flag : « before merge » anglais n'etait pas
+# un marqueur alors que « avant merge » francais l'etait. Corpus minimal : 2
+# PRs, une seule formulation a couvrir.
+
+
+def test_demande_anglaise_before_merge_flagge():
+    """FN #594 : « several correctness issues that should be addressed before
+    merge » + sections ### Critical — merge 2h apres, zero levee."""
+    assert mod.classify(
+        "jsboige", "Overall: solid structure. However, there are several "
+        "correctness issues that should be addressed before merge.") == "BOT-CONCERN"
+
+
+def test_must_fix_before_merge_flagge():
+    """FN #590 : « CRITICAL — Must fix before merge » (liens morts nb01) —
+    merge 4h apres, zero levee. Meme occurrence « before merge »."""
+    assert mod.classify(
+        "jsboige", "### CRITICAL — Must fix before merge\n"
+        "1. Broken cross-references in nb01 conclusion table.") == "BOT-CONCERN"
