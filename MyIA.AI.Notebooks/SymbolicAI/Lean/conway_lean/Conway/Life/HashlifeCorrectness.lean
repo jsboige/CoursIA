@@ -1184,6 +1184,203 @@ private theorem jumpCaptured_iff (c : MacroCell) :
     simp only [Bool.and_eq_true, decide_eq_true_eq]
     tauto
 
+/-! ### Inlining des briques de saut (JumpCapture.lean, cycle d'import)
+
+`JumpCapture.lean` importe CE module (sa brique P4
+`hashlifeResult_central_correct` vit ici), donc `p5_large_n_jumpN` ne peut
+pas consommer `one_jump_toGrid_correct` par import. Les trois théorèmes
+ci-dessous sont inlinés byte-identiques (mêmes preuves à l'identique),
+même pattern que l'inlining de `jumpCaptured` ci-dessus ; `private` évite
+toute ambiguïté de résolution dans le module aval. Toutes les autres
+briques de l'assemblage BR4a (`toGrid_shift_grid` BR2,
+`padCenter2_toGrid_shift` BR3, `wf_padCenter2`, `level_padCenter2`,
+`evolve_shift`, `evolve_congr` BR5, `shift_shift`, `shift_zero`,
+`canonical_evolve_of_pos`, `hashlifeResult_central_correct`) vivent dans
+des modules importés (Foundation / GridCanonical / ce fichier) — aucune
+copie nécessaire. -/
+
+private theorem restrictGridTo_eq_self (g : Grid) (lo : Int) (size : Nat)
+    (h : ∀ p ∈ g, lo ≤ p.1 ∧ p.1 < lo + (size : Int) ∧
+          lo ≤ p.2 ∧ p.2 < lo + (size : Int)) :
+    restrictGridTo g lo size = g := by
+  induction g with
+  | nil => rfl
+  | cons p ps ih =>
+    obtain ⟨h1, h2, h3, h4⟩ := h p List.mem_cons_self
+    have hps : restrictGridTo ps lo size = ps :=
+      ih fun q hq => h q (List.mem_cons_of_mem p hq)
+    unfold restrictGridTo at hps ⊢
+    rw [List.filter_cons, if_pos (by
+      simp only [Bool.and_eq_true, decide_eq_true_eq]
+      tauto), hps]
+
+private theorem hashlifeJump_correct_of_captured (c : MacroCell)
+    (hwf : c.wf = true) (hlvl : 1 ≤ c.level)
+    (hcap : jumpCaptured c = true) :
+    (hashlifeJump c).toGrid ((2 ^ c.level : Nat), (2 ^ c.level : Nat))
+      = evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)) := by
+  have hplvl : (padCenter2 c).level = c.level + 2 := level_padCenter2 c hlvl
+  have hpwf : (padCenter2 c).wf = true := wf_padCenter2 c hwf
+  have hjump : hashlifeJump c = hashlifeResultAux (c.level + 2) (padCenter2 c) := by
+    unfold hashlifeJump hashlifeResult
+    rw [hplvl]
+  have h4 : (hashlifeResultAux (c.level + 2) (padCenter2 c)).toGrid
+        ((2 ^ c.level : Nat), (2 ^ c.level : Nat))
+      = restrictGridTo (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)))
+          (2 ^ c.level : Int) (2 ^ (c.level + 1)) :=
+    hashlifeResult_central_correct (padCenter2 c) c.level hpwf hplvl
+  calc (hashlifeJump c).toGrid ((2 ^ c.level : Nat), (2 ^ c.level : Nat))
+      = (hashlifeResultAux (c.level + 2) (padCenter2 c)).toGrid
+          ((2 ^ c.level : Nat), (2 ^ c.level : Nat)) := by rw [hjump]
+    _ = restrictGridTo (evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)))
+          (2 ^ c.level : Int) (2 ^ (c.level + 1)) := h4
+    _ = evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0)) :=
+        restrictGridTo_eq_self _ _ _ ((jumpCaptured_iff c).mp hcap)
+
+private theorem one_jump_toGrid_correct (g : Grid) (off : Int × Int) (mc : MacroCell)
+    (hmem : ∀ p, p ∈ mc.toGrid off ↔ p ∈ g)
+    (hwf : mc.wf = true) (hlvl : 1 ≤ mc.level)
+    (hcap : jumpCaptured mc = true) :
+    (hashlifeJump mc).toGrid (jumpResultOff off mc.level)
+      = evolve (jumpSize mc.level) g := by
+  have hk1 : mc.level - 1 + 1 = mc.level := by omega
+  have hnjs : 0 < 2 ^ mc.level := Nat.two_pow_pos _
+  have h1js : 1 ≤ 2 ^ mc.level := by omega
+  have h2k : ((2 ^ mc.level : Nat) : Int)
+      = 2 * ((2 ^ (mc.level - 1) : Nat) : Int) := by
+    have hp : (2 : Nat) ^ (mc.level - 1 + 1) = 2 ^ (mc.level - 1) * 2 := by
+      rw [Nat.pow_succ]
+    rw [hk1] at hp
+    rw [hp, Nat.cast_mul]
+    push_cast
+    ring
+  have hbrick := hashlifeJump_correct_of_captured mc hwf hlvl hcap
+  have hnew : jumpResultOff off mc.level
+      = (off.1 - (2 ^ (mc.level - 1) : Nat),
+         off.2 - (2 ^ (mc.level - 1) : Nat)) := by
+    unfold jumpResultOff
+    split
+    · next h0 =>
+        exfalso
+        have hb : Nat.beq mc.level 0 = true := by simpa [BEq] using h0
+        have hz : mc.level = 0 := Nat.eq_of_beq_eq_true hb
+        omega
+    · rfl
+  have hmc0 : mc.toGrid (0, 0)
+      = shift (0 - off.1, 0 - off.2) (mc.toGrid (off.1, off.2)) :=
+    toGrid_shift_grid mc 0 0 off.1 off.2
+  have hmem' : ∀ p, p ∈ mc.toGrid (off.1, off.2) ↔ p ∈ g := by
+    simpa using hmem
+  simp only [jumpSize]
+  rw [hnew,
+    toGrid_shift_grid (hashlifeJump mc) _ _ (2 ^ mc.level : Nat)
+      (2 ^ mc.level : Nat),
+    hbrick, padCenter2_toGrid_shift mc hlvl, ← evolve_shift, hmc0,
+    ← evolve_shift, evolve_congr hmem' h1js, shift_shift, shift_shift]
+  have hpow : (2 : Int) ^ (mc.level - 1) = ((2 ^ (mc.level - 1) : Nat) : Int) := by
+    exact (Nat.cast_pow (2 : Nat) (mc.level - 1)).symm
+  have hz1 : (off.1 - (2 ^ (mc.level - 1) : Nat)) - (2 ^ mc.level : Nat)
+      + 3 * (2 ^ (mc.level - 1) : Int) + (0 - off.1) = 0 := by
+    rw [hpow, h2k]
+    omega
+  have hz2 : (off.2 - (2 ^ (mc.level - 1) : Nat)) - (2 ^ mc.level : Nat)
+      + 3 * (2 ^ (mc.level - 1) : Int) + (0 - off.2) = 0 := by
+    rw [hpow, h2k]
+    omega
+  rw [hz1, hz2, shift_zero (canonical_evolve_of_pos hnjs g)]
+
+/-- **Mur nommé (b) : préservation de la capture à travers le re-tramage.**
+    C'est LE contenu géométrique restant de `p5_large_n_jumpN` (voie (a),
+    finding #6724) : après UN saut Hashlife complet (`jumpSize mc.level =
+    2^lvl` générations) depuis un cadre capturé, la MacroCell du cadre
+    reconstruit par `gridToMacroCellWithOffset` est ENCORE capturée. La
+    brique (a) du pont de localité (`one_jump_toGrid_correct` ci-dessus)
+    est prouvée ; la récursion multi-sauts ci-dessous est prouvée modulo
+    CE théorème uniquement — le sorry résiduel de la couche P5 est
+    désormais exactement cet énoncé, nommé et autonome (pattern
+    mur-nommé = livrable, c.42/986).
+
+    Matière première pour la décharge (cycle suivant) : la marge de
+    `padCenter2` domine la portée du saut
+    (`padCenter2_margin_ge_jumpReach` : `3·2^(k-1) ≥ 2^k`), le cône de
+    lumière reste dans le domaine (`window_cheb_cone_in_domain`,
+    ConeGeometry) et l'accord local des trajectoires (`evolve_cone_agree`)
+    — l'assemblage géométrique de la tranche (b2)/(b3) de #6724.
+
+    Décision (gate ai-01 c.98, tranche b3) : la voie retenue pour p5 est
+    la préservation d'invariant à cadre fixe, PAS la décorrélation j de
+    Gosper — celle-ci (b2', #10987) refonde le MOTEUR
+    (`evolveHashlifeFastN`) et sa sortie, elle ne prouve pas la correction
+    du moteur à cadre fixe que `p5_large_n_jumpN` énonce. Le prédicat
+    `jumpCaptured` est l'inliné byte-identique de
+    `Conway.Life.JumpCapture.jumpCaptured` (voir ci-dessus) — les deux
+    énoncés sont donc réutilisables inter-modules par defeq. -/
+theorem jumpCaptured_jump_preserved (g : Grid) (off : Int × Int) (mc : MacroCell)
+    (hmem : ∀ p, p ∈ mc.toGrid off ↔ p ∈ g)
+    (hwf : mc.wf = true) (hlvl : 2 ≤ mc.level)
+    (hcap : jumpCaptured mc = true) :
+    jumpCaptured (gridToMacroCellWithOffset
+      ((hashlifeJump mc).toGrid (jumpResultOff off mc.level))).2 = true := by
+  sorry
+
+/-- **Squelette d'induction multi-sauts (b) — PROUVÉ modulo le mur nommé.**
+    Pour tout `fuel ≥ n` et toute grille dont le cadre est capturé,
+    `evolveHashlifeFastAux fuel n g = evolve n g`. L'invariant `n ≤ fuel`
+    se préserve car chaque saut consomme `js = 2^lvl ≥ 1` générations pour
+    1 unité de fuel (le moteur initialise `fuel = n`, cf. docstring de
+    `evolveHashlifeFast`) ; le bras `else` rend littéralement `evolve n g` ;
+    le bras de saut applique la brique (a) (`one_jump_toGrid_correct`),
+    l'hypothèse d'induction sur le fuel décroissant, puis recompose par
+    `evolve_add` (S1, Foundation). La seule hypothèse non fermée est le
+    mur `jumpCaptured_jump_preserved` — l'invariant de capture à travers
+    le re-tramage. -/
+private theorem evolveHashlifeFastAux_correct (fuel n : Nat) (g : Grid)
+    (hle : n ≤ fuel)
+    (hcap : jumpCaptured (gridToMacroCellWithOffset g).2 = true) :
+    evolveHashlifeFastAux fuel n g = evolve n g := by
+  induction fuel generalizing n g with
+  | zero =>
+    have hn0 : n = 0 := Nat.le_zero.mp hle
+    subst hn0
+    rfl
+  | succ fuel ih =>
+    cases n with
+    | zero => rfl
+    | succ m =>
+      simp only [evolveHashlifeFastAux]
+      split
+      · next hcond =>
+        simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
+        obtain ⟨hlvl2, hnjs⟩ := hcond
+        have hlvl1 : 1 ≤ (gridToMacroCellWithOffset g).2.level := by omega
+        have hwf : (gridToMacroCellWithOffset g).2.wf = true := by
+          unfold gridToMacroCellWithOffset
+          exact buildFromGrid_wf g _ _ _
+        have hmem : ∀ p, p ∈ (gridToMacroCellWithOffset g).2.toGrid
+            (gridToMacroCellWithOffset g).1 ↔ p ∈ g :=
+          mem_toGrid_gridToMacroCellWithOffset g
+        have hone := one_jump_toGrid_correct g
+          (gridToMacroCellWithOffset g).1 (gridToMacroCellWithOffset g).2
+          hmem hwf hlvl1 hcap
+        have hjspo : 0 < jumpSize (gridToMacroCellWithOffset g).2.level := by
+          simp only [jumpSize]
+          exact Nat.two_pow_pos _
+        have hle' : m + 1 - jumpSize (gridToMacroCellWithOffset g).2.level
+            ≤ fuel := by omega
+        have hcap' := jumpCaptured_jump_preserved g
+          (gridToMacroCellWithOffset g).1 (gridToMacroCellWithOffset g).2
+          hmem hwf hlvl2 hcap
+        rw [ih (m + 1 - jumpSize (gridToMacroCellWithOffset g).2.level)
+              ((hashlifeJump (gridToMacroCellWithOffset g).2).toGrid
+                (jumpResultOff (gridToMacroCellWithOffset g).1
+                  (gridToMacroCellWithOffset g).2.level)) hle' hcap',
+            hone, ← evolve_add]
+        have hsum : (m + 1 - jumpSize (gridToMacroCellWithOffset g).2.level)
+            + jumpSize (gridToMacroCellWithOffset g).2.level = m + 1 := by
+          omega
+        rw [hsum]
+      · rfl
+
 /-- **P5.2 genuine large-`n` jump (N2) — the sole remaining open
     target of the P5 layer.** When `n ≥ jumpSize lvl` (the MacroCell level)
     on the n-aware frame, `evolveHashlifeFast` makes one Hashlife jump of
@@ -1233,13 +1430,16 @@ private theorem jumpCaptured_iff (c : MacroCell) :
     `JumpCapture.lean` itself imports `HashlifeCorrectness`). The new
     hypothesis is **non-tautological** (witnessed by `jumpCaptured_block`,
     `jumpCaptured_glider`, `jumpCaptured_not_trivial` in `JumpCapture.lean`),
-    so this restatement carries real geometric content. Body remains `sorry`
-    (no longer P4-gated — see the gate-status correction above);
-    `restrictGridTo_eq_self` lives in `JumpCapture.lean` (not Foundation),
-    tracked as a known constraint for the eventual sorry discharge — though
-    the one-jump brick that consumes it (`hashlifeJump_correct_of_captured`)
-    is already proved there, so an eventual discharge here can inline it
-    (byte-identical term, same pattern as the `jumpCaptured` inlining above).
+    so this restatement carries real geometric content. Body is now PROVED
+    (no longer P4-gated — see the gate-status correction above): the three
+    one-jump bricks are inlined below the private `jumpCaptured` (`private`
+    copies of `restrictGridTo_eq_self`, `hashlifeJump_correct_of_captured`,
+    `one_jump_toGrid_correct`, byte-identical to `JumpCapture.lean`), the
+    fuel induction is closed in `evolveHashlifeFastAux_correct` (invariant
+    `n ≤ fuel`, recomposition via `evolve_add`), and the SOLE residual sorry
+    of the P5 layer is the named wall `jumpCaptured_jump_preserved` — the
+    preservation of capture through re-framing. Discharging the wall closes
+    this theorem outright; no other hypothesis is open.
 
     **Moved above `hashlife_correctN` (c.95)** so the latter can consume it: the
     N-frame statement is now *derived* from this jump plus the padding-free
@@ -1248,7 +1448,8 @@ theorem p5_large_n_jumpN (n : Nat) (g : Grid)
     (hcap : jumpCaptured (gridToMacroCellWithOffset g).2 = true)
     (hbig : n ≥ jumpSize (gridToMacroCellWithOffset g).2.level) :
     evolveHashlifeFast n g = evolve n g := by
-  sorry
+  unfold evolveHashlifeFast
+  exact evolveHashlifeFastAux_correct n n g (Nat.le_refl n) hcap
 
 /-- **N2 restatement — the genuine large-`n` correctness statement (EPIC #3846,
     gate W2).** Under the **geometric capture hypothesis** `jumpCaptured
