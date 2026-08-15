@@ -43,6 +43,12 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/GameTheory/index.qmd",
     "MyIA.AI.Notebooks/Probas/index.qmd",
     "docs/index.qmd",
+    # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
+    # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
+    # quarto render standalone -> HTML 176 Ko, exit 0, sans front-matter).
+    # Le fichier catalogue lui-meme reste byte-identique (catalog-pr-hygiene R1 :
+    # on rend le fichier committe, on ne le regenere jamais sur une branche).
+    "COURSE_CATALOG.generated.md",
 ]
 
 # READMEs in vendored / archived / LFS subtrees that must NOT render.
@@ -159,8 +165,8 @@ def git_tracked_readmes() -> list[str]:
 def build_render_block() -> list[str]:
     """Build the YAML lines for the project.render list."""
     lines = ["project:", "  type: site", "  output-dir: _site", "  render:"]
-    # Landing pages (qmd) with a header comment
-    lines.append("    # Landing pages (.qmd).")
+    # Landing pages (qmd) + catalogue genere (rendu HTML, cf. LANDING_PAGES)
+    lines.append("    # Landing pages (.qmd) + COURSE_CATALOG.generated.md (rendu HTML).")
     for entry in LANDING_PAGES:
         lines.append(f'    - "{entry}"')
     # READMEs (explicit list — globs do not expand in Quarto 1.7, see header)
