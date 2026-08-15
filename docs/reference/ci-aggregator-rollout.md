@@ -176,7 +176,7 @@ GitHub = code pas rapport), §G.6 (audit avant merge cascade).
 | `ci / No fabricated text output in changed notebooks` | required | C.4 doc-honesty (#8052) |
 | `ci / No degenerate figure in changed notebooks` | required | GenAI rendering (cf #6541) |
 | `ci / No bare cross-dir #load in changed notebooks` | required | coupling cellule cross-répertoire |
-| `ci / No catalog changes on feature branch` | required | catalog-pr-hygiene R1 |
+| `ci / Notebook catalog drift (read-only)` | advisory | catalog-pr-hygiene R1 — détecteur read-only ; le garde bloquant `catalog-pr-guard.yml` est retiré (#11012) |
 | `ci / Gitleaks secret scanner` | required | secrets-hygiene |
 | `hooks-parity gate` | required | #8782 — gate qui ne peut plus rougir |
 
