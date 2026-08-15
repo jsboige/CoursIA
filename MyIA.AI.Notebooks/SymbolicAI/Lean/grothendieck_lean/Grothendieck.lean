@@ -32,6 +32,7 @@ import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.Subcanonical
+import Grothendieck.TopologyLattice
 import Grothendieck.YonedaLemma
 import Grothendieck.ZariskiSite
 /-
