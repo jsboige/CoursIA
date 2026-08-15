@@ -20,6 +20,12 @@
       csharp_sha: 88d414b7b8662bfa7cd48a6ebffbc1109cfcd8f2
       content_python_sha: 3e24a480f8e53f39fd6a0b83e2336142e72058e3b6b07d4b8f53bc1929a89e80
       content_csharp_sha: b7853f4d800f7624ebc2cff0056d5d0028fbf354eeb80b12100d93a146db0741
+    - date: "2026-08-15"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 248ef9388438ac9084b64aac70db01492c6f31c5
+      csharp_sha: 29f7fa8443ca968bc685e28ebb16bef4dbdfc7f8
+      content_python_sha: 3e24a480f8e53f39fd6a0b83e2336142e72058e3b6b07d4b8f53bc1929a89e80
+      content_csharp_sha: 1c930d2e48c87b3333643ff1c884a77403ae86426d985625894f13024dfaf2be
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Python = networkX (librairie mature graphes : plus courts chemins, centralites, flot max, Louvain, matching pondere) -- vrai SOTA ecosysteme Python (BSD). C# = QuikGraph 2.5.0 (moteur .NET natif graphes, post Tranche 2 PR #10382 cycle 11) avec Dijkstra sur MEME instance 6-villes (dist(A,F)=7, chemin A-B-E-F verifies chiffres a chiffres) -- vrai SOTA ecosysteme .NET. Tranche 1 C# from-scratch pedagogique (BFS, DFS, Dijkstra, centralites, Ford-Fulkerson sur adjacency list maison) preservee + Tranche 2 ajoute QuikGraph lib-vs-lib. Les DEUX cotes branchent une lib native de leur ecosysteme (networkX + QuikGraph). Asymetrie de couverture asumee (Louvain/matching pondere/Prong-B cote Python seulement). Verdict SOTA-OK.

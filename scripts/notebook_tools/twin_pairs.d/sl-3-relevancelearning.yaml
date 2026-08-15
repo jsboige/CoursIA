@@ -2,7 +2,7 @@
   family: SymbolicAI/SymbolicLearning
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -20,10 +20,16 @@
       csharp_sha: fed9320c5c649a7c42ef7547b587301488ec92af
       content_python_sha: 03ca5467db08c4f61f43ce084551a032cb04c0c1e842bc231597519d07d54317
       content_csharp_sha: de9b17181f20f84ff757ceca9890b02e2865583f84bd68dde927e6e265dbe655
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = BCL from-scratch pour determinations fonctionnelles + treillis des determinations + MINIMAL-CONSISTENT-DET + lien Web Semantique + defi presentation ; application phare = selection d'attributs guidee. C# = BCL .NET from-scratch (`HashSet<T>` + `Dictionary<TKey,TValue>` + powerset via combinatoire) pour determinations + treillis (powerset) + determination minimale + application activite biologique des molecules + borne PAC quantifiee + information mutuelle. Verdict RECOVERABLE-LOCAL : le coeur pedagogique (RBL = Relevance-Based Learning, determinations fonctionnelles, treillis, MINIMAL-CONSISTENT-DET) est PARITABLE des deux cotes (memes concepts AIMA, memes algorithmes from-scratch), l'asymetrie reside dans les ENRICHISSEMENTS DISTINCTS : Python ajoute lien Web Semantique + selection d'attributs ; C# ajoute borne PAC quantifiee + information mutuelle (avantage RBL : borne theorique sur la taille de l'echantillon d'apprentissage). Les deux enrichissements sont paritables sur le plan pedagogique. `parity_level: semantic` preserve."
+    - date: "2026-08-15"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 40f2cd7c36fcbb293ad79aae55109190e0272458
+      csharp_sha: efe9ed97345a5b59fe9606cfdef150b674601b02
+      content_python_sha: 03ca5467db08c4f61f43ce084551a032cb04c0c1e842bc231597519d07d54317
+      content_csharp_sha: 189ad1063870c9be32b9b347efdf8b54faf2478fd0742cfbafbe8138bbc395f3
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = BCL from-scratch pour determinations fonctionnelles + treillis des determinations + MINIMAL-CONSISTENT-DET + lien Web Semantique + defi presentation ; application phare = selection d'attributs guidee, faite avec **sklearn** (`mutual_info_classif`, cellule 21). C# = BCL .NET from-scratch (`HashSet<T>` + `Dictionary<TKey,TValue>` + powerset via combinatoire) pour determinations + treillis (powerset) + determination minimale + application activite biologique des molecules + borne PAC quantifiee + information mutuelle (section 7). Verdict initial RECOVERABLE-LOCAL (2026-08-04) : le coeur pedagogique (RBL) est paritable des deux cotes, l'asymetrie residait dans les enrichissements distincts (Web Semantique cote Python, borne PAC + MI cote C#). Verdict REVOQUE par la tranche 2 (epic #10382, 2026-08-15) : le twin Python selectionne les attributs avec sklearn (lib de reference) ; le twin C# branche le pendant .NET de production — **Microsoft.ML** (`PermutationFeatureImportance`, PFI, Breiman 2001) — sur le meme jeu `moleculeData` (section 9) : foret gradient-boostee FastTree, chute d'AUC par permutation d'attribut (PFI agrege sur 5 seeds MLContext, top-2 {logp, mw} stable 5/5), rang confronte a l'information mutuelle from-scratch et a la determination minimale `{mw, logp}` (concordance top-2, 5/5 seeds). Axes binding #10459 : NuGet .NET = le canal (Microsoft.ML 5.0.0 + Microsoft.ML.FastTree 5.0.0, pas de reimplementation), P/Invoke N/A, CLI N/A, IKVM N/A, PythonNet N/A. Le from-scratch est conserve (sections 4 et 7 gardent leur valeur pedagogique : comment la MI se calcule, pourquoi la determination minimale est une contrainte logique). `parity_level: native-both` (les deux jumeaux referencent un moteur d'apprentissage de production : sklearn cote Python, ML.NET cote C#)."
   known_differences:
     - "Socle commun : Relevance-Based Learning (RBL) approfondi -- determinations fonctionnelles, treillis des determinations, algorithme MINIMAL-CONSISTENT-DET, selection d'attributs guidee."
-    - "Asymetrie de couverture : Python (42 cellules, 17 code) couvre determinations + treillis + MINIMAL-CONSISTENT-DET + lien Web Semantique + defi presentation ; C# (23 cellules, 11 code) couvre determinations + treillis (powerset) + determination minimale + application activite biologique + borne PAC + information mutuelle. Les deux cotes apportent des enrichissements distincts (Web Semantique cote Python, borne PAC + information mutuelle cote C#)."
-    - "Application phare : Python sur selection d'attributs ; C# sur activite biologique des molecules + borne PAC quantifiee (avantage RBL)."
-    - "Implementation from-scratch les deux cotes (pas de librairie RBL tierce)."
+    - "Asymetrie de couverture : Python (42 cellules, 17 code) couvre determinations + treillis + MINIMAL-CONSISTENT-DET + lien Web Semantique + defi presentation ; C# (26 cellules, 12 code) couvre determinations + treillis (powerset) + determination minimale + application activite biologique + borne PAC + information mutuelle + pont ML.NET (section 9). Les deux cotes apportent des enrichissements distincts (Web Semantique cote Python, borne PAC cote C#)."
+    - "Application phare : Python sur selection d'attributs via sklearn (`mutual_info_classif` sur jeu synthetique R1..R2 + N1..N8) ; C# sur activite biologique des molecules (10 molecules, mw/logp/hbd/hba) via MI from-scratch + pont ML.NET PFI (FastTree). Les deux classent les attributs pertinents ; le C# confronte le rang ML.NET (top-2 {logp, mw} stable 5/5 seeds) a la determination minimale `{mw, logp}` (concordance)."
+    - "Selection d'attributs : sklearn (Python, statistique MI) vs ML.NET (C#, PFI sur foret FastTree) — deux instruments differents (mesure statistique vs importance modele-basee par permutation) qui repondent a la meme question et convergent sur le meme top-2 {logp, mw} (epic #10382, tranche 2)."

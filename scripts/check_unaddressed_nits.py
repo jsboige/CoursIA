@@ -77,8 +77,13 @@ AGENT_PREFIXES = (
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "NEEDS_CHANGES", "CONCERNS",
-    "SUSPECT_", "STRUCTURAL_ONLY", "avant merge", "avant de merger",
-    "il va falloir", "a nuancer", "à nuancer",
+    "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
+    "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
+    # Miroir anglais de « avant merge » : fenetre 04-23..04-30 (triage po-2023,
+    # #11044) — 2 faux negatifs mesures, PRs mergees sans aucune levee :
+    # #594 « issues that should be addressed before merge » et #590
+    # « CRITICAL — Must fix before merge ». Une seule addition couvre les deux.
+    "before merge",
 )
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
@@ -90,15 +95,90 @@ LIFT_MARKERS = (
     "Je lève", "Je leve", "Levée de", "Levee de",
 )
 
-# Le verdict d'un reviewer bot vit en QUEUE de body (« Verdict: ... ne bloque
-# pas »), pas en tete. Un body qui CONCLUT positivement n'est pas une reserve,
-# meme si son titre ou son devellopement porte le mot CONCERNS (classe de FP
-# no 1 du triage 07-15..07-31 : le flag lisait le titre, la conclusion disait
-# l'inverse). On ne regarde que les 300 derniers chars — la conclusion.
-NO_CONCERN_TAIL_MARKERS = (
-    "ne bloque pas", "non-bloquant", "non bloquant", "No concerns",
-    "Safe to merge", "safe to merge", "pas un bloquer", "non-blocking",
-    "NON-BLOQUANT",
+# NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
+# Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
+# portent « ne bloque pas » / « Safe to merge » a ete propose puis RETIRE : il
+# rouvre le failure mode fondateur de B.0. Sur #10761, Hermes a emis
+# COMMENT_WITH_CONCERNS et la PR a ete mergee sans reponse ecrite ; si ce meme
+# body s'etait conclu par « ne bloque pas », un tel filtre l'aurait efface — et
+# l'organe aurait manque precisement l'incident qui l'a fait naitre. Une reserve
+# emise se leve par une PHRASE de reponse, jamais par la conclusion de celui qui
+# l'a emise. `POSITIVE_MARKERS` ci-dessous fait le travail voisin, mais lui ne
+# decharge QUE s'il ne reste aucune reserve vivante — c'est la difference.
+
+# Verdict structurel POSITIF : l'emporte sur toute prose du body, y compris un
+# decompte de CONCERNS passe en revue (« NanoClaw a relevé 2 CONCERNS... Verdict
+# : COMMENT_WITHOUT_CONCERNS » #7583). C'est le miroir exact de
+# COMMENT_WITH_CONCERNS : quand le verdict formel est rendu, il decide.
+VERDICT_POSITIVE = "COMMENT_WITHOUT_CONCERNS"
+
+# Approbations SOUPES : ne rescussitent un commentaire que s'il ne porte AUCUNE
+# reserve vivante. Une review mixte (« [COMMENT_WITH_CONCERNS] — 2 concerns...
+# Safe to merge » #6849/#6852/#7704, gate vision « [avant merge] » #6698) garde
+# ses reserves — le « Safe to merge » y est une conclusion nuancee, pas un
+# verdict.
+POSITIVE_MARKERS = (
+    "SAFE for merge", "Safe to merge",
+    "Verdict** : OK", "Verdict : OK",
+)
+
+# Mots qui, DEVANT une occurrence de marqueur, la rendent CITEE et non emise :
+# negation (« No CHANGES_REQUESTED », « COMMENT_WITHOUT_CONCERNS »), article
+# defini narratif (« the CHANGES_REQUESTED reflects a pre-fix state » #6699),
+# modal hypothesique (« would `CHANGES_REQUESTED` a probeAddresses strip »
+# #7248). L'occurrence fait reference au verdict d'un autre sans l'emettre.
+# Fenetre courte (30 chars avant l'occurrence) : une citation a distance
+# (autre phrase) ne desactive rien.
+CITERS = (
+    "no", "not", "pas de", "pas d'", "sans", "without", "aucun", "aucune",
+    "zero", "jamais", "the", "would", "could", "might", "aurait",
+    # « Previous CHANGES_REQUESTED was incorrect... Revised verdict: APPROVE »
+    # (#748, 10 s avant le merge) : le reviewer RETRACTE sa propre reserve.
+    # On ne peut pas demander « previous » — le mot ne peut que narrer.
+    "previous",
+    # Fenetre 05-08..05-14 (triage po-2023, #11044) — trois narrations mesurees :
+    # « **COMMENTED** (pas CHANGES_REQUESTED) » (#860) : negation francaise
+    # sans « de » — « pas de » ci-dessus ne couvrait pas la forme nue.
+    "pas",
+    # « pending dismissal of stale CHANGES_REQUESTED » (#977) : comme
+    # « previous », le mot ne peut que narrer une reserve passee.
+    "stale",
+    # « CONFLICTING — needs rebase before merge » (#887, recidive de #729
+    # fenetre 05-01..05-07) : demande procedurelle satisfaite par le merge
+    # lui-meme — git n'autorise pas le merge d'une branche en conflit.
+    "needs rebase",
+    # « Si Static validation rouge → CHANGES_REQUESTED + diagnostic » (#1247,
+    # fenetre 05-15..05-21) : verdict CONDITIONNEL futur, jamais emis. Une
+    # fleche devant le marqueur est une derivation, pas une emission — les
+    # verdicts reels s'ecrivent « Verdict : X » ou dans le state de la review.
+    # Traite hors CITERS (voir _is_cited) car la fleche n'est pas un mot.
+    # Fenetre 05-22..05-28 (triage po-2023, #11044) — la RETRACTION narree :
+    # « my earlier CHANGES_REQUESTED was a FALSE POSITIVE (retracted) » puis
+    # « Supersedes my earlier false-positive CHANGES_REQUESTED » (#1458), et
+    # « supersedes my CHANGES_REQUESTED of 03:21 » (#1442). Comme « previous »,
+    # ces mots ne peuvent que narrer un verdict passe ; une emission s'ecrit
+    # « CHANGES_REQUESTED: » ou passe par le state de la review. « supersedes
+    # my » en deux mots (pas « my » nu : « my CONCERN is... » est une vraie
+    # emission).
+    "earlier",
+    "false-positive",
+    "supersedes my",
+    # « **Retracting CHANGES_REQUESTED → approving.** » (#1458, meme
+    # commentaire) : le gerondif de retraction ne peut qu'annuler sa propre
+    # reserve passee.
+    "retracting",
+    # Fenetre 05-29..06-04 (triage po-2023, #11044) — la REPONSE QUI NOMME.
+    # « ## Re: CONCERNS ... **Fixed.** » (#1839) : « Re: » est un en-tete de
+    # reponse — le marqueur cite est le SUJET auquel on repond, jamais une
+    # nouvelle emission. (Forme nue « re » : le normalisateur retire la
+    # ponctuation de fin de fenetre, deux-points compris.)
+    "re",
+    # « Per ai-01 CHANGES_REQUESTED: ... » (#2363) : « per X » = « selon X »,
+    # attribution d'une reserve passee dans un rapport de fix. Idem « du
+    # precedent review (CHANGES_REQUESTED ... » (#1958, 2e review APPROVED).
+    # Ces deux-la agissent via la regle du mot d'attribution dans _is_cited.
+    "per",
+    "precedent",
 )
 
 
@@ -129,11 +209,79 @@ def _excerpt(body: str) -> str:
     Les 280 premiers chars seuls coupaient la conclusion (mesure triage
     07-15..07-31 : le verdict final tombait hors excerpt sur les PRs longues,
     et l'audit lisait la position du titre au lieu de la conclusion).
+
+    Note : ceci concerne l'AFFICHAGE de l'audit, pas la classification. Voir
+    `classify` — la conclusion en queue n'y decharge rien.
     """
     snippet = " ".join(body.split())
     if len(snippet) <= 400:
         return snippet[:280]
     return snippet[:200] + " [...] " + snippet[-200:]
+
+
+def _is_cited(window: str) -> bool:
+    """La fenetre avant l'occurrence se termine-t-elle sur un mot de citation ?
+
+    Le mot doit etre delimite : le caractere qui le precede est non-alphanumerique
+    (espace, newline, ponctuation) ou le debut de la fenetre. Sans frontiere,
+    « xxxtechno » matcherait « no ».
+    """
+    w = window
+    # Fleche immediatement devant le marqueur : derivation conditionnelle
+    # (« Si X → CHANGES_REQUESTED », #1247), pas une emission de verdict.
+    stripped = w.rstrip()
+    if stripped.endswith(("→", "->", "=>")):
+        return True
+    while w and not w[-1].isalnum():
+        w = w[:-1]
+    w = w.lower()
+    for c in CITERS:
+        c = c.rstrip("'’")
+        if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
+            return True
+    # Fenetre 05-29..06-04 (#11044) — le mot d'ATTRIBUTION entre le citer et
+    # le marqueur : « Per ai-01 CHANGES_REQUESTED » (#2363), « Stale Hermes
+    # CHANGES_REQUESTED was purely... » (#2006), « du precedent review
+    # (CHANGES_REQUESTED sur commit... » (#1958). Un citer suivi d'UN seul
+    # mot reste une narration — le nom d'agent n'y change rien. Une emission
+    # ne le traverse jamais : elle s'ecrit « MARKER: » nue ou passe par le
+    # state de la review (« [Hermes] — CHANGES_REQUESTED » n'a pas de citer
+    # devant l'agent, donc reste live).
+    parts = w.rsplit(None, 1)
+    head = parts[0] if len(parts) == 2 else ""
+    if head:
+        for c in CITERS:
+            c = c.rstrip("'’")
+            if head == c or (head.endswith(c) and not head[-len(c) - 1].isalnum()):
+                return True
+    return False
+
+
+def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
+    """Marqueur present avec au moins une occurrence NON citee.
+
+    `has_marker` traite le body comme un sac de mots : « No CHANGES_REQUESTED
+    from this review » contient « CHANGES_REQUESTED » donc compte comme une
+    reserve. C'est la source dominante de faux positifs de l'organe (11/64
+    signaux flagges sur la fenetre 07-14..07-20, triage po-2024:CoursIA-2) :
+    des reviews d'approbation qui citent le verdict qu'elles n'emettent pas —
+    negation (« No », « Pas de », « without »), narration d'une review
+    pre-fix (« the CHANGES_REQUESTED reflects a pre-fix state » #6699), ou
+    modal hypothesique (« would CHANGES_REQUESTED » #7248). On verifie donc
+    chaque occurrence : si un mot de citation touche le debut du marqueur
+    (fenetre de 30 caracteres, le « WITHOUT_ » de COMMENT_WITHOUT_CONCERNS
+    compris), l'occurrence est morte ; le marqueur ne vit que si au moins une
+    occurrence survit.
+    """
+    normalised = _unaccent(body)
+    for marker in markers:
+        m = _unaccent(marker)
+        start = 0
+        while (i := normalised.find(m, start)) != -1:
+            if not _is_cited(normalised[max(0, i - 30):i]):
+                return True
+            start = i + 1
+    return False
 
 
 def ts(value: str | None) -> datetime | None:
@@ -187,14 +335,17 @@ def classify(author: str, body: str) -> str | None:
     stripped = body.lstrip()
     if has_marker(body, LIFT_MARKERS):
         return None  # annonce de levee / de merge : resolution, pas reserve
-    if has_marker(" ".join(body.split())[-300:], NO_CONCERN_TAIL_MARKERS):
-        return None  # la conclusion du body decharge : verdict positif, pas une reserve
+    if has_live_marker(body, (VERDICT_POSITIVE,)):
+        return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
+    live_concern = has_live_marker(body, CONCERN_MARKERS)
+    if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
+        return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
-        return "BOT-CONCERN" if has_marker(body, CONCERN_MARKERS) else None
+        return "BOT-CONCERN" if live_concern else None
     if "\r\n" in body:
         return "HUMAN"
-    if has_marker(body, CONCERN_MARKERS):
+    if live_concern:
         return "BOT-CONCERN"
     return None
 
@@ -254,6 +405,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         ts(c["createdAt"]) for c in (pr_data.get("comments") or []) if can_lift(c)
     ]
     comment_times = [t for t in comment_times if t]
+
+    # Fenetre 05-29..06-04 (#1958) : la RE-REVIEW APPROVED. Le reviewer qui
+    # revient approuver apres sa demande de changements A dit que la reserve
+    # est levee — le state GitHub natif porte plus de sens que le body (une
+    # re-review Hermes narre l'ancien verdict en le citant, sans mot de
+    # levee). Seul APPROVED compte : une re-review COMMENTED qui re-emet une
+    # reserve (« NOT FIXED », #2298) ne doit rien eteindre, et l'agent
+    # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
+    # bruit de protocole, meme depuis un reviewer bot.
+    comment_times += [
+        t for r in (pr_data.get("reviews") or [])
+        if r.get("state") == "APPROVED"
+        and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
+        and (t := ts(r.get("submittedAt"))) is not None
+    ]
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:

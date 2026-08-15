@@ -533,6 +533,7 @@ def test_canonicalize_genre_aliases():
     assert vlc.canonicalize_genre("audit-tooling") == "tooling"
     assert vlc.canonicalize_genre("test-coverage") == "test"
     assert vlc.canonicalize_genre("data") == "ledger"
+    assert vlc.canonicalize_genre("slidev") == "slides"
     # No alias -> identity.
     assert vlc.canonicalize_genre("readme") == "readme"
     assert vlc.canonicalize_genre("DOCS") == "DOCS".lower()  # case-insensitive

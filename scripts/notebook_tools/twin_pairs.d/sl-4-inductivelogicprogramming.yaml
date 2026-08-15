@@ -2,7 +2,7 @@
   family: SymbolicAI/SymbolicLearning
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb
-  parity_level: surface
+  parity_level: native-both
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -14,10 +14,14 @@
       csharp_sha: ea011ad638e69c982deb3f508e45841b3d71a75a
       content_python_sha: a0185c6e1a00d084964b50b70a50050c2669fb2c455e2e31cd78af2abc488efb
       content_csharp_sha: 60d47e6878beae9cfb7cc04ee58023026833530169810a13213a8e8c41774682
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = `pyswip` (binding Python pour SWI-Prolog, moteur Prolog SOTA reel pour unification/resolution) + section dediee a `Popper` (Learning From Failures, moteur ILP SOTA moderne) + FOIL top-down + resolution inverse bottom-up + ILP/KG. C# = BCL .NET from-scratch pour FOIL (Quinlan 1990) + unification + resolution inverse + probleme des ancetres + mini KG (System.Collections, pas de NuGet Prolog). Verdict RECOVERABLE-LOCAL : le coeur pedagogique (ILP = Inductive Logic Programming, clauses Horn, unification, FOIL, resolution inverse, KG mining) est PARITABLE des deux cotes (memes concepts AIMA + Quinlan), l'asymetrie reside dans la MACHINERIE sous-jacente : Python invoque un VRAI moteur Prolog SOTA (SWI-Prolog + Popper LFF) tandis que le C# reimplemente FOIL from-scratch. Popper (LFF) est presente en prose Python mais pas implante cote C# -- le C# est honnete sur le fait que FOIL from-scratch est une baseline pedagogique, pas un substitute SOTA. `parity_level: surface` preserve (machineries distinctes, concepts paritables)."
+    - date: "2026-08-15"
+      by: myia-po-2024:CoursIA-2
+      python_sha: b1913d1ede19ac09c87d2e56c5e40bbf00781848
+      csharp_sha: 068b54f2cb08c9e831b0b48bb502a27dfc47f101
+      content_python_sha: a0185c6e1a00d084964b50b70a50050c2669fb2c455e2e31cd78af2abc488efb
+      content_csharp_sha: e8da5a118de488f57edd6373f1f717863ed2b5a6330c3d1ad155927df54f071e
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `clingo` (Potassco, solveur ASP SOTA) + `janus_swi` (SWI-Prolog) + section dediee a `Popper` (Learning From Failures, moteur ILP SOTA qui formule l'ILP comme un probleme ASP resolu par clingo) + FOIL top-down + resolution inverse bottom-up + ILP/KG. C# = BCL .NET from-scratch pour FOIL (Quinlan 1990) + unification + resolution inverse + probleme des ancetres + mini KG, PLUS pont SOTA #10382 : la section 9 invoque clingo via `Process.Start` (axe CLI checklist #10459) sur le programme ASP du probleme ancestor (faits parent/2 + 2 clauses apprises par le FOIL from-scratch) et verifie que clingo derive exactement les 9 POSITIVES sans atteindre les 10 NEGATIVES (mesure : 9/9, 0/10, verdict `FOIL from-scratch == clingo (SOTA)`). Le verdict INTRINSIC #10406 est REVOQUE : clingo est un binaire invocable, pas un equivalent .NET introuvable. Axes binding : pas de NuGet .NET (1), pas de P/Invoke (2), CLI = le canal (3), pas d'IKVM (4), pas de PythonNet (5). Le from-scratch FOIL est conserve (le pont est en plus, jamais a la place -- FOIL = algorithme fondateur AIMA §19.5, clingo = le moteur que Popper utilise en interne). `parity_level: native-both` (les deux jumeaux referencent un moteur externe : Popper/clingo cote Python, clingo cote C#)."
   known_differences:
-    - "AVERTISSEMENT D'INGENIERIE : parity_level=surface car le jumeau Python INVOQUE un vrai moteur ILP SOTA (SWI-Prolog via pyswip + reference a Popper 'Learning From Failures') tandis que le C# reimplemente FOIL from-scratch (pas de moteur Prolog). Meme concept pedagogique, machineries differentes."
-    - "Asymetrie de couverture : Python (48 cellules, 19 code) couvre clauses Horn + unification, FOIL top-down, resolution inverse bottom-up, application FOIL pas-a-pas, ILP et Knowledge Graphs, + section dediee au vrai moteur Popper (LFF) ; C# (25 cellules, 10 code) couvre clauses Horn + unification, briques FOIL, probleme des ancetres, evaluation de clauses candidates, resolution inverse, FOIL pas-a-pas, mini KG."
-    - "Engine idiom : Python = SWI-Prolog (moteur Prolog reel pour l'unification et la resolution) ; C# = unification et FOIL codes a la main (System.Collections, pas de NuGet Prolog)."
-    - "Popper (LFF) est presente en prose Python mais pas implante cote C# -- le C# se limite au FOIL from-scratch."
+    - "Python invoque Popper (ILP SOTA, clingo + janus_swi) qui EXPLORE l'espace des programmes pour apprendre ancestor/2 ; C# valide via clingo le programme trouve par son FOIL from-scratch (les deux utilisent le meme moteur clingo, l'orchestration differente : apprentissage vs validation)."
+    - "Asymetrie de couverture : Python (48 cellules, 19 code) couvre clauses Horn + unification, FOIL top-down, resolution inverse bottom-up, application FOIL pas-a-pas, ILP et Knowledge Graphs, + section dediee au vrai moteur Popper (LFF) ; C# (27 cellules, 11 code) couvre clauses Horn + unification, briques FOIL, probleme des ancetres, evaluation de clauses candidates, resolution inverse, FOIL pas-a-pas, mini KG + pont clingo (section 9)."

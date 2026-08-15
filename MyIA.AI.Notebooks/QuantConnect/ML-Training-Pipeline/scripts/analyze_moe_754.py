@@ -43,7 +43,7 @@ def verdict(groups):
         seeds = [e['seed'] for e in entries]
         diraccs = [e['diracc'] for e in entries]
         mean_da = np.mean(diraccs)
-        std_da = np.std(diraccs)
+        std_da = np.std(diraccs, ddof=1)
         delta = mean_da - baseline
         delta_pp = delta * 100
         

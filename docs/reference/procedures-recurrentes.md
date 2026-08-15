@@ -107,11 +107,13 @@ Une PR « doc-honesty » / « alignement output » / « reconcile stale » (titr
 
 ```bash
 # 1. La PR porte bien `## Diagnostic dérive` dans le body (sinon CHANGES_REQUESTED §D.5)
-gh pr view <N> --json body | grep -c '^## Diagnostic dérive'
+# NB : --jq '.body' OBLIGATOIRE — sans lui, gh sort le wrapper JSON (une ligne, \n échappés)
+# et l'ancre ^ ne peut JAMAIS matcher : la commande retourne 0 même si la section existe.
+gh pr view <N> --json body --jq '.body' | grep -c '^## Diagnostic dérive'
 # > 0 requis
 
 # 2. Si verdict COSMETIC : une issue fille doit exister avec `See #N`
-gh pr view <N> --json body | grep -oE 'See #[0-9]+'
+gh pr view <N> --json body --jq '.body' | grep -oE 'See #[0-9]+'
 # > 0
 
 # 3. Si verdict REFRAME : la valeur du markdown doit venir d'une re-exec fraîche
