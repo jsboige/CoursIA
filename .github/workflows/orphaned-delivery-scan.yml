@@ -1,0 +1,93 @@
+name: Orphaned delivery scan
+
+# The POST-MERGE organ for issue #10981: a PR merged with base != main
+# delivers its content onto a branch. If that branch is squash-merged into
+# main AFTERWARDS, the PR's mergeCommit is NOT an ancestor of main -- the
+# deliverable is orphaned (exists, merged, referenced by a closed issue, and
+# invisible to main). Measured firsthand 2026-08-14: #10972 merged into
+# feature/c10923-quarto-normalize 24s AFTER #10965 squash-merged that base
+# into main -- the site render infra never reached main and the site broke
+# in production.
+#
+# The advisory at PR time (base-not-main-advisory.yml, #10918) measures
+# "open PRs from base towards main" at pull_request events only; that
+# verdict can die between events without re-triggering anything. THIS
+# workflow re-examines every MERGED PR whose base != main and verifies that
+# its mergeCommit is an ancestor of origin/main -- the check the advisory
+# delegates to a human ("verifier au moment du merge") that nothing executed.
+#
+# ADVISORY, never blocking (same posture as orphan-branch-scan.yml):
+#   - The job ALWAYS exits 0. The actionable payload is the label
+#     `orphaned-delivery` + marker-guarded comment naming the mergeCommit and
+#     the recovery command, NEVER the green conclusion.
+#   - It does NOT auto-fix, does NOT close issues: it signals, ai-01 decides.
+#
+# Scheduled sweep (daily) is the primary trigger: an orphan is a STABLE state
+# once it exists, nothing forces J+0 detection. The [closed] trigger is
+# advisory-only and does NOT label (a base in flight is not yet an orphan).
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede). 06:17 UTC.
+    - cron: '17 6 * * *'
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log only, apply no label/comment'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  issues: write
+  pull-requests: write
+  contents: read
+
+concurrency:
+  group: orphaned-delivery-scan
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Verify merged PRs' mergeCommit reached main (advisory)"
+    runs-on: ubuntu-latest
+    # On [closed], restrict to same-repo PRs: fork PRs cannot create an
+    # internal base != main orphan and their limited token/fetch access would
+    # only produce spurious failures on an advisory job.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch ALL remote heads
+        # actions/checkout@v4 only fetches the default branch. Ancestry of a
+        # mergeCommit against origin/main requires every remote head present.
+        run: |
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' || true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run post-merge orphan scan
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ARGS="--days 7"
+          # Apply only on the scheduled sweep (or a dispatch that explicitly
+          # opts out of dry-run). A [closed] event is advisory-only: a base
+          # still in flight is NOT an orphan yet, labeling on PR close would
+          # be a false alarm.
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            ARGS="$ARGS --apply"
+          elif [ "${{ inputs.dry_run }}" = "false" ]; then
+            ARGS="$ARGS --apply"
+          else
+            ARGS="$ARGS --dry-run"
+          fi
+          python scripts/audit/check_orphan_merged_pr.py $ARGS --limit 200
