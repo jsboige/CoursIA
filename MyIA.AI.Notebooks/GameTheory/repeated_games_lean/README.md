@@ -11,7 +11,7 @@
 > **neutralisée** dans le `lakefile.lean` (ses `globs` pointaient vers des sources déplacées et
 > matchaient 0 fichier, ce qui aurait provoqué une collision de module-path). La certification
 > no-sorry (`grim_trigger_sustains_iff`, théorème-phare) et le build Lake sont repris par
-> `game_theory_lean` via `.github/workflows/lean-repeated-games.yml`.
+> `game_theory_lean` via `.github/workflows/lean-game-theory.yml`.
 >
 > La suite de ce README décrit les formalisations telles qu'elles existent **historiquement** ici —
 > le contenu mathématique (théorème grim-trigger, principe de déviation one-shot, seuil δ) reste

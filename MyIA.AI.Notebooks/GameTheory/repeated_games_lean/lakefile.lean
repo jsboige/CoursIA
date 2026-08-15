@@ -33,7 +33,7 @@ require mathlib from git
 -- canonique. Ce lake archive conserve son `package`, son `require mathlib`, ses
 -- docs/manifest/toolchain (coquille archive) mais n'expose PLUS la lib. La
 -- certification no-sorry (grim_trigger_sustains_iff, theoreme-phare) et le Lake build
--- sont repris par game_theory_lean via `.github/workflows/lean-repeated-games.yml`.
+-- sont repris par game_theory_lean via `.github/workflows/lean-game-theory.yml`.
 -- -- @[default_target]
 -- -- lean_lib «RepeatedGames» where
 -- --   globs := #[`RepeatedGames.*]  (archive, voir git history PR #6146)
