@@ -127,7 +127,16 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 18 | [Lean-18-Search-AStar-Optimality](Lean-18-Search-AStar-Optimality.ipynb) | Optimalité de A* sous heuristique admissible : graphe pondéré ℝ≥0 et coût additif `pathCost`, prédicats `Admissible`/`Consistent`, théorème phare `admissible_implies_optimal` (borne en f), téléscopage `consistent_implies_path_bound` + monotonie de f - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 35 min |
 
-**Durée totale** : ~18h05
+### Partie 7 : Digestions de résultats profonds (Sendov, Tao, PFR, MIMO)
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
+| 19 | [Lean-19-Sendov-Complex-Analysis](Lean-19-Sendov-Complex-Analysis.ipynb) | La conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques des cas, contexte de la preuve | 45 min |
+| 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean-20-Analysis-I-Tao-Workflow.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
+| 21 | [Lean-21-PFR-Entropy-Method](Lean-21-PFR-Entropy-Method.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
+| 22 | [Lean-22-MIMO-Detection-Flips](Lean-22-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 40 min |
+
+**Durée totale** : ~20h55
 
 ## Acquis d'apprentissage
 

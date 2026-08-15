@@ -15,9 +15,10 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 
+from fishaudio_client import FISHAUDIO_URL
+
 load_dotenv(Path(__file__).resolve().parent.parent.parent.parent / ".env")
 
-FISHAUDIO_URL = "http://localhost:8197"
 MANIFEST = Path(__file__).resolve().parent / "outputs" / "fishaudio_references" / "manifest.json"
 
 
