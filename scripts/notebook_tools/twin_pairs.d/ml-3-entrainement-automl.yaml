@@ -35,6 +35,12 @@
       csharp_sha: 368fa70908b21e5b64d889ce595c70826c54917f
       content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
       content_csharp_sha: ffc6a21329a4a83dd530ad32ced3cb20be8da8e93d8f711f9fb96c0cfed8a1fe
+    - date: "2026-08-16"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: ee313290cb2f95f19a3063f5476fd1103cf4818e
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: 5b847c94a8671b87feaea6160682530fdf4b9dddfa7fe69b18ff6b30cece7e3a
   known_differences:
     - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
