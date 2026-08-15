@@ -58,6 +58,12 @@
       csharp_sha: 5d7af1b6a0f54605bab53ac5a0b8a98ffa44c71a
       content_python_sha: 48c7c5a685b64aff0d09c568a5eef72b541133103c1a03afe31f87a80ae9537b
       content_csharp_sha: b05cbde37e91715c003aa7f345e15cc7e9c9af2a96bc89c88fddb6ccc9c98ffe
+    - date: "2026-08-15"
+      by: myia-po-2023:CoursIA
+      python_sha: 2b2723319e6f701beed14734f6924b0f6319241b
+      csharp_sha: 5cde89262c0e52a90e264f67c611ee7cb431c1f7
+      content_python_sha: 48c7c5a685b64aff0d09c568a5eef72b541133103c1a03afe31f87a80ae9537b
+      content_csharp_sha: 6d2fc11c2dc78081eb2ebfe5066e7e2ec26a936ce248db60cdf194b0aa4eb9e5
   known_differences:
     - "Socle pedagogique commun : automates symboliques et resolution de Sudoku via Z3 (automates finis symboliques, representation symbolique des contraintes, liens avec SMT). Meme concept (automates symboliques + Z3 comme backend de decision), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, symbolic, Solver."
     - "Divergence d'implementation : le C# (Microsoft.Z3 via NuGet + auto-suffisant en annexe S10, 19 cellules code apres #10459) utilise la theorie des chaines Z3 et la regle `re.++` / `re.*` / `re.range` / `str.to_re` pour la partie symbolique. Le Python (pyz3, 10 cellules code) utilise les bindings Z3 directement. Meme enseignement (automates symboliques + Z3), deux niveaux."
