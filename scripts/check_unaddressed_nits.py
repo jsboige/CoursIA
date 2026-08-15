@@ -135,6 +135,11 @@ CITERS = (
     # fenetre 05-01..05-07) : demande procedurelle satisfaite par le merge
     # lui-meme — git n'autorise pas le merge d'une branche en conflit.
     "needs rebase",
+    # « Si Static validation rouge → CHANGES_REQUESTED + diagnostic » (#1247,
+    # fenetre 05-15..05-21) : verdict CONDITIONNEL futur, jamais emis. Une
+    # fleche devant le marqueur est une derivation, pas une emission — les
+    # verdicts reels s'ecrivent « Verdict : X » ou dans le state de la review.
+    # Traite hors CITERS (voir _is_cited) car la fleche n'est pas un mot.
 )
 
 
@@ -167,6 +172,11 @@ def _is_cited(window: str) -> bool:
     « xxxtechno » matcherait « no ».
     """
     w = window
+    # Fleche immediatement devant le marqueur : derivation conditionnelle
+    # (« Si X → CHANGES_REQUESTED », #1247), pas une emission de verdict.
+    stripped = w.rstrip()
+    if stripped.endswith(("→", "->", "=>")):
+        return True
     while w and not w[-1].isalnum():
         w = w[:-1]
     w = w.lower()

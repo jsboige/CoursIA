@@ -311,3 +311,21 @@ def test_needs_rebase_ne_flagge_pas():
     body = ("### Notes\n- **CONFLICTING** — needs rebase before merge (same as "
             "#882)\n- No CI checks triggered (CoursIA notebooks repo)")
     assert mod.classify("jsboige", body) is None
+
+
+def test_verdict_conditionnel_fleche_ne_flagge_pas():
+    """FP #1247 (fenetre 05-15..05-21) : « Si Static validation rouge →
+    CHANGES_REQUESTED + diagnostic » — verdict CONDITIONNEL futur. La fleche
+    devant le marqueur est une derivation, jamais une emission."""
+    body = ("### Verdict pré-merge\nAPPROVED conditionnel : merge dès que catalog "
+            "drift fixé ET Static validation H.1/H.3 GREEN. Si Static validation "
+            "rouge → CHANGES_REQUESTED + diagnostic.")
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_verdict_emis_sans_fleche_flagge():
+    """Garde-fou : l'arrow-citer ne desactive que la forme conditionnelle —
+    un verdict reellement emis reste une reserve."""
+    assert mod.classify(
+        "jsboige", "Verdict : CHANGES_REQUESTED — la cellule 12 casse le kernel."
+    ) == "BOT-CONCERN"
