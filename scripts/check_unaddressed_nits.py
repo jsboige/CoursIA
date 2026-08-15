@@ -87,6 +87,18 @@ CONCERN_MARKERS = (
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+    "Je lève", "Je leve", "Levée de", "Levee de",
+)
+
+# Le verdict d'un reviewer bot vit en QUEUE de body (« Verdict: ... ne bloque
+# pas »), pas en tete. Un body qui CONCLUT positivement n'est pas une reserve,
+# meme si son titre ou son devellopement porte le mot CONCERNS (classe de FP
+# no 1 du triage 07-15..07-31 : le flag lisait le titre, la conclusion disait
+# l'inverse). On ne regarde que les 300 derniers chars — la conclusion.
+NO_CONCERN_TAIL_MARKERS = (
+    "ne bloque pas", "non-bloquant", "non bloquant", "No concerns",
+    "Safe to merge", "safe to merge", "pas un bloquer", "non-blocking",
+    "NON-BLOQUANT",
 )
 
 
@@ -109,6 +121,19 @@ def _unaccent(text: str) -> str:
 def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     normalised = _unaccent(body)
     return any(_unaccent(m) in normalised for m in markers)
+
+
+def _excerpt(body: str) -> str:
+    """Tete + queue : le verdict d'un reviewer vit en QUEUE de body.
+
+    Les 280 premiers chars seuls coupaient la conclusion (mesure triage
+    07-15..07-31 : le verdict final tombait hors excerpt sur les PRs longues,
+    et l'audit lisait la position du titre au lieu de la conclusion).
+    """
+    snippet = " ".join(body.split())
+    if len(snippet) <= 400:
+        return snippet[:280]
+    return snippet[:200] + " [...] " + snippet[-200:]
 
 
 def ts(value: str | None) -> datetime | None:
@@ -162,6 +187,8 @@ def classify(author: str, body: str) -> str | None:
     stripped = body.lstrip()
     if has_marker(body, LIFT_MARKERS):
         return None  # annonce de levee / de merge : resolution, pas reserve
+    if has_marker(" ".join(body.split())[-300:], NO_CONCERN_TAIL_MARKERS):
+        return None  # la conclusion du body decharge : verdict positif, pas une reserve
     if stripped.startswith(AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
         return "BOT-CONCERN" if has_marker(body, CONCERN_MARKERS) else None
@@ -264,7 +291,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "at": when.isoformat(),
             "gap_hours": round((cutoff - when).total_seconds() / 3600.0, 1),
             "code_pushed_after": pushed_after,
-            "excerpt": " ".join(body.split())[:280],
+            "excerpt": _excerpt(body),
         })
 
     for t in threads:
@@ -274,7 +301,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "kind": "INLINE-UNRESOLVED", "author": t["author"], "src": "reviewThread",
             "at": t.get("createdAt") or "?",
             "where": f"{t.get('path')}:{t.get('line')}",
-            "excerpt": " ".join((t.get("body") or "").split())[:280],
+            "excerpt": _excerpt(t.get("body") or ""),
         })
 
     return {

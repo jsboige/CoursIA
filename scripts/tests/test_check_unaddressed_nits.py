@@ -142,3 +142,46 @@ def test_thread_inline_resolu_ne_bloque_pas():
 
 def test_pr_propre_ne_bloque_pas():
     assert run([])["blocked"] is False
+
+
+# --- Durcissements (triage 07-15..07-31, approuves par ai-01 le 2026-08-15) ---
+
+def test_verdict_positif_en_queue_decharge():
+    """Classe FP no 1 : titre CONCERNS, conclusion « ne bloque pas »."""
+    bot = {"author": {"login": "hermes-bot"}, "createdAt": at(12),
+           "body": "Review Hermes: COMMENT_WITH_CONCERNS. Le scope est large "
+                   "et deux cellules manquent d'interp. Apres relecture du "
+                   "diff et des outputs, verdict final: ne bloque pas."}
+    assert run([bot])["blocked"] is False  # le bot concluant positivement n'est pas une reserve
+    # et son verdict constitue une reponse qui leve le nit user :
+    assert run([USER_NIT, bot])["blocked"] is False
+
+
+def test_negation_hors_queue_ne_decharge_pas():
+    """La negation ne compte que si elle est dans les 300 derniers chars."""
+    filler = " ".join(["developpement"] * 80)
+    bot = {"author": {"login": "hermes-bot"}, "createdAt": at(12),
+           "body": "Verdict initial: ne bloque pas, mais " + filler +
+                   " et au final il va falloir splitter avant merge."}
+    assert run([bot])["blocked"] is True
+
+
+def test_lift_capitalise_leve():
+    """« Je lève ma CHANGES_REQUESTED » ne matchait pas les LIFT_MARKERS lowercase."""
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Je leve ma CHANGES_REQUESTED apres le commit abc."}
+    assert mod.has_marker(lift["body"], mod.LIFT_MARKERS)
+
+
+def test_lift_capitalise_accents_leve():
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Levée de ma réserve : les 2 nits sont traités."}
+    assert mod.has_marker(lift["body"], mod.LIFT_MARKERS)
+
+
+def test_excerpt_porte_la_queue():
+    """Le verdict final doit rester visible dans l'excerpt des PRs longues."""
+    filler = " ".join(["contexte"] * 60)
+    body = "Review: " + filler + " verdict final: ne bloque pas."
+    excerpt = mod._excerpt(body)
+    assert "ne bloque pas" in excerpt
