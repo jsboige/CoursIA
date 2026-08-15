@@ -15,6 +15,12 @@
       csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
       content_python_sha: af379708f3230a003e086fb360fd1f47e38bcdae2b8b98bef4b421c83792af4f
       content_csharp_sha: 8ff080818394f0564ef7c520644be395b580820ac947123408c1f4914caa3aa2
+    - date: "2026-08-15"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 924092dad22d0d395af77067e636d92d773484ec
+      csharp_sha: 43e8441093f9092488970566704c61e6850df678
+      content_python_sha: af379708f3230a003e086fb360fd1f47e38bcdae2b8b98bef4b421c83792af4f
+      content_csharp_sha: 03f8eca2c4268cffbefe5b39db80c0dee2c24e43037a3b2a9cb285854c2df4aa
   known_differences:
     - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."
     - "Idiomes framework : Python = `scipy.integrate.odeint` (integration ODE) + `scipy.optimize.minimize` + `numpy` + `matplotlib`. C# = BCL .NET 9 pur (`System.*`) pour la tranche 1 (RK4 from-scratch, formes analytiques Stackelberg/Cournot) + **tranche 2** branchant le moteur SOTA .NET `MathNet.Numerics` 5.0.0 (RungeKutta.FourthOrder + NelderMeadSimplex) pour la verification croisee. 0 numpy, 0 scipy des deux cotes C#."
