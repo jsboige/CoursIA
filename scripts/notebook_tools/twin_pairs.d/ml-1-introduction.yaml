@@ -17,7 +17,14 @@
       csharp_sha: 1b6915c6869155bc57f7f9b1105eb5a0184abba9
       content_python_sha: ecd3798935d81f107d9318130f2c68e29e483b8f6ab06bae62668ee9621a9151
       content_csharp_sha: 79793c01eb4182dfac2965300476fb136cab7685333247e798a606d31175a947
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 736ca5bc84443703871b0889ec8fe8413b5246c3
+      csharp_sha: badb7ba30e145498996a823e9d2b69e8fb31ea1a
+      content_python_sha: ecd3798935d81f107d9318130f2c68e29e483b8f6ab06bae62668ee9621a9151
+      content_csharp_sha: 38238ddf5cbe7c38ee7dbd223bceb742dd35aff85828528be5dc111ee9725bfa
   known_differences:
+    - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "Socle pedagogique commun : regression lineaire (R2, MAE) + regression logistique (accuracy, ROC-AUC). Dataset : prediction de prix / classification binaire."
     - "Idiomes framework : C# = `Microsoft.ML` (API imperative MLContext -> PredictionEngine, schema via classes [ColumnName]). Python = `sklearn.linear_model` (LinearRegression, LogisticRegression) fonctionnel (estimator.fit/predict), metrics `r2_score, mean_absolute_error, accuracy_score, roc_auc_score`."
     - "Meme concept demontre des deux cotes (pipeline regression de base) ; asymetrie d'idiome MLContext-vs-estimator, pas d'ecart algorithmique."

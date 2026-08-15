@@ -18,7 +18,14 @@
       csharp_sha: bac67babe57b50922219ad90581732373d0d8c01
       content_python_sha: 083c392f8d9070ae5b22b7bfcbb6b57c5a6a5f8365929cf45134c5a93f2ca3eb
       content_csharp_sha: 6e192bb5b64450b21ab98ca02e5d64f315ffcdd7be072606246b68184d4dded6
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 5e863ede175ce3bf689752df4e3750ac08f2a71f
+      csharp_sha: b0c0a5297ace0d8fe490901b3dc8e522af15d649
+      content_python_sha: 083c392f8d9070ae5b22b7bfcbb6b57c5a6a5f8365929cf45134c5a93f2ca3eb
+      content_csharp_sha: e24fbc32219e7ebaeea9223982e906434465dd83c3394fc9a3be59b3d0384db0
   known_differences:
+    - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
     - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."
     - "parity_level = surface : meme probleme (prevision de series temporelles avec saisonnalite) mais algorithmes distincts (SSA spectral vs STL/SARIMAX statistique). Les resultats numeriques ne sont pas directement comparables ; c'est une parite de OBJECTIF pedagogique, pas de methode."

@@ -17,7 +17,14 @@
       csharp_sha: 01dbdf04a2db7cd4a48f04172530f6c1848768c9
       content_python_sha: 2366808236680e11b4ddc99b5289ecf54a7b448f0e72fec11d890ad92ec9581b
       content_csharp_sha: 3bb2c2deb1a98d499742ef2f47a1664668607fbca43078b757f79b6744673594
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 101ab5a0f5a70557bcddc84c4ebfebadbb8ecc64
+      csharp_sha: 2a158cc55996dead23a76fd0f495efc6f17e6ff0
+      content_python_sha: 2366808236680e11b4ddc99b5289ecf54a7b448f0e72fec11d890ad92ec9581b
+      content_csharp_sha: 3ec82bd447b7aa98691918b396642483479158675869b041731d431828a0dfdf
   known_differences:
+    - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "Socle pedagogique commun : featurization (encodage categoriel one-hot, normalisation, imputation) sur donnees tabulaires."
     - "Idiomes framework : C# = `mlContext.Transforms.Categorical.OneHotEncoding` (OutputKind.Binary) sur IDataView (LoadFromEnumerable). Python = `sklearn.preprocessing` (OneHotEncoder, StandardScaler, SimpleImputer) composes via `ColumnTransformer` + `Pipeline`."
     - "Difference conceptuelle : ML.NET exprime les transforms comme un pipeline chained (.Append), sklearn comme un ColumnTransformer declaratif (colonnes numeriques vs categorielles routees separement)."

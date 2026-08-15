@@ -29,7 +29,14 @@
       csharp_sha: 8312994b018141ee792668a10d4badc1818b32a3
       content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
       content_csharp_sha: 5e3eaddd134b346c59036a1e2ac05412f1685d24dffd4697e794b5fe9b84831c
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: 368fa70908b21e5b64d889ce595c70826c54917f
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: ffc6a21329a4a83dd530ad32ced3cb20be8da8e93d8f711f9fb96c0cfed8a1fe
   known_differences:
+    - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
     - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
     - "Asymetrie de couverture : Python expose nativement `GridSearchCV` + `cross_val_score` (recherche d'hyperparametres + CV K-fold) ; le C# compare manuellement SDCA vs LightGbm sans AutoML sur ce notebook (AutoML apparait en ML-4)."
