@@ -50,8 +50,12 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
         with:
           # Version alignée sur local (cf. po-2023-c160/c161 Quarto tranches).
-          # Si bump futur → changer ici + changer .claude/CLAUDE.md si besoin.
-          version: 1.7.32
+          # Bump 1.7.32 -> 1.10.18 (issue #10968) : le filtre lua 1.7.32 pend sur
+          # les cellules echo:true dont une ligne de source se termine par \n et
+          # suivies d'un output display_data (mini-repro #10968) — corrigé en
+          # 1.10.18 (App-9b rend en 6 s). Les 7 notebooks exclus du pilote par
+          # #10979 redeviennent rendables (NOTEBOOK_EXCLUDE_FILES vidé, #10968).
+          version: 1.10.18
 
       - name: Regenerate README render list
         # _quarto.yml porte une liste render: EXPLICITE de tous les README.md
