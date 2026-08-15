@@ -311,6 +311,20 @@ la distance entre ses outils et le schéma de persistance.
 > y est synthétique (Maison Valmont) — aucun outil réel du site n'y figure —
 > et un chemin live optionnel permet de le rejouer sur son propre serveur.
 
+> **Notebook compagnon (face protocole).**
+> [`piloter-wordpress-par-mcp.ipynb`](piloter-wordpress-par-mcp.ipynb)
+> démontre le protocole lui-même contre l'instance jetable : l'endpoint
+> JSON-RPC `mcp/v1/http` (namespace séparé de l'API REST d'administration),
+> le handshake `initialize` avec **négociation de version** réelle, le
+> catalogue `tools/list` (43 outils à JSON Schema, miroir vivant de
+> `mcp/functions`), puis de vrais `tools/call` — lecture, puis
+> création/suppression d'un article éphémère : un client externe qui agit
+> sur le site. Frontière mesurée : sans credentials, chaque méthode
+> (initialize comprise) répond `401`. Sur la version gratuite, les 43
+> outils sont tous génériques `wp_*` — la leçon ci-dessus (« les verbes du
+> métier ») se lit en négatif : les 24 outils métier de l'installation
+> client viennent du plugin custom, consommables par le même protocole.
+
 ### Comparaison OWUI
 
 C'est ici qu'AI-Engine se distingue le plus franchement. Open WebUI
