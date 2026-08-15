@@ -33,6 +33,9 @@ package «mimo_lean» where
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.0"
 
+require slt from git
+  "https://github.com/YuanheZ/lean-stat-learning-theory.git" @ "d0f506f0a695018265dccb33bcb05e2f5ca1c876"
+
 @[default_target]
 lean_lib «Descent» where
   globs := #[`Descent, `Descent_en]
@@ -44,3 +47,7 @@ lean_lib «Objective» where
 @[default_target]
 lean_lib «Lmmse» where
   globs := #[`Lmmse, `Lmmse_en]
+
+@[default_target]
+lean_lib «Converse» where
+  globs := #[`Converse, `Converse_en]
