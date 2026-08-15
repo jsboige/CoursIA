@@ -211,6 +211,7 @@ def thermal_backoff(
     max_temp: int = 80,
     base_sleep: float = 3.0,
     max_sleep: float = 30.0,
+    max_cooldown_cycles: int = 30,
 ) -> int:
     """Adaptive thermal pause between TTS generations.
 
@@ -218,7 +219,9 @@ def thermal_backoff(
       - Below *target_temp*: minimal pause (base_sleep) to maintain airflow.
       - Between *target_temp* and *max_temp*: progressive backoff,
         scaling from base_sleep to max_sleep linearly with temperature.
-      - Above *max_temp*: full max_sleep cooldown and re-check.
+      - Above *max_temp*: full max_sleep cooldown and re-check, bounded
+        by *max_cooldown_cycles* (a stuck sensor or permanently
+        throttled GPU must not hang the pipeline forever).
 
     Returns current GPU temperature after the pause.
     """
@@ -240,14 +243,23 @@ def thermal_backoff(
         )
         time.sleep(sleep_time)
     else:
-        # Over threshold — full cooldown until temperature drops
-        while temp > target_temp:
+        # Over threshold — bounded cooldown until temperature drops
+        for _ in range(max_cooldown_cycles):
+            if temp <= target_temp:
+                break
             logger.info(
                 "GPU %dC > %dC, cooling %ds...",
                 temp, max_temp, int(max_sleep),
             )
             time.sleep(max_sleep)
             temp = get_gpu_temp()
+        else:
+            logger.warning(
+                "GPU still %dC after %d cooldown cycles (%ds total) — "
+                "proceeding throttled rather than hanging",
+                temp, max_cooldown_cycles,
+                int(max_cooldown_cycles * max_sleep),
+            )
 
     return temp
 
