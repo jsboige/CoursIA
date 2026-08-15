@@ -59,14 +59,17 @@ EXCLUDE_MARKERS = (
     "\\archive\\",
 )
 
-# Notebooks rendered to HTML (EPIC #10921). Pilot = the Search series only
-# (#10923 Phase A); extending to other series = adding a subtree here. The
-# root execute block (_quarto.yml) already carries enabled: false + echo: true
-# for every notebook — a directory-scoped _quarto.yml is NOT applied to .ipynb
-# (measured firsthand sur Quarto 1.7.32, pin d'origine du pilote), so no
-# per-subtree override exists.
+# Notebooks rendered to HTML (EPIC #10921). Pilot = Search (#10923 Phase A);
+# tranche 2 = Sudoku + GameTheory + Probas (#10923, les 3 familles deja
+# surfacees par la navbar — la nav ne doit mener a aucun non-rendu). The root
+# execute block (_quarto.yml) already carries enabled: false + echo: true for
+# every notebook — a directory-scoped _quarto.yml is NOT applied to .ipynb in
+# Quarto 1.7.32 (measured firsthand), so no per-subtree override exists.
 NOTEBOOK_SUBTREES = (
-    "MyIA.AI.Notebooks/Search/",  # pilote #10923 — voir EPIC #10921 pour l'extension
+    "MyIA.AI.Notebooks/Search/",      # pilote #10923 (111 rendus apres exclusions)
+    "MyIA.AI.Notebooks/Sudoku/",      # tranche 2 #10923 (37)
+    "MyIA.AI.Notebooks/GameTheory/",  # tranche 2 #10923 (56)
+    "MyIA.AI.Notebooks/Probas/",      # tranche 2 #10923 (58)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
