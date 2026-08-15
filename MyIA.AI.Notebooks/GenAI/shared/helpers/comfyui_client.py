@@ -659,7 +659,7 @@ class ComfyUIClient:
                 "inputs": {
                     "width": width,
                     "height": height,
-                    "frame_limit": num_frames,
+                    "length": num_frames,
                     "batch_size": 1
                 }
             },
