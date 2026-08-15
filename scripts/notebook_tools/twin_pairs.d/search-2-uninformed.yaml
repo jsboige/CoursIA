@@ -17,8 +17,15 @@
       csharp_sha: c92b053064e00cf25d2b57b2a4a27dc84a3be7cb
       content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
       content_csharp_sha: 2f849cf4ceac487315fccc97ecde0f5323bbb2cb24e9b819102151f3435bf6bf
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 9fab1a819cb10727d3003902bcfcbf0d849a98bc
+      csharp_sha: ffab0d9c69b1a35c7d5dc050730c27c20d79af16
+      content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
+      content_csharp_sha: 944773973aef369b09851dd2ee95e41ec9fdf477af6c7048bf35e6cd181a4574
   known_differences:
     - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
     - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
-    - "Pas d'extension solveur tiers sur ce notebook - implementation from-scratch sur les deux cotes (memes algorithmes, idiomes distincts)."
+    - "C# = tranche 1 from-scratch (Queue/Stack/PriorityQueue BCL) PUIS tranche 2 QuikGraph 2.5.0 (BreadthFirstSearch/DepthFirstSearch/Dijkstra). La tranche 2 ajoute l'extension solveur tier cote .NET ; Python = networkx (moteur Python de production) + heapq."
+    - "DFS : ecart de strategie observe sur les 5 trajets (tranche 1 = iteratif LIFO, dernier voisin explore en premier ; QuikGraph = recursif, premier voisin d'abord). BFS et UCS (Dijkstra) parite chiffre-a-chiffre, y compris le trajet piege Paris -> Rennes."
     - "Benchmarks : les deux cotes mesurent le nombre de noeuds explorés, la longueur du chemin optimal, et le cout uniforme quand applicable."
