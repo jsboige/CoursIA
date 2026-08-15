@@ -11,6 +11,18 @@
       python_sha: fd2931b15681647be5458c009420315234cba14b
       csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
       reason: "c.1127 #8052 Python c34 code mislabeled Exercice 3->Exemple resolu (sister guide-cells c26/30/38 convention) + c37 anchor Exercice 1->1b (PY exercises are 1b/2b/3b/4b, no Exercice 1); C# twin preserved"
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 4cb3b227a8d662490199a069f1835e26f62bbc7a
+      csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
+      content_python_sha: eee637c2870c6da169553a14a8e861c19165bfd3240689c366b0719ea831d377
+      content_csharp_sha: c6bab540f0a215779fa3f6143d6424f67adee605467ab4d6b2c99f7ba41a0af5
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 576922e014017a92bdb13a9e9dc2c043b1c40325
+      csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
+      content_python_sha: 040431dcdf9c141892e3720654e560ab03d023623a5b47cdc1564a0e6877cda2
+      content_csharp_sha: c6bab540f0a215779fa3f6143d6424f67adee605467ab4d6b2c99f7ba41a0af5
   known_differences:
     - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
     - "Cas etudies : N-Reines (LCG via CP-SAT), Job-Shop Scheduling (exploration des parametres CP-SAT : DEFAULT / FIXED_SEARCH / PORTFOLIO), generation d'instances CSP aleatoires + prediction de faisabilite par features (n_vars, n_constraints, density)."

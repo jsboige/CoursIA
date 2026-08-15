@@ -119,15 +119,13 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
+      target-modules: "*"
       allow-axioms: ""
-      # This lake has 16 acknowledged tactic `sorry`s -- the same 16 the build
-      # job declares as `sorry-baseline` above (verified firsthand: Conway 8,
-      # Invariant 4, Lidman 2, Reidemeister 2, Basic 0, with the `_en` siblings
-      # mirroring exactly). Gating on `sorryAx` here would make the job red on
-      # every run, forever, for a fact already tracked by the baseline counter
-      # three lines up. `has_sorry` is still reported per module, and forbidden
-      # axioms still hard-fail. Flip this to `true` when the baseline reaches 0.
+      # 16 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+      # build job above; the gate tolerates them (`fail-on-sorry: false`) but
+      # still reports `has_sorry` per module and hard-fails forbidden axioms.
+      # The per-module enumeration now lives in the gate's runtime derivation
+      # (issue #10889) -- flip to `true` when the baseline reaches 0.
       fail-on-sorry: false
 
   # Advisory proof-integrity coverage (See #8782). Same pattern as conway_lean

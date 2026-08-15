@@ -16,6 +16,7 @@ Resume operationnel : CLAUDE.md section F.
 - Distributions corrompues prefixees `~` (ex: `~cipy/`, `~umpy/`) dans `site-packages`
 - Conflits Python 3.12 vs 3.14 vs 3.13 dans `which pip` vs `python --version`
 - `pip list` montre le paquet mais `python -c "import pkg"` echoue
+- Un paquet **present et importable seul** fait echouer un import qui en depend (cf **Cas E** : le coupable est un *autre* paquet, herite du site-packages utilisateur)
 
 ---
 
@@ -95,6 +96,39 @@ python -c "import sys; print(sys.executable)"  # qui est REELLEMENT execute ?
 ```
 
 Forcer le bon Python : `& "<path-complet>/python.exe" -m pip install ...` au lieu de `python -m pip ...`.
+
+### Cas E : le site-packages **utilisateur** fuit dans tous les envs Conda
+
+Le plus trompeur des cinq, parce que le paquet qu'il fait echouer n'est pas celui qui est casse.
+
+Sous Windows, `%APPDATA%\Python\Python3XX\site-packages` (le *user site*) est ajoute au `sys.path` de **tout** interpreteur de meme version mineure — y compris ceux des envs Conda. Un paquet natif installe la, compile contre une autre version de `torch`, est donc importe **en priorite** dans un env qui a pourtant sa propre copie saine.
+
+Mesure sur ai-01 (2026-08-14) : le user site heberge une installation QuantConnect LEAN complete **et** un `torchvision` etranger. Consequence dans un env neuf ou tout est correctement installe :
+
+```
+RuntimeError: operator torchvision::nms does not exist
+  -> transformers/image_utils.py echoue a l'import
+  -> ModuleNotFoundError: Could not import module 'T5EncoderModel'
+  -> RuntimeError: Failed to import diffusers.pipelines.ltx.pipeline_ltx
+```
+
+Le message final accuse `diffusers`, l'intermediaire accuse `transformers` — **aucun des deux n'est en cause**. On peut reinstaller les deux indefiniment sans rien changer.
+
+**Diagnostic** (une bascule, pas une deduction) :
+
+```bash
+python -c "import site, sys; print(site.ENABLE_USER_SITE); print(site.getusersitepackages())"
+ls "$APPDATA/Python/Python312/site-packages"     # que traine-t-il la ?
+PYTHONNOUSERSITE=1 python -c "import <le_module_qui_echoue>"   # ca passe ? -> c'est le user site
+```
+
+**Reparation** — par ordre de preference :
+
+1. **`PYTHONNOUSERSITE=1`** dans l'invocation du job / du kernel. Isole l'env sans rien desinstaller ; c'est la reparation, pas un contournement (le user site n'a rien a faire dans un env dedie).
+2. **Desinstaller le paquet fautif du user site** : `python -m pip uninstall --user <pkg>` — a preferer quand le user site est cense rester utilisable.
+3. **Installer dans l'env la version coherente** du paquet fautif, qui reprend alors la priorite.
+
+Ne **pas** « reparer » en reinstallant le paquet accuse par le message d'erreur : il n'est pas casse, et l'operation renforce l'illusion.
 
 ---
 

@@ -35,6 +35,12 @@
       csharp_sha: 260561e83086b1b62f40481690ca9e6857c8f093
       content_python_sha: eb2571fa7f0df9984c7dcc3067b57c80db0cd248f7ac1f2a9b058f33ef057d7f
       content_csharp_sha: 80bd5533929a9d6ef0f076dd8fc4bb5fcfafe7988a2356c119d0f4849b5fd9c0
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: cd9b0d292100b31b38b036e77954534d0eb69ab5
+      csharp_sha: b71d62b0a0302d259d10a398dfa6f8c1efe6e5c8
+      content_python_sha: eb2571fa7f0df9984c7dcc3067b57c80db0cd248f7ac1f2a9b058f33ef057d7f
+      content_csharp_sha: e66af724dc812ece98f85d0a0fe17446838c196c856aee2057290c50f171e48b
   known_differences:
     - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
     - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : deux tranches — Tranche 1 from-scratch BCL .NET (0 NuGet, backtracking + propagation, enseigne les mecanismes) + Tranche 2 Google.OrTools CP-SAT natif .NET (moteur de production, depuis 2026-08-11)."

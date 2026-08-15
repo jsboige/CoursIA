@@ -12,9 +12,13 @@ preserving the rest of ``_quarto.yml`` byte-for-byte. It is meant to be run:
   - on CI as a pre-render step of ``quarto-pages-deploy.yml`` (so new READMEs
     appear on the site without a manual regen commit).
 
-The .ipynb notebooks are intentionally NOT added: ``notebook-preview: false``
-+ ``freeze: auto`` keep them copied verbatim with their committed outputs
-(rule C.2), without kernel re-execution on CI.
+The .ipynb notebooks of the pilot subtree (``NOTEBOOK_SUBTREES``, currently
+``Search/``) ARE rendered to HTML (EPIC #10921, Phase A #10923): they are
+listed explicitly with the same mechanism. Rendering consumes the committed
+outputs (rule C.2) without kernel re-execution and shows the code cells: the
+root ``execute`` block carries ``enabled: false`` + ``echo: true`` (measured
+firsthand on the pilot: a directory-scoped ``_quarto.yml`` is NOT applied to
+.ipynb documents in Quarto 1.7.32, only the root project block is).
 
 Usage:
     python scripts/regen_quarto_render.py            # rewrite _quarto.yml in place
@@ -54,6 +58,72 @@ EXCLUDE_MARKERS = (
     "/archive/",           # any archive/ subdir (notebook families, scripts)
     "\\archive\\",
 )
+
+# Notebooks rendered to HTML (EPIC #10921). Pilot = the Search series only
+# (#10923 Phase A); extending to other series = adding a subtree here. The
+# root execute block (_quarto.yml) already carries enabled: false + echo: true
+# for every notebook — a directory-scoped _quarto.yml is NOT applied to .ipynb
+# (measured firsthand sur Quarto 1.7.32, pin d'origine du pilote), so no
+# per-subtree override exists.
+NOTEBOOK_SUBTREES = (
+    "MyIA.AI.Notebooks/Search/",  # pilote #10923 — voir EPIC #10921 pour l'extension
+)
+
+# Notebook subtrees that must NOT render (archived families only — vendored
+# subtrees are never git-tracked under these prefixes).
+NOTEBOOK_EXCLUDE_MARKERS = (
+    "/_archive/",
+    "/archive/",
+)
+
+# Notebook files volontairement exclus du rendu HTML, avec raison mesurée.
+# Vide depuis 2026-08-14 (issue #10968) : la pathologie qui motivait les 7
+# exclusions — le filtre lua de Quarto 1.7.32 qui pend (CPU-bound, aucune
+# sortie) sur les cellules echo:true dont une ligne de source se termine par
+# \n et qui sont suivies d'un output display_data — est corrigee en Quarto
+# 1.10.18 (pin CI mis a jour). Verifie firsthand (2026-08-14, standalone) :
+#   - App-9b-EdgeDetection-CSharp.ipynb : 1.7.32 >= 15 min sans progression
+#     -> 1.10.18 rend en ~6 s (HTML 4.88 MB).
+#   - MGS-9-EverestRelief / MGS-15-LandscapeAnalysis : 1.10.18 rendent en
+#     7 s / 3 s (leger vs lourd de la famille MetaGeneticSharp).
+#   - Mini-repro minimal (1 cellule code, ligne de source terminant par \n +
+#     1 display_data) : 1.7.32 pend, 1.10.18 rend en ~13 s.
+# NB : pandoc n'est PAS en cause (reader + writer ipynb<->html en 0 s) ;
+# c'est le filtre post-traitement de Quarto 1.7.32 (main.lua:9677, recherche
+# de fenced-div ":::") qui boucle sur la combinaison source+display_data.
+# L'ancienne liste des 7 (App-9b + MGS-4/8/9/11/14/15) est conservee dans
+# l'historique git du fichier. Laisser ce tuple vide sauf raison mesuree.
+NOTEBOOK_EXCLUDE_FILES = ()
+
+
+def git_tracked_notebooks() -> list[str]:
+    """Return repo-relative POSIX paths of every git-tracked ``.ipynb`` under
+    NOTEBOOK_SUBTREES, excluding archived subtrees.
+
+    Same `git ls-files` + quote handling as ``git_tracked_readmes`` (raw UTF-8
+    paths, single YAML wrap stays valid on every machine).
+    """
+    patterns = []
+    for tree in NOTEBOOK_SUBTREES:
+        patterns.append(tree + "*.ipynb")
+        patterns.append(tree + "**/*.ipynb")
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", *patterns],
+        capture_output=True, text=True, check=True,
+    )
+    paths = []
+    for line in out.stdout.splitlines():
+        p = line.strip()
+        if not p:
+            continue
+        if any(bad in p for bad in NOTEBOOK_EXCLUDE_MARKERS):
+            continue
+        if p in NOTEBOOK_EXCLUDE_FILES:
+            continue
+        paths.append(p)
+    # Sort for deterministic diffs (by path, case-insensitive)
+    paths.sort(key=lambda s: s.lower())
+    return paths
 
 
 def git_tracked_readmes() -> list[str]:
@@ -100,6 +170,17 @@ def build_render_block() -> list[str]:
     lines.append('    - "README.md"')
     for p in readmes:
         lines.append(f'    - "{p}"')
+    # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
+    # list (globs do not expand in Quarto 1.7, see README comment above).
+    notebooks = git_tracked_notebooks()
+    if notebooks:
+        lines.append("    # Notebooks rendus en HTML (EPIC #10921, pilote Search #10923).")
+        lines.append("    # Liste explicite — globs non etendus en Quarto 1.7.")
+        lines.append("    # Execution desactivee + echo: true au niveau racine (_quarto.yml).")
+        lines.append(f"    # {len(notebooks)} notebooks (sous-arbres: "
+                     + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ").")
+        for p in notebooks:
+            lines.append(f'    - "{p}"')
     return lines
 
 
@@ -146,12 +227,14 @@ def main() -> int:
                   "Run: python scripts/regen_quarto_render.py", file=sys.stderr)
             return 1
         n = len(git_tracked_readmes()) + 1
-        print(f"_quarto.yml render list up to date ({n} READMEs).")
+        nb = len(git_tracked_notebooks())
+        print(f"_quarto.yml render list up to date ({n} READMEs, {nb} notebooks).")
         return 0
 
     QUARTO_YML.write_text(proposed, encoding="utf-8")
     n = len(git_tracked_readmes()) + 1
-    print(f"_quarto.yml updated: render list now includes {n} READMEs.")
+    nb = len(git_tracked_notebooks())
+    print(f"_quarto.yml updated: render list now includes {n} READMEs, {nb} notebooks.")
     return 0
 
 

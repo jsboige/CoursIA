@@ -33,6 +33,11 @@
       python_sha: 4b261ba1eb23a7abedc399eaff5a8dcd33679d86
       csharp_sha: 193e39383c74f3ef0de15ba7c7d2a0db8cb2109c
       content_python_sha: 9064d43f497882c706c9101c04cddf0b1636826b21e8f032c2d7398f96b0c2d1
+    - date: "2026-08-15"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 1b3bac28b9aadaf6ce799af789144280aada3cbe
+      csharp_sha: 193e39383c74f3ef0de15ba7c7d2a0db8cb2109c
+      content_python_sha: bb2981c6c332b8989dc83bcef6b4ed36d9b301309e24c8f46d634aad69c985a0
       content_csharp_sha: 5f3321677f3c599e1b146b6f02b509579f7cb8bc5b7f19f8b16590da20c7f5e5
     - date: "2026-08-14"
       by: myia-po-2024:CoursIA-2

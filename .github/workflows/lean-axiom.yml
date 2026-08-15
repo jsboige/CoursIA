@@ -42,9 +42,13 @@ on:
         type: string
         required: true
       target-modules:
-        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file."
+        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file. May also be '*' (issue #10889): the module list is then derived at runtime by walking every *.lean under project-path (minus .lake/, .git, node_modules, .venv, lakefile*, lean-toolchain) -- exactly what `lake build` compiles -- so the gate cannot drift out of view of newly added modules."
         type: string
         required: true
+      include-i18n-siblings:
+        description: "When `target-modules: \"*\"`, whether the runtime derivation keeps `_en` i18n siblings (any path segment -- dir or stem -- ending in `_en`). Default 'false' excludes them, matching the FR-only measurement of #10889; a caller that wants the full bilingual surface opts in. Ignored when target-modules is an explicit list."
+        type: string
+        default: "false"
       allow-axioms:
         description: "Comma-separated additional axioms to whitelist beyond the defaults (propext, funext, Classical.choice, Quot.lift, Quot.mk, Quot.sound). Use sparingly — adding an axiom to this list is an explicit acknowledgement that the project's proofs may depend on it."
         type: string
@@ -146,6 +150,7 @@ jobs:
         DISPLAY_NAME: ${{ inputs.display-name }}
         PROJECT_PATH: ${{ inputs.project-path }}
         FAIL_ON_SORRY: ${{ inputs.fail-on-sorry }}
+        INCLUDE_I18N_SIBLINGS: ${{ inputs.include-i18n-siblings }}
       run: |
         set -eu
         python - <<'PY'
@@ -180,15 +185,45 @@ jobs:
                 lines = (raw_output or "").strip().splitlines()
                 return lines[-20:]
 
-        modules = [m.strip() for m in os.environ["MODULES"].split(",") if m.strip()]
+        # `target-modules: "*"` (issue #10889): derive the module list at
+        # runtime instead of trusting a hand-maintained caller list that drifts
+        # out of sync with the lake (26 modules were out of view on 4 lakes).
+        # discover_modules walks exactly what `lake build` compiles -- every
+        # `*.lean` under the project root minus `.lake/`, `.git`, `node_modules`,
+        # `.venv`, `lakefile*` and `lean-toolchain`. Its imports are stdlib-only
+        # (no PyYAML here), so importing it into this step is safe.
+        project_path = (repo_root / os.environ["PROJECT_PATH"]).resolve()
+        if not project_path.is_dir():
+            sys.exit(f"lake project path does not exist: {project_path}")
+
+        modules_raw = os.environ["MODULES"].strip()
+        if modules_raw == "*":
+            sys.path.insert(0, str(repo_root / "scripts" / "lean"))
+            from check_target_coverage import (  # noqa: E402
+                discover_modules,
+                filter_i18n_siblings,
+            )
+
+            modules = sorted(discover_modules(project_path, None))
+            # i18n `_en` siblings are excluded by default: any path SEGMENT
+            # ending in `_en` (dir or stem -- e.g. `Conway/Life_en.lean`), not
+            # only a root-level stem. Mirrors the FR-only measurement of #10889;
+            # a caller that wants the full bilingual surface opts in via
+            # `include-i18n-siblings: "true"`. The filter lives in the script
+            # (unit-tested) so the gate never carries a second copy of the rule.
+            if os.environ.get("INCLUDE_I18N_SIBLINGS", "false").strip().lower() != "true":
+                modules = sorted(filter_i18n_siblings(modules))
+            if not modules:
+                sys.exit("target-modules='*' enumerated no modules under "
+                         f"{project_path} (no .lean outside .lake/?). "
+                         "A gate that inspects nothing must fail, not pass silently.")
+        else:
+            modules = [m.strip() for m in modules_raw.split(",") if m.strip()]
         allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
         display_name = os.environ["DISPLAY_NAME"]
 
         fail_on_sorry = os.environ.get("FAIL_ON_SORRY", "true").strip().lower() == "true"
 
-        project_path = (repo_root / os.environ["PROJECT_PATH"]).resolve()
-        if not project_path.is_dir():
-            sys.exit(f"lake project path does not exist: {project_path}")
         verifier = LeanVerifier()
         verifier.project_dir = str(project_path)
 

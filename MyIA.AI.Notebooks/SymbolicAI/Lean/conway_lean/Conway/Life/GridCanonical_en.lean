@@ -254,5 +254,110 @@ theorem evolve_shift (v : Int × Int) (n : Nat) (g : Grid) :
   | zero => simp [evolve]
   | succ k ih => rw [evolve_succ, step_shift, ih, ← evolve_succ]
 
+/-- Composition of translations: applying `w` then `v` equals the
+    componentwise-sum translation. Stated with explicit components (rather
+    than pairs) so that rewriting produces sums directly, without `(a, b).1`
+    projections. -/
+theorem shift_shift (a1 a2 b1 b2 : Int) (g : Grid) :
+    shift (a1, a2) (shift (b1, b2) g) = shift (a1 + b1, a2 + b2) g := by
+  apply Canonical.ext
+  · exact canonical_shift (a1, a2) (shift (b1, b2) g)
+  · exact canonical_shift (a1 + b1, a2 + b2) g
+  · intro p
+    rw [mem_shift, mem_shift, mem_shift]
+    have hp : ((p.1 - a1) - b1, (p.2 - a2) - b2)
+        = (p.1 - (a1 + b1), p.2 - (a2 + b2)) := by ext <;> omega
+    rw [hp]
+
+/-- Translating by zero is the identity on canonical grids: the `sortDedup`
+    of `shift` re-sorts an already sorted duplicate-free list. Inset of the
+    locality bridge (a) of #6724: the composition of the one-jump's three
+    translations cancels to the zero vector, and `shift_zero` eliminates
+    that residual identity. -/
+theorem shift_zero {g : Grid} (hg : Canonical g) : shift (0, 0) g = g := by
+  apply Canonical.ext
+  · exact canonical_shift (0, 0) g
+  · exact hg
+  · intro p
+    rw [mem_shift]
+    have hp : (p.1 - 0, p.2 - 0) = p := by ext <;> omega
+    rw [hp]
+
+/-! ## Extensional congruence of `step` / `evolve`
+
+Two grids with extensionally equal membership (same set of live cells,
+lists possibly differing in order or duplicates) have the same `step` and
+the same `evolve`. This is the missing link for the locality bridge (a)
+of #6724: BR1 (`mem_toGrid_gridToMacroCellWithOffset`) yields the
+membership equivalence between `g` and the macrocell's `toGrid` image, but
+`evolve_cone_agree` requires a *grid equality*; the congruence converts
+the pointwise equivalence into an equality of trajectories. The ladder
+mirrors the translation one above: `isAlive` (local test) then
+`liveNeighborCount`/`aliveNext` (rule B3/S23) then `step` then `evolve`. -/
+
+/-- Extensionally equal grids have the same candidate set. -/
+theorem candidates_congr {g1 g2 : Grid} (h : ∀ p, p ∈ g1 ↔ p ∈ g2) (p : Int × Int) :
+    p ∈ candidates g1 ↔ p ∈ candidates g2 := by
+  simp only [candidates, List.mem_append, List.mem_flatMap]
+  constructor
+  · rintro (hm | ⟨q, hq, hm⟩)
+    · exact Or.inl ((h p).mp hm)
+    · exact Or.inr ⟨q, (h q).mp hq, hm⟩
+  · rintro (hm | ⟨q, hq, hm⟩)
+    · exact Or.inl ((h p).mpr hm)
+    · exact Or.inr ⟨q, (h q).mpr hq, hm⟩
+
+/-- The liveness test depends only on pointwise membership. -/
+theorem isAlive_congr {g1 g2 : Grid} (h : ∀ p, p ∈ g1 ↔ p ∈ g2) (q : Int × Int) :
+    isAlive g1 q = isAlive g2 q := by
+  by_cases hm : q ∈ g1
+  · have h2 : q ∈ g2 := (h q).mp hm
+    simp [isAlive, hm, h2]
+  · have h2 : q ∉ g2 := fun hc => hm ((h q).mpr hc)
+    simp [isAlive, hm, h2]
+
+/-- The live-neighbour count depends only on pointwise membership. -/
+theorem liveNeighborCount_congr {g1 g2 : Grid} (h : ∀ p, p ∈ g1 ↔ p ∈ g2)
+    (p : Int × Int) :
+    liveNeighborCount g1 p = liveNeighborCount g2 p := by
+  unfold liveNeighborCount
+  rw [funext (isAlive_congr h)]
+
+/-- The B3/S23 rule depends only on pointwise membership. -/
+theorem aliveNext_congr {g1 g2 : Grid} (h : ∀ p, p ∈ g1 ↔ p ∈ g2) (p : Int × Int) :
+    aliveNext g1 p = aliveNext g2 p := by
+  simp only [aliveNext, isAlive_congr h, liveNeighborCount_congr h]
+
+/-- Extensional congruence of `step`: grids with equal membership, same
+    accepted candidates, hence the same global step (canonicity via
+    `Canonical.ext`, structure identical to `step_shift`). -/
+theorem step_congr {g1 g2 : Grid} (h : ∀ p, p ∈ g1 ↔ p ∈ g2) : step g1 = step g2 := by
+  apply Canonical.ext
+  · exact canonical_step g1
+  · exact canonical_step g2
+  · intro p
+    rw [mem_step_iff, mem_step_iff]
+    constructor
+    · rintro ⟨hc, ha⟩
+      exact ⟨(candidates_congr h p).mp hc, by rw [← aliveNext_congr h p]; exact ha⟩
+    · rintro ⟨hc, ha⟩
+      exact ⟨(candidates_congr h p).mpr hc, by rw [aliveNext_congr h p]; exact ha⟩
+
+/-- Extensional congruence of `evolve`: grids with equal membership have
+    the same trajectory from the first generation on. Honest caveat: at
+    `n = 0` the statement would be false (`evolve 0 g = g`, a raw list
+    equality not implied by membership equivalence); from `n = 1` the
+    first `step` normalizes via `sortDedup` and the trajectories coincide.
+    BR4 only invokes the congruence at `n = jumpSize lvl ≥ 4`. Induction
+    on the predecessor of `n`, structure mirroring `evolve_shift`. -/
+theorem evolve_congr {g1 g2 : Grid} (h : ∀ p, p ∈ g1 ↔ p ∈ g2) {n : Nat} (hn : 1 ≤ n) :
+    evolve n g1 = evolve n g2 := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  clear hn
+  induction m with
+  | zero => exact step_congr h
+  | succ k ih =>
+      rw [evolve_succ, step_congr (fun p => by rw [ih]), ← evolve_succ]
+
 end Life_en
 end Conway_en

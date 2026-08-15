@@ -650,7 +650,12 @@ margin is at least `max 2 n ≥ n` *by construction*. The margin hypothesis
 then becomes satisfiable for every `n` (not just `n ≤ 2`) — see the witness
 `box_assez_grandN_single_cell_3` in `HashlifeCorrectness`, the honest dual of
 the `boxAssezGrand_nonempty_le_two` unsat cap. N1 keeps `evolveHashlifeFast`
-unchanged; N2 threads this frame through the loop without re-framing. -/
+unchanged; N2 threads this frame through the loop by re-framing on every
+iteration — the recursive call `evolveHashlifeFastAuxN fuel (n - js) g'`
+re-enters `gridToMacroCellWithOffsetN (n - js) g'` on the jumped grid
+(Hashlife). Trade-off ruled in (b2): under this padding, the jump guard
+is structurally dead (`gridToMacroCellWithOffsetN_level_gt_n`) — the side
+`bbox + 2 * max 2 n` forces `2 ^ lvl > n = js`. -/
 
 /-- Like `gridFrame` but with padding `max 2 n` (instead of the fixed `2`) on
     each side, so the light-cone margin is at least `max 2 n ≥ n`. Returns
@@ -766,11 +771,82 @@ theorem gridToMacroCellWithOffsetN_le_two_eq (n : Nat) (g : Grid) (hn : n ≤ 2)
   unfold gridToMacroCellWithOffsetN gridToMacroCellWithOffset
   rw [gridFrameN_le_two_eq_gridFrame n g hn]
 
+/-- **Dead N3 guard ((b2) verdict, #6724).** For a nonempty grid, the
+    n-aware frame level always dominates the jump horizon:
+    `2 ^ lvl ≥ side ≥ height = (rMax - rMin + 1 + 2 * max 2 n).toNat ≥ 2 * n + 1 > n`,
+    so the jump guard `lvl ≥ 2 ∧ n ≥ jumpSize lvl` (`= 2 ^ lvl`) of
+    `evolveHashlifeFastAuxN` is structurally unsatisfied: the `max 2 n`
+    padding, designed to cover the light cone of the n remaining
+    generations, inflates the frame beyond the very jump horizon it
+    conditions. The N3 jump branch can never fire; preserving
+    `jumpCaptured` across the N re-framing is therefore VACUOUS while
+    this guard is dead — see `evolveHashlifeFastAuxN_eq_evolve`
+    (Hashlife) for the behavioral consequence and the section docstring
+    of `Hashlife.lean` for the identified exit (Gosper's j decorrelation,
+    `jumpReach`/`marginToResultWindow` in `JumpCapture`). -/
+theorem gridToMacroCellWithOffsetN_level_gt_n (n : Nat) (g : Grid) (hg : g ≠ []) :
+    n < 2 ^ (gridToMacroCellWithOffsetN n g).2.level := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    simp only [gridToMacroCellWithOffsetN]
+    rw [MacroCell.level_buildFromGrid]
+    simp only [gridFrameN]
+    set rMin := gridRowMin (p₀ :: ps)
+    set rMax := gridRowMax (p₀ :: ps)
+    set cMin := gridColMin (p₀ :: ps)
+    set cMax := gridColMax (p₀ :: ps)
+    set pad := max 2 n
+    set height := (rMax - rMin + 1 + 2 * pad).toNat
+    set width := (cMax - cMin + 1 + 2 * pad).toNat
+    set side := max height width
+    set lvl := MacroCell.ceilLog2 side
+    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have hH : 1 + 2 * max 2 n ≤ height := by
+      have hnn : 0 ≤ rMax - rMin + 1 + 2 * pad := by omega
+      simp only [height]
+      omega
+    omega
+
 /-- Convert a `Grid` to a `MacroCell`, discarding the offset (defaulting to
     `(0, 0)` for the round trip). For round-trip purposes, prefer
     `gridToMacroCellWithOffset`. -/
 def gridToMacroCell (g : Grid) : MacroCell :=
   (gridToMacroCellWithOffset g).2
+
+/-- **Grid -> MacroCell -> Grid round trip (membership)**: for any point
+    `p`, `p` is alive in the reconstructed grid
+    `(gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1`
+    iff `p` is alive in `g`. This is the general form of the goal announced
+    by the docstring of `gridToMacroCellWithOffset`, previously verified
+    only via `#eval` on the canonical patterns (Sanity checks below).
+
+    Assembles `mem_toCellsAux_buildFromGrid` (the enumeration of
+    `buildFromGrid` inside the covered square is exactly `inRegion /\ p ∈ g`)
+    with `gridFrame_contains_g` (every live cell of `g` lies inside the
+    frame square). Forward direction: enumerated members are in `g`.
+    Backward: members of `g` are inside the square, hence enumerated.
+
+    This is brick BR1 of the locality bridge (a) of `p5_large_n_jumpN`
+    (#6724): it identifies `mc.toGrid off` with `g` at the membership
+    level, letting evolutions be transported between the two via
+    `toGrid_shift_between` (Foundation) and `evolve_shift` (GridCanonical). -/
+theorem mem_toGrid_gridToMacroCellWithOffset (g : Grid) (p : Int × Int) :
+    p ∈ (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1 ↔ p ∈ g := by
+  cases hF : gridFrame g with
+  | mk off lvl =>
+    simp only [gridToMacroCellWithOffset, hF, MacroCell.toGrid, mem_sortDedup]
+    rw [MacroCell.mem_toCellsAux_buildFromGrid g lvl off.1 off.2 p]
+    constructor
+    · exact fun h => h.2
+    · intro hp
+      refine ⟨?_, hp⟩
+      have hreg := gridFrame_contains_g g p hp
+      rw [hF] at hreg
+      exact hreg
 
 /-! ## Sanity checks
 

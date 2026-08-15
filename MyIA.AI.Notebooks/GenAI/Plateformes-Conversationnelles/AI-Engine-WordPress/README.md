@@ -147,6 +147,20 @@ sonde ment » documenté pour la classe *système* dans
 [`verification-verte-systeme-casse.md`](../../../../docs/reference/verification-verte-systeme-casse.md).
 stdlib pur, sans clé ni réseau.
 
+Une série « AI Engine par son API » s'ajoute aux compagnons ci-dessus :
+elle présente le plugin par des notebooks qui **appellent réellement
+l'API** d'une instance jetable dédiée — montage en 5 étapes via
+[`instance-jetable/`](instance-jetable/), corpus synthétique 100 %
+(Maison Valmont), credentials via `.env` jamais commité.
+[`presenter-ai-engine-par-son-api.ipynb`](presenter-ai-engine-par-son-api.ipynb)
+pose le socle : instance, catalogue des routes `mwai/v1`, première
+completion réelle avec compte de tokens.
+[`configurer-chatbots-par-l-api.ipynb`](configurer-chatbots-par-l-api.ipynb)
+traite les chatbots comme des **documents JSON** — lecture, duplication,
+écriture read-modify-write, interrogation — puis mesure honnêtement ce
+que les instructions d'un persona changent, et ce qu'elles ne changent
+pas.
+
 ---
 
 ## Sections
@@ -270,6 +284,10 @@ attendues.
   Copilot Gutenberg : dérive d'une chaîne de transformations, le gate par étape ne protège pas la chaîne
 - [`auditer-la-conformite-visuelle.ipynb`](auditer-la-conformite-visuelle.ipynb) —
   smoke test structurel vs conformité visuelle : contraste WCAG, primaires Bootstrap, affordance des CTA
+- [`presenter-ai-engine-par-son-api.ipynb`](presenter-ai-engine-par-son-api.ipynb) —
+  socle de la série « par son API » : instance jetable, catalogue des routes, première completion réelle
+- [`configurer-chatbots-par-l-api.ipynb`](configurer-chatbots-par-l-api.ipynb) —
+  chatbots comme documents JSON : lire, dupliquer, écrire (read-modify-write), interroger deux personas
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

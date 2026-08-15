@@ -34,7 +34,20 @@
       csharp_sha: abcf96042ee9d56be40ee26c5af221274c0f9cd6
       content_python_sha: 172023a0fd6ba51eee1a77528c228bb97fd8eb411af5aae9e624016c341bbc24
       content_csharp_sha: 52766be036cda036e6e972e9c156f21ffc4cc964fdd82295f125dfdc4e702860
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 8eb8a6a442a1edfc61a2952916d187611bce0331
+      csharp_sha: b7c569ab7b66177a75be90fccc8b8bc2acf755c4
+      content_python_sha: 3aa9e09c1f0029a5086671f400f79eaf67adf454aeee919f57a7c62c3dd3d148
+      content_csharp_sha: 3729ed9b3950b274cb5aec6a8b93ecf1e9b72f610e1c30bb16b50dbef8cd0ac9
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA
+      python_sha: 8eb8a6a442a1edfc61a2952916d187611bce0331
+      csharp_sha: 79a41d1f45cf20633b1ebf6e1cdefd0ea7199b99
+      content_python_sha: 3aa9e09c1f0029a5086671f400f79eaf67adf454aeee919f57a7c62c3dd3d148
+      content_csharp_sha: b5cbe3525c9b2b6f5695199caf35ce2659c9c98fc48f3f231f60e4d490ea22e0
   known_differences:
+    - "Edition 2026-08-15 (myia-po-2026:CoursIA, #9434 machine-dep) : drainage markdown-only de 4 re-pins de runtime absolus de la prose d'interpretation du twin C# -- cell[31] borne JVM chaude (bien inferieur a 10 ms), cell[33] table Temps (~1-5 ms / < 10 ms), cell[36] ligne d'ouverture (moins de 50 ms), toutes derivees des sorties de mesure committeees (c32 : Temps enumeration 2,94 ms ; c35 : Temps 46,24 ms). Remplacees par des descripteurs *machine-dep* renvoyant aux sorties des cellules de mesure, geste canonique #9434 (la prose re-epingle une valeur qui contredira la sortie au prochain passage kernel sur une autre machine). check_machine_dep_timing passe de 2 a 0 wallclock sur ce notebook. Parite semantique preservee : le socle from-scratch et l'extension Choco sont inchanges, seules les valeurs machine-dep de la prose ont bouge, d'ou le re-baseline du csharp_sha."
     - "Socle pedagogique commun (parity semantic) : les deux cotes implementent une classe CSP generique + backtracking simple + heuristique MRV + value-ordering LCV, depuis zero (pas de lib externe pour le coeur). Cote Python : classe CSP dict/list pure Python. Cote C# : classe CSP generique C# (Dictionary/List) qui reflete la Python."
     - "Extension solveur ASYMETRIQUE : le cote C# ajoute Choco-solver 4.10.17 (Java solver via IKVM 8.15.0, recette #4711) avec des cellules (coloration Australie par Choco, enumeration de TOUTES les solutions, 8-Reines par Choco) qui n'ont PAS d'equivalent direct cote Python. Le cote Python reste pur from-scratch sur tout le notebook."
     - "Visualisation : Python = matplotlib (graphes de contraintes, trace de backtracking, distributions). C# = rendu ASCII du graphe de contraintes (pas de plotting .NET headless)."

@@ -121,6 +121,18 @@ def discover_modules(project_path: Path, lib_root: str | None) -> set[str]:
     return modules
 
 
+def filter_i18n_siblings(modules: set[str]) -> set[str]:
+    """Drop i18n ``_en`` siblings from a module set, by PATH SEGMENT.
+
+    A segment ending in ``_en`` covers both root stems (``Conway_en``) and
+    non-root directories (``Conway/Life_en/Foo.lean`` -> ``Conway.Life_en.Foo``).
+    Used by lean-axiom.yml's runtime derivation (issue #10889); kept here so the
+    exact filter the gate applies is unit-tested against the walk.
+    """
+    return {m for m in modules
+            if not any(part.endswith("_en") for part in m.split("."))}
+
+
 def parse_target_modules(raw: str) -> set[str]:
     return {m.strip() for m in raw.split(",") if m.strip()}
 
@@ -209,9 +221,19 @@ def main(argv: list[str] | None = None) -> int:
     else:
         targeted = parse_target_modules(args.target_modules)
 
-    covered = compiled & targeted
-    blind_spot = sorted(compiled - targeted)  # compiled but gate never inspects
-    phantom = sorted(targeted - compiled)  # targeted but no source on disk
+    runtime_derived = "*" in targeted
+    if runtime_derived:
+        # "*" (issue #10889) = the gate derives its module list at runtime by
+        # walking the lake itself, so every compiled module is inspected by
+        # construction: no blind spot can exist, and nothing is a phantom
+        # ("*" is a directive, not a module name).
+        covered = set(compiled)
+        blind_spot = []
+        phantom = []
+    else:
+        covered = compiled & targeted
+        blind_spot = sorted(compiled - targeted)  # compiled but gate never inspects
+        phantom = sorted(targeted - compiled)  # targeted but no source on disk
 
     coverage_pct = (len(covered) / len(compiled) * 100) if compiled else 0.0
 
@@ -243,6 +265,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"Compiled modules (filesystem walk): {len(compiled)}")
     print(f"Gate target-modules:                {len(targeted)}")
+    if runtime_derived:
+        print('     ("*" -- derived at runtime from the lake walk, #10889;')
+        print("      every compiled module is inspected by construction)")
     print(f"Covered (in both):                  {len(covered)}  ({coverage_pct:.1f}% of compiled)")
     print()
     if phantom:
@@ -264,7 +289,13 @@ def main(argv: list[str] | None = None) -> int:
             "      This is advisory; it does not fail the build. See #8782."
         )
     else:
-        print("OK: every compiled module is in target-modules (or the walk found none).")
+        if runtime_derived:
+            print(
+                'OK: target-modules="*" -- module list derived at runtime from the lake '
+                "walk (issue #10889); every compiled module is inspected."
+            )
+        else:
+            print("OK: every compiled module is in target-modules (or the walk found none).")
 
     return 0  # advisory: always exit 0, never gate CI
 

@@ -44,6 +44,8 @@ La série Search comporte **19+ notebooks** répartis en **4 parties** compléme
 
 **Kernels** : python3 · **GPU** : non · **Prérequis** : AUCUN — série adaptée à un premier contact avec l'IA.
 
+**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 1
+
 ## Foundations — Algorithmes fondamentaux
 
 ::: {#foundations}
@@ -85,6 +87,6 @@ jupyter notebook MyIA.AI.Notebooks/Search/
 
 Une fois la série Search maîtrisée, les parcours conseillés sont :
 
-1. **Vers l'apprentissage** : [RL](../RL/index.qmd) — Reinforcement Learning (PPO, DQN, Decision Transformer)
-2. **Vers la planification** : [SymbolicAI/Planning](../../SymbolicAI/Planning/index.qmd) — OR-tools, planificateurs
+1. **Vers l'apprentissage** : [RL](../RL/README.md) — Reinforcement Learning (PPO, DQN, Decision Transformer)
+2. **Vers la planification** : [SymbolicAI/Planners](../SymbolicAI/Planners/README.md) — OR-tools, planificateurs
 3. **Vers les jeux** : [GameTheory](../GameTheory/index.qmd) — équilibre de Nash, théorème de Folk

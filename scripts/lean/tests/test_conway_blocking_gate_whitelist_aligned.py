@@ -171,4 +171,6 @@ def test_blocking_gate_audit_job_still_there():
     assert "Conway.FreeWillTheorem" in blocking.get("target-modules", "")
     audit = jobs["proof-integrity-audit"]["with"]
     assert audit.get("fail-on-sorry") is False
-    assert "Conway.Life.HashlifeCorrectness" in audit.get("target-modules", "")
+    # Post-#10889 the audit derives its module list at runtime ('*' = every
+    # compiled module, HashlifeCorrectness included by construction).
+    assert audit.get("target-modules") == "*"

@@ -52,6 +52,7 @@ from m11g_fee_aware_kelly import (  # noqa: E402
     _net_at_fee,
 )
 from m11c_sharpe_test import ledoit_wolf_sharpe_diff_se  # noqa: E402
+from dm_test import diebold_mariano_test  # noqa: E402
 from realized_variance import (  # noqa: E402
     daily_realized_variance,
     realized_variance_to_log,
@@ -372,11 +373,23 @@ def evaluate_one_combo(
     seed: int,
     hidden_size: int = HIDDEN_SIZE,
     oos_strict_year: int | None = None,
+    loss_fn: str = "linear",
+    refit_every: int = REFIT_EVERY,
 ) -> dict | None:
     """Run LSTM vs HAR Classic for one (coin, horizon, seed) combo.
 
     If oos_strict_year is set, data on/after Jan 1st of that year is held out
     from training/walk-forward (reserved for separate OOS verdict).
+
+    loss_fn selects the DM loss: "linear" (signed) is required by pr-review §C
+    for return series — mse/mae are symmetric and annul the sign (#10228).
+
+    refit_every controls the walk-forward refit cadence (test days between
+    LSTM retrains). The legacy research config is 22d; the §C run uses a
+    documented 110d cadence to keep the LSTM sweep tractable (the 22d cadence
+    retrains ~85 LSTMs per combo, ~50 min/combo on the RTX 3070 — infeasible
+    for a 12-combo multi-seed §C validation). The REGISTRY entry records the
+    cadence used.
     """
     import torch
 
@@ -408,7 +421,7 @@ def evaluate_one_combo(
     try:
         lstm_out = walk_forward_lstm(
             features, rv_aligned, horizon=horizon,
-            n_splits=N_SPLITS, refit_every=REFIT_EVERY,
+            n_splits=N_SPLITS, refit_every=refit_every,
             seed=seed, hidden_size=hidden_size,
         )
     except Exception as e:
@@ -465,6 +478,26 @@ def evaluate_one_combo(
     mse_lstm = float(np.mean((lstm_pred_aligned - target) ** 2))
     mse_reduction_pct = (mse_lstm - mse_har) / mse_har * 100 if mse_har > 0 else float("nan")
 
+    # Diebold-Mariano on log-RV forecast errors (pr-review §C).
+    # errors_model = LSTM, errors_baseline = HAR: dm < 0 => LSTM wins.
+    dm_info: dict = {"dm_stat": float("nan"), "dm_pvalue": float("nan"),
+                     "mean_loss_diff": float("nan"), "dm_verdict": "N/A"}
+    try:
+        har_err = (har_pred_aligned - target).values.astype(float)
+        lstm_err = (lstm_pred_aligned - target).values.astype(float)
+        if len(har_err) >= 10 and np.all(np.isfinite(har_err)) and np.all(np.isfinite(lstm_err)):
+            dm = diebold_mariano_test(
+                lstm_err, har_err, loss_fn=loss_fn, horizon=horizon
+            )
+            dm_info = {
+                "dm_stat": float(dm.dm_statistic),
+                "dm_pvalue": float(dm.p_value),
+                "mean_loss_diff": float(dm.mean_loss_diff),
+                "dm_verdict": _dm_verdict_label(dm.p_value, dm.mean_loss_diff),
+            }
+    except ValueError:
+        pass
+
     return {
         "coin": coin,
         "horizon": horizon,
@@ -478,10 +511,25 @@ def evaluate_one_combo(
         "mse_har": mse_har,
         "mse_lstm": mse_lstm,
         "mse_reduction_pct": mse_reduction_pct,
+        "loss_fn": loss_fn,
         "n_obs": len(r),
         "lstm_preds": len(lstm_fc),
         "har_preds": len(har_fc),
+        **dm_info,
     }
+
+
+def _dm_verdict_label(p_value: float, mean_loss_diff: float) -> str:
+    """Label a DM outcome: BEATS / BEATEN BY baseline / INCONCLUSIVE.
+
+    mean_loss_diff < 0 => LSTM loss lower than HAR (LSTM wins). Mirrors the
+    sign convention of scripts/dm_test.py dm_verdict().
+    """
+    if p_value < 0.05 and mean_loss_diff < 0:
+        return "BEATS baseline"
+    if p_value < 0.05 and mean_loss_diff > 0:
+        return "BEATEN BY baseline"
+    return "INCONCLUSIVE"
 
 
 def _csv_list(value: str) -> list[str]:
@@ -522,6 +570,28 @@ def main() -> None:
         help="Override results directory (default: results/m15_lstm_rv_h{hidden_size}/)",
     )
     parser.add_argument(
+        "--loss-fn",
+        type=str,
+        default="linear",
+        choices=["linear", "mse", "mae"],
+        help=(
+            "DM loss function. pr-review §C requires 'linear' (signed loss) "
+            "for return series; mse/mae are symmetric and annul the sign (#10228). "
+            "Default: linear."
+        ),
+    )
+    parser.add_argument(
+        "--refit-every",
+        type=int,
+        default=REFIT_EVERY,
+        help=(
+            f"Walk-forward refit cadence in test days (default: {REFIT_EVERY}, "
+            "the legacy research config). The §C run uses a documented 110d "
+            "cadence: the 22d cadence retrains ~85 LSTMs per combo (~50 min/combo), "
+            "infeasible for a multi-seed §C sweep."
+        ),
+    )
+    parser.add_argument(
         "--oos-strict",
         type=int,
         default=None,
@@ -538,6 +608,8 @@ def main() -> None:
     horizons = args.horizons if args.horizons is not None else HORIZONS
     seeds = args.seeds if args.seeds is not None else SEEDS
     oos_strict_year = args.oos_strict
+    loss_fn = args.loss_fn
+    refit_every = args.refit_every
 
     import torch
     print(f"PyTorch {torch.__version__}, CUDA: {torch.cuda.is_available()}")
@@ -576,7 +648,8 @@ def main() -> None:
     if args.dry_run:
         print("[DRY RUN] BTC-USD h=1 seed=0 only")
         row = evaluate_one_combo("BTC-USD", 1, 0, hidden_size=hidden_size,
-                                 oos_strict_year=oos_strict_year)
+                                 oos_strict_year=oos_strict_year, loss_fn=loss_fn,
+                                 refit_every=refit_every)
         if row:
             combos.append(row)
             print(json.dumps(row, indent=2))
@@ -595,7 +668,8 @@ def main() -> None:
                     continue
                 print(f"\n[{done}/{total}] {coin} h={h} seed={seed}", flush=True)
                 row = evaluate_one_combo(coin, h, seed, hidden_size=hidden_size,
-                                         oos_strict_year=oos_strict_year)
+                                         oos_strict_year=oos_strict_year,
+                                         loss_fn=loss_fn, refit_every=refit_every)
                 if row is not None:
                     combos.append(row)
                     with open(checkpoint_path, "a") as f:
@@ -661,6 +735,44 @@ def main() -> None:
 
     print(f"\nVERDICT: {verdict} (p={p_sign:.4f}, win_rate={n_lstm_beats_har/n_combos*100:.1f}%)")
 
+    # pr-review §C aggregation (per horizon, cross-seed).
+    # Conjunction: edge >= 2*std cross-seed AND dm_p_median < 0.05, reported
+    # separately (#10228). Dominance guard: any "BEATEN BY baseline" -> NO BEATS.
+    # Sign convention: m15's mse_reduction_pct = (lstm - har)/har*100 is NEGATIVE
+    # when LSTM improves MSE, the inverse of dlinear_vol.py (positive = model
+    # better). edge_pct below restores the dlinear convention (positive = LSTM
+    # reduces MSE) so the conjunction reads identically.
+    per_horizon_sc: dict[int, dict] = {}
+    for h in horizons:
+        h_rows = [r for r in combos if r["horizon"] == h]
+        if not h_rows:
+            continue
+        reduction_pcts = [r.get("mse_reduction_pct", float("nan")) for r in h_rows]
+        p_values = [r.get("dm_pvalue", float("nan")) for r in h_rows]
+        edge_std_pct = float(np.nanstd(reduction_pcts)) if len(reduction_pcts) > 1 else 0.0
+        dm_p_median = float(np.nanmedian(p_values))
+        mean_reduction = float(np.nanmean(reduction_pcts)) if any(
+            np.isfinite(x) for x in reduction_pcts) else float("nan")
+        edge_pct = -mean_reduction if np.isfinite(mean_reduction) else float("nan")
+        n_beaten = sum(1 for r in h_rows if r.get("dm_verdict") == "BEATEN BY baseline")
+        if n_beaten > 0:
+            verdict_sc = "NO BEATS"
+        elif edge_pct >= 2.0 * edge_std_pct and dm_p_median < 0.05:
+            verdict_sc = "BEATS"
+        else:
+            verdict_sc = "INCONCLUSIVE"
+        per_horizon_sc[h] = {
+            "mean_reduction_pct": mean_reduction,
+            "edge_pct": edge_pct,
+            "edge_std_pct": edge_std_pct,
+            "dm_p_median": dm_p_median,
+            "n_beaten": n_beaten,
+            "n_rows": len(h_rows),
+            "verdict_sc": verdict_sc,
+        }
+        print(f"\n§C h={h}: edge={edge_pct:+.1f}% (σ={edge_std_pct:.2f}) "
+              f"dm_p_median={dm_p_median:.4f} beaten={n_beaten} -> {verdict_sc}")
+
     # Save
     results = {
         "model": "Log-LSTM RV",
@@ -669,7 +781,7 @@ def main() -> None:
         "fee_bps": FEE_BPS,
         "mu_window": MU_WINDOW,
         "n_splits": N_SPLITS,
-        "refit_every": REFIT_EVERY,
+        "refit_every": refit_every,
         "window": WINDOW,
         "hidden_size": hidden_size,
         "num_layers": NUM_LAYERS,
@@ -681,6 +793,8 @@ def main() -> None:
         "median_delta_sharpe": median_delta,
         "median_mse_change_pct": median_mse,
         "verdict": verdict,
+        "loss_fn": loss_fn,
+        "per_horizon_sc": per_horizon_sc,
         "runtime_s": elapsed,
         "combos": combos,
     }

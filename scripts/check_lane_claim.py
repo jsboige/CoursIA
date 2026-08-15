@@ -83,8 +83,8 @@ from grain_tag import extract_lane
 # `[DONE]`/`[RELEASED]`/`[CANCELLED]`/`[ABANDONED]` close a claim; `[CLAIMED]`
 # opens one. Read on ISSUE comments (the claim registry per #9774), not on the
 # dashboard. Case-insensitive, tolerates inner spaces.
-# Line-anchored (`(?m)^[ \t]*\[...`): a marker only enacts a state change when
-# it STARTS a line -- the convention of every `--claim`/`--release` post and every
+# Line-anchored (`(?m)^...`): a marker only enacts a state change when it
+# STARTS a line -- the convention of every `--claim`/`--release` post and every
 # coordinator dispatch. A marker MENTIONED mid-sentence in prose is not an event.
 # Closes the #10228 false-negative: ai-01's claim comment ended with the
 # instructional sentence "Release with `[RELEASED]` when your PR lands" -- the
@@ -93,8 +93,17 @@ from grain_tag import extract_lane
 # lane held an active claim. `findall` still returns markers in order, so the
 # legitimate "last marker wins" design (a `[CLAIMED]\n[DONE]` edit sequence on
 # separate lines) is preserved -- only mid-line mentions are rejected.
+# Decoration tolerance (#10906): issue comments are markdown-rendered, and
+# agents legitimately post `**[CLAIMED] ...**`, `## [CLAIMED] ...`, `- [CLAIMED]
+# ...`, `> [CLAIMED] ...` etc. The legacy `^[ \t]*\[` anchor voided every such
+# marker (8 voided on 70 issues, including po-2024's [CLAIMED] on #10043 and
+# po-2025's on #10038). The prefix group eats up to 6 leading `#>*+-` chars
+# (headings / bullets / blockquotes / nested lists), then an optional `**`/`__`
+# bold pair opener, then whitespace, then the bracket. A `[` NOT immediately at
+# a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
+# match -- the mid-prose non-regression property is preserved.
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
+    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
     re.IGNORECASE,
 )
 _OPEN = {"CLAIMED"}
@@ -124,9 +133,26 @@ _OVERRIDE = {"OVERRIDE"}
 # 1 = comma-separated path list (already stripped of surrounding spaces).
 # Recognised on [CLAIMED], [RELEASED] (attached; the reducer treats release as
 # a full lane-close, so the scope is informational there), and [OVERRIDE].
+# Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
+# reducer feeds this regex the `_line_for_match` output (which starts at the
+# `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
+# defense-in-depth for direct calls on a full decorated marker line. The path
+# list capture deliberately does NOT strip a trailing `**`/`__` (closing pair
+# of a bold-wrapped claim): `paths: dir/**` is a legitimate recursive glob,
+# indistinguishable from a closing decorator by suffix alone. Trailing `*` in
+# fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
+# #10958 -- the annotation suffix separator. Fleet claims append a trailing
+# annotation after the glob list: `paths: a/** -- 2026-08-11T18:10Z` (body
+# timestamp) or `paths: .../** — Phase 2 : ...` (prose rationale). The clause
+# regex swallows it into the LAST glob, which then matches no tracked file and
+# the claim silently ends up non-blocking (fail-open). The separator must be
+# whitespace-delimited on BOTH sides so a `foo--bar.py` (internal dashes, no
+# spaces) is never cut. Em/en dashes are included because fleet markers use
+# both (` -- ` in timestamps, ` — ` in prose rationales).
+_ANNOTATION_SUFFIX_RE = re.compile(r"\s+(?:--|—|–)\s+")
 
 
 class ClaimEvent(dict):
@@ -209,126 +235,128 @@ class ClaimEvent(dict):
         """
         return self.get("unparseable_scope") or []
 
+    @property
+    def empty_scope(self) -> list[str]:
+        """Subset of `paths` matching ZERO tracked files in the repo (#10958).
 
-def parse_claim_event(comment: dict) -> ClaimEvent | None:
-    """Classify one issue comment into a claim event, or None if not a marker.
+        Unlike `unparseable_scope` (pure parse residue, computable without
+        the repo), this witness requires a `git ls-files` walk, so it is
+        attached at the CHECK layer (`_run_check`), not at parse. Empty when
+        every glob locks at least one real file, or when the walk failed
+        (best-effort: we cannot prove deadness, so we do not lift).
+        """
+        return self.get("empty_scope") or []
 
-    The decisive marker is the LAST bracketed one in the body (final intent).
-    The lane is read by `extract_lane`; None when the body carries no lane token
-    (surfaced as "unattributed", never guessed). The timestamp is the comment's
-    server `createdAt` -- the Defaut-2 fix: body stamps are not trusted.
 
-    `#10342`/`#10419 scope`: when the marker line carries a `paths: <comma-list>`
-    clause, the parsed list is attached to the event as `paths`. Originally
-    [OVERRIDE]-only (#10342); #10419 extended recognition to [CLAIMED] and
-    [RELEASED]. For [CLAIMED] the scope makes two lanes with DISJOINT paths free
-    to work the same issue in parallel (multi-instance audits, one lane per
-    notebook). For [RELEASED] the clause is attached for symmetry but the
-    reducer treats release as a full lane-close (partial release is a non-goal).
+def _line_for_match(body: str, m: re.Match) -> str:
+    """Return the verbatim source line carrying a marker match (marker included).
 
-    `#10395 Variante 1`: the marker LINE (the line carrying the last bracketed
-    marker, not the whole body) is also passed to `extract_lane` as the
-    fallback search scope. Comment forms that omit the literal `lane` keyword
-    -- e.g. `[CLAIMED] #9764 - myia-po-2025:CoursIA 2026-08-07T00:52Z` --
-    are recognised by their marker-line token instead of being mis-attributed.
-
-    `#10395 Variante 2`: the marker-line body excerpt (with the `[MARKER]`
-    stripped) is attached as `intent` -- gives a BLOCKED verdict enough
-    context to discriminate "two lanes on disjoint notebooks of the same EPIC"
-    (legitimate) from "two lanes on the same file" (real collision).
+    Walks from the end of the match to the end of its line so the caller sees
+    any trailing content (e.g. `[CLAIMED] #9764 - myia-po-2025:CoursIA`). This
+    is the per-marker generalisation of the old `_last_marker_line`: the
+    #10881 addendum fix reads EACH marker line, not just the last one.
     """
-    body = comment.get("body") or ""
-    marks = _MARKER_RE.findall(body)
-    if not marks:
-        return None
-    marker = marks[-1].upper()  # last marker = final intent in that comment
-    if marker in _OPEN:
-        action = "open"
-    elif marker in _OVERRIDE:
-        action = "override"
-    else:
-        action = "close"
-    author = (comment.get("author") or {}).get("login")
-    marker_line = _last_marker_line(body, marker)
-    # `paths:` clause (#10342 OVERRIDE, #10419 CLAIMED/RELEASED): parsed from the
-    # marker line so a stray `paths:` in body prose cannot arm a false scope.
-    paths = _extract_paths_clause(marker_line) if marker_line else None
-    intent = _extract_marker_intent(body) if marker_line else None
-    return ClaimEvent(
-        lane=extract_lane(body, marker_line=marker_line),
-        action=action,
-        marker=marker,
-        created_at=comment.get("createdAt"),
-        author=author,
-        url=comment.get("url"),
-        paths=paths,
-        # #10597 hardener -- preserve the unparseable subset of the scope
-        # (residual `{` or `}` after `_expand_brace_groups`). The reducer
-        # and check layer use this to lift the claim back to EPIC-WIDE
-        # when the scope cannot be matched by fnmatch. Without this field
-        # an unclosed-brace scope would silently degrade to "non-blocking
-        # accidental empty" -- the exact defect that motivated #10597.
-        unparseable_scope=_unparseable_scope_in(paths) if paths else [],
-        intent=intent,
-    )
-
-
-def _last_marker_line(body: str, marker_upper: str) -> str | None:
-    r"""Return the line (verbatim, including the marker) that carries the LAST
-    ``[MARKER]`` in `body`, restricted to the canonical marker set
-    (CLAIMED/RELEASED/CANCELLED/ABANDONED/DONE/OVERRIDE). Returns None if the
-    last bracketed marker does not match the canonical set.
-
-    Used by `parse_claim_event` to scope the `#10395 Variante 1` fallback
-    search: the marker line is the human-stated intent of the claim, and
-    restricting the fallback to that line keeps URLs / time stamps / code
-    tokens that contain colons from being mistaken for lane IDs.
-    """
-    last_line: str | None = None
-    for m in _MARKER_RE.finditer(body):
-        # Group 1 carries the marker text (case-insensitive matched by the
-        # compiled regex; uppercase it for the comparison).
-        if m.group(1).upper() == marker_upper:
-            last_line = m.group(0)
-            # Walk forward to the end of the line so the fallback sees any
-            # trailing content (e.g. `[CLAIMED] #9764 - myia-po-2025:CoursIA`).
-            tail = body[m.end():]
-            nl = tail.find("\n")
-            last_line = (m.group(0) + (tail if nl == -1 else tail[:nl])).rstrip("\r")
-    return last_line
-
-
-def _extract_marker_intent(body: str) -> str | None:
-    r"""Extract the human-readable INTENT of a claim comment (#10395 Variante 2).
-
-    The intent is the marker line with the bracketed marker stripped, leading
-    punctuation / whitespace trimmed, and capped at 120 chars. Examples:
-
-      `[CLAIMED] lane myia-po-2025:CoursIA-2 — taxonomy coverage analysis notebook`
-        -> `lane myia-po-2025:CoursIA-2 — taxonomy coverage analysis notebook`
-
-    The point is to make a BLOCKED verdict actionable: instead of saying
-    "another lane holds an active claim on #10355", the tool can show the
-    claim's scope ("taxonomy coverage analysis notebook") so a coordinator
-    reads "three disjoint notebooks on the same EPIC" instead of "three
-    blocking claims". Returns None when the body carries no bracketed marker.
-    """
-    last_marker: tuple[str, int, int] | None = None
-    for m in _MARKER_RE.finditer(body or ""):
-        last_marker = (m.group(1).upper(), m.end(), m.end())
-    if last_marker is None:
-        return None
-    _, after_marker, _ = last_marker
-    # Walk forward to the end of the same line.
-    tail = body[after_marker:]
+    tail = body[m.end():]
     nl = tail.find("\n")
-    text = tail if nl == -1 else tail[:nl]
+    return (m.group(0) + (tail if nl == -1 else tail[:nl])).rstrip("\r")
+
+
+def _intent_from_line(line: str | None) -> str | None:
+    """Marker-line excerpt with the bracketed marker stripped (#10395 V2).
+
+    The per-marker variant of the old `_extract_marker_intent`: strips the
+    `[MARKER]` from a single line, trims leading punctuation, caps at 120
+    chars. Returns None for a bare `[CLAIMED]` (nothing after the bracket).
+    """
+    if not line:
+        return None
+    text = _MARKER_RE.sub("", line, count=1)
     text = text.strip().lstrip(":—-•| ").strip()
     if not text:
         return None
     if len(text) > 120:
         text = text[:120].rstrip() + "…"
     return text
+
+
+def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
+    """One ClaimEvent per bracketed marker line -- the #10881 reducer fix.
+
+    A comment can LEGITIMATELY carry markers for several lanes: the natural
+    shape of a coordinator arbitration is `[RELEASED] lane A` then
+    `[CLAIMED] lane B -- paths: X`. The legacy single-event reader kept only
+    the LAST marker (final intent): every marker of the comment was attributed
+    to ONE lane (the first `lane <token>` in the whole body) with the LAST
+    marker's paths clause, and intermediate `[RELEASED]`s were lost. Measured
+    on #10678 2026-08-14 (ai-01's 07:30:08Z comment): po-2024:CoursIA-2 was
+    credited with ai-01's gate-file scope while its own two notebooks were
+    claimed by no one, and ai-01's epic-wide 07:06:23Z claim stayed active
+    against every other lane.
+
+    This function treats each marker line independently, with the lane ITS
+    OWN LINE names (marker line first, whole body as fallback), its own
+    paths clause, its own intent. `compute_active_claims` walks these events
+    in order, so a comment can release one lane and open another, and a
+    `[CLAIMED]\n[DONE]` sequence on separate lines still reduces to inactive
+    (open then close). Per-marker fields keep the #10342/#10419 scope, the
+    #10395 Variante-1 fallback and the #10597 hardener semantics.
+    """
+    body = comment.get("body") or ""
+    author = (comment.get("author") or {}).get("login")
+    created_at = comment.get("createdAt")
+    url = comment.get("url")
+    events: list[ClaimEvent] = []
+    for m in _MARKER_RE.finditer(body):
+        marker = m.group(1).upper()
+        line = _line_for_match(body, m)
+        if marker in _OPEN:
+            action = "open"
+        elif marker in _OVERRIDE:
+            action = "override"
+        else:
+            action = "close"
+        paths = _extract_paths_clause(line) if line else None
+        # Lane attribution per marker line: the marker's OWN line first, then
+        # the whole body as fallback. The line-first order is the fix -- the
+        # legacy whole-body search always picked the FIRST `lane <token>` of
+        # the comment, mis-attributing every later marker to that lane.
+        lane = extract_lane(line, marker_line=line)
+        if lane is None:
+            lane = extract_lane(body, marker_line=line)
+        events.append(ClaimEvent(
+            lane=lane,
+            action=action,
+            marker=marker,
+            created_at=created_at,
+            author=author,
+            url=url,
+            paths=paths,
+            # #10597 hardener -- preserve the unparseable subset of the scope
+            # (residual `{` or `}` after `_expand_brace_groups`). The reducer
+            # and check layer use this to lift the claim back to EPIC-WIDE
+            # when the scope cannot be matched by fnmatch. Without this field
+            # an unclosed-brace scope would silently degrade to "non-blocking
+            # accidental empty" -- the exact defect that motivated #10597.
+            unparseable_scope=_unparseable_scope_in(paths) if paths else [],
+            intent=_intent_from_line(line),
+        ))
+    return events
+
+
+def parse_claim_event(comment: dict) -> ClaimEvent | None:
+    """Classify one issue comment into a claim event, or None if not a marker.
+
+    Legacy single-event view: the LAST bracketed marker of the comment is the
+    final intent (backward-compatible with every existing caller and the
+    Defaut-2 / lane / scope semantics). The full reader is `_parse_claim_events`
+    -- one event per marker line (#10881 addendum), used by `_sort_events`; for
+    a single-marker comment the two views are identical. The lane is read by
+    `extract_lane`; None when the body carries no lane token (surfaced as
+    "unattributed", never guessed). The timestamp is the comment's server
+    `createdAt` -- the Defaut-2 fix: body stamps are not trusted.
+    """
+    events = _parse_claim_events(comment)
+    return events[-1] if events else None
 
 
 def _split_paths_brace_aware(raw: str) -> list[str]:
@@ -399,11 +427,24 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
     via `_unparseable_scope_in`; the caller MUST treat such a claim as
     EPIC-WIDE (conservateur: in case of doubt, block rather than let
     through). See `_run_check` for the integration.
+
+    #10958 -- annotation suffix: a trailing ` -- <rest>` (or ` — <rest>`)
+    after the glob list is TRUNCATED before the split. The clause regex
+    captures to end of line, so `paths: a/** -- 2026-08-11T18:10Z` used to
+    yield the single glob `a/** -- 2026-08-11T18:10Z` -- which matches no
+    tracked file, so the scoped claim never blocked anyone (fail-open). The
+    separator is whitespace-delimited on both sides, so an INTERNAL unspaced
+    dash sequence (`foo--bar.py`) survives untouched; the truncation cuts at
+    the FIRST separator, so glob content after it stays out regardless of
+    how the annotation is punctuated.
     """
     m = _PATHS_CLAUSE_RE.search(text or "")
     if not m:
         return None
     raw = m.group(1)
+    m_suffix = _ANNOTATION_SUFFIX_RE.search(raw)
+    if m_suffix:
+        raw = raw[:m_suffix.start()]
     parts = _split_paths_brace_aware(raw)
     expanded: list[str] = []
     for p in parts:
@@ -426,6 +467,24 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
     if not parts:
         return []
     return [p for p in parts if "{" in p or "}" in p]
+
+
+def _empty_scope_in(parts: list[str] | None,
+                    tracked: list[str] | None) -> list[str]:
+    """Return the subset of `parts` matching ZERO tracked files (#10958).
+
+    The dead-glob witness: unlike `_unparseable_scope_in` (a parse residue),
+    this requires the `git ls-files` walk, so the caller passes `tracked`
+    (fetched once per check). Returns [] when `tracked` is None -- the walk
+    failed (not a repo, git missing): we cannot prove deadness, so the
+    fail-safe lift does NOT fire (best-effort, mirroring the lint). A
+    NON-empty result means the glob locks nothing; `_filter_by_claim_scope`
+    treats an ENTIRELY-dead scope as epic-wide (a broken claim is not a
+    permissive claim).
+    """
+    if not parts or tracked is None:
+        return []
+    return [p for p in parts if not _glob_matches_tracked(p, tracked)]
 
 
 def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEvent]]:
@@ -503,10 +562,19 @@ def _gh_issue_comments(issue: str) -> dict:
 
 
 def _sort_events(payload: dict) -> list[ClaimEvent]:
-    """Parse + chronologically sort claim events from an `gh issue view` payload."""
+    """Parse + chronologically sort claim events from a `gh issue view` payload.
+
+    Uses `_parse_claim_events` -- one event per marker line (#10881) -- so a
+    comment carrying markers for several lanes reduces correctly instead of
+    collapsing to a single (mis-attributed) event. Events from the same comment
+    share the server `createdAt`; the stable sort preserves their in-comment
+    marker order, so the walk-order reducer sees `[CLAIMED] X\n[DONE] X` as
+    open-then-close (final state inactive), exactly as before.
+    """
     events = [
-        ev for c in payload.get("comments", [])
-        if (ev := parse_claim_event(c)) is not None
+        ev
+        for c in payload.get("comments", [])
+        for ev in _parse_claim_events(c)
     ]
     # Server createdAt, ISO 8601 UTC -> lexicographic order == chronological.
     events.sort(key=lambda e: e.created_at or "")
@@ -656,6 +724,119 @@ def _scope_zero_coverage_warning(
     return {"scope": scope, "tracked_count": len(tracked)}
 
 
+# --- #10881 lint: malformed paths: clauses -----------------------------------
+# 2026-08-14 morning on #10678: four markers, all misread SILENTLY, two lanes
+# blocked 1.5h. The lint fires on stderr when a marker is READ -- visible to
+# any lane running the check, NEVER changing a verdict. Three checks:
+#   1. marker without a `paths:` clause -> INFO naming the epic-wide effect
+#      (the information that was missing in all four cases).
+#   2. implausible glob (em-dash, colon-space, escaped comma, >120 chars) ->
+#      WARN "glob suspect (prose avalée ?)" -- the prose-after-clause trap.
+#   3. glob matching zero tracked files -> WARN "glob sans correspondance".
+#      A dead glob is almost always a typo or prose. Best-effort: when the
+#      git walk fails (not a repo), the no-match check silently skips.
+# Selectivity is the acceptance's core ("la moitié qui compte"): a well-formed
+# marker (`paths: a/b.lean, a/c.lean`, two existing files) produces NOTHING.
+
+_IMPLAUSIBLE_SUBSTRINGS = ("—", "–", "\\,")
+
+
+def _glob_implausible(glob: str) -> bool:
+    """True when a `paths:` entry cannot plausibly be a repo path (prose)."""
+    if len(glob) > 120:
+        return True
+    if any(s in glob for s in _IMPLAUSIBLE_SUBSTRINGS):
+        return True
+    if re.search(r":\s", glob):  # colon followed by whitespace = prose
+        return True
+    return False
+
+
+def _git_tracked_files(repo_root: str | None = None) -> list[str] | None:
+    """Best-effort `git ls-files` under repo_root (cwd default). None on failure.
+
+    Mirrors the walk of `_scope_zero_coverage_warning` -- the one source of
+    "which files does the repo track" for both callers.
+    """
+    if repo_root is None:
+        repo_root = os.getcwd()
+    try:
+        proc = subprocess.run(
+            ["git", "-C", repo_root, "ls-files"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode != 0:
+        return None
+    tracked = [ln for ln in proc.stdout.splitlines() if ln]
+    return tracked or None
+
+
+def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
+    """True when at least one tracked file matches the glob (fnmatch, basename-or-full)."""
+    for path in tracked:
+        if _path_matches(path, [glob]):
+            return True
+    return False
+
+
+def _lint_claim_events(
+    events: list[ClaimEvent],
+    issue_number: int | None,
+    repo_root: str | None = None,
+    tracked: list[str] | None = None,
+) -> None:
+    """Emit WARN/INFO lines for malformed claim markers (#10881). Non-blocking.
+
+    Runs on OPEN and OVERRIDE markers only: a close marker is always a full
+    lane-close (its scope is informational, #10419), so an epic-wide release
+    is semantically identical to a scoped one -- nothing to warn about. The
+    lint only prints to stderr; verdicts are untouched. `tracked` lets a
+    caller that already walked the repo (#10958 empty-scope witness) reuse
+    the list instead of paying the walk twice.
+    """
+    if tracked is None:
+        tracked = _git_tracked_files(repo_root)
+    for ev in events:
+        if ev.get("action") not in ("open", "override"):
+            continue
+        if ev.paths is None:
+            print(
+                f"INFO: marqueur {ev.marker} epic-wide (pas de clause paths:) "
+                f"-- il bloque toutes les autres lanes sur #{issue_number} "
+                f"(lane {ev.lane or '?'}).",
+                file=sys.stderr,
+            )
+            continue
+        for g in ev.paths:
+            if _glob_implausible(g):
+                print(
+                    f'WARN: glob suspect (prose avalée ?) : "{g}" '
+                    f"(lane {ev.lane or '?'})",
+                    file=sys.stderr,
+                )
+            if tracked is not None and not _glob_matches_tracked(g, tracked):
+                print(
+                    f'WARN: glob sans correspondance : "{g}" '
+                    f"(lane {ev.lane or '?'})",
+                    file=sys.stderr,
+                )
+
+
+def _warn_bare_integer_paths(paths: list[str]) -> list[str]:
+    """Return the `--paths` entries that are bare integers (#10881 trap).
+
+    `--paths` uses `nargs='+'` and swallows a TRAILING positional issue
+    number: `--lane X --paths a b 10678` puts `"10678"` into the paths list,
+    switches to path mode, and prints a reassuring CLEAR that measured
+    nothing. A bare integer in the list is almost always that trap -- the
+    correct form is `check_lane_claim.py 10678 --lane X --paths a b`
+    (positional FIRST).
+    """
+    return [p for p in paths if p.isdigit()]
+
+
 # --- modes -------------------------------------------------------------------
 
 def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
@@ -713,6 +894,23 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             disjointness, so we conservatively over-block).
     """
     events = _sort_events(payload)
+    # One shared tracked-files walk feeds BOTH the #10881 lint and the
+    # #10958 empty-scope witness (best-effort: None outside a git repo, in
+    # which case both features degrade to their pre-#10958 behaviour).
+    tracked = _git_tracked_files()
+    # #10881 lint -- malformed paths: clauses surface on stderr when the
+    # marker is read: visible to every lane running the check, never changing
+    # a verdict. The four 2026-08-14 markers on #10678 shared the defect the
+    # three checks name (epic-wide by accident / prose swallowed as globs).
+    _lint_claim_events(events, payload.get("number"), tracked=tracked)
+    # #10958 -- attach the dead-glob witness to every scoped event (own and
+    # others): a glob that matches zero tracked files is surfaced in the
+    # JSON (`empty_scope`) and, when it covers the WHOLE scope, lifts the
+    # claim to epic-wide in `_filter_by_claim_scope` (fail-safe).
+    if tracked is not None:
+        for ev in events:
+            if ev.get("paths"):
+                ev["empty_scope"] = _empty_scope_in(ev["paths"], tracked)
     active, unattributed = compute_active_claims(events)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
@@ -722,7 +920,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # `my_paths`, we conservatively treat every scoped override as blocking
     # (the caller's intent is unknown -- better to over-block than silently
     # merge a write that should have pinged a held lane).
-    others = _filter_by_claim_scope(others, my_paths, mine)
+    others = _filter_by_claim_scope(others, my_paths, mine, tracked=tracked)
 
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
     # (age from the server createdAt, NEVER the body) is treated as STALE -- it
@@ -758,6 +956,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # scope is fully parseable) or non-empty (the claim carries
                 # patterns fnmatch cannot match).
                 "unparseable_scope": ev.get("unparseable_scope") or [],
+                # #10958 -- the dead-glob witness: globs of this claim that
+                # match zero tracked files. Empty when every glob locks
+                # something (or the walk was impossible). Non-empty means the
+                # declaring lane should reissue the claim with valid globs;
+                # when it covers the whole scope the claim is lifted to
+                # epic-wide (a broken claim is not a permissive claim).
+                "empty_scope": ev.get("empty_scope") or [],
             }
             for ln, ev in sorted(active.items())
         },
@@ -837,6 +1042,7 @@ def _filter_by_claim_scope(
     others: dict[str, ClaimEvent],
     my_paths: list[str] | None,
     mine: ClaimEvent | None,
+    tracked: list[str] | None = None,
 ) -> dict[str, ClaimEvent]:
     """Drop `others` lanes whose scoped claim does NOT intersect my scope.
 
@@ -860,6 +1066,14 @@ def _filter_by_claim_scope(
         is surfaced in the JSON summary under `unparseable_scopes` so the
         declaring lane sees the defect and reissues the claim with valid
         syntax.
+      - #10958 fail-safe: scope is ENTIRELY dead (every glob matches zero
+        tracked files, witness under `empty_scope`) -> STAYS, lifted to
+        epic-wide. A claim whose scope matches nothing is not a permissive
+        claim -- it is a BROKEN one (polluted suffix, typo'd path), and the
+        safe hypothesis is that the lane meant something. A PARTIALLY dead
+        scope (at least one live glob) stays scoped on its live part: the
+        lock is real, the dead globs are surfaced in the JSON for the lane
+        to fix. `tracked` None (no repo walk) -> no lift (cannot prove).
 
     The reducer `compute_active_claims` is untouched; this filter only prunes
     the `others` view. The active_claims summary keeps the full state, so the
@@ -869,6 +1083,12 @@ def _filter_by_claim_scope(
     my_scope = list(dict.fromkeys((my_paths or []) + mine_paths)) or None
     if not my_scope:
         return others  # no declared scope -> cannot prove disjointness
+    # #10958 fail-safe, caller side: an entirely-dead MY scope proves nothing
+    # either. Dropping an other-lane claim as "disjoint" from globs that lock
+    # no real file would be the same fail-open with the roles swapped, so the
+    # caller keeps every other lane until its own scope is reissued clean.
+    if tracked is not None and _empty_scope_in(my_scope, tracked) == my_scope:
+        return others
     filtered: dict[str, ClaimEvent] = {}
     for ln, ev in others.items():
         scope = ev.get("paths")
@@ -882,6 +1102,15 @@ def _filter_by_claim_scope(
         # witness list is surfaced via `ev.get("unparseable_scope")` for
         # the JSON audit (see _run_check summary).
         if ev.get("unparseable_scope"):
+            filtered[ln] = ev  # lifted to epic-wide -- always blocking
+            continue
+        # #10958 fail-safe -- an ENTIRELY dead scope (every glob matches zero
+        # tracked files) is a broken claim, not a permissive one: lifted to
+        # epic-wide before the disjointness test, mirroring #10597. The
+        # witness is `ev.get("empty_scope")` (attached by `_run_check` when
+        # the walk succeeded); a missing/empty witness never lifts.
+        empty = ev.get("empty_scope") or []
+        if empty and len(empty) >= len(scope):
             filtered[ln] = ev  # lifted to epic-wide -- always blocking
             continue
         if _path_matches_any(my_scope, scope):
@@ -1103,6 +1332,22 @@ def main(argv: list[str] | None = None) -> int:
     act.add_argument("--release", nargs="?", const="", default=None,
                      metavar="NOTE", help="post a [RELEASED] comment")
     args = p.parse_args(argv)
+
+    # #10881 -- `nargs='+'` on --paths swallows a TRAILING positional issue
+    # number (`--lane X --paths a b 10678` puts "10678" into the paths list,
+    # switches to path mode, and prints a reassuring CLEAR that measured
+    # nothing). Warn loudly when a paths entry is a bare integer; the warning
+    # is non-blocking (the caller may have meant a numeric path), but the
+    # measured trap is precisely this shape.
+    if args.paths is not None:
+        for entry in _warn_bare_integer_paths(args.paths):
+            print(
+                f"WARN: --paths entry {entry!r} is a bare integer -- an issue "
+                f"number swallowed by nargs='+' (#10881). Correct form: "
+                f"`check_lane_claim.py {entry} --lane <lane> --paths ...` "
+                f"(positional FIRST).",
+                file=sys.stderr,
+            )
 
     # Path-only mode (#9959) does NOT require an issue number -- it is the
     # missing leg of L898 dispatched pre-claim to detect cross-lane PR

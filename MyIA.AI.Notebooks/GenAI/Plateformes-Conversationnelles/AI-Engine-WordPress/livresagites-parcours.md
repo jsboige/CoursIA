@@ -83,6 +83,20 @@ Deux conséquences pratiques :
 > avec un accent sur le sous-ensemble écriture (le double-écrit, risque réel
 > même sous un chevauchement global faible).
 
+> **Notebook compagnon (module Client).**
+> [`configurer-chatbots-par-l-api.ipynb`](configurer-chatbots-par-l-api.ipynb)
+> ouvre la face exécutable du module Chatbot : dans AI-Engine, un chatbot
+> est un **document JSON** (54 champs — identité, instructions, modèle,
+> présentation) que l'API REST lit et réécrit. Le `POST
+> /mwai/v1/settings/chatbots` **remplace toute la liste**, d'où le
+> pattern read-modify-write pour créer ou modifier un bot. Le notebook
+> duplique le chatbot d'accueil d'une maison synthétique (Maison Valmont)
+> en comité de lecture, vérifie la persistance par relecture, puis pose la
+> même question aux deux personas et **mesure** leur recouvrement
+> lexical : les instructions orientent la réponse, elles ne la garantissent
+> pas. Exécuté contre l'instance jetable locale (`instance-jetable/`),
+> corpus 100 % synthétique, aucun contenu privé.
+
 ---
 
 ## Parcours 1 — Copilot pour l'éditeur WordPress

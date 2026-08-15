@@ -11,3 +11,6 @@ golly_*.png
 __pycache__/
 *.py[cod]
 *$py.class
+
+# teorth/pfr lake self-clone (7 Go, environnement d'execution du notebook Lean-21)
+pfr_lean/

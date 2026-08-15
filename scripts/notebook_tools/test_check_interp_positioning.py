@@ -35,8 +35,10 @@ from check_interp_positioning import (  # noqa: E402
     _first_line,
     _is_interp_cell,
     _is_legit_following_header,
+    _is_section_boundary,
     _is_section_header,
     _stable_finding_hash,
+    _top_level,
     scan_notebook,
 )
 
@@ -182,6 +184,53 @@ class TestSectionHeader(unittest.TestCase):
         self.assertTrue(_is_section_header("\n  ## Section"))
 
 
+class TestTopLevelAndBoundary(unittest.TestCase):
+    """Niveau structurel relatif du notebook (correctif #10910).
+
+    La condition 4 arrete la remontee sur un header de niveau `<=` au niveau
+    structurel du notebook (`_top_level`), PAS sur tout `###` : un sous-header
+    plus profond que la structure appartient a la MEME section.
+    """
+
+    def test_top_level_h2_notebook(self):
+        cells = [
+            _md("## 1. Section"),
+            _md("### 1.1 Sous-section"),
+            _md("### 1.2 Sous-section"),
+        ]
+        self.assertEqual(_top_level(cells), 2)
+
+    def test_top_level_h3_only_notebook(self):
+        # Notebook entierement en ### (cas QC-Py-08 / #10785) : le niveau
+        # structurel est 3, pas 2 -- sinon le guard serait desarme.
+        cells = [
+            _md("### 1. Section"),
+            _md("### 1.1 Sous-section"),
+            _md("### 2. Section"),
+        ]
+        self.assertEqual(_top_level(cells), 3)
+
+    def test_top_level_default_when_no_header(self):
+        cells = [_md("paragraphe"), _md("liste")]
+        self.assertEqual(_top_level(cells), 2)
+
+    def test_top_level_ignores_code_and_plain_md(self):
+        cells = [_code("# code"), _md("## 1. Section"), _md("texte libre")]
+        self.assertEqual(_top_level(cells), 2)
+
+    def test_boundary_stops_on_top_level(self):
+        self.assertTrue(_is_section_boundary("## 1. Section", top=2))
+        self.assertTrue(_is_section_boundary("### 1. Section", top=3))
+
+    def test_boundary_ignores_deeper_than_top(self):
+        # Dans un notebook structure en ##, un ### n'est PAS une frontiere.
+        self.assertFalse(_is_section_boundary("### 1.1 Sous-section", top=2))
+
+    def test_boundary_rejects_non_header(self):
+        self.assertFalse(_is_section_boundary("paragraphe", top=2))
+        self.assertFalse(_is_section_boundary("# Titre", top=2))
+
+
 class TestStableFindingHash(unittest.TestCase):
     def test_determinism(self):
         h1 = _stable_finding_hash("misplaced_before_section", "foo.ipynb", 5, "### Lecture du résultat")
@@ -244,6 +293,23 @@ class TestScanNotebookOkCases(unittest.TestCase):
         ])
         self.assertEqual(_scan(nb), [])
 
+    def test_interp_anchored_across_sibling_subheader(self):
+        """Acceptance 2(a) : code -> ### sous-header -> interp -> ## header.
+
+        Cas de 03-Voting-Methods cell#4..7 (#10910) : le sous-header `###`
+        entre le code et l'interp est DANS la meme section (notebook structure
+        en `##`) -- la remontee de la condition 4 doit le traverser et
+        atteindre le code, donc ABSOUDRE l'interp.
+        """
+        nb = _make_nb([
+            _md("## 1. Methode de vote"),                 # cell[0]
+            _code("# duels pairwise"),                    # cell[1]
+            _md("### Cycle de Condorcet"),                # cell[2] sous-header frere
+            _md("### Interprétation : majorite intransitive"),  # cell[3]
+            _md("## 2. Gagnant de Condorcet"),            # cell[4]
+        ])
+        self.assertEqual(_scan(nb), [])
+
 
 class TestScanNotebookBuggyCases(unittest.TestCase):
     """Le defaut vise : une interp PARACHUTEE entre deux headers.
@@ -282,6 +348,24 @@ class TestScanNotebookBuggyCases(unittest.TestCase):
         findings = _scan(nb)
         self.assertEqual(len(findings), 1)
         self.assertEqual(findings[0]["cell_index"], 1)
+
+    def test_interp_parachuted_in_h3_only_notebook(self):
+        """Acceptance 2(d) : notebook SANS aucun `##` (100% `###`).
+
+        Cas QC-Py-08 / #10785 : le niveau structurel est 3, donc `###` EST la
+        frontiere. Code -> ### orphelin -> interp -> ### : la remontee
+        s'arrete sur le ### orphelin avant le code -> toujours flagge.
+        """
+        nb = _make_nb([
+            _md("### 1. Section"),                       # cell[0] top=3
+            _code("# code de la section"),               # cell[1]
+            _md("### bloc orphelin"),                    # cell[2] frontiere
+            _md("### Interprétation des données"),       # cell[3] misplaced
+            _md("### 2. Section suivante"),              # cell[4]
+        ])
+        findings = _scan(nb)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0]["cell_index"], 3)
 
     def test_interp_followed_by_pour_aller_plus_loin_excluded(self):
         # "Pour aller plus loin" est legitime -> pas un bug
@@ -376,16 +460,18 @@ class TestRealNotebooks(unittest.TestCase):
             self.skipTest("Z3-09 absent")
         self.assertEqual(found, [], f"FP c.95 reintroduit : {found}")
 
-    def test_pymc15_keeps_its_genuine_finding(self):
-        """PyMC-15 cell#9 : `### Interpretation des donnees` suit cell#8, une AUTRE
-        interp -- aucun code entre `### Preparation des donnees` et elle."""
+    def test_pymc15_repaired_is_clean(self):
+        """PyMC-15 a ete repare sur main (#10687 + #10876) : 0 finding.
+
+        Le pin de detection reelle de c.95 (cell#9) est obsolete -- le
+        notebook a depuis ete reordonne. La non-cecite du detecteur est
+        couverte par les cas synthetiques (parachute entre deux headers) et
+        par les findings live de la baseline.
+        """
         found = self._misplaced("MyIA.AI.Notebooks/Probas/PyMC/PyMC-15-Recommenders.ipynb")
         if found is None:
             self.skipTest("PyMC-15 absent")
-        self.assertEqual(
-            [f["cell_index"] for f in found], [9],
-            "le detecteur ne doit pas etre devenu aveugle au defaut reel",
-        )
+        self.assertEqual(found, [], "PyMC-15 ne doit plus avoir de finding (repare c.96)")
 
 
 if __name__ == "__main__":

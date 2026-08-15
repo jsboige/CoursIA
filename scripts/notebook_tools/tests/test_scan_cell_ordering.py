@@ -20,6 +20,7 @@ from scan_cell_ordering import (  # noqa: E402
     scan_enchainement,
     scan_consecutive_code,
     scan_interp_output_anchor,
+    scan_interp_semantic_orphan,
     scan_notebook,
     find_notebooks,
 )
@@ -363,4 +364,59 @@ class TestInterpOutputAnchorTriage:
         ])
         cats = _cats(scan_interp_output_anchor(cells))
         assert "INTERP_OUTPUT_MISMATCH" not in cats
+
+
+# ---------------------------------------------------------------------------
+# INTERP_SEMANTIC_ORPHAN triage (#10678, port of _scan_interp_orphans.py c.240)
+# ---------------------------------------------------------------------------
+
+class TestInterpSemanticOrphan:
+    """scan_interp_semantic_orphan is an opt-in TRIAGE helper (NOT a CI gate),
+    same contract as scan_interp_output_anchor. It flags an interp cell whose
+    significant tokens (<2 shared) do not overlap the code cell immediately
+    above -- i.e. it likely comments an EARLIER code cell (the c.237 blind
+    spot). Measured 100% FP on origin/main (2026-08-15, 0/25 on a 25-sample of
+    117 candidates): a legitimately-placed interp almost always shares <2
+    tokens with the code above it. These tests lock the mechanics only."""
+
+    def test_shared_tokens_not_flagged(self):
+        # Interp reuses two identifiers from the code above -> LEGIT, silent.
+        cells = [
+            _code("weights = fit_model(X)\nprint(metrics_report)"),
+            _md("### Interprétation : les weights du metrics_report confirment la convergence."),
+        ]
+        assert _cats(scan_interp_semantic_orphan(cells)) == set()
+
+    def test_no_overlap_flagged(self):
+        # Interp talks about trading, code builds a DataFrame -> candidate orphan.
+        cells = [
+            _code("df = load_data()\ndf.head()"),
+            _md("### Interprétation : la stratégie de trading surpasse la baseline."),
+        ]
+        cats = _cats(scan_interp_semantic_orphan(cells))
+        assert "INTERP_SEMANTIC_ORPHAN" in cats
+
+    def test_vacuous_interp_accepted(self):
+        # Stopwords only (after accent folding) -> no signal -> accepted.
+        cells = [
+            _code("compute()"),
+            _md("### Interprétation : la figure montre les données."),
+        ]
+        assert _cats(scan_interp_semantic_orphan(cells)) == set()
+
+    def test_no_code_above_skipped(self):
+        # Interp sits before any code cell -> out of scope, silent.
+        cells = [
+            _md("## 1. Introduction"),
+            _md("### Interprétation : trading strategie."),
+        ]
+        assert _cats(scan_interp_semantic_orphan(cells)) == set()
+
+    def test_non_interp_markdown_ignored(self):
+        # Plain prose with no interp header/opener is not a candidate at all.
+        cells = [
+            _code("x = 1"),
+            _md("Ce paragraphe introduit la suite."),
+        ]
+        assert _cats(scan_interp_semantic_orphan(cells)) == set()
 
