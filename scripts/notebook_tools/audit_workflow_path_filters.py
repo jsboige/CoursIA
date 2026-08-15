@@ -44,7 +44,8 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     "variation-tag-guard.yml",
     "variation-light-genre.yml",
     "translation-guard.yml",
-    "catalog-pr-guard.yml",
+    # catalog-pr-guard.yml retire par #11012 : le workflow n'a jamais tourne sur
+    # une PR (0 run pull_request), c'est catalog-drift.yml qui tient la ligne.
     # Secret scan (doit voir chaque PR)
     "secret-scan.yml",
     # Regression guard (doit voir chaque PR)

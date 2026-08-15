@@ -43,6 +43,12 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/GameTheory/index.qmd",
     "MyIA.AI.Notebooks/Probas/index.qmd",
     "docs/index.qmd",
+    # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
+    # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
+    # quarto render standalone -> HTML 176 Ko, exit 0, sans front-matter).
+    # Le fichier catalogue lui-meme reste byte-identique (catalog-pr-hygiene R1 :
+    # on rend le fichier committe, on ne le regenere jamais sur une branche).
+    "COURSE_CATALOG.generated.md",
 ]
 
 # READMEs in vendored / archived / LFS subtrees that must NOT render.
@@ -59,14 +65,17 @@ EXCLUDE_MARKERS = (
     "\\archive\\",
 )
 
-# Notebooks rendered to HTML (EPIC #10921). Pilot = the Search series only
-# (#10923 Phase A); extending to other series = adding a subtree here. The
-# root execute block (_quarto.yml) already carries enabled: false + echo: true
-# for every notebook — a directory-scoped _quarto.yml is NOT applied to .ipynb
-# (measured firsthand sur Quarto 1.7.32, pin d'origine du pilote), so no
-# per-subtree override exists.
+# Notebooks rendered to HTML (EPIC #10921). Pilot = Search (#10923 Phase A);
+# tranche 2 = Sudoku + GameTheory + Probas (#10923, les 3 familles deja
+# surfacees par la navbar — la nav ne doit mener a aucun non-rendu). The root
+# execute block (_quarto.yml) already carries enabled: false + echo: true for
+# every notebook — a directory-scoped _quarto.yml is NOT applied to .ipynb in
+# Quarto 1.7.32 (measured firsthand), so no per-subtree override exists.
 NOTEBOOK_SUBTREES = (
-    "MyIA.AI.Notebooks/Search/",  # pilote #10923 — voir EPIC #10921 pour l'extension
+    "MyIA.AI.Notebooks/Search/",      # pilote #10923 (111 rendus apres exclusions)
+    "MyIA.AI.Notebooks/Sudoku/",      # tranche 2 #10923 (37)
+    "MyIA.AI.Notebooks/GameTheory/",  # tranche 2 #10923 (56)
+    "MyIA.AI.Notebooks/Probas/",      # tranche 2 #10923 (58)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
@@ -156,8 +165,8 @@ def git_tracked_readmes() -> list[str]:
 def build_render_block() -> list[str]:
     """Build the YAML lines for the project.render list."""
     lines = ["project:", "  type: site", "  output-dir: _site", "  render:"]
-    # Landing pages (qmd) with a header comment
-    lines.append("    # Landing pages (.qmd).")
+    # Landing pages (qmd) + catalogue genere (rendu HTML, cf. LANDING_PAGES)
+    lines.append("    # Landing pages (.qmd) + COURSE_CATALOG.generated.md (rendu HTML).")
     for entry in LANDING_PAGES:
         lines.append(f'    - "{entry}"')
     # READMEs (explicit list — globs do not expand in Quarto 1.7, see header)

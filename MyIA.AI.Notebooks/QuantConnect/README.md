@@ -109,21 +109,21 @@ Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie 
 
 ### Phase 4 : Algorithm Framework (3 notebooks, ~4h)
 
-Architecture modulaire QuantConnect pour stratégies scalables (Alpha, Portfolio Construction, Execution, Risk).
+Architecture modulaire QuantConnect pour stratégies scalables (Alpha, Portfolio Construction, Risk Management, Execution).
 
 ```mermaid
 flowchart LR
     U["Universe Selection<br/>quels actifs ?"] --> A["Alpha Model<br/>quels signaux ?"]
     A --> PC["Portfolio Construction<br/>quelles tailles ?"]
-    PC --> E["Execution<br/>quels ordres ?"]
-    E --> R["Risk Management<br/>quels filtres ?"]
-    R -. "ajustement temps reel" .-> U
+    PC --> RM["Risk Management<br/>quels filtres ?"]
+    RM --> E["Execution<br/>quels ordres ?"]
+    RM -. "ajustement temps reel" .-> U
     style A fill:#e1f5ff
     style PC fill:#e8f5e9
-    style R fill:#fff3e0
+    style RM fill:#fff3e0
 ```
 
-Le flux de données traverse cinq modules Découplables : l'**Universe** sélectionne les actifs, l'**Alpha** produit les signaux directionnels, la **Portfolio Construction** transforme les signaux en tailles cibles, l'**Execution** route les ordres, et le **Risk Management** filtre/ajuste en continu. Chaque module est remplaçable indépendamment — c'est ce qui permet de composer une stratégie complexe sans réécrire l'ensemble.
+Le flux de données traverse cinq modules Découplables : l'**Universe** sélectionne les actifs, l'**Alpha** produit les signaux directionnels, la **Portfolio Construction** transforme les signaux en tailles cibles, le **Risk Management** filtre/ajuste ces cibles en continu, et l'**Execution** route les ordres. Chaque module est remplaçable indépendamment — c'est ce qui permet de composer une stratégie complexe sans réécrire l'ensemble.
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -463,7 +463,7 @@ Après completion de cette série, vous maîtriserez :
 
 - ✅ **QuantConnect LEAN** : Architecture, lifecycle, Universe sélection
 - ✅ **Risk Management** : Position sizing, stop-loss, take-profit
-- ✅ **Algorithm Framework** : Alpha, Portfolio Construction, Execution, Risk
+- ✅ **Algorithm Framework** : Alpha, Portfolio Construction, Risk Management, Execution
 - ✅ **Machine Learning** : Supervised (RF, XGBoost), Deep Learning (LSTM), RL (PPO)
 - ✅ **LLM Integration** : Prompt engineering, LLM-augmented signals
 - ✅ **Production Deployment** : Paper trading, live trading, monitoring

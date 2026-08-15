@@ -8,7 +8,7 @@ name: Catalog Drift Check
 #   NO LONGER COMMITS anything back to PR branches. The earlier design
 #   auto-committed a regenerated catalog onto every PR matching **/*.ipynb or
 #   **/README.md. Because those commits were bot-authored, catalog-pr-guard.yml
-#   exempted them — so they landed even when they mass-reverted curated git
+#   (retiré depuis, #11012) exempted them — so they landed even when they mass-reverted curated git
 #   fields (issue_pr_associee, last_validation) via the branch git-history
 #   heuristic. That is the stale-catalog-silent-revert pattern (513 poisoned
 #   entries observed on branches, 0 on main — source-verified by po-2025,
@@ -17,9 +17,9 @@ name: Catalog Drift Check
 #
 #   Per decision #2632 (catalog cron-only, off-branch), the ONLY legitimate
 #   catalog writer is catalog-cron.yml on main (daily regen + push HEAD:main).
-#   catalog-pr-guard.yml still FAILS any human/agent PR that touches the catalog
-#   files. This workflow stays as a read-only detector so reviewers see drift,
-#   without ever writing to a branch.
+#   The blocking guard catalog-pr-guard.yml was removed (#11012: phantom entity,
+#   0 run on pull_request). This workflow stays as the read-only detector so
+#   reviewers see drift, without ever writing to a branch.
 #
 # This job is intentionally NON-BLOCKING and READ-ONLY. The REQUIRED notebook
 # gate remains "Static validation (H.1/H.3/C.1)" in notebook-execution-required.yml.
@@ -88,7 +88,8 @@ jobs:
           fi
 
       # This job is always green. Drift is surfaced as a notice annotation only.
-      # catalog-cron.yml (main) is the sole writer; catalog-pr-guard.yml blocks any
-      # human/agent catalog commit on PRs (see #2632, #2744).
+      # catalog-cron.yml (main) is the sole writer; the blocking guard
+      # catalog-pr-guard.yml was removed (#11012) — this read-only detector and
+      # the catalog-cron.yml regen PR are the sole organs now (see #2632, #2744).
       - name: Done (non-blocking, read-only)
         run: echo "Catalog drift check complete (non-blocking, read-only)."

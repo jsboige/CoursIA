@@ -10,6 +10,7 @@ concluded 29 FAUX POSITIFS + 1 REPARABLE, all carrying committed media or
 widgets/import-only).
 """
 
+import base64
 import json
 import subprocess
 import sys
@@ -18,7 +19,10 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scan_media_render import scan_notebook  # noqa: E402
+from scan_media_render import (  # noqa: E402
+    discover_tracked_notebooks,
+    scan_notebook,
+)
 
 REPO = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -89,6 +93,11 @@ def _write_nb(tmp_path, code_sources, outputs_by_cell=None, name="nb.ipynb"):
     p.write_text(json.dumps(_nb(code_sources, outputs_by_cell)), encoding="utf-8")
     return p
 
+# Data-URIs reels (payloads COMPLETS) : la justesse verifie le magic binaire, un
+# payload tronque (ex. "UklGRg==" = RIFF 6 octets) ne compte plus comme media.
+PNG_1PX = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+WAV_MINIMAL = "UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="
+
 
 # ---------------------------------------------------------------------------
 # Angle mort 1 : data-URI media dans text/html
@@ -99,7 +108,7 @@ def test_data_uri_in_html_counts_as_rendered(tmp_path):
         tmp_path,
         ["audio = Audio(data, rate=22050)", "display(audio)"],
         outputs_by_cell={
-            1: [_html_output('<audio><source src="data:audio/wav;base64,UklGRg=="></audio>')],
+            1: [_html_output(f'<audio><source src="data:audio/wav;base64,{WAV_MINIMAL}"></audio>')],
         },
     )
     r = scan_notebook(nb, tmp_path)
@@ -113,7 +122,7 @@ def test_data_uri_image_in_html(tmp_path):
         tmp_path,
         ["display(Image('x.png'))"],
         outputs_by_cell={
-            0: [_html_output('<img src="data:image/png;base64,iVBORw0KGgo=">')],
+            0: [_html_output(f'<img src="data:image/png;base64,{PNG_1PX}">')],
         },
     )
     r = scan_notebook(nb, tmp_path)
@@ -131,6 +140,73 @@ def test_plain_html_without_data_uri_is_not_media(tmp_path):
     assert r.data_uris == {}
     # display(HTML(...)) n'est pas une primitive media : aucun appel media.
     assert r.verdict() == "NO_MEDIA_PRIMITIVE"
+
+
+# ---------------------------------------------------------------------------
+# Justesse (c.109, #10985) : un data-URI ne compte que si le payload decode en
+# un media reel (magic binaire verifie). Mesure : 0 data-URI avec src= vs 175
+# verifiables par magic dans GenAI (format papermill : pas d'attribut src).
+# ---------------------------------------------------------------------------
+
+def test_data_uri_without_src_counts(tmp_path):
+    """Format reel committe par papermill : data-URI SANS attribut src. La
+    detection doit le trouver, l'ancienne regex `src="data:` ne le voyait pas."""
+    nb = _write_nb(
+        tmp_path,
+        ["display(audio)"],
+        outputs_by_cell={
+            0: [_html_output(f'<audio controls>data:audio/wav;base64,{WAV_MINIMAL}</audio>')],
+        },
+    )
+    r = scan_notebook(nb, tmp_path)
+    assert r.data_uris == {"audio": 1}
+    assert r.verdict() == "MEDIA_RENDERED"
+
+
+def test_data_uri_invalid_payload_not_counted(tmp_path):
+    """Un data-URI dont le payload ne decode pas en un media reel (magic absent)
+    ne compte pas comme media rendu — le predicat refuse les donnees tronquees."""
+    junk = base64.b64encode(b"\x00" * 40).decode()
+    nb = _write_nb(
+        tmp_path,
+        ["display(Image('x.png'))"],
+        outputs_by_cell={0: [_html_output(f'<img src="data:image/png;base64,{junk}">')]},
+    )
+    r = scan_notebook(nb, tmp_path)
+    assert r.data_uris == {}
+    assert r.verdict() == "NO_MEDIA_RENDERED"  # primitive appelee, aucun media valide
+
+
+def test_verify_media_payload_magics():
+    """Magic binaires reconnus, payloads invalides rejetes (unitaire)."""
+    from scan_media_render import _verify_media_payload
+
+    # formats reels
+    assert _verify_media_payload(PNG_1PX) == "image"
+    assert _verify_media_payload(WAV_MINIMAL) == "audio"            # RIFF + WAVE
+    assert _verify_media_payload(
+        base64.b64encode(b"RIFF\x00\x00\x00\x04WEBP" + b"\x00" * 16).decode()
+    ) == "image"                                                      # RIFF + WEBP
+    assert _verify_media_payload(
+        base64.b64encode(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x00\x00").decode()
+    ) == "image"                                                      # JPEG
+    assert _verify_media_payload(
+        base64.b64encode(b"\x89PNG\r\n\x1a\n" + b"\x00" * 12).decode()
+    ) == "image"                                                      # PNG (padding)
+    assert _verify_media_payload(
+        base64.b64encode(b"\xff\xfb\x90\x00" + b"\x00" * 12).decode()
+    ) == "audio"                                                      # MP3 frame sync
+    assert _verify_media_payload(
+        base64.b64encode(b"\x00\x00\x00\x18ftypisom\x00\x00\x00\x00isom").decode()
+    ) == "video"                                                      # MP4 (ftyp)
+
+    # payloads invalides / trop courts
+    assert _verify_media_payload(
+        base64.b64encode(b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f").decode()
+    ) is None
+    assert _verify_media_payload(base64.b64encode(b"RIFF").decode()) is None   # 4 octets < 12
+    assert _verify_media_payload("") is None
+    assert _verify_media_payload("@@not-base64@@") is None
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +228,7 @@ def test_import_then_real_call(tmp_path):
     nb = _write_nb(
         tmp_path,
         ["from IPython.display import Audio, display", "display(Audio('x.wav'))"],
-        outputs_by_cell={1: [_html_output('<audio src="data:audio/wav;base64,UklGRg==">')]},
+        outputs_by_cell={1: [_html_output(f'<audio src="data:audio/wav;base64,{WAV_MINIMAL}">')]},
     )
     r = scan_notebook(nb, tmp_path)
     assert r.primitive_calls == ["display(Audio/Image/Video)"]
@@ -276,3 +352,41 @@ def test_triage_30_legacy_still_flags_them():
         if scan_notebook(REPO / p, REPO).verdict(legacy=True) == "NO_MEDIA_RENDERED"
     )
     assert flagged == 30, f"le predicat legacy ne signale plus les 30 (actuel: {flagged})"
+
+
+
+# ---------------------------------------------------------------------------
+# Robustesse (ai-01 c.103, #10985) : fichier JSON invalide + discovery trackee
+# ---------------------------------------------------------------------------
+
+def test_malformed_json_returns_scan_error(tmp_path):
+    """Un notebook illisible ne tue pas le run : scan_error + verdict SCAN_ERROR."""
+    bad = tmp_path / "broken.ipynb"
+    bad.write_text('{"cells": [', encoding="utf-8")
+    r = scan_notebook(bad, tmp_path)
+    assert r.scan_error, "le JSON invalide doit etre capture, pas leve"
+    assert "JSONDecodeError" in r.scan_error
+    assert r.verdict() == "SCAN_ERROR"
+    assert r.verdict(legacy=True) == "SCAN_ERROR"
+    assert r.primitive_calls == [] and r.data_uris == {}
+
+
+def test_discover_tracked_excludes_untracked(tmp_path):
+    """La decouverte par defaut scanne les notebooks SUIVIS, pas le disque :
+    un .ipynb untracked (ex. research.ipynb invalide gitignore ESGF-2026)
+    ne doit pas entrer dans le corpus."""
+    _git_init_repo(tmp_path)
+    tracked_dir = tmp_path / "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation"
+    tracked_dir.mkdir(parents=True)
+    good = _write_nb(tracked_dir, ["display(Audio('a.wav'))"], name="01-1-ok.ipynb")
+    subprocess.run(["git", "-C", str(tmp_path), "add", str(good)], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "nb"], check=True)
+
+    # notebook untracked (invalide, comme ESGF research.ipynb) — hors git
+    untracked = tmp_path / "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/broken.ipynb"
+    untracked.write_text('{"cells": [', encoding="utf-8")
+
+    found = discover_tracked_notebooks(tmp_path)
+    assert found == [good], f"decouverte trackee doit exclure l'untracked: {found}"
+    # et le fichier untracked ne produit pas d'erreur en scan direct : il n'est pas scanne
+    assert all(r.scan_error is None for r in [scan_notebook(good, tmp_path)])

@@ -156,6 +156,19 @@ jobs:
               echo "::warning::Aucune 'lane <machine:workspace>' declaree. G-VAR-2 est un cap PAR LANE et PAR JOUR : un grain sans lane est structurellement incomptable, et le cap devient inapplicable sans que personne ne l'ait contourne (§3)."
               note_defect variation-tag-lane-missing
             fi
+
+            # `prev:` -- le champ qui rend G-VAR-3 EVALUABLE (adjacence de
+            # genre). Le guard ne le mesurait pas (#10983) : un tag sans
+            # `prev:` traversait les deux jobs en silence et l'adjacence ne
+            # s'evaluait qu'a la main, apres merge. Forme canonique :
+            # `prev: <TIER>/<GENRE> #<PR>`. Exemption premier grain d'une
+            # lane : `prev: none (premier grain)` (parse_prev -> exempt).
+            PREV_PRESENT=$(_field prev_present)
+            PREV_EXEMPT=$(_field prev_exempt)
+            if [ "$PREV_PRESENT" = "False" ] && [ "$PREV_EXEMPT" != "True" ]; then
+              echo "::warning::Champ 'prev:' absent du tag. variation-protocol §1 le rend obligatoire (support mecanique de G-VAR-3 : pas deux fois le meme GENRE LIGHT consecutif). Forme : prev: <TIER>/<GENRE> #<PR>. Premier grain d'une lane : prev: none (premier grain)."
+              note_defect variation-tag-prev-absent
+            fi
           else
             # Substance absente (TIER/GENRE introuvable) : l'unique cas ou la
             # tolerance s'arrete. Les formes titre/bold/no-colon sont couvertes
@@ -174,12 +187,13 @@ jobs:
           # de contexte `gh` invisible (#8786). Un garde dont l'echec est muet
           # n'est pas un garde. Sur les `remove`, `2>/dev/null` reste justifie :
           # retirer un label absent est l'issue ATTENDUE au cas nominal.
-          for LABEL in variation-tag-missing variation-tag-malformed variation-tag-genre-offlist variation-tag-lane-missing; do
+          for LABEL in variation-tag-missing variation-tag-malformed variation-tag-genre-offlist variation-tag-lane-missing variation-tag-prev-absent; do
             case "$LABEL" in
               variation-tag-missing)          COLOR="FBCA04"; DESC="PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" ;;
               variation-tag-malformed)       COLOR="FEF2C0"; DESC="Tag Grain present mais TIER != DEEP|MED|LIGHT" ;;
               variation-tag-genre-offlist)   COLOR="FEF2C0"; DESC="GENRE hors de l'enumeration variation-protocol §1" ;;
               variation-tag-lane-missing)    COLOR="FEF2C0"; DESC="Tag Grain sans 'lane <machine:workspace>' (cap G-VAR-2 incomptable)" ;;
+              variation-tag-prev-absent)     COLOR="FEF2C0"; DESC="Tag Grain sans 'prev: <TIER>/<GENRE> #<PR>' (adjacence G-VAR-3 inevaluable)" ;;
             esac
             case " $DEFECTS " in
               *" $LABEL "*)
@@ -193,7 +207,7 @@ jobs:
           done
 
           if [ -z "$DEFECTS" ]; then
-            echo "Tag conforme : TIER + GENRE dans la liste §1 + lane declaree."
+            echo "Tag conforme : TIER + GENRE dans la liste §1 + lane declaree + prev: (ou exemption premier grain)."
           else
             echo "Defauts signales (advisory, non bloquant) :$DEFECTS"
           fi

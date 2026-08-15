@@ -10,7 +10,7 @@
 > manifest and documentation are preserved, but the `lean_lib` is **neutralized** in `lakefile.lean`
 > (its `globs` pointed to moved sources and matched 0 files). The no-sorry certification
 > (`grim_trigger_sustains_iff`, headline theorem) and the Lake build are now carried by
-> `game_theory_lean` via `.github/workflows/lean-repeated-games.yml`.
+> `game_theory_lean` via `.github/workflows/lean-game-theory.yml`.
 >
 > The rest of this README describes the formalizations as they **historically** existed here — the
 > mathematical content (grim-trigger theorem, one-shot deviation principle, threshold δ) remains

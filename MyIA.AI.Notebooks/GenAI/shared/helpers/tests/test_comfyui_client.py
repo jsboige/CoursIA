@@ -330,6 +330,40 @@ class TestWaitForCompletion:
             with pytest.raises(Exception, match="Workflow execution failed"):
                 client.wait_for_completion("abc", timeout=10)
 
+    def test_raises_on_status_error_dict(self):
+        """Si status={status_str: 'error'} (execution echouee cote serveur, outputs {}),
+        leve Exception au lieu de retourner des outputs vides (masquage du message reel).
+
+        Mesure 2026-08-15 : HyVideoSampler rejette num_frames != 4k+1 avec
+        status_str='error' et outputs:{} ; l'ancien check `if 'outputs' in result`
+        faisait croire a un echec "aucun fichier" sans le vrai message serveur.
+        """
+        with mock.patch.object(comfyui_client.ComfyUIClient, "get_history") as mock_get:
+            mock_get.return_value = {
+                "abc": {
+                    "status": {"status_str": "error", "messages": [["execution_error", {"exception_message": "invalid num_frames"}]]},
+                    "outputs": {},
+                }
+            }
+            client = comfyui_client.ComfyUIClient("http://x")
+            with pytest.raises(Exception, match="invalid num_frames"):
+                client.wait_for_completion("abc", timeout=10)
+
+    def test_status_string_legacy_keeps_polling(self):
+        """Legacy workers portent status: 'running' (str). isinstance garde ce
+        format pour le polling sans lever a tort."""
+        with mock.patch.object(comfyui_client.ComfyUIClient, "get_history") as mock_get, \
+             mock.patch.object(comfyui_client.time, "sleep") as mock_sleep:
+            mock_get.side_effect = [
+                {"abc": {"status": "running"}},
+                {"abc": {"status": "running"}},
+                {"abc": {"outputs": {"done": True}}},
+            ]
+            client = comfyui_client.ComfyUIClient("http://x")
+            result = client.wait_for_completion("abc", timeout=10)
+        assert result["outputs"] == {"done": True}
+        assert mock_sleep.call_count == 2
+
     def test_polls_until_outputs_ready(self):
         """Poll jusqu'a ce que 'outputs' apparaisse."""
         with mock.patch.object(comfyui_client.ComfyUIClient, "get_history") as mock_get, \

@@ -9,9 +9,11 @@ name: Quarto Pages Deploy
 #
 # Spécificités CoursIA :
 # - `freeze: auto` dans `_quarto.yml` : Quarto re-render seulement sur changement source
-# - `notebook-preview: false` : les .ipynb sont publiés tels quels avec outputs embedded
+# - Les .ipynb des familles de NOTEBOOK_SUBTREES (scripts/regen_quarto_render.py)
+#   sont RENDUS en HTML statique (EPIC #10921, #10923) : echo:true au niveau
+#   racine (_quarto.yml), sans exécution de kernel (execute.enabled: false).
 # - Pas de kernel exec sur CI : les notebooks .NET C# / Lean 4 / Python sont déjà
-#   commités avec outputs (règle C.2). Seuls les .qmd sont rendus sur CI.
+#   commités avec outputs (règle C.2).
 
 on:
   push:
@@ -20,6 +22,7 @@ on:
       - "_quarto.yml"
       - "**.qmd"
       - "MyIA.AI.Notebooks/**/index.qmd"
+      - "MyIA.AI.Notebooks/**/*.ipynb"
       - "MyIA.AI.Notebooks/**/_output.ipynb"
       - "MyIA.AI.Notebooks/**/README.md"
       - "docs/**"
@@ -57,19 +60,20 @@ jobs:
           # #10979 redeviennent rendables (NOTEBOOK_EXCLUDE_FILES vidé, #10968).
           version: 1.10.18
 
-      - name: Regenerate README render list
-        # _quarto.yml porte une liste render: EXPLICITE de tous les README.md
-        # (Quarto 1.7 n'étend pas le glob **/README.md sur les sous-répertoires).
-        # On régénère cette liste avant le render pour que les nouveaux READMEs
-        # ajoutés depuis la dernière synchro apparaissent sur le site sans commit
-        # manuel de _quarto.yml (Axe C #4211). Idempotent ; archives et libs
-        # vendored exclues (cf. scripts/regen_quarto_render.py).
+      - name: Regenerate render list
+        # _quarto.yml porte une liste render: EXPLICITE des READMEs + notebooks
+        # (Quarto 1.7 n'étend pas les globs **/README.md / **/*.ipynb sur les
+        # sous-répertoires). On régénère cette liste avant le render pour que les
+        # nouveaux fichiers apparaissent sur le site sans commit manuel de
+        # _quarto.yml (Axe C #4211). Idempotent ; archives et libs vendored
+        # exclues (cf. scripts/regen_quarto_render.py).
         run: python scripts/regen_quarto_render.py
 
       - name: Render Quarto site
-        # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks .ipynb.
-        # Les .ipynb sont juste copiés dans _site/ avec leurs outputs embedded
-        # (déjà validés et commités par les workers, règle C.2).
+        # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
+        # .ipynb (execute.enabled: false) : ils sont RENDUS en HTML statique avec
+        # echo:true (EPIC #10921, #10923) — code affiché + outputs déjà validés et
+        # commités par les workers (règle C.2), sans kernel.
         run: quarto render --to html
         # Pas de --execute : sinon ça tente de ré-exécuter les notebooks = impossible
         # sans kernels .NET Interactive / Lean 4 / conda Python spécialisés.
