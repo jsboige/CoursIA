@@ -381,8 +381,8 @@ def evaluate_one_combo(
     If oos_strict_year is set, data on/after Jan 1st of that year is held out
     from training/walk-forward (reserved for separate OOS verdict).
 
-    loss_fn selects the DM loss: "linear" (signed) is required by pr-review §C
-    for return series — mse/mae are symmetric and annul the sign (#10228).
+    loss_fn selects the DM loss: "mse"/"mae" (precision) are the §C conjunction
+    jambe per the #11010 amendment; "linear" (signed) is the bias control only.
 
     refit_every controls the walk-forward refit cadence (test days between
     LSTM retrains). The legacy research config is 22d; the §C run uses a
@@ -575,9 +575,9 @@ def main() -> None:
         default="linear",
         choices=["linear", "mse", "mae"],
         help=(
-            "DM loss function. pr-review §C requires 'linear' (signed loss) "
-            "for return series; mse/mae are symmetric and annul the sign (#10228). "
-            "Default: linear."
+            "DM loss function. §C (amended #11010): mse/mae (precision) are the "
+            "conjunction jambe; linear (signed) is the bias control, never the "
+            "conjunction jambe. Default: linear."
         ),
     )
     parser.add_argument(

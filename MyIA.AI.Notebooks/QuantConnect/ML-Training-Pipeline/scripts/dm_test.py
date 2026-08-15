@@ -186,8 +186,8 @@ def dm_verdict(
 
     ``loss_fn`` selects the loss applied to forecast errors before the DM
     differential: ``"mse"`` (squared), ``"mae"`` (absolute), ``"linear"``
-    (raw errors, sign-preserving — required by pr-review §C for
-    return/strategy series; ``mse`` squares away the sign).
+    (raw signed errors — bias control, never the conjunction jambe;
+    per amended §C (#11010) the conjunction DM must use a precision loss).
     """
     result = diebold_mariano_test(errors_model, errors_baseline, loss_fn=loss_fn, horizon=horizon)
     if result.p_value < alpha and result.mean_loss_diff < 0:
