@@ -53,6 +53,7 @@ import argparse
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -228,6 +229,114 @@ def scan_interp_output_anchor(cells: list[dict]) -> list[dict]:
                 f"interp cites measured score(s) {sorted(cited)[:3]} not found in the "
                 f"adjacent code output -- the interpretation cell is likely anchored to "
                 f"the wrong code cell (density-enrichment misplacement, Epic #10678)"
+            ),
+        })
+    return findings
+
+
+# ---- INTERP_SEMANTIC_ORPHAN (triage opt-in, Epic #10678 Phase 1b) ----
+# Ported from _scan_interp_orphans.py (c.240, PR #10714): a position-blind
+# semantic heuristic for the c.237 "blind spot" (closing interps that
+# semantically belong to an EARLIER code cell, not the adjacent one).
+#
+# ADVISORY ONLY -- measured 100% false-positive rate on origin/main
+# (2026-08-15, 0/25 true positives on a random 25-sample of the 117
+# candidates): a legitimately-placed interp almost always shares <2
+# significant tokens with the code above it (plot-only cells, concept-only
+# prose, identifier renames between code and prose). The one real orphan the
+# original audit found (02-SK-Advanced cell[34]) is NOT caught by this
+# keyword-overlap heuristic either -- it is a structural tool, not a recall
+# fix. Triages candidates to eyeball; NEVER a verdict; never in the default
+# pipeline; never affects --fail-on / exit code (same contract as
+# INTERP_OUTPUT_MISMATCH above).
+
+_INTERP_TOKEN_RE = re.compile(r"\b[A-Za-z_]\w{3,}\b")
+
+# Stopwords (EN from the original heuristic + FR prose frequentatives). Kept
+# small on purpose: stripping too much would remove the code-identifier signal
+# the heuristic keys on. Stored accent-free: tokens are accent-folded before
+# comparison, so "modèle" hits "modele" (see _interp_fold).
+_INTERP_STOPWORDS = frozenset({
+    'this', 'that', 'with', 'from', 'have', 'they', 'them', 'will', 'been',
+    'each', 'which', 'their', 'there', 'these', 'those', 'were', 'what',
+    'pour', 'avec', 'dans', 'sur', 'plus', 'est', 'sont', 'ces', 'cette',
+    'leur', 'entre', 'apres', 'avant', 'aussi', 'comme', 'mais', 'donc',
+    'quand', 'etre', 'avoir', 'faire', 'fait', 'peut', 'bien', 'tre',
+    'ainsi', 'resume', 'conclusion', 'resultat', 'sortie', 'figure',
+    'cellule', 'section', 'exemple', 'valeur', 'donnees', 'modele', 'code',
+    'affiche', 'montre', 'observe', 'voit', 'voir', 'suivant', 'precedent',
+    'notebook', 'tableau', 'partie', 'page', 'ligne', 'etape', 'ensemble',
+    'deux', 'tout', 'tous', 'toute', 'toutes', 'chaque', 'autre', 'autres',
+    'alors', 'sous', 'tres', 'peu', 'ici', 'sont',
+})
+
+
+def _interp_fold(w: str) -> str:
+    """Accent-fold a token to lower-case without diacritics ('modèle' -> 'modele')."""
+    return "".join(c for c in unicodedata.normalize("NFD", w.lower())
+                   if not unicodedata.combining(c))
+
+
+def interp_matches_code(interp_src: str, code_src: str) -> bool:
+    """Check if an interpretation cell semantically matches the code above it
+    by keyword overlap.
+
+    Returns True if the interp shares >=2 significant tokens with the code
+    (significant = >=4 chars, accent-folded, not a stopword). False means the
+    interp talks about something else -- candidate semantic orphan. A vacuous
+    interp (no significant tokens) is accepted (no signal to judge on).
+    """
+    interp_words = {_interp_fold(w) for w in _INTERP_TOKEN_RE.findall(interp_src)}
+    interp_words -= _INTERP_STOPWORDS
+    if not interp_words:
+        return True  # vacuous interp, accept
+    code_words = {_interp_fold(w) for w in _INTERP_TOKEN_RE.findall(code_src)}
+    code_words -= _INTERP_STOPWORDS
+    return len(interp_words & code_words) >= 2
+
+
+def scan_interp_semantic_orphan(cells: list[dict]) -> list[dict]:
+    """Position-blind orphan triage for interpretation cells (Epic #10678).
+
+    For every interp cell (prose opener or canonical #10488 header), compare
+    its significant tokens with those of the code cell immediately above. If
+    they share <2 tokens, the interp likely comments an EARLIER code cell --
+    the c.237 blind spot that gap-based audits missed.
+
+    ADVISORY ONLY (high FP -- see module docstring of this section): triages
+    candidates for a human to eyeball, never a verdict.
+    """
+    findings = []
+    for i, cell in enumerate(cells):
+        if cell.get("cell_type") != "markdown":
+            continue
+        header = _interp_header_source(cell.get("source", []))
+        body = "".join(cell.get("source", []))
+        if not header and not _INTERP_RE.search(body):
+            continue  # not an interpretation cell
+        if header:
+            # The canonical header ('### Interprétation : …') carries no
+            # semantic signal -- strip its own token ('interpretation') so it
+            # cannot inflate the interp's significant-word set. Only the
+            # header PREFIX is removed: prose on the same line survives.
+            body = _INTERP_HEADER_RE.sub("", body, count=1)
+        adj_code = None
+        for j in range(i - 1, -1, -1):
+            if cells[j].get("cell_type") == "code":
+                adj_code = cells[j]
+                break
+        if adj_code is None:
+            continue  # interp at top, no code above -- out of scope
+        code_src = "".join(adj_code.get("source", []))
+        if interp_matches_code(body, code_src):
+            continue
+        findings.append({
+            "cell_index": i, "category": "INTERP_SEMANTIC_ORPHAN", "severity": "LOW",
+            "evidence": (header or body.strip())[:120],
+            "message": (
+                f"interp shares <2 significant tokens with the code cell immediately "
+                f"above -- likely comments an EARLIER code cell (semantic orphan, "
+                f"Epic #10678; eyeball before acting)"
             ),
         })
     return findings
@@ -504,6 +613,13 @@ def main(argv=None) -> int:
                          "ADVISORY ONLY, ~99%% false-positive rate -- a cited decimal usually "
                          "lives in a plot/DataFrame/neighbour cell. Outputs candidates to "
                          "eyeball, never a verdict, never affects --fail-on / exit code.")
+    ap.add_argument("--check-interp-semantic", action="store_true",
+                    help="ALSO run the INTERP_SEMANTIC_ORPHAN triage helper (Epic #10678 "
+                         "Phase 1b, ported from _scan_interp_orphans.py c.240). ADVISORY "
+                         "ONLY, high false-positive rate (see module docstring -- measured "
+                         "on main): a legit interp often shares <2 tokens with the code "
+                         "above it. Outputs candidates to eyeball, never a verdict, never "
+                         "affects --fail-on / exit code.")
     args = ap.parse_args(argv)
 
     if args.notebook:
@@ -539,6 +655,14 @@ def main(argv=None) -> int:
                     triage.append((path, f))
             except (json.JSONDecodeError, UnicodeDecodeError, OSError):
                 pass
+        if args.check_interp_semantic:
+            try:
+                cells = json.loads(Path(path).read_text(encoding="utf-8")).get("cells", [])
+                for f in scan_interp_semantic_orphan(cells):
+                    f["_triage"] = True
+                    triage.append((path, f))
+            except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+                pass
         reports.append(rep)
 
     if args.json:
@@ -561,13 +685,19 @@ def main(argv=None) -> int:
         clean = sum(1 for r in reports if not r.get("findings") and not r.get("error"))
         print(f"\nScanned {scanned} notebook(s): {clean} clean, {total} finding(s).")
 
-    if args.check_interp_anchor and triage and not args.json:
+    if triage and not args.json:
         print(f"\n{'='*70}")
-        print("INTERP_OUTPUT_MISMATCH triage (ADVISORY, ~99% FP — Epic #10678).")
-        print("Eyeball only; the cited decimal is usually in a plot/neighbour cell.")
-        print(f"{len(triage)} candidate(s):")
+        n_anchor = sum(1 for _, f in triage if f["category"] == "INTERP_OUTPUT_MISMATCH")
+        n_sem = sum(1 for _, f in triage if f["category"] == "INTERP_SEMANTIC_ORPHAN")
+        print(f"Interp triage (ADVISORY only -- eyeball, never a verdict):")
+        if n_anchor:
+            print(f"  INTERP_OUTPUT_MISMATCH: {n_anchor} candidate(s) "
+                  f"(~99% FP -- cited decimal usually in a plot/neighbour cell).")
+        if n_sem:
+            print(f"  INTERP_SEMANTIC_ORPHAN: {n_sem} candidate(s) "
+                  f"(high FP -- legit interp often shares <2 tokens with code above).")
         for path, f in triage:
-            print(f"  {_rel(str(path))} cell#{f['cell_index']} {f['evidence'][:60]}")
+            print(f"  {_rel(str(path))} cell#{f['cell_index']} [{f['category']}] {f['evidence'][:60]}")
 
     return 1 if worst >= fail_at else 0
 
