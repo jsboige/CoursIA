@@ -85,7 +85,7 @@ noncomputable def discountedPayoff (g : PrisonersDilemma) (δ : ℝ)
 /-- Le théorème de Folk ACTUALISÉ (Fudenberg–Maskin 1986, simplifié pour 2x2) :
 
       Pour tout paiement faisable strictement individuellement rationnel
-      `u = (u_row, u_col)`, il existe δ* < 1 tel que pour tout δ ≥ δ* le
+      `u = (u_row, u_col)`, il existe δ* < 1 tel que pour tout δ ∈ [δ*, 1) le
       vecteur `u` est réalisé comme paiement actualisé d'une trajectoire
       d'actions conjointes.
 
@@ -108,7 +108,7 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
       Feasible g u_row u_col →
       u_row > g.P ∧ u_col > g.P →  -- strict IR
       ∃ (δ_star : ℝ), δ_star < 1 ∧
-        ∀ (d : ℝ), d ≥ δ_star →
+        ∀ (d : ℝ), d ≥ δ_star → d < 1 →
           ∃ (a : ℕ → PDAction × PDAction),
             discountedPayoff g d a = u_row ∧
             discountedPayoff g d (fun n => ((a n).2, (a n).1)) = u_col := by
@@ -117,6 +117,13 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
   -- paiement actualisé, pour tout δ assez proche de 1. Requiert la convexité
   -- du polytope des paiements faisables et un argument de point extrême ;
   -- preuve de plusieurs pages, pas une seule tactique.
+  --
+  -- Bord d'énoncé réparé (2026-08-15) : l'ancien quantificateur « ∀ d ≥ δ* »
+  -- (sans borne d < 1) rendait le théorème FAUX — à d ≥ 1 les séries
+  -- ∑' d^n · payoff divergent et `tsum` vaut 0 (valeur junk), si bien qu'aucun
+  -- u ≠ 0 n'est réalisable (témoin : g = ⟨3, 2, 1, 0⟩, u = (2, 2), d = 2).
+  -- La borne « d < 1 » répare sans renforcer : le prouveur choisit δ* ≥ 0,
+  -- donc d ∈ [δ*, 1) ⊆ [0, 1) et les séries convergent absolument.
   sorry
 
 /-- Cas limite δ = 0 : sans poids sur le futur, les valeurs actualisées se

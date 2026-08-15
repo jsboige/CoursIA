@@ -104,7 +104,7 @@ noncomputable def discountedPayoff (g : PrisonersDilemma) (δ : ℝ)
 /-- The DISCOUNTED Folk theorem (Fudenberg–Maskin 1986, simplified for 2x2):
 
       For every strictly individually rational feasible payoff
-      `u = (u_row, u_col)`, there exists δ* < 1 such that for all δ ≥ δ* the
+      `u = (u_row, u_col)`, there exists δ* < 1 such that for all δ ∈ [δ*, 1) the
       vector `u` is realized as the discounted payoff of a trajectory of
       joint actions.
 
@@ -126,7 +126,7 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
       Feasible g u_row u_col →
       u_row > g.P ∧ u_col > g.P →  -- strict IR
       ∃ (δ_star : ℝ), δ_star < 1 ∧
-        ∀ (d : ℝ), d ≥ δ_star →
+        ∀ (d : ℝ), d ≥ δ_star → d < 1 →
           ∃ (a : ℕ → PDAction × PDAction),
             discountedPayoff g d a = u_row ∧
             discountedPayoff g d (fun n => ((a n).2, (a n).1)) = u_col := by
@@ -134,6 +134,13 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
   -- realizing the target payoff vector (u_row, u_col) as a discounted payoff,
   -- for all δ close enough to 1. Requires convexity of the feasible-payoff
   -- polytope and an extreme-point argument; a multi-page proof, not one tactic.
+  --
+  -- Statement edge repaired (2026-08-15): the old quantifier "∀ d ≥ δ*"
+  -- (no d < 1 bound) made the theorem FALSE — at d ≥ 1 the series
+  -- ∑' d^n · payoff diverge and `tsum` is 0 (junk value), so no u ≠ 0 is
+  -- realizable (witness: g = ⟨3, 2, 1, 0⟩, u = (2, 2), d = 2).
+  -- The "d < 1" bound repairs without strengthening: the prover picks
+  -- δ* ≥ 0, hence d ∈ [δ*, 1) ⊆ [0, 1) and the series converge absolutely.
   sorry
 
 /-- Boundary case δ = 0: with no weight on the future, the discounted values
