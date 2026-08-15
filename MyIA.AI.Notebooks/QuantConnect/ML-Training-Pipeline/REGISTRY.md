@@ -4,6 +4,7 @@ Auto-generated: 2026-05-03 22:29
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
 Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
 Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais révélé par loss_fn=linear)
+Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11011): BEATS 3/3 (linear → mse : changement de jambe, pas de modèle)
 Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
@@ -74,6 +75,33 @@ au 1/1000ᵉ) ; dé-biaiser HAR ramènerait son MSE de ~0,888 à ~0,836 (h=1) et
 - **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn linear --skip-remote --coins BTC-USD --debias --out-json results/m4_dlinear_vol_btc_sc_debiased.json` (3963,8 s)
 - **Notebook** : section 7 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction + décomposition, outputs C.2)
 - **Verdict §C dé-biaisé** : **3/3 NO BEATS** — identique au brut (la dominance seed-BEATEN est une propriété du MSE, pas du biais).
+
+### M4 DLinear-vol — re-run §C perte de précision (2026-08-15, issue #11011)
+
+Re-run du barème §C **amendé** (#11010) sous `--loss-fn mse` (jambe de précision). Le verdict
+NO BEATS de #10930 était instrumenté sur `linear`, désormais **contrôle de biais séparé** — la
+conjonction doit porter sur une perte de précision (`mse`/`mae`). Cette entrée rend la conjonction
+§C sur MSE : edge ≥ 2σ cross-seed **et** `dm_p_median < 0,05`.
+
+| Horizon | edge (red MSE moy, %) | σ cross-seed | dm_p_median | Verdict §C |
+|---------|----------------------|--------------|-------------|------------|
+| h=1 | +15,3 % | 0,04 | 0,00e+00 | **BEATS** |
+| h=5 | +28,3 % | 0,10 | 2,25e-10 | **BEATS** |
+| h=10 | +38,3 % | 0,20 | 2,39e-09 | **BEATS** |
+
+**Lecture** : sous `mse`, le DM teste l'égalité des pertes quadratiques (précision pure) — le
+`d_mean = biais_DL − biais_HAR` de la jambe linéaire n'intervient plus dans le verdict. Les
+4 seeds de chaque horizon passent **BEATS baseline** (0 BEATEN) et la conjonction est tenue 3/3 :
+l'edge de précision (+15 à +38 %) est **significatif** sous la perte quadratique. Le changement de
+verdict (NO BEATS → BEATS) vs #10930 est **mécanique** : mêmes MSE, mêmes seeds, même découpage —
+ce qui change est la question posée au DM (biais sous `linear`, précision sous `mse`), pas le
+modèle. Rapport de biais séparé (mesuré #10938, inchangé) : `har_bias_oos` −0,2266/−0,3432/−0,4502
+(h=1/5/10), `bias_DL ≈ 0` — le différentiel linéaire reste porté par le biais de HAR, DLinear
+non biaisé.
+
+- **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn mse --skip-remote --coins BTC-USD --out-json scripts/results/m4_dlinear_vol_btc_sc_mse.json` (2341,4 s)
+- **Notebook** : section 8 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
+- **Verdict §C (jambe de précision)** : **3/3 BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
 
 ## M15 LSTM-vol — entrée §C (2026-08-14) — issue #10941
 
