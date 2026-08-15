@@ -2,14 +2,20 @@
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
+  bridge_verdict_reason: "Tranche 2 (2026-08-15) : pont MathNet.Numerics branche sur la paire GT-14. Le socle reste from-scratch (la lecon), mais la verification croisee s appuie desormais sur le moteur SOTA .NET MathNet.Numerics 5.0.0 (RK4 RungeKutta.FourthOrder + NelderMeadSimplex) : concordance vecteur-a-vecteur L-infini = 0 sur les deux experiences (ODE feedback Nash + optimum Stackelberg statique), gabarit #11058. Le moteur SOTA est invoque reellement (pas un stub) ; la paire reste pedagogiquement from-scratch-first, la verification par moteur tiers valide la reimplementation."
   audits:
     - date: "2026-08-04"
       python_sha: 924092dad22d0d395af77067e636d92d773484ec
       csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
+    - date: "2026-08-15"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 924092dad22d0d395af77067e636d92d773484ec
+      csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
+      content_python_sha: af379708f3230a003e086fb360fd1f47e38bcdae2b8b98bef4b421c83792af4f
+      content_csharp_sha: 8ff080818394f0564ef7c520644be395b580820ac947123408c1f4914caa3aa2
   known_differences:
     - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."
-    - "Idiomes framework : Python = `scipy.integrate.odeint` (integration ODE) + `scipy.optimize.minimize` + `numpy` + `matplotlib`. C# = BCL .NET 9 pur (`System.*`, 0 NuGet, 0 numpy, 0 scipy), integrateur RK4 from-scratch (section 'Pourquoi RK4 et pas Euler ?') + formes analytiques Stackelberg/Cournot."
-    - "Asymetrie de couverture : Python (40 cellules, 14 code) resout numeriquement via scipy (ODE + optimisation) ; C# (26 cellules, 10 code) construit RK4 from-scratch et privilegie les formes analytiques du duopole. Meme theorie centrale (Stackelberg/Cournot), leviers numeriques differents (scipy cote Python vs RK4 from-scratch cote C#)."
+    - "Idiomes framework : Python = `scipy.integrate.odeint` (integration ODE) + `scipy.optimize.minimize` + `numpy` + `matplotlib`. C# = BCL .NET 9 pur (`System.*`) pour la tranche 1 (RK4 from-scratch, formes analytiques Stackelberg/Cournot) + **tranche 2** branchant le moteur SOTA .NET `MathNet.Numerics` 5.0.0 (RungeKutta.FourthOrder + NelderMeadSimplex) pour la verification croisee. 0 numpy, 0 scipy des deux cotes C#."
+    - "Asymetrie de couverture : Python (40 cellules, 14 code) resout numeriquement via scipy (ODE + optimisation) ; C# (29 cellules, 12 code) construit RK4 from-scratch (tranche 1) + verification croisee MathNet (tranche 2) et privilegie les formes analytiques du duopole. Meme theorie centrale (Stackelberg/Cournot) ; le C# couvre desormais l'ODE via **deux** moteurs concordants (RK4 from-scratch L-infini 0 vs MathNet) et l'optimum statique par NelderMead (L-infini 0 vs forme close)."
