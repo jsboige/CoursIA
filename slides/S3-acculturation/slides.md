@@ -60,7 +60,6 @@ layout: section
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -85,15 +84,7 @@ layout: two-cols
 - Théorie du contrôle
 - Linguistique
 
-
-::right::
-
-
-![w:380](./images/img_005.png)
-
-
-
-
+<img src="./images/img_005.png" style="position:absolute; top:193px; right:20px; width:460px;" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
 layout: two-cols
 ---
@@ -177,7 +168,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -198,15 +188,7 @@ layout: two-cols
 - Limitations
   - ressources disponibles
 
-
-::right::
-
-
-![w:350](./images/img_009.png)
-
-
-
-
+<img src="./images/img_009.png" style="position:absolute; top:203px; right:20px; width:460px;" alt="Les agents" />
 ---
 layout: two-cols
 ---
@@ -250,7 +232,6 @@ layout: section
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -268,15 +249,7 @@ layout: two-cols
 
 - Flexibilité vs complexité
 
-
-::right::
-
-
-![w:380](./images/img_012.png)
-
-
-
-
+<img src="./images/img_012.png" style="position:absolute; top:239px; right:20px; width:460px;" alt="Agent réflexe fondé sur un modèle" />
 ---
 
 
@@ -651,7 +624,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -673,18 +645,11 @@ layout: two-cols
 - Solveurs SAT
   - Problèmes NP-complets
 
-
-::right::
-
-
-<div class="img-grid">
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
 ![w:200](./images/img_038.png)
 ![w:200](./images/img_039.png)
 ![w:200](./images/img_040.png)
-
 </div>
-
-
 ---
 layout: two-cols
 ---
@@ -808,7 +773,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -832,25 +796,14 @@ layout: two-cols
 - Planification à Ordre partiel
 - Décomposition hiérarchique
 
-
-::right::
-
-
-<div class="img-grid">
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
 ![](./images/img_043.png)
 ![](./images/img_044.png)
 ![](./images/img_045.png)
 ![](./images/img_046.png)
 ![](./images/img_047.jpg)
-
-
 </div>
-
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -868,18 +821,10 @@ layout: two-cols
   - W3C
   - Linked Data
 
-
-::right::
-
-
-![w:300](./images/img_048.png)
-![w:300](./images/img_049.png)
-
-
+<img src="./images/img_048.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
+<img src="./images/img_049.png" style="position:absolute; top:437px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
-
-
 ---
 
 
@@ -1049,7 +994,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1075,24 +1019,14 @@ layout: two-cols
   - Processus de Markov
   - Politique optimale
 
-
-::right::
-
-
-<div class="img-grid">
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
 ![w:150](./images/img_061.png)
 ![w:150](./images/img_062.png)
 ![w:150](./images/img_063.png)
 ![w:150](./images/img_064.png)
 ![w:150](./images/img_065.jpg)
 ![w:150](./images/img_066.jpg)
-
-
 </div>
-
-
-
 ---
 layout: two-cols
 ---
@@ -1389,7 +1323,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1410,17 +1343,9 @@ layout: two-cols
   - d'ensemble
   - Boosting
 
-
-::right::
-
-
-![w:300](./images/img_083.png)
-![w:300](./images/img_084.png)
-
-
-
+<img src="./images/img_083.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Caractéristiques (2/2)" />
+<img src="./images/img_084.png" style="position:absolute; top:530px; right:20px; width:460px;" alt="Caractéristiques (2/2)" />
 ---
-layout: two-cols
 ---
 
 
@@ -1444,21 +1369,12 @@ layout: two-cols
 - Random forest
 - Ensemble
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
 ![](./images/img_085.png)
 ![](./images/img_086.png)
 ![](./images/img_087.png)
 ![](./images/img_088.png)
-
-
 </div>
-
-
 ---
 
 
@@ -1471,7 +1387,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1485,23 +1400,13 @@ layout: two-cols
 - Multi-couches
   - Expressivité croissante
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
 ![](./images/img_090.png)
 ![](./images/img_091.png)
 ![](./images/img_092.png)
 ![](./images/img_093.png)
-
-
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1520,23 +1425,13 @@ layout: two-cols
   - Noyaux de convolution
   - Sous-échantillonnage
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
 ![](./images/img_094.png)
 ![](./images/img_095.png)
 ![](./images/img_096.png)
 ![](./images/img_097.png)
-
-
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1548,32 +1443,22 @@ layout: two-cols
   - Mémoire à court terme
   - Réseaux LSTM
   - MAJ d'un état de cellule
-- Réseaux résiduels
+- Réseaux résiduels (2015)
   - Réinjection des entrées
-- GANs
+- GANs (2014)
   - Réseaux adversériaux
 
-
-::right::
-
-
-<div class="img-grid">
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
 ![w:150](./images/img_098.png)
 ![w:150](./images/img_099.png)
 ![w:150](./images/img_100.png)
 ![w:150](./images/img_101.png)
 ![w:150](./images/img_102.png)
 ![w:150](./images/img_103.png)
-
-
 </div>
 
 <!-- GANs : generateur vs discriminateur, portraits StyleGAN, deepfakes -->
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1590,31 +1475,21 @@ layout: two-cols
 - Réseaux attentionnels
   - Economie de ressources
   - Séquences
-  - Transformers, Multi-têtes
+  - Transformers, Multi-têtes (2017 : « Attention Is All You Need »)
 - Semi-supervisé, Transfert
-- LLMs : Bert, GPT
+- LLMs : BERT (2018), GPT
 
-
-::right::
-
-
-<div class="img-grid">
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
 ![w:150](./images/img_104.png)
 ![w:150](./images/img_105.jpg)
 ![w:150](./images/img_106.png)
 ![w:150](./images/img_107.png)
 ![w:150](./images/img_108.png)
 ![w:150](./images/img_109.png)
-
-
 </div>
 
 <!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1630,31 +1505,21 @@ layout: two-cols
 
 **Modèles de diffusion**
 
-- Prédiction d'un bruit
+- Prédiction d'un bruit (DDPM, 2020)
 - Diffusion latente
 - Autoencodeur Variationnel
 - Conditionnement multimodal
 - Mécanisme attentionnel
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
 ![](./images/img_110.png)
 ![](./images/img_111.png)
 ![](./images/img_112.png)
 ![](./images/img_113.png)
-
-
 </div>
 
 <!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1676,23 +1541,13 @@ layout: two-cols
 - Séparateurs à marge maximale
 - Astuce du noyau
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
 ![](./images/img_114.png)
 ![](./images/img_115.png)
 ![](./images/img_116.png)
 ![](./images/img_117.png)
-
-
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1715,17 +1570,9 @@ layout: two-cols
   - Knowledge Based Inductive Learning
 - Programmation logique inductive (Prolog)
 
-
-::right::
-
-
-![w:350](./images/img_118.png)
-![w:350](./images/img_119.png)
-
-
-
+<img src="./images/img_118.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Apprentissage et connaissances" />
+<img src="./images/img_119.png" style="position:absolute; top:441px; right:20px; width:460px;" alt="Apprentissage et connaissances" />
 ---
-layout: two-cols
 ---
 
 
@@ -1749,15 +1596,8 @@ layout: two-cols
   - Modèles paramétriques
   - Deep Q-learning
 
-
-::right::
-
-
-![w:350](./images/img_120.png)
-![w:350](./images/img_121.png)
-
-
-
+<img src="./images/img_120.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Apprentissage par renforcement" />
+<img src="./images/img_121.png" style="position:absolute; top:384px; right:20px; width:460px;" alt="Apprentissage par renforcement" />
 ---
 layout: section
 ---
@@ -1863,7 +1703,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1880,23 +1719,13 @@ layout: two-cols
   - Résumé, analyse syntaxique
   - Modèles sémantiques profonds
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
 ![](./images/img_127.png)
 ![](./images/img_128.png)
 ![](./images/img_129.png)
 ![](./images/img_130.png)
-
-
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1919,16 +1748,9 @@ layout: two-cols
   - Bootstrap
   - Entraînement en ligne
 
-
-::right::
-
-
-![w:280](./images/img_131.png)
-![w:250](./images/img_132.png)
-![w:250](./images/img_133.png)
-
-
-
+<img src="./images/img_131.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Agents conversationnels" />
+<img src="./images/img_132.png" style="position:absolute; top:353px; right:20px; width:460px;" alt="Agents conversationnels" />
+<img src="./images/img_133.png" style="position:absolute; top:669px; right:20px; width:460px;" alt="Agents conversationnels" />
 ---
 layout: two-cols
 ---
