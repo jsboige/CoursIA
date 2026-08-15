@@ -261,3 +261,18 @@ def test_must_fix_before_merge_flagge():
     assert mod.classify(
         "jsboige", "### CRITICAL — Must fix before merge\n"
         "1. Broken cross-references in nb01 conclusion table.") == "BOT-CONCERN"
+
+
+def test_retraction_narree_ne_flagge_pas():
+    """FP #748 (fenetre 05-01..05-07, triage po-2023) : le commentaire est la
+    RETRACTION elle-meme — « CORRECTION — Previous CHANGES_REQUESTED was
+    incorrect... Revised verdict: APPROVE » — suivi du bot « APPROVE —
+    previous CHANGES_REQUESTED retracted ». « previous » ne peut que narrer
+    une reserve passee, jamais en emettre une."""
+    assert mod.classify(
+        "jsboige", "## CORRECTION — Previous CHANGES_REQUESTED was incorrect\n"
+        "Verified on all 4 scripts on main. Revised verdict: APPROVE.") is None
+    assert mod.classify(
+        "clusterManager-Myia",
+        "APPROVE — previous CHANGES_REQUESTED retracted (see correction "
+        "comment).") is None

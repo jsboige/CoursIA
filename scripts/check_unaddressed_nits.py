@@ -120,6 +120,10 @@ POSITIVE_MARKERS = (
 CITERS = (
     "no", "not", "pas de", "pas d'", "sans", "without", "aucun", "aucune",
     "zero", "jamais", "the", "would", "could", "might", "aurait",
+    # « Previous CHANGES_REQUESTED was incorrect... Revised verdict: APPROVE »
+    # (#748, 10 s avant le merge) : le reviewer RETRACTE sa propre reserve.
+    # On ne peut pas demander « previous » — le mot ne peut que narrer.
+    "previous",
 )
 
 
