@@ -42,6 +42,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         "scripts/tests",
         "scripts/notebook_tools/tests",
         "scripts/lean/tests",
+        "scripts/translation/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
