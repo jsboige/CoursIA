@@ -2,9 +2,9 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17-VRP-Logistics.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-17b-VRP-Logistics-Csharp.ipynb
-  parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = `ortools.constraint_solver` (pywrapcp, routing_enums_pb2 : moteur VRP SOTA Google OR-Tools routing) + dataclasses/math stdlib. C# = BCL pure (0 NuGet, 0 reference externe) : reimplementation from-scratch du VRP (construction de routes, contraintes de capacite). Verdict RECOVERABLE-LOCAL : `ortools` implemente le concept enseigne (routage/VRP) et Google.OrTools est deja en service dans le depot (CSP-4/6/8, Sudoku-10/18, Search-9, App-8, App-15b) — le C# pourrait brancher `Google.OrTools` (routing) pour atteindre la parite lib-vs-lib. Le from-scratch reste un choix pedagogique valide (fondamentaux), mais la tranche 2 Google.OrTools est recuperable localement. parity_level: semantic preserve."
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools.constraint_solver` (pywrapcp.RoutingModel + routing_enums_pb2, moteur VRP SOTA Google OR-Tools routing, PATH_CHEAPEST_ARC + GLS) + dataclasses/math stdlib. C# = Google.OrTools.ConstraintSolver (NuGet, C# binding du MEME engine OR-Tools 9.11) + Tranche 1 from-scratch BCL pure (System.*, 0 NuGet) PRESERVEE (Nearest-Neighbor, Cheapest-Insertion, 2-opt, recuit simule). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur OR-Tools routing (pywrapcp.RoutingModel <-> Google.OrTools.ConstraintSolver.RoutingModel), contrainte de capacite AddDimensionWithVehicleCapacity des deux cotes. Prong-B (#3801) : discrimination mesuree sur l'instance canonique (15 clients, capacite 60, 6 vehicules) -- OR-Tools (GLS) 510.59 vs Nearest-Neighbor 595.83 (-14.3%) vs recuit simule 569.24 (-4.5%), validite capacite = True. Tranche 1 from-scratch preservee intacte (byte-identique a main). parity_level: native-both preserve."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
