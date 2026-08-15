@@ -27,10 +27,23 @@ Usage
     python scripts/check_unaddressed_nits.py <PR> --json   # sortie machine
     python scripts/check_unaddressed_nits.py --audit --limit 400   # audit retro
 
-Un nit est considere **leve** si, apres son horodatage, on trouve au moins un de :
-  - un commit pousse sur la branche (le nit a ete traite en code) ;
-  - une reponse (comment) sur la PR (le nit a ete discute/refuse explicitement) ;
+Ce qui leve un nit — et ce qui ne le leve PAS
+---------------------------------------------
+**Ce qui leve une remarque est une phrase, pas un SHA.** Un nit n'est considere
+**leve** que si, entre son horodatage et le merge, on trouve au moins un de :
+  - une **reponse ecrite** capable de repondre (cf `can_lift` : ni bot de CI,
+    ni tag de protocole nu) ;
   - pour un thread inline : `isResolved: true` ou `isOutdated: true`.
+
+Ne levent RIEN :
+  - **un commit pousse apres le nit** : un push muet est indiscernable d'un push
+    qui repond (sur #10761, le « traitement » etait un rebase qui n'adressait
+    aucun des deux nits). Il est reporte comme contexte (`code_pushed_after`) ;
+  - **un commentaire poste apres le merge** : c'est l'annonce de merge, pas une
+    reponse — sans cette borne, le gate ratait son propre incident fondateur ;
+  - **un commentaire de bot CI ou un tag de protocole nu** : ils ne repondent a
+    rien, et sur ce depot ils sont postes a chaque push (defaut signale par
+    Hermes en review de cet organe meme, cf `can_lift`).
 
 Limite honnete de l'heuristique HUMAN
 -------------------------------------
@@ -47,6 +60,7 @@ import argparse
 import json
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime, timezone
 
 REPO = "jsboige/CoursIA"
@@ -76,6 +90,27 @@ LIFT_MARKERS = (
 )
 
 
+def _unaccent(text: str) -> str:
+    """« sont adressés » et « sont adresses » disent la meme chose.
+
+    Les agents du cluster ecrivent massivement sans accents (les fichiers de
+    regles eux-memes le font) tandis que les marqueurs ci-dessus sont accentues.
+    Comparer les formes brutes rend le filtre orthographique — un nit deja leve
+    serait re-signale (faux positif) sur la seule foi d'un accent absent. La
+    casse, elle, est PRESERVEE : elle porte du sens (« Merge. »), et l'ignorer
+    elargirait le filet au point de manquer de vrais nits.
+    """
+    return "".join(
+        c for c in unicodedata.normalize("NFD", text)
+        if unicodedata.category(c) != "Mn"
+    )
+
+
+def has_marker(body: str, markers: tuple[str, ...]) -> bool:
+    normalised = _unaccent(body)
+    return any(_unaccent(m) in normalised for m in markers)
+
+
 def ts(value: str | None) -> datetime | None:
     if not value:
         return None
@@ -89,19 +124,50 @@ def gh_json(args: list[str]) -> object:
     return json.loads(out)
 
 
+def can_lift(comment: dict) -> bool:
+    """Ce commentaire est-il capable de LEVER un nit qui le precede ?
+
+    Seule une reponse d'un humain ou d'un agent, qui dit quelque chose, peut
+    lever une remarque. Sont exclus :
+      - les bots de CI (`github-actions` & co) : ils postent a chaque push et
+        n'ont aucun compte a rendre sur une remarque de review ;
+      - les tags de protocole nus (`[ACK]`, `[DISPATCH...]`, `[CLAIMED]`) :
+        ils ne nomment aucun nit.
+
+    Sans ce filtre, l'organe reproduit exactement le defaut qu'il traque :
+    n'importe quel bruit poste entre le nit et le merge eteint le nit. Sur ce
+    depot ou les bots commentent a chaque push, ce failure mode est la regle,
+    pas l'exception (defaut trouve par Hermes en review de #11045).
+
+    Limite connue et assumee : on ne verifie pas que la reponse *nomme* la
+    remarque — cela demanderait du NLP. Un commentaire humain hors-sujet leve
+    donc encore un nit (faux negatif residuel). Auteur + protocole eliminent le
+    gros du bruit sans pretendre lire le sens.
+    """
+    login = (comment.get("author") or {}).get("login", "")
+    if login in BOT_LOGINS:
+        return False
+    body = (comment.get("body") or "").lstrip()
+    if not body:
+        return False
+    if body.startswith(AGENT_PREFIXES) and not has_marker(body, LIFT_MARKERS):
+        return False
+    return True
+
+
 def classify(author: str, body: str) -> str | None:
     """'HUMAN' (nit user, UI web) | 'BOT-CONCERN' (reviewer avec reserves) | None."""
     if author in BOT_LOGINS or not body:
         return None
     stripped = body.lstrip()
-    if any(m in body for m in LIFT_MARKERS):
+    if has_marker(body, LIFT_MARKERS):
         return None  # annonce de levee / de merge : resolution, pas reserve
     if stripped.startswith(AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
-        return "BOT-CONCERN" if any(m in body for m in CONCERN_MARKERS) else None
+        return "BOT-CONCERN" if has_marker(body, CONCERN_MARKERS) else None
     if "\r\n" in body:
         return "HUMAN"
-    if any(m in body for m in CONCERN_MARKERS):
+    if has_marker(body, CONCERN_MARKERS):
         return "BOT-CONCERN"
     return None
 
@@ -125,6 +191,14 @@ def review_threads(pr: int) -> list[dict]:
         "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
     ])
     nodes = data["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"]
+    # Pas de pagination : au-dela de 100 threads inline, les suivants seraient
+    # invisibles. Plutot que de tronquer en silence — le mode d'echec que ce
+    # script existe pour combattre — on le DIT. Theorique sur ce depot ; si le
+    # message apparait, paginer devient necessaire, pas optionnel.
+    if len(nodes) == 100:
+        print(f"  [!] PR #{pr}: 100 threads inline retournes (plafond `first:100`) "
+              "— d'eventuels threads supplementaires ne sont PAS analyses.",
+              file=sys.stderr)
     out = []
     for t in nodes:
         first = (t.get("comments") or {}).get("nodes") or [{}]
@@ -147,7 +221,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
 
-    comment_times = [ts(c["createdAt"]) for c in (pr_data.get("comments") or [])]
+    # Seuls les commentaires capables de LEVER comptent (cf can_lift) : un
+    # commentaire de bot CI ou un tag de protocole nu n'a jamais repondu a rien.
+    comment_times = [
+        ts(c["createdAt"]) for c in (pr_data.get("comments") or []) if can_lift(c)
+    ]
     comment_times = [t for t in comment_times if t]
 
     signals: list[tuple] = []
@@ -259,6 +337,11 @@ def audit(limit: int, search: str | None = None) -> int:
             )["commits"]
         except subprocess.CalledProcessError:
             p["commits"] = []
+        # Ce 2e passage rend le MEME verdict `blocked` que le pre-filtre — un
+        # commit ne leve rien (c'est le principe de B.0). Il n'est pas pour le
+        # verdict : il renseigne `code_pushed_after`, dont la Phase 2 de #11044
+        # a besoin pour trier (« du code a bouge apres le nit » = aller lire le
+        # diff avant de conclure). Information de triage, pas critere.
         # Audit retro : on n'interroge pas les threads inline (1 appel GraphQL/PR).
         res = analyse(p, [], merged)
         if res["blocked"]:
