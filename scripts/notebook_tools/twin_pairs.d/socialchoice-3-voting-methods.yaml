@@ -32,6 +32,12 @@
       csharp_sha: be1ecc18050cbcafcae61de8875b24baad31fccf
       content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
       content_csharp_sha: 89371c541374137ca6e5b07ebe25d8ac7d2b186c1fcd08073857bf5d6ff0d5ca
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 0b4e212a66f03f2eec2247e17f55db061bd2b247
+      csharp_sha: 5523cd3da0b681111d9e223c01f58ce19d97551a
+      content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
+      content_csharp_sha: a4fd0553f13fc65de40c151e108dd46da2d53ab0d1d156e86f929f3e7c0b4c32
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = demonstrations riches (44 cellules, classe Profile from-scratch dataclass-like + simulation Arrow + Lady Chatterley/Sen) ; le graphe de tournoi des duels pairwise est construit avec `networkx` (`nx.DiGraph`, cell 10) et le cycle de Condorcet y est detecte via `nx.simple_cycles`. C# = socle BCL .NET 9 from-scratch (System / Collections.Generic / Linq / Globalization, 0 NuGet, sections 1-4 : duels pairwise, cycle ASCII, CondorcetWinner, CopelandScores -- tranche 1) + **tranche 2 (#10382)** : `QuikGraph` 2.5.0 (MIT, NuGet) invoque sur les MEMES profils (`condorcetProfile`, `profileWithWinner`, `divergentProfile`) — construction du graphe de tournoi `BidirectionalGraph` (arete x->y ssi x bat y au duel majoritaire, identique a nx.DiGraph), detection de cycle via `IsDirectedAcyclicGraph()` + tri topologique (`NonAcyclicGraphException`), gagnant de Condorcet relu par le degre sortant (n-1), scores Copeland relus par out-degree - in-degree. Parite chiffree dans la sortie : Condorcet cycle -> DAG=false / gagnant AUCUN ; profil a gagnant -> DAG=true / out-degre A=2 / gagnant A ; divergent -> Copeland A=-2 B=2 C=0 -> B (identiques au from-scratch cells 4/8/11/14). Verdict SOTA-OK : chaque cote atteint un moteur de production de son ecosysteme -- networkx (Python) vs QuikGraph (.NET) -- sur la meme instance, le from-scratch etant preserve (fondations pedagogiques)."
   known_differences:
