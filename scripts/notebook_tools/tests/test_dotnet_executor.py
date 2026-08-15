@@ -44,13 +44,19 @@ def _msg(msg_type, parent=None, **content):
     return msg
 
 
-def _fake_kernel(message_seq_by_cell):
+def _fake_kernel(message_seq_by_cell, idle_after_interrupt=False):
     """Build a KernelManager mock whose client yields the given per-cell messages.
 
     ``message_seq_by_cell`` is a list of lists: each inner list is the iopub
     message sequence for one cell execution. The fake ``get_iopub_msg`` drains
     the current cell's list, then raises ``queue.Empty`` so the caller's
     ``except Exception: continue`` re-checks the deadline without consuming more.
+
+    ``idle_after_interrupt``: when True, the fake ``interrupt_kernel`` makes
+    the kernel emit a kernel-level idle on the next poll -- modeling an
+    interrupt that was HONORED (the kernel resumed). When False (default),
+    the interrupt is a silent no-op, which is what .NET Interactive
+    (interrupt_mode: signal) actually does on Windows (#11111).
     """
     import queue
 
@@ -58,9 +64,16 @@ def _fake_kernel(message_seq_by_cell):
     # currently executing live at seqs[exec_count - 1]. pos is the cursor
     # within that cell's sequence. execute() is called BEFORE the iopub loop,
     # so it sets up the index the loop then drains.
-    state = {"exec_count": 0, "pos": 0}
+    state = {"exec_count": 0, "pos": 0, "interrupt_idle": False,
+             "idle_after_interrupt": idle_after_interrupt}
 
     def get_iopub_msg(timeout=5):
+        # interrupt_idle: set by the fake interrupt when the mock kernel is
+        # asked to model an HONORED interrupt -- the next get_iopub_msg after
+        # the interrupt returns a kernel-level idle broadcast (no parent).
+        if state["interrupt_idle"]:
+            state["interrupt_idle"] = False
+            return _msg("status", execution_state="idle")
         idx = state["exec_count"] - 1  # 0-indexed current cell
         if idx < 0 or idx >= len(message_seq_by_cell):
             raise queue.Empty
@@ -80,8 +93,13 @@ def _fake_kernel(message_seq_by_cell):
     kc.execute.side_effect = execute
     kc.get_iopub_msg.side_effect = get_iopub_msg
 
+    def interrupt_kernel():
+        if state.get("idle_after_interrupt"):
+            state["interrupt_idle"] = True
+
     km = MagicMock()
     km.client.return_value = kc
+    km.interrupt_kernel.side_effect = interrupt_kernel
     return km, kc
 
 
@@ -97,8 +115,9 @@ def _patch_kernelmanager():
     """Yield a setter that installs the fake KernelManager."""
     holder = {}
 
-    def install(message_seq_by_cell):
-        km, kc = _fake_kernel(message_seq_by_cell)
+    def install(message_seq_by_cell, idle_after_interrupt=False):
+        km, kc = _fake_kernel(message_seq_by_cell,
+                              idle_after_interrupt=idle_after_interrupt)
         holder["km"] = km
         holder["kc"] = kc
         return km, kc
@@ -224,16 +243,66 @@ def test_execution_count_increments_across_cells(tmp_path, _patch_kernelmanager)
     assert [c["execution_count"] for c in cells] == [1, 2, 3]
 
 
-def test_timeout_branch_emits_stderr_and_counts_executed(tmp_path, _patch_kernelmanager):
-    """cell_timeout=0 → while-loop skipped → TIMEOUT stderr appended, still 'executed'."""
+def test_timeout_interrupt_ignored_aborts_run(tmp_path, _patch_kernelmanager):
+    """Timeout + interrupt not honored (kernel never idle) -> ABORT the run.
+
+    This is the .NET Interactive reality (#11111): interrupt_mode 'signal',
+    interrupt_kernel() returns cleanly, kernel stays busy. Previously the
+    executor kept going: each remaining cell queued behind the stuck one,
+    burned a full timeout, and the run reported 'N/N cells, 0 errors', exit 0.
+    """
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("ok"), _code_cell("while(true);"),
+                                          _code_cell("never-runs")])
+    km, kc = _patch_kernelmanager([
+        [_msg("status", execution_state="idle")],  # cell 1 completes
+        [],                                       # cell 2: no messages, times out
+    ])
+    # Small positive timeout so the healthy cell completes within its deadline;
+    # grace=0 so the ignored interrupt aborts immediately (no real waiting).
+    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0.2, interrupt_grace=0)
+
+    assert stats["aborted"] is True
+    assert stats["executed"] == 1   # only cell 1 completed
+    assert stats["errors"] == 1     # the stuck cell
+    cells = json.loads(nb.read_text(encoding="utf-8"))["cells"]
+    # Stuck cell carries the TIMEOUT + ABORT stderr markers.
+    stuck_out = cells[1]["outputs"][0]
+    assert stuck_out["name"] == "stderr"
+    assert "TIMEOUT" in stuck_out["text"]
+    assert "ABORT" in stuck_out["text"]
+    # Remaining cell is untouched: never submitted, never counted.
+    assert cells[2]["execution_count"] is None
+    assert cells[2]["outputs"] == []
+    assert kc.execute.call_count == 2  # cell 3 never submitted
+    km.shutdown_kernel.assert_called_once()
+
+
+def test_timeout_interrupt_honored_continues(tmp_path, _patch_kernelmanager):
+    """Timeout + interrupt honored (kernel goes idle) -> run continues."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("while(true);"), _code_cell("ok")])
+    _patch_kernelmanager([
+        [],  # cell 1: times out; fake interrupt then injects kernel idle
+        [_msg("status", execution_state="idle")],  # cell 2 completes
+    ], idle_after_interrupt=True)
+    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0.2, interrupt_grace=1)
+
+    assert stats["aborted"] is False
+    assert stats["executed"] == 2   # both cells visited, run went on
+    assert stats["errors"] == 1     # the timed-out cell still counts as an error
+    cells = json.loads(nb.read_text(encoding="utf-8"))["cells"]
+    assert "TIMEOUT" in cells[0]["outputs"][0]["text"]
+    assert "ABORT" not in cells[0]["outputs"][0]["text"]
+    assert cells[1]["execution_count"] == 2
+
+
+def test_timeout_interrupt_raises_still_aborts(tmp_path, _patch_kernelmanager):
+    """interrupt_kernel() raising (unsupported) is treated as not-honored -> abort."""
     nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("while(true);")])
-    _patch_kernelmanager([[]])  # no messages needed; loop never runs
-    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0)
-    assert stats["executed"] == 1
-    out = json.loads(nb.read_text(encoding="utf-8"))["cells"][0]["outputs"][0]
-    assert out["output_type"] == "stream"
-    assert out["name"] == "stderr"
-    assert "TIMEOUT" in out["text"]
+    km, _ = _patch_kernelmanager([[]])
+    km.interrupt_kernel.side_effect = RuntimeError("Kernel is not interruptible")
+    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0.2, interrupt_grace=0)
+    assert stats["aborted"] is True
+    assert stats["errors"] == 1
 
 
 def test_kernel_shutdown_on_success(tmp_path, _patch_kernelmanager):
@@ -362,15 +431,19 @@ def test_interrupt_kernel_called_on_timeout(tmp_path, _patch_kernelmanager):
 
 def test_interrupt_failure_does_not_crash(tmp_path, _patch_kernelmanager):
     """Fix B: if interrupt_kernel() raises (unsupported kernel), the executor
-    must swallow it and still emit the TIMEOUT stderr + count the cell."""
+    must survive the exception. Since the interrupt was not honored, the run
+    aborts cleanly (kernel shut down, TIMEOUT stderr emitted) instead of
+    queueing the remaining cells behind the stuck one."""
     nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("x")])
     km, _ = _patch_kernelmanager([[]])
     km.interrupt_kernel.side_effect = RuntimeError("interrupt not supported")
-    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0)
-    assert stats["executed"] == 1
+    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0.2, interrupt_grace=0)
+    assert stats["aborted"] is True
+    assert stats["errors"] == 1
     out = json.loads(nb.read_text(encoding="utf-8"))["cells"][0]["outputs"][0]
     assert out["output_type"] == "stream"
     assert "TIMEOUT" in out["text"]
+    km.shutdown_kernel.assert_called_once()
 
 
 def test_drain_after_timeout_consumes_interrupted_idle(tmp_path, _patch_kernelmanager):
