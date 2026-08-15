@@ -368,9 +368,14 @@ chaine complete du pont de localite (a) :
   `shift_zero` elimine l'identite residuelle sur la grille canonique
   `evolve (2^k) g`.
 
-Reste ouvert pour `p5_large_n_jumpN` : l'invariant multi-sauts (b) — la
-preservation de `jumpCaptured` a travers le re-tramage — puis l'induction
-sur le fuel de `evolveHashlifeFastAux`. -/
+Statut (b3', 2026-08-15) : l'invariant multi-sauts (b) et l'induction sur
+le fuel de `evolveHashlifeFastAux` sont PROUVES dans
+`HashlifeCorrectness.lean`, sous hypothese de capture TRAJECTOIRE
+(`∀ t ≤ n`) — la preservation de `jumpCaptured` a travers le re-tramage
+n'est PAS un theoreme (voir la note d'impossibilite la-bas :
+`window_margin_lt_cone_reach` + `no_padding_depth_suffices` ferment toute
+voie geometrique ; un motif-relais la falsifie dynamiquement), donc la
+capture de toute la trajectoire est l'hypothese honnete du moteur. -/
 
 /-- **Assemblage du saut unique** : pour toute `MacroCell` `mc` dont l'image
     `toGrid off` a la meme appartenance que `g` (hypothese fournie par BR1,

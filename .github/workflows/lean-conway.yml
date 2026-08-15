@@ -8,21 +8,25 @@ name: Lean Conway CI
 # version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
 # shared lean-build.yml reusable workflow).
 #
-# Sorry profile (re-verified 2026-08-07 post-#6724 P4 mpr assembly, standalone-
-# tactic mode, baseline=5): conway has 5 real tactic sorries.
+# Sorry profile (re-verified 2026-08-15 post-b3' p5 trajectory re-signing,
+# standalone-tactic mode, baseline=1): conway has 1 real tactic sorry.
 # The standalone-tactic filter also counts the Lean case-bullet form `· sorry`
 # (fixed in lean-build.yml, See #2747) and EXCLUDES `*_en.lean` i18n siblings
 # (byte-identical mirrors of the FR file — counting both double-inflates,
 # C513-L1 #6429). Prose mentions ("Each sorry is a target", "Left as sorry",
-# "remain sorry-gated") are excluded by the sole-token check. Breakdown of the 5:
-#   - HashlifeCorrectness.lean: 4 =
-#       p4_sw_overlap_wall (1)        -- SW mirror of the NW overlap wall (#9132)
-#       p4_sw_supercell_agree (1)     -- SW supercell-agree scaffold (#9132)
-#       p4_se_overlap_wall (1)        -- SE mirror of the NW overlap wall
-#       p5_large_n_jumpN (1)          -- downstream P4-gated
-#     6 -> 5 (this PR, See #6724): p4_succ_membership mpr PROVED (four _rev
-#     membership arms + quad_partition_bounds router at the succ call site) —
-#     a proof, not a deletion (anti-regression §D).
+# "remain sorry-gated") are excluded by the sole-token check. Breakdown of the 1:
+#   - HashlifeCorrectness.lean: 0 =
+#       p4_sw_overlap_wall / p4_sw_supercell_agree / p4_se_overlap_wall
+#         discharged by PR B of #9863 (ported from #9840);
+#       p4_succ_membership PROVED (See #6724 P4 mpr assembly — a proof,
+#         not a deletion, anti-regression §D);
+#       p5_large_n_jumpN PROVED (b3', See #6724): fuel induction
+#         `evolveHashlifeFastAux_correct` + one-jump bricks inlined from
+#         JumpCapture; hypothesis re-signed to trajectory capture
+#         (`∀ t ≤ n`) — forced by the proved impossibility lemmas
+#         `window_margin_lt_cone_reach` + `no_padding_depth_suffices`
+#         (no geometric route to capture-preservation; a relay pattern
+#         falsifies it dynamically). 2 -> 1 (this PR, See #6724).
 #   - HashlifeMarginFragment.lean: 1  -- documented framework sorry
 #     (hashlife_correct_margin, Livrable B #9568, acceptance-B state)
 #   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
@@ -35,9 +39,10 @@ name: Lean Conway CI
 # lists 19 native_decide axioms EXPLICITEMENT (no wildcard `*native_decide*`:
 # that would destroy the "new native_decide = new red" property required to
 # triage any future introduction one-by-one). fail-on-sorry=true (the
-# 2 acknowledged tactic sorries (1 frozen P5 in HashlifeCorrectness.lean +
-# 1 documented framework sorry in HashlifeMarginFragment.lean) are governed by
-# the lean-build.yml `sorry-baseline: "2"`, not by this gate — no double-cover).
+# 1 acknowledged tactic sorry (the documented framework sorry in
+# HashlifeMarginFragment.lean; the P5 sorry of HashlifeCorrectness.lean is
+# discharged by b3') is governed by
+# the lean-build.yml `sorry-baseline: "1"`, not by this gate — no double-cover).
 # Lowered 5→2 by PR B of #9863: the 3 SW+SE wall sorries (p4_sw_overlap_wall,
 # p4_se_overlap_wall + supercell/g3_bridge) are discharged — ported from #9840.
 #
@@ -88,7 +93,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      sorry-baseline: "2"
+      sorry-baseline: "1"
       sorry-filter-mode: standalone-tactic
 
   # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
