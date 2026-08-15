@@ -11,9 +11,9 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 | H1 — Learning rate | `xgb-h1-learningrate.png` | 1000×712 | 185 Ko | cellule 11 · output 4 | **Sweep QUASI-NUL** : 3 lr (0.01/0.03/0.1) → S=0.538/0.564/0.57, écart max 0.03, courbes superposées ; SPY B&H (S=0.778) nettement au-dessus 2.9× vs ~2.1× |
 | H2 — N estimateurs | `xgb-h2-nestimators.png` | 1389×989 | 197 Ko | cellule 14 · output 4 | **Sweep QUASI-NUL** : 3 n_est (50/100/200) → S=0.568/0.564/0.6, écart max 0.04, n_est=200 marginal winner fin 2025 ; SPY B&H toujours au-dessus |
 | H3 — Seuil | `xgb-h3-threshold.png` | 1000×712 | 182 Ko | cellule 17 · output 4 | **Sweep DISCRIMINANT MODESTE** : 3 threshold (0.0/0.001/0.01) → S=0.591/0.564/0.534, threshold=0.0 winner |
-| H4 — Max positions | `xgb-h4-maxpositions.png` | 900×640 | 174 Ko | cellule 20 · output 4 | **Sweep DISCRIMINANT MODESTE** : 3 max_pos (3/7/12) → S=0.508/0.568/0.585, max_pos=12 winner + DD=-30.62% moins creux |
+| H4 — Max positions | `xgb-h4-maxpositions.png` | 900×640 | 174 Ko | cellule 20 · output 4 | **Sweep DISCRIMINANT MODESTE** : 3 max_pos (3/7/12) → S=0.508/0.568/0.585, max_pos=12 winner + DD=-30.82% moins creux |
 | H5 — Subsample | `xgb-h5-subsample.png` | 1000×712 | 191 Ko | cellule 23 · output 4 | **Sweep DISCRIMINANT MODESTE** : 3 subsample (0.6/0.8/1.0) → S=0.527/0.564/0.593, subsample=1.0 winner (pas de subsampling = MIEUX) |
-| Synthèse | `xgb-synthese.png` | 989×790 | 43 Ko | cellule 26 · output 0 | **Feature Importance INVERSION vs ML-RandomForest** : 22 features, **vol_20 winner ~0.122** (vs perdant 0.076 dans RandomForest), bb_position perdant ~0.018 (vs winner dans RandomForest), volume_ratio+volume_change quasi-nuls |
+| Synthèse | `xgb-synthese.png` | 989×790 | 43 Ko | cellule 26 · output 0 | **Feature Importance INVERSION vs ML-RandomForest** : 22 features, **vol_20 winner ~0.122** (vs perdant 0.076 dans RandomForest), bb_position perdant ~0.015 (vs winner dans RandomForest), volume_ratio+volume_change quasi-nuls |
 
 **Total** : 6 figures, 974 Ko. **Politique** (#5654) : ≤200 Ko/fichier, downscale ≤1200 px max. H1/H3/H4/H5 (220–243 Ko natifs, denses) downscaled à 900–1000 px ; H2 passe natif après optimisation PNG (216 → 197 Ko). Arc : cinq hypothèses d'hyperparamètres XGBoost (learning rate, n estimateurs, seuil, max positions, subsample) → synthèse par importance des features.
 
@@ -80,16 +80,16 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
   - **Panneau haut « H4: Max Positions »** : 3 courbes equity 2018-2026, sweep **DISCRIMINANT MODESTE** le plus discriminant (range Sharpe 0.08), max_pos=12 VERT winner visible :
     - `max_pos=3` bleu tab: S=0.508, DD=-48.84% — perdant, DD sévère mi-2022 -49%
     - `max_pos=7` orange tab: S=0.568, DD=-41.29% — current default
-    - `max_pos=12` vert tab: S=0.585, DD=-30.62% — **winner** + diversification → DD moins creux
+    - `max_pos=12` vert tab: S=0.585, DD=-30.82% — **winner** + diversification → DD moins creux
     - SPY Buy-Hold rouge tab : S=0.778, DD=-33.72%, capital 1.0 → 2.9
   - **Panneau bas « Drawdowns »** : 3 aires bleues/orange/vert + aire rose SPY, max_pos=12 vert présente DD moins sévère visible (creux -30% vs -49% max_pos=3), différenciation la plus visible parmi les 5 sweeps.
   - Légende unique panneau haut (4 entrées), axes annotés, grille légère grise.
 - **Haut** « H4: Max Positions » 2018-2026, 3 courbes XGBoost :
   - `max_pos=3` bleu : S=0.508, DD=-48.84% (perdant, DD sévère mi-2022 -49%)
   - `max_pos=7` orange : S=0.568, DD=-41.29% (current, default)
-  - `max_pos=12` vert : S=0.585, DD=-30.62% (**winner**, + diversification → DD moins creux)
+  - `max_pos=12` vert : S=0.585, DD=-30.82% (**winner**, + diversification → DD moins creux)
 - **Bas** « Drawdowns » 2018-2026 — on voit clairement max_pos=12 vert avec drawdown moins sévère
-- **Verdict** : **sweep DISCRIMINANT MODESTE** — range Sharpe 0.508-0.585 (écart 0.08, le plus grand des sweeps XGBoost). max_pos=12 winner en capital final + drawdown -30.62% (le moins creux des 3). **Verdict attendu** : plus de diversification améliore la perf. **Mais toutes configs sous SPY B&H** (~2.3× vs 2.9×).
+- **Verdict** : **sweep DISCRIMINANT MODESTE** — range Sharpe 0.508-0.585 (écart 0.08, le plus grand des sweeps XGBoost). max_pos=12 winner en capital final + drawdown -30.82% (le moins creux des 3). **Verdict attendu** : plus de diversification améliore la perf. **Mais toutes configs sous SPY B&H** (~2.3× vs 2.9×).
 
 ## xgb-h5-subsample.png
 
@@ -117,7 +117,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
     - **sma_ratio_10_50 ~0.078** / **price_sma50 ~0.055**
     - **vol_5 ~0.053** / **bb_width ~0.052** / **macd ~0.053** / **macd_hist ~0.048** / **mom_20 ~0.038**
     - **sma_ratio_5_20 ~0.034** / **mom_10 ~0.030** / **rsi ~0.026** / **price_sma20 ~0.025** / **mom_5 ~0.024**
-    - **price_sma5 ~0.023** / **stoch_d ~0.020** / **bb_position ~0.018** (vs winner 0.103 dans ML-RandomForest = **2ᵉ inversion**)
+    - **price_sma5 ~0.023** / **stoch_d ~0.020** / **bb_position ~0.015** (vs winner 0.103 dans ML-RandomForest = **2ᵉ inversion**)
     - **returns ~0.014** / **stoch_k ~0.010**
     - **volume_ratio ~0.000** quasi-nul
     - **volume_change ~0.000** quasi-nul
@@ -128,7 +128,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
   - **sma_ratio_10_50 ~0.078** / **price_sma50 ~0.055**
   - **vol_5 ~0.053** / **bb_width ~0.052** / **macd ~0.053** / **macd_hist ~0.048** / **mom_20 ~0.038**
   - **sma_ratio_5_20 ~0.034** / **mom_10 ~0.030** / **rsi ~0.026** / **price_sma20 ~0.025** / **mom_5 ~0.024**
-  - **price_sma5 ~0.023** / **stoch_d ~0.020** / **bb_position ~0.018** (vs winner 0.103 dans ML-RandomForest = **2ᵉ inversion**)
+  - **price_sma5 ~0.023** / **stoch_d ~0.020** / **bb_position ~0.015** (vs winner 0.103 dans ML-RandomForest = **2ᵉ inversion**)
   - **returns ~0.014** / **stoch_k ~0.010**
   - **volume_ratio ~0.000** quasi-nul
   - **volume_change ~0.000** quasi-nul
@@ -169,7 +169,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
 | MaxDD winners | -30% à -41% | -30% à -49% |
 | Sweeps DISCRIMINANTS | 5/5 (range 0.6 Sharpe) | 3/5 modestes (H3+H4+H5 range 0.07) + 2/5 NULS (H1+H2 range 0.03) |
 | Feature #1 | bb_position (momentum, ~0.103) | **vol_20 (volatilité, ~0.122)** ← inversion |
-| Feature dernière significative | volume_ratio (~0.002) | **bb_position (~0.018)** ← inversion |
+| Feature dernière significative | volume_ratio (~0.002) | **bb_position (~0.015)** ← inversion |
 | Verdict global | **Stratégie VIABLE**, 3 hyperparamètres à activer (depth=10, Universe 5, Monthly rebal) → ~3× SPY | **Stratégie NON VIABLE vs SPY**, à reconsidérer ou améliorer fondamentalement |
 
 ## Cumul EPIC #5780 vague QC
