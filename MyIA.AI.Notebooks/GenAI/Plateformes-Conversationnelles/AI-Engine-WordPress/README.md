@@ -160,6 +160,11 @@ traite les chatbots comme des **documents JSON** — lecture, duplication,
 écriture read-modify-write, interrogation — puis mesure honnêtement ce
 que les instructions d'un persona changent, et ce qu'elles ne changent
 pas.
+[`administrer-les-formulaires-par-l-api.ipynb`](administrer-les-formulaires-par-l-api.ipynb)
+montre l'autre style d'API du plugin : le formulaire est un **contenu**
+WordPress (custom post type `mwai_form`, CRUD unitaire, corps
+Gutenberg, rendu public par shortcode) — et mesure la frontière
+gratuite/Pro (du contenu rendu, pas encore des champs).
 
 ---
 
@@ -288,6 +293,8 @@ attendues.
   socle de la série « par son API » : instance jetable, catalogue des routes, première completion réelle
 - [`configurer-chatbots-par-l-api.ipynb`](configurer-chatbots-par-l-api.ipynb) —
   chatbots comme documents JSON : lire, dupliquer, écrire (read-modify-write), interroger deux personas
+- [`administrer-les-formulaires-par-l-api.ipynb`](administrer-les-formulaires-par-l-api.ipynb) —
+  formulaires comme contenu : CRUD unitaire, publication, rendu public, frontière gratuite/Pro mesurée
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
