@@ -481,6 +481,56 @@ def test_prev_close_keyword_multiple_prevs():
     assert genres == {"fix", "closes"}
 
 
+def test_parse_prev_canonical_with_pr():
+    # Canonical form: `prev: <TIER>/<GENRE> #<PR>` -- the guard reads this to
+    # keep the adjacency G-VAR-3 evaluable mechanically (#10983).
+    r = gt.parse_prev(
+        "Grain: MED/tooling -- lane myia-po-2025:CoursIA-2 -- prev: MED/tooling #11021 (c.164)"
+    )
+    assert r == {"present": True, "exempt": False, "tier": "MED",
+                 "genre": "tooling", "pr_number": 11021}
+
+
+def test_parse_prev_canonical_without_pr():
+    # PR reference optional -- the TIER/GENRE pair is what traces adjacency.
+    r = gt.parse_prev("Grain: DEEP/lean -- lane myia-po-2025:CoursIA-2 -- prev: DEEP/lean #10912")
+    assert r["present"] is True
+    assert r["genre"] == "lean"
+    assert r["pr_number"] == 10912
+
+
+def test_parse_prev_absent():
+    # A Grain tag without any prev: field -- the exact gap #10983 measures
+    # (10 grains merged on one lane without prev:).
+    r = gt.parse_prev("Grain: DEEP/lean -- lane myia-po-2025:CoursIA-2")
+    assert r == {"present": False, "exempt": False, "tier": None,
+                 "genre": None, "pr_number": None}
+
+
+def test_parse_prev_first_grain_exemption():
+    # `prev: none (premier grain)` -- the first-grain exemption: a lane with
+    # no predecessor to cite must NOT be flagged as prev-absent.
+    r = gt.parse_prev(
+        "Grain: DEEP/lean -- lane myia-po-2026:CoursIA -- prev: none (premier grain)"
+    )
+    assert r["present"] is False
+    assert r["exempt"] is True
+
+
+def test_parse_prev_exemption_noise_tolerant():
+    # Bold-wrapped exemption (same noise discipline as parse_grain_tag).
+    r = gt.parse_prev(
+        "Grain: MED/docs -- lane myia-po-2023:CoursIA -- **prev: none (premier grain)**"
+    )
+    assert r["exempt"] is True
+
+
+def test_parse_prev_empty_and_none():
+    assert gt.parse_prev(None)["present"] is False
+    assert gt.parse_prev(None)["exempt"] is False
+    assert gt.parse_prev("")["present"] is False
+
+
 def test_find_non_closing_refs_see_part_of_refs():
     # The 3 safe-syntax non-closing references (See/Part of/Refs) -- the
     # complement of find_close_keyword_pr_refs. Feeds lane_claim_required's
