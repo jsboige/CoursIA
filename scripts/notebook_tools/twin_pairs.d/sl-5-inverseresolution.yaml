@@ -14,6 +14,12 @@
       csharp_sha: 4b57327282a8e9eddace41724e021c03a05d30b9
       content_python_sha: c28029108d18bf81ea0889e66c0e53165d040492f1188efc3fe8f9589d9d5af2
       content_csharp_sha: 54c71238739789b5c722067606554b231272a92b7f19e539a1215706aa332601
+    - date: "2026-08-15"
+      by: myia-po-2024:CoursIA-2
+      python_sha: e28b82f9ff80b8ad67ecec64085f7cc0a8455426
+      csharp_sha: 7a8a5073f810038c10213acaf30919e2f43ab673
+      content_python_sha: c28029108d18bf81ea0889e66c0e53165d040492f1188efc3fe8f9589d9d5af2
+      content_csharp_sha: 4ff0ae5f29954ca5b1f2983f741c45817fa29ec6d3b1b01ca3056c93a2379741
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = `janus_swi` (SWI-Prolog) pour resolution/unification reelle + section dediee a `Aleph` (moteur ILP SOTA, Progol en chair et en os) + LGG (Plotkin 1970) + theta-subsomption + clause bottom + recherche a la Progol. C# = BCL .NET from-scratch pour LGG + theta-subsomption + clause bottom (saturation bornee) + recherche Progol + exemple guide grandmother/2, PLUS pont SOTA #10382 : la section 7 invoque SWI-Prolog via `Process.Start` (axe CLI checklist #10459) sur le programme appris par le Progol from-scratch (la clause grandmother/2) et verifie que le moteur derive exactement le positif (liz,eve) sans atteindre les 10 negatifs (mesure : 1/1, 0/10, verdict `theorie from-scratch == SWI-Prolog (SOTA)`). L'ancien verdict RECOVERABLE-LOCAL (pont declare « hors scope C# pur ») est REVOQUE : SWI-Prolog est un binaire invocable, le pendant C# honnete est `Process.Start` sur le meme executable (mandat #10382 bucket 2). Axes binding : pas de NuGet .NET (1), pas de P/Invoke (2), CLI = le canal (3), pas d'IKVM (4), pas de PythonNet (5). Le from-scratch est conserve (le pont est en plus, jamais a la place). `parity_level: native-both` (les deux jumeaux referencent un moteur externe : SWI-Prolog cote Python via janus_swi, SWI-Prolog cote C# via Process.Start)."
   known_differences:
