@@ -2,9 +2,9 @@
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-2-Uninformed-Csharp.ipynb
-  parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = stdlib + networkx (helper viz graph + heuristic for viz) + heapq (priority queue native pour UCS). Pas de lib SOTA-tier pour uninformed search en Python pur (la reference AIMA 3e ed. est pedagogique from-scratch, `aima-python` n'est pas maintained). C# = BCL pure (PriorityQueue<T> en .NET 9 + Queue<T> BFS + Stack<T> DFS + SortedDictionary<T,V> pour UCS, 0 NuGet SOTA tiers). Les DEUX cotes utilisent les memes structures de donnees natives (heap binaire / FIFO / LIFO), portabilite cross-lang directe sur l'algo. Verdict RECOVERABLE-LOCAL (from-scratch pedagogique des deux cotes, lib SOTA non requise pour les algos uninformed)."
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = stdlib + networkx (moteur Python de production pour la construction du graphe et la visualisation) + heapq (priority queue native pour UCS). C# = BCL (Queue<T> BFS, Stack<T> DFS, PriorityQueue<T> UCS) EN TETE DE NOTEBOOK (tranche 1, reimplementation pedagogique from-scratch) PUIS QuikGraph 2.5.0 (moteur .NET natif de production : BreadthFirstSearchAlgorithm, DepthFirstSearchAlgorithm, DijkstraShortestPathAlgorithm) en tranche 2 sur la MEME instance (13 villes, 80 arcs, memes poids). La tranche 2 verifie la parite chiffre-a-chiffre : BFS et UCS (Dijkstra) identiques a la tranche 1 sur les 5 trajets ; DFS differe par strategie de parcours (iteratif LIFO vs recursif premier-voisin), ecart documente en known_differences. Chaque cote atteint un moteur de production de son ecosysteme : networkx (Python) vs QuikGraph (.NET) = parite lib-vs-lib, critere native-both satisfait (issue #10382)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
