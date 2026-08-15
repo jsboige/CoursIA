@@ -202,7 +202,7 @@ def find_prev_close_keywords(text: str | None) -> list[dict]:
     parses as a close instruction when the text lands in a commit message --
     the silent-PR-closure failure mode of #10093.
 
-    The 14 canonical genres (variation-protocol.md §1) contain NO closing
+    The 15 canonical genres (variation-protocol.md §1) contain NO closing
     keyword, so a closing-keyword genre in `prev:` is ALWAYS a misuse: the
     worker meant `refactor`, `guard`, `tooling`, etc. -- never `fix`. This
     function does NOT flag a standalone ``Fixes #123`` (an intended close):
@@ -561,8 +561,8 @@ def parse_short_header(body: str | None) -> dict:
 TIERS = ("DEEP", "MED", "LIGHT")
 GENRES = (
     "lean", "qc", "training", "genai", "notebook-python", "notebook-dotnet",
-    "docs", "guard", "refactor", "ledger", "readme", "test", "tooling",
-    "research-code",
+    "slides", "docs", "guard", "refactor", "ledger", "readme", "test",
+    "tooling", "research-code",
 )
 
 

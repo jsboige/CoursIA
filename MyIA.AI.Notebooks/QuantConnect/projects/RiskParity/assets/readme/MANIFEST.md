@@ -99,7 +99,7 @@ Contrairement à l'alt-text « contre-exemple pédagogique » (Sharpe 0.399) qui
 | Métrique | Risk Parity | SPY | Verdict |
 |---|---|---|---|
 | Sharpe (2015-2026) | 0.544 | 0.655 | RP perd ~17 % en Sharpe |
-| CAGR | 7.28 % | 13.46 % | RP rend ~ moitié |
+| CAGR | 7.28 % | 13.65 % | RP rend ~ moitié |
 | MaxDD | -20.26 % | -33.72 % | **RP MaxDD ~ moitié moindre** |
 | Inflation 2022 | -9.8 % | -18.6 % | **RP perd 2× moins** |
 | Recovery 2023-25 | 47.9 % | 86.3 % | RP upside raboté |

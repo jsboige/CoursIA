@@ -16,9 +16,12 @@ Port formel de l'algorithme de détection MIMO par flips de coordonnées
 - **Phase 2** (`Objective.lean`, livré) : fonction objectif au carré avec
   Mathlib — Lemme 11.1 (coût d'un flip, forme fermée) + boucle de contrôle
   `flip_accepted_iff` (pont avec `hstrict` de la Phase 1).
-- **Phase 3** (à venir) : Lemme 5.1 (erreur LMMSE) et converse §11, appui sur
-  le lake externe `YuanheZ/lean-stat-learning-theory` (v4.32.0, Apache 2.0)
-  pour la concentration gaussienne (Hanson-Wright, LSI, RMT).
+- **Phase 3a** (`Lmmse.lean`, livré) : Lemme 5.1 (erreur LMMSE
+  `E‖b − x*‖² = tr B_ρ`) — formule de la trace gaussienne, `B_ρ` PSD,
+  transport de loi.
+- **Phase 3b** (à venir) : converse §11 — concentration Hanson–Wright du
+  bruit (`‖w‖²` chi-square), union bound `(1−p)^n ≤ e^{−np}`, appui sur le
+  lake externe `YuanheZ/lean-stat-learning-theory` (v4.32.0, Apache 2.0).
 
 Convention i18n #4980 : docstrings FR par défaut, sibling `_en`
 (namespace `Mimo_en`, imports `_en`), énoncés et noms de lemmes en anglais.
@@ -37,3 +40,7 @@ lean_lib «Descent» where
 @[default_target]
 lean_lib «Objective» where
   globs := #[`Objective, `Objective_en]
+
+@[default_target]
+lean_lib «Lmmse» where
+  globs := #[`Lmmse, `Lmmse_en]

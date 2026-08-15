@@ -58,7 +58,7 @@ REPO = "jsboige/CoursIA"
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
     "lean", "qc", "training", "genai",
-    "notebook-python", "notebook-dotnet", "research-code",
+    "notebook-python", "notebook-dotnet", "slides", "research-code",
 }
 META = {"guard", "tooling", "ledger", "docs", "readme", "test", "refactor"}
 
@@ -71,6 +71,7 @@ GENRE_RULES: list[tuple[str, str]] = [
     (r"training|post[- ]?training|\bppo\b|fine[- ]?tun|checkpoint|walk[- ]?forward", "training"),
     (r"genai|comfyui|diffusion|audiobook|\btts\b|whisper|acestep|voice|image gener", "genai"),
     (r"\.ipynb|notebook", "notebook-python"),
+    (r"slidev|\bslides?\b|deck\b", "slides"),
     (r"c#|csharp|\.net|dotnet|roslyn|aspire|nuget|semantickernel", "notebook-dotnet"),
     (r"z3|solveur|solver|automat|opensp|tweety|pymc|infer\.net|prover", "research-code"),
     (r"workflow|\bci\b|gate\b|guard|gitleaks|check-|advisory", "guard"),

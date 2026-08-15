@@ -11,7 +11,8 @@ Port formel de l'algorithme de détection MIMO par flips de coordonnées
 |-------|----------|--------|
 | 1 | `Descent.lean` — squelette abstrait de la Proposition 9.1, **sans dépendance** (cœur Lean) | livré |
 | 2 | `Objective.lean` — fonction objectif au carré avec Mathlib : Lemme 11.1 (coût d'un flip `4·(s·‖hᵢ‖² + √s·⟪hᵢ,w⟫)`) + boucle de contrôle `flip_accepted_iff` | livré |
-| 3 | Lemme 5.1 (erreur LMMSE `E‖b − x*‖² = E tr(B_ρ)`) et converse §11 via le lake externe [YuanheZ/lean-stat-learning-theory](https://github.com/YuanheZ/lean-stat-learning-theory) (v4.32.0, Apache 2.0, 0 sorry) : Hanson-Wright, concentration LSI, RMT | à venir |
+| 3a | `Lmmse.lean` — **Lemme 5.1** (erreur LMMSE) : `E‖b − x*‖² = tr(B_ρ)`, `B_ρ = (I + s·HᵀH)⁻¹` — formule de la trace gaussienne + transport de loi | livré |
+| 3b | Converse §11 via le lake externe [YuanheZ/lean-stat-learning-theory](https://github.com/YuanheZ/lean-stat-learning-theory) (v4.32.0, Apache 2.0, 0 sorry) : Hanson–Wright (`‖w‖²` chi-square), union bound `(1−p)^n ≤ e^{−np}` | à venir |
 
 ## Phase 1 — ce qui est prouvé
 
@@ -55,6 +56,21 @@ docstrings) instancie la géométrie du détecteur sur Mathlib :
 
 Axiomes : `propext`, `Classical.choice`, `Quot.sound` (les trois standards
 de Mathlib) — zéro sorry.
+
+## Phase 3a — ce qui est prouvé
+
+`Lmmse.lean` (twin `Lmmse_en.lean`) prouve le **Lemme 5.1** sur Mathlib :
+
+1. `integral_norm_sq_eq_trace` — **formule de la trace gaussienne** : pour
+   une gaussienne centrée de covariance PSD `B`, `E‖x‖² = tr B` (chaque
+   coordonnée contribue sa variance `B i i`, via les marginales
+   `gaussianReal` et `variance_eq_integral`) ;
+2. `B_ρ` / `B_ρ_posSemidef` — la matrice d'erreur LMMSE `(I + s·HᴴH)⁻¹`
+   est PSD dès `s ≥ 0` (`posSemidef_conjTranspose_mul_self` + inverse) ;
+3. `lmmse_error_eq_trace` — **Lemme 5.1** : `E‖b − x*‖² = tr(B_ρ)` par
+   transport de la loi de l'erreur.
+
+Axiomes : les trois standards de Mathlib — zéro sorry.
 
 ## Build
 
