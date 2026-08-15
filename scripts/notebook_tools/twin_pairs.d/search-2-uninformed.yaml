@@ -23,6 +23,12 @@
       csharp_sha: ffab0d9c69b1a35c7d5dc050730c27c20d79af16
       content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
       content_csharp_sha: 944773973aef369b09851dd2ee95e41ec9fdf477af6c7048bf35e6cd181a4574
+    - date: "2026-08-15"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 9fab1a819cb10727d3003902bcfcbf0d849a98bc
+      csharp_sha: 9926874c4fc2564c9b8b29a02c648b0015cb15db
+      content_python_sha: 0174bff8a2c484139336fafa5f9f1e8e3dc9125f866511b574f6ccfa9bdbafee
+      content_csharp_sha: 187b633fe65735f81f375e735fa2b0ae95dfaf23117c50950f4cd83a67ea3eb1
   known_differences:
     - "Socle pedagogique commun : BFS (largeur), DFS (profondeur), UCS (cout uniforme), iterative deepening. Exemples : labyrinthe, 8-puzzle, Arrive en Roumanie."
     - "Idiomes framework : Python = `from collections import deque` (BFS FIFO) + `import heapq` (UCS priority queue). C# = `System.Collections.Generic.Queue<T>` (BFS) + `PriorityQueue<TElement, TPriority>` (.NET 6+, UCS) ; recursion via Stack<T> pour DFS."
