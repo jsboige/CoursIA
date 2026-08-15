@@ -63,7 +63,8 @@ EXCLUDE_MARKERS = (
 # (#10923 Phase A); extending to other series = adding a subtree here. The
 # root execute block (_quarto.yml) already carries enabled: false + echo: true
 # for every notebook — a directory-scoped _quarto.yml is NOT applied to .ipynb
-# in Quarto 1.7.32 (measured firsthand), so no per-subtree override exists.
+# (measured firsthand sur Quarto 1.7.32, pin d'origine du pilote), so no
+# per-subtree override exists.
 NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/Search/",  # pilote #10923 — voir EPIC #10921 pour l'extension
 )
@@ -76,26 +77,23 @@ NOTEBOOK_EXCLUDE_MARKERS = (
 )
 
 # Notebook files volontairement exclus du rendu HTML, avec raison mesurée.
-# Pathologie pandoc 1.7.32 sous echo: true (config requise par #10923, code
-# visible) : le reader ipynb boucle CPU-bound sans produire de sortie, alors
-# que le meme notebook rend en 2-6 s en echo: false. Mesures (2026-08-14,
-# standalone + build complet) :
-#   - App-9b-EdgeDetection-CSharp.ipynb : >= 15 min sans progression
-#     (outputs .NET 4.8 MB, 1061 blocs).
-#   - MGS-4/-8/-9/-11/-14/-15 (MetaGeneticSharp, .net-csharp) : >= 40 s sans
-#     progression (meme pathologie, independante du volume d'outputs —
-#     MGS-11 ne fait que 361 KB / 22 blocs). MGS-4 confirme par le build
-#     complet : hang malgre la normalisation des cellules (post-#10965).
-# Voir issue #10968.
-NOTEBOOK_EXCLUDE_FILES = (
-    "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb",
-    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-4-Islands.ipynb",
-    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb",
-    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-9-EverestRelief.ipynb",
-    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb",
-    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb",
-    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb",
-)
+# Vide depuis 2026-08-14 (issue #10968) : la pathologie qui motivait les 7
+# exclusions — le filtre lua de Quarto 1.7.32 qui pend (CPU-bound, aucune
+# sortie) sur les cellules echo:true dont une ligne de source se termine par
+# \n et qui sont suivies d'un output display_data — est corrigee en Quarto
+# 1.10.18 (pin CI mis a jour). Verifie firsthand (2026-08-14, standalone) :
+#   - App-9b-EdgeDetection-CSharp.ipynb : 1.7.32 >= 15 min sans progression
+#     -> 1.10.18 rend en ~6 s (HTML 4.88 MB).
+#   - MGS-9-EverestRelief / MGS-15-LandscapeAnalysis : 1.10.18 rendent en
+#     7 s / 3 s (leger vs lourd de la famille MetaGeneticSharp).
+#   - Mini-repro minimal (1 cellule code, ligne de source terminant par \n +
+#     1 display_data) : 1.7.32 pend, 1.10.18 rend en ~13 s.
+# NB : pandoc n'est PAS en cause (reader + writer ipynb<->html en 0 s) ;
+# c'est le filtre post-traitement de Quarto 1.7.32 (main.lua:9677, recherche
+# de fenced-div ":::") qui boucle sur la combinaison source+display_data.
+# L'ancienne liste des 7 (App-9b + MGS-4/8/9/11/14/15) est conservee dans
+# l'historique git du fichier. Laisser ce tuple vide sauf raison mesuree.
+NOTEBOOK_EXCLUDE_FILES = ()
 
 
 def git_tracked_notebooks() -> list[str]:
