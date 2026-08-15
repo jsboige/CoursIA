@@ -415,9 +415,14 @@ jobs:
           # The blocking helper emits one JSON line on stdout and exits
           # 0 (pass) or 1 (block). We capture both streams; the verdict
           # JSON is on stdout, anything Python warns about goes on stderr.
+          # Capturing the exit code on the line AFTER the helper call
+          # (`RC=$?` separated by a semicolon) dies under bash -e (the
+          # GitHub default shell) when the helper exits non-zero -- the
+          # BLOCK path, exactly the one that needs the stderr + verdict
+          # diagnostics below. The &&/|| list assigns RC on BOTH branches
+          # and is exempt from errexit.
           python3 scripts/ci/variation_tag_required.py \
-            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err
-          RC=$?
+            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           # Surface the stderr warnings so a failure here is debuggable
           # from the job log alone -- #10036 lesson: a guard whose
@@ -534,10 +539,13 @@ jobs:
 
           # The helper scans body + commits for `prev:` close-keyword genres
           # and exits 0 (pass) or 1 (block). stderr surfaced for debug.
+          # Capturing RC on the line after a semicolon dies under bash -e
+          # when the helper exits 1 (the BLOCK path) -- the &&/|| list
+          # captures RC on both branches and is exempt from errexit (same
+          # fix as check-variation-tag-required).
           python3 scripts/ci/variation_prev_guard.py \
             --body-file /tmp/pr_body.txt \
-            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err
-          RC=$?
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"
@@ -646,10 +654,13 @@ jobs:
           # The helper resolves each `<closing-keyword> #N` via `gh api` and
           # exits 0 (pass / fail-open) or 1 (block on a PR). stderr surfaced
           # for debug.
+          # Capturing RC on the line after a semicolon dies under bash -e
+          # when the helper exits 1 (the BLOCK path) -- the &&/|| list
+          # captures RC on both branches and is exempt from errexit (same
+          # fix as check-variation-tag-required).
           python3 scripts/ci/pr_close_keyword_guard.py \
             --body-file /tmp/pr_body.txt \
-            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err
-          RC=$?
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"
