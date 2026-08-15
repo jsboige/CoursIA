@@ -19,9 +19,9 @@ layout: cover
 - Cogs, Brighton UK
 - Aricie - DNN - PKP
 
-![w:250](images/img_001.png)
-![w:250](images/img_002.png)
-![w:250](images/img_003.png)
+![w:250](./images/img_001.png)
+![w:250](./images/img_002.png)
+![w:250](./images/img_003.png)
 
 
 ---
@@ -60,7 +60,6 @@ layout: section
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -85,15 +84,7 @@ layout: two-cols
 - Théorie du contrôle
 - Linguistique
 
-
-::right::
-
-
-![w:380](images/img_005.png)
-
-
-
-
+<img src="./images/img_005.png" style="position:absolute; top:193px; right:20px; width:460px;" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
 layout: two-cols
 ---
@@ -116,7 +107,8 @@ layout: two-cols
 - 1990s : L'IA devient une science
 
 <div style="text-align: center; margin-top: 8px;">
-![h:100](images/img_006.png)
+![h:100](./images/img_006.png)
+</div>
 
 
 ::right::
@@ -133,10 +125,9 @@ layout: two-cols
 - NLP : Transformers, LLMs
 
 <div style="display: flex; gap: 10px; margin-top: 8px;">
-![h:45](images/img_007.jpg)
-![h:45](images/img_008.jpg)
+![h:45](./images/img_007.jpg)
+![h:45](./images/img_008.jpg)
 
-</div>
 </div>
 
 
@@ -177,7 +168,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -198,15 +188,7 @@ layout: two-cols
 - Limitations
   - ressources disponibles
 
-
-::right::
-
-
-![w:350](images/img_009.png)
-
-
-
-
+<img src="./images/img_009.png" style="position:absolute; top:203px; right:20px; width:460px;" alt="Les agents" />
 ---
 layout: two-cols
 ---
@@ -225,13 +207,13 @@ layout: two-cols
 - Pas de mémoire, reagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
-![w:300](images/img_010.png)
+![w:300](./images/img_010.png)
 
 
 ::right::
 
 
-![w:380](images/img_011.png)
+![w:380](./images/img_011.png)
 
 
 
@@ -250,7 +232,6 @@ layout: section
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -268,15 +249,7 @@ layout: two-cols
 
 - Flexibilité vs complexité
 
-
-::right::
-
-
-![w:380](images/img_012.png)
-
-
-
-
+<img src="./images/img_012.png" style="position:absolute; top:239px; right:20px; width:460px;" alt="Agent réflexe fondé sur un modèle" />
 ---
 
 
@@ -288,7 +261,7 @@ layout: two-cols
 - **Probabiliste** : gestion de l'incertitude, réseaux bayesiens, decision
 - **Apprentissage** : amelioration par l'expérience (supervise, renforcement, deep learning)
 
-![w:200](images/img_013.jpg) ![w:200](images/img_014.png) ![w:200](images/img_015.jpg)
+![w:200](./images/img_013.jpg) ![w:200](./images/img_014.png) ![w:200](./images/img_015.jpg)
 
 
 ---
@@ -327,7 +300,7 @@ layout: two-cols
 - Passe du reactif au deliberatif
 - Planifie ses actions par exploration
 
-![w:300](images/img_016.png)
+![w:300](./images/img_016.png)
 
 
 ::right::
@@ -339,7 +312,7 @@ layout: two-cols
 - Actions ?
 - Représentation ?
 
-![w:300](images/img_017.png)
+![w:300](./images/img_017.png)
 
 
 
@@ -355,7 +328,7 @@ layout: two-cols
 
 **Itinéraire**
 
-![w:300](images/img_018.png)
+![w:300](./images/img_018.png)
 
 - Etat initial, test de but
 - Transitions
@@ -372,9 +345,9 @@ layout: two-cols
 - Assemblage robotique
 - Problèmes jouets
 
-![w:200](images/img_019.png)
-![w:200](images/img_020.png)
-![w:200](images/img_021.png)
+![w:200](./images/img_019.png)
+![w:200](./images/img_020.png)
+![w:200](./images/img_021.png)
 
 
 
@@ -393,7 +366,7 @@ layout: two-cols
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-![w:320](images/img_022.jpg)
+![w:320](./images/img_022.jpg)
 
 
 ::right::
@@ -405,8 +378,8 @@ layout: two-cols
   - Barque de 2 places
   - Jamais + de cannibales
 
-![w:280](images/img_023.png)
-![w:100](images/img_024.png)
+![w:280](./images/img_023.png)
+![w:100](./images/img_024.png)
 
 
 
@@ -438,9 +411,9 @@ layout: two-cols
 - Ex: Où sont mes clefs ?
 - Bidirectionnelle
 
-![w:220](images/img_025.png)
-![w:220](images/img_026.png)
-![w:220](images/img_027.png)
+![w:220](./images/img_025.png)
+![w:220](./images/img_026.png)
+![w:220](./images/img_027.png)
 
 
 ::right::
@@ -457,8 +430,8 @@ layout: two-cols
   - Algorithme A*
   - Demo Pathfinding.js
 
-![w:220](images/img_028.png)
-![w:220](images/img_029.png)
+![w:220](./images/img_028.png)
+![w:220](./images/img_029.png)
 
 
 
@@ -478,8 +451,8 @@ layout: two-cols
   - Optimisation d'une fonction
   - Escalade, descente de gradient
 
-![w:220](images/img_030.png)
-![w:220](images/img_031.png)
+![w:220](./images/img_030.png)
+![w:220](./images/img_031.png)
 
 
 ::right::
@@ -495,8 +468,8 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-![w:220](images/img_032.png)
-![w:220](images/img_033.png)
+![w:220](./images/img_032.png)
+![w:220](./images/img_033.png)
 
 
 
@@ -541,7 +514,7 @@ layout: two-cols
 - Expectiminimax
 - Méthodes de Monte-Carlo
 
-![w:350](images/img_031.png)
+![w:350](./images/img_031.png)
 
 
 
@@ -583,10 +556,10 @@ layout: two-cols
   - Symétrie (rupture de)
 
 <div class="img-grid-2x2">
-![w:150](images/img_034.jpg)
-![w:150](images/img_035.png)
-![w:150](images/img_036.png)
-![w:150](images/img_037.png)
+![w:150](./images/img_034.jpg)
+![w:150](./images/img_035.png)
+![w:150](./images/img_036.png)
+![w:150](./images/img_037.png)
 
 </div>
 
@@ -645,13 +618,12 @@ layout: two-cols
 
 **Raisonnement**
 
-![w:300](images/img_035.png)
-![w:300](images/img_036.png)
+![w:300](./images/img_035.png)
+![w:300](./images/img_036.png)
 
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -673,18 +645,11 @@ layout: two-cols
 - Solveurs SAT
   - Problèmes NP-complets
 
-
-::right::
-
-
-<div class="img-grid">
-![w:200](images/img_038.png)
-![w:200](images/img_039.png)
-![w:200](images/img_040.png)
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+![w:200](./images/img_038.png)
+![w:200](./images/img_039.png)
+![w:200](./images/img_040.png)
 </div>
-
-
 ---
 layout: two-cols
 ---
@@ -714,7 +679,7 @@ layout: two-cols
 - Enemy(x,America) => Hostile(x)
 - Américain(x) ET Arme(y) ET Vend(x,y,z) ET Hostile(z) => Criminel(x)
 
-![w:300](images/img_040.png)
+![w:300](./images/img_040.png)
 
 
 
@@ -800,15 +765,14 @@ layout: two-cols
   - Fair-play
 
 <div class="img-grid">
-![w:220](images/img_042.jpg)
-![w:220](images/img_041.jpg)
+![w:220](./images/img_042.jpg)
+![w:220](./images/img_041.jpg)
 
 </div>
 
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -832,25 +796,14 @@ layout: two-cols
 - Planification à Ordre partiel
 - Décomposition hiérarchique
 
-
-::right::
-
-
-<div class="img-grid">
-
-![](images/img_043.png)
-![](images/img_044.png)
-![](images/img_045.png)
-![](images/img_046.png)
-![](images/img_047.jpg)
-
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+![](./images/img_043.png)
+![](./images/img_044.png)
+![](./images/img_045.png)
+![](./images/img_046.png)
+![](./images/img_047.jpg)
 </div>
-
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -868,18 +821,8 @@ layout: two-cols
   - W3C
   - Linked Data
 
-
-::right::
-
-
-![w:300](images/img_048.png)
-![w:300](images/img_049.png)
-
-
-
-<!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
-
-
+<img src="./images/img_048.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
+<img src="./images/img_049.png" style="position:absolute; top:437px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
 ---
 
 
@@ -954,7 +897,7 @@ layout: two-cols
 - Alternatives
 - Niveau de succès espéré
 
-![w:350](images/img_051.png)
+![w:350](./images/img_051.png)
 
 
 
@@ -992,9 +935,9 @@ layout: two-cols
   - Facteurs de distributions continues
 
 <div class="img-grid">
-![w:180](images/img_052.png)
-![w:180](images/img_053.png)
-![w:180](images/img_054.png)
+![w:180](./images/img_052.png)
+![w:180](./images/img_053.png)
+![w:180](./images/img_054.png)
 
 </div>
 
@@ -1020,9 +963,10 @@ layout: two-cols
   - Observations bruitées
 
 <div class="img-grid">
-![w:150](images/img_055.png)
-![w:150](images/img_056.png)
-![w:150](images/img_057.png)
+![w:150](./images/img_055.png)
+![w:150](./images/img_056.png)
+![w:150](./images/img_057.png)
+</div>
 
 
 ::right::
@@ -1040,16 +984,14 @@ layout: two-cols
 - Apprentissage
 
 <div class="img-grid">
-![w:150](images/img_058.png)
-![w:150](images/img_059.png)
-![w:150](images/img_060.jpg)
+![w:150](./images/img_058.png)
+![w:150](./images/img_059.png)
+![w:150](./images/img_060.jpg)
 
-</div>
 </div>
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1075,24 +1017,14 @@ layout: two-cols
   - Processus de Markov
   - Politique optimale
 
-
-::right::
-
-
-<div class="img-grid">
-
-![w:150](images/img_061.png)
-![w:150](images/img_062.png)
-![w:150](images/img_063.png)
-![w:150](images/img_064.png)
-![w:150](images/img_065.jpg)
-![w:150](images/img_066.jpg)
-
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+![w:150](./images/img_061.png)
+![w:150](./images/img_062.png)
+![w:150](./images/img_063.png)
+![w:150](./images/img_064.png)
+![w:150](./images/img_065.jpg)
+![w:150](./images/img_066.jpg)
 </div>
-
-
-
 ---
 layout: two-cols
 ---
@@ -1123,9 +1055,9 @@ layout: two-cols
 - Utilité espérée
 
 <div class="img-grid">
-![w:180](images/img_067.png)
-![w:180](images/img_068.png)
-![w:180](images/img_069.png)
+![w:180](./images/img_067.png)
+![w:180](./images/img_068.png)
+![w:180](./images/img_069.png)
 
 </div>
 
@@ -1148,7 +1080,7 @@ layout: two-cols
 - Purs et mixtes (2n+1)
 - Topologie
 
-![w:300](images/img_070.png)
+![w:300](./images/img_070.png)
 
 
 ::right::
@@ -1163,7 +1095,7 @@ layout: two-cols
 - Induction
   - avant/arrière
 
-![w:300](images/img_071.jpg)
+![w:300](./images/img_071.jpg)
 
 
 <!-- Forme extensive : arbre ou chaque noeud = decision, feuilles = gains -->
@@ -1200,9 +1132,9 @@ layout: two-cols
 - Deepstack
 
 <div class="img-grid">
-![w:180](images/img_072.png)
-![w:180](images/img_073.png)
-![w:180](images/img_074.png)
+![w:180](./images/img_072.png)
+![w:180](./images/img_073.png)
+![w:180](./images/img_074.png)
 
 </div>
 
@@ -1241,9 +1173,9 @@ layout: two-cols
   - Évolution de la confiance
 
 <div class="img-grid">
-![w:180](images/img_075.png)
-![w:180](images/img_076.png)
-![w:180](images/img_077.jpg)
+![w:180](./images/img_075.png)
+![w:180](./images/img_076.png)
+![w:180](./images/img_077.jpg)
 
 </div>
 
@@ -1277,8 +1209,8 @@ layout: two-cols
   - Jugement majoritaire
   - Scrutin bipartipludique
 
-![w:280](images/img_078.png)
-![w:280](images/img_079.jpg)
+![w:280](./images/img_078.png)
+![w:280](./images/img_079.jpg)
 
 
 
@@ -1347,7 +1279,7 @@ layout: two-cols
   - Critique
   - Générateur de problème
 
-![w:350](images/img_080.png)
+![w:350](./images/img_080.png)
 
 
 
@@ -1382,14 +1314,13 @@ layout: two-cols
   - Connaissance a priori / modèles
   - Feedback pour apprendre
 
-![w:280](images/img_081.png)
-![w:280](images/img_082.png)
+![w:280](./images/img_081.png)
+![w:280](./images/img_082.png)
 
 
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1410,17 +1341,9 @@ layout: two-cols
   - d'ensemble
   - Boosting
 
-
-::right::
-
-
-![w:300](images/img_083.png)
-![w:300](images/img_084.png)
-
-
-
+<img src="./images/img_083.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Caractéristiques (2/2)" />
+<img src="./images/img_084.png" style="position:absolute; top:530px; right:20px; width:460px;" alt="Caractéristiques (2/2)" />
 ---
-layout: two-cols
 ---
 
 
@@ -1444,21 +1367,12 @@ layout: two-cols
 - Random forest
 - Ensemble
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
-![](images/img_085.png)
-![](images/img_086.png)
-![](images/img_087.png)
-![](images/img_088.png)
-
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+![](./images/img_085.png)
+![](./images/img_086.png)
+![](./images/img_087.png)
+![](./images/img_088.png)
 </div>
-
-
 ---
 
 
@@ -1471,7 +1385,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1485,23 +1398,13 @@ layout: two-cols
 - Multi-couches
   - Expressivité croissante
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
-![](images/img_090.png)
-![](images/img_091.png)
-![](images/img_092.png)
-![](images/img_093.png)
-
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+![](./images/img_090.png)
+![](./images/img_091.png)
+![](./images/img_092.png)
+![](./images/img_093.png)
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1520,23 +1423,13 @@ layout: two-cols
   - Noyaux de convolution
   - Sous-échantillonnage
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
-![](images/img_094.png)
-![](images/img_095.png)
-![](images/img_096.png)
-![](images/img_097.png)
-
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+![](./images/img_094.png)
+![](./images/img_095.png)
+![](./images/img_096.png)
+![](./images/img_097.png)
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1548,32 +1441,20 @@ layout: two-cols
   - Mémoire à court terme
   - Réseaux LSTM
   - MAJ d'un état de cellule
-- Réseaux résiduels
+- Réseaux résiduels (2015)
   - Réinjection des entrées
-- GANs
+- GANs (2014)
   - Réseaux adversériaux
 
-
-::right::
-
-
-<div class="img-grid">
-
-![w:150](images/img_098.png)
-![w:150](images/img_099.png)
-![w:150](images/img_100.png)
-![w:150](images/img_101.png)
-![w:150](images/img_102.png)
-![w:150](images/img_103.png)
-
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+![w:150](./images/img_098.png)
+![w:150](./images/img_099.png)
+![w:150](./images/img_100.png)
+![w:150](./images/img_101.png)
+![w:150](./images/img_102.png)
+![w:150](./images/img_103.png)
 </div>
-
-<!-- GANs : generateur vs discriminateur, portraits StyleGAN, deepfakes -->
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1590,31 +1471,19 @@ layout: two-cols
 - Réseaux attentionnels
   - Economie de ressources
   - Séquences
-  - Transformers, Multi-têtes
+  - Transformers, Multi-têtes (2017 : « Attention Is All You Need »)
 - Semi-supervisé, Transfert
-- LLMs : Bert, GPT
+- LLMs : BERT (2018), GPT
 
-
-::right::
-
-
-<div class="img-grid">
-
-![w:150](images/img_104.png)
-![w:150](images/img_105.jpg)
-![w:150](images/img_106.png)
-![w:150](images/img_107.png)
-![w:150](images/img_108.png)
-![w:150](images/img_109.png)
-
-
+<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+![w:150](./images/img_104.png)
+![w:150](./images/img_105.jpg)
+![w:150](./images/img_106.png)
+![w:150](./images/img_107.png)
+![w:150](./images/img_108.png)
+![w:150](./images/img_109.png)
 </div>
-
-<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1630,31 +1499,19 @@ layout: two-cols
 
 **Modèles de diffusion**
 
-- Prédiction d'un bruit
+- Prédiction d'un bruit (DDPM, 2020)
 - Diffusion latente
 - Autoencodeur Variationnel
 - Conditionnement multimodal
 - Mécanisme attentionnel
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
-![](images/img_110.png)
-![](images/img_111.png)
-![](images/img_112.png)
-![](images/img_113.png)
-
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+![](./images/img_110.png)
+![](./images/img_111.png)
+![](./images/img_112.png)
+![](./images/img_113.png)
 </div>
-
-<!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1676,23 +1533,13 @@ layout: two-cols
 - Séparateurs à marge maximale
 - Astuce du noyau
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
-![](images/img_114.png)
-![](images/img_115.png)
-![](images/img_116.png)
-![](images/img_117.png)
-
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+![](./images/img_114.png)
+![](./images/img_115.png)
+![](./images/img_116.png)
+![](./images/img_117.png)
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1715,17 +1562,9 @@ layout: two-cols
   - Knowledge Based Inductive Learning
 - Programmation logique inductive (Prolog)
 
-
-::right::
-
-
-![w:350](images/img_118.png)
-![w:350](images/img_119.png)
-
-
-
+<img src="./images/img_118.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Apprentissage et connaissances" />
+<img src="./images/img_119.png" style="position:absolute; top:441px; right:20px; width:460px;" alt="Apprentissage et connaissances" />
 ---
-layout: two-cols
 ---
 
 
@@ -1749,15 +1588,8 @@ layout: two-cols
   - Modèles paramétriques
   - Deep Q-learning
 
-
-::right::
-
-
-![w:350](images/img_120.png)
-![w:350](images/img_121.png)
-
-
-
+<img src="./images/img_120.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Apprentissage par renforcement" />
+<img src="./images/img_121.png" style="position:absolute; top:384px; right:20px; width:460px;" alt="Apprentissage par renforcement" />
 ---
 layout: section
 ---
@@ -1814,9 +1646,9 @@ layout: two-cols
   - Machine reading
 
 <div class="img-grid">
-![w:180](images/img_122.png)
-![w:180](images/img_123.png)
-![w:180](images/img_124.png)
+![w:180](./images/img_122.png)
+![w:180](./images/img_123.png)
+![w:180](./images/img_124.png)
 
 </div>
 
@@ -1856,14 +1688,13 @@ layout: two-cols
   - Ambiguités, Modèles imbriqués
 
 <div class="img-grid">
-![w:220](images/img_125.png)
-![w:220](images/img_126.png)
+![w:220](./images/img_125.png)
+![w:220](./images/img_126.png)
 
 </div>
 
 
 ---
-layout: two-cols
 ---
 
 
@@ -1880,23 +1711,13 @@ layout: two-cols
   - Résumé, analyse syntaxique
   - Modèles sémantiques profonds
 
-
-::right::
-
-
-<div class="img-grid-2x2">
-
-![](images/img_127.png)
-![](images/img_128.png)
-![](images/img_129.png)
-![](images/img_130.png)
-
-
+<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+![](./images/img_127.png)
+![](./images/img_128.png)
+![](./images/img_129.png)
+![](./images/img_130.png)
 </div>
-
-
 ---
-layout: two-cols
 ---
 
 
@@ -1919,16 +1740,9 @@ layout: two-cols
   - Bootstrap
   - Entraînement en ligne
 
-
-::right::
-
-
-![w:280](images/img_131.png)
-![w:250](images/img_132.png)
-![w:250](images/img_133.png)
-
-
-
+<img src="./images/img_131.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Agents conversationnels" />
+<img src="./images/img_132.png" style="position:absolute; top:353px; right:20px; width:460px;" alt="Agents conversationnels" />
+<img src="./images/img_133.png" style="position:absolute; top:669px; right:20px; width:460px;" alt="Agents conversationnels" />
 ---
 layout: two-cols
 ---
@@ -1996,6 +1810,276 @@ layout: section
 
 
 ---
+layout: section
+---
+
+
+# IA générative & vibe coding
+
+- 2022-2026 : la révolution des modèles de fondation
+- LLMs, IA générative multimodale, agents et vibe coding
+- Notre expérience : notebooks GenAI et stack self-hosted
+
+
+---
+
+
+# La révolution des modèles de fondation
+
+**Le tournant : la « mise à l'échelle » (scaling)**
+
+- Plus de données, plus de calcul, plus de paramètres
+- Des capacités nouvelles émergent au-delà d'un seuil
+  - Comprendre, traduire, résumer, écrire du code
+- Ces modèles deviennent la base (« fondation ») de nombreuses applications
+
+```mermaid
+graph LR
+    A[Données massives] --> C[Modèle de fondation]
+    B[Calcul massif] --> C
+    C --> D[Capacités émergentes]
+    D --> E[GPT, Claude, Gemini...]
+```
+
+> Pour approfondir : notebooks `GenAI/Texte/`
+
+
+---
+
+
+# LLMs & ChatGPT : l'IA grand public
+
+- 2017 : Transformers (« Attention is All You Need ») — le fondement
+- 2020 : GPT-3 — des capacités qui émergent à l'échelle
+- 2022 : ChatGPT — l'IA conversationnelle grand public
+- 2023-2026 : GPT-4/5, Claude, Gemini, modèles open-source
+
+**Alignement par instruction**
+
+```mermaid
+graph LR
+    A[Pré-entraînement<br/>corpus massif] --> B[Fine-tuning supervisé<br/>exemples d'instructions]
+    B --> C[RLHF<br/>retour humain]
+    C --> D[Assistant aligné]
+```
+
+> ChatGPT a atteint 100 millions d'utilisateurs en 2 mois : l'IA devient un produit de masse
+
+
+---
+
+
+# IA générative multimodale
+
+Un seul paradigme, plusieurs modalités — un modèle peut générer et comprendre différents types de contenus :
+
+- **Texte** : rédaction, traduction, résumé, code (`GenAI/Texte/`)
+- **Image** : génération et édition (`GenAI/Image/` — DALL-E, Qwen-Image-Edit, SDXL)
+- **Audio** : synthèse vocale et transcription (`GenAI/Audio/` — Whisper, Kokoro, XTTS)
+- **Vidéo** : génération et analyse (`GenAI/Video/` — Hunyuan, LTX, AnimateDiff)
+
+<img src="./images/img_111.png" style="position:absolute; top:150px; right:20px; width:360px;" alt="Architecture CLIP : encodeurs texte et image alignes dans un espace partage" />
+<img src="./images/img_110.png" style="position:absolute; top:380px; right:20px; width:360px;" alt="Paires image-legende : le modele relie chaque image a sa description textuelle" />
+
+```mermaid
+graph TD
+    A[Modèle de fondation multimodal] --> B[Texte]
+    A --> C[Image]
+    A --> D[Audio]
+    A --> E[Vidéo]
+```
+
+
+---
+
+
+# Modèles de diffusion : générer une image
+
+**Principe : apprendre à débruiter**
+
+- Phase aller : on ajoute progressivement du bruit à une image
+- Phase retour : le modèle apprend à retirer le bruit pas à pas
+- À partir d'un bruit pur, il reconstruit une image cohérente
+- Diffusion latente : opérer dans un espace compact (moins de calcul)
+
+<img src="./images/img_112.png" style="position:absolute; top:150px; right:20px; width:500px;" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
+<img src="./images/img_113.png" style="position:absolute; top:380px; right:20px; width:360px;" alt="Architecture latent diffusion : encodeur, U-Net de debruitage dans l'espace latent, decodeur" />
+
+```mermaid
+graph LR
+    A[Image] --> B[+ bruit<br/>aller] --> C[Bruit pur]
+    C --> D[- bruit<br/>retour appris] --> E[Nouvelle image]
+```
+
+> Les générateurs d'images (DALL-E, Stable Diffusion, Midjourney) reposent sur ce principe
+
+
+---
+
+
+# RAG : connecter un LLM à vos données
+
+- Le LLM seul connaît ses données d'entraînement (fenêtre de connaissance figée)
+- RAG = Retrieval Augmented Generation — « génération augmentée par la récupération »
+  - Les documents sont indexés en vecteurs (embeddings)
+  - À chaque question, on récupère les passages les plus pertinents
+  - On les injecte dans le prompt, puis le LLM génère une réponse fondée
+- Effets : réponses à jour, traçables, moins d'hallucinations
+
+```mermaid
+graph LR
+    A[Documents] --> B[Embeddings<br/>vecteurs]
+    B --> C[(Base vectorielle)]
+    D[Question] --> E[Récupération<br/>top-k]
+    C --> E
+    E --> F[Prompt enrichi]
+    F --> G[Réponse fondée]
+```
+
+> Notebook : `GenAI/RAG-et-Memoire-Semantique/`
+
+
+---
+
+
+# Agents IA : au-delà du chatbot
+
+- Un agent = un LLM + des outils + une boucle de raisonnement
+- Le modèle décide quand utiliser un outil (code, web, API, fichier)
+- Boucle **ReAct** : Raisonner → Agir → Observer → Raisonner…
+
+```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 30, "rankSpacing": 35, "curve": "linear"}, "themeVariables": {"fontSize": "14px"}}}%%
+graph LR
+    A[Percevoir] --> B[Raisonner]
+    B --> C[Agir]
+    C --> D[Observer]
+    D --> B
+```
+
+- Cas d'usage : recherche web, exécution de code, orchestration de tâches
+- Le chatbot devient un **agent actif** qui accomplit des tâches
+
+> Notebooks : `GenAI/SemanticKernel/` (20 notebooks)
+
+
+---
+
+
+# Vibe coding : programmer par intention
+
+- Terme popularisé par Andrej Karpathy (2025)
+- On décrit ce que l'on veut **en langage naturel**, l'IA écrit le code
+- Le développeur devient architecte et relecteur plutôt que dactylographe
+- Limite : il faut savoir **relire et tester** ce que l'IA produit
+
+```mermaid
+graph LR
+    A[Idée en langage naturel] --> B[L'IA génère le code]
+    B --> C[Exécution + tests]
+    C --> D[Revue humaine]
+    D --> B
+```
+
+> Curriculum : `GenAI/Vibe-Coding/`
+
+
+---
+
+
+# Vibe coding en pratique
+
+- **Outils** : Claude Code, GitHub Copilot, Cursor, Windsurf
+- **Bonnes pratiques**
+  - `CLAUDE.md` : documenter le contexte et les règles du projet
+  - Agents et skills spécialisés : déléguer les tâches répétitives
+  - Itération serrée : petites tâches, vérification continue
+- **Notre infrastructure** : un cluster d'agents (coordinateur + workers) qui
+  explorent, produisent, reviewent et fusionnent des PRs
+
+```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 18, "rankSpacing": 25, "curve": "linear"}, "themeVariables": {"fontSize": "12px"}}}%%
+graph LR
+    U[Utilisateur] --> C[Coordinateur]
+    C --> W1[Worker 1]
+    C --> W2[Worker 2]
+    C --> W3[Worker 3]
+    W1 --> R[PR + rapports]
+    W2 --> R
+    W3 --> R
+    R --> U
+```
+
+> Curriculum : `GenAI/Vibe-Coding/Claude-Code/`
+
+
+---
+
+
+# Adapter un modèle de fondation
+
+- Un modèle de fondation est générique : on l'**adapte** à un domaine
+- **Fine-tuning** : ré-entraînement supervisé sur des données spécialisées
+- **LoRA** : n'adapter qu'un petit nombre de paramètres (économie de calcul)
+- **Quantization** (INT4, FP8) : réduire la mémoire pour l'inférence
+- **DPO / RLHF** : aligner le comportement sur des préférences humaines
+
+```mermaid
+graph LR
+    A[Modèle de fondation<br/>générique] --> B[Adaptation<br/>LoRA / fine-tuning]
+    B --> C[Modèle spécialisé]
+    C --> D[Quantization<br/>INT4 / FP8]
+    D --> E[Inférence efficace]
+```
+
+> Notebooks : `GenAI/PostTraining/`, `GenAI/FineTuning/`
+
+
+---
+
+
+# Notre stack GenAI (self-hosted)
+
+- Services Docker dédiés, orchestrés et validés sur nos machines
+  - **ComfyUI** : workflows de génération d'images
+  - **Qwen / Lumina / Z-Image** : modèles de fondation open-source
+  - **Open-WebUI** : interface conversationnelle
+- GPU avec allocation et idle management (quantization par service)
+- La même stack alimente les notebooks `GenAI/{Image,Audio,Video}`
+
+```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 25, "rankSpacing": 30, "curve": "linear"}, "themeVariables": {"fontSize": "13px"}}}%%
+graph LR
+    A[Notebooks GenAI] --> B[API commune]
+    B --> C[ComfyUI]
+    B --> D[Qwen / Lumina]
+    B --> E[Open-WebUI]
+    C --> F[(GPU)]
+    D --> F
+    E --> F
+```
+
+> Référence : `docs/genai/genai-services.md`
+
+
+---
+
+
+# Enjeux : hallucinations, alignement, régulation
+
+- **Hallucinations** : un LLM peut affirmer avec assurance une chose fausse
+  - Atténuation : RAG, vérification, raisonnement pas à pas
+- **Alignement** : s'assurer que le modèle suit l'intention humaine
+  - RLHF, DPO, garde-fous, supervision
+- **Régulation** : l'AI Act européen encadre les usages à risque
+  - Transparence, documentation, obligations pour l'IA généraliste
+- **Sécurité** : les clés et secrets vivent dans des fichiers protégés,
+  jamais dans le code, les prompts ou les sorties
+
+> Un outil puissant appelle une utilisation **responsable**
+
+
+---
 
 
 # Pour aller plus loin : Notebooks
@@ -2004,7 +2088,8 @@ Ce deck couvre tous les domaines de l'IA. Pour approfondir avec des exemples pra
 
 > **GenAI - IA Generative**
 > `MyIA.AI.Notebooks/GenAI/`
-> Transformers, diffusion models, LLMs, génération d'images
+> Transformers, diffusion, LLMs, génération d'images, audio, vidéo
+> `GenAI/Vibe-Coding/` : programmation par intention (Claude Code)
 
 > **Search - Recherche et Optimisation**
 > `MyIA.AI.Notebooks/Search/`
