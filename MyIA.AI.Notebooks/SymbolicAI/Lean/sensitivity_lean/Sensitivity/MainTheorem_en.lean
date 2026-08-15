@@ -80,7 +80,7 @@ theorem exists_eigenvalue (H : Set (Q m.succ)) (hH : Card H ≥ 2 ^ m + 1) :
     have li : LinearIndependent ℝ (H.restrict e) := by
       convert (dualBases_e_ε m.succ).basis.linearIndependent.comp _ Subtype.val_injective
       rw [(dualBases_e_ε _).coe_basis]
-      rfl
+      all_goals rfl
     have hdW := rank_span li
     rw [Set.range_restrict] at hdW
     convert hdW
