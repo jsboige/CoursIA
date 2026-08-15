@@ -155,6 +155,18 @@ CITERS = (
     # commentaire) : le gerondif de retraction ne peut qu'annuler sa propre
     # reserve passee.
     "retracting",
+    # Fenetre 05-29..06-04 (triage po-2023, #11044) — la REPONSE QUI NOMME.
+    # « ## Re: CONCERNS ... **Fixed.** » (#1839) : « Re: » est un en-tete de
+    # reponse — le marqueur cite est le SUJET auquel on repond, jamais une
+    # nouvelle emission. (Forme nue « re » : le normalisateur retire la
+    # ponctuation de fin de fenetre, deux-points compris.)
+    "re",
+    # « Per ai-01 CHANGES_REQUESTED: ... » (#2363) : « per X » = « selon X »,
+    # attribution d'une reserve passee dans un rapport de fix. Idem « du
+    # precedent review (CHANGES_REQUESTED ... » (#1958, 2e review APPROVED).
+    # Ces deux-la agissent via la regle du mot d'attribution dans _is_cited.
+    "per",
+    "precedent",
 )
 
 
@@ -199,6 +211,21 @@ def _is_cited(window: str) -> bool:
         c = c.rstrip("'’")
         if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
             return True
+    # Fenetre 05-29..06-04 (#11044) — le mot d'ATTRIBUTION entre le citer et
+    # le marqueur : « Per ai-01 CHANGES_REQUESTED » (#2363), « Stale Hermes
+    # CHANGES_REQUESTED was purely... » (#2006), « du precedent review
+    # (CHANGES_REQUESTED sur commit... » (#1958). Un citer suivi d'UN seul
+    # mot reste une narration — le nom d'agent n'y change rien. Une emission
+    # ne le traverse jamais : elle s'ecrit « MARKER: » nue ou passe par le
+    # state de la review (« [Hermes] — CHANGES_REQUESTED » n'a pas de citer
+    # devant l'agent, donc reste live).
+    parts = w.rsplit(None, 1)
+    head = parts[0] if len(parts) == 2 else ""
+    if head:
+        for c in CITERS:
+            c = c.rstrip("'’")
+            if head == c or (head.endswith(c) and not head[-len(c) - 1].isalnum()):
+                return True
     return False
 
 
@@ -350,6 +377,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         ts(c["createdAt"]) for c in (pr_data.get("comments") or []) if can_lift(c)
     ]
     comment_times = [t for t in comment_times if t]
+
+    # Fenetre 05-29..06-04 (#1958) : la RE-REVIEW APPROVED. Le reviewer qui
+    # revient approuver apres sa demande de changements A dit que la reserve
+    # est levee — le state GitHub natif porte plus de sens que le body (une
+    # re-review Hermes narre l'ancien verdict en le citant, sans mot de
+    # levee). Seul APPROVED compte : une re-review COMMENTED qui re-emet une
+    # reserve (« NOT FIXED », #2298) ne doit rien eteindre, et l'agent
+    # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
+    # bruit de protocole, meme depuis un reviewer bot.
+    comment_times += [
+        t for r in (pr_data.get("reviews") or [])
+        if r.get("state") == "APPROVED"
+        and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
+        and (t := ts(r.get("submittedAt"))) is not None
+    ]
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
