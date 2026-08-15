@@ -72,12 +72,17 @@ def test_audit_targets_sorry_bearing_module():
     """The audit closes the vert-hors-cible: it inspects the module that
     CARRIES the 8 sorries (HashlifeCorrectness), which the blocking gate
     skips. Targeting only KochenSpecker/FreeWillTheorem here would reproduce
-    the very gap #8782 opened on."""
+    the very gap #8782 opened on. Post-#10889 the coverage is stronger than
+    naming the module: `target-modules: "*"` derives the list at runtime, so
+    HashlifeCorrectness -- and every module added later -- is covered by
+    construction."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     targets = audit.get("target-modules", "")
-    assert "Conway.Life.HashlifeCorrectness" in targets, (
-        "audit must target the sorry-bearing module, not the sorry-free showcase")
+    assert targets == "*", (
+        "audit must derive its module list at runtime ('*', #10889 point 5) -- "
+        "an explicit list can drift out of view of the sorry-bearing module "
+        "and of any module added later")
 
 
 def test_audit_allowlists_native_decide_axioms():
@@ -120,7 +125,19 @@ def test_audit_allowlists_native_decide_axioms():
     'does not depend on any axioms' on all 3 (FR+EN byte-identity verified),
     so their 3 axiom names genuinely left the build-enumerated footprint.
     Same ratchet direction as #9571 (virtuous shrink, fewer trusted-kernel
-    escapes); the pin follows the footprint down by 3 to 38."""
+    escapes); the pin follows the footprint down by 3 to 38.
+
+    **Widened to 59 by #10889 point 5** (`ci(lean,#10889)`): the audit flipped
+    from the 18-module explicit list to `target-modules: "*"` with
+    `include-i18n-siblings: "true"` (69 modules derived at runtime). The 21
+    added entries are the build-enumerated footprint of exactly the newly
+    covered modules -- JumpCapture (3), PatternTour (1), Pillars (1),
+    LookAndSayLemmas (2) on the FR side, plus the `_en` twins of
+    Oscillators (2), PatternTour (1), Pillars (1), RLE (8), LookAndSayLemmas
+    (2) under the `Conway_en.*` namespaces (with `Pillars_en` keeping the FR
+    `Conway.Life.*` path -- namespace heterogeneity is why names are
+    enumerated from the build, never derived by rule). Same legitimacy rule
+    as #9341: every added name is attributable to a newly covered module."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -130,18 +147,21 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 38, (
-        f"audit allow-list must carry the 38 native_decide axioms of the 7 "
-        f"covered Life modules (empirical footprint, #8782 + #9341, shrunk by "
-        f"the #9571 still-life decide flips + the #9595 spaceship decide flips); "
-        f"got {len(names)}")
+    assert len(names) == 59, (
+        f"audit allow-list must carry the 59 native_decide axioms of the whole "
+        f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
+        f"footprint + 21 build-enumerated entries of the newly covered "
+        f"modules, each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
-    # box-assez-grand lemmas, hashlife_correct_implies bridges).
+    # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
+    # #10889-widening family: the _en twins under Conway_en.*).
     for sample in [
         "Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝",
         "Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4",
         "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1",
         "Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1",
+        "Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1",
+        "Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1",
     ]:
         assert sample in names, (
             f"audit allow-list missing revealed axiom {sample!r}")
@@ -174,7 +194,10 @@ def test_blocking_and_audit_are_complementary():
     jobs = _load_jobs()
     blocking_targets = jobs["proof-integrity"].get("with", {}).get("target-modules", "")
     audit_targets = jobs["proof-integrity-audit"].get("with", {}).get("target-modules", "")
-    assert "Conway.Life.HashlifeCorrectness" in audit_targets
+    # Post-#10889 the audit derives its list at runtime ('*' = every compiled
+    # module, HashlifeCorrectness included by construction); the blocking gate
+    # keeps its explicit showcase-only list.
+    assert audit_targets == "*"
     assert "Conway.Life.HashlifeCorrectness" not in blocking_targets
 
 

@@ -441,7 +441,10 @@ class TestRealWorkflowRegression:
             pytest.skip(f"workflow not present: {wf}")
         union, per_job = targets_from_workflow(wf)
         assert len(per_job) >= 2, f"expected blocking + audit gate jobs, got {sorted(per_job)}"
-        assert "Conway.Life.HashlifeCorrectness" in union
+        # Post-#10889 the audit job derives its list at runtime (`"*"`): the
+        # union carries the sentinel instead of the literal module. Either
+        # form means the gate inspects HashlifeCorrectness.
+        assert "*" in union or "Conway.Life.HashlifeCorrectness" in union
         assert "Conway.KochenSpecker" in union
         assert "Conway.FreeWillTheorem" in union
 
