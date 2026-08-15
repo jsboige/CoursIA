@@ -2369,3 +2369,113 @@ def test_main_paths_correct_form_no_warning(monkeypatch, capsys):
                    "--paths", "a.py", "b.py"])
     assert rc == 0
     assert "bare integer" not in capsys.readouterr().err
+
+
+# --- #11064: --claim runs the check first and renders --paths ----------------
+
+def _write_payload(p, tmp_path):
+    import json
+    f = tmp_path / "payload.json"
+    f.write_text(json.dumps(p), encoding="utf-8")
+    return str(f)
+
+
+def test_paths_clause_renders_only_when_paths_given():
+    # The `paths:` clause is the LAST element of the marker line -- the reader
+    # (`_PATHS_CLAUSE_RE`) parses the value to END OF LINE, so any trailing
+    # prose would leak into the captured scope.
+    assert clc._paths_clause(None) == ""
+    assert clc._paths_clause([]) == ""
+    assert clc._paths_clause(["x/**", "y/01.ipynb"]) == \
+        " -- paths: x/**, y/01.ipynb"
+
+
+def test_claim_body_renders_paths_clause():
+    body = clc._CLAIM_BODY_TMPL.format(
+        lane="myia-po-2024:CoursIA", intention="fix ML-4",
+        paths_clause=clc._paths_clause(["x/**", "y/01.ipynb"]),
+    )
+    assert body.split("\n")[0] == (
+        "[CLAIMED] lane myia-po-2024:CoursIA -- fix ML-4"
+        " -- paths: x/**, y/01.ipynb"
+    )
+
+
+def test_claim_body_without_paths_stays_epic_wide():
+    # A `--claim` without `--paths` keeps the inherited epic-wide semantics --
+    # the fix renders the scope when given, it does not force one.
+    body = clc._CLAIM_BODY_TMPL.format(
+        lane="myia-po-2024:CoursIA", intention="fix ML-4",
+        paths_clause=clc._paths_clause(None),
+    )
+    assert body.split("\n")[0] == \
+        "[CLAIMED] lane myia-po-2024:CoursIA -- fix ML-4"
+
+
+def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
+    # #11064 acceptance (4): a claim posted with --paths is read back by the
+    # check as SCOPED -- a disjoint lane stays free (exit 0), an intersecting
+    # lane is blocked (exit 1), an unscoped caller is conservatively blocked.
+    # The fake globs must match "tracked files" or the #10958 fail-safe lifts
+    # the scope to epic-wide (an entirely-dead scope is a broken claim, not a
+    # permissive one) -- mock the repo walk so the scopes stay live.
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb", "z/deep/f.ipynb"])
+    body = clc._CLAIM_BODY_TMPL.format(
+        lane="A:CoursIA", intention="tranche x",
+        paths_clause=clc._paths_clause(["x/**", "y/01.ipynb"]),
+    )
+    pl = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["z/**"]) == 0
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/sub/f.ipynb"]) == 1
+    assert clc._run_check(pl, "B:CoursIA") == 1
+
+
+def test_claim_refuses_when_blocked(monkeypatch, tmp_path):
+    # #11064 acceptance (1): `--claim` runs the check before posting and
+    # REFUSES (exit 1, nothing posted) when another lane holds an overlapping
+    # claim -- instead of posting first and printing a reassuring success.
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    json_path = _write_payload(
+        payload(blocker, number=11064, title="t"), tmp_path)
+    posted = []
+    monkeypatch.setattr(clc, "_post_comment",
+                        lambda issue, body: posted.append((issue, body)))
+    rc = clc.main(["--lane", "B:CoursIA", "--paths", "x/sub/f.ipynb",
+                   "--claim", "tranche x", "11064", "--from-json", json_path])
+    assert rc == 1
+    assert posted == []
+
+
+def test_claim_force_posts_when_blocked(monkeypatch, tmp_path):
+    # --force restores the coordinator bypass: post even when the pre-claim
+    # check is blocked. The marker must still carry the --paths clause.
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    json_path = _write_payload(
+        payload(blocker, number=11064, title="t"), tmp_path)
+    posted = []
+    monkeypatch.setattr(clc, "_post_comment",
+                        lambda issue, body: posted.append((issue, body)))
+    rc = clc.main(["--lane", "B:CoursIA", "--paths", "x/sub/f.ipynb",
+                   "--claim", "tranche x", "11064", "--from-json", json_path,
+                   "--force"])
+    assert rc == 0
+    assert len(posted) == 1
+    assert "paths: x/sub/f.ipynb" in posted[0][1]
+
+
+def test_release_body_renders_paths_clause():
+    # #11064 fix (3): silence-for-silence -- a scope given on the release path
+    # is rendered, never silently dropped.
+    body = clc._RELEASE_BODY_TMPL.format(
+        lane="myia-po-2024:CoursIA", note="PR #42",
+        paths_clause=clc._paths_clause(["x/**"]),
+    )
+    assert body.split("\n")[0] == \
+        "[RELEASED] lane myia-po-2024:CoursIA -- PR #42 -- paths: x/**"

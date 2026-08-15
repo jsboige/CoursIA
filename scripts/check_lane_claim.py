@@ -669,13 +669,29 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
 # --- formatted output --------------------------------------------------------
 
 _CLAIM_BODY_TMPL = (
-    "[CLAIMED] lane {lane} -- {intention}\n\n"
+    "[CLAIMED] lane {lane} -- {intention}{paths_clause}\n\n"
     "(check_lane_claim #9774 -- server-stamped UTC; body timestamps are NOT "
     "authoritative. Release with `[RELEASED]` when your PR lands.)\n"
 )
 _RELEASE_BODY_TMPL = (
-    "[RELEASED] lane {lane} -- {note}\n"
+    "[RELEASED] lane {lane} -- {note}{paths_clause}\n"
 )
+
+
+def _paths_clause(paths: list[str] | None) -> str:
+    """Render a `paths:` scope clause for a claim/release marker (#11064).
+
+    The reader (`_PATHS_CLAUSE_RE`) parses the clause at END OF LINE
+    (`paths\\s*:\\s*([^\\n]+?)\\s*$`), so the clause is always the LAST element
+    of the marker line. Empty when `paths` is None -- the marker stays
+    epic-wide (legacy semantics, preserved). `--paths` provided on a posting
+    path was previously DROPPED SILENTLY: the caller believed the claim was
+    scoped while the organ read it epic-wide (maximally blocking). This
+    function is the fix that makes the scope survive the round-trip.
+    """
+    if not paths:
+        return ""
+    return " -- paths: " + ", ".join(paths)
 
 
 def _fmt_utc(iso: str | None) -> str:
@@ -1328,9 +1344,17 @@ def main(argv: list[str] | None = None) -> int:
                         "ignored (legacy epic-wide behaviour, preserved).")
     act = p.add_mutually_exclusive_group()
     act.add_argument("--claim", metavar="INTENTION",
-                     help="post a [CLAIMED] comment for your lane")
+                     help="post a [CLAIMED] comment for your lane. Runs the "
+                          "issue-claim check FIRST and refuses to post when "
+                          "another lane blocks (use --force only for "
+                          "coordinator arbitration). A --paths scope is "
+                          "rendered into the marker, never dropped (#11064).")
     act.add_argument("--release", nargs="?", const="", default=None,
                      metavar="NOTE", help="post a [RELEASED] comment")
+    p.add_argument("--force", action="store_true",
+                   help="post a [CLAIMED] even when the pre-claim check is "
+                        "blocked (#11064). Coordinator arbitration only -- "
+                        "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
 
     # #10881 -- `nargs='+'` on --paths swallows a TRAILING positional issue
@@ -1364,23 +1388,57 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 1
     if args.claim is not None:
-        body = _CLAIM_BODY_TMPL.format(lane=args.lane, intention=args.claim)
+        # #11064: `--claim` must not short-circuit the check. The old path
+        # posted FIRST (unchecked) and printed a reassuring "posted" line
+        # while another lane held the claim -- the exact shape of the #11044
+        # collision. Now: run the issue-claim check; a blocked issue REFUSES
+        # to post (exit 1, nothing written). `--force` restores the old
+        # bypass for coordinator arbitration (the reading side still honours
+        # `[OVERRIDE]` markers).
+        if not args.force:
+            try:
+                if args.from_json:
+                    payload = json.loads(
+                        Path(args.from_json).read_text(encoding="utf-8"))
+                else:
+                    payload = _gh_issue_comments(args.issue)
+            except (RuntimeError, json.JSONDecodeError, OSError) as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                return 2
+            rc = _run_check(payload, args.lane,
+                            stale_threshold=args.stale_threshold,
+                            my_paths=args.paths)
+            if rc != 0:
+                print(f"BLOCKED: not posting [CLAIMED] on #{args.issue} "
+                      f"-- another lane holds an active claim (the check "
+                      f"above names it). Use --force only for coordinator "
+                      f"arbitration.",
+                      file=sys.stderr)
+                return rc
+        body = _CLAIM_BODY_TMPL.format(
+            lane=args.lane, intention=args.claim,
+            paths_clause=_paths_clause(args.paths),
+        )
         try:
             _post_comment(args.issue, body)
         except RuntimeError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-        print(f"posted [CLAIMED] lane {args.lane} on #{args.issue}")
+        scope = f" (paths: {', '.join(args.paths)})" if args.paths else ""
+        print(f"posted [CLAIMED] lane {args.lane} on #{args.issue}{scope}")
         return 0
     if args.release is not None:
         note = args.release or "released"
-        body = _RELEASE_BODY_TMPL.format(lane=args.lane, note=note)
+        body = _RELEASE_BODY_TMPL.format(
+            lane=args.lane, note=note, paths_clause=_paths_clause(args.paths),
+        )
         try:
             _post_comment(args.issue, body)
         except RuntimeError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
-        print(f"posted [RELEASED] lane {args.lane} on #{args.issue}")
+        scope = f" (paths: {', '.join(args.paths)})" if args.paths else ""
+        print(f"posted [RELEASED] lane {args.lane} on #{args.issue}{scope}")
         return 0
 
     # Check mode (default). `--paths` (when supplied with an issue) threads
