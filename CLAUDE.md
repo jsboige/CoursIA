@@ -54,7 +54,38 @@ Les 27 règles sont **auto-chargées à chaque session** : leur contenu est déj
 
 **Git** : pas de push direct sur `main`. **Force push** : interdit sur `main` (porté par `allow_force_pushes: false`), autorisé sur une branche de PR qu'une **seule** lane manipule (`--force-with-lease`, l'alternative merge d'abord) — décision user 2026-08-08. Pas de `reset --hard` sur `main` ni sur une branche partagée. Branches `feature/<sujet>` ou `fix/<sujet>`, un sujet par PR. Le coordinateur (ai-01) review et merge ; les agents ne mergent pas eux-mêmes. Cf [git-workflow.md](.claude/rules/git-workflow.md).
 
-### B. Reviews PR (5 points obligatoires)
+### B. Reviews PR — B.0 bloquant, puis 5 points
+
+#### B.0 — Aucun nit non levé ne survit à un merge (HARD, mandat user 2026-08-15)
+
+**Lire l'ÉTAT d'une review n'est pas lire la review.** Le champ `reviews[].state` est **structurellement aveugle** aux deux canaux qui portent le plus de substance sur ce dépôt :
+
+| Canal | Ce que `reviews[].state` en dit | Où le contenu vit réellement |
+|---|---|---|
+| **Nits du user** | *rien* — postés en issue comments, aucune entrée dans `reviews[]` | `comments[].body` |
+| **Réserves d'Hermes** | `COMMENTED` — le verdict est un **préfixe de body** (`[Hermes] COMMENT_WITH_CONCERNS`) | `reviews[].body` |
+| **Commentaires inline** | *rien* — absents de `gh pr view --json comments,reviews` | `reviewThreads` (GraphQL), champ `isResolved` |
+
+Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que chaque remarque postée après le dernier commit est **levée** par l'une de ces trois choses, et rien d'autre :
+
+1. une **réponse écrite** sur la PR qui nomme la remarque (traitée en code — en citant le commit — traitée en argument, ou refusée en le disant) ;
+2. un **thread inline résolu** (`isResolved: true`) ;
+3. une **issue de suivi nommée dans le commentaire de merge** (reportée sciemment).
+
+**Un commit poussé après la remarque ne la lève PAS à lui seul.** Sur #10761 le « traitement » était un rebase à 19:41 qui n'adressait aucun des deux nits de 11:07 — un push muet est indiscernable d'un push qui répond. Ce qui lève une remarque est **une phrase**, pas un SHA.
+
+L'écoulement du temps n'est **pas** une levée. `mergeStateStatus: CLEAN` n'est **pas** une levée. `state: COMMENTED` n'est **pas** une absence de réserve. Un reviewer qui écrit « je ne peux pas approuver seul sur ce format » **bloque** — c'est un refus d'approbation, pas un avis.
+
+**Organe** (la règle ne tient pas par la vigilance) :
+
+```bash
+python scripts/check_unaddressed_nits.py <PR>        # exit 1 = ne pas merger
+python scripts/check_unaddressed_nits.py --audit --limit 400
+```
+
+**Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook mergé attribue toujours à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
+
+#### Les 5 points
 
 Avant tout merge (y compris ses propres PRs) :
 
