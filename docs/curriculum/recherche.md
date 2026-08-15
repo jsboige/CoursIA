@@ -22,8 +22,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 |----------|--------|
 | Notebooks | 179 |
 | PRODUCTION | 0 |
-| BETA | 176 |
-| ALPHA | 3 |
+| BETA | 175 |
+| ALPHA | 4 |
 
 ## GameTheory (49 notebooks)
 
@@ -86,7 +86,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 1 | SocialChoice 01 : Théorème d'impossibilité d'Arrow (twi | BETA | Oui |
 | 2 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formelle et | BETA | Oui |
 | 3 | SocialChoice 02 - Choix Social Formel en Lean 4 | ALPHA | Non |
-| 4 | SocialChoice 03 : Méthodes de Vote et Paradoxes (twin C | BETA | Oui |
+| 4 | SocialChoice 03 : Méthodes de Vote et Paradoxes (twin C | ALPHA | Oui |
 | 5 | SocialChoice 03 - Méthodes de Vote et Paradoxes | BETA | Oui |
 | 6 | SocialChoice 04 : Agregation Computationnelle - SAT et  | BETA | Oui |
 | 7 | SocialChoice 04 - Agregation Computationnelle : SAT et  | BETA | Oui |
@@ -116,8 +116,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 11 | ICT-15d — Cochaîne de Čech pondérée : obstruction intra | BETA | Oui |
 | 12 | ICT-15e -- Bridge #2 : recouvrabilite *est* agentivite  | BETA | Oui |
 | 13 | ICT-15f -- Pont #1-bis : la famille decouplee tranche l | BETA | Oui |
-| 14 | ICT-15g -- Pont #1-bis (chantier 2/3) : le regime asyme | BETA | Oui |
-| 15 | ICT-15h -- Pont #1-bis : le paysage 2D anisotrope clot  | BETA | Oui |
+| 14 | ICT-15h -- Pont #1-bis (chantier 2/3) : le regime asyme | BETA | Oui |
+| 15 | ICT-15i -- Pont #1-bis : le paysage 2D anisotrope clot  | BETA | Oui |
 | 16 | ICT-16 — MDL / code en deux parties et bosse complexite | BETA | Oui |
 | 17 | ICT-17b — Grokking et compression-progress : la jambe K | BETA | Oui |
 | 18 | ICT-18 -- Fleche du temps et reversibilisation (strate  | BETA | Oui |

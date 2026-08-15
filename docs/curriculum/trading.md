@@ -22,8 +22,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |----------|--------|
 | Notebooks | 200 |
 | PRODUCTION | 0 |
-| BETA | 179 |
-| ALPHA | 21 |
+| BETA | 180 |
+| ALPHA | 20 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
@@ -200,7 +200,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 27 | Objectifs d'Apprentissage | BETA | Non |
 | 28 | QC-Py-27 - Production Deployment | BETA | Non |
 | 29 | QC-Py-28 - Market Regime Detection | BETA | Non |
-| 30 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | ALPHA | Non |
+| 30 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | BETA | Non |
 | 31 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | ALPHA | Non |
 | 32 | QC-Py-32 - Reinforcement Learning DQN pour le Trading | BETA | Non |
 | 33 | QC-Py-33 - Reinforcement Learning PPO pour le Trading | BETA | Non |

@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-ML-Training-Pipeline
-pedagogical_count: 2
-breakdown: ML-Training-Pipeline=2
-maturity: BETA=1, TEMPLATE=1
+pedagogical_count: 4
+breakdown: ML-Training-Pipeline=4
+maturity: DRAFT=2, BETA=1, TEMPLATE=1
 -->
 
 # Pipeline d'entraînement ML pour la prévision financière

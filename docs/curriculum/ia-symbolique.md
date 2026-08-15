@@ -20,10 +20,10 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 224 |
+| Notebooks | 226 |
 | PRODUCTION | 0 |
-| BETA | 217 |
-| ALPHA | 7 |
+| BETA | 220 |
+| ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
 
@@ -58,9 +58,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 21 | Argument_Analysis — Le modèle de Toulmin (1958) | BETA | Oui |
 | 22 | Interface de Configuration et Préparation du Texte | BETA | Oui |
 | 23 | Argument_Analysis — Argumentation basée sur les valeurs | BETA | Oui |
-| 24 | I2 - Génération de contre-arguments par raisonnement fo | ALPHA | Oui |
+| 24 | I2 - Génération de contre-arguments par raisonnement fo | BETA | Oui |
 
-## SymbolicAI/Lean (27 notebooks)
+## SymbolicAI/Lean (29 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -82,15 +82,17 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 16 | Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo | BETA | Non |
 | 17 | Lean 17b — Invariants de Nœuds : Calcul et Vérification | BETA | Non |
 | 18 | Lean-18 : A* et l'optimalité sous heuristique admissibl | BETA | Non |
-| 19 | Lean 2 - Types Dependants et Calcul des Constructions | BETA | Non |
-| 20 | Lean 3 - Propositions et Preuves | BETA | Non |
-| 21 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
-| 22 | Lean 5 - Mode Tactique | BETA | Non |
-| 23 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
-| 24 | Lean 7 - Integration des LLMs pour l'Assistance aux Pre | BETA | Non |
-| 25 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
-| 26 | Lean 8 - Agents Autonomes pour Demonstration de Theorem | BETA | Non |
-| 27 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
+| 19 | Lean-19 : La Conjecture de Sendov (T. Tao, aout 2026) — | BETA | Non |
+| 20 | Lean 2 - Types Dependants et Calcul des Constructions | BETA | Non |
+| 21 | Lean-20 : Le manuel *Analysis I* de T. Tao en Lean 4 (l | BETA | Non |
+| 22 | Lean 3 - Propositions et Preuves | BETA | Non |
+| 23 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
+| 24 | Lean 5 - Mode Tactique | BETA | Non |
+| 25 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
+| 26 | Lean 7 - Integration des LLMs pour l'Assistance aux Pre | BETA | Non |
+| 27 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
+| 28 | Lean 8 - Agents Autonomes pour Demonstration de Theorem | BETA | Non |
+| 29 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
 
 ## SymbolicAI/Planners (23 notebooks)
 
