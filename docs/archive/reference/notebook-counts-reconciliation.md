@@ -25,9 +25,9 @@
 | **Catalogue** | **830** | forensic moins `research/`, `partner-course-quant-trading/`, `examples/`, et **non-curés** (drift) | `scripts/notebook_tools/generate_catalog.py` |
 | **STABLE_SNAPSHOT** | **934** | snapshot daté **2026-07-17** (SHA `d8ea11a`), stale de 6 jours | `STABLE_SNAPSHOT.md` |
 
-**Écart catalogue / disque = 116 = (114 curés non-inclus bruts) = (84 drift curé réel) + (30 exclusions catalogue par design)**.
+**Écart catalogue / disque = 116 = (2 exclusions forensic `_archives/`) + (31 exclusions catalogue par design) + (83 drift curé réel) — dont écart brut catalogue/forensic 114 = 31 exclusions + 83 drift**.
 
-> **Important.** Le diff brut catalogue-forensic est **114** (cf tableau par série), mais **84 seulement sont du drift** (notebooks curés manquants) ; les **30 autres sont des exclusions catalogue par design** (recherche/partner-course/archive/examples — présents sur disque et dans forensic, exclus du catalogue). Le détecteur `scripts/audit/check_denominators.py` filtre ces 30 et remonte les 84 réels.
+> **Important.** Le diff brut catalogue-forensic est **114** (cf tableau par série), mais **83 seulement sont du drift** (notebooks curés manquants) ; les **31 autres sont des exclusions catalogue par design** (recherche/partner-course/archive/examples — présents sur disque et dans forensic, exclus du catalogue). Le détecteur `scripts/audit/check_denominators.py` filtre ces 31 et remonte les 83 réels.
 
 ---
 
