@@ -20,6 +20,7 @@ import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackFunctor
+import Grothendieck.PullbackFunctorLaws
 import Grothendieck.SchemesTour
 import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
