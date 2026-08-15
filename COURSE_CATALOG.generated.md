@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-08-11 04:59
-Total notebooks: 886
+Generated: 2026-08-15 03:51
+Total notebooks: 903
 
 ## Status Summary
 
-- **READY**: 731
+- **READY**: 748
 - **DEMO**: 153
 - **RESEARCH**: 0
 - **BROKEN**: 2
@@ -13,14 +13,14 @@ Total notebooks: 886
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 807
+- **BETA**: 818
 - **TEMPLATE**: 4
-- **ALPHA**: 47
-- **DRAFT**: 28
+- **ALPHA**: 46
+- **DRAFT**: 35
 
 ## By Series
 
-### GenAI (159 notebooks) — BROKEN:2, DEMO:90, READY:67 | ALPHA:11, BETA:140, DRAFT:5, TEMPLATE:3
+### GenAI (169 notebooks) — BROKEN:2, DEMO:90, READY:77 | ALPHA:11, BETA:146, DRAFT:9, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -30,159 +30,169 @@ Total notebooks: 886
 | 4 | ✅ Environment Validation - GenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 5 | 00-5: ComfyUI Local - Test Rapide | Python 3 | READY | BETA | 30min | po-2025 |
 | 6 | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 7 | OpenAI TTS - Synthese Vocale par API | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 8 | OpenAI Whisper STT - Reconnaissance Vocale par API | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 9 | Opérations de Base sur l'Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 10 | Whisper Local - Transcription GPU avec faster-whis | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 11 | Kokoro TTS Local - Synthese Vocale Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 12 | Chatterbox TTS - Synthese Vocale Expressive | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 13 | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 14 | MusicGen - Generation Musicale par IA | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 15 | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 16 | Multi-Model TTS Gateway - Synthese Vocale Multi-Mo | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 17 | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 18 | Generation de Chansons Completes : YuE vs SongGene | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 19 | TTS Expressif : Fish S2 Pro et Modèles SOTA | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 20 | Ace-Step v1.5 - Generation Musicale avec Paroles | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 21 | Comparaison Multi-Modèles Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 22 | Orchestration de Pipelines Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 23 | OpenAI Realtime Voice API | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 24 | Creation de Contenu Audio Educatif | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 25 | P3 - Annotation Prosodique pour TTS Agentique | Python 3 | READY | BETA | 30min | po-2025 |
-| 26 | P4 — Generation TTS pour Audiobook | Python 3 | READY | BETA | 45min | po-2025 |
-| 27 | P5 — Compilation Audio pour Audiobook | Python 3 | READY | BETA | 30min | po-2025 |
-| 28 | Audiobook Agentique avec FishAudio S2-Pro | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 29 | Pipeline de Transcription et Sous-titrage | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 30 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 31 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 32 | Live Coding Musical pilote par LLM | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 33 | Pipeline Audiobook Agentique | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 34 | Benchmark TTS : Comparaison des Modèles Vocaux pou | Python 3 | READY | BETA | 1h | po-2025 |
-| 35 | Lecture Analytique pour Audiobook | Python 3 | READY | BETA | 30min | po-2025 |
-| 36 | Voice Casting : Attribution de voix TTS par person | Python 3 | READY | BETA | 45min | po-2025 |
-| 37 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 38 | Verbal Duel: Barbie vs Shrek's Donkey | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 39 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | DRAFT | 30min | po-2025 |
-| 40 | Guessing Game: Father Fouras vs Laurent Jalabert | Python 3 | DEMO | DRAFT | 30min | po-2025 |
+| 7 | Aspire : orchestrer notre pile GenAI en C# | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 8 | Aspire : orchestrer la pile GenAI **réelle** du cl | .NET (C#) | READY | BETA | 45min | po-2025 |
+| 9 | OpenAI TTS - Synthese Vocale par API | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 10 | OpenAI Whisper STT - Reconnaissance Vocale par API | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 11 | Opérations de Base sur l'Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 12 | Whisper Local - Transcription GPU avec faster-whis | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 13 | Kokoro TTS Local - Synthese Vocale Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 14 | Chatterbox TTS - Synthese Vocale Expressive | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 15 | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 16 | MusicGen - Generation Musicale par IA | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 17 | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 18 | Multi-Model TTS Gateway - Synthese Vocale Multi-Mo | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 19 | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 20 | Generation de Chansons Completes : YuE vs SongGene | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 21 | TTS Expressif : Fish S2 Pro et Modèles SOTA | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 22 | Ace-Step v1.5 - Generation Musicale avec Paroles | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 23 | Comparaison Multi-Modèles Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 24 | Orchestration de Pipelines Audio | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 25 | OpenAI Realtime Voice API | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 26 | Creation de Contenu Audio Educatif | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 27 | P3 - Annotation Prosodique pour TTS Agentique | Python 3 | READY | BETA | 30min | po-2025 |
+| 28 | P4 — Generation TTS pour Audiobook | Python 3 | READY | BETA | 45min | po-2025 |
+| 29 | P5 — Compilation Audio pour Audiobook | Python 3 | READY | BETA | 30min | po-2025 |
+| 30 | Audiobook Agentique avec FishAudio S2-Pro | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 31 | Pipeline de Transcription et Sous-titrage | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 32 | Workflow de Composition Musicale | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 33 | Synchronisation Audio-Video (Passerelle) | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 34 | Live Coding Musical pilote par LLM | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 35 | Pipeline Audiobook Agentique | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 36 | Benchmark TTS : Comparaison des Modèles Vocaux pou | Python 3 | READY | BETA | 1h | po-2025 |
+| 37 | Lecture Analytique pour Audiobook | Python 3 | READY | BETA | 30min | po-2025 |
+| 38 | Voice Casting : Attribution de voix TTS par person | Python 3 | READY | BETA | 45min | po-2025 |
+| 39 | Duel Verbal : Barbie vs l'Âne de Shrek | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 40 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | DRAFT | 30min | po-2025 |
 | 41 | Docteur vs ChatGPT : Chatbot medical multi-agent | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 42 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 43 | Générateur de Recettes PDF | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 44 | PDF Recipe Generator | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 45 | FT-01 : Introduction au Fine-Tuning | Python 3 | READY | BETA | 45min | po-2025 |
-| 46 | FT-01: Introduction to Fine-Tuning | Python 3 | READY | BETA | 45min | po-2025 |
-| 47 | FT-02 : QLoRA — Fine-Tuning avec Quantization | Python 3 | READY | BETA | 45min | po-2025 |
-| 48 | FT-02: QLoRA — Fine-Tuning with Quantization | Python 3 | READY | BETA | 45min | po-2025 |
-| 49 | FT-03 : Supervised Fine-Tuning (SFT) — Instruction | Python 3 | READY | BETA | 45min | po-2025 |
-| 50 | FT-03: Supervised Fine-Tuning (SFT) — Instruction  | Python 3 | READY | BETA | 45min | po-2025 |
-| 51 | FT-04 : RLHF et Alignement — Préférences Humaines  | Python 3 | READY | BETA | 45min | po-2025 |
-| 52 | FT-04: RLHF and Alignment — Human Preferences and  | Python 3 | READY | BETA | 45min | po-2025 |
-| 53 | FT-05 : Fusion et Routage de Modèles -- Combiner l | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 54 | FT-05: Model Merging and Routing -- Combining Expe | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 55 | OpenAI DALL-E 3 - Generation d'Images | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 56 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 57 | 🖼️ Opérations de Base sur les Images | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 58 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 59 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 60 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 61 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 62 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 63 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 64 | Bonsai-Image : Generation Text-to-Image avec Quant | Python 3 | READY | BETA | 30min | po-2025 |
-| 65 | Comparaison Multi-Modèles : SDXL Lightning-4step,  | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 66 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 67 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | BETA | 1h | po-2025 |
-| 68 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 69 | Creative Workflows - GenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 70 | 🏭 Production Integration - GenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 71 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | ALPHA | 30min | po-2025 |
-| 72 | Choisir le modèle derrière son chatbot — une mini- | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
-| 73 | Ingestion RAG d'un corpus long structure | Python 3 | READY | BETA | 30min | po-2025 |
-| 74 | Parcours QA-OWUI — Notebook chapeau de la mission | Python 3 | READY | ALPHA | 15min | po-2025 |
-| 75 | Module 01 — Découverte de Playwright & Open WebUI | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 76 | Module 02 — Navigation & Authentification | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 77 | Module 03 — Chat & Streaming LLM | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 78 | Module 04 — RAG, Outils MCP & Fonctionnalités avan | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 79 | Module 05 — Multi-tenant, API Testing & CI/CD | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 80 | Module 06 — Tester les nouveautés v0.10 (« l'ère a | Python 3 | READY | BETA | 30min | po-2025 |
-| 81 | PT-01 — Introduction et vue d'ensemble | Python 3 | READY | BETA | 30min | po-2025 |
-| 82 | PT-02 — Supervised Fine-Tuning baseline (SFT) | Python 3 | READY | BETA | 45min | po-2025 |
-| 83 | PT-03 — Direct Préférence Optimization (DPO) | Python 3 | READY | ALPHA | 45min | po-2025 |
-| 84 | PT-04 — Group Relative Policy Optimization (GRPO) | Python 3 | READY | ALPHA | 45min | po-2025 |
-| 85 | PT-05 — Reinforcement Learning with Verifiable Rew | Python 3 | READY | ALPHA | 45min | po-2025 |
-| 86 | PT-06 — Evaluation Comparative du Post-Training | Python 3 | READY | BETA | 30min | po-2025 |
-| 87 | PT-07 — Détecter le reward hacking avec rewardspy | Python 3 | READY | BETA | 15min | po-2025 |
-| 88 | PT-08 — GRPO from scratch : la mécanique du signal | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
-| 89 | PT-09 — RLOO (REINFORCE Leave-One-Out) from scratc | coursia-ml-training | READY | BETA | 30min | po-2025 |
-| 90 | PT-10 — GAE from scratch : pourquoi un mini-critic | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
-| 91 | PT-11 — GRPO + RLVR sur Qwen3.5-0.8B : la série Po | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
-| 92 | Hands-On Grounding — Qdrant en mémoire | Python 3 | READY | BETA | 30min | po-2025 |
-| 93 | SK-1-Fundamentals : Introduction a Semantic Kernel | Python 3 | READY | BETA | 30min | po-2025 |
-| 94 | SK-2-Functions : Function Calling, Memory et Fonct | Python 3 | READY | BETA | 30min | po-2025 |
-| 95 | SK-3-Agents : Agent Framework Semantic Kernel | Python 3 | READY | BETA | 15min | po-2025 |
-| 96 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | BETA | 30min | po-2025 |
-| 97 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | BETA | 30min | po-2025 |
-| 98 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | BETA | 30min | po-2025 |
-| 99 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
-| 100 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | BETA | 30min | po-2025 |
-| 101 | SK-9-Building-CLR : Interoperabilite Python/.NET v | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 102 | SK-10-NotebookMaker : Système Multi-Agents pour Ge | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 103 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 104 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 105 | Projet Createur de Mail personnalise | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 106 | Notebook de travail | Python 3 | READY | BETA | 30min | po-2025 |
-| 107 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
-| 108 | Notebook de conception de Notebook | .NET (C#) | DEMO | BETA | 45min | po-2025 |
-| 109 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
-| 110 | Notebook de travail | .NET (C#) | BROKEN | TEMPLATE | 30min | po-2025 |
-| 111 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | ALPHA | 30min | po-2025 |
-| 112 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 113 | 10. Hébergement Local de Modèles Génératifs | Python 3 | READY | BETA | 45min | po-2025 |
-| 114 | 11. Quantization | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 115 | 12. Test Time Scaling | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 116 | 13. Orchestration agentique du test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
-| 117 | 14. Memoire persistante pour le test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
-| 118 | 15. Tree-of-Thoughts sur de vrais problemes de rec | Python 3 | READY | BETA | 30min | po-2025 |
-| 119 | 16. Scaling du test-time compute (Snell 2024) | Python 3 | READY | BETA | 30min | po-2025 |
-| 120 | 17. Modèles a raisonnement natif vs scaling du tes | Python 3 | READY | BETA | 30min | po-2025 |
-| 121 | 18. Plugins Semantic Kernel pour le test-time scal | Python 3 | READY | BETA | 30min | po-2025 |
-| 122 | 19. Orchestration et tâches planifiées avec Open W | Python 3 | READY | BETA | 30min | po-2025 |
-| 123 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 124 | 20. OWUI Native API v0.9.6 — introspection REST et | Python 3 | READY | BETA | 30min | po-2025 |
-| 125 | 21. Fine-tuning LoRA / QLoRA — Adapter un LLM sans | Python (coursia-ml-training) | READY | DRAFT | 45min | po-2025 |
-| 126 | 2. Prompt Engineering : Techniques Avancées | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 127 | 3. Structured Outputs : Sorties JSON Garanties | Python 3 | READY | BETA | 30min | po-2025 |
-| 128 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 129 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | BETA | 45min | po-2025 |
-| 130 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | BETA | 30min | po-2025 |
-| 131 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | BETA | 30min | po-2025 |
-| 132 | 8. Reasoning Models | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 133 | 9. Production Patterns | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 134 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
-| 135 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 45min | po-2025 |
-| 136 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 45min | po-2025 |
-| 137 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
-| 138 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 45min | po-2025 |
-| 139 | Claude Code via Claudish | Python 3 | READY | BETA | 15min | po-2025 |
-| 140 | Opérations de Base sur les Videos | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 141 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 142 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 143 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 144 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 145 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 146 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 147 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 148 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 149 | LTX-2 - Generation Audiovisuelle Conjointe (Video  | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 150 | MiniMax H3 (Hailuo 3.0) — Architecture, capacités… | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 151 | Comparaison Multi-Modèles de Generation Video | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 152 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 153 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 154 | Generation de Videos Educatives | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 155 | Workflows Video Creatifs | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 156 | Sora API - Generation Video Cloud | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 157 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 158 | MiniMax H3 (Hailuo) — Génération vidéo par le serv | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 159 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
+| 42 | Générateur de Recettes PDF | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 43 | FT-01 : Introduction au Fine-Tuning | Python 3 | READY | BETA | 45min | po-2025 |
+| 44 | FT-02 : QLoRA — Fine-Tuning avec Quantization | Python 3 | READY | BETA | 45min | po-2025 |
+| 45 | FT-03 : Supervised Fine-Tuning (SFT) — Instruction | Python 3 | READY | BETA | 45min | po-2025 |
+| 46 | FT-04 : RLHF et Alignement — Préférences Humaines  | Python 3 | READY | BETA | 45min | po-2025 |
+| 47 | FT-05 : Fusion et Routage de Modèles -- Combiner l | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 48 | OpenAI DALL-E 3 - Generation d'Images | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 49 | 🤖 GPT-5 Multimodal - Analyse et Génération d'Image | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 50 | 🖼️ Opérations de Base sur les Images | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 51 | Notebook: Stable Diffusion Forge - SD XL Turbo | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 52 | Notebook: Qwen Image-Edit 2.5 - API ComfyUI | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 53 | Qwen Image Edit 2509 - Édition Avancée d'Images | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 54 | FLUX.1 - Génération d'Images Avancée | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 55 | Stable Diffusion 3.5 - Génération de Pointe | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 56 | Z-Image (Lumina-2) : Generation Avancee avec Comfy | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 57 | Bonsai-Image : Generation Text-to-Image avec Quant | Python 3 | READY | BETA | 30min | po-2025 |
+| 58 | Comparaison Multi-Modèles : SDXL Lightning-4step,  | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 59 | Workflow Orchestration - Chaînage Multi-Modèles | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 60 | 🚀 Performance Optimization pour la Génération d'Im | Python 3 | DEMO | BETA | 1h | po-2025 |
+| 61 | 🎓 Educational Content Generation - GenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 62 | Creative Workflows - GenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 63 | 🏭 Production Integration - GenAI | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 64 | Génération d’un patron de point de croix à partir  | Python 3 | DEMO | ALPHA | 30min | po-2025 |
+| 65 | Administrer les formulaires par l'API — le formula | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 66 | Auditer la conformite visuelle — ce que le smoke t | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 67 | Auditer un formulaire conditionnel — l'état que vo | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 68 | Auditer un serveur MCP qu'on n'a pas ecrit | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 69 | Configurer et interroger des chatbots — le chatbot | Python 3 | READY | DRAFT | 15min | po-2025 |
+| 70 | Consommer vs exposer le MCP — les deux sens du fil | Python 3 | READY | BETA | 30min | po-2025 |
+| 71 | Choisir le modèle derrière son chatbot — une mini- | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
+| 72 | Ingestion RAG d'un corpus long structure | Python 3 | READY | BETA | 30min | po-2025 |
+| 73 | Mesurer la dérive d'un copilot — le gate par étape | Python 3 | READY | BETA | 30min | po-2025 |
+| 74 | Presenter AI Engine par son API — instance jetable | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 75 | Séparer les environnements de vecteurs | Python 3 | READY | BETA | 30min | po-2025 |
+| 76 | Parcours QA-OWUI — Notebook chapeau de la mission | Python 3 | READY | ALPHA | 15min | po-2025 |
+| 77 | Module 01 — Découverte de Playwright & Open WebUI | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 78 | Module 02 — Navigation & Authentification | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 79 | Module 03 — Chat & Streaming LLM | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 80 | Module 04 — RAG, Outils MCP & Fonctionnalités avan | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 81 | Module 05 — Multi-tenant, API Testing & CI/CD | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 82 | Module 06 — Tester les nouveautés v0.10 (« l'ère a | Python 3 | READY | BETA | 30min | po-2025 |
+| 83 | Différencier plusieurs assistants — mesurer ce qu' | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 84 | PT-01 — Introduction et vue d'ensemble | Python 3 | READY | BETA | 30min | po-2025 |
+| 85 | PT-02 — Supervised Fine-Tuning baseline (SFT) | coursia-ml-training | READY | BETA | 45min | po-2025 |
+| 86 | PT-03 — Direct Préférence Optimization (DPO) | Python 3 | READY | ALPHA | 45min | po-2025 |
+| 87 | PT-04 — Group Relative Policy Optimization (GRPO) | coursia-ml-training | READY | ALPHA | 45min | po-2025 |
+| 88 | PT-05 — Reinforcement Learning with Verifiable Rew | Python 3 | READY | BETA | 45min | po-2025 |
+| 89 | PT-06 — Evaluation Comparative du Post-Training | coursia-ml-training | READY | BETA | 30min | po-2025 |
+| 90 | PT-07 — Détecter le reward hacking avec rewardspy | Python 3 | READY | BETA | 15min | po-2025 |
+| 91 | PT-08 — GRPO from scratch : la mécanique du signal | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
+| 92 | PT-09 — RLOO (REINFORCE Leave-One-Out) from scratc | coursia-ml-training | READY | BETA | 30min | po-2025 |
+| 93 | PT-10 — GAE from scratch : pourquoi un mini-critic | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
+| 94 | PT-11 — GRPO + RLVR sur Qwen3.5-0.8B : la série Po | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
+| 95 | PT-11 — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewards | Python (coursia-ml-training) | READY | BETA | 45min | po-2025 |
+| 96 | PT-11b — RLVR multi-seed sur Qwen3.5-0.8B (4 seeds | Python (coursia-ml-training) | READY | ALPHA | 45min | po-2025 |
+| 97 | PT-12 — Crédit différé multi-step : GAE-λ sur un e | Coursia ML Training | READY | ALPHA | 45min | po-2025 |
+| 98 | Hands-On Grounding — Qdrant en mémoire | Python 3 | READY | BETA | 30min | po-2025 |
+| 99 | SK-1-Fundamentals : Introduction a Semantic Kernel | Python 3 | READY | BETA | 30min | po-2025 |
+| 100 | SK-2-Functions : Function Calling, Memory et Fonct | Python 3 | READY | BETA | 30min | po-2025 |
+| 101 | SK-3-Agents : Agent Framework Semantic Kernel | Python 3 | READY | BETA | 15min | po-2025 |
+| 102 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | BETA | 30min | po-2025 |
+| 103 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | BETA | 30min | po-2025 |
+| 104 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | BETA | 30min | po-2025 |
+| 105 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
+| 106 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | BETA | 30min | po-2025 |
+| 107 | SK-9-Building-CLR : Interoperabilite Python/.NET v | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 108 | SK-10-NotebookMaker : Système Multi-Agents pour Ge | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 109 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 110 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 111 | Projet Createur de Mail personnalise | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 112 | Notebook de travail | Python 3 | READY | BETA | 30min | po-2025 |
+| 113 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
+| 114 | Notebook de conception de Notebook | .NET (C#) | DEMO | BETA | 45min | po-2025 |
+| 115 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
+| 116 | Notebook de travail | .NET (C#) | BROKEN | TEMPLATE | 30min | po-2025 |
+| 117 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | DRAFT | 30min | po-2025 |
+| 118 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 119 | 10. Hébergement Local de Modèles Génératifs | Python 3 | READY | BETA | 45min | po-2025 |
+| 120 | 11. Quantization | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 121 | 12. Test Time Scaling | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 122 | 13. Orchestration agentique du test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
+| 123 | 14. Memoire persistante pour le test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
+| 124 | 15. Tree-of-Thoughts sur de vrais problemes de rec | Python 3 | READY | BETA | 30min | po-2025 |
+| 125 | 16. Scaling du test-time compute (Snell 2024) | Python 3 | READY | BETA | 30min | po-2025 |
+| 126 | 17. Modèles a raisonnement natif vs scaling du tes | Python 3 | READY | BETA | 30min | po-2025 |
+| 127 | 18. Plugins Semantic Kernel pour le test-time scal | Python 3 | READY | BETA | 30min | po-2025 |
+| 128 | 19. Orchestration et tâches planifiées avec Open W | Python 3 | READY | BETA | 30min | po-2025 |
+| 129 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 130 | 20. OWUI Native API v0.9.6 — introspection REST et | Python 3 | READY | BETA | 30min | po-2025 |
+| 131 | 21. Fine-tuning LoRA / QLoRA — Adapter un LLM sans | Python (coursia-ml-training) | READY | DRAFT | 45min | po-2025 |
+| 132 | 2. Prompt Engineering : Techniques Avancées | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 133 | 3. Structured Outputs : Sorties JSON Garanties | Python 3 | READY | BETA | 30min | po-2025 |
+| 134 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 135 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | BETA | 45min | po-2025 |
+| 136 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | BETA | 30min | po-2025 |
+| 137 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | BETA | 30min | po-2025 |
+| 138 | 8. Reasoning Models | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 139 | 9. Production Patterns | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 140 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
+| 141 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 45min | po-2025 |
+| 142 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 45min | po-2025 |
+| 143 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
+| 144 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 45min | po-2025 |
+| 145 | Claude Code via Claudish | Python 3 | READY | BETA | 15min | po-2025 |
+| 146 | CSharpRepl attache a un process .NET vivant | .NET (C#) | READY | ALPHA | 1h | po-2025 |
+| 147 | Garde-fous Roslyn pour le code genere par agent | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 148 | Opérations de Base sur les Videos | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 149 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 150 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 151 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 152 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 153 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 154 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 155 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 156 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 157 | LTX-2 - Generation Audiovisuelle Conjointe (Video  | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 158 | MiniMax H3 (Hailuo 3.0) — Architecture, capacités… | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 159 | CogVideoX - Generation Video depuis Texte (Open We | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 160 | Comparaison Multi-Modèles de Generation Video | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 161 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 162 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 163 | Generation de Videos Educatives | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 164 | Workflows Video Creatifs | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 165 | Sora API - Generation Video Cloud | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 166 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 167 | MiniMax H3 (Hailuo) — Génération vidéo par le serv | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 168 | MiniMax video-01 (v1) — Service cloud generation v | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 169 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
 ### Search (118 notebooks) — READY:118 | ALPHA:5, BETA:110, DRAFT:3
 
@@ -207,7 +217,7 @@ Total notebooks: 886
 | 17 | App-3b : Nurse Scheduling — Twin C# (planification | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 18 | App-4 : Job-Shop Scheduling | Python 3 | READY | BETA | 45min | po-2025 |
 | 19 | App-4b : Job-Shop Scheduling — Twin C# (ordonnance | .NET (C#) | READY | BETA | 45min | po-2025 |
-| 20 | App-5 : Emploi du temps universitaire — Twin C# (U | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 20 | App-5 : Emploi du temps universitaire — Twin C# (U | .NET (C#) | READY | BETA | 45min | po-2025 |
 | 21 | App-5 : Emploi du temps universitaire (University  | Python 3 | READY | BETA | 45min | po-2025 |
 | 22 | App-6 - Demineur (C#) : CSP, probabilites et NP-co | .NET (C#) | READY | ALPHA | 45min | po-2025 |
 | 23 | App-6 - Demineur : CSP, Probabilites et NP-complet | Python 3 | READY | BETA | 45min | po-2025 |
@@ -360,7 +370,7 @@ Total notebooks: 886
 | 47 | ML-9 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 48 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (227 notebooks) — DEMO:9, READY:218 | ALPHA:7, BETA:217, DRAFT:3
+### SymbolicAI (230 notebooks) — DEMO:9, READY:221 | ALPHA:6, BETA:220, DRAFT:4
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -375,7 +385,7 @@ Total notebooks: 886
 | 9 | Argument_Analysis_Agentic-4-capstone : capstone d' | Python 3 | READY | BETA | 30min | po-2024 |
 | 10 | Argument_Analysis_Agentic-5-jtms : Truth Maintenan | Python 3 | READY | BETA | 30min | po-2024 |
 | 11 | ArgumentProfile : la fiche d'identite multidimensi | Python 3 | READY | BETA | 30min | po-2024 |
-| 12 | Argumentum : la carte de sophisme, du nœud de taxo | Python 3 | READY | BETA | 15min | po-2024 |
+| 12 | Argumentum : la carte de sophisme, du nœud de taxo | Python 3 | READY | BETA | 30min | po-2024 |
 | 13 | Argumentation abstraite de Dung — sémantiques grou | Python 3 | READY | BETA | 30min | po-2024 |
 | 14 | 🚀 Analyse Rhétorique Collaborative par Agents IA - | Python 3 | READY | BETA | 30min | po-2024 |
 | 15 | Matrice de richesse formelle — évaluer honnêtement | Python 3 | READY | DRAFT | 30min | po-2024 |
@@ -388,7 +398,7 @@ Total notebooks: 886
 | 22 | Argument_Analysis — Le modèle de Toulmin (1958) | Python 3 | READY | BETA | 15min | po-2024 |
 | 23 | Interface de Configuration et Préparation du Texte | Python 3 | READY | BETA | 30min | po-2024 |
 | 24 | Argument_Analysis — Argumentation basée sur les va | Python 3 | READY | BETA | 15min | po-2024 |
-| 25 | I2 - Génération de contre-arguments par raisonneme | Python 3 | READY | ALPHA | 45min | po-2024 |
+| 25 | I2 - Génération de contre-arguments par raisonneme | Python 3 | READY | BETA | 45min | po-2024 |
 | 26 | Lean 4 - Installation et Configuration | Python 3 (WSL) | READY | BETA | 15min | po-2024 |
 | 27 | Lean 10 : LeanDojo - ML/LLM Theorem Proving | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
 | 28 | Lean 11a - TorchLean : Implémentation Python des R | Python 3 | READY | BETA | 45min | po-2024 |
@@ -408,302 +418,307 @@ Total notebooks: 886
 | 42 | Lean 17a — Conway, les Nœuds et la Preuve de Picci | Python 3 | READY | BETA | 30min | po-2024 |
 | 43 | Lean 17b — Invariants de Nœuds : Calcul et Vérific | Python 3 | READY | BETA | 45min | po-2024 |
 | 44 | Lean-18 : A* et l'optimalité sous heuristique admi | Python 3 | READY | BETA | 30min | po-2024 |
-| 45 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
-| 46 | Lean 3 - Propositions et Preuves | Lean 4 | READY | BETA | 45min | po-2024 |
-| 47 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
-| 48 | Lean 5 - Mode Tactique | Lean 4 | READY | BETA | 1h | po-2024 |
-| 49 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | BETA | 45min | po-2024 |
-| 50 | Lean 7 - Integration des LLMs pour l'Assistance au | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
-| 51 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | READY | BETA | 30min | po-2024 |
-| 52 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 | READY | BETA | 30min | po-2024 |
-| 53 | Lean 9 : Multi-Agents avec Semantic Kernel | Python 3 | READY | BETA | 45min | po-2024 |
-| 54 | Configuration de l'environnement C# | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 55 | Planners-0-Setup | Python 3 | READY | BETA | 30min | po-2024 |
-| 56 | Planners-1-Introduction-Csharp : la planification  | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 57 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | BETA | 30min | po-2024 |
-| 58 | Planners-2-PDDL-Basics-Csharp | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 59 | Planners-2-PDDL-Basics | Python 3 | READY | BETA | 30min | po-2024 |
-| 60 | Planners-3 : Recherche dans l'Espace d'Etats — twi | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 61 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | BETA | 45min | po-2024 |
-| 62 | Planners-4-Fast-Downward (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 63 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | BETA | 45min | po-2024 |
-| 64 | Planners-5-Heuristics-Csharp | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 65 | Planners-5-Heuristiques en Planification | Python 3 | READY | BETA | 45min | po-2024 |
-| 66 | Planners-5b — Admissibilité de la relaxation sans- | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
-| 67 | Planners-6-Domains-Csharp — Jumeau C# : planificat | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 68 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | BETA | 45min | po-2024 |
-| 69 | Planners-7-OR-Tools-Csharp — Jumeau C# : solveur C | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 70 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | BETA | 45min | po-2024 |
-| 71 | Planners-8-Temporal — Planification Temporelle (tw | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 72 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | BETA | 45min | po-2024 |
-| 73 | Planners-9-HTN (C#) | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 74 | Planners-9-HTN - Planification Hiérarchique | Python 3 | READY | BETA | 45min | po-2024 |
-| 75 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | BETA | 45min | po-2024 |
-| 76 | Planners-11: Unified Planning | Python 3 | READY | BETA | 45min | po-2024 |
-| 77 | Planners-12: Learning to Plan avec LOOP | Python 3 | READY | BETA | 45min | po-2024 |
-| 78 | Z3 (C# / .NET) — Introduction au solveur SMT | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 79 | Z3-Python 01 — Introduction a la resolution de con | Python 3 | READY | BETA | 30min | po-2024 |
-| 80 | Z3 (C# / .NET) — Sudoku par contraintes | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 81 | Z3-Python 02 — Sudoku comme problème de satisfacti | Python 3 | READY | BETA | 15min | po-2024 |
-| 82 | Z3 (C# / .NET) — Tactiques, théories BitVec et Arr | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 83 | Z3-Python 03 — Tactiques et théories | Python 3 | READY | BETA | 30min | po-2024 |
-| 84 | Z3 (C# / .NET) — Théorie des chaînes et expression | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 85 | Z3-Python 04 — Chaînes de caractères et expression | Python 3 | READY | BETA | 30min | po-2024 |
-| 86 | Z3 (C# / .NET) — Quantificateurs et preuves par re | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 87 | Z3-Python 05 — Quantificateurs et preuves formelle | Python 3 | READY | BETA | 30min | po-2024 |
-| 88 | Z3-Python 06 -- Optimisation avancee (twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 89 | Z3-Python 06 — Optimisation avancee | Python 3 | READY | BETA | 30min | po-2024 |
-| 90 | Z3-Python 07 — Du style declaratif LINQ au solveur | Python 3 | READY | BETA | 15min | po-2024 |
-| 91 | Z3-Python-08 : Ordonnancement de tâches (Job-Shop  | Python 3 | READY | BETA | 30min | po-2024 |
-| 92 | Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle) | Python 3 | READY | BETA | 15min | po-2024 |
-| 93 | 10. Cryptarithmes (SEND + MORE = MONEY) | Python 3 | READY | BETA | 15min | po-2024 |
-| 94 | 11. Coloration de graphe : le graphe de Petersen | Python 3 | READY | BETA | 30min | po-2024 |
-| 95 | 12. Arithmetique reelle : raisonner sur les irrati | Python 3 | READY | BETA | 30min | po-2024 |
-| 96 | 13. UNSAT cores : expliquer l'insatisfiabilite (le | Python 3 | READY | BETA | 30min | po-2024 |
-| 97 | 14. Bit-vectors : verifier le debordement arithmet | Python 3 | READY | BETA | 30min | po-2024 |
-| 98 | 15. Tableaux imbriqués et grilles 2D : carrés lati | Python 3 | READY | BETA | 30min | po-2024 |
-| 99 | 16. Meal-Planner déclaratif : du modèle Z3 au plan | Python 3 | READY | BETA | 30min | po-2024 |
-| 100 | Z3-Python-16b — Meal-Planner : couche de données r | Python 3 | READY | BETA | 30min | po-2024 |
-| 101 | Z3-Python-16c — Meal-Planner : capstone patient (r | Python 3 | READY | BETA | 30min | po-2024 |
-| 102 | Z3-Python-16d — Convergence à l'échelle : l'encoda | Python 3 | READY | BETA | 30min | po-2024 |
-| 103 | Z3-Python-16e — Meal-Planner : l'optimisation (du  | Python 3 | READY | BETA | 30min | po-2024 |
-| 104 | Z3-Python 17 — Théorie des tableaux : Select, Stor | Python 3 | READY | BETA | 15min | po-2024 |
-| 105 | Z3-Python 18 — Sudoku 4x4 : comparaison des modes  | Python 3 | READY | BETA | 15min | po-2024 |
-| 106 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 107 | Sudoku : Théorème Explicite vs Modèle Implicite pa | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 108 | Sudoku 4x4 : comparaison des modes `Array` et `Con | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 109 | Théorie des Tableaux Z3 — Select, Store et Switchi | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 110 | Tableaux Imbriqués et Grilles 2D : API Déclarative | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 111 | Notebook 06 — Meal-Planner declaratif : du modèle  | .NET (C#) | READY | BETA | 1h | po-2024 |
-| 112 | 07 — Données réelles & externe : Ciqual × RecipeML | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 113 | 08 — Capstone hiérarchique : du squelette `int[][] | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 114 | 09 — Convergence à l'échelle : l'encodage décide d | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 115 | 10 — Générer un témoin depuis `A & ~B` (fork Autom | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 116 | Notebook 11 — Ordonnancement d'atelier (Job Shop S | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 117 | Notebook 12 - Coloration de graphe : le graphe de  | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 118 | Notebook 13 — Cryptarithmes : l'arithmétique posit | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 119 | Notebook 14 — De SAT à OPT : optimisation et contr | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 120 | 15 — Théorie des bit-vectors Z3 : vérifier le débo | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 121 | 16 — Arithmétique réelle Z3 : raisonner sur les ir | .NET (C#) | READY | DRAFT | 30min | po-2024 |
-| 122 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 123 | Notebook 18 - L'enigme d'Einstein : la logique des | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 124 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | BETA | 2h+ | po-2024 |
-| 125 | SW-1-Setup | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 126 | SW-10-CSharp-RDFStar — Jumeau C# : annoter des tri | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 127 | SW-10-Python-RDFStar | Python 3 | READY | BETA | 45min | po-2024 |
-| 128 | SW-11-CSharp-KnowledgeGraphs | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 129 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | BETA | 1h | po-2024 |
-| 130 | SW-12-Python-GraphRAG | Python 3 | DEMO | BETA | 45min | po-2024 |
-| 131 | SW-13-Reasoners | Python 3 | READY | BETA | 1h | po-2024 |
-| 132 | SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des con | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 133 | SW-2-RDFBasics | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 134 | SW-2b-Python-RDFBasics | Python 3 | READY | BETA | 30min | po-2024 |
-| 135 | SW-3-GraphOperations | .NET (C#) | READY | BETA | 1h | po-2024 |
-| 136 | SW-3b-Python-GraphOperations | Python 3 (ipykernel) | READY | BETA | 45min | po-2024 |
-| 137 | SW-4-SPARQL | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 138 | SW-4b-Python-SPARQL | Python 3 | READY | BETA | 45min | po-2024 |
-| 139 | SW-5-LinkedData | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 140 | SW-5b-Python-LinkedData | .venv (3.12.3) | DEMO | BETA | 45min | po-2024 |
-| 141 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 142 | SW-6b-Python-RDFS | Python 3 (ipykernel) | READY | BETA | 30min | po-2024 |
-| 143 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 144 | SW-7b-Python-OWL | Python 3 | DEMO | BETA | 45min | po-2024 |
-| 145 | SW-8-CSharp-SHACL | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 146 | SW-8-Python-SHACL | Python 3 | READY | BETA | 45min | po-2024 |
-| 147 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin  | .NET (C#) | READY | ALPHA | 45min | po-2024 |
-| 148 | SW-9-Python-JSONLD | Python 3 | READY | BETA | 1h | po-2024 |
-| 149 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python 3 | READY | BETA | 45min | po-2024 |
-| 150 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python 3 | READY | BETA | 15min | po-2024 |
-| 151 | SC-2-Setup-Web3py - Python et la Blockchain | Python 3 | READY | BETA | 30min | po-2024 |
-| 152 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | BETA | 45min | po-2024 |
-| 153 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | BETA | 45min | po-2024 |
-| 154 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | BETA | 30min | po-2024 |
-| 155 | SC-6-Errors-Events - Erreurs et Événements | Python 3 | READY | BETA | 30min | po-2024 |
-| 156 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | BETA | 30min | po-2024 |
-| 157 | SC-11-LLM-Assisted - Développement Smart Contracts | Python 3 | DEMO | BETA | 45min | po-2024 |
-| 158 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | BETA | 30min | po-2024 |
-| 159 | SC-8-DeFi-Primitives - Primitives DeFi | Python 3 | READY | BETA | 30min | po-2024 |
-| 160 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | BETA | 30min | po-2024 |
-| 161 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | BETA | 45min | po-2024 |
-| 162 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | BETA | 30min | po-2024 |
-| 163 | SC-14-Formal-Verification - Verification Formelle | Python 3 | DEMO | BETA | 30min | po-2024 |
-| 164 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | BETA | 45min | po-2024 |
-| 165 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 (SC-16 Concrete, WSL) | READY | BETA | 30min | po-2024 |
-| 166 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | BETA | 30min | po-2024 |
-| 167 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | BETA | 30min | po-2024 |
-| 168 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | BETA | 30min | po-2024 |
-| 169 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | BETA | 30min | po-2024 |
-| 170 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | BETA | 30min | po-2024 |
-| 171 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | BETA | 30min | po-2024 |
-| 172 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | BETA | 30min | po-2024 |
-| 173 | SC-24 : Deploiement sur Testnets | Python 3 | READY | BETA | 30min | po-2024 |
-| 174 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | BETA | 30min | po-2024 |
-| 175 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | BETA | 15min | po-2024 |
-| 176 | SL-1 - Apprentissage Logique : CBH Search et Versi | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 177 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | BETA | 45min | po-2024 |
-| 178 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 179 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | Python 3 | READY | BETA | 45min | po-2024 |
-| 180 | SL-11 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | BETA | 45min | po-2024 |
-| 181 | SL-12 : Differentiable Logic Gate Networks | Python (difflogic-sl12) | READY | BETA | 45min | po-2024 |
-| 182 | SL-2 - Apprentissage et Connaissance : EBL & RBL ( | .NET (C#) | READY | ALPHA | 30min | po-2024 |
-| 183 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | BETA | 45min | po-2024 |
-| 184 | SL-3 — Apprentissage basé sur la pertinence (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 185 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | BETA | 45min | po-2024 |
-| 186 | SL-4 — Programmation Logique Inductive (ILP) — Twi | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 187 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
-| 188 | SL-5 - Resolution Inverse & ILP (C#) | .NET (C#) | READY | ALPHA | 30min | po-2024 |
-| 189 | SL-5 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | BETA | 30min | po-2024 |
-| 190 | SL-6 (C#) : Moteurs ILP modernes — apprendre des p | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 191 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Po | Python 3 (WSL) | READY | BETA | 30min | po-2024 |
-| 192 | SL-7 : Integration Neuro-Symbolique | Python 3 | READY | BETA | 45min | po-2024 |
-| 193 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 194 | SL-8 - ILP Moderne et Knowledge Graphs | Python 3 | READY | BETA | 45min | po-2024 |
-| 195 | SL-9 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | BETA | 45min | po-2024 |
-| 196 | Configuration et Installation TweetyProject | Python 3 | READY | BETA | 45min | po-2024 |
-| 197 | Tweety-10 — Markov Logic Networks (MLN) en .NET (C | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 198 | Tweety-10 — Markov Logic Networks (MLN) | Python 3 | READY | BETA | 30min | po-2024 |
-| 199 | Tweety-11 — Inférence causale & do-calculus (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 200 | Tweety-11 — Raisonnement Causal : du do-calculus a | Python 3 | READY | BETA | 30min | po-2024 |
-| 201 | Tweety C# / IKVM - Logiques de Base (Port .NET du  | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 202 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | BETA | 45min | po-2024 |
-| 203 | Tweety C# / IKVM - Sémantique propositionnelle : m | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 204 | Tweety-2c — Logique du premier ordre en C#/.NET (p | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 205 | Tweety-3 — Description Logics en C#/.NET (port nat | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 206 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | BETA | 45min | po-2024 |
-| 207 | Tweety-3 — Conditional Logics en C#/.NET (port nat | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 208 | Tweety-3 — Argumentation abstraite de Dung en C#/. | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 209 | Tweety-3 Modal Logic en C#/.NET (port natif IKVM) | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 210 | Tweety-3 - Quantified Boolean Formulas en C#/.NET  | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 211 | Tweety-4 — Argumentation structurée ASPIC+ en C#/. | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 212 | Tweety C# / IKVM - Revision de Croyances (Port .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 213 | Révision de Croyances et Incohérence | Python 3 | READY | BETA | 30min | po-2024 |
-| 214 | Tweety-5 : Argumentation Abstraite de Dung (C# / . | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 215 | Argumentation Abstraite (Dung) | Python 3 | READY | BETA | 45min | po-2024 |
-| 216 | Tweety-5b — Théorie de l'argumentation de Dung (co | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
-| 217 | Tweety-6 — Argumentation structuree (twin C# / .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 218 | Argumentation Structuree | Python 3 | READY | BETA | 30min | po-2024 |
-| 219 | Tweety-7a : Frameworks d'Argumentation Etendus (C# | .NET (C#) | READY | BETA | 30min | po-2024 |
-| 220 | Frameworks d'Argumentation Étendus | Python 3 | READY | BETA | 30min | po-2024 |
-| 221 | Tweety-7b - Ranking Probabilistic Conditional Logi | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 222 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | BETA | 30min | po-2024 |
-| 223 | Dialogues Multi-Agents Argumentatifs (twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
-| 224 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | BETA | 30min | po-2024 |
-| 225 | Préférences et Théorie du Vote en C# / .NET (port  | .NET (C#) | READY | ALPHA | 30min | po-2024 |
-| 226 | Préférences et Théorie du Vote | Python 3 | READY | ALPHA | 30min | po-2024 |
-| 227 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 45 | Lean-19 : La Conjecture de Sendov (T. Tao, aout 20 | Python 3 | READY | BETA | 30min | po-2024 |
+| 46 | Lean 2 - Types Dependants et Calcul des Constructi | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
+| 47 | Lean-20 : Le manuel *Analysis I* de T. Tao en Lean | Python 3 | READY | BETA | 30min | po-2024 |
+| 48 | Lean-21 : La conjecture de Freiman-Ruzsa polynomia | Python 3 | READY | DRAFT | 15min | po-2024 |
+| 49 | Lean 3 - Propositions et Preuves | Lean 4 | READY | BETA | 45min | po-2024 |
+| 50 | Lean 4 - Quantificateurs et Logique du Premier Ord | Lean 4 (WSL) | READY | BETA | 45min | po-2024 |
+| 51 | Lean 5 - Mode Tactique | Lean 4 | READY | BETA | 1h | po-2024 |
+| 52 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | Lean 4 | READY | BETA | 45min | po-2024 |
+| 53 | Lean 7 - Integration des LLMs pour l'Assistance au | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
+| 54 | Lean 7b - Exemples Progressifs et Benchmarks | Python 3 (WSL) | READY | BETA | 30min | po-2024 |
+| 55 | Lean 8 - Agents Autonomes pour Demonstration de Th | Python 3 | READY | BETA | 30min | po-2024 |
+| 56 | Lean 9 : Multi-Agents avec Semantic Kernel | Python 3 | READY | BETA | 45min | po-2024 |
+| 57 | Configuration de l'environnement C# | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 58 | Planners-0-Setup | Python 3 | READY | BETA | 30min | po-2024 |
+| 59 | Planners-1-Introduction-Csharp : la planification  | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 60 | Planners-1-Introduction a la Planification Automat | Python 3 | READY | BETA | 30min | po-2024 |
+| 61 | Planners-2-PDDL-Basics-Csharp | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 62 | Planners-2-PDDL-Basics | Python 3 | READY | BETA | 30min | po-2024 |
+| 63 | Planners-3 : Recherche dans l'Espace d'Etats — twi | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 64 | Planners-3-State-Space - Recherche dans l'Espace d | Python 3 | READY | BETA | 45min | po-2024 |
+| 65 | Planners-4-Fast-Downward (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 66 | Planners-4-Fast-Downward - Planificateur Classique | Python 3 | READY | BETA | 45min | po-2024 |
+| 67 | Planners-5-Heuristics-Csharp | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 68 | Planners-5-Heuristiques en Planification | Python 3 | READY | BETA | 45min | po-2024 |
+| 69 | Planners-5b — Admissibilité de la relaxation sans- | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
+| 70 | Planners-6-Domains-Csharp — Jumeau C# : planificat | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 71 | Planners-6-Domains - Domaines Classiques de Planif | Python 3 | READY | BETA | 45min | po-2024 |
+| 72 | Planners-7-OR-Tools-Csharp — Jumeau C# : solveur C | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 73 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | BETA | 45min | po-2024 |
+| 74 | Planners-8-Temporal — Planification Temporelle (tw | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 75 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | BETA | 45min | po-2024 |
+| 76 | Planners-9-HTN (C#) | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 77 | Planners-9-HTN - Planification Hiérarchique | Python 3 | READY | BETA | 45min | po-2024 |
+| 78 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | BETA | 45min | po-2024 |
+| 79 | Planners-11: Unified Planning | Python 3 | READY | BETA | 45min | po-2024 |
+| 80 | Planners-12: Learning to Plan avec LOOP | Python 3 | READY | BETA | 45min | po-2024 |
+| 81 | Z3 (C# / .NET) — Introduction au solveur SMT | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 82 | Z3-Python 01 — Introduction a la resolution de con | Python 3 | READY | BETA | 30min | po-2024 |
+| 83 | Z3 (C# / .NET) — Sudoku par contraintes | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 84 | Z3-Python 02 — Sudoku comme problème de satisfacti | Python 3 | READY | BETA | 15min | po-2024 |
+| 85 | Z3 (C# / .NET) — Tactiques, théories BitVec et Arr | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 86 | Z3-Python 03 — Tactiques et théories | Python 3 | READY | BETA | 30min | po-2024 |
+| 87 | Z3 (C# / .NET) — Théorie des chaînes et expression | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 88 | Z3-Python 04 — Chaînes de caractères et expression | Python 3 | READY | BETA | 30min | po-2024 |
+| 89 | Z3 (C# / .NET) — Quantificateurs et preuves par re | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 90 | Z3-Python 05 — Quantificateurs et preuves formelle | Python 3 | READY | BETA | 30min | po-2024 |
+| 91 | Z3-Python 06 -- Optimisation avancee (twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 92 | Z3-Python 06 — Optimisation avancee | Python 3 | READY | BETA | 30min | po-2024 |
+| 93 | Z3-Python 07 — Du style declaratif LINQ au solveur | Python 3 | READY | BETA | 15min | po-2024 |
+| 94 | Z3-Python-08 : Ordonnancement de tâches (Job-Shop  | Python 3 | READY | BETA | 30min | po-2024 |
+| 95 | Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle) | Python 3 | READY | BETA | 15min | po-2024 |
+| 96 | 10. Cryptarithmes (SEND + MORE = MONEY) | Python 3 | READY | BETA | 15min | po-2024 |
+| 97 | 11. Coloration de graphe : le graphe de Petersen | Python 3 | READY | BETA | 30min | po-2024 |
+| 98 | 12. Arithmetique reelle : raisonner sur les irrati | Python 3 | READY | BETA | 30min | po-2024 |
+| 99 | 13. UNSAT cores : expliquer l'insatisfiabilite (le | Python 3 | READY | BETA | 30min | po-2024 |
+| 100 | 14. Bit-vectors : verifier le debordement arithmet | Python 3 | READY | BETA | 30min | po-2024 |
+| 101 | 15. Tableaux imbriqués et grilles 2D : carrés lati | Python 3 | READY | BETA | 30min | po-2024 |
+| 102 | 16. Meal-Planner déclaratif : du modèle Z3 au plan | Python 3 | READY | BETA | 30min | po-2024 |
+| 103 | Z3-Python-16b — Meal-Planner : couche de données r | Python 3 | READY | BETA | 30min | po-2024 |
+| 104 | Z3-Python-16c — Meal-Planner : capstone patient (r | Python 3 | READY | BETA | 30min | po-2024 |
+| 105 | Z3-Python-16d — Convergence à l'échelle : l'encoda | Python 3 | READY | BETA | 30min | po-2024 |
+| 106 | Z3-Python-16e — Meal-Planner : l'optimisation (du  | Python 3 | READY | BETA | 30min | po-2024 |
+| 107 | Z3-Python 17 — Théorie des tableaux : Select, Stor | Python 3 | READY | BETA | 15min | po-2024 |
+| 108 | Z3-Python 18 — Sudoku 4x4 : comparaison des modes  | Python 3 | READY | BETA | 15min | po-2024 |
+| 109 | LINQ to Z3 - Résolution de Contraintes Déclarative | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 110 | Sudoku : Théorème Explicite vs Modèle Implicite pa | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 111 | Sudoku 4x4 : comparaison des modes `Array` et `Con | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 112 | Théorie des Tableaux Z3 — Select, Store et Switchi | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 113 | Tableaux Imbriqués et Grilles 2D : API Déclarative | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 114 | Notebook 06 — Meal-Planner declaratif : du modèle  | .NET (C#) | READY | BETA | 1h | po-2024 |
+| 115 | 07 — Données réelles & externe : Ciqual × RecipeML | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 116 | 08 — Capstone hiérarchique : du squelette `int[][] | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 117 | 09 — Convergence à l'échelle : l'encodage décide d | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 118 | 10 — Générer un témoin depuis `A & ~B` (fork Autom | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 119 | Notebook 11 — Ordonnancement d'atelier (Job Shop S | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 120 | Notebook 12 - Coloration de graphe : le graphe de  | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 121 | Notebook 13 — Cryptarithmes : l'arithmétique posit | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 122 | Notebook 14 — De SAT à OPT : optimisation et contr | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 123 | 15 — Théorie des bit-vectors Z3 : vérifier le débo | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 124 | 16 — Arithmétique réelle Z3 : raisonner sur les ir | .NET (C#) | READY | DRAFT | 30min | po-2024 |
+| 125 | 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 126 | Notebook 18 - L'enigme d'Einstein : la logique des | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 127 | Introduction au web sémantique avec RDF.Net | .NET (C#) | READY | BETA | 2h+ | po-2024 |
+| 128 | SW-1-Setup | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 129 | SW-10-CSharp-RDFStar — Jumeau C# : annoter des tri | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 130 | SW-10-Python-RDFStar | Python 3 | READY | BETA | 45min | po-2024 |
+| 131 | SW-11-CSharp-KnowledgeGraphs | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 132 | SW-11-Python-KnowledgeGraphs | Python 3 | READY | BETA | 1h | po-2024 |
+| 133 | SW-12-Python-GraphRAG | Python 3 | DEMO | BETA | 45min | po-2024 |
+| 134 | SW-13-Reasoners | Python 3 | READY | BETA | 1h | po-2024 |
+| 135 | SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des con | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 136 | SW-2-RDFBasics | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 137 | SW-2b-Python-RDFBasics | Python 3 | READY | BETA | 45min | po-2024 |
+| 138 | SW-3-GraphOperations | .NET (C#) | READY | BETA | 1h | po-2024 |
+| 139 | SW-3b-Python-GraphOperations | Python 3 (ipykernel) | READY | BETA | 45min | po-2024 |
+| 140 | SW-4-SPARQL | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 141 | SW-4b-Python-SPARQL | Python 3 | READY | BETA | 45min | po-2024 |
+| 142 | SW-5-LinkedData | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 143 | SW-5b-Python-LinkedData | .venv (3.12.3) | DEMO | BETA | 45min | po-2024 |
+| 144 | SW-6-RDFS | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 145 | SW-6b-Python-RDFS | Python 3 (ipykernel) | READY | BETA | 30min | po-2024 |
+| 146 | SW-7-OWL | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 147 | SW-7b-Python-OWL | Python 3 | DEMO | BETA | 45min | po-2024 |
+| 148 | SW-8-CSharp-SHACL | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 149 | SW-8-Python-SHACL | Python 3 | READY | BETA | 45min | po-2024 |
+| 150 | SW-9-CSharp-JSONLD — JSON-LD avec dotNetRDF (twin  | .NET (C#) | READY | ALPHA | 45min | po-2024 |
+| 151 | SW-9-Python-JSONLD | Python 3 | READY | BETA | 1h | po-2024 |
+| 152 | SC-0-Cypherpunk-Origins - Les origines Cypherpunk  | Python 3 | READY | BETA | 45min | po-2024 |
+| 153 | SC-1-Setup-Foundry - Environnement Smart Contracts | Python 3 | READY | BETA | 15min | po-2024 |
+| 154 | SC-2-Setup-Web3py - Python et la Blockchain | Python 3 | READY | BETA | 30min | po-2024 |
+| 155 | SC-3-Solidity-Basics - Fondements de Solidity | .venv | READY | BETA | 45min | po-2024 |
+| 156 | SC-4-Functions-State - Fonctions et Etat | Python 3 | READY | BETA | 45min | po-2024 |
+| 157 | SC-5-Inheritance - Heritage et Interfaces | Python 3 | READY | BETA | 30min | po-2024 |
+| 158 | SC-6-Errors-Events - Erreurs et Événements | Python 3 | READY | BETA | 30min | po-2024 |
+| 159 | SC-10-Account-Abstraction - ERC-4337 | Python 3 | READY | BETA | 30min | po-2024 |
+| 160 | SC-11-LLM-Assisted - Développement Smart Contracts | Python 3 | DEMO | BETA | 45min | po-2024 |
+| 161 | SC-7-Token-Standards - Standards de Tokens | Python 3 | READY | BETA | 30min | po-2024 |
+| 162 | SC-8-DeFi-Primitives - Primitives DeFi | Python 3 | READY | BETA | 30min | po-2024 |
+| 163 | SC-9-DAO-Governance - Gouvernance DAO | cours-ia | READY | BETA | 30min | po-2024 |
+| 164 | SC-12-Foundry-Testing - Tests avec Foundry | Python 3 | READY | BETA | 45min | po-2024 |
+| 165 | SC-13-Fuzz-Invariants - Fuzz Testing | Python 3 | READY | BETA | 30min | po-2024 |
+| 166 | SC-14-Formal-Verification - Verification Formelle | Python 3 | DEMO | BETA | 30min | po-2024 |
+| 167 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgatio | Python 3 | READY | BETA | 45min | po-2024 |
+| 168 | SC-16-Homomorphic-Encryption - Chiffrement Homomor | Python 3 (SC-16 Concrete, WSL) | READY | BETA | 30min | po-2024 |
+| 169 | SC-17-E2E-Verifiable-Voting - Vote Electronique Ve | Python 3 | READY | BETA | 30min | po-2024 |
+| 170 | SC-18-Vyper - Smart Contracts en Python-like | Python 3 | READY | BETA | 30min | po-2024 |
+| 171 | SC-19-Ripple-XRP - Protocole Ripple et XRP Ledger | Python 3 | READY | BETA | 30min | po-2024 |
+| 172 | SC-20-Bitcoin-Scripting - Bitcoin, UTXO et Scripts | .venv | READY | BETA | 30min | po-2024 |
+| 173 | SC-21-Move-Sui - Move sur Sui | Python 3 | READY | BETA | 30min | po-2024 |
+| 174 | SC-22-Solana-Anchor - Solana avec Anchor | Python 3 | READY | BETA | 30min | po-2024 |
+| 175 | SC-23-Cross-Chain - Interoperabilite Cross-Chain | Python 3 | READY | BETA | 30min | po-2024 |
+| 176 | SC-24 : Deploiement sur Testnets | Python 3 | READY | BETA | 30min | po-2024 |
+| 177 | SC-25 : Deploiement Mainnet (L2) | Python 3 | READY | BETA | 30min | po-2024 |
+| 178 | SC-26 : Projet Final - DApp Complete | Python 3 | READY | BETA | 15min | po-2024 |
+| 179 | SL-1 - Apprentissage Logique : CBH Search et Versi | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 180 | SL-1 - Apprentissage Logique : CBH Search et Versi | Python 3 | READY | BETA | 45min | po-2024 |
+| 181 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 182 | SL-10 --- Apprentissage Actif d'Automates (L* d'An | Python 3 | READY | BETA | 45min | po-2024 |
+| 183 | SL-11 --- Capstone : un pipeline neuro-symbolique  | Python 3 | READY | BETA | 45min | po-2024 |
+| 184 | SL-12 : Differentiable Logic Gate Networks | Python (difflogic-sl12) | READY | BETA | 45min | po-2024 |
+| 185 | SL-2 - Apprentissage et Connaissance : EBL & RBL ( | .NET (C#) | READY | ALPHA | 30min | po-2024 |
+| 186 | SL-2 --- Apprentissage et Connaissance (EBL & RBL) | Python 3 | READY | BETA | 45min | po-2024 |
+| 187 | SL-3 — Apprentissage basé sur la pertinence (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 188 | SL-3 --- Apprentissage Base sur la Pertinence (RBL | Python 3 | READY | BETA | 45min | po-2024 |
+| 189 | SL-4 — Programmation Logique Inductive (ILP) — Twi | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 190 | SL-4 --- Programmation Logique Inductive (ILP) | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
+| 191 | SL-5 - Resolution Inverse & ILP (C#) | .NET (C#) | READY | ALPHA | 30min | po-2024 |
+| 192 | SL-5 --- Resolution Inverse et Progol (ILP bottom- | Python 3 | READY | BETA | 30min | po-2024 |
+| 193 | SL-6 (C#) : Moteurs ILP modernes — apprendre des p | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 194 | SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Po | Python 3 (WSL) | READY | BETA | 30min | po-2024 |
+| 195 | SL-7 : Integration Neuro-Symbolique | Python 3 | READY | BETA | 45min | po-2024 |
+| 196 | SL-8 (C#) : ILP Moderne et Knowledge Graphs | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 197 | SL-8 - ILP Moderne et Knowledge Graphs | Python 3 | READY | BETA | 45min | po-2024 |
+| 198 | SL-9 - LLMs et Apprentissage Symbolique : Generati | Python 3 | READY | BETA | 45min | po-2024 |
+| 199 | Configuration et Installation TweetyProject | Python 3 | READY | BETA | 45min | po-2024 |
+| 200 | Tweety-10 — Markov Logic Networks (MLN) en .NET (C | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 201 | Tweety-10 — Markov Logic Networks (MLN) | Python 3 | READY | BETA | 30min | po-2024 |
+| 202 | Tweety-11 — Inférence causale & do-calculus (twin  | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 203 | Tweety-11 — Raisonnement Causal : du do-calculus a | Python 3 | READY | BETA | 30min | po-2024 |
+| 204 | Tweety C# / IKVM - Logiques de Base (Port .NET du  | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 205 | Logiques de Base - Propositionnelle et Premier Ord | Python 3 | READY | BETA | 45min | po-2024 |
+| 206 | Tweety C# / IKVM - Sémantique propositionnelle : m | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 207 | Tweety-2c — Logique du premier ordre en C#/.NET (p | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 208 | Tweety-3 — Description Logics en C#/.NET (port nat | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 209 | Logiques Avancees - DL, Modale, QBF, Conditional | Python 3 | READY | BETA | 45min | po-2024 |
+| 210 | Tweety-3 — Conditional Logics en C#/.NET (port nat | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 211 | Tweety-3 — Argumentation abstraite de Dung en C#/. | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 212 | Tweety-3 Modal Logic en C#/.NET (port natif IKVM) | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 213 | Tweety-3 - Quantified Boolean Formulas en C#/.NET  | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 214 | Tweety-4 — Argumentation structurée ASPIC+ en C#/. | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 215 | Tweety C# / IKVM - Revision de Croyances (Port .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 216 | Révision de Croyances et Incohérence | Python 3 | READY | BETA | 30min | po-2024 |
+| 217 | Tweety-5 : Argumentation Abstraite de Dung (C# / . | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 218 | Argumentation Abstraite (Dung) | Python 3 | READY | BETA | 45min | po-2024 |
+| 219 | Tweety-5b — Théorie de l'argumentation de Dung (co | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
+| 220 | Tweety-6 — Argumentation structuree (twin C# / .NE | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 221 | Argumentation Structuree | Python 3 | READY | BETA | 30min | po-2024 |
+| 222 | Tweety-7a : Frameworks d'Argumentation Etendus (C# | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 223 | Frameworks d'Argumentation Étendus | Python 3 | READY | BETA | 30min | po-2024 |
+| 224 | Tweety-7b - Ranking Probabilistic Conditional Logi | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 225 | Sémantiques de Classement et Argumentation Probabi | Python 3 | READY | BETA | 30min | po-2024 |
+| 226 | Dialogues Multi-Agents Argumentatifs (twin C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 227 | Dialogues Multi-Agents Argumentatifs | Python 3 | READY | BETA | 30min | po-2024 |
+| 228 | Préférences et Théorie du Vote en C# / .NET (port  | .NET (C#) | READY | ALPHA | 30min | po-2024 |
+| 229 | Préférences et Théorie du Vote | Python 3 | READY | ALPHA | 30min | po-2024 |
+| 230 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (106 notebooks) — DEMO:48, READY:58 | ALPHA:16, BETA:78, DRAFT:11, TEMPLATE:1
+### QuantConnect (108 notebooks) — DEMO:48, READY:60 | ALPHA:15, BETA:79, DRAFT:13, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
 | 1 | ML Training Pipeline - Notebook de Recherche | Python 3 | READY | TEMPLATE | 30min | po-2026 |
-| 2 | M3b - HAR Asymetrique : Decomposition Semivariance | Python 3 | READY | BETA | 30min | po-2026 |
-| 3 | QC-Py-01 : Configuration et Premier Backtest Quant | Python 3 | DEMO | BETA | 30min | po-2026 |
-| 4 | QC-Py-02 : QuantConnect Platform Fundamentals - QC | Python 3 | DEMO | BETA | 30min | po-2026 |
-| 5 | QC-Py-03 - Data Management in QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 6 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 7 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 8 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 9 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 10 | QC-Py-08 - Multi-Asset Portfolio Stratégies | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 11 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 12 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 13 | QC-Py-11 - Indicateurs Techniques dans QuantConnec | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 14 | QC-Py-12 - Backtesting et Analyse de Performance | Python 3 | DEMO | BETA | 1h30 | po-2026 |
-| 15 | QC-Py-12b - Validité du backtest et signification  | Python 3 | READY | BETA | 30min | po-2026 |
-| 16 | QC-Py-13 - Alpha Models et Algorithm Framework | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 17 | QC-Py-14 - Portfolio Construction et Exécution Mod | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 18 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h30 | po-2026 |
-| 19 | QC-Py-16 - Alternative Data dans QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 20 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 21 | QC-Py-18 - Feature Engineering pour Machine Learni | Python 3 | DEMO | ALPHA | 1h | po-2026 |
-| 22 | Objectifs d'Apprentissage | Python 3 | DEMO | ALPHA | 1h | po-2026 |
-| 23 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 24 | QC-Py-21 - Portfolio Optimization avec Machine Lea | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 2 | M15 - LSTM RV : entree §C du registre (2e entree § | Python 3 (ipykernel) | READY | DRAFT | 30min | po-2026 |
+| 3 | M3b - HAR Asymetrique : Decomposition Semivariance | Python 3 | READY | BETA | 30min | po-2026 |
+| 4 | M4 - DLinear-vol : entree §C du registre (conjonct | Python 3 | READY | DRAFT | 30min | po-2026 |
+| 5 | QC-Py-01 : Configuration et Premier Backtest Quant | Python 3 | DEMO | BETA | 30min | po-2026 |
+| 6 | QC-Py-02 : QuantConnect Platform Fundamentals - QC | Python 3 | DEMO | BETA | 30min | po-2026 |
+| 7 | QC-Py-03 - Data Management in QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 8 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 9 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 10 | QC-Py-06 : Options Trading dans QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 11 | QC-Py-07 : Futures et Forex Trading dans QuantConn | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 12 | QC-Py-08 - Multi-Asset Portfolio Stratégies | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 13 | QC-Py-09 : Types d'Ordres et Order Management dans | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 14 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 15 | QC-Py-11 - Indicateurs Techniques dans QuantConnec | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 16 | QC-Py-12 - Backtesting et Analyse de Performance | Python 3 | DEMO | BETA | 1h30 | po-2026 |
+| 17 | QC-Py-12b - Validité du backtest et signification  | Python 3 | READY | BETA | 30min | po-2026 |
+| 18 | QC-Py-13 - Alpha Models et Algorithm Framework | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 19 | QC-Py-14 - Portfolio Construction et Exécution Mod | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 20 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h30 | po-2026 |
+| 21 | QC-Py-16 - Alternative Data dans QuantConnect | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 22 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 23 | QC-Py-18 - Feature Engineering pour Machine Learni | Python 3 | DEMO | ALPHA | 1h | po-2026 |
+| 24 | Objectifs d'Apprentissage | Python 3 | DEMO | ALPHA | 1h | po-2026 |
 | 25 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 26 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 27 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | DRAFT | 45min | po-2026 |
-| 28 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 29 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 30 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 31 | QC-Py-27 - Production Deployment | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 32 | QC-Py-28 - Market Regime Detection | Python 3 | DEMO | BETA | 1h | po-2026 |
-| 33 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 34 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 35 | QC-Py-32 - Reinforcement Learning DQN pour le Trad | Python 3 | READY | BETA | 45min | po-2026 |
-| 36 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 37 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 38 | QC-Py-35 - Reinforcement Learning pour la Construc | Python 3 | DEMO | ALPHA | 30min | po-2026 |
-| 39 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | DEMO | ALPHA | 45min | po-2026 |
-| 40 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 41 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur  | Python 3 | DEMO | ALPHA | 30min | po-2026 |
-| 42 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 43 | QC-Py-Cloud-02 : Classification de Texte et Sentim | Python 3 | DEMO | ALPHA | 30min | po-2026 |
-| 44 | QC-Py-Cloud-02 — Sector Rotation & Multi-Asset Mom | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 45 | QC-Py-Cloud-03 — Dual Momentum : Asset Sélection M | Python 3 | READY | BETA | 15min | po-2026 |
-| 46 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | READY | BETA | 30min | po-2026 |
-| 47 | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 48 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trad | Python 3 | DEMO | ALPHA | 30min | po-2026 |
-| 49 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones  | Python 3 | DEMO | ALPHA | 30min | po-2026 |
-| 50 | QC-Py-Cloud-05 — Regime Switching : Momentum in Bu | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 51 | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean Re | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 52 | QC-Py-Cloud-06 -- Volatility Targeting : Risk Mana | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 53 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 54 | Value Factor Z-Score — Sélection multi-facteurs fo | Python 3 | DEMO | BETA | 15min | po-2026 |
-| 55 | Option Wheel — Le paradoxe du win-rate eleve | Python 3 | DEMO | BETA | 15min | po-2026 |
-| 56 | Workflow : Téléchargement et gestion des datasets | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 57 | Le critere de Kelly — compagnon Python du lake `ke | Python 3 | DEMO | BETA | 30min | po-2026 |
-| 58 | Research QuantBook: Adaptive Asset Allocation | Python 3 | READY | BETA | 45min | po-2026 |
-| 59 | Research QuantBook: All-Weather Portfolio | Python 3 | READY | BETA | 30min | po-2026 |
-| 60 | Alpha Correlation Analysis | Python 3 | READY | BETA | 45min | po-2026 |
-| 61 | Research QuantBook: BTC ML Enhanced | Python 3 | READY | BETA | 45min | po-2026 |
-| 62 | Initializing environment | .NET (C#) | DEMO | DRAFT | 1h30 | po-2026 |
-| 63 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | READY | BETA | 45min | po-2026 |
-| 64 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | READY | BETA | 45min | po-2026 |
-| 65 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | READY | BETA | 30min | po-2026 |
-| 66 | Research QuantBook: Dual Momentum No TLT | Python 3 | READY | BETA | 45min | po-2026 |
-| 67 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | READY | BETA | 30min | po-2026 |
-| 68 | Research QuantBook: EMA Cross Equity | Python 3 | READY | BETA | 45min | po-2026 |
-| 69 | Research QuantBook: EMA Crossover SPY Index | Python 3 | READY | BETA | 45min | po-2026 |
-| 70 | Research QuantBook: Multi-Stock EMA Crossover | Python 3 | READY | BETA | 45min | po-2026 |
-| 71 | Research QuantBook: ETF Pairs Trading | Python 3 | READY | BETA | 45min | po-2026 |
-| 72 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | READY | BETA | 45min | po-2026 |
-| 73 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | READY | BETA | 45min | po-2026 |
-| 74 | Research QuantBook: Framework Composite EMA-Trend | Python 3 | READY | BETA | 30min | po-2026 |
-| 75 | Research QuantBook: Framework Composite FamaFrench | Python 3 | READY | BETA | 30min | po-2026 |
-| 76 | Research QuantBook: Framework Composite Momentum + | Python 3 | READY | BETA | 30min | po-2026 |
-| 77 | Framework Composite TrendWeather - Research | Python 3 | READY | BETA | 45min | po-2026 |
-| 78 | Research QuantBook: FuturesTrend (Donchian Breakou | Python 3 | READY | BETA | 30min | po-2026 |
-| 79 | Research QuantBook: ML Classification (RandomFores | Python 3 | READY | BETA | 45min | po-2026 |
-| 80 | ML Deep Learning - LSTM/GRU pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 81 | Research QuantBook: ML-Enhanced Pairs Trading | Python 3 | READY | BETA | 45min | po-2026 |
-| 82 | Research QuantBook: ML Ensemble | Python 3 | READY | BETA | 45min | po-2026 |
-| 83 | Research QuantBook: ML Feature Engineering | Python 3 | READY | BETA | 45min | po-2026 |
-| 84 | ML Random Forest - Classification pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 85 | Research QuantBook: ML Regression | Python 3 | READY | BETA | 45min | po-2026 |
-| 86 | ML SVM - Support Vector Machine pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 87 | ML Text Classification for Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
-| 88 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | READY | BETA | 45min | po-2026 |
-| 89 | Research QuantBook: Mean Reversion (Sector ETFs) | Python 3 | READY | BETA | 30min | po-2026 |
-| 90 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | READY | BETA | 30min | po-2026 |
-| 91 | Research QuantBook: Equity Multi-Layer EMA + ML Fi | Python 3 | READY | BETA | 45min | po-2026 |
-| 92 | Research QuantBook: Option Wheel Strategy | Python 3 | READY | BETA | 45min | po-2026 |
-| 93 | Research QuantBook: Options Wheel Tech Stocks | Python 3 | READY | BETA | 30min | po-2026 |
-| 94 | Research QuantBook: Covered Call Strategy | Python 3 | READY | BETA | 45min | po-2026 |
-| 95 | Research QuantBook: PairsTrading (Statistical Arbi | Python 3 | READY | BETA | 30min | po-2026 |
-| 96 | Portfolio Hybride IBKR (50%) + Binance (50%) — Pha | Python 3 | READY | DRAFT | 30min | po-2026 |
-| 97 | Research QuantBook: RL Portfolio Allocation | Python 3 | READY | BETA | 45min | po-2026 |
-| 98 | Research QuantBook: RegimeSwitching Alpha Model | Python 3 | READY | BETA | 45min | po-2026 |
-| 99 | runner | Python 3 | DEMO | DRAFT | 15min | po-2026 |
-| 100 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | READY | BETA | 30min | po-2026 |
-| 101 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | READY | BETA | 30min | po-2026 |
-| 102 | Research QuantBook: Trend Following Competition | Python 3 | READY | BETA | 30min | po-2026 |
-| 103 | Research QuantBook: TrendStocks Alpha Model | Python 3 | READY | BETA | 30min | po-2026 |
-| 104 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | READY | BETA | 30min | po-2026 |
-| 105 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | READY | BETA | 45min | po-2026 |
-| 106 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issu | Python 3 | READY | BETA | 15min | po-2026 |
+| 26 | QC-Py-21 - Portfolio Optimization avec Machine Lea | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 27 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 28 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 29 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | DRAFT | 45min | po-2026 |
+| 30 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 31 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 32 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 33 | QC-Py-27 - Production Deployment | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 34 | QC-Py-28 - Market Regime Detection | Python 3 | DEMO | BETA | 1h | po-2026 |
+| 35 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | Python 3 | READY | BETA | 45min | po-2026 |
+| 36 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | Python 3 | READY | ALPHA | 45min | po-2026 |
+| 37 | QC-Py-32 - Reinforcement Learning DQN pour le Trad | Python 3 | READY | BETA | 45min | po-2026 |
+| 38 | QC-Py-33 - Reinforcement Learning PPO pour le Trad | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 39 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL po | Python 3 | DEMO | BETA | 45min | po-2026 |
+| 40 | QC-Py-35 - Reinforcement Learning pour la Construc | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 41 | QC-Py-40 : Paper Trading Binance - Mean Reversion  | Python 3 | DEMO | ALPHA | 45min | po-2026 |
+| 42 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | READY | ALPHA | 45min | po-2026 |
+| 43 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur  | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 44 | QC-Py-Cloud-01 — Risk Parity Composite Multi-Asset | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 45 | QC-Py-Cloud-02 : Classification de Texte et Sentim | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 46 | QC-Py-Cloud-02 — Sector Rotation & Multi-Asset Mom | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 47 | QC-Py-Cloud-03 — Dual Momentum : Asset Sélection M | Python 3 | READY | BETA | 15min | po-2026 |
+| 48 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | READY | BETA | 30min | po-2026 |
+| 49 | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 50 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trad | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 51 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones  | Python 3 | DEMO | ALPHA | 30min | po-2026 |
+| 52 | QC-Py-Cloud-05 — Regime Switching : Momentum in Bu | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 53 | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean Re | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 54 | QC-Py-Cloud-06 -- Volatility Targeting : Risk Mana | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 55 | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 56 | Value Factor Z-Score — Sélection multi-facteurs fo | Python 3 | DEMO | BETA | 15min | po-2026 |
+| 57 | Option Wheel — Le paradoxe du win-rate eleve | Python 3 | DEMO | BETA | 15min | po-2026 |
+| 58 | Workflow : Téléchargement et gestion des datasets | Python 3 | READY | ALPHA | 45min | po-2026 |
+| 59 | Le critere de Kelly — compagnon Python du lake `ke | Python 3 | DEMO | BETA | 30min | po-2026 |
+| 60 | Research QuantBook: Adaptive Asset Allocation | Python 3 | READY | BETA | 45min | po-2026 |
+| 61 | Research QuantBook: All-Weather Portfolio | Python 3 | READY | BETA | 30min | po-2026 |
+| 62 | Alpha Correlation Analysis | Python 3 | READY | BETA | 45min | po-2026 |
+| 63 | Research QuantBook: BTC ML Enhanced | Python 3 | READY | BETA | 45min | po-2026 |
+| 64 | Initializing environment | .NET (C#) | DEMO | DRAFT | 1h30 | po-2026 |
+| 65 | Research QuantBook: Multi-Channel ZigZag Crypto | Python 3 | READY | BETA | 45min | po-2026 |
+| 66 | Research QuantBook: Deep Learning LSTM pour SPY | Python 3 | READY | BETA | 45min | po-2026 |
+| 67 | Research QuantBook: DualMomentum (Antonacci) | Python 3 | READY | BETA | 30min | po-2026 |
+| 68 | Research QuantBook: Dual Momentum No TLT | Python 3 | READY | BETA | 45min | po-2026 |
+| 69 | Research QuantBook: EMA-Cross Alpha Model | Python 3 | READY | BETA | 30min | po-2026 |
+| 70 | Research QuantBook: EMA Cross Equity | Python 3 | READY | BETA | 45min | po-2026 |
+| 71 | Research QuantBook: EMA Crossover SPY Index | Python 3 | READY | BETA | 45min | po-2026 |
+| 72 | Research QuantBook: Multi-Stock EMA Crossover | Python 3 | READY | BETA | 45min | po-2026 |
+| 73 | Research QuantBook: ETF Pairs Trading | Python 3 | READY | BETA | 45min | po-2026 |
+| 74 | Research QuantBook: Fama-French Factor ETF Rotatio | Python 3 | READY | BETA | 45min | po-2026 |
+| 75 | Research QuantBook: ForexCarry (G10 FX Momentum) | Python 3 | READY | BETA | 45min | po-2026 |
+| 76 | Research QuantBook: Framework Composite EMA-Trend | Python 3 | READY | BETA | 30min | po-2026 |
+| 77 | Research QuantBook: Framework Composite FamaFrench | Python 3 | READY | BETA | 30min | po-2026 |
+| 78 | Research QuantBook: Framework Composite Momentum + | Python 3 | READY | BETA | 30min | po-2026 |
+| 79 | Framework Composite TrendWeather - Research | Python 3 | READY | BETA | 45min | po-2026 |
+| 80 | Research QuantBook: FuturesTrend (Donchian Breakou | Python 3 | READY | BETA | 30min | po-2026 |
+| 81 | Research QuantBook: ML Classification (RandomFores | Python 3 | READY | BETA | 45min | po-2026 |
+| 82 | ML Deep Learning - LSTM/GRU pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
+| 83 | Research QuantBook: ML-Enhanced Pairs Trading | Python 3 | READY | BETA | 45min | po-2026 |
+| 84 | Research QuantBook: ML Ensemble | Python 3 | READY | BETA | 45min | po-2026 |
+| 85 | Research QuantBook: ML Feature Engineering | Python 3 | READY | BETA | 45min | po-2026 |
+| 86 | ML Random Forest - Classification pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
+| 87 | Research QuantBook: ML Regression | Python 3 | READY | BETA | 45min | po-2026 |
+| 88 | ML SVM - Support Vector Machine pour Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
+| 89 | ML Text Classification for Trading | Python 3 | READY | ALPHA | 45min | po-2026 |
+| 90 | ML XGBoost - Gradient Boosting pour Trading | Python 3 | READY | BETA | 45min | po-2026 |
+| 91 | Research QuantBook: Mean Reversion (Sector ETFs) | Python 3 | READY | BETA | 30min | po-2026 |
+| 92 | Research QuantBook: MomentumStrategy (Sector ETF R | Python 3 | READY | BETA | 30min | po-2026 |
+| 93 | Research QuantBook: Equity Multi-Layer EMA + ML Fi | Python 3 | READY | BETA | 45min | po-2026 |
+| 94 | Research QuantBook: Option Wheel Strategy | Python 3 | READY | BETA | 45min | po-2026 |
+| 95 | Research QuantBook: Options Wheel Tech Stocks | Python 3 | READY | BETA | 30min | po-2026 |
+| 96 | Research QuantBook: Covered Call Strategy | Python 3 | READY | BETA | 45min | po-2026 |
+| 97 | Research QuantBook: PairsTrading (Statistical Arbi | Python 3 | READY | BETA | 30min | po-2026 |
+| 98 | Portfolio Hybride IBKR (50%) + Binance (50%) — Pha | Python 3 | READY | DRAFT | 30min | po-2026 |
+| 99 | Research QuantBook: RL Portfolio Allocation | Python 3 | READY | BETA | 45min | po-2026 |
+| 100 | Research QuantBook: RegimeSwitching Alpha Model | Python 3 | READY | BETA | 45min | po-2026 |
+| 101 | runner | Python 3 | DEMO | DRAFT | 15min | po-2026 |
+| 102 | Research QuantBook: RiskParity (Inverse-Volatility | Python 3 | READY | BETA | 30min | po-2026 |
+| 103 | Research QuantBook: Sector-Momentum (Dual Momentum | Python 3 | READY | BETA | 30min | po-2026 |
+| 104 | Research QuantBook: Trend Following Competition | Python 3 | READY | BETA | 30min | po-2026 |
+| 105 | Research QuantBook: TrendStocks Alpha Model | Python 3 | READY | BETA | 30min | po-2026 |
+| 106 | Research QuantBook: TurnOfMonth (Calendar Anomaly) | Python 3 | READY | BETA | 30min | po-2026 |
+| 107 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | READY | BETA | 45min | po-2026 |
+| 108 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issu | Python 3 | READY | BETA | 15min | po-2026 |
 
-### GameTheory (56 notebooks) — READY:56 | ALPHA:3, BETA:53
+### GameTheory (56 notebooks) — READY:56 | ALPHA:4, BETA:52
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -759,7 +774,7 @@ Total notebooks: 886
 | 50 | SocialChoice 01 : Théorème d'impossibilité d'Arrow | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 51 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | BETA | 30min | po-2024 |
 | 52 | SocialChoice 02 - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | 45min | po-2024 |
-| 53 | SocialChoice 03 : Méthodes de Vote et Paradoxes (t | .NET (C#) | READY | BETA | 45min | po-2024 |
+| 53 | SocialChoice 03 : Méthodes de Vote et Paradoxes (t | .NET (C#) | READY | ALPHA | 45min | po-2024 |
 | 54 | SocialChoice 03 - Méthodes de Vote et Paradoxes | Python 3 | READY | BETA | 45min | po-2024 |
 | 55 | SocialChoice 04 : Agregation Computationnelle - SA | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 56 | SocialChoice 04 - Agregation Computationnelle : SA | Python 3 (WSL) | READY | BETA | 45min | po-2024 |
@@ -793,7 +808,7 @@ Total notebooks: 886
 | 23 | Sudoku-Python-DancingLinks : Dancing Links / Algor | Python 3 | READY | BETA | 30min | po-2023 |
 | 24 | Sudoku-3 : Résolution par Algorithme Génétique (C# | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 25 | Sudoku-Python-Genetic : Algorithme Génétique (Pyth | Python 3 | READY | BETA | 30min | po-2023 |
-| 26 | Résolution de Sudoku par Recuit Simulé | .NET (C#) | READY | BETA | 45min | po-2023 |
+| 26 | Résolution de Sudoku par Recuit Simulé | .NET (C#) | READY | BETA | 1h | po-2023 |
 | 27 | Sudoku-4 : Recuit Simule (Python) | Python 3 | READY | BETA | 45min | po-2023 |
 | 28 | Sudoku-5 : Particle Swarm Optimization (PSO) | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 29 | Sudoku-5 : Particle Swarm Optimization (Python) | Python 3 | READY | BETA | 45min | po-2023 |
@@ -890,8 +905,8 @@ Total notebooks: 886
 | 15 | ICT-15e -- Bridge #2 : recouvrabilite *est* agenti | Python 3 | READY | BETA | 30min | po-2025 |
 | 16 | ICT-15f -- Pont #1-bis : la famille decouplee tran | Python 3 | READY | BETA | 30min | po-2025 |
 | 17 | ICT-15g -- Exploitation empirique de la sensibilit | Python 3 | READY | DRAFT | 30min | po-2025 |
-| 18 | ICT-15g -- Pont #1-bis (chantier 2/3) : le regime  | Python 3 | READY | BETA | 30min | po-2025 |
-| 19 | ICT-15h -- Pont #1-bis : le paysage 2D anisotrope  | unknown | READY | BETA | 30min | po-2025 |
+| 18 | ICT-15h -- Pont #1-bis (chantier 2/3) : le regime  | Python 3 | READY | BETA | 30min | po-2025 |
+| 19 | ICT-15i -- Pont #1-bis : le paysage 2D anisotrope  | unknown | READY | BETA | 30min | po-2025 |
 | 20 | ICT-16 — MDL / code en deux parties et bosse compl | Python 3 | READY | BETA | 30min | po-2025 |
 | 21 | ICT-17 -- Mecanique computationnelle (epsilon-mach | Python 3 | READY | DRAFT | 30min | po-2025 |
 | 22 | ICT-17b — Grokking et compression-progress : la ja | Python 3 | READY | BETA | 30min | po-2025 |
@@ -952,8 +967,8 @@ Total notebooks: 886
 
 ## Requirements
 
-- **API**: 143 notebooks
+- **API**: 145 notebooks
 - **GPU**: 102 notebooks
-- **Cloud**: 107 notebooks
-- **WSL**: 43 notebooks
-- **Local**: 556 notebooks
+- **Cloud**: 110 notebooks
+- **WSL**: 46 notebooks
+- **Local**: 567 notebooks

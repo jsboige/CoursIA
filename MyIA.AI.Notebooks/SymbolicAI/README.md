@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 227
-breakdown: SMT=46, Tweety=32, Lean=28, SmartContracts=27, Argument_Analysis=25, SemanticWeb=25, Planners=23, SymbolicLearning=20, root=1
-maturity: BETA=217, ALPHA=7, DRAFT=3
+pedagogical_count: 230
+breakdown: SMT=46, Tweety=32, Lean=31, SmartContracts=27, Argument_Analysis=25, SemanticWeb=25, Planners=23, SymbolicLearning=20, root=1
+maturity: BETA=220, ALPHA=6, DRAFT=4
 -->
 
 > **Note sur les comptes.** Le bloc ci-dessus est un marqueur autoritatif : `<!-- CATALOG-STATUS -->` est régénéré quotidiennement par la CI (`.github/workflows/catalog-cron.yml`, 03:37 UTC) sur `main` — pour toute vérification courante du nombre de notebooks et de la maturité, **le catalogue fait foi**. La prose pédagogique ci-dessous mentionne des chiffres précis (ex. « 12 notebooks Python », « 8 jumeaux C# ») qui peuvent dériver localement ; la table « Audit Qualité » (§E) au bas de ce fichier et les READMEs de chaque sous-série ([Tweety](Tweety/README.md), [Lean](Lean/README.md), [SemanticWeb](SemanticWeb/README.md), [Planners](Planners/README.md), [SmartContracts](SmartContracts/README.md), [Argument_Analysis](Argument_Analysis/README.md), [SymbolicLearning](SymbolicLearning/README.md)) sont les sources canoniques pour les détails de chaque sous-série.

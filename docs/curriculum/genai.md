@@ -20,9 +20,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 151 |
+| Notebooks | 157 |
 | PRODUCTION | 0 |
-| BETA | 140 |
+| BETA | 146 |
 | ALPHA | 11 |
 
 ## GenAI (1 notebooks)
@@ -41,6 +41,13 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 4 | ✅ Environment Validation - GenAI | BETA | Non |
 | 5 | 00-5: ComfyUI Local - Test Rapide | BETA | Non |
 | 6 | Deploiement Docker Local des Services GenAI | BETA | Non |
+
+## GenAI/Aspire (2 notebooks)
+
+| # | Notebook | Maturité | Exécutable |
+|---|----------|----------|------------|
+| 1 | Aspire : orchestrer notre pile GenAI en C# | BETA | Non |
+| 2 | Aspire : orchestrer la pile GenAI **réelle** du cluster | BETA | Non |
 
 ## GenAI/Audio (30 notebooks)
 
@@ -77,31 +84,23 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 29 | Lecture Analytique pour Audiobook | BETA | Oui |
 | 30 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
 
-## GenAI/CaseStudies (6 notebooks)
+## GenAI/CaseStudies (3 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Duel Verbal : Barbie vs l'Âne de Shrek | BETA | Non |
-| 2 | Verbal Duel: Barbie vs Shrek's Donkey | BETA | Non |
-| 3 | Docteur vs ChatGPT : Chatbot medical multi-agent | BETA | Non |
-| 4 | Doctor vs ChatGPT: Multi-Agent Medical Chatbot | ALPHA | Non |
-| 5 | Générateur de Recettes PDF | BETA | Non |
-| 6 | PDF Recipe Generator | BETA | Non |
+| 2 | Docteur vs ChatGPT : Chatbot medical multi-agent | BETA | Non |
+| 3 | Générateur de Recettes PDF | BETA | Non |
 
-## GenAI/FineTuning (10 notebooks)
+## GenAI/FineTuning (5 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | FT-01 : Introduction au Fine-Tuning | BETA | Non |
-| 2 | FT-01: Introduction to Fine-Tuning | BETA | Non |
-| 3 | FT-02 : QLoRA — Fine-Tuning avec Quantization | BETA | Non |
-| 4 | FT-02: QLoRA — Fine-Tuning with Quantization | BETA | Non |
-| 5 | FT-03 : Supervised Fine-Tuning (SFT) — Instruction Foll | BETA | Non |
-| 6 | FT-03: Supervised Fine-Tuning (SFT) — Instruction Follo | BETA | Non |
-| 7 | FT-04 : RLHF et Alignement — Préférences Humaines et DP | BETA | Non |
-| 8 | FT-04: RLHF and Alignment — Human Preferences and DPO | BETA | Non |
-| 9 | FT-05 : Fusion et Routage de Modèles -- Combiner les Ex | BETA | Non |
-| 10 | FT-05: Model Merging and Routing -- Combining Expertise | BETA | Non |
+| 2 | FT-02 : QLoRA — Fine-Tuning avec Quantization | BETA | Non |
+| 3 | FT-03 : Supervised Fine-Tuning (SFT) — Instruction Foll | BETA | Non |
+| 4 | FT-04 : RLHF et Alignement — Préférences Humaines et DP | BETA | Non |
+| 5 | FT-05 : Fusion et Routage de Modèles -- Combiner les Ex | BETA | Non |
 
 ## GenAI/Image (17 notebooks)
 
@@ -125,21 +124,27 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | 🏭 Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une | ALPHA | Non |
 
-## GenAI/Plateformes-Conversationnelles (9 notebooks)
+## GenAI/Plateformes-Conversationnelles (15 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | Choisir le modèle derrière son chatbot — une mini-évalu | BETA | Non |
-| 2 | Ingestion RAG d'un corpus long structure | BETA | Oui |
-| 3 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
-| 4 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
-| 5 | Module 02 — Navigation & Authentification | BETA | Oui |
-| 6 | Module 03 — Chat & Streaming LLM | BETA | Oui |
-| 7 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
-| 8 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
-| 9 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
+| 1 | Auditer un serveur MCP qu'on n'a pas ecrit | BETA | Non |
+| 2 | Consommer vs exposer le MCP — les deux sens du fil | BETA | Oui |
+| 3 | Choisir le modèle derrière son chatbot — une mini-évalu | BETA | Non |
+| 4 | Ingestion RAG d'un corpus long structure | BETA | Oui |
+| 5 | Mesurer la dérive d'un copilot — le gate par étape ne p | BETA | Oui |
+| 6 | Presenter AI Engine par son API — instance jetable Mais | BETA | Non |
+| 7 | Séparer les environnements de vecteurs | BETA | Oui |
+| 8 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
+| 9 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
+| 10 | Module 02 — Navigation & Authentification | BETA | Oui |
+| 11 | Module 03 — Chat & Streaming LLM | BETA | Oui |
+| 12 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
+| 13 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
+| 14 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
+| 15 | Différencier plusieurs assistants — mesurer ce qu'un pr | BETA | Non |
 
-## GenAI/PostTraining (11 notebooks)
+## GenAI/PostTraining (14 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -147,13 +152,16 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 2 | PT-02 — Supervised Fine-Tuning baseline (SFT) | BETA | Non |
 | 3 | PT-03 — Direct Préférence Optimization (DPO) | ALPHA | Non |
 | 4 | PT-04 — Group Relative Policy Optimization (GRPO) | ALPHA | Non |
-| 5 | PT-05 — Reinforcement Learning with Verifiable Rewards  | ALPHA | Non |
+| 5 | PT-05 — Reinforcement Learning with Verifiable Rewards  | BETA | Non |
 | 6 | PT-06 — Evaluation Comparative du Post-Training | BETA | Non |
 | 7 | PT-07 — Détecter le reward hacking avec rewardspy | BETA | Oui |
 | 8 | PT-08 — GRPO from scratch : la mécanique du signal de r | BETA | Non |
 | 9 | PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch : l | BETA | Oui |
 | 10 | PT-10 — GAE from scratch : pourquoi un mini-critic ? (e | BETA | Non |
 | 11 | PT-11 — GRPO + RLVR sur Qwen3.5-0.8B : la série PostTra | BETA | Non |
+| 12 | PT-11 — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewardspy.wa | BETA | Non |
+| 13 | PT-11b — RLVR multi-seed sur Qwen3.5-0.8B (4 seeds × 10 | ALPHA | Non |
+| 14 | PT-12 — Crédit différé multi-step : GAE-λ sur un enviro | ALPHA | Oui |
 
 ## GenAI/RAG-et-Memoire-Semantique (1 notebooks)
 
@@ -161,7 +169,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | Hands-On Grounding — Qdrant en mémoire | BETA | Oui |
 
-## GenAI/SemanticKernel (15 notebooks)
+## GenAI/SemanticKernel (14 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -178,8 +186,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 11 | Projet Createur de Mail personnalise | BETA | Non |
 | 12 | Notebook de travail | BETA | Oui |
 | 13 | Notebook de conception de Notebook | BETA | Non |
-| 14 | Jeu de devinette : Père Fouras vs Laurent Jalabert | ALPHA | Non |
-| 15 | Jeu de devinette : Père Fouras vs Laurent Jalabert | BETA | Non |
+| 14 | Jeu de devinette : Père Fouras vs Laurent Jalabert | BETA | Non |
 
 ## GenAI/Texte (20 notebooks)
 
@@ -206,7 +213,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 19 | 8. Reasoning Models | BETA | Non |
 | 20 | 9. Production Patterns | BETA | Non |
 
-## GenAI/Vibe-Coding (6 notebooks)
+## GenAI/Vibe-Coding (8 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -216,8 +223,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 4 | Claude CLI - Agents et Subagents | BETA | Oui |
 | 5 | Claude CLI - Automatisation Avancee | BETA | Non |
 | 6 | Claude Code via Claudish | BETA | Non |
+| 7 | CSharpRepl attache a un process .NET vivant | ALPHA | Oui |
+| 8 | Garde-fous Roslyn pour le code genere par agent | BETA | Oui |
 
-## GenAI/Video (19 notebooks)
+## GenAI/Video (21 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -232,11 +241,13 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 9 | SVD - Stable Video Diffusion (Image-to-Video) | ALPHA | Non |
 | 10 | LTX-2 - Generation Audiovisuelle Conjointe (Video + Aud | BETA | Non |
 | 11 | MiniMax H3 (Hailuo 3.0) — Architecture, capacités… et u | BETA | Non |
-| 12 | Comparaison Multi-Modèles de Generation Video | BETA | Non |
-| 13 | Orchestration de Pipelines Video | ALPHA | Non |
-| 14 | ComfyUI - Workflows Video via API | BETA | Non |
-| 15 | Generation de Videos Educatives | BETA | Non |
-| 16 | Workflows Video Creatifs | BETA | Non |
-| 17 | Sora API - Generation Video Cloud | BETA | Non |
-| 18 | Pipeline Video de Production | BETA | Non |
-| 19 | MiniMax H3 (Hailuo) — Génération vidéo par le service c | BETA | Non |
+| 12 | CogVideoX - Generation Video depuis Texte (Open Weights | BETA | Non |
+| 13 | Comparaison Multi-Modèles de Generation Video | BETA | Non |
+| 14 | Orchestration de Pipelines Video | ALPHA | Non |
+| 15 | ComfyUI - Workflows Video via API | BETA | Non |
+| 16 | Generation de Videos Educatives | BETA | Non |
+| 17 | Workflows Video Creatifs | BETA | Non |
+| 18 | Sora API - Generation Video Cloud | BETA | Non |
+| 19 | Pipeline Video de Production | BETA | Non |
+| 20 | MiniMax H3 (Hailuo) — Génération vidéo par le service c | BETA | Non |
+| 21 | MiniMax video-01 (v1) — Service cloud generation video  | BETA | Non |

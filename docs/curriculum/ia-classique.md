@@ -100,7 +100,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 22 | Search-6 — Recherche adversariale (jeux à somme nulle)  | BETA | Oui |
 | 23 | Search-6-AdversarialSearch : Recherche Adversariale | BETA | Oui |
 | 24 | Search-7-MCTS-And-Beyond (C#) : Monte Carlo Tree Search | BETA | Oui |
-| 25 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search et E | BETA | Non |
+| 25 | Search-7-MCTS-And-Beyond : Monte Carlo Tree Search et E | BETA | Oui |
 | 26 | Search-8-DancingLinks-Csharp : L'algorithme X et Dancin | BETA | Oui |
 | 27 | Search-8-DancingLinks : L'algorithme X et Dancing Links | BETA | Oui |
 | 28 | Search-9 : Programmation Linéaire et Simplexe (C# / .NE | BETA | Oui |

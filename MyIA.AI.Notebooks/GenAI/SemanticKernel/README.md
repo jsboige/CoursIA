@@ -4,7 +4,7 @@
 series: GenAI-SemanticKernel
 pedagogical_count: 20
 breakdown: SemanticKernel=20
-maturity: BETA=14, TEMPLATE=3, DRAFT=2, ALPHA=1
+maturity: BETA=14, DRAFT=3, TEMPLATE=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
