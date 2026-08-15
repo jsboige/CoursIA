@@ -96,10 +96,13 @@ class NotebookResult:
     sidecar_files: list[str] = field(default_factory=list)
     noexec: int = 0
     errors: int = 0
+    scan_error: str | None = None       # echec de lecture/parse du notebook
 
     def verdict(self, legacy: bool = False) -> str:
         """Verdict. En mode legacy, seuls les mimes separees comptent comme media
         rendu (data-URIs et side-cars ignores) — reproduction du predicat #10996."""
+        if self.scan_error:
+            return "SCAN_ERROR"
         primitives = self.primitive_calls if not legacy else (
             ["legacy"] if self.legacy_primitive else []
         )
@@ -166,8 +169,12 @@ def _resolve_sidecar(path: str, nb_file: Path, repo: Path) -> str | None:
 
 
 def scan_notebook(nb_file: Path, repo: Path) -> NotebookResult:
-    nb = json.loads(nb_file.read_text(encoding="utf-8"))
     result = NotebookResult(path=nb_file.relative_to(repo).as_posix())
+    try:
+        nb = json.loads(nb_file.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError) as exc:
+        result.scan_error = f"{type(exc).__name__}: {exc}"
+        return result
 
     for cell in nb.get("cells", []):
         if cell.get("cell_type") != "code":
@@ -210,13 +217,33 @@ def scan_notebook(nb_file: Path, repo: Path) -> NotebookResult:
     return result
 
 
+def discover_tracked_notebooks(repo: Path) -> list[Path]:
+    """Notebooks suivis par git (`git ls-files`) — exclut untracked/gitignores
+    (ex. research.ipynb invalide sous ESGF-2026/lean-workspace, hors depot).
+    Fallback sur le glob disque si git est indisponible."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(repo), "ls-files"],
+            capture_output=True, text=True, encoding="utf-8", timeout=30,
+        )
+    except (subprocess.SubprocessError, OSError):
+        return sorted(repo.glob("MyIA.AI.Notebooks/**/*.ipynb"))
+    if proc.returncode != 0:
+        return sorted(repo.glob("MyIA.AI.Notebooks/**/*.ipynb"))
+    return sorted(
+        repo / line
+        for line in proc.stdout.splitlines()
+        if line.startswith("MyIA.AI.Notebooks/") and line.endswith(".ipynb")
+    )
+
+
 def discover_notebooks(repo: Path, globs: list[str]) -> list[Path]:
     if globs:
         out: list[Path] = []
         for g in globs:
             out.extend(repo.glob(g))
         return sorted(out)
-    return sorted(repo.glob("MyIA.AI.Notebooks/**/*.ipynb"))
+    return discover_tracked_notebooks(repo)
 
 
 def main() -> int:
@@ -257,7 +284,10 @@ def main() -> int:
         print(json.dumps(out, indent=2, ensure_ascii=False))
         return 0
 
-    counts = {"NO_MEDIA_PRIMITIVE": 0, "MEDIA_RENDERED": 0, "NO_MEDIA_RENDERED": 0}
+    counts = {
+        "NO_MEDIA_PRIMITIVE": 0, "MEDIA_RENDERED": 0,
+        "NO_MEDIA_RENDERED": 0, "SCAN_ERROR": 0,
+    }
     for r in results:
         counts[r.verdict(legacy=args.legacy)] += 1
     print(f"=== {repo.name} — {len(results)} notebooks ===")
@@ -267,6 +297,9 @@ def main() -> int:
     for r in results:
         if r.verdict(legacy=args.legacy) == "NO_MEDIA_RENDERED":
             print(f"  CANDIDAT: {r.path}  calls={r.primitive_calls}  noexec={r.noexec} errors={r.errors}")
+    for r in results:
+        if r.scan_error:
+            print(f"  SCAN_ERROR: {r.path} — {r.scan_error}")
     return 0
 
 

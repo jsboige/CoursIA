@@ -18,7 +18,10 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scan_media_render import scan_notebook  # noqa: E402
+from scan_media_render import (  # noqa: E402
+    discover_tracked_notebooks,
+    scan_notebook,
+)
 
 REPO = Path(__file__).resolve().parent.parent.parent.parent
 
@@ -276,3 +279,41 @@ def test_triage_30_legacy_still_flags_them():
         if scan_notebook(REPO / p, REPO).verdict(legacy=True) == "NO_MEDIA_RENDERED"
     )
     assert flagged == 30, f"le predicat legacy ne signale plus les 30 (actuel: {flagged})"
+
+
+
+# ---------------------------------------------------------------------------
+# Robustesse (ai-01 c.103, #10985) : fichier JSON invalide + discovery trackee
+# ---------------------------------------------------------------------------
+
+def test_malformed_json_returns_scan_error(tmp_path):
+    """Un notebook illisible ne tue pas le run : scan_error + verdict SCAN_ERROR."""
+    bad = tmp_path / "broken.ipynb"
+    bad.write_text('{"cells": [', encoding="utf-8")
+    r = scan_notebook(bad, tmp_path)
+    assert r.scan_error, "le JSON invalide doit etre capture, pas leve"
+    assert "JSONDecodeError" in r.scan_error
+    assert r.verdict() == "SCAN_ERROR"
+    assert r.verdict(legacy=True) == "SCAN_ERROR"
+    assert r.primitive_calls == [] and r.data_uris == {}
+
+
+def test_discover_tracked_excludes_untracked(tmp_path):
+    """La decouverte par defaut scanne les notebooks SUIVIS, pas le disque :
+    un .ipynb untracked (ex. research.ipynb invalide gitignore ESGF-2026)
+    ne doit pas entrer dans le corpus."""
+    _git_init_repo(tmp_path)
+    tracked_dir = tmp_path / "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation"
+    tracked_dir.mkdir(parents=True)
+    good = _write_nb(tracked_dir, ["display(Audio('a.wav'))"], name="01-1-ok.ipynb")
+    subprocess.run(["git", "-C", str(tmp_path), "add", str(good)], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "nb"], check=True)
+
+    # notebook untracked (invalide, comme ESGF research.ipynb) — hors git
+    untracked = tmp_path / "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/broken.ipynb"
+    untracked.write_text('{"cells": [', encoding="utf-8")
+
+    found = discover_tracked_notebooks(tmp_path)
+    assert found == [good], f"decouverte trackee doit exclure l'untracked: {found}"
+    # et le fichier untracked ne produit pas d'erreur en scan direct : il n'est pas scanne
+    assert all(r.scan_error is None for r in [scan_notebook(good, tmp_path)])
