@@ -8,7 +8,7 @@ package «repeated_games» where
   ]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.0"
 
 -- Convention i18n EPIC #4980 (ratifiee ai-01 2026-07-04, comment-4881909354) :
 -- chaque `Foo.lean` FR canonique a un sibling `Foo_en.lean` (miroir EN, namespace
@@ -33,7 +33,7 @@ require mathlib from git
 -- canonique. Ce lake archive conserve son `package`, son `require mathlib`, ses
 -- docs/manifest/toolchain (coquille archive) mais n'expose PLUS la lib. La
 -- certification no-sorry (grim_trigger_sustains_iff, theoreme-phare) et le Lake build
--- sont repris par game_theory_lean via `.github/workflows/lean-repeated-games.yml`.
+-- sont repris par game_theory_lean via `.github/workflows/lean-game-theory.yml`.
 -- -- @[default_target]
 -- -- lean_lib «RepeatedGames» where
 -- --   globs := #[`RepeatedGames.*]  (archive, voir git history PR #6146)

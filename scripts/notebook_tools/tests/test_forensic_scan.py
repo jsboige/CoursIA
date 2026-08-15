@@ -15,6 +15,7 @@ from forensic_scan import (
     EXCLUDE_DIRS,
     RULE_C2_DATE,
     categorize_notebook,
+    collect_notebooks,
     get_series,
     is_excluded,
 )
@@ -168,6 +169,43 @@ class TestIsExcluded:
 
     def test_old_dir(self):
         assert is_excluded(Path("_old/legacy.ipynb")) is True
+
+
+# ---------------------------------------------------------------------------
+# collect_notebooks SKIP_DIRS guard (#8858-class)
+# ---------------------------------------------------------------------------
+
+class TestCollectNotebooksSkipdirParent:
+    """``collect_notebooks`` must NOT be silenced when the scan root sits
+    under a parent whose name is in ``EXCLUDE_DIRS``.
+
+    ``main`` resolves an absolute ``root`` and used to pass absolute rglob
+    paths to ``is_excluded``, which checks ``path.parts`` (absolute
+    components). A checkout cloned under e.g. ``archive/`` would match
+    every path and silence the whole forensic scan. The fix passes the
+    path RELATIVE to ``root`` (matching ``is_excluded``'s relative-path
+    semantics exercised by ``TestIsExcluded`` above).
+    """
+
+    def test_collect_under_archives_parent_not_silenced(self, tmp_path):
+        nb_root = tmp_path / "_archives" / "repo" / "MyIA.AI.Notebooks"
+        nb_root.mkdir(parents=True)
+        (nb_root / "nb.ipynb").write_text("{}", encoding="utf-8")
+        found = collect_notebooks(nb_root)
+        assert [p.name for p in found] == ["nb.ipynb"]
+
+    def test_collect_still_skips_in_repo_archives_dir(self, tmp_path):
+        """A legit in-repo ``_archives/`` subdir IS still skipped (the fix
+        must not weaken real SKIP_DIRS filtering)."""
+        nb_root = tmp_path / "MyIA.AI.Notebooks"
+        (nb_root / "good").mkdir(parents=True)
+        (nb_root / "good" / "keep.ipynb").write_text("{}", encoding="utf-8")
+        (nb_root / "_archives").mkdir()
+        (nb_root / "_archives" / "hide.ipynb").write_text("{}", encoding="utf-8")
+        found = collect_notebooks(nb_root)
+        names = [p.name for p in found]
+        assert "keep.ipynb" in names
+        assert "hide.ipynb" not in names
 
 
 # ---------------------------------------------------------------------------

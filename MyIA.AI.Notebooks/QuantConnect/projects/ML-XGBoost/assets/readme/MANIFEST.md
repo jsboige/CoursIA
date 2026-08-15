@@ -136,7 +136,7 @@ Provenance de chaque figure (convention d'indexation **all-cells** du module `ex
   - vol_20 passe de perdant (mrf) à **winner** (xgb) — XGBoost exploite fortement la volatilité 20j
   - bb_position passe de winner (mrf) à perdant (xgb) — momentum/position Bollinger marginal pour XGBoost
   - volume_ratio quasi-nul dans les 2 cas
-  - **Hypothèse** : XGBoost gère mieux les features de **volatilité** (vol_20, atr, atr_ratio) via ses tree splits séquentiels avec shrinkage, alors que RandomForest distribue l'importance entre features de **momentum** (bb_position) et volume均等ément. Pour XGBoost : **les features de VOLATILITÉ dominent**, momentum marginal.
+  - **Hypothèse** : XGBoost gère mieux les features de **volatilité** (vol_20, atr, atr_ratio) via ses tree splits séquentiels avec shrinkage, alors que RandomForest distribue l'importance entre features de **momentum** (bb_position) et volume uniformément. Pour XGBoost : **les features de VOLATILITÉ dominent**, momentum marginal.
 
 ---
 

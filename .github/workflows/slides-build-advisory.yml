@@ -1,0 +1,254 @@
+name: Slides Build Advisory
+
+# The missing ORGAN that let 5 of 16 Slidev decks stay broken for months (#8807).
+# Nothing in CI built the slides -- verified firsthand: `grep -rliE "slidev|slides/"
+# .github/workflows/` returned 0 hits across 57 workflows. Each broken deck was
+# caught only by a human running the build locally, which nobody did. This workflow
+# makes a deck that does not construct VISIBLE on the PR that touches it.
+#
+# ADVISORY, never blocking (issue #8817 acceptance 5): the job ALWAYS exits 0 on a
+# build failure. The actionable payload is the `slides-build-failed` LABEL, NEVER
+# the green conclusion of the job (which is green by construction). A reviewer who
+# reads only "exit 0" as "the slides build" has read the wrong signal -- the same
+# trap that let a non-conforming PR through in #8797, and that #8816 codified for
+# the exercises convention. The job prints its denominator precisely so this
+# confusion is impossible.
+#
+# Per-PR scope (acceptance 1): builds ONLY the decks impacted by the PR -- either
+# the deck whose directory changed, or ALL decks when shared slides infra changed
+# (theme-ia101, package.json, package-lock -- a theme edit can break every deck).
+#
+# The three traps from #8807, named and guarded here:
+#
+#   1. SILENT-SKIP DENOMINATOR (#8807 trap 1). `slides/` has 16 deck dirs but
+#      S4-trading-algorithmique carries THREE decks (deck-1/2/3.md) and NO
+#      slides.md -- a `[ -f slides.md ]` filter skips it silently (15 OK lines
+#      for 16 dirs, exactly what happened in #8807). The discovery here finds
+#      `deck-*.md` as a fallback AND FAILS LOUDLY (exit 1, a META-FAILURE of the
+#      gate itself, NOT advisory) if any tracked deck dir yields zero targets.
+#      A gate that enumerates zero targets is green and mute (#8680, #8782, #8678).
+#      The denominator is falsifiable in BOTH directions: a dir that does NOT
+#      match the NN/SN convention but DOES carry a deck file is caught too
+#      (renaming 01-introduction to intro-01 would otherwise shrink M silently),
+#      and an EMPTY discovery (M=0, e.g. a mass rename) refuses to assert.
+#
+#   2. FAIL-FAST IS A SAMPLE, NOT AN INVENTORY (#8807 trap 2). On S3 and 06,
+#      Rollup stopped at the markup crash BEFORE reaching asset resolution, so
+#      the 147 broken image refs surfaced only once the markup was lifted. The
+#      gate therefore builds EVERY impacted deck to completion -- the first error
+#      raised does not certify it was the only one.
+#
+#   3. POSITIVE CONTROL AT CABLING (#8807 trap 3). A defect of one of the three
+#      classes closed by #8807 (bare `images/` specifier, missing asset, `<div>`
+#      crossing `::right::`), reintroduced in the fix PR, MUST lift the label.
+#      That control is captured in the PR body, not asserted by the workflow.
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
+# benevolent review applies, no internal content gate runs against them.
+#
+# Promoting to a blocking gate is a separate decision, to revisit only once the
+# advisory has run green-and-stable across enough slide PRs to trust it.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - 'slides/**'
+      # The workflow's own file MUST be in the filter, else the gate can never
+      # run on the PR that wires it (this PR touches .github/, not slides/) AND
+      # a live-control revert would strand the label: after revert, base..head
+      # contains no slides/ change, paths blocks re-run, slides-build-failed
+      # sticks dead (the exact defect on exercises-unparseable / #8820). A gate
+      # filtered by paths that also poses a label must self-cover (#8822).
+      - '.github/workflows/slides-build-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  slides-build-advisory:
+    name: "Slidev build advisory (label, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Need base..head history for `git diff` of changed slides.
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache slides node_modules
+        id: cache-nm
+        uses: actions/cache@v4
+        with:
+          path: slides/node_modules
+          # Slidev install (~676 pkgs) dominates build time; cache it by lockfile
+          # so a cache hit skips the multi-minute `npm ci` (issue #8817 grain note).
+          key: slides-node_modules-${{ runner.os }}-${{ hashFiles('slides/package-lock.json') }}
+
+      - name: Install Slidev deps
+        working-directory: slides
+        run: |
+          if [ "${{ steps.cache-nm.outputs.cache-hit }}" = "true" ] && [ -d node_modules/@slidev ]; then
+            echo "node_modules cache hit -- skipping install"
+          else
+            npm ci --no-audit --no-fund
+          fi
+
+      - name: Discover decks, build impacted, signal via label
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without GH_REPO, `gh pr edit` / `gh label create` cannot infer the
+          # target repo and fail silently (variation-tag-guard, post-#8765).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL: slides-build-failed
+        run: |
+          set -uo pipefail
+
+          # ---- Trap 1: discover ALL deck targets, fail loudly on silent skip. ----
+          # Deck dirs follow the NN-name / SN-name convention (01-introduction,
+          # S4-trading-algorithmique, ...). Infra dirs (_assets, _tools, analysis,
+          # theme-ia101, themes, node_modules) do NOT match the pattern and are
+          # skipped -- they are not decks and must not pollute the denominator.
+          # Pattern (not an exclude list): a NEW infra dir does not trip a false
+          # failure, but a conventionally-named deck dir that lost its slides.md
+          # IS caught (zero target -> fail loudly). This is what makes the
+          # denominator check non-tautological.
+          TARGETS=()        # repo-relative deck files (slides/NN/.../*.md)
+          N_DECK_DIRS=0
+          ZERO_TARGET_DIRS=0
+
+          for d in slides/*/; do
+            [ -d "$d" ] || continue
+            base="$(basename "$d")"
+            if ! printf '%s' "$base" | grep -qE '^(S)?[0-9]'; then
+              # SYMMETRIC of trap 1 (ai-01 #8821 review blocage 2): a dir that
+              # does NOT match the convention but DOES carry a deck file is
+              # invisible to discovery. Renaming 01-introduction to intro-01
+              # would silently drop it from M -- 15 OK lines for 16 dirs, the
+              # literal shape of the #8807 incident moved from file-test to
+              # name-test. The denominator must be falsifiable in BOTH
+              # directions, not just the "convention dir with no target" one.
+              # Check existence per-pattern (ls over a non-matching glob passes
+              # the literal and errors on it, masking a real slides.md).
+              has_deck=0
+              [ -f "${d}slides.md" ] && has_deck=1
+              for deck in "${d}"deck-*.md; do [ -f "$deck" ] && has_deck=1; done
+              if [ "$has_deck" -eq 1 ]; then
+                echo "::error::'$d' carries a deck file (slides.md or deck-*.md) but does NOT match the NN/SN convention -- invisible to discovery (#8807 trap 1, symmetrized). Rename the directory to match the convention or move the deck into a convention dir."
+                ZERO_TARGET_DIRS=$((ZERO_TARGET_DIRS + 1))
+              fi
+              continue   # infra dir -- not a deck
+            fi
+            N_DECK_DIRS=$((N_DECK_DIRS + 1))
+            if [ -f "${d}slides.md" ]; then
+              TARGETS+=("${d}slides.md")
+            else
+              # S4-trading-algorithmique pattern: 3 deck-*.md, no slides.md.
+              found=0
+              for deck in "${d}"deck-*.md; do
+                [ -f "$deck" ] || continue
+                TARGETS+=("$deck")
+                found=1
+              done
+              if [ "$found" -eq 0 ]; then
+                echo "::error::Deck dir '$d' matches the naming convention but has no slides.md and no deck-*.md -- silent-skip risk (#8807 trap 1). The gate refuses to assert what it cannot discover."
+                ZERO_TARGET_DIRS=$((ZERO_TARGET_DIRS + 1))
+              fi
+            fi
+          done
+
+          echo "===== DENOMINATOR (discovery sanity) ====="
+          echo "Deck dirs tracked (M): $N_DECK_DIRS"
+          echo "Build targets discovered (N): ${#TARGETS[@]}"
+          printf '  target: %s\n' "${TARGETS[@]}"
+
+          # META-FAILURE (empty discovery, ai-01 #8821 review blocage 2): if
+          # NOTHING matched the convention, the gate measures nothing and must
+          # NOT print "valid" from an empty measure. A mass rename or a
+          # convention change would empty N_DECK_DIRS silently -- the job would
+          # otherwise emit "Discovery sanity above still validates the gate" from
+          # a vacuous inventory (the #8807 defect one notch higher: there the
+          # unmeasured item was one notebook, here it is the whole inventory).
+          if [ "$N_DECK_DIRS" -eq 0 ] || [ "${#TARGETS[@]}" -eq 0 ]; then
+            echo "::error::Discovery empty (M=$N_DECK_DIRS decks, N=${#TARGETS[@]} targets) -- the gate measures nothing. Refusing to assert validity from an empty measure (#8807, #8680)."
+            exit 1
+          fi
+
+          # META-FAILURE: the gate itself is broken (incomplete discovery), NOT a
+          # build failure. This is the one non-advisory exit -- a gate that
+          # enumerates n-1 targets is green for the wrong reason (#8807 trap 1).
+          if [ "$ZERO_TARGET_DIRS" -gt 0 ]; then
+            echo "::error::$ZERO_TARGET_DIRS deck dir(s) yielded zero build targets -- discovery incomplete. Failing loudly rather than asserting a partial build."
+            exit 1
+          fi
+
+          # ---- Filter to decks impacted by THIS PR (acceptance 1). ----
+          # A deck is impacted if any file in its directory changed. PLUS: a change
+          # to shared slides infra (theme / package manifests) impacts ALL decks.
+          TOUCHED=()
+          for t in "${TARGETS[@]}"; do
+            dir="$(dirname "$t")"
+            if git diff --name-only --diff-filter=d "$BASE...$HEAD" -- "$dir/" | grep -q .; then
+              TOUCHED+=("$t")
+            fi
+          done
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          SHARED=$(git diff --name-only --diff-filter=d "$BASE...$HEAD" \
+            -- 'slides/theme-ia101/' 'slides/package.json' 'slides/package-lock.json' \
+            | head -1)
+          if [ -n "$SHARED" ]; then
+            echo "Shared slides infra changed ($SHARED) -- building ALL ${#TARGETS[@]} decks."
+            TOUCHED=("${TARGETS[@]}")
+          fi
+
+          if [ "${#TOUCHED[@]}" -eq 0 ]; then
+            echo "No deck impacted by this PR (slides/ changes were in _tools/analysis/etc.). Discovery sanity above still validates the gate."
+            gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            exit 0
+          fi
+
+          echo "===== BUILDING ${#TOUCHED[@]} impacted deck(s) ====="
+          # Trap 2: build EACH impacted deck to completion; capture failures rather
+          # than aborting at the first (a fail-fast error is a sample, not an
+          # inventory -- #8807 trap 2). The job stays advisory (exit 0 on failure).
+          FAILURES=0
+          FAILED_LIST=""
+          for t in "${TOUCHED[@]}"; do
+            rel="${t#slides/}"
+            echo "----- slidev build: $rel -----"
+            if ( cd slides && npx slidev build "$rel" --out "dist-$(echo "$rel" | tr '/' '_')" ); then
+              echo "OK: $rel"
+            else
+              echo "::warning::BUILD FAILED: $rel"
+              FAILURES=$((FAILURES + 1))
+              FAILED_LIST="${FAILED_LIST}\n  - $rel"
+            fi
+          done
+
+          # ---- Label signaling (advisory: exit 0 regardless). ----
+          if [ "$FAILURES" -gt 0 ]; then
+            echo "::notice::$FAILURES impacted deck(s) failed to build. See the '$LABEL' label. Failed:$FAILED_LIST"
+            gh label create "$LABEL" \
+              --description "A Slidev deck impacted by this PR does not construct (#8807)" \
+              --color "D93F0B" --force 2>/dev/null || true
+            gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+          else
+            echo "All ${#TOUCHED[@]} impacted deck(s) build cleanly."
+            gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+          fi
+          exit 0

@@ -1,0 +1,64 @@
+- name: "Tweety-7a Extended-Frameworks"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: RECOVERABLE-MACHINE
+  bridge_verdict_reason: "Lib-vs-lib MEME moteur Java TweetyProject MAIS shade fat jar C# pas livre dans le repo (libs/ gitignored, dotnet-build/build-Tweety7aShade.csproj exige JAVA_HOME + `dotnet build` pour produire libs/org.tweetyproject.tweety-7a.dll = 608 types, 740 KB, cf PR #10499 pour 5 modules individuels et PR #10410 pour le verdict RECOVERABLE-MACHINE precedent). C# branche IKVM 8.15.0 + shade DLL attendue + 113 refs `org.tweetyproject.*` actifs (14 cellules avec `using org.tweetyproject.arg.{dung,adf,weighted,social}` explicite) + patterns cell 23/24/25 (Dung/Weighted/Social) executes par c.208/c.209 (attestation `modules_attested_sota_ok`). Python branche JPype + `from org.tweetyproject.arg.dung.reasoner import SimpleGroundedReasoner` (cf cell 17) + meme bibliotheque Java. Verdict RECOVERABLE-MACHINE (et non RECOVERABLE-LOCAL) : le shade fat jar est deja livre en PR #10499 via shade Maven IKVM, mais la DLL finale n'est pas sur disque dans la machine worker (cf constat c.229, 2026-08-12, po-2023:CoursIA-2) -- action = `cd MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build && dotnet build build-Tweety7aShade.csproj -c Release` sur la machine qui livrera les demos (po-2023 ou po-2024 avec JAVA_HOME=/path/to/jdk). Verdict distinct de INTRINSIC : la lib est invocable, juste pas buildable localement. Sub-grain ADF SAT reste INTRINSIC (UnsatisfiedLinkError sur NativeLingelingSolver, pre-requis IncrementalSatSolver natif)."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: 62f6921da965958ab0277d2cee822d284a47e568
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: 810c48a5fee843782b9e7fed74130fed59a19fe5
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 3c4bf9276953a8c66c247d2b4652d8948a44b2548a211c44c3366d2c2105fdfb
+    - date: "2026-08-11"
+      by: myia-ai-01:CoursIA
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: b96a49ed4a02f4665860d2c39e61a0af67b33fec
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 17e41645882658da3fbd271375669b346d05d02cad77084f2fda613095f7c030
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: 81b5cb3b31d4cc9d67621625506f9dde02c83504
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 6048d15b4fb4b795dba5d1fc1f0977ff36de17f4c7740029f95040a9b6211a0c
+      modules_attested_sota_ok:
+        - arg.dung (SimpleGroundedReasoner sur DungTheory = extension {a,c})
+        - arg.weighted (WeightedGroundedReasoner sur WeightedDungTheory = extension vide {})
+        - arg.social (IssReasoner + SimpleProductSemantics(0.5, 0.5) sur SocialDungTheory = scores {a=0.857, b=0, c=0})
+      bridge:
+        - "csproj `dotnet-build/build-Tweety7aShade.csproj` : cible net8.0, IKVM 8.14.0 (max bytecode Java 8 = major 52), IkvmReference sur shade jar org.tweetyproject.tweety-7a-1.21.0-shaded.jar. Re-construction reproductible : dotnet build -> libs/org.tweetyproject.tweety-7a.dll (608 types, 740 KB)."
+        - "libs/ gitignored (convention Tweety/ standard) ; IKVM.Runtime/CoreLib/Java copies depuis nuget cache IKVM 8.15.0 (CS1701 cosmetic warning 8.14 vs 8.15 alignable ulterieurement)."
+        - "Cellule 21 (load) : Assembly.LoadFrom absolute path via Directory.GetCurrentDirectory() (kernel cwd = notebook dir, pas repo root)."
+        - "Cellules 23/24/25 (Dung/Weighted/Social) : directive `#r \"libs/org.tweetyproject.tweety-7a.dll\"` prepended pour exposer les types au compilateur C# (Assembly.LoadFrom seul ne suffit pas, cf L898-3 keyword=`tweety-7a`)."
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: e61bed63a509773591f6115a4a127526a4c4afef
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 1d14a985ff5f4adedd0f8c1c662ebfb71ebfb733d02d499fb4741e2112065e30
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: e61bed63a509773591f6115a4a127526a4c4afef
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: 1d14a985ff5f4adedd0f8c1c662ebfb71ebfb733d02d499fb4741e2112065e30
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA
+      python_sha: 25a8e8d7427c1a8415b03f70cc26dee4a2d4956a
+      csharp_sha: 566030159577d62ce0850cdc16f626558f773125
+      content_python_sha: 23231ed062cb3a39f85805af0f75dffbe0360e014d3a08b065dc25d9c9200c5a
+      content_csharp_sha: a2b5ca8de80147ae93a1d4193b6a4ebd0c90b382dfea37dda323140c26757e2d
+  known_differences:
+    - "Socle commun : frameworks d'argumentation etendus (bipolaire, valeur-based) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (helpers `#!import` chargeant les DLL TweetyProject traduites). Python via JPype (`from java.util import HashSet, Set as JavaSet`). Meme moteur Java."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python avance depuis l'audit 2026-07-23 via #8170 (markdown hyphenation (Note-de-parite)) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+    - "Tranche 2 (2026-08-11, po-2023, #10381) : le C# branche la librairie Tweety via le pont IKVM (runtime Java 8, gabarit Tweety-6). Dung = SOTA-OK : SimpleGroundedReasoner (arg.dung dans conditional-logics.dll shade fat) calcule l'extension fondee {a,c}. ADF = librairie chargee (arg.adf = 125 types dans le meme shade fat) SOTA-OK sur la syntaxe ; le reasoner SAT complet (semantiques fondee/complete/stable) exige un IncrementalSatSolver natif (minisat/picosat/lingeling via java.library.path), meme pre-requis que le jumeau Python (Tweety-1-Setup -> NATIVE_LIBS_DIR) -> sonde firsthand sous IKVM : UnsatisfiedLinkError. Verdict scinde : Dung+ADF-syntaxe SOTA-OK ; reasoner ADF SAT + 5 modules absents (bipolar/setaf/weighted/social/extended) -> #10411 (RECOVERABLE-MACHINE). Tranche 1 from-scratch intacte."
+    - "Re-attestation 2026-08-11 (ai-01, #10410) : le blob SHA C# a bouge sous strip_probe_banner.py --apply (9 lignes probeAddresses injectees par le kernel .NET dans la cellule de restore #r nuget -- enumeration NetworkInterface du runner). Strip verifie firsthand : 9 lignes retirees, 9 lignes vides, aucune insertion ; la parite semantique est inchangee. --update relance EN DERNIER, apres le strip (cf #8957 : attester puis stripper invalide l'attestation)."
+    - "Re-attestation 2026-08-11 (po-2023:CoursIA-2, #10450 cycle c.209) : 3 fix ai-01 NEW CHANGES_REQUESTED msg-20260811T112544-qwi1mh (cellule ADF executee perdue + path leak cell#21 + bilan net honest). Blob SHA C# rebouge par (1) cell#21 path leak fix Path.GetFullPath -> Path.GetFileName, (2) cell#26 ADF probe insertion (245 types arg.adf.* enumeres, 9 reasoners concrets, NativeLingelingSolver -> NullReferenceException RECOVERABLE-MACHINE ; CS0122 trap sur EmptyAbstractDialecticalFramework package-private contourne par reflection sur AbstractBuilder public), (3) cell#27 Conclusion prose avec Substance accounting section (-1 ADF execute / +2 weighted+social executes = -1 net, declare honnetement). La parite semantique Python inchangee : aucun changement cote jumeau Python."

@@ -1,0 +1,290 @@
+name: Variation Light Genre Signals
+
+# #10020 (issue, out-of-scope grain from PR #10031) -- CI workflow qui
+# surface les 4 signaux G-VAR-2/3-by-GENRE au moment du PR :
+#
+#   * TIER-INFLATION          (le declared-LIGHT vs effective-LIGHT-genre diverge)
+#   * GENRE-RUN               (>= 2 grains consecutifs du meme genre LIGHT)
+#   * CAP-EXCEEDED-BY-GENRE   (light_genre > cap partage G-VAR-2)
+#   * GENRE-MISMATCH          (declared genre vs _genre_from_paths)
+#
+# PR #10031 a livre le script (compute_signals + 16 tests + le live replay
+# sur le cas de reference po-2025:CoursIA-2 du 2026-08-08) ; cette PR livre
+# la plomberie CI : sparse-checkout, dataset merged du jour UTC, lane
+# extraite du tag Grain: de la PR ouverte, candidate_files via
+# `gh pr view --json files`, labels distincts par signal, commentaire
+# idempotent, sortie toujours 0 (advisory).
+#
+# ADVISORY, jamais bloquant : le script sort en 0 meme quand tous les
+# signaux sont True. C'est le consommateur (coordinateur a la passe de
+# merge, lecture `gh pr list --json labels`) qui prend la decision. Le
+# merge-gate lit le LABEL, pas l'etat du check (lecon L875 -- un check
+# vert ne dit rien sur le contenu du verdict, un label distinctif le dit).
+#
+# Cf variation-tag-guard.yml `check-light-cap` pour le modele de plomberie
+# (meme sparse-checkout, meme garde-fou bots+forks, meme idiome de label
+# distinct par classe de defaut, meme commentaire idempotent via marqueur
+# HTML invisible). Ce workflow est strictement parallele : il s'appuie sur
+# la meme source de verite (variation_light_cap.py) et ajoute les 4
+# signaux GENRE que le cap TIER ne sait pas voir.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-light-genre-signals:
+    name: G-VAR-2/3 GENRE signals (advisory, #10020)
+    runs-on: ubuntu-latest
+    steps:
+      # variation_light_cap.py importe grain_tag.py (#9485 : extracteur
+      # partage avec le guard tag). Les deux modules sont checkout ensemble
+      # par le meme step sparse-checkout -- memes precautions que dans
+      # variation-tag-guard.yml `check-light-cap`.
+      - name: Checkout the cap detector (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/variation_light_cap.py
+            scripts/grain_tag.py
+      - name: G-VAR-2/3 by GENRE (TIER-INFLATION, GENRE-RUN, CAP-EXCEEDED, GENRE-MISMATCH)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Meme garde-fou anti-spam que variation-tag-guard : bots et forks
+          # hors scope (bots = catalogue auto-regenere, forks = PRs etudiantes
+          # .claude/rules/student-pr-reviews.md -- review bienveillante, aucun
+          # critere interne ne s'y applique).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Jour courant en UTC : G-VAR-2 se compte par jour UTC (reset 00:00Z),
+          # meme convention que `check-light-cap`. La PR courante est OUVERTE
+          # donc elle n'est PAS dans le set -- c'est ce qui rend la detection
+          # du 2e grain consecutif possible.
+          TODAY=$(date -u +%Y-%m-%d)
+          # --limit 500 est OBLIGATOIRE : `gh pr list` pagine a 30 par defaut
+          # et ne signale pas la troncature. Le set tronque attaque le
+          # DENOMINATEUR du ratio G-VAR-2 (`max(1, lane_grains // 3)`) : la
+          # lane sous-compte, le cap retombe a 1, et l'organe accuse de
+          # CAP-EXCEEDED la lane la plus productive du jour -- l'inverse exact
+          # de ce que le ratio protege. Constate le 2026-08-10 sur #10328
+          # (60 mergees, 30 vues, lane po-2024:CoursIA a 11 grains lue <=2).
+          gh pr list --state merged --search "merged:$TODAY" --limit 500 \
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || \
+            printf '[]' > /tmp/merged.json
+
+          # Body circule par fichier : printf '%s' ne reinterprete rien (cf
+          # variation-tag-guard `check-light-cap`, meme idiome).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Lane : on extrait du tag Grain: de la PR OUVERTE. L'extracteur
+          # partage grain_tag.py est la source unique (cf #9485) -- sinon
+          # le guard et l'organe re-divergeraient. Si la lane est absente
+          # (tag manquant, lane non declaree), on ne peut rien calculer :
+          # sortie 0 avec un echo diagnostique, sans label (un grain sans
+          # lane est un autre defaut que G-VAR-2/3-by-GENRE -- le guard tag
+          # l'a deja signale via variation-tag-lane-missing, ce serait du
+          # bruit de re-notifier ici).
+          LANE=$(python3 scripts/grain_tag.py --body-file /tmp/pr_body.txt 2>/dev/null \
+            | python3 -c "import json,sys; print(json.load(sys.stdin).get('lane') or '')" 2>/dev/null || echo "")
+          if [ -z "$LANE" ]; then
+            echo "Lane absente du tag Grain: de la PR. variation-tag-guard l'a surement deja signalee ; ce job n'a rien a calculer sur G-VAR-2/3-by-GENRE."
+            exit 0
+          fi
+          echo "Lane ciblee : ${LANE}"
+
+          # Labels de la PR courante : la requalification #8970 (grain-requalified:<TIER>)
+          # peut etre pre-appliquee sur la PR ouverte -- le script la prend en
+          # compte via load_labels_file, comme dans check-light-cap.
+          gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_labels.json
+
+          # Fichiers du diff : pour GENRE-MISMATCH (declared genre vs
+          # _genre_from_paths). gh pr view --json files renvoie un tableau
+          # de {path: ...}. On extrait les paths en JSON-lines, on join en
+          # CSV passe a --files. MUTATION : si le tableau est vide (PR sans
+          # fichiers, rare mais legal), on passe --files "" ce qui rend
+          # GENRE-MISMATCH inactif (cf compute_signals : "missing input is
+          # a missing signal, never a false positive").
+          gh pr view "$PR_NUMBER" --json files > /tmp/pr_files.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_files.json
+          FILES_CSV=$(python3 -c "
+          import json
+          try:
+              data = json.load(open('/tmp/pr_files.json'))
+              files = data if isinstance(data, list) else data.get('files', [])
+              paths = [f.get('path','') for f in files if isinstance(f, dict)]
+              paths = [p for p in paths if p]
+              print(','.join(paths))
+          except Exception:
+              print('')
+          " 2>/dev/null || echo "")
+
+          # Invocation du detecteur. Exit 0 toujours (advisory -- meme
+          # posture que check-light-cap : le script sort en 0, c'est le
+          # label qui porte le signal). 2>/tmp/cap.err preserve stderr
+          # diagnostique si le parseur tombe (cf le meme idiome dans
+          # variation-tag-guard).
+          python3 scripts/variation_light_cap.py \
+            --replay /tmp/merged.json \
+            --genre-signals \
+            --lane "${LANE}" \
+            --body-file /tmp/pr_body.txt \
+            --labels-file /tmp/pr_labels.json \
+            --files "${FILES_CSV}" > /tmp/signals.json 2>/tmp/cap.err || true
+
+          echo "--- detector output ---"
+          cat /tmp/signals.json 2>/dev/null || true
+          [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
+
+          # Lecture des 4 signaux + de la tally light_genre/cap (pour le
+          # commentaire diagnostique quand CAP-EXCEEDED-BY-GENRE tire).
+          SIG_INFLATION=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('TIER-INFLATION'))" 2>/dev/null || echo "False")
+          SIG_RUN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-RUN'))" 2>/dev/null || echo "False")
+          SIG_CAPEXC=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('CAP-EXCEEDED-BY-GENRE'))" 2>/dev/null || echo "False")
+          SIG_MISMATCH=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-MISMATCH'))" 2>/dev/null || echo "False")
+          TALLY=$(python3 -c "import json; t=json.load(open('/tmp/signals.json')).get('tally',{}); print(f\"declared={t.get('light_declared',0)} genre={t.get('light_genre',0)} cap={t.get('cap',1)}\")" 2>/dev/null || echo "inconnu")
+          # #10341 -- the three aggregate signals (TIER-INFLATION, GENRE-RUN,
+          # CAP-EXCEEDED-BY-GENRE) measure the LANE-DAY, not the candidate.
+          # When the OPEN PR is CONTENT (not a LIGHT-genre grain -- genai,
+          # lean, qc, notebook-...), it does NOT contribute to the pattern
+          # they denounce. Posing the aggregate label on it would let the
+          # merge-gate (which reads the LABEL, not the check state) HOLD the
+          # grain that REMEDIES the motif, while the META grains that caused
+          # the cap/run/inflation go untouched. GENRE-MISMATCH is exempt: it
+          # carries on the candidate by construction (declared genre vs the
+          # candidate's OWN diff paths), so it may label regardless.
+          CAND_LIGHT=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('candidate_is_light_genre'))" 2>/dev/null || echo "False")
+
+          # Labels distincts (lisibles dans gh pr list --json labels). Chaque
+          # classe de defaut a son propre label -- un seul label fourre-tout
+          # aurait cache la nature du manquement (lecon du tag guard L163).
+          # `create --force` tolere l'existant ; `add`/`remove` avec `|| true`
+          # ne tuent pas le job si gh echoue (advisory).
+          for LABEL_PAIR in \
+            "variation-tier-inflation:FEF2C0:TIER-INFLATION:declared LIGHT << effective LIGHT-genre (#10020, advisory)" \
+            "variation-genre-run:FEF2C0:GENRE-RUN:>= 2 grains consecutifs du meme genre LIGHT pour la lane (#10020, advisory)" \
+            "variation-genre-cap-exceeded:FBCA04:CAP-EXCEEDED-BY-GENRE:light_genre > cap partage G-VAR-2 (#10020, advisory)" \
+            "variation-genre-mismatch:FEF2C0:GENRE-MISMATCH:declared genre != genre infere depuis les chemins du diff (#10020, advisory)"
+          do
+            LABEL=$(echo "$LABEL_PAIR" | cut -d: -f1)
+            COLOR=$(echo "$LABEL_PAIR" | cut -d: -f2)
+            SIGNAL=$(echo "$LABEL_PAIR" | cut -d: -f3)
+            DESC=$(echo "$LABEL_PAIR" | cut -d: -f4)
+            # Mapping explicite SIGNAL -> nom de variable (evite le `eval`
+            # dynamique qui, avec `set -u`, fait sortir en 1 sur le tout
+            # premier signal dont le nom contient un hyphen --
+            # SIG_TIER_INFLATION n'existe pas, le nom canonique est
+            # SIG_INFLATION ; idem SIG_GENRE_RUN vs SIG_RUN). Les noms
+            # sont fixes (cf scripts/variation_light_cap.py), une table
+            # explicite reste la lecture la moins fragile.
+            case "$SIGNAL" in
+              TIER-INFLATION)        SIGVAR="SIG_INFLATION"; MAY_LABEL_INNOCENT="no" ;;
+              GENRE-RUN)             SIGVAR="SIG_RUN"; MAY_LABEL_INNOCENT="no" ;;
+              CAP-EXCEEDED-BY-GENRE) SIGVAR="SIG_CAPEXC"; MAY_LABEL_INNOCENT="no" ;;
+              GENRE-MISMATCH)        SIGVAR="SIG_MISMATCH"; MAY_LABEL_INNOCENT="yes" ;;
+              *)
+                echo "Signal non reconnnu : ${SIGNAL} (PR ${PR_NUMBER})"
+                SIGVAR="__UNDEFINED__"
+                MAY_LABEL_INNOCENT="yes"
+                ;;
+            esac
+            if [ "$SIGVAR" = "__UNDEFINED__" ]; then
+              SIGVAL="False"
+            else
+              # Expansion indirecte bash (${!VAR}) avec default pour eviter
+              # l'`eval` dynamique (qui ne survit pas a `set -u` sur var
+              # absente). Le `:-False` couvre le cas d'une variable non
+              # initialisee ; on en reste a SIGVAL=False sans crasher.
+              SIGVAL="${!SIGVAR:-False}"
+            fi
+            gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force 2>/dev/null || true
+            # #10341 -- aggregate signals (MAY_LABEL_INNOCENT="no") must not
+            # label an innocent CONTENT candidate. The lane-day signal stays
+            # real (surfaced in the diagnostic comment below), but the LABEL
+            # -- which is what the merge-gate reads -- must not misattribute
+            # a META pattern (guard/docs/readme run or cap) to a CONTENT
+            # grain (genai/lean/qc/notebook-...) that does not carry it.
+            # GENRE-MISMATCH (MAY_LABEL_INNOCENT="yes") is exempt: its
+            # subject IS the candidate by construction. The else-branch also
+            # strips a label that a prior push had posed before the lane
+            # crossed the cap on META grains (idempotent re-eval).
+            if [ "$SIGVAL" = "True" ] && { [ "$MAY_LABEL_INNOCENT" = "yes" ] || [ "$CAND_LIGHT" = "True" ]; }; then
+              gh pr edit "$PR_NUMBER" --add-label "$LABEL" 2>/dev/null || true
+            else
+              gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+            fi
+          done
+
+          # Commentaire diagnostique idempotent : un seul commentaire, porte
+          # par un marqueur HTML invisible. A chaque synchronize on re-EDIT
+          # le commentaire existant (PATCH via `gh api`) plutot que d'en
+          # poster un nouveau -- sinon spam sur chaque push.
+          MARK="<!-- variation-genre-signals -->"
+          ACTIVE_LINES=""
+          [ "$SIG_INFLATION" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **TIER-INFLATION** : declared LIGHT << effective LIGHT-genre (tally : ${TALLY})"
+          [ "$SIG_RUN" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **GENRE-RUN** : run consecutif d'un genre LIGHT (voir \`signals.runs\` dans le log du job)"
+          [ "$SIG_CAPEXC" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **CAP-EXCEEDED-BY-GENRE** : light_genre > cap partage G-VAR-2 (tally : ${TALLY})"
+          [ "$SIG_MISMATCH" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **GENRE-MISMATCH** : declared genre != genre infere depuis les chemins du diff"
+
+          # #10341 nuance : si la PR courante est CONTENU (non LIGHT-genre)
+          # et qu'un signal agrege est actif, le dire explicitement -- le
+          # motif lane-jour est reel (garde dans le commentaire pour le
+          # coordinateur), mais les labels agregees ne sont PAS poses sur
+          # cette PR, donc le merge-gate ne doit pas la HOLD pour ce motif.
+          if [ "$CAND_LIGHT" != "True" ]; then
+            if [ "$SIG_INFLATION" = "True" ] || [ "$SIG_RUN" = "True" ] || [ "$SIG_CAPEXC" = "True" ]; then
+              ACTIVE_LINES="${ACTIVE_LINES}
+          - **NOTE (#10341)** : la PR courante est de classe CONTENU (non LIGHT-genre) et ne contribue pas au motif ci-dessus -- les labels agregees ne sont PAS poses sur cette PR (le merge-gate ne doit pas la HOLD pour ce motif ; le coupable est parmi les grains META de la lane)."
+            fi
+          fi
+
+          if [ -n "$ACTIVE_LINES" ]; then
+            BODY="${MARK}
+          **G-VAR-2/3 GENRE signals** (advisory, non bloquant, #10020).
+          La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
+
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`) -- la decision de merge reste au coordinateur."
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            if [ -n "$EXISTING_ID" ]; then
+              gh api -X PATCH "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" \
+                -f body="$BODY" 2>/dev/null || true
+            else
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+            fi
+            echo "::notice::G-VAR-2/3-by-GENRE signale sur ${LANE} (tally ${TALLY})."
+          else
+            # Cas nominal : aucun signal -- on retire le commentaire si il
+            # en reste un d'un push anterieur. Idempotence symetrique.
+            EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
+            if [ -n "$EXISTING_ID" ]; then
+              gh api -X DELETE "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" 2>/dev/null || true
+            fi
+            # Et on retire les labels devenus obsoletes (deja fait dans la
+            # boucle ci-dessus). Echo nominal pour le log.
+            echo "Aucun signal actif pour ${LANE} aujourd'hui (tally ${TALLY})."
+          fi
+          exit 0

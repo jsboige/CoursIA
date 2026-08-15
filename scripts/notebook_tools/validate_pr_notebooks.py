@@ -17,6 +17,7 @@ Exit codes:
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -56,7 +57,20 @@ ALLOW_NULL_EXEC_COUNT_KERNELS = {"lean4", "lean4-wsl", "lean"}
 
 # Paths that require QC Cloud (python3 kernel but need QuantBook runtime).
 # H.3 is advisory-only for these — they can only be executed via QC Cloud.
+# NOTE: this list is a FAST PATH, not the definition. The definition is
+# "the notebook instantiates QuantBook" — see QUANTBOOK_PATTERN below.
 QC_CLOUD_PATHS = ("QuantConnect/Python", "QuantConnect/projects")
+
+# The actual reason a null execution_count is tolerated is not WHERE a notebook
+# lives, it is WHAT IT NEEDS: `QuantBook()` only exists inside the QC Cloud
+# research runtime, which is on no worker machine. Anchoring on the path alone
+# left 16 QuantBook notebooks outside the carve-out (ESGF-2026/lean-workspace,
+# QuantConnect/research, partner-course kit-transitoire), 8 of them with null
+# execution_count — a latent CI landmine that fires on whoever next touches one
+# of those files, for a reason that is not their PR's fault. Same predicate as
+# check_cost_metadata.detect_quantbook_usage (Litmus 5/7) so the cost gate and
+# the execution gate agree on what "is a QC notebook" means. See #8056.
+QUANTBOOK_PATTERN = re.compile(r"QuantBook\(\)|self\.QuantBook")
 
 # Research-exploration archive snapshots (path suffix). An `*_archive.ipynb` is
 # a frozen log of exploratory iteration; its error outputs (KeyError/NameError
@@ -69,6 +83,33 @@ QC_CLOUD_PATHS = ("QuantConnect/Python", "QuantConnect/projects")
 # is deliberately tight (path suffix) so only explicit archives opt out. See
 # #6803.
 ARCHIVE_NOTEBOOK_SUFFIX = "_archive.ipynb"
+
+# Notebooks whose OUTPUTS would embed personal data (student rosters, e-mails,
+# individual grades). Here an EMPTY output is the compliant state, not a defect
+# — CLAUDE.md §E: "Clear cell outputs avant commit UNIQUEMENT si les outputs
+# contiennent des donnees sensibles".
+#
+# Without this carve-out the gate is not merely wrong, it is DANGEROUS: it told
+# `MyIA.AI.Notebooks/GradeBook.ipynb` (.net-csharp, 12/12 cells null) twelve
+# times over ".net-csharp executes locally; commit execution proof, See #5214".
+# An agent obeying that instruction plus rule F ("install the kernel, never
+# bypass") would execute a notebook whose cells render `studentRecords
+# .DisplayTable()` — login, first name, last name, e-mail — and commit student
+# PII to a public repo. The gate would have been the proximate cause.
+#
+# DECLARED, never inferred: PII cannot be detected from source, so the notebook
+# must opt in via `metadata.pii_no_output: true` (same declarative shape as
+# `metadata.qc_reference`, #3776).
+#
+# The declaration is NOT a free pass on #5214 — it is load-bearing in the other
+# direction too. A notebook that declares it MUST carry zero outputs on every
+# code cell; a single committed output makes the gate FAIL loudly, because that
+# is the signature of personal data already sitting in git history. So the flag
+# excuses emptiness and forbids non-emptiness: it cannot be used to smuggle a
+# half-executed notebook past the execution proof. Both verdicts are exercised
+# in tests/test_validate_pr_notebooks.py (a guard nobody has seen fail is not
+# yet a guard — #8681/#8820).
+PII_NO_OUTPUT_KEY = "pii_no_output"
 
 # Kernels that render errors as TEXT, not as output_type=="error" (#5151).
 # Lean via lean4_jupyter/alectryon embeds the compiler's own message severity
@@ -85,13 +126,33 @@ TEXT_RENDERED_ERROR_SIGNATURES = ('"severity": "error"', '"severity":"error"')
 
 
 def get_changed_notebooks(base: str, paths: list[str] | None = None) -> list[Path]:
-    """Get list of .ipynb files changed relative to base branch."""
+    """Get list of .ipynb files changed relative to base branch.
+
+    The diff anchor is merge-base(base, HEAD), not base itself: diffing
+    against base directly also lists every file that changed on *base*
+    since the branch was cut, so a violation landing on main (e.g. the
+    pre-existing GT-4b cell 28 error, #9672) failed unrelated PRs whose
+    diff never touched the file (#9650/#9656/#9671/#9673). Falls back to
+    base when merge-base is unavailable (shallow clone, detached ref).
+    """
     if paths:
         return [Path(p) for p in paths if p.endswith(".ipynb") and Path(p).exists()]
 
+    anchor = base
+    try:
+        mb = subprocess.run(
+            ["git", "merge-base", base, "HEAD"],
+            capture_output=True, text=True, check=True,
+            cwd=str(REPO_ROOT),
+        ).stdout.strip()
+        if mb:
+            anchor = mb
+    except subprocess.CalledProcessError:
+        pass
+
     try:
         result = subprocess.run(
-            ["git", "diff", "--name-only", "--diff-filter=ACM", base],
+            ["git", "diff", "--name-only", "--diff-filter=ACM", anchor],
             capture_output=True, text=True, check=True,
             cwd=str(REPO_ROOT),
         )
@@ -138,14 +199,28 @@ def _output_text(output: dict) -> str:
 
 def _is_qc_cloud(rel_path: str, data: dict) -> bool:
     """Whether a notebook can ONLY be executed via QC Cloud (so a null
-    execution_count is tolerated everywhere — CI AND local). True if the path
-    is under a QC Cloud directory OR the notebook is explicitly flagged as a
-    QC reference template (metadata.qc_reference=True, content-aware unification
-    with regression_scan.py:261 / #3776)."""
+    execution_count is tolerated everywhere — CI AND local). True if:
+      - the path is under a QC Cloud directory (fast path), OR
+      - the notebook is explicitly flagged as a QC reference template
+        (metadata.qc_reference=True, content-aware unification with
+        regression_scan.py:261 / #3776), OR
+      - a code cell instantiates `QuantBook()` (content-aware — the runtime
+        requirement itself, wherever the notebook happens to live).
+    """
     normalized = rel_path.replace("\\", "/")
     if any(p in normalized for p in QC_CLOUD_PATHS):
         return True
-    return data.get("metadata", {}).get("qc_reference") is True
+    if data.get("metadata", {}).get("qc_reference") is True:
+        return True
+    for cell in data.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        source = cell.get("source", "")
+        if isinstance(source, list):
+            source = "".join(source)
+        if QUANTBOOK_PATTERN.search(source):
+            return True
+    return False
 
 
 def validate_notebook(nb_path: Path) -> dict:
@@ -188,8 +263,14 @@ def validate_notebook(nb_path: Path) -> dict:
     # committed .NET cell MUST carry execution_count != null = EXEC_PROVED
     # (#5214: "CI skip .NET" != "outputs may be empty"). The Tweety-3 cluster
     # (#5194/#5199/#5202) was merged at execution_count:null + outputs:[].
+    # Declared PII notebook: empty outputs are the compliant state (see the
+    # PII_NO_OUTPUT_KEY comment above). Read once, used twice — it relaxes H.3
+    # and, symmetrically, makes any committed output a hard failure.
+    pii_no_output = data.get("metadata", {}).get(PII_NO_OUTPUT_KEY) is True
     allow_null_exec_count = (
-        any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS) or qc_cloud
+        any(k in kernel for k in ALLOW_NULL_EXEC_COUNT_KERNELS)
+        or qc_cloud
+        or pii_no_output
     )
     saw_null_exec = False  # for the forensic verdict (H.5)
     saw_empty_display = False  # #6971 blank-render signature (see verdict below)
@@ -208,12 +289,37 @@ def validate_notebook(nb_path: Path) -> dict:
         # Lean command cells — and with them any error output they carry
         # (#5151: the failing '#print axioms' / '#check' cells were skipped;
         # the notebook was only caught by its failing 'import' cell).
-        comment_prefix = "--" if "lean" in kernel else "#"
+        # C# / F# (.NET Interactive) line comments use '//' — a '//'-only cell is
+        # a transition note, not executable code, so it must not be counted as
+        # total_code nor flagged for a missing execution_count. Mirrors the '//'
+        # awareness of scan_c1_source (#5261) in the same ecosystem.
+        if "lean" in kernel:
+            comment_prefix = "--"
+        elif "csharp" in kernel or "fsharp" in kernel:
+            comment_prefix = "//"
+        else:
+            comment_prefix = "#"
         lines = [l.strip() for l in source.split("\n") if l.strip()]
         if all(l.startswith(comment_prefix) for l in lines):
             continue
 
         result["total_code"] += 1
+
+        # The other half of the PII carve-out. Declaring `pii_no_output` buys
+        # tolerance for a null execution_count and, in exchange, forbids ANY
+        # committed output: an output on a notebook that renders student
+        # rosters is the signature of personal data already in git history.
+        # Failing here is what stops the flag from becoming an escape hatch
+        # from #5214 for ordinary half-executed notebooks.
+        if pii_no_output and cell.get("outputs"):
+            result["passed"] = False
+            result["errors"].append(
+                f"cell {i}: notebook declares metadata.{PII_NO_OUTPUT_KEY} but "
+                f"this cell carries {len(cell['outputs'])} committed output(s) — "
+                f"personal data may already be in git history. Clear the outputs "
+                f"and rotate/scrub upstream if they were pushed; do NOT hand-edit "
+                f"them into something plausible (Stop&Repair)."
+            )
 
         # C.1 check: forbidden patterns via the shared digit-bounded,
         # comment/docstring-aware scanner (#1505 — no more date false positives)
@@ -301,7 +407,12 @@ def validate_notebook(nb_path: Path) -> dict:
     # Forensic verdict (H.5): EXEC_PROVED / STRUCTURAL_ONLY / ADVISORY_NON_EXEC.
     # Distinguishes "real outputs present" from "structural-only / advisory" so
     # reviewers and bots apply CHANGES_REQUESTED on the second (#5214).
-    if allow_null_exec_count:
+    if pii_no_output:
+        # Its own verdict, ahead of ADVISORY_NON_EXEC: a reviewer must not read
+        # "advisory" (= we could not execute here) where the truth is "empty ON
+        # PURPOSE, and any output would be a data-protection incident".
+        result["forensic_verdict"] = "PII_NO_OUTPUT"
+    elif allow_null_exec_count:
         result["forensic_verdict"] = "ADVISORY_NON_EXEC"
     elif saw_null_exec:
         result["forensic_verdict"] = "STRUCTURAL_ONLY"

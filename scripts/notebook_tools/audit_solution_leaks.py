@@ -18,6 +18,15 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
+# Marcheur canonique centralise dans notebook_walk (#8650) : SKIP_DIRS canonique
+# (sur-ensemble strict de l'ancienne exclusion locale -- ajoute ``.lake``,
+# ``archive``, ``_archive``, ``foundry-lib``, ``.ipynb_checkpoints``, etc., donc
+# les arborescences vendored/archivees ne sont plus auditees), filtre git
+# tracked_only, et filtre sur le chemin RELATIF a la racine (immunise contre la
+# classe #8858 -- un filtre abs-parts reduit le scan au silence sous un parent
+# nomme ``_archives/`` / ``archive/``).
+from notebook_walk import iter_notebooks as _walk_notebooks  # noqa: E402
+
 EXERCICE_MARKERS = re.compile(
     r'#\s*(Exercice|TODO\s+etudiant|Etape)\s*\d*', re.IGNORECASE
 )
@@ -352,9 +361,8 @@ def _run_audit():
     Shared by the human-readable report (default) and the ``--json`` machine
     output consumed by ``solution_leak_delta.py`` (CI WARN-mode gate, #8053).
     """
-    notebooks = list(NOTEBOOKS_DIR.rglob('*.ipynb'))
-    notebooks = [n for n in notebooks if '_output' not in n.name and '_executed' not in n.name
-                 and '.ipynb_checkpoints' not in str(n)]
+    notebooks = [n for n in _walk_notebooks(NOTEBOOKS_DIR)
+                 if '_executed' not in n.name]
 
     results = {}
     total_leaks = {

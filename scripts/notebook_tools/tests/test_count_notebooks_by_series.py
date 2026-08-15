@@ -119,6 +119,94 @@ class TestCountNotebooksInDir:
         result = count_notebooks_in_dir(tmp_path, pedagogical=True)
         assert result["total"] == 0
 
+    # --- #9851: EXCLUDE_ALWAYS must match DIRECTORY segments only,
+    #     never the filename. A notebook named "Foo-CombinatorialGames.ipynb"
+    #     at the series root must be counted (the bug dropped 5 GameTheory
+    #     notebooks because "bin" is a substring of "CombinatorialGames").
+
+    def test_filename_with_bin_counted(self, tmp_path):
+        """#9851 root fix: 'Foo-CombinatorialGames.ipynb' at root IS counted.
+        The substring "bin" in the filename must NOT trigger EXCLUDE_ALWAYS."""
+        (tmp_path / "GameTheory-8-CombinatorialGames.ipynb").write_text(
+            "{}", encoding="utf-8"
+        )
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+        assert result["by_subfolder"].get("_root") == 1
+
+    def test_filename_with_obj_counted(self, tmp_path):
+        """Sibling case: 'ObjectDetection.ipynb' at root IS counted.
+        The substring "obj" in the filename must NOT trigger EXCLUDE_ALWAYS."""
+        (tmp_path / "ObjectDetection.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+
+    def test_filename_with_pycache_counted(self, tmp_path):
+        """Sibling case: 'pycache_utils.ipynb' at root IS counted."""
+        (tmp_path / "pycache_utils.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+
+    def test_bin_subdir_still_excluded(self, tmp_path):
+        """Intent preserved: a notebook UNDER bin/ is still excluded.
+        EXCLUDE_ALWAYS still matches 'bin' when 'bin' is a directory segment."""
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        (bin_dir / "compiled_output.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "real.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+        assert "bin" not in result["by_subfolder"]
+
+    def test_obj_subdir_still_excluded(self, tmp_path):
+        """Intent preserved: a notebook UNDER obj/ is still excluded."""
+        obj_dir = tmp_path / "obj"
+        obj_dir.mkdir()
+        (obj_dir / "build.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 0
+
+    def test_checkpoints_subdir_still_excluded(self, tmp_path):
+        """Intent preserved: a notebook UNDER .ipynb_checkpoints/ is excluded."""
+        cp = tmp_path / ".ipynb_checkpoints"
+        cp.mkdir()
+        (cp / "lesson-checkpoint.ipynb").write_text("{}", encoding="utf-8")
+        (tmp_path / "lesson.ipynb").write_text("{}", encoding="utf-8")
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 1
+
+    def test_gametheory_synthetic_regression(self, tmp_path):
+        """#9851 acceptance: synthetic GameTheory-like layout reproduces the
+        real-world bug. 5 root notebooks with 'bin' in their filenames MUST
+        be counted; bin/ subdir notebook MUST be excluded."""
+        # 5 root notebooks whose filenames contain 'bin' substring
+        for name in [
+            "GameTheory-8-CombinatorialGames.ipynb",
+            "GameTheory-8-CombinatorialGames-Csharp.ipynb",
+            "GameTheory-8b-Lean-CombinatorialGames.ipynb",
+            "GameTheory-8c-CombinatorialGames-Csharp.ipynb",
+            "GameTheory-8c-CombinatorialGames-Python.ipynb",
+        ]:
+            (tmp_path / name).write_text("{}", encoding="utf-8")
+        # 7 sub-series notebooks (SocialChoice)
+        social_choice = tmp_path / "SocialChoice"
+        social_choice.mkdir()
+        for i in range(7):
+            (social_choice / f"sc-{i}.ipynb").write_text("{}", encoding="utf-8")
+        # 1 noise: a real bin/ subdir (intentionally excluded)
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        (bin_dir / "compiled.ipynb").write_text("{}", encoding="utf-8")
+
+        result = count_notebooks_in_dir(tmp_path)
+        assert result["total"] == 12, (
+            f"5 root + 7 SocialChoice = 12; got {result['total']} "
+            f"(the bin/ subdir is the ONLY expected exclusion)"
+        )
+        assert result["by_subfolder"].get("_root") == 5
+        assert result["by_subfolder"].get("SocialChoice") == 7
+        assert "bin" not in result["by_subfolder"]
+
 
 # --- extract_readme_count ---
 
@@ -127,56 +215,77 @@ class TestExtractReadmeCount:
         result = extract_readme_count(tmp_path / "nonexistent.md")
         assert result is None
 
-    def test_bold_notebooks(self, tmp_path):
-        p = tmp_path / "README.md"
-        p.write_text("Some intro\n\n> **28 notebooks** Python\n", encoding="utf-8")
-        assert extract_readme_count(p) == 28
+    # --- Scope-aware behavior (#9835) -------------------------------------
+    # extract_readme_count is anchored on the generated CATALOG-STATUS marker
+    # (pedagogical_count). Bare prose numbers are NO LONGER caught: they were
+    # the bug (sub-section headers, exercise counts compared to notebooks).
 
-    def test_table_row(self, tmp_path):
-        p = tmp_path / "README.md"
-        p.write_text("| Notebooks | 45 |\n", encoding="utf-8")
-        assert extract_readme_count(p) == 45
+    _MARKER = (
+        "<!-- CATALOG-STATUS\n"
+        "series: Demo\n"
+        "pedagogical_count: {count}\n"
+        "breakdown: A=10, B={rest}\n"
+        "maturity: BETA={count}\n"
+        "-->\n"
+    )
 
-    def test_inline_notebooks_python(self, tmp_path):
+    def test_marker_primary(self, tmp_path):
+        """With a CATALOG-STATUS marker, return its pedagogical_count."""
         p = tmp_path / "README.md"
-        p.write_text("This series has 12 notebooks Python.\n", encoding="utf-8")
-        assert extract_readme_count(p) == 12
+        p.write_text(self._MARKER.format(count=226, rest=216), encoding="utf-8")
+        assert extract_readme_count(p) == 226
 
-    def test_inline_notebooks(self, tmp_path):
+    def test_marker_wins_over_misleading_prose(self, tmp_path):
+        """The SymbolicAI bug: marker total (226) must win over a sub-section
+        header '**28 notebooks**' that appears in the prose below the marker."""
         p = tmp_path / "README.md"
-        p.write_text("Contient 7 notebooks de cours.\n", encoding="utf-8")
-        assert extract_readme_count(p) == 7
+        body = self._MARKER.format(count=226, rest=216)
+        body += "\n## Lean - Verification Formelle\n\n**28 notebooks** dans cette sous-serie.\n"
+        p.write_text(body, encoding="utf-8")
+        assert extract_readme_count(p) == 226
 
-    def test_total_row(self, tmp_path):
+    def test_marker_exercices_not_caught(self, tmp_path):
+        """The IIT bug: marker total (53) must win over an 'exercices' phrase
+        that previously served as a fallback and compared notebooks to exercises."""
+        p = tmp_path / "README.md"
+        body = self._MARKER.format(count=53, rest=43)
+        body += "\nLes **3 exercices** vous font varier les sous-systemes.\n"
+        p.write_text(body, encoding="utf-8")
+        assert extract_readme_count(p) == 53
+
+    def test_total_row_fallback_no_marker(self, tmp_path):
+        """Without a marker, an explicitly-anchored '| Total | N |' still works."""
         p = tmp_path / "README.md"
         p.write_text("| Total | 84 |\n", encoding="utf-8")
         assert extract_readme_count(p) == 84
 
-    def test_exercices(self, tmp_path):
+    def test_bare_notebooks_not_caught(self, tmp_path):
+        """No marker + bare '**N notebooks**' (often a sub-section header) ->
+        None, not the first number. This is the core scope-aware fix (#9835)."""
+        p = tmp_path / "README.md"
+        p.write_text("Some intro\n\n> **28 notebooks** Python\n", encoding="utf-8")
+        assert extract_readme_count(p) is None
+
+    def test_exercices_not_caught(self, tmp_path):
+        """No marker + 'N exercices' -> None. An exercise count is not a
+        notebook count; the former fallback is removed (#9835)."""
         p = tmp_path / "README.md"
         p.write_text("La serie comprend 15 exercices.\n", encoding="utf-8")
-        assert extract_readme_count(p) == 15
+        assert extract_readme_count(p) is None
 
-    def test_no_match(self, tmp_path):
+    def test_no_marker_no_total_is_none(self, tmp_path):
+        """Honest silence: no marker and no explicit Total -> None, not a
+        number caught at random (#9835 acceptance 4)."""
         p = tmp_path / "README.md"
         p.write_text("Some random text without numbers.\n", encoding="utf-8")
         assert extract_readme_count(p) is None
 
-    def test_zero_ignored(self, tmp_path):
+    def test_marker_zero_falls_through(self, tmp_path):
+        """A marker with pedagogical_count: 0 is ignored (val > 0), and the
+        function falls through to the prose fallback (or None)."""
         p = tmp_path / "README.md"
-        p.write_text("We have 0 notebooks.\n", encoding="utf-8")
-        result = extract_readme_count(p)
-        assert result is None
-
-    def test_first_pattern_wins(self, tmp_path):
-        p = tmp_path / "README.md"
-        p.write_text("**5 notebooks** and also 10 notebooks Python.\n", encoding="utf-8")
-        assert extract_readme_count(p) == 5
-
-    def test_case_insensitive(self, tmp_path):
-        p = tmp_path / "README.md"
-        p.write_text("**28 Notebooks** in this series.\n", encoding="utf-8")
-        assert extract_readme_count(p) == 28
+        p.write_text(self._MARKER.format(count=0, rest=0), encoding="utf-8")
+        assert extract_readme_count(p) is None
 
     def test_empty_file(self, tmp_path):
         p = tmp_path / "README.md"

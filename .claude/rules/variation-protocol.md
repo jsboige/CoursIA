@@ -1,69 +1,101 @@
 # Protocole de variation — anti-monoculture, tag déclaré + merge-gate coordinateur
 
-S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Source : mandat user 2026-07-21 (« Tu constateras que la monoculture de PRs facile est toujours bien là, il faut que tu steere mieux, c'est peut-être le moment d'imposer un protocole de variation »).
+S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Source : mandat user 2026-07-21 (« la monoculture de PRs facile est toujours bien là, il faut que tu steere mieux, c'est peut-être le moment d'imposer un protocole de variation »).
 
-**Ce fichier n'est PAS une redite de [proactive-coordination.md](proactive-coordination.md) R6/R7.** Les *concepts* (tiers DEEP/MED/LIGHT, cap 1 LIGHT/lane/jour, rotation genres, never-idle outcome-test) y sont déjà posés — et pourtant la monoculture persiste, parce qu'ils étaient **auto-évalués, invisibles, et non-gatés au merge**. Ce protocole ajoute la **mécanique d'enforcement manquante** : un **tag déclaré auditable**, un **merge-gate coordinateur**, et une **obligation de provisionnement** qui lie `ai-01`. C'est la couche qui fait *mordre* R6/R7, pas un contrepoids.
+Les *concepts* (tiers DEEP/MED/LIGHT, rotation des genres, never-idle) sont déjà dans [proactive-coordination.md](proactive-coordination.md) R6/R7 — et la monoculture a persisté, parce qu'ils étaient **auto-évalués, invisibles, non-gatés au merge**. Ce fichier ajoute la mécanique manquante : un **tag auditable**, un **merge-gate**, une **obligation de provisionnement**. C'est ce qui fait mordre R6/R7.
 
-## 1. Le tag de grain — déclaré, objectif, non-gamable (HARD)
+**Détail (justifications mesurées, incidents fondateurs, verbatims)** : [docs/reference/variation-protocol-detail.md](../../docs/reference/variation-protocol-detail.md).
 
-Tout `[CLAIMED]` (dashboard) **et** tout body de PR portent en **première ligne** :
+## 1. Le tag de grain (HARD)
+
+Tout `[CLAIMED]` **et** tout body de PR portent en **première ligne** :
 
 ```
-Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>
+Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR>
 ```
 
-Ex. `Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard`.
+Ex. `Grain: DEEP/lean — lane myia-po-2026:CoursIA — prev: LIGHT/guard #8954`.
 
-### TIER — test objectif, PAS auto-évaluation de valeur
+`prev:` documente le grain précédent de la lane (adjacence G-VAR-3) **et** le lie à une PR relisable — le genre est la clé d'adjacence, le numéro rend la déclaration vérifiable ; les deux sont obligatoires.
 
-Le TIER se décide par un **test mécanique**, pour couper le gaming (« mon tranche-de-guards est de la *substance* ») :
+Le guard ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guard.yml)) matche par **mot-clé** (`Grain:`, `lane`), casse insensible, décoration markdown neutralisée : ni le séparateur ni la casse ne comptent. Ce qui est vérifié est la **substance** (TIER par le litmus, GENRE dans l'énumération, `lane` présente). **Ne pas forcer de churn cosmétique** sur un tag valide en substance.
 
-| TIER | Test décisif (litmus) | Exemples |
-|------|----------------------|----------|
-| **DEEP** | `main` contient-il désormais un **résultat/capacité qui n'existait pas**, dont la production a demandé du **raisonnement de domaine** ? | sorry Lean retiré + `lake build SUCCESS` · training/backtest avec verdict multi-seed · nouveau notebook pédagogique exécuté (≥3 exos, outputs réels) · moteur SOTA nouvellement branché (verdict SOTA-OK) · module de recherche avec résultat falsifiable |
-| **MED** | Étend de la substance existante **avec ré-exécution/vérification**, et **change quelque chose** (pas « 0 trouvé ») | enrichissement pédagogique + ré-exec · audit borné dont le finding **change une décision** · exercice ajouté + exécuté · refactor avec tests qui passent · audit README fichier-entier corrigeant un drift **structurel** réel |
-| **LIGHT** | **« Pourrais-je en générer une douzaine d'autres à la chaîne en scannant l'instance suivante ? »** → si oui : LIGHT, quel que soit le nom qu'on lui donne | guard-tranche · portability/path-fix · doc-resync (+1/−1 caption/count) · ledger append · fix accent/leak/FP · propagation de marqueur |
+### TIER — test objectif, pas auto-évaluation
 
-Le litmus LIGHT (« générable en série par scan ») est le **cœur anti-gaming** : guards, resyncs, ledger-entries, accents passent TOUS ce test → tous LIGHT, peu importe l'étiquette que le worker leur colle.
+| TIER | Litmus décisif | Exemples |
+|---|---|---|
+| **DEEP** | `main` contient-il désormais un **résultat/capacité qui n'existait pas**, dont la production a demandé du **raisonnement de domaine** ? | sorry Lean retiré + `lake build SUCCESS` · backtest/training avec verdict multi-seed · nouveau notebook exécuté (≥3 exos, outputs réels) · moteur SOTA branché (verdict SOTA-OK) · module de recherche à résultat falsifiable |
+| **MED** | Étend de la substance existante **avec ré-exécution/vérification**, et **change quelque chose** (pas « 0 trouvé ») | enrichissement + ré-exec · audit borné dont le finding **change une décision** · exercice ajouté + exécuté · refactor avec tests verts · audit README fichier-entier corrigeant un drift structurel |
+| **LIGHT** | **« Pourrais-je en générer une douzaine en scannant l'instance suivante ? »** → si oui : LIGHT, quel que soit le label | guard-tranche · path-fix · doc-resync · ledger append · accent/leak/FP · propagation de marqueur |
 
-### GENRE — étiquette de rotation
+Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, accents le passent tous.
 
-`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test`. Sert la règle anti-consécutif (§2, G-VAR-3).
+### GENRE — énumération CLOSE
+
+`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test` · `tooling` · `research-code`.
+
+**L'énumération se partitionne en deux, et la frontière porte G-VAR-1 :**
+
+| Classe | Genres | Ce qu'un grain y produit |
+|---|---|---|
+| **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
+| **META** | `guard` · `tooling` · `ledger` · `docs` · `readme` · `test` · `refactor` | l'outillage, les garde-fous et la prose *autour* du contenu — nécessaire, jamais suffisant |
+
+Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
+
+Un genre hors liste est un **alias** que le merge-gate normalise : pas une violation, le worker n'est ni repris ni HOLD. La fermeture protège G-VAR-3, qu'un vocabulaire ouvert rendrait inatteignable par simple choix de mot.
+
+**Le GENRE est le TYPE DE TRAVAIL, jamais la famille où vivent les fichiers.** Test : *si le prochain grain de ce rollout tombait dans une autre famille, changerais-je le GENRE ?* Si oui, le genre décrit le répertoire — reprendre celui du travail. Le composé `<famille>-<genre>` (`lean-ci`, `cjk-ci`, `audit-tooling`) **se réduit toujours à sa tête** ; les synonymes (`test-coverage` → `test`, `documentation` → `docs`, `data` → `ledger`) se normalisent. Table d'alias complète : [détail §Alias](../../docs/reference/variation-protocol-detail.md).
+
+**`guard` vs `tooling` — le discriminant est « est-ce que ça peut rougir ».** Un check susceptible de passer au rouge est `guard` ; un script/helper/convertisseur sans statut d'échec propre est `tooling`.
+
+**Entrer dans la liste LIGHT de G-VAR-3 se mesure, jamais s'intuitionne** : un genre y entre dès **≥ 2 grains LIGHT mergés**.
 
 ## 2. Les trois gates durs
 
-- **G-VAR-1 — Plat principal DEEP ou MED.** La PR-plancher du cycle (le `≥1 PR/wakeup` de [proactive-coordination.md](proactive-coordination.md) R1) **DOIT** être DEEP ou MED. **Une LIGHT ne satisfait JAMAIS le plancher.** Le pool global (`gh issue list --state open`, ~65 issues) porte toujours du DEEP/MED à tous les niveaux → le plancher-substance est toujours atteignable ; la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
-- **G-VAR-2 — Cap LIGHT = 1/lane/jour, agrégé.** Au plus **une** LIGHT par lane par jour, **toutes catégories LIGHT confondues**. C'est ce qui ferme le gaming « guard + resync + ledger = 3 familles différentes » : ce sont 3 LIGHT → **une seule** compte, les autres attendent demain ou cèdent la place à du DEEP/MED.
-- **G-VAR-3 — Pas deux fois le même GENRE **LIGHT** consécutif ; DEEP/MED same-genre seulement si substance genuinement distincte.** Le ban **absolu** vise les **genres LIGHT** : `guard`→`guard`, `ledger`→`ledger`, `docs`→`docs`, `readme`→`readme`, `test`→`test` = **bloqué** dès 2 (la vague se forme dès 2 — durcit le « après 3 grains similaires » de R6, trop laxiste). Pour un genre **DEEP ou MED dans le domaine-cœur d'une lane spécialiste** (`lean` pour po-2026, `qc` pour po-2024, `training`/`genai` selon la lane), **deux grains same-genre consécutifs sont autorisés SI chacun est une substance genuinement distincte** — théorème / module / résultat différent, produit par du raisonnement de domaine neuf, **pas** une variante scan-générée. Un spécialiste Lean qui enchaîne deux preuves DEEP **distinctes** (ex. #7649 puis #2159 Grothendieck) n'est **PAS** la monoculture visée. Le tell décisif reste le litmus LIGHT : « pourrais-je générer le suivant en scannant l'instance d'à-côté ? » — **oui** → c'est la vague, bloqué **même sous une étiquette DEEP** ; **non**, il a fallu du raisonnement de domaine neuf → OK.
+- **G-VAR-1 — Plat principal DEEP ou MED, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP ou MED **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier.** Le pool global porte toujours du DEEP/MED de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+
+  **Pourquoi la clause de genre existe** : le tier seul laissait une porte que la flotte a prise sans jamais mentir — un `tooling`/`guard` qui attrape un vrai défaut « change quelque chose », donc **MED** est défendable, donc le plancher paraît tenu, et **zéro contenu livré** (mesuré sur six semaines, aucun gate n'a rougi : [chiffres](../../docs/reference/variation-protocol-detail.md)). Un cycle dont le plat principal est META **n'a pas de plancher tenu**, même avec dix PR livrées. Le remède n'est pas de bannir le META (bienvenu au-delà du plancher, sous budget G-VAR-2 pour ses composantes LIGHT) mais d'exiger qu'**au moins un** grain de contenu porte le cycle.
+- **G-VAR-2 — Budget LIGHT proportionnel : `max(1, grains_mergés_du_jour // 3)`**, par lane et par jour, **toutes catégories LIGHT confondues**. Une lane à 1-5 grains garde l'ancien plafond d'une LIGHT ; à 6 elle en a deux, à 19 elle en a six. Au-delà : la LIGHT attend demain ou cède la place à du DEEP/MED. Le budget se **calcule** — [`scripts/variation_light_cap.py`](../../scripts/variation_light_cap.py) — il ne se déclare pas.
+- **G-VAR-3 — Pas deux fois le même GENRE LIGHT consécutif.** Ban **absolu** sur les genres LIGHT (`guard` · `ledger` · `docs` · `readme` · `test`) : bloqué dès 2. Pour un genre **DEEP ou MED dans le domaine-cœur d'une lane spécialiste**, deux consécutifs sont autorisés **si chacun est une substance genuinement distincte** — théorème/module/résultat différent, produit par du raisonnement neuf. Un spécialiste Lean qui enchaîne deux preuves DEEP distinctes n'est **pas** la monoculture visée. Tell décisif : le litmus LIGHT — générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP**.
 
 ## 3. Merge-gate coordinateur (ai-01) — les dents (HARD)
 
-Le protocole ne mord que si `ai-01` **cesse de merger passivement la monoculture**. À chaque passe de merge, pour chaque PR, `ai-01` **lit le tag** et croise avec les grains récents de la lane :
+Le protocole ne mord que si `ai-01` cesse de merger passivement. À chaque passe, pour chaque PR, **lire le tag** et croiser avec les grains récents de la lane :
 
-- **PR LIGHT d'une lane ayant déjà mergé une LIGHT aujourd'hui** (G-VAR-2 violé) → **HOLD** : commenter « variation-protocol G-VAR-2 : LIGHT-du-jour déjà consommée sur cette lane ; apporte un DEEP/MED ou attends demain », **ne pas merger**.
-- **2ᵉ même-GENRE consécutif** (G-VAR-3 violé) → **HOLD** *seulement si c'est un genre LIGHT (`guard`/`ledger`/`docs`/`readme`/`test`) OU un DEEP/MED non-distinct (variante scan-générée)* : « variation-protocol G-VAR-3 : `<genre>`→`<genre>` ; change de genre ». Ne pas merger. Un 2ᵉ DEEP/MED **genuinement distinct** dans le domaine-cœur de la lane (ex. Lean spécialiste, preuve différente) **passe** — ne pas HOLD une preuve dure au motif du seul label de genre.
-- **Plancher tenu par une LIGHT** (G-VAR-1 violé) → steer vers un grain DEEP/MED du pool, nommé.
+| Constat | Action |
+|---|---|
+| LIGHT d'une lane à budget épuisé (G-VAR-2) | **HOLD** : citer la sortie de `variation_light_cap.py` (`N` LIGHT pour `M` grains), pas une estimation |
+| 2ᵉ même-GENRE consécutif (G-VAR-3) | **HOLD** *si* genre LIGHT **ou** DEEP/MED non-distinct. Un 2ᵉ DEEP/MED genuinement distinct **passe** |
+| Plancher tenu par une LIGHT (G-VAR-1) | steer vers un grain DEEP/MED de **contenu** du pool, **nommé** |
+| Plancher tenu par un genre **META**, même tagué DEEP/MED (G-VAR-1) | le cycle n'a pas de plancher : merger la PR si elle est bonne, **et** nommer dans le même geste le grain de contenu qui portera le cycle suivant. Ne **pas** HOLD une PR META saine — la sanction porterait sur le mauvais objet ; c'est le **provisionnement** qui a manqué (obligation §4) |
+| Tag mal dérivé (tier sur-coté, genre pris sur la famille, alias/composé) | **re-qualifier le tag soi-même**, puis traiter selon le tag corrigé |
+| `lane` absente | **HOLD** jusqu'à déclaration — un grain sans lane est **structurellement incomptable**, et le cap devient inapplicable sans que personne ne le contourne |
 
-Le HOLD **ne sanctionne jamais la lane en idle** (cf [coordinator-discipline.md](coordinator-discipline.md) R4) : il est **toujours accompagné d'un grain DEEP/MED nommé** du pool global, poussé en **double canal** (DM inbox + `[DISPATCH→inbox]` dashboard). HOLD sans grain de remplacement = échec coordinateur, pas enforcement.
+**Le tag déclaré n'est pas auto-exécutoire** : il rend le grain auditable, il ne le définit pas. Merger sans lire le tag laisse le protocole s'auto-certifier.
 
-**Exception plancher** : ne jamais bloquer l'**unique** PR qui garde une lane hors-idle *si* le pool était réellement vide — mais le pool n'est jamais vide (§2 G-VAR-1), donc en pratique on **redirige**, on ne bloque pas à sec.
+**Ne jamais tenir une LIGHT plus d'une journée** : un hold prolongé fait réécrire le même travail par une autre lane. Passé 24 h : merger, ou fermer **en nommant le remplaçant**.
+
+Le HOLD **ne sanctionne jamais la lane en idle** ([coordinator-discipline.md](coordinator-discipline.md) R4) : il est **toujours accompagné d'un grain DEEP/MED nommé** du pool, poussé en **double canal** (DM inbox + `[DISPATCH→inbox]` dashboard). HOLD sans remplacement = échec coordinateur.
 
 ## 4. Obligation de provisionnement — ce qui lie ai-01 (HARD)
 
-La cause racine de la monoculture est **autant** un défaut de provisionnement coordinateur qu'un réflexe de facilité worker : quand `ai-01` ne stocke pas de substance, le worker tombe sur les veines faciles générables-à-la-demande. Donc **chaque cycle `/coordinate`**, `ai-01` :
+La cause racine est **autant** un défaut de provisionnement qu'un réflexe de facilité worker : sans substance stockée, le worker tombe sur les veines faciles. Chaque cycle `/coordinate`, `ai-01` :
 
-1. **Provisionne ≥1 grain DEEP/MED par lane** (la « loterie substance », cf [[feedback-substance-lottery-provisioning]]), **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre — pour que le plat principal soit disponible **sans** self-serve de veine facile.
-2. **Varie la loterie d'un cycle à l'autre** : ne pas re-provisionner le même genre à la même lane deux cycles de suite (le coordinateur applique G-VAR-3 à son propre dispatch).
+1. **Provisionne ≥1 grain DEEP/MED de CONTENU par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre. Un provisionnement uniquement `guard`/`tooling`/`docs` ne satisfait pas l'obligation — il garantit que toutes les lanes manqueront leur plancher.
+   Deux corollaires mesurés : **agréger les GENRES des merges récents** avant de provisionner, pas seulement leurs tiers (« 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook`) ; et **un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle (précédent ICT).
+2. **Varie la loterie** d'un cycle à l'autre — le coordinateur applique G-VAR-3 à son propre dispatch.
 
-Sous-provisionner puis merger la monoculture qui en résulte = **le** manquement que ce protocole corrige. « Steere mieux » = provisionne + gate, pas « constate la vague au merge ».
+Sous-provisionner puis merger la monoculture qui en résulte est **le** manquement que ce protocole corrige.
 
-## 5. Auto-détection (worker et coordinateur)
+## 5. Auto-détection
 
-Avant de claim / de merger, une question : **« ce grain est-il générable-en-série (LIGHT) ET (déjà une LIGHT-jour OU même-genre-que-le-précédent) ? »** — si oui, c'est la monoculture : le worker pioche un DEEP/MED du pool à la place ; le coordinateur HOLD+redirige. Le tag rend la réponse visible en un coup d'œil.
+Avant de claim / de merger : **« ce grain est-il générable-en-série (LIGHT) ET (budget épuisé OU même-genre-que-le-précédent) ? »** Si oui, c'est la monoculture — le worker pioche un DEEP/MED, le coordinateur HOLD+redirige.
+
+Et la question que le tier seul ne posait pas, à se poser en fin de cycle : **« qu'est-ce que ce cycle a ajouté au dépôt qu'un lecteur ou un étudiant puisse utiliser ? »** Si la seule réponse honnête est « un détecteur de plus, un guard de plus, une doc de plus », le plancher n'est pas tenu — quel que soit le nombre de PR mergées et quels que soient les tiers déclarés. Côté worker : piocher un grain de contenu. Côté coordinateur : c'est un défaut de provisionnement (§4), pas une faute de lane.
 
 ## Voir aussi
 
-- [proactive-coordination.md](proactive-coordination.md) — R1 (≥1 PR/wakeup plancher), R5 (pool global cross-lane), R6 (variété/rotation), R7 (never-idle outcome-test, tiers DEEP/MED/LIGHT). **Ce protocole opérationnalise R6/R7.**
-- [coordinator-discipline.md](coordinator-discipline.md) — R4 (jamais sanctionner l'idle : HOLD toujours + grain de remplacement), R5 (steer qui ATTEINT/VRAI/DÉCIDE).
-- `~/.claude/projects/d--CoursIA/memory/feedback-substance-lottery-provisioning.md` — loterie substance ungated (obligation §4).
-- `~/.claude/projects/d--CoursIA/memory/feedback-vary-backlog-not-accent-day.md` — jamais une journée d'un seul registre.
+- [docs/reference/variation-protocol-detail.md](../../docs/reference/variation-protocol-detail.md) — justifications mesurées, incidents #8056 / #8961, historique des applications
+- [proactive-coordination.md](proactive-coordination.md) — R1, R5 (pool global), R6/R7 (variété, never-idle)
+- [coordinator-discipline.md](coordinator-discipline.md) — R4 (jamais sanctionner l'idle), R5 (steer qui ATTEINT/VRAI/DÉCIDE)

@@ -4,11 +4,19 @@ on:
   pull_request:
     paths:
       - 'CLAUDE.md'
+      - 'index.md'
       - 'PARCOURS.md'
       - '.claude/rules/**'
       - 'docs/**'
       - '**/README.md'
       - 'scripts/check_docs_links.py'
+  # Manual re-run on `main` after a CI outage (e.g. 2026-08-06 Actions window),
+  # so this PR-only gate is not silently skipped on merges that land without a
+  # clean per-PR run. See #9858. Matches the 6 sibling gates that already carry it.
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   check-links:

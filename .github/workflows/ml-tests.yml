@@ -17,6 +17,9 @@ on:
       - '.github/workflows/ml-tests.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   ml-tests:
     name: ML Pipeline Tests (CPU)

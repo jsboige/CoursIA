@@ -5,7 +5,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 ## Status
 
 - **Toolchain**: v4.31.0-rc1
-- **Sorry count**: 2 (all in `HashlifeCorrectness.lean` — P4 double-nine wave-glue residual `p4_succ_membership` (private helper `window_cone_in_domain` is the proven local bridge) [1] + P5 large-n jump `p5_large_n_jump` [1], Epic #2162). Several P4 sub-lemmas and additive ingredients are proven sorry-free (see § "Game of Life" below). `p5_inductive_step` (P5.3 glue) was closed by c.310 PR #5998 via vacuous-arm split (design gate #3846): on non-empty grids, the `¬ hsmall` branch is jointly unsatisfiable with `BoxAssezGrand`, hence vacuous by construction. The P4.4 `p4_half_steps_compose` placeholder was deleted: its pure-evolve composition is already closed (`evolve_add` + `evolve_half_step`), its wave-glue content carried by the `p4_succ_membership` residual. **Audit N1 (PR #5853, ai-01 2026-07-09)**: the initial frame sub-claim (`BoxAssezGrand` ∩ `n ≥ jumpSize`) is **VACUOUS on non-empty grids** (`p5_large_n_hyps_unsat`: padding 2 of `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`). **Design gate ai-01 (#3846, 2026-07-10)**: redesign `gridFrame` for `n`-dependent padding, port the `(off, mc)` state through the `evolveHashlifeFastAux` loop without intermediate re-framing, restate the "margin ≥ remaining n, preserved by jump" invariant. The proof debt (#3846) remains the BG-prover target and the coordinated architectural redesign scope.
+- **Sorry count**: **2** (code-level, canonical FR — post-split count #9883/#9884; +1 `_en` twin = 3 counting `HashlifeMarginFragment_en.lean`). **P4: 0 sorry** (double-nine inductive step PROVEN post-split — `p4_succ_membership` sorry-free, consumed by `hashlifeResult_central_correct` via `p4_ext_bridge`) + **P5 large-n: 2 sorry** (`p5_large_n_jumpN` aggregator L1156/sorry L1159 + `hashlife_correct_margin` `HashlifeMarginFragment.lean` L136/sorry L145). Raw `grep` over-counts (~23 hits in the aggregator alone) via docstring prose; canonical code-level count via stripping docstrings `/- … -/` + `--` comments. The old counts "8 sorry / P4: 5 / P5: 3" and line numbers `L2893-3706` below date from the **pre-split monolith** (7082 lines) and are **stale** — the current aggregator is 1283 lines. See § "Honest state of the HashlifeCorrectness lock" for the post-split per-declaration breakdown. **Audit N1 (PR #5853, ai-01 2026-07-09)**: the initial frame sub-claim (`BoxAssezGrand` ∩ `n ≥ jumpSize`) is **VACUOUS on non-empty grids** (`p5_large_n_hyps_unsat`: padding 2 of `gridFrame` ∧ `lvl ≥ 3` ⇒ `n ≤ 2 ∧ js ≥ 8`) — which is why `hashlife_correct` (aggregator L1092) is proven via `p5_inductive_step` but remains *vacuous* in the large-`n` regime, and why the N-aware statement `hashlife_correctN` + the jump `p5_large_n_jumpN` (the genuine P5.2, open sorry) were introduced. **Design gate ai-01 (#3846, 2026-07-10)**: redesign `gridFrame` for `n`-dependent padding, port the `(off, mc)` state through the `evolveHashlifeFastAux` loop without intermediate re-framing, restate the "margin ≥ remaining n, preserved by jump" invariant. The proof debt (#3846) remains the BG-prover target and the coordinated architectural redesign scope.
 - **Build**: `lake build Conway` -- SUCCESS (3352 jobs)
 - **Dependencies**: Mathlib4
 - **i18n coverage (EPIC #4980)**: **25 conway_lean modules** shipped as FR-canonical + `_en` sibling on `main` (all but `HashlifeCorrectness.lean`, the P4/P5 prover target which remains EN-only) — Phase 1: **10/10**; Phase 2: **13/14** (`ConeGeometry` included); Phase 3: **2/2**. Rollout complete (c.290-#6439 + cycles c.421-c.423 merged).
@@ -44,7 +44,7 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 | `Conway/Life/HashlifeMemo.lean` | `HashlifeMemo_en.lean` | 0 | Memoized Hashlife for community pillar witnesses (OTCA 35K, UnitCell 4096, Gemini 33M) |
 | `Conway/Life/HashlifeMarginDemo.lean` | `HashlifeMarginDemo_en.lean` | 0 | Runnable P5 redesign demo (#3846) — n-aware framing margin around `MacroCell`/`HashlifeCorrectness` |
 | `Conway/Life/Pillars.lean` | `Pillars_en.lean` (c.417) | 0 | Community-witness theorem scaffolding (4 pillars) |
-| `Conway/Life/HashlifeCorrectness.lean` | — | 2 | Bounded correctness `hashlife_correct`; P4/P5 prover targets (Epic #1453, #2162) |
+| `Conway/Life/HashlifeCorrectness.lean` | — | 2 | Bounded correctness `hashlife_correct` (proven but vacuous at large-n); P5 prover target (Epic #1453, #2162). **P4 PROVEN sorry-free post-split #9883/#9884** (0 sorry — `p4_succ_membership` sorry-free). 2 = P5 large-n (`p5_large_n_jumpN` L1159 + `hashlife_correct_margin` L145 INTRINSIC). The old P4 items `p4_nw_supercell_agree`/`p4_nw_membership_arm` and line numbers L2893-3706 date from the pre-split monolith (7082 lines) — **stale**. |
 
 ### Phase 3 — Free Will Theorem (Epic #1651, COMPLETE)
 
@@ -85,28 +85,8 @@ Lean 4 formalization of Conway's mathematical games and algorithms.
 - **Memoized Hashlife**: Community pillar witnesses (OTCA 35K gen, UnitCell 4096 gen, Gemini 33M gen)
 - **HashlifeCorrectness**: bounded correctness `hashlife_correct`, decomposed P1-P5
   - **P1-P3 proven** (base case `k=0` via `2^16 native_decide`, PR #2810)
-  - **P4 inductive step** (1 residual sorry on `window_cone_in_domain`): decomposed by #2975
-    scaffolding into sub-lemmas. Several are now **proven sorry-free** with real statements
-    — `p4_double_nine_shape` (structural existence of the nine quadrants of a double-nine
-    cell), `p4_wave1_ih` and `p4_wave2_ih` (propagation of `centralCorrect` via the induction
-    hypothesis over the two waves), `p4_ext_bridge`, plus the additive ingredients closed in
-    cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`,
-    `evolve_cone_agree`). The P4.4 `p4_half_steps_compose` placeholder (`: True`) was
-    **deleted** (N2-bis): its pure-evolve half-step composition is exactly the closed
-    `evolve_add` + `evolve_half_step`, and its wave-assembly content is carried by the
-    **1 residual sorry** on `window_cone_in_domain` (private helper declared at L2629) — the
-    real offset-matching G3 assembly: characterize super-cell `q_*` membership in the four
-    quadrant offsets via `centralCorrect_mem` (G2) + the bridging `evolve_half_step`/
-    `step_light_cone` (G3). Research-level double-nine light-cone composition, whnf-hard —
-    reserved for a dedicated multi-cycle effort. The sub-lemmas' real statements live in
-    their docstrings — restate + prove, do not eliminate as `True`.
-  - **P5 large-n** (1 residual sorry): `p5_small_n_fallback` **PROVEN** (PR #2984);
-    `evolve_dead_of_cone_dead` (P5.2 contrapositive, #4574) **proven sorry-free**;
-    `p5_inductive_step` (P5.3 glue) **PROVEN** by c.310 PR #5998 via vacuous-arm split
-    (non-empty branch closed by `p5_large_n_hyps_unsat`, empty branch by direct unfold).
-    Remaining: `p5_large_n_jump` (P5.2, `evolveHashlifeFast n g = evolve n g`, body `sorry`,
-    blocked on P4). Base `n=0` proven (`hashlife_correct_base_zero` #2898,
-    `evolveHashlifeFastAux_zero_n` #2901).
+  - **P4 inductive step — PROVEN sorry-free post-split #9883/#9884** (0 sorry): the scaffolding decomposes the inductive step into sub-lemmas all sorry-free in `Foundation.lean` — `p4_double_nine_shape` (structural existence of the nine quadrants of a double-nine cell), `p4_wave1_ih` and `p4_wave2_ih` (propagation of `centralCorrect` via the induction hypothesis over the two waves), `p4_ext_bridge` (reduction to the pointwise-membership biconditional), `p4_succ_membership` (the membership iff itself, sorry-free). Also sorry-free are the additive ingredients closed in cycles 145-160: `evolve_add` (S1), `evolve_half_step` (half-step `2^k`, #4555), `centralCorrect_mem_shift` (G2 offset-generalized gate, #4812) and `evolve_cone_agree` (radius-doubling locality composition gate, #4892). The P4.4 placeholder `p4_half_steps_compose` (`: True`) was **deleted** (N2-bis): its pure-evolve composition is exactly `evolve_add` + `evolve_half_step` (closed). The aggregator consumes it all: `hashlifeResult_central_correct` applies `p4_ext_bridge c (k+1) (p4_succ_membership …)` at its `k → k+1` case.
+  - **P5 large-n — 2 residual sorry** (P4 gate fallen → attackable): `p5_small_n_fallback` **PROVEN** (PR #2984); `evolve_dead_of_cone_dead` (P5.2 contrapositive, #4574) **proven sorry-free**; `p5_inductive_step` (P5.3 glue) **PROVEN** by c.310 PR #5998 via vacuous-arm split; `p5_large_n_jump` (P5.2, aggregator L993) and `hashlife_correctN` (N-steps `BoxAssezGrandN`, aggregator L1181) **proven sorry-free** post-split. Remaining are 2 `sorry` theorems: `p5_large_n_jumpN` (aggregator L1156, sorry L1159 — the genuine jump `evolveHashlifeFast n g = evolve n g` on the non-vacuous N-aware frame, P5.2) + `hashlife_correct_margin` (`HashlifeMarginFragment.lean` L136, sorry L145 — INTRINSIC, bounded assembly via `supportInMargin` + the `p4_nw_overlap_wall` chain). Base case `n=0` proven (`hashlife_correct_base_zero` #2898, `evolveHashlifeFastAux_zero_n` #2901).
 
 ### Kochen-Specker + Free Will Theorem (Phase 3, PROVED)
 
@@ -136,18 +116,45 @@ This workspace formalizes in Lean 4 three facets of John Conway's work, from cla
 
 ### Honest state of the HashlifeCorrectness lock
 
-The central theorem `hashlife_correct` (bounded by the padding hypothesis `BoxAssezGrand`) is **not yet proven in full generality**: **2 `sorry`** remain in `HashlifeCorrectness.lean`. The foundation is solid — base case `k=0` proven (`2^16 native_decide`), base case `n=0` proven, P1/P2/P3 (padding, light-cone, locality) proven, `p5_small_n_fallback` proven, `p5_inductive_step` (P5.3 glue) proven by c.310 PR #5998 via vacuous-arm split, the P4 sub-lemmas (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_ext_bridge`) proven sorry-free, plus the additive ingredients closed in cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`, `evolve_cone_agree`) and the P5.2 contrapositive (`evolve_dead_of_cone_dead`) — but the P4 inductive step (offset-matching G3 assembly, 1 residual sorry on `window_cone_in_domain` — private helper declared at L2629, the `p4_half_steps_compose` placeholder has been deleted, its pure-evolve composition already closed via `evolve_add`+`evolve_half_step`) and P5 large-n (`p5_large_n_jump`, blocked on P4) are **research-level**. These are the BG-prover (`agent_tests/prover/`) targets, not bounded grains: the multi-wave light-cone composition resists current tactical automation. The P4 scaffolds state each sub-goal precisely in their docstrings.
+The central theorem `hashlife_correct` (bounded by the padding hypothesis `BoxAssezGrand`) is **proven** (aggregator L1092, via `exact p5_inductive_step n g h`), but its hypothesis `BoxAssezGrand g n` is structurally *capped* at `n ≤ 2` on non-empty grids (`p5_large_n_hyps_unsat`): it is therefore **vacuous in the large-`n` regime** where the Hashlife jump is actually exercised. The foundation is solid — base case `k=0` proven (`2^16 native_decide`), base case `n=0` proven, P1/P2/P3 (padding, light-cone, locality) proven, `p5_small_n_fallback` proven, `p5_inductive_step` (P5.3 glue) proven by c.310 PR #5998 via vacuous-arm split, **the P4 inductive step PROVEN sorry-free post-split** (`p4_double_nine_shape`, `p4_wave1_ih`, `p4_wave2_ih`, `p4_ext_bridge` sorry-free in `Foundation.lean`; `p4_succ_membership` sorry-free, consumed by `hashlifeResult_central_correct` via `p4_ext_bridge`), as well as the additive ingredients closed in cycles 145-160 (`evolve_add`, `evolve_half_step`, `centralCorrect_mem_shift`, `evolve_cone_agree`) and the P5.2 contrapositive (`evolve_dead_of_cone_dead`) — but the **large-`n` P5.2 jump** remains **research-level**. **Per-declaration breakdown of the 2 residual sorry** (code-level, post-split #9883/#9884; the old P4 items `p4_nw_supercell_agree`/`p4_nw_membership_arm` and line numbers `L2893-3706` date from the pre-split monolith and no longer exist):
+
+- **P4 — double-nine inductive step**: **0 sorry (PROVEN post-split)**. The scaffolding (`p4_double_nine_shape` structural, `p4_wave1_ih`/`p4_wave2_ih` IH application, `p4_ext_bridge` reduction to the biconditional, `p4_succ_membership` membership iff) is entirely sorry-free in `Foundation.lean` + the aggregator. The `p4_half_steps_compose` placeholder (P4.4) was deleted (pure-evolve composition already closed via `evolve_add`+`evolve_half_step`).
+- **P5 large-n** (2 sorry, P4 gate now fallen → attackable): `p5_large_n_jumpN` (aggregator L1156, sorry L1159, P5.2 — the genuine jump `evolveHashlifeFast n g = evolve n g` on the N-aware frame `BoxAssezGrandN`, non-vacuous at `n ≥ 8`) + `hashlife_correct_margin` (`HashlifeMarginFragment.lean` L136, sorry L145, INTRINSIC — the bounded P4/P5 assembly via `supportInMargin`, open research heart). `hashlife_correctN` (aggregator L1181) and `p5_large_n_jump` (aggregator L993) are **proven sorry-free** post-split (the former covers the `n ≤ 2` case, the latter is the legacy fixed-frame statement).
+
+**Concrete next step**: attack `p5_large_n_jumpN` (P5.2) — the Hashlife jump of `2^lvl` generations (`jumpSize lvl`, via `hashlifeJump = hashlifeResult (padCenter2 c)` on the padded level-`(lvl+2)` cell, certified by `hashlifeResult_central_correct`) + recurse on `n - 2^lvl`. The real crux is **jump exactness at each step**: `hashlifeJump_correct_of_captured` (JumpCapture) requires `jumpCaptured c = true` (the `restrictGridTo` clip is transparent under capture), i.e. the light cone stays inside the central window — the containment condition (`window_cheb_cone_in_domain`, `ConeGeometry`). With the P4 gate fallen, this is the live BG-prover target (`agent_tests/prover/`); the multi-wave light-cone composition resists current tactical automation. `hashlife_correct_margin` (INTRINSIC) additionally requires the offset-matching chain `p4_nw_overlap_wall` (`Walls/NW.lean`).
+
+*The `hashlife_correct` correction pyramid: the proven foundation (base cases, P1-P3,
+`p5_small_n_fallback`) carries the theorem, and the P4 double-nine inductive step is
+now **proven sorry-free post-split** (#9883/#9884); the residual research-level target
+is the large-`n` P5.2 jump (`p5_large_n_jumpN`), and `hashlife_correct` itself is proven
+but vacuous in the large-`n` regime (its `BoxAssezGrand g n` hypothesis is capped at `n ≤ 2`):*
+
+```mermaid
+flowchart TD
+    BASE["Base cases  <b>proven</b><br/>k=0 (2¹⁶ native_decide) · n=0"]
+    P1["P1 — Padding<br/>box_assez_grand · natCeilLog2  <b>✓</b>"]
+    P2["P2 — Light-cone<br/>step_light_cone  <b>✓</b>"]
+    P3["P3 — Locality<br/>aliveNext_local · step_local  <b>✓</b>"]
+    P5S["P5 small-n<br/>p5_small_n_fallback  <b>✓</b> (#2984)"]
+    P4["P4 — Double-nine inductive step  <b>✓ PROVEN (post-split #9883/#9884)</b><br/>0 sorry · p4_double_nine_shape + p4_wave1_ih + p4_wave2_ih + p4_ext_bridge + p4_succ_membership all sorry-free<br/><i>consumed by hashlifeResult_central_correct via p4_ext_bridge; audit N1 PR #5853 VACUOUS; design gate #3846 discharged</i>"]
+    P5["P5 — Large-n jump  <b>⚠ research-level (P4 gate fallen → attackable)</b><br/>2 sorry · p5_large_n_jumpN [L1159] + hashlife_correct_margin [L145, INTRINSIC]<br/><i>p5_small_n_fallback + evolve_dead_of_cone_dead + p5_inductive_step (c.310 #5998) + p5_large_n_jump + hashlife_correctN all proven</i>"]
+    GOAL["hashlife_correct  <b>proven (vacuous at large-n)</b> · p5_large_n_jumpN = live target"]
+
+    BASE --> P1 --> P2 --> P3 --> GOAL
+    P5S -.-> GOAL
+    P4 -.->|"P4 closed"| P5 -.->|"BG-prover lock"| GOAL
+```
 
 ### Methodological lessons
 
 - **`List (Int × Int)` + `Bool` predicates + `native_decide`** is the encoding that passes for grids; the `Finset` encoding is blocked by `Quot.lift`/`Eq.rec`.
 - **The "intractable" concept often hides a false statement**: the same intuition as for the Lattice breakthrough (7→0) applies — the certified counter-example `p4_unrestricted_counterexample` shows that an unrestricted statement form is false, pointing toward the correct `MacroCell.wf` hypothesis.
-- **The sorry-free additive ingredients** (level/wf preservation, `box_assez_grand` arithmetic) accumulate behind the lock and will be deployable once P4 yields.
+- **The sorry-free additive ingredients** (level/wf preservation, `box_assez_grand` arithmetic) accumulated behind the P4 lock and are **deployed** — the P4 inductive step is now proven post-split, and they feed `hashlifeResult_central_correct`. The same dynamic now applies behind the P5.2 large-`n` jump.
 
 ### Next steps
 
-1. **BG-prover on P4**: attack the double-nine inductive step via the multi-agent harness (`agent_tests/prover/`), leaning on the docstring-restated scaffolds.
-2. **Sorry-free geometric sub-claim**: the bound `gridBoundingBox (g').2 ≤ gridBoundingBox g .2 + 2 * jumpSize` (light-cone growth) is an additive grain on the P5.2 frame, dischargeable by `Nat` arithmetic once the light-cone case is bounded — queuable behind the P4 lock.
+1. **BG-prover on P5.2**: attack `p5_large_n_jumpN` (large-`n` jump `evolveHashlifeFast n g = evolve n g` on `BoxAssezGrandN`) via the multi-agent harness (`agent_tests/prover/`), leaning on `hashlifeResult_central_correct` (P4 now closed) + `window_cheb_cone_in_domain`. With the P4 gate fallen, this is the live research-level target.
+2. **INTRINSIC margin lock**: `hashlife_correct_margin` (`HashlifeMarginFragment.lean` L145) additionally requires the offset-matching chain `p4_nw_overlap_wall` (`Walls/NW.lean`) — separate research heart, bounded P4/P5 assembly via `supportInMargin`.
 3. **Witness extension**: add additional HashlifeMemo patterns (community pillars) to strengthen the `native_decide` foundation.
 
 ## Notes

@@ -1,0 +1,67 @@
+- name: "GameTheory-4 NashEquilibrium"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : nashpy (lib SOTA du twin Python, `nash.Game(A,B).support_enumeration()`) invoque depuis le notebook C# via CLI Process.Start (cellule 6.3) sur les 5 jeux canoniques (PD, MP, BoS, RPS, Asym 3x2), en plus du pont Gambit CLI deja branche (cellule 6.2, PR #10442). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). Axe 6 : nashpy couvre le meme role que le SupportEnumeration from-scratch (enumeration de supports pour les NE purs et mixtes) -> le pont est desormais wire. Comparaison numerique (cellule 6.3 du C#) : 5/5 jeux concordent (ecart max 3.3e-07, exploitabilite = 0 partout). RPS : nashpy retrouve l'equilibre uniforme (1/3,1/3,1/3) ; BoS : 3 NE (2 purs + mixte 2/3,1/3) ; Asym : 2 NE mixtes -- identiques aux resultats du twin Python (meme moteur nashpy). From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE. parity_level `semantic` conservee (cf. jumeaux part-2 et GT-4, precedent pont Gambit)."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      reason: "Markdown-only cross-file count refresh (cell 33): the companion Lean notebook GT-4b-Lean-NashExistence grew from 38 to 44 cells since the cite was written (verified firsthand by parsing origin/main: ...GameTheory-4b-Lean-NashExistence.ipynb -> 44 cells). No re-exec, no output change. C# twin untouched (different from-scratch engine, no Lean refs)."
+      csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 996045df3048efc7eb27dfddbaade83973dc97d3
+      csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
+      content_python_sha: 8139ccafc461eb6f7c169096b457010d71a706605efc3419975f26e851146763
+      content_csharp_sha: 4021a70b18b0be17cf3cc9302549df5de68a6c1f5fecedf62517af96e45b6214
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 1c90b37ab7d6098dcf07d5d141875b752b315afd
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: 4021a70b18b0be17cf3cc9302549df5de68a6c1f5fecedf62517af96e45b6214
+    - date: "2026-08-10"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: dc0c6381a77c3b5efd488de2e0f57ce400300d7f
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: c88fd3c06bdb5b2d9688475998c6f03d763e4d06e64bdd0f43ec8514ee3feba2
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 06cf0927eaa9d2178ee469f83ca3d14beacb63bb
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: 21ad5c350618ea280d1370ed2d11977d9ecf06336fd095ed4cd6376b76e7ba77
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 86c8d1b7ce7893364cb8582bee19169374e703c0
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: b5fd643ce314b56010e53a3c04331fd7aa3011489f53bc69204aba24201bf9ae
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 2871c0d104edfcefe09c81fe6813d202363355b1
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: b803515e8d69793be33344dd5161cf55d6dc9e9e63ac4e76aa0b71dd4d8930be
+    - date: "2026-08-15"
+      by: myia-po-2025:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: 978594ab1a745b688d5252255c7cd00764c97421
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: a047d74bf1c152b53728d3c41ceb3373b803406c75fe5bf033443e532cd26aea
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: e3a20c5a309c90f173c5494dc7cd032aa77fe37c
+      content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
+      content_csharp_sha: 22b635165857585f64e21f62348f41f83e1d7193105a71e0efe5534b571aefbc
+  known_differences:
+    - "2026-08-15 : ajout du pont nashpy CLI (cellule 6.3, meme schema que le pont Gambit 6.2 et la tranche GT-2 #11055). Le C# invoque nashpy (moteur du twin Python) via Process.Start, resout les 5 jeux (PD, MP, BoS, RPS, Asym) et compare l'ensemble des equilibres au SupportEnumeration from-scratch : 5/5 concordent (ecart max 3.3e-07, exploitabilite 0). RunGambit (cell 25) : resolution portable du binaire (GAMBIT_DIR, Program Files (x86), %USERPROFILE%\\gambit) pour reproductibilite sans elevation UAC. Bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK (pont reellement execute)."
+    - "2026-08-11 : C.4 enrichment du twin C# (2 cellules markdown interpretation apres les outputs Nash pur §2.1 + Nash mixte) pour egaler la densite pedagogique du twin Python (qui fournit deja ces lectures aux memes positions). Markdown-only, aucun changement d'engine/outputs. Parite semantique preservee (meme theorie, meme interpretation conceptuelle). Attestation rebaselinee par myia-po-2023:CoursIA-2 apres arbitrage ai-01 (DM 2026-08-11) — la PR jumelle #10351 (doublon) est retiree, #10352 est le canonique."
+    - "Socle pedagogique commun : calcul des equilibres de Nash (purs + mixtes), meilleure reponse, support des equilibres mixtes."
+    - "Idiomes framework : Python = `nashpy` + `scipy.optimize.linprog` (resolution des mixtes via programmation lineaire). C# = `BestResponseRow` from-scratch (enumeration des meilleures reponses en pur Linq, pas de solveur LP externe)."
+    - "Asymetrie de couverture : Python utilise scipy.linprog pour les equilibres mixtes (LP battle-tested) ; le C# implemente la meilleure reponse manuellement et couvre les purs en detail. Meme theorie, leviers algorithmiques differents (LP vs enumeration)."

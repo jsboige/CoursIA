@@ -1,13 +1,23 @@
-"""Tests for qc_quantbook_execute.py — workspace_root and find_lean."""
+"""Tests for qc_quantbook_execute.py — workspace_root, find_lean, and the
+#8734 data-quality pre-flight (extract_requested_symbols / preflight_data_quality)."""
 
+import json
 import os
 import sys
+import zipfile
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from qc_quantbook_execute import workspace_root, find_lean, LEAN_BIN_CANDIDATES
+from qc_quantbook_execute import (
+    workspace_root,
+    find_lean,
+    LEAN_BIN_CANDIDATES,
+    extract_requested_symbols,
+    preflight_data_quality,
+)
 
 
 # --- workspace_root ---
@@ -76,3 +86,130 @@ class TestFindLean:
             assert isinstance(result, str)
         except RuntimeError:
             pass  # Expected when lean is not installed
+
+
+# --- #8734 data-quality pre-flight ---
+
+
+def _nb(cells):
+    """Build a minimal notebook dict from (type, source) tuples."""
+    return {"cells": [{"cell_type": t, "source": s, "metadata": {}} for t, s in cells],
+            "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+
+
+def _write_daily_zip(path: Path, rows: list[str]) -> None:
+    """Write a QC-style daily zip (one CSV, no header, 'YYYYMMDD HH:MM,o,h,l,c,v')."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    csv = "\n".join(rows).encode("utf-8")
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr(path.stem + ".csv", csv)
+
+
+class TestExtractRequestedSymbols:
+    def test_equity_python_and_csharp(self, tmp_path):
+        nb = tmp_path / "research.ipynb"
+        nb.write_text(json.dumps(_nb([
+            ("code", 'qb.add_equity("SPY", Resolution.Daily)'),
+            ("code", 'self.AddEquity("qqq")'),
+        ])), encoding="utf-8")
+        syms = extract_requested_symbols(nb)
+        assert syms["equity"] == {"SPY", "QQQ"}
+
+    def test_asset_class_split(self, tmp_path):
+        nb = tmp_path / "research.ipynb"
+        nb.write_text(json.dumps(_nb([
+            ("code", 'qb.AddEquity("SPY")'),
+            ("code", 'qb.AddForex("EURUSD")'),
+            ("code", 'qb.AddCrypto("BTCUSD")'),
+        ])), encoding="utf-8")
+        syms = extract_requested_symbols(nb)
+        assert syms["equity"] == {"SPY"}
+        assert syms["forex"] == {"EURUSD"}
+        assert syms["crypto"] == {"BTCUSD"}
+
+    def test_ignores_markdown_and_comments(self, tmp_path):
+        """Markdown cells and plain strings must not be mined as data requests."""
+        nb = tmp_path / "research.ipynb"
+        nb.write_text(json.dumps(_nb([
+            ("markdown", 'We call qb.AddEquity("SPY") here.'),
+            ("code", '# demo: self.AddEquity("DUMMY")\nprice = "100"'),
+            ("code", 'qb.add_equity("REAL")'),
+        ])), encoding="utf-8")
+        syms = extract_requested_symbols(nb)
+        assert syms["equity"] == {"REAL"}  # markdown + comment excluded
+
+    def test_missing_notebook_returns_empty(self, tmp_path):
+        syms = extract_requested_symbols(tmp_path / "nope.ipynb")
+        assert all(len(v) == 0 for v in syms.values())
+
+    def test_malformed_json_returns_empty(self, tmp_path):
+        nb = tmp_path / "broken.ipynb"
+        nb.write_text("{not json", encoding="utf-8")
+        syms = extract_requested_symbols(nb)
+        assert all(len(v) == 0 for v in syms.values())
+
+
+class TestPreflightDataQuality:
+    def _ws(self, tmp_path: Path) -> Path:
+        ws = tmp_path / "ws"
+        (ws / "data").mkdir(parents=True)
+        (ws / "lean.json").write_text("{}", encoding="utf-8")
+        return ws
+
+    def test_degenerate_flagged(self, tmp_path):
+        ws = self._ws(tmp_path)
+        # 60 identical closes ending today -> DEGENERATE (#8734 signature).
+        today = date.today().year
+        rows = [f"{today}{m:02d}15 00:00,1,2,0,396.33,0" for m in range(1, 13)] * 5
+        _write_daily_zip(ws / "data" / "equity" / "usa" / "daily" / "SPY.zip", rows)
+        n, msgs = preflight_data_quality(
+            ws, {"equity": {"SPY"}, "forex": set(), "crypto": set()}, flat_tail_bars=60)
+        assert n == 1
+        assert any("DEGENERATE" in m for m in msgs)
+
+    def test_stale_flagged(self, tmp_path):
+        ws = self._ws(tmp_path)
+        _write_daily_zip(ws / "data" / "equity" / "usa" / "daily" / "SPY.zip", [
+            "20150102 00:00,1,2,0,100.5,1000",
+            "20210331 00:00,1,2,0,200.5,1000",
+        ])
+        n, msgs = preflight_data_quality(
+            ws, {"equity": {"SPY"}, "forex": set(), "crypto": set()}, flat_tail_bars=60)
+        assert n == 1
+        assert any("STALE" in m for m in msgs)
+
+    def test_fresh_not_flagged(self, tmp_path):
+        ws = self._ws(tmp_path)
+        today = date.today()
+        rows = [f"{today.year}{m:02d}15 00:00,1,2,0,{300 + m}.5,1000" for m in range(1, 13)]
+        _write_daily_zip(ws / "data" / "equity" / "usa" / "daily" / "SPY.zip", rows)
+        n, msgs = preflight_data_quality(
+            ws, {"equity": {"SPY"}, "forex": set(), "crypto": set()}, flat_tail_bars=60)
+        assert n == 0 and msgs == []
+
+    def test_missing_symbol_not_flagged(self, tmp_path):
+        """Absence is NOT flagged by the pre-flight (provisioning is separate, #8724)."""
+        ws = self._ws(tmp_path)
+        n, msgs = preflight_data_quality(
+            ws, {"equity": {"NOPE"}, "forex": set(), "crypto": set()}, flat_tail_bars=60)
+        assert n == 0 and msgs == []
+
+    def test_only_requested_symbols_scanned(self, tmp_path):
+        """A degenerate zip for a NON-requested ticker must not flag."""
+        ws = self._ws(tmp_path)
+        today = date.today().year
+        rows = [f"{today}{m:02d}15 00:00,1,2,0,396.33,0" for m in range(1, 13)] * 5
+        _write_daily_zip(ws / "data" / "equity" / "usa" / "daily" / "DEAD.zip", rows)
+        n, msgs = preflight_data_quality(
+            ws, {"equity": {"SPY"}, "forex": set(), "crypto": set()}, flat_tail_bars=60)
+        assert n == 0  # SPY absent, DEAD not requested -> nothing flagged
+
+    def test_flat_tail_disabled_when_zero(self, tmp_path):
+        """flat_tail_bars=0 disables the DEGENERATE check (STALE still applies if old)."""
+        ws = self._ws(tmp_path)
+        today = date.today().year
+        rows = [f"{today}{m:02d}15 00:00,1,2,0,396.33,0" for m in range(1, 13)] * 5
+        _write_daily_zip(ws / "data" / "equity" / "usa" / "daily" / "SPY.zip", rows)
+        n, _ = preflight_data_quality(
+            ws, {"equity": {"SPY"}, "forex": set(), "crypto": set()}, flat_tail_bars=0)
+        assert n == 0  # date is current, flat-tail check disabled -> OK

@@ -1,0 +1,19 @@
+- name: Probas-1 Setup
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-1-Setup.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: d66cca0ab2869a855a3d57c7a23072d9409c9ab5
+      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: d7f6c2180b23d7ba10cbf84c317130a14bad28e5
+      csharp_sha: 08d80a7b526cec74e667ecb04eca32cc443374de
+  known_differences:
+  - "Premier modele partage : les deux notebooks demarrent par le modele classique des deux pieces (Two Coins) -- prior Beta, vraisemblance Bernoulli, inference du biais de la piece. Socle pedagogique commun au-dela de la dimension setup (installation Infer.NET cote C# vs PyMC cote Python). Note : #8183 avait initialement exclu cette paire comme 'env-config mecanique, pas de demonstration de concept' (analogue ML-6 ONNX) ; relecture firsthand (ai-01 c.36, po-2023 c.941) confirme la presence substantive du modele Two Coins dans les DEUX notebooks (Infer-1-Setup : piece x15 / Bernoulli x10 / Beta x8 ; PyMC-1-Setup : coin x6 / piece x13 / Beta x12) -> la rationale d'exclusion initiale etait incomplete, paire re-enregistree."
+  - "Moteurs d'inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation, modele compile en code d'inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC) + ADVI sur backend PyTensor. Memes concepts (Beta-Bernoulli two-coins), paradigmes d'inference differents -- les ecarts numeriques attendus (point estimate EP vs posterior samples NUTS) ne sont pas des defauts."

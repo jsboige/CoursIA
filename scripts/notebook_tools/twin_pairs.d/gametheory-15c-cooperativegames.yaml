@@ -1,0 +1,23 @@
+- name: "GameTheory-15c CooperativeGames"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 6a0f9876a9e7b2563a4a451da57f5722408b5245
+      csharp_sha: 2b5ecf27a189d00765e6f80edf7c48eb10372cfe
+    - date: "2026-08-09"
+      by: myia-po-2026:CoursIA
+      python_sha: 25459ad7ac385087eb15c07e41121dd3ac8e51a5
+      csharp_sha: 2b5ecf27a189d00765e6f80edf7c48eb10372cfe
+      content_python_sha: 94c4c3e1f27d44c46e530295487eedc9871c7d2582b872180502f7a9c39936ff
+      content_csharp_sha: e51c9c8531ea016c263de00b7a5aaef5815002fa0306a825091399d04403cd35
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = numpy + scipy + matplotlib (visualisation du core comme polytope, extremites, 18 cellules code). C# = pur System.* (System.Linq, 0 NuGet), calcul de Shapley (iteration sur permutations) + verification d'appartenance au core sans libs numeriques (15 cellules code). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (Shapley axiomatique + core + coalitions). L'asymetrie reside dans l'angle d'attaque -- Python numerique+visualisation (polytope, extremites du core) vs C# implementation constructive pure. Aucune lib SOTA partagee (scipy vs System.Linq). parity_level: semantic preserve."
+  known_differences:
+    - "[2026-08-09 re-audit myia-po-2026:CoursIA] Edition prose-truth du jumeau Python uniquement (cellule markdown compagnon, pas de cellule code) : chemin mort cooperative_games_lean/ remplace par le chemin vivant game_theory_lean/ (lake absorbe per #6040/#4365) + compte sorry Basic.lean 1->0 corrige (accuracy, 0 sorry actif verifie). Aucun changement au contenu mathematique cooperatif (Shapley / core / coalitions), le jumeau C# n'est pas touche : la parite Python<->C# tient, seul le blob SHA du jumeau Python a deplace."
+    - "Socle pedagogique commun : jeux cooperatifs a utilite transferable (TU) -- valeur de Shapley (formule axiomatique, calcul sur permutations), le core (stabilite, imputations), coalitions. Meme concept mathematique (Shapley value phi_i = somme sur permutations, core comme polytope des imputations stables), meme cas d'application (repartition de gains cooperatifs). Les deux couvrent Shapley, core, Coalition."
+    - "Divergence d'implementation : le Python (numpy + scipy + matplotlib, 18 cellules code) calcule les valeurs de Shapley et visualise le core (polytope, extremites) ; le C# (pur System.* stdlib, 0 NuGet, 15 cellules code) implemente le calcul de Shapley (iteration sur permutations) et la verification d'appartenance au core sans libs numeriques. Meme theoreme, deux angles : numerique+visualisation cote Python vs implementation constructive cote C#."
+    - "Idiomes framework : Python = numpy + scipy + matplotlib, 18 cellules code ; C# = pur System.* (System / System.Linq), 0 NuGet, 15 cellules code. Asymetrie attendue (le C# evite les libs numeriques/scientifiques), meme enseignement sous-jacent (Shapley axiomatique + core)."

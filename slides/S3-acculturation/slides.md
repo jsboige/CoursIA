@@ -823,6 +823,8 @@ layout: two-cols
 
 <img src="./images/img_048.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
 <img src="./images/img_049.png" style="position:absolute; top:437px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
+
+<!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 ---
 
 
@@ -1454,6 +1456,8 @@ layout: two-cols
 ![w:150](./images/img_102.png)
 ![w:150](./images/img_103.png)
 </div>
+
+<!-- GANs : generateur vs discriminateur, portraits StyleGAN, deepfakes -->
 ---
 ---
 
@@ -1483,6 +1487,8 @@ layout: two-cols
 ![w:150](./images/img_108.png)
 ![w:150](./images/img_109.png)
 </div>
+
+<!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
 ---
 ---
 
@@ -1511,6 +1517,8 @@ layout: two-cols
 ![](./images/img_112.png)
 ![](./images/img_113.png)
 </div>
+
+<!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
 ---
 ---
 

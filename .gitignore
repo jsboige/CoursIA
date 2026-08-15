@@ -21,6 +21,10 @@ mono_crash.*
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
+# Negation: scripts/release/ is intentional tooling (release notes generator, #9856),
+# not a Visual Studio Release/ build artefact. Without this, the [Rr]elease/
+# pattern above (which matches anywhere in the tree) would silently exclude it.
+!scripts/release/
 x64/
 x86/
 [Aa][Rr][Mm]/
@@ -511,8 +515,10 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/ext_tools/spass/SPASS_installer.exe
 # Issue #1396: untrack 857M duplicate JARs, keep native/ tracked
 MyIA.AI.Notebooks/SymbolicAI/libs/*.jar
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/*.jar
+MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/lib/*.jar
 !MyIA.AI.Notebooks/SymbolicAI/libs/native/
 !MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/libs/native/
+!MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/lib/native/
 
 # Tweety dotnet-build intermediate fat-jars (Maven shade) — regenerable via the
 # 2-step build in dotnet-build/README.md (mvn package -> dotnet build). The runtime
@@ -543,6 +549,18 @@ MyIA.AI.Notebooks/SymbolicAI/ext_tools/spass/
 
 # Claude Code agent memory - local scope only (project scope is versioned)
 .claude/agent-memory-local/
+# Per-machine ephemeral audit snapshots (point-in-time status) belong on the dashboard,
+# not in the repo. Cross-machine project memory under .claude/agent-memory/<agent>/
+# remains tracked (rationale: cross-worker coordination, e.g. #1708 forensic baseline).
+# See PR (item 7 of #9535) and harness-hygiene.md.
+.claude/agent-memory/*/project_*_audit.md
+.claude/agent-memory/*/enrichment-log-*.md
+.claude/agent-memory/*/enrichment_summary_*.md
+.claude/agent-memory/*/failing-strategies-*.md
+.claude/agent-memory/*/btc-ml-improvements-*.md
+.claude/agent-memory/*/cycle-*-findings.md
+.claude/agent-memory/*/forensic-p*-*.md
+.claude/agent-memory/*/ks-pilier-*.md
 
 # Windows artifact
 nul
@@ -739,6 +757,24 @@ videos/
 /.playwright-mcp/
 /calib/
 
+# Playwright test artifacts — storage-state.json holds session cookies/tokens
+# (SECRET) and the rest is regenerable. Prevents credential leak on commit.
+**/storage-state*.json
+**/playwright-report/
+**/test-results/
+**/playwright/.cache/
+**/playwright/.auth/
+**/blob-report/
+
+# Defense in depth (cf #10144) — Playwright `.auth/*.json` mixed-case variants.
+# Les cas d'école :
+#   - Playwright-OWUI/.auth/owui.json  (mixed case + tiret)
+#   - Playwright-XYZ/.auth/*.json     (futures instances)
+#   - anyPlaywrightX/.auth/*.json     (mixed case arbitraire)
+# Le `.gitignore` local de chaque sous-dossier reste l'organe principal ;
+# cette règle-ci est un filet de sécurité au cas où il serait omis.
+**/*[Pp]laywright*/.auth/*.json
+
 # Slidev pre-fix vs post-fix screenshot pairs (regenerable via Playwright)
 slides/*/analysis/_*.png
 
@@ -888,4 +924,33 @@ _freeze/
 # covers both the canonical target (Z3-Linq2Z3/data/meals/) and the stale wrong-CWD
 # location (Z3/data/meals/, from the old Z3/ series name before the Z3-API/Z3-Linq2Z3
 # split). Delete the stale Z3/data/ copy locally; it is orphaned (no notebook reads it there).
-MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/
+# EXCEPTION (#8901) : le cache derive data/meals/mealplan_cache.json (~205 Ko) est EPIINGLE
+# (derive stable consommee par 07/08/09 + port Python 16b/16c/16d) pour stopper la derive de
+# millesime. Le brut volumineux reste ignore ; seul le cache est tracke (cf Z3-Linq2Z3/.gitignore).
+# La negation est scopee au chemin CANONIQUE Z3-Linq2Z3/ (pas de glob **) : un ** ferait remonter
+# le vestige SMT/Z3/data/meals/ (ancien nom de serie, vintage 270 Ko 2026-07-02) en ?? sur les
+# machines qui le portent -> risque de committer le mauvais millesime que #8905 a deplace (#8901).
+# L'ignore (ligne du dessus) reste large pour couvrir les autres fichiers du vestige stale.
+MyIA.AI.Notebooks/SymbolicAI/SMT/**/data/meals/*
+!MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/data/meals/mealplan_cache.json
+
+# PR body scratchpad (root-level) — #9535 item 2
+# A PR body is a scratchpad composed outside the worktree (gh pr create --body-file),
+# NEVER a repo artefact. PR_BODY.md was tracked at root and rewritten by >=3 PRs
+# (e5bfeb945, 55fcc23, 9c6f075) — a recurring accidental commit. Gitignoring the
+# root path stops the drift without affecting any --body-file usage (the file is
+# ephemeral, lives anywhere outside the repo). Scope is root-only (/PR_BODY.md)
+# so a same-named pedagogical file deeper in the tree is unaffected.
+/PR_BODY.md
+
+# Pipeline output directory — scripts/quantconnect/quantbooks_stop_repair_pipeline.py (#9749)
+# The orchestrator writes timestamped CSV+MD smoke reports to results/quantbooks_stop_repair_<ts>/
+# on every run. A dry-run smoke report (20260806_172234, "Creds ABSENTES") was committed alongside
+# the script in #9749 and nothing references it (grep-empty). Pipeline output is ephemeral
+# (harness-hygiene tier ephemere + secrets-hygiene Stop&Repair rule 6 : reports belong on the
+# RooSync dashboard, never tracked in the repo). Gitignoring the root path stops future runs from
+# leaking reports, without affecting local execution (the script still writes there untracked).
+/results/
+
+# Tweety dialogues shade build dir (sources-extracted, classes, downloaded jars) - regenerated by rebuild-dialogues.sh
+MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/.dialogues-build/

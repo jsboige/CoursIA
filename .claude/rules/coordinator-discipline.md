@@ -4,13 +4,15 @@ S'applique au **coordinateur ai-01** (`myia-ai-01:CoursIA`).
 
 Detail complet (workflow batch merge + commandes + audit pre-merge + incidents + verbatims + mapping lanes + listes de rollout + 4-mecanismes de chaque regle) : [docs/secrets-and-coord-detail.md §2](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01).
 
-## Regle 1 : ai-01 merge soi-meme via `gh auth switch`
+## Regle 1 : ai-01 merge activement sous `myia-ai-01`
 
-Le compte `myia-ai-01` n'a **pas** le droit `MergePullRequest` (GraphQL) sur `jsboige/CoursIA`. Le compte `jsboige` (token scopes `repo workflow`) a les droits.
+Le compte `myia-ai-01` **a** le droit `MergePullRequest` sur `jsboige/CoursIA` (verifie firsthand 2026-08-08 : 6 merges consecutifs sans aucun `gh auth switch`). Le `404` sur la protection de branche (#9991) dit que `jsboige` est requis pour **lire/modifier cette protection**, PAS pour merger — ne pas confondre.
 
-Quand 1+ PR(s) CLEAN MERGEABLE + APPROVED s'accumulent : `gh auth switch -u jsboige` → merge → `gh auth switch -u myia-ai-01` → post dashboard ack. **Pas** de "pending user merge" dans le todo. Ne pas confondre "permissions GitHub absent" avec "interdiction de merger". User feedback 2026-05-19 : "Fais un switch pour merger toi meme stp".
+Quand 1+ PR(s) CLEAN MERGEABLE + APPROVED s'accumulent : merger directement sous `myia-ai-01` (`gh pr merge <N> --squash`), puis post dashboard ack. **Pas** de "pending user merge" dans le todo. Reserver `gh auth switch -u jsboige` aux operations qui l'exigent : protection de branche, et PRs etudiantes ([student-pr-reviews.md](student-pr-reviews.md)) — le switch mute un etat **global au process `gh`** qui entre en course avec toute autre session appelant `gh` ([model-delegation.md](model-delegation.md) regle 6), donc le prescrire inutilement est un risque net.
 
-**Exception** : PR notebook → regle H.4 (`git checkout` + Papermill local + verify `execution_count`) AVANT merge.
+**JAMAIS `--delete-branch`** au merge (incident #10093) : la branche est ce qui permet de rouvrir une PR fermee par erreur — #10067 n'a survecu a une fermeture involontaire que parce que sa branche etait intacte.
+
+**Exception** : PR notebook -> regle H.4 (`git checkout` + Papermill local + verify `execution_count`) AVANT merge.
 
 ## Regle 2 : aucune demande user ne pourrit > 1 cycle
 
@@ -47,11 +49,11 @@ Incident 2026-06-16 (verbatim) + liste des rollouts LIVE (#3973 + filles, #4212,
 **L'idle est un echec COORDINATEUR, jamais worker** (renforce Regle 4). Un steer poste seulement sur l'intercom (qui auto-condense/archive chaque cycle), redige depuis un status condense qui hallucine, ou qui defere les design-gates = **phantom** : le worker brule ses cycles a le refuter au lieu de produire. Chaque cycle, par lane :
 
 1. **DIRECT MESSAGE** (`roosync_messages send`/`reply` vers `machine:workspace`), pas seulement un append dashboard — le worker lit `inbox status:unread` en premier, et le DM survit a la condensation. Dashboard = backstop persistant + sonnette `[DISPATCH→inbox]`, pas le canal de decision.
-2. **Grounder chaque grain firsthand AVANT de dispatcher** (`gh issue view N` / `gh pr view N`), jamais depuis le status condense. Un steer qui pointe une issue CLOSED / une PR mergee / un rollout sature = phantom. Worker firsthand-sature → **le croire**, fournir un grain HORS scope.
+2. **Grounder chaque grain firsthand AVANT de dispatcher** (`gh issue view N` / `gh pr view N`), jamais depuis le status condense. Un steer qui pointe une issue CLOSED / une PR mergee / un rollout sature = phantom. Worker firsthand-sature → **le croire**, fournir un grain HORS scope. **Un body d'issue est date de sa redaction, pas de sa lecture** : `gh issue view N` est un status condense de plus des qu'un merge est passe apres. Grounder = lire l'**artefact** (`git log -- <fichier>` + le fichier sur `main` courant) **et** le **plateau** (`gh pr list` sur le chemin), pas le body seul.
 3. **DECIDER les design-gates, ne pas deferer** : greenlight nomme + acceptance dans le cycle. Deferer une option deja investiguee = fabriquer de l'idle.
 4. **Familles matures = fallback perenne epuisable** → deux sources never-empty le remplacent : **(a) CREATION SUBSTANTIELLE** scopee-coordinateur (nouveaux lakes Lean, audits axe-2 SOTA, consolidation, notebooks) stockee en avance ; **(b) DIVERSITE DU BACKLOG en souffrance** — piocher **une tranche concrete** par cycle de vieilles issues/EPICs, varier genres ET familles, jamais tunneliser un mono-theme.
 
-**Tell d'auto-detection** avant de poster un steer : « (a) grain verifie OPEN/non-sature firsthand a l'instant ? (b) la decision atteint-elle l'inbox du worker ? (c) ai-je tranche, ou defere ? » — trois oui requis, sinon phantom.
+**Tell d'auto-detection** avant de poster un steer : « (a) grain verifie OPEN/non-sature firsthand a l'instant, **et aucune PR ouverte sur ce chemin** ? (b) la decision atteint-elle l'inbox du worker ? (c) ai-je tranche, ou defere ? » — trois oui requis, sinon phantom. Le (a) se pose **avant** de rediger, pas apres (cf L898, [proactive-coordination.md](proactive-coordination.md)).
 
 Mandat 2026-06-26 (verbatim) + listes d'issues des sources (a)/(b) : [§2.5](../../docs/reference/secrets-and-coord-detail.md#2-coordinator-discipline-ai-01). Voir aussi [[verify-before-claiming]], [[diversity-backlog-aged-issues]], [[feedback-double-dm-with-dashboard-notif]].
 

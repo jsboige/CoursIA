@@ -137,10 +137,35 @@ theorem gittins_index_monotone_discount (arm : BanditArm) (γ₁ γ₂ : ℝ)
   simp only [gittinsIndex]
   apply le_refl
 
-/-- For the 2-armed bandit, the Gittins policy outperforms the greedy policy. -/
-theorem gittins_beats_greedy (inst : BanditInstance)
-    (h : inst.arms.size = 2) :
-    True := by  -- Placeholder: the actual statement needs V(gittins) ≥ V(greedy)
-  trivial
+/-- Greedy (myopic) policy: always play the arm with the highest true mean.
+    This is the same argmax as `gittinsPolicy` but read directly off `arm.trueMean`
+    rather than through the Gittins index. -/
+noncomputable def greedyPolicy (inst : BanditInstance) : Nat :=
+  ((Array.range inst.arms.size).foldl
+    (fun (best : Nat × ℝ) i =>
+      match inst.arms[i]? with
+      | none => best
+      | some arm =>
+        let g := arm.trueMean
+        if g > best.2 then (i, g) else best)
+    (0, 0)).1
+
+/-- In the known-mean model, the Gittins policy **coincides** with the greedy
+    policy, regardless of the observed history: the Gittins index equals `trueMean`
+    (`gittins_index_known_arm`), so both argmaxes range over the same quantity. The
+    proof is definitional (reduction to the identity of the two folds after unfolding
+    `gittinsIndex`).
+
+    This is precisely why the former "Gittins beats greedy" statement was vacuous
+    here: the dominance of the Gittins policy over the greedy approach only appears
+    in the uncertain-belief regime (Beta–Bernoulli posterior, exploration), which
+    requires the optimal-stopping / Bellman machinery absent from Mathlib (INTRINSIC,
+    `gittins_optimality` above, #4039). In the known-arm model, Gittins = greedy,
+    full stop. -/
+theorem gittinsPolicy_eq_greedyPolicy (inst : BanditInstance)
+    (histories : Array RewardHistory) :
+    gittinsPolicy inst histories = greedyPolicy inst := by
+  unfold gittinsPolicy greedyPolicy gittinsIndex
+  rfl
 
 end Gittins_en

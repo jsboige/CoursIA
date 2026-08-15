@@ -275,6 +275,23 @@ class AgentExecutor(Executor):
         self._no_tool_call_threshold = int(
             os.environ.get("PROVER_NO_TOOL_CALL_THRESHOLD", "3")
         )
+        # Finding 3 (#1453 forensic, cycle-98): consecutive empty responses
+        # from SearchAgent. The empty_response_guard below injects a fallback
+        # so the run continues, but when the SAME agent (forensic evidence:
+        # SearchAgent, VOTING session 2 — 475s burned across 2 invocations)
+        # repeatedly burns its output budget in reasoning_content and emits no
+        # visible parts, the injected fallback only extends the burn. Mirror
+        # the TacticAgent freeze-loop guard above: after N consecutive empties,
+        # force a Coordinator handoff instead of injecting yet another fallback.
+        # Scoped to SearchAgent — the evidenced agent; a truly-empty response
+        # (finish_reason="length", no parts) is pathological for any agent, but
+        # only SearchAgent was shown to burn multi-cycle budget this way before
+        # the iteration_cap catches it. The guard is empty-ONLY (not "short"),
+        # so legitimate short SearchAgent replies never increment it.
+        self._consecutive_empty_response = 0
+        self._empty_response_threshold = int(
+            os.environ.get("PROVER_SEARCH_EMPTY_RESPONSE_THRESHOLD", "3")
+        )
 
     @handler
     async def handle(self, msg: ProofMessage, ctx: WorkflowContext[ProofMessage]) -> None:
@@ -626,6 +643,38 @@ class AgentExecutor(Executor):
         # silently degrades. Annotate the response so the downstream agent
         # sees a recoverable signal instead of silence.
         if not response_text.strip() and not msg.tactic:
+            # Finding 3 (#1453 forensic, cycle-98): escalate past the injected-
+            # fallback loop when SearchAgent keeps producing empty responses.
+            # Each empty burn is ~200-400s (reasoning_content eats the output
+            # budget); injecting another fallback only extends it. After the
+            # threshold, force a Coordinator handoff to revise the plan instead.
+            if self._agent.name == "SearchAgent":
+                self._consecutive_empty_response += 1
+                if (self._consecutive_empty_response
+                        >= self._empty_response_threshold):
+                    msg.next_agent = "coordinator"
+                    msg.error = (
+                        f"SearchAgent produced an empty response for "
+                        f"{self._consecutive_empty_response} consecutive turns "
+                        f"(threshold={self._empty_response_threshold}). The "
+                        f"agent is burning its output budget in reasoning with "
+                        f"no visible result. Forcing Coordinator handoff to "
+                        f"revise the attack plan."
+                    )
+                    msg.error_type = "search_empty_response_storm"
+                    if self._trace:
+                        self._trace.log(
+                            agent=self._agent.name,
+                            role="empty_response_storm_guard",
+                            content=(f"empty-response storm detected "
+                                     f"(consecutive_empty_response="
+                                     f"{self._consecutive_empty_response}, "
+                                     f"threshold="
+                                     f"{self._empty_response_threshold}); "
+                                     f"forcing next_agent=coordinator"),
+                        )
+                    await ctx.send_message(msg)
+                    return
             response_text = (
                 "[harness] previous agent produced an empty response (likely "
                 "burned its output budget in reasoning_content). Proceed using "
@@ -637,6 +686,11 @@ class AgentExecutor(Executor):
                     agent=self._agent.name, role="empty_response_guard",
                     content="injected fallback message (response was empty)",
                 )
+        else:
+            # A productive (non-empty) response breaks the SearchAgent
+            # empty-response streak — reset the counter so a future empty run
+            # must climb back to the threshold before escalating.
+            self._consecutive_empty_response = 0
 
         # Bridge TacticAgent's tool-side submissions to the workflow message:
         # `submit_tactic` and `submit_decomposition` write to

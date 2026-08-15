@@ -21,9 +21,21 @@ ne CORRIGE PAS -- la correction = re-executer dans le vrai environnement
 puis committer la vraie sortie. Stop&Repair, JAMAIS maquiller (regle
 secrets-hygiene 6 + sota-not-workaround Prong-A).
 
+Fenetre d'analyse : le CONTENU, pas le chemin
+---------------------------------------------
+Est un quantbook **tout notebook dont au moins une cellule code instancie
+``QuantBook()``** -- c'est ce dont il a besoin (le runtime research QC Cloud)
+qui le definit, pas ou il vit ni comment il s'appelle. La fenetre d'origine
+etait ``projects/*/quantbook.ipynb``, soit un chemin ET un basename : deux
+proxys de la vraie raison. ``--scope projects`` conserve cette ancienne
+fenetre pour comparaison ; ``--scope repo`` (defaut) est un sur-ensemble
+strict qui scanne les quantbooks canoniques d'abord (ils gardent leur
+cross-reference ``config.json``) puis balaye l'arbre par contenu, sans jamais
+rescanner ni reclassifier une entree deja vue.
+
 Ce qui est classifie (DETERMINISTE)
 -----------------------------------
-Pour chaque ``quantbook.ipynb`` du dossier ``MyIA.AI.Notebooks/QuantConnect/projects/*/`` :
+Pour chaque quantbook ainsi identifie :
 
   - **HEALTHY**              -- 0 cellule code sans ``execution_count`` ni sortie.
   - **STOP_REPAIR_STRIPPED** -- >=1 cellule code unexec ET >=1 cellule markdown
@@ -39,10 +51,16 @@ Pour chaque ``quantbook.ipynb`` du dossier ``MyIA.AI.Notebooks/QuantConnect/proj
                                 unexec). Nouvelle occurrence non encore triee --
                                 celle que ``--check`` flagge en CI.
 
-Le verdict est **conservatif** : si une cellule est unexec, on l'attrape.
-Pas de faux positif sur les cellules volontairement non executees (defs,
-helpers) parce qu'on regarde aussi le markdown contextuel -- un notebook
-avec un seul ``def`` unexec et pas d'autre cellule = HEALTHY.
+Le verdict est **conservatif** : toute cellule code **non vide** sans
+``execution_count`` ni sortie est attrapee, quel qu'en soit le contenu. Une
+cellule qui ne contient qu'un ``def`` ou un helper est donc signalee comme
+les autres -- c'est voulu (regle C.2 : un notebook se commite execute de bout
+en bout), et le markdown contextuel ne l'en exempte pas : ``_has_strip_marker``
+et ``_has_unexec_marker`` **routent** entre les classes STOP_REPAIR_*, ils ne
+produisent jamais HEALTHY.
+
+Seul faux positif ecarte : les **cellules vides**, qui satisfont le predicat
+par construction sans rien avoir a executer.
 
 Cross-reference avec ``config.json``
 ------------------------------------
@@ -59,8 +77,9 @@ appel reseau) pour rester CPU-only et CI-friendly.
 
 Usage
 -----
-    python audit_quantbooks_unexec.py                        # tous les projets
-    python audit_quantbooks_unexec.py --project DualMomentum  # un seul
+    python audit_quantbooks_unexec.py                        # tout le depot (par contenu)
+    python audit_quantbooks_unexec.py --scope projects       # ancienne fenetre (chemin)
+    python audit_quantbooks_unexec.py --project DualMomentum  # un seul projet canonique
     python audit_quantbooks_unexec.py --json                 # sortie machine
     python audit_quantbooks_unexec.py --check                # exit 1 si PREEXISTING_UNEXEC
     python audit_quantbooks_unexec.py --md report.md         # rapport markdown
@@ -99,14 +118,46 @@ _STRIP_MARKER = re.compile(r"(sortie\s+stripp[e\xe9]e|FABRICATED|blank[\s\-]?PNG
 # gaming du detecteur (les deux bug-classes ont deux marqueurs distincts).
 _UNEXEC_MARKER = re.compile(r"QC-UNEXEC-TRIAGED", re.IGNORECASE)
 
+# Ce qui fait d'un notebook un "quantbook" est ce dont il a BESOIN, pas ou il
+# vit ni comment il s'appelle : ``QuantBook()`` n'existe que dans le runtime
+# research de QC Cloud. La fenetre d'origine etait ``projects/*/quantbook.ipynb``
+# -- un chemin ET un basename -- alors que la pathologie decrite par #7575
+# (cellules code jamais executees faute de ce runtime) est une propriete du
+# CONTENU. Neuf notebooks la portaient hors fenetre (ESGF-2026/lean-workspace,
+# QuantConnect/research, partner-course), donc absents de tout rapport : le
+# ``HEALTHY (28)`` se lisait comme un etat de sante global alors qu'il ne
+# couvrait qu'un repertoire. Meme predicat que ``validate_pr_notebooks``
+# (QUANTBOOK_PATTERN, carve-out H.3) et ``check_cost_metadata`` afin que les
+# trois outils repondent la meme chose a "qu'est-ce qu'un notebook QC".
+# Voir #7575, #8598.
+_QUANTBOOK_PATTERN = re.compile(r"QuantBook\(\)|self\.QuantBook")
+
 
 def _is_code(cell: dict) -> bool:
     return cell.get("cell_type") == "code"
 
 
+def _source_text(cell: dict) -> str:
+    """Source d'une cellule en texte, que nbformat la stocke en str ou en list."""
+    src = cell.get("source", "")
+    if isinstance(src, list):
+        src = "".join(src)
+    return src
+
+
 def _is_unexecuted_code(cell: dict) -> bool:
-    """Cellule code sans execution_count ET sans outputs = JAMAIS executee."""
+    """Cellule code NON VIDE sans execution_count ET sans outputs = JAMAIS executee.
+
+    La clause "non vide" n'est pas cosmetique : une cellule code vide satisfait
+    ``ec is None and outputs == []`` par construction -- il n'y a rien a executer,
+    donc rien a signaler. Sans ce garde-fou, ``--check`` echoue en CI sur un
+    notebook dont les seules cellules "unexec" sont vides, et la seule
+    remediation possible serait de les supprimer : un faux positif qui pousse a
+    modifier un notebook sain (mesure sur le depot : 1 notebook, 2 cellules).
+    """
     if not _is_code(cell):
+        return False
+    if not _source_text(cell).strip():
         return False
     ec = cell.get("execution_count")
     outs = cell.get("outputs") or []
@@ -135,6 +186,23 @@ def _has_unexec_marker(nb: dict) -> bool:
         if isinstance(src, list):
             src = "".join(src)
         if _UNEXEC_MARKER.search(src or ""):
+            return True
+    return False
+
+
+def _uses_quantbook(nb: dict) -> bool:
+    """Au moins une cellule CODE instancie ``QuantBook()`` / ``self.QuantBook``.
+
+    Cellules code seulement : un tutoriel qui *parle* de QuantBook en markdown
+    n'a pas besoin du runtime QC Cloud et n'entre donc pas dans la fenetre.
+    """
+    for c in nb.get("cells", []):
+        if not _is_code(c):
+            continue
+        src = c.get("source", "")
+        if isinstance(src, list):
+            src = "".join(src)
+        if _QUANTBOOK_PATTERN.search(src or ""):
             return True
     return False
 
@@ -230,6 +298,48 @@ def scan_projects(quant_root: Path) -> list[dict]:
     results = []
     for nb in sorted(quant_root.glob("*/quantbook.ipynb")):
         results.append(scan_notebook(nb))
+    return results
+
+
+def scan_repo(notebooks_root: Path, quant_root: Path) -> list[dict]:
+    """Scan tout notebook qui INSTANCIE ``QuantBook()``, ou qu'il vive.
+
+    Sur-ensemble strict de :func:`scan_projects` : les quantbooks canoniques de
+    ``quant_root`` sont scannes d'abord (ils conservent leur cross-reference
+    ``config.json``), puis le reste de l'arbre est balaye par contenu. Un
+    notebook deja vu n'est pas rescanne, donc aucune entree existante n'est
+    reclassifiee par l'elargissement.
+
+    ``notebooks_root`` absent n'est pas une erreur ici : le scan canonique est
+    rendu seul (rien a elargir). Un chemin errone passe explicitement en
+    ``--notebooks-root`` est rejete par :func:`main` (exit 2).
+    """
+    results = []
+    seen: set[Path] = set()
+    if quant_root.exists():
+        for nb in sorted(quant_root.glob("*/quantbook.ipynb")):
+            results.append(scan_notebook(nb))
+            seen.add(nb.resolve())
+
+    if not notebooks_root.exists():
+        return results
+
+    for nb in sorted(notebooks_root.rglob("*.ipynb")):
+        resolved = nb.resolve()
+        if resolved in seen:
+            continue
+        if ".ipynb_checkpoints" in nb.parts:
+            continue
+        try:
+            with open(nb, encoding="utf-8") as f:
+                doc = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue  # illisible : hors perimetre de cet audit (pas un quantbook prouve)
+        if not _uses_quantbook(doc):
+            continue
+        results.append(scan_notebook(nb))
+        seen.add(resolved)
+
     return results
 
 
@@ -346,6 +456,12 @@ def main(argv=None) -> int:
     parser.add_argument("--quant-root",
                         default="MyIA.AI.Notebooks/QuantConnect/projects",
                         help="Path to QC projects dir (relative to --root)")
+    parser.add_argument("--notebooks-root", default=None,
+                        help="Racine des notebooks pour --scope repo "
+                             "(relative a --root, defaut: MyIA.AI.Notebooks)")
+    parser.add_argument("--scope", choices=("repo", "projects"), default="repo",
+                        help="repo (defaut) : tout notebook instanciant QuantBook(), ou qu'il vive. "
+                             "projects : ancienne fenetre quant-root/*/quantbook.ipynb seulement.")
     parser.add_argument("--project", help="Single project name (under --quant-root)")
     parser.add_argument("--json", action="store_true", help="Machine-readable JSON output")
     parser.add_argument("--md", help="Write markdown report to this path")
@@ -365,8 +481,17 @@ def main(argv=None) -> int:
             print(f"error: project quantbook not found: {nb}", file=sys.stderr)
             return 2
         results = [scan_notebook(nb)]
-    else:
+    elif args.scope == "projects":
         results = scan_projects(quant_root)
+    else:
+        notebooks_root = (root / (args.notebooks_root or "MyIA.AI.Notebooks")).resolve()
+        # Un chemin FOURNI qui n'existe pas est une faute de frappe -> exit 2.
+        # Le defaut absent (arbre synthetique, checkout partiel) degrade
+        # simplement le sweep : on rend les quantbooks canoniques seuls.
+        if args.notebooks_root and not notebooks_root.exists():
+            print(f"error: notebooks root not found: {notebooks_root}", file=sys.stderr)
+            return 2
+        results = scan_repo(notebooks_root, quant_root)
 
     if args.json:
         print(json_report(results))

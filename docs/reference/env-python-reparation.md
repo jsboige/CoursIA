@@ -4,6 +4,8 @@ Resume operationnel : CLAUDE.md section F.
 
 **Regle user 2026-05-06 (incident scipy DLL/sklearn force-reinstall)** : un environnement Python degrade ne se contourne **jamais** par delegation, fallback ou skip. On repare **coute que coute**, en demandant un UAC user au besoin pour les operations privilegiees.
 
+> **macOS / Linux** : les mode d'echec Python different de Windows (pas de DLL locking au sens Windows, pas d'UAC, pas de Defender quarantine). Le workflow de reparation est le meme en esprit (cleanup `~xxx/` + force-reinstall + verifier l'import), mais les commandes shells different. Cf la section **[Reparation sous macOS / Linux](#reparation-sous-macos--linux)** ci-dessous. Pour le setup d'un poste contributeur Mac/Linux, cf [kernels-runtime.md](kernels-runtime.md) et le doc `setup-linux-macos.md` (a venir, Epic #10643).
+
 ---
 
 ## Symptomes red-flag
@@ -14,6 +16,7 @@ Resume operationnel : CLAUDE.md section F.
 - Distributions corrompues prefixees `~` (ex: `~cipy/`, `~umpy/`) dans `site-packages`
 - Conflits Python 3.12 vs 3.14 vs 3.13 dans `which pip` vs `python --version`
 - `pip list` montre le paquet mais `python -c "import pkg"` echoue
+- Un paquet **present et importable seul** fait echouer un import qui en depend (cf **Cas E** : le coupable est un *autre* paquet, herite du site-packages utilisateur)
 
 ---
 
@@ -94,6 +97,39 @@ python -c "import sys; print(sys.executable)"  # qui est REELLEMENT execute ?
 
 Forcer le bon Python : `& "<path-complet>/python.exe" -m pip install ...` au lieu de `python -m pip ...`.
 
+### Cas E : le site-packages **utilisateur** fuit dans tous les envs Conda
+
+Le plus trompeur des cinq, parce que le paquet qu'il fait echouer n'est pas celui qui est casse.
+
+Sous Windows, `%APPDATA%\Python\Python3XX\site-packages` (le *user site*) est ajoute au `sys.path` de **tout** interpreteur de meme version mineure — y compris ceux des envs Conda. Un paquet natif installe la, compile contre une autre version de `torch`, est donc importe **en priorite** dans un env qui a pourtant sa propre copie saine.
+
+Mesure sur ai-01 (2026-08-14) : le user site heberge une installation QuantConnect LEAN complete **et** un `torchvision` etranger. Consequence dans un env neuf ou tout est correctement installe :
+
+```
+RuntimeError: operator torchvision::nms does not exist
+  -> transformers/image_utils.py echoue a l'import
+  -> ModuleNotFoundError: Could not import module 'T5EncoderModel'
+  -> RuntimeError: Failed to import diffusers.pipelines.ltx.pipeline_ltx
+```
+
+Le message final accuse `diffusers`, l'intermediaire accuse `transformers` — **aucun des deux n'est en cause**. On peut reinstaller les deux indefiniment sans rien changer.
+
+**Diagnostic** (une bascule, pas une deduction) :
+
+```bash
+python -c "import site, sys; print(site.ENABLE_USER_SITE); print(site.getusersitepackages())"
+ls "$APPDATA/Python/Python312/site-packages"     # que traine-t-il la ?
+PYTHONNOUSERSITE=1 python -c "import <le_module_qui_echoue>"   # ca passe ? -> c'est le user site
+```
+
+**Reparation** — par ordre de preference :
+
+1. **`PYTHONNOUSERSITE=1`** dans l'invocation du job / du kernel. Isole l'env sans rien desinstaller ; c'est la reparation, pas un contournement (le user site n'a rien a faire dans un env dedie).
+2. **Desinstaller le paquet fautif du user site** : `python -m pip uninstall --user <pkg>` — a preferer quand le user site est cense rester utilisable.
+3. **Installer dans l'env la version coherente** du paquet fautif, qui reprend alors la priorite.
+
+Ne **pas** « reparer » en reinstallant le paquet accuse par le message d'erreur : il n'est pas casse, et l'operation renforce l'illusion.
+
 ---
 
 ## Reference incident
@@ -101,6 +137,55 @@ Forcer le bon Python : `& "<path-complet>/python.exe" -m pip install ...` au lie
 **2026-05-06** : agent a tente force-reinstall sklearn sans cleanup prealable `~xxx/` residues + sans tuer les processes Python qui lockaient scipy DLL. 3 cycles d'install "Successfully installed" suivis de `ImportError: DLL load failed` au runtime. Resolution : `Get-Process python* | Stop-Process` + cleanup `~scipy/` + reinstall force = SUCCESS.
 
 **Lecon** : la complaisance "ca devrait marcher cette fois" est l'ennemi #1 d'un env Python sain. Diagnostiquer le pourquoi avant le comment.
+
+---
+
+## Reparation sous macOS / Linux
+
+Le workflow de reparation est **le meme en esprit** que sous Windows (identifier l'env, tuer les processes lockant les fichiers, nettoyer les distributions corrompues, force-reinstall, tester l'import). Les differences : pas de DLL-locking au sens Windows (un fichier en cours d'execution reste renommable/supprimable sous Linux/macOS), pas d'UAC (elevation via `sudo`), pas de Defender (pas de quarantine silencieuse). Pour le setup du poste, cf [kernels-runtime.md](kernels-runtime.md).
+
+### Workflow equivalent
+
+1. **Identifier l'env vise** : `which python && python --version` (ne pas reparer le mauvais interpreteur). Preferer un env Conda dedie.
+2. **Lister/killer les processes Python actifs** qui pourraient locker des fichiers ouverts :
+   ```bash
+   ps aux | grep -i "[p]ython"        # lister (les crochets evitent de matcher grep lui-meme)
+   pkill -f "python.*train_"          # killer par motif ; ou kill -9 <PID>
+   ```
+3. **Cleanup distributions corrompues** (`~xxx/` dirs dans site-packages) :
+   ```bash
+   site=$(python -c "import site; print(site.getsitepackages()[0])")
+   rm -rf "$site"/~*                   # retirer les residus ~cipy/, ~umpy/ etc.
+   python -m pip install --force-reinstall <pkg>
+   ```
+4. **Si permission refusee** (ecriture dans un env systeme) → elevation `sudo` **ou, preferable**, utiliser un env Conda/venv utilisateur (ne jamais `sudo pip` qui casse le Python systeme) :
+   ```bash
+   sudo python -m pip install --force-reinstall <pkg>   # DERNIER RECOURS sur un env systeme
+   # Prefere : creer/reutiliser un env utilisateur
+   conda create -n repair python=3.12 -y && conda activate repair
+   ```
+5. **Tester import end-to-end** avant de relancer le job :
+   ```bash
+   python -c "import scipy, sklearn; print('OK')"
+   ```
+
+### Cas particuliers equivalents
+
+- **Cas A (distribution corrompue `~xxx/`)** : `rm -rf "$site"/~*` (cf workflow step 3). Les prefixes `~` apparaissent aussi sous Linux/macOS quand un install interrompu laisse un dossier renomme.
+- **Cas B (fichier occupe)** : contrairement a Windows (DLL locked = Access denied), Linux/macOS permettent de supprimer un fichier en cours d'usage (l'inode persiste pour le process qui l'a ouvert, mais le nom disparait). Le `ImportError` vient alors d'un **module ghost** : `pkill -f python` puis reinstaller.
+- **Cas C (permission refusee)** : `sudo` au lieu de `Start-Process -Verb RunAs`. **Jamais `sudo pip install`** sur le Python systeme (casse le gestionnaire de paquets OS) — toujours `sudo` sur le Python cible explicite, ou mieux un env utilisateur.
+- **Cas D (multi-Python)** : `which -a python python3` au lieu de `where.exe python` ; `python -c "import sys; print(sys.executable)"` identique. Forcer l'interpreteur explicite : `/chemin/vers/python -m pip install ...`.
+
+### Activation Conda (bash/zsh au lieu de PowerShell)
+
+Sur macOS/Linux, `conda activate` exige un `conda init` prealable (une fois) du shell :
+
+```bash
+conda init bash        # ou: conda init zsh (macOS default)
+# relancer le shell, puis :
+conda activate coursia-ml-training     # (env cree localement, nom libre sous Mac/Linux)
+python train_lstm.py
+```
 
 ---
 

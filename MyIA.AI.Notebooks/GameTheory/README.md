@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 55
-breakdown: root=48, SocialChoice=7
-maturity: BETA=52, ALPHA=3
+pedagogical_count: 56
+breakdown: root=49, SocialChoice=7
+maturity: BETA=52, ALPHA=4
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations commerciales, élections, poker, guerre commerciale, allocation de ressources. Cette dualité entre coopération et compétition est omniprésente en économie, en sciences politiques et en informatique (mécanismes de vote, smart contracts, réseaux). Le prix Nobel d'économie a été décerné à des théoriciens des jeux à sept reprises entre 1994 et 2020 — c'est un domaine vivant et influent.
@@ -691,6 +691,7 @@ Tous les notebooks incluent :
 GameTheory/
 ├── GameTheory-1-Setup.ipynb                        # 17 notebooks principaux (Python, fil rouge 1→17)
 ├── GameTheory-2-NormalForm.ipynb
+├── GameTheory-2-NormalForm-Part2-Python.ipynb      #   Tranche 2 du Python NormalForm — support enumeration mixte NxN from-scratch (numpy) + vérification nashpy
 ├── GameTheory-2-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
 ├── GameTheory-2-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
 ├── GameTheory-3-Topology2x2.ipynb
@@ -747,7 +748,6 @@ GameTheory/
 │   ├── 04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
 │   └── README.md
 ├── README.md
-├── INVENTORY.md                            # Inventaire notebooks
 ├── LEAN_INVENTORY.md                       # Inventaire Lean (toolchains + sorry)
 ├── install_wsl_kernel.md                   # Install kernel WSL
 ├── requirements.txt                        # 16 deps Python (nashpy/scipy/z3/etc.)

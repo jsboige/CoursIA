@@ -1,0 +1,33 @@
+- name: "GameTheory-3 Topology2x2"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = networkx (lib SOTA, graphe des topologies 2x2 PD/Chicken/Stag-Hunt/Coordination, viz des regions d'equilibre Nash). C# = tranche 1 from-scratch en pur Linq (BCL .NET 9, 0 NuGet) PUIS tranche 2 (2026-08-15) bridge le moteur .NET natif QuikGraph 2.5.0 : graphe des swaps construit sur les 576 jeux (1728 aretes = 576 x 6 / 2, degre moyen 6,0 = 3 swaps x 2 joueurs, comptes verifies contre le twin networkx), BFS shortest-path via UndirectedBreadthFirstSearchAlgorithm, parite BFS QuikGraph vs BFS maison : IDENTIQUE 25/25 distances (matrice des jeux classiques). SOTA-OK : le vrai moteur est branche et produit des sorties reelles."
+  audits:
+    - python_sha: ac9b8aee4ae0785bfefe6c10f64cfb3e13a38c54
+      csharp_sha: b09da0acd68389084b6ff1fac9c565169a85ab06
+      reason: "c.1129 #8052 Python c40 SINGLE_NASH ~75%->50% (family vs 1-nash count confusion; 288/576=50%) + DOMINANT subcategory->distinct family (144/25%) + c51 un seul swap->deux swaps (c13/c23: PD->Stag Hunt=PD->Chicken=2); C# twin preserved"
+    - date: "2026-08-06"
+      by: manual
+      python_sha: 224683de9814a66ade5abf87c9a2c83e0bb255b0
+      csharp_sha: b09da0acd68389084b6ff1fac9c565169a85ab06
+      content_python_sha: 815935226dbad1b77881f155b7b44abf8bea72c8bcffc08e7f71346da8e0d43c
+      content_csharp_sha: e9b7eeee3f79a4af592a353f59f21c0dcf3cd6a21ddb978e636298a218e30ec4
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: ac9b8aee4ae0785bfefe6c10f64cfb3e13a38c54
+      csharp_sha: b09da0acd68389084b6ff1fac9c565169a85ab06
+      content_python_sha: 88aa84c0f790cc07445940d900bb0084abeb9af5c5de61e21974d4003ac07ad2
+      content_csharp_sha: e9b7eeee3f79a4af592a353f59f21c0dcf3cd6a21ddb978e636298a218e30ec4
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: ac9b8aee4ae0785bfefe6c10f64cfb3e13a38c54
+      csharp_sha: 3eefd90a0b918ef6da907cd5efc6eef7bea3b426
+      content_python_sha: 88aa84c0f790cc07445940d900bb0084abeb9af5c5de61e21974d4003ac07ad2
+      content_csharp_sha: 02a7121eec1f1793250e6c76bc9a191abebe4ce7aa92d6eb9fd855965afecc5a
+  known_differences:
+    - "Socle pedagogique commun : representation ordinale des jeux 2x2 (4 rangs par joueur), classification topologique des 5 archetypes strategiques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies) sur le carre des preferences ordinales."
+    - "Idiomes framework : Python = `numpy` + `matplotlib` + `networkx` + classe `OrdinalGame` from-scratch (dataclass + equals). C# = `System.*` (Collections.Generic, Linq) + classe `OrdinalGame` from-scratch (IEquatable<OrdinalGame>)."
+    - "Asymetrie (resolue en tranche 2) : Python s'appuie sur networkx (graphe + BFS + layout) ; C# tranche 1 = pur System.* (Linq), tranche 2 = bridge QuikGraph 2.5.0 (UndirectedGraph + UndirectedBreadthFirstSearchAlgorithm) pour la meme capacite de graphe/BFS que networkx, avec parite 25/25 des distances. Valeur pedagogique = voir la structure OrdinalGame sous deux perspectives framework (lib graph externe branchable : networkx en Python, QuikGraph en C#)."

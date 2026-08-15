@@ -9,11 +9,12 @@ Usage:
     python count_notebooks_by_series.py --check-readme      # Compare with README counts
 
 Excluded by default (pedagogical mode):
-    - .ipynb_checkpoints/
+    - .ipynb_checkpoints/, obj/, bin/, __pycache__/, .git/  (directory names only;
+      NOT matched against filename -- a notebook named "Foo-CombinatorialGames.ipynb"
+      must still be counted, see #9851)
     - research notebooks (path contains "research")
     - archive/backup notebooks (path contains "archive" or "_output")
     - partner course student examples (partner-course-*/examples/)
-    - obj/, bin/
 """
 
 import argparse
@@ -25,7 +26,16 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
+# EXCLUDE_ALWAYS: directory names only, matched EXACTLY against directory
+# segments of the notebook path (NEVER against the filename -- a notebook named
+# "Foo-CombinatorialGames.ipynb" must still be counted, see #9851 for the bug
+# history where substring matching excluded 5 GameTheory root notebooks).
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
+
+# EXCLUDE_PEDAGOGICAL: path-substring by NAMING CONVENTION. These are intentional
+# pedagogical exclusions: papermill _output artifacts, QC research quantbooks,
+# archives, partner-course student examples. Substring match on the relative
+# path is the documented behaviour here -- do NOT change to exact match.
 EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "partner-course", "examples"}
 
 SERIES_ORDER = [
@@ -47,8 +57,13 @@ def count_notebooks_in_dir(
 
     for nb_path in sorted(directory.rglob("*.ipynb")):
         parts = nb_path.relative_to(directory).parts
+        # Directory segments only -- never the filename -- for EXCLUDE_ALWAYS
+        # (bin/ obj/ __pycache__/ .git/ .ipynb_checkpoints/ are directories).
+        # See #9851: substring-on-all-parts silently dropped "CombinatorialGames"
+        # notebooks (5 in GameTheory, false positive on "bin" substring).
+        dir_parts = parts[:-1]
 
-        if any(exc in part for part in parts for exc in EXCLUDE_ALWAYS):
+        if any(exc in dir_parts for exc in EXCLUDE_ALWAYS):
             continue
 
         if pedagogical and any(
@@ -65,39 +80,52 @@ def count_notebooks_in_dir(
 
 
 def extract_readme_count(readme_path: Path) -> int | None:
-    """Try to extract a notebook count from a README file.
+    """Extract the AUTHORITATIVE series notebook count from a README.
 
-    Looks for patterns like "N notebooks", "N notebooks Python",
-    table rows with "Notebooks" label, or blockquote stats.
-    Returns the first plausible match (> 0).
+    Scope-aware (#9835): anchored on the generated ``<!-- CATALOG-STATUS -->``
+    marker (``pedagogical_count``, maintained daily by ``catalog-cron.yml``),
+    which is the canonical per-series total. Falls back to an explicitly-anchored
+    prose "Total" only when the marker is absent -- never the first number that
+    matches anywhere in the file. That first-match behaviour compared notebooks
+    to sub-section headers (e.g. SymbolicAI's "28 notebooks Lean" while the
+    series has 226) and to exercise counts (IIT: 53 notebooks vs "3 exercices").
+
+    A count of exercises is NOT a count of notebooks: the former prose-fallback
+    ``(\\d+)\\s+exercices`` is removed. A series with no marker and no explicit
+    Total returns None ("no count") -- an honest silence, not a number caught at
+    random.
     """
     if not readme_path.exists():
         return None
 
     text = readme_path.read_text(encoding="utf-8")
 
-    # Specific patterns ordered by reliability
-    patterns = [
-        # Blockquote: > **28 notebooks Python**
-        r"\*\*(\d+)\s*notebooks",
-        # Table row: | Notebooks | 28 |
-        r"\|\s*Notebooks?\s*\|\s*(\d+)",
-        # Inline: "28 notebooks Python"
-        r"(\d+)\s+notebooks?\s+Python",
-        # Inline: "N notebooks"
-        r"(\d+)\s+notebooks",
+    # Primary anchor: the generated CATALOG-STATUS marker (canonical,
+    # cron-maintained, per-series). See #9835.
+    marker = re.search(r"<!--\s*CATALOG-STATUS\b(.*?)-->", text, re.S)
+    if marker:
+        m = re.search(r"pedagogical_count:\s*(\d+)", marker.group(1))
+        if m:
+            val = int(m.group(1))
+            if val > 0:
+                return val
+
+    # Fallback (marker absent): an explicitly-anchored series-total in prose.
+    # Require an explicit "Total" anchor -- NOT the first "N notebooks" anywhere
+    # (often a sub-section header, e.g. "28 notebooks Lean"). See #9835.
+    for pattern in (
         # Table row: | Total | 84 |
         r"\|\s*Total\s*\|\s*(\d+)",
-        # French: "N exercices"
-        r"(\d+)\s+exercices",
-    ]
-
-    for pattern in patterns:
+        # Explicit "N notebooks total"
+        r"(\d+)\s+notebooks?\s+total",
+    ):
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             val = int(match.group(1))
             if val > 0:
                 return val
+
+    # No marker, no explicit total -> honest silence (not a random number).
     return None
 
 
@@ -121,6 +149,10 @@ def main():
         "--check-readme", action="store_true",
         help="Compare actual counts with README declarations",
     )
+    parser.add_argument(
+        "--check", action="store_true",
+        help="Assertion (issue #9857): exit 1 if tool pedagogical count diverges from catalogue",
+    )
     args = parser.parse_args()
 
     pedagogical = not args.all
@@ -139,6 +171,39 @@ def main():
         counts = count_notebooks_in_dir(series_dir, pedagogical=pedagogical)
         if counts["total"] > 0 or args.series:
             results[series_dir.name] = counts
+
+    if args.check:
+        # Assertion #9857 : l'outil (pedagogique) et le catalogue (curé) doivent
+        # converger. Les deux appliquent le même EXCLUDE_PEDAGOGICAL, donc tout
+        # écart signale soit un drift de curation (notebook fraîchement ajouté,
+        # non curé — résolu par catalog-cron < 24h) soit un changement structurel.
+        # Détail chemin-par-chemin : scripts/audit/check_denominators.py --strict.
+        tool_total = sum(r["total"] for r in results.values())
+        catalog_path = REPO_ROOT / "COURSE_CATALOG.generated.json"
+        try:
+            with open(catalog_path, encoding="utf-8") as f:
+                catalog = json.load(f)
+        except FileNotFoundError:
+            print(f"ERREUR: catalogue introuvable: {catalog_path}", file=sys.stderr)
+            return 2
+        catalog_count = len(catalog) if isinstance(catalog, list) else len(
+            catalog.get("notebooks", []) if isinstance(catalog, dict) else []
+        )
+
+        print("CHECK -- convergence catalogue / outil")
+        print(f"  Outil (pedagogical) : {tool_total}")
+        print(f"  Catalogue (curated) : {catalog_count}")
+        if tool_total == catalog_count:
+            print(f"  Statut              : OK -- convergent ({tool_total} == {catalog_count})")
+            return 0
+        delta = tool_total - catalog_count
+        if delta > 0:
+            direction = "outil > catalogue : drift de curation (notebook fraichement ajoute, non cure -- resolu par catalog-cron < 24h)"
+        else:
+            direction = "catalogue > outil : notebook cure mais exclu par chemin outil (ex. examples/ promu au catalogue)"
+        print(f"  DIVERGENCE          : {abs(delta)} -- {direction}")
+        print("  -> investiguer : py scripts/audit/check_denominators.py --strict")
+        return 1
 
     if args.check_readme:
         print(f"\n{'Series':<15} {'Actual':>7} {'README':>7} {'Status':<10}")
@@ -195,4 +260,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -47,13 +47,15 @@ import argparse
 import csv
 import hashlib
 import json
+import math
+import re
 import sys
 from pathlib import Path
 
-# Doit rester coherent avec extract_cells_to_csv.py (T1).
-PIVOT_LANG = "fr"
-TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
-ALL_LANGS = [PIVOT_LANG] + TARGET_LANGS
+# Doit rester coherent avec extract_cells_to_csv.py (T1) ET check_perimeter.py
+# (source unique de l'univers des langues, #10109) -- pas de copie locale.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_perimeter import ALL_LANGS, PIVOT_LANG, TARGET_LANGS  # noqa: E402
 
 # Plages Unicode du script attendu pour les langues cibles non-Latines.
 # Une cellule text_<lang> deposee dont le contenu ne porte AUCUN caractere de
@@ -269,6 +271,127 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
     return anomalies
 
 
+def csv_fill_stats(csv_path: Path) -> dict[str, dict[str, int]]:
+    """Taux de remplissage par langue cible d'un CSV de synchro (#6949 point 1).
+
+    Rend visible le signal honnête que le compte de drift seul masque : un
+    ``SRC_DRIFT=0`` sur une table où ``text_en..text_pt`` sont vides se lit à
+    tort comme « à jour », alors qu'aucune traduction n'a été déposée (discipline
+    #6949 : un compteur nu se périmé ; un compteur avec son dénominateur se
+    contredit tout seul).
+
+    Compte, pour chaque langue cible (``TARGET_LANGS`` + le pivot ``fr``), les
+    cellules où ``text_<lang>`` est non-vide, sur le dénominateur des lignes
+    bien formées (``notebook`` + ``cell_id`` renseignés). Lecture CSV seule,
+    aucun chargement de notebook (I/O minime) — les ``ORPHAN_ROW`` rares
+    restent dans le dénominateur (signal honnête : « sur les N cellules que ce
+    CSV référence, X% sont traduites »).
+
+    Retourne ``{lang: {"filled": int, "total": int}}`` (total = dénominateur
+    commun, identique pour toutes les langues).
+    """
+    stats: dict[str, dict[str, int]] = {}
+    total = 0
+    filled: dict[str, int] = {lang: 0 for lang in ALL_LANGS}
+    with csv_path.open(encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            if not row.get("notebook") or not row.get("cell_id"):
+                continue
+            total += 1
+            for lang in ALL_LANGS:
+                if row.get(f"text_{lang}", "").strip():
+                    filled[lang] += 1
+    for lang in ALL_LANGS:
+        stats[lang] = {"filled": filled[lang], "total": total}
+    return stats
+
+
+def find_out_of_scope_notebooks(
+    notebooks_root: Path,
+    known_notebooks: set[str],
+) -> list[dict]:
+    """Scanne ``MyIA.AI.Notebooks/**/*.ipynb`` et identifie les notebooks FR
+    pivots qui ne sont référencés dans aucun CSV de ``translations/``.
+
+    Un notebook FR pivot = fichier ``.ipynb`` qui n'a pas de suffixe ``_<xx>``
+    ET dont le basename ne contient pas de marqueur de langue cible.
+
+    Cette fonction implémente l'étape 5 de #10329 : détecter la dérive
+    HORS-PÉRIMÈTRE — c'est-à-dire les notebooks FR qui ont été créés ou
+    modifiés sans qu'un run incrémental du pipeline T1 n'ait eu lieu (ex :
+    PR mergée directement sur ``main`` qui ajoute un notebook sans
+    déclencher le trigger ``push: paths: [MyIA.AI.Notebooks/**/*.ipynb]``
+    du workflow ``translation-sync``, ou notebooks d'une série qui n'est
+    couverte par AUCUN CSV).
+
+    Retourne une liste de ``{"notebook": str, "verdict": "MISSING_FROM_CSV"}``
+    pour chaque notebook FR pivot non-référencé.
+    """
+    SUFFIX_PATTERN = re.compile(
+        r"_(?:" + "|".join(sorted(ALL_LANGS, key=len, reverse=True)) + r")\.ipynb$",
+        re.IGNORECASE,
+    )
+    EXCLUDE_SUFFIXES = ("_output", "_agent", "-checkpoint", "_checkpoints")
+
+    out: list[dict] = []
+    if not notebooks_root.exists():
+        return out
+    notebooks_root = notebooks_root.resolve()
+    for nb_path in notebooks_root.rglob("*.ipynb"):
+        # Exclure les outputs / agents / checkpoints (cf iter_notebooks()).
+        if any(s in nb_path.stem for s in EXCLUDE_SUFFIXES):
+            continue
+        # Exclure les notebooks traduits (suffixe _xx).
+        if SUFFIX_PATTERN.search(nb_path.name):
+            continue
+        # Chemin RELATIF a notebooks_root (posix). Le caller (main) est
+        # responsable de la mise en correspondance avec ``known_notebooks``
+        # qui contient des paths relatifs au repo root.
+        try:
+            rel = nb_path.relative_to(notebooks_root).as_posix()
+        except ValueError:
+            rel = nb_path.as_posix()
+        if rel not in known_notebooks:
+            out.append({"notebook": rel, "verdict": "MISSING_FROM_CSV"})
+    return out
+
+
+def _fill_pct(filled: int, total: int) -> float:
+    """Pourcentage floored à 1 décimale — jamais arrondi vers le haut.
+
+    Discipline #6949 (ai-01 c.33) : un compteur ne doit pas affirmer faussement
+    la complétude. ``round(99.996, 1)`` vaut ``100.0`` pour ``24469/24470``, ce
+    qui réintroduit, un ordre de grandeur plus bas, le défaut que cet outil
+    dénonce (un ``SRC_DRIFT=0`` lu comme « à jour »). On floor donc : ``100.0``
+    n'apparaît que si ``filled == total`` exactement ; sinon le pct reste sous
+    le seuil de complétude. ``filled``/``total`` bruts restent disponibles à
+    côté du pct pour la précision exacte.
+    """
+    if not total:
+        return 0.0
+    return math.floor((100.0 * filled / total) * 10) / 10
+
+
+def _format_fill_line(stats: dict[str, dict[str, int]]) -> str:
+    """Ligne lisible stderr : 'en=0.0% es=0.0% ... — AUCUNE traduction déposée'.
+
+    N'inclut que les langues cibles (le pivot ``fr`` est à 100% par construction,
+    l'afficher n'apporte rien). Le suffixe ``AUCUNE traduction déposée`` est
+    ajouté quand toutes les cibles sont à 0% — il rend explicite que le compte de
+    drift est non-informatif sur une table vide.
+    """
+    total = next(iter(stats.values()))["total"] if stats else 0
+    parts = []
+    for lang in TARGET_LANGS:
+        s = stats.get(lang, {"filled": 0, "total": 0})
+        pct = _fill_pct(s["filled"], s["total"])
+        parts.append(f"{lang}={pct:.1f}%")
+    line = f"REMPLISSAGE TRADUCTION ({total} cellules, {len(TARGET_LANGS)} langues cibles) : " + " ".join(parts)
+    if total and all(stats[lang]["filled"] == 0 for lang in TARGET_LANGS):
+        line += " — AUCUNE traduction déposée (le compte de drift est non-informatif tant que 0%)"
+    return line
+
+
 def iter_csvs(target: Path) -> list[Path]:
     if target.is_file():
         return [target]
@@ -287,6 +410,17 @@ def main() -> int:
         "--check", action="store_true",
         help="Mode CI non-bloquant : exit 0 même si drift détecté (le rapport va sur stderr/JSON).",
     )
+    parser.add_argument(
+        "--report-out-of-scope", action="store_true",
+        help="Étend le rapport avec un scan des notebooks FR dans "
+        "MyIA.AI.Notebooks/ qui ne sont référencés dans aucun CSV "
+        "(MISSING_FROM_CSV, étape 5 de #10329). Sortie JSON additionnelle, "
+        "non-bloquante : le verdict MISSING_FROM_COV n'influe pas sur exit code.",
+    )
+    parser.add_argument(
+        "--notebooks-root", type=Path, default=None,
+        help="Racine de scan des notebooks (défaut : <repo_root>/MyIA.AI.Notebooks).",
+    )
     args = parser.parse_args()
 
     if not args.input.exists():
@@ -302,19 +436,96 @@ def main() -> int:
         return 0
 
     all_anomalies: list[dict] = []
+    fill_by_csv: dict[str, dict[str, dict[str, int]]] = {}
+    known_notebooks: set[str] = set()
     for csv_path in csvs:
         all_anomalies.extend(check_csv(csv_path, repo_root))
+        fill_by_csv[str(csv_path)] = csv_fill_stats(csv_path)
+        # Collecte des notebooks référencés (pour l'étape 5 : out-of-scope
+        # detection). On lit rapidement le CSV sans relancer check_csv.
+        with csv_path.open(encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                nb = row.get("notebook", "")
+                if nb:
+                    known_notebooks.add(nb)
+
+    # Agrégation du taux de remplissage (#6949 point 1) : somme des filled/total
+    # sur tous les CSV, pour un signal global honnête. Le pivot fr est à 100% par
+    # construction (c'est le notebook source) — on l'inclut dans le JSON pour
+    # auditabilité mais on ne l'affiche pas (cf ``_format_fill_line``).
+    global_fill: dict[str, dict[str, int]] = {
+        lang: {"filled": 0, "total": 0} for lang in ALL_LANGS
+    }
+    for stats in fill_by_csv.values():
+        for lang in ALL_LANGS:
+            global_fill[lang]["filled"] += stats[lang]["filled"]
+            global_fill[lang]["total"] += stats[lang]["total"]
+
+    def _with_pct(stats: dict[str, dict[str, int]]) -> dict[str, dict[str, object]]:
+        out: dict[str, dict[str, object]] = {}
+        for lang in ALL_LANGS:
+            s = stats.get(lang, {"filled": 0, "total": 0})
+            out[lang] = {
+                "filled": s["filled"],
+                "total": s["total"],
+                "pct": _fill_pct(s["filled"], s["total"]),
+            }
+        return out
+
+    fill_report = {
+        "global": _with_pct(global_fill),
+        "by_csv": {path: _with_pct(stats) for path, stats in fill_by_csv.items()},
+    }
 
     # Rapport lisible (stderr) + JSON (stdout, consommable CI).
     report = {
         "csvs_checked": len(csvs),
         "anomalies": all_anomalies,
         "anomaly_count": len(all_anomalies),
+        "fill_rate": fill_report,
     }
+
+    # Étape 5 de #10329 : scan out-of-scope (option --report-out-of-scope).
+    # Ce scan n'est PAS bloquant (exit code inchangé) — c'est un signal
+    # diagnostique : les notebooks FR jamais indexés dans un CSV apparaissent
+    # ici, ce qui signifie qu'aucun T1 incrémental ne les a vus passer (créés
+    # hors trigger push, ou série non couverte par un CSV).
+    if args.report_out_of_scope:
+        notebooks_root = args.notebooks_root or (repo_root / "MyIA.AI.Notebooks")
+        oos = find_out_of_scope_notebooks(notebooks_root, known_notebooks)
+        # Normalisation : les chemins retournés sont relatifs à
+        # ``notebooks_root``, mais les consommateurs (dashboard, audit)
+        # s'attendent à des chemins relatifs au repo root. On préfixe.
+        if notebooks_root.is_absolute():
+            try:
+                rel_root = notebooks_root.relative_to(repo_root).as_posix()
+            except ValueError:
+                rel_root = None
+        else:
+            rel_root = notebooks_root.as_posix()
+        if rel_root and rel_root not in (".", ""):
+            for entry in oos:
+                entry["notebook"] = f"{rel_root}/{entry['notebook']}"
+        report["out_of_scope"] = oos
+        report["out_of_scope_count"] = len(oos)
+
     print(json.dumps(report, ensure_ascii=False, indent=2))
+
+    # Signal honnête stderr : le taux de remplissage à côté du compte de drift,
+    # pour qu'un SRC_DRIFT=0 sur une table 0% traduite ne se lise plus comme
+    # « à jour » (discipline #6949 : compteur nu se périmé ; avec dénominateur,
+    # se contredit tout seul).
+    if global_fill[PIVOT_LANG]["total"]:
+        print(_format_fill_line(global_fill), file=sys.stderr)
 
     if not all_anomalies:
         print(f"OK : {len(csvs)} CSV vérifié(s), 0 drift.", file=sys.stderr)
+        if args.report_out_of_scope and report.get("out_of_scope_count", 0) > 0:
+            print(
+                f"  -> {report['out_of_scope_count']} notebook(s) FR hors-périmètre "
+                f"(MISSING_FROM_CSV). Pas de blocage mais signal d'attention.",
+                file=sys.stderr,
+            )
         return 0
 
     # Regroupement par verdict pour le rapport stderr.

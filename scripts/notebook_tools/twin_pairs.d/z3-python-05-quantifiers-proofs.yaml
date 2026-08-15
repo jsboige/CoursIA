@@ -1,0 +1,27 @@
+- name: "Z3-Python-05 Quantifiers & Proofs"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Z3 quantifiers & proofs branche NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkForall/MkExists, Solver.Check() = Status.UNSATISFIABLE = preuve par refutation) et pyz3 (`from z3 import *`, ForAll/Exists, prove() par refutation, Fermat last theorem = unknown) sont les deux bindings officiels du meme coeur C++ Z3 — pas un pont intermediaire. Aucune asymetrie de machinerie a corriger."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 6d85c875a279e2db3161677684c9fb2433503195
+      csharp_sha: dcc4aa5c50ff122180e2b2dd97bf25cdbb4d1b2a
+    - date: "2026-08-13"
+      by: myia-po-2024:CoursIA
+      python_sha: 6d85c875a279e2db3161677684c9fb2433503195
+      csharp_sha: 1934af8e843c3bc8359671b0f47f0614b2af126b
+      content_python_sha: d462387e582fb0115b3a385059b195acd5044f97631ac3b4a5c17e28581ccfe6
+      content_csharp_sha: 426c6c7837711d69d4c1d011a2a178d3e2234b5f0180094963c32192c40c5583
+    - date: "2026-08-13"
+      by: myia-po-2024:CoursIA
+      python_sha: eb97e27e946c3c2e8e6c3e46e02e4abf0655e3d9
+      csharp_sha: 1934af8e843c3bc8359671b0f47f0614b2af126b
+      content_python_sha: e64b2d011be5ae976afd68b12f274369bc05ee26ff4832fc751ad1db3bc87e15
+      content_csharp_sha: 426c6c7837711d69d4c1d011a2a178d3e2234b5f0180094963c32192c40c5583
+  known_differences:
+    - "Python : pyz3 (ForAll, Exists, prove() par refutation). C# : Microsoft.Z3 .NET (ctx.MkForall, MkExists, Solver+unsat)."
+    - "Concept demontre (preuve par refutation, Exists sat/unsat, Fermat unknown) verifie cote Python (structure CLEAN c.20)."

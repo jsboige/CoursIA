@@ -11,6 +11,7 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 | [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — 58 liens internes vérifiés c.805 (aucun mort), 11 sections cohérentes avec disque, organisation par catégorie stable |
 | [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
 | [grothendieckian-lens.md](grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal (116 lignes), durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
+| [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
 
 ## Référence (docs/reference/)
 
@@ -20,7 +21,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 |---------|-------------|
 | [reference/common-commands.md](reference/common-commands.md) | Environnement, validation notebooks, scripts CLI |
 | [reference/procedures-recurrentes.md](reference/procedures-recurrentes.md) | Workflow PR, dispatch, validation, pré-commit |
-| [reference/architecture_mcp_roo.md](reference/architecture_mcp_roo.md) | Architecture des 34 outils MCP roo-state-manager |
+| [reference/architecture_mcp_roo.md](reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (l'inventaire des 15 outils roo-state-manager vit en amont : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/kernels-runtime.md](reference/kernels-runtime.md) | .NET, Python, WSL, conda envs |
 | [reference/env-python-reparation.md](reference/env-python-reparation.md) | Réparation environnements Python |
 | [reference/claude-code-config.md](reference/claude-code-config.md) | Agents, skills, rules, model selection |
@@ -42,6 +43,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/regles-vigilance-detail.md](reference/regles-vigilance-detail.md) | Détails G.1-G.9 + incidents |
 | [reference/regles-validation-detail.md](reference/regles-validation-detail.md) | Détails H.1-H.7 + incident Sudoku-13 |
 | [reference/anti-regression-detail.md](reference/anti-regression-detail.md) | Patterns red-flag, protocole avant suppression |
+| [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake (22 lakes inventoriés, 2 câblés en CI : `lean-knot.yml` + `lean-conway.yml`) — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`), 167 lignes. See #8738 (step 3), #8752 (livraison) |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
 | [reference/user-blocker-signaling-detail.md](reference/user-blocker-signaling-detail.md) | Catégories + anti-patterns signaler |
@@ -51,13 +53,19 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 
 | Fichier | Description |
 |---------|-------------|
-| [reference/HEALTH_DASHBOARD.md](reference/HEALTH_DASHBOARD.md) | Tableau de santé du dépôt — snapshot dérivé du catalogue |
+| [archive/reference/HEALTH_DASHBOARD.md](archive/reference/HEALTH_DASHBOARD.md) | **Archivé 2026-08-08** (était [reference/](reference/)) : Tableau de santé du dépôt — snapshot statique auto-généré depuis `COURSE_CATALOG.generated.json` (acceptance #4 de #4210). **Record historique** — superseded pour usage live par le marqueur `CATALOG-STATUS` dans chaque README de série (cron `catalog-cron.yml` quotidien). 77 lignes. Linked #4210 |
 | [reference/accent-cure-defense-in-depth.md](reference/accent-cure-defense-in-depth.md) | Cure des accents FR & défense contre les régressions (#2876) |
 | [reference/chatgpt-export-playwright.md](reference/chatgpt-export-playwright.md) | Explorer une longue conversation / un export ChatGPT via Playwright |
 | [reference/dotnet-plotly-zero-restore.md](reference/dotnet-plotly-zero-restore.md) | Pattern .NET Interactive — figures Plotly « zero-restore » (technique C548-L2) |
 | [reference/notebook-formatting.md](reference/notebook-formatting.md) | Mise en forme visuelle des notebooks — directives + vérification de rendu |
 | [reference/notebook-parity-table.md](reference/notebook-parity-table.md) | Table de parité cross-série — notebooks Python ⇄ .NET |
+| [archive/reference/notebook-counts-reconciliation.md](archive/reference/notebook-counts-reconciliation.md) | **Archivé 2026-08-08** (était [reference/](reference/)) : réconciliation forensic des 4 sources de comptage notebooks (disque 946 / forensic 944 / catalogue 830 / STABLE_SNAPSHOT 934) — écart catalogue-disque = 116 = 84 drift + 30 exclusions par design, filtre `scripts/audit/check_denominators.py`. SHA daté 2026-07-23. **Record historique** — superseded pour usage live par [`reference/notebook-counters.md`](reference/notebook-counters.md) (#9857). 174 lignes. Linked #8050 |
 | [reference/stale-tree-drift-scan.md](reference/stale-tree-drift-scan.md) | Scan de drift sur worktree frais (anti-phantom) |
+| [reference/orphan-branch-scan-l576.md](reference/orphan-branch-scan-l576.md) | Scan de branche orpheline (L576 ★★) — compound gate 3 ancres (`merge-base` + REST `commits/<sha>/pulls` + `gh pr list --search head:<branch>`) anti-FPOS du REST, decision matrix 5 lignes. Détail de référence pour la section « Orphan-branch scan » de `.claude/rules/git-workflow.md`. 105 lignes. Origine : investigation 5 branches `jsboige/*` attachées à #7086-#7091 (c.576) |
+| [reference/probas-history.md](reference/probas-history.md) | Référence pérenne du portage Infer.NET → Python (`Probas/`) — périmètre intentionnel (combien de notebooks, quelle bibliothèque pour quel concept) + recommandation PyMC/NumPyro/pgmpy/hmmlearn/Pyro. Source canonique issue #297. Le mapping d'API ligne-à-ligne y est explicitement marqué *périssable* (poison si non re-testé). 117 lignes |
+| [reference/quant-prose-census.md](reference/quant-prose-census.md) | Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules markdown des notebooks, classées selon la ligne de partage codifiée par #9434 (acceptance item 4, #9958). Outil `scripts/notebook_tools/scan_quant_classify.py`. 212 lignes |
+| [reference/repo-size-policy.md](reference/repo-size-policy.md) | Politique de taille du dépôt (~1,2 GiB) — pourquoi ce poids est le prix d'une décision délibérée (sorties notebooks committées C.2/H.1), ce qui est acquis (ne sera pas réécrit), ce qui est surveillé. Mesure, pas impression. 177 lignes |
+| [reference/verification-verte-systeme-casse.md](reference/verification-verte-systeme-casse.md) | « Quand la vérification est verte et le système est cassé » — étude de cas 8 incidents datés, un seul motif (un agent déclare un état système sur la foi d'une vérification qui passait alors que cet état était faux). Détail de référence pour la règle G.9 (culture du doute). 170 lignes |
 
 ## GenAI (docs/genai/)
 
@@ -83,7 +91,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 
 ## Lean (docs/lean/)
 
-Iteration history prover, intractable diagnosis, LLM endpoints.
+Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-répertoire :** [lean/README.md](lean/README.md) — point d'entrée de référence regroupant les sous-docs ci-dessous (coordinator-workflow, llm-endpoints, prover history, SOTA 2026, AB, i18n). Établi par po-2024 (#10132).
 
 | Fichier | Description |
 |---------|-------------|
@@ -94,8 +102,27 @@ Iteration history prover, intractable diagnosis, LLM endpoints.
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
+| [reference/mbml-source-attribution.md](reference/mbml-source-attribution.md) | Attribution de source MBML/Infer.NET — table de correspondance notebook ↔ source canonique pour la série Probas/ (36 notebooks Infer + PyMC + 2 racine vs *MBML Book* Herbrich + TrueSkill 2007 + WinBUGS/JAGS). Établie audit distillation #8081 (c.803, 2026-07-23). Les 4 sous-items de backfill/archivage extraits en issues filles #8702-#8705. Réqualification #7422 (déplacement audit/ → reference/, retrait des verdicts/décisions de cycle). |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
+
+## ICT (docs/ict/)
+
+Documentation de cadrage et de synthèse de la série ICT (strate 7) — tous **grade C-documentaire** (positionnement/consolidation/cartographie, aucun résultat démontré). Index thématique et parcours suggéré dans [`ict/README.md`](ict/README.md). Epic umbrella [#4588](https://github.com/jsboige/CoursIA/issues/4588), méta-proxy [#7395](https://github.com/jsboige/CoursIA/issues/7395).
+
+| Fichier | Rôle |
+|---------|------|
+| [ict/README.md](ict/README.md) | **Index** — cartographie des 10 docs par mode (vertical / horizontal / méta) + parcours suggéré |
+| [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Fils 1–3 : trois régimes de lecture (invariants / dissociations / obstructions) |
+| [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4e fil : généalogie de `p̂` (représentation interne, ICT-10 → ICT-17) |
+| [ict/dissolution-scalaires.md](ict/dissolution-scalaires.md) | 5e fil : dissolution successive des scalaires Φ / F / K |
+| [ict/strate7-boussole-myth.md](ict/strate7-boussole-myth.md) | 6e fil : boussole narrative de la strate 7 |
+| [ict/strate7-cadres-libres.md](ict/strate7-cadres-libres.md) | Jambe D1 : formalisme (variables libres, jeu évolutif `G_t`) |
+| [ict/jambe-c4-propagation.md](ict/jambe-c4-propagation.md) | Jambe C4 : grammaire de propagation & seuil de bascule `(π, W, causalité)` |
+| [ict/cadrage-trajectoires-representations.md](ict/cadrage-trajectoires-representations.md) | Pivot N2 : états → représentations |
+| [ict/tresse-cartographie.md](ict/tresse-cartographie.md) | Cartographie horizontale : la tresse (Thom / Grothendieck / Schmidhuber / Friston) |
+| [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice de dissociations 4-objets `(s, q, π, W)` |
+| [ict/d1-c4-rencontre-meta.md](ict/d1-c4-rencontre-meta.md) | Méta-cadrage : rencontre D1 ↔ C4 (le formel et l'opérationnel) |
 
 ## Curriculum (docs/curriculum/)
 
@@ -135,9 +162,24 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 | Fichier | Description |
 |---------|-------------|
 | [i18n/CSV-by-series-design.md](i18n/CSV-by-series-design.md) | Design doc infra CSV-by-series (EPIC #4957 Phase 1) |
-| [i18n/argumentum-fork-mapping.md](i18n/argumentum-fork-mapping.md) | Cartographie fork Argumentum → CoursIA (EPIC #6949 T3) |
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
 | [translation/epic-4957-status.md](translation/epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
+
+## Recherche (docs/research/)
+
+Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Distinct de `archive/research/` (recherche close/archivée) — ici vit la recherche active.
+
+| Fichier | Description |
+|---------|-------------|
+| [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
+
+## Audit sémantique cross-famille (docs/audit/)
+
+Cadrage **méthodologique** de l'audit sémantique (grade B-méthodologique, EPIC #4208 + #8052). Les **comptes-rendus** de cycle et les **findings** ne vivent pas ici : dashboard RooSync pour l'éphémère, issue GitHub pour l'actionnable (règle HARD [audit-cross-source-distillation.md](../.claude/rules/audit-cross-source-distillation.md)).
+
+| Fichier | Description |
+|---------|-------------|
+| [audit/sampling-protocol.md](audit/sampling-protocol.md) | Protocole d'audit d'échantillonnage sémantique cross-famille : ≥5%/famille par cycle mensuel, env-vierge (pas cache), confrontation claims-markdown ↔ sorties réelles, détection fallback silencieux (TenSEAL CKKS incident fondateur). 5 litmus + grille outillée `scripts/audit/extract_claims_vs_outputs.py`, avec état de validation par litmus (2/5 jamais déclenchés) et limite connue du matching numérique. Grade B-méthodologique, #8052. 164 lignes |
 
 ## ICT (docs/ict/)
 
@@ -147,6 +189,8 @@ Synthèses transversales de la série IIT → ICT (Epic #4588, grade C-documenta
 |---------|-------------|
 | [ict/synthese-invariants-dissociations-obstructions.md](ict/synthese-invariants-dissociations-obstructions.md) | Grille 3 régimes de lecture d'une trajectoire (#7399, #4588) |
 | [ict/dissociations-matrix.md](ict/dissociations-matrix.md) | Matrice canonique `notebook × claim × proxy × contrôle × seeds × verdict × portée` (grade C-documentaire, #7734, #4588) |
+| [ict/cadrage-trajectoires-representations.md](ict/cadrage-trajectoires-representations.md) | Cadrage « trajectoires de représentations » — pivot états → représentations (échelle LLM, strate 5). Grade C-documentaire, livrable N2 de #7396, See #4588. 169 lignes |
+| [ict/genealogy-representation-interne.md](ict/genealogy-representation-interne.md) | 4ᵉ fil de lecture ICT — généalogie backward de `p̂` (ICT-10 → ICT-17), 6 maillons diachroniques. Grade C-documentaire, #7735 + Part of #7396, See #4588. 96 lignes |
 
 ## Ledgers cumulatifs (docs/ledgers/)
 
@@ -186,6 +230,7 @@ Documents conservés pour référence mais inactifs. Index complet : [archive/IN
 ```
 docs/
   reference/         Docs vivantes liées depuis CLAUDE.md / rules
+  audit/             Audit sémantique cross-famille (sampling-protocol + history/) — #8052
   genai/             Infrastructure GenAI
   qc/                QuantConnect reference
   lean/              Prover itération + endpoints
@@ -196,6 +241,7 @@ docs/
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801)
   suivis/            Suivis de cycle (transitions de série)
   grothendieckian-lens.md  Clé de lecture transversale du dépôt
+  PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
   archive/           Documents inactifs (ex-_archives)
 ```
 

@@ -27,8 +27,10 @@ bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
 ```json
 // nb.metadata["cost"] — l'objet JSON sérialisé par le notebook (.ipynb = JSON).
 {
-  "api_usd_est": 0.40,            // Coût API estimé par exécution end-to-end (USD). 0 si gratuit.
+  "api_usd_est": 0.40,            // Coût API estimé par exécution end-to-end (USD). 0 si gratuit, null si inconnu. Cf §"Attribution multi-fournisseur".
   "api_provider": "openai",       // openai | anthropic | mistral | hf | replicate | google | local | none
+  "api_cost_breakdown": null,     // OPTIONNEL. Ventilation provider→USD, somme == api_usd_est (gate falsifiable). Cf §"Attribution multi-fournisseur".
+  "qcc_tokens_est": 0,            // QuantConnect Cloud compute tokens (QCC) estimés par exécution end-to-end. 0 si non-QC. Cf §"Coût QCC / QuantConnect".
   "cpu_min": 1,                   // Estimation CPU-only minutes (range ou best-case)
   "gpu_min": 0,                   // Estimation GPU minutes (range ou best-case)
   "gpu_required": false,          // true si impossible sans GPU
@@ -36,10 +38,10 @@ bloc `---\n...\n---` est promue par markdown-it en **setext-H2 supersize**
   "vram_tier": "LITE",            // Catégorie VRAM (cf table §"Tiers VRAM")
   "network": true,                // Accès réseau requis (téléchargement modèle, appel API)
   "external_account": "openai",   // Compte externe obligatoire (openai, anthropic, hf, qc, ...) | "none"
-  "free_alternative": null,       // Notebook du dépôt qui couvre le même sujet sans coût | null
+  "free_alternative": null,       // Chemin repo-relatif vers un notebook équivalent sans coût, sentinel canonique, ou null. Cf §"Sentinels de `free_alternative`".
   "reduced_pedagogical": null,    // Version pédagogique réduite (sous-ensemble ou mock) | null
   "reproducibility": "HIGH",      // HIGH=déterministe, MED=seed-dépendant, LOW=stochastique
-  "last_validated": "2026-07-24", // Date dernière exécution validée (ISO8601, papermill/QC Cloud/MCP)
+  "metadata_written": "2026-07-24", // Date d'établissement de la metadata (ISO8601), pas la date de validation
   "validator": "papermill",       // papermill | qc_cloud | manual | lean_build | sk_agent | sk_visual
 }
 ```
@@ -75,6 +77,8 @@ source de vérité, le badge est un confort de lecture.
 |-------|-------------|----------------|
 | `cost.api_usd_est` | ✓ | `0` |
 | `cost.api_provider` | ✓ | `"none"` |
+| `cost.api_cost_breakdown` | optionnel | `null` (multi-fournisseur seulement ; `sum == api_usd_est` vérifié) |
+| `cost.qcc_tokens_est` | optionnel | `0` (0 = non-QC ; à peupler pour tout quantbook QC Cloud) |
 | `cost.cpu_min` | ✓ | `0` |
 | `cost.gpu_min` | optionnel | (omission = pas d'estimation GPU) |
 | `cost.gpu_required` | ✓ | `false` |
@@ -85,8 +89,154 @@ source de vérité, le badge est un confort de lecture.
 | `cost.free_alternative` | optionnel | `null` (peut être ajouté après-coup) |
 | `cost.reduced_pedagogical` | optionnel | `null` |
 | `cost.reproducibility` | ✓ | `"HIGH"` |
-| `cost.last_validated` | ✓ | (date de création de la metadata) |
+| `cost.metadata_written` | ✓ | (date d'établissement de la metadata) |
 | `cost.validator` | ✓ | `"manual"` |
+
+### Attribution multi-fournisseur (`api_cost_breakdown`)
+
+**Décision de schéma (design-gate #8056, issuecomment 5106409423) : scalaire
+autoritatif + ventilation optionnelle et falsifiable.**
+
+`api_usd_est` reste **le** champ autoritatif — c'est lui que lisent les
+consommateurs (agrégats, catalogue, badges). `api_cost_breakdown` est un champ
+**optionnel** qui ventile le coût par fournisseur quand cette information est
+réellement connue (plusieurs endpoints payants dans le même notebook) :
+
+```json
+"api_usd_est": 0.42,                 // TOTAL autoritatif, obligatoire
+"api_cost_breakdown": {              // optionnel
+  "openai": 0.30,
+  "anthropic": 0.12
+}
+```
+
+**Règle falsifiable (la seule qui compte) :** quand `api_cost_breakdown` est
+présent, `sum(valeurs)` **doit égaler** `api_usd_est`. Vérifié par
+`check_cost_metadata.py` (Litmus 8) — un écart > 1 cent déclenche le finding
+`api_cost_breakdown_sum_mismatch`.
+
+Pourquoi exiger la somme plutôt que laisser la ventilation libre ? Une
+ventilation libre est **décorative** : personne ne peut la contredire, elle se
+périme en silence au premier drift. Une ventilation dont la somme doit égaler
+le total est **falsifiable** — elle casse le jour où elle ment. Même leçon que
+le README central (`#8678` : un compteur nu se périme ; un compteur avec son
+dénominateur se contredit tout seul) et que le gate de preuve Lean (`#8680` :
+un gate incapable d'échouer n'est pas un gate).
+
+**Quand l'écrire :**
+- Notebook multi-fournisseur dont les sous-totaux par provider sont réellement
+  mesurés (ex : un notebook qui appelle GPT-5 pour le raisonnement **et**
+  Claude pour la vérification, coûts séparés dans les logs).
+
+**Quand NE PAS l'écrire (règles d'or) :**
+- **Mono-fournisseur** : écrire la ventilation dupliquerait le total pour zéro
+  information, et fabriquerait 327 occasions de drift. On laisse `null`.
+- **Sous-totaux reconstitués à la louche** : une fausse précision sur une
+  estimation `validator: "manual"` est pire que l'absence. On laisse `null` et
+  on documente la raison dans `notes` si pertinent.
+
+**`0.0` vs `null` sur `api_usd_est` (corollaire) :**
+- `0.0` **affirme** la gratuité (notebook local, pas d'appel facturé). C'est un
+  énoncé positif.
+- `null` (+ raison) = coût **inconnu**. Ne pas confondre : `0.0` n'est pas un
+  défaut pour « je ne sais pas », l'absence se lirait à tort comme gratuite.
+
+### `validator` / `metadata_written` — la seconde règle falsifiable (Litmus 9)
+
+> **Note terminologique (#8843)** : ce champ s'appelait `last_validated` jusqu'au
+> 2026-07-29. Le nom suggérait à tort une date de validation, alors que les
+> populators écrivent `metadata_written: date.today()` au moment du *peuplement*
+> — pas au moment d'une validation. Le nouveau nom (`metadata_written`) reflète
+> honnêtement la sémantique : c'est la date d'établissement de la metadata, pas
+> un horodatage de validation. La règle falsifiable du Litmus 9 reste la même :
+> c'est `validator` qui affirme l'exécution, et c'est contre `validator` que
+> s'applique le prédicat, pas contre `metadata_written` (qui est décoratif).
+
+Ces deux champs s'articulent ainsi : `validator` *affirme* qu'une validation a
+eu lieu (papermill, QC Cloud, manuel, etc.), `metadata_written` *horodate*
+l'établissement de la metadata. Jusqu'au Litmus 9, **rien dans le dépôt ne
+pouvait contredire `validator`** : aucun consommateur ne relisait son affirmation
+contre l'état réel du notebook. Un champ `validator` que rien ne peut contredire
+est **décoratif** : il porterait la même valeur sur un notebook dont *aucune*
+cellule n'a jamais tourné.
+
+**Règle falsifiable :** quand `validator` affirme une **exécution de cellules**
+(`papermill`, `sk_visual`, `dotnet-interactive`), aucune cellule code non vide ne
+doit porter `execution_count: null`. Le fondement est mécanique : nbclient/papermill
+exécutent **toute** cellule code non vide — y compris celles qui échouent
+(`--allow-errors` ne change que le comportement d'arrêt, pas l'attribution du
+compteur). Donc `execution_count: null` **prouve** la non-exécution. Vérifié par
+`check_cost_metadata.py` (Litmus 9) → finding `validator_asserts_execution_but_cells_unexecuted`
+(MAJOR).
+
+**Validators hors périmètre, délibérément :**
+
+| Validator | Pourquoi il n'est pas contredit |
+|---|---|
+| `manual` | un humain a relu — aucune affirmation d'exécution. C'est aussi **la valeur de correction** pour un notebook non exécutable localement |
+| `qc_cloud` | carve-out H.3 documenté — le runtime research QC n'existe sur aucune machine worker |
+| `lean_build` | `lake build` SUCCESS porte sur le lake, pas sur les cellules |
+| `sk_agent` | périmètre ambigu, pas d'affirmation nette |
+
+**Échappatoire honnête (tag de skip).** Une cellule délibérément non exécutable —
+code de référence destiné à un autre runtime — se **déclare** par un tag de cellule
+(`skip-execution`, `skip`, `no-execute`). Le notebook cesse alors d'être contredit
+sans mentir, et l'exemption est **visible dans le fichier**, contrairement à une
+exception codée en dur dans l'outil. La contrepartie est la même que partout
+ailleurs : on corrige la **déclaration**, ou on ré-exécute — **jamais** on n'édite
+une sortie de cellule à la main (Stop & Repair, cf
+[secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) règle 6).
+
+> **Mesure à l'introduction (2026-07-29, 1020 notebooks scannés) :** 13 findings,
+> tous `validator: papermill`, tous dans `QuantConnect/Python` — série dont chaque
+> cellule code est du `[REFERENCE QC]` important `AlgorithmImports`, qui n'existe
+> que dans le runtime QC. Ces notebooks sont couverts par le carve-out H.3 **par
+> chemin** (`QC_CLOUD_PATHS`) alors qu'ils échappent au prédicat de contenu partagé
+> (`QuantBook()`) : le carve-out excuse l'**absence** d'exécution, il n'autorise pas
+> à en **affirmer** une. Correction attendue : `validator: manual`. Zéro finding sur
+> les autres validators, y compris sur la tranche .NET en attente d'harmonisation
+> (`Probas/Infer.NET`, `ML/ML.NET`) — ceux-là *ont* été exécutés, leur défaut est une
+> étiquette inexacte, pas une exécution fantôme.
+
+#### Mode flotte — agréger avant de résorber
+
+Les neuf litmus n'avaient jusqu'ici qu'un mode **un notebook à la fois** : chacun
+était donc appliqué à la main, par quiconque y pensait, et **personne n'avait
+jamais agrégé le résultat**. Conséquence directe : un litmus vert ne pouvait pas
+être distingué d'un litmus *jamais exécuté* — c'est le même angle mort que
+« vert hors-cible ». `--all` / `--family` ferment cet écart (même prédicat,
+marcheur canonique [`notebook_walk`](../../scripts/notebook_tools/notebook_walk.py), #8650) :
+
+```bash
+python scripts/audit/check_cost_metadata.py --all                 # flotte entière
+python scripts/audit/check_cost_metadata.py --family QuantConnect # une famille
+python scripts/audit/check_cost_metadata.py --all --json          # sortie machine
+```
+
+**Mesure d'introduction du mode (2026-07-29) : 941 notebooks scannés, 71 porteurs
+d'au moins un finding, 86 findings sur 6 patterns** — `gpu_used_but_not_declared`
+31, `gpu_no_visual_validator` 18, `token_required_but_no_account` 17,
+`api_used_but_cost_zero` 13, `qc_notebook_no_qcc_estimate` 4,
+`qc_notebook_no_validator` 3. Le **litmus 9 est à zéro** : les 13 findings mesurés
+ci-dessus ont bien été corrigés en `validator: manual`, ils n'ont pas été
+escamotés par le marcheur (contrôle indépendant sur `--family QuantConnect` :
+`manual: 13`).
+
+**Écart de population assumé, 1020 vs 941 :** la mesure du litmus 9 ci-dessus
+parcourait le disque brut ; le mode flotte passe par `notebook_walk`, qui restreint
+aux fichiers **suivis par git** (`tracked_only=True`) et écarte `_output.ipynb`,
+`_archives/`, `.ipynb_checkpoints/`, `.lake/`. Les ~79 de différence sont des
+sorties d'exécution, des archives et des notebooks non suivis — hors périmètre
+d'un audit de métadonnées déclarées.
+
+**Pas de `--check`, pas de câblage CI, délibérément.** Les 86 findings sont
+**pré-existants** : un gate posé dessus naîtrait rouge et serait ignoré dès le
+premier jour. L'ordre est *agréger → résorber → gater*, jamais l'inverse. C'est
+d'ailleurs ce que dit déjà « [Ce que ce schéma n'est PAS](#ce-que-ce-schéma-nest-pas) » :
+le validateur **signale**, il ne décide pas si l'incohérence est bloquante.
+Résorber un pattern est un grain de substance séparé — et la correction se fait
+**à la source** (ré-exécuter, ou corriger la déclaration), jamais en éditant une
+sortie de cellule à la main.
 
 ### Tiers VRAM (déterminé par `vram_gb`)
 
@@ -116,6 +266,24 @@ Le catalogue anti-drift expose `cost` via l'inférence du frontmatter. Schéma c
 
 Le champ `cost.free_alternative` permet le routage machine : si `po-2025` n'a pas le GPU ou l'API key, le catalogue pointe vers le notebook équivalent exécutable localement.
 
+### Sentinels de `free_alternative`
+
+Le champ admet **deux natures** : un chemin repo-relatif, ou un **sentinel sémantique**. Le critère qui décide qu'un sentinel est canonique : **il porte une information que `null` détruit** (design-gate tranché sur #8056).
+
+| Valeur | Statut | Sens |
+|---|---|---|
+| `<chemin repo-relatif>` | forme nominale | Un notebook du dépôt couvre le même sujet sans coût. Résolu en dual-base (racine du dépôt **ou** `MyIA.AI.Notebooks/`). |
+| `self` | **canonique** | Ce notebook **est** l'alternative gratuite. Opposé de `null` — ne jamais normaliser vers `null`, ce serait lire 55 réponses positives comme 55 absences de réponse. |
+| `ollama` | **canonique** | Un moteur local gratuit couvre le sujet. Aucun chemin du dépôt ne l'exprime. |
+| `n/a` | toléré | Synonyme de `null`. Traité à l'identique par le checker ; pas de migration (coût non nul, gain nul). |
+| `null` | forme nominale | Aucune alternative gratuite connue. |
+| **service payant** (`openai`, `anthropic`, `replicate`, …) | **erreur** | C'est précisément le service dont on cherche à s'affranchir. Flaggé `free_alternative_is_paid_service` (MAJOR). |
+| autre valeur non-chemin | **erreur** | Ne résout vers rien que le lecteur puisse suivre. Flaggé `free_alternative_unresolvable` (MINOR). |
+
+Un **basename nu** (`10_LocalLlama.ipynb`) est un chemin imprécis, pas un sentinel : le lecteur ne peut pas le suivre et la dual-base ne le résout pas. Le checker ne le résout **pas** par `glob` sur l'arbre — ça ferait taire le finding sans corriger la référence, et deviendrait ambigu au premier basename partagé. **On répare la donnée, pas le détecteur.**
+
+Implémentation : `scripts/audit/check_cost_metadata.py`, litmus 4.
+
 ## Peuplement pilote (cycle c.794)
 
 5 familles × 2 notebooks = 10 entrées de référence (échantillon ≥5%/famille, conforme protocole #8052).
@@ -142,7 +310,7 @@ cost:
   free_alternative: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb
   reproducibility: MED         # Pas de seed déterministe côté OpenAI
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill         # Exécuté via Papermill local + OpenAI API
 ```
 
@@ -161,7 +329,7 @@ cost:
   free_alternative: GenAI/Image/02-Advanced/02-1-Qwen-Image-Edit-2509.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reproducibility: HIGH        # torch.manual_seed(42) + déterminisme sampler
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: sk_visual         # sk-agent vision check sur figures rendues
 ```
 
@@ -181,7 +349,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH        # Variational message passing déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill         # .NET Interactive local (cf L532 MEMORY : strip probeAddresses banner post-re-exec)
 ```
 
@@ -199,7 +367,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: lean_build        # `lake build` SUCCESS + Lean REPL via sk-agent
 ```
 
@@ -219,7 +387,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: Probas/Probas-PyMC/PyMC-0-PyMC-Setup-Lightweight.ipynb
   reproducibility: HIGH        # `pm.sample(seed=42, cores=1)` déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill
 ```
 
@@ -239,9 +407,61 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH        # ML.NET seed déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill
 ```
+
+### .NET Interactive (profil canonique, cpu-only)
+
+Un notebook **.NET Interactive** (kernel `.net-csharp` / `.net-fsharp`) sans
+appel API n'a **pas le profil** d'un notebook Python appelant OpenAI. Le profil
+canonique ci-dessous est celui à appliquer aux familles .NET cpu-only pures
+(Sudoku solveurs, Search CSP, GameTheory twins C#) — il diffère du profil
+Python+API sur trois points : `validator`, `vram_tier`, `free_alternative`.
+
+```yaml
+# Profil canonique .NET Interactive cpu-only (ex: Sudoku solveur, Search CSP)
+cost:
+  api_usd_est: 0.0
+  api_provider: none
+  cpu_min: 1
+  gpu_min: 0
+  gpu_required: false
+  vram_gb: 0
+  vram_tier: NONE              # cpu-only — c.888 canonical (PAS LITE)
+  network: false
+  external_account: none
+  free_alternative: self       # le notebook local sans API EST son alternative gratuite
+  reduced_pedagogical: null
+  reproducibility: HIGH        # solveurs .NET déterministes (MEDIUM si stochastique)
+  metadata_written: "2026-07-28T15:45Z"   # UTC obligatoire (cf leçon TZ : jamais local+Z)
+  validator: manual
+```
+
+**`validator: manual` est la valeur canonique pour .NET.** Le kernel
+`.net-csharp` s'exécute via `dotnet-interactive` headless local, **pas** via
+papermill (qui ne pilote pas les kernels .NET Interactive par défaut). Écrire
+`validator: papermill` suggère une validation automatisée absente — `manual`
+est honnête : la re-exécution se fait via `dotnet-interactive` sur chaque
+machine worker (cf `docs/reference/kernels-runtime.md`), le résultat est vérifié
+à la main. La CI ne peut pas Papermill-exécuter les notebooks .NET (advisory
+`#5214`) — `manual` reflète cette réalité.
+
+**`vram_tier: NONE` pour cpu-only** (leçon c.888) : un notebook sans GPU doit
+porter `NONE`, pas `LITE`. `LITE` décrit un besoin VRAM faible mais **réel**
+(< 8 GB) ; un notebook cpu-only n'a **aucun** besoin VRAM. La table générale
+« <8=LITE » s'applique aux notebooks GPU à faible VRAM, pas au cpu-only.
+
+**`free_alternative: self`** : un notebook .NET local sans API payante **EST**
+déjà gratuit — le sentinel `self` le dit (`null` signifierait à tort « aucune
+alternative gratuite connue », cf §"Sentinels de `free_alternative`").
+
+> **Note d'harmonisation (hors scope de ce PR).** Les profils historiques
+> `Probas/Infer.NET` et `ML/ML.NET` ci-dessus portent `validator: papermill` et
+> omettent `vram_tier: NONE`/`free_alternative: self`. Ils ont été migrés avant
+> la formalisation de ce profil canonique. Leur harmonisation vers
+> `validator: manual` se fait en tranche dédiée (pas un blanket-sweep — chaque
+> notebook vérifié `api_provider: none` au passage).
 
 ### QC / QuantConnect (Cloud obligatoire)
 
@@ -250,6 +470,7 @@ cost:
 cost:
   api_usd_est: 0.0             # QC Cloud = pas de coût API par backtest (free tier)
   api_provider: qc_cloud
+  qcc_tokens_est: 840          # ~70 QCC/cellule code (cf §"Coût QCC / QuantConnect")
   cpu_min: 0
   gpu_min: 0
   gpu_required: false
@@ -259,9 +480,26 @@ cost:
   free_alternative: null       # Pas d'alternative locale (QuantBook = QC uniquement)
   reduced_pedagogical: QuantConnect/projects/research-research-only.ipynb
   reproducibility: MED         # Walk-forward OOS reproductible, single-run backtest stochastique
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: qc_cloud          # MCP qc-mcp-lite create_backtest + read_backtest
 ```
+
+#### Coût QCC / QuantConnect — pourquoi un champ dédié
+
+QuantConnect Cloud facture l'exécution des quantbooks en **QCC tokens** (QuantConnect
+Compute), une monnaie de quota propre au cloud QC — **non convertible en USD** et
+**non gratuite** au-delà du free tier. Le champ `api_usd_est: 0.0` est donc
+techniquement correct (pas de coût API *en USD*) mais **trompeur** sans
+`qcc_tokens_est` : il présente le quantbook comme « gratuit » alors qu'il consomme
+du quota QCC. `qcc_tokens_est` ferme ce gap en exposant le coût réel en quota QC.
+
+**Estimation** (acceptance [#8056](https://github.com/jsboige/CoursIA/issues/8056) :
+« sessions QuantConnect ≈ 800-1200 QCC tokens pour un notebook de 14 cellules ») :
+heuristic dérivable **~70 QCC par cellule code**, plancher `max(400, n_code_cells × 70)`.
+C'est une **estimation** (le suffixe `_est` l'atteste), pas une mesure — ré-estimer
+après une exécution QC Cloud réelle (`read_backtest` retourne le QCC consommé). Le
+litmus correspondant dans `check_cost_metadata.py` signale tout quantbook
+(`QuantBook()` détecté) dont `qcc_tokens_est` est absent ou `0`.
 
 ### GenAI/Image GPU lourd (référence HIGH tier)
 
@@ -280,7 +518,7 @@ cost:
   free_alternative: GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reproducibility: HIGH
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: sk_visual
 ```
 
@@ -300,7 +538,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: MED         # Sharpe 0.333 / CAGR 4.589% / MaxDD 14.100% (#8064)
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: qc_cloud
 ```
 
@@ -320,7 +558,7 @@ cost:
   free_alternative: IIT/4-Subsystem-IIT.ipynb
   reduced_pedagogical: IIT/0-PyPhi-Setup-Lightweight.ipynb
   reproducibility: HIGH        # PyPhi seed + ground truth MIP
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: papermill
 ```
 
@@ -340,7 +578,7 @@ cost:
   free_alternative: null
   reduced_pedagogical: null
   reproducibility: HIGH        # Lean 4 type-check déterministe
-  last_validated: 2026-07-23T01:30Z
+  metadata_written: 2026-07-23T01:30Z
   validator: lean_build
 ```
 
@@ -354,8 +592,11 @@ Le script `extract_claims_vs_outputs.py` (livré par [PR #8068 / cycle c.793](ht
 | `metadata.cost.api_usd_est: 0.0` mais cellule appelle `openai.ChatCompletion.create()` | CRITICAL |
 | `metadata.cost.external_account: none` mais cellule demande `HF_TOKEN` | MAJOR |
 | `metadata.cost.free_alternative` pointe vers un notebook inexistant | MAJOR |
+| `metadata.cost.free_alternative` nomme un **service payant** (`openai`, `anthropic`, …) | MAJOR |
+| `metadata.cost.free_alternative` : valeur ni sentinel canonique ni chemin | MINOR |
 | Notebook QC sans `qc_cloud` validator | MAJOR |
 | Notebook GPU sans `sk_visual` validator (cf #5780 sweep) | MINOR |
+| `metadata.cost.validator` affirme une exécution mais des cellules code portent `execution_count: null` (Litmus 9) | MAJOR |
 
 Ces extensions restent **hors scope c.794** (à dispatcher cycles c.795+) — la grille est volontairement extensible.
 

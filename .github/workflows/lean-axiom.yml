@@ -1,0 +1,403 @@
+name: Lean Axiom Check (reusable)
+
+# Reusable Level 3 axiom-check CI for any Lean project in the repo.
+# Closes #8677 criterion 4 (criterion B.3 of pr-review-discipline:
+# "Proof integrity SUCCESS"). The Python helper `LeanVerifier.check_axioms`
+# was wired in #8680 (sorryAx policy + per-declaration `#print axioms`).
+# This workflow is the *câblage CI* on the lake side: opt-in per lake,
+# caller pattern below.
+#
+# The check is NOT a build run — we assume `lean-build.yml` already ran
+# successfully upstream. We just need the lake project cached and the
+# toolchain present, so we run the same setup steps. If `lake build`
+# fails, the `#print axioms` step will too, and the job will exit 1 with
+# the lake error in the logs.
+#
+# Callers invoke this via:
+#   jobs:
+#     proof-integrity:
+#       uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+#       with:
+#         project-path:   MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+#         display-name:   knot_lean
+#         target-modules: "Knots.Basic,Knots.Conway,Knots.Invariant,Knots.Reidemeister,Knots.Lidman"
+#         allow-axioms:   "propext,funext,Quot.lift,Quot.mk,Quot.sound,Classical.choice"
+#
+# Output:
+# - On success: prints "OK: no forbidden axioms" plus a per-declaration
+#   summary (declaration -> axioms list) for review traceability.
+# - On failure: prints the forbidden axioms with the declarations that
+#   pulled them in, then exits 1. The PR review rule B.3 is satisfied by
+#   quoting the relevant block from this log.
+
+on:
+  workflow_call:
+    inputs:
+      project-path:
+        description: "Repo-relative path to the lake project root"
+        type: string
+        required: true
+      display-name:
+        description: "Human-readable project name (for job labels)"
+        type: string
+        required: true
+      target-modules:
+        description: "Comma-separated dotted module names to check (e.g. 'Knots.Basic,Knots.Conway'). Per-module, theorem/lemma/def/axiom/instance/structure/inductive decls are enumerated from the source file. May also be '*' (issue #10889): the module list is then derived at runtime by walking every *.lean under project-path (minus .lake/, .git, node_modules, .venv, lakefile*, lean-toolchain) -- exactly what `lake build` compiles -- so the gate cannot drift out of view of newly added modules."
+        type: string
+        required: true
+      include-i18n-siblings:
+        description: "When `target-modules: \"*\"`, whether the runtime derivation keeps `_en` i18n siblings (any path segment -- dir or stem -- ending in `_en`). Default 'false' excludes them, matching the FR-only measurement of #10889; a caller that wants the full bilingual surface opts in. Ignored when target-modules is an explicit list."
+        type: string
+        default: "false"
+      allow-axioms:
+        description: "Comma-separated additional axioms to whitelist beyond the defaults (propext, funext, Classical.choice, Quot.lift, Quot.mk, Quot.sound). Use sparingly — adding an axiom to this list is an explicit acknowledgement that the project's proofs may depend on it."
+        type: string
+        default: ""
+      fail-on-sorry:
+        description: >-
+          Whether a transitive `sorryAx` fails the run. Leave at `true` for a
+          lake whose proofs are meant to be complete. Set to `false` for a lake
+          with acknowledged open `sorry`s: the job then still hard-fails on
+          forbidden axioms, and reports `has_sorry` per module without gating
+          on it. This is an honesty knob, not a leniency one — a gate that can
+          never go green teaches reviewers to ignore it, which is the exact
+          mirror of a gate that can never go red.
+        type: boolean
+        default: true
+
+# A reusable workflow cannot request more than its caller grants. #8951 gave the
+# callers (lean-conway.yml, lean-knot.yml) `permissions: {contents: read}`, which
+# implicitly sets pull-requests to none -- so this block's `pull-requests: write`
+# became unsatisfiable and both callers died at startup, gate included. The grant
+# was dead anyway (this file posts no comment, runs no `gh`, no github-script:
+# grep-verified), exactly like the one #8951 removed from lean-build.yml. Dropping
+# it completes that hardening instead of contradicting it. See #8949.
+permissions:
+  contents: read
+
+jobs:
+  axiom-check:
+    name: "Proof integrity (${{ inputs.display-name }})"
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install elan
+      run: |
+        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+        ./elan-init -y --default-toolchain none
+        echo "$HOME/.elan/bin" >> $GITHUB_PATH
+
+    - name: Cache Lake build artifacts
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.project-path }}/.lake
+        key: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
+        restore-keys: lake-${{ inputs.display-name }}-axiom-${{ runner.os }}-
+
+    - name: Add swap space
+      # Same OOM guard as lean-build.yml (see the comment there): a cache-miss
+      # build of a large local module (conway_lean HashlifeCorrectness.lean)
+      # exceeds the 16 GB of hosted runners and the VM is torn down with exit 143.
+      # This workflow rebuilds the lake too (its cache key differs from
+      # lean-build's, so it can miss independently) — observed on PR #9798 where
+      # BOTH proof-integrity jobs died at exit 143 alongside the build job.
+      # 16 G -> 32 G (2026-08-07, PR #9840): teardown recurred with the swap step
+      # green, and the peak is inside a SINGLE module — see the long note in
+      # lean-build.yml for the measurements.
+      run: |
+        df -h /mnt
+        sudo fallocate -l 32G /mnt/lean-swap
+        sudo chmod 600 /mnt/lean-swap
+        sudo mkswap /mnt/lean-swap
+        sudo swapon /mnt/lean-swap
+        free -h
+
+    - name: Lake build
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        set -o pipefail   # propagate lake's exit code through the pipeline (FAILED must
+                          # exit != 0; See incident conway_lean HashlifeCorrectness L1058, 2026-06-14).
+        lake exe cache get || true
+        # On failure, surface the error lines the `tail` window loses (See #8915).
+        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -10; then
+          :
+        else
+          rc=$?
+          echo "::group::Error lines from the full lake log (See #8915)"
+          grep -nE "^error:|\.lean:[0-9]+:[0-9]+: (error|warning)" "$RUNNER_TEMP/lake.log" | head -100 || true
+          echo "::endgroup::"
+          exit "$rc"
+        fi
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.13"
+
+    # No `working-directory:` here, and no `cd`, on purpose. Both paths are
+    # derived from the environment below. A `working-directory:` on this step
+    # is silently cancelled by any `cd` inside `run:`, which is exactly the
+    # defect this replaces: the step declared the lake root, the `run` block
+    # then moved to `$GITHUB_WORKSPACE`, and the check ran against the repo
+    # root where no lake exists. `lake build` (which has a correct
+    # `working-directory` and no `cd`) succeeded, so the job looked like an
+    # axiom violation while it was really a "no lake here" error. See #8712.
+    - name: Run axiom check
+      env:
+        MODULES: ${{ inputs.target-modules }}
+        ALLOW: ${{ inputs.allow-axioms }}
+        DISPLAY_NAME: ${{ inputs.display-name }}
+        PROJECT_PATH: ${{ inputs.project-path }}
+        FAIL_ON_SORRY: ${{ inputs.fail-on-sorry }}
+        INCLUDE_I18N_SIBLINGS: ${{ inputs.include-i18n-siblings }}
+      run: |
+        set -eu
+        python - <<'PY'
+        import os
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        # Both roots come from the environment, never from the cwd: the cwd of
+        # this step is an implementation detail of the runner, and depending on
+        # it is what broke the gate on its first real run (#8712).
+        repo_root = Path(os.environ["GITHUB_WORKSPACE"]).resolve()
+        if not (repo_root / "MyIA.AI.Notebooks").exists():
+            sys.exit(f"repo root has no MyIA.AI.Notebooks/: {repo_root}")
+        sys.path.insert(0, str(repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "agent_tests"))
+
+        from lean_server import LeanVerifier  # noqa: E402
+
+        # `axiom_lookup_anomalies` is the complement filter for the
+        # build_failed_returncode_* path (#10486, ai-01 c.1044). It returns the
+        # lines of raw_output that are NOT healthy `#print axioms` verdicts --
+        # i.e. the actual error (unknown constant, type error) wherever it sits
+        # in the stream. select_diagnostic_lines misses `unknown constant`
+        # (no `error:` prefix) and falls back to a tail slice, which on a batch
+        # of 537 commands shows twenty healthy verdicts and hides the cause.
+        # Same version-skew fallback as above: degrade to the tail slice, never
+        # crash the gate on an ImportError from an older caller checkout.
+        try:
+            from lean_server import axiom_lookup_anomalies  # noqa: E402
+        except ImportError:
+            def axiom_lookup_anomalies(raw_output, limit=50):
+                lines = (raw_output or "").strip().splitlines()
+                return lines[-20:]
+
+        # `target-modules: "*"` (issue #10889): derive the module list at
+        # runtime instead of trusting a hand-maintained caller list that drifts
+        # out of sync with the lake (26 modules were out of view on 4 lakes).
+        # discover_modules walks exactly what `lake build` compiles -- every
+        # `*.lean` under the project root minus `.lake/`, `.git`, `node_modules`,
+        # `.venv`, `lakefile*` and `lean-toolchain`. Its imports are stdlib-only
+        # (no PyYAML here), so importing it into this step is safe.
+        project_path = (repo_root / os.environ["PROJECT_PATH"]).resolve()
+        if not project_path.is_dir():
+            sys.exit(f"lake project path does not exist: {project_path}")
+
+        modules_raw = os.environ["MODULES"].strip()
+        if modules_raw == "*":
+            sys.path.insert(0, str(repo_root / "scripts" / "lean"))
+            from check_target_coverage import (  # noqa: E402
+                discover_modules,
+                filter_i18n_siblings,
+            )
+
+            modules = sorted(discover_modules(project_path, None))
+            # i18n `_en` siblings are excluded by default: any path SEGMENT
+            # ending in `_en` (dir or stem -- e.g. `Conway/Life_en.lean`), not
+            # only a root-level stem. Mirrors the FR-only measurement of #10889;
+            # a caller that wants the full bilingual surface opts in via
+            # `include-i18n-siblings: "true"`. The filter lives in the script
+            # (unit-tested) so the gate never carries a second copy of the rule.
+            if os.environ.get("INCLUDE_I18N_SIBLINGS", "false").strip().lower() != "true":
+                modules = sorted(filter_i18n_siblings(modules))
+            if not modules:
+                sys.exit("target-modules='*' enumerated no modules under "
+                         f"{project_path} (no .lean outside .lake/?). "
+                         "A gate that inspects nothing must fail, not pass silently.")
+        else:
+            modules = [m.strip() for m in modules_raw.split(",") if m.strip()]
+        allow = [a.strip() for a in os.environ.get("ALLOW", "").split(",") if a.strip()]
+        display_name = os.environ["DISPLAY_NAME"]
+
+        fail_on_sorry = os.environ.get("FAIL_ON_SORRY", "true").strip().lower() == "true"
+
+        verifier = LeanVerifier()
+        verifier.project_dir = str(project_path)
+
+        all_clean = True
+        sorry_modules = []
+        zero_decl_design = []   # modules that legitimately declare nothing (root aggregators)
+        total_enumerated = 0    # lake-level non-vacuity (Gesture 2, ai-01 c.84)
+        print(f"=== Proof integrity axiom check ({display_name}) ===")
+        print(f"Project: {project_path}")
+        print(f"Gate on sorry: {'yes' if fail_on_sorry else 'no (reported, not gated)'}")
+        print(f"Modules: {modules}")
+        print(f"Additional allow-list: {allow if allow else '(none)'}")
+        print()
+        for mod in modules:
+            print(f"--- Module {mod} ---")
+            result = verifier.check_axioms(
+                mod,
+                whitelist=[
+                    "Classical.choice",
+                    "propext",
+                    "funext",
+                    "Quot.lift",
+                    "Quot.mk",
+                    "Quot.sound",
+                    *allow,
+                ],
+                fail_on_sorry=fail_on_sorry,
+                # The post-#8680 default is False (prover path), right for the
+                # agent harness which tracks sorries via `has_sorry` separately.
+                # A CI gate wants True by default so a transitive sorryAx fails
+                # the run -- but a lake with acknowledged open sorries opts out
+                # via `fail-on-sorry: false` rather than staying permanently red.
+            )
+            n_decls = len(result["declarations"])
+            total_enumerated += n_decls
+            print(f"  declarations: {n_decls} enumerated")
+            # Criterion 1 (#8782): render WHICH declarations were audited, not
+            # only the count. A bare count hides both directions of the blind
+            # spot -- a module that enumerated zero decls (a gate that inspected
+            # nothing, "non applicable") AND a sorry-bearing module whose only
+            # public anchor reaching the proof front is buried among hundreds.
+            # Naming the audited decls lets a reviewer see, e.g.,
+            # `hashlifeResult_central_correct` in the list and trust that the
+            # private sorry chain behind it was reached transitively. Sample-
+            # bounded (head + tail) so a large module does not flood the log.
+            decls = result["declarations"]
+            if decls:
+                sample = decls[:12]
+                tail = decls[-3:] if len(decls) > 15 else []
+                parts = [", ".join(sample)]
+                if len(decls) > 12:
+                    omitted = len(decls) - 12 - (len(tail) if tail else 0)
+                    parts.append(f" ... (+{omitted} more)" if not tail
+                                 else f" ... (+{omitted} more) ... {', '.join(tail)}")
+                print(f"  enumerated decls: {''.join(parts)}")
+            else:
+                print(f"  enumerated decls: (none -- module is 'non applicable', "
+                      f"a gate that inspected nothing)")
+            # On the build_failed_returncode_* path, check_axioms reads the
+            # returncode BEFORE parsing (lean_server.py:760), so axioms are
+            # NEVER collected -- `axioms: []` / `forbidden: []` /
+            # `has_sorry: False` are the path's hardcoded defaults, not
+            # measurements. Printing them bare made a dead build read as
+            # "no forbidden axioms, no sorry" (ai-01 c.1044 on #10486: the gate
+            # said "couldn't measure", not "clean despite flake"). Say so.
+            if result.get("error"):
+                print(f"  axioms: (non mesuré -- échec de lookup, see error below)")
+                print(f"  forbidden: (non mesuré -- échec de lookup)")
+                print(f"  has_sorry: (non mesuré -- échec de lookup)")
+            else:
+                print(f"  axioms: {result['axioms']}")
+                print(f"  forbidden: {result['forbidden']}")
+                print(f"  has_sorry: {result['has_sorry']}")
+            # `error` is the ONLY field that separates "the lake did not build /
+            # was not found" from "a forbidden axiom was reached". Omitting it
+            # made a dead build indistinguishable from a real violation in the
+            # logs, and cost a full misattribution on #8712 -- the summary
+            # blamed forbidden axioms while `forbidden` was empty.
+            if result.get("error"):
+                print(f"  error: {result['error']}")
+                # `error` names the class of failure; `raw_output` names the
+                # cause. Without it, "build_failed_returncode_1" sends you to a
+                # local reproduction to learn what any CI log already had.
+                #
+                # Print the COMPLEMENT of the healthy form (ai-01 c.1044 on
+                # #10486): any non-blank line of raw_output that is NOT a
+                # `'decl' depends on axioms: [...]` / `does not depend on any
+                # axioms` verdict. On a healthy run this prints nothing. On a
+                # failed run it prints the cause (`unknown constant`, type
+                # error) wherever it sits in the stream -- bulletproof by
+                # position, unlike select_diagnostic_lines which matches the
+                # `error:` marker that an `unknown constant` lacks and then
+                # falls back to a tail slice. On #10486 (galois_lean, 537
+                # declarations) the tail was twenty healthy verdicts and the
+                # cause sat near the top, invisible.
+                anomalies = axiom_lookup_anomalies(result.get("raw_output") or "")
+                if anomalies:
+                    print(f"    | non-verdict lines in raw_output ({len(anomalies)} shown):")
+                    for line in anomalies:
+                        print(f"    | {line}")
+                else:
+                    print("    | (no non-verdict lines -- raw_output is all healthy"
+                          " axioms verdicts; failure left no trace in this capture)")
+            if result["has_sorry"]:
+                sorry_modules.append(mod)
+
+            module_ok = result["success"]
+
+            # Discriminate the two causes of a zero enumeration (ai-01 c.84,
+            # #9446 CHANGES_REQUESTED). `lean_server.check_axioms` already
+            # classifies the empty case via `empty_reason`
+            # (`_classify_empty_enumeration`); only `declaration_free_module` is
+            # a pass -- every other reason (source_not_found,
+            # all_private_declarations, sorry_without_declaration,
+            # no_declarations_enumerated) is a gap where the gate inspected
+            # nothing and MUST fail loud, independently of the sorry policy
+            # (that is why we assert here and not only inside `check_axioms`:
+            # `fail_on_sorry` doubles as the "no declarations" guard there, so a
+            # false would otherwise silence a parse gap and yield a gate that
+            # can never go red). The previous `n_decls == 0 -> FAIL` conflated
+            # the two and red-flagged root aggregators (Grothendieck,
+            # .DirectImage, .MathlibMap, .SchemesTour) that the lake built and
+            # parsed clean but legitimately declare nothing. Vacuity moves to
+            # lake level (below) so a lake whose EVERY module is zero-decl is
+            # still caught without an exclusion list (ai-01: a list rots and
+            # does not scale to 20 lakes).
+            empty_reason = result.get("empty_reason")
+            if n_decls == 0 and empty_reason != "declaration_free_module":
+                module_ok = False
+                print(f"  FAIL: no declarations enumerated -- source gap "
+                      f"(empty_reason={empty_reason})")
+            elif n_decls == 0:
+                zero_decl_design.append(mod)
+                print(f"  NOTE: declaration-free by design "
+                      f"(empty_reason={empty_reason}) -- non-fatal; "
+                      f"vacuity guarded at lake level")
+
+            if not module_ok:
+                all_clean = False
+                print(f"  FAIL")
+            else:
+                print(f"  OK")
+
+        # Gesture 2 (ai-01 c.84): non-vacuity at LAKE level. A gate whose
+        # every module enumerated zero declarations inspected nothing. Asserting
+        # this once at lake level catches that without false-positiving on
+        # individual root aggregators (handled above via empty_reason). Neutre
+        # for lean-knot.yml / lean-conway.yml: none of their target modules
+        # enumerate zero.
+        if total_enumerated == 0:
+            all_clean = False
+            print(f"FAIL: lake-level non-vacuity -- all {len(modules)} "
+                  f"module(s) enumerated zero declarations (the gate inspected "
+                  f"nothing; check target-modules / module resolution).")
+
+        print()
+        if zero_decl_design:
+            print(f"NOTE: {len(zero_decl_design)} module(s) declaration-free by "
+                  f"design (non-fatal): {', '.join(zero_decl_design)}")
+        if sorry_modules and not fail_on_sorry:
+            print(f"NOTE: sorry present in {', '.join(sorry_modules)} "
+                  f"(reported, not gated -- fail-on-sorry is false for this lake).")
+        if all_clean:
+            print("OK: no forbidden axioms"
+                  + (" (sorryAx caught transitively if any)." if fail_on_sorry else "."))
+        else:
+            # Say what actually failed. A fixed "forbidden axioms detected."
+            # line is a lie whenever the cause was a build/lookup error, and a
+            # gate that misreports its own cause is worse than no gate.
+            print("FAIL: see per-module breakdown above "
+                  "(`error:` for build/lookup failures, "
+                  "`empty_reason` != declaration_free_module for a source gap, "
+                  "lake-level non-vacuity if every module enumerated zero, "
+                  "`forbidden:` for axiom violations"
+                  + (", `has_sorry:` for sorryAx)." if fail_on_sorry else ")."))
+            sys.exit(1)
+        PY

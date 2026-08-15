@@ -83,7 +83,7 @@ python scripts/series_progress_manager.py report search-part1-foundations
 - JAMAIS lancer papermill ou ipython directement sans passer par les scripts
 
 ### Git / Workflow
-- Jamais `git push --force` sans approbation explicite
+- `git push --force` : jamais sur `main` ; autorise sur une branche de PR qu'une seule lane manipule (`--force-with-lease`, alternative merge d'abord) — cf `.claude/rules/git-workflow.md`
 - Committer les enrichissements separement des outputs d'execution
 - Preferer `git add <fichiers specifiques>` a `git add -A`
 

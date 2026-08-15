@@ -48,6 +48,11 @@
   <ItemGroup>
     <Compile Remove="QuantConnect\**\*.cs" />
     <Compile Remove="ML\ML.Net\Infer.NETCacheHelper.cs" />
+    <!-- Nested standalone sub-projects (own .csproj): excluded from the
+         parent glob so they do not break MyIA.AI.Notebooks.dll (precedent:
+         QuantConnect exclusion above). OwlAdapter/GSheetSync/DatasetUpdater
+         were added in #5167 without this guard. -->
+    <Compile Remove="SymbolicAI\Argument_Analysis\CoursIA-*\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

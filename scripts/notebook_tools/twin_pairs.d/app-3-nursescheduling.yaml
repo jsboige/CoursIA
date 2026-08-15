@@ -1,0 +1,34 @@
+- name: App-3 NurseScheduling
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-3-NurseScheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-3b-NurseScheduling-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `ortools` PyPI (Google, Apache-2.0, CP-SAT solver SOTA-tier : `from ortools.sat.python import cp_model` + `CpModel()` + variables shift[i][nurse][day] + `AddAllDifferent` sur shift par jour + `solver.Solve()`). C# = `Google.OrTools` NuGet (Google, Apache-2.0, meme solver CP-SAT natif : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;` + `CpModel()` + variables shift[i][nurse][day] + `AddAllDifferent` + `solver.Solve()`). Verdict SOTA-OK (modele owner PR #10396 MERGED 2026-08-11 tranche 2 lib-vs-lib) : les DEUX cotes utilisent LE MEME solveur Google OR-Tools CP-SAT natif, modelisation Nurse Scheduling (variables 3D, contraintes all-different sur les shifts quotidiens, optimisation multi-objectifs nurse preferences / fairness), bridge direct sans glue. Substantive parite : les outputs (planning par nurse/jour/shift, total cost) sont bit-compatibles, le solveur EST le meme moteur C++."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 3ac0cea2b314a0dadb0429f451a8a3a458c9a97e
+      csharp_sha: 52f7b50aa5d1f9553673ecce518df546dd4c1f93
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 9dccc85f12b400cdef4b3186016abcda10dffd0b
+      csharp_sha: 52f7b50aa5d1f9553673ecce518df546dd4c1f93
+      content_python_sha: b5cbd82694075843973d66e038023af6e204eb2c5ed5e46c8bdcaeec4f188ed6
+      content_csharp_sha: c67f15539798cbcd5300e1b720a38a8b768191fb6ada5ba7ccf5f6936401a3d0
+    - date: "2026-08-11"
+      by: myia-po-2025:CoursIA
+      python_sha: 9dccc85f12b400cdef4b3186016abcda10dffd0b
+      csharp_sha: 7b105336ba11fb4be0ae1c52458f068c3a051189
+      content_python_sha: b5cbd82694075843973d66e038023af6e204eb2c5ed5e46c8bdcaeec4f188ed6
+      content_csharp_sha: 7e7fad00ffe3c2fef8fe1c69973fee44dc25ab73f4516a5e859dc7fe8b44ea14
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 41bc0a0422aebd4755248f8b2ede55768cc8e12e
+      csharp_sha: 0c87ad9cb73305b451561926d7ab5d73912bc164
+      content_python_sha: 0c8ebf864862b404c4778b3068466c8555f992c70de918586e3697db059dd256
+      content_csharp_sha: 02d4e6836d90fcd7c8c08f4870b9a95f35e6fd698b00918ba315afaccf5df1ff
+  known_differences:
+    - "Bibliotheque vs from-scratch puis lib-vs-lib : Python invoque OR-Tools CP-SAT (cp_model, 105 booleens x[n][d][s] + contraintes add(...), model.minimize pour les preferences) comme solveur SOTA. C# = deux tranches -- Tranche 1 (sections 2-5) reimplementation from-scratch pedagogique (3 solveurs : glouton, backtracking, Min-Conflicts, en BCL pure System.* 0 NuGet) PRESERVEE integralement ; Tranche 2 (PR #10382 cycle 13) ajoute Google.OrTools 9.15 (.NET natif, deja en service dans Sudoku-10/18, App-8, App-15b, App-1) avec le MEME modele canonique CP-SAT que le Python (4 contraintes C1-C4 : couverture Sum==demand, unicite Sum<=1, repos Nuit->Matin, charge max <= 5, sur 105 booleens x[n][d][s]) sur la MEME instance (5 infirmiers x 7 jours x 3 shifts). parite verifiee : status=Optimal (= Python OPTIMAL 30ms), 21/21 shifts assignes, charge [5,5,4,3,4] toutes <= 5. parity_level=native-both (Python/ortools ET C#/Google.OrTools atteignent chacun le moteur de production CP-SAT de leur ecosysteme)."
+    - "Asymetrie de couverture : Python (matplotlib gantt + experimentation a grande echelle avec courbe de convergence CP-SAT + search_helpers) ; C# (27 cellules : 3 solveurs from-scratch Tranche 1 + pont CP-SAT Tranche 2 + 3 exercices + visualisation ASCII). La visualisation matplotlib et le benchmark a grande echelle restent propres au Python ; la parite porte sur le solveur SOTA (CP-SAT) et le socle theorique (C1-C4)."
+    - "Idiomes framework : Python = OR-Tools CP-SAT (cp_model.CpModel, model.add, solver.parameters.max_time_in_seconds, model.minimize) ; C# = Google.OrTools.Sat (CpModel, model.Add(LinearExpr.Sum(...)), solver.StringParameters='max_time_in_seconds:N') + from-scratch System.*. Meme socle theorique (Nurse Rostering CSP, 4 familles de contraintes C1-C4, variables booleennes x[n][d][s]). Le C# valorise la reimplementation pedagogique (Tranche 1) ET l'invocation du moteur SOTA (Tranche 2)."

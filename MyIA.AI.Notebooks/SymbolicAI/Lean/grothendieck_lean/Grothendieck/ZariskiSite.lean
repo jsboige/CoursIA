@@ -24,6 +24,8 @@ bloc d'en-tête diffèrent entre les deux fichiers.
 
 import Mathlib.AlgebraicGeometry.Sites.BigZariski
 
+universe v u
+
 namespace Grothendieck
 
 open AlgebraicGeometry CategoryTheory
@@ -89,5 +91,49 @@ recouvrement de Zariski par forget est un crible de recouvrement dans TopCat.
 example : Scheme.forgetToTop.IsContinuous
     Scheme.zariskiTopology TopCat.grothendieckTopology :=
   inferInstance
+
+/-! ## 5. Bridges Mathlib canoniques (hommage Grothendieck)
+
+Ponts vers les 5 constructeurs canoniques de `Mathlib/AlgebraicGeometry/Sites/BigZariski.lean`
+qui étendent le namespace `Grothendieck` avec les opérateurs fondamentaux du site de Zariski :
+(5.1) la prétopologie et la topologie, (5.2) les instances Subcanonical et continuité du foncteur
+d'oubli, (5.3) l'hypercover affine. -/
+
+/-! ### 5.1 Pont-def : la prétopologie et la topologie de Zariski
+
+Le bridge-lemma expose `zariskiPretopology` (la prétopologie sous-jacente) et `zariskiTopology`
+(la topologie de Grothendieck dérivée) directement sous `Grothendieck.Scheme`. -/
+
+/-- Pont-def : re-export de la prétopologie de Zariski sur la catégorie des schémas. -/
+def zariskiPretopology_field : Pretopology Scheme.{u} :=
+  Scheme.zariskiPretopology
+
+/-- Pont-def : re-export de la topologie de Zariski (topologie de Grothendieck dérivée). -/
+abbrev zariskiTopology_field : GrothendieckTopology Scheme.{u} :=
+  Scheme.zariskiTopology
+
+/-! ### 5.2 Pont-instance : Zariski sous-canonique et foncteur d'oubli continu
+
+L'instance Subcanonical sur la topologie de Zariski (cf. Subcanonical.lean Partie 16) et
+l'instance de continuité du foncteur d'oubli vers TopCat. -/
+
+/-- Pont-instance : la topologie de Zariski est sous-canonique. -/
+instance subcanonical_zariskiTopology_field : Scheme.zariskiTopology.Subcanonical :=
+  Scheme.subcanonical_zariskiTopology
+
+/-- Pont-instance : le foncteur d'oubli vers TopCat est continu vis-à-vis de Zariski. -/
+instance forgetToTop_continuous_zariskiTopology :
+    Scheme.forgetToTop.IsContinuous Scheme.zariskiTopology TopCat.grothendieckTopology :=
+  inferInstance
+
+/-! ### 5.3 Pont-def : hypercover affine (1-hypercover)
+
+Pour tout schéma X, le 1-hypercover de Zariski dont tous les composantes sont affines.
+C'est l'outil de base pour la cohomologie de Zariski. -/
+
+/-- Pont-def : 1-hypercover de Zariski dont toutes les composantes sont affines. -/
+noncomputable def affineOneHypercover_field (X : Scheme.{u}) :
+    Scheme.zariskiTopology.OneHypercover X :=
+  Scheme.affineOneHypercover X
 
 end Grothendieck

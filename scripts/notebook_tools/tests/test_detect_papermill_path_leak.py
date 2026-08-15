@@ -393,6 +393,17 @@ class ScanTreeTests(unittest.TestCase):
             found = iter_notebooks(root)
             self.assertEqual([p.name for p in found], ["a.ipynb"])
 
+    def test_iter_notebooks_parent_in_skipdir_not_silenced(self):
+        """#8858-class: a repo cloned UNDER a SKIP_DIR-name parent (e.g.
+        ``_archives/repo/``) must NOT be totally silenced. Checks parts RELATIVE
+        to root, not absolute ``p.parts``. RED on unfixed code, GREEN after fix."""
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / "_archives" / "repo"  # repo under a SKIP_DIR parent
+            (repo / "good").mkdir(parents=True)
+            (repo / "good" / "leak.ipynb").write_text("{}", encoding="utf-8")
+            found = iter_notebooks(repo.resolve())  # absolute root, as CI passes
+            self.assertEqual([p.name for p in found], ["leak.ipynb"])
+
     def test_iter_notebooks_sorted(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

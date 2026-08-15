@@ -10,7 +10,7 @@
 > manifest and documentation are preserved, but the `lean_lib` is **neutralized** in `lakefile.lean`
 > (its `globs` pointed to moved sources and matched 0 files). The no-sorry certification
 > (`grim_trigger_sustains_iff`, headline theorem) and the Lake build are now carried by
-> `game_theory_lean` via `.github/workflows/lean-repeated-games.yml`.
+> `game_theory_lean` via `.github/workflows/lean-game-theory.yml`.
 >
 > The rest of this README describes the formalizations as they **historically** existed here — the
 > mathematical content (grim-trigger theorem, one-shot deviation principle, threshold δ) remains
@@ -36,7 +36,7 @@ For an infinitely repeated game, discount factor δ ∈ [0,1), real parameters `
 |-----------|-------|-----------|
 | Toolchain | `leanprover/lean4:v4.31.0-rc1` | 18-lake mutualised cohort |
 | Mathlib rev | `d568c8c0` | `#4363` junction shared cache |
-| Total sorry (production) | See [FORMAL_STATUS.md](FORMAL_STATUS.md) | Headline theorem 0 sorry required |
+| Total sorry (production) | See [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/) | Headline theorem 0 sorry required |
 | Total sorry (stretch) | Folk.lean — tolerated | `#4880` § "Critères de fermeture" §1 |
 
 ## Modules

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 20
-breakdown: Texte=20
-maturity: BETA=19, ALPHA=1
+pedagogical_count: 21
+breakdown: Texte=21
+maturity: BETA=19, ALPHA=1, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -95,6 +95,16 @@ Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment
 </p>
 
 Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+
+### Tier 6 : Fine-tuning (Avancé)
+
+Les tiers 1 à 5 exploitent un LLM **tel quel** (prompting, structuration, augmentation, scaling au moment du test). Le notebook 21 franchit le pas suivant : **adapter le modèle lui-même** à une tâche précise sans tout réentraîner. La technique est **LoRA / QLoRA** (Low-Rank Adaptation) : on gèle les poids du modèle de base et on n'entraîne que de petits *adaptateurs* de bas rang — quelques millions de paramètres au lieu de quelques milliards — ce qui tient dans 8 Go de VRAM et évite l'oubli catastrophistique des connaissances pré-entraînées.
+
+Le fil rouge est volontairement discriminant : enseigner au modèle un **format balisé arbitraire** (`[T]Terme[/T][D]Définition[/D][E]Exemple[/E]`) que le modèle de base ne produit **jamais** spontanément. On observe d'abord l'échec du base (prose avec deux-points, balises ignorées), puis on quantifie en 4-bit (NF4 + double quantification, calcul en bf16 via `BitsAndBytesConfig`), on greffe les adaptateurs LoRA avec `peft`, et on entraîne avec `trl` sur un petit jeu d'exemples bien formatés. Le vrai outil SOTA est branché bout en bout (`peft`, `bitsandbytes`, `trl`, `datasets`, `transformers`) — aucun substitut. Ce notebook fait pont avec la série [PostTraining](../PostTraining/README.md) et l'EPIC [#10247](https://github.com/jsboige/CoursIA/issues/10247) (fine-tuning/training). **GPU CUDA requis** (environnement `coursia-ml-training`).
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 21 | `21_LoRA_FineTuning.ipynb` | **QLoRA** (NF4 4-bit + double quant, bf16) sur Qwen2.5-0.5B-Instruct : fil rouge = format balisé `[T]/[D]/[E]` que le base échoue à produire ; adaptateurs LoRA via `peft` + `bitsandbytes` + `trl` + `datasets`, GPU CUDA requis (pont PostTraining / #10247) | 75 min |
 
 ## Prérequis
 

@@ -10,6 +10,11 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib import request, error
+from urllib.parse import urlencode
+
+
+class NetworkError(Exception):
+    """Erreur réseau transitoire (connexion reset, timeout) — retryable."""
 
 
 class ComfyUIConfig:
@@ -104,7 +109,7 @@ class ComfyUIClient:
                 f"HTTP {e.code} Error calling {url}: {e.reason}\nBody: {error_body}"
             )
         except error.URLError as e:
-            raise Exception(f"URL Error calling {url}: {e.reason}")
+            raise NetworkError(f"URL Error calling {url}: {e.reason}") from e
 
     def queue_prompt(self, workflow: Dict[str, Any]) -> str:
         """
@@ -165,19 +170,55 @@ class ComfyUIClient:
         Raises:
             TimeoutError: Si le timeout est dépassé
             Exception: Si l'exécution échoue
+
+        Note:
+            Les erreurs réseau transitoires (NetworkError) sont retentées
+            avec backoff tant que le timeout global le permet.
         """
         start_time = time.time()
+        network_errors = 0
 
         while True:
-            if time.time() - start_time > timeout:
+            elapsed = time.time() - start_time
+            if elapsed > timeout:
                 raise TimeoutError(
                     f"Workflow execution timed out after {timeout}s (prompt_id: {prompt_id})"
                 )
 
-            history = self.get_history(prompt_id)
+            try:
+                history = self.get_history(prompt_id)
+            except NetworkError as e:
+                # Erreur réseau transitoire (connexion reset, timeout) : retenter
+                # avec backoff, sans faire échouer un polling long (ex: premier
+                # téléchargement de modèle qui dure plusieurs minutes).
+                network_errors += 1
+                backoff = min(2 ** min(network_errors, 4), 15)
+                if elapsed + backoff > timeout:
+                    raise TimeoutError(
+                        f"Workflow execution timed out after {timeout}s (prompt_id: {prompt_id}, "
+                        f"network errors: {network_errors})"
+                    ) from e
+                time.sleep(backoff)
+                continue
+            network_errors = 0
 
             if prompt_id in history:
                 result = history[prompt_id]
+
+                # Une exécution échouée porte status.status_str="error" (avec
+                # outputs: {}). Lever ici le vrai message serveur au lieu de
+                # laisser l'appelant lire des outputs vides ("aucun fichier"
+                # trompeur). Mesuré 2026-08-15 : HyVideoSampler rejette les
+                # num_frames non (4k+1) avec status_str="error", outputs: {}.
+                # Legacy workers portent status: "running" (str) ; seul le format
+                # dict {status_str: ...} signale l'echec. isinstance garde les deux.
+                status = result.get("status")
+                if isinstance(status, dict) and status.get("status_str") == "error":
+                    messages = status.get("messages") or []
+                    detail = json.dumps(messages, indent=2)[:2000] if messages else "(aucun detail serveur)"
+                    raise Exception(
+                        f"Workflow execution failed (server reported error): {detail}"
+                    )
 
                 # Vérifier si l'exécution est terminée
                 if "outputs" in result:
@@ -190,6 +231,46 @@ class ComfyUIClient:
                     )
 
             time.sleep(poll_interval)
+
+    def get_output_file(
+        self,
+        filename: str,
+        subfolder: str = "",
+        file_type: str = "output",
+    ) -> bytes:
+        """
+        Recupere un fichier de sortie genere par ComfyUI.
+
+        Args:
+            filename: Nom du fichier (ex: sortie du noeud SaveVideo)
+            subfolder: Sous-dossier (defaut: vide)
+            file_type: Type de fichier (defaut: "output")
+
+        Returns:
+            Contenu binaire du fichier
+
+        Raises:
+            Exception: Si la recuperation echoue (HTTP error ou URL error)
+        """
+        endpoint = f"/view?{urlencode({'filename': filename, 'subfolder': subfolder, 'type': file_type})}"
+        server_url = self.server_url.rstrip("/")
+        url = f"{server_url}/{endpoint}"
+
+        headers = {}
+        if self.api_token:
+            headers["Authorization"] = f"Bearer {self.api_token}"
+
+        req = request.Request(url, headers=headers, method="GET")
+        try:
+            with request.urlopen(req) as response:
+                return response.read()
+        except error.HTTPError as e:
+            error_body = e.read().decode() if e.fp else "No error body"
+            raise Exception(
+                f"HTTP {e.code} Error calling {url}: {e.reason}\nBody: {error_body}"
+            )
+        except error.URLError as e:
+            raise NetworkError(f"URL Error calling {url}: {e.reason}") from e
 
     def generate_text2image(
         self,
@@ -578,7 +659,7 @@ class ComfyUIClient:
                 "inputs": {
                     "width": width,
                     "height": height,
-                    "frame_limit": num_frames,
+                    "length": num_frames,
                     "batch_size": 1
                 }
             },
@@ -668,6 +749,7 @@ class ComfyUIClient:
         seed: Optional[int] = None,
         save_prefix: str = "hunyuan_t2v",
         timeout: int = 600,
+        guidance_scale: float = 1.0,
     ) -> Dict[str, Any]:
         """
         Genere une video a partir d'un prompt texte avec HunyuanVideo 1.5.
@@ -692,6 +774,9 @@ class ComfyUIClient:
             seed: Seed aleatoire (None = aleatoire)
             save_prefix: Prefixe de sauvegarde
             timeout: Timeout en secondes (defaut: 600s pour longues generations)
+            guidance_scale: Guidance embarque du sampler HyVideo
+                (defaut: 1.0 -- le modele 720p cfgdistill est distille sans CFG
+                externe; valeurs > 1.0 augmentent l'adherence au prompt)
 
         Returns:
             Resultat de la generation (historique ComfyUI)
@@ -708,7 +793,7 @@ class ComfyUIClient:
                     "llm_model": "Kijai/llava-llama-3-8b-text-encoder-tokenizer",
                     "clip_model": "openai/clip-vit-large-patch14",
                     "precision": "bf16",
-                    "quantization": "disabled",
+                    "quantization": "fp8_e4m3fn",
                     "load_device": "offload_device"
                 }
             },
@@ -750,9 +835,10 @@ class ComfyUIClient:
                     "height": height,
                     "num_frames": num_frames,
                     "steps": steps,
-                    "embedded_guidance_scale": 1.0,
+                    "embedded_guidance_scale": guidance_scale,
                     "flow_shift": 7.0,
                     "seed": seed,
+                    "scheduler": "FlowMatchDiscreteScheduler",
                     "force_offload": True
                 }
             },
@@ -762,7 +848,10 @@ class ComfyUIClient:
                 "inputs": {
                     "vae": ["4", 0],
                     "samples": ["5", 0],
-                    "enable_vae_tiling": True
+                    "enable_vae_tiling": True,
+                    "auto_tile_size": True,
+                    "spatial_tile_sample_min_size": 256,
+                    "temporal_tiling_sample_size": 64
                 }
             },
             # CreateVideo

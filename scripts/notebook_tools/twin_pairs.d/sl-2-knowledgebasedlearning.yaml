@@ -1,0 +1,29 @@
+- name: "SL-2 KnowledgeBasedLearning"
+  family: SymbolicAI/SymbolicLearning
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 6eaf20ca712b255fb724606ee37772ee2b24f691
+      csharp_sha: 275bd7259ed84ce600bb09308af699878965cf38
+    - date: "2026-08-13"
+      by: myia-po-2025:CoursIA
+      python_sha: e4b8acd30ddeb07469b8e41b837f6aee1c730a9d
+      csharp_sha: 275bd7259ed84ce600bb09308af699878965cf38
+      content_python_sha: 33e772bc2fed219e7f3678b45c1546df9fefff8a76a8ba2761e1684f7fcb05af
+      content_csharp_sha: 4a95daeedc65a24191ef177bc556490e919295a63abb56a4acab88d764ce3713
+    - date: "2026-08-13"
+      by: myia-po-2026:CoursIA-2
+      python_sha: e4b8acd30ddeb07469b8e41b837f6aee1c730a9d
+      csharp_sha: 7e9b7973f88757c01c0e2ab637392eba38ad9af9
+      content_python_sha: 33e772bc2fed219e7f3678b45c1546df9fefff8a76a8ba2761e1684f7fcb05af
+      content_csharp_sha: e63cf371037f476f0327cb61114e2d203ed1df5ab83131f7b19bc9f847c156dd
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = BCL from-scratch + implementation EBL complete multi-etapes (variabilisation, simplification arithmetique, extraction de regle, speedup) + RBL introduction aux determinations. C# = BCL .NET from-scratch (`Dictionary<string,string>` + unification maison) pour EBL (chainage avant avec unification, speedup) + RBL (verification de determination). Les deux cotes codent l'unification et le chainage avant from-scratch (pas de moteur Prolog). Verdict RECOVERABLE-LOCAL : le coeur pedagogique (EBL = Explanation-Based Learning, RBL = Relevance-Based Learning, determinations, unification, chainage avant) est PARITABLE des deux cotes (memes concepts AIMA, meme domaine d'application), l'asymetrie reside dans la portee (Python = implementation EBL complete + speedup multi-etapes ; C# = version focalisee sur les 2 algorithmes avec exercice commun de differentiation symbolique). Le BCL C# preserve le socle from-scratch comme choix pedagogique assume. `parity_level: semantic` preserve."
+  known_differences:
+    - "Socle commun : Explanation-Based Learning (EBL) et Relevance-Based Learning (RBL) -- variabilisation, extraction de regle, speedup, determinations."
+    - "Asymetrie de couverture : Python (44 cellules, 15 code) couvre EBL (simplification arithmetique, variabilisation, implementation complete, efficacite) + RBL (introduction aux determinations) ; C# (18 cellules, 9 code) couvre EBL (chainage avant avec unification, speedup) + RBL (verification de determination) -- structure plus serree."
+    - "Implementation : les deux cotes codent l'unification et le chainage avant from-scratch (pas de moteur Prolog). Python inclut une implementation EBL complete multi-etapes ; C# presente une version focalisee."
+    - "Exercice commun : differentiation symbolique (C#) vs variantes du domaine (Python) -- meme concept EBL applique."

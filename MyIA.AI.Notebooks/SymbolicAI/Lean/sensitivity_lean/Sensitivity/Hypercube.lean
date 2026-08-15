@@ -65,7 +65,7 @@ theorem succ_n_eq (p q : Q n.succ) : p = q ↔ p 0 = q 0 ∧ π p = π q := by
     by_cases hx : x = 0
     · rwa [hx]
     · rw [← Fin.succ_pred x hx]
-      convert congr_fun h (Fin.pred x hx)
+      exact congr_fun h (Fin.pred x hx)
 
 /-- La relation d'adjacence définissant la structure de graphe sur `Q n` :
 `p.adjacent q` s'il existe une arête de `p` vers `q` dans `Q n`. -/

@@ -1,0 +1,126 @@
+name: Markdown content-loss gate
+
+# Purpose
+# -------
+# Per-PR gate that catches markdown CONTENT LOSS a cellule tronquee : une PR
+# du rollout #3966 (demotion de titres H1/H2 en callouts blockquote) peut,
+# quand le correcteur one-shot opere sur une cellule dont le `source` est une
+# chaine unique jointe, REMPLACER LA CELLULE ENTIERE par le seul callout. Une
+# cellule de 941 caracteres (enonce + contraintes + indices) se reduit a 16 ;
+# un bloc `**Navigation**` + 5 objectifs disparait. Aucun garde existant ne
+# mesure le volume de prose markdown -> la CI reste verte (issue #8655).
+#
+# Ce gate est le filet : il compare chaque notebook modifie entre sa base git
+# (origin/<base_ref>) et sa tete (working tree) et signale toute cellule
+# markdown dont le contenu normalise chute sous 75 % du volume d'origine, et
+# toute perte de motif structurant (Navigation / Objectifs / Prerequis / Enonce
+# / liens de navigation). La transformation LEGITIME titre->callout est
+# invisible apres normalisation (heading `#{1,6}` et callout `> **X :**` sont
+# retires) -> pas de faux positif sur une demotion honnete.
+#
+# Detector: scripts/notebook_tools/detect_md_content_loss.py (#8655), run in
+# --check mode (exit 0 clean, exit 1 on defect) on every notebook changed by
+# the PR. Diff-scoped (base git vs working tree) : les pertes pre-existantes
+# sur `main` ne sont pas relevees tant que le notebook n'est pas touche
+# (clavette, comme degenerate-figure-gate).
+#
+# Sortie exploitable en review : fichier / cellule / avant-apres / ratio /
+# motifs perdus. Le detecteur SIGNALE ; la PR justifie en review (une
+# reformulation legitime qui resserre le texte reste au-dessus de 75 %).
+#
+# See issue #8655 (cahier des charges + 3 cas reels), registre #3966 (le rollout
+# demotion-de-titres dont provient le defaut), degenerate-figure-gate.yml
+# (modele de gate diff-scoped), detect_link_target_regression.py (modele de
+# detecteur base-vs-head).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_md_content_loss.py'
+      - '.github/workflows/md-content-loss-gate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  md-content-loss:
+    name: "No markdown content loss in changed notebooks"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Gate changed notebooks
+        run: |
+          set -uo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::notice title=Markdown content-loss gate::Manual dispatch — nothing to diff."
+            exit 0
+          fi
+
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "::notice title=Markdown content-loss gate::No notebooks changed — clean."
+            exit 0
+          fi
+
+          echo "## Markdown content-loss gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          checked=0
+          unreadable=0
+          while IFS= read -r nb; do
+            [ -z "$nb" ] && continue
+            # Skip notebooks deleted by the PR.
+            [ -f "$nb" ] || continue
+            checked=$((checked + 1))
+            # `&& rc=0 || rc=$?` is load-bearing under `bash -e`: a bare `out=$(cmd)`
+            # that exits non-zero aborts the step before `rc=$?` is read, making the
+            # rc=1/rc=2 branches below dead code and the failure anonymous (#8884 motif).
+            # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
+            out=$(python scripts/notebook_tools/detect_md_content_loss.py --base "$BASE" --check "$nb" 2>&1) && rc=0 || rc=$?
+            if [ "$rc" -eq 1 ]; then
+              echo "::error title=Markdown content loss::$nb lost substantial markdown content (truncated cell or lost structuring motif). If this is a legit rephrase, justify in review."
+              echo "<details><summary><code>$nb</code></summary>" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "$out" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+              fail=1
+            elif [ "$rc" -eq 2 ]; then
+              echo "::warning title=Markdown content-loss gate::$nb could not be read (rc=2); see detector log."
+              unreadable=$((unreadable + 1))
+            fi
+          done <<< "$CHANGED"
+
+          # Anti-self-disarmament guard (reserve ai-01 c.28 sur #8656) :
+          # si CHAQUE notebook tente etait illisible (rc=2), le gate n'a rien
+          # analyse -> il NE PEUT PAS certifier "no content loss". Un detecteur
+          # casse ou une ref git manquante desarmerait silencieusement ce gate
+          # (la classe de defaut meme qu'il attrape) en renvoyant un notice vert.
+          # On fail loud dans ce cas plutot que de donner un quitus a l'aveugle.
+          if [ "$checked" -gt 0 ] && [ "$unreadable" -eq "$checked" ]; then
+            echo "::error title=Markdown content-loss gate::All $checked changed notebook(s) were unreadable (rc=2) — the gate analyzed NOTHING and cannot certify content integrity. This is likely a broken detector or a missing git ref (BASE=$BASE), not a clean bill of health. Failing loud (anti-self-disarmament, #8655/#8656)."
+            echo "FIX: the gate could not read any changed notebook. Check the detector log above and the BASE ref ($BASE). Do NOT treat this as a pass." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "FIX: a markdown cell lost substantial content. Two usual causes (see the detector log above for which): (1) the demotion one-shot replaced a whole joined-string cell instead of its heading line only (#8655) -- restore the content and re-apply the heading->callout demotion LINE BY LINE via \`python scripts/notebook_tools/demote_md_asides.py --dir\` ; (2) a YAML frontmatter cost block was removed but its fields were NOT migrated equivalently into \`nb['metadata']['cost']\` (#8919) -- migrate the cost values verbatim (the detector names the divergent fields). A legit migration (fields preserved verbatim in metadata.cost) passes without this notice." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "::notice title=Markdown content-loss gate::Checked $checked changed notebook(s); no content loss."

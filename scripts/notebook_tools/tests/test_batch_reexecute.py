@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from batch_reexecute import get_kernel_name, needs_reexecution
+from batch_reexecute import get_kernel_name, needs_reexecution, _normalize_kernel_paths
 
 
 # ---------------------------------------------------------------------------
@@ -90,3 +90,83 @@ class TestGetKernelName:
     def test_dotnet_in_name(self):
         """Any '.net' substring maps to .net-interactive."""
         assert get_kernel_name({"kernel": ".NET Interactive"}) == ".net-interactive"
+
+
+# ---------------------------------------------------------------------------
+# _normalize_kernel_paths — strip_machine_paths wired into the re-exec path (#10061)
+# ---------------------------------------------------------------------------
+
+def _nb_with_ipykernel_leak(pid: int):
+    """Build a minimal nbformat-4 notebook whose single code cell carries a
+    stream output with a username + ipykernel_<pid> kernel-injected path."""
+    return {
+        "cells": [
+            {
+                "cell_type": "code",
+                "execution_count": 1,
+                "source": ["print('hi')\n"],
+                "outputs": [
+                    {
+                        "output_type": "stream",
+                        "name": "stderr",
+                        "text": [
+                            f"C:\\Users\\jsboi\\AppData\\Local\\Temp\\ipykernel_{pid}"
+                            f"\\1424116259.py:8: DeprecationWarning\n"
+                        ],
+                    }
+                ],
+                "metadata": {},
+            }
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+
+
+class TestNormalizeKernelPaths:
+    """#10061 — re-exec must auto-normalize username paths AND per-execution
+    PIDs so two runs produce byte-identical output (no spurious diff)."""
+
+    def test_normalizes_username_and_pid(self, tmp_path):
+        import json
+
+        nb_path = tmp_path / "nb.ipynb"
+        nb_path.write_text(json.dumps(_nb_with_ipykernel_leak(30104)), encoding="utf-8")
+
+        fixed = _normalize_kernel_paths(nb_path)
+        # The leak line was detected and normalized.
+        assert fixed >= 1
+        out = json.loads(nb_path.read_text(encoding="utf-8"))
+        text = out["cells"][0]["outputs"][0]["text"][0]
+        # Username is redacted, PID is normalized to the stable placeholder.
+        assert "jsboi" not in text
+        assert "30104" not in text
+        assert "ipykernel_<pid>" in text
+        assert "<USER_PATH>" in text
+        # The per-cell source hash (stable, pedagogy) survives.
+        assert "1424116259.py" in text
+
+    def test_two_reexecs_produce_identical_output(self, tmp_path):
+        """Acceptance (a): two re-execs differing only in the PID redact to the
+        same byte-identical output → empty git diff on the PID motif."""
+        import json
+
+        a = tmp_path / "a.ipynb"
+        b = tmp_path / "b.ipynb"
+        a.write_text(json.dumps(_nb_with_ipykernel_leak(30104)), encoding="utf-8")
+        b.write_text(json.dumps(_nb_with_ipykernel_leak(55982)), encoding="utf-8")
+        _normalize_kernel_paths(a)
+        _normalize_kernel_paths(b)
+        assert a.read_text(encoding="utf-8") == b.read_text(encoding="utf-8")
+
+    def test_idempotent(self, tmp_path):
+        """Re-normalizing an already-clean notebook is a no-op (no leak → 0)."""
+        import json
+
+        nb_path = tmp_path / "nb.ipynb"
+        nb_path.write_text(json.dumps(_nb_with_ipykernel_leak(30104)), encoding="utf-8")
+        first = _normalize_kernel_paths(nb_path)
+        assert first >= 1
+        second = _normalize_kernel_paths(nb_path)
+        assert second == 0

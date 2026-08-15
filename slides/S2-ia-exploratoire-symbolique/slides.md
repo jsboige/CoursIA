@@ -154,8 +154,8 @@ layout: cover
   - Bots conversationnels: Un nouveau paradigme UX
 
 <div class="image-row">
-<img src="images/img_004.jpg" height="100" alt="DARPA">
-<img src="images/img_005.jpg" height="100" alt="ImageNet">
+<img src="./images/img_004.jpg" height="100" alt="DARPA">
+<img src="./images/img_005.jpg" height="100" alt="ImageNet">
 </div>
 
 
@@ -206,9 +206,9 @@ layout: cover
   - Algorithmes
 
 <div class="image-row">
-<img src="images/img_007.jpg" height="150" alt="Intelligence procedurale">
-<img src="images/img_008.png" height="150" alt="Automates">
-<img src="images/img_009.jpg" height="150" alt="Algorithmes">
+<img src="./images/img_007.jpg" height="150" alt="Intelligence procedurale">
+<img src="./images/img_008.png" height="150" alt="Automates">
+<img src="./images/img_009.jpg" height="150" alt="Algorithmes">
 </div>
 
 
@@ -218,9 +218,9 @@ layout: cover
 # Intelligences (suite)
 
 <div class="image-row">
-<img src="images/img_010.jpg" height="180" alt="Intelligence exploratoire">
-<img src="images/img_011.png" height="180" alt="Intelligence symbolique">
-<img src="images/img_012.jpg" height="180" alt="Intelligence probabiliste">
+<img src="./images/img_010.jpg" height="180" alt="Intelligence exploratoire">
+<img src="./images/img_011.png" height="180" alt="Intelligence symbolique">
+<img src="./images/img_012.jpg" height="180" alt="Intelligence probabiliste">
 </div>
 
 
@@ -313,7 +313,7 @@ layout: cover
 - Règles
   - Conditions / Actions
 
-![w:500 center](images/img_014.png)
+![w:500 center](./images/img_014.png)
 
 
 
@@ -326,7 +326,7 @@ layout: cover
 - Historique des percepts
 - Mémoire du changement
 
-![w:500 center](images/img_015.png)
+![w:500 center](./images/img_015.png)
 
 
 
@@ -378,7 +378,7 @@ layout: section
 - Exploration du Futur, séquences d'actions
 - Recherche, planification
 
-![w:550 center](images/img_017.png)
+![w:550 center](./images/img_017.png)
 
 
 
@@ -422,7 +422,7 @@ layout: section
 
 # Exemple Abstraction: Assemblage robotique
 
-![w:500 center](images/img_019.png)
+![w:500 center](./images/img_019.png)
 
 - **Etats:** Coordonnées réelles des joints du robot et des objets
 - **Test de but:** Objet assemblé
@@ -436,7 +436,7 @@ layout: section
 
 # Problème jouet: Les 8 reines
 
-![w:350 center](images/img_020.png)
+![w:350 center](./images/img_020.png)
 
 - **Etats:** Disposition de 0-8 reines
 - **Test de but:** 8 reines sont présentes, et aucune n'est menacée
@@ -481,9 +481,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_021.png" width="380">
-<img src="images/img_022.png" width="380">
-<img src="images/img_023.png" width="380">
+<img src="./images/img_021.png" width="380">
+<img src="./images/img_022.png" width="380">
+<img src="./images/img_023.png" width="380">
 
 
 
@@ -497,7 +497,7 @@ layout: two-cols
 - Si + de cannibales que de missionnaires d'un côté ou l'autre
   - ils se font manger
 
-![w:500 center](images/img_024.png)
+![w:500 center](./images/img_024.png)
 
 
 ---
@@ -537,7 +537,7 @@ layout: two-cols
   - Peut fonctionner dans des espaces de grande taille ou infinis
 - **Exemple:** 8 reines
 
-![w:600 center](images/img_026.png)
+![w:600 center](./images/img_026.png)
 
 
 ---
@@ -549,7 +549,7 @@ layout: two-cols
   - Objectif = trouver le meilleur état selon une fonction objectif
 - Utilité du paysage de l'espace des états
 
-![w:700 center](images/img_027.png)
+![w:700 center](./images/img_027.png)
 
 
 ---
@@ -669,10 +669,10 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_032.png" width="380">
-<img src="images/img_033.png" width="380">
-<img src="images/img_034.png" width="380">
-<img src="images/img_035.png" width="380">
+<img src="./images/img_032.png" width="380">
+<img src="./images/img_033.png" width="380">
+<img src="./images/img_034.png" width="380">
+<img src="./images/img_035.png" width="380">
 
 
 
@@ -742,9 +742,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_038.png" width="380">
-<img src="images/img_039.png" width="380">
-<img src="images/img_040.png" width="380">
+<img src="./images/img_038.png" width="380">
+<img src="./images/img_039.png" width="380">
+<img src="./images/img_040.png" width="380">
 
 
 
@@ -777,9 +777,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_041.png" width="380">
-<img src="images/img_042.png" width="380">
-<img src="images/img_043.png" width="380">
+<img src="./images/img_041.png" width="380">
+<img src="./images/img_042.png" width="380">
+<img src="./images/img_043.png" width="380">
 
 
 
@@ -883,9 +883,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_044.png" width="380">
-<img src="images/img_045.png" width="380">
-<img src="images/img_046.png" width="380">
+<img src="./images/img_044.png" width="380">
+<img src="./images/img_045.png" width="380">
+<img src="./images/img_046.png" width="380">
 
 
 
@@ -987,7 +987,7 @@ layout: two-cols
 - Viole l'un des critères
 - Taxonomie
 
-<img src="images/img_047.jpg" width="300" alt="Taxonomie des fallacies">
+<img src="./images/img_047.jpg" width="300" alt="Taxonomie des fallacies">
 
 - Comment le dénoncer
   - Reconstruction standard
@@ -1011,8 +1011,8 @@ layout: two-cols
 - But à atteindre
 - Listes des opérations
 
-<img src="images/img_048.png" width="350" alt="Langage formel planification">
-<img src="images/img_049.png" width="350" alt="Operations planification">
+<img src="./images/img_048.png" width="350" alt="Langage formel planification">
+<img src="./images/img_049.png" width="350" alt="Operations planification">
 
 
 ::right::
@@ -1026,8 +1026,8 @@ layout: two-cols
 - Planification à Ordre partiel
 - Décomposition hiérarchique
 
-<img src="images/img_050.png" width="300" alt="Diagramme planification">
-<img src="images/img_051.png" width="300" alt="Schema hierarchique">
+<img src="./images/img_050.png" width="300" alt="Diagramme planification">
+<img src="./images/img_051.png" width="300" alt="Schema hierarchique">
 
 
 
@@ -1046,11 +1046,11 @@ layout: two-cols
 - Web sémantique
   - W3C
 
-<img src="images/img_052.png" width="280" alt="Ontologies web semantique">
+<img src="./images/img_052.png" width="280" alt="Ontologies web semantique">
 
 - Linked Data
 
-<img src="images/img_053.png" width="280" alt="Linked Data">
+<img src="./images/img_053.png" width="280" alt="Linked Data">
 
 
 ::right::
@@ -1070,7 +1070,7 @@ layout: two-cols
   - C(A+B) = C(A)+C(B)
   - Non-divulgation
 
-<img src="images/img_054.png" width="200" alt="Smart contracts">
+<img src="./images/img_054.png" width="200" alt="Smart contracts">
 
 
 

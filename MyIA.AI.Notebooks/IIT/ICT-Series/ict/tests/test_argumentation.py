@@ -231,3 +231,77 @@ def test_phase_a_verdict_tpm_derivable():
         f"Phase A : la TPM doit avoir >= 2 etats, recu {n_states} -> FAIL"
     )
     assert np.allclose(P.sum(axis=1), 1.0)
+
+
+# --------------------------------------------------------------------------- #
+#  Gate 11 : self-loop = cycle de longueur 1 -> undec (corner case Dung)      #
+# --------------------------------------------------------------------------- #
+
+
+def test_grounded_self_loop_is_undec():
+    """Un argument qui s'auto-attaque (self-loop ``(a, a)``) reste ``undec``.
+
+    Corner case sémantique de Dung : un self-loop est un cycle de longueur 1.
+    L'algorithme par point fixe ne crédite jamais ``a`` comme ``in`` (il
+    faudrait que son unique attaquant -- lui-même -- soit d'abord ``out``, ce
+    qui exigerait qu'un ``in`` l'attaque, impasse), ni comme ``out`` (aucun
+    ``in`` ne l'attaque). Il tombe donc ``undec``, exactement comme un cycle
+    classique (Nixon diamond). Ce test protège la sémantique contre une
+    « optimisation » qui traiterait les self-loops comme des attaques
+    incontestées -> ``out`` (convention non standard).
+    """
+    af = arg.DungAF([0], [(0, 0)])
+    label = arg.grounded_labeling(af)
+    assert label[0] == "undec", (
+        f"self-loop doit etre undec (cycle longueur 1), recu {label[0]!r}"
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  Gate 12 : tweety_bird() resout le conflit (vs Nixon diamond)               #
+# --------------------------------------------------------------------------- #
+
+
+def test_tweety_bird_resolves_conflict():
+    """Le schéma canonique *Tweety* (oiseau vs autruche) se résout par soutien
+    indirect -- contrairement au *Nixon diamond* (cycle non résolu).
+
+    AF : 0 <-> 1 (conflit direct Tweety vole / ne vole pas), 2 -> 1 (le fait
+    « oiseau » attaque la négation). Grounded : 2 (non attaqué) = ``in`` ;
+    1 (attaqué par 2 ``in``) = ``out`` ; 0 (son seul attaquant 1 est ``out``)
+    = ``in``. Labeling attendu : {0: in, 1: out, 2: in}, aucun ``undec``.
+    C'est le contrepoint canonique au Nixon diamond (les deux ``undec``) :
+    l'ajout d'un attaquant externe non contesté (2) brise la symétrie.
+    """
+    af = arg.tweety_bird()
+    label = arg.grounded_labeling(af)
+    assert label == {0: "in", 1: "out", 2: "in"}, (
+        f"tweety_bird doit se resoudre en {{0:in, 1:out, 2:in}}, recu {label}"
+    )
+
+
+# --------------------------------------------------------------------------- #
+#  Gate 13 : controversial_chain(n) = alternance in/out stricte               #
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("n", [2, 3, 4, 5, 8])
+def test_controversial_chain_alternation(n):
+    """Une chaîne d'attaques ``0 -> 1 -> ... -> n-1`` produit une alternance
+    stricte ``in / out / in / out / ...`` en sémantique grounded.
+
+    Propriété documentée dans la docstring de :func:`controversial_chain` :
+    0 (non attaqué) = ``in``, 1 (attaqué par 0 ``in``) = ``out``, 2 (attaqué
+    par 1 ``out``, donc défendu) = ``in``, etc. Ce test formalise cette
+    propriété d'alternance (que le docstring énonce mais ne vérifiait pas) :
+    ``label[i] == 'in'`` si ``i`` pair, ``'out'`` si ``i`` impair. C'est le
+    substrat canonique d'une TPM non triviale (bascules propres).
+    """
+    af = arg.controversial_chain(n)
+    label = arg.grounded_labeling(af)
+    for i in range(n):
+        expected = "in" if i % 2 == 0 else "out"
+        assert label[i] == expected, (
+            f"arg {i} dans controversial_chain({n}) : attendu {expected!r}, "
+            f"recu {label[i]!r} (alternance in/out cassee)"
+        )

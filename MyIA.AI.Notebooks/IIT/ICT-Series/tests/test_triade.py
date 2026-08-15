@@ -15,7 +15,8 @@ Le scope est volontairement limite : on verifie la **forme** de la primitive
 **coherence avec les primitives en amont** (``beauty_events``,
 ``ignition_events``, ``colocalize_lenses``). On n'invoque PAS les fixtures
 reelles (couche 16, 2699 tokens) ici -- ces fixtures sont GPU-extractees et
-leur analyse releve du notebook ICT-26, pas des tests unitaires.
+leur analyse releve du notebook ICT-26 (SignalingConvention, livré via
+PR #8881 MERGED, EPIC #7746), pas des tests unitaires.
 
 Convention C.1 notebooks respectee (pas de ``raise NotImplementedError``).
 """

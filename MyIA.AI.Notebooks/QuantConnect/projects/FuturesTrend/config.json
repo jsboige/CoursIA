@@ -1,0 +1,8 @@
+{
+    "algorithm-language": "Python",
+    "name": "FuturesTrend",
+    "id": 1,
+    "parameters": {},
+    "description": "Multi-asset ETF trend-following: concentrated positions on the strongest SMA50-filtered trends across a diversified ETF universe.",
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

@@ -1,0 +1,54 @@
+name: notebook-interp-positioning-guard
+
+# EPIC #10678 Phase 3 : gate CI qui empeche l'insertion de cellules markdown
+# d'interpretation mal positionnees (interp precedent immediatement un titre
+# de section). Voir scripts/notebook_tools/check_interp_positioning.py pour
+# le detail de la regle de detection.
+#
+# Le gate est :
+# - dur sur les NOUVELLES insertions (les findings deja dans la baseline sont
+#   acceptes temporairement, dans l'esprit de la "dette explicite" brulee en
+#   Phase 2 / Phase 4 de l'EPIC) ;
+# - mou sur les renames (un deplacement corrige le placement sans changer
+#   le contenu, donc le hash peut sauter, donc la baseline peut sauter ; le
+#   detecteur re-evalue a chaque PR).
+#
+# Scope : PRs touchant a des notebooks OU au script OU a la baseline.
+# En dehors de ces paths, le workflow ne fait rien (cout = 0).
+
+on:
+  pull_request:
+    paths:
+      - "MyIA.AI.Notebooks/**/*.ipynb"
+      - "scripts/notebook_tools/check_interp_positioning.py"
+      - "scripts/notebook_tools/interp_positioning_baseline.json"
+      - ".github/workflows/notebook-interp-positioning.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebook-interp-positioning-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-interp-positioning:
+    name: check_interp_positioning.py
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run detector (--check --baseline)
+        run: |
+          python scripts/notebook_tools/check_interp_positioning.py \
+            --check \
+            --baseline scripts/notebook_tools/interp_positioning_baseline.json

@@ -1,0 +1,58 @@
+name: Workflow Label-Paths Coverage Guard
+
+# Issue #8822. A `pull_request` workflow filtered by `on.pull_request.paths`
+# runs ONLY when the PR's `base...head` diff touches those paths. If it also
+# poses a label (gh pr edit --add-label / gh label create), then the commit
+# that RETIRES the matching paths from the diff leaves the job unable to
+# re-run -- its own --remove-label cleanup becomes dead code exactly when it is
+# needed, and the label survives its cause. Demonstrated firsthand on #8820:
+# the bot posed `exercises-unparseable`, the artifact was removed, the paths
+# filter kept the job from re-running, and a human unlabeled six minutes later.
+#
+# The fix is the established repo convention: list the workflow's OWN path in
+# its `paths:` (20 workflows already do -- scripts-tests.yml, lean-conway.yml,
+# banner-guard.yml, ...). This guard enforces that invariant structurally.
+#
+# BLOCKING (not advisory), per #8822 acceptance 4: the target is a file
+# invariant (own path under paths:), not a content judgement, so there is
+# nothing to arbitrate and nothing to let slide. Contrast the exit-0 advisory
+# exercises-advisory job (#8816) which guards pedagogical content (a judgement).
+#
+# Auto-covered by construction: this workflow's own file lives under
+# `.github/workflows/**`, which is in its own `paths:` filter -- it can never
+# be the first to violate its own rule.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/check_workflow_label_paths.py'
+      - 'scripts/tests/test_check_workflow_label_paths.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  label-paths-guard:
+    name: "Label-poser workflows self-cover (blocking)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Guard -- every paths-filtered label-poser self-covers its own file
+        # Blocking: exits 1 on any violation (or if 0 workflows were scanned).
+        # The script prints the denominator (examined / label-posers /
+        # path-filtered / non-covered) so coverage is auditable in the log.
+        run: python scripts/check_workflow_label_paths.py

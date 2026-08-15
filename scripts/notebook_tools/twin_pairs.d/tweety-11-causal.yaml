@@ -1,0 +1,33 @@
+- name: "Tweety-11 Causal"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Csharp.ipynb
+  parity_level: surface
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = JPype vers la vraie lib Java Tweety causal-1.30 (`from org.tweetyproject.causal.reasoner import ArgumentationBasedCausalReasoner`). C# = §§1-5 from-scratch pedagogique (do-calculus reimplemente, titre 'twin C# from-scratch') + §6 (PR #10570) pont IKVM chargeant `org.tweetyproject.tweety-causal.dll` (DLL build #10566, 13/13 classes causales actives, verifie firsthand via Assembly.GetExportedTypes) : `StructuralCausalModel.intervene()` Java reel invoque sous le runtime IKVM 8.15. Verdict SOTA-OK (pas de workaround degrade) : §6 prouve la parite moteur-contre-moteur -- `do(sprinkler=True)` produit `sprinkler <=> +` (surgery Java reel) IDENTIQUE au do-calculus from-scratch §3 `do(drops=True)` -> `drops <=> +`. Les DEUX cotes executent le meme moteur Java Tweety causal (Python via JPype, C# via IKVM). parity_level reste `surface` car le mode pedagogique primaire reste §§1-5 from-scratch ; §6 est le pont de validation qui confirme la conformite du from-scratch au moteur de reference."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
+      csharp_sha: d60c424c0e1334c0dbf3f9fa6b9376bad215c330
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
+      csharp_sha: 2e6264b157267b42a40a4ed9ca31ba37308ff9c2
+      content_python_sha: e6065df8dca49799e2752b5b17a4ec6696419c859765963ff6b121bd60891c04
+      content_csharp_sha: 279178432baf6e7607182165acfed96f83446f9b40449806f681fb1d4dc2ac87
+    - date: "2026-08-12"
+      by: myia-po-2025:CoursIA
+      python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
+      csharp_sha: 59c7739d4f3821a9f3d92f848c5ea7f9ee3bb865
+      content_python_sha: e6065df8dca49799e2752b5b17a4ec6696419c859765963ff6b121bd60891c04
+      content_csharp_sha: 0182881b2d5b1fb3ae91d36cd26870184d0fee33e775dfb89fc8dfc50616c971
+    - date: "2026-08-14"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 95aa9b6f604e806ef2e5b08c4cc2f0bb633820cc
+      csharp_sha: ca8b37b73c1335da49d4c594bc40c9cfbe469aea
+      content_python_sha: e6065df8dca49799e2752b5b17a4ec6696419c859765963ff6b121bd60891c04
+      content_csharp_sha: 4ba64b109c6e7b2c102e51c1befe132704372a064860a7945605047245e722aa
+  known_differences:
+    - "Socle commun : inference causale et do-calculus (Pearl) sur modeles causaux structurels."
+    - "Asymetrie de profondeur (surface) : le Python s'appuie sur la vraie bibliotheque Java Tweety `causal-1.30.jar` via JPype (`from org.tweetyproject.causal.reasoner import ArgumentationBasedCausal`). C# §§1-5 = jumeau **from-scratch** pedagogique (titre 'twin C# from-scratch', reimplemente le do-calcul) ; §6 (PR #10570) ajoute un pont IKVM vers la meme DLL Java `tweety-causal.dll` (build #10566) -- §§1-5 from-scratch et pont §6 donnent le meme resultat surgery (`<=> +`), validant la conformite du from-scratch au moteur de reference. Parite `surface` (mode primaire = from-scratch) avec pont de validation SOTA-OK en §6."

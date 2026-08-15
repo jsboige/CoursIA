@@ -1,0 +1,23 @@
+- name: "Planners-2 PDDL-Basics"
+  family: SymbolicAI/Planners
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `unified-planning` qui wrap en interne le solveur SOTA Fast Downward 24.06.1 (Helmert ICAPS 2006 + nombreux raffinements), invoque via le conteneur Docker `jsboige/coursia-fast-downward` (API HTTP port 8200, urllib). C# = Tranche 1 from-scratch BCL .NET (grounding + BFS forward sur PDDL parse, 0 NuGet) + Tranche 2 invoque LE MEME Fast Downward 24.06.1 via `System.Net.Http.HttpClient` sur le MEME conteneur Docker (meme API, port 8200). Verdict SOTA-OK (modele owner c.217 PR #10557 MERGED 2026-08-12 App tranche 4 lib-vs-lib + precedents Planners #10386 #10389 #10401 #10413 #10426 #10428 MERGED, substance Fast Downward validee firsthand sur les memes domaines Logistics cout 7 + Gripper cout 5) : les DEUX cotes invoquent LE MEME moteur de production Fast Downward natif (meme solveur C++ natif, API symetrique entre les bindings Python urllib + C# HttpClient), bridge direct sans glue non-SOTA. Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382 : enseignement des mecanismes avant l'invocation du moteur. `parity_level: native-both` preserve : parite engine + from-scratch pedagogique."
+  audits:
+    - date: "2026-07-31"
+      by: po-2024
+      python_sha: c83be596acfef24a0d6b22bab6405f2e68074374
+      csharp_sha: 241758247433d536fb0f1f324962446cd6d12af5
+    - date: "2026-08-11"
+      by: myia-po-2024:CoursIA
+      python_sha: c83be596acfef24a0d6b22bab6405f2e68074374
+      csharp_sha: 9e4f2381178788134c11a90ad6cf40aa8c8c473a
+      content_python_sha: 5d4135096b98c027a43c2e93f1efb883c1857fe80bfd2b47cbeebe20c3dafdd1
+      content_csharp_sha: 119bcb4b69575be84bc0bfa222091ee17e20d1db74be38463561c3bb7f7b3d8d
+  known_differences:
+    - "Concept : syntaxe PDDL (domain.pddl + problem.pddl), predicats, actions, etat initial/but."
+    - "Lib-vs-lib : Python invoque unified-planning (qui wrap Fast Downward). C# : Tranche 1 from-scratch (grounding + BFS forward, BCL .NET) + Tranche 2 invoque Fast Downward 24.06.1 via API Docker (port 8200). Mêmes domaines PDDL (Logistics, Gripper)."
+    - "Tranche 2 native-both (#10382, 2026-08-11 po-2024) : FD astar(lmcut()) confirme les plans optimaux du BFS from-scratch — Logistics cout 7 (contrainte empty = 1 colis a la fois), Gripper cout 5 (2 pinces paralleles). Verdict SOTA-OK (#3801) : moteur reel invoque (API Docker returncode 0), memes plans. Tranche 1 from-scratch preservee."
+    - "Re-baseline 2026-07-31 (po-2024, #8052) : markdown-only correction cote Python (cell[59] downstream next-notebook list : nb4/nb5 titres transposes -> Planners-4-Fast-Downward / Planners-5-Heuristics, conformes aux fichiers sur disque). Paraphite-preservant : aucun output/code modifie, axe de parite semantic intact."

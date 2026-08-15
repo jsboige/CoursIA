@@ -29,20 +29,20 @@ namespace Conway
 
 /-- CALIBRATION (decide) : 2000 est bissextile (divisible par 400). -/
 theorem isLeapYear_2000 : isLeapYear 2000 = true := by
-  native_decide
+  decide
 
 /-- CALIBRATION (decide) : 1900 n'est PAS bissextile (divisible par 100, pas par 400). -/
 theorem isLeapYear_1900 : isLeapYear 1900 = false := by
-  native_decide
+  decide
 
 /-- CALIBRATION (decide) : 2024 est bissextile. -/
 theorem isLeapYear_2024 : isLeapYear 2024 = true := by
-  native_decide
+  decide
 
 /-- HOMMAGE + CALIBRATION : John Conway est décédé le samedi 11 avril 2020.
     Évaluation fermée de l'algorithme Doomsday. -/
 theorem dayOfWeek_conway_death : dayOfWeek 2020 4 11 = DayOfWeek.saturday := by
-  native_decide
+  decide
 
 /-- CALIBRATION (décomposition par cas) : ajouter une semaine complète est l'identité.
     Un `decide` naïf échoue (`d` est libre) ; nécessite `cases d`. -/

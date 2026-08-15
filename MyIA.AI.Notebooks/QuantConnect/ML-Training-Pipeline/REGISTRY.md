@@ -3,8 +3,179 @@
 Auto-generated: 2026-05-03 22:29
 Updated: 2026-05-06 — Stage -1 Panier baselines: 18 BEATS, 32 FAILS across 50 experiments (26 symbols x 2 models)
 Updated: 2026-06-12 — Ladder #1409 verdicts consolidated; legacy SPY-single checkpoints marked ARCHIVED
+Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais révélé par loss_fn=linear)
+Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11011): BEATS 3/3 (linear → mse : changement de jambe, pas de modèle)
+Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
+Updated: 2026-08-15 — M15 LSTM-vol §C re-run perte de précision (issue #11034): 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
+
+## M4 DLinear-vol — entrée §C (2026-08-14) — issue #10908
+
+Première entrée du registre conforme **intégralement** au barème `pr-review-discipline.md` §C :
+walk-forward ≥ 5 folds, ≥ 4 seeds, Diebold-Mariano `loss_fn="linear"` (perte signée), conjonction
+edge ≥ 2σ **et** `dm_p_median < 0,05` (reportés séparément), baselines + coûts documentés, verdict
+honnête. Notebook : `m4_dlinear_vol_sc_validation.ipynb` (outputs C.2, 0 erreur).
+
+**Modèle** : DLinear (Zeng et al. AAAI 2023) — `y_hat = Linear(seq_len=22 -> horizon)`, ~22 params.
+**Univers** : BTC-USD (Bitstamp hourly 2014→2024, 2278 jours de RV). Coin le plus riche du panel
+M4 (les autres ~725 j restent hors barème §C).
+**Cible** : log-RV quotidien. **Baselines** : HAR (Corsi 2009, benchmark de référence) +
+persistence (random walk, mesurée section 4 du notebook). **DM** : `scripts/dm_test.py`,
+HAC Newey-West + correction HLN, `loss_fn="linear"` (#10228).
+
+| Horizon | edge (red MSE moy, %) | σ cross-seed | dm_p_median | Verdict §C |
+|---------|----------------------|--------------|-------------|------------|
+| h=1 | +15,3 % | 0,04 | 0,00e+00 | **NO BEATS** |
+| h=5 | +28,3 % | 0,10 | 0,00e+00 | **NO BEATS** |
+| h=10 | +38,3 % | 0,20 | 0,00e+00 | **NO BEATS** |
+
+**Lecture honnête (le piège §C, mesure #10938)** : DLinear bat HAR de 15 à 38 % en MSE (perte
+symétrique). Sous la perte **signée** (`linear`), `d_mean = biais_DL − biais_HAR` (identité
+dm_test.py L123-135) : le différentiel `dm_mean_loss_diff ≈ +0,22` log-RV (h=1) est **porté par
+le biais de HAR**, pas par DLinear. Mesuré (run dé-biaisé #10938) : `har_bias_oos = −0,227`
+(h=1, HAR **sous-prévient** log-RV), `bias_DL = dm_mean_loss_diff + har_bias_oos ≈ 0` (DLinear
+**non biaisé**). L'hypothèse initiale « retirer le biais² porterait l'edge à ~21/52/74 % » est
+**réfutée** : le biais² (~0,051 h=1) est dans le MSE de **HAR**, pas dans celui de DLinear —
+dé-biaiser DLinear ne libère rien (MSE brut = dé-biaisé, bit-identique), dé-biaiser HAR ramènerait
+son MSE à ~0,836 et l'edge à ~10 %. Sous §C tel qu'écrit, la conjonction n'est pas tenue.
+**Verdict §C : NO BEATS (3/3 horizons)** — règle de dominance (seed BEATEN → NO BEATS) appliquée.
+**Coûts de transaction** : prévision (MSE log-RV), **aucune stratégie dérivée** → coût non imputé ;
+borne crypto 10 bps si conversion future en overlay de vol-timing (note, pas un claim).
+**Persistence MSE** (même série, même découpage) : h=1 `1,173` · h=5 `0,968` · h=10 `0,930` —
+DLinear et HAR battent tous deux le plancher naïf.
+
+- **Data hash** : `sha256 38a4e973955cf9f8527c3096931aa958bfae09580737c909450504b21502c573`
+  (`Bitstamp_BTCUSD_1h_2014-20240808.csv`, CryptoDataDownload)
+- **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn linear --skip-remote --coins BTC-USD --out-json results/m4_dlinear_vol_btc_sc.json` (3508 s)
+- **Verdict global** : 0/3 BEATS, 0/3 INCONCLUSIVE, **3/3 NO BEATS**
+
+### M4 DLinear-vol — re-run §C dé-biaisé (2026-08-14, issue #10938)
+
+Re-run du barème §C avec dé-biaisage explicite (mesure acceptance #1 de #10938 : attribution du
+`dm_mean_loss_diff` sous perte signée). Verdict inchangé — l'attribution de la « Lecture honnête »
+ci-dessus est la **correction** mesurée.
+
+**Méthode** : `_train_bias` estime le biais signé moyen modèle-vs-cible **sur fold train uniquement**
+(jamais sur test, acceptance #2) ; il est soustrait aux prédictions de test ; le biais OOS de HAR
+(`har_bias_oos`) est persisté par horizon. Config identique au run brut (`refit_every` 22, 4 seeds,
+5 folds).
+
+| Horizon | `dm_mean_loss_diff` | `har_bias_oos` | ⇒ `bias_DL` dérivé | MSE DL dé-biaisé vs brut |
+|---------|--------------------:|---------------:|--------------------|--------------------------|
+| h=1 | +0,2282 | −0,2266 | ≈ 0 (+0,002) | 0,7516 = 0,7516 (bit-identique) |
+| h=5 | +0,3512 | −0,3432 | ≈ 0 (+0,008) | 0,3740 = 0,3740 |
+| h=10 | +0,4513 | −0,4502 | ≈ 0 (+0,001) | 0,3521 = 0,3521 |
+
+**Lecture** : `d_mean = biais_DL − biais_HAR` — le différentiel linéaire est porté par le biais de
+**HAR** (sous-prévision log-RV −0,23 à −0,45 selon l'horizon) ; DLinear est **non biaisé**
+(`bias_DL ≈ 0` sur les 3 horizons). Dé-biaiser DLinear ne change rien (son MSE est déjà dé-biaisé
+au 1/1000ᵉ) ; dé-biaiser HAR ramènerait son MSE de ~0,888 à ~0,836 (h=1) et l'edge de ~15 % à
+~10 %. L'hypothèse « retirer le biais² → edge ~21/52/74 % » est **réfutée** par la mesure.
+
+- **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn linear --skip-remote --coins BTC-USD --debias --out-json results/m4_dlinear_vol_btc_sc_debiased.json` (3963,8 s)
+- **Notebook** : section 7 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction + décomposition, outputs C.2)
+- **Verdict §C dé-biaisé** : **3/3 NO BEATS** — identique au brut (la dominance seed-BEATEN est une propriété du MSE, pas du biais).
+
+### M4 DLinear-vol — re-run §C perte de précision (2026-08-15, issue #11011)
+
+Re-run du barème §C **amendé** (#11010) sous `--loss-fn mse` (jambe de précision). Le verdict
+NO BEATS de #10930 était instrumenté sur `linear`, désormais **contrôle de biais séparé** — la
+conjonction doit porter sur une perte de précision (`mse`/`mae`). Cette entrée rend la conjonction
+§C sur MSE : edge ≥ 2σ cross-seed **et** `dm_p_median < 0,05`.
+
+| Horizon | edge (red MSE moy, %) | σ cross-seed | dm_p_median | Verdict §C |
+|---------|----------------------|--------------|-------------|------------|
+| h=1 | +15,3 % | 0,04 | 0,00e+00 | **BEATS** |
+| h=5 | +28,3 % | 0,10 | 2,25e-10 | **BEATS** |
+| h=10 | +38,3 % | 0,20 | 2,39e-09 | **BEATS** |
+
+**Lecture** : sous `mse`, le DM teste l'égalité des pertes quadratiques (précision pure) — le
+`d_mean = biais_DL − biais_HAR` de la jambe linéaire n'intervient plus dans le verdict. Les
+4 seeds de chaque horizon passent **BEATS baseline** (0 BEATEN) et la conjonction est tenue 3/3 :
+l'edge de précision (+15 à +38 %) est **significatif** sous la perte quadratique. Le changement de
+verdict (NO BEATS → BEATS) vs #10930 est **mécanique** : mêmes MSE, mêmes seeds, même découpage —
+ce qui change est la question posée au DM (biais sous `linear`, précision sous `mse`), pas le
+modèle. Rapport de biais séparé (mesuré #10938, inchangé) : `har_bias_oos` −0,2266/−0,3432/−0,4502
+(h=1/5/10), `bias_DL ≈ 0` — le différentiel linéaire reste porté par le biais de HAR, DLinear
+non biaisé.
+
+- **Run** : `python dlinear_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --loss-fn mse --skip-remote --coins BTC-USD --out-json scripts/results/m4_dlinear_vol_btc_sc_mse.json` (2341,4 s)
+- **Notebook** : section 8 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
+- **Verdict §C (jambe de précision)** : **3/3 BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
+
+## M15 LSTM-vol — entrée §C (2026-08-14) — issue #10941
+
+2e entrée du registre conforme au barème `pr-review-discipline.md` §C (suite #10908/#10930) :
+walk-forward ≥ 5 folds, ≥ 4 seeds, Diebold-Mariano `loss_fn="linear"` (perte signée), conjonction
+edge ≥ 2σ **et** `dm_p_median < 0,05` (reportés séparément), baselines + coûts documentés, verdict
+honnête. Notebook : `m15_lstm_rv_sc_validation.ipynb` (outputs C.2, 0 erreur).
+
+**Modèle** : LSTM (Hochreiter & Schmidhuber 1997) — `LSTM(hidden=64, layers=1, window=22) -> horizon`,
+~17 729 params, Adam lr=1e-3, 100 epochs max (patience 10).
+**Univers** : BTC-USD (Bitstamp hourly 2014→2024, 2278 jours de RV). Coin le plus riche du panel
+M15 (les autres ~725 j restent hors barème §C).
+**Cible** : log-RV quotidien. **Baselines** : HAR (Corsi 2009, benchmark de référence) +
+persistence (random walk, mesurée section 4 du notebook). **DM** : `scripts/dm_test.py`,
+HAC Newey-West + correction HLN, `loss_fn="linear"` (#10228).
+**Cadence de refit** : `--refit-every 110` (vs 22 legacy) — à 22 j, ~85 LSTM retraînés par combo
+(~50 min/combo sur RTX 3070) serait infeasible pour un sweep multi-seed §C de 12 combos. La cadence
+110 j est un hyperparamètre de walk-forward légitime, reproductible, documenté dans le notebook.
+
+| Horizon | edge (red MSE moy, %) | σ cross-seed | dm_p_median | Verdict §C |
+|---------|----------------------|--------------|-------------|------------|
+| h=1 | −0,4 % | 3,67 | 3,08e-09 | **NO BEATS** |
+| h=5 | +13,3 % | 4,46 | 0,00e+00 | **NO BEATS** |
+| h=10 | +20,1 % | 4,11 | 0,00e+00 | **NO BEATS** |
+
+**Lecture honnête (le piège §C, même structure que M4)** : LSTM bat HAR de 13 à 20 % en MSE sur
+h=5/h=10 (perte symétrique) mais la perte **signée** (`linear`) révèle un **biais différentiel**
+LSTM−HAR — les 4 seeds de chaque horizon sont **BEATEN BY baseline** (`dm_p_median < 3,1e-09`).
+h=1 est plus ambigu : 2 seeds améliorent le MSE (−2,7/−3,9 %) mais 2 seeds le dégradent (+3,6/+4,4 %)
+→ edge moyen ≈ 0 (−0,4 %). Le DM signé détecte ce biais de niveau des prévisions (différentiel
+LSTM−HAR) exactement comme pour DLinear : sous `loss_fn="linear"`, un modèle qui sous-prévoit
+log-RV est mécaniquement « battu » — l'edge MSE réel ne se convertit pas en verdict §C. Conjonction
+non tenue partout. **Attribution du biais non mesurée dans ce run** (`mean_loss_diff = bias_LSTM −
+bias_HAR`, `har_bias_oos` non persisté ici) : cf #10938/#10966 où HAR porte l'essentiel sur la même
+cible.
+**Verdict §C : NO BEATS (3/3 horizons)** — règle de dominance (seed BEATEN → NO BEATS) appliquée.
+**Coûts de transaction** : prévision (MSE log-RV), **aucune stratégie dérivée** → coût non imputé ;
+borne crypto 10 bps si conversion future en overlay de vol-timing (note, pas un claim).
+**Persistence MSE** (même série, même découpage) : h=1 `1,173` · h=5 `0,968` · h=10 `0,930` —
+LSTM et HAR battent tous deux le plancher naïf.
+
+- **Data hash** : `sha256 38a4e973955cf9f8527c3096931aa958bfae09580737c909450504b21502c573`
+  (`Bitstamp_BTCUSD_1h_2014-20240808.csv`, CryptoDataDownload)
+- **Run** : `python m15_lstm_rv.py --coins BTC-USD --seeds 0 1 7 42 --horizons 1 5 10 --loss-fn linear --refit-every 110 --output results/m15_lstm_rv_btc_sc` (2096 s, resume depuis checkpoint 5/12)
+- **Verdict global** : 0/3 BEATS, 0/3 INCONCLUSIVE, **3/3 NO BEATS**
+
+### M15 LSTM-vol — re-run §C perte de précision (2026-08-15, issue #11034)
+
+Re-run du barème §C **amendé** (#11010) sous `--loss-fn mse` (jambe de précision). Le verdict
+NO BEATS de #10941 était instrumenté sur `linear`, désormais **contrôle de biais séparé** — la
+conjonction doit porter sur une perte de précision (`mse`/`mae`). Cette entrée rend la conjonction
+§C sur MSE : edge ≥ 2σ cross-seed **et** `dm_p_median < 0,05`.
+
+| Horizon | edge (red MSE moy, %) | σ cross-seed | dm_p_median | Verdict §C |
+|---------|----------------------|--------------|-------------|------------|
+| h=1 | -0,7 % | 3,70 | 3.63e-01 | **INCONCLUSIVE** |
+| h=5 | +14,9 % | 4,64 | 4.06e-02 | **BEATS** |
+| h=10 | +18,8 % | 4,72 | 1.83e-02 | **BEATS** |
+
+**Lecture** : sous `mse`, le DM teste l'égalité des pertes quadratiques (précision pure) — le
+`d_mean = biais_LSTM − biais_HAR` de la jambe linéaire n'intervient plus dans le verdict, et la
+règle de dominance (seed BEATEN) ne se déclenche plus : les seeds BEATEN du run linear étaient
+l'artefact du biais différentiel. Contrairement au re-run M4 (#11036, MSE bit-identiques), ce
+sweep ré-entraîne les LSTM (cuDNN non déterministe sur GPU) : les edges restent proches de #10941
+(± 1,6 pt) — l'écart dominant entre les deux runs est bien la **jambe DM**, pas le modèle.
+Rapport de biais séparé (contrôle §C(7), conservé) : la jambe linear #10941 reste le contrôle
+(`dm_p_median < 3,1e-09`, seeds BEATEN sur h=5/h=10) ; l'attribution du biais n'est pas mesurée
+dans le run M15 (`har_bias_oos` non persisté ici) — sur la même cible, #10938/#10966 montrent
+que HAR porte l'essentiel (`har_bias_oos` −0,23/−0,34/−0,45).
+
+- **Run** : `python m15_lstm_rv.py --coins BTC-USD --seeds 0,1,7,42 --horizons 1,5,10 --loss-fn mse --refit-every 110 --output results/m15_lstm_rv_btc_sc_mse` (1563 s, resume depuis checkpoint 9/12)
+- **Notebook** : section 7 de `m15_lstm_rv_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
+- **Verdict §C (jambe de précision)** : **2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
 
 ## Ladder #1409 — Final Verdicts (2026-06-12)
 
@@ -17,11 +188,11 @@ honest verdict). Full method + results per rung: `docs/L<n>_*.md` + `scripts/res
 | L1 | TSMOM multi-asset | NO BEATS | net Sharpe -2.26 to -2.56 (costs kill) | `docs/L1_tsmom.md` |
 | L2 | Carry + dual momentum | NO BEATS | best CS 252d delta -0.153 | `docs/L2_dual_momentum.md` |
 | L3 | Trend long-horizon | NO BEATS | 0/75 signal, median AUC 0.509 | `results/l3_trend_long_horizon/` |
-| **L4** | **Decision Transformer (action-based)** | **BEATS** | **24/26, median AUC 0.558** | `docs/STAGE7_DECISION_TRANSFORMER.md` |
+| **L4** | **Decision Transformer (action-based)** | **BEATS** (panel @10bps) | **24/26, median AUC 0.558** ; @50bps INCONCLUSIVE ; holdout temporel 06/08 non reproduit (interne -6.63σ DM p 0.085, frais +19.97σ DM p 0.236) | `docs/L4_decision_transformer.md` |
 | L5 | Vol-targeted trend composite | NO BEATS | delta -0.236 vs S4 v2, t=-2.49, DSR 0.074 | `docs/L5_vol_targeted_composite.md` |
 | (side) | PatchTST forecast-based (mislabeled "L5" before 2026-06-12) | NO BEATS | 0/26, median AUC 0.501 | `results/l5_patchtst/` |
 
-Conclusion: alpha on this universe comes from learned action policies (L4), not trend
+Conclusion: alpha on this universe comes from learned action policies (L4) — **in cross-section / panel only (@10bps)**; the L4 edge does NOT survive temporal holdout (internal split 06/08: -6.63σ, DM p 0.085) — not trend
 overlays or vol conditioning on risk-based allocation. Vol-targeting achieves its 10%
 risk target at ~zero Sharpe cost — keep as a *risk* overlay on production candidates
 (S3 HMM + S4 v2 Ridge KEEPERS), not as an alpha source.

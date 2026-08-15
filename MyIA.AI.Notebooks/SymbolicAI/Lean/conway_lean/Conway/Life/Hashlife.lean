@@ -4,53 +4,58 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 ## Hashlife (Gosper 1984)
 
-The Hashlife algorithm exploits the self-similar structure of Game of
-Life patterns. Two observations make it work:
+L'algorithme Hashlife exploite la structure auto-similaire des motifs du
+Jeu de la Vie. Deux observations le rendent possible :
 
-1. A level-`k` `MacroCell` (`k >= 2`, side `2^k`) contains enough
-   information to compute the **centered** level-`(k-1)` sub-region
-   (side `2^(k-1)`) after `2^(k-2)` generations of B3/S23, because at
-   distance `2^(k-2)` from any cell the rule cannot propagate
-   information further than `2^(k-2)` cells.
-2. The computation is structurally recursive on the level: combining
-   nine overlapping level-`(k-1)` sub-cells (the standard Hashlife
-   "double-nine" decomposition), each advanced by `2^(k-3)`
-   generations, gives the four-quadrant decomposition of the centered
-   level-`(k-1)` region after `2 * 2^(k-3) = 2^(k-2)` generations.
+1. Une `MacroCell` de niveau `k` (`k >= 2`, cote `2^k`) contient assez
+   d'information pour calculer la sous-region **centree** de niveau
+   `(k-1)` (cote `2^(k-1)`) apres `2^(k-2)` generations de B3/S23, car a
+   distance `2^(k-2)` de toute cellule la regle ne peut pas propager
+   l'information au-dela de `2^(k-2)` cellules.
+2. Le calcul est structurellement recursif sur le niveau : en combinant
+   neuf sous-cellules de niveau `(k-1)` qui se chevauchent (la
+   decomposition standard de Hashlife en double-neuf), chacune avancee
+   de `2^(k-3)` generations, on obtient la decomposition en quatre
+   quadrants de la region centree de niveau `(k-1)` apres
+   `2 * 2^(k-3) = 2^(k-2)` generations.
 
-In this Lean port we implement the algorithm **without** memoization
-(no `HashMap` / hash-consing). The kernel cannot reduce a hash-table
-efficiently, so we trade peak performance for full structural
-reduction. A later module may add memoization for native execution.
+Dans ce port Lean nous implementons l'algorithme **sans** memoisation
+(pas de `HashMap` / hash-consing). Le noyau ne sait pas reduire une table
+de hachage efficacement, donc nous echangeons la performance maximale
+contre une reduction structurelle complete. Un module ulterieur pourra
+ajouter la memoisation pour l'execution native.
 
-## Pieces of the implementation
+## Morceaux de l'implementation
 
-- `step4x4`     : level-2 input -> level-1 output, one generation ahead
-                  (base case, computed via direct B3/S23).
-- `hashlifeResult` : level-`k` input (`k >= 2`) -> level-`(k-1)` output,
-                     `2^(k-2)` generations ahead (recursive case).
-- `centerInLevelPlus2` : pad a level-`n` cell into a level-`(n+2)` cell
-                          with the input placed at the centered region.
-- `hashlifeStep` : convenience wrapper. Given a `MacroCell` `c`, pad to
-                   level `c.level + 2` and call `hashlifeResult` once,
-                   advancing by `2 ^ c.level` generations.
-- `evolveHashlife n g` : top-level entry point. Advances `g` by `n`
-                          generations, using Hashlife when feasible.
+- `step4x4`     : entree de niveau 2 -> sortie de niveau 1, une generation
+                  en avant (cas de base, calcule via B3/S23 direct).
+- `hashlifeResult` : entree de niveau `k` (`k >= 2`) -> sortie de niveau
+                     `(k-1)`, `2^(k-2)` generations en avant (cas recursif).
+- `centerInLevelPlus2` : placer une cellule de niveau `n` dans une cellule
+                          de niveau `(n+2)` avec l'entree placee dans la
+                          region centree.
+- `hashlifeStep` : enveloppe de commodite. Etant donne une `MacroCell`
+                   `c`, rembourrer au niveau `c.level + 2` et appeler
+                   `hashlifeResult` une fois, en avancant de
+                   `2 ^ c.level` generations.
+- `evolveHashlife n g` : point d'entree de haut niveau. Fait avancer `g`
+                          de `n` generations, en utilisant Hashlife quand
+                          c'est possible.
 
 ## Correctness
 
-We do not prove the full correctness theorem
-`evolveHashlife n g = evolve n g`. The theorem is comment-only because
-(a) it requires an extensive theory of MacroCell semantics and (b) the
-algorithm is verified empirically by `#eval` against the reference
-`step`/`evolve` from `Conway.Life` on the canonical small patterns.
+Nous ne prouvons pas le theoreme de correction complet
+`evolveHashlife n g = evolve n g`. Le theoreme est seulement commente car
+(a) il exige une theorie extensive de la semantique des MacroCell et
+(b) l'algorithme est verifie empiriquement par `#eval` face aux references
+`step`/`evolve` de `Conway.Life` sur les petits motifs canoniques.
 
-For the canonical small patterns (block, blinker, glider, beacon,
-toad), `evolveHashlife` is verified to agree with `evolve` on every
-generation tested.
+Pour les petits motifs canoniques (block, blinker, glider, beacon,
+toad), `evolveHashlife` est verifie comme coincidant avec `evolve` sur
+toutes les generations testees.
 
-This module is fully proven (no gaps in actual definitions; the
-correctness theorem is left as a future direction).
+Ce module est entierement prouve (aucun trou dans les definitions
+reelles ; le theoreme de correction est laisse comme direction future).
 -/
 
 import Conway.Life
@@ -61,24 +66,24 @@ namespace Life
 
 open MacroCell
 
-/-! ## 4x4 base case: `step4x4`
+/-! ## Cas de base 4x4 : `step4x4`
 
-We extract the 4x4 boolean matrix encoded in a level-2 MacroCell, then
-apply the B3/S23 rule at the centered 2x2 cells `(1,1), (1,2), (2,1),
-(2,2)`. -/
+Nous extrayons la matrice 4x4 de booleens codee dans une MacroCell de
+niveau 2, puis nous appliquons la regle B3/S23 aux cellules centrees 2x2
+`(1,1), (1,2), (2,1), (2,2)`. -/
 
-/-- Extract the 16 booleans of a level-2 MacroCell as a 4x4
-    `Array (Array Bool)`. The all-dead matrix is returned on
-    malformed (non level-2) inputs. -/
+/-- Extrait les 16 booleens d'une MacroCell de niveau 2 sous forme d'un
+    `Array (Array Bool)` 4x4. La matrice toute-morte est renvoyee sur les
+    entrees mal formees (non niveau 2). -/
 def level2ToMatrix : MacroCell -> Array (Array Bool)
   | node nw ne sw se =>
     let q : MacroCell -> Bool × Bool × Bool × Bool
       | node (leaf a) (leaf b) (leaf c) (leaf d) => (a, b, c, d)
       | _ => (false, false, false, false)
-    let (a00, a01, a10, a11) := q nw   -- rows 0-1, cols 0-1
-    let (b00, b01, b10, b11) := q ne   -- rows 0-1, cols 2-3
-    let (c00, c01, c10, c11) := q sw   -- rows 2-3, cols 0-1
-    let (d00, d01, d10, d11) := q se   -- rows 2-3, cols 2-3
+    let (a00, a01, a10, a11) := q nw   -- lignes 0-1, col 0-1
+    let (b00, b01, b10, b11) := q ne   -- lignes 0-1, col 2-3
+    let (c00, c01, c10, c11) := q sw   -- lignes 2-3, col 0-1
+    let (d00, d01, d10, d11) := q se   -- lignes 2-3, col 2-3
     #[#[a00, a01, b00, b01],
       #[a10, a11, b10, b11],
       #[c00, c01, d00, d01],
@@ -87,11 +92,11 @@ def level2ToMatrix : MacroCell -> Array (Array Bool)
     let row : Array Bool := #[false, false, false, false]
     #[row, row, row, row]
 
-/-- Read `mat[i]![j]!`, defaulting to `false` if out of bounds. -/
+/-- Lit `mat[i]![j]!`, avec `false` par defaut hors des bornes. -/
 @[inline] def readBit (mat : Array (Array Bool)) (i j : Nat) : Bool :=
   ((mat[i]?.getD #[])[j]?).getD false
 
-/-- Apply the B3/S23 rule at `mat[i][j]`, counting live Moore neighbors. -/
+/-- Applique la regle B3/S23 en `mat[i][j]`, en comptant les voisins de Moore vivants. -/
 def applyB3S23 (mat : Array (Array Bool)) (i j : Nat) : Bool :=
   let n : Nat :=
     (if readBit mat (i - 1) (j - 1) then 1 else 0)
@@ -107,9 +112,9 @@ def applyB3S23 (mat : Array (Array Bool)) (i j : Nat) : Bool :=
   else
     n == 3
 
-/-- Base case of Hashlife: level-2 input -> level-1 output, one
-    generation ahead, covering the centered 2x2 at positions
-    `(1,1), (1,2), (2,1), (2,2)` of the input. -/
+/-- Cas de base de Hashlife : entree de niveau 2 -> sortie de niveau 1,
+    une generation en avant, couvrant le 2x2 centre aux positions
+    `(1,1), (1,2), (2,1), (2,2)` de l'entree. -/
 def step4x4 (c : MacroCell) : MacroCell :=
   if c.level == 2 then
     let mat := level2ToMatrix c
@@ -121,50 +126,53 @@ def step4x4 (c : MacroCell) : MacroCell :=
   else
     emptyOfLevel 1
 
-/-! ## Recursive Hashlife: `hashlifeResult`
+/-! ## Hashlife recursif : `hashlifeResult`
 
-`hashlifeResult c` takes a level-`k` MacroCell (`k >= 2`) and returns
-a level-`(k-1)` MacroCell representing the centered region after
-`2^(k-2)` generations.
+`hashlifeResult c` prend une MacroCell de niveau `k` (`k >= 2`) et
+renvoie une MacroCell de niveau `(k-1)` representant la region centree
+apres `2^(k-2)` generations.
 
-Base case (`k = 2`): use `step4x4`.
+Cas de base (`k = 2`) : utiliser `step4x4`.
 
-Recursive case (`k >= 3`):
-1. Decompose the input's quadrants. Each is level `k-1`. Each of those
-   quadrants has four sub-quadrants of level `k-2`. Together they
-   tile a 4x4 grid of level-`(k-2)` cells (rows 0..3, cols 0..3).
-2. Form nine overlapping level-`(k-1)` cells (the 3x3 layout):
-     n1 = NW corner          (nw_nw, nw_ne, nw_sw, nw_se)
-     n2 = top middle         (nw_ne, ne_nw, nw_se, ne_sw)
-     n3 = NE corner          (ne_nw, ne_ne, ne_sw, ne_se)
-     n4 = left middle        (nw_sw, nw_se, sw_nw, sw_ne)
-     n5 = center             (nw_se, ne_sw, sw_ne, se_nw)
-     n6 = right middle       (ne_sw, ne_se, se_nw, se_ne)
-     n7 = SW corner          (sw_nw, sw_ne, sw_sw, sw_se)
-     n8 = bottom middle      (sw_ne, se_nw, sw_se, se_sw)
-     n9 = SE corner          (se_nw, se_ne, se_sw, se_se)
-3. Recurse on each n_i, obtaining level-`(k-2)` cells `r1..r9`, each
-   `2^(k-3)` generations ahead.
-4. Form four overlapping level-`(k-1)` super-cells from the r_i:
+Cas recursif (`k >= 3`) :
+1. Decomposer les quadrants de l'entree. Chacun est de niveau `k-1`.
+   Chacun de ces quadrants a quatre sous-quadrants de niveau `k-2`.
+   Ensemble ils pavent une grille 4x4 de cellules de niveau `(k-2)`
+   (lignes 0..3, col 0..3).
+2. Former neuf cellules de niveau `(k-1)` qui se chevauchent (disposition 3x3) :
+     n1 = coin NO          (nw_nw, nw_ne, nw_sw, nw_se)
+     n2 = milieu haut      (nw_ne, ne_nw, nw_se, ne_sw)
+     n3 = coin NE          (ne_nw, ne_ne, ne_sw, ne_se)
+     n4 = milieu gauche    (nw_sw, nw_se, sw_nw, sw_ne)
+     n5 = centre           (nw_se, ne_sw, sw_ne, se_nw)
+     n6 = milieu droit     (ne_sw, ne_se, se_nw, se_ne)
+     n7 = coin SO          (sw_nw, sw_ne, sw_sw, sw_se)
+     n8 = milieu bas       (sw_ne, se_nw, sw_se, se_sw)
+     n9 = coin SE          (se_nw, se_ne, se_sw, se_se)
+3. Recurir sur chaque n_i, en obtenant des cellules de niveau `(k-2)`
+   `r1..r9`, chacune avancee de `2^(k-3)` generations.
+4. Former quatre super-cellules de niveau `(k-1)` qui se chevauchent a
+   partir des r_i :
      q_nw = (r1, r2, r4, r5)
      q_ne = (r2, r3, r5, r6)
      q_sw = (r4, r5, r7, r8)
      q_se = (r5, r6, r8, r9)
-5. Recurse on each q_*, obtaining level-`(k-2)` cells `out_*`,
-   each another `2^(k-3)` generations ahead — total `2^(k-2)`. ✓
-6. Return `node out_nw out_ne out_sw out_se` (level `k-1`).
+5. Recurir sur chaque q_*, en obtenant des cellules de niveau `(k-2)`
+   `out_*`, chacune encore `2^(k-3)` generations en avant — total
+   `2^(k-2)`. ✓
+6. Renvoyer `node out_nw out_ne out_sw out_se` (niveau `k-1`).
 -/
 
-/-- Auxiliary for `hashlifeResult`: structural recursion on `fuel`.
-    When `fuel = 0`, returns a default cell. When `fuel > 0`,
-    performs one Hashlife step, recursing with `fuel - 1`.
-    Terminates because `fuel` is a `Nat` that strictly decreases.
+/-- Auxiliaire pour `hashlifeResult` : recursion structurelle sur `fuel`.
+    Quand `fuel = 0`, renvoie une cellule par defaut. Quand `fuel > 0`,
+    effectue un pas de Hashlife, en recursant avec `fuel - 1`.
+    Termine car `fuel` est un `Nat` qui decroit strictement.
 
-    The wrapper `hashlifeResult` calls this with `fuel = c.level`,
-    which is a structural upper bound on recursion depth (level
-    strictly decreases at each step of the algorithm). -/
+    L'enveloppe `hashlifeResult` l'appelle avec `fuel = c.level`, qui est
+    une borne structurelle superieure sur la profondeur de recursion (le
+    niveau decroit strictement a chaque pas de l'algorithme). -/
 def hashlifeResultAux : Nat → MacroCell → MacroCell
-  | 0, _ => deadLeaf  -- fuel exhausted: return default
+  | 0, _ => deadLeaf  -- fuel epuise : renvoyer la valeur par defaut
   | fuel + 1, c@(node (node nw_nw nw_ne nw_sw nw_se)
                       (node ne_nw ne_ne ne_sw ne_se)
                       (node sw_nw sw_ne sw_sw sw_se)
@@ -200,266 +208,573 @@ def hashlifeResultAux : Nat → MacroCell → MacroCell
       let out_se := hashlifeResultAux fuel q_se
       node out_nw out_ne out_sw out_se
   | _ + 1, c =>
-    -- Malformed: not a level >= 2 node of nodes.
+    -- Malforme : pas un noeud de niveau >= 2 compose de noeuds.
     if c.level == 0 then deadLeaf
     else emptyOfLevel (c.level - 1)
 
-/-- Recursive Hashlife: level-`k` input -> level-`(k-1)` output,
-    `2^(k-2)` generations ahead.
+/-- Hashlife recursif : entree de niveau `k` -> sortie de niveau `(k-1)`,
+    `2^(k-2)` generations en avant.
 
-    Implemented via `hashlifeResultAux` with fuel = `c.level`,
-    which is a structural upper bound on the recursion depth
-    (the level strictly decreases at each recursive call).
+    Implemente via `hashlifeResultAux` avec fuel = `c.level`, qui est une
+    borne structurelle superieure sur la profondeur de recursion (le
+    niveau decroit strictement a chaque appel recursif).
 
-    This wrapper is not itself recursive: termination comes from
-    `hashlifeResultAux`'s structural recursion on `fuel`, so the
-    wrapper is a plain `def` (kept transparent for the correctness
-    proofs in `Conway.Life.HashlifeMemo`). -/
+    Cette enveloppe n'est pas elle-meme recursive : la terminaison vient
+    de la recursion structurelle de `hashlifeResultAux` sur `fuel`, donc
+    l'enveloppe est un simple `def` (gardee transparente pour les preuves
+    de correction dans `Conway.Life.HashlifeMemo`). -/
 def hashlifeResult (c : MacroCell) : MacroCell :=
   hashlifeResultAux c.level c
 
-/-! ## Centering / padding helpers -/
+/-! ## Aides de centrage / rembourrage -/
 
-/-- Center `c` (level `n`) inside a level-`(n+2)` MacroCell, with `c`
-    placed at the centered `2^n x 2^n` region.
+/-- Centre `c` (niveau `n`) dans une MacroCell de niveau `(n+2)`, avec
+    `c` place dans la region centree `2^n x 2^n`.
 
-    The four level-`(n+1)` quadrants of the result are each formed of
-    four level-`n` sub-cells: one is a part of the input, the other
-    three are all-dead padding. -/
+    Les quatre quadrants de niveau `(n+1)` du resultat sont chacun
+    composes de quatre sous-cellules de niveau `n` : une est une partie
+    de l'entree, les trois autres sont du rembourrage tout-mort. -/
 def centerInLevelPlus2 (c : MacroCell) : MacroCell :=
   let n := c.level
   let e : MacroCell := emptyOfLevel n
-  -- Result NW quadrant (level n+1) has `c` in its SE sub-cell.
-  -- Result NE quadrant has `c` in its SW sub-cell.
-  -- Result SW quadrant has `c` in its NE sub-cell.
-  -- Result SE quadrant has `c` in its NW sub-cell.
+  -- Le quadrant NO du resultat (niveau n+1) a `c` dans sa sous-cellule SE.
+  -- Le quadrant NE du resultat a `c` dans sa sous-cellule SO.
+  -- Le quadrant SO du resultat a `c` dans sa sous-cellule NE.
+  -- Le quadrant SE du resultat a `c` dans sa sous-cellule NO.
   node (node e e e c)
        (node e e c e)
        (node e c e e)
        (node c e e e)
 
-/-- Pad `c` (level `n`) into a level-`(n+1)` MacroCell by placing `c`
-    at the centered region with all-dead padding around it.
+/-- Remboure `c` (niveau `n`) dans une MacroCell de niveau `(n+1)` en
+    placant `c` dans la region centree avec du rembourrage tout-mort
+    autour.
 
-    For `c = node nw ne sw se`, the result is:
+    Pour `c = node nw ne sw se`, le resultat est :
     ```
     node (node e e e nw) (node e e ne e) (node e sw e e) (node se e e e)
     ```
-    This gives one copy of `c` in the center, with `2^(n-1)` cells of
-    dead padding on each side. -/
+    Cela donne une copie de `c` au centre, avec `2^(n-1)` cellules de
+    rembourrage mort de chaque cote. -/
 def padToLevelPlus1 (c : MacroCell) : MacroCell :=
   match c with
   | node nw ne sw se =>
-    let e := emptyOfLevel nw.level  -- level n-1
+    let e := emptyOfLevel nw.level  -- niveau n-1
     node (node e e e nw) (node e e ne e) (node e sw e e) (node se e e e)
-  | _ => c  -- leaves can't be padded
+  | _ => c  -- les feuilles ne peuvent pas etre rembourrees
 
-/-- Pad `c` by 2 levels, placing it at the center of a level-`(n+2)` cell.
-    Equivalent to `padToLevelPlus1 (padToLevelPlus1 c)`.
-    The result has `2^n` cells of dead padding on each side. -/
+/-- Remboure `c` de 2 niveaux, en le placant au centre d'une cellule de
+    niveau `(n+2)`. Equivalent a `padToLevelPlus1 (padToLevelPlus1 c)`.
+    Le resultat a `2^n` cellules de rembourrage mort de chaque cote. -/
 def padCenter2 (c : MacroCell) : MacroCell := padToLevelPlus1 (padToLevelPlus1 c)
 
-/-! ## One-generation step on arbitrary MacroCells
+/-! ## Pas d'une generation sur des MacroCell quelconques
 
-For single-generation steps, we round-trip via Grid for level > 0
-(since `hashlifeResult` jumps by `2^(k-2)` generations, not 1).
-The real speedup comes from `hashlifeJump` and `evolveHashlifeFast`
-which use the recursive Hashlife for multi-generation jumps. -/
+Pour les pas d'une seule generation, nous faisons un aller-retour via
+Grid pour level > 0 (car `hashlifeResult` saute de `2^(k-2)` generations,
+pas de 1). La vraie acceleration vient de `hashlifeJump` et
+`evolveHashlifeFast`, qui utilisent le Hashlife recursif pour les sauts
+de plusieurs generations. -/
 
-/-- Advance `c` by exactly one generation. For level 0, uses the
-    Hashlife base case `step4x4`. For larger levels, falls back to
-    `Conway.Life.step` on the underlying grid. -/
+/-- Fait avancer `c` d'exactement une generation. Pour le niveau 0,
+    utilise le cas de base Hashlife `step4x4`. Pour les niveaux plus
+    grands, se replie sur `Conway.Life.step` sur la grille sous-jacente. -/
 def hashlifeStep1 (c : MacroCell) : MacroCell :=
   if c.level == 0 then
     step4x4 (centerInLevelPlus2 c)
   else
     gridToMacroCell (step (c.toGrid (0, 0)))
 
-/-- One Hashlife step on a MacroCell. -/
+/-- Un pas de Hashlife sur une MacroCell. -/
 def hashlifeStep (c : MacroCell) : MacroCell := hashlifeStep1 c
 
-/-- Fast-forward `c` by `k` generations, one step at a time. -/
+/-- Avance rapide de `c` de `k` generations, un pas a la fois. -/
 def hashlifeFastForward : Nat -> MacroCell -> MacroCell
   | 0,     c => c
   | k + 1, c => hashlifeFastForward k (hashlifeStep1 c)
 
-/-! ## Exponential-speedup API: `hashlifeJump`, `evolveHashlifeFast`
+/-! ## API d'acceleration exponentielle : `hashlifeJump`, `evolveHashlifeFast`
 
-The key insight: `hashlifeResult` on a level-`k` MacroCell advances the
-centered region by `2^(k-2)` generations. To ensure the pattern stays
-within the computed region, we pad the MacroCell by 2 levels using
-`centerInLevelPlus2`, which places the pattern at the center of a
-`(level + 2)` cell. This gives `2^level` margin on each side, which is
-more than enough for `2^(level-2)` generations (speed of light = 1 cell/gen).
+L'idee clee : `hashlifeResult` sur une MacroCell de niveau `k` fait
+avancer la region centree de `2^(k-2)` generations. Pour garantir que le
+motif reste dans la region calculee, nous rembourrons la MacroCell de 2
+niveaux avec `centerInLevelPlus2`, qui place le motif au centre d'une
+cellule `(level + 2)`, laissant `2^level` de marge de chaque cote.
 
-With this padding, `hashlifeResult` on the padded cell advances by
-`2^level` generations (not `2^(level-2)`), and the result's offset equals
-the original offset (the centered result of the padded cell aligns with
-the original region). -/
+Attention : ce rembourrage **augmente aussi la portee**. `hashlifeResult`
+sur la cellule rembourree avance de `2^level` generations (et non
+`2^(level-2)` comme la cellule non rembourree). La marge `2^level` se
+trouve donc comparee a une portee de `2^level` generations : le ratio est
+**tendu** (proche de 1), et non « largement suffisant » comme l'aurait
+laisse croire la portee naive `2^(level-2)`. Le theoreme
+`no_padding_depth_suffices` (cf. `JumpCapture.lean`) le formalise :
+`marginToResultWindow k p < jumpReach k p`, la marge restant strictement
+inferieure a la portee du cone de vitesse 1, l'ecart etant le clip de
+`2^(k-1)`.
 
-/-- Jump a MacroCell forward by `2^level` generations using recursive
-    Hashlife with padding. Pads the input by 2 levels, then calls
-    `hashlifeResult`. The result is a level-`(k+1)` MacroCell.
+Le decalage du resultat egale le decalage original (le resultat centre de
+la cellule rembourree s'aligne avec la region originale). Desserrer ce
+ratio exigerait de decorreler la portee du niveau — le parametre `j` de
+Gosper (rembourrage plus profond que `+2`) ramene le ratio marge/portee
+a `2 - 2^(2-p)`, tendu a `p = 2` et surplus strict a `p >= 3` ; cette
+variante n'est pas implementee ici. -/
 
-    The result offset equals the original offset (the centered region
-    of the padded cell aligns with the original bounding box). -/
+/-- Fait sauter une MacroCell en avant de `2^level` generations en
+    utilisant le Hashlife recursif avec rembourrage. Remboure l'entree de
+    2 niveaux, puis appelle `hashlifeResult`. Le resultat est une
+    MacroCell de niveau `(k+1)`.
+
+    Le decalage du resultat egale le decalage original (la region centree
+    de la cellule rembourree s'aligne avec la boite englobante originale). -/
 def hashlifeJump (c : MacroCell) : MacroCell :=
   hashlifeResult (padCenter2 c)
 
-/-- Jump size for a level-`k` MacroCell: `2^k` generations. -/
+/-- Taille de saut pour une MacroCell de niveau `k` : `2^k` generations. -/
 def jumpSize (lvl : Nat) : Nat := 2 ^ lvl
 
-/-- Compute the offset for the result of `hashlifeJump`.
+/-- Calcule le decalage pour le resultat de `hashlifeJump`.
 
-    After padding by 2 levels (`padCenter2`), the level-`k` MacroCell
-    becomes level-`(k+2)`. The result of `hashlifeResult` on the padded
-    cell is level-`(k+1)`, whose corner is shifted by `-2^(k-1)` relative
-    to the original offset `off`. -/
+    Apres rembourrage de 2 niveaux (`padCenter2`), la MacroCell de niveau
+    `k` devient de niveau `(k+2)`. Le resultat de `hashlifeResult` sur la
+    cellule rembourree est de niveau `(k+1)`, dont le coin est decale de
+    `-2^(k-1)` par rapport au decalage original `off`. -/
 def jumpResultOff (off : Int × Int) (lvl : Nat) : Int × Int :=
   if lvl == 0 then off
   else (off.1 - (2 ^ (lvl - 1) : Nat), off.2 - (2 ^ (lvl - 1) : Nat))
 
-/-- Auxiliary for `evolveHashlifeFast`: structural recursion on `fuel`.
-    When `fuel = 0`, falls back to `evolve n g` (reference implementation).
-    When `fuel > 0`, tries to use Hashlife exponential jump if possible,
-    recursing with `fuel - 1`. -/
+/-- Auxiliaire pour `evolveHashlifeFast` : recursion structurelle sur
+    `fuel`. Quand `fuel = 0`, se replie sur `evolve n g` (implementation
+    de reference). Quand `fuel > 0`, essaye d'utiliser le saut
+    exponentiel de Hashlife si possible, en recursant avec `fuel - 1`. -/
 def evolveHashlifeFastAux : Nat → Nat → Grid → Grid
   | _, 0, g => g
-  | 0, _, g => g  -- fuel exhausted: return current state
+  | 0, _, g => g  -- fuel epuise : retourner l'etat courant
   | fuel + 1, n, g =>
     let (off, mc) := gridToMacroCellWithOffset g
     let lvl := mc.level
     let js := jumpSize lvl
     if lvl >= 2 && n >= js then
-      -- Jump forward by `2^lvl` generations using padded Hashlife
+      -- Saut en avant de `2^lvl` generations avec Hashlife rembourre
       let jumped := hashlifeJump mc
       let newOff := jumpResultOff off lvl
       let g' := jumped.toGrid newOff
       evolveHashlifeFastAux fuel (n - js) g'
     else
-      -- Small n or small pattern: use reference evolve
+      -- Petit n ou petit motif : utiliser le evolve de reference
       evolve n g
 
-/-- Evolve `g` by `n` generations using Hashlife exponential speedup.
+/-- Fait evoluer `g` de `n` generations en utilisant l'acceleration
+    exponentielle de Hashlife.
 
-    Strategy:
-    - Build a MacroCell from `g` (level `k`).
-    - Pad by 2 levels and use `hashlifeResult` to jump `2^k` generations.
-    - After each jump, rebuild the MacroCell and repeat.
-    - For small `n` or level < 2, fall back to `evolve`.
+    Strategie :
+    - Construire une MacroCell a partir de `g` (niveau `k`).
+    - Rembourrer de 2 niveaux et utiliser `hashlifeResult` pour sauter de
+      `2^k` generations.
+    - Apres chaque saut, reconstruire la MacroCell et repeter.
+    - Pour les petits `n` ou level < 2, se replier sur `evolve`.
 
-    Implemented via `evolveHashlifeFastAux` with `fuel = n`,
-    since each iteration reduces `n` by at least `js >= 4`. -/
+    Implemente via `evolveHashlifeFastAux` avec `fuel = n`, car chaque
+    iteration reduit `n` d'au moins `js >= 4`. -/
 def evolveHashlifeFast (n : Nat) (g : Grid) : Grid :=
   evolveHashlifeFastAux n n g
 
-/-! ### N3: n-aware threading of `evolveHashlifeFast` (issue #3846)
+/-! ### N3 : tramage conscient de n pour `evolveHashlifeFast` (issue #3846)
 
-The P5 redesign introduces `gridToMacroCellWithOffsetN` (n-aware analog of
-`gridToMacroCellWithOffset`, see `MacroCell.lean` L736): it builds the
-`MacroCell` from `gridFrameN n g` (padding `max 2 n`) instead of the
-fixed-padding `gridFrame` (padding `2`). For `n ≤ 2`, both builders coincide
-(`gridToMacroCellWithOffsetN_le_two_eq`, L746), so the n-aware threading is
-**definitionally identical** to the existing `evolveHashlifeFast` on the
-small-`n` regime (every existing correctness witness in `Computation.lean`
-uses `n ∈ {2, 4, 8, 12, 16}`, all `≤ 16` but with most `≤ 4`).
+La refonte P5 introduit `gridToMacroCellWithOffsetN` (analogue conscient
+de n de `gridToMacroCellWithOffset`, voir `MacroCell.lean` L736) : il
+construit la `MacroCell` a partir de `gridFrameN n g` (rembourrage
+`max 2 n`) au lieu de `gridFrame` a rembourrage fixe (rembourrage `2`).
+Pour `n ≤ 2`, les deux constructeurs coincident
+(`gridToMacroCellWithOffsetN_le_two_eq`, L746), donc le tramage conscient
+de n est **definitionnellement identique** au `evolveHashlifeFast`
+existant dans le regime des petits `n` (chaque temoin de correction
+existant dans `Computation.lean` utilise `n ∈ {2, 4, 8, 12, 16}`, tous
+`≤ 16` mais la plupart `≤ 4`).
 
-This section **adds** the n-aware variant without touching `evolveHashlifeFast`
-or any of its 50+ call-sites / proofs:
+Cette section **ajoute** la variante consciente de n sans toucher a
+`evolveHashlifeFast` ni a aucun de ses 50+ sites d'appel / preuves :
 
-- `evolveHashlifeFastAuxN` / `evolveHashlifeFastN` — same recursion as
-  `evolveHashlifeFastAux`, but the initial MacroCell is built with the
-  n-aware frame `gridToMacroCellWithOffsetN n g`. Subsequent iterations use
-  the fixed-frame builder (N3 = "thread without re-frame", per the N1
-  design comment at MacroCell L634).
-- `evolveHashlifeFastN_zero` — trivial sanity: `n = 0` returns `g`.
+- `evolveHashlifeFastAuxN` / `evolveHashlifeFastN` — meme recursion que
+  `evolveHashlifeFastAux`, mais chaque iteration re-cadre via le
+  constructeur conscient de n `gridToMacroCellWithOffsetN` : l'appel
+  recursif `evolveHashlifeFastAuxN fuel (n - js) g'` re-entre dans
+  `gridToMacroCellWithOffsetN (n - js) g'` sur la grille sautee. (Le
+  commentaire de conception N1 a MacroCell L634 decrivait un tramage
+  "sans re-cadrer" ; le code, lui, re-cadre a chaque iteration — c'est
+  le code qui fait foi, la doc a ete alignee.)
+- `evolveHashlifeFastN_zero` — verification triviale : `n = 0` renvoie `g`.
+- `evolveHashlifeFastAuxN_eq_evolve` / `evolveHashlifeFastN_eq_evolve` —
+  **tranche (b2), #6724 : le garde de saut N3 est mort.** Le rembourrage
+  `max 2 n` de `gridFrameN` force `2 ^ lvl ≥ side ≥ 2 * n + 1 > n`
+  (`gridToMacroCellWithOffsetN_level_gt_n`, MacroCell), donc le garde
+  `lvl ≥ 2 ∧ n ≥ jumpSize lvl` est insatisfait pour toute grille non
+  vide (et `lvl = 0 < 2` pour la vide) : la branche de saut ne tire
+  jamais et la variante N3 degénère en le `evolve` de reference.
 
-The **bridge** `evolveHashlifeFastN n g = evolveHashlifeFast n g` for `n ≤ 2`
-(via `gridToMacroCellWithOffsetN_le_two_eq` + structural induction on `fuel`)
-is **deferred** to a follow-up cycle, paired with the P4 unlock: it requires
-the `evolveHashlifeFastMemo_eq_evolveHashlifeFast`-style full body unfolding
-which is best assembled once the Lean LSP harness (ai-01 turf, post-fix H)
-is back to fully interactive. Documenting the proof obligation here keeps
-the P5 redesign plan honest and avoids a vacuous stub. -/
+Le **pont** `evolveHashlifeFastN n g = evolve n g` est donc prouve pour
+TOUT n comme corollaire immediat du garde mort — plus fort que le pont
+`n ≤ 2` vers `evolveHashlifeFast` initialement reporte (la composante
+Hashlife est simplement inactive, au prix honnete de l'acceleration).
+Le dejouement pour la refonte P5 : couvrir le cone des n generations
+restantes par le rembourrage est auto-sabotant — le cadre gonfle au-dela
+du horizon du saut qu'il conditionne. La sortie identifiee (amendement
+j/p>=3, tranche par le coordinateur sur #6724) est la decorrelation j de
+Gosper (`hashlifeResultAt j`, implementee dans la section suivante) : a
+j = lvl-2 sur la cellule paddede, le comptage centre de la bbox rend la
+capture consequence du seul invariant du cadre
+(`jumpAt_capture_centered`), avec un garde viable
+(`guardAt_viable_glider`). -/
 
-/-- N3-threaded auxiliary for `evolveHashlifeFastN`: same recursion as
-    `evolveHashlifeFastAux`, but the initial MacroCell is built with the
-    n-aware frame `gridToMacroCellWithOffsetN n g`. Subsequent recursive
-    calls (the `n - js` arm) use the fixed-frame builder — N3 threads the
-    frame *without* re-framing on every iteration (per the N1 design
-    comment at MacroCell L634). -/
+/-- Auxiliaire trame N3 pour `evolveHashlifeFastN` : meme recursion que
+    `evolveHashlifeFastAux`, mais chaque iteration re-cadre via le
+    constructeur conscient de n `gridToMacroCellWithOffsetN` — l'appel
+    recursif sur `n - js` re-entre dans le cadrage conscient du n restant
+    sur la grille sautee. Attention (tranche (b2), #6724) : sous ce
+    cadrage, le garde de saut `lvl ≥ 2 ∧ n ≥ js` est structurellement
+    mort — voir `evolveHashlifeFastAuxN_eq_evolve` ci-dessous. -/
 def evolveHashlifeFastAuxN : Nat → Nat → Grid → Grid
   | _, 0, g => g
-  | 0, _, g => g  -- fuel exhausted: return current state
+  | 0, _, g => g  -- fuel epuise : retourner l'etat courant
   | fuel + 1, n, g =>
-    -- N3 substitution: n-aware frame on the initial MacroCell only.
+    -- Cadrage conscient de n a CHAQUE iteration : l'appel recursif de la
+    -- branche de saut re-entre dans gridToMacroCellWithOffsetN (n - js).
     let (off, mc) := gridToMacroCellWithOffsetN n g
     let lvl := mc.level
     let js := jumpSize lvl
     if lvl >= 2 && n >= js then
-      -- Jump forward by `2^lvl` generations using padded Hashlife,
-      -- then re-frame from the new (jumped) grid's fixed frame.
+      -- Saut en avant de `2^lvl` generations avec Hashlife rembourre,
+      -- puis re-cadrage conscient du n restant sur la grille sautee.
+      -- NB (tranche (b2), #6724) : branche actuellement MORTE —
+      -- `gridToMacroCellWithOffsetN_level_gt_n` (MacroCell) force
+      -- `2^lvl > n = js`, le garde ne peut jamais tirer tant que le
+      -- rembourrage `max 2 n` gouverne le niveau du cadre.
       let jumped := hashlifeJump mc
       let newOff := jumpResultOff off lvl
       let g' := jumped.toGrid newOff
-      -- Subsequent iterations use the fixed-frame builder, NOT the
-      -- n-aware one — the n parameter is already consumed by `n - js`,
-      -- and re-framing with the *new* `n` would needlessly inflate the
-      -- padding when the bounding box has shrunk after the jump.
       evolveHashlifeFastAuxN fuel (n - js) g'
     else
-      -- Small n or small pattern: use reference evolve.
+      -- Petit n ou petit motif : utiliser le evolve de reference.
       evolve n g
 
-/-- N3-threaded variant of `evolveHashlifeFast`: initial MacroCell uses the
-    n-aware frame `gridToMacroCellWithOffsetN n g`, then the recursion
-    proceeds identically. Public API; for `n ≤ 2` it coincides with
-    `evolveHashlifeFast` (bridge deferred to follow-up cycle, paired with
-    the P4 unlock — see the section docstring above). -/
+/-- Variante tramee N3 de `evolveHashlifeFast` : la MacroCell initiale
+    utilise le cadre conscient de n `gridToMacroCellWithOffsetN n g`, puis
+    la recursion procede de maniere identique. API publique ; pour
+    `n ≤ 2` elle coincide avec `evolveHashlifeFast` (pont reporte a un
+    cycle ulterieur, jumele avec le deblocage P4 — voir la docstring de
+    section ci-dessus). -/
 def evolveHashlifeFastN (n : Nat) (g : Grid) : Grid :=
   evolveHashlifeFastAuxN n n g
 
-/-- Trivial sanity: `evolveHashlifeFastN 0 g = g` (the `n = 0` arm of the
-    auxiliary returns `g` directly). -/
+/-- Verification triviale : `evolveHashlifeFastN 0 g = g` (la branche
+    `n = 0` de l'auxiliaire renvoie `g` directement). -/
 @[simp]
 theorem evolveHashlifeFastN_zero (g : Grid) :
     evolveHashlifeFastN 0 g = g := rfl
 
-/-- Compute `evolve n g` using Hashlife. Round-trips through the
-    `MacroCell` representation each generation, exercising `step4x4`
-    for the level-2 inner loop. -/
+/-- **Tranche (b2), #6724 : le garde de saut N3 est mort.** Pour toute
+    grille, le garde `lvl ≥ 2 ∧ n ≥ jumpSize lvl` de la branche de saut
+    est insatisfait : grille vide → `lvl = 0 < 2` ; grille non vide →
+    `gridToMacroCellWithOffsetN_level_gt_n` donne `2 ^ lvl > n` alors que
+    `jumpSize lvl = 2 ^ lvl`. La branche de saut ne tire donc jamais, et
+    l'auxiliaire N3 rend exactement le `evolve` de reference. -/
+theorem evolveHashlifeFastAuxN_eq_evolve (fuel n : Nat) (g : Grid)
+    (hfuel : 1 ≤ fuel) :
+    evolveHashlifeFastAuxN fuel n g = evolve n g := by
+  obtain ⟨fuel', rfl⟩ : ∃ k, fuel = k + 1 := ⟨fuel - 1, by omega⟩
+  cases n with
+  | zero => rfl
+  | succ m =>
+    simp only [evolveHashlifeFastAuxN]
+    split
+    · next hcond =>
+      exfalso
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
+      cases g with
+      | nil =>
+        rw [show (gridToMacroCellWithOffsetN (m + 1) []).2.level = 0 from by
+              simp [gridToMacroCellWithOffsetN, gridFrameN,
+                MacroCell.level_buildFromGrid]] at hcond
+        omega
+      | cons p₀ ps =>
+        have hgt := gridToMacroCellWithOffsetN_level_gt_n (m + 1) (p₀ :: ps)
+          (List.cons_ne_nil _ _)
+        simp only [jumpSize] at hcond
+        omega
+    · rfl
+
+/-- **Pont valable pour TOUT n (b3 anticipe)** : `evolveHashlifeFastN`
+    coincide avec le `evolve` de reference — corollaire direct du garde
+    mort (`evolveHashlifeFastAuxN_eq_evolve`) : la variante N3 ne saute
+    jamais. Ce pont etait initialement prevu (reporte) pour `n ≤ 2`
+    seulement, vers `evolveHashlifeFast` ; il est en realite
+    inconditionnel vers `evolve`, au prix honnete de l'acceleration
+    Hashlife (inactive tant que le garde est mort — docstring de section
+    ci-dessus pour la sortie via la decorrelation j de Gosper). -/
+theorem evolveHashlifeFastN_eq_evolve (n : Nat) (g : Grid) :
+    evolveHashlifeFastN n g = evolve n g := by
+  cases n with
+  | zero => rfl
+  | succ m =>
+    exact evolveHashlifeFastAuxN_eq_evolve (m + 1) (m + 1) g (by omega)
+
+/-! ## Saut a portee decorrelee : `hashlifeResultAt j` — porte (b2') de #6724
+
+**Arithmetique decidee AVANT l'implementation** (exigence coordinateur,
+cycle c.1044). Rappel (b2) : `hashlifeResult` sur une cellule de niveau
+`M` avance `2^(M-2)` generations et rend la fenetre centrale `2^(M-1)` ;
+sa demi-largeur EGALE l'avancement — pour tout contenu de demi-largeur
+`b > 0`, le cone depasse la fenetre d'exactement `b`, quel que soit le
+rembourrage (`no_padding_depth_suffices` : le deficit est `b`, constant).
+La decorrelation exige d'avancer MOINS que `2^(M-2)` sur une cellule
+padee de niveau `M` : fenetre grande, portee petite.
+
+**Comptage centre (corrige apres temoin falsifiant)** : la premiere mise
+par ecrit comptait la bbox contre le bord GAUCHE de la fenetre (« le
+garde EST la capture a p = 2 ») ; le temoin computationnel a falsifie
+l'assemblage initial, et la re-derivation corrige le modele.
+`padCenter2` CENTRE le cadre : dans la cellule paddede de niveau
+`lvl+2` (cote `4*2^lvl`), le cadre de cote `2^lvl` occupe
+`[3*2^(lvl-1), 5*2^(lvl-1))`, donc la bbox `[pad, B+pad)` du cadre
+occupe `[3*2^(lvl-1)+pad, 3*2^(lvl-1)+pad+B)`. La fenetre de sortie de
+`hashlifeResultAt j` (geometrie independante de j) est la moitie
+centrale `[2*2^(lvl-1), 6*2^(lvl-1))`. Marges : gauche
+`2^(lvl-1)+pad`, droite `3*2^(lvl-1)-pad-B`. La capture par cone de
+portee `2^j = 2^(lvl-2)` suit alors du SEUL invariant du cadre
+`B + 2*pad <= 2^lvl` (`jumpAt_capture_centered`) : le garde
+`n >= 2^(lvl-2)` ne conditionne plus la capture, seulement l'avancee
+demandee. Le ratio tendu `2 - 2^(2-p)` du docstring de marge comptait
+la bbox sans le decalage de centrage `2^(lvl-1)` de `padCenter2`.
+
+**Viabilite du garde** : `2^lvl >= B + 2*max 2 n` et garde
+`n >= 2^(lvl-2)` coexistent (temoin : glider `B = 3`, `n = 8` donne
+`lvl = 5`, `j = 3`, `2^3 = 8 <= 8` : le garde TIRE, voir
+`guardAt_viable_glider` et les evals de temoin ci-dessous).
+
+**Geometrie de l'assemblage mono-ronde** : les neuf resultats recursifs
+`r_i` (fenetres centrales des `n_i`, chacune avancee de `2^j`) pavent la
+region `[2^(M-3), 7*2^(M-3))^2` — pas de chevauchement, pas de trou,
+pas `2^(M-2)` de pas — mais la fenetre de sortie
+`[2^(M-2), 3*2^(M-2))^2` est DECALEE de `2^(M-3)` de la grille des
+`r_i` : l'assemblage se fait donc en SOUS-QUADRANTS des `r_i` (16
+extraits de quadrant), pas en `r_i` entiers — l'assemblage initial par
+`r_i` entiers titait `r5` quatre fois (temoin falsifiant).
+
+**Honnetete du perimetre** : la correction de `hashlifeResultAt` contre
+`evolve` n'est pas ici formellement prouvee (terrain P4, comme pour le
+`hashlifeJump` existant) ; elle est verifiee computationnellement sur
+temoins (`evolveHashlifeFastAtN k g = evolve k g` sur glider/blinker/
+ligne, un saut et deux sauts). Les theoremes livres sont arithmetiques :
+viabilite du garde (temoin concret) et capture centree (chaine de
+marge). -/
+
+/-- Accesseurs de quadrant pour l'assemblage mono-ronde : extraient le
+    quadrant demande d'une cellule de niveau >= 1. Le cas feuille
+    renvoie la feuille telle quelle — impossible dans l'assemblage, ou
+    chaque `r_i` est de niveau `M-2 >= 1`, mais exigee par l'exhaustivite
+    du filtrage. -/
+def subNW (c : MacroCell) : MacroCell :=
+  match c with
+  | node q _ _ _ => q
+  | _ => c
+
+def subNE (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ q _ _ => q
+  | _ => c
+
+def subSW (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ _ q _ => q
+  | _ => c
+
+def subSE (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ _ _ q => q
+  | _ => c
+
+/-- Auxiliaire pour `hashlifeResultAt` : recursion structurelle sur
+    `fuel`, cible de portee `j`. Sur une cellule de niveau `M = j + 2`,
+    effectue le Hashlife standard (double ronde, avance `2^j`). Sur une
+    cellule de niveau `M > j + 2`, effectue UNE SEULE ronde : les neuf
+    sous-cellules `n_i` avancees recursivement de `2^j` chacune, la
+    sortie assemblee en SOUS-QUADRANTS des `r_i`, SANS seconde ronde —
+    la portee reste `2^j` au lieu de doubler a `2^(M-2)` : c'est la
+    decorrelation de Gosper. La sortie est la fenetre centrale (niveau
+    `M-1`), l'etat a `t = 2^j` — les `r_i` pavent
+    `[2^(M-3), 7*2^(M-3))^2` mais la fenetre `[2^(M-2), 3*2^(M-2))^2`
+    est decalee de `2^(M-3)` de leur grille, d'ou l'assemblage par
+    quadrants (cf. docstring de section). -/
+def hashlifeResultAtAux : Nat → Nat → MacroCell → MacroCell
+  | 0, _, _ => deadLeaf  -- fuel epuise : renvoyer la valeur par defaut
+  | fuel + 1, j, c@(node (node nw_nw nw_ne nw_sw nw_se)
+                      (node ne_nw ne_ne ne_sw ne_se)
+                      (node sw_nw sw_ne sw_sw sw_se)
+                      (node se_nw se_ne se_sw se_se)) =>
+    if c.level == j + 2 then
+      hashlifeResultAux (fuel + 1) c
+    else
+      let n1 := node nw_nw nw_ne nw_sw nw_se
+      let n2 := node nw_ne ne_nw nw_se ne_sw
+      let n3 := node ne_nw ne_ne ne_sw ne_se
+      let n4 := node nw_sw nw_se sw_nw sw_ne
+      let n5 := node nw_se ne_sw sw_ne se_nw
+      let n6 := node ne_sw ne_se se_nw se_ne
+      let n7 := node sw_nw sw_ne sw_sw sw_se
+      let n8 := node sw_ne se_nw sw_se se_sw
+      let n9 := node se_nw se_ne se_sw se_se
+      let r1 := hashlifeResultAtAux fuel j n1
+      let r2 := hashlifeResultAtAux fuel j n2
+      let r3 := hashlifeResultAtAux fuel j n3
+      let r4 := hashlifeResultAtAux fuel j n4
+      let r5 := hashlifeResultAtAux fuel j n5
+      let r6 := hashlifeResultAtAux fuel j n6
+      let r7 := hashlifeResultAtAux fuel j n7
+      let r8 := hashlifeResultAtAux fuel j n8
+      let r9 := hashlifeResultAtAux fuel j n9
+      -- Assemblage a t = 2^j en SOUS-QUADRANTS des r_i, PAS de seconde
+      -- ronde : portee = 2^j. La fenetre centrale `[2^(M-2), 3*2^(M-2))^2`
+      -- est decalee de `2^(M-3)` de la grille des r_i : chaque quadrant de
+      -- la sortie se recompose depuis un quadrant de chacun des quatre r_i
+      -- couvrants (l'assemblage initial par r_i entiers titait r5 quatre
+      -- fois — temoin falsifiant).
+      node (node (subSE r1) (subSW r2) (subNE r4) (subNW r5))
+           (node (subSE r2) (subSW r3) (subNE r5) (subNW r6))
+           (node (subSE r4) (subSW r5) (subNE r7) (subNW r8))
+           (node (subSE r5) (subSW r6) (subNE r8) (subNW r9))
+  | _ + 1, _, c =>
+    -- Malforme : pas un noeud de niveau >= 2 compose de noeuds.
+    if c.level == 0 then deadLeaf
+    else emptyOfLevel (c.level - 1)
+
+/-- Hashlife a portee decorrelee : avance exactement `2^j` generations
+    (j independant du niveau `M >= j + 2` de la cellule), rend la
+    fenetre centrale `2^(M-1)` a `t = 2^j`. La demi-largeur de fenetre
+    `2^(M-2)` excede la portee `2^j` d'un facteur `2^(M-2-j)` : le
+    deficit structurel du Hashlife standard (fenetre = portee) est
+    dissous, la capture devient possible. -/
+def hashlifeResultAt (j : Nat) (c : MacroCell) : MacroCell :=
+  hashlifeResultAtAux c.level j c
+
+/-- Saut Hashlife a portee decorrelee : remboure `c` (niveau `lvl`) de
+    2 niveaux puis avance de `2^j` generations (`j <= lvl`), fenetre
+    centrale `2^(lvl+1)` de la cellule paddede. Decalage du resultat :
+    `padCenter2` centre le cadre a `[3*2^(lvl-1), 5*2^(lvl-1))` et la
+    fenetre demarre a `2^(lvl-1)` — le coin du resultat est donc decale
+    de `-2^(lvl-1)` par rapport au decalage d'entree, la meme formule
+    que `jumpResultOff off lvl` du saut plein. -/
+def hashlifeJumpAt (j : Nat) (c : MacroCell) : MacroCell :=
+  hashlifeResultAt j (padCenter2 c)
+
+/-- Taille du saut decorrele pour un cadre de niveau `lvl` (piste
+    Gosper validee par l'arithmetique (b2')) : `2^(lvl - 2)`. -/
+def jumpSizeAt (lvl : Nat) : Nat := 2 ^ (lvl - 2)
+
+/-- **Capture centree : l'invariant du cadre suffit.** Sous les
+    invariants du cadre `gridFrameN` — bbox de cote `B` logee a
+    `[3*2^(lvl-1)+pad, 3*2^(lvl-1)+pad+B]^2` de la cellule paddede
+    `padCenter2` (cote `2^(lvl+2)`), fenetre de sortie
+    `[2*2^(lvl-1), 6*2^(lvl-1)]^2` — le saut decorrele de `2^(lvl-2)`
+    generations est capturant des que `B + 2*pad <= 2^lvl` et
+    `lvl >= 2` : la marge gauche `2^(lvl-1)+pad` et la marge droite
+    `3*2^(lvl-1)-pad-B` couvrent chacune la portee `2^(lvl-2)`. Le garde
+    `n >= 2^(lvl-2)` ne conditionne que l'avancee demandee, pas la
+    capture — correction du modele bord-gauche initial (« le garde EST
+    la capture a p = 2 »), qui comptait la bbox sans le decalage de
+    centrage `2^(lvl-1)` de `padCenter2`. -/
+theorem jumpAt_capture_centered (lvl B pad : Nat)
+    (hlvl : 2 ≤ lvl) (hframe : B + 2 * pad ≤ 2 ^ lvl) :
+    2 ^ (lvl - 2) ≤ 2 ^ (lvl - 1) + pad ∧
+    2 ^ (lvl - 2) ≤ 3 * 2 ^ (lvl - 1) - pad - B := by
+  obtain ⟨m, rfl⟩ : ∃ k, lvl = k + 2 := ⟨lvl - 2, by omega⟩
+  have h1 : (2:Nat) ^ (m + 2 - 2) = 2 ^ m := by rw [Nat.add_sub_cancel]
+  have h2 : (2:Nat) ^ (m + 2 - 1) = 2 * 2 ^ m := by
+    rw [show m + 2 - 1 = m + 1 from by omega, Nat.pow_succ]; ring
+  have h4 : (2:Nat) ^ (m + 2) = 4 * 2 ^ m := by
+    rw [Nat.pow_add, Nat.pow_two]; ring
+  rw [h4] at hframe
+  rw [h1, h2]
+  omega
+
+/-- Le garde decorrele est VIABLE : temoin concret (glider, n = 8) ou
+    le niveau du cadre conscient de n est exactement `5`, donc
+    `jumpSizeAt 5 = 2^3 = 8 <= 8 = n` — la branche de saut TIRE, contra
+    du garde (b2) mort pour toute grille. -/
+theorem guardAt_viable_glider :
+    (gridToMacroCellWithOffsetN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2.level = 5
+    ∧ jumpSizeAt
+        (gridToMacroCellWithOffsetN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2.level
+      ≤ 8 := by
+  decide
+
+/-- Variante N3 a portee decorrelee : chaque iteration re-cadre via
+    `gridToMacroCellWithOffsetN` (invariant auto-regenerant, (b2)), puis
+    saute de `jumpSizeAt lvl = 2^(lvl-2)` generations via
+    `hashlifeJumpAt` si le garde `lvl >= 2 ∧ n >= 2^(lvl-2)` tire —
+    VIABLE cette fois (cf `guardAt_viable_glider`), contra du garde
+    plein `2^lvl` prouve mort en (b2). Decalage du resultat :
+    `jumpResultOff off lvl` (coin decale de `-2^(lvl-1)`, cf
+    `hashlifeJumpAt`). Capture gardee par le seul invariant du cadre
+    (`jumpAt_capture_centered`). Le reste de la recursion est identique
+    a `evolveHashlifeFastAuxN`. -/
+def evolveHashlifeFastAtAuxN : Nat → Nat → Grid → Grid
+  | _, 0, g => g
+  | 0, _, g => g  -- fuel epuise : retourner l'etat courant
+  | fuel + 1, n, g =>
+    let (off, mc) := gridToMacroCellWithOffsetN n g
+    let lvl := mc.level
+    let js := jumpSizeAt lvl
+    if lvl >= 2 && n >= js then
+      -- Saut decorrele : capture gardee par l'invariant du cadre
+      -- (`jumpAt_capture_centered`), le garde `n >= js` ne conditionne
+      -- que l'avancee demandee. Le coin du resultat est decale de
+      -- `-2^(lvl-1)` (centrage padCenter2 vs fenetre).
+      let jumped := hashlifeJumpAt (lvl - 2) mc
+      let newOff := jumpResultOff off lvl
+      let g' := jumped.toGrid newOff
+      evolveHashlifeFastAtAuxN fuel (n - js) g'
+    else
+      -- Petit n ou grand motif : evolve de reference.
+      evolve n g
+
+/-- API publique de la variante a portee decorrelee. -/
+def evolveHashlifeFastAtN (n : Nat) (g : Grid) : Grid :=
+  evolveHashlifeFastAtAuxN n n g
+
+/-- Calcule `evolve n g` avec Hashlife. Fait un aller-retour a travers
+    la representation `MacroCell` a chaque generation, en exercant
+    `step4x4` pour la boucle interne de niveau 2. -/
 def evolveHashlife : Nat -> Grid -> Grid
   | 0,     g => g
   | n + 1, g =>
-    -- Build a MacroCell. If the bounding box fits in a level-2 window
-    -- (i.e. the live region spans at most a few cells), the Hashlife
-    -- base case `step4x4` can be used; otherwise round-trip via
-    -- `Conway.Life.step`. We always at least exercise the MacroCell
-    -- representation as a sanity check.
+    -- Construire une MacroCell. Si la boite englobante tient dans une
+    -- fenetre de niveau 2 (i.e. la region vivante s'etend sur au
+    -- maximum quelques cellules), le cas de base Hashlife `step4x4` peut
+    -- etre utilise ; sinon aller-retour via `Conway.Life.step`. Nous
+    -- exercons au minimum la representation MacroCell comme verification.
     let (off, mc) := gridToMacroCellWithOffset g
-    -- The chosen frame places the live region inside a level >= 2
-    -- square. Try the Hashlife base case if the level is exactly 2.
+    -- Le cadre choisi place la region vivante dans un carre de niveau >= 2.
+    -- Essayer le cas de base Hashlife si le niveau est exactement 2.
     let g' :=
       if mc.level == 2 then
         let r := hashlifeResult mc
-        -- `r` is a level-1 MacroCell covering the centered 2x2 of the
-        -- level-2 input. The level-2 input has its top-left corner at
-        -- `off`, so the centered 2x2 has its top-left at
+        -- `r` est une MacroCell de niveau 1 couvrant le 2x2 centre de
+        -- l'entree de niveau 2. L'entree de niveau 2 a son coin haut-gauche
+        -- en `off`, donc le 2x2 centre a son haut-gauche en
         -- `(off.1 + 1, off.2 + 1)`.
         r.toGrid (off.1 + 1, off.2 + 1)
       else
         step g
     evolveHashlife n g'
 
-/-! ## Sanity checks
+/-! ## Tests de coherence
 
-We verify that `evolveHashlife` agrees with the reference `evolve` on
-the canonical small patterns, and that `step4x4` correctly handles
-specific 4x4 inputs.
+Nous verifions que `evolveHashlife` coincide avec le `evolve` de
+reference sur les petits motifs canoniques, et que `step4x4` gere
+correctement des entrees 4x4 specifiques.
 -/
 
--- step4x4 on a hand-built 4x4 with a horizontal blinker at row 1.
--- Expected centered 2x2 result at (1,1)..(2,2): (1,1) alive, (2,1) alive.
+-- step4x4 sur un 4x4 construit a la main avec un blinker horizontal a la ligne 1.
+-- Resultat centre 2x2 attendu en (1,1)..(2,2) : (1,1) vivant, (2,1) vivant.
 #eval
   let mc : MacroCell :=
     node
@@ -469,14 +784,14 @@ specific 4x4 inputs.
       (node (leaf false) (leaf false) (leaf false) (leaf false)) -- SE
   (step4x4 mc).toGrid (1, 1)
 
--- Compare with the reference: blinker_h is [(0,0), (1,0), (2,0)].
--- After step it becomes blinker_v = [(1,-1), (1,0), (1,1)].
--- In the test above, the blinker sits at row 1, cols 0..2, and the
--- expected centered output is (row 1, col 1) and (row 2, col 1), i.e.
--- only the vertical stroke that lies inside the centered 2x2 window.
+-- Comparaison avec la reference : blinker_h est [(0,0), (1,0), (2,0)].
+-- Apres un step il devient blinker_v = [(1,-1), (1,0), (1,1)].
+-- Dans le test ci-dessus, le blinker est a la ligne 1, col 0..2, et le
+-- resultat centre attendu est (ligne 1, col 1) et (ligne 2, col 1), i.e.
+-- seulement le trait vertical qui se trouve dans la fenetre centree 2x2.
 #eval step blinker_h
 
--- Round-trip checks of `evolveHashlife` against `evolve`.
+-- Verifications par aller-retour de `evolveHashlife` face a `evolve`.
 #eval evolveHashlife 1 block == evolve 1 block
 #eval evolveHashlife 4 block == evolve 4 block
 #eval evolveHashlife 1 blinker_h == evolve 1 blinker_h
@@ -488,13 +803,13 @@ specific 4x4 inputs.
 #eval evolveHashlife 1 toad == evolve 1 toad
 #eval evolveHashlife 2 toad == evolve 2 toad
 
--- Direct recursive Hashlife on a level-3 input (exercises the
--- recursive `hashlifeResult` for k = 3). Builds a level-3 (8x8)
--- MacroCell containing the glider near its center, then calls
--- `hashlifeResult`; this returns a level-2 cell representing the
--- glider 2 generations later, but only over the centered 4x4 window.
--- We therefore compare against `evolve 2 glider` *filtered* to the
--- centered window.
+-- Hashlife recursif direct sur une entree de niveau 3 (exerce le
+-- `hashlifeResult` recursif pour k = 3). Construit une MacroCell de
+-- niveau 3 (8x8) contenant le glider pres de son centre, puis appelle
+-- `hashlifeResult` ; ceci renvoie une cellule de niveau 2 representant
+-- le glider 2 generations plus tard, mais seulement sur la fenetre
+-- centree 4x4. Nous comparons donc avec `evolve 2 glider` *filtre* sur
+-- la fenetre centree.
 #eval
   let off : Int × Int := (-2, -2)
   let mc := MacroCell.buildFromGrid glider off.1 off.2 3
@@ -509,34 +824,35 @@ specific 4x4 inputs.
     (fun p => 0 <= p.1 && p.1 < 4 && 0 <= p.2 && p.2 < 4)
   (hashlife_cells, ref_window, hashlife_cells == ref_window)
 
--- Reference: glider 4 steps ahead.
+-- Reference : glider 4 pas en avant.
 #eval evolve 4 glider
 
-/-! ## Sanity checks for `evolveHashlifeFast`
+/-! ## Tests de coherence pour `evolveHashlifeFast`
 
-Verify that the exponential-speedup path agrees with the reference
-`evolve` on canonical patterns. These exercise `hashlifeJump` (via the
-padded `hashlifeResult` path) rather than the fallback `step`.
+Verifions que le chemin d'acceleration exponentielle coincide avec le
+`evolve` de reference sur les motifs canoniques. Ces tests exercent
+`hashlifeJump` (via le chemin `hashlifeResult` rembourre) plutot que le
+`step` de repli.
 -/
 
--- Block: still life, any number of generations = unchanged
+-- Block : still life, n'importe quel nombre de generations = inchange
 #eval evolveHashlifeFast 1 block == evolve 1 block
 #eval evolveHashlifeFast 4 block == evolve 4 block
 #eval evolveHashlifeFast 16 block == evolve 16 block
 
--- Glider: period 4, displacement (1,-1)
+-- Glider : periode 4, deplacement (1,-1)
 #eval evolveHashlifeFast 4 glider == evolve 4 glider
 #eval evolveHashlifeFast 8 glider == evolve 8 glider
 #eval evolveHashlifeFast 12 glider == evolve 12 glider
 
--- Blinker: period 2
+-- Blinker : periode 2
 #eval evolveHashlifeFast 2 blinker_h == evolve 2 blinker_h
 #eval evolveHashlifeFast 4 blinker_h == evolve 4 blinker_h
 
--- Beacon: period 2
+-- Beacon : periode 2
 #eval evolveHashlifeFast 2 beacon == evolve 2 beacon
 
--- Toad: period 2
+-- Toad : periode 2
 #eval evolveHashlifeFast 2 toad == evolve 2 toad
 
 end Life

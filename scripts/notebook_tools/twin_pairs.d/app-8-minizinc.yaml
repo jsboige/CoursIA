@@ -1,0 +1,52 @@
+- name: App-8 MiniZinc
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5a3556edb46ca5f2be12979620d2f723e3a5b364
+      csharp_sha: 2bce8a6cdcbc8659b9287c737f49321a98a0ac90
+    - date: "2026-08-10"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 5a3556edb46ca5f2be12979620d2f723e3a5b364
+      csharp_sha: f762ffd10ed8f6cbd40b6b66dcec15546277d6d0
+      content_python_sha: cc6536c7912207f2c51571d4ba3d597c306f3061b4332f6ce503cfa3b019a9f3
+      content_csharp_sha: 9f939d86ca7c66948e057c5d449b3250a924b4a2efa2d85af85aeb96d74af89d
+    - date: "2026-08-12"
+      by: myia-ai-01:CoursIA
+      python_sha: 5a3556edb46ca5f2be12979620d2f723e3a5b364
+      csharp_sha: 2877bc45bc4a46294aeea93bba5fcc768d2edc6d
+      content_python_sha: cc6536c7912207f2c51571d4ba3d597c306f3061b4332f6ce503cfa3b019a9f3
+      content_csharp_sha: 43f51c6d44379073f7cff3a9696a645e1e43938fe9b6566ffca59253b7b19f8c
+    - date: "2026-08-13"
+      by: myia-po-2025:CoursIA
+      python_sha: 5a3556edb46ca5f2be12979620d2f723e3a5b364
+      csharp_sha: 5100d36a8b6f99e0ad01d6cbf5f5a84508bcce5e
+      content_python_sha: cc6536c7912207f2c51571d4ba3d597c306f3061b4332f6ce503cfa3b019a9f3
+      content_csharp_sha: e30909bc211cd8be77b2ef3faf3c525da10998fb23af58c20d86595d4f6ba2c4
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 0ad3e3f90ea3483c29256e8c91a1f5284d3d5d24
+      csharp_sha: 3f4552ad5ef04f866b18ce8437ce2a2e6778b8b0
+      content_python_sha: e3fd067407b9c0a72bd6f908597d9594b4087e5e306543dc2257427e1e96b11e
+      content_csharp_sha: 88388bac2ec54e083ab2663ed90289f7a03b17851d1a778bb0fee4b30220493a
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 5a3556edb46ca5f2be12979620d2f723e3a5b364
+      csharp_sha: e62f4d4e9c5c6fe147fe768914ef7cd91305cbbe
+      content_python_sha: cc6536c7912207f2c51571d4ba3d597c306f3061b4332f6ce503cfa3b019a9f3
+      content_csharp_sha: c1519e397c2d7dc828c80b77e2359c7622fa508cc5478aac4ab906859f7d8a59
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 0ad3e3f90ea3483c29256e8c91a1f5284d3d5d24
+      csharp_sha: 6d92004320fa7e4b11e457c3c2298f6935b604f1
+      content_python_sha: e3fd067407b9c0a72bd6f908597d9594b4087e5e306543dc2257427e1e96b11e
+      content_csharp_sha: c1f0ffebdb1cfdd2ae32788157cc6b0e7cf84a650e80fc4851620ceeae877966
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = minizinc (binding Python pour MiniZinc modeling language, MIT, https://github.com/MiniZinc/libminizinc, dekker 2024) + OR-Tools CP-SAT (driver pour cross-solve depuis MiniZinc) + numpy + matplotlib (19 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding OR-Tools CP-SAT 9.11) + System.* BCL, 14 cellules code. Verdict SOTA-OK (lib-vs-lib) : Python invoque minizinc (modeling language) + OR-Tools CP-SAT (solver backend) ; C# invoque Google.OrTools.Sat (C# binding du MEME engine OR-Tools CP-SAT 9.11). MiniZinc utilise OR-Tools comme solver backend par defaut, donc les deux cotes aboutissent au MEME moteur CP-SAT reel. L'asymetrie est mineure : Python passe par la couche modeling language MiniZinc (plus declarative, plus haut niveau d'abstraction), C# utilise directement le binding CP-SAT (plus proche du moteur). parity_level: semantic preserve (post-#10382 les deux cotes utilisent le MEME solver)."
+  known_differences:
+    - "Socle pedagogique commun : MiniZinc (modeling language CSP, OR-Tools CP-SAT cross-solve) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = minizinc + OR-Tools CP-SAT ; C# = Google.OrTools.Sat NuGet (C# binding du meme solver OR-Tools)."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."

@@ -153,22 +153,38 @@ class TestMissingOutputs:
         result = check_notebook(nb_path)
         assert result["violations"] == []
 
-    def test_assignment_no_output_flagged(self, tmp_path):
-        """Simple assignment with = but no print/display -> flagged (has '=' keyword)."""
+    def test_assignment_no_output_ok(self, tmp_path):
+        """Pure assignment `x = ...` with no print/display -> NOT flagged.
+
+        A bare assignment produces no Jupyter output by design (the binding
+        lives in the kernel namespace, the value is not auto-displayed).
+        The historical detector had `has_output_statement` matching any
+        cell containing `=` (over-broad) and gated on a `is_assignment`
+        flag that was computed but never used (dead code, #10120). The
+        fix removes the `=` from `has_output_statement` and treats pure
+        assignment as no-output-by-design.
+        """
         nb_path = _write_nb(tmp_path / "assign.ipynb", [
             _code("x = compute_value()", exec_count=1),
         ])
         result = check_notebook(nb_path)
-        assert len(result["violations"]) == 1
-        assert "no outputs" in result["violations"][0]["reason"]
+        assert result["violations"] == []
 
-    def test_pure_function_call_no_output(self, tmp_path):
-        """Function call without = or print -> not flagged (no output keyword)."""
+    def test_pure_function_call_no_output_flagged(self, tmp_path):
+        """Bare function call (no assignment, no print) -> flagged.
+
+        A top-level expression is the canonical Jupyter auto-output
+        pattern; the kernel displays the return value (or ``None`` for
+        void). When the cell shows no outputs, the notebook was not
+        re-executed after the call — a real C.2 violation. This is the
+        inverse of the pre-#10120 detector, which missed this case.
+        """
         nb_path = _write_nb(tmp_path / "func.ipynb", [
             _code("setup_environment()", exec_count=1),
         ])
         result = check_notebook(nb_path)
-        assert result["violations"] == []
+        assert len(result["violations"]) == 1
+        assert "no outputs" in result["violations"][0]["reason"]
 
     def test_return_statement_no_output(self, tmp_path):
         """Cell with return statement but no outputs -> violation."""
@@ -182,6 +198,223 @@ class TestMissingOutputs:
         """Cell with exec_count AND outputs -> OK."""
         nb_path = _write_nb(tmp_path / "ok.ipynb", [
             _code("print('hello')", exec_count=1, outputs=[{"output_type": "stream"}]),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+
+# ---------------------------------------------------------------------------
+# check_notebook — heuristic carve-outs (papermill, REFERENCE-QC, function/class
+# stubs, C# declarations). These cover the cases the historical detector
+# over-reported (see #10120: 671 → 87 violations after the fix).
+# ---------------------------------------------------------------------------
+
+class TestHeuristicCarveOuts:
+    """Heuristic carve-outs: cells that should NOT be flagged as missing
+    outputs even when exec_count is set and outputs is empty."""
+
+    # --- papermill parameters ----------------------------------------------
+
+    def test_papermill_parametres_no_output_ok(self, tmp_path):
+        """`# Parametres Papermill` cell with no output -> OK.
+
+        Papermill injects values via API at execution time, the cell body
+        intentionally produces no output. GenAI convention header.
+        """
+        nb_path = _write_nb(tmp_path / "papermill_genai.ipynb", [
+            _code(
+                "# Parametres Papermill - JAMAIS modifier ce commentaire\n"
+                'BATCH_MODE = "true"\n'
+                "skip_widgets = \"true\"",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_papermill_jamais_modifier_no_exec_count_ok(self, tmp_path):
+        """`# Parametres Papermill - JAMAIS modifier` cell with no exec_count
+        AND no output -> OK (skipped in BOTH branches).
+        """
+        nb_path = _write_nb(tmp_path / "papermill_unexec.ipynb", [
+            _code(
+                "# Parametres Papermill - JAMAIS modifier ce commentaire\n"
+                'BATCH_MODE = "true"',
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_papermill_hash_parameters_no_output_ok(self, tmp_path):
+        """`# Parameters` (qc-strategies convention) cell with no output -> OK."""
+        nb_path = _write_nb(tmp_path / "papermill_qc.ipynb", [
+            _code(
+                "# Parameters\n"
+                "ticker = \"SPY\"\n"
+                "start_date = \"2020-01-01\"",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    # --- REFERENCE QC -------------------------------------------------------
+
+    def test_reference_qc_with_exec_count_ok(self, tmp_path):
+        """`# [REFERENCE QC]` cell with no output -> OK."""
+        nb_path = _write_nb(tmp_path / "ref_qc.ipynb", [
+            _code(
+                "# [REFERENCE QC] Code a copier dans main.py QC Lab\n"
+                "from AlgorithmImports import *\n"
+                "class MyAlgo(QCAlgorithm):\n"
+                "    pass",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_reference_qc_no_exec_count_ok(self, tmp_path):
+        """`# Code a copier` cell with no exec_count -> OK (skipped upstream)."""
+        nb_path = _write_nb(tmp_path / "ref_qc_unexec.ipynb", [
+            _code(
+                "# [REFERENCE QC] Code a copier (non executable ici)\n"
+                "from AlgorithmImports import *",
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    # --- function/class stubs ----------------------------------------------
+
+    def test_function_def_no_return_ok(self, tmp_path):
+        """`def foo(): ...` (no `return`) -> OK (C.1 stub)."""
+        nb_path = _write_nb(tmp_path / "stub.ipynb", [
+            _code(
+                "def solve_dispatch(network, params):\n"
+                "    \"\"\"Dispatch with spinning reserve.\"\"\"\n"
+                "    result = None  # TODO etudiant\n"
+                "    pass",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_function_def_with_return_ok(self, tmp_path):
+        """`def foo(): ... return ...` (not a stub) and no output -> OK.
+
+        A function definition — even one with ``return`` — is a
+        top-level *declaration*, not an expression. Jupyter does not
+        auto-display ``def`` blocks; the cell produces no output by
+        design. The cell is correctly skipped regardless of the
+        presence of ``return`` (the ``is_function_stub`` heuristic
+        exists to distinguish a *deliberate stub* from a *complete
+        function*, not to enforce a missing caller).
+        """
+        nb_path = _write_nb(tmp_path / "func.ipynb", [
+            _code(
+                "def add(a, b):\n"
+                "    return a + b",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_function_def_body_print_no_output_ok(self, tmp_path):
+        """`def foo(): ... print(...) ... return` -> OK (PRINT_IN_DEF_FP).
+
+        A ``print(`` nested INSIDE a def body is not a top-level output:
+        it only fires when the function is called. Scanning the whole
+        source for ``print(`` (the pre-fix behaviour) flagged 73 pure
+        function-definition cells whose body merely happened to call
+        print. Only column-0 (top-level) output calls count.
+        """
+        nb_path = _write_nb(tmp_path / "func_print.ipynb", [
+            _code(
+                "def summarize(scores):\n"
+                "    print('mean:', sum(scores) / len(scores))\n"
+                "    return sum(scores)",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_top_level_print_still_flagged(self, tmp_path):
+        """Regression guard: a column-0 print() with no outputs -> violation.
+
+        The PRINT_IN_DEF_FP fix restricts output-call detection to
+        top-level lines; a genuine top-level ``print(`` must still be
+        flagged (no false-negative regression).
+        """
+        nb_path = _write_nb(tmp_path / "toplevel.ipynb", [
+            _code(
+                "x = 42\n"
+                "print('result', x)",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert len(result["violations"]) == 1
+        assert "no outputs" in result["violations"][0]["reason"]
+
+    # --- C# declarations ----------------------------------------------------
+
+    def test_csharp_using_no_output_ok(self, tmp_path):
+        """`using System.Text.Json;` -> OK (declaration, no output)."""
+        nb_path = _write_nb(tmp_path / "cs.ipynb", [
+            _code(
+                'using System.Text.Json;\n'
+                'using Microsoft.SemanticKernel;\n'
+                "namespace MyApp {\n"
+                "    public class Foo {\n"
+                "        public string Bar { get; set; }\n"
+                "    }\n"
+                "}",
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    def test_csharp_r_nuget_no_output_ok(self, tmp_path):
+        """`#r "nuget: ..."` package reference -> OK."""
+        nb_path = _write_nb(tmp_path / "nuget.ipynb", [
+            _code(
+                '#r "nuget: Microsoft.SemanticKernel"\n'
+                '#r "nuget: Microsoft.SemanticKernel.Agents.Core, *-*"',
+                exec_count=1,
+            ),
+        ])
+        result = check_notebook(nb_path)
+        assert result["violations"] == []
+
+    # --- expression statements ---------------------------------------------
+
+    def test_top_level_expression_no_output_flagged(self, tmp_path):
+        """Top-level expression `setup_environment()` -> flagged.
+
+        A bare function call (no assignment to capture the return value)
+        is the canonical Jupyter auto-output pattern; if the cell has no
+        output, the notebook was not re-executed after the call.
+        """
+        nb_path = _write_nb(tmp_path / "expr.ipynb", [
+            _code("setup_environment()", exec_count=1),
+        ])
+        result = check_notebook(nb_path)
+        assert len(result["violations"]) == 1
+        assert "no outputs" in result["violations"][0]["reason"]
+
+    def test_assignment_with_call_no_output_ok(self, tmp_path):
+        """`x = compute_value()` (assignment captures return) -> OK.
+
+        The return value is bound to a name; Jupyter does not auto-display
+        the assignment. No output expected.
+        """
+        nb_path = _write_nb(tmp_path / "assign_call.ipynb", [
+            _code("x = compute_value()", exec_count=1),
         ])
         result = check_notebook(nb_path)
         assert result["violations"] == []
@@ -566,6 +799,44 @@ class TestGetTargetNotebooksCatalog:
              patch("check_c2_compliance.CATALOG_PATH", cat):
             result = get_target_notebooks(self._make_args())
         assert result == []
+
+
+# ---------------------------------------------------------------------------
+# check_notebook — declared PII carve-out (metadata.pii_no_output)
+# ---------------------------------------------------------------------------
+
+class TestPiiNoOutput:
+    """Second half of the carve-out introduced in validate_pr_notebooks.py.
+    Honouring the declaration in only one of the two scanners would leave this
+    one still reporting "missing execution_count" on a grading notebook — i.e.
+    still telling an agent to execute it and commit student PII."""
+
+    def test_declared_pii_notebook_is_compliant_while_empty(self, tmp_path):
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable();"),
+            _code("evaluations.DisplayTable();"),
+        ], metadata={"pii_no_output": True})
+        assert check_notebook(nb)["violations"] == []
+
+    def test_declared_pii_notebook_with_output_is_a_violation(self, tmp_path):
+        """Symmetric: the flag excuses emptiness and criminalises non-emptiness."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable();", outputs=[
+                {"output_type": "stream", "name": "stdout",
+                 "text": ["login prenom nom email\n"]}]),
+        ], metadata={"pii_no_output": True})
+        violations = check_notebook(nb)["violations"]
+        assert len(violations) == 1
+        assert "git history" in violations[0]["reason"]
+
+    def test_without_the_flag_missing_exec_count_still_flagged(self, tmp_path):
+        """Control: opt-in, never inferred."""
+        nb = _write_nb(tmp_path / "GradeBook.ipynb", [
+            _code("studentRecords.DisplayTable();"),
+        ])
+        violations = check_notebook(nb)["violations"]
+        assert len(violations) == 1
+        assert violations[0]["reason"] == "missing execution_count"
 
 
 # ---------------------------------------------------------------------------

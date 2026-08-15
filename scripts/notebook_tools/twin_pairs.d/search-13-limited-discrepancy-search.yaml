@@ -1,0 +1,17 @@
+- name: "Search-13 Limited Discrepancy Search"
+  family: Search/Part3-Advanced
+  python: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 78a207157e912197358a83086ab8428e3847ca0e
+      csharp_sha: c371375a5fcdabb870072c6db55fbc42c42e210b
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: |
+    Python = tuples nommes (name, weight, value) + fonctions pures (greedy_knapsack, lds) -- pedagogique from-scratch, pas de SOTA tier (LDS = algorithme pedagogique, pas de solveur tiers applicable). C# = record Item (immuable) + methodes retournant tuple -- pedagogique from-scratch, pas de NuGet SOTA. Both cote from-scratch sur LDS (borne ecarts a heuristique gloutonne ratio valeur/poids). Asymetrie d instance (Python 7 objets A-G dont F+G pieges, C# 5 objets A-E coeur) asumee conceptual parity. Verdict RECOVERABLE-LOCAL (both from-scratch pedagogical assume, pas de SOTA tier applicable a LDS).
+  known_differences:
+    - "Socle pedagogique commun : sac a dos 0/1, Limited Discrepancy Search (LDS) borne le nombre d'ecarts a l'heuristique gloutonne (ratio valeur/poids decroissant) pour trouver l'optimum sans explorer tout l'arbre."
+    - "Idiomes framework : Python = tuples nommes `(name, weight, value)` + fonctions pures (`greedy_knapsack`, `lds`). C# = `record Item(string Name, int Weight, int Value)` (immuable) + methodes retournant un tuple `(Value, Selection, Nodes)`."
+    - "Difference d'instance (verifiee firsthand) : le notebook Python enumere 7 objets A-G (dont F et G de valeur nulle, pieges pour le greedy) ; le notebook C# enumere 5 objets A-E seulement. Meme concept LDS, instance C# = coeur 5-objets, instance Python = coeur + 2 pieges. La parite est conceptuelle (LDS/k), pas cellule-par-cellule."

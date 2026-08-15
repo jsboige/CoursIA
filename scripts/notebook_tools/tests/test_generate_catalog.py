@@ -1039,6 +1039,27 @@ class TestDetermineStatusEdgeCases:
             pedagogical=False,
         ) == "RESEARCH"
 
+    def test_research_archive_underscore_path_is_research(self):
+        """Convention #9535 item 10: archived notebooks live under ``_archive``
+        (or ``_archives``). Their pedagogical COUNT is excluded via substring
+        match on ``archive``, but their STATUS must also be RESEARCH (consistent
+        with ``archive/``). Before this fix, ``_is_research_path`` matched dir
+        names exactly and missed ``_archive`` -- archived notebooks got
+        READY/BROKEN instead of RESEARCH. Regression guard."""
+        nb = _nb([_code("x=1", [_stream_output()])])
+        code_cells = [nb["cells"][0]]
+        reqs = {"requires_api": False, "requires_gpu": False,
+                "requires_cloud": False, "requires_wsl": False}
+        assert determine_status(
+            self._make_path("Search/_archive/Old.ipynb"), nb, code_cells, reqs,
+            pedagogical=False,
+        ) == "RESEARCH"
+        # The ``_archives`` variant (SymbolicLearning convention) too.
+        assert determine_status(
+            self._make_path("SymbolicAI/SymbolicLearning/_archives/Old.ipynb"),
+            nb, code_cells, reqs, pedagogical=False,
+        ) == "RESEARCH"
+
 
 # --- classify_maturity edge cases ---
 

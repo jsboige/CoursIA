@@ -1,0 +1,29 @@
+- name: App-12 ConnectFour
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/Search/App-12-ConnectFour-CSharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: '2026-07-25'
+      by: po-2026
+      python_sha: 77bf96c05321f063ddad84755458050e16154329
+      reason: "Markdown-only identity fix (cell 33 Participants table): row named MCTS(1000)/1000 itérations, but the actual tournament uses MCTS(500) — cell 34 code `MCTS(500): make_mcts_ai(500)`, cell 36 output ranking MCTS(500), cell 39 interpretation MCTS(500). Aligned to MCTS(500)/500 itérations. No re-exec, no output change. C# twin untouched (different System.* BCL engine)."
+      csharp_sha: 540ef653a9252b9040e1eeff424c36c64c9bd82c
+    - date: "2026-08-05"
+      by: myia-po-2024:CoursIA
+      python_sha: 77bf96c05321f063ddad84755458050e16154329
+      csharp_sha: 540ef653a9252b9040e1eeff424c36c64c9bd82c
+      content_python_sha: 857fa07c06ff2b66adb5e078423296bd4780156d9b7baa8fe757111e13b137ef
+      content_csharp_sha: cdd370883b0ceb52ea7b3c83beb914fe78daf87fbe30999db613e4a0b1112dd1
+    - date: "2026-08-05"
+      by: myia-po-2024:CoursIA
+      python_sha: f5da785f898942cc046ecd1e6f7249cf7c7c2229
+      csharp_sha: 540ef653a9252b9040e1eeff424c36c64c9bd82c
+      content_python_sha: 9bdb02f9811772d4ab17c31fc832f171bc0b4ce31d7356871f288fdd88519a92
+      content_csharp_sha: cdd370883b0ceb52ea7b3c83beb914fe78daf87fbe30999db613e4a0b1112dd1
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = numpy + matplotlib + framework AIMA (Game, namedtuple, https://github.com/aimacode/aima-python, MIT, Russell/Norvig) + algo minimax alpha-beta + MCTS (22 cellules code). C# = BCL pure (System.*, 0 NuGet, from-scratch) + algo minimax alpha-beta + MCTS (16 cellules code). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (Puissance 4 / Connect Four, IA jeux combinatoires : minimax alpha-beta + MCTS, framework AIMA comme structure de donnees). L'asymetrie reside dans le moteur : Python invoque framework AIMA (lib de reference MIT, Russell/Norvig) + numpy/matplotlib pour viz ; C# implemente from-scratch en BCL pure. Le port de AIMA vers C# est realisable (AIMA-python est structurel) mais hors scope -- le C# demontre l'implementation from-scratch en BCL pure, presentation compacte. parity_level: semantic preserve."
+  known_differences:
+    - "Socle pedagogique commun : Puissance 4 / Connect Four (IA jeux combinatoires : minimax alpha-beta, MCTS, framework AIMA) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = numpy/matplotlib + framework AIMA (Game, namedtuple) + viz ; C# = System.* BCL pure, 0 NuGet, 29 cellules compactes."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."

@@ -49,29 +49,21 @@ from pathlib import Path
 CDN_PATTERN = re.compile(r"cdn\.plot\.?ly", re.IGNORECASE)
 IMAGE_MIMES = ("image/png", "image/jpeg", "image/svg+xml", "image/webp", "image/gif")
 
-# Skips
-SKIP_DIRS = {
-    ".git",
-    "_output",
-    "_archives",
-    ".ipynb_checkpoints",
-    ".lake",  # Lean vendored
-    ".claude",
-    "node_modules",
-}
+# Skips -- source unique notebook_walk (#8650). Plotly etait le cas net du
+# constat : son SKIP_DIRS (7 entrees) manquait `archive`/`_archive`/`__pycache__`/
+# `.pytest_cache`/`worktrees`/`foundry-lib` et balayait donc 4 notebooks archives
+# que les 10 autres scanners excluaient. Le set canonique (13 entrees) harmonise.
+from notebook_walk import SKIP_DIRS, iter_notebooks as _shared_iter_notebooks  # noqa: E402
 
 
 def iter_notebooks(root: Path):
-    """Yield all .ipynb paths under root, skipping vendored/archived dirs."""
-    for p in root.rglob("*.ipynb"):
-        # Skip vendored, archives, outputs
-        rel_parts = p.parts
-        if any(part in SKIP_DIRS for part in rel_parts):
-            continue
-        # Skip _output.ipynb duplicates (always have same outputs as primary)
-        if p.stem.endswith("_output"):
-            continue
-        yield p
+    """Yield all .ipynb paths under root, skipping vendored/archived dirs.
+
+    Delegue au marcheur partage (#8650) : SKIP_DIRS canonique + filtre git
+    tracked_only (exclut deterministement les arbres gitignores) + skip des
+    artefacts papermill ``*_output.ipynb``.
+    """
+    yield from _shared_iter_notebooks(root)
 
 
 def cell_is_risky(cell: dict) -> bool:

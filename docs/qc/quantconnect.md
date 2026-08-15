@@ -35,6 +35,17 @@ Toute modification d'une stratégie QC (main.py, paramètres, périodes) **DOIT*
 
 **Changer une date ou un paramètre sans backtest = travail invalide.**
 
+### Convention `SetEndDate` — fenêtre figée vs flottante (mécanisme D2, #9768)
+
+L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pas toujours un défaut** : elle ouvre la fenêtre de backtest à la date courante, ce qui est un comportement légitime **selon le type de notebook**. La classification (audit #9772 Phase 0) distingue deux régimes :
+
+| Régime | Environnement | `SetEndDate` attendu | Raison |
+|--------|---------------|----------------------|--------|
+| **Déploiement** (`class X(QCAlgorithm)`, dossier `projects/`) | QC Cloud / Live / Paper | **Requis** (fenêtre figée) | Reproductibilité du backtest de production — sans date fixée, le résultat dérive à chaque exécution |
+| **Recherche** (`QuantBook()`, dossier `ML-Training-Pipeline/`) | Research env | **Flottant par design** (légitime) | Notebooks exploratoires : la fenêtre flottante est une feature, le notebook n'est pas un livrable reproductible |
+
+**Avant de « corriger » un notebook QC sans `SetEndDate`** : vérifier son régime. Un notebook de recherche `QuantBook` sans date figée **n'est pas un defect D2**. Un notebook de déploiement `QCAlgorithm` (surtout dans `projects/`) sans `SetStartDate`/`SetEndDate` **est un defect** à figer (exception : Paper Trading explicite, où l'absence de dates = live par construction, ex. `QC-Py-27`). Le détecteur canonique est `scripts/notebook_tools/scan_window_drift.py` (#10230/#10627, qui remplace le `grep -L set_end_date` brut — ce dernier sur-compte d'un ordre de grandeur en mélangeant les deux régimes).
+
 ## QC Cloud API - Accès via MCP Docker (OBLIGATOIRE)
 
 **Méthode d'accès** : Utiliser le MCP Docker `quantconnect/mcp-server` configure dans `.mcp.json` a la racine du projet.
@@ -149,6 +160,25 @@ MyIA.AI.Notebooks/QuantConnect/
   partner-course-quant-trading/  # Cours partenaire : exercices, templates, lean-workspace
   docs/              # Documentation technique (pas de coordination)
 ```
+
+## Provisionnement reproductible des data LEAN locales
+
+Les data equity/forex locales (`<lean-workspace>/data/`) sont **gitignorées** (binaires volumineuses, régénérables — `.gitignore` ligne 581). L'incident **#8734** (leçon C942-L ★★★, découvert c.942) a montré que des zips tronqués (fin **2021-03-31**) forward-fillés silencieusement par `fillDataForward=True` (défaut Lean) invalident les métriques **sans aucun signal d'erreur** : le notebook affiche une période « 2015 → 2025 » normale mais les ~4-5 dernières années sont une **ligne plate**. Trois outils forment la chaîne reproductible qui ferme ce défaut :
+
+| Outil | Rôle | Issue |
+|-------|------|-------|
+| `scripts/quantconnect/yfinance_to_lean_daily.py` | **Convertisseur** yfinance → zips LEAN daily (OHLC x10000, `00:00`, lowercase) | #8627 |
+| `scripts/quantconnect/check_data_freshness.py` | **Détecteur** STALE, exit 1 gatable pre-exec | #8737 |
+| `scripts/quantconnect/provision_lean_data.py` | **Provisionneur** : regen idempotente one-command d'un univers + **gate fraîcheur cablée** | #8742 |
+
+Le **manifeste versionné** [`lean_universes.manifest.json`](../../scripts/quantconnect/lean_universes.manifest.json) (committé, texte) pin la spec de chaque univers (tickers + plage + `regen_date` + issue) — c'est le **« quelle data a produit ce Sharpe »** vérifiable au merge-gate. Les zips restent gitignorés (machine-local), mais reproductibles en une commande :
+
+```bash
+python scripts/quantconnect/provision_lean_data.py --universe turn_of_month
+# → download yfinance + convert + gate fraîcheur (exit 1 si STALE)
+```
+
+**Avant toute re-exec equity/forex quantbook** : provisionner l'univers (ou lancer `check_data_freshness.py`) pour ne pas reposer sur une ligne plate forward-fillée. Le provisionneur est idempotent (un ticker déjà FRESH est skipé sauf `--force`) et la gate est **cablée** post-provision (pas un outil optionnel à penser à lancer). Voir #8734, #8737, #8627.
 
 ## QC Cloud Assistants — méthode privilégiée Quantbook execution
 

@@ -1,0 +1,17 @@
+- name: "Z3-Python-06 Advanced Optimization"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Z3 optimization (MaxSAT / objectifs hierarchiques / front de Pareto) branchee NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkOptimize/MkMaximize/MkAssertSoft) et pyz3 (`from z3 import *`, Optimize/maximize/assert_soft) sont les deux bindings officiels du meme coeur C++ Z3 — pas un pont intermediaire. Concept porte au twin C# c.8052/#3801 (capstone budget 100->80, cas non-degenere, DRIFT resorbe). Aucune asymetrie de machinerie a corriger."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 21568eafac5f6a33ccccf09748fabdb00ac651ce
+      csharp_sha: 09839b0862080005043750fa15b42b91a8ab13cb
+  known_differences:
+    - "Python : pyz3 (Optimize, maximize/minimize, assert_soft pour MaxSAT, front de Pareto). C# : Microsoft.Z3 .NET (ctx.MkOptimize, MkMaximize, MkAssertSoft)."
+    - "Concept demontre (objectifs hierarchiques, MaxSAT, front de Pareto) verifie cote Python (structure CLEAN c.20)."
+    - "2026-07-24 (po-2026) : doc-honesty #8052 -- cell#21 prose disait 'budget de 100 unites' alors que code[22] tourne budget_total=80 (et cell#23 interprete deja correctement 'budget de 80, inferieur a la demande ideale 5x20=100'). Markdown-only align du nombre a l'output (100->80), code et outputs intacts. python_sha rebaseline suite a ce changement de blob."
+    - "2026-07-24 (po-2026) : Prong-B (#3801) porte au twin C# -- capstone budget 100->80 (cas non-degenere). Avant : C# restait a budget=100 (cas degenere, valeur=420, cout=0) tandis que Python etait passe a 80 (#8158). Apres port : les deux jumeaux alignes a budget=80 (valeur=368, cout=6), l'arbitrage multi-objectif (hierarchie + valeur) visible des deux cotes. DRIFT resorbe."

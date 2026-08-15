@@ -81,22 +81,38 @@ utilise une **correspondance floue** (`rapidfuzz`). Deux seuils sont en vigueur 
 **Règles de gouvernance (politique, à respecter par l'enseignant) :**
 
 1. **Au-dessus du seuil** : correspondance acceptée automatiquement.
-2. **Sous le seuil mais au-dessus d'une marge d'ambiguïté** (ex. 80–90 %) :
-   **validation humaine obligatoire**. Le moteur émet un avertissement (`AVERTISSEMENT` dans
-   les logs) mais **ne bloque pas** l'exécution : l'enseignant doit inspecter les
-   correspondances ambiguës avant de considérer le rapport comme final.
-3. **Journalisation** : les correspondances ambiguës (sous le seuil) doivent être
-   consignées (manuellement, hors données nominatives — ex. « correspondance ambiguë pour le
-   groupe G3 ») pour audit.
+2. **Dans la bande d'ambiguïté** — score dans `[seuil - AMBIGUITY_MARGIN, seuil[`,
+   soit 80–90 % aux valeurs par défaut : **validation humaine obligatoire**. Le
+   rapprochement n'est **pas** crédité, il est consigné, et le run est déclaré
+   **non final** tant que l'enseignant n'a pas arbitré.
+3. **Journalisation** : les rapprochements de cette bande sont écrits automatiquement
+   dans un journal structuré JSON (`ambiguites_rapprochement.json` par défaut),
+   **sans donnée nominative** — condensé SHA-256 tronqué des deux libellés comparés,
+   score, seuil et marge applicables (cf §5).
 4. **Procédure en cas de confusion entre deux étudiants** : ni l'un ni l'autre n'est
    crédité automatiquement ; l'enseignant tranche, et l'incident est tracé.
 
-> **État d'implémentation (honnête).** Les seuils existent et sont applicables
-> (`gradebook.py` : `SIMILARITY_THRESHOLD`, `group_match_threshold`, `fuzzy_match_group`).
-> En revanche, la **validation humaine sous seuil n'est pas encore forcée par le code**
-> (le moteur affiche un avertissement, puis continue). Cette notice formalise donc la
-> politique attendue ; l'enforcement strict (blocage + journal structuré) est un axe
-> d'amélioration suivi séparément.
+> **État d'implémentation.** L'enforcement est en place (issue #8606).
+>
+> | Mécanisme | Emplacement |
+> |---|---|
+> | Bande d'ambiguïté nommée et configurable | `gradebook.py` : `AMBIGUITY_MARGIN` (défaut `10`) |
+> | Journal structuré pseudonymisé | `gradebook.py` : `AmbiguityJournal`, actif par défaut |
+> | Gate de sortie | `run_grading.py` : code de retour `2` (`EXIT_AMBIGUITIES_PENDING`) tant que des ambiguïtés subsistent ; `--allow-ambiguous` requis pour produire le rapport malgré tout |
+> | Couverture de test | `test_fuzzy_match_group.py` (dont la confusion entre deux patronymes proches, règle 4) |
+>
+> **Décision de conception.** Le gate ne change **aucune décision de rapprochement** :
+> un score sous le seuil reste un refus. Ce qui change est que le run en porte la trace
+> et ne peut plus produire un rapport présenté comme final sans arbitrage — un
+> avertissement dans les logs pouvait n'être jamais lu.
+>
+> **Défaut corrigé au passage.** Le cas d'inclusion simple (`fuzzy_match_group`, Cas 4)
+> court-circuitait le seuil : un libellé inclus dans un autre était accepté même à
+> `threshold=100`. Sur des patronymes proches (`… - dupont` inclus dans `… - dupontt`),
+> l'un des deux étudiants était donc crédité automatiquement, en violation de la règle 4
+> ci-dessus. L'inclusion exige désormais que le reliquat commence sur une frontière de
+> token (séparateur), ce qui préserve le cas visé (« projet alpha » ⊂ « projet alpha -
+> groupe 3 ») et ferme la confusion de noms.
 
 ## 7. Conservation et suppression en fin de semestre
 

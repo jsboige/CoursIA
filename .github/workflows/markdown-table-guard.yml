@@ -1,0 +1,118 @@
+name: Markdown table syntax advisory
+
+# Source-level lint for GFM markdown table syntax defects (#10097, sub-issue of
+# #3966). The scanner (scripts/notebook_tools/scan_md_table_syntax.py) detects
+# four pathologies that break table rendering: COL_MISMATCH (bare unescaped |
+# in a cell), NO_SEP (missing |---| separator), NO_BLANK_BEFORE/AFTER (paragraph
+# glued to the table). This workflow makes defects in *.ipynb markdown cells and
+# *.md / README* files VISIBLE on the PR.
+#
+# ADVISORY, never blocking (mirrors exercises-advisory.yml, #8814 acceptance 5):
+# the job ALWAYS exits 0. The actionable payload is the `markdown-table-syntax`
+# LABEL, never the green job conclusion (which is green by construction). A
+# reviewer who reads only "exit 0" as "conforming" has read the wrong signal.
+#
+# Advisory (not blocking) on purpose: the day-1 fleet residual is non-trivial
+# (LaTeX-heavy families carry genuine d-sep / norm-bar cases), and GitHub's
+# renderer is lenient on some NO_BLANK_BEFORE cases. Surfacing for human triage
+# is the right grain; promoting to a blocking gate is a separate decision, to
+# revisit once the residual is at 0 and stable (cf exercises-advisory "Hors
+# scope").
+#
+# Per-PR scope: runs the scan ONLY on the *.ipynb / *.md modified by the PR, not
+# a repo-wide scan on every push (the canon scan_md_table_syntax.py consumes the
+# path list; the workflow does not re-implement detection).
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
+# benevolent review applies, no internal content criterion runs against them.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*.ipynb'
+      - '**/*.md'
+      - '**/README*'
+      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
+      # else it cannot re-run (so cannot remove its own label) once the matching
+      # paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
+      - '.github/workflows/markdown-table-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  md-table-syntax-advisory:
+    name: "Markdown table syntax advisory (label, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on modified notebooks / markdown
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_DEFECT: markdown-table-syntax
+        run: |
+          set -uo pipefail
+
+          # Added/modified *.ipynb + *.md + README* in the PR (deletions
+          # excluded). Skip vendored / archived trees where we do not enforce
+          # this (.lake/ Mathlib, docs/_archives/, node_modules).
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" \
+            -- '*.ipynb' '*.md' '*README*' \
+            | grep -v -E '^(\.lake/|docs/_archives/|node_modules/)' \
+            | grep -v $'\r$' > changed.txt || true
+          COUNT=$(wc -l < changed.txt | tr -d ' ')
+          echo "Modified *.ipynb/*.md/README* in scope: $COUNT"
+
+          # Label helpers (idempotent).
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label()   { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          ensure_label "$LABEL_DEFECT" "PR introduces a markdown table syntax defect (COL_MISMATCH / NO_SEP / NO_BLANK_BEFORE/AFTER). Advisory, non-blocking. See #10097." "d93f0b"
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No in-scope files to scan."
+            unset_label "$LABEL_DEFECT"
+            exit 0
+          fi
+
+          # Advisory: the job ALWAYS exits 0. The actionable signal is the
+          # LABEL decided from the JSON total below.
+          python scripts/notebook_tools/scan_md_table_syntax.py $(cat changed.txt) --json > payload.json || true
+          cat payload.json
+
+          TOTAL=$(python -c "import json,sys; print(json.load(open('payload.json'))['total_findings'])" 2>/dev/null || echo 0)
+          echo "Total table-syntax defects in changed files: $TOTAL"
+
+          if [ "$TOTAL" -gt 0 ]; then
+            set_label "$LABEL_DEFECT"
+            echo "::warning::Found $TOTAL markdown table syntax defect(s) in changed files (label '$LABEL_DEFECT' added). See scan_md_table_syntax.py --check locally."
+          else
+            unset_label "$LABEL_DEFECT"
+            echo "Clean."
+          fi
+          exit 0

@@ -1,0 +1,42 @@
+- name: "ML-3 Entrainement&AutoML"
+  family: ML.NET/Python
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
+  audits:
+    - date: "2026-07-31"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: 23a665e9c31aa87889cbaf4630e4d87b3c32e8c2
+      reason: "rebaseline python apres fix prose Exemple 2/AutoML (cellules 7/8/11, #8052) : la prose disait 'donnees quadratiques y=100x^2' et 'compare deux GradientBoosting' mais le code cellule 8 genere des SINUS (y=10sin(x)) et compare trois DecisionTreeRegressor (underfit/good/overfit) ; l'AutoML cellule 10 tourne sur ces memes donnees sinus (LinearRegression RMSE CV=7.01, RandomForest=3.06). Le comment cellule 8 'le RMSE test explose' contredisait l'output (overfit test=2.78, le plus bas). Fix aligne prose sur le code execute. Python-only, csharp_sha unchanged, parite semantique preservee."
+    - date: "2026-08-06"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: cc944d052d3f64d4d72e0c0a833a0a637746a62b
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: 2c593b51f0144ed0a7b21cbd230719916fca3744e9ef9cfba0b6ca2fadf9041b
+    - date: "2026-08-08"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: c5be5734167b73aa31abb84da4d00165a3612552
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: 86f24846bc1a8aec98d49b592ea36d0ec471eb0e065eb44bb3f48cfe1a8649cb
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: 8312994b018141ee792668a10d4badc1818b32a3
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: 5e3eaddd134b346c59036a1e2ac05412f1685d24dffd4697e794b5fe9b84831c
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 695da4960a0c19888c1e5917040ed84d5ee520be
+      csharp_sha: 368fa70908b21e5b64d889ce595c70826c54917f
+      content_python_sha: 58d05932f373d8570f763fca6d9cdccd997959fd75a2509513c74dbec893cccc
+      content_csharp_sha: ffc6a21329a4a83dd530ad32ced3cb20be8da8e93d8f711f9fb96c0cfed8a1fe
+  known_differences:
+    - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
+    - "Socle pedagogique commun : comparaison de trainers de regression (lineaire vs boosting) + evaluation RMSE train/test."
+    - "Zoos de modeles distincts : C# = `Regression.Trainers.Sdca` (Stochastic Dual Coord Ascent) + `LightGbm` (binding ML.NET LightGBM natif). Python = `LinearRegression` + `GradientBoostingRegressor, RandomForestRegressor, DecisionTreeRegressor, SVR` (ensemble sklearn)."
+    - "Asymetrie de couverture : Python expose nativement `GridSearchCV` + `cross_val_score` (recherche d'hyperparametres + CV K-fold) ; le C# compare manuellement SDCA vs LightGbm sans AutoML sur ce notebook (AutoML apparait en ML-4)."

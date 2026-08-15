@@ -1,0 +1,17 @@
+- name: "SL-6 ModernILP"
+  family: SymbolicAI/SymbolicLearning
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb
+  parity_level: surface
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5987b939ee2725614feb3a08a51b54b20be6018e
+      csharp_sha: b2861f9b3f92d79a57666890cfab01846d60805d
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `pyswip` (SWI-Prolog) + documentation prosaique des 4 moteurs ILP modernes SOTA : `Aleph` (entailment-inverse, Srinivasan 2001), `Metagol` (MIL = Meta-Interpretive Learning, Muggleton 2014), `Popper` (LFF = Learning From Failures, Cropper 2020), `dILP/Lernd` (differentiable ILP, Evans 2018). C# = BCL .NET from-scratch pour FOIL (Quinlan 1990) sur la tache 'apprendre ancestor' (programme recursif, 2 clauses), benchmark sur graphe parent croissant, puis comparaison en prose aux 4 moteurs SOTA. Verdict RECOVERABLE-LOCAL : le coeur pedagogique (moteurs ILP modernes, apprentissage recursif, comparaison SOTA) est PARITABLE des deux cotes (memes concepts + tache commune 'ancestor'), l'asymetrie reside dans la MACHINERIE : Python invoque un VRAI moteur Prolog SOTA + decrit les 4 paradigmes SOTA en prose ; C# implemente FOIL from-scratch comme baseline pedagogique. Le verdict SOTA est honnete : FOIL from-scratch != les moteurs modernes -- le C# sert de baseline pedagogique, pas de substitute SOTA. `parity_level: surface` preserve."
+  known_differences:
+    - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Python INVOQUE SWI-Prolog et documente les 4 moteurs ILP modernes (Aleph, Metagol/MIL, Popper/LFF, dILP/Lernd) en prose ; C# reimplemente FOIL (Quinlan 1990) from-scratch comme demonstration pedagogique unique."
+    - "Socle commun : moteurs ILP modernes -- la tache commune est 'apprendre ancestor' (programme recursif)."
+    - "Asymetrie de couverture : Python (27 cellules, 14 code) couvre les 4 paradigmes (Aleph entailment-inverse, Metagol meta-interpretive, Popper LFF, dILP differentiable) en prose + SWI-Prolog ; C# (22 cellules, 11 code) implemente FOIL from-scratch pour apprendre ancestor (2 clauses recursives), benchmark sur graphe parent croissant, puis compare en prose aux 4 moteurs du Python."
+    - "Verdict SOTA documente : le C# est honnete sur le fait que FOIL from-scratch != les moteurs modernes -- il sert de baseline pedagogique, pas de substitute SOTA."

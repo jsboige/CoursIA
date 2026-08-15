@@ -43,13 +43,24 @@ from pathlib import Path
 
 # Langues vivantes côté Argumentum (8 langues, #4957 §1).
 # Le pivot (fr en Phase 0.5) est la source ; les autres sont cibles de traduction.
-PIVOT_LANG = "fr"
-TARGET_LANGS = ["en", "es", "ar", "fa", "zh", "ru", "pt"]
+# L'univers ordonné des cibles vient de la source unique ``check_perimeter`` (#10109).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from check_perimeter import PIVOT_LANG, TARGET_LANGS  # noqa: E402
 
 # Colonnes du CSV, dans l'ordre ratifié #4957 §1.
 COLUMNS = ["notebook", "cell_id", "cell_type", "src_lang", "src_hash"]
 COLUMNS += [f"text_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
 COLUMNS += [f"hash_{lang}" for lang in [PIVOT_LANG] + TARGET_LANGS]
+# translate_policy (#10326): per-row translation policy declared on the source
+# notebook cell (metadata) and carried through the pipeline. Empty = default
+# (translate if target empty or drifted); ``verbatim`` = never translate (the
+# source FR is the deliverable for every lang -- literary citation, idiomatic
+# example, prompt to reproduce -- so no LLM call). T1 reads it from
+# ``cell.metadata.translate`` (tranche 2) and writes it into the CSV; T3
+# honors it (see translate_csv.py VERBATIM_POLICY). Trailing column pour
+# rester rétro-compatible avec les CSV legacy (DictReader fill missing avec
+# ``""`` via load_existing_csv.setdefault).
+COLUMNS += ["translate_policy"]
 
 
 def normalize(text: str) -> str:
@@ -72,11 +83,40 @@ def cell_hash(text: str) -> str:
     return hashlib.sha256(normalize(text).encode("utf-8")).hexdigest()[:16]
 
 
+def _read_translate_policy(cell: dict) -> str:
+    """Lit la politique de traduction déclarée dans ``cell.metadata``.
+
+    Convention (#10326, tranche 2) : la politique vit dans ``cell.metadata.translate``
+    du notebook source — pas dans le CSV dérivé — pour survivre aux régénérations
+    T1. Une seule valeur reconnue à ce jour : ``"verbatim"`` (texte source
+    préservé, jamais traduit). Toute autre valeur (clé absente, valeur vide,
+    autre chaîne) = politique par défaut (traduire si cible vide ou driftée).
+
+    Le design accepte délibérément des valeurs inconnues (cf test
+    ``test_extract_unknown_policy_value_falls_back_to_default``) : ajouter une
+    nouvelle politique ne casse pas les anciens extractions. T3 et T4 sont
+    responsables de la sémantique exacte — T1 ne fait que transporter le
+    marqueur.
+    """
+    meta = cell.get("metadata") or {}
+    policy = meta.get("translate")
+    if not isinstance(policy, str):
+        return ""
+    return policy.strip()
+
+
 def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict]:
     """Extrait les cellules d'un notebook en lignes CSV.
 
     Saute les cellules sans id nbformat stable (cell_id vide = non traduisible de
     façon fiable). Les cellules vides sont incluses (leur texte peut être traduit).
+
+    Chaque cellule peut porter une **politique de traduction** déclarée dans
+    ``cell.metadata.translate`` (#10326, tranche 2) — ex. ``"verbatim"`` pour les
+    citations Hugo de ``FT-02-QLoRA-Quantization``. La politique est recopiée
+    dans la colonne CSV ``translate_policy`` et propagée à T3 (qui honore
+    ``verbatim`` court-circuitant l'éligibilité) puis à T4 (qui rend ``text_fr``
+    inchangé pour les cellules verbatim). Défaut : ``""`` = traduire.
     """
     rows = []
     try:
@@ -101,6 +141,7 @@ def extract_notebook(nb_path: Path, repo_root: Path, src_lang: str) -> list[dict
         row["cell_type"] = cell_type
         row["src_lang"] = src_lang
         row["src_hash"] = cell_hash(text)
+        row["translate_policy"] = _read_translate_policy(cell)
         # Pivot : on dépose le texte + son hash dans la colonne pivot. À l'extraction
         # initiale (T1) le pivot EST la source, donc hash_{src_lang} == src_hash par
         # construction (c'est intentionnel, pas une invariance à tester). Les vrais
@@ -162,7 +203,7 @@ def load_existing_csv(csv_path: Path) -> list[dict]:
 def update_existing_csv(
     existing_rows: list[dict],
     fresh_rows: list[dict],
-    target_notebooks: set[str],
+    target_notebooks: set[str] | None,
 ) -> tuple[list[dict], dict]:
     """Met à jour les lignes existantes pour les notebooks cibles, sans toucher
     aux autres entrées du CSV.
@@ -207,7 +248,17 @@ def update_existing_csv(
             # on garde la première occurrence.
             index[key] = i
 
-    PIVOT_COLS = ("src_lang", "src_hash", "text_fr", "hash_fr", "cell_type")
+    # Champs pivot : toute mutation dans le notebook source DOIT se propager
+    # dans le CSV à l'extraction suivante (sans attendre T3).
+    # ``translate_policy`` (#10326) rejoint le groupe : un auteur qui ajoute
+    # ``metadata.translate = "verbatim"`` dans le notebook veut voir la
+    # politique prendre effet immédiatement, pas rester cachée derrière un
+    # ``""`` legacy. Les colonnes cibles T3 (text_en, hash_en, ...) restent
+    # quant à elles préservées entre deux extractions.
+    PIVOT_COLS = (
+        "src_lang", "src_hash", "text_fr", "hash_fr", "cell_type",
+        "translate_policy",
+    )
 
     # 1) Calculer le diff en PRÉ-update (avant de muter existing_rows).
     pre_updated = 0
@@ -237,15 +288,26 @@ def update_existing_csv(
             appended += 1
 
     # 3) Compteurs finaux (post-update).
-    kept_orphan = sum(
-        1
-        for r in existing_rows
-        if r.get("notebook") in target_notebooks
-        and (r.get("notebook", ""), r.get("cell_id", "")) not in fresh_keys
-    )
-    kept_other = sum(
-        1 for r in existing_rows if r.get("notebook") not in target_notebooks
-    )
+    # target_notebooks=None (mode --full, #10329 etape 2) : on considere
+    # toutes les lignes comme cibles. kept_orphan = toute ligne existante
+    # qui n'a pas de cellule correspondante dans le scan courant.
+    if target_notebooks is None:
+        kept_orphan = sum(
+            1
+            for r in existing_rows
+            if (r.get("notebook", ""), r.get("cell_id", "")) not in fresh_keys
+        )
+        kept_other = 0
+    else:
+        kept_orphan = sum(
+            1
+            for r in existing_rows
+            if r.get("notebook") in target_notebooks
+            and (r.get("notebook", ""), r.get("cell_id", "")) not in fresh_keys
+        )
+        kept_other = sum(
+            1 for r in existing_rows if r.get("notebook") not in target_notebooks
+        )
 
     stats = {
         "updated": pre_updated,
@@ -346,6 +408,15 @@ def main() -> int:
         "par T3. Les champs pivot (src_hash, text_fr, hash_fr, src_lang, cell_type) "
         "sont rafraîchis pour les notebooks donnés en input.",
     )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Mode plein périmètre (étape 2 #10329). Quand combiné avec --update, "
+        "rafraîchit TOUS les notebooks référencés dans le CSV (et tout nouveau "
+        "notebook FR trouvé sous args.input), même ceux dont la dernière modif "
+        "git est antérieure au dernier run. Sans --full, seuls les notebooks "
+        "passés en input sont rafraîchis.",
+    )
     args = parser.parse_args()
 
     # `input` est une liste (nargs="+"). On accepte des chemins individuels ou
@@ -357,7 +428,42 @@ def main() -> int:
         print(f"ERROR : aucun chemin d'input valide (reçus : {args.input}).", file=sys.stderr)
         return 2
 
+    # Mode --full : on élargit la zone de scan pour rafraîchir TOUS les
+    # notebooks FR référencés (étape 2 de #10329). Sans --full, seul `input`
+    # est scanné (mode incrémental = comportement historique, post-#4957).
     repo_root = (args.repo_root or Path.cwd()).resolve()
+    if args.full and args.update is not None:
+        # Si --full + --update, on scanne récursivement chaque répertoire
+        # parent des notebooks déjà référencés dans le CSV, ce qui attrape
+        # les nouveaux notebooks FR jamais encore extraits (etape 2 de
+        # #10329 : comble la dette de 78 lignes désynchronisées détectée
+        # par c.199 / PR #10347).
+        existing_csv_rows = load_existing_csv(args.update)
+        ref_dirs = set()
+        for row in existing_csv_rows:
+            # "notebook" est un chemin POSIX relatif au repo. On prend le
+            # dossier parent (jusqu'à 3 niveaux) pour borner le scan sans
+            # exploser sur tout le dépôt.
+            nb_path = row["notebook"]
+            # On prend juste le répertoire parent immédiat (le dossier de
+            # série). Pour les chemins type "translations/foo/bar.csv",
+            # c'est bar.csv ; ici c'est "MyIA.AI.Notebooks/..." qu'on
+            # cherche — pas un CSV. Donc on prend le dossier parent du
+            # notebook.
+            # Heuristique : on prend le dossier qui contient 2+ notebooks
+            # existants dans le CSV = dossier de série.
+            parts = nb_path.split("/")
+            if len(parts) >= 2:
+                ref_dirs.add("/".join(parts[:-1]))
+        # On ajoute les chemins input existants (compatibilité historique).
+        # Les ref_dirs serviront de bornes de scan.
+        existing_inputs = list(existing_inputs)  # freeze
+        # On étend existing_inputs par les ref_dirs absolus (résolus vs repo_root).
+        for rd in ref_dirs:
+            abs_rd = (repo_root / rd).resolve() if not Path(rd).is_absolute() else Path(rd)
+            if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in existing_inputs:
+                existing_inputs.append(abs_rd)
+
     notebooks = iter_notebooks(existing_inputs)
     if not notebooks:
         print(f"ERROR : aucun notebook trouvé dans {existing_inputs}.", file=sys.stderr)
@@ -378,11 +484,19 @@ def main() -> int:
             print(f"ERROR : --update CSV introuvable : {args.update}", file=sys.stderr)
             return 2
         existing = load_existing_csv(args.update)
-        target_notebooks = {row["notebook"] for row in rows}
+        # --full : on rafraîchit TOUTES les lignes du CSV existant (mode plein
+        # périmètre #10329 etape 2), pas seulement celles des notebooks passés
+        # en input. Sans --full, on cible uniquement les notebooks du scan
+        # courant (= ceux dont le notebook est dans `rows`).
+        if args.full:
+            target_notebooks = None  # signal "tout rafraîchir"
+        else:
+            target_notebooks = {row["notebook"] for row in rows}
         updated_rows, stats = update_existing_csv(existing, rows, target_notebooks)
         sink = write_csv(updated_rows, args.update)
         print(
-            f"OK (--update) : {stats['updated']} ligne(s) rafraîchie(s), "
+            f"OK (--update{' --full' if args.full else ''}) : "
+            f"{stats['updated']} ligne(s) rafraîchie(s), "
             f"{stats['unchanged']} déjà in-sync, "
             f"{stats['appended']} ajoutée(s), "
             f"{stats['kept_orphan']} orpheline(s) "

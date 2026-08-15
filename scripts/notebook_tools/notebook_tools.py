@@ -1533,6 +1533,127 @@ def cmd_analyze(args):
     return 0
 
 
+def cmd_count_by_subdir(args):
+    """Count notebooks per sub-folder under one or all series (#4959 tooling).
+
+    Wrapper around scripts/notebook_tools/count_notebooks_by_series.py pure
+    functions so the count is reachable as a sub-command of the unified CLI
+    (rule: never spawn an isolated scripts/quantconnect/<count>.py — see #4959
+    dispatcher ai-01 msg-20260806T182709).
+    """
+    # Local import so the heavy module is not pulled in by other subcommands.
+    _tools_dir = Path(__file__).resolve().parent
+    if str(_tools_dir) not in sys.path:
+        sys.path.insert(0, str(_tools_dir))
+    try:
+        from count_notebooks_by_series import (
+            count_notebooks_in_dir,
+            extract_readme_count,
+            SERIES_ORDER,
+            NOTEBOOKS_DIR,
+            EXCLUDE_ALWAYS,
+        )
+    except ImportError as exc:
+        print_error(f"count_notebooks_by_series module unavailable: {exc}")
+        return 1
+
+    pedagogical = not args.all
+    results: Dict[str, Any] = {}
+
+    if args.series:
+        series_dirs = [NOTEBOOKS_DIR / args.series]
+    else:
+        if not NOTEBOOKS_DIR.is_dir():
+            print_error(f"MyIA.AI.Notebooks directory not found: {NOTEBOOKS_DIR}")
+            return 1
+        series_dirs = sorted(NOTEBOOKS_DIR.iterdir())
+
+    for series_dir in series_dirs:
+        if not series_dir.is_dir():
+            continue
+        if series_dir.name in EXCLUDE_ALWAYS or series_dir.name.startswith("."):
+            continue
+        counts = count_notebooks_in_dir(series_dir, pedagogical=pedagogical)
+        if counts["total"] > 0 or args.series:
+            results[series_dir.name] = counts
+
+    if args.check_readme:
+        print()
+        print(f"{'Series':<18} {'Actual':>7} {'README':>7} {'Status':<12}")
+        print("-" * 50)
+        for name in SERIES_ORDER:
+            if name not in results:
+                continue
+            actual = results[name]["total"]
+            readme_path = NOTEBOOKS_DIR / name / "README.md"
+            declared = extract_readme_count(readme_path)
+            if declared is None:
+                status = "no count"
+                declared_str = "?"
+            elif actual == declared:
+                status = "OK"
+                declared_str = str(declared)
+            else:
+                status = "MISMATCH"
+                declared_str = str(declared)
+            print(f"{name:<18} {actual:>7} {declared_str:>7} {status:<12}")
+        total_all = sum(r["total"] for r in results.values())
+        print(f"\nTotal: {total_all} notebooks in {len(results)} series")
+        if not args.json:
+            return 0
+
+    if args.json:
+        # Emit JSON only when explicitly requested (also when --check-readme + --json).
+        if args.check_readme:
+            enriched: Dict[str, Any] = {}
+            for name, counts in results.items():
+                readme_path = NOTEBOOKS_DIR / name / "README.md"
+                declared = extract_readme_count(readme_path)
+                entry = dict(counts)
+                entry["readme_declared"] = declared
+                if declared is not None:
+                    entry["status"] = "OK" if declared == counts["total"] else "MISMATCH"
+                else:
+                    entry["status"] = "no count"
+                enriched[name] = entry
+            print(json.dumps(enriched, indent=2, ensure_ascii=False))
+        else:
+            print(json.dumps(results, indent=2, ensure_ascii=False))
+        return 0
+
+    # Human-readable mode (default).
+    mode = "pedagogical" if pedagogical else "all"
+    print()
+    print(f"Notebook counts by series ({mode})")
+    print("=" * 50)
+
+    total_all = 0
+    for name in SERIES_ORDER:
+        if name not in results:
+            continue
+        total = results[name]["total"]
+        subs = results[name]["by_subfolder"]
+        total_all += total
+
+        sub_detail = ""
+        if subs:
+            top_subs = sorted(subs.items(), key=lambda x: -x[1])[:3]
+            sub_detail = " (" + ", ".join(f"{k}: {v}" for k, v in top_subs) + ")"
+        print(f"  {name:<18} {total:>4} notebooks{sub_detail}")
+
+    remaining = sum(
+        r["total"] for name, r in results.items()
+        if name not in SERIES_ORDER
+    )
+    if remaining:
+        print(f"  {'(other)':<18} {remaining:>4} notebooks")
+
+    print("=" * 50)
+    print(f"  {'TOTAL':<18} {total_all + remaining:>4} notebooks in {len(results)} series")
+
+    return 0
+
+
 def cmd_check_env(args):
     """Check environment for a notebook family"""
     family = args.family
@@ -2144,6 +2265,23 @@ def main():
     p_analyze.add_argument('--verbose', '-v', action='store_true')
     p_analyze.add_argument('--json', action='store_true')
 
+    # count-by-subdir command (See #4959, ai-01 msg-20260806T182709: tooling d'abord)
+    p_count = subparsers.add_parser(
+        'count-by-subdir',
+        help='Count notebooks per sub-folder under a series (or all series). '
+             'Wrapper around count_notebooks_by_series.py — adds --check-readme '
+             'comparison + JSON mode (See #4959).'
+    )
+    p_count.add_argument('--series', type=str, default=None,
+                        help='Count only a specific series (e.g. Search). Default: all.')
+    p_count.add_argument('--all', action='store_true',
+                        help='Include research, examples, and archive notebooks '
+                             '(default: pedagogical only).')
+    p_count.add_argument('--check-readme', action='store_true',
+                        help='Compare actual counts with README declarations.')
+    p_count.add_argument('--json', action='store_true',
+                        help='Machine-readable JSON output.')
+
     # check-env command
     p_env = subparsers.add_parser('check-env', help='Check environment for a family')
     p_env.add_argument('family', help='Notebook family name')
@@ -2251,6 +2389,7 @@ def main():
         'validate': cmd_validate,
         'skeleton': cmd_skeleton,
         'analyze': cmd_analyze,
+        'count-by-subdir': cmd_count_by_subdir,
         'check-env': cmd_check_env,
         'execute': cmd_execute,
         'golden-set': cmd_golden_set,

@@ -1,0 +1,23 @@
+- name: "SL-1 LogicalLearning"
+  family: SymbolicAI/SymbolicLearning
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-01"
+      by: myia-po-2023:CoursIA
+      python_sha: 54e32cb14b4791558f1017d16974ea0ee19d62af
+      csharp_sha: 8013c9d785020bb014f29f74e4cf64e4a413f595
+    - date: "2026-08-13"
+      by: myia-po-2025:CoursIA
+      python_sha: c0395f1f0ee82f67cc1827cb9c0323f4def48635
+      csharp_sha: 8013c9d785020bb014f29f74e4cf64e4a413f595
+      content_python_sha: d041e06781b2ed2e041cfcca3786d08777a4a503fbfb12283e79eb0b6841e0ca
+      content_csharp_sha: 152ac61c16a03acd5a6729fbbb165e870cfbef28e5ced2d1b4931f87bf3ead79
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `aima-python` (AIMA reference implementation, MIT, Russell/Norvig) pour CBH/Candidate Elimination/Version Space sur domaine restaurant + matplotlib pour la visualisation graphique de l'evolution du Version Space ; le coeur pedagogique est code from-scratch (pas de lib ILP tierce). C# = BCL .NET from-scratch (`Dictionary` + `HashSet` + `List<T>`) pour CBH + Candidate Elimination + 10 sections textuelles, sans visualisation graphique. Verdict RECOVERABLE-LOCAL : le coeur pedagogique (CBH = Current-Best-Hypothesis, Candidate Elimination, Version Space sur domaine AIMA restaurant) est PARITABLE des deux cotes (memes algorithmes, meme domaine), l'asymetrie reside dans la portee pedagogique (Python = version de reference complete + visualisation + comparaison aima-python ; C# = tranche focalisee sur les 2 algorithmes). Le socle BCL C# preserve comme choix pedagogique assume (ILP foundations = construire les algorithmes d'apprentissage a la main avant d'utiliser une lib). `parity_level: semantic` preserve : parite sur les concepts cibles malgre l'asymetrie de portee."
+  known_differences:
+    - "Socle commun : apprentissage logique symbolique -- Current-Best-Hypothesis (CBH) et Version Space / Candidate Elimination, sur le domaine restaurant (AIMA)."
+    - "Asymetrie de couverture : le jumeau Python (58 cellules, 18 code) couvre 9 sections incluant visualisation de l'evolution du Version Space et une section 'implementation de reference : aima-python' ; le jumeau C# (21 cellules, 9 code) est plus compact (10 sections, pas de visualisation graphique)."
+    - "Implementation : les deux cotes codent CBH et Candidate Elimination from-scratch (pas de librairie ILP tierce) -- c'est le coeur pedagogique. Sortie textuelle C# vs matplotlib/aima-python cote Python."
+    - "Le jumeau Python est la version de reference complete (avec comparaison a l'implementation aima-python) ; le C# est la tranche pedagogique focalisee sur les 2 algorithmes."

@@ -1,0 +1,54 @@
+- name: "CSP-2 Consistency"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `search_helpers.draw_csp_graph` + `benchmark_table`/`plot_benchmark` (custom local) + stdlib (`collections.deque`, `itertools.product`) + `networkx` (BSD-3-Clause, viz graphes) + matplotlib (rendu). C# = Choco-solver 4.10.17 (Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711) avec `org.chocosolver.solver.Model` + propagation AC-3 (Arc Consistency) + fixpoint detection + bench AC-3 vs backtracking + coloration Australie benchmarks. Verdict RECOVERABLE-LOCAL : le coeur pedagogique (AC-3, propagation de contraintes, mesure du facteur de branchement) est PARITABLE des deux cotes (PY = AC-3 from-scratch sur `deque`, C# = AC-3 via Choco IKVM) ; l'asymetrie reside dans la machinerie cote C# (Java SOTA via IKVM) vs cote PY (from-scratch pur + `networkx` pour viz). Le PY pourrait installer `pychoco` (binding natif Choco Python, MIT, meme solveur SOTA Apache-2.0) pour atteindre la parite complete, ou `python-constraint` (MIT) pour une lib CSP pure Python ; le notebook preserve le socle from-scratch comme choix pedagogique (consistency = implementer AC-3 a la main avant de le voir en lib). `parity_level: semantic` preserve : parite sur les concepts cibles (AC-3, fixpoint, domaine reduit) malgre l'asymetrie d'extension."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: e4bcb98f9b804b32f5116fdb79e253b7488cd030
+      csharp_sha: e8fd63183edffb0de5cb32c437c1b4bbcdc8b688
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: e4bcb98f9b804b32f5116fdb79e253b7488cd030
+      csharp_sha: 6d5e97dcecf99e4e5a9ae1881ba520072808d4d1
+      content_python_sha: f804bda0e8779cecd9234bef5ebdfe1bde4f1c5ff07f4db572579a3fafdc642d
+      content_csharp_sha: 15254f5d996c1c1b5ec961b8c1e9e1daaa88a500ee1ada38aca8eaf0696db073
+    - date: "2026-08-08"
+      by: myia-po-2023:CoursIA-2
+      python_sha: e4bcb98f9b804b32f5116fdb79e253b7488cd030
+      csharp_sha: 296d6a8b9f2112a20e2cf89c2b0db518f630b50f
+      content_python_sha: f804bda0e8779cecd9234bef5ebdfe1bde4f1c5ff07f4db572579a3fafdc642d
+      content_csharp_sha: 8f43ffa2051318b6eb8448ae3258d905503363d3dfdf1e4ed38a1ad55f26ba81
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: e4bcb98f9b804b32f5116fdb79e253b7488cd030
+      csharp_sha: 21fbd1f0263b778f19ff2d977d9d761128081a2f
+      content_python_sha: f804bda0e8779cecd9234bef5ebdfe1bde4f1c5ff07f4db572579a3fafdc642d
+      content_csharp_sha: 7f36d5d3db53e8bc7ba4d90252761a3788e17b47f3695a8d00ebfe930c2ca6d2
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: e4bcb98f9b804b32f5116fdb79e253b7488cd030
+      csharp_sha: 7a43c3a06569b03dddbeb014d7eb3678c1a97542
+      content_python_sha: f804bda0e8779cecd9234bef5ebdfe1bde4f1c5ff07f4db572579a3fafdc642d
+      content_csharp_sha: 8d8a6671bbd2b6278c88014eb61e5487fd794b0ff070e94c0ce9fde5fce42b01
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA
+      python_sha: 2b23660708b29ec536f8deb3709f50a133d56fe2
+      csharp_sha: 7a43c3a06569b03dddbeb014d7eb3678c1a97542
+      content_python_sha: cf8d8ea4d7840a6f5d5fe7a230464cae750f4ac259311d58e3863fad155f5370
+      content_csharp_sha: 8d8a6671bbd2b6278c88014eb61e5487fd794b0ff070e94c0ce9fde5fce42b01
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 27aa0b4a749c466db321f13bf66c7b136de90a6d
+      csharp_sha: 7a43c3a06569b03dddbeb014d7eb3678c1a97542
+      content_python_sha: 7fd91444f20e1c987b51721b30e8c86c3bc76f59b1223a03655e2150a938e4c3
+      content_csharp_sha: 8d8a6671bbd2b6278c88014eb61e5487fd794b0ff070e94c0ce9fde5fce42b01
+  known_differences:
+    - "Socle pedagogique commun : node consistency + AC-3 + Forward Checking + MAC, implementes from-scratch des deux cotes."
+    - "Cote C# : extension Choco-solver 4.10.17 via IKVM 8.15.0 (memes recettes infrastructure que CSP-1) pour comparer les algorithmes custom avec la propagation native de Choco (variable x, contrainte arithmetique, model.getSolver().propagate())."
+    - "Visualisation : Python = matplotlib (graphes de contraintes colorees par domaine, propagation tracee). C# = sortie textuelle via Console.WriteLine (pas de plotting .NET headless sur ce notebook)."
+    - "Idiomes framework : Python = pur (list/dict/set + recursion). C# = generiques System.Collections.Generic + delegation Func<Variable, IEnumerable<int>> pour les domaines."
+    - "DRIFT cote Python corrige c.818 (rebaseline fe90bbf6, was 41a4f050) : doc-honesty po-2025 #8139 a substitue des PLACEHOLDER qualitatifs ('petit/moyen/grand', 'reference/moins/le moins', 'modeste/significatif/important') par des nombres reels deterministes (BT 876 assigns / FC 67 / MAC 20 pour N=8) + tableau croisant taille N / variant / ratio BT/MAC. Substance algorithmique inchangee (memes implementations AC-3/FC/MAC). Cote C# inchange (SHA 7c545623 identique)."

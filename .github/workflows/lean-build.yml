@@ -15,6 +15,14 @@ name: Lean Build (reusable)
 #         sorry-baseline:    "0"
 #         sorry-filter-mode: prose-header   # raw | prose-header | standalone-tactic
 #
+# Bidirectional gate (anti-regression §D, See #8853/#8856): sorry-baseline must
+# EXACTLY equal the counter's real output. The gate FAILs on above-baseline
+# (regression: a sorry-as-tactic was introduced) AND on below-baseline (stale:
+# a sorry was discharged but the baseline was not decremented — a stale floor
+# hides the next regression). When you discharge a sorry, decrement
+# sorry-baseline in the same PR; when you introduce one intentionally, raise it
+# with justification.
+#
 # Sorry-filter modes (chosen per project's sorry "profile"):
 #   raw               : grep -c "sorry"                          (every mention)
 #   prose-header      : grep "sorry" | grep -viE "sorries|sorry.s"   (excludes prose plural/possessive)
@@ -47,7 +55,7 @@ on:
         type: string
         required: true
       sorry-baseline:
-        description: "Known-good standalone/real sorry count (regression floor)"
+        description: "Current real sorry count (must EXACTLY match the counter; bidirectional gate fails above AND below)"
         type: string
         required: true
       sorry-filter-mode:
@@ -57,7 +65,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   ci:
@@ -80,8 +87,12 @@ jobs:
         # are DUPLICATES of the FR file's, not new debt. Counting both double-inflates
         # the total above baseline (e.g. knot_lean: Reidemeister.lean(2) +
         # Reidemeister_en.lean(2) => 19 > baseline 17, a false FAIL — C513-L1, #6429).
-        # FR<->EN divergence is caught separately by the i18n drift CI, so nothing is
-        # hidden. This exclusion only ever LOWERS a count, never breaks a green lake.
+        # FR<->EN body divergence is caught separately by the dedicated job
+        # `.github/workflows/lean-i18n-drift.yml` (#10007), which invokes
+        # `scripts/lean/check_i18n_siblings.py --all` and FAILs on real drift /
+        # orphan / non-whitelisted unbuilt. The exemption list lives there,
+        # NAMED (PetersTour_en, #7081 INTRINSIC). This exclusion only ever LOWERS
+        # a count here, never breaks a green lake.
         for f in $(find . -name '*.lean' ! -name '*_en.lean' -not -path './.lake/*'); do
           if [ -f "$f" ]; then
             case "$MODE" in
@@ -140,8 +151,23 @@ jobs:
           echo "scaffolding target), raise sorry-baseline in the caller workflow WITH"
           echo "a documented justification in the PR body."
           exit 1
+        elif [ "$SORRY_TOTAL" -lt "$BASELINE" ]; then
+          # Bidirectional enforcement (anti-regression §D, See #8853/#8856).
+          # The gate previously only failed on above-baseline regressions; a
+          # discharged sorry (real count drops) left the baseline stale with no
+          # signal, so the NEXT regression above the stale floor passed silently.
+          # A baseline must track the real count exactly. Real < baseline means
+          # the caller workflow's sorry-baseline is stale — decrement it here.
+          echo ""
+          echo "FAIL: sorry count ($SORRY_TOTAL) is BELOW baseline ($BASELINE)."
+          echo "A sorry was discharged (or the counter scope changed) but the"
+          echo "sorry-baseline in the caller workflow was not decremented to match."
+          echo "A stale baseline hides the next regression — the gate only flags"
+          echo "above-baseline. Decrement sorry-baseline to $SORRY_TOTAL in the"
+          echo "caller workflow, in this same PR (anti-regression §D, #8853/#8856)."
+          exit 1
         fi
-        echo "OK: sorry count at or below baseline ($SORRY_TOTAL <= $BASELINE)."
+        echo "OK: sorry count matches baseline exactly ($SORRY_TOTAL == $BASELINE)."
 
     - name: Install elan
       run: |
@@ -156,12 +182,62 @@ jobs:
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
 
+    - name: Add swap space
+      # Hosted ubuntu-latest runners have 16 GB RAM. Full (cache-miss) elaboration
+      # of a large local module can exceed that: the VM OOMs and the provisioner
+      # tears the runner down mid-build ("The runner has received a shutdown
+      # signal", exit 143, ~4 min after the Mathlib cache download completes).
+      # Observed 3x on PR #9798 (runs 31139*, 31141*, 31147588612, 2026-08-07)
+      # while the sibling PR #9806 — same lake, cache HIT on the big module —
+      # passed in ~6 min: the discriminant is the actions/cache miss, not the
+      # code. Swap absorbs the elaboration peak; on incremental (cache-hit) runs
+      # this step costs ~5 s and the swap is idle.
+      #
+      # History (2026-08-07): PR #9840 (+756 lines of heartbeat-heavy P4 wall
+      # proofs) pushed the monolithic HashlifeCorrectness.lean past the 16 GB
+      # ceiling — `Add swap space` green but `Lake build` killed ~4 min 50 s after
+      # `Decompressed 8477 file(s)` (run 31161731891), zero error line. At the
+      # time the elaboration peak sat in ONE module, so lowering `lake -j` could
+      # not split it and more swap was the only lever.
+      #
+      # RESOLVED by the split (#9863, PR #9897 + follow-ups, 2026-08-07):
+      # HashlifeCorrectness.lean is now an aggregator (1285 lines) over
+      # Foundation.lean + Walls/{NE,NW,SE,SW}.lean. The peak is distributed across
+      # modules that `lake -j` elaborates in SEPARATE processes, so the runner no
+      # longer OOMs a single address space — conway_lean CI is green on main
+      # (runs of 2026-08-09). This swap step stays as cheap insurance against a
+      # future cache-miss peak; it is no longer the only mitigation. The same
+      # commit elaborates clean on WSL (`lake build` exit 0) — the ceiling was
+      # the runner's 16 GB RAM, not the proof. /mnt on ubuntu-latest carries
+      # ~70 GB free, so 32 G is affordable; `df -h /mnt` keeps that auditable.
+      run: |
+        df -h /mnt
+        sudo fallocate -l 32G /mnt/lean-swap
+        sudo chmod 600 /mnt/lean-swap
+        sudo mkswap /mnt/lean-swap
+        sudo swapon /mnt/lean-swap
+        free -h
+
     - name: Lake build
       working-directory: ${{ inputs.project-path }}
       run: |
-        set -o pipefail   # propagate lake's exit code through `| tail` — without this a
+        set -o pipefail   # propagate lake's exit code through the pipeline — without this a
                           # FAILED lake build reports exit 0 (tail always succeeds), and the
                           # CI step passes regardless. See incident conway_lean HashlifeCorrectness
                           # L1058 (rfl fail masked as CI PASS, 2026-06-14).
         lake exe cache get || true
-        lake -R build 2>&1 | tail -20
+        # `tail` keeps the SUCCESS path terse, but on FAILURE it also truncates the
+        # `File.lean:L:C: error:` line — lake builds in parallel and pushes an early
+        # failure ~8000 lines out of the tail window (See #8915). Tee the full log so
+        # the error lines can be surfaced in a ::group:: on failure. `if cmd;` exempts
+        # the pipeline from errexit, but pipefail still feeds `$?` here — this is what
+        # preserves the 2026-06-14 invariant (FAILED build still exits != 0).
+        if lake -R build 2>&1 | tee "$RUNNER_TEMP/lake.log" | tail -20; then
+          :
+        else
+          rc=$?
+          echo "::group::Error lines from the full lake log (See #8915)"
+          grep -nE "^error:|\.lean:[0-9]+:[0-9]+: (error|warning)" "$RUNNER_TEMP/lake.log" | head -100 || true
+          echo "::endgroup::"
+          exit "$rc"
+        fi

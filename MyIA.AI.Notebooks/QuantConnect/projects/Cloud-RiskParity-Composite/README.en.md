@@ -2,7 +2,7 @@
 
 **Asset class:** Multi-asset (Equities, Bonds, Commodities)
 
-**Cloud project ID:** N/A
+**Cloud project ID:** 30820857
 
 ## Description
 
@@ -16,9 +16,22 @@ lean backtest --algorithm Cloud-RiskParity-Composite/main.py
 ```
 
 ### QC Cloud
-Create a new project, upload `main.py`, compile and run a backtest (default: 2015-01-01 to 2024-12-31).
+Project 30820857. Upload `main.py`, compile and run a backtest. Hard-coded period: **2018-01-01 → 2025-01-01** (aligned with the cross-strategy baseline #1630). Optional parameter `rebalance_days` (default 30).
 
 ## Backtest Metrics
+
+Fresh backtest via QC Cloud MCP, 2026-08-14 (`RiskParity-Composite-2018-2025-aligned-status-2026-08`, project 30820857, compile `BuildSuccess`, 1761 tradeable dates, 297 orders):
+
+| Indicator | Value | Reading |
+|---|---|---|
+| Sharpe ratio | **0.027** | near zero |
+| CAGR | **3.50%** | below buy-and-hold SPY over the period |
+| Max drawdown | **24.400%** | high |
+| Total net profit | **27.282%** (+$17,435) | over the period |
+| PSR (Probabilistic Sharpe Ratio) | **0.094%** | indistinguishable from noise |
+| Orders | 297 | real backtest |
+
+**Verdict: NO-BEATS.** Sharpe 0.027, CAGR ~3.5%: the dual-filter rotation does not beat buy-and-hold SPY over this window (double-digit CAGR 2018-2025). The structural ceiling of unlevered equal-weight trend-following is confirmed (see the `qc-strategies-status.md` catalog: "pedagogical counter-example").
 
 | Method | Rebalance | Key Parameters |
 |--------|-----------|----------------|

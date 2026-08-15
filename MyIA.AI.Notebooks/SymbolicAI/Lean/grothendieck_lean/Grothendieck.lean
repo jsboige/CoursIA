@@ -6,8 +6,13 @@ import Grothendieck.Comma
 import Grothendieck.Conservative
 import Grothendieck.ConstantSheaf
 import Grothendieck.Construction
+import Grothendieck.Cover
 import Grothendieck.CoverageGen
+import Grothendieck.CoversArrow
+import Grothendieck.CoversOrder
+import Grothendieck.CoversPullback
 import Grothendieck.DenseTopology
+import Grothendieck.DirectImage
 import Grothendieck.Equivalences
 import Grothendieck.KanExtensions
 import Grothendieck.LeftExact
@@ -16,6 +21,8 @@ import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
 import Grothendieck.MonoidalCategories
+import Grothendieck.PullbackFunctor
+import Grothendieck.PullbackFunctorLaws
 import Grothendieck.SchemesTour
 import Grothendieck.SheafBasics
 import Grothendieck.SheafCohomology.Basic
@@ -28,6 +35,7 @@ import Grothendieck.SieveLattice
 import Grothendieck.SieveOps
 import Grothendieck.SitePoints
 import Grothendieck.Subcanonical
+import Grothendieck.TopologyLattice
 import Grothendieck.YonedaLemma
 import Grothendieck.ZariskiSite
 /-

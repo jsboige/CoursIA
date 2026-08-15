@@ -6,7 +6,7 @@
 
 **Grain (agents internes — [variation-protocol](../.claude/rules/variation-protocol.md))** — premiere ligne du body, format :
 
-`Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE>`
+`Grain: <TIER>/<GENRE> — lane <machine:workspace> — prev: <TIER>/<GENRE> #<PR>`
 
 <!--
 TIER (test objectif, detail dans .claude/rules/variation-protocol.md) :

@@ -73,6 +73,57 @@ git diff <base>..<pr-branch> -- '*.ipynb' | grep -E "^[-+].*Solution|^[-+].*pass
 
 Patterns red-flag complets : [.claude/rules/anti-regression.md](../../.claude/rules/anti-regression.md).
 
+## PR doc-honesty — alignement markdown ↔ output (règle C.4)
+
+Une PR « doc-honesty » / « alignement output » / « reconcile stale » (titre ou body citant #8052 ou #3801) **DOIT** diagnostiquer la cause de la dérive prose ↔ output AVANT de ré-aligner. Détail : [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) §C.4 + [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §D.5.
+
+### Workflow 4 étapes avant ouverture
+
+| Step | Action | Livrable |
+|------|--------|----------|
+| **1. Identifier la contradiction** | Relire la cellule code + l'output committé + le markdown. Noter la valeur citée par le markdown et la valeur réellement dans l'output | `claim_markdown=X, output_réel=Y, écart=Y-X` |
+| **2. Triage cause racine** | Classifier selon [.claude/rules/regles-vigilance-detail.md](../../docs/reference/regles-vigilance-detail.md) G.7 : **(a)** env/kernel (règle F : réparer), **(b)** claim antérieure fabriquée (revert + ré-exec), **(c)** moteur upstream (issue engine-fix), **(d)** régression dépendance (lockfile + ré-exec), **(e)** stochasticité non-seedée (seed + multi-seed ≥4 + verdict BEATS/NO BEATS) | `cause_classification: a/b/c/d/e` |
+| **3. Décider du verdict** | Appliquer la matrice décisionnelle (ci-dessous) | `verdict: SUBSTANCE / REFRAME / COSMETIC / FABRICATION` |
+| **4. Écrire `## Diagnostic dérive` dans le body PR** | Inclure : cause classifiée, verdict, action choisie. Section **obligatoire** dans le body, citer `#8364` seul ne suffit pas (cf §D.5 pr-review-discipline) | Section body PR présente |
+
+### Matrice décisionnelle (issue #8364 Garde-fou B)
+
+| Verdict | Critère vérifiable | Action merge | Issue fille |
+|---------|---------------------|--------------|-------------|
+| **SUBSTANCE** | Cause corrigée : env réparé (règle F), claim antérieure revertée, seed ajouté + multi-seed OK, lockfile fixé | Merge OK | Aucune si cause fixée |
+| **REFRAME** | Sortie honnête = la valeur réelle (output régénéré). Le markdown re-formule l'interprétation sur la valeur vraie | Merge OK si valeur vient d'une re-exec fraîche (sinon COSMETIC) | Aucune |
+| **COSMETIC** | Cause identifiée mais **non** traitée — alignement markdown sans re-exec = « jambe de bois repeinte », consacre la dégénérescence | **REFUS merge** (CHANGES_REQUESTED §D.5) | **OBLIGATOIRE** `See #N` traitant la cause |
+| **FABRICATION** | Markdown ajusté pour masquer une regression connue sans issue ni re-exec = falsification preuve d'exécution | **REFUS merge** + escalade §G.9 | Issue + revert prior |
+
+### Anti-patterns
+
+- **Citer `#8364` en label sans `## Diagnostic dérive`** dans le body = violation §D.5, reviewer DOIT poster `CHANGES_REQUESTED` (incident fondateur #8479, MusicGen 02-3 RTF `0.5-2x`→`0.21-0.24x` aligné sur run non-optimisé alors qu'une re-exec Stop-&-Repair était déjà due — verdict COSMETIC + CHANGES_REQUESTED obligatoire).
+- **Aligner un nombre de perf/timing/accuracy/coût sans re-exec** alors que le notebook est re-exécutable localement (kernel Python/.NET dispo, règle F) = enshrine une valeur qui changera au prochain passage kernel. C'est la dérive même que C.4 interdit.
+- **Fold l'alignement dans une PR markdown séparée** alors qu'une re-exec Stop-&-Repair est **déjà due** sur ce notebook (leak cellule cassée, cause classifiée **(a)** env) = malhonnête. Fold dans la re-exec, **pas** de PR markdown isolée.
+- **`CAUSE_DOCUMENTED_ONLY` sans issue fille** = COSMETIC caché, CHANGES_REQUESTED (cf §D.5).
+- **Hand-editer la sortie de cellule** au lieu de re-exécuter (Stop & Repair, L948 ★★, règle secrets-hygiene #6) = **BANNISSEMENT** (`CHANGES_REQUESTED` §D + §H sota-not-workaround). Seules exceptions tolérées : quantbooks QC (non-exécutables via MCP) + `metadata.papermill.input/output_path` au `basename` + `probeAddresses` banner strip post-re-exec .NET.
+
+### Vérification post-fix (avant `[DONE]`)
+
+```bash
+# 1. La PR porte bien `## Diagnostic dérive` dans le body (sinon CHANGES_REQUESTED §D.5)
+gh pr view <N> --json body | grep -c '^## Diagnostic dérive'
+# > 0 requis
+
+# 2. Si verdict COSMETIC : une issue fille doit exister avec `See #N`
+gh pr view <N> --json body | grep -oE 'See #[0-9]+'
+# > 0
+
+# 3. Si verdict REFRAME : la valeur du markdown doit venir d'une re-exec fraîche
+#    (papermill/kernelspec exec récent), JAMAIS byte-surgical markdown-align sur l'ancien output
+```
+
+### Scope discipline
+
+Une PR doc-honesty est **atomique** : 1 notebook (ou 1 série de notebooks homogène en cause), 1 cause classifiée, 1 verdict. **Pas** de composite « alignement N notebooks + fix env + régén catalogue » (G.4 / R3 catalog-pr-hygiene §1).
+
+Refs : [#8052](https://github.com/jsboige/CoursIA/issues/8052) (Epic parent audit sémantique), [#8364](https://github.com/jsboige/CoursIA/issues/8364) (issue parent doc-honesty protocol), [#3801](https://github.com/jsboige/CoursIA/issues/3801) (Epic SOTA axe-2 registre), [#8479](https://github.com/jsboige/CoursIA/pull/8479) (incident fondateur MusicGen RTF).
+
 ## Exécution Quantbooks (règle user 2026-04-29)
 
 Pour un notebook research utilisant `QuantBook()` (kernel QC Cloud uniquement) :

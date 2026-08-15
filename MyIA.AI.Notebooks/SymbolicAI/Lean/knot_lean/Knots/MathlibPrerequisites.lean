@@ -23,115 +23,115 @@ Convention : organisé par tier de difficulté.
 
 namespace Knots.MathlibPrerequisites
 
-/-! ## Tier 1: Accessible (Phase 2 targets, no deep prerequisites)
+/-! ## Tier 1 : Accessible (cibles Phase 2, sans prerequis profonds)
 
-These could be proved with current Mathlib once the definitions are
-properly set up.
+Celles-ci pourraient etre prouvees avec le Mathlib actuel une fois les
+definitions correctement posees.
 -/
 
-/-- #1: Well-formedness of PD-codes
-Each edge appears exactly twice across all crossings.
-Mathlib has: List, Finset, Fintype, counting
-Needed: proper edge-index extraction from PDCrossing
+/-- #1 : Bien-fondation des PD-codes
+Chaque arete apparait exactement deux fois a travers tous les croisements.
+Mathlib possede : List, Finset, Fintype, denombrement
+Necessaire : extraction correcte de l'index d'arete depuis PDCrossing
 -/
 theorem pd_wellformed_prerequisites : True := trivial
 
-/-- #2: Trefoil is tricolorable
-Assign red/blue/green cyclically to 3 strands.
-Mathlib has: Fin n → TriColor, decidable equality
-Needed: proper edge indexing, crossing→edge mapping
+/-- #2 : Le trefoil est tricoloriable
+On assigne rouge/bleu/vert cycliquement aux 3 brins.
+Mathlib possede : Fin n -> TriColor, egalite decidable
+Necessaire : indexation correcte des aretes, application croisement->arete
 -/
 theorem trefoil_tricolorable_prerequisites : True := trivial
 
-/-- #3: Unknot is not tricolorable
-0-crossing diagram → only 1 edge → can't use ≥2 colors.
-Mathlib has: everything needed
-Needed: proper edge indexing
+/-- #3 : Le noeud trivial n'est pas tricoloriable
+Diagramme a 0 croisement -> seulement 1 arete -> ne peut pas utiliser >= 2 couleurs.
+Mathlib possede : tout le necessaire
+Necessaire : indexation correcte des aretes
 -/
 theorem unknot_not_tricolorable_prerequisites : True := trivial
 
-/-- #4: Tricolorability invariant under R1, R2, R3
-Check each move case by case.
-Mathlib has: propositional logic, Fin types
-Needed: formal descriptions of each move's effect on edges
+/-- #4 : La tricolorabilite est invariante sous R1, R2, R3
+On verifie chaque mouvement cas par cas.
+Mathlib possede : logique propositionnelle, types Fin
+Necessaire : descriptions formelles de l'effet de chaque mouvement sur les aretes
 -/
 theorem tricolorable_invariant_prerequisites : True := trivial
 
-/-! ## Tier 2: Moderate (Phase 3–4 targets)
+/-! ## Tier 2 : Modere (cibles Phase 3-4)
 
-These need some infrastructure that doesn't exist yet but is
-plausible to build.
+Celles-ci necessitent une infrastructure qui n'existe pas encore mais
+qu'il est plausible de construire.
 -/
 
-/-- #5: Reidemeister moves (formal description)
-Need a precise combinatorial description of each move's
-effect on PD-codes. Possible but tedious.
-Reference: shua/leanknot has a partial formalization.
+/-- #5 : Mouvements de Reidemeister (description formelle)
+Il faut une description combinatoire precise de l'effet de chaque
+mouvement sur les PD-codes. Possible mais fastidieux.
+Reference : shua/leanknot possede une formalisation partielle.
 -/
 theorem reidemeister_formal_prerequisites : True := trivial
 
-/-- #6: Alexander polynomial
-Via Burau representation or Fox calculus.
-Mathlib has: Polynomial ℤ, matrices, free groups (partial)
-Needed: Fox free differential calculus, Burau representation
-Reference: Alexander (1928), Crowell & Fox (1963)
+/-- #6 : Polynome d'Alexander
+Via representation de Burau ou calcul de Fox.
+Mathlib possede : Polynomial Z, matrices, groupes libres (partiel)
+Necessaire : calcul differentiel libre de Fox, representation de Burau
+Reference : Alexander (1928), Crowell & Fox (1963)
 -/
 theorem alexander_polynomial_prerequisites : True := trivial
 
-/-- #7: Jones polynomial via Kauffman bracket
-The Kauffman bracket is a state sum model.
-Mathlib has: Polynomial, sums over finite types
-Needed: Kauffman bracket state model, writhe normalization
-Reference: Jones (1985), Kauffman (1987)
+/-- #7 : Polynome de Jones via le crochet de Kauffman
+Le crochet de Kauffman est un modele de somme sur les etats.
+Mathlib possede : Polynomial, sommes sur types finis
+Necessaire : modele d'etats du crochet de Kauffman, normalisation du writhe
+Reference : Jones (1985), Kauffman (1987)
 -/
 theorem jones_polynomial_prerequisites : True := trivial
 
-/-! ## Tier 3: Deep (Phase 5+, effectively permanent sorry)
+/-! ## Tier 3 : Approfondi (Phase 5+, effectively permanent sorry)
 
-These require infrastructure that is **far** beyond current Mathlib
-and represents major research projects in formalization.
+Celles-ci requierent une infrastructure **bien** au-dela du Mathlib
+actuel et representent des projets de recherche majeurs en formalisation.
 -/
 
-/-- #8: Ambient isotopy ↔ Reidemeister equivalence
-THE fundamental theorem of knot theory.
-Needs: PL topology, general position, Alexander's theorem
-Reference: Reidemeister (1927), Alexander (1928)
-Timeline: years to decades
+/-- #8 : Isotopie ambiante <-> equivalence de Reidemeister
+LE theoreme fondamental de la theorie des noeuds.
+Necessite : topologie PL, position generale, theoreme d'Alexander
+Reference : Reidemeister (1927), Alexander (1928)
+Chronologie : annees a decennies
 -/
 theorem reidemeister_theorem_prerequisites : True := trivial
 
-/-- #9: Piccirillo's theorem (Conway not smoothly slice)
-Needs:
-  - 4-manifold topology (handle decompositions, Kirby calculus)
-  - Khovanov homology
-  - Rasmussen s-invariant
-  - Trace embedding lemma
-Reference: Piccirillo (2018), arXiv:1808.02923
-Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/
-Timeline: decades
+/-- #9 : Theoreme de Piccirillo (Conway non lisse-slice)
+Necessite :
+  - topologie des 4-varietes (decompositions en anses, calcul de Kirby)
+  - homologie de Khovanov
+  - s-invariant de Rasmussen
+  - lemme d'inclusion de trace
+Reference : Piccirillo (2018), arXiv:1808.02923
+Lean AI Leaderboard : https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/
+Chronologie : decennies
 -/
 theorem piccirillo_prerequisites : True := trivial
 
-/-- #10: Lidman's theorem (unknotting number of 11n102 = 2)
-Needs:
-  - Montesinos trick (branched double covers)
-  - Seifert fibered spaces
-  - Heegaard Floer homology (d-invariants, HFred)
-  - Ni-Wu formula for cosmetic surgeries
-  - Gainullin's mapping cone formula
-Reference: Lidman (2026), arXiv:2606.12431
-Timeline: decades
+/-- #10 : Theoreme de Lidman (nombre de denouement de 11n102 = 2)
+Necessite :
+  - astuce de Montesinos (revetements doubles ramifies)
+  - espaces fibres de Seifert
+  - homologie de Heegaard Floer (d-invariants, HFred)
+  - formule de Ni-Wu pour les chirurgies cosmetiques
+  - formule du cone d'application de Gainullin
+Reference : Lidman (2026), arXiv:2606.12431
+Chronologie : decennies
 -/
 theorem lidman_prerequisites : True := trivial
 
-/-- #11: Freedman's theorem (Conway topologically slice)
-Needs:
-  - Topological surgery in dimension 4
-  - Disk embedding theorem
-  - Topological h-cobordism theorem
-Reference: Freedman (1982), J. Differential Geom.
-Lean AI Leaderboard: https://lean-lang.org/eval/problems/conway_knot_topologically_slice/
-Timeline: decades
+/-- #11 : Theoreme de Freedman (Conway topologiquement slice)
+Necessite :
+  - chirurgie topologique en dimension 4
+  - theoreme d'inclusion de disque
+  - theoreme de h-cobordisme topologique
+Reference : Freedman (1982), J. Differential Geom.
+Lean AI Leaderboard : https://lean-lang.org/eval/problems/conway_knot_topologically_slice/
+Chronologie : decennies
 -/
 theorem freedman_prerequisites : True := trivial
 

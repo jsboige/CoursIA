@@ -1,0 +1,25 @@
+- name: Probas-11 Topic-Models
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-11-Topic-Models.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 60fbbf573921efe05e991d4d04f773144f4a6779
+      csharp_sha: 113030efaae912747548fb296a6c5d2e09846ab5
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 60fbbf573921efe05e991d4d04f773144f4a6779
+      csharp_sha: 479d24e0d69d1bb2ee6dcca6d6d4b15c5e29aad0
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 18339f3b723901441ff4b4bb333019edcd80bd0f
+      csharp_sha: 479d24e0d69d1bb2ee6dcca6d6d4b15c5e29aad0
+  known_differences:
+  - 'Socle pedagogique commun : modeles de topics (LDA / allocation de Dirichlet) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

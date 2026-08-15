@@ -14,10 +14,19 @@ It reads the BEGINNING and the END of every cell and looks for:
                             ("executons", "ci-dessous", "le code suivant"...)
                             but the next cell is NOT code -> forgotten/misplaced
   MED    INTERP_BEFORE_CODE an interpretation markdown ("on observe", "le
-                            resultat montre"...) sits directly BEFORE the code
-                            it comments instead of after its output
+                            resultat montre", OR a canonical density header
+                            "### Lecture du résultat" / "### Interprétation :")
+                            sits directly BEFORE the code it comments instead
+                            of after its output
   LOW    SECTION_GAP        a numbered header skips a value (possible omission)
   LOW    CONSECUTIVE_CODE   > 3 code cells in a row with no markdown between
+
+The semantic "interp anchored to the WRONG code cell" misplacement (Epic #10678,
+the PyMC-15 bug) is NOT auto-detected here: a precise, low-FP structural signal
+does not exist (measured ~99% FP, see scan_interp_output_anchor). The durable
+fix is the rule .claude/rules/cell-interpretation-ordering.md + human review of
+enrichment PRs. The opt-in --check-interp-anchor flag runs the noisy triage
+helper for auditors who want candidate leads to eyeball (NOT a verdict).
 
 The #2639 scanner flagged EVERY "## N." header (~100% false positives). The
 fix here: legitimate numbering is never flagged -- only a genuine DECREASE at a
@@ -44,6 +53,7 @@ import argparse
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -105,6 +115,232 @@ _INTERP_RE = re.compile(
     re.I,
 )
 
+# Canonical post-output interpretation headers introduced by the density
+# enrichment Epic #10488 ("### Lecture du résultat : …", "### Interprétation : …").
+# These exist ONLY as cells meant to comment the immediately-preceding code
+# output, so a header match is a high-precision anchor. Distinct from
+# _INTERP_RE (prose openers); both are recognised.
+_INTERP_HEADER_RE = re.compile(
+    r"^#{1,6}\s*(Lecture du r[ée]sultat|Interpr[ée]tation)\b",
+    re.I,
+)
+
+# Salient DECIMAL values cited in an interp cell -- measured scores (3.192,
+# 4.988, 0.892) printed verbatim by exactly the code cell that computes them.
+# Two decimal places minimum: "3.192" is salient, "5.0" (a rating) is not.
+_DECIMAL_SALIENT_RE = re.compile(r"\b\d+[.,]\d{2,}\b")
+
+# Version triples (0.8.28, 1.16.0, 3.0.0) must NOT count as measured scores --
+# they are library/pragma versions cited in prose, unrelated to code output.
+# We null them out of the body BEFORE extracting salient decimals, so "8.28"
+# inside "0.8.28" disappears (the \d+[.,]\d{2,} match it would otherwise feed).
+_VERSION_TRIPLE_RE = re.compile(r"\b\d+\.\d+\.\d+\b")
+
+# Minimum adjacent code-output length to attempt anchor verification. A tiny
+# output (a connection banner, a one-line ack) does not carry measured scores,
+# so requiring the cited score there would only false-positive.
+_MIN_OUTPUT_LEN = 120
+
+
+def _interp_header_source(source) -> str | None:
+    """Return the canonical #10488 interp header line if the cell opens with one.
+
+    Recognises both '### Lecture du résultat : …' and '### Interprétation : …'.
+    Returns None for prose-style interp (handled by _INTERP_RE elsewhere).
+    """
+    text = source if isinstance(source, str) else "".join(source)
+    for ln in _lines(text):
+        s = ln.strip()
+        if s.startswith("#"):
+            return s if _INTERP_HEADER_RE.match(s) else None
+        if s:  # first non-empty non-header line -> not a header interp
+            return None
+    return None
+
+
+def _cell_output_text(cell: dict) -> str:
+    """Concatenated text output (stdout + text/plain data) of a code cell."""
+    parts = []
+    for o in cell.get("outputs", []) or []:
+        if "text" in o:
+            parts.append(o["text"] if isinstance(o["text"], str) else "".join(o["text"]))
+        elif "data" in o and "text/plain" in o["data"]:
+            d = o["data"]["text/plain"]
+            parts.append(d if isinstance(d, str) else "".join(d))
+    return "\n".join(parts)
+
+
+def scan_interp_output_anchor(cells: list[dict]) -> list[dict]:
+    """Flag canonical interp headers whose cited DECIMAL score is absent from the
+    adjacent code output -- the #10488 enrichment misplacement bug (Epic #10678).
+
+    A 'Lecture du résultat : …' cell is meant to comment the output of the code
+    cell immediately above it. When an enrichment PR anchors it to the wrong code
+    cell (by id, without checking semantics), the unique measured score it cites
+    (e.g. 4.988) appears nowhere in the adjacent output -- that absence is a
+    high-precision MISPLACED signal.
+
+    Precision-first: only DECIMAL scores count as anchors (unique measured values
+    printed verbatim). Count-based interps ('163 divergences') and conceptual
+    interps are NOT flagged here -- they legitimately reference prior-section
+    results, so requiring their value in the adjacent output would false-positive.
+    Recall is intentionally partial; the decimal signal catches the most egregious
+    cases (a unique score floating dozens of cells from its source).
+
+    Skipped (cannot conclude): interp with no decimal token, or whose adjacent
+    code cell produced no text output (plot-only / empty).
+    """
+    findings = []
+    n = len(cells)
+    for i, cell in enumerate(cells):
+        if cell.get("cell_type") != "markdown":
+            continue
+        header = _interp_header_source(cell.get("source", []))
+        if not header:
+            continue
+        body = "".join(cell.get("source", []))
+        # Drop version triples before extracting salient decimals: "0.8.28" must
+        # not yield "8.28" as a measured-score candidate.
+        body_nover = _VERSION_TRIPLE_RE.sub(" ", body)
+        cited = set(_DECIMAL_SALIENT_RE.findall(body_nover))
+        # Strip the header's own numbering noise; keep only >=2dp decimals.
+        cited = {c.replace(",", ".") for c in cited}
+        if not cited:
+            continue  # conceptual / count-based interp -- not anchorable here
+        # Adjacent code cell = nearest code cell above.
+        adj_code = None
+        for j in range(i - 1, -1, -1):
+            if cells[j].get("cell_type") == "code":
+                adj_code = cells[j]
+                break
+        if adj_code is None:
+            continue  # interp at top, no code above -- out of scope
+        out_text = _cell_output_text(adj_code)
+        if len(out_text.strip()) < _MIN_OUTPUT_LEN:
+            continue  # adjacent output too small to carry a measured score -- skip
+        # Normalise the adjacent output's decimals the same way for comparison.
+        out_decimals = {m.replace(",", ".") for m in _DECIMAL_SALIENT_RE.findall(out_text)}
+        if cited & out_decimals:
+            continue  # at least one cited score is in the adjacent output -> anchored, OK
+        findings.append({
+            "cell_index": i, "category": "INTERP_OUTPUT_MISMATCH", "severity": "HIGH",
+            "evidence": header[:120],
+            "message": (
+                f"interp cites measured score(s) {sorted(cited)[:3]} not found in the "
+                f"adjacent code output -- the interpretation cell is likely anchored to "
+                f"the wrong code cell (density-enrichment misplacement, Epic #10678)"
+            ),
+        })
+    return findings
+
+
+# ---- INTERP_SEMANTIC_ORPHAN (triage opt-in, Epic #10678 Phase 1b) ----
+# Ported from _scan_interp_orphans.py (c.240, PR #10714): a position-blind
+# semantic heuristic for the c.237 "blind spot" (closing interps that
+# semantically belong to an EARLIER code cell, not the adjacent one).
+#
+# ADVISORY ONLY -- measured 100% false-positive rate on origin/main
+# (2026-08-15, 0/25 true positives on a random 25-sample of the 117
+# candidates): a legitimately-placed interp almost always shares <2
+# significant tokens with the code above it (plot-only cells, concept-only
+# prose, identifier renames between code and prose). The one real orphan the
+# original audit found (02-SK-Advanced cell[34]) is NOT caught by this
+# keyword-overlap heuristic either -- it is a structural tool, not a recall
+# fix. Triages candidates to eyeball; NEVER a verdict; never in the default
+# pipeline; never affects --fail-on / exit code (same contract as
+# INTERP_OUTPUT_MISMATCH above).
+
+_INTERP_TOKEN_RE = re.compile(r"\b[A-Za-z_]\w{3,}\b")
+
+# Stopwords (EN from the original heuristic + FR prose frequentatives). Kept
+# small on purpose: stripping too much would remove the code-identifier signal
+# the heuristic keys on. Stored accent-free: tokens are accent-folded before
+# comparison, so "modèle" hits "modele" (see _interp_fold).
+_INTERP_STOPWORDS = frozenset({
+    'this', 'that', 'with', 'from', 'have', 'they', 'them', 'will', 'been',
+    'each', 'which', 'their', 'there', 'these', 'those', 'were', 'what',
+    'pour', 'avec', 'dans', 'sur', 'plus', 'est', 'sont', 'ces', 'cette',
+    'leur', 'entre', 'apres', 'avant', 'aussi', 'comme', 'mais', 'donc',
+    'quand', 'etre', 'avoir', 'faire', 'fait', 'peut', 'bien', 'tre',
+    'ainsi', 'resume', 'conclusion', 'resultat', 'sortie', 'figure',
+    'cellule', 'section', 'exemple', 'valeur', 'donnees', 'modele', 'code',
+    'affiche', 'montre', 'observe', 'voit', 'voir', 'suivant', 'precedent',
+    'notebook', 'tableau', 'partie', 'page', 'ligne', 'etape', 'ensemble',
+    'deux', 'tout', 'tous', 'toute', 'toutes', 'chaque', 'autre', 'autres',
+    'alors', 'sous', 'tres', 'peu', 'ici', 'sont',
+})
+
+
+def _interp_fold(w: str) -> str:
+    """Accent-fold a token to lower-case without diacritics ('modèle' -> 'modele')."""
+    return "".join(c for c in unicodedata.normalize("NFD", w.lower())
+                   if not unicodedata.combining(c))
+
+
+def interp_matches_code(interp_src: str, code_src: str) -> bool:
+    """Check if an interpretation cell semantically matches the code above it
+    by keyword overlap.
+
+    Returns True if the interp shares >=2 significant tokens with the code
+    (significant = >=4 chars, accent-folded, not a stopword). False means the
+    interp talks about something else -- candidate semantic orphan. A vacuous
+    interp (no significant tokens) is accepted (no signal to judge on).
+    """
+    interp_words = {_interp_fold(w) for w in _INTERP_TOKEN_RE.findall(interp_src)}
+    interp_words -= _INTERP_STOPWORDS
+    if not interp_words:
+        return True  # vacuous interp, accept
+    code_words = {_interp_fold(w) for w in _INTERP_TOKEN_RE.findall(code_src)}
+    code_words -= _INTERP_STOPWORDS
+    return len(interp_words & code_words) >= 2
+
+
+def scan_interp_semantic_orphan(cells: list[dict]) -> list[dict]:
+    """Position-blind orphan triage for interpretation cells (Epic #10678).
+
+    For every interp cell (prose opener or canonical #10488 header), compare
+    its significant tokens with those of the code cell immediately above. If
+    they share <2 tokens, the interp likely comments an EARLIER code cell --
+    the c.237 blind spot that gap-based audits missed.
+
+    ADVISORY ONLY (high FP -- see module docstring of this section): triages
+    candidates for a human to eyeball, never a verdict.
+    """
+    findings = []
+    for i, cell in enumerate(cells):
+        if cell.get("cell_type") != "markdown":
+            continue
+        header = _interp_header_source(cell.get("source", []))
+        body = "".join(cell.get("source", []))
+        if not header and not _INTERP_RE.search(body):
+            continue  # not an interpretation cell
+        if header:
+            # The canonical header ('### Interprétation : …') carries no
+            # semantic signal -- strip its own token ('interpretation') so it
+            # cannot inflate the interp's significant-word set. Only the
+            # header PREFIX is removed: prose on the same line survives.
+            body = _INTERP_HEADER_RE.sub("", body, count=1)
+        adj_code = None
+        for j in range(i - 1, -1, -1):
+            if cells[j].get("cell_type") == "code":
+                adj_code = cells[j]
+                break
+        if adj_code is None:
+            continue  # interp at top, no code above -- out of scope
+        code_src = "".join(adj_code.get("source", []))
+        if interp_matches_code(body, code_src):
+            continue
+        findings.append({
+            "cell_index": i, "category": "INTERP_SEMANTIC_ORPHAN", "severity": "LOW",
+            "evidence": (header or body.strip())[:120],
+            "message": (
+                f"interp shares <2 significant tokens with the code cell immediately "
+                f"above -- likely comments an EARLIER code cell (semantic orphan, "
+                f"Epic #10678; eyeball before acting)"
+            ),
+        })
+    return findings
+
 
 def find_notebooks(family: str | None = None) -> list[Path]:
     """Discover pedagogical notebooks (same convention as audit_c1_c3.py)."""
@@ -113,7 +349,19 @@ def find_notebooks(family: str | None = None) -> list[Path]:
         return []
     out = []
     for p in root.rglob("*.ipynb"):
-        if any(part in EXCLUDE_DIRS for part in p.parts):
+        # #8858-class guard: ``root.rglob`` yields ABSOLUTE paths, so
+        # filtering on ``p.parts`` (absolute components) would match the
+        # repo's own parent if it sits under an EXCLUDE_DIRS-name dir (e.g.
+        # a checkout cloned at ``archive/repo/``). That matches EVERY path
+        # and silences the whole scan — worse than a false positive for a
+        # cell-ordering CI guard. Filter on the path RELATIVE to ``root``
+        # (the in-repo SKIP_DIRS semantics), with a fallback to ``p.parts``
+        # when ``p`` is not under ``root``.
+        try:
+            rel_parts = p.relative_to(root).parts
+        except ValueError:
+            rel_parts = p.parts
+        if any(part in EXCLUDE_DIRS for part in rel_parts):
             continue
         out.append(p)
     return sorted(out)
@@ -274,8 +522,15 @@ def scan_enchainement(cells: list[dict]) -> list[dict]:
                            "(forgotten or misplaced code cell?)",
             })
 
-        # INTERP_BEFORE_CODE: begins interpreting output, sits before code rather than after.
-        if head and _INTERP_RE.search(head[0].strip()):
+        # INTERP_BEFORE_CODE: begins interpreting output, sits before code rather
+        # than after. Recognises BOTH prose openers ("on observe", "le résultat")
+        # and the canonical density-enrichment headers ("### Lecture du résultat",
+        # "### Interprétation :") introduced by Epic #10488 -- so the structural
+        # misplacement of a #10488 interp cell is caught here (MED), even though
+        # the semantic "anchored to the wrong code cell" case is not (that needs
+        # human review -- see scan_interp_output_anchor, a triage tool, + rule
+        # .claude/rules/cell-interpretation-ordering.md).
+        if head and (_INTERP_RE.search(head[0].strip()) or _INTERP_HEADER_RE.match(head[0].strip())):
             prev_is_code = prev is not None and prev.get("cell_type") == "code"
             next_is_code = nxt is not None and nxt.get("cell_type") == "code"
             if not prev_is_code and next_is_code:
@@ -326,6 +581,13 @@ def scan_notebook(path: Path) -> dict:
         + scan_enchainement(cells)
         + scan_consecutive_code(cells)
     )
+    # NOTE: INTERP_OUTPUT_MISMATCH is NOT in the default pipeline. Measured at
+    # ~99% false positives (164 FP vs ~1 TP on origin/main, G.9 audit #10678):
+    # a cited decimal usually lives in a plot/DataFrame/neighbour cell, not the
+    # adjacent text output, so correctly-placed interps fire massively. It stays
+    # available as scan_interp_output_anchor() -- an opt-in TRIAGE helper for
+    # auditors (CLI: --check-interp-anchor), never a CI gate. A noisy gate trains
+    # reviewers to ignore the signal; precision-first means shipping less.
     findings.sort(key=lambda f: (f["cell_index"], -SEVERITY_ORDER[f["severity"]]))
     return {"path": str(path), "findings": findings}
 
@@ -346,6 +608,18 @@ def main(argv=None) -> int:
     ap.add_argument("--severity", choices=["LOW", "MED", "HIGH"], help="only show findings at/above this severity")
     ap.add_argument("--fail-on", choices=["LOW", "MED", "HIGH"], default="HIGH",
                     help="exit 1 if any finding at/above this severity (default HIGH)")
+    ap.add_argument("--check-interp-anchor", action="store_true",
+                    help="ALSO run the INTERP_OUTPUT_MISMATCH triage helper (Epic #10678). "
+                         "ADVISORY ONLY, ~99%% false-positive rate -- a cited decimal usually "
+                         "lives in a plot/DataFrame/neighbour cell. Outputs candidates to "
+                         "eyeball, never a verdict, never affects --fail-on / exit code.")
+    ap.add_argument("--check-interp-semantic", action="store_true",
+                    help="ALSO run the INTERP_SEMANTIC_ORPHAN triage helper (Epic #10678 "
+                         "Phase 1b, ported from _scan_interp_orphans.py c.240). ADVISORY "
+                         "ONLY, high false-positive rate (see module docstring -- measured "
+                         "on main): a legit interp often shares <2 tokens with the code "
+                         "above it. Outputs candidates to eyeball, never a verdict, never "
+                         "affects --fail-on / exit code.")
     args = ap.parse_args(argv)
 
     if args.notebook:
@@ -367,11 +641,28 @@ def main(argv=None) -> int:
 
     reports = []
     worst = -1
+    triage = []
     for path in targets:
         rep = scan_notebook(path)
         rep["findings"] = [f for f in rep["findings"] if SEVERITY_ORDER[f["severity"]] >= min_show]
         if rep["findings"]:
             worst = max(worst, max(SEVERITY_ORDER[f["severity"]] for f in rep["findings"]))
+        if args.check_interp_anchor:
+            try:
+                cells = json.loads(Path(path).read_text(encoding="utf-8")).get("cells", [])
+                for f in scan_interp_output_anchor(cells):
+                    f["_triage"] = True
+                    triage.append((path, f))
+            except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+                pass
+        if args.check_interp_semantic:
+            try:
+                cells = json.loads(Path(path).read_text(encoding="utf-8")).get("cells", [])
+                for f in scan_interp_semantic_orphan(cells):
+                    f["_triage"] = True
+                    triage.append((path, f))
+            except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+                pass
         reports.append(rep)
 
     if args.json:
@@ -393,6 +684,20 @@ def main(argv=None) -> int:
         scanned = len(targets)
         clean = sum(1 for r in reports if not r.get("findings") and not r.get("error"))
         print(f"\nScanned {scanned} notebook(s): {clean} clean, {total} finding(s).")
+
+    if triage and not args.json:
+        print(f"\n{'='*70}")
+        n_anchor = sum(1 for _, f in triage if f["category"] == "INTERP_OUTPUT_MISMATCH")
+        n_sem = sum(1 for _, f in triage if f["category"] == "INTERP_SEMANTIC_ORPHAN")
+        print(f"Interp triage (ADVISORY only -- eyeball, never a verdict):")
+        if n_anchor:
+            print(f"  INTERP_OUTPUT_MISMATCH: {n_anchor} candidate(s) "
+                  f"(~99% FP -- cited decimal usually in a plot/neighbour cell).")
+        if n_sem:
+            print(f"  INTERP_SEMANTIC_ORPHAN: {n_sem} candidate(s) "
+                  f"(high FP -- legit interp often shares <2 tokens with code above).")
+        for path, f in triage:
+            print(f"  {_rel(str(path))} cell#{f['cell_index']} [{f['category']}] {f['evidence'][:60]}")
 
     return 1 if worst >= fail_at else 0
 

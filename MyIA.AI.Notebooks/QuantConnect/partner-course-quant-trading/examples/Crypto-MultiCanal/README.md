@@ -79,12 +79,12 @@ channel_params = {
 
 ## Fichiers
 
-| Fichier | Taille | Description |
-|---------|--------|-------------|
-| `main.py` | ~930 lignes | Algorithme complet : helpers, ZigZag, canaux, entrées/sorties, OCO |
-| `fix_ipynb_quotes.py` | petit | Utilitaire de nettoyage pour le notebook research |
-| `research.ipynb` | 210K | Notebook de recherche et visualisation (cloud QC) |
-| `research_archive.ipynb` | archive | Version archivée du notebook research |
+| Fichier | Description |
+|---------|-------------|
+| `main.py` | Algorithme complet : helpers, ZigZag, canaux, entrées/sorties, OCO |
+| `fix_ipynb_quotes.py` | Utilitaire de nettoyage pour le notebook research |
+| `research.ipynb` | Notebook de recherche et visualisation (cloud QC) |
+| `research_archive.ipynb` | Version archivée du notebook research |
 
 ## Concepts pédagogiques
 

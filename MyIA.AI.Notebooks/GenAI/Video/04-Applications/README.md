@@ -4,13 +4,13 @@
 
 Ce module présente des cas d'usage concrets et des workflows de production pour la génération vidéo.
 
-**Dans le cadre du fil rouge pipeline vidéo pédagogique** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Video-Generation.ipynb) génère automatiquement du contenu vidéo éducatif à partir d'un script. [04-3](04-3-Sora-API-Cloud-Video.ipynb) explore la génération cloud via l'API Sora. [04-4](04-4-Production-Video-Pipeline.ipynb) assemble le pipeline bout-en-bout.
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Video-Generation.ipynb) génère automatiquement du contenu vidéo éducatif à partir d'un script. [04-3](04-3-Sora-API-Cloud-Video.ipynb) explore la génération cloud via l'API Sora. [04-4](04-4-Production-Video-Pipeline.ipynb) assemble le pipeline bout-en-bout. [04-5](04-5-MiniMax-H3-Cloud-Video.ipynb) invoque le service cloud Hailuo (MiniMax H3) pour la vidéo HD/2K avec audio natif — la voie ouverte en UE que l'auto-hébergement des poids interdit (voir la bifurcation juridique en [`02-6`](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb)).
 
 ## Vue d'overview
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 4 |
+| Notebooks | 6 |
 | Kernel | Python 3 |
 | Durée estimée | ~6-8h |
 | GPU requis | 0-24GB |
@@ -23,6 +23,8 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 | 2 | [04-2-Creative-Video-Workflows](04-2-Creative-Video-Workflows.ipynb) | Workflows créatifs | ComfyUI | ~14GB |
 | 3 | [04-3-Sora-API-Cloud-Video](04-3-Sora-API-Cloud-Video.ipynb) | Sora API cloud | OpenAI API | 0 |
 | 4 | [04-4-Production-Video-Pipeline](04-4-Production-Video-Pipeline.ipynb) | Pipeline production | Mixed | ~18GB |
+| 5 | [04-5-MiniMax-H3-Cloud-Video](04-5-MiniMax-H3-Cloud-Video.ipynb) | Hailuo API, HD/2K + audio natif | MiniMax API | 0 |
+| 6 | [04-6-MiniMax-video-01-v1-Cloud-Video](04-6-MiniMax-video-01-v1-Cloud-Video.ipynb) | Hailuo API v1, video muette plan-couvert UE, key-gated + sonde non-brûlante | MiniMax API | 0 |
 
 **[04-1](04-1-Educational-Video-Generation.ipynb) — Contenu éducatif.** Le notebook génère automatiquement une vidéo pédagogique à partir d'un script textuel : le panorama de frames ci-dessous atteste que la chaîne (script → prompts → frames → vidéo) produit un rendu visuellement cohérent :
 
@@ -62,12 +64,15 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
   <em>Sortie du notebook <a href="04-4-Production-Video-Pipeline.ipynb">04-4</a> : les 5 scènes générées par le pipeline bout-en-bout — Introduction / Origines historiques / Fonctionnement / Applications / Perspectives, chacune avec fond coloré distinct + constellation filaire reliant ses bulles.</em>
 </p>
 
+**[04-5](04-5-MiniMax-H3-Cloud-Video.ipynb) — Service cloud Hailuo (MiniMax H3), key-gated.** Ce notebook invoque le service cloud Hailuo pour produire de la vidéo HD/2K avec **audio stéréo natif synchronisé** — une capacité inaccessible en auto-hébergement UE (la *Community License* des poids exclut l'UE, voir [`02-6`](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb)). Il contraste avec [`02-2`](../02-Advanced/02-2-LTX-Video-Lightweight.ipynb) (LTX-Video, licence ouverte, local léger mais muet). Le loader est **idempotent** (`MINIMAX_SPEND_QUOTA=1` déclenche la génération, sinon l'artefact commité est chargé) pour ne jamais rebrûler le quota de 5 générations/jour. La sortie réelle est **key-gated** (`MINIMAX_GENAI_API_KEY`) : à la provision de la clé, les artefacts (keyframes + forme d'onde audio + sidecar `task_id`) sont commités comme preuve d'exécution.
+
 ## Prérequis
 
 ### API Keys
 ```bash
 # Dans GenAI/.env
 OPENAI_API_KEY=sk-...
+MINIMAX_GENAI_API_KEY=...   # 04-5 (H3/v2 HD/2K + audio) et 04-6 (video-01/v1 muet) : même clé, services cloud Hailuo (5 générations HD/jour)
 ```
 
 ### Docker Services (optionnel)
@@ -104,6 +109,16 @@ pip install -r requirements-video.txt
 - **Objectif** : Pipeline de production vidéo complet
 - **Technologies** : Batch processing + monitoring + QC
 - **Applications** : Production en série, contenu marketing
+
+### 04-5 MiniMax H3 Cloud Video
+- **Objectif** : Vidéo HD/2K + audio natif via le service cloud Hailuo
+- **Technologies** : Hailuo Video API + loader idempotent + sidecar `task_id`
+- **Applications** : Contenu HD audio-synchronisé inaccessible en local UE
+
+### 04-6 MiniMax video-01 v1 Cloud Video
+- **Objectif** : Vidéo muette via le service cloud Hailuo `/v1/video_generation`, plan-couvert UE
+- **Technologies** : MiniMax Hailuo API v1 + `video-01` + sonde POST non-brûlante + 3 exercices (predict_verdict, daily_debit_count, build_cloud_video_comparison_table)
+- **Applications** : Quand l'audio natif n'est pas requis (storyboards, prévisualisation, clips muets pédagogiques). Alternative immédiate à 04-5 quand la série H3 est bloquée 2013 TokenPlan.
 
 ## Workflows
 

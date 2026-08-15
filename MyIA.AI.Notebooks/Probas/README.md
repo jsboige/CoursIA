@@ -155,11 +155,11 @@ Pour les étudiants en recherche opérationnelle ou finance :
 
 #### Parcours rapide Python (standalone, ~2h)
 
-Si vous préférez Python au C#, commencez par Infer-101.ipynb (introduction standalone avec modèles Two Coins et Cyclist) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA).
+Si vous préférez Python au C#, commencez par **PyMC-1-Setup** (introduction standalone en Python, premier modèle Two Coins) puis Pyro_RSA_Hyperbole.ipynb (application à la linguistique pragmatique avec le framework RSA). Infer-101.ipynb est également une introduction standalone, mais en **C#/.NET** (voir la table « Notebooks racine » ci-dessous).
 
 #### Parcours PyMC complet (26 notebooks, ~17h)
 
-Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/` (fondations 1-3, modèles classiques 4-13, inférence causale 14, processus gaussien épars 15, frontières 16-19 : hiérarchiques, filtre de Kalman, change-point, analyse de survie) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
+Les notebooks PyMC portent les modèles Infer.NET en Python avec PyMC et l'échantillonnage NUTS : le corpus bayésien dans `PyMC/`, **numéroté 1:1 avec son jumeau C# Infer** (fondations 1-3 ; modèles classiques 4-13 dont l'inférence causale en 5 et les modèles hiérarchiques en 12 ; séquences 14 et recommandation 15 ; frontières 16-19 : processus gaussien épars, filtre de Kalman, change-point, analyse de survie), et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7). Ils constituent un excellent complément pour comparer les approches d'inférence (message passing vs MCMC) et rejoindre l'écosystème Python data science. La progression suit la même structure pédagogique en 3 phases que la série Infer.NET.
 
 ## Quel stack choisir ?
 
@@ -214,7 +214,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
-├── Infer-101.ipynb              # Introduction Python/C# (standalone)
+├── Infer-101.ipynb              # Introduction C#/.NET (standalone)
 ├── Pyro_RSA_Hyperbole.ipynb     # Pragmatique linguistique (Python)
 ├── GeneratedSource/             # Sources Infer.NET compilées (Model0_EP.cs ... Model10_VMP.cs)
 ├── PyMC/                # Port PyMC : bayésien + causal (1-13, dont PyMC-5 causal) + séquences/reco/GP (14-16) + frontières (17-19)
@@ -272,18 +272,18 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 2 | Gaussian Mixtures | Mélanges gaussiens MCMC, trace plots, convergence diagnostics |
 | 3 | Factor Graphs | Inférence discrète avec PyMC, comparaison Infer.NET vs PyMC |
 | 4 | Bayesian Networks | Réseaux bayésiens MCMC, CPT, explaining away |
-| 5 | Skills (IRT) | IRT en Python, estimation de compétences par MCMC |
-| 6 | TrueSkill | TrueSkill avec NUTS, online learning bayésien |
-| 7 | Classification | Classification bayésienne, régression logistique |
-| 8 | Model Sélection | Model comparison MCMC, LOO, WAIC, Bayes Factors empiriques |
-| 9 | Topic Models | LDA avec NUTS, gestion variables latentes, inférence approximation |
-| 10 | Crowdsourcing | Agrégation de labels crowdsourcing, worker communities |
-| 11 | Séquences | HMM MCMC, forward-backward avec échantillonnage |
-| 12 | Recommenders | Factorisation matricielle bayésienne MCMC |
-| 13 | Debugging | Trace plots, R-hat, effective sample size, bonnes pratiques MCMC |
-| 14 | Causal Inference | `pm.do`, do-calculus de Pearl, contrefactuel bayésien |
-| 15 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-16 EP) |
-| 16 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel (cf. asymétrie structurelle Infer-12 EP) |
+| 5 | Causal Inference | `pm.do`, do-calculus de Pearl, contrefactuel bayésien |
+| 6 | Debugging | Trace plots, R-hat, effective sample size, bonnes pratiques MCMC |
+| 7 | Skills (IRT) | IRT en Python, estimation de compétences par MCMC |
+| 8 | TrueSkill | TrueSkill avec NUTS, online learning bayésien |
+| 9 | Classification | Classification bayésienne, régression logistique |
+| 10 | Model Sélection | Model comparison MCMC, LOO, WAIC, Bayes Factors empiriques |
+| 11 | Topic Models | LDA avec NUTS, gestion variables latentes, inférence approximation |
+| 12 | Modèles Hiérarchiques | Shrinkage bayésien, divergences NUTS sur le funnel (cf. asymétrie structurelle Infer-12 EP) |
+| 13 | Crowdsourcing | Agrégation de labels crowdsourcing, worker communities |
+| 14 | Séquences | HMM MCMC, forward-backward avec échantillonnage |
+| 15 | Recommenders | Factorisation matricielle bayésienne MCMC |
+| 16 | Sparse Gaussian Process | NUTS sur géométrie latente (cf. asymétrie structurelle Infer-16 EP) |
 | 17 | Kalman Filter | Value-add MCMC (estimation jointe Q/R/drift) |
 | 18 | Change-Point | Switch bayésien, catastrophes minières (Poisson) |
 | 19 | Survival Analysis | Weibull inféré directement, sélection LOO arviZ |
@@ -330,7 +330,7 @@ Les **27 notebooks Infer.NET C#** (19 du corpus bayésien + 8 de l'arc décision
 
 ## Série PyMC (19 corpus notebooks, Python + 7 extraits DecisionTheory/PyMC)
 
-Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La progression suit les mêmes phases que la série Infer.NET : le corpus bayésien dans `PyMC/` (fondations 1-3 = notebooks 1-3, modèles classiques 4-13 = notebooks 4 (Bayesian Networks), 5 (IRT), 6 (TrueSkill), 7 (Classification), 8 (Model Sélection), 9 (Topic Models), 10 (Crowdsourcing), 11 (Séquences), 12 (Recommenders), 13 (Debugging), inférence causale 14 = notebook 5, processus gaussien épars 15 = notebook 16, modèles hiérarchiques 16 = notebook 12, filtre de Kalman 17 = notebook 17, change-point 18 = notebook 18, analyse de survie 19 = notebook 19) et le cœur de l'arc décision dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
+Port Python des modèles Infer.NET, utilisant l'échantillonnage MCMC (NUTS) au lieu du message passing. Permet de comparer les deux approches d'inférence sur des modèles identiques. La série `PyMC/` suit la même numérotation linéaire 1-19 que la série Infer — fondations 1-3, modèles classiques 4-13 (réseaux bayésiens, inférence causale, debugging, IRT, TrueSkill, classification, sélection de modèles, topic models, modèles hiérarchiques, crowdsourcing), puis frontières 14-19 (séquences/HMM, recommandation, processus gaussien épars, filtre de Kalman, change-point, analyse de survie) ; l'apport pédagogique de chacun est détaillé dans le [tableau de la série PyMC](#série-pymc) ci-dessus. Le cœur de l'arc décision vit dans `DecisionTheory/PyMC/` (7 notebooks renumérotés 1-7).
 
 ### Phase 1 — Fondations (notebooks 1-3, ~2h)
 
@@ -417,7 +417,7 @@ Cette série suppose une **maîtrise de base en probabilités et statistiques** 
 |---------|---------------------|------------------|
 | Variables aléatoires (discrètes/continues) | Partout, notebook 1+ | Loi de proba, espérance, variance |
 | Distributions usuelles (Bernoulli, Gaussian, Beta, Gamma) | Notebook 1 (Beta-Bernoulli), 2 (Gaussian) | Paramètres, formes, conjugaison |
-| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A|B), théorème de Bayes |
+| Probabilités conditionnelles | Notebook 3+ (Variable.If, CPT) | P(A\|B), théorème de Bayes |
 | Indépendance conditionnelle | Notebook 3 (Monty Hall), 4 (D-separation) | Collider, explaining away |
 | Espérance mathématique | Partout (calcul de EU) | E[X] = sum x*P(x) ou intégrale |
 | Distributions conjuguées | Notebook 1 (Beta-Bernoulli), 9 (Dirichlet-Discrète) | Prior + likelihood = posterior (famille même) |
@@ -467,7 +467,7 @@ cd MyIA.AI.Notebooks/Probas/Infer/scripts
 .\setup_environment.ps1
 ```
 
-### Notebooks Python (Infer-101, Pyro_RSA)
+### Notebooks Python (Pyro_RSA)
 
 ```bash
 pip install pyro-ppl torch matplotlib numpy
@@ -549,9 +549,9 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 - Vous pouvez les visualiser sur [viz-js.com](https://viz-js.com/) ou [edotor.net](https://edotor.net/).
 - Installation Graphviz Windows : télécharger depuis https://graphviz.org/download/, puis ajouter `C:\Program Files\Graphviz\bin` au PATH.
 
-### Switcher entre kernels C# et Python dans un même notebook
+### Kernels : un par sous-série, jamais mélangés
 
-Le notebook `Infer-101.ipynb` est le seul à mélanger les deux kernels. Il utilise le mode **polyglot** de .NET Interactive, où chaque cellule spécifie son kernel via le tag `#kernel name`. Pour la série standard, chaque sous-série (Infer/ ou PyMC/) utilise un seul kernel.
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour `Infer/` et `Infer-101`, `Python 3` pour `PyMC/` et `Pyro_RSA`. Aucun notebook ne mélange les deux kernels. (Historiquement, `Infer-101` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET autonome.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
@@ -658,12 +658,12 @@ La programmation probabiliste propose un changement de posture : ne plus demande
 
 ## Références canoniques (audit distillation #8081)
 
-La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilistes canoniques. Le **mapping source ↔ notebook** est audité dans [`docs/audit/c803-mapping.md`](../../docs/audit/c803-mapping.md) (c.803, 2026-07-23). Références canoniques principales :
+La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilistes canoniques. Le **mapping source ↔ notebook** est audité dans [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) (c.803, 2026-07-23). Références canoniques principales :
 
 - **[*Model-Based Machine Learning Book*](https://mbmlbook.com/)** (Herbrich / Bishop / Winn / Diethe) — couvre la majorité des notebooks probas appliqués (Murder Mystery Ch.1, Skills IRT Ch.2, TrueSkill Ch.3, BPM Ch.4, WetGrass Ch.5, LDA Ch.10, Crowdsourcing Ch.7/9c, Recommenders, Sequences Ch.12, GP Ch.16, Survival Ch.17).
 - **[*TrueSkill: A Bayesian Skill Rating System*](https://research.microsoft.com/~minka/papers/trueskill.pdf)** (Herbrich, Minka & Graepel, NeurIPS 2007) — fondement algorithmique de Infer-8 et PyMC-8, dont les formules fermées V(t)/W(t)/τ² (section 7 bis PyMC-8).
 - **[*Pattern Recognition and Machine Learning*](https://www.microsoft.com/en-us/research/people/cmbishop/prml-book/)** (Bishop, Springer 2006) — référence générale pour les modèles gaussiens, mixtures, EM, et la théorie de l'inférence bayésienne.
-- **Rasch (1960) / Birnbaum (1968) / Lord (1980)** — historique IRT cité dans PyMC-7 (cell 3) « Origine de la méthode » ; le pendant Infer-7 mérite un backfill analogue (cf. c.803 décisions PR Backfill-1).
+- **Rasch (1960) / Birnbaum (1968) / Lord (1980)** — historique IRT cité dans PyMC-7 (cell 3) « Origine de la méthode » ; le pendant Infer-7 mérite un backfill analogue (#8702).
 - **Lauritzen & Spiegelhalter (1988), Jensen, Lauritzen & Olesen (1990)** — fondement des réseaux bayésiens WetGrass/Sprinkler (Infer-4, PyMC-4).
 - **Blei, Ng & Jordan (2003)** — Latent Dirichlet Allocation, cité dans Infer-11 et PyMC-11 comme « Source primaire ».
 - **Salakhutdinov & Mnih (2008)** — Probabilistic Matrix Factorization, cité dans PyMC-15.
@@ -671,7 +671,7 @@ La série Probas/Infer+PyMC distille et adapte un corpus de modèles probabilist
 - **Rabiner (1989)** — HMM tutorial, base conceptuelle d'Infer-14 / PyMC-14.
 - **Minka, T., Winn, J., et al. (2018)** — *Infer.NET 2.4*, Microsoft Research Cambridge (cité PyMC-1).
 
-Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1 cell 37, Infer-15 cell 76) ou sur les **sources primaires** académiques. Le tableau de mapping [`docs/audit/c803-mapping.md`](../../docs/audit/c803-mapping.md) inventorie chaque notebook avec son verdict distillation (FIDÈLE inline / FIDÈLE biblio-footer / PERTE DOCUMENTÉE / PERTE PAR COMPLAISANCE / NE SAIT PAS).
+Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Murder Mystery, PyMC-8 TrueSkill) citent la source canonique **inline** ; les autres notebooks s'appuient sur la **bibliographie footer** « Pour aller plus loin » (Infer-1 cell 37, Infer-15 cell 76) ou sur les **sources primaires** académiques. Le tableau de correspondance [`docs/reference/mbml-source-attribution.md`](../../docs/reference/mbml-source-attribution.md) inventorie chaque notebook avec sa source/attribution.
 
 ## Licence
 

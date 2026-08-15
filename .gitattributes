@@ -21,3 +21,22 @@ lake-manifest.json text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
+
+# Registre twin-parity (#8057) : autrefois un mono-fichier `twin_pairs.yaml`
+# (liste append-only) sur lequel un `merge=union` etait declare pour mitiger le
+# conflit serie systematique entre N tranches de registration (recurrences
+# #8415/#8476/#8499/#8505/#8526/#8492, toutes resolues a la main). #8542 Option
+# C a deplace le registre vers `twin_pairs.d/` (un fichier par paire) : deux PRs
+# qui enregistrent des paires differentes touchent des fichiers differentes ->
+# la classe de conflit est supprimee a la source, le driver `union` n'a donc
+# plus d'objet (et de toute facon n'etait jamais honore par le merge cote serveur
+# GitHub). Ne PAS le re-ajouter : le filet de securite structural est desormais
+# scripts/notebook_tools/tests/test_twin_registry_integrity.py (file-per-entry).
+#
+# EOL (meme motif "L268" que ci-dessus) : le registre est reecrit par
+# `check_twin_parity.py --update`, donc par des agents dont la moitie tourne
+# sous Windows. Sans regle explicite, un rebaseline d'UNE paire y basculait le
+# fichier entier en CRLF et le diff passait de 2 lignes a tout le fichier
+# (#8709, #8713). L'ecrivain est corrige cote outil (`write_registry_text`) ;
+# cette regle est le second filet, qui vaut pour n'importe quel ecrivain.
+scripts/notebook_tools/twin_pairs.d/*.yaml text eol=lf

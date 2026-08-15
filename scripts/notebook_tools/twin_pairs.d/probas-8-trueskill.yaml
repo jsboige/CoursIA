@@ -1,0 +1,21 @@
+- name: Probas-8 TrueSkill
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-8-TrueSkill.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-8-TrueSkill.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
+  audits:
+    - date: "2026-08-01"
+      by: myia-po-2026:CoursIA
+      python_sha: 14097169f417cf18752f051f0f41f61802871844
+      csharp_sha: c9a371fce477c487466ee3549cae114c9963d418
+  known_differences:
+  - "2026-07-28 (myia-po-2026) #8704/#8715 : backfill section 14 \"Pour aller plus loin\" -- formules fermees EP V(t)/W(t)/tau^2 (Herbrich-Minka-Graepel 2007) ajoutees en markdown + NOUVELLE cellule code .NET executee (#r MathNet.Numerics, computation closed-form). Add-only (65 -> 69 cellules), 0 cellule existante alteree, 0 output drift sur les sections 1-13. Variance utilise la forme canonique sigma^2*(1-(sigma^2/c^2)*W(t)) (facteur de gain de Kalman sigma^2/c^2 present) -> posterior sigma=7,19 match exact Infer.NET cellule 16 N(29,21,7,19). python_sha inchange a ce stade (note: PyMC-8 cell29 portait la variante sans facteur sigma^2/c^2 -> bug source trace/corrige en #8718). csharp_sha rebaseline suite au changement de blob."
+  - '2026-07-28 (myia-po-2023) #8718 / See #8081 : FIX defaut mathematique cote Python -- cellule 29 (code execute) et cellule 28 (prose LaTeX) de la section 7 bis contractaient la variance par W(t) seul au lieu du facteur canonique (sigma_w^2 / c^2) * W(t) (Herbrich-Minka-Graepel 2007). La cellule imprimait sigma 8,33 -> 5,02 alors que le jumeau C# Infer-8 cellule 16 (vrai moteur EP) imprime N(29,21, 7,19). Correction des 2 lignes de code + alignement LaTeX + callout pedagogique + RE-EXECUTION cellule 29 (Stop & Repair, sortie reelle sigma -> 7,19 des deux cotes, match exact Infer-8). Source de l''erreur propagee dans #8709 cote C# (superseded par #8715 po-2026). python_sha rebaseline suite au changement de blob ; csharp_sha desormais porteur du fix #8715 (reconcilie au rebase).'
+  - '2026-07-25 (po-2024) #8548 : correction attribution source cote C# uniquement -- cell[7] Herbrich et Graepel 2006 remplace par Herbrich Minka et Graepel (2007 NIPS 20) avec Minka comme auteur EP, cell[55] reference alignee, NOUVELLE cellule markdown lineage (MBML Ch.3 Meeting Your Match + distinction Infer-7 = Ch.2 skill-from-answers vs Infer-8 = Ch.3 skill-from-match-result). Edition markdown-only, 0 changement de code 0 output drift -- parite semantique (factor graph, EP, perf = skill + noise, IsGreaterThan) non affectee par le raffinement de citation. python_sha inchange (twin PyMC non touche). csharp_sha rebaseline suite a ce changement de blob.'
+  - 'Socle pedagogique commun : TrueSkill (classement et apprentissage en ligne) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+

@@ -1,9 +1,9 @@
 # Registre datasets — open-courseware CoursIA
 
 > **Statut.** Document de cadrage, grade **B-méthodologique** (registre applicable, pas suggestion). V0 = pilote cycle c.795 (issue #8055 tranche 2, parent #4208).
-> **Objet.** Répondre à l'acceptance d'[#8055](https://github.com/jsboige/CoursIA/issues/8055) (tranche 2 — registre datasets avec licence + checksum) et compléter la tranche 1 ([THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md), PR #8067 OPEN MERGEABLE jsboige).
+> **Objet.** Répondre à l'acceptance d'[#8055](https://github.com/jsboige/CoursIA/issues/8055) (tranche 2 — registre datasets avec licence + checksum) et compléter la tranche 1 ([THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md), PR #8067 MERGED 2026-07-23).
 > **Discipline.** NE REMPLACE PAS `THIRD_PARTY_NOTICES.md` (licences code/submodules/vendored), ni `validate_pr_notebooks.py` (structure notebooks), ni `audit-reassessment.md` (mécanique) ; **AJOUTE** une couche **contenu des données** que le catalogue open-courseware peut scanner pour vérifier la reproductibilité avant publication.
-> **Lien.** Issue-source : [#8055](https://github.com/jsboige/CoursIA/issues/8055) (P1, tranche 2). Épique parent : [#4208](https://github.com/jsboige/CoursIA/issues/4208) (open-courseware fiabilisé/publié). Tranche 1 (code) : PR #8067 OPEN (jsboige, livraison 2026-07-23).
+> **Lien.** Issue-source : [#8055](https://github.com/jsboige/CoursIA/issues/8055) (P1, tranche 2). Épique parent : [#4208](https://github.com/jsboige/CoursIA/issues/4208) (open-courseware fiabilisé/publié). Tranche 1 (code) : PR #8067 MERGED 2026-07-23.
 
 ## Pourquoi ce registre
 
@@ -62,7 +62,7 @@ Chaque ligne du registre respecte le schéma :
 
 **31 entrées** (post c.826), couvrant 10 familles thématiques. Toutes vérifiées firsthand via `sha256sum` au SHA `8092a4aec` (origin/main) le 2026-07-23 (29 entrées c.795-c.797), complétées au cycle c.826 (cross-series/matching-cv × 2 datasets ajoutés, `taxi-fare.csv` confirmé NON-TRACKED dans `origin/main` — voir `## Hors périmètre c.795`).
 
-### ML / ML.NET (4)
+### ML / ML.NET (3)
 
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
 |--------|----------:|-----------------|---------|-----------|-------|------|
@@ -94,7 +94,7 @@ Chaque ligne du registre respecte le schéma :
 |--------|----------:|-----------------|---------|-----------|-------|------|
 | `MyIA.AI.Notebooks/Probas/PyMC/PROBAS_INFER_AUDIT.csv` | 1 296 | `8522cb271e2b479…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Audit cross-source PyMC↔Infer | — |
 
-### QuantConnect / datasets (4)
+### QuantConnect / datasets (11)
 
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
 |--------|----------:|-----------------|---------|-----------|-------|------|
@@ -196,7 +196,7 @@ Acceptance partiel (5/6 vérifiables firsthand maintenant, 1/6 attend rollout ca
 - Matrice coût/ressource (sibling) : [#8056](https://github.com/jsboige/CoursIA/issues/8056) (c.794 PR #8073).
 - Métadonnée parité jumeaux : [#8057](https://github.com/jsboige/CoursIA/issues/8057) (c.801 PR #8066).
 - Maturité 3-axes (sibling) : [#8051](https://github.com/jsboige/CoursIA/issues/8051) (c.762 PR #8074).
-- THIRD_PARTY_NOTICES.md (tranche 1) : [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) (PR #8067 OPEN MERGEABLE).
+- THIRD_PARTY_NOTICES.md (tranche 1) : [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) (PR #8067 MERGED 2026-07-23).
 - Licence code : [LICENSE](../../LICENSE) (MIT).
 - Sécurité secrets : [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) (`.env` gitignored, pas de literals inline).
 

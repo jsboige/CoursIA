@@ -24,7 +24,7 @@ Pour chaque cycle mensuel :
 1. **Énumérer** tous les notebooks de la famille (`find MyIA.AI.Notebooks/<Famille> -name "*.ipynb" -type f`).
 2. **Stratifier** par sous-série pondérée par nombre de notebooks (≥5% par sous-série si ≥20 notebooks).
 3. **Échantillonner** uniformément dans la liste (Python `random.sample` avec seed fixée `seed=42` + offset cycle pour reproductibilité inter-cycle mais varié intra-cycle).
-4. **Marquer** les notebooks déjà audités dans les 90 derniers jours (`git log --since="90 days ago" -- <path>` sur dossier `docs/audit/history/`) — ne pas ré-auditer sauf régression signalée.
+4. **Marquer** les notebooks déjà audités dans les 90 derniers jours — `gh issue list --state all --search "<notebook>" --label audit-fallback-critical` + historique dashboard `[AUDIT-CYCLE]`. Ne pas ré-auditer sauf régression signalée.
 
 ### Volume cible
 
@@ -41,6 +41,24 @@ Pour chaque cycle mensuel :
 | 3 | **Verdict markdown positif** vs **exécution dégradée** | dernière cellule markdown `## Conclusion\|## Synthèse\|## Verdict` vs outputs précédents | Oui si claim positif alors que warnings/erreurs dans outputs |
 | 4 | **SOTA tool vraiment invoqué** | imports réels dans cellules code vs mention dans markdown | Match import = vrai ; pas d'import alors que markdown mentionne l'outil = fallback |
 | 5 | **Cohérence pédagogique** (exercice résolu ≠ marqué exercice, etc.) | cf [exercise-example-labeling.md](../../.claude/rules/exercise-example-labeling.md) | Stub cohérent avec titre |
+
+### État de validation de la grille (après le pilote c.793)
+
+Deux des cinq litmus n'ont **jamais tourné en conditions réelles**. Le savoir avant de lancer la grille évite de lire un silence comme un feu vert.
+
+| Litmus | Statut | Détail |
+|---|---|---|
+| 1 — claim numérique | **validé** | extrait correctement, sous réserve du bruit de matching décrit ci-dessous |
+| 2 — fallback silencieux | **implémenté, jamais déclenché** | `detect_fallback_silent` existe, mais l'échantillon pilote était .NET Interactive — le pattern `try/except ImportError` est Python. **À valider sur des notebooks Python** (ML.NET tutorials, Search Part1 Python). Tant que ce n'est pas fait, l'absence de finding litmus-2 ne prouve rien. |
+| 3 — verdict positif markdown | **non déclenché** | absent de l'échantillon pilote |
+| 4 — SOTA tool | **validé** | c'est ce litmus qui a produit le finding pilote `F-c793-1` (`pymc` mentionné, jamais importé) — la grille fonctionne |
+| 5 — cohérence pédagogique | **non automatisable** | lecture cellule-par-cellule requise, hors périmètre du script |
+
+### Limite connue du litmus 1 — `matched=0` est du bruit, pas un signal
+
+`CLAIM_NUMERIC_RE` dans `scripts/audit/extract_claims_vs_outputs.py` attrape **tous** les nombres : `execution_count`, indices de liste, identifiants d'assets. Sur des notebooks riches en code, cela produit des `matched=0` massifs — mesuré sur le pilote : **0/319** et **0/242** claims appariés sur deux notebooks parfaitement sains.
+
+**Ne pas lire un `matched=0` comme un finding.** C'est un défaut d'appariement, et l'interpréter comme un claim faux ferait conclure à une catastrophe là où il n'y a rien. Raffinement identifié, non implémenté : exclure les nombres < 10 (execution_count, indices) ou introduire une heuristique de contexte (`f"step {i}"` n'est pas un claim).
 
 ### Workflow d'audit (env-vierge)
 
@@ -91,7 +109,7 @@ fallback_detected: <bool>
 fix_proposed: <PR #X ou "tracker #Y">
 ```
 
-Findings CRITICAL → tag `audit-fallback-critical` posé dans `docs/audit/history/<cycle>/<notebook>.md`. Findings MAJOR/MINOR → agrégés dans `docs/audit/history/<cycle>/summary.md` pour correction batch.
+**Où va un finding.** Findings CRITICAL/MAJOR → **une issue GitHub** (label `audit-fallback-critical` pour les CRITICAL), une par finding actionnable, avec le bloc YAML ci-dessus dans le body. Findings MINOR → agrégés dans **un post dashboard** `[AUDIT-CYCLE]`. Dans les deux cas, la sortie de l'audit est un **verdict** — jamais un fichier de rapport committé dans l'arbre (cf § suivant).
 
 ## Application pilote (cycles c.793+)
 
@@ -112,14 +130,22 @@ Pour respecter le scope po-2025 (partition Probas/ML/Sudoku) ET le scope cross-f
 
 Déjà couvert par [#7734 matrice dissociations](https://github.com/jsboige/CoursIA/issues/7734) (instance scoping).
 
-## Sortie attendue par cycle
+## Sortie attendue par cycle — un verdict, jamais un fichier de rapport
 
 Pour chaque cycle mensuel audité :
 
-- 1 fichier `docs/audit/history/<cycle>/summary.md` (≤200 lignes, agrégation findings)
-- N fichiers `docs/audit/history/<cycle>/<notebook>.md` (1 par finding CRITICAL/MAJOR)
-- 1 entrée dashboard `[AUDIT-CYCLE] <famille> — <N>/<N_total> findings — <severity breakdown>`
-- 0 PR de fix automatique **dans le même cycle** (audit = reportage, fix = cycle séparé pour ne pas confondre les genres G-VAR-3)
+- **1 post dashboard** `[AUDIT-CYCLE] <famille> — <N>/<N_total> findings — <severity breakdown>` : le compte-rendu de cycle, éphémère par nature (échantillon tiré, litmus déclenchés, suite envisagée).
+- **1 issue GitHub par finding CRITICAL/MAJOR**, avec le bloc YAML du § « Format de finding ». C'est le seul support qui survit au cycle et qui se referme quand le fix est livré.
+- **0 fichier de rapport committé dans l'arbre** — ni `docs/audit/history/<cycle>/…`, ni `AUDIT-*.md`, ni `*_audit_cNNNN.md`, où que ce soit dans le dépôt.
+- **0 PR de fix automatique dans le même cycle** (audit = reportage, fix = cycle séparé, pour ne pas confondre les genres G-VAR-3).
+
+### Pourquoi pas un fichier de rapport
+
+C'est une règle HARD du dépôt, pas une préférence de style : [`audit-cross-source-distillation.md`](../../.claude/rules/audit-cross-source-distillation.md) — « Un audit produit un **verdict**, pas un fichier. Le compte-rendu va sur le **dashboard RooSync** (éphémère) ; un finding **actionnable** devient une **issue**. » Et `CLAUDE.md` §A : « GitHub = code, jamais de […] rapports d'audit dans le repo. » Incident fondateur : 18 rapports d'audit déposés dans l'arbre notebooks, retirés par [#8168](https://github.com/jsboige/CoursIA/pull/8168).
+
+La raison de fond est opérationnelle, pas bureaucratique. Un rapport committé **fige un état daté** dans un arbre qui bouge : il périme en silence, personne ne le referme, et un finding qui y dort n'est réclamé par personne. Une issue, elle, a un état, un assignataire possible, et se ferme quand le fix est livré. Le cycle pilote c.793 en est la démonstration : son finding MAJOR `F-c793-1` est resté **non tracké pendant tout le temps où il vivait dans un fichier de rapport** — il n'a existé comme finding réclamable qu'une fois remonté sur [#8052](https://github.com/jsboige/CoursIA/issues/8052#issuecomment-5090493572).
+
+**Conséquence sur la sélection.** L'étape 4 du § « Critère de sélection » — marquer les notebooks déjà audités — ne peut donc pas s'appuyer sur `git log` d'un dossier de rapports. Elle s'appuie sur les **issues d'audit** (`gh issue list --search "<notebook> label:audit-fallback-critical --state all"`) et sur l'historique dashboard.
 
 ## Ce que ce protocole n'est PAS
 

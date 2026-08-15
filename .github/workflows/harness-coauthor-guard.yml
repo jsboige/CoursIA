@@ -1,0 +1,143 @@
+name: harness-coauthor-guard
+
+# Durable anti-regression guard for the .claude/ harness convention: every
+# `Co-Authored-By:` trailer that names a specific Claude model + version
+# (e.g. `Claude Opus 4.6`) fails this PR. The canonical form per CLAUDE.md
+# global secGit line 27 is `Co-Authored-By: Claude-Code <noreply@anthropic.com>`
+# (no model token, no version).
+#
+# Background: #10752 (Phase 2). Two harness files caught citing stale models
+# (`skills/review-student-prs/SKILL.md:132` → Opus 4.6, `agents/notebook-iterative-builder.md:676`
+# → Sonnet 4.5) despite those models not running since the migration to
+# Opus 5.x. Phase 1 of #10752 = literal substitution; Phase 2 = this guard.
+#
+# BLOCKING on PRs that introduce a NEW stale trailer. Inherited trailers
+# (post-Phase-1 main) are zero today; the base-vs-head diff ensures the
+# gate never freezes the cluster if a future fix is partially reverted.
+# Self-cover (#8822 pattern): the workflow lists its own path under `paths:`
+# so it can re-run to remove its own advisory label when it leaves the diff.
+#
+# Mirror of #6312 (probeAddresses auto-fix) and #10143 (gitleaks test
+# discipline): a regression guard is durable only if its detector is
+# tested by another regression guard. Self-test runs in scripts/tests/.
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped --
+# a benevolent review applies, no internal content criterion runs against
+# them.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '.claude/skills/**'
+      - '.claude/agents/**'
+      - '.claude/commands/**'
+      - '.claude/rules/**'
+      # Self-cover: must list its own file, else it cannot re-run (so
+      # cannot remove its own label) once the matching paths leave the
+      # PR diff. Enforced by scripts/check_workflow_label_paths.py.
+      - '.github/workflows/harness-coauthor-guard.yml'
+      - 'scripts/notebook_tools/check_harness_coauthor.py'
+      - 'scripts/tests/test_check_harness_coauthor.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: harness-coauthor-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coauthor-stale-delta:
+    name: "Stale Co-Authored-By trailer guard (#10752 Phase 2)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # base ref must be reachable for the BASE scan
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # HEAD scan (PR head) — produces the JSON report we'll compare against.
+      # Per the c.1331+107-L2 lesson, the script always exits 0 here on a
+      # clean working tree; we capture findings via JSON, not exit code, to
+      # distinguish "0 findings" from "detector crashed".
+      - name: HEAD scan
+        id: head_scan
+        run: |
+          python scripts/notebook_tools/check_harness_coauthor.py --json > /tmp/head.json
+          rc=$?
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 1 ]; then
+            echo "::error title=Detector crashed::check_harness_coauthor.py exited with non-standard code $rc. The gate cannot be trusted -- investigate before merging."
+            exit 1
+          fi
+          HEAD_VERDICT=$(python -c "import json; print(json.load(open('/tmp/head.json'))['verdict'])")
+          HEAD_TOTAL=$(python -c "import json; print(json.load(open('/tmp/head.json'))['total_findings'])")
+          echo "head_verdict=$HEAD_VERDICT" >> "$GITHUB_OUTPUT"
+          echo "head_total=$HEAD_TOTAL" >> "$GITHUB_OUTPUT"
+          echo "HEAD verdict: $HEAD_VERDICT ($HEAD_TOTAL findings)"
+
+      # BASE scan (PR base ref). Swap `.claude/` to base, scan, then restore.
+      # head.json is already captured above, so the swap cannot contaminate
+      # the delta.
+      - name: BASE scan
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout ${{ github.event.pull_request.base.sha }} -- .claude
+          python scripts/notebook_tools/check_harness_coauthor.py --json > /tmp/base.json || true
+          git checkout HEAD -- .claude
+
+      # DELTA check: a NEW finding introduced by the PR fails the gate.
+      # Inherited findings (post-Phase-1 main = 0) are tolerated, mirroring
+      # #6314 pip-leak-guard pattern (durable anti-regression without
+      # freezing the cluster).
+      - name: "Fail if delta introduces new stale trailers"
+        if: github.event_name == 'pull_request'
+        run: |
+          set -uo pipefail
+
+          python - <<'PYEOF'
+          import json
+          import sys
+
+          base = json.load(open("/tmp/base.json"))
+          head = json.load(open("/tmp/head.json"))
+
+          base_keys = {(f["file"], f["line"], f["match"]) for f in base["findings"]}
+          head_keys = {(f["file"], f["line"], f["match"]) for f in head["findings"]}
+
+          new_findings = [f for f in head["findings"]
+                          if (f["file"], f["line"], f["match"]) not in base_keys]
+
+          print(f"Base: {len(base['findings'])} findings, verdict={base['verdict']}")
+          print(f"Head: {len(head['findings'])} findings, verdict={head['verdict']}")
+          print(f"New findings introduced by this PR: {len(new_findings)}")
+
+          if new_findings:
+              for f in new_findings:
+                  print(f"  NEW: {f['file']}:{f['line']} [{f['model']} {f['version']}] {f['match']}")
+              sys.exit(1)
+
+          print("Clean: no new stale trailers introduced.")
+          sys.exit(0)
+          PYEOF
+
+      # Advisory only when head has inherited findings (post-Phase-1 main should
+      # have 0; this catches future partial reverts without blocking them).
+      - name: "Surface inherited findings as warning (non-blocking)"
+        if: github.event_name == 'pull_request' && steps.head_scan.outputs.head_total != '0'
+        run: |
+          echo "::warning title=Inherited stale Co-Authored-By trailers::This PR inherits $HEAD_TOTAL stale trailers from main (Phase 1 baseline: 0). The delta check above blocks only NEW ones. If this PR is *introducing* stale trailers, the delta check will fail above; if it only edits .claude/ files, no action is required."

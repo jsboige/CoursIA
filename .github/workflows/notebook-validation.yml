@@ -11,6 +11,9 @@ on:
       - '**.ipynb'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   validate-notebooks:
     runs-on: ubuntu-latest

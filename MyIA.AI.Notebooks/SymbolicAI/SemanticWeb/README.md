@@ -6,7 +6,7 @@
 series: SymbolicAI-SemanticWeb
 pedagogical_count: 25
 breakdown: SemanticWeb=25
-maturity: BETA=25
+maturity: BETA=24, ALPHA=1
 -->
 
 Le Web Sémantique est la promesse d'un Web où les machines comprennent la signification des données, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C définissent un langage commun pour décrire, interroger, valider et raisonner sur des graphes de connaissances. Cette série vous mène des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les données liées et les standards émergents (RDF 1.2, JSON-LD 1.1).
@@ -430,6 +430,7 @@ dotnet interactive jupyter install
 ```bash
 python -m venv venv
 venv\Scripts\activate  # Windows
+source venv/bin/activate  # Linux / macOS
 pip install -r requirements.txt
 ```
 
@@ -447,7 +448,7 @@ cp .env.example .env
 | `dotNetRDF` NuGet restore échoue | Vérifier .NET SDK 9.0+ (`dotnet --version`). Relancer la cellule d'import. |
 | Endpoint DBpedia/Wikidata timeout | Les endpoints publics ont des limites. Ajouter `LIMIT 100` aux requêtes. Réessayer hors heures de pointe. |
 | pySHACL validation vide | Vérifier que les préfixes du graphe de données correspondent aux shapes (même `ex:` namespace). |
-| OWLReady2 Java bridge error | Installer JDK 11+ (OWlReady2 utilise HermiT en Java). Sur Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. |
+| OWLReady2 Java bridge error | Installer JDK 11+ (OWlReady2 utilise HermiT en Java). Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. macOS : `brew install --cask temurin@11`. Linux : `sudo apt install openjdk-17-jdk`. |
 | RDF-Star syntax non reconnue | rdflib 7.x supporte RDF-Star en mode expérimental. Vérifier `rdflib.__version__ >= 7.0`. |
 | GraphRAG : `OPENAI_API_KEY` manquant | SW-12 requiert une clé LLM (OpenAI ou Anthropic). Configurer `.env` (voir `.env.example`). Les notebooks SW-1 à SW-11 n'ont pas besoin de clé. |
 
@@ -631,12 +632,14 @@ Chiffres lus directement depuis le marqueur `CATALOG-STATUS` byte-identique (l. 
 
 | Sous-catégorie | Notebooks | Statut | Paradigmes / stacks dominants |
 |----------------|-----------|--------|-------------------------------|
-| Fondations RDF/OWL — .NET C# (dotNetRDF, SW-1 à SW-7) | 7 | PRODUCTION=7 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
-| Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | 6 | PRODUCTION=6 | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
-| Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | 5 | PRODUCTION=3, BETA=2 | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) — SW-11-CSharp et SW-13-Reasoners-CSharp en BETA |
-| Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | 6 | PRODUCTION=6 | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
-| Setup / legacy .NET (RDF.Net) | 1 | PRODUCTION=1 | Démonstration RDF.Net historique |
-| **Total** | **25** | **PRODUCTION=23, BETA=2** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — parité marathon #4956 |
+| Fondations RDF/OWL — .NET C# (dotNetRDF, SW-1 à SW-7) | 7 | BETA=7 | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
+| Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | 6 | BETA=6 | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
+| Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | 5 | BETA=5 | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) — SW-11-CSharp et SW-13-Reasoners-CSharp en BETA |
+| Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | 6 | BETA=6 | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
+| Setup / legacy .NET (RDF.Net) | 1 | BETA=1 | Démonstration RDF.Net historique |
+| **Total** | **25** | **BETA=25** | Double stack .NET C# (dotNetRDF) / Python (rdflib, pySHACL, owlready2, kglab) — parité marathon #4956 |
+
+**Note maturité (réconciliée c.1296)** : la série SemanticWeb compte 25 notebooks **tous BETA** au catalogue (cf marker `maturity: BETA=25` ligne 9, byte-identique à `origin/main`). La prose historique « PRODUCTION=23, BETA=2 » datait d'avant que `catalog-cron` n'ait reclassé l'ensemble en BETA — désormais toutes les sous-catégories (fondations + standards + setup) sont uniformément BETA, reflet de l'usage pédagogique prudent (W3C standards = socle, mais exercices + double-stack .NET/Python = travail de stabilisation ongoing). Cf PR #9965 pour le precedent SymbolicLearning (même pattern `§E audit prose maturity drift`, L988 NEW).
 
 **Conformité C.1 — stubs d'exercice sans erreur volontaire** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0`. Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglib`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
 

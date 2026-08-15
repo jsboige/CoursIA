@@ -1,0 +1,715 @@
+name: Variation Tag Guard
+
+# Rend VISIBLE la conformite du tag `Grain: <TIER>/<GENRE>` exige par
+# .claude/rules/variation-protocol.md (mandat user 2026-07-21, anti-monoculture).
+#
+# ADVISORY, jamais bloquant : ce job sort toujours en exit 0. Il n'existe pas
+# pour punir un worker, mais pour que le coordinateur ne puisse plus merger
+# une PR sans tag *sans le voir*. Le protocole designe le tag comme condition
+# de merge et confie la lecture a ai-01 ; une condition qui repose sur la
+# seule vigilance humaine derive silencieusement (constat : plusieurs merges
+# NO-TAG malgre la regle publiee). Un signal automatique la rend auditable.
+#
+# Passage en bloquant : seulement apres une periode ou la flotte est conforme,
+# et par decision explicite — pas par durcissement unilateral de ce fichier.
+#
+# Ce que le guard verifiait jusqu'ici : la PRESENCE d'une ligne `Grain:` et la
+# validite du TIER. Deux omissions constatees a la main sur un seul cycle de
+# coordination (c.61) :
+#
+#   1. GENRE hors-liste. `tooling` x3, `test-coverage`, `refs`, `ci` ont tous
+#      obtenu un `Check Grain tag conformity` SUCCESS. (`tooling` a depuis ete
+#      canonise par la regle §1 sur la foi de ces 5 usages, avec `research-code` :
+#      un genre observe assez souvent est une lacune de l'enumeration, pas une
+#      faute du worker. Les trois autres restent des alias a replier.) Or
+#      G-VAR-3 compare des
+#      GENRES consecutifs : un genre absent de l'enumeration §1 rend cette
+#      comparaison arbitraire — deux tranches d'une meme vague peuvent porter
+#      deux etiquettes inventees et ne jamais declencher l'adjacence.
+#   2. `lane` absente. §3 l'exige explicitement ("un grain qui ne dit pas de
+#      quelle lane il vient est structurellement incomptable") parce que
+#      G-VAR-2 est un cap PAR LANE ET PAR JOUR. Le guard ne la regardait pas.
+#      Constate sur deux PR d'un meme rollout, aucune des deux signalee.
+#
+# Relever a la main ce qu'un organe devrait dire est le reflexe a supprimer :
+# ce fichier APPLIQUE la §1 telle qu'ecrite, il ne la modifie pas — aucun
+# fichier de `.claude/rules/` n'est touche, donc pas de sign-off requis.
+#
+# Un label distinct par classe de defaut (plutot qu'un label fourre-tout) rend
+# la nature du manquement lisible dans `gh pr list --json labels`, sans avoir a
+# ouvrir les logs du job.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-variation-tag:
+    name: Check Grain tag conformity
+    runs-on: ubuntu-latest
+    steps:
+      # #9485 : le parsing du tag est desormais porte par scripts/grain_tag.py
+      # (extracteur partage avec variation_light_cap.py). Sparse-checkout de ce
+      # module -- rien d'autre dans l'arbre n'est lu par ce job.
+      - name: Checkout the shared tag extractor (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/grain_tag.py
+      - name: Inspect PR body for Grain tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # GH_REPO reste positionne malgre le checkout (sparse laisse un repo
+          # git valide, donc gh deduit le cible) : inoffensif, et protege contre
+          # toute regression du contexte gh (#8786 -- un `|| true` muet avait
+          # masque une panne de contexte ou zero PR etait labellisee).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # ATTENTION au shell reel : GitHub invoque ce bloc avec
+          # `/usr/bin/bash -e {0}` (visible dans le log du job, ligne `shell:`).
+          # L'errexit est donc **actif**, et `set -uo pipefail` ne l'annule pas —
+          # il ajoute `-u` et `-o pipefail`, il ne retire pas `-e`. Ne pas lire
+          # l'absence de `-e` sur cette ligne comme « rien ne peut faire echouer
+          # le job » : toute commande non protegee qui sort non-zero tue le step
+          # et transforme cet advisory en check rouge.
+          #
+          # Ce qui garde l'advisory vrai n'est donc PAS l'absence de `-e`, c'est
+          # que chaque commande faillible ci-dessous est soit dans une condition
+          # (`if`/`elif`/`case`, exempts d'errexit), soit suffixee `|| true`.
+          # Verifie firsthand : les 8 cas de test passent sous `bash -e` — la
+          # premiere passe, menee sous `bash -c` sans `-e`, testait le mauvais
+          # interpreteur. C'est exactement la faille nommee par #8894 (« un test
+          # unitaire ne peut pas observer l'interpreteur d'un autre job »).
+          #
+          # Et surtout : **jamais `|| true` sur la capture d'un code de retour**.
+          # `rc=$?` apres `cmd || true` lit le `0` de `true`, pas celui de `cmd` —
+          # cela desarme le controle en permanence, strictement pire que le bug
+          # d'errexit qu'on croyait corriger. Idiome correct si besoin un jour :
+          # `out=$(cmd) && rc=0 || rc=$?`.
+
+          # Hors scope : bots (catalogue auto-regenere) et forks (PRs etudiantes,
+          # cf .claude/rules/student-pr-reviews.md — review bienveillante, aucun
+          # critere interne ne s'y applique).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Extraction du tag via l'extracteur PARTAGE scripts/grain_tag.py.
+          # #9485 : le grep bash 'Grain:' ici et le regex Python 'Grain:\s*' dans
+          # variation_light_cap.py divergeaient -- les deux exigeaient les
+          # deux-points et rataient la forme titre `## Grain` + tag sur la ligne
+          # suivante (38% des merges du 2026-08-05 invisibles au cap G-VAR-2).
+          # Desormais une SEULE source de lecture (grain_tag.parse_grain_tag),
+          # qui tolere les formes observees (Grain:, ## Grain, **Grain** :,
+          # `Grain` sans deux-points) SANS tolerer l'absence de substance
+          # (TIER/GENRE introuvable -> present=False -> variation-tag-missing).
+          # Le bash n'est plus que la plomberie de labels : il consomme le JSON
+          # {present, tier, genre, lane, tier_valid, genre_valid} et applique
+          # les memes labels qu'avant (la nomenclature §1 ne change pas).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+          python3 scripts/grain_tag.py --body-file /tmp/pr_body.txt > /tmp/tag.json 2>/dev/null || true
+
+          # Chaque extraction est tolerante a un fichier tag.json absent ou vide
+          # (un python3 manquant en CI, un body vide) : fallback = defauts surs
+          # qui declenchent les labels, jamais un faux vert.
+          _field() { python3 -c "import json; print(json.load(open('/tmp/tag.json')).get('$1'))" 2>/dev/null || echo "None"; }
+          PRESENT=$(_field present)
+          TIER=$(_field tier)
+          GENRE=$(_field genre)
+          LANE=$(_field lane)
+          TIER_VALID=$(_field tier_valid)
+          GENRE_VALID=$(_field genre_valid)
+
+          DEFECTS=""
+          note_defect() { DEFECTS="$DEFECTS $1"; }
+
+          if [ "$PRESENT" = "True" ]; then
+            echo "Tag lu : TIER=$TIER GENRE=$GENRE lane=$LANE"
+
+            # Enumeration §1 et tiers DEEP|MED|LIGHT internes a grain_tag.py
+            # (la source unique -- sinon le guard et l'organe re-divergeraient).
+            if [ "$TIER_VALID" != "True" ]; then
+              echo "::warning::TIER non reconnu ('${TIER:-vide}'). Attendu DEEP, MED ou LIGHT -- le TIER se decide par le litmus de variation-protocol.md, pas par auto-evaluation de valeur."
+              note_defect variation-tag-malformed
+            fi
+            if [ "$GENRE_VALID" != "True" ]; then
+              echo "::warning::GENRE '${GENRE:-vide}' hors enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
+              note_defect variation-tag-genre-offlist
+            fi
+            if [ -z "$LANE" ] || [ "$LANE" = "None" ]; then
+              echo "::warning::Aucune 'lane <machine:workspace>' declaree. G-VAR-2 est un cap PAR LANE et PAR JOUR : un grain sans lane est structurellement incomptable, et le cap devient inapplicable sans que personne ne l'ait contourne (§3)."
+              note_defect variation-tag-lane-missing
+            fi
+
+            # `prev:` -- le champ qui rend G-VAR-3 EVALUABLE (adjacence de
+            # genre). Le guard ne le mesurait pas (#10983) : un tag sans
+            # `prev:` traversait les deux jobs en silence et l'adjacence ne
+            # s'evaluait qu'a la main, apres merge. Forme canonique :
+            # `prev: <TIER>/<GENRE> #<PR>`. Exemption premier grain d'une
+            # lane : `prev: none (premier grain)` (parse_prev -> exempt).
+            PREV_PRESENT=$(_field prev_present)
+            PREV_EXEMPT=$(_field prev_exempt)
+            if [ "$PREV_PRESENT" = "False" ] && [ "$PREV_EXEMPT" != "True" ]; then
+              echo "::warning::Champ 'prev:' absent du tag. variation-protocol §1 le rend obligatoire (support mecanique de G-VAR-3 : pas deux fois le meme GENRE LIGHT consecutif). Forme : prev: <TIER>/<GENRE> #<PR>. Premier grain d'une lane : prev: none (premier grain)."
+              note_defect variation-tag-prev-absent
+            fi
+          else
+            # Substance absente (TIER/GENRE introuvable) : l'unique cas ou la
+            # tolerance s'arrete. Les formes titre/bold/no-colon sont couvertes
+            # ci-dessus ; si present=False, il n'y a reellement pas de tag.
+            echo "::warning::Aucun tag 'Grain: <TIER>/<GENRE>' lisible dans le body (formes lues : Grain:, ## Grain, **Grain** :). variation-protocol.md exige 'Grain: <TIER>/<GENRE> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>'."
+            note_defect variation-tag-missing
+          fi
+
+          # Traduction en labels. Chaque classe de defaut a son propre label pour
+          # que sa nature se lise dans `gh pr list --json labels`. Les labels
+          # correspondant a un defaut ABSENT sont retires : un label colle par un
+          # push anterieur ne doit pas survivre a la correction.
+          #
+          # stderr LAISSE PASSER sur les `create`/`add` : `|| true` garde le job
+          # non bloquant, mais masquer l'erreur est ce qui avait rendu la panne
+          # de contexte `gh` invisible (#8786). Un garde dont l'echec est muet
+          # n'est pas un garde. Sur les `remove`, `2>/dev/null` reste justifie :
+          # retirer un label absent est l'issue ATTENDUE au cas nominal.
+          for LABEL in variation-tag-missing variation-tag-malformed variation-tag-genre-offlist variation-tag-lane-missing variation-tag-prev-absent; do
+            case "$LABEL" in
+              variation-tag-missing)          COLOR="FBCA04"; DESC="PR sans tag Grain: <TIER>/<GENRE> (variation-protocol)" ;;
+              variation-tag-malformed)       COLOR="FEF2C0"; DESC="Tag Grain present mais TIER != DEEP|MED|LIGHT" ;;
+              variation-tag-genre-offlist)   COLOR="FEF2C0"; DESC="GENRE hors de l'enumeration variation-protocol §1" ;;
+              variation-tag-lane-missing)    COLOR="FEF2C0"; DESC="Tag Grain sans 'lane <machine:workspace>' (cap G-VAR-2 incomptable)" ;;
+              variation-tag-prev-absent)     COLOR="FEF2C0"; DESC="Tag Grain sans 'prev: <TIER>/<GENRE> #<PR>' (adjacence G-VAR-3 inevaluable)" ;;
+            esac
+            case " $DEFECTS " in
+              *" $LABEL "*)
+                gh label create "$LABEL" --description "$DESC" --color "$COLOR" --force || true
+                gh pr edit "$PR_NUMBER" --add-label "$LABEL" || true
+                ;;
+              *)
+                gh pr edit "$PR_NUMBER" --remove-label "$LABEL" 2>/dev/null || true
+                ;;
+            esac
+          done
+
+          if [ -z "$DEFECTS" ]; then
+            echo "Tag conforme : TIER + GENRE dans la liste §1 + lane declaree + prev: (ou exemption premier grain)."
+          else
+            echo "Defauts signales (advisory, non bloquant) :$DEFECTS"
+          fi
+          exit 0
+
+  # G-VAR-2 est le seul gate du protocole qui ne se decide pas DANS la PR : il
+  # demande de savoir ce que la lane a DEJA merge aujourd'hui (au plus
+  # max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes
+  # categories LIGHT confondues -- un RATIO, pas un plafond plat). Compte a la main
+  # par le coordinateur jusqu'ici, qui a merge une 2e LIGHT deux fois en un
+  # cycle (#8964). Ce job rend le fait VISIBLE (advisory, exit 0).
+  #
+  # La logique de parsing + comptage vit dans scripts/variation_light_cap.py
+  # (testable, agnostique separateur/casse #8938, bodies lus en TEXTE ENTIER --
+  # le bug ligne-a-ligne avait rendu "18/38 sans tag" au lieu de "2/38"). Le job
+  # n'est que la plomberie CI : dataset des mergees du jour + label + commentaire.
+  #
+  # #8970 : le compteur lit le tier DECLARE, mais le protocole dit que le tag
+  # declare n'est pas auto-executable -- le coordinateur RE-qualifie au merge
+  # (up LIGHT->MED, down DEEP->LIGHT). Cette requalification est porte par un
+  # LABEL `grain-requalified:<TIER>` applique au merge (machine-readable, body
+  # intact, cheap : --json labels ajoute le champ a la MEME requete, pas de
+  # quota supplementaire). Le label OVERRIDE le tier declare pour le comptage,
+  # dans les deux sens. Sans lui, le compteur flaggait du travail legitiment
+  # re-qualifie (1 FP/2 flags sur la vague 2026-07-30 : #8930 LIGHT->MED).
+  check-light-cap:
+    name: G-VAR-2 light cap (cross-PR)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the cap detector (sparse)
+        uses: actions/checkout@v4
+        with:
+          # variation_light_cap.py importe grain_tag.py (#9485 : extracteur
+          # partage) -- les deux modules sont checkout ensemble.
+          sparse-checkout: |
+            scripts/variation_light_cap.py
+            scripts/grain_tag.py
+      - name: Cross-PR LIGHT cap (G-VAR-2)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Meme garde-fou anti-spam que le job de tag : bots et forks hors
+          # scope (PRs etudiantes, .claude/rules/student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Jour courant en UTC : G-VAR-2 se compte par jour UTC (reset 00:00Z).
+          TODAY=$(date -u +%Y-%m-%d)
+
+          # Les PR deja mergees aujourd'hui = le jeu de comptage. La PR courante
+          # est OUVERTE (le job tourne sur opened/edited/synchronize/reopened,
+          # pas sur le merge) donc elle n'est PAS dans ce set -- c'est ce qui
+          # rend la 2e LIGHT detectable. On recupere aussi les LABELS pour
+          # honorer la requalification #8970 (grain-requalified:<TIER> qui
+          # override le tier declare) : ajouter le champ `labels` a la MEME
+          # requete ne consomme pas de quota supplementaire.
+          # --limit 500 OBLIGATOIRE : la page par defaut de `gh pr list` est 30,
+          # silencieusement. Le set tronque attaque le DENOMINATEUR du ratio
+          # G-VAR-2 -- le cap retombe a son plancher de 1 et le label devient un
+          # faux positif contre les lanes productives (cf #10328, 2026-08-10 :
+          # 60 mergees pour 30 vues). Meme correctif dans variation-light-genre.yml.
+          gh pr list --state merged --search "merged:$TODAY" --limit 500 \
+            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
+
+          # Le body circule par fichier : printf '%s' ne reinterprete rien
+          # (newlines, quotes, $), contrairement a un passage en arg CLI.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Labels de la PR courante : une requalification peut etre pre-appliquee
+          # sur la PR ouverte (cas down-qualification, ou up-qualification
+          # anticipee). On les passe au detecteur pour que son verdict soit
+          # symetrique a celui porte sur les mergees. `gh pr view --json labels`
+          # renvoie l'objet {"labels":[{name,...}]} (et non un tableau nu --
+          # c'est `gh pr list` qui renvoie un tableau de PRs) ; le script
+          # l'aplatit, et accepte aussi les formes tableau nu / [str] (#9971).
+          gh pr view "$PR_NUMBER" --json labels > /tmp/pr_labels.json 2>/dev/null || \
+            printf '[]' > /tmp/pr_labels.json
+
+          # ADVISORY : le script sort toujours en 0. cap_reached consomme les
+          # DEUX axes du cap G-VAR-2 (#10480) : le TIER (LIGHT declare/effectif)
+          # ET le GENRE (light-genre -- readme/docs/guard/ledger/test -- quel
+          # que soit le tier declare). Un MED/readme peut donc faire cap_reached
+          # =true meme si 0 LIGHT declare (ferme le bypass ou --check-pr disait
+          # false et --genre-signals disait CAP-EXCEEDED-BY-GENRE sur la meme
+          # lane-day). Un non-LIGHT non-light-genre (DEEP/lean, MED/tooling) ou
+          # une lane absente renvoie cap_reached=false/None et le label est
+          # retire (un label colle par un push anterieur ne survit pas).
+          python3 scripts/variation_light_cap.py \
+            --replay /tmp/merged.json \
+            --check-pr "$PR_NUMBER" \
+            --body-file /tmp/pr_body.txt \
+            --labels-file /tmp/pr_labels.json > /tmp/status.json 2>/tmp/cap.err || true
+
+          echo "--- detector output ---"
+          cat /tmp/status.json 2>/dev/null || true
+          [ -s /tmp/cap.err ] && { echo "--- detector stderr ---"; cat /tmp/cap.err; } || true
+
+          CAP=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('cap_reached'))" 2>/dev/null || echo "False")
+
+          # Label distinct (lisible dans gh pr list --json labels). advisory,
+          # donc create/add/remove tolerent l'echec sans tuer le job (|| true).
+          gh label create variation-light-cap-reached \
+            --description "Lane ayant deja merge une LIGHT aujourd'hui (cap G-VAR-2 atteint)" \
+            --color B60205 --force 2>/dev/null || true
+
+          if [ "$CAP" = "True" ]; then
+            gh pr edit "$PR_NUMBER" --add-label variation-light-cap-reached 2>/dev/null || true
+            LANE=$(python3 -c "import json; print(json.load(open('/tmp/status.json')).get('lane','?'))" 2>/dev/null || echo "?")
+            CB=$(python3 -c "import json; c=(json.load(open('/tmp/status.json')).get('consumed_by') or {}); print(f\"#{c.get('number','?')} (merge a {c.get('mergedAt','?')})\")" 2>/dev/null || echo "une LIGHT anterieure de cette lane")
+            # Commentaire idempotent : un marqueur HTML invisible evite le spam
+            # a chaque synchronize. On ne poste que si aucun commentaire ne le
+            # porte deja.
+            MARK="<!-- gvar2-light-cap -->"
+            if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
+              BODY="${MARK}
+          **G-VAR-2 light cap reached** (advisory, non bloquant).
+          La lane \`${LANE}\` a deja consomme son budget LIGHT du jour (${CB}).
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour,
+          toutes categories LIGHT confondues** (guard, doc, refs, ... partagent un seul budget) :
+          c'est un RATIO, pas un plafond plat. La decision de merge reste au coordinateur."
+              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
+            fi
+            echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
+          else
+            # Cas nominal : on retire un label obsolete colle par un push anterieur.
+            gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
+          fi
+          exit 0
+
+  # c.10330 / PR retire le job `check-short-header` et le label
+  # `variation-short-header-missing`. La convention #9861 (Quoi/Preuve/Perimetre)
+  # etait volontairement non-promulguee (cf. titre de l'issue : "pas une
+  # nouvelle regle"), mais l'organe etait cable quand meme et labellisait
+  # 69 % du flux (207/300 PR) -- un signal qui se leve sur 7 PR sur 10 ne
+  # discrimine plus rien. `parse_short_header` reste dans `scripts/grain_tag.py`
+  # (code teste, sans cout quand personne ne l'appelle), disponible si la
+  # convention est un jour promulguee avec une regle dans le harnais.
+
+  # #10045 -- the BLOCKING half of the variation-tag guard. The job above
+  # (check-variation-tag) is advisory (exit 0) -- it posts labels but never
+  # fails the PR. The gap is that the label is the ONLY signal, and the
+  # coordinator has been measured to miss it (3/10 PRs of the 2026-08-08
+  # cycle were unattributable -- issue #10045, `#9967`/`#10027`/`#10030`).
+  # This job exits 1 when the body carries no `Grain: <TIER>/<GENRE>` or no
+  # `lane <machine:workspace>` token. Both checks pass through the SAME
+  # shared extractor (`scripts/grain_tag.py`) as the advisory job, so the
+  # two halves never diverge on what a tag is.
+  #
+  # The decision logic lives in `scripts/ci/variation_tag_required.py` so
+  # the verdict is unit-tested (the YAML harness is reviewed by hand). The
+  # `reason` field of the verdict is the single line we emit into the PR
+  # comment on failure, idempotent (`<!-- vtr-required-block -->` mark).
+  #
+  # RULES (per issue #10045 acceptance):
+  #   1. Exit 1 on missing tag OR missing lane. Exit 0 only when both
+  #      are present.
+  #   2. NO `paths:` filter -- path-filtered jobs report `pending` forever
+  #      on out-of-scope PRs (cf. pr-gate.yml L18-22), which would make
+  #      the gate perpetually red. The verdict must reach every same-repo
+  #      PR, no exceptions.
+  #   3. Forks excluded -- ~95 etudiants, cf. student-pr-reviews.md.
+  #   4. Bots excluded -- catalog auto-regen is the only `*[bot]` author
+  #      we get; its PR body has no Grain tag by construction.
+  #   5. Job name `check-variation-tag-required` carries the `-required`
+  #      suffix on purpose: PR #10036 introduces an `is_advisory()`
+  #      classifier in `scripts/pr_gate.py` that RETURNS `true` for jobs
+  #      whose name matches `/advisory|non-blocking|^skip|optional/i`.
+  #      The `-required` suffix is the explicit signal that this job is
+  #      NOT advisory and must NOT be silenced when #10036 lands.
+  #      Pinned by `test_check_name_is_not_advisory_friendly` in
+  #      `scripts/tests/test_variation_tag_required.py`.
+  check-variation-tag-required:
+    name: Require Grain tag (block on absent, #10045)
+    runs-on: ubuntu-latest
+    steps:
+      # Sparse checkout of the BLOCKING decision script + the shared tag
+      # extractor it depends on (#9485 single source of truth).
+      - name: Checkout the blocking helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/variation_tag_required.py
+            scripts/grain_tag.py
+      - name: Require Grain tag in PR body
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Bots and forks are out of scope (cf. rule 3 + 4 above). Same
+          # gating as the advisory job.
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante, cf. student-pr-reviews.md)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim, no shell
+          # re-interpretation of $, ", or newlines (cf. existing jobs).
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # The blocking helper emits one JSON line on stdout and exits
+          # 0 (pass) or 1 (block). We capture both streams; the verdict
+          # JSON is on stdout, anything Python warns about goes on stderr.
+          # Capturing the exit code on the line AFTER the helper call
+          # (`RC=$?` separated by a semicolon) dies under bash -e (the
+          # GitHub default shell) when the helper exits non-zero -- the
+          # BLOCK path, exactly the one that needs the stderr + verdict
+          # diagnostics below. The &&/|| list assigns RC on BOTH branches
+          # and is exempt from errexit.
+          python3 scripts/ci/variation_tag_required.py \
+            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          # Surface the stderr warnings so a failure here is debuggable
+          # from the job log alone -- #10036 lesson: a guard whose
+          # failure is silent is not a guard.
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Grain tag + lane present -- job passes."
+            exit 0
+          fi
+
+          # Block path. The verdict JSON gives us a single-line `reason`
+          # for the PR comment (idempotent via the HTML marker).
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::Grain tag ou lane manquant : $REASON"
+
+          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-required-block -->
+          **Grain tag obligatoire (#10045, bloquant).**
+
+          \`${REASON}\`.
+
+          Pour passer ce gate, le body doit porter en tete une ligne de la forme :
+
+          \`\`\`
+          Grain: <DEEP|MED|LIGHT>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>
+          \`\`\`
+
+          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
+          EOF
+          )" 2>/dev/null || true
+
+          # Exit 1 to fail the job. The "PR gate" required check on `main`
+          # aggregates all check-runs and will report this as BLOCKED, so
+          # the PR is non-mergeable until the body is fixed.
+          exit 1
+
+  # #10093 -- the BLOCKING gate against `prev:` close-keyword genres. The
+  # four jobs above (tag advisory, light cap, short-header, tag-required)
+  # read the PR BODY. This one reads the COMMIT MESSAGES too: the incident
+  # was a commit carrying `prev: MED/fix #10067` whose `fix #10067` tail
+  # GitHub parsed as an auto-close, closing PR #10067 (the translation core
+  # deliverable) at the squash-merge of #10063 -- unintended, silent, no
+  # keyword in #10063's body (its body tag was `MED/tooling`, sane).
+  #
+  # Why BLOCKING: the failure is DESTRUCTIVE and happens AT MERGE TIME
+  # (the squash commit message is what GitHub parses). An advisory label
+  # would not stop the merge. Only a required check turning `PR gate` red
+  # before merge prevents the auto-close -- same shape as the
+  # `check-variation-tag-required` job.
+  #
+  # Why scan commits: the offending tag was in a COMMIT, not the body. A
+  # body-only gate would have seen nothing. The decision logic lives in
+  # `scripts/ci/variation_prev_guard.py` (testable, same pattern as
+  # `variation_tag_required.py`); the YAML is plomberie.
+  #
+  # The job name carries the `-required` suffix on purpose: PR #10036's
+  # `is_advisory()` classifier in `scripts/pr_gate.py` must NOT silence
+  # this job (cf. check-variation-tag-required). The 14 canonical genres
+  # contain no closing keyword, so a closing-keyword `prev:` genre is
+  # ALWAYS a misuse -- the worker meant refactor/guard/tooling, never fix.
+  # A standalone `Fixes #N` (intended close) is NOT flagged: the
+  # discriminator is the `prev:` prefix, not the keyword alone.
+  check-prev-close-keyword-required:
+    name: 'Require prev: non-closing (block on close-keyword genre, #10093)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the prev-guard helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/variation_prev_guard.py
+            scripts/grain_tag.py
+      - name: 'Scan body + commit messages for prev: close-keyword'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Same bot/fork gating as the other jobs (cf. student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Commit messages as a JSON array of strings. `messageBody` is the
+          # full commit message (subject + body), which is what GitHub parses
+          # for auto-close keywords. Empty/missing file -> no commits to scan
+          # (the helper tolerates it). A `gh pr view` failure is LOGGED, not
+          # masked: `--jq '[.[].messageBody]'` iterates the wrong level and
+          # failed for months, and the old `2>/dev/null` fallback swallowed it
+          # so the commit scan silently never ran (#10953).
+          if ! gh pr view "$PR_NUMBER" --json commits --jq '[.commits[].messageBody]' \
+              > /tmp/commits.json; then
+            echo "::warning::gh pr view --json commits a echoue — scan des commits vide, body seul couvert (#10953)"
+            printf '[]' > /tmp/commits.json
+          fi
+
+          # The helper scans body + commits for `prev:` close-keyword genres
+          # and exits 0 (pass) or 1 (block). stderr surfaced for debug.
+          # Capturing RC on the line after a semicolon dies under bash -e
+          # when the helper exits 1 (the BLOCK path) -- the &&/|| list
+          # captures RC on both branches and is exempt from errexit (same
+          # fix as check-variation-tag-required).
+          python3 scripts/ci/variation_prev_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No `prev:` close-keyword genre in body or commits -- job passes."
+            exit 0
+          fi
+
+          # Block path. Idempotent comment via the HTML marker.
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::prev: close-keyword genre detected: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-prev-close-keyword -->
+          **\`prev:\` genre mots-clé fermant -- bloquant (#10093).**
+
+          ${REASON}
+
+          Une \`prev:\` dont le genre est \`fix\`/\`close\`/\`resolve\` (ou une inflexion) fait que GitHub interprète \`<genre> #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans un message de commit -- c'est exactement ce qui a fermé #10067 (sans la merger) au squash-merge de #10063. Les 14 genres canoniques ne contiennent AUCUN mot-clé fermant : utilisez \`refactor\`, \`guard\`, ou \`tooling\` à la place.
+
+          Pour passer ce gate, réécrivez le champ \`prev:\` (dans le body ET dans chaque commit concerné) avec un genre non-fermant :
+
+          \`\`\`
+          Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<refactor|guard|tooling|...> #<PR>
+          \`\`\`
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
+
+  # #10101 -- the BLOCKING gate against `<closing-keyword> #N` in FREE PROSE
+  # (body + commit messages) where N resolves to a PR. The #10093 gate above
+  # blocks the SAME keyword but ONLY in the `prev:` genre slot (structurally
+  # always wrong). #10101 closes the second, measured vector: PR #10094's own
+  # commit message claimed it had CLOSED a PR (the translation core deliverable)
+  # "without merging it" -- a naive squash would have re-closed that PR because
+  # GitHub parses `<closing-keyword> #N` in a squash message as an auto-close
+  # whenever N is a PR.
+  #
+  # The discriminator is the NUMBER's nature, not the keyword's context:
+  #   - N is an ISSUE -> silence (intended close, catalog-pr-hygiene HARD 4:
+  #     `Closes #N` is what shrinks the backlog on its own)
+  #   - N is a PR      -> BLOCK (one does not "resolve" a PR by keyword)
+  #   - N missing/API error -> fail-open warn (a stale ref or a network blip
+  #     must not block a legitimate merge)
+  # The PR-vs-issue resolution uses `gh api repos/:owner/:repo/issues/N` (a
+  # non-null `.pull_request` field is a PR). The resolver is INJECTABLE in the
+  # helper (`scripts/ci/pr_close_keyword_guard.py`), so the unit tests pass a
+  # table and never touch the network. The YAML is plomberie, same shape as
+  # `check-prev-close-keyword-required` above.
+  #
+  # The job name carries the `-required` suffix so PR #10036's `is_advisory()`
+  # classifier in `scripts/pr_gate.py` does NOT silence it -- same reason as
+  # the tag-required and prev-close-keyword-required jobs.
+  check-close-keyword-pr-ref-required:
+    name: 'Require no close-keyword + PR-number (block on auto-close of a PR, #10101)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the close-keyword-pr-ref helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/ci/pr_close_keyword_guard.py
+            scripts/grain_tag.py
+      - name: 'Resolve body + commit close-keyword refs (PR -> block, issue -> silence)'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Same bot/fork gating as the other jobs (cf. student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # Commit messages as a JSON array of strings. `messageBody` is the
+          # full commit message (subject + body), which is what GitHub parses
+          # for auto-close keywords. Empty/missing file -> no commits to scan
+          # (the helper tolerates it). A `gh pr view` failure is LOGGED, not
+          # masked: `--jq '[.[].messageBody]'` iterates the wrong level and
+          # failed for months, and the old `2>/dev/null` fallback swallowed it
+          # so the commit scan silently never ran (#10953).
+          if ! gh pr view "$PR_NUMBER" --json commits --jq '[.commits[].messageBody]' \
+              > /tmp/commits.json; then
+            echo "::warning::gh pr view --json commits a echoue — scan des commits vide, body seul couvert (#10953)"
+            printf '[]' > /tmp/commits.json
+          fi
+
+          # The helper resolves each `<closing-keyword> #N` via `gh api` and
+          # exits 0 (pass / fail-open) or 1 (block on a PR). stderr surfaced
+          # for debug.
+          # Capturing RC on the line after a semicolon dies under bash -e
+          # when the helper exits 1 (the BLOCK path) -- the &&/|| list
+          # captures RC on both branches and is exempt from errexit (same
+          # fix as check-variation-tag-required).
+          python3 scripts/ci/pr_close_keyword_guard.py \
+            --body-file /tmp/pr_body.txt \
+            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          # Surface fail-open warnings even on the pass path (stale refs, API
+          # blips) so the author can fix the ref without the gate blocking.
+          python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No closing-keyword + PR-number reference in body or commits -- job passes."
+            exit 0
+          fi
+
+          # Block path. Idempotent comment via the HTML marker.
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::closing-keyword + PR-number reference detected: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-close-keyword-pr-ref -->
+          **\`<mot-clé fermant> #N\` où N est une PR -- bloquant (#10101).**
+
+          ${REASON}
+
+          GitHub interprète \`close/closes/closed/fix/fixes/fixed/resolve/resolves/resolved #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans le message de squash -- et fermer une **PR** par mot-clé n'est jamais intentionnel (une PR se merge ou se ferme explicitement, elle ne se « résout » pas). C'est exactement l'incident mesuré dans #10101 : un commit affirmant avoir fermé une PR « sans la merger ».
+
+          Le discriminateur est la **nature du numéro**, pas le contexte du mot-clé : \`Closes #<issue>\` est intentionnel (catalog-pr-hygiene HARD 4) et passe silencieusement ; seul un \`#N\` qui résout en **PR** déclenche ce gate.
+
+          Pour passer ce gate :
+          - **retirez le mot-clé fermant** devant le numéro, ou
+          - **écrivez le numéro SANS le \`#\`** (un nombre nu n'est pas un auto-close).
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1

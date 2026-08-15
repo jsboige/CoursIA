@@ -16,12 +16,12 @@ Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel
 
 **Séries accessibles** :
 
-- `Search/Part1-Foundations` — BFS, DFS, Dijkstra, A*
-- `Sudoku/Sudoku-Python` — solveur Python pur
-- `GameTheory` — jeux combinatoires en Python
-- `Probas/InferGlossary` — probabilités discrètes de base
-- `RL` — Reinforcement Learning (Stable Baselines3)
-- `GenAI/Audio/01-Foundation` — audio via librosa + transformers
+- [Search/Part1-Foundations](MyIA.AI.Notebooks/Search/Part1-Foundations/README.md) — BFS, DFS, Dijkstra, A*
+- [Sudoku/Sudoku-Python](MyIA.AI.Notebooks/Sudoku/index.qmd) — solveur Python pur
+- [GameTheory](MyIA.AI.Notebooks/GameTheory/index.qmd) — jeux combinatoires en Python
+- [Probas/InferGlossary](MyIA.AI.Notebooks/Probas/index.qmd) — probabilités discrètes de base
+- [RL](MyIA.AI.Notebooks/RL/README.md) — Reinforcement Learning (Stable Baselines3)
+- [GenAI/Audio/01-Foundation](MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/README.md) — audio via librosa + transformers
 
 **Démarrage rapide** :
 
@@ -42,11 +42,11 @@ jupyter notebook MyIA.AI.Notebooks/
 
 **Séries supplémentaires** :
 
-- `ML/` — ML.NET tutorials (classification, régression, clustering)
-- `Sudoku/Sudoku-CSharp` — solveur C# avec contraintes
-- `SymbolicAI/Lean` — preuves formelles (gammes, socles, induction)
-- `SymbolicAI/Tweety` — argumentation computationnelle (port IKVM)
-- `SymbolicAI/Planning` — planification automatique (OR-tools)
+- [ML/](MyIA.AI.Notebooks/ML/README.md) — ML.NET tutorials (classification, régression, clustering)
+- [Sudoku/Sudoku-CSharp](MyIA.AI.Notebooks/Sudoku/index.qmd) — solveur C# avec contraintes
+- [SymbolicAI/Lean](MyIA.AI.Notebooks/SymbolicAI/Lean/README.md) — preuves formelles (gammes, socles, induction)
+- [SymbolicAI/Tweety](MyIA.AI.Notebooks/SymbolicAI/Tweety/README.md) — argumentation computationnelle (port IKVM)
+- [SymbolicAI/Planners](MyIA.AI.Notebooks/SymbolicAI/Planners/README.md) — planification automatique (OR-tools)
 
 ## 3. GenAI complet — Docker + GPU + services cloud
 
@@ -56,10 +56,10 @@ jupyter notebook MyIA.AI.Notebooks/
 
 **Séries supplémentaires** :
 
-- `GenAI/Image` — génération d'images (Stable Diffusion, FLUX, Qwen-VL)
-- `GenAI/Audio/02-Advanced` — TTS, Whisper, music generation
-- `GenAI/Vibe-Coding` — assistants IA en local (Claude Code, Roo)
-- `QuantConnect/` — 50+ stratégies de trading algorithmique (Lean engine)
+- [GenAI/Image](MyIA.AI.Notebooks/GenAI/Image/README.md) — génération d'images (Stable Diffusion, FLUX, Qwen-VL)
+- [GenAI/Audio/02-Advanced](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/README.md) — TTS, Whisper, music generation
+- [GenAI/Vibe-Coding](MyIA.AI.Notebooks/GenAI/Vibe-Coding/README.md) — assistants IA en local (Claude Code, Roo)
+- [QuantConnect/](MyIA.AI.Notebooks/QuantConnect/README.md) — 50+ stratégies de trading algorithmique (Lean engine)
 
 ## Passerelles entre parcours
 

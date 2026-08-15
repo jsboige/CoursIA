@@ -1,0 +1,28 @@
+- name: "Z3-Python-01 Introduction"
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Z3 EST le moteur SOTA SMT, branche NATIVEMENT des deux cotes : Microsoft.Z3 (NuGet officiel, `#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, API Context ctx.MkSolver/MkConst) et pyz3 (pip z3-solver, `from z3 import *`, API fonctionnelle Solver()/Int()) sont les deux bindings de la meme lib C++ Z3 sous-jacente — pas un pont intermediaire type IKVM/PythonNet. Parite firsthand sur le concept central (SMT de base, contrainte insatisfiable) cellule 5 des deux notebooks : Python pyz3 `s.check() -> unsat` (x>5 ET x<3) == C# Microsoft.Z3 `s.check() -> UNSATISFIABLE`, meme verdict du meme moteur. Aucune asymetrie de machinerie a corriger."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 1dce7f1d5495aacad37cdac4fd21f9d211589840
+      csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
+    - date: "2026-08-11"
+      by: myia-po-2026:CoursIA
+      python_sha: 1dce7f1d5495aacad37cdac4fd21f9d211589840
+      csharp_sha: 8b10f3c8fd958afee15f332405689369d26bd71c
+      content_python_sha: f9c0451a32a8ca918b8a29c77f1b11fa619edfb703b1d1cf3f9d9f8b595c2fe2
+      content_csharp_sha: c827d60dbec7329c60a8fe3d40deb650b3be384767a07d26dfbe3b253e13ab87
+    - date: "2026-08-12"
+      by: myia-po-2025:CoursIA
+      python_sha: 1dce7f1d5495aacad37cdac4fd21f9d211589840
+      csharp_sha: e8c5ee11e355b64c065e339e4199c23a97115462
+      content_python_sha: f9c0451a32a8ca918b8a29c77f1b11fa619edfb703b1d1cf3f9d9f8b595c2fe2
+      content_csharp_sha: 86fe390ef793212678b6829c5a96847a22021bcc9cc848720f40d53e9ef4fa59
+  known_differences:
+    - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
+    - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."
+    - "Concept demontre (SMT de base, x>=10 & x<=2 -> unsat) verifie firsthand cote Python (NB-01 CLEAN)."

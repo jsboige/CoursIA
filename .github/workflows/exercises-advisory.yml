@@ -1,0 +1,164 @@
+name: Exercises Convention Advisory
+
+# The missing ORGAN for the ">= 3 exercises per pedagogical notebook" rule
+# (#2161, #8814). The convention (.claude/rules/three-exercises-per-notebook.md)
+# and its canonical tool (count_exercises.py) existed, but nothing wired the
+# tool to a PR -- the rule relied entirely on reviewer vigilance, which drifts
+# silently. This workflow makes a below-threshold notebook VISIBLE on the PR.
+#
+# ADVISORY, never blocking (issue #8814 acceptance 5): the job ALWAYS exits 0.
+# The actionable payload is the `exercises-below-threshold` LABEL, NEVER the
+# green conclusion of the job (which is green by construction). A reviewer who
+# reads only "exit 0" as "conforming" has read the wrong signal -- the same trap
+# that let a non-conforming PR through in #8797.
+#
+# Per-PR scope (acceptance 1): runs count_exercises.py ONLY on the *.ipynb
+# modified by the PR, not a repo-wide scan on every push. The corpus/kind
+# classification (setup/Lean exempt, out-of-corpus artifacts) is CONSUMED from
+# count_exercises.py, never re-implemented here (acceptance 4) -- the label and
+# the canonical tool must not diverge.
+#
+# Hors scope (student-pr-reviews.md): forks (student PRs) are skipped -- a
+# benevolent review applies, no internal content criterion runs against them.
+#
+# Promoting to a blocking gate is a separate decision (issue #8814 "Hors
+# scope"), to revisit only once the residual is at 0 and stable.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - '**/*.ipynb'
+      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
+      # else it cannot re-run (so cannot remove its own label) once the matching
+      # paths leave the PR diff -- the bot's label survives its cause. Proven
+      # firsthand on this very workflow (PR #8820: exercises-unparseable posed,
+      # then stuck). Enforced by scripts/check_workflow_label_paths.py.
+      - '.github/workflows/exercises-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  exercises-advisory:
+    name: "Exercises >= 3 advisory (label, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only (agents/staff). Fork PRs are student submissions
+    # under student-pr-reviews.md -- benevolent review, no content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          # Need base..head history for `git diff` of changed notebooks.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Advisory check on modified notebooks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without a git context GH_REPO, `gh pr edit` / `gh label create`
+          # cannot infer the target repo and fail silently (variation-tag-guard
+          # documented this trap firsthand after #8765).
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          LABEL_BELOW: exercises-below-threshold
+          LABEL_UNPARSEABLE: exercises-unparseable
+        run: |
+          set -uo pipefail
+
+          # Added/modified *.ipynb in the PR (deletions excluded -- a deleted
+          # notebook has nothing to count).
+          # 3-point diff (#10403): merge-base...HEAD -- strictly this PR's apport.
+          git diff --name-only --diff-filter=d "$BASE...$HEAD" -- '*.ipynb' \
+            | grep -v $'\r$' > changed_ipynb.txt || true
+          COUNT=$(wc -l < changed_ipynb.txt | tr -d ' ')
+          echo "Modified *.ipynb in this PR: $COUNT"
+
+          # Helper: ensure a label exists (idempotent), then add/remove it.
+          ensure_label() {
+            gh label create "$1" --description "$2" --color "$3" --force 2>/dev/null || true
+          }
+          set_label() { gh pr edit "$PR_NUMBER" --add-label "$1" || true; }
+          unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
+
+          if [ "$COUNT" -eq 0 ]; then
+            echo "No modified notebooks to check."
+            unset_label "$LABEL_BELOW"; unset_label "$LABEL_UNPARSEABLE"
+            exit 0
+          fi
+
+          # Advisory: ALWAYS exit 0. The job never fails; the actionable signal
+          # is the pair of LABELS decided from the JSON payload below.
+          python scripts/notebook_tools/check_pr_exercises.py --json --stdin \
+            < changed_ipynb.txt > payload.json
+          cat payload.json
+
+          SUB=$(python -c "import json; print(json.load(open('payload.json'))['summary']['below_threshold'])")
+          PARSE=$(python -c "import json; print(json.load(open('payload.json'))['summary']['unverified'])")
+          echo "Below-threshold notebooks: $SUB"
+          echo "Unverified (parse errors): $PARSE"
+
+          # Issue #8819: TWO distinct labels. "Could not measure" (unparseable)
+          # and "measured, below threshold" call for different reactions, so they
+          # never collapse into one. Each label is raised when its count > 0 and
+          # cleared otherwise (a stale label from an earlier push must not stick).
+          ensure_label "$LABEL_BELOW" \
+            "A modified notebook is below the >=3 exercises convention (#2161)" "D93F0B"
+          ensure_label "$LABEL_UNPARSEABLE" \
+            "A modified notebook could not be parsed -- NOT verified (#8819)" "BFD4F2"
+
+          # Review #8820 (Blocage 3): if check_pr_exercises.py died (truncated
+          # JSON, ImportError, OOM), payload.json is unreadable, the two
+          # python -c above fail, and SUB/PARSE are not integers. With only
+          # `set -uo pipefail` (no -e), each `[ "" -gt 0 ]` below exits rc=2 --
+          # which falls into the else branch, UNSETS both labels, and asserts
+          # verified conformity on a measurement that never happened. That is
+          # this PR's own defect (#8819) one layer down: #8816 said "all meet
+          # threshold" when ONE notebook was unreadable; this branch would say
+          # "all meet threshold (verified)" when NOTHING was read. `[ "$x" -eq
+          # "$x" ]` succeeds only for an integer, so its negation is true when
+          # the payload is illisible. NOT measured => NOT verified: pose the
+          # unparseable label and a loud ::error::, never a green claim.
+          if ! [ "${SUB:-}" -eq "${SUB:-}" ] 2>/dev/null \
+             || ! [ "${PARSE:-}" -eq "${PARSE:-}" ] 2>/dev/null; then
+            echo "::error::exercises payload illisible (check_pr_exercises.py produced no usable JSON) -- the gate measured NOTHING; conformity neither claimed nor denied."
+            set_label "$LABEL_UNPARSEABLE"
+            exit 0
+          fi
+
+          if [ "$SUB" -gt 0 ]; then
+            echo "::notice::$SUB modified notebook(s) below the >=3 exercises convention (#2161). See the '$LABEL_BELOW' label."
+            set_label "$LABEL_BELOW"
+          else
+            unset_label "$LABEL_BELOW"
+          fi
+
+          if [ "$PARSE" -gt 0 ]; then
+            echo "::warning::$PARSE modified notebook(s) could not be parsed -- NOT verified by the exercises gate (#8819). See the '$LABEL_UNPARSEABLE' label."
+            set_label "$LABEL_UNPARSEABLE"
+          else
+            unset_label "$LABEL_UNPARSEABLE"
+          fi
+
+          # The closing line asserts ONLY what was measured (issue #8819). The
+          # job never claims "all conform" while unverified > 0 -- that was the
+          # original defect (a gate that reassures while the true state sleeps).
+          if [ "$PARSE" -gt 0 ]; then
+            echo "RESULT: $PARSE notebook(s) NOT verified (parse error) -- conformity neither claimed nor denied."
+          elif [ "$SUB" -gt 0 ]; then
+            echo "RESULT: $SUB notebook(s) below threshold -- labelled."
+          else
+            echo "RESULT: all in-corpus modified notebooks meet their threshold (verified)."
+          fi
+          exit 0

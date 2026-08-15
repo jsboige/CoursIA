@@ -34,3 +34,7 @@ require SocialChoiceLean from git
 @[default_target]
 lean_lib «PetersTour» where
   -- Tour of DominikPeters/SocialChoiceLean results
+  -- globs incluent le sibling EN (i18n #4980) pour que `lake build` le compile
+  -- aussi : sans cela, PetersTour_en.lean n'est jamais élaboré et un Lean CI
+  -- vert est un faux pass (orphan-trap #6749). Même pattern que sudoku_lean.
+  globs := #[`PetersTour, `PetersTour_en]

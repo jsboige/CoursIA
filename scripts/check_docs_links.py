@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Check for broken relative markdown links and orphan docs across the repository.
 
-Scans CLAUDE.md, docs/, .claude/rules/, .claude/agents/, .claude/skills/,
-and all README.md files for relative links and verifies targets exist.
+Scans CLAUDE.md, index.md, PARCOURS.md, docs/, .claude/rules/, .claude/agents/,
+.claude/skills/, and all README.md files for relative links and verifies targets
+exist.
 
 Also detects orphan .md files in docs/ (not referenced by any scanned file).
 
@@ -32,16 +33,35 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # Directories and files to scan for links
 SCAN_SCOPES = [
     "CLAUDE.md",
+    # Root entry points (#7422 root slice): index.md rotted historically precisely
+    # because no organ watched it -- the portal and the parcours front page are
+    # now link-checked like everything else.
+    "index.md",
+    "PARCOURS.md",
     "docs/",
     ".claude/rules/",
     ".claude/agents/",
     ".claude/skills/",
 ]
 
-# Directories to skip when scanning and resolving
+# Directories to skip when scanning and resolving.
+#
+# NOTE on archive variants (EPIC #9535 item 10): the canonical code-archive
+# convention is `_archive/` (no trailing 's'). These notebook archives hold
+# READMEs that link to ACTIVE notebooks, so a broken link there is a real
+# defect -- incident #9814 proved it: a structurally-broken `../../` link in
+# SymbolicLearning/_archive/ was masked for as long as a STALE `_archives`
+# (with 's') entry skipped the folder, then surfaced as a CI REGRESSION when
+# the folder was renamed to `_archive/` (no longer skipped). We therefore
+# DELIBERATELY do NOT skip `_archive/` -- its READMEs are validated. Do not
+# "harmonize" by adding `_archive` here without first checking the link
+# health of the archived READMEs (see test_check_docs_links TestShouldSkip).
+#
+# `archive/` (docs historical archives, ~319 files) stays skipped: those are
+# frozen historical reports out of scope for link validation.
 SKIP_DIRS = {
     ".lake", "node_modules", ".git", "venv", "__pycache__",
-    "_archives", "archive", "_output", ".ipynb_checkpoints", "worktrees",
+    "archive", "_output", ".ipynb_checkpoints", "worktrees",
     ".mypy_cache", ".pytest_cache", ".ruff_cache",
     "custom_nodes",  # Third-party ComfyUI plugins, not ours to fix
 }

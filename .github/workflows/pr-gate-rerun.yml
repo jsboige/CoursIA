@@ -1,0 +1,128 @@
+name: PR gate (re-aggregate)
+
+# Re-aggregation path for the stale-rollup defect (#10433 item-1 / #10435).
+# Sister workflow to pr-gate.yml. Keep them in separate files on purpose: the
+# delivery canary in pr_gate.py (derive_always_on_jobs) scans every workflow in
+# this directory for jobs that run on EVERY pull_request and expects to find
+# them on each PR. A workflow_run-only job does not run on pull_request, so
+# folding it into pr-gate.yml (whose workflow-level trigger IS pull_request)
+# would make the canary wait for a check that never surfaces -- tripping the
+# #9858 partial-delivery alarm on ~180 merges/day. This file has NO pull_request
+# trigger, so the canary skips it entirely (derive_always_on_jobs returns None
+# from _pull_request_trigger and continues).
+#
+# What this fixes: pr-gate.yml aggregates once on pull_request with up to a
+# 90-min settle window. If a required guard (Variation Tag Guard, Lane Claim
+# Guard) flips green AFTER that aggregation, the PR stays BLOCKED on a stale
+# FAIL until a manual `gh run rerun`. This workflow re-aggregates the CURRENT
+# check set when such a guard completes and POSTs the fresh verdict onto the
+# PR head SHA.
+#
+# Why Lane Claim Guard is also a trigger (#10433 follow-up): lane-claim-guard
+# listens to the `edited` activity type, so it re-runs when a PR body is
+# edited (e.g. a closing-ref `Closes #N` fixed to `See #N` to resolve a
+# lane collision). pr-gate.yml does NOT listen to `edited` (its trigger is
+# the default opened/synchronize/reopened), so its aggregate stays stale on
+# the pre-edit FAIL even though lane-claim-guard now passes. Without this
+# re-aggregation trigger, the PR stays falsely BLOCKED until a manual rerun
+# -- observed 4x on 2026-08-12 (twin-parite tranches #10588/#10592/#10599/
+# #10601, unblocked by hand). Re-aggregating on Lane Claim Guard completion
+# closes the loop automatically.
+#
+# Why an explicit check-run POST (not the job's auto check-run): a workflow_run
+# job runs on the DEFAULT branch, so GITHUB_SHA is the default-branch commit and
+# the auto check-run lands there -- invisible to the PR head's mergeState (gh pr
+# checks, mergeStateStatus). pr_gate.py with --post-check-run POSTs a check-run
+# onto github.event.workflow_run.head_sha (the guard's SHA = the PR head), named
+# "PR gate" (--self-name) so it matches the required check on `main`.
+
+on:
+  workflow_run:
+    workflows: ["Variation Tag Guard", "Lane Claim Guard"]
+    types: [completed]
+  # Manual dispatch for testing the re-aggregation path without waiting for a
+  # guard run. PR_NUMBER/HEAD_SHA default to empty; the job then no-ops unless
+  # both are supplied.
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number whose head SHA to re-aggregate (testing only)'
+        required: false
+        default: ''
+      head_sha:
+        description: 'Head SHA to re-aggregate (defaults to the PR head)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  checks: write   # POST the check-run onto the PR head SHA (#10433 item-1)
+  statuses: read
+
+concurrency:
+  # One re-aggregation per PR at a time: a later guard-completion supersedes an
+  # in-flight one for the same PR.
+  group: pr-gate-rerun-${{ github.event.workflow_run.pull_requests[0].number || github.event.inputs.pr_number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  reaggregate:
+    name: Re-aggregate after guard flip
+    runs-on: ubuntu-latest
+    # Above the script's own 90 min budget (mirrors pr-gate.yml): the script
+    # prints its verdict rather than the runner killing it mid-poll.
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install canary dependency
+        # PyYAML drives derive_always_on_jobs (the rule-8 delivery canary). Same
+        # reason as pr-gate.yml: if the install fails, the script self-disables
+        # the canary (safe, no block) but the #9858 hole stays open.
+        run: pip install pyyaml
+
+      - name: Re-aggregate check verdicts onto the PR head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # The PR list travels in the workflow_run payload; index 0 is the PR
+          # the guard built for. Absent when the guard ran on a non-PR commit
+          # (e.g. a push to main) or when invoked via workflow_dispatch.
+          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number || github.event.inputs.pr_number }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.event.inputs.head_sha }}
+        run: |
+          set -eu
+          # No PR associated with this guard run -> nothing to unblock.
+          # Fail-safe: skip rather than POST onto a bare commit (the
+          # pull_request path in pr-gate.yml already covers PR heads on open).
+          if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_SHA" ]; then
+            echo "[pr-gate] workflow_run has no PR head to re-aggregate -- skip"
+            exit 0
+          fi
+          # workflow_run runs on the default branch, so it cannot read
+          # pull_request.head.repo.fork from the event. Resolve it via the PR
+          # number, then mirror pr-gate.yml's fork short-circuit (#10072): a
+          # fork PR must surface success on its head SHA, not a stale FAIL.
+          IS_FORK=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
+            --jq '.head.repo.fork' 2>/dev/null || echo false)
+          if [ "$IS_FORK" = "true" ]; then
+            IS_FORK_ARG="--is-fork"
+          else
+            IS_FORK_ARG=""
+          fi
+          # --post-check-run: POST the verdict onto HEAD_SHA (the PR head),
+          # because this job's auto check-run would land on the default branch.
+          # --self-name "PR gate": the POSTed check-run matches the required
+          # check name on `main` (same string as pr-gate.yml's gate job).
+          python scripts/pr_gate.py \
+            --repo "${{ github.repository }}" \
+            --sha "${HEAD_SHA}" \
+            --self-name "PR gate" \
+            --timeout-min 90 \
+            --poll-sec 30 \
+            --settle-polls 2 \
+            --post-check-run \
+            $IS_FORK_ARG

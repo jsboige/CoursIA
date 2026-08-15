@@ -2,26 +2,27 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-## MacroCell — Quadtree representation for Hashlife
+## MacroCell — Representation par quadtree pour Hashlife
 
-A `MacroCell` represents a square region of the Game of Life grid as a
-quadtree. Level-0 cells are individual boolean cells. A level-(n+1) cell
-is a 2x2 arrangement of level-n cells (named `nw`, `ne`, `sw`, `se` for
-north-west, north-east, south-west, south-east).
+Une `MacroCell` represente une region carree de la grille du Jeu de la
+Vie sous forme de quadtree. Les cellules de niveau 0 sont des cellules
+booleennes individuelles. Une cellule de niveau (n+1) est un
+arrangement 2x2 de cellules de niveau n (nommees `nw`, `ne`, `sw`, `se`
+pour nord-ouest, nord-est, sud-ouest, sud-est).
 
-The key insight of Hashlife (Gosper 1984) is that the step function on
-MacroCells can be computed recursively and memoized, giving exponential
-speedup on patterns with repetitive structure.
+L'idee clee de Hashlife (Gosper 1984) est que la fonction de pas sur
+les MacroCell peut etre calculee recursivement et memoisee, donnant une
+acceleration exponentielle sur les motifs a structure repetitive.
 
-## Layout convention
+## Convention de disposition
 
-We use the same coordinate convention as `Conway.Life`:
-- Each cell is `(row, col) : Int × Int`.
-- Rows increase downward (north -> south).
-- Columns increase rightward (west -> east).
+Nous utilisons la meme convention de coordonnees que `Conway.Life` :
+- Chaque cellule est `(row, col) : Int × Int`.
+- Les lignes croissent vers le bas (nord -> sud).
+- Les colonnes croissent vers la droite (ouest -> est).
 
-So at the top level a node `node nw ne sw se` of level `n+1` covers a
-region of size `2^(n+1) x 2^(n+1)` partitioned as:
+Ainsi, au niveau le plus haut, un noeud `node nw ne sw se` de niveau
+`n+1` couvre une region de taille `2^(n+1) x 2^(n+1)` partitionnee en :
 
 ```
 nw | ne
@@ -29,16 +30,16 @@ nw | ne
 sw | se
 ```
 
-where each quadrant is `2^n x 2^n`. If the whole region has its
-top-left corner at `(row0, col0)`, then:
+ou chaque quadrant est `2^n x 2^n`. Si la region entiere a son coin
+haut-gauche en `(row0, col0)`, alors :
 
-- `nw` covers `[row0,            row0 + 2^n)         x [col0,           col0 + 2^n)`
-- `ne` covers `[row0,            row0 + 2^n)         x [col0 + 2^n,    col0 + 2^(n+1))`
-- `sw` covers `[row0 + 2^n,     row0 + 2^(n+1))      x [col0,           col0 + 2^n)`
-- `se` covers `[row0 + 2^n,     row0 + 2^(n+1))      x [col0 + 2^n,    col0 + 2^(n+1))`
+- `nw` couvre `[row0,            row0 + 2^n)         x [col0,           col0 + 2^n)`
+- `ne` couvre `[row0,            row0 + 2^n)         x [col0 + 2^n,    col0 + 2^(n+1))`
+- `sw` couvre `[row0 + 2^n,     row0 + 2^(n+1))      x [col0,           col0 + 2^n)`
+- `se` couvre `[row0 + 2^n,     row0 + 2^(n+1))      x [col0 + 2^n,    col0 + 2^(n+1))`
 
-This module is fully proven (no gaps). It only provides the data
-structure and conversions. The Hashlife algorithm lives in
+Ce module est entierement prouve (aucun trou). Il fournit seulement la
+structure de donnees et les conversions. L'algorithme Hashlife vit dans
 `Conway.Life.Hashlife`.
 -/
 
@@ -58,67 +59,69 @@ namespace Conway
 
 namespace Life
 
-/-! ## The quadtree data structure -/
+/-! ## La structure de donnees quadtree -/
 
-/-- A quadtree cell.
-    - `leaf b` is a single cell that is alive (`b = true`) or dead (`b = false`).
-    - `node nw ne sw se` is a 2x2 block of subtrees, all required (by convention,
-      but not enforced by the type) to have the same level. -/
+/-- Une cellule de quadtree.
+    - `leaf b` est une cellule unique qui est vivante (`b = true`) ou morte (`b = false`).
+    - `node nw ne sw se` est un bloc 2x2 de sous-arbres, tous requis (par convention,
+      mais non impose par le type) d'etre au meme niveau. -/
 inductive MacroCell where
   | leaf (alive : Bool)
   | node (nw ne sw se : MacroCell)
-  -- `DecidableEq` (rather than a derived `BEq`) so that the `BEq`
-  -- instance is lawful (`instLawfulBEq`), which the memoization cache
-  -- proofs in `Conway.Life.HashlifeMemo` rely on.
+  -- `DecidableEq` (plutot qu'un `BEq` derive) pour que l'instance `BEq`
+  -- soit licite (`instLawfulBEq`), ce dont les preuves du cache de
+  -- memoisation dans `Conway.Life.HashlifeMemo` dependent.
   deriving DecidableEq, Repr, Inhabited
 
 namespace MacroCell
 
-/-- The level of a `MacroCell`: 0 for `leaf`, `1 + nw.level` for `node`.
-    By construction, a well-formed `MacroCell` has all four subtrees at the
-    same level; we only inspect `nw`. -/
+/-- Le niveau d'une `MacroCell` : 0 pour `leaf`, `1 + nw.level` pour `node`.
+    Par construction, une `MacroCell` bien formee a ses quatre sous-arbres au
+    meme niveau ; nous inspectons seulement `nw`. -/
 def level : MacroCell -> Nat
   | leaf _      => 0
   | node nw _ _ _ => 1 + nw.level
 
-/-- The side length of the region covered by a `MacroCell`: `2 ^ level`. -/
+/-- La longueur de cote de la region couverte par une `MacroCell` : `2 ^ level`. -/
 def size (c : MacroCell) : Nat := 2 ^ c.level
 
-/-- A leaf containing a dead cell. -/
+/-- Une feuille contenant une cellule morte. -/
 def deadLeaf : MacroCell := leaf false
 
-/-- A leaf containing a live cell. -/
+/-- Une feuille contenant une cellule vivante. -/
 def aliveLeaf : MacroCell := leaf true
 
-/-- Build an "empty" (all-dead) `MacroCell` of level `n`. -/
+/-- Construit une `MacroCell` "vide" (tout-morte) de niveau `n`. -/
 def emptyOfLevel : Nat -> MacroCell
   | 0     => deadLeaf
   | n + 1 =>
     let sub := emptyOfLevel n
     node sub sub sub sub
 
-/-- Test if a `MacroCell` represents the all-dead region. -/
+/-- Teste si une `MacroCell` represente la region toute-morte. -/
 def isEmpty : MacroCell -> Bool
   | leaf b      => !b
   | node a b c d => a.isEmpty && b.isEmpty && c.isEmpty && d.isEmpty
 
-/-! ## Conversion: MacroCell -> Grid
+/-! ## Conversion : MacroCell -> Grid
 
-Given a `MacroCell` and the absolute `(row, col)` offset of its top-left
-corner, enumerate the live cells in lexicographic `(row, col)` order.
+Etant donnee une `MacroCell` et le decalage absolu `(row, col)` de son
+coin haut-gauche, enumerer les cellules vivantes dans l'ordre
+lexicographique `(row, col)`.
 
-The recursion walks the quadrants in the order `nw, ne, sw, se`. We
-process all of `nw`'s rows before `ne`'s rows is **not** correct in the
-lex ordering when rows interleave; however, because `nw` and `ne` cover
-the same row range and `nw` has strictly smaller columns, listing all of
-`nw` then all of `ne` does produce lex order **only when** each
-quadrant's output is itself sorted. The simpler and obviously correct
-implementation is to concatenate the four quadrants and then `sortDedup`
-at the top level. -/
+La recursion parcourt les quadrants dans l'ordre `nw, ne, sw, se`.
+Traiter toutes les lignes de `nw` avant celles de `ne` n'est **pas**
+correct dans l'ordre lex quand les lignes s'entrelacent ; cependant,
+parce que `nw` et `ne` couvrent la meme plage de lignes et que `nw` a
+des colonnes strictement plus petites, lister tout `nw` puis tout `ne`
+produit l'ordre lex **seulement quand** la sortie de chaque quadrant est
+elle-meme triee. L'implementation plus simple et evidemment correcte
+consiste a concatener les quatre quadrants puis a `sortDedup` au niveau
+du haut. -/
 
-/-- Internal helper: enumerate the live cells of `c` whose top-left
-    corner is at offset `(r0, c0)`. The resulting list is **not** guaranteed
-    to be sorted in lex order — the caller should `sortDedup` if needed. -/
+/-- Aide interne : enumerer les cellules vivantes de `c` dont le coin
+    haut-gauche est au decalage `(r0, c0)`. La liste resultante n'est **pas**
+    garantie triee dans l'ordre lex — l'appelant devrait `sortDedup` si besoin. -/
 def toCellsAux (r0 c0 : Int) : MacroCell -> List (Int × Int)
   | leaf true   => [(r0, c0)]
   | leaf false  => []
@@ -130,56 +133,66 @@ def toCellsAux (r0 c0 : Int) : MacroCell -> List (Int × Int)
       ++ sw.toCellsAux (r0 + half) c0
       ++ se.toCellsAux (r0 + half) (c0 + half)
 
-/-- Convert a `MacroCell` to a `Grid`, given the offset `(r0, c0)` of its
-    top-left corner. The output is sorted lexicographically and deduplicated. -/
+/-- Convertit une `MacroCell` en `Grid`, etant donne le decalage `(r0, c0)` de
+    son coin haut-gauche. La sortie est triee lexicographiquement et dedoublonnee. -/
 def toGrid (offset : Int × Int) (c : MacroCell) : Grid :=
   sortDedup (c.toCellsAux offset.1 offset.2)
 
 end MacroCell
 
-/-! ## Conversion: Grid -> MacroCell
+/-! ## Conversion : Grid -> MacroCell
 
-Given a `Grid` (list of live cell coordinates), build a `MacroCell` of the
-smallest level whose region, placed at a chosen offset, contains all the
-live cells. The offset is returned alongside so that subsequent calls to
-`toGrid` round-trip correctly.
+Etant donne un `Grid` (liste des coordonnees des cellules vivantes),
+construire une `MacroCell` du plus petit niveau dont la region, placee a
+un decalage choisi, contient toutes les cellules vivantes. Le decalage
+est renvoye a cote pour que les appels ulterieurs a `toGrid` fassent un
+aller-retour correct.
 
-The construction is straightforward but a little tedious:
-1. Find the bounding box `[rMin, rMax] x [cMin, cMax]` of the live cells
-   (using extra padding on each side to allow `step` to spread).
-2. Compute the side length needed: `max (rMax - rMin + 1) (cMax - cMin + 1)`,
-   rounded up to the next power of 2.
-3. Recursively build the quadtree, dispatching each live cell to the
-   appropriate quadrant.
+La construction est directe mais un peu fastidieuse :
+1. Trouver la boite englobante `[rMin, rMax] x [cMin, cMax]` des cellules
+   vivantes (en utilisant du rembourrage supplementaire de chaque cote
+   pour permettre a `step` de s'etendre).
+2. Calculer la longueur de cote necessaire : `max (rMax - rMin + 1) (cMax - cMin + 1)`,
+   arrondie a la puissance de 2 superieure.
+3. Construire recursivement le quadtree, en envoyant chaque cellule
+   vivante vers le quadrant approprie.
 -/
 
 namespace MacroCell
 
-/-- Smallest `n` such that `2 ^ n >= k`. -/
+/-- Plus petit `n` tel que `2 ^ n >= k`.
+
+    Implementation note (#8869, c.847) : la recursion precedente
+    `| k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)` etait **WellFounded** (l'argument
+    `(k+2+1)/2` n'est pas structurellement plus petit), donc **opaque au reducteur
+    du noyau** — `decide` ne pouvait pas l'evaluer, bloquant `gridFrame lvl` puis
+    toute la chaine `buildFromGrid`/`toGrid`/`evolveHashlife` (les 14 theoremes de
+    coherence de `Computation.lean` etaient `native_decide` par symptome, pas par
+    necessite intrinseque). Reformulee via `Nat.log 2` (recursion structurelle de
+    Mathlib, noyau-reductible) : `ceilLog2 k = if k ≤ 1 then 0 else Nat.log 2 (k-1) + 1`.
+    Meme fonction (valeurs invariantes, cf `ceilLog2_spec`), mais desormais
+    decidable. Diagnostic firsthand : `ceilLog2 6 = 3` passe sous `decide` apres
+    rewrite (echouait avant, meme avec `maxRecDepth 1000000`, meme sur 1 pas). -/
 def ceilLog2 (k : Nat) : Nat :=
-  match k with
-  | 0     => 0
-  | 1     => 0
-  | k + 2 => 1 + ceilLog2 ((k + 2 + 1) / 2)
+  if k ≤ 1 then 0 else Nat.log 2 (k - 1) + 1
 
-/-- `ceilLog2 k` is large enough that `2 ^ ceilLog2 k >= k`. This is the
-    arithmetic heart of the `gridFrame` containment lemma. -/
+/-- `ceilLog2 k` est assez grand pour que `2 ^ ceilLog2 k >= k`. C'est le
+    coeur arithmetique du lemme de containment de `gridFrame`. -/
 theorem ceilLog2_spec (k : Nat) : 2 ^ ceilLog2 k >= k := by
-  induction k using Nat.strong_induction_on with
-  | _ k ih =>
-    match k with
-    | 0 => simp [ceilLog2]
-    | 1 => simp [ceilLog2]
-    | m + 2 =>
-      simp only [ceilLog2]
-      have h : 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= (m + 2 + 1) / 2 :=
-        ih ((m + 2 + 1) / 2) (by omega)
-      have h2 : 2 * 2 ^ ceilLog2 ((m + 2 + 1) / 2) >= m + 2 := by omega
-      rw [Nat.pow_add, Nat.pow_one]
-      exact h2
+  by_cases hk : k ≤ 1
+  · -- k = 0 ou 1 : ceilLog2 k = 0, et 2^0 = 1 ≥ k
+    simp only [ceilLog2, hk, reduceIte]
+    omega
+  · -- k ≥ 2 : ceilLog2 k = Nat.log 2 (k-1) + 1, et k ≤ 2^((k-1).log+1) par la
+    -- borne superieure de Nat.log (Mathlib : n < b^(log b n + 1)).
+    simp only [ceilLog2, hk, reduceIte]
+    have h := Nat.lt_pow_succ_log_self Nat.one_lt_two (k - 1)
+    rw [Nat.succ_eq_add_one] at h
+    omega
 
-/-- Build a `MacroCell` of level `n` covering the square `[r0, r0 + 2^n) x
-    [c0, c0 + 2^n)`, with live cells given by membership test in `g`. -/
+/-- Construit une `MacroCell` de niveau `n` couvrant le carre
+    `[r0, r0 + 2^n) x [c0, c0 + 2^n)`, avec les cellules vivantes donnees par
+    le test d'appartenance dans `g`. -/
 def buildFromGrid (g : Grid) (r0 c0 : Int) : Nat -> MacroCell
   | 0     => leaf (g.elem (r0, c0))
   | n + 1 =>
@@ -190,7 +203,7 @@ def buildFromGrid (g : Grid) (r0 c0 : Int) : Nat -> MacroCell
     let se := buildFromGrid g (r0 + half) (c0 + half) n
     node nw ne sw se
 
-/-- The level of a `MacroCell` built by `buildFromGrid g r0 c0 lvl` is `lvl`. -/
+/-- Le niveau d'une `MacroCell` construite par `buildFromGrid g r0 c0 lvl` est `lvl`. -/
 theorem level_buildFromGrid (g : Grid) (r0 c0 : Int) (lvl : Nat) :
     (buildFromGrid g r0 c0 lvl).level = lvl := by
   induction lvl with
@@ -200,22 +213,23 @@ theorem level_buildFromGrid (g : Grid) (r0 c0 : Int) (lvl : Nat) :
     rw [level, ih]
     omega
 
-/-- A cell `p` lies inside the level-`lvl` square anchored at `(r0, c0)`:
+/-- Une cellule `p` se trouve dans le carre de niveau `lvl` ancre en `(r0, c0)` :
     `[r0, r0 + 2^lvl) x [c0, c0 + 2^lvl)`.
 
-    NOTE: `cases`/`rcases`/`rintro` on a disjunction whose branches mention
-    `inRegion` (which unfolds to `Int.le`/`Int.lt`) triggers a Lean
-    dependent-elimination failure on the Int subtraction match. The proof
-    below uses `match` (which elaborates differently and succeeds) to split
-    the 4-way quadrant disjunction. -/
+    NOTE : `cases`/`rcases`/`rintro` sur une disjonction dont les branches
+    mentionnent `inRegion` (qui se deploie en `Int.le`/`Int.lt`) declenche un
+    echec d'elimination dependante de Lean sur le match de soustraction Int. La
+    preuve ci-dessous utilise `match` (qui s'elabore differemment et reussit)
+    pour decomposer la disjonction a 4 quadrants. -/
 def inRegion (p : Int × Int) (r0 c0 : Int) (lvl : Nat) : Prop :=
   r0 ≤ p.1 ∧ p.1 < r0 + (2 ^ lvl : Nat) ∧
     c0 ≤ p.2 ∧ p.2 < c0 + (2 ^ lvl : Nat)
 
-/-- **Round-trip core lemma**: a cell `p` appears in the `toCellsAux`
-    enumeration of `buildFromGrid g r0 c0 lvl` iff `p` lies inside the
-    covered square AND `p ∈ g`. Proved by induction on `lvl`,
-    generalizing the offsets so the IH applies at shifted quadrant origins. -/
+/-- **Lemme central d'aller-retour** : une cellule `p` apparait dans
+    l'enumeration `toCellsAux` de `buildFromGrid g r0 c0 lvl` ssi `p` se
+    trouve dans le carre couvert ET `p ∈ g`. Prouve par induction sur `lvl`,
+    en generalisant les decalages pour que l'IH s'applique aux origines
+    decalees des quadrants. -/
 theorem mem_toCellsAux_buildFromGrid (g : Grid) (lvl : Nat) (r0 c0 : Int)
     (p : Int × Int) :
     p ∈ (buildFromGrid g r0 c0 lvl).toCellsAux r0 c0 ↔
@@ -253,9 +267,9 @@ theorem mem_toCellsAux_buildFromGrid (g : Grid) (lvl : Nat) (r0 c0 : Int)
     have ihse := ih (r0 + (2 ^ n : Nat)) (c0 + (2 ^ n : Nat)) p
     rw [ihn, ihne, ihsw, ihse]
     constructor
-    · -- Forward: `match` (not rcases) splits the Or — rcases/rintro trigger a
-      -- Lean dependent-elimination failure on the Int.le in branch types.
-      -- Left-nested `((A ∨ B) ∨ C) ∨ D`:
+    · -- Direct : `match` (pas rcases) decompose le Or — rcases/rintro declenchent
+      -- un echec d'elimination dependante de Lean sur les Int.le dans les types
+      -- de branches. Imbriquee a gauche `((A ∨ B) ∨ C) ∨ D` :
       --   nw = inl (inl (inl _)), ne = inl (inl (inr _)),
       --   sw = inl (inr _),       se = inr _.
       intro h
@@ -287,57 +301,61 @@ theorem mem_toCellsAux_buildFromGrid (g : Grid) (lvl : Nat) (r0 c0 : Int)
         · left; right; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
         · right; unfold inRegion; refine ⟨⟨?_, ?_, ?_, ?_⟩, hpg⟩ <;> omega
 
-/-- **Offset-shift identity for `toCellsAux`**: enumerating `c`'s live cells
-    with the top-left corner anchored at `(r0, c0)` equals the
-    origin-anchored enumeration `(c.toCellsAux 0 0)` translated pointwise by
-    `(r0, c0)`. Pure structural induction on `MacroCell` — no Hashlife, no
-    `evolve`, no light-cone. This is the bookkeeping bridge that will align an
-    offset-`(r0, c0)` `toCellsAux` / `toGrid` membership goal with an
-    origin-anchored induction hypothesis in the eventual P4
-    central-correctness assembly (`hashlifeResult_central_correct`). -/
+/-- **Identite de decalage pour `toCellsAux`** : enumerer les cellules
+    vivantes de `c` avec le coin haut-gauche ancre en `(r0, c0)` egale
+    l'enumeration ancoree a l'origine `(c.toCellsAux 0 0)` translatee
+    point par point par `(r0, c0)`. Induction structurelle pure sur
+    `MacroCell` — pas de Hashlife, pas d'`evolve`, pas de cone de lumiere.
+    C'est le pont de comptabilite qui alignera un objectif d'appartenance
+    `toCellsAux` / `toGrid` a decalage `(r0, c0)` avec une hypothese
+    d'induction ancoree a l'origine dans le futur assemblage P4 de
+    correction centrale (`hashlifeResult_central_correct`). -/
 theorem toCellsAux_shift (c : MacroCell) (r0 c0 : Int) :
     c.toCellsAux r0 c0 =
       (c.toCellsAux 0 0).map (fun p => (p.1 + r0, p.2 + c0)) := by
   induction c generalizing r0 c0 with
   | leaf b =>
-    -- `toCellsAux r0 c0 (leaf b)` reduces to `[(r0, c0)]` / `[]`, but
-    -- `List.map f [(0, 0)] = [(0 + r0, 0 + c0)]` is NOT defeq to `[(r0, c0)]`
-    -- (`Int.add 0 _` does not reduce definitionally), so `rfl` fails — close
-    -- by `zero_add` instead.
+    -- `toCellsAux r0 c0 (leaf b)` se reduit en `[(r0, c0)]` / `[]`, mais
+    -- `List.map f [(0, 0)] = [(0 + r0, 0 + c0)]` n'est PAS defeq a `[(r0, c0)]`
+    -- (`Int.add 0 _` ne se reduit pas definitionnellement), donc `rfl` echoue —
+    -- fermer par `zero_add` a la place.
     cases b
     · simp only [toCellsAux, List.map_nil]
     · simp only [toCellsAux, List.map_singleton, zero_add]
   | node nw ne sw se ihw ine isw ise =>
     simp only [toCellsAux]
-    -- Apply the IH to each LHS quadrant, anchoring at the origin:
+    -- Appliquer l'IH a chaque quadrant du membre gauche, en ancrant a l'origine :
     rw [ihw r0 c0, ine r0 (c0 + (2 ^ nw.level : Nat)),
         isw (r0 + (2 ^ nw.level : Nat)) c0,
         ise (r0 + (2 ^ nw.level : Nat)) (c0 + (2 ^ nw.level : Nat))]
-    -- Distribute the RHS map over the concatenation, then fold the
-    -- origin-anchored quadrants back through the IH (forward) so each RHS
-    -- segment becomes a composition of two shifts; `map_map` flattens it.
+    -- Distribuer le map du membre droit sur la concatenation, puis replier
+    -- les quadrants ancores a l'origine a travers l'IH (en avant) pour que
+    -- chaque segment du membre droit devienne une composition de deux
+    -- decalages ; `map_map` l'aplatit.
     simp only [List.map_append, zero_add]
     rw [ine 0 (2 ^ nw.level : Nat), isw (2 ^ nw.level : Nat) 0,
         ise (2 ^ nw.level : Nat) (2 ^ nw.level : Nat)]
     simp only [List.map_map, zero_add]
-    -- Both sides are now concatenations of `map (shift_i) (toCellsAux 0 0 sub_i)`,
-    -- differing only by AC rearrangements of addition; normalise and close.
+    -- Les deux membres sont maintenant des concatenations de `map (shift_i) (toCellsAux 0 0 sub_i)`,
+    -- ne differant que par des rearrangements AC de l'addition ; normaliser et fermer.
     simp only [add_zero, add_assoc, add_comm, add_left_comm]
     rfl
 
-/-- **Membership form of the offset-shift identity**: `p` lies in the
-    offset-`(r0, c0)` enumeration of `c` iff `p` translated back to the origin
-    `(p.1 - r0, p.2 - c0)` lies in the origin-anchored enumeration. This is the
-    form directly usable inside membership biconditionals (e.g. the P4
-    central-correctness goal `p ∈ (hashlifeResultAux …).toGrid off ↔ …`), where
-    the list-equality `toCellsAux_shift` is less convenient. -/
+/-- **Forme d'appartenance de l'identite de decalage** : `p` se trouve dans
+    l'enumeration a decalage `(r0, c0)` de `c` ssi `p` translatee vers
+    l'origine `(p.1 - r0, p.2 - c0)` se trouve dans l'enumeration ancoree a
+    l'origine. C'est la forme directement utilisable dans les
+    biconditionnelles d'appartenance (ex. l'objectif P4 de correction
+    centrale `p ∈ (hashlifeResultAux …).toGrid off ↔ …`), ou l'egalite de
+    liste `toCellsAux_shift` est moins commode. -/
 theorem mem_toCellsAux_shift {c : MacroCell} {r0 c0 : Int} {p : Int × Int} :
     p ∈ c.toCellsAux r0 c0 ↔ (p.1 - r0, p.2 - c0) ∈ c.toCellsAux 0 0 := by
   rw [toCellsAux_shift, List.mem_map]
   constructor
   · rintro ⟨q, hqmem, hpq⟩
-    -- `q` is a free variable, so we rewrite the membership to speak of `q`
-    -- directly (cannot `subst` on `q.1`/`q.2`, which are field accesses).
+    -- `q` est une variable libre, donc nous reecrivons l'appartenance pour
+    -- parler de `q` directement (impossible de `subst` sur `q.1`/`q.2`, qui
+    -- sont des acces a des champs).
     have hqeq : q = (p.1 - r0, p.2 - c0) := by
       rw [Prod.ext_iff] at hpq; ext <;> omega
     rw [hqeq] at hqmem
@@ -348,52 +366,55 @@ theorem mem_toCellsAux_shift {c : MacroCell} {r0 c0 : Int} {p : Int × Int} :
 
 end MacroCell
 
-/-! ## High-level Grid -> MacroCell
+/-! ## Grid -> MacroCell de haut niveau
 
-We pick an offset and level large enough to contain `g`. To leave room
-for one round of `step` to spread, we add a 2-cell padding on each side
-of the bounding box. Empty grids give the all-dead level-0 leaf. -/
+Nous choisissons un decalage et un niveau assez grands pour contenir
+`g`. Pour laisser de la place a un tour de `step` pour s'etendre, nous
+ajoutons un rembourrage de 2 cellules de chaque cote de la boite
+englobante. Les grilles vides donnent la feuille de niveau 0 toute-morte. -/
 
-/-- The minimum row of a non-empty grid; defaults to 0 on the empty grid. -/
+/-- La ligne minimum d'une grille non vide ; par defaut 0 sur la grille vide. -/
 def gridRowMin (g : Grid) : Int :=
   match g with
   | []      => 0
   | p :: ps => ps.foldl (fun m q => min m q.1) p.1
 
-/-- The maximum row of a non-empty grid; defaults to 0 on the empty grid. -/
+/-- La ligne maximum d'une grille non vide ; par defaut 0 sur la grille vide. -/
 def gridRowMax (g : Grid) : Int :=
   match g with
   | []      => 0
   | p :: ps => ps.foldl (fun m q => max m q.1) p.1
 
-/-- The minimum column of a non-empty grid; defaults to 0 on the empty grid. -/
+/-- La colonne minimum d'une grille non vide ; par defaut 0 sur la grille vide. -/
 def gridColMin (g : Grid) : Int :=
   match g with
   | []      => 0
   | p :: ps => ps.foldl (fun m q => min m q.2) p.2
 
-/-- The maximum column of a non-empty grid; defaults to 0 on the empty grid. -/
+/-- La colonne maximum d'une grille non vide ; par defaut 0 sur la grille vide. -/
 def gridColMax (g : Grid) : Int :=
   match g with
   | []      => 0
   | p :: ps => ps.foldl (fun m q => max m q.2) p.2
 
-/-! ## Bounding-box membership lemmas
+/-! ## Lemmes d'appartenance a la boite englobante
 
-These relate `gridRowMin` / `gridRowMax` / `gridColMin` / `gridColMax` to list
-membership: every live cell of `g` lies inside its bounding box. They form the
-arithmetic bridge for `gridFrame_contains_g` (P5 correctness, issue #2162,
-Gap 2 — the Grid↔MacroCell round trip).
+Ces lemmes relient `gridRowMin` / `gridRowMax` / `gridColMin` / `gridColMax`
+a l'appartenance de liste : toute cellule vivante de `g` se trouve dans sa
+boite englobante. Ils forment le pont arithmetique pour
+`gridFrame_contains_g` (correction P5, issue #2162, Gap 2 — l'aller-retour
+Grid↔MacroCell).
 
-The four bounding-box helpers are `foldl`s over a coordinate projection, so we
-factor the reasoning through generic `proj`-parameterised lemmas and
-instantiate them for rows (`(·.1)`) and columns (`(·.2)`). We split
-`p ∈ head :: tail` via `by_cases` rather than `cases`/`subst` to avoid the
-direction-dependent substitution (which side gets eliminated) when both
-operands are local variables. -/
+Les quatre aides a boite englobante sont des `foldl` sur une projection de
+coordonnee, donc nous factorisons le raisonnement via des lemmes generiques
+parametres par `proj` et nous les instancions pour les lignes (`(·.1)`) et
+les colonnes (`(·.2)`). Nous decomposons `p ∈ head :: tail` via `by_cases`
+plutot que `cases`/`subst` pour eviter la substitution dependante de la
+direction (quel cote est elimine) quand les deux operandes sont des
+variables locales. -/
 
-/-- Generic helper: a `foldl` of `min` (via a projection `proj`) never exceeds
-    its seed accumulator. -/
+/-- Aide generique : un `foldl` de `min` (via une projection `proj`) ne
+    depasse jamais son accumulateur de depart. -/
 theorem foldl_proj_min_le_seed (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
     ps.foldl (fun m q => min m (proj q)) acc ≤ acc := by
   induction ps generalizing acc with
@@ -403,8 +424,8 @@ theorem foldl_proj_min_le_seed (ps : Grid) (proj : Int × Int → Int) (acc : In
     have h := ih (min acc (proj q))
     omega
 
-/-- Generic helper: a `foldl` of `min` (via `proj`) never exceeds the projected
-    coordinate of any cell in the list. -/
+/-- Aide generique : un `foldl` de `min` (via `proj`) ne depasse jamais la
+    coordonnee projettee d'une cellule quelconque de la liste. -/
 theorem foldl_proj_min_le_of_mem (ps : Grid) (proj : Int × Int → Int) (acc : Int)
     (p : Int × Int) (hp : p ∈ ps) :
     ps.foldl (fun m q => min m (proj q)) acc ≤ proj p := by
@@ -422,8 +443,8 @@ theorem foldl_proj_min_le_of_mem (ps : Grid) (proj : Int × Int → Int) (acc : 
         · exact hps
       exact ih (min acc (proj q)) p hps
 
-/-- Generic helper: a `foldl` of `max` (via a projection `proj`) is never below
-    its seed accumulator. -/
+/-- Aide generique : un `foldl` de `max` (via une projection `proj`) n'est
+    jamais en dessous de son accumulateur de depart. -/
 theorem le_foldl_proj_max_seed (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
     acc ≤ ps.foldl (fun m q => max m (proj q)) acc := by
   induction ps generalizing acc with
@@ -433,8 +454,8 @@ theorem le_foldl_proj_max_seed (ps : Grid) (proj : Int × Int → Int) (acc : In
     have h := ih (max acc (proj q))
     omega
 
-/-- Generic helper: a `foldl` of `max` (via `proj`) is never below the projected
-    coordinate of any cell in the list. -/
+/-- Aide generique : un `foldl` de `max` (via `proj`) n'est jamais en dessous
+    de la coordonnee projettee d'une cellule quelconque de la liste. -/
 theorem le_foldl_proj_max_of_mem (ps : Grid) (proj : Int × Int → Int) (acc : Int)
     (p : Int × Int) (hp : p ∈ ps) :
     proj p ≤ ps.foldl (fun m q => max m (proj q)) acc := by
@@ -452,7 +473,7 @@ theorem le_foldl_proj_max_of_mem (ps : Grid) (proj : Int × Int → Int) (acc : 
         · exact hps
       exact ih (max acc (proj q)) p hps
 
-/-- Every cell of `g` has row coordinate at least `gridRowMin g`. -/
+/-- Toute cellule de `g` a une coordonnee de ligne au moins `gridRowMin g`. -/
 theorem gridRowMin_le_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     gridRowMin g ≤ p.1 := by
   cases g with
@@ -468,7 +489,7 @@ theorem gridRowMin_le_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
         · exact hps
       exact foldl_proj_min_le_of_mem ps (·.1) p₀.1 p hps
 
-/-- Every cell of `g` has row coordinate at most `gridRowMax g`. -/
+/-- Toute cellule de `g` a une coordonnee de ligne au plus `gridRowMax g`. -/
 theorem le_gridRowMax_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     p.1 ≤ gridRowMax g := by
   cases g with
@@ -484,7 +505,7 @@ theorem le_gridRowMax_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
         · exact hps
       exact le_foldl_proj_max_of_mem ps (·.1) p₀.1 p hps
 
-/-- Every cell of `g` has column coordinate at least `gridColMin g`. -/
+/-- Toute cellule de `g` a une coordonnee de colonne au moins `gridColMin g`. -/
 theorem gridColMin_le_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     gridColMin g ≤ p.2 := by
   cases g with
@@ -500,7 +521,7 @@ theorem gridColMin_le_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
         · exact hps
       exact foldl_proj_min_le_of_mem ps (·.2) p₀.2 p hps
 
-/-- Every cell of `g` has column coordinate at most `gridColMax g`. -/
+/-- Toute cellule de `g` a une coordonnee de colonne au plus `gridColMax g`. -/
 theorem le_gridColMax_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     p.2 ≤ gridColMax g := by
   cases g with
@@ -516,8 +537,8 @@ theorem le_gridColMax_of_mem (g : Grid) (p : Int × Int) (hp : p ∈ g) :
         · exact hps
       exact le_foldl_proj_max_of_mem ps (·.2) p₀.2 p hps
 
-/-- For any non-empty grid, the row bounding box is well-formed:
-    `gridRowMin g ≤ gridRowMax g`. -/
+/-- Pour toute grille non vide, la boite englobante des lignes est bien
+    formee : `gridRowMin g ≤ gridRowMax g`. -/
 theorem gridRowMin_le_gridRowMax (g : Grid) (hg : g ≠ []) :
     gridRowMin g ≤ gridRowMax g := by
   obtain ⟨p₀, ps, rfl⟩ : ∃ p₀ ps, g = p₀ :: ps := by
@@ -530,8 +551,8 @@ theorem gridRowMin_le_gridRowMax (g : Grid) (hg : g ≠ []) :
     le_gridRowMax_of_mem _ _ (by simp)
   omega
 
-/-- For any non-empty grid, the column bounding box is well-formed:
-    `gridColMin g ≤ gridColMax g`. -/
+/-- Pour toute grille non vide, la boite englobante des colonnes est bien
+    formee : `gridColMin g ≤ gridColMax g`. -/
 theorem gridColMin_le_gridColMax (g : Grid) (hg : g ≠ []) :
     gridColMin g ≤ gridColMax g := by
   obtain ⟨p₀, ps, rfl⟩ : ∃ p₀ ps, g = p₀ :: ps := by
@@ -544,10 +565,10 @@ theorem gridColMin_le_gridColMax (g : Grid) (hg : g ≠ []) :
     le_gridColMax_of_mem _ _ (by simp)
   omega
 
-/-- Generic helper: a `foldl` of `min` (via `proj`) is *attained* — the result
-    is either the seed `acc` or the projection of some element of the list.
-    Companion to `foldl_proj_min_le_seed`/`foldl_proj_min_le_of_mem` (those give
-    the `≤` bounds; this one gives the witness). -/
+/-- Aide generique : un `foldl` de `min` (via `proj`) est *atteint* — le
+    resultat est soit le depart `acc`, soit la projection d'un element de la
+    liste. Compagnon de `foldl_proj_min_le_seed`/`foldl_proj_min_le_of_mem`
+    (ceux-ci donnent les bornes `≤` ; celui-ci donne le temoin). -/
 theorem foldl_proj_min_attained (ps : Grid) (proj : Int × Int → Int) (acc : Int) :
     ps.foldl (fun m q => min m (proj q)) acc = acc ∨
       ∃ p ∈ ps, ps.foldl (fun m q => min m (proj q)) acc = proj p := by
@@ -561,10 +582,11 @@ theorem foldl_proj_min_attained (ps : Grid) (proj : Int × Int → Int) (acc : I
       · right; exact ⟨q, by simp, by rw [h]; omega⟩
     · right; exact ⟨p, by simp [hp], hval⟩
 
-/-- The row minimum of a non-empty grid is *attained* by some live cell:
-    there is a `p ∈ g` with `p.1 = gridRowMin g`. This is the witness form of
-    `gridRowMin_le_of_mem` (needed to extract the topmost live cell, e.g. for
-    the structural satisfiability bound on `box_assez_grand`). -/
+/-- Le minimum de ligne d'une grille non vide est *atteint* par une cellule
+    vivante : il existe un `p ∈ g` avec `p.1 = gridRowMin g`. C'est la forme
+    temoin de `gridRowMin_le_of_mem` (necessaire pour extraire la cellule
+    vivante la plus haute, ex. pour la borne de satisfiabilite structurelle
+    sur `box_assez_grand`). -/
 theorem gridRowMin_mem (g : Grid) (hg : g ≠ []) :
     ∃ p ∈ g, p.1 = gridRowMin g := by
   cases g with
@@ -575,10 +597,10 @@ theorem gridRowMin_mem (g : Grid) (hg : g ≠ []) :
     · exact ⟨p₀, by simp, h.symm⟩
     · exact ⟨p, by simp [hp], hval.symm⟩
 
-/-- Compute a suitable `(offset, level)` so that the square of side
-    `2 ^ level` placed at `offset` strictly contains the bounding box of
-    `g` plus a 2-cell padding on each side. Returns `((0, 0), 0)` for the
-    empty grid. -/
+/-- Calcule un `(offset, level)` adapte pour que le carre de cote
+    `2 ^ level` place en `offset` contienne strictement la boite englobante
+    de `g` plus un rembourrage de 2 cellules de chaque cote. Renvoie
+    `((0, 0), 0)` pour la grille vide. -/
 def gridFrame (g : Grid) : (Int × Int) × Nat :=
   match g with
   | []      => ((0, 0), 0)
@@ -587,18 +609,19 @@ def gridFrame (g : Grid) : (Int × Int) × Nat :=
     let rMax := gridRowMax g
     let cMin := gridColMin g
     let cMax := gridColMax g
-    -- 2-cell padding on each side
+    -- rembourrage de 2 cellules de chaque cote
     let r0 := rMin - 2
     let c0 := cMin - 2
-    let height := (rMax - rMin + 5).toNat   -- +1 for inclusive, +4 for padding
+    let height := (rMax - rMin + 5).toNat   -- +1 pour inclusif, +4 pour le rembourrage
     let width  := (cMax - cMin + 5).toNat
     let side   := max height width
     let lvl    := MacroCell.ceilLog2 side
     ((r0, c0), lvl)
 
-/-- For every live cell `p ∈ g`, the frame chosen by `gridFrame g` contains `p`:
-    `inRegion p r0 c0 lvl` where `((r0, c0), lvl) = gridFrame g`. This is the
-    containment bridge for the Grid↔MacroCell round trip (issue #2162, Gap 2). -/
+/-- Pour toute cellule vivante `p ∈ g`, le cadre choisi par `gridFrame g`
+    contient `p` : `inRegion p r0 c0 lvl` ou `((r0, c0), lvl) = gridFrame g`.
+    C'est le pont de containment pour l'aller-retour Grid↔MacroCell
+    (issue #2162, Gap 2). -/
 theorem gridFrame_contains_g (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     let ((r0, c0), lvl) := gridFrame g
     MacroCell.inRegion p r0 c0 lvl := by
@@ -630,24 +653,31 @@ theorem gridFrame_contains_g (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     unfold MacroCell.inRegion
     refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
 
-/-! ### n-aware framing (`gridFrameN`) — P5 redesign gate N1 (issue #3846)
+/-! ### Cadrage conscient de n (`gridFrameN`) — porte N1 de la refonte P5 (issue #3846)
 
-The fixed-2 padding of `gridFrame` caps the light-cone margin at 2 (see
-`boxAssezGrand_nonempty_le_two` in `HashlifeCorrectness`): with `r0 := rMin - 2`,
-the topmost live cell has margin exactly 2, so `BoxAssezGrand g n` forces
-`n ≤ 2` and is *unsatisfiable* for large `n`. This is the structural root of
-the P5 large-`n` obstruction.
+Le rembourrage fixe a 2 de `gridFrame` plafonne la marge du cone de lumiere
+a 2 (voir `boxAssezGrand_nonempty_le_two` dans `HashlifeCorrectness`) : avec
+`r0 := rMin - 2`, la cellule vivante la plus haute a une marge d'exactement
+2, donc `BoxAssezGrand g n` force `n ≤ 2` et est *insatisfiable* pour les
+grands `n`. C'est la racine structurelle de l'obstruction P5 des grands `n`.
 
-`gridFrameN n g` generalizes the padding to `max 2 n`, so the light-cone
-margin is at least `max 2 n ≥ n` *by construction*. The margin hypothesis
-then becomes satisfiable for every `n` (not just `n ≤ 2`) — see the witness
-`box_assez_grandN_single_cell_3` in `HashlifeCorrectness`, the honest dual of
-the `boxAssezGrand_nonempty_le_two` unsat cap. N1 keeps `evolveHashlifeFast`
-unchanged; N2 threads this frame through the loop without re-framing. -/
+`gridFrameN n g` generalise le rembourrage en `max 2 n`, donc la marge du
+cone de lumiere est au moins `max 2 n ≥ n` *par construction*. L'hypothese
+de marge devient alors satisfiable pour tout `n` (pas seulement `n ≤ 2`) —
+voir le temoin `box_assez_grandN_single_cell_3` dans
+`HashlifeCorrectness`, le dual honnete du plafond insat
+`boxAssezGrand_nonempty_le_two`. N1 garde `evolveHashlifeFast` inchange ;
+N2 trame ce cadre a travers la boucle en re-cadrant a chaque iteration —
+l'appel recursif `evolveHashlifeFastAuxN fuel (n - js) g'` re-entre dans
+`gridToMacroCellWithOffsetN (n - js) g'` sur la grille sautee (Hashlife).
+Contrepartie tranchee en (b2) : sous ce rembourrage, le garde de saut est
+structurellement mort (`gridToMacroCellWithOffsetN_level_gt_n`) — le cote
+`bbox + 2 * max 2 n` force `2 ^ lvl > n = js`. -/
 
-/-- Like `gridFrame` but with padding `max 2 n` (instead of the fixed `2`) on
-    each side, so the light-cone margin is at least `max 2 n ≥ n`. Returns
-    `((0, 0), 0)` for the empty grid. (P5 redesign, issue #3846, gate N1.) -/
+/-- Comme `gridFrame` mais avec un rembourrage `max 2 n` (au lieu du `2`
+    fixe) de chaque cote, donc la marge du cone de lumiere est au moins
+    `max 2 n ≥ n`. Renvoie `((0, 0), 0)` pour la grille vide. (Refonte P5,
+    issue #3846, porte N1.) -/
 def gridFrameN (n : Nat) (g : Grid) : (Int × Int) × Nat :=
   match g with
   | []      => ((0, 0), 0)
@@ -665,8 +695,9 @@ def gridFrameN (n : Nat) (g : Grid) : (Int × Int) × Nat :=
     let lvl    := MacroCell.ceilLog2 side
     ((r0, c0), lvl)
 
-/-- For every live cell `p ∈ g`, the frame chosen by `gridFrameN n g` contains
-    `p` (containment bridge, n-aware analog of `gridFrame_contains_g`). -/
+/-- Pour toute cellule vivante `p ∈ g`, le cadre choisi par `gridFrameN n g`
+    contient `p` (pont de containment, analogue conscient de n de
+    `gridFrame_contains_g`). -/
 theorem gridFrameN_contains_g (n : Nat) (g : Grid) (p : Int × Int) (hp : p ∈ g) :
     let ((r0, c0), lvl) := gridFrameN n g
     MacroCell.inRegion p r0 c0 lvl := by
@@ -699,31 +730,33 @@ theorem gridFrameN_contains_g (n : Nat) (g : Grid) (p : Int × Int) (hp : p ∈ 
     unfold MacroCell.inRegion
     refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
 
-/-- `gridFrameN n g` reduces to `gridFrame g` when `n ≤ 2`: the n-aware padding
-    `max 2 n` equals the fixed padding `2`, so both frames coincide. This is the
-    reduction bridge showing `gridFrameN` strictly generalizes `gridFrame` — it
-    lets existing `gridFrame`-based results transfer to the n-aware frame for
-    small `n` (N3 threading, issue #3846). -/
+/-- `gridFrameN n g` se reduit en `gridFrame g` quand `n ≤ 2` : le
+    rembourrage conscient de n `max 2 n` egale le rembourrage fixe `2`, donc
+    les deux cadres coincident. C'est le pont de reduction montrant que
+    `gridFrameN` generalise strictement `gridFrame` — il laisse les resultats
+    existants bases sur `gridFrame` se transferer au cadre conscient de n pour
+    les petits `n` (tramage N3, issue #3846). -/
 theorem gridFrameN_le_two_eq_gridFrame (n : Nat) (g : Grid) (hn : n ≤ 2) :
     gridFrameN n g = gridFrame g := by
   have hpad : max 2 n = 2 := by omega
   cases g with
   | nil => rfl
   | cons p₀ ps =>
-    -- Establish non-negativity of the row/col spans directly (no `set` aliases,
-    -- so `omega` connects these facts to the goal terms `gridRowMin _` etc.).
+    -- Etablir la non-negativite des portees ligne/col directement (pas d'alias
+    -- `set`, pour que `omega` relie ces faits aux termes du but `gridRowMin _` etc.).
     have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
       gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
     have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
       gridColMin_le_gridColMax _ (List.cons_ne_nil _ _)
     simp only [gridFrameN, gridFrame, hpad, Nat.cast_two]
-    -- Both frames now have padding 2; the only residual difference is
-    -- `+ 1 + 2*2` (gridFrameN) vs `+ 5` (gridFrame) in the height/width, a
-    -- pure Int arithmetic identity. The offset pair `(r0, c0)` matches by `rfl`.
-    -- Close the offset pair `(r0, c0)` by `Prod.ext` + `rfl` (no `congr` on the
-    -- subtraction, which would over-decompose). The level equality reduces to
-    -- the height/width `toNat` identities `(x + 1 + 2*2).toNat = (x + 5).toNat`,
-    -- which `omega` closes using the non-negativity facts above.
+    -- Les deux cadres ont maintenant un rembourrage de 2 ; la seule difference
+    -- residuelle est `+ 1 + 2*2` (gridFrameN) contre `+ 5` (gridFrame) dans la
+    -- hauteur/largeur, une identite arithmetique pure Int. La paire de decalage
+    -- `(r0, c0)` coincide par `rfl`. Fermer la paire de decalage `(r0, c0)` par
+    -- `Prod.ext` + `rfl` (pas de `congr` sur la soustraction, qui
+    -- sur-decomposerait). L'egalite des niveaux se reduit aux identites
+    -- `toNat` de hauteur/largeur `(x + 1 + 2*2).toNat = (x + 5).toNat`, que
+    -- `omega` ferme en utilisant les faits de non-negativite ci-dessus.
     refine Prod.ext ?_ ?_
     · rfl
     · have hH : (gridRowMax (p₀ :: ps) - gridRowMin (p₀ :: ps) + 1 + 2 * 2).toNat
@@ -732,55 +765,129 @@ theorem gridFrameN_le_two_eq_gridFrame (n : Nat) (g : Grid) (hn : n ≤ 2) :
                   = (gridColMax (p₀ :: ps) - gridColMin (p₀ :: ps) + 5).toNat := by omega
       rw [hH, hW]
 
-/-- Convert a `Grid` to a `MacroCell`, returning the chosen offset so that
-    `MacroCell.toGrid offset (gridToMacroCell g) = g`. -/
+/-- Convertit un `Grid` en `MacroCell`, en renvoyant le decalage choisi pour
+    que `MacroCell.toGrid offset (gridToMacroCell g) = g`. -/
 def gridToMacroCellWithOffset (g : Grid) : (Int × Int) × MacroCell :=
   let (off, lvl) := gridFrame g
   (off, MacroCell.buildFromGrid g off.1 off.2 lvl)
 
-/-- n-aware variant of `gridToMacroCellWithOffset`: builds the `MacroCell` from
-    the n-aware frame `gridFrameN n g` (padding `max 2 n`), rather than the
-    fixed-padding `gridFrame`. This is the offset/MacroCell builder the N3
-    threading of `evolveHashlifeFast` (issue #3846) substitutes in place of
-    `gridToMacroCellWithOffset` to thread the n-aware frame through the recursion
-    loop. -/
+/-- Variante consciente de n de `gridToMacroCellWithOffset` : construit la
+    `MacroCell` a partir du cadre conscient de n `gridFrameN n g` (rembourrage
+    `max 2 n`), plutot que le `gridFrame` a rembourrage fixe. C'est le
+    constructeur d'offset/MacroCell que le tramage N3 de
+    `evolveHashlifeFast` (issue #3846) substitue a `gridToMacroCellWithOffset`
+    pour tramer le cadre conscient de n a travers la boucle de recursion. -/
 def gridToMacroCellWithOffsetN (n : Nat) (g : Grid) : (Int × Int) × MacroCell :=
   let (off, lvl) := gridFrameN n g
   (off, MacroCell.buildFromGrid g off.1 off.2 lvl)
 
-/-- `gridToMacroCellWithOffsetN n g` reduces to `gridToMacroCellWithOffset g`
-    when `n ≤ 2`: since `gridFrameN n g = gridFrame g` for small `n`
-    (`gridFrameN_le_two_eq_gridFrame`), both builders feed the same offset and
-    level to `buildFromGrid`. This bridges the fixed-frame builder used by the
-    current `evolveHashlifeFast` to its n-aware variant, so the N3 threading
-    substitution is behaviorally transparent for small `n` (issue #3846). -/
+/-- `gridToMacroCellWithOffsetN n g` se reduit en
+    `gridToMacroCellWithOffset g` quand `n ≤ 2` : comme
+    `gridFrameN n g = gridFrame g` pour les petits `n`
+    (`gridFrameN_le_two_eq_gridFrame`), les deux constructeurs fournissent le
+    meme decalage et niveau a `buildFromGrid`. Cela fait le pont entre le
+    constructeur a cadre fixe utilise par l'actuel `evolveHashlifeFast` et sa
+    variante consciente de n, donc la substitution du tramage N3 est
+    transparente comportementalement pour les petits `n` (issue #3846). -/
 theorem gridToMacroCellWithOffsetN_le_two_eq (n : Nat) (g : Grid) (hn : n ≤ 2) :
     gridToMacroCellWithOffsetN n g = gridToMacroCellWithOffset g := by
   unfold gridToMacroCellWithOffsetN gridToMacroCellWithOffset
   rw [gridFrameN_le_two_eq_gridFrame n g hn]
 
-/-- Convert a `Grid` to a `MacroCell`, discarding the offset (defaulting to
-    `(0, 0)` for the round trip). For round-trip purposes, prefer
+/-- **Garde N3 mort (tranche (b2), #6724).** Pour une grille non vide, le
+    niveau du cadre conscient de n domine toujours le horizon de saut :
+    `2 ^ lvl ≥ side ≥ height = (rMax - rMin + 1 + 2 * max 2 n).toNat ≥ 2 * n + 1 > n`,
+    donc le garde de saut `lvl ≥ 2 ∧ n ≥ jumpSize lvl` (`= 2 ^ lvl`) de
+    `evolveHashlifeFastAuxN` est structurellement insatisfait : le
+    rembourrage `max 2 n`, concu pour couvrir le cone de lumiere des `n`
+    generations restantes, gonfle le cadre au-dela du horizon du saut
+    qu'il conditionne. La branche de saut N3 ne peut jamais tirer ; la
+    preservation de `jumpCaptured` a travers le re-cadrage N est donc
+    VACUE tant que ce garde est mort — voir `evolveHashlifeFastAuxN_eq_evolve`
+    (Hashlife) pour la consequence comportementale et la docstring de
+    section de `Hashlife.lean` pour la sortie identifiee (decorrelation j
+    de Gosper, `jumpReach`/`marginToResultWindow` dans `JumpCapture`). -/
+theorem gridToMacroCellWithOffsetN_level_gt_n (n : Nat) (g : Grid) (hg : g ≠ []) :
+    n < 2 ^ (gridToMacroCellWithOffsetN n g).2.level := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    simp only [gridToMacroCellWithOffsetN]
+    rw [MacroCell.level_buildFromGrid]
+    simp only [gridFrameN]
+    set rMin := gridRowMin (p₀ :: ps)
+    set rMax := gridRowMax (p₀ :: ps)
+    set cMin := gridColMin (p₀ :: ps)
+    set cMax := gridColMax (p₀ :: ps)
+    set pad := max 2 n
+    set height := (rMax - rMin + 1 + 2 * pad).toNat
+    set width := (cMax - cMin + 1 + 2 * pad).toNat
+    set side := max height width
+    set lvl := MacroCell.ceilLog2 side
+    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have hH : 1 + 2 * max 2 n ≤ height := by
+      have hnn : 0 ≤ rMax - rMin + 1 + 2 * pad := by omega
+      simp only [height]
+      omega
+    omega
+
+/-- Convertit un `Grid` en `MacroCell`, en jetant le decalage (par defaut
+    `(0, 0)` pour l'aller-retour). Pour les besoins d'aller-retour, preferer
     `gridToMacroCellWithOffset`. -/
 def gridToMacroCell (g : Grid) : MacroCell :=
   (gridToMacroCellWithOffset g).2
 
-/-! ## Sanity checks
+/-- **Aller-retour Grid -> MacroCell -> Grid (appartenance)** : pour tout
+    point `p`, `p` est vivant dans la grille reconstruite
+    `(gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1`
+    ssi `p` est vivant dans `g`. C'est la forme generale du but annonce par
+    le docstring de `gridToMacroCellWithOffset`, jusqu'ici verifie seulement
+    par `#eval` sur les motifs canoniques (Tests de coherence ci-dessous).
 
-We verify that the round trip `Grid -> MacroCell -> Grid` preserves the
-small canonical patterns of `Conway.Life`. -/
+    Assemble `mem_toCellsAux_buildFromGrid` (l'enumeration de
+    `buildFromGrid` dans le carre couvert est exactement `inRegion /\ p ∈ g`)
+    avec `gridFrame_contains_g` (toute cellule vivante de `g` est dans le
+    carre du cadre). Direction -> : les membres de l'enumeration sont dans
+    `g`. Direction <- : les membres de `g` sont dans le carre, donc dans
+    l'enumeration.
 
--- Bounding-box helpers
+    C'est la brique BR1 du pont de localite (a) de `p5_large_n_jumpN`
+    (#6724) : elle identifie `mc.toGrid off` a `g` au niveau des membres,
+    ce qui permet de transporter les evolutions de l'un a l'autre via
+    `toGrid_shift_between` (Foundation) et `evolve_shift` (GridCanonical). -/
+theorem mem_toGrid_gridToMacroCellWithOffset (g : Grid) (p : Int × Int) :
+    p ∈ (gridToMacroCellWithOffset g).2.toGrid (gridToMacroCellWithOffset g).1 ↔ p ∈ g := by
+  cases hF : gridFrame g with
+  | mk off lvl =>
+    simp only [gridToMacroCellWithOffset, hF, MacroCell.toGrid, mem_sortDedup]
+    rw [MacroCell.mem_toCellsAux_buildFromGrid g lvl off.1 off.2 p]
+    constructor
+    · exact fun h => h.2
+    · intro hp
+      refine ⟨?_, hp⟩
+      have hreg := gridFrame_contains_g g p hp
+      rw [hF] at hreg
+      exact hreg
+
+/-! ## Tests de coherence
+
+Nous verifions que l'aller-retour `Grid -> MacroCell -> Grid` preserve les
+petits motifs canoniques de `Conway.Life`. -/
+
+-- Aides de boite englobante
 #eval gridRowMin block
 #eval gridRowMax block
 #eval gridFrame block
 
--- The empty grid should give a level-0 dead leaf.
+-- La grille vide devrait donner une feuille morte de niveau 0.
 #eval gridToMacroCell ([] : Grid) |>.level
 #eval gridToMacroCell ([] : Grid) |>.isEmpty
 
--- Round trip on the block: the MacroCell, then back to a grid at the
--- chosen offset, should equal `block`.
+-- Aller-retour sur le block : la MacroCell, puis de retour vers une grille
+-- au decalage choisi, devrait egaler `block`.
 #eval
   let (off, mc) := gridToMacroCellWithOffset block
   (off, mc.level, mc.toGrid off == block)

@@ -10,20 +10,20 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 836
-breakdown: SymbolicAI=220, GenAI=141, Search=115, QuantConnect=105, Probas=58, GameTheory=55, ML=47, IIT=36, Sudoku=36, RL=17, CaseStudies=6
-maturity: BETA=745, ALPHA=62, DRAFT=25, TEMPLATE=4
+total: 903
+breakdown: SymbolicAI=230, GenAI=169, Search=118, QuantConnect=108, Probas=58, GameTheory=56, IIT=53, ML=48, Sudoku=37, RL=17, CaseStudies=6, FallacyDetection=2, cross-series=1
+maturity: BETA=818, ALPHA=46, DRAFT=35, TEMPLATE=4
 -->
 
-<sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est refusée par `catalog-guard.yml` (catalog-pr-hygiene R1).*</sub>
+<sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
 
-Dernière mise à jour : 2026-07-21
+Dernière mise à jour : 2026-08-05
 
 ## Vue d'ensemble
 
 **[GenAI](GenAI/README.md)** — Tout ce qui se génère : images (SDXL, Flux, Qwen), audio — du TTS au pipeline complet d'audiobook —, vidéo, et le travail des LLMs (RAG, raisonnement, fine-tuning LoRA). La série a un parti pris d'atelier : on ne se contente pas d'appeler des APIs, on héberge les modèles soi-même sur une stack Docker dédiée ([00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md)), ce qui change tout à ce qu'on comprend de leurs coûts et de leurs limites. Elle culmine avec l'orchestration Semantic Kernel, quatre études de cas étudiantes et les ateliers de vibe-coding (Claude Code, Roo Code).
 
-**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de stratégies cataloguées (cf. breakdown `QuantConnect=105` du marqueur et l'inventaire [`docs/qc/qc-strategies-status.md`](../docs/qc/qc-strategies-status.md) pour la classification 4-types + statut best-guess de chaque projet). Les algorithmes emblématiques — GARCH, Kelly, ensembles — y côtoient 18 des 19 exemples de la section 06 Applied ML du livre *Hands-On AI Trading* (20/22 toutes sections ML/AI confondues — sections 06+07+08, cf. [QC README](QuantConnect/README.md) pour le détail périmètre). La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : un **Ladder** d'architectures testées (cf. [QC README — section ML-Training-Pipeline](QuantConnect/README.md)) dont seule une fraction bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
+**[QuantConnect](QuantConnect/README.md)** — Le ML appliqué à un domaine qui ne pardonne pas : les marchés. Un cours Python progressif mène du premier backtest à un portefeuille de stratégies cataloguées (cf. breakdown `QuantConnect=105` du marqueur et l'inventaire [`docs/qc/qc-strategies-status.md`](../docs/qc/qc-strategies-status.md) pour la classification 4-types + statut best-guess de chaque projet). Les algorithmes emblématiques — GARCH, Kelly, ensembles — y côtoient les **22 exemples** (sections 06 Applied ML + 07 RL + 08 Risk Mgmt) du livre *Hands-On AI Trading* — **20 fermes + 2 ⚠️ partiels** (section 06 ex.01 Trend Scanning + section 08 ex.02 AI corrective, cf. [`docs/HANDSON_AI_TRADING_MAPPING.md`](QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) pour le statut détaillé de chaque exemple). La leçon transversale vaut bien au-delà de la finance : une discipline de validation — walk-forward, multi-seed, coûts de transaction — sans laquelle tout résultat de ML est une illusion d'optique. Le pipeline d'entraînement associé (ML-Training-Pipeline) en est la démonstration grandeur nature : un **Ladder** d'architectures testées (cf. [QC README — section ML-Training-Pipeline](QuantConnect/README.md)) dont seule une fraction bat le baseline après validation multi-seed — un verdict d'honnêteté que la série assume comme résultat pédagogique à part entière.
 
 **[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
 
@@ -43,6 +43,8 @@ Dernière mise à jour : 2026-07-21
 
 **[IIT](IIT/README.md)** — La plus spéculative : la théorie de l'information intégrée et la mesure Phi (PyPhi) appliquées à des réseaux logiques — où l'on calcule, littéralement, des candidats quantitatifs à une mesure de la conscience. La série prolonge le Phi *statique* vers les **trajectoires** causales avec l'extension **ICT** (*Integrated Causal Trajectories*) : tri auto-organisé comme morphogenèse, émergence causale multi-échelles (Hoel, *Causal Emergence 2.0*). Le banc cross-substrat de l'ICT atteint désormais un **transformer réel** : les activations d'un LLM, lues à travers un autoencodeur parcimonieux (SAE), deviennent un quatrième substrat mesurable aux côtés du tri, de la réaction-diffusion (Gray-Scott) et de la morphodynamique stratégique (Axelrod) — et un axe *Global Workspace* (broadcast, ignition — module `ict/workspace.py`) confronte désormais empiriquement IIT et GWT sur ces mêmes traces, faisant du pont entre les deux grandes théories de la conscience une question **falsifiable** plutôt qu'un débat d'école. La série rejoint ainsi le fil rouge **causalité** du dépôt, où le même opérateur `do(·)` de Pearl s'instancie à travers quatre paradigmes — symbolique (Tweety), message passing (Infer.NET), MCMC (PyMC) et théorie de l'information (ICT).
 
+**[cross-series](cross-series/README.md)** (projets-capstones) — Annexe transversale, distincte des onze domaines ci-dessus : non pas une famille de notebooks supplémentaire, mais des **projets capstones** qui rejouent plusieurs séries sur une même application de bout en bout (ex. [`matching-cv`](cross-series/matching-cv/) : appariement CV ↔ poste par mots-clés, embeddings sémantiques et appariement stable de Gale-Shapley, mobilisant ML, GenAI et GameTheory).
+
 ### Progression pédagogique
 
 ```text
@@ -56,14 +58,14 @@ GenAI
 ├── FineTuning/ - Fine-tuning LoRA, adapters
 ├── PostTraining/ - Chaîne SOTA : SFT, DPO, GRPO, RLVR
 ├── CaseStudies/ - Études de cas étudiants
-├── Open-WebUI/ - Plateforme OWUI + série QA Playwright E2E
+├── Plateformes-Conversationnelles/ - OWUI (tour + QA Playwright E2E) + AI-Engine WordPress
 ├── Vibe-Coding/ - Claude-Code + Roo-Code + Claw-Systems + Claudish
 └── RAG-et-Memoire-Semantique/ - Qdrant, embeddings, grounding SDDD
 
 QuantConnect
 ├── Python/ - Cours progressifs QC-Py (fondamentaux → stratégies)
 ├── projects/ - Stratégies backtestées et ML (GARCH, Kelly, ensemble)
-├── ML-Training-Pipeline/ - Pipeline training thermal-safe + Ladder 13 arch.
+├── ML-Training-Pipeline/ - Pipeline training thermal-safe + Ladder #1409 (6 niveaux)
 └── partner-course-quant-trading/ - Cours partenaire Hands-On AI Trading
 
 SymbolicAI
@@ -85,10 +87,9 @@ Search
 └── search_lean/ - Lake d'optimalité A* (consistance + heuristique)
 
 Probas
-├── Infer/ - 19 notebooks Infer.NET (graphes de facteurs, C#)
-├── PyMC/ - 19 notebooks PyMC (MCMC, Python) — miroir Infer
-├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson)
-├── Causal-Bridges/ - do(·) Pearl cross-paradigmes
+├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
+├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
+├── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes)
 └── decision_theory_lean/ - Axiomes VNM + Gittins (Lean 4)
 
 Sudoku
@@ -97,9 +98,9 @@ Sudoku
     └── 10..19 spécialisations (Z3, OR-Tools, Choco, Lean, LLM, NN)
 
 GameTheory
-├── (à plat) - 17 notebooks : Nash, Minimax, Coopétition, MARL, Mechanism Design
+├── (à plat) - Nash, Minimax, Coopétition, MARL, Mechanism Design
 ├── SocialChoice/ - Arrow, Sen, Condorcet (Lean 4)
-└── game_theory_lean + *_lean/ - 8 lakes (Arrow, Shapley, Conway, Stable Marriage…)
+└── *_lean/ + lean_game_defs(_ext)/ - 8 lakes (game_theory_lean [Arrow, Shapley, Stable Marriage], conway_cgt_lean, minimax_lean, repeated_games_lean, social_choice_lean, social_choice_lean_peters [lake de référence externe], lean_game_defs, lean_game_defs_ext — ces deux derniers en `lakefile.toml`, pas `.lean`)
 
 ML
 ├── ML.Net/ - Tutoriels ML.NET C# (classification, régression, clustering)
@@ -115,8 +116,24 @@ CaseStudies
 
 IIT
 ├── ICT-Series/ - Integrated Causal Trajectories (4 substrats : tri, Gray-Scott, Axelrod, transformer+SAE)
-└── (à plat) - 3 notebooks PyPhi : Intro, Advanced, Coarse-Graining Phi
+└── (à plat) - notebooks PyPhi : Intro, Advanced, Coarse-Graining Phi
+
+cross-series/
+└── (capstones) - Projets transversaux multi-séries (ex. matching-cv : ML + GenAI + GameTheory)
 ```
+
+## Galerie de rendus — un aperçu visuel du dépôt
+
+Les onze familles ci-dessus ne sont pas seulement des collections de notebooks : elles produisent des **sorties vérifiables** (figures matplotlib, heatmaps, schémas). Cette galerie en présente quatre emblématiques — choisies pour couvrir quatre paradigmes distincts (choix social formel, morphogenèse, équilibre coopératif, apprentissage multi-agent) et pour montrer ce que la **dualité simulation / preuve** produit concrètement : chaque figure est issue d'un notebook exécuté, et celles qui correspondent à un *théorème-phare* (Arrow, Shapley) ont leur **contrepartie formelle** dans un *lake* Lean 4 de la même famille.
+
+| Famille | Figure | Ce qu'elle montre | Contrepartie formelle |
+|---|---|---|---|
+| **GameTheory / SocialChoice** | ![Théorème d'Arrow : aucun système ne satisfait Pareto+IIA+Non-dictature simultanément. 9 cellules : Borda=Pareto✓+IIA✗+Non-dictature✓, Pluralité=Pareto✓+IIA✗+Non-dictature✓, Dictature=Pareto✓+IIA✓+Non-dictature✗. Vert = SATISFAIT, Rouge = VIOLÉ.](GameTheory/SocialChoice/assets/readme/sc-arrow.png) | **Théorème d'impossibilité d'Arrow** (Arrow 1951) — quand les 3 axiomes (Pareto, IIA, Non-dictature) sont imposés simultanément, *aucun* système de vote ne les satisfait. La figure montre les 9 cellules verdict (3 systèmes × 3 axiomes), chaque violation étant marquée en rouge. | [`game_theory_lean/SocialChoice/Arrow.lean`](GameTheory/game_theory_lean/SocialChoice/Arrow.lean) (sibling [`Arrow_en.lean`](GameTheory/game_theory_lean/SocialChoice/Arrow_en.lean)) — 0 `sorry`, énoncé prouvé mécaniquement. |
+| **IIT / ICT-Series** | ![Morphogenèse générative par réaction-diffusion Gray-Scott (Pearson 1993) : gauche = germe localisé à t=0, droite = motif auto-entretenu à t=6000 (structure=0.0095, ~25 taches sur fond noir). Heatmap dark-field + colormap hot.](IIT/ICT-Series/assets/readme/ict9-gray-scott.png) | **Morphogenèse Gray-Scott** : à partir d'un germe localisé, la réaction-diffusion engendre spontanément un **attracteur de forme** stable, point de départ de la mesure de *repair_gain* par ablation contrefactuelle `do(·)`. | Pas de lake (résultat numérique), mais ICT-9/ICT-13 utilisent la même instrumentation que les autres strates (le banc cross-substrat d'ICT-15 mesure la même Φ/F/K sur 4 substrats dont celui-ci). |
+| **GameTheory (CooperativeGames)** | ![Simplexe triangulaire 3 firmes (A,B,C) avec v(N)=9. Hexagone vert = Core du jeu, étoile rouge = valeur de Shapley au centroïde (3,3,3). Pour un jeu additif, le Core coïncide avec les allocations Pareto-efficientes et englobe Shapley.](GameTheory/assets/readme/gt15-shapley.png) | **Core vs Valeur de Shapley** (Shapley 1953, Gillies 1953) — pour un jeu coopératif à 3 firmes (v(N)=9, additif, v(S)=cardinal de S), le *Core* est l'hexagone des allocations coalitionnellement stables, et la **valeur de Shapley** est l'unique allocation equitable au centre. | [`game_theory_lean/CooperativeGames/Shapley.lean`](GameTheory/game_theory_lean/CooperativeGames/Shapley.lean) (sibling `_en.lean`) — 0 `sorry`, résultat prouvé. |
+| **GameTheory (MARL)** | ![CFR (Counterfactual Regret Minimization) sur le poker de Kuhn (K/Q/J) : gauche = convergence de l'utilité espérée vers Nash = −0.0556 sur 10 000 itérations (courbe rouge = moyenne mobile qui s'approche de la ligne verte pointillée Nash), droite = stratégies J1 par carte (étoiles noires = Nash théorique, barres colorées = CFR réel).](GameTheory/assets/readme/gt13-cfr.png) | **CFR sur Kuhn Poker** (Zinkevich et al. 2007) — convergence numérique vers l'équilibre de Nash (valeur du jeu = −0.0556) en 10 000 itérations, avec les fréquences de mise par carte (J/Q/K) rejoignant les étoiles du Nash théorique. | Pas de lake (algo numérique), mais l'**équilibre de Nash** sous-jacent est prouvé formellement dans [`game_theory_lean/`](GameTheory/game_theory_lean/) (cf. branche SocialChoice). |
+
+Les **MANIFEST** correspondants ([GameTheory/assets/readme/MANIFEST.md](GameTheory/assets/readme/MANIFEST.md), [SocialChoice/assets/readme/MANIFEST.md](GameTheory/SocialChoice/assets/readme/MANIFEST.md), [ICT-Series/assets/readme/MANIFEST.md](IIT/ICT-Series/assets/readme/MANIFEST.md)) documentent chaque PNG : *Description visuelle* (audit vision MiniMax M3, juillet 2026), *Alt-text français*, *Contenu réel vérifié* par lecture directe, *Ce qui n'est PAS dans la figure*. La doctrine est connue : une figure README décrit ce qu'on voit réellement, pas ce qu'on voudrait y voir.
 
 ## Parité Python / .NET / Lean — différenciant structurant
 
@@ -164,7 +181,7 @@ Le dépôt sert ainsi doublement de support de cours : par son contenu, et comme
 - **LEAN Engine**: Backtesting, live trading, optimisation
 - **sklearn / XGBoost / PyTorch**: Modèles ML financiers
 - **QuantConnect Cloud**: projets et backtests cloud (volume exact → [CATALOG-STATUS](#catalog-status) ci-dessus + [hub QuantConnect](QuantConnect/README.md))
-- **Hands-On AI Trading**: 18/19 exemples de la section 06 Applied ML implémentés, **20/22** toutes sections ML/AI confondues (sections 06+07+08 : 19 + 1 + 2, cf. [QC README](QuantConnect/README.md) + [`docs/HANDSON_AI_TRADING_MAPPING.md`](QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) pour le détail périmètre et le statut ferme/partiel de chaque exemple)
+- **Hands-On AI Trading**: les **22 exemples** (sections 06 Applied ML + 07 RL + 08 Risk Mgmt) sont mappés aux notebooks de la série — **20 fermes + 2 ⚠️ partiels** (section 06 ex.01 Trend Scanning + section 08 ex.02 AI corrective, cf. [QC README](QuantConnect/README.md) + [`docs/HANDSON_AI_TRADING_MAPPING.md`](QuantConnect/docs/HANDSON_AI_TRADING_MAPPING.md) pour le détail périmètre et le statut ferme/partiel de chaque exemple)
 
 ### Infrastructure
 - **Docker**: services GenAI (cf. [00-GenAI-Environment](GenAI/00-GenAI-Environment/README.md) pour la stack complète)

@@ -1,0 +1,47 @@
+- name: "Tweety-10 MLN"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "C# branche IKVM 8.15.0 + `tweety-mln.dll` (DLL source-recompilee, tracked sur disque) + 43 refs `org.tweetyproject.*` actifs (29 cellules avec `using org.tweetyproject.logics.{mln,fol,commons}.*` explicite). MAIS : le reasoner Java `org.tweetyproject.logics.mln.reasoner.ApproximateNaiveMlnReasoner` est bloque par un bug IKVM 8.15 sur le MCMC (cell 6 documente l'erreur). Pour le cas trivial 1-atome MLN `{<P(a),w>}`, le C# contourne en factorisant la fonction de partition analytiquement : Z(w) = exp(w)+1, P(P(a)) = sigma(w) = exp(w)/(1+exp(w)) (calcule exact via Math.Exp, PAS un workaround degrade au sens de sota-not-workaround.md -- la forme fermee est le resultat mathematiquement exact pour ce domaine). Python branche JPype + `from org.tweetyproject.logics.mln.syntax import MlnFormula, MarkovLogicNetwork` + meme moteur Java, et utilise `ApproximateNaiveMlnReasoner` directement pour le cas general N-atomes (deterministe sur ce subset, cf audit 2026-08-05). Verdict RECOVERABLE-LOCAL : la lib est invocable (les classes syntax sont chargees et instantiatees des deux cotes) MAIS le reasoner C# est partiellement bloque (MCMC multi-atomes). Action : mise a jour IKVM vers 8.16+ ou portage vers une autre implementation MCMC (e.g., `org.tweetyproject.logics.mln.reasoner.SatNaiveMlnReasoner` qui prend un SAT solver en argument, contourne possiblement le bug MCMC IKVM). Verdict distinct de INTRINSIC : le pipeline est fonctionnel pour le cas trivial 1-atome, le cas general est juste gêté."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 0dea8c32c031cda45adcb6eff1d499f7a6dbdfa3
+      csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: bf2d2a6596b0ddb379487359c10c0b870e4f642e
+      csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+      content_python_sha: 007cf1b13fdbfb48eb1e7bc81b72b109b806488b81b545135d0ecfb04f18911d
+      content_csharp_sha: a276a91f35d52db19f424642bdf9b8338c9fee6909feb8e48d58eee74ac21ee9
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 0b35a8ae8192938539bc1c9d00e53b36788d2fc3
+      csharp_sha: 362f5ad69fcfb34e063ca7414c28e4fbda6fdc77
+      content_python_sha: 28ebe3e83f46a2122dbe3378365b4d9d0bfe7e1c3f930b72180e634b4a3f4290
+      content_csharp_sha: a276a91f35d52db19f424642bdf9b8338c9fee6909feb8e48d58eee74ac21ee9
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 0b35a8ae8192938539bc1c9d00e53b36788d2fc3
+      csharp_sha: cfbb0578df2cf99d6f81afb28fed2eb491cc810f
+      content_python_sha: 28ebe3e83f46a2122dbe3378365b4d9d0bfe7e1c3f930b72180e634b4a3f4290
+      content_csharp_sha: ef670bb7bb3afda89ee38bd24540b03b07cc77a52d9175ae12416b69e647a251
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 2fc23f1da3d30268b6087bc412d194b98e5f89f2
+      csharp_sha: cfbb0578df2cf99d6f81afb28fed2eb491cc810f
+      content_python_sha: dffc5c0672b52e4ad26a94825d7bcfa293a04b3b1f977f4edf9dd03187bdf9de
+      content_csharp_sha: ef670bb7bb3afda89ee38bd24540b03b07cc77a52d9175ae12416b69e647a251
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 2fc23f1da3d30268b6087bc412d194b98e5f89f2
+      csharp_sha: cfbb0578df2cf99d6f81afb28fed2eb491cc810f
+      content_python_sha: dffc5c0672b52e4ad26a94825d7bcfa293a04b3b1f977f4edf9dd03187bdf9de
+      content_csharp_sha: ef670bb7bb3afda89ee38bd24540b03b07cc77a52d9175ae12416b69e647a251
+  known_differences:
+    - "Rebaseline 2026-08-05 : cote Python deplace par re-alignement du tableau de balayage cell[12] sur la sortie commitee cell[11] (arrondis ~0.58 -> ~0.60 etc.). Edition markdown-only, parite semantique inchangee (aucune cellule code / sortie / exec_count touchee) ; cote C# non modifie. NOTE (verdict firsthand #9466 volet 1) : le reasoner ApproximateNaiveMlnReasoner est DETERMINISTE sur ce domaine (DefaultSubsetIterator, 2^N <= 200000 atomes, enumeration exhaustive) -- l hypothese MCMC-non-seede de #9466 volet(1) est INVALIDEE (delta=0 sur 2 runs cross-JVM). Les marginales sont reproductibles a 4 decimales : ce re-alignement est PERMANENT, non cyclique (pas de derive recurrente)."
+    - "Rebaseline 2026-08-05 : cote C# deplace par remplacement des 4 WriteLine litteraux de cell[11] (effet du poids w sur P(a)) par le calcul EXACT en forme fermee sigma(w)=exp(w)/(1+exp(w)) via Math.Exp (decision Prong-A #9466/#3801 : le reasoner MCMC ApproximateNaiveMlnReasoner reste bloque par le bug IKVM 8.15, mais le MLN trivial {<P(a),w>} a 1 atome admet une factorisation analytique exacte -- pas de workaround degrade, pas de litteral faux w=0.5->0.5). Edition code cell[11] (re-executed, ec=4, outputs reels) + markdown cells[6]/[12] (correction formule, note forme fermee). Parite semantique inchangee (aucune autre cellule touchee) ; cote Python non modifie (python_sha 0b35a8ae herite de #9459)."
+    - "Socle commun : reseaux logiques markoviens (MLN, Markov Logic Networks) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-mln.dll\"` + `using org.tweetyproject.logics.mln.syntax`). Python via JPype (`from java.util import ArrayList` + `from jpype.types import JObject, JInt`). Meme moteur MLN Java."

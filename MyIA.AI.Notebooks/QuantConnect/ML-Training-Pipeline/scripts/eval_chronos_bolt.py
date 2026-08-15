@@ -48,7 +48,23 @@ from eval_kronos_zeroshot import (
     compute_majority_baseline,
     compute_transaction_cost,
     evaluate_window,
+    load_ohlcv,
 )
+
+
+def _prices_to_ohlcv(prices: pd.Series) -> pd.DataFrame:
+    """Wrap a close-price Series into a minimal OHLCV DataFrame.
+
+    The shared window builder operates on OHLCV frames (Kronos is multivariate).
+    Chronos is univariate but conforms to the same contract so both rungs build
+    identically-constructed windows (single source of truth for the comparison).
+    """
+    close = prices.rename("close").to_frame()
+    close["open"] = close["close"]
+    close["high"] = close["close"]
+    close["low"] = close["close"]
+    close["volume"] = 0.0
+    return close[["open", "high", "low", "close", "volume"]]
 
 CHRONOS_MODEL_IDS = {
     "small": "amazon/chronos-bolt-small",
@@ -86,16 +102,20 @@ class ChronosBoltWrapper:
         self.model_id = model_id
 
     def predict(
-        self, context: np.ndarray, pred_len: int = 24
+        self,
+        context_ohlcv,
+        x_timestamp=None,
+        y_timestamp=None,
+        pred_len: int = 24,
+        seed=None,
     ) -> np.ndarray:
         """Generate zero-shot forecast via Chronos-Bolt.
 
-        Parameters
-        ----------
-        context : np.ndarray, shape (seq_len,)
-            Historical time series values.
-        pred_len : int
-            Number of future steps to predict.
+        Chronos is univariate: it consumes the ``close`` column of the OHLCV
+        frame (the shared window contract). ``x_timestamp``/``y_timestamp``/
+        ``seed`` are accepted to match the Kronos wrapper signature (shared
+        ``evaluate_window``) but ignored -- Chronos-Bolt is deterministic and
+        timestamp-agnostic. A raw close array is also accepted (unit tests).
 
         Returns
         -------
@@ -103,6 +123,11 @@ class ChronosBoltWrapper:
             Median forecast values.
         """
         import torch
+
+        if hasattr(context_ohlcv, "iloc"):
+            context = np.asarray(context_ohlcv["close"], dtype=float)
+        else:
+            context = np.asarray(context_ohlcv, dtype=float)
 
         tensor = torch.tensor(context, dtype=torch.float32).unsqueeze(0)
         samples = self.pipeline.predict(tensor, prediction_length=pred_len)
@@ -120,8 +145,17 @@ class NaiveChronosWrapper:
         self.model_id = model_id
 
     def predict(
-        self, context: np.ndarray, pred_len: int = 24
+        self,
+        context_ohlcv,
+        x_timestamp=None,
+        y_timestamp=None,
+        pred_len: int = 24,
+        seed=None,
     ) -> np.ndarray:
+        if hasattr(context_ohlcv, "iloc"):
+            context = np.asarray(context_ohlcv["close"], dtype=float)
+        else:
+            context = np.asarray(context_ohlcv, dtype=float)
         last_val = context[-1] if context.ndim == 1 else context[-1, 0]
         return np.full(pred_len, last_val)
 
@@ -147,16 +181,20 @@ def run_evaluation(args: argparse.Namespace) -> dict:
         symbol = "SYNTHETIC"
     else:
         data_path = Path(args.data_dir)
-        prices_df = load_data(data_path, symbol=args.symbol)
-        prices = prices_df["Close"]
+        ohlcv_df = load_ohlcv(data_path, symbol=args.symbol)
+        prices = ohlcv_df["close"]
         symbol = args.symbol
 
     print(f"Data: {symbol}, {len(prices)} points")
     baseline = compute_majority_baseline(np.asarray(prices.pct_change().dropna().values))
     print(f"  Majority baseline: {baseline['majority_class_accuracy']:.4f}")
 
+    # Shared OHLCV window builder (single source of truth with the Kronos rung).
+    # build_evaluation_windows needs an OHLCV frame; in dry-run we wrap the
+    # synthetic close Series into one.
+    ohlcv_windows_df = ohlcv_df if not args.dry_run else _prices_to_ohlcv(prices)
     windows = build_evaluation_windows(
-        prices, seq_len=args.seq_len, pred_len=args.pred_len, n_windows=args.n_windows
+        ohlcv_windows_df, seq_len=args.seq_len, pred_len=args.pred_len, n_windows=args.n_windows
     )
     print(f"  Evaluation windows: {len(windows)}")
 
@@ -249,13 +287,17 @@ def run_walk_forward(args: argparse.Namespace) -> dict:
         if split_point + args.seq_len >= eval_end:
             continue
 
-        ctx = prices.iloc[split_point - args.seq_len : split_point].values
+        ctx_series = prices.iloc[split_point - args.seq_len : split_point]
         actual = prices.iloc[split_point : eval_end].values
         actual_rets = returns[split_point : eval_end - 1]
 
+        # Conform to the shared OHLCV window contract (single source of truth
+        # with the Kronos rung); Chronos extracts its close column internally.
         window = {
-            "context": ctx,
-            "actual_prices": actual,
+            "context_ohlcv": _prices_to_ohlcv(ctx_series),
+            "x_timestamp": pd.Series(ctx_series.index),
+            "y_timestamp": pd.Series(prices.index[split_point:eval_end]),
+            "actual_close": actual,
             "actual_returns": actual_rets,
             "start_date": str(prices.index[split_point - args.seq_len]),
             "end_date": str(prices.index[min(eval_end - 1, n - 1)]),
@@ -334,16 +376,17 @@ def run_multi_seed(args: argparse.Namespace) -> dict:
             prices = pd.Series(
                 np.cumsum(np.random.randn(n_points) * 0.01 + 100), index=dates
             )
+            ohlcv_df = _prices_to_ohlcv(prices)
         else:
             data_path = Path(args.data_dir)
-            prices_df = load_data(data_path, symbol=symbol)
-            prices = prices_df["Close"]
+            ohlcv_df = load_ohlcv(data_path, symbol=symbol)
+            prices = ohlcv_df["close"]
 
         baseline = compute_majority_baseline(
             np.asarray(prices.pct_change().dropna().values)
         )
         windows = build_evaluation_windows(
-            prices, seq_len=args.seq_len, pred_len=args.pred_len, n_windows=args.n_windows
+            ohlcv_df, seq_len=args.seq_len, pred_len=args.pred_len, n_windows=args.n_windows
         )
 
         window_metrics = []

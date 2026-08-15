@@ -1,0 +1,32 @@
+- name: Probas-6 Debugging
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-6-Debugging.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-6-Debugging.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5be9114fb786b0af0162783143398e61fd5c8f90
+      csharp_sha: ac88e9ac8df3d3e4459371c22015e42b68ef9def
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5be9114fb786b0af0162783143398e61fd5c8f90
+      csharp_sha: 7a620e4f99806eb368c890e2ada2e9f8c83a0b2e
+  known_differences:
+  - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - 'Asymetrie assumee (#8595, PR #8599) : le cote C# porte une demonstration mesuree de l''instabilite d''EP sur modele
+    non-conjugue (regression logistique bayesienne — overshoot a +30500 a l''iteration 1, changement de signe a -7490 a
+    l''iteration 2, convergence a +1,45 des l''iteration 5 ; VMP monotone des l''iteration 1). Pas de contrepartie PyMC :
+    EP n''existe pas dans ce stack, et NUTS/ADVI n''exposent pas ce mode de defaillance (ADVI diverge autrement — ELBO plat,
+    sans changement de signe). Divergence intrinseque au paradigme deja declare ci-dessus, pas un manque cote Python :
+    porter la cellule cote PyMC exigerait de fabriquer un analogue, ce que l''issue proscrit explicitement.'
+  - 'Backfill EP mixture (#8892) : la cellule cible cote C# execute desormais un melange gaussien bimodal sous EP — prior
+    symetrique prec=10 (collapse reproductible : les deux moyennes post. identiques a 5.0737, le modele ne separe pas les modes)
+    vs prior asymetrique (convergence, moyennes -5.1493 / 4.9088). La defaillance est rendue demonstrable au lieu d etre
+    seulement narree en prose. C#-only, meme asymetrie assumee que ci-dessus : EP n existe pas cote PyMC, et l issue #8892
+    proscrit de fabriquer un analogue. Pas de contrepartie Python.'

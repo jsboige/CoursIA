@@ -1,11 +1,63 @@
 name: Lean Game Theory CI
 
-# CI for game_theory_lean (multi-module lake: StableMarriage + CooperativeGames,
-# EPIC #4365). The legacy cooperative_games_lean lake was absorbed into
-# game_theory_lean and removed (#4362); CooperativeGames sorry-guard coverage is
-# preserved by check-sorry-cooperative-games pointing at game_theory_lean.
-# Tracks sorry count in certified modules and runs lake build.
-# Rule B (PR review): sorry count must not increase on certified modules.
+# CI for game_theory_lean (multi-module lake: SocialChoice + StableMarriage +
+# CooperativeGames + RepeatedGames, EPIC #4365). The legacy cooperative_games_lean
+# and stable_marriage_lean lakes were absorbed into game_theory_lean (#4362/#4365).
+#
+# Migrated to the shared lean-build.yml reusable workflow (See #8947), like
+# conway / grothendieck / calibration. It replaces THREE hand-rolled bash gates
+# (check-sorry-stable-marriage + check-sorry-cooperative-games here, and
+# check-sorry-repeated-games in the now-deleted lean-repeated-games.yml) whose
+# hardcoded file lists scanned 10 of the lake's 26 FR modules. SocialChoice/
+# (8 modules, including Arrow.lean and Sen.lean) was covered by NOTHING -- the
+# very file whose #524 regression (9 proofs replaced by `sorry`, one week of
+# Lean port lost, restored by #527) founded the anti-regression rule §D.
+# `find .` in the reusable workflow scans all 26.
+#
+# Sorry profile (measured 2026-07-30 on 27ddbfae6, mode `real`, baseline 1):
+#   RepeatedGames/Folk.lean : 1  -- the authentic hard direction of the folk
+#                                  theorem (convexity + extreme-point
+#                                  machinery), tolerated stretch per #4880
+#   every other FR module   : 0
+#
+# Mode `real` (not `raw`): the legacy gates' baselines (5 + 1 + 10 = 16) counted
+# the WORD "sorry" in FR/EN prose. `raw` over the same FR file set returns 17 for
+# this lake, of which 16 are docstring mentions ("plusieurs lemmes portent un
+# `sorry`", "ses sorries comptés", ...). Two consequences it had: a docs-only PR
+# that wrote the word reddened the gate, and rewording a docstring to drop it
+# freed a slot for a genuine sorry. `real` strips Lean comments (-- and nested
+# /- -/) before counting \bsorry\b -- mirror of the prover harness
+# count_real_sorries (FX-6 #1453), See #5120.
+#
+# The baseline is BIDIRECTIONAL (#8853/#8856): it must EXACTLY equal the
+# counter's output, so the gate fails above (a sorry was introduced) AND below
+# (a sorry was discharged without decrementing -- a stale floor hides the next
+# regression). This is precisely what the legacy gates could not do:
+# RepeatedGames counted 5 against a baseline of 10 and slept green on 5 units of
+# phantom headroom. When Folk's sorry is discharged, set sorry-baseline to "0"
+# in the same PR.
+#
+# `*_en.lean` siblings are excluded by the reusable workflow: under the i18n
+# convention (code-style.md, signatures and proofs byte-identical, only
+# docstrings differ) Folk_en.lean's sorry is the SAME obligation as Folk.lean's,
+# not new debt -- counting both double-inflates past baseline (C513-L1, #6429).
+# FR<->EN divergence is caught separately by the i18n drift CI, so nothing hides.
+#
+# Lake build: the reusable runs `lake exe cache get || true` then `lake -R build`,
+# which builds every @[default_target] of the lakefile -- SocialChoice,
+# StableMarriage, CooperativeGames, RepeatedGames and their _en siblings. The
+# deleted lean-repeated-games.yml ran `lake build RepeatedGames` (a strict
+# subset) WITHOUT `cache get`, so it recompiled Mathlib from source: on #8946 it
+# was still running after 50 minutes while this build finished in 3 min 50 s.
+#
+# Preserved from the deleted lean-repeated-games.yml (EPIC #4365 Phase-4, PR
+# c.371, po-2023), so the intent is not lost with the file: RepeatedGames was
+# absorbed into `game_theory_lean/RepeatedGames/` (its canonical home) and the
+# old `repeated_games_lean/` lake stays archived (docs + lakefile + manifest,
+# no @[default_target] pointing at it). Its certification intent -- Stage,
+# Discounting and GrimTrigger at 0 sorry, `grim_trigger_sustains_iff` proved --
+# is now enforced lake-wide by the single baseline below: any sorry appearing in
+# those modules pushes the count above 1 and fails.
 
 on:
   push:
@@ -15,6 +67,7 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      - '.github/workflows/lean-game-theory.yml'
   pull_request:
     branches: [main]
     paths:
@@ -22,108 +75,17 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      - '.github/workflows/lean-game-theory.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
-  check-sorry-stable-marriage:
-    name: "Sorry check (game_theory_lean)"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Count sorry in game_theory_lean
-      run: |
-        echo "=== Sorry inventory for game_theory_lean ==="
-        SORRY_TOTAL=0
-        KNOWN_INTRACTABLE=5
-        for f in StableMarriage/GaleShapley.lean StableMarriage/Lemmas.lean StableMarriage/GSState.lean StableMarriage/Lattice.lean; do
-          if [ -f "$f" ]; then
-            COUNT=$(grep -c "sorry" "$f" || true)
-            echo "  $f: $COUNT sorry"
-            SORRY_TOTAL=$((SORRY_TOTAL + COUNT))
-          fi
-        done
-        echo ""
-        echo "Total sorry: $SORRY_TOTAL"
-        echo "Known intractable baseline: $KNOWN_INTRACTABLE"
-        if [ "$SORRY_TOTAL" -gt "$KNOWN_INTRACTABLE" ]; then
-          echo ""
-          echo "FAIL: sorry count ($SORRY_TOTAL) exceeds known intractable baseline ($KNOWN_INTRACTABLE)"
-          echo "New sorrys introduced — anti-regression violation."
-          exit 1
-        fi
-        echo "OK: no new sorrys introduced."
-
-  build-stable-marriage:
-    name: "Lake build (game_theory_lean)"
-    runs-on: ubuntu-latest
-    needs: check-sorry-stable-marriage
-    defaults:
-      run:
-        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Install elan
-      run: |
-        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
-        ./elan-init -y --default-toolchain none
-        echo "$HOME/.elan/bin" >> $GITHUB_PATH
-
-    - name: Cache Lake build artifacts
-      uses: actions/cache@v4
-      with:
-        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
-        key: lake-sm-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
-        restore-keys: lake-sm-${{ runner.os }}-
-
-    - name: Lake build
-      run: |
-        set -o pipefail   # propagate lake's exit code through `| tail` (see lean-build.yml fix, 2026-06-14)
-        lake exe cache get || true
-        lake -R build 2>&1 | tail -20
-
-  check-sorry-cooperative-games:
-    name: "Sorry check (game_theory_lean CooperativeGames)"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Count sorry in game_theory_lean CooperativeGames
-      run: |
-        echo "=== Sorry inventory for game_theory_lean CooperativeGames ==="
-        SORRY_TOTAL=0
-        KNOWN_INTRACTABLE=1
-        for f in CooperativeGames/Basic.lean CooperativeGames/Shapley.lean; do
-          if [ -f "$f" ]; then
-            COUNT=$(grep -c "sorry" "$f" || true)
-            echo "  $f: $COUNT sorry"
-            SORRY_TOTAL=$((SORRY_TOTAL + COUNT))
-          fi
-        done
-        echo ""
-        echo "Total sorry: $SORRY_TOTAL"
-        echo "Known intractable baseline: $KNOWN_INTRACTABLE"
-        if [ "$SORRY_TOTAL" -gt "$KNOWN_INTRACTABLE" ]; then
-          echo ""
-          echo "FAIL: sorry count ($SORRY_TOTAL) exceeds known intractable baseline ($KNOWN_INTRACTABLE)"
-          echo "New sorrys introduced in CooperativeGames — anti-regression violation."
-          exit 1
-        fi
-        echo "OK: no new sorrys introduced."
-        # CooperativeGames lake build is covered by build-stable-marriage
-        # (`lake -R build` builds all default targets of game_theory_lean,
-        # including CooperativeGames); no separate build job needed.
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/GameTheory/game_theory_lean
+      display-name: game_theory_lean
+      sorry-baseline: "1"
+      sorry-filter-mode: real

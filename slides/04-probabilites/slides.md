@@ -589,9 +589,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_019.png" width="380">
-<img src="images/img_020.png" width="380">
-<img src="images/img_021.png" width="380">
+<img src="./images/img_019.png" width="380">
+<img src="./images/img_020.png" width="380">
+<img src="./images/img_021.png" width="380">
 
 
 
@@ -638,9 +638,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_022.png" width="380">
-<img src="images/img_023.png" width="380">
-<img src="images/img_024.png" width="380">
+<img src="./images/img_022.png" width="380">
+<img src="./images/img_023.png" width="380">
+<img src="./images/img_024.png" width="380">
 
 
 
@@ -670,8 +670,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_025.png" width="380">
-<img src="images/img_026.png" width="380">
+<img src="./images/img_025.png" width="380">
+<img src="./images/img_026.png" width="380">
 
 
 
@@ -707,8 +707,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_028.png" width="420">
-<img src="images/img_029.png" width="420">
+<img src="./images/img_028.png" width="420">
+<img src="./images/img_029.png" width="420">
 
 
 
@@ -731,8 +731,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_030.png" width="420">
-<img src="images/img_031.png" width="420">
+<img src="./images/img_030.png" width="420">
+<img src="./images/img_031.png" width="420">
 
 
 
@@ -761,7 +761,7 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_032.png" width="380">
+<img src="./images/img_032.png" width="380">
 
 
 
@@ -1217,9 +1217,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_064.png" width="380">
-<img src="images/img_065.png" width="380">
-<img src="images/img_066.png" width="380">
+<img src="./images/img_064.png" width="380">
+<img src="./images/img_065.png" width="380">
+<img src="./images/img_066.png" width="380">
 
 
 
@@ -1242,9 +1242,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_067.png" width="380">
-<img src="images/img_068.png" width="380">
-<img src="images/img_069.png" width="380">
+<img src="./images/img_067.png" width="380">
+<img src="./images/img_068.png" width="380">
+<img src="./images/img_069.png" width="380">
 
 
 
@@ -1267,9 +1267,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_070.png" width="380">
-<img src="images/img_071.png" width="380">
-<img src="images/img_072.png" width="380">
+<img src="./images/img_070.png" width="380">
+<img src="./images/img_071.png" width="380">
+<img src="./images/img_072.png" width="380">
 
 
 
@@ -1297,8 +1297,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_073.png" width="380">
-<img src="images/img_074.png" width="380">
+<img src="./images/img_073.png" width="380">
+<img src="./images/img_074.png" width="380">
 
 
 
@@ -1328,7 +1328,7 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_075.png" width="380">
+<img src="./images/img_075.png" width="380">
 
 
 
@@ -1439,8 +1439,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_077.png" width="380">
-<img src="images/img_078.png" width="380">
+<img src="./images/img_077.png" width="380">
+<img src="./images/img_078.png" width="380">
 
 
 
@@ -1462,9 +1462,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_079.png" width="420">
-<img src="images/img_080.png" width="420">
-<img src="images/img_081.png" width="420">
+<img src="./images/img_079.png" width="420">
+<img src="./images/img_080.png" width="420">
+<img src="./images/img_081.png" width="420">
 
 
 
@@ -1486,9 +1486,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_082.png" width="420">
-<img src="images/img_083.png" width="420">
-<img src="images/img_084.png" width="420">
+<img src="./images/img_082.png" width="420">
+<img src="./images/img_083.png" width="420">
+<img src="./images/img_084.png" width="420">
 
 
 
@@ -1510,9 +1510,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_085.png" width="420">
-<img src="images/img_086.png" width="420">
-<img src="images/img_087.png" width="420">
+<img src="./images/img_085.png" width="420">
+<img src="./images/img_086.png" width="420">
+<img src="./images/img_087.png" width="420">
 
 
 
@@ -1534,8 +1534,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_088.png" width="420">
-<img src="images/img_089.png" width="420">
+<img src="./images/img_088.png" width="420">
+<img src="./images/img_089.png" width="420">
 
 
 
@@ -1558,8 +1558,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_090.png" width="420">
-<img src="images/img_091.png" width="420">
+<img src="./images/img_090.png" width="420">
+<img src="./images/img_091.png" width="420">
 
 
 
@@ -1581,8 +1581,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_092.png" width="420">
-<img src="images/img_093.png" width="420">
+<img src="./images/img_092.png" width="420">
+<img src="./images/img_093.png" width="420">
 
 
 
@@ -1642,8 +1642,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_094.png" width="420">
-<img src="images/img_095.png" width="420">
+<img src="./images/img_094.png" width="420">
+<img src="./images/img_095.png" width="420">
 
 
 
@@ -1668,8 +1668,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_096.png" width="420">
-<img src="images/img_097.png" width="420">
+<img src="./images/img_096.png" width="420">
+<img src="./images/img_097.png" width="420">
 
 
 
@@ -1690,8 +1690,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_098.png" width="420">
-<img src="images/img_099.png" width="420">
+<img src="./images/img_098.png" width="420">
+<img src="./images/img_099.png" width="420">
 
 
 
@@ -1712,9 +1712,9 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_100.png" width="420">
-<img src="images/img_101.png" width="420">
-<img src="images/img_102.png" width="420">
+<img src="./images/img_100.png" width="420">
+<img src="./images/img_101.png" width="420">
+<img src="./images/img_102.png" width="420">
 
 
 
@@ -1735,8 +1735,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_103.png" width="420">
-<img src="images/img_104.png" width="420">
+<img src="./images/img_103.png" width="420">
+<img src="./images/img_104.png" width="420">
 
 
 
@@ -1757,7 +1757,7 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_105.png" width="420">
+<img src="./images/img_105.png" width="420">
 
 
 
@@ -1785,7 +1785,7 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_106.png" width="380">
+<img src="./images/img_106.png" width="380">
 
 
 
@@ -1813,7 +1813,7 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_107.png" width="380">
+<img src="./images/img_107.png" width="380">
 
 
 
@@ -1835,8 +1835,8 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_108.png" width="420">
-<img src="images/img_109.png" width="420">
+<img src="./images/img_108.png" width="420">
+<img src="./images/img_109.png" width="420">
 
 
 
@@ -1858,7 +1858,7 @@ layout: two-cols
 ::right::
 
 
-<img src="images/img_110.png" width="420">
+<img src="./images/img_110.png" width="420">
 
 
 

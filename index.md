@@ -4,13 +4,16 @@ Ce document sert de **portail d'entrée éditorial** vers le contenu pédagogiqu
 
 > **Catalogue à jour** — Pour l'inventaire exhaustif et toujours synchronisé (total à jour, comptes exacts par série, statuts, maturité, owner), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)** (en-tête « Total notebooks », régénéré automatiquement chaque jour par le workflow `catalog-cron.yml`). Le catalogue fait foi sur les chiffres et les statuts.
 
-## 🎯 Trois niveaux de lecture
+## 🎯 Quatre niveaux de lecture
 
 - **Entrée** (le présent fichier, [`index.md`](index.md)) — portail éditorial : thématiques + parcours. Maintenance manuelle, modifications rares.
 - **Vue d'ensemble** ([`README.md`](README.md)) — cartographie rapide du dépôt + parcours d'apprentissage par niveau. Maintenance manuelle, vue pédagogique consolidée.
+- **Parcours thématiques** ([`PARCOURS.md`](PARCOURS.md)) — cinq parcours de formation (IA classique, symbolique, GenAI, trading, recherche) dont les pages détaillées sont **générées** depuis le catalogue.
 - **Catalogue à jour** ([`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)) — inventaire exhaustif : total à jour (en-tête « Total notebooks »), décompte par série, statuts, maturités, owners. Maintenance **automatique** (workflow `catalog-cron.yml` quotidien).
 
-Les trois niveaux sont complémentaires : l'`index.md` répond à *« quelles thématiques ? »*, le `README.md` à *« par où commencer ? »*, le catalogue à *« quel notebook précis dans quelle série ? »*.
+Les quatre niveaux sont complémentaires : l'`index.md` répond à *« quelles thématiques ? »*, le `README.md` à *« par où commencer ? »*, `PARCOURS.md` à *« quel enchaînement suivre ? »*, le catalogue à *« quel notebook précis dans quelle série ? »*.
+
+> **Cadence de maintenance** : les liens de ces fichiers racine (`index.md`, `PARCOURS.md`, `README.md`) sont vérifiés par la CI à chaque PR (`docs-link-check.yml`), les comptes et statuts vivent dans les artefacts générés (catalogue + pages de parcours, régénérés quotidiennement) — la prose manuelle ne porte ni chiffres ni listes de notebooks, ce qui est précisément ce qui lui permet de rester juste sans entretien calendaire.
 
 ## 🗂️ Thématiques pédagogiques
 
@@ -33,7 +36,7 @@ Chaque série est introduite par son thème central, ses prérequis et un pointe
 ### Raisonnement formel et symbolique
 
 - **[SymbolicAI](MyIA.AI.Notebooks/SymbolicAI/README.md)** — Lean 4 (preuves formelles), Tweety (argumentation), Semantic Web (RDF, OWL), Smart Contracts, Planners, SMT (Z3), Argument Analysis, Symbolic Learning. La plus vaste série du dépôt. *Avancé.*
-- **[Probas](MyIA.AI.Notebooks/Probas/README.md)** — Programmation probabiliste (Infer.NET, NumPyro). *Intermédiaire à avancé.*
+- **[Probas](MyIA.AI.Notebooks/Probas/README.md)** — Programmation probabiliste (Infer.NET, PyMC). *Intermédiaire à avancé.*
 - **[GameTheory](MyIA.AI.Notebooks/GameTheory/README.md)** — Théorie des jeux, équilibres de Nash, mechanism design, social choice (Arrow, Sen, Voting) avec ports Lean. *Intermédiaire à avancé.*
 
 ### Domaines connexes
@@ -45,7 +48,7 @@ Chaque série est introduite par son thème central, ses prérequis et un pointe
 
 ## 🚀 Comment choisir son point d'entrée
 
-Pour un plan d'apprentissage guidé par niveau (débutant, intermédiaire, avancé), consultez la section **[Parcours recommandés](README.md#parcours-recommandés)** du `README.md` racine.
+Pour un plan d'apprentissage guidé par niveau (débutant, intermédiaire, avancé), consultez la section **[Parcours recommandés](README.md#parcours-recommandés)** du `README.md` racine. Pour un enchaînement thématique complet trié par maturité, consultez **[`PARCOURS.md`](PARCOURS.md)**.
 
 Pour un inventaire technique exhaustif (notebook par notebook, statuts d'exécution, owners), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**.
 

@@ -8,19 +8,54 @@ name: Lean Conway CI
 # version in PR #2747 (same standalone-tactic mode, same baseline 8, now via the
 # shared lean-build.yml reusable workflow).
 #
-# Sorry profile (re-verified 2026-07-16 post-#6792, standalone-tactic mode,
-# baseline=8): conway has 8 real tactic sorries, ALL in HashlifeCorrectness.lean.
+# Sorry profile (re-verified 2026-08-15 post-b3' p5 trajectory re-signing,
+# standalone-tactic mode, baseline=1): conway has 1 real tactic sorry.
 # The standalone-tactic filter also counts the Lean case-bullet form `· sorry`
-# (fixed in lean-build.yml, See #2747). Prose mentions ("Each sorry is a
-# target", "Left as sorry", "remain sorry-gated") are excluded by the
-# sole-token check. Breakdown of the 8:
-#   - HashlifeCorrectness.lean: 8 = 5 sub-goals of the p4_succ_membership
-#     decomposition (#6792: 4 mp quadrant cases + 1 mpr routing case)
-#     + 3 downstream P4-gated (p5_large_n_jump, hashlife_correctN,
-#     p5_large_n_jumpN)
+# (fixed in lean-build.yml, See #2747) and EXCLUDES `*_en.lean` i18n siblings
+# (byte-identical mirrors of the FR file — counting both double-inflates,
+# C513-L1 #6429). Prose mentions ("Each sorry is a target", "Left as sorry",
+# "remain sorry-gated") are excluded by the sole-token check. Breakdown of the 1:
+#   - HashlifeCorrectness.lean: 0 =
+#       p4_sw_overlap_wall / p4_sw_supercell_agree / p4_se_overlap_wall
+#         discharged by PR B of #9863 (ported from #9840);
+#       p4_succ_membership PROVED (See #6724 P4 mpr assembly — a proof,
+#         not a deletion, anti-regression §D);
+#       p5_large_n_jumpN PROVED (b3', See #6724): fuel induction
+#         `evolveHashlifeFastAux_correct` + one-jump bricks inlined from
+#         JumpCapture; hypothesis re-signed to trajectory capture
+#         (`∀ t ≤ n`) — forced by the proved impossibility lemmas
+#         `window_margin_lt_cone_reach` + `no_padding_depth_suffices`
+#         (no geometric route to capture-preservation; a relay pattern
+#         falsifies it dynamically). 2 -> 1 (this PR, See #6724).
+#   - HashlifeMarginFragment.lean: 1  -- documented framework sorry
+#     (hashlife_correct_margin, Livrable B #9568, acceptance-B state)
 #   - HashlifeMemo.lean:        0 (discharged since #2794, Phase 3c)
 #   - Pillars.lean:             0 (discharged since #2790, scaffolding witnesses)
 # Raising this baseline requires a documented justification in the PR body.
+#
+# Proof-integrity gate (c.950 reprise, See #8677, follows PR #8740 knot_lean pattern):
+# v2 scope élargi — Conway.KochenSpecker + Conway.FreeWillTheorem (les modules
+# d'affiche, à ranger PAR TRANCHES avant Conway.Life.Computation). The gate
+# lists 19 native_decide axioms EXPLICITEMENT (no wildcard `*native_decide*`:
+# that would destroy the "new native_decide = new red" property required to
+# triage any future introduction one-by-one). fail-on-sorry=true (the
+# 1 acknowledged tactic sorry (the documented framework sorry in
+# HashlifeMarginFragment.lean; the P5 sorry of HashlifeCorrectness.lean is
+# discharged by b3') is governed by
+# the lean-build.yml `sorry-baseline: "1"`, not by this gate — no double-cover).
+# Lowered 5→2 by PR B of #9863: the 3 SW+SE wall sorries (p4_sw_overlap_wall,
+# p4_se_overlap_wall + supercell/g3_bridge) are discharged — ported from #9840.
+#
+# Reprise rationale (ai-01 DM HIGH msg-20260728T231209-43cuju, c.950):
+#   1. allow-axioms MUST list the 19 explicit names — wildcard forbidden
+#   2. fail-on-sorry: true (not false)
+#   3. target-modules élargi — start with KochenSpecker + FreeWillTheorem,
+#      profile before gater, puis rest of Conway/Life/ by tranche
+#
+# Follow-up triage = PR #8752 (docs-only, jsboige himself, MED/prover-tooling):
+# 22-lake triage + §B.3 rule update. Will need to be re-aligned to the new
+# explicit-names approach once this PR lands (the triage doc still recommends
+# wildcard `native_decide.*`).
 
 on:
   push:
@@ -30,6 +65,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - '.github/workflows/lean-conway.yml'
+      # The gate's own implementation: a change to it must re-run the gate.
+      # knot lists it already; conway did not (added with #8951's startup break).
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_target_coverage.py'
   pull_request:
     branches: [main]
     paths:
@@ -37,7 +77,15 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      - '.github/workflows/lean-conway.yml'
+      # The gate's own implementation: a change to it must re-run the gate.
+      # knot lists it already; conway did not (added with #8951's startup break).
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_target_coverage.py'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   ci:
@@ -45,5 +93,167 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
       display-name: conway_lean
-      sorry-baseline: "8"
+      sorry-baseline: "1"
       sorry-filter-mode: standalone-tactic
+
+  # c.8133 (#8782 reconciliation): the blocking gate's allow-axioms list was
+  # a fossil -- 18 ``Conway.Life.*`` names that the gate's target closure
+  # (Conway.KochenSpecker + Conway.FreeWillTheorem, import Mathlib basics only)
+  # could NEVER reach. The list was historical, inherited from the pre-#8782
+  # era when the same workflow carried the HashlifeCorrectness audit. The audit
+  # now lives in ``proof-integrity-audit`` below (option (b), 46-name list,
+  # fail-on-sorry: false). The blocking gate's scope is the sorry-free showcase
+  # modules, whose actual axiom footprint is the standard Mathlib defaults:
+  # propext / funext / Quot.sound / Classical.choice. Pinned by
+  # ``scripts/lean/tests/test_conway_blocking_gate_whitelist_aligned.py``
+  # (audit script: ``scripts/lean/audit_conway_blocking_gate_whitelist.py``).
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      display-name: conway_lean
+      target-modules: "Conway.KochenSpecker,Conway.FreeWillTheorem"
+      allow-axioms: "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound"
+      fail-on-sorry: true
+
+  # Advisory proof-integrity AUDIT -- option (b) of #8782 (decision c.50,
+  # assigned to po-2023, taken up by po-2026 after 4 days idle + no WIP). The
+  # blocking `proof-integrity` job above targets Conway.KochenSpecker +
+  # Conway.FreeWillTheorem (the sorry-free showcase modules): it is green BY
+  # CONSTRUCTION on the 7 acknowledged tactic sorries, because it never
+  # inspects the module that carries them (#8809: SUCCESS beside a file with 8
+  # sorries). That is the "vert hors-cible" this issue opened on -- a gate
+  # whose green teaches reviewers to trust it while it slept through the only
+  # module that matters.
+  #
+  # This advisory job closes that gap: it runs the axiom audit ON the
+  # sorry-bearing module with fail-on-sorry: false. The 8 sorries surface as
+  # `has_sorry` (reported, not gated -- an honesty knob, not a leniency one),
+  # while a FORBIDDEN axiom -- one beyond the 19 native_decide allow-list and
+  # the standard defaults -- still hard-fails. So the job can go red on a real
+  # regression and green on the acknowledged state, neither of which the
+  # blocking gate could distinguish from "did not look".
+  #
+  # Criterion 1 (#8782, reformulated): the log renders WHICH declarations were
+  # enumerated, not only the module. The public anchor `hashlifeResult_central_correct`
+  # closes the private sorry chain (p4_nw_overlap_wall), so its `#print axioms`
+  # carries sorryAx -- the sorry is REACHED, not hidden. A module whose sorry
+  # sat in a private chain no public decl closes would read `enumerated=0`
+  # explicitly (lean-axiom.yml guards it), never as a silent clean.
+  #
+  # target-modules scope: Conway.Life.HashlifeCorrectness (where all 8 sorries
+  # AND 28 native_decide axioms live -- see allow-axioms below) PLUS the 4
+  # axiom-clean Life foundations: MacroCell + Hashlife (and their _en siblings).
+  # Those 4 were verified clean by STATIC analysis (grep over conway_lean source):
+  # native_decide=0, decide=0, sorry=0, and their import graph pulls in NONE of
+  # the nd-bearing Life modules (Computation/Oscillators/RLE/Spaceships/
+  # HashlifeMemo/HashlifeMarginDemo), so #print axioms resolves to the standard
+  # defaults only (propext/Classical.choice/Quot.* -- already allowed) and the
+  # audit stays green-on-acknowledged. MacroCell (43 decls) + Hashlife (20) are
+  # the data/structure layer the sorry-bearing proof builds on. The _en siblings
+  # ARE separate compiled modules (i18n convention: docstrings only differ) -- a
+  # coverage gate that counts compiled modules must not omit half a bilingual pair
+  # by default (the knot_lean 5/12-vs-5/14 miscount, #8782 pitfall 2). Moving the
+  # covered count 3 -> 7 closes 4 of the 50 blind-spot modules.
+  #
+  # RESIDUAL above is now CLOSED (point 5 of #10889): the flip to
+  # target-modules "*" below enumerated the nd-bearing modules' axioms on a
+  # warm main-identical build (probe = the same LeanVerifier.check_axioms loop
+  # this job runs, 2026-08-15) and the 21 build-enumerated names were added
+  # one-by-one to allow-axioms below -- never a wildcard entry.
+  proof-integrity-audit:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+      # #8848: the advisory (fail-on-sorry: false) job carries the ' (audit)' suffix
+      # so it is distinguishable from the blocking proof-integrity job above in the
+      # CI check rollup ("Proof integrity (conway_lean (audit))" vs "(conway_lean)").
+      # Without it a reviewer saw two identical "Proof integrity (conway_lean)" checks
+      # and could not tell which tolerates the 8 acknowledged sorries from which
+      # refuses them. Pinned by scripts/lean/tests/test_proof_integrity_display_names.py.
+      display-name: conway_lean (audit)
+      # #10889 (point 5): target-modules "*" -- lean-axiom.yml derives the
+      # module list at runtime by walking every *.lean the lake compiles
+      # (69 modules on 2026-08-15), so a hand-maintained list can never drift
+      # out of this gate's view again. The 18-module explicit list this
+      # replaces covered 18/69; the wildcard keeps those AND the ~45
+      # blind-spot modules (JumpCapture, PatternTour, Pillars,
+      # LookAndSayLemmas, RLE_en, ...), and surfaced 2 previously-unseen
+      # sorry-bearing modules (HashlifeMarginFragment + _en -- reported
+      # has_sorry, not gated: this job is fail-on-sorry: false).
+      # include-i18n-siblings: "true" -- the wildcard derivation excludes
+      # `_en` siblings by default (FR-only measurement, #10889); opting in
+      # keeps the 4 _en modules the explicit list already covered
+      # (MacroCell_en, Hashlife_en, Spaceships_en, GridCanonical_en) AND adds
+      # the 5 nd-bearing _en modules whose axioms are enumerated below. A gate
+      # that counts compiled modules must not omit half a bilingual pair
+      # (#8782 pitfall 2).
+      # #9863 history: the monolithic HashlifeCorrectness.lean (7082 ln) was
+      # split into an import aggregator + Foundation + Walls/{NW,NE,SW,SE};
+      # the 8 acknowledged tactic sorries live in the Walls submodules
+      # (native_decide=0 there). Under the explicit list those submodules had
+      # to be NAMED to keep the sorries surfaced; the wildcard covers them by
+      # construction now.
+      target-modules: "*"
+      include-i18n-siblings: "true"
+      # allow-axioms: 59 native_decide axioms = the 38 HashlifeCorrectness-era
+      # empirical footprint (revealed by this job's first CI run, #8782/#9341,
+      # shrunk by the #9571 still-life + #9595 spaceship decide flips) + 21
+      # build-enumerated entries added by the #10889 "*" widening (probe: this
+      # job's own LeanVerifier.check_axioms loop over all 69 modules on a warm
+      # main-identical conway build, 2026-08-15). All 59 are decide-kernel
+      # (`._native.native_decide.ax_1_N` = `decide` on finite Fin-typed props).
+      # The 21 new entries, each annotated with the module that introduces it:
+      #   Conway.Life.JumpCapture (3): jumpCaptured_block / _glider /
+      #     _not_trivial
+      #   Conway.Life.PatternTour (1): pulsar_is_oscillator
+      #   Conway.Life.Pillars (1): Pillars.pulsar_period3
+      #   Conway.LookAndSayLemmas (2): digitsToNat_example, lookAndSay_4
+      #   Conway.Life.Oscillators_en (2): Conway_en.Life_en.pulsar_period_three,
+      #     pentadecathlon_period_15 (_en twins of 2 of the 38)
+      #   Conway.Life.PatternTour_en (1): Conway_en.Life_en.pulsar_is_oscillator
+      #   Conway.Life.Pillars_en (1): Conway.Life.Pillars_en.pulsar_period3
+      #     -- namespace keeps the FR Conway.Life path here while other _en
+      #     twins live under Conway_en.*: this heterogeneity is exactly why
+      #     names are ENUMERATED from the build, never derived by rule.
+      #   Conway.Life.RLE_en (8): Conway_en.Life_en.RLE_en.* (_en twins of
+      #     the 8 RLE entries of the 38)
+      #   Conway.LookAndSayLemmas_en (2): Conway_en.digitsToNat_example,
+      #     Conway_en.lookAndSay_4
+      # Names stay explicit -- no wildcard entry in allow-axioms: a NEW
+      # native_decide anywhere in the lake = a new red ("new native_decide =
+      # new red"), the property the no-wildcard rule preserves.
+      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1,Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1,Conway.digitsToNat_example._native.native_decide.ax_1_1,Conway.lookAndSay_4._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1,Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway_en.digitsToNat_example._native.native_decide.ax_1_1,Conway_en.lookAndSay_4._native.native_decide.ax_1_1"
+      fail-on-sorry: false
+
+  # Advisory proof-integrity coverage (See #8782). The `target-modules` lists
+  # above are hand-maintained while the lakefile glob (.submodules Conway,
+  # Conway_en) grows as modules are added; a gate that inspects 3 of N compiled
+  # modules is a "vert hors-cible" -- visually indistinguishable from a targeted
+  # green in the check rollup. This job prints the delta (compiled vs target)
+  # and ALWAYS exits 0: it never fails CI, it makes the gap legible in the log.
+  #
+  # `--from-workflow` reads THIS file and unions target-modules over every job
+  # whose `uses:` resolves to lean-axiom.yml. It replaces a literal
+  # `--target-modules` flag that had been given the blocking job's list only:
+  # when option (b) of #8782 added the audit job above, the advisory kept the
+  # old list and reported Conway.Life.HashlifeCorrectness as a blind spot --
+  # false about precisely the module the audit job inspects. A drift-detector
+  # that keeps its own copy of the list detects everyone's drift but its own.
+  target-coverage:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Advisory target-coverage delta
+        run: |
+          python3 scripts/lean/check_target_coverage.py \
+            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean \
+            --from-workflow .github/workflows/lean-conway.yml \
+            --lib-root Conway \
+            --name conway_lean

@@ -389,5 +389,65 @@ But remember: **Complexity is not always better**. The research proves it.
 **Execution Time**: ~3 minutes
 **Data Source**: Yahoo Finance (BTC-USD)
 **Period**: 2019-01-01 → 2026-02-17 (2417 days)
-**Author**: Claude Opus 4.6 (qc-research-notebook agent)
+**Author**: Claude-Code (qc-research-notebook agent)
 **Date**: 2026-02-17
+
+---
+
+## QC Cloud Validation (2026-08-07) — le verdict sur le moteur réel
+
+**Contexte.** L'analyse ci-dessus (février 2026) reposait sur des données Yahoo
+Finance **locales**, avec une conclusion forte : l'approche adaptative à seuils
+percentile échoue (H1-H5 rejetées, WFE 26 %), et la simplification (retirer le
+filtre ADX) rescousse la stratégie (MACD-only Sharpe local **0.939**). Cette
+conclusion n'avait **jamais été validée sur QC Cloud** avec frais Binance réels.
+Le mandat user (EPIC #9768) demande : *l'échec est-il intrinsèque, ou un défaut
+de robustesse réparable ?*
+
+**Protocole.** 3 backtests sur QC Cloud, brokerage **Binance Cash** (frais réels),
+**même fenêtre fixée** 2019-04-01 → 2026-08-06 (2684 jours tradeables). Projet de
+validation isolé `CSharp-BTC-MACD-ADX-robustness` (34914270) — le canonical
+(30751067) n'est pas touché.
+
+| Stratégie | Sharpe | PSR | CAGR | MaxDD | Profit net | Ordres |
+|-----------|--------|-----|------|-------|------------|--------|
+| Adaptative (code committé) | 0.123 | 0.814 % | ~0.04 % | 72.7 % | ~3.7 % | 52 |
+| **MACD-only (filtre ADX retiré)** | **0.988** | **29.605 %** | **32.35 %** | **55.30 %** | **685.75 %** | 188 |
+| **Buy & hold BTC** (baseline) | **1.180** | 35.697 % | 45.20 % | 76.40 % | 1453.37 % | 1 |
+
+### Verdict : BEATS-adaptative, NO-BEATS buy-hold — réparable mais sans alpha
+
+**1. La réparation fonctionne (l'échec N'ÉTAIT PAS intrinsèque).** Retirer le
+filtre ADX percentile multiplie le Sharpe par **8** (0.123 → 0.988) sur le moteur
+réel. Le PSR passe de bruit (0.8 %) à statistiquement significatif (29.6 %,
+au-dessus du seuil 10 %). Le diagnostic de février 2026 (sur-filtrage : 52 ordres
+vs 188, fenêtres percentile trop lentes pour la volatilité crypto) est **confirmé
+sur QC Cloud**. Le nombre local yfinance (0.939) survient quasi à l'identique sur
+le moteur réel (0.988) — l'analyse locale **n'était pas un artefact**.
+
+**2. Mais la stratégie ne bat pas le buy & hold BTC.** Sharpe 0.988 < 1.180,
+profit net 685 % < 1453 %. Le trend-following MACD sur BTC, même débarrassé de
+son filtre nuisible, **ne génère pas d'alpha** au-delà de l'exposition elle-même.
+
+**3. Le seul avantage réel est la gestion du risque.** MACD-only délivre ~47 % du
+rendement buy-hold pour un drawdown max de 55.3 % (vs 76.4 %) — soit environ 72 %
+du drawdown le plus profond. C'est une amélioration de profil de risque, **pas un
+edge prédictif**.
+
+### Conclusion actionnable
+
+- Le code committé (`Main.cs` adaptatif) est **démontrablement cassé** : 8× pire
+  que sa propre version simplifiée. Le filtre ADX percentile détruit de la valeur.
+- Recommandation : remplacer la logique adaptative par MACD-only (Option A de
+  l'analyse de février, confirmée sur QC Cloud). Le variant validé vit sur le
+  projet QC 34914270 (`Main.cs` « MACD-only »). **Ce déploiement est un changement
+  de stratégie** — laissé à la décision review (ni alpha ni urgence), hors scope de
+  cette validation.
+- Résiduel honnête : la fenêtre unique (2019-04 → 2026-08) ne constitue pas un
+  walk-forward out-of-sample. Les paramètres MACD (12/26/9) sont les **valeurs par
+  défaut standard**, non optimisés — le risque d'overfitting est donc faible, mais
+  une validation walk-forward (fenêtres train/test disjointes) reste l'étape de
+  robustesse suivante avant tout déploiement paper-trading.
+
+**Source des données** : QuantConnect Cloud (BTCUSDT daily, Binance Cash), 2026-08-07.
+**Auteur** : po-2025 (bras robustesse, mandat user EPIC #9768, steer ai-01 c.1265).

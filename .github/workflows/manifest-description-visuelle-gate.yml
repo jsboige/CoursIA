@@ -87,8 +87,11 @@ jobs:
             [ -z "$mf" ] && continue
             [ -f "$mf" ] || continue
             checked=$((checked + 1))
-            out=$(python scripts/notebook_tools/detect_manifest_field.py --check "$mf" 2>&1)
-            rc=$?
+            # `&& rc=0 || rc=$?` is load-bearing under `bash -e`: a bare `out=$(cmd)`
+            # that exits non-zero aborts the step before `rc=$?` is read, making the
+            # rc=1/rc=2 branches below dead code and the failure anonymous (#8884 motif).
+            # NOT `|| true` (that makes $? read 0 from `true` and permanently disarms the gate).
+            out=$(python scripts/notebook_tools/detect_manifest_field.py --check "$mf" 2>&1) && rc=0 || rc=$?
             if [ "$rc" -eq 1 ]; then
               echo "::error title=Manifest description_visuelle::$mf omits the **Description visuelle** field for at least one figure. See PR #7771 doctrine + PR #7814 (this gate)."
               echo "<details><summary><code>$mf</code></summary>" >> "$GITHUB_STEP_SUMMARY"

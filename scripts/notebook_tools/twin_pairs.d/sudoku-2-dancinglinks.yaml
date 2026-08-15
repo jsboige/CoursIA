@@ -1,0 +1,22 @@
+- name: "Sudoku-2 DancingLinks"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-2-DancingLinks-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-2-DancingLinks-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = DLX from-scratch (dataclasses + linked-list 4-way : Head/Column/Node/Up/Down/Left/Right, port pedagogique Knuth Algorithm X, mini-Sudoku 4x4 exclusivement). Pas de lib SOTA-tier en Python : `xalgorithmx` n'est pas maintained, `dlx` est un jouet 4x4. L'algo Knuth DLX est pedagogique by design (les liens sont la lecon). C# = `DlxLib` NuGet (taylorjg, MIT-license, reference implementation Knuth DLX, stable 2013-2015, spec figee). Verdict SOTA-OK : la lib C# EST la SOTA Knuth (meme algo), le cote PY est from-scratch assume pedagogique (le DLX est un algo a comprendre, pas une lib a consommer). Asymetrie assumee et documentee dans known_differences."
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 59e277684255099f42d578085c52c3fb749b7fa1
+      csharp_sha: 156c7c4e68a21a5348a91ca49c279ffa92a79593
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: d41c65dbebdbe43271ca635c1dfee84dffe24ae5
+      csharp_sha: 156c7c4e68a21a5348a91ca49c279ffa92a79593
+      content_python_sha: 2df12ef9f26880b4153f71bbaeb0095b16ca9a73da5f76b328ac7645ea641c94
+      content_csharp_sha: 5f55607cc83719023b4ff9ae13ba7376af1791c721ff902943831e19977df756
+  known_differences:
+    - "Socle pedagogique commun : algorithme Dancing Links (DLX) de Knuth / Algorithm X pour la couverture exacte (exact cover), applique a un mini-Sudoku 4x4. Meme concept mathematique (matrice binaire de couverture, selection de colonnes a cardinalite minimale, unlinking/relinking des noeuds), meme cas d'application (mini-Sudoku 4x4), meme exercice pedagogique (construire la matrice de couverture, stub TODO)."
+    - "Divergence d'implementation : le C# delegue a la lib DlxLib (NuGet `#r \"nuget: DlxLib\"`, classe `DancingLinkSolver : ISudokuSolver` qui wrappe le solveur de la lib, importe le socle `Sudoku-0-Environment-Csharp.ipynb`) ; le Python implemente Dancing Links ENTIEREMENT from scratch (`class DancingLinksNode` a 4 voisins gauche/droite/haut/bas + `class DancingLinks` construisant la matrice creuse et executant l'Algorithm X de Knuth manuellement). Meme algorithme, deux niveaux d'abstraction : lib industrielle cote C# vs reconstruction pedagogique a la main cote Python."
+    - "Asymetrie structurelle : Python 12 cellules code / 21 markdown (implementation complete from scratch + docstring algorithmique detaillee) ; C# 10 cellules code / 16 markdown (wrapper DlxLib + exercice BuildMiniSudokuMatrix). Idiomes framework : C# = DlxLib + System.*, Python = stdlib (typing, dataclasses), 0 dependance numerique."

@@ -277,3 +277,51 @@ def test_surprise_gain_iid_near_zero():
     g = fe.surprise_gain(noise, rng, n_shuffles=10)
     assert abs(g["fe_gain"]) < 0.2
 
+
+# --------------------------------------------------------------------------- #
+#  #8936 : plancher absolu (1e-6) = mine pour appelants a petite echelle         #
+# --------------------------------------------------------------------------- #
+
+
+def test_relative_floor_default_is_absolute_unchanged():
+    """Non-regression : ``floor_frac=None`` (defaut) = plancher absolu ``1e-6``.
+    Aucun resultat ICT-10/14 ne bouge (acceptance #8936)."""
+    rng = np.random.default_rng(0)
+    obs = rng.standard_normal(100)
+    pred = obs + rng.standard_normal(100) * 0.5  # O(1) errors (ICT-10/14 scale)
+    bare = fe.free_energy_trajectory(obs, pred, mode="adaptive")
+    none_floor = fe.free_energy_trajectory(obs, pred, mode="adaptive", floor_frac=None)
+    assert np.allclose(bare["F"], none_floor["F"])
+    # le plancher absolu 1e-6 borne la variance (pas de divergence a cette echelle)
+    assert np.all(np.isfinite(bare["F"]))
+
+
+def test_relative_floor_defuses_cliff_for_small_error_scale():
+    """La falaise #8936 : un predictor confiant (sigma^2 << 1e-6) trompe le
+    plancher absolu. Le plancher relatif ``floor_frac * scale`` s'adapte a
+    l'echelle reelle et borne la surprise, l'absolu l'influe (scale-insensible).
+
+    Cas isole controle : err^2 = 1e-4, predictor reclame sigma^2 = 1e-9 (<< floor).
+    - abs floor (1e-6) : accuracy = 1e-4 / 1e-6 = 100 -> surprise ~ 44.
+    - rel floor (0.05 * scale=1e-4 = 5e-6) : accuracy = 1e-4 / 5e-6 = 20 -> surprise ~ 5.
+    Le relatif est nettement inferieur (la surprise reflète l'erreur réelle,
+    pas le plancher numerique)."""
+    scale = 1e-4  # echelle d'erreur reelle (petite devant 1e-6)
+    err = np.full(5, np.sqrt(scale))   # err^2 = 1e-4
+    sigma = np.full(5, np.sqrt(1e-9))  # predictor sur-confiant (var << 1e-6)
+    f_abs = fe.gaussian_surprise(err, np.zeros(5), sigma=sigma)
+    f_rel = fe.gaussian_surprise(err, np.zeros(5), sigma=sigma,
+                                 floor_frac=0.05, scale=scale)
+    # le plancher absolu influe la surprise (clipped a 1e-6)
+    # le plancher relatif la borne (clipped a 0.05*scale)
+    assert float(np.mean(f_rel)) < float(np.mean(f_abs))
+    # et le facteur est substantiel (pas une marge bruit)
+    assert float(np.mean(f_abs) / np.mean(f_rel)) > 2.0
+
+
+def test_gaussian_surprise_relative_floor_requires_scale():
+    """Le plancher relatif sans ``scale`` echoue explicitement (pas de chute
+    silencieuse sur l'absolu -- l'appelant doit nommer l'echelle de reference)."""
+    with pytest.raises(ValueError):
+        fe.gaussian_surprise(np.ones(3), np.zeros(3), sigma=0.5, floor_frac=0.05)
+

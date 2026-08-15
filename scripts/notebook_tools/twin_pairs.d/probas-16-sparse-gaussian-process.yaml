@@ -1,0 +1,23 @@
+- name: Probas-16 Sparse-Gaussian-Process
+  family: Probas/Infer.NET-PyMC
+  python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-16-Sparse-Gaussian-Process.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5743c084f9060ed197a7acf541bf2611f89c7505
+      csharp_sha: 6f3548830ed7e67e883b0d6d789c022fad96d6c4
+    - date: "2026-08-08"
+      by: myia-po-2025:CoursIA
+      python_sha: 18bff0a5981fa0f4cec591766a2e42dde21a19ed
+      csharp_sha: 6f3548830ed7e67e883b0d6d789c022fad96d6c4
+      content_python_sha: f95fb8bc9c28d5c311b113abfa35fbcdcfec5ac07bf332477c8977f59b77b6e3
+      content_csharp_sha: 0e1a73ae33cfba37a8d37a4e9bc0fba25b2e1271a32255817ba4949bbaca8926
+  known_differences:
+  - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
+  - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
+    Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
+    (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'

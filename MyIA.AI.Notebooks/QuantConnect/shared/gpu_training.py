@@ -74,7 +74,7 @@ def thermal_check(max_temp: int = 80, cool_sleep: int = 15, verbose: bool = True
     Parameters
     ----------
     max_temp : int
-        Seuil en Celsius au-dela duquel on pause (defaut: 87).
+        Seuil en Celsius au-dela duquel on pause (defaut: 80).
     cool_sleep : int
         Duree de pause en secondes si seuil depasse (defaut: 15).
     verbose : bool

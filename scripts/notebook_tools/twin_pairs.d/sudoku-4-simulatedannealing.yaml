@@ -1,0 +1,29 @@
+- name: "Sudoku-4 SimulatedAnnealing"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-4-SimulatedAnnealing-Csharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib native-both : Python = `simanneal` PyPI package (SOTA Python Simulated Annealing framework, recuit simule avec schema de refroidissement, temperature initiale, lambda, equilibre). C# = `GeneticSharp` NuGet package (SOTA .NET Genetic Algorithm framework). Les deux utilisent la SOTA metaheuristique de leur stack, et le mandat #10382 explicite cette configuration native-both comme valide (chaque cote atteint un moteur metaheuristique de production de son ecosysteme). Asymetrie d'algorithme documentee dans known_differences : SA cote Python vs GA cote C#, mais les deux algorithmes sont des methodes de recherche stochastique voisines (voisinage par mutation locale, exploration/exploitation via temperature vs selection). Pont cross-stack impossible : simanneal pur Python (C-extension), GeneticSharp pur .NET. Verdict SOTA-OK par construction native-both (#10382). Pas de moteur commun a brancher, pas d'asymetrie engine-mismatch a corriger."
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 39980a85c8895cd5edb2443ba28a12d07ae4b8f2
+      csharp_sha: 1e982c6661c13ce0cb9f1ed1b40a81b85bd856ea
+    - date: "2026-08-06"
+      by: myia-po-2025:CoursIA
+      python_sha: 89a574cf97744436510574f6b05388406d69e945
+      csharp_sha: 1493ad7d5939e637e45fdc97942f372cc9305a08
+      content_python_sha: 64d5a9cc3ac6be2bfb084166ad9b8a68d033540da338965beb6e94e8fe588764
+      content_csharp_sha: b66c6a0d04744cd17437122672c82a2081fcc0b22590ee5d8990758ef3555343
+    - date: "2026-08-11"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 89a574cf97744436510574f6b05388406d69e945
+      csharp_sha: 0da262013d3c9132fb3d59c9553d9333d807d05a
+      content_python_sha: 64d5a9cc3ac6be2bfb084166ad9b8a68d033540da338965beb6e94e8fe588764
+      content_csharp_sha: 1e246f528ee21341b6804fa730661468c8ad7e7d7f96df895790b74b2fc4dfef
+  known_differences:
+    - "Socle pedagogique commun : recuit simule (Simulated Annealing) applique au Sudoku -- schema de refroidissement, temperature decroissante, acceptation de Metropolis, voisinage par mutation locale. Tranche 1 (C# from scratch, sections 3-8) et le jumeau Python enseignent le meme algorithme."
+    - "Lib-vs-lib native-both (mandat #10382) : chaque cote atteint un moteur metaheuristique de production de son ecosysteme. Python : framework 'simanneal' (l'etudiant sous-classe Annealer, herite de l'infrastructure temperature/voisinage/Metropolis) -- from simanneal import Annealer, classe SudokuAnnealer(Annealer). C# : librairie 'GeneticSharp' (Tranche 2, section 9) -- le solver SudokuGeneticSharpSolver branche un chromosome a permutation de ligne + operateurs custom (mutation echange intra-ligne, crossover OX par ligne) sur l'infrastructure Population/GeneticAlgorithm/EliteSelection/TplTaskExecutor de GeneticSharp. Les deux cotes deleguent le MOTEUR a une lib de production et se concentrent sur le probleme (encodage, voisinage/fitness)."
+    - "Asymetrie d'algorithme documentee : le moteur Python (simanneal) est un framework de recuit simule ; le moteur C# (GeneticSharp) est un framework d'algorithme genetique. Les deux sont des moteurs metaheuristiques de production, mais de familles differentes (trajectoire unique + bruit thermique vs population + operateurs stochastiques). La Tranche 2 C# exploite cette difference pour comparer SA vs GA sur le meme Sudoku (SA 3/3 Easy > GA 2/3 Easy -- la structure de contraintes du Sudoku favorise la recherche locale stochastique, resultat etabli). C'est le cas mealpy-vs-MetaGeneticSharp du mandat metaheuristiques user : Python a un framework metaheuristique, .NET a le sien (GeneticSharp)."
+    - "Tranche 1 preservee EN PLUS (jamais remplacee) : la classe SimulatedAnnealingSolver from scratch (sections 3-8, 0 NuGet, System.* stdlib) reste byte-identique a l'attestation precedente. La Tranche 2 (GeneticSharp) s'ajoute comme section 9, avant la Conclusion. Template = Tweety-5 / GT-5 : 'Tranche 1 from scratch' + 'Tranche 2 via <engine>'."

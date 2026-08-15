@@ -35,7 +35,7 @@ L'IA générative a transformé la création de contenu en 2024-2026. Un dévelo
 | 8 | PostTraining - La chaîne SOTA du post-entraînement | [README complet](PostTraining/README.md) | (durée libre) | SFT → RLHF → DPO → GRPO → RLVR (DeepSeek-R1) |
 | 9 | Vibe-Coding - Développer avec des agents IA | [README complet](Vibe-Coding/README.md) | ~30h | Claude Code + Roo Code + Claw-Systems + Claudish |
 | 10 | RAG et Mémoire Sémantique - Le backend de grounding des agents | [README complet](RAG-et-Memoire-Semantique/README.md) | ~6h | Qdrant + embeddings + notebook pratique hors ligne |
-| 11 | Open-WebUI - La plateforme et son assurance qualité | [README de l'ombrelle Open-WebUI](Open-WebUI/README.md) | ~14h | Plateforme + Playwright E2E (30+ tests) |
+| 11 | Plateformes-Conversationnelles - OWUI & AI-Engine | [README catégorie](Plateformes-Conversationnelles/README.md) | ~14h+ | Tour OWUI + Playwright E2E (30+ tests) + AI-Engine WordPress |
 | 12 | CaseStudies - Projets étudiants | [README complet](CaseStudies/README.md) | (durée libre) | Barbie/Shrek, recettes, chatbot médical, Fort Boyard |
 
 ## Parcours recommandés
@@ -140,8 +140,9 @@ GenAI/
 ├── FineTuning/              # Fine-tuning de modèles : LoRA/QLoRA/SFT/DPO
 ├── PostTraining/            # Post-training SOTA : SFT/RLHF/DPO/GRPO/RLVR
 ├── CaseStudies/             # Études de cas étudiants
-├── Open-WebUI/              # Plateforme Open WebUI : tour guidé + série QA Playwright
-│   └── Playwright-OWUI/     # Tests E2E Playwright (6 modules, 30+ tests)
+├── Plateformes-Conversationnelles/  # Interfaces GenAI conversationnelles (nommées par fonction)
+│   ├── Open-WebUI/          # Tour guidé plateforme + série QA Playwright (6 modules, 30+ tests)
+│   └── AI-Engine-WordPress/ # WordPress comme surface GenAI (Copilot, RAG, serveur MCP)
 ├── Vibe-Coding/             # Tutoriels Claude Code et Roo Code
 └── RAG-et-Memoire-Semantique/  # Mémoire sémantique : Qdrant, embeddings, grounding (SDDD)
 ```
@@ -164,7 +165,7 @@ La vidéo est la modalité la plus exigeante en ressources mais aussi la plus sp
 
 ### Texte - Maîtriser les LLMs et les APIs OpenAI
 
-Le texte est le socle de toute interaction avec l'IA générative. Cette série va au-delà du simple "prompt engineering" : structured outputs pour des réponses fiables, function calling pour connecter les LLMs à vos outils, RAG pour injecter de la connaissance externe, code interpreter pour l'exécution dynamique, et les modèles de raisonnement (o-series) pour les tâches complexes. Le milieu de série couvre les patterns de production et les LLMs locaux (llama.cpp, quantization, vLLM). Le dernier tiers (notebooks 13-18) forme un arc **agentique et test-time compute** : orchestration d'agents, mémoire persistante, Tree-of-Thoughts, scaling du calcul à l'inférence et raisonnement natif vs scaling ; les notebooks 19-20 raccordent le tout à la plateforme [Open WebUI](Open-WebUI/README.md) (orchestration et API native, endpoints authentifiés live).
+Le texte est le socle de toute interaction avec l'IA générative. Cette série va au-delà du simple "prompt engineering" : structured outputs pour des réponses fiables, function calling pour connecter les LLMs à vos outils, RAG pour injecter de la connaissance externe, code interpreter pour l'exécution dynamique, et les modèles de raisonnement (o-series) pour les tâches complexes. Le milieu de série couvre les patterns de production et les LLMs locaux (llama.cpp, quantization, vLLM). Le dernier tiers (notebooks 13-18) forme un arc **agentique et test-time compute** : orchestration d'agents, mémoire persistante, Tree-of-Thoughts, scaling du calcul à l'inférence et raisonnement natif vs scaling ; les notebooks 19-20 raccordent le tout à la plateforme [Open WebUI](Plateformes-Conversationnelles/Open-WebUI/README.md) (orchestration et API native, endpoints authentifiés live).
 
 ### SemanticKernel - Orchestration agentique avec Microsoft
 
@@ -186,9 +187,9 @@ Le "vibe coding" est la compétence la plus demandée de 2026 : décrire ce qu'o
 
 Là où Vibe-Coding montre les *front-ends* d'agents, cette section documente la couche d'en dessous : la **mémoire sémantique** qui ancre un agent dans des faits vérifiables plutôt que dans des suppositions. C'est le récit d'une infrastructure réelle — une base vectorielle [Qdrant](https://qdrant.tech/) qui indexe conversations et code, interrogée à chaque tâche pour retrouver « ce qui a déjà été dit, écrit, décidé ». Quatre documents (le besoin et la méthode SDDD, l'infrastructure Docker/WSL2, l'usage via MCP, les incidents réels et leurs leçons) et un **notebook pratique** exécutable hors ligne (Qdrant en mémoire + `fastembed`, sans clé d'API ni Docker). Le pendant *applicatif* du RAG sur documents reste la série [Texte](Texte/README.md).
 
-### Open-WebUI - La plateforme et son assurance qualité
+### Plateformes-Conversationnelles - Interfaces GenAI conversationnelles
 
-Open WebUI est une interface réelle de chat LLM, multi-tenant et auto-hébergée. Ce sous-domaine ombrelle présente la plateforme et ses fonctionnalités, et regroupe la série **Playwright-OWUI** : des tests de bout en bout (navigation, authentification, streaming, RAG, outils MCP, CI/CD) pour passer de la démonstration au produit déployable.
+Cette catégorie regroupe les **plateformes GenAI réelles** qui apportent une couche de conversation par-dessus les modèles : **Open WebUI** (serveur auto-hébergé multi-tenant, avec son tour guidé et la série QA **Playwright-OWUI** de tests de bout en bout) et **AI-Engine** (extension WordPress, chatbots + Copilot Gutenberg + RAG + WordPress comme serveur MCP). Un [comparatif](Plateformes-Conversationnelles/comparatif-owui-vs-ai-engine.md) vit au niveau catégorie pour aider à choisir selon le terrain.
 
 ### CaseStudies - Projets étudiants
 
@@ -219,7 +220,7 @@ Cette partition traverse les **13 entrées** du marqueur `CATALOG-STATUS` ci-des
 | [FineTuning](FineTuning/) | 5 | ● self-hosted | **LoRA/QLoRA/SFT/DPO** sur GPU local ; PEFT + Transformers |
 | [PostTraining](PostTraining/) | 7 | ● self-hosted | **SFT/GRPO/RLVR** (rewardspy 0.1.0 git install) |
 | [CaseStudies](CaseStudies/) | 4 | ◯ Hybride | Projets étudiants bout-en-bout |
-| [Open-WebUI](Open-WebUI/) | 7 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) |
+| [Plateformes-Conversationnelles](Plateformes-Conversationnelles/) | 7 | ◯ Hybride | Plateforme Open WebUI + Playwright E2E (30+ tests) ; AI-Engine (WordPress) |
 | [Vibe-Coding](Vibe-Coding/) | 6 | ◯ Hybride | **Claude Code** + **Roo Code** ; **Claw-Systems** (bots Hermes/NanoClaw) + **Claudish** (proxy multi-provider) |
 | [RAG-et-Memoire-Semantique](RAG-et-Memoire-Semantique/) | 1 | ● self-hosted | **Qdrant** + embeddings + grounding SDDD |
 | [racine](.) | 1 | ◯ Hybride | Index général |
@@ -378,7 +379,7 @@ Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que le
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 141
-breakdown: Audio=30, SemanticKernel=20, Texte=20, Image=17, Video=17, Open-WebUI=7, PostTraining=7, 00-GenAI-Environment=6, Vibe-Coding=6, FineTuning=5, CaseStudies=4, RAG-et-Memoire-Semantique=1, root=1
-maturity: BETA=125, ALPHA=10, DRAFT=3, TEMPLATE=3
+pedagogical_count: 169
+breakdown: Audio=30, Texte=21, Video=21, SemanticKernel=20, Plateformes-Conversationnelles=19, Image=17, PostTraining=14, Vibe-Coding=8, 00-GenAI-Environment=6, FineTuning=5, CaseStudies=4, Aspire=2, RAG-et-Memoire-Semantique=1, root=1
+maturity: BETA=146, ALPHA=11, DRAFT=9, TEMPLATE=3
 -->

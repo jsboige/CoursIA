@@ -286,7 +286,7 @@ IIT/
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
-│   ├── ICT-*.ipynb             # Notebooks numérotés 1..25 + raffinement ICT-19 + ICT-SAE-JLens + ICT-Synthese (5 strates, Epic #4588 — cf son README)
+│   ├── ICT-*.ipynb             # Notebooks numérotés (ICT-1 à ICT-30) + raffinement/extension (suffixes lettrés + non-numérotés), 7 strates — cf son README pour la liste complète (Epic #4588)
 │   ├── ict/                    # Package Python autonome (simulations + mesures)
 │   ├── tests/                  # Suite pytest de validation des modules ict/
 │   └── README.md               # Documentation de la série ICT
@@ -316,14 +316,19 @@ La série IIT étudie des structures causales **à un instant donné**. Une exte
 **ICT** (Integrated Causal Trajectories, Epic #4588), prolonge ce regard vers les **trajectoires**
 de structures causales : comment une organisation se maintient, se transforme, se répare, change
 d'échelle et traverse un espace de possibles ($C_0 \rightarrow C_1 \rightarrow \dots \rightarrow C_n$).
-Elle progresse en cinq strates — le **tri auto-organisé** transparent (strate 1, ICT-0 à ICT-7), la
+Elle progresse en **sept strates** — le **tri auto-organisé** transparent (strate 1, ICT-0 à ICT-7), la
 **morphogenèse dynamique** à paysages d'attracteurs engendrés (strate 2, ICT-8 à ICT-10), les
 **trajectoires intégrées** régime-dépendantes (strate 3, ICT-11 à ICT-13), la jambe
-**représentationnelle** énergie libre / surprise (strate 4, ICT-14), puis la **théorie fondatrice**
-cross-substrat et la réversibilisation outillée (strate 5, ICT-15 et suivants).
+**représentationnelle** énergie libre / surprise (strate 4, ICT-14), la **théorie fondatrice**
+cross-substrat et la réversibilisation outillée (strate 5, ICT-15 à ICT-25), un **socle théorique
+transverse** distillant la sémiophysique de René Thom (strate 6), puis la **coopération comme
+opérateur** — conventions, invention de symboles, adoption collective, inoculation de concept
+(strate 7, ICT-26 à ICT-30).
 
-La strate 5 est complétée par **quatre notebooks de raffinement / extension** que la table de
-navigabilité n'isolait pas jusqu'ici : [ICT-15b-SensitivityCanonicity](ICT-Series/ICT-15b-SensitivityCanonicity.ipynb)
+Chaque strate est **complétée par des notebooks de raffinement / extension** (suffixes lettrés
+`b`/`c`/`d`… ou titres non-numérotés) qui approfondissent un aspect ou appliquent l'instrumentation
+d'un notebook principal à un nouveau cas. Quelques exemples représentatifs :
+[ICT-15b-SensitivityCanonicity](ICT-Series/ICT-15b-SensitivityCanonicity.ipynb)
 (sensibilité du verdict Φ/F/K d'ICT-15 aux perturbations contrôlées du substrat, re-mesure multi-graines),
 [ICT-15c-MetaProxyObstruction](ICT-Series/ICT-15c-MetaProxyObstruction.ipynb) (obstructions adversariales au verdict
 de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
@@ -331,7 +336,8 @@ de convergence — exploration des faux-positifs quand le triplet co-varie par c
 cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
 et al. 2022), et [ICT-Argumentation-BeliefTrajectories](ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb)
 (Phase B du zoo ICT — application de l'instrumentation Φ-trajectoires d'ICT-1 aux trajectoires de croyances
-Argumentum 5 classes, banc T2 multilingue).
+Argumentum 5 classes, banc T2 multilingue). La **liste complète** de ces raffinements (qui s'enrichit à
+mesure que la série de recherche progresse) figure dans le [README dédié d'ICT](ICT-Series/README.md).
 
 La strate 5 est désormais **ancrée sur un substrat réel** : ICT-21 extrait des trajectoires SAE
 (*sparse autoencoders*) sur les activations d'un LLM (Qwen), et le module `ict/workspace.py` réalise
@@ -343,7 +349,7 @@ ci-dessus ne co-localisent pas leurs prédictions sur S4 (négatif honnête).
 
 ICT vit dans le sous-répertoire [`ICT-Series/`](ICT-Series/README.md), placé sous IIT pour respecter
 l'ordre de lecture (ICT prolonge IIT). **Voir son [README dédié](ICT-Series/README.md)** pour la liste
-complète des notebooks, les cinq strates et le détail des mesures *sans complaisance*. La série
+complète des notebooks, les sept strates et le détail des mesures *sans complaisance*. La série
 partage l'environnement Python d'IIT (`scripts/setup_pyphi_env.ps1`, `requirements.txt`) ; la jambe
 SAE (ICT-21 et suivants) utilise en plus un environnement conda dédié (`coursia-sae`).
 
@@ -406,11 +412,11 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.3.0 — Juillet 2026*
+*Version 1.3.1 — Août 2026*
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 36
-breakdown: ICT-Series=33, root=3
-maturity: BETA=33, DRAFT=3
+pedagogical_count: 53
+breakdown: ICT-Series=50, root=3
+maturity: BETA=48, DRAFT=5
 -->

@@ -1,0 +1,29 @@
+- name: "Tweety-5 Abstract-Argumentation"
+  family: Tweety/IKVM-JPype
+  python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (argumentation abstraite de Dung + semantique CF2 + 11 notions d'equivalence) : C# branche IKVM 8.15.0 avec `tweety-dung.dll` + `tweety-rpcl.dll` (DLLs source-recompilees selon pattern c.220 IKVM causal rebuild, tracked sur disque) + 30 refs `org.tweetyproject.*` (cell 26 SccCF2Reasoner cell 28 11 notions equivalence via Assembly.LoadFrom + reflection IKVM sur les types exposes par les DLLs shade). Python branche JPype + `from org.tweetyproject.arg.dung.syntax import DungTheory, Argument` + meme moteur Java. Verifie firsthand (c.229, 2026-08-12, po-2023:CoursIA-2) : DLLs source compilees (pas bytecode 59 maven-shade), C# `Console.WriteLine` confirme `DLL tweety-dung chargee : ... v1.30.0`, Python `jpype.getDefaultJVMPath()` + init JVM. NB : le C# N'UTILISE PAS de `using org.tweetyproject` explicite mais instancie les types via reflection `Assembly.LoadFrom(...).GetType(...)` (pattern IKVM 8.x : IKVM traduit les packages Java en types .NET, accessibles par reflection sans `using` direct). Pont IKVM-bytecode .NET vs JPype-JVM-runtime sur le meme moteur Java."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2026:CoursIA
+      python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
+      csharp_sha: 0993ec2e3068216e3b07f1448dd5776de232692b
+    - date: "2026-08-09"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
+      csharp_sha: 1cb02535990e166e31594dd2d5b852dd04877aff
+      content_python_sha: e7b00864506b27c1b7840f0b8b6fabc792d256b0607d7b01c18ed3da9c7f70f1
+      content_csharp_sha: 2b766fb4ebc5f6c7b97d4acf0996cf2b023b46063778f938737d648ac15e37a6
+    - date: "2026-08-12"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
+      csharp_sha: 1cb02535990e166e31594dd2d5b852dd04877aff
+      content_python_sha: e7b00864506b27c1b7840f0b8b6fabc792d256b0607d7b01c18ed3da9c7f70f1
+      content_csharp_sha: 2b766fb4ebc5f6c7b97d4acf0996cf2b023b46063778f938737d648ac15e37a6
+  known_differences:
+    - "Socle commun : argumentation abstraite de Dung (semantiques grounded/preferred/stable) via TweetyProject."
+    - "Lib-vs-lib : C# via IKVM (`#r \"org.tweetyproject.tweety-dung.dll\"`). Python via JPype (`from java.util import Collection, HashSet`). Meme moteur Dung de TweetyProject."
+    - "Re-baseline 2026-07-25 (po-2024, consolidation #8264) : SHA Python+C# avance depuis l'audit 2026-07-23 via #8320/#8170 (doc-honesty md52 non-determinism output alignment + hyphenation) ; drift verifie paraphite-preservant (ne touche pas l'axe de parite semantic)."
+    - "Interpretation 4-semantiques sur a<->b (c.48, po-2025:CoursIA-2) : le C# possede une cellule d'interpretation dediee au resultat-pivot 4-semantiques (Grounded unique vide vs Stable/Preferred multiples {a},{b} vs Complete intermediaire). Le Python possede une interpretation DIFFERENTE mais couvrant le meme axe (cell 9 'Interpretation des extensions Dung' = tableau par semantique sur AF1 a1<->b1->c1). Parite semantique tenue : les deux jumeaux interpreten la divergence des semantiques de Dung, sous des angles complementaires (C# = multiplicite isolee sur a<->b minimal ; Python = tableau multi-AF). Rebaseline markdown-only legitime, pas de strip outille."

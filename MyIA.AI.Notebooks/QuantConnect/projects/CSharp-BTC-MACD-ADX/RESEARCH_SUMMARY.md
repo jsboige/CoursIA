@@ -348,6 +348,6 @@ Le notebook génère:
 
 **Execution**: En cours...
 
-**Auteur**: Claude Opus 4.6 (qc-research-notebook agent)
+**Auteur**: Claude-Code (qc-research-notebook agent)
 
 **Date**: 2026-02-17

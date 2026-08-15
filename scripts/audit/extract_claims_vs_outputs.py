@@ -89,6 +89,25 @@ def _on_header_line(cell_source: str, start: int) -> bool:
     return cell_source[line_start:].lstrip().startswith('#')
 
 
+# Fix E — tolérance d'arrondi (FP-c.909, Infer-101 Probas).
+_NUM_FLOAT_RE = re.compile(r'\d+(?:\.\d+)?')
+
+
+def _to_float(s: str):
+    """Premier float d'une chaîne numérique normalisée (virgule→point déjà fait).
+    Renvoie None si aucun nombre parsable (ex. marqueur non numérique)."""
+    m = _NUM_FLOAT_RE.search(s)
+    return float(m.group()) if m else None
+
+
+def _decimal_places(s: str) -> int:
+    """Nombre de chiffres après le point décimal du premier nombre de `s` (FR déjà normalisé).
+    0 si le nombre est entier (ex. '10' → 0 → tolérance 0, match exact requis)."""
+    m = re.search(r'\d+\.(\d+)', s)
+    return len(m.group(1)) if m else 0
+
+
+
 def extract_markdown_claims(cell_source: str) -> dict:
     """Extrait les claims numériques/qualitatifs d'une cellule markdown."""
     claims = []
@@ -139,6 +158,14 @@ def extract_code_outputs(cell: dict) -> dict:
             if isinstance(text, list):
                 text = ''.join(text)
             text_chunks.append(text)
+            # Extract numbers from stream text too — FP-c.1228 : les notebooks dont
+            # les outputs sont majoritairement du stdout (PyPhi/IIT imprime TPM,
+            # matrices, Φ via print()) n'avaient AUCUN numeric_values_found (le
+            # finditer n'était fait que sur data['text/plain'] des display_data).
+            # Résultat : 0% de match -> 125+ faux MAJOR numeric_claim_not_in_outputs
+            # qui masquaient tout. On extrait ici, miroir de la branche display_data.
+            for match in CLAIM_NUMERIC_RE.finditer(text):
+                numeric_values_found.add(match.group(0).strip())
             if out.get('name') == 'stderr':
                 if 'error' in text.lower() or 'traceback' in text.lower():
                     has_error = True
@@ -157,6 +184,25 @@ def extract_code_outputs(cell: dict) -> dict:
                     # Extract numbers from text
                     for match in CLAIM_NUMERIC_RE.finditer(content):
                         numeric_values_found.add(match.group(0).strip())
+                elif mime == 'text/html':
+                    # .NET Interactive émet les affichages riches d'objets (tables
+                    # dni-treeview, matrices de confusion) en text/html SANS fallback
+                    # text/plain — les valeurs calculées vivent dans des cellules
+                    # <pre>...</pre> (ex <pre>0.8884018879298109</pre>). Sans cette
+                    # extraction, le scanner est aveugle à TOUS les outputs .NET ->
+                    # faux numeric_claim_not_in_outputs MAJOR sur chaque notebook
+                    # .NET qui cite ses propres résultats (FP-c.1229).
+                    #
+                    # On extrait UNIQUEMENT depuis les <pre> (cellules de valeurs),
+                    # pas du HTML brut : les index structurels <td>0</td>, <td>1</td>
+                    # (numéros de fold, positions de table) pollueraient numeric_values
+                    # par des single-digits qui false-matchent toute claim contenant
+                    # ce chiffre via le Litmus-1 « num in claim ».
+                    if isinstance(content, list):
+                        content = ''.join(content)
+                    for pre_match in re.finditer(r'<pre>(.*?)</pre>', content, re.DOTALL):
+                        for match in CLAIM_NUMERIC_RE.finditer(pre_match.group(1)):
+                            numeric_values_found.add(match.group(0).strip())
 
     return {
         'text': '\n'.join(text_chunks),
@@ -291,18 +337,45 @@ def audit_notebook(notebook_path: Path) -> dict:
     # Litmus 1 : claim numérique markdown qui n'apparaît pas dans outputs
     matched = unmatched = 0
     for claim in all_numeric_claims:
-        # Substring match (claim peut être avec unités)
-        if any(claim['value'] in num or num in claim['value']
-               for num in all_numeric_outputs):
+        # Substring match (claim peut être avec unités). Les notebooks sont
+        # FR-first : la prose cite des décimales à virgule (« R² ≈ 0,888 ») alors
+        # que les outputs .NET/Python affichent souvent le point décimal
+        # (« 0.8884018879298109 »). On normalise la virgule décimale vers le point
+        # des deux côtés avant le substring, sinon aucune claim à virgule ne
+        # matcherait un output à point (FP-c.1229). NB : les séparateurs de
+        # milliers FR utilisent l'espace (« 8 000 »), pas la virgule — la virgule
+        # est ici toujours un séparateur décimal.
+        cv = claim['value'].replace(',', '.')
+        outputs_norm = [num.replace(',', '.') for num in all_numeric_outputs]
+        if any(cv in num or num in cv for num in outputs_norm):
             matched += 1
         else:
-            unmatched += 1
-            findings.append({
-                'cell_idx': claim['cell_idx'],
-                'pattern': 'numeric_claim_not_in_outputs',
-                'claim_value': claim['value'],
-                'severity': 'MAJOR',  # MAJOR = claim exagéré possible
-            })
+            # Fix E — tolérance d'arrondi (FP-c.909, Infer-101 Probas). La prose
+            # pédagogique arrondit les outputs à moins de décimales (« 9.79 » vs
+            # output « 9.785 »). Le substring échoue sur cette troncature, d'où un
+            # FP MAJOR. Conservateur : la tolérance = demi-ulna de la PRÉCISION de
+            # la claim (±0.005 pour 2 décimales), et seulement APRÈS l'échec du
+            # substring — les matches exacts sont inchangés. Les claims entières
+            # (« 10 ») gardent une tolérance nulle (match exact requis) pour ne
+            # pas absorber des valeurs sans rapport. Un vrai écart (« 0.95 » vs
+            # « 0.85 ») reste signalé : |0.85−0.95| = 0.10 > ±0.005.
+            claim_f = _to_float(cv)
+            ndec = _decimal_places(cv)
+            tol = 0.5 * (10 ** (-ndec)) if ndec > 0 and claim_f is not None else None
+            if tol is not None and any(
+                _to_float(num) is not None
+                and abs(_to_float(num) - claim_f) <= tol
+                for num in outputs_norm
+            ):
+                matched += 1
+            else:
+                unmatched += 1
+                findings.append({
+                    'cell_idx': claim['cell_idx'],
+                    'pattern': 'numeric_claim_not_in_outputs',
+                    'claim_value': claim['value'],
+                    'severity': 'MAJOR',  # MAJOR = claim exagéré possible
+                })
 
     # Litmus 4 : SOTA tool mentionné mais pas importé (canonicalisé pour reporting)
     # On déduplique au niveau canonique AVANT la soustraction (sinon 4 tokens internes

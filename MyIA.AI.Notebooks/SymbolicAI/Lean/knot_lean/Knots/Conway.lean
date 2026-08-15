@@ -77,7 +77,6 @@ def conwayKnotDiagram : KnotDiagram where
     ⟨21, 22, 22, 21⟩
   ]
   numEdges := 22
-  hwell := by trivial  -- TODO: proper well-formedness check
 
 def conwayKnot : Knot where
   diagram := conwayKnotDiagram
@@ -104,7 +103,6 @@ def kinoshitaTerasakaDiagram : KnotDiagram where
     ⟨21, 12, 22, 21⟩
   ]
   numEdges := 22
-  hwell := by trivial  -- TODO: proper well-formedness check
 
 def kinoshitaTerasakaKnot : Knot where
   diagram := kinoshitaTerasakaDiagram

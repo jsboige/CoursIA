@@ -1,0 +1,55 @@
+- name: "CSP-1 Fundamentals"
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = `search_helpers.draw_csp_graph` (custom local) + stdlib pure (dict/list, itertools.product) + matplotlib viz (graphe de contraintes, trace de backtracking). C# = Choco-solver 4.10.17 (Java SOTA, Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711, AppContext['IKVM.Home'] recursive copy) avec `org.chocosolver.solver.Model` + `IntVar` + `arithm` + `getSolver().findAllSolutions()` pour coloration Australie / 8-Reines / enumeration exhaustive. Verdict RECOVERABLE-LOCAL : le coeur pedagogique CSP (classe generique, backtracking, MRV, value-ordering LCV) est PARITABLE des deux cotes (PY = pur Python, C# = `Dictionary`/`List` generique) ; l'asymetrie reside dans l'extension solveur cote C# uniquement (Choco via IKVM, pas d'equivalent direct cote PY). Le PY pourrait installer `python-constraint` (PyPI MIT, recemment ajoute dans CSP-3) ou `pychoco` (PyPI binding natif Choco Python, MIT) pour atteindre la parite complete, mais le notebook CSP-1 preserve le socle from-scratch comme choix pedagogique assumme (fundamentals = construire la classe a la main avant d'utiliser une lib). `parity_level: semantic` preserve : parite sur les concepts cibles (CSP, backtracking, MRV, LCV) malgre l'asymetrie d'extension."
+  audits:
+    - date: "2026-07-29"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 7013d56a565f9243bbf1b7d7e49529c4048bba24
+      csharp_sha: aa7c1005e14400fc680e55691f69da5828d3a46e
+    - date: "2026-08-06"
+      by: myia-po-2023:CoursIA
+      python_sha: 7013d56a565f9243bbf1b7d7e49529c4048bba24
+      csharp_sha: affc4fa92d76e6cb9dbe157d41f967a20c43ad94
+      content_python_sha: 0148af8590584a1234e23b1d9599151ffa6e7bf36c3d71fdfc5c6604cd07644a
+      content_csharp_sha: fa531f46e6aa9dc764062c9927a5417a8f9560182c7c66597c031e1de036e017
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 7013d56a565f9243bbf1b7d7e49529c4048bba24
+      csharp_sha: d6cd5b2719c40d6aa8670f4212102afae346fdee
+      content_python_sha: 0148af8590584a1234e23b1d9599151ffa6e7bf36c3d71fdfc5c6604cd07644a
+      content_csharp_sha: 24c3e489cf23df1e832b35c9a1e25d1b531ac6ba588421e3e467d70882208b36
+    - date: "2026-08-10"
+      by: myia-po-2024:CoursIA
+      python_sha: 7013d56a565f9243bbf1b7d7e49529c4048bba24
+      csharp_sha: deb7ec968d40c1fc2f54e3f584f289ce6abc7af0
+      content_python_sha: 0148af8590584a1234e23b1d9599151ffa6e7bf36c3d71fdfc5c6604cd07644a
+      content_csharp_sha: b818eb308915ed0f9b46a131cb928641a7e92df4ef7c14ce73efa45834cb7b0f
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA
+      python_sha: 2609258ef64e09a5acbe3f7f10451a402dd28ce7
+      csharp_sha: abcf96042ee9d56be40ee26c5af221274c0f9cd6
+      content_python_sha: 172023a0fd6ba51eee1a77528c228bb97fd8eb411af5aae9e624016c341bbc24
+      content_csharp_sha: 52766be036cda036e6e972e9c156f21ffc4cc964fdd82295f125dfdc4e702860
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 8eb8a6a442a1edfc61a2952916d187611bce0331
+      csharp_sha: b7c569ab7b66177a75be90fccc8b8bc2acf755c4
+      content_python_sha: 3aa9e09c1f0029a5086671f400f79eaf67adf454aeee919f57a7c62c3dd3d148
+      content_csharp_sha: 3729ed9b3950b274cb5aec6a8b93ecf1e9b72f610e1c30bb16b50dbef8cd0ac9
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA
+      python_sha: 8eb8a6a442a1edfc61a2952916d187611bce0331
+      csharp_sha: 79a41d1f45cf20633b1ebf6e1cdefd0ea7199b99
+      content_python_sha: 3aa9e09c1f0029a5086671f400f79eaf67adf454aeee919f57a7c62c3dd3d148
+      content_csharp_sha: b5cbe3525c9b2b6f5695199caf35ce2659c9c98fc48f3f231f60e4d490ea22e0
+  known_differences:
+    - "Edition 2026-08-15 (myia-po-2026:CoursIA, #9434 machine-dep) : drainage markdown-only de 4 re-pins de runtime absolus de la prose d'interpretation du twin C# -- cell[31] borne JVM chaude (bien inferieur a 10 ms), cell[33] table Temps (~1-5 ms / < 10 ms), cell[36] ligne d'ouverture (moins de 50 ms), toutes derivees des sorties de mesure committeees (c32 : Temps enumeration 2,94 ms ; c35 : Temps 46,24 ms). Remplacees par des descripteurs *machine-dep* renvoyant aux sorties des cellules de mesure, geste canonique #9434 (la prose re-epingle une valeur qui contredira la sortie au prochain passage kernel sur une autre machine). check_machine_dep_timing passe de 2 a 0 wallclock sur ce notebook. Parite semantique preservee : le socle from-scratch et l'extension Choco sont inchanges, seules les valeurs machine-dep de la prose ont bouge, d'ou le re-baseline du csharp_sha."
+    - "Socle pedagogique commun (parity semantic) : les deux cotes implementent une classe CSP generique + backtracking simple + heuristique MRV + value-ordering LCV, depuis zero (pas de lib externe pour le coeur). Cote Python : classe CSP dict/list pure Python. Cote C# : classe CSP generique C# (Dictionary/List) qui reflete la Python."
+    - "Extension solveur ASYMETRIQUE : le cote C# ajoute Choco-solver 4.10.17 (Java solver via IKVM 8.15.0, recette #4711) avec des cellules (coloration Australie par Choco, enumeration de TOUTES les solutions, 8-Reines par Choco) qui n'ont PAS d'equivalent direct cote Python. Le cote Python reste pur from-scratch sur tout le notebook."
+    - "Visualisation : Python = matplotlib (graphes de contraintes, trace de backtracking, distributions). C# = rendu ASCII du graphe de contraintes (pas de plotting .NET headless)."
+    - "Infrastructure : C# requiert l'assemblage du home IKVM (AppContext['IKVM.Home'] via copie recursive, recette #4711) avant tout premier appel Choco ; Python ne requiert que matplotlib."
+    - "Exercices : les deux cotes ont des stubs C.1-conformes (4-Reines backtracking manuel, MRV sur 4-Reines, SEND+MORE=MONEY). Cote C# l'exercice SEND+MORE utilise Choco ; cote Python (notebook CSP-1) reste conceptuel."

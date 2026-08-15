@@ -12,7 +12,9 @@ name: Lean Knot CI
 #
 # Uses the shared lean-build.yml reusable workflow.
 #
-# Sorry profile (switched 2026-07-11 to `real` mode, baseline=17; was prose-header/28):
+# Sorry profile (switched 2026-07-11 to `real` mode, baseline=17; was prose-header/28,
+# then 16 after #8766 discharged trefoil_not_unknot [sorry 5->4], raised back to 17 by
+# PR #9966 which adds the characterized wrapper front tricolorable_forward_r1 [sorry 4->5]):
 # knot_lean's docstrings legitimately reference "sorry" (Phase-1 scaffolding prose:
 # "sorry permanent", "sorry commentés", "chaque sorry", the MathlibPrerequisites
 # roadmap index, the TODO on well-formedness). Under `prose-header` mode these
@@ -27,13 +29,23 @@ name: Lean Knot CI
 # Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
 #   - Conway.lean:              8 (Conway knot 11n34, Kinoshita-Terasaka, mutation)
 #   - Invariant.lean:           5 (tricolorable_invariant residual fox/col tactics;
-#                                  the Fox linearity bridge + num are PROVEN — see
-#                                  Invariant.lean docstring for the resolved/open split)
+#                                  trefoil_not_unknot DISCHARGED by #8766 [sorry 5->4];
+#                                  tricolorable_forward_r1 wrapper front added by #9966
+#                                  [sorry 4->5] — characterized ∀c∈d₂.crossings wall,
+#                                  2/3 sub-cases PROVEN (newKink c.987, unchanged c.988),
+#                                  ai-01 multi-cycle acceptance; the Fox linearity bridge
+#                                  + num are PROVEN — see Invariant.lean docstring for
+#                                  the resolved/open split)
 #   - Lidman.lean:              2 (11n102 unknotting number = 2 — Heegaard-Floer)
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 17. Raising this baseline requires a documented
+# Total real tactic sorry = 16 (lowered from 17: the tricolorable_forward_r1
+# wrapper ∀c∈d₂.crossings wall is now DISCHARGED — append decomposition +
+# Lean core lemma List.mem_or_eq_of_mem_set + 3 proven sub-lemmas (_renamed,
+# _unchanged, _newKink) + nomatch on the singleton tail; was 17 raised by
+# #9966 which fronted the wall; 16 after #8766 discharged trefoil_not_unknot).
+# Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
 on:
@@ -44,6 +56,26 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+      # A change to the gate must run the gate. Without these three lines the
+      # workflows that define this CI are the only files it never checks, so a
+      # defect in them ships unverified -- which is exactly how the broken
+      # `cd` reached main (#8712): the axiom job could not run on the PR that
+      # introduced it, and its first execution ever was post-merge.
+      - '.github/workflows/lean-knot.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      # ...and the gate is not only its YAML. The axiom step is a Python
+      # program whose whole body is `from lean_server import LeanVerifier`,
+      # so lean_server.py (and the helper it loads) ARE gate inputs. Omitting
+      # them reopened #8712 one layer down: #8725 edited the enumerator, no
+      # path matched, the gate never ran on the PR, and an import that dies on
+      # a bare runner reached main unobserved (#8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # Advisory target-coverage check (See #8782): the target-modules list is
+      # hand-maintained while the lakefile glob grows; a change to the checker
+      # must run it.
+      - 'scripts/lean/check_target_coverage.py'
   pull_request:
     branches: [main]
     paths:
@@ -51,7 +83,16 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean/lean-toolchain'
+      - '.github/workflows/lean-knot.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - '.github/workflows/lean-build.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      - 'scripts/lean/check_target_coverage.py'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   ci:
@@ -59,5 +100,62 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "17"
+      sorry-baseline: "16"
       sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # Closes #8677: catches forbidden axioms (incl. transitive `sorryAx`)
+  # that the textual sorry counter cannot see. Runs after the build to
+  # reuse the cached lake artifacts.
+  # Opt-in per lake; knot_lean is the pilote because it has a stable
+  # sorry profile (16 real tactic sorries, all enumerated + justified).
+  # NOTE: `uses: ./...` (not `@main`) -- `lean-axiom.yml` is introduced by
+  # THIS PR; resolving it from `main` would mean the pilot job silently
+  # fails to dispatch on the branch and never proves the gate works.
+  # Once the workflow lands on `main`, future lakes can either keep `./`
+  # (resolved per-PR) or switch to `@main` (resolved once).
+  proof-integrity:
+    uses: ./.github/workflows/lean-axiom.yml
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
+      display-name: knot_lean
+      target-modules: "*"
+      allow-axioms: ""
+      # 16 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+      # build job above; the gate tolerates them (`fail-on-sorry: false`) but
+      # still reports `has_sorry` per module and hard-fails forbidden axioms.
+      # The per-module enumeration now lives in the gate's runtime derivation
+      # (issue #10889) -- flip to `true` when the baseline reaches 0.
+      fail-on-sorry: false
+
+  # Advisory proof-integrity coverage (See #8782). Same pattern as conway_lean
+  # (#8787): the `target-modules` list above is hand-maintained while the
+  # lakefile glob (.submodules Knots, Knots_en) grows as modules are added; a
+  # gate that inspects 5 of 14 compiled modules is a "vert hors-cible" --
+  # visually indistinguishable from a targeted green in the check rollup. This
+  # job prints the delta (compiled vs target) and ALWAYS exits 0: it never
+  # fails CI, it makes the gap legible in the log.
+  #
+  # `--from-workflow` reads THIS file and unions target-modules over every job
+  # whose `uses:` resolves to lean-axiom.yml, instead of restating the list a
+  # second time here. knot_lean has a single gate job today, so the union is
+  # the same set -- the point is that it stays the same set if a second gate
+  # job is ever added, which is exactly where the conway copy went stale
+  # (it reported the audit job's module as a blind spot). See #8782.
+  target-coverage:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install PyYAML
+        run: pip install pyyaml
+      - name: Advisory target-coverage delta
+        run: |
+          python3 scripts/lean/check_target_coverage.py \
+            --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean \
+            --from-workflow .github/workflows/lean-knot.yml \
+            --lib-root Knots \
+            --name knot_lean

@@ -4,6 +4,10 @@ Document de référence détaillant l'inventaire kernels obligatoire sur toute m
 
 **Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
 
+## Setup macOS / Linux (poste contributeur)
+
+Ce document est centré cluster Windows. Pour le setup d'un poste contributeur **macOS / Linux** (équivalents `brew`/`apt` des commandes `winget`/`choco`, `elan` Lean sans WSL, backend MPS sur Apple Silicon), cf [setup-linux-macos.md](setup-linux-macos.md). Les kernels .NET Interactive, Python et Lean 4 sont cross-OS ; les notebooks s'exécutent à l'identique modulo le backend GPU.
+
 ## .NET Interactive (C# notebooks)
 
 Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`, `Sudoku/`, `ML/`, `Probas/`.
@@ -11,14 +15,49 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
 | .NET SDK | 8.0 + 9.0 (10.0 optionnel) | `dotnet --list-sdks` |
-| dotnet-interactive | >= 1.0.700 (PIN 1.0.552801 sur ai-01) | `dotnet interactive --version` |
+| dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
-Installation : `dotnet tool install --global Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install`.
+Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, aujourd'hui 1.0.712001, qui casse `#!import` (cf tableau ci-dessous).
 
-**Execution** : toujours cell-by-cell via MCP Jupyter (Papermill ne supporte pas .NET Interactive). Le kernel `.net-csharp` preserve l'etat entre cellules.
+**Execution** : `python scripts/notebook_tools/notebook_tools.py execute <notebook>` — qui pilote Papermill avec `--kernel .net-csharp`. Le kernel preserve l'etat entre cellules, `#!import` compris.
 
-**Versions a EVITER** : 1.0.522904 (Roslyn bug), 1.0.712001 (`#!import` bug). PIN sur 1.0.552801 si possible.
+Ce document affirmait « Papermill ne supporte pas .NET Interactive » et renvoyait vers l'execution cell-by-cell par MCP Jupyter. **C'est faux**, et la consequence etait couteuse : le chemin MCP hang (#835), donc des notebooks .NET etaient committes sans re-execution (violation C.2/H.3, cf l'anti-pattern PR #1591 cite en CLAUDE.md regle F). Verifie firsthand sur ai-01 le 2026-07-25 (dni 1.0.617701) — Papermill execute bien un notebook `.net-csharp` de bout en bout, `execution_count` et sorties reelles a l'appui, y compris a travers un `#!import`.
+
+La **seule** limite reelle est l'**injection de parametres** : Papermill n'a pas de traducteur C#, donc une cellule taguee `parameters` avec `-p` produit `Translator for 'C#' language does not support parameter introspection.` — l'avertissement est emis, l'injection est ignoree, **et le notebook s'execute quand meme**. Les notebooks .NET du depot ne prennent pas de parametres Papermill ; `BATCH_MODE` passe par variable d'environnement, pas par `-p`, et reste donc disponible.
+
+Deux limites voisines, **distinctes** de celle-ci, restent vraies : le restore `#r "nuget:"` est bloque cluster-wide en Papermill headless (cf [dotnet-plotly-zero-restore.md](dotnet-plotly-zero-restore.md)), et la **CI** ne peut pas re-executer ces notebooks faute de kernel installe sur le runner — d'ou l'exigence d'execution **locale** avant commit ([pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §D).
+
+**Borne du blocage nuget** (mesure firsthand po-2026 le 2026-08-08 sur `origin/main` `f153cf0c8`, logique de detection = `notebook_tools.py` L375-389 ; l'issue #10024 rapportait 237/129/108/3 mesurés par ai-01 le meme jour, ecart ~7 = evolution du repo + heuristique de classification legerement plus large) :
+
+```
+230 notebooks .NET dans MyIA.AI.Notebooks/
+  127  SANS aucun #r "nuget:"   -> executables headless MAINTENANT
+  103  avec #r "nuget:"          -> le blocage #r nuget peut s'appliquer
+    2  avec >=1 code cell exec_count=None  (dont 1 QC, exempt)
+```
+
+Cette borne **n'etablit pas** que le blocage `#r "nuget:"` est faux pour les 103 qui en contiennent. Elle etablit qu'il a ete invoque comme dispense generale (PR #10021, `RECOVERABLE-MACHINE` + outputs transplantes hors-depot) pour un notebook qui **n'en contenait aucun** — la forme meme d'une preuve d'execution falsifiee. Le reflexe avant d'invoquer un blocage .NET :
+
+```bash
+grep -c '#r "nuget:' <notebook>     # 0  ->  RECOVERABLE-LOCAL : executer pour de vrai
+```
+
+### Version : 1.0.617701, pas « >= 1.0.700 »
+
+| Version | Etat | Preuve |
+|---------|------|--------|
+| 1.0.522904 | a eviter | bug Roslyn |
+| 1.0.552801 | ancien pin — **ne plus viser** : hote net8.0-only, bloque les notebooks qui referencent des DLL `net9.0` | [`Search/Part4-Metaheuristics/README.md`](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/README.md) (MGS-6 a MGS-9, `MetaGeneticSharp.Extensions`) |
+| **1.0.617701** | **cible** — cellule C# et `#!import` OK | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
+| 1.0.712001 | a eviter | `#!import` casse (`ArgumentNullException`) — bloque la re-execution de `Sudoku-15-Infer-Csharp` (#8485, #8525) et le pivot d'env #8369 |
+
+Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclut le pin qu'elle citait dans la meme ligne (552801 < 700) et n'admet, aujourd'hui, que la version cassee. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
+
+```bash
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet interactive jupyter install
+```
 
 ## Python 3.10+ (notebooks Python)
 
@@ -99,7 +138,7 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 #### .NET
 
 - SDKs : 8.0.x, 9.0.x, 10.0.x
-- dotnet-interactive : **1.0.552801** (PINNED)
+- dotnet-interactive : **1.0.617701** (installe, verifie 2026-07-25 — cf [tableau des versions](#version--10617701-pas--100700))
 - Kernels : `.net-csharp`, `.net-fsharp`, `.net-powershell`
 
 #### Jupyter kernels (10 registered)
@@ -107,14 +146,18 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 | Kernel | Type | Executable via |
 |--------|------|----------------|
 | python3 | Python (conda base) | Papermill |
-| .net-csharp | .NET 9.0 | MCP Jupyter cell-by-cell |
-| .net-fsharp | .NET | MCP Jupyter cell-by-cell |
-| .net-powershell | .NET | MCP Jupyter cell-by-cell |
+| .net-csharp | .NET 9.0 | Papermill (`notebook_tools.py execute --kernel .net-csharp`) |
+| .net-fsharp | .NET | Papermill (`notebook_tools.py execute --kernel .net-fsharp`) |
+| .net-powershell | .NET | Papermill (`notebook_tools.py execute --kernel .net-powershell`) |
 | conda-torch | Python (torch) | Papermill |
-| lean4 | Lean 4 (v4.29.1 Windows) | MCP Jupyter cell-by-cell |
-| lean4-wsl | Lean 4 (v4.11.0 WSL) | MCP Jupyter cell-by-cell |
+| lean4 | Lean 4 (v4.29.1 Windows) | `notebook_tools.py execute` (in-process Papermill, translator Python enregistre) |
+| lean4-wsl | Lean 4 (v4.11.0 WSL) | `notebook_tools.py execute` (non re-mesure c.10024 ; laisser en l'etat si doute) |
 | python3-wsl | Python (WSL 3.12) | wsl_papermill.py |
 | smartcontracts | Python | Papermill |
+
+**Écart de compte non résolu** : l'intitulé annonce « 10 registered », la table en liste **9**. Non re-mesurable en l'état — po-2025 est **CONFIRMÉ non joignable** firsthand (#9976 : `HTTP 000` + 100 % de perte ping, LAN physiquement disjoint). Ni le 10 ni le 9 ne sont corrigés ici : un relevé `jupyter kernelspec list` tranchera au retour de la machine. Ne pas citer l'un des deux comme mesuré.
+
+**Note** : la colonne *Executable via* disait « MCP Jupyter cell-by-cell » pour les kernels `.net-*` et `lean4*`. C'etait faux pour `.NET` (Papermill execute `.net-csharp` firsthand, cf L19-21 et la mesure nuget ci-dessus) et **ne s'applique pas** au chemin recommande : le MCP `jupyter-papermill` hang (#835) et ignore `kernel_name` (#5211) — il ne doit **jamais** etre le chemin de re-exec cite dans cette table. Pour `lean4`/`lean4-wsl`, le chemin `notebook_tools.py execute` (Papermill in-process avec translator enregistre, `notebook_tools.py` L1139-1179) est le mecanisme reel ; non re-mesure ce cycle, ne pas affirmer sans mesure.
 
 #### Papermill : env de reference
 
@@ -125,12 +168,16 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 # WSL notebooks : wsl_papermill.py
 python scripts/notebook_tools/wsl_papermill.py execute <nb>
 
-# .NET / Lean : cell-by-cell MCP Jupyter (Papermill ne marche PAS)
+# .NET : Papermill via l'outil du depot (cf L19-21 — Papermill execute bien .net-csharp)
+python scripts/notebook_tools/notebook_tools.py execute <nb> --cell-by-cell --kernel .net-csharp
+
+# Lean (Windows) : notebook_tools (in-process Papermill)
+python scripts/notebook_tools/notebook_tools.py execute <nb>
 ```
 
 #### MCP jupyter-papermill HANG (bug #835) : bascule directe timeout-wrappée, JAMAIS bloquer (HARD)
 
-**Il existe DEUX chemins d'exécution notebook** : (1) le MCP `jupyter-papermill` (cell-by-cell), (2) **papermill/nbconvert en direct** via `notebook_tools` / les binaires ci-dessus. Ils sont **interchangeables** pour l'exécution.
+**Il existe DEUX chemins d'exécution notebook** : (1) le MCP `jupyter-papermill` (cell-by-cell), (2) **papermill/nbconvert en direct** via `notebook_tools` / les binaires ci-dessus. En theorie interchangeables ; en pratique le chemin (2) direct est **le seul recommande** — le MCP (1) hang (#835) et ignore `kernel_name` (#5211), cf regle ci-dessous.
 
 **Le MCP est un piège (bug #835, CLOSED mais reproductible 2026-07-01)** : `mcp__jupyter-papermill__*` peut **bloquer 6 h+ sur un appel `execute`/`manage_kernel` et tuer la session** (root cause = **stdout buffering** qui bloque le spawn Claude Code — ce n'est PAS un serveur mort, donc **un restart ne corrige rien**). Le tracker « PR #660 » cité par erreur dans des cycles antérieurs = GPU-training checkpoints, **sans rapport**.
 
@@ -181,9 +228,34 @@ Installation : `python SymbolicAI/SmartContracts/setup_env.py`.
 | `SymbolicAI/Lean/scripts/validate_lean_setup.py` | Valide env Lean (elan, lean4-jupyter, kernel, openai) |
 | `SymbolicAI/Lean/scripts/setup_wsl_python.sh` | Setup WSL Python pour lean4-wsl kernel |
 
-### Autres machines (po-2023/24/26)
+### po-2023 (inventaire kernels, 2026-08-10)
 
-Vérifier qu'elles ont aussi un env Conda dédié ou un venv local équivalent. La mémoire est spécifique ai-01 mais le pattern (env dédié ML) est cluster-wide. Inventorier via `conda env list` sur chaque machine.
+**Machine** : hôte des services GenAI Image/Audio/Video (8 services Docker), RTX 3080 + eGPU RTX 3090, 40 GB VRAM (16 + 24) — cf [cluster-agents.md](cluster-agents.md) L10. **po-2023 n'est PAS CPU-only** : la mention « CPU-only strict » de ce fichier (L114) appartient à **po-2025** (MSI GE76 Raider, 11 crashes GPU), et c'est la seule machine du cluster ainsi caractérisée. Ne pas router par famille sur cette base.
+
+#### Jupyter kernels (12 registered)
+
+Relevé `jupyter kernelspec list` firsthand sur po-2023, 2026-08-10.
+
+| Kernel | Type | Usage |
+|--------|------|-------|
+| `.net-csharp` | .NET Interactive | notebooks C# (ML, Sudoku, Probas, SymbolicAI .NET) |
+| `.net-fsharp` | .NET Interactive | notebooks F# |
+| `.net-powershell` | .NET Interactive | notebooks PowerShell |
+| `python3` | Python (Windows) | notebooks Python natifs |
+| `python3-wsl` | Python (WSL) | notebooks Python côté WSL |
+| `lean4-wsl` | Lean 4 (WSL) | `SymbolicAI/Lean` |
+| `gametheory-wsl` | Python (WSL + OpenSpiel) | `GameTheory` |
+| `mcp-jupyter-py310` | Python 3.10 | exécution Papermill (env de référence) |
+| `acestep-venv` | Python (venv) | GenAI Audio — ACE-Step |
+| `dia-tts` | Python (venv) | GenAI Audio — Dia TTS |
+| `bonsai-gpu` | Python (GPU) | notebooks GPU |
+| `cleanenv-k` | Python (env propre) | tests d'isolation de dépendances |
+
+**Couverture des trois kernels installables partout** (règle F / H.2) : .NET Interactive **OK**, Python **OK**, Lean 4 **OK** (via WSL). Aucun contournement « kernel not available locally » n'est recevable sur cette lane.
+
+### Autres machines (po-2024/26)
+
+Inventaire kernels non encore relevé. Vérifier aussi l'env Conda dédié ou son venv équivalent : la mémoire est spécifique ai-01 mais le pattern (env dédié ML) est cluster-wide. Relever via `conda env list` **et** `jupyter kernelspec list` sur chaque machine.
 
 ### GenAI GPU stack : triton-windows + bitsandbytes
 

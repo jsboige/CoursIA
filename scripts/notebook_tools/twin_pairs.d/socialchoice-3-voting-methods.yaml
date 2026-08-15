@@ -1,0 +1,45 @@
+- name: "SocialChoice-3 Voting-Methods"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb
+  parity_level: semantic
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 7d3ea48c681d137b25725c50e9c4d78678fd6ba8
+      csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+    - date: "2026-08-08"
+      by: myia-po-2025:CoursIA
+      python_sha: 0b4e212a66f03f2eec2247e17f55db061bd2b247
+      csharp_sha: 0d127926ec65642b24c16d7ca24cfa88cae11830
+      content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
+      content_csharp_sha: 45c07615f01f1b52fc259c38d930acb8b8745186adcf93cbaa09eae2e1b281fd
+    - date: "2026-08-12"
+      by: myia-ai-01:CoursIA
+      python_sha: 0b4e212a66f03f2eec2247e17f55db061bd2b247
+      csharp_sha: a3ffeb7397f987b9dfce0ea8aee79dae946d3be5
+      content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
+      content_csharp_sha: 5a5cf03b54274ac7c4440db6cf1662404b96830f97ad5d7db5042ce94982b195
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 0b4e212a66f03f2eec2247e17f55db061bd2b247
+      csharp_sha: 3c555b635512478b89a1610fcc607e77574e83a7
+      content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
+      content_csharp_sha: aabf9f42a6ebae75fe6f64abcc18e77105832b93f5eadd320ae26493a7a30808
+    - date: "2026-08-14"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 0b4e212a66f03f2eec2247e17f55db061bd2b247
+      csharp_sha: be1ecc18050cbcafcae61de8875b24baad31fccf
+      content_python_sha: 44b742b5f9cb1974b925f64a5b7f8ee3de1ead02a9d9095c857e4d27e620aa36
+      content_csharp_sha: 89371c541374137ca6e5b07ebe25d8ac7d2b186c1fcd08073857bf5d6ff0d5ca
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = demonstrations riches (44 cellules, classe Profile from-scratch dataclass-like + simulation Arrow + Lady Chatterley/Sen). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization, 0 NuGet, 29 cellules, implementation compacte presentation tabulaire autour de 10 sections canoniques). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (theorie du choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs). Meme socle theorique, parite algorithmique sur les regles de vote from-scratch (Plurality/Borda/Condorcet/IRV/Copeland). L'asymetrie reside dans la LEVEE pedagogique -- simulation empirique d'Arrow + contexte litteraire cote Python vs structure tabulaire compacte BCL pure sans viz cote C#. Aucune lib SOTA partagee (numpy vs System.Linq from-scratch). parity_level: semantic preserve."
+  known_differences:
+    - "2026-08-14 (po-2026) merge origin/main dans #10725 : le notebook C# combine le hoist des 5 headers de section (#10725, rotation markdown C.3) ET les cell_ids stables ajoutes par #10848. Audit rebaseline sur le blob fusionne (3c555b63... / aabf9f42...). 34/34 cellules, 0 doublon, python_sha inchange."
+    - "2026-08-08 (po-2025) #8052 prose precision : md[16] disait 'les trois regles donnent des classements differents' mais l'output (cell#12) montre Borda = Copeland (B>C>A), seule la Pluralite s'ecarte (A>C>B). Reworded au split 2-vs-1 reel. Markdown-only (C.2 exception). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
+    - "2026-07-25 (po-2024) #8052 case-A : median-voter preference order -- cell#29 (devenu #29 apres #8566) table disait pic=5 => '4 > 6 > 2 > 0 > 8 > 10' mais l'output code (Electeur 4 pic=5: [4,6,2,8,0,10]) prouve '4 > 6 > 2 > 8 > 0 > 10' (single_peaked_preference sort stable par |x-5|). Markdown-only 1-line swap, no re-exec. csharp_sha inchange. python_sha rebaseline suite a ce changement de blob."
+    - "2026-07-25 (po-2024) #8564 : IIA verdict honnetete + contre-exemple Copeland -- cell#23 imprimait `=> respecte IIA` des que le compteur Monte-Carlo tombait a 0, mais Copeland (Condorcet-consistante) VIOLE IIA (theoreme). Fix : verdict existentiel seul (0/100 => 'aucune violation observee, n'etablit pas respecte IIA' ; >0 => 'VIOLE IIA (N contre-exemples)'). Ajout cellule contre-exemple constructif (profil cyclique 4 alts A>B>C>D / B>C>D>A / C>D>A>B : A bat B pairwise, Copeland classe B>A avec C,D vs A>B sans -- inversion = IIA violée prouvee). markdown cell#24 (devenu #26) corrigé ('Copeland respecte IIA car pairwise' etait faux). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
+    - "2026-07-25 (po-2024) #8559 : determinism rebaseline -- plurality/borda/copeland tie-break etait `sorted(set(...), key=lambda x:-score)` (stable-sort + hash-dependent set iteration = PYTHONHASHSEED non-determinisme, 4 outcome buckets sur 41 seeds). Fix : tuple tiebreak `key=lambda x:(-score, x)` (lexicographique). Outputs regeneres (cell#12 rules -> A>B>C deterministe ; cell#23 Arrow MC -> 12/3/0 deterministe). markdown cell#13/#14/#16 aligne a la nouvelle verite (symmetric profile donne meme classement A>B>C ; departage alphabétique). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
+    - "Socle pedagogique commun : theorie du choix social — formalisation d'un profil de preferences, paradoxe de Condorcet, comparaison des regles de vote positionnelles (Plurality, Borda, Copeland, Instant-Runoff/IRV), theoreme de Sen (liberte vs Pareto), theoreme d'Arrow (violation IIA), theoreme de l'electeur median (Black) + modele de convergence de Downs. Les deux twins implementent les memes regles de vote from-scratch (parite algorithmique sur Plurality/Borda/Condorcet/IRV/Copeland)."
+    - "Idiomes framework : Python = classe Profile from-scratch (dataclass-like, md[0]) + demonstrations riches (44 cellules, simulation Arrow, exemple Lady Chatterley/Sen, implications politiques). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization), 0 NuGet, 29 cellules (implementation compacte, presentation tabulaire)."
+    - "Asymetrie pedagogique : Python developpe la simulation empirique d'Arrow + le contexte litteraire (Lady Chatterley) ; le C# structure la demonstration autour de 10 sections canoniques (Condorcet → regles positionnelles → divergence → Sen → Arrow → median → Downs) en BCL pure sans viz. Meme socle theorique (choix social classique : Condorcet 1785, Arrow 1951, Sen 1970, Black/Downs), leviers de demonstration differents."

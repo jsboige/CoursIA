@@ -388,53 +388,62 @@ def walk_forward_composite(
 
             # Compute composite weights (S4 v2 + vol conditioning)
             lookback_data = returns_boot.iloc[max(0, idx - 63):idx]
+            # Trade cost incurred TODAY (0 unless a rebalance happens today). Costs are
+            # deducted once, on the rebalance day — NOT every day until the next rebalance.
+            comp_day_cost = 0.0
+            s4_day_cost = 0.0
             if len(lookback_data) >= 20:
                 new_composite_weights = compute_inv_vol_ridge_weights(
                     lookback_data, regime_label, vol_regime
                 )
 
                 # Execution gate
-                new_composite_weights = gate_execution(
+                gated_composite_weights = gate_execution(
                     current_composite_weights, new_composite_weights, turnover_history
                 )
-                if new_composite_weights is current_composite_weights:
+                if gated_composite_weights is current_composite_weights:
                     n_gates_skipped += 1
                 n_total_rebalances += 1
 
-                current_composite_weights = new_composite_weights
-                turnover_history.append(
-                    estimate_trade_cost(current_composite_weights, new_composite_weights)
+                # Turnover = actual trade from OLD -> NEW weights. Measured BEFORE
+                # reassigning current_composite_weights: the prior code reassigned first
+                # (current = new), so both refs pointed to the same dict and the diff was
+                # always 0 -> costs never applied and the execution gate never fired.
+                turnover = estimate_trade_cost(
+                    current_composite_weights, gated_composite_weights
                 )
+                turnover_history.append(turnover)
+                comp_day_cost = turnover * tx_bps / 10000
+                current_composite_weights = gated_composite_weights
 
-            # S4 v2 baseline (no vol conditioning, no execution gate)
-            if len(lookback_data) >= 20:
+                # S4 v2 baseline (no vol conditioning, no execution gate). Save the old
+                # weights BEFORE recomputing so the turnover reflects the real trade.
+                old_s4v2_weights = current_s4v2_weights
                 current_s4v2_weights = compute_inv_vol_ridge_weights(
                     lookback_data, regime_label, "normal"  # always normal vol
+                )
+                s4_day_cost = (
+                    estimate_trade_cost(old_s4v2_weights, current_s4v2_weights)
+                    * tx_bps / 10000
                 )
 
             # Compute returns for this day
             day_ret = returns_boot.iloc[idx]
 
-            # Composite return
+            # Composite return (tx cost deducted once, on the rebalance day)
             comp_ret = sum(
                 current_composite_weights.get(s, 0) * day_ret.get(s, 0)
                 for s in SYMBOLS
                 if s in day_ret.index
-            )
-            # Apply tx costs on weight changes
-            if n_total_rebalances > 0 and turnover_history:
-                turnover = turnover_history[-1]
-                comp_ret -= turnover * tx_bps / 10000
+            ) - comp_day_cost
             composite_rets.append(comp_ret)
 
-            # S4 v2 baseline return
+            # S4 v2 baseline return (tx cost deducted once, on the rebalance day)
             s4_ret = sum(
                 current_s4v2_weights.get(s, 0) * day_ret.get(s, 0)
                 for s in SYMBOLS
                 if s in day_ret.index
-            )
-            if n_total_rebalances > 0:
-                s4_ret -= estimate_trade_cost(current_s4v2_weights, current_s4v2_weights) * tx_bps / 10000
+            ) - s4_day_cost
             s4v2_rets.append(s4_ret)
 
             # Equal-weight return

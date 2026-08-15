@@ -68,9 +68,9 @@ services:
       - COMFYUI_PORT=8188
       - COMFYUI_LISTEN=0.0.0.0
       # Tokens pour téléchargement des modèles
-      - CIVITAI_TOKEN=c39ba121e12e5b40ac67a87836431e34
+      - CIVITAI_TOKEN=ROTATED 2026-08-10
       - HF_TOKEN=HF_TOKEN_REDACTED
-      - QWEN_API_TOKEN=2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij
+      - QWEN_API_TOKEN=ROTATED 2026-08-11 7a052dd4aeb4
       
     working_dir: /workspace/ComfyUI
     
@@ -139,14 +139,14 @@ networks:
 # - HuggingFace: https://huggingface.co/settings/tokens
 # - Civitai: https://civitai.com/user/account
 # These tokens are passed to container for model downloads
-CIVITAI_TOKEN=c39ba121e12e5b40ac67a87836431e34
+CIVITAI_TOKEN=ROTATED 2026-08-10
 HF_TOKEN=HF_TOKEN_REDACTED
 
 # =============================================================================
 # QWEN API CONFIGURATION
 # =============================================================================
 # API Authentication token for Qwen model access
-QWEN_API_TOKEN=2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij
+QWEN_API_TOKEN=ROTATED 2026-08-11 7a052dd4aeb4
 
 # =============================================================================
 # GPU CONFIGURATION

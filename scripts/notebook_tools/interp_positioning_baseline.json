@@ -1,0 +1,9 @@
+{
+  "_comment": "Baseline of known interp-positioning violations. Burn down, do not grow. Regenerate with: python scripts/notebook_tools/check_interp_positioning.py --update-baseline --baseline <this file>",
+  "count": 3,
+  "hashes": [
+    "ba68d165bbfc",
+    "e0cae79dcd19",
+    "fd679529799f"
+  ]
+}

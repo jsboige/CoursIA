@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "description": "Provenance spec for local LEAN daily equity data. The zips themselves are gitignored (regenerable binaries, machine-local under <lean-workspace>/data/equity/usa/daily/); this manifest is the COMMITTED text record that pins 'what data produced a shipped quantbook metric', so the regen is reproducible from the repo. Regenerate via scripts/quantconnect/provision_lean_data.py.",
+  "source": "yfinance",
+  "converter": "scripts/quantconnect/yfinance_to_lean_daily.py",
+  "freshness_min_year": 2024,
+  "note": "Closes the reproducibility gap surfaced by #8734 (forward-fill defect) + ai-01 c.37 (msg-20260728T220240): a shipped Sharpe must rest on data anyone can regenerate, not on machine-local zips only the author has. The regen_date pins when a shipped metric's data was last provisioned; re-running the provisioner yields FRESH data (current to today) and the freshness_min_year gate enforces it before any re-exec. See #8734, #8737 (detector), #8627 (converter).",
+  "universes": {
+    "turn_of_month": {
+      "purpose": "TurnOfMonth quantbook (#8730 correctif) -- SPY/QQQ/IWM/DIA daily bars from 2005 (preserves GFC + Recovery sub-periods).",
+      "issue": "#8730",
+      "tickers": ["SPY", "QQQ", "IWM", "DIA"],
+      "start": "2005-01-01",
+      "end": null,
+      "regen_date": "2026-07-28"
+    },
+    "ema_cross_alpha": {
+      "purpose": "EMA-Cross-Alpha quantbook (#8714 correctif) -- 5 large-cap tech stocks from 2015.",
+      "issue": "#8714",
+      "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA"],
+      "start": "2015-01-01",
+      "end": null,
+      "regen_date": "2026-07-28"
+    },
+    "fama_french": {
+      "purpose": "FamaFrench quantbook (ai-01 c.38 dispatch) -- iShares factor ETFs (VLUE/MTUM/SIZE/QUAL/USMV) + risk-off (TLT/XLP/XLU) + SPY. NB: NOT Kenneth French raw factor data -- daily equity ETFs representing the Fama-French factor model, hence on the free yfinance path (not futures/forex).",
+      "issue": "#8734",
+      "tickers": ["VLUE", "MTUM", "SIZE", "QUAL", "USMV", "TLT", "XLP", "XLU", "SPY"],
+      "start": "2015-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
+    },
+    "ml_deep_learning": {
+      "purpose": "ML-DeepLearning quantbook (ai-01 c.38 dispatch) -- broad-market ETFs (SPY/QQQ/IWM/TLT) loaded over a trailing 5y window. NB: the notebook trains an sklearn Ridge/RandomForest proxy as a stand-in for a real LSTM (documented in-cell, real Keras code shown in a comment) -- re-exec is faithful to that committed pedagogy, not a model change.",
+      "issue": "#8734",
+      "tickers": ["SPY", "QQQ", "IWM", "TLT"],
+      "start": "2021-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
+    },
+    "ml_xgboost": {
+      "purpose": "ML-XGBoost quantbook (ai-01 c.38 dispatch) -- Top tech/large-cap stocks (AAPL/MSFT/GOOGL/AMZN/NVDA/META/TSLA/JPM/V/WMT/DIS/NFLX/PYPL/ADBE) loaded over a trailing 5y window. NB: despite the name, the notebook trains sklearn GradientBoostingRegressor as a documented stand-in for the xgboost library (no `import xgboost`); random_state=42 throughout = deterministic. Re-exec is faithful to committed pedagogy, not a model change.",
+      "issue": "#8734",
+      "tickers": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "JPM", "V", "WMT", "DIS", "NFLX", "PYPL", "ADBE"],
+      "start": "2015-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
+    },
+    "ml_random_forest": {
+      "purpose": "ML-RandomForest quantbook (ai-01 c.38 dispatch) -- broad-market ETFs (SPY/QQQ/IWM/TLT/GLD) loaded over a trailing 5y window. GLD was absent from local data (silent 5->3 ticker drop pre-guard, #8724); provisioned via yfinance so the documented 5-ticker universe actually computes. random_state=42 throughout = deterministic.",
+      "issue": "#8772",
+      "tickers": ["SPY", "QQQ", "IWM", "TLT", "GLD"],
+      "start": "2012-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
+    },
+    "ml_svm": {
+      "purpose": "ML-SVM quantbook (ai-01 c.38 dispatch) -- broad-market ETFs (SPY/QQQ/IWM/TLT/GLD) loaded over a trailing 5y window. Same universe as ML-RandomForest; GLD provisioned via yfinance (#8724). random_state=42 throughout = deterministic.",
+      "issue": "#8772",
+      "tickers": ["SPY", "QQQ", "IWM", "TLT", "GLD"],
+      "start": "2012-01-01",
+      "end": null,
+      "regen_date": "2026-07-29"
+    }
+  }
+}

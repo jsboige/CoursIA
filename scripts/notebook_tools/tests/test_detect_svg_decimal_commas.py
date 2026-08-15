@@ -132,6 +132,24 @@ class TestDetectSvg:
         assert out["points_tokens"]
         assert out["coord_attrs"]
 
+    def test_graphviz_integer_coords_not_flagged(self) -> None:
+        # The #6946 founding-incident anti-FP regression guard: a full Graphviz
+        # block with legit integer coords + cx="100" must NOT trip the detector.
+        # The naive \d,\d regex would flag ~56 Graphviz SVGs as false positives
+        # repo-wide (consolidated from scripts/tests/ test_graphviz_integer_coords_not_flagged).
+        svg = (
+            '<svg width="236pt" height="289pt" viewBox="0.00 0.00 236.00 289.00">'
+            '<g id="graph0" class="graph" transform="scale(1 1)">'
+            '<polygon points="10,20 30,40 50,60"/>'
+            '<ellipse cx="100" cy="200" rx="5" ry="5"/>'
+            "</g></svg>"
+        )
+        assert detect_svg(svg) is None
+
+    def test_empty_points_not_flagged(self) -> None:
+        # Edge case: empty points attribute must not crash or trigger a false positive.
+        assert detect_svg("<svg><polyline points=''/></svg>") is None
+
 
 # ── _extract_svgs ───────────────────────────────────────────────────────────
 
@@ -200,6 +218,20 @@ class TestDetectCell:
         findings = detect_cell(cell)
         assert len(findings) == 1
         assert findings[0]["mime"] == "text/html"
+
+    def test_detect_cell_handles_list_html_blob(self) -> None:
+        # On-disk text/html payloads are often list[str] (nbformat chunked form).
+        # The detector must join then extract SVGs (consolidated from scripts/tests/
+        # test_detect_cell_handles_list_html_blob).
+        cell = _nb_with_svg_output(
+            '<svg><polyline points="70,0,334,4"/></svg>', mime="text/html"
+        )["cells"][0]
+        # Re-shape the output to carry a list[str] payload (notebook on-disk pattern).
+        cell["outputs"][0]["data"]["text/html"] = [
+            '<svg><polyline points="70,0,334,4"/></svg>',
+        ]
+        findings = detect_cell(cell)
+        assert len(findings) == 1
 
 
 class TestScanNotebook:

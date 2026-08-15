@@ -54,8 +54,8 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 | 4 | [Infer-4-Bayesian-Networks](Infer-4-Bayesian-Networks.ipynb) | 55 min | CPT, D-séparation, causalité |
 | 5 | [Infer-5-Causal-Inference](Infer-5-Causal-Inference.ipynb) | 65 min | do-calculus, backdoor/front-door, paradoxe de Simpson |
 | 6 | [Infer-6-Debugging](Infer-6-Debugging.ipynb) | 45 min | Troubleshooting, diagnostics, algorithmes |
-| 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many |
-| 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes |
+| 7 | [Infer-7-Skills-IRT](Infer-7-Skills-IRT.ipynb) | 60 min | IRT, DINA, many-to-many — *MBML Ch.2* « Assessing People's Skills » |
+| 8 | [Infer-8-TrueSkill](Infer-8-TrueSkill.ipynb) | 55 min | Ranking, online learning, équipes — *MBML Ch.3* « Meeting Your Match » |
 | 9 | [Infer-9-Classification](Infer-9-Classification.ipynb) | 50 min | BPM, régression logistique, A/B |
 | 10 | [Infer-10-Model-Selection](Infer-10-Model-Selection.ipynb) | 45 min | Evidence, Bayes factors, ARD |
 | 11 | [Infer-11-Topic-Models](Infer-11-Topic-Models.ipynb) | 60 min | LDA, documents-topics-mots |
@@ -98,13 +98,22 @@ dotnet tool install -g Microsoft.dotnet-interactive
 dotnet interactive jupyter install
 ```
 
-### 3. Ou utiliser le script PowerShell (recommandé)
+### 3. Ou utiliser le script d'environnement (recommandé)
 
 ```bash
-# Installe dotnet-interactive, papermill et enregistre les kernels :
+# Windows (PowerShell) — installe dotnet-interactive, papermill et enregistre les kernels :
 cd MyIA.AI.Notebooks/Probas/Infer/scripts
 .\setup_environment.ps1
+
+# Linux / macOS (bash) — jumeau du dépôt (même périmètre : dotnet-interactive,
+# papermill, kernels Jupyter) :
+./scripts/environment/setup_environment.sh --auto-fix
 ```
+
+> Le script de série `setup_environment.ps1` est Windows-only. Sur Linux/macOS, le
+> jumeau [`setup_environment.sh`](../../../scripts/environment/setup_environment.sh)
+> couvre le même setup. Guide d'installation complet 3 OS :
+> [`docs/reference/setup-linux-macos.md`](../../../docs/reference/setup-linux-macos.md).
 
 ### 4. Extension VS Code
 
@@ -126,6 +135,12 @@ Pour les visualisations de factor graphs dans les notebooks 11, 14-19 :
 ```bash
 # Windows (chocolatey)
 choco install graphviz
+
+# macOS (via Homebrew)
+brew install graphviz
+
+# Linux (Debian/Ubuntu)
+sudo apt install graphviz
 
 # Ou téléchargement direct depuis https://graphviz.org/download/
 ```

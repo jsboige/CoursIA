@@ -1,0 +1,132 @@
+name: Twin Parity Cron (CI-derived SHA, #9399 volet b)
+
+# Purpose: Cron quotidien qui re-verifie le registre de parite sur l'etat reel
+# de `main` SANS base ref. Contrairement au gate par-PR (twin-parity.yml qui
+# ne rougit QUE le drift INTRODUIT par la PR), ce cron voit TOUT le drift
+# fleet-wide, dont le drift pre-existant -- utile pour reperer un worker qui
+# a oublie `--update` apres une normalisation outillee, ou un SHA declare a
+# la main devenu faux.
+#
+# Volet b du trilogie #9399 (a = append-only audits MERGED, c = content_sha
+# metadata-immune MERGED, b = CI cron strict). Categorisation 4 axes :
+# ok_legacy / ok_content / drift_blob / drift_content /
+# drift_legacy_after_content / missing_python / missing_csharp / no_audit.
+#
+# `drift_legacy_after_content` (blob SHA bouge, content_sha identique) est
+# INFORMATIF et ne rougit PAS : `_content_sha` hache les cellules ET leurs
+# outputs en n'excluant que `nb["metadata"]`, donc ce cas ne peut signifier que
+# du churn de metadata carnet (cost / papermill / kernelspec) -- precisement le
+# faux positif que le volet c elimine. Ne PAS le re-inclure dans le total
+# bloquant : le 2026-08-07 il rougissait main pour Sudoku-8/14 BDD avec un
+# `::error ...::<none>` sans nom de paire, et son remede prescrit (`--update`)
+# refusait en no-op par design. Le gate rougit sur `n_blocking_drift`.
+#
+# Distinction outil-erreur vs constat-drift : exigence c.1240 + L948/L949.
+# Si stdout JSON est parsable mais contient des drift, on ROUGE (exit 1)
+# mais on emet un `::error` avec le NOM des paires touchees (actionnable).
+# Si stdout n'est PAS parsable (tool error), on ROUGE avec un `::error`
+# DIFFERENT signalant "tool crash, ne PAS confondre avec constat".
+#
+# Sortie : un job-summary (md) avec les compteurs + la liste des paires
+# touchees, archive 30j pour forensic. Le cron ne committe RIEN -- le
+# rollup de drift releve d'une PR dediee (cf #8264 precedent).
+#
+# Schedule: tous les jours a 06:17 UTC (decalage pour eviter la collision
+# avec catalog-cron 03:30 + lean-cron).
+#
+# Implementation note : la logique Python (extraction drift + rendu summary)
+# est externalisee dans scripts/notebook_tools/_cron_extract_drift.py et
+# _cron_render_summary.py. Cela elimine le YAML/Bash quoting croise (les
+# f-strings `f\"{r['name']}\"` casse yaml.safe_load quand elles sont
+# inline dans un `run: |` block). Tests : voir scripts/notebook_tools/tests/.
+
+on:
+  schedule:
+    # m h dom mon dow -- 06:17 UTC quotidien
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+    inputs:
+      json_only:
+        description: "Ne pas publier de summary markdown (utile pour debug)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: read
+
+jobs:
+  twin-parity-cron:
+    name: "Twin parity CI-derived SHA (#9399 b)"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Sur cron on lit l'etat courant de main. Les PR-checking workflows
+          # utilisent le PR merge ref ; ici on n'a PAS de PR, juste l'arbre.
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Run twin parity CI-strict check
+        id: check
+        run: |
+          set +e
+          python scripts/notebook_tools/check_twin_parity.py \
+            --ci-strict --check --json > twin_parity_cron.json 2>twin_parity_cron_stderr.log
+          EXIT=$?
+          set -e
+
+          # Distinction tool-error vs constat-drift (cf L948, c.1240) :
+          # 1. stdout JSON parsable + exit != 0  -> constat de drift, rouge
+          # 2. stdout JSON NON parsable           -> tool crash, rouge distinct
+          if python -c "import json; json.load(open('twin_parity_cron.json'))" 2>/dev/null; then
+            if [ $EXIT -eq 0 ]; then
+              echo "ok=CI-STRICT_OK"
+            else
+              # Extraire le nom des paires touchees pour le ::error actionnable.
+              # Logique externalisee dans _cron_extract_drift.py (tests : test_cron_extract_drift.py).
+              DRIFT_NAMES=$(python scripts/notebook_tools/_cron_extract_drift.py twin_parity_cron.json)
+              echo "ok=CI-STRICT_DRIFT"
+              echo "::error title=Twin parity CI-strict DRIFT DETECTED::$DRIFT_NAMES"
+            fi
+          else
+            # Tool crash : sortie stderr informative, message distinct du drift finding
+            echo "ok=TOOL_ERROR"
+            echo "::error title=Twin parity CI-strict TOOL ERROR::La commande a crash SANS emettre de JSON valide. Cela N'est PAS un constat de drift mais un crash d'outil (registre illisible, PyYAML absent, etc.). Voir stderr ci-dessous."
+            tail -c 600 twin_parity_cron_stderr.log 2>/dev/null || true
+            exit 1
+          fi
+
+          # Si exit != 0 et JSON ok, on a deja posté le ::error ci-dessus.
+          # Re-rouge pour que la cheklist gate (required checks) rougit.
+          if [ $EXIT -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Publish job summary
+        if: always()
+        run: |
+          if [ -f twin_parity_cron.json ]; then
+            # Logique externalisee dans _cron_render_summary.py (tests : test_cron_render_summary.py).
+            python scripts/notebook_tools/_cron_render_summary.py twin_parity_cron.json >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twin-parity-cron
+          path: |
+            twin_parity_cron.json
+            twin_parity_cron_stderr.log
+          retention-days: 30
+          if-no-files-found: ignore

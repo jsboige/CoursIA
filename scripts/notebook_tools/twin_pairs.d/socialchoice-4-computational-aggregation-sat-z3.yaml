@@ -1,0 +1,37 @@
+- name: "SocialChoice-4 Computational-Aggregation-SAT-Z3"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb
+  parity_level: surface
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: f42738edd2aadd75ac4653d1dc4ba41b464c48b3
+      csharp_sha: ea3274f2b4e20d75fc199176ce4136c299295a0c
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: b8a55a010f8bcfdaa4bb1c6141c6408decdf8348
+      csharp_sha: ea3274f2b4e20d75fc199176ce4136c299295a0c
+    - date: "2026-08-05"
+      by: myia-po-2023:CoursIA
+      python_sha: 7cefe1660ded04739df2d88043ece199dbdbba03
+      csharp_sha: 1d6c34998a7a2dea80e2b4362daae247d9bb3227
+      content_python_sha: 27551984fc79a82c6bd43760d48cf2e37a0a437819b98c2957bf5a98a1ac9a35
+      content_csharp_sha: 28562df3c1f0e4f3f168812c1860e8b75d85279a78ec9abefd69c48b6fef4969
+    - date: "2026-08-13"
+      by: myia-po-2024:CoursIA
+      python_sha: 55b19576fd2c02160625ca3eebeaf023bce06c2b
+      csharp_sha: 1d6c34998a7a2dea80e2b4362daae247d9bb3227
+      content_python_sha: 37c4109217426d7764ea33d4a406423a7f4fc5d7df5762838dd2e2a05f7115d4
+      content_csharp_sha: 28562df3c1f0e4f3f168812c1860e8b75d85279a78ec9abefd69c48b6fef4969
+  bridge_verdict: RECOVERABLE-LOCAL
+  bridge_verdict_reason: "Python = PySAT (3 vrais solveurs SAT industriels Glucose3/Minisat22/Cadical103) + z3-py pour SMT + matplotlib/numpy (68 cellules, 21 code). C# = Microsoft.Z3 4.12.2 (1 NuGet) pour SMT + DPLL from-scratch pour SAT, 0 autre NuGet, 33 cellules, 12 code. Verdict RECOVERABLE-LOCAL : la branche SMT est native-both (SOTA-OK sur Z3, Python z3-py <-> C# Microsoft.Z3 4.12.2 meme protocole). MAIS la branche SAT, qui est le coeur du notebook (Arrow/Sen computational aggregation), est asymetrique : Python invoque 3 solveurs SAT industriels reels via PySAT, alors que C# reimplemente DPLL from-scratch sans NuGet de solveur SAT. DPLL from-scratch n'est PAS un substitut SOTA aux solveurs modernes (Glucose3/Minisat22/Cadical103) -- c'est explicitement declare dans la section 'Verdict SOTA (EPIC #3801)' du C# comme une 'Limite honnete (Prong B)'. RECOVERABLE-LOCAL s'applique : un solveur SAT NuGet (Microsoft.Z3 sat solver, ou Google.OrTools sat) est installable/invocable pour combler ce gap, mais pas tente dans cette PR (le notebook C# est honnete sur sa limite). Aucune lib SOTA partagee sur l'axe SAT. Axes de benchmark differents : Python bench les SOLVERS sur l'encodage d'Arrow ; C# bench STRUCTURELLEMENT Arrow vs Sen. parity_level: surface preserve."
+
+  known_differences:
+    - "AVERTISSEMENT D'INGENIERIE : parity_level=surface. Asymetrie de solveur SAT : le jumeau Python INVOQUE 3 vrais solveurs SAT industriels via PySAT (Glucose3, Minisat22, Cadical103) et les benchmark en §6 ; le C# reimplémente DPLL from-scratch (§1.1) sans NuGet de solveur SAT. Meme concept (agregation computationnelle d'Arrow/Sen), machineries SAT differentes."
+    - "Le C# est HONNETE sur ce point : il contient une section dediee '§5 Verdict SOTA (EPIC #3801)' qui auto-declare que DPLL from-scratch n'est pas un substitut SOTA aux solveurs modernes, plus une 'Limite honnête (Prong B)' sous la conclusion. Ce point SOTA est un candidat d'enrichissement future (brancher un vrai solveur SAT NuGet), pas un verdict parity."
+    - "Asymetrie de couverture forte : Python (68 cellules, 21 code, 47 markdown) couvre §1-8 + une Partie 2 complete SMT-Z3 (8 sous-sections : Config, Encodage SMT, UNSAT, SAT 2-alternatives, Relaxation, Benchmarks, SAT vs SMT, Exercices Z3) ; C# (33 cellules, 12 code, 21 markdown) replie Z3 dans une seule §7. La Partie 2 SMT du Python est largement absente du C#."
+    - "Parite Z3 CONFIRMEE : les deux cotes utilisent Z3 pour la branche SMT (Python z3-py ; C# Microsoft.Z3 4.12.2). Le SMT est nativement twinned ; l'asymetrie porte uniquement sur le SAT (PySAT 3-solveurs vs C# DPLL from-scratch)."
+    - "Axes de benchmark differents : Python §6 = benchmark de SOLVERS (Glucose3 vs Minisat22 vs Cadical103 sur l'encodage d'Arrow) ; C# §6 = benchmark STRUCTUREL Arrow vs Sen (compare les deux theoremes, pas les solveurs). Visualisation : Python §7 'Espace des Solutions' via matplotlib/numpy ; C# sans librairie de plotting."
+    - "Re-baseline 2026-08-01 (myia-po-2023:CoursIA, cycle c.1054, EPIC #8052) : SHA Python avance 871a25d6 -> bd66b19d via §D.5 markdown-fix cote Python uniquement (table d'encodage + solver-bound alignes aux outputs committes ; drift parite-preserving, le C# n'est pas touche). Cote C# non modifie (csharp_sha 64e14757 inchange). Drift verifie surface-preserving : prose markdown seule sur l'axe de couverture Python, aucune cellule de code C# touchee."
+    - "Re-baseline 2026-08-05 (myia-po-2023:CoursIA, EPIC #9434) : drainage des mesures de temps machine-dependantes de la prose des DEUX jumeaux. Python cell 18 : colonne 'Temps d'encodage' retiree de la table de complexite (la cellule de code 17 la mesure deja live via time.time ; colonnes deterministes Profils/Variables = combinatoire math preservees). Python cell 28 : 'sous la milliseconde' / 'quinzaine de ms' de-pingues -> observation qualitative + pointeur vers benchmark code 27. C# cell 29 : '~0.1 ms' de-pingue -> 'quasi-instantanement' + pointeur vers benchmark code 24. Markdown-only sur les deux cotes : aucune cellule de code touchee, execution_count et outputs preserves (C.3, pas de re-exec). content_sha desormais enregistre -> les futures derives prose-only seront immunisees. Regle #9434 : 'calcule = legitime, prose = interdit'."

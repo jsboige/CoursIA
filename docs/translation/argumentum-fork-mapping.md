@@ -1,7 +1,7 @@
 # Mapping de fork Argumentum → CoursIA (moteur T3)
 
 > **Statut** : référence pérenne pour la couche T3 (moteur de traduction).
-> Issue [#6949](https://github.com/jsboige/CoursIA/issues/6949) — **CLOSED 2026-07-22 (c.757)** : livrable court-terme expédié. PRs du scope original : #6980 (ce doc, `fb9bff827`) + #6976 (fork code T3, `84ba7ac70`).
+> Issue [#6949](https://github.com/jsboige/CoursIA/issues/6949) — **OUVERTE (resserrée 2026-07-28 par ai-01, close refusée)** : livrable court-terme expédié (fork T3 `#6976` + ce doc), mais l'issue reste ouverte — le titre porte deux engagements et le second (dépôt de traductions, 0/7 langues cibles remplies) n'est pas tenu. Règle posée c.31 : plus de PR *resync-only* sur `translations/**/*.csv` jusqu'au GO moteur. PRs du scope original : #6980 (ce doc, `fb9bff827`) + #6976 (fork code T3, `84ba7ac70`).
 > Fork code : PR #6976 (`scripts/translation/translate_csv.py`).
 > Travaux d'harmonisation post-issue : #7615 (env-hermetic provider-keys), #7714 (WRONG_SCRIPT, c.734), #7731 (FR_CONTAM, c.738).
 > Épics parents : [#4957](https://github.com/jsboige/CoursIA/issues/4957) (infra synchro), [#1650](https://github.com/jsboige/CoursIA/issues/1650) (traduction multilingue).
@@ -78,7 +78,7 @@ T4  re-import     patcher xxx_<lang>.ipynb depuis le CSV + Papermill re-exec    
 
 ## 6. Voir aussi
 
-- [Issue #6949](https://github.com/jsboige/CoursIA/issues/6949) — motivation, scope (PR #1 doc + PR #2 code), arrêt des resync vides. **CLOSED 2026-07-22** (cf. bloc Statut ci-dessus).
+- [Issue #6949](https://github.com/jsboige/CoursIA/issues/6949) — motivation, scope (PR #1 doc + PR #2 code), arrêt des resync vides. **OUVERTE (resserrée 2026-07-28)** (cf. bloc Statut ci-dessus).
 - [Issue #4957](https://github.com/jsboige/CoursIA/issues/4957) — design de l'infra (schéma CSV, sémantique drift).
 - [Epic #1650](https://github.com/jsboige/CoursIA/issues/1650) — traduction multilingue du dépôt.
 - PR #6976 — fork code (`scripts/translation/translate_csv.py` + 14 tests).

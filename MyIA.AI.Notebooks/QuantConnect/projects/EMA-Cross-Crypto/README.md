@@ -7,7 +7,29 @@
 
 Croisement dual EMA sur crypto. Prend position long quand EMA(20) > EMA(50) sur BTC/ETH, à 80% du capital disponible (réduit de 95% pour limiter l'exposition), avec un **filtre SMA200** (n'entre que si BTC > SMA200 = bull market structurel) et un **trailing stop 10%** intra-position (sortie si BTC recule de 10% depuis le peak depuis l'entrée).
 
-> **Note introductive** : la description précédente indiquait EMA 20/60 — la **stratégie implémentée est EMA 20/50** (cf `main.py:32-33` et `research.ipynb` cell[8]). Le sweet spot validé sur la fenêtre 2020-2026 reste EMA 20/50 ; aucune valeur de slow_period > 50 ne bat la baseline sur le critère MaxDD (cf H1 ci-dessous).
+> **Note introductive** : la description précédente indiquait EMA 20/60 — la **stratégie implémentée est EMA 20/50** (cf `main.py:32-33` et `research.ipynb` cell[7] BASELINE). Le sweet spot validé sur la fenêtre 2020-2026 reste EMA 20/50 ; aucune valeur de slow_period > 50 ne bat la baseline sur le critère MaxDD (cf H1 ci-dessous).
+
+## Mesures vérifiées (multi-source)
+
+> **Note honnête (#1621, drainage #9434)** : le dossier EMA-Cross-Crypto contient **deux notebooks qui étudient deux univers différents** — `research.ipynb` travaille sur **BTC-USD** (la stratégie telle qu'implémentée dans `main.py`), tandis que `quantbook.ipynb` travaille sur **SPY/QQQ/IWM comme substitut** (cell[3] ligne 2 explicite : « Equity universe (substitute for crypto in Docker research environment) ») parce que l'environnement Docker local ne charge pas les données crypto Binance. Les chiffres produits par les deux notebooks sont **fondamentalement divergents** et **NE PEUVENT PAS être combinés en une seule mesure canonique** : période différente (2020-2025 vs 2010-2025), univers différent (BTC vs actions US), mécanisme différent. Les tableaux H1-H5 ci-dessous citent **uniquement `research.ipynb` (BTC)** ; le tableau ci-dessous cite les **deux implémentations distinctes** pour la transparence.
+
+| Source | Sharpe | CAGR | Max DD | Période | Univers |
+|--------|--------|------|--------|---------|---------|
+| [`research.ipynb`](research.ipynb) cell[7] (exec=3) — BASELINE EMA 20/50, 95% position | **0.939** | **30.5 %** | **-47.3 %** | 2020-2025 (2192 j) | **BTC-USD** (yfinance) |
+| [`research.ipynb`](research.ipynb) cell[22] (exec=9) — + filtre SMA200 (lévrier principal MaxDD) | **1.016** | **31.7 %** | **-41.7 %** | 2020-2025 (2192 j) | **BTC-USD** (yfinance) |
+| [`research.ipynb`](research.ipynb) cell[34] (exec=14) — config recommandée SMA200+Cap80+Trail10% | **0.983** | **25.6 %** | **-34.1 %** | 2020-2025 (2192 j) | **BTC-USD** (yfinance) |
+| [`quantbook.ipynb`](quantbook.ipynb) cell[12] (exec=6) — meilleure période EMA 25/55 (substitute environment) | **0.436** | **8.4 %** | **-19.0 %** | 2010-2025 (4024 j) | **SPY/QQQ/IWM** (Docker substitute) |
+| [`quantbook.ipynb`](quantbook.ipynb) cell[20] (exec=10) — config optimale vs Buy & Hold | **0.377** | **7.6 %** | **-22.1 %** | 2010-2025 (4024 j) | **SPY/QQQ/IWM** (Docker substitute) |
+| [`main.py`](main.py) docstring — synthèse recherche | n/a | n/a | n/a | 2015-2024 (start/end code) | BTCUSDT (Binance Cash) |
+
+**Lecture honnête** : la divergence entre les deux notebooks **n'est pas un bug** — ce sont **deux implémentations sur deux univers distincts** :
+
+- `research.ipynb` utilise `yfinance` pour charger **BTC-USD réel**, c'est la **référence pédagogique** pour la stratégie crypto telle que codée dans `main.py` (BTCUSDT sur Binance Cash).
+- `quantbook.ipynb` charge **SPY/QQQ/IWM comme substitut** parce que l'environnement Docker de recherche Lean Engine ne fournit pas les données crypto Binance — les chiffres Sharpe 0.377 / CAGR 7.6 % qu'il produit **NE SONT PAS** une mesure de la stratégie EMA-Cross-Crypto, mais une mesure d'une stratégie EMA analogue appliquée à un univers actions US 15 ans.
+
+**Pour la stratégie crypto elle-même** (telle que déployable sur QC Cloud avec BTCUSDT Binance) : **`research.ipynb`** est la référence. **`quantbook.ipynb`** sert uniquement de banc d'essai méthodologique (test de la mécanique EMA sur un univers liquide chargé en Docker), pas d'évaluation de performance de la stratégie EMA-Cross-Crypto.
+
+Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
 ## Figures du notebook de recherche
 

@@ -42,11 +42,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from detect_blank_figures import (  # noqa: E402
     MIN_BYTES,
     MIN_DIM,
+    MIN_DISTINCT_COLORS,
+    PARTIAL_EMPTY_FRACTION,
     SKIP_DIRS,
+    UNIFORM_TILE_STD,
     _OUTPUT_SUFFIX,
     _PNG_SIGNATURE,
     _classify_image,
     _decode_image,
+    _flattened_pixels,
+    _has_real_content,
+    _tile_uniformity_finding,
     detect_cell,
     _human_report,
     _iter_notebooks,
@@ -124,6 +130,42 @@ def _make_noisy_png(width: int, height: int) -> bytes:
 
 # A 50x50 noisy PNG: ~7.5 KB decoded > MIN_BYTES=1024, dim > MIN_DIM=8 -> CLEAN
 PNG_LARGE_B64 = base64.b64encode(_make_noisy_png(50, 50)).decode("ascii")
+
+
+def _make_multicolor_png(width: int, height: int, palette: list[bytes]) -> bytes:
+    """Synthesize a small PNG with several DISTINCT colors (pixel-art / grid).
+
+    Used to exercise the content-gate escape hatch (#8634): such an image is
+    small in bytes but carries real content, so it must NOT be flagged. Rows are
+    painted round-robin from `palette` (>= MIN_DISTINCT_COLORS colors) so the
+    decoded image is genuinely multicolor.
+    """
+    assert len(palette) >= MIN_DISTINCT_COLORS, "palette must carry real content"
+
+    def chunk(chunk_type: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + chunk_type
+            + data
+            + struct.pack(">I", zlib.crc32(chunk_type + data) & 0xFFFFFFFF)
+        )
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)  # 8-bit RGB
+    rows = []
+    for row in range(height):
+        pixel = palette[row % len(palette)]
+        rows.append(b"\x00" + pixel * width)
+    raw = b"".join(rows)
+    idat = zlib.compress(raw, level=9)
+    return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
+
+
+# A 24x16 pixel-art grid with 6 distinct colors (the 04-4 cross-stitch shape,
+# #8632/#8634): small canvas, real content -> CLEAN via the content gate.
+_PALETTE_6 = [bytes(c) for c in [(51, 131, 98), (153, 207, 217), (253, 215, 85),
+                                  (44, 106, 69), (200, 50, 30), (120, 80, 160)]]
+PNG_PIXELART_B64 = base64.b64encode(_make_multicolor_png(24, 16, _PALETTE_6)).decode("ascii")
 
 
 def _md(source: str) -> dict:
@@ -640,13 +682,396 @@ class TestMainExitCodes:
         assert parsed["total_hits"] == 1
 
     def test_custom_thresholds_passed_through(self, tmp_path, capsys):
-        # A 50x50 noisy PNG = ~7.5 KB. With --min-bytes 20000 -> degenerate on tiny_payload
-        nb_path = _write_nb(tmp_path / "test.ipynb", [_code_cell_with_png(PNG_LARGE_B64)])
-        rc = main([str(nb_path), "--check", "--min-bytes", "20000"])
-        assert rc == 1
+        # Post-content-gate (#8634): a noisy/rich PNG is no longer flagged on
+        # size alone (it carries real content). To still demonstrate that
+        # --min-bytes propagates, use a MONOCHROME PNG (1 color, so
+        # _has_real_content=False -> not exempt) whose only signal is tiny_payload.
+        # Threshold below its byte count -> clean; above -> degenerate.
+        raw = _make_png(100, 100, pixel=b"\x80\x80\x80")  # ~334 B, monochrome, 100x100 (dim OK)
+        size = len(raw)
+        mono_b64 = base64.b64encode(raw).decode("ascii")
+        nb_path = _write_nb(tmp_path / "test.ipynb", [_code_cell_with_png(mono_b64)])
+        assert main([str(nb_path), "--check", "--min-bytes", str(size - 1)]) == 0
+        assert main([str(nb_path), "--check", "--min-bytes", str(size + 1)]) == 1
 
     def test_invalid_family_exits_2(self, tmp_path, capsys):
         rc = main(["--family", "NonExistentFamily", "--root", str(tmp_path)])
         assert rc == 2
         captured = capsys.readouterr()
         assert "family not found" in captured.err.lower()
+
+
+# ---------------------------------------------------------------------------
+# 10. Content gate (#8634) -- escape hatch for small but rich images
+# ---------------------------------------------------------------------------
+# The founding #6891 incident was about EMPTY figures (1x1, 70 B). The size
+# threshold (MIN_BYTES) caught them. But size measures RESOLUTION, not CONTENT:
+# pixel-art, cross-stitch grids, sprites, mini heatmaps are small in bytes yet
+# carry real visual content. The content gate adds a content-based escape: a
+# small image is exempted from tiny_payload iff it decodes and carries >=
+# MIN_DISTINCT_COLORS distinct colors. Indecodable images (PIL absent / corrupt)
+# fall back to the size signal -- no coverage regression.
+
+class TestContentGate:
+    def test_min_distinct_colors_is_4(self):
+        # Calibrated so a 1-color canvas is caught but a 4-color pixel-art is freed
+        assert MIN_DISTINCT_COLORS == 4
+
+    def test_has_real_content_true_for_multicolor(self):
+        # A 24x16 grid with 6 colors carries real content
+        assert _has_real_content(_make_multicolor_png(24, 16, _PALETTE_6)) is True
+
+    def test_has_real_content_false_for_monochrome(self):
+        # A single-color image (canvas blanc) carries no real content
+        assert _has_real_content(_make_png(50, 50, pixel=b"\xff\xff\xff")) is False
+
+    def test_has_real_content_none_for_non_image_bytes(self):
+        # Random/corrupt bytes cannot be decoded -> None (fall back to size)
+        assert _has_real_content(b"\x00" * 50) is None
+        assert _has_real_content(b"") is None
+
+    def test_has_real_content_respects_custom_threshold(self):
+        # With min_colors higher than the palette size, a 6-color image is "poor"
+        assert _has_real_content(_make_multicolor_png(24, 16, _PALETTE_6), min_colors=10) is False
+
+    def test_pixelart_not_flagged_on_tiny_payload(self):
+        # THE #8634 case: a small (24x16, <1024 B) but rich image is CLEAN
+        raw = _make_multicolor_png(24, 16, _PALETTE_6)
+        assert len(raw) < MIN_BYTES  # sanity: it IS under the size threshold
+        assert _classify_image("image/png", raw, MIN_DIM, MIN_BYTES) is None
+
+    def test_monochrome_small_still_flagged(self):
+        # #6891 must NOT regress: a small monochrome (canvas blanc) stays flagged
+        raw = _make_png(50, 50, pixel=b"\xff\xff\xff")  # 50x50 white, ~150 B, 1 color
+        assert len(raw) < MIN_BYTES
+        result = _classify_image("image/png", raw, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert any("tiny_payload" in r for r in result["reasons"])
+
+    def test_1x1_still_flagged_via_min_dim(self):
+        # The true 1x1 placeholder is caught by degenerate_dimensions regardless
+        raw = _make_png(1, 1)
+        result = _classify_image("image/png", raw, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert "degenerate_dimensions(1x1)" in result["reasons"]
+
+    def test_indecodable_small_falls_back_to_size(self):
+        # A corrupt "JPEG" under MIN_BYTES: _has_real_content=None -> size signal
+        result = _classify_image("image/jpeg", b"\xff\xd8" + b"\x00" * 50, MIN_DIM, MIN_BYTES)
+        assert result is not None
+        assert any("tiny_payload" in r for r in result["reasons"])
+
+    def test_scan_notebook_frees_pixelart(self, tmp_path):
+        # End-to-end: a notebook whose only figure is rich pixel-art scans clean
+        nb_path = _write_nb(tmp_path / "pixelart.ipynb", [_code_cell_with_png(PNG_PIXELART_B64)])
+        result = scan_notebook(nb_path)
+        assert result["hits"] == []
+
+    def test_scan_notebook_still_catches_monochrome(self, tmp_path):
+        # End-to-end: a monochrome small figure is still caught (#6891 preserved)
+        mono_b64 = base64.b64encode(_make_png(50, 50, pixel=b"\xff\xff\xff")).decode("ascii")
+        nb_path = _write_nb(tmp_path / "mono.ipynb", [_code_cell_with_png(mono_b64)])
+        result = scan_notebook(nb_path)
+        assert len(result["hits"]) == 1
+
+
+class TestContentGateSurvivesDeprecation:
+    """The content gate must not revert to size-only because of a Pillow warning.
+
+    `_has_real_content` swallows every exception into `None`, and `None` means
+    "fall back to the size rule" -- the very rule #8634 was filed against. So any
+    call that can *raise* on the nominal path silently undoes #8637. Pillow 12
+    deprecated `Image.getdata()` and removes it in Pillow 14 (2027-10-15): under
+    a warnings-as-errors run the deprecation raises, is swallowed, and the
+    pixel-art of #8634 is flagged again -- with no error and no failing test.
+
+    These tests pin the nominal path as warning-free, so the regression surfaces
+    here rather than in a scan verdict two years from now.
+    """
+
+    def test_content_gate_is_warning_free(self):
+        # The happy path must not emit ANY warning: one turned into an error by
+        # `-W error` would be swallowed into None and silently disable the gate.
+        import warnings
+
+        raw = base64.b64decode(PNG_PIXELART_B64)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert _has_real_content(raw) is True
+
+    def test_pixelart_stays_free_under_warnings_as_errors(self):
+        # End-to-end guard: this is what regresses on Pillow 14 if the deprecated
+        # API is called -- the pixel-art gets flagged tiny_payload again.
+        import warnings
+
+        raw = base64.b64decode(PNG_PIXELART_B64)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            assert _classify_image("image/png", raw, MIN_DIM, MIN_BYTES) is None
+
+    def test_uses_supported_pillow_api_when_available(self):
+        # Prefer get_flattened_data(); fall back to getdata() on older Pillow.
+        pytest.importorskip("PIL")
+        from PIL import Image
+
+        im = Image.new("RGB", (2, 2))
+        im.putdata([(0, 0, 0), (1, 1, 1), (2, 2, 2), (3, 3, 3)])
+        if hasattr(im, "get_flattened_data"):
+            assert list(_flattened_pixels(im)) == list(im.get_flattened_data())
+        else:  # Pillow < 12: the legacy name is the only one available
+            assert len(list(_flattened_pixels(im))) == 4
+
+
+# ---------------------------------------------------------------------------
+# 11. Gate workflow contract (#8884) -- the environment the detector RUNS in
+# ---------------------------------------------------------------------------
+# Every test above exercises the detector as a library, in THIS job's
+# environment -- where Pillow is present transitively (scripts-tests.yml installs
+# matplotlib, which depends on Pillow). The GATE runs in a different job with its
+# own environment, and that is the gap #8884 fell through: the unit tests stayed
+# green while `degenerate-figure-gate.yml` had no `pip install` at all, so PIL was
+# missing, `_has_real_content` returned None, the #8634 content escape hatch was
+# inoperative, and the 24x16 cross-stitch grid was flagged again -- in CI only,
+# invisible from here.
+#
+# These two assertions are the ratchet. They are deliberately assertions about
+# the WORKFLOW FILE, not about the detector: a unit test cannot observe another
+# job's interpreter. Dropping the Pillow install, or reverting the loop to the
+# errexit-unsafe form, turns this file red instead of silently disarming the gate.
+
+_GATE_WORKFLOW = (
+    Path(__file__).resolve().parents[3] / ".github" / "workflows" / "degenerate-figure-gate.yml"
+)
+
+
+class TestGateWorkflowContract:
+    def test_gate_workflow_exists(self):
+        assert _GATE_WORKFLOW.is_file(), f"gate workflow missing: {_GATE_WORKFLOW}"
+
+    def test_gate_installs_pillow_explicitly(self):
+        # PIL is REQUIRED for the #8634 content gate, not optional. Relying on a
+        # transitive matplotlib dependency (as scripts-tests.yml does) is exactly
+        # the asymmetry that hid #8884.
+        text = _GATE_WORKFLOW.read_text(encoding="utf-8")
+        assert "pip install" in text and "Pillow" in text, (
+            "degenerate-figure-gate.yml must install Pillow explicitly; without it "
+            "_has_real_content() degrades to None and the #8634 escape hatch is dead"
+        )
+
+    def test_detector_invocation_is_errexit_safe(self):
+        # The step runs under `bash -e`: a bare `out=$(cmd)` that exits non-zero
+        # aborts before `rc=$?` is read, making the rc=1/rc=2 branches dead code
+        # and the failure anonymous. `&& rc=0 || rc=$?` preserves the real code.
+        text = _GATE_WORKFLOW.read_text(encoding="utf-8")
+        invocation = [
+            ln for ln in text.splitlines()
+            if "detect_blank_figures.py" in ln and "out=$(" in ln
+        ]
+        assert invocation, "expected an `out=$(... detect_blank_figures.py ...)` invocation"
+        line = invocation[0]
+        assert "&& rc=0 || rc=$?" in line, (
+            f"errexit-unsafe detector invocation: {line.strip()!r} -- use "
+            "`out=$(...) && rc=0 || rc=$?` so rc survives `bash -e`"
+        )
+        # `|| true` would make $? read 0 from `true` itself: rc always 0, so the
+        # gate could never fire at all -- strictly worse than the original bug.
+        assert "|| true" not in line, (
+            "`|| true` makes rc always 0 and permanently disarms the gate; "
+            "use `&& rc=0 || rc=$?`"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 8. TileUniformity (#10319) — per-region metric for "partial-empty grids"
+# ---------------------------------------------------------------------------
+#
+# Le detecteur global (dimensions / bytes / distinct colors) rate les grandes
+# images globalement riches qui cachent des regions vides (cf issue #10319,
+# cas fondateur cellule 12 de 02-7-CogVideoX-Text-to-Video.ipynb, PR #10305 :
+# grille 4x4 1440x960 OU les rangées 1-2 sont des cadres vides et les
+# rangées 3-4 des pommes rendues — 955 KB / 134k couleurs globales).
+#
+# La metrique per-tile (#10319) divise l'image en cellules, calcule la
+# pstdev moyenne des 3 canaux par tuile, et signale quand >= PARTIAL_EMPTY_FRACTION
+# des tuiles ont un std < UNIFORM_TILE_STD ET qu'au moins une tuile est riche.
+# Phase 1 = advisory (ne fail PAS --check), passee par --strict.
+
+def _make_grid_png(
+    rows: int,
+    cols: int,
+    kinds: list[str],
+    cell_w: int = 360,
+    cell_h: int = 240,
+) -> bytes:
+    """Compose a `rows x cols` grid PNG where each tile is one of `kinds`.
+
+    `kinds` is a flat list of length rows*cols, one entry per tile in
+    row-major order. Each entry is either:
+      - "uniform:R,G,B"      : solid color tile (low std -> "empty" by detector)
+      - "rich:<rgb_hex>"      : noisy multicolor tile (high std -> "full")
+    Tile size is fixed (cell_w x cell_h) so the test controls the per-tile
+    pixel count irrespective of rows/cols. Width/height of the synthesized
+    image are rows*cell_h x cols*cell_w.
+    """
+    expected = rows * cols
+    assert len(kinds) == expected, f"kinds must have {expected} entries (rows*cols)"
+
+    def chunk(chunk_type: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + chunk_type
+            + data
+            + struct.pack(">I", zlib.crc32(chunk_type + data) & 0xFFFFFFFF)
+        )
+
+    sig = b"\x89PNG\r\n\x1a\n"
+    width = cols * cell_w
+    height = rows * cell_h
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+
+    rows_bytes = []
+    for r in range(rows):
+        for y_in_cell in range(cell_h):
+            row_bytes = b"\x00"  # PNG filter byte
+            for c in range(cols):
+                kind = kinds[r * cols + c]
+                if kind.startswith("uniform:"):
+                    _, rgb = kind.split(":", 1)
+                    r_byte, g_byte, b_byte = [int(x) for x in rgb.split(",")]
+                    row_bytes += bytes([r_byte, g_byte, b_byte]) * cell_w
+                else:
+                    # "rich" : deterministic pseudo-random noise per (cell, y)
+                    # to keep tile std well above UNIFORM_TILE_STD across rows.
+                    import hashlib
+                    seed = hashlib.sha256(f"{r}-{c}-{y_in_cell}".encode()).digest()
+                    raw3 = seed * ((cell_w * 3) // len(seed) + 1)
+                    row_bytes += raw3[: cell_w * 3]
+            rows_bytes.append(row_bytes)
+    raw = b"".join(rows_bytes)
+    idat = zlib.compress(raw, level=1)  # low compression -> preserves size, but
+    # for "rich" tiles we want noise; for "uniform" tiles it's fine either way.
+    return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", idat) + chunk(b"IEND", b"")
+
+
+def _grid_fixture_b64(rows: int, cols: int, kinds: list[str], cell_w=360, cell_h=240) -> str:
+    raw = _make_grid_png(rows, cols, kinds, cell_w, cell_h)
+    return base64.b64encode(raw).decode("ascii")
+
+
+# Issue #10319 case replica : 4x4 grid, rows 0-1 uniform beige, rows 2-3 rich
+# (mirrors the structure of the real CogVideoX cell 12).
+_KINDS_PARTIAL_EMPTY = (
+    ["uniform:216,200,168"] * 4   # row 0 -- beige (std ~ 0)
+    + ["uniform:216,200,168"] * 4  # row 1 -- beige
+    + ["rich:apple"] * 4           # row 2 -- rich noise
+    + ["rich:apple"] * 4           # row 3 -- rich noise
+)
+PNG_GRID_4x4_PARTIAL_EMPTY_B64 = _grid_fixture_b64(4, 4, _KINDS_PARTIAL_EMPTY)
+PNG_GRID_4x4_ALL_RICH_B64 = _grid_fixture_b64(4, 4, ["rich:apple"] * 16)
+
+
+class TestTileUniformity:
+    """#10319 — per-region (tile) uniformity metric for `detect_blank_figures`."""
+
+    def test_constants_documented(self):
+        # Acceptance criterion traceability -- keep these tied to the docstring
+        # in detect_blank_figures.py so any silent tightening surfaces here.
+        assert UNIFORM_TILE_STD == 15.0
+        assert PARTIAL_EMPTY_FRACTION == 0.5
+
+    def test_partial_empty_grid_signaled(self):
+        """Real case (#10305 CogVideoX, 4x4 grid rows 0-1 empty rows 2-3 full)."""
+        cell = _code_cell_with_png(PNG_GRID_4x4_PARTIAL_EMPTY_B64)
+        findings = detect_cell(cell, tiles=(4, 4))
+        assert len(findings) == 1, findings
+        f = findings[0]
+        assert f["advisory"] is True
+        assert "partial_empty_tiles" in f["reasons"][0]
+        assert f["tile_detail"]["low_variance_tiles"] >= 8  # rows 0-1 = 8 low
+        assert f["tile_detail"]["rich_tiles"] >= 8          # rows 2-3 = 8 rich
+
+    def test_full_grid_not_signaled(self):
+        """Same 4x4 fully-filled grid MUST NOT be flagged (issue's own criterion)."""
+        cell = _code_cell_with_png(PNG_GRID_4x4_ALL_RICH_B64)
+        findings = detect_cell(cell, tiles=(4, 4))
+        assert findings == []
+
+    def test_advisory_does_not_fail_check(self):
+        """`--check` exits 0 even with an advisory finding (phase 1 contract)."""
+        import tempfile
+        cell = _code_cell_with_png(PNG_GRID_4x4_PARTIAL_EMPTY_B64)
+        nb_dict = _nb([cell])
+        with tempfile.TemporaryDirectory() as d:
+            target = Path(d) / "grid.ipynb"
+            _write_nb(target, nb_dict["cells"])
+            rc = main([str(target), "--check"])
+        assert rc == 0, f"advisory finding escalated --check to rc={rc}"
+
+    def test_strict_fails_on_advisory(self):
+        """`--strict --check` ESCALATES the same advisory to exit 1."""
+        import tempfile
+        cell = _code_cell_with_png(PNG_GRID_4x4_PARTIAL_EMPTY_B64)
+        nb_dict = _nb([cell])
+        with tempfile.TemporaryDirectory() as d:
+            target = Path(d) / "grid.ipynb"
+            _write_nb(target, nb_dict["cells"])
+            rc = main([str(target), "--check", "--strict"])
+        assert rc == 1, f"--strict did NOT escalate advisory finding (rc={rc})"
+
+    def test_small_image_not_analyzed(self):
+        """Tiny images (< _MIN_SIDE_FOR_TILING per tile) are not tile-analyzed.
+
+        This protects the pixel-art / sprite content-gate (cf #8634) : the
+        tile metric would otherwise mistake small multicolor images for
+        uniform grids at the adaptive granularity.
+        """
+        # 32x32 noisy PNG : adaptive g = 32//64 = 0 -> clamp 2 -> tile 16x16,
+        # but tile pixel count is still adequate; choose something too small
+        # by setting tiles manually to (2, 2) on a 32x32 image (16x16 tile OK),
+        # then directly with the adaptive path on a 24x16 image (no _MIN_SIDE
+        # each tile = 12x8 < 16, returns None).
+        cell = _code_cell_with_png(
+            base64.b64encode(_make_noisy_png(24, 16)).decode("ascii")
+        )
+        findings = detect_cell(cell)  # adaptive: 24//64=0 -> 2; tile 12x8 < 16
+        assert findings == [], f"small noisy image should not be tile-analyzed: {findings}"
+
+    def test_tiles_flag_overrides_adaptive(self):
+        """`--tiles 2x2` on the partial-empty 4x4 re-runs the metric at that grid.
+
+        With tiles=(2,2) the 4x4 grid becomes 4 super-tiles, each spanning 2
+        rows or 2 cols of the original. Rows 0-1 still low-variance as a pair,
+        rows 2-3 still rich -- the helper still flags it, at 2/4 = 50%.
+        """
+        cell = _code_cell_with_png(PNG_GRID_4x4_PARTIAL_EMPTY_B64)
+        findings = detect_cell(cell, tiles=(2, 2))
+        assert len(findings) == 1
+        assert findings[0]["tile_detail"]["tiles"] == [2, 2]
+
+    def test_all_uniform_not_partial(self):
+        """All-uniform grid -- not a 'partial empty', that's the #8634 case.
+
+        Guard : rich >= 1 required for the signal. An entirely uniform grid
+        is a separate diagnostic (handled by `_has_real_content` if small,
+        by global size check otherwise) -- tile metric must NOT pile on.
+        """
+        kinds = ["uniform:255,255,255"] * 16
+        b64 = _grid_fixture_b64(4, 4, kinds)
+        cell = _code_cell_with_png(b64)
+        findings = detect_cell(cell, tiles=(4, 4))
+        # Image is full-white: distinct colors = 1, content gate flags it as
+        # tiny_payload-eligible; but at 4x4 with cell_w/h=360x240 the image
+        # is 1440x960, bytes ~tens of KB, so size check passes. Global content
+        # gate sees 1 color, returns False; size check passes -> reasons empty
+        # -> tile metric runs -> all 16 tiles low-variance, rich=0 -> NOT
+        # signaled (per the rich>=1 guard).
+        # NOTE : if the size *fails* min_bytes, the global check fires first
+        # and we get a non-advisory finding. The fixture here produces a
+        # legitimate-sized image (uniform Pixels still encode to ~120 KB),
+        # so the test exercises the tile-metric rich>=1 guard specifically.
+        if findings:
+            for f in findings:
+                if "partial_empty_tiles" in f["reasons"][0]:
+                    pytest.fail(
+                        f"all-uniform grid incorrectly flagged as partial-empty: {f}"
+                    )

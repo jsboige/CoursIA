@@ -78,6 +78,8 @@ gh pr list --search "#<issue>" --state all                   # 0 PR antérieure
 ```
 3 zeros = grain libre. ≥1 hit = verifier l'etat de l'upstream (`gh pr view N --json mergedAt`) et choisir (a) reporter, (b) redécouper, (c) rafraichir la substance.
 
+**C715-L2 — Incident fondateur #8835/#8836 (po-2024, 2026-07-29)**. Deux écarts au triple-check ci-dessus ont laissé passer un doublon **déjà mergé** : (a) recherche `--state open` au lieu de `--state all` — la PR #8836 (mergée 14:03Z par jsboige) était invisible à toute recherche de PRs ouverts ; (b) recherche par **mots-clés** du titre (`"GradeBook is_absolute"`) au lieu du **numéro d'issue** (`"#8835"`) — le titre de #8836 (« top-tree rule form-invariant ») ne matchait pas les mots-clés choisis. Le correctif identique (même règle `_classify`, mêmes 2 fichiers, mêmes 5 critères d'acceptation) fut livré ~30 min après → PR #8838 fermée comme doublon CONFLICTING. **Le triple-check canonique l'aurait attrappé** : `gh pr list --search "#8835" --state all` retourne #8836 (son tag scope `notebook-tools,#8835` matche), et `git log --all --grep "#8835"` montre `6446bd7bd`. Leçon : avant de pousser un fix sur une issue, le triple-check C715-L2 est **non-négociable**, la recherche se fait par **numéro d'issue** (pas par mots-clés), et `--state all` (pas `open`) — un doublon mergé est le cas de collision le plus facile à manquer parce qu'il n'a aucune PR ouverte à voir.
+
 **Routine verification first-and** (à coller dans `~/.claude/CLAUDE.md` personalisation ou alias bash) :
 
 ```bash
@@ -85,3 +87,41 @@ gh pr list --search "#<issue>" --state all                   # 0 PR antérieure
 gh pr view N --json state,mergedAt,baseRefOid 2>/dev/null | head -5
 git merge-base --is-ancestor <sha> origin/main && echo "MERGED" || echo "NOT-MERGED"
 ```
+
+---
+
+## Vocabulaire d'idle-honnête — les labels bannis (R7, mandat user 2026-07-19)
+
+Les règles R1-R6 interdisent l'idle ; les workers l'ont contournée en inventant un vocabulaire qui *sonne* comme du travail. Liste constatée, **bannie comme état terminal de cycle** :
+
+`CLEAN_DONE 0-PR` · `0 grain frais` · `pool/lane exhausted/saturée` · `forensic-floor` · `drained-confirm` · `due-diligence contribution` · `NO-CHANGE-NEEDED honnête` · `Nᵉ cycle honnête` · `loophole applicable` · `rien à faire` · `en attente de dispatch`.
+
+Cette liste est **indicative, jamais l'autorité** : un worker peut toujours inventer un nouveau synonyme. L'autorité est le **test de résultat** de R7 (`.claude/rules/proactive-coordination.md`) — *ai-je sorti un grain de substance du pool et l'ai-je transformé en PR ?* — qui couvre tous les synonymes présents et futurs.
+
+## Incident fondateur R5/R7 — le silo qui se termine en ASK (2026-07-01, po-2025)
+
+Séquence constatée : le worker audite la tranche README de **sa seule famille**, la trouve cohérente, puis poste un `[ASK coordinator]` pour un grain frais — alors que `gh issue list --state open` offrait des dizaines de grains exécutables cross-lane (#3360 bug RL Python, #4039 gittins bi-track, #3968/#2876 cross-famille, entrées ML.Net manquantes).
+
+Un audit de tranche étroite qui se termine en ASK **est le silo, pas de la proactivité**. C'est l'origine de la formulation R5 « le pool n'est PAS ta famille » et de la clause « le coordinateur n'est PAS un distributeur de grains ».
+
+Exemple chiffré du même registre (2026-07-19) : la famille ICT offrait à elle seule **≥6 grains CPU frais non-claimés** pendant que **4 lanes** se déclaraient « drained ».
+
+## Picker — pondération, graine, mesures (organe #10853)
+
+Détail de la R5 « le pool se tire ». La règle porte l'usage et les trois urnes ; ce qui suit sert quand on veut comprendre ou ajuster le tirage.
+
+**Mesure fondatrice (2026-08-14).** Pool de 140 issues ouvertes, dont **89 créées dans les 7 derniers jours**. `gh issue list` plafonnant à 30 résultats triés par récence, la fenêtre visible s'arrêtait à **~6 jours** — le worker repiochait mécaniquement dans ce que le coordinateur venait de créer. Partition du même pool : **44 grains unitaires · 29 EPIC/umbrella · 67 `candidate-delivered`**.
+
+**Pourquoi trois urnes et pas une.** Au moment de la mesure, **aucun** grain unitaire n'avait plus de 30 jours : tout l'ancien (#1453 prover, #1454 training, #2159 Grothendieck, #2874 Knot, #1621 QC, #1206 Z3.Linq) était umbrella. Une urne unique ne l'aurait jamais montré, quel que soit le poids donné à l'ancienneté. L'urne `delivered` est ce qui fait *refluer* le compte sans batch-close aveugle — le batch-close endort une série (précédent ICT : 24 fermetures justifiées item par item, série ensuite dormante).
+
+**Pondération** — trois facteurs doux, tous imprimés à côté du candidat :
+
+| Facteur | Formule | Ce qu'il sert |
+|---|---|---|
+| ancienneté | `1 + log2(1 + jours/7)` | « faire refluer doucement » — la traîne est là où le compte s'accumule ; 6 mois pèsent ~4× une issue de la semaine |
+| anti-adjacence | `×0.25` si le genre égale `--prev-genre` | **G-VAR-3 au tirage**, plutôt qu'en HOLD a posteriori |
+| contenu | `×2` si le genre est CONTENU | **G-VAR-1 au tirage** |
+
+Tirage pondéré **sans remise** (Efraimidis-Spirakis : clé `u^(1/w)`, top-k). Plus de pondération reproduirait une monoculture avec des étapes en plus : on se limite à ce que les gates du variation-protocol demandent déjà.
+
+**Graine** = `sha256(lane | heure UTC | reroll)`. Deux lanes tirent des candidats différents à la même minute ; une même lane qui relance dans l'heure retrouve son tirage (idempotent, pas de thrash) ; `--reroll N` redistribue. Le genre affiché est **inféré** par regex sur titre+labels : c'est une aide au tri, pas un verdict — l'agent pose le vrai tag `Grain:` lui-même.

@@ -1,0 +1,34 @@
+- name: App-20 SudokuBenchmark
+  family: Search/Applications
+  python: MyIA.AI.Notebooks/Search/Applications/CSP/App-20-SudokuBenchmark-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = stdlib pure (typing, copy, random, time) : solveurs Sudoku (backtracking, strategies) + benchmark from-scratch, aucun moteur de production externe (numpy/matplotlib = substrat generique viz uniquement). C# = BCL pure (0 NuGet) : meme benchmark from-scratch (backtracking, strategies). Verdict SOTA-OK : aucun des deux cotes n'importe un moteur de production — le benchmark compare des solveurs maison des deux cotes ; il n'y a rien a recuperer (pas de lib Python a bridger, pas d'equivalent .NET manquant). Le concept enseigne (benchmark de strategies Sudoku) est implemente from-scratch des deux cotes, parite sur les concepts cibles. parity_level: semantic preserve."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: 5a773fde57018c807f03804ac5c313172b9f9a19
+      csharp_sha: 0f2dbea5dad14954250d2262b6e5baa3ba60df6a
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 5a773fde57018c807f03804ac5c313172b9f9a19
+      csharp_sha: ff525b24ceae1d7e5855ec168de667ae6c34ff19
+      content_python_sha: 46fd5081a1fb9ea0bdd39a3b50099a056766c4be60a2920739bbb37ff5070b46
+      content_csharp_sha: 3b2cef307f7393653504869a954c4321f0022880834f4021efb38cb065e26a9b
+    - date: "2026-08-06"
+      by: myia-ai-01:CoursIA
+      python_sha: 2a4c98b8f8daeda505350d4b289e5c63835099b1
+      csharp_sha: ff525b24ceae1d7e5855ec168de667ae6c34ff19
+      content_python_sha: 2d7043d705b740670d59131b9124430811b017b4d78a118c24652ce67685188d
+      content_csharp_sha: 3b2cef307f7393653504869a954c4321f0022880834f4021efb38cb065e26a9b
+    - date: "2026-08-14"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 2a4c98b8f8daeda505350d4b289e5c63835099b1
+      csharp_sha: 72f77838eafe5c5beafaf07df1a7d5c733390145
+      content_python_sha: 2d7043d705b740670d59131b9124430811b017b4d78a118c24652ce67685188d
+      content_csharp_sha: f280d48767837420b685f9bc4d50fe6da8a6c59b6a648acbdb530269ab14ab2e
+  known_differences:
+    - "Socle pedagogique commun : Benchmark Sudoku (comparaison solveurs, timing) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
+    - "Idiomes framework : Python = typing + random + time (from-scratch benchmark) ; C# = System.Diagnostics (Stopwatch) BCL pure."
+    - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."

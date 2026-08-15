@@ -1,0 +1,153 @@
+name: ICT-Series Tests
+
+# Organe manquant (#9387) : aucun workflow ne surveillait les tests de
+# ICT-Series/. Ce workflow declenche sur toute modif sous ICT-Series/** et
+# lance les DEUX suites depuis leur rootdir correct (piege d'import #9387) :
+#   - tests/      -> rootdir = ICT-Series/  (pyproject.toml)
+#   - ict/tests/  -> rootdir = ict/tests/   (pytest.ini, mode prepend)
+#
+# DEUX conventions de compte, ne pas confondre (post-#9478) :
+#   - suite-name (matrix) compte les STRATES (classes/modules de test) :
+#       tests/ = 55 strates (34 originales + 21 edge-cases spectral/bistable/
+#       sensitivity consolides depuis ict/tests/, #9478).
+#       ict/tests/ = 42 strates package.
+#   - test-floor compte la COLLECTION parametree (items developpes par
+#     @pytest.mark.parametrize) : tests/ = 746 items, ict/tests/ = 42 items.
+#     55 != 746 PAR CONSTRUCTION (une strate se developpe en N items parametres) :
+#     NE PAS "harmoniser" le floor sur le compte de strates, ni inversement. Le
+#     floor garde la collection (746/42), le label garde les strates (55/42).
+#
+# Provenance : a l'intro du workflow (59ac5fc10) le header reclamait 34/119
+# tests, mais la CI a TOUJOURS collecte davantage (run d'origine 30896333149) :
+# le 34 etait faux des l'inception. Les floors actuels (746/42) sont mesures
+# firsthand sur origin/main (ai-01 @ dbfbf73ab) et enforce par la collection
+# floor-guard ci-dessous, pas seulement par ce commentaire. Quand la collection
+# change (ex. consolidation #9478), ajuster matrix.test-floor dans la meme PR
+# -- le message d'erreur du guard nomme la valeur a ajuster.
+# Imposer un troisieme rootdir depuis la racine reproduirait le ModuleNotFoundError
+# documente dans #9387 (acceptance : une panne d'infra doit se distinguer d'un finding).
+#
+# Python 3.9 requis : pyphi==1.2.0 (pin pyproject.toml) exige collections.Iterable
+# (retire en 3.10) + NumPy < 2.0 (compat pyemd). Cf. memoire pyphi-1-2-0-broken-python313.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/IIT/ICT-Series/**'
+      - '.github/workflows/ict-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/IIT/ICT-Series/**'
+      - '.github/workflows/ict-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ict-tests:
+    name: ICT ${{ matrix.suite-name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # tests/ : 55 strates (34 originales + 21 edge-cases spectral/bistable/
+          # sensitivity consolides depuis ict/tests/, #9478) -> 746 items collectes
+          # (cf. test-floor : le floor compte la COLLECTION parametree, PAS les
+          # strates ; 55 != 746 par construction). Rootdir herite du pyproject.toml
+          # d'ICT-Series/ (pip install -e . rend le package ict/ importable depuis
+          # n'importe quel cwd).
+          - suite-name: "tests/ (55)"
+            test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
+            test-args: tests
+            test-floor: 746
+          # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
+          # #9478) -> 42 items collectes (strates == collection ici, pas de
+          # parametrize massif). Rootdir = ict/tests/ pour que le pytest.ini local
+          # (mode prepend, neutralise --import-mode=importlib) s'applique -- sinon
+          # test_reversibility_budget / test_time_arrow n'executent jamais
+          # (sys.path.insert module-level ignore sous importlib).
+          - suite-name: "ict/tests/ (42 package)"
+            test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests
+            test-args: .
+            test-floor: 42
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: pip
+          cache-dependency-path: MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml
+
+      - name: Install ict package + deps (pyphi 1.2.0, numpy<2, scipy, matplotlib)
+        id: install
+        working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run ${{ matrix.suite-name }}
+        working-directory: ${{ matrix.test-cwd }}
+        run: pytest ${{ matrix.test-args }} --tb=short -v
+
+      # Collection floor-guard (#9387). Acceptance de l'issue : "une panne
+      # d'infra doit se distinguer d'un finding". pytest exit-code couvre deja
+      # les cas brutaux (code 1 = test en echec, code 2 = collection error,
+      # code 5 = zero test collecte). Ce guard couvre le cas restant, le plus
+      # silencieux : une REGRESSION PARTIELLE ou N tests disparaissent sans
+      # faire tomber la suite (un module entier passe en skip suite a un changement
+      # d'env, un generateur parametrize produit moins de cas, un fichier deplace
+      # hors du glob). pytest reste vert, mais 50 ou 200 tests ont evapore. La
+      # gate reste verte alors que la couverture a chute. Ce step re-collecte
+      # (--co -q, import-only, rapide) et echoue si le compte passe sous le
+      # plancher. Floors = comptes observes sur origin/main (4/4 runs CI stables
+      # 2026-08-04, suite deterministe). Quand des tests sont retires
+      # INTENTIONNELLEMENT, abaisser matrix.test-floor dans la meme PR -- le
+      # message d'erreur nomme la valeur a ajuster.
+      #
+      # Robustesse : on parse la ligne de resume CANONIQUE de pytest ("N tests
+      # collected"), pas les nodeids via `grep -c '::'`. Le premier essai
+      # comptait les nodeids : cassait sur ict/tests/ (mode prepend du pytest.ini
+      # local -> format nodeid differents sur stdout -> grep trouvait 0) ET sous
+      # le `set -e` par defaut de GHA (bash -eo pipefail) ou un grep a 0 match
+      # (exit 1) + pipefail tuait le script avant l'echo de diagnostic. Le resume
+      # "N tests collected" est le compte officiel de pytest, stable par
+      # rootdir/mode. Les `|| true` neutralisent set -e sur l'extraction pour
+      # qu'un compte 0 produise un message clair plutot qu'un exit muet.
+      #
+      # (a) INVOCATION IDENTIQUE au step Run ci-dessus : `pytest`, pas
+      # `python -m pytest` (qui prefixe le CWD sur sys.path et reintroduit le
+      # piege d'import #9387 que le pytest.ini local en mode prepend neutralise).
+      # (b) ACCEPTANCE #9387 : "une panne d'infra doit se distinguer d'un
+      # finding". Deux messages d'erreur DISTINCTS -- un echec de COLLECTE
+      # (import casse / dep manquante -> panne d'infra) n'est pas une baisse de
+      # COUVERTURE (tests disparus -> finding). Le premier arrete le guard avant
+      # le plancher (on ne peut pas mesurer une couverture quand la collecte
+      # meme plante) ; le second est le verdict de regression que ce guard existe
+      # pour signer. Pas de 2>/dev/null : l'erreur de collecte reste VISIBLE.
+      - name: Collection floor-guard (${{ matrix.suite-name }})
+        if: always() && steps.install.outcome == 'success'
+        working-directory: ${{ matrix.test-cwd }}
+        env:
+          ICT_TEST_FLOOR: ${{ matrix.test-floor }}
+        run: |
+          set -uo pipefail
+          co_out=$(pytest ${{ matrix.test-args }} --co -q 2>&1) || {
+            echo "::error title=ICT collection FAILED (${{ matrix.suite-name }})::pytest --co a echoue (exit != 0) -- PANNE D'INFRA (import casse, dep manquante, erreur de syntaxe), PAS une baisse de couverture. La collecte elle-meme a plante ; le plancher n'est pas evalue. Sortie complete de pytest ci-dessus dans le log."
+            exit 1
+          }
+          collected=$(printf '%s\n' "$co_out" | grep -oE '[0-9]+ tests? collected' | tail -1 | grep -oE '[0-9]+' | head -1 || true)
+          collected=${collected:-0}
+          echo "Collected: $collected tests (floor: $ICT_TEST_FLOOR) for ${{ matrix.suite-name }}"
+          if [ "$collected" -lt "$ICT_TEST_FLOOR" ]; then
+            echo "::error title=ICT coverage regression (${{ matrix.suite-name }})::Collected $collected < floor $ICT_TEST_FLOOR -- FINDING : des tests ont disparu silencieusement (module en skip, parametrize casse, fichier hors-glob) alors que la collecte a reussi. Si cette baisse est INTENTIONNELLE (ex. consolidation de doublons), abaissez matrix.test-floor ($ICT_TEST_FLOOR) dans .github/workflows/ict-tests.yml a la meme PR que la suppression qui la justifie. Sinon, c'est une regression de couverture a corriger avant merge."
+            exit 1
+          fi
+          echo "Floor OK ($collected >= $ICT_TEST_FLOOR)."

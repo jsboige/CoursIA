@@ -1,7 +1,19 @@
+import argparse
 import os
 import glob
+import sys
 import pandas as pd
-from gradebook import process_grades, load_student_records, generate_qualitative_summary
+from gradebook import (
+    process_grades,
+    load_student_records,
+    generate_qualitative_summary,
+    get_ambiguity_journal,
+    reset_ambiguity_journal,
+)
+
+# Code de sortie signalant un rapport non-final : des rapprochements ambigus
+# attendent l'arbitrage de l'enseignant (PRIVACY.md §6).
+EXIT_AMBIGUITIES_PENDING = 2
 
 # --- Paramètres ---
 # Le chemin racine où se trouvent les données des différentes classes.
@@ -112,16 +124,54 @@ def verify_and_print_excel_head(filepath):
     print("ERREUR: Le fichier de rapport n'a pas été trouvé à l'emplacement attendu après plusieurs tentatives.")
 
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Orchestration de la notation GradeBookApp.")
+    parser.add_argument(
+        "--allow-ambiguous", action="store_true",
+        help=("Produire le rapport malgré des rapprochements dans la bande "
+              "d'ambiguïté. À n'utiliser qu'après avoir arbitré le journal."))
+    parser.add_argument(
+        "--ambiguity-log", default=os.path.join(OUTPUT_DIR, "ambiguites_rapprochement.json"),
+        help="Chemin du journal structuré des rapprochements ambigus (JSON, sans PII).")
+    return parser.parse_args(argv)
+
+
+def report_ambiguity_gate(journal, log_path, allow_ambiguous):
+    """Applique le gate §6. Retourne le code de sortie du run."""
+    if not journal.has_ambiguities:
+        print("\nGate rapprochement : aucun cas dans la bande d'ambiguïté.")
+        return 0
+
+    written = journal.write(log_path)
+    print(f"\nGate rapprochement : {len(journal)} rapprochement(s) dans la bande "
+          f"d'ambiguïté (marge {journal.margin} points sous le seuil).")
+    print(f"Journal (pseudonymisé, sans donnée nominative) : {written}")
+    print("Aucun de ces rapprochements n'a été crédité automatiquement.")
+
+    if allow_ambiguous:
+        print("--allow-ambiguous : rapport produit malgré tout, sous la "
+              "responsabilité de l'enseignant.")
+        return 0
+
+    print("RAPPORT NON FINAL : arbitrez le journal, puis relancez avec "
+          "--allow-ambiguous pour valider.")
+    return EXIT_AMBIGUITIES_PENDING
+
+
+def main(argv=None):
     """
     Point d'entrée du script d'orchestration.
     """
+    args = parse_args(argv)
+    reset_ambiguity_journal()
+
     print(f"Recherche des fichiers dans : {DATA_ROOT}")
     files_to_process = find_files(DATA_ROOT)
 
     if not files_to_process:
         print("Aucune classe à traiter. Vérifiez les noms de vos fichiers.")
-        return
+        return 0
 
     print(f"Classes à traiter : {', '.join(files_to_process.keys())}")
 
@@ -134,7 +184,7 @@ def main():
             all_students.extend(load_student_records(paths["registration"]))
         except Exception as e:
             print(f"ERREUR CRITIQUE lors du chargement de {paths['registration']}: {e}")
-            return
+            return 1
     print(f"Total de {len(all_students)} étudiants chargés pour la validation.")
 
     for class_name, paths in files_to_process.items():
@@ -159,5 +209,8 @@ def main():
 
     print("\n--- Tous les traitements sont terminés. ---")
 
+    return report_ambiguity_gate(
+        get_ambiguity_journal(), args.ambiguity_log, args.allow_ambiguous)
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

@@ -36,8 +36,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
 EXCLUDE_ALWAYS = {".ipynb_checkpoints", "obj", "bin", "__pycache__", ".git"}
-EXCLUDE_PEDAGOGICAL = {"research", "archive", "_output", "output", "partner-course", "examples"}
-RESEARCH_DIR_KEYWORDS = {"research", "archive", "examples", "partner-course"}
+# ``_archive``/``_archives`` mirror ``archive`` (convention #9535 item 10): the
+# pedagogical exclusion below uses a substring match (so ``archive`` already
+# catches ``_archive``), but ``_is_research_path`` matches dir names EXACTLY --
+# listing them explicitly keeps the RESEARCH STATUS consistent with the count
+# exclusion and survives a future refactor of either match strategy.
+EXCLUDE_PEDAGOGICAL = {"research", "archive", "_archive", "_archives", "_output", "output", "partner-course", "examples"}
+RESEARCH_DIR_KEYWORDS = {"research", "archive", "_archive", "_archives", "examples", "partner-course"}
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",

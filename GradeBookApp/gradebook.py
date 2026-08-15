@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import hashlib
+import json
 import os
 import glob
 import re
@@ -15,6 +17,100 @@ professor_email = "jsboige@gmail.com"
 PROFESSOR_FULL_NAME = "Jean-Sylvain Boige"
 SIMILARITY_THRESHOLD = 80 # Seuil pour le fuzzy matching
 TEACHER_WEIGHT = 1.0 # Poids de la note du professeur. 1.0 = 50% du total.
+
+# Largeur de la bande d'ambiguïté sous le seuil de rapprochement (PRIVACY.md §6).
+# Un score dans [threshold - AMBIGUITY_MARGIN, threshold[ n'est ni accepté ni
+# rejeté : le rapprochement n'est pas crédité automatiquement (règle 4 de §6),
+# et le run est marqué non-final tant que l'enseignant n'a pas arbitré.
+AMBIGUITY_MARGIN = 10
+
+# --- Journalisation des rapprochements ambigus ---
+
+
+def _pseudonymize(value):
+    """Identifiant stable et non réversible pour le journal d'ambiguïtés.
+
+    PRIVACY.md §5 interdit la PII nominative hors du périmètre de traitement :
+    le journal d'audit ne porte donc que ce condensé, jamais le libellé source.
+    Stable d'un run à l'autre (pas de sel aléatoire) pour que l'enseignant
+    puisse rapprocher deux exécutions successives.
+    """
+    normalized = re.sub(r'\s+', ' ', str(value).lower().strip())
+    return hashlib.sha256(normalized.encode('utf-8')).hexdigest()[:12]
+
+
+class AmbiguityJournal:
+    """Consigne les rapprochements tombant dans la bande d'ambiguïté.
+
+    Sert le gate de PRIVACY.md §6 : le moteur ne se contente plus d'un
+    avertissement dans les logs (que l'enseignant peut ne jamais lire), il
+    retient chaque cas litigieux pour que le run puisse être déclaré non-final.
+
+    N'enregistre **aucune donnée nominative** : seulement les condensés des deux
+    libellés comparés, le score obtenu et le seuil applicable.
+    """
+
+    def __init__(self, margin=AMBIGUITY_MARGIN):
+        self.margin = margin
+        self.entries = []
+
+    def record(self, eval_group_name, student_project_string, score, threshold):
+        """Enregistre un rapprochement litigieux. Retourne True s'il a été retenu."""
+        if not (threshold - self.margin <= score < threshold):
+            return False
+        self.entries.append({
+            "groupe_evalue": _pseudonymize(eval_group_name),
+            "projet_etudiant": _pseudonymize(student_project_string),
+            "score": round(float(score), 2),
+            "seuil": threshold,
+            "marge": self.margin,
+            "decision": "non_credite_arbitrage_requis",
+        })
+        return True
+
+    @property
+    def has_ambiguities(self):
+        return bool(self.entries)
+
+    def __len__(self):
+        return len(self.entries)
+
+    def clear(self):
+        self.entries = []
+
+    def write(self, path):
+        """Écrit le journal au format JSON. Retourne le chemin, ou None si vide."""
+        if not self.entries:
+            return None
+        os.makedirs(os.path.dirname(os.path.abspath(path)) or '.', exist_ok=True)
+        payload = {
+            "marge_ambiguite": self.margin,
+            "nb_rapprochements_ambigus": len(self.entries),
+            "note": ("Identifiants pseudonymisés (SHA-256 tronqué) — aucune donnée "
+                     "nominative, cf PRIVACY.md §5. Chaque entrée exige un arbitrage "
+                     "humain avant que le rapport soit considéré comme final (§6)."),
+            "rapprochements": self.entries,
+        }
+        with open(path, 'w', encoding='utf-8') as handle:
+            json.dump(payload, handle, ensure_ascii=False, indent=2)
+        return path
+
+
+# Journal actif par défaut : le gate doit fonctionner sans que chaque appelant
+# ait à le câbler — un journal optionnel que personne ne branche reproduirait
+# exactement l'avertissement-que-nul-ne-lit que ce mécanisme remplace.
+_DEFAULT_AMBIGUITY_JOURNAL = AmbiguityJournal()
+
+
+def get_ambiguity_journal():
+    """Journal d'ambiguïtés utilisé par défaut par ``fuzzy_match_group``."""
+    return _DEFAULT_AMBIGUITY_JOURNAL
+
+
+def reset_ambiguity_journal():
+    """Vide le journal par défaut (à appeler en début de run, et dans les tests)."""
+    _DEFAULT_AMBIGUITY_JOURNAL.clear()
+    return _DEFAULT_AMBIGUITY_JOURNAL
 
 # --- Structures de données ---
 
@@ -326,7 +422,7 @@ def _leading_group_code(normalized):
     return match.group(1) if match else None
 
 
-def fuzzy_match_group(eval_group_name, student_project_string, threshold=90):
+def fuzzy_match_group(eval_group_name, student_project_string, threshold=90, journal=None):
     """
     Correspondance entre nom de groupe évalué et nom de projet inscrit.
     Privilégie la correspondance exacte ou quasi-exacte (>= threshold % similarité).
@@ -334,6 +430,13 @@ def fuzzy_match_group(eval_group_name, student_project_string, threshold=90):
     Le seuil ``threshold`` (défaut 90, comportement historique) rend effectif le
     paramètre ``group_match_threshold`` configurable par épreuve (commit 3a612f85c).
     Les appelants 2-args conservent le défaut 90 (comportement inchangé).
+
+    ``journal`` (défaut : le journal de module) reçoit les scores tombant dans la
+    bande d'ambiguïté ``[threshold - AMBIGUITY_MARGIN, threshold[``. **La décision
+    de rapprochement est inchangée** — un score sous le seuil reste un refus, donc
+    aucun étudiant n'est crédité automatiquement (PRIVACY.md §6 règle 4). Ce qui
+    change est que le run porte désormais la trace du litige et peut être déclaré
+    non-final. Passer ``journal=False`` désactive tout enregistrement.
     """
     if not isinstance(eval_group_name, str) or not isinstance(student_project_string, str):
         return False
@@ -367,6 +470,12 @@ def fuzzy_match_group(eval_group_name, student_project_string, threshold=90):
     if similarity >= threshold:
         return True
 
+    # Sous le seuil : refus (comportement inchangé), mais si le score tombe dans
+    # la bande d'ambiguïté, le litige est consigné pour arbitrage humain.
+    if journal is not False:
+        active_journal = journal if journal is not None else _DEFAULT_AMBIGUITY_JOURNAL
+        active_journal.record(eval_group_name, student_project_string, similarity, threshold)
+
     # Cas 3: Pour les anciens formats (groupe X, project X)
     group_pattern = r'^groupe?\s*(\d+)$'
     eval_group_match = re.match(group_pattern, eval_norm)
@@ -375,13 +484,33 @@ def fuzzy_match_group(eval_group_name, student_project_string, threshold=90):
     if eval_group_match and student_group_match:
         return eval_group_match.group(1) == student_group_match.group(1)
 
-    # Cas 4: Inclusion simple pour les noms courts non numérotés
+    # Cas 4: Inclusion simple pour les noms courts non numérotés.
+    # L'inclusion doit s'arrêter sur une frontière de token : « projet alpha »
+    # inclus dans « projet alpha - groupe 3 » est le cas visé (le reste est un
+    # segment distinct), tandis que « ... dupont » inclus dans « ... dupontt »
+    # est une confusion de patronymes. Sans ce garde-fou, Cas 4 court-circuitait
+    # le seuil et créditait automatiquement l'un des deux étudiants même à
+    # threshold=100 (PRIVACY.md §6 règle 4).
     if not (eval_norm and eval_norm[0].isdigit()):
         if len(eval_norm) > 5 and len(student_norm) > 5:
-            if eval_norm in student_norm or student_norm in eval_norm:
+            if _inclusion_on_token_boundary(eval_norm, student_norm):
                 return True
 
     return False
+
+
+def _inclusion_on_token_boundary(a, b):
+    """Vrai si l'un des libellés inclut l'autre, le reliquat commençant sur un
+    séparateur (frontière de token) et non collé au dernier mot."""
+    shorter, longer = (a, b) if len(a) <= len(b) else (b, a)
+    if shorter not in longer:
+        return False
+    prefix, _, suffix = longer.partition(shorter)
+    # Le reliquat de part et d'autre doit être vide ou débuter/finir sur un
+    # caractère non alphanumérique (espace, tiret, parenthèse...).
+    head_ok = (not prefix) or (not prefix[-1].isalnum())
+    tail_ok = (not suffix) or (not suffix[0].isalnum())
+    return head_ok and tail_ok
 
 
 def is_feedback_empty(evaluation):

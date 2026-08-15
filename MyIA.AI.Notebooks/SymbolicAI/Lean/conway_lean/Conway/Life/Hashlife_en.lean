@@ -299,13 +299,24 @@ The key insight: `hashlifeResult` on a level-`k` MacroCell advances the
 centered region by `2^(k-2)` generations. To ensure the pattern stays
 within the computed region, we pad the MacroCell by 2 levels using
 `centerInLevelPlus2`, which places the pattern at the center of a
-`(level + 2)` cell. This gives `2^level` margin on each side, which is
-more than enough for `2^(level-2)` generations (speed of light = 1 cell/gen).
+`(level + 2)` cell, leaving `2^level` margin on each side.
 
-With this padding, `hashlifeResult` on the padded cell advances by
-`2^level` generations (not `2^(level-2)`), and the result's offset equals
-the original offset (the centered result of the padded cell aligns with
-the original region). -/
+Note that this padding **also increases the reach**: `hashlifeResult` on
+the padded cell advances by `2^level` generations (not `2^(level-2)` as
+the unpadded cell would). The `2^level` margin is therefore measured
+against a reach of `2^level` generations: the ratio is **tight** (close
+to 1), not "more than enough" as the naive `2^(level-2)` reach would
+suggest. The theorem `no_padding_depth_suffices` (see `JumpCapture.lean`)
+formalizes this: `marginToResultWindow k p < jumpReach k p`, the margin
+remaining strictly below the speed-of-light cone's reach, the gap being
+the `2^(k-1)` clip.
+
+The result's offset equals the original offset (the centered result of
+the padded cell aligns with the original region). Loosening this ratio
+would require decoupling the reach from the level — Gosper's `j`
+parameter (padding deeper than `+2`) brings the margin/reach ratio to
+`2 - 2^(2-p)`, tight at `p = 2` and a strict surplus at `p >= 3`; this
+variant is not implemented here. -/
 
 /-- Jump a MacroCell forward by `2^level` generations using recursive
     Hashlife with padding. Pads the input by 2 levels, then calls
@@ -378,44 +389,62 @@ This section **adds** the n-aware variant without touching `evolveHashlifeFast`
 or any of its 50+ call-sites / proofs:
 
 - `evolveHashlifeFastAuxN` / `evolveHashlifeFastN` — same recursion as
-  `evolveHashlifeFastAux`, but the initial MacroCell is built with the
-  n-aware frame `gridToMacroCellWithOffsetN n g`. Subsequent iterations use
-  the fixed-frame builder (N3 = "thread without re-frame", per the N1
-  design comment at MacroCell L634).
+  `evolveHashlifeFastAux`, but every iteration re-frames via the n-aware
+  builder `gridToMacroCellWithOffsetN`: the recursive call
+  `evolveHashlifeFastAuxN fuel (n - js) g'` re-enters
+  `gridToMacroCellWithOffsetN (n - js) g'` on the jumped grid. (The N1
+  design comment at MacroCell L634 described a "thread without re-frame"
+  scheme; the code, however, re-frames on every iteration — the code is
+  authoritative, the docs have been aligned.)
 - `evolveHashlifeFastN_zero` — trivial sanity: `n = 0` returns `g`.
+- `evolveHashlifeFastAuxN_eq_evolve` / `evolveHashlifeFastN_eq_evolve` —
+  **(b2) verdict, #6724: the N3 jump guard is dead.** The `max 2 n`
+  padding of `gridFrameN` forces `2 ^ lvl ≥ side ≥ 2 * n + 1 > n`
+  (`gridToMacroCellWithOffsetN_level_gt_n`, MacroCell), so the guard
+  `lvl ≥ 2 ∧ n ≥ jumpSize lvl` fails for every nonempty grid (and
+  `lvl = 0 < 2` for the empty one): the jump branch never fires and the
+  N3 variant degenerates to the reference `evolve`.
 
-The **bridge** `evolveHashlifeFastN n g = evolveHashlifeFast n g` for `n ≤ 2`
-(via `gridToMacroCellWithOffsetN_le_two_eq` + structural induction on `fuel`)
-is **deferred** to a follow-up cycle, paired with the P4 unlock: it requires
-the `evolveHashlifeFastMemo_eq_evolveHashlifeFast`-style full body unfolding
-which is best assembled once the Lean LSP harness (ai-01 turf, post-fix H)
-is back to fully interactive. Documenting the proof obligation here keeps
-the P5 redesign plan honest and avoids a vacuous stub. -/
+The **bridge** `evolveHashlifeFastN n g = evolve n g` is therefore proven
+for ALL n as an immediate corollary of the dead guard — stronger than
+the originally deferred `n ≤ 2` bridge to `evolveHashlifeFast` (the
+Hashlife component is simply inert, at the honest price of the
+acceleration). The lesson for the P5 redesign: covering the light cone
+of the n remaining generations by padding is self-defeating — the frame
+inflates beyond the very jump horizon it conditions. The identified exit
+(j/p>=3 amendment, ruled by the coordinator on #6724) is Gosper's j
+decorrelation (`hashlifeResultAt j`, implemented in the next section):
+at j = lvl-2 on the padded cell, the centered bbox accounting makes
+capture a consequence of the frame invariant alone
+(`jumpAt_capture_centered`), with a viable guard
+(`guardAt_viable_glider`). -/
 
 /-- N3-threaded auxiliary for `evolveHashlifeFastN`: same recursion as
-    `evolveHashlifeFastAux`, but the initial MacroCell is built with the
-    n-aware frame `gridToMacroCellWithOffsetN n g`. Subsequent recursive
-    calls (the `n - js` arm) use the fixed-frame builder — N3 threads the
-    frame *without* re-framing on every iteration (per the N1 design
-    comment at MacroCell L634). -/
+    `evolveHashlifeFastAux`, but every iteration re-frames via the
+    n-aware builder `gridToMacroCellWithOffsetN` — the recursive call on
+    `n - js` re-enters the n-aware framing of the remaining n on the
+    jumped grid. Warning ((b2) verdict, #6724): under this framing, the
+    jump guard `lvl ≥ 2 ∧ n ≥ js` is structurally dead — see
+    `evolveHashlifeFastAuxN_eq_evolve` below. -/
 def evolveHashlifeFastAuxN : Nat → Nat → Grid → Grid
   | _, 0, g => g
   | 0, _, g => g  -- fuel exhausted: return current state
   | fuel + 1, n, g =>
-    -- N3 substitution: n-aware frame on the initial MacroCell only.
+    -- n-aware framing on EVERY iteration: the recursive call in the jump
+    -- branch re-enters gridToMacroCellWithOffsetN (n - js).
     let (off, mc) := gridToMacroCellWithOffsetN n g
     let lvl := mc.level
     let js := jumpSize lvl
     if lvl >= 2 && n >= js then
       -- Jump forward by `2^lvl` generations using padded Hashlife,
-      -- then re-frame from the new (jumped) grid's fixed frame.
+      -- then n-aware re-framing of the remaining n on the jumped grid.
+      -- NB ((b2) verdict, #6724): this branch is currently DEAD —
+      -- `gridToMacroCellWithOffsetN_level_gt_n` (MacroCell) forces
+      -- `2^lvl > n = js`; the guard can never fire as long as the
+      -- `max 2 n` padding governs the frame level.
       let jumped := hashlifeJump mc
       let newOff := jumpResultOff off lvl
       let g' := jumped.toGrid newOff
-      -- Subsequent iterations use the fixed-frame builder, NOT the
-      -- n-aware one — the n parameter is already consumed by `n - js`,
-      -- and re-framing with the *new* `n` would needlessly inflate the
-      -- padding when the bounding box has shrunk after the jump.
       evolveHashlifeFastAuxN fuel (n - js) g'
     else
       -- Small n or small pattern: use reference evolve.
@@ -434,6 +463,272 @@ def evolveHashlifeFastN (n : Nat) (g : Grid) : Grid :=
 @[simp]
 theorem evolveHashlifeFastN_zero (g : Grid) :
     evolveHashlifeFastN 0 g = g := rfl
+
+/-- **(b2) verdict, #6724: the N3 jump guard is dead.** For every grid,
+    the jump-branch guard `lvl ≥ 2 ∧ n ≥ jumpSize lvl` fails: empty grid
+    → `lvl = 0 < 2`; nonempty grid → `gridToMacroCellWithOffsetN_level_gt_n`
+    gives `2 ^ lvl > n` while `jumpSize lvl = 2 ^ lvl`. The jump branch
+    therefore never fires, and the N3 auxiliary returns exactly the
+    reference `evolve`. -/
+theorem evolveHashlifeFastAuxN_eq_evolve (fuel n : Nat) (g : Grid)
+    (hfuel : 1 ≤ fuel) :
+    evolveHashlifeFastAuxN fuel n g = evolve n g := by
+  obtain ⟨fuel', rfl⟩ : ∃ k, fuel = k + 1 := ⟨fuel - 1, by omega⟩
+  cases n with
+  | zero => rfl
+  | succ m =>
+    simp only [evolveHashlifeFastAuxN]
+    split
+    · next hcond =>
+      exfalso
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
+      cases g with
+      | nil =>
+        rw [show (gridToMacroCellWithOffsetN (m + 1) []).2.level = 0 from by
+              simp [gridToMacroCellWithOffsetN, gridFrameN,
+                MacroCell.level_buildFromGrid]] at hcond
+        omega
+      | cons p₀ ps =>
+        have hgt := gridToMacroCellWithOffsetN_level_gt_n (m + 1) (p₀ :: ps)
+          (List.cons_ne_nil _ _)
+        simp only [jumpSize] at hcond
+        omega
+    · rfl
+
+/-- **Bridge valid for ALL n (b3 delivered early)**: `evolveHashlifeFastN`
+    coincides with the reference `evolve` — a direct corollary of the dead
+    guard (`evolveHashlifeFastAuxN_eq_evolve`): the N3 variant never
+    jumps. This bridge was originally planned (deferred) for `n ≤ 2`
+    only, towards `evolveHashlifeFast`; it is in fact unconditional
+    towards `evolve`, at the honest price of the Hashlife acceleration
+    (inert while the guard is dead — see the section docstring above for
+    the exit via Gosper's j decorrelation). -/
+theorem evolveHashlifeFastN_eq_evolve (n : Nat) (g : Grid) :
+    evolveHashlifeFastN n g = evolve n g := by
+  cases n with
+  | zero => rfl
+  | succ m =>
+    exact evolveHashlifeFastAuxN_eq_evolve (m + 1) (m + 1) g (by omega)
+
+/-! ## Decorrelated-reach jump: `hashlifeResultAt j` — gate (b2') of #6724
+
+**Arithmetic decided BEFORE the implementation** (coordinator
+requirement, cycle c.1044). Recall (b2): `hashlifeResult` on a level-`M`
+cell advances `2^(M-2)` generations and returns the `2^(M-1)` central
+window; its half-width EQUALS the advancement — for any content of
+half-width `b > 0`, the cone exceeds the window by exactly `b`, whatever
+the padding (`no_padding_depth_suffices`: the deficit is `b`, constant).
+Decorrelation requires advancing LESS than `2^(M-2)` on a padded level-`M`
+cell: large window, small reach.
+
+**Centered accounting (corrected after a falsifying witness)**: the
+first written account counted the bbox against the LEFT edge of the
+window ("the guard IS the capture at p = 2"); the computational witness
+falsified the initial assembly, and the re-derivation corrects the
+model. `padCenter2` CENTERS the frame: in the padded level-`lvl+2` cell
+(side `4*2^lvl`), the side-`2^lvl` frame occupies
+`[3*2^(lvl-1), 5*2^(lvl-1))`, so the frame's bbox `[pad, B+pad)` occupies
+`[3*2^(lvl-1)+pad, 3*2^(lvl-1)+pad+B)`. The output window of
+`hashlifeResultAt j` (geometry independent of j) is the central half
+`[2*2^(lvl-1), 6*2^(lvl-1))`. Margins: left `2^(lvl-1)+pad`, right
+`3*2^(lvl-1)-pad-B`. Cone capture with reach `2^j = 2^(lvl-2)` then
+follows from the frame invariant ALONE `B + 2*pad <= 2^lvl`
+(`jumpAt_capture_centered`): the guard `n >= 2^(lvl-2)` no longer
+conditions capture, only the requested advancement. The tight ratio
+`2 - 2^(2-p)` of the margin docstring counted the bbox without
+`padCenter2`'s centering offset `2^(lvl-1)`.
+
+**Guard viability**: `2^lvl >= B + 2*max 2 n` and guard
+`n >= 2^(lvl-2)` coexist (witness: glider `B = 3`, `n = 8` gives
+`lvl = 5`, `j = 3`, `2^3 = 8 <= 8`: the guard FIRES, see
+`guardAt_viable_glider` and the witness evals below).
+
+**Geometry of the single-round assembly**: the nine recursive results
+`r_i` (central windows of the `n_i`, each advanced by `2^j`) tile the
+region `[2^(M-3), 7*2^(M-3))^2` — no overlap, no gap, stride
+`2^(M-2)` — but the output window `[2^(M-2), 3*2^(M-2))^2` is OFFSET by
+`2^(M-3)` from the `r_i` grid: the assembly therefore happens in
+SUB-QUADRANTS of the `r_i` (16 quadrant extracts), not whole `r_i` — the
+initial whole-`r_i` assembly tiled `r5` four times (falsifying
+witness).
+
+**Perimeter honesty**: the correctness of `hashlifeResultAt` against
+`evolve` is not formally proven here (P4 terrain, as for the existing
+`hashlifeJump`); it is verified computationally on witnesses
+(`evolveHashlifeFastAtN k g = evolve k g` on glider/blinker/line, one
+jump and two jumps). The delivered theorems are arithmetic: guard
+viability (concrete witness) and centered capture (margin chain). -/
+
+/-- Quadrant accessors for the single-round assembly: extract the
+    requested quadrant of a level >= 1 cell. The leaf case returns the
+    leaf unchanged — impossible in the assembly, where each `r_i` has
+    level `M-2 >= 1`, but required by match exhaustiveness. -/
+def subNW (c : MacroCell) : MacroCell :=
+  match c with
+  | node q _ _ _ => q
+  | _ => c
+
+def subNE (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ q _ _ => q
+  | _ => c
+
+def subSW (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ _ q _ => q
+  | _ => c
+
+def subSE (c : MacroCell) : MacroCell :=
+  match c with
+  | node _ _ _ q => q
+  | _ => c
+
+/-- Auxiliary for `hashlifeResultAt`: structural recursion on `fuel`,
+    target reach `j`. On a level `M = j + 2` cell, run standard Hashlife
+    (double round, advancing `2^j`). On a level `M > j + 2` cell, run a
+    SINGLE round: the nine sub-cells `n_i` each recursively advanced by
+    `2^j`, the output assembled from SUB-QUADRANTS of the `r_i`, WITHOUT
+    a second round — the reach stays `2^j` instead of doubling to
+    `2^(M-2)`: this is Gosper's decorrelation. The output is the central
+    window (level `M-1`), the state at `t = 2^j` — the `r_i` tile
+    `[2^(M-3), 7*2^(M-3))^2` but the window `[2^(M-2), 3*2^(M-2))^2` is
+    offset by `2^(M-3)` from their grid, hence the quadrant assembly
+    (see the section docstring). -/
+def hashlifeResultAtAux : Nat → Nat → MacroCell → MacroCell
+  | 0, _, _ => deadLeaf  -- fuel exhausted: return the default value
+  | fuel + 1, j, c@(node (node nw_nw nw_ne nw_sw nw_se)
+                      (node ne_nw ne_ne ne_sw ne_se)
+                      (node sw_nw sw_ne sw_sw sw_se)
+                      (node se_nw se_ne se_sw se_se)) =>
+    if c.level == j + 2 then
+      hashlifeResultAux (fuel + 1) c
+    else
+      let n1 := node nw_nw nw_ne nw_sw nw_se
+      let n2 := node nw_ne ne_nw nw_se ne_sw
+      let n3 := node ne_nw ne_ne ne_sw ne_se
+      let n4 := node nw_sw nw_se sw_nw sw_ne
+      let n5 := node nw_se ne_sw sw_ne se_nw
+      let n6 := node ne_sw ne_se se_nw se_ne
+      let n7 := node sw_nw sw_ne sw_sw sw_se
+      let n8 := node sw_ne se_nw sw_se se_sw
+      let n9 := node se_nw se_ne se_sw se_se
+      let r1 := hashlifeResultAtAux fuel j n1
+      let r2 := hashlifeResultAtAux fuel j n2
+      let r3 := hashlifeResultAtAux fuel j n3
+      let r4 := hashlifeResultAtAux fuel j n4
+      let r5 := hashlifeResultAtAux fuel j n5
+      let r6 := hashlifeResultAtAux fuel j n6
+      let r7 := hashlifeResultAtAux fuel j n7
+      let r8 := hashlifeResultAtAux fuel j n8
+      let r9 := hashlifeResultAtAux fuel j n9
+      -- Assembly at t = 2^j from SUB-QUADRANTS of the r_i, NO second
+      -- round: reach = 2^j. The central window `[2^(M-2), 3*2^(M-2))^2`
+      -- is offset by `2^(M-3)` from the r_i grid: each output quadrant
+      -- recomposes from one quadrant of each of the four covering r_i
+      -- (the initial whole-r_i assembly tiled r5 four times —
+      -- falsifying witness).
+      node (node (subSE r1) (subSW r2) (subNE r4) (subNW r5))
+           (node (subSE r2) (subSW r3) (subNE r5) (subNW r6))
+           (node (subSE r4) (subSW r5) (subNE r7) (subNW r8))
+           (node (subSE r5) (subSW r6) (subNE r8) (subNW r9))
+  | _ + 1, _, c =>
+    -- Malformed: not a level >= 2 node composed of nodes.
+    if c.level == 0 then deadLeaf
+    else emptyOfLevel (c.level - 1)
+
+/-- Decorrelated-reach Hashlife: advances exactly `2^j` generations
+    (j independent of the cell's level `M >= j + 2`), returns the
+    `2^(M-1)` central window at `t = 2^j`. The window half-width
+    `2^(M-2)` exceeds the reach `2^j` by a factor `2^(M-2-j)`: the
+    structural deficit of standard Hashlife (window = reach) is
+    dissolved, capture becomes possible. -/
+def hashlifeResultAt (j : Nat) (c : MacroCell) : MacroCell :=
+  hashlifeResultAtAux c.level j c
+
+/-- Decorrelated-reach Hashlife jump: pads `c` (level `lvl`) by 2
+    levels then advances `2^j` generations (`j <= lvl`), central window
+    `2^(lvl+1)` of the padded cell. Result offset: `padCenter2` centers
+    the frame at `[3*2^(lvl-1), 5*2^(lvl-1))` and the window starts at
+    `2^(lvl-1)` — the result's corner is therefore offset by
+    `-2^(lvl-1)` from the input offset, the same formula as
+    `jumpResultOff off lvl` for the full jump. -/
+def hashlifeJumpAt (j : Nat) (c : MacroCell) : MacroCell :=
+  hashlifeResultAt j (padCenter2 c)
+
+/-- Size of the decorrelated jump for a level-`lvl` frame (Gosper
+    route validated by the (b2') arithmetic): `2^(lvl - 2)`. -/
+def jumpSizeAt (lvl : Nat) : Nat := 2 ^ (lvl - 2)
+
+/-- **Centered capture: the frame invariant suffices.** Under the
+    invariants of the `gridFrameN` frame — bbox of side `B` located at
+    `[3*2^(lvl-1)+pad, 3*2^(lvl-1)+pad+B]^2` of the `padCenter2`-padded
+    cell (side `2^(lvl+2)`), output window `[2*2^(lvl-1),
+    6*2^(lvl-1)]^2` — the decorrelated jump of `2^(lvl-2)` generations
+    is capturing as soon as `B + 2*pad <= 2^lvl` and `lvl >= 2`: the
+    left margin `2^(lvl-1)+pad` and the right margin
+    `3*2^(lvl-1)-pad-B` each cover the reach `2^(lvl-2)`. The guard
+    `n >= 2^(lvl-2)` only conditions the requested advancement, not
+    capture — correcting the initial left-edge model ("the guard IS the
+    capture at p = 2"), which counted the bbox without `padCenter2`'s
+    centering offset `2^(lvl-1)`. -/
+theorem jumpAt_capture_centered (lvl B pad : Nat)
+    (hlvl : 2 ≤ lvl) (hframe : B + 2 * pad ≤ 2 ^ lvl) :
+    2 ^ (lvl - 2) ≤ 2 ^ (lvl - 1) + pad ∧
+    2 ^ (lvl - 2) ≤ 3 * 2 ^ (lvl - 1) - pad - B := by
+  obtain ⟨m, rfl⟩ : ∃ k, lvl = k + 2 := ⟨lvl - 2, by omega⟩
+  have h1 : (2:Nat) ^ (m + 2 - 2) = 2 ^ m := by rw [Nat.add_sub_cancel]
+  have h2 : (2:Nat) ^ (m + 2 - 1) = 2 * 2 ^ m := by
+    rw [show m + 2 - 1 = m + 1 from by omega, Nat.pow_succ]; ring
+  have h4 : (2:Nat) ^ (m + 2) = 4 * 2 ^ m := by
+    rw [Nat.pow_add, Nat.pow_two]; ring
+  rw [h4] at hframe
+  rw [h1, h2]
+  omega
+
+/-- The decorrelated guard is VIABLE: concrete witness (glider, n = 8)
+    where the n-aware frame's level is exactly `5`, hence
+    `jumpSizeAt 5 = 2^3 = 8 <= 8 = n` — the jump branch FIRES, unlike
+    the (b2) guard proven dead for every grid. -/
+theorem guardAt_viable_glider :
+    (gridToMacroCellWithOffsetN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2.level = 5
+    ∧ jumpSizeAt
+        (gridToMacroCellWithOffsetN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2.level
+      ≤ 8 := by
+  decide
+
+/-- Decorrelated-reach N3 variant: every iteration re-frames via
+    `gridToMacroCellWithOffsetN` (self-regenerating invariant, (b2)),
+    then jumps `jumpSizeAt lvl = 2^(lvl-2)` generations via
+    `hashlifeJumpAt` if the guard `lvl >= 2 ∧ n >= 2^(lvl-2)` fires —
+    VIABLE this time (see `guardAt_viable_glider`), unlike the full
+    `2^lvl` guard proven dead in (b2). Result offset: `jumpResultOff off
+    lvl` (corner shifted by `-2^(lvl-1)`, see `hashlifeJumpAt`).
+    Capture is guaranteed by the frame invariant alone
+    (`jumpAt_capture_centered`). The rest of the recursion is identical
+    to `evolveHashlifeFastAuxN`. -/
+def evolveHashlifeFastAtAuxN : Nat → Nat → Grid → Grid
+  | _, 0, g => g
+  | 0, _, g => g  -- fuel exhausted: return the current state
+  | fuel + 1, n, g =>
+    let (off, mc) := gridToMacroCellWithOffsetN n g
+    let lvl := mc.level
+    let js := jumpSizeAt lvl
+    if lvl >= 2 && n >= js then
+      -- Decorrelated jump: capture guaranteed by the frame invariant
+      -- (`jumpAt_capture_centered`), the guard `n >= js` only
+      -- conditions the requested advancement. The result's corner is
+      -- shifted by `-2^(lvl-1)` (padCenter2 centering vs window).
+      let jumped := hashlifeJumpAt (lvl - 2) mc
+      let newOff := jumpResultOff off lvl
+      let g' := jumped.toGrid newOff
+      evolveHashlifeFastAtAuxN fuel (n - js) g'
+    else
+      -- Small n or large pattern: reference evolve.
+      evolve n g
+
+/-- Public API of the decorrelated-reach variant. -/
+def evolveHashlifeFastAtN (n : Nat) (g : Grid) : Grid :=
+  evolveHashlifeFastAtAuxN n n g
 
 /-- Compute `evolve n g` using Hashlife. Round-trips through the
     `MacroCell` representation each generation, exercising `step4x4`

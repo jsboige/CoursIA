@@ -32,6 +32,34 @@ from .forensic_guards import (
     _find_sorry_definitions,
     _is_axiom_declaration,
 )
+# Delta-based size guard + edit sandbox (#1453 DEMO 63 forensic). The pre-existing
+# absolute 5000-line cap in ``_check_file_size_guard`` below created a perverse
+# "delete-to-fit" incentive: a 622-line net deletion on a 5385-line file silently
+# removed 3 guard theorems to stay under the cap. The delta-based check caps
+# insertions and deletions, with an "insert-only allowance" for pre-existing
+# oversized files. The sandbox takes a one-shot checkpoint before the first edit
+# and restores it on verifier failure, so a runaway edit sequence cannot leave
+# the file in an unsound state. Stdlib-only so unit tests can load it by file
+# path (see size_guard.py docstring).
+from .size_guard import (
+    INSERT_ONLY_THRESHOLD,
+    MAX_NET_DELETION_LINES,
+    MAX_NET_DELETION_PCT,
+    MAX_NET_INSERTIONS,
+    EditSandbox,
+    check_size_delta,
+)
+
+# Canonical Lean/Lake error marker (#8694) -- kept byte-identical to
+# ``LeanVerifier._ERROR_TOKEN`` (``agent_tests/lean_server.py``). Lean 4 spells
+# a diagnostic either bare (``error:``) or tagged with a diagnostic class
+# (``error(lean.unknownIdentifier):``); matching the SHAPE rather than the
+# literals we happened to have seen is what stops a new Lean spelling from
+# silently reopening the #6790 false negative. The two modules cannot share an
+# import (``lean_server.py`` lives one directory up and is spec-loaded by
+# ``prover/verifier.py``), so the agreement the docstrings claim is pinned by
+# ``tests/test_error_marker_contract.py`` instead of left to prose.
+_ERROR_TOKEN = r"error(?:\([^)]*\))?"
 
 
 def _count_sorries_from_build_output(raw_output) -> int:
@@ -101,6 +129,18 @@ def _parse_lean_errors(raw_output) -> list:
     ``error: <f>:<l>:<c>:``) on every line regardless of substring, then fall
     back to substring / line-start detection for non-positional errors.
 
+    Diagnostic **classes** (#8694): current Lean 4 tags many diagnostics with a
+    class between the keyword and the colon --
+    ``<f>:<l>:<c>: error(lean.unknownIdentifier): Unknown identifier `x` ``.
+    All four branches above anchored on the literal ``error:``, so that form
+    matched none of them and the #6790 false negative returned through a new
+    spelling: measured on a real broken build emitting one error of each
+    spelling, this helper reported 1 of 2. Every branch now builds its pattern
+    from ``_ERROR_TOKEN`` (keyword, optional ``(<class>)``, colon), so the
+    marker is matched by shape and a future class name needs no code change.
+    The change is purely additive -- every previously-detected line still
+    matches.
+
     Crash fix (#6790 forensic, BG run-4, exit 1): the preserve/revert gate
     ``_reverify_compiles_clean`` falls back to the pre-parsed ``errors`` LIST
     when ``raw_output`` is empty (``rv.get("raw_output", "") or
@@ -130,22 +170,24 @@ def _parse_lean_errors(raw_output) -> list:
         if "_GoalExtract.lean" in line or "_SorryVerify.lean" in line:
             continue
         # Standard positional: <file>:<line>:<col>: error: <msg>
-        m = re.search(r"(\d+):(\d+): error: (.*)", line)
+        m = re.search(r"(\d+):(\d+): " + _ERROR_TOKEN + r": (.*)", line)
         if m:
             errors.append({"line": int(m.group(1)), "message": m.group(3)})
             continue
         # Lake-prefix positional: error: <file>:<line>:<col>: <msg>  (grain a-2)
-        m = re.search(r"error: .*?(\d+):(\d+): (.*)", line)
+        m = re.search(_ERROR_TOKEN + r": .*?(\d+):(\d+): (.*)", line)
         if m:
             errors.append({"line": int(m.group(1)), "message": m.group(3)})
             continue
         # Non-positional, substring form: <file>: error: <msg> (module-level)
-        if ": error:" in line:
-            errors.append({"line": None, "message": line.split(": error:", 1)[1].strip()})
+        m = re.search(r":\s*" + _ERROR_TOKEN + r":", line)
+        if m:
+            errors.append({"line": None, "message": line[m.end():].strip()})
             continue
         # Non-positional, line-start form: error: <msg> (message-only / lake-prefix no-col)
-        if line.lstrip().startswith("error: "):
-            errors.append({"line": None, "message": line.lstrip().split("error: ", 1)[1].strip()})
+        m = re.match(_ERROR_TOKEN + r":", line.lstrip())
+        if m:
+            errors.append({"line": None, "message": line.lstrip()[m.end():].strip()})
             continue
     return errors
 
@@ -846,6 +888,13 @@ class TacticTools:
                 if _is_axiom_declaration(line))
         )
 
+        # Edit sandbox (#1453 DEMO 63 forensic): one-shot checkpoint taken on the
+        # first edit, restored on verifier failure. Lazily snapshotted by
+        # ``_ensure_sandbox_snapshot`` so we only pay the disk copy cost on the
+        # first edit of the session — subsequent edits reuse the same checkpoint
+        # so a runaway edit sequence cannot leave the file in an unsound state.
+        self._sandbox: Optional[EditSandbox] = None
+
         self._heuristics = {
             "equality": ["rfl", "exact", "simp", "ring", "omega", "aesop"],
             "nat_arithmetic": ["omega", "simp", "decide", "aesop"],
@@ -1045,7 +1094,20 @@ class TacticTools:
         }, indent=2, ensure_ascii=False)
 
     def _check_file_size_guard(self, new_content: str, operation: str) -> Optional[str]:
-        """Block writes that double the file size or exceed 5000 lines."""
+        """Block writes that double the file size or exceed 5000 lines.
+
+        The absolute 5000-line cap is kept as a post-edit safety net for the
+        case where the file grew under successive small inserts. The
+        delta-based guard (insertions cap + deletions cap + insert-only
+        allowance for pre-existing oversized files) lives in
+        ``prover.size_guard.check_size_delta`` and is wired through this
+        method so every edit entry point picks it up without changing its
+        existing call sites.
+
+        Forensic: DEMO 63 (cycle-98) deleted 622 lines on a 5385-line file
+        to fit under the absolute 5000-line cap — silently erasing 3 c.91
+        guard theorems. The delta check now blocks that pattern at the gate.
+        """
         new_lines = new_content.count("\n") + 1
         if new_lines > 5000:
             if self._trace:
@@ -1072,7 +1134,94 @@ class TacticTools:
                     f"(new={new_size} chars vs original={self._original_file_size} chars). "
                     f"Use TARGETED replacements: replace only the specific sorry line or a small range, "
                     f"NOT the entire file.")
+
+        # Delta-based guard: catch the "delete-to-fit" incentive that the
+        # absolute cap alone cannot detect. When the original content is
+        # known (loaded-file branch above), compare against it; otherwise
+        # (probe or non-target edit), the delta check is a no-op since we
+        # have no baseline to compare against.
+        if self._original_content:
+            delta_err = check_size_delta(self._original_content, new_content, operation)
+            if delta_err:
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="size_delta_guard",
+                        content=f"BLOCKED {operation}: delta-based guard fired "
+                                f"(orig_lines={self._original_content.count(chr(10)) + 1}, "
+                                f"new_lines={new_lines})",
+                        duration_s=0.01,
+                    )
+                return delta_err
         return None
+
+    def _ensure_sandbox_snapshot(self) -> Optional[EditSandbox]:
+        """Lazily create / return the file-level sandbox for the current edit session.
+
+        Returns ``None`` if no target file is configured (no edit can happen).
+        The sandbox snapshots the file ONCE on the first call; subsequent
+        calls return the same sandbox so the snapshot covers the entire
+        edit sequence from session start to final commit, not just the
+        last edit.
+        """
+        if not self._filepath:
+            return None
+        if self._sandbox is None:
+            self._sandbox = EditSandbox(Path(self._filepath))
+        if not self._sandbox.has_snapshot:
+            try:
+                self._sandbox.snapshot()
+            except OSError:
+                # If we cannot snapshot (e.g. missing file on first edit
+                # attempt), leave the sandbox in a has_snapshot=False state;
+                # ``_revert_to_sandbox_if_active`` becomes a no-op so we
+                # degrade to the legacy write-or-fail behaviour instead of
+                # crashing the edit loop.
+                pass
+        return self._sandbox
+
+    def _revert_to_sandbox_if_active(self, original_content: str) -> str:
+        """Restore the file from the sandbox snapshot, then drop the snapshot.
+
+        Called on the verifier-failure / loop-error / exception paths so a
+        mid-sequence edit that broke the build cannot leave the file in a
+        half-edited state. The snapshot is dropped after restore (the edit
+        cycle that triggered the failure is over), so the next edit cycle
+        takes a fresh snapshot.
+
+        Returns the restored content (== original_content when restore
+        worked, or whatever the live file says when it did not).
+        """
+        if self._sandbox is None:
+            return original_content
+        restored = self._sandbox.restore()
+        # Drop the snapshot either way: a stale snapshot from a prior cycle
+        # would otherwise prevent the next edit from getting a fresh
+        # baseline, and ``original_content`` is the authoritative fallback.
+        self._sandbox = None
+        if not restored:
+            # Snapshot lost (or never taken). Best-effort: write the
+            # original content directly so the file is at least byte-stable
+            # at the start of the edit cycle.
+            try:
+                Path(self._filepath).write_text(original_content, encoding="utf-8")
+            except OSError:
+                pass
+            return original_content
+        return original_content
+
+    def _commit_sandbox(self) -> None:
+        """Drop the sandbox snapshot after a build-verified edit cycle.
+
+        Called on the happy path (file_replace_lines / file_insert_lines /
+        file_replace_sorry with build_check=True that succeeded): the
+        snapshot is no longer needed because the file is in a known-good
+        state, and freeing the temp file keeps the per-edit cost to a
+        single ``shutil.copy2`` rather than letting temp files accumulate
+        across a long run.
+        """
+        if self._sandbox is not None:
+            self._sandbox.drop()
+            self._sandbox = None
 
     # Lean placeholder patterns that "look like a proof" but never compile.
     # The plain `sorry` token is handled separately by the sorry-count guard;
@@ -1154,6 +1303,50 @@ class TacticTools:
             self._state.consecutive_delta0_compiles = self._consecutive_delta0
             self._state.consecutive_compile_fail = self._consecutive_compile_fail  # P4 (c.317b)
 
+    def _bump_compile_fail(self) -> None:
+        """Count a build failure in _build_check_or_revert toward the fail streak.
+
+        compile() maintains _consecutive_compile_fail (inc on fail at tools.py:2067,
+        reset on success at 2021), but _build_check_or_revert() — the dominant
+        structural-edit path (~75 vs ~5 compile() calls per forensic trace) — did
+        NOT touch it, leaving the workflow yield-guard (workflow.py
+        FAIL_STREAK_HARDCAP=12, read between iterations) and the intra-turn
+        BUILD_FAIL_STORM entry-guards blind to build_check fails. Forensic #1453
+        (cycle-98): a single TacticAgent turn burned 1352s / 14 invisible
+        build_check fails on Voting L338 because the counter stayed at 0
+        throughout. Mirrors compile()'s semantic — every failed build (crash,
+        sorry-regressed veto, or hard revert) increments — so the dominant
+        file_replace_* path finally feeds the same streak the autonomous loop
+        already tracked.
+        """
+        self._consecutive_compile_fail += 1
+        if self._state is not None:
+            self._state.consecutive_compile_fail = self._consecutive_compile_fail
+
+    def _build_fail_storm_guard(self, tool_name: str) -> Optional[str]:
+        """Intra-turn entry-guard: stop editing once the fail streak hits the cap.
+
+        The workflow.py guard (FAIL_STREAK_HARDCAP) reads the counter BETWEEN agent
+        turns and yields, but a single TacticAgent turn issues many file_replace_*
+        calls in a row — so within one turn the counter could climb far past the
+        cap with no interruption (forensic #1453 cycle-98: 14 fails in one turn,
+        1352s burned). This guard returns a hard JSON error before any edit lands,
+        directing the agent to submit its best tactic or yield instead of
+        churning more fails. Sits right after _check_tool_loop in both
+        file_replace_lines and file_replace_sorry, so it caps both entry points.
+        """
+        if self._consecutive_compile_fail >= self._fail_streak_threshold:
+            return json.dumps({
+                "error": (
+                    f"BUILD_FAIL_STORM: {self._consecutive_compile_fail} "
+                    f"consecutive build failures (cap={self._fail_streak_threshold}). "
+                    f"The last {self._consecutive_compile_fail} edits all broke the "
+                    f"build — further editing is the same pathology. STOP editing. "
+                    f"Submit your best tactic via submit_tactic, or yield."
+                ),
+            }, ensure_ascii=False)
+        return None
+
     def _build_check_or_revert(self, original_content: str, operation: str
                                ) -> Optional[Dict]:
         """After writing, run lake build. If it fails, revert and return diagnostics.
@@ -1184,6 +1377,10 @@ class TacticTools:
         except Exception as e:
             # Verifier itself blew up — revert defensively and surface the error.
             Path(self._filepath).write_text(original_content, encoding="utf-8")
+            # #1453 forensic (cycle-98): a verifier crash is still a build fail
+            # for stagnation purposes — count it so the workflow / intra-turn
+            # guards see the streak (otherwise 14 invisible fails burned 1352s).
+            self._bump_compile_fail()
             return {
                 "error": f"Verifier crashed during {operation} build-check: {e}. Reverted.",
                 "reverted": True,
@@ -1206,6 +1403,10 @@ class TacticTools:
                 count_real_sorries(_content),
                 _count_sorries_from_build_output(result.get("raw_output", "")),
             )
+            # #1453 forensic (cycle-98): build succeeded -> reset the fail streak
+            # (mirrors compile() at tools.py:2021). _record_sorry_count then
+            # mirrors the reset counter into shared state.
+            self._consecutive_compile_fail = 0
             self._record_sorry_count(sorry_count)
             return None
 
@@ -1239,6 +1440,9 @@ class TacticTools:
                 count_real_sorries(_content),
                 _count_sorries_from_build_output(raw_output),
             )
+            # #1453 forensic (cycle-98): sorry-only build is logically a SUCCESS
+            # (no new syntax errors) -> reset the streak, mirroring compile().
+            self._consecutive_compile_fail = 0
             self._record_sorry_count(current_sorry)
             return None
 
@@ -1265,6 +1469,12 @@ class TacticTools:
                     tool_result=str(non_sorry_errors[:3]),
                 )
             # Return the errors so the agent knows what's broken, but don't revert
+            # #1453 forensic (cycle-98): the veto preserves progress but the build
+            # STILL failed — count it for streak parity with compile() (which
+            # increments on every fail regardless of sorry progress). _best_content
+            # is already saved above, so no progress is lost if the storm guard
+            # fires on the next edit.
+            self._bump_compile_fail()
             return {
                 "error": (
                     f"BUILD has {len(non_sorry_errors)} non-sorry errors, but sorry "
@@ -1280,6 +1490,10 @@ class TacticTools:
         Path(self._filepath).write_text(original_content, encoding="utf-8")
         raw_output = result.get("raw_output", "") or result.get("errors", "")
         errors = _parse_lean_errors(raw_output)  # #6790: authoritative parser
+        # #1453 forensic (cycle-98): the dominant-path gap — this is the branch
+        # that fired 14x invisibly on Voting L338. Bump the streak so the
+        # workflow / intra-turn guards can finally see a build_check fail storm.
+        self._bump_compile_fail()
 
         if self._trace:
             self._trace.log(
@@ -1313,6 +1527,9 @@ class TacticTools:
         loop_err = self._check_tool_loop("file_replace_lines", f"{start}:{end}:{new_content[:80]}")
         if loop_err:
             return loop_err
+        storm = self._build_fail_storm_guard("file_replace_lines")  # #1453 forensic (cycle-98)
+        if storm:
+            return storm
 
         # Context boundary: only allow replacing near the target sorry
         if self._sorry_ctx:
@@ -1492,6 +1709,13 @@ class TacticTools:
                     duration_s=0.0,
                 )
 
+            # Sandbox snapshot (#1453 DEMO 63): capture the pre-edit file so
+            # we can restore it if the build check below fails. Lazily
+            # snapshotted on first edit; the snapshot covers the entire
+            # edit cycle (multiple file_replace_lines calls before a
+            # build-verified success), so a partial-write + verifier
+            # failure cannot leave the file half-edited.
+            self._ensure_sandbox_snapshot()
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
 
             # Build check: if compilation fails, revert and surface diagnostics.
@@ -1516,6 +1740,11 @@ class TacticTools:
                 # build_check — it is a build-verified structural edit (real
                 # proof progress), counted separately from tactic submissions.
                 self._structural_edits_verified += 1
+                # Sandbox commit: build verified, drop the snapshot so the
+                # next edit cycle takes a fresh baseline (the previous
+                # snapshot now belongs to the just-committed build-verified
+                # state, not the original).
+                self._commit_sandbox()
 
                 if sorry_count < self._best_sorry_count:
                     self._best_sorry_count = sorry_count
@@ -1530,6 +1759,16 @@ class TacticTools:
                 "snapshot_updated": build_check,
             }, ensure_ascii=False)
         except Exception as e:
+            # Mid-edit exception: revert to the sandbox snapshot so the
+            # file is not left in a partial-write state (e.g. sorry count
+            # bumped but file syntax broken). The build-failure path above
+            # already reverts via _build_check_or_revert; this is the
+            # safety net for unexpected exceptions raised before or
+            # after the write (TypeError from a downstream helper, etc.).
+            try:
+                self._revert_to_sandbox_if_active(content)
+            except Exception:
+                pass
             return json.dumps({"error": str(e)})
 
     def file_insert_lines(self, after_line: int, content: str,
@@ -1609,6 +1848,11 @@ class TacticTools:
             result_lines = lines[:after_line] + new_lines + lines[after_line:]
             new_file_content = "\n".join(result_lines)
 
+            # Sandbox snapshot (#1453 DEMO 63): same rationale as
+            # file_replace_lines — capture pre-edit state so a verifier
+            # crash or mid-edit exception can be reverted to a known-good
+            # baseline instead of leaving the file half-inserted.
+            self._ensure_sandbox_snapshot()
             Path(self._filepath).write_text(new_file_content, encoding="utf-8")
 
             sorry_count = count_real_sorries(new_file_content)
@@ -1633,6 +1877,8 @@ class TacticTools:
                 # build_check -- a build-verified structural edit (real proof
                 # progress), counted separately from tactic submissions.
                 self._structural_edits_verified += 1
+                # Sandbox commit: see file_replace_lines for rationale.
+                self._commit_sandbox()
                 if sorry_count < self._best_sorry_count:
                     self._best_sorry_count = sorry_count
                     self._best_content = new_file_content
@@ -1646,6 +1892,11 @@ class TacticTools:
                 "build_check": "passed" if build_check else "skipped",
             }, ensure_ascii=False)
         except Exception as e:
+            # Mid-edit exception: see file_replace_lines for rationale.
+            try:
+                self._revert_to_sandbox_if_active(current)
+            except Exception:
+                pass
             return json.dumps({"error": str(e)})
 
     def file_replace_sorry(self, sorry_line: int, replacement: str,
@@ -1662,6 +1913,9 @@ class TacticTools:
         loop_err = self._check_tool_loop("file_replace_sorry", f"{sorry_line}:{replacement[:80]}")
         if loop_err:
             return loop_err
+        storm = self._build_fail_storm_guard("file_replace_sorry")  # #1453 forensic (cycle-98)
+        if storm:
+            return storm
         try:
             # Context boundary: only allow replacing the target sorry
             if self._sorry_ctx:
@@ -1800,6 +2054,13 @@ class TacticTools:
 
             # Save pre-edit content for rollback
             pre_edit_content = content
+            # Sandbox snapshot (#1453 DEMO 63): lazy checkpoint, same
+            # rationale as file_replace_lines / file_insert_lines. The
+            # build-failure path (below) reverts via
+            # _build_check_or_revert; this guards against mid-edit
+            # exceptions raised by downstream helpers (count_real_sorries,
+            # _count_axiom_declarations, _check_sorry_relocation, etc).
+            self._ensure_sandbox_snapshot()
             Path(self._filepath).write_text(new_content, encoding="utf-8")
 
             # Build check: if compilation fails, revert and surface diagnostics.
@@ -1814,6 +2075,8 @@ class TacticTools:
 
                 self._last_build_ok_content = new_content
                 self._last_build_ok_sorry_count = sorry_count
+                # Sandbox commit: see file_replace_lines for rationale.
+                self._commit_sandbox()
 
                 if sorry_count < self._best_sorry_count:
                     self._best_sorry_count = sorry_count
@@ -1828,6 +2091,16 @@ class TacticTools:
                 "snapshot_updated": build_check,
             }, ensure_ascii=False)
         except Exception as e:
+            # Mid-edit exception: see file_replace_lines for rationale.
+            # ``content`` is the pre-edit file read at the top of the
+            # method, so the sandbox restore is the last-chance fallback
+            # that gets the file back to byte-identity with the original
+            # if any downstream helper raised (count_real_sorries,
+            # _check_sorry_relocation, _count_axiom_declarations, etc).
+            try:
+                self._revert_to_sandbox_if_active(content)
+            except Exception:
+                pass
             return json.dumps({"error": str(e)})
 
     def _quick_build_check(self) -> bool:

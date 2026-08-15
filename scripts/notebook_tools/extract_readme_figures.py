@@ -447,7 +447,7 @@ def _append_manifest(assets_dir, entry: dict, alt_text_fr: str,
         # Reconstitue via split-match-rebuild (PAS de pattern.sub avec un
         # replacement-string : un alt-text FR contenant un backslash (chemin
         # Windows, code source, etc.) ferait crasher `re.sub` avec
-        # "bad escape \\X". Cf tests/test_extract_readme_figures.py
+        # "bad escape \\X". Cf scripts/notebook_tools/tests/test_extract_readme_figures.py
         # TestAppendManifest::test_replace_handles_alt_text_with_backslash).
         prefix = existing[:m.start()].rstrip("\n")
         suffix = existing[m.end():].lstrip("\n")

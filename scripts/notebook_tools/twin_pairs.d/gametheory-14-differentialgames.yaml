@@ -1,0 +1,15 @@
+- name: "GameTheory-14 DifferentialGames"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
+  audits:
+    - date: "2026-08-04"
+      python_sha: 924092dad22d0d395af77067e636d92d773484ec
+      csharp_sha: 88e961fdf00ed0525c1918f9ac71132dcbbd8056
+  known_differences:
+    - "Socle pedagogique commun : jeux differentiels et jeux dynamiques, equilibres de Stackelberg (von Stackelberg 1934) leader-follower, duopole a demande lineaire, comparaison avec Cournot, decisions dynamiques et leadership strategique."
+    - "Idiomes framework : Python = `scipy.integrate.odeint` (integration ODE) + `scipy.optimize.minimize` + `numpy` + `matplotlib`. C# = BCL .NET 9 pur (`System.*`, 0 NuGet, 0 numpy, 0 scipy), integrateur RK4 from-scratch (section 'Pourquoi RK4 et pas Euler ?') + formes analytiques Stackelberg/Cournot."
+    - "Asymetrie de couverture : Python (40 cellules, 14 code) resout numeriquement via scipy (ODE + optimisation) ; C# (26 cellules, 10 code) construit RK4 from-scratch et privilegie les formes analytiques du duopole. Meme theorie centrale (Stackelberg/Cournot), leviers numeriques differents (scipy cote Python vs RK4 from-scratch cote C#)."

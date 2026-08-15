@@ -1,0 +1,29 @@
+- name: "Sudoku-11 Choco"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Csharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Lib-vs-lib meme moteur Java Choco-Solver : C# branche IKVM-Choco via DLL `org.chocosolver.solver.dll` trackee sur disque (Choco 4.10.17, IKVM 8.15.0) + 5 `using org.choco.*` explicites + 18 refs `IKVM` runtime + cells 12. Python branche JPype + 11 refs `choco` + 19 refs `jpype` + `from org.chocosolver.solver import Model` runtime. Meme moteur Java Choco-Solver 4.10.17 des deux cotes, accessible via deux chemins distincts (JPype-JVM-runtime cote Python, IKVM-bytecode .NET cote C#). Verifie firsthand (c.234 audit 2026-08-12, myia-po-2023:CoursIA-2) : DLL trackee, csproj IKVM-Choco deja construit (c.218 PR #10561 \"tranche 5 CSP\" a couvert 5 paires dont Choco-bridgeable), kernel .NET Interactive execute le twin C#. Pont IKVM-bytecode .NET vs JPype-JVM-runtime sur le meme moteur Java. Verdict SOTA-OK : Choco-Solver est la SOTA CSP solver pour les deux stacks, aucun autre solveur ne le remplacerait avantageusement. Build IKVM deja fait sur le runner (DLL trackee = artefact build, pas a reconstruire)."
+  audits:
+    - date: "2026-08-04"
+      by: myia-po-2023:CoursIA
+      python_sha: aa49b097f61d8b7feb617d65304c7a327df489cc
+      csharp_sha: b1cedb474514fc7a8afdf87594c5fc229b6f4c0c
+    - date: "2026-08-08"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 9318edeccf6ebc3df4a3ea616fc8f13ebf7d0173
+      csharp_sha: 225710e79b086d5bf54282e53d6cfe925de53357
+      content_python_sha: a6609e480abe6ffb3c7978244f23d9cb5f72e3d039df17ee438448fa23b17b5e
+      content_csharp_sha: 92ade1dd77eef038de3cd7cf1f94e1c74916875e33ef7f92f4145dad2f597523
+    - date: "2026-08-09"
+      by: myia-po-2023:CoursIA-2
+      python_sha: c62db3b84c0386eddd494a7c579fa12375401828
+      csharp_sha: 225710e79b086d5bf54282e53d6cfe925de53357
+      content_python_sha: 6bed29eb21df32b1f9c2d022d6d0e604c4c9f77785e6cb69ccd59824585f04ec
+      content_csharp_sha: 92ade1dd77eef038de3cd7cf1f94e1c74916875e33ef7f92f4145dad2f597523
+  known_differences:
+    - "Edition 2026-08-08 (myia-po-2023:CoursIA-2, #9434 item 3) : les DEUX twins ont evacue leurs valeurs de timing absolues machine-dependantes de la prose d'interpretation (Python cell[18/23/26] : 64.01/8.38/50.43 ms etc. ; C# cell[28] : 728 ms startup JVM IKVM) au profit de descripteurs qualitatifs pointant vers la cellule de mesure live ci-dessus. Markdown-only, pas de re-exec (exception C.2). Parite semantique tenue : socle CP, modelisation, contraintes, asymetrie IKVM/from-scratch inchanges."
+    - "Socle pedagogique commun : resolution de Sudoku par programmation par contraintes (CP) avec le solveur Choco -- modelisation (variables, domaines, contraintes), propagation, recherche. Meme solveur (Choco), meme cas d'application (Sudoku). Les deux couvrent Choco, choco, Solver."
+    - "Divergence d'implementation : le C# accede a Choco via IKVM (bridge Java->.NET, NuGet IKVM 8.15.0 + IKVM.Image) -- Choco etant une lib Java, le C# la consomme a travers le runtime IKVM ; le Python (pur stdlib, 0 dependance Choco) implemente un solveur CP a la Choco from scratch (propagation, recherche). Meme paradigme CP, deux niveaux : le C# wrappe le vrai Choco via IKVM (RECOVERABLE-MACHINE per SOTA ledger Entry #008 : IKVM instable dans dotnet-interactive), le Python reconstruit la logique CP didactiquement."
+    - "Idiomes framework : C# = IKVM + Choco (Java lib via bridge) + System.*, 12 cellules code ; Python = pur stdlib (0 dependance), 13 cellules code. Asymetrie pedagogique (vrai Choco cote C# vs reconstruction cote Python), meme enseignement CP sous-jacent."

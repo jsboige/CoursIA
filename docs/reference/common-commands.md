@@ -2,9 +2,12 @@
 
 ## Environment Setup
 
+Ce document est centré Windows (paths `C:\`, `venv\Scripts`). Pour le setup d'un poste contributeur **macOS / Linux** (équivalents `brew`/`apt` des commandes `winget`/`choco`, `elan` Lean sans WSL, backend MPS sur Apple Silicon), cf [setup-linux-macos.md](setup-linux-macos.md). Les kernels .NET Interactive, Python et Lean 4 sont cross-OS ; les notebooks s'exécutent à l'identique modulo le backend GPU.
+
 ```bash
 # Python
-python -m venv venv && venv\Scripts\activate
+python -m venv venv && venv\Scripts\activate   # Windows
+# python -m venv venv && source venv/bin/activate   # macOS / Linux
 pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
 
 # C# (.NET 9.0)
@@ -72,8 +75,8 @@ Cf [claude-code-config.md](./claude-code-config.md) pour le detail agents/skills
 ## GradeBookApp
 
 ```bash
-python GradeBookApp/gradebook.py               # Python grading pipeline
-python GradeBookApp/run_epf_mis_2026.py         # EPF MIS multi-epreuves
+python GradeBookApp/gradebook.py               # Python grading pipeline (module core)
+python GradeBookApp/run_grading.py              # Runner generique (CLI argparse)
 ```
 
 Notation par cohorte (ECE, ESGF, ...) = privee sur GDrive `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` ; cf [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) pour le moteur generique.

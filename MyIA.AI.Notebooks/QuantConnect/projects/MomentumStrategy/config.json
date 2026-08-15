@@ -1,0 +1,8 @@
+{
+    "algorithm-language": "Python",
+    "name": "MomentumStrategy",
+    "id": 1,
+    "parameters": {},
+    "description": "Sector ETF momentum rotation with skip-month volatility-adjusted momentum, dual regime filter, and stop-loss.",
+    "organization-id": "d600793ee4caecb03441a09fc2d00f7f"
+}

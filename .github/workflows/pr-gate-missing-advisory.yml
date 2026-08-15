@@ -1,0 +1,69 @@
+name: PR gate missing advisory
+
+# The missing ORGAN for issue #10928: a PR whose required check `PR gate` is
+# ABSENT from its rollup reads green on every visible signal (`gh pr checks`: 0
+# failures, 0 pending, `mergeable: MERGEABLE`) yet is `BLOCKED` forever -- a
+# required context never reported blocks without displaying anything. Three
+# distinct causes measured 2026-08-14: a head-commit subject containing the
+# literal `[skip ci]` (#10898, fixed by a re-push), a bot push made with
+# `GITHUB_TOKEN` that creates no workflow run (#10558, structural), and an
+# unidentified case (#10902).
+#
+# This scheduled sweep flags OPEN non-draft PRs (base=main) whose rollup has NO
+# `PR gate` check-run, labels them (`pr-gate-missing` / `pr-gate-missing-bot`),
+# and posts the remediation comment once (marker-guarded, no spam on re-runs).
+#
+# ADVISORY, never blocking (#10928 "il ne peut pas bloquer, c'est précisément
+# le contexte manquant qui bloque"):
+#   - The job ALWAYS exits 0. The actionable payload is the LABEL + COMMENT,
+#     NEVER the green conclusion.
+#   - Presence is the signal, conclusion is not: a PR whose `PR gate` is
+#     queued/in_progress is NOT flagged (acceptance #1 -- normal on young PRs).
+#   - Bot PRs get their own label (acceptance #2 -- structural GITHUB_TOKEN
+#     anti-recursion case, not an accident).
+#   - Draft PRs and PRs targeting a non-main base are excluded: pr-gate.yml
+#     only fires on `branches: [main]`, so they never see the check by design.
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede). 05:47 UTC.
+    - cron: '47 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log only, apply no labels/comments'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  # Labels sur PR (gh pr edit) = pull-requests: write ; commentaires et creation
+  # de labels (gh pr comment / gh label create) = issues: write. Meme set que
+  # lane-claim-guard.yml / variation-tag-guard.yml.
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-gate-missing-advisory
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Flag PRs without PR gate (advisory)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run sweep
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          python scripts/pr_gate_missing.py $DRY

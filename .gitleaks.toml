@@ -3,13 +3,103 @@
 
 title = "CoursIA Secret Scanner"
 
+# Extend gitleaks' built-in default ruleset (700+ detectors: AWS, GitHub,
+# Google, Stripe, ...). WITHOUT this directive the config below carries no
+# [[rules]] of its own, so gitleaks matched nothing — the secret scanner was a
+# silent no-op both in the pre-commit hook and in CI (secret-scan.yml sets
+# GITLEAKS_CONFIG=.gitleaks.toml). The allowlist below still applies on top of
+# the defaults (verified: secrets detected + base64-blob FP suppressed). See #9888.
+#
+# WARNING — this directive's behaviour is VERSION-DEPENDENT, so both gates MUST
+# pin the SAME gitleaks version: GITLEAKS_VERSION in secret-scan.yml (CI) and
+# `rev` in .pre-commit-config.yaml (local). Parity is gated by
+# scripts/check_hooks_parity.py; do not change one without the other.
+# Measured on this repo, same files and same config, three binaries:
+#     8.21.2 -> 0 findings   |   8.24.3 -> 2   |   8.30.1 -> 2
+# `useDefault = true` is therefore NOT equivalent to running with no config at
+# all: the implicit default suppresses what the *extended* default reports. Left
+# unpinned, the hook (8.21.2) silently disagreed with CI (8.24.3) — a clean
+# local commit was rejected in CI with no way to see it coming. See #10139.
+[extend]
+useDefault = true
+
+# Custom rules below ADD to the default 700+ detectors. Each is a precise
+# detector for a CoursIA-specific credential format that the default ruleset
+# does NOT catch (verified empirically against the values redacted in #10265 —
+# characters outside the default ruleset's [a-zA-Z0-9_\-] alphabet). A gate that
+# can't rouge is not a gate, so every [[rules]] block below MUST be exercised
+# against the positive control before being merged (see scripts/secrets/tests/
+# test_gitleaks_qwen_rule.py).
+
+# --- #10265 Qwen / ComfyUI-Login bearer token ---
+# Detects assignments of QWEN_API_TOKEN / QWEN_API_USER_TOKEN (same secret,
+# two env-var names) when the VALUE is a literal that is NOT one of the
+# LEAKED-PENDING-ROTATION sha256[:12] placeholders (which are allowlisted as stopwords). The
+# default `generic-api-key` detector does NOT catch these tokens because the
+# generated values contain ``!@#$%^&*()`` characters (outside the default
+# alphabet) and the legacy `QWEN_API_USER_TOKEN` name does not even anchor
+# near "API_KEY".
+#
+# Positive control (this PR): a synthetic ``QWEN_API_TOKEN=foo-real-secret-bar``
+# is FLAGGED. Negative control: ``QWEN_API_TOKEN=LEAKED-PENDING-ROTATION 7a052dd4aeb4``
+# is SUPPRESSED via the [allowlist].stopwords entry. Detector armed.
+[[rules]]
+id = "qwen-api-token"
+description = "Qwen / ComfyUI-Login bearer token (env-var form, #10265)"
+# Match the KEY name (Qwen env vars) followed by ``=`` then a VALUE of
+# length >= 20 with characters drawn from the alphabet observed in the
+# redacted values + standard URL-safe base64 (default ruleset covers the
+# latter; we add the former). Excluded values are handled via the stopwords
+# list at the bottom (LEAKED-PENDING-ROTATION <sha256[:12]>).
+# Match the KEY name (Qwen env vars) followed by ``=`` then a VALUE of
+# length >= 20 with characters drawn from the alphabet observed in the
+# redacted values + standard URL-safe base64 (default ruleset covers the
+# latter; we add the former). Excluded values are handled via the stopwords
+# list at the bottom (LEAKED-PENDING-ROTATION <sha256[:12]>).
+# Character class verified against the actual redacted token alphabet
+# (``2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij`` from commit 81eb1a2b,
+# `docker-configurations/_archive-20251125/docker-compose-no-auth.yml`):
+# ``[A-Za-z0-9!@#$%^&*()_=+.-]`` -- 32 chars exactly.
+regex = '''(?i)(?:qwen_api_token|qwen_api_user_token)\s*[:=]\s*['"]?([A-Za-z0-9!@#\$%^&*()\-_=+.]{20,})['"]?'''
+# entropy = 0 disables the Shannon-entropy filter that would otherwise drop
+# low-entropy pedagogical placeholders ("abcd1234...") AND many real secrets
+# whose generated alphabet compresses well. The stopwords handle both the
+# LEAKED-PENDING-ROTATION sha256[:12] redaction markers and the synthetic
+# test-fixture values (see the stopwords list at the bottom); the path
+# allowlist is limited to whole-file exclusions (``.env.example``,
+# ``.env.template``) -- NOT used to suppress finding shapes (see #10595).
+entropy = 0
+keywords = [
+    "qwen_api_token",
+    "qwen-api-token",
+    "qwen_api_user_token",
+]
+
 [allowlist]
 description = "Global allowlist for known false positives"
+# WARNING -- `[allowlist].paths` is a CONTENT BYPASS, not a scope marker
+# (#10595, measured gitleaks 8.24.3): a file matching `paths` is skipped by
+# gitleaks BEFORE [[rules]] evaluation -- it is not even read. Keep path
+# entries ONLY where excluding the whole file is genuinely intended (template
+# files below). Never use `paths` to suppress a finding SHAPE: that belongs in
+# `regexes`/`stopwords`, which leave the detector armed on the same file.
+# (The previous `docs/suivis/.*\.md$`, `\.gitleaks\.toml$` and
+# `scripts/secrets/tests/test_gitleaks_.*\.py$` entries were removed after
+# verifying the content they shielded is fully covered by stopwords below.)
 paths = [
-    '''\.env\.example$''',
-    '''\.env\.template$''',
-    '''docs/suivis/.*\.md$''',  # Historical docs with rotated/stale credentials
-    '''\.gitleaks\.toml$''',
+    '''\.env\.example$''',   # Template: this file is NOT scanned at all (deliberate)
+    '''\.env\.template$''',  # Template: this file is NOT scanned at all (deliberate)
+    # The previous paths entry `MyIA\.AI\.Notebooks/SymbolicAI/Tweety/dotnet-build/.*\.sh$`
+    # (added by PR #10544, 2026-08-12) was a content bypass: it excluded 3 IKVM shade
+    # build recipe scripts from the scan entirely. The driving FP was
+    # `slf4j-api-1.7.36.jar:slf4j-api-1.7.36.jar` on `rebuild-dialogues.sh:110`
+    # (and 5 sibling lines) — a public Maven Central artifact path, matched by the
+    # default `generic-api-key` rule on the `prefix:secret` shape (entropy 3.78).
+    # Replaced by a regexes entry below that matches ONLY the Maven artifact-id
+    # form `<artifact>-<version>.jar:<artifact>-<version>.jar`. Sub-grain of #10595
+    # (PR #10606 handles the 3 main entries; this one was left untouched).
+    # Verified by `TestMavenUrlRegexNotPathBypass` in
+    # scripts/tests/test_gitleaks_allowlist.py (this PR, c.1331+118).
 ]
 
 # Notebooks: do NOT blanket-exclude .ipynb — secrets inline in code cells are a real vector.
@@ -18,9 +108,148 @@ paths = [
 
 # Allowlist for specific known patterns that are NOT secrets
 regexes = [
-    '''ROTATED \d{4}-\d{2}-\d{2}''',  # Rotation placeholders
+    '''LEAKED-PENDING-ROTATION''',  # Qwen redaction markers (leaked, awaiting real rotation)
     '''see docker-configurations/''',  # References to .env locations
     '''os\.getenv\(['\"][A-Z_]+['\"]\)''',  # env var reads without defaults
     '''data:image/[a-z]+;base64,''',  # Inline base64 images in outputs
     '''^[A-Za-z0-9+/]{100,}={0,2}$''',  # Base64 blobs (long lines typical of image outputs)
+    # --- #10143 class-based FP suppression (each read at source + positive control) ---
+    # OpenRouter pedagogical placeholder: real keys are `sk-or-v1-` + 64 hex chars;
+    # the uppercase-only suffix (VOTRE_CLE, VOTRE_CLE_ICI) is the FR teaching form and
+    # can never be a real key. Covers ~15 findings across GenAI/Vibe-Coding/Claude-Code.
+    # Positive control (#10143): a real sk-or-v1-<lowercase-hex> key in the same file
+    # is STILL flagged (uppercase-only class cannot match hex) — detector stays armed.
+    '''sk-or-v1-[A-Z][A-Z_]+''',
+    # --- Truncated-example JWT (Roo-Code docs, #10143 residual) ---
+    # The BARE header `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9` still CANNOT be allowlisted
+    # (it is a prefix of every real JWT; gitleaks allowlist matching is substring-based,
+    # so the bare header disarms the jwt detector — verified, #10201). BUT the 2 FP findings
+    # in Roo-Code docs (exemple-api.md L38, guide-agent.md L124) are TRUNCATED pedagogical
+    # examples: the literal string is the header followed by an ellipsis `...` (no payload,
+    # no signature) — e.g. `"token": "eyJ...XVCJ9..."`. A real JWT is `header.payload.signature`
+    # (single dots, base64 segments), NEVER header+`...`. Anchoring the allowlist regex on
+    # the trailing literal `\.\.\.` therefore matches ONLY the truncated teaching example,
+    # never a real JWT. Positive control (gitleaks 8.24.3, this PR): a synthetic file with a
+    # real full JWT (header.eyJzdWIi…payload.signature) + the truncated example side by side
+    # → the real JWT stays FLAGGED, the truncated example is SUPPRESSED. Detector armed.
+    # Covers 2 findings (×7 under translation-sync #10133 if these docs are translated).
+    '''eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.\.\.''',
+    # --- #10544 Maven artifact `jar:jar` shape (IKVM shade build recipes) ---
+    # The 3 scripts `MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/rebuild-*.sh`
+    # enumerate Java/Maven dependencies as `<artifact>-<version>.jar:<artifact>-<version>.jar`
+    # pairs (the suffix is the classpath basename). The `generic-api-key` rule
+    # matches the substring `slf4j-api-1.7.36.jar:slf4j-api-1.7.36.jar` on entropy
+    # 3.78 (a public Maven Central artifact path — NOT a credential). The regex
+    # below targets the strict Maven basename form: `<artifact-name-with-hyphens>
+    # -<digit-leading-version>.jar:<artifact-name-with-hyphens>-<digit-leading-version>.jar`.
+    # The `-(?=\d)` lookahead enforces a numeric version segment (real jars always
+    # have one: `1.7.36`, `45.1.1`, `2.3.1`) and protects against false matches on
+    # shaped-but-non-Maven strings. A REAL OpenRouter / GitHub / Stripe / HF token
+    # placed in the same .sh file does NOT contain the `jar:jar` infix and stays
+    # FLAGGED. Positive control: `TestMavenUrlRegexNotPathBypass` in
+    # scripts/tests/test_gitleaks_allowlist.py (c.1331+118, this PR). See #10595.
+    '''[\w.-]+-[\d][\w.-]*\.jar:[\w./$-]+-[\d][\w.-]*\.jar|[\w.-]+-[\d][\w.-]*\.jar''',
+]
+
+# Teaching placeholders and model identifiers that `generic-api-key` reads as
+# assignments. Each entry was read at its source before being listed here — all
+# are non-secrets, so no rotation applies. Kept as stopwords (substring match on
+# the finding) rather than paths, so a REAL secret in the same file still fails.
+#   abcd1234           sample .env block in a MARKDOWN cell of
+#                      GenAI/Texte/10_LocalLlama.ipynb ("sk-abcd1234ABCD1423")
+#   SECRET-KEY         same cell: "sk-MINI-SECRET-KEY", "sk-MEDIUM-SECRET-KEY"
+#   dummy_key          "dummy_key_for_validation" in
+#                      GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb
+#   no-key-needed      conventional value for a keyless local vLLM endpoint
+#   GPT-4o-Transcribe  a MODEL NAME, flagged because it follows "API," in a
+#                      "**Technologies :**" bullet
+# These surface x7 once translation-sync derives each source into every target
+# language (#10133), so one unlisted FP blocks up to 7 PRs. See #10139.
+stopwords = [
+    "abcd1234",
+    "SECRET-KEY",
+    "dummy_key",
+    "no-key-needed",
+    "GPT-4o-Transcribe",
+    # --- #10143 distinct pedagogical/test literals (each re-read at its source) ---
+    # None is a secret; none is rotatable. Kept as stopwords (substring on the finding)
+    # so a REAL key in the same file still fails the scan.
+    "sk-secret-12345",            # pedagogical key placeholder, Claude-Code commit-review README
+    "sk_live_1234567890abcdef",   # canonical Stripe TEST key, bonnes-pratiques.md (stripe-access-token)
+    "rt-67890abcdef",             # pedagogical refresh-token placeholder, Roo-Code exemple-api/guide-agent
+    "v4_officier_german",         # voice-clone sample name (character->voice map), p1_voice_cloning.py
+    "_getDistanceToBezierEdge2",  # vendored vis.js Bezier-edge function, movie_kg_interactive.html
+    "votre_token_ici",            # FR placeholder "your token here", archived README-ETUDIANTS-AUTH
+    "INVALID_TOKEN",              # error-string literal, archived ComfyUI auth-archaeology report
+    "b2NWTdQ/zSFsWQ/JwCHyK/egVV6jpIssX0htD16",  # throwaway ComfyUI-Login local test token, archived 2025-11 failed-auth report
+    "wrongkey",                   # pedagogical placeholder, auth-flip-runbook.md
+    "fixture-whisper-XXXX-1234",  # test fixture, scripts/secrets/tests/test_verify_running_containers.py
+    "hf_fixtureABCDEF1234567890", # test fixture (HF-token-shaped), same test file
+    "val2=with=equals",           # parser test fixture (value with embedded '='), test_notebook_tools_pure.py
+    "ghp_IMfYN5...NCsd",          # redacted GitHub-token example (the `...` is literal), symbolicai-lean translation CSV
+    # --- #10141 revoked Civitai token (allowlist for scanner hygiene) ---
+    # c39ba121e12e5b40ac67a87836431e34 = CIVITAI_TOKEN, 6 occurrences in archive dirs
+    # (docker-configurations/_archive-20251125/, docs/archive/suivis/genai-image/phase-30-*/,
+    # scripts/genai-stack/_archive/). Rotation performed at Civitai (user action 2026-08);
+    # revoked confirmed firsthand: GET /api/v1/users/self with this token -> 401 Unauthorized
+    # (same as a fake token; a live key returns 200). Allowlister une valeur REVOQUEE est de
+    # l'hygiene de scanner (secrets-hygiene rule 5: rotation is the PRIMARY remediation and is
+    # DONE; this entry only silences the dead value in CI). NEVER allowlist a live credential
+    # (#9888) — this entry is legitimate precisely because the value is dead. The 6 archive
+    # files are redacted in a SEPARATE PR (replace with LEAKED-PENDING-ROTATION placeholder). See #10141.
+    "c39ba121e12e5b40ac67a87836431e34",
+    # --- #10265 revoked QWEN_API_TOKEN sha256 prefixes (allowlist for scanner hygiene) ---
+    # 3 distinct values were redacted across 14 files in docs/archive/suivis/genai-image/
+    # (Phase 29, Phase 30, Phase 31), docker-configurations/_archive-20251125/, and
+    # scripts/genai-stack/_archive/utils/. The sha256[:12] hashes are the placeholders
+    # used in the redaction marker ``LEAKED-PENDING-ROTATION <sha256[:12]>`` (non-inversible
+    # fingerprint, c.10186-L1 ★★ — distinct from the full-value ``value[-4:]`` slice
+    # that secrets-hygiene §C forbids). Rotation of the LIVE tokens is a
+    # RECOVERABLE-MACHINE action: ComfyUI-Login is our self-hosted stack (we ARE
+    # the provider — no third-party console), so the path is master.env ->
+    # render_envs.py -> docker compose restart (the restart regenerates the bcrypt
+    # hash from env, per docs/genai/secrets-management.md). Deferred to a separate
+    # grain (voie a); this PR is voie (b) — honest redaction marker only.
+    # RECOVERABLE-LOCAL for the redaction itself. Same revocation-then-redact
+    # logic as Civitai (#10141).
+    "7a052dd4aeb4",
+    "2e5dd4339ca9",
+    "de13deaace0c",
+    # --- #10265 pedagogical QWEN_API_TOKEN placeholder values (FR/EN, first read at source) ---
+    # The default ruleset's `generic-api-key` does not catch these (entropy too
+    # low / non-secret shape) but the new custom `qwen-api-token` rule
+    # (length >= 20 + the right charset) flags them. They are PLACEHOLDERS,
+    # not secrets — re-read at source 2026-08-10:
+    #   * "votre_token_copie_ici"  — FR placeholder in docs/archive/genai/
+    #                                 user-guide.md:92, GUIDE-APIS-ETUDIANTS.md:85
+    #   * "your_bearer_token_here" — EN placeholder in MyIA.AI.Notebooks/
+    #                                 GenAI/.env.example + 2 docker-configurations
+    #                                 .env.example + 1 phase-30 archive
+    #   * "your_qwen_api_token_here" — EN placeholder, same files as above
+    # None is rotatable. Kept as stopwords so a REAL 32-char alphanum key in the
+    # same file still rougir (the stopword is a substring match — a long real key
+    # will not contain "votre_token_copie_ici").
+    "votre_token_copie_ici",
+    "your_bearer_token_here",
+    "your_qwen_api_token_here",
+    # --- #10575 AGSEC005 test fixtures (placeholder credentials in xUnit tests) ---
+    # AgentSafetyAnalyzerTests.cs exercises the credential-prefix detector with
+    # CANONICAL placeholder values. None is a real secret; all are re-read at
+    # source 2026-08-12. Kept as stopwords (substring on the finding) so a REAL
+    # credential in the same test file still fails the scan.
+    "AbCdEf1234567890",       # common placeholder segment across sk-/ghp_-shaped test fixtures
+    "AKIAIOSFODNN7EXAMPLE",   # AWS documentation example key (canonical placeholder, not rotatable)
+    # --- #10595 synthetic qwen fixtures (scripts/secrets/tests/test_gitleaks_qwen_rule.py) ---
+    # The path entry `scripts/secrets/tests/test_gitleaks_.*\.py$` used to make
+    # gitleaks skip these files ENTIRELY -- a content bypass that also silenced
+    # a real secret accidentally dropped into the same directory (#10595). The
+    # path entry is removed; the four synthetic fixture VALUES the custom
+    # `qwen-api-token` rule flags in test_gitleaks_qwen_rule.py are instead
+    # suppressed here, as stopwords (substring on the finding) -- the file is
+    # now scanned, and any token OTHER than these exact literals still rougir.
+    # Each value re-read at its source in the test file before listing:
+    "xK9mZ3vL7nQ2pR8tY4wU6jH1bN5cF0eG",              # canonical QWEN_API_TOKEN fixture (L158/L216)
+    "aB3xZ9kL7mN2pQ8vR5tY4wU6jH1nC0e",               # legacy QWEN_API_USER_TOKEN fixture (L171)
+    "2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-Lij",              # redacted alphabet sample reused as fixture (L200)
+    "NOT_A_REAL_TOKEN_BUT_LONG_ENOUGH_TO_MATCH",     # explicit placeholder fixture (L269)
 ]

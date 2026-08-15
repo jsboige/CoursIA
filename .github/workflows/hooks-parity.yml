@@ -1,0 +1,50 @@
+# Parity-check for the pre-commit harness (issue #9888, suite).
+# Advisory: surfaces in CI but does not block. The worker is the owner
+# of the missing-local-hook state, not the PR.
+name: hooks-parity
+
+on:
+  # Monthly cron so a long-running worker that drifted since last push
+  # still gets a nudge back into the harness.
+  schedule:
+    # 05:17 UTC on the 1st of each month (avoids the top-of-hour rush).
+    - cron: "17 5 1 * *"
+  push:
+    paths:
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/hooks-parity.yml"
+      - "scripts/check_hooks_parity.py"
+      - "scripts/setup_hooks.py"
+  pull_request:
+    paths:
+      - ".pre-commit-config.yaml"
+      - ".github/workflows/hooks-parity.yml"
+      - "scripts/check_hooks_parity.py"
+      - "scripts/setup_hooks.py"
+
+jobs:
+  parity:
+    name: parity gate
+    runs-on: ubuntu-latest
+    # Advisory: surfaces the warning without breaking the rest of the CI run.
+    # `continue-on-error` is only valid on a job or a step -- at the workflow
+    # root it is an unknown key, which Actions rejects with a startup_failure
+    # (0 jobs created, no log to read). See the PR body for the diagnosis.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install PyYAML
+        run: python -m pip install --quiet pyyaml
+      - name: Run parity check
+        id: parity
+        # Exit 0 = all gates green, 1 = some gate KO. We surface the
+        # warning either way because the gate is advisory.
+        run: |
+          python scripts/check_hooks_parity.py || echo "PARITY_FAIL_RC=$?"
+      - name: Annotate if any gate KO
+        if: steps.parity.outcome == 'failure'
+        run: |
+          echo "::warning::hooks-parity gate: declared-vs-installable mismatch. Run on the worker: python scripts/setup_hooks.py --install"

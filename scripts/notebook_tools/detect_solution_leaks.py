@@ -48,7 +48,7 @@ STUB_PATTERNS = [
 ]
 
 EXERCISE_HEADER_RE = re.compile(
-    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d*)\s*[:.]?\s*(.*)',
+    r'^#+\s*(?:\d+[.:]\s*)?(?:Exercice|Exercise)\s*(\d*(?:\.\d+)*)\s*[:.]?\s*(.*)',
     re.MULTILINE | re.IGNORECASE,
 )
 
@@ -125,6 +125,62 @@ def code_cell_first_comment_labels_example(source: str) -> bool:
     return False
 
 
+# A "methodological commentary" header line (``### Interprétation``,
+# ``### Interpretation``, ``### Analyse``, ``### Analyse mathematique``,
+# ``### Methodologie`` ...). Used for closest-preceding-header attribution:
+# a code cell whose nearest header is a methodological commentary section
+# (NOT an Exercice and NOT an Exemple guide) is a data table / worked
+# derivation attached to the surrounding narrative, NOT an exercise
+# solution leak. Closes the Lean-17-Knots-b-Invariants-Companion cell 14
+# FP class (c.875 sub-grain of EPIC #8053): a slice-genus data table
+# sitting under ``### Interprétation`` between the exercise header and
+# the next exercise sub-section. Cf exercise-example-labeling.md
+# (content-based rule): a code cell whose closest header is interpretive
+# narrative, not an exercise, is not an exercise solution leak.
+METHODOLOGICAL_HEADER_RE = re.compile(
+    r'^#+\s*(?:Interpr[ée]tation|Interpretation|Analyse'
+    r'|Analyse\s+math[ée]matique|Methodologie|M[ée]thodologie'
+    r'|Discussion|Notes\s+math[ée]matiques'
+    r'|R[ée]sultats\s+et\s+discussion)\b',
+    re.IGNORECASE,
+)
+
+
+def closest_preceding_header_is_methodological(cells, code_idx):
+    """Return True if the closest preceding markdown header line is a
+    methodological commentary header (``### Interprétation``,
+    ``### Analyse``, ...).
+
+    Scans backwards from ``code_idx``; within a markdown cell, the LAST header
+    line wins (it is the closest to the code that follows). A code cell whose
+    nearest header is a methodological narrative (interpretation of results,
+    mathematical analysis, discussion, methodology) is a data table / worked
+    derivation attached to the surrounding narrative, NOT an exercise solution
+    leak. Suppresses the FP class where a code cell sits under a
+    ``## Exercices`` (or ``### Exercice N``) section header but its actual
+    nearest sub-header is ``### Interprétation`` (in the same cell or an
+    intervening one). Cf exercise-example-labeling.md (content-based rule).
+
+    Recall-safe contract: a code cell that *is* a real exercise solution has
+    its closest preceding header being either (a) the ``### Exercice N``
+    sub-header itself, or (b) a worked-example header (``### Exemple guide``
+    — already handled by ``closest_preceding_header_is_example``), or (c)
+    a section header that does NOT match ``METHODOLOGICAL_HEADER_RE``. None
+    of those match the methodological regex, so the helper returns False and
+    the leak is still emitted.
+    """
+    for k in range(code_idx - 1, -1, -1):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        header_lines = HEADER_LINE_RE.findall(src)
+        if not header_lines:
+            continue  # prose-only markdown cell; keep scanning further back
+        return bool(METHODOLOGICAL_HEADER_RE.search(header_lines[-1]))
+    return False
+
+
 def _header_level(line: str) -> int:
     """Return the ATX heading level (count of leading ``#``), or 0 if not a
     header line."""
@@ -136,25 +192,44 @@ def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> boo
     """Return True if a markdown header at the same or higher level than the
     exercise header appears between ``exercise_idx`` and ``code_idx``.
 
-    A same-or-higher-level header (e.g. ``## Conclusion``, ``## Section 6``,
-    or a ``### 6.1 ...`` sibling of ``### Exercice 2``) starts a new section and
-    breaks the attribution of the code cell to the exercise: the code then
-    belongs to that later section, not the exercise. A DEEPER sub-header (e.g.
-    ``### Indice`` under a ``## Exercice 1``) does NOT break the section (it is
-    a child of the exercise, common in worked exercise scaffolding).
+    A same-or-higher-level header (e.g. ``## Conclusion``, ``## Section 6``)
+    starts a new section and breaks the attribution of the code cell to the
+    exercise: the code then belongs to that later section, not the exercise.
+    A DEEPER sub-header (e.g. ``### Indice`` under a ``## Exercice 1``) does
+    NOT break the section (it is a child of the exercise, common in worked
+    exercise scaffolding).
+
+    Recall-safety: ``### Indice`` and ``### Interpretation`` (level 3) under
+    ``### Exercice 1`` (level 3) are structurally indistinguishable from a
+    visualisation sub-header at the same level — we MUST NOT over-suppress
+    real exercise code cells. Therefore the level threshold is computed from
+    the FIRST exercise header line (the num-less parent, e.g. ``## Exercices``
+    at level 2), NOT the LAST numbered sub-header. With the parent level,
+    ``### Indice`` (deeper, level 3) and ``### Interprétation`` (deeper,
+    level 3) are correctly preserved.
 
     This suppresses cross-cell false positives where a demo/visualisation code
     cell sits a few cells after an exercise header but is actually owned by a
     later ``## Conclusion`` / ``## Section N`` section. Cf exercise-example-labeling.md
     (content-based rule). Safe default: if the exercise header level cannot be
     determined, do not suppress.
+
+    Additional check: a numbered subsection header (``### 3.4 Title``,
+    ``### 6.1 Diagrammes``) ALWAYS breaks attribution regardless of level.
+    These announce a NEW topic (cf Tweety-4 cell#24 FP class: ``## Exercice``
+    at level 2, then ``### 3.4 MaxSAT`` (level 3, deeper, but a real topic
+    transition, not an exercise-internal sub-header). The number distinguishes
+    a section/subsection boundary from exercise-internal scaffolding like
+    ``### Indice`` or ``### Interprétation`` which are NEVER numbered.
     """
     ex_src = ''.join(cells[exercise_idx].get('source', []))
-    ex_level = 0
-    for line in ex_src.split('\n'):
-        if EXERCISE_HEADER_RE.search(line):
-            ex_level = _header_level(line)
-            break
+    # First exercise header line is the num-less parent (e.g. ``## 7. Exercices``
+    # or ``## Exercices``). Its level is the threshold for the level-based check.
+    first_match = EXERCISE_HEADER_RE.search(ex_src)
+    if not first_match:
+        return False
+    matched_line = ex_src[first_match.start():first_match.end()]
+    ex_level = _header_level(matched_line)
     if not ex_level:
         return False
     for k in range(exercise_idx + 1, code_idx):
@@ -165,6 +240,11 @@ def intervening_section_breaks_attribution(cells, exercise_idx, code_idx) -> boo
         for header_line in HEADER_LINE_RE.findall(src):
             if _header_level(header_line) <= ex_level:
                 return True
+        # Numbered subsection header (`### 3.4 Title`, `### 6.1 Diagrammes`):
+        # always breaks attribution regardless of level — these announce a
+        # new topic, not an exercise-internal sub-detail. Cf Tweety-4 cell#24.
+        if NUMBERED_SUBSECTION_HEADER_RE.search(src):
+            return True
     return False
 
 
@@ -221,6 +301,45 @@ def _numbered_exercise_header_between(cells, start_idx, end_idx) -> bool:
             continue
         src = ''.join(cell.get('source', []))
         if any(m.group(1) for m in EXERCISE_HEADER_RE.finditer(src)):
+            return True
+    return False
+
+
+# A markdown header line that is a numbered subsection ("### N.M Title" or
+# "## N. Title"). Distinguished from exercise-internal sub-headers like
+# "### Indice", "### Etape N", "### Solution" (which are children of an
+# exercise and SHOULD NOT break attribution). The numbered subsection
+# pattern uses a digit-then-dot prefix at the start of the title — these
+# are topic-level transitions ("### 3.4 MaxSAT", "### 6.1 Diagrammes 2D")
+# that genuinely start a new section, even when nested under a level-2
+# "## Exercice" header (which itself was promoted to level 2 because the
+# notebook author dropped the section number prefix, e.g. "## Exercice : Enumeration de MUS").
+NUMBERED_SUBSECTION_HEADER_RE = re.compile(
+    r'^#{1,6}\s+\d+(?:\.\d+)*\.?\s+\S', re.MULTILINE,
+)
+
+
+def _numbered_subsection_header_between(cells, start_idx, end_idx) -> bool:
+    """Return True if a markdown cell strictly between ``start_idx`` and
+    ``end_idx`` (exclusive) holds a numbered subsection header (``### N.M Title``).
+
+    Used by ``intervening_section_breaks_attribution`` to disambiguate: a deeper
+    sub-header that introduces a NEW topic (numbered ``### N.M``) breaks
+    attribution, while exercise-internal sub-headers (``### Indice``, ``### Etape N``,
+    ``### Solution``, ``### Reponses``, ``### Interpretation``) do NOT.
+
+    Recall-safety: a real solution cell never self-labels with a numbered
+    subsection header (``# --- 3.4.1 Title ---``) when it sits between an
+    exercise header and the next code cell — the exercise cell would own its
+    own header. The only legitimate uses of numbered subsection headers are
+    new topic transitions.
+    """
+    for k in range(start_idx + 1, end_idx):
+        cell = cells[k]
+        if cell.get('cell_type') != 'markdown':
+            continue
+        src = ''.join(cell.get('source', []))
+        if NUMBERED_SUBSECTION_HEADER_RE.search(src):
             return True
     return False
 
@@ -550,6 +669,89 @@ def exercise_with_exercice_indice_skeleton(source: str) -> bool:
     return not has_substantive_call
 
 
+def exercise_with_run_lean_snippet(source: str) -> bool:
+    """Return True if the cell is a Lean exercise that wraps a ``snippet_exN``
+    string literal passed to ``run_lean(...)`` for isolated execution, with
+    pedagogical commentary (``# Lecture : ...``) — the student inspects the
+    snippet output and answers the conceptual question.
+
+    Structural pattern observed in ``Lean-15-Grothendieck-Tribute`` cells 25
+    and 29 (c.8104g sub-grain of EPIC #8053):
+
+    1. A ``# Exercice N : <topic>`` (or similar) header comment at the top
+       of the cell body — the same language the detector uses to attribute
+       the code cell to its exercise markdown header.
+    2. A multi-line ``snippet_exN = \"\"\" ... Lean code ... \"\"\"`` literal
+       containing ``import`` / ``#check`` / ``#eval`` style verification
+       statements — the snippet itself is mostly *check statements* that
+       demonstrate type-class instances are reachable, not a worked theorem
+       proof.
+    3. A ``resultat_exN = run_lean(snippet_exN, timeout_s=...)`` invocation
+       that compiles and runs the snippet in an isolated Lean process.
+    4. A ``print(resultat_exN)`` trailer that displays the snippet's output.
+    5. Optional pedagogical commentary (``# Lecture : ...``) guiding the
+       student on what to observe.
+
+    These cells are LEGITIMATE EXERCISES under the user's doctrine (cf
+    ``.claude/rules/exercise-example-labeling.md`` §"Classification PAR
+    CONTENU"): the snippet is a verification harness, not a worked theorem
+    proof. The student runs the snippet, observes the Lean output, and
+    formulates an answer to the conceptual question stated in the markdown
+    header above. The detector previously reported this as HIGH because the
+    snippet looks like "real Lean code under an exercise header" — the fix
+    is to recognize the ``run_lean`` wrapper pattern as a Lean-specific
+    exercise skeleton.
+
+    Recall-safe contract: a cell that contains a *real* Lean solution
+    (a complete ``theorem ... := by sorry`` / `:= by <tactics>` proof or a
+    substantive ``example : ... := by ...`` proof — NOT just `#check`
+    imports / type-class reachability checks) must NOT match this helper.
+    Such a cell would lack the ``snippet_exN = \"\"\"...\"\"\"`` wrapper or
+    contain substantive proof tactics, making the regex below return False.
+    """
+    # Marker 1: a `run_lean(` call exists in the cell.
+    if not re.search(r'\brun_lean\s*\(', source):
+        return False
+    # Marker 2: a multi-line string literal assigned to `snippet_exN` (or
+    # similar snippet_ prefix). The triple-quoted body holds the snippet.
+    if not re.search(r'\bsnippet_\w+\s*=\s*"""', source):
+        return False
+    # Marker 3: the cell body itself announces an exercise header in its
+    # own comment block (the detector's `EXERCISE_HEADER_RE` matches both
+    # markdown AND code cell comments). This distinguishes from
+    # `Lean-15b` cells which use `# Verification interactive` headers
+    # (those are NOT exercises — they're worked-example verifications and
+    # already correctly attributed by `closest_preceding_header_is_example`).
+    if not re.search(
+        r'(?:^|\n)\s*#\s*Exercice\b', source, re.IGNORECASE | re.MULTILINE
+    ):
+        return False
+    # Marker 4: a `resultat_exN` (or `resultat_*`) capture variable that the
+    # student inspects via `print(...)`. Required to distinguish from a bare
+    # `run_lean(...)` invocation without a pedagogical wrapper.
+    if not re.search(r'\bresultat_\w+\s*=\s*run_lean\s*\(', source):
+        return False
+    # Anti-solution guard: if the snippet body contains substantive Lean
+    # proof tactics (`theorem ... := by <tactics>` with non-`#check` /
+    # non-`#eval` statements), this is NOT a verification harness — it's a
+    # worked solution. The harness should remain false-positive-resistant
+    # even if a future notebook author writes a real proof in the snippet.
+    snippet_match = re.search(
+        r'snippet_\w+\s*=\s*"""(.*?)"""', source, re.DOTALL
+    )
+    if snippet_match:
+        snippet_body = snippet_match.group(1)
+        # Real proof tactics lines start with `theorem` / `lemma` / `example`
+        # WITHOUT being followed by `#check` / `#eval` / `--` comments.
+        has_proof_statement = bool(re.search(
+            r'^\s*(?:theorem|lemma|example)\b(?![^:]*#check|#[^:]*#eval)',
+            snippet_body, re.MULTILINE,
+        ))
+        if has_proof_statement:
+            return False
+    return True
+
+
 def scan_notebook(path: str) -> list[dict]:
     """Scan a single notebook for solution leaks."""
     findings = []
@@ -648,6 +850,21 @@ def scan_notebook(path: str) -> list[dict]:
             # "## Exercice 1") does not break the section.
             if intervening_section_breaks_attribution(cells, i, next_code_idx):
                 continue
+            # Methodological commentary attribution: if the closest preceding
+            # header is a methodological narrative header (``### Interprétation``
+            # / ``### Analyse`` / ``### Discussion`` / ...), the code cell is a
+            # data table or worked derivation attached to the surrounding
+            # narrative, NOT an exercise solution leak. Closes the
+            # Lean-17-Knots-b-Invariants-Companion cell 14 FP class (c.875
+            # sub-grain of EPIC #8053): a slice-genus data table sitting
+            # under ``### Interprétation`` between the exercise header and
+            # the next exercise sub-section. Recall-safe: a real exercise
+            # solution has its closest preceding header being either an
+            # ``### Exercice N`` sub-header or a worked-example header
+            # (already handled by ``closest_preceding_header_is_example``),
+            # neither of which matches the methodological regex.
+            if closest_preceding_header_is_methodological(cells, next_code_idx):
+                continue
             # Commented-template stub: the whole solution is commented out and
             # only data assignments + a prompt print execute (the student
             # uncomments and fills the TODOs). A legitimate exercise skeleton,
@@ -694,6 +911,19 @@ def scan_notebook(path: str) -> list[dict]:
             # guidance headers, no substantive call/return body. Arrow-33
             # pattern. The student follows the indicesteps.
             if exercise_with_exercice_indice_skeleton(next_code_source):
+                continue
+            # Lean exercise wrapping a `snippet_exN = """..."""` literal
+            # passed to `run_lean(snippet_exN, timeout_s=...)` with a
+            # `print(resultat_exN)` trailer and `# Lecture : ...` commentary.
+            # Lean-15-Grothendieck-Tribute cells 25/29 pattern (c.8104g
+            # sub-grain of EPIC #8053). The snippet is a verification
+            # harness of `#check` / `#eval` statements, NOT a worked proof.
+            # The student runs the snippet, observes Lean output, and
+            # answers the conceptual question in the markdown header above.
+            # Recall-safe: a real Lean proof (theorem/lemma/example with
+            # substantive tactics) does NOT match — the anti-solution
+            # guard checks for proof statements inside the snippet body.
+            if exercise_with_run_lean_snippet(next_code_source):
                 continue
             solution_markers = bool(SOLUTION_MARKER_RE.search(next_code_source))
             if solution_markers or len(next_code_source.strip().split('\n')) > 8:
