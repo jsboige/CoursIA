@@ -2,9 +2,9 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18-HyperparameterTuning.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb
-  parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = `sklearn` (RandomForestClassifier, GradientBoostingClassifier, SVC, cross_val_score, Pipeline, StandardScaler) + `optuna` (optimisation d'hyperparametres SOTA) + `scipy.optimize`/`scipy.stats` + stdlib. C# = BCL pure (0 NuGet, 0 reference externe) : grid-search/random-search from-scratch. Verdict RECOVERABLE-LOCAL : `sklearn`/`optuna` implementent les concepts enseignes (classifieurs + tuning d'hyperparametres) et ML.NET est deja en service dans le depot (serie ML.NET, SL-3 RelevanceLearning — cf bucket-1 #10382) — le C# pourrait brancher ML.NET (AutoML / contexte de tuning) pour la parite lib-vs-lib. Le from-scratch (grid search manuel) reste pedagogique mais la tranche 2 ML.NET est recuperable localement. parity_level: semantic preserve."
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = `sklearn` (RandomForestClassifier, GradientBoostingClassifier, SVC, cross_val_score, Pipeline, StandardScaler) + `optuna` (optimisation d'hyperparametres SOTA) + `scipy.optimize`/`scipy.stats`. C# = tranche 1 BCL pure (grid/random/bayes/GA/PSO from-scratch) + tranche 2 (2026-08-15) branche **ML.NET AutoML 0.23.0** (`CreateBinaryClassificationExperiment(30).Execute`): le jumeau C# dispose d'un moteur de production qui cherche dans l'espace des modeles (FastTree, LightGBM, SDCA, reg. logistique, perceptron) ET de leurs hyperparametres — parite lib-vs-lib atteinte (sklearn+Optuna <-> ML.NET AutoML). Mesures : split deterministe TrainTestSplit(0.2, seed 424242) = 165/35, AutoML 405 essais/30 s, meilleur entraineur SdcaLogisticRegressionBinary, accuracy test 0.7714 / AUC 0.7467 vs meilleure config k-NN from-scratch (Grid, k=49) 0.7143 sur le MEME split — AutoML devant de 0.0571. Env repare (regle F) : dotnet-interactive 1.0.712001 (Roslyn 5.0.0.0) requis par AutoML 0.23.0 (CodeAnalysis.CSharp 4.13). parity_level: native-both (les deux twins branchent une lib SOTA)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -28,8 +28,15 @@
       csharp_sha: c927aed935e215e5e3733c3f8568c3673d32e2d6
       content_python_sha: 73920f7e8592771a8d78b6b7e285242e81f2e5c883da5d5ba5097102d78ce505
       content_csharp_sha: efda6e7bf94adacc3222559ffde9f7de3427a8161cf42543e6f84dc621e52e2c
+    - date: "2026-08-15"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 17ba5d66c7ff9ea1eae59c503364c77210b9c50a
+      csharp_sha: 6b7597515bd7b78b088f8b8bc4f18c54be69c578
+      content_python_sha: 73920f7e8592771a8d78b6b7e285242e81f2e5c883da5d5ba5097102d78ce505
+      content_csharp_sha: c4c7151cd9d2d0014e18f4a53e3b3cd9744a477d98dafafa1ae731d98420d744
   known_differences:
     - "Edition Prong B #10019/#3801 (2026-08-08, po-2026) : le jumeau Python remplace Breast Cancer (dataset saturant, ecart 0,0022 = bruit) par un make_classification dur (flip_y 0,20, class_sep 0,55, desequilibre) pour rendre le RandomForest sensible a ses hyperparametres (paysage rugueux, ecart 0,021 entre les 5 optimiseurs). Le modele (RF) est INCHANGE donc le md[0] C# 'App-18 optimise un Random Forest' reste exact. Le C# twin (k-NN + gaussiens chevauchants) etait deja discriminant, non touche. Parite semantique preservee : les deux demontrent le tuning d'hyperparametres sur un paysage accidente."
     - "Socle pedagogique commun : Hyperparameter tuning (scipy.optimize + Gaussian Process / Bayes opt) comme application canonique. Les deux twins couvrent le meme socle theorique (formulation variables/domaines/contraintes, resolution, experimentation) avec parite semantique sur les concepts cibles."
-    - "Idiomes framework : Python = scipy.optimize + scipy.stats norm + sklearn ; C# = BCL pure (System.*), 0 NuGet."
+    - "Idiomes framework : Python = scipy.optimize + scipy.stats norm + sklearn + optuna ; C# = BCL pure (System.*) pour les 5 optimiseurs from-scratch (cellules 4-20) + Microsoft.ML.AutoML 0.23.0 pour le moteur de production (tranche 2, cellule 26)."
+    - "Tranche 2 lib-vs-lib (2026-08-15, po-2025, #10382) : le jumeau C# garde ses 5 optimiseurs from-scratch (pedagogie du mecanisme) et ajoute un bridge ML.NET AutoML sur les MEMES X,y avec split deterministe (TrainTestSplit seed 424242, 165/35). Comparaison pomme-pomme : k-NN Grid 0.7143 vs AutoML 0.7714 sur le meme split (0.0571 d'ecart), CV 5-fold from-scratch 0.7750 en rappel (protocole different, rappel cellule 27). Le from-scratch reste reference pedagogique, AutoML apporte la parite lib-vs-lib."
     - "Asymetrie pedagogique : Python met l'accent sur le solveur SOTA (OR-Tools CP-SAT / library specialisee) + visualisation matplotlib + experimentation comparative ; le C# demontre l'implementation from-scratch en BCL pure (ou binding NuGet du meme solver pour App-8/10/15), presentation compacte. Meme socle theorique, leviers de demonstration differents."
