@@ -409,6 +409,9 @@ class TestGoldenSetArgAnalysisC1275:
         # TIME_UNIT_RE.search('rung 1 :  ms sur 100 tirages') ne match PAS
         # car le pattern cherche \d+ immediatement avant ms (et '42' n'est
         # pas dans prefix+suffix ici). On tombe donc sur STRUCTURAL_LOCATIONS.
+        assert cls == "STRUCTUREL", (
+            f"rung adjacent doit rester STRUCTUREL, got {cls} ({rationale})"
+        )
         # Cas alternatif ou MACHINE-DEP prime : `42 ms runtime` directement.
         cls, rationale = _classify_quant_value("42", 42.0,
                                                "runtime: ",
