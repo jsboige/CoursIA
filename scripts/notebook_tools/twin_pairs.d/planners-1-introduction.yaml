@@ -2,16 +2,30 @@
   family: SymbolicAI/Planners
   python: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-1-Introduction-Csharp.ipynb
-  parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = `unified-planning` (AIplan4EU, API moderne : `Fluent`, `Action`, `InstantaneousAction`, `Problem`, `OneshotPlanner`) ; le solveur sous-jacent est enveloppe via `up.engines.factory` (pyperplan ou Fast Downward selon la config). C# = `from-scratch BCL .NET` pur (System.Collections.Generic.Dictionary + List + Action/State dataclasses, 0 NuGet de planification) sur les memes concepts (domaine/probleme/plan/sequence d'actions). Verdict RECOVERABLE-LOCAL : le coeur pedagogique (modelisation domaine+probleme, recherche de plan, instanciation) est PARITABLE des deux cotes (PY = pur Python, C# = BCL generique), l'asymetrie reside dans l'extension solveur cote PY uniquement (unified-planning wrap des moteurs de production, pas d'equivalent direct cote C# sans NuGet Fast-Downward). Le C# preserve le socle from-scratch comme choix pedagogique assumme (fondations = construire la classe a la main avant d'utiliser une lib, cf meme logique que CSP-1/Sudoku-1). Le PY pourrait installer `pddl-fluent-parser` (PyPI MIT, pure-Python, jansucan) ou `pddl-parser` (PyPI MIT) pour atteindre une parite complete de parsing, mais le notebook preserve le socle from-scratch. `parity_level: semantic` preserve : parite sur les concepts cibles (planification classique, modelisation domaine/probleme) malgre l'asymetrie d'extension solveur."
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Tranche 2 livree (2026-08-15, #10382) : le C# delogue maintenant au VRAI moteur de production -- Fast Downward 24.06.1 via son API Docker (conteneur coursia-fast-downward, POST http://localhost:8200/plan, search astar(lmcut())) -- le meme moteur que le jumeau Python enveloppe via unified-planning (pyperplan/FD selon la config). Parite native-both sur 3 instances : interrupteur (FD [turn-on] 1 action = BFS from-scratch Tranche 1 [allumer] 1 action), multi-interrupteurs N=3+maitresse (FD 4 actions master-first = BFS 4 actions, h(lmcut) initiale = 4 = but conjonctif), livraison (FD plan optimal 3 actions pick/move/drop = Exemple guide 1 unified-planning du jumeau Python, domaine fourni en PDDL seul, 0 classe C#). La Tranche 1 from-scratch (STRIPS + BFS, BCL .NET 0 NuGet) est PRESERVEE integralement comme socle pedagogique ; la Tranche 2 ajoute le pont HttpClient (pattern Planners-4-Fast-Downward-Csharp, #10401). Verdict SOTA-OK : le moteur reel est proprement invoque, les sorties committes sont ses vraies sorties (papermill .net-csharp 35/35, 0 erreur)."
   audits:
     - date: "2026-08-02"
       by: myia-po-2024:CoursIA-2
       python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
       csharp_sha: 684de6ba81caa8202262c6f7f1b3830bc4af8291
       reason: "rebaseline python apres 1 fix structurel (#8052) : le titre ### 4.2 Implementation avec unified-planning apparaissait DEUX FOIS -- cellule 7 (intro) et cellule 9 (re-ouvert, byte-identique), avec seulement le code de verification de version (cellule 8) entre les deux ; la section 4 avait donc 4.1, 4.2, 4.2 (dup), 4.3. Fix = suppression du titre duplique de la cellule 9 (cellule 7 l'avait deja), la phrase d'introduction distincte de la cellule 9 est conservee (elle devient un pont entre la verification de version cellule 8 et le code de modelisation cellule 10, tous sous ### 4.2 ouvert a la cellule 7). Python-only (le jumeau C# from-scratch BCL n'a pas d'unified-planning, 0 titre ### 4.2), csharp_sha unchanged, parite semantique preservee (0 re-exec, 0 output/code modifie)."
+    - date: "2026-08-15"
+      by: myia-po-2023:CoursIA
+      python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
+      csharp_sha: f32eddbaf89841702a25a8d9049b2bfb89f7d295
+      content_python_sha: 53fe5088b0ee89543ae4f92fa27f69ce20e31c9313ed91e71b2a9739509aa3bb
+      content_csharp_sha: 24ba00b8e94024171f0a435eff1e9d00d28ccccae4baf574b3c9ab9e18cd5571
+      reason: "Tranche 2 FD bridge (Epic #10382 lib-vs-lib) : 7 cellules inserees avant conclusion (header + client FD HttpClient + multi-interrupteurs + livraison + interpretation), cell 0 et conclusion mises a jour. C#-only (python_sha/content_python_sha inchanges -- le jumeau Python n'a pas bouge). Les 28 cellules Tranche 1 sont preservees integralement (source + outputs identiques au precedent, seule la cellule 4 porte un stream vide kernel supplementaire sans contenu). Re-exec papermill .net-csharp end-to-end 35/35, 0 erreur, execution_count 11-13 sur les nouvelles cellules. parity_level semantic -> native-both, bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK."
+    - date: "2026-08-15"
+      by: myia-po-2023:CoursIA
+      python_sha: b8b4aab5c7f937970c850710f50d8f9b3166ad6a
+      csharp_sha: 6c10bba6cbdf6afb8f60a6e56567a273e0eb8e34
+      content_python_sha: 53fe5088b0ee89543ae4f92fa27f69ce20e31c9313ed91e71b2a9739509aa3bb
+      content_csharp_sha: 6f667c0b3ea21776c9ee58f81ba3f6fed750f7b6d8148ea7e77ac7fe55009e39
+      reason: "Rebaseline C# apres strip du banner kernel-injected probeAddresses (commit 6a8b31317, #11114) : la re-exec papermill Tranche 2 avait reinjecte le JS probe (loadDotnetInteractiveApi, interfaces IPv6 host) en tete de cellule -- strip via l'outil dedie scripts/notebook_tools/strip_probe_banner.py --apply (9 lignes, output-only, sanctionne). Python inchange. Ordre #8957 respecte : strip commite PUIS --update en dernier."
   known_differences:
     - "Concept : introduction a la planification classique (domaine, probleme, plan = sequence d'actions)."
-    - "Python : unified-planning (API moderne, modelisation Fluent/Action). C# : from-scratch BCL .NET (dataclasses d'Action/Etat, 0 NuGet)."
+    - "Python : unified-planning (API moderne, modelisation Fluent/Action). C# : Tranche 1 from-scratch BCL .NET (dataclasses d'Action/Etat, 0 NuGet) + Tranche 2 Fast Downward via API Docker (depuis 2026-08-15, #10382)."
     - "Re-baseline 2026-07-31 (po-2024, #8052) : markdown-only correction cote Python (cell[0] nav label + cell[35] list item + link text : 'PDDL-Syntax' -> 'PDDL-Basics', conforme au titre reel du notebook suivant Planners-2-PDDL-Basics). Paraphite-preservant : aucun output/code modifie, axe de parite semantic (concept planification) intact."
