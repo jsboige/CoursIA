@@ -134,6 +134,7 @@ Le GENRE est le **type de travail**, jamais la famille où vivent les fichiers. 
 | `refs`, `documentation` | `docs` | synonyme |
 | `data` | `ledger` | tranché par l'incident #8056 |
 | `content` | `docs` ou `notebook-python` selon le travail réel | genre **hors énumération** — six grains consécutifs de `po-2023:CoursIA` l'ont porté (#10745, #10742, #10733, #10727, #10712, #10711), rendant l'adjacence G-VAR-3 inatteignable : un genre hors liste ne collisionne avec rien |
+| `slidev` | `slides` | outil → type de travail — `slides` est CONTENU quand le grain écrit/enrichit le contenu du deck, sinon le grain garde son genre de type de travail (`guard`/`refactor`/`tooling`) |
 | `Lean` | `lean` | genres en minuscules |
 
 **Entrer dans la liste LIGHT de G-VAR-3 se mesure, jamais s'intuitionne** : un genre y entre dès **≥ 2 grains LIGHT mergés**. Au 2026-07-30, `tooling` était à 5 MED sur 5 et `research-code` à 1 DEEP sur 1 — aucun ne qualifiait.

@@ -411,6 +411,7 @@ _GENRE_ALIASES = {
     "audit-tooling": "tooling",
     "test-coverage": "test",
     "data": "ledger",
+    "slidev": "slides",              # outil -> type de travail (cf #11059)
 }
 
 # Compoments `<famille>-<genre>` always reduce to the head genre (the family
