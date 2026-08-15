@@ -77,8 +77,8 @@ AGENT_PREFIXES = (
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 CONCERN_MARKERS = (
     "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "NEEDS_CHANGES", "CONCERNS",
-    "SUSPECT_", "STRUCTURAL_ONLY", "avant merge", "avant de merger",
-    "il va falloir", "a nuancer", "à nuancer",
+    "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
+    "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
 )
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
@@ -87,6 +87,34 @@ CONCERN_MARKERS = (
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+)
+
+# Verdict structurel POSITIF : l'emporte sur toute prose du body, y compris un
+# decompte de CONCERNS passe en revue (« NanoClaw a relevé 2 CONCERNS... Verdict
+# : COMMENT_WITHOUT_CONCERNS » #7583). C'est le miroir exact de
+# COMMENT_WITH_CONCERNS : quand le verdict formel est rendu, il decide.
+VERDICT_POSITIVE = "COMMENT_WITHOUT_CONCERNS"
+
+# Approbations SOUPES : ne rescussitent un commentaire que s'il ne porte AUCUNE
+# reserve vivante. Une review mixte (« [COMMENT_WITH_CONCERNS] — 2 concerns...
+# Safe to merge » #6849/#6852/#7704, gate vision « [avant merge] » #6698) garde
+# ses reserves — le « Safe to merge » y est une conclusion nuancee, pas un
+# verdict.
+POSITIVE_MARKERS = (
+    "SAFE for merge", "Safe to merge",
+    "Verdict** : OK", "Verdict : OK",
+)
+
+# Mots qui, DEVANT une occurrence de marqueur, la rendent CITEE et non emise :
+# negation (« No CHANGES_REQUESTED », « COMMENT_WITHOUT_CONCERNS »), article
+# defini narratif (« the CHANGES_REQUESTED reflects a pre-fix state » #6699),
+# modal hypothesique (« would `CHANGES_REQUESTED` a probeAddresses strip »
+# #7248). L'occurrence fait reference au verdict d'un autre sans l'emettre.
+# Fenetre courte (30 chars avant l'occurrence) : une citation a distance
+# (autre phrase) ne desactive rien.
+CITERS = (
+    "no", "not", "pas de", "pas d'", "sans", "without", "aucun", "aucune",
+    "zero", "jamais", "the", "would", "could", "might", "aurait",
 )
 
 
@@ -109,6 +137,51 @@ def _unaccent(text: str) -> str:
 def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     normalised = _unaccent(body)
     return any(_unaccent(m) in normalised for m in markers)
+
+
+def _is_cited(window: str) -> bool:
+    """La fenetre avant l'occurrence se termine-t-elle sur un mot de citation ?
+
+    Le mot doit etre delimite : le caractere qui le precede est non-alphanumerique
+    (espace, newline, ponctuation) ou le debut de la fenetre. Sans frontiere,
+    « xxxtechno » matcherait « no ».
+    """
+    w = window
+    while w and not w[-1].isalnum():
+        w = w[:-1]
+    w = w.lower()
+    for c in CITERS:
+        c = c.rstrip("'’")
+        if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
+            return True
+    return False
+
+
+def has_live_marker(body: str, markers: tuple[str, ...]) -> bool:
+    """Marqueur present avec au moins une occurrence NON citee.
+
+    `has_marker` traite le body comme un sac de mots : « No CHANGES_REQUESTED
+    from this review » contient « CHANGES_REQUESTED » donc compte comme une
+    reserve. C'est la source dominante de faux positifs de l'organe (11/64
+    signaux flagges sur la fenetre 07-14..07-20, triage po-2024:CoursIA-2) :
+    des reviews d'approbation qui citent le verdict qu'elles n'emettent pas —
+    negation (« No », « Pas de », « without »), narration d'une review
+    pre-fix (« the CHANGES_REQUESTED reflects a pre-fix state » #6699), ou
+    modal hypothesique (« would CHANGES_REQUESTED » #7248). On verifie donc
+    chaque occurrence : si un mot de citation touche le debut du marqueur
+    (fenetre de 30 caracteres, le « WITHOUT_ » de COMMENT_WITHOUT_CONCERNS
+    compris), l'occurrence est morte ; le marqueur ne vit que si au moins une
+    occurrence survit.
+    """
+    normalised = _unaccent(body)
+    for marker in markers:
+        m = _unaccent(marker)
+        start = 0
+        while (i := normalised.find(m, start)) != -1:
+            if not _is_cited(normalised[max(0, i - 30):i]):
+                return True
+            start = i + 1
+    return False
 
 
 def ts(value: str | None) -> datetime | None:
@@ -162,12 +235,17 @@ def classify(author: str, body: str) -> str | None:
     stripped = body.lstrip()
     if has_marker(body, LIFT_MARKERS):
         return None  # annonce de levee / de merge : resolution, pas reserve
+    if has_live_marker(body, (VERDICT_POSITIVE,)):
+        return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
+    live_concern = has_live_marker(body, CONCERN_MARKERS)
+    if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
+        return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
-        return "BOT-CONCERN" if has_marker(body, CONCERN_MARKERS) else None
+        return "BOT-CONCERN" if live_concern else None
     if "\r\n" in body:
         return "HUMAN"
-    if has_marker(body, CONCERN_MARKERS):
+    if live_concern:
         return "BOT-CONCERN"
     return None
 
