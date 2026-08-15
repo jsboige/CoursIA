@@ -32,6 +32,8 @@ vrais defauts. Voir #10996 pour le tri humain des 30.
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import json
 import re
 import subprocess
@@ -70,8 +72,13 @@ IMPORT_LINE_RE = re.compile(r"^\s*(?:from|import)\s+\S+.*$", re.MULTILINE)
 # Definition de fonction `def image(v)` n'est pas un appel (angle mort 5,
 # mesure sur mesurer-la-derive-dun-copilot : `def image(v)` matchait Image()).
 DEF_LINE_RE = re.compile(r"^\s*def\s+\w+\s*\(", re.MULTILINE)
-# Data-URI media dans text/html (angle mort 1).
-DATA_URI_RE = re.compile(r"src=\"data:(audio|image|video)/[\w+.-]+;base64,", re.IGNORECASE)
+# Data-URI media, partout dans les outputs (pas seulement text/html, pas besoin de
+# `src="` : le format committe par papermill n'a pas d'attribut src — mesure c.109 :
+# 0 data-URI avec src= vs 175 verifiables par magic dans GenAI (angle mort 1).
+DATA_URI_RE = re.compile(
+    r"data:(audio|image|video)/[A-Za-z0-9.+-]+;base64,([A-Za-z0-9+/=\s]+)",
+    re.IGNORECASE,
+)
 # Mimes separees dans les outputs (le predicat original ne comptait que ceux-ci).
 MIME_SEPARATED_RE = re.compile(r"^(?:image|audio|video)/", re.IGNORECASE)
 # Chemins de fichiers media ecrits par le notebook (angle mort 4).
@@ -118,6 +125,51 @@ def strip_imports(src: str) -> str:
     return IMPORT_LINE_RE.sub("", src)
 
 
+_MEDIA_MAGIC: tuple[tuple[bytes, str], ...] = (
+    (b"\x89PNG\r\n\x1a\n", "image"),   # PNG
+    (b"\xff\xd8\xff", "image"),          # JPEG
+    (b"GIF87a", "image"), (b"GIF89a", "image"),
+    (b"BM", "image"),                      # BMP
+    (b"II*\x00", "image"), (b"MM\x00*", "image"),  # TIFF
+    (b"<svg", "image"), (b"<?xml", "image"),         # SVG (texte)
+    (b"OggS", "audio"),                    # OGG/Opus/WebM
+    (b"ID3", "audio"),                     # MP3 avec tag
+    (b"fLaC", "audio"),
+    (b"\x1a\x45\xdf\xa3", "video"),     # EBML/WebM/Matroska
+    (b"\x00\x00\x01\xb3", "video"),     # MPEG-1 Video
+    (b"\x00\x00\x01\xba", "video"),     # MPEG-2 Video
+)
+
+
+def _verify_media_payload(b64: str) -> str | None:
+    """Decode le debut d'un payload data-URI et retourne le type media (audio/image/video)
+    si le magic binaire est valide. C'est la JUSTESSE : un data-URI dont le payload ne
+    decode pas en un media reel (RIFF / PNG / JPEG / GIF / ftyp / MPEG frame sync...) ne
+    compte pas comme media rendu — le predicat ne doit pas etre trompe par une donnee
+    tronquee ou un faux data-URI."""
+    head = b64[:128].strip()
+    if not head:
+        return None
+    try:
+        raw = base64.b64decode(head + "=" * (-len(head) % 4))
+    except (binascii.Error, ValueError):
+        return None
+    if len(raw) < 12:
+        return None
+    if raw[4:8] == b"ftyp":
+        return "video"                     # MP4 / QuickTime
+    if raw.startswith(b"RIFF"):
+        if raw[8:12] == b"WEBP":
+            return "image"
+        return "audio"                     # WAV / AVI
+    for magic, media_type in _MEDIA_MAGIC:
+        if raw.startswith(magic):
+            return media_type
+    if raw[0] == 0xFF and (raw[1] & 0xE0) == 0xE0:
+        return "audio"                     # MPEG audio frame sync (MP3/AAC)
+    return None
+
+
 def _count_outputs(nb: dict) -> tuple[dict[str, int], dict[str, int]]:
     data_uris: dict[str, int] = {}
     mimes: dict[str, int] = {}
@@ -125,16 +177,13 @@ def _count_outputs(nb: dict) -> tuple[dict[str, int], dict[str, int]]:
         for out in cell.get("outputs", []):
             data = out.get("data", {}) or {}
             for mime, payload in data.items():
-                if mime in ("text/html", "text/plain", "application/javascript"):
-                    continue
                 if MIME_SEPARATED_RE.match(mime):
                     mimes[mime] = mimes.get(mime, 0) + 1
-            html = data.get("text/html")
-            if html:
-                h = "".join(html) if isinstance(html, list) else str(html)
-                for m in DATA_URI_RE.finditer(h):
-                    t = m.group(1)
-                    data_uris[t] = data_uris.get(t, 0) + 1
+                p = "".join(payload) if isinstance(payload, list) else str(payload)
+                for m in DATA_URI_RE.finditer(p):
+                    media_type = _verify_media_payload(m.group(2))
+                    if media_type:
+                        data_uris[media_type] = data_uris.get(media_type, 0) + 1
     return data_uris, mimes
 
 
