@@ -1,0 +1,39 @@
+name: Lean CI (mimo_lean)
+
+# CI for mimo_lean (SymbolicAI/Lean/mimo_lean) — MIMO flip-descent detection
+# (Papailiopoulos 2026, issue #10984). Phase 1 (Descent.lean) is core-only:
+# the abstract skeleton of Proposition 9.1 (strictly decreasing cost per
+# accepted flip, confinement barrier, flip ceiling M_N -> target reached
+# strictly before the ceiling). Phase 2 will add Mathlib (Objective.lean,
+# Lemmas 11.1 / 5.1) and Phase 3 the external SLT lake; the `require` lines
+# will land with those phases, keeping each PR one-subject.
+#
+# sorry-filter-mode=standalone-tactic, baseline=0: the library ships entirely
+# sorry-free. This CI only guards that NO new standalone `sorry` tactic is
+# introduced (no false positive on prose mentions; catches any new sorry).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain'
+  workflow_dispatch:
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean
+      display-name: mimo_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: standalone-tactic
