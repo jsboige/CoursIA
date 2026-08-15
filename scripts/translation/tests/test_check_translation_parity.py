@@ -646,6 +646,15 @@ def test_cli_repo_root_missing_returns_two(tmp_path, capsys, monkeypatch):
 # Reference — live state (manual)
 # ---------------------------------------------------------------------------
 
+# Declared translation-pair count on main. EQ, not a threshold: the test
+# reddens in BOTH directions — a count below the declaration means pairs were
+# lost, a count above means the perimeter moved without updating this
+# declaration. Today 0 pairs: hold i18n #10038 (decision user 2026-08-12,
+# rollback 2e79bcb77). When i18n resumes, the first reintroduced pair makes
+# this test red and the declaration must be updated knowingly — a skipif
+# would re-arm silently and a >= 0 threshold would stay green forever.
+EXPECTED_PAIR_COUNT = 0
+
 
 def test_full_repo_state_passes_parity():
     """Reference test against the live ``xxx_<lang>.ipynb`` artifacts on main.
@@ -655,17 +664,18 @@ def test_full_repo_state_passes_parity():
     hand-edited (must re-render via T4), or (b) the parity invariants need
     extending to cover a regression introduced by T4 itself.
 
-    Expected state today (post-grain A MERGED): exactly one pair —
-    ``FT-01-Introduction-FineTuning_en.ipynb`` — and it must satisfy all
-    invariants including strict-fr (because grain A proved byte-identity
-    + structure + no-FR-leak on md).
+    Expected pair count is declared in ``EXPECTED_PAIR_COUNT`` above (hold
+    i18n #10038). Any existing pair — including every pair reintroduced after
+    the hold lifts — is still checked against all invariants including
+    strict-fr.
     """
     repo_root = HERE.parent.parent.parent  # scripts/translation/tests/ → repo root
     pairs = p.discover_pairs(repo_root, ["en", "ru"])
-    # We expect exactly one pair: FT-01-Introduction-FineTuning (en only).
-    # Other PRs (grain E #10047) may have brought additional pairs; we check
-    # each one is OK.
-    assert len(pairs) >= 1, "no translation pairs found on main"
+    assert len(pairs) == EXPECTED_PAIR_COUNT, (
+        f"translation pair count drifted from the declared perimeter: "
+        f"found {len(pairs)}, declared {EXPECTED_PAIR_COUNT} "
+        f"(update EXPECTED_PAIR_COUNT knowingly — hold i18n #10038)"
+    )
     for src_path, trd_path, stem, lang in pairs:
         src_cells, src_err = p.load_cells(src_path)
         trd_cells, trd_err = p.load_cells(trd_path)

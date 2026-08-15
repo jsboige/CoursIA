@@ -460,7 +460,7 @@ def test_advisory_failure_alone_settles_green_end_to_end():
 # workflows dir, which drifts as workflows are added -- exactly why the real
 # gate derives it rather than baking it in).
 _CANARY = frozenset(
-    {"No catalog changes on feature branch", "Gitleaks secret scanner"}
+    {"No notebook health regression", "Gitleaks secret scanner"}
 )
 
 
@@ -484,7 +484,7 @@ def test_empty_set_means_platform_did_not_deliver():
 def test_canary_passes_when_an_always_on_is_present():
     """A healthy PR surfaces at least one always-on check -> delivered."""
     checks = [
-        run("No catalog changes on feature branch", "success", rid=1),
+        run("No notebook health regression", "success", rid=1),
         run("Lean CI", "success", rid=2),
     ]
     code, msg = pr_gate.wait_and_decide(
@@ -559,8 +559,11 @@ def test_derive_always_on_reads_real_workflows_and_excludes_self():
         "stale-base/variation always-on jobs from the real repo"
     assert all(pr_gate.DEFAULT_SELF_NAME not in j for j in jobs), \
         "the gate must never canary itself"
-    # A job known to be always-on (catalog-guard, no paths filter) is present.
-    assert "No catalog changes on feature branch" in jobs
+    # A job known to be always-on (secret-scan, no paths filter) is present.
+    # Was the catalog-guard job until #11012 removed that workflow; anchoring on
+    # a job whose workflow can be deleted makes this test a hostage to unrelated
+    # CI churn, so prefer a gate the repo cannot ship without.
+    assert "Gitleaks secret scanner" in jobs
 
 
 def test_fork_short_circuit_skips_the_canary(monkeypatch):

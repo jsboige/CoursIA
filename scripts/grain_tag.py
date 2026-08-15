@@ -175,6 +175,12 @@ _PREV_RE = re.compile(
     r"prev\s*:?\s*([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)", re.IGNORECASE
 )
 
+# `prev: none (premier grain)` -- the FIRST-grain exemption of a lane
+# (#10983, variation-protocol §1). `none` is not a canonical genre: the token
+# (followed by an optional parenthetical) marks "this lane has no predecessor
+# to cite" and must NOT be flagged as a missing prev: by the guard.
+_PREV_NONE_RE = re.compile(r"prev\s*:?\s*none\b", re.IGNORECASE)
+
 # GitHub auto-close keywords (case-insensitive) -- the exact set GitHub
 # recognises in commit messages + PR bodies + PR titles
 # (https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue).
@@ -217,6 +223,44 @@ def find_prev_close_keywords(text: str | None) -> list[dict]:
         if genre in CLOSING_KEYWORDS:
             hits.append({"tier": m.group(1).upper(), "genre": genre})
     return hits
+
+
+def parse_prev(body: str | None) -> dict:
+    """Extract the `prev:` field of a Grain tag (#10983).
+
+    Returns ``{"present", "exempt", "tier", "genre", "pr_number"}``. The
+    canonical form is ``prev: <TIER>/<GENRE> #<PR>`` (the PR reference is
+    optional but the TIER/GENRE pair is not). ``present`` is False when no
+    `prev:` field carries a TIER/GENRE pair; ``exempt`` is True for the
+    first-grain exemption ``prev: none (premier grain)`` -- a lane with no
+    predecessor to cite must not be flagged. The guard reads this JSON to
+    pose `variation-tag-prev-absent` on a tag that declares no predecessor
+    at all: without it, G-VAR-3 adjacency is evaluable only by hand
+    reconstruction of the lane history (the gap #10983 measures).
+
+    Same noise discipline as ``parse_grain_tag``: bold / backticks /
+    blockquotes stripped, title hashes stripped on recognised key lines.
+    """
+    out = {"present": False, "exempt": False, "tier": None, "genre": None,
+           "pr_number": None}
+    if not body:
+        return out
+    flat = _strip_title_hashes(body.translate(_NOISE))
+    if _PREV_NONE_RE.search(flat):
+        out["exempt"] = True
+        return out
+    m = _PREV_RE.search(flat)
+    if not m:
+        return out
+    out["present"] = True
+    out["tier"] = m.group(1).upper()
+    out["genre"] = m.group(2).lower()
+    # PR reference: the `#N` right after the genre (`prev: MED/tooling #11021`
+    # or `prev: MED/tooling #11021 (c.42)`), scanned in the tail of the field.
+    pr_m = re.search(r"#(\d+)", flat[m.end():m.end() + 120])
+    if pr_m:
+        out["pr_number"] = int(pr_m.group(1))
+    return out
 
 
 # Matches `<closing-keyword> #N` in free prose (#10101). The keyword set is
@@ -550,6 +594,8 @@ def main(argv: list[str] | None = None) -> int:
         # reported anyway (its own job consumes it).
         print(json.dumps({"present": False, "tier": None, "genre": None,
                           "lane": None, "tier_valid": False, "genre_valid": False,
+                          "prev_present": False, "prev_exempt": False,
+                          "prev_tier": None, "prev_genre": None, "prev_pr": None,
                           "quoi": sh["quoi"], "preuve": sh["preuve"],
                           "perimetre": sh["perimetre"],
                           "short_header_complete": short_complete,
@@ -557,6 +603,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     tier_valid = g["tier"] in TIERS
     genre_valid = g["genre"] in GENRES
+    pv = parse_prev(body)
     print(json.dumps({
         "present": True,
         "tier": g["tier"],
@@ -564,6 +611,11 @@ def main(argv: list[str] | None = None) -> int:
         "lane": g["lane"],
         "tier_valid": tier_valid,
         "genre_valid": genre_valid,
+        "prev_present": pv["present"],
+        "prev_exempt": pv["exempt"],
+        "prev_tier": pv["tier"],
+        "prev_genre": pv["genre"],
+        "prev_pr": pv["pr_number"],
         "quoi": sh["quoi"],
         "preuve": sh["preuve"],
         "perimetre": sh["perimetre"],
