@@ -29,7 +29,7 @@ package «erc20_lean» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.31.0-rc1"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.0"
 
 @[default_target]
 lean_lib «ERC20» where

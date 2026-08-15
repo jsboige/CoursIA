@@ -76,11 +76,11 @@ python -c "from lean_server import LeanVerifier; print(LeanVerifier('<lake-root>
 
 `allow-axioms` liste les axiomes tolérés **un par un**. C'est un mécanisme à cliquet : tout nouveau `native_decide` introduit produit un nom **absent de la liste**, donc le gate rougit. Un motif générique (`*native_decide*`) détruirait cette propriété — le gate ne pourrait plus jamais rougir sur la classe qu'il est censé attraper, et un gate qui ne peut plus rougir n'est pas un gate.
 
-### C — les deux contre-exemples ML inscrits (σ sans DM, et DM sur une perte symétrique)
+### C — les trois contre-exemples ML inscrits (σ sans DM, DM sur perte symétrique, DM linéaire = biais)
 
 **(1) `edge_sigma` seul ne prouve rien.** `edge_sigma = +19.97σ` avec `DM p = 0.236` n'est **pas** un BEATS (`validate_xrp_dt_holdout.py`, holdout_fresh du 06/08). Le dénominateur de `edge_sigma` mesure la dispersion **inter-seeds** — c'est-à-dire la *reproductibilité de la procédure*, pas la *significativité de l'edge*. σ croît donc sans borne quand les seeds s'accordent, que l'edge soit réel ou non. Un σ élevé sans DM est un flag « noise », jamais une preuve.
 
-**(2) Le test DM doit porter sur une perte qui préserve le signe.** `mse` et `mae` sont **symétriques** (`(-e)² = e²`, `|-e| = |e|`) : elles rendent des `dm_stat` / `p_value` **bit-identiques** pour une série et son exact opposé — un test incapable de distinguer un modèle gagnant de son inverse ne teste rien.
+**(2) Le test DM porte sur une perte de précision ; `linear` est un contrôle de biais.** `mse` et `mae` sont **symétriques** (`(-e)² = e²`, `|-e| = |e|`) : elles rendent des `dm_stat` / `p_value` **bit-identiques** pour une série et son exact opposé — correct : deux prévisions opposées sont également précises, le DM dit exactement cela. La perte linéaire signée (`loss_fn="linear"`) distingue le signe mais mesure le **biais** (`d_mean = mean(e_a) − mean(e_b) = biais_a − biais_b`), pas la précision : aveugle à la dispersion, elle déclare « BEATEN » un modèle strictement plus précis face à une baseline plus biaisée (#10956, #10961 CE1). Elle ne porte pas la jambe DM de la conjonction §C ; elle la complète comme **rapport de biais obligatoire** par modèle.
 
 Mesure d'intégration (#10232), série gagnante `e` vs son opposé `-e` contre baseline nulle :
 
@@ -89,7 +89,7 @@ Mesure d'intégration (#10232), série gagnante `e` vs son opposé `-e` contre b
 | `mse` | 10.0754 | 10.0754 | **non** |
 | `linear` | −0.1771 | +0.1771 | **oui** (signes opposés) |
 
-D'où l'exigence `loss_fn="linear"` dans `scripts/dm_test.py` (additif à `mse`/`mae`). Pin de régression : `test_dm.py::test_linear_loss_distinguishes_opposite_series`.
+Le tableau montre les deux instruments et leur angle mort : `mse`/`mae` mesurent la précision (insensibles au signe), `linear` distingue le signe mais mesure le biais. La jambe DM de §C porte donc sur une perte de précision ; `linear` reste disponible comme contrôle de biais (détection de sous/sur-prévision). Pin de régression : `test_dm.py::test_linear_loss_distinguishes_opposite_series` (valide — signes opposés = déclaration de biais, pas de précision).
 
 ### D.5 — #8479 MusicGen : l'alignement qui enshrine un nombre périssable
 

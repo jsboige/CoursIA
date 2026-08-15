@@ -8,7 +8,7 @@ package «galois» where
   ]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "d568c8c09630de097a046763c17b9ea99f95f950"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.0"
 
 -- Bare `lean_lib` (no `globs`): the root aggregator `Galois.lean` imports the
 -- vendored module(s), so `lake build` (default target) builds the full proof via
