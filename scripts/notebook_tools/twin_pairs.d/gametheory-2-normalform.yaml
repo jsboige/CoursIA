@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = nashpy (lib SOTA, `import nashpy as nash`, calcule Nash purs/mixtes via support enumeration, leader-follower). C# = BestResponseRow from-scratch en pur Linq (BCL pure 0 NuGet SOTA tiers). Lib SOTA .NET existe (GameTheory NuGet, John H. Lindsey / MIT-license) et peut etre branchee (PR #10483 a ajoute le pont Gambit sur GT-2 part-2 ; la meme approche Process.Start + parsing texte est applicable a nashpy CLI ou a la lib GameTheory.NET). RECOVERABLE-LOCAL = le pont est faisable, pas encore wire sur la joute pure. parite semantique preservee (meme socle theorique : calcul des equilibres de Nash purs + mixtes)."
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : nashpy (lib SOTA du twin Python, `nash.Game(A,B).support_enumeration()`) invoque depuis le notebook C# via CLI Process.Start (cellule 8) sur les 4 jeux canoniques (PD, BoS, MP, RPS). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). Axe 6 : nashpy couvre le meme role que le from-scratch BCL (enumeration de supports pour les NE mixtes) -> le pont est desormais wire. Comparaison numerique (cellule 8 du C#) : 4/4 jeux concordent (dist < 1e-3) + exploitabilite = 0 partout (premier principe verifie). RPS : nashpy retrouve l'equilibre uniforme (1/3,1/3,1/3), identique au resultat du twin Python. From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE. parity_level `semantic` conservee (cf. jumeau part-2, precedent pont Gambit)."
   audits:
     - date: "2026-08-02"
       by: myia-po-2024:CoursIA-2
@@ -51,7 +51,13 @@
       csharp_sha: 193e39383c74f3ef0de15ba7c7d2a0db8cb2109c
       content_python_sha: bff4979bb6acd0c6b029bbe909e509b8c9817b4f9787dbb0a29550481833e53d
       content_csharp_sha: 5f3321677f3c599e1b146b6f02b509579f7cb8bc5b7f19f8b16590da20c7f5e5
+    - date: "2026-08-15"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 48879e3d9dd44224bcf1b6768ad98954d7bb6d6f
+      csharp_sha: e599016ad76f8674d4a45252c3a04e5aa15a55e1
+      content_python_sha: bff4979bb6acd0c6b029bbe909e509b8c9817b4f9787dbb0a29550481833e53d
+      content_csharp_sha: 61ed6909f5162cbbe3c8f2c32655cf219b6ae100cd2a68a091814b060379e916
   known_differences:
     - "Socle pedagogique commun : jeux sous forme normale (matrices de gains 2 joueurs), strategies pures, dominance, equilibres de Nash purs sur 5 jeux canoniques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies)."
     - "Idiomes framework : Python = `numpy` + `nashpy` (lib mature, Game(A,B), support_enumeration). C# = pur `System.*` (Linq, Collections), classes from-scratch (matrices A/B/Payoffs, pas de lib tiers)."
-    - "Asymetrie : Python s'appuie sur nashpy pour la theorie des jeux ; le C# reimplemente les structures de jeu a la main (valeur pedagogique : voir les entrailles, vs invoquer une lib). Meme concepts, abstraction differente (lib vs from-scratch)."
+    - "Asymetrie : Python s'appuie sur nashpy pour la theorie des jeux ; le C# reimplemente les structures de jeu a la main (valeur pedagogique : voir les entrailles, vs invoquer une lib) ET appelle nashpy en oracle SOTA (pont CLI section 8, parite lib-vs-lib #10382) pour valider ses resultats. Meme concepts, abstraction differente (lib vs from-scratch + oracle)."

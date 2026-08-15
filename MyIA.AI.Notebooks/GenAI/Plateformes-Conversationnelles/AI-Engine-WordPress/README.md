@@ -165,6 +165,12 @@ montre l'autre style d'API du plugin : le formulaire est un **contenu**
 WordPress (custom post type `mwai_form`, CRUD unitaire, corps
 Gutenberg, rendu public par shortcode) — et mesure la frontière
 gratuite/Pro (du contenu rendu, pas encore des champs).
+[`piloter-wordpress-par-mcp.ipynb`](piloter-wordpress-par-mcp.ipynb)
+ouvre la seconde face du plugin : **WordPress comme serveur MCP** —
+endpoint JSON-RPC `mcp/v1/http`, handshake avec négociation de
+version, catalogue de 43 outils à JSON Schema, et de vrais
+`tools/call` (lecture, puis création/suppression d'un article) — la
+frontière d'authentification mesurée à 401 sur chaque méthode.
 
 ---
 
@@ -295,6 +301,8 @@ attendues.
   chatbots comme documents JSON : lire, dupliquer, écrire (read-modify-write), interroger deux personas
 - [`administrer-les-formulaires-par-l-api.ipynb`](administrer-les-formulaires-par-l-api.ipynb) —
   formulaires comme contenu : CRUD unitaire, publication, rendu public, frontière gratuite/Pro mesurée
+- [`piloter-wordpress-par-mcp.ipynb`](piloter-wordpress-par-mcp.ipynb) —
+  WordPress comme serveur MCP : handshake JSON-RPC, catalogue d'outils, tools/call en lecture et écriture
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
