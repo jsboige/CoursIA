@@ -35,7 +35,7 @@ Backtest frais via QC Cloud MCP, 2026-08-07 (`VolTargeting-v1-honest-read-2026-0
 
 ## Lecture honnête (variante v1)
 
-Le v1 ajuste l'allocation SPY en fonction de la volatilité réalisée : `allocation = cible_vol / vol_réalisée`, clampée entre 30 % et 150 %. Les faiblesses observées sur 2018-2025 :
+Le v1 ajuste l'allocation SPY en fonction de la volatilité réalisée : `allocation = vol_target / realized_vol`, clampée entre 30 % et 150 %. Les faiblesses observées sur 2018-2025 :
 
 - **Signal retardé (lag de volatilité).** La volatilité réalisée augmente typiquement **après** le début d'un drawdown (krach COVID 2020, bear 2022). La réduction d'allocation arrive donc trop tard pour éviter la queue de perte, mais à temps pour rater le rebond qui suit.
 - **Plancher d'exposition à 30 %.** Même en forte volatilité, la stratégie reste au moins 30 % investie — la protection à la baisse est donc partielle, tandis que le rendement est amputé côté hausse.
