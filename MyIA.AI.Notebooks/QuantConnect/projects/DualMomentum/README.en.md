@@ -53,7 +53,6 @@ This strategy uses **TLT** as the risk-off asset during bear markets:
 - Removed TLT, replaced with **defensive assets** (XLP, IEF, GLD)
 - Max DD reduced from 33.6% → 23.6% (stale figures)
 - Sharpe improved from 0.350 → 0.469 (stale figures)
-- Sharpe improved from 0.350 → 0.469
 
 ### Lessons Learned
 
