@@ -276,3 +276,38 @@ def test_retraction_narree_ne_flagge_pas():
         "clusterManager-Myia",
         "APPROVE — previous CHANGES_REQUESTED retracted (see correction "
         "comment).") is None
+
+
+# --- Fenetre 05-08..05-14 (triage po-2023, 18 flags / 249 PRs) : trois
+# narrations mesurees, une par citer ajoute. Le reste de la fenetre (11
+# FLAG-OK, 0 DEFECT-ALIVE sur main) confirme le regime de reviews : les
+# reserves reelles y sont levees, les flags restants sont des narrations.
+
+
+def test_negation_pas_nu_ne_flagge_pas():
+    """FP #860 : « **COMMENTED** (pas CHANGES_REQUESTED) » — negation
+    francaise SANS « de ». La review scoping elle-meme ses 3 points comme
+    anomalies de checkpoint non bloquantes."""
+    body = ("### Verdict\n**COMMENTED** (pas CHANGES_REQUESTED) — les 3 points "
+            "ci-dessus sont des anomalies dans les checkpoint JSON, pas dans "
+            "le code source.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_stale_narree_ne_flagge_pas():
+    """FP #977 : « pending dismissal of stale CHANGES_REQUESTED » — le nit
+    est une demande de RE-REVIEW apres fixes documentes, pas une reserve
+    emise contre le merge."""
+    body = ("@clusterManager-Myia please re-review: po-2026 has pushed 8 commits "
+            "with documented fixes addressing all 4 flagged notebooks. Branch is "
+            "now mergeable pending dismissal of stale CHANGES_REQUESTED.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_needs_rebase_ne_flagge_pas():
+    """FP #887 (recidive de #729, fenetre 05-01..05-07) : « CONFLICTING —
+    needs rebase before merge » — demande procedurelle satisfaite par le
+    merge lui-meme."""
+    body = ("### Notes\n- **CONFLICTING** — needs rebase before merge (same as "
+            "#882)\n- No CI checks triggered (CoursIA notebooks repo)")
+    assert mod.classify("jsboige", body) is None

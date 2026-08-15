@@ -124,6 +124,17 @@ CITERS = (
     # (#748, 10 s avant le merge) : le reviewer RETRACTE sa propre reserve.
     # On ne peut pas demander « previous » — le mot ne peut que narrer.
     "previous",
+    # Fenetre 05-08..05-14 (triage po-2023, #11044) — trois narrations mesurees :
+    # « **COMMENTED** (pas CHANGES_REQUESTED) » (#860) : negation francaise
+    # sans « de » — « pas de » ci-dessus ne couvrait pas la forme nue.
+    "pas",
+    # « pending dismissal of stale CHANGES_REQUESTED » (#977) : comme
+    # « previous », le mot ne peut que narrer une reserve passee.
+    "stale",
+    # « CONFLICTING — needs rebase before merge » (#887, recidive de #729
+    # fenetre 05-01..05-07) : demande procedurelle satisfaite par le merge
+    # lui-meme — git n'autorise pas le merge d'une branche en conflit.
+    "needs rebase",
 )
 
 
