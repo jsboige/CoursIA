@@ -14,6 +14,12 @@
       csharp_sha: b45fe4157ec3f2fe355fdc31b14c5f82f6b6b7ac
       content_python_sha: c5c1ce460b76bd6318f8dd4ddb068e8ae996567530f7e69cc1274455c8e2ba62
       content_csharp_sha: 363a4553f5ed7e8da5d91962470f79176d7af4709fe4953ecda2b5aeda35a1b8
+    - date: "2026-08-15"
+      by: myia-ai-01:CoursIA
+      python_sha: 57b4f25d6cd233f750688420563bf802665a7354
+      csharp_sha: b45fe4157ec3f2fe355fdc31b14c5f82f6b6b7ac
+      content_python_sha: c466def4c9cedf109edf5b7ed8f1bef786465e59918483b5dbedb4a95821716b
+      content_csharp_sha: 363a4553f5ed7e8da5d91962470f79176d7af4709fe4953ecda2b5aeda35a1b8
   bridge_verdict: RECOVERABLE-LOCAL
   bridge_verdict_reason: "Python = demonstrations riches (41 cellules, preuve formelle en 4 etapes d'apres Geanakoplos 2005, visualisation de la synthese). C# = pur System.* (System / System.Collections.Generic / System.Linq / System.Globalization, 0 NuGet, 30 cellules, implementation regles de vote from-scratch + structure de la preuve + refutation par enumeration complete force-brute). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (theoreme d'impossibilite d'Arrow 1951, 3 axiomes Pareto/IIA/Non-dictature, preuve de non-satisfaisabilite simultanee). L'asymetrie reside dans la LEVEE de demonstration -- preuve formelle structuree Geanakoplos 2005 + viz cote Python vs enumeration exhaustive force-brute BCL pure sans dependance externe cote C#. Aucune lib SOTA partagee (numpy vs System.Linq from-scratch). parity_level: semantic preserve."
 
