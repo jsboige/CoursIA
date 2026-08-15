@@ -140,6 +140,7 @@ jobs:
         run: |
           set -uo pipefail
           co_out=$(pytest ${{ matrix.test-args }} --co -q 2>&1) || {
+            printf '%s\n' "$co_out"
             echo "::error title=ICT collection FAILED (${{ matrix.suite-name }})::pytest --co a echoue (exit != 0) -- PANNE D'INFRA (import casse, dep manquante, erreur de syntaxe), PAS une baisse de couverture. La collecte elle-meme a plante ; le plancher n'est pas evalue. Sortie complete de pytest ci-dessus dans le log."
             exit 1
           }
