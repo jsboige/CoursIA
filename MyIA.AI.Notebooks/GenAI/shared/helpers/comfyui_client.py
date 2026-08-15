@@ -252,7 +252,7 @@ class ComfyUIClient:
         Raises:
             Exception: Si la recuperation echoue (HTTP error ou URL error)
         """
-        endpoint = f"/view?{urlencode({'filename': filename, 'subfolder': subfolder, 'type': file_type})}"
+        endpoint = f"view?{urlencode({'filename': filename, 'subfolder': subfolder, 'type': file_type})}"
         server_url = self.server_url.rstrip("/")
         url = f"{server_url}/{endpoint}"
 
