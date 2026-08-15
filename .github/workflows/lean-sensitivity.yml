@@ -12,6 +12,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain'
+      # The gate's own implementation: a change to it must re-run the gate
+      # (same rationale as lean-galois.yml / lean-conway.yml, cf #8951).
+      - '.github/workflows/lean-sensitivity.yml'
+      - '.github/workflows/lean-axiom.yml'
+      # The axiom step is a Python program (`from lean_server import LeanVerifier`);
+      # lean_server.py + lean_utils.py ARE gate inputs (cf #8722).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   pull_request:
     branches: [main]
     paths:
@@ -19,6 +27,11 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain'
+      # The gate must run on the PR that introduces or changes it (cf #8712).
+      - '.github/workflows/lean-sensitivity.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
   workflow_dispatch:
 
 permissions:
@@ -32,3 +45,26 @@ jobs:
       display-name: sensitivity_lean
       sorry-baseline: "0"
       sorry-filter-mode: standalone-tactic
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # Wired per ai-01 dispatch c.101 ("brancher lean-axiom.yml sur sensitivity_lean,
+  # maintenant qu'il est vert sous 4.32") -- 5th caller after knot/galois/
+  # grothendieck/conway. The `#print axioms` measurement of #10997 (huang_degree_
+  # theorem FR + _en: [propext, Classical.choice, Quot.sound], zéro sorryAx) was a
+  # one-shot in a PR body; this gate re-plays it on every PR touching the lake.
+  # allow-axioms: "" -- the measured footprint IS the reusable-workflow defaults
+  # (propext, funext, Classical.choice, Quot.lift, Quot.mk, Quot.sound); a NEW
+  # axiom (native_decide, sorryAx) = a red, which is exactly the point.
+  # fail-on-sorry: true -- sorry-baseline is 0, the lake is fully proven.
+  # target-modules: "*" (issue #10889) -- the module list is derived at runtime
+  # from the lake walk, so it cannot drift out of view. The `_en` i18n siblings
+  # are EXCLUDED by default (FR-only measurement; the byte-parity of #10997
+  # covers the EN side structurally).
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean
+      display-name: sensitivity_lean
+      target-modules: "*"
+      allow-axioms: ""
+      fail-on-sorry: true
