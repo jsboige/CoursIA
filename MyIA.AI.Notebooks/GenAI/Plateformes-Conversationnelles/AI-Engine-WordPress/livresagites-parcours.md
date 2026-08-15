@@ -398,6 +398,20 @@ suppose d'énumérer ses chemins, pas de relire ses champs.
 > — un champ mort que la lecture du schéma compterait à tort comme
 > fonctionnel. stdlib pure, aucune clé, aucun réseau.
 
+> **Notebook compagnon (face API).**
+> [`administrer-les-formulaires-par-l-api.ipynb`](administrer-les-formulaires-par-l-api.ipynb)
+> est la face administrative du même objet : dans AI Engine, un formulaire
+> n'est pas une table mais un **contenu** — un custom post type `mwai_form`
+> avec CRUD unitaire (`forms/create` alloue une coquille vide, `forms/update`
+> écrit titre, corps Gutenberg et statut), rendu au public par le shortcode
+> `[mwai_form id=N]`. Le notebook démontre le cycle complet par l'API contre
+> l'instance jetable, et **mesure la frontière gratuite/Pro** : sur la
+> version gratuite, le formulaire publié rend du contenu (paragraphes, zéro
+> `<input>`) — les champs dynamiques pilotés par l'IA du Parcours 4 vivent
+> dans la version Pro. Le contraste avec les chatbots (grain 2 : liste
+> globale remplacée en bloc) porte la leçon d'architecture : deux
+> fonctionnalités, deux styles d'API, deux modèles mentaux.
+
 ---
 
 ## Note de méthode — pourquoi il n'y a aucune capture
