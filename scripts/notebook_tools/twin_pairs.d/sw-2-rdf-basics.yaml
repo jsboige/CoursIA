@@ -18,6 +18,12 @@
       content_python_sha: e4d4864ac6c5e54c934f445af44401718ecfb82dde43fa1c434ed0c706697440
       content_csharp_sha: d2471f19c3459505386a13bb7974735deed73ae2b9c4684db8da68111c197c5d
       reason: "Enrichissement Python-only (#2161): ajout section 7 SPARQL (Exemple guide 3 resolu SELECT + Exercice 3 stub COUNT) avant l'Exercice de synthese qui exigeait une requete SPARQL jamais introduite (pedagogical gap). SPARQL = standard W3C, independant de rdflib ; le jumeau C# SW-2 couvre le meme socle RDF via dotNetRDF et le SPARQL a sa paire dediee SW-4. 4 new cells (39 existing byte-identical), C# unchanged (csharp_sha preserved). Notebook now 4 exercices (was 2)."
+    - date: "2026-08-16"
+      by: myia-po-2024:CoursIA-2
+      python_sha: e573f03f051e7f4a9ec71f965eef41a8e67d4ee1
+      csharp_sha: fcea9bfbc914f113a7448e2511941ec09908d787
+      content_python_sha: a433659805856a504b76204a619b1b46eedc6d643e0c811e8bf33d7e9fba02f5
+      content_csharp_sha: d2471f19c3459505386a13bb7974735deed73ae2b9c4684db8da68111c197c5d
   known_differences:
     - "Socle pedagogique commun : construction d'un premier graphe RDF (triplets sujet-predicat-objet), namespaces W3C (RDF/RDFS/XSD)."
     - "Lib-vs-lib : C# = `dotNetRDF 3.2.1` (`#r \"nuget: dotNetRDF, 3.2.1\"`, espaces `VDS.RDF` / `VDS.RDF.Parsing` / `VDS.RDF.Writing`). Python = `rdflib` (`from rdflib import Graph, URIRef, Literal, BNode, Namespace` + `rdflib.namespace` RDF/RDFS/XSD/FOAF/DC)."
