@@ -865,6 +865,378 @@ theorem p4at_witness_k2 :
           (evolve 4 ((centerInLevelPlus2 gliderCell).toGrid (0, 0)))
           4 8 := by
   native_decide
+
+/-! ### P4-At pas mono-ronde : socle geometrique (grain 3b, #11161)
+
+Le pas inductif `M > j + 2` du moteur At assemble la fenetre de sortie en
+SOUS-QUADRANTS des `r_i = hashlifeResultAt j n_i` (recursion mono-ronde,
+Hashlife.lean section « Saut a portee decouplee »). Ce bloc pose le socle
+geometrique de l'assemblage, sans toucher a `evolve` :
+
+* `mem_toGrid_extent` : la grille d'une cellule bien formee ne sort jamais
+  de son etendue `[a, a + 2^level)²` — l'ingredient d'elimination des
+  disjonctes impossibles de `mem_toGrid_node` ;
+* `subSE/subSW/subNE/subNW_toGrid_mem` : lire un sous-quadrant d'un `r_i`
+  dans le repere local de `r_i` — `p ∈ (subXX r).toGrid (a, b)` equivaut a
+  un point translate dans `r.toGrid (0, 0)`, avec la contrainte de region
+  (le quadrant ou `p` tombe dans la fenetre) ;
+* `hashlifeResultAtAux_succ_node_at` : le moteur At au cran successeur se
+  reduit (rfl) au noeud explicite de sous-quadrants — l'unlock du LHS du
+  pas, miroir de `hashlifeResultAux_succ_node` pour le moteur plein ;
+* `p4at_ext_bridge` : l'egalite de grille du pas se reduit a la
+  biconditionnelle point par point.
+
+Les briques de localite (`evolve_box_agree_local`, accord `n_i` vs `c`) et
+les quatre bras d'assemblage consomment ce socle au grain 3b part 2. -/
+
+private theorem pow_two_succ_le_int (n : Nat) : (2 ^ n : Int) ≤ (2 ^ (n + 1) : Int) := by
+  have hN : 2 ^ n ≤ 2 ^ (n + 1) := by
+    rw [pow_succ]
+    exact Nat.le_mul_of_pos_right _ (by positivity)
+  exact_mod_cast hN
+
+private theorem pow_two_succ_eq_int (n : Nat) : (2 ^ (n + 1) : Int) = 2 * (2 ^ n : Int) := by
+  push_cast
+  rw [pow_succ]
+  ring
+
+/-- **Borne d'etendue de `toGrid`.** L'appartenance a la grille d'une
+    cellule bien formee placee en `(a, b)` implique que le point est dans
+    la region couverte `[a, a + 2^level)²` : la grille n'emet jamais hors
+    de l'etendue de la cellule. Par induction structurelle sur `c` — les
+    feuilles emettent exactement leur coin, un `node` ecarte ses quatre
+    enfants (de niveau egal, `wf`) sur ses quadrants. -/
+theorem mem_toGrid_extent (c : MacroCell) (a b : Int) (p : Int × Int)
+    (hwf : c.wf = true) (h : p ∈ c.toGrid (a, b)) :
+    a ≤ p.1 ∧ p.1 < a + (2^c.level : Int) ∧ b ≤ p.2 ∧ p.2 < b + (2^c.level : Int) := by
+  rw [mem_toGrid] at h
+  induction c generalizing a b with
+  | leaf lf =>
+      cases lf with
+      | false => simp only [MacroCell.toCellsAux] at h
+      | true =>
+          simp only [MacroCell.toCellsAux, List.mem_singleton] at h
+          subst p
+          simp [MacroCell.level]
+          omega
+  | node nw ne sw se ihnw ihne ihsw ihse =>
+      obtain ⟨hne_lvl, hsw_lvl, hse_lvl, hw_nw, hw_ne, hw_sw, hw_se⟩ :=
+        wf_node_quad_level (n := nw.level) (by simp [MacroCell.level]) hwf
+      simp only [MacroCell.toCellsAux, List.mem_append] at h
+      rcases h with h | h | h | h
+      · have hb := ihnw a b hw_nw h
+        rw [show 1 + nw.level = nw.level + 1 from by omega]
+        omega
+      · have hb := ihne a (b + (2 ^ nw.level : Int)) hw_ne h
+        rw [show 1 + nw.level = nw.level + 1 from by omega]
+        have hp1 : p.1 < a + (2 ^ (nw.level + 1) : Int) := by
+          have hb2 := hb.2.1
+          rw [hne_lvl] at hb2
+          have hup := pow_two_succ_le_int nw.level
+          omega
+        have hp2 : p.2 < b + (2 ^ (nw.level + 1) : Int) := by
+          have hb2 := hb.2.2.2
+          rw [hne_lvl] at hb2
+          rw [pow_two_succ_eq_int nw.level]
+          omega
+        omega
+      · have hb := ihsw (a + (2 ^ nw.level : Int)) b hw_sw h
+        rw [show 1 + nw.level = nw.level + 1 from by omega]
+        have hp1 : p.1 < a + (2 ^ (nw.level + 1) : Int) := by
+          have hb2 := hb.1.2.1
+          rw [hsw_lvl] at hb2
+          rw [pow_two_succ_eq_int nw.level]
+          omega
+        have hp2 : p.2 < b + (2 ^ (nw.level + 1) : Int) := by
+          have hb2 := hb.2.2.2
+          rw [hsw_lvl] at hb2
+          have hup := pow_two_succ_le_int nw.level
+          omega
+        omega
+      · have hb := ihse (a + (2 ^ nw.level : Int)) (b + (2 ^ nw.level : Int)) hw_se h
+        rw [show 1 + nw.level = nw.level + 1 from by omega]
+        have hp1 : p.1 < a + (2 ^ (nw.level + 1) : Int) := by
+          have hb2 := hb.1.2.1
+          rw [hse_lvl] at hb2
+          rw [pow_two_succ_eq_int nw.level]
+          omega
+        have hp2 : p.2 < b + (2 ^ (nw.level + 1) : Int) := by
+          have hb2 := hb.2.2.2
+          rw [hse_lvl] at hb2
+          rw [pow_two_succ_eq_int nw.level]
+          omega
+        omega
+
+/-- **Appartenance au sous-quadrant SE.** `p` dans la grille du sous-quadrant
+    SE de `r` place en `(a, b)` (region `[a, a+s') × [b, b+s')`,
+    `s' = 2^(r.level-1)`) equivaut au point translate
+    `(p.1 - a + s', p.2 - b + s')` dans la grille de `r` au repere local —
+    la lecture de l'assemblage mono-ronde depuis le repere local de chaque
+    `r_i`. L'elimination des trois disjonctes impossibles de
+    `mem_toGrid_node` passe par `mem_toGrid_extent`. -/
+theorem subSE_toGrid_mem (r : MacroCell) (a b : Int) (p : Int × Int)
+    (hr : 1 ≤ r.level) (hwf : r.wf = true)
+    (hbox : a ≤ p.1 ∧ p.1 < a + (2^(r.level - 1) : Int) ∧
+            b ≤ p.2 ∧ p.2 < b + (2^(r.level - 1) : Int)) :
+    p ∈ (subSE r).toGrid (a, b) ↔
+      (p.1 - a + (2^(r.level - 1) : Int), p.2 - b + (2^(r.level - 1) : Int)) ∈ r.toGrid (0, 0) := by
+  obtain ⟨r1, r2, r3, r4, hnode, hr1lvl⟩ := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node r1 r2 r3 r4 =>
+        refine ⟨r1, r2, r3, r4, rfl, ?_⟩
+        simp only [MacroCell.level] at hr
+        omega
+  subst r
+  have hnodelevel : (MacroCell.node r1 r2 r3 r4).level = r1.level + 1 := by
+    simp [MacroCell.level]
+  rw [hnodelevel] at hbox ⊢
+  simp only [Nat.add_sub_cancel] at hbox ⊢
+  obtain ⟨hr2eq, hr3eq, hr4eq, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := r1.level) hnodelevel hwf
+  constructor
+  · intro hmem
+    have hmem' : (p.1 - a, p.2 - b) ∈ r4.toGrid (0, 0) := by
+      exact (mem_toGrid_shift (c := r4) (r0 := a) (c0 := b) (p := p)).mp hmem
+    have hq4 : (p.1 - a + (2 ^ r1.level : Int), p.2 - b + (2 ^ r1.level : Int)) ∈
+        r4.toGrid ((2 ^ r1.level : Int), (2 ^ r1.level : Int)) := by
+      refine (mem_toGrid_shift (c := r4) (r0 := (2 ^ r1.level : Int))
+        (c0 := (2 ^ r1.level : Int))
+        (p := (p.1 - a + (2 ^ r1.level : Int), p.2 - b + (2 ^ r1.level : Int)))).mpr ?_
+      convert hmem' using 1 <;> abel
+    rw [mem_toGrid_node]
+    right; right; right
+    exact hq4
+  · intro hq
+    rw [mem_toGrid_node] at hq
+    rcases hq with h1 | h2 | h3 | h4
+    · have he1 := mem_toGrid_extent r1 0 0 (p.1 - a + (2 ^ r1.level : Int), p.2 - b + (2 ^ r1.level : Int)) hw1 h1
+      have hle : (2 ^ r1.level : Int) ≤ p.1 - a + (2 ^ r1.level : Int) := by omega
+      omega
+    · have he2 := mem_toGrid_extent r2 0 (2 ^ r1.level : Int) (p.1 - a + (2 ^ r1.level : Int), p.2 - b + (2 ^ r1.level : Int)) hw2 h2
+      have hle : (2 ^ r1.level : Int) ≤ p.1 - a + (2 ^ r1.level : Int) := by omega
+      rw [hr2eq] at he2
+      omega
+    · have he3 := mem_toGrid_extent r3 (2 ^ r1.level : Int) 0 (p.1 - a + (2 ^ r1.level : Int), p.2 - b + (2 ^ r1.level : Int)) hw3 h3
+      have hle : (2 ^ r1.level : Int) ≤ p.2 - b + (2 ^ r1.level : Int) := by omega
+      rw [hr3eq] at he3
+      omega
+    · have h4s : (p.1 - a, p.2 - b) ∈ r4.toGrid (0, 0) := by
+        convert (mem_toGrid_shift (c := r4) (r0 := (2 ^ r1.level : Int))
+          (c0 := (2 ^ r1.level : Int))
+          (p := (p.1 - a + (2 ^ r1.level : Int), p.2 - b + (2 ^ r1.level : Int)))).mp h4 <;> abel
+      exact (mem_toGrid_shift (c := r4) (r0 := a) (c0 := b) (p := p)).mpr h4s
+
+/-- **Appartenance au sous-quadrant SW.** Miroir de `subSE_toGrid_mem` pour
+    le sous-quadrant SW de `r` (region `[a, a+s') × [b, b+s')`, le point
+    translate est `(p.1 - a + s', p.2 - b)`). -/
+theorem subSW_toGrid_mem (r : MacroCell) (a b : Int) (p : Int × Int)
+    (hr : 1 ≤ r.level) (hwf : r.wf = true)
+    (hbox : a ≤ p.1 ∧ p.1 < a + (2^(r.level - 1) : Int) ∧
+            b ≤ p.2 ∧ p.2 < b + (2^(r.level - 1) : Int)) :
+    p ∈ (subSW r).toGrid (a, b) ↔
+      (p.1 - a + (2^(r.level - 1) : Int), p.2 - b) ∈ r.toGrid (0, 0) := by
+  obtain ⟨r1, r2, r3, r4, hnode, hr1lvl⟩ := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node r1 r2 r3 r4 =>
+        refine ⟨r1, r2, r3, r4, rfl, ?_⟩
+        simp only [MacroCell.level] at hr
+        omega
+  subst r
+  have hnodelevel : (MacroCell.node r1 r2 r3 r4).level = r1.level + 1 := by
+    simp [MacroCell.level]
+  rw [hnodelevel] at hbox ⊢
+  simp only [Nat.add_sub_cancel] at hbox ⊢
+  obtain ⟨hr2eq, hr3eq, hr4eq, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := r1.level) hnodelevel hwf
+  constructor
+  · intro hmem
+    have hmem' : (p.1 - a, p.2 - b) ∈ r3.toGrid (0, 0) := by
+      exact (mem_toGrid_shift (c := r3) (r0 := a) (c0 := b) (p := p)).mp hmem
+    have hq3 : (p.1 - a + (2 ^ r1.level : Int), p.2 - b) ∈
+        r3.toGrid ((2 ^ r1.level : Int), 0) := by
+      refine (mem_toGrid_shift (c := r3) (r0 := (2 ^ r1.level : Int)) (c0 := 0)
+        (p := (p.1 - a + (2 ^ r1.level : Int), p.2 - b))).mpr ?_
+      convert hmem' using 1 <;> abel
+    rw [mem_toGrid_node]
+    right; right
+    exact hq3
+  · intro hq
+    rw [mem_toGrid_node] at hq
+    rcases hq with h1 | h2 | h3 | h4
+    · have he1 := mem_toGrid_extent r1 0 0 (p.1 - a + (2 ^ r1.level : Int), p.2 - b) hw1 h1
+      have hle : (2 ^ r1.level : Int) ≤ p.1 - a + (2 ^ r1.level : Int) := by omega
+      omega
+    · have he2 := mem_toGrid_extent r2 0 (2 ^ r1.level : Int) (p.1 - a + (2 ^ r1.level : Int), p.2 - b) hw2 h2
+      have hle : (2 ^ r1.level : Int) ≤ p.1 - a + (2 ^ r1.level : Int) := by omega
+      rw [hr2eq] at he2
+      omega
+    · have h3s : (p.1 - a, p.2 - b) ∈ r3.toGrid (0, 0) := by
+        convert (mem_toGrid_shift (c := r3) (r0 := (2 ^ r1.level : Int)) (c0 := 0)
+          (p := (p.1 - a + (2 ^ r1.level : Int), p.2 - b))).mp h3 <;> abel
+      exact (mem_toGrid_shift (c := r3) (r0 := a) (c0 := b) (p := p)).mpr h3s
+    · have he4 := mem_toGrid_extent r4 (2 ^ r1.level : Int) (2 ^ r1.level : Int) (p.1 - a + (2 ^ r1.level : Int), p.2 - b) hw4 h4
+      have hlt : p.2 - b < (2 ^ r1.level : Int) := by omega
+      omega
+
+/-- **Appartenance au sous-quadrant NE.** Miroir de `subSE_toGrid_mem` pour
+    le sous-quadrant NE de `r` (region `[a, a+s') × [b, b+s')`, le point
+    translate est `(p.1 - a, p.2 - b + s')`). -/
+theorem subNE_toGrid_mem (r : MacroCell) (a b : Int) (p : Int × Int)
+    (hr : 1 ≤ r.level) (hwf : r.wf = true)
+    (hbox : a ≤ p.1 ∧ p.1 < a + (2^(r.level - 1) : Int) ∧
+            b ≤ p.2 ∧ p.2 < b + (2^(r.level - 1) : Int)) :
+    p ∈ (subNE r).toGrid (a, b) ↔
+      (p.1 - a, p.2 - b + (2^(r.level - 1) : Int)) ∈ r.toGrid (0, 0) := by
+  obtain ⟨r1, r2, r3, r4, hnode, hr1lvl⟩ := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node r1 r2 r3 r4 =>
+        refine ⟨r1, r2, r3, r4, rfl, ?_⟩
+        simp only [MacroCell.level] at hr
+        omega
+  subst r
+  have hnodelevel : (MacroCell.node r1 r2 r3 r4).level = r1.level + 1 := by
+    simp [MacroCell.level]
+  rw [hnodelevel] at hbox ⊢
+  simp only [Nat.add_sub_cancel] at hbox ⊢
+  obtain ⟨hr2eq, hr3eq, hr4eq, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := r1.level) hnodelevel hwf
+  constructor
+  · intro hmem
+    have hmem' : (p.1 - a, p.2 - b) ∈ r2.toGrid (0, 0) := by
+      exact (mem_toGrid_shift (c := r2) (r0 := a) (c0 := b) (p := p)).mp hmem
+    have hq2 : (p.1 - a, p.2 - b + (2 ^ r1.level : Int)) ∈
+        r2.toGrid (0, (2 ^ r1.level : Int)) := by
+      refine (mem_toGrid_shift (c := r2) (r0 := 0) (c0 := (2 ^ r1.level : Int))
+        (p := (p.1 - a, p.2 - b + (2 ^ r1.level : Int)))).mpr ?_
+      convert hmem' using 1 <;> abel
+    rw [mem_toGrid_node]
+    right
+    exact hq2
+  · intro hq
+    rw [mem_toGrid_node] at hq
+    rcases hq with h1 | h2 | h3 | h4
+    · have he1 := mem_toGrid_extent r1 0 0 (p.1 - a, p.2 - b + (2 ^ r1.level : Int)) hw1 h1
+      have hle : (2 ^ r1.level : Int) ≤ p.2 - b + (2 ^ r1.level : Int) := by omega
+      omega
+    · have h2s : (p.1 - a, p.2 - b) ∈ r2.toGrid (0, 0) := by
+        convert (mem_toGrid_shift (c := r2) (r0 := 0) (c0 := (2 ^ r1.level : Int))
+          (p := (p.1 - a, p.2 - b + (2 ^ r1.level : Int)))).mp h2 <;> abel
+      exact (mem_toGrid_shift (c := r2) (r0 := a) (c0 := b) (p := p)).mpr h2s
+    · have he3 := mem_toGrid_extent r3 (2 ^ r1.level : Int) 0 (p.1 - a, p.2 - b + (2 ^ r1.level : Int)) hw3 h3
+      have hle : (2 ^ r1.level : Int) ≤ p.2 - b + (2 ^ r1.level : Int) := by omega
+      omega
+    · have he4 := mem_toGrid_extent r4 (2 ^ r1.level : Int) (2 ^ r1.level : Int) (p.1 - a, p.2 - b + (2 ^ r1.level : Int)) hw4 h4
+      have hlt : p.1 - a < (2 ^ r1.level : Int) := by omega
+      omega
+
+/-- **Appartenance au sous-quadrant NW.** Miroir de `subSE_toGrid_mem` pour
+    le sous-quadrant NW de `r` (region `[a, a+s') × [b, b+s')`, le point
+    translate est `(p.1 - a, p.2 - b)`). -/
+theorem subNW_toGrid_mem (r : MacroCell) (a b : Int) (p : Int × Int)
+    (hr : 1 ≤ r.level) (hwf : r.wf = true)
+    (hbox : a ≤ p.1 ∧ p.1 < a + (2^(r.level - 1) : Int) ∧
+            b ≤ p.2 ∧ p.2 < b + (2^(r.level - 1) : Int)) :
+    p ∈ (subNW r).toGrid (a, b) ↔
+      (p.1 - a, p.2 - b) ∈ r.toGrid (0, 0) := by
+  obtain ⟨r1, r2, r3, r4, hnode, hr1lvl⟩ := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node r1 r2 r3 r4 =>
+        refine ⟨r1, r2, r3, r4, rfl, ?_⟩
+        simp only [MacroCell.level] at hr
+        omega
+  subst r
+  have hnodelevel : (MacroCell.node r1 r2 r3 r4).level = r1.level + 1 := by
+    simp [MacroCell.level]
+  rw [hnodelevel] at hbox ⊢
+  simp only [Nat.add_sub_cancel] at hbox ⊢
+  obtain ⟨hr2eq, hr3eq, hr4eq, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := r1.level) hnodelevel hwf
+  constructor
+  · intro hmem
+    have hmem' : (p.1 - a, p.2 - b) ∈ r1.toGrid (0, 0) := by
+      exact (mem_toGrid_shift (c := r1) (r0 := a) (c0 := b) (p := p)).mp hmem
+    rw [mem_toGrid_node]
+    left
+    exact hmem'
+  · intro hq
+    rw [mem_toGrid_node] at hq
+    rcases hq with h1 | h2 | h3 | h4
+    · have h1s : (p.1 - a, p.2 - b) ∈ r1.toGrid (0, 0) := h1
+      exact (mem_toGrid_shift (c := r1) (r0 := a) (c0 := b) (p := p)).mpr h1s
+    · have he2 := mem_toGrid_extent r2 0 (2 ^ r1.level : Int) (p.1 - a, p.2 - b) hw2 h2
+      have hlt : p.2 - b < (2 ^ r1.level : Int) := by omega
+      omega
+    · have he3 := mem_toGrid_extent r3 (2 ^ r1.level : Int) 0 (p.1 - a, p.2 - b) hw3 h3
+      have hlt : p.1 - a < (2 ^ r1.level : Int) := by omega
+      omega
+    · have he4 := mem_toGrid_extent r4 (2 ^ r1.level : Int) (2 ^ r1.level : Int) (p.1 - a, p.2 - b) hw4 h4
+      have hlt : p.1 - a < (2 ^ r1.level : Int) := by omega
+      omega
+
+/-! ### P4-At pas mono-ronde : unlock du LHS et pont d'extensionnalite (grain 3b)
+
+L'egalite de grille du pas se prouve point par point (`p4at_ext_bridge`),
+et le LHS `hashlifeResultAt j c` se reduit, au cran successeur, au noeud
+explicite de sous-quadrants (`hashlifeResultAtAux_succ_node_at`, rfl) —
+le miroir de `hashlifeResultAux_succ_node` (Foundation) pour le moteur At.
+L'assemblage mono-ronde consomme ensuite `mem_toGrid_node` deux fois (les
+quadrants de la fenetre, puis leurs sous-quadrants) et les lemmes
+sous-quadrants ci-dessus pour lire chaque sous-quadrant dans le repere
+local du `r_i` correspondant. -/
+
+/-- **Unfold du moteur At au cran successeur.** Le LHS du pas est
+    `p ∈ (hashlifeResultAt j c).toGrid ...` avec `c.level = M > j + 2` ; ce
+    lemme (vrai par rfl — iota + zeta, comme son miroir P4) reduit
+    `hashlifeResultAtAux (fuel + 1) j c` au noeud explicite dont les quatre
+    enfants sont eux-memes des noeuds de sous-quadrants des `r_i`, rendant
+    le LHS accessible a `mem_toGrid_node`. -/
+theorem hashlifeResultAtAux_succ_node_at (fuel j : Nat)
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell) :
+    hashlifeResultAtAux (fuel + 1) j
+      (MacroCell.node (MacroCell.node a1 a2 a3 a4) (MacroCell.node b1 b2 b3 b4)
+            (MacroCell.node c1 c2 c3 c4) (MacroCell.node d1 d2 d3 d4)) =
+    if (MacroCell.node (MacroCell.node a1 a2 a3 a4) (MacroCell.node b1 b2 b3 b4)
+             (MacroCell.node c1 c2 c3 c4) (MacroCell.node d1 d2 d3 d4)).level == j + 2 then
+      hashlifeResultAux (fuel + 1)
+        (MacroCell.node (MacroCell.node a1 a2 a3 a4) (MacroCell.node b1 b2 b3 b4)
+             (MacroCell.node c1 c2 c3 c4) (MacroCell.node d1 d2 d3 d4))
+    else
+      node
+        (node (subSE (hashlifeResultAtAux fuel j (MacroCell.node a1 a2 a3 a4)))
+              (subSW (hashlifeResultAtAux fuel j (MacroCell.node a2 b1 a4 b3)))
+              (subNE (hashlifeResultAtAux fuel j (MacroCell.node a3 a4 c1 c2)))
+              (subNW (hashlifeResultAtAux fuel j (MacroCell.node a4 b3 c2 d1))))
+        (node (subSE (hashlifeResultAtAux fuel j (MacroCell.node a2 b1 a4 b3)))
+              (subSW (hashlifeResultAtAux fuel j (MacroCell.node b1 b2 b3 b4)))
+              (subNE (hashlifeResultAtAux fuel j (MacroCell.node a4 b3 c2 d1)))
+              (subNW (hashlifeResultAtAux fuel j (MacroCell.node b3 b4 d1 d2))))
+        (node (subSE (hashlifeResultAtAux fuel j (MacroCell.node a3 a4 c1 c2)))
+              (subSW (hashlifeResultAtAux fuel j (MacroCell.node a4 b3 c2 d1)))
+              (subNE (hashlifeResultAtAux fuel j (MacroCell.node c1 c2 c3 c4)))
+              (subNW (hashlifeResultAtAux fuel j (MacroCell.node c2 d1 c4 d3))))
+        (node (subSE (hashlifeResultAtAux fuel j (MacroCell.node a4 b3 c2 d1)))
+              (subSW (hashlifeResultAtAux fuel j (MacroCell.node b3 b4 d1 d2)))
+              (subNE (hashlifeResultAtAux fuel j (MacroCell.node c2 d1 c4 d3)))
+              (subNW (hashlifeResultAtAux fuel j (MacroCell.node d1 d2 d3 d4)))) := by
+  rfl
+
+/-- **Pont d'extensionnalite P4-At.** L'egalite de grille de
+    `hashlifeResultAt_central_correct` (et de son pas) se reduit a la
+    biconditionnelle point par point — miroir de `p4_ext_bridge` (Foundation)
+    pour le moteur decorrele. -/
+theorem p4at_ext_bridge (c : MacroCell) (j M : Nat)
+    (h : ∀ p, p ∈ (hashlifeResultAt j c).toGrid ((2^(M-2) : Nat), (2^(M-2) : Nat)) ↔
+        p ∈ restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1))) :
+    (hashlifeResultAt j c).toGrid ((2^(M-2) : Nat), (2^(M-2) : Nat))
+      = restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)) := by
+  apply Canonical.ext (canonical_toGrid _ _) _ h
+  unfold restrictGridTo
+  exact (canonical_evolve_of_pos (Nat.two_pow_pos j) _).filter _
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
