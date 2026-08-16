@@ -18,7 +18,7 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 | dotnet-interactive | **1.0.617701** (verifie sur ai-01, cf ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
-Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, aujourd'hui 1.0.712001, qui casse `#!import` (cf tableau ci-dessous).
+Installation : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701` puis `dotnet interactive jupyter install`. **Preciser la version** : une installation sans `--version` prend le dernier build publie, aujourd'hui 1.0.712001, qui a casse `#!import` sur ai-01 (cf tableau ci-dessous ; non reproduit sur po-2024, cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)).
 
 **Execution** : `python scripts/notebook_tools/notebook_tools.py execute <notebook>` — qui pilote Papermill avec `--kernel .net-csharp`. Le kernel preserve l'etat entre cellules, `#!import` compris.
 
@@ -50,7 +50,7 @@ grep -c '#r "nuget:' <notebook>     # 0  ->  RECOVERABLE-LOCAL : executer pour d
 | 1.0.522904 | a eviter | bug Roslyn |
 | 1.0.552801 | ancien pin — **ne plus viser** : hote net8.0-only, bloque les notebooks qui referencent des DLL `net9.0` | [`Search/Part4-Metaheuristics/README.md`](../../MyIA.AI.Notebooks/Search/Part4-Metaheuristics/README.md) (MGS-6 a MGS-9, `MetaGeneticSharp.Extensions`) |
 | **1.0.617701** | **cible** — cellule C# et `#!import` OK | verifie firsthand sur ai-01 le 2026-07-25 : `notebook_tools.py execute` sur un notebook `.net-csharp` (SUCCESS 4,4 s, `execution_count: 1`) et sur une paire `#!import helper.ipynb` + appel de la methode importee (SUCCESS 3,8 s, cellule 2 imprime le resultat) |
-| 1.0.712001 | a eviter | `#!import` casse (`ArgumentNullException`) — bloque la re-execution de `Sudoku-15-Infer-Csharp` (#8485, #8525) et le pivot d'env #8369 |
+| 1.0.712001 | a eviter | `#!import` casse (`ArgumentNullException`) — bloque la re-execution de `Sudoku-15-Infer-Csharp` (#8485, #8525) et le pivot d'env #8369. **Nuance (2026-08-16)** : non reproduit sur po-2024 — run complet Sudoku-15 0 erreur sous ce build (cf [Divergence po-2024](#divergence-po-2024-du-2026-08-16-11157--le-pin-netait-jamais-installe)) ; le breakage est au minimum contextuel, le verdict « a eviter » reste le standard tant qu'ai-01 n'a pas tranche un eventual depin |
 
 Une contrainte `>= 1.0.700` figurait ici : elle est **fausse et nuisible** — elle exclut le pin qu'elle citait dans la meme ligne (552801 < 700) et n'admet, aujourd'hui, que la version cassee. Un `#!import` en echec est un **defaut d'environnement reparable en une commande** (regle F), jamais un blocage utilisateur :
 
@@ -87,6 +87,24 @@ grep -o 'id="Microsoft.CodeAnalysis[^"]*" version="[^"]*"' \
 ```
 
 **Piege de diagnostic adjacent** : sur cet hote (32 threads), un notebook .NET non borne en threads OpenMP part en timeouts de cellule qui *ressemblent* a un blocage kernel. `OMP_NUM_THREADS=4` a ramene ce meme notebook de **6 380,9 s (7 cellules en timeout a 900 s)** a **14,8 s** — facteur **x431**. Borner les threads **avant** de conclure a un hang.
+
+### Divergence po-2024 du 2026-08-16 (#11157) : le pin n'etait jamais installe
+
+L'ecart « le meme notebook ML-3 AutoML passe sur po-2024 et echoue sur ai-01 » (#11157) n'etait **ni le notebook ni le cache NuGet** : les deux machines ne tournaient pas le meme kernel. Etat mesure firsthand sur po-2024 le 2026-08-16 matin : le tool store ne contenait **que** `1.0.712001` (Roslyn `Microsoft.CodeAnalysis.CSharp.dll` FileVersion `5.0.25.56712`, hote `tools/net10.0/any/`) — le pin `1.0.617701` n'y avait jamais ete installe. Le kernelspec resout via PATH vers ce build derive, sans qu'aucun `dotnet interactive --version` de routine ne signale l'ecart (il faut comparer au pin, pas seulement verifier que la commande repond).
+
+**Pourquoi le run propre de #11140 a passe AutoML 0.23.0** : ce run (blob `bf38be1766`) portait `#r "nuget: Microsoft.ML.AutoML, 0.23.0"` — dependance Roslyn `[4.13.0, )` — satisfait par le Roslyn **5.0** du kernel derive, la ou le Roslyn 4.12 du pin echoue (section precedente). Le downgrade `0.23.0 -> 0.22.3` a atterri dans `3ac89ed30c` (#11173, 2026-08-16 03:53 +02:00), le meme commit que la migration Plotly-CDN de ML-3 et la section « plafond Roslyn » ci-dessus. Apres lui, ML-3 passe sur les **deux** builds de kernel.
+
+**Mesures sous 1.0.712001 sur po-2024 (2026-08-16)** : paire `#!import` minimale OK ; `Sudoku-15-Infer-Csharp` run **complet 47/47 cellules (19 code), 0 erreur, exec [1..19] sequentiel, `#!import` cell[3] propre** — l'incident `ArgumentNullException` #8485/#8525 ne se reproduit **pas** sur cette machine ce jour ; chemin exact ML-3 AutoML 0.22.3 OK (RSquared 0,972). Le breakage historique est donc au minimum **contextuel** (hote net10.0 vs net9.0, runtime, ou corrige entre builds) — il n'est pas efface ici, il est qualifie.
+
+**Reparation executee (regle F, 2026-08-16)** : `dotnet tool update` refusant le downgrade, passer par uninstall + install pinne :
+
+```bash
+dotnet tool uninstall --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.617701
+dotnet interactive jupyter install
+```
+
+Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). Le pin reste le standard fleet ; un eventuel depin vers un build recent (qui embarque Roslyn >= 4.13 et leverait le plafond de packages) est une decision coordinateur, a appuyer sur un essai croise ai-01 x po-2024 reproduisant les deux tableaux ci-dessus.
 
 ## Python 3.10+ (notebooks Python)
 
