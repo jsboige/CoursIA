@@ -781,6 +781,90 @@ theorem p4_wf_witness_k2 :
           4 8 := by
   native_decide
 
+/-! ### P4-At : socle du moteur décorrélaté (grain 3, #11161)
+
+La brique de base du saut décorrélaté `hashlifeResultAt j` (Hashlife.lean,
+section « Saut à portée découplée ») : au niveau terminal `j + 2` de sa
+récursion, le moteur At délègue au moteur plein `hashlifeResultAux` avec
+le fuel saturé — exactement la forme du P4 prouvé
+(`hashlifeResult_central_correct`). La correction centrale se transfère
+donc TELLE QUELLE, sans hypothèse de capture. C'est le socle de la
+décharge de `OneJumpAtCorrect` (grain 2 du re-cadrage Gosper, #11161) ;
+le contenu restant du grain 3 est le pas inductif `M > j + 2` (assemblage
+mono-ronde en sous-quadrants) puis le pont de localité (`evolve_box_agree`,
+LightCone) avec l'invariant du cadre (grain 1). -/
+
+/-- **P4-At cas de base (grain 3, #11161).** Pour toute cellule bien
+    formée de niveau exactement `j + 2` (le niveau terminal de la récursion
+    At), `hashlifeResultAt j c` est le moteur plein à fuel saturé et rend
+    la fenêtre centrale de `evolve (2^j)` — l'énoncé P4 transféré
+    littéralement au moteur décorrélaté, SANS hypothèse de capture.
+
+    L'inversion `wf` passe par le prédicat OPAQUE `cellWf` (pont
+    `cellWf_of_wf`) : le `Bool` transparent `MacroCell.wf` diverge en whnf
+    sur les `node` en defeq (Foundation, note c.142). -/
+theorem hashlifeResultAt_base_central (c : MacroCell) (j : Nat)
+    (hwf : c.wf = true) (hklvl : c.level = j + 2) :
+    (hashlifeResultAt j c).toGrid ((2^j : Nat), (2^j : Nat))
+      = restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^j : Int) (2^(j+1)) := by
+  have hshape : ∀ (x : MacroCell) (n : Nat), x.level = n + 1 →
+      ∃ nw ne sw se, x = MacroCell.node nw ne sw se ∧ nw.level = n := by
+    intro x n hx
+    cases x with
+    | leaf _ => simp only [MacroCell.level] at hx; omega
+    | node nw ne sw se =>
+        exact ⟨nw, ne, sw, se, rfl, by simp only [MacroCell.level] at hx; omega⟩
+  have hnode : ∀ (q : MacroCell) (hq : q.level ≥ 1),
+      ∃ p1 p2 p3 p4, q = MacroCell.node p1 p2 p3 p4 := by
+    intro q hq
+    cases q with
+    | leaf _ => simp only [MacroCell.level] at hq; omega
+    | node p1 p2 p3 p4 => exact ⟨p1, p2, p3, p4, rfl⟩
+  have hwrap : hashlifeResultAt j c = hashlifeResultAux (j + 2) c := by
+    unfold hashlifeResultAt
+    rw [hklvl]
+    obtain ⟨a, b, d, e, rfl, ha⟩ := hshape c (j + 1) hklvl
+    obtain ⟨_, _, _, _, hlb, hld, hle⟩ := cellWf_of_wf _ hwf
+    have hbl : b.level = j + 1 := by omega
+    have hdl : d.level = j + 1 := by omega
+    have hel : e.level = j + 1 := by omega
+    obtain ⟨a1, a2, a3, a4, rfl⟩ := hnode a (by omega)
+    obtain ⟨b1, b2, b3, b4, rfl⟩ := hnode b (by omega)
+    obtain ⟨d1, d2, d3, d4, rfl⟩ := hnode d (by omega)
+    obtain ⟨e1, e2, e3, e4, rfl⟩ := hnode e (by omega)
+    simp only [MacroCell.level] at ha
+    show hashlifeResultAtAux (j + 1 + 1) j _
+      = hashlifeResultAux (j + 2) _
+    simp only [hashlifeResultAtAux, MacroCell.level, ha, beq_iff_eq]
+    split
+    · rfl
+    · exfalso; omega
+  rw [hwrap]
+  exact hashlifeResult_central_correct c j hwf hklvl
+
+/-- Témoin P4-At k = 1 : même cellule que `p4_wf_witness_k1` (bloc encore
+    de vie centré, niveau 3 = j+2 pour j = 1), lue au moteur décorrélaté —
+    au niveau terminal il rend exactement le moteur plein. -/
+theorem p4at_witness_k1 :
+    (hashlifeResultAt 1
+      (centerInLevelPlus2 (node aliveLeaf aliveLeaf aliveLeaf aliveLeaf))).toGrid
+        ((2 : Int), (2 : Int))
+      = restrictGridTo
+          (evolve 2
+            ((centerInLevelPlus2
+              (node aliveLeaf aliveLeaf aliveLeaf aliveLeaf)).toGrid (0, 0)))
+          2 4 := by
+  native_decide
+
+/-- Témoin P4-At k = 2 : même cellule que `p4_wf_witness_k2` (glider centré
+    de niveau 4 = j+2 pour j = 2, avance 4 générations). -/
+theorem p4at_witness_k2 :
+    (hashlifeResultAt 2 (centerInLevelPlus2 gliderCell)).toGrid
+        ((4 : Int), (4 : Int))
+      = restrictGridTo
+          (evolve 4 ((centerInLevelPlus2 gliderCell).toGrid (0, 0)))
+          4 8 := by
+  native_decide
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
