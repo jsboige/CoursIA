@@ -23,6 +23,12 @@
       content_python_sha: cdd2d4c542af4a175ee483624f05abe745a6a8a0283eb1082b24b7fbc6be2a1f
       content_csharp_sha: 536a248cb5af410b7867159f605d558bedc8eecc39c0827d93480d736b820bb4
       reason: "Rebaseline apres fix citation arXiv #11168 (branche fix/11168-arxiv-symbolic, commit a3a0e595a) : le lien 'Temporal Planning Survey' arXiv:2104.08553 etait le mauvais papier, remplace par le fondement canonique Fox & Long PDDL2.1 arXiv:1106.4561 (1 ligne markdown, section References). Python-only, csharp_sha inchangee (identique aux entrees precedentes), markdown-only (C.2 exception), aucun contenu code/output touche. Diff verifie firsthand : 1 ligne remplacee, rien strippe."
+    - date: "2026-08-16"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 94d90a0461447759bcbe0029b70b8985527349f1
+      csharp_sha: fbf977a93183d00158edd7acb8ca333796d043f8
+      content_python_sha: cdd2d4c542af4a175ee483624f05abe745a6a8a0283eb1082b24b7fbc6be2a1f
+      content_csharp_sha: 5b309e30c55ef606483e1d45ab2b71ad49e0099711ff4a3d1cb351cb9fbd43fe
   known_differences:
     - "Concept : planification temporelle (actions duratives, ordonnancement avec parallelisme)."
     - "Python : unified-planning temporal + CP-SAT + Gantt. C# : deux tranches — Tranche 1 from-scratch BCL .NET (PDDL duratives, Allen, STN Floyd-Warshall, RCPSP glouton LPT) + Tranche 2 Google.OrTools CP-SAT natif .NET (moteur de production, depuis 2026-08-11, contrainte cumulative AddCumulative)."
