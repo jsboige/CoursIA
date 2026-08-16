@@ -3469,6 +3469,394 @@ theorem sub_quadrant_mem_se {r : MacroCell} {k : Nat} {x y : Int} {p : Int × In
       omega
     · exact hm
 
+/-! ### P5-At pas inductif (c) : briques de localite des regions n_i (grain 3b, partie 5c)
+
+Consommation prescrite par la partie 2 : les neuf theoremes
+`n1_evolve_agree` .. `n9_evolve_agree` portent chaque accord
+`n_i_grid_agree` au niveau `evolve` -- le bloc `evolve (2^j)` de la
+sous-cellule r_i lu en repere local `p - offset_i` coïncide avec le bloc
+parent `evolve (2^j)` lu au point global `p`, des que `p` est a marge
+`2^j` du bord de la region n_i (la boite Chebyshev `2^j` autour de `p`
+reste alors dans la region ou l'accord s'applique). Moteur :
+`evolve_box_agree_local` (Foundation, miroir anti-cycle de LightCone),
+chaine de decalages `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`,
+pont Bool `isAlive_eq_of_mem_iff`. Les bras du theoreme d'assemblage
+chaineront l'HI (r_i, niveau M-1), les ponts 5b, puis la brique
+`n_i_evolve_agree` correspondante.
+-/
+
+/-- `n1` : le bloc `evolve (2^j)` de la sous-cellule
+    `node a1 a2 a3 a4` lu en repère local (p.1 - 0, p.2 - 0) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n1`. Consomme `n1_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n1_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2^j : Int) ≤ p.1 ∧ p.1 < (2*(2^k : Int)) - (2^j : Int) ∧ (2^j : Int) ≤ p.2 ∧ p.2 < (2*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node a1 a2 a3 a4).toGrid (0, 0))) (p.1 - 0, p.2 - 0) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hp' : (p.1 - 0, p.2 - 0) = p := by
+    obtain ⟨x, y⟩ := p
+    simp
+  rw [hp']
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : 0 ≤ q.1 ∧ q.1 < (2*(2^k : Int)) ∧ 0 ≤ q.2 ∧ q.2 < (2*(2^k : Int)) := by omega
+  have hagree := n1_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node a1 a2 a3 a4) (r0 := 0) (c0 := 0) (p := q)).trans hagree)
+
+/-- `n2` : le bloc `evolve (2^j)` de la sous-cellule
+    `node a2 b1 a4 b3` lu en repère local (p.1 - 0, p.2 - (2^k : Int)) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n2`. Consomme `n2_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n2_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2^j : Int) ≤ p.1 ∧ p.1 < (2*(2^k : Int)) - (2^j : Int) ∧ (2^k : Int) + (2^j : Int) ≤ p.2 ∧ p.2 < (3*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node a2 b1 a4 b3).toGrid (0, 0))) (p.1 - 0, p.2 - (2^k : Int)) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node a2 b1 a4 b3).toGrid (0, (2^k : Int))
+      = shift (0, (2^k : Int)) ((node a2 b1 a4 b3).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift (0, (2^k : Int)) (evolve (2^j) ((node a2 b1 a4 b3).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node a2 b1 a4 b3).toGrid (0, 0))) (p.1 - 0, p.2 - (2^k : Int)) := by
+    have hpt : (p.1 - (0, (2^k : Int)).1, p.2 - (0, (2^k : Int)).2)
+        = (p.1 - 0, p.2 - (2^k : Int)) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : 0 ≤ q.1 ∧ q.1 < (2*(2^k : Int)) ∧ (2^k : Int) ≤ q.2 ∧ q.2 < (3*(2^k : Int)) := by omega
+  have hagree := n2_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node a2 b1 a4 b3) (r0 := 0) (c0 := (2^k : Int)) (p := q)).trans hagree)
+
+/-- `n3` : le bloc `evolve (2^j)` de la sous-cellule
+    `node b1 b2 b3 b4` lu en repère local (p.1 - 0, p.2 - (2*(2^k : Int))) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n3`. Consomme `n3_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n3_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2^j : Int) ≤ p.1 ∧ p.1 < (2*(2^k : Int)) - (2^j : Int) ∧ (2*(2^k : Int)) + (2^j : Int) ≤ p.2 ∧ p.2 < (4*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node b1 b2 b3 b4).toGrid (0, 0))) (p.1 - 0, p.2 - (2*(2^k : Int))) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node b1 b2 b3 b4).toGrid (0, (2*(2^k : Int)))
+      = shift (0, (2*(2^k : Int))) ((node b1 b2 b3 b4).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift (0, (2*(2^k : Int))) (evolve (2^j) ((node b1 b2 b3 b4).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node b1 b2 b3 b4).toGrid (0, 0))) (p.1 - 0, p.2 - (2*(2^k : Int))) := by
+    have hpt : (p.1 - (0, (2*(2^k : Int))).1, p.2 - (0, (2*(2^k : Int))).2)
+        = (p.1 - 0, p.2 - (2*(2^k : Int))) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : 0 ≤ q.1 ∧ q.1 < (2*(2^k : Int)) ∧ (2*(2^k : Int)) ≤ q.2 ∧ q.2 < (4*(2^k : Int)) := by omega
+  have hagree := n3_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node b1 b2 b3 b4) (r0 := 0) (c0 := (2*(2^k : Int))) (p := q)).trans hagree)
+
+/-- `n4` : le bloc `evolve (2^j)` de la sous-cellule
+    `node a3 a4 c1 c2` lu en repère local (p.1 - (2^k : Int), p.2 - 0) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n4`. Consomme `n4_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n4_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2^k : Int) + (2^j : Int) ≤ p.1 ∧ p.1 < (3*(2^k : Int)) - (2^j : Int) ∧ (2^j : Int) ≤ p.2 ∧ p.2 < (2*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node a3 a4 c1 c2).toGrid (0, 0))) (p.1 - (2^k : Int), p.2 - 0) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node a3 a4 c1 c2).toGrid ((2^k : Int), 0)
+      = shift ((2^k : Int), 0) ((node a3 a4 c1 c2).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift ((2^k : Int), 0) (evolve (2^j) ((node a3 a4 c1 c2).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node a3 a4 c1 c2).toGrid (0, 0))) (p.1 - (2^k : Int), p.2 - 0) := by
+    have hpt : (p.1 - ((2^k : Int), 0).1, p.2 - ((2^k : Int), 0).2)
+        = (p.1 - (2^k : Int), p.2 - 0) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : (2^k : Int) ≤ q.1 ∧ q.1 < (3*(2^k : Int)) ∧ 0 ≤ q.2 ∧ q.2 < (2*(2^k : Int)) := by omega
+  have hagree := n4_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node a3 a4 c1 c2) (r0 := (2^k : Int)) (c0 := 0) (p := q)).trans hagree)
+
+/-- `n5` : le bloc `evolve (2^j)` de la sous-cellule
+    `node a4 b3 c2 d1` lu en repère local (p.1 - (2^k : Int), p.2 - (2^k : Int)) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n5`. Consomme `n5_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n5_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2^k : Int) + (2^j : Int) ≤ p.1 ∧ p.1 < (3*(2^k : Int)) - (2^j : Int) ∧ (2^k : Int) + (2^j : Int) ≤ p.2 ∧ p.2 < (3*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node a4 b3 c2 d1).toGrid (0, 0))) (p.1 - (2^k : Int), p.2 - (2^k : Int)) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node a4 b3 c2 d1).toGrid ((2^k : Int), (2^k : Int))
+      = shift ((2^k : Int), (2^k : Int)) ((node a4 b3 c2 d1).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift ((2^k : Int), (2^k : Int)) (evolve (2^j) ((node a4 b3 c2 d1).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node a4 b3 c2 d1).toGrid (0, 0))) (p.1 - (2^k : Int), p.2 - (2^k : Int)) := by
+    have hpt : (p.1 - ((2^k : Int), (2^k : Int)).1, p.2 - ((2^k : Int), (2^k : Int)).2)
+        = (p.1 - (2^k : Int), p.2 - (2^k : Int)) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : (2^k : Int) ≤ q.1 ∧ q.1 < (3*(2^k : Int)) ∧ (2^k : Int) ≤ q.2 ∧ q.2 < (3*(2^k : Int)) := by omega
+  have hagree := n5_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node a4 b3 c2 d1) (r0 := (2^k : Int)) (c0 := (2^k : Int)) (p := q)).trans hagree)
+
+/-- `n6` : le bloc `evolve (2^j)` de la sous-cellule
+    `node b3 b4 d1 d2` lu en repère local (p.1 - (2^k : Int), p.2 - (2*(2^k : Int))) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n6`. Consomme `n6_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n6_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2^k : Int) + (2^j : Int) ≤ p.1 ∧ p.1 < (3*(2^k : Int)) - (2^j : Int) ∧ (2*(2^k : Int)) + (2^j : Int) ≤ p.2 ∧ p.2 < (4*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node b3 b4 d1 d2).toGrid (0, 0))) (p.1 - (2^k : Int), p.2 - (2*(2^k : Int))) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node b3 b4 d1 d2).toGrid ((2^k : Int), (2*(2^k : Int)))
+      = shift ((2^k : Int), (2*(2^k : Int))) ((node b3 b4 d1 d2).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift ((2^k : Int), (2*(2^k : Int))) (evolve (2^j) ((node b3 b4 d1 d2).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node b3 b4 d1 d2).toGrid (0, 0))) (p.1 - (2^k : Int), p.2 - (2*(2^k : Int))) := by
+    have hpt : (p.1 - ((2^k : Int), (2*(2^k : Int))).1, p.2 - ((2^k : Int), (2*(2^k : Int))).2)
+        = (p.1 - (2^k : Int), p.2 - (2*(2^k : Int))) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : (2^k : Int) ≤ q.1 ∧ q.1 < (3*(2^k : Int)) ∧ (2*(2^k : Int)) ≤ q.2 ∧ q.2 < (4*(2^k : Int)) := by omega
+  have hagree := n6_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node b3 b4 d1 d2) (r0 := (2^k : Int)) (c0 := (2*(2^k : Int))) (p := q)).trans hagree)
+
+/-- `n7` : le bloc `evolve (2^j)` de la sous-cellule
+    `node c1 c2 c3 c4` lu en repère local (p.1 - (2*(2^k : Int)), p.2 - 0) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n7`. Consomme `n7_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n7_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2*(2^k : Int)) + (2^j : Int) ≤ p.1 ∧ p.1 < (4*(2^k : Int)) - (2^j : Int) ∧ (2^j : Int) ≤ p.2 ∧ p.2 < (2*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node c1 c2 c3 c4).toGrid (0, 0))) (p.1 - (2*(2^k : Int)), p.2 - 0) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node c1 c2 c3 c4).toGrid ((2*(2^k : Int)), 0)
+      = shift ((2*(2^k : Int)), 0) ((node c1 c2 c3 c4).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift ((2*(2^k : Int)), 0) (evolve (2^j) ((node c1 c2 c3 c4).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node c1 c2 c3 c4).toGrid (0, 0))) (p.1 - (2*(2^k : Int)), p.2 - 0) := by
+    have hpt : (p.1 - ((2*(2^k : Int)), 0).1, p.2 - ((2*(2^k : Int)), 0).2)
+        = (p.1 - (2*(2^k : Int)), p.2 - 0) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : (2*(2^k : Int)) ≤ q.1 ∧ q.1 < (4*(2^k : Int)) ∧ 0 ≤ q.2 ∧ q.2 < (2*(2^k : Int)) := by omega
+  have hagree := n7_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node c1 c2 c3 c4) (r0 := (2*(2^k : Int))) (c0 := 0) (p := q)).trans hagree)
+
+/-- `n8` : le bloc `evolve (2^j)` de la sous-cellule
+    `node c2 d1 c4 d3` lu en repère local (p.1 - (2*(2^k : Int)), p.2 - (2^k : Int)) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n8`. Consomme `n8_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n8_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2*(2^k : Int)) + (2^j : Int) ≤ p.1 ∧ p.1 < (4*(2^k : Int)) - (2^j : Int) ∧ (2^k : Int) + (2^j : Int) ≤ p.2 ∧ p.2 < (3*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node c2 d1 c4 d3).toGrid (0, 0))) (p.1 - (2*(2^k : Int)), p.2 - (2^k : Int)) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node c2 d1 c4 d3).toGrid ((2*(2^k : Int)), (2^k : Int))
+      = shift ((2*(2^k : Int)), (2^k : Int)) ((node c2 d1 c4 d3).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift ((2*(2^k : Int)), (2^k : Int)) (evolve (2^j) ((node c2 d1 c4 d3).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node c2 d1 c4 d3).toGrid (0, 0))) (p.1 - (2*(2^k : Int)), p.2 - (2^k : Int)) := by
+    have hpt : (p.1 - ((2*(2^k : Int)), (2^k : Int)).1, p.2 - ((2*(2^k : Int)), (2^k : Int)).2)
+        = (p.1 - (2*(2^k : Int)), p.2 - (2^k : Int)) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : (2*(2^k : Int)) ≤ q.1 ∧ q.1 < (4*(2^k : Int)) ∧ (2^k : Int) ≤ q.2 ∧ q.2 < (3*(2^k : Int)) := by omega
+  have hagree := n8_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node c2 d1 c4 d3) (r0 := (2*(2^k : Int))) (c0 := (2^k : Int)) (p := q)).trans hagree)
+
+/-- `n9` : le bloc `evolve (2^j)` de la sous-cellule
+    `node d1 d2 d3 d4` lu en repère local (p.1 - (2*(2^k : Int)), p.2 - (2*(2^k : Int))) coïncide avec le
+    bloc parent lu au point global `p`, dès que `p` est à marge
+    `2^j` du bord de la région `n9`. Consomme `n9_grid_agree` via `evolve_box_agree_local` (Foundation, miroir
+    anti-cycle de LightCone) et la chaîne de décalages
+    `toGrid_shift_grid` / `evolve_shift` / `isAlive_shift`. -/
+theorem n9_evolve_agree {k j : Nat}
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = k) (p : Int × Int)
+    (hp : (2*(2^k : Int)) + (2^j : Int) ≤ p.1 ∧ p.1 < (4*(2^k : Int)) - (2^j : Int) ∧ (2*(2^k : Int)) + (2^j : Int) ≤ p.2 ∧ p.2 < (4*(2^k : Int)) - (2^j : Int)) :
+    isAlive (evolve (2^j) ((node d1 d2 d3 d4).toGrid (0, 0))) (p.1 - (2*(2^k : Int)), p.2 - (2*(2^k : Int))) =
+      isAlive (evolve (2^j)
+        ((node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).toGrid (0, 0))) p := by
+  have hsh : (node d1 d2 d3 d4).toGrid ((2*(2^k : Int)), (2*(2^k : Int)))
+      = shift ((2*(2^k : Int)), (2*(2^k : Int))) ((node d1 d2 d3 d4).toGrid (0, 0)) := by
+    rw [toGrid_shift_grid (a' := 0) (b' := 0)]
+    simp only [Int.sub_zero]
+  have hish : isAlive (shift ((2*(2^k : Int)), (2*(2^k : Int))) (evolve (2^j) ((node d1 d2 d3 d4).toGrid (0, 0)))) p
+      = isAlive (evolve (2^j) ((node d1 d2 d3 d4).toGrid (0, 0))) (p.1 - (2*(2^k : Int)), p.2 - (2*(2^k : Int))) := by
+    have hpt : (p.1 - ((2*(2^k : Int)), (2*(2^k : Int))).1, p.2 - ((2*(2^k : Int)), (2*(2^k : Int))).2)
+        = (p.1 - (2*(2^k : Int)), p.2 - (2*(2^k : Int))) := by
+      rfl
+    rw [isAlive_shift, hpt]
+  rw [← hish, evolve_shift, ← hsh]
+  apply evolve_box_agree_local (2^j)
+  intro q hq
+  obtain ⟨hq1, hq2⟩ := coord_bound_of_chebDist_le p q (2^j) hq
+  have hj_pow : (↑((2:Nat)^j) : Int) = (2^j : Int) := Nat.cast_pow 2 j
+  have hj1 : |q.1 - p.1| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq1
+  have hj2 : |q.2 - p.2| ≤ (2^j : Int) := by
+    rw [hj_pow.symm, Int.abs_eq_natAbs]; exact_mod_cast hq2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hj1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hj2
+  have hreg : (2*(2^k : Int)) ≤ q.1 ∧ q.1 < (4*(2^k : Int)) ∧ (2*(2^k : Int)) ≤ q.2 ∧ q.2 < (4*(2^k : Int)) := by omega
+  have hagree := n9_grid_agree a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf ha1l q hreg
+  exact isAlive_eq_of_mem_iff
+    ((mem_toGrid_shift (c := node d1 d2 d3 d4) (r0 := (2*(2^k : Int))) (c0 := (2*(2^k : Int))) (p := q)).trans hagree)
+
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
