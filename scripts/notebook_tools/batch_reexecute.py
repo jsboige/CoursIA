@@ -90,14 +90,14 @@ def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
             sys.executable, "-m", "papermill",
             str(nb_path), str(nb_path),
             "--kernel", kernel,
-            "--timeout", str(timeout * 60),  # papermill uses seconds
+            "--execution-timeout", str(timeout),  # per-cell budget, seconds
         ]
 
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=timeout * 60 + 60,  # extra buffer
+            timeout=timeout + 60,  # extra buffer for papermill + kernel startup
             cwd=str(REPO_ROOT),
         )
 
