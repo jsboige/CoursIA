@@ -9,6 +9,7 @@ import Grothendieck.Construction
 import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
+import Grothendieck.CoversExtremal
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPullback
