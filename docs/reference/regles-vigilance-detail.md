@@ -23,7 +23,7 @@ Avant de relayer un diagnostic technique d'un autre agent dans un dispatch ou un
 `sorry count = 0` n'a aucune valeur sans `lake build SUCCESS` post-modification. Un theoreme supprime, un identifiant inexistant injecte, une preuve qui ne compile pas = sorry count peut etre 0 ET le port casse.
 
 **Pour Lean / Coq / Agda, trois preuves obligatoires dans le body PR** :
-1. `grep -c sorry` avant/après
+1. Compte de `sorry` **réel** avant/après — `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (ni `grep -c sorry`, qui sur-compte la prose ; ni un jeu de motifs artisanal, qui sous-compte **sans le dire**)
 2. `lake build` SUCCESS log (lien CI ou commit local prouvable)
 3. Proof integrity check SUCCESS (axiom check)
 

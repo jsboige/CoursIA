@@ -50,7 +50,7 @@
 | 2026-05-15 16:47 | hK_empty (Basic L280) | autonomous | ~3 | PROVED sorry 2→1 |
 | 2026-05-15 | hCore (Basic L308) | autonomous | 10 | INTRACTABLE (5.9h) |
 
-**Key finding:** Multi-agent prover silently succeeds (writes proofs to disk but hangs on output). Always check `grep -c sorry` after "stuck" runs.
+**Key finding:** Multi-agent prover silently succeeds (writes proofs to disk but hangs on output). Always re-count `sorry` after "stuck" runs — `python scripts/lean/count_code_sorry.py --json` (`distinct_code_sorry`), not `grep -c sorry`.
 
 ### Phase 4: GS Lemmas Manual Breakthrough (May 16)
 
