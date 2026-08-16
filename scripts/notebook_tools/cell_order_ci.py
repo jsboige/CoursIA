@@ -15,8 +15,14 @@ around does not mask a newly introduced one.
 Usage:
     cell_order_ci.py --base <base.ipynb|NONE> --head <head.ipynb>
 
+--base and --head are FILE PATHS to the notebook revisions on disk -- NOT git
+refs. Passing a git ref (e.g. `--head HEAD` or `--base main`) is a usage error:
+the path does not exist, and the gate fails loudly with a SystemExit naming the
+cause, instead of silently reporting "no regression". `NONE` is the only
+accepted non-path value for --base; it means "new notebook, no base".
+
 Exit codes:
-    0 - no new HIGH findings in head (or head unreadable -> nothing to gate)
+    0 - no new HIGH findings in head (or head file present but unreadable -> nothing to gate)
     1 - one or more NEW HIGH findings introduced by head (regression)
 """
 
@@ -29,10 +35,21 @@ from scan_cell_ordering import scan_notebook  # noqa: E402
 
 
 def high_signatures(path: str | None) -> set[tuple[str, str]]:
-    """Set of (category, message) for HIGH findings of a notebook, or empty."""
-    if not path or path == "NONE" or not Path(path).exists():
+    """Set of (category, message) for HIGH findings of a notebook, or empty.
+
+    `None`/`"NONE"` mean "no base revision" and yield the empty set. A path
+    that was provided but does not exist is a usage error (a git ref is not a
+    file path): it raises SystemExit instead of silently reporting nothing.
+    """
+    if not path or path == "NONE":
         return set()
-    rep = scan_notebook(Path(path))
+    p = Path(path)
+    if not p.exists():
+        raise SystemExit(
+            "cell_order_ci: --base/--head attend un CHEMIN de fichier, "
+            f"reçu {path!r} qui n'existe pas (une ref git ne convient pas)"
+        )
+    rep = scan_notebook(p)
     if rep.get("error"):
         return set()
     return {(f["category"], f["message"]) for f in rep["findings"] if f["severity"] == "HIGH"}
