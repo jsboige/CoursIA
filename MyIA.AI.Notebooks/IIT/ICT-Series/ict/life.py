@@ -237,3 +237,34 @@ def calibrate(name: str, size: int = 32) -> Tuple[bool, Dict[str, object]]:
 def calibrate_all() -> Dict[str, bool]:
     """Calibration de tous les patterns canoniques (utilisee par les tests)."""
     return {name: calibrate(name)[0] for name in _PATTERNS}
+
+
+def trajectory_symbols(traj: List[np.ndarray]) -> Tuple[List[str], Dict[str, np.ndarray]]:
+    """Encode une trajectoire de grilles en labels d'etats discrets.
+
+    Chaque grille est identifiee par son **contenu** (octets) : deux grilles de
+    meme disposition portent le meme label, independamment de leur instant
+    d'observation. Les labels (``"e0"``, ``"e1"``, ...) suivent l'ordre de
+    PREMIERE apparition, ce qui rend l'encodage reproductible et lisible.
+
+    C'est le pont vers la batterie de mesures ICT : la suite de labels est
+    directement consommable par :func:`ict.tpm_estimation.tpm_from_trajectory`
+    (etats hashables), qui en tire la chaine de Markov empirique dont
+    :mod:`ict.causal_emergence` mesure le profil causal. Sur une dynamique
+    deterministe comme B3/S23, le nombre d'etats distincts d'une trajectoire
+    fermee est la **longueur du cycle** (ex. glider sur tore 16x16 : 64).
+
+    Retourne ``(symbols, states)`` ou ``states[label]`` redonne la grille
+    representative de chaque etat (pour inspection apres mesure).
+    """
+    symbols: List[str] = []
+    canon: Dict[bytes, str] = {}
+    states: Dict[str, np.ndarray] = {}
+    for g in traj:
+        key = g.tobytes()
+        if key not in canon:
+            label = f"e{len(canon)}"
+            canon[key] = label
+            states[label] = g
+        symbols.append(canon[key])
+    return symbols, states

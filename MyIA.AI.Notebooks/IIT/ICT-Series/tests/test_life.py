@@ -125,3 +125,33 @@ def test_embed_rejects_oversized_pattern():
 
     with pytest.raises(ValueError):
         embed(canonical_pattern("pulsar"), 4)
+
+
+# ------------------------------------------------- pont batterie ICT (#5726)
+def test_trajectory_symbols_blinker_alternates():
+    from ict.life import trajectory_symbols
+
+    traj = trajectory(embed(canonical_pattern("blinker"), 8), 6)
+    symbols, states = trajectory_symbols(traj)
+    assert symbols == ["e0", "e1", "e0", "e1", "e0", "e1", "e0"]
+    assert len(states) == 2
+
+
+def test_trajectory_symbols_block_single_state():
+    from ict.life import trajectory_symbols
+
+    traj = trajectory(embed(canonical_pattern("block"), 8), 10)
+    symbols, states = trajectory_symbols(traj)
+    assert symbols == ["e0"] * 11
+    assert len(states) == 1
+
+
+def test_trajectory_symbols_glider_cycle_length():
+    # Glider sur tore 16x16 : deplacement (1, 1) par periode de 4, retour a
+    # l'etat initial apres 16 pas de deplacement = 64 generations.
+    from ict.life import trajectory_symbols
+
+    traj = trajectory(embed(canonical_pattern("glider"), 16), 64)
+    symbols, states = trajectory_symbols(traj)
+    assert len(states) == 64
+    assert symbols[0] == symbols[-1]  # la fenetre referme le cycle
