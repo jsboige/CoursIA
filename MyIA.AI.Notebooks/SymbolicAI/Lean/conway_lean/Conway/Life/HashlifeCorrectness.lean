@@ -2659,6 +2659,296 @@ theorem n9_grid_agree {k : Nat}
       rw [← hp'] at h0
       exact Or.inr (Or.inr (Or.inr (((mem_toGrid_shift (c := d4) (r0 := (2^k : Int)) (c0 := (2^k : Int)) (p := (q.1 - (2*(2^k : Int)), q.2 - (2*(2^k : Int))))).mpr h0))))
 
+/-! ### P4-At sortie mono-ronde : decomposition 16-voies (grain 3b, partie 4)
+
+Preparation du LHS du pas inductif de `hashlifeResultAt_central_correct` :
+la fenetre certifiee `[2^(M-2), 2^(M-2) + 2^(M-1))^2` (cf `p4at_ext_bridge`,
+`restrictGridTo` prend lo et SIZE) couvre la sortie ENTIÈRE du moteur At
+lue a l'ancre `(2^(M-2), 2^(M-2))`. Les seize sous-cellules `subX r_i`
+(niveau `k`, cote `2^k`) pavent ce carre en grille 4x4 ; `r5` (centre)
+y figure quatre fois. Decomposition par deux niveaux de
+`mem_toGrid_node` + normalisation des offsets (`2*2^k + 2^k = 3*2^k`),
+sans navettes : les seize disjonctes sont deja les `subX r_i`. Les faits
+de niveau des sous-cellules viennent de `subX_level_cellWf` (partie 3,
+premier consommateur). -/
+
+theorem out16_toGrid_mem {k : Nat}
+    (r1 r2 r3 r4 r5 r6 r7 r8 r9 : MacroCell)
+    (hr1w : r1.wf = true) (hr1l : r1.level = k + 1)
+    (hr2w : r2.wf = true) (hr2l : r2.level = k + 1)
+    (hr3w : r3.wf = true) (hr3l : r3.level = k + 1)
+    (hr4w : r4.wf = true) (hr4l : r4.level = k + 1)
+    (hr5w : r5.wf = true) (hr5l : r5.level = k + 1)
+    (hr6w : r6.wf = true) (hr6l : r6.level = k + 1)
+    (hr7w : r7.wf = true) (hr7l : r7.level = k + 1)
+    (hr8w : r8.wf = true) (hr8l : r8.level = k + 1)
+    (hr9w : r9.wf = true) (hr9l : r9.level = k + 1)
+    (a b : Int) (q : Int × Int) :
+    q ∈ (node (node (subSE r1) (subSW r2) (subNE r4) (subNW r5))
+             (node (subSE r2) (subSW r3) (subNE r5) (subNW r6))
+             (node (subSE r4) (subSW r5) (subNE r7) (subNW r8))
+             (node (subSE r5) (subSW r6) (subNE r8) (subNW r9))).toGrid (a, b) ↔
+      q ∈ (subSE r1).toGrid (a, b) ∨
+      q ∈ (subSW r2).toGrid (a, (b + (2^k : Int))) ∨
+      q ∈ (subNE r4).toGrid ((a + (2^k : Int)), b) ∨
+      q ∈ (subNW r5).toGrid ((a + (2^k : Int)), (b + (2^k : Int))) ∨
+      q ∈ (subSE r2).toGrid (a, (b + (2*(2^k : Int)))) ∨
+      q ∈ (subSW r3).toGrid (a, (b + (3*(2^k : Int)))) ∨
+      q ∈ (subNE r5).toGrid ((a + (2^k : Int)), (b + (2*(2^k : Int)))) ∨
+      q ∈ (subNW r6).toGrid ((a + (2^k : Int)), (b + (3*(2^k : Int)))) ∨
+      q ∈ (subSE r4).toGrid ((a + (2*(2^k : Int))), b) ∨
+      q ∈ (subSW r5).toGrid ((a + (2*(2^k : Int))), (b + (2^k : Int))) ∨
+      q ∈ (subNE r7).toGrid ((a + (3*(2^k : Int))), b) ∨
+      q ∈ (subNW r8).toGrid ((a + (3*(2^k : Int))), (b + (2^k : Int))) ∨
+      q ∈ (subSE r5).toGrid ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) ∨
+      q ∈ (subSW r6).toGrid ((a + (2*(2^k : Int))), (b + (3*(2^k : Int)))) ∨
+      q ∈ (subNE r8).toGrid ((a + (3*(2^k : Int))), (b + (2*(2^k : Int)))) ∨
+      q ∈ (subNW r9).toGrid ((a + (3*(2^k : Int))), (b + (3*(2^k : Int)))) := by
+  have hSE1l : (subSE r1).level = k :=
+    (subSE_level_cellWf (m := k) (cellWf_of_wf _ hr1w) hr1l).1
+  have hSW2l : (subSW r2).level = k :=
+    (subSW_level_cellWf (m := k) (cellWf_of_wf _ hr2w) hr2l).1
+  have hNE4l : (subNE r4).level = k :=
+    (subNE_level_cellWf (m := k) (cellWf_of_wf _ hr4w) hr4l).1
+  have hNW5l : (subNW r5).level = k :=
+    (subNW_level_cellWf (m := k) (cellWf_of_wf _ hr5w) hr5l).1
+  have hSE2l : (subSE r2).level = k :=
+    (subSE_level_cellWf (m := k) (cellWf_of_wf _ hr2w) hr2l).1
+  have hSW3l : (subSW r3).level = k :=
+    (subSW_level_cellWf (m := k) (cellWf_of_wf _ hr3w) hr3l).1
+  have hNE5l : (subNE r5).level = k :=
+    (subNE_level_cellWf (m := k) (cellWf_of_wf _ hr5w) hr5l).1
+  have hNW6l : (subNW r6).level = k :=
+    (subNW_level_cellWf (m := k) (cellWf_of_wf _ hr6w) hr6l).1
+  have hSE4l : (subSE r4).level = k :=
+    (subSE_level_cellWf (m := k) (cellWf_of_wf _ hr4w) hr4l).1
+  have hSW5l : (subSW r5).level = k :=
+    (subSW_level_cellWf (m := k) (cellWf_of_wf _ hr5w) hr5l).1
+  have hNE7l : (subNE r7).level = k :=
+    (subNE_level_cellWf (m := k) (cellWf_of_wf _ hr7w) hr7l).1
+  have hNW8l : (subNW r8).level = k :=
+    (subNW_level_cellWf (m := k) (cellWf_of_wf _ hr8w) hr8l).1
+  have hSE5l : (subSE r5).level = k :=
+    (subSE_level_cellWf (m := k) (cellWf_of_wf _ hr5w) hr5l).1
+  have hSW6l : (subSW r6).level = k :=
+    (subSW_level_cellWf (m := k) (cellWf_of_wf _ hr6w) hr6l).1
+  have hNE8l : (subNE r8).level = k :=
+    (subNE_level_cellWf (m := k) (cellWf_of_wf _ hr8w) hr8l).1
+  have hNW9l : (subNW r9).level = k :=
+    (subNW_level_cellWf (m := k) (cellWf_of_wf _ hr9w) hr9l).1
+  have hQ1l : (node (subSE r1) (subSW r2) (subNE r4) (subNW r5)).level = k + 1 := by
+    show 1 + (subSE r1).level = k + 1
+    omega
+  rw [mem_toGrid_node, hQ1l, pow_two_succ_eq_int]
+  first | simp only [Int.zero_add, Int.add_zero] | skip
+  constructor
+  · rintro (hQ1 | hQ2 | hQ3 | hQ4)
+    · rw [mem_toGrid_node, hSE1l] at hQ1
+      first | simp only [Int.zero_add, Int.add_zero] at hQ1 | skip
+      rcases hQ1 with (e1 | e2 | e3 | e4)
+      · have hp : (a, b) = (a, b) := by
+          congr 1 <;> ring
+        rw [hp] at e1
+        exact Or.inl e1
+      · have hp : (a, (b + (2^k : Int))) = (a, (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp] at e2
+        exact Or.inr (Or.inl e2)
+      · have hp : ((a + (2^k : Int)), b) = ((a + (2^k : Int)), b) := by
+          congr 1 <;> ring
+        rw [hp] at e3
+        exact Or.inr (Or.inr (Or.inl e3))
+      · have hp : ((a + (2^k : Int)), (b + (2^k : Int))) = ((a + (2^k : Int)), (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp] at e4
+        exact Or.inr (Or.inr (Or.inr (Or.inl e4)))
+    · rw [mem_toGrid_node, hSE2l] at hQ2
+      first | simp only [Int.zero_add, Int.add_zero] at hQ2 | skip
+      rcases hQ2 with (e1 | e2 | e3 | e4)
+      · have hp : (a, (b + (2*(2^k : Int)))) = (a, (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e1
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e1))))
+      · have hp : (a, ((b + (2*(2^k : Int))) + (2^k : Int))) = (a, (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e2
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e2)))))
+      · have hp : ((a + (2^k : Int)), (b + (2*(2^k : Int)))) = ((a + (2^k : Int)), (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e3
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e3))))))
+      · have hp : ((a + (2^k : Int)), ((b + (2*(2^k : Int))) + (2^k : Int))) = ((a + (2^k : Int)), (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e4
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e4)))))))
+    · rw [mem_toGrid_node, hSE4l] at hQ3
+      first | simp only [Int.zero_add, Int.add_zero] at hQ3 | skip
+      rcases hQ3 with (e1 | e2 | e3 | e4)
+      · have hp : ((a + (2*(2^k : Int))), b) = ((a + (2*(2^k : Int))), b) := by
+          congr 1 <;> ring
+        rw [hp] at e1
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e1))))))))
+      · have hp : ((a + (2*(2^k : Int))), (b + (2^k : Int))) = ((a + (2*(2^k : Int))), (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp] at e2
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e2)))))))))
+      · have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), b) = ((a + (3*(2^k : Int))), b) := by
+          congr 1 <;> ring
+        rw [hp] at e3
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e3))))))))))
+      · have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), (b + (2^k : Int))) = ((a + (3*(2^k : Int))), (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp] at e4
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e4)))))))))))
+    · rw [mem_toGrid_node, hSE5l] at hQ4
+      first | simp only [Int.zero_add, Int.add_zero] at hQ4 | skip
+      rcases hQ4 with (e1 | e2 | e3 | e4)
+      · have hp : ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) = ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e1
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e1))))))))))))
+      · have hp : ((a + (2*(2^k : Int))), ((b + (2*(2^k : Int))) + (2^k : Int))) = ((a + (2*(2^k : Int))), (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e2
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e2)))))))))))))
+      · have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), (b + (2*(2^k : Int)))) = ((a + (3*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e3
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl e3))))))))))))))
+      · have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), ((b + (2*(2^k : Int))) + (2^k : Int))) = ((a + (3*(2^k : Int))), (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp] at e4
+        exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (e4)))))))))))))))
+  · rintro (h1 | h2 | h3 | h4 | h5 | h6 | h7 | h8 | h9 | h10 | h11 | h12 | h13 | h14 | h15 | h16)
+    · have hQ1 : q ∈ (node (subSE r1) (subSW r2) (subNE r4) (subNW r5)).toGrid (a, b) := by
+        rw [mem_toGrid_node, hSE1l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (a, b) = (a, b) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inl h1
+      exact Or.inl hQ1
+    · have hQ1 : q ∈ (node (subSE r1) (subSW r2) (subNE r4) (subNW r5)).toGrid (a, b) := by
+        rw [mem_toGrid_node, hSE1l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (a, (b + (2^k : Int))) = (a, (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inl h2)
+      exact Or.inl hQ1
+    · have hQ1 : q ∈ (node (subSE r1) (subSW r2) (subNE r4) (subNW r5)).toGrid (a, b) := by
+        rw [mem_toGrid_node, hSE1l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2^k : Int)), b) = ((a + (2^k : Int)), b) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inl h3))
+      exact Or.inl hQ1
+    · have hQ1 : q ∈ (node (subSE r1) (subSW r2) (subNE r4) (subNW r5)).toGrid (a, b) := by
+        rw [mem_toGrid_node, hSE1l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2^k : Int)), (b + (2^k : Int))) = ((a + (2^k : Int)), (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inr (h4)))
+      exact Or.inl hQ1
+    · have hQ2 : q ∈ (node (subSE r2) (subSW r3) (subNE r5) (subNW r6)).toGrid (a, (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE2l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (a, (b + (2*(2^k : Int)))) = (a, (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inl h5
+      exact Or.inr (Or.inl hQ2)
+    · have hQ2 : q ∈ (node (subSE r2) (subSW r3) (subNE r5) (subNW r6)).toGrid (a, (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE2l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (a, ((b + (2*(2^k : Int))) + (2^k : Int))) = (a, (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inl h6)
+      exact Or.inr (Or.inl hQ2)
+    · have hQ2 : q ∈ (node (subSE r2) (subSW r3) (subNE r5) (subNW r6)).toGrid (a, (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE2l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2^k : Int)), (b + (2*(2^k : Int)))) = ((a + (2^k : Int)), (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inl h7))
+      exact Or.inr (Or.inl hQ2)
+    · have hQ2 : q ∈ (node (subSE r2) (subSW r3) (subNE r5) (subNW r6)).toGrid (a, (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE2l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2^k : Int)), ((b + (2*(2^k : Int))) + (2^k : Int))) = ((a + (2^k : Int)), (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inr (h8)))
+      exact Or.inr (Or.inl hQ2)
+    · have hQ3 : q ∈ (node (subSE r4) (subSW r5) (subNE r7) (subNW r8)).toGrid ((a + (2*(2^k : Int))), b) := by
+        rw [mem_toGrid_node, hSE4l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2*(2^k : Int))), b) = ((a + (2*(2^k : Int))), b) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inl h9
+      exact Or.inr (Or.inr (Or.inl hQ3))
+    · have hQ3 : q ∈ (node (subSE r4) (subSW r5) (subNE r7) (subNW r8)).toGrid ((a + (2*(2^k : Int))), b) := by
+        rw [mem_toGrid_node, hSE4l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2*(2^k : Int))), (b + (2^k : Int))) = ((a + (2*(2^k : Int))), (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inl h10)
+      exact Or.inr (Or.inr (Or.inl hQ3))
+    · have hQ3 : q ∈ (node (subSE r4) (subSW r5) (subNE r7) (subNW r8)).toGrid ((a + (2*(2^k : Int))), b) := by
+        rw [mem_toGrid_node, hSE4l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), b) = ((a + (3*(2^k : Int))), b) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inl h11))
+      exact Or.inr (Or.inr (Or.inl hQ3))
+    · have hQ3 : q ∈ (node (subSE r4) (subSW r5) (subNE r7) (subNW r8)).toGrid ((a + (2*(2^k : Int))), b) := by
+        rw [mem_toGrid_node, hSE4l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), (b + (2^k : Int))) = ((a + (3*(2^k : Int))), (b + (2^k : Int))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inr (h12)))
+      exact Or.inr (Or.inr (Or.inl hQ3))
+    · have hQ4 : q ∈ (node (subSE r5) (subSW r6) (subNE r8) (subNW r9)).toGrid ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE5l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) = ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inl h13
+      exact Or.inr (Or.inr (Or.inr (hQ4)))
+    · have hQ4 : q ∈ (node (subSE r5) (subSW r6) (subNE r8) (subNW r9)).toGrid ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE5l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : ((a + (2*(2^k : Int))), ((b + (2*(2^k : Int))) + (2^k : Int))) = ((a + (2*(2^k : Int))), (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inl h14)
+      exact Or.inr (Or.inr (Or.inr (hQ4)))
+    · have hQ4 : q ∈ (node (subSE r5) (subSW r6) (subNE r8) (subNW r9)).toGrid ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE5l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), (b + (2*(2^k : Int)))) = ((a + (3*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inl h15))
+      exact Or.inr (Or.inr (Or.inr (hQ4)))
+    · have hQ4 : q ∈ (node (subSE r5) (subSW r6) (subNE r8) (subNW r9)).toGrid ((a + (2*(2^k : Int))), (b + (2*(2^k : Int)))) := by
+        rw [mem_toGrid_node, hSE5l]
+        first | simp only [Int.zero_add, Int.add_zero] | skip
+        have hp : (((a + (2*(2^k : Int))) + (2^k : Int)), ((b + (2*(2^k : Int))) + (2^k : Int))) = ((a + (3*(2^k : Int))), (b + (3*(2^k : Int)))) := by
+          congr 1 <;> ring
+        rw [hp]
+        exact Or.inr (Or.inr (Or.inr (h16)))
+      exact Or.inr (Or.inr (Or.inr (hQ4)))
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
