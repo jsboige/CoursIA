@@ -31,7 +31,7 @@ package «mimo_lean» where
   leanOptions := #[⟨`autoImplicit, false⟩]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.0"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
 
 require slt from git
   "https://github.com/YuanheZ/lean-stat-learning-theory.git" @ "d0f506f0a695018265dccb33bcb05e2f5ca1c876"
