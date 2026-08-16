@@ -26,6 +26,21 @@ from scan_media_render import (  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent.parent.parent
 
+# CLIQUET du controle positif `test_triage_30_legacy_still_flags_them`.
+#
+# Nombre de notebooks du tri #10996 encore signales par le predicat LEGACY.
+# Il BAISSE a mesure que les tranches reparent les notebooks (une sortie
+# `audio/*` apparait dans le JSON -> legacy cesse legitimement de signaler) :
+#
+#   30  au tri initial (#10996)
+#   21  apres tranche B (#11166, 9 notebooks republies via audio_helpers.py)
+#
+# Le test assert `flagged <= CEILING` : il rougit quand le compte REMONTE
+# (regression reelle), jamais quand il baisse (reparation reussie). Abaisser
+# cette valeur est facultatif et se fait en nommant la tranche ; la RELEVER
+# est interdit sans diagnostic — c'est le signal, pas le bruit.
+LEGACY_FLAGGED_CEILING = 21
+
 # Les 30 notebooks du tri #10996 (tranches A/B/C/D) — chemins exacts verifies
 # sur main au tri (issuecomments 5299344909, 5299156801, 5299386143, 5299391278).
 TRIAGE_30 = [
@@ -343,7 +358,30 @@ def test_triage_30_no_false_defect():
 
 
 def test_triage_30_legacy_still_flags_them():
-    """Controle positif : l'ancien predicat DOIT encore signaler les 30."""
+    """Controle positif : l'ancien predicat DOIT encore signaler une partie des 30.
+
+    Ce test rend `test_triage_30_no_false_defect` NON VACUEUX : il prouve que le
+    predicat enrichi (qui ne signale aucun des 30) dit bien autre chose que le
+    predicat legacy sur ce meme corpus.
+
+    Le compte n'est PAS fige a 30, et ne doit pas l'etre. Les tranches de #10996
+    reparent reellement ces notebooks — quand une sortie `audio/*` apparait dans
+    le JSON, le predicat legacy cesse legitimement de les signaler. Figer 30
+    faisait donc echouer `main` a **chaque reparation reussie** (tranche B /
+    #11166 : 9 notebooks republies via `audio_helpers.py`, 30 -> 21, `main` rouge
+    sur le merge). Un controle qui rougit quand le depot s'ameliore mesure le
+    contraire de ce qu'il annonce.
+
+    L'invariant qui tient dans les deux sens :
+
+    - le compte ne peut que **BAISSER** (une hausse = regression d'un notebook
+      deja repare, ou erosion du predicat legacy — les deux sont de vrais bugs) ;
+    - il doit rester **> 0** tant que #10996 n'est pas clos, sinon le controle
+      est vacueux.
+
+    Quand #10996 sera entierement livre, `flagged` tombera a 0 : ce test aura
+    alors fait son office et devra etre **retire**, pas rafistole.
+    """
     missing = [p for p in TRIAGE_30 if not (REPO / p).exists()]
     if missing:
         pytest.skip(f"corpus GenAI absent: {missing[:2]}")
@@ -351,7 +389,18 @@ def test_triage_30_legacy_still_flags_them():
         1 for p in TRIAGE_30
         if scan_notebook(REPO / p, REPO).verdict(legacy=True) == "NO_MEDIA_RENDERED"
     )
-    assert flagged == 30, f"le predicat legacy ne signale plus les 30 (actuel: {flagged})"
+    assert flagged <= LEGACY_FLAGGED_CEILING, (
+        f"le predicat legacy signale {flagged} notebooks du tri #10996, contre "
+        f"{LEGACY_FLAGGED_CEILING} au dernier relevé. Un compte qui REMONTE ne "
+        f"peut venir que d'une regression : soit un notebook deja republie a "
+        f"reperdu ses sorties media, soit le predicat legacy a change. "
+        f"Ne PAS relever le plafond pour faire passer le test — diagnostiquer."
+    )
+    assert flagged > 0, (
+        "le predicat legacy ne signale plus AUCUN des 30 : soit #10996 est "
+        "entierement livre (retirer ce test, il est devenu vacueux), soit le "
+        "predicat legacy a ete casse et ne signale plus rien"
+    )
 
 
 
