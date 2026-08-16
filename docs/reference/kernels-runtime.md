@@ -59,6 +59,35 @@ dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.617701
 dotnet interactive jupyter install
 ```
 
+### Consequence du pin : plafond Roslyn 4.12.0.0 sur les packages NuGet
+
+Le pin n'est pas gratuit. `1.0.617701` **embarque Roslyn 4.12.0.0** (`Microsoft.CodeAnalysis.CSharp.dll`, FileVersion `4.1200.24.57207`, mesure firsthand sur ai-01 le 2026-08-16 dans `.dotnet/tools/.store/.../tools/net9.0/any/`). Tout package reference par `#r "nuget: ..."` qui **exige** une version superieure echoue au chargement :
+
+```
+System.IO.FileNotFoundException: Could not load file or assembly
+'Microsoft.CodeAnalysis.CSharp, Version=4.13.0.0, ...'
+```
+
+**Un `#r "nuget: Microsoft.CodeAnalysis.CSharp, 4.13.0"` ne repare PAS ce cas** : le kernel a deja charge son propre Roslyn dans l'ALC au demarrage, et `#r` ne substitue pas une assembly deja resolue. Le correctif est donc **toujours cote package**, jamais cote kernel — remonter le kernel casserait `#!import` sur tout le depot (tableau ci-dessus).
+
+Instance mesuree (#11104, ML-3 AutoML) :
+
+| Package | Dependance `Microsoft.CodeAnalysis.CSharp` | Sur le kernel pinne |
+|---|---|---|
+| `Microsoft.ML.AutoML` **0.23.0** | `[4.13.0, )` | **echoue** — `FileNotFoundException` |
+| `Microsoft.ML.AutoML` **0.22.3** | `[4.9.2, )` | **OK** — satisfait par 4.12.0.0 |
+
+`0.22.3` prend `Microsoft.ML [4.0.3, )`, borne **ouverte** : le pin `Microsoft.ML, 5.0.0` du notebook reste valide. Mesure de bout en bout apres bascule : **10/10 cellules, 0 erreur, 86,1 s**.
+
+Verifier la dependance d'un package avant d'incriminer le kernel :
+
+```bash
+grep -o 'id="Microsoft.CodeAnalysis[^"]*" version="[^"]*"' \
+  ~/.nuget/packages/<pkg>/<version>/<pkg>.nuspec
+```
+
+**Piege de diagnostic adjacent** : sur cet hote (32 threads), un notebook .NET non borne en threads OpenMP part en timeouts de cellule qui *ressemblent* a un blocage kernel. `OMP_NUM_THREADS=4` a ramene ce meme notebook de **6 380,9 s (7 cellules en timeout a 900 s)** a **14,8 s** — facteur **x431**. Borner les threads **avant** de conclure a un hang.
+
 ## Python 3.10+ (notebooks Python)
 
 Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python).
