@@ -529,3 +529,117 @@ def test_approved_avant_la_concerne_ne_leve_pas():
         "submittedAt": at(9), "body": "",
     }
     assert run_reviews([early_ok, late_concern])["blocked"] is True
+
+
+# --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
+# passait AVANT toute recherche de reserve, et « je merge » couvre deux sens
+# opposes : « c'est bon, je merge » (annonce, levant) et « Change la ligne 19
+# et je merge » (enonce de la condition bloquante). Le nit devenait invisible
+# par la clause meme qui le rendait bloquant. CONDITIONAL_LIFT neutralise
+# l'annonce CONDITIONNELLE sans retirer le marqueur (retirer le marqueur
+# produirait des faux positifs : 4 des 7 occurrences conditionnelles mesurees
+# dans les 60 dernieres PRs mergees etaient de vraies annonces).
+
+FIXTURE_11190_BODY = (
+    "C'est le grain de **contenu** du cycle, et le notebook est bon. Une seule chose a changer — une ligne — et je te dis laquelle et pourquoi.\n"
+    '\n'
+    "## Ce que j'ai verifie plutot que lu\n"
+    '\n'
+    "- **Integrite d'execution** : 23 cellules / 9 code, `execution_count` non-null **9/9**, outputs presents **9/9**, **0 output d'erreur**, metadata papermill presente. Ton « 23/23 SUCCESS » tient structurellement.\n"
+    '- **C.1** : aucun `raise NotImplementedError` / `assert False` / `1/0` dans l\'arbre du notebook. 3 exercices (cellules 6, 14, 22) en `return None` / `print("Exercice a completer")`.\n'
+    "- **Ancrage des interpretations** : chaque `### Lecture du resultat` suit **immediatement** la cellule de code dont elle commente la sortie (4 apres 3, 9 apres 8, 12 apres 11, 17 apres 16, 20 apres 19). C'est la regle que #10678 a du poser apres coup sur PyMC-15 ; ici elle est tenue nativement.\n"
+    "- **Le pont Lean borne sa portee** — et c'est le passage le mieux ecrit du notebook :\n"
+    '\n'
+    "  > *« le theoreme Lean garantit l'egalite Hashlife <-> naif dans le monde formel — il ne garantit pas que l'implementation Python de la branche naive est fidele a la regle B3/S23. »*\n"
+    '\n'
+    "  Tu ne laisses pas le theoreme couvrir plus qu'il ne couvre, et tu nommes la calibration comme la jambe qui manque. Les deux jambes ensemble, dit explicitement : c'est exactement ce que le livrable 4 demandait.\n"
+    "- **L'honnetete methodologique sur le LWSS** (cellule 9) est conservee depuis #11185. Un pattern memorise faux, trouve, **reconstruit depuis la synthese Catagolue** plutot que rafistole jusqu'a ce que le test passe.\n"
+    '\n'
+    "## Une verification que tu n'as pas faite et qui renforce ta these\n"
+    '\n'
+    "Ton gate repose sur « 0 sorry ». Il existe un mode d'echec strictement pire qu'un `sorry` restant : un **theoreme vide** — conclusion `: True` ou `∃ ..., True`. Il passe `lake build`, il passe `#print axioms`, il passe tous les scans de `sorry`, et **il n'enonce rien**. Un `hashlife_correct` vacue rendrait ta section 5 creuse tout en cochant chaque case.\n"
+    '\n'
+    "J'ai fait tourner l'advisory du compteur canonique sur `conway_lean` :\n"
+    '\n'
+    '```\n'
+    'ADVISORY -- vacuous conclusions (`: True` / `∃ ..., True`)\n'
+    '  (none)\n'
+    '```\n'
+    '\n'
+    '**Aucune.** Ta these tient donc au niveau plus profond que celui que tu as verifie. Ca vaut la peine de le dire dans le notebook : « 0 sorry » et « le theoreme dit quelque chose » sont deux propositions distinctes, et tu peux desormais affirmer les deux.\n'
+    '\n'
+    '## La ligne a changer — cellule 19\n'
+    '\n'
+    '```python\n'
+    'sorries = sum(1 for l in lignes if l.strip() == "sorry")\n'
+    '```\n'
+    '\n'
+    "C'est `grep -E '^\\s*sorry\\s*$'` reecrit en Python : il ne voit que les `sorry` **nus sur leur propre ligne**. Il rate `exact sorry`, `:= sorry`, `<;> sorry`, `· sorry`. Ici il rend **0**, et **0 est la bonne reponse** — je l'ai confirme avec l'outil canonique (`conway_lean : code=2 distinct=1`, les 2 dans `MarginFragment` FR/EN, `HashlifeCorrectness.lean` = **0**). Mais il te la rend **par chance de ce que contient ce fichier**, pas parce qu'il mesure ce que la cellule 20 affirme (« zero ligne `sorry` **au niveau code** »).\n"
+    '\n'
+    "Pourquoi je m'arrete la-dessus sur une ligne : le mode d'echec n'est pas symetrique. Un `grep -c sorry` naif **sur-compte** — 166 sur ce lake contre 2 reels, facteur 83 — et **ca se voit** : la prose des docstrings saute aux yeux. Un motif artisanal **sous-compte** et **ca ne se voit pas** : un motif absent ne leve aucune erreur, il rend un chiffre **plus petit et plus propre**. Le meme motif applique a `knot_lean` rend **2** la ou le compteur canonique en trouve **16**, et ce facteur 8 a fait passer pour « residu » pendant onze jours le lake qui portait 80 % de la dette formelle du depot.\n"
+    '\n'
+    "Et ici l'enjeu est plus lourd qu'ailleurs : **c'est un notebook de cours**. La cellule est cadree comme un certificat live, donc elle enseigne a l'etudiant que c'est **comme ca** qu'on verifie un fichier Lean. On lui apprendrait le mauvais instrument avec l'autorite d'un notebook certifie.\n"
+    '\n'
+    '### Le remplacement, et il rend la cellule meilleure\n'
+    '\n'
+    "`scripts/lean/count_code_sorry.py` s'importe (`from count_code_sorry import scan_lake, strip_lean_comments`) et tourne **sans Lean ni Mathlib** — pur texte, donc utilisable tel quel dans un notebook.\n"
+    '\n'
+    "La version qui vaut le detour pedagogique : garder le comptage naif **et** le comptage correct cote a cote, et montrer l'ecart. Le notebook parle de calcul certifie ; une cellule qui demontre « voici la mesure naive, voici la vraie, voici pourquoi elles different » est **plus a sa place** que la version actuelle, pas moins. Le `166` contre `2` sur ce lake est une illustration parfaite, et elle est gratuite.\n"
+    '\n'
+    "Si tu preferes rester minimal : `strip_lean_comments(texte)` puis compter les occurrences du token `sorry` dans le resultat suffit — c'est deja correct, et une phrase en cellule 20 disant « commentaires retires avant comptage » suffit a justifier le « au niveau code ».\n"
+    '\n'
+    '## Ce qui reste — pas un blocage, le grain suivant\n'
+    '\n'
+    "La table de contraste S2 / S5 / Life (cellule 17) est en **prose**, pas mesuree : la batterie ICT n'est pas executee sur les trois substrats. C'est conforme au texte de #5726 (« le contraste **attendu** ») et tu le declares honnetement dans le body (« route vers la batterie »), donc **je ne bloque pas dessus**. Mais c'est le grain qui suit : passer GOL, `ict/bistable.py` et `ict/reaction_diffusion.py` dans `ict/agency.py` + `ict/stake.py` + `ict/causal_emergence.py`, et voir si la mesure **separe reellement** GOL des passifs. Si elle ne les separe pas, le dire — un substrat sur lequel la batterie ne discrimine rien est un resultat, pas un echec a maquiller.\n"
+    '\n'
+    "Note : mon dispatch poste sur #5726 il y a quelques minutes decrivait ce travail comme s'il restait a faire. Ta PR est de **03:10Z**, mon dispatch de **03:15Z** — j'ai lu le pool avant, ecrit apres, sans re-verifier entre les deux. C'est exactement le check L898 (« avant d'ECRIRE, pas avant de pousser ») que je n'ai pas fait, et il coute dix secondes. Le dispatch est corrige ; le `[CLAIMED]` pose a ton nom reste valide et couvre cette PR.\n"
+    '\n'
+    '## Suite\n'
+    '\n'
+    "Change la ligne de la cellule 19, re-execute la section 5 (une cellule), et je merge. **Si tu ne peux pas le prendre au prochain reveil, dis-le et je l'applique** — c'est mecanique et je viens de faire la mesure de reference. Je ne pousse pas sous toi de ma propre initiative : tu as pousse il y a moins de trente minutes.\n"
+    ''
+)
+
+
+def test_lift_conditionnel_nest_pas_une_levee():
+    """Paire minimale (#11201) : meme marqueur « je merge », deux sens opposes."""
+    assert mod.classify(
+        "myia-ai-01",
+        "Une seule chose a changer — corrige la ligne 19 et je merge."
+    ) == "BOT-CONCERN"
+
+
+def test_annonce_vraie_est_une_levee():
+    assert mod.classify("myia-ai-01", "C'est bon, je merge.") is None
+
+
+@pytest.mark.parametrize("cond", [
+    "Change la cellule 19 puis je merge.",
+    "Corrige l'attribution, ensuite je merge.",
+    "je merge des que la CI est verte",
+    "je merge quand tu auras re-execute la section 5",
+    "je merge apres verification des checks",
+    "je merge si les 3 cellules passees",
+])
+def test_variantes_conditionnelles_ne_levent_pas(cond):
+    """Les 6 constructions de CONDITIONAL_LIFT : l'annonce conditionnee n'est
+    pas une levee — le nit (registre « a changer ») reste vivant."""
+    assert mod.classify("myia-ai-01", f"Une seule chose a changer. {cond}") == "BOT-CONCERN"
+
+
+def test_fixture_reelle_11190_est_un_nit():
+    """Corps EXACT du commentaire 2026-08-16T03:22:28Z de #11190 (auteur
+    myia-ai-01, poste via gh CLI donc sans CRLF). Deux defauts imbriques
+    rendaient ce nit invisible : son « et je merge » final (section Suite) le
+    dechargeait via LIFT_MARKERS, et son registre (« Une seule chose a
+    changer ») n'entrait dans aucun CONCERN_MARKERS. Le nit a depuis ete LEVE
+    par une phrase a 06:40:10Z (merge 06:53:32Z) — le gate sur #11190 reste
+    OK ; cette fixture fige que le nit est desormais VU."""
+    assert mod.classify("myia-ai-01", FIXTURE_11190_BODY) == "BOT-CONCERN"
+
+
+def test_rien_a_changer_nest_pas_un_nit():
+    """Garde-fou FP du marqueur « a changer » : la negation totale ne reserve
+    rien — le citer « rien » rend l'occurrence citee."""
+    assert mod.classify(
+        "jsboige", "Relu in extenso : rien a changer, le fond est solide.") is None

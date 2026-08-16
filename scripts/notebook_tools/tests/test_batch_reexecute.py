@@ -4,13 +4,19 @@ Tests focus on pure functions: needs_reexecution, get_kernel_name.
 No filesystem I/O on production files.
 """
 
+import json
 import sys
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from batch_reexecute import get_kernel_name, needs_reexecution, _normalize_kernel_paths
+from batch_reexecute import (
+    get_kernel_name,
+    needs_reexecution,
+    read_kernelspec_name,
+    _normalize_kernel_paths,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -90,6 +96,56 @@ class TestGetKernelName:
     def test_dotnet_in_name(self):
         """Any '.net' substring maps to .net-interactive."""
         assert get_kernel_name({"kernel": ".NET Interactive"}) == ".net-interactive"
+
+    def test_kernelspec_shaped_passthrough_csharp(self):
+        """A kernelspec name (no space) from --path passes through untouched
+        instead of being remapped to an unrelated kernel (#11199)."""
+        assert get_kernel_name({"kernel": ".net-csharp"}) == ".net-csharp"
+
+    def test_kernelspec_shaped_passthrough_fsharp(self):
+        assert get_kernel_name({"kernel": ".net-fsharp"}) == ".net-fsharp"
+
+    def test_kernelspec_shaped_passthrough_python3(self):
+        assert get_kernel_name({"kernel": "python3"}) == "python3"
+
+    def test_kernelspec_shaped_passthrough_wsl(self):
+        assert get_kernel_name({"kernel": "lean4-wsl"}) == "lean4-wsl"
+
+
+# ---------------------------------------------------------------------------
+# read_kernelspec_name — kernel truth source for --path (#11199)
+# ---------------------------------------------------------------------------
+
+class TestReadKernelspecName:
+    def _write_nb(self, tmp_path: Path, metadata: dict) -> Path:
+        nb = {"cells": [], "metadata": metadata, "nbformat": 4,
+              "nbformat_minor": 5}
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        return p
+
+    def test_reads_kernelspec_name(self, tmp_path):
+        p = self._write_nb(
+            tmp_path,
+            {"kernelspec": {"name": ".net-csharp", "language": "C#"}},
+        )
+        assert read_kernelspec_name(p) == ".net-csharp"
+
+    def test_missing_kernelspec_falls_back_to_python3(self, tmp_path):
+        p = self._write_nb(tmp_path, {})
+        assert read_kernelspec_name(p) == "python3"
+
+    def test_empty_kernelspec_name_falls_back(self, tmp_path):
+        p = self._write_nb(tmp_path, {"kernelspec": {"name": ""}})
+        assert read_kernelspec_name(p) == "python3"
+
+    def test_malformed_json_falls_back(self, tmp_path):
+        p = tmp_path / "broken.ipynb"
+        p.write_text("{not json", encoding="utf-8")
+        assert read_kernelspec_name(p) == "python3"
+
+    def test_missing_file_falls_back(self, tmp_path):
+        assert read_kernelspec_name(tmp_path / "ghost.ipynb") == "python3"
 
 
 # ---------------------------------------------------------------------------

@@ -51,3 +51,7 @@ lean_lib «Lmmse» where
 @[default_target]
 lean_lib «Converse» where
   globs := #[`Converse, `Converse_en]
+
+@[default_target]
+lean_lib «Bridge» where
+  globs := #[`Bridge, `Bridge_en]
