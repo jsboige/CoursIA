@@ -3284,6 +3284,191 @@ theorem hashlifeResultAt_step_window_nw {M j : Nat} (hj : j + 2 ≤ M)
         (hext.2.2.1 : (2^(M-1) : Int) ≤ p.2),
         hext.2.2.2.trans_eq (Int.add_comm _ _)⟩
 
+/-! ### P5-At pas inductif (b) : ponts d'appartenance des sous-quadrants (grain 3b, partie 5b)
+
+Interface de consommation de l'Hypothese d'Induction pour le pas inductif
+de `hashlifeResultAt_central_correct` : lire un sous-quadrant `subX r` a
+son ancre de quadrant, c'est lire `r` restreint a la boite du quadrant.
+Les bras d'assemblage chaineront ces ponts avec l'HI (les `r_i` lus en
+`(2^k, 2^k)`, `k = M - 2`) puis la localite (`evolve_box_agree_local`).
+Preuve purement structurelle : `mem_toGrid_node` + exclusion des trois
+quadrants freres par bornes d'etendue (`mem_toGrid_extent` + normalisation
+du niveau enfant par les faits de la quadrique), omega uniquement dans les
+petits contextes de contradiction par bras ; bornes en forme additive
+scindee (`x + 2^k + 2^k`) pour matcher les litteraux d'etendue atome par
+atome.
+-/
+theorem sub_quadrant_mem_nw {r : MacroCell} {k : Nat} {x y : Int} {p : Int × Int}
+    (hr : r.level = k + 1) (hrw : r.wf = true) :
+    p ∈ (subNW r).toGrid (x, y) ↔
+      p ∈ r.toGrid (x, y) ∧ x ≤ p.1 ∧ p.1 < x + (2^k : Int) ∧
+        y ≤ p.2 ∧ p.2 < y + (2^k : Int) := by
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ a b c d, r = MacroCell.node a b c d := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node a b c d => exact ⟨a, b, c, d, rfl⟩
+  simp only [subNW]
+  obtain ⟨he1, he2, he3, he4, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := k) hr hrw
+  constructor
+  · intro hmem
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · rw [mem_toGrid_node]; exact Or.inl hmem
+    · have he := mem_toGrid_extent q1 x y p hw1 hmem
+      rw [he1] at he; exact he.1
+    · have he := mem_toGrid_extent q1 x y p hw1 hmem
+      rw [he1] at he; exact he.2.1
+    · have he := mem_toGrid_extent q1 x y p hw1 hmem
+      rw [he1] at he; exact he.2.2.1
+    · have he := mem_toGrid_extent q1 x y p hw1 hmem
+      rw [he1] at he; exact he.2.2.2
+  · rintro ⟨hmem, h1, h2, h3, h4⟩
+    rw [mem_toGrid_node, he1] at hmem
+    rcases hmem with hm | hm | hm | hm
+    · exact hm
+    · exfalso
+      have he := mem_toGrid_extent q2 x (y + (2^k : Int)) p hw2 hm
+      rw [he2] at he
+      omega
+    · exfalso
+      have he := mem_toGrid_extent q3 (x + (2^k : Int)) y p hw3 hm
+      rw [he3] at he
+      omega
+    · exfalso
+      have he := mem_toGrid_extent q4 (x + (2^k : Int)) (y + (2^k : Int)) p hw4 hm
+      rw [he4] at he
+      omega
+
+theorem sub_quadrant_mem_ne {r : MacroCell} {k : Nat} {x y : Int} {p : Int × Int}
+    (hr : r.level = k + 1) (hrw : r.wf = true) :
+    p ∈ (subNE r).toGrid (x, y + (2^k : Int)) ↔
+      p ∈ r.toGrid (x, y) ∧ x ≤ p.1 ∧ p.1 < x + (2^k : Int) ∧
+        y + (2^k : Int) ≤ p.2 ∧ p.2 < y + (2^k : Int) + (2^k : Int) := by
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ a b c d, r = MacroCell.node a b c d := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node a b c d => exact ⟨a, b, c, d, rfl⟩
+  simp only [subNE]
+  obtain ⟨he1, he2, he3, he4, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := k) hr hrw
+  constructor
+  · intro hmem
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · rw [mem_toGrid_node, he1]; exact Or.inr (Or.inl hmem)
+    · have he := mem_toGrid_extent q2 x (y + (2^k : Int)) p hw2 hmem
+      rw [he2] at he; exact he.1
+    · have he := mem_toGrid_extent q2 x (y + (2^k : Int)) p hw2 hmem
+      rw [he2] at he; exact he.2.1
+    · have he := mem_toGrid_extent q2 x (y + (2^k : Int)) p hw2 hmem
+      rw [he2] at he; exact he.2.2.1
+    · have he := mem_toGrid_extent q2 x (y + (2^k : Int)) p hw2 hmem
+      rw [he2] at he; exact he.2.2.2
+  · rintro ⟨hmem, h1, h2, h3, h4⟩
+    rw [mem_toGrid_node, he1] at hmem
+    rcases hmem with hm | hm | hm | hm
+    · exfalso
+      have he := mem_toGrid_extent q1 x y p hw1 hm
+      rw [he1] at he
+      omega
+    · exact hm
+    · exfalso
+      have he := mem_toGrid_extent q3 (x + (2^k : Int)) y p hw3 hm
+      rw [he3] at he
+      omega
+    · exfalso
+      have he := mem_toGrid_extent q4 (x + (2^k : Int)) (y + (2^k : Int)) p hw4 hm
+      rw [he4] at he
+      omega
+
+theorem sub_quadrant_mem_sw {r : MacroCell} {k : Nat} {x y : Int} {p : Int × Int}
+    (hr : r.level = k + 1) (hrw : r.wf = true) :
+    p ∈ (subSW r).toGrid (x + (2^k : Int), y) ↔
+      p ∈ r.toGrid (x, y) ∧ x + (2^k : Int) ≤ p.1 ∧
+        p.1 < x + (2^k : Int) + (2^k : Int) ∧
+        y ≤ p.2 ∧ p.2 < y + (2^k : Int) := by
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ a b c d, r = MacroCell.node a b c d := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node a b c d => exact ⟨a, b, c, d, rfl⟩
+  simp only [subSW]
+  obtain ⟨he1, he2, he3, he4, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := k) hr hrw
+  constructor
+  · intro hmem
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · rw [mem_toGrid_node, he1]; exact Or.inr (Or.inr (Or.inl hmem))
+    · have he := mem_toGrid_extent q3 (x + (2^k : Int)) y p hw3 hmem
+      rw [he3] at he; exact he.1
+    · have he := mem_toGrid_extent q3 (x + (2^k : Int)) y p hw3 hmem
+      rw [he3] at he; exact he.2.1
+    · have he := mem_toGrid_extent q3 (x + (2^k : Int)) y p hw3 hmem
+      rw [he3] at he; exact he.2.2.1
+    · have he := mem_toGrid_extent q3 (x + (2^k : Int)) y p hw3 hmem
+      rw [he3] at he; exact he.2.2.2
+  · rintro ⟨hmem, h1, h2, h3, h4⟩
+    rw [mem_toGrid_node, he1] at hmem
+    rcases hmem with hm | hm | hm | hm
+    · exfalso
+      have he := mem_toGrid_extent q1 x y p hw1 hm
+      rw [he1] at he
+      omega
+    · exfalso
+      have he := mem_toGrid_extent q2 x (y + (2^k : Int)) p hw2 hm
+      rw [he2] at he
+      omega
+    · exact hm
+    · exfalso
+      have he := mem_toGrid_extent q4 (x + (2^k : Int)) (y + (2^k : Int)) p hw4 hm
+      rw [he4] at he
+      omega
+
+theorem sub_quadrant_mem_se {r : MacroCell} {k : Nat} {x y : Int} {p : Int × Int}
+    (hr : r.level = k + 1) (hrw : r.wf = true) :
+    p ∈ (subSE r).toGrid (x + (2^k : Int), y + (2^k : Int)) ↔
+      p ∈ r.toGrid (x, y) ∧ x + (2^k : Int) ≤ p.1 ∧
+        p.1 < x + (2^k : Int) + (2^k : Int) ∧
+        y + (2^k : Int) ≤ p.2 ∧
+        p.2 < y + (2^k : Int) + (2^k : Int) := by
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ a b c d, r = MacroCell.node a b c d := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hr; omega
+    | node a b c d => exact ⟨a, b, c, d, rfl⟩
+  simp only [subSE]
+  obtain ⟨he1, he2, he3, he4, hw1, hw2, hw3, hw4⟩ :=
+    wf_node_quad_level (n := k) hr hrw
+  constructor
+  · intro hmem
+    refine ⟨?_, ?_, ?_, ?_, ?_⟩
+    · rw [mem_toGrid_node, he1]; exact Or.inr (Or.inr (Or.inr hmem))
+    · have he := mem_toGrid_extent q4 (x + (2^k : Int)) (y + (2^k : Int)) p hw4 hmem
+      rw [he4] at he; exact he.1
+    · have he := mem_toGrid_extent q4 (x + (2^k : Int)) (y + (2^k : Int)) p hw4 hmem
+      rw [he4] at he; exact he.2.1
+    · have he := mem_toGrid_extent q4 (x + (2^k : Int)) (y + (2^k : Int)) p hw4 hmem
+      rw [he4] at he; exact he.2.2.1
+    · have he := mem_toGrid_extent q4 (x + (2^k : Int)) (y + (2^k : Int)) p hw4 hmem
+      rw [he4] at he; exact he.2.2.2
+  · rintro ⟨hmem, h1, h2, h3, h4⟩
+    rw [mem_toGrid_node, he1] at hmem
+    rcases hmem with hm | hm | hm | hm
+    · exfalso
+      have he := mem_toGrid_extent q1 x y p hw1 hm
+      rw [he1] at he
+      omega
+    · exfalso
+      have he := mem_toGrid_extent q2 x (y + (2^k : Int)) p hw2 hm
+      rw [he2] at he
+      omega
+    · exfalso
+      have he := mem_toGrid_extent q3 (x + (2^k : Int)) y p hw3 hm
+      rw [he3] at he
+      omega
+    · exact hm
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
