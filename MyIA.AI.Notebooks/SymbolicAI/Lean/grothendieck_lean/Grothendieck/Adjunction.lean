@@ -289,20 +289,24 @@ certificat qui relie la propriété d'existence à l'adjonction concrète.
 /-- Pont : l'identité triangulaire gauche en version **globale** (égalité de
     transformations naturelles) : `whiskerRight η L ≫ whiskerLeft L ε = 𝟙 L`.
     C'est la version NatTrans de `left_triangle_components_apply` (section 7,
-    version pointwise). Délègue au lemme Mathlib `Adjunction.left_triangle`.
+    version pointwise). Délègue au lemme Mathlib
+    `Adjunction.left_triangle_components` (v4.32.0 : `left_triangle`
+    porte désormais associateurs/unitors explicites).
     Namespace theorem (L902 ★★ Tier 4) — lemma call direct. -/
 theorem left_triangle_nat {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
-    whiskerRight h.unit L ≫ whiskerLeft L h.counit = 𝟙 L :=
-  h.left_triangle
+    whiskerRight h.unit L ≫ whiskerLeft L h.counit = 𝟙 L := by
+  ext X; exact h.left_triangle_components X
 
 /-- Pont : l'identité triangulaire droite en version **globale** (égalité de
     transformations naturelles) : `whiskerLeft R η ≫ whiskerRight ε R = 𝟙 R`.
     C'est la version NatTrans de `right_triangle_components_apply` (section 7,
-    version pointwise). Délègue au lemme Mathlib `Adjunction.right_triangle`.
+    version pointwise). Délègue au lemme Mathlib
+    `Adjunction.right_triangle_components` (v4.32.0 : `right_triangle`
+    porte désormais associateurs/unitors explicites).
     Namespace theorem (L902 ★★ Tier 4) — lemma call direct. -/
 theorem right_triangle_nat {L : C ⥤ D} {R : D ⥤ C} (h : L ⊣ R) :
-    whiskerLeft R h.unit ≫ whiskerRight h.counit R = 𝟙 R :=
-  h.right_triangle
+    whiskerLeft R h.unit ≫ whiskerRight h.counit R = 𝟙 R := by
+  ext X; exact h.right_triangle_components X
 
 /-- Pont : la propriété pour un foncteur `L : C ⥤ D` d'être adjoint à gauche
     (avoir un adjoint à droite `R : D ⥤ C` avec `L ⊣ R`). C'est la classe de

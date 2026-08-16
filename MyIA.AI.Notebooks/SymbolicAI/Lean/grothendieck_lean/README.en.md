@@ -22,7 +22,7 @@ formalize EGA/SGA. The goal is to give learners a curated entry point into:
 
 ## The arc
 
-The **44 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
+The **46 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
 the raw site up to cohomology:
 
 ```mermaid
@@ -77,25 +77,27 @@ a `#check` index) states honestly what exists and what is missing, and
 comma categories, (co)limits, equivalences, Kan extensions, monoidal
 categories: the bedrock on which everything above is written.
 
-**The two recent veins** (Parts 33-44). The *six operations* thread opens with
+**The two recent veins** (Parts 33-46). The *six operations* thread opens with
 `DirectImage.lean` (Part 33, indexing the `f^* ⊣ f_*` adjunction) then
 `ExceptionalDirect.lean` (Part 34, #10357) which formalizes `f_! ⊣ f^*` at the
 presheaf level — the proper-support direct image as a left Kan extension, the
 missing link between `f^*` and `f_*`. In parallel, the *covering* program
-(Phase 5 of Epic #2159, waves 2026-08-14..16: #10879 → #11244) systematizes
+(Phase 5 of Epic #2159, waves 2026-08-14..16: #10879 → #11285) systematizes
 the arrow and bundled forms of the covering — from `covers_comp_iff` to the
-arrow form of the dense topology (Part 44), through the pullback pseudofunctor
-laws and the lattice of topologies.
+pushforward-pullback adjunction at the covering level (Part 45, #11262) and
+the bind as indexed transitivity (Part 46, #11285), through the arrow form of
+the dense topology (Part 44, #11244), the pullback pseudofunctor laws and the
+lattice of topologies.
 
 ## Code structure
 
-The formalization spans **44 leaf modules** + **1 umbrella** `Grothendieck.lean`
+The formalization spans **46 leaf modules** + **1 umbrella** `Grothendieck.lean`
 (imports-only, bilingual inline FR/EN). The three `SheafCohomology/`
 sub-modules are Parts 20, 22, and 23 of the table.
 
 | Part | File | `_en` | Content | Lines |
 |------|------|-------|---------|-------|
-| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only + bilingual FR/EN doctring); imports 43 of the 44 leaves — the `ExceptionalDirect` import is pending ([#11286](https://github.com/jsboige/CoursIA/issues/11286)) | 218 |
+| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only + bilingual FR/EN doctring); imports all 46 leaves (complete since [#11294](https://github.com/jsboige/CoursIA/pull/11294)) | 221 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 139 |
@@ -140,17 +142,19 @@ sub-modules are Parts 20, 22, and 23 of the table.
 | 42 | `Grothendieck/PullbackCoversLaws.lean` | `PullbackCoversLaws_en.lean` | Arrow-form laws under iterated pullback: `covers_pullback_assoc`, `covers_pullback_id`, `covers_pullback_generate` (#11217, Phase 5 of #2159) | 160 |
 | 43 | `Grothendieck/CoversLattice.lean` | `CoversLattice_en.lean` | Indexed lattice laws of the arrow form: `sInf/sSup_covering`, `sInf/sSup_covers` (#11231, Phase 5 of #2159) | 106 |
 | 44 | `Grothendieck/CoversTopologies.lean` | `CoversTopologies_en.lean` | Arrow form of the dense topology: `dense_covers_iff`, `dense_covers_precomp` (precomposition stability), `dense_covers_id` (#11244, Phase 5 of #2159) | 115 |
+| 45 | `Grothendieck/CoversPushforward.lean` | `CoversPushforward_en.lean` | Arrow form of the pushforward-pullback adjunction: `covers_pushforward_of_mem`, `covers_pushforward_monotone/comp/union`, `pushforward_id` (#11262, Phase 5 of #2159) | 166 |
+| 46 | `Grothendieck/CoversBind.lean` | `CoversBind_en.lean` | Arrow form of indexed transitivity (bind): `covers_bind`, `bind_le`, `covers_bind_id`, `bind_top` (#11285, Phase 5 of #2159) | 158 |
 
 *The `Lines` column counts the **FR file alone**; the `_en` sibling adds
 roughly as much again.*
 
 ## Build & status
 
-- **Toolchain**: `leanprover/lean4:v4.31.0-rc1` (aligned with the other SymbolicAI/Lean projects)
-- **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-12, "Build completed successfully". The explicit target `lake build Grothendieck` (the umbrella's import closure) currently omits `ExceptionalDirect` — see [#11286](https://github.com/jsboige/CoursIA/issues/11286).
+- **Toolchain**: `leanprover/lean4:v4.32.0` (aligned with the other SymbolicAI/Lean projects — conway_lean, game_theory_lean, calibration_lean)
+- **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-16 under v4.32.0, "Build completed successfully". The explicit target `lake build Grothendieck` (the umbrella's import closure) covers all 46 leaves — the `ExceptionalDirect` import, orphaned for 5 days ([#10357](https://github.com/jsboige/CoursIA/pull/10357) → [#11286](https://github.com/jsboige/CoursIA/issues/11286)), was repaired by [#11294](https://github.com/jsboige/CoursIA/pull/11294).
 - **Proofs**: **0 `sorry`, 0 axiom added** — every module is complete at creation. (A naive `grep sorry` matches prose mentions in the bilingual docstrings, notably two in `ExceptionalDirect.lean`; CI counts in `real` mode — after comment stripping — and reads 0.)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — 45 FR files (1 umbrella + 44 canonical leaves) and 44 `_en.lean` siblings (`_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable). The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — 47 FR files (1 umbrella + 46 canonical leaves) and 46 `_en.lean` siblings (`_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable). The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
 
 ## References
 
@@ -166,10 +170,10 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 
 ## See also
 
-- Epic #1646 (Grothendieck tribute) — Issue #2159 (formalization depth: Phase 1 shipped, Phase 2 = #10357, Phase 5 = Parts 35-44)
-- EPIC #4980 — Lean i18n convention (Option A sibling pair; 44 `_en` pairs in this lake)
+- Epic #1646 (Grothendieck tribute) — Issue #2159 (formalization depth: Phase 1 shipped, Phase 2 = #10357, Phase 5 = Parts 35-46)
+- EPIC #4980 — Lean i18n convention (Option A sibling pair; 46 `_en` pairs in this lake)
 - Epic #1453 (prover harness calibration) — Issue #8960 (reconciling the two `Part` numberings)
-- [#11286](https://github.com/jsboige/CoursIA/issues/11286) — pending umbrella import of `ExceptionalDirect`
+- [#11286](https://github.com/jsboige/CoursIA/issues/11286) — umbrella import of `ExceptionalDirect` (resolved by [#11294](https://github.com/jsboige/CoursIA/pull/11294))
 - Conway tribute workspace (`../conway_lean/`) — Lean notebook series (`../README.md`)
 - **[`README.md`](./README.md)** — FR canonical sibling of this file
 
