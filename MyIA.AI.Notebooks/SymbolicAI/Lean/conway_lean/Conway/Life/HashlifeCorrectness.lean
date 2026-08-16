@@ -1552,6 +1552,114 @@ theorem hashlife_correctN_le_two (n : Nat) (g : Grid) (hn : n ≤ 2)
   rw [← box_assez_grandN_le_two_eq n g hn]
   exact h
 
+/-! ## N3 decorrelated-reach engine: fuel skeleton (#11161, grain 2)
+
+Adaptation du squelette P5.1 (`evolveHashlifeFastAux_correct`) au moteur
+a portee decorrele `evolveHashlifeFastAtAuxN` (Hashlife.lean). Deux
+differences structurelles : l'hypothese de capture TRAJECTOIRE
+disparait (la brique un-saut `OneJumpAtCorrect` est universellement
+quantifiee, la re-instantiation en `t + js` est gratuite), et le garde
+decorrele est VIABLE (temoins ci-dessous). Le contenu ouvert restant est la
+correction P4-At de `hashlifeResultAt` (recursion mono-ronde) — portee
+par l'hypothese, a decharger au grain 3 (voir #11161). -/
+
+/-- **Hypothese P4-At (brique un-saut a portee decorrelee, grain 2 #11161).**
+    Pour tout re-cadrage conscient de n dont le niveau est au moins 2
+    (i.e. tout etat ou le garde de saut de `evolveHashlifeFastAtAuxN`
+    tire), le saut decorrele calcule exactement `evolve (jumpSizeAt lvl) g`
+    sur la grille, avec la comptabilite de decalage `jumpResultOff`. C'est
+    l'analogique At de la brique un-saut `one_jump_toGrid_correct` (P5.1),
+    avec une difference structurelle : PLUS d'hypothese de capture —
+    `jumpAt_capture_centered` rend la capture corollaire de l'invariant du
+    cadre (grain 1, #11161). Le contenu encore ouvert est la correction
+    P4-At de `hashlifeResultAt` elle-meme (recursion mono-ronde ; note
+    d'honnetete du meme nom dans Hashlife.lean) — portee ici par
+    l'hypothese, a decharger au grain 3. -/
+def OneJumpAtCorrect : Prop :=
+  ∀ (n : Nat) (g : Grid),
+    2 ≤ (gridToMacroCellWithOffsetN n g).2.level →
+      (hashlifeJumpAt ((gridToMacroCellWithOffsetN n g).2.level - 2)
+          (gridToMacroCellWithOffsetN n g).2).toGrid
+        (jumpResultOff (gridToMacroCellWithOffsetN n g).1
+          (gridToMacroCellWithOffsetN n g).2.level)
+        = evolve (jumpSizeAt (gridToMacroCellWithOffsetN n g).2.level) g
+
+/-- **Grain 2 (#11161) : squelette d'induction fuel du moteur decorrele.**
+    Sous la brique un-saut `OneJumpAtCorrect`, pour tout `fuel >= n`,
+    `evolveHashlifeFastAtAuxN fuel n g = evolve n g`. L'induction est
+    l'adaptation de `evolveHashlifeFastAux_correct` (P5.1) avec deux
+    simplifications structurelles : (1) l'hypothese de capture
+    TRAJECTOIRE disparaît — `OneJumpAtCorrect` est universellement
+    quantifiee, donc la re-instantiation de l'hypothese en `t + js` est
+    gratuite ; (2) l'invariant `n <= fuel` se preserve car le saut
+    consomme `js = 2^(lvl-2) >= 1` generations pour 1 unite de fuel. Le
+    bras `else` rend litteralement `evolve n g`. Aucun sorry. -/
+theorem evolveHashlifeFastAtAuxN_correct (hbr : OneJumpAtCorrect)
+    (fuel n : Nat) (g : Grid) (hle : n ≤ fuel) :
+    evolveHashlifeFastAtAuxN fuel n g = evolve n g := by
+  induction fuel generalizing n g with
+  | zero =>
+    have hn0 : n = 0 := Nat.le_zero.mp hle
+    subst hn0
+    rfl
+  | succ fuel ih =>
+    cases n with
+    | zero => rfl
+    | succ m =>
+      simp only [evolveHashlifeFastAtAuxN]
+      split
+      · next hcond =>
+        simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
+        obtain ⟨hlvl2, hnjs⟩ := hcond
+        have hjspo : 0 < jumpSizeAt
+            (gridToMacroCellWithOffsetN (m + 1) g).2.level :=
+          Nat.two_pow_pos _
+        have hle' : m + 1 - jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level
+            ≤ fuel := by omega
+        rw [hbr (m + 1) g hlvl2,
+            ih (m + 1 - jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level)
+              (evolve (jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level) g)
+              hle',
+            ← evolve_add]
+        have hsum : (m + 1 - jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level)
+            + jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level = m + 1 := by
+          omega
+        rw [hsum]
+      · rfl
+
+/-- **Grain 2 (#11161) : correction conditionnelle de l'API publique.**
+    Sous la meme unique hypothese, `evolveHashlifeFastAtN n g = evolve n g`
+    pour TOUT n et TOUTE grille — la portee du theoreme n'est plus bornee
+    par une hypothese de capture. Dechargee au grain 3 : `OneJumpAtCorrect`
+    suit de l'invariant du cadre (grain 1) + la correction P4-At de
+    `hashlifeResultAt`. -/
+theorem evolveHashlifeFastAtN_correct (hbr : OneJumpAtCorrect)
+    (n : Nat) (g : Grid) :
+    evolveHashlifeFastAtN n g = evolve n g :=
+  evolveHashlifeFastAtAuxN_correct hbr n n g (Nat.le_refl n)
+
+/-- Témoin d'échappement : ligne de 7 cellules (grille de `lineCell3`,
+    `jumpCaptured_not_trivial` en JumpCapture) — son burst transitoire
+    atteint le bord de toute fenêtre FIXE à la génération 8. Sur le moteur
+    décorrélé n-aware, la même grille est capturée (rembourrage
+    `max 2 n`). -/
+def line7 : Grid := [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6)]
+
+-- Témoin 1 (acceptance #11161) : glider à n = 8 — le garde décorrélé tire
+-- (guardAt_viable_glider), un saut de jumpSizeAt 5 = 8.
+#eval evolveHashlifeFastAtN 8 glider == evolve 8 glider
+
+-- Témoin 2 : blinker à n = 8 — oscillateur période 2, un saut.
+#eval evolveHashlifeFastAtN 8 blinker_h == evolve 8 blinker_h
+
+-- Témoin 3 (acceptance #11161) : la ligne de 7 qui falsifiait le moteur
+-- plein doit PASSER sur le moteur décorrélé (re-cadrage n-aware).
+#eval evolveHashlifeFastAtN 8 line7 == evolve 8 line7
+
+-- Témoin 4 : glider à n = 12 — DEUX sauts décorrélés (js = 8, reste 4,
+-- nouveau cadre lvl 4 → js' = 4), exercice du bras récursif multi-sauts.
+#eval evolveHashlifeFastAtN 12 glider == evolve 12 glider
+
 /-! ## Sanity witnesses (native_decide)
 
 Concrete instantiations of `hashlife_correct` on small patterns verify that

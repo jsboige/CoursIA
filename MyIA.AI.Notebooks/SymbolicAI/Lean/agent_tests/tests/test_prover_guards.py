@@ -1441,6 +1441,28 @@ def test_refuse_intractable_returns_none_for_provable_target(mock_intractable_kb
     assert P._refuse_intractable("X/Voting.lean", 116, "DEMO_X") is None
 
 
+def test_gittins_sorries_registered_static_honest():
+    """gittins_optimality (GittinsTheorem.lean) sorries are INTRINSIC (#4039):
+    the prover must refuse them statically, without relying on the dynamic
+    comment scan (the docstring uses INTRINSIC/barriere markers that
+    _HONEST_SORRY_PATTERNS does not match)."""
+    import prover.provers as P
+    from prover.config import GITTINS_FILE, GITTINS_FILE_EN
+
+    if GITTINS_FILE is None:
+        pytest.skip("GittinsTheorem.lean not resolvable on this machine")
+    # FR canonical at L104/L108, EN sibling (#4980) at L99/L103.
+    for path, line in ((GITTINS_FILE, 104), (GITTINS_FILE, 108),
+                       (GITTINS_FILE_EN, 99), (GITTINS_FILE_EN, 103)):
+        if path is None:
+            continue
+        out = P._refuse_honest_sorry(str(path), line, "gittins_optimality")
+        assert out is not None, f"{path.name} L{line}: expected static HONEST refusal"
+        assert out["skipped"] is True and out["success"] is False
+        assert out["reason"] == "honest_sorry_static"
+        assert out["sorry_line"] == line
+
+
 def test_refuse_intractable_shape_matches_honest_sorry(mock_intractable_kb):
     """The skip dict mirrors _refuse_honest_sorry so callers handle both alike."""
     import prover.provers as P
