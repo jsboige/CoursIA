@@ -454,12 +454,29 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # reserve (« NOT FIXED », #2298) ne doit rien eteindre, et l'agent
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
-    comment_times += [
-        t for r in (pr_data.get("reviews") or [])
+    approved_rereviews = [
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""))
+        for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
-        and (t := ts(r.get("submittedAt"))) is not None
     ]
+    approved_rereviews = [(t, a) for (t, a) in approved_rereviews if t]
+    comment_times += [t for (t, _) in approved_rereviews]
+
+    # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
+    # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
+    # conditionnel) dans un commentaire qui peut lever reste une levee pour
+    # l'etat de review — c'est la reponse ecrite que B.0 exige. On garde
+    # l'auteur pour la branche dedicated ci-dessous.
+    explicit_lifts = [
+        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
+         c.get("body", ""))
+        for c in (pr_data.get("comments") or [])
+        if can_lift(c)
+        and has_marker(c.get("body", ""), LIFT_MARKERS)
+        and not CONDITIONAL_LIFT.search(c.get("body", ""))
+    ]
+    explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
@@ -470,6 +487,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     for r in pr_data.get("reviews") or []:
         login = (r.get("author") or {}).get("login", "")
         body = r.get("body", "")
+        if r.get("state") == "DISMISSED":
+            # Une dismissal GitHub n'est possible que par l'auteur de la review
+            # (ou un admin) : la reserve est formellement RETIREE par son
+            # emetteur — pas un signal (#11222, levée (b)).
+            continue
         kind = classify(login, body)
         if r.get("state") == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
@@ -485,7 +507,30 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # c'est l'annonce de merge, pas une réponse. Sans cette borne, le gate
         # rate son propre incident fondateur (#10761, où mon commentaire de
         # merge « éteignait » rétroactivement le nit user posté 17 h plus tôt).
-        if any(when < t < cutoff for t in comment_times):
+        if src == "review:CHANGES_REQUESTED":
+            # Fenetre 2026-08-16 (#11222) : un CHANGES_REQUESTED est un ETAT
+            # GitHub natif, pas une remarque en prose — un commentaire
+            # posterieur quelconque ne l'eteint pas. Sur #11215, la review de
+            # 08:34:39 etait eteinte par le commentaire 08:36:23 de son
+            # PROPRE auteur (« Ma remarque de review sur le fond est
+            # inchangee ») : le gate rendait EXIT=0. Le principe du state
+            # natif (deja applique a la LEVEE par la re-review APPROVED
+            # ci-dessus) est honore dans l'autre sens : l'etat ne se retire
+            # que par son AUTEUR (re-review APPROVED ; la dismissal est
+            # eliminee des la collecte), ou par une PHRASE explicite de levee
+            # (B.0 : ce qui leve une remarque est une phrase). Les nits portes
+            # par un COMMENTAIRE gardent le regime general ci-dessous — limite
+            # NLP documentee dans can_lift.
+            lifted = any(
+                when < t < cutoff and author == login
+                for (t, author) in approved_rereviews
+            ) or any(
+                when < t < cutoff
+                for (t, _, _) in explicit_lifts
+            )
+            if lifted:
+                continue
+        elif any(when < t < cutoff for t in comment_times):
             continue  # discute/refuse explicitement apres le nit, avant le merge
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
