@@ -12,17 +12,21 @@ monkeypatch (no real notebook parsing needed) to exercise the gate's pure
 set-difference logic deterministically.
 
 Strategy:
-  - high_signatures: NONE / None / missing-file / scan-error -> empty set;
-    otherwise {(category, message)} filtered to severity == HIGH.
+  - high_signatures: NONE / None / scan-error -> empty set; a provided path
+    that does not exist is a usage error (git refs are not file paths) and
+    raises SystemExit (issue #11213); otherwise {(category, message)} filtered
+    to severity == HIGH.
   - regressions: sorted(head - base), deterministic, base=NONE counts every
     head HIGH as a regression (new-notebook semantics).
   - main(): exit 0 on no regression, exit 1 + formatted print on regression;
-    --base optional (defaults to NONE-equivalent); missing head file -> exit 0
-    ("head unreadable -> nothing to gate").
+    --base optional (defaults to NONE-equivalent); a --head/--base that is not
+    an existing file path -> SystemExit (never "nothing to gate" silently).
 
-G.9 honesty: bug-hunt firsthand BEFORE tests (c.534 lesson). 0 functional bug
-found -- the module is clean pure set logic. Pinned as-is (honest coverage,
-no fix).
+G.9 honesty: bug-hunt firsthand BEFORE tests (c.534 lesson). One functional
+defect found 2026-08-16 (issue #11213): a provided-but-absent path returned
+an empty set instead of failing, so a git ref (`--head HEAD`) silently passed
+the gate. Fixed: SystemExit on absent path. The mock-based coverage below
+keeps the gate's pure set logic tested deterministically.
 """
 from __future__ import annotations
 
@@ -73,9 +77,11 @@ class TestHighSignatures:
         _mock_scan(monkeypatch, [_finding("c", "m")])
         assert ci.high_signatures("NONE") == set()
 
-    def test_missing_file_returns_empty(self, monkeypatch, tmp_path):
+    def test_missing_file_raises(self, monkeypatch, tmp_path):
+        # A provided path that does not exist (git ref) must fail loudly.
         _mock_scan(monkeypatch, [_finding("c", "m")])
-        assert ci.high_signatures(str(tmp_path / "does_not_exist.ipynb")) == set()
+        with pytest.raises(SystemExit, match="n'existe pas"):
+            ci.high_signatures(str(tmp_path / "does_not_exist.ipynb"))
 
     def test_scan_error_returns_empty(self, monkeypatch, tmp_path):
         nb = tmp_path / "nb.ipynb"
@@ -122,7 +128,12 @@ class TestRegressions:
 
     def test_empty_head_empty_base_no_regressions(self, monkeypatch, tmp_path):
         _mock_scan(monkeypatch, [])
-        assert ci.regressions(str(tmp_path / "a.ipynb"), str(tmp_path / "b.ipynb")) == []
+        # Both paths must exist on disk (absent path = usage error, #11213).
+        a = tmp_path / "a.ipynb"
+        b = tmp_path / "b.ipynb"
+        a.write_text("{}")
+        b.write_text("{}")
+        assert ci.regressions(str(a), str(b)) == []
 
     def test_head_subset_of_base_no_regressions(self, monkeypatch, tmp_path):
         # Pre-existing HIGH in base -> not a regression even if in head.
@@ -216,11 +227,12 @@ class TestMain:
         _mock_scan(monkeypatch, [_finding("c", "m")])
         assert ci.main(["--base", "NONE", "--head", str(nb)]) == 1
 
-    def test_missing_head_file_exit_0(self, monkeypatch, tmp_path):
-        # Docstring: "head unreadable -> nothing to gate -> exit 0".
+    def test_missing_head_file_raises(self, monkeypatch, tmp_path):
+        # A head path that does not exist (e.g. a git ref) must fail loudly,
+        # never report "no regression" (issue #11213).
         _mock_scan(monkeypatch, [_finding("c", "m")])
-        rc = ci.main(["--head", str(tmp_path / "ghost.ipynb")])
-        assert rc == 0
+        with pytest.raises(SystemExit, match="n'existe pas"):
+            ci.main(["--head", str(tmp_path / "ghost.ipynb")])
 
     def test_pre_existing_high_not_a_regression(self, monkeypatch, tmp_path, capsys):
         # Same HIGH in base and head -> exit 0 (the core regression-gate promise).

@@ -8,6 +8,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from cell_order_ci import regressions, high_signatures, main  # noqa: E402
 
@@ -33,8 +35,11 @@ class TestHighSignatures:
         assert high_signatures("NONE") == set()
         assert high_signatures(None) == set()
 
-    def test_missing_path_is_empty(self, tmp_path):
-        assert high_signatures(str(tmp_path / "absent.ipynb")) == set()
+    def test_missing_path_raises(self, tmp_path):
+        # A provided path that does not exist is a usage error (git refs are
+        # not file paths): fail loudly, never report "no regression" silently.
+        with pytest.raises(SystemExit, match="n'existe pas"):
+            high_signatures(str(tmp_path / "absent.ipynb"))
 
     def test_clean_has_no_high(self, tmp_path):
         p = _write(tmp_path / "c.ipynb", _CLEAN)
@@ -86,3 +91,8 @@ class TestMainExitCodes:
     def test_exit_one_on_regression(self, tmp_path):
         head = _write(tmp_path / "h.ipynb", _BAD)
         assert main(["--base", "NONE", "--head", str(head)]) == 1
+
+    def test_ref_git_head_raises(self, tmp_path):
+        # --head HEAD (a git ref, not a path) must fail loudly, not exit 0.
+        with pytest.raises(SystemExit, match="n'existe pas"):
+            main(["--base", "NONE", "--head", "HEAD"])
