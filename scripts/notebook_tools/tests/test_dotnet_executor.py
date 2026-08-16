@@ -504,3 +504,67 @@ def test_setup_failure_surfaces_original_error_not_cleanup_error(tmp_path, _patc
     with pytest.raises(RuntimeError, match="broken transport"):
         dotnet_executor.execute_notebook(nb)
     km.shutdown_kernel.assert_called_once()  # guard attempted cleanup, then swallowed
+
+
+# --- Fix D: stale Papermill metadata stripped on write-back (#11146) --------
+
+def test_stale_papermill_block_removed_after_reexec(tmp_path, _patch_kernelmanager):
+    """Fix D (#11146): a notebook that carried a ``metadata.papermill`` block
+    from a PREVIOUS Papermill pass must not keep it after dotnet_executor
+    re-executes it — the block would date the fresh outputs to the old pass.
+    The block is stripped on write-back, even when the cell completes fine."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("x")])
+    data = json.loads(nb.read_text(encoding="utf-8"))
+    data["metadata"]["papermill"] = {
+        "input_path": "n.ipynb",
+        "output_path": "n.ipynb",
+        "start_time": "2026-06-09T04:46:32.249433",
+        "end_time": "2026-06-09T04:47:28.327814",
+        "duration": 56.078381,
+        "version": "2.6.0",
+    }
+    nb.write_text(json.dumps(data), encoding="utf-8")
+
+    _patch_kernelmanager([[_msg("status", execution_state="idle")]])
+    stats = dotnet_executor.execute_notebook(nb)
+    assert stats["executed"] == 1
+
+    meta = json.loads(nb.read_text(encoding="utf-8"))["metadata"]
+    assert "papermill" not in meta
+
+
+def test_stale_papermill_block_removed_on_aborted_run(tmp_path, _patch_kernelmanager):
+    """Fix D: even an ABORTED run rewrites the notebook with partial outputs —
+    a pre-existing Papermill block would be no less false there. It must be
+    stripped too."""
+    nb = _write_nb(tmp_path / "n.ipynb", [_code_cell("while(true);")])
+    data = json.loads(nb.read_text(encoding="utf-8"))
+    data["metadata"]["papermill"] = {"duration": 56.0, "version": "2.6.0"}
+    nb.write_text(json.dumps(data), encoding="utf-8")
+
+    _patch_kernelmanager([[]])
+    stats = dotnet_executor.execute_notebook(nb, cell_timeout=0, interrupt_grace=0)
+    assert stats["aborted"] is True
+
+    meta = json.loads(nb.read_text(encoding="utf-8"))["metadata"]
+    assert "papermill" not in meta
+
+
+def test_execution_papermill_subkey_removed(tmp_path):
+    """Fix D: a Papermill block nested under ``metadata.execution.papermill``
+    (alternate writers) is stripped too, and an emptied ``execution`` dict is
+    removed entirely rather than left as an empty husk."""
+    nb = {
+        "cells": [{"cell_type": "markdown", "source": ["# hi"]}],
+        "metadata": {"execution": {"papermill": {"duration": 1.0}}},
+    }
+    dotnet_executor._strip_stale_papermill_metadata(nb)
+    assert nb["metadata"] == {}
+
+
+def test_no_papermill_metadata_untouched(tmp_path):
+    """Fix D: a notebook with no Papermill block is left alone — stripping is
+    a no-op, not a removal of unrelated metadata."""
+    nb = {"cells": [], "metadata": {"language_info": {"name": ".net-csharp"}}}
+    dotnet_executor._strip_stale_papermill_metadata(nb)
+    assert nb["metadata"] == {"language_info": {"name": ".net-csharp"}}
