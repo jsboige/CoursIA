@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 226 |
+| Notebooks | 227 |
 | PRODUCTION | 0 |
-| BETA | 220 |
+| BETA | 221 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -60,7 +60,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 23 | Argument_Analysis — Argumentation basée sur les valeurs | BETA | Oui |
 | 24 | I2 - Génération de contre-arguments par raisonnement fo | BETA | Oui |
 
-## SymbolicAI/Lean (29 notebooks)
+## SymbolicAI/Lean (30 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -82,17 +82,18 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 16 | Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo | BETA | Non |
 | 17 | Lean 17b — Invariants de Nœuds : Calcul et Vérification | BETA | Non |
 | 18 | Lean-18 : A* et l'optimalité sous heuristique admissibl | BETA | Non |
-| 19 | Lean-19 : La Conjecture de Sendov (T. Tao, aout 2026) — | BETA | Non |
+| 19 | Lean-19 : La Conjecture de Sendov (preuve L. Mazur, dig | BETA | Non |
 | 20 | Lean 2 - Types Dependants et Calcul des Constructions | BETA | Non |
 | 21 | Lean-20 : Le manuel *Analysis I* de T. Tao en Lean 4 (l | BETA | Non |
-| 22 | Lean 3 - Propositions et Preuves | BETA | Non |
-| 23 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
-| 24 | Lean 5 - Mode Tactique | BETA | Non |
-| 25 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
-| 26 | Lean 7 - Integration des LLMs pour l'Assistance aux Pre | BETA | Non |
-| 27 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
-| 28 | Lean 8 - Agents Autonomes pour Demonstration de Theorem | BETA | Non |
-| 29 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
+| 22 | Lean-22 : Detection MIMO par flips -- le seuil 2 log N  | BETA | Non |
+| 23 | Lean 3 - Propositions et Preuves | BETA | Non |
+| 24 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
+| 25 | Lean 5 - Mode Tactique | BETA | Non |
+| 26 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
+| 27 | Lean 7 - Integration des LLMs pour l'Assistance aux Pre | BETA | Non |
+| 28 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
+| 29 | Lean 8 - Agents Autonomes pour Demonstration de Theorem | BETA | Non |
+| 30 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
 
 ## SymbolicAI/Planners (23 notebooks)
 
@@ -210,7 +211,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 2 | SC-1-Setup-Foundry - Environnement Smart Contracts | BETA | Oui |
 | 3 | SC-2-Setup-Web3py - Python et la Blockchain | BETA | Oui |
 | 4 | SC-3-Solidity-Basics - Fondements de Solidity | BETA | Oui |
-| 5 | SC-4-Functions-State - Fonctions et Etat | BETA | Oui |
+| 5 | SC-4-Functions-State - Fonctions et État | BETA | Oui |
 | 6 | SC-5-Inheritance - Heritage et Interfaces | BETA | Oui |
 | 7 | SC-6-Errors-Events - Erreurs et Événements | BETA | Oui |
 | 8 | SC-10-Account-Abstraction - ERC-4337 | BETA | Oui |
@@ -220,7 +221,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 12 | SC-9-DAO-Governance - Gouvernance DAO | BETA | Oui |
 | 13 | SC-12-Foundry-Testing - Tests avec Foundry | BETA | Non |
 | 14 | SC-13-Fuzz-Invariants - Fuzz Testing | BETA | Oui |
-| 15 | SC-14-Formal-Verification - Verification Formelle | BETA | Non |
+| 15 | SC-14-Formal-Vérification - Vérification Formelle | BETA | Non |
 | 16 | SC-15-Zero-Knowledge-Proofs - Preuves a Divulgation Nul | BETA | Oui |
 | 17 | SC-16-Homomorphic-Encryption - Chiffrement Homomorphiqu | BETA | Oui |
 | 18 | SC-17-E2E-Verifiable-Voting - Vote Electronique Verifia | BETA | Oui |
