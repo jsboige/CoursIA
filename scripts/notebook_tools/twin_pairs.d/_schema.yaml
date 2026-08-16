@@ -38,9 +38,24 @@
 # parity_level :
 #   surface     = meme plan/sections, implimentations independantes
 #   semantic    = meme contenu mathematique/conceptuel, API idiomatique differente
-#   native-both = traduction fidele cellule-par-cellule (rare)
+#   native-both = CHAQUE cote fait le travail du notebook au moyen d'un moteur
+#                 de production/reference externe (package, solveur, service).
+#                 Test : pour chaque cote, NOMMER le moteur et le point d'entree
+#                 qui produit le resultat. Un cote qui reimplemente le sujet du
+#                 notebook a la main n'est PAS natif — meme si sa sortie est
+#                 identique, meme si ses cellules se correspondent une a une.
+#                 native-both ne dit RIEN de la correspondance structurelle
+#                 cellule-par-cellule.
 #
-# bridge_verdict (OPTIONNEL, #10439) : orthogonal a parity_level. Decrit si un
+# bridge_verdict (OPTIONNEL, #10439) : CORRELE a parity_level, a sens unique
+# (croisement des 157 entrees, 2026-08-16, arbitrage #11200) :
+#   native-both  => SOTA-OK (36/37)
+#   SOTA-OK     =/> native-both (82 contre-exemples sous semantic/surface)
+# La raison est dans l'enumeration ci-dessous : SOTA-OK couvre explicitement
+# « solver-free by design des deux cotes ». Les deux champs repondent a deux
+# questions differentes — bridge_verdict juge LE TRAVAIL (a-t-on saute un
+# moteur atteignable ?), parity_level decrit L'ETAT LIVRE (les deux cotes
+# tournent-ils sur un moteur ?). Decrit si un
 # moteur SOTA est branchable/branche du cote .NET, pour qu'un verdict INTRINSIC
 # deja rendu en prose (dans known_differences) cesse d'etre invisible aux
 # detecteurs et de re-signaler la paire comme "ecart de parite" a chaque scan.

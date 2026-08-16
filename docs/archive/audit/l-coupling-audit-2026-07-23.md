@@ -23,7 +23,7 @@ Script Python `scratchpad-c8087/audit_l_coupling.py` (3 étapes — script déso
 | 3 | Parse `CLAUDE.md` (harnais global) → set `L\d+` | N leçons uniques |
 | 4 | Cross-match : ancrées / orphelines-MEMORY / orphelines-rules | Rapport |
 
-**Reproduction** : `python scratchpad-c8087/audit_l_coupling.py` (read-only, pas de side-effects).
+**Reproduction** : le script `audit_l_coupling.py` est archivé hors-repo (drop scratchpad c.821, harness-hygiene) — snapshot dans l'historique de la PR #8099 (commit `5ac25223b`), non rejouable depuis l'arbre. Le résultat du dernier refresh est reproduit dans la section « Sortie script ».
 
 ## Verdict global — refresh 2026-07-23
 
@@ -140,7 +140,7 @@ Script Python `scratchpad-c8087/audit_l_coupling.py` (3 étapes — script déso
 ## Sortie script (refresh 2026-07-23)
 
 ```
-$ python scratchpad-c8087/audit_l_coupling.py
+$ # repro : script archivé hors-repo — snapshot via PR #8099 (commit 5ac25223b) ; sortie du refresh c.821 :
 === AUDIT L-COUPLING (refresh c.821) ===
 MEMORY.md leçons uniques : 35
 .claude/rules/ leçons uniques (tous fichiers) : 17

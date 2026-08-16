@@ -713,3 +713,139 @@ jobs:
           )" 2>/dev/null || true
 
           exit 1
+
+  # #11170 -- the BLOCKING gate against consecutive LIGHT-genre grains
+  # (G-VAR-3, the "pas deux fois le meme GENRE LIGHT consecutif" ban of
+  # variation-protocol.md §2). Until this job, the ban had NO organ:
+  # `Check Grain tag conformity` verifies the tag is well-formed (TIER +
+  # GENRE in the enumeration + lane + prev: present), `G-VAR-2 light cap`
+  # counts the daily budget, but NO job compared the genre of the grain to
+  # that of its `prev:` -- a perfectly conformant tag declaring
+  # `LIGHT/docs -- prev: LIGHT/docs` passed every gate green.
+  #
+  # Measured on the night of 2026-08-15/16: #11136 (`LIGHT/docs -- prev:
+  # LIGHT/docs 11134`) was MERGED 00:30:56Z, #11167 (`LIGHT/docs -- prev:
+  # MED/docs 11069`) was HELD ~03:00Z -- identical shape, opposite verdicts,
+  # three hours apart, same coordinator. The first was not merged by
+  # complacency: nothing in the tooling posed the question.
+  #
+  # Why BLOCKING: an advisory label is exactly the failure mode #11170
+  # measures -- the label does not stop a merge and the coordinator read the
+  # green of a check that measures something else. Same shape as
+  # check-variation-tag-required (#10045) and check-prev-close-keyword-
+  # required (#10093): a required check turning `PR gate` red before merge
+  # is the only organ that makes the ban hold.
+  #
+  # What blocks vs what labels (per issue acceptance):
+  #   * BLOCK (exit 1) when `genre == prev_genre` AND the genre is in the
+  #     LIGHT set {guard, ledger, docs, readme, test} -- the absolute ban of
+  #     §2, no escape clause. Remediation: pick a grain of ANOTHER genre,
+  #     never re-tag the same work.
+  #   * ADVISORY label `variation-adjacency-deep-med` when the genres are
+  #     equal and OUTSIDE the LIGHT set (DEEP/MED domain-core): §2 allows
+  #     two consecutive there "si chacun est une substance genument
+  #     distincte" -- a judgment not mechanisable, the label leaves it to
+  #     the coordinator.
+  #   * PASS otherwise -- different genres, `prev: none (premier grain)`
+  #     (first-grain exemption), prev: absent (already covered by the
+  #     variation-tag-prev-absent label), or no Grain tag (covered by
+  #     check-variation-tag-required).
+  #
+  # Both genres are normalised through the SAME alias table as the G-VAR-2
+  # organ (`variation_light_cap.canonicalize_genre`) -- variation-protocol
+  # §1 warns that two invented labels suffice to never trip the adjacency.
+  #
+  # The decision logic lives in `scripts/ci/variation_adjacency_guard.py`
+  # (unit-tested, same pattern as `variation_prev_guard.py`); the YAML is
+  # plomberie. The job name carries the `-required` suffix so PR #10036's
+  # `is_advisory()` classifier in `scripts/pr_gate.py` does NOT silence it.
+  check-variation-adjacency-required:
+    name: 'Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the adjacency helper (sparse)
+        uses: actions/checkout@v4
+        with:
+          # The helper imports grain_tag.py (shared extractor) AND
+          # variation_light_cap.py (the G-VAR-2 alias table + LIGHT set) --
+          # the three modules are checked out together.
+          sparse-checkout: |
+            scripts/ci/variation_adjacency_guard.py
+            scripts/variation_light_cap.py
+            scripts/grain_tag.py
+      - name: 'Compare grain genre vs prev: genre (G-VAR-3)'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+        run: |
+          set -uo pipefail
+
+          # Same bot/fork gating as the other jobs (cf. student-pr-reviews.md).
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issue d'un fork : hors scope (PR etudiante)."
+            exit 0
+          fi
+
+          # Body to a file -- printf '%s' preserves it verbatim.
+          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
+
+          # The helper emits one JSON verdict and exits 0 (pass/advisory) or
+          # 1 (block on LIGHT adjacency). The &&/|| list captures RC on BOTH
+          # branches and is exempt from errexit (same fix as
+          # check-variation-tag-required).
+          python3 scripts/ci/variation_adjacency_guard.py \
+            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+
+          if [ -s /tmp/verdict.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/verdict.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/verdict.json
+
+          ADJACENT=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('adjacent'))" 2>/dev/null || echo "False")
+
+          # Advisory label for DEEP/MED adjacency (guard_pass stays true, the
+          # job passes; the label surfaces the §2 judgment for the coordinator).
+          gh label create variation-adjacency-deep-med \
+            --description "Adjacence de genre DEEP/MED (hors liste LIGHT) : §2 l'autorise si substance distincte -- jugement au coordinateur" \
+            --color FEF2C0 --force 2>/dev/null || true
+          if [ "$ADJACENT" = "True" ]; then
+            gh pr edit "$PR_NUMBER" --add-label variation-adjacency-deep-med 2>/dev/null || true
+          else
+            gh pr edit "$PR_NUMBER" --remove-label variation-adjacency-deep-med 2>/dev/null || true
+          fi
+
+          if [ "$RC" -eq 0 ]; then
+            echo "No LIGHT-genre adjacency vs prev: -- job passes."
+            exit 0
+          fi
+
+          # Block path (LIGHT adjacency). Idempotent comment via the marker.
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
+          echo "::error::G-VAR-3 LIGHT-genre adjacency: $REASON"
+
+          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+          <!-- vtr-adjacency-block -->
+          **G-VAR-3 : deux grains LIGHT du meme genre consecutifs -- bloquant (#11170).**
+
+          ${REASON}
+
+          variation-protocol.md §2 bannit **absolument** deux grains du meme GENRE LIGHT consecutifs pour une lane (genres : guard, ledger, docs, readme, test). Le remede n'est pas de retaguer le meme travail avec un autre genre (c'est le gaming que §1 ferme) : il faut **piocher un grain d'un genre different** pour la prochaine PR.
+
+          Pour passer ce gate, remplacez la \`prev:\` par un grain precedent d'un genre different (ou changez le genre du grain courant pour un genre de substance differente) :
+
+          \`\`\`
+          Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<genre-different> #<PR>
+          \`\`\`
+          EOF
+          )" 2>/dev/null || true
+
+          exit 1
