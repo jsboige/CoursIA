@@ -64,6 +64,27 @@ def _wait_for_idle(kc, grace_s):
     return False
 
 
+def _strip_stale_papermill_metadata(nb):
+    """Remove a pre-existing Papermill block from a notebook the executor is
+    about to rewrite.
+
+    The outputs and ``execution_count`` just written describe THIS run; a
+    ``metadata.papermill`` left over from an earlier Papermill pass would still
+    describe that pass (old dates, old duration) and would let a reviewer date
+    the fresh outputs to the wrong run. An absent metadata is missing
+    information; a stale one is misleading information (#11146).
+    """
+    metadata = nb.get("metadata")
+    if not metadata:
+        return
+    metadata.pop("papermill", None)
+    execution = metadata.get("execution")
+    if isinstance(execution, dict):
+        execution.pop("papermill", None)
+        if not execution:
+            metadata.pop("execution", None)
+
+
 def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
                      verbose=False, dry_run=False, interrupt_grace=10):
     """Execute a .NET notebook cell-by-cell and update outputs.
@@ -255,6 +276,10 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
             except Exception:
                 pass
         os.chdir(orig_dir)
+
+    # A Papermill block that predates this run must not survive the rewrite:
+    # it would date these outputs to the wrong run (#11146).
+    _strip_stale_papermill_metadata(nb)
 
     # Write back
     notebook_path.write_text(json.dumps(nb, ensure_ascii=False, indent=1), encoding="utf-8")

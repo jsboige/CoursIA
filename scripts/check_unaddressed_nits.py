@@ -92,7 +92,19 @@ CONCERN_MARKERS = (
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+    "Je lève", "Je leve", "Levée de", "Levee de",
 )
+
+# NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
+# Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
+# portent « ne bloque pas » / « Safe to merge » a ete propose puis RETIRE : il
+# rouvre le failure mode fondateur de B.0. Sur #10761, Hermes a emis
+# COMMENT_WITH_CONCERNS et la PR a ete mergee sans reponse ecrite ; si ce meme
+# body s'etait conclu par « ne bloque pas », un tel filtre l'aurait efface — et
+# l'organe aurait manque precisement l'incident qui l'a fait naitre. Une reserve
+# emise se leve par une PHRASE de reponse, jamais par la conclusion de celui qui
+# l'a emise. `POSITIVE_MARKERS` ci-dessous fait le travail voisin, mais lui ne
+# decharge QUE s'il ne reste aucune reserve vivante — c'est la difference.
 
 # Verdict structurel POSITIF : l'emporte sur toute prose du body, y compris un
 # decompte de CONCERNS passe en revue (« NanoClaw a relevé 2 CONCERNS... Verdict
@@ -189,6 +201,22 @@ def _unaccent(text: str) -> str:
 def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     normalised = _unaccent(body)
     return any(_unaccent(m) in normalised for m in markers)
+
+
+def _excerpt(body: str) -> str:
+    """Tete + queue : le verdict d'un reviewer vit en QUEUE de body.
+
+    Les 280 premiers chars seuls coupaient la conclusion (mesure triage
+    07-15..07-31 : le verdict final tombait hors excerpt sur les PRs longues,
+    et l'audit lisait la position du titre au lieu de la conclusion).
+
+    Note : ceci concerne l'AFFICHAGE de l'audit, pas la classification. Voir
+    `classify` — la conclusion en queue n'y decharge rien.
+    """
+    snippet = " ".join(body.split())
+    if len(snippet) <= 400:
+        return snippet[:280]
+    return snippet[:200] + " [...] " + snippet[-200:]
 
 
 def _is_cited(window: str) -> bool:
@@ -429,7 +457,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "at": when.isoformat(),
             "gap_hours": round((cutoff - when).total_seconds() / 3600.0, 1),
             "code_pushed_after": pushed_after,
-            "excerpt": " ".join(body.split())[:280],
+            "excerpt": _excerpt(body),
         })
 
     for t in threads:
@@ -439,7 +467,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "kind": "INLINE-UNRESOLVED", "author": t["author"], "src": "reviewThread",
             "at": t.get("createdAt") or "?",
             "where": f"{t.get('path')}:{t.get('line')}",
-            "excerpt": " ".join((t.get("body") or "").split())[:280],
+            "excerpt": _excerpt(t.get("body") or ""),
         })
 
     return {

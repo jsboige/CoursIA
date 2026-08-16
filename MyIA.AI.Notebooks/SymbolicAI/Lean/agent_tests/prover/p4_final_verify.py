@@ -17,11 +17,13 @@ lost, exhumed only by manual span extraction).
 
 Fix (#7477 P4): promote the authoritative ``": error:"`` substring contract
 (#6831, ``prover.tools._parse_lean_errors``) to the PRIMARY signal of a clean
-build; demote ``level_1_build`` to a secondary cross-check. A genuine build
-failure ALWAYS produces >=1 parseable compile error in the verifier's raw
-output, so promoting the substring contract does not mask real breakage.
-The ``level_1_build`` cross-check lets the call-site log a discrepancy when
-the two signals disagree (notably the DEMO 62 false-negative pattern).
+build and fully demote ``level_1_build`` -- it is no longer read at all, not
+as a gate and not as a cross-check (see ``_evaluate_final_verify`` below). A
+genuine build failure ALWAYS produces >=1 parseable compile error in the
+verifier's raw output, so promoting the substring contract does not mask real
+breakage; a ``level_1_build`` disagreeing with the substring verdict (the DEMO
+62 false-negative pattern) is expected to remain silent -- the substring
+contract is authoritative.
 
 The multi-agent path (#870-919) already calls ``_reverify_compiles_clean``
 + ``_final_verify_is_false_negative`` for the same purpose -- this helper is

@@ -171,6 +171,14 @@ endpoint JSON-RPC `mcp/v1/http`, handshake avec négociation de
 version, catalogue de 43 outils à JSON Schema, et de vrais
 `tools/call` (lecture, puis création/suppression d'un article) — la
 frontière d'authentification mesurée à 401 sur chaque méthode.
+[`brancher-plusieurs-providers-par-l-api.ipynb`](brancher-plusieurs-providers-par-l-api.ipynb)
+ouvre la régie des **environnements** : la matrice
+`ai_<usage>_default_env` (chat, vision, images, audio, json,
+embeddings) lue et écrite par l'API, l'interrogation d'un provider
+(catalogue `/ai/models`, poignée de main `/ai/test_connection`), le
+cycle déclarer/basculer/rétablir d'un second environnement — et le
+piège mesuré par accident : `settings/update` **ne met pas à jour, il
+remplace** (démonstration sécurisée par instantané et restauration).
 
 ---
 
@@ -303,6 +311,8 @@ attendues.
   formulaires comme contenu : CRUD unitaire, publication, rendu public, frontière gratuite/Pro mesurée
 - [`piloter-wordpress-par-mcp.ipynb`](piloter-wordpress-par-mcp.ipynb) —
   WordPress comme serveur MCP : handshake JSON-RPC, catalogue d'outils, tools/call en lecture et écriture
+- [`brancher-plusieurs-providers-par-l-api.ipynb`](brancher-plusieurs-providers-par-l-api.ipynb) —
+  environnements et matrice d'usages multi-provider : catalogues, connexions, bascules, et le PUT déguisé de settings/update
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

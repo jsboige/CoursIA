@@ -10,6 +10,12 @@
       by: myia-po-2023:CoursIA-2
       python_sha: 5929bd4bbe321ca89056a4d92209fdb5b30bc821
       csharp_sha: fa2c2ffdbc5dc5aaff9bfe03316c262cd926f150
+    - date: "2026-08-16"
+      by: myia-ai-01:CoursIA
+      python_sha: 8be87123cf063f6743db86bcd1bb2cd97f944020
+      csharp_sha: 4024549ae3bb76a1fa276174a77c6602fa9671c2
+      content_python_sha: 2e3a92140ef42a21c65bcf464d784e37b9e2856902c779b303310de7c682b0dc
+      content_csharp_sha: 9718209c7ab6079d9f258fe5571077662ff7ad00d63ff0e41d721d5da085f595
   known_differences:
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
