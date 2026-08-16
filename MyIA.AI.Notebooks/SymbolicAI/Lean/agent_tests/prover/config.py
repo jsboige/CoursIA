@@ -258,6 +258,26 @@ import Conway.Life.MacroCell
 import Conway.Life.Hashlife
 """
 
+# ── Decision theory (Epic #1453) ──
+# decision_theory_lean lives under Probas/ (its own lake), not under
+# GameTheory/ — Gittins is the bandit/optimal-stopping module (#4039).
+_DECISION_THEORY_CANDIDATES = [
+    _workspace_relative("Probas/decision_theory_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
+    Path(r"d:\dev\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
+    Path(r"D:\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\Probas\decision_theory_lean"),
+]
+DECISION_THEORY_DIR = next(
+    (p for p in _DECISION_THEORY_CANDIDATES if p.exists()),
+    _DECISION_THEORY_CANDIDATES[0],
+)
+GITTINS_FILE = DECISION_THEORY_DIR / "Gittins" / "GittinsTheorem.lean" if DECISION_THEORY_DIR.exists() else None
+# i18n sibling (#4980): same theorem, English docstring is a few lines shorter,
+# so the two sorries sit at L99/L103 (vs L104/L108 in the FR canonical).
+GITTINS_FILE_EN = DECISION_THEORY_DIR / "Gittins" / "GittinsTheorem_en.lean" if DECISION_THEORY_DIR.exists() else None
+
 # ── HONEST sorrys registry (DO NOT TOUCH) ──
 # Some sorrys document genuine theoretical impossibility — they are NOT bugs to
 # fix. Attacking them wastes compute and produces fake "PROVED" reports. Each
@@ -282,6 +302,35 @@ HONEST_SORRIES = {
             "wired with Convex/Cone.Dual + PiL2 imports. Targets: hP_conv, hP_closed, "
             "hP_nonempty, hK_empty, hCore. Awaiting multi-agent prover run with "
             "--director-provider openrouter."
+        ),
+    },
+    str(GITTINS_FILE) if GITTINS_FILE else "": {
+        # gittins_optimality at Gittins/GittinsTheorem.lean, INTRINSIC (#4039).
+        # Docstring (L76-98) documents the genuine theoretical barrier: Mathlib
+        # lacks MDP/bandit/Bellman formalizations; a faithful proof needs
+        # ~2000-5000 lines of support definitions. The two sorries are markers
+        # of that barrier, NOT provable targets.
+        104: (
+            "gittins_optimality — V (operator de valeur espere) : exige un type de "
+            "processus de recompense de bandit + couplage probabiliste + somme "
+            "actualisee a horizon infini. INTRINSIC (#4039)."
+        ),
+        108: (
+            "gittins_optimality — preuve d'optimalite : exige operateur de Bellman / "
+            "programmation dynamique / formalisation MDP complete. INTRINSIC (#4039)."
+        ),
+    },
+    str(GITTINS_FILE_EN) if GITTINS_FILE_EN else "": {
+        # gittins_optimality EN sibling (#4980): same INTRINSIC barrier, same
+        # theorem; only the docstring differs (English, a few lines shorter).
+        99: (
+            "gittins_optimality (EN sibling) — V expected-value operator: needs "
+            "bandit reward-process type + probabilistic coupling + infinite-horizon "
+            "discounted sum. INTRINSIC (#4039)."
+        ),
+        103: (
+            "gittins_optimality (EN sibling) — optimality proof: needs Bellman / "
+            "dynamic programming / full MDP formalization. INTRINSIC (#4039)."
         ),
     },
 }
