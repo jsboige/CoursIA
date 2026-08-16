@@ -13,10 +13,10 @@ extraction).
 Fix (#7477 P4): extract ``_evaluate_final_verify(verify_result)`` in
 ``prover/p4_final_verify.py`` (stdlib-only) that promotes the authoritative
 ``: error:`` substring contract (#6831, ``prover.tools._parse_lean_errors``)
-to the PRIMARY signal and demotes ``level_1_build`` to a secondary
-cross-check. A genuine build failure always produces >=1 parseable compile
-error in the raw lake output, so promoting the substring contract does not
-mask real breakage.
+to the PRIMARY signal and fully demotes ``level_1_build`` -- it is no longer
+read at all, neither as a gate nor as a cross-check. A genuine build failure
+always produces >=1 parseable compile error in the raw lake output, so
+promoting the substring contract does not mask real breakage.
 
 These tests load ``prover/p4_final_verify.py`` by file path (bypassing
 ``prover/__init__.py`` and the LLM stack) and stub
@@ -206,11 +206,11 @@ def test_real_compile_failure_module_level_error():
 
 
 def test_level_1_build_true_does_not_save_us_from_real_errors():
-    """Defensive cross-check: even when ``level_1_build=True`` (the
+    """Defensive check: even when ``level_1_build=True`` (the
     historical primary signal would say PASS), if the raw output contains
     a real ``: error:`` substring, the helper MUST return ``False``.
-    The substring contract is the primary signal; level_1_build is the
-    secondary cross-check only (not the other way around)."""
+    The substring contract is the primary signal; ``level_1_build`` is
+    never consulted (fully demoted, not the gate)."""
     real_failure_subordinate = {
         "level_1_build": True,
         "error_count": 0,

@@ -1915,8 +1915,8 @@ class AutonomousProver:
         # (#6831) -- not on level_1_build alone, which is manifest/cache-
         # sensitive (DEMO 62 L2892 2026-07-16). A sorry increase from
         # strategic decomposition must NOT trigger revert if the build passes.
-        # _evaluate_final_verify promotes _parse_lean_errors to primary,
-        # demotes level_1_build to secondary cross-check.
+        # _evaluate_final_verify promotes _parse_lean_errors to primary and
+        # no longer reads level_1_build at all (fully demoted, no cross-check).
         final_verify_ok = _evaluate_final_verify(verify_result)
         final_build_ok = final_verify_ok
         # Update final_sorry from compile result (includes implicit sorry detection)
