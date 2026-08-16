@@ -1184,6 +1184,9 @@ class NotebookExecutor:
         import sys
         import os as _os
 
+        # Bound OpenMP/BLAS pools before the papermill subprocess spawns: the
+        # kernel it launches inherits the environment (#11111).
+        bound_native_thread_pools()
         start_time = time.time()
         kernel_name = kernel_name or self.detect_kernel(notebook_path)
         timeout = timeout or self.timeout
@@ -1344,6 +1347,31 @@ class NotebookExecutor:
 # ============================================================================
 # Utility functions for common operations
 # ============================================================================
+
+NATIVE_THREAD_POOL_VARS = ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+                           "MKL_NUM_THREADS")
+
+
+def bound_native_thread_pools(default: int = 4) -> Dict[str, str]:
+    """Bound native thread pools (OpenMP/BLAS) for kernel subprocesses.
+
+    LightGBM, XGBoost and BLAS spin one OpenMP thread per logical core and
+    spin-wait on barriers; on a busy many-core host the oversubscription
+    turns a 14 s training cell into 500 s+ (measured x35 on ML-3, #11111),
+    with the signature of a "frozen" kernel. Executors call this before
+    launching a kernel so the bound inherits to the kernel subprocess.
+
+    An explicitly pre-set variable wins (no clobbering): a machine where
+    full parallelism is wanted keeps it. Returns the variables actually set.
+    """
+    import os
+    set_vars = {}
+    for var in NATIVE_THREAD_POOL_VARS:
+        if var not in os.environ:
+            os.environ[var] = str(default)
+            set_vars[var] = str(default)
+    return set_vars
+
 
 def read_notebook(path: str) -> Dict[str, Any]:
     """Read notebook JSON from file."""

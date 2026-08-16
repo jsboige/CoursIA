@@ -7,6 +7,8 @@ import time
 import base64
 from pathlib import Path
 
+from notebook_helpers import bound_native_thread_pools
+
 
 def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
     """Execute a .NET notebook cell-by-cell and write outputs back."""
@@ -19,6 +21,9 @@ def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
     kernel_name = nb.get('metadata', {}).get('kernelspec', {}).get('name', '.net-csharp')
     print(f"Executing {path.name} (kernel={kernel_name})")
 
+    # Bound OpenMP/BLAS pools: LightGBM unbounded oversubscribes many-core
+    # hosts and training cells look frozen (#11111). Kernel inherits env.
+    bound_native_thread_pools()
     km = jupyter_client.KernelManager(kernel_name=kernel_name)
     km.start_kernel()
     kc = km.client()

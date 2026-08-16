@@ -33,6 +33,8 @@ import sys
 
 from jupyter_client.manager import start_new_kernel
 
+from notebook_helpers import bound_native_thread_pools
+
 
 def _source(cell) -> str:
     src = cell["source"]
@@ -135,6 +137,9 @@ def main():
         print(f"ERROR: code cell not found (cell-id={args.cell_id} index={args.index})")
         sys.exit(2)
 
+    # Bound OpenMP/BLAS pools: native training cells oversubscribe many-core
+    # hosts and look frozen (#11111). Kernel inherits env.
+    bound_native_thread_pools()
     km, kc = start_new_kernel(kernel_name=args.kernel)
     status = "unknown"
     try:

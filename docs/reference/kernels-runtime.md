@@ -86,7 +86,7 @@ grep -o 'id="Microsoft.CodeAnalysis[^"]*" version="[^"]*"' \
   ~/.nuget/packages/<pkg>/<version>/<pkg>.nuspec
 ```
 
-**Piege de diagnostic adjacent** : sur cet hote (32 threads), un notebook .NET non borne en threads OpenMP part en timeouts de cellule qui *ressemblent* a un blocage kernel. `OMP_NUM_THREADS=4` a ramene ce meme notebook de **6 380,9 s (7 cellules en timeout a 900 s)** a **14,8 s** — facteur **x431**. Borner les threads **avant** de conclure a un hang.
+**Piege de diagnostic adjacent** : sur cet hote (32 threads), un notebook .NET non borne en threads OpenMP part en timeouts de cellule qui *ressemblent* a un blocage kernel. `OMP_NUM_THREADS=4` a ramene ce meme notebook de **6 380,9 s (7 cellules en timeout a 900 s)** a **14,8 s** — facteur **x431**. Borner les threads **avant** de conclure a un hang. Les executeurs du depot (`dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `NotebookExecutor.execute_with_papermill`) exportent desormais `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS=4` par defaut avant de lancer le kernel (#11111) ; une valeur deja posee dans l'environnement gagne (surcharge explicite pour ne pas brider une machine ou c'est voulu). `wsl_papermill.py` reste hors de ce mecanisme : l'environnement Windows ne traverse pas la frontiere `wsl.exe`.
 
 ### Divergence po-2024 du 2026-08-16 (#11157) : le pin n'etait jamais installe
 
