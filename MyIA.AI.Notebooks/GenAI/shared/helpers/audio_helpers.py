@@ -502,6 +502,9 @@ def display_audio_array(samples, rate: int, autoplay: bool = False):
     import numpy as np
 
     arr = np.asarray(samples)
+    if arr.ndim == 2 and arr.shape[0] > arr.shape[1] and arr.shape[1] <= 8:
+        # Convention soundfile/librosa (frames, channels) -> torchaudio (channels, frames)
+        arr = arr.T
     if arr.dtype.kind == "f":
         arr = np.clip(arr, -1.0, 1.0)
         arr = (arr * 32767.0).astype(np.int16)
