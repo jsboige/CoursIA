@@ -12,7 +12,7 @@ Commits "fix compilation" / "Mathlib fix" / "lint fix" / "simplify" avec **delet
 
 ## Red-flag rapides
 
-- **Lean/Coq/Agda** : `theorem foo := by <tactics>` → `:= by sorry` = régression. `grep -c sorry` qui monte sans justification = PR contestée.
+- **Lean/Coq/Agda** : `theorem foo := by <tactics>` → `:= by sorry` = régression. Un compte de `sorry` **réel** qui monte sans justification = PR contestée — mesuré avec `python scripts/lean/count_code_sorry.py --json` (champ `distinct_code_sorry`), **jamais** `grep -c sorry`. Détail de l'instrument ci-dessous.
 - **Python production** : corps calculé → `pass` (fonction encore appelée) ; `@pytest.skip` sans issue référencée ; `return None` à la place du calcul.
 - **Notebooks pédagogiques** : `raise NotImplementedError` → `pass`/`print`/`return None` = **conforme** (règle user 2026-04-26). Mais cellule `# Solution` / `# Exemple résolu` supprimée = **régression de contenu INTERDITE**.
 
@@ -29,9 +29,26 @@ Si tu veux supprimer du code/preuve, **réponses écrites dans le commit** :
 
 Une seule question sans réponse écrite : ne pas commiter, demander au user/coordinateur.
 
+## Compter les `sorry` — un seul instrument, et deux façons de se tromper
+
+```bash
+python scripts/lean/count_code_sorry.py --json   # champ distinct_code_sorry
+```
+
+Les deux instruments artisanaux échouent, mais **pas de la même façon** — et c'est le second qui est dangereux :
+
+| Instrument | Défaut | Se voit ? |
+|---|---|---|
+| `grep -c sorry` | **sur-compte** la prose (docstrings, `-- commentaires`, feuilles de route) — 484 naïfs pour 21 réels sur les 21 lakes, mesuré le 2026-08-14 | **oui** : la prose saute aux yeux dès qu'on ouvre le fichier |
+| jeu de motifs « code-only » écrit à la main (`:= by sorry`, `^\s*sorry$`, `<;> sorry`) | **sous-compte** : ignore `exact sorry` et `def … := sorry` — rend **2** là où le lake en porte **16** (`knot_lean`, mesuré le 2026-08-16) | **non** : un motif absent ne lève pas d'erreur, il rend un chiffre plus petit et plus propre |
+
+Le second a fait qualifier de « résidu » pendant onze jours le lake portant 80 % de la dette formelle du dépôt. Un motif de détection se valide **par ses faux négatifs** — écrire les formes qu'il doit attraper, vérifier qu'il les attrape — pas par ses hits.
+
+Les paires FR/EN (convention i18n #4980) doublent le compte brut : `distinct_code_sorry` dédoublonne, `code_sorry` non. Un fix se porte **sur les deux siblings**.
+
 ## Audit pré-merge
 
-Commandes `git diff` + `grep -c sorry` avant/après + workflow rogue commits : [docs/anti-regression-detail.md](../../docs/reference/anti-regression-detail.md#détection-après-coup-audit-rogue-commits).
+Commandes `git diff` + comptage avant/après (ci-dessus) + workflow rogue commits : [docs/anti-regression-detail.md](../../docs/reference/anti-regression-detail.md#détection-après-coup-audit-rogue-commits).
 
 ## Incident référence
 

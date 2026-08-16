@@ -55,7 +55,7 @@ Si le build echoue alors que la junction est intacte et `.lake/build/lib/lean/Ma
 - Ne pas merger seul
 - Dispatcher po-2026 avec criteres :
   1. Build log complet colle (pas extrait)
-  2. `grep -c sorry` avant/apres par fichier
+  2. Compte de `sorry` **reel** avant/apres par fichier — `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry`. **Jamais `grep -c sorry`** (sur-compte la prose), **ni un jeu de motifs artisanal** type `:= by sorry` / `^\s*sorry$` (sous-compte : rate `exact sorry` et `def … := sorry`, cf [anti-regression.md](../../.claude/rules/anti-regression.md))
   3. Diff sur defs partagees (signatures, instances)
 
 ### Discipline temporelle

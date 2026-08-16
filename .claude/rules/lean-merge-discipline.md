@@ -40,5 +40,5 @@ Commandes (grep de scope, heredoc WSL), pattern de preuve `pullback_union` + not
 
 ## Voir aussi
 
-- [anti-regression.md](anti-regression.md) — `grep -c sorry` avant/apres, pas de regression preuves
+- [anti-regression.md](anti-regression.md) — comptage `sorry` reel avant/apres (`count_code_sorry.py`) + les deux facons de se tromper d'instrument, pas de regression preuves
 - [pr-review-discipline.md](pr-review-discipline.md) — Section B (4 elements Lean PR body)
