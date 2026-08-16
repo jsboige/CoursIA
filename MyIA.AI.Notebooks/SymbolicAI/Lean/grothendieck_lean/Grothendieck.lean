@@ -9,12 +9,15 @@ import Grothendieck.Construction
 import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
+import Grothendieck.CoversBind
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPullback
+import Grothendieck.CoversPushforward
 import Grothendieck.CoversTopologies
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
+import Grothendieck.ExceptionalDirect
 import Grothendieck.Equivalences
 import Grothendieck.ExceptionalDirect
 import Grothendieck.KanExtensions
