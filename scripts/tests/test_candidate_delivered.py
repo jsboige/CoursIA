@@ -69,9 +69,44 @@ def test_active_when_comment_after_merge():
 
 def test_no_delivery_when_no_merged_ref():
     issue = _issue(title="fresh idea", comments=[])
-    refs = [{"pr_number": 1, "merged_at": None}]  # open PR, not merged
+    # closed-unmerged PR = abandoned lane, no work in flight
+    refs = [{"pr_number": 1, "merged_at": None, "is_pr": True, "state": "closed"}]
     verdict, _ = classify(issue, refs)
     assert verdict == "no_delivery"
+
+
+def test_in_flight_when_open_pr_references_after_merges():
+    # Mirrors #10984 (#11100): open PR #10986 references the issue BESIDES six
+    # merged PRs -- a multi-phase rollout. Old heuristic: candidate (wrong).
+    issue = _issue(title="rollout phase 7 of N", comments=["2026-08-10T09:00:00Z"])
+    refs = [
+        {"pr_number": 10995, "merged_at": "2026-08-14T23:18:16Z", "is_pr": True, "state": "closed"},
+        {"pr_number": 10986, "merged_at": None, "is_pr": True, "state": "open"},
+        {"pr_number": 11048, "merged_at": "2026-08-15T13:41:32Z", "is_pr": True, "state": "closed"},
+    ]
+    verdict, why = classify(issue, refs)
+    assert verdict == "in_flight"
+    assert "#10986" in why
+
+
+def test_in_flight_even_without_any_merge():
+    # Only an open PR (no merge yet): the issue is being worked on right now.
+    issue = _issue(title="fresh idea", comments=[])
+    refs = [{"pr_number": 1, "merged_at": None, "is_pr": True, "state": "open"}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "in_flight"
+
+
+def test_open_issue_mention_is_not_in_flight():
+    # A non-PR issue citing this one carries state "open" too -- must NOT
+    # trigger in_flight (only PR refs count as work in flight).
+    issue = _issue(title="x", comments=[])
+    refs = [
+        {"pr_number": 10397, "merged_at": None, "is_pr": False, "state": "open"},
+        {"pr_number": 1, "merged_at": "2026-08-11T06:40:37Z", "is_pr": True, "state": "closed"},
+    ]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "candidate"
 
 
 def test_candidate_when_comment_equals_merge_time():
@@ -99,9 +134,10 @@ def test_is_epic_case_insensitive():
     assert not is_epic("Epictetus notebook", [])  # substring inside a word -- accepted trade-off
 
 
-def _xref_event(src_number, merged_at=None, is_pr=True):
-    """Build one raw GitHub ``cross-referenced`` timeline event (shape from #10403)."""
-    issue = {"number": src_number}
+def _xref_event(src_number, merged_at=None, is_pr=True, state=None):
+    """Build one raw GitHub ``cross-referenced`` timeline event (shape from #10403
+    and #10984: source.issue carries `state`; `pull_request` present iff PR)."""
+    issue = {"number": src_number, "state": state}
     if is_pr:
         issue["pull_request"] = ({"merged_at": merged_at} if merged_at else {})
     return {"event": "cross-referenced", "source": {"issue": issue}}
@@ -110,20 +146,23 @@ def _xref_event(src_number, merged_at=None, is_pr=True):
 def test_parse_cross_ref_events_merged_prs_captured():
     # Mirrors #10403 timeline (measured firsthand): 5 cross-refs, 4 merged.
     events = [
-        _xref_event(10397, is_pr=False),                       # an issue, not a PR
-        _xref_event(10405, merged_at="2026-08-11T04:25:17Z"),  # merged PR
-        _xref_event(10410, merged_at="2026-08-11T06:40:37Z"),  # merged PR
-        _xref_event(10466),                                    # open PR, not merged
-        _xref_event(10507, merged_at="2026-08-11T22:51:43Z"),  # merged PR
+        _xref_event(10397, is_pr=False, state="open"),                       # an issue, not a PR
+        _xref_event(10405, merged_at="2026-08-11T04:25:17Z", state="closed"),  # merged PR
+        _xref_event(10410, merged_at="2026-08-11T06:40:37Z", state="closed"),  # merged PR
+        _xref_event(10466, state="open"),                                     # open PR, not merged
+        _xref_event(10507, merged_at="2026-08-11T22:51:43Z", state="closed"),  # merged PR
     ]
     refs = _parse_cross_ref_events(events)
     assert len(refs) == 5  # all cross-refs kept; classify filters by merged_at
     merged = [r for r in refs if r["merged_at"]]
     assert len(merged) == 3
     assert {r["pr_number"] for r in merged} == {10405, 10410, 10507}
-    # The non-PR issue ref carries merged_at=None (classify ignores it).
+    # The non-PR issue ref carries merged_at=None (classify ignores it)...
     issue_ref = next(r for r in refs if r["pr_number"] == 10397)
-    assert issue_ref["merged_at"] is None
+    assert issue_ref["merged_at"] is None and issue_ref["is_pr"] is False
+    # ...and an open PR ref is marked is_pr + state open (drives in_flight).
+    open_ref = next(r for r in refs if r["pr_number"] == 10466)
+    assert open_ref["is_pr"] is True and open_ref["state"] == "open"
 
 
 def test_parse_cross_ref_events_feeds_classify_candidate():

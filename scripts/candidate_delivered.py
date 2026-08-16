@@ -38,6 +38,11 @@ ADVISORY, never auto-close (#10466 "Ce que l'organe ne doit pas faire"):
     robust signal (covers #1454 "[EPIC]", #3801 "EPIC:", #10355/#4362 label
     EPIC). This exclusion rule is written here per acceptance #3 (the motif is
     in the workflow, not patched by hand).
+  - An OPEN PR referencing the issue means work in flight -- excluded as
+    ``in_flight`` (#11100): the correct `See #N` syntax for a partial delivery
+    must not produce the "probably delivered" label. Measured on #10984
+    (open #10986 + six merged PRs = a multi-phase rollout the old heuristic
+    mislabeled). An open *issue* mention does NOT trigger this: only PR refs.
 
 The classification core (``classify``) is a PURE function -- no network -- so it
 is unit-tested with fixtures in ``scripts/tests/test_candidate_delivered.py``.
@@ -94,6 +99,7 @@ def classify(issue: dict, cross_refs: list[dict]) -> tuple[str, str]:
         ``(verdict, detail)`` where verdict is one of:
         ``"epic"``         -- excluded (EPIC by title/label)
         ``"no_delivery"``  -- no merged PR references it
+        ``"in_flight"``    -- an OPEN PR references it: work in progress (#11100)
         ``"active"``       -- a comment landed after the latest merge
         ``"candidate"``    -- delivered + silent: pose the label
     """
@@ -101,6 +107,15 @@ def classify(issue: dict, cross_refs: list[dict]) -> tuple[str, str]:
     labels = issue.get("labels", []) or []
     if is_epic(title, labels):
         return ("epic", f"EPIC by title/label: {title!r}")
+
+    # #11100: an OPEN PR referencing the issue is work in flight -- the
+    # multi-phase rollout shape (e.g. #10984, referenced by open #10986 plus
+    # six merged PRs). Partial deliveries write `See #N` correctly, so the
+    # "merged + silent" heuristic alone mislabels the rollout as delivered.
+    open_prs = [r for r in cross_refs if r.get("is_pr") and r.get("state") == "open"]
+    if open_prs:
+        prs = ", ".join(f"#{r['pr_number']}" for r in open_prs)
+        return ("in_flight", f"open PR(s) {prs} reference this issue")
 
     merged = [r for r in cross_refs if r.get("merged_at")]
     if not merged:
@@ -162,17 +177,26 @@ def _parse_cross_ref_events(events: list[dict]) -> list[dict]:
     GitHub payload-shape handling is unit-tested independently of the network.
     Each event's ``source.issue`` carries a ``pull_request`` sub-object iff the
     referrer is a PR; ``merged_at`` on that sub-object is set iff the PR merged.
-    Non-PR refs (an *issue* citing this one) yield ``merged_at: None`` and are
-    ignored downstream by :func:`classify`, which counts only refs with a merge.
-    Events missing a source issue number are dropped.
+    ``state`` ("open"/"closed") distinguishes an unmerged-but-OPEN PR (work in
+    flight, #11100) from a closed-unmerged one (abandoned lane) -- both carry
+    ``merged_at: None``. Non-PR refs (an *issue* citing this one) yield
+    ``merged_at: None`` and are ignored downstream by :func:`classify`, which
+    counts only refs with a merge. Events missing a source issue number are
+    dropped.
     """
     refs = []
     for ev in events or []:
         src = (ev.get("source") or {}).get("issue") or {}
         if src.get("number") is None:
             continue
+        is_pr = "pull_request" in src  # presence, not truthiness: {} is a PR
         pr = src.get("pull_request") or {}
-        refs.append({"pr_number": src["number"], "merged_at": pr.get("merged_at")})
+        refs.append({
+            "pr_number": src["number"],
+            "merged_at": pr.get("merged_at"),
+            "is_pr": is_pr,
+            "state": src.get("state"),
+        })
     return refs
 
 
@@ -261,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.limit:
         issues = issues[: args.limit]
 
-    counts = {"candidate": 0, "active": 0, "no_delivery": 0, "epic": 0}
+    counts = {"candidate": 0, "active": 0, "in_flight": 0, "no_delivery": 0, "epic": 0}
     print(f"[candidate-delivered] repo={repo} mode={'dry-run' if args.dry_run else 'apply'} "
           f"open_issues={len(issues)} label={args.label}")
 
@@ -295,6 +319,12 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  #{number:<6} active     {why}  (label retracted)")
             else:
                 print(f"  #{number:<6} active     {why}")
+        elif verdict == "in_flight":
+            if labeled:  # an open PR appeared since the label was posed -- retract
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} in_flight  {why}  (label retracted)")
+            else:
+                print(f"  #{number:<6} in_flight  {why}")
         elif verdict == "epic":
             print(f"  #{number:<6} EPIC       excluded  ({enriched['title'][:50]})")
         else:  # no_delivery
