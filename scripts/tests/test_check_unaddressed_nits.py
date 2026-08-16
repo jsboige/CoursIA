@@ -643,3 +643,99 @@ def test_rien_a_changer_nest_pas_un_nit():
     rien — le citer « rien » rend l'occurrence citee."""
     assert mod.classify(
         "jsboige", "Relu in extenso : rien a changer, le fond est solide.") is None
+
+
+# --- #11222 : le deuxieme faux negatif du gate. `analyse()` eteignait TOUT
+# signal par n'importe quel commentaire posterieur (comment_times plat). Pour
+# un CHANGES_REQUESTED — un ETAT GitHub natif — c'est intenable : sur #11215,
+# la review de 08:34:39Z etait eteinte par le commentaire de 08:36:23Z de son
+# PROPRE auteur ecrivant que la remarque tient, et le gate rendait EXIT=0.
+# Matrice d'acceptation mesuree par ai-01 sur le cas reel : 1/1/1/0/0.
+
+CR_REVIEW = {
+    "author": {"login": "myia-ai-01"},
+    "state": "CHANGES_REQUESTED", "submittedAt": at(10),
+    "body": "CHANGES_REQUESTED: la cellule 19 apprend le mauvais instrument.",
+}
+
+
+def run_cr(comments=(), reviews=()):
+    data = {
+        "number": 0, "title": "t", "comments": list(comments),
+        "reviews": [CR_REVIEW, *reviews],
+        "commits": [{"committedDate": at(19)}],
+    }
+    return mod.analyse(data, [], MERGED)
+
+
+def test_cr_cas1_aucun_commentaire_bloque():
+    assert run_cr()["blocked"] is True
+
+
+def test_cr_cas2_commentaire_de_son_propre_auteur_ne_leve_pas():
+    """Le repro exact de #11215 : l'auteur du nit repond que le nit tient —
+    l'ancien comment_times plat l'eteignait quand meme (faux negatif)."""
+    reply = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+             "body": "Ma remarque de review sur le fond est inchangee."}
+    assert run_cr([reply])["blocked"] is True
+
+
+def test_cr_cas3_commentaire_tiers_hors_sujet_ne_leve_pas():
+    """Limite NLP documentee dans can_lift : un commentaire humain hors-sujet
+    leve un nit PORTE PAR COMMENTAIRE ; il n'eteint pas un etat de review."""
+    bystander = {"author": {"login": "po-2023-worker"}, "createdAt": at(12),
+                 "body": "Base verifiee de mon cote, plus de conflit."}
+    assert run_cr([bystander])["blocked"] is True
+
+
+def test_cr_cas4_phrase_de_levee_leve():
+    """La reponse ecrite que B.0 exige : l'auteur de la PR repond AVEC un
+    marqueur de levee (« sont adresses ») — l'etat se leve."""
+    fix = {"author": {"login": "jsboige"}, "createdAt": at(12),
+           "body": "Les 2 points sont adresses : cellule 19 remplacee par "
+                   "strip_lean_comments, commit abc123."}
+    assert run_cr([fix])["blocked"] is False
+
+
+def test_cr_cas5_rereview_approved_meme_auteur_leve():
+    approved = {"author": {"login": "myia-ai-01"}, "state": "APPROVED",
+                "submittedAt": at(15), "body": "Verifie apres re-exec : APPROVED."}
+    assert run_cr(reviews=[approved])["blocked"] is False
+
+
+def test_cr_dismissed_nest_pas_un_signal():
+    """Levee (b) : une dismissal GitHub n'est possible que par l'auteur de la
+    review (ou un admin) — formellement retiree des la collecte."""
+    data = {
+        "number": 0, "title": "t", "comments": [],
+        "reviews": [{"author": {"login": "myia-ai-01"},
+                     "state": "DISMISSED", "submittedAt": at(10),
+                     "body": "CHANGES_REQUESTED: cellule 19."}],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_cr_approved_d_un_tiers_ne_leve_pas():
+    """Sur GitHub, l'approbation d'un autre reviewer ne retire PAS le
+    CHANGES_REQUESTED actif du premier — seul son auteur le retire."""
+    other = {"author": {"login": "clusterManager-Myia"}, "state": "APPROVED",
+             "submittedAt": at(15), "body": "De mon cote c'est bon."}
+    assert run_cr(reviews=[other])["blocked"] is True
+
+
+def test_cr_levee_conditionnelle_ne_leve_pas():
+    """« corrige X et je merge » (#11201) : l'annonce conditionnee porte le
+    marqueur « je merge » mais n'est pas une phrase de levee."""
+    cond = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Corrige la cellule 19 et je merge."}
+    assert run_cr([cond])["blocked"] is True
+
+
+def test_nit_commentaire_garde_le_regime_general():
+    """Non-regression : le durcissement ne touche QUE l'etat de review. Un nit
+    porte par un COMMENTAIRE reste leve par une reponse humaine (regime
+    general, limite NLP de can_lift)."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Bien vu, corrige."}
+    assert run([USER_NIT, reply])["blocked"] is False
