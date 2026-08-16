@@ -21,6 +21,7 @@ import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
 import Grothendieck.MonoidalCategories
+import Grothendieck.PullbackCoversLaws
 import Grothendieck.PullbackFunctor
 import Grothendieck.PullbackFunctorLaws
 import Grothendieck.SchemesTour
