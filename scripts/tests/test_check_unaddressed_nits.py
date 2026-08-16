@@ -643,3 +643,108 @@ def test_rien_a_changer_nest_pas_un_nit():
     rien — le citer « rien » rend l'occurrence citee."""
     assert mod.classify(
         "jsboige", "Relu in extenso : rien a changer, le fond est solide.") is None
+
+
+# --- #11222 : la couche de RESOLUTION (pas classify) eteignait un
+# review:CHANGES_REQUESTED par n'importe quel commentaire humain posterieur —
+# y compris celui de l'AUTEUR du nit disant que la reserve tient (#11215 :
+# review CHANGES_REQUESTED 08:34 eteinte par le commentaire 08:36 « Ma
+# remarque de review sur le fond est inchangée », portant sur un autre sujet).
+# Acceptance issue : les 5 cas rendent 1/1/1/0/0.
+
+def run_mixed(comments, reviews):
+    data = {
+        "number": 0, "title": "t", "comments": comments, "reviews": reviews,
+        "commits": [{"committedDate": at(19)}],
+    }
+    return mod.analyse(data, [], MERGED)
+
+
+CHANGES_REVIEW = {
+    "author": {"login": "myia-ai-01"},
+    "state": "CHANGES_REQUESTED", "submittedAt": at(8),
+    "body": "CHANGES_REQUESTED — la preuve saute une etape critique.",
+}
+
+
+def test_cr_aucun_commentaire_bloque():
+    """Cas 1 : aucun commentaire posterieur -> attendu 1."""
+    assert run_mixed([], [CHANGES_REVIEW])["blocked"] is True
+
+
+def test_cr_meme_auteur_ne_retracte_pas_bloque():
+    """Cas 2 : commentaire du MEME auteur qui ne retracte PAS (« ma remarque
+    est inchangée ») -> attendu 1. L'auteur du nit est seul autorite pour le
+    lever ; s'il ne le leve pas, rien ne bouge."""
+    same_author_no_lift = {
+        "author": {"login": "myia-ai-01"}, "createdAt": at(9),
+        "body": "Note annexe sur le label pedagogy-density. Ma remarque de "
+                "review sur le fond est inchangée.",
+    }
+    res = run_mixed([same_author_no_lift], [CHANGES_REVIEW])
+    assert res["blocked"] is True
+
+
+def test_cr_tiers_hors_sujet_bloque():
+    """Cas 3 : commentaire d'un TIERS hors-sujet -> attendu 1. Un CHANGES_REQUESTED
+    n'est pas un nit de commentaire : la levee doit lui etre adressee."""
+    third_party = {
+        "author": {"login": "jsboige"}, "createdAt": at(9),
+        "body": "Vu en coordination : le grain suivant part sur la lane 2.",
+    }
+    res = run_mixed([third_party], [CHANGES_REVIEW])
+    assert res["blocked"] is True
+
+
+def test_cr_auteur_pr_annonce_le_correctif_leve():
+    """Cas 4 : commentaire de l'AUTEUR DE LA PR qui corrige (« X est adressé,
+    je merge ») -> attendu 0. LIFT_MARKER explicite (voie (c))."""
+    pr_author_fix = {
+        "author": {"login": "po-worker"}, "createdAt": at(9),
+        "body": "L'etape manquante est ajoutee, le nit est adressé et je merge "
+                "apres les checks.",
+    }
+    res = run_mixed([pr_author_fix], [CHANGES_REVIEW])
+    assert res["blocked"] is False
+
+
+def test_cr_rereview_approved_meme_auteur_leve():
+    """Cas 5 : re-review APPROVED du meme auteur -> attendu 0 (voie (a))."""
+    approved_same = {
+        "author": {"login": "myia-ai-01"}, "state": "APPROVED",
+        "submittedAt": at(15), "body": "",
+    }
+    res = run_mixed([], [CHANGES_REVIEW, approved_same])
+    assert res["blocked"] is False
+
+
+def test_cr_approved_autre_auteur_ne_leve_pas():
+    """Voie (a) est du MEME auteur : l'APPROVED d'un AUTRE reviewer que
+    l'emetteur du CHANGES_REQUESTED ne leve pas son state natif — seul son
+    auteur peut retirer un CHANGES_REQUESTED sur GitHub."""
+    approved_other = {
+        "author": {"login": "NanoClaw-Audit"}, "state": "APPROVED",
+        "submittedAt": at(15), "body": "",
+    }
+    res = run_mixed([], [CHANGES_REVIEW, approved_other])
+    assert res["blocked"] is True
+
+
+def test_cr_lift_marker_avant_la_review_ne_leve_pas():
+    """Borne anti-retroactivite voie (c) : un LIFT_MARKER AVANT la reserve
+    ne peut pas l'avoir eteinte."""
+    early_lift = {
+        "author": {"login": "po-worker"}, "createdAt": at(7),
+        "body": "Le point precedent est adressé, je merge.",
+    }
+    res = run_mixed([early_lift], [CHANGES_REVIEW])
+    assert res["blocked"] is True
+
+
+def test_cr_nit_commentaire_garde_la_semantique_golbale():
+    """Non-regression : les signaux de COMMENTAIRE gardent la levee globale
+    par reponse (test_vraie_reponse_humaine_leve ne doit pas changer de sens
+    pour les CHANGES_REQUESTED uniquement)."""
+    res = run([USER_NIT, {"author": {"login": "jsboige"}, "createdAt": at(12),
+                          "body": "Bien vu, corrigée en cellule 0."}])
+    assert res["blocked"] is False

@@ -353,7 +353,10 @@ def can_lift(comment: dict) -> bool:
     Limite connue et assumee : on ne verifie pas que la reponse *nomme* la
     remarque — cela demanderait du NLP. Un commentaire humain hors-sujet leve
     donc encore un nit (faux negatif residuel). Auteur + protocole eliminent le
-    gros du bruit sans pretendre lire le sens.
+    gros du bruit sans pretendre lire le sens. Cette limite ne vaut que pour
+    les signaux de COMMENTAIRE : depuis #11222, un review:CHANGES_REQUESTED
+    n'est leve que par une levee adressee (APPROVED du meme auteur ou
+    LIFT_MARKER explicite) — voir `analyse()`.
     """
     login = (comment.get("author") or {}).get("login", "")
     if login in BOT_LOGINS:
@@ -461,6 +464,32 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         and (t := ts(r.get("submittedAt"))) is not None
     ]
 
+    # Levée ADRESSEE a un signal review:CHANGES_REQUESTED (#11222) : la couche
+    # de resolution ne peut pas traiter ce state comme un nit de commentaire.
+    # Un CHANGES_REQUESTED ne se retire sur GitHub que par son AUTEUR (re-review
+    # APPROVED ou dismissal) ; un commentaire nu — meme de l'auteur du nit, meme
+    # disant explicitement que la reserve tient (« Ma remarque est inchangée »,
+    # #11215) — n'a jamais cette autorite. Ne le lever que par :
+    #   (a) une re-review APPROVED du MEME auteur que le CHANGES_REQUESTED ;
+    #   (b) un dismissal GitHub — couvert nativement : une review dismissée
+    #       apparait avec state DISMISSED, donc ne genere jamais de signal ;
+    #   (c) un LIFT_MARKER explicite (commentaire non-bot portant un marqueur
+    #       de levee) : l'auteur du nit qui leve (« Je lève ma réserve ») ou
+    #       l'auteur de la PR qui annonce le correctif (« adressé, je merge »).
+    lift_marker_times = [
+        t for t in (
+            ts(c.get("createdAt")) for c in (pr_data.get("comments") or [])
+            if can_lift(c) and has_marker(c.get("body") or "", LIFT_MARKERS)
+        ) if t
+    ]
+    approved_by_author: dict[str, list] = {}
+    for r in (pr_data.get("reviews") or []):
+        login = (r.get("author") or {}).get("login", "")
+        if (r.get("state") == "APPROVED" and login
+                and login not in BOT_LOGINS
+                and (t := ts(r.get("submittedAt"))) is not None):
+            approved_by_author.setdefault(login, []).append(t)
+
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
         login = (c.get("author") or {}).get("login", "")
@@ -485,7 +514,15 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         # c'est l'annonce de merge, pas une réponse. Sans cette borne, le gate
         # rate son propre incident fondateur (#10761, où mon commentaire de
         # merge « éteignait » rétroactivement le nit user posté 17 h plus tôt).
-        if any(when < t < cutoff for t in comment_times):
+        if src == "review:CHANGES_REQUESTED":
+            # Seules les levees ADRESSEES comptent (#11222) : (a) re-review
+            # APPROVED du meme auteur, (c) LIFT_MARKER explicite. Le global
+            # comment_times — ou n'importe quel commentaire humain eteignait
+            # le state natif — est ici un faux negatif par construction.
+            if (any(when < t < cutoff for t in approved_by_author.get(login, []))
+                    or any(when < t < cutoff for t in lift_marker_times)):
+                continue
+        elif any(when < t < cutoff for t in comment_times):
             continue  # discute/refuse explicitement apres le nit, avant le merge
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
