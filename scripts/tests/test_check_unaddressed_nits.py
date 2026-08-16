@@ -613,6 +613,45 @@ def test_annonce_vraie_est_une_levee():
     assert mod.classify("myia-ai-01", "C'est bon, je merge.") is None
 
 
+# --- #11246 : use vs mention. CONDITIONAL_LIFT lisait les exemples CITES du
+# motif comme des usages : une review expliquant « corrige X et je merge » se
+# flaggait elle-meme (2/15 findings de l'audit --limit 400, les 2 seules
+# reviews du corpus parlant du gate), et son annonce de merge reelle etait
+# annulee. La citation est neutralisee avant la recherche ; l'usage nu reste
+# bloquant.
+
+def test_conditional_lift_usage_reste_bloquant():
+    """Paire (a) : la construction conditionnelle EMPLOYEE, hors citation —
+    la reserve reste vivante (#11201 inchange)."""
+    assert mod.classify(
+        "myia-ai-01",
+        "Une seule chose a changer — corrige la ligne 19 et je merge."
+    ) == "BOT-CONCERN"
+
+
+def test_conditional_lift_cite_n_annule_pas_la_levee():
+    """Paire (b) : la formule CITEE (« corrige X et je merge ») expliquee dans
+    une review qui annonce par ailleurs le merge (« **Mergée.** »). AVANT le
+    fix, CONDITIONAL_LIFT matchait la citation et la review basculait en
+    BOT-CONCERN (cas #11218/#11233)."""
+    body = ("Une seule chose a changer sur le registre : la formule "
+            "« corrige X et je merge » n'est pas une levee. **Mergée.**")
+    assert mod.classify("myia-ai-01", body) is None
+
+
+@pytest.mark.parametrize("cite", [
+    "`corrige X et je merge`",
+    "« corrige X et je merge »",
+    "```\ncorrige X et je merge\n```",
+])
+def test_conditional_lift_citations_ne_bloquent_pas(cite):
+    """Les 3 formes de citation — backtick inline, guillemets typo, bloc code —
+    ne sont pas des usages de la construction conditionnelle."""
+    body = (f"Une seule chose a changer. La formule {cite} est citee, "
+            "pas employee. **Mergée.**")
+    assert mod.classify("myia-ai-01", body) is None
+
+
 @pytest.mark.parametrize("cond", [
     "Change la cellule 19 puis je merge.",
     "Corrige l'attribution, ensuite je merge.",
