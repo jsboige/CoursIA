@@ -2949,6 +2949,341 @@ theorem out16_toGrid_mem {k : Nat}
         exact Or.inr (Or.inr (Or.inr (h16)))
       exact Or.inr (Or.inr (Or.inr (hQ4)))
 
+/-! ### P5-At pas inductif (a) : reduction de la fenetre LHS (grain 3b, partie 5a)
+
+Premiere brique du pas inductif de `hashlifeResultAt_central_correct` :
+la fenetre certifiee `[2^(M-1), 2^M)^2` de la sortie mono-ronde du moteur
+At (lue a l'ancre `(2^(M-1), 2^(M-1))`, cf la geometrie de la partie 4)
+coincide avec le quadrant nord-ouest `Q1` de l'assemblage, c'est-a-dire la
+grille du noeud des quatre sous-quadrants `subX r_i` des briques centrales.
+Preuve : decomposition 16-voies (partie 4, `k = M - 2`), elimination des
+douze placements hors fenetre par bornes inferieures d'etendue
+(`grandchild_extent'`) contre des cles de contradiction pre-prouvees
+(discipline omega de la partie 3 : aucun omega post-obtention),
+conservation des quatre placements de Q1 par `mem_toGrid_node`, pont
+d'extensionnalite `Canonical.ext` (miroir de `p4at_ext_bridge`). Les
+ascriptions de type ferment l'ecart de coersion `↑(2^(M-1) : Nat)` vs
+`(2^(M-1) : Int)` (definitionnellement egaux, verifie par `rfl`). -/
+
+set_option maxHeartbeats 4000000 in
+theorem hashlifeResultAt_step_window_nw {M j : Nat} (hj : j + 2 ≤ M)
+    (a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 : MacroCell)
+    (hwf : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).wf = true)
+    (ha1l : a1.level = M - 1) :
+    restrictGridTo ((hashlifeResultAt j (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4))).toGrid ((2^(M-1) : Nat), (2^(M-1) : Nat)))
+        (2^(M-1) : Int) (2^(M-1))
+      = (node (subSE (hashlifeResultAt j (node a1 a2 a3 a4)))
+              (subSW (hashlifeResultAt j (node a2 b1 a4 b3)))
+              (subNE (hashlifeResultAt j (node a3 a4 c1 c2)))
+              (subNW (hashlifeResultAt j (node a4 b3 c2 d1)))).toGrid ((2^(M-1) : Nat), (2^(M-1) : Nat)) := by
+  have hM2 : 2 ≤ M := by omega
+  have keyL : ∀ x : Nat, x = M - 1 → 1 + x = M := by intro x hx; omega
+  have keyS : ∀ x : Nat, x = M - 1 → x = (M - 2) + 1 := by intro x hx; omega
+  have keyT : ∀ x : Nat, x = (M - 2) + 1 → x = M - 1 := by intro x hx; omega
+  have keyLev2 : ∀ x : Nat, x = M - 1 → 1 + (1 + x) = M + 1 := by
+    intro x hx; omega
+  have hrel : (2^(M-1) : Int) = 2 * (2^(M-2) : Int) := by
+    have hM' : M - 1 = (M - 2) + 1 := by omega
+    rw [hM', pow_two_succ_eq_int]
+  have hB : 0 < (2^(M-2) : Int) := by
+    exact_mod_cast (pow_pos (by norm_num : (0 : Nat) < 2) (M - 2))
+  have hne : ¬ (M + 1 = j + 2) := by omega
+  have keyR2 : ∀ pr : Int, (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ pr →
+      pr < (2^(M-1) : Int) + (2^(M-1) : Nat) → False := by
+    intro pr hlo hup
+    have hup' : pr < (2^(M-1) : Int) + (2^(M-1) : Int) := hup
+    omega
+  have keyR3 : ∀ pr : Int, (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ pr →
+      pr < (2^(M-1) : Int) + (2^(M-1) : Nat) → False := by
+    intro pr hlo hup
+    have hup' : pr < (2^(M-1) : Int) + (2^(M-1) : Int) := hup
+    omega
+  have keyC2 : ∀ pc : Int, (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ pc →
+      pc < (2^(M-1) : Int) + (2^(M-1) : Nat) → False := by
+    intro pc hlo hup
+    have hup' : pc < (2^(M-1) : Int) + (2^(M-1) : Int) := hup
+    omega
+  have keyC3 : ∀ pc : Int, (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ pc →
+      pc < (2^(M-1) : Int) + (2^(M-1) : Nat) → False := by
+    intro pc hlo hup
+    have hup' : pc < (2^(M-1) : Int) + (2^(M-1) : Int) := hup
+    omega
+  obtain ⟨ha2l, ha3l, ha4l, hb1l, hb2l, hb3l, hb4l, hc1l, hc2l, hc3l, hc4l, hd1l, hd2l, hd3l, hd4l,
+          ha1w, ha2w, ha3w, ha4w, hb1w, hb2w, hb3w, hb4w, hc1w, hc2w, hc3w, hc4w, hd1w, hd2w, hd3w, hd4w⟩ :=
+    node16_grandchild_facts (k := M - 1) a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4
+      d1 d2 d3 d4 hwf ha1l
+  have hn1l : ((node a1 a2 a3 a4)).level = M := by
+    show 1 + a1.level = M
+    exact keyL _ ha1l
+  have hn1w : cellWf ((node a1 a2 a3 a4)) :=
+    cellWf.node (cellWf_of_wf _ ha1w) (cellWf_of_wf _ ha2w)
+      (cellWf_of_wf _ ha3w) (cellWf_of_wf _ ha4w)
+      (ha1l.trans ha2l.symm) (ha1l.trans ha3l.symm) (ha1l.trans ha4l.symm)
+  have hjn1 : j + 2 ≤ ((node a1 a2 a3 a4)).level := by rw [hn1l]; exact hj
+  have hn2l : ((node a2 b1 a4 b3)).level = M := by
+    show 1 + a2.level = M
+    exact keyL _ ha2l
+  have hn2w : cellWf ((node a2 b1 a4 b3)) :=
+    cellWf.node (cellWf_of_wf _ ha2w) (cellWf_of_wf _ hb1w)
+      (cellWf_of_wf _ ha4w) (cellWf_of_wf _ hb3w)
+      (ha2l.trans hb1l.symm) (ha2l.trans ha4l.symm) (ha2l.trans hb3l.symm)
+  have hjn2 : j + 2 ≤ ((node a2 b1 a4 b3)).level := by rw [hn2l]; exact hj
+  have hn3l : ((node b1 b2 b3 b4)).level = M := by
+    show 1 + b1.level = M
+    exact keyL _ hb1l
+  have hn3w : cellWf ((node b1 b2 b3 b4)) :=
+    cellWf.node (cellWf_of_wf _ hb1w) (cellWf_of_wf _ hb2w)
+      (cellWf_of_wf _ hb3w) (cellWf_of_wf _ hb4w)
+      (hb1l.trans hb2l.symm) (hb1l.trans hb3l.symm) (hb1l.trans hb4l.symm)
+  have hjn3 : j + 2 ≤ ((node b1 b2 b3 b4)).level := by rw [hn3l]; exact hj
+  have hn4l : ((node a3 a4 c1 c2)).level = M := by
+    show 1 + a3.level = M
+    exact keyL _ ha3l
+  have hn4w : cellWf ((node a3 a4 c1 c2)) :=
+    cellWf.node (cellWf_of_wf _ ha3w) (cellWf_of_wf _ ha4w)
+      (cellWf_of_wf _ hc1w) (cellWf_of_wf _ hc2w)
+      (ha3l.trans ha4l.symm) (ha3l.trans hc1l.symm) (ha3l.trans hc2l.symm)
+  have hjn4 : j + 2 ≤ ((node a3 a4 c1 c2)).level := by rw [hn4l]; exact hj
+  have hn5l : ((node a4 b3 c2 d1)).level = M := by
+    show 1 + a4.level = M
+    exact keyL _ ha4l
+  have hn5w : cellWf ((node a4 b3 c2 d1)) :=
+    cellWf.node (cellWf_of_wf _ ha4w) (cellWf_of_wf _ hb3w)
+      (cellWf_of_wf _ hc2w) (cellWf_of_wf _ hd1w)
+      (ha4l.trans hb3l.symm) (ha4l.trans hc2l.symm) (ha4l.trans hd1l.symm)
+  have hjn5 : j + 2 ≤ ((node a4 b3 c2 d1)).level := by rw [hn5l]; exact hj
+  have hn6l : ((node b3 b4 d1 d2)).level = M := by
+    show 1 + b3.level = M
+    exact keyL _ hb3l
+  have hn6w : cellWf ((node b3 b4 d1 d2)) :=
+    cellWf.node (cellWf_of_wf _ hb3w) (cellWf_of_wf _ hb4w)
+      (cellWf_of_wf _ hd1w) (cellWf_of_wf _ hd2w)
+      (hb3l.trans hb4l.symm) (hb3l.trans hd1l.symm) (hb3l.trans hd2l.symm)
+  have hjn6 : j + 2 ≤ ((node b3 b4 d1 d2)).level := by rw [hn6l]; exact hj
+  have hn7l : ((node c1 c2 c3 c4)).level = M := by
+    show 1 + c1.level = M
+    exact keyL _ hc1l
+  have hn7w : cellWf ((node c1 c2 c3 c4)) :=
+    cellWf.node (cellWf_of_wf _ hc1w) (cellWf_of_wf _ hc2w)
+      (cellWf_of_wf _ hc3w) (cellWf_of_wf _ hc4w)
+      (hc1l.trans hc2l.symm) (hc1l.trans hc3l.symm) (hc1l.trans hc4l.symm)
+  have hjn7 : j + 2 ≤ ((node c1 c2 c3 c4)).level := by rw [hn7l]; exact hj
+  have hn8l : ((node c2 d1 c4 d3)).level = M := by
+    show 1 + c2.level = M
+    exact keyL _ hc2l
+  have hn8w : cellWf ((node c2 d1 c4 d3)) :=
+    cellWf.node (cellWf_of_wf _ hc2w) (cellWf_of_wf _ hd1w)
+      (cellWf_of_wf _ hc4w) (cellWf_of_wf _ hd3w)
+      (hc2l.trans hd1l.symm) (hc2l.trans hc4l.symm) (hc2l.trans hd3l.symm)
+  have hjn8 : j + 2 ≤ ((node c2 d1 c4 d3)).level := by rw [hn8l]; exact hj
+  have hn9l : ((node d1 d2 d3 d4)).level = M := by
+    show 1 + d1.level = M
+    exact keyL _ hd1l
+  have hn9w : cellWf ((node d1 d2 d3 d4)) :=
+    cellWf.node (cellWf_of_wf _ hd1w) (cellWf_of_wf _ hd2w)
+      (cellWf_of_wf _ hd3w) (cellWf_of_wf _ hd4w)
+      (hd1l.trans hd2l.symm) (hd1l.trans hd3l.symm) (hd1l.trans hd4l.symm)
+  have hjn9 : j + 2 ≤ ((node d1 d2 d3 d4)).level := by rw [hn9l]; exact hj
+  obtain ⟨hres1l, hres1w⟩ := hashlifeResultAt_level_cellWf j ((node a1 a2 a3 a4)) hn1w hjn1
+  rw [hn1l] at hres1l
+  obtain ⟨hres2l, hres2w⟩ := hashlifeResultAt_level_cellWf j ((node a2 b1 a4 b3)) hn2w hjn2
+  rw [hn2l] at hres2l
+  obtain ⟨hres3l, hres3w⟩ := hashlifeResultAt_level_cellWf j ((node b1 b2 b3 b4)) hn3w hjn3
+  rw [hn3l] at hres3l
+  obtain ⟨hres4l, hres4w⟩ := hashlifeResultAt_level_cellWf j ((node a3 a4 c1 c2)) hn4w hjn4
+  rw [hn4l] at hres4l
+  obtain ⟨hres5l, hres5w⟩ := hashlifeResultAt_level_cellWf j ((node a4 b3 c2 d1)) hn5w hjn5
+  rw [hn5l] at hres5l
+  obtain ⟨hres6l, hres6w⟩ := hashlifeResultAt_level_cellWf j ((node b3 b4 d1 d2)) hn6w hjn6
+  rw [hn6l] at hres6l
+  obtain ⟨hres7l, hres7w⟩ := hashlifeResultAt_level_cellWf j ((node c1 c2 c3 c4)) hn7w hjn7
+  rw [hn7l] at hres7l
+  obtain ⟨hres8l, hres8w⟩ := hashlifeResultAt_level_cellWf j ((node c2 d1 c4 d3)) hn8w hjn8
+  rw [hn8l] at hres8l
+  obtain ⟨hres9l, hres9w⟩ := hashlifeResultAt_level_cellWf j ((node d1 d2 d3 d4)) hn9w hjn9
+  rw [hn9l] at hres9l
+  have hSE1 := subSE_level_cellWf (m := M - 2) hres1w (keyS _ hres1l)
+  have hSW2 := subSW_level_cellWf (m := M - 2) hres2w (keyS _ hres2l)
+  have hNE4 := subNE_level_cellWf (m := M - 2) hres4w (keyS _ hres4l)
+  have hNW5 := subNW_level_cellWf (m := M - 2) hres5w (keyS _ hres5l)
+  have hSE2 := subSE_level_cellWf (m := M - 2) hres2w (keyS _ hres2l)
+  have hSW3 := subSW_level_cellWf (m := M - 2) hres3w (keyS _ hres3l)
+  have hNE5 := subNE_level_cellWf (m := M - 2) hres5w (keyS _ hres5l)
+  have hNW6 := subNW_level_cellWf (m := M - 2) hres6w (keyS _ hres6l)
+  have hSE4 := subSE_level_cellWf (m := M - 2) hres4w (keyS _ hres4l)
+  have hSW5 := subSW_level_cellWf (m := M - 2) hres5w (keyS _ hres5l)
+  have hNE7 := subNE_level_cellWf (m := M - 2) hres7w (keyS _ hres7l)
+  have hNW8 := subNW_level_cellWf (m := M - 2) hres8w (keyS _ hres8l)
+  have hSE5 := subSE_level_cellWf (m := M - 2) hres5w (keyS _ hres5l)
+  have hSW6 := subSW_level_cellWf (m := M - 2) hres6w (keyS _ hres6l)
+  have hNE8 := subNE_level_cellWf (m := M - 2) hres8w (keyS _ hres8l)
+  have hNW9 := subNW_level_cellWf (m := M - 2) hres9w (keyS _ hres9l)
+  obtain ⟨hQ1l', hQ1w⟩ := node4_level_cellWf hSE1.1 hSW2.1 hNE4.1 hNW5.1
+    hSE1.2 hSW2.2 hNE4.2 hNW5.2
+  have hQ1l : (node (subSE (hashlifeResultAt j (node a1 a2 a3 a4)))
+              (subSW (hashlifeResultAt j (node a2 b1 a4 b3)))
+              (subNE (hashlifeResultAt j (node a3 a4 c1 c2)))
+              (subNW (hashlifeResultAt j (node a4 b3 c2 d1)))).level = M - 1 := keyT _ hQ1l'
+  have hrw1 : hashlifeResultAtAux M j ((node a1 a2 a3 a4)) = hashlifeResultAt j ((node a1 a2 a3 a4)) := by
+    unfold hashlifeResultAt
+    rw [hn1l]
+  have hrw2 : hashlifeResultAtAux M j ((node a2 b1 a4 b3)) = hashlifeResultAt j ((node a2 b1 a4 b3)) := by
+    unfold hashlifeResultAt
+    rw [hn2l]
+  have hrw3 : hashlifeResultAtAux M j ((node b1 b2 b3 b4)) = hashlifeResultAt j ((node b1 b2 b3 b4)) := by
+    unfold hashlifeResultAt
+    rw [hn3l]
+  have hrw4 : hashlifeResultAtAux M j ((node a3 a4 c1 c2)) = hashlifeResultAt j ((node a3 a4 c1 c2)) := by
+    unfold hashlifeResultAt
+    rw [hn4l]
+  have hrw5 : hashlifeResultAtAux M j ((node a4 b3 c2 d1)) = hashlifeResultAt j ((node a4 b3 c2 d1)) := by
+    unfold hashlifeResultAt
+    rw [hn5l]
+  have hrw6 : hashlifeResultAtAux M j ((node b3 b4 d1 d2)) = hashlifeResultAt j ((node b3 b4 d1 d2)) := by
+    unfold hashlifeResultAt
+    rw [hn6l]
+  have hrw7 : hashlifeResultAtAux M j ((node c1 c2 c3 c4)) = hashlifeResultAt j ((node c1 c2 c3 c4)) := by
+    unfold hashlifeResultAt
+    rw [hn7l]
+  have hrw8 : hashlifeResultAtAux M j ((node c2 d1 c4 d3)) = hashlifeResultAt j ((node c2 d1 c4 d3)) := by
+    unfold hashlifeResultAt
+    rw [hn8l]
+  have hrw9 : hashlifeResultAtAux M j ((node d1 d2 d3 d4)) = hashlifeResultAt j ((node d1 d2 d3 d4)) := by
+    unfold hashlifeResultAt
+    rw [hn9l]
+  have hlev : (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)).level = M + 1 :=
+    keyLev2 _ ha1l
+  have hunf : hashlifeResultAt j (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)) =
+      hashlifeResultAtAux (M + 1) j (node (node a1 a2 a3 a4) (node b1 b2 b3 b4)
+             (node c1 c2 c3 c4) (node d1 d2 d3 d4)) := by
+    unfold hashlifeResultAt
+    rw [hlev]
+  rw [hunf, hashlifeResultAtAux_succ_node_at, hlev]
+  rw [if_neg (by simp only [beq_iff_eq]; exact hne)]
+  rw [hrw1, hrw2, hrw3, hrw4, hrw5, hrw6, hrw7, hrw8, hrw9]
+  refine Canonical.ext ?_ (canonical_toGrid _ _) ?_
+  · unfold restrictGridTo
+    exact (canonical_toGrid _ _).filter _
+  · intro p
+    constructor
+    · intro hpw
+      obtain ⟨hout, hlo1, hup1, hlo2, hup2⟩ := mem_restrictGridTo.mp hpw
+      rcases (out16_toGrid_mem (k := M - 2)
+          (hashlifeResultAt j (node a1 a2 a3 a4))
+          (hashlifeResultAt j (node a2 b1 a4 b3))
+          (hashlifeResultAt j (node b1 b2 b3 b4))
+          (hashlifeResultAt j (node a3 a4 c1 c2))
+          (hashlifeResultAt j (node a4 b3 c2 d1))
+          (hashlifeResultAt j (node b3 b4 d1 d2))
+          (hashlifeResultAt j (node c1 c2 c3 c4))
+          (hashlifeResultAt j (node c2 d1 c4 d3))
+          (hashlifeResultAt j (node d1 d2 d3 d4))
+          (wf_of_cellWf hres1w) (keyS _ hres1l)
+          (wf_of_cellWf hres2w) (keyS _ hres2l)
+          (wf_of_cellWf hres3w) (keyS _ hres3l)
+          (wf_of_cellWf hres4w) (keyS _ hres4l)
+          (wf_of_cellWf hres5w) (keyS _ hres5l)
+          (wf_of_cellWf hres6w) (keyS _ hres6l)
+          (wf_of_cellWf hres7w) (keyS _ hres7l)
+          (wf_of_cellWf hres8w) (keyS _ hres8l)
+          (wf_of_cellWf hres9w) (keyS _ hres9l)
+          (2^(M-1) : Nat) (2^(M-1) : Nat) p).mp hout with
+        (e1 | e2 | e3 | e4 | e5 | e6 | e7 | e8 | e9 | e10 | e11 | e12 | e13 | e14 | e15 | e16)
+      ·
+        rw [mem_toGrid_node, hSE1.1]
+        exact Or.inl e1
+      ·
+        rw [mem_toGrid_node, hSE1.1]
+        exact Or.inr (Or.inl e2)
+      ·
+        rw [mem_toGrid_node, hSE1.1]
+        exact Or.inr (Or.inr (Or.inl e3))
+      ·
+        rw [mem_toGrid_node, hSE1.1]
+        exact Or.inr (Or.inr (Or.inr (e4)))
+      ·
+        have hx := grandchild_extent' (subSE (hashlifeResultAt j (node a2 b1 a4 b3))) (2^(M-1) : Nat) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) p hSE2.1
+          (wf_of_cellWf hSE2.2) e5
+        exact (keyC2 p.2 (hx.2.2.1 : (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ p.2) hup2).elim
+      ·
+        have hx := grandchild_extent' (subSW (hashlifeResultAt j (node b1 b2 b3 b4))) (2^(M-1) : Nat) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) p hSW3.1
+          (wf_of_cellWf hSW3.2) e6
+        exact (keyC3 p.2 (hx.2.2.1 : (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ p.2) hup2).elim
+      ·
+        have hx := grandchild_extent' (subNE (hashlifeResultAt j (node a4 b3 c2 d1))) ((2^(M-1) : Nat) + (2^(M-2) : Int)) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) p hNE5.1
+          (wf_of_cellWf hNE5.2) e7
+        exact (keyC2 p.2 (hx.2.2.1 : (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ p.2) hup2).elim
+      ·
+        have hx := grandchild_extent' (subNW (hashlifeResultAt j (node b3 b4 d1 d2))) ((2^(M-1) : Nat) + (2^(M-2) : Int)) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) p hNW6.1
+          (wf_of_cellWf hNW6.2) e8
+        exact (keyC3 p.2 (hx.2.2.1 : (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ p.2) hup2).elim
+      ·
+        have hx := grandchild_extent' (subSE (hashlifeResultAt j (node a3 a4 c1 c2))) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) (2^(M-1) : Nat) p hSE4.1
+          (wf_of_cellWf hSE4.2) e9
+        exact (keyR2 p.1 (hx.1 : (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+      ·
+        have hx := grandchild_extent' (subSW (hashlifeResultAt j (node a4 b3 c2 d1))) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) ((2^(M-1) : Nat) + (2^(M-2) : Int)) p hSW5.1
+          (wf_of_cellWf hSW5.2) e10
+        exact (keyR2 p.1 (hx.1 : (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+      ·
+        have hx := grandchild_extent' (subNE (hashlifeResultAt j (node c1 c2 c3 c4))) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) (2^(M-1) : Nat) p hNE7.1
+          (wf_of_cellWf hNE7.2) e11
+        exact (keyR3 p.1 (hx.1 : (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+      ·
+        have hx := grandchild_extent' (subNW (hashlifeResultAt j (node c2 d1 c4 d3))) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) ((2^(M-1) : Nat) + (2^(M-2) : Int)) p hNW8.1
+          (wf_of_cellWf hNW8.2) e12
+        exact (keyR3 p.1 (hx.1 : (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+      ·
+        have hx := grandchild_extent' (subSE (hashlifeResultAt j (node a4 b3 c2 d1))) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) p hSE5.1
+          (wf_of_cellWf hSE5.2) e13
+        exact (keyR2 p.1 (hx.1 : (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+      ·
+        have hx := grandchild_extent' (subSW (hashlifeResultAt j (node b3 b4 d1 d2))) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) p hSW6.1
+          (wf_of_cellWf hSW6.2) e14
+        exact (keyR2 p.1 (hx.1 : (2^(M-1) : Int) + 2 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+      ·
+        have hx := grandchild_extent' (subNE (hashlifeResultAt j (node c2 d1 c4 d3))) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) ((2^(M-1) : Nat) + (2*(2^(M-2) : Int))) p hNE8.1
+          (wf_of_cellWf hNE8.2) e15
+        exact (keyR3 p.1 (hx.1 : (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+      ·
+        have hx := grandchild_extent' (subNW (hashlifeResultAt j (node d1 d2 d3 d4))) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) ((2^(M-1) : Nat) + (3*(2^(M-2) : Int))) p hNW9.1
+          (wf_of_cellWf hNW9.2) e16
+        exact (keyR3 p.1 (hx.1 : (2^(M-1) : Int) + 3 * (2^(M-2) : Int) ≤ p.1) hup1).elim
+    · intro hpq1
+      have hext := mem_toGrid_extent (node (subSE (hashlifeResultAt j (node a1 a2 a3 a4)))
+              (subSW (hashlifeResultAt j (node a2 b1 a4 b3)))
+              (subNE (hashlifeResultAt j (node a3 a4 c1 c2)))
+              (subNW (hashlifeResultAt j (node a4 b3 c2 d1)))) (2^(M-1) : Nat) (2^(M-1) : Nat) p
+        (wf_of_cellWf hQ1w) hpq1
+      rw [hQ1l] at hext
+      have hout : p ∈ (node (node (subSE (hashlifeResultAt j (node a1 a2 a3 a4)))
+              (subSW (hashlifeResultAt j (node a2 b1 a4 b3)))
+              (subNE (hashlifeResultAt j (node a3 a4 c1 c2)))
+              (subNW (hashlifeResultAt j (node a4 b3 c2 d1))))
+        (node (subSE (hashlifeResultAt j (node a2 b1 a4 b3)))
+              (subSW (hashlifeResultAt j (node b1 b2 b3 b4)))
+              (subNE (hashlifeResultAt j (node a4 b3 c2 d1)))
+              (subNW (hashlifeResultAt j (node b3 b4 d1 d2))))
+        (node (subSE (hashlifeResultAt j (node a3 a4 c1 c2)))
+              (subSW (hashlifeResultAt j (node a4 b3 c2 d1)))
+              (subNE (hashlifeResultAt j (node c1 c2 c3 c4)))
+              (subNW (hashlifeResultAt j (node c2 d1 c4 d3))))
+        (node (subSE (hashlifeResultAt j (node a4 b3 c2 d1)))
+              (subSW (hashlifeResultAt j (node b3 b4 d1 d2)))
+              (subNE (hashlifeResultAt j (node c2 d1 c4 d3)))
+              (subNW (hashlifeResultAt j (node d1 d2 d3 d4))))).toGrid ((2^(M-1) : Nat), (2^(M-1) : Nat)) := by
+        rw [mem_toGrid_node]
+        exact Or.inl hpq1
+      exact mem_restrictGridTo.mpr ⟨hout,
+        (hext.1 : (2^(M-1) : Int) ≤ p.1),
+        hext.2.1.trans_eq (Int.add_comm _ _),
+        (hext.2.2.1 : (2^(M-1) : Int) ≤ p.2),
+        hext.2.2.2.trans_eq (Int.add_comm _ _)⟩
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
