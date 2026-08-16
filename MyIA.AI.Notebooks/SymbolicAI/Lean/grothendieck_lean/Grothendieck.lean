@@ -11,6 +11,7 @@ import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPullback
+import Grothendieck.CoversTopologies
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.Equivalences
