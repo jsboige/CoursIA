@@ -330,6 +330,80 @@ class ScanOutputTextTests(unittest.TestCase):
 # --- scan_notebook ---
 
 
+# --- _scan_output_text class C (non-PII, opt-in) ---
+
+
+class ScanOutputNonPiiTests(unittest.TestCase):
+    @staticmethod
+    def _nb_with_stream(text: str) -> dict:
+        return {
+            "cells": [
+                {
+                    "cell_type": "code",
+                    "outputs": [
+                        {"output_type": "stream", "name": "stdout", "text": text},
+                    ],
+                }
+            ]
+        }
+
+    def test_worktree_windows_path_flagged(self):
+        # Founding case #11278: PR #11234 committed a worktree output path.
+        nb = self._nb_with_stream(
+            "Output directory: D:\\Dev\\CoursIA-0411-audiobooks\\MyIA.AI.Notebooks\\GenAI"
+        )
+        defects = _scan_output_text(nb, include_nonpii=True)
+        self.assertEqual(len(defects), 1)
+        self.assertEqual(defects[0]["kind"], "output_text_abs_path_nonpii")
+        self.assertEqual(defects[0]["severity"], "low")
+        self.assertIn("basename", defects[0]["remed"])
+        self.assertTrue(defects[0]["match"].startswith("D:\\Dev"))
+
+    def test_silent_without_flag(self):
+        nb = self._nb_with_stream(
+            "Output directory: D:\\Dev\\CoursIA-0411-audiobooks\\MyIA.AI.Notebooks"
+        )
+        self.assertEqual(_scan_output_text(nb), [])
+
+    def test_url_not_flagged(self):
+        nb = self._nb_with_stream(
+            "namespace: https://www.w3.org/2001/xmlns/ and https://arxiv.org/abs/2201.11903"
+        )
+        self.assertEqual(_scan_output_text(nb, include_nonpii=True), [])
+
+    def test_remote_env_prefix_allowlisted(self):
+        # /opt/miniconda3 is the QC Cloud runtime signature, not a
+        # contributor-machine leak (measured x1575 in ML-RandomForest).
+        nb = self._nb_with_stream(
+            "already satisfied: numpy in /opt/miniconda3/lib/python3.11/site-packages"
+        )
+        self.assertEqual(_scan_output_text(nb, include_nonpii=True), [])
+
+    def test_users_profile_stays_class_b_only(self):
+        nb = self._nb_with_stream(r"C:\Users\jsboi\AppData\Local\Temp\x.ipynb")
+        defects = _scan_output_text(nb, include_nonpii=True)
+        self.assertEqual(len(defects), 1)
+        self.assertEqual(defects[0]["kind"], "output_text_path_leak")
+
+    def test_windows_system32_stays_class_b_only(self):
+        nb = self._nb_with_stream(r"dll loaded from C:\Windows\system32\kernel32.dll")
+        defects = _scan_output_text(nb, include_nonpii=True)
+        self.assertEqual(len(defects), 1)
+        self.assertEqual(defects[0]["kind"], "output_text_path_leak")
+
+    def test_unix_mount_flagged(self):
+        nb = self._nb_with_stream("checkpoint restored from /mnt/data/runs/ckpt-42.pt")
+        defects = _scan_output_text(nb, include_nonpii=True)
+        self.assertEqual(len(defects), 1)
+        self.assertEqual(defects[0]["kind"], "output_text_abs_path_nonpii")
+
+    def test_bare_drive_letter_not_flagged(self):
+        # A single ``C:\`` segment (error-message template) needs a second
+        # segment to fire — mirrors the class-B no-noise rationale.
+        nb = self._nb_with_stream("failed to open C: (device not ready)")
+        self.assertEqual(_scan_output_text(nb, include_nonpii=True), [])
+
+
 class ScanNotebookTests(unittest.TestCase):
     def test_clean_notebook(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -459,6 +533,35 @@ class CliTests(unittest.TestCase):
             self.assertEqual(cp.returncode, 0)
             report = json.loads(cp.stdout)
             self.assertEqual(report, [])
+
+    def test_nonpii_implies_outputs_and_check_exits_1(self):
+        # ``--nonpii`` without ``--outputs`` must still scan output text
+        # (class C lives there) and make ``--check`` exit 1 on the defect.
+        nb = {
+            "cells": [
+                {
+                    "cell_type": "code",
+                    "outputs": [
+                        {
+                            "output_type": "stream",
+                            "name": "stdout",
+                            "text": "Output directory: D:\\Dev\\CoursIA-x\\notebooks",
+                        },
+                    ],
+                }
+            ],
+            "metadata": {},
+            "nbformat": 4,
+            "nbformat_minor": 5,
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            p = _make_nb(Path(tmp), "worktree.ipynb", nb)
+            cp = self._run("--scan", str(p), "--nonpii", "--check")
+            self.assertEqual(cp.returncode, 1)
+            cp2 = self._run("--scan", str(p), "--nonpii")
+            report = json.loads(cp2.stdout)
+            kinds = {d["kind"] for d in report}
+            self.assertIn("output_text_abs_path_nonpii", kinds)
 
     def test_scan_defects_exits_0_with_json(self):
         nb = {

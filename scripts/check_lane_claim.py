@@ -106,6 +106,23 @@ _MARKER_RE = re.compile(
     r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
     re.IGNORECASE,
 )
+# #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
+# (`CLAIMED #11222 -- ...`) is invisible to `_MARKER_RE` above: the organ
+# reports `unattributed_markers: 0` and answers CLEAR to every other lane,
+# while the writer believes their lock is posted. Measured 2026-08-16 on
+# #11222: two lanes delivered the same fix seven minutes apart (#11230 /
+# #11233). This regex is the WARN-side of that gap. Same decoration tolerance
+# as `_MARKER_RE`, but the marker word must appear BARE (no `[`), and the line
+# must carry a claim motif (`lane <machine:workspace>` or `#N`) so prose that
+# merely MENTIONS a marker word is not flagged. Deliberately NOT a parser
+# widening -- a malformed line must surface as a warning, never as a claim
+# event. The motif tail is on the same line only (no `[\s\S]` cross-line).
+_MALFORMED_MARKER_RE = re.compile(
+    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*"
+    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\b"
+    r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
+    re.IGNORECASE,
+)
 _OPEN = {"CLAIMED"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
@@ -840,6 +857,33 @@ def _lint_claim_events(
                 )
 
 
+def _find_malformed_markers(payload: dict) -> list[dict]:
+    """Bare-marker lines that look like claims but will never be read (#11239).
+
+    `_parse_claim_events` keys off `_MARKER_RE`, which REQUIRES the brackets:
+    a `CLAIMED #N -- lane ...` line written without them is invisible to the
+    organ (`unattributed_markers: 0`, CLEAR to every other lane) yet the
+    writer believes their lock is posted. Returns one dict per matching line
+    (marker word, capped verbatim line, author, comment url). WARN-only by
+    design: never changes a verdict, never touches `blocked` -- the lint
+    exists to tell the writer they were not read, not to re-interpret their
+    text as a claim.
+    """
+    found: list[dict] = []
+    for c in payload.get("comments", []):
+        body = c.get("body") or ""
+        author = (c.get("author") or {}).get("login")
+        for m in _MALFORMED_MARKER_RE.finditer(body):
+            line = _line_for_match(body, m)
+            found.append({
+                "marker": m.group(1).upper(),
+                "line": line if len(line) <= 160 else line[:160] + "…",
+                "author": author,
+                "url": c.get("url"),
+            })
+    return found
+
+
 def _warn_bare_integer_paths(paths: list[str]) -> list[str]:
     """Return the `--paths` entries that are bare integers (#10881 trap).
 
@@ -919,6 +963,20 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # a verdict. The four 2026-08-14 markers on #10678 shared the defect the
     # three checks name (epic-wide by accident / prose swallowed as globs).
     _lint_claim_events(events, payload.get("number"), tracked=tracked)
+    # #11239 lint -- bare markers without brackets (invisible to the organ).
+    # Same non-blocking spirit as the #10881 lint above: the writer learns at
+    # the call site that their lock was never registered, instead of two lanes
+    # discovering it via collision. Also mirrored into the JSON summary so a
+    # coordinator's sweep can grep `malformed_markers` across issues.
+    malformed = _find_malformed_markers(payload)
+    for mm in malformed:
+        who = f" by @{mm['author']}" if mm["author"] else ""
+        print(
+            f'WARN: marqueur sans crochets "{mm["marker"]}"{who} -- la forme '
+            f'attendue est "[{mm["marker"]}]" ; sans crochets, l\'organe ne '
+            f"le lit pas (unattributed_markers reste 0). {mm['line']}",
+            file=sys.stderr,
+        )
     # #10958 -- attach the dead-glob witness to every scoped event (own and
     # others): a glob that matches zero tracked files is surfaced in the
     # JSON (`empty_scope`) and, when it covers the WHOLE scope, lifts the
@@ -983,6 +1041,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             for ln, ev in sorted(active.items())
         },
         "unattributed_markers": len(unattributed),
+        # #11239 -- bare-marker lines (no brackets) carrying a claim motif.
+        # The organ does not read them (`_MARKER_RE` requires the brackets),
+        # so they are invisible to `unattributed_markers` AND to the blocker
+        # test; surfacing them here lets the writer and the coordinator see
+        # the lock that never registered.
+        "malformed_markers": len(malformed),
+        "malformed_marker_lines": [m["line"] for m in malformed],
         "blocked": bool(others),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))

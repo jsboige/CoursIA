@@ -24,6 +24,12 @@
       content_python_sha: bc08c2cef56a4c22ac09fdd94f74198f5fb62b4c0ee448524edaec4041ead8c9
       content_csharp_sha: bb2450a9abefd49a370c77b2ed6d6bd97402df3a101d7c4c0a76de72e1c40cd6
       reason: "Rebaseline apres fix citations arXiv #11168 (commit bdb44ead09) : correction unilaterale Python-only de 2 pointeurs de section fabriques (1312.0906 n'a pas de §10, pagination romaine I-VI ; funnel = §I, reparametrisation non-centree = §II.B). Infer-12 ne cite pas 1312.0906 (grep verifie), cote C# inchange (csharp_sha identique a l'entree 2026-08-15). Markdown-only (C.2 exception). Rebaseline POSEE APRES le commit des corrections (ordre checker, #8957)."
+    - date: "2026-08-16"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 49badb1775f020524bacc681a50ab573fbe01eec
+      csharp_sha: 3606ff946d2c9622571442060c48a53d5cf14910
+      content_python_sha: eb0811abbbf52d20f502c79fac9f72f9e0f34ac2c71946d58e05545825182909
+      content_csharp_sha: bb2450a9abefd49a370c77b2ed6d6bd97402df3a101d7c4c0a76de72e1c40cd6
   known_differences:
   - 'Socle pedagogique commun : modeles hierarchiques (effets aleatoires emboites) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
