@@ -10,6 +10,7 @@ import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
 import Grothendieck.CoversLattice
+import Grothendieck.CoversOfPretopology
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPullback
 import Grothendieck.CoversTopologies
