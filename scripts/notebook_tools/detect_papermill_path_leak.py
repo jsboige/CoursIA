@@ -175,8 +175,55 @@ LEAK_PATTERNS: tuple[re.Pattern[str], ...] = (
     """),
 )
 
+# --- Defect class C — non-PII absolute filesystem paths (advisory, opt-in) ---
+#
+# ``LEAK_PATTERNS`` (class B) anchors on *home/identity* markers; a
+# contributor-machine path outside any home directory — typically a git
+# worktree like ``D:\Dev\CoursIA-0411-audiobooks\...`` or
+# ``C:\dev\CoursIA-8892-infer6ep\...`` — is therefore invisible to both this
+# detector and the ``strip_machine_paths.py`` pre-commit hook (same PII
+# anchor). Founding case: PR #11234 merged
+# ``Output directory: D:\Dev\CoursIA-0411-audiobooks\...`` into
+# ``04-11-Generation-TTS.ipynb`` outputs (#11044 T1 correction, issue #11278).
+#
+# Class C is **advisory and opt-in** (``--nonpii``): it routes to a
+# *source fix + re-execution* (print the basename, not the absolute path —
+# secrets-hygiene rule 6, triage C), never to an automated strip.
+#
+# Remote-execution environment prefixes: these absolute paths are the
+# signature of the *distant* runtime (QC Cloud LEAN images), not of the
+# contributor's machine — allowlisted, not a leak.
+REMOTE_ENV_PREFIXES: tuple[str, ...] = (
+    "/opt/miniconda3",
+    "/opt/conda",
+    "/usr/local/lib/python",
+    "/League",
+)
 
-def _scan_output_text(nb: dict) -> list[dict]:
+NONPII_PATTERNS: tuple[re.Pattern[str], ...] = (
+    # Windows drive path outside any user profile: two-plus segments so a
+    # bare ``C:\`` in an error template does not fire. ``Users`` and
+    # ``Windows`` are excluded — both stay class-B-only (no double count).
+    re.compile(r"""(?xi)
+        [A-Za-z]: [\\/] (?! (?: Users | Windows ) [\\/])
+        [A-Za-z0-9_.\-]+ [\\/] [^"'<>\s]{2,64}
+    """),
+    # Unix filesystem roots outside /home (excluded above) and outside URLs
+    # (the ``(?<![:\w/])`` look-behind rejects the ``//host/...`` tail of
+    # ``https://...``).
+    re.compile(r"""(?xi)
+        (?<![:\w/]) / (?:mnt|media|srv|opt|data|workspace) / [A-Za-z0-9_.\-]{2,} [\\/] [^"'<>\s]{2,64}
+    """),
+)
+
+NONPII_KIND = "output_text_abs_path_nonpii"
+NONPII_REMEDIATION = (
+    "print a basename/relative path in the cell source and re-execute "
+    "(Stop & Repair) — never hand-edit the committed output"
+)
+
+
+def _scan_output_text(nb: dict, *, include_nonpii: bool = False) -> list[dict]:
     """Walk ``cells[*].outputs[*].text`` and ``data['text/plain']`` for leaks.
 
     Skips image and HTML data. ``stream`` (stderr) and ``display_data`` with
@@ -199,20 +246,23 @@ def _scan_output_text(nb: dict) -> list[dict]:
             # longer streams (one element per line break); handle both.
             text = out.get("text")
             if isinstance(text, str):
-                _collect_leaks(defects, ci, oi, "stream.text", text)
+                _collect_leaks(defects, ci, oi, "stream.text", text,
+                               include_nonpii=include_nonpii)
             elif isinstance(text, list):
                 for li, piece in enumerate(text):
                     if isinstance(piece, str):
                         _collect_leaks(
                             defects, ci, oi,
                             f"stream.text[{li}]", piece,
+                            include_nonpii=include_nonpii,
                         )
             # Channel 2: display_data / execute_result with text/plain
             data = out.get("data")
             if isinstance(data, dict):
                 tp = data.get("text/plain")
                 if isinstance(tp, str):
-                    _collect_leaks(defects, ci, oi, "data['text/plain']", tp)
+                    _collect_leaks(defects, ci, oi, "data['text/plain']", tp,
+                                   include_nonpii=include_nonpii)
                 elif isinstance(tp, list):
                     # nbformat sometimes wraps long text in a list of strings
                     for li, piece in enumerate(tp):
@@ -220,6 +270,7 @@ def _scan_output_text(nb: dict) -> list[dict]:
                             _collect_leaks(
                                 defects, ci, oi,
                                 f"data['text/plain'][{li}]", piece,
+                                include_nonpii=include_nonpii,
                             )
     return defects
 
@@ -230,6 +281,8 @@ def _collect_leaks(
     output_idx: int,
     location: str,
     text: str,
+    *,
+    include_nonpii: bool = False,
 ) -> None:
     """Append a defect for each regex match in ``text``."""
     for pat in LEAK_PATTERNS:
@@ -240,6 +293,19 @@ def _collect_leaks(
                 "match": m.group(0),
                 "severity": "medium",
             })
+    if include_nonpii:
+        for pat in NONPII_PATTERNS:
+            for m in pat.finditer(text):
+                frag = m.group(0)
+                if frag.startswith(REMOTE_ENV_PREFIXES):
+                    continue
+                defects.append({
+                    "kind": NONPII_KIND,
+                    "location": f"cells[{cell_idx}].outputs[{output_idx}].{location}",
+                    "match": frag,
+                    "severity": "low",
+                    "remed": NONPII_REMEDIATION,
+                })
 
 
 # --- Scanner glue ---
@@ -269,7 +335,12 @@ def iter_notebooks(root: Path) -> list[Path]:
     return list(_walk_notebooks(root))
 
 
-def scan_notebook(nb_path: Path, *, include_outputs: bool = False) -> list[dict]:
+def scan_notebook(
+    nb_path: Path,
+    *,
+    include_outputs: bool = False,
+    include_nonpii: bool = False,
+) -> list[dict]:
     """Return the defects list for a single notebook."""
     nb = _read_notebook(nb_path)
     if nb is None:
@@ -281,7 +352,7 @@ def scan_notebook(nb_path: Path, *, include_outputs: bool = False) -> list[dict]
         }]
     defects = _scan_metadata_papermill(nb)
     if include_outputs:
-        defects.extend(_scan_output_text(nb))
+        defects.extend(_scan_output_text(nb, include_nonpii=include_nonpii))
     return defects
 
 
@@ -289,6 +360,7 @@ def scan_tree(
     root: Path,
     *,
     include_outputs: bool = False,
+    include_nonpii: bool = False,
 ) -> list[dict]:
     """Scan every notebook under ``root``; return a flat defects report.
 
@@ -302,7 +374,11 @@ def scan_tree(
             rel = str(nb_path.relative_to(root))
         except ValueError:
             rel = str(nb_path)
-        for d in scan_notebook(nb_path, include_outputs=include_outputs):
+        for d in scan_notebook(
+            nb_path,
+            include_outputs=include_outputs,
+            include_nonpii=include_nonpii,
+        ):
             d_with_file = {"file": rel, **d}
             report.append(d_with_file)
     return report
@@ -333,6 +409,13 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "Off by default — class B can be noisy on first scan.",
     )
     p.add_argument(
+        "--nonpii", action="store_true",
+        help="Advisory class C: also flag non-PII absolute filesystem paths "
+             "in output text (worktrees like D:\\Dev\\CoursIA-*, issue #11278). "
+             "Implies --outputs — class C lives in output text. Routes to a "
+             "source fix + re-exec, never to an automated strip.",
+    )
+    p.add_argument(
         "--check", action="store_true",
         help="CI gate: exit 1 if any defect is found, suppress JSON.",
     )
@@ -349,14 +432,22 @@ def main(argv: list[str] | None = None) -> int:
     if not target.exists():
         print(f"error: path does not exist: {target}", file=sys.stderr)
         return 2
-    include_outputs = bool(args.outputs)
+    include_outputs = bool(args.outputs) or bool(args.nonpii)
     if args.scan is not None:
         report = [
             {"file": str(target), **d}
-            for d in scan_notebook(target, include_outputs=include_outputs)
+            for d in scan_notebook(
+                target,
+                include_outputs=include_outputs,
+                include_nonpii=bool(args.nonpii),
+            )
         ]
     else:
-        report = scan_tree(target, include_outputs=include_outputs)
+        report = scan_tree(
+            target,
+            include_outputs=include_outputs,
+            include_nonpii=bool(args.nonpii),
+        )
 
     if args.summary and not args.check:
         _print_summary(report)
