@@ -16,6 +16,7 @@ import Grothendieck.CoversPullback
 import Grothendieck.CoversTopologies
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
+import Grothendieck.ExceptionalDirect
 import Grothendieck.Equivalences
 import Grothendieck.KanExtensions
 import Grothendieck.LeftExact
