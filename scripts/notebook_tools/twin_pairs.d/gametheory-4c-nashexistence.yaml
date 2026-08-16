@@ -26,29 +26,6 @@
       content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Tri du residu #10382 (2026-08-16, lane myia-po-2024:CoursIA-2) : FAUX POSITIF de la liste des 51 -- le jumeau Python n'embarque AUCUN moteur SOTA (imports mesures firsthand : numpy/matplotlib/typing uniquement, 0 nashpy). numpy = signal faible au sens de l'issue (helper numerique, pas un moteur de jeu), les DEUX jumeaux font la demonstration constructive du point fixe from-scratch. Verdict reformule : pas d'asymetrie lib-vs-lib a combler ; asymetrie de machinerie seulement (visualisation numpy/matplotlib vs System.* + SVG zero-dependance). parity_level semantic preserve (gel #11200)."
-  audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: c6db511801c503cacd18a0af26ffe0182d0b70f8
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: d961920fe442d4cd9e6948327d5cd72c79f0c36b
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: 8b006e3260363e251379e3629401d7bbc49a7782
-      csharp_sha: 0cc0403bd9de958a52e3fa3a3c318e3cf3d8ddd4
-      content_python_sha: fc4746498c529d0f9befe4aadc97686ce38e5b7301795815bcb93518baf80dd1
-      content_csharp_sha: 5aedf36d46460381bc005e1d451d8ca00cf0f023aa900261c9d1460672c148e3
-    - date: "2026-08-06"
-      by: myia-po-2023:CoursIA
-      python_sha: d961920fe442d4cd9e6948327d5cd72c79f0c36b
-      csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
-      content_python_sha: 85820028c0c456b7522c80315ee04d794c1ef827fc3ed227a466e1b70d316dd6
-      content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
-  bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "Python = numpy + matplotlib (calcul numerique et visualisation des equilibres, support enumeration / best-response correspondence, 15 cellules code). C# = pur System.* (System.Linq, 0 NuGet, demonstration constructive/algebrique de l'existence via point fixe de Brouwer, 10 cellules code). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (theoreme d'existence de Nash = point fixe de Brouwer/Kakutani). L'asymetrie reside dans la machinerie -- Python numerique+visualisation, C# demonstration constructive pure. Aucune lib SOTA partagee (numpy vs System.Linq). parity_level: semantic preserve."
   known_differences:
     - "Socle pedagogique commun : existence d'un equilibre de Nash (theoreme de point fixe de Brouwer / Kakutani), structure de jeu et conditions d'existence. Meme concept mathematique (equilibre, point fixe, convexite), meme cas d'application (jeux strategiques, illustration de l'existence). Les deux couvrent le theoreme de Nash."
     - "Divergence d'implementation : le Python (numpy + matplotlib, 15 cellules code) calcule et visualise numeriquement les equilibres (support enumeration / approche numerique + tracé du best-response correspondence) ; le C# (pur System.* stdlib, 0 NuGet, 10 cellules code) demontre l'existence de maniere constructive/algebrique (sans solveur numerique externe). Meme theoreme, deux angles : numerique+visualisation cote Python vs construction algebrique cote C#."
