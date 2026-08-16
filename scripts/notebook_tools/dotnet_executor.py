@@ -17,6 +17,8 @@ from pathlib import Path
 
 import jupyter_client
 
+from notebook_helpers import bound_native_thread_pools
+
 
 def _drain_iopub(kc, parent_msg_id, deadline_s=5):
     """Best-effort drain of iopub messages until the kernel goes idle or a
@@ -126,6 +128,9 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
     start_time = time.time()
 
     try:
+        # Bound OpenMP/BLAS pools: LightGBM unbounded oversubscribes many-core
+        # hosts and training cells look frozen (#11111). Kernel inherits env.
+        bound_native_thread_pools()
         km = jupyter_client.KernelManager(kernel_name=kernel_name)
         km.start_kernel(cwd=str(notebook_dir))
         kc = km.client()

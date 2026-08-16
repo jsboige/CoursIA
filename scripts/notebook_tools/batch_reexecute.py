@@ -27,6 +27,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from notebook_helpers import bound_native_thread_pools
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
@@ -103,6 +105,10 @@ def read_kernelspec_name(nb_path: Path) -> str:
 
 def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
     """Execute a single notebook with papermill."""
+    # Bound OpenMP/BLAS pools before spawning papermill: the kernel it
+    # launches inherits the environment; unbounded native training cells
+    # oversubscribe many-core hosts and look frozen (#11111).
+    bound_native_thread_pools()
     backup_path = nb_path.with_suffix(".ipynb.bak")
 
     # Create backup
