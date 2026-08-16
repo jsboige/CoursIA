@@ -13,6 +13,7 @@ import Grothendieck.CoversBind
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPullback
+import Grothendieck.CoversPushforward
 import Grothendieck.CoversTopologies
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
