@@ -23,6 +23,13 @@
       csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
       content_python_sha: 040431dcdf9c141892e3720654e560ab03d023623a5b47cdc1564a0e6877cda2
       content_csharp_sha: c6bab540f0a215779fa3f6143d6424f67adee605467ab4d6b2c99f7ba41a0af5
+    - date: "2026-08-16"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 7dabf01fc13dfab6976e7e410458fe4aa8ccfaf9
+      csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
+      reason: "Re-exec seq only (#11112 etage 3): DUPLICATE -> CLEAN 1..17 via nbconvert python3 (ortools CP-SAT, solution/stats VSIDS identiques au main), sources byte-identiques (0 source_diffs JSON). Retrait 1 cle outputs invalide pre-existante sur markdown cell 33 (nbformat now VALID). Cote C# non touche."
+      content_python_sha: 710eeb3a3dd2bf26ec6c13a3a0e5658733ccc3af8ccb86d9261d878fbb0720de
+      content_csharp_sha: c6bab540f0a215779fa3f6143d6424f67adee605467ab4d6b2c99f7ba41a0af5
   known_differences:
     - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
     - "Cas etudies : N-Reines (LCG via CP-SAT), Job-Shop Scheduling (exploration des parametres CP-SAT : DEFAULT / FIXED_SEARCH / PORTFOLIO), generation d'instances CSP aleatoires + prediction de faisabilite par features (n_vars, n_constraints, density)."

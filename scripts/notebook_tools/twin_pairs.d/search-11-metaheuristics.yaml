@@ -37,6 +37,13 @@
       csharp_sha: ac366782eb567725eea37d1aa9fe0264a3ab1541
       content_python_sha: 4ce8da48465e96479c46f68575e93ba9f43ab08895faced3039afb2fb15d49bc
       content_csharp_sha: dce689a469dd323686332ca9508192b5f6f410f7511d562dc87bbead6c45dcc8
+    - date: "2026-08-16"
+      by: myia-po-2026:CoursIA-2
+      python_sha: c99f7fa459b2c622dc4659be5f40273e8f66b4dc
+      csharp_sha: 06ec508260ebf1eb3aae40b435a782a3a5cc4d32
+      reason: "Re-exec seq only (#11112 etage 3): python DUPLICATE -> CLEAN 1..20 (mealpy 3.0.3 installee regle F, logs horodates frais, stochasticite epoch-1 attendue) ET csharp DUPLICATE -> CLEAN 1..18 (dotnet_executor, GeneticSharp, 8 seeds byte-identiques au run main, probe banner strip L532). Sources byte-identiques des deux cotes (0 source_diffs JSON)."
+      content_python_sha: fe2b28c0cf5616d3a54c71d572da73a14f5113a3001db251db7908a62f0f829d
+      content_csharp_sha: 762f48ff1d51d08ce97ba22d6a92fb75dc3b92e2ede5c843e212c6fa1d65fa60
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
     Python = MEALPy (librairie metaheuristique 40+ algos, MIT) -- vrai SOTA ecosysteme Python. C# = GeneticSharp (librairie .NET GA/evolutionnaire reference, LGPL) post Tranche 2 -- vrai SOTA ecosysteme .NET. Les DEUX cotes branchent une librairie native de leur ecosysteme (mealpy + geneticsharp). Tranche 1 C# from-scratch (PSO/SA/GA) preservee + Tranche 2 ajoute GeneticSharp sur 4 fonctions benchmark -- lib-vs-lib cote-a-cote avec from-scratch. Asymetrie de couverture (ABC + BRO cote Python, GA + TSP cote C#) asumee native-both parity_level. Verdict SOTA-OK.
