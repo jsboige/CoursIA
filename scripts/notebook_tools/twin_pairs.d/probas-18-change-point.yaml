@@ -10,6 +10,13 @@
       by: myia-po-2023:CoursIA
       python_sha: f295cceb90dc134cb19ebda5860bb121a77e2174
       csharp_sha: 95033cfe1c4ee9b1562c17faaddbe482f92d5e38
+    - date: "2026-08-16"
+      by: myia-po-2023:CoursIA
+      python_sha: a1219285566fe34d6b7d46547791c4d8943c0f64
+      csharp_sha: e696a6c6e93fbbbf880dbc3ea33b77d58df83a88
+      content_python_sha: eded81f51dcf1424804b3b5ceb612aa6c3a6e4eb422f186054ea1e93879034d7
+      content_csharp_sha: 2d3e776bb6cacb6fa1c0ef6588a586c39fe1ebf3d2c2244e4eb6dbec314a1e48
+      reason: "Rebaseline apres fix citations arXiv #11168 (commit bdb44ead09) : correction bilaterale de 3+1 pointeurs de section fabriques identiques dans les DEUX jumeaux (0710.3742 n'a pas de section 'constant-hazard', son §3 = 'Experimental Results' ; le message-passing/run-length = §2). Markdown-only (C.2 exception), aucun contenu code/output touche. Rebaseline POSEE APRES le commit des corrections (ordre checker, #8957) : les shas attestent les fichiers corriges."
   known_differences:
   - 'Socle pedagogique commun : points de changement (change-point detection) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
