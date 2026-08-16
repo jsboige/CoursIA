@@ -415,6 +415,115 @@ def play_audio_bytes(audio_bytes: bytes, format: str = "mp3"):
 
 
 # ============================================================================
+# Publication MIME bundle audio (cle data audio/* dans le JSON du notebook)
+# ============================================================================
+# `display(Audio(...))` ne publie qu'un embed HTML sur IPython >= 9 : la sortie
+# committee ne porte jamais de cle `audio/*`, ce qui fait tomber le notebook
+# sous le predicat #10996 ("aucun media audio/* committe"). On publie ici le
+# bundle MIME complet (audio/* + text/html + text/plain) via display(raw=True)
+# pour que le media rendu soit verifiable dans le JSON.
+
+AUDIO_MIME_BY_SUFFIX = {
+    ".wav": "audio/wav",
+    ".mp3": "audio/mpeg",
+    ".ogg": "audio/ogg",
+    ".flac": "audio/flac",
+    ".m4a": "audio/mp4",
+    ".aac": "audio/aac",
+    ".webm": "audio/webm",
+}
+
+
+def _sniff_audio_mimetype(audio_bytes: bytes) -> str:
+    """Detecte le MIME d'un flux audio a partir de ses octets (WAV / MP3)."""
+    if audio_bytes[:4] == b"RIFF" and audio_bytes[8:12] == b"WAVE":
+        return "audio/wav"
+    if audio_bytes[:3] == b"ID3":
+        return "audio/mpeg"
+    if len(audio_bytes) > 2 and audio_bytes[0] == 0xFF and (audio_bytes[1] & 0xE0) == 0xE0:
+        return "audio/mpeg"
+    return "audio/mpeg"
+
+
+def display_audio_bundle(audio_bytes: bytes, mimetype: Optional[str] = None,
+                         autoplay: bool = False):
+    """Publie des bytes audio en bundle MIME complet (audio/* + text/html).
+
+    Args:
+        audio_bytes: Donnees audio brutes (WAV, MP3, ...)
+        mimetype: Type MIME explicite (None = sniffing automatique)
+        autoplay: Lecture automatique dans le navigateur
+    """
+    import base64
+    from IPython.display import display
+
+    if not mimetype:
+        mimetype = _sniff_audio_mimetype(audio_bytes)
+    b64 = base64.b64encode(audio_bytes).decode("ascii")
+    autoplay_attr = " autoplay" if autoplay else ""
+    html = (
+        f'<audio controls="controls"{autoplay_attr}>'
+        f'<source src="data:{mimetype};base64,{b64}" type="{mimetype}" />'
+        "Your browser does not support the audio element.</audio>"
+    )
+    display({
+        mimetype: b64,
+        "text/html": html,
+        "text/plain": f"<audio embedded ({mimetype}, {len(audio_bytes)} bytes)>",
+    }, raw=True)
+
+
+def display_audio_file(path: str, autoplay: bool = False):
+    """Lit un fichier audio sur disque et publie un bundle MIME audio/*.
+
+    Args:
+        path: Chemin vers le fichier audio (le MIME est deduit de l'extension)
+        autoplay: Lecture automatique dans le navigateur
+    """
+    path = Path(path)
+    audio_bytes = path.read_bytes()
+    mimetype = AUDIO_MIME_BY_SUFFIX.get(path.suffix.lower())
+    if not mimetype:
+        mimetype = _sniff_audio_mimetype(audio_bytes)
+    display_audio_bundle(audio_bytes, mimetype=mimetype, autoplay=autoplay)
+
+
+def display_audio_array(samples, rate: int, autoplay: bool = False):
+    """Encode un tableau numpy en WAV et publie un bundle MIME audio/wav.
+
+    Args:
+        samples: Tableau numpy (int16 ou float dans [-1, 1]), mono ou stereo
+        rate: Sample rate
+        autoplay: Lecture automatique dans le navigateur
+    """
+    import io
+    import wave
+
+    import numpy as np
+
+    arr = np.asarray(samples)
+    if arr.dtype.kind == "f":
+        arr = np.clip(arr, -1.0, 1.0)
+        arr = (arr * 32767.0).astype(np.int16)
+    elif arr.dtype != np.int16:
+        arr = arr.astype(np.int16)
+    if arr.ndim == 2:
+        channels = arr.shape[0]
+        frames = arr.T.tobytes()
+    else:
+        channels = 1
+        frames = arr.tobytes()
+
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(channels)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(frames)
+    display_audio_bundle(buf.getvalue(), mimetype="audio/wav", autoplay=autoplay)
+
+
+# ============================================================================
 # Utilitaires
 # ============================================================================
 
