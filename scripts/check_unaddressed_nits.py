@@ -53,11 +53,24 @@ porte `\r\n`, un commentaire poste via `gh` CLI porte `\n`. C'est fiable en
 pratique sur ce depot mais ce n'est pas une preuve d'identite : un nit user
 poste via `gh` serait manque (faux negatif), un agent collant du CRLF serait
 signale a tort (faux positif). Le gate signale, l'humain tranche.
+
+Limite honnete du CONDITIONAL_LIFT (#11201)
+-------------------------------------------
+La regex neutralise le marqueur « je merge » au niveau du BODY ENTIER : un
+commentaire contenant a la fois une annonce vraie (« c'est bon, je merge ») et
+une construction conditionnelle (« corrige X et je merge ») est integralement
+de-leve — l'annonce vraie y perd son effet (faux positif possible). La branche
+« des » peut aussi matcher « je merge des PRs » (pluriel direct, pas « dès »).
+Choix assume : le cout d'un faux positif (un flag a trier) est inferieur au
+cout du faux negatif corrige ici (un nit invisible fondu dans sa propre
+condition). Toute passe `--audit` lancee avant le 2026-08-16 a sous-compte :
+elle est a rejouer.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import unicodedata
@@ -84,6 +97,14 @@ CONCERN_MARKERS = (
     # #594 « issues that should be addressed before merge » et #590
     # « CRITICAL — Must fix before merge ». Une seule addition couvre les deux.
     "before merge",
+    # Fenetre 2026-08-16 (#11201) : le registre naturel d'un nit redige a la main.
+    # Le commentaire 03:22:28Z de #11190 disait « Une seule chose a changer —
+    # une ligne » sans AUCUN marqueur ci-dessus : une fois le faux negatif
+    # « et je merge » neutralise (CONDITIONAL_LIFT), classify() le rendait
+    # encore None. `_unaccent` fait matcher « a changer » et « à changer ».
+    # Garde-fou FP : « rien a changer » nie le nit — le citer « rien »
+    # (CITERS, ci-dessous) rend l'occurrence citee.
+    "a changer",
 )
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
@@ -94,6 +115,20 @@ LIFT_MARKERS = (
     "est adressé", "sont adressés", "sont levées", "est levée",
     "Je lève", "Je leve", "Levée de", "Levee de",
 )
+
+# Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
+# quand… ») n'est pas une levee : c'est l'enonce de la condition bloquante
+# (#11201). Le marqueur « je merge » couvre en effet deux sens opposes —
+# « c'est bon, je merge » (annonce, levant) et « Change la ligne 19 et je
+# merge » (condition, bloquant) — et le test LIFT_MARKERS passait AVANT toute
+# recherche de reserve : le nit devenait invisible par la clause meme qui le
+# rendait bloquant. On ne RETIRE pas le marqueur : sur les 7 occurrences
+# conditionnelles mesurees dans les 60 dernieres PRs mergees, 4 etaient de
+# vraies annonces (le retrait produirait des faux positifs). On annule son
+# effet quand la construction est conditionnelle.
+CONDITIONAL_LIFT = re.compile(
+    r"(et je merge|puis je merge|ensuite je merge"
+    r"|je merge (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
 
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
@@ -140,6 +175,9 @@ CITERS = (
     # « **COMMENTED** (pas CHANGES_REQUESTED) » (#860) : negation francaise
     # sans « de » — « pas de » ci-dessus ne couvrait pas la forme nue.
     "pas",
+    # « rien a changer » (#11201) : negation totale du nit — le marqueur
+    # « a changer » y est cite, pas emis.
+    "rien",
     # « pending dismissal of stale CHANGES_REQUESTED » (#977) : comme
     # « previous », le mot ne peut que narrer une reserve passee.
     "stale",
@@ -333,8 +371,10 @@ def classify(author: str, body: str) -> str | None:
     if author in BOT_LOGINS or not body:
         return None
     stripped = body.lstrip()
-    if has_marker(body, LIFT_MARKERS):
+    if has_marker(body, LIFT_MARKERS) and not CONDITIONAL_LIFT.search(body):
         return None  # annonce de levee / de merge : resolution, pas reserve
+    # (construction conditionnelle « et je merge » : voir CONDITIONAL_LIFT —
+    # l'annonce conditionnee n'est pas une levee, le commentaire continue)
     if has_live_marker(body, (VERDICT_POSITIVE,)):
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     live_concern = has_live_marker(body, CONCERN_MARKERS)
