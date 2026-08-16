@@ -83,7 +83,9 @@ python scripts/check_unaddressed_nits.py <PR>        # exit 1 = ne pas merger
 python scripts/check_unaddressed_nits.py --audit --limit 400
 ```
 
-**Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook mergé attribue toujours à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
+**Incident fondateur — PR #10761** : mergée le 2026-08-14T04:15Z sous `myia-ai-01` malgré 2 nits user du 2026-08-13T11:07 (**17 h avant**) et une review Hermes `COMMENT_WITH_CONCERNS` confirmant ces 2 nits + 3 points neufs. `mergeStateStatus: CLEAN`, `reviews[].state: COMMENTED` : les deux champs qu'un merge-gate lit d'ordinaire étaient verts, et le notebook a été mergé en attribuant à tort le théorème de Sendov à T. Tao (la preuve est de **Lech Mazur** ; Tao en signe la digestion, il l'écrit lui-même). Epic de reprise : **#11044**.
+
+> **Cette attribution est corrigée depuis** — `e1ad7868a` (PR #11065, Epic #11044) : Lean-19 et Lean-20 portent désormais « preuve L. Mazur, digestion T. Tao ». Le récit ci-dessus reste le fondement de la règle — le merge fautif a bien eu lieu — mais l'état du dépôt n'est plus celui-là, et ce fichier est chargé par chaque agent à chaque session : y laisser un présent périmé, dans la règle même qui exige de vérifier ses affirmations, apprend l'inverse de ce qu'elle demande. **La classe de défaut, elle, reste vivante** (#11110 Lidman, #11127 Gill) : une citation se vérifie contre la source, et *après* avoir établi qu'une référence est fausse, il reste à lire **qui a signé** la vraie avant de conclure sur l'attribution — « l'article n'existe pas » et « l'attribution est fausse » sont deux propositions distinctes.
 
 #### Les 5 points
 
