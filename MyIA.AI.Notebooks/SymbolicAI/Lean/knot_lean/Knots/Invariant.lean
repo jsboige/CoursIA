@@ -1982,30 +1982,32 @@ au kink ajoute `C = ⟨a, b, c, c⟩` (avec `b = d₁.numEdges + 1`,
   `tricolorable_backward` ci-dessous prouve la moitie **preservation-couleur**
   constructivement (une etiquette preservee lit la meme couleur sous `col₁`
   dans `d₁` que sous `col₂` dans `d₂` ; mire `hcolF1` de `tricolorable_forward`).
-* **mode tous-distincts** (`col₂(a-1) ≠ col₂(b-1)`) : a besoin du
-  re-equilibrage de symetrie-couleur / multi-position caracterise
-  empiriquement au §9.4–§9.6 (le regime echec-naïve a 47.9%). Niveau recherche.
+* **mode tous-distincts** (`col₂(a-1) ≠ col₂(b-1)`) : **VACUOLE** (cycle
+  #11211) — le kink `C = ⟨a, b, c, c⟩` a `e3 = e4 = c`, donc la continuite du
+  strand over (`c2 = c4`) impose `col₂(b) = col₂(c) = c3`, tandis que le mode
+  tous-distincts de Fox exige `c2 ≠ c3`. Aucun coloriage valide de `d₂`
+  n'atteint ce mode (un auto-croisement R1 n'est Fox-coloriable qu'en mode
+  tout-egal). Les sondes empiriques §9.4–§9.6 caracterisaient des lifts dans
+  une branche sans habitant — c'est pourquoi aucune construction n'y
+  convergeait.
 
-L'assemblage restant — transfer-Fox a chaque croisement de `d₁` (les
-inchanges heritent via le fait de preservation-couleur, mirant `h_inherit` ;
-le croisement modifie `Y` et le mode kink tous-distincts requierent la
-construction §9.1), le relift `d₁.numEdges ≥ 2` (derivable depuis `d₁.wf` +
-l'hypothese proper-arc, mais un argument separate de parite-wf), et le relift
-`≥ 2`-couleur — est laisse comme trois `sorries` tactic residuels pour qu'ai-01
-les conseille. Cela fait passer la baseline prose-header du Knots-CI de 25 a 28
-(trois `sorries` tactic residuels, un par sous-but). Livraison partielle
-autorisee par l'utilisateur (2026-06-15) : livrer avec des obligations de
-sous-preuve residuelles qu'ai-01 conseillera. Avec `tricolorable_forward`
-(#3000) cela donne la bi-implication R1 necessaire pour debloquer le
-placeholder §2 `tricolorable_invariant`. Voir #2874.
+**Resolution (cycle #11211, 2026-08-16)** : la branche tous-distincts est
+refermee par `absurd` (contradiction interne de `hCmode'`), l'assemblage
+transfer-Fox et le relift `≥ 2`-couleur etant deja decharges en mode
+tout-egal, de meme que le relift `numEdges ≥ 2` (parite-wf).
+`tricolorable_backward` est donc **entierement prouve** — zero `sorry`
+tactic. La bi-implication R1 avec `tricolorable_forward` (#3000) est
+complete ; seul le transfert maitre R2/R3 de `tricolorable_invariant` (L350)
+manque pour fermer le §2. Voir #2874.
 -/
 
-/-- Transfer arriere de tricolorabilite (PARTIEL) : sous le R1-connecte
-    renforce `Reidemeister1Connected d₁ d₂`, un tricolorage de `d₂` se
-    restreint en un tricolorage de `d₁`. Le sous-lemme de preservation-couleur
-    est decharge constructivement (mire `hcolF1` de `tricolorable_forward`) ;
-    l'assemblage transfer-Fox et le mode kink tous-distincts restent comme
-    `sorries` tactic residuels (voir §9.1, §9.4–§9.6). -/
+/-- Transfer arriere de tricolorabilite : sous le R1-connecte renforce
+    `Reidemeister1Connected d₁ d₂`, un tricolorage de `d₂` se restreint en un
+    tricolorage de `d₁`. Entierement prouve (cycle #11211) : preservation-couleur
+    constructive (mire `hcolF1` de `tricolorable_forward`), transfert-Fox par
+    croisement, relift `numEdges ≥ 2` et relift `≥ 2`-couleur ; le mode kink
+    tous-distincts est vacuole (auto-croisement : la continuite du strand over
+    contredit `c2 ≠ c3`). -/
 theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     (h : Reidemeister1Connected d₁ d₂) (htri₂ : IsTricolorable d₂) :
     IsTricolorable d₁ := by
@@ -2037,11 +2039,11 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
     have h2 : (l - 1) % d₂.numEdges = l - 1 := Nat.mod_eq_of_lt (by omega)
     simp only [h1, h2]
     rfl
-  -- Residual assembly (§9): Fox-transfer at every `d₁` crossing under `col₁`
-  -- (unchanged crossings inherit via `hcolPres` — mirrors forward `h_inherit`;
-  -- the modified crossing `Y` and the all-distinct kink mode need the §9.1
-  -- colour-symmetry construction), the `d₁.numEdges ≥ 2` lift (wf + proper-arc),
-  -- and the `≥ 2`-colour lift. Left for ai-01 to advise on.
+  -- Assemblage final : Fox-transfer a chaque croisement de `d₁` sous `col₁`
+  -- (inchanges via hcolPres, mirant le `h_inherit` du forward ; croisement
+  -- modifie `Y` via le kink tout-egal), relift `d₁.numEdges ≥ 2` (wf +
+  -- proper-arc) et relift `≥ 2`-couleur. Decharges (cycle #11211) ; le mode
+  -- kink tous-distincts est vacuole (voir les branches `fox`/`col` ci-dessous).
   refine' ⟨col₁, ?fox, ?num, ?col⟩
   case fox =>
     -- ∀ c ∈ d₁.crossings, triColorConditionAt d₁ col₁ c.
@@ -2183,36 +2185,17 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           · rw [← h1, ← h2]; exact h12
           · rw [← h2, ← h3]; exact h23
           · rw [← h1, ← h3]; exact h13
-      · -- all-distinct kink mode: residual §9.1.
-        --
-        -- BREAKTHROUGH PROOF STRATEGY (cycle-3): Fox tricolorability is
-        -- LINEAR over GF(3) — `triColorConditionAt` ⟺ c₁+c₂+c₃ ≡ 0 mod 3
-        -- (verified: 0 disagreements over 7.5M wf diagrams, m∈{2,3}). The
-        -- coloring space V(d) is a linear subspace of (Z/3)^n with
-        -- dim V(d) ≥ n − m = m (m crossings ⇒ m homogeneous equations;
-        -- n = 2m edges by wf parity). The 3 constant colorings form a
-        -- 1-dim subspace, so dim V(d) ≥ m ≥ 2 ⟹ a non-constant
-        -- Fox-coloring exists ⟹ IsTricolorable d. UNIVERSAL LEMMA:
-        -- `wf d → d.crossings.length ≥ 2 → IsTricolorable d` (GF(3)
-        -- rank-nullity; bridge `triColorConditionAt ↔ sum ≡ 0` by decide
-        -- on Fin 3). d₁ qualifies (wf + proper-arc ⟹ ≥2 crossings, see
-        -- `num` case), so d₁ is tricolorable INDEPENDENTLY of col₂ —
-        -- WITHDRAWN under Path B (2026-06-23). The universal lemma above is
-        -- FALSE classically: the figure-eight knot is well-formed with 4
-        -- crossings yet is NOT Fox-tricolorable (only its 3 constant colourings
-        -- exist). The per-crossing GF(3) bridge (`triColorFoxCondition_iff_sum_mod_three`,
-        -- cycle-6) still holds, but it does not lift to universal colourability.
-        -- This branch is therefore OPEN, awaiting a direct col2->col1 lift
-        -- (see the Record below); it is NOT discharged by the withdrawn lemma.
-        --
-        -- Record — why the direct col₂→col₁ lift below is blocked: d₂.wf
-        -- parity on fresh edge b=n₁+1 forces Y to hold `a` in exactly one
-        -- slot, and d₁.wf forces `a` at exactly one proper-arc c_j; `a`
-        -- is torn (Y wants col₁(a)=col₂(b), c_j wants col₁(a)=col₂(a),
-        -- all-distinct denies equality). Projective / single-swap /
-        -- σ∘col₂ all fail (Fox σ-invariant, #4003). The GF(3) lemma above
-        -- bypasses this entirely — the col₂ construction is unnecessary.
-        sorry
+      · -- Mode kink tous-distincts : VACUOLE (cycle #11211). Le kink
+        -- `C = ⟨a, b, c, c⟩` a `e3 = e4 = c` : la continuite du strand
+        -- over (`c2 = c4`, conjoint Path B) lit `col₂(b) = col₂(c)` = `c3`,
+        -- tandis que le mode tous-distincts de Fox exige `c2 ≠ c3`. Un
+        -- auto-croisement (kink R1) n'est Fox-coloriable qu'en mode
+        -- tout-egal — aucun temoin `IsTricolorable d₂` n'atteint cette
+        -- branche. Les lifts col₂→col₁ des cycles precedents (projectif /
+        -- single-swap / σ∘col₂, registre retire) cherchaient un habitant
+        -- dans une branche vide ; le lemme universel GF(3) (cycle 3) avait
+        -- ete retire a juste titre (figure-eight, faux classiquement).
+        exact absurd _hCarc _hdist.2.1
   case num =>
     -- d₁.numEdges ≥ 2. Diagnostic for the BG-prover (ai-01): d₁ is forced
     -- NON-DEGENERATE (`crossings ≠ []`) because `_hproper` supplies a distinct
@@ -2353,15 +2336,8 @@ theorem Reidemeister1Connected.tricolorable_backward {d₁ d₂ : KnotDiagram}
           rw [show k = (⟨d₁.numEdges + 1, hn1_le⟩ : Fin d₂.numEdges) from Fin.ext hk1]
           exact h_n1_n2.symm.trans h_a_n1.symm
       exact hij (by rw [hanch i₀, hanch j₀])
-    · -- all-distinct kink mode: §9.1 residual. The fresh edges carry a NEW
-      -- colour absent from the d₁ range, so the naïve col₁ restriction can be
-      -- monochromatic and the ≥2-colour lift via col₂ fails (see the `fox`
-      -- case above). [WITHDRAWN under Path B] The hoped-for discharge via the
-      -- cycle-3 GF(3) universal lemma (`wf d, >=2 crossings => IsTricolorable d`,
-      -- Fox linear over GF(3)) is FALSE classically: the figure-eight knot has
-      -- 4 crossings yet is NOT Fox-tricolorable. The universal shortcut is gone,
-      -- so this `col` residual is OPEN (as is the `fox` case above); both await a
-      -- direct arc-respecting col2->col1 lift rather than the withdrawn lemma.
-      sorry
+    · -- Mode kink tous-distincts : VACUOLE, meme contradiction interne que le
+      -- cas `fox` ci-dessus (continuite du strand over du kink vs `c2 ≠ c3`).
+      exact absurd _hCarc _hdist.2.1
 
 end Knots
