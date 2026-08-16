@@ -17,6 +17,13 @@
       content_python_sha: 99a14bd3dbaf782912118a61e13f40a75e9adad8bca10368022d40edd6cbab2e
       content_csharp_sha: bb2450a9abefd49a370c77b2ed6d6bd97402df3a101d7c4c0a76de72e1c40cd6
       reason: "Enrichissement C#-only (#3801 Prong-B): ajout section markdown 'Pourquoi EP ignore le funnel de Neal' entre cellule 10 (Lecture du resultat) et cellule 11 (Exercices). La conclusion cellule 17 mentionnait EP 'analytique' sans JAMAIS expliquer pourquoi (funnel/Neal/divergence = 0 occurrences vs PyMC-12 funnel x11). La section demontre que le modele centree de la cellule 7 (pathogene pour NUTS) est infere sans diagnostic par EP (message-passing, pas d'echantillonnage). Python PyMC-12 inchange (deja couvre le cote MCMC du funnel). Asymetrie legitime = le sujet pedagogique meme de la paire (EP-vs-NUTS). 19 cells existantes byte-identiques, markdown-only (C.2 exception)."
+    - date: "2026-08-16"
+      by: myia-po-2023:CoursIA
+      python_sha: 8f31b5cc6b423fc4f5eda440475e103f17dab9e9
+      csharp_sha: 3606ff946d2c9622571442060c48a53d5cf14910
+      content_python_sha: bc08c2cef56a4c22ac09fdd94f74198f5fb62b4c0ee448524edaec4041ead8c9
+      content_csharp_sha: bb2450a9abefd49a370c77b2ed6d6bd97402df3a101d7c4c0a76de72e1c40cd6
+      reason: "Rebaseline apres fix citations arXiv #11168 (commit bdb44ead09) : correction unilaterale Python-only de 2 pointeurs de section fabriques (1312.0906 n'a pas de §10, pagination romaine I-VI ; funnel = §I, reparametrisation non-centree = §II.B). Infer-12 ne cite pas 1312.0906 (grep verifie), cote C# inchange (csharp_sha identique a l'entree 2026-08-15). Markdown-only (C.2 exception). Rebaseline POSEE APRES le commit des corrections (ordre checker, #8957)."
   known_differences:
   - 'Socle pedagogique commun : modeles hierarchiques (effets aleatoires emboites) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
