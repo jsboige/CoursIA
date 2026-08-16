@@ -16,6 +16,7 @@ import Grothendieck.CoversTopologies
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.Equivalences
+import Grothendieck.ExceptionalDirect
 import Grothendieck.KanExtensions
 import Grothendieck.LeftExact
 import Grothendieck.Limits
