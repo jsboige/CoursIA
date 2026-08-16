@@ -144,6 +144,50 @@ def test_pr_propre_ne_bloque_pas():
     assert run([])["blocked"] is False
 
 
+# --- Durcissements (triage 07-15..07-31, approuves par ai-01 le 2026-08-15) ---
+#
+# Le 3e durcissement de la serie initiale — dechargement sur conclusion en queue
+# (« ne bloque pas ») — a ete RETIRE au rebase 2026-08-16 : il contredit le
+# recalibrage plus fin arrive entre-temps sur main, et rouvre le failure mode
+# fondateur de B.0. Le test ci-dessous fige la decision dans le sens INVERSE de
+# ce qui avait ete propose.
+
+def test_reserve_emise_ne_se_leve_pas_par_sa_propre_conclusion():
+    """Une reserve VIVANTE survit a un « ne bloque pas » de son propre auteur.
+
+    C'est exactement la forme de #10761 : Hermes emet COMMENT_WITH_CONCERNS,
+    personne ne repond par ecrit, la PR est mergee. Si la conclusion du
+    reviewer dechargeait sa propre reserve, l'organe manquerait l'incident qui
+    l'a fait naitre. Ce qui leve une reserve est une PHRASE de reponse.
+    """
+    bot = {"author": {"login": "hermes-bot"}, "createdAt": at(12),
+           "body": "Review Hermes: COMMENT_WITH_CONCERNS. Le scope est large "
+                   "et deux cellules manquent d'interp. Apres relecture du "
+                   "diff et des outputs, verdict final: ne bloque pas."}
+    assert run([bot])["blocked"] is True
+
+
+def test_lift_capitalise_leve():
+    """« Je lève ma CHANGES_REQUESTED » ne matchait pas les LIFT_MARKERS lowercase."""
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Je leve ma CHANGES_REQUESTED apres le commit abc."}
+    assert mod.has_marker(lift["body"], mod.LIFT_MARKERS)
+
+
+def test_lift_capitalise_accents_leve():
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Levée de ma réserve : les 2 nits sont traités."}
+    assert mod.has_marker(lift["body"], mod.LIFT_MARKERS)
+
+
+def test_excerpt_porte_la_queue():
+    """Le verdict final doit rester visible dans l'excerpt des PRs longues."""
+    filler = " ".join(["contexte"] * 60)
+    body = "Review: " + filler + " verdict final: ne bloque pas."
+    excerpt = mod._excerpt(body)
+    assert "ne bloque pas" in excerpt
+
+
 # --- Recalibrage FP (triage po-2024:CoursIA-2, fenetre 07-14..07-20 : 11/64) ---
 #
 # Le defaut mesure : une review POSITIVE contenant le mot « CONCERN » (ou
@@ -329,3 +373,159 @@ def test_verdict_emis_sans_fleche_flagge():
     assert mod.classify(
         "jsboige", "Verdict : CHANGES_REQUESTED — la cellule 12 casse le kernel."
     ) == "BOT-CONCERN"
+
+
+# --- Fenetre 05-22..05-28 (triage po-2023) : la RETRACTION narree. Le
+# coordinateur retire SA PROPRE reserve anterieure — le commentaire qui
+# retracte ne peut pas etre une nouvelle emission.
+
+
+def test_retraction_earlier_ne_flagge_pas():
+    """FP #1458 : « my earlier CHANGES_REQUESTED was a FALSE POSITIVE
+    (retracted) » + APPROVED « Supersedes my earlier false-positive
+    CHANGES_REQUESTED » + « **Retracting CHANGES_REQUESTED → approving.** ».
+    « earlier »/« false-positive »/« retracting » ne peuvent que narrer un
+    verdict passe."""
+    assert mod.classify(
+        "myia-ai-01", "## Correction — my earlier CHANGES_REQUESTED was a "
+        "FALSE POSITIVE (retracted). That claim was wrong.") is None
+    assert mod.classify(
+        "myia-ai-01", "Approved after merge-tree verification. Supersedes my "
+        "earlier false-positive CHANGES_REQUESTED.") is None
+    assert mod.classify(
+        "myia-ai-01", "True post-merge delta verified. **Retracting "
+        "CHANGES_REQUESTED → approving.** Mea culpa.") is None
+
+
+def test_supersede_possessif_ne_flagge_pas():
+    """FP #1442 : « APPROVE (supersedes my CHANGES_REQUESTED of 03:21) » —
+    la nouvelle review REMPLACE l'ancienne reserve, elle n'en emet pas."""
+    assert mod.classify(
+        "myia-ai-01", "**ai-01 — APPROVE (supersedes my CHANGES_REQUESTED "
+        "of 03:21).** All three blockers are resolved.") is None
+
+
+def test_my_concern_emis_flagge_malgre_citer():
+    """Garde-fou anti-surcorrection : « my » nu n'est PAS un citer (forme
+    bi-mot « supersedes my » uniquement) — « my CONCERNS: » est une emission."""
+    assert mod.classify(
+        "jsboige", "my CONCERNS: the attribution in cell 0 is still wrong."
+    ) == "BOT-CONCERN"
+
+
+# --- Fenetre 05-29..06-04 (triage po-2023 sur #11044, 509 PRs / 61 flags,
+# fenetre la plus dense) : la REPONSE QUI NOMME. Trois narrations mesurees ou
+# le citer et le marqueur sont separes par le nom de l'agent emetteur —
+# « Per ai-01 CHANGES_REQUESTED », « Stale Hermes CHANGES_REQUESTED was »,
+# « du precedent review (CHANGES_REQUESTED » — plus l'en-tete de reponse
+# « ## Re: CONCERNS ... Fixed. ». Corpus minimal par PR citee du triage.
+
+
+def test_reponse_re_concerns_ne_flagge_pas():
+    """FP #1839 : « ## Re: CONCERNS ... **Fixed.** Root cause ... » — le
+    marqueur est le SUJET de l'en-tete de reponse, la levee suit."""
+    body = ("## Re: CONCERNS\n\n### 1. Catalog drift CI failure\n**Fixed.** "
+            "Root cause: branch behind main. Rebased, regenerated, both "
+            "checks pass locally.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_per_attribution_ne_flagge_pas():
+    """FP #2363 : « Per ai-01 CHANGES_REQUESTED: ... Action taken: restored
+    from main » — attribution d'une reserve passee dans un rapport de fix."""
+    body = ("## Fix: Infer-16 restored from main (option b)\n\nPer ai-01 "
+            "CHANGES_REQUESTED: Chart.Combine compiles on main but fails "
+            "CS0103 via Papermill.\n\n**Action taken**: restored from main.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_stale_attribution_ne_flagge_pas():
+    """FP #2006 : « Stale Hermes CHANGES_REQUESTED was purely catalog-drift
+    mechanical ... Admin-merging. » — annonce de merge d'une reserve eteinte."""
+    body = ("Stale Hermes CHANGES_REQUESTED was purely catalog-drift "
+            "mechanical. Drift resolved by regen; CI catalog-drift check "
+            "PASS. Admin-merging.")
+    assert mod.classify("jsboige", body) is None
+
+
+def test_precedent_review_narre_ne_flagge_pas():
+    """FP #1958 (2e review) : APPROVED qui narrate « l'unique concern du
+    precedent review (CHANGES_REQUESTED sur commit c506d04b) »."""
+    body = ("[Hermes] — APPROVED\n\nLe CI catalog drift etait l'unique "
+            "concern du precedent review (CHANGES_REQUESTED sur commit "
+            "c506d04b). Le HEAD actuel corrige le drift (SUCCESS).")
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_emission_deux_mots_apres_citer_flagge():
+    """Garde-fou : la regle du mot d'attribution n'accepte qu'UN mot entre
+    le citer et le marqueur — « Per my review: CHANGES_REQUESTED » reste une
+    emission (deux mots la separent du citer)."""
+    assert mod.classify(
+        "jsboige", "Per my review: CHANGES_REQUESTED — cell 12 breaks."
+    ) == "BOT-CONCERN"
+
+
+def test_en_tete_hermes_emission_flagge_malgre_agent():
+    """Garde-fou : « [Hermes] — CHANGES_REQUESTED » est une VRAIE emission —
+    le nom d'agent nu devant le marqueur ne cite rien tant qu'aucun citer ne
+    le precede."""
+    assert mod.classify(
+        "clusterManager-Myia",
+        "[Hermes] — CHANGES_REQUESTED\nCell 12 casse le kernel."
+    ) == "BOT-CONCERN"
+
+
+def run_reviews(reviews):
+    data = {
+        "number": 0, "title": "t", "comments": [], "reviews": reviews,
+        "commits": [{"committedDate": at(19)}],
+    }
+    return mod.analyse(data, [], MERGED)
+
+
+CONCERN_REVIEW = {
+    "author": {"login": "clusterManager-Myia"},
+    "state": "COMMENTED", "submittedAt": at(10),
+    "body": "[Hermes] — COMMENT_WITH_CONCERNS\nCI catalog-drift FAIL sur cette base.",
+}
+APPROVED_REREVIEW = {
+    "author": {"login": "clusterManager-Myia"},
+    "state": "APPROVED", "submittedAt": at(15),
+    "body": ("[Hermes] — APPROVED\n\nLe CI catalog drift etait l'unique concern "
+             "du precedent review (CHANGES_REQUESTED sur commit c506d04b). "
+             "Le HEAD actuel corrige le drift (SUCCESS)."),
+}
+
+
+def test_rereview_approved_leve_la_concerne_precedente():
+    """FP #1958 : le reviewer revient APPROVED apres sa demande — le state
+    GitHub natif porte la levee, meme si le body narre l'ancien verdict."""
+    assert run_reviews([CONCERN_REVIEW, APPROVED_REREVIEW])["blocked"] is False
+
+
+def test_rereview_commented_not_fixed_ne_leve_pas():
+    """#2298 : seule une re-review APPROVED leve. Une re-review COMMENTED qui
+    re-emet (« NOT FIXED ») n'eteint rien — le PR doit rester bloque."""
+    again = {
+        "author": {"login": "NanoClaw-Audit"},
+        "state": "COMMENTED", "submittedAt": at(15),
+        "body": "**[NanoClaw]** Re-audit: issue 1 NOT FIXED — le chemin machine est toujours la.",
+    }
+    res = run_reviews([CONCERN_REVIEW, again])
+    assert res["blocked"] is True
+
+
+def test_approved_avant_la_concerne_ne_leve_pas():
+    """Borne anti-retroactivite pour la nouvelle source de levee : un APPROVED
+    poste AVANT la reserve ne peut pas l'avoir eteintee."""
+    late_concern = {
+        "author": {"login": "NanoClaw-Audit"},
+        "state": "COMMENTED", "submittedAt": at(18),
+        "body": "**[NanoClaw]** CONCERNS: sortie degeneree committee en cell 3.",
+    }
+    early_ok = {
+        "author": {"login": "jsboige"}, "state": "APPROVED",
+        "submittedAt": at(9), "body": "",
+    }
+    assert run_reviews([early_ok, late_concern])["blocked"] is True

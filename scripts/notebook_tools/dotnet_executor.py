@@ -41,8 +41,52 @@ def _drain_iopub(kc, parent_msg_id, deadline_s=5):
             return
 
 
+def _wait_for_idle(kc, grace_s):
+    """Poll iopub for a kernel-level idle status (any parent) for up to
+    ``grace_s`` seconds. Returns True if the kernel went idle.
+
+    An ``interrupt_kernel()`` call that returns without raising is NOT proof
+    the interrupt worked: .NET Interactive declares ``interrupt_mode: signal``
+    and on Windows accepts the call while the kernel keeps executing the stuck
+    cell (verified live: kernel still busy 10 s after a clean interrupt).
+    The idle transition is the only observable that distinguishes an honored
+    interrupt from a silently ignored one.
+    """
+    deadline = time.time() + grace_s
+    while time.time() < deadline:
+        try:
+            msg = kc.get_iopub_msg(timeout=1)
+        except Exception:
+            continue
+        if (msg.get("msg_type") == "status"
+                and msg.get("content", {}).get("execution_state") == "idle"):
+            return True
+    return False
+
+
+def _strip_stale_papermill_metadata(nb):
+    """Remove a pre-existing Papermill block from a notebook the executor is
+    about to rewrite.
+
+    The outputs and ``execution_count`` just written describe THIS run; a
+    ``metadata.papermill`` left over from an earlier Papermill pass would still
+    describe that pass (old dates, old duration) and would let a reviewer date
+    the fresh outputs to the wrong run. An absent metadata is missing
+    information; a stale one is misleading information (#11146).
+    """
+    metadata = nb.get("metadata")
+    if not metadata:
+        return
+    metadata.pop("papermill", None)
+    execution = metadata.get("execution")
+    if isinstance(execution, dict):
+        execution.pop("papermill", None)
+        if not execution:
+            metadata.pop("execution", None)
+
+
 def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
-                     verbose=False, dry_run=False):
+                     verbose=False, dry_run=False, interrupt_grace=10):
     """Execute a .NET notebook cell-by-cell and update outputs.
 
     Returns dict with stats: total cells, executed, errors, time.
@@ -76,7 +120,8 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
     # entirely and leaked the kernel.
     km = None
     kc = None
-    stats = {"total": len(code_cells), "executed": 0, "errors": 0, "time": 0}
+    stats = {"total": len(code_cells), "executed": 0, "errors": 0, "time": 0,
+             "aborted": False}
     exec_counter = 0
     start_time = time.time()
 
@@ -162,28 +207,56 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
             if time.time() >= deadline:
                 print(f"    TIMEOUT [{exec_counter}] after {cell_timeout}s")
                 # Interrupt the stuck execution so the next cell is not queued
-                # behind it, then drain this request's trailing iopub messages
-                # so they do not consume the next cell's loop budget. Both are
-                # defensive: wrapped against kernel managers that do not support
-                # interrupt or have nothing left to drain.
+                # behind it. Defensive: wrapped against kernel managers that do
+                # not support interrupt.
                 try:
                     km.interrupt_kernel()
                 except Exception:
                     pass
-                _drain_iopub(kc, msg_id)
-                outputs.append({
-                    "output_type": "stream",
-                    "name": "stderr",
-                    "text": f"[TIMEOUT after {cell_timeout}s]\n",
-                })
+                if _wait_for_idle(kc, interrupt_grace):
+                    # Kernel resumed: drain this request's trailing iopub
+                    # messages so they do not leak into the next cell's loop,
+                    # mark the timeout, and continue the run.
+                    _drain_iopub(kc, msg_id)
+                    outputs.append({
+                        "output_type": "stream",
+                        "name": "stderr",
+                        "text": f"[TIMEOUT after {cell_timeout}s]\n",
+                    })
+                    cell["execution_count"] = exec_counter
+                    cell["outputs"] = outputs
+                    stats["executed"] += 1
+                    stats["errors"] += 1  # a timed-out cell never completed
+                else:
+                    # Interrupt not honored (kernel still busy): every further
+                    # execute request would queue behind the stuck cell and
+                    # burn a full timeout each. Escalate: abort the run now;
+                    # the finally-block shuts the kernel down for real.
+                    print(f"    ABORT [{exec_counter}]: kernel still busy "
+                          f"{interrupt_grace}s after interrupt -- interrupt "
+                          f"not honored, stopping run")
+                    outputs.append({
+                        "output_type": "stream",
+                        "name": "stderr",
+                        "text": (f"[TIMEOUT after {cell_timeout}s]\n"
+                                 f"[ABORT: kernel did not return to idle "
+                                 f"{interrupt_grace}s after interrupt; run "
+                                 f"stopped, remaining cells not executed]\n"),
+                    })
+                    cell["execution_count"] = exec_counter
+                    cell["outputs"] = outputs
+                    stats["errors"] += 1
+                    stats["aborted"] = True
+                    break
 
-            # Update cell
-            cell["execution_count"] = exec_counter
-            cell["outputs"] = outputs
+            else:
+                # Update cell
+                cell["execution_count"] = exec_counter
+                cell["outputs"] = outputs
 
-            if error_occurred:
-                stats["errors"] += 1
-            stats["executed"] += 1
+                if error_occurred:
+                    stats["errors"] += 1
+                stats["executed"] += 1
 
     finally:
         elapsed = round(time.time() - start_time, 1)
@@ -204,16 +277,26 @@ def execute_notebook(notebook_path, kernel_name=".net-csharp", cell_timeout=120,
                 pass
         os.chdir(orig_dir)
 
+    # A Papermill block that predates this run must not survive the rewrite:
+    # it would date these outputs to the wrong run (#11146).
+    _strip_stale_papermill_metadata(nb)
+
     # Write back
     notebook_path.write_text(json.dumps(nb, ensure_ascii=False, indent=1), encoding="utf-8")
 
-    print(f"  DONE {notebook_path.name}: {stats['executed']}/{stats['total']} cells, "
-          f"{stats['errors']} errors, {elapsed}s")
+    if stats.get("aborted"):
+        print(f"  ABORTED {notebook_path.name}: {stats['executed']}/{stats['total']} cells "
+              f"completed, run stopped on a non-interruptible stuck cell "
+              f"({stats['errors']} errors), {elapsed}s")
+    else:
+        print(f"  DONE {notebook_path.name}: {stats['executed']}/{stats['total']} cells, "
+              f"{stats['errors']} errors, {elapsed}s")
     return stats
 
 
 def batch_execute(directory, pattern="*.ipynb", kernel_name=".net-csharp",
-                  cell_timeout=120, verbose=False, dry_run=False):
+                  cell_timeout=120, verbose=False, dry_run=False,
+                  interrupt_grace=10):
     """Execute all matching notebooks in a directory."""
     notebooks = sorted(glob.glob(str(Path(directory) / pattern)))
     print(f"Found {len(notebooks)} notebooks matching '{pattern}' in {directory}")
@@ -226,7 +309,7 @@ def batch_execute(directory, pattern="*.ipynb", kernel_name=".net-csharp",
         print(f"{'='*60}")
         stats = execute_notebook(nb_path, kernel_name=kernel_name,
                                  cell_timeout=cell_timeout, verbose=verbose,
-                                 dry_run=dry_run)
+                                 dry_run=dry_run, interrupt_grace=interrupt_grace)
         results[name] = stats
 
     print(f"\n{'='*60}")
@@ -235,6 +318,9 @@ def batch_execute(directory, pattern="*.ipynb", kernel_name=".net-csharp",
     for name, stats in results.items():
         if stats.get("skipped"):
             print(f"  {name}: SKIPPED ({stats['total']} cells)")
+        elif stats.get("aborted"):
+            print(f"  {name}: ABORTED ({stats['executed']}/{stats['total']} cells, "
+                  f"stuck cell not interruptible, {stats['errors']} errors)")
         else:
             print(f"  {name}: {stats['executed']}/{stats['total']} cells, "
                   f"{stats['errors']} errors, {stats.get('time', 0)}s")
@@ -249,17 +335,33 @@ def main():
     parser.add_argument("--pattern", default="*.ipynb", help="Glob pattern for batch mode")
     parser.add_argument("--kernel", default=".net-csharp", help="Kernel name")
     parser.add_argument("--timeout", type=int, default=120, help="Cell timeout in seconds")
+    parser.add_argument("--interrupt-grace", type=int, default=10,
+                        help="Seconds to wait for the kernel to go idle after an "
+                             "interrupt before aborting the run (an interrupt that "
+                             "returns without error can still be a silent no-op)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show each cell execution")
     parser.add_argument("--dry-run", action="store_true", help="Diagnostic only")
     args = parser.parse_args()
 
     if args.batch:
-        batch_execute(args.path, pattern=args.pattern, kernel_name=args.kernel,
-                      cell_timeout=args.timeout, verbose=args.verbose, dry_run=args.dry_run)
+        results = batch_execute(args.path, pattern=args.pattern, kernel_name=args.kernel,
+                                cell_timeout=args.timeout, verbose=args.verbose,
+                                dry_run=args.dry_run,
+                                interrupt_grace=args.interrupt_grace)
+        failed = any(r.get("errors") or r.get("aborted")
+                     for r in results.values() if not r.get("skipped"))
     else:
-        execute_notebook(args.path, kernel_name=args.kernel,
-                         cell_timeout=args.timeout, verbose=args.verbose,
-                         dry_run=args.dry_run)
+        stats = execute_notebook(args.path, kernel_name=args.kernel,
+                                 cell_timeout=args.timeout, verbose=args.verbose,
+                                 dry_run=args.dry_run,
+                                 interrupt_grace=args.interrupt_grace)
+        failed = bool(stats.get("errors") or stats.get("aborted"))
+
+    # A run with cell errors or an aborted run must fail loudly: callers
+    # (agents, CI) branch on the exit code, and a frozen-kernel run that
+    # reports success is precisely the defect that hid #11111.
+    if failed:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

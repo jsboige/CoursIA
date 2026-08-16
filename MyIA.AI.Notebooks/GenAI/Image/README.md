@@ -145,10 +145,10 @@ Section transversale de guides markdown (pas de notebooks) — quatre référenc
 
 | Guide | Sujet |
 |-------|-------|
-| [dalle3-complete-guide](tutorials/dalle3-complete-guide.md) | DALL-E 3 de bout en bout — prompt engineering, exemples, retrait OpenAI et remplacement par gpt-image-1 |
-| [educational-workflows](tutorials/educational-workflows.md) | Concevoir des workflows ComfyUI orientés production pédagogique (vignettes, schémas, planches de cours) |
-| [gpt5-image-analysis-guide](tutorials/gpt5-image-analysis-guide.md) | GPT-5 Image : forces, faiblesses, structure de prompt recommandée, comparaison à gpt-image-1 |
-| [openrouter-ecosystem-guide](tutorials/openrouter-ecosystem-guide.md) | Routage multi-modèles via OpenRouter — DALL-E / GPT-5 / Stability / Recraft / BlackForest Labs selon coût et quota |
+| [dalle3-complete-guide](tutorials/dalle3-complete-guide.md) | DALL-E 3 de bout en bout via l'API OpenAI — prompt engineering, templates pédagogiques, batch et intégration workflows CoursIA |
+| [educational-workflows](tutorials/educational-workflows.md) | Supports de cours, évaluations et présentations via API OpenAI (DALL-E 3 + GPT-5) et OpenRouter — contrôle qualité, accessibilité |
+| [gpt5-image-analysis-guide](tutorials/gpt5-image-analysis-guide.md) | Analyse d'images multimodale GPT-5 via OpenRouter — configuration, templates cas pédagogiques, alt-text, optimisation des coûts |
+| [openrouter-ecosystem-guide](tutorials/openrouter-ecosystem-guide.md) | Routage DALL-E 3 / GPT-5 via OpenRouter — endpoints multiples, fallback, rate limiting et optimisation des coûts |
 
 ## Technologies
 

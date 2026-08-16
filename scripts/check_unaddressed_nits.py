@@ -92,7 +92,19 @@ CONCERN_MARKERS = (
 LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
+    "Je lève", "Je leve", "Levée de", "Levee de",
 )
+
+# NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
+# Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
+# portent « ne bloque pas » / « Safe to merge » a ete propose puis RETIRE : il
+# rouvre le failure mode fondateur de B.0. Sur #10761, Hermes a emis
+# COMMENT_WITH_CONCERNS et la PR a ete mergee sans reponse ecrite ; si ce meme
+# body s'etait conclu par « ne bloque pas », un tel filtre l'aurait efface — et
+# l'organe aurait manque precisement l'incident qui l'a fait naitre. Une reserve
+# emise se leve par une PHRASE de reponse, jamais par la conclusion de celui qui
+# l'a emise. `POSITIVE_MARKERS` ci-dessous fait le travail voisin, mais lui ne
+# decharge QUE s'il ne reste aucune reserve vivante — c'est la difference.
 
 # Verdict structurel POSITIF : l'emporte sur toute prose du body, y compris un
 # decompte de CONCERNS passe en revue (« NanoClaw a relevé 2 CONCERNS... Verdict
@@ -140,6 +152,33 @@ CITERS = (
     # fleche devant le marqueur est une derivation, pas une emission — les
     # verdicts reels s'ecrivent « Verdict : X » ou dans le state de la review.
     # Traite hors CITERS (voir _is_cited) car la fleche n'est pas un mot.
+    # Fenetre 05-22..05-28 (triage po-2023, #11044) — la RETRACTION narree :
+    # « my earlier CHANGES_REQUESTED was a FALSE POSITIVE (retracted) » puis
+    # « Supersedes my earlier false-positive CHANGES_REQUESTED » (#1458), et
+    # « supersedes my CHANGES_REQUESTED of 03:21 » (#1442). Comme « previous »,
+    # ces mots ne peuvent que narrer un verdict passe ; une emission s'ecrit
+    # « CHANGES_REQUESTED: » ou passe par le state de la review. « supersedes
+    # my » en deux mots (pas « my » nu : « my CONCERN is... » est une vraie
+    # emission).
+    "earlier",
+    "false-positive",
+    "supersedes my",
+    # « **Retracting CHANGES_REQUESTED → approving.** » (#1458, meme
+    # commentaire) : le gerondif de retraction ne peut qu'annuler sa propre
+    # reserve passee.
+    "retracting",
+    # Fenetre 05-29..06-04 (triage po-2023, #11044) — la REPONSE QUI NOMME.
+    # « ## Re: CONCERNS ... **Fixed.** » (#1839) : « Re: » est un en-tete de
+    # reponse — le marqueur cite est le SUJET auquel on repond, jamais une
+    # nouvelle emission. (Forme nue « re » : le normalisateur retire la
+    # ponctuation de fin de fenetre, deux-points compris.)
+    "re",
+    # « Per ai-01 CHANGES_REQUESTED: ... » (#2363) : « per X » = « selon X »,
+    # attribution d'une reserve passee dans un rapport de fix. Idem « du
+    # precedent review (CHANGES_REQUESTED ... » (#1958, 2e review APPROVED).
+    # Ces deux-la agissent via la regle du mot d'attribution dans _is_cited.
+    "per",
+    "precedent",
 )
 
 
@@ -164,6 +203,22 @@ def has_marker(body: str, markers: tuple[str, ...]) -> bool:
     return any(_unaccent(m) in normalised for m in markers)
 
 
+def _excerpt(body: str) -> str:
+    """Tete + queue : le verdict d'un reviewer vit en QUEUE de body.
+
+    Les 280 premiers chars seuls coupaient la conclusion (mesure triage
+    07-15..07-31 : le verdict final tombait hors excerpt sur les PRs longues,
+    et l'audit lisait la position du titre au lieu de la conclusion).
+
+    Note : ceci concerne l'AFFICHAGE de l'audit, pas la classification. Voir
+    `classify` — la conclusion en queue n'y decharge rien.
+    """
+    snippet = " ".join(body.split())
+    if len(snippet) <= 400:
+        return snippet[:280]
+    return snippet[:200] + " [...] " + snippet[-200:]
+
+
 def _is_cited(window: str) -> bool:
     """La fenetre avant l'occurrence se termine-t-elle sur un mot de citation ?
 
@@ -184,6 +239,21 @@ def _is_cited(window: str) -> bool:
         c = c.rstrip("'’")
         if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
             return True
+    # Fenetre 05-29..06-04 (#11044) — le mot d'ATTRIBUTION entre le citer et
+    # le marqueur : « Per ai-01 CHANGES_REQUESTED » (#2363), « Stale Hermes
+    # CHANGES_REQUESTED was purely... » (#2006), « du precedent review
+    # (CHANGES_REQUESTED sur commit... » (#1958). Un citer suivi d'UN seul
+    # mot reste une narration — le nom d'agent n'y change rien. Une emission
+    # ne le traverse jamais : elle s'ecrit « MARKER: » nue ou passe par le
+    # state de la review (« [Hermes] — CHANGES_REQUESTED » n'a pas de citer
+    # devant l'agent, donc reste live).
+    parts = w.rsplit(None, 1)
+    head = parts[0] if len(parts) == 2 else ""
+    if head:
+        for c in CITERS:
+            c = c.rstrip("'’")
+            if head == c or (head.endswith(c) and not head[-len(c) - 1].isalnum()):
+                return True
     return False
 
 
@@ -336,6 +406,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     ]
     comment_times = [t for t in comment_times if t]
 
+    # Fenetre 05-29..06-04 (#1958) : la RE-REVIEW APPROVED. Le reviewer qui
+    # revient approuver apres sa demande de changements A dit que la reserve
+    # est levee — le state GitHub natif porte plus de sens que le body (une
+    # re-review Hermes narre l'ancien verdict en le citant, sans mot de
+    # levee). Seul APPROVED compte : une re-review COMMENTED qui re-emet une
+    # reserve (« NOT FIXED », #2298) ne doit rien eteindre, et l'agent
+    # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
+    # bruit de protocole, meme depuis un reviewer bot.
+    comment_times += [
+        t for r in (pr_data.get("reviews") or [])
+        if r.get("state") == "APPROVED"
+        and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
+        and (t := ts(r.get("submittedAt"))) is not None
+    ]
+
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
         login = (c.get("author") or {}).get("login", "")
@@ -372,7 +457,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "at": when.isoformat(),
             "gap_hours": round((cutoff - when).total_seconds() / 3600.0, 1),
             "code_pushed_after": pushed_after,
-            "excerpt": " ".join(body.split())[:280],
+            "excerpt": _excerpt(body),
         })
 
     for t in threads:
@@ -382,7 +467,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             "kind": "INLINE-UNRESOLVED", "author": t["author"], "src": "reviewThread",
             "at": t.get("createdAt") or "?",
             "where": f"{t.get('path')}:{t.get('line')}",
-            "excerpt": " ".join((t.get("body") or "").split())[:280],
+            "excerpt": _excerpt(t.get("body") or ""),
         })
 
     return {
