@@ -1,8 +1,9 @@
-"""Tests for notebook_helpers.py — NotebookHelper pure methods, CellIterator, utilities."""
+"""Tests for notebook_helpers.py — NotebookHelper pure methods, CellIterator, utilities, NotebookExecutor kernel-start wiring."""
 
 import json
 import os
 import sys
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -11,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from notebook_helpers import (
     NotebookHelper,
+    NotebookExecutor,
     CellIterator,
     CellInfo,
     IterationResult,
@@ -1396,3 +1398,58 @@ class TestFindPatternMutation:
         h = NotebookHelper(p)
         result = h.find_cells_with_pattern("target", cell_type=None)
         assert result == [0, 1]
+
+
+# ---------------------------------------------------------------------------
+# NotebookExecutor kernel-start wiring (#11111)
+# ---------------------------------------------------------------------------
+
+class TestNativeThreadPoolWiring:
+    """#11111 acceptance case 3 : preuve du cablage bound_native_thread_pools()
+    AVANT km.start_kernel() sur les deux chemins cell-by-cell de NotebookExecutor
+    (le helper est teste unitairement dans test_bound_thread_pools.py ; ce qui
+    manque est la preuve du cablage, pas du comportement)."""
+
+    def _patch_wiring(self, monkeypatch):
+        """Patch bound_native_thread_pools + KernelManager ; retourne l'ordre d'appels.
+
+        start_kernel leve volontairement : le chemin d'echec de demarrage est le
+        point le plus court qui traverse les deux appels sequentially.
+        """
+        import jupyter_client
+        import notebook_helpers
+
+        order = []
+        monkeypatch.setattr(
+            notebook_helpers, "bound_native_thread_pools",
+            lambda: order.append("bound"),
+        )
+        km = MagicMock()
+
+        def _start_kernel():
+            order.append("start")
+            raise RuntimeError("wired-stop")
+
+        km.start_kernel.side_effect = _start_kernel
+        monkeypatch.setattr(jupyter_client, "KernelManager", lambda **kwargs: km)
+        return order
+
+    def test_execute_cell_bounds_before_start_kernel(self, tmp_path, monkeypatch):
+        """bound_native_thread_pools() s'execute avant km.start_kernel() (execute_cell)."""
+        p = _write_nb([_code_cell("x = 1")], tmp_path)
+        order = self._patch_wiring(monkeypatch)
+        executor = NotebookExecutor()
+        result = executor.execute_cell(p, 0, kernel_name="python3")
+        assert order == ["bound", "start"]
+        assert result.success is False
+        assert "Failed to start" in (result.error or "")
+
+    def test_cell_by_cell_bounds_before_start_kernel(self, tmp_path, monkeypatch):
+        """bound_native_thread_pools() s'execute avant km.start_kernel() (cell-by-cell)."""
+        p = _write_nb([_code_cell("x = 1")], tmp_path)
+        order = self._patch_wiring(monkeypatch)
+        executor = NotebookExecutor()
+        result = executor.execute_notebook_cell_by_cell(p, kernel_name="python3")
+        assert order == ["bound", "start"]
+        assert result.success is False
+        assert any("Failed to start" in e for e in result.errors)
