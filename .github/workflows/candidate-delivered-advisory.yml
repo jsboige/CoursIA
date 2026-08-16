@@ -23,6 +23,12 @@ name: Candidate-Delivered Advisory
 #     suggested in #10466 was measured firsthand and is UNRELIABLE (EPIC #1454
 #     has no checkboxes; delivered leaf #10143 has 4) -- title/label is the
 #     robust signal. See scripts/candidate_delivered.py.
+#   - Issues referenced by an OPEN PR are excluded as "in_flight" (#11100): a
+#     multi-phase rollout writes the CORRECT `See #N` partial-delivery syntax
+#     and receives no post-merge comments by construction -- the merged+silent
+#     heuristic alone mislabeled exactly that shape (measured on #10984:
+#     open #10986 + six merged PRs). The sweep retracts the label when an
+#     open PR appears, same as it does for post-merge activity.
 
 on:
   schedule:
