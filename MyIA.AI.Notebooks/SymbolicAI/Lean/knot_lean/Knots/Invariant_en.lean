@@ -332,6 +332,10 @@ theorem tricolorable_invariant :
   -- Fox is symmetric, only over-continuity is fragile). With those two moves,
   -- the master iff becomes provable by the same trivial-extension method as
   -- §2-bis.
+  -- Foundation laid (§2-quater, `tricolorable_backward_R2_cardinality`): under
+  -- append-only, two distinct colors inside the d₁ window suffice for the
+  -- descending arm — cardinality is the ONLY obstruction; the connected model
+  -- merely has to guarantee it.
   --
   -- Historical diagnosis (why the OLD free-ρ `Reidemeister1` model failed):
   -- `wf`'s "every label appears exactly twice" condition forced an R1-twist's new
@@ -1058,6 +1062,122 @@ theorem r2_append_only_wall :
   · rintro ⟨col, _hcond, hnum, _⟩
     have : emptyDiagram.numEdges ≥ 2 := hnum
     simp only [emptyDiagram] at this
+    omega
+
+/-! ### R2 cure foundation — cardinality is the only obstruction
+
+The wall `r2_append_only_wall` above shows the descending arm FALSE on the
+append-only model: both colors of a valid tricoloring of `d₂` may live
+ENTIRELY on fresh labels. The foundation below proves this is the ONLY
+obstruction: restricting a valid tricoloring of `d₂` to the labels of `d₁`
+carries every Fox condition and the over-continuity with no loss whatsoever —
+only the "≥ 2 colors" requirement can be lost in the window. A future
+`Reidemeister2Connected` (paired crossings sharing strands with `d₁`)
+therefore has exactly one thing to guarantee: that two distinct colors of `d₂`
+are carried by labels inside the `d₁` window. -/
+
+/-- Restriction of a coloring of `d₂` to the label window of `d₁` (the `Fin`
+cast comes from `d₁.numEdges ≤ d₂.numEdges`). -/
+def tricolorRestrictionR2 {d₁ d₂ : KnotDiagram}
+    (hle : d₁.numEdges ≤ d₂.numEdges)
+    (coloring₂ : TriColoring d₂) : TriColoring d₁ :=
+  fun i => coloring₂ ⟨i.val, by omega⟩
+
+/-- The restriction reads the same color as `d₂` on every old label
+`1 ≤ l ≤ d₁.numEdges`: the index `(l-1) % numEdges` coincides on both sides
+(the integer is smaller than both moduli). -/
+theorem tricolorRestrictionR2.colorAtNat_eq {d₁ d₂ : KnotDiagram}
+    (hle : d₁.numEdges ≤ d₂.numEdges) (coloring₂ : TriColoring d₂)
+    {l : Nat} (hl1 : 1 ≤ l) (hl2 : l ≤ d₁.numEdges) :
+    d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) l =
+      d₂.colorAtNat coloring₂ l := by
+  have hpos : 0 < d₁.numEdges := by omega
+  simp only [KnotDiagram.colorAtNat,
+    dif_neg (by omega : d₁.numEdges ≠ 0), dif_neg (by omega : d₂.numEdges ≠ 0)]
+  simp only [tricolorRestrictionR2]
+  refine congrArg coloring₂ (Fin.ext ?_)
+  show (l - 1) % d₁.numEdges = (l - 1) % d₂.numEdges
+  rw [Nat.mod_eq_of_lt (show l - 1 < d₁.numEdges by omega),
+      Nat.mod_eq_of_lt (show l - 1 < d₂.numEdges by omega)]
+
+/-- Under non-degenerate `wf`, the four slots of a crossing of the diagram lie
+in `[1, numEdges]` (extraction of wf-a for a list member). -/
+theorem crossingSlots_mem_of_wf {d : KnotDiagram} (hwf : d.wf = true)
+    (hne : d.crossings ≠ []) (c : PDCrossing) (hc : c ∈ d.crossings) :
+    1 ≤ c.e1 ∧ c.e1 ≤ d.numEdges ∧ 1 ≤ c.e2 ∧ c.e2 ≤ d.numEdges ∧
+    1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges ∧ 1 ≤ c.e4 ∧ c.e4 ≤ d.numEdges := by
+  simp only [KnotDiagram.wf, if_neg hne, Bool.and_eq_true, List.all_eq_true,
+    decide_eq_true_iff] at hwf
+  obtain ⟨ha, _⟩ := hwf
+  have hmem : ∀ l ∈ [c.e1, c.e2, c.e3, c.e4], l ∈ d.edges := fun l hl =>
+    List.mem_flatMap.mpr ⟨c, hc, hl⟩
+  have hall := fun l hl => ha l (hmem l hl)
+  exact ⟨(hall c.e1 (by simp)).1, (hall c.e1 (by simp)).2,
+         (hall c.e2 (by simp)).1, (hall c.e2 (by simp)).2,
+         (hall c.e3 (by simp)).1, (hall c.e3 (by simp)).2,
+         (hall c.e4 (by simp)).1, (hall c.e4 (by simp)).2⟩
+
+/-- "Unchanged crossing" bridge for the RESTRICTION (descending mirror of
+`triColorConditionAt_unchangedR2`): a crossing of `d₁` whose slots lie in the
+window satisfies the `d₁` condition under the restriction as soon as it
+satisfies it under `d₂`. -/
+theorem triColorConditionAt_restrictR2 {d₁ d₂ : KnotDiagram}
+    (hle : d₁.numEdges ≤ d₂.numEdges) (coloring₂ : TriColoring d₂)
+    (c : PDCrossing)
+    (hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+              1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+              1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+              1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges)
+    (hcond : triColorConditionAt d₂ coloring₂ c) :
+    triColorConditionAt d₁ (tricolorRestrictionR2 hle coloring₂) c := by
+  obtain ⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩ := hc_wf
+  have hc1 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e1 =
+      d₂.colorAtNat coloring₂ c.e1 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc11 hc12
+  have hc2 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e2 =
+      d₂.colorAtNat coloring₂ c.e2 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc21 hc22
+  have hc3 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e3 =
+      d₂.colorAtNat coloring₂ c.e3 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc31 hc32
+  have hc4 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e4 =
+      d₂.colorAtNat coloring₂ c.e4 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc41 hc42
+  simp only [triColorConditionAt]
+  simp only [hc1, hc2, hc3, hc4]
+  simp only [triColorConditionAt] at hcond
+  exact ⟨⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩, hcond.2⟩
+
+/-- **Cardinality is the only obstruction to the R2 descending transfer
+(append-only).** If `d₂ = d₁ ++ [c₁, c₂]` (free model) carries a valid
+tricoloring WITH TWO DISTINCT COLORS already living on the labels of the `d₁`
+window, then `d₁` is tricolorable: the restriction carries every Fox
+condition and the over-continuity (bridge `triColorConditionAt_restrictR2`),
+and "≥ 2 colors" is precisely the `htwo` hypothesis. In other words,
+`r2_append_only_wall` fails ONLY because the floating bigon manufactures its
+two colors on fresh labels — the single thing a future
+`Reidemeister2Connected` has to forbid. -/
+theorem tricolorable_backward_R2_cardinality {d₁ d₂ : KnotDiagram}
+    {c₁ c₂ : PDCrossing}
+    (hwf₁ : d₁.wf = true)
+    (hne : d₁.crossings ≠ [])
+    (hle : d₁.numEdges ≤ d₂.numEdges)
+    (hsurg : d₂.crossings = d₁.crossings ++ [c₁, c₂])
+    (coloring₂ : TriColoring d₂) (hcol₂ : IsTriColoring d₂ coloring₂)
+    (htwo : ∃ i j : Fin d₁.numEdges,
+      tricolorRestrictionR2 hle coloring₂ i ≠
+        tricolorRestrictionR2 hle coloring₂ j) :
+    IsTricolorable d₁ := by
+  refine ⟨tricolorRestrictionR2 hle coloring₂, ?_, ?_, htwo⟩
+  · intro c hc
+    have hmem : c ∈ d₂.crossings := by
+      rw [hsurg]; exact List.mem_append.mpr (Or.inl hc)
+    exact triColorConditionAt_restrictR2 hle coloring₂ c
+      (crossingSlots_mem_of_wf hwf₁ hne c hc) (hcol₂.1 c hmem)
+  · obtain ⟨i, j, hne'⟩ := htwo
+    have hij : i ≠ j := fun h => hne' (by rw [h])
+    have hi := i.isLt
+    have hj := j.isLt
     omega
 
 /-- The slot slide: crossing 0 renumbered `⟨1,3,2,4⟩` (slots e2↔e3 swapped —
