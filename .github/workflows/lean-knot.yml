@@ -28,10 +28,16 @@ name: Lean Knot CI
 # compiled-tactic sorries, immune to docstring edits.
 # Real-mode breakdown (firsthand counted 2026-07-11 with the exact CI awk):
 #   - Conway.lean:              8 (Conway knot 11n34, Kinoshita-Terasaka, mutation)
-#   - Invariant.lean:           5 (tricolorable_invariant residual fox/col tactics;
-#                                  trefoil_not_unknot DISCHARGED by #8766 [sorry 5->4];
+#   - Invariant.lean:           3 (tricolorable_invariant residual fox/col tactics
+#                                  DISCHARGED by #11211 [sorry 5->3] — the all-distinct
+#                                  kink mode is VACUOUS: the R1 kink C = ⟨a,b,c,c⟩ has
+#                                  e3 = e4 = c, the Path B over-strand continuity
+#                                  c2 = c4 forces col₂(b) = col₂(c) = c3, contradicting
+#                                  the Fox all-distinct requirement c2 ≠ c3 — hence
+#                                  `exact absurd _hCarc _hdist.2.1` closes both residuals;
+#                                  trefoil_not_unknot DISCHARGED by #8766 [5->4];
 #                                  tricolorable_forward_r1 wrapper front added by #9966
-#                                  [sorry 4->5] — characterized ∀c∈d₂.crossings wall,
+#                                  [4->5] — characterized ∀c∈d₂.crossings wall,
 #                                  2/3 sub-cases PROVEN (newKink c.987, unchanged c.988),
 #                                  ai-01 multi-cycle acceptance; the Fox linearity bridge
 #                                  + num are PROVEN — see Invariant.lean docstring for
@@ -40,11 +46,13 @@ name: Lean Knot CI
 #   - Reidemeister.lean:        2 (reidemeister_theorem x2 — PL topology, OOS)
 #   - Basic.lean:               0 (the "1" under prose-header was a TODO prose comment)
 #   - MathlibPrerequisites.lean:0 (the "2" were the prose roadmap index)
-# Total real tactic sorry = 16 (lowered from 17: the tricolorable_forward_r1
-# wrapper ∀c∈d₂.crossings wall is now DISCHARGED — append decomposition +
-# Lean core lemma List.mem_or_eq_of_mem_set + 3 proven sub-lemmas (_renamed,
-# _unchanged, _newKink) + nomatch on the singleton tail; was 17 raised by
-# #9966 which fronted the wall; 16 after #8766 discharged trefoil_not_unknot).
+# Total real tactic sorry = 14 (lowered from 16: tricolorable_backward fox/col
+# residuals DISCHARGED by #11211 — the all-distinct kink branch is vacuous, no
+# witness exists, absurd closes both in one line each; was 16 after the
+# tricolorable_forward_r1 wrapper ∀c∈d₂.crossings wall was DISCHARGED — append
+# decomposition + Lean core lemma List.mem_or_eq_of_mem_set + 3 proven sub-lemmas
+# (_renamed, _unchanged, _newKink) + nomatch on the singleton tail; was 17 raised
+# by #9966 which fronted the wall; 16 after #8766 discharged trefoil_not_unknot).
 # Raising this baseline requires a documented
 # justification in the PR body (a NEW real tactic sorry, not prose).
 
@@ -100,7 +108,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "16"
+      sorry-baseline: "14"
       sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
@@ -121,7 +129,7 @@ jobs:
       display-name: knot_lean
       target-modules: "*"
       allow-axioms: ""
-      # 16 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+      # 14 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
       # build job above; the gate tolerates them (`fail-on-sorry: false`) but
       # still reports `has_sorry` per module and hard-fails forbidden axioms.
       # The per-module enumeration now lives in the gate's runtime derivation

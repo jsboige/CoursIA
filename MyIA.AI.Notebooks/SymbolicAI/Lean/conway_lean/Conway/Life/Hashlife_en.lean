@@ -685,6 +685,119 @@ theorem jumpAt_capture_centered (lvl B pad : Nat)
   rw [h1, h2]
   omega
 
+/-- **Reframing invariant (grain 1, #11161).** For a non-empty grid, the
+    bounding box of `g` and the n-aware padding fit inside the frame cell:
+    `B + 2 * max 2 n <= 2 ^ lvl` with
+    `B = max (rMax-rMin+1).toNat (cMax-cMin+1).toNat` and
+    `lvl = (gridFrameN n g).2`. Acquired by construction — `side >= B + 2*pad`
+    via `max height width` + `Nat.le_max_left/right`, and `2^lvl >= side` via
+    `MacroCell.ceilLog2_spec`: this is the `hframe` hypothesis of
+    `jumpAt_capture_centered`, obtained with no capture assumption. -/
+theorem gridFrameN_frame_invariant (n : Nat) (g : Grid) (hg : g ≠ []) :
+    max ((gridRowMax g - gridRowMin g + 1).toNat)
+        ((gridColMax g - gridColMin g + 1).toNat) + 2 * max 2 n
+      ≤ 2 ^ (gridFrameN n g).2 := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    have hrnn : gridRowMin (p₀ :: ps) ≤ gridRowMax (p₀ :: ps) :=
+      gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    have hcnn : gridColMin (p₀ :: ps) ≤ gridColMax (p₀ :: ps) :=
+      gridColMin_le_gridColMax _ (List.cons_ne_nil _ _)
+    simp only [gridFrameN]
+    set rMin := gridRowMin (p₀ :: ps)
+    set rMax := gridRowMax (p₀ :: ps)
+    set cMin := gridColMin (p₀ :: ps)
+    set cMax := gridColMax (p₀ :: ps)
+    set pad := max 2 n
+    set rowSpan := (rMax - rMin + 1).toNat
+    set colSpan := (cMax - cMin + 1).toNat
+    set height := (rMax - rMin + 1 + 2 * pad).toNat
+    set width := (cMax - cMin + 1 + 2 * pad).toNat
+    set side := max height width
+    set lvl := MacroCell.ceilLog2 side
+    have hspec : (2 ^ lvl : Nat) ≥ side := MacroCell.ceilLog2_spec side
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have hw : width ≤ side := Nat.le_max_right _ _
+    have hrow : rowSpan + 2 * pad ≤ height := by
+      simp only [rowSpan, height]
+      have hnn : 0 ≤ rMax - rMin + 1 := by omega
+      omega
+    have hcol : colSpan + 2 * pad ≤ width := by
+      simp only [colSpan, width]
+      have hnn : 0 ≤ cMax - cMin + 1 := by omega
+      omega
+    have hB : max rowSpan colSpan + 2 * pad ≤ side := by
+      by_cases h : rowSpan ≤ colSpan
+      · rw [max_eq_right h]
+        exact le_trans hcol hw
+      · have h' : colSpan ≤ rowSpan := Nat.le_of_not_ge h
+        rw [max_eq_left h']
+        exact le_trans hrow hh
+    simpa [pad] using le_trans hB hspec
+
+/-- The level of the n-aware frame is at least 2 for a non-empty grid: the
+    padding `max 2 n >= 2` and the non-empty bounding box give `height >= 5`,
+    hence `side >= 5`, and `2^lvl >= side >= 5 > 4 = 2^2`, so `lvl >= 2`. This
+    is the `hlvl` of `jumpAt_capture_centered`, acquired by construction. -/
+theorem gridFrameN_level_ge_two (n : Nat) (g : Grid) (hg : g ≠ []) :
+    2 ≤ (gridFrameN n g).2 := by
+  cases g with
+  | nil => exact absurd rfl hg
+  | cons p₀ ps =>
+    simp only [gridFrameN]
+    set rMin := gridRowMin (p₀ :: ps)
+    set rMax := gridRowMax (p₀ :: ps)
+    set cMin := gridColMin (p₀ :: ps)
+    set cMax := gridColMax (p₀ :: ps)
+    set pad := max 2 n
+    set height := (rMax - rMin + 1 + 2 * pad).toNat
+    set width := (cMax - cMin + 1 + 2 * pad).toNat
+    set side := max height width
+    set lvl := MacroCell.ceilLog2 side
+    have hrnn : rMin ≤ rMax := gridRowMin_le_gridRowMax _ (List.cons_ne_nil _ _)
+    have hpad2 : 2 ≤ pad := by simp [pad]
+    have hheight : 5 ≤ height := by
+      simp only [height]
+      have hnn : 0 ≤ rMax - rMin + 1 := by omega
+      omega
+    have hh : height ≤ side := Nat.le_max_left _ _
+    have h5 : 5 ≤ side := le_trans hheight hh
+    have hspec : side ≤ 2 ^ lvl := MacroCell.ceilLog2_spec side
+    by_contra h2
+    have hlvl1 : lvl ≤ 1 := by omega
+    have hpow : 2 ^ lvl ≤ 2 := by
+      calc 2 ^ lvl ≤ 2 ^ 1 := Nat.pow_le_pow_right (by decide : 0 < 2) hlvl1
+           _ = 2 := by norm_num
+    have hbad : 5 ≤ 2 := le_trans h5 (le_trans hspec hpow)
+    omega
+
+/-- **Reframing: the decoupled-jump capture becomes a corollary of the
+    frame** (grain 1, #11161). Both margins of `jumpAt_capture_centered` —
+    left `2^(lvl-1) + pad` and right `3*2^(lvl-1) - pad - B` — cover the range
+    `2^(lvl-2)` under the sole construction hypotheses of the `gridFrameN`
+    frame (bounding box of side `B`, padding `pad = max 2 n`, level `lvl`).
+    No capture hypothesis remains: the N3 reframing is unconditional. -/
+theorem frame_jumpAt_capture_centered (n : Nat) (g : Grid) (hg : g ≠ []) :
+    2 ^ ((gridFrameN n g).2 - 2) ≤ 2 ^ ((gridFrameN n g).2 - 1) + max 2 n ∧
+    2 ^ ((gridFrameN n g).2 - 2) ≤ 3 * 2 ^ ((gridFrameN n g).2 - 1) - max 2 n
+      - max ((gridRowMax g - gridRowMin g + 1).toNat)
+            ((gridColMax g - gridColMin g + 1).toNat) := by
+  exact jumpAt_capture_centered (gridFrameN n g).2
+    (max ((gridRowMax g - gridRowMin g + 1).toNat) ((gridColMax g - gridColMin g + 1).toNat))
+    (max 2 n) (gridFrameN_level_ge_two n g hg) (gridFrameN_frame_invariant n g hg)
+
+/-- Concrete witness: for the glider at `n = 8`, the reframing captures the
+    range of the decoupled jump — `jumpSizeAt 5 = 2^3 = 8` fits both margins
+    (left `2^4 + 8 = 24`, right `3*2^4 - 8 - 3 = 37`). -/
+example :
+    let lvl := (gridFrameN 8 [(1,2),(2,3),(3,1),(3,2),(3,3)]).2
+    jumpSizeAt lvl ≤ 2 ^ (lvl - 1) + max 2 8
+    ∧ jumpSizeAt lvl ≤ 3 * 2 ^ (lvl - 1) - max 2 8
+      - max ((gridRowMax [(1,2),(2,3),(3,1),(3,2),(3,3)] - gridRowMin [(1,2),(2,3),(3,1),(3,2),(3,3)] + 1).toNat)
+            ((gridColMax [(1,2),(2,3),(3,1),(3,2),(3,3)] - gridColMin [(1,2),(2,3),(3,1),(3,2),(3,3)] + 1).toNat) := by
+  dsimp [jumpSizeAt]
+  decide
 /-- The decorrelated guard is VIABLE: concrete witness (glider, n = 8)
     where the n-aware frame's level is exactly `5`, hence
     `jumpSizeAt 5 = 2^3 = 8 <= 8 = n` — the jump branch FIRES, unlike
