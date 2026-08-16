@@ -1,14 +1,13 @@
 # Périmètre PRODUCTION — dérivation mécanique v1
 
-> **Epic [#11259](https://github.com/jsboige/CoursIA/issues/11259) — tâche T1.**
+> **Epic [#11259](https://github.com/jsboige/CoursIA/issues/11259) — tâches T1 + T1b.**
 > Candidats à la signature `PRODUCTION`, dérivés du calendrier d'enseignement
 > ([teaching-context.md](../reference/teaching-context.md), cycle 2026→2027).
-> Ce fichier est la **liste unique** à valider en une passe : **barrez dans la strate A
-> ce qui ne doit pas être signé** — c'est la seule action attendue. La strate B n'est
-> pas soumise à décision (non tranché = BETA, verdict correct), la strate C reste
-> exclue sauf demande explicite.
-
-**Comptes : 99 proposés (strate A) · 112 hors proposition v1 (strate B, BETA par défaut) · 81 exclus mécaniques (strate C).**
+> **La décision se prend par série**, dans le tableau « La passe par série » ci-dessous —
+> une réponse par ligne, rien d'autre à faire. Le détail par notebook (strate A)
+> reste en dessous comme référence consultable ; la strate B n'est pas soumise à
+> décision (non tranché = BETA, verdict correct), la strate C reste exclue sauf
+> demande explicite.
 
 ## Critères mécaniques appliqués
 
@@ -29,9 +28,33 @@
 3. **Têtes de série** — le notebook qu'un étudiant ouvre en premier dans chaque série.
 4. Le reste du périmètre (strate B arbitrée).
 
+## La passe par série — la seule surface de décision
+
+Une ligne par série, dans l'ordre de passage. La question, une seule fois par ligne :
+**cette série entière entre-t-elle dans le périmètre signé ?**
+Répondre « oui », « non », ou « oui sauf … » (citer le notebook). La colonne *Tête de série*
+nomme le notebook qu'un étudiant ouvre en premier dans la série — le point d'appui du jugement.
+Le détail par notebook suit en strate A ci-dessous : consultation, plus décision.
+
+| Série | Cours | Tête de série | N proposés | Verdict |
+|-------|-------|---------------|------------|---------|
+| QuantConnect Python | ECE IA Finance Ing4 + Partner Algo Trading | `QC-Py-02-Platform-Fundamentals.ipynb` | 35 | |
+| GenAI Image — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-DALL-E-3.ipynb` | 5 | |
+| GenAI Audio — Foundation | EPF GenAI Bachelor 3A | `01-1-OpenAI-TTS-Intro.ipynb` | 5 | |
+| GenAI Video — Foundation | EPF GenAI Bachelor 3A | `01-1-Video-Operations-Basics.ipynb` | 5 | |
+| GenAI Texte (1-8) | EPF GenAI Bachelor 3A | `1_OpenAI_Intro.ipynb` | 8 | |
+| Search — Part 1 Foundations | EPITA Programmation par Contraintes | `Search-1-StateSpace.ipynb` | 13 | |
+| Search — Part 2 CSP | EPITA Programmation par Contraintes | `CSP-1-Fundamentals.ipynb` | 9 | |
+| Argument Analysis | EPITA IA Symbolique | `Argument_Analysis_Toulmin_Model.ipynb` | 4 | |
+| Tweety | EPITA IA Symbolique | `Tweety-2-Basic-Logics.ipynb` | 6 | |
+| Lean | EPITA IA Symbolique | `Lean-2-Dependent-Types.ipynb` | 2 | |
+| Semantic Web | EPITA IA Symbolique | `SW-2-CSharp-RDFBasics.ipynb` | 2 | |
+| Planners (01-02) | EPITA IA Symbolique | `Planners-1-Introduction.ipynb` | 3 | |
+| SmartContracts (00-01) | EPITA IA Symbolique | `SC-0-Cypherpunk-Origins.ipynb` | 2 | |
+
 ## Strate A — proposés pour signature (99)
 
-*Barrer ce qui ne doit pas être signé. Un dossier de revue sera préparé pour chaque entrée dans cet ordre.*
+*Référence consultable — la décision se prend par série dans le tableau ci-dessus. Un dossier de revue sera préparé pour chaque entrée dans l'ordre de passage.*
 
 ### EPF — GenAI Bachelor 3A (MSBNS3IN03) (23)
 
