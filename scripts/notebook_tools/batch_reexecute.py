@@ -71,11 +71,34 @@ def _normalize_kernel_paths(nb_path: Path) -> int:
 def get_kernel_name(entry: dict) -> str:
     """Map catalog kernel to papermill kernel name."""
     kernel = entry.get("kernel", "").lower()
+    if kernel and " " not in kernel:
+        # Kernelspec-shaped name (".net-csharp", "python3", "lean4-wsl") --
+        # e.g. a notebook's own metadata.kernelspec.name fed by --path.
+        # Pass it through so the notebook's real kernel is not remapped
+        # to an unrelated one (#11199). Catalog values are descriptive
+        # strings with spaces (".NET (C#)", "Python 3") and keep flowing
+        # through the mappings below.
+        return kernel
     if "python 3" in kernel:
         return "python3"
     if ".net" in kernel or "c#" in kernel:
         return ".net-interactive"
     return kernel
+
+
+def read_kernelspec_name(nb_path: Path) -> str:
+    """Read a notebook's own kernelspec name, falling back to ``python3``.
+
+    The ``--path`` branch has no catalog entry to map, so the notebook
+    itself is the truth source: its ``metadata.kernelspec.name`` is the
+    kernel papermill must use (#11199).
+    """
+    try:
+        data = json.loads(nb_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return "python3"
+    spec = data.get("metadata", {}).get("kernelspec", {})
+    return spec.get("name") or "python3"
 
 
 def execute_notebook(nb_path: Path, kernel: str, timeout: int) -> dict:
@@ -148,7 +171,8 @@ def main():
         if not nb_path.is_absolute():
             nb_path = REPO_ROOT / nb_path
         targets = [{"path": str(nb_path.relative_to(NOTEBOOKS_DIR)),
-                     "kernel": "python3", "cells_without_outputs": 1}]
+                     "kernel": read_kernelspec_name(nb_path),
+                     "cells_without_outputs": 1}]
     elif CATALOG_PATH.exists():
         try:
             catalog = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))

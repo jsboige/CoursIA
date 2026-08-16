@@ -10,10 +10,13 @@ Ce module formalise les briques probabilistes du converse du seuil `2 log N`
 (papier Papailiopoulos 2026, §11 — cf issue #10984) : la récupération ML
 échoue sous `2 log N − log log N − s_N`. Les trois ingrédients du §11 sont :
 
-1. **Masse minimale d'un intervalle gaussien** (`gaussian_interval_mass_lower`) :
-   la densité `φ` est minorée par `exp(−2)/√(2π)` sur `[−2, 2]`, donc tout
-   intervalle inclus dans `[−2, 2]` porte une masse `≥ largeur · φ(2)`.
-   C'est le mécanisme des « intervalles gaussiens de largeur `1/√ρ₀` » du §11.
+1. **Masse minimale d'un intervalle gaussien** (`gaussian_interval_mass_lower_param`,
+   forme généralisée rayon `R` arbitraire ; `gaussian_interval_mass_lower` = cas
+   `R = 2`, `gaussian_interval_mass_lower_inv_sqrt` = forme papier `1/√ρ₀`) :
+   la densité `φ` est minorée par `exp(−R²/2)/√(2π)` sur `[−R, R]`
+   (`gaussianPDFReal_lower_abs`), donc tout intervalle inclus dans `[−R, R]`
+   porte une masse `≥ largeur · φ(R)`. C'est le mécanisme des « intervalles
+   gaussiens de largeur `1/√ρ₀` » du §11.
 2. **Union bound complémentaire** (`one_sub_pow_le_exp_mul`) : `(1−p)^n ≤ e^{−np}`
    (instance de Mathlib `one_sub_div_pow_le_exp_neg`).
 3. **Concentration Hanson–Wright** (`hanson_wright_noise`) : queues de la forme
@@ -34,79 +37,138 @@ namespace Mimo
 open MeasureTheory ProbabilityTheory GaussianMeasure HansonWright Real
 open scoped BigOperators NNReal
 
-/-! ## Brique 1 — masse minimale d'un intervalle gaussien -/
+/-! ## Brique 1 — masse minimale d'un intervalle gaussien
 
-/-- La densité gaussienne standard est minorée par `exp(−2)/√(2π)` sur `[−2, 2]`. -/
-lemma gaussianPDFReal_lower_two (x : ℝ) (hx : |x| ≤ 2) :
-    Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤ gaussianPDFReal 0 1 x := by
-  have h1 : -2 ≤ x := (abs_le.mp hx).1
-  have h2 : x ≤ 2 := (abs_le.mp hx).2
-  have hx4 : x ^ 2 ≤ 4 := by nlinarith
+Forme généralisée à un rayon `R` arbitraire (`gaussianPDFReal_lower_abs`,
+`gaussian_interval_mass_lower_param`), les versions historiques `[−2, 2]`
+comme corollaires, et la forme papier `1/√ρ₀`
+(`gaussian_interval_mass_lower_inv_sqrt`). La bibliothèque `SLT/SmallBallProb`
+a été évaluée pour ce rôle (issue #11148, Grain 2) : son `small_ball_prob`
+est une borne **supérieure** de small-ball `P(∑Xᵢ ≤ εN) ≤ (e·ε)^N` (Markov
+sur la MGF), pas une anti-concentration inférieure — elle ne couvre pas la
+Brique 1, d'où la version paramétrée ci-dessous plutôt qu'une dérivation. -/
+
+/-- La densité gaussienne standard est minorée par `exp(−R²/2)/√(2π)` sur
+`[−R, R]` : la densité décroît en `|x|`, donc sa valeur au bord du domaine
+minore tout l'intérieur. Forme généralisée (rayon arbitraire) de
+`gaussianPDFReal_lower_two`. -/
+lemma gaussianPDFReal_lower_abs {R x : ℝ} (hx : |x| ≤ R) :
+    Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi) ≤ gaussianPDFReal 0 1 x := by
+  have hxR : x ^ 2 ≤ R ^ 2 := by nlinarith [(abs_le.mp hx).1, (abs_le.mp hx).2]
   have hpi : ((2 * Real.pi * (1 : ℝ≥0)) : ℝ) = 2 * Real.pi := by norm_num
   have h2' : (2 * (1 : ℝ≥0) : ℝ) = 2 := by norm_num
   unfold gaussianPDFReal
   rw [hpi, h2']
-  have hexp : Real.exp (-2) ≤ Real.exp (-(x - 0) ^ 2 / 2) := by
+  have hexp : Real.exp (-(R ^ 2) / 2) ≤ Real.exp (-(x - 0) ^ 2 / 2) := by
     refine Real.exp_le_exp.mpr ?_
-    nlinarith [hx4]
+    nlinarith [hxR]
   have hinv : 0 < (Real.sqrt (2 * Real.pi))⁻¹ := by positivity
-  calc Real.exp (-2) / Real.sqrt (2 * Real.pi)
-      = (Real.sqrt (2 * Real.pi))⁻¹ * Real.exp (-2) := div_eq_inv_mul _ _
+  calc Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi)
+      = (Real.sqrt (2 * Real.pi))⁻¹ * Real.exp (-(R ^ 2) / 2) := div_eq_inv_mul _ _
     _ ≤ (Real.sqrt (2 * Real.pi))⁻¹ * Real.exp (-(x - 0) ^ 2 / 2) :=
         mul_le_mul_of_nonneg_left hexp hinv.le
 
-/-- Tout intervalle inclus dans `[−2, 2]` porte une masse gaussienne
-`≥ largeur · φ(2)` où `φ(2) = exp(−2)/√(2π)` (§11 : intervalles de largeur
-`1/√ρ₀`). -/
-theorem gaussian_interval_mass_lower {a b : ℝ} (hab : a ≤ b)
-    (ha : |a| ≤ 2) (hb : |b| ≤ 2) :
-    (b - a) * Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤
+/-- La densité gaussienne standard est minorée par `exp(−2)/√(2π)` sur `[−2, 2]`. -/
+lemma gaussianPDFReal_lower_two (x : ℝ) (hx : |x| ≤ 2) :
+    Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤ gaussianPDFReal 0 1 x := by
+  have hexp : Real.exp (-(2:ℝ) ^ 2 / 2) = Real.exp (-2) := by
+    congr 1
+    norm_num
+  have h := gaussianPDFReal_lower_abs (R := 2) hx
+  rwa [hexp] at h
+
+/-- Tout intervalle inclus dans `[−R, R]` porte une masse gaussienne
+`≥ largeur · φ(R)` où `φ(R) = exp(−R²/2)/√(2π)` : la densité est minorée par
+sa valeur au bord (`gaussianPDFReal_lower_abs`), l'intégrale minore donc par
+`largeur × minorant`. Forme généralisée de `gaussian_interval_mass_lower`. -/
+theorem gaussian_interval_mass_lower_param {a b R : ℝ} (hab : a ≤ b)
+    (ha : |a| ≤ R) (hb : |b| ≤ R) :
+    (b - a) * Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi) ≤
       (gaussianReal 0 1 (Set.Ioc a b)).toReal := by
-  have hk : 0 ≤ Real.exp (-2) / Real.sqrt (2 * Real.pi) := by positivity
+  have hk : 0 ≤ Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi) := by positivity
   have hmeasure : gaussianReal 0 1 (Set.Ioc a b) =
       ∫⁻ x in Set.Ioc a b, ENNReal.ofReal (gaussianPDFReal 0 1 x) ∂volume := by
     rw [gaussianReal_of_var_ne_zero 0 one_ne_zero,
       withDensity_apply _ measurableSet_Ioc]
     rfl
-  have hsplit : ∀ x ∈ Set.Ioc (a : ℝ) b, |x| ≤ 2 := by
+  have hsplit : ∀ x ∈ Set.Ioc (a : ℝ) b, |x| ≤ R := by
     intro x hx
     rw [abs_le]
     constructor <;> nlinarith [(abs_le.mp ha).1, (abs_le.mp ha).2,
       (abs_le.mp hb).1, (abs_le.mp hb).2, hx.1.le, hx.2]
   have hpoint : ∀ x, (Set.Ioc a b).indicator (fun _ => ENNReal.ofReal
-      (Real.exp (-2) / Real.sqrt (2 * Real.pi))) x ≤
+      (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi))) x ≤
       (Set.Ioc a b).indicator (fun x => ENNReal.ofReal (gaussianPDFReal 0 1 x)) x := by
     intro x
     by_cases hx : x ∈ Set.Ioc a b
     · simp only [Set.indicator_of_mem hx]
-      exact ENNReal.ofReal_le_ofReal (gaussianPDFReal_lower_two x (hsplit x hx))
+      exact ENNReal.ofReal_le_ofReal (gaussianPDFReal_lower_abs (hsplit x hx))
     · rw [Set.indicator_apply, if_neg hx, Set.indicator_apply, if_neg hx]
   have hmono : (∫⁻ _x in Set.Ioc a b,
-        ENNReal.ofReal (Real.exp (-2) / Real.sqrt (2 * Real.pi)) ∂volume) ≤
+        ENNReal.ofReal (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi)) ∂volume) ≤
       ∫⁻ x in Set.Ioc a b, ENNReal.ofReal (gaussianPDFReal 0 1 x) ∂volume := by
     rw [← lintegral_indicator measurableSet_Ioc
-        (fun _ => ENNReal.ofReal (Real.exp (-2) / Real.sqrt (2 * Real.pi))),
+        (fun _ => ENNReal.ofReal (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi))),
       ← lintegral_indicator measurableSet_Ioc
         (fun x => ENNReal.ofReal (gaussianPDFReal 0 1 x))]
     exact lintegral_mono hpoint
-  have hchain : ENNReal.ofReal ((b - a) * (Real.exp (-2) / Real.sqrt (2 * Real.pi))) ≤
+  have hchain : ENNReal.ofReal ((b - a) *
+        (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi))) ≤
       gaussianReal 0 1 (Set.Ioc a b) := by
     rw [hmeasure]
-    calc ENNReal.ofReal ((b - a) * (Real.exp (-2) / Real.sqrt (2 * Real.pi)))
+    calc ENNReal.ofReal ((b - a) *
+          (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi)))
         = ∫⁻ _x in Set.Ioc a b,
-            ENNReal.ofReal (Real.exp (-2) / Real.sqrt (2 * Real.pi)) ∂volume := by
+            ENNReal.ofReal (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi)) ∂volume := by
           rw [setLIntegral_const, Real.volume_Ioc,
             ← ENNReal.ofReal_mul (by nlinarith [hab, hk]), mul_comm]
       _ ≤ ∫⁻ x in Set.Ioc a b, ENNReal.ofReal (gaussianPDFReal 0 1 x) ∂volume := hmono
-  have hnn : 0 ≤ (b - a) * (Real.exp (-2) / Real.sqrt (2 * Real.pi)) := by
+  have hnn : 0 ≤ (b - a) * (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi)) := by
     nlinarith [hab, hk]
-  have hlhs : (b - a) * Real.exp (-2) / Real.sqrt (2 * Real.pi) =
-      (ENNReal.ofReal ((b - a) * (Real.exp (-2) / Real.sqrt (2 * Real.pi)))).toReal := by
+  have hlhs : (b - a) * Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi) =
+      (ENNReal.ofReal ((b - a) *
+        (Real.exp (-(R ^ 2) / 2) / Real.sqrt (2 * Real.pi)))).toReal := by
     rw [ENNReal.toReal_ofReal hnn]
     ring
   rw [hlhs]
   exact (ENNReal.toReal_le_toReal ENNReal.ofReal_ne_top (measure_ne_top _ _)).mpr
     hchain
+
+/-- Tout intervalle inclus dans `[−2, 2]` porte une masse gaussienne
+`≥ largeur · φ(2)` où `φ(2) = exp(−2)/√(2π)` (§11 : intervalles de largeur
+`1/√ρ₀`). Cas `R = 2` de `gaussian_interval_mass_lower_param`. -/
+theorem gaussian_interval_mass_lower {a b : ℝ} (hab : a ≤ b)
+    (ha : |a| ≤ 2) (hb : |b| ≤ 2) :
+    (b - a) * Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤
+      (gaussianReal 0 1 (Set.Ioc a b)).toReal := by
+  have hexp : Real.exp (-(2:ℝ) ^ 2 / 2) = Real.exp (-2) := by
+    congr 1
+    norm_num
+  have h := gaussian_interval_mass_lower_param (R := 2) hab ha hb
+  rwa [hexp] at h
+
+/-- **Forme papier §11** : tout intervalle de largeur exactement `1/√ρ₀`
+centré en `c` et inclus dans `[−2, 2]` porte une masse gaussienne
+`≥ (1/√ρ₀) · φ(2)` — les « intervalles gaussiens de largeur `1/√ρ₀` » du
+converse de Papailiopoulos 2026 (§11), instanciation directe de la Brique 1
+sur `ε = 1/√ρ₀`. -/
+theorem gaussian_interval_mass_lower_inv_sqrt {ρ₀ c : ℝ} (hρ : 0 < ρ₀)
+    (hc : |c| + 1 / √ρ₀ / 2 ≤ 2) :
+    (1 / √ρ₀) * Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤
+      (gaussianReal 0 1 (Set.Ioc (c - 1 / √ρ₀ / 2) (c + 1 / √ρ₀ / 2))).toReal := by
+  have he : 0 < 1 / √ρ₀ := by positivity
+  have hc' : |c| ≤ 2 - 1 / √ρ₀ / 2 := by nlinarith [hc]
+  have hca := abs_le.mp hc'
+  have ha : |c - 1 / √ρ₀ / 2| ≤ 2 := by
+    rw [abs_le]
+    constructor <;> nlinarith [hca.1, hca.2, he]
+  have hb : |c + 1 / √ρ₀ / 2| ≤ 2 := by
+    rw [abs_le]
+    constructor <;> nlinarith [hca.1, hca.2, he]
+  have hab : c - 1 / √ρ₀ / 2 ≤ c + 1 / √ρ₀ / 2 := by nlinarith
+  have h := gaussian_interval_mass_lower hab ha hb
+  rw [show (c + 1 / √ρ₀ / 2) - (c - 1 / √ρ₀ / 2) = 1 / √ρ₀ from by ring] at h
+  exact h
 
 /-! ## Brique 2 — union bound complémentaire -/
 
