@@ -915,6 +915,9 @@ class NotebookExecutor:
         # Start kernel if not already running
         # WSL-based kernels (smartcontracts, lean4-wsl) need longer startup
         startup_timeout = 120 if 'wsl' in kernel_name or kernel_name == 'smartcontracts' else 60
+        # Bound OpenMP/BLAS pools: native training cells oversubscribe many-core
+        # hosts and look frozen (#11111). Kernel inherits env.
+        bound_native_thread_pools()
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
             km.start_kernel()
@@ -1040,6 +1043,9 @@ class NotebookExecutor:
 
         # Start kernel (WSL-based kernels need longer startup)
         startup_timeout = 120 if 'wsl' in kernel_name or kernel_name == 'smartcontracts' else 60
+        # Bound OpenMP/BLAS pools: native training cells oversubscribe many-core
+        # hosts and look frozen (#11111). Kernel inherits env.
+        bound_native_thread_pools()
         try:
             km = jupyter_client.KernelManager(kernel_name=kernel_name)
             km.start_kernel()

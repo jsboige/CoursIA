@@ -426,6 +426,103 @@ def test_check_surfaces_unattributed(capsys):
     assert '"unattributed_markers": 1' in out
 
 
+# --- #11239: malformed-marker lint --------------------------------------------
+# A claim written WITHOUT the brackets (`CLAIMED #N ...`) is invisible to
+# `_MARKER_RE` -- the organ reports `unattributed_markers: 0` and answers
+# CLEAR to every other lane while the writer believes their lock is posted
+# (measured 2026-08-16 on #11222: #11230 / #11233, 7 minutes apart). The lint
+# is WARN-only: the writer learns at the call site that they were not read.
+
+def test_malformed_marker_incident_line_surfaces(capsys):
+    # The exact shape of the #11222 incident comment line.
+    p = payload(comment(
+        "CLAIMED #11222 — myia-po-2026:CoursIA — 2026-08-16T11:12Z. "
+        "Fix couche resolution gate nits.",
+        "2026-08-16T09:09:50Z", author="jsboige"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"malformed_markers": 1' in captured.out
+    assert 'CLAIMED #11222' in captured.out
+    assert 'WARN: marqueur sans crochets "CLAIMED"' in captured.err
+
+
+def test_malformed_marker_lane_form_surfaces(capsys):
+    p = payload(comment(
+        "CLAIMED lane myia-po-2026:CoursIA -- working here",
+        "2026-08-16T09:10:00Z", author="jsboige"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"malformed_markers": 1' in captured.out
+    assert 'WARN: marqueur sans crochets "CLAIMED"' in captured.err
+
+
+def test_bracketed_marker_is_not_malformed(capsys):
+    p = payload(comment(
+        "[CLAIMED] #11222 — myia-po-2026:CoursIA — 2026-08-16T11:12Z.",
+        "2026-08-16T09:09:50Z", author="jsboige"))
+    # Own-lane check: the bracketed claim IS read and does not block us.
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"malformed_markers": 0' in captured.out
+    assert 'WARN: marqueur sans crochets' not in captured.err
+
+
+def test_prose_mention_not_flagged(capsys):
+    # A line that merely MENTIONS a marker word mid-prose is not a claim:
+    # the motif tail (`lane <tok>` / `#N`) is required AND the marker word
+    # must be line-initial after decoration.
+    p = payload(comment(
+        "Cette PR revient sur un [CLAIMED] discute plus tot; work done #123.",
+        "2026-08-16T09:00:00Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"malformed_markers": 0' in captured.out
+    assert 'WARN: marqueur sans crochets' not in captured.err
+
+
+def test_decorated_bare_marker_flagged(capsys):
+    # `**` / bullet decoration is tolerated by `_MARKER_RE`, so a bare marker
+    # with the same decoration is equally invisible and equally malformed.
+    p = payload(comment(
+        "- **CLAIMED** #11222 -- myia-po-2026:CoursIA",
+        "2026-08-16T09:11:00Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"malformed_markers": 1' in captured.out
+
+
+def test_malformed_close_marker_flagged(capsys):
+    # Close markers are linted too: a bracketless `RELEASED` never registers
+    # as a release, so the claim stays locked for other lanes.
+    p = payload(comment(
+        "RELEASED lane myia-po-2025:CoursIA -- landed",
+        "2026-08-16T09:20:00Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"malformed_markers": 1' in captured.out
+    assert 'WARN: marqueur sans crochets "RELEASED"' in captured.err
+
+
+def test_valid_bracketed_line_with_midline_bare_word_not_double_counted(capsys):
+    # A well-formed `[CLAIMED]` whose line ALSO mentions a bare marker word
+    # later must count 0 malformed: the lint is line-initial only, and the
+    # bracketed claim is read by `_MARKER_RE` as intended.
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2026:CoursIA -- voir RELEASED #12 du precedent",
+        "2026-08-16T09:30:00Z"))
+    rc = clc._run_check(p, "myia-po-2026:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert '"malformed_markers": 0' in captured.out
+    assert 'WARN: marqueur sans crochets' not in captured.err
+
+
 # --- --stale-threshold (#9812) ----------------------------------------------
 # A claim older than the threshold (age from server createdAt, never the body)
 # is treated as STALE: it no longer blocks, but a STALE_CLAIM warning is printed
