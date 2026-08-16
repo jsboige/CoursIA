@@ -3,10 +3,12 @@
 > **Epic [#11259](https://github.com/jsboige/CoursIA/issues/11259) — tâche T1.**
 > Candidats à la signature `PRODUCTION`, dérivés du calendrier d'enseignement
 > ([teaching-context.md](../reference/teaching-context.md), cycle 2026→2027).
-> Ce fichier est la **liste unique** à valider en une passe : barrez dans la strate A,
-> cochez dans la strate B, la strate C reste exclue sauf demande explicite.
+> Ce fichier est la **liste unique** à valider en une passe : **barrez dans la strate A
+> ce qui ne doit pas être signé** — c'est la seule action attendue. La strate B n'est
+> pas soumise à décision (non tranché = BETA, verdict correct), la strate C reste
+> exclue sauf demande explicite.
 
-**Comptes : 99 proposés (strate A) · 112 à trancher (strate B) · 81 exclus mécaniques (strate C).**
+**Comptes : 99 proposés (strate A) · 112 hors proposition v1 (strate B, BETA par défaut) · 81 exclus mécaniques (strate C).**
 
 ## Critères mécaniques appliqués
 
@@ -18,7 +20,7 @@
 | Exclus — technique | `*_en.ipynb` (traduction), `*_output*`, `_archive/`, `_research/`, `temp/`, `_probes/`, `RDF.Net-Legacy/` |
 | Exclus — setup | notebooks d'environnement/`Setup` (réintégrables : ils s'exécutent, ne s'enseignent pas) |
 | Strate A (proposé) | GenAI **Foundation** des 4 modalités + Texte 1-8 · QC-Py **02-21** + série Cloud · Search **Part1+Part2** · SymbolicAI **têtes** (numéros ≤3 + fondateurs) |
-| Strate B (à trancher) | GenAI Advanced/Applications + Texte 9-21 · QC-Py 22-41 (ML avancé) + `research_*` · le reste des séries SymbolicAI |
+| Strate B (hors proposition v1) | GenAI Advanced/Applications + Texte 9-21 · QC-Py 22-41 (ML avancé) + `research_*` · le reste des séries SymbolicAI — BETA par défaut, intégration sur demande explicite |
 
 ## Ordre de passage (d'après l'Epic)
 
@@ -155,9 +157,11 @@
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-3-Solidity-Basics.ipynb`
 
-## Strate B — à trancher (112)
+## Strate B — hors proposition v1 (112)
 
-*Cocher pour intégrer au périmètre. Non tranché = reste BETA (verdict correct, pas une dette).*
+*Non soumise à la passe de validation. Statut BETA par défaut — verdict correct, pas une dette.
+Une entrée n'entre dans le périmètre PRODUCTION que sur demande explicite (mention sur
+l'Epic) ; un dossier de revue est alors préparé (T2).*
 
 ### EPF — GenAI Bachelor 3A (MSBNS3IN03) (34)
 
@@ -290,6 +294,25 @@
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-4-Functions-State.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-5-Inheritance.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-6-Errors-Events.ipynb`
+
+## Séries hors périmètre — justification en une ligne
+
+Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans rouvrir le dossier) :
+
+| Série | Pourquoi hors périmètre v1 |
+|-------|----------------------------|
+| `ML/` (ML.NET) | cursus .NET non rattaché aux 4 écoles in-scope ; le ML enseigné passe par QC-Py (ECE) et GenAI (EPF) |
+| `Search/Part3-Advanced/`, `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
+| `Search/Applications/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
+| `Sudoku/` | série .NET autonome, non rattachée à un cours du calendrier |
+| `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |
+| `GameTheory/` | les preuves Lean associées sont du code (i18n #4980), non des notebooks à signer ; les `.ipynb` ne sont pas cités nommément par le calendrier |
+| `IIT/` (PyPhi) | non rattaché à un cours du calendrier |
+| `RL/`, `CaseStudies/`, `FallacyDetection/`, `cross-series/` | hors des 4 écoles in-scope |
+| `QuantConnect/` hors `Python/` (C#, partner-course, ML-Training-Pipeline, projects, kelly_lean) | le cours ECE/partner suit la série Python ; le reste est outillage/projets, non enseigné en cours |
+| `SymbolicAI/Planners/03-Advanced/`, `04-NeuroSymbolic/` | au-delà des 2 sous-séries scoping EPITA-IS (TP = tête de série) |
+| `SymbolicAI/SmartContracts/02-*/` à `06-*/` | idem — scoping EPITA-IS limité à `00-Foundations` + `01-Solidity-Foundation` |
+| `SymbolicAI/Z3.Linq/` | fork externe non tracké (submodule) |
 
 ## Strate C — exclus mécaniques (81)
 
