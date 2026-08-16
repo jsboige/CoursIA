@@ -1274,6 +1274,328 @@ theorem p4at_ext_bridge (c : MacroCell) (j M : Nat)
   unfold restrictGridTo
   exact (canonical_evolve_of_pos (Nat.two_pow_pos j) _).filter _
 
+/-! ### P4-At : invariant niveau/wf du moteur At (grain 3b, partie 3)
+
+Miroir de `hashlifeResultAux_level_cellWf` (Foundation, c.142) pour le
+moteur decorrele. Comptage du fuel verifie sur la definition
+(Hashlife.lean, `hashlifeResultAtAux`) : le wrapper pose fuel = niveau,
+et la recursion mono-ronde descend le niveau ET le fuel de 1 chacune
+(les neuf `n_i` sont des noeuds de quatre petits-enfants, donc de
+niveau `M - 1`) — l'invariant fuel = niveau est preserve, et le cas
+terminal delegue au moteur plein avec exactement le fuel de la brique
+Foundation. -/
+
+/-- Preservation niveau + `cellWf` de l'accesseur `subNW` sur une
+    cellule de niveau `m + 1` bien formee : le quadrant nord-ouest est de
+    niveau `m` et bien forme. Les conclusions portent le predicat
+    OPAQUE `cellWf` (pont `cellWf_of_wf`) : dans les bras d'assemblage
+    du moteur At, les `r_i` sont des termes bloques — la version
+    transparente `.wf` y divergerait en whnf (c.140). -/
+theorem subNW_level_cellWf {m : Nat} {r : MacroCell}
+    (hwf : cellWf r) (hlevel : r.level = m + 1) :
+    (subNW r).level = m ∧ cellWf (subNW r) := by
+  have hw := wf_of_cellWf hwf
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ q1 q2 q3 q4, r = MacroCell.node q1 q2 q3 q4 := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hlevel; omega
+    | node q1 q2 q3 q4 => exact ⟨q1, q2, q3, q4, rfl⟩
+  obtain ⟨h1, _, _, _, h1w, _, _, _⟩ := wf_node_quad_level (n := m) hlevel hw
+  exact ⟨h1, cellWf_of_wf _ h1w⟩
+
+/-- Preservation niveau + `cellWf` de l'accesseur `subNE` sur une
+    cellule de niveau `m + 1` bien formee : le quadrant nord-est est de
+    niveau `m` et bien forme. Les conclusions portent le predicat
+    OPAQUE `cellWf` (pont `cellWf_of_wf`) : dans les bras d'assemblage
+    du moteur At, les `r_i` sont des termes bloques — la version
+    transparente `.wf` y divergerait en whnf (c.140). -/
+theorem subNE_level_cellWf {m : Nat} {r : MacroCell}
+    (hwf : cellWf r) (hlevel : r.level = m + 1) :
+    (subNE r).level = m ∧ cellWf (subNE r) := by
+  have hw := wf_of_cellWf hwf
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ q1 q2 q3 q4, r = MacroCell.node q1 q2 q3 q4 := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hlevel; omega
+    | node q1 q2 q3 q4 => exact ⟨q1, q2, q3, q4, rfl⟩
+  obtain ⟨_, h2, _, _, _, h2w, _, _⟩ := wf_node_quad_level (n := m) hlevel hw
+  exact ⟨h2, cellWf_of_wf _ h2w⟩
+
+/-- Preservation niveau + `cellWf` de l'accesseur `subSW` sur une
+    cellule de niveau `m + 1` bien formee : le quadrant sud-ouest est de
+    niveau `m` et bien forme. Les conclusions portent le predicat
+    OPAQUE `cellWf` (pont `cellWf_of_wf`) : dans les bras d'assemblage
+    du moteur At, les `r_i` sont des termes bloques — la version
+    transparente `.wf` y divergerait en whnf (c.140). -/
+theorem subSW_level_cellWf {m : Nat} {r : MacroCell}
+    (hwf : cellWf r) (hlevel : r.level = m + 1) :
+    (subSW r).level = m ∧ cellWf (subSW r) := by
+  have hw := wf_of_cellWf hwf
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ q1 q2 q3 q4, r = MacroCell.node q1 q2 q3 q4 := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hlevel; omega
+    | node q1 q2 q3 q4 => exact ⟨q1, q2, q3, q4, rfl⟩
+  obtain ⟨_, _, h3, _, _, _, h3w, _⟩ := wf_node_quad_level (n := m) hlevel hw
+  exact ⟨h3, cellWf_of_wf _ h3w⟩
+
+/-- Preservation niveau + `cellWf` de l'accesseur `subSE` sur une
+    cellule de niveau `m + 1` bien formee : le quadrant sud-est est de
+    niveau `m` et bien forme. Les conclusions portent le predicat
+    OPAQUE `cellWf` (pont `cellWf_of_wf`) : dans les bras d'assemblage
+    du moteur At, les `r_i` sont des termes bloques — la version
+    transparente `.wf` y divergerait en whnf (c.140). -/
+theorem subSE_level_cellWf {m : Nat} {r : MacroCell}
+    (hwf : cellWf r) (hlevel : r.level = m + 1) :
+    (subSE r).level = m ∧ cellWf (subSE r) := by
+  have hw := wf_of_cellWf hwf
+  obtain ⟨q1, q2, q3, q4, rfl⟩ :
+      ∃ q1 q2 q3 q4, r = MacroCell.node q1 q2 q3 q4 := by
+    cases r with
+    | leaf _ => simp only [MacroCell.level] at hlevel; omega
+    | node q1 q2 q3 q4 => exact ⟨q1, q2, q3, q4, rfl⟩
+  obtain ⟨_, _, _, h4, _, _, _, h4w⟩ := wf_node_quad_level (n := m) hlevel hw
+  exact ⟨h4, cellWf_of_wf _ h4w⟩
+
+/-- Conjunct-closer pour un noeud de quatre cellules de meme niveau `m`
+    bien formees : niveau `m + 1` et `cellWf`. Version publique et
+    parametree en niveau ABSOLU du helper prive
+    `node_level_cellWf_conjuncts` (Foundation, c.142, en `n - 2`), pour
+    l'assemblage mono-ronde du moteur At : les sous-quadrants `subX r_i`
+    sont de niveau `F - 2` et les quadrants de la fenetre de niveau
+    `F - 1`. -/
+theorem node4_level_cellWf {a b c d : MacroCell} {m : Nat}
+    (ha : a.level = m) (hb : b.level = m) (hc : c.level = m) (hd : d.level = m)
+    (hwa : cellWf a) (hwb : cellWf b) (hwc : cellWf c) (hwd : cellWf d) :
+    (MacroCell.node a b c d).level = m + 1 ∧ cellWf (MacroCell.node a b c d) := by
+  refine ⟨?_, ?_⟩
+  · show 1 + a.level = m + 1
+    omega
+  · exact cellWf.node hwa hwb hwc hwd (by omega) (by omega) (by omega)
+
+set_option maxHeartbeats 4000000 in
+/-- **Pas mono-ronde de l'invariant du moteur At** (grain 3b,
+    partie 3). Corps lourd de `hashlifeResultAtAux_level_cellWf`
+    isole dans sa propre commande (budget heartbeats frais,
+    miroir du helper prive `hashlifeResultAux_level_cellWf_step`,
+    Foundation c.142).
+
+    **Discipline omega** (mesuree sur la divergence v1-v3, probes
+    scratch) : chaque `omega` POST-obtain re-scanne les 32 faits de
+    petits-enfants — le preprocessing grind normalise chaque
+    hypothese lineaire (~100k heartbeats par appel). Toute
+    l'arithmetique est donc pre-prouvee AVANT l'obtain en lemmes
+    parametriques (`key*`, contexte minimal), et le corps
+    post-obtain n'utilise que des APPLICATIONS DE TERMES
+    (`Eq.trans`/`symm`, `keyL`, `keyS`, `keyT`). L'unfold passe par
+    l'equation rfl `hashlifeResultAtAux_succ_node_at` + `hlev` +
+    `if_neg` — jamais de `simp` sur le terme 16-petits-enfants
+    (divergence c.138-c.140). -/
+private theorem hashlifeResultAtAux_level_cellWf_mono (fuel j : Nat)
+    (hle : j + 2 ≤ fuel)
+    (nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se : MacroCell)
+    (hgrands : nw_nw.level = fuel - 1 ∧ nw_nw.wf = true ∧ nw_ne.level = fuel - 1 ∧ nw_ne.wf = true ∧ nw_sw.level = fuel - 1 ∧ nw_sw.wf = true ∧ nw_se.level = fuel - 1 ∧ nw_se.wf = true ∧ ne_nw.level = fuel - 1 ∧ ne_nw.wf = true ∧ ne_ne.level = fuel - 1 ∧ ne_ne.wf = true ∧ ne_sw.level = fuel - 1 ∧ ne_sw.wf = true ∧ ne_se.level = fuel - 1 ∧ ne_se.wf = true ∧ sw_nw.level = fuel - 1 ∧ sw_nw.wf = true ∧ sw_ne.level = fuel - 1 ∧ sw_ne.wf = true ∧ sw_sw.level = fuel - 1 ∧ sw_sw.wf = true ∧ sw_se.level = fuel - 1 ∧ sw_se.wf = true ∧ se_nw.level = fuel - 1 ∧ se_nw.wf = true ∧ se_ne.level = fuel - 1 ∧ se_ne.wf = true ∧ se_sw.level = fuel - 1 ∧ se_sw.wf = true ∧ se_se.level = fuel - 1 ∧ se_se.wf = true)
+    (hne : ¬ (fuel + 1 = j + 2))
+    (ih : ∀ (j : Nat) (c' : MacroCell), cellWf c' → c'.level = fuel → j + 2 ≤ fuel →
+      ((hashlifeResultAtAux fuel j c').level = fuel - 1 ∧ cellWf (hashlifeResultAtAux fuel j c'))) :
+    ((hashlifeResultAtAux (fuel + 1) j (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+          (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se))).level = fuel + 1 - 1 ∧
+     cellWf (hashlifeResultAtAux (fuel + 1) j (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+          (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)))) := by
+  -- Arithmetique pre-prouvee : chaque omega ci-dessous travaille sur
+  -- un contexte MINIMAL (hgrands est UNE hypothese, pas 32).
+  have hfuel : 1 ≤ fuel := by omega
+  have hf2 : 2 ≤ fuel := by omega
+  have keyL : ∀ x : Nat, x = fuel - 1 → 1 + x = fuel := by
+    intro x hx; omega
+  have keyLev2 : ∀ x : Nat, x = fuel - 1 → 1 + (1 + x) = fuel + 1 := by
+    intro x hx; omega
+  have keyS : ∀ x : Nat, x = fuel - 1 → x = (fuel - 2) + 1 := by
+    intro x hx; omega
+  have keyT : ∀ x : Nat, x = (fuel - 2) + 1 → x = fuel - 1 := by
+    intro x hx; omega
+  have keyFin : (fuel - 1) + 1 = fuel + 1 - 1 := by omega
+  obtain ⟨hnw_nw_l, hnw_nw_w, hnw_ne_l, hnw_ne_w, hnw_sw_l, hnw_sw_w, hnw_se_l, hnw_se_w, hne_nw_l, hne_nw_w, hne_ne_l, hne_ne_w, hne_sw_l, hne_sw_w, hne_se_l, hne_se_w, hsw_nw_l, hsw_nw_w, hsw_ne_l, hsw_ne_w, hsw_sw_l, hsw_sw_w, hsw_se_l, hsw_se_w, hse_nw_l, hse_nw_w, hse_ne_l, hse_ne_w, hse_sw_l, hse_sw_w, hse_se_l, hse_se_w⟩ := hgrands
+  have hlev : (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+          (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)).level = fuel + 1 := by
+    show 1 + (1 + nw_nw.level) = fuel + 1
+    exact keyLev2 _ hnw_nw_l
+  have hn1l : (node nw_nw nw_ne nw_sw nw_se).level = fuel := by
+    show 1 + nw_nw.level = fuel
+    exact keyL _ hnw_nw_l
+  have hn1w : cellWf (node nw_nw nw_ne nw_sw nw_se) :=
+    cellWf.node (cellWf_of_wf _ hnw_nw_w) (cellWf_of_wf _ hnw_ne_w)
+      (cellWf_of_wf _ hnw_sw_w) (cellWf_of_wf _ hnw_se_w)
+      (hnw_nw_l.trans hnw_ne_l.symm) (hnw_nw_l.trans hnw_sw_l.symm) (hnw_nw_l.trans hnw_se_l.symm)
+  have hn2l : (node nw_ne ne_nw nw_se ne_sw).level = fuel := by
+    show 1 + nw_ne.level = fuel
+    exact keyL _ hnw_ne_l
+  have hn2w : cellWf (node nw_ne ne_nw nw_se ne_sw) :=
+    cellWf.node (cellWf_of_wf _ hnw_ne_w) (cellWf_of_wf _ hne_nw_w)
+      (cellWf_of_wf _ hnw_se_w) (cellWf_of_wf _ hne_sw_w)
+      (hnw_ne_l.trans hne_nw_l.symm) (hnw_ne_l.trans hnw_se_l.symm) (hnw_ne_l.trans hne_sw_l.symm)
+  have hn3l : (node ne_nw ne_ne ne_sw ne_se).level = fuel := by
+    show 1 + ne_nw.level = fuel
+    exact keyL _ hne_nw_l
+  have hn3w : cellWf (node ne_nw ne_ne ne_sw ne_se) :=
+    cellWf.node (cellWf_of_wf _ hne_nw_w) (cellWf_of_wf _ hne_ne_w)
+      (cellWf_of_wf _ hne_sw_w) (cellWf_of_wf _ hne_se_w)
+      (hne_nw_l.trans hne_ne_l.symm) (hne_nw_l.trans hne_sw_l.symm) (hne_nw_l.trans hne_se_l.symm)
+  have hn4l : (node nw_sw nw_se sw_nw sw_ne).level = fuel := by
+    show 1 + nw_sw.level = fuel
+    exact keyL _ hnw_sw_l
+  have hn4w : cellWf (node nw_sw nw_se sw_nw sw_ne) :=
+    cellWf.node (cellWf_of_wf _ hnw_sw_w) (cellWf_of_wf _ hnw_se_w)
+      (cellWf_of_wf _ hsw_nw_w) (cellWf_of_wf _ hsw_ne_w)
+      (hnw_sw_l.trans hnw_se_l.symm) (hnw_sw_l.trans hsw_nw_l.symm) (hnw_sw_l.trans hsw_ne_l.symm)
+  have hn5l : (node nw_se ne_sw sw_ne se_nw).level = fuel := by
+    show 1 + nw_se.level = fuel
+    exact keyL _ hnw_se_l
+  have hn5w : cellWf (node nw_se ne_sw sw_ne se_nw) :=
+    cellWf.node (cellWf_of_wf _ hnw_se_w) (cellWf_of_wf _ hne_sw_w)
+      (cellWf_of_wf _ hsw_ne_w) (cellWf_of_wf _ hse_nw_w)
+      (hnw_se_l.trans hne_sw_l.symm) (hnw_se_l.trans hsw_ne_l.symm) (hnw_se_l.trans hse_nw_l.symm)
+  have hn6l : (node ne_sw ne_se se_nw se_ne).level = fuel := by
+    show 1 + ne_sw.level = fuel
+    exact keyL _ hne_sw_l
+  have hn6w : cellWf (node ne_sw ne_se se_nw se_ne) :=
+    cellWf.node (cellWf_of_wf _ hne_sw_w) (cellWf_of_wf _ hne_se_w)
+      (cellWf_of_wf _ hse_nw_w) (cellWf_of_wf _ hse_ne_w)
+      (hne_sw_l.trans hne_se_l.symm) (hne_sw_l.trans hse_nw_l.symm) (hne_sw_l.trans hse_ne_l.symm)
+  have hn7l : (node sw_nw sw_ne sw_sw sw_se).level = fuel := by
+    show 1 + sw_nw.level = fuel
+    exact keyL _ hsw_nw_l
+  have hn7w : cellWf (node sw_nw sw_ne sw_sw sw_se) :=
+    cellWf.node (cellWf_of_wf _ hsw_nw_w) (cellWf_of_wf _ hsw_ne_w)
+      (cellWf_of_wf _ hsw_sw_w) (cellWf_of_wf _ hsw_se_w)
+      (hsw_nw_l.trans hsw_ne_l.symm) (hsw_nw_l.trans hsw_sw_l.symm) (hsw_nw_l.trans hsw_se_l.symm)
+  have hn8l : (node sw_ne se_nw sw_se se_sw).level = fuel := by
+    show 1 + sw_ne.level = fuel
+    exact keyL _ hsw_ne_l
+  have hn8w : cellWf (node sw_ne se_nw sw_se se_sw) :=
+    cellWf.node (cellWf_of_wf _ hsw_ne_w) (cellWf_of_wf _ hse_nw_w)
+      (cellWf_of_wf _ hsw_se_w) (cellWf_of_wf _ hse_sw_w)
+      (hsw_ne_l.trans hse_nw_l.symm) (hsw_ne_l.trans hsw_se_l.symm) (hsw_ne_l.trans hse_sw_l.symm)
+  have hn9l : (node se_nw se_ne se_sw se_se).level = fuel := by
+    show 1 + se_nw.level = fuel
+    exact keyL _ hse_nw_l
+  have hn9w : cellWf (node se_nw se_ne se_sw se_se) :=
+    cellWf.node (cellWf_of_wf _ hse_nw_w) (cellWf_of_wf _ hse_ne_w)
+      (cellWf_of_wf _ hse_sw_w) (cellWf_of_wf _ hse_se_w)
+      (hse_nw_l.trans hse_ne_l.symm) (hse_nw_l.trans hse_sw_l.symm) (hse_nw_l.trans hse_se_l.symm)
+  obtain ⟨hr1l, hr1w⟩ := ih j (node nw_nw nw_ne nw_sw nw_se) hn1w hn1l hle
+  obtain ⟨hr2l, hr2w⟩ := ih j (node nw_ne ne_nw nw_se ne_sw) hn2w hn2l hle
+  obtain ⟨hr3l, hr3w⟩ := ih j (node ne_nw ne_ne ne_sw ne_se) hn3w hn3l hle
+  obtain ⟨hr4l, hr4w⟩ := ih j (node nw_sw nw_se sw_nw sw_ne) hn4w hn4l hle
+  obtain ⟨hr5l, hr5w⟩ := ih j (node nw_se ne_sw sw_ne se_nw) hn5w hn5l hle
+  obtain ⟨hr6l, hr6w⟩ := ih j (node ne_sw ne_se se_nw se_ne) hn6w hn6l hle
+  obtain ⟨hr7l, hr7w⟩ := ih j (node sw_nw sw_ne sw_sw sw_se) hn7w hn7l hle
+  obtain ⟨hr8l, hr8w⟩ := ih j (node sw_ne se_nw sw_se se_sw) hn8w hn8l hle
+  obtain ⟨hr9l, hr9w⟩ := ih j (node se_nw se_ne se_sw se_se) hn9w hn9l hle
+  have hSE1 := subSE_level_cellWf (m := fuel - 2) hr1w (keyS _ hr1l)
+  have hSW2 := subSW_level_cellWf (m := fuel - 2) hr2w (keyS _ hr2l)
+  have hNE4 := subNE_level_cellWf (m := fuel - 2) hr4w (keyS _ hr4l)
+  have hNW5 := subNW_level_cellWf (m := fuel - 2) hr5w (keyS _ hr5l)
+  have hSE2 := subSE_level_cellWf (m := fuel - 2) hr2w (keyS _ hr2l)
+  have hSW3 := subSW_level_cellWf (m := fuel - 2) hr3w (keyS _ hr3l)
+  have hNE5 := subNE_level_cellWf (m := fuel - 2) hr5w (keyS _ hr5l)
+  have hNW6 := subNW_level_cellWf (m := fuel - 2) hr6w (keyS _ hr6l)
+  have hSE4 := subSE_level_cellWf (m := fuel - 2) hr4w (keyS _ hr4l)
+  have hSW5 := subSW_level_cellWf (m := fuel - 2) hr5w (keyS _ hr5l)
+  have hNE7 := subNE_level_cellWf (m := fuel - 2) hr7w (keyS _ hr7l)
+  have hNW8 := subNW_level_cellWf (m := fuel - 2) hr8w (keyS _ hr8l)
+  have hSE5 := subSE_level_cellWf (m := fuel - 2) hr5w (keyS _ hr5l)
+  have hSW6 := subSW_level_cellWf (m := fuel - 2) hr6w (keyS _ hr6l)
+  have hNE8 := subNE_level_cellWf (m := fuel - 2) hr8w (keyS _ hr8l)
+  have hNW9 := subNW_level_cellWf (m := fuel - 2) hr9w (keyS _ hr9l)
+  obtain ⟨hI1l, hI1w⟩ := node4_level_cellWf hSE1.1 hSW2.1 hNE4.1 hNW5.1 hSE1.2 hSW2.2 hNE4.2 hNW5.2
+  obtain ⟨hI2l, hI2w⟩ := node4_level_cellWf hSE2.1 hSW3.1 hNE5.1 hNW6.1 hSE2.2 hSW3.2 hNE5.2 hNW6.2
+  obtain ⟨hI3l, hI3w⟩ := node4_level_cellWf hSE4.1 hSW5.1 hNE7.1 hNW8.1 hSE4.2 hSW5.2 hNE7.2 hNW8.2
+  obtain ⟨hI4l, hI4w⟩ := node4_level_cellWf hSE5.1 hSW6.1 hNE8.1 hNW9.1 hSE5.2 hSW6.2 hNE8.2 hNW9.2
+  obtain ⟨hOl, hOw⟩ := node4_level_cellWf (m := fuel - 1)
+    (hwa := hI1w) (hwb := hI2w) (hwc := hI3w) (hwd := hI4w)
+    (ha := keyT _ hI1l) (hb := keyT _ hI2l) (hc := keyT _ hI3l) (hd := keyT _ hI4l)
+  -- Unfold en FIN de preuve (le but reste le terme NEUTRE pendant
+  -- l'etablissement des faits) puis arithmetique terminale en
+  -- termes (keyFin), sans omega.
+  rw [hashlifeResultAtAux_succ_node_at, hlev]
+  rw [if_neg (by simp only [beq_iff_eq]; exact hne)]
+  refine ⟨?_, hOw⟩
+  rw [hOl]
+  exact keyFin
+
+set_option maxHeartbeats 4000000 in
+/-- **Invariant niveau/wf du moteur At (grain 3b, partie 3).** Miroir de
+    `hashlifeResultAux_level_cellWf` (Foundation, c.142) pour le moteur
+    decorrele : pour une cellule bien formee de niveau `F >= j + 2`,
+    sous l'invariant du wrapper `hashlifeResultAt` — le fuel EGAL le
+    niveau, preserve par la recursion mono-ronde (chaque ronde descend
+    le niveau ET le fuel de 1, les neuf `n_i` etant des noeuds de quatre
+    petits-enfants, donc de niveau `M - 1`) — le resultat est de niveau
+    `F - 1` et bien forme.
+
+    Architecture (celle de la brique Foundation) : le corps lourd du pas
+    mono-ronde vit dans le helper prive `hashlifeResultAtAux_level_cellWf_mono`
+    (budget heartbeats propre) ; la commande publique ne fait qu'aiguiller.
+    Le cas terminal appelle la brique de preservation Foundation sur la
+    cellule OPAQUE AVANT tout destructure (isolation whnf c.139 : appeler
+    la brique sur le 16-petits-enfants epelle fait diverger le whnf de la
+    conclusion, cf `wave1_result_facts`), puis destructure uniquement pour
+    declencher l'unfold `hashlifeResultAtAux` (la definition matche la
+    structure de la cellule) et conclut par `exact` syntaxique. -/
+theorem hashlifeResultAtAux_level_cellWf :
+    ∀ (F : Nat) (j : Nat) (c : MacroCell), cellWf c → c.level = F → j + 2 ≤ F →
+      ((hashlifeResultAtAux F j c).level = F - 1 ∧ cellWf (hashlifeResultAtAux F j c)) := by
+
+  intro F
+  induction F with
+  | zero => intro j c _hwf _hc hj2; exact absurd hj2 (by omega)
+  | succ fuel ih =>
+    intro j c hwf hc hj2
+    by_cases heq : c.level == j + 2
+    · -- terminal : fuel + 1 = j + 2, delegation au moteur plein.
+      -- Brique Foundation sur la cellule OPAQUE d'abord (isolation
+      -- whnf c.139), destructure ensuite pour l'unfold seul.
+      rw [hc] at heq
+      simp only [beq_iff_eq] at heq
+      have hres := hashlifeResultAux_level_cellWf (fuel + 1) c hwf hc (by omega)
+      have hk : c.level = (fuel - 1) + 2 := by omega
+      obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se, sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, hgrands⟩ :=
+        p4_double_nine_shape c (fuel - 1) (wf_of_cellWf hwf) hk
+      obtain ⟨hnw_nw_l, _⟩ := hgrands
+      have hdef : hashlifeResultAtAux (fuel + 1) j
+          (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+          (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)) =
+          hashlifeResultAux (fuel + 1) (node (node nw_nw nw_ne nw_sw nw_se) (node ne_nw ne_ne ne_sw ne_se)
+          (node sw_nw sw_ne sw_sw sw_se) (node se_nw se_ne se_sw se_se)) := by
+        simp only [hashlifeResultAtAux, MacroCell.level, hnw_nw_l, beq_iff_eq]
+        split
+        · rfl
+        · exfalso; omega
+      rw [hdef]
+      exact hres
+    · -- mono-ronde : fuel + 1 ≥ j + 3, helper prive (budget propre).
+      rw [hc] at heq
+      simp only [beq_iff_eq] at heq
+      have hle : j + 2 ≤ fuel := by omega
+      have hk : c.level = (fuel - 1) + 2 := by omega
+      obtain ⟨nw_nw, nw_ne, nw_sw, nw_se, ne_nw, ne_ne, ne_sw, ne_se, sw_nw, sw_ne, sw_sw, sw_se, se_nw, se_ne, se_sw, se_se, rfl, hgrands⟩ :=
+        p4_double_nine_shape c (fuel - 1) (wf_of_cellWf hwf) hk
+      exact hashlifeResultAtAux_level_cellWf_mono fuel j hle
+        nw_nw nw_ne nw_sw nw_se ne_nw ne_ne ne_sw ne_se sw_nw sw_ne sw_sw sw_se se_nw se_ne se_sw se_se
+        hgrands heq ih
+
+/-- Enveloppe `hashlifeResultAt` : l'invariant du moteur At se
+    specialise au fuel = niveau pose par le wrapper. C'est la forme
+    consommee par le pas inductif de `hashlifeResultAt_central_correct`
+    (l'ih sur les `n_i` exige leur niveau ET leur `cellWf`). -/
+theorem hashlifeResultAt_level_cellWf (j : Nat) (c : MacroCell)
+    (hwf : cellWf c) (hj : j + 2 ≤ c.level) :
+    (hashlifeResultAt j c).level = c.level - 1 ∧ cellWf (hashlifeResultAt j c) := by
+  have h := hashlifeResultAtAux_level_cellWf c.level j c hwf rfl hj
+  unfold hashlifeResultAt
+  exact h
+
 /-! ## Grain 3b partie 2 — accords de grille n_i vs c (briques de localite)
 
 Le pas inductif de `hashlifeResultAt_central_correct` (niveau `M > j + 2`)
