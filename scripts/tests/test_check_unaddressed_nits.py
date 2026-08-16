@@ -144,6 +144,50 @@ def test_pr_propre_ne_bloque_pas():
     assert run([])["blocked"] is False
 
 
+# --- Durcissements (triage 07-15..07-31, approuves par ai-01 le 2026-08-15) ---
+#
+# Le 3e durcissement de la serie initiale — dechargement sur conclusion en queue
+# (« ne bloque pas ») — a ete RETIRE au rebase 2026-08-16 : il contredit le
+# recalibrage plus fin arrive entre-temps sur main, et rouvre le failure mode
+# fondateur de B.0. Le test ci-dessous fige la decision dans le sens INVERSE de
+# ce qui avait ete propose.
+
+def test_reserve_emise_ne_se_leve_pas_par_sa_propre_conclusion():
+    """Une reserve VIVANTE survit a un « ne bloque pas » de son propre auteur.
+
+    C'est exactement la forme de #10761 : Hermes emet COMMENT_WITH_CONCERNS,
+    personne ne repond par ecrit, la PR est mergee. Si la conclusion du
+    reviewer dechargeait sa propre reserve, l'organe manquerait l'incident qui
+    l'a fait naitre. Ce qui leve une reserve est une PHRASE de reponse.
+    """
+    bot = {"author": {"login": "hermes-bot"}, "createdAt": at(12),
+           "body": "Review Hermes: COMMENT_WITH_CONCERNS. Le scope est large "
+                   "et deux cellules manquent d'interp. Apres relecture du "
+                   "diff et des outputs, verdict final: ne bloque pas."}
+    assert run([bot])["blocked"] is True
+
+
+def test_lift_capitalise_leve():
+    """« Je lève ma CHANGES_REQUESTED » ne matchait pas les LIFT_MARKERS lowercase."""
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Je leve ma CHANGES_REQUESTED apres le commit abc."}
+    assert mod.has_marker(lift["body"], mod.LIFT_MARKERS)
+
+
+def test_lift_capitalise_accents_leve():
+    lift = {"author": {"login": "jsboige"}, "createdAt": at(12),
+            "body": "Levée de ma réserve : les 2 nits sont traités."}
+    assert mod.has_marker(lift["body"], mod.LIFT_MARKERS)
+
+
+def test_excerpt_porte_la_queue():
+    """Le verdict final doit rester visible dans l'excerpt des PRs longues."""
+    filler = " ".join(["contexte"] * 60)
+    body = "Review: " + filler + " verdict final: ne bloque pas."
+    excerpt = mod._excerpt(body)
+    assert "ne bloque pas" in excerpt
+
+
 # --- Recalibrage FP (triage po-2024:CoursIA-2, fenetre 07-14..07-20 : 11/64) ---
 #
 # Le defaut mesure : une review POSITIVE contenant le mot « CONCERN » (ou

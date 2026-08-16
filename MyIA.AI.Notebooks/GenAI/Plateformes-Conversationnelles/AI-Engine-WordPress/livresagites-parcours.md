@@ -241,6 +241,21 @@ champ de configuration de premier niveau.
 > à un visiteur public) et l'accident de réindexation silencieux
 > (comptage du corpus voisin écrasé). Déterministe, sans clé ni réseau.
 
+> **Notebook compagnon (série « par son API »).**
+> [`brancher-plusieurs-providers-par-l-api.ipynb`](brancher-plusieurs-providers-par-l-api.ipynb)
+> applique la notion d'environnement aux **modèles** cette fois : la
+> matrice `ai_<usage>_default_env` (chat, fast, vision, images, audio,
+> json, embeddings) route chaque usage vers un environnement distinct,
+> lu et écrit par l'API REST. Le notebook démontre le cycle complet sur
+> l'instance jetable — déclarer un second environnement, interroger son
+> catalogue (`/ai/models`) et sa connexion (`/ai/test_connection`),
+> basculer l'usage chat, rétablir — et le piège découvert par accident
+> pendant le sondage : `settings/update` **ne met pas à jour, il
+> remplace**. Un update partiel détruit la configuration entière
+> (environnement custom effacé, modules désactivés, défauts régénérés) ;
+> la démonstration est sécurisée par instantané complet en mémoire,
+> puis restauration à l'identique.
+
 ---
 
 ## Parcours 3 — WordPress comme serveur MCP métier

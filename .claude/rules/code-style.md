@@ -43,7 +43,7 @@ EPIC **#4980** — convention ratifiée par user 2026-07-04 (Option A, deux comm
 
 ## Anti-régression (code de production)
 
-S'applique au **code de production** (preuves Lean/Coq/Agda, fonctions métier appelées, tests, librairies), **PAS** aux cellules d'exercice de notebooks. Règle HARD + protocole 4 étapes + red-flags : [anti-regression.md](anti-regression.md). En bref : ne jamais remplacer une preuve/implémentation existante par `sorry`/stub vide sous prétexte de "fix compilation" ; `grep -c sorry` avant/après ; deletions > insertions sur code métier = red flag.
+S'applique au **code de production** (preuves Lean/Coq/Agda, fonctions métier appelées, tests, librairies), **PAS** aux cellules d'exercice de notebooks. Règle HARD + protocole 4 étapes + red-flags : [anti-regression.md](anti-regression.md). En bref : ne jamais remplacer une preuve/implémentation existante par `sorry`/stub vide sous prétexte de "fix compilation" ; compte de `sorry` réel avant/après via `count_code_sorry.py --json` (**jamais** `grep -c sorry`, qui compte la prose) ; deletions > insertions sur code métier = red flag.
 
 ## Notebooks : stubs d'exercice sans erreur volontaire (C.1)
 
