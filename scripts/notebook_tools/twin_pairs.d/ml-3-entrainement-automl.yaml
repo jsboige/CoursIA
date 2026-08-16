@@ -53,6 +53,12 @@
       csharp_sha: ee313290cb2f95f19a3063f5476fd1103cf4818e
       content_python_sha: d10a27601c07d8f9d313cdd8dcbbcf0184cb6833209e5e877737e89b30942ae6
       content_csharp_sha: 5b847c94a8671b87feaea6160682530fdf4b9dddfa7fe69b18ff6b30cece7e3a
+    - date: "2026-08-16"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 98273947fbf527c3d46e44760a5f8ba849433e1a
+      csharp_sha: 58f6ae3832011e841390b35858288e9c51eeb3e5
+      content_python_sha: d10a27601c07d8f9d313cdd8dcbbcf0184cb6833209e5e877737e89b30942ae6
+      content_csharp_sha: 2aace562e3201186743f2e665340546e7c01577ce72ced096207737dbd502399
   known_differences:
     - "2026-08-16 : migration de la derniere cellule Plotly-CDN du depot vers SVG inline cote C# (issue #11104, PR #11173). Le graphique du leaderboard AutoML passe de `Plotly.NET.Interactive` 3.0.2 (sortie HTML dependante d'un CDN, invisible en export statique) a `SvgChartHelper` (canon #6927, SVG inline sans requete reseau) ; `Microsoft.ML.AutoML` recule 0.23.0 -> 0.22.3 pour rester sous le plafond Roslyn 4.12.0.0 du kernel epingle. Le graphique n'est pas supprime, il devient hors-reseau : parite SEMANTIQUE conservee (meme socle pedagogique, memes moteurs, C# re-execute 10/10 cellules / 0 erreur / 48,7 s). Rebaseline content SHA apres re-audit firsthand (myia-ai-01:CoursIA)."
     - "2026-08-16 : asymetrie de visualisation (constatee au re-audit du 2026-08-16, PRE-EXISTANTE a la PR #11173) : le C# rend un graphique du leaderboard (desormais SVG inline) ; le jumeau Python n'en rend AUCUN -- il importe `matplotlib.pyplot as plt` en cellule 2 sans jamais tracer (8/8 cellules executees, 9 sorties toutes de type `stream`, zero `display_data`). L'import est donc mort. Ecart signale, non corrige ici (hors scope de #11104) : suivi par #11174."
