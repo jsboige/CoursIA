@@ -14,7 +14,7 @@ régression du prouveur.
 
 ## Statut
 
-- **Toolchain** : v4.31.0-rc1
+- **Toolchain** : v4.32.1 (v4.31.0-rc1 → v4.32.0 via #11307, puis bump soundness → v4.32.1 via #11325, cf #11256)
 - **Compte de sorry** : 0 en production (les 4 cibles de calibration sont prouvées ; un ancien compte de « 4 sorry » correspondait à du texte de docstring à l'intérieur de blocs `/-- ... -/`, pas à des termes `sorry` réels)
 - **Build** : `lake build Calibration` -- SUCCESS
 - **Dépendances** : Mathlib4
@@ -67,14 +67,14 @@ flowchart LR
 
 - Ce module benchmark la capacité du prouveur Lean multi-agents à clore des preuves de type manuel
 - Toutes les cibles sont désormais fermées ; le module est conservé comme suite de régression permanente pour les changements du prouveur
-- Vérification : `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` retourne 0 correspondance en production (cf [README Lean](../Lean-1-Setup.ipynb))
+- Vérification : comptage code-level (docstrings `/-- ... -/` et commentaires `-- ...` strippés) = **0** `sorry` en production (cf [README Lean](../Lean-1-Setup.ipynb)). NB : le `grep -nE '^[^/]*\bsorry\b' Calibration/Nash.lean` naïf retourne **3** correspondances sur main — toutes en prose dans la docstring de la cible F (L90/96/97), pas des termes de preuve
 
 ## Conclusion
 
 Ce projet est une **suite de calibration** pour le prouveur Lean multi-agents :
 quatre cibles de preuve de type manuel (C / D / E / F) dans
 `Calibration/Nash.lean`, toutes **prouvées avec 0 `sorry`**
-(`lake build Calibration` SUCCESS, toolchain `v4.31.0-rc1`).
+(`lake build Calibration` SUCCESS, toolchain `v4.32.1`).
 
 ### Pourquoi ce module existe
 
@@ -104,10 +104,13 @@ flowchart TD
 
 Un ancien compte de « 4 `sorry` » était un **artéfact de mesure** — le mot
 « sorry » apparaissait à l'intérieur de docstrings `/-- ... -/` (prose), pas
-comme termes de preuve. Un `grep sorry` naïf sur-comptait ; la vérification
-correcte `grep -nE '^[^/]*\bsorry\b'` (en excluant commentaires/docstrings)
-retourne 0. La même distinction — `sorry` la tactique vs « sorry » le mot —
-s'applique à toute la série Lean.
+comme termes de preuve. Un `grep sorry` naïf sur-comptait, et le grep ancré
+`grep -nE '^[^/]*\bsorry\b'` n'est **pas suffisant non plus** : il n'exclut que
+les lignes *commençant* par `/`, donc le corps indenté d'une docstring matche
+encore — sur main il retourne 3 correspondances de prose (docstring de la
+cible F). La vérification correcte strippe les blocs de docstring avant de
+compter ; le comptage code-level retourne 0. La même distinction —
+`sorry` la tactique vs « sorry » le mot — s'applique à toute la série Lean.
 
 ### Où aller ensuite
 

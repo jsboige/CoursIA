@@ -34,7 +34,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-__all__ = ["is_decomposition_regression"]
+__all__ = ["is_decomposition_regression", "is_same_count_zero_verified"]
 
 
 def is_decomposition_regression(
@@ -60,3 +60,26 @@ def is_decomposition_regression(
     if verified_tactic_count is None:
         return False
     return final_sorry > original_sorry_count and verified_tactic_count == 0
+
+
+def is_same_count_zero_verified(
+    final_sorry: int,
+    original_sorry_count: int,
+    verified_tactic_count: Optional[int],
+) -> bool:
+    """Return True iff a kept SAME-COUNT snapshot has zero build-verified
+    tactics (the #11421 symmetry gap of P3).
+
+    P3 closes the net-INCREASE case (``final > original``, see
+    :func:`is_decomposition_regression`). The multi-agent path also sets
+    ``structural_progress = True`` for a kept snapshot where ``final ==
+    original`` (provers.py:890-898: a build-passing snapshot different from
+    the original). With ``verified_tactic_count == 0`` that snapshot is text
+    churn the agent edited without proving anything -- a "decomposition"
+    with no verified sub-goal is not structural progress. Same semantics as
+    P3: ``None`` vtc (legacy caller) returns ``False`` -- cannot classify,
+    preserve prior behaviour rather than guess.
+    """
+    if verified_tactic_count is None:
+        return False
+    return final_sorry == original_sorry_count and verified_tactic_count == 0
