@@ -10,6 +10,8 @@ import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
 import Grothendieck.CoversBind
+import Grothendieck.CoversCoverageArrow
+import Grothendieck.CoversCoverageArrow_en
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPullback
