@@ -132,6 +132,52 @@ def label_names(pr: dict) -> list[str]:
     return out
 
 
+# Veine detection (#11343): a "veine" is a (lane, cited_issue#) pair. When
+# 2+ PRs of the same lane cite the same issue within the same day, the
+# declared/tier axis is FRANCHISSABLE (no LIGHT cap, no genre cap) and the
+# only signal left is the VEIN. Extracted by lightest discipline possible:
+# first `#N` in the body that is NOT the PR number itself. Title refs
+# (e.g. `feat(lean,#2874)`) carry the same discipline because the merge
+# flat-text contains the commit subject line, which most PRs prefix with
+# `#N` from the squashed message. Returns None when no citation is found --
+# the VEIN-RUN signal is then inactive (not a false positive).
+_NUMBER_REF_RE = re.compile(r"#(\d{4,6})\b")
+
+
+def extract_vein_key(pr: dict) -> int | None:
+    """The first issue# cited in `pr`'s body (excluding the PR's own number).
+
+    The vein is the issue the PR is *working on* -- the one named in the
+    body or the squash-commit subject. Cross-references to OTHER PRs (the
+    `prev:` field, sibling PRs in an EPIC) are NOT the vein: only the target
+    issue counts. The function is best-effort: it scans the body, returns
+    the first `#N` that differs from the PR# itself; returns None when no
+    such reference exists. The discipline is loose by design (#11343):
+    the GOAL is to catch a runway of N PRs of the same lane all citing
+    the same umbrella, and a first-match hit is enough -- the false
+    negatives (a body that mentions the target issue late) are tolerable
+    because the deliverable IS the message, the message is the citation,
+    and the lane declares its intent in the body.
+    """
+    body = pr.get("body", "") or ""
+    pr_num = pr.get("number")
+    m = _NUMBER_REF_RE.search(body)
+    if not m:
+        return None
+    n = int(m.group(1))
+    if pr_num and n == pr_num:
+        # The first hit is the PR itself: skip and look for the next. Rare
+        # (a PR that says "Closes #N" then has `#N` again later), but the
+        # next-hit behaviour is robust to the ordering GitHub generates.
+        m = _NUMBER_REF_RE.search(body, m.end())
+        if not m:
+            return None
+        n = int(m.group(1))
+        if pr_num and n == pr_num:
+            return None
+    return n
+
+
 def load_labels_file(path: Path) -> list[str]:
     """Load the current PR's labels from a JSON file written by the CI workflow.
 
@@ -496,8 +542,8 @@ def _candidate_record(merged_prs: list[dict], target_lane: str) -> list[dict]:
     """For each merged PR, return the per-lane per-grain record.
 
     Each record is a dict with {number, lane, tier, genre, canonical_genre,
-    is_light_genre, mergedAt} -- the flat shape the signals iterate over.
-    PRs without a readable Grain tag are dropped (unattributed, never
+    is_light_genre, vein_key, mergedAt} -- the flat shape the signals iterate
+    over. PRs without a readable Grain tag are dropped (unattributed, never
     counted, same policy as `lane_grains`).
     """
     out = []
@@ -516,7 +562,8 @@ def _candidate_record(merged_prs: list[dict], target_lane: str) -> list[dict]:
             "genre": g["genre"],
             "canonical_genre": canonicalize_genre(g["genre"]),
             "is_light_genre": canonicalize_genre(g["genre"]) in LIGHT_GENRES,
-            "mergedAt": pr.get("mergedAt", ""),
+            "vein_key": extract_vein_key(pr),
+            "mergedAt": pr.get("mergedAt") or "",
         })
     out.sort(key=lambda r: r["mergedAt"])
     return out
@@ -601,6 +648,43 @@ def genre_runs(merged_prs: list[dict], target_lane: str) -> list[dict]:
     return runs
 
 
+# Veine runs (#11343): a "veine" is a (lane, cited_issue#) pair. Unlike
+# genre, the adjacency is LANE-DAY-AGGREGATE, not chronological: any N
+# grains of the same lane citing the same issue, on the same day, and the
+# runner-up survives the declared-tier arbitration (the rotation/cross-
+# genre argument that validated #11436). The threshold is NOT a
+# declared value but a checkable one: `vein_cap=2` trips the first time
+# 2 distinct PRs of the lane cite the same issue. A PR body that links
+# 2 umbrella issues contributes to BOTH veins. A PR without a readable
+# citation is not part of any vein (it is its own, unnamed, harmless).
+def vein_runs(
+    merged_prs: list[dict],
+    target_lane: str,
+    vein_cap: int = 2,
+) -> list[dict]:
+    """Veins (lane, issue#) with count >= `vein_cap` for `target_lane`.
+
+    Returns a list of `{vein_key, count, numbers}` dicts, one per vein
+    that crosses the threshold. `vein_key` is the issue# (int) the lane
+    cited; `numbers` are the PRs that contributed. PRs with no readable
+    citation (`vein_key is None`) are skipped (they are not in any vein).
+    Order of the returned list is descending count then ascending vein_key.
+    """
+    recs = _candidate_record(merged_prs, target_lane)
+    bucket: dict[int, list[int]] = {}
+    for r in recs:
+        vk = r.get("vein_key")
+        if vk is None:
+            continue
+        bucket.setdefault(vk, []).append(r["number"])
+    out: list[dict] = []
+    for vk, nums in bucket.items():
+        if len(nums) >= vein_cap:
+            out.append({"vein_key": vk, "count": len(nums), "numbers": nums})
+    out.sort(key=lambda x: (-x["count"], x["vein_key"]))
+    return out
+
+
 def _genre_from_paths(files: list[str] | None) -> str | None:
     """Best-effort GENRE inferred from a PR's diff file paths.
 
@@ -672,19 +756,28 @@ def compute_signals(
       * `GENRE-MISMATCH`         -- `candidate_genre is not None` AND
                                     `_genre_from_paths(candidate_files)` is
                                     not None AND the two disagree.
+      * `VEIN-RUN`               -- ANY vein in `vein_runs()` of `count >= 2`.
+                                    The 5th axis (#11343): a (lane, issue#)
+                                    pair cited by 2+ PRs of the lane on the
+                                    same day. The vein is independent of the
+                                    declared tier/genre (a CONTENT tranche
+                                    on the same umbrella IS the vein -- the
+                                    defect the axis catches). The list of
+                                    veins is returned for the workflow to
+                                    label, the same posture as `long_runs`.
 
-    Three of the four signals (TIER-INFLATION, GENRE-RUN, CAP-EXCEEDED-BY-
-    GENRE) are LANE-DAY aggregates: they are True when the lane's merged
-    set of the day trips the rule, regardless of whether the OPEN
-    candidate contributes. GENRE-MISMATCH alone carries on the candidate
-    (declared genre vs its own diff paths). The return therefore also
-    exposes `candidate_is_light_genre` so the workflow can avoid posing
-    an aggregate label on a CONTENT candidate that does not contribute to
-    the pattern it denounces (#10341 -- otherwise the merge-gate, which
-    reads the LABEL, would HOLD the grain that REMEDIES the motif instead
-    of the META grains that caused it).
+    Three of the four aggregate signals (TIER-INFLATION, GENRE-RUN,
+    CAP-EXCEEDED-BY-GENRE) are LANE-DAY aggregates: they are True when the
+    lane's merged set of the day trips the rule, regardless of whether the
+    OPEN candidate contributes. GENRE-MISMATCH alone carries on the
+    candidate (declared genre vs its own diff paths). VEIN-RUN is also a
+    LANE-DAY aggregate -- a vein is a property of the merged set, the
+    candidate contributes only by being the N-th PR that cites the issue.
+    The function therefore also exposes `candidate_is_light_genre` so the
+    workflow can avoid posing an aggregate label on a CONTENT candidate
+    that does not contribute to the pattern it denounces (#10341).
 
-    The function returns the tally, the list of runs, and the four signals
+    The function returns the tally, the list of runs, and the five signals
     ON the tally/candidate -- the workflow decides what to label. The
     G-VAR-2 organ (the original `light_cap_status`) is unchanged: a PR
     that is `cap_reached=False` for the TIER can still trip
@@ -716,6 +809,16 @@ def compute_signals(
         and inferred != can_canon
     )
 
+    # VEIN-RUN (#11343): complementary to the genre axis. The genre axis
+    # sees a rotation `notebook-python -> notebook-dotnet` as a fresh
+    # grain (the cap counts the LIGHT-genre, the run is broken). The vein
+    # axis sees the citation in the body and counts it independently: 2
+    # PRs of the same lane citing the same issue within the day ARE a
+    # vein, regardless of what tier/genre each declares. The `vein_runs`
+    # threshold is 2 (one PR is not a vein, two is a trend) -- mirrors
+    # the GENRE-RUN threshold, the same adjacency convention.
+    vein_list = vein_runs(merged_prs, target_lane)
+
     return {
         "lane": target_lane,
         "tally": tally,
@@ -725,8 +828,10 @@ def compute_signals(
             "GENRE-RUN": bool(long_runs),
             "CAP-EXCEEDED-BY-GENRE": cap_exceeded,
             "GENRE-MISMATCH": genre_mismatch,
+            "VEIN-RUN": bool(vein_list),
         },
         "long_runs": long_runs,
+        "vein_runs": vein_list,
         "inferred_genre_from_paths": inferred,
         "candidate_genre_canonical": can_canon,
         # Whether the OPEN candidate is itself a LIGHT-genre grain, i.e. a
