@@ -312,14 +312,35 @@ def _cure_markdown_line(line: str) -> tuple[str, int]:
 def cure_markdown(path: Path, write: bool):
     """Cure un fichier markdown pur (.md). Retourne dict {cures, lines_touched, lines}."""
     try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as exc:
+        text = path.read_bytes().decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
         return {"error": str(exc)}
 
     ends_with_newline = text.endswith("\n")
-    lines = text.split("\n")
+    raw_lines = text.split("\n")
     if ends_with_newline:
-        lines = lines[:-1]
+        raw_lines = raw_lines[:-1]
+
+    # Fin de ligne PRESERVEE, par ligne. Les decks du depot sont incoherents :
+    # mesure du 2026-08-18, `slides/02-resolution-problemes/slides.md` est
+    # committe en CRLF quand `slides/01-introduction/slides.md` l'est en LF, et
+    # `.gitattributes` ne couvre pas `slides/**/*.md`. Ecrire LF sans regarder
+    # renormalisait donc le deck 02 en entier : 1605 lignes de diff pour 25
+    # cures — un diff qui n'est plus accents-only, exactement la classe de
+    # defaut #7105/#7124/#7132 du registre #2876 dans un autre habit. Un `\r`
+    # n'est retire que lorsqu'un `\n` le suivait ; le residu d'une derniere
+    # ligne non terminee reste du contenu.
+    n_lines = len(raw_lines)
+    crlf: list[bool] = []
+    lines: list[str] = []
+    for idx, ln in enumerate(raw_lines):
+        followed_by_nl = ends_with_newline or idx < n_lines - 1
+        if followed_by_nl and ln.endswith("\r"):
+            crlf.append(True)
+            lines.append(ln[:-1])
+        else:
+            crlf.append(False)
+            lines.append(ln)
 
     protected = _frontmatter_and_fence_mask(lines)
     in_fence = _fence_mask(lines)
@@ -350,8 +371,12 @@ def cure_markdown(path: Path, write: bool):
         out.append(cured)
 
     if write and total > 0:
-        new_text = "\n".join(out) + ("\n" if ends_with_newline else "")
-        path.write_text(new_text, encoding="utf-8", newline="\n")
+        parts: list[str] = []
+        for idx, (ln, is_crlf) in enumerate(zip(out, crlf)):
+            parts.append(ln)
+            if idx < len(out) - 1 or ends_with_newline:
+                parts.append("\r\n" if is_crlf else "\n")
+        path.write_bytes("".join(parts).encode("utf-8"))
     return {"cures": total, "lines_touched": touched, "lines": len(lines)}
 
 

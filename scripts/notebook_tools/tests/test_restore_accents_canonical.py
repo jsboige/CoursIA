@@ -413,6 +413,36 @@ class TestMarkdownStructurePreserved:
         assert p.read_text(encoding="utf-8") == original
 
 
+class TestMarkdownLineEndings:
+    """Les decks du depot sont incoherents : 02-resolution-problemes est
+    committe en CRLF, 01-introduction en LF, et `.gitattributes` ne couvre pas
+    `slides/**/*.md`. Ecrire LF sans regarder renormalisait le deck 02 en
+    entier — 1605 lignes de diff pour 25 cures, donc un diff qui n'est plus
+    accents-only.
+    """
+
+    def test_crlf_file_stays_crlf(self, tmp_path):
+        p = tmp_path / "slides.md"
+        p.write_bytes(b"# Titre\r\n\r\nUn parametre.\r\n")
+        rac.main([str(p), "--apply"])
+        raw = p.read_bytes()
+        assert raw == "# Titre\r\n\r\nUn paramètre.\r\n".encode("utf-8")
+
+    def test_lf_file_stays_lf(self, tmp_path):
+        p = tmp_path / "slides.md"
+        p.write_bytes(b"# Titre\n\nUn parametre.\n")
+        rac.main([str(p), "--apply"])
+        assert b"\r\n" not in p.read_bytes()
+
+    def test_crlf_without_trailing_newline(self, tmp_path):
+        p = tmp_path / "slides.md"
+        p.write_bytes(b"# Titre\r\nUn parametre.")
+        rac.main([str(p), "--apply"])
+        raw = p.read_bytes()
+        assert raw == "# Titre\r\nUn paramètre.".encode("utf-8")
+        assert not raw.endswith(b"\n")
+
+
 class TestMarkdownCli:
     def test_check_exits_1_when_cures_available(self, tmp_path):
         p = _md(tmp_path, "Un parametre.\n")
