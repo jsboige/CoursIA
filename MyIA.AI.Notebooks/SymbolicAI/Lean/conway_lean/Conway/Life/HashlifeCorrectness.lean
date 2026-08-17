@@ -5975,6 +5975,89 @@ theorem hashlifeResultAt_step_converse_mem {M j : Nat} (hj : j + 2 ≤ M)
                     | trivial
                   | skip
 
+/-! ### P4-At induction forte : correction de la fenetre centrale (grain 3b, 5h)
+
+Assemblage final du grain 3b : l'egalite de fenetre certifiee du moteur
+decorrele est etablie par induction ordinaire sur l'excedent de niveau
+`k = level - (j+2)` (forme sans soustraction). Le cas de base `k = 0`
+delegue a `hashlifeResultAt_base_central` (moteur plein a fuel sature) ;
+le pas `k + 1` consomme les deux directions du pas inductif (forward 5f +
+converse 5g) reliees par le pont d'extensionnalite `p4at_ext_bridge` :
+l'hypothese d'induction, re-instantiee sur les neuf briques de niveau
+exact `j + 2 + k`, fournit la biconditionnelle point par point exacte.
+Les seize petits-enfants sont exposes par la double inversion OPAQUE
+`cellWf_of_wf` (parent, puis chaque enfant par niveau) — le `Bool`
+transparent diverge en whnf sur les `node` (Foundation, note c.142).
+
+Les normalisations d'exposants se font exclusivement par `rw`
+directionnels : les formes `M - 2` ne sont PAS defeq des formes propres
+(soustraction sur fvars), et les motifs les plus grands sont reecrits
+en premier (`j + k + 1` avant `j + k`) pour eviter les captures de
+sous-termes. -/
+set_option maxHeartbeats 2000000 in
+theorem hashlifeResultAt_central_correct (j : Nat) :
+    ∀ (k : Nat) (c : MacroCell), c.wf = true → c.level = j + 2 + k →
+    (hashlifeResultAt j c).toGrid ((2^(j+k) : Nat), (2^(j+k) : Nat))
+      = restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^(j+k) : Int) (2^(j+k+1)) := by
+  intro k
+  induction k with
+  | zero =>
+    intro c hwf hL
+    rw [show j + 2 + 0 = j + 2 from by omega] at hL
+    rw [show j + 0 = j from by omega]
+    exact hashlifeResultAt_base_central c j hwf hL
+  | succ k ih =>
+    intro c hwf hL
+    have hnode : ∀ q : MacroCell, 1 ≤ q.level → ∃ p1 p2 p3 p4, q = MacroCell.node p1 p2 p3 p4 := by
+      intro q hq
+      cases q with
+      | leaf _ => simp only [MacroCell.level] at hq; omega
+      | node p1 p2 p3 p4 => exact ⟨p1, p2, p3, p4, rfl⟩
+    have hc1 : 1 ≤ c.level := by omega
+    obtain ⟨A, B, C, D, rfl⟩ := hnode c hc1
+    -- egalites de niveau extraites du wf Bool directement (technique de la
+    -- preuve de cellWf_of_wf, Foundation) : la decomposition rcases du
+    -- cellWf OPAQUE perd les noms dans ce contexte (probe5 : champs
+    -- inaccessibles), le simp_all sur le Bool transparent fonctionne.
+    have hAB : A.level = B.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    have hAC : A.level = C.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    have hAD : A.level = D.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    simp only [MacroCell.level] at hL
+    have hAl : A.level = j + 2 + k := by omega
+    obtain ⟨a1, a2, a3, a4, rfl⟩ := hnode A (by omega)
+    simp only [MacroCell.level] at hAl
+    have hBl : B.level = j + 2 + k := by omega
+    have hCl : C.level = j + 2 + k := by omega
+    have hDl : D.level = j + 2 + k := by omega
+    obtain ⟨b1, b2, b3, b4, rfl⟩ := hnode B (by omega)
+    obtain ⟨c1, c2, c3, c4, rfl⟩ := hnode C (by omega)
+    obtain ⟨d1, d2, d3, d4, rfl⟩ := hnode D (by omega)
+    -- hypothese d'induction re-exprimee dans la forme exacte du hIH des bras (M := j+k+2)
+    have hIH' : ∀ n : MacroCell, n.level = j + k + 2 → n.wf = true →
+      (hashlifeResultAt j n).toGrid ((2^(j+k+2-2) : Nat), (2^(j+k+2-2) : Nat))
+        = restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(j+k+2-2) : Int) (2^(j+k+2-1)) := by
+      intro n hnl hnw
+      rw [show j + k + 2 - 2 = j + k from by omega,
+          show j + k + 2 - 1 = j + k + 1 from by omega]
+      exact ih n hnw (by omega)
+    have hfw := hashlifeResultAt_step_forward_mem (M := j + k + 2)
+      (show j + 2 ≤ j + k + 2 by omega)
+      a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf
+      (show a1.level = j + k + 2 - 1 by omega) hIH'
+    have hcv := hashlifeResultAt_step_converse_mem (M := j + k + 2)
+      (show j + 2 ≤ j + k + 2 by omega)
+      a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf
+      (show a1.level = j + k + 2 - 1 by omega) hIH'
+    rw [show j + k + 2 - 1 = j + k + 1 from by omega] at hfw hcv
+    -- but ramene a la forme exacte du pont (M := j+k+3), puis biconditionnelle par forward/converse
+    rw [show j + (k + 1) + 1 = j + k + 3 - 1 from by omega]
+    rw [show j + (k + 1) = j + k + 3 - 2 from by omega]
+    refine p4at_ext_bridge _ j (j + k + 3) ?_
+    intro p
+    rw [show j + k + 3 - 2 = j + k + 1 from by omega,
+        show j + k + 3 - 1 = j + k + 2 from by omega]
+    exact ⟨hfw p, hcv p⟩
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
