@@ -315,3 +315,15 @@ a {
   bottom: 10px;
   right: 20px;
 }
+
+/* Footer global "Intelligence(s)" — bas-gauche, comme le PPTX original */
+.slidev-layout::after {
+  content: 'Intelligence(s)';
+  position: fixed;
+  bottom: 8px;
+  left: 24px;
+  font-size: 0.65em;
+  color: var(--color-text-light);
+  letter-spacing: 0.05em;
+  z-index: 10;
+}

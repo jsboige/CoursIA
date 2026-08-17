@@ -420,35 +420,42 @@ layout: two-cols
 
 # Stratégies d'exploration (1/2)
 
+<div class="grid grid-cols-2 gap-0 -mt-4">
+<div class="bg-orange-700 text-white px-6 py-3 text-xl font-bold text-center">Non informées</div>
+<div class="bg-slate-800 text-white px-6 py-3 text-xl font-bold text-center">Informées</div>
+</div>
 
-**Non informées**
+<div class="grid grid-cols-2 gap-8 mt-6">
+
+<div>
 
 - En largeur
 - En profondeur
-- Ex: Où sont mes clefs ?
 - Bidirectionnelle
+- Ex: Où sont mes clefs ?
 
-![w:220](./images/img_025.png)
-![w:220](./images/img_026.png)
-![w:220](./images/img_027.png)
+![w:300](./images/img_025.png)
+![w:300](./images/img_026.png)
 
+</div>
 
-::right::
-
-
-**Informées**
+<div>
 
 - Évaluation des états
-- Heuristique
-- Estimation du coût restant
-- Ex: Distance à vol d'oiseau
+  - **Heuristique**
+  - Estimation du coût restant
+  - Ex: Distance à vol d'oiseau
 - Par le meilleur d'abord
   - Exploration gloutonne
   - Algorithme A*
-  - Demo Pathfinding.js
+  - [Demo Pathfinding.js](#)
 
-![w:220](./images/img_028.png)
-![w:220](./images/img_029.png)
+![w:300](./images/img_027.png)
+![w:300](./images/img_028.png)
+
+</div>
+
+</div>
 
 
 
