@@ -97,6 +97,22 @@ Deux conséquences pratiques :
 > pas. Exécuté contre l'instance jetable locale (`instance-jetable/`),
 > corpus 100 % synthétique, aucun contenu privé.
 
+> **Notebook compagnon (module Client, face visiteur).**
+> [`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](parler-au-chatbot-en-visiteur-par-l-api.ipynb)
+> ouvre la troisième face du plugin — celle du **navigateur d'un visiteur
+> anonyme**, dans un namespace propre (`mwai-ui/v1`). Le cycle démontré :
+> la page publique du chatbot n'embarque **aucun jeton** (`restNonce` et
+> `sessionId` explicitement `null` dans le conteneur — un design
+> anti-cache : un nonce figé dans du HTML caché expirerait, un sessionId
+> figé fusionnerait les limites de tous les visiteurs) ; le navigateur
+> amorce par `POST /mwai/v1/start_session` (le seul endpoint à
+> permission `__return_true`), qui délivre nonce frais et cookie de
+> session ; puis la conversation passe par `chats/submit` au header
+> `X-WP-Nonce`. Frontière mesurée : **401 sans le nonce** — mais un nonce
+> n'est pas une authentification, c'est un anti-CSRF délivré à quiconque
+> charge le site ; le contrôle d'accès réel de cette face vit aux
+> limites de débit.
+
 ---
 
 ## Parcours 1 — Copilot pour l'éditeur WordPress
