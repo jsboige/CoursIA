@@ -94,7 +94,7 @@ layout: section
 
 - Philosophie
 - Maths
-- Economie
+- Économie
 - Biologie
 - Neurosciences
 - Psychologie
@@ -152,13 +152,13 @@ layout: two-cols
 
 # Développement (2/2)
 
-- **2000s** : Data mining, apprentissage bayesien, web semantique, prouveurs automatiques
+- **2000s** : Data mining, apprentissage bayésien, web sémantique, prouveurs automatiques
 - **2010s** : Explosion du deep learning et du big data
   - 2014 : GANs (génération d'images), 2016 : AlphaGo (Go)
   - 2017 : Transformers ("Attention is All You Need")
-  - 2018 : AlphaZero (echecs, Go, shogi sans connaissances humaines)
+  - 2018 : AlphaZero (échecs, Go, shogi sans connaissances humaines)
   - 2019 : Pluribus (poker), AlphaStar (Starcraft 2)
-- **2020s** : LLMs et IA generative deviennent grand public
+- **2020s** : LLMs et IA générative deviennent grand public
   - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024)
   - Stable Diffusion, Midjourney, DALL-E : génération d'images
   - 2025 : agents IA autonomes, vibe coding, IA multimodale
@@ -172,13 +172,13 @@ layout: two-cols
 # Dans la vie de tous les jours
 
 - **Poste** : reconnaissance des adresses et tri automatique du courrier
-- **Banque** : lecture des cheques, verification des signatures, évaluation de credits
-- **Medecine** : diagnostic assiste, prescriptions, suivi et prevention
-- **Service client** : synthese/reconnaissance vocale, chatbots (ChatGPT, Claude)
-- **Transport** : detection de plaques, conduite autonome (Tesla, Waymo)
-- **Internet** : marketing personnalise, detection de spam et de fraude
-- **Industrie** : conception, fabrication et exploitation assistees par IA
-- **Image numerique** : detection de visages, mise au point, compression
+- **Banque** : lecture des chèques, vérification des signatures, évaluation de crédits
+- **Médecine** : diagnostic assiste, prescriptions, suivi et prévention
+- **Service client** : synthèse/reconnaissance vocale, chatbots (ChatGPT, Claude)
+- **Transport** : détection de plaques, conduite autonome (Tesla, Waymo)
+- **Internet** : marketing personnalise, détection de spam et de fraude
+- **Industrie** : conception, fabrication et exploitation assistées par IA
+- **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
 
@@ -216,9 +216,9 @@ layout: two-cols
 
 - Description PEAS : Performance, Environnement, Actionneurs, Senseurs
 
-**Agent reflexe**
+**Agent réflexe**
 
-- Pas de mémoire, reagit aux percepts courants
+- Pas de mémoire, réagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
 <img src="./images/img_010.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
@@ -255,7 +255,7 @@ layout: section
 **Agent réflexe avec modèle**
 
 - Fonctionnement interne
-- Etat du monde
+- État du monde
 - Niveau de représentation
 
 **Compromis**
@@ -268,13 +268,16 @@ layout: section
 
 # Intelligences
 
-- **Procedurale** : automates et algorithmes déterministes (instructions pas a pas)
-- **Exploratoire** : recherche dans un espace d'etats (parcours de graphes, A*)
+- **Procédurale** : automates et algorithmes déterministes (instructions pas à pas)
+- **Exploratoire** : recherche dans un espace d'états (parcours de graphes, A*)
 - **Symbolique** : raisonnement logique, bases de connaissances, planification
-- **Probabiliste** : gestion de l'incertitude, réseaux bayesiens, decision
-- **Apprentissage** : amelioration par l'expérience (supervise, renforcement, deep learning)
+- **Probabiliste** : gestion de l'incertitude, réseaux bayésiens, décision
+- **Apprentissage** : amélioration par l'expérience (supervisé, renforcement, deep learning)
 
-<img src="./images/img_013.jpg" class="w-[200px] max-w-full max-h-[300px] object-contain" /> <img src="./images/img_014.png" class="w-[200px] max-w-full max-h-[300px] object-contain" /> <img src="./images/img_015.jpg" class="w-[200px] max-w-full max-h-[300px] object-contain" />
+<div class="flex justify-center items-center gap-12 mt-8">
+  <img src="./images/img_015.jpg" class="h-[190px] max-w-[42%] object-contain" alt="Recherche de chemin dans un reseau : intelligence exploratoire" />
+  <img src="./images/img_014.png" class="h-[190px] max-w-[42%] object-contain" alt="Processus de decision markovien : intelligence probabiliste" />
+</div>
 
 
 ---
@@ -309,7 +312,7 @@ layout: two-cols
 
 **Agent fonde sur des buts**
 
-- Passe du reactif au deliberatif
+- Passe du réactif au délibératif
 - Planifie ses actions par exploration
 
 <img src="./images/img_016.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
@@ -342,9 +345,9 @@ layout: two-cols
 
 <img src="./images/img_018.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
 
-- Etat initial, test de but
+- État initial, test de but
 - Transitions
-- Etats, Actions
+- États, Actions
 - Coût de chemin
 - Solution = Séquence
 
@@ -378,13 +381,12 @@ layout: two-cols
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
-<img src="./images/img_022.jpg" class="w-[320px] max-w-full max-h-[300px] object-contain" />
 
 
 ::right::
 
 
-**Exemple: Enigme**
+**Exemple: Énigme**
 
 - Missionnaires et cannibales
   - Barque de 2 places
@@ -549,8 +551,8 @@ layout: two-cols
 **Définition CSPs**
 
 - Jusqu'ici: représentation atomique
-- CSP = Etat factorisé
-- Etat = variables sur des domaines
+- CSP = État factorisé
+- État = variables sur des domaines
 - Test de but = contraintes sur les variables
 - Bonnes méthodes générales
 - Meilleures que l'exploration standard
@@ -575,7 +577,6 @@ layout: two-cols
   - Symétrie (rupture de)
 
 <div class="img-grid-2x2">
-<img src="./images/img_034.jpg" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_035.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_036.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
@@ -656,7 +657,7 @@ layout: two-cols
   - Ex: Modus ponens
   - Preuve déductive
 - Procédures
-  - Chainages
+  - Chaînages
   - Résolution
   - DPLL, WalkSAT
 - Solveurs SAT
@@ -782,7 +783,6 @@ layout: two-cols
   - Fair-play
 
 <div class="img-grid">
-<img src="./images/img_042.jpg" class="w-[220px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_041.jpg" class="w-[220px] max-w-full max-h-[300px] object-contain" />
 
 </div>
@@ -817,7 +817,6 @@ layout: two-cols
 <img src="./images/img_044.png" class="max-h-[300px] max-w-full object-contain" />
 <img src="./images/img_045.png" class="max-h-[300px] max-w-full object-contain" />
 <img src="./images/img_046.png" class="max-h-[300px] max-w-full object-contain" />
-<img src="./images/img_047.jpg" class="max-h-[300px] max-w-full object-contain" />
 </div>
 ---
 
@@ -929,8 +928,8 @@ layout: two-cols
 
 **Fondements**
 
-- Les probabilités resument notre incertitude (paresse, ignorance)
-- Probabilites subjectives : degre de croyance d'un agent
+- Les probabilités résument notre incertitude (paresse, ignorance)
+- Probabilités subjectives : degré de croyance d'un agent
 - Se mettent a jour avec les observations
 
 **Règle de Bayes**
@@ -1002,7 +1001,6 @@ layout: two-cols
 <div class="img-grid">
 <img src="./images/img_058.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_059.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_060.jpg" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 
 </div>
 
@@ -1037,8 +1035,6 @@ layout: two-cols
 <img src="./images/img_062.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_063.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_064.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_065.jpg" class="w-[150px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_066.jpg" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 </div>
 ---
 layout: two-cols
@@ -1091,7 +1087,7 @@ layout: two-cols
 
 - Matrice de gains
 - Dominance
-- Equilibres de Nash
+- Équilibres de Nash
 - Purs et mixtes (2n+1)
 - Topologie
 
@@ -1110,10 +1106,9 @@ layout: two-cols
 - Induction
   - avant/arrière
 
-<img src="./images/img_071.jpg" class="w-[300px] max-w-full max-h-[300px] object-contain" />
 
 
-<!-- Forme extensive : arbre ou chaque noeud = decision, feuilles = gains -->
+<!-- Forme extensive : arbre ou chaque noeud = décision, feuilles = gains -->
 
 
 ---
@@ -1138,7 +1133,7 @@ layout: two-cols
 ::right::
 
 
-**Equilibres approchés**
+**Équilibres approchés**
 
 - ε-équilibres
 - Minimisation de regret contrefactuel
@@ -1190,7 +1185,6 @@ layout: two-cols
 <div class="img-grid">
 <img src="./images/img_075.png" class="w-[180px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_076.png" class="w-[180px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_077.jpg" class="w-[180px] max-w-full max-h-[300px] object-contain" />
 
 </div>
 
@@ -1210,7 +1204,7 @@ layout: two-cols
 - Théorie des votes
 - Résultats négatifs
   - Critère de Condorcet
-  - Electeur médian
+  - Électeur médian
 
 
 ::right::
@@ -1225,7 +1219,6 @@ layout: two-cols
   - Scrutin bipartipludique
 
 <img src="./images/img_078.png" class="w-[280px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_079.jpg" class="w-[280px] max-w-full max-h-[300px] object-contain" />
 
 
 
@@ -1373,7 +1366,7 @@ layout: two-cols
 - Ordre des attributs
 - Gain entropique
 - Compacité
-- Elagage
+- Élagage
 - Régression
 - Quantisation
 - Random forest
@@ -1393,7 +1386,7 @@ layout: two-cols
 - Utilisation de dimensions supérieures
 - Classification linéaire
 
-<!-- Image: images/img_089.png -->
+<img src="./images/img_089.png" class="w-[620px] max-w-full mt-6 mx-auto object-contain" alt="Astuce du noyau : donnees non separables lineairement en 2D, separables par un plan apres passage en 3D" />
 
 
 ---
@@ -1435,7 +1428,6 @@ layout: two-cols
 
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_094.png" class="max-h-[300px] max-w-full object-contain" />
-<img src="./images/img_095.png" class="max-h-[300px] max-w-full object-contain" />
 <img src="./images/img_096.png" class="max-h-[300px] max-w-full object-contain" />
 <img src="./images/img_097.png" class="max-h-[300px] max-w-full object-contain" />
 </div>
@@ -1479,7 +1471,7 @@ layout: two-cols
   - Généralisation géométrique
   - Agrégation de voisinage
 - Réseaux attentionnels
-  - Economie de ressources
+  - Économie de ressources
   - Séquences
   - Transformers, Multi-têtes (2017 : « Attention Is All You Need »)
 - Semi-supervisé, Transfert
@@ -1772,7 +1764,7 @@ layout: two-cols
 - Choix des canaux
   - Mobile, réseaux sociaux etc.
 - Choix technologique
-- Réalisation + entrainement
+- Réalisation + entraînement
 - Mise en production
 - Amélioration
 
@@ -1799,11 +1791,11 @@ layout: two-cols
 
 # Intelligence conversationnelle
 
-- **Quiz** : quelles formes d'intelligence sont mobilisees par un chatbot ?
+- **Quiz** : quelles formes d'intelligence sont mobilisées par un chatbot ?
   - Exploratoire : navigation dans l'arbre de dialogue
-  - Symbolique : comprehension des intentions, raisonnement logique
-  - Probabiliste : modèles de langage, prediction du mot suivant
-  - Apprentissage : entrainement sur des corpus massifs, fine-tuning RLHF
+  - Symbolique : compréhension des intentions, raisonnement logique
+  - Probabiliste : modèles de langage, prédiction du mot suivant
+  - Apprentissage : entraînement sur des corpus massifs, fine-tuning RLHF
 - L'agent conversationnel combine toutes les intelligences du cours
 
 
@@ -2229,30 +2221,30 @@ graph LR
 
 Ce deck couvre tous les domaines de l'IA. Pour approfondir avec des exemples pratiques :
 
-> **GenAI - IA Generative**
+> **GenAI - IA Générative**
 > `MyIA.AI.Notebooks/GenAI/`
 > Transformers, diffusion, LLMs, génération d'images, audio, vidéo
 > `GenAI/Vibe-Coding/` : programmation par intention (Claude Code)
 
 > **Search - Recherche et Optimisation**
 > `MyIA.AI.Notebooks/Search/`
-> Algorithmes genetiques, A*, optimisation locale
+> Algorithmes génétiques, A*, optimisation locale
 
 > **ML - Machine Learning**
 > `MyIA.AI.Notebooks/ML/`
-> ML.NET, arbres de decision, classification, regression
+> ML.NET, arbres de décision, classification, régression
 
 > **SymbolicAI - IA Symbolique**
 > `MyIA.AI.Notebooks/SymbolicAI/`
-> RDF, Z3 SMT, Tweety, Lean, ontologies, web semantique
+> RDF, Z3 SMT, Tweety, Lean, ontologies, web sémantique
 
-> **Probas - Modeles Probabilistes**
+> **Probas - Modèles Probabilistes**
 > `MyIA.AI.Notebooks/Probas/`
-> Infer.NET, réseaux bayesiens, inference probabiliste
+> Infer.NET, réseaux bayésiens, inférence probabiliste
 
 > **GameTheory - Théorie des Jeux**
 > `MyIA.AI.Notebooks/GameTheory/`
-> OpenSpiel, equilibres de Nash, jeux strategiques
+> OpenSpiel, équilibres de Nash, jeux stratégiques
 
 
 ---
