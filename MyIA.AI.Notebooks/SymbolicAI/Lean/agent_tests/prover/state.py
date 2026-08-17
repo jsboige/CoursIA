@@ -1,7 +1,7 @@
 """Proof state data structures shared between agents."""
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
 from enum import Enum
@@ -205,7 +205,7 @@ class ProofState:
             "plan": list(self.plan),
             "plan_phase": self.plan_phase,
             "sorry_goals": dict(self.sorry_goals),
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         self._checkpoints[label] = checkpoint
         return label
@@ -280,7 +280,7 @@ class ProofState:
             "id": verif_id, "attempt_id": attempt_id,
             "success": success, "output": output, "errors": errors,
             "exec_time_ms": exec_time_ms,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
         return verif_id
 
