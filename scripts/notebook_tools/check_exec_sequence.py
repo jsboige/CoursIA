@@ -137,6 +137,18 @@ def head_commit():
         return "?"
 
 
+def code_exec_counts(nb):
+    """execution_count list of the notebook's non-empty code cells.
+
+    Shared definition of "the sequence" between the tier-1 scanner and the
+    tier-2 ratchet gate (check_exec_ratchet.py): a code cell whose source is
+    blank does not occupy a kernel counter slot."""
+    cells = [c for c in nb.get("cells", [])
+             if c.get("cell_type") == "code"
+             and "".join(c.get("source", [])).strip()]
+    return [c.get("execution_count") for c in cells]
+
+
 def scan(target, tracked_only, verbose):
     root = target if target.is_dir() else target.parent
     tracked = tracked_files(root) if tracked_only else None
@@ -156,10 +168,7 @@ def scan(target, tracked_only, verbose):
         except Exception:
             records.append(rec)
             continue
-        cells = [c for c in nb.get("cells", [])
-                 if c.get("cell_type") == "code"
-                 and "".join(c.get("source", [])).strip()]
-        ec = [c.get("execution_count") for c in cells]
+        ec = code_exec_counts(nb)
         rec["verdict"] = sequence_verdict(ec)
         rec["sequence"] = ec
         rec["sequence_head"] = ec[:12]

@@ -1,0 +1,51 @@
+name: Notebook Exec Sequence Ratchet
+
+# #11112 tier 2 — ratchet gate: a PR must not soil the execution_count
+# sequence of a notebook that was CLEAN on its base. Legacy dirty notebooks
+# (tier-3 family rollout in progress) are NOT required to improve here:
+# no retroactive catch-up, the gate is green on main from day one.
+# The verdict organ is scripts/notebook_tools/check_exec_sequence.py
+# (tier 1, #11150); this workflow drives check_exec_ratchet.py, which
+# compares each changed notebook base-vs-head and fails only on
+# CLEAN -> non-CLEAN.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_exec_sequence.py'
+      - 'scripts/notebook_tools/check_exec_ratchet.py'
+      - '.github/workflows/notebook-exec-sequence-ratchet.yml'
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref to ratchet against (default origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+jobs:
+  ratchet:
+    name: Ratchet (base vs PR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Refs reach the script via env, never inline in the run script
+      # (script-injection guard).
+      - name: Ratchet check
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          python scripts/notebook_tools/check_exec_ratchet.py "$BASE"
