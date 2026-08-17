@@ -51,9 +51,31 @@ les consomme sans rien savoir de leur provenance.
 
 Garde-fous d'honnetete (5) — a reporter dans le notebook
 --------------------------------------------------------
-1. **J-lens != SAE** -- l'article identifie le J-space par *jacobien des logits*,
-   pas par SAE. Nous operationalisons parallelement (features SAE), nous ne
-   repliquons pas. Ne pas vend re comme jacobien ce qui est activite SAE.
+1. **J-lens != SAE, et les deux tournent maintenant sur Qwen3.5-9B-Base.**
+   L'article identifie le J-space par *jacobien des logits*, pas par SAE : ne pas
+   vendre comme jacobien ce qui est activite SAE (toujours vrai et toujours
+   utile). Depuis la livraison Track S (#5681), les **deux appareils** tournent
+   sur le meme substrat Qwen3.5-9B-Base (couche 16), confrontees dans
+   ``ICT-SAE-JLens-TeteATete.ipynb`` : SAE = Qwen-Scope W64K features
+   apprises, J-Lens = directions singulieres principales du jacobien des logits.
+   La confrontation (T = 2 699 positions) mesure deux correlations sur les sorties
+   committees du tete-a-tete :
+
+   | Mesure | TRAINED | CONTROL |
+   |---|---|---|
+   | Pearson concentration Gini top-50, SAE ↔ J-Lens (positions) | **+0.0846** | +0.0164 |
+   | Pearson des matrices de separation de jeux (K_DIFF=64) | **+0.3273** | — |
+
+   Lecture honnete : **quasi-aucune correspondance position-par-position**
+   (r ≈ +0.08), mais une correlation **moderee** sur la structure de separation
+   des jeux (+0.33). Le delta trained−control (+0.0683) va dans le bon sens —
+   l'ablation degrade le signal croise — ce qui **valide la correspondance
+   faible plutot que de l'infirmer**. La divergence anticipee au scoping
+   (2026-07-18, « ~+0.08 attendu ») est donc **confirmee par la mesure**, ce
+   qui est un resultat, pas un echec. Ne presenter ni comme replication
+   (l'appareil SAE n'est pas le J-space jacobien), ni comme « on ne fait rien » :
+   on bridge les deux lectures sur un meme substrat avec la mesure ci-dessus
+   comme verdict explicite.
 2. **structurel vs temporel** -- Anthropic mesure la **connectivite**
    (cablage), PAS l'ignition temporelle. L'ignition (pics de concentration
    persistants) est NOTRE lecture Dehaene, dite comme telle.
