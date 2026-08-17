@@ -11,44 +11,47 @@ name: PR gate (re-aggregate)
 # trigger, so the canary skips it entirely (derive_always_on_jobs returns None
 # from _pull_request_trigger and continues).
 #
-# What this fixes: pr-gate.yml aggregates once on pull_request with up to a
-# 90-min settle window. If a required guard (Variation Tag Guard, Lane Claim
-# Guard) flips green AFTER that aggregation, the PR stays BLOCKED on a stale
-# FAIL until a manual `gh run rerun`. This workflow re-aggregates the CURRENT
-# check set when such a guard completes and POSTs the fresh verdict onto the
-# PR head SHA.
+# What this fixes: pr-gate.yml aggregates once on pull_request with a short
+# settle window (#11405). If a required guard (Variation Tag Guard, Lane Claim
+# Guard, ...) flips green AFTER that aggregation completed with FAIL, the PR
+# stays BLOCKED on the stale FAIL. This workflow re-triggers the aggregation
+# when such a guard completes.
 #
-# Why Lane Claim Guard is also a trigger (#10433 follow-up): lane-claim-guard
-# listens to the `edited` activity type, so it re-runs when a PR body is
-# edited (e.g. a closing-ref `Closes #N` fixed to `See #N` to resolve a
-# lane collision). pr-gate.yml does NOT listen to `edited` (its trigger is
-# the default opened/synchronize/reopened), so its aggregate stays stale on
-# the pre-edit FAIL even though lane-claim-guard now passes. Without this
-# re-aggregation trigger, the PR stays falsely BLOCKED until a manual rerun
-# -- observed 4x on 2026-08-12 (twin-parite tranches #10588/#10592/#10599/
-# #10601, unblocked by hand). Re-aggregating on Lane Claim Guard completion
-# closes the loop automatically.
+# MECHANISM -- rerun the original run, never POST a duplicate (#11519):
+# the previous implementation re-aggregated here and POSTed the verdict as a
+# check-run named "PR gate" (--self-name) onto the PR head SHA. Measured
+# 2026-08-17 over 116 open PRs: the POSTed check-run lands in a DIFFERENT
+# check suite (CodeQL, event dynamic), and GitHub requires EVERY check-run
+# bearing a required check's name to be green -- an AND, not latest-wins. The
+# POSTed leg could therefore only ever ADD a way to fail: 52 PRs sat BLOCKED
+# with pull_request-leg FAILURE + posted-leg SUCCESS (the rescue did not
+# rescue), and 3 PRs (#11444/#11489/#11493) sat BLOCKED with the gate green
+# and the posted leg red (the rescue BLOCKED them). A `gh run rerun` of the
+# original pr-gate.yml run instead produces a check-run in the SAME suite,
+# where latest-wins holds and there is exactly one instance of the required
+# name. The aggregation logic itself reads check state live via the API, so
+# the rerun verdict is fresh even though the pull_request payload is frozen.
 #
-# Why an explicit check-run POST (not the job's auto check-run): a workflow_run
-# job runs on the DEFAULT branch, so GITHUB_SHA is the default-branch commit and
-# the auto check-run lands there -- invisible to the PR head's mergeState (gh pr
-# checks, mergeStateStatus). pr_gate.py with --post-check-run POSTs a check-run
-# onto github.event.workflow_run.head_sha (the guard's SHA = the PR head), named
-# "PR gate" (--self-name) so it matches the required check on `main`.
+# Loop bounding: this workflow triggers only on the FIVE guard workflows
+# below, and "PR gate" is not among them, so a rerun cannot re-trigger this
+# workflow. If two guards complete close together, the second reaggregate job
+# sees the target run already in_progress and skips -- each unblock attempt
+# requires a NEW guard completion, so the chain cannot self-sustain.
 
 on:
   workflow_run:
-    # #11405: the rerun leg is the TERMINAL verdict-holder, so it must fire on
+    # #11405: the rerun leg is the terminal verdict-holder, so it must fire on
     # completion of the guards that finish AFTER the (now short) pull_request
-    # leg times out. Added the three slow guards observed never settling under
-    # runner starvation (notebook-execution-required, translation-drift,
-    # machine-dep-timing-advisory). Variation Tag Guard / Lane Claim Guard
-    # stay for the original stale-aggregate loop (#10433).
+    # leg settles. Slow guards observed never settling under runner starvation
+    # (notebook-execution-required, translation-drift,
+    # machine-dep-timing-advisory) plus the two original stale-aggregate
+    # loops (#10433): Variation Tag Guard / Lane Claim Guard (the latter
+    # listens to `edited`, which pr-gate.yml's own trigger does not).
     workflows: ["Variation Tag Guard", "Lane Claim Guard", "Notebook Execution Required", "Translation Drift Check", "machine-dep-timing-advisory"]
     types: [completed]
-  # Manual dispatch for testing the re-aggregation path without waiting for a
-  # guard run. PR_NUMBER/HEAD_SHA default to empty; the job then no-ops unless
-  # both are supplied.
+  # Manual dispatch for testing the rerun path without waiting for a guard.
+  # PR_NUMBER/HEAD_SHA default to empty; the job then no-ops unless both are
+  # supplied.
   workflow_dispatch:
     inputs:
       pr_number:
@@ -62,21 +65,14 @@ on:
 
 permissions:
   contents: read
-  checks: write   # POST the check-run onto the PR head SHA (#10433 item-1)
-  statuses: read
+  actions: write  # re-run the original pr-gate.yml run for the PR head SHA (#11519)
 
 concurrency:
   # One re-aggregation per PR at a time: a later guard-completion supersedes an
-  # in-flight one for the same PR. Correct semantics -- the later run sees more
-  # settled checks -- but it assumes runs START PROMPTLY. They did not: with the
-  # job polling up to 90 min on a starved queue, the window in which a later
-  # completion could cancel an in-flight run was enormous and the chain
-  # decapitated itself. Measured 2026-08-17 over 100 runs (#11415): 69% of
-  # completed runs were `cancelled`, i.e. posted no verdict at all -- and a
-  # cancelled run reddens no rollup, so the whole unblock stage was failing
-  # silently. The fix is NOT to drop cancel-in-progress (that would multiply
-  # 90-min runs by the trigger count); it is the short poll below, which makes
-  # runs finish before a successor can supersede them.
+  # in-flight one for the same PR. The job below runs in seconds (API calls
+  # only, no polling), so the cancel window is tiny -- unlike the former
+  # 10-min-poll design whose superseded runs silently posted no verdict
+  # (measured 2026-08-17 over 100 runs, #11415: 69% cancelled).
   group: pr-gate-rerun-${{ github.event.workflow_run.pull_requests[0].number || github.event.inputs.pr_number || github.run_id }}
   cancel-in-progress: true
 
@@ -84,23 +80,8 @@ jobs:
   reaggregate:
     name: Re-aggregate after guard flip
     runs-on: ubuntu-latest
-    # Above the script's own budget so the script prints its verdict rather than
-    # the runner killing it mid-poll. Was 100 min against a 90 min poll (#11415).
-    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install canary dependency
-        # PyYAML drives derive_always_on_jobs (the rule-8 delivery canary). Same
-        # reason as pr-gate.yml: if the install fails, the script self-disables
-        # the canary (safe, no block) but the #9858 hole stays open.
-        run: pip install pyyaml
-
-      - name: Re-aggregate check verdicts onto the PR head
+      - name: Re-run the original PR gate for the PR head
         env:
           GH_TOKEN: ${{ github.token }}
           # The PR list travels in the workflow_run payload; index 0 is the PR
@@ -111,42 +92,43 @@ jobs:
         run: |
           set -eu
           # No PR associated with this guard run -> nothing to unblock.
-          # Fail-safe: skip rather than POST onto a bare commit (the
-          # pull_request path in pr-gate.yml already covers PR heads on open).
           if [ -z "$PR_NUMBER" ] || [ -z "$HEAD_SHA" ]; then
             echo "[pr-gate] workflow_run has no PR head to re-aggregate -- skip"
             exit 0
           fi
-          # workflow_run runs on the default branch, so it cannot read
-          # pull_request.head.repo.fork from the event. Resolve it via the PR
-          # number, then mirror pr-gate.yml's fork short-circuit (#10072): a
-          # fork PR must surface success on its head SHA, not a stale FAIL.
-          IS_FORK=$(gh api "repos/${{ github.repository }}/pulls/${PR_NUMBER}" \
-            --jq '.head.repo.fork' 2>/dev/null || echo false)
-          if [ "$IS_FORK" = "true" ]; then
-            IS_FORK_ARG="--is-fork"
-          else
-            IS_FORK_ARG=""
+          # Find the original pr-gate.yml run for THIS head SHA. event=pull_request
+          # only (pr-gate.yml also accepts workflow_dispatch, whose payload's
+          # --sha target is not the PR head). Most recently CREATED, per #11519:
+          # a rerun replays the frozen payload of its original event, so an older
+          # run for the same SHA is fine (same SHA, fresh API reads) but a run
+          # for an older SHA would re-aggregate a stale head.
+          RUN_JSON=$(gh api "repos/${{ github.repository }}/actions/runs?head_sha=${HEAD_SHA}&event=pull_request&per_page=100" \
+            --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last')
+          if [ -z "$RUN_JSON" ] || [ "$RUN_JSON" = "null" ]; then
+            echo "[pr-gate] no pull_request PR gate run yet for ${HEAD_SHA} -- the gate will run on its own, skip"
+            exit 0
           fi
-          # --post-check-run: POST the verdict onto HEAD_SHA (the PR head),
-          # because this job's auto check-run would land on the default branch.
-          # --self-name "PR gate": the POSTed check-run matches the required
-          # check name on `main` (same string as pr-gate.yml's gate job).
-          # --timeout-min 10 (was 90, #11415): THE TRIGGER IS THE POLL. This job
-          # fires AFTER a guard completed, so most checks are already settled;
-          # and if they are not, the NEXT guard completion re-fires this job.
-          # The re-trigger mechanism is itself a distributed, runner-free polling
-          # loop -- polling 90 min inside the job duplicated it while holding a
-          # runner, which is what made runs long-lived enough to be superseded
-          # (see the concurrency note above). "Terminal verdict holder" is the
-          # LAST guard completion, not a long poll. Semantics unchanged:
-          # verdict() still returns FAIL on unsettled, so unsettled = BLOCKED.
-          python scripts/pr_gate.py \
-            --repo "${{ github.repository }}" \
-            --sha "${HEAD_SHA}" \
-            --self-name "PR gate" \
-            --timeout-min 10 \
-            --poll-sec 30 \
-            --settle-polls 2 \
-            --post-check-run \
-            $IS_FORK_ARG
+          RUN_ID=$(echo "$RUN_JSON" | jq -r '.id')
+          STATUS=$(echo "$RUN_JSON" | jq -r '.status')
+          CONCLUSION=$(echo "$RUN_JSON" | jq -r '.conclusion')
+          echo "[pr-gate] target run ${RUN_ID}: status=${STATUS} conclusion=${CONCLUSION}"
+          # Already running/queued: it will aggregate the current check state
+          # by itself -- rerunning now is impossible (API rejects it) and
+          # useless. This is also the loop bound for near-simultaneous guard
+          # completions (#11519: "borner la boucle").
+          if [ "$STATUS" != "completed" ]; then
+            echo "[pr-gate] run in flight (${STATUS}) -- it will see the fresh guard verdict, skip"
+            exit 0
+          fi
+          # Green already: this leg is not what blocks the PR. No rerun.
+          if [ "$CONCLUSION" = "success" ]; then
+            echo "[pr-gate] run already green -- nothing to rescue, skip"
+            exit 0
+          fi
+          # Full rerun (NOT --failed): the gate is a single job, and a full
+          # rerun replays the aggregation end-to-end against live check state.
+          if gh run rerun "$RUN_ID" --repo "${{ github.repository }}"; then
+            echo "[pr-gate] rerun ${RUN_ID} issued -- fresh verdict lands in the original check suite (latest-wins, no duplicate name)"
+          else
+            echo "[pr-gate] rerun rejected (likely flipped to in_progress between read and rerun) -- ok"
+          fi
