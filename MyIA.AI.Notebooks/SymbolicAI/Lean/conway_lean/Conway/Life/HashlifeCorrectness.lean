@@ -3968,6 +3968,271 @@ theorem step_forward_arm_se {M j : Nat} (hj : j + 2 ≤ M)
     simp only [Nat.cast_pow, Nat.cast_ofNat] at he4 hw4 ⊢
     omega
 
+/-- Bras NW du pas inductif (5d, miroir du bras SE) : un point de la
+    sortie vivant dans le placement `subNW r_i` en `(x, y)` (offset de
+    placement `(S, S)` relativement a l'ancre `o_i`) vit dans l'evolue
+    parent `cg` au meme point, dans la fenetre centree. Le point local
+    du pont `subNW_toGrid_mem` est `(p - (x, y))` (aucun decalage de
+    quadrant) ; le point IH `(p - (x, y) + (S, S))` couvre la portion
+    `[S, 2S)^2` de la fenetre d'induction `[S, 3S)^2`. -/
+theorem step_forward_arm_nw {M j : Nat} (hj : j + 2 ≤ M)
+    (n r : MacroCell) (o1 o2 x y : Int) (cg : Grid) (p : Int × Int)
+    (hrw : r.wf = true) (hrl : r.level = M - 1)
+    (href : r = hashlifeResultAt j n)
+    (hih : (hashlifeResultAt j n).toGrid ((2^(M-2) : Nat), (2^(M-2) : Nat))
+      = restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)))
+    (hagree : isAlive (evolve (2^j) (n.toGrid (0, 0))) (p.1 - o1, p.2 - o2)
+      = isAlive (evolve (2^j) cg) p)
+    (hXY : o1 + (2^(M-2) : Int) = x ∧ o2 + (2^(M-2) : Int) = y)
+    (hwin : (2^(M-1) : Int) ≤ x ∧ x + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int) ∧
+      (2^(M-1) : Int) ≤ y ∧ y + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int))
+    (hp : p ∈ (subNW r).toGrid (x, y)) :
+    p ∈ restrictGridTo (evolve (2^j) cg) (2^(M-1) : Int) (2^M) := by
+  have hM2 : 2 ≤ M := by omega
+  have hS : (2^(M-1) : Int) = 2 * (2^(M-2) : Int) := by
+    have hM' : M - 1 = (M - 2) + 1 := by omega
+    rw [hM']
+    rw [pow_succ]
+    ring
+  have h4 : (2^M : Int) = 4 * (2^(M-2) : Int) := by
+    have hm : M - 2 + 2 = M := by omega
+    conv_lhs => rw [← hm]
+    rw [pow_add]
+    ring
+  rw [Nat.cast_pow 2 (M-2)] at hih
+  have hrl' : r.level = (M - 2) + 1 := by rw [hrl]; omega
+  obtain ⟨hsubl, hsubw⟩ := subNW_level_cellWf (m := M - 2) (cellWf_of_wf _ hrw) hrl'
+  have hsubwf : (subNW r).wf = true := wf_of_cellWf hsubw
+  have hexp : r.level - 1 = M - 2 := by omega
+  have hext := mem_toGrid_extent (subNW r) x y p hsubwf hp
+  rw [hsubl] at hext
+  have h1lev : 1 ≤ r.level := by omega
+  -- le pont NW n'a pas d'offset de quadrant dans sa conclusion :
+  -- hmem est deja en forme finale, pas de `rw [hexp]` (contrairement au SE)
+  have hmem := subNW_toGrid_mem r x y p h1lev hrw (by rw [hexp]; exact hext)
+  have hL : ((p.1 - x + (2^(M-2) : Int)) - (2^(M-2) : Int),
+      (p.2 - y + (2^(M-2) : Int)) - (2^(M-2) : Int)) ∈ r.toGrid (0, 0) := by
+    have hpair2 : ((p.1 - x + (2^(M-2) : Int)) - (2^(M-2) : Int),
+        (p.2 - y + (2^(M-2) : Int)) - (2^(M-2) : Int)) =
+        (p.1 - x, p.2 - y) := by
+      apply Prod.ext <;> ring
+    rw [hpair2]
+    exact hmem.mp hp
+  have hmemS : (p.1 - x + (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int))
+      ∈ r.toGrid ((2^(M-2) : Int), (2^(M-2) : Int)) :=
+    (toGrid_origin_iff_placed (g := r) (r0 := (2^(M-2) : Int)) (c0 := (2^(M-2) : Int))
+      (p := (p.1 - x + (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int)))).mp hL
+  rw [href] at hmemS
+  have hres : (p.1 - x + (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int))
+      ∈ restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)) := by
+    rw [← hih]
+    exact hmemS
+  obtain ⟨hqmem, hq1, hq2, hq3, hq4⟩ := mem_restrictGridTo.mp hres
+  have halive : isAlive (evolve (2^j) (n.toGrid (0, 0)))
+      (p.1 - x + (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int)) = true := by
+    simp [isAlive, hqmem]
+  have hqe : (p.1 - x + (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int))
+      = (p.1 - o1, p.2 - o2) := by
+    obtain ⟨hXY1, hXY2⟩ := hXY
+    apply Prod.ext <;> omega
+  rw [← hqe] at hagree
+  have h1 : isAlive (evolve (2^j) cg) p = true := by rw [← hagree]; exact halive
+  refine (mem_restrictGridTo).mpr ⟨?_, ?_, ?_, ?_, ?_⟩
+  · by_cases hpc : p ∈ evolve (2^j) cg
+    · exact hpc
+    · exfalso
+      simp [isAlive, hpc] at h1
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he2 hw2 ⊢
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he4 hw4 ⊢
+    omega
+
+/-- Bras NE du pas inductif (5d, miroir du bras SE) : un point de la
+    sortie vivant dans le placement `subNE r_i` en `(x, y)` (offset de
+    placement `(S, 2S)` relativement a l'ancre `o_i`) vit dans l'evolue
+    parent `cg` au meme point, dans la fenetre centree. Le point local
+    du pont `subNE_toGrid_mem` est `(p.1 - x, p.2 - y + S)` (decalage du
+    quadrant en seconde composante) ; le point IH `(p - (x, y) + (S, 2S))`
+    couvre la portion `[S, 2S) x [2S, 3S)` de la fenetre `[S, 3S)^2`. -/
+theorem step_forward_arm_ne {M j : Nat} (hj : j + 2 ≤ M)
+    (n r : MacroCell) (o1 o2 x y : Int) (cg : Grid) (p : Int × Int)
+    (hrw : r.wf = true) (hrl : r.level = M - 1)
+    (href : r = hashlifeResultAt j n)
+    (hih : (hashlifeResultAt j n).toGrid ((2^(M-2) : Nat), (2^(M-2) : Nat))
+      = restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)))
+    (hagree : isAlive (evolve (2^j) (n.toGrid (0, 0))) (p.1 - o1, p.2 - o2)
+      = isAlive (evolve (2^j) cg) p)
+    (hXY : o1 + (2^(M-2) : Int) = x ∧ o2 + 2 * (2^(M-2) : Int) = y)
+    (hwin : (2^(M-1) : Int) ≤ x ∧ x + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int) ∧
+      (2^(M-1) : Int) ≤ y ∧ y + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int))
+    (hp : p ∈ (subNE r).toGrid (x, y)) :
+    p ∈ restrictGridTo (evolve (2^j) cg) (2^(M-1) : Int) (2^M) := by
+  have hM2 : 2 ≤ M := by omega
+  have hS : (2^(M-1) : Int) = 2 * (2^(M-2) : Int) := by
+    have hM' : M - 1 = (M - 2) + 1 := by omega
+    rw [hM']
+    rw [pow_succ]
+    ring
+  have h4 : (2^M : Int) = 4 * (2^(M-2) : Int) := by
+    have hm : M - 2 + 2 = M := by omega
+    conv_lhs => rw [← hm]
+    rw [pow_add]
+    ring
+  rw [Nat.cast_pow 2 (M-2)] at hih
+  have hrl' : r.level = (M - 2) + 1 := by rw [hrl]; omega
+  obtain ⟨hsubl, hsubw⟩ := subNE_level_cellWf (m := M - 2) (cellWf_of_wf _ hrw) hrl'
+  have hsubwf : (subNE r).wf = true := wf_of_cellWf hsubw
+  have hexp : r.level - 1 = M - 2 := by omega
+  have hext := mem_toGrid_extent (subNE r) x y p hsubwf hp
+  rw [hsubl] at hext
+  have h1lev : 1 ≤ r.level := by omega
+  have hmem := subNE_toGrid_mem r x y p h1lev hrw (by rw [hexp]; exact hext)
+  rw [hexp] at hmem
+  have hL : ((p.1 - x + (2^(M-2) : Int)) - (2^(M-2) : Int),
+      (p.2 - y + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int)) ∈ r.toGrid (0, 0) := by
+    have hpair2 : ((p.1 - x + (2^(M-2) : Int)) - (2^(M-2) : Int),
+        (p.2 - y + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int)) =
+        (p.1 - x, p.2 - y + (2^(M-2) : Int)) := by
+      apply Prod.ext <;> ring
+    rw [hpair2]
+    exact hmem.mp hp
+  have hmemS : (p.1 - x + (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int))
+      ∈ r.toGrid ((2^(M-2) : Int), (2^(M-2) : Int)) :=
+    (toGrid_origin_iff_placed (g := r) (r0 := (2^(M-2) : Int)) (c0 := (2^(M-2) : Int))
+      (p := (p.1 - x + (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int)))).mp hL
+  rw [href] at hmemS
+  have hres : (p.1 - x + (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int))
+      ∈ restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)) := by
+    rw [← hih]
+    exact hmemS
+  obtain ⟨hqmem, hq1, hq2, hq3, hq4⟩ := mem_restrictGridTo.mp hres
+  have halive : isAlive (evolve (2^j) (n.toGrid (0, 0)))
+      (p.1 - x + (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int)) = true := by
+    simp [isAlive, hqmem]
+  have hqe : (p.1 - x + (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int))
+      = (p.1 - o1, p.2 - o2) := by
+    obtain ⟨hXY1, hXY2⟩ := hXY
+    apply Prod.ext <;> omega
+  rw [← hqe] at hagree
+  have h1 : isAlive (evolve (2^j) cg) p = true := by rw [← hagree]; exact halive
+  refine (mem_restrictGridTo).mpr ⟨?_, ?_, ?_, ?_, ?_⟩
+  · by_cases hpc : p ∈ evolve (2^j) cg
+    · exact hpc
+    · exfalso
+      simp [isAlive, hpc] at h1
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he2 hw2 ⊢
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he4 hw4 ⊢
+    omega
+
+/-- Bras SW du pas inductif (5d, miroir du bras SE) : un point de la
+    sortie vivant dans le placement `subSW r_i` en `(x, y)` (offset de
+    placement `(2S, S)` relativement a l'ancre `o_i`) vit dans l'evolue
+    parent `cg` au meme point, dans la fenetre centree. Le point local
+    du pont `subSW_toGrid_mem` est `(p.1 - x + S, p.2 - y)` (decalage du
+    quadrant en premiere composante) ; le point IH `(p - (x, y) + (2S, S))`
+    couvre la portion `[2S, 3S) x [S, 2S)` de la fenetre `[S, 3S)^2`. -/
+theorem step_forward_arm_sw {M j : Nat} (hj : j + 2 ≤ M)
+    (n r : MacroCell) (o1 o2 x y : Int) (cg : Grid) (p : Int × Int)
+    (hrw : r.wf = true) (hrl : r.level = M - 1)
+    (href : r = hashlifeResultAt j n)
+    (hih : (hashlifeResultAt j n).toGrid ((2^(M-2) : Nat), (2^(M-2) : Nat))
+      = restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)))
+    (hagree : isAlive (evolve (2^j) (n.toGrid (0, 0))) (p.1 - o1, p.2 - o2)
+      = isAlive (evolve (2^j) cg) p)
+    (hXY : o1 + 2 * (2^(M-2) : Int) = x ∧ o2 + (2^(M-2) : Int) = y)
+    (hwin : (2^(M-1) : Int) ≤ x ∧ x + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int) ∧
+      (2^(M-1) : Int) ≤ y ∧ y + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int))
+    (hp : p ∈ (subSW r).toGrid (x, y)) :
+    p ∈ restrictGridTo (evolve (2^j) cg) (2^(M-1) : Int) (2^M) := by
+  have hM2 : 2 ≤ M := by omega
+  have hS : (2^(M-1) : Int) = 2 * (2^(M-2) : Int) := by
+    have hM' : M - 1 = (M - 2) + 1 := by omega
+    rw [hM']
+    rw [pow_succ]
+    ring
+  have h4 : (2^M : Int) = 4 * (2^(M-2) : Int) := by
+    have hm : M - 2 + 2 = M := by omega
+    conv_lhs => rw [← hm]
+    rw [pow_add]
+    ring
+  rw [Nat.cast_pow 2 (M-2)] at hih
+  have hrl' : r.level = (M - 2) + 1 := by rw [hrl]; omega
+  obtain ⟨hsubl, hsubw⟩ := subSW_level_cellWf (m := M - 2) (cellWf_of_wf _ hrw) hrl'
+  have hsubwf : (subSW r).wf = true := wf_of_cellWf hsubw
+  have hexp : r.level - 1 = M - 2 := by omega
+  have hext := mem_toGrid_extent (subSW r) x y p hsubwf hp
+  rw [hsubl] at hext
+  have h1lev : 1 ≤ r.level := by omega
+  have hmem := subSW_toGrid_mem r x y p h1lev hrw (by rw [hexp]; exact hext)
+  rw [hexp] at hmem
+  have hL : ((p.1 - x + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int),
+      (p.2 - y + (2^(M-2) : Int)) - (2^(M-2) : Int)) ∈ r.toGrid (0, 0) := by
+    have hpair2 : ((p.1 - x + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int),
+        (p.2 - y + (2^(M-2) : Int)) - (2^(M-2) : Int)) =
+        (p.1 - x + (2^(M-2) : Int), p.2 - y) := by
+      apply Prod.ext <;> ring
+    rw [hpair2]
+    exact hmem.mp hp
+  have hmemS : (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int))
+      ∈ r.toGrid ((2^(M-2) : Int), (2^(M-2) : Int)) :=
+    (toGrid_origin_iff_placed (g := r) (r0 := (2^(M-2) : Int)) (c0 := (2^(M-2) : Int))
+      (p := (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int)))).mp hL
+  rw [href] at hmemS
+  have hres : (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int))
+      ∈ restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)) := by
+    rw [← hih]
+    exact hmemS
+  obtain ⟨hqmem, hq1, hq2, hq3, hq4⟩ := mem_restrictGridTo.mp hres
+  have halive : isAlive (evolve (2^j) (n.toGrid (0, 0)))
+      (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int)) = true := by
+    simp [isAlive, hqmem]
+  have hqe : (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int))
+      = (p.1 - o1, p.2 - o2) := by
+    obtain ⟨hXY1, hXY2⟩ := hXY
+    apply Prod.ext <;> omega
+  rw [← hqe] at hagree
+  have h1 : isAlive (evolve (2^j) cg) p = true := by rw [← hagree]; exact halive
+  refine (mem_restrictGridTo).mpr ⟨?_, ?_, ?_, ?_, ?_⟩
+  · by_cases hpc : p ∈ evolve (2^j) cg
+    · exact hpc
+    · exfalso
+      simp [isAlive, hpc] at h1
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he2 hw2 ⊢
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he4 hw4 ⊢
+    omega
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
