@@ -2241,7 +2241,7 @@ intègre.
 | Contributions intégrées | **9 192** |
 | Commits | **11 383** |
 | Notebooks pédagogiques | **1 040** |
-| Machines | **5** |
+| Machines hébergeant des agents | **5** |
 | Postes de travail (« lanes ») | **10** |
 
 </div>
