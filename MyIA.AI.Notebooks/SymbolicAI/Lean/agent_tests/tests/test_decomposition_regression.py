@@ -43,6 +43,7 @@ _spec.loader.exec_module(_dr)
 
 classify = _dr.is_decomposition_regression
 same_count_churn = _dr.is_same_count_zero_verified
+worsened_unproven = _dr.is_worsened_unproven
 
 
 # ── Acceptance: the founder incident classifies as regression ──────────────
@@ -162,3 +163,39 @@ class TestSameCountZeroVerified:
 
     def test_exported_in_all(self):
         assert "is_same_count_zero_verified" in _dr.__all__
+
+# ── #1453 iter-2: never persist a worsened state ───────────────────────────
+
+class TestWorsenedUnproven:
+    """The write-guard predicate: a run that ENDED with MORE sorries than it
+    started and proved nothing must be reverted + marked REGRESSED, never
+    persisted as success (L2551 4->8, L849 10->11)."""
+
+    def test_flags_l2551_founder(self):
+        """The founding incident: 4 -> 8 with no proof is a worsened unproven
+        state (the file was persisted as structural_only, success=True)."""
+        assert worsened_unproven(8, 4, False) is True
+
+    def test_flags_l849_increase(self):
+        """10 -> 11, no proof -- same class, smaller magnitude."""
+        assert worsened_unproven(11, 10, False) is True
+
+    def test_same_count_not_its_territory(self):
+        """final == original is not a worsened state (FX-8 / equality guard)."""
+        assert worsened_unproven(4, 4, False) is False
+
+    def test_drop_not_its_territory(self):
+        """A sorry DROP is real progress, never a worsened state."""
+        assert worsened_unproven(2, 4, False) is False
+
+    def test_proof_found_exempt(self):
+        """Proving the target IS progress even if collateral sorries grew --
+        reverting would throw away the proof."""
+        assert worsened_unproven(8, 4, True) is False
+
+    def test_returns_real_bool(self):
+        assert type(worsened_unproven(8, 4, False)) is bool
+
+    def test_exported_in_all(self):
+        assert "is_worsened_unproven" in _dr.__all__
+
