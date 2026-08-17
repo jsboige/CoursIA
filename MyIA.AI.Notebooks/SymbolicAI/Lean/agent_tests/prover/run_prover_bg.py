@@ -13,6 +13,7 @@ import json
 import re
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.stdout.reconfigure(line_buffering=True)
@@ -315,7 +316,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
             "result": {"status": "already_solved",
                        "reason": "0 sorry in target file (pre-check, no prover spawn)"},
             "trace_file": None,
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
         summary_path = TRACES_DIR / f"{trace_name}_result.json"
         summary_path.write_text(
@@ -405,7 +406,7 @@ def _run_prover_locked(demo, name, filepath, line, mode, iterations, provider,
         "elapsed_s": round(elapsed, 1),
         "result": result,
         "trace_file": trace_path,
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     summary_path = TRACES_DIR / f"{trace_name}_result.json"
     summary_path.write_text(

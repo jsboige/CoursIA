@@ -64,8 +64,15 @@
       csharp_sha: 5cde89262c0e52a90e264f67c611ee7cb431c1f7
       content_python_sha: 48c7c5a685b64aff0d09c568a5eef72b541133103c1a03afe31f87a80ae9537b
       content_csharp_sha: 6d2fc11c2dc78081eb2ebfe5066e7e2ec26a936ce248db60cdf194b0aa4eb9e5
+    - date: "2026-08-17"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 2b2723319e6f701beed14734f6924b0f6319241b
+      csharp_sha: 97b2f17c2eb27adb09ee0f773b869c891e285cc0
+      content_python_sha: 48c7c5a685b64aff0d09c568a5eef72b541133103c1a03afe31f87a80ae9537b
+      content_csharp_sha: 5584781230dd93ebae6a155a0ffd2d5bcbb6daa7e801fc6119021de4546420de
   known_differences:
     - "Socle pedagogique commun : automates symboliques et resolution de Sudoku via Z3 (automates finis symboliques, representation symbolique des contraintes, liens avec SMT). Meme concept (automates symboliques + Z3 comme backend de decision), meme cas d'application (Sudoku). Les deux couvrent Z3, z3, symbolic, Solver."
     - "Divergence d'implementation : le C# (Microsoft.Z3 via NuGet + auto-suffisant en annexe S10, 19 cellules code apres #10459) utilise la theorie des chaines Z3 et la regle `re.++` / `re.*` / `re.range` / `str.to_re` pour la partie symbolique. Le Python (pyz3, 10 cellules code) utilise les bindings Z3 directement. Meme enseignement (automates symboliques + Z3), deux niveaux."
     - "Plafond academique documente (issue AutomataDotNet/Automata#6, voir SOTA ledger Entry #008) : la voie SFAz3 d'origine a un cap du temoin a ~21 caracteres (SFAz3 + Z3 'monstre regex tronque'). Ce plafond est **academique** et frappe les deux jumeaux a l'identique ; il est documente ici et **ne peut pas** motiver un verdict de parite. Le contournement par la theorie des chaines directe (annexe S10 du notebook C#) montre la lib Microsoft.Z3 sans ce plafond."
     - "Idiomes framework : C# = Microsoft.Z3 (NuGet, registre #3801 axe 1) + System.* stdlib + Annexe S10 cellule auto-suffisante ; Python = pyz3. Meme concept (automates symboliques), implementations avec le meme moteur (Z3)."
+    - "Rebaseline 2026-08-17 : cote C# draine wall-clock MACHINE-DEP en cell[43] (table banc d'essai 13 voies x 3 grilles, ~31 valeurs) et cell[44] (table consolidant 9 voies x 4x4/9x9, ~10 valeurs) - mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Resultats de resolution (SAT / TIMEOUT / unknown / OOM / faux negatif / rejet compile) et tendance qualitative conserves. Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote Python non modifie (pas de table wall-clock identique). Attestation = nouveau blob SHA (csharp) + nouveau content_csharp_sha."
