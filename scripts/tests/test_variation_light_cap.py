@@ -1201,3 +1201,138 @@ def test_check_pr_coherent_with_genre_signals_on_defect(tmp_path, capsys):
     assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is True
     assert chk["cap_exceeded_by_genre"] is True
     assert chk["cap_reached"] is True
+
+
+# --- #11343: VEINE runs (lane, cited_issue#) ---------------------------------
+
+def test_extract_vein_key_first_citation_excludes_pr_number():
+    body = "Grain: MED/guard -- lane myia-po-2024:CoursIA\n\nVoir #11343."
+    pr = {"number": 12345, "body": body}
+    assert vlc.extract_vein_key(pr) == 11343
+
+
+def test_extract_vein_key_returns_none_when_no_citation():
+    assert vlc.extract_vein_key({"number": 1, "body": "Grain: MED/guard -- lane x"}) is None
+    assert vlc.extract_vein_key({"number": 2, "body": ""}) is None
+    assert vlc.extract_vein_key({"number": 3, "body": None}) is None
+
+
+def test_extract_vein_key_skips_self_reference():
+    """A PR body that opens with its own number (Closes #N) must look further."""
+    body = (
+        "Grain: MED/guard -- lane myia-po-2024:CoursIA\n\n"
+        "Closes #7777. See #11343 for the umbrella."
+    )
+    pr = {"number": 7777, "body": body}
+    assert vlc.extract_vein_key(pr) == 11343
+
+
+def test_extract_vein_key_self_when_no_other_citation():
+    body = "Grain: MED/guard -- lane myia-po-2024:CoursIA\n\nCloses #7777."
+    pr = {"number": 7777, "body": body}
+    assert vlc.extract_vein_key(pr) is None
+
+
+def test_vein_runs_aggregates_two_prs_citing_same_issue():
+    """A lane with 2 PRs citing #11224 trips VEINE-RUN at vein_cap=2."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11224, tranche 2."
+    merged = [
+        {"number": 100, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 101, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    out = vlc.vein_runs(merged, lane)
+    assert len(out) == 1
+    assert out[0]["vein_key"] == 11224
+    assert out[0]["count"] == 2
+    assert sorted(out[0]["numbers"]) == [100, 101]
+
+
+def test_vein_runs_below_threshold_is_empty():
+    """1 PR citing #N is not a vein (count=1 < vein_cap=2)."""
+    lane = "myia-po-2024:CoursIA-2"
+    body = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    merged = [{"number": 200, "body": body, "mergedAt": "2026-08-17T08:00:00Z"}]
+    assert vlc.vein_runs(merged, lane) == []
+
+
+def test_vein_runs_distinct_issues_kept_separate():
+    """Two PRs citing TWO different issues does NOT form a vein."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11271."
+    merged = [
+        {"number": 300, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 301, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    out = vlc.vein_runs(merged, lane)
+    assert out == []
+
+
+def test_vein_runs_skips_prs_without_citation():
+    """A PR without a #N reference is not in any vein."""
+    lane = "myia-po-2024:CoursIA-2"
+    merged = [
+        {"number": 400, "body": f"Grain: MED/guard -- lane {lane}\n\nFix build.",
+         "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 401, "body": f"Grain: MED/guard -- lane {lane}",
+         "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    assert vlc.vein_runs(merged, lane) == []
+
+
+def test_vein_runs_only_target_lane_counted():
+    """PRs of OTHER lanes citing the same issue do NOT form a vein for this lane."""
+    body_a = "Grain: MED/guard -- lane myia-po-2023:CoursIA\n\nIssue #11224."
+    body_b = f"Grain: MED/guard -- lane myia-po-2024:CoursIA-2\n\nIssue #11224."
+    merged = [
+        {"number": 500, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 501, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    out = vlc.vein_runs(merged, "myia-po-2024:CoursIA-2")
+    assert out == []
+
+
+def test_compute_signals_vein_run_above_threshold():
+    """VEIN-RUN fires when 2 PRs of the lane cite the same issue."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11224, tranche 2."
+    merged = [
+        {"number": 600, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 601, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    sig = vlc.compute_signals(merged, lane)
+    assert sig["signals"]["VEIN-RUN"] is True
+    assert len(sig["vein_runs"]) == 1
+    assert sig["vein_runs"][0]["vein_key"] == 11224
+
+
+def test_compute_signals_vein_run_silent_on_singular_citation():
+    """VEIN-RUN is False when no citation pattern is exceeded."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224."
+    body_b = f"Grain: MED/lean -- lane {lane}\n\nIssue #11256."
+    merged = [
+        {"number": 700, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 701, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    sig = vlc.compute_signals(merged, lane)
+    assert sig["signals"]["VEIN-RUN"] is False
+    assert sig["vein_runs"] == []
+
+
+def test_vein_runs_handles_open_pr_with_none_mergedat():
+    """OPEN PRs have `mergedAt=None`; the sort must not crash on None."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11224, tranche 2."
+    merged = [
+        {"number": 800, "body": body_a, "mergedAt": None},
+        {"number": 801, "body": body_b, "mergedAt": None},
+    ]
+    out = vlc.vein_runs(merged, lane)
+    assert len(out) == 1
+    assert out[0]["vein_key"] == 11224
+    assert sorted(out[0]["numbers"]) == [800, 801]
