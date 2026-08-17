@@ -29,6 +29,14 @@
       content_python_sha: db934d114b25f50499a9c857eadb10cbb69f9cc02df6bd9ee09c7a228a777ad5
       content_csharp_sha: 28db117646b3940d869d29bccaa6ad4fda169c22af3d0443a17876c36a8ac998
       reason: "Re-exec seq CLEAN 1..19 (#11112 etage 3, commit 7c43287ef) : kernel python3 + jpype 1.7.1, 10 jars Tweety 1.30-SNAPSHOT (commons/logics-commons/fol/pl/graphs/math/plugin) assembles depuis le .m2 local + sat4j 2.3.1 (Maven Central) + JDK 17 portable zulu (regle F, libs gitignorees). Verdicts solveurs bit-stables vs main (SAT/UNSAT, enumeration des modeles, requetes FOL) ; seuls timings et placement de lignes vides different. Markdown cell2 re-aligne 42 -> 10 JARs (C.4 cause (a) env : module set vs agregat 42 jars). 2 lignes output EProver normalisees worktree-path -> <repo>, forme placeholder deja commitee sur main (cause A env-injected). csharp_sha inchange (jumeau IKVM non touche)."
+    - date: "2026-08-17"
+      by: myia-po-2023:CoursIA
+      python_sha: db6e66674e180e9146b7698a17549da121b99df1
+      csharp_sha: e20cd3d4db92085a84d61b5a7941f91b0d8a079b
+      content_python_sha: 9ea706f03d4f0eb8408bda6760ace8de24c999a3bdc75019d713633ad2031ad1
+      content_csharp_sha: ae1a73913b8814a0c8840c8c1e6a2d5ffa3c60a40cefc92b383b43dc02c75ba1
+      reason: "Tranche densite #11224 markdown-only sur le cote C# (PR #11338, c.310 cycle relecture) : 10 cellules code byte-identiques au twin Python + 1 cellule markdown enrichie + squelettes densifies. Parite de contenu intacte (re-exec confirme les deux cotes bit-stable), rebaseline d'attestation."
   known_differences:
+    - "2026-08-17 : tranche densite #11224 markdown-only sur le cote C# (10 cellules code byte-identiques, +1 cellule markdown + squelettes enrichis, PR #11338) - parite de contenu intacte, rebaseline d'attestation."
     - "Socle commun : logiques classiques propositionnelles et du premier ordre (FOL) via la bibliotheque Java TweetyProject."
     - "Lib-vs-lib meme moteur Java : C# via IKVM (`#r \"nuget: IKVM, 8.15.0\"` + `#r \"org.tweetyproject.tweety-pl.dll\"` + `using org.tweetyproject.*` ; bytecode Java traduit en .NET, pas de JVM au runtime). Python via JPype (`import jpype` + `from org.tweetyproject.* import` + `from java.util import` ; pont vers une JVM)."
