@@ -1,22 +1,22 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-08-16 03:55
-Total notebooks: 906
+Generated: 2026-08-17 03:57
+Total notebooks: 912
 
 ## Status Summary
 
-- **READY**: 750
-- **DEMO**: 154
+- **READY**: 755
+- **DEMO**: 155
 - **RESEARCH**: 0
 - **BROKEN**: 2
 
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 819
+- **BETA**: 825
 - **TEMPLATE**: 4
-- **ALPHA**: 46
-- **DRAFT**: 37
+- **ALPHA**: 47
+- **DRAFT**: 36
 
 ## By Series
 
@@ -452,7 +452,7 @@ Total notebooks: 906
 | 74 | Planners-7-OR-Tools - Programmation par Contrainte | Python 3 | READY | BETA | 45min | po-2024 |
 | 75 | Planners-8-Temporal — Planification Temporelle (tw | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 76 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | BETA | 45min | po-2024 |
-| 77 | Planners-9-HTN (C#) | .NET (C#) | READY | BETA | 30min | po-2024 |
+| 77 | Planners-9-HTN (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 78 | Planners-9-HTN - Planification Hiérarchique | Python 3 | READY | BETA | 45min | po-2024 |
 | 79 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | BETA | 45min | po-2024 |
 | 80 | Planners-11: Unified Planning | Python 3 | READY | BETA | 45min | po-2024 |
@@ -608,7 +608,7 @@ Total notebooks: 906
 | 230 | Préférences et Théorie du Vote | Python 3 | READY | ALPHA | 30min | po-2024 |
 | 231 | Tweety .NET - Probe Phase 1 axe 2 : initialisation | .NET (C#) | READY | BETA | 30min | po-2024 |
 
-### QuantConnect (108 notebooks) — DEMO:48, READY:60 | ALPHA:15, BETA:79, DRAFT:13, TEMPLATE:1
+### QuantConnect (108 notebooks) — DEMO:48, READY:60 | ALPHA:16, BETA:79, DRAFT:12, TEMPLATE:1
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -640,7 +640,7 @@ Total notebooks: 906
 | 26 | QC-Py-21 - Portfolio Optimization avec Machine Lea | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 27 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 28 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
-| 29 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | DRAFT | 45min | po-2026 |
+| 29 | QC-Py-23b - PatchTST et iTransformer pour Previsio | Python 3 | READY | ALPHA | 45min | po-2026 |
 | 30 | QC-Py-24 - Modèles Génératifs pour Anomaly Detecti | Python 3 | DEMO | BETA | 1h | po-2026 |
 | 31 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
 | 32 | Objectifs d'Apprentissage | Python 3 | DEMO | BETA | 45min | po-2026 |
@@ -887,7 +887,7 @@ Total notebooks: 906
 | 57 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | BETA | 30min | po-2023 |
 | 58 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | BETA | 45min | po-2023 |
 
-### IIT (53 notebooks) — READY:53 | BETA:48, DRAFT:5
+### IIT (55 notebooks) — READY:55 | BETA:50, DRAFT:5
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -930,22 +930,24 @@ Total notebooks: 906
 | 37 | ICT-29 — Inoculation d'un concept (expérience D, s | Python 3 | READY | BETA | 30min | po-2025 |
 | 38 | ICT-3 — Robustesse & délai de gratification : étud | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
 | 39 | ICT-30 — Invention inhibée (expérience E, strate 7 | Python 3 | READY | BETA | 30min | po-2025 |
-| 40 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
-| 41 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
-| 42 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
-| 43 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 44 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 45 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 46 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
-| 47 | Boucle auto-referentielle p_hat (case 2 / Epic #95 | Python 3 | READY | BETA | 30min | po-2025 |
-| 48 | ICT -- Dissociation saillance / pregnance (case `s | Python 3 | READY | BETA | 30min | po-2025 |
-| 49 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | BETA | 45min | po-2025 |
-| 50 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
-| 51 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
-| 52 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
-| 53 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
+| 40 | ICT-31 — Le contraste **mesuré** à trois substrats | Python 3 | READY | BETA | 30min | po-2025 |
+| 41 | ICT-4 — Tableaux chimériques & agrégation émergent | Python 3 | READY | BETA | 30min | po-2025 |
+| 42 | ICT-5 : Émergence causale — quelle échelle décrit  | Python 3 (PyPhi/IIT) | READY | BETA | 30min | po-2025 |
+| 43 | ICT-6 — Du tri a la chaîne de Markov : emergence c | Python 3 (coursia-ml-training) | READY | BETA | 30min | po-2025 |
+| 44 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 45 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 46 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 47 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
+| 48 | Boucle auto-referentielle p_hat (case 2 / Epic #95 | Python 3 | READY | BETA | 30min | po-2025 |
+| 49 | ICT -- Dissociation saillance / pregnance (case `s | Python 3 | READY | BETA | 30min | po-2025 |
+| 50 | ICT-Life — Substrat de calibration certifié : le J | Python 3 | READY | BETA | 30min | po-2025 |
+| 51 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | BETA | 45min | po-2025 |
+| 52 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
+| 53 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
+| 54 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
+| 55 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
 
-### RL (17 notebooks) — DEMO:1, READY:16 | BETA:17
+### RL (21 notebooks) — DEMO:2, READY:19 | BETA:21
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -955,7 +957,7 @@ Total notebooks: 906
 | 4 | RL 13 - Exploration par curiosité : Random Network | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
 | 5 | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | BETA | 45min | po-2025 |
 | 6 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,  | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 7 | Notebook 3 – Hindsight Expérience Replay (HER) et  | Python 3 | READY | BETA | 30min | po-2025 |
+| 7 | Notebook 3 – Hindsight Experience Replay (HER) et  | Python 3 | READY | BETA | 30min | po-2025 |
 | 8 | RL-4 : Bandits Manchots et le Compromis Exploratio | Python 3 | READY | BETA | 45min | po-2025 |
 | 9 | RL-5 : MDP, Programmation Dynamique et Q-Learning  | Python 3 | READY | BETA | 45min | po-2025 |
 | 10 | RL-6 : Deep Q-Network (DQN) et Policy Gradient | Python 3 | READY | BETA | 30min | po-2025 |
@@ -966,12 +968,16 @@ Total notebooks: 906
 | 15 | RL-7 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | BETA | 30min | po-2025 |
 | 16 | RL-8 : Model-Based RL — Dyna-Q et planification | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
 | 17 | RL-9 : RL offline — Behavior Cloning et erreur d'e | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 18 | RL Post-Training — 1 : PPO pour l'alignement d'un  | Python 3 | READY | BETA | 30min | po-2025 |
+| 19 | RL Post-Training — 2 : GRPO minimal — alignement d | Python (coursia-ml-training) | READY | BETA | 45min | po-2025 |
+| 20 | RL Post-Training — 3 : Reward hacking — anatomie d | Python (coursia-ml-training) | DEMO | BETA | 45min | po-2025 |
+| 21 | RL Post-Training — 4 : DPO offline vs RL online —  | Python (coursia-ml-training) | READY | BETA | 45min | po-2025 |
 
 
 ## Requirements
 
 - **API**: 146 notebooks
-- **GPU**: 102 notebooks
-- **Cloud**: 110 notebooks
+- **GPU**: 105 notebooks
+- **Cloud**: 111 notebooks
 - **WSL**: 47 notebooks
-- **Local**: 568 notebooks
+- **Local**: 571 notebooks
