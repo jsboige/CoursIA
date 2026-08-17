@@ -22,6 +22,12 @@
       csharp_sha: b158670a31d10d9a71a33e3d9fac94c5870b175a
       content_python_sha: 1da65bd6906c2ecba081c7c39516840e26ba9fb8b73f060d48adbf22ea0a27fa
       content_csharp_sha: bc1fdea1895a2a608a1f3608f7b6d41a6f7e4bc734e095524b5dd038af59ab9c
+    - date: "2026-08-16"
+      by: myia-po-2025:CoursIA
+      python_sha: 3aab3c2ceb2e00086af53a96c7cca8cc99cdc80d
+      csharp_sha: b52ba0fdd1c9f3738a5d863d5c0ce9ec03295a1f
+      content_python_sha: 37adb017f13b00bf40850f32a22dc23247341f5064ea5830a54f809a0f150d47
+      content_csharp_sha: 1248533b87848396497d3726182df99b9cc5b87a362e6c5de694cb9053dd8ecd
   known_differences:
     - "Rebaseline 2026-08-14 : cote C# deplace par drain wallclock #9434 / PR #10874 (remplacement des timings machine-dependants en ms par des ordres de grandeur dans le markdown). Parite semantique inchangee (cellules code byte-identiques, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Socle pedagogique commun : solveur de Sudoku de Peter Norvig (combinaison de constraint propagation + search) -- fonctions assign (assigner une valeur en eliminant des candidats) et eliminate (propager les contraintes via les unites/peers), backtracking search quand la propagation seule ne suffit pas. Meme algorithme (Norvig's solver), meme cas canonique (Sudoku). Les deux couvrent backtracking, Norvig, eliminate, assign."

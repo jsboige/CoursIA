@@ -137,7 +137,40 @@ def test_audit_allowlists_native_decide_axioms():
     (2) under the `Conway_en.*` namespaces (with `Pillars_en` keeping the FR
     `Conway.Life.*` path -- namespace heterogeneity is why names are
     enumerated from the build, never derived by rule). Same legitimacy rule
-    as #9341: every added name is attributable to a newly covered module."""
+    as #9341: every added name is attributable to a newly covered module.
+
+    **Widened to 61 by #11349** (`ci(lean,#11349)`), and this one does NOT fit
+    the "newly covered module" phrasing above -- it is the first widening that
+    does not, so the criterion is stated properly here rather than stretched.
+    Grain 3a (#11303, `c3bd40cc1`) added two theorems to the ALREADY covered
+    `Conway.Life.HashlifeCorrectness` and widened the workflow allow-list by
+    exactly their two names. It DID annotate them in the workflow comment
+    (L204-208, header updated to "All 61") -- what it omitted was this pin, and
+    that omission is the ratchet working as designed: an attribution written by
+    the same hand that widens cannot self-certify, so `main` goes red until a
+    second reading confirms it. This is that reading. Verified before raising:
+
+    * `p4at_witness_k1` / `p4at_witness_k2` (L848, L861) are the P4-At mirrors
+      of the already-allow-listed `p4_wf_witness_k1` / `p4_wf_witness_k2`
+      (L758, L775): SAME cells (centered block still-life; centered glider),
+      SAME generation counts (2, 4), SAME `restrictGridTo` windows -- only the
+      engine differs (`hashlifeResultAt j` instead of `hashlifeResultAux (j+2)`),
+      which is the whole point of grain 3a.
+    * Both are STANDALONE: `git grep` finds zero references outside their own
+      declarations. They are concrete finite sanity checks, not premises.
+    * Grain 3a's headline theorem `hashlifeResultAt_base_central` (L806) is
+      universally quantified over `c : MacroCell` and `j : Nat` and is proven
+      by structural tactics (`cases`/`omega`/`obtain`/`simp only`), closing on
+      the already-proven `hashlifeResult_central_correct`. No `native_decide`
+      in it -- the general claim is NOT hollowed out by these two escapes.
+
+    The operative criterion is therefore **attributable AND non-hollowing**, of
+    which "attributable to a newly covered module" was one instance, not the
+    definition. A name attributable to a newly added THEOREM is equally
+    legitimate provided (a) the theorem is a concrete finite witness, (b) it is
+    referenced by nothing, and (c) the module's general theorems do not depend
+    on it. Absent any of the three, the pin stays put and the proof is reworked
+    -- unchanged from #9341."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -147,11 +180,12 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 59, (
-        f"audit allow-list must carry the 59 native_decide axioms of the whole "
+    assert len(names) == 61, (
+        f"audit allow-list must carry the 61 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
-        f"modules, each attributed in the workflow comment); got {len(names)}")
+        f"modules + 2 P4-At standalone witnesses from grain 3a #11303, each "
+        f"attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
     # #10889-widening family: the _en twins under Conway_en.*).
