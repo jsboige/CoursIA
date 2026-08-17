@@ -611,6 +611,109 @@ theorem reidemeister3Determined_satisfiable :
   · -- d₂.wf = true (multiset unchanged by the slot swap)
     exact by decide
 
+/-! ### R3 connected — the triangular move induced by the Sat-equal bijection
+
+Exhaustive evidence `scripts/lean/knot_r3connected_validation.py` (PR #11486,
+Part C): among 4320 size-preserving bijections of the 9 triangle arcs,
+**exactly 2** transport the Fox solution set of the triangle
+`sigma1*sigma2*sigma1` exactly onto that of `sigma2*sigma1*sigma2` — internal
+correspondence **unique** `g1=(2,5)→(3,8)`, `g2=(3,9)→(7,9)`, `g3=(6,8)→(2,4)`;
+a 4-cycle on the boundary arcs, `a1`/`b1` exchanged between the two
+bijections.
+
+`Reidemeister3Connected` takes the **first** of these bijections (identity on
+`a1`, `b1→b3`) as the definition of the move. Layouts (12 slots, 9 arcs):
+
+    X (sigma1*sigma2*sigma1) : X₁ = ⟨a₂,a₁,g₁,g₂⟩  X₂ = ⟨a₃,g₁,g₃,b₃⟩  X₃ = ⟨g₃,g₂,b₂,b₁⟩
+    Y (sigma2*sigma1*sigma2) : Y₁ = ⟨a₃,a₂,h₁,h₂⟩  Y₂ = ⟨h₁,a₁,h₃,h₄⟩  Y₃ = ⟨h₂,h₄,b₂,b₃⟩
+
+The surgery: each arc `y` of the Y triangle receives the **concrete label**
+carried by the arc `φ⁻¹(y)` of the X triangle (labels reused, not renamed):
+
+    Y₁ = ⟨a₃,b₃,g₃,g₁⟩   Y₂ = ⟨g₃,a₁,b₂,g₂⟩   Y₃ = ⟨g₁,g₂,a₂,b₁⟩
+
+The multiset of the 12 labels is **unchanged** ({a₁,a₂,a₃,b₁,b₂,b₃} single +
+{g₁,g₁,g₂,g₂,g₃,g₃} paired), so `wf` is preserved by the surgery and the
+external context (crossings outside the triangle, which only reference
+boundary arcs) stays intact — the "redistribution" shape validated in Part B
+(194719 concrete surgeries, 0 transfer failure) and C (300 witnesses n=5,
+0 failure).
+
+**Honest negatives** (#11486, documented): (i) the "geometric" version
+(identity on the 6 boundary arcs) does **not** have equal Sat on our manual
+slot derivation — the statement takes the bijection found as the definition
+of the move, without claiming the classic strand slide; (ii) no non-trivial
+partner with identity transport among the 15 possible internal pairings
+(fixed boundary); (iii) the move is **not** an instance of `Reidemeister3`
+(the surgery rewrites three crossings, not a single one) — it is a parallel
+refinement to `Reidemeister3Determined`, and the inverse direction `d₂ → d₁`
+(bijection φ⁻¹, also Sat-equal) is future work.
+-/
+
+/-- **Reidemeister3Connected**: the connected R3 triangular move. Diagram
+    `d₁` carries the X triangle (layout `⟨a₂,a₁,g₁,g₂⟩`,
+    `⟨a₃,g₁,g₃,b₃⟩`, `⟨g₃,g₂,b₂,b₁⟩`) on three consecutive crossings from
+    index `i`, with nine distinct arc labels; `d₂` rewrites these three
+    crossings according to the Y triangle induced by the Sat-equal bijection
+    (concrete labels reused via `φ⁻¹`). Length and `numEdges` unchanged;
+    `wf` of both sides in the premise (as R1C/R2C — multiset preservation of
+    the labels makes it automatic in practice, see
+    `reidemeister3Connected_satisfiable`). -/
+def Reidemeister3Connected (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  ∃ (i : Nat) (hi : i + 2 < d₁.crossings.length)
+    (a₁ a₂ a₃ b₁ b₂ b₃ g₁ g₂ g₃ : Nat),
+    List.Nodup [a₂, a₁, a₃, b₃, b₂, b₁, g₁, g₂, g₃] ∧
+    d₁.crossings.get ⟨i, by omega⟩ = ⟨a₂, a₁, g₁, g₂⟩ ∧
+    d₁.crossings.get ⟨i + 1, by omega⟩ = ⟨a₃, g₁, g₃, b₃⟩ ∧
+    d₁.crossings.get ⟨i + 2, by omega⟩ = ⟨g₃, g₂, b₂, b₁⟩ ∧
+    d₂.crossings = ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+      ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩
+
+/-- `Reidemeister3Connected` is NOT vacuous: the concrete X triangle
+    `d₁ = {[⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩] ++ context [⟨1,2,10,10⟩,
+    ⟨3,4,5,6⟩]}` (boundary 1..6 = a₂,a₁,a₃,b₃,b₂,b₁; internals 7,8,9 =
+    g₁,g₂,g₃; the two context crossings close the parity: each boundary
+    label 1..6 appears a second time, 10 carries both remaining
+    endpoints), rewritten as the Y triangle
+    `d₂ = {[⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩] ++ same context}`. Both are
+    well-formed (`decide`: each label 1..10 appears exactly twice).
+    Tricolorability is invariant on this witness (checked by the
+    validation machinery of #11486 — both are non-tricolorable). -/
+theorem reidemeister3Connected_satisfiable :
+    Reidemeister3Connected
+      { crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }
+      { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } := by
+  refine ⟨by decide, by decide, rfl, rfl,
+          ⟨0, by decide, 2, 1, 3, 6, 5, 4, 7, 8, 9, ?_, ?_, ?_, ?_, ?_⟩⟩
+  · -- Nodup of the 9 labels [a₂,a₁,a₃,b₃,b₂,b₁,g₁,g₂,g₃] = [1,2,3,4,5,6,7,8,9]
+    decide
+  · -- get 0 = ⟨a₂,a₁,g₁,g₂⟩ = ⟨1,2,7,8⟩ (definitional reduction)
+    rfl
+  · -- get 1 = ⟨a₃,g₁,g₃,b₃⟩ = ⟨3,7,9,4⟩
+    rfl
+  · -- get 2 = ⟨g₃,g₂,b₂,b₁⟩ = ⟨9,8,5,6⟩
+    rfl
+  · -- triple List.set on the concrete list: reduces definitionally
+    rfl
+
+/-- The triangular move preserves the number of crossings. -/
+theorem Reidemeister3Connected.numCrossings_eq {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) :
+    d₂.crossings.length = d₁.crossings.length := by
+  obtain ⟨_, _, hl, _, _⟩ := h
+  exact hl.symm
+
+/-- The triangular move preserves the number of edges. -/
+theorem Reidemeister3Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) :
+    d₂.numEdges = d₁.numEdges := by
+  obtain ⟨_, _, _, he, _⟩ := h
+  exact he.symm
+
 /-! ## 2. Single Reidemeister step
 
 A single step is any of R1, R2, or R3.
