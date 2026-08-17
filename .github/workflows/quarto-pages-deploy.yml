@@ -69,6 +69,19 @@ jobs:
         # exclues (cf. scripts/regen_quarto_render.py).
         run: python scripts/regen_quarto_render.py
 
+      - name: Normalize .NET kernel language for Quarto (C# -> csharp)
+        # Quarto derive la classe pandoc du code-block depuis kernelspec.language.
+        # Le kernel .NET Interactive ecrit "C#", que Quarto emet comme classe
+        # d'attribut invalide {.c# .cell-code} (le # est le marqueur d'ID pandoc) :
+        # quand la cellule est en colonne 0, la premiere ligne source est fusionnee
+        # dans la ligne de fence et pandoc re-parse le corps comme markdown
+        # (strings C# $"..." mangees par MathJax, code rendu en <p>, issue #11335).
+        # Le patch byte-level ("C#" -> "csharp") normalise le language AVANT le
+        # render et le restore APRES. kernelspec.language est informationnel :
+        # l'execution Jupyter/papermill utilise kernelspec.name ".net-csharp"
+        # (inchange) -> le patch n'affecte jamais l'execution.
+        run: python scripts/quarto_csharp_kernel_fix.py apply
+
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
         # .ipynb (execute.enabled: false) : ils sont RENDUS en HTML statique avec
@@ -77,6 +90,11 @@ jobs:
         run: quarto render --to html
         # Pas de --execute : sinon ça tente de ré-exécuter les notebooks = impossible
         # sans kernels .NET Interactive / Lean 4 / conda Python spécialisés.
+
+      - name: Restore kernel language (hygiene)
+        # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
+        # garde le worktree coherent si un step futur relit les notebooks sources.
+        run: python scripts/quarto_csharp_kernel_fix.py restore
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
