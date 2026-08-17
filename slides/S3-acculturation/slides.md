@@ -1013,6 +1013,7 @@ layout: two-cols
 
 # Prise de décision
 
+<div class="dense-list">
 
 - Théorie de la décision
   - Que faire?
@@ -1031,6 +1032,8 @@ layout: two-cols
 - Décision complexe
   - Processus de Markov
   - Politique optimale
+
+</div>
 
 <div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_061.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
