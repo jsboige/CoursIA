@@ -714,6 +714,230 @@ theorem Reidemeister3Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
   obtain ⟨_, _, _, he, _⟩ := h
   exact he.symm
 
+/-! #### Inverse direction — the Y → X move
+
+The bijection φ⁻¹ is also Sat-preserving (validation #11486, Part C:
+both bijections found are mutually inverse at equal Sat). The inverse
+surgery — each arc x of the X triangle receives the concrete label
+carried by the arc φ(x) of the Y triangle — rewrites the Y triangle
+`⟨a₃,b₃,g₃,g₁⟩, ⟨g₃,a₁,b₂,g₂⟩, ⟨g₁,g₂,a₂,b₁⟩` into the X triangle
+`⟨a₂,a₁,g₁,g₂⟩, ⟨a₃,g₁,g₃,b₃⟩, ⟨g₃,g₂,b₂,b₁⟩`. Applied to the result of
+the direct move, it **restores exactly the original labels**: the label
+of slot y after the direct move is that of φ⁻¹(y), and the inverse
+surgery reassigns to slot φ(y) the label of φ⁻¹(φ(y)) = y — the original
+label. This is the content of `reidemeister3Connected_inv`: the direct
+move **determines** its inverse; the relation is reversible, not merely
+witnessed in both directions.
+-/
+
+/-- **Reidemeister3ConnectedInv**: the inverse direction of the connected
+    R3 triangular move. `d₁` carries the Y triangle (layout
+    `⟨a₃,b₃,g₃,g₁⟩`, `⟨g₃,a₁,b₂,g₂⟩`, `⟨g₁,g₂,a₂,b₁⟩`) on three
+    consecutive crossings starting from index `i`, with nine distinct
+    arc labels; `d₂` rewrites those three crossings into the X triangle.
+    Same guardrails as `Reidemeister3Connected` (wf in premise, length
+    and `numEdges` unchanged, multiset of labels preserved by the
+    surgery). -/
+def Reidemeister3ConnectedInv (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  ∃ (i : Nat) (hi : i + 2 < d₁.crossings.length)
+    (a₁ a₂ a₃ b₁ b₂ b₃ g₁ g₂ g₃ : Nat),
+    List.Nodup [a₂, a₁, a₃, b₃, b₂, b₁, g₁, g₂, g₃] ∧
+    d₁.crossings.get ⟨i, by omega⟩ = ⟨a₃, b₃, g₃, g₁⟩ ∧
+    d₁.crossings.get ⟨i + 1, by omega⟩ = ⟨g₃, a₁, b₂, g₂⟩ ∧
+    d₁.crossings.get ⟨i + 2, by omega⟩ = ⟨g₁, g₂, a₂, b₁⟩ ∧
+    d₂.crossings = ((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1)
+      ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩
+
+/-- `Reidemeister3ConnectedInv` is NOT vacuous: the direct-move witness
+    pair, **reversed**. `d₁` carries the concrete Y triangle
+    `[⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩] ++ context [⟨1,2,10,10⟩,
+    ⟨3,4,5,6⟩]`, rewritten into the original X triangle
+    `[⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩] ++ same context` — the inverse
+    surgery restores exactly the starting diagram of the direct
+    witness. -/
+theorem reidemeister3ConnectedInv_satisfiable :
+    Reidemeister3ConnectedInv
+      { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }
+      { crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } := by
+  refine ⟨by decide, by decide, rfl, rfl,
+          ⟨0, by decide, 2, 1, 3, 6, 5, 4, 7, 8, 9, ?_, ?_, ?_, ?_, ?_⟩⟩
+  · -- Nodup of the 9 labels (same assignment as the direct witness)
+    decide
+  · -- get 0 = ⟨a₃,b₃,g₃,g₁⟩ = ⟨3,4,9,7⟩
+    rfl
+  · -- get 1 = ⟨g₃,a₁,b₂,g₂⟩ = ⟨9,2,5,8⟩
+    rfl
+  · -- get 2 = ⟨g₁,g₂,a₂,b₁⟩ = ⟨7,8,1,6⟩
+    rfl
+  · -- triple List.set: reduces definitionally
+    rfl
+
+/-- **The direct move determines its inverse**: if `d₂` is obtained from
+    `d₁` by the direct triangular move, then the reversed pair
+    satisfies the inverse surgery. The rewrite X → Y → X restores
+    exactly the three original crossings: the `List.set`s at the same
+    indices override last-writer-wins, and the positions outside the
+    triangle are unchanged. No additional hypothesis — the relation is
+    reversible by construction. -/
+theorem reidemeister3Connected_inv {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) : Reidemeister3ConnectedInv d₂ d₁ := by
+  obtain ⟨w1, w2, hl, he, i, hi, a₁, a₂, a₃, b₁, b₂, b₃, g₁, g₂, g₃,
+          hnd, g0, g1', g2', surg⟩ := h
+  -- Generic peels: a `List.set` at another index is transparent, at the
+  -- same index it overwrites. `.get` forms, proved by the `getElem_set_*`
+  -- lemmas up to defeq (syntactic `rw` does not match `.get`).
+  have hpeel : ∀ (l : List PDCrossing) (k j : Nat) (v : PDCrossing)
+      (hk : k ≠ j) (hj : j < l.length),
+      (l.set k v).get ⟨j, by simp only [List.length_set]; omega⟩
+        = l.get ⟨j, hj⟩ := by
+    intro l k j v hk hj
+    exact List.getElem_set_ne hk (by simp only [List.length_set]; omega)
+  have hself : ∀ (l : List PDCrossing) (k : Nat) (v : PDCrossing)
+      (hk : k < l.length),
+      (l.set k v).get ⟨k, by simp only [List.length_set]; omega⟩ = v := by
+    intro l k v hk
+    exact List.getElem_set_self (by simp only [List.length_set]; omega)
+  -- Transport of a get along a list equality (avoids `▸`, whose motive
+  -- fails on dependent `Fin` proofs).
+  have hgetmap : ∀ (L M : List PDCrossing) (e : L = M) (j : Nat)
+      (hj : j < L.length),
+      L.get ⟨j, hj⟩ = M.get ⟨j, by rw [← e]; omega⟩ := by
+    intro L M e j hj
+    cases e
+    rfl
+  refine ⟨w2, w1, hl.symm, he.symm,
+          ⟨i, by rw [surg]; simp only [List.length_set]; omega, a₁, a₂, a₃,
+            b₁, b₂, b₃, g₁, g₂, g₃, hnd, ?_, ?_, ?_, ?_⟩⟩
+  · -- get i of the result = Y₁: sets (i+1) and (i+2) transparent, set i writes
+    have hd2 : i < d₂.crossings.length := by omega
+    exact (hgetmap d₂.crossings (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+      (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) surg i hd2).trans
+      ((hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+        ⟨g₃, a₁, b₂, g₂⟩) (i + 2) i ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+        (by simp only [List.length_set]; omega)).trans
+      ((hpeel (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) i
+        ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+        (by simp only [List.length_set]; omega)).trans
+        (hself d₁.crossings i ⟨a₃, b₃, g₃, g₁⟩ (by omega))))
+  · -- get (i+1) of the result = Y₂: set (i+2) transparent, set (i+1) writes
+    have hd2 : i + 1 < d₂.crossings.length := by omega
+    exact (hgetmap d₂.crossings (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+      (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) surg (i + 1)
+        hd2).trans
+      ((hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+        ⟨g₃, a₁, b₂, g₂⟩) (i + 2) (i + 1) ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+        (by simp only [List.length_set]; omega)).trans
+        (hself (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1)
+          ⟨g₃, a₁, b₂, g₂⟩ (by simp only [List.length_set]; omega)))
+  · -- get (i+2) of the result = Y₃: written by the outer set
+    have hd2 : i + 2 < d₂.crossings.length := by omega
+    exact (hgetmap d₂.crossings (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+      (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) surg (i + 2)
+        hd2).trans
+      (hself ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+        ⟨g₃, a₁, b₂, g₂⟩) (i + 2) ⟨g₁, g₂, a₂, b₁⟩
+        (by simp only [List.length_set]; omega))
+  · -- inverse surgery: X → Y → X restores the original. The six `set`s
+    -- override last-writer-wins at indices i, i+1, i+2; elsewhere they
+    -- are transparent — `List.ext_get` by position.
+    rw [surg]
+    apply List.ext_get
+    · simp only [List.length_set]
+    · intro n hn1 hn2
+      rcases Nat.lt_trichotomy n i with hlt | heq | hgt
+      · -- n < i: all six sets are transparent at index n
+        have e1 := hpeel (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩)
+            (i + 2) n ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e2 := hpeel ((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) n ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e3 := hpeel (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) i n
+            ⟨a₂, a₁, g₁, g₂⟩ (by omega : i ≠ n)
+            (by simp only [List.length_set]; omega)
+        have e4 := hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩) (i + 2) n ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e5 := hpeel (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) n
+            ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e6 := hpeel d₁.crossings i n ⟨a₃, b₃, g₃, g₁⟩
+            (by omega : i ≠ n) hn1
+        exact (e1.trans (e2.trans (e3.trans (e4.trans (e5.trans e6))))).symm
+      · -- n = i: the inner set X₁ is last written; g0 says d₁ already
+        -- carries X₁ at this index (subst eliminates i)
+        subst heq
+        have e1 := hpeel (((((d₁.crossings.set n ⟨a₃, b₃, g₃, g₁⟩).set
+            (n + 1) ⟨g₃, a₁, b₂, g₂⟩).set (n + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            n ⟨a₂, a₁, g₁, g₂⟩).set (n + 1) ⟨a₃, g₁, g₃, b₃⟩) (n + 2) n
+            ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e2 := hpeel ((((d₁.crossings.set n ⟨a₃, b₃, g₃, g₁⟩).set
+            (n + 1) ⟨g₃, a₁, b₂, g₂⟩).set (n + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            n ⟨a₂, a₁, g₁, g₂⟩) (n + 1) n ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e3 := hself (((d₁.crossings.set n ⟨a₃, b₃, g₃, g₁⟩).set
+            (n + 1) ⟨g₃, a₁, b₂, g₂⟩).set (n + 2) ⟨g₁, g₂, a₂, b₁⟩) n
+            ⟨a₂, a₁, g₁, g₂⟩ (by simp only [List.length_set]; omega)
+        exact g0.trans (e1.trans (e2.trans e3)).symm
+      · -- i < n: three sub-cases
+        rcases Nat.lt_trichotomy n (i + 1) with hlt2 | heq2 | hgt2
+        · -- n < i + 1: impossible (hgt : i < n)
+          exact (by omega : False).elim
+        · -- n = i + 1: X₂ last written, g1' (subst eliminates n)
+          subst heq2
+          have e1 := hpeel (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+              (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+              i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2)
+              (i + 1) ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+              (by simp only [List.length_set]; omega)
+          have e2 := hself ((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+              (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+              i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) ⟨a₃, g₁, g₃, b₃⟩
+              (by simp only [List.length_set]; omega)
+          exact g1'.trans (e1.trans e2).symm
+        · rcases Nat.lt_trichotomy n (i + 2) with hlt3 | heq3 | hgt3
+          · -- n < i + 2: impossible (hgt2 : i + 1 < n)
+            exact (by omega : False).elim
+          · -- n = i + 2: X₃, g2' (subst eliminates n)
+            subst heq3
+            have e1 := hself (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+                i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2)
+                ⟨g₃, g₂, b₂, b₁⟩ (by simp only [List.length_set]; omega)
+            exact g2'.trans e1.symm
+          · -- i + 2 < n: all six sets are transparent
+            have e1 := hpeel (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+                i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2) n
+                ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e2 := hpeel ((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+                i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) n ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e3 := hpeel (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) i n
+                ⟨a₂, a₁, g₁, g₂⟩ (by omega : i ≠ n)
+                (by simp only [List.length_set]; omega)
+            have e4 := hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩) (i + 2) n ⟨g₁, g₂, a₂, b₁⟩
+                (by omega) (by simp only [List.length_set]; omega)
+            have e5 := hpeel (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) n
+                ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e6 := hpeel d₁.crossings i n ⟨a₃, b₃, g₃, g₁⟩
+                (by omega : i ≠ n) hn1
+            exact (e1.trans (e2.trans (e3.trans (e4.trans (e5.trans e6))))).symm
+
 /-! ## 2. Single Reidemeister step
 
 A single step is any of R1, R2, or R3.
