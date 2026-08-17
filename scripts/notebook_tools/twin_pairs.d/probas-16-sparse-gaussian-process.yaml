@@ -22,6 +22,12 @@
       csharp_sha: 6f3548830ed7e67e883b0d6d789c022fad96d6c4
       content_python_sha: 67de2ad2b0ad91f092d75c731686df7886571e78704ebe86612360e27257f2ee
       content_csharp_sha: 0e1a73ae33cfba37a8d37a4e9bc0fba25b2e1271a32255817ba4949bbaca8926
+    - date: "2026-08-16"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 4a3d89cb84ea32e95a307f04396253f9291800a4
+      csharp_sha: 3ba21c169e6c85cfbd5185acb5444d3a57d5cbcf
+      content_python_sha: 983a0833c9b9bc93277790e1af261dda2f6046236b8e9816ab670bb5da1a23fc
+      content_csharp_sha: c06adb667122f19581de02736f25c0a67ea4c39ab6c9138614847edd6f11b586
   known_differences:
   - 'Socle pedagogique commun : gaussiens parcimonieux (Sparse GP, points induits) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
