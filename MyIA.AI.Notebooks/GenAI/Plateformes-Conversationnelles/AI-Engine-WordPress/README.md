@@ -179,6 +179,14 @@ embeddings) lue et écrite par l'API, l'interrogation d'un provider
 cycle déclarer/basculer/rétablir d'un second environnement — et le
 piège mesuré par accident : `settings/update` **ne met pas à jour, il
 remplace** (démonstration sécurisée par instantané et restauration).
+[`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](parler-au-chatbot-en-visiteur-par-l-api.ipynb)
+ouvre la troisième face, celle du **navigateur d'un visiteur anonyme**
+(namespace `mwai-ui/v1`) : la page publique du chatbot n'embarque
+aucun jeton (design anti-cache), l'amorçage passe par `start_session`
+(le seul endpoint réellement public), et la conversation par
+`chats/submit` au header `X-WP-Nonce` — frontière 401 mesurée sans le
+nonce, et la nuance : un nonce est un anti-CSRF, pas une
+authentification.
 
 ---
 
@@ -313,6 +321,8 @@ attendues.
   WordPress comme serveur MCP : handshake JSON-RPC, catalogue d'outils, tools/call en lecture et écriture
 - [`brancher-plusieurs-providers-par-l-api.ipynb`](brancher-plusieurs-providers-par-l-api.ipynb) —
   environnements et matrice d'usages multi-provider : catalogues, connexions, bascules, et le PUT déguisé de settings/update
+- [`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](parler-au-chatbot-en-visiteur-par-l-api.ipynb) —
+  la face navigateur du visiteur : page sans jetons, session bootstrap, conversation anonyme au nonce
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
