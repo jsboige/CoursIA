@@ -67,10 +67,16 @@ jobs:
     # this workflow exists to avoid.
     name: PR gate
     runs-on: ubuntu-latest
-    # Above the script's own 90 min budget, so the script prints its verdict
+    # Above the script's own budget, so the script prints its verdict
     # instead of the runner killing it mid-poll (a runner-killed job reports
     # `cancelled`, which is far less legible than "timed out waiting for X").
-    timeout-minutes: 100
+    # #11405: was 100 min while the script polled 90 -- under runner
+    # starvation (11+/14 runners held by PR gate) the queue wait alone
+    # exceeded that budget. The pull_request leg now polls short and hands
+    # the terminal verdict to pr-gate-rerun.yml (triggered on completion of
+    # the slow guards), which re-aggregates and POSTs the check-run on the
+    # PR head SHA. Semantics unchanged: unsettled = FAIL = BLOCKED.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -111,7 +117,7 @@ jobs:
             --repo "${{ github.repository }}" \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --self-name "PR gate" \
-            --timeout-min 90 \
+            --timeout-min 12 \
             --poll-sec 30 \
             --settle-polls 2 \
             $IS_FORK_ARG

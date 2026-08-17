@@ -38,7 +38,13 @@ name: PR gate (re-aggregate)
 
 on:
   workflow_run:
-    workflows: ["Variation Tag Guard", "Lane Claim Guard"]
+    # #11405: the rerun leg is the TERMINAL verdict-holder, so it must fire on
+    # completion of the guards that finish AFTER the (now short) pull_request
+    # leg times out. Added the three slow guards observed never settling under
+    # runner starvation (notebook-execution-required, translation-drift,
+    # machine-dep-timing-advisory). Variation Tag Guard / Lane Claim Guard
+    # stay for the original stale-aggregate loop (#10433).
+    workflows: ["Variation Tag Guard", "Lane Claim Guard", "Notebook Execution Required", "Translation Drift Check", "machine-dep-timing-advisory"]
     types: [completed]
   # Manual dispatch for testing the re-aggregation path without waiting for a
   # guard run. PR_NUMBER/HEAD_SHA default to empty; the job then no-ops unless
