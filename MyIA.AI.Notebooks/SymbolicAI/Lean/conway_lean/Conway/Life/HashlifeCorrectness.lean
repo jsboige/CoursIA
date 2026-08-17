@@ -3857,6 +3857,117 @@ theorem n9_evolve_agree {k j : Nat}
     ((mem_toGrid_shift (c := node d1 d2 d3 d4) (r0 := (2*(2^k : Int))) (c0 := (2*(2^k : Int))) (p := q)).trans hagree)
 
 
+/-! ### P4-At 5d : bras d'assemblage du pas inductif (grain 3b, direction
+forward)
+
+Briques de la premiere direction du theoreme d'assemblage
+`hashlifeResultAt_central_correct` : chaque bras est l'un des seize
+placements `subX r_i` de la decomposition 16-voies (`out16_toGrid_mem`).
+Le bras SE est le template ; les miroirs SW/NE/NW et l'enveloppe
+16-voies (rcases + enveloppe fenetre) forment les tranches suivantes.
+Chaine par bras : etendue -> point local (`subSE_toGrid_mem`, placement
+`x = o_i + 2*S`) -> re-ancrage IH (`toGrid_origin_iff_placed`, ancre
+`(S, S)`, `S = 2^(M-2)`) -> hypothese d'induction sur `n_i` (niveau `M`,
+fenetre `[S, 3S)^2`) -> brique de localite `nX_evolve_agree` (hypothese
+`hagree`, marge `2^j <= S`) -> fenetre finale `[2S, 6S)^2`.
+-/
+
+/-- Bras SE du pas inductif de `hashlifeResultAt_central_correct` (5d) :
+    un point de la sortie vivant dans le placement `subSE r_i` en `(x, y)`
+    vit dans l'evolue parent `cg` au meme point, dans la fenetre centree.
+    Chaine : etendue (`mem_toGrid_extent`) -> point local
+    (`subSE_toGrid_mem`, placement `x = o1 + 2*S`) -> re-ancrage IH
+    (`toGrid_origin_iff_placed`, ancre `(S, S)`, `S = 2^(M-2)`) ->
+    hypothese d'induction sur `n_i` (niveau `M`, fenetre `[S, 3S)^2`) ->
+    brique de localite `hagree` (forme `nX_evolve_agree`, marge `2^j`) ->
+    fenetre finale `[2S, 6S)^2` (`mem_restrictGridTo`). -/
+theorem step_forward_arm_se {M j : Nat} (hj : j + 2 ≤ M)
+    (n r : MacroCell) (o1 o2 x y : Int) (cg : Grid) (p : Int × Int)
+    (hrw : r.wf = true) (hrl : r.level = M - 1)
+    (href : r = hashlifeResultAt j n)
+    (hih : (hashlifeResultAt j n).toGrid ((2^(M-2) : Nat), (2^(M-2) : Nat))
+      = restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)))
+    (hagree : isAlive (evolve (2^j) (n.toGrid (0, 0))) (p.1 - o1, p.2 - o2)
+      = isAlive (evolve (2^j) cg) p)
+    (hXY : o1 + 2 * (2^(M-2) : Int) = x ∧ o2 + 2 * (2^(M-2) : Int) = y)
+    (hwin : (2^(M-1) : Int) ≤ x ∧ x + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int) ∧
+      (2^(M-1) : Int) ≤ y ∧ y + (2^(M-2) : Int) < (2^(M-1) : Int) + (2^M : Int))
+    (hp : p ∈ (subSE r).toGrid (x, y)) :
+    p ∈ restrictGridTo (evolve (2^j) cg) (2^(M-1) : Int) (2^M) := by
+  have hM2 : 2 ≤ M := by omega
+  have hS : (2^(M-1) : Int) = 2 * (2^(M-2) : Int) := by
+    have hM' : M - 1 = (M - 2) + 1 := by omega
+    rw [hM']
+    rw [pow_succ]
+    ring
+  have h4 : (2^M : Int) = 4 * (2^(M-2) : Int) := by
+    have hm : M - 2 + 2 = M := by omega
+    conv_lhs => rw [← hm]
+    rw [pow_add]
+    ring
+  rw [Nat.cast_pow 2 (M-2)] at hih
+  have hrl' : r.level = (M - 2) + 1 := by rw [hrl]; omega
+  obtain ⟨hsubl, hsubw⟩ := subSE_level_cellWf (m := M - 2) (cellWf_of_wf _ hrw) hrl'
+  have hsubwf : (subSE r).wf = true := wf_of_cellWf hsubw
+  have hexp : r.level - 1 = M - 2 := by omega
+  -- 1. Placement box [x, x + S) x [y, y + S) via extent
+  have hext := mem_toGrid_extent (subSE r) x y p hsubwf hp
+  rw [hsubl] at hext
+  -- 2. Local point: (p - (x,y) + S) in r.toGrid (0, 0)
+  have h1lev : 1 ≤ r.level := by omega
+  have hmem := subSE_toGrid_mem r x y p h1lev hrw (by rw [hexp]; exact hext)
+  rw [hexp] at hmem
+  -- 3. Re-anchor at (S, S): q := (p - (x,y) + 2S) in r.toGrid (S, S)
+  have hL : ((p.1 - x + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int),
+      (p.2 - y + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int)) ∈ r.toGrid (0, 0) := by
+    have hpair2 : ((p.1 - x + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int),
+        (p.2 - y + 2 * (2^(M-2) : Int)) - (2^(M-2) : Int)) =
+        (p.1 - x + (2^(M-2) : Int), p.2 - y + (2^(M-2) : Int)) := by
+      apply Prod.ext <;> ring
+    rw [hpair2]
+    exact hmem.mp hp
+  have hmemS : (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int))
+      ∈ r.toGrid ((2^(M-2) : Int), (2^(M-2) : Int)) :=
+    (toGrid_origin_iff_placed (g := r) (r0 := (2^(M-2) : Int)) (c0 := (2^(M-2) : Int))
+      (p := (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int)))).mp hL
+  -- 4. IH: membership in the restricted evolve of n
+  rw [href] at hmemS
+  have hres : (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int))
+      ∈ restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(M-2) : Int) (2^(M-1)) := by
+    rw [← hih]
+    exact hmemS
+  obtain ⟨hqmem, hq1, hq2, hq3, hq4⟩ := mem_restrictGridTo.mp hres
+  -- 5. Aliveness at the local point, transported to the parent grid
+  have halive : isAlive (evolve (2^j) (n.toGrid (0, 0)))
+      (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int)) = true := by
+    simp [isAlive, hqmem]
+  have hqe : (p.1 - x + 2 * (2^(M-2) : Int), p.2 - y + 2 * (2^(M-2) : Int))
+      = (p.1 - o1, p.2 - o2) := by
+    obtain ⟨hXY1, hXY2⟩ := hXY
+    apply Prod.ext <;> omega
+  rw [← hqe] at hagree
+  have h1 : isAlive (evolve (2^j) cg) p = true := by rw [← hagree]; exact halive
+  -- 6. Conclusion: p in the parent window
+  refine (mem_restrictGridTo).mpr ⟨?_, ?_, ?_, ?_, ?_⟩
+  · by_cases hpc : p ∈ evolve (2^j) cg
+    · exact hpc
+    · exfalso
+      simp [isAlive, hpc] at h1
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he2 hw2 ⊢
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    omega
+  · obtain ⟨hw1, hw2, hw3, hw4⟩ := hwin
+    obtain ⟨he1, he2, he3, he4⟩ := hext
+    simp only [Nat.cast_pow, Nat.cast_ofNat] at he4 hw4 ⊢
+    omega
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
