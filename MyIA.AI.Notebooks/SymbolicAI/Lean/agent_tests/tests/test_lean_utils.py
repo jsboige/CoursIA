@@ -231,3 +231,94 @@ class TestVerifySorryReplacementReplacementGuard:
         # replacement guard.
         with pytest.raises(ValueError, match="replacement: expected str"):
             lu.verify_sorry_replacement("x.lean", 1, None)
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Implicit-sorry detection (Epic #1500, c.1301+209)
+# ──────────────────────────────────────────────────────────────────────────
+#
+# Founding incident: BG2 GaleShapley L98 (2026-05-23) reported "SUCCESS
+# sorry 1→0" but the prover had replaced ``sorry`` with ``apply?`` — the
+# tactic failed silently and compiled as an implicit ``sorry``. Lake emits
+# ``declaration uses 'sorry'`` for these. ``count_real_sorries`` reads
+# source text only and misses the warning; the new ``count_implicit_sorries``
+# reads the build output and closes the gap.
+
+class TestCountImplicitSorries:
+    """Epic #1500: parse ``declaration uses 'sorry'`` warnings from lake build."""
+
+    def test_none_yields_zero(self):
+        # No build ran — no warning possible.
+        assert lu.count_implicit_sorries(None) == 0
+
+    def test_empty_string_yields_zero(self):
+        assert lu.count_implicit_sorries("") == 0
+
+    def test_modern_wording_single_occurrence(self):
+        # The current Lake wording: ``declaration uses 'sorry'`` (single quotes).
+        out = "info: myfile.lean:42: declaration uses 'sorry'"
+        assert lu.count_implicit_sorries(out) == 1
+
+    def test_modern_wording_multiple_occurrences(self):
+        # Two warnings on two different lines.
+        out = (
+            "info: myfile.lean:42: declaration uses 'sorry'\n"
+            "info: myfile.lean:73: declaration uses 'sorry'\n"
+        )
+        assert lu.count_implicit_sorries(out) == 2
+
+    def test_legacy_wording_fallback(self):
+        # Older Lake wording — kept as a fallback for robustness.
+        out = "warning: myfile.lean:42: uses 'sorry'"
+        assert lu.count_implicit_sorries(out) == 1
+
+    def test_unrelated_warning_ignored(self):
+        # Sanity: a warning that does NOT mention sorry yields 0.
+        out = "info: myfile.lean:42: some unrelated warning\n"
+        assert lu.count_implicit_sorries(out) == 0
+
+    def test_pure_sorry_string_ignored(self):
+        # Bare "sorry" without "declaration uses" or "uses" prefix = noise.
+        out = "the tactic emitted sorry at line 42\n"
+        assert lu.count_implicit_sorries(out) == 0
+
+    def test_real_sorry_prose_ignored(self):
+        # Lake output mentioning "sorry" in plain prose (no warning form) = 0.
+        out = "warning: a sorried proof will fail in subsequent steps\n"
+        assert lu.count_implicit_sorries(out) == 0
+
+    def test_double_quotes_variant(self):
+        # Some Lake versions emit ``declaration uses "sorry"`` with double quotes.
+        out = 'info: myfile.lean:42: declaration uses "sorry"'
+        assert lu.count_implicit_sorries(out) == 1
+
+
+class TestCountSorriesCombined:
+    """Epic #1500: combined REAL + IMPLICIT count for full coverage."""
+
+    def test_textual_only(self):
+        # No build output → combined == textual (no false positive).
+        src = "theorem foo := by sorry\n"
+        assert lu.count_sorries_combined(src, None) == 1
+        assert lu.count_sorries_combined(src, "") == 1
+
+    def test_textual_and_implicit(self):
+        # Source has 1 textual sorry, build output has 1 implicit warning
+        # (a different declaration): combined = 2.
+        src = "theorem foo := by sorry\n"
+        out = "info: bar.lean:73: declaration uses 'sorry'\n"
+        assert lu.count_sorries_combined(src, out) == 2
+
+    def test_textual_zero_implicit_one_is_false_positive(self):
+        # The founding scenario: source has 0 textual sorry, build output
+        # has 1 implicit warning → combined = 1 (this is the FP the prover
+        # would have reported as success without this fix).
+        src = "theorem foo := by apply?\n"  # no textual "sorry"
+        out = "info: foo.lean:1: declaration uses 'sorry'\n"
+        assert lu.count_sorries_combined(src, out) == 1
+
+    def test_both_zero_is_clean(self):
+        # No textual sorry, no build warning = 0 (clean proof).
+        src = "theorem foo := by rfl\n"
+        out = "info: foo.lean:1: ok\n"
+        assert lu.count_sorries_combined(src, out) == 0
