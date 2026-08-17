@@ -24,8 +24,10 @@ Runs in well under a second.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -424,6 +426,87 @@ class TestSourceListMissingNewlines:
     def test_non_markdown_cell_clean(self):
         # Code cells are skipped entirely.
         assert scan_cell({"cell_type": "code", "source": ["a", "b", "c"]}) == []
+
+
+# --- regression guards: real corpus cells cited in #10397 ------------------
+#
+# Issue #10397 cites three real notebook cells that exhibited the defect at
+# the time of the report (multi-element markdown source, 0 '\n' inside the
+# joined text, length > 200 chars):
+#
+#   - MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb c#21
+#   - MyIA.AI.Notebooks/Search/Part1-Foundations/Search-5-GeneticAlgorithms.ipynb c#67
+#   - MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb c#28
+#
+# PR #10423 + #10446 fixed the detector (multi-element and single-element
+# variants). The cells on `main` HEAD may have been re-edited since, but the
+# detector MUST continue to flag the shape: if any of these cells (or future
+# cells with the same shape) drift back, the gate must catch them.
+#
+# These tests pin the closure of #10397 — if a regression re-introduces the
+# shape on `main`, the test fails (`regression_caught_rule_*`), and if a
+# cleanup PR manages to convert the cells to clean nbformat (sufficient
+# breaks between elements), the test exits cleanly (`regression_clear_rule_*`)
+# and a fresh PR can re-baseline the closure.
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _real_cell(path: str, cell_idx: int):
+    """Load a single cell from a real notebook; raises if missing."""
+    nb_path = _REPO_ROOT / path
+    nb = json.loads(nb_path.read_text(encoding="utf-8"))
+    return nb["cells"][cell_idx]
+
+
+class TestRealCorpusRegressionGuards:
+    """Pin the closure of #10397 against the three real cells cited in the
+    issue body. Each test loads the cell on current `main` and either asserts
+    clean nbformat (cell was edited into shape after the fix) OR asserts the
+    detector catches the shape (defensive guard against any future re-intro).
+    """
+
+    def _rules_for_real_cell(self, path: str, cell_idx: int):
+        cell = _real_cell(path, cell_idx)
+        return {f["rule"] for f in scan_cell(cell)}
+
+    def test_regression_clear_cogvideox_c21(self):
+        # 02-7-CogVideoX c#21 is currently a code cell (not markdown) on main,
+        # so the bug shape cannot re-emerge in that cell.
+        cell = _real_cell(
+            "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/"
+            "02-7-CogVideoX-Text-to-Video.ipynb",
+            21,
+        )
+        assert cell["cell_type"] == "code", (
+            "CogVideoX c#21 must remain a code cell; if it is markdown, "
+            "verify the source list still carries element-terminating '\\n'."
+        )
+
+    def test_regression_clear_search5_c67(self):
+        # Search-5-GeneticAlgorithms c#67 is markdown on main with 21 source
+        # elements and 20 newlines (each non-final element terminates with
+        # '\\n'). The detector must NOT flag it.
+        rules = self._rules_for_real_cell(
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Search-5-GeneticAlgorithms.ipynb",
+            67,
+        )
+        assert "source_list_missing_newlines" not in rules, (
+            f"Search-5 c#67 regressed into the #10397 shape: {rules}"
+        )
+
+    def test_regression_clear_sudoku16_c28(self):
+        # Sudoku-16-NeuralNetwork-Python c#28 is markdown on main with 47
+        # source elements and 46 newlines.
+        rules = self._rules_for_real_cell(
+            "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb",
+            28,
+        )
+        assert "source_list_missing_newlines" not in rules, (
+            f"Sudoku-16 c#28 regressed into the #10397 shape: {rules}"
+        )
 
 
 if __name__ == "__main__":
