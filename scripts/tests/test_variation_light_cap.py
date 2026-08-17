@@ -1065,7 +1065,7 @@ def test_check_pr_med_readme_on_saturated_lane_is_cap_reached(tmp_path, capsys):
     assert res["cap_reached"] is True               # the bypass is closed
     assert res["tier_cap_reached"] is False         # 0 LIGHT declared
     assert res["cap_exceeded_by_genre"] is True     # light_genre=2 > cap=1
-    assert res["counts"] == "tier+genre"
+    assert res["counts"] == "tier+genre+vein"
     assert res["light_genre"] == 2                  # 1 merged + the candidate
     assert res["genre_cap"] == 1
 
@@ -1078,7 +1078,7 @@ def test_check_pr_counts_field_discloses_both_axes(tmp_path, capsys):
     merged = [{"number": 1, "body": BODY_EMDASH, "mergedAt": "2026-08-11T03:00:00Z"}]
     rc, res = _check_pr(tmp_path, merged, BODY_EMDASH, capsys=capsys)
     assert rc == 0
-    assert res["counts"] == "tier+genre"
+    assert res["counts"] == "tier+genre+vein"
 
 
 def test_check_pr_lane_grains_window_aligned_tier_genre(tmp_path, capsys):
@@ -1201,3 +1201,439 @@ def test_check_pr_coherent_with_genre_signals_on_defect(tmp_path, capsys):
     assert sig["signals"]["CAP-EXCEEDED-BY-GENRE"] is True
     assert chk["cap_exceeded_by_genre"] is True
     assert chk["cap_reached"] is True
+
+
+# --- #11343: VEINE runs (lane, cited_issue#) ---------------------------------
+
+def test_extract_vein_key_first_citation_excludes_pr_number():
+    body = "Grain: MED/guard -- lane myia-po-2024:CoursIA\n\nVoir #11343."
+    pr = {"number": 12345, "body": body}
+    assert vlc.extract_vein_key(pr) == 11343
+
+
+def test_extract_vein_key_returns_none_when_no_citation():
+    assert vlc.extract_vein_key({"number": 1, "body": "Grain: MED/guard -- lane x"}) is None
+    assert vlc.extract_vein_key({"number": 2, "body": ""}) is None
+    assert vlc.extract_vein_key({"number": 3, "body": None}) is None
+
+
+def test_extract_vein_key_skips_self_reference():
+    """A PR body that opens with its own number (Closes #N) must look further."""
+    body = (
+        "Grain: MED/guard -- lane myia-po-2024:CoursIA\n\n"
+        "Closes #7777. See #11343 for the umbrella."
+    )
+    pr = {"number": 7777, "body": body}
+    assert vlc.extract_vein_key(pr) == 11343
+
+
+def test_extract_vein_key_self_when_no_other_citation():
+    body = "Grain: MED/guard -- lane myia-po-2024:CoursIA\n\nCloses #7777."
+    pr = {"number": 7777, "body": body}
+    assert vlc.extract_vein_key(pr) is None
+
+
+def test_extract_vein_key_skips_prev_clause_to_target_issue():
+    """The `prev:` clause carries adjacency (previous grain of the lane), NOT the
+    vein. The detector must skip it and find the next #N -- which is the real
+    issue the PR is working on. Bug observed c.1331p236: the original detector
+    always returned the prev: PR number, defeating the entire VEIN-RUN signal.
+    """
+    body = (
+        "Grain: MED/notebook-python — lane myia-po-2024:CoursIA-2 "
+        "— prev: MED/tooling #11479\n\n"
+        "feat(genai,#11271): Audio 04-11-Generation-TTS densite 988->1311"
+    )
+    pr = {"number": 11498, "body": body}
+    assert vlc.extract_vein_key(pr) == 11271
+
+
+def test_extract_vein_key_skips_prev_emdash_separator():
+    """The `prev:` clause can be separated by em-dash (real PR bodies)."""
+    body = (
+        "Grain: MED/notebook-python — lane myia-po-2024:CoursIA-2 — "
+        "prev: MED/notebook-python #11498\n\n"
+        "feat(genai,#11271): Audio 04-12 tranche 2"
+    )
+    pr = {"number": 11499, "body": body}
+    assert vlc.extract_vein_key(pr) == 11271
+
+
+def test_extract_vein_key_returns_none_when_only_prev_clause():
+    """When the body has only a `prev:` reference and nothing else,
+    the detector returns None (no vein signal)."""
+    body = (
+        "Grain: MED/guard — lane myia-po-2024:CoursIA-2 — "
+        "prev: MED/tooling #11479\n\n"
+        "Pas d'issue cible dans ce body."
+    )
+    pr = {"number": 11500, "body": body}
+    assert vlc.extract_vein_key(pr) is None
+
+
+def test_extract_vein_key_realistic_pr_with_self_and_prev_and_target():
+    """A body with self-reference + prev: + target -- the detector must
+    skip the first two and return the third."""
+    body = (
+        "Grain: DEEP/lean — lane myia-po-2025:CoursIA-2 — prev: DEEP/lean #11396\n\n"
+        "EPIC **#2159 Phase 5** — Partie 53 du hommage Grothendieck\n\n"
+        "Refs #2159 (EPIC #1646, Phase 5 — forme flèche)."
+    )
+    pr = {"number": 11402, "body": body}
+    assert vlc.extract_vein_key(pr) == 2159
+
+
+def test_vein_runs_aggregates_two_prs_citing_same_issue():
+    """A lane with 2 PRs citing #11224 trips VEINE-RUN at vein_cap=2."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11224, tranche 2."
+    merged = [
+        {"number": 100, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 101, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    out = vlc.vein_runs(merged, lane)
+    assert len(out) == 1
+    assert out[0]["vein_key"] == 11224
+    assert out[0]["count"] == 2
+    assert sorted(out[0]["numbers"]) == [100, 101]
+
+
+def test_vein_runs_below_threshold_is_empty():
+    """1 PR citing #N is not a vein (count=1 < vein_cap=2)."""
+    lane = "myia-po-2024:CoursIA-2"
+    body = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    merged = [{"number": 200, "body": body, "mergedAt": "2026-08-17T08:00:00Z"}]
+    assert vlc.vein_runs(merged, lane) == []
+
+
+def test_vein_runs_distinct_issues_kept_separate():
+    """Two PRs citing TWO different issues does NOT form a vein."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11271."
+    merged = [
+        {"number": 300, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 301, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    out = vlc.vein_runs(merged, lane)
+    assert out == []
+
+
+def test_vein_runs_skips_prs_without_citation():
+    """A PR without a #N reference is not in any vein."""
+    lane = "myia-po-2024:CoursIA-2"
+    merged = [
+        {"number": 400, "body": f"Grain: MED/guard -- lane {lane}\n\nFix build.",
+         "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 401, "body": f"Grain: MED/guard -- lane {lane}",
+         "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    assert vlc.vein_runs(merged, lane) == []
+
+
+def test_vein_runs_only_target_lane_counted():
+    """PRs of OTHER lanes citing the same issue do NOT form a vein for this lane."""
+    body_a = "Grain: MED/guard -- lane myia-po-2023:CoursIA\n\nIssue #11224."
+    body_b = f"Grain: MED/guard -- lane myia-po-2024:CoursIA-2\n\nIssue #11224."
+    merged = [
+        {"number": 500, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 501, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    out = vlc.vein_runs(merged, "myia-po-2024:CoursIA-2")
+    assert out == []
+
+
+def test_compute_signals_vein_run_above_threshold():
+    """VEIN-RUN fires when 2 PRs of the lane cite the same issue."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11224, tranche 2."
+    merged = [
+        {"number": 600, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 601, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    sig = vlc.compute_signals(merged, lane)
+    assert sig["signals"]["VEIN-RUN"] is True
+    assert len(sig["vein_runs"]) == 1
+    assert sig["vein_runs"][0]["vein_key"] == 11224
+
+
+def test_compute_signals_vein_run_silent_on_singular_citation():
+    """VEIN-RUN is False when no citation pattern is exceeded."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224."
+    body_b = f"Grain: MED/lean -- lane {lane}\n\nIssue #11256."
+    merged = [
+        {"number": 700, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 701, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    sig = vlc.compute_signals(merged, lane)
+    assert sig["signals"]["VEIN-RUN"] is False
+    assert sig["vein_runs"] == []
+
+
+def test_vein_runs_handles_open_pr_with_none_mergedat():
+    """OPEN PRs have `mergedAt=None`; the sort must not crash on None."""
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = f"Grain: MED/notebook-python -- lane {lane}\n\nIssue #11224, tranche 1."
+    body_b = f"Grain: MED/notebook-dotnet -- lane {lane}\n\nIssue #11224, tranche 2."
+    merged = [
+        {"number": 800, "body": body_a, "mergedAt": None},
+        {"number": 801, "body": body_b, "mergedAt": None},
+    ]
+    out = vlc.vein_runs(merged, lane)
+    assert len(out) == 1
+    assert out[0]["vein_key"] == 11224
+    assert sorted(out[0]["numbers"]) == [800, 801]
+
+
+# --- #11343 tranche 2 : picker-command surface ------------------------------
+
+def test_picker_command_for_vein_below_cap_returns_none():
+    """A vein with count < vein_cap must NOT carry a picker command."""
+    from variation_light_cap import picker_command_for_vein
+    vein = {"vein_key": 11224, "count": 1, "numbers": [800]}
+    cmd = picker_command_for_vein(vein, "myia-po-2024:CoursIA-2")
+    assert cmd is None
+
+
+def test_picker_command_for_vein_at_cap_returns_command():
+    """A tripped vein (count >= vein_cap=2) returns the picker shell command."""
+    from variation_light_cap import picker_command_for_vein
+    vein = {"vein_key": 11224, "count": 2, "numbers": [800, 801]}
+    cmd = picker_command_for_vein(vein, "myia-po-2024:CoursIA-2")
+    assert cmd is not None
+    assert "scripts/pick_idle_grain.py" in cmd
+    assert "--lane" in cmd
+    assert "myia-po-2024:CoursIA-2" in cmd
+    assert "--prev-genre" in cmd
+    assert "tooling" in cmd
+
+
+def test_check_pr_emits_picker_command_when_vein_tripped():
+    """--check-pr N: when the lane-day trips a vein (count >= 2), the JSON
+    output must carry picker_command populated with the picker shell
+    command. The flag does NOT flip cap_reached -- the tranche in
+    flight still merges, only the NEXT grain is pointed at the picker
+    (amendement ai-01 2026-08-16T22:53Z verbatim)."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Tranche 1, issue #11224."
+    )
+    body_b = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Tranche 2, issue #11224."
+    )
+    merged_payload = [
+        {"number": 900, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 901, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    # The OPEN candidate is also a LIGHT/guard on the same vein -- it
+    # falls into the STRUCTURED branch (eff=LIGHT, candidate_is_light_genre=True),
+    # where the full `counts: tier+genre+vein` disclosure lives.
+    body_now = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Tranche 3, issue #11224."
+    )
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8",
+    ) as f:
+        f.write(body_now)
+        body_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--check-pr", "999",
+                "--body-file", body_path,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+        os.unlink(body_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert out["vein_exceeded"] is True
+    assert out["vein_key"] == 11224
+    assert out["vein_count"] >= 2
+    assert out["picker_command"] is not None
+    assert "pick_idle_grain.py" in out["picker_command"]
+    assert lane in out["picker_command"]
+    assert out["counts"] == "tier+genre+vein"
+
+
+def test_check_pr_picker_command_absent_when_no_vein():
+    """--check-pr N: when NO vein is tripped (count < 2), picker_command
+    is None -- no false picker-call on a clean day."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Issue #11224, tranche 1."
+    )
+    body_b = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Issue #11256, tranche distincte."
+    )
+    merged_payload = [
+        {"number": 950, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 951, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    # OPEN candidate LIGHT/guard with no shared issue# in the day --
+    # vein count stays at 1, picker_command must be None.
+    body_now = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Issue #11224, tranche candidate."
+    )
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8",
+    ) as f:
+        f.write(body_now)
+        body_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--check-pr", "999",
+                "--body-file", body_path,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+        os.unlink(body_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert out["vein_exceeded"] is False
+    assert out["vein_key"] is None
+    assert out["vein_count"] == 0
+    assert out["picker_command"] is None
+
+
+def test_genre_signals_emits_picker_command_when_vein_tripped():
+    """--genre-signals mode: when the lane's day trips a vein, the JSON
+    output carries picker_command at the top level (alongside
+    signals and vein_runs)."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: MED/notebook-python -- lane {lane}\n\n"
+        f"Tranche 1, issue #11224."
+    )
+    body_b = (
+        f"Grain: MED/notebook-dotnet -- lane {lane}\n\n"
+        f"Tranche 2, issue #11224."
+    )
+    merged_payload = [
+        {"number": 960, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 961, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--genre-signals",
+                "--lane", lane,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert "picker_command" in out
+    assert out["picker_command"] is not None
+    assert "pick_idle_grain.py" in out["picker_command"]
+    assert lane in out["picker_command"]
+    assert out["signals"]["VEIN-RUN"] is True
+
+
+def test_genre_signals_picker_command_absent_when_clean():
+    """--genre-signals mode: when the lane's day has no vein, the JSON
+    output carries picker_command: null -- no false picker-call."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: MED/notebook-python -- lane {lane}\n\n"
+        f"Issue #11224."
+    )
+    merged_payload = [
+        {"number": 970, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--genre-signals",
+                "--lane", lane,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert out["picker_command"] is None
+    assert out["signals"]["VEIN-RUN"] is False
