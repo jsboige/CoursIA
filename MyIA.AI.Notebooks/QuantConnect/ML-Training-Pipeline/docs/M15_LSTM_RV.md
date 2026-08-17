@@ -2,6 +2,7 @@
 
 **Model:** LSTM (Hochreiter & Schmidhuber 1997) applied to log-realized variance.
 **Date:** 2026-05-14
+**Updated:** 2026-08-17 — hidden=32 re-run §C (issue #11395): **NO BEATS**, claim "deployable" retracted.
 **Script:** `scripts/m15_lstm_rv.py`
 
 ## Architecture
@@ -14,10 +15,10 @@ Loss:   MSE on log-RV
 Decode: exp(pred) -> RV level, then log(RV) for Kelly comparison
 ```
 
-Three capacities tested:
-- **hidden=128**: ~68,225 params -- NO BEATS
-- **hidden=64**: ~17,729 params -- NO BEATS
-- **hidden=32**: ~4,769 params -- **BEATS**
+Three capacities were tested historically:
+- **hidden=128**: ~68,225 params -- NO BEATS (historical run, not tracked)
+- **hidden=64**: ~17,729 params -- NO BEATS (tracked runs: `m15_lstm_rv_btc_sc`, BTC only)
+- **hidden=32**: ~4,769 params -- historical "BEATS" **invalidated by the §C test** (NO BEATS)
 
 ## Methodology
 
@@ -26,128 +27,105 @@ Three capacities tested:
 - Expanding normalization (mean/std from training fold only)
 - 7 coins (BTC, ETH, SOL, LTC, XRP, ADA, DOT) x 3 horizons (h=1,5,10) x 4 seeds (0,1,7,42) = 84 combos
 - Kelly cap=1.0, fee=50bps, mu_window=60
-- Sign-test: binomial one-sided, BEATS if p<0.05 AND win_rate >= 60%
+- Sign-test: binomial one-sided (historical gate, NOT the §C gate)
+- **§C gate (issue #11395):** conjunction edge >= 2σ cross-seed **AND** dm_p_median < 0.05 on the **precision loss** (loss_fn="mse"), plus dominance guard
 
-## Results: hidden=32 (~4.8K params) -- BEST
+## Results: hidden=32 (~4.8K params) -- §C re-run (issue #11395)
 
-**VERDICT: BEATS** (52/84, p=0.0188, win_rate=61.9%)
-
-| Metric | Value |
-|--------|-------|
-| LSTM beats HAR | 52/84 (61.9%) |
-| p-value (sign-test) | 0.0188 |
-| Median delta-Sharpe (LSTM - HAR) | +0.0121 |
-| Median MSE change | +11.0% (LSTM worse) |
-
-### Per-coin results (hidden=32)
-
-| Coin | Median delta-Sharpe | MSE change | Beats |
-|------|-------------------|------------|-------|
-| BTC-USD | +0.0121 | -14.2% | 11/12 |
-| ETH-USD | -0.0272 | +8.1% | 4/12 |
-| SOL-USD | -0.0062 | +10.2% | 4/12 |
-| LTC-USD | -0.0218 | +15.8% | 1/12 |
-| XRP-USD | +0.0640 | +24.4% | 9/12 |
-| ADA-USD | +0.0764 | +12.1% | 11/12 |
-| DOT-USD | +0.0473 | +11.0% | 12/12 |
-
-### Per-horizon results (hidden=32)
-
-| Horizon | Median delta-Sharpe | Beats |
-|---------|-------------------|-------|
-| h=1 | +0.0317 | 23/28 |
-| h=5 | -0.0006 | 13/28 |
-| h=10 | +0.0232 | 16/28 |
-
-### Notable observations (hidden=32)
-
-1. **BTC-USD**: Strong BEATS (11/12) with MSE reduction (-14.2%). LSTM captures BTC volatility structure well at all horizons.
-2. **DOT-USD**: Perfect beat rate (12/12) consistent with h=64 results. DOT volatility has structure well-suited for LSTM.
-3. **ADA-USD**: Strong BEATS (11/12) driven by massive h=10 improvement (+0.25 delta-Sharpe).
-4. **XRP-USD**: Solid BEATS (9/12) with large delta-Sharpe (+0.064), especially at h=10.
-5. **h=1 strongest**: 23/28 wins at h=1, suggesting LSTM excels at short-horizon forecasting where sequential memory matters most.
-6. **MSE paradox**: LSTM wins on Sharpe but loses on MSE (+11.0% median). The Kelly framework transforms MSE-suboptimal forecasts into better portfolio sizing through asymmetric payoff.
-
-## Results: hidden=64 (~17.7K params)
-
-**VERDICT: NO BEATS** (45/84, p=0.2928, win_rate=53.6%)
+**VERDICT: NO BEATS** (44/84, p=0.372, win_rate=52.4%)
 
 | Metric | Value |
 |--------|-------|
-| LSTM beats HAR | 45/84 (53.6%) |
-| p-value (sign-test) | 0.2928 |
+| LSTM beats HAR | 44/84 (52.4%) |
+| p-value (sign-test) | 0.3718 |
 | Median delta-Sharpe (LSTM - HAR) | +0.0029 |
-| Median MSE change | +7.8% (LSTM worse) |
+| Median MSE change | +11.2% (LSTM worse) |
+| Runtime | 4.5h (16036s, GPU) |
+| Results file | `scripts/results/m15_lstm_rv_h32/results.json` (tracked) |
 
-### Per-coin results (hidden=64)
+### §C conjunction per horizon (loss = mse)
+
+| Horizon | edge (MSE) | σ cross-seed | dm_p_median | beaten | Verdict §C |
+|---------|------------|--------------|-------------|--------|------------|
+| h=1 | -9.1% | 6.50 | 0.027 | 18/28 | NO BEATS |
+| h=5 | -9.0% | 11.43 | 0.083 | 7/28 | NO BEATS |
+| h=10 | -10.9% | 15.41 | 0.112 | 7/28 | NO BEATS |
+
+The Diebold-Mariano test is significant at h=1 (p=0.027) but **in the direction LSTM worse**: the
+HAR baseline is significantly more precise at the short horizon. A significant p-value is not a
+BEATS -- the sign of the edge decides.
+
+### Per-coin results (hidden=32, §C run)
 
 | Coin | Median delta-Sharpe | MSE change | Beats |
 |------|-------------------|------------|-------|
-| BTC-USD | +0.0069 | -13.1% | 9/12 |
-| ETH-USD | -0.0293 | +8.8% | 4/12 |
-| SOL-USD | -0.0190 | +8.6% | 4/12 |
-| LTC-USD | -0.0142 | +12.3% | 2/12 |
-| XRP-USD | +0.0026 | +12.0% | 6/12 |
-| ADA-USD | +0.0687 | +7.7% | 8/12 |
-| DOT-USD | +0.0247 | +4.6% | 12/12 |
+| BTC-USD | +0.0123 | -11.9% | 12/12 |
+| ETH-USD | -0.0286 | +8.3% | 4/12 |
+| SOL-USD | +0.0131 | +17.1% | 9/12 |
+| LTC-USD | -0.0744 | +14.9% | 0/12 |
+| XRP-USD | +0.0331 | +17.4% | 8/12 |
+| ADA-USD | +0.0192 | +9.4% | 7/12 |
+| DOT-USD | -0.0530 | +8.7% | 4/12 |
 
-### Per-horizon results (hidden=64)
+Only BTC shows a median MSE reduction (-11.9%). The historical per-coin claims (DOT 12/12, ADA 11/12,
+XRP 9/12) do **not** reproduce on the tracked §C run.
+
+### Per-horizon results (hidden=32, §C run)
 
 | Horizon | Median delta-Sharpe | Beats |
 |---------|-------------------|-------|
-| h=1 | -0.0031 | 13/28 |
-| h=5 | +0.0040 | 16/28 |
-| h=10 | +0.0075 | 16/28 |
+| h=1 | +0.0123 | 18/28 |
+| h=5 | -0.0253 | 13/28 |
+| h=10 | -0.0077 | 13/28 |
 
-## Results: hidden=128 (~68.2K params)
+### Historical run (NOT tracked, claims only)
 
-**VERDICT: NO BEATS** (38/84, p=0.8369, win_rate=45.2%)
+The original hidden=32 run (2026-05) claimed BEATS (52/84, p=0.0188, median delta-Sharpe +0.0121,
+DOT 12/12, h=1 23/28). These numbers were based on a **sign-test of Kelly Sharpe alone** -- never
+validated by the §C conjunction. The run is not tracked; the §C run above is the reproducible
+reference and it **infirms** the BEATS.
 
-| Metric | Value |
-|--------|-------|
-| LSTM beats HAR | 38/84 (45.2%) |
-| p-value (sign-test) | 0.8369 |
-| Median delta-Sharpe (LSTM - HAR) | -0.0076 |
-| Median MSE change | +7.0% (LSTM worse) |
+## Results: hidden=64 and hidden=128 (historical, not tracked)
 
-### Per-coin results (hidden=128)
+Historical claims (2026-05, 84-combo runs not tracked in the repo):
+- hidden=64: NO BEATS (45/84, p=0.2928)
+- hidden=128: NO BEATS (38/84, p=0.8369)
 
-| Coin | Median delta-Sharpe | MSE change | Beats |
-|------|-------------------|------------|-------|
-| BTC-USD | +0.0041 | -12.7% | 8/12 |
-| ETH-USD | -0.0119 | +8.8% | 4/12 |
-| SOL-USD | -0.0042 | +6.8% | 6/12 |
-| LTC-USD | -0.0621 | +9.3% | 0/12 |
-| XRP-USD | -0.0153 | +13.0% | 3/12 |
-| ADA-USD | -0.0254 | +10.3% | 5/12 |
-| DOT-USD | +0.0500 | +0.5% | 12/12 |
+Tracked substitutes: `scripts/results/m15_lstm_rv_btc_sc` (hidden=64, loss_fn="linear") and
+`m15_lstm_rv_btc_sc_mse` (hidden=64, loss_fn="mse"), both BTC-only, both **NO BEATS** in their
+§C verdict. The historical 84-combo numbers above are **not reproducible** (runs never tracked)
+and should not be cited as evidence.
 
-## Capacity comparison: h=32 vs h=64 vs h=128
+## Capacity comparison (revised)
 
-| Metric | h=32 | h=64 | h=128 |
-|--------|------|------|-------|
-| Win rate | 61.9% | 53.6% | 45.2% |
-| p-value | 0.0188 | 0.2928 | 0.8369 |
-| Median delta-Sharpe | +0.0121 | +0.0029 | -0.0076 |
-| Median MSE change | +11.0% | +7.8% | +7.0% |
-| Params | 4,769 | 17,729 | 68,225 |
-| Verdict | **BEATS** | NO BEATS | NO BEATS |
+| Metric | h=32 (§C run) | h=64 (tracked BTC) | h=128 (historical) |
+|--------|--------------|--------------------|--------------------|
+| Win rate | 52.4% (44/84) | 58.3% / 66.7% (12 BTC combos) | 45.2% (not tracked) |
+| Median MSE change | +11.2% | -12.2% / -11.5% | +7.0% (not tracked) |
+| Verdict | **NO BEATS** | NO BEATS | NO BEATS |
 
-The capacity sweep shows a monotonic relationship: smaller model = better generalization. h=32 (4.8K params) BEATS, h=64 (17.7K) neutral, h=128 (68.2K) anti-beats. This is a textbook overfitting signature on ~1825 daily observations.
+The historical "monotonic capacity sweep" interpretation (smaller = better, overfitting signature)
+is **not supported**: the tracked h=64 BTC runs were actually **more precise** in MSE (-12%) yet
+still failed the §C conjunction on significance. The correct reading: at every tracked capacity,
+the LSTM fails the §C gate.
 
 ## Caveats (G.2 Honesty)
 
 ### C.1 -- MSE worse despite Sharpe better
 
-Median MSE change is +11.0% (LSTM worse). The BEATS verdict comes entirely from Kelly Sharpe, not forecast accuracy. LSTM forecasts are less accurate in MSE terms but produce better trading signals through the Kelly framework.
+Median MSE change is +11.2% (LSTM worse). The historical BEATS verdict came entirely from Kelly
+Sharpe, not forecast accuracy. The §C re-run shows the Sharpe gain (+0.0029) is **indistinguishable
+from noise** (p=0.372) -- the MSE paradox is real but the Sharpe side is not statistically significant.
 
 ### C.2 -- Weak coins drag
 
-ETH, SOL, LTC show consistent losses (4/12 or 1/12 beat rate). The overall BEATS is carried by BTC (11/12), ADA (11/12), DOT (12/12), and XRP (9/12). Without these 4 coins, the verdict would be NO BEATS.
+ETH, LTC and DOT show negative median delta-Sharpe on the §C run. The overall Sharpe win rate
+(52.4%) is carried by BTC (12/12) and, more weakly, SOL/XRP/ADA.
 
-### C.3 -- h=5 neutral
+### C.3 -- No horizon holds the §C conjunction
 
-Horizon h=5 is essentially a coin flip (13/28, delta-Sharpe -0.0006). The BEATS signal comes from h=1 (23/28) and h=10 (16/28).
+The edge on the precision loss is negative at all three horizons. h=5 is essentially a coin flip
+(13/28, delta-Sharpe -0.0253). No horizon qualifies as an edge.
 
 ## Comparison with M-series
 
@@ -155,17 +133,22 @@ Horizon h=5 is essentially a coin flip (13/28, delta-Sharpe -0.0006). The BEATS 
 |-------|---------|----------|---------|-------|
 | M2 HAR Classic | **Baseline** | -- | -- | Sharpe +0.313 vs BH |
 | M10 Realized GARCH | NO BEATS | -- | -- | MSE +62% |
-| M12 HAR-RV-J | **BEATS** | -- | p=7.9e-7 | Jump-augmented |
+| M12 HAR-RV-J | **BEATS** | -- | p=0.0015 | Jump-augmented, deployed (`HAR-RV-J-Kelly`) |
 | M13 MS-HAR | NO BEATS | 39/84 | p=0.7774 | Markov-Switching |
 | M14 HEAVY | NO BEATS | 48/84 | p=0.1149 | Bivariate |
-| **M15 LSTM h=32** | **BEATS** | **52/84** | **p=0.0188** | Neural, small capacity |
-| M15 LSTM h=64 | NO BEATS | 45/84 | p=0.2928 | Neural, overfitting |
-| M15 LSTM h=128 | NO BEATS | 38/84 | p=0.8369 | Neural, overfitting amplified |
+| M15 LSTM h=32 | **NO BEATS** | 44/84 | p=0.372 | §C re-run (issue #11395) |
+| M15 LSTM h=64 (BTC) | NO BEATS | 7-8/12 | -- | §C tracked runs |
 
 ## Conclusion
 
-LSTM hidden=32 BEATS HAR Classic for crypto volatility forecasting (p=0.0188, 61.9% win rate). The key insight is that **smaller capacity wins**: 4.8K params outperform both 17.7K and 68.2K params by avoiding overfitting. The model excels on BTC, DOT, ADA, and XRP but struggles on ETH, SOL, and LTC. The signal is strongest at h=1 (short-horizon) where sequential memory provides the most value.
+The historical BEATS of M15 hidden=32 (p=0.0188, "deployable") was based on a sign-test of Kelly
+Sharpe only. The §C re-run (issue #11395, DM on the mse precision loss, seeds 0/1/7/42, 84 combos)
+**infirms** it: edge negative at all horizons (-9.1% / -9.0% / -10.9%), Sharpe gain not significant
+(p=0.372). M15 h=32 is **removed from the KEEPERS** (`RECAP_KEEPERS_V2.md`).
 
-This is the first neural model in the M-series to achieve BEATS, confirming that deep learning can complement the HAR family when properly regularized.
+The lesson: a Sharpe gain without a precision gain is **indistinguishable from noise** on 84 combos.
+The §C conjunction (edge >= 2σ AND dm_p_median < 0.05 on the precision loss) exists exactly for this
+case. A distinct §C-conformant M15 entry exists for BTC-only hidden=64 refit-110 (2/3 BEATS at
+h=5/h=10, issue #11034) -- see `REGISTRY.md`; it is a different configuration, not the retracted claim.
 
-Runtime: h=32 ~13.7h (49206s, RTX 3070 Laptop); h=64 ~4.8h (17206s, RTX 3070); h=128 ~3.9h (13892s, RTX 4090 ai-01).
+Runtime (§C run): h=32 ~4.5h (16036s, RTX 3070 Laptop).
