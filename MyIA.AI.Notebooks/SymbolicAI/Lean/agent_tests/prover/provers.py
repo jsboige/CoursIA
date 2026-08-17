@@ -17,7 +17,10 @@ from agent_framework import ToolResultCompactionStrategy
 from .trace import TraceLogger
 from .state import ProofState, SorryContext, ProofPhase, PHASE_TRANSITIONS, TacticAttempt
 from .p4_final_verify import _evaluate_final_verify
-from .decomposition_regression import is_decomposition_regression
+from .decomposition_regression import (
+    is_decomposition_regression,
+    is_same_count_zero_verified,
+)
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
@@ -1022,6 +1025,20 @@ class MultiAgentSorryProver:
                 f"  DECOMPOSITION_REGRESSION: sorry {original_sorry_count}"
                 f" -> {final_sorry} with 0 verified tactic. Net sorry growth"
                 f" unproven -- not structural progress (#7477 P3)."
+            )
+            structural_progress = False
+        # FX-8s (#11421): the equality case of the gap P3 closes. P3 demotes a
+        # net INCREASE with vtc=0; the structural_progress=True set at the
+        # kept-snapshot branch (:898) for final == original also requires at
+        # least one build-verified tactic. Same-count + vtc=0 = the agent
+        # churned text without proving anything -- not structure.
+        same_count_churn = is_same_count_zero_verified(
+            final_sorry, original_sorry_count, verified_tactic_count)
+        if same_count_churn:
+            print(
+                f"  SAME_COUNT_ZERO_VERIFIED: sorry {original_sorry_count}"
+                f" == {final_sorry} with 0 verified tactic -- snapshot kept"
+                f" without proof, not structural progress (#11421)."
             )
             structural_progress = False
         stmt_mutation = _stmt_mutation_guard(
