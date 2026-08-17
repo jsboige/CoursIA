@@ -49,4 +49,6 @@ jobs:
           python scripts/notebook_tools/check_papermill_ratchet.py "$BASE"
 
       - name: Ratchet unit tests
-        run: python -m pytest scripts/notebook_tools/tests/test_check_papermill_ratchet.py -q
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest scripts/notebook_tools/tests/test_check_papermill_ratchet.py -q
