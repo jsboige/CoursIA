@@ -1,0 +1,7 @@
+{
+  "3a178b0f02bc0de7c12f09f48ef88f878ed87280": {
+    "motif": "Contenu arrive sur main par promotion quarto : 3 des 4 fichiers sont deja presents a l'identique ; le 4e (MyIA.AI.Notebooks/Search/_metadata.yml) portait echo/enabled/warning pour le sous-arbre Search/, reglages promus au bloc racine execute: de _quarto.yml (L624-629, promotion documentee comme mesuree dans regen_quarto_render.py:19). L'override par sous-arbre est redondant, pas perdu — content_missing est file-presence-based et ne peut pas savoir qu'un reglage a migre ailleurs.",
+    "adjudicated_by": "ai-01",
+    "date": "2026-08-16"
+  }
+}

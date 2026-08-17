@@ -34,11 +34,18 @@ main, aucune PR ouverte de la base vers main, et le contenu manque encore a
 main*. L'orphelinage est un etat STABLE une fois avere : un balayage quotidien
 suffit (latence J+1 acceptable, l'issue le dit explicitement).
 
+Adjudications (#11159) : un orphelin tranche « ne pas recuperer » (motif ecrit,
+versionne dans ``orphan_adjudications.json``, cle = mergeCommit immuable) passe
+en statut ``ADJUGE`` distinct — liste separement et compte, jamais efface du
+rapport, label retire. Le registre ne desarme pas le detecteur : un nouvel
+orphelin non adjuge ressort toujours en ``ORPHAN``.
+
 Usage :
     py scripts/audit/check_orphan_merged_pr.py --days 14
     py scripts/audit/check_orphan_merged_pr.py --from-json prs.json --repo-path <repo>
     py scripts/audit/check_orphan_merged_pr.py --days 30 --strict
     py scripts/audit/check_orphan_merged_pr.py --days 7 --json-out out.json --apply
+    py scripts/audit/check_orphan_merged_pr.py --days 7 --adjudications <chemin>
 
 Exit codes :
     0 — advisory par defaut : n'echoue jamais, meme avec des findings
@@ -154,11 +161,13 @@ def open_prs_to_main(repo: str, base: str) -> int:
     return len(data)
 
 
-def analyse_pr(repo: Path, pr: dict, base_ref: str, repo_slug: str) -> dict:
+def analyse_pr(repo: Path, pr: dict, base_ref: str, repo_slug: str,
+               adjudications: dict | None = None) -> dict:
     """Analyse une PR mergee. Rend un dict de resultat avec `status` explicite.
 
     Statuts :
       ``orphan``      — mergeCommit non-ancetre de main, jambe morte, contenu absent (finding)
+      ``adjudge``     — orphelin adjuge « ne pas recuperer » (#11159, motif ecrit dans le registre)
       ``clean``       — ancetre de main, ou contenu deja present (re-atterri)
       ``in_flight``   — jambe encore ouverte vers main (stack legitime en vol)
       ``skipped``     — base == main, ou mergeCommit manquant / introuvable
@@ -198,6 +207,16 @@ def analyse_pr(repo: Path, pr: dict, base_ref: str, repo_slug: str) -> dict:
     if not missing:
         return {**result, "status": "clean", "merge_commit": merge_commit,
                 "paths": paths, "reason": "content already present in base (re-landed)"}
+
+    # Adjudication (#11159) : la cle est le mergeCommit (immuable), jamais le
+    # numero de PR ni la branche (reutilisables). Statut distinct, compte, et
+    # le motif est reporte pour qu'un adjudicataire puisse se dedire.
+    if adjudications and merge_commit in adjudications:
+        adj = adjudications[merge_commit]
+        return {**result, "status": "adjudge", "merge_commit": merge_commit,
+                "paths": paths, "motif": adj["motif"],
+                "adjudicated_by": adj["adjudicated_by"],
+                "adjudicated_at": adj["date"]}
 
     return {**result, "status": "orphan", "merge_commit": merge_commit,
             "paths": paths,
@@ -241,9 +260,42 @@ def filter_by_age(prs: list[dict], days: int, now: datetime | None = None) -> li
     return kept
 
 
+def load_adjudications(path: Path | None) -> dict[str, dict]:
+    """Charge le registre d'adjudications (#11159) : mergeCommit -> {motif, ...}.
+
+    Un orphelin adjuge (« ne pas recuperer », motif ecrit) passe du statut
+    ORPHAN a ADJUGE, liste separement et compte. Le registre est versionne
+    dans le depot (fichier, pas label GitHub) precisement pour obliger au
+    motif et passer en revue de PR. Toute entree sans motif est refusee
+    (RuntimeError -> exit 2) : une adjudication de complaisance reste visible.
+    """
+    if path is None or not path.is_file():
+        return {}
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"registre d'adjudications illisible: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise RuntimeError("registre d'adjudications: objet attendu (mergeCommit -> entree)")
+    registry: dict[str, dict] = {}
+    for commit, entry in raw.items():
+        if not isinstance(entry, dict):
+            raise RuntimeError(f"adjudication {commit[:12]}: entree non-objet")
+        motif = str(entry.get("motif", "")).strip()
+        if not motif:
+            raise RuntimeError(f"adjudication {commit[:12]}: motif obligatoire")
+        registry[commit] = {
+            "motif": motif,
+            "adjudicated_by": str(entry.get("adjudicated_by", "")).strip(),
+            "date": str(entry.get("date", "")).strip(),
+        }
+    return registry
+
+
 def format_report(results: list[dict]) -> str:
     """Rapport texte : les findings d'abord, puis un recapitulatif compte."""
     orphans = [r for r in results if r["status"] == "orphan"]
+    adjudges = [r for r in results if r["status"] == "adjudge"]
     inflight = [r for r in results if r["status"] == "in_flight"]
     lines: list[str] = []
 
@@ -255,10 +307,17 @@ def format_report(results: list[dict]) -> str:
         lines.append(f"        recuperation : {r.get('recovery', '')}")
         lines.append("")
 
+    for r in adjudges:
+        lines.append(f"ADJUGE  PR #{r['number']}  mergeCommit={r['merge_commit'][:12]}  |  {r['title'][:70]}")
+        lines.append(f"        adjuge par: {r.get('adjudicated_by', '?')}  le {r.get('adjudicated_at', '?')}")
+        lines.append(f"        motif: {r.get('motif', '')[:120]}")
+        lines.append("")
+
     lines.append(
-        "Analysees: {total} | orphelins: {o} | en vol: {f} | propres: {c} | ignorees: {s}".format(
+        "Analysees: {total} | orphelins: {o} | adjuges: {a} | en vol: {f} | propres: {c} | ignorees: {s}".format(
             total=len(results),
             o=len(orphans),
+            a=len(adjudges),
             f=len(inflight),
             c=sum(1 for r in results if r["status"] == "clean"),
             s=sum(1 for r in results if r["status"] == "skipped"),
@@ -327,12 +386,30 @@ def build_comment(r: dict) -> str:
     ])
 
 
-def apply_findings(repo: str, orphans: list[dict], dry_run: bool) -> None:
-    """Label + commentaire marker-guarde (upsert, pas de spam quotidien)."""
-    if not orphans:
+def apply_findings(repo: str, orphans: list[dict], adjudges: list[dict],
+                   dry_run: bool) -> None:
+    """Label + commentaire marker-guarde sur les orphelins (upsert, pas de spam).
+
+    Les PR adjugees (#11159) reçoivent l'inverse : le label ``orphaned-delivery``
+    est RETIRE (la decision « ne pas recuperer » est tranchee — garder le label
+    rouge ferait passer une adjudication pour un orphelin non traite). Le
+    commentaire historique reste, marker-guarde, pour que l'adjudicataire puisse
+    relire et se dedire.
+    """
+    if not orphans and not adjudges:
         return
     if not dry_run:
         ensure_label(repo)
+    for r in adjudges:
+        number = r["number"]
+        if dry_run:
+            print(f"[orphan-apply] #{number} label={LABEL_NAME} removed (adjudge, dry-run)")
+            continue
+        subprocess.run(
+            ["gh", "pr", "edit", str(number), "--repo", repo, "--remove-label", LABEL_NAME],
+            capture_output=True, text=True, check=False, encoding="utf-8",
+        )
+        print(f"[orphan-apply] #{number} label={LABEL_NAME} removed (adjudge)")
     for r in orphans:
         number = r["number"]
         if dry_run:
@@ -358,6 +435,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--base-ref", default="origin/main", help="ref de base (defaut: origin/main)")
     parser.add_argument("--days", type=int, default=14,
                         help="fenetre d'anciennete des merges, en jours (0 = sans limite)")
+    parser.add_argument("--adjudications", type=Path, default=None,
+                        help="registre d'adjudications JSON (#11159, defaut: <repo>/scripts/audit/orphan_adjudications.json)")
     parser.add_argument("--limit", type=int, default=200, help="nombre de PR demandees a gh")
     parser.add_argument("--repo", default=None, help="slug owner/name passe a gh")
     parser.add_argument("--from-json", default=None,
@@ -383,8 +462,12 @@ def main(argv: list[str] | None = None) -> int:
             ["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
             capture_output=True, text=True, encoding="utf-8").stdout.strip()
             or "jsboige/CoursIA")
+        adjudications_path = args.adjudications or (
+            repo / "scripts" / "audit" / "orphan_adjudications.json")
+        adjudications = load_adjudications(adjudications_path)
         prs = filter_by_age(load_prs(args), args.days)
-        results = [analyse_pr(repo, pr, args.base_ref, repo_slug) for pr in prs]
+        results = [analyse_pr(repo, pr, args.base_ref, repo_slug, adjudications)
+                   for pr in prs]
     except GitError as exc:
         print(f"ERREUR: {exc}", file=sys.stderr)
         return 2
@@ -408,9 +491,10 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     orphans = [r for r in results if r["status"] == "orphan"]
+    adjudges = [r for r in results if r["status"] == "adjudge"]
     if args.apply:
         try:
-            apply_findings(repo_slug, orphans, args.dry_run)
+            apply_findings(repo_slug, orphans, adjudges, args.dry_run)
         except RuntimeError as exc:
             print(f"ERREUR: {exc}", file=sys.stderr)
             return 2

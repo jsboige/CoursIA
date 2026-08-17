@@ -23,7 +23,9 @@ fails below `2 log N − log log N − s_N`. The three ingredients of §11 are:
    centered quadratic form of the standard noise `w` (external lake
    `YuanheZ/lean-stat-learning-theory`, `hanson_wright_inequality`), applied to
    the standard Gaussian vector `stdGaussianPi` — the chi-square tail of `‖w‖²`
-   from §11.
+   from §11. The case `A = 1` (Brick 3b, `chisq_norm_concentration`) derives
+   the explicit chi-square concentration `P(|∑ wᵢ² − n| ≥ t) ≤
+   2·exp(−(1/4C)·min(t²/n, t))`, chi-square being absent from Mathlib v4.32.0.
 
 The assembly (`gaussian_coordinate_escape_bound`): by independence of the
 coordinates (`Measure.pi_pi`), the probability that the noise escapes the `n`
@@ -214,6 +216,149 @@ theorem hanson_wright_noise {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {C t : �
     exact hasSubgaussianMGF_eval_stdGaussianPi i
   simpa using hanson_wright_inequality (μ := stdGaussianPi n) (K := 1) (C := C)
     (t := t) one_pos hC hC₁ hC₂ hC₃ hC₄ hF hOp iIndepFun_eval_stdGaussianPi hcert ht
+
+/-! ## Brick 3b — chi-square concentration of `‖w‖²` (case `A = 1`)
+
+Instantiation `A = 1` (identity) of Brick 3: the quadratic form
+`quadraticForm 1 w` is the squared Euclidean norm `∑ wᵢ²`, its mean is
+`E‖w‖² = n` (the `N(0,1)` second moment of each coordinate), so
+`centeredQuadraticForm` becomes exactly `‖w‖² − n`. Hanson–Wright then yields
+the chi-square tail `P(|∑ wᵢ² − n| ≥ t) ≤ 2·exp(−(1/4C)·min(t²/n, t))`.
+This is the "chi-squared tails" brick of the cartography #11152 — chi-square
+being absent from Mathlib v4.32.0, it is formalized via Hanson–Wright rather
+than through a dedicated χ² law. -/
+
+/-- Identity quadratic form: contracting `w` with the identity matrix gives
+the sum of squared coordinates. -/
+lemma quadraticForm_one {n : ℕ} (w : Fin n → ℝ) :
+    quadraticForm (1 : Matrix (Fin n) (Fin n) ℝ) w = ∑ i, w i * w i := by
+  simp [quadraticForm, Matrix.one_apply]
+
+/-- Squared Frobenius norm of the identity: `‖1‖_F² = n` (one entry 1 per row). -/
+lemma frobeniusNormSq_one {n : ℕ} :
+    frobeniusNormSq (1 : Matrix (Fin n) (Fin n) ℝ) = (n : ℝ) := by
+  simp [frobeniusNormSq, Matrix.one_apply]
+
+/-- Squared Frobenius norm of the identity: `‖1‖_F² = n`. Version directly
+usable inside the Hanson–Wright bound. -/
+lemma frobeniusNorm_one_sq {n : ℕ} :
+    frobeniusNorm (1 : Matrix (Fin n) (Fin n) ℝ) ^ 2 = (n : ℝ) := by
+  have h : frobeniusNorm (1 : Matrix (Fin n) (Fin n) ℝ) = Real.sqrt ((n : ℝ)) :=
+    show Real.sqrt (frobeniusNormSq (1 : Matrix (Fin n) (Fin n) ℝ)) = _ by
+      rw [frobeniusNormSq_one]
+  rw [h, Real.sq_sqrt (Nat.cast_nonneg n)]
+
+/-- Operator norm of the identity: `‖1‖_op = 1` for `n ≥ 1`. The identity
+matrix acts as the identity on Euclidean space (`one_mulVec`), so the norm
+is 1 by a two-sided bound: `‖x‖ ≤ 1·‖x‖` and `1 = ‖e_{i₀}‖ ≤ ‖1‖·1` on a
+basis vector. -/
+lemma operatorNorm_one {n : ℕ} (hn : 0 < n) :
+    operatorNorm (1 : Matrix (Fin n) (Fin n) ℝ) = 1 := by
+  obtain ⟨i₀⟩ : Nonempty (Fin n) := Fin.pos_iff_nonempty.mp hn
+  have happl : ∀ x : EuclideanSpace ℝ (Fin n),
+      Matrix.toEuclideanCLM (𝕜 := ℝ) (1 : Matrix (Fin n) (Fin n) ℝ) x = x := by
+    intro x
+    have h : WithLp.ofLp (Matrix.toEuclideanCLM (𝕜 := ℝ)
+        (1 : Matrix (Fin n) (Fin n) ℝ) x) = WithLp.ofLp x := by
+      rw [Matrix.ofLp_toEuclideanCLM, Matrix.one_mulVec]
+    exact @WithLp.ofLp_injective _ _ _ _ h
+  refine le_antisymm ?_ ?_
+  · exact ContinuousLinearMap.opNorm_le_bound _ zero_le_one
+      fun x => by rw [happl x, one_mul]
+  · have hx : ‖(EuclideanSpace.single i₀ (1 : ℝ) : EuclideanSpace ℝ (Fin n))‖ = 1 := by
+      simp
+    have hle := ContinuousLinearMap.le_opNorm
+      (Matrix.toEuclideanCLM (𝕜 := ℝ) (1 : Matrix (Fin n) (Fin n) ℝ))
+      (EuclideanSpace.single i₀ (1 : ℝ))
+    rw [happl, hx, mul_one] at hle
+    exact hle
+
+/-- Second moment of a coordinate of the standard noise: `E[(wᵢ)²] = 1`.
+Variance of `N(0,1)` transported through the pushforward law
+`map_eval_stdGaussianPi`. -/
+lemma integral_sq_eval_stdGaussianPi {n : ℕ} (i : Fin n) :
+    ∫ w : Fin n → ℝ, (w i) ^ 2 ∂stdGaussianPi n = 1 := by
+  have hg : AEStronglyMeasurable (fun x : ℝ => x ^ 2)
+      ((stdGaussianPi n).map (fun w => w i)) := by
+    rw [map_eval_stdGaussianPi i]
+    exact (measurable_id.pow_const 2).aestronglyMeasurable
+  calc ∫ w : Fin n → ℝ, (w i) ^ 2 ∂stdGaussianPi n
+      = ∫ x : ℝ, x ^ 2 ∂(stdGaussianPi n).map (fun w => w i) :=
+        (integral_map (α := Fin n → ℝ) (β := ℝ) (μ := stdGaussianPi n)
+          (φ := fun w => w i) (f := fun x : ℝ => x ^ 2)
+          (measurable_pi_apply i).aemeasurable hg).symm
+    _ = ∫ x : ℝ, x ^ 2 ∂gaussianReal 0 1 := by rw [map_eval_stdGaussianPi i]
+    _ = 1 := by
+        have h := variance_fun_id_gaussianReal (μ := 0) (v := 1)
+        rw [variance_eq_integral measurable_id'.aemeasurable] at h
+        simpa using h
+
+/-- Mean of the squared Euclidean norm of the standard noise:
+`E‖w‖² = n` (finite sum/integral exchange, each coordinate contributing its
+second moment `E[(wᵢ)²] = 1`). -/
+theorem integral_sqnorm_stdGaussianPi {n : ℕ} :
+    ∫ w : Fin n → ℝ, ∑ i, w i * w i ∂stdGaussianPi n = (n : ℝ) := by
+  have hinteg : ∀ i : Fin n,
+      Integrable (fun w : Fin n → ℝ => w i * w i) (stdGaussianPi n) := by
+    intro i
+    have h : Integrable (fun w : Fin n → ℝ => (w i) ^ 2) (stdGaussianPi n) :=
+      integrable_sq_eval_stdGaussianPi i
+    rwa [show (fun w : Fin n → ℝ => (w i) ^ 2) = fun w => w i * w i from
+      by funext w; ring] at h
+  rw [integral_finsetSum Finset.univ (fun i _ => hinteg i)]
+  have h1 : ∀ i : Fin n, ∫ w : Fin n → ℝ, w i * w i ∂stdGaussianPi n = 1 := by
+    intro i
+    calc ∫ w : Fin n → ℝ, w i * w i ∂stdGaussianPi n
+        = ∫ w : Fin n → ℝ, (w i) ^ 2 ∂stdGaussianPi n :=
+          integral_congr_ae (ae_of_all _ (fun w => by ring))
+      _ = 1 := integral_sq_eval_stdGaussianPi i
+  have hsum : ∑ i : Fin n, ∫ w : Fin n → ℝ, w i * w i ∂stdGaussianPi n
+      = ∑ i : Fin n, 1 := Finset.sum_congr rfl fun i _ => h1 i
+  rw [hsum]
+  simp
+
+/-- **Chi-square concentration of the noise norm** (the "chi-squared tails"
+brick of the cartography #11152): for `w ~ N(0, Iₙ)` with `n ≥ 1`, the
+deviation of the squared Euclidean norm from its mean `n` is
+sub-exponential —
+
+`P(|∑ wᵢ² − n| ≥ t) ≤ 2·exp(−(1/(4C))·min(t²/n, t))`.
+
+Case `A = 1` of `hanson_wright_noise`: identity quadratic form
+(`quadraticForm_one`), mean `E‖w‖² = n` (`integral_sqnorm_stdGaussianPi`),
+norms `‖1‖_F² = n` and `‖1‖_op = 1`. The quadratic component recovers the
+classical Gaussian deviation, the linear one the sub-exponential
+large-deviation bound for `‖w‖²`. -/
+theorem chisq_norm_concentration {n : ℕ} (hn : 0 < n) {C t : ℝ}
+    (hC : 0 < C) (hC₁ : 4 * Real.exp 1 ≤ C) (hC₂ : 8 * Real.exp 1 ^ 3 ≤ C)
+    (hC₃ : 16 * Real.exp 1 ≤ C ^ 2) (hC₄ : 64 * Real.exp 1 ^ 2 ≤ C)
+    (ht : 0 ≤ t) :
+    (stdGaussianPi n {w : Fin n → ℝ | t ≤ |∑ i, w i * w i - (n : ℝ)|}).toReal ≤
+      2 * Real.exp (-(1 / (4 * C)) * min (t ^ 2 / (n : ℝ)) t) := by
+  have hF : 0 < frobeniusNorm (1 : Matrix (Fin n) (Fin n) ℝ) :=
+    Real.sqrt_pos.mpr (by
+      show 0 < frobeniusNormSq (1 : Matrix (Fin n) (Fin n) ℝ)
+      rw [frobeniusNormSq_one]
+      exact Nat.cast_pos.mpr hn)
+  have hOp : 0 < operatorNorm (1 : Matrix (Fin n) (Fin n) ℝ) := by
+    rw [operatorNorm_one hn]
+    norm_num
+  have hev : ∀ w : Fin n → ℝ,
+      centeredQuadraticForm (stdGaussianPi n) (1 : Matrix (Fin n) (Fin n) ℝ)
+          (fun i w => w i) w = ∑ i, w i * w i - (n : ℝ) := by
+    intro w
+    simp only [centeredQuadraticForm, randomQuadraticForm, quadraticForm_one]
+    rw [integral_sqnorm_stdGaussianPi]
+  have hset : {w : Fin n → ℝ | t ≤ |∑ i, w i * w i - (n : ℝ)|} =
+      {w : Fin n → ℝ | t ≤ |centeredQuadraticForm (stdGaussianPi n)
+        (1 : Matrix (Fin n) (Fin n) ℝ) (fun i w => w i) w|} := by
+    ext w
+    simp only [Set.mem_setOf_eq]
+    rw [hev w]
+  rw [hset]
+  have hw := hanson_wright_noise (A := (1 : Matrix (Fin n) (Fin n) ℝ))
+    hC hC₁ hC₂ hC₃ hC₄ hF hOp ht
+  rwa [frobeniusNorm_one_sq, operatorNorm_one hn, div_one] at hw
 
 /-! ## Assembly — skeleton of the impossibility argument of §11 -/
 

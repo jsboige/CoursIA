@@ -130,6 +130,23 @@ CONDITIONAL_LIFT = re.compile(
     r"(et je merge|puis je merge|ensuite je merge"
     r"|je merge (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
 
+# #11246 — use vs mention : CONDITIONAL_LIFT lisait les exemples CITES du motif
+# comme des usages. Une review qui explique « corrige X et je merge » se
+# flaggait elle-meme (2/15 findings de l'audit --limit 400 : les 2 seules
+# reviews du corpus qui PARLENT du gate), et son annonce de merge reelle
+# (« **Mergée.** ») etait annulee. On neutralise les segments cites AVANT la
+# recherche de la construction conditionnelle — guillemets typographiques
+# (« … »), backticks inline (`…`), blocs de code (``` … ```) — comme pour tout
+# parseur qui ne doit pas lire ses propres exemples. La construction
+# conditionnelle EMPLOYEE (« corrige la ligne 19 et je merge ») reste bloquante
+# (#11201) : elle ne porte aucun de ces delimiteurs.
+_QUOTED_RANGES = re.compile(r"```.*?```|«.*?»|`[^`]*`", re.DOTALL)
+
+
+def _strip_quoted(body: str) -> str:
+    """Retire les segments cites (guillemets typo, backtick, bloc code)."""
+    return _QUOTED_RANGES.sub(" ", body)
+
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
 # portent « ne bloque pas » / « Safe to merge » a ete propose puis RETIRE : il
@@ -371,7 +388,7 @@ def classify(author: str, body: str) -> str | None:
     if author in BOT_LOGINS or not body:
         return None
     stripped = body.lstrip()
-    if has_marker(body, LIFT_MARKERS) and not CONDITIONAL_LIFT.search(body):
+    if has_marker(body, LIFT_MARKERS) and not CONDITIONAL_LIFT.search(_strip_quoted(body)):
         return None  # annonce de levee / de merge : resolution, pas reserve
     # (construction conditionnelle « et je merge » : voir CONDITIONAL_LIFT —
     # l'annonce conditionnee n'est pas une levee, le commentaire continue)
@@ -474,7 +491,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
         and has_marker(c.get("body", ""), LIFT_MARKERS)
-        and not CONDITIONAL_LIFT.search(c.get("body", ""))
+        and not CONDITIONAL_LIFT.search(_strip_quoted(c.get("body", "")))
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
