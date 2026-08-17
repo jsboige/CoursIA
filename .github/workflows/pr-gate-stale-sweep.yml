@@ -27,59 +27,76 @@ name: PR gate stale-verdict sweep
 #
 # This sweep closes the loop from the outside, independent of trigger
 # semantics: it finds open PRs whose ONLY failing check is `PR gate` while
-# every other check has COMPLETED green, and dispatches pr-gate-rerun.yml for
-# each -- the workflow that POSTs a fresh verdict onto the PR head SHA
-# (`--post-check-run`). It never merges, never edits, never blocks.
+# every other check has COMPLETED green, and re-aggregates each one, POSTing
+# the fresh verdict onto the PR head SHA. It never merges, never edits, never
+# blocks, and always exits 0.
 #
-# Why dispatch pr-gate-rerun.yml and NOT pr-gate.yml: the latter's own
-# `workflow_dispatch` leg cannot unblock a PR. It runs on the default branch,
-# so `github.event.pull_request.head.sha || github.sha` resolves to the default
-# branch commit, and it carries no `--post-check-run`, so its check-run lands
-# on that commit -- invisible to the PR's mergeState. (Its unused `sha` input
-# is removed in the same change that adds this file, for the same reason: a
-# documented remedy wired to nothing is worse than an absent one, because it
-# is tried and believed.)
+# Why it POSTs directly instead of dispatching pr-gate-rerun.yml: that
+# workflow's `cancel-in-progress: true` concurrency, combined with a starved
+# queue, eats most of its runs before they post anything. Measured over its
+# last 100 runs (2026-08-17 19:22Z -> 22:08Z): 91 completed, of which 69
+# `cancelled` (76%), 6 `failure`, 16 `success`. Its own header already
+# records 69% cancellations from #11415; the short-poll fix landed there did
+# not change the ratio, because under saturation runs are superseded while
+# still QUEUED -- before the poll length can matter at all. Dispatching into
+# that channel would make this sweep inherit a ~1-in-5 delivery rate. Calling
+# pr_gate.py here costs one job, has no concurrency chain to be cancelled by,
+# and delivers or fails visibly.
 #
-# Why GITHUB_TOKEN suffices: `workflow_dispatch` and `repository_dispatch` are
-# the two events explicitly EXEMPT from the anti-recursion rule that otherwise
-# stops a GITHUB_TOKEN-triggered event from creating a workflow run (the rule
-# behind the `pr-gate-missing` bot case, #10558). `actions: write` is required
-# and requested below.
+# pr-gate.yml's own `workflow_dispatch` leg cannot be used either: it runs on
+# the default branch, so `github.event.pull_request.head.sha || github.sha`
+# resolves to the default-branch commit, and it carries no `--post-check-run`,
+# so its check-run lands on that commit -- invisible to the PR's mergeState.
+# (Its unused `sha` input is removed in the same change that adds this file,
+# for the same reason: a documented remedy wired to nothing is worse than an
+# absent one, because it is tried and believed.)
 
 on:
   schedule:
     # Every 20 minutes on off-:00 minutes (anti-stampede convention, as in
     # pr-gate-missing-advisory.yml). Frequent enough that a PR blocked by a
-    # stale verdict waits minutes, not a day; cheap enough (one short API-only
-    # job) not to add meaningful load to a starved queue.
+    # stale verdict waits minutes, not a day; cheap enough (one short job)
+    # not to add meaningful load to a starved queue.
     - cron: '7,27,47 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'List candidates, dispatch nothing'
+        description: 'List candidates, post nothing'
         required: false
         type: boolean
         default: false
 
 permissions:
   contents: read
-  checks: read
+  checks: write        # POST the re-aggregated verdict onto the PR head SHA
   pull-requests: read
-  actions: write   # gh workflow run pr-gate-rerun.yml
 
 concurrency:
+  # One sweep at a time, and never cancel a running one: a sweep that is killed
+  # mid-loop leaves the PRs it had not reached still blocked, which is the
+  # exact failure mode this file exists to remove.
   group: pr-gate-stale-sweep
   cancel-in-progress: false
 
 jobs:
   sweep:
-    name: Re-dispatch stale PR gate verdicts
+    name: Re-aggregate stale PR gate verdicts
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Find and re-dispatch
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install canary dependency
+        # PyYAML drives derive_always_on_jobs (the rule-8 delivery canary).
+        # Same reason as pr-gate.yml / pr-gate-rerun.yml: without it the script
+        # self-disables the canary (safe, no block) but the #9858 hole reopens.
+        run: pip install pyyaml
+
+      - name: Find stale verdicts and re-aggregate
         env:
           GH_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
@@ -87,11 +104,11 @@ jobs:
         run: |
           set -uo pipefail
 
-          # Cap the number of dispatches per sweep. A wide outage can leave
-          # dozens of PRs in this state at once; re-dispatching all of them
-          # would add exactly the load that caused the timeouts. The next
-          # sweep (20 min later) takes the next batch.
-          MAX_DISPATCH=8
+          # Cap the number of re-aggregations per sweep. A wide outage can
+          # leave dozens of PRs in this state at once; doing all of them in one
+          # job would run past the timeout. The next sweep (20 min later) takes
+          # the next batch.
+          MAX_POSTS=8
 
           # Collected over REST, one small call per PR, NOT one bulk GraphQL
           # query. `gh pr list --limit 60 --json statusCheckRollup` returns
@@ -105,17 +122,17 @@ jobs:
           # (`PR gate`, CodeQL, the guards) is a check run, so the selection is
           # exact for this repository's setup.
           gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" --paginate \
-            --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha)"' > /tmp/openprs.txt \
+            --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha) \(.head.repo.fork)"' > /tmp/openprs.txt \
             || { echo "[stale-sweep] PR listing failed (upstream) -- skip this sweep"; exit 0; }
 
           : > /tmp/runs.jsonl
-          while read -r NUM SHA; do
+          while read -r NUM SHA FORK; do
             [ -z "${NUM:-}" ] && continue
             BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
                      --jq '[.check_runs[] | {name, status, conclusion, started_at}]' 2>/dev/null) || continue
-            printf '{"number":%s,"sha":"%s","checks":%s}\n' "$NUM" "$SHA" "$BODY" >> /tmp/runs.jsonl
+            printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
-          echo "[stale-sweep] PR ouvertes inspectees : $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
+          echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
 
           python - <<'PY' > /tmp/candidates.txt
           import json
@@ -152,41 +169,54 @@ jobs:
 
               others = [(n, c) for n, (t, c) in latest.items() if n != "PR gate"]
               # Every other check must be finished AND green. An unfinished one
-              # means the gate may still be legitimately waiting: re-dispatching
+              # means the gate may still be legitimately waiting: re-aggregating
               # then would just burn another verdict on the same incomplete set.
               if not all((c.get("status") or "") == "completed" for _, c in others):
                   continue
               if not all((c.get("conclusion") or "") in GREEN for _, c in others):
                   continue
 
-              print(f'{p["number"]} {p["sha"]}')
+              print(f'{p["number"]} {p["sha"]} {str(p.get("fork", False)).lower()}')
           PY
 
           COUNT=$(wc -l < /tmp/candidates.txt | tr -d ' ')
-          echo "[stale-sweep] PR whose only red is a stale \`PR gate\`: $COUNT"
+          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT"
           if [ "$COUNT" = "0" ]; then
             echo "[stale-sweep] nothing to do"
             exit 0
           fi
 
           n=0
-          while read -r NUM SHA; do
+          while read -r NUM SHA FORK; do
             [ -z "${NUM:-}" ] && continue
-            if [ "$n" -ge "$MAX_DISPATCH" ]; then
-              echo "[stale-sweep] cap $MAX_DISPATCH reached -- remaining candidates wait for the next sweep"
+            if [ "$n" -ge "$MAX_POSTS" ]; then
+              echo "[stale-sweep] cap $MAX_POSTS reached -- remaining candidates wait for the next sweep"
               break
             fi
             if [ "${DRY_RUN:-false}" = "true" ]; then
               echo "[stale-sweep] (dry-run) would re-aggregate #$NUM ($SHA)"
             else
               echo "[stale-sweep] re-aggregating #$NUM ($SHA)"
-              gh workflow run pr-gate-rerun.yml --repo "$REPO" \
-                -f pr_number="$NUM" -f head_sha="$SHA" \
-                || echo "[stale-sweep] dispatch failed for #$NUM (non-fatal)"
+              # Mirror pr-gate.yml's fork short-circuit (#10072): a fork PR must
+              # surface success on its head SHA, not a stale FAIL.
+              if [ "$FORK" = "true" ]; then FORK_ARG="--is-fork"; else FORK_ARG=""; fi
+              # Short budget on purpose: the candidate filter above already
+              # proved every other check is COMPLETED, so there is nothing left
+              # to wait for -- this call reads the settled set and POSTs.
+              # `|| true`: one PR whose aggregation fails must not abort the
+              # loop, nor redden a sweep whose other posts landed.
+              python scripts/pr_gate.py \
+                --repo "$REPO" \
+                --sha "$SHA" \
+                --self-name "PR gate" \
+                --timeout-min 2 \
+                --poll-sec 15 \
+                --settle-polls 1 \
+                --post-check-run \
+                $FORK_ARG || echo "[stale-sweep] re-aggregation failed for #$NUM (non-fatal)"
             fi
             n=$((n + 1))
           done < /tmp/candidates.txt
 
-          # Advisory organ: it acts, it never blocks. A dispatch that fails
-          # must not redden a sweep whose other dispatches landed.
+          # Advisory organ: it acts, it never blocks.
           exit 0
