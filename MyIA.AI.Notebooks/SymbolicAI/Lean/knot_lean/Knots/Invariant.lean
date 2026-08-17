@@ -348,14 +348,37 @@ theorem tricolorable_invariant :
   -- here and described in the docstring. The parens restore the intended shape
   -- `RE d₁ d₂ → (IsTc₁ ↔ IsTc₂)`, which `trefoil_not_unknot` applies below.
   exact sorry
-  -- BLOCKED (forward transfer, Phase 5 PR2). `ReidemeisterStep.r1` was rewired
-  -- (Stage 2, #2874) to the GEOMETRICALLY CONNECTED move `Reidemeister1Connected`,
-  -- so the free-ρ counter-example of §3b is no longer `ReidemeisterEquiv`-reachable
-  -- (it is provably NOT a connected move, §3c-bis / PR #3997). The invariant is
-  -- therefore NO LONGER REFUTED by that witness — it now stands on the sound
-  -- connected equivalence. It is still OPEN: the FORWARD direction is unproven,
-  -- i.e. a tricoloring of `d₁` must EXTEND across a connected R1 curl
-  -- (`Reidemeister1Connected`), so the two fresh edges inherit `color a`.
+  -- BLOCKED (master iff, Phase 5 PR3 — état c.1130). PROUVÉ jusqu'ici :
+  --   * R1 CONNECTED, les deux sens (#11227) : `tricolorable_forward_r1` (§2,
+  --     L754) + `Reidemeister1Connected.tricolorable_backward` (§9, L2183).
+  --     Le contre-exemple free-ρ de §3b n'est plus `ReidemeisterEquiv`-accessible
+  --     (Stage 2, #2874 ; exclu §3c-bis / PR #3997).
+  --   * R2 BRAS ASCENDANT (ce cycle) : `tricolorable_forward_r2_up` (§2-bis) —
+  --     `wf` force les deux crossings appariés sur des labels FRAIS uniquement
+  --     (`appended_crossings_fresh`), donc l'extension triviale tout-rouge est
+  --     un tricoloriage valide de d₂.
+  -- Le maître iff est désormais bloqué par DEUX MURS NOMMÉS (§2-ter, deux
+  -- contre-exemples PROUVÉS) :
+  --   * `r2_append_only_wall` : le modèle R2 LIBRE est append-only avec bigon
+  --     flottant — `Reidemeister2 emptyDiagram twoTwinCrossings` relie un grand
+  --     diagramme tricolorable au diagramme vide non-tricolorable. Le transfert
+  --     DESCENDANT R2 est FAUX.
+  --   * `r3_determined_wall` : même le raffinement slot-déterminé échoue — son
+  --     propre témoin de satisfiabilité (`reidemeister3Determined_satisfiable`,
+  --     [⟨1,3,2,4⟩, ⟨1,2,3,4⟩]) force le mono-couleur par double continuité
+  --     over + Fox, contredisant « ≥ 2 couleurs ». Une permutation de slots doit
+  --     préserver les rôles over/under pour que le transfert passe.
+  -- CURE (cycles futurs) : (1) un mouvement `Reidemeister2Connected` exigeant
+  -- que les crossings appariés partagent des brins avec d₁ (splice dans un arc
+  -- existant, calqué sur `Reidemeister1Connected`) ; (2) un raffinement R3
+  -- préservant over/under (slots over {e2,e4} et under {e1,e3}, chacun à
+  -- permutation près — Fox est symétrique, seule la continuité over est
+  -- fragile). Avec ces deux mouvements, le maître iff devient prouvable par la
+  -- même méthode d'extension triviale qu'en §2-bis.
+  -- Fondation posée (§2-quater, `tricolorable_backward_R2_cardinality`) : sous
+  -- append-only, deux couleurs distinctes dans la fenêtre d₁ suffisent au bras
+  -- descendant — la cardinalité est l'UNIQUE obstruction ; le connecté n'a
+  -- qu'à la garantir.
   --
   -- Historical diagnosis (why the OLD free-ρ `Reidemeister1` model failed):
   -- `wf`'s "every label appears exactly twice" condition forced an R1-twist's new
@@ -406,9 +429,10 @@ theorem tricolorable_invariant :
   --   (d) UNCHANGED CROSSINGS: `List.set` only touches index `i`; `d₂.crossings`
   --       = `d₁.crossings.set i Y' ++ [C]`, so `∀ c ∈ d₂.crossings` splits into
   --       the renamed `Y'`, the appended `C`, and the untouched `d₁` crossings.
-  -- The deep track is MULTI-CYCLE (ai-01 greenlit): a characterized wall with
-  -- the corrected trivial construction above is the next cycle's implementation
-  -- target. FORBIDDEN: weakening the statement (anti-regression D).
+  -- STATUT : obligations (a)-(d) DISCHARGÉES — c'est `tricolorForwardExtension`
+  -- (L447) + ses lemmes-pivots + `tricolorable_forward_r1` (L754, #11227).
+  -- Le maître reste ouvert pour les seuls murs R2/R3 ci-dessus (§2-ter).
+  -- FORBIDDEN: weakening the statement (anti-regression D).
 
 /-- Construction de l'extension triviale « toutes-égales » d'un tricoloriage à
     travers une torsion R1 connectée (option C). C'est la matérialisation en
@@ -822,6 +846,504 @@ theorem tricolorable_forward_r1 {d₁ d₂ : KnotDiagram}
       unfold tricolorForwardExtension
       rw [dif_pos hk_lt]
     rw [hj_val, hk_val]; exact hjk
+
+/-! ## 2-bis. Transfert avant R2 — bras ascendant (Phase 5 PR2, #11211)
+
+`Reidemeister2` est bipolaire : un bras ajoute 2 croisements (append pur +
+`numEdges + 4`), l'autre les retire. Le bras ASCENDANT (d₂ = d₁ ++ [c₁, c₂])
+admet un transfert avant complet et simple : sous `wf`, chaque label ancien
+apparaît déjà exactement 2× dans `d₁.edges` (clause b) et exactement 2× dans
+`d₂.edges` — or `d₂.edges = d₁.edges ++ (labels de c₁, c₂)` — donc les
+croisements appendés n'utilisent QUE les 4 labels fraîches `{n+1..n+4}`. Le
+témoin : les 4 arêtes fraîches reçoivent TOUTES `TriColor.red` ; chaque
+croisement appendé lit alors `(red, red, red, red)` — bornes par wf (a),
+continuité `red = red`, Fox toutes-égales. Les croisements anciens sont
+préservés par le lemme-pont inchangé (+4).
+
+Le bras DESCENDANT, lui, est FAUX pour le modèle append-only (bigon flottant,
+voir `r2_append_only_wall` en §2-ter) : c'est le mur nommé
+qui sépare ce transfert du maître `tricolorable_invariant` (L350).
+-/
+
+/-- Extension triviale +4 : le préfixe `[0, d₁.numEdges)` lit `coloring₁`,
+    les 4 arêtes fraîches reçoivent toutes `TriColor.red`. -/
+def tricolorForwardExtensionR2 {d₁ d₂ : KnotDiagram}
+    (hnum4 : d₂.numEdges = d₁.numEdges + 4)
+    (coloring₁ : TriColoring d₁) : TriColoring d₂ := by
+  exact fun k => if hk : k.val < d₁.numEdges then coloring₁ ⟨k.val, hk⟩ else TriColor.red
+
+/-- Lemme-pivot (arête ancienne) : pour `e ∈ [1, d₁.numEdges]`, l'extension +4
+    lit la MÊME couleur que `coloring₁`. Miroir de `colorAtNat_eq` (+2). -/
+theorem tricolorForwardExtensionR2.colorAtNat_eq {d₁ d₂ : KnotDiagram}
+    (hnum4 : d₂.numEdges = d₁.numEdges + 4)
+    (coloring₁ : TriColoring d₁) (e : Nat) (he1 : 1 ≤ e) (he2 : e ≤ d₁.numEdges) :
+    d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) e =
+      d₁.colorAtNat coloring₁ e := by
+  have hn1 : d₁.numEdges ≠ 0 := by omega
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  have hfin2 : ((e - 1) % d₂.numEdges : Nat) = e - 1 := Nat.mod_eq_of_lt (by omega)
+  have hfin1 : ((e - 1) % d₁.numEdges : Nat) = e - 1 := Nat.mod_eq_of_lt (by omega)
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, dif_neg hn1, hfin2, hfin1]
+  unfold tricolorForwardExtensionR2
+  show (if hk : (e - 1 : Nat) < d₁.numEdges then coloring₁ ⟨e - 1, hk⟩
+        else TriColor.red) = coloring₁ ⟨e - 1, by omega⟩
+  rw [dif_pos (by omega : (e - 1 : Nat) < d₁.numEdges)]
+
+/-- Lemme-pivot (arête fraîche) : toute arête `e ∈ (d₁.numEdges, d₂.numEdges]`
+    lit `TriColor.red` sous l'extension +4. -/
+theorem tricolorForwardExtensionR2.colorAtNat_fresh_eq {d₁ d₂ : KnotDiagram}
+    (hnum4 : d₂.numEdges = d₁.numEdges + 4)
+    (coloring₁ : TriColoring d₁) (e : Nat)
+    (he_lo : d₁.numEdges < e) (he_hi : e ≤ d₂.numEdges) :
+    d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) e = TriColor.red := by
+  have hn2 : d₂.numEdges ≠ 0 := by omega
+  have hmod_e : (e - 1) % d₂.numEdges = e - 1 := Nat.mod_eq_of_lt (by omega)
+  simp only [KnotDiagram.colorAtNat, dif_neg hn2, hmod_e]
+  unfold tricolorForwardExtensionR2
+  show (if hk : (e - 1 : Nat) < d₁.numEdges then coloring₁ ⟨e - 1, hk⟩
+        else TriColor.red) = TriColor.red
+  rw [dif_neg (by omega : ¬ (e - 1 : Nat) < d₁.numEdges)]
+
+/-- Lemme-pont (cas « crossing inchangé ») pour l'extension +4 : un crossing de
+    `d₁` dont les 4 slots sont dans `[1, d₁.numEdges]` satisfait la condition
+    sous l'extension R2 — les 4 lectures couleur sont transportées sans
+    changement, seules les bornes passent de `d₁.numEdges` à `d₂.numEdges`. -/
+theorem triColorConditionAt_unchangedR2 {d₁ d₂ : KnotDiagram}
+    (hnum4 : d₂.numEdges = d₁.numEdges + 4)
+    (coloring₁ : TriColoring d₁) (c : PDCrossing)
+    (hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+              1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+              1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+              1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges)
+    (hcond : triColorConditionAt d₁ coloring₁ c) :
+    triColorConditionAt d₂ (tricolorForwardExtensionR2 hnum4 coloring₁) c := by
+  obtain ⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩ := hc_wf
+  have hc1 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e1 =
+      d₁.colorAtNat coloring₁ c.e1 :=
+    tricolorForwardExtensionR2.colorAtNat_eq hnum4 coloring₁ c.e1 hc11 hc12
+  have hc2 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e2 =
+      d₁.colorAtNat coloring₁ c.e2 :=
+    tricolorForwardExtensionR2.colorAtNat_eq hnum4 coloring₁ c.e2 hc21 hc22
+  have hc3 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e3 =
+      d₁.colorAtNat coloring₁ c.e3 :=
+    tricolorForwardExtensionR2.colorAtNat_eq hnum4 coloring₁ c.e3 hc31 hc32
+  have hc4 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e4 =
+      d₁.colorAtNat coloring₁ c.e4 :=
+    tricolorForwardExtensionR2.colorAtNat_eq hnum4 coloring₁ c.e4 hc41 hc42
+  simp only [triColorConditionAt]
+  simp only [hc1, hc2, hc3, hc4]
+  simp only [triColorConditionAt] at hcond
+  refine ⟨?_, hcond.2⟩
+  omega
+
+/-- Sous `wf` (des deux côtés) et la chirurgie append `d₂.crossings =
+    d₁.crossings ++ [c₁, c₂]` avec `numEdges + 4`, tout crossing appendé
+    n'utilise QUE des labels fraîches : chaque label ancien `l ≤ d₁.numEdges`
+    apparaît exactement 2× dans `d₁.edges` (wf-b de `d₁`) et exactement 2× dans
+    `d₂.edges` (wf-b de `d₂`), or `d₂.edges = d₁.edges ++ (labels appendés)`,
+    donc le compte dans la partie appendée est 0 — et les bornes viennent de
+    wf-a de `d₂`. Exige `d₁.crossings ≠ []` (branche dégénérée de wf-b). -/
+theorem appended_crossings_fresh {d₁ d₂ : KnotDiagram} {c₁ c₂ : PDCrossing}
+    (hwf₁ : d₁.wf = true) (hwf₂ : d₂.wf = true)
+    (hne : d₁.crossings ≠ [])
+    (hnum4 : d₂.numEdges = d₁.numEdges + 4)
+    (hsurg : d₂.crossings = d₁.crossings ++ [c₁, c₂])
+    (c : PDCrossing) (hc : c ∈ [c₁, c₂]) :
+    d₁.numEdges < c.e1 ∧ d₁.numEdges < c.e2 ∧ d₁.numEdges < c.e3 ∧ d₁.numEdges < c.e4 ∧
+    c.e1 ≤ d₂.numEdges ∧ c.e2 ≤ d₂.numEdges ∧ c.e3 ≤ d₂.numEdges ∧ c.e4 ≤ d₂.numEdges := by
+  -- Additivité du compte sur ++ (v4.32 ne declare pas List.count_append pour
+  -- List ; preuve directe par induction, miroir de count_lift_append).
+  have hcount_app : ∀ (l : Nat) (l₁ l₂ : List Nat),
+      (l₁ ++ l₂).count l = l₁.count l + l₂.count l := by
+    intro l l₁ l₂
+    induction l₁ with
+    | nil => simp
+    | cons x xs ih => simp only [List.cons_append, List.count_cons, ih]; omega
+  -- Déplie les deux wf (branches non dégénérées : les deux listes ≠ []).
+  have hd₂ne : d₂.crossings ≠ [] := by rw [hsurg]; simp
+  have hw₁ := hwf₁
+  simp only [KnotDiagram.wf, if_neg hne, Bool.and_eq_true, List.all_eq_true,
+    decide_eq_true_iff] at hw₁
+  obtain ⟨ha₁, hb₁⟩ := hw₁
+  have hw₂ := hwf₂
+  simp only [KnotDiagram.wf, if_neg hd₂ne, Bool.and_eq_true, List.all_eq_true,
+    decide_eq_true_iff] at hw₂
+  obtain ⟨ha₂, hb₂⟩ := hw₂
+  -- Décomposition additive des comptes : d₂.edges = d₁.edges ++ R.
+  have hedges : d₂.edges = d₁.edges ++
+      [c₁, c₂].flatMap (fun x => [x.e1, x.e2, x.e3, x.e4]) := by
+    simp only [KnotDiagram.edges, hsurg, List.flatMap_append]
+  -- Les 4 slots du crossing appendé vivent dans la partie appendée ⊆ d₂.edges.
+  have hmem_R : ∀ l ∈ [c.e1, c.e2, c.e3, c.e4],
+      l ∈ [c₁, c₂].flatMap (fun x => [x.e1, x.e2, x.e3, x.e4]) := by
+    intro l hl
+    exact List.mem_flatMap.mpr ⟨c, hc, hl⟩
+  have hmem_d₂ : ∀ l ∈ [c.e1, c.e2, c.e3, c.e4], l ∈ d₂.edges := by
+    intro l hl
+    rw [hedges, List.mem_append]; exact Or.inr (hmem_R l hl)
+  -- Aucun label ancien ne peut vivre dans la partie appendée (comptes 2 + 2).
+  have hcount_zero : ∀ l, 1 ≤ l → l ≤ d₁.numEdges →
+      ([c₁, c₂].flatMap (fun x => [x.e1, x.e2, x.e3, x.e4])).count l = 0 := by
+    intro l hl1 hl2
+    have hmem₁ : l - 1 ∈ List.range d₁.numEdges := List.mem_range.mpr (by omega)
+    have hc_d₁ : d₁.edges.count l = 2 := by
+      have h := hb₁ (l - 1) hmem₁
+      rwa [show l - 1 + 1 = l from by omega] at h
+    have hmem₂ : l - 1 ∈ List.range d₂.numEdges := List.mem_range.mpr (by omega)
+    have hc_d₂ : d₂.edges.count l = 2 := by
+      have h := hb₂ (l - 1) hmem₂
+      rwa [show l - 1 + 1 = l from by omega] at h
+    rw [hedges, hcount_app l] at hc_d₂
+    rw [hc_d₁] at hc_d₂
+    simpa using hc_d₂
+  -- Chaque slot du crossing appendé est > d₁.numEdges (sinon il compterait
+  -- dans la partie appendée avec un compte ≥ 1, contredisant le compte 0).
+  have hfresh : ∀ l ∈ [c.e1, c.e2, c.e3, c.e4], d₁.numEdges < l := by
+    intro l hl
+    by_contra hle
+    have hl1 : 1 ≤ l := (ha₂ l (hmem_d₂ l hl)).1
+    have hpos : (0 : Nat) < ([c₁, c₂].flatMap (fun x => [x.e1, x.e2, x.e3, x.e4])).count l :=
+      List.count_pos_iff.mpr (hmem_R l hl)
+    exact absurd (hcount_zero l hl1 (by omega)) (by omega)
+  have h1 := hfresh c.e1 (by simp)
+  have h2 := hfresh c.e2 (by simp)
+  have h3 := hfresh c.e3 (by simp)
+  have h4 := hfresh c.e4 (by simp)
+  have b1 := (ha₂ c.e1 (hmem_d₂ c.e1 (by simp))).2
+  have b2 := (ha₂ c.e2 (hmem_d₂ c.e2 (by simp))).2
+  have b3 := (ha₂ c.e3 (hmem_d₂ c.e3 (by simp))).2
+  have b4 := (ha₂ c.e4 (hmem_d₂ c.e4 (by simp))).2
+  exact ⟨h1, h2, h3, h4, b1, b2, b3, b4⟩
+
+/-- **Direction avant (bras ascendant)** de l'invariance de tricolorabilité
+    par R2 append. Témoin = extension +4 toute-rouge sur les arêtes fraîches.
+    Les croisements appendés ne lisent QUE du rouge (labels fraîches forcés
+    par wf), donc Fox toutes-égales + continuité triviales ; les croisements
+    anciens sont transportés par le pont inchangé. -/
+theorem tricolorable_forward_r2_up {d₁ d₂ : KnotDiagram} {c₁ c₂ : PDCrossing}
+    (hwf₁ : d₁.wf = true) (hwf₂ : d₂.wf = true)
+    (hsurg : d₂.crossings = d₁.crossings ++ [c₁, c₂])
+    (hnum4 : d₂.numEdges = d₁.numEdges + 4)
+    (htc : IsTricolorable d₁) :
+    IsTricolorable d₂ := by
+  obtain ⟨coloring₁, hcond, hnum, hcol⟩ := htc
+  -- d₁.crossings ≠ [] : sinon wf₁ (branche dégénérée) force numEdges ≤ 1 < 2.
+  have hne : d₁.crossings ≠ [] := by
+    intro hnil
+    have hw := hwf₁
+    rw [KnotDiagram.wf, if_pos hnil] at hw
+    simp only [decide_eq_true_eq] at hw
+    omega
+  refine' ⟨tricolorForwardExtensionR2 hnum4 coloring₁, ?_, ?_, ?_⟩
+  · intro c hc
+    rw [hsurg] at hc
+    obtain hc_pre | hc_app := List.mem_append.mp hc
+    · have hcond_c : triColorConditionAt d₁ coloring₁ c := hcond _ hc_pre
+      have hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+                    1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+                    1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+                    1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges := by
+        have := hcond_c
+        simp only [triColorConditionAt] at this
+        exact this.1
+      exact triColorConditionAt_unchangedR2 hnum4 coloring₁ c hc_wf hcond_c
+    · obtain ⟨hf1, hf2, hf3, hf4, hb1, hb2, hb3, hb4⟩ :=
+        appended_crossings_fresh hwf₁ hwf₂ hne hnum4 hsurg c hc_app
+      -- Les 4 slots fraîches lisent tous red.
+      have hcol1 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e1
+          = TriColor.red :=
+        tricolorForwardExtensionR2.colorAtNat_fresh_eq hnum4 coloring₁ c.e1 hf1 hb1
+      have hcol2 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e2
+          = TriColor.red :=
+        tricolorForwardExtensionR2.colorAtNat_fresh_eq hnum4 coloring₁ c.e2 hf2 hb2
+      have hcol3 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e3
+          = TriColor.red :=
+        tricolorForwardExtensionR2.colorAtNat_fresh_eq hnum4 coloring₁ c.e3 hf3 hb3
+      have hcol4 : d₂.colorAtNat (tricolorForwardExtensionR2 hnum4 coloring₁) c.e4
+          = TriColor.red :=
+        tricolorForwardExtensionR2.colorAtNat_fresh_eq hnum4 coloring₁ c.e4 hf4 hb4
+      simp only [triColorConditionAt]
+      simp only [hcol1, hcol2, hcol3, hcol4]
+      refine ⟨?_, ⟨trivial, Or.inl ⟨trivial, trivial⟩⟩⟩
+      omega
+  · rw [hnum4]; omega
+  · obtain ⟨j, k, hjk⟩ := hcol
+    refine' ⟨⟨j.val, by omega⟩, ⟨k.val, by omega⟩, ?_⟩
+    have hj_lt : (j : Nat) < d₁.numEdges := j.isLt
+    have hk_lt : (k : Nat) < d₁.numEdges := k.isLt
+    have hj_val : (tricolorForwardExtensionR2 hnum4 coloring₁)
+        ⟨j.val, by omega⟩ = coloring₁ j := by
+      show tricolorForwardExtensionR2 hnum4 coloring₁ ⟨j.val, by omega⟩ =
+        coloring₁ ⟨j.val, j.isLt⟩
+      unfold tricolorForwardExtensionR2
+      rw [dif_pos hj_lt]
+    have hk_val : (tricolorForwardExtensionR2 hnum4 coloring₁)
+        ⟨k.val, by omega⟩ = coloring₁ k := by
+      show tricolorForwardExtensionR2 hnum4 coloring₁ ⟨k.val, by omega⟩ =
+        coloring₁ ⟨k.val, k.isLt⟩
+      unfold tricolorForwardExtensionR2
+      rw [dif_pos hk_lt]
+    rw [hj_val, hk_val]; exact hjk
+
+/-! ## 2-ter. Murs nommés : les modèles R2/R3 libres ne portent PAS l'iff du maître
+
+Deux contre-exemples PROUVÉS bornent le transfert maître
+`tricolorable_invariant` (L350). Ils sont l'analogue R2/R3 du contre-exemple
+R1 à ρ libre (§3b) qui avait motivé `Reidemeister1Connected` :
+
+1. **R2 append-only** (`r2_append_only_wall`) : le petit diagramme dégénéré
+   (0 croisements) et le grand (2 croisements jumeaux) sont `Reidemeister2`,
+   le grand est tricolorable, le petit non — le bras descendant du transfert
+   est FAUX. Structurellement, sous `wf` les 2 croisements appendés ne
+   peuvent utiliser QUE des labels fraîches (`appended_crossings_fresh`) :
+   le modèle décrit un **bigon flottant** déconnecté du diagramme, capable de
+   fabriquer la tricolorabilité de toutes pièces (variante non dégénérée :
+   figure-eight + bigon sur labels 9-12). Cure future : un raffinement
+   connecté `Reidemeister2Connected` (les croisements appendés partagent
+   leurs strands avec `d₁`, chirurgie modify-2-append-2), parallèle à
+   `Reidemeister1Connected`.
+
+2. **R3 même slot-déterminé** (`r3_determined_wall`) : le témoin officiel de
+   `reidemeister3Determined_satisfiable` ([⟨1,3,2,4⟩] permutation de slots de
+   [⟨1,2,3,4⟩]) relie un diagramme tricolorable à un diagramme forcé
+   mono-couleur — la bi-implication échoue AUSSI sous `Reidemeister3Determined`.
+   La permutation de slots peut déplacer un brin sous vers un slot over,
+   cassant la continuité du strand over. Cure future : contraindre la
+   permutation à préserver les slots over {e2,e4} et under {e1,e3} (chacun
+   up-to-swap) — Fox étant symétrique en (c1,c2,c3), seule la continuité
+   over est fragile.
+-/
+
+/-- Le diagramme dégénéré vide : 0 croisements, 0 arêtes (wf : branche `[]`). -/
+def emptyDiagram : KnotDiagram where
+  crossings := []
+  numEdges := 0
+
+/-- Deux croisements jumeaux `⟨1,2,3,4⟩` sur 4 arêtes (le témoin
+    `reidemeister3Determined_satisfiable`). Tricolorable : témoin
+    (red, blue, green, blue) sur les labels 1-4 — Fox (red,blue,green)
+    toutes-distinctes, continuité blue = blue. -/
+def twoTwinCrossings : KnotDiagram where
+  crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩]
+  numEdges := 4
+
+/-- `twoTwinCrossings` EST tricolorable (témoin explicite). -/
+theorem twoTwinCrossings_tricolorable : IsTricolorable twoTwinCrossings := by
+  unfold IsTricolorable IsTriColoring twoTwinCrossings
+  simp only [triColorConditionAt, KnotDiagram.colorAtNat]
+  refine' ⟨fun i : Fin 4 =>
+              if i.val = 0 then TriColor.red
+              else if i.val = 1 ∨ i.val = 3 then TriColor.blue
+              else TriColor.green, _, _, _⟩
+  · intro c hc
+    rcases List.mem_cons.mp hc with rfl | htail
+    · decide
+    · rcases List.mem_cons.mp htail with rfl | hnil
+      · decide
+      · exact absurd hnil (by simp)
+  · decide
+  · exact ⟨⟨0, by decide⟩, ⟨1, by decide⟩, by decide⟩
+
+/-- **Mur R2** : `Reidemeister2` relie le diagramme vide (NON tricolorable,
+    `numEdges = 0 < 2`) au diagramme à 2 croisements jumeaux (tricolorable).
+    Le bras descendant du transfert — donc la bi-implication du maître
+    L350 — est FAUX sur le modèle append-only. -/
+theorem r2_append_only_wall :
+    Reidemeister2 emptyDiagram twoTwinCrossings ∧
+    IsTricolorable twoTwinCrossings ∧ ¬ IsTricolorable emptyDiagram := by
+  refine ⟨?_, twoTwinCrossings_tricolorable, ?_⟩
+  · -- Bras append : d₂.crossings = [] ++ [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges 4 = 0 + 4.
+    refine ⟨by decide, by decide, ⟨1,2,3,4⟩, ⟨1,2,3,4⟩, ?_, Or.inl ⟨by rfl, by rfl⟩⟩
+    -- ρ : Fin (min 0 4) ↪ Fin (max 0 4) = Fin 0 ↪ Fin 4 (plongement vide).
+    exact ⟨fun k => Fin.elim0 k, fun a b => Fin.elim0 a⟩
+  · rintro ⟨col, _hcond, hnum, _⟩
+    have : emptyDiagram.numEdges ≥ 2 := hnum
+    simp only [emptyDiagram] at this
+    omega
+
+/-! ### Fondation de la cure R2 — la cardinalité est l'unique obstruction
+
+Le mur `r2_append_only_wall` ci-dessus montre le bras descendant FAUX sur le
+modèle append-only : les deux couleurs du tricoloriage de `d₂` peuvent vivre
+ENTIÈREMENT sur les labels fraîches. La fondation ci-dessous prouve que c'est
+l'UNIQUE obstruction : restreindre un tricoloriage valide de `d₂` aux labels
+de `d₁` transporte toutes les conditions de Fox et la continuité over sans
+aucune perte — seules les « ≥ 2 couleurs » peuvent se perdre dans la fenêtre.
+Un futur `Reidemeister2Connected` (croisements appariés partageant leurs brins
+avec `d₁`) n'aura donc qu'une chose à garantir : que deux couleurs distinctes
+de `d₂` soient portées par des labels de la fenêtre `d₁`. -/
+
+/-- Restriction d'un coloriage de `d₂` à la fenêtre de labels de `d₁`
+(l'incast `Fin` vient de `d₁.numEdges ≤ d₂.numEdges`). -/
+def tricolorRestrictionR2 {d₁ d₂ : KnotDiagram}
+    (hle : d₁.numEdges ≤ d₂.numEdges)
+    (coloring₂ : TriColoring d₂) : TriColoring d₁ :=
+  fun i => coloring₂ ⟨i.val, by omega⟩
+
+/-- La restriction lit la même couleur que `d₂` sur tout label ancien
+`1 ≤ l ≤ d₁.numEdges` : l'index `(l-1) % numEdges` coïncide de part et d'autre
+(l'entier est plus petit que les deux moduli). -/
+theorem tricolorRestrictionR2.colorAtNat_eq {d₁ d₂ : KnotDiagram}
+    (hle : d₁.numEdges ≤ d₂.numEdges) (coloring₂ : TriColoring d₂)
+    {l : Nat} (hl1 : 1 ≤ l) (hl2 : l ≤ d₁.numEdges) :
+    d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) l =
+      d₂.colorAtNat coloring₂ l := by
+  have hpos : 0 < d₁.numEdges := by omega
+  simp only [KnotDiagram.colorAtNat,
+    dif_neg (by omega : d₁.numEdges ≠ 0), dif_neg (by omega : d₂.numEdges ≠ 0)]
+  simp only [tricolorRestrictionR2]
+  refine congrArg coloring₂ (Fin.ext ?_)
+  show (l - 1) % d₁.numEdges = (l - 1) % d₂.numEdges
+  rw [Nat.mod_eq_of_lt (show l - 1 < d₁.numEdges by omega),
+      Nat.mod_eq_of_lt (show l - 1 < d₂.numEdges by omega)]
+
+/-- Sous `wf` non dégénéré, les quatre slots d'un crossing du diagramme sont
+dans `[1, numEdges]` (extraction de wf-a pour un membre de la liste). -/
+theorem crossingSlots_mem_of_wf {d : KnotDiagram} (hwf : d.wf = true)
+    (hne : d.crossings ≠ []) (c : PDCrossing) (hc : c ∈ d.crossings) :
+    1 ≤ c.e1 ∧ c.e1 ≤ d.numEdges ∧ 1 ≤ c.e2 ∧ c.e2 ≤ d.numEdges ∧
+    1 ≤ c.e3 ∧ c.e3 ≤ d.numEdges ∧ 1 ≤ c.e4 ∧ c.e4 ≤ d.numEdges := by
+  simp only [KnotDiagram.wf, if_neg hne, Bool.and_eq_true, List.all_eq_true,
+    decide_eq_true_iff] at hwf
+  obtain ⟨ha, _⟩ := hwf
+  have hmem : ∀ l ∈ [c.e1, c.e2, c.e3, c.e4], l ∈ d.edges := fun l hl =>
+    List.mem_flatMap.mpr ⟨c, hc, hl⟩
+  have hall := fun l hl => ha l (hmem l hl)
+  exact ⟨(hall c.e1 (by simp)).1, (hall c.e1 (by simp)).2,
+         (hall c.e2 (by simp)).1, (hall c.e2 (by simp)).2,
+         (hall c.e3 (by simp)).1, (hall c.e3 (by simp)).2,
+         (hall c.e4 (by simp)).1, (hall c.e4 (by simp)).2⟩
+
+/-- Pont « crossing inchangé » pour la RESTRICTION (miroir descendant de
+`triColorConditionAt_unchangedR2`) : un crossing de `d₁` dont les slots sont
+dans la fenêtre satisfait la condition de `d₁` sous la restriction dès qu'il
+la satisfait sous `d₂`. -/
+theorem triColorConditionAt_restrictR2 {d₁ d₂ : KnotDiagram}
+    (hle : d₁.numEdges ≤ d₂.numEdges) (coloring₂ : TriColoring d₂)
+    (c : PDCrossing)
+    (hc_wf : 1 ≤ c.e1 ∧ c.e1 ≤ d₁.numEdges ∧
+              1 ≤ c.e2 ∧ c.e2 ≤ d₁.numEdges ∧
+              1 ≤ c.e3 ∧ c.e3 ≤ d₁.numEdges ∧
+              1 ≤ c.e4 ∧ c.e4 ≤ d₁.numEdges)
+    (hcond : triColorConditionAt d₂ coloring₂ c) :
+    triColorConditionAt d₁ (tricolorRestrictionR2 hle coloring₂) c := by
+  obtain ⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩ := hc_wf
+  have hc1 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e1 =
+      d₂.colorAtNat coloring₂ c.e1 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc11 hc12
+  have hc2 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e2 =
+      d₂.colorAtNat coloring₂ c.e2 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc21 hc22
+  have hc3 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e3 =
+      d₂.colorAtNat coloring₂ c.e3 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc31 hc32
+  have hc4 : d₁.colorAtNat (tricolorRestrictionR2 hle coloring₂) c.e4 =
+      d₂.colorAtNat coloring₂ c.e4 :=
+    tricolorRestrictionR2.colorAtNat_eq hle coloring₂ hc41 hc42
+  simp only [triColorConditionAt]
+  simp only [hc1, hc2, hc3, hc4]
+  simp only [triColorConditionAt] at hcond
+  exact ⟨⟨hc11, hc12, hc21, hc22, hc31, hc32, hc41, hc42⟩, hcond.2⟩
+
+/-- **La cardinalité est l'unique obstruction au transfert descendant R2
+(append-only).** Si `d₂ = d₁ ++ [c₁, c₂]` (modèle libre) porte un tricoloriage
+valide DONT DEUX COULEURS DISTINCTES vivent déjà sur les labels de la fenêtre
+`d₁`, alors `d₁` est tricolorable : la restriction transporte toutes les
+conditions de Fox et la continuité over (pont `triColorConditionAt_restrictR2`),
+et les « ≥ 2 couleurs » sont précisément l'hypothèse `htwo`. Autrement dit,
+`r2_append_only_wall` échoue UNIQUEMENT parce que le bigon flottant fabrique
+ses deux couleurs sur des labels fraîches — c'est la seule chose qu'un futur
+`Reidemeister2Connected` a à interdire. -/
+theorem tricolorable_backward_R2_cardinality {d₁ d₂ : KnotDiagram}
+    {c₁ c₂ : PDCrossing}
+    (hwf₁ : d₁.wf = true)
+    (hne : d₁.crossings ≠ [])
+    (hle : d₁.numEdges ≤ d₂.numEdges)
+    (hsurg : d₂.crossings = d₁.crossings ++ [c₁, c₂])
+    (coloring₂ : TriColoring d₂) (hcol₂ : IsTriColoring d₂ coloring₂)
+    (htwo : ∃ i j : Fin d₁.numEdges,
+      tricolorRestrictionR2 hle coloring₂ i ≠
+        tricolorRestrictionR2 hle coloring₂ j) :
+    IsTricolorable d₁ := by
+  refine ⟨tricolorRestrictionR2 hle coloring₂, ?_, ?_, htwo⟩
+  · intro c hc
+    have hmem : c ∈ d₂.crossings := by
+      rw [hsurg]; exact List.mem_append.mpr (Or.inl hc)
+    exact triColorConditionAt_restrictR2 hle coloring₂ c
+      (crossingSlots_mem_of_wf hwf₁ hne c hc) (hcol₂.1 c hmem)
+  · obtain ⟨i, j, hne'⟩ := htwo
+    have hij : i ≠ j := fun h => hne' (by rw [h])
+    have hi := i.isLt
+    have hj := j.isLt
+    omega
+
+/-- Le glissement de slots : croisement 0 renuméroté `⟨1,3,2,4⟩`
+    (slots e2↔e3 échangés — un brin sous passe au-dessus). C'est le témoin
+    officiel de `reidemeister3Determined_satisfiable`. -/
+def r3SlideCounter : KnotDiagram where
+  crossings := [⟨1,3,2,4⟩, ⟨1,2,3,4⟩]
+  numEdges := 4
+
+/-- **Mur R3 (même slot-déterminé)** : `Reidemeister3Determined` relie
+    `twoTwinCrossings` (tricolorable) à `r3SlideCounter` (NON tricolorable :
+    la continuité over des deux croisements force les 4 arêtes à une seule
+    couleur, contredisant « ≥ 2 couleurs »). La bi-implication du maître L350
+    échoue donc AUSSI sous le raffinement `Reidemeister3Determined` — la
+    permutation de slots doit préserver les rôles over/under. -/
+theorem r3_determined_wall :
+    Reidemeister3Determined twoTwinCrossings r3SlideCounter ∧
+    IsTricolorable twoTwinCrossings ∧ ¬ IsTricolorable r3SlideCounter := by
+  refine ⟨?_, twoTwinCrossings_tricolorable, ?_⟩
+  · -- Réutilise le témoin officiel `reidemeister3Determined_satisfiable`
+    -- (les deux diagrammes sont définitionnellement égaux aux littéraux).
+    exact reidemeister3Determined_satisfiable
+  · -- Forçage mono-couleur : tout coloriage valide de r3SlideCounter est constant.
+    rintro ⟨col, ⟨hcond, _hnum, hcol⟩⟩
+    have h0 : triColorConditionAt r3SlideCounter col ⟨1,3,2,4⟩ :=
+      hcond _ (by simp [r3SlideCounter])
+    have h1 : triColorConditionAt r3SlideCounter col ⟨1,2,3,4⟩ :=
+      hcond _ (by simp [r3SlideCounter])
+    have hnum4 : r3SlideCounter.numEdges = 4 := rfl
+    -- Déplie les conditions : continuité over + Fox de chaque croisement.
+    simp only [triColorConditionAt] at h0 h1
+    obtain ⟨_hb0, ⟨hcont0, _hfox0⟩⟩ := h0
+    obtain ⟨_hb1, ⟨hcont1, hfox1⟩⟩ := h1
+    -- hcont0 : colorAtNat 3 = colorAtNat 4 ; hcont1 : colorAtNat 2 = colorAtNat 4.
+    -- hfox1 : Fox sur (1, 2, 3). Comme 2 = 3 (via 4), la branche « toutes
+    -- distinctes » est absurde et la branche « toutes égales » force A1 = A2.
+    have h23 : r3SlideCounter.colorAtNat col 2 = r3SlideCounter.colorAtNat col 3 :=
+      hcont1.trans hcont0.symm
+    have hA1 : r3SlideCounter.colorAtNat col 1 = r3SlideCounter.colorAtNat col 2 := by
+      rcases hfox1 with ⟨h, _⟩ | ⟨_, hd, _⟩
+      · exact h
+      · exact absurd h23 hd
+    have hA2 : r3SlideCounter.colorAtNat col 2 = r3SlideCounter.colorAtNat col 1 :=
+      hA1.symm
+    have hA3 : r3SlideCounter.colorAtNat col 3 = r3SlideCounter.colorAtNat col 1 :=
+      (hA1.trans h23).symm
+    have hA4 : r3SlideCounter.colorAtNat col 4 = r3SlideCounter.colorAtNat col 1 :=
+      hcont1.symm.trans hA1.symm
+    -- Tout indice Fin 4 lit l'une des 4 arêtes, toutes de même couleur.
+    have hall : ∀ k : Fin r3SlideCounter.numEdges,
+        col k = r3SlideCounter.colorAtNat col 1 := by
+      intro k
+      have hne : r3SlideCounter.numEdges ≠ 0 := by omega
+      have hk4 : k.val < 4 := by rw [← hnum4]; exact k.isLt
+      have hmod : (k.val + 1 - 1) % r3SlideCounter.numEdges = k.val := by
+        rw [Nat.add_sub_cancel]
+        exact Nat.mod_eq_of_lt k.isLt
+      have hcolor : r3SlideCounter.colorAtNat col (k.val + 1) = col ⟨k.val, hk4⟩ := by
+        simp only [KnotDiagram.colorAtNat, dif_neg hne, hmod]
+      calc col k = col ⟨k.val, hk4⟩ := rfl
+        _ = r3SlideCounter.colorAtNat col (k.val + 1) := hcolor.symm
+        _ = r3SlideCounter.colorAtNat col 1 := by
+            interval_cases k.val
+            · rfl
+            · exact hA2
+            · exact hA3
+            · exact hA4
+    obtain ⟨i, j, hij⟩ := hcol
+    exact hij (by rw [hall i, hall j])
 
 /-! ## 3. Le trefoil est tricolorable
 

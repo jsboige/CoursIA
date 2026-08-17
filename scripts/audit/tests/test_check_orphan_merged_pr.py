@@ -401,3 +401,126 @@ def test_main_json_out_written(tmp_path):
     assert rc == 0
     data = json.loads(out.read_text(encoding="utf-8"))
     assert data["results"][0]["status"] == "skipped"
+
+
+# --------------------------------------------------------------------------- #
+# Adjudications (#11159) — registre versionne, statut ADJUGE distinct
+# --------------------------------------------------------------------------- #
+def test_adjudged_when_merge_commit_in_registry(tmp_path):
+    """Le #10972 original, mais son mergeCommit est dans le registre d'adjudications
+    -> statut ADJUGE (pas ORPHAN), motif reporte, cle = mergeCommit."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash of base leg", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "feature/base")
+    mc = _commit(repo, "PR site-render infra", {"site/rendered.html": "html"})
+    pr = _pr(10972, "feature/site-render-infra-10923", base="feature/base",
+             merge_commit=mc, files=["site/rendered.html", "_quarto.yml"])
+    adjudications = {mc: {"motif": "contenu promu au bloc racine de _quarto.yml (L624-629)",
+                          "adjudicated_by": "ai-01", "date": "2026-08-16"}}
+    res = mod.analyse_pr(repo, pr, "main", "", adjudications)
+    assert res["status"] == "adjudge"
+    assert res["merge_commit"] == mc
+    assert "promu au bloc racine" in res["motif"]
+    assert res["adjudicated_by"] == "ai-01"
+
+
+def test_unadjudged_orphan_still_orphan_with_registry(tmp_path):
+    """Un nouvel orphelin non adjuge ressort toujours en ORPHAN meme quand le
+    registre existe — le registre ne desarme pas le detecteur."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash of base leg", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "feature/base")
+    mc = _commit(repo, "PR work", {"site/rendered.html": "html"})
+    pr = _pr(999, "feature/new-orphan", base="feature/base", merge_commit=mc,
+             files=["site/rendered.html"])
+    # Le registre contient un AUTRE mergeCommit (le #10972 historique)
+    adjudications = {"3a178b0f02bc0de7c12f09f48ef88f878ed87280":
+                     {"motif": "autre orphelin", "adjudicated_by": "ai-01",
+                      "date": "2026-08-16"}}
+    res = mod.analyse_pr(repo, pr, "main", "", adjudications)
+    assert res["status"] == "orphan"
+    assert res["merge_commit"] == mc
+
+
+def test_adjudication_without_motive_rejected(tmp_path):
+    """Entree de registre sans motif -> RuntimeError (exit 2) : jamais un mute
+    silencieux, l'adjudication de complaisance reste visible."""
+    mod = _load()
+    reg = tmp_path / "adjudications.json"
+    reg.write_text(json.dumps({"a" * 40: {"adjudicated_by": "ai-01",
+                                          "date": "2026-08-16"}}), encoding="utf-8")
+    with pytest.raises(RuntimeError, match="motif"):
+        mod.load_adjudications(reg)
+
+
+def test_adjudication_bad_json_rejected(tmp_path):
+    mod = _load()
+    reg = tmp_path / "adjudications.json"
+    reg.write_text("{not json", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="illisible"):
+        mod.load_adjudications(reg)
+
+
+def test_format_report_lists_adjudges_separately_and_counts():
+    mod = _load()
+    results = [
+        {"status": "orphan", "number": 1, "base": "feature/base", "head": "f",
+         "merged_at": "t", "title": "T", "merge_commit": "b" * 40,
+         "paths": ["x"], "recovery": "git merge origin/f"},
+        {"status": "adjudge", "number": 2, "base": "feature/base", "head": "g",
+         "merged_at": "t", "title": "T2", "merge_commit": "a" * 40,
+         "paths": ["y"], "motif": "contenu promu au bloc racine",
+         "adjudicated_by": "ai-01", "adjudicated_at": "2026-08-16"},
+    ]
+    out = mod.format_report(results)
+    assert "ADJUGE  PR #2" in out
+    assert "motif: contenu promu au bloc racine" in out
+    assert "orphelins: 1" in out
+    assert "adjuges: 1" in out
+
+
+def test_main_adjudged_does_not_fail_strict(tmp_path):
+    """main() avec registre qui adjuge le seul orphelin -> --strict exit 0 :
+    le compte orphelins retombe a 0, l'adjudication n'est pas un finding."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    _g(repo, "checkout", "-q", "-b", "feature/base")
+    _commit(repo, "base leg work", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "main")
+    _commit(repo, "squash of base leg", {"_quarto.yml": "cfg"})
+    _g(repo, "checkout", "-q", "feature/base")
+    mc = _commit(repo, "PR work", {"site/rendered.html": "html"})
+    prs = tmp_path / "prs.json"
+    prs.write_text(json.dumps([_pr(10972, "feature/site", merge_commit=mc,
+                                   files=["site/rendered.html"])]), encoding="utf-8")
+    reg = tmp_path / "adjudications.json"
+    reg.write_text(json.dumps({mc: {"motif": "contenu promu au bloc racine",
+                                    "adjudicated_by": "ai-01",
+                                    "date": "2026-08-16"}}), encoding="utf-8")
+    rc = mod.main(["--repo-path", str(repo), "--from-json", str(prs),
+                   "--base-ref", "main", "--repo", "", "--days", "0",
+                   "--adjudications", str(reg), "--strict"])
+    assert rc == 0
+
+
+def test_main_registry_corrupt_exits_2(tmp_path):
+    """Un registre mal forme (motif manquant) -> exit 2 : le garde-fou est
+    declenche, pas une adjudication silencieuse."""
+    mod = _load()
+    repo = _git_repo(tmp_path)
+    prs = tmp_path / "prs.json"
+    prs.write_text(json.dumps([_pr(1, "feature/x", base="main")]), encoding="utf-8")
+    reg = tmp_path / "adjudications.json"
+    reg.write_text(json.dumps({"a" * 40: {"adjudicated_by": "x"}}), encoding="utf-8")
+    rc = mod.main(["--repo-path", str(repo), "--from-json", str(prs),
+                   "--base-ref", "main", "--repo", "", "--days", "0",
+                   "--adjudications", str(reg)])
+    assert rc == 2
