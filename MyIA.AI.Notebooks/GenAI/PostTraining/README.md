@@ -187,7 +187,23 @@ PT-06 documente le pipeline d'évaluation complet et produit un tableau comparat
 | **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
 | **[RL — rl_9 offline](../../RL/rl_9_offline_rl.ipynb)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
 | **[RL — rl_10 reward shaping](../../RL/rl_10_reward_shaping.ipynb)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.ipynb). |
+| **[RL — rlpt_* (Post-Training RLHF/GRPO/DPO)](../../RL/rlpt_1_ppo_lm_rlhf.ipynb)** | Mécanique from-scratch sur petits LM | La sous-série `rlpt_*` (4 notebooks) applique les algorithmes RLHF/GRPO/DPO à des LM char-level ou Qwen3.5-0.8B local (8 Go), **sans `trl`** : on recompile les boucles à la main, on voit les gradients. Différenciation explicite vis-à-vis de `PT_*` : `rlpt_*` = mécanique pure (from-scratch, CPU/8 Go) ; `PT_*` = chaîne SOTA 2024 à l'échelle LLM (`trl` 1.9.2, QLoRA, rewardspy). Voir la section « Frontière RL/rlpt_* vs GenAI/PostTraining » du [README RL](../../RL/README.md) pour la table de décision « quel notebook pour quelle question ». |
 | **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique (14 notebooks), FineTuning = recettes exécutables. |
+
+## Frontière avec `RL/rlpt_*`
+
+Cette série (`PT_*`) et la sous-série RL `rlpt_*` partagent les algorithmes GRPO/PPO/DPO/reward hacking, mais opèrent à des échelles et avec des outillages différents :
+
+- **`PT_*`** = chaîne SOTA 2024 (`trl` 1.9.2 + `transformers` 5.15.0 + QLoRA 4-bit) sur vrais LLMs (Qwen3.5-0.8B → 4B), diagnostic outillé via `rewardspy`, multi-seed de production, contrainte RTX 3070 8 Go.
+- **`rlpt_*`** = mécanique from-scratch (char-level ou Qwen3.5-0.8B local, sans framework lourd) : on recompile les boucles, on voit les gradients. La granularité d'observation est plus fine ; la profondeur d'exécution est plus courte.
+
+**Différenciations explicites** :
+- `rlpt_2` (GRPO Qwen3.5-0.8B, additions à 2 chiffres) ↔ `PT-11` (GRPO via `trl` + QLoRA, récompense Z3 sur vrai LLM) — from-scratch vs `trl`.
+- `rlpt_3` (construit un reward piégé, essaie de le déclencher) ↔ `PT-07` (détecte automatiquement via `rewardspy`) — manuel vs outil.
+- `rlpt_1` (PPO/RLHF char-level) ↔ `PT-02` + `PT-04` (SFT + GRPO DeepSeek-R1 via `trl`) — authentique.
+- `rlpt_4` (DPO vs GRPO offline/online, budget égal) ↔ `PT-03` (DPO) + `PT-06` (éval comparative) — authentique.
+
+**Lecture conseillée** : pour comprendre *pourquoi* un algorithme fonctionne, suivre `rlpt_*`. Pour exécuter *comment* on l'utilise à l'échelle LLM, suivre `PT_*`.
 
 ## Contexte industriel et historique 2017-2025
 

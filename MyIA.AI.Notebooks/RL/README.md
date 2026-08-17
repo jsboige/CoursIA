@@ -548,6 +548,24 @@ La thèse est puissante et honnêtement présentée : le RL n'a pas d'algorithme
 
 Le reinforcement learning propose un changement de regard sur l'apprentissage : ne plus demander « quelle est la bonne réponse ? » mais **« quelle action maximise la récompense cumulée, sachant qu'elle détermine les états futurs ? »**. La série vous a donné le formalisme (MDP, équation de Bellman), les algorithmes (du bandit à SAC, du tabulaire au deep, du online à l'offline), et l'intuition des compromis pour transformer un problème de décision séquentielle en une politique apprise — en gardant à l'esprit que ce paradigme, de AlphaGo aux LLMs alignés par RLHF, est devenu l'un des deux piliers (avec l'apprentissage supervisé) de l'IA contemporaine.
 
+## Frontière RL/rlpt_* vs GenAI/PostTraining : quel notebook pour quelle question
+
+La sous-série `rlpt_*` (Post-Training RLHF/GRPO/DPO sur petits LM) et la série `GenAI/PostTraining/PT_*` partagent le même algorithme général — GRPO, PPO, DPO, reward hacking — mais diffèrent par **l'échelle et l'outillage**. Cette section tranche, depuis le point de vue du lecteur, **quel notebook ouvrir pour quelle question** :
+
+- **`RL/rlpt_*`** = **la mécanique RL pure, en petit, sans framework lourd** : from-scratch / CPU ou 8 Go (RTX 3070), on voit les gradients, on recompile les boucles à la main. Convient pour comprendre *pourquoi* un algorithme fonctionne.
+- **`GenAI/PostTraining/PT_*`** = **la chaîne SOTA 2024 à l'échelle LLM** : `trl` 1.9.2 + `transformers` 5.15.0 + QLoRA 4-bit, vrais modèles (Qwen3.5-0.8B → 4B), `rewardspy` pour le diagnostic, multi-seed de production. Convient pour exécuter *comment* on l'utilise en pratique.
+
+Les **différenciations explicites** qui ferment la redondance :
+
+| Question | Ouvrir dans RL/rlpt_* | Ouvrir dans GenAI/PostTraining/PT_* |
+|----------|----------------------|-----------------------------------|
+| « GRPO — comment l'algorithme fonctionne ? » | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.ipynb) — group rollouts, avantage intra-group, recompense verifiable (additions 2 chiffres), budget steps borné | [PT-11 GRPO Qwen3.5-0.8B](PT_11_grpo_qwen35_rlvr.ipynb) — `trl.GRPOConfig` + QLoRA 4-bit, recompense Z3 sur vrai LLM |
+| « Reward hacking — comment le reconnaitre ? » | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) — on **construit** un reward piégé puis on essaie de le declencher par 3 voies | [PT-07 rewardspy](PT_07_rewardspy_reward_hacking.ipynb) — detection **automatique** via la lib `rewardspy` (AvAdiii) |
+| « RLHF from scratch — la signature ? » | [rlpt_1_ppo_lm_rlhf](rlpt_1_ppo_lm_rlhf.ipynb) — char-level, PPO + KL vs ref, sans framework | [PT-02 SFT baseline](PT_02_sft_baseline.ipynb) + [PT-04 GRPO DeepSeek-R1](PT_04_grpo_deepseek_r1.ipynb) — `trl.SFTTrainer` / `GRPOTrainer` |
+| « DPO vs GRPO online — budget egal ? » | [rlpt_4_dpo_vs_ppo](rlpt_4_dpo_vs_ppo.ipynb) — preferences auto-fabriquees, verdict multi-seed DM | [PT-03 DPO direct preference](PT_03_dpo_direct_preference.ipynb) + [PT-06 eval comparative](PT_06_eval_comparative.ipynb) |
+
+**Lecture conseillee** : pour comprendre la *mecanique*, suivre `rlpt_*`. Pour executer la *chaine*, suivre `PT_*`. Les deux series se reference mais ne dupliquent pas (cf. note d'intention de #11297 : « le pont PostTraining existant — la serie s'y refere, ne le duplique pas »).
+
 ## Où atterrit le « pont RLHF » : les séries GenAI
 
 Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur l'offline RL, notebook 10 sur le reward shaping). Ce pont **atterrit concrètement** dans deux séries GenAI, qui appliquent ces fondations RL à de vrais modèles de langue. La série RL fournit l'algorithmique tabulaire ; GenAI fournit la réalisation à l'échelle des LLM.
