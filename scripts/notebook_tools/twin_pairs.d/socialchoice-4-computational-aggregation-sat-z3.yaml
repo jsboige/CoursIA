@@ -30,6 +30,12 @@
       csharp_sha: 86be4aae1151a7511612e98c5e36a93b077a133d
       content_python_sha: 37c4109217426d7764ea33d4a406423a7f4fc5d7df5762838dd2e2a05f7115d4
       content_csharp_sha: 97b39db98315b44d73e58ea0766af5b886dbb874cbee5511c50b98140a13ac3f
+    - date: "2026-08-17"
+      by: myia-po-2024:CoursIA
+      python_sha: 55b19576fd2c02160625ca3eebeaf023bce06c2b
+      csharp_sha: a889aa74d072a98a1459feb819d1fb6ba7f51d3c
+      content_python_sha: 37c4109217426d7764ea33d4a406423a7f4fc5d7df5762838dd2e2a05f7115d4
+      content_csharp_sha: 159dc37548107422c2f1d79d967217bc237e629b067b4caae5c49572b18872b3
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = PySAT (3 vrais solveurs SAT industriels Glucose3/Minisat22/Cadical103) + z3-py pour SMT + matplotlib/numpy (68 cellules, 21 code). C# = Microsoft.Z3 4.12.2 pour SMT + DPLL from-scratch pedagogique + pont PythonNet vers PySAT pour le SAT industriel (42 cellules, 15 code). Verdict SOTA-OK depuis 2026-08-17 : les DEUX branches critiques sont completes des deux cotes. Branche SMT complete depuis 2026-08-16 (tranche 2 : encodage Arrow complet UNSAT, SAT 2-alternatives, relaxation par paires d'axiomes, grille de passage a l'echelle -- mirrors C# idiomatiques via Microsoft.Z3). Branche SAT completee 2026-08-17 (section 8 du C#, EPIC #10382 axe 5 PythonNet) : le pont pythonnet 3.1.0 -> CPython 3.13 -> pysat execute Glucose3/MiniSat22/CaDiCaL103 sur le MEME encodage produit par l'ArrowSATEncoder C# (216 variables, 2216 clauses) -- les 3 solveurs concluent UNSAT, miroir exact de la cellule 11 Python. Le DPLL from-scratch est CONSERVE comme outil pedagogique (sections 1-6) : le pont est en plus, jamais a la place. Chaque twin atteint desormais des moteurs de production de son ecosysteme ET le C# a l'acces direct aux 3 solveurs industriels du twin Python. Axes de benchmark alignes : Python cellule 11 et C# section 8 benchent les solveurs sur l'encodage d'Arrow ; le C# conserve en plus le benchmark STRUCTUREL Arrow vs Sen (section 6). parity_level: semantic (meme contenu mathematique des deux cotes sur les axes SAT et SMT complets, API idiomatique differente ; PAS native-both : 42 vs 68 cellules, pas une traduction cellule-par-cellule)."
 
