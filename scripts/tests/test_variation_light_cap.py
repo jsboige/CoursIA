@@ -1065,7 +1065,7 @@ def test_check_pr_med_readme_on_saturated_lane_is_cap_reached(tmp_path, capsys):
     assert res["cap_reached"] is True               # the bypass is closed
     assert res["tier_cap_reached"] is False         # 0 LIGHT declared
     assert res["cap_exceeded_by_genre"] is True     # light_genre=2 > cap=1
-    assert res["counts"] == "tier+genre"
+    assert res["counts"] == "tier+genre+vein"
     assert res["light_genre"] == 2                  # 1 merged + the candidate
     assert res["genre_cap"] == 1
 
@@ -1078,7 +1078,7 @@ def test_check_pr_counts_field_discloses_both_axes(tmp_path, capsys):
     merged = [{"number": 1, "body": BODY_EMDASH, "mergedAt": "2026-08-11T03:00:00Z"}]
     rc, res = _check_pr(tmp_path, merged, BODY_EMDASH, capsys=capsys)
     assert rc == 0
-    assert res["counts"] == "tier+genre"
+    assert res["counts"] == "tier+genre+vein"
 
 
 def test_check_pr_lane_grains_window_aligned_tier_genre(tmp_path, capsys):
@@ -1336,3 +1336,254 @@ def test_vein_runs_handles_open_pr_with_none_mergedat():
     assert len(out) == 1
     assert out[0]["vein_key"] == 11224
     assert sorted(out[0]["numbers"]) == [800, 801]
+
+
+# --- #11343 tranche 2 : picker-command surface ------------------------------
+
+def test_picker_command_for_vein_below_cap_returns_none():
+    """A vein with count < vein_cap must NOT carry a picker command."""
+    from variation_light_cap import picker_command_for_vein
+    vein = {"vein_key": 11224, "count": 1, "numbers": [800]}
+    cmd = picker_command_for_vein(vein, "myia-po-2024:CoursIA-2")
+    assert cmd is None
+
+
+def test_picker_command_for_vein_at_cap_returns_command():
+    """A tripped vein (count >= vein_cap=2) returns the picker shell command."""
+    from variation_light_cap import picker_command_for_vein
+    vein = {"vein_key": 11224, "count": 2, "numbers": [800, 801]}
+    cmd = picker_command_for_vein(vein, "myia-po-2024:CoursIA-2")
+    assert cmd is not None
+    assert "scripts/pick_idle_grain.py" in cmd
+    assert "--lane" in cmd
+    assert "myia-po-2024:CoursIA-2" in cmd
+    assert "--prev-genre" in cmd
+    assert "tooling" in cmd
+
+
+def test_check_pr_emits_picker_command_when_vein_tripped():
+    """--check-pr N: when the lane-day trips a vein (count >= 2), the JSON
+    output must carry picker_command populated with the picker shell
+    command. The flag does NOT flip cap_reached -- the tranche in
+    flight still merges, only the NEXT grain is pointed at the picker
+    (amendement ai-01 2026-08-16T22:53Z verbatim)."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Tranche 1, issue #11224."
+    )
+    body_b = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Tranche 2, issue #11224."
+    )
+    merged_payload = [
+        {"number": 900, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 901, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    # The OPEN candidate is also a LIGHT/guard on the same vein -- it
+    # falls into the STRUCTURED branch (eff=LIGHT, candidate_is_light_genre=True),
+    # where the full `counts: tier+genre+vein` disclosure lives.
+    body_now = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Tranche 3, issue #11224."
+    )
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8",
+    ) as f:
+        f.write(body_now)
+        body_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--check-pr", "999",
+                "--body-file", body_path,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+        os.unlink(body_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert out["vein_exceeded"] is True
+    assert out["vein_key"] == 11224
+    assert out["vein_count"] >= 2
+    assert out["picker_command"] is not None
+    assert "pick_idle_grain.py" in out["picker_command"]
+    assert lane in out["picker_command"]
+    assert out["counts"] == "tier+genre+vein"
+
+
+def test_check_pr_picker_command_absent_when_no_vein():
+    """--check-pr N: when NO vein is tripped (count < 2), picker_command
+    is None -- no false picker-call on a clean day."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Issue #11224, tranche 1."
+    )
+    body_b = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Issue #11256, tranche distincte."
+    )
+    merged_payload = [
+        {"number": 950, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 951, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    # OPEN candidate LIGHT/guard with no shared issue# in the day --
+    # vein count stays at 1, picker_command must be None.
+    body_now = (
+        f"Grain: LIGHT/guard -- lane {lane}\n\n"
+        f"Issue #11224, tranche candidate."
+    )
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8",
+    ) as f:
+        f.write(body_now)
+        body_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--check-pr", "999",
+                "--body-file", body_path,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+        os.unlink(body_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert out["vein_exceeded"] is False
+    assert out["vein_key"] is None
+    assert out["vein_count"] == 0
+    assert out["picker_command"] is None
+
+
+def test_genre_signals_emits_picker_command_when_vein_tripped():
+    """--genre-signals mode: when the lane's day trips a vein, the JSON
+    output carries picker_command at the top level (alongside
+    signals and vein_runs)."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: MED/notebook-python -- lane {lane}\n\n"
+        f"Tranche 1, issue #11224."
+    )
+    body_b = (
+        f"Grain: MED/notebook-dotnet -- lane {lane}\n\n"
+        f"Tranche 2, issue #11224."
+    )
+    merged_payload = [
+        {"number": 960, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+        {"number": 961, "body": body_b, "mergedAt": "2026-08-17T09:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--genre-signals",
+                "--lane", lane,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert "picker_command" in out
+    assert out["picker_command"] is not None
+    assert "pick_idle_grain.py" in out["picker_command"]
+    assert lane in out["picker_command"]
+    assert out["signals"]["VEIN-RUN"] is True
+
+
+def test_genre_signals_picker_command_absent_when_clean():
+    """--genre-signals mode: when the lane's day has no vein, the JSON
+    output carries picker_command: null -- no false picker-call."""
+    import subprocess
+    import tempfile
+    import os
+
+    lane = "myia-po-2024:CoursIA-2"
+    body_a = (
+        f"Grain: MED/notebook-python -- lane {lane}\n\n"
+        f"Issue #11224."
+    )
+    merged_payload = [
+        {"number": 970, "body": body_a, "mergedAt": "2026-08-17T08:00:00Z"},
+    ]
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".json", delete=False, encoding="utf-8",
+    ) as f:
+        json.dump(merged_payload, f)
+        merged_path = f.name
+
+    try:
+        proc = subprocess.run(
+            [
+                sys.executable, str(Path(__file__).resolve().parents[1] / "variation_light_cap.py"),
+                "--genre-signals",
+                "--lane", lane,
+                "--replay", merged_path,
+            ],
+            capture_output=True, text=True, cwd=str(
+                Path(__file__).resolve().parents[1]
+            ),
+            timeout=15,
+        )
+    finally:
+        os.unlink(merged_path)
+
+    assert proc.returncode == 0, proc.stderr
+    out = json.loads(proc.stdout)
+    assert out["picker_command"] is None
+    assert out["signals"]["VEIN-RUN"] is False

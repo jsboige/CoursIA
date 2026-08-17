@@ -61,6 +61,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 import sys
 from pathlib import Path
 
@@ -685,6 +686,44 @@ def vein_runs(
     return out
 
 
+# Picker-call helper (#11343 tranche 2, amendement ai-01 2026-08-16T22:53Z) :
+# when VEINE-RUN trips, the cap is no longer advisory. The lane must
+# DRAW the next grain from `pick_idle_grain.py`, the same posture as
+# `queue vide` -- the picker knows the 300-deep pool, the 30-issue gh
+# truncation, and does not bias by family. The function returns the
+# shell command string to run, or None when no vein is over the cap.
+# `vein` is one entry of `vein_runs()`: `{vein_key, count, numbers}`.
+def picker_command_for_vein(
+    vein: dict,
+    lane: str,
+    vein_cap: int = 2,
+) -> str | None:
+    """Return the `pick_idle_grain.py` shell command for a tripped vein.
+
+    The command shape is fixed by the picker CLI (`--lane` mandatory,
+    `--prev-genre` optional but recommended after a vein -- the lane has
+    just spent its budget on one genre of work and the picker should
+    lean away from it). We pass `--prev-genre tooling` as the SAFE
+    default: when the actual genre of the contributing PRs is
+    unknown to this function (it usually is, the picker-call happens
+    on the *next* grain, not the contributing ones), `tooling` is
+    the lightest penalty in the picker's urn -- it does not block
+    any genre, only de-prioritises tooling, which is what we want
+    when a tooling-vein is what's tripping.
+
+    Returns None when the vein is below the cap (defensive: callers
+    should filter on `count >= vein_cap` first; the function refuses
+    to print a picker command for a non-tripped vein).
+    """
+    if vein.get("count", 0) < vein_cap:
+        return None
+    return (
+        f"python scripts/pick_idle_grain.py "
+        f"--lane {shlex.quote(lane)} "
+        f"--prev-genre tooling"
+    )
+
+
 def _genre_from_paths(files: list[str] | None) -> str | None:
     """Best-effort GENRE inferred from a PR's diff file paths.
 
@@ -990,6 +1029,25 @@ def main(argv: list[str] | None = None) -> int:
                 tally_info = lane_genre_tally(merged, lane)
                 if tally_info["light_genre"] > tally_info["cap"]:
                     out["lane_genre_saturated"] = True
+                # VEIN-RUN (#11343 tranche 2) : the vein is INDEPENDENT
+                # of tier/genre -- a CONTENT candidate may still find
+                # its lane's day tripping a vein. Surface picker_command
+                # so the lane points at the picker regardless of where
+                # in the assessment it branched.
+                sig_early = compute_signals(merged, lane)
+                vein_early = sig_early.get("vein_runs", [])
+                if vein_early:
+                    out["vein_exceeded"] = True
+                    out["vein_key"] = vein_early[0]["vein_key"]
+                    out["vein_count"] = vein_early[0]["count"]
+                    out["picker_command"] = picker_command_for_vein(
+                        vein_early[0], lane,
+                    )
+                else:
+                    out["vein_exceeded"] = False
+                    out["vein_key"] = None
+                    out["vein_count"] = 0
+                    out["picker_command"] = None
             print(json.dumps(out))
             return 0
         if not lane:
@@ -1020,19 +1078,35 @@ def main(argv: list[str] | None = None) -> int:
         # the defect are closed -- the declared-MED bypass AND the coherence
         # with --genre-signals.
         cap_reached = tier_cap_reached or (cap_exceeded_by_genre and candidate_is_light_genre)
+        # VEIN-RUN (#11343 tranche 2) : when the lane's day trips a vein
+        # (2+ PRs citing the same issue), the cap must point the lane
+        # at the picker. The picker-call is informationally added to
+        # the JSON, NOT a hard HOLD: the existing tranche in flight
+        # still merges (amendement ai-01 verbatim : « le plafond ne
+        # bloque PAS le merge de la tranche en cours, c'est la
+        # SUIVANTE de la meme veine qui declenche le tirage »).
+        sig = compute_signals(merged, lane)
+        vein_runs_list = sig.get("vein_runs", [])
+        picker_cmd = None
+        if vein_runs_list:
+            picker_cmd = picker_command_for_vein(vein_runs_list[0], lane)
         print(json.dumps({
             "pr": args.check_pr,
             "lane": lane,
             "cap_reached": cap_reached,
             "tier_cap_reached": tier_cap_reached,
             "cap_exceeded_by_genre": cap_exceeded_by_genre,
+            "vein_exceeded": sig["signals"]["VEIN-RUN"],
+            "vein_key": vein_runs_list[0]["vein_key"] if vein_runs_list else None,
+            "vein_count": vein_runs_list[0]["count"] if vein_runs_list else 0,
+            "picker_command": picker_cmd,
             "budget": status["budget"],
             "spent": status["spent"],
             "light_genre": light_genre_count,
             "genre_cap": genre_cap,
             "lane_grains": status["lane_grains"],
             "consumed_by": status["consumed_by"],
-            "counts": "tier+genre",
+            "counts": "tier+genre+vein",
         }))
         return 0
 
@@ -1061,6 +1135,18 @@ def main(argv: list[str] | None = None) -> int:
             candidate_genre=cand_genre,
             candidate_files=cand_files,
         )
+        # Picker-call wiring (#11343 tranche 2) : the signals are
+        # advisory, but the FIRST tripped vein (highest count, lowest
+        # vein_key per `vein_runs` order) carries the picker command
+        # the lane must run for its NEXT grain. The coordinator reads
+        # `picker_command` alongside the labels.
+        vein_runs_list = sig.get("vein_runs", [])
+        if vein_runs_list:
+            sig["picker_command"] = picker_command_for_vein(
+                vein_runs_list[0], args.lane,
+            )
+        else:
+            sig["picker_command"] = None
         # The workflow reads the JSON and applies a label per True signal;
         # we do NOT throw a non-zero exit -- the gate is advisory, the
         # consumer is the coordinator at merge time. Same posture as
