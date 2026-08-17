@@ -36,13 +36,13 @@ layout: cover
 
 # Le fil de la matinée
 
-<div class="grid grid-cols-3 gap-6 mt-8">
+<div class="grid grid-cols-3 gap-8 mt-10">
 
-<div class="border-t-2 border-rose-800 pt-4">
+<div class="border-t-2 border-rose-800 pt-4 flex flex-col">
 
-**1 — Comprendre le fonctionnement**
+<div class="font-bold text-rose-900 min-h-[3.2rem]">1 — Comprendre le fonctionnement</div>
 
-<div class="text-sm text-slate-600 mt-3">
+<div class="text-sm text-slate-600 mt-1 leading-relaxed">
 
 Ce que « l'IA » recouvre réellement, et les cinq familles qu'on range sous le mot.
 
@@ -51,11 +51,11 @@ Comment un modèle de langage lit un texte : tokens, embeddings, attention.
 </div>
 </div>
 
-<div class="border-t-2 border-rose-800 pt-4">
+<div class="border-t-2 border-rose-800 pt-4 flex flex-col">
 
-**2 — Organisation et méthodes**
+<div class="font-bold text-rose-900 min-h-[3.2rem]">2 — Organisation et méthodes</div>
 
-<div class="text-sm text-slate-600 mt-3">
+<div class="text-sm text-slate-600 mt-1 leading-relaxed">
 
 Ce que change un assistant qui écrit : le rôle passe de la production à la relecture.
 
@@ -64,11 +64,11 @@ Une équipe d'agents spécialisés, coordonnée — et ce que sa structure a d'a
 </div>
 </div>
 
-<div class="border-t-2 border-rose-800 pt-4">
+<div class="border-t-2 border-rose-800 pt-4 flex flex-col">
 
-**3 — Risques et opportunités**
+<div class="font-bold text-rose-900 min-h-[3.2rem]">3 — Risques et opportunités</div>
 
-<div class="text-sm text-slate-600 mt-3">
+<div class="text-sm text-slate-600 mt-1 leading-relaxed">
 
 Hallucination, alignement, confidentialité, AI Act : ce qui est un vrai risque et ce qui n'en est pas un.
 
