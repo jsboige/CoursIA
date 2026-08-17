@@ -21,7 +21,15 @@ Terrain commun (apples-to-apples with Chronos-Bolt / Kronos)
   cost 10 bps per rebalance, majority-class baseline.
 - Horizons: pred_len in {24, 66, 132} (~ h=22 / 66 / 132 business days).
 - Metric: edge_vs_majority = DirAcc - majority_baseline.
-- Gate: beats_valid = seeds>=4 AND mean_edge>0 AND (std<1e-10 OR mean_edge>=2*std).
+- Gate (§C CONJUNCTION, both legs required):
+    * sigma leg : seeds>=4 AND mean_edge>0 AND (std<1e-10 OR mean_edge>=2*std)
+    * DM leg    : dm_p_median < 0.05, Diebold-Mariano on an **mse** precision
+                  loss vs the no-change (martingale) path forecast.
+  sigma alone measures dispersion across seeds, NOT significance: this pipeline
+  has a +19.97-sigma edge with DM p=0.236 on record. "linear" is a bias control
+  and is never the conjunction leg (#10956/#10961). A missing DM leg yields
+  INCONCLUSIVE, never BEATS -- absent evidence is not evidence (#11395).
+  Per-seed signed bias (model AND baseline) is reported, per §C point 7.
 
 The DirAcc definition matches evaluate_window (eval_kronos_zeroshot): a forecast
 *path* is produced and we measure the fraction of day-over-day directional moves
@@ -90,6 +98,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from data_utils import load_data  # noqa: E402
+from dm_test import diebold_mariano_test  # noqa: E402
 
 # -- Terrain-commun constants (match Chronos-Bolt / Kronos rungs) ------------
 
@@ -366,9 +375,46 @@ def walk_forward_direction(
     if not fold_results:
         return {"error": "no valid folds produced"}
 
-    dir_acc = compute_direction_accuracy(
-        np.asarray(all_actual_rets), np.asarray(all_pred_rets)
-    )
+    actual_arr = np.asarray(all_actual_rets)
+    pred_arr = np.asarray(all_pred_rets)
+    dir_acc = compute_direction_accuracy(actual_arr, pred_arr)
+
+    # -- Diebold-Mariano precision leg (§C conjunction) ------------------------
+    # The sigma leg (aggregation below) measures a DIRECTIONAL edge; §C also
+    # requires a significance leg on a PRECISION loss (mse/mae), never on
+    # "linear" -- that one is a bias differential, blind to dispersion
+    # (#10956/#10961, documented in dm_test.py itself).
+    #
+    # Both legs bear on the SAME forecast object: the model regresses the
+    # cumulative log-return path, and the day-over-day signs OF THAT PATH are
+    # what produce DirAcc. The numeric counterpart of the majority baseline is
+    # therefore the no-change (martingale) forecast pred=0 -- the standard
+    # benchmark for return prediction: e_baseline = 0 - actual = -actual.
+    # This does NOT claim the two legs measure the same quantity. It claims a
+    # directional edge must not ride a path less precise than predicting
+    # nothing at all.
+    dm_block: dict = {"available": False, "reason": "fewer than 30 paired points"}
+    if len(actual_arr) >= 30:
+        errors_model = pred_arr - actual_arr
+        errors_naive = -actual_arr  # no-change forecast
+        dm_res = diebold_mariano_test(
+            errors_model, errors_naive, loss_fn="mse", horizon=horizon
+        )
+        dm_block = {
+            "available": True,
+            "loss_fn": "mse",
+            "baseline": "no-change (martingale) path forecast",
+            "dm_statistic": dm_res.dm_statistic,
+            "p_value": dm_res.p_value,
+            "mean_loss_diff": dm_res.mean_loss_diff,
+            "n_observations": dm_res.n_observations,
+            # §C point 7: signed bias reported for model AND baseline.
+            "bias_model": float(np.mean(errors_model)),
+            "bias_baseline": float(np.mean(errors_naive)),
+            "mae_model": float(np.mean(np.abs(errors_model))),
+            "mae_baseline": float(np.mean(np.abs(errors_naive))),
+        }
+
     return {
         "horizon": horizon,
         "seed": seed,
@@ -376,6 +422,7 @@ def walk_forward_direction(
         "n_folds": len(fold_results),
         "n_test_points": len(all_actual_rets),
         "direction_accuracy": float(dir_acc),
+        "dm": dm_block,
         "fold_results": fold_results,
         "device": str(device),
         "is_trained": True,
@@ -486,12 +533,46 @@ def run_sweep(args: argparse.Namespace) -> dict:
             mean_edge = float(np.mean(edges))
             std_edge = float(np.std(edges))
             n_beats = int(np.sum(edges > 0))
-            beats_valid = (
+            # Leg 1 (sigma): directional edge, >=4 seeds, edge >= 2*std.
+            sigma_leg = (
                 len(seed_rows) >= 4 and mean_edge > 0
                 and (std_edge < 1e-10 or mean_edge >= 2 * std_edge)
             )
+            # Leg 2 (DM): median p-value across seeds on an mse precision loss.
+            # §C is a CONJUNCTION -- sigma measures dispersion across seeds, not
+            # significance, and a +19.97-sigma edge with DM p=0.236 is on record
+            # in this very pipeline. A missing DM leg is NOT a pass: absent
+            # evidence yields INCONCLUSIVE, never BEATS (#11395 class).
+            dm_rows = [r["dm"] for r in seed_rows
+                       if isinstance(r.get("dm"), dict) and r["dm"].get("available")]
+            dm_ps = [d["p_value"] for d in dm_rows]
+            dm_p_median = float(np.median(dm_ps)) if dm_ps else None
+            # DIRECTION MATTERS. A small p-value says the two forecasts differ
+            # significantly, NOT that the model wins. Measured on the synthetic
+            # dry run (geometric random walk, nothing to predict): p_value=0.0
+            # with mean_loss_diff=+1.15e-4 and mae 0.0146 vs 0.0119 -- i.e. the
+            # model significantly WORSE than doing nothing. A p-only leg would
+            # have passed it. d = loss_model - loss_baseline, so the model wins
+            # only when the differential is NEGATIVE.
+            dm_diff_median = (float(np.median([d["mean_loss_diff"] for d in dm_rows]))
+                              if dm_rows else None)
+            dm_leg = (dm_p_median is not None and dm_p_median < 0.05
+                      and dm_diff_median is not None and dm_diff_median < 0)
+
+            beats_valid = bool(sigma_leg and dm_leg)
+            if sigma_leg and dm_p_median is None:
+                verdict = "INCONCLUSIVE (no DM evidence)"
+            elif beats_valid:
+                verdict = "BEATS"
+            else:
+                verdict = "NO BEATS"
+
             mean_diracc = float(np.mean([r["direction_accuracy"] for r in seed_rows]))
             majority = seed_rows[0]["majority_baseline"]["majority_class_accuracy"]
+            # §C point 7: signed bias, model AND baseline, averaged across seeds.
+            biases = [(r["dm"]["bias_model"], r["dm"]["bias_baseline"])
+                      for r in seed_rows
+                      if isinstance(r.get("dm"), dict) and r["dm"].get("available")]
             summary_rows.append({
                 "symbol": symbol,
                 "horizon": horizon,
@@ -501,12 +582,25 @@ def run_sweep(args: argparse.Namespace) -> dict:
                 "mean_edge": mean_edge,
                 "std_edge": std_edge,
                 "n_beats": n_beats,
+                "sigma_leg": sigma_leg,
+                "dm_leg": dm_leg,
+                "dm_p_median": dm_p_median,
+                "dm_mean_loss_diff_median": dm_diff_median,
+                "dm_loss_fn": "mse",
+                "mean_bias_model": float(np.mean([b[0] for b in biases])) if biases else None,
+                "mean_bias_baseline": float(np.mean([b[1] for b in biases])) if biases else None,
+                # Kept explicitly so a reader can see whether the pre-§C gate
+                # would have over-called this cell (sigma_only=True while
+                # beats_valid=False is exactly the #11395 defect, made visible).
+                "sigma_only_legacy_verdict": sigma_leg,
                 "beats_valid": beats_valid,
+                "verdict": verdict,
             })
-            verdict = "BEATS" if beats_valid else "NO BEATS"
+            dm_txt = f"{dm_p_median:.4f}" if dm_p_median is not None else "n/a"
             print(f"  {symbol} h={horizon}: DirAcc={mean_diracc:.4f} "
                   f"majority={majority:.4f} edge={mean_edge:+.4f} "
                   f"(std={std_edge:.4f}, beats {n_beats}/{len(seed_rows)}) "
+                  f"sigma_leg={sigma_leg} dm_p_median={dm_txt} "
                   f"[{verdict}]", flush=True)
 
     sweep_summary = {
