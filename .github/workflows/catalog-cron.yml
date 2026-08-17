@@ -177,6 +177,18 @@ jobs:
           # long-lived PR, locking it in `BLOCKED` state indefinitely
           # (measured firsthand, see #10421 acceptance note).
           #
+          # Even after the `[skip ci]` removal, the bot push still
+          # produces a head that the `PR gate` doesn't accept: that gate
+          # runs on `pull_request` events, and a push with `GITHUB_TOKEN`
+          # never emits one (GitHub anti-recursion guard). The result is
+          # a head with 5 default-Setup CodeQL checks (all green) and no
+          # repo-owned check, which `mergeStateStatus` reports as
+          # `BLOCKED`. See #11202 -- the cause is `GITHUB_TOKEN`, not
+          # `[skip ci]`, and removing the latter only fixed the
+          # symbolic half. The empty-commit wake-up gesture
+          # (carved out below, alongside the "agents are forbidden"
+          # sentence) is the canonical fix on the consumer side.
+          #
           # The push MUST be a force-with-lease, and that is not a shortcut:
           # this job re-roots the branch on fresh main every run
           # (`git checkout -B "$BRANCH" origin/main` above), so its HEAD is a
@@ -190,12 +202,23 @@ jobs:
           #
           # Nothing is lost by overwriting: the branch is a materialized view,
           # regenerated from scratch from main on each run, owned solely by the
-          # automation (agents are forbidden from pushing to it, see
-          # .claude/rules/catalog-pr-hygiene.md). git-workflow.md permits
-          # force-push on a single-owner PR branch with --force-with-lease --
-          # and the lease is what keeps it honest: fetching the branch first
-          # materializes refs/remotes/origin/$BRANCH, so the push refuses if
-          # anything pushed to it between that fetch and this push.
+          # automation. The "agents are forbidden from pushing to it" rule
+          # (catalog-pr-hygiene.md, regle HARD 1) is about **content** (ne pas
+          # regenerer le catalogue sur la branche) -- it does NOT carve out
+          # the wake-up gesture described in #11202, which is mechanically
+          # distinct (commit vide, arbre identique, sous identite non-bot).
+          # When the bot's head lands BLOCKED with 5 CodeQL verts, the
+          # canonical fix is exactly that empty-commit push, and the rule
+          # file documents how to perform it. Nothing in this workflow
+          # should ever regenerate or amend the catalog content from a
+          # non-bot identity; an empty commit at the tip is the only
+          # permitted non-bot push on this branch.
+          #
+          # git-workflow.md permits force-push on a single-owner PR branch
+          # with --force-with-lease -- and the lease is what keeps it honest:
+          # fetching the branch first materializes refs/remotes/origin/$BRANCH,
+          # so the push refuses if anything pushed to it between that fetch
+          # and this push.
           git fetch origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || true
           if ! git push --force-with-lease origin "HEAD:$BRANCH"; then
             echo "::error title=Catalog push rejected::Could not push $BRANCH to origin. The lease failed (someone pushed to $BRANCH after this run fetched it) or github-actions[bot] lacks push rights on chore/*. Re-run this workflow; if it repeats, inspect the branch tip."
