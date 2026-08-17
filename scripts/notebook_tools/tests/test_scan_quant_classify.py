@@ -1320,3 +1320,129 @@ class TestV7SeedPropagation:
         assert acc[0].quant_class == "STRUCTUREL", (
             f"0.87 après torch.manual_seed = déterministe, got {acc[0].quant_class}"
         )
+
+# --------------------------------------------------------------------------- #
+#  v8 (#9434) : guard « min-domaine » — l'unite « min » d'une variable
+#  modelisee (duree de trajet bayesienne) n'est pas du runtime.
+#
+#  NB construction : le raw ne porte JAMAIS l'unite (le regex extrait le nombre
+#  seul). La regle 4 ne se declenche que si une AUTRE valeur-unite « N min »
+#  tombe dans la fenetre 40 du prefix+suffix (cas reel : tables de posteriors
+#  « 15,33 min ... 2,15 min »). Les tests ci-dessous reproduisent cette
+#  adjacence, sinon ils passeraient trivialement sans exercer le guard.
+# --------------------------------------------------------------------------- #
+
+
+class TestV8ModeledMinuteGuard:
+    """Infer-2 (mesure 2026-08-17) : 30/30 MACHINE-DEP etaient des FP min-domaine."""
+
+    def test_commute_arrival_absorbs(self):
+        """« arriver en moins de 15 minutes ... fenêtre de départ 14-18 min » (c23)."""
+        cls, rationale = _classify_quant_value(
+            "15", 15.0,
+            "probabilité d'arriver en moins de ",
+            " minutes, et une fenêtre de départ entre 14 et 18 min",
+            wide_context=("probabilité d'arriver en moins de 15 minutes, et une "
+                          "fenêtre de départ entre 14 et 18 min"),
+        )
+        assert cls == "STRUCTUREL", f"min-domaine doit etre absorbe, got {cls} ({rationale})"
+
+    def test_cluster_table_absorbs_beyond_40_chars(self):
+        """« 26,69 min » table de clusters (c65) : « clusters » a >40 chars -> seul
+        le wide window (120) le voit. La fenetre 40 ne porte AUCUN kw domaine."""
+        cls, rationale = _classify_quant_value(
+            "26,69", 26.69,
+            "dit « ordinaire » = ",
+            " et « extraordinaire » = 14,96 min. les deux c",
+            wide_context=("le modèle dit « ordinaire » = 26,69 min et « extraordinaire » "
+                          "= 14,96 min. les deux clusters trouvés"),
+        )
+        assert cls == "STRUCTUREL", f"clusters hors fenetre 40 = min-domaine, got {cls} ({rationale})"
+
+    def test_struct_kw_via_wide_absorbs(self):
+        """« moyenne » a >40 chars (lecon c.4) : STRUCT_KEYWORDS vu via wide window."""
+        cls, _ = _classify_quant_value(
+            "15,33", 15.33,
+            "estimation ponctuelle de ",
+            " min (contre 12,8 min pour le second mode)",
+            wide_context=("estimation ponctuelle de 15,33 min (contre 12,8 min pour le "
+                          "second mode), la moyenne postérieure du temps de trajet"),
+        )
+        assert cls == "STRUCTUREL", f"moyenne hors fenetre 40 doit etre vue en wide, got {cls}"
+
+    def test_falsification_runtime_kw_blocks_guard(self):
+        """Un kw runtime dans le wide BLOCKE l'absorption, « trajet » n'y change rien."""
+        cls, _ = _classify_quant_value(
+            "15", 15.0,
+            "le run complet prend ",
+            " minutes, soit 3 min de plus qu'avant",
+            wide_context=("le run complet prend 15 minutes, soit 3 min de plus "
+                          "qu'avant, sur ce trajet de traitement"),
+        )
+        assert cls == "MACHINE-DEP", f"« prend »/« run » runtime doit rester MACHINE-DEP, got {cls}"
+
+    def test_falsification_benchmark_min_stays(self):
+        """« benchmark ... 9 min » : runtime dans le wide -> MACHINE-DEP."""
+        cls, _ = _classify_quant_value(
+            "15", 15.0,
+            "benchmark total : ",
+            " minutes pour l'expérience (record : 9 min)",
+            wide_context="benchmark total : 15 minutes pour l'expérience (record : 9 min)",
+        )
+        assert cls == "MACHINE-DEP", f"benchmark min reste MACHINE-DEP, got {cls}"
+
+    def test_falsification_hours_unit_not_absorbed(self):
+        """Le guard ne s'applique qu'a « min » : « 1 h » avec « cluster » reste MD."""
+        cls, _ = _classify_quant_value(
+            "2", 2.0,
+            "l'entraînement complet a pris ",
+            " h (contre 1 h au cluster précédent)",
+            wide_context="l'entraînement complet a pris 2 h (contre 1 h au cluster de gpu)",
+        )
+        assert cls == "MACHINE-DEP", f"« cluster » ne doit pas absorber une unite h, got {cls}"
+
+    def test_falsification_no_domain_kw_stays(self):
+        """« vaut 15 min ici » : ni runtime ni domaine -> pas d'absorption."""
+        cls, _ = _classify_quant_value(
+            "15", 15.0,
+            "la valeur mesurée vaut ",
+            " min ici, contre 12 min la semaine dernière",
+            wide_context="la valeur mesurée vaut 15 min ici, contre 12 min la semaine dernière",
+        )
+        assert cls == "MACHINE-DEP", f"sans evidence double, pas d'absorption, got {cls}"
+
+
+class TestV8ModeledMinuteIntegration:
+    """Integration via analyze_notebook_quant : wide window a travers la boucle reelle."""
+
+    @staticmethod
+    def _write_nb(tmp_path, cells, name):
+        p = tmp_path / name
+        p.write_text(json.dumps({"cells": cells}), encoding="utf-8")
+        return analyze_notebook_quant(p)
+
+    def test_cluster_table_notebook_absorbs(self, tmp_path):
+        """Table de posteriors (c65) : fenetre 40 sans kw, « clusters » vu en wide."""
+        result = self._write_nb(tmp_path, [
+            {"cell_type": "markdown", "source": [
+                "Le modèle dit « ordinaire » = 26,69 min et « extraordinaire » = 14,96 min. "
+                "Les deux clusters trouvés séparent les trajets.\n"
+            ]},
+        ], "commute_table.ipynb")
+        machine_dep = [f for f in result.findings if f.quant_class == "MACHINE-DEP"]
+        assert machine_dep == [], (
+            f"table de clusters en min = min-domaine, got MD: {[(f.raw_match, f.rationale) for f in machine_dep]}"
+        )
+
+    def test_runtime_min_notebook_stays_machine_dep(self, tmp_path):
+        """Falsification end-to-end : un vrai pin runtime en minutes reste MACHINE-DEP."""
+        result = self._write_nb(tmp_path, [
+            {"cell_type": "markdown", "source": [
+                "Le tri s'exécute en 15 minutes sur ce corpus de 1000 éléments, "
+                "puis 9 min de sauvegarde.\n"
+            ]},
+        ], "runtime.ipynb")
+        machine_dep = [f for f in result.findings if f.quant_class == "MACHINE-DEP"]
+        assert len(machine_dep) >= 1, (
+            f"genuine runtime min doit rester MACHINE-DEP, got {result.by_class}"
+        )

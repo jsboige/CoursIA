@@ -29,7 +29,7 @@ machine-dep / env-dep / stochastique = a deriver ou retirer.
 ## Cas ambigus
 
 - `Durée estimée : 45 minutes` (effort etudiant, pacing pedagogique) = **TN structurel/pédagogique**, **hors scope drainage** (arbitrage 2026-08-06 ai-01, cf #9434 thread). Le classifier le classe STRUCTUREL grace au contexte `Durée estimée`.
-- Posterieurs bayesiens en minutes (Infer-101 moyennes/variances de trajets) = donnees deterministes, **TN**, classes STRUCTUREL grace au contexte `posterior`/`moyenne`/`variance`.
+- Posterieurs bayesiens en minutes (Infer-2 moyennes/variances de trajets) = donnees deterministes, **TN**, classes STRUCTUREL grace au contexte `posterior`/`moyenne`/`variance` — et depuis v8 par le **guard min-domaine** (fenetre elargie 120 + kws domaine `cluster`/`départ`/`fenêtre`), qui tient cette promesse la ou la fenetre 40 de la regle 1 echouait (mesure Infer-2 : 30/30 MACHINE-DEP = FP avant v8, 0 reel).
 
 CLI `--check` avec exit codes 0/1/2 distincts (succes / finding / usage).
 
@@ -76,6 +76,12 @@ _TIME_UNITS = (
     r"\b\d+\s*(?:ns|nanosecondes?)\b",
 )
 TIME_UNIT_RE = re.compile("|".join(_TIME_UNITS), re.IGNORECASE)
+
+# v8 (#9434): seule l'unite « min »/« minutes » est ambigue — c'est aussi
+# l'unite de VARIABLES MODELEES du domaine (durees de trajet bayesiennes
+# d'Infer-2), pas seulement du runtime. Extraite de _TIME_UNITS pour le
+# guard min-domaine (regle 4, _is_modeled_minute).
+MIN_UNIT_RE = re.compile(r"\b\d+\s*(?:min|minutes?)\b", re.IGNORECASE)
 
 # Regex strictes pour les versions (env-dep) — pattern semver simplifie.
 SEMVER_RE = re.compile(r"\b\d+\.\d+\.\d+(?:[a-zA-Z0-9._+-]*)?\b")
@@ -144,6 +150,27 @@ STRUCT_KEYWORDS = (
     # (FP : `temps d'apprentissage du modele: 42 s` = runtime). Le mot-composé
     # `inference bayesienne` reste, qui preserve la couverture Probas (20 fichiers).
     "inference bayesienne", "inférence bayésienne",
+)
+
+# v8 (#9434, c.b34166ee cycle 11): vocabulaire domaine ADDITIONNEL pour le
+# guard « min-domaine » UNIQUEMENT (regle 4, cf. _is_modeled_minute). Ces kws
+# ne vont PAS dans STRUCT_KEYWORDS (regle 1) : « cluster »/« départ » y
+# absorberaient des timings non-min (« le cluster de GPU répond en 200 ms »).
+# Ici ils ne s'appliquent qu'a une valeur portant l'unite « min »/« minutes »
+# SANS aucun kw runtime dans la fenetre elargie — double evidence.
+# Mesure Infer-2 (30/30 MACHINE-DEP = FP min-domaine) : « fenêtre optimale de
+# départ 14-18 min », « les deux clusters trouvés », tables de posteriors.
+MODELED_MINUTE_EXTRA_KEYWORDS = (
+    "cluster", "départ", "depart", "fenêtre", "fenetre",
+    "arrivée", "arrivee", "arriver", "arrivé", "retard", "avance",
+    "marge", "bruit", "observations", "observation", "distribution",
+    "commute",
+    # Formes mesurees cell 57/68 Infer-2 (tables markdown de posteriors) :
+    # vocabulaire de modelisation ABBREGE en table (« (3 obs) », « un seul
+    # mode », « melange (2 comp) ») ou specifique au corpus (« événements
+    # extraordinaires » = clusters nommes, mesure c.57 ET c.65).
+    "obs", "mode", "melange", "mélange",
+    "ordinaire", "événement", "evenement",
 )
 
 # v3 (c.1275): anti-FP Argument_Analysis — STRUCTURAL_LOCATIONS sont des
@@ -312,9 +339,39 @@ def _extract_context(text: str, match_start: int, match_end: int, window: int = 
     return prefix.lower(), suffix.lower()
 
 
+def _is_modeled_minute(
+    raw: str, prefix: str, suffix: str, wide_context: str = "",
+) -> bool:
+    """Guard « min-domaine » v8 (#9434) : l'unite « min » d'une variable modelee.
+
+    La regle 4 classe « 15,33 min » en MACHINE-DEP via TIME_UNIT_RE — faux pour
+    les durees de trajet bayesiennes (Infer-2 : 30/30 MACHINE-DEP = FP, 0 reel).
+    La regle 1 (STRUCT_KEYWORDS bayesiens : moyenne/trajet/posterior...) ne les
+    attrape pas toujours : fenetre 40 chars trop courte (« moyenne » hors
+    fenetre) ou kw hors voisinage immediat (« clusters » a 45+ chars d'une
+    table de resultats).
+
+    Double evidence (failure-mode safe — n'absorbe QUE vers STRUCTUREL) :
+    (a) la valeur porte l'unite min/minutes (pas ms/s/h, non ambigues) ;
+    (b) AUCUN kw runtime (_MACHINE_DEP_PATTERN) dans la fenetre elargie ;
+    (c) >=1 kw STRUCT/bayesien OU domaine (MODELED_MINUTE_EXTRA_KEYWORDS)
+        dans la fenetre elargie (120 chars, cf. scan loop).
+    Un vrai timing runtime « le run prend 15 min » reste MACHINE-DEP.
+    """
+    local_ctx = (prefix + " " + raw + " " + suffix).lower()
+    if not MIN_UNIT_RE.search(local_ctx):
+        return False
+    wide = (wide_context or local_ctx).lower()
+    if _MACHINE_DEP_PATTERN.search(wide):
+        return False
+    if any(kw in wide for kw in STRUCT_KEYWORDS):
+        return True
+    return any(kw in wide for kw in MODELED_MINUTE_EXTRA_KEYWORDS)
+
+
 def _classify_quant_value(
     raw: str, value: float, prefix: str, suffix: str,
-    seeded_upstream: bool = False,
+    seeded_upstream: bool = False, wide_context: str = "",
 ) -> tuple[str, str]:
     """Classifie une valeur quantitative selon le contexte. Renvoie (classe, rationale).
 
@@ -324,6 +381,7 @@ def _classify_quant_value(
     2. SEED dans prefix → bascule STOCHASTIQUE → STRUCTUREL
     3. ENV-DEP si pattern semver ou mot-cle env
     4. MACHINE-DEP si unite temporelle ou mot-cle machine-dep
+       (v8: SAUF unite « min » a double evidence domaine — cf. _is_modeled_minute)
     5. STOCHASTIQUE-NON-SEEDEE si mot-cle stochastique
        (sauf seeded_upstream: seed global posé en amont → STRUCTUREL)
     6. STRUCTUREL par defaut (classe residuelle surete)
@@ -459,6 +517,18 @@ def _classify_quant_value(
     #    structurel matche dans le contexte — `rung 42 ms` doit rester MACHINE-DEP
     #    runtime, pas STRUCTUREL). v2 (c.1272): data-list exempte.
     if not in_data_list and (TIME_UNIT_RE.search(raw) or TIME_UNIT_RE.search(prefix + suffix)):
+        # v8 (#9434, c.b34166ee cycle 11): guard « min-domaine ». L'unite
+        # « min »/« minutes » est ambigue : unite runtime MAIS aussi unite de
+        # variables modelisees du domaine (durees de trajet bayesiennes
+        # Infer-2 : « arriver en moins de 15 minutes », « cluster ordinaire
+        # 15,33 min », « ecart-type (2.15 min) pour 3 observations »). Mesure
+        # firsthand : Infer-2 30/30 MACHINE-DEP = FP min-domaine, 0 reel.
+        # Le docstring module (« Cas ambigus ») promettait STRUCTUREL via le
+        # contexte bayesien — la regle 1 ne tient pas la promesse (fenetre 40
+        # trop courte, kw hors voisinage). Ce guard la tient, a double
+        # evidence (cf. _is_modeled_minute), failure-mode safe.
+        if _is_modeled_minute(raw, prefix, suffix, wide_context):
+            return ("STRUCTUREL", "unité « min » = variable modélisée du domaine, pas runtime (guard min-domaine v8)")
         return ("MACHINE-DEP", f"unite temporelle detectee: {raw!r}")
 
     # 5. STRUCTURAL_LOCATIONS (c.1275) — anti-FP Argument_Analysis : mots-cles
@@ -563,7 +633,15 @@ def analyze_notebook_quant(path: str | os.PathLike) -> NotebookQuantClasses:
             if re.fullmatch(r"\d{4}", raw) and 1900 <= v <= 2099:
                 continue
             prefix, suffix = _extract_context(text, m.start(), m.end())
-            cls, rationale = _classify_quant_value(raw, v, prefix, suffix, seeded_upstream=seeded_upstream)
+            # v8: fenetre elargie 120 chars pour le guard min-domaine — la
+            # fenetre 40 de la regle 1 laisse « moyenne »/« clusters » hors
+            # champ des posteriors bayesiens en minutes (lecon c.4).
+            wide_prefix, wide_suffix = _extract_context(text, m.start(), m.end(), window=120)
+            wide_context = f"{wide_prefix} {raw} {wide_suffix}"
+            cls, rationale = _classify_quant_value(
+                raw, v, prefix, suffix,
+                seeded_upstream=seeded_upstream, wide_context=wide_context,
+            )
             # Tronque le snippet pour le rapport.
             snippet = text.strip().splitlines()
             snippet_str = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]
