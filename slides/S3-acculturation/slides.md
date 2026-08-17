@@ -104,7 +104,7 @@ layout: section
 - Théorie du contrôle
 - Linguistique
 
-<img src="./images/img_005.png" class="absolute top-[193px] right-[20px] w-[460px]" alt="Qu'est-ce que l'intelligence artificielle?" />
+<img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
 layout: two-cols
 ---
@@ -207,7 +207,7 @@ layout: two-cols
 - Limitations
   - ressources disponibles
 
-<img src="./images/img_009.png" class="absolute top-[203px] right-[20px] w-[460px]" alt="Les agents" />
+<img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
 ---
 layout: two-cols
 ---
@@ -267,7 +267,7 @@ layout: section
 
 - Flexibilité vs complexité
 
-<img src="./images/img_012.png" class="absolute top-[239px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
+<img src="./images/img_012.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
 ---
 
 
@@ -841,8 +841,10 @@ layout: two-cols
   - W3C
   - Linked Data
 
-<img src="./images/img_048.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Autres Applications (1/2)" />
-<img src="./images/img_049.png" class="absolute top-[437px] right-[20px] w-[460px]" alt="Autres Applications (1/2)" />
+<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
+<img src="./images/img_048.png" class="w-full object-contain" alt="Autres Applications (1/2)" />
+<img src="./images/img_049.png" class="w-full object-contain" alt="Autres Applications (1/2)" />
+</div>
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 ---
@@ -1359,8 +1361,10 @@ layout: two-cols
   - d'ensemble
   - Boosting
 
-<img src="./images/img_083.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Caractéristiques (2/2)" />
-<img src="./images/img_084.png" class="absolute top-[530px] right-[20px] w-[460px]" alt="Caractéristiques (2/2)" />
+<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
+<img src="./images/img_083.png" class="w-full object-contain" alt="Caractéristiques (2/2)" />
+<img src="./images/img_084.png" class="w-full object-contain" alt="Caractéristiques (2/2)" />
+</div>
 ---
 
 
@@ -1578,8 +1582,10 @@ layout: two-cols
   - Knowledge Based Inductive Learning
 - Programmation logique inductive (Prolog)
 
-<img src="./images/img_118.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Apprentissage et connaissances" />
-<img src="./images/img_119.png" class="absolute top-[441px] right-[20px] w-[460px]" alt="Apprentissage et connaissances" />
+<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
+<img src="./images/img_118.png" class="w-full object-contain" alt="Apprentissage et connaissances" />
+<img src="./images/img_119.png" class="w-full object-contain" alt="Apprentissage et connaissances" />
+</div>
 ---
 
 
@@ -1603,8 +1609,10 @@ layout: two-cols
   - Modèles paramétriques
   - Deep Q-learning
 
-<img src="./images/img_120.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Apprentissage par renforcement" />
-<img src="./images/img_121.png" class="absolute top-[384px] right-[20px] w-[460px]" alt="Apprentissage par renforcement" />
+<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
+<img src="./images/img_120.png" class="w-full object-contain" alt="Apprentissage par renforcement" />
+<img src="./images/img_121.png" class="w-full object-contain" alt="Apprentissage par renforcement" />
+</div>
 ---
 layout: section
 ---
@@ -1752,9 +1760,11 @@ layout: two-cols
   - Bootstrap
   - Entraînement en ligne
 
-<img src="./images/img_131.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agents conversationnels" />
-<img src="./images/img_132.png" class="absolute top-[353px] right-[20px] w-[460px]" alt="Agents conversationnels" />
-<img src="./images/img_133.png" class="absolute top-[669px] right-[20px] w-[460px]" alt="Agents conversationnels" />
+<div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
+<img src="./images/img_131.png" class="w-full object-contain" alt="Agents conversationnels" />
+<img src="./images/img_132.png" class="w-full object-contain" alt="Agents conversationnels" />
+<img src="./images/img_133.png" class="w-full object-contain" alt="Agents conversationnels" />
+</div>
 ---
 layout: two-cols
 ---
