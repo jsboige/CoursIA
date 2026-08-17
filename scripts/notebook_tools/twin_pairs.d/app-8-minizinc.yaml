@@ -2,7 +2,8 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
+
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -44,6 +45,11 @@
       csharp_sha: 6d92004320fa7e4b11e457c3c2298f6935b604f1
       content_python_sha: e3fd067407b9c0a72bd6f908597d9594b4087e5e306543dc2257427e1e96b11e
       content_csharp_sha: c1f0ffebdb1cfdd2ae32788157cc6b0e7cf84a650e80fc4851620ceeae877966
+    - date: "2026-08-17"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 0ad3e3f90ea3483c29256e8c91a1f5284d3d5d24
+      csharp_sha: 6d92004320fa7e4b11e457c3c2298f6935b604f1
+      reason: "parity_level basculee semantic -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A : chaque cote atteint un moteur SOTA de son ecosysteme (lib-vs-lib). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant (lib SOTA Python / lib SOTA C#)."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = minizinc (binding Python pour MiniZinc modeling language, MIT, https://github.com/MiniZinc/libminizinc, dekker 2024) + OR-Tools CP-SAT (driver pour cross-solve depuis MiniZinc) + numpy + matplotlib (19 cellules code). C# = Google.OrTools.Sat (NuGet, C# binding OR-Tools CP-SAT 9.11) + System.* BCL, 14 cellules code. Verdict SOTA-OK (lib-vs-lib) : Python invoque minizinc (modeling language) + OR-Tools CP-SAT (solver backend) ; C# invoque Google.OrTools.Sat (C# binding du MEME engine OR-Tools CP-SAT 9.11). MiniZinc utilise OR-Tools comme solver backend par defaut, donc les deux cotes aboutissent au MEME moteur CP-SAT reel. L'asymetrie est mineure : Python passe par la couche modeling language MiniZinc (plus declarative, plus haut niveau d'abstraction), C# utilise directement le binding CP-SAT (plus proche du moteur). parity_level: semantic preserve (post-#10382 les deux cotes utilisent le MEME solver)."
   known_differences:

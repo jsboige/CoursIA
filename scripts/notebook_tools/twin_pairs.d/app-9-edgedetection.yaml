@@ -2,7 +2,8 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
+
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
@@ -14,6 +15,11 @@
       csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
       content_python_sha: 5b06a29776e27caae58aeaadb641fe07b114e32feb6aa22307e37fb9b43dda12
       content_csharp_sha: 95c8832f379c55fde58990536acc162774564ef0e98470f174cd7fc84d6178ac
+    - date: "2026-08-17"
+      by: myia-po-2026:CoursIA-2
+      python_sha: a783da437fdbb5773339cc4c7b1c648ebd1e3169
+      csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
+      reason: "parity_level basculee semantic -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A : chaque cote atteint un moteur SOTA de son ecosysteme (lib-vs-lib). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant (lib SOTA Python / lib SOTA C#)."
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = DEAP (Distributed Evolutionary Algorithms in Python, MIT, https://github.com/DEAP/deap, Fortin 2012) + scipy.signal.sobel (filtre sobel pour detection de contours) + pygad (Python Genetic Algorithm, MIT) + matplotlib + numpy (17 cellules code). C# = Emgu.CV (wrapper C# OpenCV 4.x, Apache-2.0, https://github.com/emgucv/emgucv) + SkiaSharp (binding .NET Skia, MIT, https://github.com/mono/SkiaSharp) + GeneticSharp (lib C# algorithmes genetiques, MIT, https://github.com/giacomelli/GeneticSharp) (12 cellules code). Verdict SOTA-OK (lib-vs-lib, deux ecosystemes natifs) : Python utilise l'ecosysteme SciPy + DEAP (lib SOTA evolutionary computation) + scipy.signal (filtre sobel) ; C# utilise l'ecosysteme OpenCV via Emgu.CV (lib SOTA computer vision) + SkiaSharp (bitmaps) + GeneticSharp (algorithmes genetiques). Les deux ecosystemes invoquent de vraies libs SOTA de leur stack natif (Python scientifique / C# computer vision). Detection de contours = application canonique des deux cotes. parity_level: semantic preserve."
   known_differences:

@@ -2,7 +2,8 @@
   family: SMT/Z3-API
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
+
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 EST le moteur SOTA SMT, branche NATIVEMENT des deux cotes : pyz3 (pip z3-solver, `from z3 import *`, API fonctionnelle Solver()/Int()/Distinct()) et Microsoft.Z3 (NuGet officiel, `#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, API Context ctx.MkSolver/MkIntConst/MkDistinct) sont les deux bindings de la meme lib C++ Z3 sous-jacente — pas un pont intermediaire type IKVM/PythonNet. Parite firsthand sur le concept central (resolution de Sudoku par encodage SMT) cellule 5 des deux notebooks : meme structure de contrainte (domaine 1-9 via `>=1,<=9`/`MkGe,MkLe`, indices figes `==`/`MkEq`, unicite `Distinct()`/`MkDistinct()` par ligne + colonne + bloc 3x3) -> meme verdict `s.check()==sat`/`s.Check()==Status.SATISFIABLE` -> 'Puzzle facile : resolu' + la meme grille 9x9 resolue. Aucune asymetrie de machinerie a corriger."
   audits:
@@ -22,6 +23,11 @@
       csharp_sha: 9922b667c446285537c687626cd76c6aa5cbcc9f
       content_python_sha: 3607d23ded635bccfe9269d290d4830ae0608451d9ece9013354daea4ac523ff
       content_csharp_sha: 8f1c53c018d1f3f96621997a3c88580846eff039607d7341fbf6a64e3c337ff6
+    - date: "2026-08-17"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 31ede72cdc3c4895792d29b26e360cb2d31b66da
+      csharp_sha: 9922b667c446285537c687626cd76c6aa5cbcc9f
+      reason: "parity_level basculee semantic -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A : chaque cote atteint un moteur SOTA de son ecosysteme (lib-vs-lib). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant (lib SOTA Python / lib SOTA C#)."
   known_differences:
     - "Python : pyz3. C# : Microsoft.Z3 .NET (idiomes API comme NB-01)."
     - "Cote Python : modelisation Sudoku (81 cellules Int 1-9, alldifferent lignes/colonnes/blocs). Doc-honesty cures c.19 (PR #8045 : compte indices ~35 -> 30 pour puzzle_facile). SHA rebaseline c.802 apres DRIFT detecte par check_twin_parity.py : 4dcb5921 -> 1d3b1932 (commit e8a3be3ae merge le 2026-07-23)."

@@ -2,7 +2,8 @@
   family: SMT/Z3-API
   python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
+
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Z3 string/regex theory (SeqSort) branchee NATIVEMENT des deux cotes : Microsoft.Z3 .NET (`#r \"nuget: Microsoft.Z3\"` + `using Microsoft.Z3;`, ctx.MkRange/MkConcat/MkRe/MkInRe sur Seq) et pyz3 (`from z3 import *`, Range/Concat/Plus/Re/InRe sur Seq) sont les deux bindings officiels du meme coeur C++ Z3 sous-jacent — pas un pont intermediaire type IKVM/PythonNet. Concept string-regex (date AAAA-MM-JJ sous-contrainte en groupes longueur-fixe) demontre des deux cotes. Aucune asymetrie de machinerie a corriger."
   audits:
@@ -16,6 +17,11 @@
       csharp_sha: dad296706c9d68300cd4184e60a0ba5bd794780a
       content_python_sha: 8ba920d8f6f6b0c18eb0653165aa21db2dc9486f4d856048055cc45da1ae6bdc
       content_csharp_sha: 18b2b6ee50648326822b73659e6a5b78d1bff65db3e8276c35d8e30da8d1328d
+    - date: "2026-08-17"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 4c04fe94faf2b0e2aea04dead81f1f46edf60b11
+      csharp_sha: dad296706c9d68300cd4184e60a0ba5bd794780a
+      reason: "parity_level basculee semantic -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A : chaque cote atteint un moteur SOTA de son ecosysteme (lib-vs-lib). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant (lib SOTA Python / lib SOTA C#)."
   known_differences:
     - "Edition C# twin 2026-08-14 (myia-po-2024:CoursIA-2, #10488 density) : enrichissement markdown du jumeau C# seul (474->882 c/cell), 8 sections 'Implémentation C#' ajoutees apres les explications existantes -- detail binding-spcifique .NET (types de retour SeqExpr/IntExpr/ReExpr/BoolExpr, casts obligatoires, MkExtract exigent des IntExpr, MkConcat/MkUnion tableaux types, Status enum vs is_sat, Model.Eval + trim guillemets, decidable sans quantificateurs). Rattrapage partiel du Python twin, deja dense avec son propre contenu binding pyz3. Aucune divergence algorithmique : C.3 byte-identique (0 cellule code touchee, sources+outputs+exec_count inchanges) -- divergence markdown-only, le C# comble son retard pedagogique vers le Python, pas l'inverse (precedent Sudoku-6 AIMA-CSP 2026-08-12 po-2025)."
     - "Python : pyz3 (Range, Concat, Plus, Re, InRe, Length sur Seq). C# : Microsoft.Z3 .NET (ctx.MkRange, MkConcat, MkRe...)."
