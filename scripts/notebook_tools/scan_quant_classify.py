@@ -29,7 +29,7 @@ machine-dep / env-dep / stochastique = a deriver ou retirer.
 ## Cas ambigus
 
 - `Durée estimée : 45 minutes` (effort etudiant, pacing pedagogique) = **TN structurel/pédagogique**, **hors scope drainage** (arbitrage 2026-08-06 ai-01, cf #9434 thread). Le classifier le classe STRUCTUREL grace au contexte `Durée estimée`.
-- Posterieurs bayesiens en minutes (Infer-101 moyennes/variances de trajets) = donnees deterministes, **TN**, classes STRUCTUREL grace au contexte `posterior`/`moyenne`/`variance`.
+- Posterieurs bayesiens en minutes (Infer-2 moyennes/variances de trajets) = donnees deterministes, **TN**, classes STRUCTUREL grace au contexte `posterior`/`moyenne`/`variance` — et depuis v8 par le **guard min-domaine** (fenetre elargie 120 + kws domaine `cluster`/`départ`/`fenêtre`), qui tient cette promesse la ou la fenetre 40 de la regle 1 echouait (mesure Infer-2 : 30/30 MACHINE-DEP = FP avant v8, 0 reel).
 
 CLI `--check` avec exit codes 0/1/2 distincts (succes / finding / usage).
 
@@ -76,6 +76,12 @@ _TIME_UNITS = (
     r"\b\d+\s*(?:ns|nanosecondes?)\b",
 )
 TIME_UNIT_RE = re.compile("|".join(_TIME_UNITS), re.IGNORECASE)
+
+# v8 (#9434): seule l'unite « min »/« minutes » est ambigue — c'est aussi
+# l'unite de VARIABLES MODELEES du domaine (durees de trajet bayesiennes
+# d'Infer-2), pas seulement du runtime. Extraite de _TIME_UNITS pour le
+# guard min-domaine (regle 4, _is_modeled_minute).
+MIN_UNIT_RE = re.compile(r"\b\d+\s*(?:min|minutes?)\b", re.IGNORECASE)
 
 # Regex strictes pour les versions (env-dep) — pattern semver simplifie.
 SEMVER_RE = re.compile(r"\b\d+\.\d+\.\d+(?:[a-zA-Z0-9._+-]*)?\b")
@@ -144,6 +150,27 @@ STRUCT_KEYWORDS = (
     # (FP : `temps d'apprentissage du modele: 42 s` = runtime). Le mot-composé
     # `inference bayesienne` reste, qui preserve la couverture Probas (20 fichiers).
     "inference bayesienne", "inférence bayésienne",
+)
+
+# v8 (#9434, c.b34166ee cycle 11): vocabulaire domaine ADDITIONNEL pour le
+# guard « min-domaine » UNIQUEMENT (regle 4, cf. _is_modeled_minute). Ces kws
+# ne vont PAS dans STRUCT_KEYWORDS (regle 1) : « cluster »/« départ » y
+# absorberaient des timings non-min (« le cluster de GPU répond en 200 ms »).
+# Ici ils ne s'appliquent qu'a une valeur portant l'unite « min »/« minutes »
+# SANS aucun kw runtime dans la fenetre elargie — double evidence.
+# Mesure Infer-2 (30/30 MACHINE-DEP = FP min-domaine) : « fenêtre optimale de
+# départ 14-18 min », « les deux clusters trouvés », tables de posteriors.
+MODELED_MINUTE_EXTRA_KEYWORDS = (
+    "cluster", "départ", "depart", "fenêtre", "fenetre",
+    "arrivée", "arrivee", "arriver", "arrivé", "retard", "avance",
+    "marge", "bruit", "observations", "observation", "distribution",
+    "commute",
+    # Formes mesurees cell 57/68 Infer-2 (tables markdown de posteriors) :
+    # vocabulaire de modelisation ABBREGE en table (« (3 obs) », « un seul
+    # mode », « melange (2 comp) ») ou specifique au corpus (« événements
+    # extraordinaires » = clusters nommes, mesure c.57 ET c.65).
+    "obs", "mode", "melange", "mélange",
+    "ordinaire", "événement", "evenement",
 )
 
 # v3 (c.1275): anti-FP Argument_Analysis — STRUCTURAL_LOCATIONS sont des
@@ -241,6 +268,20 @@ DATA_LIST_MARKERS = ("{", "~ ", " valeurs", "observations)")
 SEED_KEYWORDS = ("seed=", "random_state=", "np.random.seed", "torch.manual_seed",
                  "tf.random.set_seed", "rng.seed", "np_seed")
 
+# v7 (#9434, c.5316759237): appels de seed GLOBAL posés dans le CODE. La règle 2
+# (SEED_KEYWORDS) ne voit que le contexte local de la valeur ; elle manque le cas
+# dominant — le seed est posé une fois dans la cellule d'imports, et toutes les
+# valeurs stochastiques citées en prose DANS LES CELLULES SUIVANTES sont
+# déterministes (mesuré : QC-Py-22 seedé en cellule 8, 44/53 findings STOCH
+# re-signés ; App-14 : 18 STOCH re-signés sur main, absorbés au merge de #11482
+# qui pose les seeds).
+# Instances locales (rng.seed, np.random.default_rng) exclues : elles ne seedent
+# pas le RNG global du module.
+GLOBAL_SEED_CALL_RE = re.compile(
+    r"\b(?:random\.seed|np\.random\.seed|numpy\.random\.seed|"
+    r"torch\.manual_seed|tf\.random\.set_seed)\s*\("
+)
+
 
 # --------------------------------------------------------------------------- #
 #  Dataclasses
@@ -298,17 +339,51 @@ def _extract_context(text: str, match_start: int, match_end: int, window: int = 
     return prefix.lower(), suffix.lower()
 
 
+def _is_modeled_minute(
+    raw: str, prefix: str, suffix: str, wide_context: str = "",
+) -> bool:
+    """Guard « min-domaine » v8 (#9434) : l'unite « min » d'une variable modelee.
+
+    La regle 4 classe « 15,33 min » en MACHINE-DEP via TIME_UNIT_RE — faux pour
+    les durees de trajet bayesiennes (Infer-2 : 30/30 MACHINE-DEP = FP, 0 reel).
+    La regle 1 (STRUCT_KEYWORDS bayesiens : moyenne/trajet/posterior...) ne les
+    attrape pas toujours : fenetre 40 chars trop courte (« moyenne » hors
+    fenetre) ou kw hors voisinage immediat (« clusters » a 45+ chars d'une
+    table de resultats).
+
+    Double evidence (failure-mode safe — n'absorbe QUE vers STRUCTUREL) :
+    (a) la valeur porte l'unite min/minutes (pas ms/s/h, non ambigues) ;
+    (b) AUCUN kw runtime (_MACHINE_DEP_PATTERN) dans la fenetre elargie ;
+    (c) >=1 kw STRUCT/bayesien OU domaine (MODELED_MINUTE_EXTRA_KEYWORDS)
+        dans la fenetre elargie (120 chars, cf. scan loop).
+    Un vrai timing runtime « le run prend 15 min » reste MACHINE-DEP.
+    """
+    local_ctx = (prefix + " " + raw + " " + suffix).lower()
+    if not MIN_UNIT_RE.search(local_ctx):
+        return False
+    wide = (wide_context or local_ctx).lower()
+    if _MACHINE_DEP_PATTERN.search(wide):
+        return False
+    if any(kw in wide for kw in STRUCT_KEYWORDS):
+        return True
+    return any(kw in wide for kw in MODELED_MINUTE_EXTRA_KEYWORDS)
+
+
 def _classify_quant_value(
-    raw: str, value: float, prefix: str, suffix: str
+    raw: str, value: float, prefix: str, suffix: str,
+    seeded_upstream: bool = False, wide_context: str = "",
 ) -> tuple[str, str]:
     """Classifie une valeur quantitative selon le contexte. Renvoie (classe, rationale).
 
     Ordre d'application des regles (la premiere qui matche gagne) :
+    0. Tag de drain « machine-dep » dans le contexte → STRUCTUREL (déjà drainé)
     1. STRUCTUREL si mot-cle structurel detecte dans prefix+suffix
     2. SEED dans prefix → bascule STOCHASTIQUE → STRUCTUREL
     3. ENV-DEP si pattern semver ou mot-cle env
     4. MACHINE-DEP si unite temporelle ou mot-cle machine-dep
+       (v8: SAUF unite « min » a double evidence domaine — cf. _is_modeled_minute)
     5. STOCHASTIQUE-NON-SEEDEE si mot-cle stochastique
+       (sauf seeded_upstream: seed global posé en amont → STRUCTUREL)
     6. STRUCTUREL par defaut (classe residuelle surete)
 
     Le defaut STRUCTUREL evite les faux positifs massifs sur les valeurs
@@ -322,6 +397,22 @@ def _classify_quant_value(
     # (v2 c.1272 inchange ; remonte ici pour proteger la regle MACHINE-DEP
     # anti-FP c.1275 qui doit respecter la liste.)
     in_data_list = any(marker in full_context for marker in DATA_LIST_MARKERS)
+
+    # 0 (v7, #9434 c.5316759237): immunité tag de drain « machine-dep ». Les
+    #     vagues de drain (#9664, #11482, ...) posent une convention de prose :
+    #     la valeur absolue est remplacée par un ordre de grandeur accompagné du
+    #     tag explicite (« *runtime machine-dep* : ~0,5 s ici », « Speedup
+    #     wall-clock *machine-dep* (CPython + charge) »). Le scanner re-signait
+    #     ces valeurs : les mots-clé légitimes « runtime » / « wall clock » du
+    #     contexte taggé déclenchent MACHINE-DEP — re-signaler du drain DÉJÀ
+    #     FAIT. Mesuré firsthand : SW-13 47 findings → 0 réel, QC-Py-22 53 → 1
+    #     réel (PR #11487 « 52/53 FP »), Lean-10 52 → 0. Le tag est un marqueur
+    #     d'auteur « déjà assumé machine-dep » → STRUCTUREL.
+    #     Failure-mode SAFE : absorbe vers STRUCTUREL uniquement — un tag trop
+    #     large garde une vraie valeur en STRUCTUREL (sur-correction inoffensive
+    #     pour un triage), jamais l'inverse.
+    if "machine-dep" in full_context:
+        return ("STRUCTUREL", "tag de drain « machine-dep » explicite (déjà assumé)")
 
     # 0. Filtre semver : si le raw match EST un semver, c'est env-dep en soi.
     if SEMVER_RE.fullmatch(raw):
@@ -426,6 +517,18 @@ def _classify_quant_value(
     #    structurel matche dans le contexte — `rung 42 ms` doit rester MACHINE-DEP
     #    runtime, pas STRUCTUREL). v2 (c.1272): data-list exempte.
     if not in_data_list and (TIME_UNIT_RE.search(raw) or TIME_UNIT_RE.search(prefix + suffix)):
+        # v8 (#9434, c.b34166ee cycle 11): guard « min-domaine ». L'unite
+        # « min »/« minutes » est ambigue : unite runtime MAIS aussi unite de
+        # variables modelisees du domaine (durees de trajet bayesiennes
+        # Infer-2 : « arriver en moins de 15 minutes », « cluster ordinaire
+        # 15,33 min », « ecart-type (2.15 min) pour 3 observations »). Mesure
+        # firsthand : Infer-2 30/30 MACHINE-DEP = FP min-domaine, 0 reel.
+        # Le docstring module (« Cas ambigus ») promettait STRUCTUREL via le
+        # contexte bayesien — la regle 1 ne tient pas la promesse (fenetre 40
+        # trop courte, kw hors voisinage). Ce guard la tient, a double
+        # evidence (cf. _is_modeled_minute), failure-mode safe.
+        if _is_modeled_minute(raw, prefix, suffix, wide_context):
+            return ("STRUCTUREL", "unité « min » = variable modélisée du domaine, pas runtime (guard min-domaine v8)")
         return ("MACHINE-DEP", f"unite temporelle detectee: {raw!r}")
 
     # 5. STRUCTURAL_LOCATIONS (c.1275) — anti-FP Argument_Analysis : mots-cles
@@ -460,6 +563,13 @@ def _classify_quant_value(
             # une mesure stochastique.
             if kw in ("moyenne", "mean", "variance") and any(mod in full_context for mod in NONSTOCH_MODIFIERS):
                 continue
+            # v7 (#9434, c.5316759237): seed global posé dans une cellule code
+            # EN AMONT (analyse cross-cellules) → la valeur citée est
+            # déterministe, pas « non-seedée ». N'absorbe que STOCHASTIQUE :
+            # un seed ne rend ni un temps (MACHINE-DEP) ni une version
+            # (ENV-DEP) déterministes.
+            if seeded_upstream:
+                return ("STRUCTUREL", "stochastique seede (seed global posé en amont dans le code)")
             return ("STOCHASTIQUE-NON-SEEDEE", f"mot-cle stochastique: {kw!r}")
 
     # 8. STRUCTUREL par defaut (classe residuelle)
@@ -488,13 +598,25 @@ def analyze_notebook_quant(path: str | os.PathLike) -> NotebookQuantClasses:
     findings: list[QuantClassFinding] = []
     by_class: dict[str, int] = {cls: 0 for cls in QUANT_CLASSES}
 
+    # v7 (#9434, c.5316759237): première cellule code où un seed GLOBAL est
+    # posé. Les valeurs stochastiques citées en prose APRÈS cette cellule sont
+    # déterministes (exécution séquentielle du notebook) → seeded_upstream.
+    # Condition temporelle stricte (seed_cell_index < i) : une prose AVANT le
+    # seed commente une sortie produite sans lui.
+    seeded_cell_index: int | None = None
+
     for i, c in enumerate(cells):
-        if c.get("cell_type") != "markdown":
-            continue
         source = c.get("source") or []
         text = "".join(source) if isinstance(source, list) else str(source)
         if not text:
             continue
+        if c.get("cell_type") == "code":
+            if seeded_cell_index is None and GLOBAL_SEED_CALL_RE.search(text):
+                seeded_cell_index = i
+            continue
+        if c.get("cell_type") != "markdown":
+            continue
+        seeded_upstream = seeded_cell_index is not None and seeded_cell_index < i
         # Reutilisation de l'extraction D5 v3 (qui filtre les annees, #issues,
         # PRJ42, semver simplifie stricte, etc.) — mais on doit scanner le
         # texte brut pour les versions, donc on **re-scan** avec nos propres
@@ -511,7 +633,15 @@ def analyze_notebook_quant(path: str | os.PathLike) -> NotebookQuantClasses:
             if re.fullmatch(r"\d{4}", raw) and 1900 <= v <= 2099:
                 continue
             prefix, suffix = _extract_context(text, m.start(), m.end())
-            cls, rationale = _classify_quant_value(raw, v, prefix, suffix)
+            # v8: fenetre elargie 120 chars pour le guard min-domaine — la
+            # fenetre 40 de la regle 1 laisse « moyenne »/« clusters » hors
+            # champ des posteriors bayesiens en minutes (lecon c.4).
+            wide_prefix, wide_suffix = _extract_context(text, m.start(), m.end(), window=120)
+            wide_context = f"{wide_prefix} {raw} {wide_suffix}"
+            cls, rationale = _classify_quant_value(
+                raw, v, prefix, suffix,
+                seeded_upstream=seeded_upstream, wide_context=wide_context,
+            )
             # Tronque le snippet pour le rapport.
             snippet = text.strip().splitlines()
             snippet_str = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]

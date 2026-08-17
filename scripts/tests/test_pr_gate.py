@@ -740,3 +740,42 @@ def test_post_failure_is_non_fatal(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "check-run POST failed" in err
     assert "stale check stays" in err
+
+
+# --- fetch_checks pagination (#11416 annexe) ---------------------------------
+
+
+def _fake_paginated_api(responses):
+    """Return a _gh_api stand-in yielding canned pages in order."""
+    calls = {"n": 0}
+
+    def fake(path):
+        # Only check-runs paths paginate here; the statuses call returns empty.
+        if "/check-runs" not in path:
+            return {"statuses": []}
+        idx = calls["n"]
+        calls["n"] += 1
+        return responses[min(idx, len(responses) - 1)]
+
+    return fake
+
+
+def test_fetch_checks_paginates_beyond_100(monkeypatch):
+    """Runs past the per_page=100 cap must not be judged on a subset."""
+    page1 = {"total_count": 150, "check_runs": [run(f"c{i}", "success", rid=i) for i in range(100)]}
+    page2 = {"total_count": 150, "check_runs": [run(f"c{i}", "success", rid=i) for i in range(100, 150)]}
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_paginated_api([page1, page2]))
+
+    checks = pr_gate.fetch_checks("o/r", "deadbeef")
+    assert len(checks) == 150
+    assert {c["name"] for c in checks} == {f"c{i}" for i in range(150)}
+
+
+def test_fetch_checks_stops_on_empty_page(monkeypatch):
+    """An empty page terminates the loop even if total_count is missing."""
+    page1 = {"check_runs": [run("a", "success")]}  # no total_count key
+    monkeypatch.setattr(pr_gate, "_gh_api", _fake_paginated_api([page1, {"check_runs": []}]))
+
+    checks = pr_gate.fetch_checks("o/r", "deadbeef")
+    assert len(checks) == 1
+    assert checks[0]["name"] == "a"
