@@ -22,8 +22,15 @@
       csharp_sha: 225710e79b086d5bf54282e53d6cfe925de53357
       content_python_sha: 6bed29eb21df32b1f9c2d022d6d0e604c4c9f77785e6cb69ccd59824585f04ec
       content_csharp_sha: 92ade1dd77eef038de3cd7cf1f94e1c74916875e33ef7f92f4145dad2f597523
+    - date: "2026-08-17"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 7f0b6526246d282b666a5e1305f46f87ef55317a
+      csharp_sha: 225710e79b086d5bf54282e53d6cfe925de53357
+      content_python_sha: a8d3538d22728fee84ac8ac7fac646e80b8650c3cddbf8597cfe59fcea989231
+      content_csharp_sha: 92ade1dd77eef038de3cd7cf1f94e1c74916875e33ef7f92f4145dad2f597523
   known_differences:
     - "Edition 2026-08-08 (myia-po-2023:CoursIA-2, #9434 item 3) : les DEUX twins ont evacue leurs valeurs de timing absolues machine-dependantes de la prose d'interpretation (Python cell[18/23/26] : 64.01/8.38/50.43 ms etc. ; C# cell[28] : 728 ms startup JVM IKVM) au profit de descripteurs qualitatifs pointant vers la cellule de mesure live ci-dessus. Markdown-only, pas de re-exec (exception C.2). Parite semantique tenue : socle CP, modelisation, contraintes, asymetrie IKVM/from-scratch inchanges."
     - "Socle pedagogique commun : resolution de Sudoku par programmation par contraintes (CP) avec le solveur Choco -- modelisation (variables, domaines, contraintes), propagation, recherche. Meme solveur (Choco), meme cas d'application (Sudoku). Les deux couvrent Choco, choco, Solver."
     - "Divergence d'implementation : le C# accede a Choco via IKVM (bridge Java->.NET, NuGet IKVM 8.15.0 + IKVM.Image) -- Choco etant une lib Java, le C# la consomme a travers le runtime IKVM ; le Python (pur stdlib, 0 dependance Choco) implemente un solveur CP a la Choco from scratch (propagation, recherche). Meme paradigme CP, deux niveaux : le C# wrappe le vrai Choco via IKVM (RECOVERABLE-MACHINE per SOTA ledger Entry #008 : IKVM instable dans dotnet-interactive), le Python reconstruit la logique CP didactiquement."
     - "Idiomes framework : C# = IKVM + Choco (Java lib via bridge) + System.*, 12 cellules code ; Python = pur stdlib (0 dependance), 13 cellules code. Asymetrie pedagogique (vrai Choco cote C# vs reconstruction cote Python), meme enseignement CP sous-jacent."
+    - "Rebaseline 2026-08-17 : cote Python draine wall-clock MACHINE-DEP en cell[32] (table comparative Choco vs OR-Tools vs python-constraint, 10 wall-clock : ~50ms/~10ms/~500ms/~200ms/~50ms/~5000ms/~1000ms/~200ms/~1000ms/~5000ms). Cote C# non modifie. Timeout/Echec textuels (reproductibles configuration solver) conserves verbatim. Snippet pedagogique limitTime('10s') cell[29] conserve (reproduction textuelle, pas mesure). Cell[0] '~40 minutes' (duree pedagogique estimee par section) conserve verbatim. Attestation = blob SHA Python avance (7f0b6526... depuis c62db3b8...)."
