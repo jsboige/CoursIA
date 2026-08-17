@@ -23,6 +23,12 @@
       csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
       content_python_sha: 040431dcdf9c141892e3720654e560ab03d023623a5b47cdc1564a0e6877cda2
       content_csharp_sha: c6bab540f0a215779fa3f6143d6424f67adee605467ab4d6b2c99f7ba41a0af5
+    - date: "2026-08-17"
+      by: myia-po-2024:CoursIA-2
+      python_sha: cbc900f8f22beb0592eaa099bacf62497faafad6
+      csharp_sha: d35a6e6262a3a2ac3e8837315c5b365d5ec95aff
+      content_python_sha: 255f1c9dec3bff893a6844f6b2e9e6ddf042e9ee9e1d1cb4925629ec57ba2693
+      content_csharp_sha: c6bab540f0a215779fa3f6143d6424f67adee605467ab4d6b2c99f7ba41a0af5
   known_differences:
     - "Socle pedagogique commun : approches hybrides modernes en CP -- Lazy Clause Generation (LCG), architecture CP-SAT (CP + SAT + CDCL), hybridation CP + ML (prediction de faisabilite), integration LLM + CSP."
     - "Cas etudies : N-Reines (LCG via CP-SAT), Job-Shop Scheduling (exploration des parametres CP-SAT : DEFAULT / FIXED_SEARCH / PORTFOLIO), generation d'instances CSP aleatoires + prediction de faisabilite par features (n_vars, n_constraints, density)."
