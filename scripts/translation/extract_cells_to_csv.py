@@ -326,9 +326,9 @@ def write_csv(rows: list[dict], output: Path | None) -> str:
     - `newline=""` est l'invariant CSV (laissée à csv.writer) MAIS on interdit
       ensuite tout `\r` dans le flux final. `csv.writer` écrit `\r\n` sur
       toute plateforme (cf doc Python) → on convertit en `\n` APRÈS écriture
-      pour garantir LF-only sans casser l'échappement CSV (les `\r\n` à
-      l'intérieur des champs sont déjà échappés en `""` quotes, ils ne sont
-      pas affectés).
+      pour garantir LF-only. Le quoting CSV échappe les `"` mais PAS les
+      fins de ligne : la conversion normalise donc aussi les `\r\n`/`\r` à
+      l'intérieur des champs (vérifié empiriquement, 0 CR survivant).
     - stdout passe par `sys.stdout.reconfigure` (Python 3.7+) plutôt qu'un
       binaire intermédiaire, ce qui préserve le rendu côté utilisateur.
     """

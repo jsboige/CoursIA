@@ -18,6 +18,12 @@ MyIA.AI.Notebooks/*/README.md text eol=lf
 *.en.md text eol=lf
 # Lean lake manifests are JSON consumed cross-platform; keep LF.
 lake-manifest.json text eol=lf
+# Traduction CSVs (translation-sync, #11249) : le generateur
+# `extract_cells_to_csv.py` est deja LF-only (L359 normalise \r\n et \r), mais
+# un `eol=lf` explicite rend l'invariant structurel au lieu de dependre des
+# internes d'un script (residus CRLF legacy pre-L268 encore presents sur main).
+# Meme motif que `*.ipynb text eol=lf` / L268.
+translations/**/*.csv text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
