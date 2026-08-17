@@ -369,6 +369,117 @@ theorem Reidemeister2.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister2 d₁ d�
     exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
            Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
 
+/-! ## R2 Connected — bigon surgery on a double arc (`Reidemeister2Connected`)
+
+Exhaustive validation (PR #11467, `scripts/lean/knot_r2connected_validation.py`):
+over the 2526 well-formed diagrams with ≤ 2 crossings, 40368 candidate
+surgeries tested on both arms of the tricolorability transfer. The `<a, o, u, o>`
+candidate (v2) fails 100% on the backward arm — the kinks admit the Fox
+all-distinct mode, nothing forces `color(u) = color(a)`, the gadget is always
+tricolorable. The `<a, u, u, o>` fix (v3) — Fox `(a, u, u)` all-equal-only
+(`c₂ = c₃` makes all-distinct impossible) + over-strand continuity `e₂ = e₄` —
+forces `color(u) = color(o) = color(a)` and breaks NEITHER arm (0 failures over
+40368). It is the v3 surgery that is stated here.
+-/
+
+/-- `Y'` is obtained from `c` by renaming the occurrences of `a` to two fresh
+    labels `o₁`, `o₂`: each field of `Y'` is either unchanged from `c`, or
+    equal to `o₁`/`o₂` where `c` had `a`. Two-target version of `isRenameOf`,
+    serving `Reidemeister2Connected`. The `wf` count-balance (each label exactly
+    twice) forces the two occurrences of `a` in `d₁` to be renamed — the
+    appended kinks compensate by supplying the two remaining occurrences of `a`
+    and one of each `o₁`, `o₂`. -/
+def PDCrossing.isDoubleRenameOf (Y' c : PDCrossing) (a o₁ o₂ : Nat) : Prop :=
+  (Y'.e1 = c.e1 ∨ (Y'.e1 = o₁ ∧ c.e1 = a) ∨ (Y'.e1 = o₂ ∧ c.e1 = a)) ∧
+  (Y'.e2 = c.e2 ∨ (Y'.e2 = o₁ ∧ c.e2 = a) ∨ (Y'.e2 = o₂ ∧ c.e2 = a)) ∧
+  (Y'.e3 = c.e3 ∨ (Y'.e3 = o₁ ∧ c.e3 = a) ∨ (Y'.e3 = o₂ ∧ c.e3 = a)) ∧
+  (Y'.e4 = c.e4 ∨ (Y'.e4 = o₁ ∧ c.e4 = a) ∨ (Y'.e4 = o₂ ∧ c.e4 = a))
+
+/-- **Reidemeister2Connected**: a CONNECTED R2 twist on the double arc `a` of
+    the crossing `Y = d₁.crossings[i]` — both occurrences of `a` are renamed
+    there to the fresh labels `o₁ = d₁.numEdges + 2` and `o₂ = d₁.numEdges + 4`
+    (materialized by the supplied `Y'`), and two bigon kinks
+    `⟨a, u₁, u₁, o₁⟩`, `⟨a, u₂, u₂, o₂⟩` (with `u₁ = d₁.numEdges + 1`,
+    `u₂ = d₁.numEdges + 3`) are appended. Unlike `Reidemeister2` (the free
+    append-only form, whose master L350 is FALSE — see
+    `not_tricolorable_invariant_current`, PR #11453), the premise
+    `d₂.wf = true` is **satisfiable** — see `reidemeister2Connected_satisfiable`.
+
+    Parity preserved: `a` loses both occurrences (renamed in `Y'`) and gains
+    two (the kinks' `e1`); `o₁`/`o₂`: one in `Y'` + one in the kink (`e4`);
+    `u₁`/`u₂`: two in their kink (`e2`, `e3`). Every label of
+    `[1, d₁.numEdges + 4]` keeps count 2, hence `wf` is satisfiable.
+
+    The kink SHAPE is the validation of the transfer mechanism: the Fox on
+    `(a, u, u)` — the two equal leading colors make the all-distinct mode
+    impossible — forces `color(u) = color(a)`, and the over-strand continuity
+    `e₂ = e₄` forces `color(o) = color(u)`. Under any valid coloring of `d₂`
+    the fresh labels therefore conform to `color(a)`, which makes the BACKWARD
+    arm (restriction) provable. This is the v3 fix validated by exhaustive
+    search (PR #11467) — the v2 candidate `<a, o, u, o>` fails on the contrary
+    at 100% (40368/40368). -/
+def Reidemeister2Connected (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ (i : Fin d₁.crossings.length) (a : Nat) (Y' : PDCrossing)
+     (ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges + 4)),
+     1 ≤ a ∧ a ≤ d₁.numEdges ∧
+     a ∈ d₁.edges ∧
+     Y'.isDoubleRenameOf (d₁.crossings.get i) a (d₁.numEdges + 2) (d₁.numEdges + 4) ∧
+     d₂.crossings = d₁.crossings.set i.val Y' ++
+       [⟨a, d₁.numEdges + 1, d₁.numEdges + 1, d₁.numEdges + 2⟩,
+        ⟨a, d₁.numEdges + 3, d₁.numEdges + 3, d₁.numEdges + 4⟩] ∧
+     d₂.numEdges = d₁.numEdges + 4)
+
+/-- `Reidemeister2Connected` is NOT vacuous: a concrete connected R2 twist
+    `d₁ → d₂` with `wf = true` on both sides.
+
+    Witness: `d₁ = {[⟨1,1,2,3⟩, ⟨2,3,4,4⟩], 4}` (the double arc `a = 1` appears
+    at `e1`, `e2` of crossing 0). The twist modifies crossing 0
+    (`⟨1,1,2,3⟩ → ⟨6,8,2,3⟩`: `e1 : 1 → 6 = o₁`, `e2 : 1 → 8 = o₂`) and appends
+    `C₁ = ⟨1,5,5,6⟩`, `C₂ = ⟨1,7,7,8⟩`. The result
+    `d₂ = {[⟨6,8,2,3⟩, ⟨2,3,4,4⟩, ⟨1,5,5,6⟩, ⟨1,7,7,8⟩], 8}` is well-formed
+    (`wf = true`, checked by `decide`): every label of `[1, 8]` appears exactly
+    twice. -/
+theorem reidemeister2Connected_satisfiable :
+    Reidemeister2Connected
+      { crossings := [⟨1,1,2,3⟩, ⟨2,3,4,4⟩], numEdges := 4 }
+      { crossings := [⟨6,8,2,3⟩, ⟨2,3,4,4⟩, ⟨1,5,5,6⟩, ⟨1,7,7,8⟩], numEdges := 8 } := by
+  refine ⟨by decide, by decide, ⟨0, by decide⟩, 1, ⟨6,8,2,3⟩, ?_, ?_⟩
+  · -- ρ : Fin 4 ↪ Fin 8 (trivial embedding, first 4 → first 4 of 8).
+    exact { toFun := fun j => ⟨j.val, by omega⟩,
+            inj' := fun x y h => by injection h with hv; exact Fin.ext hv }
+  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, isDoubleRenameOf (rename
+    --   1→6 at e1, 1→8 at e2), and the surgery equation. `decide` (kernel
+    --   reduction) handles the struct projections / flatMap that `omega` cannot
+    --   see; `rfl` closes the definitional surgery equation. isDoubleRenameOf
+    --   must be unfolded first — as a raw `def` it has no `Decidable` instance,
+    --   but the unfolded `∧∨=` on `Nat` does.
+    exact ⟨by decide, by decide, by decide,
+           by unfold PDCrossing.isDoubleRenameOf; decide, ⟨rfl, rfl⟩⟩
+
+/-! ### API lemmas for `Reidemeister2Connected`
+
+Same projection infrastructure as `Reidemeister1Connected`: the edge count grows
+by exactly 4 (the amplitude of the free `Reidemeister2` model, but reached by a
+connected insertion), and the crossing count by exactly 2. They follow the
+projection API style of `trefoil_wf` / `unknot_wf` in `Basic.lean`.
+-/
+
+/-- A connected R2 twist adds exactly four edges (the two bigon kinks and the
+    two renamed arc ends `o₁`, `o₂`). -/
+theorem Reidemeister2Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister2Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 4 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, _h_cross, h_num⟩ := h
+  exact h_num
+
+/-- A connected R2 twist adds exactly two crossings (the bigons `C₁`, `C₂`);
+    the existing end crossing `Y` is relabeled in place (`List.set` preserves
+    length), not duplicated. -/
+theorem Reidemeister2Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister2Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 2 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, h_cross, _h_num⟩ := h
+  rw [h_cross]; simp [List.length_set, List.length_append]
+
 /-- R3 (Slide): move a strand over a crossing.
 
 A strand can slide past a crossing without changing the knot:
