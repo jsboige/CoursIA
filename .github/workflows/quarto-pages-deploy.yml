@@ -69,6 +69,15 @@ jobs:
         # exclues (cf. scripts/regen_quarto_render.py).
         run: python scripts/regen_quarto_render.py
 
+      - name: Patch kernelspec language C# -> csharp
+        # #11335 : `kernelspec.language: "C#"` fait émettre à Quarto une fence
+        # invalide ```{.c# ...} (`#` = marqueur d'ID pandoc) => le code C# fuit en
+        # <p> et les strings interpolées $"..." sont mangées par MathJax. Le champ
+        # language est informationnel (l'exécution utilise kernelspec.name
+        # .net-csharp), on le patche byte-level en "csharp" avant render. Manifeste
+        # d'offsets -> .quarto_csharp_fix_manifest.json (gitignored).
+        run: python scripts/quarto_csharp_kernel_fix.py apply
+
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
         # .ipynb (execute.enabled: false) : ils sont RENDUS en HTML statique avec
@@ -85,6 +94,12 @@ jobs:
           test -d _site || (echo "::error::_site/ absent après quarto render" && exit 1)
           test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
           echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
+
+      - name: Restore kernelspec language tokens
+        # #11335 : revert byte-clean du patch C# -> csharp, vérifié contre le
+        # manifeste d'offsets (DRIFT = skip loud + exit 1). Ne touche que les
+        # notebooks .net-csharp ; le site rendu (_site/) est déjà figé à ce point.
+        run: python scripts/quarto_csharp_kernel_fix.py restore
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
