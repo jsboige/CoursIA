@@ -31,7 +31,7 @@ layout: cover
 
 - Qu'est-ce que l'intelligence artificielle ?
 - Racines, histoire et état de l'art
-- Structure des agents rationnel
+- Structure des agents rationnels
 - Intelligence exploratoire
 - Comment chercher la solution à un problème ?
 - Intelligence Symbolique
@@ -60,7 +60,6 @@ layout: section
 
 
 ---
----
 
 
 
@@ -84,7 +83,7 @@ layout: section
 - Théorie du contrôle
 - Linguistique
 
-<img src="./images/img_005.png" style="position:absolute; top:193px; right:20px; width:460px;" alt="Qu'est-ce que l'intelligence artificielle?" />
+<img src="./images/img_005.png" class="absolute top-[193px] right-[20px] w-[460px]" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
 layout: two-cols
 ---
@@ -106,7 +105,7 @@ layout: two-cols
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-<div style="text-align: center; margin-top: 8px;">
+<div class="text-center mt-2">
 ![h:100](./images/img_006.png)
 </div>
 
@@ -124,7 +123,7 @@ layout: two-cols
   - 2016 : AlphaGo
 - NLP : Transformers, LLMs
 
-<div style="display: flex; gap: 10px; margin-top: 8px;">
+<div class="flex gap-3 mt-2">
 ![h:45](./images/img_007.jpg)
 ![h:45](./images/img_008.jpg)
 
@@ -168,7 +167,6 @@ layout: two-cols
 
 
 ---
----
 
 
 
@@ -188,7 +186,7 @@ layout: two-cols
 - Limitations
   - ressources disponibles
 
-<img src="./images/img_009.png" style="position:absolute; top:203px; right:20px; width:460px;" alt="Les agents" />
+<img src="./images/img_009.png" class="absolute top-[203px] right-[20px] w-[460px]" alt="Les agents" />
 ---
 layout: two-cols
 ---
@@ -232,7 +230,6 @@ layout: section
 
 
 ---
----
 
 
 
@@ -249,7 +246,7 @@ layout: section
 
 - Flexibilité vs complexité
 
-<img src="./images/img_012.png" style="position:absolute; top:239px; right:20px; width:460px;" alt="Agent réflexe fondé sur un modèle" />
+<img src="./images/img_012.png" class="absolute top-[239px] right-[20px] w-[460px]" alt="Agent réflexe fondé sur un modèle" />
 ---
 
 
@@ -271,7 +268,6 @@ layout: section
 
 
 # Questions?
-
 
 ---
 layout: section
@@ -573,7 +569,6 @@ layout: section
 
 # Questions?
 
-
 ---
 layout: section
 ---
@@ -624,7 +619,6 @@ layout: two-cols
 
 
 ---
----
 
 
 
@@ -645,7 +639,7 @@ layout: two-cols
 - Solveurs SAT
   - Problèmes NP-complets
 
-<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 ![w:200](./images/img_038.png)
 ![w:200](./images/img_039.png)
 ![w:200](./images/img_040.png)
@@ -773,7 +767,6 @@ layout: two-cols
 
 
 ---
----
 
 
 
@@ -796,14 +789,13 @@ layout: two-cols
 - Planification à Ordre partiel
 - Décomposition hiérarchique
 
-<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 ![](./images/img_043.png)
 ![](./images/img_044.png)
 ![](./images/img_045.png)
 ![](./images/img_046.png)
 ![](./images/img_047.jpg)
 </div>
----
 ---
 
 
@@ -821,8 +813,8 @@ layout: two-cols
   - W3C
   - Linked Data
 
-<img src="./images/img_048.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
-<img src="./images/img_049.png" style="position:absolute; top:437px; right:20px; width:460px;" alt="Autres Applications (1/2)" />
+<img src="./images/img_048.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Autres Applications (1/2)" />
+<img src="./images/img_049.png" class="absolute top-[437px] right-[20px] w-[460px]" alt="Autres Applications (1/2)" />
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 ---
@@ -852,7 +844,6 @@ layout: section
 
 
 # Questions?
-
 
 ---
 layout: section
@@ -994,7 +985,6 @@ layout: two-cols
 
 
 ---
----
 
 
 
@@ -1019,7 +1009,7 @@ layout: two-cols
   - Processus de Markov
   - Politique optimale
 
-<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 ![w:150](./images/img_061.png)
 ![w:150](./images/img_062.png)
 ![w:150](./images/img_063.png)
@@ -1236,7 +1226,6 @@ layout: section
 
 # Questions?
 
-
 ---
 layout: section
 ---
@@ -1323,7 +1312,6 @@ layout: two-cols
 
 
 ---
----
 
 
 
@@ -1343,9 +1331,8 @@ layout: two-cols
   - d'ensemble
   - Boosting
 
-<img src="./images/img_083.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Caractéristiques (2/2)" />
-<img src="./images/img_084.png" style="position:absolute; top:530px; right:20px; width:460px;" alt="Caractéristiques (2/2)" />
----
+<img src="./images/img_083.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Caractéristiques (2/2)" />
+<img src="./images/img_084.png" class="absolute top-[530px] right-[20px] w-[460px]" alt="Caractéristiques (2/2)" />
 ---
 
 
@@ -1369,7 +1356,7 @@ layout: two-cols
 - Random forest
 - Ensemble
 
-<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 ![](./images/img_085.png)
 ![](./images/img_086.png)
 ![](./images/img_087.png)
@@ -1387,7 +1374,6 @@ layout: two-cols
 
 
 ---
----
 
 
 
@@ -1400,13 +1386,12 @@ layout: two-cols
 - Multi-couches
   - Expressivité croissante
 
-<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 ![](./images/img_090.png)
 ![](./images/img_091.png)
 ![](./images/img_092.png)
 ![](./images/img_093.png)
 </div>
----
 ---
 
 
@@ -1425,13 +1410,12 @@ layout: two-cols
   - Noyaux de convolution
   - Sous-échantillonnage
 
-<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 ![](./images/img_094.png)
 ![](./images/img_095.png)
 ![](./images/img_096.png)
 ![](./images/img_097.png)
 </div>
----
 ---
 
 
@@ -1448,7 +1432,7 @@ layout: two-cols
 - GANs (2014)
   - Réseaux adversériaux
 
-<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 ![w:150](./images/img_098.png)
 ![w:150](./images/img_099.png)
 ![w:150](./images/img_100.png)
@@ -1458,7 +1442,6 @@ layout: two-cols
 </div>
 
 <!-- GANs : generateur vs discriminateur, portraits StyleGAN, deepfakes -->
----
 ---
 
 
@@ -1479,7 +1462,7 @@ layout: two-cols
 - Semi-supervisé, Transfert
 - LLMs : BERT (2018), GPT
 
-<div class="img-grid" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 ![w:150](./images/img_104.png)
 ![w:150](./images/img_105.jpg)
 ![w:150](./images/img_106.png)
@@ -1489,7 +1472,6 @@ layout: two-cols
 </div>
 
 <!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding -->
----
 ---
 
 
@@ -1511,7 +1493,7 @@ layout: two-cols
 - Conditionnement multimodal
 - Mécanisme attentionnel
 
-<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 ![](./images/img_110.png)
 ![](./images/img_111.png)
 ![](./images/img_112.png)
@@ -1519,7 +1501,6 @@ layout: two-cols
 </div>
 
 <!-- Diffusion : bruit gaussien progressif → apprentissage du debruitage inverse -->
----
 ---
 
 
@@ -1541,13 +1522,12 @@ layout: two-cols
 - Séparateurs à marge maximale
 - Astuce du noyau
 
-<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 ![](./images/img_114.png)
 ![](./images/img_115.png)
 ![](./images/img_116.png)
 ![](./images/img_117.png)
 </div>
----
 ---
 
 
@@ -1570,9 +1550,8 @@ layout: two-cols
   - Knowledge Based Inductive Learning
 - Programmation logique inductive (Prolog)
 
-<img src="./images/img_118.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Apprentissage et connaissances" />
-<img src="./images/img_119.png" style="position:absolute; top:441px; right:20px; width:460px;" alt="Apprentissage et connaissances" />
----
+<img src="./images/img_118.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Apprentissage et connaissances" />
+<img src="./images/img_119.png" class="absolute top-[441px] right-[20px] w-[460px]" alt="Apprentissage et connaissances" />
 ---
 
 
@@ -1596,8 +1575,8 @@ layout: two-cols
   - Modèles paramétriques
   - Deep Q-learning
 
-<img src="./images/img_120.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Apprentissage par renforcement" />
-<img src="./images/img_121.png" style="position:absolute; top:384px; right:20px; width:460px;" alt="Apprentissage par renforcement" />
+<img src="./images/img_120.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Apprentissage par renforcement" />
+<img src="./images/img_121.png" class="absolute top-[384px] right-[20px] w-[460px]" alt="Apprentissage par renforcement" />
 ---
 layout: section
 ---
@@ -1605,7 +1584,6 @@ layout: section
 
 
 # Questions?
-
 
 ---
 layout: section
@@ -1703,7 +1681,6 @@ layout: two-cols
 
 
 ---
----
 
 
 
@@ -1719,13 +1696,12 @@ layout: two-cols
   - Résumé, analyse syntaxique
   - Modèles sémantiques profonds
 
-<div class="img-grid-2x2" style="position:absolute; top:130px; right:20px; width:400px;">
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 ![](./images/img_127.png)
 ![](./images/img_128.png)
 ![](./images/img_129.png)
 ![](./images/img_130.png)
 </div>
----
 ---
 
 
@@ -1748,9 +1724,9 @@ layout: two-cols
   - Bootstrap
   - Entraînement en ligne
 
-<img src="./images/img_131.png" style="position:absolute; top:110px; right:20px; width:460px;" alt="Agents conversationnels" />
-<img src="./images/img_132.png" style="position:absolute; top:353px; right:20px; width:460px;" alt="Agents conversationnels" />
-<img src="./images/img_133.png" style="position:absolute; top:669px; right:20px; width:460px;" alt="Agents conversationnels" />
+<img src="./images/img_131.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Agents conversationnels" />
+<img src="./images/img_132.png" class="absolute top-[353px] right-[20px] w-[460px]" alt="Agents conversationnels" />
+<img src="./images/img_133.png" class="absolute top-[669px] right-[20px] w-[460px]" alt="Agents conversationnels" />
 ---
 layout: two-cols
 ---
@@ -1815,7 +1791,6 @@ layout: section
 
 
 # Questions?
-
 
 ---
 layout: section
@@ -1886,8 +1861,8 @@ Un seul paradigme, plusieurs modalités — un modèle peut générer et compren
 - **Audio** : synthèse vocale et transcription (`GenAI/Audio/` — Whisper, Kokoro, XTTS)
 - **Vidéo** : génération et analyse (`GenAI/Video/` — Hunyuan, LTX, AnimateDiff)
 
-<img src="./images/img_111.png" style="position:absolute; top:150px; right:20px; width:360px;" alt="Architecture CLIP : encodeurs texte et image alignes dans un espace partage" />
-<img src="./images/img_110.png" style="position:absolute; top:380px; right:20px; width:360px;" alt="Paires image-legende : le modele relie chaque image a sa description textuelle" />
+<img src="./images/img_111.png" class="absolute top-[150px] right-[20px] w-[360px]" alt="Architecture CLIP : encodeurs texte et image alignes dans un espace partage" />
+<img src="./images/img_110.png" class="absolute top-[380px] right-[20px] w-[360px]" alt="Paires image-legende : le modele relie chaque image a sa description textuelle" />
 
 ```mermaid
 graph TD
@@ -1910,8 +1885,8 @@ graph TD
 - À partir d'un bruit pur, il reconstruit une image cohérente
 - Diffusion latente : opérer dans un espace compact (moins de calcul)
 
-<img src="./images/img_112.png" style="position:absolute; top:150px; right:20px; width:500px;" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
-<img src="./images/img_113.png" style="position:absolute; top:380px; right:20px; width:360px;" alt="Architecture latent diffusion : encodeur, U-Net de debruitage dans l'espace latent, decodeur" />
+<img src="./images/img_112.png" class="absolute top-[150px] right-[20px] w-[500px]" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
+<img src="./images/img_113.png" class="absolute top-[380px] right-[20px] w-[360px]" alt="Architecture latent diffusion : encodeur, U-Net de debruitage dans l'espace latent, decodeur" />
 
 ```mermaid
 graph LR
