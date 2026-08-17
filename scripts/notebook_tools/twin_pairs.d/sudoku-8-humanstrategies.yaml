@@ -22,6 +22,12 @@
       csharp_sha: ceda25c4ba74167ab7c5e4f0750e56d1a4259fcc
       content_python_sha: 3e13eece88ca5f7935f8f2e938a90e829ebda3e35f56d39b6eb4d2d2cabc38ea
       content_csharp_sha: bfa8a6876a42f10ccbc21ea4acdfd237626681209124d877cc4e70b56433f074
+    - date: "2026-08-16"
+      by: myia-po-2025:CoursIA
+      python_sha: 19334bbfa6da473594298b46b610d240e4bc96e8
+      csharp_sha: 3d7759a2f52a774d5d4bb15f70559c297345b771
+      content_python_sha: 637c132df86ca82db40a4e3e4ba24aaf3434cffef0cdd61af348a0bffae23965
+      content_csharp_sha: 0f24cab8cdc70fce2098d6723e87e41a313ed905e2672df0b57a41d2117cd605
   known_differences:
     - "Socle pedagogique commun : strategies de resolution humaines (techniques d'inference -- naked/hidden singles, pointing pairs, box-line) appliquees au Sudoku, meme concept (simuler le raisonnement humain par couches d'inference successives plutot qu'un backtracking brut), meme arc pedagogique (theorie -> implementation -> benchmark)."
     - "Divergence d'implementation : le Python implemente les techniques d'inference from scratch + visualisation networkx du graphe de contraintes ; le C# implemente les memes strategies d'inference en stdlib avec un benchmark comparatif. Idiomes de visualisation differents (networkx cote Python)."

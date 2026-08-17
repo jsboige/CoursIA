@@ -781,6 +781,90 @@ theorem p4_wf_witness_k2 :
           4 8 := by
   native_decide
 
+/-! ### P4-At : socle du moteur décorrélaté (grain 3, #11161)
+
+La brique de base du saut décorrélaté `hashlifeResultAt j` (Hashlife.lean,
+section « Saut à portée découplée ») : au niveau terminal `j + 2` de sa
+récursion, le moteur At délègue au moteur plein `hashlifeResultAux` avec
+le fuel saturé — exactement la forme du P4 prouvé
+(`hashlifeResult_central_correct`). La correction centrale se transfère
+donc TELLE QUELLE, sans hypothèse de capture. C'est le socle de la
+décharge de `OneJumpAtCorrect` (grain 2 du re-cadrage Gosper, #11161) ;
+le contenu restant du grain 3 est le pas inductif `M > j + 2` (assemblage
+mono-ronde en sous-quadrants) puis le pont de localité (`evolve_box_agree`,
+LightCone) avec l'invariant du cadre (grain 1). -/
+
+/-- **P4-At cas de base (grain 3, #11161).** Pour toute cellule bien
+    formée de niveau exactement `j + 2` (le niveau terminal de la récursion
+    At), `hashlifeResultAt j c` est le moteur plein à fuel saturé et rend
+    la fenêtre centrale de `evolve (2^j)` — l'énoncé P4 transféré
+    littéralement au moteur décorrélaté, SANS hypothèse de capture.
+
+    L'inversion `wf` passe par le prédicat OPAQUE `cellWf` (pont
+    `cellWf_of_wf`) : le `Bool` transparent `MacroCell.wf` diverge en whnf
+    sur les `node` en defeq (Foundation, note c.142). -/
+theorem hashlifeResultAt_base_central (c : MacroCell) (j : Nat)
+    (hwf : c.wf = true) (hklvl : c.level = j + 2) :
+    (hashlifeResultAt j c).toGrid ((2^j : Nat), (2^j : Nat))
+      = restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^j : Int) (2^(j+1)) := by
+  have hshape : ∀ (x : MacroCell) (n : Nat), x.level = n + 1 →
+      ∃ nw ne sw se, x = MacroCell.node nw ne sw se ∧ nw.level = n := by
+    intro x n hx
+    cases x with
+    | leaf _ => simp only [MacroCell.level] at hx; omega
+    | node nw ne sw se =>
+        exact ⟨nw, ne, sw, se, rfl, by simp only [MacroCell.level] at hx; omega⟩
+  have hnode : ∀ (q : MacroCell) (hq : q.level ≥ 1),
+      ∃ p1 p2 p3 p4, q = MacroCell.node p1 p2 p3 p4 := by
+    intro q hq
+    cases q with
+    | leaf _ => simp only [MacroCell.level] at hq; omega
+    | node p1 p2 p3 p4 => exact ⟨p1, p2, p3, p4, rfl⟩
+  have hwrap : hashlifeResultAt j c = hashlifeResultAux (j + 2) c := by
+    unfold hashlifeResultAt
+    rw [hklvl]
+    obtain ⟨a, b, d, e, rfl, ha⟩ := hshape c (j + 1) hklvl
+    obtain ⟨_, _, _, _, hlb, hld, hle⟩ := cellWf_of_wf _ hwf
+    have hbl : b.level = j + 1 := by omega
+    have hdl : d.level = j + 1 := by omega
+    have hel : e.level = j + 1 := by omega
+    obtain ⟨a1, a2, a3, a4, rfl⟩ := hnode a (by omega)
+    obtain ⟨b1, b2, b3, b4, rfl⟩ := hnode b (by omega)
+    obtain ⟨d1, d2, d3, d4, rfl⟩ := hnode d (by omega)
+    obtain ⟨e1, e2, e3, e4, rfl⟩ := hnode e (by omega)
+    simp only [MacroCell.level] at ha
+    show hashlifeResultAtAux (j + 1 + 1) j _
+      = hashlifeResultAux (j + 2) _
+    simp only [hashlifeResultAtAux, MacroCell.level, ha, beq_iff_eq]
+    split
+    · rfl
+    · exfalso; omega
+  rw [hwrap]
+  exact hashlifeResult_central_correct c j hwf hklvl
+
+/-- Témoin P4-At k = 1 : même cellule que `p4_wf_witness_k1` (bloc encore
+    de vie centré, niveau 3 = j+2 pour j = 1), lue au moteur décorrélaté —
+    au niveau terminal il rend exactement le moteur plein. -/
+theorem p4at_witness_k1 :
+    (hashlifeResultAt 1
+      (centerInLevelPlus2 (node aliveLeaf aliveLeaf aliveLeaf aliveLeaf))).toGrid
+        ((2 : Int), (2 : Int))
+      = restrictGridTo
+          (evolve 2
+            ((centerInLevelPlus2
+              (node aliveLeaf aliveLeaf aliveLeaf aliveLeaf)).toGrid (0, 0)))
+          2 4 := by
+  native_decide
+
+/-- Témoin P4-At k = 2 : même cellule que `p4_wf_witness_k2` (glider centré
+    de niveau 4 = j+2 pour j = 2, avance 4 générations). -/
+theorem p4at_witness_k2 :
+    (hashlifeResultAt 2 (centerInLevelPlus2 gliderCell)).toGrid
+        ((4 : Int), (4 : Int))
+      = restrictGridTo
+          (evolve 4 ((centerInLevelPlus2 gliderCell).toGrid (0, 0)))
+          4 8 := by
+  native_decide
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
@@ -1551,6 +1635,114 @@ theorem hashlife_correctN_le_two (n : Nat) (g : Grid) (hn : n ≤ 2)
   show box_assez_grand g n = true
   rw [← box_assez_grandN_le_two_eq n g hn]
   exact h
+
+/-! ## N3 decorrelated-reach engine: fuel skeleton (#11161, grain 2)
+
+Adaptation du squelette P5.1 (`evolveHashlifeFastAux_correct`) au moteur
+a portee decorrele `evolveHashlifeFastAtAuxN` (Hashlife.lean). Deux
+differences structurelles : l'hypothese de capture TRAJECTOIRE
+disparait (la brique un-saut `OneJumpAtCorrect` est universellement
+quantifiee, la re-instantiation en `t + js` est gratuite), et le garde
+decorrele est VIABLE (temoins ci-dessous). Le contenu ouvert restant est la
+correction P4-At de `hashlifeResultAt` (recursion mono-ronde) — portee
+par l'hypothese, a decharger au grain 3 (voir #11161). -/
+
+/-- **Hypothese P4-At (brique un-saut a portee decorrelee, grain 2 #11161).**
+    Pour tout re-cadrage conscient de n dont le niveau est au moins 2
+    (i.e. tout etat ou le garde de saut de `evolveHashlifeFastAtAuxN`
+    tire), le saut decorrele calcule exactement `evolve (jumpSizeAt lvl) g`
+    sur la grille, avec la comptabilite de decalage `jumpResultOff`. C'est
+    l'analogique At de la brique un-saut `one_jump_toGrid_correct` (P5.1),
+    avec une difference structurelle : PLUS d'hypothese de capture —
+    `jumpAt_capture_centered` rend la capture corollaire de l'invariant du
+    cadre (grain 1, #11161). Le contenu encore ouvert est la correction
+    P4-At de `hashlifeResultAt` elle-meme (recursion mono-ronde ; note
+    d'honnetete du meme nom dans Hashlife.lean) — portee ici par
+    l'hypothese, a decharger au grain 3. -/
+def OneJumpAtCorrect : Prop :=
+  ∀ (n : Nat) (g : Grid),
+    2 ≤ (gridToMacroCellWithOffsetN n g).2.level →
+      (hashlifeJumpAt ((gridToMacroCellWithOffsetN n g).2.level - 2)
+          (gridToMacroCellWithOffsetN n g).2).toGrid
+        (jumpResultOff (gridToMacroCellWithOffsetN n g).1
+          (gridToMacroCellWithOffsetN n g).2.level)
+        = evolve (jumpSizeAt (gridToMacroCellWithOffsetN n g).2.level) g
+
+/-- **Grain 2 (#11161) : squelette d'induction fuel du moteur decorrele.**
+    Sous la brique un-saut `OneJumpAtCorrect`, pour tout `fuel >= n`,
+    `evolveHashlifeFastAtAuxN fuel n g = evolve n g`. L'induction est
+    l'adaptation de `evolveHashlifeFastAux_correct` (P5.1) avec deux
+    simplifications structurelles : (1) l'hypothese de capture
+    TRAJECTOIRE disparaît — `OneJumpAtCorrect` est universellement
+    quantifiee, donc la re-instantiation de l'hypothese en `t + js` est
+    gratuite ; (2) l'invariant `n <= fuel` se preserve car le saut
+    consomme `js = 2^(lvl-2) >= 1` generations pour 1 unite de fuel. Le
+    bras `else` rend litteralement `evolve n g`. Aucun sorry. -/
+theorem evolveHashlifeFastAtAuxN_correct (hbr : OneJumpAtCorrect)
+    (fuel n : Nat) (g : Grid) (hle : n ≤ fuel) :
+    evolveHashlifeFastAtAuxN fuel n g = evolve n g := by
+  induction fuel generalizing n g with
+  | zero =>
+    have hn0 : n = 0 := Nat.le_zero.mp hle
+    subst hn0
+    rfl
+  | succ fuel ih =>
+    cases n with
+    | zero => rfl
+    | succ m =>
+      simp only [evolveHashlifeFastAtAuxN]
+      split
+      · next hcond =>
+        simp only [Bool.and_eq_true, decide_eq_true_eq] at hcond
+        obtain ⟨hlvl2, hnjs⟩ := hcond
+        have hjspo : 0 < jumpSizeAt
+            (gridToMacroCellWithOffsetN (m + 1) g).2.level :=
+          Nat.two_pow_pos _
+        have hle' : m + 1 - jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level
+            ≤ fuel := by omega
+        rw [hbr (m + 1) g hlvl2,
+            ih (m + 1 - jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level)
+              (evolve (jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level) g)
+              hle',
+            ← evolve_add]
+        have hsum : (m + 1 - jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level)
+            + jumpSizeAt (gridToMacroCellWithOffsetN (m + 1) g).2.level = m + 1 := by
+          omega
+        rw [hsum]
+      · rfl
+
+/-- **Grain 2 (#11161) : correction conditionnelle de l'API publique.**
+    Sous la meme unique hypothese, `evolveHashlifeFastAtN n g = evolve n g`
+    pour TOUT n et TOUTE grille — la portee du theoreme n'est plus bornee
+    par une hypothese de capture. Dechargee au grain 3 : `OneJumpAtCorrect`
+    suit de l'invariant du cadre (grain 1) + la correction P4-At de
+    `hashlifeResultAt`. -/
+theorem evolveHashlifeFastAtN_correct (hbr : OneJumpAtCorrect)
+    (n : Nat) (g : Grid) :
+    evolveHashlifeFastAtN n g = evolve n g :=
+  evolveHashlifeFastAtAuxN_correct hbr n n g (Nat.le_refl n)
+
+/-- Témoin d'échappement : ligne de 7 cellules (grille de `lineCell3`,
+    `jumpCaptured_not_trivial` en JumpCapture) — son burst transitoire
+    atteint le bord de toute fenêtre FIXE à la génération 8. Sur le moteur
+    décorrélé n-aware, la même grille est capturée (rembourrage
+    `max 2 n`). -/
+def line7 : Grid := [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6)]
+
+-- Témoin 1 (acceptance #11161) : glider à n = 8 — le garde décorrélé tire
+-- (guardAt_viable_glider), un saut de jumpSizeAt 5 = 8.
+#eval evolveHashlifeFastAtN 8 glider == evolve 8 glider
+
+-- Témoin 2 : blinker à n = 8 — oscillateur période 2, un saut.
+#eval evolveHashlifeFastAtN 8 blinker_h == evolve 8 blinker_h
+
+-- Témoin 3 (acceptance #11161) : la ligne de 7 qui falsifiait le moteur
+-- plein doit PASSER sur le moteur décorrélé (re-cadrage n-aware).
+#eval evolveHashlifeFastAtN 8 line7 == evolve 8 line7
+
+-- Témoin 4 : glider à n = 12 — DEUX sauts décorrélés (js = 8, reste 4,
+-- nouveau cadre lvl 4 → js' = 4), exercice du bras récursif multi-sauts.
+#eval evolveHashlifeFastAtN 12 glider == evolve 12 glider
 
 /-! ## Sanity witnesses (native_decide)
 
