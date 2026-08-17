@@ -23,6 +23,13 @@
       csharp_sha: 89d2ce8ff271e2d5a28df4064488f51a9d8e659a
       content_python_sha: e49f24a57c52ec6ff167091f332a28ddc61c663f1a49c0b10bda9101a23c06ca
       content_csharp_sha: 8bf58b4802a5ad2cb524d73d902bb02dd2b14f3fb081fee1c2e45e09e4369549
+    - date: "2026-08-16"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 77524721813b30cc81946ec94cf4f9ed6c69531a
+      csharp_sha: 539b615ca402254cff49b8d895bbacb7f4236c75
+      reason: "Re-exec seq only (#11112 etage 3): csharp DUPLICATE -> CLEAN 1..17 via dotnet_executor (Microsoft.ML 5.0.0 + Recommender), sources byte-identiques (0 source_diffs JSON), 0 erreur. Probe banner strip L532 + 2 fuites chemin Nuget normalisees (strip_machine_paths --category nuget, banniere kernel-extension pre-existante sur main en forme tilde). Metriques MF stochastiques proches (RMSE 2,997 vs 2,955), conclusions inchangees, aucun markdown ne cite les valeurs exactes. Cote Python non touche."
+      content_python_sha: e49f24a57c52ec6ff167091f332a28ddc61c663f1a49c0b10bda9101a23c06ca
+      content_csharp_sha: bada80e2aabbbd8f48dfdd3778ffdee8c3e3575ea551f0a1e076932f11ed0e39
   known_differences:
     - "Socle pedagogique commun : filtrage collaboratif par factorisation de matrices (recommandation user-item, K facteurs latents)."
     - "Idiomes framework : C# = `mlContext.Recommendation().Trainers.MatrixFactorization` (trainer dedie + MapValueToKey pour UserId/MovieId). Python = `sklearn.decomposition.NMF` (Non-negative Matrix Factorization generique, init='nndsvda', solver='mu') avec erreur de reconstruction explicite."
