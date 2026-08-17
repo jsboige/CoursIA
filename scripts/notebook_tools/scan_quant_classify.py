@@ -241,6 +241,20 @@ DATA_LIST_MARKERS = ("{", "~ ", " valeurs", "observations)")
 SEED_KEYWORDS = ("seed=", "random_state=", "np.random.seed", "torch.manual_seed",
                  "tf.random.set_seed", "rng.seed", "np_seed")
 
+# v7 (#9434, c.5316759237): appels de seed GLOBAL posés dans le CODE. La règle 2
+# (SEED_KEYWORDS) ne voit que le contexte local de la valeur ; elle manque le cas
+# dominant — le seed est posé une fois dans la cellule d'imports, et toutes les
+# valeurs stochastiques citées en prose DANS LES CELLULES SUIVANTES sont
+# déterministes (mesuré : QC-Py-22 seedé en cellule 8, 44/53 findings STOCH
+# re-signés ; App-14 : 18 STOCH re-signés sur main, absorbés au merge de #11482
+# qui pose les seeds).
+# Instances locales (rng.seed, np.random.default_rng) exclues : elles ne seedent
+# pas le RNG global du module.
+GLOBAL_SEED_CALL_RE = re.compile(
+    r"\b(?:random\.seed|np\.random\.seed|numpy\.random\.seed|"
+    r"torch\.manual_seed|tf\.random\.set_seed)\s*\("
+)
+
 
 # --------------------------------------------------------------------------- #
 #  Dataclasses
@@ -299,16 +313,19 @@ def _extract_context(text: str, match_start: int, match_end: int, window: int = 
 
 
 def _classify_quant_value(
-    raw: str, value: float, prefix: str, suffix: str
+    raw: str, value: float, prefix: str, suffix: str,
+    seeded_upstream: bool = False,
 ) -> tuple[str, str]:
     """Classifie une valeur quantitative selon le contexte. Renvoie (classe, rationale).
 
     Ordre d'application des regles (la premiere qui matche gagne) :
+    0. Tag de drain « machine-dep » dans le contexte → STRUCTUREL (déjà drainé)
     1. STRUCTUREL si mot-cle structurel detecte dans prefix+suffix
     2. SEED dans prefix → bascule STOCHASTIQUE → STRUCTUREL
     3. ENV-DEP si pattern semver ou mot-cle env
     4. MACHINE-DEP si unite temporelle ou mot-cle machine-dep
     5. STOCHASTIQUE-NON-SEEDEE si mot-cle stochastique
+       (sauf seeded_upstream: seed global posé en amont → STRUCTUREL)
     6. STRUCTUREL par defaut (classe residuelle surete)
 
     Le defaut STRUCTUREL evite les faux positifs massifs sur les valeurs
@@ -322,6 +339,22 @@ def _classify_quant_value(
     # (v2 c.1272 inchange ; remonte ici pour proteger la regle MACHINE-DEP
     # anti-FP c.1275 qui doit respecter la liste.)
     in_data_list = any(marker in full_context for marker in DATA_LIST_MARKERS)
+
+    # 0 (v7, #9434 c.5316759237): immunité tag de drain « machine-dep ». Les
+    #     vagues de drain (#9664, #11482, ...) posent une convention de prose :
+    #     la valeur absolue est remplacée par un ordre de grandeur accompagné du
+    #     tag explicite (« *runtime machine-dep* : ~0,5 s ici », « Speedup
+    #     wall-clock *machine-dep* (CPython + charge) »). Le scanner re-signait
+    #     ces valeurs : les mots-clé légitimes « runtime » / « wall clock » du
+    #     contexte taggé déclenchent MACHINE-DEP — re-signaler du drain DÉJÀ
+    #     FAIT. Mesuré firsthand : SW-13 47 findings → 0 réel, QC-Py-22 53 → 1
+    #     réel (PR #11487 « 52/53 FP »), Lean-10 52 → 0. Le tag est un marqueur
+    #     d'auteur « déjà assumé machine-dep » → STRUCTUREL.
+    #     Failure-mode SAFE : absorbe vers STRUCTUREL uniquement — un tag trop
+    #     large garde une vraie valeur en STRUCTUREL (sur-correction inoffensive
+    #     pour un triage), jamais l'inverse.
+    if "machine-dep" in full_context:
+        return ("STRUCTUREL", "tag de drain « machine-dep » explicite (déjà assumé)")
 
     # 0. Filtre semver : si le raw match EST un semver, c'est env-dep en soi.
     if SEMVER_RE.fullmatch(raw):
@@ -460,6 +493,13 @@ def _classify_quant_value(
             # une mesure stochastique.
             if kw in ("moyenne", "mean", "variance") and any(mod in full_context for mod in NONSTOCH_MODIFIERS):
                 continue
+            # v7 (#9434, c.5316759237): seed global posé dans une cellule code
+            # EN AMONT (analyse cross-cellules) → la valeur citée est
+            # déterministe, pas « non-seedée ». N'absorbe que STOCHASTIQUE :
+            # un seed ne rend ni un temps (MACHINE-DEP) ni une version
+            # (ENV-DEP) déterministes.
+            if seeded_upstream:
+                return ("STRUCTUREL", "stochastique seede (seed global posé en amont dans le code)")
             return ("STOCHASTIQUE-NON-SEEDEE", f"mot-cle stochastique: {kw!r}")
 
     # 8. STRUCTUREL par defaut (classe residuelle)
@@ -488,13 +528,25 @@ def analyze_notebook_quant(path: str | os.PathLike) -> NotebookQuantClasses:
     findings: list[QuantClassFinding] = []
     by_class: dict[str, int] = {cls: 0 for cls in QUANT_CLASSES}
 
+    # v7 (#9434, c.5316759237): première cellule code où un seed GLOBAL est
+    # posé. Les valeurs stochastiques citées en prose APRÈS cette cellule sont
+    # déterministes (exécution séquentielle du notebook) → seeded_upstream.
+    # Condition temporelle stricte (seed_cell_index < i) : une prose AVANT le
+    # seed commente une sortie produite sans lui.
+    seeded_cell_index: int | None = None
+
     for i, c in enumerate(cells):
-        if c.get("cell_type") != "markdown":
-            continue
         source = c.get("source") or []
         text = "".join(source) if isinstance(source, list) else str(source)
         if not text:
             continue
+        if c.get("cell_type") == "code":
+            if seeded_cell_index is None and GLOBAL_SEED_CALL_RE.search(text):
+                seeded_cell_index = i
+            continue
+        if c.get("cell_type") != "markdown":
+            continue
+        seeded_upstream = seeded_cell_index is not None and seeded_cell_index < i
         # Reutilisation de l'extraction D5 v3 (qui filtre les annees, #issues,
         # PRJ42, semver simplifie stricte, etc.) — mais on doit scanner le
         # texte brut pour les versions, donc on **re-scan** avec nos propres
@@ -511,7 +563,7 @@ def analyze_notebook_quant(path: str | os.PathLike) -> NotebookQuantClasses:
             if re.fullmatch(r"\d{4}", raw) and 1900 <= v <= 2099:
                 continue
             prefix, suffix = _extract_context(text, m.start(), m.end())
-            cls, rationale = _classify_quant_value(raw, v, prefix, suffix)
+            cls, rationale = _classify_quant_value(raw, v, prefix, suffix, seeded_upstream=seeded_upstream)
             # Tronque le snippet pour le rapport.
             snippet = text.strip().splitlines()
             snippet_str = next((ln.strip() for ln in snippet if ln.strip()), "")[:120]
