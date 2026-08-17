@@ -1161,6 +1161,19 @@ theorem r2_append_only_wall :
     simp only [emptyDiagram] at this
     omega
 
+
+/-- **Contre-exemple formel (mur R2)** : l'énoncé actuel du maître
+`tricolorable_invariant` n'est pas seulement non-prouvé — pour le constructeur
+`Reidemeister2` libre append-only actuel il est FAUX. -/
+theorem not_tricolorable_invariant_current :
+    ¬ (∀ (d₁ d₂ : KnotDiagram),
+        ReidemeisterEquiv d₁ d₂ → (IsTricolorable d₁ ↔ IsTricolorable d₂)) := by
+  intro h
+  obtain ⟨hr2, htc₂, hnempty⟩ := r2_append_only_wall
+  have hre : ReidemeisterEquiv emptyDiagram twoTwinCrossings :=
+    ReidemeisterEquiv.step (ReidemeisterStep.r2 hr2)
+  exact hnempty ((h emptyDiagram twoTwinCrossings hre).mpr htc₂)
+
 /-! ### Fondation de la cure R2 — la cardinalité est l'unique obstruction
 
 Le mur `r2_append_only_wall` ci-dessus montre le bras descendant FAUX sur le
