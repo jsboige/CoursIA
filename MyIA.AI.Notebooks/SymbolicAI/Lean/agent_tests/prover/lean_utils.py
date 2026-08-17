@@ -308,12 +308,27 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
     new_lines = lines[:sorry_line - 1] + [indent_str + _TRUE_PROBE] + lines[sorry_line:]
     tmp_path.write_text("\n".join(new_lines), encoding="utf-8")
     try:
-        raw_output = verifier.verify_project_file(relative_path).get("raw_output", "") or ""
+        probe_result = verifier.verify_project_file(relative_path)
     finally:
         try:
             tmp_path.unlink()
         except OSError:
             pass
+
+    # FX-5b (#1453 iteration 1): a probe build that timed out or crashed
+    # (LeanVerifier TimeoutExpired / FileNotFoundError branches) yields
+    # success=False with an EMPTY raw_output — and ``_probe_closes_goal("")``
+    # sees "no error at the sorry line" and false-positives the goal as
+    # ``True``. Observed firsthand (2026-08-17): Folk.lean:127, a genuine
+    # Fudenberg–Maskin stretch goal, refused as TRUE_PLACEHOLDER after the
+    # 600s probe build timed out under host memory pressure — the run never
+    # entered its loop. Empty output on a failed build is NO evidence either
+    # way; only a probe that produced output (or succeeded cleanly) may
+    # decide. Non-empty output keeps full prior semantics: errors far from
+    # the probed line stay valid evidence the elaborator ran there.
+    raw_output = probe_result.get("raw_output", "") or ""
+    if not probe_result.get("success") and not raw_output.strip():
+        return False, ""
 
     if _probe_closes_goal(raw_output, sorry_line):
         return True, (

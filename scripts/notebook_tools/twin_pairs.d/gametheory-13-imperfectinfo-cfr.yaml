@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Verdict a deux niveaux (reclassification #10459 : axe PythonNet omis de la taxonomie bucket-3 #10382). (1) OpenSpiel CFR-la-lib : PONT .NET demontre en annexe section 7 du notebook C# via PythonNet (.NET -> Python.Runtime -> pyspiel -> OpenSpiel C++, meme axe que SemanticKernel-09, GT-17 annexe S10 et le moteur QuantConnect/Lean) -- pyspiel.CFRSolver invoque depuis C# (100 iters) + exploitabilite de la strategie moyenne mesuree = 0.008226 (converge vers 0 = Nash), sortie commitee. Pont installe (pythonnet NuGet + open_spiel pip, regle F) et branche : SOTA-OK pour ce role. (2) From-scratch C# CFR (sections 3-6) : reste la contrepartie pedagogique (niveau semantic) -- le pont est EN PLUS jamais A LA PLACE (mandat #10382). GT-13 etant purement CFR (pas de NFSP/AlphaZero neuronal comme GT-17), l'integralite d'OpenSpiel couverte cote Python est desormais reachable via le pont ; aucun reste INTRINSIC."
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Pont pyspiel execute (bascule registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : cellule pont `#r nuget pythonnet 3.0.5` (cell[23], execution_count=11) invoque CPython -> pyspiel (axe 5 #10459, patron Search-7). Verdict RECOVERABLE-LOCAL -> SOTA-OK : le pont est installe et execute dans le notebook commite, le verdict n'avait pas ete rebasculé. parity_level semantic preserve (gel #11200)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2024:CoursIA-2
