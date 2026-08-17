@@ -548,6 +548,23 @@ La thèse est puissante et honnêtement présentée : le RL n'a pas d'algorithme
 
 Le reinforcement learning propose un changement de regard sur l'apprentissage : ne plus demander « quelle est la bonne réponse ? » mais **« quelle action maximise la récompense cumulée, sachant qu'elle détermine les états futurs ? »**. La série vous a donné le formalisme (MDP, équation de Bellman), les algorithmes (du bandit à SAC, du tabulaire au deep, du online à l'offline), et l'intuition des compromis pour transformer un problème de décision séquentielle en une politique apprise — en gardant à l'esprit que ce paradigme, de AlphaGo aux LLMs alignés par RLHF, est devenu l'un des deux piliers (avec l'apprentissage supervisé) de l'IA contemporaine.
 
+## Frontière RL ↔ GenAI/PostTraining : qui lit quoi
+
+> Cette section existe pour qu'un lecteur qui ouvre la **sous-série `rlpt_*`** en premier ne fasse pas l'erreur de croire qu'elle duplique les notebooks [`PT_*`](../GenAI/PostTraining/README.md) — ou inversement. Les deux séries couvrent le **même algorithme** (RLHF / GRPO / DPO / reward hacking) à deux échelles différentes, et la distinction est écrite ici du point de vue du lecteur.
+
+**Si vous êtes ici pour comprendre la *mécanique* d'un algorithme RL appliqué à un LM** — comment PPO clippe son ratio, comment GRPO calcule son avantage intra-groupe, comment une récompense vérifiable se branche à un `GRPOTrainer`, comment le reward hacking déforme une politique — **ouvrez `rlpt_*`**. Ces notebooks partent du code (un mini-LM char-level pour `rlpt_1`, Qwen3.5-0.8B QLoRA pour `rlpt_2-4`) et montrent **mécanique + verdict multi-seed** sans introduire la chaîne complète `SFT → Reward Model → PPO`. C'est l'angle « un seul algorithme à la fois, sous-contrôle ».
+
+**Si vous êtes ici pour comprendre la *chaîne complète* du post-training appliquée à un vrai modèle de production** — comment SFT alimente DPO qui alimente GRPO qui alimente RLVR, comment les choices d'aujourd'hui (DPO vs GRPO) se lisent dans la lignée RLHF historique, comment l'industrialisation d'un alignement se heurte aux contraintes VRAM — **ouvrez [`GenAI/PostTraining`](../GenAI/PostTraining/README.md)**. La série `PT_*` (14 notebooks) parcourt toute la chaîne, des fondations (PT-01) jusqu'aux notebooks toy env `from-scratch` (PT-08/09/10/12) et aux applications Qwen3.5 (PT-11a/11b). Chaque technique y est resituée dans la progression 2017→2025 (Reward Model → InstructGPT → DPO → GRPO → RLVR) avec ses contraintes industrielles.
+
+**Deux lignes restent volontairement en recouvrement assumé, car elles répondent à deux questions pédagogiques distinctes** :
+
+- `rlpt_2_grpo_minimal` (`RL/`) **et** `PT_11_grpo_qwen35_rlvr` (`GenAI/PostTraining/`) — même modèle (Qwen3.5-0.8B QLoRA), même contrainte (8 Go), même algorithme (GRPO), même nature de reward (vérifiable). La différence : `rlpt_2` cadre la **mécanique GRPO** (group rollouts, avantage sans critic, budget steps borné), `PT-11a` cadre la **chaîne complète** sur un vrai LLM (reward vérifiable Z3, rewardspy en ligne, sortie du toy env). Lire `rlpt_2` d'abord pour la mécanique, puis `PT-11a` pour la mise en production.
+- `rlpt_3_reward_hacking` (`RL/`) **et** `PT_07_rewardspy_reward_hacking` (`GenAI/PostTraining/`) — la cible (Goodhart / overoptimisation du reward) est commune. La différence : `rlpt_3` est la **version compacte pédagogique** (capstone #5105 condensé, inoculation comme variable expérimentale, verdict reproductible seed-fixée) ; `PT-07` est le **notebook de référence** du détecteur rewardspy, plus systématique et offline.
+
+Les autres deux notebooks de la sous-série — `rlpt_1` (PPO-RLHF from scratch, char-level, CPU) et `rlpt_4` (DPO offline vs GRPO online, budget égal, multi-seed) — n'ont **pas** d'équivalent dans `PT_*` : ils couvrent ce que `PT_*` ne montre pas (l'implémentation from-scratch pure sans framework, et la comparaison offline-vs-online à budget steps contraint). Ils sont lus pour eux-mêmes.
+
+---
+
 ## Où atterrit le « pont RLHF » : les séries GenAI
 
 Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur l'offline RL, notebook 10 sur le reward shaping). Ce pont **atterrit concrètement** dans deux séries GenAI, qui appliquent ces fondations RL à de vrais modèles de langue. La série RL fournit l'algorithmique tabulaire ; GenAI fournit la réalisation à l'échelle des LLM.

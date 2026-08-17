@@ -180,6 +180,23 @@ PT-06 documente le pipeline d'évaluation complet et produit un tableau comparat
 | Environnement | `coursia-ml-training` requis (TRL + bitsandbytes + datasets) |
 | Méthodologie | Toute claim comparative ("GRPO > DPO") vérifiée sur >= 4 seeds avec écart >= 2 sigma |
 
+## Frontière GenAI/PostTraining ↔ RL/rlpt_* : qui lit quoi
+
+> Cette section existe pour qu'un lecteur qui ouvre `PT_*` en premier ne se demande pas si la **sous-série `rlpt_*`** (4 notebooks, [`RL`](../../RL/README.md)) duplique les choses — ou inversement. Les deux séries couvrent le **même algorithme** (RLHF / GRPO / DPO / reward hacking) à deux échelles différentes. La distinction est écrite ici du point de vue du lecteur.
+
+**Si vous êtes ici pour comprendre la *chaîne complète* du post-training appliquée à un vrai modèle de production** — comment SFT alimente DPO qui alimente GRPO qui alimente RLVR, comment les choices d'aujourd'hui (DPO vs GRPO) se lisent dans la lignée RLHF historique, comment l'industrialisation d'un alignement se heurte aux contraintes VRAM (8 Go sur RTX 3070, 671B sur cluster MoE) — **restez ici**. La série `PT_*` (14 notebooks) parcourt toute la chaîne : SFT (PT-02), DPO (PT-03), GRPO (PT-04), RLVR (PT-05), évaluation comparative (PT-06), détecteur reward hacking (PT-07), from-scratch toy env (PT-08/09/10/12), applications Qwen3.5 (PT-11a/11b), et chaque technique y est resituée dans la progression 2017→2025 (Reward Model → InstructGPT → DPO → GRPO → RLVR).
+
+**Si vous êtes ici pour comprendre la *mécanique* d'un algorithme RL appliqué à un LM en isolation** — comment PPO clippe son ratio, comment GRPO calcule son avantage intra-groupe, comment une récompense vérifiable se branche à un `GRPOTrainer`, comment le reward hacking déforme une politique — **ouvrez [`RL/rlpt_*`](../../RL/README.md)** (4 notebooks, `RL/`). `rlpt_*` part du code (mini-LM char-level pour `rlpt_1`, Qwen3.5-0.8B QLoRA pour `rlpt_2/3/4`) et montre **mécanique + verdict multi-seed** sans la chaîne complète `SFT → Reward Model → PPO`. C'est l'angle « un seul algorithme à la fois, sous-contrôle ».
+
+**Deux lignes restent en recouvrement assumé, car elles répondent à deux questions pédagogiques distinctes** :
+
+- `PT-11_grpo_qwen35_rlvr` **et** `rlpt_2_grpo_minimal` — même modèle (Qwen3.5-0.8B QLoRA), même contrainte (8 Go), même algorithme (GRPO), même nature de reward (vérifiable). La différence : `rlpt_2` cadre la **mécanique GRPO** (group rollouts, avantage sans critic, budget steps borné), `PT-11a` cadre la **chaîne complète** sur un vrai LLM (reward vérifiable Z3, rewardspy en ligne, sortie du toy env). Lire `rlpt_2` d'abord pour la mécanique, puis `PT-11a` pour la mise en production.
+- `PT_07_rewardspy_reward_hacking` **et** `rlpt_3_reward_hacking` — la cible (Goodhart / overoptimisation du reward) est commune. La différence : `rlpt_3` est la **version compacte pédagogique** (capstone #5105 condensé, inoculation comme variable expérimentale, verdict reproductible seed-fixée) ; `PT-07` est le **notebook de référence** du détecteur rewardspy, plus systématique et offline.
+
+Les autres deux notebooks de `rlpt_*` — `rlpt_1` (PPO-RLHF from scratch, char-level, CPU) et `rlpt_4` (DPO offline vs GRPO online, budget égal, multi-seed) — n'ont **pas** d'équivalent dans `PT_*` : ils couvrent ce que `PT_*` ne montre pas (l'implémentation from-scratch pure sans framework, et la comparaison offline-vs-online à budget steps contraint). Ils sont lus pour eux-mêmes.
+
+---
+
 ## Ponts avec les autres séries
 
 | Série | Connection | Details |
