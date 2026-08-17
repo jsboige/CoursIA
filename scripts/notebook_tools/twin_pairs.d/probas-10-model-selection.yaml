@@ -15,6 +15,12 @@
       python_sha: 4481dfa722eff68e157a8beaf4287ad3bf1bd1c4
       csharp_sha: 00c3d935ea7b4573c2a3dd6950bf955a39fe793c
       note: "Rebaseline apres correctif markdown cell[12] (citation croisee Infer-8 -> Infer-10 : les valeurs d'evidence -45.89/-31.35/14.54 proviennent d'Infer-10-Model-Selection, pas d'Infer-8=TrueSkill). Infer-10 est par ailleurs le jumeau C# declare de PyMC-10. Parite semantic preservee : markdown-only, 0 cellule code modifiee, cote C# inchange."
+    - date: "2026-08-16"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 4481dfa722eff68e157a8beaf4287ad3bf1bd1c4
+      csharp_sha: bd2e254a7fc1a1a387c7cb66c52325c385309509
+      content_python_sha: 38ca5a739f0b9f9113eb3990812ced1527b65ee823672085e13960227b30eb8d
+      content_csharp_sha: 15e6a000e469ca71a5d1bedb888339d88289ae65283430d85fbfbcc332c1c02f
   known_differences:
   - 'Socle pedagogique commun : selection de modele (WAIC/LOO, evidence) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
