@@ -55,6 +55,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from typing import Iterable
@@ -84,6 +85,9 @@ _BOT_AUTHORS: tuple[str, ...] = (
 # Same pattern as pr-gate-missing: idempotent, not a stream of duplicates.
 COMMENT_MARKER_START = "<!-- REVIEW-COVERAGE:START -->"
 COMMENT_MARKER_END = "<!-- REVIEW-COVERAGE:END -->"
+# The REST id of an issue comment, recovered from its html url. See the
+# docstring of framed_comments() for why `.comments[].id` cannot be used.
+_COMMENT_REST_ID_RE = re.compile(r"#issuecomment-(\d+)\s*$")
 
 # Remediation text. Must name the action (request a review) explicitly and
 # say that close/reopen does not help (the diff is what the reviewer has to
@@ -186,43 +190,90 @@ def remove_label(pr_number: int, label: str) -> None:
     )
 
 
-def upsert_comment(pr_number: int, body: str) -> None:
-    """Post or update the marker-framed comment. No-op if the body matches.
+def framed_comments(pr_number: int) -> list[tuple[str | None, str]]:
+    """Return ``[(rest_id, body)]`` for the comments carrying BOTH markers.
 
-    The marker is the same as pr-gate-missing: an existing comment with the
-    same markers is replaced wholesale; one without markers is left alone
-    (we do not touch user comments). A re-run posting the exact same body
-    is a no-op (idempotent by content, not just by marker).
+    Two traps live on this path, and both fail *silently* -- which is why
+    the lookup is a named function with its own fixtures rather than three
+    lines inlined in :func:`upsert_comment`.
+
+    1. **The body is raw text, not JSON.** ``gh pr view --json comments
+       --jq '.comments[].body'`` prints each body as multi-line plain text
+       (verified: ``| cat -A`` shows real newlines, no escaping). Splitting
+       that on ``\\n`` and asking whether a *single line* holds both markers
+       can never be true of a framed comment -- START and END are on
+       different lines by construction. The detection therefore returned
+       empty forever: the "idempotent by content" no-op never fired, the
+       delete loop never ran, and each daily sweep would have posted one
+       more comment per flagged PR. We ask for a JSON array instead, so a
+       body stays one value whatever it contains.
+
+    2. **``id`` is a GraphQL node id, the delete path is REST.**
+       ``.comments[].id`` yields ``IC_kwDOH2Odns8AAAABPNf6UA`` while
+       ``DELETE /repos/{owner}/{repo}/issues/comments/{id}`` wants the
+       numeric id. Verified non-destructively with a GET on the same path:
+       node id -> ``HTTP 404``, numeric id -> the comment. So even once (1)
+       is fixed, deleting by ``id`` would 404 -- and with no ``check`` on
+       that subprocess, it would 404 without a word. The numeric id is
+       carried by the comment ``url`` (``...#issuecomment-<n>``).
+
+    A comment whose url cannot be parsed is returned with ``None`` as its
+    id: it still counts for the content comparison, and
+    :func:`upsert_comment` reports it rather than dropping it.
     """
     out = subprocess.run(
         ["gh", "pr", "view", str(pr_number), "--json", "comments",
-         "--jq", ".comments[].body"],
+         "--jq", "[.comments[] | {url, body}]"],
         capture_output=True, text=True, check=True,
     )
-    existing = [c for c in out.stdout.split("\n")
-                if COMMENT_MARKER_START in c and COMMENT_MARKER_END in c]
+    try:
+        items = json.loads(out.stdout or "[]")
+    except json.JSONDecodeError:
+        return []
+    found: list[tuple[str | None, str]] = []
+    for c in items:
+        body = c.get("body") or ""
+        if COMMENT_MARKER_START not in body or COMMENT_MARKER_END not in body:
+            continue  # not ours -- user comments are never touched
+        m = _COMMENT_REST_ID_RE.search(c.get("url") or "")
+        found.append((m.group(1) if m else None, body))
+    return found
+
+
+def upsert_comment(pr_number: int, body: str) -> list[str]:
+    """Post or update the marker-framed comment. No-op if the body matches.
+
+    An existing comment with the same markers is replaced wholesale; one
+    without them is left alone (we do not touch user comments). A re-run
+    posting the exact same body is a no-op (idempotent by content, not just
+    by marker).
+
+    Returns the list of *warnings* -- stale comments we failed to delete.
+    They are surfaced through the sweep's ``errors`` rather than raised: the
+    check is ADVISORY and must never block, but a delete that fails has to
+    be visible or the comment count creeps back up without a signal.
+    """
+    existing = framed_comments(pr_number)
     framed = f"{COMMENT_MARKER_START}\n{body}\n{COMMENT_MARKER_END}"
-    if existing and existing[0].strip() == framed.strip():
-        return  # no-op
-    # Delete the prior framed comment (if any) then post the new one.
-    for prior in existing:
-        # Find the comment id by re-querying with id field
-        ids = subprocess.run(
-            ["gh", "pr", "view", str(pr_number), "--json", "comments",
-             "--jq", f'[.comments[] | select(.body | contains("{COMMENT_MARKER_START}"))] | .[].id'],
-            capture_output=True, text=True, check=True,
+    if len(existing) == 1 and existing[0][1].strip() == framed.strip():
+        return []  # exactly one, identical -> nothing to do
+    warnings: list[str] = []
+    for cid, _ in existing:
+        if cid is None:
+            warnings.append(f"#{pr_number}: framed comment with unparsable url, not deleted")
+            continue
+        res = subprocess.run(
+            ["gh", "api", f"repos/{{owner}}/{{repo}}/issues/comments/{cid}", "-X", "DELETE"],
+            capture_output=True, text=True,
         )
-        for cid in ids.stdout.split():
-            subprocess.run(
-                ["gh", "pr", "comment", "--delete", cid] if False else
-                ["gh", "api", f"repos/{{owner}}/{{repo}}/issues/comments/{cid}",
-                 "-X", "DELETE"],
-                capture_output=True, text=True,
-            )
+        if res.returncode != 0:
+            warnings.append(f"#{pr_number}: delete of comment {cid} failed: "
+                            f"{res.stderr.strip()[:120]}")
     subprocess.run(
         ["gh", "pr", "comment", str(pr_number), "--body", framed],
         capture_output=True, text=True, check=True,
     )
+    return warnings
 
 
 def sweep(threshold: int, dry_run: bool, label: str) -> dict:
@@ -243,7 +294,7 @@ def sweep(threshold: int, dry_run: bool, label: str) -> dict:
             if not dry_run:
                 try:
                     add_label(pr["number"], label)
-                    upsert_comment(pr["number"], REMEDIATION)
+                    errors.extend(upsert_comment(pr["number"], REMEDIATION))
                 except subprocess.CalledProcessError as e:
                     errors.append(f"#{pr['number']}: {e}")
         elif verdict == "clear":

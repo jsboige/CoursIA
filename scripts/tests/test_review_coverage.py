@@ -20,11 +20,13 @@ itself be the defect (it would re-create the hole it claims to fill, just
 on a narrower surface).
 """
 
+import json
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import review_coverage as rc  # noqa: E402
 from review_coverage import classify  # noqa: E402
 
 
@@ -139,6 +141,141 @@ def test_legacy_classification_unknown_field_is_robust():
     # Specific check: no `additions` key + no `reviews` key = below threshold
     # + no reviews = clear (a no-op pass), not flag.
     assert classify(minimal) == "clear"
+
+
+# ---------------------------------------------------------------------------
+# Comment plumbing : the two SILENT defects of the first draft (Hermes review
+# on #11526 found the first ; the second was on the same path, under it).
+#
+# Both fixtures below encode a shape MEASURED against the live API, not an
+# imagined one -- which is the whole point, since neither defect raised.
+# ---------------------------------------------------------------------------
+
+# Measured 2026-08-17 on a real comment of PR #11444 :
+#   `gh pr view --json comments --jq '.comments[0]'`
+#     id  = "IC_kwDOH2Odns8AAAABPNf6UA"     <- GraphQL node id
+#     url = "https://.../pull/11444#issuecomment-5315754576"
+# and, on the same REST path the delete uses,
+#   GET repos/jsboige/CoursIA/issues/comments/IC_kwDO...  -> HTTP 404
+#   GET repos/jsboige/CoursIA/issues/comments/5315754576  -> the comment
+_REAL_NODE_ID = "IC_kwDOH2Odns8AAAABPNf6UA"
+_REAL_REST_ID = "5315754576"
+_REAL_URL = f"https://github.com/jsboige/CoursIA/pull/11444#issuecomment-{_REAL_REST_ID}"
+
+
+def _fake_gh(payload: list[dict]):
+    """Stand in for `gh pr view --json comments --jq '[.comments[]|{url,body}]'`."""
+    class _Res:
+        returncode = 0
+        stdout = json.dumps(payload)
+        stderr = ""
+    return lambda *a, **k: _Res()
+
+
+def test_framed_comment_detected_across_lines(monkeypatch):
+    """The framing puts START and END on DIFFERENT lines.
+
+    The first draft split the raw `--jq .comments[].body` output on newlines
+    and kept lines holding BOTH markers -- which no framed comment can ever
+    satisfy. Detection was empty forever, so the no-op never fired and the
+    daily cron would have posted one comment per flagged PR per day.
+    """
+    body = f"{rc.COMMENT_MARKER_START}\nligne 1\nligne 2\n{rc.COMMENT_MARKER_END}"
+    monkeypatch.setattr(rc.subprocess, "run",
+                        _fake_gh([{"url": _REAL_URL, "body": body}]))
+    found = rc.framed_comments(11444)
+    assert len(found) == 1, "multi-line framed comment must be detected"
+    assert found[0][1] == body
+
+
+def test_rest_id_recovered_from_url_not_node_id(monkeypatch):
+    """The id used for DELETE is the NUMERIC one, taken from the url.
+
+    `.comments[].id` is a GraphQL node id; the delete endpoint is REST and
+    404s on it -- silently, since that subprocess carries no `check`.
+    """
+    body = f"{rc.COMMENT_MARKER_START}\nx\n{rc.COMMENT_MARKER_END}"
+    monkeypatch.setattr(rc.subprocess, "run",
+                        _fake_gh([{"url": _REAL_URL, "body": body}]))
+    cid, _ = rc.framed_comments(11444)[0]
+    assert cid == _REAL_REST_ID
+    assert cid != _REAL_NODE_ID
+
+
+def test_foreign_comments_never_touched(monkeypatch):
+    """A comment without our markers is not ours -- it is never a delete target."""
+    monkeypatch.setattr(rc.subprocess, "run", _fake_gh([
+        {"url": _REAL_URL, "body": "un commentaire humain"},
+        {"url": _REAL_URL, "body": "<!-- variation-genre-signals -->\nautre bot"},
+    ]))
+    assert rc.framed_comments(11444) == []
+
+
+def test_identical_body_is_a_noop(monkeypatch):
+    """Re-posting the same content must not call gh at all beyond the lookup."""
+    framed = f"{rc.COMMENT_MARKER_START}\n{rc.REMEDIATION}\n{rc.COMMENT_MARKER_END}"
+    calls = []
+
+    class _Res:
+        returncode = 0
+        stdout = json.dumps([{"url": _REAL_URL, "body": framed}])
+        stderr = ""
+
+    def _run(cmd, *a, **k):
+        calls.append(cmd)
+        return _Res()
+
+    monkeypatch.setattr(rc.subprocess, "run", _run)
+    assert rc.upsert_comment(11444, rc.REMEDIATION) == []
+    assert len(calls) == 1, f"no-op must not post or delete, got {calls}"
+
+
+def test_changed_body_deletes_then_posts(monkeypatch):
+    """Different content -> delete the stale one by REST id, then post."""
+    stale = f"{rc.COMMENT_MARKER_START}\nvieux texte\n{rc.COMMENT_MARKER_END}"
+    calls = []
+
+    class _Res:
+        returncode = 0
+        stdout = json.dumps([{"url": _REAL_URL, "body": stale}])
+        stderr = ""
+
+    def _run(cmd, *a, **k):
+        calls.append(cmd)
+        return _Res()
+
+    monkeypatch.setattr(rc.subprocess, "run", _run)
+    assert rc.upsert_comment(11444, rc.REMEDIATION) == []
+    joined = [" ".join(c) for c in calls]
+    assert any("DELETE" in c and _REAL_REST_ID in c for c in joined), joined
+    assert any("pr comment" in c for c in joined), joined
+
+
+def test_failed_delete_is_reported_not_swallowed(monkeypatch):
+    """An advisory must never block -- but it must not fail in silence either."""
+    stale = f"{rc.COMMENT_MARKER_START}\nvieux\n{rc.COMMENT_MARKER_END}"
+
+    class _Lookup:
+        returncode = 0
+        stdout = json.dumps([{"url": _REAL_URL, "body": stale}])
+        stderr = ""
+
+    class _Fail:
+        returncode = 1
+        stdout = ""
+        stderr = "gh: Not Found (HTTP 404)"
+
+    seen = {"n": 0}
+
+    def _run(cmd, *a, **k):
+        seen["n"] += 1
+        if seen["n"] == 1:
+            return _Lookup()
+        return _Fail() if "DELETE" in cmd else _Lookup()
+
+    monkeypatch.setattr(rc.subprocess, "run", _run)
+    warnings = rc.upsert_comment(11444, rc.REMEDIATION)
+    assert len(warnings) == 1 and "404" in warnings[0], warnings
 
 
 if __name__ == "__main__":
