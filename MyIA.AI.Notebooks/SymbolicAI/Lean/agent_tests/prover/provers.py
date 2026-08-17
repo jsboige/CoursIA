@@ -1012,6 +1012,29 @@ class MultiAgentSorryProver:
                     )
                     final_sorry = _verify_sorry
                     structural_progress = False
+                    # #1453 iter-3 build-aware write-guard: the iter-2 guard
+                    # above compared TEXT counts (2==2), so the kept-snapshot
+                    # branch persisted a file whose BUILD-aware count actually
+                    # grew (2->3, one implicit sorry via apply?/exact?/
+                    # solve_by_elim). structural_progress=False alone does not
+                    # revert -- the worsened file stays on disk while the run
+                    # is merely marked non-success. Re-check the write-guard
+                    # with the build-aware count and revert on a genuine rise.
+                    if is_worsened_unproven(
+                            final_sorry, original_sorry_count, proof_found):
+                        print(
+                            f"  REGRESSED (build-aware): text count was "
+                            f"{original_sorry_count}, build reveals {_verify_sorry}"
+                            f" ({_verify_sorry - original_sorry_count} implicit "
+                            f"sorry, no proof). Reverting to the entry state -- "
+                            f"the harness never persists a build-aware-worsened "
+                            f"file (#1453 iter-3 guard)."
+                        )
+                        Path(filepath).write_text(original_content, encoding="utf-8")
+                        final_sorry = original_sorry_count
+                        structural_progress = False
+                        tactic_tools._best_content = None
+                        tactic_tools._best_sorry_count = original_sorry_count
 
         # Success now also covers structural progress: file changed but
         # compiles, even if sorry count didn't decrease. Provers.py used to

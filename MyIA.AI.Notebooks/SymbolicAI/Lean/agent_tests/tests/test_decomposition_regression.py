@@ -199,3 +199,28 @@ class TestWorsenedUnproven:
     def test_exported_in_all(self):
         assert "is_worsened_unproven" in _dr.__all__
 
+
+
+# ── #1453 iter-3: build-aware blind spot ─────────────────────────────────────
+
+class TestBuildAwareBlindSpot:
+    """#1453 iter-3: the write-guard compared TEXT counts, so a build that
+    reveals an implicit sorry (apply?/exact?/solve_by_elim finding nothing)
+    grows the BUILD-AWARE count 2->3 while the text stays 2==2. The text guard
+    passes and the kept-snapshot branch persists a file whose effective count
+    rose. The guard must therefore be re-checked with the build-aware count,
+    which is exactly what is_worsened_unproven does once given that count."""
+
+    def test_text_same_count_passes_old_guard(self):
+        """2 == 2 text: the iter-2 guard sees no worsening (the blind spot)."""
+        assert worsened_unproven(2, 2, False) is False
+
+    def test_buildaware_rise_flags_with_build_count(self):
+        """Build reveals 2 -> 3: the SAME predicate flags it once fed the
+        build-aware count. This is the iter-3 re-check."""
+        assert worsened_unproven(3, 2, False) is True
+
+    def test_buildaware_rise_still_respects_proof_exemption(self):
+        """A build-aware rise with a proof is still exempt (revert would throw
+        the proof away)."""
+        assert worsened_unproven(3, 2, True) is False

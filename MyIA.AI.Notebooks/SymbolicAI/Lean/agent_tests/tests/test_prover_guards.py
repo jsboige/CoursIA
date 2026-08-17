@@ -4123,3 +4123,58 @@ def test_build_fail_storm_guard_passes_below_cap(tactic_tools):
     err = out.get("error", "")
     assert "BUILD_FAIL_STORM" not in err
 
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #1453 iter-3 — the build-aware write-guard re-check in prove_sorry
+#
+# iter-2 (#11445) added is_worsened_unproven as the write-guard; it compared
+# TEXT counts, so text 2==2 passed while the build-aware count (final_verify
+# ["sorry_count"]) actually grew 2->3 via an implicit sorry. structural_progress
+# was demoted but the kept-snapshot file stayed on disk. iter-3 re-runs the
+# guard with the build-aware count and reverts on a genuine rise. The wiring
+# test below FAILS against the iter-2-only source (no second is_worsened_unproven
+# call after the build-aware adoption) -- it is the regression lock for the fix.
+# ──────────────────────────────────────────────────────────────────────────
+
+
+def test_iter3_buildaware_writeguard_recheck_wired():
+    """prove_sorry re-checks is_worsened_unproven AFTER the build-aware count
+    adoption (iter-3): the text guard alone (2==2) lets a build-aware rise
+    2->3 through the kept-snapshot branch."""
+    import ast
+    import inspect
+    from prover.provers import MultiAgentSorryProver
+
+    src_lines = inspect.getsource(MultiAgentSorryProver.prove_sorry).splitlines()
+
+    # Locate the build-aware adoption `if` by indentation: its condition line
+    # and every subsequent line strictly more indented form its body.
+    adopt_idx = next(
+        i for i, line in enumerate(src_lines)
+        if line.lstrip().startswith("if isinstance(_verify_sorry, int)")
+    )
+    adopt_indent = len(src_lines[adopt_idx]) - len(src_lines[adopt_idx].lstrip())
+
+    def _block_lines(start: int, base_indent: int) -> list[str]:
+        out = []
+        for line in src_lines[start + 1:]:
+            indent = len(line) - len(line.lstrip())
+            if indent <= base_indent or not line.strip():
+                if indent <= base_indent:
+                    break
+                continue
+            out.append(line)
+        return out
+
+    # The re-check must be lexically INSIDE the adoption block. A call AFTER
+    # that block (the iter-2 success-gate `not is_worsened_unproven(...)`)
+    # does NOT satisfy iter-3 -- the kept-snapshot branch already persisted by
+    # then, and demoting structural_progress alone leaves the file on disk.
+    body = _block_lines(adopt_idx, adopt_indent)
+    assert any("is_worsened_unproven" in line for line in body), (
+        "the build-aware adoption block must contain an is_worsened_unproven "
+        "re-check (iter-3): text 2==2 passes the text guard, but the build "
+        "reveals 2->3 and the file must be reverted, not just demoted to "
+        "structural_progress=False"
+    )
