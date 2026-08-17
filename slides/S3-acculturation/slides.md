@@ -11,25 +11,23 @@ layout: cover
 ---
 
 
-# Intelligence(s)
+<div class="h-full flex flex-col items-center justify-center text-center">
 
-<div class="text-center">
-<sub class="text-xl tracking-widest uppercase text-slate-500">Une introduction à l'IA pour décideurs</sub>
+  <h1 class="text-7xl font-serif text-rose-800 leading-tight">Intelligence(s)</h1>
 
-<h1 class="text-7xl font-serif mt-12 text-rose-700">Intelligence(s)</h1>
+  <div class="w-32 h-px bg-rose-800/40 my-8"></div>
 
-<div class="mt-12 text-lg tracking-wide">
-  Jean-Sylvain Boige
-</div>
-<div class="text-sm text-slate-500">
-  jsboige@myia.org — Telecom Bretagne — Cogs Brighton UK
-</div>
-</div>
+  <div class="text-xl tracking-widest uppercase text-slate-500">Une introduction à l'IA pour décideurs</div>
 
-<div class="absolute bottom-12 inset-x-0 flex justify-center gap-12 items-end">
-  <img src="./images/img_003.png" class="h-20" alt="DNN" />
-  <img src="./images/img_001.png" class="h-24" alt="myIA" />
-  <img src="./images/img_002.png" class="h-16" alt="Cogs" />
+  <div class="mt-16 text-lg tracking-wide">Jean-Sylvain Boige</div>
+  <div class="text-sm text-slate-500 mt-1">jsboige@myia.org — Telecom Bretagne — Cogs Brighton UK</div>
+
+  <div class="mt-16 flex justify-center gap-16 items-center">
+    <img src="./images/img_003.png" class="h-12" alt="DNN" />
+    <img src="./images/img_001.png" class="h-14" alt="myIA" />
+    <img src="./images/img_002.png" class="h-10" alt="Cogs" />
+  </div>
+
 </div>
 
 
@@ -41,23 +39,23 @@ layout: cover
 <div class="grid grid-cols-2 gap-8 mt-4">
 <div>
 
-**🌿 Qu'est-ce que l'intelligence artificielle ?**
-*Racines, histoire et état de l'art*
-*Structure des agents rationnels*
+**Qu'est-ce que l'intelligence artificielle ?**<br>
+<span class="text-sm text-slate-500">Racines, histoire et état de l'art — structure des agents rationnels</span>
 
-**🔍 Intelligence exploratoire**
-*Comment chercher la solution à un problème ?*
+**Intelligence exploratoire**<br>
+<span class="text-sm text-slate-500">Comment chercher la solution à un problème ?</span>
 
-**📐 Intelligence Symbolique**
-*Comment utiliser le raisonnement et les mathématiques ?*
+**Intelligence symbolique**<br>
+<span class="text-sm text-slate-500">Comment utiliser le raisonnement et les mathématiques ?</span>
 
-**🎲 Intelligence probabiliste**
-*Comment agir dans l'incertitude ?*
+**Intelligence probabiliste**<br>
+<span class="text-sm text-slate-500">Comment agir dans l'incertitude ?</span>
 
-**📊 Apprentissage**
-*Comment utiliser les données et l'expérience ?*
+**Apprentissage**<br>
+<span class="text-sm text-slate-500">Comment utiliser les données et l'expérience ?</span>
 
-**💬 Application : le langage naturel**
+**Application : le langage naturel**<br>
+<span class="text-sm text-slate-500">Chatbots, LLM, IA générative et agents</span>
 
 </div>
 <div class="flex items-center justify-center">
@@ -126,9 +124,7 @@ layout: two-cols
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-<div class="text-center mt-2">
-![h:100](./images/img_006.png)
-</div>
+<img src="./images/img_006.png" class="h-24 mx-auto mt-4" alt="Repères historiques" />
 
 
 ::right::
@@ -144,10 +140,9 @@ layout: two-cols
   - 2016 : AlphaGo
 - NLP : Transformers, LLMs
 
-<div class="flex gap-3 mt-2">
-![h:45](./images/img_007.jpg)
-![h:45](./images/img_008.jpg)
-
+<div class="flex gap-4 mt-4 items-center">
+  <img src="./images/img_007.jpg" class="h-12" alt="Deep Blue" />
+  <img src="./images/img_008.jpg" class="h-12" alt="AlphaGo" />
 </div>
 
 
@@ -1853,6 +1848,82 @@ graph LR
 ```
 
 > Pour approfondir : notebooks `GenAI/Texte/`
+
+
+---
+
+
+# « Tokens » : l'unité que le modèle manipule
+
+Un modèle ne lit ni des lettres, ni des mots : il lit des **tokens** — des fragments de texte fréquents, découpés statistiquement sur le corpus d'entraînement.
+
+<div class="grid grid-cols-2 gap-8 mt-6">
+<div>
+
+**Le découpage n'est pas le mot**
+
+| Texte | Découpage |
+|---|---|
+| assurance | `assurance` |
+| sinistralité | `sinistr` · `alité` |
+| SMABTP | `SM` · `AB` · `TP` |
+
+<div class="text-sm text-slate-500 mt-3">
+Ordre de grandeur en français : <b>1 token ≈ 4 caractères ≈ 0,75 mot</b>.
+</div>
+
+</div>
+<div>
+
+**Pourquoi cela vous concerne**
+
+- Le modèle ne fait qu'une chose : **prédire le token suivant**, un à la fois
+- La **fenêtre de contexte** (ce qu'il peut « avoir sous les yeux ») se compte en tokens
+- Le **prix** et la **latence** se facturent au token, en entrée comme en sortie
+- Un mot rare, un nom propre ou un sigle métier coûte plus de tokens qu'un mot courant
+
+</div>
+</div>
+
+> Conséquence de gestion : « combien de documents puis-je lui donner ? » et « combien cela coûte ? » sont **la même question**, posée en tokens.
+
+
+---
+
+
+# L'avènement des Transformers
+
+**Avant 2017** — le texte est lu séquentiellement (RNN, LSTM) : le début de la phrase s'estompe à mesure qu'on avance. Les longues dépendances se perdent.
+
+**2017, « Attention is All You Need »** — chaque token regarde **tous les autres en même temps** et pondère ceux qui comptent pour lui.
+
+<div class="grid grid-cols-2 gap-8 mt-4">
+<div>
+
+**L'attention, sur un cas métier**
+
+<div class="text-sm mt-2">
+« Le <b class="text-rose-700">contrat</b> que l'assuré a signé après sa visite <b class="text-rose-700">est valable</b>. »
+</div>
+
+<div class="text-sm text-slate-500 mt-2">
+Pour accorder « est valable », le modèle doit rattacher le verbe à <b>contrat</b> — sept mots plus tôt — et non à <b>visite</b>, qui le précède immédiatement. L'attention lui permet de pointer directement le bon mot, quelle qu'en soit la distance.
+</div>
+
+</div>
+<div>
+
+**Les deux conséquences**
+
+- **Portée** : les dépendances longues sont capturées, donc le sens tient sur un document entier
+- **Parallélisme** : tous les tokens sont traités simultanément — donc sur GPU, donc **à grande échelle**
+
+<div class="text-sm text-slate-500 mt-3">
+C'est ce second point qui a tout déclenché : l'architecture a rendu l'entraînement massif <i>économiquement possible</i>. Le « scaling » de la slide précédente n'est pas une trouvaille séparée — il est ce que les Transformers ont rendu praticable.
+</div>
+
+</div>
+</div>
 
 
 ---
