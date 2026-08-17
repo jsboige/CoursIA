@@ -10,6 +10,13 @@
       by: myia-po-2026:CoursIA
       python_sha: 14097169f417cf18752f051f0f41f61802871844
       csharp_sha: c9a371fce477c487466ee3549cae114c9963d418
+    - date: "2026-08-16"
+      by: myia-po-2026:CoursIA-2
+      python_sha: cc111b5f9f915ac7cf64a577a473cc6fe0ce0cc7
+      reason: "Re-exec seq only (#11112 etage 3): python DUPLICATE -> CLEAN 1..15 (nbconvert, pymc 5.28.5), sources byte-identiques, 0 erreur, valeurs de sortie stables (sym-diff 0 vs main). Cote csharp non touche."
+      csharp_sha: c9a371fce477c487466ee3549cae114c9963d418
+      content_python_sha: 6a2f4d9afc8fded99521d64673bc7e136b3097d494eac1a99f5190b3e2445590
+      content_csharp_sha: 98d2613c5b6aab3e5768f0e296304172c066efc3c8c08fd40d3ee0f3db275a4e
   known_differences:
   - "2026-07-28 (myia-po-2026) #8704/#8715 : backfill section 14 \"Pour aller plus loin\" -- formules fermees EP V(t)/W(t)/tau^2 (Herbrich-Minka-Graepel 2007) ajoutees en markdown + NOUVELLE cellule code .NET executee (#r MathNet.Numerics, computation closed-form). Add-only (65 -> 69 cellules), 0 cellule existante alteree, 0 output drift sur les sections 1-13. Variance utilise la forme canonique sigma^2*(1-(sigma^2/c^2)*W(t)) (facteur de gain de Kalman sigma^2/c^2 present) -> posterior sigma=7,19 match exact Infer.NET cellule 16 N(29,21,7,19). python_sha inchange a ce stade (note: PyMC-8 cell29 portait la variante sans facteur sigma^2/c^2 -> bug source trace/corrige en #8718). csharp_sha rebaseline suite au changement de blob."
   - '2026-07-28 (myia-po-2023) #8718 / See #8081 : FIX defaut mathematique cote Python -- cellule 29 (code execute) et cellule 28 (prose LaTeX) de la section 7 bis contractaient la variance par W(t) seul au lieu du facteur canonique (sigma_w^2 / c^2) * W(t) (Herbrich-Minka-Graepel 2007). La cellule imprimait sigma 8,33 -> 5,02 alors que le jumeau C# Infer-8 cellule 16 (vrai moteur EP) imprime N(29,21, 7,19). Correction des 2 lignes de code + alignement LaTeX + callout pedagogique + RE-EXECUTION cellule 29 (Stop & Repair, sortie reelle sigma -> 7,19 des deux cotes, match exact Infer-8). Source de l''erreur propagee dans #8709 cote C# (superseded par #8715 po-2026). python_sha rebaseline suite au changement de blob ; csharp_sha desormais porteur du fix #8715 (reconcilie au rebase).'
