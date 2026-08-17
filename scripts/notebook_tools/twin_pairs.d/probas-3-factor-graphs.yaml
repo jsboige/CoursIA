@@ -16,7 +16,14 @@
       csharp_sha: 4024549ae3bb76a1fa276174a77c6602fa9671c2
       content_python_sha: 2e3a92140ef42a21c65bcf464d784e37b9e2856902c779b303310de7c682b0dc
       content_csharp_sha: 9718209c7ab6079d9f258fe5571077662ff7ad00d63ff0e41d721d5da085f595
+    - date: "2026-08-17"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 8be87123cf063f6743db86bcd1bb2cd97f944020
+      csharp_sha: 15cccc9d79696a2611b127ac89767336e09e2875
+      content_python_sha: 2e3a92140ef42a21c65bcf464d784e37b9e2856902c779b303310de7c682b0dc
+      content_csharp_sha: 0f93930297751b81a8105ba9e0d2b520b2aa9006154ac2c11e43154d7b300061
   known_differences:
+  - "2026-08-17 (po-2026) re-exec seq etage 3 #11112 (PR #11351) : cote C# re-execute via dotnet_executor (sequences 1..N propres, outputs frais, sources byte-identiques, banners probe/nuget stripees L532), cote python inchange. Aucune prose ajoutee -- parite semantique intacte, seuls les blob SHA ont bouge."
   - 'Socle pedagogique commun : graphes de facteurs et variables aleatoires modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI

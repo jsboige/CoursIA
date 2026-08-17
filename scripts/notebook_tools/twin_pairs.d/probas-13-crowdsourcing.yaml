@@ -16,7 +16,14 @@
       csharp_sha: cd3a596713c655135eb79b91dabd651fa03f0d35
       content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
       content_csharp_sha: 4969d2c94028ae4c3a0bc56e4a46155bc47d87c5bba59422e3b3a2b3e2b1425e
+    - date: "2026-08-17"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 246ba905ee53e1dcbae37a711e47a1622eac72b7
+      csharp_sha: 28bd558fa9c9fa77369d18f3c24ebb5c81dee0ee
+      content_python_sha: e13cd18278d50e554dba2ee3c64b36240335c15b36ece62fc85157d210ceba0d
+      content_csharp_sha: b3c32820550e85bbf0694d32bf806e17b952afc9ac4d460b20c6ae9e898e6eee
   known_differences:
+  - "2026-08-17 (po-2026) re-exec seq etage 3 #11112 (PR #11351) : cote C# re-execute via dotnet_executor (sequences 1..N propres, outputs frais, sources byte-identiques, banners probe/nuget stripees L532), cote python inchange. Aucune prose ajoutee -- parite semantique intacte, seuls les blob SHA ont bouge."
   - '2026-07-28 (myia-po-2023) #8711 / See #8081 : FERME l''asymetrie sources entre jumeaux -- Infer-13 portait une
     cellule "Sources canoniques" (table Raykar 2010, Karger 2011, Dawid-Skene 1979, Whitehill 2009, Kim-Ghahramani
     2012, MBML Ch.7) absente cote PyMC, alors que PyMC-13 citait massivement Dawid-Skene (53x) sans le rattachement
