@@ -12,6 +12,8 @@ import Grothendieck.CoversArrow
 import Grothendieck.CoversBind
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
+import Grothendieck.CoversPretopologyArrow
+import Grothendieck.CoversPretopologyArrow_en
 import Grothendieck.CoversPullback
 import Grothendieck.CoversPushforward
 import Grothendieck.CoversTopologies
