@@ -1,0 +1,54 @@
+name: Notebook Papermill Ratchet
+
+# #11155 (tier 2 of #11146) — ratchet gate: a PR that changes the outputs /
+# execution_count of a notebook must not leave a metadata.papermill block
+# byte-identical to base — that block describes the PREVIOUS run, not the one
+# that produced the committed outputs. Legal escapes (by design of the issue):
+# outputs untouched (markdown-only edit), block removed, block moved/added.
+# No retroactive catch-up: the 576 stale candidates measured on main
+# (#11146) never enter the diff, so the gate is green on main from day one.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_papermill_ratchet.py'
+      - '.github/workflows/notebook-papermill-ratchet.yml'
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref to ratchet against (default origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+jobs:
+  ratchet:
+    name: Ratchet (base vs PR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # Refs reach the script via env, never inline in the run script
+      # (script-injection guard, same as notebook-exec-sequence-ratchet.yml).
+      - name: Ratchet check
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          python scripts/notebook_tools/check_papermill_ratchet.py "$BASE"
+
+      - name: Ratchet unit tests
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest scripts/notebook_tools/tests/test_check_papermill_ratchet.py -q
