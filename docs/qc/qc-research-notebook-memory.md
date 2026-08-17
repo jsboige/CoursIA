@@ -1,4 +1,8 @@
-# QC Research Notebook Agent - Memory
+# QC Research Notebook — Agent Memory (relocalisé)
+
+> **Origine** : fichier `.claude/agent-memory/qc-research-notebook/MEMORY.md` (relocalisé en c.1301+211 dans le cadre de l'EPIC #9535, item 7 PR-C narrow). Le contenu est conservé tel quel (anti-régression : cf triage jsboigeEpita, durable vs scratch) ; seul un sommaire FR est ajouté.
+>
+> **Statut** : durable. Le contenu documente (a) les **contraintes d'exécution** des notebooks QuantBook (cloud-only, pas local) ; (b) la **structure optimale** d'un notebook de recherche diagnostic (intro → diagnostic → hypothèses → conclusion) ; (c) les **patterns de composants** (charts, data tables, hedging examples) ; (d) les **leçons stratégiques** (régimes, robustesse, MCP patterns). Ce sont des invariants d'environnement, pas du scratch daté.
 
 ## Key Learnings
 
