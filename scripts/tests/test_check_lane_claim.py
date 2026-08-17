@@ -1117,6 +1117,116 @@ def test_reducer_epic_wide_override_closes_everything():
     assert set(active) == {"B:CoursIA"}  # every other lane closed
 
 
+# --- reducer honours `empty_scope` on [CLAIMED] (#11098) --------------------
+#
+# #11098 -- the asymmetric gap between read-side (`_filter_by_claim_scope`,
+# which #10958 lifts an entirely-dead `paths:` clause to epic-wide) and
+# reducer-side (`compute_active_claims`, which #10505 added but did NOT
+# consult `empty_scope`). A claim whose `paths:` clause globs all fail to
+# match any tracked file effectively claims nothing -- the safe hypothesis
+# is that the lane meant something (prose swallowed, polluted suffix).
+# The reducer previously treated such a claim as disjoint from any scoped
+# override, leaving it uncloseable except by an epic-wide override (which
+# swept legitimate scoped claims of sibling lanes along with the broken
+# one). The fix mirrors the read-side lift in the reducer: an entirely-
+# dead `paths:` clause is read as epic-wide on both sides, so any scoped
+# override that intersects its scope (= any scope) closes it.
+#
+# The four cases below pin the corrected reducer behaviour, with
+# `empty_scope` attached directly on the event (the `_run_check` walk
+# produces these in production; the helper `_claim_scope_effectively_epic_wide`
+# consults `ev["empty_scope"]`).
+
+def _scoped_ev(action, lane, ts, paths_clause, empty_scope=None):
+    """Build a CLAIMED event with an `empty_scope` witness attached (#11098).
+
+    `_ev` builds the event straight from primitives; this adds the
+    `empty_scope` field that `_run_check` would normally attach after the
+    tracked-files walk. Passing `empty_scope=None` reproduces the
+    reducer-direct unit-test paths (no witness -> the helper degrades to
+    False, no lift).
+    """
+    e = _ev(action, lane, "x", ts, paths_clause=paths_clause)
+    if empty_scope is not None:
+        e["empty_scope"] = list(empty_scope)
+    return e
+
+
+def test_reducer_scoped_override_closes_empty_scope_full_claim():
+    # #11098 core case: override scoped to Lean/** ; a claim whose `paths:`
+    # clause is ENTIRELY DEAD (every glob fails to match any tracked file,
+    # empty_scope covers the whole declared scope) is effectively epic-wide
+    # -> intersects any override scope -> closed. Pre-#11098 the reducer
+    # treated the claim as scoped but disjoint (it had `paths` non-None), so
+    # no scoped override could close it.
+    events = [
+        _scoped_ev(
+            "open", "A:CoursIA", "2026-08-11T22:00:00Z",
+            paths_clause=["MyIA.AI.Notebooks/GameTheory/GameTheory-7-*. Pont pyspiel"],
+            empty_scope=["MyIA.AI.Notebooks/GameTheory/GameTheory-7-*. Pont pyspiel"],
+        ),
+        _ev("override", "B:CoursIA", "reassign Lean only", "2026-08-11T22:30:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"B:CoursIA"}  # A closed (empty_scope = epic-wide)
+
+
+def test_reducer_scoped_override_keeps_scoped_disjoint_claim_no_empty_scope():
+    # No-regression pin for #11098: when `empty_scope` is absent (reducer-
+    # direct path, no witness) the helper degrades to False, and the legacy
+    # behaviour holds -- disjoint scoped claims are kept.
+    events = [
+        _ev("open", "A:CoursIA", "claim scripts", "2026-08-11T22:00:00Z",
+            paths_clause=["scripts/**"]),
+        _ev("override", "B:CoursIA", "reassign Lean only", "2026-08-11T22:30:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"A:CoursIA", "B:CoursIA"}  # both survive (disjoint)
+
+
+def test_reducer_scoped_override_keeps_scoped_partially_dead_claim():
+    # #11098 asymmetry test: when `empty_scope` covers PART of the declared
+    # scope (at least one glob still matches a tracked file), the claim is
+    # NOT lifted -- the live part of the scope is real and stays scoped.
+    # The override scoped to Lean/** does not intersect the live part, so
+    # the claim survives.
+    events = [
+        _scoped_ev(
+            "open", "A:CoursIA", "2026-08-11T22:00:00Z",
+            paths_clause=["scripts/check_lane_claim.py", "dead/glob/**"],
+            empty_scope=["dead/glob/**"],  # only the second glob is dead
+        ),
+        _ev("override", "B:CoursIA", "reassign Lean only", "2026-08-11T22:30:00Z",
+            paths_clause=["MyIA.AI.Notebooks/SymbolicAI/Lean/**"]),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"A:CoursIA", "B:CoursIA"}  # A stays (live scope disjoint)
+
+
+def test_reducer_scoped_override_closes_empty_scope_full_claim_overlapping_live():
+    # #11098 mirror: when the override's scope DOES intersect the live part
+    # of a partially-dead claim, the live part closes the claim (legacy
+    # behaviour, unchanged by this fix). A scoped claim with at least one
+    # live glob stays scoped and is closed iff the override intersects it.
+    # We use a concrete-file override (not `scripts/**` -- whose `**` is a
+    # universal basename in `_path_matches`) to make the intersection test
+    # well-defined.
+    events = [
+        _scoped_ev(
+            "open", "A:CoursIA", "2026-08-11T22:00:00Z",
+            paths_clause=["scripts/check_lane_claim.py", "dead/glob/**"],
+            empty_scope=["dead/glob/**"],
+        ),
+        _ev("override", "B:CoursIA", "reassign scripts only", "2026-08-11T22:30:00Z",
+            paths_clause=["scripts/check_lane_claim.py"]),
+    ]
+    active, _ = clc.compute_active_claims(events)
+    assert set(active) == {"B:CoursIA"}  # A closed (live part intersects override)
+    assert set(active) == {"B:CoursIA"}  # every other lane closed
+
+
 # --- the actual SCOPE behaviour at the check layer ---------------------------
 
 def test_check_override_no_paths_preserves_legacy_epic_wide_behaviour(capsys):
