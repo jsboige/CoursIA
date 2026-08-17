@@ -275,8 +275,8 @@ layout: section
 - **Apprentissage** : amélioration par l'expérience (supervisé, renforcement, deep learning)
 
 <div class="flex justify-center items-center gap-12 mt-8">
-  <img src="./images/img_015.jpg" class="h-[190px] max-w-[42%] object-contain" alt="Recherche de chemin dans un reseau : intelligence exploratoire" />
-  <img src="./images/img_014.png" class="h-[190px] max-w-[42%] object-contain" alt="Processus de decision markovien : intelligence probabiliste" />
+  <img src="./images/img_015.jpg" class="h-[190px] max-w-[42%] object-contain" alt="Recherche de chemin dans un réseau : intelligence exploratoire" />
+  <img src="./images/img_014.png" class="h-[190px] max-w-[42%] object-contain" alt="Processus de décision markovien : intelligence probabiliste" />
 </div>
 
 
@@ -856,7 +856,7 @@ layout: two-cols
 <!-- Image: images/img_050.png -->
 
 
-<!-- Blockchain : registre distribue, consensus, execution automatique de contrats -->
+<!-- Blockchain : registre distribué, consensus, exécution automatique de contrats -->
 
 
 ---
@@ -1386,7 +1386,7 @@ layout: two-cols
 - Utilisation de dimensions supérieures
 - Classification linéaire
 
-<img src="./images/img_089.png" class="w-[620px] max-w-full mt-6 mx-auto object-contain" alt="Astuce du noyau : donnees non separables lineairement en 2D, separables par un plan apres passage en 3D" />
+<img src="./images/img_089.png" class="w-[620px] max-w-full mt-6 mx-auto object-contain" alt="Astuce du noyau : données non séparables linéairement en 2D, séparables par un plan après passage en 3D" />
 
 
 ---
@@ -1456,7 +1456,7 @@ layout: two-cols
 <img src="./images/img_103.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 </div>
 
-<!-- GANs : generateur vs discriminateur, portraits StyleGAN, deepfakes -->
+<!-- GANs : générateur vs discriminateur, portraits StyleGAN, deepfakes -->
 ---
 
 
@@ -2021,7 +2021,7 @@ graph LR
 
 <img src="./images/img_112.png" class="w-full object-contain" alt="Processus de diffusion : bruitage progressif puis debruitage inverse" />
 
-<img src="./images/img_113.png" class="w-[88%] mx-auto mt-3 object-contain" alt="Architecture latent diffusion : encodeur, U-Net de debruitage dans l'espace latent, decodeur" />
+<img src="./images/img_113.png" class="w-[88%] mx-auto mt-3 object-contain" alt="Architecture latent diffusion : encodeur, U-Net de débruitage dans l'espace latent, décodeur" />
 
 </div>
 
