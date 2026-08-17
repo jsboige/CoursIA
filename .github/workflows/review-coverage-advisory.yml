@@ -1,0 +1,81 @@
+name: Review coverage advisory
+
+# The missing ORGAN for issue #11232: a PR >threshold with no review (bot or
+# human) reads green on every visible signal -- gh pr checks 0 failures,
+# 0 pending, mergeable: MERGEABLE, reviews[] empty -- yet the coverage hole
+# is the largest defect (measured on the Lean track: #11132 1041 LOC and
+# #11210 883 LOC had NO review at all). The signal is the absence, not the
+# content.
+#
+# This scheduled sweep labels OPEN non-draft PRs (base=main) whose
+# additions exceed the threshold and whose reviews[] is empty, and removes
+# the label when a review arrives (or the diff shrinks below the threshold).
+# The label is a current-state flag, not a sticky one.
+#
+# ADVISORY, never blocking (#11232 "il ne peut pas bloquer, c'est
+# précisément l'absence qui est le défaut"):
+#   - The job ALWAYS exits 0. The actionable payload is the LABEL, NEVER
+#     the green conclusion.
+#   - Draft PRs and PRs targeting a non-main base are excluded by design.
+#   - Threshold is a CLI arg (default 300); tuned in the cron without a
+#     code change. Rationale + history: docs/reference/review-coverage-threshold.md.
+
+on:
+  schedule:
+    # Daily, off-:00 minute (anti-stampede). 06:13 UTC.
+    - cron: '13 6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log only, apply no labels/comments'
+        required: false
+        type: boolean
+        default: true
+      threshold:
+        description: 'Additions threshold (default 300)'
+        required: false
+        type: number
+        default: 300
+
+permissions:
+  # Labels sur PR (gh pr edit) = pull-requests: write ; commentaires et creation
+  # de labels (gh pr comment / gh label create) = issues: write. Meme set que
+  # pr-gate-missing-advisory.yml / lane-claim-guard.yml / variation-tag-guard.yml.
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: review-coverage-advisory
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Flag large PRs with no review (advisory)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install gh (system)
+        run: |
+          if ! command -v gh >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq gh
+          fi
+          gh --version
+
+      - name: Run sweep
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DRY=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then DRY="--dry-run"; fi
+          python scripts/review_coverage.py \
+            $DRY \
+            --threshold "${{ inputs.threshold }}" \
+            --label "large-pr-no-review"
