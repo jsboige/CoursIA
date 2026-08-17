@@ -183,6 +183,178 @@ def _cure_source(source) -> tuple[object, int]:
     return new_chunks, total
 
 
+# --------------------------------------------------------------------------
+# Adaptateur markdown pur (.md) — decks Slidev, Epic #11508 lot L1.
+#
+# Pourquoi un adaptateur et pas un second outil : `accent-cure-defense-in-depth.md`
+# interdit la cure ad-hoc, qui est la cause racine de chaque regression #2876.
+# Le coeur (`_cure_line`, masquage des cibles de liens, preservation de casse) est
+# reutilise tel quel ; seules les ZONES A PROTEGER changent entre un notebook et
+# un deck.
+#
+# Mesure qui a motive ces masques, prise en lecture seule sur les 18 decks de
+# `slides/` le 2026-08-17 (detail sur l'issue #11508) : la cure notebook appliquee
+# telle quelle proposait 979 cures, dont 146 STRUCTURELLEMENT fausses. La plus
+# grave etait unanime :
+#
+#     theme: ../theme-ia101      ->      theme: ../theme-ia101   (accentue)
+#
+# `theme:` est la cle de configuration Slidev, ligne 2, presente dans 18 decks
+# sur 18. La cure cassait donc CHAQUE deck. Ce n'est pas un defaut du coeur : il
+# a ete ecrit pour la `source` de cellules nbformat, ou aucun frontmatter YAML
+# n'apparait.
+#
+# Quatre zones protegees, chacune adossee a un faux positif mesure :
+#   - frontmatter YAML (document + par-slide)  : 46 occurrences
+#   - blocs de code ``` / ~~~                  : 64 occurrences
+#   - code inline `...`                        : 30 occurrences
+#   - attributs HTML src=/href=/style=         :  6 occurrences
+#
+# `alt=` est DELIBEREMENT laisse curable : l'inventaire de #11508 demande
+# explicitement de curer le texte alternatif (lu par les lecteurs d'ecran et
+# l'indexation), et les commentaires HTML le sont aussi — verifie sur
+# `S1-argumentation:144`.
+
+_FENCE_RE = re.compile(r"^\s{0,3}(?:```|~~~)")
+_SEPARATOR_RE = re.compile(r"^-{3,}\s*$")
+# Une ligne de frontmatter : `cle:` eventuellement indentee, ou une continuation
+# indentee / un item de liste sous une cle.
+_YAML_KEY_RE = re.compile(r"^\s*[A-Za-z_][\w.-]*\s*:")
+_YAML_CONT_RE = re.compile(r"^(?:\s+\S|\s*-\s)")
+_INLINE_CODE_RE = re.compile(r"`[^`\n]*`")
+# Cles de frontmatter dont la VALEUR est du texte AFFICHE par Slidev : `title`
+# alimente l'onglet du navigateur et les metadonnees du PDF exporte, `info` le
+# panneau d'information. Les laisser sous le masque global protegeait donc de la
+# prose visible — mesure le 2026-08-18 sur les 18 decks : 8 lignes, dont
+# `title: "Intelligence Artificielle - Theorie des jeux"` et
+# `title: "Web Semantique - dotNetRDF & Python"`. Le deck exportait « Theorie »
+# dans ses propres metadonnees PDF.
+#
+# Toutes les AUTRES cles restent protegees en bloc, sans exception : `theme:`,
+# `layout:`, `class:`, `src:`, `transition:` sont de la configuration, et une
+# seule d'entre elles accentuee casse le deck (c'est le faux positif fondateur).
+# La liste est donc une whitelist de prose, jamais une blacklist de config.
+_YAML_PROSE_RE = re.compile(r"^(\s*(?:title|info)\s*:\s*)(\S.*)$")
+# src / href / style / class / id : jamais de prose. `alt` en est ABSENT a dessein.
+_HTML_ATTR_RE = re.compile(
+    r"""\b(?:src|href|style|class|id|width|height|data-[\w-]+)\s*=\s*(?:"[^"]*"|'[^']*')""",
+    re.IGNORECASE,
+)
+
+
+def _fence_mask(lines: list[str]) -> list[bool]:
+    """True pour chaque ligne d'un bloc de code, delimiteurs inclus.
+
+    Isole du masque global parce que la distinction porte une decision : dans un
+    frontmatter, la valeur d'une cle de prose est curable (cf `_YAML_PROSE_RE`) ;
+    dans une fence, `title: ...` peut etre un exemple de YAML montre au lecteur,
+    et rien n'y est curable.
+    """
+    protected = [False] * len(lines)
+    in_fence = False
+    for i, ln in enumerate(lines):
+        if _FENCE_RE.match(ln):
+            protected[i] = True
+            in_fence = not in_fence
+            continue
+        protected[i] = in_fence
+    return protected
+
+
+def _frontmatter_and_fence_mask(lines: list[str]) -> list[bool]:
+    """Retourne, pour chaque ligne, True si elle est PROTEGEE (frontmatter ou fence).
+
+    Le fence est suivi en premier : un `---` a l'interieur d'un bloc de code n'est
+    pas un separateur de slide.
+
+    Un segment (entre deux `---`) est reconnu comme frontmatter quand *toutes* ses
+    lignes non vides sont des cles YAML ou des continuations indentees. Un segment
+    qui porte la moindre ligne de prose n'en est pas un — la direction sure : dans
+    le doute, on ne protege pas plus large que necessaire, mais on ne cure jamais
+    un segment dont chaque ligne ressemble a de la configuration.
+    """
+    n = len(lines)
+    # 1. fences
+    protected = _fence_mask(lines)
+    # 2. segments delimites par `---` hors fence
+    seps = [i for i, ln in enumerate(lines)
+            if _SEPARATOR_RE.match(ln) and not protected[i]]
+    bounds = [-1] + seps + [n]
+    for a, b in zip(bounds, bounds[1:]):
+        seg = range(a + 1, b)
+        body = [lines[i] for i in seg if lines[i].strip()]
+        if not body:
+            continue
+        if all(_YAML_KEY_RE.match(ln) or _YAML_CONT_RE.match(ln) for ln in body):
+            for i in seg:
+                protected[i] = True
+    return protected
+
+
+def _cure_markdown_line(line: str) -> tuple[str, int]:
+    """Cure une ligne de markdown pur : masque code inline + attributs HTML, puis
+    delegue au coeur `_cure_line` (qui protege deja les cibles de liens).
+    """
+    spans: list[str] = []
+
+    def _mask(m):
+        spans.append(m.group(0))
+        return "\x00MD{}\x00".format(len(spans) - 1)
+
+    masked = _INLINE_CODE_RE.sub(_mask, line)
+    masked = _HTML_ATTR_RE.sub(_mask, masked)
+    cured, n = _cure_line(masked)
+    for i, original in enumerate(spans):
+        cured = cured.replace("\x00MD{}\x00".format(i), original, 1)
+    return cured, n
+
+
+def cure_markdown(path: Path, write: bool):
+    """Cure un fichier markdown pur (.md). Retourne dict {cures, lines_touched, lines}."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {"error": str(exc)}
+
+    ends_with_newline = text.endswith("\n")
+    lines = text.split("\n")
+    if ends_with_newline:
+        lines = lines[:-1]
+
+    protected = _frontmatter_and_fence_mask(lines)
+    in_fence = _fence_mask(lines)
+    total = 0
+    touched = 0
+    out = []
+    for ln, is_protected, is_fence in zip(lines, protected, in_fence):
+        if is_protected:
+            # Seule exception au masque : la VALEUR d'une cle de prose dans un
+            # frontmatter (jamais dans une fence, ou `title:` peut etre un
+            # exemple de YAML montre au lecteur). La cle elle-meme n'est jamais
+            # touchee — c'est le groupe 1, reinjecte tel quel.
+            if not is_fence:
+                m = _YAML_PROSE_RE.match(ln)
+                if m:
+                    cured_value, n = _cure_markdown_line(m.group(2))
+                    if n:
+                        total += n
+                        touched += 1
+                        out.append(m.group(1) + cured_value)
+                        continue
+            out.append(ln)
+            continue
+        cured, n = _cure_markdown_line(ln)
+        if n:
+            total += n
+            touched += 1
+        out.append(cured)
+
+    if write and total > 0:
+        new_text = "\n".join(out) + ("\n" if ends_with_newline else "")
+        path.write_text(new_text, encoding="utf-8", newline="\n")
+    return {"cures": total, "lines_touched": touched, "lines": len(lines)}
+
+
 def cure_notebook(path: Path, write: bool, check_scope: bool = False):
     """Cure un notebook. Retourne dict {cures, cells_touched, md_cells, code_hits}.
 
@@ -232,7 +404,7 @@ def cure_notebook(path: Path, write: bool, check_scope: bool = False):
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    p.add_argument("notebook", help="Chemin du notebook (.ipynb)")
+    p.add_argument("notebook", help="Chemin du notebook (.ipynb) ou du markdown (.md)")
     p.add_argument("--dry-run", action="store_true",
                    help="Liste les cures prevues sans ecrire (defaut)")
     p.add_argument("--apply", action="store_true",
@@ -255,9 +427,17 @@ def main(argv=None) -> int:
         print(f"Notebook introuvable: {nb_path}", file=sys.stderr)
         return 2
 
-    res = cure_notebook(nb_path, write=write, check_scope=args.scope)
+    is_md = nb_path.suffix.lower() in {".md", ".markdown"}
+    if is_md:
+        if args.scope:
+            print("--scope n'a pas de sens sur un .md (pas de cellules code)",
+                  file=sys.stderr)
+            return 2
+        res = cure_markdown(nb_path, write=write)
+    else:
+        res = cure_notebook(nb_path, write=write, check_scope=args.scope)
     if "error" in res:
-        msg = f"Notebook illisible: {res['error']}"
+        msg = f"Fichier illisible: {res['error']}"
         if args.json:
             print(json.dumps({"error": msg}, ensure_ascii=False))
         else:
@@ -273,14 +453,18 @@ def main(argv=None) -> int:
         print(json.dumps(out, ensure_ascii=False, indent=2))
     else:
         verb = "CURED (written)" if write else "would cure"
-        print(f"{nb_path}: {verb} {res['cures']} accent(s) in "
-              f"{res['cells_touched']}/{res['md_cells']} markdown cells")
-        if args.scope and res["code_hits"]:
+        if is_md:
+            print(f"{nb_path}: {verb} {res['cures']} accent(s) on "
+                  f"{res['lines_touched']}/{res['lines']} lines")
+        else:
+            print(f"{nb_path}: {verb} {res['cures']} accent(s) in "
+                  f"{res['cells_touched']}/{res['md_cells']} markdown cells")
+        if args.scope and res.get("code_hits"):
             print(f"  WARNING: {res['code_hits']} accentable form(s) found in CODE cells "
                   f"(HORS scope #2876 — possible ad-hoc script residue)")
 
     if args.check:
-        if res["cures"] > 0 or (args.scope and res["code_hits"] > 0):
+        if res["cures"] > 0 or (args.scope and res.get("code_hits", 0) > 0):
             return 1
     return 0
 
