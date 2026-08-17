@@ -22,7 +22,14 @@
       csharp_sha: 3fa6407a8adc8d0964573cea36d8baaebb032c41
       content_python_sha: eebe1fa4c322c88714c81bbb9f57be98e19b5dcb9ce12c84be2881d577b9c37e
       content_csharp_sha: 0a2d9dc84310962dd7d8dda05567e2ecc8cfce6dbb6a6b96ff18ee8d4b5bafec
+    - date: "2026-08-17"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 615e4b5af8e3ba9f4ede229a8dc0b57bb840ffd2
+      csharp_sha: 3fa6407a8adc8d0964573cea36d8baaebb032c41
+      content_python_sha: 593d664902723c584f7a6c4758eedd1b91571026d9f92243e63fd190df78b2c3
+      content_csharp_sha: 0a2d9dc84310962dd7d8dda05567e2ecc8cfce6dbb6a6b96ff18ee8d4b5bafec
   known_differences:
+    - "2026-08-17 (po-2026) re-exec seq etage 3 #11112 (PR #11352) : cote python re-execute via nbconvert unified-planning (sequences 1..23 propres, outputs frais, sources byte-identiques, language_info honnete 3.11.9), cote C# inchange. Aucune prose ajoutee -- parite intacte, seuls les blob SHA ont bouge."
     - "Concept : domaines classiques de planification (Block World, Logistics, Gripper, Ferry, Hanoi)."
     - "Lib-vs-lib : Python modelise les domaines canoniques via unified-planning/pyperplan. C# : Tranche 1 from-scratch BCL .NET (meme domaines de reference) + Tranche 2 invoque Fast Downward 24.06.1 via API Docker (port 8200)."
     - "Tranche 2 native-both (#10382, 2026-08-11 po-2024) : FD astar(lmcut()) confirme les plans optimaux du BFS from-scratch sur 3 domaines (Block World tour 4 + reverse 8, Hanoi 3 disques 7 = 2^3-1, Gripper 5). Verdict SOTA-OK (#3801) : moteur reel invoque (API Docker returncode 0), memes plans (jusqu'aux sequences d'actions identiques, ex. blocks-reverse). Tranche 1 from-scratch preservee."
