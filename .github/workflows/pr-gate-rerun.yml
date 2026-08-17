@@ -67,7 +67,16 @@ permissions:
 
 concurrency:
   # One re-aggregation per PR at a time: a later guard-completion supersedes an
-  # in-flight one for the same PR.
+  # in-flight one for the same PR. Correct semantics -- the later run sees more
+  # settled checks -- but it assumes runs START PROMPTLY. They did not: with the
+  # job polling up to 90 min on a starved queue, the window in which a later
+  # completion could cancel an in-flight run was enormous and the chain
+  # decapitated itself. Measured 2026-08-17 over 100 runs (#11415): 69% of
+  # completed runs were `cancelled`, i.e. posted no verdict at all -- and a
+  # cancelled run reddens no rollup, so the whole unblock stage was failing
+  # silently. The fix is NOT to drop cancel-in-progress (that would multiply
+  # 90-min runs by the trigger count); it is the short poll below, which makes
+  # runs finish before a successor can supersede them.
   group: pr-gate-rerun-${{ github.event.workflow_run.pull_requests[0].number || github.event.inputs.pr_number || github.run_id }}
   cancel-in-progress: true
 
@@ -75,9 +84,9 @@ jobs:
   reaggregate:
     name: Re-aggregate after guard flip
     runs-on: ubuntu-latest
-    # Above the script's own 90 min budget (mirrors pr-gate.yml): the script
-    # prints its verdict rather than the runner killing it mid-poll.
-    timeout-minutes: 100
+    # Above the script's own budget so the script prints its verdict rather than
+    # the runner killing it mid-poll. Was 100 min against a 90 min poll (#11415).
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -123,11 +132,20 @@ jobs:
           # because this job's auto check-run would land on the default branch.
           # --self-name "PR gate": the POSTed check-run matches the required
           # check name on `main` (same string as pr-gate.yml's gate job).
+          # --timeout-min 10 (was 90, #11415): THE TRIGGER IS THE POLL. This job
+          # fires AFTER a guard completed, so most checks are already settled;
+          # and if they are not, the NEXT guard completion re-fires this job.
+          # The re-trigger mechanism is itself a distributed, runner-free polling
+          # loop -- polling 90 min inside the job duplicated it while holding a
+          # runner, which is what made runs long-lived enough to be superseded
+          # (see the concurrency note above). "Terminal verdict holder" is the
+          # LAST guard completion, not a long poll. Semantics unchanged:
+          # verdict() still returns FAIL on unsettled, so unsettled = BLOCKED.
           python scripts/pr_gate.py \
             --repo "${{ github.repository }}" \
             --sha "${HEAD_SHA}" \
             --self-name "PR gate" \
-            --timeout-min 90 \
+            --timeout-min 10 \
             --poll-sec 30 \
             --settle-polls 2 \
             --post-check-run \
