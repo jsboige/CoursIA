@@ -78,6 +78,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/Probas/",                  # tranche 2 #10923 (58)
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/",  # tranche 3 #10923 (25, EPITA Argumentum)
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/",              # tranche 4 #10923 (32, manipulation arguments)
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/",         # tranche 5 #10923 (26, RDF/OWL/SPARQL EPITA-Sub-symbolic)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
