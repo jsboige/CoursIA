@@ -14,7 +14,7 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 | 1 — Extraction Jessynoo | [data/jessynoo_rfallacy_anonymized.csv](data/jessynoo_rfallacy_anonymized.csv) + [scripts/fallacy_detection/extract_jessynoo_fallacy.py](../../scripts/fallacy_detection/extract_jessynoo_fallacy.py) | livré |
 | 1 — Paysage datasets | ≥ 5 datasets testés en accès réel | à livrer |
 | 1 — Inventaire SAE Qwen | ≥ 3 tailles (gate de faisabilité) | à livrer |
-| 2 — Dataset builder | projection de la taxonomie Argumentum | Phase 2 |
+| 2 — Dataset builder | projection de la taxonomie Argumentum par **produit cartésien Scénarii × Fallacy** (167 × 1408), colonnes `_en` (natif AN) ou autres langues au choix | Phase 2 |
 | 3 — Fine-tuning (série FT) | mémorisation du motif général→particulier | Phase 3 |
 | 4 — Post-training (série PT) | utilisation du workflow | Phase 4 |
 | 5 — Analyse SAE (strate 6 ICT) | features « motif » FT vs PT | gate de succès, Phase 5 |
@@ -32,4 +32,24 @@ Corpus r/fallacy extrait et anonymisé depuis le Data Export Reddit du compte `u
 
 ### Constat important pour les phases aval
 
-Le corpus Jessynoo r/fallacy est en **anglais** (0 mot-clé français sur 69 items). La taxonomie Argumentum (grilles d'étiquettes) est en **français** (1408 sophismes / 8 familles). La Phase 2 (dataset builder) devra traiter ce **décalage de langue étiquettes-vs-corpus** (traduction des étiquettes, ou corpus multilingue, ou restriction initiale au sous-ensemble Argumentum couvert par les datasets académiques anglophones — cf survey §5.1).
+Le corpus Jessynoo r/fallacy est en **anglais** (0 mot-clé français sur 69 items), mais ce corpus n'est **pas** un jeu d'entraînement — c'est un **bootstrap de câblage** du pipeline (extraction reproductible, anonymisation PII, format CSV stable). Il a toujours eu cette vocation, et le README l'annonçait sans la nommer. Le jeu d'entraînement viendra de la Phase 2.
+
+La **taxonomie Argumentum** (sous-module `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum`, fichier `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) est **déjà traduite en 8 langues** : `fr` (4 colonnes), `en` (6), `ru` (7), `ar` (7), `fa` (7), `zh` (7), `es` (7), `pt` (7). Mesure firsthand sur `origin/main` du sous-module :
+
+```bash
+head -1 "Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv" | tr ',' '\n' \
+  | grep -oE '_(fr|en|ru|ar|fa|zh|es|pt)$' | sort | uniq -c
+#   7 _zh   7 _ru   7 _pt   7 _fa   7 _es   7 _ar   6 _en   4 _fr
+```
+
+Huit groupes de colonnes : `text_<lang>`, `desc_<lang>`, `example_<lang>`, `link_<lang>`, `Family_<lang>`, etc. Un corpus anglophone s'étiquette donc **directement** avec les colonnes `_en` ; un corpus russe avec `_ru`, etc. Le « décalage de langue étiquettes-vs-corpus » ne se pose plus : la Phase 2 choisit la langue source du corpus, et la taxonomie fournit l'étiquetage correspondant.
+
+### Stratégie de données pour la Phase 2
+
+Deux voies complémentaires, pas exclusives :
+
+1. **Corpus académiques annotés réellement obtenables** — déjà mesurés en Phase 1 dans [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) (Logic 13 + MAFALDA L2 23 = 27 classes après déduplication de 9 doublons). Le paysage montre un écart de **plus d'un ordre de grandeur** avec la taxonomie Argumentum : couverture ~3 % des feuilles et ~2 % des nœuds (mesuré dans [03_taxonomy_coverage_gap.ipynb](03_taxonomy_coverage_gap.ipynb)). C'est utile mais structurellement limité : aucune académie n'a produit 1408 fine-grained fallacies étiquetées.
+
+2. **Corpus synthétique par produit cartésien Scénarii × Fallacy** — Argumentum fournit aussi `Cards/Scenarii/Argumentum Scenarii - Taxonomy.csv` (167 scénarii mesurés). Le produit cartésien `167 × 1408 = 235 376` couples (scénario, sophisme) fournit, par construction, **un exemple annoté pour chaque sophisme de la taxonomie**. La génération du label est triviale (c'est le second facteur du couple) ; la production du `body` est le travail de la Phase 2 — typiquement via un LLM conditionné à l'étiquette (template par sophisme, paraphrase, validation humaine sur un échantillon). Cette voie est **la seule** qui porte la couverture uniforme de la taxonomie qu'aucun corpus naturel ne donne, et c'est ce qui justifie l'échelle des phases 3-5.
+
+Les deux voies sont complémentaires : le corpus académique **valide** que les features apprises par fine-tuning discrimininent vraiment (évaluation OOS sur données humaines), et le corpus synthétique **porte l'échelle** (Phase 3 fine-tuning sur la couverture complète de la taxonomie).
