@@ -42,6 +42,7 @@ _dr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_dr)
 
 classify = _dr.is_decomposition_regression
+same_count_churn = _dr.is_same_count_zero_verified
 
 
 # ── Acceptance: the founder incident classifies as regression ──────────────
@@ -128,3 +129,36 @@ class TestLegacyAndContract:
         ``if result['decomposition_regression']``; it must be a real bool."""
         assert type(classify(8, 4, 0)) is bool
         assert type(classify(6, 4, 2)) is bool
+
+
+# ── #11421: same-count + vtc=0 symmetry guard ──────────────────────────────
+
+class TestSameCountZeroVerified:
+    """#11421: P3 covers the net-INCREASE case; a kept SAME-COUNT snapshot
+    (provers.py:890-898) also needs >= 1 verified tactic to count as
+    structural progress. final == original with vtc=0 is text churn."""
+
+    def test_same_count_zero_verified_flags_churn(self):
+        assert same_count_churn(4, 4, 0) is True
+
+    def test_same_count_with_verified_is_progress(self):
+        assert same_count_churn(4, 4, 1) is False
+        assert same_count_churn(4, 4, 3) is False
+
+    def test_increase_is_not_this_guards_territory(self):
+        """A net increase is P3's case, not this equality guard's."""
+        assert same_count_churn(8, 4, 0) is False
+
+    def test_drop_is_not_this_guards_territory(self):
+        """A drop is FX-6's territory (statement-mutation guard)."""
+        assert same_count_churn(2, 4, 0) is False
+
+    def test_none_verified_preserves_prior_behaviour(self):
+        """Legacy caller with no verified-tactic tracking: cannot classify."""
+        assert same_count_churn(4, 4, None) is False
+
+    def test_returns_real_bool(self):
+        assert type(same_count_churn(4, 4, 0)) is bool
+
+    def test_exported_in_all(self):
+        assert "is_same_count_zero_verified" in _dr.__all__

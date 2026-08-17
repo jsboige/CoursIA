@@ -1,150 +1,162 @@
 #!/usr/bin/env python3
-"""Normalize ``kernelspec.language`` of .NET C# notebooks before Quarto render.
+"""Quarto C# kernelspec fix — byte-level apply/restore/check (issue #11335, EPIC #10921).
 
-Quarto derives the pandoc code-block class from ``kernelspec.language``. The
-.NET Interactive kernel writes ``C#``, which Quarto emits as the invalid
-attribute class ``{.c# .cell-code}`` (``#`` is the pandoc ID marker). When the
-code fence carries that class AND the cell sits at column 0, Quarto's ipynb ->
-qmd writer merges the first source line into the opening fence line; pandoc
-then re-parses the cell body as markdown, so C# ``$"..."`` interpolated strings
-are consumed by MathJax as LaTeX math and the code leaks out as <p> paragraphs
-on the rendered page (issue #11335, measured firsthand on Search-15
--NetworkX-Csharp: 0 sourceCode blocks, 14 math-inline spans, 11 leaked
-``::: {.cell-output}`` markers; reproduced identically on Quarto 1.7.32 CI and
-1.10.18 local).
+Problem: notebooks with `kernelspec.language: "C#"` make Quarto emit an invalid
+attribute class in the intermediate qmd (```{.c# .cell-code}...). `#` is pandoc's
+ID marker, so the fence is broken and pandoc re-parses the C# source as markdown:
+interpolated strings `$"..."` get swallowed as LaTeX math, code leaks into <p>.
 
-Python notebooks are unaffected (`` ``` python`` class, clean fence). Setting
-``kernelspec.language`` to ``csharp`` makes Quarto emit `` ``` csharp`` and the
-whole defect class disappears (measured: 22 sourceCode blocks, 0 leaks).
-``kernelspec.language`` is informational only: kernel selection in Jupyter /
-papermill uses ``kernelspec.name`` (``.net-csharp``), which is left untouched,
-so the patch never affects execution.
+Fix: `kernelspec.language` is informational (execution uses `kernelspec.name`,
+`.net-csharp`), so the render pipeline patches it to "csharp" — Quarto then emits
+a clean ``` csharp fence (same shape as ``` python).
 
-The patch is a **byte-level string replacement** (``"language": "C#"`` ->
-``"language": "csharp"``) anchored on the last ``"kernelspec"`` key (cell-level
-metadata like ``dotnet_repl`` may carry its own ``"language": "C#"``) — NOT a
-JSON load/dump round-trip, which would corrupt notebooks whose output cells
-embed raw CR/LF inside JSON strings (the .NET Interactive wrapper script).
-apply / restore are therefore byte-perfect on LF-committed notebooks.
+Design (per issue acceptance):
+- apply:    byte-level replacement of "C#" -> "csharp" in the language field of
+            the kernelspec metadata of .NET notebooks only (kernelspec.name ==
+            '.net-csharp'). Records the byte offset of every patched token in a
+            manifest.
+- restore:  reverse replacement, verified against the manifest (same occurrence
+            count per file). Files that no longer match are reported and skipped
+            loudly (exit 1) rather than silently clobbered.
+- check:    report how many notebooks are patched/unpatched; --strict exits 1 if
+            any `.net-csharp` notebook still carries "C#" (CI guard after apply).
 
-Usage:
-    python scripts/quarto_csharp_kernel_fix.py apply    # patch C#-kernel notebooks
-    python scripts/quarto_csharp_kernel_fix.py restore  # revert exactly what apply did
-    python scripts/quarto_csharp_kernel_fix.py check    # exit 1 if any notebook still 'C#'
+The round-trip is byte-clean: only the language token bytes differ, everything
+else on disk is untouched (no JSON re-serialization).
+
+Manifest: JSON {file: [offsets]}, default `<repo-root>/.quarto_csharp_fix_manifest.json`
+(gitignored). Offsets point at the opening quote of the "csharp" token post-apply
+(same position the "C#" token occupied pre-apply).
 """
+
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import sys
 from pathlib import Path
 
-import regen_quarto_render as rqr
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
+DEFAULT_MANIFEST = REPO_ROOT / ".quarto_csharp_fix_manifest.json"
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-MANIFEST = REPO_ROOT / ".quarto-csharp-manifest.json"
-
-BUGGY = '"language": "C#"'
-FIXED = '"language": "csharp"'
-
-
-def target_notebooks() -> list[str]:
-    """Repo-relative POSIX paths of the notebooks Quarto renders (same source
-    of truth as the render list, exclusions included)."""
-    return rqr.git_tracked_notebooks()
+# kernelspec is a flat object: {"display_name": ..., "language": ..., "name": ".net-csharp"}
+KERNELSPEC_RE = re.compile(rb'"kernelspec"\s*:\s*\{[^{}]*\}')
+DOTNET_NAME_RE = re.compile(rb'"name"\s*:\s*"\.net-csharp"')
+LANG_CSHARP_TOKEN_RE = re.compile(rb'("language"\s*:\s*)("C#")')
+LANG_FIX_TOKEN_RE = re.compile(rb'("language"\s*:\s*)("csharp")')
 
 
-def rewrite_at(rel_path: str, offset: int, old: str, new: str) -> bool:
-    """Replace the occurrence of `old` at byte offset `offset`. Exact-position
-    patching (not count-based): some notebooks embed the JSON fragment in their
-    output cells, so `old` may legitimately appear more than once."""
-    path = REPO_ROOT / rel_path
-    text = path.read_text(encoding="utf-8")
-    if text[offset:offset + len(old)] != old:
-        return False
-    # write_bytes: Path.write_text would translate \n to \r\n on Windows
-    # (default newline=None), producing a phantom EOL diff on LF-committed
-    # notebooks (HEAD blobs are LF). Bytes keep the diff minimal.
-    path.write_bytes((text[:offset] + new + text[offset + len(old):]).encode("utf-8"))
-    return True
+def iter_notebooks(root: Path):
+    for path in sorted(root.rglob("*.ipynb")):
+        yield path
 
 
-def find_offset(text: str, needle: str, rel_path: str) -> int | None:
-    # nbformat orders the JSON: cells (with their own cell-level metadata, e.g.
-    # "dotnet_repl": {"language": "C#"}) first, then the top-level metadata whose
-    # "kernelspec" object carries the language that Quarto reads. The kernelspec
-    # block is therefore the LAST section: anchor on the last '"kernelspec"' key.
-    kspec = text.rfind('"kernelspec"')
-    if kspec < 0:
-        raise SystemExit(f"{rel_path}: no 'kernelspec' key found")
-    idx = text.find(needle, kspec)
-    if idx < 0:
-        return None
-    if text.find(needle, idx + 1) >= 0:
-        raise SystemExit(f"{rel_path}: {needle!r} appears more than once after "
-                         "'kernelspec' — refusing to patch ambiguously")
-    return idx
+def patched_spans(data: bytes, token_re):
+    """Yield (start, end) byte spans of language tokens inside .NET kernelspecs."""
+    for ks in KERNELSPEC_RE.finditer(data):
+        if not DOTNET_NAME_RE.search(ks.group(0)):
+            continue
+        for m in token_re.finditer(ks.group(0)):
+            yield ks.start() + m.start(2), ks.start() + m.end(2)
 
 
-def cmd_apply() -> int:
-    # Two phases so an ambiguity anywhere leaves the tree untouched (a crash
-    # mid-apply would orphan patched files without a manifest to restore them).
-    candidates: list[tuple[str, int]] = []
-    for rel in target_notebooks():
-        text = (REPO_ROOT / rel).read_text(encoding="utf-8")
-        idx = find_offset(text, BUGGY, rel)
-        if idx is not None:
-            candidates.append((rel, idx))
-    for rel, idx in candidates:
-        rewrite_at(rel, idx, BUGGY, FIXED)
-    if candidates:
-        import json
-        MANIFEST.write_text(
-            json.dumps([{"path": rel, "offset": idx} for rel, idx in candidates],
-                       indent=1), encoding="utf-8")
-    print(f"quarto_csharp_kernel_fix: {len(candidates)} notebooks patched "
-          f"({BUGGY} -> {FIXED}).")
-    return 0
-
-
-def cmd_restore() -> int:
-    if not MANIFEST.exists():
-        print("quarto_csharp_kernel_fix: no manifest — nothing to restore.")
-        return 0
-    import json
-    manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    restored = 0
-    for entry in manifest:
-        if rewrite_at(entry["path"], entry["offset"], FIXED, BUGGY):
-            restored += 1
-    MANIFEST.unlink()
-    print(f"quarto_csharp_kernel_fix: {restored} notebooks restored to {BUGGY}.")
-    return 0
-
-
-def cmd_check() -> int:
-    bad = []
-    for rel in target_notebooks():
-        if BUGGY in (REPO_ROOT / rel).read_text(encoding="utf-8"):
-            bad.append(rel)
-    if bad:
-        print(f"quarto_csharp_kernel_fix: {len(bad)} notebooks still carry "
-              f"{BUGGY}: {bad[0]} ... (run 'apply' before render)",
-              file=sys.stderr)
+def cmd_apply(root: Path, manifest_path: Path) -> int:
+    if manifest_path.exists():
+        print(f"[apply] manifest {manifest_path} already exists — restore first "
+              f"(refusing to overwrite offsets of an in-flight patch)")
         return 1
-    print("quarto_csharp_kernel_fix: no C#-kernel notebooks in the render list.")
+    manifest = {}
+    patched = 0
+    for path in iter_notebooks(root):
+        data = path.read_bytes()
+        spans = list(patched_spans(data, LANG_CSHARP_TOKEN_RE))
+        if not spans:
+            continue
+        out = bytearray(data)
+        # replace back-to-front so earlier offsets stay valid while we edit
+        for start, end in reversed(spans):
+            out[start:end] = b'"csharp"'
+        path.write_bytes(bytes(out))
+        rel = str(path.relative_to(root)).replace("\\", "/")
+        manifest[rel] = [start for start, _ in spans]
+        patched += 1
+        print(f"[apply] {rel}: {len(spans)} kernelspec token(s)")
+    manifest_path.write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+    print(f"[apply] {patched} notebook(s) patched, manifest -> {manifest_path.name}")
+    return 0
+
+
+def cmd_restore(manifest_path: Path, root: Path) -> int:
+    if not manifest_path.exists():
+        print(f"[restore] no manifest at {manifest_path} — nothing to restore")
+        return 0
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    failures = 0
+    for rel, offsets in manifest.items():
+        path = root / rel
+        if not path.exists():
+            print(f"[restore] MISSING {rel} — file gone since apply, skipping")
+            failures += 1
+            continue
+        data = path.read_bytes()
+        spans = list(patched_spans(data, LANG_FIX_TOKEN_RE))
+        if len(spans) != len(offsets):
+            print(f"[restore] DRIFT {rel}: manifest says {len(offsets)} patch(es), "
+                  f"file now has {len(spans)} csharp token(s) — NOT touching it")
+            failures += 1
+            continue
+        out = bytearray(data)
+        for start, end in reversed(spans):
+            out[start:end] = b'"C#"'
+        path.write_bytes(bytes(out))
+        print(f"[restore] {rel}: {len(spans)} token(s) reverted")
+    if failures:
+        print(f"[restore] {failures} file(s) could not be restored — manual review needed")
+        return 1
+    manifest_path.unlink()
+    print("[restore] all files reverted byte-clean, manifest removed")
+    return 0
+
+
+def cmd_check(root: Path, strict: bool) -> int:
+    unpatched = patched = 0
+    for path in iter_notebooks(root):
+        data = path.read_bytes()
+        if list(patched_spans(data, LANG_CSHARP_TOKEN_RE)):
+            rel = str(path.relative_to(root)).replace("\\", "/")
+            print(f"[check] UNPATCHED {rel}")
+            unpatched += 1
+        elif list(patched_spans(data, LANG_FIX_TOKEN_RE)):
+            patched += 1
+    print(f"[check] {patched} patched (csharp), {unpatched} still C#")
+    if strict and unpatched:
+        return 1
     return 0
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("command", choices=("apply", "restore", "check"))
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    ap_apply = sub.add_parser("apply", help="patch language C# -> csharp (records offsets)")
+    ap_apply.add_argument("--root", type=Path, default=DEFAULT_ROOT)
+    ap_apply.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    ap_restore = sub.add_parser("restore", help="revert using the manifest")
+    ap_restore.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    ap_restore.add_argument("--root", type=Path, default=DEFAULT_ROOT,
+                            help="root the manifest paths are relative to")
+    ap_check = sub.add_parser("check", help="report patched/unpatched state")
+    ap_check.add_argument("--root", type=Path, default=DEFAULT_ROOT)
+    ap_check.add_argument("--strict", action="store_true",
+                          help="exit 1 if any .net-csharp notebook still carries C#")
     args = ap.parse_args()
-    if args.command == "apply":
-        return cmd_apply()
-    if args.command == "restore":
-        return cmd_restore()
-    return cmd_check()
+    if args.cmd == "apply":
+        return cmd_apply(args.root.resolve(), args.manifest)
+    if args.cmd == "restore":
+        return cmd_restore(args.manifest, args.root.resolve())
+    return cmd_check(args.root.resolve(), args.strict)
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    sys.exit(main())

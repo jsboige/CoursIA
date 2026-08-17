@@ -37,7 +37,7 @@ génération d'images, synthèse et reconnaissance vocale. Deux parcours la
 couvrent : un **tour guidé** de la plateforme et une **série QA Playwright**
 qui la teste de bout en bout.
 
-➡️ **[Ouvrir le dossier Open-WebUI](Open-WebUI/README.md)**
+**→ [Ouvrir le dossier Open-WebUI](Open-WebUI/README.md)**
 
 ### [AI-Engine (WordPress)](AI-Engine-WordPress/README.md)
 
@@ -48,7 +48,7 @@ chatbots, Copilot pour l'éditeur Gutenberg, AI Forms, RAG sur le contenu du
 site, et **WordPress comme serveur MCP**. Le projet **livresagités** sert de
 terrain d'observation (sans contenu privé reproduit).
 
-➡️ **[Ouvrir le dossier AI-Engine-WordPress](AI-Engine-WordPress/README.md)**
+**→ [Ouvrir le dossier AI-Engine-WordPress](AI-Engine-WordPress/README.md)**
 
 ---
 
