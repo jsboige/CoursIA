@@ -11,11 +11,11 @@ Mini-projet complet : **0 sorry, 0 axiome** au-delà des axiomes du cœur de Lea
 
 ## Statut
 
-- **Toolchain** : `v4.31.0-rc1`
+- **Toolchain** : `v4.32.0` (migrée depuis `v4.31.0-rc1` par #10997 ; Mathlib pin `v4.32.0`)
 - **Sorry** : **0** — chaque preuve est close
-- **Build** : `lake build Sensitivity` — SUCCESS
+- **Build** : `lake build Sensitivity` — SUCCESS (1970 jobs, v4.32.0, #10997) ; `#print axioms Sensitivity.huang_degree_theorem` (+ `_en`) = `[propext, Classical.choice, Quot.sound]` — zéro `sorryAx`
 - **Dépendances** : Mathlib4
-- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 4 modules `.lean` livrés en FR canonique + 4 siblings `*_en.lean` miroirs sur `main` (`Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 5 fichiers `.lean` FR canoniques (racine agrégatrice + 4 modules) + 5 siblings `*_en.lean` miroirs sur `main` (`Sensitivity_en.lean`, `Sensitivity/Hypercube_en.lean`, `Sensitivity/VectorSpace_en.lean`, `Sensitivity/Operator_en.lean`, `Sensitivity/MainTheorem_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques.
 
 ## Ce qui est formalisé
 
@@ -84,7 +84,7 @@ flowchart TD
 
 | Fichier | `_en` | Lignes | sorry | Contenu |
 |---------|-------|-------:|------:|---------|
-| `Sensitivity.lean` | — | 1 | 0 | Ombrelle d'import racine |
+| `Sensitivity.lean` | `Sensitivity_en.lean` | 19 | 0 | Ombrelle d'import racine (imports-only) |
 | `Sensitivity/Hypercube.lean` | `Hypercube_en.lean` | 124 | 0 | Hypercube booléen `Q n`, sommets, adjacence |
 | `Sensitivity/VectorSpace.lean` | `VectorSpace_en.lean` | 132 | 0 | Espace vectoriel réel des fonctions booléennes, base `ℝ^{2^n}` |
 | `Sensitivity/Operator.lean` | `Operator_en.lean` | 100 | 0 | Opérateurs de sensibilité et de sensibilité par blocs |
