@@ -77,16 +77,23 @@ def main():
         dm_per_seed.append((m["seed"], r))
     if dm_per_seed:
         dm_p_median = float(np.median([r.p_value for _, r in dm_per_seed]))
+        dm_diff_median = float(np.median([r.mean_loss_diff for _, r in dm_per_seed]))
         print(f"\nDM per-seed (median p, n_seeds={len(dm_per_seed)}) :")
         for s, r in dm_per_seed:
-            print(f"  seed {s}: dm_stat={r.dm_statistic:.4f}, p={r.p_value:.6f}")
+            print(f"  seed {s}: dm_stat={r.dm_statistic:.4f}, p={r.p_value:.6f}, loss_diff={r.mean_loss_diff:.4f}")
         print(f"  dm_p_median = {dm_p_median:.6f}")
+        print(f"  dm_diff_median = {dm_diff_median:.4f}  (per-seed mean reward gap vs zero baseline)")
     else:
         dm_p_median = 1.0
+        dm_diff_median = 0.0
 
     # 4. Verdict combine (regle C)
     edge_ok = edge_sigma >= 2.0
-    dm_ok = dm_p_median < 0.05
+    # Directional DM leg (#11419 method lesson): p < 0.05 alone says the two
+    # series DIFFER, not which side wins. mean_loss_diff here is the per-seed
+    # mean reward gap vs the zero baseline (positive = model better), so the
+    # DM leg carries significance AND direction on the same quantity.
+    dm_ok = (dm_p_median < 0.05) and (dm_diff_median > 0)
     if edge_ok and dm_ok:
         verdict = "BEATS"
     elif (not edge_ok) and (not dm_ok):
@@ -101,6 +108,7 @@ def main():
     print(f"Steps/seed : {min_len}")
     print(f"edge_sigma : {edge_sigma:.2f}  (>= 2.0 required)")
     print(f"dm_p_median : {dm_p_median:.6f}  (< 0.05 required)")
+    print(f"dm_diff_median : {dm_diff_median:.4f}  (> 0 required, same quantity as the DM)")
     print(f"dm_pooled_p : {dm_pooled.p_value:.6f}")
     print(f"Verdict : {verdict}")
     print("=" * 70)
