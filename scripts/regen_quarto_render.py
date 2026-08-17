@@ -77,6 +77,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GameTheory/",              # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",                  # tranche 2 #10923 (58)
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/",  # tranche 3 #10923 (25, EPITA Argumentum)
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/",              # tranche 4 #10923 (32, manipulation arguments)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
