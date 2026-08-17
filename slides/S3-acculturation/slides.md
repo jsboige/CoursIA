@@ -13,15 +13,24 @@ layout: cover
 
 # Intelligence(s)
 
-- Jean-Sylvain Boige
-- jsboige@myia.org
-- Telecom Bretagne
-- Cogs, Brighton UK
-- Aricie - DNN - PKP
+<div class="text-center">
+<sub class="text-xl tracking-widest uppercase text-slate-500">Une introduction à l'IA pour décideurs</sub>
 
-![w:250](./images/img_001.png)
-![w:250](./images/img_002.png)
-![w:250](./images/img_003.png)
+<h1 class="text-7xl font-serif mt-12 text-rose-700">Intelligence(s)</h1>
+
+<div class="mt-12 text-lg tracking-wide">
+  Jean-Sylvain Boige
+</div>
+<div class="text-sm text-slate-500">
+  jsboige@myia.org — Telecom Bretagne — Cogs Brighton UK
+</div>
+</div>
+
+<div class="absolute bottom-12 inset-x-0 flex justify-center gap-12 items-end">
+  <img src="./images/img_003.png" class="h-20" alt="DNN" />
+  <img src="./images/img_001.png" class="h-24" alt="myIA" />
+  <img src="./images/img_002.png" class="h-16" alt="Cogs" />
+</div>
 
 
 ---
@@ -29,20 +38,32 @@ layout: cover
 
 # Sommaire
 
-- Qu'est-ce que l'intelligence artificielle ?
-- Racines, histoire et état de l'art
-- Structure des agents rationnels
-- Intelligence exploratoire
-- Comment chercher la solution à un problème ?
-- Intelligence Symbolique
-- Comment utiliser le raisonnement et les mathématiques ?
-- Intelligence probabiliste
-- Comment agir dans l'incertitude ?
-- Apprentissage
-- Comment utiliser les données et l'expérience ?
-- Application: le langage naturel
+<div class="grid grid-cols-2 gap-8 mt-4">
+<div>
 
-<!-- Image: images/img_004.png -->
+**🌿 Qu'est-ce que l'intelligence artificielle ?**
+*Racines, histoire et état de l'art*
+*Structure des agents rationnels*
+
+**🔍 Intelligence exploratoire**
+*Comment chercher la solution à un problème ?*
+
+**📐 Intelligence Symbolique**
+*Comment utiliser le raisonnement et les mathématiques ?*
+
+**🎲 Intelligence probabiliste**
+*Comment agir dans l'incertitude ?*
+
+**📊 Apprentissage**
+*Comment utiliser les données et l'expérience ?*
+
+**💬 Application : le langage naturel**
+
+</div>
+<div class="flex items-center justify-center">
+  <img src="./images/img_005.png" class="rounded shadow-lg" alt="Couverture AIMA Russell & Norvig" />
+</div>
+</div>
 
 
 
