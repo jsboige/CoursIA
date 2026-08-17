@@ -9,7 +9,7 @@ B.1 from issue #820: cross-session knowledge persistence.
 import json
 from pathlib import Path
 from typing import Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 DEFAULT_KB_PATH = Path(__file__).parent / "proof_knowledge.json"
@@ -69,7 +69,7 @@ class ProofKnowledgeBase:
                 }
 
     def _save(self):
-        self._data["last_updated"] = datetime.now().isoformat()
+        self._data["last_updated"] = datetime.now(timezone.utc).isoformat()
         self._path.write_text(
             json.dumps(self._data, indent=2, ensure_ascii=False),
             encoding="utf-8",
@@ -228,13 +228,13 @@ class ProofKnowledgeBase:
         if existing:
             existing["uses"] = existing.get("uses", 0) + 1
             existing["tactic"] = tactic
-            existing["timestamp"] = datetime.now().isoformat()
+            existing["timestamp"] = datetime.now(timezone.utc).isoformat()
         else:
             self._data["entries"][sig] = {
                 "tactic": tactic,
                 "theorem": theorem,
                 "file": file,
-                "timestamp": datetime.now().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "uses": 1,
             }
         self._save()
