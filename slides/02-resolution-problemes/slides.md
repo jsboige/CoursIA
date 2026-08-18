@@ -304,7 +304,7 @@ fonction EXPLORER-GRAPHE(probleme) retourne une solution, ou echec
 ## États != Noeuds
 
 - Un **Etat** : représentation de la configuration réelle
-- Un **Noeud** : structure de donnees de l'exploration
+- Un **Noeud** : structure de données de l'exploration
   - état, parent, action, coût g(x), profondeur
 
 ## Fonction NOEUD-FILS
@@ -324,7 +324,7 @@ fonction NOEUD-FILS(probleme, parent, action) retourne un noeud
 
 Une stratégie d'exploration définit l'ordre de développement des noeuds.
 
-## Criteres d'évaluation
+## Critères d'évaluation
 
 - **Completude** : garantie d'obtenir une solution si elle existe
 - **Optimalite** : garantie d'obtenir une solution de coût minimal
@@ -396,7 +396,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 - Equivaut à l'exploration en largeur d'abord si le coût d'étapes est uniforme
 - En théorie de graphes = algorithme de Dijkstra
 
-## Caracteristiques
+## Caractéristiques
 
 - Complet? Oui, si coût d'étape >= epsilon
 - Complexité en temps et en espace: O(b^(1+plafond(C*/epsilon)))
@@ -413,7 +413,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
   - Frontiere = **Pile** (LIFO)
   - Branches explorees non conservees
 
-## Caracteristiques
+## Caractéristiques
 
 - **Complet ?** Non : profondeur infinie ou boucles
 - **Temps** : O(b^m), mauvais si m >> d
@@ -434,7 +434,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 - Les noeuds de profondeur l n'ont pas de successeur
 - Complet si l >= d = diamêtre de l'espace des états
 
-## Implementation recursive
+## Implementation récursive
 
 ```
 fonction Exploration-Profondeur-Limitee(probleme, limite) retourne une solution, ou echec/arret
@@ -477,7 +477,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
   - N_DLS = 1 + 10 + 100 + 1,000 + 10,000 + 100,000 = 111,111
   - N_IDS = 6 + 50 + 400 + 3,000 + 20,000 + 100,000 = 123,456
 
-## Caracteristiques
+## Caractéristiques
 
 - Complet: Oui | Temps: O(b^d) | Espace: O(b*d) | Optimale: Oui si coût d'étape = 1
 
@@ -492,7 +492,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 ## Quand on connait l'état but
 
 - Double exploration vers l'aval et vers l'amont
-- Interet : O(b^(d/2)) + O(b^(d/2)) est tres inferieur à O(b^d)
+- Intérêt : O(b^(d/2)) + O(b^(d/2)) est très inferieur à O(b^d)
 
 ## Exemple courant
 
@@ -501,7 +501,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 ## Difficultes
 
 - Nécessite une fonction Prédécesseurs
-- Controle de l'intersection
+- Contrôle de l'intersection
   - maintient de la frontiere, même en profondeur + hachage pour comparaison
   - + Solution non optimale même en largeur -> continuer pour trouver les raccourcis
 - États buts complexes
@@ -559,7 +559,7 @@ layout: section
   - f(n) = g(n) + h(n)
   - Développé le noeud avec le plus petit f(n)
 
-## Caracteristiques
+## Caractéristiques
 
 - Complet? Non, peut être piégé dans un maximum local
 - Temps? O(b^m) mais un bon heuristique donne des bons résultats
@@ -594,7 +594,7 @@ layout: section
 
 ---
 
-# Caracteristiques de A*
+# Caractéristiques de A*
 
 <img src="./images/img_023.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Contours A* sur carte Roumanie" />
 
@@ -625,7 +625,7 @@ layout: section
 
 - A* avec approfondissement itératif (IDA*)
   - Coupe: coût f le plus faible parmi les noeuds en depassement
-- Exploration recursive par le meilleur d'abord (RBFS)
+- Exploration récursive par le meilleur d'abord (RBFS)
   - Espace en mémoire linéaire: valeur f du meilleur chemin alternatif
   - Recursion avec valeur rapportee: meilleure valeur f des enfants oublies
   - Mais exces inverse: trop peu de mémoire et trop de "redéveloppements"
@@ -671,7 +671,7 @@ layout: section
 ## Sous-problèmes
 
 - Exemple: taquin (pieces 1,2,3,4)
-- **Bases de donnees de motifs**: coût exact sous-problèmes = heuristique générale
+- **Bases de données de motifs**: coût exact sous-problèmes = heuristique générale
 - **Motifs disjoints** : question de l'additivité des heuristiques admissibles
 
 ## Apprentissage d'heuristiques
@@ -851,14 +851,14 @@ layout: section
     - Formule de Newton pour trouver g(x) = 0 : x <- x - g(x) / g'(x)
     - En prenant pour g le gradient de f: x <- x - H^-1(x) nabla f(x)
       - avec H matrice Hessienne des derivees secondes de f
-    - Methodes modernes (RMSProp, ADAM)
+    - Méthodes modernes (RMSProp, ADAM)
 
 ## Optimisation sous contrainte
 
 - Contraintes sur les variables
 - Programmation linéaire
   - <- inegalites formant ensemble convexe (pas de trous)
-  - Tres etudie -> complexité polynomiale
+  - Très etudie -> complexité polynomiale
 
 ---
 layout: section
@@ -1132,7 +1132,7 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 - Classe d'équivalence -> valeur attendue (utilité pondérée)
 - Mais trop de classes -> valeur matérielle -> fonction linéaire pondérée
   - Eval(s) = w1*f1(s) + w2*f2(s) + ... + wn*fn(s)
-- Mais non independance des attributs -> fonction non linéaire
+- Mais non indépendance des attributs -> fonction non linéaire
 - Si pas d'expérience, possibilité d'apprentissage (1 fou = 3 pions!)
 
 ## Exploration avec arret
@@ -1170,7 +1170,7 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 ## Principe -- simulations statistiques
 
-Pas d'heuristique d'évaluation : **remplacee par des rollouts** (simulations aléatoires jusqu'a fin de partie).
+Pas d'heuristique d'évaluation : **remplacée par des rollouts** (simulations aléatoires jusqu'a fin de partie).
 
 ## Algorithme (boucle)
 
@@ -1224,7 +1224,7 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 ## Décisions optimales
 
 - **Arbre de jeu** : états, actions, résultats, test terminal, utilité
-- **Minimax** : valeur optimale, algorithme recursif
+- **Minimax** : valeur optimale, algorithme récursif
 - **Alpha-Beta** : élagage pour réduire la taille de l'arbre explore
 
 ## Décisions imparfaites
@@ -1350,13 +1350,13 @@ layout: section
 
 ## Techniques
 
-- **Forward Checking**: Apres assignation, éliminer les valeurs incompatibles des variables non assignees
+- **Forward Checking**: Après assignation, éliminer les valeurs incompatibles des variables non assignees
 - **Arc Consistency (AC)**: Pour chaque contrainte binaire (X,Y), éliminer les valeurs de X qui n'ont pas de support dans Y
 
 ## Algorithme AC-3
 
 - Propage la coherence d'arc à travers le reseau de contraintes
-- Tres efficace mais complexe
+- Très efficace mais complexe
 
 ---
 
@@ -1436,7 +1436,7 @@ layout: section
 
 # Techniques de résolution des CSPs
 
-## Methodes traditionnelles
+## Méthodes traditionnelles
 
 - Backtracking + heuristiques
 - Propagation de contraintes, Forward checking
@@ -1448,7 +1448,7 @@ layout: section
 - Integration CP/SAT/SMT: Utilisation de techniques telles que Lazy Clause Generation pour apprendre les conflits
   - Exemple: Le solver CP-SAT de Google OR-Tools
 
-- Hybridation avec metaheuristiques: Combinaison d'exploration locale (min-conflicts) avec des phases de reparation par CP
+- Hybridation avec métaheuristiques: Combinaison d'exploration locale (min-conflicts) avec des phases de reparation par CP
   - Large Neighborhood Search
 
 ---
@@ -1458,7 +1458,7 @@ layout: section
 ## Variables discrêtes
 
 - Domaines finis: n variables, taille de domaine d -> O(d^n) assignations complètes
-- Domaines infinis: Entiers, chaines de caracteres etc.
+- Domaines infinis: Entiers, chaînes de caractères etc.
   - Ex: planification de cours
   - Besoin d'un langage de contraintes (DebutCours1 + 5 <= DebutCours2)
 
@@ -1572,7 +1572,7 @@ layout: section
 - Couplage inférence + exploration
 - Heuristiques de choix de variables et de valeurs
 - Forward checking et Backjumping : orientent vers les conflits et accelerent la recherche
-- Exploration locale : Min-Conflicts tres efficace, même avec de nombreuses variables
+- Exploration locale : Min-Conflicts très efficace, même avec de nombreuses variables
 
 ---
 
