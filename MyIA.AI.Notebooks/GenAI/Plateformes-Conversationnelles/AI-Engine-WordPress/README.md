@@ -187,6 +187,19 @@ aucun jeton (design anti-cache), l'amorçage passe par `start_session`
 `chats/submit` au header `X-WP-Nonce` — frontière 401 mesurée sans le
 nonce, et la nuance : un nonce est un anti-CSRF, pas une
 authentification.
+[`obtenir-des-donnees-structurees-par-l-api.ipynb`](obtenir-des-donnees-structurees-par-l-api.ipynb)
+ferme la dernière veine « non prouvée » : la route `/ai/json`. L'appel
+à froid échoue sur `The environment is required.` — la route ignore
+structurellement `envId`/`model` et lit la **case json de la matrice
+d'usages**, vide sur une instance custom-only où le repli interne
+`gpt-5-mini` sans environnement ne peut jamais passer la validation.
+Le notebook reproduit l'erreur, remplit la case par read-modify-write
+du bloc complet, obtient du JSON réellement exploitable (catalogue
+Valmont structuré), puis mesure honnêtement la promesse : le **null
+silencieux** du parser PHP (observable ou neutralisé ?) et la nature
+de la contrainte de format — prompt seul ou `response_format` au
+niveau fil, départagée par comparaison directe avec le moteur.
+État initial restauré à l'identique.
 
 ---
 
