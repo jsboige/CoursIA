@@ -8,6 +8,16 @@ name: Notebook Exec Sequence Ratchet
 # (tier 1, #11150); this workflow drives check_exec_ratchet.py, which
 # compares each changed notebook base-vs-head and fails only on
 # CLEAN -> non-CLEAN.
+#
+# Fail-by-design acknowledgment (#11577, precedent #11574 freshness):
+# a PR that legitimately re-executes a SINGLE cell (RECOVERABLE-MACHINE
+# loader fix) while the downstream artifact is gitignored (scripts/results
+# /**, GPU 10h+) inevitably soils the sequence -> DUPLICATE/NOT_FROM_1.
+# The guard is CORRECT: it detects exactly what it must. Never hand-edit
+# execution_count to silence it. Instead: document the degraded sequence
+# (base vs head) in the PR body using the template in
+# docs/reference/regles-validation-detail.md ("Ratchet exec-sequence
+# fail-by-design") and get an explicit reviewer ack before merge.
 on:
   pull_request:
     branches: [main]

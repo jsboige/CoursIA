@@ -77,7 +77,7 @@ fonction KB-AGENT(percept) retourne une action
 ## Composants
 
 - Une base de connaissance (KB), composee d'enonces formules dans un langage formel de representation des connaissances
-- Un systeme d'infrence (raisonnement) qui produit de nouveaux enonces pour prendre des decisions
+- Un système d'infrence (raisonnement) qui produit de nouveaux enonces pour prendre des decisions
 
 ## Fonctions principales
 
@@ -99,7 +99,7 @@ layout: default
 <img src="./images/img_003.png" style="position:absolute; top:50px; right:10px; height:280px;" alt="Grille du monde du Wumpus" />
 
 
-## Jeu de role simpliste
+## Jeu de rôle simpliste
 
 ### Environnement
 
@@ -139,11 +139,11 @@ layout: default
 
 ## Syntaxe
 
-- Definit les enonces possibles dans le langage
+- Définit les enonces possibles dans le langage
 
-## Semantique
+## Sémantique
 
-- Definit le sens des enonces
+- Définit le sens des enonces
 - Relation entre les enonces et le monde réel
 
 ## Proposition logique
@@ -159,17 +159,17 @@ layout: default
 - EQUIVAUT (equivalence)
 
 
-<img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation semantique enonces et monde réel" />
+<img src="./images/img_007.png" style="position:absolute; top:60px; right:20px; width:300px;" alt="Relation sémantique enonces et monde réel" />
 
 ---
 layout: default
 ---
 
-# Proprietes des systemes de representation
+# Proprietes des systèmes de representation
 
 ## Correction
 
-- Preserve la validite semantique
+- Preserve la validite sémantique
 - Derive des consequences valides
 
 ## Coherence / Consistance
@@ -189,14 +189,14 @@ layout: default
 
 ## Ontologie et Epistemologie
 
-- **Ontologie** : etude de ce qui existe dans le monde modelise
-- **Epistemologie** : etude de ce qui peut etre connu par l'agent
+- **Ontologie** : étude de ce qui existe dans le monde modelise
+- **Epistemologie** : étude de ce qui peut etre connu par l'agent
 
 ## Comparaison
 
 | Logique | Variables | Quantifie sur | Decidable ? |
 |---------|-----------|---------------|-------------|
-| Propositionnelle | Symboles booleens | -- | Oui (NP-complet) |
+| Propositionnelle | Symboles booléens | -- | Oui (NP-complet) |
 | Premier ordre (FOL) | Objets du domaine | Variables | Semi-decidable |
 | Ordre superieur (HOL) | Relations, fonctions | Relations | Non |
 | Modale | + mondes possibles | Necessaire/possible | Selon variante |
@@ -228,7 +228,7 @@ layout: default
 - P OU Q : vrai si au moins un est vrai
 - NON P : vrai si P est faux
 - P => Q : vrai si P est faux ou Q est vrai
-- P <=> Q : vrai si P et Q ont meme valeur de verite
+- P <=> Q : vrai si P et Q ont même valeur de verite
 
 ---
 layout: default
@@ -257,7 +257,7 @@ layout: default
 layout: default
 ---
 
-# Semantique de la logique propositionnelle
+# Sémantique de la logique propositionnelle
 
 ## Interpretation
 
@@ -296,7 +296,7 @@ layout: default
 
 # Infrence propositionnelle
 
-## Entailment (consequence semantique)
+## Entailment (consequence sémantique)
 
 - KB |= alpha : "KB entraine alpha"
 - Alpha est vrai dans tous les modèles ou KB est vrai
@@ -307,19 +307,19 @@ layout: default
 
 ## Demonstration d'infrence
 
-1. **Methodes de verification de modèle**
+1. **Méthodes de verification de modèle**
    - Enumerer toutes les interpretations
    - Verifier que alpha est vrai quand KB est vrai
 
-2. **Methodes de preuve**
-   - Deriver alpha a partir de KB en utilisant des regles d'infrence
+2. **Méthodes de preuve**
+   - Deriver alpha a partir de KB en utilisant des règles d'infrence
 
 ---
 layout: default
 ---
 
 
-# Regles d'infrence
+# Règles d'infrence
 
 ## Modus Ponens
 
@@ -365,7 +365,7 @@ layout: default
 - Au plus un litteral positif: P OU NON Q1 OU ... OU NON Qm
 - Equivaut a: (Q1 ET Q2 ET ... ET Qm) => P
 
-## Regle de resolution
+## Règle de resolution
 
 - Deux clauses avec des litteraux complementaires peuvent etre combinees
 - (P OU Q), (NON P OU R) |- (Q OU R)
@@ -389,7 +389,7 @@ image: ./images/img_015.png
 2. Ajouter NON alpha a l'ensemble de clauses
 3. Appliquer la resolution jusqu'a obtenir la clause vide (contradiction) ou ne plus pouvoir progresser
 
-**Resultat** : si la clause vide est derivee, alors KB |= alpha (preuve par refutation).
+**Résultat** : si la clause vide est derivee, alors KB |= alpha (preuve par refutation).
 
 </div>
 
@@ -403,16 +403,16 @@ layout: default
 <img src="./images/img_013.png" style="position:absolute; bottom:26px; right:44px; width:165px;" alt="Clauses Forward Chaining" />
 
 
-## Forward Chaining (chaine avant)
+## Forward Chaining (chaîne avant)
 
 - Partir des faits connus
-- Appliquer les regles pour deduire de nouveaux faits
+- Appliquer les règles pour deduire de nouveaux faits
 - Continuer jusqu'a ce que le but soit atteint<br>ou plus aucun fait nouveau
 
-## Backward Chaining (chaine arriere)
+## Backward Chaining (chaîne arriere)
 
 - Partir du but
-- Chercher les regles dont le but est la conclusion
+- Chercher les règles dont le but est la conclusion
 - Recursivement chercher a prouver les premisses
 
 ## Comparaison
@@ -425,7 +425,7 @@ layout: default
 layout: default
 ---
 
-# Proprietes des systemes d'infrence
+# Proprietes des systèmes d'infrence
 
 ## Correctitude (Soundness)
 
@@ -480,9 +480,9 @@ layout: default
 
 ## DPLL
 
-- Enumeration recursive en profondeur d'abord
+- Enumeration récursive en profondeur d'abord
 - **Elagage** : une clause est vraie si un litteral est vrai, un enonce est faux si une clause est fausse
-- **Heuristique des symboles purs** : toujours le meme signe -> litteral doit etre vrai
+- **Heuristique des symboles purs** : toujours le même signe -> litteral doit etre vrai
 - **Heuristique des clauses unitaires** : assignation de ces clauses en premier
 
 
@@ -520,7 +520,7 @@ layout: default
 - Equivaut a Min-Conflits pour les CSPs
 - Evaluation = nombre de clauses non satisfaites
 
-## Caracteristiques
+## Caractéristiques
 
 - Problemes simples sous-contraints / sur-contraints
 - Ratio nb clauses / nb symboles -> seuil de satisfiabilite
@@ -568,8 +568,8 @@ layout: default
 
 ## Estimation logique des etats
 
-- Probleme : inférence de plus en plus longue (t<sub>0</sub>+1+1+...)
-- Solution : mise en cache des resultats intermediaires
+- Problème : inférence de plus en plus longue (t<sub>0</sub>+1+1+...)
+- Solution : mise en cache des résultats intermediaires
 
 ## MAJ etat de croyance
 
@@ -605,7 +605,7 @@ layout: default
 ## Definition
 
 - Syntaxe : Symboles, connecteurs
-- Semantique : Valeurs de verite
+- Sémantique : Valeurs de verite
 
 ## Inference
 
@@ -639,7 +639,7 @@ layout: default
   - O1,1 <=> (W1,1 OU W1,2 OU W2,1)
   - O1,2 <=> (W1,1 OU W1,2 OU W1,3 OU W2,2)
   - ...
-- Besoin d'une regle par case!
+- Besoin d'une règle par case!
 
 ## Logique du premier ordre
 
@@ -679,19 +679,19 @@ layout: default
 layout: default
 ---
 
-# Semantique de la logique du premier ordre
+# Sémantique de la logique du premier ordre
 
 ## Interpretation
 
 - Domaine: ensemble non vide d'objets
-- Interpretation des constantes: elements du domaine
+- Interpretation des constantes: éléments du domaine
 - Interpretation des fonctions: applications du domaine vers le domaine
 - Interpretation des predicats: relations sur le domaine
 
 ## Satisfaction
 
-- Une interpretation satisfait ∀x P(x) si P(x) est vrai pour tout element du domaine
-- Une interpretation satisfait ∃x P(x) si P(x) est vrai pour au moins un element
+- Une interpretation satisfait ∀x P(x) si P(x) est vrai pour tout élément du domaine
+- Une interpretation satisfait ∃x P(x) si P(x) est vrai pour au moins un élément
 
 ## Modèle
 
@@ -733,7 +733,7 @@ layout: default
 - Un enonce qui ne contient aucune variable "libre"
 - Toutes les variables sont "liees" a des quantificateurs existentiels ou universels
 
-## Regles d'inference quantifiees
+## Règles d'inference quantifiees
 
 - Instanciations universelle et existentielle
   - ∀x P(x) |- P(A)
@@ -811,7 +811,7 @@ layout: default
 - Qu'est-ce qu'un bon argument ?
 - Qu'est-ce qu'un argument fallacieux ?
 
-## Themes
+## Thèmes
 
 - Taxonomie des arguments fallacieux
 - Biais cognitifs
@@ -830,7 +830,7 @@ layout: default
 
 ## Un standard procedural efficace
 
-- Les regles de base pour une discussion fructueuse
+- Les règles de base pour une discussion fructueuse
 
 ## Un standard ethique important
 
@@ -904,7 +904,7 @@ layout: default
 
 # Qu'est-ce qu'un bon argument ? (1/2)
 
-## 5 criteres
+## 5 critères
 
 1. **Structure bien formee**
    - Pas de contradictions entre premisses et avec la conclusion
@@ -912,7 +912,7 @@ layout: default
 2. **Premisses pertinentes** pour la verite de la conclusion
    - Pas de premisses inutiles, les liens doivent etre explicites
 3. **Premisses acceptables** par une personne raisonnable
-   - Connaissance commune, ou confirmee par l'experience
+   - Connaissance commune, ou confirmee par l'expérience
    - Defendue ou defendable par une source accessible
    - Temoignage non controversee par une autorite competente
    - Conclusion d'un autre bon argument
@@ -924,18 +924,18 @@ layout: default
 
 # Qu'est-ce qu'un bon argument ? (2/2)
 
-## Criteres (suite)
+## Critères (suite)
 
 4. **Premisses suffisantes** a demontrer la conclusion
    - Difficile a systematiser
-   - Cf. certaines sciences (echantillons statistiques) ou experience
+   - Cf. certaines sciences (echantillons statistiques) ou expérience
 5. **Refutation effective** des critiques anticipees
    - Le plus difficile, manque le plus souvent
    - Permet de departager de "presque" bons arguments
 
 ## Renforcer un argument
 
-- Balayer ces 5 criteres et le modifier en consequence
+- Balayer ces 5 critères et le modifier en consequence
 
 ---
 layout: default
@@ -945,7 +945,7 @@ layout: default
 
 ## Definition
 
-- La violation de l'un des criteres definissant un bon argument
+- La violation de l'un des critères definissant un bon argument
   - Faille structurelle
   - Premisse non pertinente
   - Premisse sous le standard d'acceptabilite
@@ -966,7 +966,7 @@ layout: default
 ## Denoncer un argument fallacieux
 
 - Autodestruction par reconstruction en forme standard
-- Methode du contre-exemple absurde
+- Méthode du contre-exemple absurde
 
 ## Fair-play
 
@@ -979,13 +979,13 @@ layout: default
 layout: default
 ---
 
-# Semantique de la logique du premier ordre (details)
+# Sémantique de la logique du premier ordre (details)
 
 ## Transposition dans le monde
 
 - Interpretation des domaines (Constantes -> objets), connecteurs, quantificateurs
 - Predicats, fonctions -> relations entre objets
-- Egalite -> memes objets
+- Egalite -> mêmes objets
 
 ## Interpretation d'enonce
 
@@ -1004,22 +1004,22 @@ layout: default
 layout: default
 ---
 
-# Semantique de la logique du premier ordre (2/2)
+# Sémantique de la logique du premier ordre (2/2)
 
-## Semantique de base de données
+## Sémantique de base de données
 
 - Hypothese des noms uniques
 - Les enonces atomiques inconnus sont presumes faux (hypothese de monde clos)
-- Fermeture du domaine (pas plus d'elements que les constantes données)
+- Fermeture du domaine (pas plus d'éléments que les constantes données)
 
-## Infrence en FOL : Operations Tell, Ask
+## Infrence en FOL : Opérations Tell, Ask
 
 - Assertions -> Tell (ex: TELL(KB, King(John)))
-- Requetes / buts -> Ask (ex: ASK(KB, King(John)))
+- Requêtes / buts -> Ask (ex: ASK(KB, King(John)))
 - Substitution / liste de liaison -> AskVars (ex: ASKVARS(KB, Person(x)))
 - Reduction a l'inference propositionnelle
-  - Regles des quantificateurs + symboles fermes => symboles propositionnels
-  - Procedure complete mais semi-decidable (Godel), tres lente
+  - Règles des quantificateurs + symboles fermes => symboles propositionnels
+  - Procedure complete mais semi-decidable (Godel), très lente
 
 ---
 layout: default
@@ -1029,7 +1029,7 @@ layout: default
 
 ## Chainages
 
-- **Chainage avant** : bases de données deductives, systemes de production
+- **Chainage avant** : bases de données deductives, systèmes de production
 - **Chainage arriere** : programmation logique (Prolog) + memoisation
 
 ## Exemple : le crime du Colonel West
@@ -1050,8 +1050,8 @@ layout: default
 
 ## Resolution
 
-- Systeme de preuve complet
-- Strategies pour reduire l'espace de resolution<br>(demodulation, paramodulation)
+- Système de preuve complet
+- Stratégies pour reduire l'espace de resolution<br>(demodulation, paramodulation)
 - Demonstrateurs de theoremes sophistiques :<br>OTTER, E-prover
 
 ## Notations
@@ -1070,7 +1070,7 @@ layout: default
 
 - Convertir en logique propositionnelle
 - Remplacer les variables par toutes les constantes possibles
-- Probleme: explosion combinatoire
+- Problème: explosion combinatoire
 
 ## Unification
 
@@ -1099,7 +1099,7 @@ layout: default
 
 - Unifier P(x, Jean) et P(Marie, y)
   - MGU: &#123;x/Marie, y/Jean&#125;
-  - Resultat: P(Marie, Jean)
+  - Résultat: P(Marie, Jean)
 
 - Unifier P(x, x) et P(Jean, Marie)
   - Echec: impossible d'unifier
@@ -1119,14 +1119,14 @@ layout: default
 ## Principe
 
 1. Partir des faits connus
-2. Pour chaque regle, trouver les substitutions qui satisfont les premisses
+2. Pour chaque règle, trouver les substitutions qui satisfont les premisses
 3. Ajouter les conclusions correspondantes
 4. Repeter jusqu'a ce que le but soit atteint
 
 ## Exemple
 
 - Faits: Humain(Socrate)
-- Regle: ∀x (Humain(x) => Mortel(x))
+- Règle: ∀x (Humain(x) => Mortel(x))
 - Substitution: &#123;x/Socrate&#125;
 - Nouveau fait: Mortel(Socrate)
 
@@ -1142,14 +1142,14 @@ layout: default
 ## Principe
 
 1. Partir du but
-2. Chercher les regles dont le but est la conclusion
-3. Pour chaque regle, chercher les substitutions et prouver les premisses
+2. Chercher les règles dont le but est la conclusion
+3. Pour chaque règle, chercher les substitutions et prouver les premisses
 4. Recursivement
 
 ## Exemple
 
 - But: Mortel(Socrate)
-- Regle: ∀x (Humain(x) => Mortel(x))
+- Règle: ∀x (Humain(x) => Mortel(x))
 - Substitution: &#123;x/Socrate&#125;
 - Nouveau but: Humain(Socrate)
 - Fait connu: Humain(Socrate) -> Succes!
@@ -1187,7 +1187,7 @@ layout: default
 ## FOL vs HOL
 
 - **FOL** quantifie sur des variables representant des **objets**
-- **HOL** (Higher-Order Logic) quantifie sur les **relations et fonctions elles-memes**
+- **HOL** (Higher-Order Logic) quantifie sur les **relations et fonctions elles-mêmes**
 
 ## Exemples
 
@@ -1202,7 +1202,7 @@ layout: default
 
 - **Tweety** : framework Java pour logiques argumentatives
 - **E-prover** : demonstrateur automatique pour FOL
-- **Lean** : assistant de preuve interactif, tres actif en mathematiques
+- **Lean** : assistant de preuve interactif, très actif en mathematiques
 
 ---
 layout: default
@@ -1227,18 +1227,18 @@ layout: default
 
 # Logique modale (2/2)
 
-## Syntaxe : operateurs
+## Syntaxe : opérateurs
 
 - "◊" (diamant = possibilite)
 - "□" (carre = necessite)
 
-## Semantique : mondes possibles
+## Sémantique : mondes possibles
 
 ## Applications
 
 - Philosophie (modalites epistemiques)
-- Informatique (systemes multi-agents, verification formelle)
-- Mathematiques (theorie des ensembles, des jeux, de la preuve)
+- Informatique (systèmes multi-agents, verification formelle)
+- Mathematiques (théorie des ensembles, des jeux, de la preuve)
 - Argumentation (raisonnement modal, mondes possibles)
 - Argumentum
 
@@ -1269,8 +1269,8 @@ layout: default
 ## Extensions de Dung
 
 - **ASPIC** (SPecification and Interrogation with Constraints)
-  - Regles, contraintes, attaques entre arguments
-  - Satisfaction des regles, validite des arguments, resolution des conflits
+  - Règles, contraintes, attaques entre arguments
+  - Satisfaction des règles, validite des arguments, resolution des conflits
 - **ABA** (Assumption-Based Argumentation)
   - Utilisation d'ensembles d'hypotheses
   - Relations de soutien et d'attaques
@@ -1307,15 +1307,15 @@ layout: default
 layout: default
 ---
 
-# Solveurs Modulo Theorie et optimiseurs (1/2)
+# Solveurs Modulo Théorie et optimiseurs (1/2)
 
 ## Issus de SAT, rajoute
 
-- Des theories arithmetiques
+- Des théories arithmetiques
 - Les quantificateurs du premier ordre
 - Certaines techniques de resolution d'equations ou d'optimisation mathematique
 
-## Tres populaires
+## Très populaires
 
 - Representation + riche que SAT mais **decidables** = sweet spot
 - Ex : Verification de circuits electroniques et de code/protocoles critiques
@@ -1325,11 +1325,11 @@ layout: default
 layout: default
 ---
 
-# Solveurs Modulo Theorie et optimiseurs (2/2)
+# Solveurs Modulo Théorie et optimiseurs (2/2)
 
-## Theories
+## Théories
 
-- Egalite de fonctions, differences
+- Egalite de fonctions, différences
 - Arithmetique lineaire entière, rationnelle, réelle
 - Tableaux, arithmetique non lineaire, vecteur de bits
 
@@ -1366,7 +1366,7 @@ layout: default
 - Modèle interne du monde
 - Representation du changement -> calcul situationnel
 - Proprietes perpetuelles -> proprietes cachees des lieux
-- Regles causales, de diagnostique
+- Règles causales, de diagnostique
 - Ex: (l1,l2,s) At(Wumpus,l1,s) ∧ Adjacent(l1,l2) => Smelly(l2)
 - Axiomes de persistance, d'effets, problemes de qualifications
 - Ingenierie de données -> modeliser le bon niveau
@@ -1435,12 +1435,12 @@ layout: default
 - Representation explicite des connaissances
 - Raisonnement automatique
 
-## Systemes experts
+## Systèmes experts
 
 - Base de connaissances + Moteur d'infrence
 - Domaines: medecine, diagnostic, configuration
 
-## Web semantique
+## Web sémantique
 
 - RDF, OWL: representation des connaissances sur le web
 - SPARQL: interrogation des connaissances
@@ -1462,14 +1462,14 @@ layout: default
 
 # Planification
 
-## Probleme de planification
+## Problème de planification
 
 - Trouver une sequence d'actions qui permettent d'atteindre un objectif a partir d'un etat initial
-- Donner la liste des instances d'operations, qui, executees a partir de l'etat initial, vont modifier l'etat du monde a un etat qui satisfait le but
+- Donner la liste des instances d'opérations, qui, executees a partir de l'etat initial, vont modifier l'etat du monde a un etat qui satisfait le but
 
-## Planification et resolution de probleme
+## Planification et resolution de problème
 
-- Souvent memes types de problemes
+- Souvent mêmes types de problemes
 - Planification plus expressive
 - Exploration de l'espace de plan en plus de l'espace d'etats
 - Sous-objectifs independants reduisent la complexite
@@ -1486,7 +1486,7 @@ layout: default
 - Similaire a la logique du premier ordre (FOL)
 - Etat: At(Truck1, Melbourne) ET At(Truck2, Sydney)
 - Chaque etat est appele un fluent
-- Semantique de DB (ce qui n'est pas explicite est presume faux)
+- Sémantique de DB (ce qui n'est pas explicite est presume faux)
 - Les enonces sont fermes, sans fonction
 
 ## Schema d'action
@@ -1548,7 +1548,7 @@ layout: default
 - Construction des sous-plans
 - Ordre reconcilie par application de contraintes
 
-## Decomposition hierarchique
+## Decomposition hiérarchique
 
 - Distinction des buts a decomposer
 - Primitives atomiques pour les atteindre
@@ -1593,7 +1593,7 @@ layout: default
 
 # Heuristiques pour la planification
 
-## Probleme relache
+## Problème relache
 
 - Ignorer les preconditions
 - Ignorer les delete lists
@@ -1604,7 +1604,7 @@ layout: default
 
 ## Decomposition
 
-- Diviser le probleme en sous-problemes independants
+- Diviser le problème en sous-problemes independants
 
 ## Landmarks
 
@@ -1619,7 +1619,7 @@ layout: default
 
 ## Structure de données
 
-- Generee a partir d'un probleme de planification
+- Generee a partir d'un problème de planification
 - Divisee en niveaux:
   - Niveaux d'etats Si: Les fluents peuvent etre vrais au niveau i
   - Niveaux d'actions Ai: Les actions applicables a l'étape i
@@ -1726,7 +1726,7 @@ layout: default
 
 ## Preconditions -> Axiomes de Possibilite
 
-## Operateurs: descriptions de comment le monde change
+## Opérateurs: descriptions de comment le monde change
 
 - ∀(a,s) Have(Milk, Result(a,s)) <=><br>((a=Buy(Milk) ET At(Grocery,s))<br>OU (Have(Milk, s) ET a≠Drop(Milk)))
 
@@ -1772,23 +1772,23 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 ## Plan non lineaire
 
 - Étapes &#123;S1, S2, S3...&#125;
-  - Description d'operateurs + pre et post-conditions
+  - Description d'opérateurs + pre et post-conditions
 - Liens causaux &#123;... (Si, C, Sj) ...&#125;
 - Contraintes d'ordre &#123;... Si &lt; Sj ...&#125;
 
 ## Plan complet
 
 - Toutes les étapes sont incluses
-- Chaine de causalite
+- Chaîne de causalite
 - Validite temporelle
 
 ---
 layout: default
 ---
 
-# Decomposition hierarchique
+# Decomposition hiérarchique
 
-<img src="./images/img_035.png" style="position:absolute; top:92px; right:30px; width:255px;" alt="SIPE-2 decomposition hierarchique" />
+<img src="./images/img_035.png" style="position:absolute; top:92px; right:30px; width:255px;" alt="SIPE-2 decomposition hiérarchique" />
 <img src="./images/img_036.png" style="position:absolute; top:288px; right:58px; width:200px;" alt="Build House HTN" />
 
 <style scoped>
@@ -1802,17 +1802,17 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Planning -> scheduling
 - Actions conditionnelles, incertaines, dynamiques
 
-## Planifier =/= Programmer un evenement
+## Planifier =/= Programmer un événement
 
 - Allouer des ressources, respecter des contraintes
 - Planifier -> raisonnement
 - Programmer -> CSPs
 
-## Decomposition hierarchique
+## Decomposition hiérarchique
 
-- Operateurs abstraits -> vers les Buts intermediaires
+- Opérateurs abstraits -> vers les Buts intermediaires
 - Primitives de bas niveau: Executable
-- Operateurs non primitifs: Buts, actions abstraites
+- Opérateurs non primitifs: Buts, actions abstraites
 
 ---
 layout: default
@@ -1826,9 +1826,9 @@ layout: default
 - Dans l'espace des plans (planification partiellement ordonnees, HTN, etc.)
 - Base sur les contraintes (GraphPlan, SATPlan etc.)
 - Calcul situationnel
-- Planification hierarchique
+- Planification hiérarchique
 
-## Strategies d'exploration
+## Stratégies d'exploration
 
 - Planification progressive
 - Regression des buts
@@ -1864,7 +1864,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 - Reification: predicats et constantes
   - BallonDeBasket(b) -> Membre(b, BallonsDeBasket)
-- Hierarchie: taxonomies (sous-classes), heritage
+- Hiérarchie: taxonomies (sous-classes), heritage
 - Partitions: Disjoints + decomposition exhaustive
 - Composition: PartieDe(x,y)
 - Mesure: Unites (Centimetre, Pouces)
@@ -1878,7 +1878,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 layout: default
 ---
 
-# Web semantique
+# Web sémantique
 
 
 ## Resource Description Framework (RDF)
@@ -1889,12 +1889,12 @@ layout: default
 
 ## RDFS et OWL
 
-- Classes definies
+- Classes définies
 - Contraintes
 
 ## SPARQL
 
-- Requetes sur "Triple Stores"
+- Requêtes sur "Triple Stores"
 
 ## Linked Data
 
@@ -1908,10 +1908,10 @@ layout: default
 layout: default
 ---
 
-# Systemes de raisonnement
+# Systèmes de raisonnement
 
 
-## Reseaux semantiques
+## Reseaux sémantiques
 
 - Proche des formalismes UML/Merise
 - Infrence par navigation, heritage, reification
@@ -1930,14 +1930,14 @@ layout: default
 - Circonscription, logique par defaut
 
 
-<img src="./images/img_044.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Systemes de raisonnement diagrammes" />
+<img src="./images/img_044.png" style="position:absolute; top:50px; right:10px; width:300px;" alt="Systèmes de raisonnement diagrammes" />
 
 ---
 layout: default
 ---
 
 
-# Systemes a maintenance de verite
+# Systèmes a maintenance de verite
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1948,7 +1948,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 - Statut par defaut -> revision des faits infenes faux
 - Tell(KB, not P) -> Retract(KB, P)
-- Probleme: si P->Q doit-on annuler Q?
+- Problème: si P->Q doit-on annuler Q?
 
 ## Fondes sur la justification (JTMS)
 
@@ -1960,7 +1960,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Envisager simultanement plusieurs hypotheses
 - Chaque enonce comporte les hypotheses qui peuvent le rendre vrai
 
-## Generateurs d'explications
+## Générateurs d'explications
 
 - Hypotheses = explications raisonnables
 - Explications minimales (Ockham)
@@ -2005,12 +2005,12 @@ layout: default
 
 - Meta-modèles de données
 
-## Web semantique
+## Web sémantique
 
 - Representation de faits
-- Pile semantique du W3C
+- Pile sémantique du W3C
 
-## Systemes de raisonnement
+## Systèmes de raisonnement
 
 - Maintenance de la verite
 
@@ -2105,19 +2105,19 @@ jpype.startJVM(classpath=["libs/*"])
 PlBeliefSet = jpype.JClass("org.tweetyproject.logics.pl.syntax.PlBeliefSet")
 ```
 
-JDK 17 + 35 JARs telecharges automatiquement par le notebook de setup. Aucune installation systeme requise.
+JDK 17 + 35 JARs telecharges automatiquement par le notebook de setup. Aucune installation système requise.
 
 ---
 
 # Tweety — cartographie des notebooks
 
-| # | Notebook | Theme | Duree |
+| # | Notebook | Thème | Duree |
 |---|----------|-------|-------|
 | 1 | Setup | JVM, JARs, outils externes | 20 min |
 | 2 | Basic-Logics | Propositionnelle, FOL | 45 min |
 | 3 | Advanced-Logics | DL, Modale, QBF, Conditionnelle | 40 min |
 | 4 | Belief-Revision | MUS, MaxSAT, incoherence | 50 min |
-| 5 | Abstract-Argumentation | Dung AF, semantiques, CF2 | 55 min |
+| 5 | Abstract-Argumentation | Dung AF, sémantiques, CF2 | 55 min |
 | 6 | Structured-Argumentation | ASPIC+, DeLP, ABA, ASP | 60 min |
 | 7a | Extended-Frameworks | ADF, Bipolar, WAF, SAF | 50 min |
 | 7b | Ranking-Probabilistic | Ranking, probabiliste | 40 min |
@@ -2153,7 +2153,7 @@ result = reasoner.query(kb, parser.parseFormula("c"))
 
 **Postulats AGM** (Alchourron-Gardenfors-Makinson, 1985) :
 
-| Operation | Notation | Effet |
+| Opération | Notation | Effet |
 |-----------|----------|-------|
 | Expansion | K + α | Ajoute α sans verification |
 | Contraction | K - α | Retire α et ses consequences |
@@ -2172,9 +2172,9 @@ result = reasoner.query(kb, parser.parseFormula("c"))
 
 **Definition** : `AF = (A, R)` graphe oriente arguments + relation d'attaque.
 
-**Semantiques** :
+**Sémantiques** :
 
-| Semantique | Definition |
+| Sémantique | Definition |
 |------------|------------|
 | **Conflict-free** | Aucun argument n'attaque un autre dans le set |
 | **Admissible** | Conflict-free + defend ses membres |
@@ -2183,7 +2183,7 @@ result = reasoner.query(kb, parser.parseFormula("c"))
 | **Preferred** | Maximale parmi les admissibles |
 | **Stable** | Conflict-free + attaque tout le reste |
 | **Semi-stable** | Preferred maximisant le range |
-| **CF2** | Recursif sur SCC |
+| **CF2** | Récursif sur SCC |
 
 Reference : Dung, *"On the Acceptability of Arguments"*, AIJ 1995.
 
@@ -2231,7 +2231,7 @@ reach(X, Y) :- reach(X, Z), edge(Z, Y).
 
 ---
 
-# Notebooks 8-9 — Agents et preferences
+# Notebooks 8-9 — Agents et préférences
 
 **Dialogues argumentatifs** (Walton & Krabbe, 1995) :
 - **Persuasion** : convaincre
@@ -2240,9 +2240,9 @@ reach(X, Y) :- reach(X, Z), edge(Z, Y).
 - **Inquiry** : decouvrir la verite
 - **Deliberation** : decider d'une action
 
-**Theorie sociale du choix** :
+**Théorie sociale du choix** :
 - Theoreme d'Arrow (1951) : impossibilite
-- Regles : Plurality, Borda, Condorcet, Copeland, STV
+- Règles : Plurality, Borda, Condorcet, Copeland, STV
 - Lien serie GameTheory : port Lean d'Arrow dans `social_choice_lean/`
 
 ---
@@ -2255,7 +2255,7 @@ layout: section
 
 # Qu'est-ce que Lean 4 ?
 
-**Lean 4** : assistant de preuves et langage de programmation fonctionnel base sur la **theorie des types dependants**.
+**Lean 4** : assistant de preuves et langage de programmation fonctionnel base sur la **théorie des types dependants**.
 
 - Successeur de Lean 3, reecriture complete (2021)
 - Auteur principal : Leonardo de Moura (Microsoft Research, AWS)
@@ -2273,7 +2273,7 @@ Reference : de Moura & Ullrich, *"The Lean 4 Theorem Prover and Programming Lang
 
 # Lean — cartographie des notebooks
 
-| # | Notebook | Theme | Duree |
+| # | Notebook | Thème | Duree |
 |---|----------|-------|-------|
 | 1 | Setup | elan, kernel Jupyter | 15 min |
 | 2 | Dependent-Types | Calcul des Constructions | 35 min |
@@ -2291,7 +2291,7 @@ Reference : de Moura & Ullrich, *"The Lean 4 Theorem Prover and Programming Lang
 
 ---
 
-# Modes d'execution suggeres
+# Modes d'exécution suggeres
 
 | Mode | Notebooks | Temps |
 |------|-----------|-------|
@@ -2371,7 +2371,7 @@ example (n : Nat) : n + 0 = n ∧ n * 1 = n := by omega
 example (a b : ℝ) : a^2 - b^2 = (a-b)*(a+b) := by polyrith
 ```
 
-**Recherche** : **Loogle** (syntaxique), **Moogle** (semantique).
+**Recherche** : **Loogle** (syntaxique), **Moogle** (sémantique).
 
 ---
 
@@ -2393,7 +2393,7 @@ example (a b : Nat) : a + b = b + a := by
 - 99.5% sur miniF2F (vs 85% AlphaProof)
 - Problemes Erdos en cours de formalisation
 
-**Microsoft Agent Framework** (Notebook 9) : orchestration sequentielle, concurrente, group chat, handoff.
+**Microsoft Agent Framework** (Notebook 9) : orchestration séquentielle, concurrente, group chat, handoff.
 
 ---
 
@@ -2414,7 +2414,7 @@ with Dojo(theorem) as dojo:
 
 **TorchLean** — verification de NN :
 
-| Methode | Complexite | Precision |
+| Méthode | Complexite | Precision |
 |---------|------------|-----------|
 | **IBP** (Interval Bound Propagation) | O(n) | Faible |
 | **CROWN** (Linear Relaxation) | O(n^2) | Moyenne |
@@ -2425,13 +2425,13 @@ with Dojo(theorem) as dojo:
 
 # Notebook 12 — Theoreme de sensibilité
 
-**Huang (2019)** : reponse au probleme de sensibilité (ouvert depuis 1988).
+**Huang (2019)** : reponse au problème de sensibilité (ouvert depuis 1988).
 
-> Pour toute fonction booleenne `f : {0,1}^n → {0,1}`, sensibilité `s(f)` et degre `deg(f)` sont polynomialement equivalents : `deg(f) ≤ s(f)^4`.
+> Pour toute fonction booleenne `f : {0,1}^n → {0,1}`, sensibilité `s(f)` et degré `deg(f)` sont polynomialement equivalents : `deg(f) ≤ s(f)^4`.
 
 **Outils** :
 - Hypercube `{0,1}^n`
-- Signing matrix `A_n` (recursive, eigenvalues ±√n)
+- Signing matrix `A_n` (récursive, eigenvalues ±√n)
 - Cauchy interlacing
 
 **Port Lean 4** (en cours) :
@@ -2455,7 +2455,7 @@ layout: section
 
 # Percees recentes (2024-2026)
 
-| Annee | Systeme | Accomplissement |
+| Annee | Système | Accomplissement |
 |-------|---------|------------------|
 | 2023 | **LeanDojo** | RAG ReProver, NeurIPS 2023 |
 | 2024 | **AlphaProof** | IMO 2024 silver-medal |
@@ -2485,7 +2485,7 @@ layout: section
 - LLM in-editor : **LeanCopilot, AlphaProof**
 
 **Convergence pratique** :
-- Tweety encode des semantiques de Dung en ASP (Clingo)
+- Tweety encode des sémantiques de Dung en ASP (Clingo)
 - Lean **prouve** la correction des algorithmes argumentatifs
 - LLMs (GPT-4o, Claude Opus) generent **+** verifient via les deux
 
@@ -2497,7 +2497,7 @@ layout: section
 |-------|--------------------------------|
 | **Argument_Analysis** | Tweety = backend Java pour l'analyse de textes argumentatifs |
 | **GameTheory** | Notebook 9 Tweety (vote) + `social_choice_lean/` (Arrow, Sen) |
-| **SmartContracts** | Verification Solidity (Certora, SMTChecker) — meme stack SAT/SMT |
+| **SmartContracts** | Verification Solidity (Certora, SMTChecker) — même stack SAT/SMT |
 | **ML** | TorchLean (Lean 11/11a) : verification de NN entraines |
 | **Search** | CSP : preuves de correction via Lean |
 | **Planners** | Dialogues argumentatifs (Tweety 8) ↔ planification PDDL |
@@ -2528,7 +2528,7 @@ jupyter notebook Tweety-1-Setup.ipynb
 # 3. Executer toutes les cellules, puis passer a Tweety-2
 ```
 
-JDK 17 et 35 JARs telecharges automatiquement. Aucune installation systeme requise.
+JDK 17 et 35 JARs telecharges automatiquement. Aucune installation système requise.
 
 **Validation rapide** :
 
@@ -2618,7 +2618,7 @@ jupyter notebook MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb
 
 **Lean** :
 
-| Outil | Role |
+| Outil | Rôle |
 |-------|------|
 | **elan** | Gestionnaire de versions |
 | **lake** | Build system |
@@ -2641,7 +2641,7 @@ jupyter notebook MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-1-Setup.ipynb
 - [Theorem Proving in Lean 4](https://leanprover.github.io/theorem_proving_in_lean4/)
 - [Mathlib4 Docs](https://leanprover-community.github.io/mathlib4_docs/)
 - [Loogle](https://loogle.lean-lang.org/) — recherche syntaxique
-- [Moogle](https://www.moogle.ai/) — recherche semantique
+- [Moogle](https://www.moogle.ai/) — recherche sémantique
 - [Lean Zulip](https://leanprover.zulipchat.com/)
 - [Mathematics in Lean](https://leanprover-community.github.io/mathematics_in_lean/)
 

@@ -35,6 +35,15 @@ What it does (issue #11268 acceptance 1-3)
    touched workflow, FAILS (exit 1). This is the non-regression property:
    a review claiming "2 files only" over a 3-file PR with a workflow can
    no longer be produced unnoticed.
+5. ``--scan-thread`` (the wiring into the review path, acceptance 4): fetches
+   the PR body + top-level reviews and confronts EVERY perimeter assertion
+   found there with the effective list. Wired by
+   ``.github/workflows/perimeter-review-guard.yml`` on ``pull_request`` +
+   ``pull_request_review`` -- the moment such a review is submitted or
+   edited, the check re-runs on the same head and goes red on a false
+   assertion, so the PR cannot stand merged with one. Baseline moves are
+   reported with direction but do not block in this mode (the reviewer
+   applies #11268-3 on unjustified loosening; the output names the move).
 
 Exit codes
 ----------
@@ -50,11 +59,12 @@ Usage
 -----
     python scripts/check_pr_perimeter.py 11334
     python scripts/check_pr_perimeter.py 11227 --assert "2 fichiers twins uniquement"
+    python scripts/check_pr_perimeter.py <PR#> --scan-thread
     python scripts/check_pr_perimeter.py <PR#> --baseline-justified "accepted debt, see #N"
 
-The pure core (assertion checking, baseline parsing) is unit-tested without
-network in ``scripts/tests/test_check_pr_perimeter.py``; the gh wiring is
-exercised on real PRs (see the PR that introduced this file).
+The pure core (assertion checking, baseline parsing, perimeter extraction) is
+unit-tested without network in ``scripts/tests/test_check_pr_perimeter.py``;
+the gh wiring is exercised on real PRs (see the PR that introduced this file).
 """
 
 from __future__ import annotations
@@ -204,6 +214,118 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     return problems
 
 
+# A file-count claim alone marks a perimeter assertion (the review template's
+# ``**Fichiers:** N fichiers modifiés``). For the exclusivity-only branch, the
+# line must ALSO carry a strong scope word: incidental prose like "pas
+# seulement les PR" / "uniquement à la prochaine ---" / "aucune `---`
+# ultérieure" (measured on #11632) must not be scanned, while a bare "Aucune
+# autre modification." is a genuine perimeter assertion.
+STRONG_SCOPE_WORDS = (
+    "modification", "modif", "changement", "change", "périmètre",
+    "perimetre", "perimeter", "scope",
+)
+
+
+def _quote_spans(line: str) -> list[tuple[int, int]]:
+    """Char spans of quoted speech on a single line (« ... » and " ... ").
+
+    A trigger that sits inside a quotation is REPORTED SPEECH -- the author
+    quoting someone else's assertion (an incident writeup, an anti-FP test
+    description) -- not the author's own claim. Spans are intra-line: a quote
+    opened but not closed on the line counts to end of line.
+    """
+    spans: list[tuple[int, int]] = []
+    for open_c, close_c in (("«", "»"), ('"', '"')):
+        start = 0
+        while True:
+            i = line.find(open_c, start)
+            if i < 0:
+                break
+            j = line.find(close_c, i + 1)
+            if j < 0:
+                spans.append((i, len(line)))
+                break
+            spans.append((i, j + 1))
+            start = j + 1
+    return spans
+
+
+def _trigger_quoted(line: str, pos: int, length: int) -> bool:
+    return any(a <= pos and pos + length <= b for a, b in _quote_spans(line))
+
+
+def _counts_all_quoted(line: str) -> bool:
+    """Every file-count claim on the line sits inside a quotation."""
+    return all(
+        _trigger_quoted(line, m.start(), m.end() - m.start())
+        for m in COUNT_CLAIM.finditer(line)
+    )
+
+
+def _markers_all_quoted(line: str) -> bool:
+    """Every exclusivity marker on the line sits inside a quotation."""
+    low = line.lower()
+    for marker in EXCLUSIVITY_MARKERS:
+        start = 0
+        while True:
+            i = low.find(marker, start)
+            if i < 0:
+                break
+            if not _trigger_quoted(line, i, len(marker)):
+                return False
+            start = i + len(marker)
+    return True
+
+
+def extract_perimeter_assertions(text: str) -> list[str]:
+    """Pull candidate perimeter assertions from review/PR prose.
+
+    Line-based by design: perimeter statements sit on their own line (the
+    report template's ``**Fichiers:** N fichiers modifiés``, the founding
+    ``**Périmètre** : 2 fichiers twins uniquement, aucune autre
+    modification.``). A line is a candidate when it carries a file-count
+    claim, or an exclusivity marker AND a strong scope word. Lines with
+    neither are not perimeter assertions and are skipped.
+
+    Two citation shapes are skipped (measured on this tool's own PR #11635,
+    dogfooded 2026-08-18 -- its evidence table quotes the founding sentence
+    and the guard flagged its own PR against its own 4-file list):
+
+    1. **Markdown table rows** (lines starting with ``|``): tables are
+       report/summary structures (evidence matrices, status boards); a
+       perimeter assertion is prose. The review template's line is a bullet,
+       not a cell.
+    2. **Candidacy fully quoted**: the trigger that made the line a
+       candidate (count claim, or exclusivity markers) sits inside
+       ``« ... »`` / ``" ... "`` -- the line quotes someone else's
+       assertion instead of making one. One unquoted trigger keeps the line
+       live.
+
+    A ``#N`` backlink in the line is NOT an exemption: the founding #11227
+    Hermes sentence carries an inline issue ref (#2874) in the same line and
+    must stay caught -- a backlink exemption would also be a trivial
+    evasion.
+    """
+    candidates: list[str] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("|"):
+            continue  # markdown table row: report structure, not an assertion
+        low = line.lower()
+        if COUNT_CLAIM.search(line):
+            if _counts_all_quoted(line):
+                continue  # quoting a count (reported speech), not claiming it
+            candidates.append(line)
+            continue
+        if any(m in low for m in EXCLUSIVITY_MARKERS) and any(w in low for w in STRONG_SCOPE_WORDS):
+            if _markers_all_quoted(line):
+                continue  # quoting an exclusivity claim, not making it
+            candidates.append(line)
+    return candidates
+
+
 def format_report(report: Report, assertion: Optional[str]) -> str:
     lines = []
     lines.append(f"Périmètre effectif : {len(report.files)} fichier(s)")
@@ -253,10 +375,39 @@ def fetch_report(pr: int) -> Report:
     return Report(files=files, moves=extract_baseline_moves(diff))
 
 
+def fetch_review_thread(pr: int) -> list[dict]:
+    """PR body + top-level review bodies -- the surfaces that carry perimeter assertions.
+
+    Inline review comments are deliberately not scanned (v1): the perimeter
+    statement lives in the review body or the PR body. ``gh pr view --json
+    reviews`` returns the review objects with body/state/author.
+    """
+    meta = json.loads(_run_gh(["pr", "view", str(pr), "--json", "body,reviews"]))
+    items: list[dict] = [{"kind": "PR body", "author": "pr-author", "body": meta.get("body") or ""}]
+    for rv in meta.get("reviews") or []:
+        items.append({
+            "kind": f"review ({rv.get('state')})",
+            "author": rv.get("author", {}).get("login", "?"),
+            "body": rv.get("body") or "",
+        })
+    return items
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Perimeter truth-source for PR reviews (#11268)")
     ap.add_argument("pr", type=int, help="PR number")
     ap.add_argument("--assert", dest="assertion", help="draft perimeter assertion to confront")
+    ap.add_argument(
+        "--scan-thread",
+        action="store_true",
+        help="scan the PR body + top-level reviews for perimeter assertions and "
+             "confront each with the effective file list (the wiring that makes "
+             "a false assertion -- #11227's '2 fichiers twins uniquement' -- "
+             "impossible to leave unblocked, #11268-4). Baseline moves are "
+             "reported with direction but do NOT block here: the output names "
+             "them and the reviewer applies CHANGES_REQUESTED on unjustified "
+             "loosening.",
+    )
     ap.add_argument(
         "--baseline-justified",
         dest="justified",
@@ -267,9 +418,14 @@ def main() -> int:
     report = fetch_report(args.pr)
     if args.assertion:
         report.problems.extend(check_assertion(report.files, args.assertion))
+    if args.scan_thread:
+        for item in fetch_review_thread(args.pr):
+            for cand in extract_perimeter_assertions(item["body"]):
+                for p in check_assertion(report.files, cand):
+                    report.problems.append(f"[{item['kind']} / {item['author']}] {p}")
 
     blocking = list(report.problems)
-    if not args.justified:
+    if not args.justified and not args.scan_thread:
         for m in report.moves:
             if m.direction == "LOOSEN":
                 blocking.append(

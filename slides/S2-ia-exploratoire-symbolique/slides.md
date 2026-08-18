@@ -1,7 +1,7 @@
 ---
 theme: ../theme-ia101
 title: "Intelligence Artificielle - IA Exploratoire et Symbolique"
-info: IA 101 - Recherche, algorithmes genetiques, logique, SMTs
+info: IA 101 - Recherche, algorithmes génétiques, logique, SMTs
 paginate: true
 drawings:
   persist: false
@@ -790,9 +790,9 @@ layout: two-cols
 
 - **Objectif de l'inférence logique:**
   - Vérifier qu'un énoncé est une conséquence de la KB, i.e. un théorème
-- Inférence par la preuve: utilisation de règles de dérivation cohérentes pour produire une chaine de conclusions conduisant au but
+- Inférence par la preuve: utilisation de règles de dérivation cohérentes pour produire une chaîne de conclusions conduisant au but
 - **Exemple de règles cohérentes**
-  - **REGLE / PREMISSES / CONCLUSION**
+  - **RÈGLE / PREMISSES / CONCLUSION**
   - Modus Ponens : A, A  B  B
   - Introduction du Et : A, B  A  B
   - Elimination du Et : A  B  A
@@ -1027,7 +1027,7 @@ layout: two-cols
 - Décomposition hiérarchique
 
 <img src="./images/img_050.png" width="300" alt="Diagramme planification">
-<img src="./images/img_051.png" width="300" alt="Schema hierarchique">
+<img src="./images/img_051.png" width="300" alt="Schema hiérarchique">
 
 
 
@@ -1046,7 +1046,7 @@ layout: two-cols
 - Web sémantique
   - W3C
 
-<img src="./images/img_052.png" width="280" alt="Ontologies web semantique">
+<img src="./images/img_052.png" width="280" alt="Ontologies web sémantique">
 
 - Linked Data
 
@@ -1090,7 +1090,7 @@ layout: section
 
 - **Exploration** : `Search/Exploration_non_informee_et_informee_intro.ipynb`
   - BFS, DFS, UCS, A* sur carte de Roumanie
-- **Algorithmes genetiques** : `Sudoku/Sudoku-2-Genetic.ipynb`
+- **Algorithmes génétiques** : `Sudoku/Sudoku-2-Genetic.ipynb`
   - `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 - **Z3 / SMT** : `Sudoku/Sudoku-4-Z3.ipynb`
 - **Logique formelle** : `SymbolicAI/Lean/` (10 notebooks)
@@ -1109,4 +1109,4 @@ Jean-Sylvain Boige
 jsboige@myia.org
 
 > **Notebooks associes :** `MyIA.AI.Notebooks/Search/`, `MyIA.AI.Notebooks/Sudoku/`, `MyIA.AI.Notebooks/SymbolicAI/`
-> Tutoriels exploration, algorithmes genetiques, CSP, Z3, logique formelle
+> Tutoriels exploration, algorithmes génétiques, CSP, Z3, logique formelle
