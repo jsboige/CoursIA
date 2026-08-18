@@ -27,6 +27,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -109,6 +111,64 @@ NOTEBOOK_EXCLUDE_MARKERS = (
 # l'historique git du fichier. Laisser ce tuple vide sauf raison mesuree.
 NOTEBOOK_EXCLUDE_FILES = ()
 
+# --- Garde de separateur horizontal `---` (issue #11451) --------------------
+#
+# Une ligne `---` seule dans une cellule markdown ouvre un bloc
+# `yaml_metadata_block` ; le `---` d'une cellule suivante le referme. Quarto
+# parse ce bloc en YAML (`readYamlFromMarkdown` -> `extractYaml`). Le contenu
+# intermediaire est de la prose et des titres du type `### Interpretation : X`,
+# que YAML lit comme des paires cle/valeur : `quarto render` s'arrete sur
+# `YAMLException` et AUCUNE page du site n'est publiee.
+#
+# Mesure (2026-08-18) : au dernier build vert (98c877037, 2026-08-17T19:09Z) la
+# render-list portait 118 notebooks ; le rollout #10923 (tranches 6 a 13) l'a
+# portee a 348, dont 234 contiennent au moins un `---`. Deux pannes du site le
+# meme jour, sur deux notebooks differents de cette classe (FallacyDetection-02
+# corrige par #11629, puis SymbolicLearning SL-8). Quarto s'arretant a la
+# PREMIERE erreur, les corriger un par un = une panne par notebook.
+#
+# La garde est SYNTAXIQUE et volontairement conservatrice : elle ne cherche pas
+# a rejouer la logique d'appariement de Quarto (un modele js-yaml fidele rendait
+# encore 4 faux positifs sur le lot vert de reference, cf. #11451). Elle se
+# contente de la condition NECESSAIRE : pas de `---`, pas de bloc, pas de
+# panne possible.
+#
+# Elle est AUTO-RESORBANTE : des qu'une famille est nettoyee (`---` -> `***`,
+# meme rendu <hr> en Pandoc, aucune semantique YAML), ses notebooks
+# reintegrent la render-list sans toucher a ce script.
+_FENCE_RE = re.compile(r"^(```|~~~)")
+
+
+def has_hr_separator(rel_path: str) -> bool:
+    """True si une cellule markdown porte un `---` en separateur horizontal.
+
+    Ignore les `---` a l'interieur d'un bloc de code, et les `---` qui
+    SOULIGNENT du texte (titre setext H2) : seul un `---` precede d'une ligne
+    vide ou du debut de cellule ouvre un bloc de metadonnees.
+    """
+    try:
+        nb = json.loads((REPO_ROOT / rel_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False  # illisible ici : laisser la CI trancher
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell.get("source")
+        text = "".join(src) if isinstance(src, list) else (src or "")
+        lines = text.split("\n")
+        in_fence = False
+        for i, line in enumerate(lines):
+            if _FENCE_RE.match(line.strip()):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            if line.rstrip() == "---":
+                prev = lines[i - 1].strip() if i > 0 else ""
+                if prev == "":
+                    return True
+    return False
+
 
 def git_tracked_notebooks() -> list[str]:
     """Return repo-relative POSIX paths of every git-tracked ``.ipynb`` under
@@ -134,6 +194,8 @@ def git_tracked_notebooks() -> list[str]:
             continue
         if p in NOTEBOOK_EXCLUDE_FILES:
             continue
+        if has_hr_separator(p):
+            continue  # cf. garde `---` ci-dessus (#11451)
         paths.append(p)
     # Sort for deterministic diffs (by path, case-insensitive)
     paths.sort(key=lambda s: s.lower())
