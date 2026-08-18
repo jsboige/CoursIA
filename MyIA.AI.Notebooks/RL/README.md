@@ -49,8 +49,8 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
 | pt-1 | [rlpt_1_ppo_lm_rlhf](rlpt_1_ppo_lm_rlhf.ipynb) | PPO pour alignement d'un petit LM (RLHF toy, from scratch, char-level) : reward model jouet, KL vs politique SFT de référence, multi-seed 4 — la signature RLHF, différenciée de rl_6c (PPO CartPole) et rl_6e (GRPO) | 40-45 min |
-| pt-2 | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.ipynb) | GRPO sur Qwen3.5-0.8B local (8 Go Viability), reward vérifiable, budget steps borné — le cœur « à la Deepseek » : group rollouts, avantage sans value net, pont #5105 | 45-55 min |
-| pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) | 35-40 min |
+| pt-2 | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.ipynb) | GRPO **nu** sur Qwen3.5-0.8B local (8 Go Viability) : le cœur « à la Deepseek » (group rollouts, avantage sans value net) sur récompense vérifiable simple (addition à 2 chiffres) — **sans verifiers ni rewardspy** : l'algorithme seul, que PT-11a industrialise (verifiers Z3 + observabilité en ligne) | 45-55 min |
+| pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) | Reward hacking × inoculation : **entraînement GRPO réel** avec récompense piégée sur 0.5B (le hack n'est pas un attracteur fort — anatomie d'un non-échec), inoculation comme variable expérimentale, détection par divergence récompense-optimisée vs objectif réel, verdict seed fixée. PT-07 couvre l'**observabilité** offline (rewardspy) ; ICT-25 (#5105) le capstone multi-persona | 35-40 min |
 | pt-4 | [rlpt_4_dpo_vs_ppo](rlpt_4_dpo_vs_ppo.ipynb) | DPO/ORPO offline vs GRPO online sur même tâche conversationnelle, même budget 40 steps, préférences auto-fabriquées — verdict multi-seed {42,0,1,7} honnête DM, dispersion inter-seed documentée | 50-55 min |
 
 ## Parcours recommandé
@@ -562,6 +562,10 @@ Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur
 | MDP, value/Q ([rl_5](rl_5_mdp_dp_qlearning.ipynb)) | Socle policy/value réutilisé par tout post-training — [GenAI/PostTraining](../GenAI/PostTraining/README.md) |
 
 En résumé : **DPO** (Direct Preference Optimization) est l'aboutissement direct de la ligne offline RL + contrainte de support + preference learning tracée par les notebooks 9 et 10. Pour le voir tourner sur de vrais LLM, suivre [GenAI/PostTraining](../GenAI/PostTraining/README.md) puis [GenAI/FineTuning](../GenAI/FineTuning/README.md).
+
+### Frontière : `rlpt_*` (ici) vs GenAI/PostTraining
+
+La sous-série `rlpt_*` répond à la question **pourquoi** : la mécanique de chaque algorithme de post-training, en petit, sur un modèle qui tient en 8 Go et des récompenses vérifiables simples — RLHF char-level (rlpt_1), GRPO nu (rlpt_2), anatomie du reward hacking (rlpt_3), DPO vs GRPO à budget égal (rlpt_4). [GenAI/PostTraining](../GenAI/PostTraining/README.md) répond à la question **comment à l'échelle** : les mêmes algorithmes sur la pile `trl` complète — verifiers variés (Z3/SymPy), observabilité `rewardspy`, RLVR multi-seed. Un lecteur qui veut comprendre l'algorithme ouvre `rlpt_*` ; un lecteur qui veut reproduire un pipeline de production ouvre PostTraining (PT-04 GRPO, PT-07 reward hacking, PT-11a/b RLVR).
 
 ---
 
