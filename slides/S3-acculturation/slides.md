@@ -374,6 +374,11 @@ layout: two-cols
 
 # Arbre d'exploration
 
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Idée de base</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Exemple : Énigme</div>
+</div>
+
 
 **Idée de base**
 
@@ -393,7 +398,7 @@ layout: two-cols
   - Jamais + de cannibales
 
 <img src="./images/img_023.png" class="w-[280px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_024.png" class="w-[100px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_024.png" class="w-[460px] max-w-full max-h-[300px] object-contain" />
 
 
 
@@ -503,6 +508,11 @@ layout: two-cols
 
 # Jeux
 
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux vs Exploration</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Arbre Minimax</div>
+</div>
+
 
 **Jeux vs Exploration**
 
@@ -546,6 +556,11 @@ layout: two-cols
 
 
 # Problèmes à satisfaction de contraintes
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Définition CSPs</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Techniques</div>
+</div>
 
 
 **Définition CSPs**
@@ -709,6 +724,11 @@ layout: two-cols
 
 # Application: argumentation
 
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Code de conduite</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Qu'est-ce qu'un argument ?</div>
+</div>
+
 
 **Code de conduite**
 
@@ -794,6 +814,11 @@ layout: two-cols
 
 
 # Application: Planification
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Expression de problème</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Approches</div>
+</div>
 
 
 **Expression de problème**
@@ -1013,6 +1038,7 @@ layout: two-cols
 
 # Prise de décision
 
+<div class="dense-list">
 
 - Théorie de la décision
   - Que faire?
@@ -1032,6 +1058,8 @@ layout: two-cols
   - Processus de Markov
   - Politique optimale
 
+</div>
+
 <div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_061.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_062.png" class="w-[150px] max-w-full max-h-[300px] object-contain" />
@@ -1045,6 +1073,11 @@ layout: two-cols
 
 
 # Théorie des jeux (1/2)
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Environnement multi-agents</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Optimisation de stratégies</div>
+</div>
 
 
 **Environnement multi-agents**
@@ -1083,6 +1116,11 @@ layout: two-cols
 
 
 # Théorie des jeux (2/2)
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux simultanés</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Jeux séquentiels</div>
+</div>
 
 
 **Jeux simultanés**
@@ -1159,6 +1197,11 @@ layout: two-cols
 
 
 # Conception de mécanismes
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Concepts</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Résultats</div>
+</div>
 
 
 **Concepts**
@@ -2205,6 +2248,234 @@ graph LR
 ```
 
 > Référence : `docs/genai/genai-services.md`
+
+
+---
+layout: section
+---
+
+
+# Retour d'expérience : une organisation d'agents
+
+- Ce que change le passage de l'assistant à l'atelier
+- L'organisation, les règles, les garde-fous
+- Ce qui marche, ce qui ne marche pas
+
+
+---
+
+
+# De l'assistant à l'atelier
+
+**L'assistant** : on pose une question, il répond. La valeur s'arrête quand on
+ferme la fenêtre.
+
+**L'atelier** : plusieurs agents travaillent en continu sur un dépôt, chacun
+produit un livrable **relisable** (une *pull request*), un coordinateur relit et
+intègre.
+
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div>
+
+**Le dépôt, au 17 août 2026**
+
+| | |
+|---|---|
+| Contributions intégrées | **9 192** |
+| Commits | **11 383** |
+| Notebooks pédagogiques | **1 040** |
+| Machines hébergeant des agents | **5** |
+| Postes de travail (« lanes ») | **10** |
+
+</div>
+<div>
+
+**Le rythme récent**
+
+| | |
+|---|---|
+| Contributions / 30 jours | **3 464** |
+| Contributions / 7 jours | **885** |
+| Contributions / 24 h | **181** |
+
+</div>
+</div>
+
+> Toutes tailles confondues : du correctif d'une ligne à la preuve formelle.
+> Le chiffre qui compte n'est pas le volume, c'est qu'**aucune n'entre sans
+> relecture**.
+
+
+---
+
+
+# L'organisation, trait pour trait
+
+Le parallèle avec une entreprise n'est pas une métaphore : ce sont les mêmes
+problèmes, et ils se résolvent avec les mêmes objets.
+
+| Dans l'atelier d'agents | Dans une organisation |
+|---|---|
+| Un **coordinateur** distribue le travail et intègre | Direction / chef de projet |
+| Des **spécialistes** par domaine (21 profils) | Métiers |
+| Une **file de travail** par poste, jamais vide | Plan de charge |
+| Un **jeton de réservation** posé sur la tâche | « Qui fait quoi » — anti-doublon |
+| Une **revue obligatoire** avant intégration | Contrôle, double signature |
+| Des **règles écrites** (27) plutôt que des consignes orales | Procédures |
+
+Aucun de ces objets n'a été conçu pour l'IA : ce sont ceux d'une direction
+des opérations, transposés tels quels.
+
+
+---
+
+
+# Le circuit d'une contribution
+
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#F5F5F5", "primaryTextColor": "#2C3E50", "primaryBorderColor": "#8B1A1A", "lineColor": "#7F8C8D", "fontSize": "15px", "fontFamily": "Segoe UI, Calibri, Arial, sans-serif"}, "flowchart": {"nodeSpacing": 26, "rankSpacing": 44, "curve": "linear"}}}%%
+graph LR
+    D[Direction] --> C[Coordinateur]
+    C --> L1[Poste 1]
+    C --> L2[Poste 2]
+    C --> L3[Poste n]
+    L1 --> P[Livrable relisable]
+    L2 --> P
+    L3 --> P
+    P --> G{Revue + contrôles}
+    G -->|conforme| M[Intégré]
+    G -->|non conforme| C
+```
+
+Le **retour en arrière** est le trait décisif : une contribution non conforme
+ne bloque personne, elle revient au poste qui l'a produite.
+
+> Le jeton de réservation est né d'un incident : deux postes irréprochables ont
+> livré **deux fois le même travail**. Ce n'était pas une faute d'exécution,
+> c'était un **défaut de signal**.
+
+
+---
+
+
+# Écrire la règle plutôt que rappeler la consigne
+
+Une leçon transposable telle quelle au management.
+
+**Ce qui ne tient pas** : redire la consigne. Un agent — comme une équipe —
+finit par contourner une règle qui n'est portée que par la vigilance.
+
+**Ce qui tient** : un **organe** qui rend le manquement visible et bloquant.
+
+<div class="grid grid-cols-2 gap-4 mt-2">
+<div>
+
+**Exemples vécus**
+
+- « Ne jamais intégrer une remarque non traitée » → un contrôle qui refuse
+  l'intégration tant que la remarque n'a pas reçu **une phrase** de réponse
+- « Varier le travail » → un compteur qui plafonne les tâches faciles
+- « Ne pas se marcher dessus » → le jeton de réservation
+
+</div>
+<div>
+
+**La formulation qui a émergé**
+
+> Une règle non appliquée demande un **organe**,
+> pas davantage de vigilance.
+
+Et son corollaire, plus dur à admettre :
+
+> Un commit poussé après une remarque ne la lève pas.
+> Ce qui lève une remarque, c'est **une phrase**.
+
+</div>
+</div>
+
+> 27 règles écrites, chargées automatiquement à chaque session. La documentation
+> qui n'est pas chargée n'existe pas.
+
+
+---
+
+
+# Les garde-fous : on ne fusionne pas sur parole
+
+**93 contrôles automatiques** s'exécutent sur chaque contribution. Ils ne
+vérifient pas l'intention, ils vérifient le **livrable** :
+
+- le notebook s'exécute-t-il vraiment de bout en bout ?
+- la preuve formelle compile-t-elle, sans trou masqué ?
+- le résultat annoncé est-il reproductible sur plusieurs tirages ?
+- la contribution fait-elle **ce que son titre annonce**, rien de plus ?
+
+**Le revers, mesuré aujourd'hui même.** Le contrôle unique qui protège la
+branche principale a, pendant plusieurs heures, bloqué **78 contributions
+saines** : le mécanisme censé le débloquer publiait un second verdict sous le
+**même nom**, et la plateforme exige que **tous** les verdicts homonymes soient
+au vert. Le sauvetage ne pouvait qu'ajouter une façon d'échouer.
+
+> Un garde-fou est un actif **et** un risque d'exploitation. Celui-ci a été
+> diagnostiqué en une requête — parce qu'il était instrumenté. Sans mesure, il
+> serait passé pour « la file d'attente est saturée », et on aurait attendu.
+
+
+---
+
+
+# Ce qui ne marche pas
+
+Le retour d'expérience utile n'est pas la liste des réussites.
+
+**1. L'affirmation confiante et fausse.** Un agent annonce volontiers « fait,
+vérifié ». Le remède n'est pas la défiance, c'est l'**exigence de preuve
+citée** : le numéro de ligne, la sortie de commande, le lien vers l'exécution.
+
+**2. L'instrument qui répond « rien trouvé » quand il veut dire « je n'ai pas
+regardé ».** Neuf fois en une seule session de travail, une mesure a rendu un
+chiffre **plus petit et plus propre que la vérité** — donc rassurant. C'est le
+mode de panne le plus dangereux, parce qu'il ne lève aucune alerte.
+
+**3. La monoculture du facile.** Laissée libre, une équipe d'agents converge
+vers les tâches courtes et sûres, et le travail de fond ne sort jamais. Il a
+fallu un quota explicite.
+
+**4. Le coût de coordination est réel.** Il croît plus vite que le nombre
+d'agents. Au-delà d'une dizaine de postes, ce n'est plus l'IA qu'on optimise,
+c'est l'organisation.
+
+> Aucun de ces quatre points n'est propre à l'IA. Ce sont des pathologies
+> d'organisation, que l'IA rend simplement **plus rapides**.
+
+
+---
+
+
+# Ce qu'un comité de direction peut en retenir
+
+**1. Le gain n'est pas la génération, c'est le débit relu.** Produire du texte
+ou du code est devenu gratuit ; ce qui reste cher, c'est de **savoir ce qu'on
+peut intégrer**. Investir dans la relecture automatisée, pas dans la génération.
+
+**2. La vérification doit être mécanique.** Tout ce qui repose sur la vigilance
+d'une personne finit par céder sous le volume. Ce qui est vérifié par un
+programme tient.
+
+**3. Ce qui n'est pas mesuré n'est pas su.** Les deux incidents les plus coûteux
+de ce projet ont été des mesures fausses, pas des décisions fausses.
+
+**4. L'organisation est le facteur limitant, pas le modèle.** Les modèles
+progressent seuls ; la distribution du travail, la non-duplication et le
+contrôle qualité, non.
+
+**5. Commencer par un périmètre où l'erreur est rattrapable.** Un dépôt de code
+a une propriété rare : tout y est réversible et tracé. Peu de processus
+d'entreprise offrent ce filet — c'est le premier critère de choix d'un pilote.
+
+> Un atelier d'agents ne remplace pas une équipe. Il déplace le travail de
+> l'exécution vers la **spécification** et le **contrôle** — les deux endroits où
+> une direction a le plus à dire.
 
 
 ---

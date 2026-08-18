@@ -2,10 +2,15 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/CSP/App-15b-SportsScheduling-CSharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = `ortools` PyPI (Google, Apache-2.0, CP-SAT solver SOTA-tier : `from ortools.sat.python import cp_model` + `CpModel()` + variables match[round][home][away] + `AddExactlyOne` pour home/away + `AddBoolOr` constraints non-consecutifs + `solver.Solve()`). C# = `Google.OrTools` NuGet (Google, Apache-2.0, meme solver CP-SAT : `#r \"nuget: Google.OrTools\"` + `using Google.OrTools.Sat;`) + `ScottPlot` NuGet (MIT-license, viz supplementaire du calendrier : `#r \"nuget: ScottPlot\"` + `using ScottPlot;` + `Plot()` heatmap render). Verdict SOTA-OK : les DEUX cotes utilisent LE MEME solveur Google OR-Tools CP-SAT natif pour la planification, le ScottPlot cote C# est un helper viz optionnel (le notebook PY utilise matplotlib/heatmap equivalent, asymetrie mineure de lib viz). Asymetrie documentee : parity_level: semantic (vs native-both) car la viz ScottPlot/matplotlib n'est PAS dans le bridge CP-SAT, le semantisme = same calendar output independant de la viz."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 2da1143851d2ac59ae66254495bb661aaddcd68c
+      csharp_sha: cff8412cd42cc696afdb430a1c5984c3154c34e3
+      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : Python atteint OR-Tools CP-SAT (ortools), C# atteint Google.OrTools (le meme moteur, portage officiel .NET). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (re-grep 2026-08-18)."
     - date: '2026-08-04'
       by: myia-po-2024:CoursIA
       python_sha: a7c58274670a247cb90b36ae75c136183170e21b

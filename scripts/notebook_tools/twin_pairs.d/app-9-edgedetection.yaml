@@ -2,8 +2,13 @@
   family: Search/Applications
   python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9-EdgeDetection.ipynb
   csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: a783da437fdbb5773339cc4c7b1c648ebd1e3169
+      csharp_sha: a2cc061a4109cfd9aef63b92fd16d152f5430a73
+      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : Python atteint DEAP (framework evolutionnaire de reference en Python), C# atteint GeneticSharp (moteur genetique de reference de l'ecosysteme .NET). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (re-grep 2026-08-18)."
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
       python_sha: 5aa7d42e6e941a86dfcedbb3c9aded569d32d2b4
