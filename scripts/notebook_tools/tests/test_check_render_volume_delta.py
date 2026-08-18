@@ -481,6 +481,169 @@ def test_cli_missing_notebook_returns_error_rc2(tmp_path):
 # -> autres : pas de changement direct.
 
 
+def test_cli_divergent_topology_no_signal_when_notebook_only_on_base(tmp_path):
+    """Topologie divergente : base et head portent chacun un commit que
+    l'autre n'a pas, mais le notebook n'est modifie QUE cote base. Aucune
+    perte cote PR -> 0 finding, meme si ``origin/main`` deux-points aurait
+    montre une perte (cf. c.357-L1 NEW durable : 3e instance du tell
+    ``origin/main`` deux-points != ``merge-base``, fix sur PR #11658).
+
+    Le helper ``_init_git_repo_with_nb`` construit une topologie lineaire
+    (``init`` -> ``add notebook``), donc la suite ne produit que la forme
+    OU le defaut ne vit pas. Ce test construit explicitement la topologie
+    divergente :
+
+        commit A (HEAD~3) : init
+        commit B (HEAD~2) : add notebook cote base
+        commit C (HEAD~1) : evolution main (autre fichier, pas le notebook)
+        commit D (HEAD)   : evolution PR (autre fichier, pas le notebook)
+
+    Le notebook n'a ete touche qu'en commit B. En ``HEAD~2`` (base
+    divergente) il a le contenu modifie ; en ``HEAD`` il a toujours ce
+    contenu (pas touche). Le detecteur rend 0.
+
+    Controle positif : sur la meme topologie, si on passe ``--base
+    origin/main`` deux-points (le default historique), il considererait
+    l'absence du notebook comme une perte de 100% -- c'est precisement le
+    faux verdict que c.357 corrige. On documente le tell par un assert
+    miroir sur le bon comportement (0 findings avec merge-base).
+    """
+    def _git(*args, check=True):
+        return subprocess.run(
+            ["git", *args],
+            cwd=tmp_path, capture_output=True, text=True, encoding="utf-8",
+            check=check,
+        )
+
+    nb_name = "case.ipynb"
+    nb_path = tmp_path / nb_name
+    # Commit A (HEAD~3) : init sentinel
+    _git("init", "-q")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test")
+    (tmp_path / ".keep").write_text("", encoding="utf-8")
+    _git("add", ".keep")
+    _git("commit", "-q", "-m", "init")
+
+    # Commit B (HEAD~2) : notebook avec sortie text/html 12 500 B (base)
+    nb_base = {"cells": [_make_cell_with_text_html_bytes(12_500, "c1")]}
+    nb_path.write_text(json.dumps(nb_base, ensure_ascii=False), encoding="utf-8")
+    _git("add", nb_name)
+    _git("commit", "-q", "-m", "add notebook on base side")
+
+    # Commit C (HEAD~1) : evolution main (autre fichier, pas le notebook)
+    (tmp_path / "main_evolution.txt").write_text("main-only change", encoding="utf-8")
+    _git("add", "main_evolution.txt")
+    _git("commit", "-q", "-m", "main evolution")
+
+    # Commit D (HEAD) : evolution PR (autre fichier, pas le notebook)
+    (tmp_path / "pr_evolution.txt").write_text("PR-only change", encoding="utf-8")
+    _git("add", "pr_evolution.txt")
+    _git("commit", "-q", "-m", "PR evolution")
+
+    # Le notebook en HEAD est inchange depuis HEAD~2 (cote base). Aucune
+    # perte cote PR. Avec --base HEAD~2 --head HEAD, le detecteur doit
+    # rendre 0 finding.
+    result = subprocess.run(
+        [sys.executable, str(TOOL), nb_name,
+         "--base", "HEAD~2", "--head", "HEAD",
+         "--check", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert result.returncode == 0, (
+        f"topologie divergente avec notebook inchange en PR : 0 finding attendu, "
+        f"got rc={result.returncode} stderr={result.stderr[:500]} "
+        f"stdout={result.stdout[:500]}"
+    )
+    payload = json.loads(result.stdout)
+    assert payload.get("stats", {}).get("findings_count", 0) == 0, (
+        f"pas de perte cote PR -> 0 finding obligatoire, got {payload}"
+    )
+
+
+def test_cli_divergent_topology_with_notebook_modified_only_on_head_passes(tmp_path):
+    """Pin inverse : topologie divergente OU le notebook n'est modifie QUE
+    cote head (PR enrichit sans toucher base). Aucune perte -> 0 finding.
+
+    Complementaire au test precedent : verifie que la symetrie tient dans
+    les deux sens de divergence.
+    """
+    def _git(*args, check=True):
+        return subprocess.run(
+            ["git", *args],
+            cwd=tmp_path, capture_output=True, text=True, encoding="utf-8",
+            check=check,
+        )
+
+    nb_name = "case.ipynb"
+    nb_path = tmp_path / nb_name
+
+    # Commit A (HEAD~3) : init sentinel (pas de notebook)
+    _git("init", "-q")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test")
+    (tmp_path / ".keep").write_text("", encoding="utf-8")
+    _git("add", ".keep")
+    _git("commit", "-q", "-m", "init")
+
+    # Commit B (HEAD~2) : evolution main (autre fichier, pas le notebook)
+    (tmp_path / "main_evolution.txt").write_text("main-only", encoding="utf-8")
+    _git("add", "main_evolution.txt")
+    _git("commit", "-q", "-m", "main evolution")
+
+    # Commit C (HEAD~1) : evolution PR (autre fichier, pas le notebook)
+    (tmp_path / "pr_evolution.txt").write_text("pr-only", encoding="utf-8")
+    _git("add", "pr_evolution.txt")
+    _git("commit", "-q", "-m", "PR evolution")
+
+    # Commit D (HEAD) : notebook ajoute cote PR (enrichissement, base=absent)
+    nb = {"cells": [_make_cell_with_text_html_bytes(8_000, "c1")]}
+    nb_path.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    _git("add", nb_name)
+    _git("commit", "-q", "-m", "add notebook on head side")
+
+    # Base = HEAD~3 (pas de notebook) -> exempt (new_file). Pas de finding.
+    result = subprocess.run(
+        [sys.executable, str(TOOL), nb_name,
+         "--base", "HEAD~3", "--head", "HEAD",
+         "--check", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert result.returncode == 0, (
+        f"topologie divergente avec notebook nouveau cote head : exempt, "
+        f"got rc={result.returncode} stderr={result.stderr[:500]}"
+    )
+    payload = json.loads(result.stdout)
+    assert payload.get("new_file") is True, (
+        f"notebook ajoute cote head seulement -> new_file=True obligatoire, "
+        f"got {payload}"
+    )
+
+
+def test_cli_merge_base_required(tmp_path):
+    """L'absence de ``--base`` est une erreur loud (rc=2), pas un fallback
+    silencieux sur ``origin/main`` (cf. c.357-L1 NEW durable : pas de faux
+    vert ; pas de « pas regarde » indistinguable de « rien trouve »).
+    """
+    nb = {"cells": [_make_cell_with_text_html_bytes(5_000, "c1")]}
+    nb_abs = tmp_path / "case.ipynb"
+    nb_abs.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    result = subprocess.run(
+        [sys.executable, str(TOOL), "case.ipynb",
+         "--check", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert result.returncode == 2, (
+        f"absence de --base doit etre rc=2, got rc={result.returncode}"
+    )
+    assert "merge-base" in result.stderr, (
+        f"erreur doit nommer merge-base comme remede, got stderr={result.stderr}"
+    )
+
+
 def test_pin_threshold_excludes_moderate_chute():
     """Pin mutuellement exclusif au précédent : un chute de 60% NE rougit PAS.
 

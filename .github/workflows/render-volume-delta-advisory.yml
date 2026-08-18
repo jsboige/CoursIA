@@ -54,7 +54,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 50
+          # fetch-depth: 0 obligatoire pour que `git merge-base origin/main HEAD`
+          # reussisse sur une branche en retard (cf. c.357-L1 NEW durable :
+          # origin/main deux-points != merge-base, et un fetch-depth limite
+          # ferait echouer merge-base silencieusement sur les branches >50
+          # commits de retard comme #11646 / #11642).
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -70,11 +75,34 @@ jobs:
         id: run
         run: |
           set +e
+          # Calcul de la base de fusion = merge-base origin/main HEAD. Si
+          # introuvable (fetch-rate, ref manquant), on **s'abstient en le
+          # disant** -- jamais de fallback silencieux sur origin/main
+          # (qui rendrait « pas regarde » et « rien trouve » indistinguables).
+          BASE=$(git merge-base origin/main HEAD 2>/dev/null)
+          if [ -z "$BASE" ]; then
+            echo "findings_total=abstain" >> "$GITHUB_OUTPUT"
+            echo "base_unresolved=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::render-volume-delta: merge-base origin/main HEAD introuvable -- on s'abstient (ref rate ou branche sans ancre commune). Relancer avec un fetch plus profond ou rebase la branche." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # Liste de notebooks modifies entre BASE et HEAD (pas origin/main
+          # deux-points, qui inclut les evolutions de main hors PR).
+          CHANGED=$(git diff --name-only --diff-filter=M "$BASE" HEAD | grep -E '\.ipynb$' | head -50)
+          if [ -z "$CHANGED" ]; then
+            echo "findings_total=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           python scripts/notebook_tools/check_render_volume_delta.py \
-            $(git diff --name-only --diff-filter=M origin/main | grep -E '\.ipynb$' | head -50) \
-            --base origin/main --check --json > /tmp/render-volume-delta.json 2>&1
+            $CHANGED \
+            --base "$BASE" --check --json > /tmp/render-volume-delta.json 2>&1
           rc=$?
-          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          # --check retourne 1 si findings ; on parse findings_total du JSON
+          # (le verdict advisory depend du nombre, pas du rc -- le workflow
+          # reste non bloquant, cf. c.356-L1 ★★ : pas de faux vert).
+          findings_total=$(python -c "import json,sys;print(json.load(open('/tmp/render-volume-delta.json')).get('findings_total', json.load(open('/tmp/render-volume-delta.json'))['stats']['findings_count']))" 2>/dev/null || echo "0")
+          echo "findings_total=$findings_total" >> "$GITHUB_OUTPUT"
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
           set -e
 
       - name: Post advisory comment
@@ -83,7 +111,8 @@ jobs:
         with:
           header: render-volume-delta-advisory
           message: |
-            ${{ steps.run.outputs.exit == '0' && '✅ No render volume delta signal (notebooks modified vs origin/main preserve >= 50% of base rendered output per MIME family).' || '⚠️ Render volume delta signal: one or more modified notebooks lost >= 50% of their rendered output per MIME family. Review against the source code — these are advisory, NOT a merge gate.' }}
+            ${{ steps.run.outputs.findings_total == '0' && '✅ No render volume delta signal (notebooks modified vs merge-base preserve >= 50% of base rendered output per MIME family).' || steps.run.outputs.findings_total == 'abstain' && '⚠️ Render volume delta: **base introuvable** (merge-base origin/main HEAD impossible). Le détecteur s\'abstient -- relancer avec un fetch plus profond, ou rebase la branche sur main. Pas de verdict.' || format('⚠️ {0} render volume delta signal(s): one or more modified notebooks lost >= 50% of their rendered output per MIME family (base = merge-base origin/main HEAD). Review against the source code -- advisory, NOT a merge gate.', steps.run.outputs.findings_total) }}
 
             See `python scripts/notebook_tools/check_render_volume_delta.py --help` for re-running locally.
             Detector rationale: #11656 / #11351 pathologie (840 B remnants in 195 692 B cells = absolute detectors blind).
+            Why merge-base not origin/main two-dots: a branch 25+ commits behind would have the detector scan 35 notebooks the PR never touched.

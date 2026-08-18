@@ -399,7 +399,17 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None,
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     p.add_argument("notebook", type=Path, help="Chemin vers le .ipynb")
-    p.add_argument("--base", default="origin/main", help="Ref git de la base (defaut origin/main)")
+    p.add_argument(
+        "--base",
+        default=None,
+        help=(
+            "Ref git de la base de PR (defaut: aucun). RECOMMANDE : "
+            "`git merge-base origin/main HEAD` (la base de fusion), PAS "
+            "`origin/main` deux-points. Sur une branche en retard, le "
+            "deux-points inclut les evolutions de main hors PR et fait "
+            "signaler des pertes que la PR n'a pas causees (cf. c.357-L1)."
+        ),
+    )
     p.add_argument("--head", default=None, help="Ref git du head (defaut working tree)")
     p.add_argument("--threshold", type=float, default=DEFAULT_DELTA_THRESHOLD,
                    help=f"Chute relative declenchant un signal (defaut {DEFAULT_DELTA_THRESHOLD})")
@@ -412,6 +422,20 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.notebook.exists():
         print(f"ERROR: notebook introuvable: {args.notebook}", file=sys.stderr)
+        return 2
+
+    # Garde anti-auto-desarmement (c.357-L1 NEW durable) : aucun fallback
+    # silencieux sur `origin/main` deux-points. Si l'appelant ne precise pas
+    # --base, on exige le merge-base explicite. Mieux : echec loud qu'un
+    # verdict silencieusement faux sur 35 notebooks que la PR n'a pas
+    # touches.
+    if args.base is None:
+        print(
+            "ERROR: --base est obligatoire. Precisez la base de fusion "
+            "(`git merge-base origin/main HEAD`) -- PAS `origin/main` "
+            "deux-points (cf. c.357-L1).",
+            file=sys.stderr,
+        )
         return 2
 
     result = scan_notebook(args.notebook, args.base, args.head,
