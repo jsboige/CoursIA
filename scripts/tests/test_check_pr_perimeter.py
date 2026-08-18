@@ -320,10 +320,14 @@ def test_pull_request_trigger_includes_edited_type():
     re-evaluated the gate, leaving the red bar in place (#11646).
     """
     text = _read_perimeter_workflow()
-    # Pull the ``pull_request:`` block (up to the next ``on:``-level key).
+    # Pull the ``on:`` block body: consecutive lines indented by >= 2 spaces.
+    # Single fixed-prefix branch (like the sibling sub-block regexes below) --
+    # CodeQL HIGH on the previous alternation ``(?:  [^\n]*\n|\s*\n)+?``:
+    # whitespace-only lines matched both branches, giving exponential
+    # backtracking on runs of blank lines.
     import re
     block = re.search(
-        r"^on:\s*\n(?P<body>(?:  [^\n]*\n|\s*\n)+?)(?=^[^ ]|\Z)",
+        r"^on:\s*\n(?P<body>(?:  [^\n]*\n)+)",
         text,
         re.MULTILINE,
     )
