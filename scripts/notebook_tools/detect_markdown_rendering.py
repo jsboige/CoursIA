@@ -99,6 +99,7 @@ WARN = "warn"
 RULE_SEVERITY = {
     "frontmatter_supersize": ERROR,
     "frontmatter_rawyaml": ERROR,
+    "yaml_block_open_no_close": ERROR,
     "setext_oversized": ERROR,
     "oversized_hint": WARN,
     "source_list_missing_newlines": ERROR,
@@ -170,6 +171,57 @@ def _is_frontmatter_block(lines) -> bool:
                 return False
             break
     return True
+
+
+def _is_yaml_block_open_no_close(lines, fenced: set[int]) -> bool:
+    """True if the cell opens a YAML frontmatter block but never closes it.
+
+    A markdown cell whose first non-blank line is exactly ``---`` (and there is
+    NO later ``---`` to close the block) still opens a YAML metadata block in
+    Pandoc -- the block then extends until end-of-document or until the next
+    ``---`` line *anywhere in the rendered output*. When Quarto renders a
+    notebook that opens such a block, the YAML parser consumes every following
+    cell until it hits a closing fence -- turning the whole page into either a
+    YAML error or a single oversized setext heading. Reproduced 2026-08-18 on
+    ``MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb``
+    pre-#11629: 8 of 20 cells started with ``---\\n### Dataset N -- ...`` and
+    Quarto refused to render the whole notebook (YAML alias error on the 4th
+    ``---`` it ate).
+
+    Distinguishing legitimate ``---\\n\\n### H`` thematic breaks from this
+    defect: the thematic break is preceded by a blank line and followed by
+    another blank line (the section divider). The YAML-opener cell has the
+    ``---`` as its very FIRST non-blank line and is followed IMMEDIATELY by
+    content (no blank). The fenced set lets us ignore ``---`` lines that live
+    inside verbatim code blocks (those are literal text, not YAML markers).
+
+    Returns True when the cell opens a YAML block with no closing ``---``
+    anywhere in the rest of the cell.
+    """
+    # First non-blank line must be exactly ``---``.
+    nz = _nonblank(lines)
+    if not nz:
+        return False
+    if nz[0].strip() != "---":
+        return False
+    # The very next raw line must carry content (no blank between ``---`` and
+    # content). This is the same ``---`` immediately-followed-by-content shape
+    # that already gates ``_is_frontmatter_block`` -- if there IS a blank line,
+    # the ``---`` is a thematic break, not a YAML opener.
+    for i, ln in enumerate(lines):
+        if ln.strip() == "---":
+            if i + 1 >= len(lines) or lines[i + 1].strip() == "":
+                return False
+            break
+    # Now: NO later ``---`` anywhere in the rest of the cell closes the block.
+    # Skip fence-internal lines so a verbatim ``---`` ASCII divider doesn't
+    # count as a closer.
+    for j in range(i + 1, len(lines)):
+        if j in fenced:
+            continue
+        if lines[j].strip() == "---":
+            return False  # has a closer -> handled by _is_frontmatter_block
+    return True  # opener with no closer in this cell
 
 
 def _inside_fence_lines(lines) -> set[int]:
@@ -290,6 +342,29 @@ def scan_cell(cell) -> list[dict]:
     fenced = _inside_fence_lines(lines)
     findings: list[dict] = []
 
+    # ---- yaml-block-open-no-close (#11630) --------------------------------------
+    # Catches the angle left by `_is_frontmatter_block`: a cell whose first non-blank
+    # line is exactly `---` but with NO closing `---` in the same cell still opens a
+    # YAML metadata block in Pandoc -- the block extends until end-of-document or
+    # until the next `---` line anywhere in the rendered output, corrupting the page.
+    # Must run BEFORE `_is_frontmatter_block` (the latter early-returns on a complete
+    # frontmatter cell, so a `---` opener without closer would never be checked for
+    # the no-close shape). The 8 cells in 02_fallacy_datasets_landscape.ipynb pre-#11629
+    # were exactly this shape: `---<NL>### Dataset N -- ...`, no closer.
+    if _is_yaml_block_open_no_close(lines, fenced):
+        findings.append({
+            "rule": "yaml_block_open_no_close",
+            "severity": RULE_SEVERITY["yaml_block_open_no_close"],
+            "message": ("cell opens a YAML frontmatter block with `---` as the first line "
+                        "but no closing `---` in the same cell; Pandoc extends the block "
+                        "until end-of-document or the next `---` in the rendered output, "
+                        "corrupting the page. Fix: replace the leading `---` with `***` "
+                        "(CommonMark thematic break, identical render, no YAML opener)"),
+            "evidence": lines[0].strip(),
+            "hash": _cell_hash("yaml_block_open_no_close", text),
+        })
+        return findings  # the YAML-opener shape fully describes this cell
+
     # ---- frontmatter-in-markdown ------------------------------------------------
     if _is_frontmatter_block(lines):
         nz = _nonblank(lines)
@@ -400,6 +475,159 @@ def gather(root: Path) -> list[dict]:
     return findings
 
 
+def _quarto_render_list(quarto_yml: Path) -> list[Path]:
+    """Files Quarto renders explicitly listed under ``project.render``.
+
+    Returns relative paths (as they appear in the YAML). Empty list on parse
+    failure or missing key -- the caller falls back to the full repo scan.
+    """
+    if not quarto_yml.exists():
+        return []
+    try:
+        import yaml  # local import: the script otherwise stays yaml-free
+        data = yaml.safe_load(quarto_yml.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    render = (((data or {}).get("project") or {}).get("render") or [])
+    out: list[Path] = []
+    for entry in render:
+        if not isinstance(entry, str):
+            continue
+        # Skip globs -- the scanner needs concrete paths. Globs like
+        # ``*.qmd`` / ``README.md`` don't expand under safe_load anyway, but
+        # leave them as-is to let the caller decide what to do.
+        if any(c in entry for c in "*?["):
+            continue
+        out.append(Path(entry))
+    return out
+
+
+_NOTEBOOK_LINK_RE_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def _notebook_link_pattern() -> re.Pattern[str]:
+    """Regex that catches a relative link to a ``.ipynb`` file from markdown text.
+
+    Three flavors covered by alternation: (a) markdown ](URL) · (b) href="URL" ·
+    (c) bare URL preceded by space/quote. The match captures the WHOLE branch
+    (prefix + URL); callers pass the result through ``_strip_branch_prefix``
+    to extract just the URL. Char class ``[A-Za-z0-9_./-]`` covers relative
+    paths + ``../``.
+
+    Why not "one shared capture group" ? Python's regex engine numbers groups
+    by POSITION across alternation branches -- three ``(url)`` groups means
+    3 capture groups, NOT one. So the pattern uses a single outer named
+    group ``url`` wrapping the alternation, and we strip the branch prefix
+    post-match. The trailing lookahead ``(?=[\\s'"><)]|$)`` prevents matches
+    from running past a closing delimiter (``)``, ``"``, space, end-of-text).
+    """
+    if "main" not in _NOTEBOOK_LINK_RE_CACHE:
+        url_nc = r"[A-Za-z0-9_./-]+\.ipynb"  # char class only, NO capture
+        _NOTEBOOK_LINK_RE_CACHE["main"] = re.compile(
+            r"(?P<url>" +
+            r"\]\(" + url_nc +
+            r"|href=['\"]" + url_nc +
+            r"|(?:^|[\s\"'])" + url_nc +
+            r")" +
+            r"(?=[\s'\"\)<>]|$)",
+            re.IGNORECASE,
+        )
+    return _NOTEBOOK_LINK_RE_CACHE["main"]
+
+
+# Pre-built post-processor -- after a regex match, extract the trailing
+# ``.ipynb`` URL from the branch prefix. Used by ``_notebook_targets_from_render_list``.
+_NOTEBOOK_URL_TAIL = re.compile(r".*?([A-Za-z0-9_./-]+\.ipynb)\s*$")
+
+
+def _strip_branch_prefix(matched: str) -> str:
+    """Return the trailing ``.ipynb`` URL from a regex branch match.
+
+    The regex captures one of ``](foo.ipynb)``, ``href="foo.ipynb"`` or
+    ``[space]foo.ipynb``. We keep only the URL (``foo.ipynb``) by anchoring
+    the suffix char class via ``_NOTEBOOK_URL_TAIL``.
+    """
+    m = _NOTEBOOK_URL_TAIL.match(matched)
+    return m.group(1) if m else matched
+
+
+def _notebook_targets_from_render_list(repo_root: Path, render_paths: list[Path]) -> set[Path]:
+    """Compute the *closure* : notebooks reachable from a rendered page.
+
+    Starts from the explicit render-list (ipynb/md/qmd files) and follows
+    ``.ipynb`` links one hop out of the rendered .md/.qmd/.ipynb files. The
+    result is the set of notebooks that Quarto will *transitively* render --
+    which is precisely the set whose frontmatter defects corrupt the page
+    (cf. #11630 : the PR that broke main didn't touch the broken notebook, it
+    only added a link to it from a rendered README). Single-hop by design:
+    Quarto's link rewriting is one-step (rendered file -> linked file -> its
+    own .html), and the empirical incident on 2026-08-17 was one-hop.
+    """
+    targets: set[Path] = set()
+    # Seed: explicit render-list entries that ARE notebooks.
+    for p in render_paths:
+        if p.suffix == ".ipynb":
+            targets.add(p)
+    # Follow links from rendered pages (.md / .qmd / .ipynb) to .ipynb targets.
+    pattern = _notebook_link_pattern()
+    for p in render_paths:
+        if p.suffix not in (".md", ".qmd", ".ipynb"):
+            continue
+        abs_p = repo_root / p
+        if not abs_p.exists():
+            continue
+        try:
+            text = abs_p.read_text(encoding="utf-8")
+        except Exception:
+            continue
+        # For notebooks, links live in markdown cell sources -- extract them
+        # by scanning the raw JSON. Simpler: scan the whole file as text, the
+        # regex tolerates either context (markdown link syntax or HTML href).
+        for m in pattern.finditer(text):
+            link = m.group("url") if "url" in m.groupdict() else m.group(0)
+            link = _strip_branch_prefix(link)
+            if not link:
+                continue
+            link = link.strip().rstrip(".,;:!?)")
+            # Drop fragment / query.
+            link = link.split("#", 1)[0].split("?", 1)[0]
+            if not link:
+                continue
+            # Resolve relative to the rendered file's directory.
+            try:
+                target = (abs_p.parent / link).resolve()
+            except Exception:
+                continue
+            try:
+                rel = target.relative_to(repo_root.resolve())
+            except ValueError:
+                continue
+            if rel.suffix == ".ipynb":
+                targets.add(Path(rel))
+    return targets
+
+
+def gather_closure(repo_root: Path, quarto_yml: Path) -> list[dict]:
+    """Scan only the Quarto closure (render-list + linked notebooks).
+
+    See ``_notebook_targets_from_render_list`` for the definition. Returns the
+    same finding shape as ``gather``. Empty list on YAML parse failure (the
+    caller decides whether to fail or fall back -- the CLI exits 2 with a
+    clear message).
+    """
+    render_paths = _quarto_render_list(quarto_yml)
+    if not render_paths:
+        return []
+    targets = _notebook_targets_from_render_list(repo_root, render_paths)
+    findings: list[dict] = []
+    for rel in sorted(targets):
+        abs_p = repo_root / rel
+        if not abs_p.exists():
+            continue
+        findings.extend(scan_notebook(abs_p))
+    return findings
+
+
 def load_baseline(path: Path) -> set[str]:
     if not path.exists():
         return set()
@@ -420,6 +648,18 @@ def main(argv=None) -> int:
                     help="write the current violation set to --baseline and exit")
     ap.add_argument("--severity", choices=[ERROR, WARN], default=None,
                     help="restrict output to this severity")
+    ap.add_argument("--closure", action="store_true",
+                    help="restrict scan to the Quarto closure: render-list + "
+                         "notebooks reachable by .ipynb links from rendered "
+                         "pages. The pre-#11630 main-line breakage happened "
+                         "because the offending notebook was NOT in the "
+                         "render-list -- it was only referenced as a link from "
+                         "a rendered README. Repository-wide scan flags 351 "
+                         "false-positive cells; the closure scan flags only "
+                         "the ones that actually break a rendered page. See "
+                         "#11630 for the rationale.")
+    ap.add_argument("--quarto-yml", type=Path, default=Path("_quarto.yml"),
+                    help="path to the Quarto project YAML (default: ./_quarto.yml)")
     args = ap.parse_args(argv)
 
     root = Path(args.root)
@@ -427,7 +667,25 @@ def main(argv=None) -> int:
         print(f"error: path not found: {root}", file=sys.stderr)
         return 2
 
-    findings = gather(root)
+    if args.closure:
+        # Closure scan: Quarto render-list + notebooks reachable by .ipynb links
+        # from any rendered page. See #11630. Repo-root = the directory holding
+        # _quarto.yml (we resolve relative to the cwd, same as the YAML path).
+        repo_root = args.quarto_yml.resolve().parent
+        render_paths = _quarto_render_list(args.quarto_yml)
+        if not render_paths:
+            print(f"error: --closure requires a parseable {args.quarto_yml} "
+                  f"with a project.render list; got empty/invalid", file=sys.stderr)
+            return 2
+        targets = _notebook_targets_from_render_list(repo_root, render_paths)
+        print(f"--closure: render-list={len(render_paths)} closure-targets={len(targets)}", file=sys.stderr)
+        findings = []
+        for rel in sorted(targets):
+            abs_p = repo_root / rel
+            if abs_p.exists():
+                findings.extend(scan_notebook(abs_p))
+    else:
+        findings = gather(root)
     if args.severity:
         findings = [f for f in findings if f["severity"] == args.severity]
 
