@@ -11,10 +11,13 @@ name: perimeter-review-guard
 # false file count, or an exclusivity claim that does not name a touched
 # .github/workflows/** file, fails the check on the PR itself.
 #
-# Triggers: pull_request (opened/synchronize/edited -- catches the PR body,
-# INCLUDING body edits: without an explicit `types:` list GitHub's default
-# excludes `edited`, so a false assertion corrected by editing the body would
-# never re-trigger the check -- nit named by ai-01 on #11635) and
+# Triggers: pull_request (opened/synchronize/edited/reopened -- catches the
+# PR body, INCLUDING body edits: without an explicit `types:` list GitHub's
+# default excludes `edited`, so a false assertion corrected by editing the
+# body would never re-trigger the check -- nit named by ai-01 on #11635;
+# `reopened` restores full parity with the default, which the explicit list
+# drops -- a body edited while the PR was closed would otherwise go
+# unchecked until the next review -- nit Hermes on #11654) and
 # pull_request_review (submitted/edited -- re-runs the SAME check name on
 # the same head SHA the moment a review is posted, so a false assertion goes
 # red and blocks the merge; a corrected review turns it green again).
@@ -25,7 +28,7 @@ name: perimeter-review-guard
 on:
   pull_request:
     branches: [ main ]
-    types: [ opened, synchronize, edited ]
+    types: [ opened, synchronize, edited, reopened ]
   pull_request_review:
     branches: [ main ]
     types: [ submitted, edited ]
