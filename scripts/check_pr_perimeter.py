@@ -175,10 +175,58 @@ def extract_baseline_moves(diff_text: str) -> list[BaselineMove]:
     return moves
 
 
+def _fence_mask(text: str) -> str:
+    """Return `text` with every character inside a fence block replaced by space.
+
+    Mirrors the existing _quote_spans exemption idea: a fence is transcription,
+    never an author's claim about his own perimeter. Workers document their L898
+    ★★★ check in fences (command output verbatim), and that transcription is
+    precisely what COUNT_CLAIM would otherwise mis-trigger on (e.g. "0 fichiers
+    en commun"). A fence is opened by a line starting with ``` or ~~~ (>= 3
+    chars) and closed by the next matching delimiter line.
+    Issue #11670 founder case: PR #11664 body containing L898 proof in a
+    fence trips COUNT_CLAIM on "0 fichiers" -> false positive.
+    """
+    out = list(text)
+    n = len(text)
+    i = 0
+    in_fence = False
+    while i < n:
+        j = text.find("\n", i)
+        if j == -1:
+            j = n
+        line = text[i:j]
+        stripped = line.lstrip()
+        if not in_fence:
+            if (stripped.startswith("```") and len(stripped) >= 3) or (
+                stripped.startswith("~~~") and len(stripped) >= 3
+            ):
+                in_fence = True
+                for k in range(i, j):
+                    out[k] = " "
+        else:
+            for k in range(i, j):
+                out[k] = " "
+            if stripped.startswith("```") or stripped.startswith("~~~"):
+                in_fence = False
+        i = j + 1
+    return "".join(out)
+
+
 def check_assertion(files: list[dict], assertion: str) -> list[str]:
-    """Confront a perimeter assertion with the effective file list."""
+    """Confront a perimeter assertion with the effective file list.
+
+    Fence blocks (transcribed commands, L898 ★★★ proof) are exempted — a
+    fence is transcription, never an author's claim about his own perimeter.
+    See _fence_mask. Issue #11670 founder case.
+
+    The final "non verifiable" check uses the ORIGINAL assertion (no fence
+    masking): a body composed only of fence transcriptions is not a valid
+    perimeter assertion, and the gate must NOT silently PASS in that case.
+    """
     problems: list[str] = []
-    count_claim = COUNT_CLAIM.search(assertion)
+    scan_target = _fence_mask(assertion)
+    count_claim = COUNT_CLAIM.search(scan_target)
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):
@@ -186,17 +234,19 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                 f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
                 + ", ".join(f["path"] for f in files)
             )
-    exclusive = any(marker in assertion.lower() for marker in EXCLUSIVITY_MARKERS)
+    exclusive = any(marker in scan_target.lower() for marker in EXCLUSIVITY_MARKERS)
     if exclusive:
         for f in files:
             if f["path"].startswith(WORKFLOW_PREFIX):
                 base = f["path"].rsplit("/", 1)[-1]
-                if base not in assertion:
+                if base not in scan_target:
                     problems.append(
                         f"assertion d'exclusivite sans nommer le workflow touche {f['path']} "
                         "(critere #11268-2 : tout .github/workflows/** doit etre enumere nommement)"
                     )
-    if not count_claim and not exclusive:
+    if not COUNT_CLAIM.search(assertion) and not any(
+        marker in assertion.lower() for marker in EXCLUSIVITY_MARKERS
+    ):
         problems.append(
             "assertion sans compte de fichiers ni marqueur d'exclusivite reconnaissable -- "
             "formulation non verifiable (ecrire par ex. 'N fichiers : a, b, c')"

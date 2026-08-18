@@ -16,6 +16,7 @@ from check_pr_perimeter import (  # noqa: E402
     check_assertion,
     extract_baseline_moves,
     format_report,
+    _fence_mask,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -148,3 +149,92 @@ def test_report_renders_no_workflow_explicitly():
         None,
     ).splitlines()
     assert any("aucun" in l.lower() for l in lines if "Workflows" in l)
+
+
+# --- Issue #11670 : fence blocks (transcribed L898 ★★★ proof) must be exempted ---
+
+# Founder case from PR #11664 body verbatim: the worker's L898 ★★★
+# documentation in a ``` fence contains "0 fichiers en commun", which
+# COUNT_CLAIM would otherwise mis-trigger on. The reviewer passes the
+# body verbatim via --assert and the guard mis-reads the fence as
+# "this PR touches 0 files". The fix: mask fences before scanning.
+# The body carries a perimeter claim in PROSE ("Perimetre : 1 fichier")
+# alongside the L898 fence — a realistic reviewer pass.
+L898_BODY_11664 = (
+    "## L898 verifie\n"
+    "\n"
+    "Perimetre : 1 fichier modifie.\n"
+    "\n"
+    "```\n"
+    "$ git worktree list\n"
+    "D:/Dev/CoursIA-2-11663\n"
+    "$ gh pr list --search head:feature/11663-xtts-melody-test\n"
+    "0 collisions\n"
+    "$ gh pr list --state open --json files\n"
+    "0 fichiers en commun avec les autres PR\n"
+    "```\n"
+)
+FILES_11664 = [{"path": "MyIA.AI.Notebooks/Audio/XTTS/foo.ipynb", "additions": 5, "deletions": 2}]
+
+
+def test_fence_with_count_claim_does_not_trigger():
+    """Acceptance 1 + 2 : fence with L898 '0 fichiers en commun' over a 1-file
+    PR must NOT trip COUNT_CLAIM (the count is in a transcription fence,
+    not the author's perimeter claim). The body carries a prose perimeter
+    claim (1 fichier modifie) that matches the file list exactly."""
+    assert check_assertion(FILES_11664, L898_BODY_11664) == []
+
+
+def test_fence_mask_replaces_internal_chars():
+    """The mask blanks out characters inside a fence but preserves length and
+    newlines so downstream regexes don't crash on boundary artifacts."""
+    src = "before\n```\ninside fence\n```\nafter"
+    masked = _fence_mask(src)
+    assert len(masked) == len(src)
+    assert "\n" in masked
+    assert "before" in masked
+    assert "after" in masked
+    assert "inside fence" not in masked
+
+
+def test_prose_claim_still_triggers_with_fence_present():
+    """Acceptance 3 (non-regression) : a real perimeter assertion in PROSE
+    outside any fence still trips the guard, even when a fence with a
+    count claim exists elsewhere in the body. The #11227 incident,
+    replicated with a fence added to ensure the fix doesn't open a hole."""
+    body = (
+        "## Sortie console\n"
+        "\n"
+        "```\n"
+        "$ gh pr list --search foo\n"
+        "0 fichiers en commun\n"
+        "```\n"
+        "\n"
+        "Perimetre : 2 fichiers twins uniquement, aucune autre modification.\n"
+    )
+    files = [
+        {"path": "a.lean", "additions": 1, "deletions": 0},
+        {"path": "b.lean", "additions": 1, "deletions": 0},
+        {"path": ".github/workflows/lean-knot.yml", "additions": 1, "deletions": 1},
+    ]
+    probs = check_assertion(files, body)
+    # exclusivity + workflow not named -> at least one problem remains
+    assert any("exclusivite" in p for p in probs), (
+        f"expected exclusivity problem to survive fence exemption, got: {probs!r}"
+    )
+
+
+def test_tilde_fence_is_also_exempted():
+    """Acceptance 2 variant : ~~~ fences (alternative markdown delimiter) are
+    exempt too — same exemption, same pattern as ``` fences."""
+    body = (
+        "Perimetre : 1 fichier modifie.\n"
+        "\n"
+        "L898 output :\n"
+        "\n"
+        "~~~\n"
+        "$ gh pr list\n"
+        "0 fichiers en commun\n"
+        "~~~\n"
+    )
+    assert check_assertion(FILES_11664, body) == []
