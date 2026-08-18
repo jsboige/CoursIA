@@ -72,6 +72,89 @@ MOTIF3_DRONE_MIN = 60.0      # % of 3-gram positions inside a repeated motif
 MIN_SYLL_FOR_STRUCTURE = 60  # below this, concentration stats are unreliable
 
 
+# ---------------------------------------------------------------------------
+# Pure verdict policy (no audio, no I/O) -- CI-testable without clips, the same
+# separation ``verify_prosody.classify_segment`` uses for the gate policy.
+# ---------------------------------------------------------------------------
+
+def classify_melody(
+    motion: float,
+    flat_pct: float,
+    effective_notes: Optional[float] = None,
+    top3_note_pct: Optional[float] = None,
+    motif3_repeat_pct: Optional[float] = None,
+) -> Dict:
+    """Turn the measured metrics into a verdict. Deterministic, audio-free.
+
+    Two axes, and the distinction between them is the whole point:
+
+    * LOCAL (``motion``, ``flat_pct``) -- always measurable, even on a
+      two-second clip. Yields ``FLAT`` / ``MODERATE`` / ``EXPRESSIVE``.
+    * STRUCTURAL (``effective_notes``, ``top3_note_pct``, ``motif3_repeat_pct``)
+      -- the chant detector, and it needs ``MIN_SYLL_FOR_STRUCTURE`` syllables
+      before its concentration statistics mean anything. Yields ``DRONE``.
+
+    ``melody_stats`` already refuses to return a silent zero when the sample is
+    too short ("never silently zero, which would read as clean"). This function
+    honours that refusal one level up: when the structural axis was NOT
+    computed, ``drone_reasons`` is ``None`` -- never ``[]``, which is reserved
+    for "the three criteria ran and none fired". *Not looked* and *nothing
+    found* must not share a value, or a clip nobody assessed reads exactly like
+    a clip that passed.
+
+    Consequence for the verdict itself, deliberately ASYMMETRIC:
+
+    * ``FLAT`` survives an unassessed structure -- flatness is a *reject* class,
+      measured on the local axis alone, and abstaining there would weaken the
+      floor on the very clips it should catch.
+    * ``MODERATE`` / ``EXPRESSIVE`` do NOT survive it. Both read as an all-clear,
+      and an all-clear that skipped the chant detector is not one. They degrade
+      to ``INSUFFICIENT``, which the caller (``verify_prosody.classify_segment``)
+      already maps to an abstention -- ``INCONCLUSIVE``, "the instruments abstain
+      rather than cry wolf" -- rather than to a pass.
+
+    Measured consequence, 2026-08-18: the five v4 character extracts sitting in
+    the review folder (7 to 24 syllables) all returned ``MODERATE`` with
+    ``drone_reasons == []`` -- indistinguishable from an assessed clean clip, on
+    material where the three chant criteria had never run.
+
+    Returns ``{"verdict", "local_verdict", "structure_assessed", "drone_reasons"}``.
+    """
+    if motion < MOTION_FLAT_MAX or flat_pct >= FLATPCT_FLAT_MIN:
+        local = "FLAT"
+    elif motion < MOTION_MODERATE_MAX or flat_pct >= FLATPCT_MODERATE_MIN:
+        local = "MODERATE"
+    else:
+        local = "EXPRESSIVE"
+
+    assessed = effective_notes is not None
+    reasons: Optional[List[str]] = [] if assessed else None
+    if assessed:
+        if effective_notes < EFFNOTES_DRONE_MAX:
+            reasons.append(
+                "effective_notes %.1f < %.1f" % (effective_notes, EFFNOTES_DRONE_MAX))
+        if top3_note_pct >= TOP3_DRONE_MIN:
+            reasons.append(
+                "top3_note_pct %.1f%% >= %.1f%%" % (top3_note_pct, TOP3_DRONE_MIN))
+        if motif3_repeat_pct >= MOTIF3_DRONE_MIN:
+            reasons.append(
+                "motif3_repeat_pct %.1f%% >= %.1f%%" % (motif3_repeat_pct, MOTIF3_DRONE_MIN))
+
+    if reasons:
+        verdict = "DRONE"
+    elif not assessed and local != "FLAT":
+        verdict = "INSUFFICIENT"
+    else:
+        verdict = local
+
+    return {
+        "verdict": verdict,
+        "local_verdict": local,
+        "structure_assessed": assessed,
+        "drone_reasons": reasons,
+    }
+
+
 def hz_to_midi(f0_hz: float) -> float:
     """Continuous MIDI note number for a frequency in Hz."""
     return 69.0 + 12.0 * math.log2(f0_hz / 440.0)
@@ -266,35 +349,24 @@ def analyze_syllables(
         )
         result.update(melody_stats([s["note"] for s in syllables]))
 
-        motion = result["mean_abs_interval_st"]
-        flat_pct = result["pct_flat_transitions"]
-        if motion < MOTION_FLAT_MAX or flat_pct >= FLATPCT_FLAT_MIN:
-            result["verdict"] = "FLAT"
-        elif motion < MOTION_MODERATE_MAX or flat_pct >= FLATPCT_MODERATE_MIN:
-            result["verdict"] = "MODERATE"
-        else:
-            result["verdict"] = "EXPRESSIVE"
-
         # Structural override: a repeating melody is monotonous even when its
         # local step size looks healthy. The v4 extract missed FLAT by 0.21
         # st and 1.2 points on the two local axes while spending 73% of its
-        # 401 syllables on three adjacent semitones.
-        drone_reasons = []
-        if result.get("effective_notes") is not None:
-            if result["effective_notes"] < EFFNOTES_DRONE_MAX:
-                drone_reasons.append(
-                    "effective_notes %.1f < %.1f" % (result["effective_notes"], EFFNOTES_DRONE_MAX))
-            if result["top3_note_pct"] >= TOP3_DRONE_MIN:
-                drone_reasons.append(
-                    "top3_note_pct %.1f%% >= %.1f%%" % (result["top3_note_pct"], TOP3_DRONE_MIN))
-            if result["motif3_repeat_pct"] >= MOTIF3_DRONE_MIN:
-                drone_reasons.append(
-                    "motif3_repeat_pct %.1f%% >= %.1f%%" % (result["motif3_repeat_pct"], MOTIF3_DRONE_MIN))
-        result["drone_reasons"] = drone_reasons
-        if drone_reasons:
-            result["verdict"] = "DRONE"
+        # 401 syllables on three adjacent semitones. When the clip is too short
+        # for those three criteria to run, classify_melody abstains instead of
+        # handing back the local reading as though it had been assessed.
+        result.update(classify_melody(
+            result["mean_abs_interval_st"],
+            result["pct_flat_transitions"],
+            result.get("effective_notes"),
+            result.get("top3_note_pct"),
+            result.get("motif3_repeat_pct"),
+        ))
     else:
         result["verdict"] = "INSUFFICIENT"
+        result["local_verdict"] = None
+        result["structure_assessed"] = False
+        result["drone_reasons"] = None
     return result
 
 
@@ -361,7 +433,7 @@ def plot_score(analyses, out_png: str, title: Optional[str] = None) -> str:
 def print_score_table(a: Dict) -> None:
     """Pretty-print the per-syllable note sequence + melodic summary."""
     print(f"\n=== {a['label']}  ({a['duration_s']}s, {a['n_syllables']} syllables) ===")
-    if a.get("verdict") == "INSUFFICIENT":
+    if not a.get("syllables"):
         print("  insufficient voiced syllables to transcribe")
         return
     notes = " ".join(s["note"] for s in a["syllables"])
@@ -382,7 +454,10 @@ def print_score_table(a: Dict) -> None:
         )
         print(f"  motifs   : {' | '.join(a.get('top_motifs', []))}")
     print(f"  VERDICT  : {a['verdict']}")
-    for r in a.get("drone_reasons", []):
+    if a.get("drone_reasons") is None and a.get("syllables"):
+        print("             (criteres de bourdon NON evalues -> lecture locale "
+              "'%s' non certifiee)" % a.get("local_verdict"))
+    for r in (a.get("drone_reasons") or []):
         print(f"             drone: {r}")
 
 
