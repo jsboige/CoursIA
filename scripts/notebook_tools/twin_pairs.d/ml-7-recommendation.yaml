@@ -2,10 +2,15 @@
   family: ML.NET/Python
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, chacun prod) : C# = Microsoft.ML (NuGet officiel Microsoft.ML, native .NET : Microsoft.ML.Transforms/Regression/Clustering/TimeSeries) et Python = scikit-learn (pip sklearn, native Python) -- chaque cote atteint le moteur SOTA ML de son ecosysteme, ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML refs + execution_count, Python sklearn imports."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 77524721813b30cc81946ec94cf4f9ed6c69531a
+      csharp_sha: 539b615ca402254cff49b8d895bbacb7f4236c75
+      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft.ML (moteur ML SOTA de l'ecosysteme .NET), Python atteint scikit-learn/lightgbm (moteurs ML SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant."
     - date: "2026-08-01"
       by: myia-po-2024:CoursIA-2
       python_sha: 77524721813b30cc81946ec94cf4f9ed6c69531a
