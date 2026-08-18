@@ -86,9 +86,14 @@ jobs:
             echo "::warning::render-volume-delta: merge-base origin/main HEAD introuvable -- on s'abstient (ref rate ou branche sans ancre commune). Relancer avec un fetch plus profond ou rebase la branche." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          # Liste de notebooks modifies entre BASE et HEAD (pas origin/main
-          # deux-points, qui inclut les evolutions de main hors PR).
-          CHANGED=$(git diff --name-only --diff-filter=M "$BASE" HEAD | grep -E '\.ipynb$' | head -50)
+          # Liste de notebooks modifies/renommes entre BASE et HEAD (pas
+          # origin/main deux-points, qui inclut les evolutions de main hors
+          # PR). --diff-filter=MR + -M=50% pour attraper les renames ; sans
+          # ca, un deplacement de notebook sort de la liste et la PR
+          # passe invisible (faux negatif dans un detecteur dont le role
+          # est precisement d'attraper ce que les autres ratent ; cf. 4e
+          # point ai-01 CHANGES_REQUESTED #11658).
+          CHANGED=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD | grep -E '\.ipynb$' | head -50)
           if [ -z "$CHANGED" ]; then
             echo "findings_total=0" >> "$GITHUB_OUTPUT"
             exit 0

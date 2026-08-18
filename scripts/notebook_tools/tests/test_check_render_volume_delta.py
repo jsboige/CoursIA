@@ -672,3 +672,90 @@ def test_pin_threshold_excludes_moderate_chute():
         "passer les deux tests simultanement, prouvant que ce pin "
         "disjoint protege contre la confusion."
     )
+
+
+def test_workflow_diff_filter_catches_renames(tmp_path):
+    """4e point ai-01 CHANGES_REQUESTED #11658 : ``--diff-filter=M`` rate
+    les renames ; un notebook deplace sort de la liste et la PR passe
+    invisible. Le workflow doit utiliser ``--diff-filter=MR -M50%`` pour
+    attraper les renames (avec detection de similarite 50%).
+
+    Cas fondateur : notebook ``old.ipynb`` (50 000 B de rendu Graphviz
+    inline) renomme en ``new.ipynb`` en second commit. La taille des
+    fichiers ne change pas (rename pur), donc la liste CHANGED issue de
+    ``git diff --name-only --diff-filter=M`` ne contient rien ; la liste
+    issue de ``--diff-filter=MR -M50%`` contient ``new.ipynb``.
+
+    Test direct de la commande shell (pas du tool Python) : c'est le
+    workflow qui decide ce qui entre dans la liste, et c'est le seul
+    endroit ou la regression silencieuse peut se cacher.
+    """
+    nb = {
+        "cells": [_make_cell_with_text_html_bytes(50000, "graphviz")],
+    }
+
+    def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args],
+            cwd=tmp_path, capture_output=True, text=True, encoding="utf-8",
+            check=check,
+        )
+
+    # Init repo + commit sentinel
+    _git("init", "-q")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test")
+    sentinel = tmp_path / ".keep"
+    sentinel.write_text("", encoding="utf-8")
+    _git("add", ".keep")
+    _git("commit", "-q", "-m", "init")
+    # Commit 1 : ajout de old.ipynb (50 000 B de rendu)
+    old_nb = tmp_path / "old.ipynb"
+    old_nb.write_text(json.dumps(nb, ensure_ascii=False, indent=1), encoding="utf-8")
+    _git("add", "old.ipynb")
+    _git("commit", "-q", "-m", "add old.ipynb")
+    # Commit 2 : renomme old.ipynb -> new.ipynb (contenu inchange)
+    _git("mv", "old.ipynb", "new.ipynb")
+    _git("commit", "-q", "-m", "rename old to new")
+
+    # Sanity : --diff-filter=M ne voit PAS le renommage (NOT modified)
+    list_m = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=M", "HEAD~1", "HEAD"],
+        cwd=tmp_path, capture_output=True, text=True, encoding="utf-8",
+        check=False,
+    )
+    assert "new.ipynb" not in list_m.stdout, (
+        f"sanity: --diff-filter=M ne devrait PAS voir le renommage, got stdout={list_m.stdout!r}"
+    )
+
+    # --diff-filter=MR -M50% voit le renommage
+    list_mr = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=MR", "-M50%", "HEAD~1", "HEAD"],
+        cwd=tmp_path, capture_output=True, text=True, encoding="utf-8",
+        check=False,
+    )
+    assert "new.ipynb" in list_mr.stdout, (
+        f"--diff-filter=MR -M50% DOIT voir le renommage, got stdout={list_mr.stdout!r} "
+        f"stderr={list_mr.stderr!r}"
+    )
+
+    # Le tool execute sur le nouveau chemin fonctionne (le fichier
+    # existe cote HEAD) -- c'est la garantie que la liste CHANGED du
+    # workflow peut etre passee au tool sans surprise.
+    new_nb = tmp_path / "new.ipynb"
+    assert new_nb.exists()
+    res = subprocess.run(
+        [sys.executable, str(TOOL), "new.ipynb",
+         "--base", "HEAD~1", "--head", "HEAD",
+         "--check", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    # Pas de degradation (rename pur), donc rc=0 et 0 findings
+    assert res.returncode == 0, (
+        f"rename pur doit etre clean, got rc={res.returncode} stderr={res.stderr[:500]} stdout={res.stdout[:500]}"
+    )
+    out = json.loads(res.stdout)
+    assert out.get("findings") == [], (
+        f"rename pur doit etre 0 findings, got {out.get('findings')}"
+    )
