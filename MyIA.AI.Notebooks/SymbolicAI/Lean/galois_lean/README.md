@@ -1,6 +1,6 @@
 # Problème inverse de Galois — M₂₃ groupe de Galois sur ℚ
 
-Lake `galois_lean` : couche de preuve pour le notebook **Lean-19** (problème inverse de Galois), autour du groupe sporadique de Mathieu M₂₃.
+Lake `galois_lean` : couche de preuve pour le notebook **[Lean-23](../Lean-23-Galois-Probleme-Inverse-M23.ipynb)** (problème inverse de Galois), autour du groupe sporadique de Mathieu M₂₃.
 
 ## Contexte
 
@@ -29,12 +29,12 @@ Deux énoncés, soigneusement distingués dans le notebook :
 
 ## Pourquoi réutiliser l'amont plutôt que réécrire
 
-Per `sota-not-workaround` : refaire une échelle de petits groupes à côté d'une preuve M₂₃ déjà faite (sorry-free, Apache-2.0) serait la **réimplémentation-jouet** interdite. On réutilise l'amont avec attribution. La partie *from-scratch* du lake (notebook Lean-19) porte sur la **pédagogie du problème inverse de Galois** (vérification indépendante du polynôme de degré 23 via sympy, système de Steiner S(4,7,23), vocabulaire SGA1), pas sur la réémergence de la preuve de groupe.
+Per `sota-not-workaround` : refaire une échelle de petits groupes à côté d'une preuve M₂₃ déjà faite (sorry-free, Apache-2.0) serait la **réimplémentation-jouet** interdite. On réutilise l'amont avec attribution. La partie *from-scratch* du lake (notebook Lean-23) porte sur la **pédagogie du problème inverse de Galois** (vérification indépendante du polynôme de degré 23 via sympy, système de Steiner S(4,7,23), vocabulaire SGA1), pas sur la réémergence de la preuve de groupe.
 
 ## Attribution
 
 - Amont : Copyright (c) 2026 Kenta. — licence Apache-2.0. Chaque fichier dérivé préserve l'en-tête amont + la note *« AI usage: Developed with assistance from Claude Code (Fable 5, 1M context, high reasoning) »*.
-- Le notebook Lean-19 (à venir) documentera explicitement que l'identification `23T5 = M23` (groupe de Galois) requiert Magma propriétaire et n'est **pas** reproduite — seule la vérification du polynôme (degré, irréductibilité, discriminant) est exécutable en sympy.
+- Le notebook Lean-23 documente explicitement que l'identification `23T5 = M23` (groupe de Galois) requiert Magma propriétaire et n'est **pas** reproduite — seule la vérification du polynôme (degré, irréductibilité, discriminant) est exécutable en sympy.
 
 ## Voir aussi
 

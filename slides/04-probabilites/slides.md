@@ -1,7 +1,7 @@
 ---
 theme: ../theme-ia101
 title: "Intelligence Artificielle - Probabilites"
-info: IA 101 - Incertitude et modeles probabilistes
+info: IA 101 - Incertitude et modèles probabilistes
 paginate: true
 drawings:
   persist: false
