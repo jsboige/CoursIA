@@ -76,8 +76,10 @@ def main() -> None:
     qc._TTS_KEY = None  # vLLM-Omni direct has no auth middleware
 
     if args.route == "vd":
+        qc.QWEN_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
         audio = qc.qwen_tts_voicedesign_chunked(text, instructions=args.instructions or "")
     else:
+        qc.QWEN_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
         if not args.ref_audio:
             print("FAILED: --ref-audio required for route=clone")
             sys.exit(1)

@@ -214,6 +214,7 @@ def main() -> None:
                 print(f"  WARN missing ref {ref_short} — clone_short skipped")
             else:
                 qc.QWEN_GATEWAY_URL = args.base_url
+                qc.QWEN_MODEL = "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
                 out_cs = out_dir / f"{voice}_clone_short.mp3"
                 _render(
                     out_cs,
