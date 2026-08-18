@@ -1,0 +1,89 @@
+name: Render volume delta detector (advisory)
+
+# Durable anti-regression advisory for the #11656 pathologie:
+# "notebook PR loses 96-99% of its rendered output volume (text/html
+# inline) between base and head, while keeping `outputs: [...]` populated
+# with measurable byte payloads". This is the founding incident on
+# Infer-3-Factor-Graphs / Infer-8-TrueSkill / Infer-13-Crowdsourcing
+# (ai-01 measurement, post PR #11351):
+#
+#     Infer-3-Factor-Graphs       45 715 ->    840 B   (-98.2%)
+#     Infer-8-TrueSkill          127 081 ->  1 613 B   (-98.7%)
+#     Infer-13-Crowdsourcing      22 896 ->    840 B   (-96.3%)
+#     TOTAL                      195 692 ->  3 293 B   (-98.3%)
+#
+# Why ADVISORY (not a blocking gate):
+# The three absolute detectors that catch blank figures / empty SVG /
+# identical RGB signatures (`detect_blank_figures.py`,
+# `detect_svg_empty_display.py`, `scan_figure_visual_signature.py`) all
+# have thresholds calibrated on surviving cells — and the cells surviving
+# in #11351 carry 840-1613 B (well above the 70 B blank figure threshold).
+# No absolute threshold can tell apart "90% of a Graphviz helper, all
+# border, no body" from a legitimate chart with thin geometry: only a
+# relative detector comparing base vs head on the SAME notebook can see
+# the loss. That detector runs here, signals findings, and a reviewer
+# (human or bot) triages them.
+#
+# When the precision improves (e.g. by adding a corpus-wide baseline of
+# typical per-family ratios), promote this to a blocking gate. Until
+# then: advisory only, never block merge on this signal alone.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/check_render_volume_delta.py'
+      - 'scripts/notebook_tools/tests/test_check_render_volume_delta.py'
+      - '.github/workflows/render-volume-delta-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: render-volume-delta-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  render-volume-delta-advisory:
+    name: "Render volume delta (#11656 advisory)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run unit tests
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest scripts/notebook_tools/tests/test_check_render_volume_delta.py -v
+        continue-on-error: false
+
+      - name: Run detector (advisory, do not gate)
+        id: run
+        run: |
+          set +e
+          python scripts/notebook_tools/check_render_volume_delta.py \
+            $(git diff --name-only --diff-filter=M origin/main | grep -E '\.ipynb$' | head -50) \
+            --base origin/main --check --json > /tmp/render-volume-delta.json 2>&1
+          rc=$?
+          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Post advisory comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: render-volume-delta-advisory
+          message: |
+            ${{ steps.run.outputs.exit == '0' && '✅ No render volume delta signal (notebooks modified vs origin/main preserve >= 50% of base rendered output per MIME family).' || '⚠️ Render volume delta signal: one or more modified notebooks lost >= 50% of their rendered output per MIME family. Review against the source code — these are advisory, NOT a merge gate.' }}
+
+            See `python scripts/notebook_tools/check_render_volume_delta.py --help` for re-running locally.
+            Detector rationale: #11656 / #11351 pathologie (840 B remnants in 195 692 B cells = absolute detectors blind).
