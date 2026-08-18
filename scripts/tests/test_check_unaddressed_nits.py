@@ -841,3 +841,123 @@ def test_bystander_explicit_lift_ne_leve_pas_changes_requested():
     bystander = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
                  "body": "Les 2 points sont adresses, commit abc123."}
     assert run_cr([bystander])["blocked"] is True
+
+
+# --- #11639 : l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas
+# l'auteur d'une reponse de levée, mais `_lift_eligible` ne creditait que
+# l'auteur du nit ou celui de la PR : tout arbitrage coordinateur laissait
+# le gate rouge, et le merge se faisait a EXIT=1 en routine — repete, ca
+# enseigne a merger rouge. La trappe est NOMMEE : `[OVERRIDE] lane <m:w>` +
+# phrase de levée (LIFT_MARKER), par un compte coordinateur. Pas une
+# ouverture generale : la restriction d'auteur #11145 tient pour tous les
+# autres.
+#
+# Mesure retro #11479 (timestamps reels) : reserve Hermes 2026-08-17T13:38Z,
+# levée nominative d'ai-01 13:06:34Z, merge 13:06:39Z, override ecrit
+# 13:07:40Z — 61 s APRES le merge. La borne anti-retroactivite (#10761 : un
+# commentaire post-merge n'a pas pu lever la reserve avant la decision)
+# exclut l'override reel : le retro live de #11479 reste EXIT=1, et c'est
+# voulu. La convention que ce correctif etablit : l'OVERRIDE s'ecrit AVANT
+# le merge (comme toute levée) — le test retro simule ce decalage.
+
+HERMES_REVIEW_11479 = {
+    "author": {"login": "clusterManager-Myia"},
+    "state": "COMMENTED", "submittedAt": "2026-08-17T13:38:00Z",
+    "body": "[Hermes] COMMENT_WITH_CONCERNS — tests exécutés en local : 44/44 "
+            "pass, mais 2 edge cases non couverts (issue #11058)",
+}
+MERGED_11479 = datetime(2026, 8, 18, 13, 6, 39, tzinfo=timezone.utc)
+
+OVERRIDE_BODY = (
+    "**[OVERRIDE] lane myia-ai-01:CoursIA** — Levée de la réserve Hermes "
+    "du 2026-08-17, en nommant chacun de ses points : gap 1 retiré par "
+    "Hermes lui-même, gaps 2-3 reportés sur #11058."
+)
+
+
+def run_coord(comments=(), reviews=(), merged=MERGED_11479):
+    """PR d'un worker NON coordinateur, reserve posee par un tiers — la
+    trappe OVERRIDE est le seul chemin de levée (ni SELF ni PR_AUTHOR)."""
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": list(comments),
+        "reviews": [HERMES_REVIEW_11479, *reviews],
+        "commits": [{"committedDate": "2026-08-18T12:00:00Z"}],
+    }
+    return mod.analyse(data, [], merged)
+
+
+def test_coord_override_avec_levee_leve():
+    """Acceptance 1 : [OVERRIDE] lane + phrase de levée par un coordinateur
+    leve la reserve qu'il arbitre — le seul chemin ouvert a l'arbitre tiers."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_coord_override_nu_ne_leve_rien():
+    """Acceptance 2 : un [OVERRIDE] sans phrase de levée ne lève rien —
+    l'override doit DIRE ce qu'il arbitre (can_lift l'écarte comme tag de
+    protocole nu, aucun LIFT_MARKER ne le réintroduit)."""
+    bare = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z",
+            "body": "[OVERRIDE] lane myia-ai-01:CoursIA — arbitrage : le "
+                    "point 3 est traité en argument, voir #11058."}
+    assert run_coord([bare])["blocked"] is True
+
+
+def test_tiers_avec_levee_sans_override_ne_leve_pas():
+    """Acceptance 3 (non-regression #11145) : un tiers quelconque qui écrit
+    une phrase de levée SANS override ne lève toujours pas — la restriction
+    d'auteur tient pour tout le monde sauf la trappe nommée."""
+    third = {"author": {"login": "myia-po-2024"},
+             "createdAt": "2026-08-18T13:06:34Z",
+             "body": "Les 2 points sont adressés, reportés sur #11058."}
+    assert run_coord([third])["blocked"] is True
+
+
+def test_override_par_un_non_coordinateur_ne_leve_pas():
+    """La trappe est coordinateur-only : un worker qui écrit lui-même
+    `[OVERRIDE] lane …` + phrase de levée ne leve pas la reserve d'un tiers
+    (il n'est ni l'auteur du nit, ni celui de la PR, ni arbitre)."""
+    fake = {"author": {"login": "myia-po-2024"},
+            "createdAt": "2026-08-18T13:06:34Z",
+            "body": "[OVERRIDE] lane myia-po-2024:CoursIA-2 — Levée de la "
+                    "réserve Hermes, reportée sur #11058."}
+    assert run_coord([fake])["blocked"] is True
+
+
+def test_retro_11479_reel_override_post_merge_ne_leve_pas():
+    """Retro #11479 tel que l'historique réel le porte (timestamps exacts) :
+    merge 13:06:39Z, override écrit 13:07:40Z. La borne anti-retroactivite
+    (#10761) exclut l'override postérieur — le retro live reste EXIT=1, la
+    convention à suivre est d'écrire l'override AVANT le merge."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:07:40Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is True
+
+
+def test_retro_11479_simule_override_pre_merge_leve():
+    """Le même retro, override déplacé AVANT le merge : le mécanisme crédite
+    l'arbitrage écrit — c'est la démonstration que seul l'ordonnancement
+    historique (et non le mécanisme) laissait #11479 à EXIT=1."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_coord_override_leve_aussi_le_state_changes_requested():
+    """La trappe couvre la branche état natif (branche A) comme la branche
+    commentaire (branche B) : un CHANGES_REQUESTED d'un reviewer arbitré par
+    override écrit se lève aussi."""
+    cr = {"author": {"login": "hermes-bot"},
+          "state": "CHANGES_REQUESTED", "submittedAt": at(10),
+          "body": "CHANGES_REQUESTED: 2 edge cases non couverts."}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": OVERRIDE_BODY}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [lift], "reviews": [cr],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False

@@ -54,6 +54,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      # #1028 melody verdict: scripts/tests/test_syllable_pitch_verdict.py pins
+      # classify_melody, which lives in the prosody_lab module below. Same shape
+      # as the conway entry just above -- a test under scripts/** whose SUBJECT
+      # is outside it only ever fired on an unrelated scripts/** push, so a
+      # change to the verdict policy could land un-rattled. Mirrored under
+      # pull_request: below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
   pull_request:
     branches: [main]
     paths:
@@ -75,6 +82,8 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      # #1028 melody verdict (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
   workflow_dispatch:
 
 permissions:

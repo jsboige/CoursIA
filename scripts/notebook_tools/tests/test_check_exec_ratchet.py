@@ -127,6 +127,65 @@ class TestRatchetVerdicts:
         assert ratchet.ratchet(base, cwd=repo) == []
 
 
+class TestBaseAdvancedMeanwhile:
+    """A branch behind its base is judged on ITS diff, not on the gap.
+
+    Every other test in this file passes a base that is an ANCESTOR of HEAD,
+    where tree-to-tree and merge-base comparisons coincide -- which is the
+    only topology the suite covered, and why the defect lived here unseen
+    while its byte-identical twin was being fixed (#11532 -> #11627).
+
+    The false verdict here is sign-reversed and therefore convincing: main
+    re-executes a notebook DUPLICATE -> CLEAN, the stale branch still holds
+    the old blob, and a tree-to-tree read calls that CLEAN -> DUPLICATE --
+    a "regression" in a file the branch never opened.
+    """
+
+    def _diverge(self, repo):
+        """base holds two notebooks; the branch edits one, base fixes the
+        other. Returns the base-branch tip sha."""
+        write_nb(repo, "mine.ipynb", make_nb([1, 2, 3]))
+        write_nb(repo, "theirs.ipynb", make_nb([1, 2, 2]))
+        commit(repo, "base")
+        base_branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo,
+            check=True, capture_output=True, encoding="utf-8").stdout.strip()
+        git_ok(repo, "checkout", "-q", "-b", "feature")
+        nb = make_nb([1, 2, 3])
+        nb["cells"].insert(0, {"cell_type": "markdown",
+                               "source": "# new prose", "metadata": {}})
+        write_nb(repo, "mine.ipynb", nb)
+        commit(repo, "feature: markdown only")
+        git_ok(repo, "checkout", "-q", base_branch)
+        # main re-executes the OTHER notebook: DUPLICATE -> CLEAN
+        write_nb(repo, "theirs.ipynb", make_nb([1, 2, 3]))
+        tip = commit(repo, "base advances")
+        git_ok(repo, "checkout", "-q", "feature")
+        return tip
+
+    def test_base_side_changes_are_not_attributed_to_the_branch(self, repo):
+        tip = self._diverge(repo)
+        recs = ratchet.ratchet(tip, cwd=repo)
+        assert [r["notebook"] for r in recs] == ["mine.ipynb"]
+        assert recs[0]["regression"] is False
+
+    def test_a_real_regression_on_a_stale_branch_is_still_caught(self, repo):
+        """The fix removes false positives without blunting the gate."""
+        tip = self._diverge(repo)
+        write_nb(repo, "mine.ipynb", make_nb([1, 2, 2]))
+        commit(repo, "feature: sequence soiled")
+        recs = ratchet.ratchet(tip, cwd=repo)
+        assert [r["notebook"] for r in recs] == ["mine.ipynb"]
+        assert recs[0] == {"notebook": "mine.ipynb", "base": "CLEAN",
+                           "head": "DUPLICATE", "regression": True}
+
+    def test_resolve_base_falls_back_when_no_merge_base(self, repo):
+        """Unrelated histories (shallow clone): previous behaviour kept."""
+        write_nb(repo, "a.ipynb", make_nb([1, 2, 3]))
+        commit(repo, "base")
+        assert ratchet.resolve_base("no-such-ref", cwd=repo) == "no-such-ref"
+
+
 class TestExclusions:
     def test_archive_output_research_checkpoints_excluded(self, monkeypatch):
         lines = "a.ipynb\npkg/archive/o.ipynb\npkg/_output/o.ipynb\n" \
