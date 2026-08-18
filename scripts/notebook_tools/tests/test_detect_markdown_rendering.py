@@ -621,9 +621,9 @@ class TestYamlBlockOpenNoClose:
             f"complete-frontmatter was not classified: {rules}"
         )
 
-    def test_fenced_dash_line_inside_code_block_not_flagged(self):
+    def test_fenced_dash_not_counted_as_closer(self):
         """A ``---`` inside a fenced code block (verbatim) is literal text,
-        not a YAML opener. The cell STARTS with ``---`` only if the first
+        not a YAML closer. The cell STARTS with ``---`` only if the first
         line of the cell is ``---`` -- if the first line is a fenced-code
         opener like ``\\`\\`\\`python``, the cell is not a YAML opener
         regardless of what comes later. This test pins the FENCE awareness
@@ -747,6 +747,74 @@ class TestQuartoClosure:
         )
         targets = _notebook_targets_from_render_list(repo, _quarto_render_list(yml))
         assert Path("docs/linked.ipynb") in targets
+
+    def test_ipynb_link_followed_by_terminal_period(self, tmp_path):
+        """A bare notebook link at the END of a sentence (followed by ``.``)
+        must still resolve -- the period is sentence punctuation, not part of
+        the filename. Without this, the closure silently misses notebooks that
+        are only reachable via sentence-final bare links (Hermes FN reserve on
+        #11643).
+
+        Motif ``... voir foo.ipynb.`` -- the regex lookahead ``(?=[.,;:!?]|$)``
+        lets the regex stop at ``.`` (which becomes the post-match rstrip's
+        job to clean). The captured URL is ``foo.ipynb`` -> resolves to the
+        file on disk.
+        """
+        repo = tmp_path
+        yml = repo / "_quarto.yml"
+        yml.write_text(
+            "project:\n  render:\n    - 'docs/render.md'\n",
+            encoding="utf-8",
+        )
+        (repo / "docs").mkdir()
+        (repo / "docs" / "render.md").write_text(
+            # Sentence-final bare link. The 'voir ' prefix puts a space before
+            # the URL; the trailing '.' is sentence punctuation.
+            "Pour la suite, voir other.ipynb.\n",
+            encoding="utf-8",
+        )
+        (repo / "docs" / "other.ipynb").write_text(
+            '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}',
+            encoding="utf-8",
+        )
+        targets = _notebook_targets_from_render_list(repo, _quarto_render_list(yml))
+        # The pin: sentence-final period MUST NOT cause the link to fall out
+        # of the closure. Pre-#11643 fix this assertion fails -- the regex
+        # stopped on the '.' and the post-match rstrip never fired.
+        assert Path("docs/other.ipynb") in targets, (
+            f"sentence-final bare link was dropped from the closure: {targets}"
+        )
+
+    def test_ipynb_link_followed_by_other_terminal_punctuation(self, tmp_path):
+        """Same FN class, but for ``!``, ``?``, ``,``, ``;``, ``:`` -- any
+        terminal punctuation that ends a sentence or clause. Each is a real
+        shape in prose; each must NOT silently drop the link from closure.
+        """
+        repo = tmp_path
+        yml = repo / "_quarto.yml"
+        yml.write_text(
+            "project:\n  render:\n    - 'docs/render.md'\n",
+            encoding="utf-8",
+        )
+        (repo / "docs").mkdir()
+        # One line per punctuation, comma is mid-clause (not really terminal
+        # -- but covered for symmetry since the lookahead accepts it).
+        (repo / "docs" / "render.md").write_text(
+            "Voir other.ipynb! Aussi other2.ipynb? "
+            "Enfin other3.ipynb, ou other4.ipynb; "
+            "puis other5.ipynb: c'est tout.\n",
+            encoding="utf-8",
+        )
+        for name in ("other", "other2", "other3", "other4", "other5"):
+            (repo / "docs" / f"{name}.ipynb").write_text(
+                '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}',
+                encoding="utf-8",
+            )
+        targets = _notebook_targets_from_render_list(repo, _quarto_render_list(yml))
+        for name in ("other", "other2", "other3", "other4", "other5"):
+            assert Path(f"docs/{name}.ipynb") in targets, (
+                f"link '...{name}.ipynb<TP>' was dropped from closure: {targets}"
+            )
 
 
 if __name__ == "__main__":
