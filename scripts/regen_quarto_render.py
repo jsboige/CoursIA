@@ -76,6 +76,10 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/Sudoku/",      # tranche 2 #10923 (37)
     "MyIA.AI.Notebooks/GameTheory/",  # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",      # tranche 2 #10923 (58)
+    "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/",  # tranche 10 #10923 (22)
+    "MyIA.AI.Notebooks/GenAI/PostTraining/",  # tranche 10 #10923 (14)
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/",   # tranche 10 #10923 (8)
+    "MyIA.AI.Notebooks/GenAI/FineTuning/",    # tranche 10 #10923 (5)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
