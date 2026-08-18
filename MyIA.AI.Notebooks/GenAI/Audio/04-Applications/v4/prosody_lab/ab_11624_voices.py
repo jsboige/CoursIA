@@ -81,6 +81,13 @@ VOICES: dict[str, dict] = {
             "monte sur les moments de tension, redescends en fin de phrase, "
             "contraste nettement entre le calme et l'émotion, rythme irrégulier et dramatique."
         ),
+        # Register-lever test (ai-01 witness 2026-08-18, msg-20260818T115928):
+        # same flat content, explicit CLEAR/medium register — if effective notes
+        # rise vs vd_flat, the register (not instruction content) is the lever.
+        "reg_clair": (
+            "Voix masculine claire et lumineuse, registre médium, bien posée. "
+            "Lecture neutre, régulière et sans variations d'intonation."
+        ),
     },
     "elisabeth_rousset": {
         "text": (
@@ -138,6 +145,32 @@ VOICES: dict[str, dict] = {
 def _to_data_uri(path: Path) -> str:
     raw = path.read_bytes()
     return "data:audio/mp3;base64," + base64.b64encode(raw).decode()
+
+
+# Reference-audio ceiling for the Base task, measured 2026-08-18: a 15 s ref
+# blows the render to > 5 min and a 34 s ref kills the EngineCore (EngineDeadError,
+# "Error concatenating tensor for key sr"); a 10 s ref renders in ~28 s. Trim the
+# "long varied" reference to this ceiling so clone_long stays runnable.
+MAX_REF_S = 10.0
+
+
+def _trim_ref(path: Path, max_s: float = MAX_REF_S) -> Path:
+    from pydub import AudioSegment
+
+    seg = AudioSegment.from_file(str(path))
+    if len(seg) / 1000.0 <= max_s:
+        return path
+    out = path.with_name(path.stem + f"_ref{int(max_s)}s.mp3")
+    seg[: int(max_s * 1000)].export(str(out), format="mp3", bitrate="128k")
+    return out
+
+
+def _ref_prefix(text: str, n_sentences: int = 2) -> str:
+    """First ``n_sentences`` of a passage — the transcript of its first ~10 s."""
+    import re
+
+    parts = re.split(r"(?<=[.!?;])\s+", text.strip())
+    return " ".join(parts[:n_sentences])
 
 
 def _render(
@@ -198,6 +231,14 @@ def main() -> None:
                 qc.qwen_tts_voicedesign_chunked,
                 cfg["text"], instructions=cfg["melodic"],
             )
+            # Register-lever config (ai-01): narrator only, flat content +
+            # explicit clear/medium register, to isolate REGISTER from prompt.
+            if voice == "narrateur" and cfg.get("reg_clair"):
+                _render(
+                    out_dir / f"{voice}_vd_flat_registre_clair.mp3",
+                    qc.qwen_tts_voicedesign_chunked,
+                    cfg["text"], instructions=cfg["reg_clair"],
+                )
             if ok_mel:
                 ref_long[voice] = out_vd_mel
                 ref_long_text[voice] = cfg["text"]
@@ -229,8 +270,10 @@ def main() -> None:
                         out_cl,
                         qc.qwen_tts_clone,
                         cfg["text"],
-                        ref_audio=_to_data_uri(ref_long[voice]),
-                        ref_text=ref_long_text[voice],
+                        ref_audio=_to_data_uri(_trim_ref(ref_long[voice])),
+                        # ref_text must match the trimmed audio (~10 s ≈ the
+                        # first two sentences), not the full passage.
+                        ref_text=_ref_prefix(ref_long_text[voice]),
                     )
 
     manifest = out_dir / "manifest.json"
@@ -242,7 +285,9 @@ def main() -> None:
                 "refs_dir": str(REFS_DIR),
                 "note": (
                     "clone_long uses the vd_melodic render of the same voice as a "
-                    "long varied reference; clone_short uses the v4 fishaudio sample."
+                    "long varied reference (trimmed to 10 s: longer refs crash the "
+                    "Base EngineCore / blow up the render time, measured 2026-08-18); "
+                    "clone_short uses the v4 fishaudio sample."
                 ),
             },
             indent=2,
