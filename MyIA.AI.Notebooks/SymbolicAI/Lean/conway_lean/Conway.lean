@@ -82,6 +82,7 @@ import Conway.Life.HashlifeMarginDemo
 import Conway.Life.ConeGeometry
 import Conway.Life.LightCone
 import Conway.Life.Pillars
+import Conway.Life.Novelty
 import Conway.KochenSpecker
 import Conway.FreeWillTheorem
 import Conway.MathlibMap
