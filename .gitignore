@@ -960,3 +960,4 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/.dialogues-build/
 # consumed by `restore`, deleted when restore completes. Ephemeral (in-flight
 # patch state), never committed.
 .quarto_csharp_fix_manifest.json
+.quarto_yaml_safe_manifest.json

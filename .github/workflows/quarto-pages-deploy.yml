@@ -29,6 +29,17 @@ on:
       - "favicon.ico"
       - "styles.css"
       - ".github/workflows/quarto-pages-deploy.yml"
+      - "scripts/quarto_yaml_safe.py"
+  pull_request:
+    paths:
+      - "_quarto.yml"
+      - "**.qmd"
+      - "MyIA.AI.Notebooks/**/index.qmd"
+      - "MyIA.AI.Notebooks/**/*.ipynb"
+      - "MyIA.AI.Notebooks/**/_output.ipynb"
+      - "MyIA.AI.Notebooks/**/README.md"
+      - "docs/**"
+      - "scripts/quarto_yaml_safe.py"
   workflow_dispatch:
 
 # Annule les runs obsolètes pour économiser des minutes CI (mêmes pushes en rafale)
@@ -82,6 +93,18 @@ jobs:
         # (inchange) -> le patch n'affecte jamais l'execution.
         run: python scripts/quarto_csharp_kernel_fix.py apply
 
+      - name: Escape YAML-ambiguous `---` separators (issue #11611)
+        # Les cellules markdown commencant par `---` (separateur visuel avant
+        # `## Heading`) sont concatenees par le pipeline nbconvert de Quarto en
+        # un flux markdown unique. Pandoc tente alors de parser le resultat
+        # comme front-matter YAML, et un `---` suivi d'un autre `---` (ou d'une
+        # table `|`) declenche `YAMLException: end of the stream or a document
+        # separator is expected (8:1)`. Le pre-processeur convertit les `---`
+        # standalone en `***` (autre syntaxe de regle horizontale markdown, NON
+        # reconnue comme separateur YAML). Round-trip byte-level propre, restore
+        # via le meme script en fin de job.
+        run: python scripts/quarto_yaml_safe.py apply
+
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
         # .ipynb (execute.enabled: false) : ils sont RENDUS en HTML statique avec
@@ -95,6 +118,13 @@ jobs:
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
         run: python scripts/quarto_csharp_kernel_fix.py restore
+
+      - name: Restore YAML-safe separators
+        # Restore les `***` en `---` dans les notebooks sources pour ne pas laisser
+        # le worktree dans un etat different de la branche. Le checkout CI est
+        # ephemere (meme remarque que ci-dessus), mais le restore garde les
+        # outputs `git diff` propres pour les etapes suivantes.
+        run: python scripts/quarto_yaml_safe.py restore
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
@@ -125,3 +155,64 @@ jobs:
         uses: actions/deploy-pages@v4
         # Pas de branche gh-pages : utilise l'environment GitHub Pages natif
         # via OIDC token (page-deploy doit être activé dans Settings → Pages).
+
+  validate-pr:
+    # PR-gate Quarto (issue #11611) : un build site sur PR qui touche la liste
+    # de rendu. Bloque les PR qui etendent `_quarto.yml` / ajoutent un notebook /
+    # modifient une cellule markdown d'un notebook rendu. Meme job `build` que
+    # le push, mais sans deploy : juste le rendu + check output. Si le rendu
+    # passe en PR, le push sur main passera aussi.
+    name: Validate Quarto build (PR)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # pour poster le commentaire de gate
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18
+
+      - name: Regenerate render list
+        run: python scripts/regen_quarto_render.py
+
+      - name: Normalize .NET kernel language for Quarto (C# -> csharp)
+        run: python scripts/quarto_csharp_kernel_fix.py apply
+
+      - name: Escape YAML-ambiguous `---` separators (issue #11611)
+        run: python scripts/quarto_yaml_safe.py apply
+
+      - name: Render Quarto site (PR check)
+        run: quarto render --to html
+
+      - name: Restore kernel language (hygiene)
+        run: python scripts/quarto_csharp_kernel_fix.py restore
+
+      - name: Restore YAML-safe separators
+        run: python scripts/quarto_yaml_safe.py restore
+
+      - name: Check output
+        run: |
+          test -d _site || (echo "::error::_site/ absent après quarto render" && exit 1)
+          test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
+          echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
+
+      - name: Comment PR with summary
+        # Resumé court : nombre de fichiers + diff notebooks si pertinent.
+        # N'utilise PAS d'API GH externe ; le commentaire est posé via gh cli
+        # dans le checkout (token GITHUB_TOKEN par defaut).
+        if: always()
+        run: |
+          FILES=$(find _site -type f 2>/dev/null | wc -l)
+          echo "Quarto build status: ${{ job.status }}"
+          echo "Pages rendues: $FILES"
+          if [ "${{ job.status }}" != "success" ]; then
+            echo "::error::Le rendu Quarto a échoué en PR. Voir les logs ci-dessus."
+            exit 1
+          fi
