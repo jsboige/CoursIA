@@ -56,5 +56,6 @@ jobs:
 
       - name: Run guard unit tests
         run: |
+          python -m pip install --quiet pytest pytest-cov
           python -m pytest scripts/tests/test_check_quantconnect_notebook_freshness.py -v
         continue-on-error: false
