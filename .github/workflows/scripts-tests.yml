@@ -43,6 +43,17 @@ on:
       # run hermetically without agent_framework (see pytest step).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #11349 native_decide ratchet rewire: scripts/lean/tests/test_proof_integrity_audit_wiring.py
+      # pins the conway_lean proof-integrity-audit allow-list to the build-enumerated
+      # footprint (61 names after #11368). The test lives under scripts/** so its only
+      # trigger was an scripts/** push -- which means a PR adding a new native_decide
+      # to conway_lean could pass un-rattled and the rouge would land on the first
+      # next scripts/** pusher. Wire the lake path so the ratchet fires when its
+      # subject moves; mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
   pull_request:
     branches: [main]
     paths:
@@ -59,6 +70,11 @@ on:
       # #6790 prover forensic-guards (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #11349 native_decide ratchet rewire (mirror of the push paths above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
   workflow_dispatch:
 
 permissions:

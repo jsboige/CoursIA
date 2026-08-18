@@ -299,6 +299,12 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     all of them makes a benign concurrency cancellation indistinguishable from a
     real failure. Ordering key is `started_at` then `id`, both monotonic per name;
     entries missing both keep their input order as a last resort.
+
+    NOTE: the monotonicity premise holds at the check-run level
+    (`commits/<sha>/check-runs` — a rerun creates a fresh entry, larger id AND
+    started_at), NOT at the `actions/runs` level, where an attempt=2 of an old
+    run keeps a smaller id while starting later. dedupe_latest is only fed by
+    the former (#11416).
     """
     best: dict[str, tuple[tuple, dict]] = {}
     for index, check in enumerate(checks):
@@ -500,9 +506,18 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
     """Union of check runs and legacy commit statuses for one SHA."""
     checks: list[dict] = []
 
-    runs = _gh_api(f"repos/{repo}/commits/{sha}/check-runs?per_page=100")
-    if isinstance(runs, dict):
-        for run in runs.get("check_runs", []):
+    # Paginate check-runs (per_page=100 cap): judging a subset of the runs on a
+    # busy SHA would silently drop verdicts. total_count is the authoritative
+    # stop condition; an empty page is the defensive fallback.
+    page = 1
+    while True:
+        runs = _gh_api(
+            f"repos/{repo}/commits/{sha}/check-runs?per_page=100&page={page}"
+        )
+        if not isinstance(runs, dict):
+            break
+        page_runs = runs.get("check_runs", [])
+        for run in page_runs:
             checks.append(
                 {
                     "name": run.get("name"),
@@ -512,6 +527,12 @@ def fetch_checks(repo: str, sha: str) -> list[dict]:
                     "id": run.get("id"),
                 }
             )
+        if not page_runs:
+            break
+        total = runs.get("total_count")
+        if total is not None and len(checks) >= total:
+            break
+        page += 1
 
     combined = _gh_api(f"repos/{repo}/commits/{sha}/status")
     if isinstance(combined, dict):

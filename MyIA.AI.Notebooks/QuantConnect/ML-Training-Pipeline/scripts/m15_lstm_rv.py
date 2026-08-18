@@ -541,6 +541,7 @@ def _csv_int_list(value: str) -> list[int]:
 
 
 def main() -> None:
+    global FEE_BPS
     parser = argparse.ArgumentParser(description="M15 Log-LSTM RV sweep")
     parser.add_argument("--dry-run", action="store_true", help="Run BTC h=1 seed=0 only")
     parser.add_argument("--hidden-size", type=int, default=HIDDEN_SIZE,
@@ -601,7 +602,23 @@ def main() -> None:
             "(for separate OOS verdict). Example: --oos-strict 2027"
         ),
     )
+    parser.add_argument(
+        "--fee-bps",
+        type=float,
+        default=FEE_BPS,
+        help=(
+            "Round-trip transaction cost in basis points applied to the Kelly "
+            "weights before every economic metric (Sharpe, delta-Sharpe, "
+            "verdict). Default: %(default)s, the conservative crypto regime "
+            "this sweep was first measured under. §C names 10bps for crypto "
+            "(5bps SPY), so a verdict read against §C must state which regime "
+            "produced it -- a NO BEATS at 50bps and a NO BEATS at 10bps are "
+            "different claims, and neither substitutes for the other."
+        ),
+    )
     args = parser.parse_args()
+
+    FEE_BPS = args.fee_bps
 
     hidden_size = args.hidden_size
     coins = args.coins if args.coins is not None else COINS
