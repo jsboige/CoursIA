@@ -374,6 +374,11 @@ layout: two-cols
 
 # Arbre d'exploration
 
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Idée de base</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Exemple : Énigme</div>
+</div>
+
 
 **Idée de base**
 
@@ -503,6 +508,11 @@ layout: two-cols
 
 # Jeux
 
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux vs Exploration</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Arbre Minimax</div>
+</div>
+
 
 **Jeux vs Exploration**
 
@@ -546,6 +556,11 @@ layout: two-cols
 
 
 # Problèmes à satisfaction de contraintes
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Définition CSPs</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Techniques</div>
+</div>
 
 
 **Définition CSPs**
@@ -709,6 +724,11 @@ layout: two-cols
 
 # Application: argumentation
 
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Code de conduite</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Qu'est-ce qu'un argument ?</div>
+</div>
+
 
 **Code de conduite**
 
@@ -794,6 +814,11 @@ layout: two-cols
 
 
 # Application: Planification
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Expression de problème</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Approches</div>
+</div>
 
 
 **Expression de problème**
@@ -1046,6 +1071,11 @@ layout: two-cols
 
 # Théorie des jeux (1/2)
 
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Environnement multi-agents</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Optimisation de stratégies</div>
+</div>
+
 
 **Environnement multi-agents**
 
@@ -1083,6 +1113,11 @@ layout: two-cols
 
 
 # Théorie des jeux (2/2)
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Jeux simultanés</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Jeux séquentiels</div>
+</div>
 
 
 **Jeux simultanés**
@@ -1159,6 +1194,11 @@ layout: two-cols
 
 
 # Conception de mécanismes
+
+<div class="grid grid-cols-2 gap-0 -mt-4 -mb-2">
+<div class="bg-orange-700 text-white px-4 py-2 text-base font-bold text-center">Concepts</div>
+<div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Résultats</div>
+</div>
 
 
 **Concepts**
