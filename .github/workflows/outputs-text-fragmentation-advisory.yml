@@ -40,7 +40,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          # fetch-depth: 0 pour que `git diff origin/main` voie les commits
+          # completes (sinon le diff est vide et l'advisory short-circuit en
+          # "no .ipynb changed" sur toute PR ; cf. finding NanoClaw #11668).
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -56,17 +59,25 @@ jobs:
         id: run
         run: |
           set +e
+          # fetch origin/main explicitement : checkout@v4 en fetch-depth:0 n'a
+          # PAS la guarantee de pointer origin/main (cf. finding #11668 #2).
+          git fetch --depth=200 origin main 2>/dev/null || true
           CHANGED=$(git diff --name-only --diff-filter=M origin/main | grep '\.ipynb$' | head -50)
           if [ -z "$CHANGED" ]; then
             echo "no .ipynb changed" >&2
-            echo "exit=0" >> "$GITHUB_OUTPUT"
+            echo "findings_total=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           python scripts/notebook_tools/check_outputs_text_fragmentation.py \
             $CHANGED \
-            --json > /tmp/outputs-frag.json || true
+            --check --json > /tmp/outputs-frag.json
           rc=$?
-          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          # --check retourne 1 si findings ; on parse findings_total du JSON
+          # (le verdict advisory depend du nombre, pas du rc -- le workflow
+          # reste non bloquant, cf. finding #11668 #1).
+          findings_total=$(python -c "import json,sys;print(json.load(open('/tmp/outputs-frag.json'))['summary']['findings_total'])" 2>/dev/null || echo "0")
+          echo "findings_total=$findings_total" >> "$GITHUB_OUTPUT"
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
           set -e
 
       - name: Post advisory comment
@@ -75,7 +86,7 @@ jobs:
         with:
           header: outputs-text-fragmentation-advisory
           message: |
-            ${{ steps.run.outputs.exit == '0' && '✅ No fragmented stream outputs detected.' || '⚠️ Stream outputs fragmented character-by-character (c.354-L2). Each item in `outputs[].text` should be a line ending in `\n`, not a single character. Fix: re-inject with `text=content.splitlines(keepends=True)` instead of `text=[content]`. Advisory, NOT a merge gate.' }}
+            ${{ steps.run.outputs.findings_total == '0' && '✅ No fragmented stream outputs detected.' || format('⚠️ {0} stream output(s) fragmented character-by-character (c.354-L2 ★★). Each item in `outputs[].text` should be a line ending in `\n`, not a single character. Fix: re-inject with `text=content.splitlines(keepends=True)` instead of `text=[content]`. Advisory, NOT a merge gate.', steps.run.outputs.findings_total) }}
 
             See `python scripts/notebook_tools/check_outputs_text_fragmentation.py --help` for re-running locally.
             Detector rationale: c.354-L2 ★★, PR #11664.

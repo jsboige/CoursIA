@@ -48,9 +48,12 @@ def _stream_output(text: list[str]) -> dict:
 
 def test_founder_case_flagged(tmp_path: Path) -> None:
     """Cas fondateur c.354 : 9 lignes reelles -> items d'1 char -> FLAGGED."""
-    # Reproduction exacte : 9 lignes, total ~800 chars, list() fragmente
+    # Reproduction exacte : 9 lignes, total ~800 chars, list() fragmente.
+    # Chemin machine c.354 scrubbe en placeholder (categorie-A standing,
+    # cf. secrets-and-coord-detail.md §1.6 : une fixture de test ne doit pas
+    # embarquer de chemin absolu machine).
     content = (
-        "Materiel de reference accessible : G:\\Mon Drive\\MyIA\\2026-08-18\n"
+        "Materiel de reference accessible : <path-redacted>\n"
         "\n"
         "Fichier                                syll   motion  flat%  span  verdict\n"
         "----------------------------------------------------------------------------------\n"
@@ -204,19 +207,17 @@ def test_mutation_disable_threshold_caught(tmp_path: Path) -> None:
     un notebook legerement au-dessus du seuil (mediane 3) doit etre capture
     par la perte de detection : c'est ce qui prouve que le seuil EST actif.
     """
-    # MEDIAN_THRESHOLD=2 ; on construit un cas median=3 avec beaucoup d'items
-    # courts et un long pour faire monter la mediane a 3
-    text = ["ab\n"] * 8 + ["x" * 100 + "\n"] * 8  # 16 items ; mediane len = (2+100)/2 = 51
-    # Non, on veut forcer mediane = 3 : 10 items de "ab\n" (3 chars) + 1 item "x"*100 (100 chars) = mediane 3
-    text2 = ["ab\n"] * 10 + ["x" * 100 + "\n"]
-    p = _make_nb(tmp_path, [_stream_output(text2)])
+    # MEDIAN_THRESHOLD=2 ; on construit un cas mediane=3 : 10 items "ab\n"
+    # (3 chars) + 1 item "x"*100 (100 chars) -> 11 items, mediane entre
+    # item 5 et 6 = (3+3)/2 = 3, au-dessus du seuil.
+    text = ["ab\n"] * 10 + ["x" * 100 + "\n"]
+    p = _make_nb(tmp_path, [_stream_output(text)])
     res = subprocess.run(
         [sys.executable, str(SCRIPT), str(p), "--check"],
         capture_output=True,
         text=True,
     )
-    # mediane = 3 (entre 10 items de 3 chars et 1 item de 100 chars)
-    # le seuil = 2 -> PAS flagger
+    # mediane = 3 > seuil 2 -> PAS flagger (sinon MEDIAN_THRESHOLD serait mort)
     assert res.returncode == 0, f"mediane 3 > seuil 2 -> OK, stderr={res.stderr}"
 
 
