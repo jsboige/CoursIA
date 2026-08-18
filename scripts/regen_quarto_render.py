@@ -72,10 +72,13 @@ EXCLUDE_MARKERS = (
 # every notebook — a directory-scoped _quarto.yml is NOT applied to .ipynb in
 # Quarto 1.7.32 (measured firsthand), so no per-subtree override exists.
 NOTEBOOK_SUBTREES = (
-    "MyIA.AI.Notebooks/Search/",      # pilote #10923 (111 rendus apres exclusions)
-    "MyIA.AI.Notebooks/Sudoku/",      # tranche 2 #10923 (37)
-    "MyIA.AI.Notebooks/GameTheory/",  # tranche 2 #10923 (56)
-    "MyIA.AI.Notebooks/Probas/",      # tranche 2 #10923 (58)
+    "MyIA.AI.Notebooks/Search/",                       # pilote #10923 (111 rendus apres exclusions)
+    "MyIA.AI.Notebooks/Sudoku/",                      # tranche 2 #10923 (37)
+    "MyIA.AI.Notebooks/GameTheory/",                  # tranche 2 #10923 (56)
+    "MyIA.AI.Notebooks/Probas/",                      # tranche 2 #10923 (58)
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/",          # tranche 6 #10923 (21)
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/",  # tranche 6 #10923 (23)
+    "MyIA.AI.Notebooks/SymbolicAI/SMT/",              # tranche 7 #10923 (52)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
