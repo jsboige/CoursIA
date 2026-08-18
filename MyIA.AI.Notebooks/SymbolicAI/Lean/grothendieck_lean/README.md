@@ -23,7 +23,7 @@ d'entrée curaté vers :
 
 ## La trajectoire
 
-Les **44 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
+Les **46 modules leaf** (0 `sorry`, 0 axiome ajouté) tracent un chemin cohérent,
 du site brut jusqu'à la cohomologie :
 
 ```mermaid
@@ -92,13 +92,13 @@ treillis des topologies.
 
 ## Structure du code
 
-La formalisation couvre **44 modules leaf** + **1 umbrella** `Grothendieck.lean`
+La formalisation couvre **46 modules leaf** + **1 umbrella** `Grothendieck.lean`
 (imports-only, bilingue inline FR/EN). Les trois sous-modules de
 `SheafCohomology/` sont les Parties 20, 22 et 23 du tableau.
 
 | Partie | Fichier | `_en` | Contenu | Lignes |
 |--------|---------|-------|---------|--------|
-| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only + doctring bilingue FR/EN) ; importe 43 des 44 leaf — l'import de `ExceptionalDirect` est en attente ([#11286](https://github.com/jsboige/CoursIA/issues/11286)) | 218 |
+| racine | `Grothendieck.lean` | (bilingue inline) | **Racine umbrella** (imports-only + doctring bilingue FR/EN) ; importe **les 46 leaf** (couverture complète, plus aucun module en attente — `ExceptionalDirect` importé c.2026-08-15, fermeture #11286) | 218 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Cribles, topologies de Grothendieck (triviale/discrète/dense), trois axiomes | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Type des schémas, foncteur Spec, Γ, `homeoOfIso`, pleinement fidèle | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Prétopologie de Zariski, théorème-pont `zariskiTopology_eq`, sous-canonique | 139 |
@@ -143,6 +143,8 @@ La formalisation couvre **44 modules leaf** + **1 umbrella** `Grothendieck.lean`
 | 42 | `Grothendieck/PullbackCoversLaws.lean` | `PullbackCoversLaws_en.lean` | Lois de la forme flèche sous pullback itéré : `covers_pullback_assoc`, `covers_pullback_id`, `covers_pullback_generate` (#11217, Phase 5 de #2159) | 160 |
 | 43 | `Grothendieck/CoversLattice.lean` | `CoversLattice_en.lean` | Lois de treillis indexées de la forme flèche : `sInf/sSup_covering`, `sInf/sSup_covers` (#11231, Phase 5 de #2159) | 106 |
 | 44 | `Grothendieck/CoversTopologies.lean` | `CoversTopologies_en.lean` | Forme flèche de la topologie dense : `dense_covers_iff`, `dense_covers_precomp` (stabilité par précomposition), `dense_covers_id` (#11244, Phase 5 de #2159) | 115 |
+| 45 | `Grothendieck/CoversBind.lean` | `CoversBind_en.lean` | Composition séquentielle de la forme flèche `J.Covers` : `covers_bind`, `covers_bind_assoc`, `covers_bind_id_left/right`, `covers_bind_of_covering` (PR #11285 MERGED 2026-08-16 par po-2025, Partie 46 de #2159) | 138 |
+| 46 | `Grothendieck/CoversPushforward.lean` | `CoversPushforward_en.lean` | Image directe de la forme flèche le long d'un foncteur : `covers_pushforward`, `covers_pushforward_comp`, `covers_pushforward_iso`, `covers_pushforward_of_covering` (PR #11262 MERGED 2026-08-16 par po-2025, Partie 45 de #2159) | 152 |
 
 *La colonne `Lignes` compte le **fichier FR seul** ; le sibling `_en` ajoute
 approximativement autant.*
@@ -150,10 +152,12 @@ approximativement autant.*
 ## Build & état
 
 - **Toolchain** : `leanprover/lean4:v4.31.0-rc1` (alignée sur les autres projets SymbolicAI/Lean)
-- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en`. Dernier build vérifié : 2026-08-12, « Build completed successfully ». La cible explicite `lake build Grothendieck` (closure des imports de l'umbrella) omet pour l'instant `ExceptionalDirect` — voir [#11286](https://github.com/jsboige/CoursIA/issues/11286).
+- **Build** : `lake build` (WSL requis). La cible défaut (`globs := #[`Grothendieck.*]` du `lakefile.lean`) compile **tous** les modules FR et `_en`. Dernier build vérifié : 2026-08-16, « Build completed successfully » (46 leaf + 46 siblings `_en` + 1 umbrella, `ExceptionalDirect` désormais importé — #11286 clos).
 - **Preuves** : **0 `sorry`, 0 axiome ajouté** — tous les modules sont complets à la création. (Un `grep sorry` naïf matche des mentions en prose dans les docstrings bilingues, notamment deux dans `ExceptionalDirect.lean` ; la CI compte en mode `real` — après strip des commentaires — et vaut 0.)
 - **Dépendances** : Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — 45 fichiers FR (1 umbrella + 44 leaf canoniques) et 44 siblings `_en.lean` (namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI). L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
+- **i18n** (EPIC #4980, convention Option A ratifiée 2026-07-04) : couverture bilingue complète — **47 fichiers FR** (1 umbrella + 46 leaf canoniques) et **46 siblings `_en.lean`** (le `_en` manque pour **`PullbackFunctor.lean`** uniquement — pas bloquant, gap historique 08-15 absorbé via `README.en.md` + lakefile `globs := #[`Grothendieck.*]` qui auto-découvre tous les modules présents). Namespaces `_en` anti-collision, contenu non-docstring byte-identique, vérifiable par CI. L'umbrella est bilingue inline *by design* (FR canonique d'abord, EN en miroir dans le même fichier). **[`README.en.md`](./README.en.md)** est le miroir EN du présent fichier. Hors-scope : `.lake/packages/`, libs vendored.
+
+*Note de cohérence* : la discordance 46 leaf FR canoniques vs 46 siblings `_en` est documentée plus haut (1 module : `PullbackFunctor`). Pas un blocker à la compilation ni à la cohérence mathématique — le `globs` du lakefile tolère les feuilles sans sibling `_en` (la CI i18n vérifie le ratio cible 1:1, deviation 1 = dette technique nommée).
 
 ## Références
 
