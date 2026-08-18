@@ -398,7 +398,7 @@ layout: two-cols
   - Jamais + de cannibales
 
 <img src="./images/img_023.png" class="w-[280px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_024.png" class="w-[100px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_024.png" class="w-[460px] max-w-full max-h-[300px] object-contain" />
 
 
 
