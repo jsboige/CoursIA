@@ -78,6 +78,9 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/Probas/",                # tranche 2 #10923 (58)
     "MyIA.AI.Notebooks/SymbolicAI/Planners/",          # tranche 6 #10923 (24)
     "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/",  # tranche 6 #10923 (23)
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
+    "MyIA.AI.Notebooks/FallacyDetection/",            # tranche 13 #10923 (2)
+    "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
