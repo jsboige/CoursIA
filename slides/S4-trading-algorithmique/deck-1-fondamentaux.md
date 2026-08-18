@@ -784,7 +784,7 @@ imageClass: mid-right visible
 
 </div>
 
-> Ref: *Hands-On AI Trading* Ch9 "Rôle of GenAI in Creating Alpha" p.341
+> Ref: *Hands-On AI Trading* Ch9 "Role of GenAI in Creating Alpha" p.341
 
 ---
 

@@ -415,7 +415,7 @@ layout: section
 
 </div>
 
-> Notebooks: QC-Py-13-Alpha-Models, QC-Py-14-Portfolio-Construction-Exécution
+> Notebooks: QC-Py-13-Alpha-Models, QC-Py-14-Portfolio-Construction-Execution
 
 ---
 

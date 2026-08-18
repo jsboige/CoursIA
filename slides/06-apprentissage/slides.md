@@ -1659,7 +1659,7 @@ layout: section
 
 - Given training set
 - Find B that best matches D
-- model sélection
+- model selection
 - parameter estimation
 - Data D
 - Inducer
@@ -1718,7 +1718,7 @@ layout: section
 ---
 
 
-# Model sélection
+# Model selection
 
 - Goal: Select the best network structure, given the data
 - Input:
@@ -1731,7 +1731,7 @@ layout: section
 ---
 
 
-# Structure sélection: Scoring
+# Structure selection: Scoring
 
 - Bayesian: prior over parameters and structure
 - get balance between model complexity and fit to data as a byproduct
@@ -1908,7 +1908,7 @@ layout: section
 ---
 
 
-# Variations on a thème
+# Variations on a theme
 
 - Known structure, fully observable: only need to do parameter estimation
 - Unknown structure, fully observable: do heuristic search through structure space, then parameter estimation
