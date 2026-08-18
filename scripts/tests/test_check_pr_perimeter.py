@@ -15,6 +15,7 @@ from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
     check_assertion,
     extract_baseline_moves,
+    extract_perimeter_assertions,
     format_report,
 )
 
@@ -148,3 +149,62 @@ def test_report_renders_no_workflow_explicitly():
         None,
     ).splitlines()
     assert any("aucun" in l.lower() for l in lines if "Workflows" in l)
+
+
+# ---------------------------------------------------------------------------
+# --scan-thread extraction (the wiring into the review path, acceptance 4)
+# ---------------------------------------------------------------------------
+
+
+def test_extract_finds_founding_assertion():
+    """The exact #11227 review sentence, as one line, is a candidate."""
+    body = "**Périmètre** : 2 fichiers twins uniquement, aucune autre modification."
+    assert extract_perimeter_assertions(body) == [body]
+
+
+def test_extract_finds_template_file_count_line():
+    """The review-template line '**Fichiers:** N fichiers modifiés'."""
+    line = "- **Fichiers:** 3 fichiers modifiés"
+    assert extract_perimeter_assertions(line) == [line]
+
+
+def test_extract_finds_bare_exclusivity_with_strong_scope_word():
+    assert extract_perimeter_assertions("Aucune autre modification.") == ["Aucune autre modification."]
+
+
+def test_extract_skips_technical_prose_with_exclusivity_words():
+    """Measured false-positive candidates on #11632 -- must NOT be scanned.
+
+    'seulement' / 'uniquement' / 'aucune' in technical prose about the YAML
+    block pattern, with no file count and no strong scope word.
+    """
+    prose = (
+        "Nouvelle regle qui detecte les cellules markdown Quarto dont le `---` "
+        "initial ouvre un bloc YAML -- pour qu'une PR qui touche un render-list "
+        "declenche le guard, pas seulement les PR touchant un `.ipynb` casse.\n"
+        "Pandoc le ferme uniquement a la prochaine `---` de la cellule.\n"
+        "aucune `---` ulterieure non-fenced avant EOF cellule.\n"
+    )
+    assert extract_perimeter_assertions(prose) == []
+
+
+def test_scan_thread_composition_rejects_founding_thread():
+    """Acceptance 4 at core level: the #11227 thread (review sentence) FAILS.
+
+    extract -> check_assertion is exactly what --scan-thread does per
+    body/review, minus the gh fetch. The false '2 fichiers twins uniquement'
+    cannot survive the confrontation.
+    """
+    cands = extract_perimeter_assertions("**Périmètre** : 2 fichiers twins uniquement, aucune autre modification.")
+    problems = [p for cand in cands for p in check_assertion(FILES_11227, cand)]
+    assert problems
+    assert any("lean-knot.yml" in p for p in problems)
+
+
+def test_scan_thread_composition_accepts_correct_thread():
+    cands = extract_perimeter_assertions(
+        "Périmètre : 3 fichiers : Invariant.lean, Invariant_en.lean, "
+        ".github/workflows/lean-knot.yml."
+    )
+    problems = [p for cand in cands for p in check_assertion(FILES_11227, cand)]
+    assert problems == []

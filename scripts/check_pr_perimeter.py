@@ -35,6 +35,15 @@ What it does (issue #11268 acceptance 1-3)
    touched workflow, FAILS (exit 1). This is the non-regression property:
    a review claiming "2 files only" over a 3-file PR with a workflow can
    no longer be produced unnoticed.
+5. ``--scan-thread`` (the wiring into the review path, acceptance 4): fetches
+   the PR body + top-level reviews and confronts EVERY perimeter assertion
+   found there with the effective list. Wired by
+   ``.github/workflows/perimeter-review-guard.yml`` on ``pull_request`` +
+   ``pull_request_review`` -- the moment such a review is submitted or
+   edited, the check re-runs on the same head and goes red on a false
+   assertion, so the PR cannot stand merged with one. Baseline moves are
+   reported with direction but do not block in this mode (the reviewer
+   applies #11268-3 on unjustified loosening; the output names the move).
 
 Exit codes
 ----------
@@ -50,11 +59,12 @@ Usage
 -----
     python scripts/check_pr_perimeter.py 11334
     python scripts/check_pr_perimeter.py 11227 --assert "2 fichiers twins uniquement"
+    python scripts/check_pr_perimeter.py <PR#> --scan-thread
     python scripts/check_pr_perimeter.py <PR#> --baseline-justified "accepted debt, see #N"
 
-The pure core (assertion checking, baseline parsing) is unit-tested without
-network in ``scripts/tests/test_check_pr_perimeter.py``; the gh wiring is
-exercised on real PRs (see the PR that introduced this file).
+The pure core (assertion checking, baseline parsing, perimeter extraction) is
+unit-tested without network in ``scripts/tests/test_check_pr_perimeter.py``;
+the gh wiring is exercised on real PRs (see the PR that introduced this file).
 """
 
 from __future__ import annotations
@@ -204,6 +214,42 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     return problems
 
 
+# A file-count claim alone marks a perimeter assertion (the review template's
+# ``**Fichiers:** N fichiers modifiés``). For the exclusivity-only branch, the
+# line must ALSO carry a strong scope word: incidental prose like "pas
+# seulement les PR" / "uniquement à la prochaine ---" / "aucune `---`
+# ultérieure" (measured on #11632) must not be scanned, while a bare "Aucune
+# autre modification." is a genuine perimeter assertion.
+STRONG_SCOPE_WORDS = (
+    "modification", "modif", "changement", "change", "périmètre",
+    "perimetre", "perimeter", "scope",
+)
+
+
+def extract_perimeter_assertions(text: str) -> list[str]:
+    """Pull candidate perimeter assertions from review/PR prose.
+
+    Line-based by design: perimeter statements sit on their own line (the
+    report template's ``**Fichiers:** N fichiers modifiés``, the founding
+    ``**Périmètre** : 2 fichiers twins uniquement, aucune autre
+    modification.``). A line is a candidate when it carries a file-count
+    claim, or an exclusivity marker AND a strong scope word. Lines with
+    neither are not perimeter assertions and are skipped.
+    """
+    candidates: list[str] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if COUNT_CLAIM.search(line):
+            candidates.append(line)
+            continue
+        low = line.lower()
+        if any(m in low for m in EXCLUSIVITY_MARKERS) and any(w in low for w in STRONG_SCOPE_WORDS):
+            candidates.append(line)
+    return candidates
+
+
 def format_report(report: Report, assertion: Optional[str]) -> str:
     lines = []
     lines.append(f"Périmètre effectif : {len(report.files)} fichier(s)")
@@ -253,10 +299,39 @@ def fetch_report(pr: int) -> Report:
     return Report(files=files, moves=extract_baseline_moves(diff))
 
 
+def fetch_review_thread(pr: int) -> list[dict]:
+    """PR body + top-level review bodies -- the surfaces that carry perimeter assertions.
+
+    Inline review comments are deliberately not scanned (v1): the perimeter
+    statement lives in the review body or the PR body. ``gh pr view --json
+    reviews`` returns the review objects with body/state/author.
+    """
+    meta = json.loads(_run_gh(["pr", "view", str(pr), "--json", "body,reviews"]))
+    items: list[dict] = [{"kind": "PR body", "author": "pr-author", "body": meta.get("body") or ""}]
+    for rv in meta.get("reviews") or []:
+        items.append({
+            "kind": f"review ({rv.get('state')})",
+            "author": rv.get("author", {}).get("login", "?"),
+            "body": rv.get("body") or "",
+        })
+    return items
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Perimeter truth-source for PR reviews (#11268)")
     ap.add_argument("pr", type=int, help="PR number")
     ap.add_argument("--assert", dest="assertion", help="draft perimeter assertion to confront")
+    ap.add_argument(
+        "--scan-thread",
+        action="store_true",
+        help="scan the PR body + top-level reviews for perimeter assertions and "
+             "confront each with the effective file list (the wiring that makes "
+             "a false assertion -- #11227's '2 fichiers twins uniquement' -- "
+             "impossible to leave unblocked, #11268-4). Baseline moves are "
+             "reported with direction but do NOT block here: the output names "
+             "them and the reviewer applies CHANGES_REQUESTED on unjustified "
+             "loosening.",
+    )
     ap.add_argument(
         "--baseline-justified",
         dest="justified",
@@ -267,9 +342,14 @@ def main() -> int:
     report = fetch_report(args.pr)
     if args.assertion:
         report.problems.extend(check_assertion(report.files, args.assertion))
+    if args.scan_thread:
+        for item in fetch_review_thread(args.pr):
+            for cand in extract_perimeter_assertions(item["body"]):
+                for p in check_assertion(report.files, cand):
+                    report.problems.append(f"[{item['kind']} / {item['author']}] {p}")
 
     blocking = list(report.problems)
-    if not args.justified:
+    if not args.justified and not args.scan_thread:
         for m in report.moves:
             if m.direction == "LOOSEN":
                 blocking.append(
