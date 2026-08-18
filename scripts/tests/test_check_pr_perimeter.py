@@ -293,63 +293,9 @@ def test_scan_thread_composition_accepts_correct_thread():
 
 
 # ---------------------------------------------------------------------------
-# Workflow trigger pin (#11648)
-#
-# Authored by po-2023 in PR #11657, closed as redundant once #11654 landed the
-# same `types:` fix. The YAML line was duplicated; these two tests were NOT --
-# #11654 shipped no test. Carried here so the fix keeps a pin.
+# NOTE: the two trigger pins that used to sit here are delivered by #11660
+# (po-2026, issue #11659), which opened first. Not duplicated here.
 # ---------------------------------------------------------------------------
-
-import pathlib  # noqa: E402
-import re  # noqa: E402
-
-
-def _read_perimeter_workflow() -> str:
-    """Locate and read perimeter-review-guard.yml, independent of cwd."""
-    here = pathlib.Path(__file__).resolve()
-    # scripts/tests/test_check_pr_perimeter.py -> repo root = parents[2]
-    return (here.parents[2] / ".github" / "workflows"
-            / "perimeter-review-guard.yml").read_text(encoding="utf-8")
-
-
-def test_pull_request_trigger_includes_edited_type():
-    """``pull_request:`` MUST list ``edited`` so a body correction re-fires.
-
-    Founding measurement (po-2023, #11648): the gate's own comment claimed
-    "pull_request (opened/synchronize/edited)" while the YAML declared no
-    ``types:`` at all, so GitHub defaulted to [opened, synchronize, reopened]
-    and silently dropped ``edited``. This pin matters MORE after #11648:
-    editing the PR body is now the documented lever for a blocking assertion,
-    and that lever exists only while ``edited`` is declared here.
-    """
-    text = _read_perimeter_workflow()
-    pr_block = re.search(
-        r"^  pull_request:\s*\n((?:    [^\n]*\n)+)", text, re.MULTILINE
-    )
-    assert pr_block, "pull_request sub-block not found"
-    pr_body = pr_block.group(1)
-    assert "types:" in pr_body, (
-        "pull_request: has no types: clause -- GitHub defaults to "
-        "[opened, synchronize, reopened] and drops `edited` (#11648)."
-    )
-    assert "edited" in pr_body, (
-        "pull_request: types: declared but `edited` missing -- the documented "
-        "lever for a blocking body assertion would not exist."
-    )
-
-
-def test_pull_request_review_trigger_includes_edited_type():
-    """Sibling invariant: a corrected review must re-fire the check."""
-    text = _read_perimeter_workflow()
-    rv_block = re.search(
-        r"^  pull_request_review:\s*\n((?:    [^\n]*\n)+)", text, re.MULTILINE
-    )
-    assert rv_block, "pull_request_review sub-block not found"
-    rv_body = rv_block.group(1)
-    assert "types:" in rv_body and "edited" in rv_body, (
-        "pull_request_review: must keep `types: [submitted, edited]`."
-    )
-
 
 # ---------------------------------------------------------------------------
 # Consequence model (#11648): supersession per author + blocking scope
