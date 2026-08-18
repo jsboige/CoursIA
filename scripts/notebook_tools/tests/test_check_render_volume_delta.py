@@ -759,3 +759,187 @@ def test_workflow_diff_filter_catches_renames(tmp_path):
     assert out.get("findings") == [], (
         f"rename pur doit etre 0 findings, got {out.get('findings')}"
     )
+
+
+# --- c.358 : extension texte (stream + text/plain + signal 'non disponible') ---
+
+
+def _make_stream_cell(payload_lines: list[str], cell_id: str) -> dict:
+    """Cellule avec un output stream (stdout) compose de N lignes."""
+    return {
+        "cell_type": "code",
+        "id": cell_id,
+        "execution_count": 1,
+        "metadata": {},
+        "outputs": [
+            {"output_type": "stream", "name": "stdout", "text": payload_lines}
+        ],
+        "source": ["print('test')"],
+    }
+
+
+def _make_error_cell(traceback_lines: list[str], cell_id: str) -> dict:
+    """Cellule avec un output error (traceback)."""
+    return {
+        "cell_type": "code",
+        "id": cell_id,
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [
+            {"output_type": "error", "ename": "ImportError",
+             "evalue": "No module named 'simanneal'",
+             "traceback": traceback_lines}
+        ],
+        "source": ["import simanneal"],
+    }
+
+
+def test_cli_text_delta_caught_when_stream_drops(tmp_path):
+    """5e point ai-01 c.358 : founder Sudoku-4-SimulatedAnnealing.
+
+    Cas fondateur : 10 794 B de stream en base -> 3 155 B en head,
+    SANS aucune perte de rendu. Le detecteur historique rendait OK
+    (les bytes stream etaient agreges sous mime_family ``text`` avec
+    les bytes de rendu, le seuil -50 % pouvait etre evite par un PNG
+    de meme taille). Le nouveau test verifie que la chute texte
+    (TEXT_DELTA) est signalee independamment du delta rendu.
+    """
+    base_lines = [f"Ligne {i}: resultat computation SOTA moteur\n" for i in range(200)]
+    head_lines = [f"Ligne {i}\n" for i in range(50)]  # ~25% des bytes
+    nb_base = {"cells": [_make_stream_cell(base_lines, "c1")]}
+    nb_head = {"cells": [_make_stream_cell(head_lines, "c1")]}
+
+    # Construire un mini-repo git : commit A = notebook avec stream long
+    # (base), commit B = notebook avec stream court (head). Pour eviter
+    # l'exemption ``new_file`` (qui se declenche si ``HEAD~1`` n'a pas
+    # le notebook), on utilise un pattern a deux commits : le notebook
+    # base est commit en HEAD~1 directement.
+    nb_name = "sota_demo.ipynb"
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_base), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "base: stream long"], cwd=tmp_path, check=True)
+    # Maintenant ecraser avec la version head et commit
+    (tmp_path / nb_name).write_text(json.dumps(nb_head), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "head: stream court"], cwd=tmp_path, check=True)
+    # HEAD~1 = notebook stream long (base) ; HEAD = notebook stream court (head)
+
+    res = subprocess.run(
+        [sys.executable, str(TOOL), nb_name,
+         "--base", "HEAD~1", "--head", "HEAD",
+         "--check", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert res.returncode == 1, (
+        f"chute de texte doit rougir, got rc={res.returncode} stderr={res.stderr[:500]} stdout={res.stdout[:500]}"
+    )
+    out = json.loads(res.stdout)
+    findings = out.get("findings", [])
+    kinds = [f["kind"] for f in findings]
+    assert "TEXT_DELTA" in kinds, (
+        f"doit signaler TEXT_DELTA, got kinds={kinds} findings={findings}"
+    )
+    delta = next(f for f in findings if f["kind"] == "TEXT_DELTA")
+    assert delta["before_bytes"] > delta["after_bytes"]
+    assert delta["ratio"] <= 0.5
+
+
+def test_cli_unavailable_signal_when_lib_import_error_message_appears(tmp_path):
+    """5e point ai-01 c.358 : signal 'non disponible' / ImportError.
+
+    Cas fondateur : un notebook declare ``import simanneal`` dans
+    requirements.txt mais le runner ne l'a pas ; la cellule execute_result
+    bascule sur un message 'simanneal non disponible' que le notebook
+    precedent n'avait pas. Detection : passage 0 -> N de messages
+    contenant 'non disponible' / 'not available' / 'importerror'.
+    """
+    nb_base = {"cells": [_make_stream_cell(["Resultat OK : 42\n"], "c1")]}
+    nb_head = {"cells": [
+        _make_error_cell(
+            ["ImportError: No module named 'simanneal'\n",
+             "Librairie simanneal non disponible sur ce runner\n"],
+            "c1"
+        ),
+    ]}
+
+    nb_name = "sudoku_demo.ipynb"
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_base), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "base: ok"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_head), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "head: import error"], cwd=tmp_path, check=True)
+
+    res = subprocess.run(
+        [sys.executable, str(TOOL), nb_name,
+         "--base", "HEAD~1", "--head", "HEAD",
+         "--check", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert res.returncode == 1, (
+        f"signal 'non disponible' doit rougir, got rc={res.returncode} stderr={res.stderr[:500]} stdout={res.stdout[:500]}"
+    )
+    out = json.loads(res.stdout)
+    findings = out.get("findings", [])
+    kinds = [f["kind"] for f in findings]
+    assert "UNAVAILABLE_SIGNAL" in kinds, (
+        f"doit signaler UNAVAILABLE_SIGNAL, got kinds={kinds}"
+    )
+    sig = next(f for f in findings if f["kind"] == "UNAVAILABLE_SIGNAL")
+    assert sig["before_count"] == 0
+    assert sig["after_count"] >= 1
+
+
+def test_cli_no_text_delta_when_stream_preserved(tmp_path):
+    """Control negatif : Sudoku-1-Backtracking (mesure ai-01). Le notebook
+    conserve 100% de son stream base -> head. Pas de TEXT_DELTA,
+    pas de UNAVAILABLE_SIGNAL. Verdict OK.
+
+    Note : pour creer un commit distinct (sinon ``git commit`` refuse
+    avec 'nothing to commit'), on ajoute une cellule markdown vide dans
+    la version head -- c'est un changement legitime qui ne touche pas au
+    volume de stream / texte / rendu.
+    """
+    base_lines = [f"Ligne resultat {i}\n" for i in range(100)]
+    head_lines = list(base_lines)  # stream identique
+    nb_base = {"cells": [_make_stream_cell(base_lines, "c1")]}
+    nb_head = {"cells": [
+        _make_stream_cell(head_lines, "c1"),
+        {"cell_type": "markdown", "id": "md-intact", "metadata": {},
+         "source": ["# Note intacte\n"]},
+    ]}
+
+    nb_name = "sota_intact.ipynb"
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_base), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "base: stream identique"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_head), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "head: stream identique"], cwd=tmp_path, check=True)
+
+    res = subprocess.run(
+        [sys.executable, str(TOOL), nb_name,
+         "--base", "HEAD~1", "--head", "HEAD",
+         "--check", "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert res.returncode == 0, (
+        f"stream inchange doit PAS rougir, got rc={res.returncode} stderr={res.stderr[:500]} stdout={res.stdout[:500]}"
+    )
+    out = json.loads(res.stdout)
+    findings = out.get("findings", [])
+    kinds = [f["kind"] for f in findings]
+    assert "TEXT_DELTA" not in kinds, f"stream inchange -> pas TEXT_DELTA, got {kinds}"
+    assert "UNAVAILABLE_SIGNAL" not in kinds, f"pas d'erreur -> pas UNAVAILABLE_SIGNAL, got {kinds}"

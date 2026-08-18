@@ -107,6 +107,31 @@ DEFAULT_DELTA_THRESHOLD = 0.50
 # par d'autres detecteurs.
 DEFAULT_MIN_BASE_BYTES = 1000
 
+# --- c.358 : extension texte -----------------------------------------------------
+
+# Compteur separe pour la sortie TEXTUELLE (stream, execute_result text/plain,
+# display_data text/plain, traceback des erreurs). Pourquoi distinct du
+# rendu MIME-base : un notebook peut perdre TOUT son volume de stream (la
+# demo du moteur SOTA) sans perdre une seule image, et inversement. La
+# chute de texte n'a pas la meme cause qu'une chute de rendu (env / lib
+# absente / try-except ImportError qui bascule vs. Graphviz helper detruit),
+# donc pas le meme correctif. Voir le cas fondateur c.358 :
+# Sudoku-4-SimulatedAnnealing perd 10 794 -> 3 155 B de stream (la grille
+# resolue, `Energie finale: 0`, `Solution valide: True`) tout en gardant 0
+# B de rendu -- aucun signal `image` ou `html` ne pouvait le voir.
+DEFAULT_TEXT_DELTA_THRESHOLD = 0.50
+DEFAULT_MIN_TEXT_BASE_BYTES = 500
+
+# Pattern "non disponible" : signature d'un try/except ImportError qui
+# bascule (la lib est declaree dans requirements.txt mais absente du runner).
+# Comptage distinct des bytes : on signale le passage 0 -> N de ces
+# messages (avant/apres) sans se meler au delta texte principal.
+_UNAVAILABLE_PATTERNS = (
+    re.compile(r"non\s+disponible", re.IGNORECASE),
+    re.compile(r"not\s+available", re.IGNORECASE),
+    re.compile(r"importerror", re.IGNORECASE),
+)
+
 # Granularite de MIME prefix : on agrege par famille, pas par MIME exacte. Un
 # ``image/png`` 5 100 B et un ``image/jpeg`` 4 500 B sont groupes en ``image``.
 MIME_PREFIX = re.compile(r"^([^/]+)/")
@@ -263,6 +288,96 @@ def _summarize_outputs(nb: dict) -> dict[tuple[str, str], int]:
     return out
 
 
+def _output_text_bytes(outp: dict) -> int:
+    """Volume de TEXTE d'un output Jupyter (c.358).
+
+    Distinct du volume de rendu : on compte ici les bytes de texte brut
+    (stream, ``text/plain`` des execute_result / display_data, ``traceback``
+    des erreurs). Un notebook peut perdre TOUT son volume de stream sans
+    perdre une seule image -- les deux deltas sont diagnostiquement
+    distincts (env / lib absente vs. helper Graphviz detruit, cf. cas
+    fondateur Sudoku-4-SimulatedAnnealing c.358 : 10 794 -> 3 155 B de
+    stream sans toucher au rendu).
+    """
+    if outp.get("output_type") == "stream":
+        text = outp.get("text")
+        if isinstance(text, str):
+            return len(text.encode("utf-8"))
+        if isinstance(text, (list, tuple)):
+            return sum(len(t.encode("utf-8")) for t in text if isinstance(t, str))
+        return 0
+    if outp.get("output_type") == "error":
+        # traceback = list[str]; on mesure l'ensemble du traceback
+        tb = outp.get("traceback")
+        if isinstance(tb, (list, tuple)):
+            return sum(len(t.encode("utf-8")) for t in tb if isinstance(t, str))
+        return 0
+    # display_data / execute_result : on prend text/plain si present
+    data = outp.get("data")
+    if isinstance(data, dict):
+        tp = data.get("text/plain")
+        if isinstance(tp, str):
+            return len(tp.encode("utf-8"))
+        if isinstance(tp, (list, tuple)):
+            return sum(len(t.encode("utf-8")) for t in tp if isinstance(t, str))
+    return 0
+
+
+def _summarize_text(nb: dict) -> int:
+    """Volume total de TEXTE (c.358) : somme sur toutes les cellules non
+    exemptes des bytes ``_output_text_bytes(outp)`` par output.
+
+    Distinct de ``_summarize_outputs`` (qui agrege par famille MIME pour le
+    rendu). On ne agrege pas par cellule ici : on veut le total du
+    notebook pour un seul delta ``base_text_bytes`` vs ``head_text_bytes``.
+    """
+    total = 0
+    for idx, cell in enumerate(nb.get("cells", [])):
+        if _cell_is_exempt(cell):
+            continue
+        for outp in (cell.get("outputs") or []):
+            total += _output_text_bytes(outp)
+    return total
+
+
+def _summarize_unavailable(nb: dict) -> int:
+    """Compte les sorties contenant un pattern 'non disponible' / 'not available'
+    / 'importerror' (c.358). Le passage 0 -> N signale typiquement un
+    ``try/except ImportError`` qui bascule : la lib est declaree dans
+    requirements.txt mais absente du runner -- pas le meme diagnostic
+    qu'une chute de stream ou de rendu.
+    """
+    total = 0
+    for idx, cell in enumerate(nb.get("cells", [])):
+        if _cell_is_exempt(cell):
+            continue
+        for outp in (cell.get("outputs") or []):
+            payload = ""
+            if outp.get("output_type") == "stream":
+                text = outp.get("text")
+                if isinstance(text, str):
+                    payload = text
+                elif isinstance(text, (list, tuple)):
+                    payload = "".join(t for t in text if isinstance(t, str))
+            elif outp.get("output_type") == "error":
+                tb = outp.get("traceback")
+                if isinstance(tb, (list, tuple)):
+                    payload = "\n".join(t for t in tb if isinstance(t, str))
+            else:
+                data = outp.get("data")
+                if isinstance(data, dict):
+                    tp = data.get("text/plain")
+                    if isinstance(tp, str):
+                        payload = tp
+                    elif isinstance(tp, (list, tuple)):
+                        payload = "".join(t for t in tp if isinstance(t, str))
+            for pat in _UNAVAILABLE_PATTERNS:
+                if pat.search(payload):
+                    total += 1
+                    break
+    return total
+
+
 def _aggregate_by_family(per_cell: dict[tuple[str, str], int]) -> dict[str, int]:
     """Agrege par famille MIME en sommant sur les cellules.
 
@@ -378,6 +493,74 @@ def scan_notebook(nb_path: Path, base_ref: str, head_ref: str | None = None,
     base_agg = _aggregate_by_family(_summarize_outputs(nb_base))
     head_agg = _aggregate_by_family(_summarize_outputs(nb_head))
     findings = _diff_families(base_agg, head_agg, threshold, min_base)
+
+    # --- c.358 : extension texte (stream + text/plain + signal 'non disponible')
+    base_text = _summarize_text(nb_base)
+    head_text = _summarize_text(nb_head)
+    if base_text >= DEFAULT_MIN_TEXT_BASE_BYTES:
+        ratio_text = head_text / base_text if base_text > 0 else 0.0
+        if ratio_text <= DEFAULT_TEXT_DELTA_THRESHOLD and head_text > 0:
+            findings.append({
+                "kind": "TEXT_DELTA",
+                "before_bytes": base_text,
+                "after_bytes": head_text,
+                "ratio": round(ratio_text, 3),
+                "threshold": DEFAULT_TEXT_DELTA_THRESHOLD,
+                "min_base_bytes": DEFAULT_MIN_TEXT_BASE_BYTES,
+            })
+        elif head_text == 0 and base_text > 0:
+            findings.append({
+                "kind": "TEXT_LOST",
+                "before_bytes": base_text,
+                "after_bytes": 0,
+            })
+    base_unav = _summarize_unavailable(nb_base)
+    head_unav = _summarize_unavailable(nb_head)
+    if base_unav == 0 and head_unav > 0:
+        findings.append({
+            "kind": "UNAVAILABLE_SIGNAL",
+            "before_count": 0,
+            "after_count": head_unav,
+        })
+
+    return {
+        "notebook": str(nb_path),
+        "base_ref": base_ref,
+        "head_ref": head_label,
+        "findings": findings,
+        "stats": {
+            "base_total_bytes": sum(base_agg.values()),
+            "head_total_bytes": sum(head_agg.values()),
+            "base_mime_families": sorted(base_agg),
+            "head_mime_families": sorted(head_agg),
+            "threshold": threshold,
+            "min_base_bytes": min_base,
+            # c.358 : dimensions texte separees
+            "base_text_bytes": base_text,
+            "head_text_bytes": head_text,
+            "text_threshold": DEFAULT_TEXT_DELTA_THRESHOLD,
+            "text_min_base_bytes": DEFAULT_MIN_TEXT_BASE_BYTES,
+            "base_unavailable_count": base_unav,
+            "head_unavailable_count": head_unav,
+            "findings_count": len(findings),
+        },
+    }
+
+    return {
+        "notebook": str(nb_path),
+        "base_ref": base_ref,
+        "head_ref": head_label,
+        "findings": findings,
+        "stats": {
+            "base_total_bytes": sum(base_agg.values()),
+            "head_total_bytes": sum(head_agg.values()),
+            "base_mime_families": sorted(base_agg),
+            "head_mime_families": sorted(head_agg),
+            "threshold": threshold,
+            "min_base_bytes": min_base,
+            "findings_count": len(findings),
+        },
+    }
 
     return {
         "notebook": str(nb_path),
