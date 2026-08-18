@@ -106,22 +106,32 @@ def main() -> None:
     print(f"OK {out} ({out.stat().st_size // 1024} KB)")
 
     # Gate the regenerated extract; refuse to serve unless it passes.
+    # NOTE: verify_prosody --single prints the report to stdout and ignores
+    # --json, so parse the captured stdout (and persist it for the record).
     gate_script = HERE.parents[5] / "scripts" / "tts_verification" / "verify_prosody.py"
     r = subprocess.run(
-        [sys.executable, str(gate_script), "--single", str(out), "--json", str(out_dir / "gate_extrait.json")],
+        [sys.executable, str(gate_script), "--single", str(out)],
         capture_output=True,
         text=True,
     )
-    print(r.stdout[-2000:])
-    gate_json = out_dir / "gate_extrait.json"
-    if gate_json.exists():
-        g = json.loads(gate_json.read_text(encoding="utf-8"))
-        verdict = g.get("gate") or g.get("results", [{}])[0].get("gate", "?")
-        print(f"\n[gate] {verdict}")
-        if verdict in ("REJECT", "ERROR"):
-            print("[serve] REFUSED — extract does not pass the gate")
-            sys.exit(2)
-        print("[serve] extract OK to stage for review")
+    gate_json_path = out_dir / "gate_extrait.json"
+    try:
+        g = json.loads(r.stdout)
+        gate_json_path.write_text(json.dumps(g, indent=2, ensure_ascii=False), encoding="utf-8")
+    except json.JSONDecodeError:
+        print(r.stdout[-2000:])
+        print("[gate] ERROR — could not parse gate output")
+        sys.exit(3)
+    verdict = g.get("gate") or g.get("results", [{}])[0].get("gate", "?")
+    print(
+        f"\n[gate] {verdict} {g.get('reasons', [])} | melody {g.get('melody_verdict')} "
+        f"| eff {g.get('effective_notes')} | top3 {g.get('top3_note_pct')}% | "
+        f"motifs {g.get('motif3_repeat_pct')}% (strict)"
+    )
+    if verdict in ("REJECT", "ERROR"):
+        print("[serve] REFUSED — extract does not pass the gate")
+        sys.exit(2)
+    print("[serve] extract OK to stage for review")
 
 
 if __name__ == "__main__":
