@@ -39,7 +39,12 @@ Ce qui leve un nit — et ce qui ne le leve PAS
     approbation d'un tiers (ni l'un ni l'autre) n'eteint pas la reserve —
     c'est la classe #10761 que l'organe existe pour bloquer (mesure #11494 :
     24,3 % des levees etaient BYSTANDER). L'echappement B.0 (issue de suivi
-    nommee) reste le chemin quand la reserve exige l'arbitrage d'un tiers.
+    nommee) reste le chemin quand la reserve exige l'arbitrage d'un tiers —
+    et depuis #11639, l'arbitrage ECRIT du coordinateur porte une trappe
+    nommee : `[OVERRIDE] lane <machine:workspace>` + phrase de levee (meme
+    convention ecrite que les claims #10223). Pas une ouverture generale :
+    la borne tient pour tout autre tiers, et un override POST-marge ne peut
+    pas avoir eteint une reserve avant la decision de merge.
 
 Ne levent RIEN :
   - **un commit pousse apres le nit** : un push muet est indiscernable d'un push
@@ -92,6 +97,20 @@ AGENT_PREFIXES = (
     "[ACK", "[RELEASED", "[OVERRIDE", "[MERGED", "[WARN", "[ERROR", "[ASK",
     "[REPLY", "[PROPOSAL", "[BLOCKED", "[ESCALATION",
 )
+
+# #11639 — l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas l'auteur
+# d'une reponse de levée (« une reponse ecrite sur la PR qui nomme la
+# remarque »), mais `_lift_eligible` ne creditait que l'auteur du nit ou
+# celui de la PR : tout arbitrage coordinateur laissait le gate rouge, et le
+# merge se faisait a EXIT=1 en routine (#11479 — mesure : merge 13:06:39Z,
+# override ecrit 13:07:40Z). La trappe est NOMMEE, pas generale : elle exige
+# le marqueur de lane ecrit (`[OVERRIDE] lane <machine:workspace>`, meme
+# convention ecrite que les claims #10223) ET une phrase de levee (LIFT_MARKER,
+# deja exige par explicit_lifts) — un OVERRIDE nu ne leve rien. Les bornes
+# temporelles restent entieres : un override POST-merge ne peut pas avoir
+# eteint une reserve avant la decision de merge (borne #10761).
+COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
+OVERRIDE_LANE = re.compile(r"\[OVERRIDE\]\s+lane\s+\S+")
 
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
 CONCERN_MARKERS = (
@@ -152,6 +171,38 @@ _QUOTED_RANGES = re.compile(r"```.*?```|«.*?»|`[^`]*`", re.DOTALL)
 def _strip_quoted(body: str) -> str:
     """Retire les segments cites (guillemets typo, backtick, bloc code)."""
     return _QUOTED_RANGES.sub(" ", body)
+
+# #11636 — use vs mention, 2e reformulation de la classe #11246 : un rapport
+# de correction qui NOMME le verdict qu'il corrige n'emet pas de reserve. Cas
+# fondateur #11628 (mesure : le SEUL item bloquant du gate) :
+#   « Fix review ai-01 (CHANGES_REQUESTED) — commit 06956bd0a. »
+# Le nom du verdict est entre PARENTHESES, pas entre guillemets —
+# `_strip_quoted` ne le voyait pas et aucun CITERS ne matche « review ai-01 ( ».
+# L'incitation etait inversee : le rapport le PLUS precis etait classe
+# BOT-CONCERN pendant qu'un « done » passait. Deux conditions CUMULATIVES,
+# pour ne pas transformer une emission parenthesee en mention : (1) un
+# verbe/locution de REFERENCE (fix, corrige, suite a, en reponse a, levee...)
+# dans les 40 chars qui precedent la parenthese ouvrante — un nom d'agent peut
+# s'intercaler, meme mecanique que l'attribution de `_is_cited` ; (2) un nom
+# de verdict FORMEL `[A-Z][A-Z_]{3,}` immediatement entre parentheses.
+# L'emission reelle reste « MARKER: » nue ou portee par le state de la review —
+# les marqueurs naturels (« avant merge », « a changer ») ne sont pas des noms
+# de verdict et restent hors de cette voie.
+_MENTION_VERDICT = re.compile(
+    r"(?i)\b(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
+    r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
+    r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
+
+
+def _strip_mentioned_verdicts(body: str) -> str:
+    """Neutralise les noms de verdict cites en position de mention (#11636).
+
+    Remplace le verdict par des espaces de meme longueur : les offsets du
+    reste du body sont preserves (les fenetres de `_is_cited` restent
+    calibrees sur la vraie position des occurrences survivantes).
+    """
+    return _MENTION_VERDICT.sub(
+        lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
 
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
@@ -400,7 +451,12 @@ def classify(author: str, body: str) -> str | None:
     # l'annonce conditionnee n'est pas une levee, le commentaire continue)
     if has_live_marker(body, (VERDICT_POSITIVE,)):
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
-    live_concern = has_live_marker(body, CONCERN_MARKERS)
+    # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —
+    # un rapport de correction qui nomme le verdict qu'il corrige n'emet pas
+    # de reserve. Uniquement pour CONCERN_MARKERS : LIFT_MARKERS et
+    # VERDICT_POSITIVE gardent le body brut (surface minimale du fix — le
+    # controle positif deux formes vit dans les tests, cote a cote).
+    live_concern = has_live_marker(_strip_mentioned_verdicts(body), CONCERN_MARKERS)
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(AGENT_PREFIXES):
@@ -473,8 +529,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # commentaire de bot CI ou un tag de protocole nu n'a jamais repondu a rien.
     # On porte l'AUTEUR de chaque evenement de levee : la borne #11145 en a
     # besoin (auteur seul = les temps plats de #11222 ne suffisaient pas).
+    # Le body est porte pour la trappe OVERRIDE de `_lift_eligible` (#11639) :
+    # elle doit voir le marqueur `[OVERRIDE] lane …` de la levee, pas
+    # seulement son auteur.
     lift_events = [
-        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""))
+        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
+         c.get("body", "") or "")
         for c in (pr_data.get("comments") or []) if can_lift(c)
     ]
 
@@ -487,17 +547,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
     approved_rereviews = [
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""))
+        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""), "")
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
     ]
-    approved_rereviews = [(t, a) for (t, a) in approved_rereviews if t]
+    approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
     lift_events += approved_rereviews
-    lift_events = [(t, a) for (t, a) in lift_events if t]
+    lift_events = [x for x in lift_events if x[0] is not None]
 
-    def _lift_eligible(lift_author: str, nit_author: str) -> bool:
-        return lift_author in (nit_author, pr_author)
+    def _lift_eligible(lift_author: str, nit_author: str,
+                       lift_body: str = "") -> bool:
+        if lift_author in (nit_author, pr_author):
+            return True
+        # #11639 : l'override NOMME du coordinateur — l'arbitre tiers de B.0.
+        # La restriction d'auteur reste la regle pour tout le monde (elle
+        # bloque l'auto-levee d'un bystander, #11145) ; seule la trappe ecrite
+        # s'ajoute. Un OVERRIDE sans phrase de levee n'entre meme pas ici :
+        # can_lift l'a ecarte (tag de protocole nu), et explicit_lifts exige
+        # un LIFT_MARKER.
+        return (lift_author in COORDINATOR_LOGINS
+                and bool(OVERRIDE_LANE.search(lift_body or "")))
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -559,16 +629,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
             # NLP documentee dans can_lift.
             lifted = any(
                 when < t < cutoff and author == login
-                for (t, author) in approved_rereviews
+                for (t, author, _) in approved_rereviews
             ) or any(
-                when < t < cutoff and _lift_eligible(lifter, login)
-                for (t, lifter, _) in explicit_lifts
+                when < t < cutoff and _lift_eligible(lifter, login, lift_body)
+                for (t, lifter, lift_body) in explicit_lifts
             )
             if lifted:
                 continue
         elif any(
-            when < t < cutoff and _lift_eligible(lift_author, login)
-            for (t, lift_author) in lift_events
+            when < t < cutoff and _lift_eligible(lift_author, login, lift_body)
+            for (t, lift_author, lift_body) in lift_events
         ):
             continue  # reponse de l'auteur du nit ou de l'auteur de la PR
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
