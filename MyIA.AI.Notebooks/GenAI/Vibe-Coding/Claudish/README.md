@@ -63,7 +63,7 @@ L'authentification client→Claudish utilise `x-api-key` ou `x-proxy-key` (clé 
 
 | Document | Description |
 |----------|-------------|
-| [Claudish-Proxy.md](docs/Claudish-Proxy.md) | Le proxy en détail : principe wire, topologie de déploiement, router 3 tiers, connecter un agent, avancées du fork, variables d'environnement, troubleshooting |
+| [Claudish-Proxy.md](docs/Claudish-Proxy.md) | Le proxy en détail : principe wire, topologie hub + sidecars, router par rôle et substitution budgétaire annoncée, connecter un agent, avancées du fork, variables d'environnement, troubleshooting |
 | [claudish.env.secrets.example](configs/claudish.env.secrets.example) | Template de configuration (placeholders uniquement — remplir avec vos valeurs) |
 
 ## Leçon fondatrice — le trick du nom Claude

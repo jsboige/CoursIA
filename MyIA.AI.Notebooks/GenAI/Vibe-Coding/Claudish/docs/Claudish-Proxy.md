@@ -42,32 +42,91 @@ client ──────────────────────► cla
                           TLS, cache IIS        traduction wire + concurrence
 ```
 
-- **claudish** tourne dans un conteneur Docker sur `po-2023`, port `3000`.
+- **claudish** tourne dans un conteneur Docker sur `po-2023`, port `3000`. C'est le **hub** : c'est lui qui détient les clés des providers et qui décide du routage.
 - La passerelle **IIS** (`models.myia.io`) termine le TLS et reverse-proxie vers le conteneur.
 - Tous les clients (agents Claude Code, bots Hermes/NanoClaw) pointent sur `https://models.myia.io`.
 
+### Le sidecar — un relais local par machine
+
+Faire pointer chaque machine du cluster directement sur le hub distant a un défaut : si le hub tombe (ou la liaison), **toute la flotte s'arrête d'un coup**. Chaque machine fait donc tourner un **sidecar** — une instance claudish locale à deux modes :
+
+| Mode | Quand | Comportement |
+|------|-------|--------------|
+| **NOMINAL** (relais) | le hub répond | transmet au hub, qui route et **capture** de façon centralisée |
+| **AUTONOMOUS** | le hub est injoignable | route lui-même avec ses propres credentials |
+
+Le sidecar transmet un en-tête `x-proxy-key` et son identité machine (`X-Claudish-Machine`), ce qui permet au hub d'**attribuer chaque requête à sa machine et à son workspace** — la base de la surveillance de consommation par poste.
+
+> **Piège de diagnostic mesuré en production :** un `200` du sidecar ne prouve **pas** qu'il relaie. Le mode AUTONOMOUS répond tout aussi bien — c'est même son but. Le seul signe distinctif est l'**absence de capture côté hub**. Une sonde de santé qui ne teste que le code de retour est aveugle à une flotte entièrement basculée en autonome, chaque machine brûlant ses propres quotas sans que rien ne l'indique. *Leçon : vérifier l'effet observable, pas le code de retour.*
+
 ---
 
-## 3. Le router à 3 providers (no-fallback)
+## 3. Le router par rôle — plan nominal et substitution annoncée
 
-C'est le cœur du déploiement MyIA. Au lieu de laisser le proxy basculer silencieusement entre providers (ce qui change la qualité et le coût en plein milieu d'une conversation), **chaque tier de modèle a un unique provider budgeté** :
+C'est le cœur du déploiement MyIA. Au lieu de laisser le proxy basculer silencieusement entre providers (ce qui change la qualité et le coût en plein milieu d'une conversation), **chaque rôle de modèle a un plan nominal budgeté** :
 
-| Tier | Modèle visible | Provider réel | Route | Budget |
-|------|----------------|---------------|-------|--------|
-| **Opus** (réflexion lourde) | `claude-opus-4-8` | Anthropic natif | `ai-01` | Max Claude |
-| **Sonnet** (usage courant) | `glm-5.2` | Z.AI GLM Coding Plan | `gc@glm-5.2` | Coding Plan |
-| **Haiku** (rapide, léger) | `qwen3.6-35b-a3b` | vLLM self-hosté | `vllm-myia@…` | GPU maison (po-2023) |
+| Rôle | Modèle nominal | Provider réel | Budget |
+|------|----------------|---------------|--------|
+| **Opus** (réflexion lourde) | `claude-opus-*` | Anthropic natif | Max Claude (reset hebdo, vendredi) |
+| **Sonnet** (usage courant) | `glm-5.2` / `glm-5.3` | Z.AI GLM Coding Plan | Coding Plan (fenêtre glissante 5 h) |
+| **Haiku** (rapide, léger) | `minimax-m3` | MiniMax Coding Plan | forfait hebdo (reset lundi) |
 
-**Principe no-fallback :**
-- Sur un burst (rate-limit), claudish **backoff** puis réessaie le **même** provider.
-- Sur une panne franche, il **fail-hard** (erreur explicite) — il ne bascule **jamais** vers un autre provider en silence.
-- Raison : un switch de provider à l'insu de l'agent dégrade silencieusement la qualité et rend les coûts imprévisibles. Mieux vaut une erreur visible qu'une dérive cachée.
+> Le tier Haiku tournait initialement sur un **vLLM self-hosté** (`qwen3.6-35b-a3b`, GPU `po-2023`). Il a migré vers un forfait MiniMax : à volume réel, un abonnement hebdomadaire revient moins cher qu'un GPU qu'il faut alimenter, refroidir, et dont la concurrence doit rester plafonnée à 1 (voir le cap ci-dessous).
+
+### Deux mécanismes distincts — ne pas les confondre
+
+C'est la subtilité qui coûte le plus cher à comprendre, et le code les sépare explicitement :
+
+| | **Fallback** (`fallback-handler.ts`) | **Failover** (`fork/failover.ts`) |
+|---|---|---|
+| Change quoi | le **provider**, à modèle constant | le **modèle**, pour tout un rôle |
+| Déclencheur | provider en panne (transport) | **budget épuisé** (souscription) |
+| Visible par l'agent | non | **oui — annoncé** |
+
+Le premier relève du transport, le second de la comptabilité d'abonnement. Un `glm-5.2` servi par une autre route reste un `glm-5.2` ; un rôle Sonnet servi par DeepSeek n'est plus le même modèle, et l'agent doit le savoir.
+
+### La cascade de substitution par rôle
+
+Le cluster tourne sur des forfaits hebdomadaires (Anthropic, MiniMax, Z.AI, Qwen). Quand un plan brûle plus vite que sa fenêtre de reset, il n'y a que deux options : **arrêter de travailler**, ou **servir le rôle depuis une autre poche**. Le servir en silence est l'option dangereuse — l'agent continue de supposer des capacités qu'il n'a plus (ou, dans le sens MiniMax → DeepSeek, n'utilise pas celles qu'il vient de gagner).
+
+Cascade en vigueur, ordonnée par **coût-tier** — on épuise ce qui est déjà payé avant de toucher au paiement à l'usage :
+
+| Rôle | Nominal | Substitution | Dernier recours |
+|------|---------|--------------|-----------------|
+| **Opus** | Anthropic natif | Qwen 3.8-max (thinking réduit) → GLM | DeepSeek (PAYG) |
+| **Sonnet** | GLM Coding | DeepSeek souscrit | DeepSeek (PAYG) |
+| **Haiku** | MiniMax-M3 | Qwen 3.8-max (Token Plan) | DeepSeek-flash (PAYG) |
+
+Configuration **par variables d'environnement**, pas par rebuild — parce qu'une crise de budget ne prévient pas :
+
+```bash
+CLAUDISH_FAILOVER_OPUS=qwen-token-plan@qwen3.8-max
+CLAUDISH_FAILOVER_OPUS_DIRECTION=degraded          # degraded | improved | lateral
+CLAUDISH_FAILOVER_OPUS_NOTE="Extended thinking is off on this target."
+CLAUDISH_FAILOVER_ACTIVE=opus,haiku                # armé maintenant
+CLAUDISH_FAILOVER_AUTO=1                           # s'arme seul sur une erreur de quota amont
+```
+
+Sans aucune variable, tout le mécanisme est **inerte** : ni changement de routage, ni notice.
+
+### La notice de dégradation — pourquoi à la condensation
+
+Chaque substitution est annoncée à l'agent **au prochain point de condensation**, et ce choix n'est pas arbitraire. La condensation est le seul moment d'une session agentique où :
+
+1. le contexte est **reconstruit de toute façon** — quelques lignes de plus ne coûtent rien et sont *garanties* de survivre dans le contexte qui continue ;
+2. c'est le **seul point de re-routage gratuit** — le cache de prompt y est déjà froid, donc changer de modèle n'y jette rien.
+
+Le message dit explicitement qu'il s'agit d'une substitution budgétaire et **non d'une erreur** : *« Keep working; adjust your expectations to the model actually serving you. »* La notice ne lève jamais d'exception : une condensation réussie ne doit pas échouer parce que son annexe est malformée — une notice manquante est un défaut cosmétique, une condensation perdue est un tour de travail perdu.
+
+La cascade est **transitive** : si la cible de substitution est elle-même épuisée, le rôle continue de descendre la chaîne plutôt que de s'arrêter sur un palier mort. Chaque substitution auto-armée porte un **TTL** (`10 m`, `30 m`, `1 h`, `4 h`, `24 h` selon l'ancienneté), après quoi le plan nominal est **réessayé** — c'est ce qui permet à un rôle de *remonter* tout seul quand son forfait se recharge, avec une notice de récupération symétrique de la notice de dégradation. Sans TTL, une substitution armée pendant un pic resterait armée pour toujours, et le forfait nominal serait payé sans être consommé.
+
+**Ce que le principe no-fallback est devenu :** il n'a pas été abandonné, il a été *précisé*. Ce qu'il interdisait, c'était la bascule **silencieuse** (war-story §7.1). Une substitution **annoncée, budgétée et explicitement orientée** (`degraded` / `improved`) ne viole pas ce principe — elle le respecte, en rendant la dégradation visible au lieu de la cacher.
 
 ### Contrôle de concurrence
 
 Certains providers ne supportent pas les requêtes parallèles illimitées. Claudish plafonne la concurrence **par provider** :
 
-- **Haiku / Qwen (vLLM)** — cap `1` (séquentiel). Un GPU ne fait pas 4 prefills de 120K tokens en parallèle sans se gripper (`max-num-batched-tokens` saturé → famine GPU).
+- **vLLM self-hosté** — cap `1` (séquentiel). Un GPU ne fait pas 4 prefills de 120K tokens en parallèle sans se gripper (`max-num-batched-tokens` saturé → famine GPU). C'est ce cap à 1 — inévitable, et donc un débit plafonné par construction — qui a fini par rendre le forfait MiniMax plus rentable que le GPU maison sur le tier Haiku.
 - **Sonnet / GLM Coding** — cap `8`. Une rafale de longs streams GLM qui s'empilent congestionne l'event-loop du proxy et remonte en 503 côté IIS.
 
 Au-delà du cap, les requêtes attendent en file FIFO et passent dès qu'un slot se libère — elles ne sont **jamais rejetées** (priorité absolue : ne jamais bloquer l'agent, voir §6).
@@ -128,7 +187,9 @@ Au-delà du routing de base, le fork `jsboige/claudish` ajoute ce qui fait tourn
 | **Interception web search** | Les appels `web_search` des providers sont interceptés et servis via SearXNG (MCP) — ne bloque jamais l'agent (dégradation gracieuse en texte). |
 | **Support `/compact` non-streaming** | Les requêtes `stream:false` (condensation de contexte) sont rebufferisées en un message JSON, pas en SSE. |
 | **Channel mode (MCP)** | Sessions de modèle async avec notifications push (`notifications/claude/channel`). |
-| **Capture & surveillance** | Capture des corps de requête (`CLAUDISH_CAPTURE_DIR`), scripts `traffic-live/summary/history.ps1`, watchdog auto-restart. |
+| **Capture & surveillance** | Capture des corps de requête (`CLAUDISH_CAPTURE_DIR`), scripts `traffic-live/summary/history.ps1`, watchdog auto-restart. Attribution machine + workspace via `X-Claudish-Machine`. |
+| **Failover budgétaire par rôle** | Substitution de modèle quand un forfait est épuisé, **annoncée à l'agent** au point de condensation (voir §3). Pilotée par variables d'environnement, inerte par défaut. |
+| **Sidecar relais/autonome** | Une instance locale par machine : relaie au hub tant qu'il répond, route seule s'il tombe (voir §2). |
 
 ---
 
@@ -141,6 +202,12 @@ Ces trois épisodes, extraits de l'historique du fork `jsboige/claudish`, illust
 Au démarrage, claudish enchaînait les providers en fallback : si GLM rate-limitait, il basculait sur Qwen. **Le problème** : cette bascule se faisait à l'insu de l'agent, en plein milieu d'une conversation — changeant la qualité du modèle et le coût d'un tour sur l'autre, de façon invisible et imprévisible. Pire, le chemin fallback vers Qwen (GPU maison) a grippé le backend à plusieurs reprises (concurrence non bornée sur des contextes longs = famine GPU).
 
 **La décision** n'a pas été d'ajouter du code pour mieux orchestrer les bascules, mais de **le retirer** : suppression de `defaultProvider`, une seule entrée par chaîne. Depuis, sur un burst claudish **backoff** puis réessaie le *même* provider ; sur une panne franche il **fail-hard** (erreur explicite). *Leçon : un fallback silencieux est une dégradation cachée. Mieux vaut une erreur visible qu'une dérive de qualité invisible — et un chemin de code en moins est un bug en moins.*
+
+**Suite (08/2026) — quand la contrainte change, la règle se précise au lieu de s'inverser.** Le no-fallback supposait implicitement qu'un provider en panne était un *accident*. L'été 2026 a introduit un cas que cette hypothèse ne couvrait pas : le **budget épuisé**, qui n'est ni transitoire ni accidentel — attendre ne le résout pas, et fail-hard signifie simplement arrêter de travailler jusqu'au reset hebdomadaire.
+
+La tentation naturelle était de réintroduire le fallback qu'on venait de supprimer. Ce n'est pas ce qui a été fait, parce que ce que la règle interdisait n'était pas *basculer* — c'était basculer **en silence**. Le mécanisme ajouté (§3) substitue le **modèle** pour un **rôle** entier, et **l'annonce à l'agent** au point de condensation. Il vit dans un fichier séparé du fallback de transport, précisément pour que les deux ne se confondent jamais.
+
+*Leçon transférable : quand une règle bien fondée rencontre un cas qu'elle n'avait pas prévu, l'erreur est de l'inverser (« finalement, remettons le fallback »). Il faut relire **ce qu'elle protégeait vraiment** — ici la visibilité, pas l'immobilité — et construire le nouveau cas de manière à respecter cette valeur. Une règle qui oscille entre deux extrêmes n'a jamais été comprise.*
 
 ### 7.2 Never-hang — le proxy qui crash déguisé en bug de stream (commit `8afe19d`, 14/06/2026)
 
