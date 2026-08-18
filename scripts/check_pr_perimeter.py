@@ -404,16 +404,98 @@ def fetch_review_thread(pr: int) -> list[dict]:
     Inline review comments are deliberately not scanned (v1): the perimeter
     statement lives in the review body or the PR body. ``gh pr view --json
     reviews`` returns the review objects with body/state/author.
+
+    Each item carries ``source`` -- "body" or "thread" -- which decides whether
+    a false assertion BLOCKS or merely SIGNALS (#11648-b2), and ``ts`` so that
+    an author's later assertion can supersede their earlier one (#11648-b1).
     """
-    meta = json.loads(_run_gh(["pr", "view", str(pr), "--json", "body,reviews"]))
-    items: list[dict] = [{"kind": "PR body", "author": "pr-author", "body": meta.get("body") or ""}]
+    meta = json.loads(
+        _run_gh(["pr", "view", str(pr), "--json", "body,reviews,author"])
+    )
+    pr_author = (meta.get("author") or {}).get("login", "pr-author")
+    items: list[dict] = [{
+        "kind": "PR body",
+        "author": pr_author,
+        "body": meta.get("body") or "",
+        "source": "body",
+        "ts": "",
+    }]
     for rv in meta.get("reviews") or []:
         items.append({
             "kind": f"review ({rv.get('state')})",
             "author": rv.get("author", {}).get("login", "?"),
             "body": rv.get("body") or "",
+            "source": "thread",
+            "ts": rv.get("submittedAt") or "",
         })
     return items
+
+
+@dataclass
+class Candidate:
+    """One perimeter assertion, with what decides its consequence."""
+
+    text: str
+    kind: str
+    author: str
+    source: str  # "body" (author-controlled -> blocking) | "thread" (signal)
+    ts: str = ""
+
+    @property
+    def blocking(self) -> bool:
+        """Only the PR body blocks.
+
+        #11648-b2: a gate blocks on what its target can fix. The PR author owns
+        the body and can edit it -- and since #11654 an edit re-triggers the
+        workflow, so the green is reachable. A third-party review is NOT
+        editable by the author, and a COMMENTED review cannot even be
+        dismissed (dismissal applies to APPROVED/CHANGES_REQUESTED only), so
+        blocking there leaves no lever at all -- measured on #11642 and #11646.
+        """
+        return self.source == "body"
+
+
+def select_candidates(items: list[dict]) -> list[Candidate]:
+    """Extract assertions, keeping only each thread author's LAST ones.
+
+    #11648-b1 (supersession). The founding measurement: on #11646 the guard
+    confronted three assertions, two of which their own author had already
+    corrected -- ai-01 said "5 fichiers" at 14:29 then "7" (correct) at 14:48,
+    and the stale one still held the PR red. An author who corrects themselves
+    must extinguish their own red; that is the one lever that acts only on
+    oneself, so it is safe to grant.
+
+    "Last" means the most recent review of that author which actually carries
+    an assertion -- a later review that says nothing about the perimeter is
+    silence, not a retraction. The PR body is never superseded: there is only
+    one of it, and it is always the current text.
+    """
+    body_items = [i for i in items if i.get("source") != "thread"]
+    thread_items = [i for i in items if i.get("source") == "thread"]
+
+    out: list[Candidate] = []
+    for item in body_items:
+        for text in extract_perimeter_assertions(item["body"]):
+            out.append(Candidate(text, item["kind"], item["author"], "body"))
+
+    # Per thread author, keep the latest assertion-carrying review.
+    latest: dict[str, tuple[str, int, dict, list[str]]] = {}
+    for pos, item in enumerate(thread_items):
+        found = extract_perimeter_assertions(item["body"])
+        if not found:
+            continue
+        author = item["author"]
+        key = (item.get("ts") or "", pos)
+        if author not in latest or key > (latest[author][0], latest[author][1]):
+            latest[author] = (key[0], key[1], item, found)
+
+    for author in sorted(latest):
+        _, _, item, found = latest[author]
+        for text in found:
+            out.append(
+                Candidate(text, item["kind"], author, "thread", item.get("ts") or "")
+            )
+    return out
 
 
 def main() -> int:
@@ -441,11 +523,18 @@ def main() -> int:
     report = fetch_report(args.pr)
     if args.assertion:
         report.problems.extend(check_assertion(report.files, args.assertion))
+    signals: list[str] = []
     if args.scan_thread:
-        for item in fetch_review_thread(args.pr):
-            for cand in extract_perimeter_assertions(item["body"]):
-                for p in check_assertion(report.files, cand):
-                    report.problems.append(f"[{item['kind']} / {item['author']}] {p}")
+        for cand in select_candidates(fetch_review_thread(args.pr)):
+            for p in check_assertion(report.files, cand.text):
+                line = f"[{cand.kind} / {cand.author}] {p}"
+                # Every catch stays visible either way -- the detector is not
+                # disarmed, only its consequence is placed where it can be
+                # acted on (#11648).
+                if cand.blocking:
+                    report.problems.append(line)
+                else:
+                    signals.append(line)
 
     blocking = list(report.problems)
     if not args.justified and not args.scan_thread:
@@ -457,6 +546,13 @@ def main() -> int:
                 )
 
     print(format_report(report, args.assertion))
+    if signals:
+        print("")
+        print("SIGNAL (non bloquant -- assertion d'un tiers, non editable par l'auteur) :")
+        for sg in signals:
+            print(f"  ~~ {sg}")
+        print("  -> a lever par son auteur (poster une assertion corrigee), ou a")
+        print("     considerer par le reviewer qui merge. Ne tient pas la PR.")
     if blocking:
         print("")
         print("VERDICT: FAIL")

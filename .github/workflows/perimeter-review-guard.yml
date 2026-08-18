@@ -19,11 +19,39 @@ name: perimeter-review-guard
 # drops -- a body edited while the PR was closed would otherwise go
 # unchecked until the next review -- nit Hermes on #11654) and
 # pull_request_review (submitted/edited -- re-runs the SAME check name on
-# the same head SHA the moment a review is posted, so a false assertion goes
-# red and blocks the merge; a corrected review turns it green again).
+# the same head SHA the moment a review is posted).
 # Baseline moves are reported with direction (issue criterion 3) but do not
 # hard-fail here: the output names the move and the reviewer applies
 # CHANGES_REQUESTED on unjustified loosening.
+#
+# ---------------------------------------------------------------------------
+# WHO CAN EXTINGUISH THIS RED, AND HOW (#11648 acceptance criterion 3)
+# ---------------------------------------------------------------------------
+# The consequence follows who can act on the surface, not who is wrong:
+#
+#   * assertion in the PR BODY  -> BLOCKS (exit 1).
+#     The PR author owns the body. Edit it, and the `edited` trigger above
+#     re-runs this check on the same SHA: the green is reachable by the very
+#     person the red is aimed at.
+#
+#   * assertion in a REVIEW     -> SIGNALS (printed under "SIGNAL", exit 0).
+#     The PR author cannot edit someone else's review, and a COMMENTED review
+#     cannot be dismissed either (dismissal covers APPROVED and
+#     CHANGES_REQUESTED only). Blocking there left NO lever at all -- measured
+#     2026-08-18 on #11642 and #11646, both held red by third-party counts
+#     nobody could retract. The reviewer who merges reads the signal and
+#     decides; the reviewer who wrote it can retract it by posting a
+#     corrected assertion, which supersedes their own earlier one (below).
+#
+# SUPERSESSION: only each author's LAST assertion-carrying review is
+# confronted. An author who corrects themselves extinguishes their own red --
+# the one lever that acts solely on oneself, hence safe to grant. A later
+# review that says nothing about the perimeter is silence, not a retraction.
+#
+# The detector itself is UNCHANGED: every false assertion is still found and
+# still printed, third-party ones included. Only the exit code moved. Do not
+# "fix" a future false-positive by narrowing the detection -- that loses both
+# properties at once (#11648, point 2).
 
 on:
   pull_request:

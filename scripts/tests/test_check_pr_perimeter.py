@@ -13,10 +13,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
+    Candidate,
     check_assertion,
     extract_baseline_moves,
     extract_perimeter_assertions,
     format_report,
+    select_candidates,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -366,3 +368,118 @@ def test_pull_request_review_trigger_includes_edited_type():
         "pull_request_review: must keep `types: [submitted, edited]` so "
         "corrected reviews re-trigger the gate."
     )
+
+
+# ---------------------------------------------------------------------------
+# Consequence model (#11648): supersession per author + blocking scope
+# ---------------------------------------------------------------------------
+# The two trigger pins above land with #11660 (po-2026, issue #11659),
+# merged first; this block adds the consequence half of #11648.
+
+def _thread(*rows):
+    """Build a fetch_review_thread()-shaped list. rows: (author, ts, body)."""
+    return [{"kind": "review (COMMENTED)", "author": a, "body": b,
+             "source": "thread", "ts": t} for a, t, b in rows]
+
+
+def _body(author, text):
+    return {"kind": "PR body", "author": author, "body": text,
+            "source": "body", "ts": ""}
+
+
+ASSERT_5 = "Perimetre : 5 fichiers."
+ASSERT_7 = "Perimetre : 7 fichiers."
+
+
+def test_author_later_assertion_supersedes_their_own_earlier_one():
+    """#11648-b1, the founding measurement on #11646.
+
+    ai-01 asserted "5 fichiers" at 14:29 then corrected to "7" (the truth) at
+    14:48; the stale one still held the PR red. Self-correction must clear
+    one's own red.
+    """
+    cands = select_candidates(_thread(
+        ("ai-01", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("ai-01", "2026-08-18T14:48:00Z", ASSERT_7),
+    ))
+    texts = [c.text for c in cands]
+    assert ASSERT_7 in texts
+    assert ASSERT_5 not in texts, "superseded assertion still confronted"
+
+
+def test_supersession_is_per_author_not_global():
+    """A later review by SOMEONE ELSE must not retract my assertion."""
+    cands = select_candidates(_thread(
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("ai-01", "2026-08-18T14:48:00Z", ASSERT_7),
+    ))
+    by = {c.author: c.text for c in cands}
+    assert by == {"hermes": ASSERT_5, "ai-01": ASSERT_7}
+
+
+def test_later_silent_review_is_not_a_retraction():
+    """Silence is not correction: a later review with no perimeter statement
+    leaves the author's previous assertion standing."""
+    cands = select_candidates(_thread(
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("hermes", "2026-08-18T15:10:00Z", "LGTM, joli travail."),
+    ))
+    assert [c.text for c in cands] == [ASSERT_5]
+
+
+def test_equal_timestamps_fall_back_to_thread_order():
+    """GitHub can stamp two reviews identically; the later-listed one wins."""
+    cands = select_candidates(_thread(
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_7),
+    ))
+    assert [c.text for c in cands] == [ASSERT_7]
+
+
+def test_pr_body_assertion_is_blocking():
+    """POSITIVE CONTROL (#11648 acceptance).
+
+    This test FAILS if the blocking branch is ever removed -- i.e. if someone
+    "fixes" a false positive by making everything advisory. A gate whose every
+    input is non-blocking is indistinguishable from a disabled gate.
+    """
+    cands = select_candidates([_body("jsboige", ASSERT_5)])
+    assert len(cands) == 1
+    assert cands[0].blocking is True, (
+        "PR-body assertions must BLOCK: the author owns the body and an edit "
+        "re-triggers the workflow, so the green is reachable (#11648-b2)."
+    )
+
+
+def test_third_party_review_assertion_is_signal_only():
+    """#11648-b2: not editable by the author, and COMMENTED reviews cannot be
+    dismissed -- blocking there leaves no lever (measured on #11642/#11646)."""
+    cands = select_candidates(_thread(
+        ("clusterManager-Myia", "2026-08-18T14:29:00Z", ASSERT_5),
+    ))
+    assert len(cands) == 1
+    assert cands[0].blocking is False
+
+
+def test_detection_is_unchanged_for_non_blocking_assertions():
+    """The detector is NOT disarmed: a false third-party assertion is still
+    extracted and still confronted -- only its exit code changes."""
+    cands = select_candidates(_thread(
+        ("clusterManager-Myia", "2026-08-18T14:29:00Z",
+         "Perimetre : 2 fichiers twins uniquement, aucune autre modification."),
+    ))
+    assert len(cands) == 1
+    problems = check_assertion(FILES_11227, cands[0].text)
+    assert problems, "third-party false assertion must still be detected"
+    assert cands[0].blocking is False, "...but must not block"
+
+
+def test_founding_incident_still_blocks_from_the_pr_body():
+    """#11227 encoded end to end: the same false assertion, posted where its
+    author can fix it, still fails the gate."""
+    cands = select_candidates([_body(
+        "author",
+        "Perimetre : 2 fichiers twins uniquement, aucune autre modification.")])
+    blocking = [c for c in cands if c.blocking]
+    assert blocking
+    assert check_assertion(FILES_11227, blocking[0].text)
