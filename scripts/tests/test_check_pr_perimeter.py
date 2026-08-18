@@ -19,6 +19,7 @@ from check_pr_perimeter import (  # noqa: E402
     extract_perimeter_assertions,
     format_report,
     select_candidates,
+    _fence_line_indices,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -281,6 +282,160 @@ def test_scan_thread_composition_rejects_founding_thread():
     problems = [p for cand in cands for p in check_assertion(FILES_11227, cand)]
     assert problems
     assert any("lean-knot.yml" in p for p in problems)
+
+
+# ---------------------------------------------------------------------------
+# Issue #11670 founder case: PR #11664 body verbatim (L898 ★★★ in a ``` fence)
+# The fence carries "0 fichiers en commun avec les autres PR" which is the
+# transcription of `gh pr list` output. Without an extraction-level fence
+# exemption, `extract_perimeter_assertions` would surface that line and the
+# count claim would mismatch a 1-file PR -> false positive block.
+# Measured by jsboige 2026-08-18 against the v1 fix at
+# `scripts/check_pr_perimeter.py:check_assertion` which masked the body only
+# at the assertion level -- the per-line extractor still received the raw
+# line, so the gate would still trip. The fix lives in
+# `_fence_line_indices` + the `idx in fence_indices` skip in
+# `extract_perimeter_assertions`.
+# ---------------------------------------------------------------------------
+
+
+L898_BODY_11664 = (
+    "## L898 verifie\n"
+    "\n"
+    "Perimetre : 1 fichier modifie.\n"
+    "\n"
+    "```\n"
+    "$ git worktree list\n"
+    "D:/Dev/CoursIA-2-11663\n"
+    "$ gh pr list --search head:feature/11663-xtts-melody-test\n"
+    "0 collisions\n"
+    "$ gh pr list --state open --json files\n"
+    "0 fichiers en commun avec les autres PR\n"
+    "```\n"
+)
+FILES_11664 = [{"path": "MyIA.AI.Notebooks/Audio/XTTS/foo.ipynb", "additions": 5, "deletions": 2}]
+
+
+def test_fence_line_indices_skip_only_enclosed_lines():
+    """Helper contract: delimiter lines are NOT in the set; only the lines
+    they enclose are. The opener line (with triple backticks) sits outside
+    the set; the body line '0 fichiers en commun' sits inside; the closer
+    line (with triple backticks) sits outside again.
+    """
+    indices = _fence_line_indices(L898_BODY_11664)
+    # The L898 body has 12 lines (0..11): opener at idx 4, body 5..10,
+    # closer at idx 11. Body interior = {5, 6, 7, 8, 9, 10}.
+    assert indices == {5, 6, 7, 8, 9, 10}, (
+        f"expected only the body lines inside the fence to be flagged, got {sorted(indices)}"
+    )
+
+
+def test_extract_perimeter_assertions_skips_fence_with_count_claim():
+    """Acceptance 1 (issue #11670): the founder #11664 body carrying L898 in
+    a fenced block must extract only the authorial 'Perimetre : 1 fichier
+    modifie.' line and NOT the fenced '0 fichiers en commun' line. The
+    single extracted candidate matches the one file in FILES_11664, so
+    `check_assertion` returns no problems on the --scan-thread path.
+    """
+    cands = extract_perimeter_assertions(L898_BODY_11664)
+    assert cands == ["Perimetre : 1 fichier modifie."], (
+        f"fence lines must not surface as perimeter candidates, got {cands!r}"
+    )
+    problems = [p for cand in cands for p in check_assertion(FILES_11664, cand)]
+    assert problems == [], (
+        f"the founder #11664 body must pass --scan-thread with the fence exemption, "
+        f"got {problems!r}"
+    )
+
+
+def test_extract_perimeter_assertions_skips_fence_acceptance2_variant():
+    """Acceptance 2: 'fail-before-fix / pass-after-fix' encoded by inspecting
+    the raw line that historically tripped the gate. Before the fix,
+    `extract_perimeter_assertions` would surface '0 fichiers en commun avec
+    les autres PR' (count claim '0 fichiers' != 1 real file -> problem).
+    After the fix, that line is in a fence and is NOT surfaced.
+    """
+    body = (
+        "## Sortie console\n"
+        "\n"
+        "```\n"
+        "$ gh pr list --search foo\n"
+        "0 fichiers en commun\n"
+        "```\n"
+        "\n"
+        "Perimetre : 1 fichier modifie.\n"
+    )
+    cands = extract_perimeter_assertions(body)
+    assert "0 fichiers en commun" not in cands
+    assert any("Perimetre : 1 fichier modifie." in c for c in cands)
+
+
+def test_extract_perimeter_assertions_skips_tilde_fence_too():
+    """Tilde fences (~~~) are exempt using the same pattern. Issue #11670
+    acceptance 2 variant.
+    """
+    body = (
+        "Perimetre : 1 fichier modifie.\n"
+        "\n"
+        "L898 output :\n"
+        "\n"
+        "~~~\n"
+        "$ gh pr list\n"
+        "0 fichiers en commun\n"
+        "~~~\n"
+    )
+    cands = extract_perimeter_assertions(body)
+    assert "0 fichiers en commun" not in cands
+    assert any("Perimetre : 1 fichier modifie." in c for c in cands)
+
+
+def test_extract_perimeter_assertions_keeps_prose_exclusivity_with_fence_present():
+    """Acceptance 3 (non-regression): a perimeter assertion in PROSE outside
+    the fence is still extracted, even when the body has a fenced block
+    elsewhere. The #11227 incident, replicated with a fence added to ensure
+    the fix doesn't open a hole. Each candidate is `check_assertion`-ed and
+    the workflow under `.github/workflows/lean-knot.yml` is not named in
+    the prose, so the gate still trips.
+    """
+    body = (
+        "## Sortie console\n"
+        "\n"
+        "```\n"
+        "$ gh pr list --search foo\n"
+        "0 fichiers en commun\n"
+        "```\n"
+        "\n"
+        "Perimetre : 2 fichiers twins uniquement, aucune autre modification.\n"
+    )
+    files = [
+        {"path": "a.lean", "additions": 1, "deletions": 0},
+        {"path": "b.lean", "additions": 1, "deletions": 0},
+        {"path": ".github/workflows/lean-knot.yml", "additions": 1, "deletions": 1},
+    ]
+    cands = extract_perimeter_assertions(body)
+    problems = [p for cand in cands for p in check_assertion(files, cand)]
+    assert cands, "the prose claim must be extracted even with a fence present"
+    assert any(p for p in problems), (
+        "the workflow-named-not assertion must still trip with a fence present"
+    )
+
+
+def test_extract_perimeter_assertions_fence_does_not_swallow_following_lines():
+    """A fence closes on its delimiter line; subsequent prose lines must be
+    re-armed for extraction. This protects against a regression where the
+    helper forgets to flip `in_fence = False` after seeing the closer.
+    """
+    body = (
+        "```\n"
+        "0 fichiers en commun\n"
+        "```\n"
+        "\n"
+        "Perimetre : 1 fichier modifie.\n"
+    )
+    cands = extract_perimeter_assertions(body)
+    assert any("Perimetre : 1 fichier modifie." in c for c in cands), (
+        f"post-fence prose must be re-extracted, got {cands!r}"
+    )
 
 
 def test_scan_thread_composition_accepts_correct_thread():
