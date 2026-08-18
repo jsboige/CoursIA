@@ -2,10 +2,15 @@
   family: Sudoku
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib idiomatic-stack probabiliste : Python = NumPyro (SOTA Python probabilistic programming framework sur JAX, MCMC + inference variationnelle, stochastic). C# = Infer.NET (Microsoft Research legacy, SOTA .NET probabilistic programming framework, MCMC + expectation propagation + variational message passing, deterministic compilation). Les deux utilisent la SOTA PPL de leur stack respective. Pont cross-stack impossible : NumPyro est JAX-based (Python only, JAX compile XLA), Infer.NET est .NET only (compilation deterministe vers C#). Aucun bytecode commun bridgeable (pas de JPype, pas d'IKVM -- les deux PPL sont compiles dans leur stack respective). Verifie firsthand (c.235 audit 2026-08-12, myia-po-2023:CoursIA-2) : Python 34 cells / C# 47 cells, structure pedagogique symetrique (modele probabiliste Sudoku, observations, inference posterior). Asymetrie : Python = stochastic MCMC (echantillonnage NUTS), C# = deterministic variational message passing (EP/VMP). Les deux methodes sont SOTA dans leur stack, et l'objectif pedagogique (modeliser l'incertitude sur les valeurs Sudoku) est tenu. Verdict SOTA-OK : lib-vs-lib idiomatic-stack PPL, aucune asymetrie engine-mismatch a corriger."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 9c9644c74bd05c238944c93c2828fedaf23eabd6
+      csharp_sha: 4f37b203d3e70f7e894b2602ef8333374adf8197
+      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint NumPyro/JAX (SVI, Trace_ELBO, import jax + numpyro.infer), C# atteint Infer.NET (Microsoft.ML.Probabilistic). Les deux cotes executent un moteur de programmation probabiliste de production. Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
     - date: "2026-08-03"
       by: myia-po-2023:CoursIA
       python_sha: d1282426b7eea1e38e808669eace82467deb0567
