@@ -17,14 +17,27 @@ char).
 Ce detecteur complete H.3 : il ne regarde pas si la cellule a execute, mais si
 la sortie stream est structurellement bien formee.
 
-Signature du cas (heuristique mediane) :
+Signature du cas (heuristique mediane + max conjonction) :
 - ``output_type == "stream"``
 - ``text`` est une liste non vide
 - longueur mediane des items < 2 chars (= presque tout est 1 char)
+- **ET** longueur max des items <= 2 chars (sinon c'est un faux positif : une
+  sortie avec lignes vides ``\n``/``\r\n`` de 2 chars + quelques vraies lignes
+  courtes — typique des stderr .NET / C# kernel — a une mediane a 2 tiree
+  par les lignes vides, mais une vraie ligne de 200+ chars qui prouve la
+  sortie est legitime).
 
-Seuils :
-- mediane <= MEDIAN_THRESHOLD (defaut 2) -> FRAGMENTED
-- mediane >= MEDIAN_THRESHOLD -> OK
+La conjonction mediane + max est le fruit de l'audit #11668 cycle c.359 :
+sur 17 cas mesures en ``--all``, 17/17 etaient des faux positifs avec
+``min=2, max=60..444`` (alternance ``\r\n`` + vraie ligne). Seul le cas
+fondateur (c.354) avait ``min=max=1`` (char-par-char reel). La conjonction
+ferme ce trou.
+
+Seuils (defaut) :
+- MEDIAN_THRESHOLD = 2
+- MAX_TEXT_LEN_THRESHOLD = 2
+- MIN_TEXT_ITEMS = 10
+- Verdict FRAGMENTED <=> mediane <= 2 AND max <= 2
 
 Exemptions (ne PAS flagger) :
 - cellule markdown (le defaut ne concerne que les code cells)
@@ -69,6 +82,7 @@ from pathlib import Path
 from typing import Any
 
 MEDIAN_THRESHOLD = 2  # mediane <= 2 chars = fragment character-par-character
+MAX_TEXT_LEN_THRESHOLD = 2  # max <= 2 chars en conjonction : sans ca, les sorties avec lignes vides (\n/\r\n) + vraies lignes courtes (stderr .NET) ont une mediane a 2 tiree par les vides, mais une vraie ligne de 200+ chars -> sortie saine, pas fragmented
 MIN_TEXT_ITEMS = 10   # au moins 10 items avant de flagger (evite faux positifs sur sorties courtes)
 
 
@@ -116,7 +130,11 @@ def scan_notebook(path: Path) -> list[dict[str, Any]]:
             if len(items) < MIN_TEXT_ITEMS:
                 continue
             med = _median_or_none(items)
-            if med is None or med > MEDIAN_THRESHOLD:
+            max_len = max(len(x) for x in items)
+            # Conjonction mediane + max : un fragment character-par-character
+            # a TOUS ses items d'1 char (max=1). Une sortie avec lignes vides
+            # + vraies lignes courtes a max>2 -> sortie saine.
+            if med is None or med > MEDIAN_THRESHOLD or max_len > MAX_TEXT_LEN_THRESHOLD:
                 continue
             findings.append({
                 "path": str(path),
@@ -125,7 +143,7 @@ def scan_notebook(path: Path) -> list[dict[str, Any]]:
                 "n_outputs": len(cell.get("outputs", [])),
                 "median_text_len": med,
                 "min_text_len": min(len(x) for x in items),
-                "max_text_len": max(len(x) for x in items),
+                "max_text_len": max_len,
                 "n_text_items": len(items),
                 "severity": "FRAGMENTED",
             })

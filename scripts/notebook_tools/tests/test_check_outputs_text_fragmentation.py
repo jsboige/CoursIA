@@ -221,6 +221,105 @@ def test_mutation_disable_threshold_caught(tmp_path: Path) -> None:
     assert res.returncode == 0, f"mediane 3 > seuil 2 -> OK, stderr={res.stderr}"
 
 
+def test_mutation_disable_max_threshold_caught(tmp_path: Path) -> None:
+    """Si MAX_TEXT_LEN_THRESHOLD est desactive, les sorties avec lignes vides
+    + vraies lignes courtes redeviennent des faux positifs. Mutation : sans
+    la conjonction max, mediane=2 + max=387 -> flagged. C'est ce qui prouve
+    que la conjonction EST le cliquet (cf. c.344-L1 ★★ + c.359).
+    """
+    # 11 items : 5 lignes vides "\r\n" (2 chars) + 6 vraies lignes de 50 chars
+    # mediane = 2, max = 50 > MAX_TEXT_LEN_THRESHOLD=2 -> PAS flagged
+    text = ["\r\n"] * 5 + ["x" * 50 + "\n"] * 6
+    assert len(text) >= 10  # au-dessus de MIN_TEXT_ITEMS
+    p = _make_nb(tmp_path, [_stream_output(text)])
+    res = subprocess.run(
+        [sys.executable, str(SCRIPT), str(p), "--check"],
+        capture_output=True,
+        text=True,
+    )
+    # max=50 > 2 -> conjonction leve l'exemption -> OK (pas de finding)
+    assert res.returncode == 0, f"max=50 > seuil max=2 -> OK, stderr={res.stderr}"
+
+
+def test_min_items_below_threshold_passes(tmp_path: Path) -> None:
+    """MIN_TEXT_ITEMS gate : <10 items = pas de verdict, peu importe mediane/max.
+
+    Si MIN_TEXT_ITEMS est desactive, une sortie de 3 items d'1 char serait
+    flagged comme fragmented. On verifie qu'a 3 items, exit=0 (le gate EST
+    le cliquet).
+    """
+    # 3 items d'1 char (founder-style, mais < 10 items)
+    text = ["a", "b", "c"]
+    p = _make_nb(tmp_path, [_stream_output(text)])
+    res = subprocess.run(
+        [sys.executable, str(SCRIPT), str(p), "--check"],
+        capture_output=True,
+        text=True,
+    )
+    # n_items=3 < MIN_TEXT_ITEMS=10 -> early-exit, exit=0
+    assert res.returncode == 0
+
+
+# --- Per-FP regression tests (cycle c.359 audit ai-01 --all sur le depot) ---
+# 17/17 faux positifs mesures par ai-01, signatures capturees firsthand.
+# Chaque test charge le notebook reel et verifie que le detecteur rend 0
+# finding dessus. Si une regression reintroduit un FP, CE test rougit
+# SPECIFIQUEMENT sur la classe de defaut. (cf. c.344-L1 ★★ : tester par
+# faux negatifs, pas par hits seuls.)
+
+# REPO_ROOT : 3 niveaux au-dessus de tests/ (tests -> notebook_tools -> scripts -> REPO_ROOT)
+REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+# 17 cas FP mesures par ai-01 verbatim (2026-08-18 c.359). Format :
+# (path_rel_repo, cell_index, output_index, signature_summary)
+FP_CASES = [
+    # (path, cell_index, output_index, description)
+    ("MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb", 18, 4, "stderr OpenAI Whisper + \\r\\n"),
+    ("MyIA.AI.Notebooks/QuantConnect/projects/PairsTrading/research.ipynb", 14, 0, "stderr PairsTrading"),
+    ("MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-Csharp.ipynb", 18, 1, "stderr CSP-8 C#"),
+    ("MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb", 14, 3, "stderr MGS-8 cell14"),
+    ("MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-8-LandscapeExplorer.ipynb", 16, 7, "stderr MGS-8 cell16"),
+    ("MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb", 4, 3, "stderr Planners-2"),
+    ("MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains-Csharp.ipynb", 2, 2, "stderr Planners-6"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 6, 2, "stderr SW-9 cell6"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 13, 4, "stderr SW-9 cell13"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 16, 3, "stderr SW-9 cell16"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 18, 5, "stderr SW-9 cell18"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-9-CSharp-JSONLD.ipynb", 25, 1, "stderr SW-9 cell25"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb", 20, 9, "stderr Z3-Linq2Z3 meal planner"),
+    ("MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb", 3, 10, "stderr SL-4"),
+    ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb", 23, 3, "stderr Tweety-7a cell23"),
+    ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb", 24, 3, "stderr Tweety-7a cell24"),
+    ("MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-7a-Extended-Frameworks-Csharp.ipynb", 25, 6, "stderr Tweety-7a cell25"),
+]
+
+
+@pytest.mark.parametrize("rel_path,cell_idx,out_idx,desc", FP_CASES, ids=[c[0] + f"#{c[1]}.{c[2]}" for c in FP_CASES])
+def test_fp_case_not_flagged(rel_path: str, cell_idx: int, out_idx: int, desc: str) -> None:
+    """Pour chaque cas FP mesure par ai-01 sur --all, le detecteur DOIT rendre
+    0 finding (grace a la conjonction mediane + max).
+
+    Capture la signature exacte du notebook reel au commit c.359 (8ab2f
+    apres rebase main 4a7002d72). Si le notebook evolue et que ce test
+    devient obsolète (vrai positif reel apparait), c'est un signal a
+    investiguer -- pas un test a ignorer.
+    """
+    nb_path = REPO_ROOT / rel_path
+    if not nb_path.exists():
+        pytest.skip(f"Notebook absent (worktree minimal): {rel_path}")
+    res = subprocess.run(
+        [sys.executable, str(SCRIPT), str(nb_path), "--check"],
+        capture_output=True,
+        text=True,
+    )
+    assert res.returncode == 0, (
+        f"FP regression sur {rel_path} cell#{cell_idx} output#{out_idx} "
+        f"({desc}) : detecteur a re-flagge ce cas qui etait OK avant. "
+        f"stdout={res.stdout!r}, stderr={res.stderr!r}"
+    )
+
+
 def test_explain_mode() -> None:
     """--explain imprime le docstring et exit 0."""
     res = subprocess.run(
