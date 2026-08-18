@@ -79,6 +79,7 @@ Usage
     python scripts/notebook_tools/detect_markdown_rendering.py --check --baseline scripts/notebook_tools/markdown_rendering_baseline.json
     python scripts/notebook_tools/detect_markdown_rendering.py --update-baseline --baseline scripts/notebook_tools/markdown_rendering_baseline.json
     python scripts/notebook_tools/detect_markdown_rendering.py --check path/to/one.ipynb   # ad-hoc, no baseline
+    python scripts/notebook_tools/detect_markdown_rendering.py --selfcheck  # embedded controls, both #11630 forms
 """
 from __future__ import annotations
 
@@ -177,23 +178,24 @@ def _is_yaml_block_open_no_close(lines, fenced: set[int]) -> bool:
     """True if the cell opens a YAML frontmatter block but never closes it.
 
     A markdown cell whose first non-blank line is exactly ``---`` (and there is
-    NO later ``---`` to close the block) still opens a YAML metadata block in
-    Pandoc -- the block then extends until end-of-document or until the next
-    ``---`` line *anywhere in the rendered output*. When Quarto renders a
-    notebook that opens such a block, the YAML parser consumes every following
-    cell until it hits a closing fence -- turning the whole page into either a
-    YAML error or a single oversized setext heading. Reproduced 2026-08-18 on
+    NO later ``---`` to close the block) opens a YAML metadata block in Pandoc
+    -- regardless of whether the line AFTER the opener is blank. The block then
+    extends until end-of-document or until the next ``---`` line *anywhere in
+    the rendered output*, turning the page into a YAML error or a single
+    oversized setext heading. Reproduced 2026-08-18 on
     ``MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb``
-    pre-#11629: 8 of 20 cells started with ``---\\n### Dataset N -- ...`` and
-    Quarto refused to render the whole notebook (YAML alias error on the 4th
-    ``---`` it ate).
+    pre-#11629 (8 cells ``---\\n### Dataset N -- ...``) AND on
+    ``SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb`` (15 cells
+    ``---\\n\\n## Titre`` -- the SECOND outage, 20:27Z, after #11629).
 
-    Distinguishing legitimate ``---\\n\\n### H`` thematic breaks from this
-    defect: the thematic break is preceded by a blank line and followed by
-    another blank line (the section divider). The YAML-opener cell has the
-    ``---`` as its very FIRST non-blank line and is followed IMMEDIATELY by
-    content (no blank). The fenced set lets us ignore ``---`` lines that live
-    inside verbatim code blocks (those are literal text, not YAML markers).
+    The earlier claim that a blank line after the opening ``---`` made it a
+    "thematic break, not a YAML opener" was empirically refuted: Pandoc opens
+    the ``yaml_metadata_block`` either way (oracle js-yaml on the SL-8 form:
+    ``scanned=1 bad=1``, *bad indentation of a mapping entry*). The ONLY safe
+    head-``---`` is a BARE divider -- a cell containing nothing but the
+    ``---`` line -- which renders as ``<hr>`` (Pandoc needs a following line
+    to start a YAML block). The fenced set lets us ignore ``---`` lines that
+    live inside verbatim code blocks (those are literal text, not YAML markers).
 
     Returns True when the cell opens a YAML block with no closing ``---``
     anywhere in the rest of the cell.
@@ -204,14 +206,13 @@ def _is_yaml_block_open_no_close(lines, fenced: set[int]) -> bool:
         return False
     if nz[0].strip() != "---":
         return False
-    # The very next raw line must carry content (no blank between ``---`` and
-    # content). This is the same ``---`` immediately-followed-by-content shape
-    # that already gates ``_is_frontmatter_block`` -- if there IS a blank line,
-    # the ``---`` is a thematic break, not a YAML opener.
+    # A cell that is ONLY the ``---`` line is a thematic break (``<hr>``), not
+    # an opener: Pandoc needs a following non-blank line to start YAML parsing.
+    if len(nz) == 1:
+        return False
+    # Locate the opening fence in the raw lines.
     for i, ln in enumerate(lines):
         if ln.strip() == "---":
-            if i + 1 >= len(lines) or lines[i + 1].strip() == "":
-                return False
             break
     # Now: NO later ``---`` anywhere in the rest of the cell closes the block.
     # Skip fence-internal lines so a verbatim ``---`` ASCII divider doesn't
@@ -222,6 +223,61 @@ def _is_yaml_block_open_no_close(lines, fenced: set[int]) -> bool:
         if lines[j].strip() == "---":
             return False  # has a closer -> handled by _is_frontmatter_block
     return True  # opener with no closer in this cell
+
+
+def _selfcheck() -> int:
+    """Embedded positive/negative controls for ``yaml_block_open_no_close``.
+
+    #11630 postmortem (ai-01 arbitration, 2026-08-18): BOTH implementations
+    calibrated their positive control on the FIRST outage form
+    (``---\\n### Dataset N``, FallacyDetection/02 pre-#11629) and let the
+    SECOND form pass -- ``---\\n\\n## Titre`` (SL-8, the notebook that took
+    the site down at 20:27Z AFTER #11629). The exemption claiming a blank
+    line after ``---`` made it a "thematic break" was the blind spot; the
+    oracle js-yaml and the outage both refute it. A detection pattern
+    validates on its false negatives, not its hits (anti-regression), so the
+    embedded control game carries BOTH observed forms plus the negatives
+    (bare divider, complete frontmatter, plain prose). Exit 1 on any miss --
+    a rule that silently stops seeing a defect form must fail loudly.
+
+    Wired as ``--selfcheck``; the guard workflow runs it so a future
+    refactor of this rule that loses a form breaks CI instead of rendering
+    a cleaner-looking violation count.
+    """
+    fixtures: list[tuple[str, str, bool]] = [
+        # (name, cell source, expected: rule fires?)
+        ("FallacyDetection/02 pre-#11629 (--- + immediate content)",
+         "---\n### Dataset N -- biased language in news\n\nIntroduction text.",
+         True),
+        ("SL-8 (--- + blank line + title)",
+         "---\n\n## Knowledge graphs and ILP\n\nBody text of the section.",
+         True),
+        ("bare --- divider (nothing after)",
+         "---\n",
+         False),
+        ("complete frontmatter (has closer)",
+         "---\ntitle: Foo\n---\n",
+         False),
+        ("plain prose cell (no --- head)",
+         "# Heading\n\nPlain paragraph, no dashes.\n",
+         False),
+    ]
+    failed: list[str] = []
+    for name, src, expected in fixtures:
+        lines = src.split("\n")
+        fenced = _inside_fence_lines(lines)
+        got = _is_yaml_block_open_no_close(lines, fenced)
+        if got != expected:
+            failed.append(f"{name}: rule fired={got}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: yaml_block_open_no_close fires on both observed forms "
+          "(FallacyDetection/02 + SL-8), silent on bare divider / complete "
+          "frontmatter / prose")
+    return 0
 
 
 def _inside_fence_lines(lines) -> set[int]:
@@ -660,7 +716,16 @@ def main(argv=None) -> int:
                          "#11630 for the rationale.")
     ap.add_argument("--quarto-yml", type=Path, default=Path("_quarto.yml"),
                     help="path to the Quarto project YAML (default: ./_quarto.yml)")
+    ap.add_argument("--selfcheck", action="store_true",
+                    help="run the embedded positive/negative controls of the "
+                         "yaml_block_open_no_close rule (BOTH observed forms: "
+                         "FallacyDetection/02 `---` + content AND SL-8 "
+                         "`---` + blank + title) and exit 1 on any miss "
+                         "(#11630). No scan root required.")
     args = ap.parse_args(argv)
+
+    if args.selfcheck:
+        return _selfcheck()
 
     root = Path(args.root)
     if not root.exists():
