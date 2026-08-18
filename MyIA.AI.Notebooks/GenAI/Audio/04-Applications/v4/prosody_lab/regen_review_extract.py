@@ -67,9 +67,10 @@ def main() -> None:
     ap.add_argument("--out-dir", default=str(DEFAULT_OUT))
     args = ap.parse_args()
 
-    text = _extract_opening_text()
     if args.text_file:
         text = Path(args.text_file).read_text(encoding="utf-8").strip()
+    else:
+        text = _extract_opening_text()
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
