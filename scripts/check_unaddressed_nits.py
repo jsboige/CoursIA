@@ -33,7 +33,13 @@ Ce qui leve un nit — et ce qui ne le leve PAS
 **leve** que si, entre son horodatage et le merge, on trouve au moins un de :
   - une **reponse ecrite** capable de repondre (cf `can_lift` : ni bot de CI,
     ni tag de protocole nu) ;
-  - pour un thread inline : `isResolved: true` ou `isOutdated: true`.
+  - pour un thread inline : `isResolved: true` ou `isOutdated: true` ;
+  - **de la bonne personne** (borne d'auteur #11145) : l'auteur de la reserve,
+    ou l'auteur de la PR qui repond a son reviewer. Une reponse ou une
+    approbation d'un tiers (ni l'un ni l'autre) n'eteint pas la reserve —
+    c'est la classe #10761 que l'organe existe pour bloquer (mesure #11494 :
+    24,3 % des levees etaient BYSTANDER). L'echappement B.0 (issue de suivi
+    nommee) reste le chemin quand la reserve exige l'arbitrage d'un tiers.
 
 Ne levent RIEN :
   - **un commit pousse apres le nit** : un push muet est indiscernable d'un push
@@ -456,12 +462,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
 
+    # #11145 — borne d'auteur : seules les levees de l'auteur de la reserve OU
+    # de l'auteur de la PR comptent. Mesure #11494 (850 PRs) : SELF 22/37
+    # (59,5 %) + PR_AUTHOR 6/37 (16,2 %) = flux sain preserve ; BYSTANDER 9/37
+    # (24,3 %) = la classe #10761 que l'organe bloque (un tiers — approbation
+    # ou reponse — n'eteint pas une reserve posee par un autre).
+    pr_author = (pr_data.get("author") or {}).get("login", "")
+
     # Seuls les commentaires capables de LEVER comptent (cf can_lift) : un
     # commentaire de bot CI ou un tag de protocole nu n'a jamais repondu a rien.
-    comment_times = [
-        ts(c["createdAt"]) for c in (pr_data.get("comments") or []) if can_lift(c)
+    # On porte l'AUTEUR de chaque evenement de levee : la borne #11145 en a
+    # besoin (auteur seul = les temps plats de #11222 ne suffisaient pas).
+    lift_events = [
+        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""))
+        for c in (pr_data.get("comments") or []) if can_lift(c)
     ]
-    comment_times = [t for t in comment_times if t]
 
     # Fenetre 05-29..06-04 (#1958) : la RE-REVIEW APPROVED. Le reviewer qui
     # revient approuver apres sa demande de changements A dit que la reserve
@@ -478,7 +493,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
     ]
     approved_rereviews = [(t, a) for (t, a) in approved_rereviews if t]
-    comment_times += [t for (t, _) in approved_rereviews]
+    lift_events += approved_rereviews
+    lift_events = [(t, a) for (t, a) in lift_events if t]
+
+    def _lift_eligible(lift_author: str, nit_author: str) -> bool:
+        return lift_author in (nit_author, pr_author)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -542,13 +561,16 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
                 when < t < cutoff and author == login
                 for (t, author) in approved_rereviews
             ) or any(
-                when < t < cutoff
-                for (t, _, _) in explicit_lifts
+                when < t < cutoff and _lift_eligible(lifter, login)
+                for (t, lifter, _) in explicit_lifts
             )
             if lifted:
                 continue
-        elif any(when < t < cutoff for t in comment_times):
-            continue  # discute/refuse explicitement apres le nit, avant le merge
+        elif any(
+            when < t < cutoff and _lift_eligible(lift_author, login)
+            for (t, lift_author) in lift_events
+        ):
+            continue  # reponse de l'auteur du nit ou de l'auteur de la PR
         # Un commit poussé après le nit ne le lève PAS à lui seul : sur #10761,
         # le « traitement » était un rebase à 19:41 qui n'adressait aucun des
         # deux nits de 11:07. Le push est reporté comme contexte, pas comme levée
@@ -585,7 +607,9 @@ FIELDS = "number,title,mergedAt,author,comments,reviews,commits,url,state"
 # `commits` porte une connection `authors` par commit : sur un `gh pr list` large,
 # GraphQL depasse son plafond de 500 000 noeuds. L'audit retro liste donc SANS
 # `commits`, puis ne les recupere que pour les PRs reellement candidates.
-LIST_FIELDS = "number,title,mergedAt,url,comments,reviews"
+# `author` est requis depuis #11145 : la borne d'auteur des levees a besoin de
+# l'auteur de la PR, en audit comme en gate.
+LIST_FIELDS = "number,title,mergedAt,url,comments,reviews,author"
 
 
 def gate(pr: int, as_json: bool) -> int:
