@@ -39,6 +39,7 @@ from detect_markdown_rendering import (  # noqa: E402
     _is_yaml_block_open_no_close,
     _notebook_targets_from_render_list,
     _quarto_render_list,
+    _selfcheck,
     scan_cell,
 )
 
@@ -546,21 +547,39 @@ class TestYamlBlockOpenNoClose:
             f"the #11630 pre-fix shape was not flagged: {rules}"
         )
 
-    def test_thematic_break_not_flagged(self):
-        """A section divider (``---\\n\\n### H...``) must NOT be flagged.
+    def test_sl8_form_blank_line_after_opener_is_flagged(self):
+        """``---\\n\\n### H`` at the head of a cell IS a YAML opener -- flagged.
 
-        The blank line after the opening ``---`` distinguishes a thematic
-        break (rendered as ``<hr>``) from a YAML opener (no blank).
+        The pre-#11630 exemption claimed a blank line after the opening ``---``
+        made it a "thematic break, not a YAML opener". ai-01's arbitration
+        (2026-08-18) refuted it empirically: SL-8-KnowledgeGraphs-ILP.ipynb --
+        the notebook that took the site down the SECOND time, at 20:27Z, AFTER
+        #11629 -- is exactly ``---\\n\\n## Titre`` in all 15 markdown cells,
+        and the oracle js-yaml renders ``scanned=1 bad=1`` (*bad indentation of
+        a mapping entry*). Pandoc opens the yaml_metadata_block whether or not
+        a blank line follows the opener. This pin is the second observed form.
         """
         src = (
             "---\n"
             "\n"
             "### Section heading\n\n"
-            "Body of the section follows the thematic break."
+            "Body of the section follows the YAML opener."
         )
         rules = _rules(scan_cell(_cell(src)))
+        assert "yaml_block_open_no_close" in rules, (
+            f"the SL-8 form (--- + blank + heading) was not flagged: {rules}"
+        )
+
+    def test_bare_divider_alone_not_flagged(self):
+        """A cell containing ONLY the ``---`` line is a thematic break.
+
+        Pandoc needs a following non-blank line to start a YAML block; a bare
+        ``---`` cell renders as ``<hr>`` and is safe. This is the one
+        head-``---`` shape the corrected rule must keep silent on.
+        """
+        rules = _rules(scan_cell(_cell("---\n")))
         assert "yaml_block_open_no_close" not in rules, (
-            f"thematic-break divider false-positive: {rules}"
+            f"bare --- divider false-positive: {rules}"
         )
 
     def test_horizontal_rule_alone_not_flagged(self):
@@ -627,6 +646,18 @@ class TestYamlBlockOpenNoClose:
         assert "yaml_block_open_no_close" in rules, (
             f"YAML opener with fenced---only-closer should still flag: {rules}"
         )
+
+    def test_selfcheck_fires_on_both_observed_forms(self):
+        """The embedded control game carries BOTH #11630 forms (acceptance).
+
+        The arbitration's core demand: a positive control calibrated on the
+        FIRST form (``---`` + immediate content) let the SECOND form (``---`` +
+        blank + title, SL-8) pass and took the site down twice. The selfcheck
+        must therefore assert both forms fire and the negatives stay silent --
+        exit 0 means the game is green. A future refactor that loses a form
+        turns this red instead of rendering a cleaner violation count.
+        """
+        assert _selfcheck() == 0
 
 
 class TestQuartoClosure:
