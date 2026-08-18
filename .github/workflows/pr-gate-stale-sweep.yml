@@ -26,30 +26,46 @@ name: PR gate stale-verdict sweep
 # went green at 21:5xZ; the 21:38Z gate verdict stayed FAILURE.
 #
 # This sweep closes the loop from the outside, independent of trigger
-# semantics: it finds open PRs whose ONLY failing check is `PR gate` while
-# every other check has COMPLETED green, and re-aggregates each one, POSTing
-# the fresh verdict onto the PR head SHA. It never merges, never edits, never
-# blocks, and always exits 0.
+# semantics: it finds open PRs carrying a red `PR gate` leg while every other
+# check has COMPLETED green, and RE-RUNS the original gate run for each. It
+# never merges, never edits, never blocks, and always exits 0.
 #
-# Why it POSTs directly instead of dispatching pr-gate-rerun.yml: that
-# workflow's `cancel-in-progress: true` concurrency, combined with a starved
-# queue, eats most of its runs before they post anything. Measured over its
-# last 100 runs (2026-08-17 19:22Z -> 22:08Z): 91 completed, of which 69
-# `cancelled` (76%), 6 `failure`, 16 `success`. Its own header already
-# records 69% cancellations from #11415; the short-poll fix landed there did
-# not change the ratio, because under saturation runs are superseded while
-# still QUEUED -- before the poll length can matter at all. Dispatching into
-# that channel would make this sweep inherit a ~1-in-5 delivery rate. Calling
-# pr_gate.py here costs one job, has no concurrency chain to be cancelled by,
-# and delivers or fails visibly.
+# Why it re-runs instead of POSTing a fresh verdict -- the correction that
+# rewrote this file. POSTing was the first design here, and it is INERT.
+# Two check-runs bearing a required name can coexist on one SHA in DIFFERENT
+# check suites, and GitHub requires EVERY one of them to be green: it is an
+# AND, not latest-wins. A posted SUCCESS therefore lands BESIDE the stale
+# FAILURE instead of replacing it, and the PR stays BLOCKED.
 #
-# pr-gate.yml's own `workflow_dispatch` leg cannot be used either: it runs on
+# Measured on #11532 (2026-08-17): `21:38 failure` (suite ...36591) and
+# `22:46 success` (suite ...31015) coexisted on the same head; the PR was
+# still BLOCKED. `gh run rerun 32070293726` then replaced the failure IN
+# PLACE in its own suite, and the block lifted. Re-running is the only
+# mechanism that clears the leg.
+#
+# The same correction applies to the candidate filter: folding same-named
+# check-runs by name (latest-wins) HID this exact case -- it kept the 22:46
+# success and called the PR healthy. Across the 116 open PRs that day the
+# fold concealed 52 of them, the majority of the blocked pool. The filter now
+# treats ANY red `PR gate` leg as a candidate.
+#
+# Why this sweep exists at all, given pr-gate-rerun.yml (#11546) now re-runs
+# on `workflow_run`: CodeQL runs in `default setup`, which is dynamic and does
+# not appear in the workflow list --
+#   GET /repos/jsboige/CoursIA/actions/workflows?per_page=100
+#     -> total_count: 103, of which CodeQL: 0
+# -- so it cannot be named as a `workflow_run` trigger, and the event-driven
+# path never fires when CodeQL is the last check to settle. Under saturation
+# that is the common case, since CodeQL is also the slowest. A schedule is
+# the only observer that does not depend on being triggerable.
+#
+# pr-gate.yml's own `workflow_dispatch` leg cannot serve either: it runs on
 # the default branch, so `github.event.pull_request.head.sha || github.sha`
-# resolves to the default-branch commit, and it carries no `--post-check-run`,
-# so its check-run lands on that commit -- invisible to the PR's mergeState.
-# (Its unused `sha` input is removed in the same change that adds this file,
-# for the same reason: a documented remedy wired to nothing is worse than an
-# absent one, because it is tried and believed.)
+# resolves to the default-branch commit, and its check-run lands there --
+# invisible to the PR's mergeState. (Its unused `sha` input is removed in the
+# same change that adds this file, for the same reason: a documented remedy
+# wired to nothing is worse than an absent one, because it is tried and
+# believed. It was tried, on #11532, before the real path was found.)
 
 on:
   schedule:
@@ -68,7 +84,7 @@ on:
 
 permissions:
   contents: read
-  checks: write        # POST the re-aggregated verdict onto the PR head SHA
+  actions: write       # re-run the ORIGINAL `PR gate` run (see the note below)
   pull-requests: read
 
 concurrency:
@@ -84,19 +100,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install canary dependency
-        # PyYAML drives derive_always_on_jobs (the rule-8 delivery canary).
-        # Same reason as pr-gate.yml / pr-gate-rerun.yml: without it the script
-        # self-disables the canary (safe, no block) but the #9858 hole reopens.
-        run: pip install pyyaml
-
-      - name: Find stale verdicts and re-aggregate
+      # No checkout / setup-python / pip here on purpose. This sweep no longer
+      # runs `pr_gate.py`: it re-runs the original workflow run (see the note in
+      # the re-aggregation step). That removes ~40 s of runner time per sweep,
+      # every 20 min, on a repository whose measured problem IS runner scarcity.
+      - name: Find stale verdicts and re-run their gate
         env:
           GH_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
@@ -151,8 +159,9 @@ jobs:
                   continue
               p = json.loads(line)
               # Same-name check-runs accumulate on a SHA (reruns, re-dispatch).
-              # Only the most recent one carries the current verdict; folding
-              # them all together resurrects verdicts already superseded.
+              # For NON-required checks, only the most recent one matters: a
+              # guard that failed and was re-run green must not keep a PR out
+              # of the pool.
               latest = {}
               for c in (p.get("checks") or []):
                   name = c.get("name") or "?"
@@ -160,11 +169,22 @@ jobs:
                   if name not in latest or started >= latest[name][0]:
                       latest[name] = (started, c)
 
-              gate = latest.get("PR gate")
-              if not gate:
+              # `PR gate` is the REQUIRED check, and there latest-wins is FALSE.
+              # Two check-runs bearing a required name can coexist on one SHA in
+              # DIFFERENT check suites, and GitHub requires EVERY one of them to
+              # be green -- an AND, not latest-wins. A newer posted SUCCESS does
+              # NOT clear an older FAILURE.
+              #
+              # Measured 2026-08-17 on #11532: `21:38 failure` (suite ...36591)
+              # and `22:46 success` (suite ...31015) coexisted, and the PR stayed
+              # BLOCKED. Folding by name kept only the 22:46 success, so this
+              # filter called the PR healthy and skipped it. Over the 116 open
+              # PRs that day, that fold hid 52 of them -- the majority of the
+              # blocked pool, and precisely the ones this sweep exists for.
+              gate_legs = [c for c in (p.get("checks") or []) if (c.get("name") or "") == "PR gate"]
+              if not gate_legs:
                   continue  # absent gate is pr-gate-missing-advisory.yml's case
-              _, gc = gate
-              if (gc.get("conclusion") or "") not in RED:
+              if not any((c.get("conclusion") or "") in RED for c in gate_legs):
                   continue
 
               others = [(n, c) for n, (t, c) in latest.items() if n != "PR gate"]
@@ -193,27 +213,45 @@ jobs:
               echo "[stale-sweep] cap $MAX_POSTS reached -- remaining candidates wait for the next sweep"
               break
             fi
+            # Re-run the ORIGINAL run rather than POSTing a fresh verdict.
+            #
+            # POSTing was this file's first design, and it is INERT: a posted
+            # check-run lands in its own check suite, so the stale FAILURE stays
+            # on the SHA alongside it, and GitHub's AND over same-named required
+            # check-runs keeps the PR BLOCKED. Verified on #11532 (see the note
+            # in the candidate filter above).
+            #
+            # `gh run rerun` overwrites the run's check-run IN PLACE, in the same
+            # suite -- the only mechanism that actually clears the red leg. Same
+            # remedy as pr-gate-rerun.yml (#11546); this sweep is its complement,
+            # because CodeQL runs in `default setup` and is NOT addressable as a
+            # `workflow_run` trigger, so the event-driven path cannot fire when
+            # CodeQL is the last check to settle -- the common case under
+            # saturation, since it is also the slowest.
+            #
+            # No loop risk: "PR gate" is not among pr-gate-rerun.yml's trigger
+            # workflows, so a re-run cannot re-trigger the rescuer.
+            RUN=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100" \
+                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null)
+            RUN_ID=$(printf '%s' "${RUN:-}" | jq -r '.id // empty' 2>/dev/null)
+
+            if [ -z "${RUN_ID:-}" ]; then
+              # The verdict on this SHA was POSTed by something else and has no
+              # workflow run behind it, so there is nothing to re-run. Say so
+              # rather than fail silently: this class needs its own handling.
+              echo "[stale-sweep] #$NUM ($SHA): red \`PR gate\` with NO workflow run -- cannot re-run, skipping"
+              n=$((n + 1))
+              continue
+            fi
+
             if [ "${DRY_RUN:-false}" = "true" ]; then
-              echo "[stale-sweep] (dry-run) would re-aggregate #$NUM ($SHA)"
+              echo "[stale-sweep] (dry-run) would re-run #$NUM ($SHA) via run $RUN_ID"
             else
-              echo "[stale-sweep] re-aggregating #$NUM ($SHA)"
-              # Mirror pr-gate.yml's fork short-circuit (#10072): a fork PR must
-              # surface success on its head SHA, not a stale FAIL.
-              if [ "$FORK" = "true" ]; then FORK_ARG="--is-fork"; else FORK_ARG=""; fi
-              # Short budget on purpose: the candidate filter above already
-              # proved every other check is COMPLETED, so there is nothing left
-              # to wait for -- this call reads the settled set and POSTs.
-              # `|| true`: one PR whose aggregation fails must not abort the
-              # loop, nor redden a sweep whose other posts landed.
-              python scripts/pr_gate.py \
-                --repo "$REPO" \
-                --sha "$SHA" \
-                --self-name "PR gate" \
-                --timeout-min 2 \
-                --poll-sec 15 \
-                --settle-polls 1 \
-                --post-check-run \
-                $FORK_ARG || echo "[stale-sweep] re-aggregation failed for #$NUM (non-fatal)"
+              echo "[stale-sweep] re-running gate for #$NUM ($SHA) -- run $RUN_ID"
+              # `|| echo`: one PR whose re-run is refused must not abort the loop
+              # nor redden a sweep whose other re-runs landed.
+              gh run rerun "$RUN_ID" --repo "$REPO" \
+                || echo "[stale-sweep] re-run refused for #$NUM (non-fatal)"
             fi
             n=$((n + 1))
           done < /tmp/candidates.txt
