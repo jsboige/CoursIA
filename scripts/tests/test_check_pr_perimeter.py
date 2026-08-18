@@ -15,6 +15,7 @@ from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
     check_assertion,
     extract_baseline_moves,
+    extract_perimeter_assertions,
     format_report,
 )
 
@@ -148,3 +149,116 @@ def test_report_renders_no_workflow_explicitly():
         None,
     ).splitlines()
     assert any("aucun" in l.lower() for l in lines if "Workflows" in l)
+
+
+# ---------------------------------------------------------------------------
+# --scan-thread extraction (the wiring into the review path, acceptance 4)
+# ---------------------------------------------------------------------------
+
+
+def test_extract_finds_founding_assertion():
+    """The exact #11227 review sentence, as one line, is a candidate."""
+    body = "**Périmètre** : 2 fichiers twins uniquement, aucune autre modification."
+    assert extract_perimeter_assertions(body) == [body]
+
+
+def test_extract_finds_template_file_count_line():
+    """The review-template line '**Fichiers:** N fichiers modifiés'."""
+    line = "- **Fichiers:** 3 fichiers modifiés"
+    assert extract_perimeter_assertions(line) == [line]
+
+
+def test_extract_finds_bare_exclusivity_with_strong_scope_word():
+    assert extract_perimeter_assertions("Aucune autre modification.") == ["Aucune autre modification."]
+
+
+def test_extract_skips_technical_prose_with_exclusivity_words():
+    """Measured false-positive candidates on #11632 -- must NOT be scanned.
+
+    'seulement' / 'uniquement' / 'aucune' in technical prose about the YAML
+    block pattern, with no file count and no strong scope word.
+    """
+    prose = (
+        "Nouvelle regle qui detecte les cellules markdown Quarto dont le `---` "
+        "initial ouvre un bloc YAML -- pour qu'une PR qui touche un render-list "
+        "declenche le guard, pas seulement les PR touchant un `.ipynb` casse.\n"
+        "Pandoc le ferme uniquement a la prochaine `---` de la cellule.\n"
+        "aucune `---` ulterieure non-fenced avant EOF cellule.\n"
+    )
+    assert extract_perimeter_assertions(prose) == []
+
+
+def test_extract_skips_markdown_table_rows():
+    """A markdown table row is a report structure, not a live assertion.
+
+    Measured on the tool's own PR #11635 (dogfooded): the evidence table
+    quoted the founding incident -- '| **#11227** ... « 2 fichiers twins
+    uniquement » ... confrontee aux 3 fichiers effectifs |' -- and the guard
+    flagged its own PR body against its own 4-file list. Tables carry
+    citations; assertions are prose.
+    """
+    table_row = (
+        "| **#11227** (fondatrice) | l'assertion « 2 fichiers twins uniquement » "
+        "confrontee aux 3 fichiers effectifs | bloque |"
+    )
+    assert extract_perimeter_assertions(table_row) == []
+
+
+def test_extract_skips_fully_quoted_candidacy():
+    """A line whose count claim sits inside « ... » quotes reported speech.
+
+    The Hermes review of #11635 cites the founding sentence inside
+    guillemets while describing the anti-FP tests -- quoting an assertion is
+    not making one.
+    """
+    quoted = (
+        "le test pinne la sentence fondatrice « 2 fichiers twins uniquement, "
+        "aucune autre modification. » et la ligne template a cote."
+    )
+    assert extract_perimeter_assertions(quoted) == []
+
+
+def test_extract_keeps_live_assertion_with_inline_backlink():
+    """A #N backlink in the line does NOT demote a live assertion.
+
+    The founding #11227 Hermes sentence carries an inline issue ref (#2874)
+    in the same line and must stay caught -- a backlink exemption would be a
+    trivial evasion (append '#1' to any perimeter sentence).
+    """
+    live = (
+        "4. **Périmètre** : 2 fichiers twins uniquement, aucune autre modification. "
+        "La note « seul le transfert maitre R2/R3 (#2874) manque » garde le statut."
+    )
+    assert extract_perimeter_assertions(live) == [live]
+
+
+def test_extract_keeps_partially_quoted_line_with_unquoted_count():
+    """One unquoted count keeps the line live even when other counts are quoted.
+
+    A line quoting '2 fichiers' but also claiming '3 fichiers' bare is a
+    live assertion about the current PR -- the unquoted trigger wins.
+    """
+    partial = "Reprise de « 2 fichiers twins uniquement » mais ici 3 fichiers au total."
+    assert extract_perimeter_assertions(partial) == [partial]
+
+
+def test_scan_thread_composition_rejects_founding_thread():
+    """Acceptance 4 at core level: the #11227 thread (review sentence) FAILS.
+
+    extract -> check_assertion is exactly what --scan-thread does per
+    body/review, minus the gh fetch. The false '2 fichiers twins uniquement'
+    cannot survive the confrontation.
+    """
+    cands = extract_perimeter_assertions("**Périmètre** : 2 fichiers twins uniquement, aucune autre modification.")
+    problems = [p for cand in cands for p in check_assertion(FILES_11227, cand)]
+    assert problems
+    assert any("lean-knot.yml" in p for p in problems)
+
+
+def test_scan_thread_composition_accepts_correct_thread():
+    cands = extract_perimeter_assertions(
+        "Périmètre : 3 fichiers : Invariant.lean, Invariant_en.lean, "
+        ".github/workflows/lean-knot.yml."
+    )
+    problems = [p for cand in cands for p in check_assertion(FILES_11227, cand)]
+    assert problems == []

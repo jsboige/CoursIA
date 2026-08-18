@@ -2,10 +2,15 @@
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-3-Factor-Graphs.ipynb
   csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 8be87123cf063f6743db86bcd1bb2cd97f944020
+      csharp_sha: 4024549ae3bb76a1fa276174a77c6602fa9671c2
+      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : C# atteint Microsoft Infer.NET (Microsoft.ML.Probabilistic, moteur probabiliste SOTA de l'ecosysteme .NET, EP/VMP), Python atteint PyMC (NUTS/HMC + ADVI, moteur probabiliste SOTA de l'ecosysteme Python). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les 38 notebooks (pymc / Microsoft.ML.Probabilistic, re-grep 2026-08-18)."
     - date: "2026-07-29"
       by: myia-po-2023:CoursIA-2
       python_sha: 5929bd4bbe321ca89056a4d92209fdb5b30bc821
