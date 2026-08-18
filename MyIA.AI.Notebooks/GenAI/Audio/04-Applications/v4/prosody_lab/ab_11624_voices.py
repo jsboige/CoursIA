@@ -61,7 +61,11 @@ VOICES: dict[str, dict] = {
             "avaient traversé la ville. Ce n'était point de la troupe, mais des "
             "hordes débandées. Les hommes avaient la barbe longue et sale, des "
             "uniformes en guenilles, et ils avançaient d'une allure molle, sans "
-            "drapeau, sans régiment."
+            "drapeau, sans régiment. Tous semblaient accablés, éreintés, "
+            "incapables de penser ou de se décider, marchant par habitude, et "
+            "ils tombaient de fatigue dès qu'ils s'arrêtaient une seconde. "
+            "On aurait dit des gens battus, qui s'en vont dormir n'importe où, "
+            "vaincus d'avance."
         ),
         "ref_file": "v4_narrator_male_neutral.mp3",
         "ref_text": (
@@ -82,7 +86,12 @@ VOICES: dict[str, dict] = {
         "text": (
             "J'avais ma maison pleine de provisions, et j'aimais mieux nourrir "
             "quelques soldats que m'expatrier je ne sais où. Mais quand je les ai "
-            "vus, ces Prussiens, ce fut plus fort que moi! Ils m'ont tourné le sang."
+            "vus, ces Prussiens, ce fut plus fort que moi! Ils m'ont tourné le sang. "
+            "Et puis il faut bien vous dire que j'ai du cœur, moi, madame; "
+            "j'habite ici depuis quarante ans, et je les ai vus arriver, et je "
+            "les verrai repartir, allez, car on n'aura pas ma peau si facilement. "
+            "Je n'ai jamais craint grand chose dans ma vie, et je ne vais pas "
+            "commencer à trembler aujourd'hui."
         ),
         "ref_file": "v4_boule_warm_distressed.mp3",
         "ref_text": (
@@ -102,7 +111,12 @@ VOICES: dict[str, dict] = {
         "text": (
             "Pourvu que nous la revoyions; qu'il ne l'en fasse pas mourir, le "
             "misérable! C'est malheureux de ne pas avoir de piano parce qu'on "
-            "pourrait pincer un quadrille."
+            "pourrait pincer un quadrille. Ah, mais si ma femme était là, elle "
+            "saurait bien le faire parler, celui-là! Elle a de la conversation, "
+            "voyez-vous, et elle n'a pas froid aux yeux. Moi je dis que la "
+            "diplomatie, c'est comme le commerce: faut savoir vendre sa "
+            "marchandise. On ne lui fera pas avaler des couleuvres, à celui-là, "
+            "quand j'aurai fini de lui parler."
         ),
         "ref_file": "v4_loiseau_vulgar.mp3",
         "ref_text": (
