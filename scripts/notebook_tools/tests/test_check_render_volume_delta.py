@@ -285,38 +285,88 @@ def test_decode_handles_data_url_prefix():
 # ---------------------------------------------------------------------------
 
 
+def _init_git_repo_with_nb(tmp_path: Path, nb: dict, nb_name: str = "new.ipynb") -> tuple[Path, str]:
+    """Initialise un mini-repo git jetable dans ``tmp_path`` avec un commit initial
+    vide, puis commit ``nb_name`` (contenant le notebook ``nb``) en second commit.
+
+    Retourne ``(nb_absolu, nb_rel)`` -- le chemin absolu pour ecrire le
+    fichier et le nom relatif passe au tool CLI (qui le combine avec le cwd
+    pour construire ``git show HEAD:rel``). Les refs accessibles localement
+    sont ``HEAD~1`` (avant le notebook) et ``HEAD`` (avec le notebook), ce qui
+    permet de tester "fichier neuf donc exempt" sans dependre de la
+    topologie du checkout CI (cf. fix (b) DM ai-01 2026-08-18 : un test
+    unitaire ne devrait pas depender de ``origin/main``).
+    """
+    nb_abs = tmp_path / nb_name
+    nb_abs.write_text(json.dumps(nb, ensure_ascii=False, indent=1), encoding="utf-8")
+
+    def _git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args],
+            cwd=tmp_path, capture_output=True, text=True, encoding="utf-8",
+            check=check,
+        )
+
+    _git("init", "-q")
+    _git("config", "user.email", "test@example.com")
+    _git("config", "user.name", "Test")
+    # Premier commit : fichier sentinel vide (etabli HEAD~1)
+    sentinel = tmp_path / ".keep"
+    sentinel.write_text("", encoding="utf-8")
+    _git("add", ".keep")
+    _git("commit", "-q", "-m", "init")
+    # Second commit : ajoute le notebook
+    _git("add", nb_name)
+    _git("commit", "-q", "-m", "add notebook")
+    return nb_abs, nb_name
+
+
 def test_cli_new_file_is_exempt(tmp_path):
     """Notebook absent a la base -> exempt, rc=0, finding_count=0.
 
-    On ecrit un notebook neuf (jamais committe), ``--base origin/main`` ne
-    le trouve pas -> exemption (rien a perdre, tout est ajout).
+    Test hermetique : on initialise un mini-repo git jetable dans
+    ``tmp_path`` avec le notebook committe seulement en ``HEAD``. Le tool
+    est appele avec ``--base HEAD~1`` (avant le notebook), ce qui rend le
+    notebook absent a la base : exemption, findings vides, rc=0.
+
+    Pourquoi ne plus utiliser ``--base origin/main`` : sous
+    ``actions/checkout`` (fetch-depth 1) le ref ``origin/main`` n'existe
+    pas, le tool renvoie rc=2, et le test echoue -- alors que le
+    comportement reel est correct (ref invalide = garde
+    anti-auto-desarmement, pas un defaut du detecteur). Cette dependance
+    a la topologie du runner rendait le test inutilement fragile (cf. DM
+    ai-01 2026-08-18T19:05Z, option (b) : rendre le test hermetique).
+
+    Le chemin du notebook est passe en chemin RELATIF (``nb_name``) au tool,
+    combine avec ``cwd=tmp_path`` -- le tool construit ``git show
+    HEAD:new.ipynb`` qui resout dans le repo jetable.
     """
     nb = {
         "cells": [_make_cell_with_text_html_bytes(5000, "c1")],
     }
-    nb_rel = _nb_path()
-    _write_nb(nb_rel, nb)
+    _nb_abs, nb_rel = _init_git_repo_with_nb(tmp_path, nb, nb_name="new.ipynb")
     try:
-        # --head omis -> working tree (le fichier qu'on vient d'ecrire)
+        # --base HEAD~1 -> le notebook n'existe qu'en HEAD -> exempt
+        # --head HEAD    -> on lit la version commitee (pas working tree)
         result = subprocess.run(
-            [sys.executable, str(TOOL), str(nb_rel),
-             "--base", "origin/main",
+            [sys.executable, str(TOOL), nb_rel,
+             "--base", "HEAD~1", "--head", "HEAD",
              "--check", "--json"],
             capture_output=True, text=True, encoding="utf-8",
-            cwd=REPO_ROOT, check=False,
+            cwd=tmp_path, check=False,
         )
         # rc=0 (exempt)
         assert result.returncode == 0, (
             f"nouveau fichier doit etre exempt (rc=0), got rc={result.returncode} "
-            f"stderr={result.stderr[:500]}"
+            f"stderr={result.stderr[:500]} stdout={result.stdout[:500]}"
         )
         # JSON valide
         out = json.loads(result.stdout)
         assert out.get("new_file") is True
         assert out.get("findings") == []
     finally:
-        # Cleanup
-        (REPO_ROOT / nb_rel).unlink(missing_ok=True)
+        # Cleanup handled par tmp_path (fixture pytest)
+        pass
 
 
 def test_cli_known_loss_case_must_rougir(tmp_path):
