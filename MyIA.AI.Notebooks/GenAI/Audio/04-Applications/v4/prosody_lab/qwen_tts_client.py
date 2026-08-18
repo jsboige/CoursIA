@@ -48,7 +48,10 @@ load_dotenv(_GENAI_ENV)
 
 # vLLM-Omni base serving Qwen3-TTS-VoiceDesign directly (route /v1/audio/speech).
 QWEN_GATEWAY_URL: str = os.getenv("QWEN_GATEWAY_URL", "http://localhost:8196")
-QWEN_MODEL: str = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+# The served model name depends on the container's MODEL_TYPE (VoiceDesign vs
+# Base checkpoint — different weights, different /v1/models id). Override via
+# env or module attribute when talking to a Base container directly.
+QWEN_MODEL: str = os.getenv("QWEN_MODEL", "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign")
 
 # Optional bearer for the gateway auth middleware (absent on localhost).
 _TTS_KEY: str | None = os.getenv("TTS_GATEWAY_API_KEY") or os.getenv("KOKORO_API_KEY")
