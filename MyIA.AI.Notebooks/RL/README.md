@@ -49,8 +49,8 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
 | pt-1 | [rlpt_1_ppo_lm_rlhf](rlpt_1_ppo_lm_rlhf.ipynb) | PPO pour alignement d'un petit LM (RLHF toy, from scratch, char-level) : reward model jouet, KL vs politique SFT de référence, multi-seed 4 — la signature RLHF, différenciée de rl_6c (PPO CartPole) et rl_6e (GRPO) | 40-45 min |
-| pt-2 | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.ipynb) | GRPO sur Qwen3.5-0.8B local (8 Go Viability), reward vérifiable, budget steps borné — le cœur « à la Deepseek » : group rollouts, avantage sans value net, pont #5105 | 45-55 min |
-| pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) | 35-40 min |
+| pt-2 | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.ipynb) | GRPO sur Qwen3.5-0.8B local (8 Go Viability), reward vérifiable, budget steps borné — le cœur « à la Deepseek » : group rollouts, avantage sans value net, pont #5105 — **pleine précision 0,8B (sans QLoRA) : le mécanisme seul ; la pile complète (QLoRA + Z3 + rewardspy en ligne) vit dans [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb)** | 45-55 min |
+| pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) — **on construit le piège à la main et on essaie de le déclencher ; la détection automatisée par l'outil vit dans [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb)** | 35-40 min |
 | pt-4 | [rlpt_4_dpo_vs_ppo](rlpt_4_dpo_vs_ppo.ipynb) | DPO/ORPO offline vs GRPO online sur même tâche conversationnelle, même budget 40 steps, préférences auto-fabriquées — verdict multi-seed {42,0,1,7} honnête DM, dispersion inter-seed documentée | 50-55 min |
 
 ## Parcours recommandé
@@ -563,6 +563,13 @@ Plusieurs notebooks de cette série annoncent un « pont RLHF » (notebook 9 sur
 
 En résumé : **DPO** (Direct Preference Optimization) est l'aboutissement direct de la ligne offline RL + contrainte de support + preference learning tracée par les notebooks 9 et 10. Pour le voir tourner sur de vrais LLM, suivre [GenAI/PostTraining](../GenAI/PostTraining/README.md) puis [GenAI/FineTuning](../GenAI/FineTuning/README.md).
 
+### Frontière avec GenAI/PostTraining — quel notebook pour quelle question ?
+
+- **« Comment marche la mécanique RLHF/GRPO/DPO dans son minimum vital ? »** → la sous-série `rlpt_*` : du from-scratch char-level ([rlpt_1](rlpt_1_ppo_lm_rlhf.ipynb)) au minimal sous `trl` ([rlpt_2](rlpt_2_grpo_minimal.ipynb), [rlpt_3](rlpt_3_reward_hacking.ipynb), [rlpt_4](rlpt_4_dpo_vs_ppo.ipynb)) sur Qwen3.5-0.8B en pleine précision, avec les fondations de la série en amont.
+- **« Comment la chaîne SOTA 2024-2025 s'exécute-t-elle à l'échelle ? »** → [GenAI/PostTraining](../GenAI/PostTraining/README.md) : `trl` + QLoRA 4-bit + solveurs (Z3/SymPy) + rewardspy en ligne + multi-seed — la pile de production, complémentaire.
+
+Renvois croisés assumés : `rlpt_2` (le mécanisme GRPO seul, sans QLoRA) laisse la pile complète à [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb) ; `rlpt_3` est la **version compacte déclarée** du capstone [ICT-25 InoculationRL (#5105)](../../IIT/ICT-Series/ICT-25-InoculationRL.ipynb) et laisse la détection automatisée par l'outil à [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb).
+
 ---
 
 ## Licence
@@ -571,4 +578,4 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.2.0 — Juillet 2026*
+*Version 1.3.0 — Août 2026*
