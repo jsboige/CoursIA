@@ -15,7 +15,9 @@ for visibility only.
 Usage:
     python check_exec_ratchet.py <base-ref> [--json]
 
-    base-ref      git ref of the merge base (CI: origin/<base branch>)
+    base-ref      base branch ref (CI: origin/<base branch>). Resolved
+                  internally to merge-base(base-ref, HEAD), so a branch
+                  behind its base is judged on its own diff only.
 
 Head verdicts read the working tree (in CI the checkout IS the head), base
 verdicts read the blob via `git show`. Exit code 1 iff at least one
@@ -47,6 +49,28 @@ def git(*args, cwd=None):
     except OSError:
         return None
     return out.stdout if out.returncode == 0 else None
+
+
+def resolve_base(base, cwd=None):
+    """Resolve `base` to merge-base(base, HEAD).
+
+    The gate must judge what the branch CHANGED, not how far behind it is.
+    Comparing a stale branch tree-to-tree against the tip of its base branch
+    reports every notebook the base advanced meanwhile -- and, since the
+    branch still holds the older blob, reports them with the sign reversed:
+    a notebook cleaned on main reads as CLEAN -> DIRTY here.  Measured on
+    #11627 (jumeau de #11532): five PRs red on this check without any of
+    them having touched a notebook sequence.
+
+    The false verdict is the dangerous kind -- it sends an author to
+    "re-execute" notebooks they never opened, which is exactly the gesture
+    that destroyed 8 SVG renders on #11351.
+
+    Falls back to the ref as given when no merge base exists (shallow clone,
+    unrelated histories), i.e. the previous behaviour.
+    """
+    out = git("merge-base", base, "HEAD", cwd=cwd)
+    return out.strip() if out and out.strip() else base
 
 
 def changed_notebooks(base, cwd=None):
@@ -90,6 +114,7 @@ def verdict_at_head(path, cwd=None):
 
 def ratchet(base, cwd=None):
     """One record per changed notebook; regression = CLEAN soiled."""
+    base = resolve_base(base, cwd=cwd)
     records = []
     for path in changed_notebooks(base, cwd=cwd):
         base_verdict, _ = verdict_at_base(base, path, cwd=cwd)
@@ -112,17 +137,20 @@ def main():
                     help="Machine-readable output")
     args = ap.parse_args()
 
+    resolved = resolve_base(args.base)
     records = ratchet(args.base)
     regressions = [r for r in records if r["regression"]]
 
     if args.as_json:
         print(json.dumps({
             "base": args.base,
+            "base_resolved": resolved,
             "changed": len(records),
             "regressions": len(regressions),
             "records": records}, ensure_ascii=False, indent=1))
     else:
-        print(f"execution_count ratchet -- base {args.base}")
+        print(f"execution_count ratchet -- base {args.base} "
+              f"(merge-base {resolved[:12]})")
         print(f"changed notebooks : {len(records)}")
         print(f"regressions       : {len(regressions)}")
         for r in records:
