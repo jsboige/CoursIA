@@ -226,6 +226,57 @@ STRONG_SCOPE_WORDS = (
 )
 
 
+def _quote_spans(line: str) -> list[tuple[int, int]]:
+    """Char spans of quoted speech on a single line (« ... » and " ... ").
+
+    A trigger that sits inside a quotation is REPORTED SPEECH -- the author
+    quoting someone else's assertion (an incident writeup, an anti-FP test
+    description) -- not the author's own claim. Spans are intra-line: a quote
+    opened but not closed on the line counts to end of line.
+    """
+    spans: list[tuple[int, int]] = []
+    for open_c, close_c in (("«", "»"), ('"', '"')):
+        start = 0
+        while True:
+            i = line.find(open_c, start)
+            if i < 0:
+                break
+            j = line.find(close_c, i + 1)
+            if j < 0:
+                spans.append((i, len(line)))
+                break
+            spans.append((i, j + 1))
+            start = j + 1
+    return spans
+
+
+def _trigger_quoted(line: str, pos: int, length: int) -> bool:
+    return any(a <= pos and pos + length <= b for a, b in _quote_spans(line))
+
+
+def _counts_all_quoted(line: str) -> bool:
+    """Every file-count claim on the line sits inside a quotation."""
+    return all(
+        _trigger_quoted(line, m.start(), m.end() - m.start())
+        for m in COUNT_CLAIM.finditer(line)
+    )
+
+
+def _markers_all_quoted(line: str) -> bool:
+    """Every exclusivity marker on the line sits inside a quotation."""
+    low = line.lower()
+    for marker in EXCLUSIVITY_MARKERS:
+        start = 0
+        while True:
+            i = low.find(marker, start)
+            if i < 0:
+                break
+            if not _trigger_quoted(line, i, len(marker)):
+                return False
+            start = i + len(marker)
+    return True
+
+
 def extract_perimeter_assertions(text: str) -> list[str]:
     """Pull candidate perimeter assertions from review/PR prose.
 
@@ -235,17 +286,42 @@ def extract_perimeter_assertions(text: str) -> list[str]:
     modification.``). A line is a candidate when it carries a file-count
     claim, or an exclusivity marker AND a strong scope word. Lines with
     neither are not perimeter assertions and are skipped.
+
+    Two citation shapes are skipped (measured on this tool's own PR #11635,
+    dogfooded 2026-08-18 -- its evidence table quotes the founding sentence
+    and the guard flagged its own PR against its own 4-file list):
+
+    1. **Markdown table rows** (lines starting with ``|``): tables are
+       report/summary structures (evidence matrices, status boards); a
+       perimeter assertion is prose. The review template's line is a bullet,
+       not a cell.
+    2. **Candidacy fully quoted**: the trigger that made the line a
+       candidate (count claim, or exclusivity markers) sits inside
+       ``« ... »`` / ``" ... "`` -- the line quotes someone else's
+       assertion instead of making one. One unquoted trigger keeps the line
+       live.
+
+    A ``#N`` backlink in the line is NOT an exemption: the founding #11227
+    Hermes sentence carries an inline issue ref (#2874) in the same line and
+    must stay caught -- a backlink exemption would also be a trivial
+    evasion.
     """
     candidates: list[str] = []
     for line in text.splitlines():
         line = line.strip()
         if not line:
             continue
+        if line.startswith("|"):
+            continue  # markdown table row: report structure, not an assertion
+        low = line.lower()
         if COUNT_CLAIM.search(line):
+            if _counts_all_quoted(line):
+                continue  # quoting a count (reported speech), not claiming it
             candidates.append(line)
             continue
-        low = line.lower()
         if any(m in low for m in EXCLUSIVITY_MARKERS) and any(w in low for w in STRONG_SCOPE_WORDS):
+            if _markers_all_quoted(line):
+                continue  # quoting an exclusivity claim, not making it
             candidates.append(line)
     return candidates
 
