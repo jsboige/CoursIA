@@ -105,6 +105,29 @@ EXCLUSIVITY_MARKERS = (
     "no other",
 )
 
+# "only" as an exclusivity marker must be a STANDALONE word. Technical
+# compounds -- "read-only", "append-only", "metadata-only" -- carry "only"
+# as a compound modifier (lecture seule), not a perimeter quantifier, and a
+# plain substring match trips criterion #11268-2 on prose about permissions.
+# Measured on #11654: the Hermes line "Sinon LGTM sur le périmètre — aucun
+# secret, permissions read-only inchangées." was flagged as an exclusivity
+# assertion because "only" sat inside "read-only" while "périmètre" supplied
+# the strong scope word. The French markers need no such guard: no hyphenated
+# compound carries "seulement"/"uniquement".
+_ONLY_STANDALONE = re.compile(r"(?<![-\w])only\b", re.IGNORECASE)
+_SUBSTRING_MARKERS = ("uniquement", "seulement", "aucune autre",
+                      "nothing else", "no other")
+
+
+def _has_exclusivity(low: str) -> bool:
+    """Exclusivity check shared by extraction and assertion checking.
+
+    `low` is the lowercased line. French/phrase markers are substring-matched;
+    "only" requires word boundaries AND no hyphen/word char before it.
+    """
+    return (any(m in low for m in _SUBSTRING_MARKERS)
+            or bool(_ONLY_STANDALONE.search(low)))
+
 
 @dataclass
 class BaselineMove:
@@ -196,7 +219,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                 f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
                 + ", ".join(f["path"] for f in files)
             )
-    exclusive = any(marker in assertion.lower() for marker in EXCLUSIVITY_MARKERS)
+    exclusive = _has_exclusivity(assertion.lower())
     if exclusive:
         for f in files:
             if f["path"].startswith(WORKFLOW_PREFIX):
@@ -319,7 +342,7 @@ def extract_perimeter_assertions(text: str) -> list[str]:
                 continue  # quoting a count (reported speech), not claiming it
             candidates.append(line)
             continue
-        if any(m in low for m in EXCLUSIVITY_MARKERS) and any(w in low for w in STRONG_SCOPE_WORDS):
+        if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
             if _markers_all_quoted(line):
                 continue  # quoting an exclusivity claim, not making it
             candidates.append(line)

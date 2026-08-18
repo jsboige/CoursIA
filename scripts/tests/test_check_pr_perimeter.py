@@ -188,6 +188,32 @@ def test_extract_skips_technical_prose_with_exclusivity_words():
     assert extract_perimeter_assertions(prose) == []
 
 
+def test_extract_skips_read_only_compound():
+    """"only" inside a technical compound is not an exclusivity marker.
+
+    Measured on #11654: the Hermes verdict line "Sinon LGTM sur le périmètre
+    — aucun secret, permissions read-only inchangées." was flagged as an
+    exclusivity assertion (criterion #11268-2, unnamed workflow) because a
+    plain substring match saw "only" inside "read-only" while "périmètre"
+    supplied the strong scope word. A permissions adjective is not a
+    perimeter quantifier.
+    """
+    line = ("Sinon LGTM sur le périmètre — note de sécurité : aucun secret, "
+            "permissions read-only inchangées.")
+    assert extract_perimeter_assertions(line) == []
+    assert not __import__("check_pr_perimeter")._has_exclusivity(
+        "permissions read-only inchangées")
+
+
+def test_only_standalone_still_flags():
+    """The control positive side: a standalone "only" with a scope word stays
+    a live exclusivity assertion -- the fix must not kill the English arm."""
+    assert __import__("check_pr_perimeter")._has_exclusivity(
+        "only change is the workflow file")
+    line = "Only scope change: the workflow file, nothing else."
+    assert extract_perimeter_assertions(line) == [line]
+
+
 def test_extract_skips_markdown_table_rows():
     """A markdown table row is a report structure, not a live assertion.
 
