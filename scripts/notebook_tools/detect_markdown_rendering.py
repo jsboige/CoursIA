@@ -574,8 +574,24 @@ def _notebook_link_pattern() -> re.Pattern[str]:
     by POSITION across alternation branches -- three ``(url)`` groups means
     3 capture groups, NOT one. So the pattern uses a single outer named
     group ``url`` wrapping the alternation, and we strip the branch prefix
-    post-match. The trailing lookahead ``(?=[\\s'"><)]|$)`` prevents matches
-    from running past a closing delimiter (``)``, ``"``, space, end-of-text).
+    post-match.
+
+    The trailing lookahead ``(?=[\\s'"<>)]|[.,;:!?]|$)`` accepts EITHER a
+    closing delimiter (``'``, ``"``, ``<``, ``>``, ``(``, ``)``, whitespace,
+    end-of-text) OR a single terminal-punctuation character (``.``, ``,``,
+    ``;``, ``:``, ``!``, ``?``). Without the punctuation
+    class, a sentence-final bare link like ``voir foo.ipynb.`` would NOT
+    match: the ``.`` is not in the original character class, so the regex
+    stops short and the link falls out of the closure entirely. The
+    post-match ``rstrip`` only fires AFTER the regex captures, so a missing
+    capture is invisible to it -- exactly the silent-FN class that #11643
+    reserves (cf. ``[[handrolled-pattern-set-undercounts-silently]]``).
+
+    Note: the parenthesis-and-quote branches in the alternation (``](``
+    and ``href="'") are markdown delimiters, not part of the URL;
+    these already terminate at the closing ``)`` or ``"`` and need no
+    punctuation extension. The punctuation class is for the bare-URL
+    branch (``(?:^|[\\s\"'])+URL``) where a link ends in mid-prose.
     """
     if "main" not in _NOTEBOOK_LINK_RE_CACHE:
         url_nc = r"[A-Za-z0-9_./-]+\.ipynb"  # char class only, NO capture
@@ -585,7 +601,13 @@ def _notebook_link_pattern() -> re.Pattern[str]:
             r"|href=['\"]" + url_nc +
             r"|(?:^|[\s\"'])" + url_nc +
             r")" +
-            r"(?=[\s'\"\)<>]|$)",
+            # Trailing context: closing delimiter (whitespace, quote, bracket,
+            # end-of-text) OR a single terminal punctuation character (``.``,
+            # ``,``, ``;``, ``:``, ``!``, ``?``). The punctuation class is
+            # necessary for bare sentence-final links like ``... voir foo.ipynb.``
+            # to match at all -- without it, the regex stops on ``.`` and the
+            # post-match ``rstrip`` never sees the URL (#11643 FN reserve).
+            r"(?=[\s'\"\)<>]|[.,;:!?]|$)",
             re.IGNORECASE,
         )
     return _NOTEBOOK_LINK_RE_CACHE["main"]
