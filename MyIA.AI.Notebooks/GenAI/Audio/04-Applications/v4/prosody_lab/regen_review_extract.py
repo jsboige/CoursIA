@@ -30,14 +30,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import qwen_tts_client as qc  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-DEFAULT_TEXT_FILE = HERE.parent.parent / "outputs" / "segments_v4.json"
+DEFAULT_TEXT_FILE = HERE.parent / "outputs" / "segments_v4.json"
 DEFAULT_OUT = HERE.parent / "outputs" / "prosody_lab" / "11624"
 
 
 def _extract_opening_text(n_segs: int = 4) -> str:
-    segs = json.loads(
-        (DEFAULT_TEXT_FILE if DEFAULT_TEXT_FILE.exists() else Path(DEFAULT_TEXT_FILE)).read_text(encoding="utf-8")
-    )["segments"]
+    if not DEFAULT_TEXT_FILE.exists():
+        raise FileNotFoundError(
+            f"{DEFAULT_TEXT_FILE} not found (outputs/ is gitignored — pass "
+            "--text-file or run from a tree that has the v4 pipeline outputs)"
+        )
+    segs = json.loads(DEFAULT_TEXT_FILE.read_text(encoding="utf-8"))["segments"]
     texts = []
     for s in segs:
         if s.get("speaker") != "narrateur" or not s.get("text"):

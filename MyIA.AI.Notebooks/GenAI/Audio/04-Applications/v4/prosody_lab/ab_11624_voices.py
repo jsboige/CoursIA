@@ -131,6 +131,11 @@ VOICES: dict[str, dict] = {
             "Faut voir si on peut pas trouver à manger ailleurs. Moi je dis qu'on "
             "devrait aller voir cet officier boche, et lui dire deux mots bien choisis !"
         ),
+        # The reference-length cliff is content-dependent: a 10 s trim of
+        # loiseau_vd_melodic hangs > 540 s (client abort, engine survives),
+        # while narrator/elisabeth 10 s refs render in ~30 s. Cap loiseau at
+        # 8 s (measured safe, 2026-08-18).
+        "ref_max_s": 8.0,
         "flat": "Voix masculine joviale et posée, lecture neutre, régulière et sans variations d'intonation.",
         "melodic": (
             "Voix masculine joviale, grossière, gouailleuse. Lecture très expressive : "
@@ -266,13 +271,14 @@ def main() -> None:
                 )
                 if voice in ref_long:
                     out_cl = out_dir / f"{voice}_clone_long.mp3"
+                    ref_max = cfg.get("ref_max_s", MAX_REF_S)
                     _render(
                         out_cl,
                         qc.qwen_tts_clone,
                         cfg["text"],
-                        ref_audio=_to_data_uri(_trim_ref(ref_long[voice])),
-                        # ref_text must match the trimmed audio (~10 s ≈ the
-                        # first two sentences), not the full passage.
+                        ref_audio=_to_data_uri(_trim_ref(ref_long[voice], max_s=ref_max)),
+                        # ref_text must match the trimmed audio (~8-10 s ≈ the
+                        # first sentence(s)), not the full passage.
                         ref_text=_ref_prefix(ref_long_text[voice]),
                     )
 
@@ -285,9 +291,9 @@ def main() -> None:
                 "refs_dir": str(REFS_DIR),
                 "note": (
                     "clone_long uses the vd_melodic render of the same voice as a "
-                    "long varied reference (trimmed to 10 s: longer refs crash the "
-                    "Base EngineCore / blow up the render time, measured 2026-08-18); "
-                    "clone_short uses the v4 fishaudio sample."
+                    "long varied reference (trimmed per-voice: 10 s default, 8 s for "
+                    "loiseau — the length cliff is content-dependent, measured "
+                    "2026-08-18); clone_short uses the v4 fishaudio sample."
                 ),
             },
             indent=2,
