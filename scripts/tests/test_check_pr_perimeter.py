@@ -288,3 +288,81 @@ def test_scan_thread_composition_accepts_correct_thread():
     )
     problems = [p for cand in cands for p in check_assertion(FILES_11227, cand)]
     assert problems == []
+
+
+# ---------------------------------------------------------------------------
+# Workflow trigger pin (#11648 — edited re-evaluation)
+# ---------------------------------------------------------------------------
+
+import pathlib
+
+
+def _read_perimeter_workflow() -> str:
+    """Locate and read the perimeter-review-guard.yml from repo root.
+
+    Resolves from this test file's location so the test is independent of cwd.
+    """
+    here = pathlib.Path(__file__).resolve()
+    # scripts/tests/test_check_pr_perimeter.py → repo root = parents[2]
+    repo_root = here.parents[2]
+    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
+    return wf.read_text(encoding="utf-8")
+
+
+def test_pull_request_trigger_includes_edited_type():
+    """Issue #11648: ``pull_request:`` MUST list ``edited`` so an assertion
+    correction on the PR body re-triggers the gate.
+
+    Founding measurement: the gate's own body comment claimed "pull_request
+    (opened/synchronize/edited)" but the YAML block did not declare ``types:``,
+    so GitHub defaulted to ``[opened, synchronize, reopened]`` -- ``edited``
+    was silently dropped. A correction on the PR body therefore never
+    re-evaluated the gate, leaving the red bar in place (#11646).
+    """
+    text = _read_perimeter_workflow()
+    # Pull the ``on:`` block body: consecutive lines indented by >= 2 spaces.
+    # Single fixed-prefix branch (like the sibling sub-block regexes below) --
+    # CodeQL HIGH on the previous alternation ``(?:  [^\n]*\n|\s*\n)+?``:
+    # whitespace-only lines matched both branches, giving exponential
+    # backtracking on runs of blank lines.
+    import re
+    block = re.search(
+        r"^on:\s*\n(?P<body>(?:  [^\n]*\n)+)",
+        text,
+        re.MULTILINE,
+    )
+    assert block, "could not locate `on:` block in perimeter-review-guard.yml"
+    body = block.group("body")
+    # The pull_request sub-block must explicitly name edited.
+    pr_block = re.search(
+        r"^  pull_request:\s*\n((?:    [^\n]*\n)+)", body, re.MULTILINE
+    )
+    assert pr_block, "pull_request sub-block not found"
+    pr_body = pr_block.group(1)
+    assert "types:" in pr_body, (
+        "pull_request: block has no types: clause — GitHub will default to "
+        "[opened, synchronize, reopened] and silently drop `edited`. "
+        "Pin this so a re-eval on PR-body edit actually fires (#11648)."
+    )
+    assert "edited" in pr_body, (
+        "pull_request: types: declared but `edited` missing — without it, "
+        "an assertion correction on the PR body will never re-trigger the gate."
+    )
+
+
+def test_pull_request_review_trigger_includes_edited_type():
+    """Sibling invariant — the review trigger already had ``edited`` from the
+    start (c.342 acceptance), so this test pins that property against
+    accidental regression when editing the workflow.
+    """
+    text = _read_perimeter_workflow()
+    import re
+    rv_block = re.search(
+        r"^  pull_request_review:\s*\n((?:    [^\n]*\n)+)", text, re.MULTILINE
+    )
+    assert rv_block, "pull_request_review sub-block not found"
+    rv_body = rv_block.group(1)
+    assert "types:" in rv_body and "edited" in rv_body, (
+        "pull_request_review: must keep `types: [submitted, edited]` so "
+        "corrected reviews re-trigger the gate."
+    )
