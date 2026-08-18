@@ -1,0 +1,82 @@
+name: Markdown claims anchored to previous output (advisory)
+
+# Durable anti-regression advisory for the c.290 / c.331 pathologie:
+# "markdown prose cites quantitative values that contradict the output
+# of the previous code cell". Two open PRs in the same week exhibited
+# this:
+#   - PR #11435 (FT-02-QLoRA-Quantization.ipynb c10/c20)
+#   - c.290 LSTM-vol notebook (M15)
+#
+# Why ADVISORY (not a blocking gate):
+# The detector has a non-trivial false-positive rate: pedagogical
+# markdown cells legitimately cite domain numbers (e.g. "OPT-1.3B",
+# "1.3B params", "~4x speedup") that don't appear in the immediate
+# previous code cell. A blocking gate would force every PR to ship
+# with the detector disabled. The right model is:
+#   1. Run on every PR
+#   2. Post findings as a PR comment
+#   3. Let the reviewer (human or bot) triage against the source code
+#   4. Never block merge on this signal alone
+#
+# When the detector's precision improves (e.g. by adding a scope gate
+# like "only flag claims present elsewhere in the notebook as tables"),
+# promote this to a blocking gate.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/check_markdown_claims_output.py'
+      - 'scripts/tests/test_check_markdown_claims_output.py'
+      - '.github/workflows/markdown-claims-output-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: markdown-claims-output-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  claims-output-advisory:
+    name: "Markdown claims anchored to previous output (#11435 advisory)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run unit tests
+        run: |
+          python -m pip install --quiet pytest pytest-cov
+          python -m pytest scripts/tests/test_check_markdown_claims_output.py -v
+        continue-on-error: false
+
+      - name: Run detector (advisory, do not gate)
+        id: run
+        run: |
+          set +e
+          python scripts/check_markdown_claims_output.py \
+            $(git ls-files 'MyIA.AI.Notebooks/**/*.ipynb') \
+            --json > /tmp/claims-output.json
+          rc=$?
+          echo "exit=$rc" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Post advisory comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: markdown-claims-output-advisory
+          message: |
+            ${{ steps.run.outputs.exit == 0 && '✅ No fabricated prose detected.' || '⚠️ Potential fabricated prose (markdown cites numbers absent from previous code output). Review against source — these are advisory, NOT a merge gate.' }}
+
+            See `python scripts/check_markdown_claims_output.py --help` for re-running locally.
+            Detector rationale: c.290 / c.331 / PR #11435 pathologie.
