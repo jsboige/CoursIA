@@ -181,3 +181,35 @@ def test_reject_beats_warn():
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- DRONE: the repeating-melody class (added 2026-08-18) -------------------
+# Local metrics (motion, flat-%) cannot see a melody that *repeats*: a chant
+# alternating two adjacent notes has normal step size. syllable_pitch now emits
+# DRONE from structural criteria (effective notes / top-3 concentration /
+# repeated 3-note motifs). These tests lock it to the same REJECT class as FLAT,
+# so the new verdict cannot silently fall through the gate as "not FLAT".
+
+def test_drone_is_rejected_as_monotone():
+    out = classify_segment(**_healthy(melody_verdict="DRONE"))
+    assert out["gate"] == "REJECT"
+    assert "MONOTONE" in out["reasons"]
+
+
+def test_drone_rejected_even_with_healthy_global_span():
+    """The v4 extract's own shape: global span looks fine, melody repeats."""
+    out = classify_segment(**_healthy(melody_verdict="DRONE", global_range_st=12.24))
+    assert out["gate"] == "REJECT"
+    assert "MONOTONE" in out["reasons"]
+
+
+def test_drone_does_not_also_raise_global_flat_warn():
+    """GLOBAL-FLAT is the 'syllable verdict disagrees' hedge; DRONE agrees."""
+    out = classify_segment(**_healthy(melody_verdict="DRONE", global_range_st=1.0))
+    assert out["gate"] == "REJECT"
+    assert "GLOBAL-FLAT" not in out["reasons"]
+
+
+def test_moderate_still_passes_so_drone_is_not_a_blanket_reject():
+    """Guard against over-correction: MODERATE must remain acceptable."""
+    assert classify_segment(**_healthy(melody_verdict="MODERATE"))["gate"] == "PASS-TO-EAR"

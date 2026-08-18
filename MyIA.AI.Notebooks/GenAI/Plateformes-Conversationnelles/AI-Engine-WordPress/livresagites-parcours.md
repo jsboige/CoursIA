@@ -272,6 +272,22 @@ champ de configuration de premier niveau.
 > la démonstration est sécurisée par instantané complet en mémoire,
 > puis restauration à l'identique.
 
+> **Notebook compagnon (série « par son API »).**
+> [`obtenir-des-donnees-structurees-par-l-api.ipynb`](obtenir-des-donnees-structurees-par-l-api.ipynb)
+> écrit enfin la case que le précédent ne faisait que lire : la route
+> `/ai/json` ignore structurellement `envId`/`model` et hérite
+> toujours de la case **json** de la matrice — vide par défaut, et
+> sans issue sur une instance custom-only (le repli `gpt-5-mini` sans
+> environnement ne passe jamais la validation : *The environment is
+> required.*). Remplie par read-modify-write du bloc complet, la
+> route rend du JSON directement exploitable — et le notebook mesure
+> ce que vaut la promesse : le **null silencieux** du parser (une
+> réponse non-JSON rend `success: true, data: null` sans un mot)
+> reste réel dans le code mais neutralisé ici, car pour un
+> environnement custom la contrainte descend au **niveau fil**
+> (`response_format`), départagé par comparaison directe avec le
+> moteur — avec et sans. État initial restauré à l'identique.
+
 ---
 
 ## Parcours 3 — WordPress comme serveur MCP métier

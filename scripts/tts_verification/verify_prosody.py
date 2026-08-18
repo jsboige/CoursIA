@@ -11,7 +11,14 @@ This stage composes the three prosody instruments the user mandated
 (``MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/``, #1273/#1877):
 
 * ``syllable_pitch.analyze_syllables``  — the MELODY, syllable by syllable
-  ("partition de musique"): motion per syllable, flat-transition %, span
+  ("partition de musique"): motion per syllable, flat-transition %, span, and
+  the STRUCTURAL criteria (effective notes, top-3 concentration, repeated
+  3-note motifs) that yield the ``DRONE`` verdict. Motion and flat-% are LOCAL:
+  a chant alternating two adjacent notes has perfectly normal step size and
+  slipped through as ``MODERATE``. Measured 2026-08-18 on the extract served
+  for review: 401 syllables, 6.0 effective notes, 73% on three adjacent
+  semitones (A2/G#2/A#2), 82% of 3-note positions inside a repeated motif —
+  it missed ``FLAT`` by 0.21 st and 1.2 points on the two local axes.
   -> FLAT / MODERATE / EXPRESSIVE.
 * ``prosody_metrics.compute_metrics``   — the GLOBAL melody: ``f0_semitone_range``
   (< ~4 st = monotone, ~8-12 st = expressive audiobook narration).
@@ -33,7 +40,7 @@ and never auto-rejected — it is an explicit "send this one to the ear" flag.
 Gate outcomes
 -------------
 * ``REJECT``       — a bad class is detected with confidence; do not surface. Reasons:
-                     ``MONOTONE`` (melody FLAT or global span < flat floor),
+                     ``MONOTONE`` (melody FLAT or DRONE, or global span < flat floor),
                      ``WINDED`` (true breath failure), ``VOICE-SWAP`` (INCONSISTENT).
 * ``WARN``         — surface *to the ear* with a caveat. Reasons: ``ERRATIC`` (over-
                      modulated, the Kokoro class), ``DRIFTING`` (mild timbre drift),
@@ -98,7 +105,7 @@ def classify_segment(
     # flat-transition %), the signal the syllable_pitch author calibrated on. A low
     # GLOBAL span alone is outlier-driven and noisy on short clips, so when the
     # syllable verdict disagrees (MODERATE/EXPRESSIVE) it only WARNs, never rejects.
-    if melody_verdict == "FLAT":
+    if melody_verdict in ("FLAT", "DRONE"):
         reject.append("MONOTONE")
     if breath_verdict == "WINDED":
         reject.append("WINDED")
@@ -115,7 +122,8 @@ def classify_segment(
         warn.append("ERRATIC")
     # Global span flat while the (robust) syllable verdict is not FLAT: borderline
     # monotone on a noisy short-clip global — surface to the ear, do not reject.
-    if global_range_st is not None and global_range_st < GLOBAL_FLAT_ST and melody_verdict != "FLAT":
+    if (global_range_st is not None and global_range_st < GLOBAL_FLAT_ST
+            and melody_verdict not in ("FLAT", "DRONE")):
         warn.append("GLOBAL-FLAT")
     if voice_verdict == "DRIFTING":
         warn.append("DRIFTING")
@@ -183,6 +191,11 @@ def analyze_segment(path: str, instruments) -> Dict[str, object]:
         "gate": decision["gate"],
         "reasons": decision["reasons"],
         "melody_verdict": mel.get("verdict"),
+        "drone_reasons": mel.get("drone_reasons", []),
+        "effective_notes": mel.get("effective_notes"),
+        "top3_note_pct": mel.get("top3_note_pct"),
+        "motif3_repeat_pct": mel.get("motif3_repeat_pct"),
+        "melodic_span_p5p95_st": mel.get("melodic_span_p5p95_st"),
         "n_syllables": mel.get("n_syllables"),
         "melodic_span_st": mel.get("melodic_span_st"),
         "mean_abs_interval_st": mel.get("mean_abs_interval_st"),
