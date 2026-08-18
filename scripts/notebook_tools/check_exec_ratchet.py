@@ -135,6 +135,13 @@ def main():
                   f"{args.base}, is {r['head']} in this PR — re-execute the "
                   f"notebook end-to-end on a fresh kernel before commit",
                   file=sys.stderr)
+        print("If this is an acknowledged single-cell re-exec (RECOVERABLE-"
+              "MACHINE, gitignored downstream artifact): never hand-edit "
+              "execution_count — document the degraded sequence in the PR "
+              "body with the template from docs/reference/regles-validation-"
+              "detail.md 'Ratchet exec-sequence fail-by-design' (#11577) and "
+              "get an explicit reviewer ack before merge.",
+              file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 

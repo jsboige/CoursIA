@@ -152,6 +152,17 @@ class TestCli:
         assert "REGRESSION" in out.stdout
         assert "::error file=a.ipynb" in out.stderr
 
+    def test_failure_points_to_failbydesign_protocol(self, repo):
+        write_nb(repo, "a.ipynb", make_nb([1, 2, 3]))
+        base = commit(repo, "base")
+        write_nb(repo, "a.ipynb", make_nb([2, 2, 3]))
+        commit(repo, "head")
+        out = self.run_cli(repo, base)
+        assert out.returncode == 1
+        assert "fail-by-design" in out.stderr
+        assert "regles-validation-detail.md" in out.stderr
+        assert "never hand-edit" in out.stderr
+
     def test_exit_0_when_clean_kept(self, repo):
         write_nb(repo, "a.ipynb", make_nb([1, 2, 3]))
         base = commit(repo, "base")
