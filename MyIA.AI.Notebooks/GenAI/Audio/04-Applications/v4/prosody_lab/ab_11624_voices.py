@@ -88,6 +88,16 @@ VOICES: dict[str, dict] = {
             "Voix masculine claire et lumineuse, registre médium, bien posée. "
             "Lecture neutre, régulière et sans variations d'intonation."
         ),
+        # Decoupling cell (ai-01 msg-20260818T133717): vd_melodic asks
+        # "legerement grave", confounding register with instruction content.
+        # Same melodic instruction with NO register request completes the
+        # local 2x2: {register, no register} x {flat, melodic}.
+        "melodic_noreg": (
+            "Voix masculine calme, avec une distance ironique. "
+            "Lecture très expressive et vivante : fais varier fortement la mélodie, "
+            "monte sur les moments de tension, redescends en fin de phrase, "
+            "contraste nettement entre le calme et l'émotion, rythme irrégulier et dramatique."
+        ),
     },
     "elisabeth_rousset": {
         "text": (
@@ -243,6 +253,14 @@ def main() -> None:
                     out_dir / f"{voice}_vd_flat_registre_clair.mp3",
                     qc.qwen_tts_voicedesign_chunked,
                     cfg["text"], instructions=cfg["reg_clair"],
+                )
+            # Decoupling cell (ai-01 msg-20260818T133717): melodic instruction
+            # with NO register request (vd_melodic says "legerement grave").
+            if voice == "narrateur" and cfg.get("melodic_noreg"):
+                _render(
+                    out_dir / f"{voice}_vd_melodic_sans_registre.mp3",
+                    qc.qwen_tts_voicedesign_chunked,
+                    cfg["text"], instructions=cfg["melodic_noreg"],
                 )
             if ok_mel:
                 ref_long[voice] = out_vd_mel
