@@ -102,10 +102,17 @@ RULE_SEVERITY = {
     "setext_oversized": ERROR,
     "oversized_hint": WARN,
     "source_list_missing_newlines": ERROR,
+    "leading_dash_yaml_block": ERROR,
 }
 
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
 _SETEXT_RE = re.compile(r"^\s{0,3}(-{3,}|={3,})\s*$")
+# a line that is *only* dashes (>= 3): Pandoc reads a leading `---` as a
+# yaml_metadata_block opener, so a markdown cell whose FIRST non-blank line is
+# `---` dumps everything until the NEXT `---` (often in a later cell) as YAML.
+# Non-YAML content (e.g. `**Papier** : ...`) crashes the Quarto render with
+# `YAMLException`. `===` never opens a YAML block, so dashes only (#11630).
+_LEADING_DASH_RE = re.compile(r"^\s{0,3}-{3,}\s*$")
 # a fenced-code marker: >=3 backticks OR tildes, optionally indented up to 3 spaces.
 # A ``` / ~~~ block renders its content VERBATIM, so a `---`/`===` line inside it is
 # literal text (ASCII art, a cryptarithme divider, a box-drawing rule) — NOT a setext
@@ -170,6 +177,26 @@ def _is_frontmatter_block(lines) -> bool:
                 return False
             break
     return True
+
+
+def _leading_dash_yaml_block(lines) -> bool:
+    """True if the FIRST non-blank line is ``---`` (>= 3 dashes) followed by content.
+
+    Pandoc opens a ``yaml_metadata_block`` only when the opening ``---`` is IMMEDIATELY
+    followed by a non-blank line; ``---`` alone or followed by a blank line is a
+    thematic break and renders fine. A head-dash + content cell starts a YAML block
+    that closes only at the NEXT ``---`` in the document — typically the head-dash of a
+    LATER cell — so non-YAML content between the dashes crashes the Quarto render
+    (``YAMLException: unidentified alias ...``). Matches the #11629 defect shape
+    (head-dash + non-blank successor), measured across the render closure (#11630).
+    """
+    for i, ln in enumerate(lines):
+        if ln.strip() == "":
+            continue
+        if not _LEADING_DASH_RE.match(ln):
+            return False
+        return i + 1 < len(lines) and lines[i + 1].strip() != ""
+    return False
 
 
 def _inside_fence_lines(lines) -> set[int]:
@@ -310,6 +337,36 @@ def scan_cell(cell) -> list[dict]:
             })
             return findings  # a frontmatter cell is fully described; don't double-report setext
 
+    # ---- leading '---' opens a Pandoc yaml_metadata_block (#11630) --------------
+    # A markdown cell whose FIRST non-blank line is `---` starts a yaml_metadata_block;
+    # Pandoc keeps parsing YAML until the next `---` (cross-cell in practice). Non-YAML
+    # content between the dashes -> YAMLException -> quarto render crash. The #11629 fix
+    # replaced those head-dashes with `***` (a thematic break renders identically and can
+    # never open a YAML block). Closure-scoped by --closure-quarto in main(): inert
+    # outside the Quarto render closure (a `---` divider in Jupyter alone is harmless).
+    if _leading_dash_yaml_block(lines):
+        # A SELF-CONTAINED yaml_metadata_block (closing '---' in the same cell) whose
+        # body is YAML-ish parses fine as document metadata -> the frontmatter branch
+        # owns it. Only flag blocks whose body cannot be YAML, or that have NO closing
+        # dash in the cell (cross-cell block = the #11629 render crash).
+        skip = False
+        if _is_frontmatter_block(lines):
+            nz = _nonblank(lines)
+            yamlish = sum(1 for ln in nz[1:] if ln.strip() != "---" and _YAML_KV_RE.match(ln))
+            skip = yamlish >= 1
+        if not skip:
+            rule = "leading_dash_yaml_block"
+            nz = _nonblank(lines)
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": ("cell opens with '---' (Pandoc yaml_metadata_block): content until the "
+                            "next '---' is parsed as YAML -> YAMLException if not valid YAML; "
+                            "replace with '***'"),
+                "evidence": nz[0][:100] if nz else "---",
+                "hash": _cell_hash(rule, text),
+            })
+
     # ---- accidental setext oversize (non-frontmatter prose underlined by ---) ----
     # A setext heading forms ONLY when the text line is IMMEDIATELY before the '---'
     # (no blank line between). `paragraph.\n\n---` is a thematic break and renders fine.
@@ -400,6 +457,118 @@ def gather(root: Path) -> list[dict]:
     return findings
 
 
+# ------------------------------------------------- Quarto render closure (#11630)
+# Quarto reads a notebook either directly (it is in the _quarto.yml render-list) or
+# because a RENDERED md/qmd file links to it (Quarto rewrites the link by reading the
+# target notebook's metadata). Only notebooks in this closure expose their markdown
+# cells to Pandoc, so leading_dash_yaml_block is scoped to it — a `---` divider in a
+# notebook Jupyter renders (but Quarto never reads) is harmless.
+_QUARTO_RENDER_ENTRY_RE = re.compile(r'^\s+- "([^"]+)"')
+_IPYNB_LINK_RE = re.compile(r"\]\(([^)#]+\.ipynb)(?:#[^)]*)?\)")
+
+
+def _quarto_render_entries(quarto_yml: Path) -> list[str]:
+    """The ``project.render`` list entries of a ``_quarto.yml`` (comments skipped)."""
+    entries: list[str] = []
+    try:
+        lines = quarto_yml.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return entries
+    in_render = False
+    for ln in lines:
+        s = ln.rstrip()
+        if not in_render:
+            if s.strip() == "render:":
+                in_render = True
+            continue
+        if s.strip() == "" or s.strip().startswith("#"):
+            continue
+        m = _QUARTO_RENDER_ENTRY_RE.match(s)
+        if m:
+            entries.append(m.group(1))
+        else:
+            break  # end of the flat render list (next YAML key)
+    return entries
+
+
+def _resolve_render_entry(repo_root: Path, entry: str) -> list[Path]:
+    """Resolve a render-list entry (plain path or glob) to concrete files."""
+    if "*" in entry:
+        return [p for p in repo_root.glob(entry) if p.is_file()]
+    p = repo_root / entry
+    return [p] if p.is_file() else []
+
+
+def compute_quarto_closure(quarto_yml: Path, repo_root: Path) -> set[str]:
+    """Absolute posix paths of the notebooks Quarto reads (render-list + linked)."""
+    root_res = repo_root.resolve()
+    closure: set[str] = set()
+    md_files: list[Path] = []
+    for entry in _quarto_render_entries(quarto_yml):
+        for p in _resolve_render_entry(root_res, entry):
+            if p.suffix == ".ipynb":
+                closure.add(p.as_posix())
+            else:
+                md_files.append(p)
+    for md in md_files:
+        try:
+            text = md.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for m in _IPYNB_LINK_RE.finditer(text):
+            target = (md.parent / m.group(1)).resolve()
+            if target.is_file():
+                closure.add(target.as_posix())
+    return closure
+
+
+def _closure_scope_findings(findings: list[dict], closure: set[str]) -> list[dict]:
+    """Scope leading_dash_yaml_block to the closure; every other rule is untouched."""
+    if not closure:
+        return findings
+    return [
+        f for f in findings
+        if f["rule"] != "leading_dash_yaml_block"
+        or str(Path(f["file"]).resolve()).replace("\\", "/") in closure
+    ]
+
+
+def _selfcheck(quarto_yml: Path | None) -> int:
+    """Positive control: replay the pre-#11629 state, fail if the guard misses it."""
+    fails: list[str] = []
+    # Exact markdown cell 3 of 02_fallacy_datasets_landscape.ipynb as of blob
+    # 9b3543a27 (pre-#11629): head-dash + content, no closing dash in the cell.
+    pre_fix = ("---\n### Dataset 1 — Logic / LogicClimate (Jin et al. 2022)\n\n"
+               "**Papier** : Jin et al., *Logical Fallacy Detection*, Findings of EMNLP 2022 — "
+               "[arXiv:2202.13758](https://arxiv.org/abs/2202.13758). Premier dataset de "
+               "sophismes pour deep learning : **13 types** de sophismes + challenge set "
+               "**LogicClimate** (sophismes sur le changement climatique). Repo GitHub : "
+               "`causalNLP/logical-fallacy`.")
+    cell = {"cell_type": "markdown", "source": pre_fix}
+    if not any(f["rule"] == "leading_dash_yaml_block" for f in scan_cell(cell)):
+        fails.append("positive control: pre-#11629 cell (leading '---') produced no "
+                     "leading_dash_yaml_block finding")
+    safe = {"cell_type": "markdown",
+            "source": "### Dataset 1 — Logic / LogicClimate (Jin et al. 2022)\n\n---\n\ntexte"}
+    if any(f["rule"] == "leading_dash_yaml_block" for f in scan_cell(safe)):
+        fails.append("negative control: '---' NOT at cell head produced a false positive")
+    divider = {"cell_type": "markdown", "source": "---"}
+    if any(f["rule"] == "leading_dash_yaml_block" for f in scan_cell(divider)):
+        fails.append("negative control: bare '---' divider (no content after) false-positived")
+    if quarto_yml is not None and quarto_yml.exists():
+        closure = compute_quarto_closure(quarto_yml, Path.cwd())
+        if not closure:
+            fails.append(f"closure control: {quarto_yml} produced an empty closure")
+        target = (Path.cwd() / "MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb")
+        if target.exists() and target.resolve().as_posix() not in closure:
+            fails.append("closure control: FallacyDetection/02_ notebook not in Quarto closure")
+    for msg in fails:
+        print(f"SELFCHECK FAIL: {msg}", file=sys.stderr)
+    if not fails:
+        print("selfcheck OK: leading_dash_yaml_block fires on the pre-#11629 state")
+    return 1 if fails else 0
+
+
 def load_baseline(path: Path) -> set[str]:
     if not path.exists():
         return set()
@@ -420,7 +589,18 @@ def main(argv=None) -> int:
                     help="write the current violation set to --baseline and exit")
     ap.add_argument("--severity", choices=[ERROR, WARN], default=None,
                     help="restrict output to this severity")
+    ap.add_argument("--closure-quarto", type=Path, default=None, metavar="QUARTO_YML",
+                    help="scope the leading_dash_yaml_block rule to the Quarto render "
+                         "closure (render-list notebooks + notebooks linked from rendered "
+                         "md/qmd). Inert without this flag. Pass --closure-quarto _quarto.yml "
+                         "on --update-baseline too, so the baseline absorbs the closure.")
+    ap.add_argument("--selfcheck", action="store_true",
+                    help="positive control: replay the pre-#11629 cell state and exit 1 if "
+                         "the leading_dash_yaml_block rule misses it")
     args = ap.parse_args(argv)
+
+    if args.selfcheck:
+        return _selfcheck(args.closure_quarto)
 
     root = Path(args.root)
     if not root.exists():
@@ -428,6 +608,15 @@ def main(argv=None) -> int:
         return 2
 
     findings = gather(root)
+    if args.closure_quarto is not None:
+        closure = compute_quarto_closure(args.closure_quarto, Path.cwd())
+        findings = _closure_scope_findings(findings, closure)
+    else:
+        # leading_dash_yaml_block is meaningful ONLY inside the Quarto render closure
+        # (a `---` divider in a notebook Jupyter renders but Quarto never reads is
+        # harmless) -- a repo-wide scan without --closure-quarto must not see it,
+        # otherwise it cries on ~164 harmless cells and the gate gets ignored.
+        findings = [f for f in findings if f["rule"] != "leading_dash_yaml_block"]
     if args.severity:
         findings = [f for f in findings if f["severity"] == args.severity]
 
@@ -440,7 +629,10 @@ def main(argv=None) -> int:
         payload = {
             "_comment": "Baseline of known markdown-rendering violations. Burn down, do not grow. "
                         "Regenerate with: python scripts/notebook_tools/detect_markdown_rendering.py "
-                        "--update-baseline --baseline <this file>",
+                        "--update-baseline --closure-quarto _quarto.yml --baseline <this file> "
+                        "(--closure-quarto REQUIRED: it scopes leading_dash_yaml_block to the "
+                        "Quarto render closure; without it those hashes are dropped and the next "
+                        "--check --closure-quarto in CI reports them as NEW)",
             "count": len(hashes),
             "hashes": hashes,
         }

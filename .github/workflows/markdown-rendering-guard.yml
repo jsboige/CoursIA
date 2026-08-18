@@ -37,6 +37,15 @@ on:
       - 'scripts/notebook_tools/scan_md_hierarchy.py'
       - 'scripts/notebook_tools/markdown_rendering_baseline.json'
       - '.github/workflows/markdown-rendering-guard.yml'
+      # The Quarto render closure (#11630): a PR that touches a render-list file
+      # (README / qmd / _quarto.yml / the regen script) can expose a notebook to
+      # Quarto without touching it -- the #11629 failure mode, where the guilty PR
+      # only added links from a rendered README. A naive '.ipynb-only' filter misses
+      # exactly that.
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+      - '**/README.md'
+      - '**/*.qmd'
   push:
     branches: [ main ]
     paths:
@@ -44,6 +53,10 @@ on:
       - 'scripts/notebook_tools/detect_markdown_rendering.py'
       - 'scripts/notebook_tools/scan_md_hierarchy.py'
       - 'scripts/notebook_tools/markdown_rendering_baseline.json'
+      - '_quarto.yml'
+      - 'scripts/regen_quarto_render.py'
+      - '**/README.md'
+      - '**/*.qmd'
   workflow_dispatch:
 
 permissions:
@@ -66,14 +79,25 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: "HARD gate -- fail on any NEW frontmatter / setext oversize"
+      - name: "HARD gate -- selfcheck + fail on any NEW frontmatter / setext / leading-dash defect"
         run: |
+          # Positive control (#11630 acceptance): replay the pre-#11629 state of
+          # 02_fallacy_datasets_landscape.ipynb and abort if the rule misses it. A
+          # detector that cannot see must say something other than 'nothing found'.
+          if ! python scripts/notebook_tools/detect_markdown_rendering.py \
+                 --selfcheck \
+                 --closure-quarto _quarto.yml; then
+            echo "::error::The guard's positive control failed: leading_dash_yaml_block did not fire on the pre-#11629 cell state. The gate is blind; fix the detector before proceeding."
+            exit 1
+          fi
           if ! python scripts/notebook_tools/detect_markdown_rendering.py \
                  --check \
+                 --closure-quarto _quarto.yml \
                  --baseline scripts/notebook_tools/markdown_rendering_baseline.json; then
             echo ""
-            echo "::error::A markdown cell was added/changed that renders as an oversized, unformatted text block (YAML frontmatter dumped into a rendered cell, or prose accidentally underlined by '---'/'==='). It looks fine in the source diff but ugly on first open."
-            echo "Fix options (per-family editorial choice):"
+            echo "::error::A markdown cell was added/changed that renders badly: (a) YAML frontmatter dumped into a rendered cell, (b) prose accidentally underlined by '---'/'===', or (c) a rendered notebook whose cell OPENS with '---' (Pandoc reads it as a yaml_metadata_block that crashes 'quarto render' with YAMLException). All look fine in a source diff but render wrong."
+            echo "Fix options:"
+            echo "  * a cell that opens with '---': replace the leading '---' with '***' (CommonMark thematic break -- identical render, cannot open a YAML block)."
             echo "  * move the metadata into the notebook 'metadata' (invisible, machine-readable), OR"
             echo "  * render it inside a fenced \`\`\`yaml block, OR"
             echo "  * format it as a small markdown table."
