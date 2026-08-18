@@ -9,6 +9,8 @@ import Grothendieck.Construction
 import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
+import Grothendieck.CoversAtomicArrow
+import Grothendieck.CoversAtomicArrow_en
 import Grothendieck.CoversBind
 import Grothendieck.CoversCoverageArrow
 import Grothendieck.CoversCoverageArrow_en
