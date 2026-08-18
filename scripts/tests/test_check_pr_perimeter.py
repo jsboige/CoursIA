@@ -13,10 +13,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from check_pr_perimeter import (  # noqa: E402
     BaselineMove,
+    Candidate,
     check_assertion,
     extract_baseline_moves,
     extract_perimeter_assertions,
     format_report,
+    select_candidates,
 )
 
 # The exact shape of the founding incident (#11227).
@@ -288,3 +290,175 @@ def test_scan_thread_composition_accepts_correct_thread():
     )
     problems = [p for cand in cands for p in check_assertion(FILES_11227, cand)]
     assert problems == []
+
+
+# ---------------------------------------------------------------------------
+# Workflow trigger pin (#11648)
+#
+# Authored by po-2023 in PR #11657, closed as redundant once #11654 landed the
+# same `types:` fix. The YAML line was duplicated; these two tests were NOT --
+# #11654 shipped no test. Carried here so the fix keeps a pin.
+# ---------------------------------------------------------------------------
+
+import pathlib  # noqa: E402
+import re  # noqa: E402
+
+
+def _read_perimeter_workflow() -> str:
+    """Locate and read perimeter-review-guard.yml, independent of cwd."""
+    here = pathlib.Path(__file__).resolve()
+    # scripts/tests/test_check_pr_perimeter.py -> repo root = parents[2]
+    return (here.parents[2] / ".github" / "workflows"
+            / "perimeter-review-guard.yml").read_text(encoding="utf-8")
+
+
+def test_pull_request_trigger_includes_edited_type():
+    """``pull_request:`` MUST list ``edited`` so a body correction re-fires.
+
+    Founding measurement (po-2023, #11648): the gate's own comment claimed
+    "pull_request (opened/synchronize/edited)" while the YAML declared no
+    ``types:`` at all, so GitHub defaulted to [opened, synchronize, reopened]
+    and silently dropped ``edited``. This pin matters MORE after #11648:
+    editing the PR body is now the documented lever for a blocking assertion,
+    and that lever exists only while ``edited`` is declared here.
+    """
+    text = _read_perimeter_workflow()
+    pr_block = re.search(
+        r"^  pull_request:\s*\n((?:    [^\n]*\n)+)", text, re.MULTILINE
+    )
+    assert pr_block, "pull_request sub-block not found"
+    pr_body = pr_block.group(1)
+    assert "types:" in pr_body, (
+        "pull_request: has no types: clause -- GitHub defaults to "
+        "[opened, synchronize, reopened] and drops `edited` (#11648)."
+    )
+    assert "edited" in pr_body, (
+        "pull_request: types: declared but `edited` missing -- the documented "
+        "lever for a blocking body assertion would not exist."
+    )
+
+
+def test_pull_request_review_trigger_includes_edited_type():
+    """Sibling invariant: a corrected review must re-fire the check."""
+    text = _read_perimeter_workflow()
+    rv_block = re.search(
+        r"^  pull_request_review:\s*\n((?:    [^\n]*\n)+)", text, re.MULTILINE
+    )
+    assert rv_block, "pull_request_review sub-block not found"
+    rv_body = rv_block.group(1)
+    assert "types:" in rv_body and "edited" in rv_body, (
+        "pull_request_review: must keep `types: [submitted, edited]`."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Consequence model (#11648): supersession per author + blocking scope
+# ---------------------------------------------------------------------------
+
+def _thread(*rows):
+    """Build a fetch_review_thread()-shaped list. rows: (author, ts, body)."""
+    return [{"kind": "review (COMMENTED)", "author": a, "body": b,
+             "source": "thread", "ts": t} for a, t, b in rows]
+
+
+def _body(author, text):
+    return {"kind": "PR body", "author": author, "body": text,
+            "source": "body", "ts": ""}
+
+
+ASSERT_5 = "Perimetre : 5 fichiers."
+ASSERT_7 = "Perimetre : 7 fichiers."
+
+
+def test_author_later_assertion_supersedes_their_own_earlier_one():
+    """#11648-b1, the founding measurement on #11646.
+
+    ai-01 asserted "5 fichiers" at 14:29 then corrected to "7" (the truth) at
+    14:48; the stale one still held the PR red. Self-correction must clear
+    one's own red.
+    """
+    cands = select_candidates(_thread(
+        ("ai-01", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("ai-01", "2026-08-18T14:48:00Z", ASSERT_7),
+    ))
+    texts = [c.text for c in cands]
+    assert ASSERT_7 in texts
+    assert ASSERT_5 not in texts, "superseded assertion still confronted"
+
+
+def test_supersession_is_per_author_not_global():
+    """A later review by SOMEONE ELSE must not retract my assertion."""
+    cands = select_candidates(_thread(
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("ai-01", "2026-08-18T14:48:00Z", ASSERT_7),
+    ))
+    by = {c.author: c.text for c in cands}
+    assert by == {"hermes": ASSERT_5, "ai-01": ASSERT_7}
+
+
+def test_later_silent_review_is_not_a_retraction():
+    """Silence is not correction: a later review with no perimeter statement
+    leaves the author's previous assertion standing."""
+    cands = select_candidates(_thread(
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("hermes", "2026-08-18T15:10:00Z", "LGTM, joli travail."),
+    ))
+    assert [c.text for c in cands] == [ASSERT_5]
+
+
+def test_equal_timestamps_fall_back_to_thread_order():
+    """GitHub can stamp two reviews identically; the later-listed one wins."""
+    cands = select_candidates(_thread(
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
+        ("hermes", "2026-08-18T14:29:00Z", ASSERT_7),
+    ))
+    assert [c.text for c in cands] == [ASSERT_7]
+
+
+def test_pr_body_assertion_is_blocking():
+    """POSITIVE CONTROL (#11648 acceptance).
+
+    This test FAILS if the blocking branch is ever removed -- i.e. if someone
+    "fixes" a false positive by making everything advisory. A gate whose every
+    input is non-blocking is indistinguishable from a disabled gate.
+    """
+    cands = select_candidates([_body("jsboige", ASSERT_5)])
+    assert len(cands) == 1
+    assert cands[0].blocking is True, (
+        "PR-body assertions must BLOCK: the author owns the body and an edit "
+        "re-triggers the workflow, so the green is reachable (#11648-b2)."
+    )
+
+
+def test_third_party_review_assertion_is_signal_only():
+    """#11648-b2: not editable by the author, and COMMENTED reviews cannot be
+    dismissed -- blocking there leaves no lever (measured on #11642/#11646)."""
+    cands = select_candidates(_thread(
+        ("clusterManager-Myia", "2026-08-18T14:29:00Z", ASSERT_5),
+    ))
+    assert len(cands) == 1
+    assert cands[0].blocking is False
+
+
+def test_detection_is_unchanged_for_non_blocking_assertions():
+    """The detector is NOT disarmed: a false third-party assertion is still
+    extracted and still confronted -- only its exit code changes."""
+    cands = select_candidates(_thread(
+        ("clusterManager-Myia", "2026-08-18T14:29:00Z",
+         "Perimetre : 2 fichiers twins uniquement, aucune autre modification."),
+    ))
+    assert len(cands) == 1
+    problems = check_assertion(FILES_11227, cands[0].text)
+    assert problems, "third-party false assertion must still be detected"
+    assert cands[0].blocking is False, "...but must not block"
+
+
+def test_founding_incident_still_blocks_from_the_pr_body():
+    """#11227 encoded end to end: the same false assertion, posted where its
+    author can fix it, still fails the gate."""
+    cands = select_candidates([_body(
+        "author",
+        "Perimetre : 2 fichiers twins uniquement, aucune autre modification.")])
+    blocking = [c for c in cands if c.blocking]
+    assert blocking
+    assert check_assertion(FILES_11227, blocking[0].text)
