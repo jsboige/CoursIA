@@ -1,0 +1,61 @@
+name: QuantConnect notebook freshness
+
+# Durable anti-regression guard for the "ML-Training-Pipeline notebook raises
+# FileNotFoundError on a fresh clone" vector (c.290 / issue #11417 / guard
+# #11433). A notebook MUST either:
+#   (a) reference a path tracked on origin/main (git ls-tree), OR
+#   (b) gracefully handle absence (try/except or guard), which we approximate
+#       by tolerating GITIGNORED paths.
+# Anything else is a MISSING = EXIT 1.
+#
+# The script (`scripts/check_quantconnect_notebook_freshness.py`) classifies
+# each `scripts/results/<X>/...` and `results/<X>/...` reference into:
+#   OK         tracked (the SC-validation 12-combos artifacts via `git add -f`)
+#   GITIGNORED caught by the catch-all `results/` line in
+#              `MyIA.AI.Notebooks/QuantConnect/.gitignore:51`
+#   MISSING    neither tracked nor gitignored (the c.290 hazard)
+#
+# Scope mirror to the precedent exercised by exercise-leak-ci.yml : PR-aware
+# paths-trigger (only fires when the guard script, the gate workflow, or a
+# ML-Training-Pipeline notebook changes), tracked-only scan.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/**/*.ipynb'
+      - 'scripts/check_quantconnect_notebook_freshness.py'
+      - 'scripts/tests/test_check_quantconnect_notebook_freshness.py'
+      - '.github/workflows/quantconnect-notebook-freshness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quantconnect-notebook-freshness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  freshness-guard:
+    name: "QuantConnect ML notebook freshness guard (#11433)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Run freshness guard
+        run: |
+          python scripts/check_quantconnect_notebook_freshness.py
+        continue-on-error: false
+
+      - name: Run guard unit tests
+        run: |
+          python -m pip install --quiet pytest pytest-cov
+          python -m pytest scripts/tests/test_check_quantconnect_notebook_freshness.py -v
+        continue-on-error: false

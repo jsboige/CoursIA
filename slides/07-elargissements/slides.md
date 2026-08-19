@@ -57,7 +57,7 @@ Son impact réel?
   - Objection mathematique
 - **Avancees recentes**
   - GPT 5.2, Claude Opus 4.5, Gemini Pro 3
-  - Raisonnement, ARC, Maths, Developpement
+  - Raisonnement, ARC, Maths, Développement
 
 ---
 layout: dense
@@ -66,7 +66,7 @@ layout: dense
 # L'informalite des comportements humains
 
 - **Critique de Dreyfus et GOFAI**
-  - Les regles logiques sont insuffisantes
+  - Les règles logiques sont insuffisantes
   - Importance de l'embodied cognition
   - Comprendre passe par l'interaction avec le monde physique
 - **Reponse moderne**
@@ -89,7 +89,7 @@ layout: dense
 - **Critique de Turing**
   - "Une machine ne pourra jamais faire X (etre gentille, creative, drole)"
 - **Avancees recentes**
-  - L'IA cree de l'art: Stable Diffusion, DALL-E, Flux, Z-Image, Nano Banana
+  - L'IA créé de l'art: Stable Diffusion, DALL-E, Flux, Z-Image, Nano Banana
   - Resout des problemes scientifiques: AlphaFold
   - Amuse: chatbots avances
   - Creativite musicale: Suno, Udio (bouleverse l'industrie musicale)
@@ -99,7 +99,7 @@ layout: dense
 - **Limites persistantes**
   - Hallucinations, manque de "comprehension"
   - L'IA reste incapable d'emotions ou de conscience réelle
-  - Autonomie simulee = meta-programmes (prompts systemes)
+  - Autonomie simulee = meta-programmes (prompts systèmes)
 
 ---
 layout: dense
@@ -108,18 +108,18 @@ layout: dense
 # L'objection mathematique
 
 - **L'argument de Godel**
-  - Godel (1931): Tout systeme formel suffisamment puissant est limite
-  - Il existe des enonces vrais mais impossibles a prouver dans ce systeme
+  - Godel (1931): Tout système formel suffisamment puissant est limite
+  - Il existe des enonces vrais mais impossibles a prouver dans ce système
 - **Critique historique**
   - Lucas (1961), Penrose (1989): "Les humains comprennent des verites inaccessibles aux machines"
 - **Reponse moderne**
-  - Les humains ne sont pas exempts d'erreurs (ex: probleme des 4 couleurs)
-  - Les machines modernes (reseaux neuronaux, LLMs) ne sont pas des systemes formels rigides
-    - Elles peuvent changer leurs regles (apprentissage automatique)
+  - Les humains ne sont pas exempts d'erreurs (ex: problème des 4 couleurs)
+  - Les machines modernes (reseaux neuronaux, LLMs) ne sont pas des systèmes formels rigides
+    - Elles peuvent changer leurs règles (apprentissage automatique)
     - Elles revoient leurs conclusions (metaraisonnement)
   - 2025: AlphaProof, AlphaGeometry -> Medaille d'or IMO
 - **Limite persistante**
-  - Les systemes humains et artificiels restent soumis aux contraintes des mathematiques
+  - Les systèmes humains et artificiels restent soumis aux contraintes des mathematiques
 
 ---
 layout: dense
@@ -133,7 +133,7 @@ layout: dense
   - Objectif: Evaluer l'intelligence par une conversation convaincante
   - Limite: Test de la "tromperie" plutot que de l'intelligence réelle
   - 2023: GPT-4 a surpasse les performances humaines, mais insuffisant pour evaluer l'AGI
-  - Nouveaux criteres: Resolution de taches complexes, explicabilite, ethique
+  - Nouveaux critères: Resolution de tâches complexes, explicabilite, ethique
 - **La course aux benchmarks**
   - 1960s--2022: Tests specialises (enigmes, reconnaissance d'images)
   - 2023: Saturation de GSM8K (maths) et MMLU (connaissances), depasses par GPT-4, Claude
@@ -159,32 +159,32 @@ layout: dense
 # La chambre chinoise (Searle, 1980)
 
 - **Explication**
-  - Un humain, sans comprendre le chinois, utilise un livre de regles pour simuler des reponses
+  - Un humain, sans comprendre le chinois, utilise un livre de règles pour simuler des reponses
   - Conclusion de Searle: Simuler n'est pas comprendre
 - **Reponses modernes**
-  - La comprehension peut emerger du systeme global (theorie des systemes)
+  - La comprehension peut emerger du système global (théorie des systèmes)
   - Les LLMs illustrent ce debat: production coherente sans comprehension intrinseque
 - **Reflexion rapide**
   - "Comment distinguer comprehension réelle et apparente chez une IA?"
 
 ---
 
-# Theories de la conscience (1/2)
+# Théories de la conscience (1/2)
 
-- **Definir la conscience**
-  - Qualia: Les experiences subjectives (ressentir la chaleur, la douleur)
+- **Définir la conscience**
+  - Qualia: Les expériences subjectives (ressentir la chaleur, la douleur)
   - Conscience comme modèle de soi et du monde
 - **Global Workspace Theory (GWT)**
-  - La conscience est un espace de travail ou differentes parties du cerveau partagent des informations
-  - Applications: Modèles d'attention, taches complexes
-  - Role important de l'inconscient
+  - La conscience est un espace de travail ou différentes parties du cerveau partagent des informations
+  - Applications: Modèles d'attention, tâches complexes
+  - Rôle important de l'inconscient
 - **Integrated Information Theory (IIT)**
-  - La conscience est mesuree par le degre d'integration de l'information (Phi)
-  - Introduit la notion de systemes physiques conscients
+  - La conscience est mesuree par le degré d'integration de l'information (Phi)
+  - Introduit la notion de systèmes physiques conscients
 
 ---
 
-# Theories de la conscience (2/2)
+# Théories de la conscience (2/2)
 
 - **Higher-Order Theory (HOT)**
   - La conscience necessite une pensee sur ses propres etats mentaux (metacognition)
@@ -203,19 +203,19 @@ layout: dense
 # Integrated Information Theory (IIT)
 
 - **La conscience est integree et informationnelle**
-  - Chaque experience consciente est un tout indivisible (integration)
+  - Chaque expérience consciente est un tout indivisible (integration)
   - Elle contient une riche quantite d'informations differenciees (information)
 - **Quantification par Phi ("phi")**
-  - Plus Phi est eleve, plus le systeme est conscient
+  - Plus Phi est eleve, plus le système est conscient
   - Cerveau humain: Phi eleve, ordinateur traditionnel: Phi bas
 - **Cinq axiomes fondamentaux**
   - Existence: La conscience existe intrinsequement
-  - Composition: Structuree en sous-elements (couleurs, formes, sons)
-  - Information: Chaque experience est differente
+  - Composition: Structuree en sous-éléments (couleurs, formes, sons)
+  - Information: Chaque expérience est différente
   - Integration: Unifiee et indivisible
-  - Exclusion: Certaines experiences sont conscientes, d'autres non
+  - Exclusion: Certaines expériences sont conscientes, d'autres non
 - **Applications et implications**
-  - La conscience peut exister dans tout systeme integrant l'information
+  - La conscience peut exister dans tout système integrant l'information
   - Reste difficile a tester experimentalement
 - **Activite**: Decouverte de PyPhi
 
@@ -232,7 +232,7 @@ layout: dense
   - Maximiser les benefices
   - Minimiser les risques
 - **Question pour reflexion**
-  - "Comment garantir que l'IA sert l'interet collectif et non des interets individuels?"
+  - "Comment garantir que l'IA sert l'intérêt collectif et non des intérêts individuels?"
 
 ---
 layout: dense
@@ -241,7 +241,7 @@ layout: dense
 # Armes autonomes letales
 
 - **Definition**
-  - Armes capables de selectionner et de tuer des cibles sans supervision humaine
+  - Armes capables de sélectionner et de tuer des cibles sans supervision humaine
 - **Exemples**
   - Harop Missile (Israel)
   - Kargu Quadcopter (Turquie)
@@ -283,7 +283,7 @@ layout: dense
 - **Types de biais**
   - **Biais de données**: minorites sous-representees
   - **Biais dans les algorithmes**: justice americaine (COMPAS), reconnaissance faciale
-  - **Biais de preferences**: Exemple LLMs
+  - **Biais de préférences**: Exemple LLMs
 - **Solutions**
   - Oversampling des classes minoritaires (SMOTE)
   - Transparence et documentation des données (data sheets)
@@ -303,7 +303,7 @@ layout: dense
   - Certification (ISO, UL)
 - **Explainable AI (XAI)**
   - Exemples: "Pourquoi votre pret a-t-il ete refuse?"
-  - Avancees: SHAP (Shapley, imputation des caracteristiques) ou LIME (Local Interpretable)
+  - Avancees: SHAP (Shapley, imputation des caractéristiques) ou LIME (Local Interpretable)
 - **Exemple concret**
   - Comparaison entre explications humaines et machines
 - **Question ouverte**
@@ -387,9 +387,9 @@ layout: two-cols
 - **La singularite et le transhumanisme**
   - Singularite technologique (Good, Kurzweil)
   - Transhumanisme: Fusion homme-machine
-  - Optimisme vs dangers (controle, survie humaine)
+  - Optimisme vs dangers (contrôle, survie humaine)
 - **Question ouverte**
-  - "Quel futur voulons-nous co-creer avec l'IA?"
+  - "Quel futur voulons-nous co-créer avec l'IA?"
 
 ---
 layout: section
@@ -406,7 +406,7 @@ layout: section
 - **Progres recents en IA**
   - Applications, materiel, composants
 - **Perspectives d'avenir**
-  - IA generale et architecturee
+  - IA générale et architecturee
   - Questions ethiques et societales
 
 ---
@@ -415,13 +415,13 @@ layout: section
 
 - **Avancees majeures**
   - Large deploiement: medecine, finance, transport, communication
-  - Deep learning: depassement des capacités humaines dans des taches spécifiques
+  - Deep learning: depassement des capacités humaines dans des tâches spécifiques
 - **Estimation des experts**
-  - IA generale dans 10 a 100 ans
+  - IA générale dans 10 a 100 ans
   - Trillions de dollars ajoutes a l'economie chaque annee dans la prochaine decennie
 - **Defis**
   - Ethique: biais, equite, potentielle letalite
-  - Developpement durable et controle de l'impact global
+  - Développement durable et contrôle de l'impact global
 
 ---
 
@@ -433,8 +433,8 @@ layout: section
   - Imprimantes 3D et bioprinting pour prototypage rapide
   - Calculateurs miniatures: Arduino, NVIDIA Orin
 - **Applications emergentes**
-  - Robots industriels: environnements controles, taches repetitives
-  - Defis pour le marche domestique: variabilite des environnements et taches complexes
+  - Robots industriels: environnements contrôles, tâches repetitives
+  - Defis pour le marche domestique: variabilite des environnements et tâches complexes
 
 ---
 
@@ -451,27 +451,27 @@ layout: section
 
 ---
 
-# Composants - Selection d'Actions
+# Composants - Sélection d'Actions
 
 - **Complexite**
   - Plans a long terme: milliards d'étapes primitives (ex: obtenir un diplome)
   - Defis dans les environnements partiellement observables (POMDP)
 - **Progres recents**
-  - Representations hierarchiques (MDP hierarchiques)
+  - Representations hiérarchiques (MDP hiérarchiques)
   - Algorithmes pour decomposer le comportement en niveaux successifs
 - **Perspectives**
-  - Developpement de methodes pour representer efficacement les etats et actions sur de longues periodes
+  - Développement de méthodes pour representer efficacement les etats et actions sur de longues periodes
 
 ---
 
-# Composants - Definir les Objectifs
+# Composants - Définir les Objectifs
 
 - **Difficultes**
-  - Modelisation des preferences humaines complexes
-  - Interaction entre preferences individuelles et equite sociale
+  - Modelisation des préférences humaines complexes
+  - Interaction entre préférences individuelles et equite sociale
 - **Progres**
   - Apprentissage par renforcement inverse: apprentissage a partir de demonstrations
-  - Langages pour specifier les preferences (logique temporelle lineaire)
+  - Langages pour specifier les préférences (logique temporelle lineaire)
 - **Exemples concrets**
   - Agents capables de maximiser des objectifs multi-dimensionnels sous incertitude
 
@@ -486,7 +486,7 @@ layout: dense
 - **Progres spectaculaires**
   - Vision par ordinateur, langage naturel, apprentissage par renforcement
 - **Limites**
-  - Dependance excessive a des données annotees massives
+  - Dépendance excessive a des données annotees massives
   - Difficultes avec des données rares ou non structurees
 - **Progres recents**
   - Self-supervised learning, Apprentissage contrastif (GPT)
@@ -495,7 +495,7 @@ layout: dense
   - RL finetuning (O1, Deepseek)
 - **Axes futurs**
   - Apprentissage par transfert: reutiliser les connaissances
-  - Integration apprentissage/connaissance: fusion de l'experience et du raisonnement
+  - Integration apprentissage/connaissance: fusion de l'expérience et du raisonnement
 
 ---
 
@@ -507,9 +507,9 @@ layout: dense
   - Augmentation exponentielle des capacités de traitement (GPU, TPU, FPGA)
 - **Defis**
   - Validation et gestion des données massives (crowdsourcing, validation par LLM)
-  - Conception de systemes robustes pour des domaines complexes
+  - Conception de systèmes robustes pour des domaines complexes
 - **Opportunites**
-  - Modèles universels reutilisables pour plusieurs taches
+  - Modèles universels reutilisables pour plusieurs tâches
   - Modèles open-source (Llama, Gemma, Qwen, Phi) + fine-tunes (LoRAs) et quants
 
 ---
@@ -517,7 +517,7 @@ layout: dense
 # Architectures d'Agents
 
 - **Approches hybrides**
-  - Symbolique: raisonnement et chaines de logique complexe
+  - Symbolique: raisonnement et chaînes de logique complexe
   - Connexionniste: reconnaissance de patterns dans des données bruyantes
 - **Concepts avances**
   - Algorithmes "anytime": amelioration progressive en fonction du temps disponible
@@ -529,17 +529,17 @@ layout: dense
 
 ---
 
-# IA Generale
+# IA Générale
 
 <!-- Image: images/recursive_self_improvement.png -->
 
 - **Objectif**
-  - Creer des agents capables de maitriser plusieurs taches diverses
-- **Probleme**
-  - Aujourd'hui, les systemes sont concus pour des taches spécifiques
+  - Créer des agents capables de maitriser plusieurs tâches diverses
+- **Problème**
+  - Aujourd'hui, les systèmes sont concus pour des tâches spécifiques
   - Manque de diversite comportementale et de generalisation
 - **Progres recents**
-  - Systemes multi-langues ou multi-taches bases sur des modèles de grande taille (ex: GPT)
+  - Systèmes multi-langues ou multi-tâches bases sur des modèles de grande taille (ex: GPT)
 
 ---
 
@@ -547,9 +547,9 @@ layout: dense
 
 - **Etat actuel**
   - IA encore difficile a deployer pour les non-experts
-  - Besoin d'un ecosysteme de developpement accessible et robuste
+  - Besoin d'un ecosysteme de développement accessible et robuste
 - **Proposition de Jeff Dean (Google)**
-  - Construire un enorme modèle universel, puis en extraire les parties pertinentes pour des taches spécifiques
+  - Construire un enorme modèle universel, puis en extraire les parties pertinentes pour des tâches spécifiques
 - **Exemples**
   - Transformers (GPT-4+) avec des milliards de paramètres
   - Montee de l'Open-source
@@ -588,7 +588,7 @@ layout: dense
 - **Modèles proprietaires vs Open-source**
   - USA vs Chine
 - **Sovereign AI**
-  - Chaque nation veut son "cerveau numerique"
+  - Chaque nation veut son "cerveau numérique"
 - **Infrastructure**
   - Course a l'armement (Datacenters, GPUs)
 
@@ -608,11 +608,11 @@ layout: dense
 - **Cosmologie: Le Grand Programmeur Universel**
   - L'univers comme programme compressible
   - Les lois physiques refletent une faible complexite algorithmique (similaire a Wolfram)
-  - Role des intelligences: Decouvrir et optimiser ces regularites, participant a une evolution universelle
+  - Rôle des intelligences: Decouvrir et optimiser ces regularites, participant a une evolution universelle
 - **Impact en IA et Philosophie**
   - En IA: Optimisation algorithmique, comme les reseaux LSTM
   - En cosmologie: Une quete computationnelle naturaliste maximisant l'efficacite algorithmique
-  - Physique Numerique: TEDx Talk
+  - Physique Numérique: TEDx Talk
 
 ---
 layout: section
@@ -630,7 +630,7 @@ layout: section
 - **Explicabilite (XAI)**: `ML/` - ML.NET tutorials
 - **IA Generative et ethique**: `GenAI/` - 58 notebooks
   - DALL-E, Stable Diffusion, ComfyUI, LLMs
-- **Theorie des jeux**: `GameTheory/` - 26 notebooks OpenSpiel
+- **Théorie des jeux**: `GameTheory/` - 26 notebooks OpenSpiel
 
 ---
 layout: end

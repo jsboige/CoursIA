@@ -22,7 +22,7 @@ TRADING ALGORITHMIQUE AVEC QUANTCONNECT
 layout: section
 ---
 
-# Instructions Generales
+# Instructions Générales
 
 ---
 layout: default
@@ -45,7 +45,7 @@ layout: default
 
 ### Metriques de reference
 
-Pour chaque strategie, mesurez : **Sharpe Ratio**, **CAGR**, **Max Drawdown**, **Win Rate**
+Pour chaque stratégie, mesurez : **Sharpe Ratio**, **CAGR**, **Max Drawdown**, **Win Rate**
 
 ---
 layout: default
@@ -85,9 +85,9 @@ layout: default
 
 ### Ce que vous allez apprendre
 
-- Creer un projet sur QC Cloud
+- Créer un projet sur QC Cloud
 - Comprendre la structure d'un algorithme (`Initialize`, `OnData`)
-- Executer un backtest et lire les resultats
+- Executer un backtest et lire les résultats
 
 ### Sources
 
@@ -100,7 +100,7 @@ layout: default
 
 # Ex01 - Consignes
 
-1. **Creer un projet** `Ex01-Setup` sur QuantConnect Cloud (Python)
+1. **Créer un projet** `Ex01-Setup` sur QuantConnect Cloud (Python)
 
 2. **Implementer un algorithme simple** qui :
    - Trade SPY (S&P 500 ETF)
@@ -111,7 +111,7 @@ layout: default
 
 <v-click>
 
-4. **Analyser les resultats** :
+4. **Analyser les résultats** :
    - Quel est le rendement total ?
    - Quel est le ratio de Sharpe ?
    - Quel est le drawdown maximum ?
@@ -132,7 +132,7 @@ layout: default
 layout: default
 ---
 
-# Ex01 - Resultats Attendus
+# Ex01 - Résultats Attendus
 
 | Metrique | Valeur attendue |
 |----------|----------------|
@@ -159,7 +159,7 @@ layout: default
 
 # Ex02 - Objectif
 
-> Implementer une strategie EMA Crossover avec indicateurs techniques
+> Implementer une stratégie EMA Crossover avec indicateurs techniques
 
 ### Ce que vous allez apprendre
 
@@ -178,9 +178,9 @@ layout: default
 
 # Ex02 - Consignes
 
-1. **Creer un projet** `Ex02-EMA-Cross` sur QC Cloud
+1. **Créer un projet** `Ex02-EMA-Cross` sur QC Cloud
 
-2. **Implementer la strategie EMA Crossover** :
+2. **Implementer la stratégie EMA Crossover** :
    - EMA rapide : 12 periodes
    - EMA lente : 26 periodes
    - Signal d'achat quand la rapide croise au-dessus de la lente
@@ -201,7 +201,7 @@ layout: default
 - `self.EMA(symbol, 12)` et `self.EMA(symbol, 26)` pour les indicateurs
 - Utiliser `Indicator.Updated` ou `self.IndicatorIsReady`
 - Piste : checker `self.fast.Current.Value > self.slow.Current.Value`
-- Attention aux signaux precedents pour detecter le **croisement** (pas juste la position)
+- Attention aux signaux précédents pour detecter le **croisement** (pas juste la position)
 
 </v-click>
 
@@ -209,7 +209,7 @@ layout: default
 layout: default
 ---
 
-# Ex02 - Resultats Attendus
+# Ex02 - Résultats Attendus
 
 | Metrique | Valeur attendue |
 |----------|----------------|
@@ -220,7 +220,7 @@ layout: default
 
 ### Pour aller plus loin
 
-- Tester avec differentes periodes EMA (5/20, 20/50, 50/200)
+- Tester avec différentes periodes EMA (5/20, 20/50, 50/200)
 - Ajouter un filtre de volume
 - Implementer un stop-loss a 5%
 
@@ -259,14 +259,14 @@ layout: default
 
 2. **Identifier les features** utilisees par le modèle :
    - Quels indicateurs techniques ?
-   - Quelle fenetre temporelle ?
+   - Quelle fenêtre temporelle ?
    - Comment les labels sont-ils construits ?
 
 <v-click>
 
 3. **Executer le backtest** sur QC Cloud (periode 2020-2025)
 
-4. **Analyser les resultats** :
+4. **Analyser les résultats** :
    - Le modèle bat-il le buy-and-hold ?
    - Quelle est la precision de prediction ?
    - Y a-t-il des periodes de sous-performance ?
@@ -288,7 +288,7 @@ layout: default
 layout: default
 ---
 
-# Ex03 - Resultats Attendus
+# Ex03 - Résultats Attendus
 
 | Metrique | Valeur de reference |
 |----------|---------------------|
@@ -346,7 +346,7 @@ layout: default
 3. **Executer le backtest** et analyser :
    - Quand le modèle detecte-t-il un changement de regime ?
    - Comment l'allocation SPY/TLT change-t-elle ?
-   - Quel est le role du GLD (10% constant) ?
+   - Quel est le rôle du GLD (10% constant) ?
 
 </v-click>
 
@@ -355,7 +355,7 @@ layout: default
 ### Hints
 
 - `MarkovRegression` de `statsmodels` avec `k_regimes=2`
-- `switching_variance=True` permet des variances differentes par regime
+- `switching_variance=True` permet des variances différentes par regime
 - Allocation : `poids_SPY = prob_low_vol * 0.80`
 - Seuil de confirmation : prob > 0.55 pour rebalancer
 
@@ -365,7 +365,7 @@ layout: default
 layout: default
 ---
 
-# Ex04 - Resultats Attendus
+# Ex04 - Résultats Attendus
 
 | Metrique | Valeur de reference |
 |----------|---------------------|
@@ -482,7 +482,7 @@ layout: default
 2. **Executer le backtest** et analyser
 
 3. **Comparer** avec le Random Forest (Ex03) :
-   - Quelle methode est plus performante ?
+   - Quelle méthode est plus performante ?
    - Laquelle s'adapte mieux aux changements de regime ?
 
 </v-click>
@@ -502,7 +502,7 @@ layout: default
 layout: default
 ---
 
-# Ex06 - Resultats Attendus
+# Ex06 - Résultats Attendus
 
 | Metrique | Valeur de reference |
 |----------|---------------------|
@@ -550,7 +550,7 @@ layout: default
 
 1. **Comprendre l'architecture LSTM** :
    - Comment les cellules LSTM memorisent-elles l'information ?
-   - Quelle est la difference avec un RNN classique ?
+   - Quelle est la différence avec un RNN classique ?
    - Pourquoi `hidden_size = 32` ?
 
 <v-click>
@@ -578,7 +578,7 @@ layout: default
 layout: default
 ---
 
-# Ex07 - Resultats Attendus
+# Ex07 - Résultats Attendus
 
 | Metrique | Valeur de reference |
 |----------|---------------------|
@@ -613,9 +613,9 @@ layout: default
 
 ### Ce que vous allez apprendre
 
-- Formulation du trading comme probleme de RL
+- Formulation du trading comme problème de RL
 - Etat, action, recompense dans un contexte financier
-- Deep Q-Network (DQN) avec experience replay
+- Deep Q-Network (DQN) avec expérience replay
 
 ### Sources
 
@@ -638,7 +638,7 @@ layout: default
 
 2. **Analyser le DQN** :
    - Comment fonctionne l'exploration (epsilon-greedy) ?
-   - Qu'est-ce que l'experience replay ?
+   - Qu'est-ce que l'expérience replay ?
    - Pourquoi un target network ?
 
 </v-click>
@@ -656,7 +656,7 @@ layout: default
 ### Hints
 
 - `epsilon` decroit de 0.3 a 0.05 (exploration -> exploitation)
-- Experience replay : le modèle re-apprend de situations passees
+- Expérience replay : le modèle re-apprend de situations passees
 - Le Q-network est un simple MLP (pas de convolution)
 - Attention au surapprentissage sur une seule periode
 
@@ -666,7 +666,7 @@ layout: default
 layout: default
 ---
 
-# Ex08 - Resultats Attendus
+# Ex08 - Résultats Attendus
 
 | Metrique | Valeur de reference |
 |----------|---------------------|
@@ -676,8 +676,8 @@ layout: default
 
 ### Concepts cles
 
-- **Exploration vs Exploitation** : equilibre entre essayer de nouvelles strategies et exploiter les connues
-- **Experience Replay** : rompt la correlation temporelle des observations
+- **Exploration vs Exploitation** : equilibre entre essayer de nouvelles stratégies et exploiter les connues
+- **Expérience Replay** : rompt la correlation temporelle des observations
 - **Target Network** : stabilise l'apprentissage
 
 ---
@@ -722,7 +722,7 @@ layout: default
 2. **Analyser l'implementation simplifiee** :
    - Comment les valeurs continues sont-elles tokenisees ?
    - Comment le transformer predit-il les tokens futurs ?
-   - Quelle est la difference avec LSTM (Ex07) ?
+   - Quelle est la différence avec LSTM (Ex07) ?
 
 </v-click>
 
@@ -739,7 +739,7 @@ layout: default
 ### Hints
 
 - Chronos tokenize les valeurs en entiers via quantization
-- Le forecasting devient un probleme de "language modeling"
+- Le forecasting devient un problème de "language modeling"
 - Implementation simplifiee dans le projet (pas le vrai package `chronos`)
 - Pour la version complete : `from chronos import ChronosPipeline`
 
@@ -749,7 +749,7 @@ layout: default
 layout: default
 ---
 
-# Ex09 - Resultats Attendus
+# Ex09 - Résultats Attendus
 
 | Metrique | Valeur de reference |
 |----------|---------------------|
@@ -794,7 +794,7 @@ layout: default
 layout: default
 ---
 
-# Resultats Comparatifs (Backtests QC Cloud)
+# Résultats Comparatifs (Backtests QC Cloud)
 
 | Exercice | Sharpe | CAGR | Max DD | Win Rate |
 |----------|--------|------|--------|----------|
@@ -804,7 +804,7 @@ layout: default
 | Ex09 Chronos | 0.774 | 15.54% | 33.72% | ~54% |
 | Ex08 RL | 0.639 | 8.06% | 20.81% | ~53% |
 
-> **Note** : Les performances passees ne garantissent pas les resultats futurs.
+> **Note** : Les performances passees ne garantissent pas les résultats futurs.
 > L'objectif est pedagogique, pas la recherche du meilleur Sharpe.
 
 ---
@@ -816,15 +816,15 @@ layout: default
 ### Avant chaque exercice
 1. Lisez le **notebook de cours** associe
 2. Explorez le **code source** du projet sur GitHub
-3. Notez les **paramètres** et leur role
+3. Notez les **paramètres** et leur rôle
 
 ### Pendant l'exercice
 4. Executez d'abord le backtest **tel quel**
 5. Puis **modifiez un paramètre** a la fois
 6. **Documentez** vos observations
 
-### Apres l'exercice
-7. **Comparez** avec les resultats de reference
+### Après l'exercice
+7. **Comparez** avec les résultats de reference
 8. **Reflechissez** : pourquoi cette performance ?
 9. **Experimentez** avec les suggestions "pour aller plus loin"
 
@@ -845,8 +845,8 @@ layout: default
 
 - Toujours **diviser** la periode (train / validation / test)
 - **Reentrainer** periodiquement les modèles
-- **Diversifier** les strategies plutot qu'optimiser une seule
-- **Questionner** les resultats anormalement bons
+- **Diversifier** les stratégies plutot qu'optimiser une seule
+- **Questionner** les résultats anormalement bons
 
 ---
 layout: cover
