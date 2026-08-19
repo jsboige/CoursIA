@@ -13,9 +13,13 @@ maturity: BETA=222, ALPHA=6, DRAFT=4
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
 
-Vous y découvrirez huit domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **résolution SMT** (Z3, satisfiability modulo theories) automatise la décision sous contraintes — cryptarithmes, planification, vérification de propriétés. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
+Vous y découvrirez huit domaines complémentaires qui, ensemble, couvrent le **cycle complet du raisonnement vérifiable** à l'ère des LLMs : **représenter** la connaissance (Tweety pour les logiques formelles et l'argumentation, SemanticWeb pour le web de données RDF/SPARQL/OWL), **prouver** quand la certitude est exigée (Lean 4 et le vérificateur de preuves Mathlib4 — y compris les théorèmes phares 2026 : Sendov, *Analysis I* Tao, PFR, MIMO, M₂₃), **décider sous contraintes** (SMT / Z3, le solveur industriel de référence, en API impérative Python et en binding déclaratif C# via Z3.Linq), **agir dans le monde réel** (Planners pour la planification PDDL/CP-SAT, SmartContracts pour la logique vérifiable sur blockchain), **apprendre à partir de connaissances** plutôt que de données (SymbolicLearning, AIMA ch. 19), et **relier ce pipeline aux LLMs** (Argument Analysis, jette un pont exploitable entre sémantique formelle et IA générative). Chaque sous-série est autonome et peut être suivie isolément, mais elles sont traversées par un **fil rouge** : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps et deviennent deux couches d'un même système fiable. La carte mermaid ci-dessous matérialise les ponts entre ces domaines — nœuds colorés selon leur rôle (fondations, applications, ponts neuro-symboliques).
 
-**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques) :
+**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques). Lecture de la carte : les **flèches pleines** (`-->`) marquent un pont conceptuel direct (la sous-série aval **consomme** ou **généralise** l'amont) ; les **flèches pointillées** (`-.->`) marquent un pont par **companion** (un notebook natif dans une autre série qui formalise la théorie). Trois classes visuelles séparent les rôles :
+
+- **Fondations** (bleu) : les formalismes de base du raisonnement symbolique — Tweety, SemanticWeb, Lean.
+- **Applications** (vert) : les séries qui **exploitent** les formalismes dans le monde réel — SMT, Planners, SmartContracts.
+- **Ponts neuro-symboliques** (ambre) : les séries qui **relient** le symbolique au génératif — Argument Analysis, SymbolicLearning.
 
 ```mermaid
 flowchart TD
@@ -28,14 +32,19 @@ flowchart TD
     AA["Argument Analysis<br/>Pont LLM (sophismes, SK)"]
     SL["SymbolicLearning<br/>Apprentissage symbolique (AIMA 19)"]
 
+    %% Ponts conceptuels (flesches pleines = consommation / généralisation)
     TW -->|"generalise en representation"| SW
-    TW -.->|"companion natif (Tweety-5b)"| LEAN
-    LEAN -.->|"companion (planners_lean)"| PL
-    SMT -.->|"meme solveur Z3"| PL
     LEAN -->|"verification de proprietes"| SMT
-    TW --> AA
-    SW -->|"GraphRAG / linked data"| AA
-    AA --> SL
+    SMT -->|"meme solveur Z3 (CP-SAT)|"| PL
+    PL -->|"contraintes executees sur blockchain"| SC
+    SW -->|"graphes de connaissances + GraphRAG"| AA
+    AA -->|"induction logique + regles LLM"| SL
+
+    %% Ponts par companion (flesches pointillees = notebook natif en Lean)
+    TW -.->|"Tweety-5b (proof natif)"| LEAN
+    LEAN -.->|"planners_lean (h-add)"| PL
+    LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
+    TW -.->|"induction logique (FOIL)"| SL
 
     classDef found fill:#e8f0fe,stroke:#1a73e8
     classDef app fill:#e6f4ea,stroke:#188038
@@ -44,6 +53,8 @@ flowchart TD
     class SMT,PL,SC app
     class AA,SL bridge
 ```
+
+**Lecture recommandée** : les apprenants qui découvrent l'IA symbolique peuvent lire la carte comme un **parcours** — Tweety ou SemanticWeb en entrée (représentation), Lean comme verrou de rigueur (vérification), SMT ou Planners en première application (décision), avant les ponts LLM (Argument Analysis) et l'apprentissage symbolique (SymbolicLearning). Les chercheurs en vérification formelle peuvent **inverser** la lecture : Lean → SMT → Planners (companion `planners_lean`) → SmartContracts (companion `sensitivity_lean`), avant de revenir à Tweety pour l'argumentation structurée.
 
 **À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python, SymbolicLearning) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
 
@@ -807,7 +818,9 @@ Les huit domaines ci-dessus ne sont pas huit sujets indépendants : ils forment 
 - **Apprendre** à partir de connaissances plutôt que de données brutes (SymbolicLearning : de l'induction logique aux pipelines neuro-symboliques).
 - **Relier** ce pipeline aux LLMs (Argument Analysis : le symbolique comme garde-fou vérifiable du génératif).
 
-La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis).
+Ce pipeline n'est pas une simple énumération — c'est un **cercle**. Une décision Z3 (SMT) peut être certifiée par une preuve Lean (prouveurs externes au format SMT-LIB) ; un planificateur PDDL (Planners) peut s'exécuter sur une blockchain (SmartContracts) en garantissant que le plan n'a pas été altéré ; un argument détecté par LLM (Argument Analysis) peut être formalisé en logique Tweety, validé par un prouveur, puis rejoué dans un notebook d'apprentissage (SymbolicLearning). La **boucle complète** est ce que chaque sous-série contribue à fermer, par un bout différent. C'est aussi pourquoi les **companions Lean** (Tweety-5b, Planners-5b, sensitivity_lean) ne sont pas des sous-produits : ce sont les **points de certification** où le symbolique passe du raisonnement plausible à la **preuve vérifiée**.
+
+La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis). La série couvre ainsi toute la **bande passante** entre la logique formelle pure et le déploiement industriel — depuis le toy example du croque-mort qui raisonne sur Tweety jusqu'au solveur Z3 qui valide un billion d'instructions cryptographiques sur une blockchain. C'est cette **amplitude** qui fait la cohérence de la famille, et qui rend chacun des huit domaines plus profond quand on l'aborde avec les sept autres en tête.
 
 ### Prochaines étapes
 
