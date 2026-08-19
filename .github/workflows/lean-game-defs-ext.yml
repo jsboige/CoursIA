@@ -33,4 +33,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext
       display-name: lean_game_defs_ext
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

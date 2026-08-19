@@ -2,10 +2,15 @@
   family: GameTheory/.NET-Parity
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : nashpy (lib SOTA du twin Python, `nash.Game(A,B).support_enumeration()`) invoque depuis le notebook C# via CLI Process.Start (cellule 6.3) sur les 5 jeux canoniques (PD, MP, BoS, RPS, Asym 3x2), en plus du pont Gambit CLI deja branche (cellule 6.2, PR #10442). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). Axe 6 : nashpy couvre le meme role que le SupportEnumeration from-scratch (enumeration de supports pour les NE purs et mixtes) -> le pont est desormais wire. Comparaison numerique (cellule 6.3 du C#) : 5/5 jeux concordent (ecart max 3.3e-07, exploitabilite = 0 partout). RPS : nashpy retrouve l'equilibre uniforme (1/3,1/3,1/3) ; BoS : 3 NE (2 purs + mixte 2/3,1/3) ; Asym : 2 NE mixtes -- identiques aux resultats du twin Python (meme moteur nashpy). From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE. parity_level `semantic` conservee (cf. jumeaux part-2 et GT-4, precedent pont Gambit)."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
+      csharp_sha: e3a20c5a309c90f173c5494dc7cd032aa77fe37c
+      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint scipy.optimize.linprog (solveur LP) et nashpy (cell1 `import nashpy`), C# atteint les binaires Gambit 16.7.0 (gambit-lcp Lemke-Howson + gambit-enummixed via Process.Start, cell25-26) ainsi qu'un pont nashpy de cross-check (cell29). Les deux cotes executent des solveurs d'equilibre de production. NB : le hit 'IKVM' du detecteur etait un artefact (aucune occurrence IKVM dans le notebook C#, verifie par grep). Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
       python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74

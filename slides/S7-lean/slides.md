@@ -69,8 +69,8 @@ lean --version  # Lean 4.x.x
 
 ## Kernel Jupyter pour Lean 4
 
-- **lean4jupyter** : execution cellule-par-cellule dans Jupyter
-- **Lake** : systeme de build et de gestion de packages
+- **lean4jupyter** : exécution cellule-par-cellule dans Jupyter
+- **Lake** : système de build et de gestion de packages
 - **Mathlib** : ajout dans `lakefile.lean` via `require mathlib`
 
 ## Verification de l'installation
@@ -203,7 +203,7 @@ layout: section
 
 ## La plus grande bibliotheque de maths formalisees
 
-- **150 000+ theoremes** : algebre, topologie, theorie des nombres, analyse
+- **150 000+ theoremes** : algebre, topologie, théorie des nombres, analyse
 - **Tactiques avancees** : `ring`, `linarith`, `norm_num`, `decide`, `field_simp`
 
 ```lean
@@ -236,7 +236,7 @@ theorem fermat_last_n2 : ∀ a b c : ℕ, a^2 + b^2 = c^2 → ... := by
 
 ## AlphaProof (DeepMind 2024)
 
-- Premier systeme a resoudre des problemes IMO avec Lean
+- Premier système a resoudre des problemes IMO avec Lean
 - **Reinforcement learning** sur l'espace des preuves Lean
 - Certaines preuves verificables mais **non interpretables par un humain**
 
@@ -258,7 +258,7 @@ theorem fermat_last_n2 : ∀ a b c : ℕ, a^2 + b^2 = c^2 → ... := by
 
 - **Orchestrateur** : decompose un theoreme complexe en sous-buts
 - **Prouver** : tente chaque sous-but avec tactiques + LLM
-- **Verifier** : Lean verifie formellement chaque etape
+- **Verifier** : Lean verifie formellement chaque étape
 
 ```python
 from prover.agents import MultiAgentSorryProver
@@ -298,7 +298,7 @@ kernel.add_plugin(lean_plugin, "Lean")
 
 ## Architecture multi-agents pour les preuves
 
-- **Orchestrateur** : planifie la strategie de preuve globale
+- **Orchestrateur** : planifie la stratégie de preuve globale
 - **Tactician** : selectionne les tactiques locales
 - **Checker** : verifie la validite formelle
 - **Explainer** : traduit la preuve en prose mathematique
@@ -309,7 +309,7 @@ kernel.add_plugin(lean_plugin, "Lean")
 
 # Lean 10 — LeanDojo
 
-## Extraction de donnees depuis Mathlib
+## Extraction de données depuis Mathlib
 
 ```python
 from lean_dojo import LeanGitRepo, trace
@@ -362,7 +362,7 @@ theorem network_robust (x : Vector ℝ n) (ε : ℝ) (hε : ε > 0) :
 
 ## Le theoreme (Huang 2019)
 
-**Tout** circuit booleen de profondeur `d` calcule une fonction de sensibilite ≤ `2^(d-1)`.
+**Tout** circuit booléen de profondeur `d` calcule une fonction de sensibilite ≤ `2^(d-1)`.
 Preuve utilisant les **graphes d-dimensionnels et les matrices signing**.
 
 ```lean
@@ -377,7 +377,7 @@ theorem sensitivity_theorem (f : BoolFunc n) (C : Circuit n) :
 ## Significance
 
 - Resout une **conjecture ouverte depuis 30 ans**
-- Premiere preuve formelle en Lean 4 dans ce repo
+- Première preuve formelle en Lean 4 dans ce repo
 
 > **Notebook** : `Lean-12-Sensitivity-Theorem.ipynb` — 60 min
 
@@ -408,7 +408,7 @@ Lean 4
 | Serie | Lien |
 |-------|------|
 | **S1-argumentation** | Argumentation formelle (Tweety ↔ Lean) |
-| **S6-tweety** | Preferences → Arrow's impossibility prouvee en Lean |
+| **S6-tweety** | Préférences → Arrow's impossibility prouvee en Lean |
 | **03-logique** | Cours magistral logique propositionnelle + FOL |
 | **GameTheory** | `social_choice_lean/` : Arrow/Sen/Voting formels |
 

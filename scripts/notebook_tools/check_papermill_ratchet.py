@@ -21,7 +21,9 @@ Everything else is clean, by design of the issue body:
 Usage:
     python check_papermill_ratchet.py <base-ref> [--json]
 
-    base-ref      git ref of the merge base (CI: origin/<base branch>)
+    base-ref      base branch ref (CI: origin/<base branch>). Resolved
+                  internally to merge-base(base-ref, HEAD), so a branch
+                  behind its base is judged on its own diff only.
 
 Head state reads the working tree (in CI the checkout IS the head), base
 state reads the blob via `git show`. Exit code 1 iff at least one
@@ -48,6 +50,25 @@ def git(*args, cwd=None):
     except OSError:
         return None
     return out.stdout if out.returncode == 0 else None
+
+
+def resolve_base(base, cwd=None):
+    """Resolve `base` to merge-base(base, HEAD).
+
+    The gate must judge what the branch CHANGED, not how far behind it is.
+    Comparing a stale branch tree-to-tree against the tip of its base branch
+    reports every notebook the base advanced meanwhile -- with the sign
+    reversed, since the branch still holds the older blob -- and attributes
+    those to the PR.  Measured on #11528 (a one-line markdown fix, 21 commits
+    behind main): 15 changed notebooks / 9 regressions against origin/main,
+    1 / 0 against the merge base.  The false verdict is the dangerous kind:
+    it sends an author to "repair" notebooks they never touched.
+
+    Falls back to the ref as given when no merge base exists (shallow clone,
+    unrelated histories), i.e. the previous behaviour.
+    """
+    out = git("merge-base", base, "HEAD", cwd=cwd)
+    return out.strip() if out and out.strip() else base
 
 
 def changed_notebooks(base, cwd=None):
@@ -137,6 +158,10 @@ def classify(base_state, head_state):
 
 def ratchet(base, cwd=None):
     """One record per changed notebook; regression = stale block ridden."""
+    # Resolved once: the file list and the base-side blobs must be read at
+    # the SAME point, or a notebook the branch AND the base both touched is
+    # compared against the base's newer version.
+    base = resolve_base(base, cwd=cwd)
     records = []
     for path in changed_notebooks(base, cwd=cwd):
         verdict, regression = classify(
