@@ -5,7 +5,17 @@ name: Lean CI (argumentation_lean)
 # First module: Argumentation. Knaster–Tarski grounded extension, Dung Fundamental
 # Lemma, the 5-semantics hierarchy — all 0 sorry. See argumentation_lean/README.md.
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the library is fully sorry-free;
+# sorry-filter-mode=real, baseline=0: the library is fully sorry-free;
+# this guards that NO new compiled-tactic `sorry` form is introduced
+# (`exact sorry`, `:= by sorry`, bare `sorry`, `sorry -- c`). `real`
+# = canonical awk (lean-build.yml:111-134) + word-bounded grep, the
+# prover harness `count_real_sorries` (FX-6 #1453). Bare `sorry` token
+# attacks (`:= by sorry`) are caught even when surrounded by a `·`
+# case-bullet (U+00B7). The "grounded is itself complete" milestone
+# (Dung Proposition 11, finite stabilization) is documented OPEN, NOT
+# sorry-backed. Top-level prose mentions of "sorry-free"/"sans sorry"
+# are inside `--` line comments stripped by the awk depth-tracking —
+# they’re NEVER counted. See lean-build.yml.
 # this guards that NO new standalone `sorry` tactic is introduced (never
 # false-positives on the prose mentions of "sorry-free"/"sans sorry"; catches any
 # NEW standalone sorry). The "grounded is itself complete" milestone (Dung
@@ -38,4 +48,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean
       display-name: argumentation_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

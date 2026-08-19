@@ -109,6 +109,29 @@ _PATTERN_WITNESSES = (
     "simanneal non disponible",
 )
 
+# --- benign banners: matched above, and NOT a tool failure -----------------
+# The emitter says in the same breath that it fell back to a WORKING
+# implementation. The transformers fast-path banner is a PERFORMANCE notice
+# -- identical outputs, slower kernel -- and it is already committed on main
+# in PT_03 and PT_05, merged as the normal state of the PostTraining series
+# (2 occurrences repo-wide, measured 2026-08-19). Blocking PT_02 for carrying
+# the same line would send an author to build a CUDA kernel in order to
+# silence a warning that changed nothing in the notebook (render-volume delta
+# base -> head on #11439: zero loss, PT_02 gains 440 B of widget output).
+#
+# The exception is LITERAL and narrow on purpose. A general "falling back"
+# allowlist would swallow the founding incident itself: its .NET helper ALSO
+# fell back -- to a path that destroyed the SVG. Banners are stripped from a
+# COPY of the text before matching, so a genuine failure sharing the same
+# stream still fires (asserted by --self-test).
+BENIGN_BANNERS = (
+    re.compile(
+        r"\[transformers\]\s*The fast path is not available because one of "
+        r"the required library is not installed\.\s*"
+        r"Falling back to torch implementation\.",
+        re.IGNORECASE),
+)
+
 # --- class 2: absolute path of the executing machine ------------------------
 MACHINE_PATH_PATTERNS = (
     # Windows drive-letter path with at least two segments: D:\dev\CoursIA
@@ -226,8 +249,11 @@ def scan(nb):
     for idx, text in output_texts(nb):
         if not text:
             continue
+        probe = text
+        for _ban in BENIGN_BANNERS:
+            probe = _ban.sub(" ", probe)
         for pat in TOOL_FAILURE_PATTERNS:
-            m = pat.search(text)
+            m = pat.search(probe)
             if m:
                 found["TOOL_FAILURE"].append((idx, m.group(0)[:120]))
                 break
@@ -291,6 +317,26 @@ def self_test(cwd=None):
         if hit:
             failures.append("benign text matched " + str(hit) + ": "
                             + repr(benign))
+
+
+    # Benign banner: matched by "not available", neutralised by
+    # BENIGN_BANNERS -- and it must NOT mask a real failure in the same
+    # stream. Both directions asserted: an exception that only proves it
+    # silences is indistinguishable from a hole.
+    _banner = ("[transformers] The fast path is not available because one of "
+               "the required library is not installed. Falling back to torch "
+               "implementation. To install follow https://github.com/fla-org/"
+               "flash-linear-attention#installation")
+
+    def _one(text):
+        return scan({"cells": [{"cell_type": "code", "outputs": [
+            {"output_type": "stream", "text": text}]}]})["TOOL_FAILURE"]
+
+    if _one(_banner):
+        failures.append("benign transformers fast-path banner still fires")
+    if not _one(_banner + "\nbash: dot: command not found"):
+        failures.append("benign banner masked a real failure in the same "
+                        "stream")
 
     # Replay the founding commit against its parent.
     if git("cat-file", "-e", SELF_TEST_COMMIT, cwd=cwd) is None:
