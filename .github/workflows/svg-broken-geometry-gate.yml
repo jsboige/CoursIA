@@ -58,6 +58,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: svg-broken-geometry-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   svg-broken-geometry:
     name: "No SVG broken-geometry (negative-dim) defect in changed notebooks"

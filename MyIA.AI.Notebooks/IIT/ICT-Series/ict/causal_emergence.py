@@ -346,3 +346,48 @@ def apportionment_table(result: dict) -> list:
             None if s["delta_cp"] is None else round(s["delta_cp"], 4),
         ))
     return rows
+
+
+# ------------------------------------------------------- partitions dessinees
+def partition_profile(tpm, groups) -> dict:
+    """Profil causal d'un PARTITIONNEMENT arbitraire des micro-etats.
+
+    Contrairement a :func:`greedy_apportionment` (qui CHERCHE la fusion
+    gloutonne la plus profitable), cette fonction EVALUE une partition
+    dessinee a la main -- par le destin dynamique (fibres de la fonction
+    successeur), par une observable macro (population, energie...), ou toute
+    autre structure. C'est l'outil du test de Hoel sur substrat certifie
+    (issue #5726, notebook ICT-32) : la question n'est plus « quelle macro le
+    glouton trouve-t-il ? » mais « la macro que la dynamique SUGGERE bat-elle
+    le micro ? », avec pour temoin negatif une partition qui ne suit pas la
+    structure causale.
+
+    ``groups`` : liste de listes d'indices micro, partition EXHAUSTIVE et
+    disjointe de ``range(n)`` (verifie). La TPM macro ligne ``i`` est la
+    distribution du groupe successeur, moyennee sur les etats du groupe
+    ``i`` pondere uniformement (intervention do(micro) uniforme dans le
+    groupe, cf. la construction canonique de Hoel 2013).
+
+    Retourne le meme dict que :func:`causal_profile`, plus la cle
+    ``macro_tpm`` (la matrice agregee, pour inspection).
+    """
+    m_tpm = validate_tpm(tpm)
+    n = m_tpm.shape[0]
+    flat = [s for g in groups for s in g]
+    if sorted(flat) != list(range(n)):
+        raise ValueError(
+            "partition_profile : groups doit etre une partition exhaustive "
+            "et disjointe de range(n) (doublon ou etat manquant)"
+        )
+    assign = np.empty(n, dtype=int)
+    for gi, g in enumerate(groups):
+        for s in g:
+            assign[s] = gi
+    macro = np.zeros((len(groups), len(groups)))
+    for gi, g in enumerate(groups):
+        nxt = m_tpm[list(g)].sum(axis=0)
+        macro[gi] = np.bincount(assign, weights=nxt, minlength=len(groups))
+    macro /= macro.sum(axis=1, keepdims=True)
+    prof = causal_profile(macro)
+    prof["macro_tpm"] = macro
+    return prof

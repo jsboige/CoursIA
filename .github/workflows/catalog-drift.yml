@@ -38,6 +38,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: catalog-drift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   catalog-drift:
     name: "Notebook catalog drift (read-only)"

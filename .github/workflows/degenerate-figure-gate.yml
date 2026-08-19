@@ -60,6 +60,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: degenerate-figure-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   degenerate-figure:
     name: "No degenerate figure in changed notebooks"

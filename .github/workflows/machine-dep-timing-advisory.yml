@@ -36,6 +36,10 @@ on:
             - 'scripts/notebook_tools/check_machine_dep_timing.py'
             - 'scripts/notebook_tools/tests/test_check_machine_dep_timing.py'
 
+concurrency:
+  group: machine-dep-timing-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
     machine-dep-timing:
         runs-on: ubuntu-latest

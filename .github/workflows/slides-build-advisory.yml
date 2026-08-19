@@ -68,6 +68,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: slides-build-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   slides-build-advisory:
     name: "Slidev build advisory (label, non-blocking)"
