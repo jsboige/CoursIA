@@ -34,6 +34,12 @@
       csharp_sha: 7e97fae158d43d849d56cc0fbd91671452e15184
       content_python_sha: 4598374c81536f452f4f907a9d153ab67ea84abd398e0aa05e72f243ff55c968
       content_csharp_sha: a48883881358fcfcec35103227c761928c7069a50048ebbce1aaf70fbacabec8
+    - date: "2026-08-19"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 7d54b3592a0d13bf58d4af6c2ce2a4b85a390ded
+      csharp_sha: 7e97fae158d43d849d56cc0fbd91671452e15184
+      content_python_sha: 63a80ea314cee32b4822dcd7d4fc06fc88863e1acfb14f28f65a4c8a266a11ac
+      content_csharp_sha: a48883881358fcfcec35103227c761928c7069a50048ebbce1aaf70fbacabec8
   known_differences:
     - "Socle pedagogique commun : global constraints (all_different, sum, element) + backtracking avec propagation globale + symetrie breaking (lexicographique)."
     - "Cote C# : Choco-solver (memes recettes infrastructure) - global constraints implementes en Python pur (classe AllDifferent via matching de Hall), cote C# delegue a Choco.IntVar+Constraint via IKVM."
