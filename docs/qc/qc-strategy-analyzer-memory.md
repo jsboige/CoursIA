@@ -1,14 +1,18 @@
-# QC Strategy Analyzer - Agent Memory
+# QC Strategy Analyzer — Agent Memory (relocalisé)
+
+> **Origine** : fichier `.claude/agent-memory/qc-strategy-analyzer/MEMORY.md` (relocalisé en c.1301+211 dans le cadre de l'EPIC #9535, item 7 PR-C narrow). Le contenu est conservé tel quel (anti-régression : cf triage jsboigeEpita, durable vs scratch) ; les chemins machine hardcodés sont remplacés par des placeholders (« `<workspace>` » pour le working dir, « `<tool-results>/` » pour le cache MCP) — la description du pattern reste valide, seule la localisation absolue est neutralisée.
+>
+> **Statut** : durable. Le contenu documente (a) le **contexte projet** (organisation QC PAID, docs clés) ; (b) les **patterns MCP** (`read_backtest` payload size, régime analysis rolling windows) ; (c) les **fixes de patterns** (vague 1.0 → 2.0) ; (d) les **leçons opérationnelles** (multi-stratégie, optuna, GPU). Ce sont des invariants d'environnement, pas du scratch daté.
 
 ## Project Context
-- **Working dir**: `d:/CoursIA/MyIA.AI.Notebooks/QuantConnect/projects/`
+- **Working dir** : `<workspace>/MyIA.AI.Notebooks/QuantConnect/projects/` (relatif au checkout local)
 - **Key docs**: `OPTIMIZATION_BACKLOG.md`, `REGIME_ANALYSIS.md`
 - **QC org**: d600793e (personal, PAID - backtests work)
 
 ## MCP Tool Patterns
 
 ### read_backtest returns very large payloads
-- Results saved to `C:\Users\MYIA\.claude\projects\d--CoursIA\<session>\tool-results\*.txt`
+- Results saved to `<tool-results>/*.txt` (cache MCP, basename par session)
 - Use Python to extract: `data['backtest']['statistics']` for key metrics
 - Use `data['backtest']['rollingWindow']` for regime analysis
   - Keys: `M12_YYYYMMDD` (trailing 12m), `M1_YYYYMMDD` (trailing 1m)

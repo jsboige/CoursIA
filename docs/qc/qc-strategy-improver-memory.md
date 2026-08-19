@@ -1,4 +1,10 @@
-# QC Strategy Improver - Agent Memory
+# QC Strategy Improver — Agent Memory (relocalisé)
+
+> **Origine** : fichier `.claude/agent-memory/qc-strategy-improver/MEMORY.md` (relocalisé en c.1301+211 dans le cadre de l'EPIC #9535, item 7 PR-C narrow). Le contenu est conservé tel quel (anti-régression : cf triage jsboigeEpita, durable vs scratch) ; seul un sommaire FR est ajouté.
+>
+> **Statut** : durable. Le contenu documente (a) le **statut de 25 stratégies** (Sharpe v1 → latest, Cloud ID, issue #) avec identifier explicite du ceiling atteindable ; (b) les **leçons par stratégie** (Sector-ML-Classification, Chronos, LSTM, Momentum, Options, etc.) — patterns de factor momentum, position sizing, regime filters, multi-symbol warmup ; (c) les **règles critiques** (SPY Parking forbidden, read_file before update_file_contents, options = Resolution.MINUTE). C'est de la substance consolidée cross-stratégie, pas du snapshot daté.
+>
+> **Note de fraîcheur** : le dernier update documenté est 2026-03-28 (Sector-ML-Classification v5). Pour des chiffres récents, croiser avec `docs/qc/qc-strategies-status.md` (auto-généré par `qc-freshness` guard PR #11441). Ce fichier reste valide comme **consolidation de patterns** même si les chiffres précis datent.
 
 ## Strategy Status (last update 2026-03-28, Sector-ML-Classification v5)
 
