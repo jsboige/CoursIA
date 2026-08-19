@@ -31,4 +31,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples
       display-name: mathlib_examples
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

@@ -6,7 +6,18 @@ name: Lean CI (finiteness_lean)
 # RegexOptions.NonBacktracking). Autonome project (no Mathlib dependency).
 # Issue #3111 (merged, 0 sorry); this is the Lean angle of #2978.
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the module is entirely
+# sorry-filter-mode=real, baseline=0: the module is entirely sorry-free
+# (verified firsthand 2026-06-25, `lake build Finiteness` SUCCESS 4 jobs,
+# 0 standalone-tactic sorry; re-verified with canonical awk: 0 real).
+# `real` mode = canonical awk (lean-build.yml:111-134) + word-bounded
+# `sorry` grep, catches every compiled-tactic form while ignoring
+# prose mentions. standalone-tactic was the prior minimal-count mode;
+# `real` is a strict superset (catches `exact sorry`, `:= by sorry`,
+# case-bullet `· sorry`), still 0 here. See lean-build.yml.
+#
+# Gap in coverage: finiteness_lean was the only COMPLETE 0-sorry Lean lake
+# without a regression workflow (cooperative_games_lean / stable_marriage_lean
+# are covered by lean-game-theory.yml; this one had no CI at all).
 # sorry-free (verified firsthand 2026-06-25, `lake build Finiteness` SUCCESS
 # 4 jobs, 0 standalone-tactic sorry). standalone-tactic counts only standalone
 # `sorry` tokens (never prose false-positives). See lean-build.yml.
@@ -42,4 +53,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean
       display-name: finiteness_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
