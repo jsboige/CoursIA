@@ -67,5 +67,5 @@ sans collision — ports randomisés, noms de conteneurs suffixés.
 - Issue [#10838](https://github.com/jsboige/CoursIA/issues/10838) · Issue [#10857](https://github.com/jsboige/CoursIA/issues/10857) · Epic [#10473](https://github.com/jsboige/CoursIA/issues/10473)
 - Digestion [#11516](https://github.com/jsboige/CoursIA/issues/11516) (Parts 3-5 : streaming agent, tests d'intégration, observabilité) — série source [chrlschn.dev](https://chrlschn.dev/blog/2026/08/the-unexpected-ai-stack-csharp-dotnet-part-4/)
 - Grain #10474 : backend d'observabilité OTLP [`aspire-otel/`](../SemanticKernel/aspire-otel/) (même pattern SDK file-based)
-- Observabilité de la série SemanticKernel : [`04-Filters-Observability.ipynb`](../SemanticKernel/04-Filters-Observability.ipynb) (même famille A9, application directe au service streaming)
+- Observabilité de la série SemanticKernel : [`04-Filters-Observability.ipynb`](../SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb) (même famille A9, application directe au service streaming)
 - Pile GenAI : [`docker-configurations/`](../../../docker-configurations/)
