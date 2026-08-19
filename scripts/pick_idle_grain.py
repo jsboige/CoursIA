@@ -58,7 +58,8 @@ REPO = "jsboige/CoursIA"
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
     "lean", "qc", "training", "genai",
-    "notebook-python", "notebook-dotnet", "slides", "research-code",
+    "notebook-python", "notebook-dotnet", "notebook-lean", "slides",
+    "research-code",
 }
 META = {"guard", "tooling", "ledger", "docs", "readme", "test", "refactor"}
 
@@ -66,6 +67,12 @@ META = {"guard", "tooling", "ledger", "docs", "readme", "test", "refactor"}
 # Volontairement grossier -- le genre infere est une *aide au tri*, pas un
 # verdict : l'agent pose le vrai tag Grain: lui-meme.
 GENRE_RULES: list[tuple[str, str]] = [
+    # AVANT la regle `lean` generique : un notebook a kernel Lean est du
+    # travail de NOTEBOOK (materiel pedagogique), pas du travail de lake.
+    # L'ordre compte -- la regle generique ci-dessous matcherait "notebook
+    # Lean" en premier et le genre notebook-lean serait inatteignable.
+    # `[.]ipynb` == `\.ipynb` sans backslash a transporter.
+    (r"(?=.*(?:notebook|[.]ipynb|companion))(?=.*lean)", "notebook-lean"),
     (r"\.lean\b|\blean[-_ ]|\blake\b|sorry|mathlib|grothendieck|knot|hashlife|tao\b", "lean"),
     (r"quantconnect|\bqc[-_ (]|backtest|quantbook|lean-cli|sharpe", "qc"),
     (r"training|post[- ]?training|\bppo\b|fine[- ]?tun|checkpoint|walk[- ]?forward", "training"),

@@ -564,8 +564,8 @@ def parse_short_header(body: str | None) -> dict:
 TIERS = ("DEEP", "MED", "LIGHT")
 GENRES = (
     "lean", "qc", "training", "genai", "notebook-python", "notebook-dotnet",
-    "slides", "docs", "guard", "refactor", "ledger", "readme", "test",
-    "tooling", "research-code",
+    "notebook-lean", "slides", "docs", "guard", "refactor", "ledger", "readme",
+    "test", "tooling", "research-code",
 )
 
 

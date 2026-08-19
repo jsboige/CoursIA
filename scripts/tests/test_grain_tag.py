@@ -437,12 +437,29 @@ def test_prev_close_keyword_all_inflections():
 
 
 def test_prev_canonical_genres_pass():
-    # The 15 canonical genres contain NO closing keyword -> all pass.
-    for genre in ("lean", "qc", "training", "genai", "notebook-python",
-                  "notebook-dotnet", "slides", "docs", "guard", "refactor",
-                  "ledger", "readme", "test", "tooling", "research-code"):
+    # Iterate gt.GENRES itself, NOT a copy of it. A hardcoded list here would
+    # be a fourth duplicate of the enumeration, silently drifting from the one
+    # the guard actually enforces -- which is the very defect that let
+    # notebook-lean be labelled off-list while the cap ranked it CONTENT.
+    for genre in gt.GENRES:
         hits = gt.find_prev_close_keywords(f"prev: MED/{genre} #100")
         assert hits == [], f"canonical genre {genre} must NOT be flagged"
+
+
+def test_notebook_lean_is_canonical_content_genre():
+    # Regression guard for the two-organ disagreement (#11764): the cap
+    # canonicalized notebook-lean -> lean (CONTENT, correct) while the tag
+    # guard rejected it as off-list, labelling legitimate Lean-notebook grains
+    # variation-tag-genre-offlist. Both organs must now agree.
+    assert "notebook-lean" in gt.GENRES
+
+    import variation_light_cap as vlc  # sys.path already set at module level
+
+    canon = vlc.canonicalize_genre("notebook-lean")
+    assert canon == "notebook-lean", (
+        f"membership in GENRES must win over compound reduction, got {canon!r}"
+    )
+    assert canon not in vlc.LIGHT_GENRES, "a Lean notebook is CONTENT, never LIGHT"
 
 
 def test_prev_close_keyword_backtick_wrapped():
