@@ -103,6 +103,26 @@ repos:
         files: '\.ipynb$'
         stages: [pre-commit]
 
+      - id: fix-source-newlines
+        name: Auto-fix source-list-missing-newlines defects in staged notebooks
+        description: |
+          Auto-corrects the ``source_list_missing_newlines`` rule of
+          ``detect_markdown_rendering.py`` on staged notebooks. Two patterns
+          are fixed in place: (a) single-element collapsed cells (heading + body
+          fused into one string with no '\\n', rendering as a giant heading)
+          are split into a two-element list ``[heading + '\\n', body]`` at the
+          first body marker (`: `, `**`, `- `, `1. `, `> `); (b) multi-element
+          lists where some non-last element lacks a trailing '\\n' get one
+          inserted. The fix is text-equivalent on non-whitespace content
+          (only '\\n' is added — no character is removed). Cells where the
+          single-element split cannot find a body marker are reported in
+          --scan mode but NOT modified (manual follow-up). See #11737.
+        entry: python scripts/notebook_tools/fix_source_newlines.py --apply
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
+        stages: [pre-commit]
+
       - id: check-null-exec
         name: H.3 — refuse un-executed notebooks (execution_count=null + outputs=[])
         description: |
