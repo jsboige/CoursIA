@@ -24,11 +24,6 @@
       content_csharp_sha: 11afe2cc4be732239737bb5f1c96fd82aa76eb6e4198c3d35afe6000bba30866
     - date: "2026-08-19"
       by: myia-po-2026:CoursIA-2
-      csharp_sha: pending -- csharp_sha refreshed by check_twin_parity post-commit
-      content_csharp_sha: pending -- content_csharp_sha refreshed by check_twin_parity post-commit
-      known_differences_added: "Tranche 2 GeneticSharp bridge (c.140 / #10382) : chromosome par permutation de ligne, OX par ligne, swap intra-ligne, TplTaskExecutor + RandomizationProvider, redemarrages symetriques au PSO. Comparaison croisee PSO-from-scratch vs GA-GeneticSharp executee sur 3 puzzles faciles (15 s max). Correction honnetete census : mealpy cote PY = import try/except optionnel NON execute (output committe du jumeau : 'mealpy non installe (optionnel) - ce notebook utilise PSO manuel'). PSO execute cote PY = numpy manuel, symetrique du System.* cote CS Tranche 1."
-    - date: "2026-08-19"
-      by: myia-po-2026:CoursIA-2
       python_sha: 3f8a330a901faf100058a7dea8dbbd88495817fd
       csharp_sha: 96b06204505a481316c03ed66cc38ae473920dea
       content_python_sha: 2b96a9a0c3ba2aae10412800985b0be1df7e9449ee6af23b5583c207c5a09132
