@@ -55,6 +55,7 @@ def run(comments, commits=None, threads=None):
     data = {
         "number": 0,
         "title": "t",
+        "author": {"login": "jsboige"},
         "comments": comments,
         "reviews": [],
         "commits": commits if commits is not None else [{"committedDate": at(19)}],
@@ -478,7 +479,8 @@ def test_en_tete_hermes_emission_flagge_malgre_agent():
 
 def run_reviews(reviews):
     data = {
-        "number": 0, "title": "t", "comments": [], "reviews": reviews,
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [], "reviews": reviews,
         "commits": [{"committedDate": at(19)}],
     }
     return mod.analyse(data, [], MERGED)
@@ -700,7 +702,8 @@ CR_REVIEW = {
 
 def run_cr(comments=(), reviews=()):
     data = {
-        "number": 0, "title": "t", "comments": list(comments),
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": list(comments),
         "reviews": [CR_REVIEW, *reviews],
         "commits": [{"committedDate": at(19)}],
     }
@@ -746,7 +749,8 @@ def test_cr_dismissed_nest_pas_un_signal():
     """Levee (b) : une dismissal GitHub n'est possible que par l'auteur de la
     review (ou un admin) — formellement retiree des la collecte."""
     data = {
-        "number": 0, "title": "t", "comments": [],
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [],
         "reviews": [{"author": {"login": "myia-ai-01"},
                      "state": "DISMISSED", "submittedAt": at(10),
                      "body": "CHANGES_REQUESTED: cellule 19."}],
@@ -778,3 +782,182 @@ def test_nit_commentaire_garde_le_regime_general():
     reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
              "body": "Bien vu, corrige."}
     assert run([USER_NIT, reply])["blocked"] is False
+
+
+# --- #11145 : la borne d'auteur. Une levee ne compte que si elle vient de
+# l'auteur de la reserve OU de l'auteur de la PR (mesure #11494 sur 850 PRs :
+# SELF 22/37 = 59,5 % + PR_AUTHOR 6/37 = 16,2 % = flux sain preserve ;
+# BYSTANDER 9/37 = 24,3 % = la classe #10761 que l'organe bloque — une
+# approbation ou une reponse d'un tiers n'eteint pas une reserve posee par un
+# autre). Echappement B.0 : issue de suivi nommee.
+
+HERMES_NIT = {
+    "author": {"login": "clusterManager-Myia"}, "createdAt": at(10),
+    "body": "[Hermes] COMMENT_WITH_CONCERNS\n2 cellules manquent d'interp.",
+}
+
+
+def test_bystander_commentaire_ne_leve_pas_un_nit():
+    """#10761 : un tiers (ni auteur de la reserve, ni auteur de la PR) qui
+    repond apres le nit ne l'eteint pas — la reserve reste bloquante."""
+    bystander = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+                 "body": "Releve de mon cote, plus de conflit."}
+    assert run([USER_NIT, bystander])["blocked"] is True
+
+
+def test_bystander_approved_ne_leve_pas_un_nit():
+    """La classe mesuree #11494 (4 cas Hermes) : un APPROVED d'un reviewer
+    tiers n'eteint pas une reserve posee par un autre."""
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [USER_NIT],
+        "reviews": [{"author": {"login": "clusterManager-Myia"},
+                     "state": "APPROVED", "submittedAt": at(15),
+                     "body": "De mon cote c'est bon."}],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is True
+
+
+def test_auteur_du_nit_leve_son_nit():
+    """SELF (59,5 %) : l'auteur de la reserve revient repondre — le nit se
+    leve par le regime general borne (auteur == auteur du nit)."""
+    reply = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
+    assert run([HERMES_NIT, reply])["blocked"] is False
+
+
+def test_auteur_pr_repond_a_son_reviewer_leve():
+    """PR_AUTHOR (16,2 %) : le worker (auteur de la PR) repond au reviewer —
+    le flux sain que la borne preserve."""
+    reply = {"author": {"login": "jsboige"}, "createdAt": at(12),
+             "body": "Les 2 cellules d'interp sont ajoutees, commit abc."}
+    assert run([HERMES_NIT, reply])["blocked"] is False
+
+
+def test_bystander_explicit_lift_ne_leve_pas_changes_requested():
+    """#11145 sur l'etat CHANGES_REQUESTED : une PHRASE de levee d'un tiers
+    (ni l'auteur du CR, ni l'auteur de la PR) n'eteint pas l'etat."""
+    bystander = {"author": {"login": "clusterManager-Myia"}, "createdAt": at(12),
+                 "body": "Les 2 points sont adresses, commit abc123."}
+    assert run_cr([bystander])["blocked"] is True
+
+
+# --- #11639 : l'arbitrage ECRIT du coordinateur. B.0 ne restreint pas
+# l'auteur d'une reponse de levée, mais `_lift_eligible` ne creditait que
+# l'auteur du nit ou celui de la PR : tout arbitrage coordinateur laissait
+# le gate rouge, et le merge se faisait a EXIT=1 en routine — repete, ca
+# enseigne a merger rouge. La trappe est NOMMEE : `[OVERRIDE] lane <m:w>` +
+# phrase de levée (LIFT_MARKER), par un compte coordinateur. Pas une
+# ouverture generale : la restriction d'auteur #11145 tient pour tous les
+# autres.
+#
+# Mesure retro #11479 (timestamps reels) : reserve Hermes 2026-08-17T13:38Z,
+# levée nominative d'ai-01 13:06:34Z, merge 13:06:39Z, override ecrit
+# 13:07:40Z — 61 s APRES le merge. La borne anti-retroactivite (#10761 : un
+# commentaire post-merge n'a pas pu lever la reserve avant la decision)
+# exclut l'override reel : le retro live de #11479 reste EXIT=1, et c'est
+# voulu. La convention que ce correctif etablit : l'OVERRIDE s'ecrit AVANT
+# le merge (comme toute levée) — le test retro simule ce decalage.
+
+HERMES_REVIEW_11479 = {
+    "author": {"login": "clusterManager-Myia"},
+    "state": "COMMENTED", "submittedAt": "2026-08-17T13:38:00Z",
+    "body": "[Hermes] COMMENT_WITH_CONCERNS — tests exécutés en local : 44/44 "
+            "pass, mais 2 edge cases non couverts (issue #11058)",
+}
+MERGED_11479 = datetime(2026, 8, 18, 13, 6, 39, tzinfo=timezone.utc)
+
+OVERRIDE_BODY = (
+    "**[OVERRIDE] lane myia-ai-01:CoursIA** — Levée de la réserve Hermes "
+    "du 2026-08-17, en nommant chacun de ses points : gap 1 retiré par "
+    "Hermes lui-même, gaps 2-3 reportés sur #11058."
+)
+
+
+def run_coord(comments=(), reviews=(), merged=MERGED_11479):
+    """PR d'un worker NON coordinateur, reserve posee par un tiers — la
+    trappe OVERRIDE est le seul chemin de levée (ni SELF ni PR_AUTHOR)."""
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": list(comments),
+        "reviews": [HERMES_REVIEW_11479, *reviews],
+        "commits": [{"committedDate": "2026-08-18T12:00:00Z"}],
+    }
+    return mod.analyse(data, [], merged)
+
+
+def test_coord_override_avec_levee_leve():
+    """Acceptance 1 : [OVERRIDE] lane + phrase de levée par un coordinateur
+    leve la reserve qu'il arbitre — le seul chemin ouvert a l'arbitre tiers."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_coord_override_nu_ne_leve_rien():
+    """Acceptance 2 : un [OVERRIDE] sans phrase de levée ne lève rien —
+    l'override doit DIRE ce qu'il arbitre (can_lift l'écarte comme tag de
+    protocole nu, aucun LIFT_MARKER ne le réintroduit)."""
+    bare = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z",
+            "body": "[OVERRIDE] lane myia-ai-01:CoursIA — arbitrage : le "
+                    "point 3 est traité en argument, voir #11058."}
+    assert run_coord([bare])["blocked"] is True
+
+
+def test_tiers_avec_levee_sans_override_ne_leve_pas():
+    """Acceptance 3 (non-regression #11145) : un tiers quelconque qui écrit
+    une phrase de levée SANS override ne lève toujours pas — la restriction
+    d'auteur tient pour tout le monde sauf la trappe nommée."""
+    third = {"author": {"login": "myia-po-2024"},
+             "createdAt": "2026-08-18T13:06:34Z",
+             "body": "Les 2 points sont adressés, reportés sur #11058."}
+    assert run_coord([third])["blocked"] is True
+
+
+def test_override_par_un_non_coordinateur_ne_leve_pas():
+    """La trappe est coordinateur-only : un worker qui écrit lui-même
+    `[OVERRIDE] lane …` + phrase de levée ne leve pas la reserve d'un tiers
+    (il n'est ni l'auteur du nit, ni celui de la PR, ni arbitre)."""
+    fake = {"author": {"login": "myia-po-2024"},
+            "createdAt": "2026-08-18T13:06:34Z",
+            "body": "[OVERRIDE] lane myia-po-2024:CoursIA-2 — Levée de la "
+                    "réserve Hermes, reportée sur #11058."}
+    assert run_coord([fake])["blocked"] is True
+
+
+def test_retro_11479_reel_override_post_merge_ne_leve_pas():
+    """Retro #11479 tel que l'historique réel le porte (timestamps exacts) :
+    merge 13:06:39Z, override écrit 13:07:40Z. La borne anti-retroactivite
+    (#10761) exclut l'override postérieur — le retro live reste EXIT=1, la
+    convention à suivre est d'écrire l'override AVANT le merge."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:07:40Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is True
+
+
+def test_retro_11479_simule_override_pre_merge_leve():
+    """Le même retro, override déplacé AVANT le merge : le mécanisme crédite
+    l'arbitrage écrit — c'est la démonstration que seul l'ordonnancement
+    historique (et non le mécanisme) laissait #11479 à EXIT=1."""
+    lift = {"author": {"login": "myia-ai-01"},
+            "createdAt": "2026-08-18T13:06:34Z", "body": OVERRIDE_BODY}
+    assert run_coord([lift])["blocked"] is False
+
+
+def test_coord_override_leve_aussi_le_state_changes_requested():
+    """La trappe couvre la branche état natif (branche A) comme la branche
+    commentaire (branche B) : un CHANGES_REQUESTED d'un reviewer arbitré par
+    override écrit se lève aussi."""
+    cr = {"author": {"login": "hermes-bot"},
+          "state": "CHANGES_REQUESTED", "submittedAt": at(10),
+          "body": "CHANGES_REQUESTED: 2 edge cases non couverts."}
+    lift = {"author": {"login": "myia-ai-01"}, "createdAt": at(12),
+            "body": OVERRIDE_BODY}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [lift], "reviews": [cr],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False

@@ -1,0 +1,3546 @@
+{
+  "model": "Log-LSTM ETF-direction (M15 adapted, fine-tuned)",
+  "reference": "LSTM (Hochreiter & Schubhuber 1997), direct multi-step cumulative log-return forecast, terrain commun with Chronos-Bolt (#8610) and Kronos (#8620)",
+  "terrain_commun": {
+    "symbols": [
+      "SPY",
+      "TLT",
+      "GLD"
+    ],
+    "horizons": [
+      24,
+      66,
+      132
+    ],
+    "seeds": [
+      0,
+      1,
+      7,
+      42,
+      99
+    ],
+    "n_splits": 5,
+    "cost_bps": 10.0,
+    "window": 22,
+    "hidden_size": 64,
+    "num_layers": 1
+  },
+  "device": "cuda",
+  "is_trained": true,
+  "n_combos": 45,
+  "runtime_s": 3909.0574679374695,
+  "summary": [
+    {
+      "symbol": "SPY",
+      "horizon": 24,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.5015483161458987,
+      "majority_baseline": 0.5466249770093802,
+      "mean_edge": -0.04507666086348152,
+      "std_edge": 0.0017691033507453305,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 3.0050212650030894e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": -0.00019386437396194239,
+      "mean_bias_baseline": -0.00039425332586320063,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 66,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.5005516409682144,
+      "majority_baseline": 0.5466249770093802,
+      "mean_edge": -0.046073336041165855,
+      "std_edge": 0.0008280252507911853,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 5.695607582955172e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": -0.00031098585059875653,
+      "mean_bias_baseline": -0.0004271864356766783,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "SPY",
+      "horizon": 132,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.5018336922513618,
+      "majority_baseline": 0.5466249770093802,
+      "mean_edge": -0.04479128475801841,
+      "std_edge": 0.0005616408958103946,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 5.266244591557187e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": -0.000287392113484787,
+      "mean_bias_baseline": -0.0004524414004260024,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 24,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.49900734123730234,
+      "majority_baseline": 0.5111274599963215,
+      "mean_edge": -0.012120118759019116,
+      "std_edge": 0.0007041947714659316,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 3.6339607022424336e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": 5.6780986248954034e-05,
+      "mean_bias_baseline": 2.7150097582268684e-05,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 66,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.49938771642691016,
+      "majority_baseline": 0.5111274599963215,
+      "mean_edge": -0.01173974356941131,
+      "std_edge": 0.0008422208605466233,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 3.541524261425478e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": 0.00014271631199658932,
+      "mean_bias_baseline": 2.607419383364742e-05,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "TLT",
+      "horizon": 132,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.49844117937976884,
+      "majority_baseline": 0.5111274599963215,
+      "mean_edge": -0.012686280616552637,
+      "std_edge": 0.0007566001803436162,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 5.4424388019486326e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": 0.00019817768166557082,
+      "mean_bias_baseline": 3.851075067425611e-05,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 24,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.5029991993131457,
+      "majority_baseline": 0.5322788302372632,
+      "mean_edge": -0.02927963092411747,
+      "std_edge": 0.000550211049350473,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 4.7136167081031076e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": 0.00026821751401426427,
+      "mean_bias_baseline": -0.00034703950391955826,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 66,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.5034383667843914,
+      "majority_baseline": 0.5322788302372632,
+      "mean_edge": -0.028840463452871768,
+      "std_edge": 0.0007861974124269789,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 4.423148460832372e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": 0.0001980222649137575,
+      "mean_bias_baseline": -0.00035553955398561485,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    },
+    {
+      "symbol": "GLD",
+      "horizon": 132,
+      "n_seeds": 5,
+      "mean_direction_accuracy": 0.50132733150664,
+      "majority_baseline": 0.5322788302372632,
+      "mean_edge": -0.030951498730623063,
+      "std_edge": 0.0005541482209802687,
+      "n_beats": 0,
+      "sigma_leg": false,
+      "dm_leg": false,
+      "dm_p_median": 0.0,
+      "dm_mean_loss_diff_median": 4.889090325725486e-05,
+      "dm_loss_fn": "mse",
+      "mean_bias_model": 0.00011651150761837693,
+      "mean_bias_baseline": -0.00037176207914665666,
+      "sigma_only_legacy_verdict": false,
+      "beats_valid": false,
+      "verdict": "NO BEATS"
+    }
+  ],
+  "combos": [
+    {
+      "horizon": 24,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.501451847850204,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 18.027955000165157,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.0050212650030894e-05,
+        "n_observations": 103661,
+        "bias_model": -0.00021163645397253333,
+        "bias_baseline": -0.00039425332586320063,
+        "mae_model": 0.009043433365820567,
+        "mae_baseline": 0.007939941531560753
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5024954410212112,
+          "best_train_loss": 0.0006676872820077863,
+          "epochs_trained": 26
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49404933294941933,
+          "best_train_loss": 0.00039460414960298555,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4998560322487763,
+          "best_train_loss": 0.0002934174389605794,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4969766772243018,
+          "best_train_loss": 0.00024307374463857572,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5142055246442464,
+          "best_train_loss": 0.0003441416201056212,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04517312915917615,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5017991337147046,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 18.878406805598733,
+        "p_value": 0.0,
+        "mean_loss_diff": 2.9375579333224675e-05,
+        "n_observations": 103661,
+        "bias_model": -0.00022168696099629287,
+        "bias_baseline": -0.00039425332586320063,
+        "mae_model": 0.009013229460105545,
+        "mae_baseline": 0.007939941531560753
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5008158172569345,
+          "best_train_loss": 0.0006666289929333809,
+          "epochs_trained": 16
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49846434398694695,
+          "best_train_loss": 0.0003216152563254582,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5023034840195796,
+          "best_train_loss": 0.00029028521230964755,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49784048373164413,
+          "best_train_loss": 0.0002667838909747738,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5097739918262839,
+          "best_train_loss": 0.00031869792452095247,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04482584329467554,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.49895331899171336,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 19.295249661975376,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.243763761938767e-05,
+        "n_observations": 103661,
+        "bias_model": -0.00027279711045309597,
+        "bias_baseline": -0.00039425332586320063,
+        "mae_model": 0.009119599652975544,
+        "mae_baseline": 0.007939941531560753
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5006718495057108,
+          "best_train_loss": 0.0006679587999574973,
+          "epochs_trained": 23
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4927536231884058,
+          "best_train_loss": 0.0004139545547202163,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5006238602553028,
+          "best_train_loss": 0.00033059760650811605,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5011037527593819,
+          "best_train_loss": 0.0002727372511557872,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.49963070559850314,
+          "best_train_loss": 0.0003118373945698882,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04767165801766682,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5010563278378561,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 16.178871641445653,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.086487222229557e-05,
+        "n_observations": 103661,
+        "bias_model": -0.00018170139885826156,
+        "bias_baseline": -0.00039425332586320063,
+        "mae_model": 0.009017926403779467,
+        "mae_baseline": 0.007939941531560753
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5008638065073423,
+          "best_train_loss": 0.0006694305016675831,
+          "epochs_trained": 16
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4976485267300125,
+          "best_train_loss": 0.0004052991457034035,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5003359247528554,
+          "best_train_loss": 0.00034357302835868564,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5012477205106056,
+          "best_train_loss": 0.0002403109279292248,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5052932197547885,
+          "best_train_loss": 0.0003274091598264054,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.045568649171524034,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5044809523350151,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 18.040501552256114,
+        "p_value": 0.0,
+        "mean_loss_diff": 2.757302227587042e-05,
+        "n_observations": 103661,
+        "bias_model": -8.149994552952813e-05,
+        "bias_baseline": -0.00039425332586320063,
+        "mae_model": 0.008959731129027143,
+        "mae_baseline": 0.007939941531560753
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5067664843075151,
+          "best_train_loss": 0.0006627933658559673,
+          "epochs_trained": 32
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4985603224877627,
+          "best_train_loss": 0.00042131609578583654,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5044630002879354,
+          "best_train_loss": 0.00036463462542194656,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5003359247528554,
+          "best_train_loss": 0.0002548170079728506,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5124821507705943,
+          "best_train_loss": 0.0003129887580995428,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.042144024674365066,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.4992781462658282,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 13.091925545156728,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.216567594796331e-05,
+        "n_observations": 290225,
+        "bias_model": -0.00026854233246590044,
+        "bias_baseline": -0.0004271864356766783,
+        "mae_model": 0.009179720678607886,
+        "mae_baseline": 0.007856203024889695
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49801324503311256,
+          "best_train_loss": 0.00036458478384052536,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4956019697741552,
+          "best_train_loss": 0.0005796822271284847,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4985566310069621,
+          "best_train_loss": 0.0003899270230356385,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5018848700967906,
+          "best_train_loss": 0.0003386647225433829,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5025702003109851,
+          "best_train_loss": 0.0004374143739349823,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04734683074355195,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.500570247221983,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 12.399817509182387,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.695607582955172e-05,
+        "n_observations": 290225,
+        "bias_model": -0.00034850339105376604,
+        "bias_baseline": -0.0004271864356766783,
+        "mae_model": 0.009217784467975757,
+        "mae_baseline": 0.007856203024889695
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4998641535065376,
+          "best_train_loss": 0.00043106266925211197,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.498064187468161,
+          "best_train_loss": 0.0005478318494819437,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5031584309730005,
+          "best_train_loss": 0.0004337110005401294,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5007641365257259,
+          "best_train_loss": 0.0004026298339074824,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5010335680965883,
+          "best_train_loss": 0.0005031739886278776,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04605472978739722,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5012834869497803,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 13.92278680115522,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.869391342891897e-05,
+        "n_observations": 290225,
+        "bias_model": -0.0003573613430713505,
+        "bias_baseline": -0.0004271864356766783,
+        "mae_model": 0.00928560832362754,
+        "mae_baseline": 0.007856203024889695
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5000169808116828,
+          "best_train_loss": 0.00037830179436631236,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49728307013075224,
+          "best_train_loss": 0.0005484545929773178,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5021565630837154,
+          "best_train_loss": 0.00043456504456972815,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5020716590253014,
+          "best_train_loss": 0.0003635419946806753,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5051678404829415,
+          "best_train_loss": 0.0004676435822257706,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.045341490059599865,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5000602980446206,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 13.055791174176736,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.934184854591687e-05,
+        "n_observations": 290225,
+        "bias_model": -0.00033410171718528496,
+        "bias_baseline": -0.0004271864356766783,
+        "mae_model": 0.009292173529965217,
+        "mae_baseline": 0.007856203024889695
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49989811512990323,
+          "best_train_loss": 0.0004165901877318642,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.495703854644252,
+          "best_train_loss": 0.0005862151291304534,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49952453727288165,
+          "best_train_loss": 0.0004210532077944235,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49828493802003737,
+          "best_train_loss": 0.00037528147400187875,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.507417909082594,
+          "best_train_loss": 0.00047384193563397895,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.046564678964759576,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5015660263588595,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 18.026491982952987,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.0632682849614254e-05,
+        "n_observations": 290225,
+        "bias_model": -0.00024642046921748075,
+        "bias_baseline": -0.0004271864356766783,
+        "mae_model": 0.009233105264794698,
+        "mae_baseline": 0.007856203024889695
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4989471896756665,
+          "best_train_loss": 0.00030750361734785007,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49809814909152655,
+          "best_train_loss": 0.0005598112012583962,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4991000169808117,
+          "best_train_loss": 0.0004280963060035206,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5012905416878927,
+          "best_train_loss": 0.0003574230897227978,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5110765572121101,
+          "best_train_loss": 0.0006201377042308317,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04505895065052068,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5015192557642351,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 18.20086350766193,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.266244591557187e-05,
+        "n_observations": 576269,
+        "bias_model": -0.00027831785869433296,
+        "bias_baseline": -0.0004524414004260024,
+        "mae_model": 0.00906602700947351,
+        "mae_baseline": 0.007687494387812882
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5005645147700656,
+          "best_train_loss": 0.0006454946581340794,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4994354852299345,
+          "best_train_loss": 0.0008359320459671185,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5024097197647575,
+          "best_train_loss": 0.0007003012414583389,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5022496334866792,
+          "best_train_loss": 0.0006203745129678926,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5031765574981532,
+          "best_train_loss": 0.0006037963975752632,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.045105721245145114,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5029265846332182,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 21.000083559613042,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.445315737220642e-05,
+        "n_observations": 576269,
+        "bias_model": -0.00025504459296141245,
+        "bias_baseline": -0.0004524414004260024,
+        "mae_model": 0.008934922336064702,
+        "mae_baseline": 0.007687494387812882
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5006908986738116,
+          "best_train_loss": 0.0008102094704684402,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49900577995719797,
+          "best_train_loss": 0.0007706808870092832,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5021653775508484,
+          "best_train_loss": 0.0006702918028595913,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5041285408557032,
+          "best_train_loss": 0.0006263776027094738,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.509608470819995,
+          "best_train_loss": 0.0006783292591670885,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04369839237616202,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5017413742540376,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 16.408918481258535,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.6680121401827596e-05,
+        "n_observations": 576269,
+        "bias_model": -0.00024983169287432156,
+        "bias_baseline": -0.0004524414004260024,
+        "mae_model": 0.009110855961311884,
+        "mae_baseline": 0.007687494387812882
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5007246010481439,
+          "best_train_loss": 0.0007406726654153317,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5004128540855703,
+          "best_train_loss": 0.0008924534964275413,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5012048598823787,
+          "best_train_loss": 0.0006653010557570001,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5029995113155722,
+          "best_train_loss": 0.0005355433736561047,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5036394976606747,
+          "best_train_loss": 0.0006125811600961875,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04488360275534253,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5016320503098379,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 20.255149424104374,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.2498033367846075e-05,
+        "n_observations": 576269,
+        "bias_model": -0.00032380515145841784,
+        "bias_baseline": -0.0004524414004260024,
+        "mae_model": 0.009144040057110342,
+        "mae_baseline": 0.007687494387812882
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5016261395615321,
+          "best_train_loss": 0.0006595839991600119,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4984328395935494,
+          "best_train_loss": 0.0008494527168555319,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5010616247914665,
+          "best_train_loss": 0.0007418413687606944,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5023675917968421,
+          "best_train_loss": 0.000553888253572982,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5051859147993105,
+          "best_train_loss": 0.0006495966895562696,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.044992926699542246,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.50134919629548,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 18.908186895373294,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.407173326283802e-05,
+        "n_observations": 576269,
+        "bias_model": -0.0003299612714354505,
+        "bias_baseline": -0.0004524414004260024,
+        "mae_model": 0.009154498957604488,
+        "mae_baseline": 0.007687494387812882
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5011795831016295,
+          "best_train_loss": 0.0007385885214067198,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4957956288020491,
+          "best_train_loss": 0.0007291923861235514,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5029405321604907,
+          "best_train_loss": 0.0006706175021142425,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5016177139679491,
+          "best_train_loss": 0.0005607087782221492,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5058655503570549,
+          "best_train_loss": 0.0006377009610093945,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "SPY",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5466249770093802,
+        "pct_up": 0.5466249770093802,
+        "pct_down": 0.45043222365274965,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.04527578071390015,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.4986639141046295,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 16.41025802793787,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.6339607022424336e-05,
+        "n_observations": 103661,
+        "bias_model": 4.293931230997034e-05,
+        "bias_baseline": 2.7150097582268688e-05,
+        "mae_model": 0.008415273442959873,
+        "mae_baseline": 0.007296657549943199
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49433726845186676,
+          "best_train_loss": 0.0001741434815422898,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49308954794126114,
+          "best_train_loss": 0.00030640554255764334,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5045589787887513,
+          "best_train_loss": 0.0003340468379011487,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4998560322487763,
+          "best_train_loss": 0.00029793130200401574,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5015510364862868,
+          "best_train_loss": 0.00021641468876933164,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.012463545891691963,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.4983359218992678,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 13.787699268298608,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.4274205602517864e-05,
+        "n_observations": 103661,
+        "bias_model": -5.773151641890479e-05,
+        "bias_baseline": 2.7150097582268688e-05,
+        "mae_model": 0.008288738089696929,
+        "mae_baseline": 0.007296657549943199
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5011517420097898,
+          "best_train_loss": 0.00016649895197977976,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49544102121124867,
+          "best_train_loss": 0.0003313266359847538,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49419330070064305,
+          "best_train_loss": 0.00034048405821736463,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4983203762357232,
+          "best_train_loss": 0.0003094484580658063,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.502683539317544,
+          "best_train_loss": 0.00020962322592332379,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.01279153809705369,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.49893402533257447,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 12.723239865254431,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.4120153634897675e-05,
+        "n_observations": 103661,
+        "bias_model": 0.00013753004169466995,
+        "bias_baseline": 2.7150097582268688e-05,
+        "mae_model": 0.008487986082054538,
+        "mae_baseline": 0.007296657549943199
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4964967847202227,
+          "best_train_loss": 0.00017606859390590607,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5035032152797774,
+          "best_train_loss": 0.00037232328707302386,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4971206449755255,
+          "best_train_loss": 0.00031185155881650965,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49654477397063057,
+          "best_train_loss": 0.0003437700877646067,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5010586439509577,
+          "best_train_loss": 0.00027257626185173844,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.012193434663747005,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.4987410887411852,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 21.41273561111758,
+        "p_value": 0.0,
+        "mean_loss_diff": 1.9953821323989106e-05,
+        "n_observations": 103661,
+        "bias_model": 2.4179097083236795e-05,
+        "bias_baseline": 2.7150097582268688e-05,
+        "mae_model": 0.008062474452565463,
+        "mae_baseline": 0.007296657549943199
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49817640848449946,
+          "best_train_loss": 0.0003865437626830369,
+          "epochs_trained": 27
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4971206449755255,
+          "best_train_loss": 0.00021668486858418743,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49769651598042036,
+          "best_train_loss": 0.0002791615862139117,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5050388712928304,
+          "best_train_loss": 0.000230732196694718,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.495593086808804,
+          "best_train_loss": 0.00021139871820738103,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.012386371255136253,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5003617561088548,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 7.864286013250933,
+        "p_value": 3.774758283725532e-15,
+        "mean_loss_diff": 6.277968442748236e-05,
+        "n_observations": 103661,
+        "bias_model": 0.0001369879965757979,
+        "bias_baseline": 2.7150097582268688e-05,
+        "mae_model": 0.008539376913249165,
+        "mae_baseline": 0.007296657549943199
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4971206449755255,
+          "best_train_loss": 0.00018678197375265881,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5032152797773298,
+          "best_train_loss": 0.0002886960470017844,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4993281504942893,
+          "best_train_loss": 0.0002684605641715119,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4950091179575775,
+          "best_train_loss": 0.00030316362225458815,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5073120291496381,
+          "best_train_loss": 0.0002589592647595093,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.010765703887466671,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5000981996726678,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 17.496976272277568,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.6105894201426e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00016326399086894137,
+        "bias_baseline": 2.607419383364742e-05,
+        "mae_model": 0.008375472066904843,
+        "mae_baseline": 0.0073043299436186685
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4988453048055697,
+          "best_train_loss": 0.00027871398456876965,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5004754627271184,
+          "best_train_loss": 0.0005218653547802075,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5005773475972152,
+          "best_train_loss": 0.0004269508114221561,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5007471557140432,
+          "best_train_loss": 0.00036018891867860097,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.499826214213848,
+          "best_train_loss": 0.00028940565718572377,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.0110292603236537,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.4996709449564993,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 31.229470632899396,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.0479922676136142e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00010053945243910274,
+        "bias_baseline": 2.607419383364742e-05,
+        "mae_model": 0.008315863140752047,
+        "mae_baseline": 0.0073043299436186685
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.500254712175242,
+          "best_train_loss": 0.00026206184546546344,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4984377653251825,
+          "best_train_loss": 0.0005853106782264408,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5007471557140432,
+          "best_train_loss": 0.0022450623883153585,
+          "epochs_trained": 36
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4988453048055697,
+          "best_train_loss": 0.00046858489224934475,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5001006128235617,
+          "best_train_loss": 0.0002463625611676273,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.011456515039822202,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.4978620036178827,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 19.035955470062337,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.635571953682325e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00014171058469087265,
+        "bias_baseline": 2.607419383364742e-05,
+        "mae_model": 0.008405944176941127,
+        "mae_baseline": 0.0073043299436186685
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49947359483783327,
+          "best_train_loss": 0.0002844982601735475,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5006792324673119,
+          "best_train_loss": 0.00041375276798914583,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4999490575649516,
+          "best_train_loss": 0.0003152263857533827,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49595856681949396,
+          "best_train_loss": 0.0004501402379627612,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.49289307600841487,
+          "best_train_loss": 0.0002738821763191901,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.013265456378438789,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.500149883710914,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 33.438055198167866,
+        "p_value": 0.0,
+        "mean_loss_diff": 2.661215011634384e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00013996642669127738,
+        "bias_baseline": 2.607419383364742e-05,
+        "mae_model": 0.008210416452237905,
+        "mae_baseline": 0.0073043299436186685
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4996264221429784,
+          "best_train_loss": 0.00025689805261208676,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4986075734420105,
+          "best_train_loss": 0.00040948398860304484,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5053829173034471,
+          "best_train_loss": 0.0003458511074046221,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4996773645780268,
+          "best_train_loss": 0.0004770592634413655,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.4972468672825391,
+          "best_train_loss": 0.0003165286367698011,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.01097757628540752,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.49915755017658714,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 16.949713581431244,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.541524261425478e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00016810110529275253,
+        "bias_baseline": 2.607419383364742e-05,
+        "mae_model": 0.008368672920917591,
+        "mae_baseline": 0.0073043299436186685
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49853965019527935,
+          "best_train_loss": 0.00027271293635879246,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49957547970793004,
+          "best_train_loss": 0.0005245506160593193,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5000509424350484,
+          "best_train_loss": 0.00046195307479459134,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49969434538970964,
+          "best_train_loss": 0.00036195427075283915,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.49783225098326167,
+          "best_train_loss": 0.0002630252738075384,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.011969909819734337,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.4969640914225822,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 21.28218495125158,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.0146543828804164e-05,
+        "n_observations": 576269,
+        "bias_model": 0.00020616499262945796,
+        "bias_baseline": 3.851075067425611e-05,
+        "mae_model": 0.008624453992533854,
+        "mae_baseline": 0.007293794958144423
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49646967628869454,
+          "best_train_loss": 0.0005183019072449367,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4976071314224087,
+          "best_train_loss": 0.000650292728615958,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49825590212830495,
+          "best_train_loss": 0.0004952891613356769,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4955849889624724,
+          "best_train_loss": 0.00038752090072556014,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.4968923910366905,
+          "best_train_loss": 0.000493724555097494,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.014163368573739288,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.4988503632852019,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 23.648230641887793,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.896045461660116e-05,
+        "n_observations": 576269,
+        "bias_model": 0.00017940435211829668,
+        "bias_baseline": 3.851075067425611e-05,
+        "mae_model": 0.00865897389100082,
+        "mae_baseline": 0.007293794958144423
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49940178285560216,
+          "best_train_loss": 0.0005337994672507713,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5007920057968084,
+          "best_train_loss": 0.0006325244363064744,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49893837520853346,
+          "best_train_loss": 0.0005162224468008122,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49724483089833676,
+          "best_train_loss": 0.0004324825033463076,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.49770992366412214,
+          "best_train_loss": 0.00047556162834108033,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.012277096711119595,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.4990134815511506,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 21.51922574354054,
+        "p_value": 0.0,
+        "mean_loss_diff": 6.24082116149078e-05,
+        "n_observations": 576269,
+        "bias_model": 0.00021083948341762062,
+        "bias_baseline": 3.851075067425611e-05,
+        "mae_model": 0.0088780318282169,
+        "mae_baseline": 0.007293794958144423
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4986856074010414,
+          "best_train_loss": 0.0007392246334347874,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49927539895185613,
+          "best_train_loss": 0.0006956398740710158,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5010953271657989,
+          "best_train_loss": 0.0004982829686281655,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4965370810373591,
+          "best_train_loss": 0.00044348641310043764,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.49955183452351637,
+          "best_train_loss": 0.00041524128879400645,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.01211397844517087,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.49886598099151613,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 20.515119231784173,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.4424388019486326e-05,
+        "n_observations": 576269,
+        "bias_model": 0.0001474064321911255,
+        "bias_baseline": 3.851075067425611e-05,
+        "mae_model": 0.008735512489025085,
+        "mae_baseline": 0.007293794958144423
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5012722646310432,
+          "best_train_loss": 0.0005218426553515851,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5010279224171343,
+          "best_train_loss": 0.0005889857509048722,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4998820416898371,
+          "best_train_loss": 0.0004841020197251483,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4966971673154374,
+          "best_train_loss": 0.0003906155996172961,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.4948731839448412,
+          "best_train_loss": 0.0004591113080250773,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.012261479004805342,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.4985119796483934,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 23.368908669648153,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.623276709625366e-05,
+        "n_observations": 576269,
+        "bias_model": 0.0002470731479713533,
+        "bias_baseline": 3.851075067425611e-05,
+        "mae_model": 0.008765216020648201,
+        "mae_baseline": 0.007293794958144423
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49801998550797905,
+          "best_train_loss": 0.000474665588366666,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4983738604384679,
+          "best_train_loss": 0.0005901524507083065,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.501356520566874,
+          "best_train_loss": 0.0005639290454222218,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4965118042566099,
+          "best_train_loss": 0.0004179424210142476,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.4982615119428712,
+          "best_train_loss": 0.00048376103460207476,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "TLT",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5111274599963215,
+        "pct_up": 0.5111274599963215,
+        "pct_down": 0.4842744160382564,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.012615480347928087,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5039117893904168,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 22.30136241929416,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.8594563534955865e-05,
+        "n_observations": 103661,
+        "bias_model": 0.0002611693637614269,
+        "bias_baseline": -0.00034703950391955826,
+        "mae_model": 0.009187182237393747,
+        "mae_baseline": 0.007860087798716834
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5104136673385161,
+          "best_train_loss": 0.0002962864372031098,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4966887417218543,
+          "best_train_loss": 0.00036989684459903013,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5065745273058835,
+          "best_train_loss": 0.00032567448985954634,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4916498704290239,
+          "best_train_loss": 0.0003268047814376949,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5145009601654439,
+          "best_train_loss": 0.0003671995151527094,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.02836704084684638,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5030628683883042,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 16.935470343186424,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.4198641370385776e-05,
+        "n_observations": 103661,
+        "bias_model": 0.00019215983669537058,
+        "bias_baseline": -0.00034703950391955826,
+        "mae_model": 0.009288978513784381,
+        "mae_baseline": 0.007860087798716834
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.505806699299357,
+          "best_train_loss": 0.000325429613959776,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49260965543718205,
+          "best_train_loss": 0.00037304696161299944,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5121412803532008,
+          "best_train_loss": 0.00038109078476041117,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49256166618677416,
+          "best_train_loss": 0.0003057906431953662,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5124329115170614,
+          "best_train_loss": 0.0003528442074452256,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.029215961848959027,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5028988722856234,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 17.75545450895292,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.9001627094737954e-05,
+        "n_observations": 103661,
+        "bias_model": 0.00036307794806101533,
+        "bias_baseline": -0.00034703950391955826,
+        "mae_model": 0.009365888253712939,
+        "mae_baseline": 0.007860087798716834
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5083501295709761,
+          "best_train_loss": 0.0003263670015647741,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49577694596410404,
+          "best_train_loss": 0.00038202778315670524,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5051828390440541,
+          "best_train_loss": 0.0003451949733597062,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49462520395431425,
+          "best_train_loss": 0.00028777636051388145,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5107587768969423,
+          "best_train_loss": 0.00035140549467632166,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.029379957951639835,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5021850068974831,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 15.11178454816714,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.7136167081031076e-05,
+        "n_observations": 103661,
+        "bias_model": 0.0003335334271547527,
+        "bias_baseline": -0.00034703950391955826,
+        "mae_model": 0.009306689647105461,
+        "mae_baseline": 0.007860087798716834
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5071983875611863,
+          "best_train_loss": 0.00034561939329640675,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49404933294941933,
+          "best_train_loss": 0.00039572271998622455,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5098857855840292,
+          "best_train_loss": 0.0003582741174956455,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.49371340819656395,
+          "best_train_loss": 0.0002880166058090672,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.506179526318381,
+          "best_train_loss": 0.00031449851961410106,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.030093823339780057,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 24,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 103661,
+      "direction_accuracy": 0.5029374596039011,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 11.48983282885765,
+        "p_value": 0.0,
+        "mean_loss_diff": 5.1704274454823016e-05,
+        "n_observations": 103661,
+        "bias_model": 0.00019114699439875562,
+        "bias_baseline": -0.00034703950391955826,
+        "mae_model": 0.009351567031706585,
+        "mae_baseline": 0.007860087798716834
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5075823015644496,
+          "best_train_loss": 0.0003240821190826994,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4927536231884058,
+          "best_train_loss": 0.0003780575706124572,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.5065745273058835,
+          "best_train_loss": 0.00029089200149482006,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 20838,
+          "direction_accuracy": 0.4948651502063538,
+          "best_train_loss": 0.0002535403614958534,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 20309,
+          "direction_accuracy": 0.5131715003200551,
+          "best_train_loss": 0.00028904965892516686,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.029341370633362063,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5032474804031355,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 25.406051730001227,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.4547495080557576e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00022720578385524112,
+        "bias_baseline": -0.00035553955398561485,
+        "mae_model": 0.009195158040512177,
+        "mae_baseline": 0.007767303220680627
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5036848361351672,
+          "best_train_loss": 0.0006392452238027804,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4959755476311768,
+          "best_train_loss": 0.0005773121582543743,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5005264051621667,
+          "best_train_loss": 0.0004708354628425749,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5065376124978774,
+          "best_train_loss": 0.00041647879375903085,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5099972560139029,
+          "best_train_loss": 0.0004314656560523898,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.029031349834127695,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5038573520544405,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 25.64334765175321,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.423148460832372e-05,
+        "n_observations": 290225,
+        "bias_model": 0.000245393839429382,
+        "bias_baseline": -0.00035553955398561485,
+        "mae_model": 0.009167735093276475,
+        "mae_baseline": 0.007767303220680627
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5060961113941247,
+          "best_train_loss": 0.0005956533776562927,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4973340125658006,
+          "best_train_loss": 0.0004988524004667332,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5018169468500594,
+          "best_train_loss": 0.00044039854136131265,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5072338257768721,
+          "best_train_loss": 0.0004191359054849409,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5070337510289948,
+          "best_train_loss": 0.00041361579321430505,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.0284214781828227,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5026376087518305,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 20.042823336980053,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.1691759811140076e-05,
+        "n_observations": 290225,
+        "bias_model": 0.0001785123196356282,
+        "bias_baseline": -0.00035553955398561485,
+        "mae_model": 0.009059498826301174,
+        "mae_baseline": 0.007767303220680627
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5056036678553235,
+          "best_train_loss": 0.0005394107439704905,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.49728307013075224,
+          "best_train_loss": 0.00045445260911947116,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5011037527593819,
+          "best_train_loss": 0.0004528179860619061,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.505892341653931,
+          "best_train_loss": 0.0004001804047977074,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5033568096588311,
+          "best_train_loss": 0.0004296323254783737,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.02964122148543269,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5047428719097252,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 18.530377645542607,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.4500698089170215e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00014428689594204555,
+        "bias_baseline": -0.00035553955398561485,
+        "mae_model": 0.00912009802679427,
+        "mae_baseline": 0.007767303220680627
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5050093394464256,
+          "best_train_loss": 0.0005403290789607647,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4997622686364408,
+          "best_train_loss": 0.00045233979575901425,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5025471217524198,
+          "best_train_loss": 0.0004503517264418085,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.505977245712345,
+          "best_train_loss": 0.00039880740558275276,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5108570383243392,
+          "best_train_loss": 0.00038047728491187463,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.027535958327537968,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 66,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 290225,
+      "direction_accuracy": 0.5027065208028254,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 27.91986623423682,
+        "p_value": 0.0,
+        "mean_loss_diff": 3.967285011007468e-05,
+        "n_observations": 290225,
+        "bias_model": 0.00019471248570649056,
+        "bias_baseline": -0.00035553955398561485,
+        "mae_model": 0.009055127910877632,
+        "mae_baseline": 0.007767303220680627
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5019867549668874,
+          "best_train_loss": 0.0005243956059400391,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.4986415350653761,
+          "best_train_loss": 0.0004377686132751738,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5002886737986075,
+          "best_train_loss": 0.0004313019535723416,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 58890,
+          "direction_accuracy": 0.5056036678553235,
+          "best_train_loss": 0.00038454011242333963,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 54665,
+          "direction_accuracy": 0.5073447361200036,
+          "best_train_loss": 0.00040911442512672736,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.029572309434437782,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 0,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5002767804619024,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 32.9896116939567,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.95544488412382e-05,
+        "n_observations": 576269,
+        "bias_model": 9.881954675521409e-05,
+        "bias_baseline": -0.00037176207914665666,
+        "mae_model": 0.009175015137728173,
+        "mae_baseline": 0.007639880524727935
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5033702374332272,
+          "best_train_loss": 0.0011889864690601826,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4954501794651433,
+          "best_train_loss": 0.0010453560555885946,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.49682355121918337,
+          "best_train_loss": 0.0008605669184094843,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5040274337327064,
+          "best_train_loss": 0.000752262153510268,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5019551834523517,
+          "best_train_loss": 0.0009733630816538072,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.03200204977536081,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 1,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5019201102263006,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 41.17091377526938,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.391283030925526e-05,
+        "n_observations": 576269,
+        "bias_model": 0.00010325933605316999,
+        "bias_baseline": -0.00037176207914665666,
+        "mae_model": 0.009102477998391785,
+        "mae_baseline": 0.007639880524727935
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.502477124513422,
+          "best_train_loss": 0.0009425828798807093,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4959220127057951,
+          "best_train_loss": 0.0008968831025413238,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4973543636149167,
+          "best_train_loss": 0.000820530393599149,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5099674772087693,
+          "best_train_loss": 0.0007116843341536557,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5042107855208077,
+          "best_train_loss": 0.0009320042498991,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.030358720010962625,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 7,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5013977847151243,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 38.9965504536066,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.8898931253421956e-05,
+        "n_observations": 576269,
+        "bias_model": 0.000140256113276838,
+        "bias_baseline": -0.00037176207914665666,
+        "mae_model": 0.009192449629733961,
+        "mae_baseline": 0.007639880524727935
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5021653775508484,
+          "best_train_loss": 0.0011250126034220947,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4957956288020491,
+          "best_train_loss": 0.0009818542634353175,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4963432923849485,
+          "best_train_loss": 0.000869735175579348,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5047436091872672,
+          "best_train_loss": 0.0008107540393413037,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5090470327505541,
+          "best_train_loss": 0.0009657184891435747,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.030881045522138884,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 42,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.5015348734705494,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 39.9237602442757,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.889090325725486e-05,
+        "n_observations": 576269,
+        "bias_model": 0.0001272508349227769,
+        "bias_baseline": -0.00037176207914665666,
+        "mae_model": 0.009172078060063349,
+        "mae_baseline": 0.007639880524727935
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5034966213369731,
+          "best_train_loss": 0.0009866609013572866,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4955007330266417,
+          "best_train_loss": 0.0010194856170398583,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4959220127057951,
+          "best_train_loss": 0.0008684112820500398,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5058473619466491,
+          "best_train_loss": 0.0008002323298344174,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5078158089140605,
+          "best_train_loss": 0.0009257620913042615,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.03074395676671382,
+      "n_prices": 5438
+    },
+    {
+      "horizon": 132,
+      "seed": 99,
+      "n_splits": 5,
+      "n_folds": 5,
+      "n_test_points": 576269,
+      "direction_accuracy": 0.501507108659324,
+      "dm": {
+        "available": true,
+        "loss_fn": "mse",
+        "baseline": "no-change (martingale) path forecast",
+        "dm_statistic": 33.05649793314433,
+        "p_value": 0.0,
+        "mean_loss_diff": 4.834205552921713e-05,
+        "n_observations": 576269,
+        "bias_model": 0.00011297170708388565,
+        "bias_baseline": -0.00037176207914665666,
+        "mae_model": 0.009150383770282171,
+        "mae_baseline": 0.007639880524727935
+      },
+      "fold_results": [
+        {
+          "fold": 1,
+          "train_size": 906,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5031258952193182,
+          "best_train_loss": 0.0010701560677262023,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 2,
+          "train_size": 1812,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4976324082031579,
+          "best_train_loss": 0.0009278241299658216,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 3,
+          "train_size": 2718,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.4946750248555011,
+          "best_train_loss": 0.0007735694916097118,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 4,
+          "train_size": 3624,
+          "n_test_points": 118686,
+          "direction_accuracy": 0.5042464991658663,
+          "best_train_loss": 0.0007456843257032796,
+          "epochs_trained": 100
+        },
+        {
+          "fold": 5,
+          "train_size": 4530,
+          "n_test_points": 101525,
+          "direction_accuracy": 0.5089288352622506,
+          "best_train_loss": 0.0008710358318284894,
+          "epochs_trained": 100
+        }
+      ],
+      "device": "cuda",
+      "is_trained": true,
+      "symbol": "GLD",
+      "majority_baseline": {
+        "majority_class_accuracy": 0.5322788302372632,
+        "pct_up": 0.5322788302372632,
+        "pct_down": 0.4640426705903991,
+        "majority_class": "up"
+      },
+      "edge_vs_majority": -0.03077172157793917,
+      "n_prices": 5438
+    }
+  ]
+}

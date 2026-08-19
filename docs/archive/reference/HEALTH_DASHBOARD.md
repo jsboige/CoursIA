@@ -1,27 +1,27 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-16**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-18**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**906** notebooks référencés au catalogue.
+**914** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 750 | 82.8% |
-| DEMO | 154 | 17.0% |
+| READY | 757 | 82.8% |
+| DEMO | 155 | 17.0% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 568 |
+| **local** (exécutable sans GPU/cloud/WSL) | 573 |
 | WSL requis | 47 |
-| GPU requis | 102 |
-| Cloud requis (QC / GenAI Docker) | 110 |
+| GPU requis | 105 |
+| Cloud requis (QC / GenAI Docker) | 111 |
 | API key requise | 146 |
 
 ## Distribution par série
@@ -31,30 +31,30 @@
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
 | FallacyDetection | 2 | 0 | 0 | 2 | 100% |
 | GameTheory | 56 | 0 | 0 | 56 | 100% |
-| GenAI | 78 | 91 | 2 | 171 | 46% |
-| IIT | 53 | 0 | 0 | 53 | 100% |
+| GenAI | 78 | 92 | 2 | 172 | 45% |
+| IIT | 56 | 0 | 0 | 56 | 100% |
 | ML | 45 | 3 | 0 | 48 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
 | QuantConnect | 60 | 48 | 0 | 108 | 56% |
-| RL | 16 | 1 | 0 | 17 | 94% |
+| RL | 19 | 2 | 0 | 21 | 90% |
 | Search | 118 | 0 | 0 | 118 | 100% |
 | Sudoku | 35 | 2 | 0 | 37 | 95% |
-| SymbolicAI | 222 | 9 | 0 | 231 | 96% |
+| SymbolicAI | 223 | 8 | 0 | 231 | 97% |
 | cross-series | 1 | 0 | 0 | 1 | 100% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 585 |
+| Python 3 | 590 |
 | .NET (C#) | 234 |
 | Python 3 (ipykernel) | 23 |
 | Lean 4 (WSL) | 18 |
 | Python (GameTheory WSL + OpenSpiel) | 10 |
 | Python 3 (WSL) | 7 |
+| Python (coursia-ml-training) | 7 |
 | coursia-ml-training | 4 |
 | Python 3 (coursia-ml-training) | 4 |
-| Python (coursia-ml-training) | 4 |
 | Python 3 (PyPhi/IIT) | 4 |
 | Lean 4 | 3 |
 | .venv | 2 |

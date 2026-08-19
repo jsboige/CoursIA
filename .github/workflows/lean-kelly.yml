@@ -7,7 +7,7 @@ name: Lean CI (kelly_lean)
 # recourir à la concavité abstraite. Premier Lean lake liant position sizing à un
 # résultat formel (roadmap #4038 Tier 2, issue #4052).
 #
-# sorry-filter-mode=standalone-tactic, baseline=0 : la bibliothèque est intégralement
+# sorry-filter-mode=real, baseline=0 : la bibliothèque est intégralement
 # sans sorry ; les deux théorèmes `kelly_optimal` (f* maximise g) et `kelly_unique`
 # (sur/sous-pari strictement sous-optimaux) sont prouvés. Ce CI garde qu'AUCUN nouveau
 # `sorry` tactic standalone n'est introduit (jamais de faux positif sur les mentions
@@ -40,4 +40,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/QuantConnect/kelly_lean
       display-name: kelly_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

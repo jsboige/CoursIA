@@ -31,4 +31,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/GameTheory/conway_cgt_lean
       display-name: conway_cgt_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
