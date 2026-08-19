@@ -448,6 +448,11 @@ jobs:
           echo "--- verdict ---"
           cat /tmp/verdict.json
 
+          OVERRIDDEN=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('overridden'))" 2>/dev/null || echo "None")
+          if [ "$OVERRIDDEN" = "True" ]; then
+            echo "::notice::Adjacence G-VAR-3 REELLE, levee par le coordinateur (clause 24h, section 3). Le grain suivant de la lane change de genre."
+          fi
+
           if [ "$RC" -eq 0 ]; then
             echo "Grain tag + lane present -- job passes."
             exit 0
@@ -796,12 +801,30 @@ jobs:
           # Body to a file -- printf '%s' preserves it verbatim.
           printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
 
+          # Comments, for the coordinator's `[G-VAR-3 OVERRIDE]` marker
+          # (#11708). variation-protocol section 3 already grants ai-01 the
+          # 24h decision -- "merger, ou fermer en nommant le remplacant" --
+          # but the job carries the `-required` suffix, so without a place
+          # for that decision to land a correctly-blocked PR ages forever
+          # and the lane rewrites the same work elsewhere: the very harm the
+          # clause exists to prevent. A fetch failure degrades to "no
+          # override" (the file stays absent), never to a silent pass.
+          gh pr view "$PR_NUMBER" --json comments \
+            --jq '[.comments[] | {author: .author.login, body: .body}]' \
+            > /tmp/pr_comments.json 2>/dev/null || rm -f /tmp/pr_comments.json
+
+          COMMENTS_ARG=""
+          if [ -s /tmp/pr_comments.json ]; then
+            COMMENTS_ARG="--comments-file /tmp/pr_comments.json"
+          fi
+
           # The helper emits one JSON verdict and exits 0 (pass/advisory) or
           # 1 (block on LIGHT adjacency). The &&/|| list captures RC on BOTH
           # branches and is exempt from errexit (same fix as
           # check-variation-tag-required).
+          # shellcheck disable=SC2086  # COMMENTS_ARG is a deliberate 0-or-2 token split
           python3 scripts/ci/variation_adjacency_guard.py \
-            --body-file /tmp/pr_body.txt > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+            --body-file /tmp/pr_body.txt $COMMENTS_ARG > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"

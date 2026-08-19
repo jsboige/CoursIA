@@ -44,7 +44,7 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean
       display-name: sensitivity_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
   # Wired per ai-01 dispatch c.101 ("brancher lean-axiom.yml sur sensitivity_lean,
