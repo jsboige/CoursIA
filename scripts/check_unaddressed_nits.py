@@ -238,10 +238,23 @@ VERDICT_POSITIVE = "COMMENT_WITHOUT_CONCERNS"
 # Verdicts positifs HUMAINS (#11677) : un reviewer UI qui tape « APPROVE » /
 # « APPROVED » / « LGTM » (avec ou sans decoration markdown : **APPROVE**,
 # `APPROVE`, # APPROVE) emet un verdict positif, equivalent formel du `state:
-# APPROVED` natif. Word-bounded : « I approve the design » d'un commentaire
-# narratif ne conclut pas une approbation de review. Hermes utilise deja
-# `COMMENT_WITHOUT_CONCERNS` (string unique), ces 3 formes ajoutent le
-# vocabulaire humain standard. Insensible a la casse (`re.IGNORECASE`).
+# APPROVED` natif. Hermes utilise deja `COMMENT_WITHOUT_CONCERNS` (string
+# unique), ces 3 formes ajoutent le vocabulaire humain standard. Insensible
+# a la casse (`re.IGNORECASE`).
+#
+# Ce que le word-bounding fait, et ce qu'il ne fait PAS (mesure, pas
+# supposition -- #11753 F2, NanoClaw) : il ecarte bien les mots dont le
+# verdict n'est qu'un fragment (`the approver left a note`, `disapprove
+# entirely` -> pas de match), mais il ne distingue PAS l'usage narratif
+# (`I approve the design` -> MATCH, parce que « approve » y est bel et bien
+# un mot entoure d'espaces ; aucune quantite de word-bounding ne separe un
+# verbe de son verdict homographe).
+#
+# Ce n'est pas un trou, parce que cette branche est subordonnee : elle ne
+# rend None que si `live_concern` est deja faux. Une phrase narrative ne
+# peut donc eteindre qu'une review qui ne portait aucune reserve vivante --
+# ou il n'y avait rien a eteindre. Le garde tient par l'ORDRE des branches,
+# pas par la finesse du motif.
 HUMAN_VERDICT_POSITIVE = ("APPROVE", "APPROVED", "LGTM")
 _HUMAN_VERDICT_RE = re.compile(
     r"(?:^|[\s\*_`#>])(" + "|".join(HUMAN_VERDICT_POSITIVE) + r")(?:$|[\s\*_`.,;:!?)])",

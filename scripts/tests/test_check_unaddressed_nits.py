@@ -1052,7 +1052,7 @@ def test_11677_changements_requested_non_regression_11222():
 def test_11677_strip_quoted_etendu_aux_concern_markers():
     """#11677 acceptance 1 (composante « strip citations ») : une review
     APPROVED qui contient un CONCERN_MARKER UNIQUEMENT dans une citation
-    en backticks ou bloc code ou guillemets fran鏰is typographiques rend
+    en backticks ou bloc code ou guillemets français typographiques rend
     classify None — la citation est neutralisee par `_strip_quoted` avant
     la recherche de CONCERN_MARKERS (meme hygiene que CONDITIONAL_LIFT,
     l.462). Les blockquotes Markdown `> ...` NE SONT PAS dans le perimetre
@@ -1090,7 +1090,7 @@ def test_11677_approved_avec_reserve_vivante_reste_bloquant():
     """Acceptance 2 dans `analyse()` (controle positif) : une review
     `state: APPROVED` qui contient une reserve VIVANTE (ex: « j'approuve
     mais le point 2 reste ouvert ») garde le kind `BOT-CONCERN` retourne
-    par classify() — la symetrique ne le降下来 PAS."""
+    par classify() — la symetrique ne l'abaisse PAS."""
     approved_mixed = {
         "author": {"login": "clusterManager-Myia"},
         "state": "APPROVED", "submittedAt": at(15),
