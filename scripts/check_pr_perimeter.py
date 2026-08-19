@@ -285,6 +285,126 @@ STRONG_SCOPE_WORDS = (
     "perimetre", "perimeter", "scope",
 )
 
+# ---------------------------------------------------------------------------
+# #11712 — incidental counts. The founding asymmetry: the count branch retained
+# ANY "N fichiers" in prose, so an inventory ("22 fichiers MP3"), a scan scope
+# ("grep ... sur 73 fichiers"), a cited threshold ("< 15 fichiers", the G.4
+# rule itself) or a zero-attestation ("0 fichier machine-path") was confronted
+# with len(files) and failed necessarily -- 11/120 PRs carried >= 2 distinct
+# counts, making a red GUARANTEED regardless of the real perimeter. The fix
+# follows #11648's path: detection is UNCHANGED (the line is still extracted,
+# confronted and printed), only the consequence moves -- an incidental count is
+# a SIGNAL, not a blocking problem. Do not "fix" a false positive by narrowing
+# extract_perimeter_assertions: that would also silence the printed report.
+#
+# FN safety is structural: every rule below first requires the line to carry
+# NO strong scope word and NO diffstat neighborhood (+N/-N, insertions,
+# deletions, lignes) -- the two shapes the corpus identifies as genuine
+# assertions (40 diffstat lines and 30 scope-word lines, all preserved).
+# ---------------------------------------------------------------------------
+# A count whose referent is a KIND of artifact or a REMAINDER, not "the files
+# this PR changes". Closed list measured on the 120-PR corpus; unknown
+# qualifiers stay authorial (a false negative does not signal itself, so the
+# default must fail loud).
+INCIDENTAL_QUALIFIERS = frozenset({
+    "mp3", "wav", "mathlib", "machine-path", "fr", "en", "scratch",
+    "restants", "restant", "reste", "restants,", "nouveau", "nouveaux",
+    "nouvelle", "nouvelles", "varies", "variés", "synthetiques",
+    "synthétiques", "scripts", "cache", "generes", "générés", "produits",
+    "produites", "sources", "source",
+})
+# A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
+# not claim a perimeter.
+COMPARISON_PREFIX = re.compile(r"[<>=≤≥]\s*$")
+# A count governed by a locative/scan preposition ("sur les 2 fichiers",
+# "across N files") is the SCOPE of a check or a tool run, not the perimeter
+# -- unless the same line carries a diffstat, where "sur 2 fichiers" names
+# what the diffstat measured (a true assertion: "+307 lignes / −0 sur 2
+# fichiers").
+LOCATIVE_PREP = re.compile(
+    r"\b(?:sur|dans|across|on)\s+(?:les\s+|le\s+|la\s+|the\s+)?\d+\s*(?:fichiers?|files?)\b",
+    re.IGNORECASE,
+)
+DIFFSTAT_NEIGHBORHOOD = re.compile(
+    r"\+\d+\s*/\s*[-−]?\d+|insertions?|deletions?|\blignes?\b|\blines?\b",
+    re.IGNORECASE,
+)
+
+
+def _has_strong_scope(low: str) -> bool:
+    return any(w in low for w in STRONG_SCOPE_WORDS)
+
+
+def _count_is_incidental(line: str) -> bool:
+    """True when every count on the line denotes something other than the PR's
+    file list. Caller-facing guarantee: a line with a scope word or a diffstat
+    neighborhood is NEVER incidental via the qualifier/locative rules (FN
+    safety, #11712 acceptance). Two shapes override even those guards, because
+    they can never be validated by the guard's EQUALITY confrontation anyway:
+    a zero count (a PR never has 0 files) and a comparison-prefixed count
+    ("< 15 fichiers" cites a threshold; the guard confronts claimed ==
+    len(files), which "<" is not)."""
+    low = line.lower()
+    matches = list(COUNT_CLAIM.finditer(line))
+    if not matches:
+        return False
+    first = matches[0]
+    first_before = line[: first.start()].rstrip()
+    if int(first.group(1)) == 0 or COMPARISON_PREFIX.search(first_before):
+        return True
+    if _has_strong_scope(low) or DIFFSTAT_NEIGHBORHOOD.search(line):
+        return False
+    for m in matches:
+        claimed = int(m.group(1))
+        if claimed == 0:
+            continue  # "0 fichier X" is a scrub/absence attestation
+        before = line[: m.start()].rstrip()
+        if COMPARISON_PREFIX.search(before):
+            continue  # "< N fichiers" cites a threshold
+        if LOCATIVE_PREP.search(line):
+            continue  # scan scope: "grep ... sur N fichiers"
+        after = line[m.end():]
+        mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
+        if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
+            continue  # "N fichiers MP3/scratch/restants/..." -- kind or remainder
+        return False  # this count looks authorial -> the line stays blocking
+    return True
+
+
+def _exclusivity_marker_in_parens(line: str) -> bool:
+    """True when every exclusivity marker on the line sits inside a
+    parenthetical group. #11616 forme B: "(SL-8/SL-9 only, scope minimal)"
+    co-presents 'only' and 'scope' by lexical coincidence -- a phase plan,
+    not a perimeter assertion. Outside parens, "Aucune autre modification."
+    and "N fichiers X uniquement" remain authorial (measured on the corpus:
+    no genuine exclusivity-only assertion carries its marker in parens)."""
+    low = line.lower()
+    open_paren = False
+    outside_hits = 0
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if ch == "(":
+            open_paren = True
+        elif ch == ")":
+            open_paren = False
+        else:
+            for marker in EXCLUSIVITY_MARKERS:
+                if low.startswith(marker, i) and not open_paren:
+                    outside_hits += 1
+        i += 1
+    # every marker inside parens <=> no marker outside
+    return outside_hits == 0 and any(low.find(mk) >= 0 for mk in EXCLUSIVITY_MARKERS)
+
+
+def _is_incidental_assertion(text: str) -> bool:
+    """#11712: kept in candidates (found + printed), excluded from blocking."""
+    if COUNT_CLAIM.search(text):
+        return _count_is_incidental(text)
+    if _has_exclusivity(text.lower()):
+        return _exclusivity_marker_in_parens(text)
+    return False
+
 
 def _quote_spans(line: str) -> list[tuple[int, int]]:
     """Char spans of quoted speech on a single line (« ... » and " ... ").
@@ -558,8 +678,16 @@ class Candidate:
         editable by the author, and a COMMENTED review cannot even be
         dismissed (dismissal applies to APPROVED/CHANGES_REQUESTED only), so
         blocking there leaves no lever at all -- measured on #11642 and #11646.
+
+        #11712: an INCIDENTAL count from the body does not block either --
+        inventory ("22 fichiers MP3"), scan scope ("grep ... sur 73 fichiers"),
+        cited threshold ("< 15 fichiers") or zero-attestation ("0 fichier
+        machine-path"). It stays extracted, confronted and printed as a
+        SIGNAL; only the exit code moved (the #11648 path). 11/120 PRs
+        carried >= 2 distinct counts, making a red guaranteed regardless
+        of the real perimeter.
         """
-        return self.source == "body"
+        return self.source == "body" and not _is_incidental_assertion(self.text)
 
 
 def select_candidates(items: list[dict]) -> tuple[list[Candidate], bool]:
@@ -670,11 +798,14 @@ def main() -> int:
     print(format_report(report, args.assertion))
     if signals:
         print("")
-        print("SIGNAL (non bloquant -- assertion d'un tiers, non editable par l'auteur) :")
+        print("SIGNAL (non bloquant -- assertion d'un tiers non editable par l'auteur,")
+        print("        ou compte INCIDENTAL du body : inventaire, perimetre de scan,")
+        print("        seuil cite, attestation de zero -- #11712) :")
         for sg in signals:
             print(f"  ~~ {sg}")
-        print("  -> a lever par son auteur (poster une assertion corrigee), ou a")
-        print("     considerer par le reviewer qui merge. Ne tient pas la PR.")
+        print("  -> assertion d'un tiers : a lever par son auteur (poster une assertion")
+        print("     corrigee). Compte incidental : le reviewer qui merge le considere.")
+        print("     Ne tient pas la PR.")
     if unterminated_seen:
         # #11678: the body scanned had an unterminated fence. CommonMark
         # renders it to EOF (correct behaviour, what GitHub does), but the

@@ -2,7 +2,7 @@
   {
     "model": "kokoro",
     "voice": "af_sky",
-    "latency_ms": 2735.9638000052655,
+    "latency_ms": 7301.633299999594,
     "audio_size_bytes": 259244,
     "status": "ok",
     "sample": "narration"
@@ -16,15 +16,15 @@
   {
     "model": "openai/tts-1",
     "voice": "alloy",
-    "latency_ms": 3643.6709000045084,
-    "audio_size_bytes": 336000,
+    "latency_ms": 4685.374200000297,
+    "audio_size_bytes": 269568,
     "status": "ok",
     "sample": "narration"
   },
   {
     "model": "kokoro",
     "voice": "af_sky",
-    "latency_ms": 3174.200399997062,
+    "latency_ms": 3222.3023000005924,
     "audio_size_bytes": 251180,
     "status": "ok",
     "sample": "dialogue"
@@ -38,15 +38,15 @@
   {
     "model": "openai/tts-1",
     "voice": "nova",
-    "latency_ms": 4242.956599999161,
-    "audio_size_bytes": 237120,
+    "latency_ms": 3842.608199998722,
+    "audio_size_bytes": 199296,
     "status": "ok",
     "sample": "dialogue"
   },
   {
     "model": "kokoro",
     "voice": "af_bella",
-    "latency_ms": 2998.344300001918,
+    "latency_ms": 4000.3085999996983,
     "audio_size_bytes": 341804,
     "status": "ok",
     "sample": "monologue"
@@ -60,8 +60,8 @@
   {
     "model": "openai/tts-1",
     "voice": "shimmer",
-    "latency_ms": 4845.543199997337,
-    "audio_size_bytes": 380160,
+    "latency_ms": 2426.669700000275,
+    "audio_size_bytes": 298752,
     "status": "ok",
     "sample": "monologue"
   }

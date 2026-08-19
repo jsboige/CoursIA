@@ -28,6 +28,18 @@
       csharp_sha: 915c605ea97f5871ff97ba57e94aa2da8716bf2c
       content_python_sha: 890c97e8f08fcfa1bb7980986b6ea9bc60b1e77a3c1559cc8b155934a447d48b
       content_csharp_sha: d4119b1a371b3bca22b3ab795621ed3428d3f575835d3de724b89167d58623ab
+    - date: "2026-08-17"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 1e1c74f35b5951383b3e0b46f291933955226831
+      csharp_sha: 915c605ea97f5871ff97ba57e94aa2da8716bf2c
+      content_python_sha: 1bac9173eaedd3ee63c596a8dfb87e97bcc282e9c3219388790fe265f30af300
+      note: "Audit post re-execution #11112 tranche (cycle c.291). Source patch minimal cell[3] PUZZLES_DIR -> PUZZLES_DIR.name (Stop & Repair #11302 precedent), outputs refrais (13/13 cells clean, sequence [1..13]). CSharp unchanged (blob/content inchanges)."
+    - date: "2026-08-18"
+      by: myia-po-2023:CoursIA-2
+      python_sha: 1e1c74f35b5951383b3e0b46f291933955226831
+      csharp_sha: 915c605ea97f5871ff97ba57e94aa2da8716bf2c
+      content_python_sha: cfb12738a9abd6b7c9c789b390a1df7e67482b7741cc5868d298a84a9973940d
+      content_csharp_sha: d4119b1a371b3bca22b3ab795621ed3428d3f575835d3de724b89167d58623ab
   known_differences:
     - "Socle pedagogique commun : algorithme de backtracking (retour sur trace) pour resoudre un mini-Sudoku, meme concept algorithmique (recursion + propagation de contraintes + retour-arriere sur conflit), meme cas d'application pedagogique (grille partiellement remplie, recherche systematique)."
     - "Divergence d'implementation : le Python implemente le backtracking from scratch (fonction recursive + suivi des conflits) avec une visualisation matplotlib/numpy du deroulement ; le C# implemente le backtracking pur en stdlib (System.*) sans visualisation. Meme algorithme, niveau d'abstraction et d'enrichissement visuel differents."

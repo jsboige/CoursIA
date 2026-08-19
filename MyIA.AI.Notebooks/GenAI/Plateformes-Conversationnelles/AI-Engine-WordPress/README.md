@@ -216,6 +216,23 @@ Le notebook clôt par le contraste des trois authentifications croisées
 par la série : application password (identité pleine), token OAuth
 (délégation bornée et consentie), nonce visiteur (anti-CSRF sans
 identité), puis révoque son jeton et mesure la mort (401).
+[`interroger-lassistant-de-lediteur-par-l-api.ipynb`](interroger-lassistant-de-lediteur-par-l-api.ipynb)
+complète le tour des **quatre faces** du plugin — admin, agent,
+visiteur, éditeur — par celle de celui qui écrit : la route
+`mwai-ui/v1/editor/submit` (l'assistant de l'éditeur, la part
+gratuite du Copilot). Le namespace est partagé avec le visiteur, la
+frontière pas : le nonce de `start_session` y prend un 403 mesuré —
+seule la paire cookies de session + nonce `wp_rest` (embarqué dans
+les pages wp-admin) ouvre la route. Le contrat se découvre par les
+refus (aucun arg déclaré ; « Empty message. » nomme `newMessage`),
+la completion réelle rend son `usage` à l'appelant (le prix du
+raisononnement visible), et le champ `actions` vide inscrit la
+frontière gratuite/Pro dans la réponse elle-même : le Copilot payant
+agit sur les blocs, l'assistant gratuit ne retourne que du texte.
+La route est stateless (le tour isolé oublie, le tour qui re-apporte
+`messages` souvient), `envId` est écouté, et un `model` sans
+environnement redonne l'erreur à froid du grain précédent — « The
+environment is required. » : le routeur exige le couple, pas le nom.
 
 ---
 
@@ -356,6 +373,8 @@ attendues.
   sorties JSON structurees : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
 - [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](autour-du-consent-oauth-du-serveur-mcp.ipynb) —
   OAuth embarque du serveur MCP : decouverte, registration dynamique, escalier des refus, consent admin, token PKCE, appel delegue
+- [`interroger-lassistant-de-lediteur-par-l-api.ipynb`](interroger-lassistant-de-lediteur-par-l-api.ipynb) —
+  la face editeur : assistant de redaction, nonce wp_rest, contrat par refus, usage rendu, actions vides (frontiere gratuite/Pro)
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
