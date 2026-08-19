@@ -35,6 +35,15 @@ What it does (issue #11268 acceptance 1-3)
    touched workflow, FAILS (exit 1). This is the non-regression property:
    a review claiming "2 files only" over a 3-file PR with a workflow can
    no longer be produced unnoticed.
+5. ``--scan-thread`` (the wiring into the review path, acceptance 4): fetches
+   the PR body + top-level reviews and confronts EVERY perimeter assertion
+   found there with the effective list. Wired by
+   ``.github/workflows/perimeter-review-guard.yml`` on ``pull_request`` +
+   ``pull_request_review`` -- the moment such a review is submitted or
+   edited, the check re-runs on the same head and goes red on a false
+   assertion, so the PR cannot stand merged with one. Baseline moves are
+   reported with direction but do not block in this mode (the reviewer
+   applies #11268-3 on unjustified loosening; the output names the move).
 
 Exit codes
 ----------
@@ -50,11 +59,12 @@ Usage
 -----
     python scripts/check_pr_perimeter.py 11334
     python scripts/check_pr_perimeter.py 11227 --assert "2 fichiers twins uniquement"
+    python scripts/check_pr_perimeter.py <PR#> --scan-thread
     python scripts/check_pr_perimeter.py <PR#> --baseline-justified "accepted debt, see #N"
 
-The pure core (assertion checking, baseline parsing) is unit-tested without
-network in ``scripts/tests/test_check_pr_perimeter.py``; the gh wiring is
-exercised on real PRs (see the PR that introduced this file).
+The pure core (assertion checking, baseline parsing, perimeter extraction) is
+unit-tested without network in ``scripts/tests/test_check_pr_perimeter.py``;
+the gh wiring is exercised on real PRs (see the PR that introduced this file).
 """
 
 from __future__ import annotations
@@ -94,6 +104,29 @@ EXCLUSIVITY_MARKERS = (
     "nothing else",
     "no other",
 )
+
+# "only" as an exclusivity marker must be a STANDALONE word. Technical
+# compounds -- "read-only", "append-only", "metadata-only" -- carry "only"
+# as a compound modifier (lecture seule), not a perimeter quantifier, and a
+# plain substring match trips criterion #11268-2 on prose about permissions.
+# Measured on #11654: the Hermes line "Sinon LGTM sur le périmètre — aucun
+# secret, permissions read-only inchangées." was flagged as an exclusivity
+# assertion because "only" sat inside "read-only" while "périmètre" supplied
+# the strong scope word. The French markers need no such guard: no hyphenated
+# compound carries "seulement"/"uniquement".
+_ONLY_STANDALONE = re.compile(r"(?<![-\w])only\b", re.IGNORECASE)
+_SUBSTRING_MARKERS = ("uniquement", "seulement", "aucune autre",
+                      "nothing else", "no other")
+
+
+def _has_exclusivity(low: str) -> bool:
+    """Exclusivity check shared by extraction and assertion checking.
+
+    `low` is the lowercased line. French/phrase markers are substring-matched;
+    "only" requires word boundaries AND no hyphen/word char before it.
+    """
+    return (any(m in low for m in _SUBSTRING_MARKERS)
+            or bool(_ONLY_STANDALONE.search(low)))
 
 
 @dataclass
@@ -186,7 +219,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                 f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
                 + ", ".join(f["path"] for f in files)
             )
-    exclusive = any(marker in assertion.lower() for marker in EXCLUSIVITY_MARKERS)
+    exclusive = _has_exclusivity(assertion.lower())
     if exclusive:
         for f in files:
             if f["path"].startswith(WORKFLOW_PREFIX):
@@ -202,6 +235,162 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
             "formulation non verifiable (ecrire par ex. 'N fichiers : a, b, c')"
         )
     return problems
+
+
+# A file-count claim alone marks a perimeter assertion (the review template's
+# ``**Fichiers:** N fichiers modifiés``). For the exclusivity-only branch, the
+# line must ALSO carry a strong scope word: incidental prose like "pas
+# seulement les PR" / "uniquement à la prochaine ---" / "aucune `---`
+# ultérieure" (measured on #11632) must not be scanned, while a bare "Aucune
+# autre modification." is a genuine perimeter assertion.
+STRONG_SCOPE_WORDS = (
+    "modification", "modif", "changement", "change", "périmètre",
+    "perimetre", "perimeter", "scope",
+)
+
+
+def _quote_spans(line: str) -> list[tuple[int, int]]:
+    """Char spans of quoted speech on a single line (« ... » and " ... ").
+
+    A trigger that sits inside a quotation is REPORTED SPEECH -- the author
+    quoting someone else's assertion (an incident writeup, an anti-FP test
+    description) -- not the author's own claim. Spans are intra-line: a quote
+    opened but not closed on the line counts to end of line.
+    """
+    spans: list[tuple[int, int]] = []
+    for open_c, close_c in (("«", "»"), ('"', '"')):
+        start = 0
+        while True:
+            i = line.find(open_c, start)
+            if i < 0:
+                break
+            j = line.find(close_c, i + 1)
+            if j < 0:
+                spans.append((i, len(line)))
+                break
+            spans.append((i, j + 1))
+            start = j + 1
+    return spans
+
+
+def _trigger_quoted(line: str, pos: int, length: int) -> bool:
+    return any(a <= pos and pos + length <= b for a, b in _quote_spans(line))
+
+
+def _counts_all_quoted(line: str) -> bool:
+    """Every file-count claim on the line sits inside a quotation."""
+    return all(
+        _trigger_quoted(line, m.start(), m.end() - m.start())
+        for m in COUNT_CLAIM.finditer(line)
+    )
+
+
+def _markers_all_quoted(line: str) -> bool:
+    """Every exclusivity marker on the line sits inside a quotation."""
+    low = line.lower()
+    for marker in EXCLUSIVITY_MARKERS:
+        start = 0
+        while True:
+            i = low.find(marker, start)
+            if i < 0:
+                break
+            if not _trigger_quoted(line, i, len(marker)):
+                return False
+            start = i + len(marker)
+    return True
+
+
+def _fence_line_indices(text: str) -> set[int]:
+    """Return the 0-based indices of lines that sit INSIDE a markdown fence.
+
+    Mirrors the existing _quote_spans exemption idea: a fence is transcription,
+    never an author's own claim. Workers document their L898 cross-lane
+    verification in fences (command output verbatim), and that transcription
+    carries file counts ("0 fichiers en commun") that would otherwise be
+    mis-extracted as authorial perimeter assertions. Issue #11670 founder
+    case: PR #11664 body contains L898 proof in a fenced block; the line
+    "0 fichiers en commun avec les autres PR" sits inside the fence without
+    the fence delimiters on the line itself, so the line-level scanner used
+    by `--scan-thread` would otherwise surface it. The check is line-based
+    and O(n) once per text.
+
+    Fence delimiters are lines starting with three or more backticks OR
+    three or more tildes. The closing delimiter matches either family.
+    Delimiter lines themselves are NOT in the returned set (only the lines
+    they enclose).
+    """
+    indices: set[int] = set()
+    in_fence = False
+    for idx, raw_line in enumerate(text.splitlines()):
+        stripped = raw_line.lstrip()
+        # A closing delimiter closes the fence BEFORE we record this line:
+        # the delimiter itself is not part of the fenced body.
+        if in_fence and (stripped.startswith("`" * 3) or stripped.startswith("~" * 3)):
+            in_fence = False
+            continue
+        if not in_fence:
+            # Open the fence on the next iteration.
+            if (stripped.startswith("`" * 3) and len(stripped) >= 3) or (
+                stripped.startswith("~" * 3) and len(stripped) >= 3
+            ):
+                in_fence = True
+            continue
+        # We're inside a fence (opening was on a previous line, no closing on
+        # this one). Add this line to the set.
+        indices.add(idx)
+    return indices
+
+
+def extract_perimeter_assertions(text: str) -> list[str]:
+    """Pull candidate perimeter assertions from review/PR prose.
+
+    Line-based by design: perimeter statements sit on their own line (the
+    report template's ``**Fichiers:** N fichiers modifiés``, the founding
+    ``**Périmètre** : 2 fichiers twins uniquement, aucune autre
+    modification.``). A line is a candidate when it carries a file-count
+    claim, or an exclusivity marker AND a strong scope word. Lines with
+    neither are not perimeter assertions and are skipped.
+
+    Two citation shapes are skipped (measured on this tool's own PR #11635,
+    dogfooded 2026-08-18 -- its evidence table quotes the founding sentence
+    and the guard flagged its own PR against its own 4-file list):
+
+    1. **Markdown table rows** (lines starting with ``|``): tables are
+       report/summary structures (evidence matrices, status boards); a
+       perimeter assertion is prose. The review template's line is a bullet,
+       not a cell.
+    2. **Candidacy fully quoted**: the trigger that made the line a
+       candidate (count claim, or exclusivity markers) sits inside
+       ``« ... »`` / ``" ... "`` -- the line quotes someone else's
+       assertion instead of making one. One unquoted trigger keeps the line
+       live.
+
+    A ``#N`` backlink in the line is NOT an exemption: the founding #11227
+    Hermes sentence carries an inline issue ref (#2874) in the same line and
+    must stay caught -- a backlink exemption would also be a trivial
+    evasion.
+    """
+    fence_indices = _fence_line_indices(text)
+    candidates: list[str] = []
+    for idx, raw_line in enumerate(text.splitlines()):
+        if idx in fence_indices:
+            continue  # Issue #11670 founder case: L898 transcription, not an authorial claim
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("|"):
+            continue  # markdown table row: report structure, not an assertion
+        low = line.lower()
+        if COUNT_CLAIM.search(line):
+            if _counts_all_quoted(line):
+                continue  # quoting a count (reported speech), not claiming it
+            candidates.append(line)
+            continue
+        if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
+            if _markers_all_quoted(line):
+                continue  # quoting an exclusivity claim, not making it
+            candidates.append(line)
+    return candidates
 
 
 def format_report(report: Report, assertion: Optional[str]) -> str:
@@ -253,10 +442,121 @@ def fetch_report(pr: int) -> Report:
     return Report(files=files, moves=extract_baseline_moves(diff))
 
 
+def fetch_review_thread(pr: int) -> list[dict]:
+    """PR body + top-level review bodies -- the surfaces that carry perimeter assertions.
+
+    Inline review comments are deliberately not scanned (v1): the perimeter
+    statement lives in the review body or the PR body. ``gh pr view --json
+    reviews`` returns the review objects with body/state/author.
+
+    Each item carries ``source`` -- "body" or "thread" -- which decides whether
+    a false assertion BLOCKS or merely SIGNALS (#11648-b2), and ``ts`` so that
+    an author's later assertion can supersede their earlier one (#11648-b1).
+    """
+    meta = json.loads(
+        _run_gh(["pr", "view", str(pr), "--json", "body,reviews,author"])
+    )
+    pr_author = (meta.get("author") or {}).get("login", "pr-author")
+    items: list[dict] = [{
+        "kind": "PR body",
+        "author": pr_author,
+        "body": meta.get("body") or "",
+        "source": "body",
+        "ts": "",
+    }]
+    for rv in meta.get("reviews") or []:
+        items.append({
+            "kind": f"review ({rv.get('state')})",
+            "author": rv.get("author", {}).get("login", "?"),
+            "body": rv.get("body") or "",
+            "source": "thread",
+            "ts": rv.get("submittedAt") or "",
+        })
+    return items
+
+
+@dataclass
+class Candidate:
+    """One perimeter assertion, with what decides its consequence."""
+
+    text: str
+    kind: str
+    author: str
+    source: str  # "body" (author-controlled -> blocking) | "thread" (signal)
+    ts: str = ""
+
+    @property
+    def blocking(self) -> bool:
+        """Only the PR body blocks.
+
+        #11648-b2: a gate blocks on what its target can fix. The PR author owns
+        the body and can edit it -- and since #11654 an edit re-triggers the
+        workflow, so the green is reachable. A third-party review is NOT
+        editable by the author, and a COMMENTED review cannot even be
+        dismissed (dismissal applies to APPROVED/CHANGES_REQUESTED only), so
+        blocking there leaves no lever at all -- measured on #11642 and #11646.
+        """
+        return self.source == "body"
+
+
+def select_candidates(items: list[dict]) -> list[Candidate]:
+    """Extract assertions, keeping only each thread author's LAST ones.
+
+    #11648-b1 (supersession). The founding measurement: on #11646 the guard
+    confronted three assertions, two of which their own author had already
+    corrected -- ai-01 said "5 fichiers" at 14:29 then "7" (correct) at 14:48,
+    and the stale one still held the PR red. An author who corrects themselves
+    must extinguish their own red; that is the one lever that acts only on
+    oneself, so it is safe to grant.
+
+    "Last" means the most recent review of that author which actually carries
+    an assertion -- a later review that says nothing about the perimeter is
+    silence, not a retraction. The PR body is never superseded: there is only
+    one of it, and it is always the current text.
+    """
+    body_items = [i for i in items if i.get("source") != "thread"]
+    thread_items = [i for i in items if i.get("source") == "thread"]
+
+    out: list[Candidate] = []
+    for item in body_items:
+        for text in extract_perimeter_assertions(item["body"]):
+            out.append(Candidate(text, item["kind"], item["author"], "body"))
+
+    # Per thread author, keep the latest assertion-carrying review.
+    latest: dict[str, tuple[str, int, dict, list[str]]] = {}
+    for pos, item in enumerate(thread_items):
+        found = extract_perimeter_assertions(item["body"])
+        if not found:
+            continue
+        author = item["author"]
+        key = (item.get("ts") or "", pos)
+        if author not in latest or key > (latest[author][0], latest[author][1]):
+            latest[author] = (key[0], key[1], item, found)
+
+    for author in sorted(latest):
+        _, _, item, found = latest[author]
+        for text in found:
+            out.append(
+                Candidate(text, item["kind"], author, "thread", item.get("ts") or "")
+            )
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Perimeter truth-source for PR reviews (#11268)")
     ap.add_argument("pr", type=int, help="PR number")
     ap.add_argument("--assert", dest="assertion", help="draft perimeter assertion to confront")
+    ap.add_argument(
+        "--scan-thread",
+        action="store_true",
+        help="scan the PR body + top-level reviews for perimeter assertions and "
+             "confront each with the effective file list (the wiring that makes "
+             "a false assertion -- #11227's '2 fichiers twins uniquement' -- "
+             "impossible to leave unblocked, #11268-4). Baseline moves are "
+             "reported with direction but do NOT block here: the output names "
+             "them and the reviewer applies CHANGES_REQUESTED on unjustified "
+             "loosening.",
+    )
     ap.add_argument(
         "--baseline-justified",
         dest="justified",
@@ -267,9 +567,21 @@ def main() -> int:
     report = fetch_report(args.pr)
     if args.assertion:
         report.problems.extend(check_assertion(report.files, args.assertion))
+    signals: list[str] = []
+    if args.scan_thread:
+        for cand in select_candidates(fetch_review_thread(args.pr)):
+            for p in check_assertion(report.files, cand.text):
+                line = f"[{cand.kind} / {cand.author}] {p}"
+                # Every catch stays visible either way -- the detector is not
+                # disarmed, only its consequence is placed where it can be
+                # acted on (#11648).
+                if cand.blocking:
+                    report.problems.append(line)
+                else:
+                    signals.append(line)
 
     blocking = list(report.problems)
-    if not args.justified:
+    if not args.justified and not args.scan_thread:
         for m in report.moves:
             if m.direction == "LOOSEN":
                 blocking.append(
@@ -278,6 +590,13 @@ def main() -> int:
                 )
 
     print(format_report(report, args.assertion))
+    if signals:
+        print("")
+        print("SIGNAL (non bloquant -- assertion d'un tiers, non editable par l'auteur) :")
+        for sg in signals:
+            print(f"  ~~ {sg}")
+        print("  -> a lever par son auteur (poster une assertion corrigee), ou a")
+        print("     considerer par le reviewer qui merge. Ne tient pas la PR.")
     if blocking:
         print("")
         print("VERDICT: FAIL")

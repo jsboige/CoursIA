@@ -27,7 +27,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Optional
 
@@ -102,7 +102,7 @@ def record_attempt(prover_dir: Path, filepath: str, sorry_line: int,
         "error_category": error_category or "",
         "error_excerpt": (error_excerpt or "")[:200],
         "session_id": session_id or "",
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
     }
 
     # Dedup: same tactic+outcome → replace timestamp only

@@ -1,0 +1,260 @@
+name: PR gate stale-verdict sweep
+
+# The gap left open by pr-gate-rerun.yml, measured 2026-08-17 on #11532.
+#
+# pr-gate.yml aggregates once on `pull_request` and polls 12 min. Under runner
+# starvation the slowest checks are still queued when that budget runs out, so
+# the gate posts FAIL -- "timed out waiting for: Analyze (actions), Analyze
+# (csharp)". pr-gate-rerun.yml exists to re-aggregate afterwards, but it is
+# driven by `workflow_run` and therefore can only listen to workflows that are
+# ADDRESSABLE BY NAME in this repository:
+#
+#   workflows: ["Variation Tag Guard", "Lane Claim Guard",
+#               "Notebook Execution Required", "Translation Drift Check",
+#               "machine-dep-timing-advisory"]
+#
+# CodeQL is not one of them. It runs under GitHub's *default setup*, which is
+# dynamic: `GET /repos/:owner/:repo/actions/workflows?per_page=100` returns 103
+# workflows on this repository and NOT ONE of them is CodeQL (measured
+# 2026-08-17T22:0xZ). Adding "CodeQL" to the list above would be a silent
+# no-op -- a trigger name that matches nothing never fires and never errors.
+#
+# Consequence when CodeQL is the last check to settle -- the common case under
+# saturation, since it is also the slowest: the gate's stale FAIL is never
+# superseded, `gh pr checks` shows zero red besides `PR gate` itself, and the
+# PR reports BLOCKED forever. On #11532 every one of the four CodeQL analyses
+# went green at 21:5xZ; the 21:38Z gate verdict stayed FAILURE.
+#
+# This sweep closes the loop from the outside, independent of trigger
+# semantics: it finds open PRs carrying a red `PR gate` leg while every other
+# check has COMPLETED green, and RE-RUNS the original gate run for each. It
+# never merges, never edits, never blocks, and always exits 0.
+#
+# Why it re-runs instead of POSTing a fresh verdict -- the correction that
+# rewrote this file. POSTing was the first design here, and it is INERT.
+# Two check-runs bearing a required name can coexist on one SHA in DIFFERENT
+# check suites, and GitHub requires EVERY one of them to be green: it is an
+# AND, not latest-wins. A posted SUCCESS therefore lands BESIDE the stale
+# FAILURE instead of replacing it, and the PR stays BLOCKED.
+#
+# Measured on #11532 (2026-08-17): `21:38 failure` (suite ...36591) and
+# `22:46 success` (suite ...31015) coexisted on the same head; the PR was
+# still BLOCKED. `gh run rerun 32070293726` then replaced the failure IN
+# PLACE in its own suite, and the block lifted. Re-running is the only
+# mechanism that clears the leg.
+#
+# The same correction applies to the candidate filter: folding same-named
+# check-runs by name (latest-wins) HID this exact case -- it kept the 22:46
+# success and called the PR healthy. Across the 116 open PRs that day the
+# fold concealed 52 of them, the majority of the blocked pool. The filter now
+# treats ANY red `PR gate` leg as a candidate.
+#
+# Why this sweep exists at all, given pr-gate-rerun.yml (#11546) now re-runs
+# on `workflow_run`: CodeQL runs in `default setup`, which is dynamic and does
+# not appear in the workflow list --
+#   GET /repos/jsboige/CoursIA/actions/workflows?per_page=100
+#     -> total_count: 103, of which CodeQL: 0
+# -- so it cannot be named as a `workflow_run` trigger, and the event-driven
+# path never fires when CodeQL is the last check to settle. Under saturation
+# that is the common case, since CodeQL is also the slowest. A schedule is
+# the only observer that does not depend on being triggerable.
+#
+# pr-gate.yml's own `workflow_dispatch` leg cannot serve either: it runs on
+# the default branch, so `github.event.pull_request.head.sha || github.sha`
+# resolves to the default-branch commit, and its check-run lands there --
+# invisible to the PR's mergeState. (Its unused `sha` input is removed in the
+# same change that adds this file, for the same reason: a documented remedy
+# wired to nothing is worse than an absent one, because it is tried and
+# believed. It was tried, on #11532, before the real path was found.)
+
+on:
+  schedule:
+    # Every 20 minutes on off-:00 minutes (anti-stampede convention, as in
+    # pr-gate-missing-advisory.yml). Frequent enough that a PR blocked by a
+    # stale verdict waits minutes, not a day; cheap enough (one short job)
+    # not to add meaningful load to a starved queue.
+    - cron: '7,27,47 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List candidates, post nothing'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write       # re-run the ORIGINAL `PR gate` run (see the note below)
+  pull-requests: read
+
+concurrency:
+  # One sweep at a time, and never cancel a running one: a sweep that is killed
+  # mid-loop leaves the PRs it had not reached still blocked, which is the
+  # exact failure mode this file exists to remove.
+  group: pr-gate-stale-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Re-aggregate stale PR gate verdicts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # No checkout / setup-python / pip here on purpose. This sweep no longer
+      # runs `pr_gate.py`: it re-runs the original workflow run (see the note in
+      # the re-aggregation step). That removes ~40 s of runner time per sweep,
+      # every 20 min, on a repository whose measured problem IS runner scarcity.
+      - name: Find stale verdicts and re-run their gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+
+          # Cap the number of re-aggregations per sweep. A wide outage can
+          # leave dozens of PRs in this state at once; doing all of them in one
+          # job would run past the timeout. The next sweep (20 min later) takes
+          # the next batch.
+          MAX_POSTS=8
+
+          # Collected over REST, one small call per PR, NOT one bulk GraphQL
+          # query. `gh pr list --limit 60 --json statusCheckRollup` returns
+          # HTTP 504 on this repository (measured 2026-08-17; --limit 40 was
+          # 530 KB and already near the edge). A sweep that 504s is a sweep
+          # that silently does nothing, and REST also lets us see the WHOLE
+          # open pool instead of the 40 most recent.
+          #
+          # Known limit, stated rather than hidden: /check-runs returns check
+          # runs only, not legacy commit statuses. Every check involved here
+          # (`PR gate`, CodeQL, the guards) is a check run, so the selection is
+          # exact for this repository's setup.
+          gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" --paginate \
+            --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha) \(.head.repo.fork)"' > /tmp/openprs.txt \
+            || { echo "[stale-sweep] PR listing failed (upstream) -- skip this sweep"; exit 0; }
+
+          : > /tmp/runs.jsonl
+          while read -r NUM SHA FORK; do
+            [ -z "${NUM:-}" ] && continue
+            BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
+                     --jq '[.check_runs[] | {name, status, conclusion, started_at}]' 2>/dev/null) || continue
+            printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" >> /tmp/runs.jsonl
+          done < /tmp/openprs.txt
+          echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
+
+          python - <<'PY' > /tmp/candidates.txt
+          import json
+
+          # REST /check-runs is lowercase where GraphQL's rollup is uppercase.
+          # A check counts as settled-green when it has completed with a
+          # conclusion that does not redden a rollup. neutral / skipped are
+          # green for this purpose: GitHub treats them as non-blocking, and a
+          # path-filtered guard that skipped must not keep a PR in the pool.
+          GREEN = {"success", "neutral", "skipped"}
+          RED = {"failure", "timed_out", "action_required"}
+
+          for line in open("/tmp/runs.jsonl", encoding="utf-8"):
+              line = line.strip()
+              if not line:
+                  continue
+              p = json.loads(line)
+              # Same-name check-runs accumulate on a SHA (reruns, re-dispatch).
+              # For NON-required checks, only the most recent one matters: a
+              # guard that failed and was re-run green must not keep a PR out
+              # of the pool.
+              latest = {}
+              for c in (p.get("checks") or []):
+                  name = c.get("name") or "?"
+                  started = c.get("started_at") or ""
+                  if name not in latest or started >= latest[name][0]:
+                      latest[name] = (started, c)
+
+              # `PR gate` is the REQUIRED check, and there latest-wins is FALSE.
+              # Two check-runs bearing a required name can coexist on one SHA in
+              # DIFFERENT check suites, and GitHub requires EVERY one of them to
+              # be green -- an AND, not latest-wins. A newer posted SUCCESS does
+              # NOT clear an older FAILURE.
+              #
+              # Measured 2026-08-17 on #11532: `21:38 failure` (suite ...36591)
+              # and `22:46 success` (suite ...31015) coexisted, and the PR stayed
+              # BLOCKED. Folding by name kept only the 22:46 success, so this
+              # filter called the PR healthy and skipped it. Over the 116 open
+              # PRs that day, that fold hid 52 of them -- the majority of the
+              # blocked pool, and precisely the ones this sweep exists for.
+              gate_legs = [c for c in (p.get("checks") or []) if (c.get("name") or "") == "PR gate"]
+              if not gate_legs:
+                  continue  # absent gate is pr-gate-missing-advisory.yml's case
+              if not any((c.get("conclusion") or "") in RED for c in gate_legs):
+                  continue
+
+              others = [(n, c) for n, (t, c) in latest.items() if n != "PR gate"]
+              # Every other check must be finished AND green. An unfinished one
+              # means the gate may still be legitimately waiting: re-aggregating
+              # then would just burn another verdict on the same incomplete set.
+              if not all((c.get("status") or "") == "completed" for _, c in others):
+                  continue
+              if not all((c.get("conclusion") or "") in GREEN for _, c in others):
+                  continue
+
+              print(f'{p["number"]} {p["sha"]} {str(p.get("fork", False)).lower()}')
+          PY
+
+          COUNT=$(wc -l < /tmp/candidates.txt | tr -d ' ')
+          echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT"
+          if [ "$COUNT" = "0" ]; then
+            echo "[stale-sweep] nothing to do"
+            exit 0
+          fi
+
+          n=0
+          while read -r NUM SHA FORK; do
+            [ -z "${NUM:-}" ] && continue
+            if [ "$n" -ge "$MAX_POSTS" ]; then
+              echo "[stale-sweep] cap $MAX_POSTS reached -- remaining candidates wait for the next sweep"
+              break
+            fi
+            # Re-run the ORIGINAL run rather than POSTing a fresh verdict.
+            #
+            # POSTing was this file's first design, and it is INERT: a posted
+            # check-run lands in its own check suite, so the stale FAILURE stays
+            # on the SHA alongside it, and GitHub's AND over same-named required
+            # check-runs keeps the PR BLOCKED. Verified on #11532 (see the note
+            # in the candidate filter above).
+            #
+            # `gh run rerun` overwrites the run's check-run IN PLACE, in the same
+            # suite -- the only mechanism that actually clears the red leg. Same
+            # remedy as pr-gate-rerun.yml (#11546); this sweep is its complement,
+            # because CodeQL runs in `default setup` and is NOT addressable as a
+            # `workflow_run` trigger, so the event-driven path cannot fire when
+            # CodeQL is the last check to settle -- the common case under
+            # saturation, since it is also the slowest.
+            #
+            # No loop risk: "PR gate" is not among pr-gate-rerun.yml's trigger
+            # workflows, so a re-run cannot re-trigger the rescuer.
+            RUN=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&event=pull_request&per_page=100" \
+                    --jq '[.workflow_runs[] | select(.name == "PR gate")] | sort_by(.created_at) | last' 2>/dev/null)
+            RUN_ID=$(printf '%s' "${RUN:-}" | jq -r '.id // empty' 2>/dev/null)
+
+            if [ -z "${RUN_ID:-}" ]; then
+              # The verdict on this SHA was POSTed by something else and has no
+              # workflow run behind it, so there is nothing to re-run. Say so
+              # rather than fail silently: this class needs its own handling.
+              echo "[stale-sweep] #$NUM ($SHA): red \`PR gate\` with NO workflow run -- cannot re-run, skipping"
+              n=$((n + 1))
+              continue
+            fi
+
+            if [ "${DRY_RUN:-false}" = "true" ]; then
+              echo "[stale-sweep] (dry-run) would re-run #$NUM ($SHA) via run $RUN_ID"
+            else
+              echo "[stale-sweep] re-running gate for #$NUM ($SHA) -- run $RUN_ID"
+              # `|| echo`: one PR whose re-run is refused must not abort the loop
+              # nor redden a sweep whose other re-runs landed.
+              gh run rerun "$RUN_ID" --repo "$REPO" \
+                || echo "[stale-sweep] re-run refused for #$NUM (non-fatal)"
+            fi
+            n=$((n + 1))
+          done < /tmp/candidates.txt
+
+          # Advisory organ: it acts, it never blocks.
+          exit 0

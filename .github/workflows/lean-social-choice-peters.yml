@@ -31,4 +31,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/GameTheory/social_choice_lean_peters
       display-name: social_choice_lean_peters
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
