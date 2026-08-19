@@ -85,9 +85,30 @@ jobs:
     # Before the ref-keyed concurrency groups added alongside this, guard
     # cancellations were rare; now every superseded generation ends this way,
     # which would have turned each saved guard run into a wasted gate rerun.
+    #
+    # ... et un `workflow_run` SANS PR dans son payload n'a aucune tete de PR a
+    # re-agreger : l'etape ci-dessous sortait deja en `exit 0` sur ce cas
+    # (« no PR head to re-aggregate -- skip »), mais apres avoir consomme un
+    # runner et une place de file pour l'apprendre. Un `if:` de job faux est
+    # evalue par le service Actions AVANT toute allocation de runner, donc le
+    # meme non-travail devient gratuit.
+    #
+    # Mesure qui motive l'ajout (2026-08-19T19:20Z, file a 400 runs pour 19
+    # slots) : sur le SHA `main` du merge de #11771, **39 runs de ce workflow**
+    # (29 queued + 8 completed + 2 pending), tous `pull_requests: 0` et
+    # `head_branch: main`. Le groupe de concurrence ne les dedoublonne pas :
+    # sa cle retombe sur `github.run_id`, unique par run, donc chacun fait
+    # groupe a lui seul. Chaque merge dans main payait ainsi ~39 slots pour 39
+    # « skip ».
+    #
+    # Le comportement observable est INCHANGE, y compris pour les PR de forks
+    # (~95 forks etudiants), dont `workflow_run.pull_requests` est vide par
+    # conception cote GitHub : ces runs ne re-agregeaient deja rien, ils le
+    # feront desormais sans occuper de runner. See #11835.
     if: >-
       github.event_name != 'workflow_run'
-      || github.event.workflow_run.conclusion != 'cancelled'
+      || (github.event.workflow_run.conclusion != 'cancelled'
+          && github.event.workflow_run.pull_requests[0])
     runs-on: ubuntu-latest
     steps:
       - name: Re-run the original PR gate for the PR head
