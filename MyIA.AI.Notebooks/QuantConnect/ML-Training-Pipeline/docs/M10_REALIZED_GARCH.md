@@ -138,8 +138,8 @@ identical data and only the walk-forward windowing differs (RG expanding from
 | M12 HAR-RV-J | **BEATS** | p=7.9e-7, 64/84 | Jump-augmented — only cluster-wide BEATS |
 | M13 MS-HAR | NO BEATS | 39/84 | Markov-Switching |
 | M14 HEAVY | NO BEATS | 48/84 | Bivariate, MSE +111 % |
-| M15 LSTM h=32 | BEATS | p=0.0188, 52/84 | Neural, narrow edge |
-| M15 LSTM h=64/128 | NO BEATS | 45/84, 38/84 | Overfitting at higher capacity |
+| M15 LSTM h=32 | NO BEATS | §C #11395 : 44/84, p=0.372 | Claim retractee, edge MSE negatif |
+| M15 LSTM h=64/128 | NO BEATS | 45/84, 38/84 (non trackes) | Historical runs, not tracked |
 | M16 HAR-Asym | NO BEATS (cluster) | BTC 3/3 only | Asymmetric semivariance |
 | M17 HAR-LJ-Asym | NO BEATS | 28/84 (33.3%) | Jump+semivariance composite |
 
