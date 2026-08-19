@@ -126,12 +126,15 @@ def _strip_title_hashes(flat: str) -> str:
 
 # --- extraction -------------------------------------------------------------
 
-# `Grain` then an OPTIONAL colon and any whitespace (incl. newlines), then
-# TIER / GENRE. The `[:\\s]*` is the whole #9485 fix in one atom: it accepts
+# `Grain` then a REQUIRED separator (colon and/or whitespace, incl. newlines),
+# then TIER / GENRE. `[:\\s]+` (one-or-more, #11771) keeps the whole #9485
+# tolerance while refusing a ZERO-width separator: with `*`, the word
+# `Graine` matched as `Grain` + `e / Tag` and a conformant PR was labelled
+# variation-tag-malformed + variation-tag-genre-offlist. It accepts
 # `Grain:`, `Grain `, `Grain\\n\\n`, `Grain :` (space then colon). TIER is the
 # alphabetic word before `/`; GENRE is the token after (letters, digits, _,-).
 _GRAIN_FULL_RE = re.compile(
-    r"Grain[:\s]*([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)", re.IGNORECASE
+    r"Grain[:\s]+([A-Za-z]+)\s*/\s*([A-Za-z0-9_-]+)", re.IGNORECASE
 )
 
 # `lane` (case-insensitive), optional whitespace, optional colon, whitespace,
@@ -561,8 +564,8 @@ def parse_short_header(body: str | None) -> dict:
 TIERS = ("DEEP", "MED", "LIGHT")
 GENRES = (
     "lean", "qc", "training", "genai", "notebook-python", "notebook-dotnet",
-    "slides", "docs", "guard", "refactor", "ledger", "readme", "test",
-    "tooling", "research-code",
+    "notebook-lean", "slides", "docs", "guard", "refactor", "ledger", "readme",
+    "test", "tooling", "research-code",
 )
 
 

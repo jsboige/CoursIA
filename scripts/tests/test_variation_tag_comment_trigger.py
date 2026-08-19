@@ -18,6 +18,9 @@ wiring cannot silently regress:
   4. the check-run it posts carries the SAME name as the pull_request job
      so the aggregator (pr_gate) sees the fresh verdict supersede the stale
      one on the PR head.
+  5. an entry guard keeps the job off comments that carry no
+     [G-VAR-3 OVERRIDE] marker (#11782) -- a comment without the marker is
+     information-free for this gate and must cost zero runner time.
 
 Run:
     python -m pytest scripts/tests/test_variation_tag_comment_trigger.py
@@ -116,4 +119,28 @@ def test_comment_job_checks_out_default_branch_code():
     checkout = [s for s in wf["jobs"][COMMENT_JOB]["steps"] if "checkout" in str(s.get("uses", ""))][0]
     assert "ref" not in checkout.get("with", {}), (
         "le checkout du chemin commentaire ne doit PAS pin de ref : il execute le gate de la branche par defaut (diagnostic #11718)"
+    )
+
+
+def test_comment_job_entry_guard_requires_override_marker():
+    """#11782 : le job ne doit tourner QUE sur les commentaires portant le
+    marqueur -- un if: de job est evalue sans allouer de runner, donc un
+    commentaire sans [G-VAR-3 OVERRIDE] ne coute rien. Sans ce garde, chaque
+    commentaire de PR (steer, ACK, review, reponse) relance le job pour ne
+    rien decider : le guard ne lit les commentaires QUE pour le marqueur
+    (variation_adjacency_guard.parse_override), tout le reste est du passage
+    a vide.
+
+    Le garde doit rester COMBINE en ET a `github.event_name == 'issue_comment'`
+    : la forme `event_name != 'issue_comment' || contains(...)` (esquissee
+    dans l'issue) laisserait aussi entrer les evenements pull_request dans ce
+    job chemin-commentaire -- doublon du job pull_request (acceptance 3).
+    """
+    wf = _load()
+    cond = str(wf["jobs"][COMMENT_JOB].get("if", ""))
+    assert "github.event_name == 'issue_comment'" in cond, (
+        "le garde marqueur ne doit pas remplacer la restriction issue_comment (acceptance 3 de #11782)"
+    )
+    assert "contains(github.event.comment.body, '[G-VAR-3 OVERRIDE]')" in cond, (
+        "garde d'entree absent : tout commentaire de PR relance le job (#11782 -- 11 runs/edition mesures sur #11405)"
     )

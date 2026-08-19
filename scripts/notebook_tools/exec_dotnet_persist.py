@@ -7,8 +7,6 @@ import time
 import base64
 from pathlib import Path
 
-from notebook_helpers import bound_native_thread_pools
-
 
 def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
     """Execute a .NET notebook cell-by-cell and write outputs back."""
@@ -21,9 +19,6 @@ def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
     kernel_name = nb.get('metadata', {}).get('kernelspec', {}).get('name', '.net-csharp')
     print(f"Executing {path.name} (kernel={kernel_name})")
 
-    # Bound OpenMP/BLAS pools: LightGBM unbounded oversubscribes many-core
-    # hosts and training cells look frozen (#11111). Kernel inherits env.
-    bound_native_thread_pools()
     km = jupyter_client.KernelManager(kernel_name=kernel_name)
     km.start_kernel()
     kc = km.client()
@@ -57,11 +52,17 @@ def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
         t0 = time.time()
 
         try:
-            kc.execute(source)
+            # Attribute iopub messages strictly to THIS execute: .NET Interactive
+            # flushes display() outputs asynchronously, sometimes AFTER the kernel
+            # reports idle. Without the parent msg_id filter those late messages
+            # were captured by the NEXT cell's loop (output misattribution).
+            msg_id = kc.execute(source)
             outputs = []
             while True:
                 try:
                     msg = kc.get_iopub_msg(timeout=timeout_per_cell)
+                    if msg.get('parent_header', {}).get('msg_id') != msg_id:
+                        continue
                     msg_type = msg['msg_type']
                     content = msg.get('content', {})
 
@@ -109,6 +110,28 @@ def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
                         })
                         errors += 1
                     elif msg_type == 'status' and content.get('execution_state') == 'idle':
+                        # Grace drain: late display outputs of this same execute
+                        # can still arrive just after idle (async flush).
+                        import queue as _queue
+                        grace_deadline = time.time() + 2.0
+                        while time.time() < grace_deadline:
+                            try:
+                                late = kc.get_iopub_msg(timeout=0.3)
+                            except _queue.Empty:
+                                break
+                            if late.get('parent_header', {}).get('msg_id') != msg_id:
+                                continue
+                            ltype = late['msg_type']
+                            lcontent = late.get('content', {})
+                            if ltype == 'display_data' or ltype == 'execute_result':
+                                data = lcontent.get('data', {})
+                                out = {'output_type': ltype, 'metadata': {}, 'data': {}}
+                                if ltype == 'execute_result':
+                                    out['execution_count'] = lcontent.get('execution_count', executed)
+                                for mime in ('text/plain', 'text/html', 'image/svg+xml'):
+                                    if mime in data:
+                                        out['data'][mime] = _split_lines(data[mime])
+                                outputs.append(out)
                         break
                 except Exception as e:
                     if 'timeout' in str(e).lower():

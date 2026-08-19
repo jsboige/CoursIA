@@ -437,12 +437,29 @@ def test_prev_close_keyword_all_inflections():
 
 
 def test_prev_canonical_genres_pass():
-    # The 15 canonical genres contain NO closing keyword -> all pass.
-    for genre in ("lean", "qc", "training", "genai", "notebook-python",
-                  "notebook-dotnet", "slides", "docs", "guard", "refactor",
-                  "ledger", "readme", "test", "tooling", "research-code"):
+    # Iterate gt.GENRES itself, NOT a copy of it. A hardcoded list here would
+    # be a fourth duplicate of the enumeration, silently drifting from the one
+    # the guard actually enforces -- which is the very defect that let
+    # notebook-lean be labelled off-list while the cap ranked it CONTENT.
+    for genre in gt.GENRES:
         hits = gt.find_prev_close_keywords(f"prev: MED/{genre} #100")
         assert hits == [], f"canonical genre {genre} must NOT be flagged"
+
+
+def test_notebook_lean_is_canonical_content_genre():
+    # Regression guard for the two-organ disagreement (#11764): the cap
+    # canonicalized notebook-lean -> lean (CONTENT, correct) while the tag
+    # guard rejected it as off-list, labelling legitimate Lean-notebook grains
+    # variation-tag-genre-offlist. Both organs must now agree.
+    assert "notebook-lean" in gt.GENRES
+
+    import variation_light_cap as vlc  # sys.path already set at module level
+
+    canon = vlc.canonicalize_genre("notebook-lean")
+    assert canon == "notebook-lean", (
+        f"membership in GENRES must win over compound reduction, got {canon!r}"
+    )
+    assert canon not in vlc.LIGHT_GENRES, "a Lean notebook is CONTENT, never LIGHT"
 
 
 def test_prev_close_keyword_backtick_wrapped():
@@ -554,3 +571,42 @@ def test_find_non_closing_refs_empty_and_none():
     assert gt.find_non_closing_refs(None) == []
     assert gt.find_non_closing_refs("") == []
     assert gt.find_non_closing_refs("nothing here") == []
+
+
+def test_grain_word_boundary_graine_heading_does_not_shadow_real_tag():
+    # #11771 (mesure 2026-08-19) : le body portait un titre `## Graine / Tag`
+    # AVANT sa ligne `Grain:` conforme. Le motif acceptait ZERO separateur apres
+    # `Grain`, donc « Graine » matchait comme `Grain` suivi de « e / Tag » et
+    # l'extracteur rendait tier="E" / genre="tag" -- deux labels rouges
+    # (variation-tag-malformed + variation-tag-genre-offlist) sur une PR dont le
+    # tag etait parfaitement conforme. Un separateur est desormais EXIGE.
+    body = """## Graine / Tag
+
+Grain: DEEP/notebook-dotnet -- lane myia-po-2026:CoursIA-2
+"""
+    g = gt.parse_grain_tag(body)
+    assert g is not None
+    assert g["tier"] == "DEEP"
+    assert g["genre"] == "notebook-dotnet"
+
+
+def test_grain_word_boundary_graine_alone_is_not_a_tag():
+    # Controle negatif : « Graine » SEULE ne doit produire aucun tag -- sinon le
+    # fix ne ferait que deplacer le faux positif au lieu de le fermer.
+    assert gt.parse_grain_tag("## Graine / Tag\n") is None
+
+
+def test_grain_separator_forms_still_accepted_after_boundary_fix():
+    # Non-regression #9485 : les 5 formes tolerees survivent au durcissement
+    # (chacune porte au moins un separateur apres `Grain`).
+    for body in (
+        "Grain: LIGHT/guard -- lane myia-po-2023:CoursIA",
+        "**Grain:** LIGHT/guard - lane myia-po-2023:CoursIA",
+        "## Grain\n\nLIGHT/guard -- lane myia-po-2023:CoursIA",
+        "`Grain` LIGHT/guard -- lane myia-po-2023:CoursIA",
+        "**Grain** : LIGHT/guard -- lane myia-po-2023:CoursIA",
+    ):
+        g = gt.parse_grain_tag(body)
+        assert g is not None, body
+        assert g["tier"] == "LIGHT", body
+        assert g["genre"] == "guard", body

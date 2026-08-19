@@ -15,6 +15,7 @@ identities of pullback along morphisms:
   - Pullback preserves ⊓ (pullback_inf, in Part 8 SieveOps.lean).
   - Pullback preserves ⋃, the finite join (pullback_union).
   - Pullback preserves indexed suprema, iSup (pullback_imap).
+  - Pullback preserves indexed infima, iInf (pullback_iinf).
   - Pullback distributes `Sieve.ofObjects` across the target (pullback_ofObjects).
   - `f ∈ S` iff `Sieve.pullback f S = ⊤` (mem_iff_pullback_eq_top).
 
@@ -132,6 +133,27 @@ theorem pullback_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
     Sieve.pullback f (iSup S) = ⨆ i, Sieve.pullback f (S i) := by
   ext Z g
   simp [Sieve.pullback, iSup, Set.mem_range]
+
+/-!
+## Pullback distributes over the indexed infimum
+
+Dual of `pullback_imap`: pulling back the infimum of a family of sieves
+equals the infimum of their pullbacks. This is the right-adjoint
+property of pullback in the Galois connection
+`pushforward ⊣ pullback` (`galoisConnection_pushforward_pullback`,
+Mathlib `Sites.Sieves`): it preserves **all** meets, not just binary
+intersections.
+
+`pullback_inf` (Part 8, `SieveOps.lean`) is the two-element special case.
+-/
+
+/-- CALIBRATION (ext + simp): pullback distributes over the iInf of an
+    indexed family. Dual of `pullback_imap` (indexed supremum). -/
+theorem pullback_iinf {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve X) :
+    Sieve.pullback f (iInf S) = ⨅ i, Sieve.pullback f (S i) := by
+  ext Z g
+  simp [Sieve.pullback, iInf, Set.mem_range]
 
 /-!
 ## Pullback preserves `ofObjects`
