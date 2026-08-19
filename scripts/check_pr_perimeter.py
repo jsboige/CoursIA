@@ -211,7 +211,14 @@ def extract_baseline_moves(diff_text: str) -> list[BaselineMove]:
 def check_assertion(files: list[dict], assertion: str) -> list[str]:
     """Confront a perimeter assertion with the effective file list."""
     problems: list[str] = []
-    count_claim = COUNT_CLAIM.search(assertion)
+    # A zero count is never the perimeter (see _counts_all_zero): on a mixed
+    # line -- "0 fichier catalogue, 2 fichiers touches" -- the claim under
+    # test is the non-zero one. Without this, the first match wins and the
+    # guard confronts "0" with a file list that cannot be empty.
+    count_claim = next(
+        (mm for mm in COUNT_CLAIM.finditer(assertion) if int(mm.group(1)) != 0),
+        None,
+    )
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):
@@ -247,6 +254,142 @@ STRONG_SCOPE_WORDS = (
     "modification", "modif", "changement", "change", "périmètre",
     "perimetre", "perimeter", "scope",
 )
+
+# A file count alone does NOT make a line a perimeter assertion. Measured on
+# the four PRs the guard was holding on 2026-08-19 (#11529, #11583, #11625,
+# #11720): 7 of the 11 count-carrying lines counted something that is not
+# this PR's diff -- MP3 artefacts produced by a benchmark ("22 fichiers MP3"),
+# files removed by a DIFFERENT PR ("PR #10023 a retiré les 5 fichiers
+# scratch"), files left to do ("les 2 fichiers restants"), the size of a lake
+# on disk ("98 fichiers `.lean` sous `Grothendieck/`"). Confronting those with
+# `len(files)` produces a mismatch that is arithmetically true and
+# semantically empty, and -- worse than noise -- it is ACTIONABLE IN THE WRONG
+# DIRECTION: the failure text tells the author to fix an assertion that was a
+# correct measurement of something else.
+#
+# So the count branch now requires the same kind of corroboration the
+# exclusivity branch has required since #11632: something on the line must tie
+# the count to the CHANGE SET. Four shapes qualify, and they are the four the
+# corpus actually uses:
+#
+#   1. a strong scope word            "**Fichiers:** 5 fichiers modifiés"
+#   2. a diff-stat marker             "6 fichiers, 15734 insertions / 15728 deletions"
+#                                     "+332/-8, 5 fichiers : ..."
+#   3. a `Fichiers:` / `Files:` label "**Fichiers :** 5 fichiers"
+#   4. the count introducing a list   "5 fichiers : module FR + sibling _en + ..."
+#   5. a totality word                "mais ici 3 fichiers au total"
+#   6. the G.4 composite phrasing    "3 fichiers, 1 sujet - pas de composite"
+#
+# Shape 5 is the semantic core stated plainly: a count declared EXHAUSTIVE over
+# the change set is a perimeter assertion whatever else the sentence does. It
+# is pinned by a test that predates this change
+# (test_extract_keeps_partially_quoted_line_with_unquoted_count), which is how
+# the omission surfaced -- the qualifier set was written from the four PRs in
+# front of me and missed a shape the suite already knew about.
+#
+# The founding #11227 sentence (« Périmètre : 2 fichiers twins uniquement,
+# aucune autre modification. ») carries TWO of them and stays caught -- that
+# is the non-regression property, pinned by a positive control in the tests.
+# Diff-stat shapes, measured on 300 PR bodies. The dash is NOT always ASCII:
+# bodies carry U+2212 MINUS SIGN and en/em dashes ("+100/-13" is written
+# "+100/\u221213"), and the stat is written both prefix ("+61/-0") and suffix
+# ("293+/214-"). A regex accepting only "[+]\d+/-\d+" with an ASCII hyphen
+# misses more real diff-stats than it catches -- measured, not supposed.
+_DASH = "[-\u2212\u2013\u2014]"
+DIFFSTAT_MARKERS = re.compile(
+    r"(?i)(insertions?|deletions?|diff\s*-?\s*stat|\bgit\s+diff\b"
+    r"|[+]\s*\d+\s*(?:lignes?|lines?)?\s*/\s*" + _DASH + r"\s*\d+"
+    r"|\d+\s*[+]\s*/\s*\d+\s*" + _DASH
+    + r"|[+]\s*\d+\s+(?:lignes?|lines?)\b"
+    r"|touch[\u00e9e]e?s?)"
+)
+FILE_LABEL = re.compile(r"(?i)^\s*[-*>#\s]*\**\s*(?:fichiers?|files?)\s*\**\s*:")
+# "N fichiers : a, b, c" and "15 fichiers `twin_pairs.d/` : flip ..." -- the
+# count introduces an enumeration. The intervening token (a path, a glob) is
+# part of the naming, so allow a short run before the colon but stop at a
+# sentence end.
+
+TOTALITY_WORDS = ("au total", "in total", "en tout", "totalit")
+# The G.4 composite declaration ("N fichiers, 1 sujet", "10 fichiers <= 15
+# (\u00a7A conforme)", "pas de composite") is a perimeter statement in the
+# repo's own review vocabulary: it asserts the size of THIS change set in
+# order to claim it is not a composite.
+COMPOSITE_WORDS = ("composite", "sujet", "subject", "\u00a7a", "g.4")
+
+
+def _counts_all_zero(line: str) -> bool:
+    """Every file count on the line is zero.
+
+    A PR cannot touch zero files, so "0 fichier(s) X" never asserts a
+    perimeter: it asserts that NO file has property X. The corpus writes this
+    constantly -- "0 fichier machine-path", "0 fichier de code touche",
+    "0 fichier .lean modifie", "0 fichier catalogue" -- and each one, read as
+    a perimeter claim, contradicts any non-empty file list by construction.
+    Measured on 300 PR bodies: this single shape accounted for 6 blocking
+    verdicts, none of them about a perimeter.
+    """
+    return all(int(mm.group(1)) == 0 for mm in COUNT_CLAIM.finditer(line))
+
+
+def _count_introduces_enumeration(line: str) -> bool:
+    """True iff a file count on this line opens an enumeration OF THOSE FILES.
+
+    Qualifies:
+        "5 fichiers : module FR + sibling _en + umbrella"
+        "15 fichiers `twin_pairs.d/` : flip parity_level + ..."
+        "2 fichiers (RL/README.md + GenAI/PostTraining/README.md)"
+
+    Does NOT qualify -- measured on the corpus, each of these reached a ':'
+    or a '(' and would pass a naive scan:
+        "22 fichiers MP3 (3 modeles x 3 textes = ...)"  -> 'MP3' names another set
+        "48 fichiers FR = 1 umbrella + 47 leaf, ratio 1:1"  -> the ':' is in "1:1"
+        "les 2 fichiers restants (qc-strategy-analyzer, ...)"  -> files NOT in this PR
+
+    Two shapes separate them, and neither is a guess -- both were read off the
+    lines above. (a) The colon of an enumeration follows the count across a
+    NAMING (a path, a glob, a directory), never across a clause: an '=', a
+    multiplication sign, a '+' or a ',' before the colon means the sentence
+    went somewhere else. Periods are NOT a break -- paths contain them, and
+    excluding them is what dropped the three twin_pairs lines. (b) An
+    enumerating parenthesis is ADJACENT to the count ("2 fichiers (a + b)");
+    an intervening word ("MP3 (", "restants (") is qualifying a different set.
+    """
+    clause = "=" + chr(215) + "+,("
+    for m in COUNT_CLAIM.finditer(line):
+        run = line[m.end():m.end() + 60]
+        if "(" in run[:2]:
+            return True
+        for i, ch in enumerate(run):
+            if ch == ":":
+                return True
+            nxt = run[i + 1] if i + 1 < len(run) else " "
+            if ch in ".;!?" and nxt.isspace():
+                break
+            if ch in clause:
+                break
+    return False
+
+
+def _count_is_about_the_change_set(line: str, low: str) -> bool:
+    """True iff a file count on this line is tied to the PR's change set.
+
+    See the block above. Returning False does not weaken the detector on the
+    shapes it exists for; it declines to read a count of *something else* as a
+    perimeter assertion. A count with no corroboration at all is prose.
+    """
+    if any(w in low for w in STRONG_SCOPE_WORDS):
+        return True
+    if DIFFSTAT_MARKERS.search(line):
+        return True
+    if FILE_LABEL.search(line):
+        return True
+    if _count_introduces_enumeration(line):
+        return True
+    if any(w in low for w in TOTALITY_WORDS):
+        return True
+    if any(w in low for w in COMPOSITE_WORDS):
+        return True
+    return False
 
 
 def _quote_spans(line: str) -> list[tuple[int, int]]:
@@ -394,6 +537,10 @@ def extract_perimeter_assertions(text: str) -> list[str]:
         if COUNT_CLAIM.search(line):
             if _counts_all_quoted(line):
                 continue  # quoting a count (reported speech), not claiming it
+            if _counts_all_zero(line):
+                continue  # "0 fichier machine-path" -- a property, not a perimeter
+            if not _count_is_about_the_change_set(line, low):
+                continue  # counts something that is not this PR's diff (#11726)
             candidates.append(line)
             continue
         if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):

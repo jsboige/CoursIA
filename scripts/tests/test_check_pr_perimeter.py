@@ -770,3 +770,101 @@ def test_founding_incident_still_blocks_from_the_pr_body():
     blocking = [c for c in cands if c.blocking]
     assert blocking
     assert check_assertion(FILES_11227, blocking[0].text)
+
+
+# ---------------------------------------------------------------------------
+# #11726 -- a file count alone is not a perimeter assertion.
+#
+# Measured on 300 real PR bodies (2026-08-19): 21 PRs were held by a blocking
+# verdict confronting a count of something that is not this PR's diff -- an
+# MP3 count, a grep scan corpus, a YAML registry, a lake on disk, another PR's
+# file list. Each verdict was arithmetically true and semantically empty, and
+# it told the author to "fix" a correct measurement.
+#
+# The tests below come in two halves, and the first half is what gives the
+# second one meaning: the shapes that MUST still be caught.
+# ---------------------------------------------------------------------------
+
+KEPT_SHAPES = [
+    # the review template
+    "**Fichiers:** 5 fichiers modifies",
+    # diff-stat, prefix / suffix / worded / Unicode minus (all four occur)
+    "- 2 fichiers, +100/\u221213 -- pas de composite (G.4).",
+    "- Diff : 2 fichiers, 293+/214\u2212, markdown-only.",
+    "6 fichiers, **15734 insertions / 15728 deletions** (31462 lignes)",
+    "`+307 lignes / \u22120` sur 2 fichiers, aucun code existant supprime.",
+    # the count opens an enumeration of the files (path token allowed: dots!)
+    "- 15 fichiers `twin_pairs.d/` : flip `parity_level` + entree d'audit",
+    "- 2 fichiers (RL/README.md + GenAI/PostTraining/README.md)",
+    # the G.4 composite declaration is a perimeter statement
+    "- 3 fichiers, 1 sujet -- pas de composite. Catalogue byte-identique.",
+    "- 10 fichiers \u2264 15 (\u00a7A conforme), un seul sujet.",
+    # totality
+    "mais ici 3 fichiers au total.",
+]
+
+DROPPED_SHAPES = [
+    # counts of artefacts the run produced
+    "- **Outputs** : 22 fichiers MP3 (3 modeles \u00d7 3 textes = 9 lectures)",
+    # the corpus a scan swept, not the diff
+    '- **0 violation C.1** : `grep -nE "assert False"` sur 73 fichiers = 0 match',
+    "- YAML parse OK (158 fichiers)",
+    "- YAML parse OK sur les 158 fichiers du registre",
+    "4. `lake update` -> 8638 fichiers mathlib cache decompresses (cache hit)",
+    # a lake on disk / another PR / work left to do
+    "cette PR aligne les compteurs (48 fichiers FR = 1 umbrella + 47 leaf, ratio 1:1)",
+    "PR #10023 a retire les **5 fichiers scratch**",
+    "edit OBLIGATOIRE sur les 2 fichiers restants (qc-strategy-analyzer, qc-strategy-improver)",
+    "one-shot des 3 fichiers ne suffit pas pour blinder l'invariant",
+    # a property count: a PR cannot touch zero files
+    "- **0 fichier machine-path** (C.1 / L213-A scrub)",
+    "- [x] `lake build` inchange : **0 fichier `.lean` modifie**",
+]
+
+
+def test_kept_shapes_are_still_perimeter_assertions():
+    """POSITIVE CONTROL. Every shape the corpus uses to state a perimeter.
+
+    This half runs first on purpose: a candidacy rule that drops false
+    positives is worthless if it also drops these, and a test file that only
+    checked the drops would look green either way.
+    """
+    for line in KEPT_SHAPES:
+        assert extract_perimeter_assertions(line) == [line], line
+
+
+def test_dropped_shapes_are_not_perimeter_assertions():
+    """The 21 blocking verdicts measured on 300 bodies, by shape."""
+    for line in DROPPED_SHAPES:
+        assert extract_perimeter_assertions(line) == [], line
+
+
+def test_founding_sentence_survives_the_narrowed_candidacy():
+    """#11227 again, at the candidacy layer this time.
+
+    The founding sentence carries TWO qualifiers (a scope word and an
+    exclusivity marker), so narrowing the count branch cannot reach it. If
+    this ever goes red the fix has eaten the incident it was built around.
+    """
+    founding = "Perimetre : 2 fichiers twins uniquement, aucune autre modification."
+    assert extract_perimeter_assertions(founding) == [founding]
+    assert check_assertion(FILES_11227, founding)
+
+
+def test_mixed_line_confronts_the_non_zero_count():
+    """"0 fichier catalogue, 2 fichiers touches" over a 2-file PR passes.
+
+    The zero is a property claim; the perimeter claim is the 2. Reading the
+    first match instead confronts "0" with a list that cannot be empty, so
+    the line could never pass whatever the PR contained.
+    """
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []
+
+
+def test_zero_only_count_is_not_confronted_at_all():
+    """A count claim of zero alone leaves nothing to confront."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    line = "- **0 fichier machine-path** touche"
+    assert extract_perimeter_assertions(line) == []
+    assert [p for p in check_assertion(files, line) if "pretend" in p] == []
