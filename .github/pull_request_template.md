@@ -16,8 +16,10 @@ TIER (test objectif, detail dans .claude/rules/variation-protocol.md) :
           (enrichissement + re-exec, audit borne qui change une decision, refactor + tests verts, README fichier-entier corrigeant un drift structurel reel).
   LIGHT = generable en serie par scan (guard-tranche, path-fix, doc-resync +1/-1, ledger append, fix accent/leak/FP).
           Litmus : « pourrais-je en generer une douzaine a la chaine en scannant l'instance d'a-cote ? » -> oui = LIGHT, quel que soit le label.
-GENRE : lean . qc . training . genai . notebook-python . notebook-dotnet . docs . guard . refactor . ledger . readme . test
-Gates durs : plancher du cycle = DEEP ou MED (G-VAR-1) ; <=1 LIGHT/lane/jour, agrege (G-VAR-2) ; pas 2x le meme genre LIGHT consecutif (G-VAR-3).
+GENRE : lean . qc . training . genai . notebook-python . notebook-dotnet . notebook-lean . slides
+        . research-code . docs . guard . refactor . ledger . readme . test . tooling
+        CONTENU (satisfait le plancher G-VAR-1) = les 9 premiers ; META = les 7 derniers.
+Gates durs : plancher du cycle = DEEP ou MED (G-VAR-1) ; budget LIGHT = max(1, grains_du_jour//3) par lane, agrege (G-VAR-2) ; pas 2x le meme genre LIGHT consecutif (G-VAR-3).
 -->
 
 ## Summary
