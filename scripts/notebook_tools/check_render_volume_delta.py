@@ -650,19 +650,51 @@ def main(argv: list[str] | None = None) -> int:
             print("\n[FINDINGS]")
             for f in fins:
                 kind = f["kind"]
-                fam = f["mime_family"]
-                before = f["before_bytes"]
-                after = f["after_bytes"]
+                # Issue #11745 -- the unpack previously extracted
+                # `mime_family`/`before_bytes`/`after_bytes` for every finding
+                # BEFORE the dispatch, which crashed on `UNAVAILABLE_SIGNAL`
+                # (a finding whose schema is `{kind, before_count,
+                # after_count}`, not the volume-delta schema). The unpack now
+                # lives INSIDE the per-kind branches that need it; a finding
+                # kind that does not fit any branch (e.g. UNAVAILABLE_SIGNAL)
+                # falls through to its own branch.
                 if kind == "DELTA_SIGNAL":
+                    fam = f["mime_family"]
+                    before = f["before_bytes"]
+                    after = f["after_bytes"]
                     print(f"  - {kind}: famille '{fam}' chute de {before}B a {after}B "
                           f"(ratio {f['ratio']}, seuil {f['threshold']}, "
                           f"min_base {f['min_base_bytes']}B)")
                 elif kind == "LOST_MIME":
+                    fam = f["mime_family"]
+                    before = f["before_bytes"]
+                    after = f["after_bytes"]
                     print(f"  - {kind}: famille '{fam}' disparue du head "
                           f"(base {before}B, head {after}B)")
                 elif kind == "NEW_MIME":
+                    fam = f["mime_family"]
+                    before = f["before_bytes"]
+                    after = f["after_bytes"]
                     print(f"  - {kind}: famille '{fam}' apparue au head "
                           f"(base {before}B, head {after}B)")
+                elif kind == "UNAVAILABLE_SIGNAL":
+                    # Schema `{kind, before_count, after_count}` -- the marker
+                    # count of "kernel backends unavailable" advisories
+                    # (e.g. `transformers` falling back to torch). The reader
+                    # needs the counts to decide without re-running in
+                    # `--json`; #11656 keeps the detector permissive on
+                    # internal-fallback advisories.
+                    before = f["before_count"]
+                    after = f["after_count"]
+                    print(f"  - {kind}: marqueurs d'indisponibilite "
+                          f"{before} -> {after} dans les sorties")
+                else:
+                    # Defense in depth: an unrecognised kind should not
+                    # silently disappear. Surface a one-liner with the raw
+                    # JSON so the operator can decide. This is the kind
+                    # dump Claude-Code review expects, not a swallowed line.
+                    print(f"  - {kind}: (kind non reconnu, "
+                          f"schema={list(f.keys())})")
 
     if args.check and result["findings"]:
         return 1

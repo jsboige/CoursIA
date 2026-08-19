@@ -22,6 +22,10 @@ on:
       - "scripts/check_hooks_parity.py"
       - "scripts/setup_hooks.py"
 
+concurrency:
+  group: hooks-parity-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   parity:
     name: parity gate

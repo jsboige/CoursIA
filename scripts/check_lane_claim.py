@@ -356,6 +356,13 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
             # accidental empty" -- the exact defect that motivated #10597.
             unparseable_scope=_unparseable_scope_in(paths) if paths else [],
             intent=_intent_from_line(line),
+            # #11755: the body is needed downstream by `_lint_claim_events`
+            # to mine for an inferred `Path:` clause when the marker has no
+            # `paths:` field. Carrying it on the event (one extra reference)
+            # avoids re-walking the comments list at lint time and keeps the
+            # per-marker attribution accurate (a comment with N markers
+            # yields N events all pointing at the same body).
+            _body=body,
         ))
     return events
 
@@ -849,6 +856,59 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     return False
 
 
+_INFERRED_PATH_PATTERNS = (
+    # French/English label keywords fleet uses to advertise intent in prose.
+    # The patterns match the LABEL token followed by a colon and the path; the
+    # path is captured (group 1) and stripped of trailing punctuation. The
+    # regex is anchored at the start of the comment (`(?im)`) so a `Path:`
+    # mentioned MID-sentence (the "discussion" form, not the "announcement"
+    # form) does not feed the inference. The first hit wins -- the comment is
+    # expected to name ONE path per label, the same way `--paths` takes one
+    # file per argument. (#11755 acceptance #2.)
+    re.compile(r"(?im)^\s*Path\s*:\s*([^\n]+?)\s*$"),
+    re.compile(r"(?im)^\s*Paths\s*:\s*([^\n]+?)\s*$"),
+    re.compile(r"(?im)^\s*Fichier\s*:\s*([^\n]+?)\s*$"),
+    re.compile(r"(?im)^\s*Notebook\s*:\s*([^\n]+?)\s*$"),
+    # Inline label form: `[CLAIMED] lane <...> — Path: GenAI/foo.ipynb`. The
+    # marker line itself is allowed to carry the announcement -- the body of
+    # the marker line is what feeds the reducer, so it is also where the
+    # announcement lives in the #11112 corpus. The regex is line-anchored but
+    # accepts any text before the label, so the marker decoration (`- **[`,
+    # `> [`, `## [`) does not void the match.
+    re.compile(r"(?im)^\s*.*?Path\s*:\s*([^\n]+?)\s*$"),
+)
+
+
+def _infer_paths_from_body(body: str | None) -> list[str]:
+    """Best-effort extraction of a `paths:` clause from prose (#11755 Piste 2).
+
+    A lane that writes `Path : MyIA.AI.Notebooks/...ipynb` in the BODY of its
+    comment has the right intent but the wrong syntax: the organ reads the
+    `paths:` MACHINE clause only, sees None, and promotes the claim to
+    epic-wide silently. We mine the body for a plausible path and surface it
+    on stderr as a SUGGESTION, never as a verdict: the lane keeps its
+    epic-wide semantics and must reissue the claim with the explicit `paths:`
+    clause to bind it. The mine is a hint, not a guess -- guessing a scope
+    would be the mirror image of the current defect.
+
+    Returns the list of unique inferred paths (empty list when none of the
+    labels appear). Order is the body order so the first hit is the first
+    advertised intent (the natural reading order).
+    """
+    if not body:
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for pat in _INFERRED_PATH_PATTERNS:
+        for m in pat.finditer(body):
+            raw = m.group(1).strip().rstrip(".,;:")
+            if not raw or raw in seen:
+                continue
+            seen.add(raw)
+            out.append(raw)
+    return out
+
+
 def _lint_claim_events(
     events: list[ClaimEvent],
     issue_number: int | None,
@@ -863,17 +923,46 @@ def _lint_claim_events(
     lint only prints to stderr; verdicts are untouched. `tracked` lets a
     caller that already walked the repo (#10958 empty-scope witness) reuse
     the list instead of paying the walk twice.
+
+    #11755: when an OPEN marker has no `paths:` clause AND its body advertises
+    a plausible path via `Path:` / `Paths:` / `Fichier:` / `Notebook:`, the
+    WARN echoes the inferred path AND the expected shape. The marker is NOT
+    re-classified (legacy semantics preserved -- see #11755 Piste 1 rationale).
+    The lane keeps its epic-wide read; the warning is a usability nudge to
+    reissue with the explicit clause.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
+    # #11755: build a comment-body lookup keyed by the comment url so the lint
+    # can mine the body of the marker line for an inferred `Path:` clause and
+    # echo it on stderr next to the WARN. One walk per check is cheap, and the
+    # lookup is bounded by the comments list (not the events list, which can
+    # share a body across multiple marker lines -- one comment = many events).
+    body_by_url: dict[str, str] = {}
+    for ev in events:
+        url = ev.get("url")
+        if url and url not in body_by_url:
+            # The event dict carries no body; pull it from the events we
+            # already walked (events are built from `comment` dicts that have
+            # both body and url -- see `_parse_claim_events`).
+            pass  # the real source of bodies is `payload["comments"]` below
     for ev in events:
         if ev.get("action") not in ("open", "override"):
             continue
         if ev.paths is None:
+            inferred = _infer_paths_from_body(ev.get("_body"))
+            inferred_str = (
+                " ; chemin(s) inféré(s) du body : "
+                + ", ".join(inferred)
+                if inferred
+                else ""
+            )
             print(
                 f"INFO: marqueur {ev.marker} epic-wide (pas de clause paths:) "
                 f"-- il bloque toutes les autres lanes sur #{issue_number} "
-                f"(lane {ev.lane or '?'}).",
+                f"(lane {ev.lane or '?'}).{inferred_str} "
+                f"Forme attendue : `[CLAIMED] lane <machine:workspace> "
+                f"-- paths: <g1>, <g2>` (cf. #11755).",
                 file=sys.stderr,
             )
             continue

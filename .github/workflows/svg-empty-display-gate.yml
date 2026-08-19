@@ -108,6 +108,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: svg-empty-display-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   svg-empty-display:
     name: "No SVG empty-display defect in changed notebooks"

@@ -652,6 +652,176 @@ class TestValidateNotebookLeanTextErrors:
 
 
 # ---------------------------------------------------------------------------
+# validate_notebook — collapse guard / source-newline regression (#11752)
+# ---------------------------------------------------------------------------
+#
+# Repro context: a notebook whose `source` list lost its trailing '\n' on
+# each element collapses to a single line when joined. If that line starts
+# with the kernel's comment prefix, the old skip-shortcut treated the whole
+# cell as a comment — even when the cell carried a real Lean compile error
+# in its output. The fix: when the cell looks like a comment but ITS OUTPUT
+# bears an error, do NOT skip — fall through to the H.1 check. The acceptance
+# mirrors the issue's checklist (5 points: a, b, c, d, e).
+
+
+class TestValidateNotebookLeanSkipCollapseGuard:
+    """Regression for #11752 — validate_pr_notebooks.py is blind to Lean
+    errors in cells whose source list lost its trailing newline (the cell
+    collapses to one line that starts with '--' and is mistaken for a
+    --comment). The validator must NEVER skip a cell whose output carries
+    an error, regardless of how the source reads."""
+
+    def _lean_err_output(self) -> dict:
+        # Same shape as TestValidateNotebookLeanTextErrors._lean_err_output
+        # — the Lean compiler's severity:error embedded in text/plain.
+        return {
+            "output_type": "display_data",
+            "data": {
+                "text/plain": [
+                    "import Sudoku.Basic\n     ──────▶ ❌ unknown namespace `Sudoku`\n",
+                    'Raw output:\n{"messages": [{"severity": "error", '
+                    '"pos": {"line": 4, "column": 5}, "data": "unknown namespace `Sudoku`"}]}',
+                ],
+            },
+        }
+
+    def test_a_collapsing_lean_cell_with_error_is_not_skipped(self, tmp_path):
+        """Acceptance (a): a Lean cell whose source is a single `'-- ...'`
+        element WITHOUT a trailing newline (the malformed form) and whose
+        output carries a severity:error MUST be flagged. Before the fix,
+        the source collapsed to one line and the cell was skipped; the
+        validator rendered a notebook with 10 error cells as green."""
+        # Source is a single element, no trailing '\n' — the exact form
+        # reported on the Lean-15c notebook.
+        cell = {
+            "cell_type": "code",
+            "source": ["-- this is actually a malformed Lean command cell"],
+            "execution_count": 1,
+            "outputs": [self._lean_err_output()],
+        }
+        nb = _write_nb(tmp_path / "gth.ipynb", [cell],
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False, (
+            "Compression was unambiguous: a cell whose source collapsed to "
+            "'-- ...' but whose output carries a severity:error must fail."
+        )
+        assert result["total_code"] == 1, (
+            "The cell must count as code (skip should not have triggered)."
+        )
+        assert any("Lean toolchain error" in e for e in result["errors"])
+
+    def test_b_real_comment_cell_still_skipped(self, tmp_path):
+        """Acceptance (b): a well-formed comment cell with no output (cell 22
+        in the original Lean-15c report) must STILL be skipped — not gated
+        into the code path. The skip must remain a pure structural shortcut
+        when the source is unambiguous AND the output carries no error."""
+        cell = {
+            "cell_type": "code",
+            # Multi-element source, each ending with '\n' — well-formed.
+            "source": ["-- a real comment\n", "-- second line"],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb(tmp_path / "lean.ipynb", [cell],
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert result["total_code"] == 0
+
+    def test_c_total_code_reflects_real_cell_count(self, tmp_path):
+        """Acceptance (c): a 10-cell notebook with 1 real comment + 9
+        error-bearing collapse-shaped cells must report total_code >= 9
+        (the comment is skipped, the 9 errors are NOT)."""
+        cells = []
+        # 1 well-formed comment (cell 22 of the original).
+        cells.append({
+            "cell_type": "code",
+            "source": ["-- transition note\n", "-- second line"],
+            "execution_count": None,
+            "outputs": [],
+        })
+        # 9 malformed-source cells with error output.
+        for _ in range(9):
+            cells.append({
+                "cell_type": "code",
+                "source": ["-- collapsed skew"],
+                "execution_count": 1,
+                "outputs": [self._lean_err_output()],
+            })
+        nb = _write_nb(tmp_path / "lean.ipynb", cells,
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert result["total_code"] == 9, (
+            f"Expected 9 (comment skipped + 9 errors counted), "
+            f"got {result['total_code']}"
+        )
+
+    def test_d_lean_command_with_hash_is_not_treated_as_comment(self, tmp_path):
+        """Acceptance (d): the #5151 fix is preserved. A cell whose source is
+        a real Lean command (#check / #eval / #print / #reduce) must NOT
+        be skipped — those are commands, not comments, even though they
+        start with '#' (Python's comment glyph)."""
+        # Cell with a successful #check — should pass AND not be skipped.
+        cell = {
+            "cell_type": "code",
+            "source": ["#check Nat"],
+            "execution_count": 1,
+            "outputs": [{
+                "output_type": "display_data",
+                "data": {"text/plain": ["Nat : Type"]},
+            }],
+        }
+        nb = _write_nb(tmp_path / "lean.ipynb", [cell],
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        # A clean #check is counted as code (not skipped). The H.1 check
+        # does not flag a successful output.
+        assert result["total_code"] == 1
+
+    def test_e_output_text_used_not_json_dumps(self, tmp_path):
+        """Acceptance (e): the Lean error detector must use _output_text
+        (the helper that joins text/plain + text/html + stream), not
+        json.dumps over the raw output — the latter double-escapes the
+        toolchain's own JSON inside text/plain and breaks the match.
+
+        Constructed cell: output is a stream whose text contains the
+        literal string `\"severity\":\"error\"` (with escaped quotes,
+        as it would appear AFTER json.dumps). The literal detector must
+        NOT match this, but the inner `'severity: error'` (with the
+        colon-space, native to the Lean compiler) DOES match — and
+        _output_text is what the detector uses on the inner payload."""
+        # Output: a display_data whose text/plain is the JSON-escaped form
+        # of the toolchain's severity message. _output_text would join it
+        # as a single string; the detector looks for the un-escaped form
+        # of the severity key, which is what the compiler emits (the
+        # escaping added by json.dumps goes through the JSON encoder and
+        # would not match the un-escaped pattern).
+        out = {
+            "output_type": "display_data",
+            "data": {"text/plain": [
+                '{"messages": [{"severity": "error", '
+                '"data": "unknown identifier"}]}',
+            ]},
+        }
+        cell = {
+            "cell_type": "code",
+            "source": ["-- collapsed"],
+            "execution_count": 1,
+            "outputs": [out],
+        }
+        nb = _write_nb(tmp_path / "lean.ipynb", [cell],
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        # The native Lean toolchain message — un-escaped form — is in the
+        # payload; _output_text preserves it and the detector matches.
+        assert result["passed"] is False
+        assert any("Lean toolchain error" in e for e in result["errors"])
+
+
+# ---------------------------------------------------------------------------
 # validate_notebook — blank-render forensic verdict (#6971 / L644-L1)
 # ---------------------------------------------------------------------------
 

@@ -47,6 +47,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: cjk-residue-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cjk-residue-advisory:
     name: "CJK residue advisory (label, non-blocking)"

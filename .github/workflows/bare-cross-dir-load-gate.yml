@@ -86,6 +86,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: bare-cross-dir-load-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   bare-cross-dir-load:
     name: "No bare cross-dir #load in changed notebooks"
