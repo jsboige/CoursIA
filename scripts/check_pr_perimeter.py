@@ -208,15 +208,54 @@ def extract_baseline_moves(diff_text: str) -> list[BaselineMove]:
     return moves
 
 
+def _fence_mask(text: str) -> str:
+    """Blank every line inside a ``` or ~~~ fence (spaces, length preserved).
+
+    Same exemption motif as _fence_line_indices (#11670/#11675, extraction
+    level): a fence is a transcription, never the author's own claim. This
+    mask covers the --assert path, where a reviewer confronts a WHOLE body
+    against the file list: a fenced L898 proof containing "0 fichiers en
+    commun" must not be misread as the author claiming a 0-file perimeter.
+    When the fence PRECEDES the prose claim, search() stops at the fenced
+    zero and the coincidence that let the #11675 founder body pass
+    disappears (#11695).
+    """
+    masked_lines: list[str] = []
+    in_fence = False
+    for raw in text.splitlines(keepends=True):
+        stripped = raw.strip()
+        newline = "\n" if raw.endswith("\n") else ""
+        if in_fence:
+            masked_lines.append(" " * (len(raw) - len(newline)) + newline)
+            if stripped.startswith("```") or stripped.startswith("~~~"):
+                in_fence = False
+        elif stripped.startswith("```") or stripped.startswith("~~~"):
+            masked_lines.append(" " * (len(raw) - len(newline)) + newline)
+            in_fence = True
+        else:
+            masked_lines.append(raw)
+    return "".join(masked_lines)
+
+
 def check_assertion(files: list[dict], assertion: str) -> list[str]:
-    """Confront a perimeter assertion with the effective file list."""
+    """Confront a perimeter assertion with the effective file list.
+
+    Fence blocks (transcribed commands, L898 proof) are masked out of the
+    scan (#11695). The final "non verifiable" guard therefore fires for a
+    body composed only of fence transcriptions: no claim OUTSIDE fences
+    means no verifiable author assertion, and such a body must not pass
+    in silence.
+    """
     problems: list[str] = []
-    # A zero count is never the perimeter (see _counts_all_zero): on a mixed
-    # line -- "0 fichier catalogue, 2 fichiers touches" -- the claim under
-    # test is the non-zero one. Without this, the first match wins and the
-    # guard confronts "0" with a file list that cannot be empty.
+    # A zero count is never the perimeter. On a mixed line -- "0 fichier
+    # catalogue, 2 fichiers touches" -- the claim under test is the non-zero
+    # one; reading the first match confronts "0" with a file list that cannot
+    # be empty, so the line could never pass whatever the PR contained. This
+    # is the FINDING raised in review of #11730 (#11735): the fence mask fixed
+    # WHERE we scan, this fixes WHICH count we scan for. Both are needed.
+    scan_target = _fence_mask(assertion)
     count_claim = next(
-        (mm for mm in COUNT_CLAIM.finditer(assertion) if int(mm.group(1)) != 0),
+        (mm for mm in COUNT_CLAIM.finditer(scan_target) if int(mm.group(1)) != 0),
         None,
     )
     if count_claim:
@@ -226,12 +265,12 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                 f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
                 + ", ".join(f["path"] for f in files)
             )
-    exclusive = _has_exclusivity(assertion.lower())
+    exclusive = _has_exclusivity(scan_target.lower())
     if exclusive:
         for f in files:
             if f["path"].startswith(WORKFLOW_PREFIX):
                 base = f["path"].rsplit("/", 1)[-1]
-                if base not in assertion:
+                if base not in scan_target:
                     problems.append(
                         f"assertion d'exclusivite sans nommer le workflow touche {f['path']} "
                         "(critere #11268-2 : tout .github/workflows/** doit etre enumere nommement)"
@@ -255,140 +294,124 @@ STRONG_SCOPE_WORDS = (
     "perimetre", "perimeter", "scope",
 )
 
-# A file count alone does NOT make a line a perimeter assertion. Measured on
-# the four PRs the guard was holding on 2026-08-19 (#11529, #11583, #11625,
-# #11720): 7 of the 11 count-carrying lines counted something that is not
-# this PR's diff -- MP3 artefacts produced by a benchmark ("22 fichiers MP3"),
-# files removed by a DIFFERENT PR ("PR #10023 a retiré les 5 fichiers
-# scratch"), files left to do ("les 2 fichiers restants"), the size of a lake
-# on disk ("98 fichiers `.lean` sous `Grothendieck/`"). Confronting those with
-# `len(files)` produces a mismatch that is arithmetically true and
-# semantically empty, and -- worse than noise -- it is ACTIONABLE IN THE WRONG
-# DIRECTION: the failure text tells the author to fix an assertion that was a
-# correct measurement of something else.
+# ---------------------------------------------------------------------------
+# #11712 — incidental counts. The founding asymmetry: the count branch retained
+# ANY "N fichiers" in prose, so an inventory ("22 fichiers MP3"), a scan scope
+# ("grep ... sur 73 fichiers"), a cited threshold ("< 15 fichiers", the G.4
+# rule itself) or a zero-attestation ("0 fichier machine-path") was confronted
+# with len(files) and failed necessarily -- 11/120 PRs carried >= 2 distinct
+# counts, making a red GUARANTEED regardless of the real perimeter. The fix
+# follows #11648's path: detection is UNCHANGED (the line is still extracted,
+# confronted and printed), only the consequence moves -- an incidental count is
+# a SIGNAL, not a blocking problem. Do not "fix" a false positive by narrowing
+# extract_perimeter_assertions: that would also silence the printed report.
 #
-# So the count branch now requires the same kind of corroboration the
-# exclusivity branch has required since #11632: something on the line must tie
-# the count to the CHANGE SET. Four shapes qualify, and they are the four the
-# corpus actually uses:
-#
-#   1. a strong scope word            "**Fichiers:** 5 fichiers modifiés"
-#   2. a diff-stat marker             "6 fichiers, 15734 insertions / 15728 deletions"
-#                                     "+332/-8, 5 fichiers : ..."
-#   3. a `Fichiers:` / `Files:` label "**Fichiers :** 5 fichiers"
-#   4. the count introducing a list   "5 fichiers : module FR + sibling _en + ..."
-#   5. a totality word                "mais ici 3 fichiers au total"
-#   6. the G.4 composite phrasing    "3 fichiers, 1 sujet - pas de composite"
-#
-# Shape 5 is the semantic core stated plainly: a count declared EXHAUSTIVE over
-# the change set is a perimeter assertion whatever else the sentence does. It
-# is pinned by a test that predates this change
-# (test_extract_keeps_partially_quoted_line_with_unquoted_count), which is how
-# the omission surfaced -- the qualifier set was written from the four PRs in
-# front of me and missed a shape the suite already knew about.
-#
-# The founding #11227 sentence (« Périmètre : 2 fichiers twins uniquement,
-# aucune autre modification. ») carries TWO of them and stays caught -- that
-# is the non-regression property, pinned by a positive control in the tests.
-# Diff-stat shapes, measured on 300 PR bodies. The dash is NOT always ASCII:
-# bodies carry U+2212 MINUS SIGN and en/em dashes ("+100/-13" is written
-# "+100/\u221213"), and the stat is written both prefix ("+61/-0") and suffix
-# ("293+/214-"). A regex accepting only "[+]\d+/-\d+" with an ASCII hyphen
-# misses more real diff-stats than it catches -- measured, not supposed.
-_DASH = "[-\u2212\u2013\u2014]"
-DIFFSTAT_MARKERS = re.compile(
-    r"(?i)(insertions?|deletions?|diff\s*-?\s*stat|\bgit\s+diff\b"
-    r"|[+]\s*\d+\s*(?:lignes?|lines?)?\s*/\s*" + _DASH + r"\s*\d+"
-    r"|\d+\s*[+]\s*/\s*\d+\s*" + _DASH
-    + r"|[+]\s*\d+\s+(?:lignes?|lines?)\b"
-    r"|touch[\u00e9e]e?s?)"
+# FN safety is structural: every rule below first requires the line to carry
+# NO strong scope word and NO diffstat neighborhood (+N/-N, insertions,
+# deletions, lignes) -- the two shapes the corpus identifies as genuine
+# assertions (40 diffstat lines and 30 scope-word lines, all preserved).
+# ---------------------------------------------------------------------------
+# A count whose referent is a KIND of artifact or a REMAINDER, not "the files
+# this PR changes". Closed list measured on the 120-PR corpus; unknown
+# qualifiers stay authorial (a false negative does not signal itself, so the
+# default must fail loud).
+INCIDENTAL_QUALIFIERS = frozenset({
+    "mp3", "wav", "mathlib", "machine-path", "fr", "en", "scratch",
+    "restants", "restant", "reste", "restants,", "nouveau", "nouveaux",
+    "nouvelle", "nouvelles", "varies", "variés", "synthetiques",
+    "synthétiques", "scripts", "cache", "generes", "générés", "produits",
+    "produites", "sources", "source",
+})
+# A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
+# not claim a perimeter.
+COMPARISON_PREFIX = re.compile(r"[<>=≤≥]\s*$")
+# A count governed by a locative/scan preposition ("sur les 2 fichiers",
+# "across N files") is the SCOPE of a check or a tool run, not the perimeter
+# -- unless the same line carries a diffstat, where "sur 2 fichiers" names
+# what the diffstat measured (a true assertion: "+307 lignes / −0 sur 2
+# fichiers").
+LOCATIVE_PREP = re.compile(
+    r"\b(?:sur|dans|across|on)\s+(?:les\s+|le\s+|la\s+|the\s+)?\d+\s*(?:fichiers?|files?)\b",
+    re.IGNORECASE,
 )
-FILE_LABEL = re.compile(r"(?i)^\s*[-*>#\s]*\**\s*(?:fichiers?|files?)\s*\**\s*:")
-# "N fichiers : a, b, c" and "15 fichiers `twin_pairs.d/` : flip ..." -- the
-# count introduces an enumeration. The intervening token (a path, a glob) is
-# part of the naming, so allow a short run before the colon but stop at a
-# sentence end.
-
-TOTALITY_WORDS = ("au total", "in total", "en tout", "totalit")
-# The G.4 composite declaration ("N fichiers, 1 sujet", "10 fichiers <= 15
-# (\u00a7A conforme)", "pas de composite") is a perimeter statement in the
-# repo's own review vocabulary: it asserts the size of THIS change set in
-# order to claim it is not a composite.
-COMPOSITE_WORDS = ("composite", "sujet", "subject", "\u00a7a", "g.4")
+DIFFSTAT_NEIGHBORHOOD = re.compile(
+    r"\+\d+\s*/\s*[-−]?\d+|insertions?|deletions?|\blignes?\b|\blines?\b",
+    re.IGNORECASE,
+)
 
 
-def _counts_all_zero(line: str) -> bool:
-    """Every file count on the line is zero.
-
-    A PR cannot touch zero files, so "0 fichier(s) X" never asserts a
-    perimeter: it asserts that NO file has property X. The corpus writes this
-    constantly -- "0 fichier machine-path", "0 fichier de code touche",
-    "0 fichier .lean modifie", "0 fichier catalogue" -- and each one, read as
-    a perimeter claim, contradicts any non-empty file list by construction.
-    Measured on 300 PR bodies: this single shape accounted for 6 blocking
-    verdicts, none of them about a perimeter.
-    """
-    return all(int(mm.group(1)) == 0 for mm in COUNT_CLAIM.finditer(line))
+def _has_strong_scope(low: str) -> bool:
+    return any(w in low for w in STRONG_SCOPE_WORDS)
 
 
-def _count_introduces_enumeration(line: str) -> bool:
-    """True iff a file count on this line opens an enumeration OF THOSE FILES.
-
-    Qualifies:
-        "5 fichiers : module FR + sibling _en + umbrella"
-        "15 fichiers `twin_pairs.d/` : flip parity_level + ..."
-        "2 fichiers (RL/README.md + GenAI/PostTraining/README.md)"
-
-    Does NOT qualify -- measured on the corpus, each of these reached a ':'
-    or a '(' and would pass a naive scan:
-        "22 fichiers MP3 (3 modeles x 3 textes = ...)"  -> 'MP3' names another set
-        "48 fichiers FR = 1 umbrella + 47 leaf, ratio 1:1"  -> the ':' is in "1:1"
-        "les 2 fichiers restants (qc-strategy-analyzer, ...)"  -> files NOT in this PR
-
-    Two shapes separate them, and neither is a guess -- both were read off the
-    lines above. (a) The colon of an enumeration follows the count across a
-    NAMING (a path, a glob, a directory), never across a clause: an '=', a
-    multiplication sign, a '+' or a ',' before the colon means the sentence
-    went somewhere else. Periods are NOT a break -- paths contain them, and
-    excluding them is what dropped the three twin_pairs lines. (b) An
-    enumerating parenthesis is ADJACENT to the count ("2 fichiers (a + b)");
-    an intervening word ("MP3 (", "restants (") is qualifying a different set.
-    """
-    clause = "=" + chr(215) + "+,("
-    for m in COUNT_CLAIM.finditer(line):
-        run = line[m.end():m.end() + 60]
-        if "(" in run[:2]:
-            return True
-        for i, ch in enumerate(run):
-            if ch == ":":
-                return True
-            nxt = run[i + 1] if i + 1 < len(run) else " "
-            if ch in ".;!?" and nxt.isspace():
-                break
-            if ch in clause:
-                break
-    return False
-
-
-def _count_is_about_the_change_set(line: str, low: str) -> bool:
-    """True iff a file count on this line is tied to the PR's change set.
-
-    See the block above. Returning False does not weaken the detector on the
-    shapes it exists for; it declines to read a count of *something else* as a
-    perimeter assertion. A count with no corroboration at all is prose.
-    """
-    if any(w in low for w in STRONG_SCOPE_WORDS):
+def _count_is_incidental(line: str) -> bool:
+    """True when every count on the line denotes something other than the PR's
+    file list. Caller-facing guarantee: a line with a scope word or a diffstat
+    neighborhood is NEVER incidental via the qualifier/locative rules (FN
+    safety, #11712 acceptance). Two shapes override even those guards, because
+    they can never be validated by the guard's EQUALITY confrontation anyway:
+    a zero count (a PR never has 0 files) and a comparison-prefixed count
+    ("< 15 fichiers" cites a threshold; the guard confronts claimed ==
+    len(files), which "<" is not)."""
+    low = line.lower()
+    matches = list(COUNT_CLAIM.finditer(line))
+    if not matches:
+        return False
+    first = matches[0]
+    first_before = line[: first.start()].rstrip()
+    if int(first.group(1)) == 0 or COMPARISON_PREFIX.search(first_before):
         return True
-    if DIFFSTAT_MARKERS.search(line):
-        return True
-    if FILE_LABEL.search(line):
-        return True
-    if _count_introduces_enumeration(line):
-        return True
-    if any(w in low for w in TOTALITY_WORDS):
-        return True
-    if any(w in low for w in COMPOSITE_WORDS):
-        return True
+    if _has_strong_scope(low) or DIFFSTAT_NEIGHBORHOOD.search(line):
+        return False
+    for m in matches:
+        claimed = int(m.group(1))
+        if claimed == 0:
+            continue  # "0 fichier X" is a scrub/absence attestation
+        before = line[: m.start()].rstrip()
+        if COMPARISON_PREFIX.search(before):
+            continue  # "< N fichiers" cites a threshold
+        if LOCATIVE_PREP.search(line):
+            continue  # scan scope: "grep ... sur N fichiers"
+        after = line[m.end():]
+        mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
+        if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
+            continue  # "N fichiers MP3/scratch/restants/..." -- kind or remainder
+        return False  # this count looks authorial -> the line stays blocking
+    return True
+
+
+def _exclusivity_marker_in_parens(line: str) -> bool:
+    """True when every exclusivity marker on the line sits inside a
+    parenthetical group. #11616 forme B: "(SL-8/SL-9 only, scope minimal)"
+    co-presents 'only' and 'scope' by lexical coincidence -- a phase plan,
+    not a perimeter assertion. Outside parens, "Aucune autre modification."
+    and "N fichiers X uniquement" remain authorial (measured on the corpus:
+    no genuine exclusivity-only assertion carries its marker in parens)."""
+    low = line.lower()
+    open_paren = False
+    outside_hits = 0
+    i = 0
+    while i < len(line):
+        ch = line[i]
+        if ch == "(":
+            open_paren = True
+        elif ch == ")":
+            open_paren = False
+        else:
+            for marker in EXCLUSIVITY_MARKERS:
+                if low.startswith(marker, i) and not open_paren:
+                    outside_hits += 1
+        i += 1
+    # every marker inside parens <=> no marker outside
+    return outside_hits == 0 and any(low.find(mk) >= 0 for mk in EXCLUSIVITY_MARKERS)
+
+
+def _is_incidental_assertion(text: str) -> bool:
+    """#11712: kept in candidates (found + printed), excluded from blocking."""
+    if COUNT_CLAIM.search(text):
+        return _count_is_incidental(text)
+    if _has_exclusivity(text.lower()):
+        return _exclusivity_marker_in_parens(text)
     return False
 
 
@@ -537,10 +560,6 @@ def extract_perimeter_assertions(text: str) -> list[str]:
         if COUNT_CLAIM.search(line):
             if _counts_all_quoted(line):
                 continue  # quoting a count (reported speech), not claiming it
-            if _counts_all_zero(line):
-                continue  # "0 fichier machine-path" -- a property, not a perimeter
-            if not _count_is_about_the_change_set(line, low):
-                continue  # counts something that is not this PR's diff (#11726)
             candidates.append(line)
             continue
         if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
@@ -668,8 +687,16 @@ class Candidate:
         editable by the author, and a COMMENTED review cannot even be
         dismissed (dismissal applies to APPROVED/CHANGES_REQUESTED only), so
         blocking there leaves no lever at all -- measured on #11642 and #11646.
+
+        #11712: an INCIDENTAL count from the body does not block either --
+        inventory ("22 fichiers MP3"), scan scope ("grep ... sur 73 fichiers"),
+        cited threshold ("< 15 fichiers") or zero-attestation ("0 fichier
+        machine-path"). It stays extracted, confronted and printed as a
+        SIGNAL; only the exit code moved (the #11648 path). 11/120 PRs
+        carried >= 2 distinct counts, making a red guaranteed regardless
+        of the real perimeter.
         """
-        return self.source == "body"
+        return self.source == "body" and not _is_incidental_assertion(self.text)
 
 
 def select_candidates(items: list[dict]) -> tuple[list[Candidate], bool]:
@@ -780,11 +807,14 @@ def main() -> int:
     print(format_report(report, args.assertion))
     if signals:
         print("")
-        print("SIGNAL (non bloquant -- assertion d'un tiers, non editable par l'auteur) :")
+        print("SIGNAL (non bloquant -- assertion d'un tiers non editable par l'auteur,")
+        print("        ou compte INCIDENTAL du body : inventaire, perimetre de scan,")
+        print("        seuil cite, attestation de zero -- #11712) :")
         for sg in signals:
             print(f"  ~~ {sg}")
-        print("  -> a lever par son auteur (poster une assertion corrigee), ou a")
-        print("     considerer par le reviewer qui merge. Ne tient pas la PR.")
+        print("  -> assertion d'un tiers : a lever par son auteur (poster une assertion")
+        print("     corrigee). Compte incidental : le reviewer qui merge le considere.")
+        print("     Ne tient pas la PR.")
     if unterminated_seen:
         # #11678: the body scanned had an unterminated fence. CommonMark
         # renders it to EOF (correct behaviour, what GitHub does), but the

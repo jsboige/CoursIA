@@ -2,9 +2,9 @@
   family: ML.NET/Python
   python: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries-Python.ipynb
   csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb
-  parity_level: surface
+  parity_level: native-both
   bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, algorithmes differents) : C# = Microsoft.ML.Transforms.TimeSeries ForecastBySsa (Singular Spectrum Analysis, ML.NET-native) et Python = statsmodels (STL decomposition + SARIMAX, native Python) -- familles algorithmiques differentes (SSA vs SARIMAX) mais CHAQUE COTE atteint un moteur SOTA de forecast saisonnier de son ecosysteme. Aucun pont intermediaire, aucune reimplementation from-scratch. Verifie firsthand C# + exec, Python statsmodels imports."
+  bridge_verdict_reason: "Modele nominal lib-vs-lib #10382 (moteurs distincts, algorithmes differents) : C# = Microsoft.ML.Transforms.TimeSeries ForecastBySsa (Singular Spectrum Analysis, ML.NET-native) et Python = statsmodels (STL decomposition + SARIMAX, native Python) -- familles algorithmiques differentes (SSA vs SARIMAX) mais CHAQUE COTE atteint un moteur SOTA de forecast saisonnier de son ecosysteme. Aucun pont intermediaire, aucune reimplementation from-scratch. Verifie firsthand C# + exec, Python statsmodels imports. Adjudication 2026-08-19 (dispatch #10382, comment 5335643895, lane myia-po-2026:CoursIA) : le test du schema est PASSE des deux cotes -- C# : moteur Microsoft.ML.TimeSeries 5.0.0 (nuget cell[1], using cell[14]), point d'entree ForecastBySsa, 15/15 cellules code execution_count != null ; Python : moteur statsmodels, points d'entree STL.fit cell[11] + SARIMAX cell[14], 12/12 execution_count != null. La difference de famille algorithmique n'empeche PAS native-both (le schema le dit explicitement : native-both ne dit rien de la correspondance structurelle cellule-par-cellule) -- c'est la forme exacte du modele nominal PyMC-vs-Infer.NET du mandat owner. Reclassification surface -> native-both."
 
   audits:
     - date: "2026-08-04"
@@ -25,7 +25,8 @@
       content_python_sha: 083c392f8d9070ae5b22b7bfcbb6b57c5a6a5f8365929cf45134c5a93f2ca3eb
       content_csharp_sha: e24fbc32219e7ebaeea9223982e906434465dd83c3394fc9a3be59b3d0384db0
   known_differences:
+    - "2026-08-19 : reclassification surface -> native-both (adjudication dispatch #10382 '3 paires surface', lane myia-po-2026:CoursIA). Les DEUX cotes font le travail du notebook au moyen d'un moteur de production nomme de leur ecosysteme : C# = Microsoft.ML.TimeSeries 5.0.0 ForecastBySsa (15/15 cellules code executees), Python = statsmodels STL + SARIMAX (12/12 executees). La difference de famille algorithmique reste documentee ci-dessous -- difference de METHODE, pas absence de moteur."
     - "2026-08-15 : correction d'auteurs falsifies (issue #11044, tranche W3C SPARQL / ML.NET KDD) — citations remises a leurs auteurs reels (Amizadeh S., DOI KDD, Protocol et al., etc.), markdown-only, aucun changement d'engine/outputs. Parite semantique conservee ; rebaseline content SHA (re-audit 2026-08-15, myia-po-2026:CoursIA-2)."
     - "FAMILLES ALGORITHMIQUES DIFFERENTES (pas un simple idiome swap) : C# = `Microsoft.ML.Transforms.TimeSeries` -> `ForecastBySsa` (Singular Spectrum Analysis, decomposition spectrale ML.NET-native). Python = `statsmodels` -> `STL` (seasonal-trend LOESS decomposition) + `SARIMAX` (seasonal ARIMA classique)."
     - "Aucune lib Python n'expose SSA de facon pedagogique equivalente ; le pendant Python choisit donc l'approche statistique classique (STL+SARIMAX) pour couvrir le meme besoin (forecast saisonnier) avec un OUTIL different."
-    - "parity_level = surface : meme probleme (prevision de series temporelles avec saisonnalite) mais algorithmes distincts (SSA spectral vs STL/SARIMAX statistique). Les resultats numeriques ne sont pas directement comparables ; c'est une parite de OBJECTIF pedagogique, pas de methode."
+    - "Meme probleme (prevision de series temporelles avec saisonnalite), algorithmes distincts (SSA spectral vs STL/SARIMAX statistique). Les resultats numeriques ne sont pas directement comparables ; parite d'OBJECTIF pedagogique avec moteurs natifs distincts des deux cotes (native-both depuis 2026-08-19, premiere entree)."
