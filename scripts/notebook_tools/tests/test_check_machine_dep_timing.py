@@ -26,10 +26,14 @@ from check_machine_dep_timing import (  # noqa: E402
     _scan_notebook,
     _is_range_bound,
     _is_detached_approximate,
+    _is_section_number,
+    _is_unit_conversion,
+    _is_code_constant_translation,
     _repo_root,
     PROTOCOL_KEYWORDS,
     CONTENT_DURATION_CONSTRAINT_RE,
     DISTRIBUTION_KEYWORDS,
+    TIMEOUT_LIMIT_RE,
     CATEGORY_WALLCLOCK,
     CATEGORY_DISTRIBUTION,
     CATEGORY_AMBIGUOUS,
@@ -1090,3 +1094,120 @@ def test_collect_targets_all_with_paths_warns(tmp_path: Path, monkeypatch, capsy
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+# --------------------------------------------------------------------------- #
+#  Tranche SymbolicAI #9434 (2026-08-19) : 6 classes FP nouvelles + frontieres
+# --------------------------------------------------------------------------- #
+
+
+def test_timeout_limit_re_real_instances() -> None:
+    """Timeout/limite de config POSE sur le pipeline = parametre, pas mesure.
+
+    Instances reelles (5 findings wallclock -> domain_quantity sur 5
+    notebooks SymbolicAI) : Planners-7 c16, Lean-13 c25, FD-Legacy c3/c14,
+    RDF.Net c69. Frontieres negaties : sans timeout/limite dans la ligne,
+    la duree reste un wallclock potentiel -- pas d'exemption silencieuse.
+    """
+    for line in [
+        "Lancons le solveur CP-SAT avec un timeout de 30 secondes et observons le makespan.",
+        "le build s'execute via wsl_papermill avec un timeout de 15 minutes.",
+        "Un timeout de 30 minutes est configure pour gerer les compilations longues.",
+        "Le temps total est limité à 30 minutes",
+        "Timeout = 30000,  // 30 secondes",
+        "Gestion des timeouts (3 000 ms par defaut -- parametre de configuration)",
+    ]:
+        assert TIMEOUT_LIMIT_RE.search(line), f"attendu parametre timeout : {line}"
+    assert not TIMEOUT_LIMIT_RE.search("Le run s'est termine en 30 secondes.")
+    assert not TIMEOUT_LIMIT_RE.search("Resolution du modele en 15 minutes.")
+
+
+def test_student_pacing_imperative_forms() -> None:
+    """Pacing IMPERATIF et borne ADVISORY cold-start = attente de l'etudiant.
+
+    Instances reelles : Lean-2 c45 « prenez 5 minutes pour lire », Lean-3
+    c53 « (essayez 5 min) », Lean-10 c27 « Si ca prend plus de 15 minutes,
+    interrompez », Lean-10 c54 « peut prendre 30 minutes a plusieurs
+    heures ». Frontiere : le PASSE mesure « a pris plus de » ne matche pas.
+    """
+    for line in [
+        "prenez 5 minutes pour lire ces solutions comme des exemples.",
+        "1. Ecrivez la preuve sans regarder l'exemple resolu (essayez 5 min).",
+        "Si ca prend plus de 15 minutes, interrompez le kernel et passez en mode SKIP.",
+        "Le premier tracing peut prendre 30 minutes a plusieurs heures.",
+    ]:
+        assert STUDENT_PACING_RE.search(line), f"attendu pacing : {line}"
+    assert not STUDENT_PACING_RE.search("Le premier tracing a pris plus de 30 minutes.")
+
+
+def test_protocol_keywords_infra_cadence() -> None:
+    """Cadence d'INFRASTRUCTURE (cron du cluster) = constante de config.
+
+    Instance reelle : Lean-20 c7 « Cluster CoursIA (4 workers, 30 min
+    cadence) ». La periode du cron ne derive pas de la machine.
+    """
+    assert PROTOCOL_KEYWORDS.search("Cluster CoursIA (4 workers, 30 min cadence)")
+    assert not PROTOCOL_KEYWORDS.search("Le build a pris 30 min.")
+
+
+def test_section_number_decimal_in_header() -> None:
+    """« ### 2.3 MIN (FIN) » = section 2.3 sur l'axiome MIN, pas 2,3 minutes.
+
+    Discriminant double : snippet decimal + header markdown immediat avant.
+    Frontiere : le MEME decimal hors header reste un wallclock potentiel.
+    """
+    line = "### 2.3 MIN (FIN) -- l'independance des choix"
+    assert _is_section_number(line, line.index("2.3 MIN"), "2.3 MIN")
+    assert not _is_section_number("Le build a dure 2.3 MIN", 16, "2.3 MIN")
+    assert not _is_section_number("### 30 min de build", 4, "30 min")
+
+
+def test_unit_conversion_parenthetical() -> None:
+    """« 500s (8.3 min) » = conversion de la constante primaire, pas mesure.
+
+    Instance reelle : Fast-Downward-Legacy c9 (bornes de config du solveur).
+    La forme entiere « (5 min) » etait deja couverte par la parenthese
+    pacing #10162 ; seul le decimal lui echappait.
+    """
+    line = "| Recherche | 500s (8.3 min) | 8000 MB |"
+    assert _is_unit_conversion(line, line.index("8.3 min"))
+    assert not _is_unit_conversion("mesure finale (8.3 min d'ecart au chrono)", 14)
+    assert not _is_unit_conversion("La resolution a pris 8.3 min au total.", 0)
+
+
+def test_code_constant_translation_sleep() -> None:
+    """« sleep(0.1) ... 100ms » = traduction de la constante du code.
+
+    Instance reelle : Argument_Analysis_UI c22. La valeur ne peut pas
+    deriver d'une machine : elle EST le code affiche dans la ligne.
+    """
+    line = "- **Blocage** : `ui_events().poll(10)` avec `sleep(0.1)` = polling toutes les 100ms"
+    assert _is_code_constant_translation(line, line.index("100ms"))
+    assert not _is_code_constant_translation("Le polling prend 100ms par cycle.", 0)
+
+
+def test_symbolicai_fp_pipeline_end_to_end() -> None:
+    """Pipeline complet : les lignes FP SymbolicAI ne produisent AUCUN
+    finding wallclock, et un wallclock strict voisin reste detecte.
+
+    Contrôle du branchement (pas seulement des helpers isoles) : chaque
+    ligne ci-dessous etait un finding wallclock reel avant la tranche.
+    """
+    nb = _make_nb([
+        _md_cell("Lancons le solveur CP-SAT avec un timeout de 30 secondes."),
+        _md_cell("Si ca prend plus de 15 minutes, interrompez le kernel."),
+        _md_cell("### 2.3 MIN (FIN) -- l'independance des choix"),
+        _md_cell("| Recherche | 500s (8.3 min) | 8000 MB |"),
+        _md_cell(
+            "La duree d'execution est 2.4 s pour 1000 iterations."
+        ),
+    ])
+    try:
+        findings = _scan_notebook(nb)
+        wallclock = [f for f in findings if f["category"] == CATEGORY_WALLCLOCK]
+        snippets = [f["snippet"] for f in wallclock]
+        assert snippets == ["2.4 s"], (
+            f"attendu uniquement le wallclock strict, trouve : {snippets}"
+        )
+    finally:
+        nb.unlink()
