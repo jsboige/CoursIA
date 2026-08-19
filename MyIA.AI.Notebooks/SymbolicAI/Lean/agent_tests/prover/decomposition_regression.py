@@ -34,7 +34,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-__all__ = ["is_decomposition_regression", "is_same_count_zero_verified"]
+__all__ = [
+    "is_decomposition_regression",
+    "is_same_count_zero_verified",
+    "is_worsened_unproven",
+]
 
 
 def is_decomposition_regression(
@@ -83,3 +87,23 @@ def is_same_count_zero_verified(
     if verified_tactic_count is None:
         return False
     return final_sorry == original_sorry_count and verified_tactic_count == 0
+
+def is_worsened_unproven(
+    final_sorry: int,
+    original_sorry_count: int,
+    proof_found: bool,
+) -> bool:
+    """Return True iff the run ENDED with MORE sorries than it started and no
+    target was proved (the #1453 iteration-2 write-guard).
+
+    The multi-agent path's kept-snapshot branch (provers.py:893-901) can
+    write ``last_ok_content`` whose sorry count ROSE -- a decomposition the
+    agent edited but never verified closed (L2551 4->8 was committed exactly
+    this way, then mislabelled ``structural_only``). The harness must never
+    persist a worsened file: the write-guard reverts to the entry state and
+    marks the run REGRESSED. ``proof_found`` is exempt: a run that proved the
+    target sorry is genuine progress even if collateral sorries grew, and
+    reverting would throw away the proof.
+    """
+    return final_sorry > original_sorry_count and not proof_found
+

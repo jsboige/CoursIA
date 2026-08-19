@@ -76,6 +76,11 @@ services:
         target: /root/.cache
 
     environment:
+      # CUDA_DEVICE_ORDER=PCI_BUS_ID: the container's default CUDA enumeration
+      # is fastest-first, which inverts the host nvidia-smi order on this
+      # mixed-GPU host (measured on tts-qwen, #11624: model loaded on GPU0 /
+      # display GPU despite *_GPU_ID=1). PCI-bus order matches nvidia-smi.
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - CUDA_VISIBLE_DEVICES=${KOKORO_GPU_ID:-1}
       - NVIDIA_VISIBLE_DEVICES=${KOKORO_GPU_ID:-1}
       - PYTHONUNBUFFERED=1
@@ -128,6 +133,8 @@ services:
         target: /root/.cache
 
     environment:
+      # Same enumeration fix as tts-kokoro (see comment there, #11624).
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - CUDA_VISIBLE_DEVICES=${TADA_GPU_ID:-1}
       - NVIDIA_VISIBLE_DEVICES=${TADA_GPU_ID:-1}
       - PYTHONUNBUFFERED=1
@@ -185,6 +192,13 @@ services:
         target: /root/.cache
 
     environment:
+      # Same enumeration fix as tts-kokoro (see comment there, #11624) —
+      # measured on this very service: the vLLM-Omni container loaded the
+      # 1.7B model on GPU0 (3080 Ti Laptop, the display GPU — freeze pattern
+      # 2026-06-21) despite device_ids ['1'] and CUDA_VISIBLE_DEVICES=1.
+      # NOTE: CUDA_VISIBLE_DEVICES must stay an integer index — the app
+      # int()s it, a UUID breaks startup (ValueError).
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
       - CUDA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - NVIDIA_VISIBLE_DEVICES=${QWEN_GPU_ID:-1}
       - PYTHONUNBUFFERED=1

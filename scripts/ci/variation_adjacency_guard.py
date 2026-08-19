@@ -68,6 +68,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -80,7 +81,62 @@ import grain_tag as gt  # noqa: E402
 from variation_light_cap import LIGHT_GENRES, canonicalize_genre  # noqa: E402
 
 
-def check(body: str | None) -> dict:
+# --- G-VAR-3 override (#11708) --------------------------------------------
+#
+# variation-protocol section 3 already grants the coordinator a decision the
+# gate could not hear: "Ne jamais tenir une LIGHT plus d'une journee [...]
+# Passe 24 h : merger, ou fermer en nommant le remplacant", and "HOLD sans
+# remplacement = echec coordinateur". Without an organ, that clause is
+# unreachable: the job carries the `-required` suffix, so a correctly-blocked
+# PR ages forever and the lane rewrites the same work elsewhere -- the exact
+# harm the clause was written to prevent.
+#
+# The marker mirrors the lane-claim `[OVERRIDE]` of #10223: an arbitration the
+# coordinator MAY make but MUST write. Two conditions make it non-vacuous:
+#   * it is authored by a coordinator login (a worker cannot self-exempt);
+#   * it NAMES the replacement genre the lane takes next, and that genre
+#     DIFFERS from the blocked one -- otherwise the override would waive the
+#     rule while promising to break it again.
+COORDINATOR_LOGINS = frozenset({"myia-ai-01", "jsboige"})
+
+_OVERRIDE_RE = re.compile(
+    r"\[\s*G-?VAR-?3\s+OVERRIDE\s*\]"          # the marker
+    r"(?:[^\n]*?lane\s+(?P<lane>[\w.-]+:[\w.-]+))?"  # optional lane echo
+    r"[^\n]*?next\s*:\s*(?P<next>[A-Za-z][\w-]*)",   # mandatory replacement
+    re.IGNORECASE,
+)
+
+
+def parse_override(comments: list[dict] | None) -> dict | None:
+    """Read a coordinator `[G-VAR-3 OVERRIDE] ... next: <genre>` marker.
+
+    `comments` is a list of ``{"author", "body"}`` (the shape `gh pr view
+    --json comments` returns, with `author` flattened to a login). Pure
+    function: the caller does the network. Returns None when no valid
+    marker is present -- an invalid one (worker-authored, or naming no
+    replacement) is deliberately indistinguishable from absent, so a
+    malformed override never silently waives the gate.
+    """
+    if not comments:
+        return None
+    for c in reversed(comments):
+        login = (c.get("author") or "")
+        if isinstance(login, dict):
+            login = login.get("login") or ""
+        if login not in COORDINATOR_LOGINS:
+            continue
+        m = _OVERRIDE_RE.search(c.get("body") or "")
+        if not m:
+            continue
+        return {
+            "author": login,
+            "lane": m.group("lane"),
+            "next_genre": canonicalize_genre(m.group("next")) or m.group("next").lower(),
+        }
+    return None
+
+
+def check(body: str | None, override: dict | None = None) -> dict:
     """Return the adjacency verdict for a PR body.
 
     Pure function so unit tests pin each branch without going through the
@@ -136,14 +192,44 @@ def check(body: str | None) -> dict:
     # Same genre. The LIGHT set is the absolute ban of §2; a DEEP/MED
     # domain-core genre is the advisory judgment of §2.
     if genre in LIGHT_GENRES:
+        # The adjacency is real. Before failing, ask whether the coordinator
+        # has exercised the 24h decision section 3 already grants (#11708).
+        if override and override.get("next_genre") \
+                and override["next_genre"] != genre:
+            return {
+                "guard_pass": True, "blocking": False, "adjacent": True,
+                "genre": genre, "prev_genre": prev_genre, "lane": lane,
+                "overridden": True,
+                "override_author": override["author"],
+                "override_next": override["next_genre"],
+                "reason": (
+                    f"G-VAR-3: adjacence {genre} apres {prev_genre} REELLE, "
+                    f"mais levee par {override['author']} au titre de la "
+                    f"clause 24h (section 3 : « merger, ou fermer en nommant "
+                    f"le remplacant »). Prochain grain nomme pour la lane "
+                    f"{lane} : {override['next_genre']}. Le travail ecrit "
+                    f"n'est pas jete ; la lane change de genre au grain "
+                    f"suivant."
+                ),
+            }
+        hint = ""
+        if override and override.get("next_genre") == genre:
+            hint = (
+                f" Un marqueur d'override existe mais nomme `next: {genre}` "
+                f"-- soit le genre meme qui bloque : une levee qui promet de "
+                f"rejouer l'adjacence n'en est pas une, elle est ignoree."
+            )
         return {
             "guard_pass": False, "blocking": True, "adjacent": True,
             "genre": genre, "prev_genre": prev_genre, "lane": lane,
+            "overridden": False,
             "reason": (
                 f"G-VAR-3: {genre} succede a {prev_genre} -- deux grains LIGHT "
                 f"consecutifs pour la lane {lane}. La regle est un ban absolu "
                 f"(§2): piochez un grain d'UN AUTRE genre, ne retaguez pas "
-                f"le meme travail (#11170)."
+                f"le meme travail (#11170). Tenu > 24 h : le coordinateur "
+                f"tranche par `[G-VAR-3 OVERRIDE] lane {lane} -- next: "
+                f"<genre>` (section 3), il ne laisse pas vieillir.{hint}"
             ),
         }
     return {
@@ -161,6 +247,9 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     p.add_argument("--body-file", metavar="FILE", required=True,
                    help="path to the PR body")
+    p.add_argument("--comments-file", metavar="FILE", default=None,
+                   help="JSON list of {author, body} PR comments, scanned for "
+                        "a coordinator [G-VAR-3 OVERRIDE] marker (#11708)")
     args = p.parse_args(argv)
 
     try:
@@ -171,7 +260,16 @@ def main(argv: list[str] | None = None) -> int:
               file=sys.stderr)
         return 2
 
-    verdict = check(body)
+    override = None
+    if args.comments_file:
+        try:
+            with open(args.comments_file, encoding="utf-8") as f:
+                override = parse_override(json.load(f))
+        except (OSError, ValueError) as e:
+            print(json.dumps({"warning": f"comments unreadable: {e}"}),
+                  file=sys.stderr)
+
+    verdict = check(body, override=override)
     print(json.dumps(verdict, ensure_ascii=False))
     return 0 if verdict["guard_pass"] else 1
 
