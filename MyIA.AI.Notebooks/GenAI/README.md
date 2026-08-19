@@ -379,7 +379,7 @@ Les notebooks GenAI exposent trois familles d'**outils d'infrastructure** que le
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 172
-breakdown: Audio=30, Plateformes-Conversationnelles=22, Texte=21, Video=21, SemanticKernel=20, Image=17, PostTraining=14, Vibe-Coding=8, 00-GenAI-Environment=6, FineTuning=5, CaseStudies=4, Aspire=2, RAG-et-Memoire-Semantique=1, root=1
-maturity: BETA=146, DRAFT=12, ALPHA=11, TEMPLATE=3
+pedagogical_count: 176
+breakdown: Audio=30, Plateformes-Conversationnelles=24, Texte=21, Video=21, SemanticKernel=20, Image=17, PostTraining=14, Vibe-Coding=8, 00-GenAI-Environment=6, FineTuning=5, Aspire=4, CaseStudies=4, RAG-et-Memoire-Semantique=1, root=1
+maturity: BETA=149, ALPHA=12, DRAFT=12, TEMPLATE=3
 -->

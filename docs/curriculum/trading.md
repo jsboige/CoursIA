@@ -22,8 +22,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |----------|--------|
 | Notebooks | 201 |
 | PRODUCTION | 0 |
-| BETA | 180 |
-| ALPHA | 21 |
+| BETA | 181 |
+| ALPHA | 20 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
@@ -195,7 +195,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 22 | QC-Py-21 - Portfolio Optimization avec Machine Learning | BETA | Non |
 | 23 | Objectifs d'Apprentissage | BETA | Non |
 | 24 | Objectifs d'Apprentissage | BETA | Non |
-| 25 | QC-Py-23b - PatchTST et iTransformer pour Prevision Fin | ALPHA | Non |
+| 25 | QC-Py-23b - PatchTST et iTransformer pour Prevision Fin | BETA | Non |
 | 26 | QC-Py-24 - Modèles Génératifs pour Anomaly Detection et | BETA | Non |
 | 27 | Objectifs d'Apprentissage | BETA | Non |
 | 28 | Objectifs d'Apprentissage | BETA | Non |
