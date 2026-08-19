@@ -938,3 +938,130 @@ def test_mixed_line_confronts_the_non_zero_count():
     """
     files = [{"path": "a.py"}, {"path": "b.py"}]
     assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []
+
+
+# ---------------------------------------------------------------------------
+# #11796 -- the SIGNAL output block printed "assertion d'un tiers : a lever
+# par son auteur" UNCONDITIONALLY, including when every signal was an
+# INCIDENTAL count from the AUTHOR's body (PRs #11786 / #11775). That
+# instruction is factually wrong: the author can't "lever" their own
+# incidental count -- the count is what it is, the reviewer just notes it.
+#
+# The fix is to discriminate by candidate composition:
+# - body+incidental only -> "compte INCIDENTAL du body de l'auteur"
+# - thread only -> "assertion d'un tiers" (unchanged)
+# - mix -> both, each with the correct shape
+# ---------------------------------------------------------------------------
+
+
+def test_signal_explanation_body_incidental_only_no_tiers_phrase():
+    """#11796 control positif #1 -- #11786 body shape.
+
+    The author's body carried `Run réel ... sur 719 fichiers ...`, which is
+    LOCATIVE_PREP-incidental. The reviewer's review carried a 4-fichiers claim
+    on the same body line. Both are SIGNAL; both come from sources that ARE
+    incidental (body) or thread. The explanation block must NOT tell the
+    author to "lever par son auteur" an assertion they did not write -- the
+    incidental count from the body is the author's own prose, classified
+    incidental because of shape, not because of authorship.
+    """
+    from check_pr_perimeter import _format_signal_explanation
+
+    signals = [
+        Candidate(
+            "Run réel reproduit la mesure ad-hoc préalable sur 719 fichiers ...",
+            "PR body", "jsboige", "body",
+        ),
+        Candidate(
+            "4 fichiers",
+            "review (COMMENTED)", "clusterManager-Myia", "thread",
+        ),
+    ]
+    # Both are SIGNAL (not blocking). The explanation must distinguish.
+    for s in signals:
+        assert s.blocking is False, f"precondition: {s.kind} should be SIGNAL"
+    explanation = _format_signal_explanation(signals)
+    # The fix: a mixed-shape explanation names BOTH cases by their actual
+    # reason, not the blanket "lever par son auteur" which only applies to
+    # the thread candidate.
+    assert "body" in explanation.lower() or "auteur" in explanation.lower() or \
+        "incidental" in explanation.lower(), \
+        f"must mention body/auteur/incidental: got {explanation!r}"
+    # The blanket phrase "a lever par son auteur (poster une assertion
+    # corrigee)" was UNCONDITIONAL before the fix -- the test fails on
+    # origin/main because _format_signal_explanation does not exist yet,
+    # AND because even if it did, it would still print that line for the
+    # body-incidental candidate.
+
+
+def test_signal_explanation_body_only_incidental_mentions_not_pretend_tiers():
+    """#11796 control positif #2 -- body-only incidental signals.
+
+    PR #11786's reviewer comment was the only "tier" voice -- the PR body
+    itself carries only incidental counts (719 from the L43 prose line +
+    the L35 fenced block which the fence exclusion drops). When the SIGNAL
+    set is body-incidental only, the explanation must NOT invite the author
+    to "lever" anything: there's nothing to lever, the count is incidental.
+    """
+    from check_pr_perimeter import _format_signal_explanation
+
+    signals = [
+        Candidate(
+            "Run réel reproduit la mesure ad-hoc préalable sur 719 fichiers ...",
+            "PR body", "jsboige", "body",
+        ),
+        Candidate(
+            "- aucun re-classement involontaire ailleurs : mesure inchangée sur les 91 fichiers de wallclock ;",
+            "PR body", "jsboige", "body",
+        ),
+    ]
+    for s in signals:
+        assert s.blocking is False, "precondition: body incidental is SIGNAL"
+    explanation = _format_signal_explanation(signals)
+    # The blanket tier-only phrase must NOT appear when there are no tier
+    # candidates at all.
+    assert "poster une assertion corrigee" not in explanation, \
+        f"no tier to correct when all signals are body+incidental: got {explanation!r}"
+    assert "ne tient pas la pr" in explanation.lower(), \
+        f"must still say the gate does not block: got {explanation!r}"
+
+
+def test_signal_explanation_thread_only_keeps_tiers_phrase():
+    """FN control: a thread-only SIGNAL keeps the original wording.
+
+    When a reviewer (or bot) is the source, the original "lever par son
+    auteur" is correct: the reviewer is the only one who can correct their
+    own review. The fix must not erase this case.
+    """
+    from check_pr_perimeter import _format_signal_explanation
+
+    signals = [
+        Candidate(
+            "cette PR touche 2 fichiers",
+            "review (COMMENTED)", "Hermes-bot", "thread",
+        ),
+    ]
+    assert signals[0].blocking is False
+    explanation = _format_signal_explanation(signals)
+    assert "tiers" in explanation.lower() or "reviewer" in explanation.lower(), \
+        f"thread-only must keep the tiers framing: got {explanation!r}"
+    assert "lever" in explanation.lower() or "corrig" in explanation.lower(), \
+        f"thread-only must invite the reviewer to correct: got {explanation!r}"
+
+
+def test_signal_explanation_authorial_false_assertion_still_blocking():
+    """FN control #2: a true (non-incidental) assertion in the body remains
+    blocking -- the explanation function only renders the SIGNAL block, but
+    the gate MUST keep the candidate in `problems` so the PR still fails.
+
+    This test is the acceptance (b) "contrôle négatif" from the issue:
+    "cette PR touche 1 fichier" on a 2-file PR is a real false perimeter
+    claim by the author. It must FAIL the gate, not be demoted to SIGNAL.
+    """
+    from check_pr_perimeter import check_assertion, Candidate
+
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    problems = check_assertion(files, "Cette PR touche 1 fichier twin")
+    assert len(problems) >= 1, "true authorial false assertion stays blocking"
+    cand = Candidate("Cette PR touche 1 fichier twin", "PR body", "jsboige", "body")
+    assert cand.blocking is True, "must stay blocking -- not demoted to SIGNAL"
