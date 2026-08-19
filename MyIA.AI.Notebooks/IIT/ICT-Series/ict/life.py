@@ -268,3 +268,73 @@ def trajectory_symbols(traj: List[np.ndarray]) -> Tuple[List[str], Dict[str, np.
             states[label] = g
         symbols.append(canon[key])
     return symbols, states
+
+
+# -------------------------------------------- ensemble des graines d'un petit tore
+def torus_ensemble_tpm(k: int) -> Tuple[np.ndarray, np.ndarray]:
+    """TPM deterministe de B3/S23 sur le tore k x k, sur TOUTES les graines.
+
+    Construit la matrice de transition etat-a-etat de la regle appliquee une
+    fois a chacune des ``2^(k*k)`` grilles possibles du tore periodique k x k
+    (issue #5726, phase narrative : la stratification causale du substrat se
+    mesure sur l'ENSEMBLE des conditions initiales, pas sur une trajectoire
+    isolee -- un cycle canonique est deja causalement sature, cf. notebook
+    ICT-32). Chaque ligne est un one-hot : la dynamique est deterministe, la
+    degenerescence eventuelle (plusieurs graines partageant un successeur)
+    vient de la REGLE, pas du bruit -- c'est ce que la batterie
+    :mod:`ict.causal_emergence` mesure.
+
+    Cap pratique : ``k <= 3`` (k=3 -> 512 etats, TPM 512x512 ; k=4 -> 65536
+    etats, hors d'atteinte d'un TPM dense en memoire). Le cap est verifie.
+
+    Retourne ``(tpm, succ)`` ou ``succ[s]`` est l'index du successeur B3/S23
+    de la graine ``s`` (encodage binaire row-major : bit ``k*i + j`` = cellule
+    ``(i, j)``) -- pratique pour construire des partitions par destin.
+    """
+    if k < 1 or k > 3:
+        raise ValueError(f"torus_ensemble_tpm : k doit valoir 1, 2 ou 3 (k={k})")
+    n = 1 << (k * k)
+    succ = np.empty(n, dtype=np.int64)
+    for s in range(n):
+        bits = np.array(list(map(int, bin(s)[2:].zfill(k * k))), dtype=np.uint8)
+        grid = bits.reshape(k, k)
+        nxt = next_generation(grid)
+        succ[s] = int("".join(map(str, nxt.flatten().astype(int))), 2)
+    tpm = np.zeros((n, n))
+    tpm[np.arange(n), succ] = 1.0
+    return tpm, succ
+
+
+def live_count_strata(k: int, succ: np.ndarray) -> List[List[int]]:
+    """Partition d'un tore k x k en strates de population (nb de cellules vivantes).
+
+    La partition TEMOIN NEGATIF du notebook ICT-32 : regrouper les graines par
+    leur nombre de cellules vivantes ne suit PAS la structure causale de la
+    regle -- B3/S23 melange croissance et mort au sein d'une meme strate -- et
+    la batterie :mod:`ict.causal_emergence` le mesure (effectiveness macro <
+    micro). Contraste avec :func:`fate_strata` (meme module ci-dessous).
+    """
+    n = 1 << (k * k)
+    counts: Dict[int, List[int]] = {}
+    for s in range(n):
+        pop = int(bin(s).count("1"))
+        counts.setdefault(pop, []).append(s)
+    return [counts[p] for p in sorted(counts)]
+
+
+def fate_strata(succ: np.ndarray) -> List[List[int]]:
+    """Partition d'un ensemble de graines par DESTIN (successeur B3/S23 commun).
+
+    Les fibres de la fonction successeur : deux graines qui evoluent vers la
+    meme grille au prochain pas forment une strate. C'est la partition que la
+    dynamique elle-meme suggere (issue #5726 : la regle B3/S23 est massivement
+    degenerescente -- 384 des 512 graines du tore 3x3 partagent leur
+    successeur avec au moins une autre graine), et la batterie
+    :mod:`ict.causal_emergence` mesure qu'elle restaure l'effectiveness
+    (notebook ICT-32) : la macro gagnante suit la structure causale de la
+    regle, la partition par destin en est le squelette.
+    """
+    groups: Dict[int, List[int]] = {}
+    for s, t in enumerate(succ.tolist()):
+        groups.setdefault(t, []).append(s)
+    return [groups[t] for t in sorted(groups)]
