@@ -19,6 +19,7 @@ from check_pr_perimeter import (  # noqa: E402
     extract_perimeter_assertions,
     format_report,
     select_candidates,
+    _check_unterminated_fence,
     _fence_line_indices,
 )
 
@@ -320,13 +321,18 @@ def test_fence_line_indices_skip_only_enclosed_lines():
     """Helper contract: delimiter lines are NOT in the set; only the lines
     they enclose are. The opener line (with triple backticks) sits outside
     the set; the body line '0 fichiers en commun' sits inside; the closer
-    line (with triple backticks) sits outside again.
+    line (with triple backticks) sits outside again. The second return value
+    says no fence was opened without a closing counterpart (founder #11670
+    body is well-formed).
     """
-    indices = _fence_line_indices(L898_BODY_11664)
+    indices, unterminated = _fence_line_indices(L898_BODY_11664)
     # The L898 body has 12 lines (0..11): opener at idx 4, body 5..10,
     # closer at idx 11. Body interior = {5, 6, 7, 8, 9, 10}.
     assert indices == {5, 6, 7, 8, 9, 10}, (
         f"expected only the body lines inside the fence to be flagged, got {sorted(indices)}"
+    )
+    assert unterminated is False, (
+        "a well-formed fence (opener + closer) must NOT be reported unterminated"
     )
 
 
@@ -435,6 +441,132 @@ def test_extract_perimeter_assertions_fence_does_not_swallow_following_lines():
     cands = extract_perimeter_assertions(body)
     assert any("Perimetre : 1 fichier modifie." in c for c in cands), (
         f"post-fence prose must be re-extracted, got {cands!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Acceptance #11678 — unterminated fence flag propagation
+# ---------------------------------------------------------------------------
+
+# Founder body verbatim from issue #11678: an orphan opener renders to EOF
+# under CommonMark (the correct rendering), but every line after the orphan
+# is excluded from the scan, producing a silent no-op on the tail. The
+# helper must surface the flag so the gate can warn the reviewer instead of
+# silently rubber-stamping the body.
+L11678_FOUNDER_BODY = (
+    "intro\n"
+    "```\n"  # ← orphan opener; never closed
+    "$ echo hi\n"
+    "\n"
+    "Perimetre : 3 fichiers modifies uniquement.\n"
+)
+
+
+def test_unterminated_fence_helper_pins_true_on_founder_body():
+    """#11678 acceptance 1: the founder body (orphan opener, no closer) MUST
+    trip ``unterminated_fence: true`` on both the helper and the
+    ``_fence_line_indices`` return value. This is the bug the gate had:
+    a body with an orphan opener rendered correctly to EOF but the scan
+    silently skipped every subsequent line, returning zero candidates
+    without telling the reviewer why.
+    """
+    # Helper contract
+    assert _check_unterminated_fence(L11678_FOUNDER_BODY) is True, (
+        "orphan opener on founder body must raise unterminated_fence"
+    )
+    # Direct: the tuple's second element also carries the flag.
+    indices, unterminated = _fence_line_indices(L11678_FOUNDER_BODY)
+    assert unterminated is True, (
+        "_fence_line_indices must report unterminated_at_eof when an opener "
+        "is never closed"
+    )
+    # The flag must NOT silently swallow the closing state: every line from
+    # the orphan opener onward (but NOT the opener itself) is in the set.
+    assert 1 not in indices, "the opener line itself is a delimiter, not a body"
+    assert 2 in indices and 3 in indices and 4 in indices, (
+        f"every post-opener line is enclosed by the orphan fence, "
+        f"expected 2/3/4 in indices, got {sorted(indices)}"
+    )
+
+
+def test_unterminated_fence_helper_pins_false_on_closed_fence():
+    """#11678 acceptance 2 (negative control): a correctly closed fence
+    MUST NOT raise the flag. The flag is for the orphan-opener shape only;
+    on a well-formed body the gate should remain silent on this dimension.
+    """
+    body = (
+        "intro\n"
+        "```\n"
+        "$ echo hi\n"
+        "```\n"  # ← closer
+        "\n"
+        "Perimetre : 3 fichiers modifies uniquement.\n"
+    )
+    assert _check_unterminated_fence(body) is False, (
+        "a fully closed fence must NOT trip unterminated_fence"
+    )
+    indices, unterminated = _fence_line_indices(body)
+    assert unterminated is False, (
+        "well-formed opener+closer must report unterminated_at_eof=False"
+    )
+    # Opener and closer are NOT in the set; the body line IS in the set.
+    assert 1 not in indices and 3 not in indices, (
+        f"delimiter lines are not body, got {sorted(indices)}"
+    )
+    assert 2 in indices, "the single body line inside the fence IS in the set"
+
+
+def test_unterminated_fence_propagates_through_select_candidates():
+    """#11678 acceptance 3 (non-regression): the flag must surface through
+    ``select_candidates`` so the gate's main() can emit the non-blocking
+    ``UNFINISHED_FENCE: True`` warning. The founder body would otherwise
+    silently pass with zero candidates → no problems → false-negative.
+    """
+    # Founder #11670 control: a body with a correctly closed fence + a
+    # prose claim that matches the perimeter → no problems, no
+    # unterminated flag. This is the false-positive guard.
+    FILES_OK = [
+        {"path": "scripts/check_pr_perimeter.py", "additions": 50, "deletions": 30},
+        {"path": "scripts/tests/test_check_pr_perimeter.py", "additions": 80, "deletions": 5},
+    ]
+    body_closed = (
+        "Périmètre : 2 fichiers : scripts/check_pr_perimeter.py, "
+        "scripts/tests/test_check_pr_perimeter.py.\n"
+    )
+    items = [{"kind": "body", "author": "owner", "body": body_closed, "source": "body"}]
+    cands, unterminated = select_candidates(items)
+    assert unterminated is False, (
+        "closed body must NOT trip unterminated_body_fence"
+    )
+    assert all(check_assertion(FILES_OK, c.text) == [] for c in cands), (
+        "matching prose claim over the right perimeter must still pass"
+    )
+
+    # Founder #11678 case: orphan opener on the body. The flag MUST
+    # surface; the actual count claim (3 fichiers) trips a problem
+    # because we feed it a 2-file perimeter (founder case #11670).
+    items_bad = [{
+        "kind": "body",
+        "author": "owner",
+        "body": L11678_FOUNDER_BODY,
+        "source": "body",
+    }]
+    cands_bad, unterminated_bad = select_candidates(items_bad)
+    assert unterminated_bad is True, (
+        "founder body with orphan opener must propagate the flag "
+        "through select_candidates"
+    )
+    # The body line of the founder case still surfaces as a candidate
+    # (the orphan fence does NOT swallow the line for the perimeter
+    # scan, only for the rendering) -- wait, actually it DOES swallow
+    # the line. The flag is the only signal that the tail was skipped.
+    # Pin that semantic explicitly so the reviewer knows what they are
+    # looking at: if the flag is True, the post-opener tail is invisible.
+    assert not any(
+        "Perimetre : 3 fichiers modifies" in c.text for c in cands_bad
+    ), (
+        "orphan fence swallows the post-opener line from the scan; "
+        "this is the silent-no-op shape #11678 measures"
     )
 
 
@@ -553,7 +685,7 @@ def test_author_later_assertion_supersedes_their_own_earlier_one():
     14:48; the stale one still held the PR red. Self-correction must clear
     one's own red.
     """
-    cands = select_candidates(_thread(
+    cands, _ = select_candidates(_thread(
         ("ai-01", "2026-08-18T14:29:00Z", ASSERT_5),
         ("ai-01", "2026-08-18T14:48:00Z", ASSERT_7),
     ))
@@ -564,7 +696,7 @@ def test_author_later_assertion_supersedes_their_own_earlier_one():
 
 def test_supersession_is_per_author_not_global():
     """A later review by SOMEONE ELSE must not retract my assertion."""
-    cands = select_candidates(_thread(
+    cands, _ = select_candidates(_thread(
         ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
         ("ai-01", "2026-08-18T14:48:00Z", ASSERT_7),
     ))
@@ -575,7 +707,7 @@ def test_supersession_is_per_author_not_global():
 def test_later_silent_review_is_not_a_retraction():
     """Silence is not correction: a later review with no perimeter statement
     leaves the author's previous assertion standing."""
-    cands = select_candidates(_thread(
+    cands, _ = select_candidates(_thread(
         ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
         ("hermes", "2026-08-18T15:10:00Z", "LGTM, joli travail."),
     ))
@@ -584,7 +716,7 @@ def test_later_silent_review_is_not_a_retraction():
 
 def test_equal_timestamps_fall_back_to_thread_order():
     """GitHub can stamp two reviews identically; the later-listed one wins."""
-    cands = select_candidates(_thread(
+    cands, _ = select_candidates(_thread(
         ("hermes", "2026-08-18T14:29:00Z", ASSERT_5),
         ("hermes", "2026-08-18T14:29:00Z", ASSERT_7),
     ))
@@ -598,7 +730,7 @@ def test_pr_body_assertion_is_blocking():
     "fixes" a false positive by making everything advisory. A gate whose every
     input is non-blocking is indistinguishable from a disabled gate.
     """
-    cands = select_candidates([_body("jsboige", ASSERT_5)])
+    cands, _ = select_candidates([_body("jsboige", ASSERT_5)])
     assert len(cands) == 1
     assert cands[0].blocking is True, (
         "PR-body assertions must BLOCK: the author owns the body and an edit "
@@ -609,7 +741,7 @@ def test_pr_body_assertion_is_blocking():
 def test_third_party_review_assertion_is_signal_only():
     """#11648-b2: not editable by the author, and COMMENTED reviews cannot be
     dismissed -- blocking there leaves no lever (measured on #11642/#11646)."""
-    cands = select_candidates(_thread(
+    cands, _ = select_candidates(_thread(
         ("clusterManager-Myia", "2026-08-18T14:29:00Z", ASSERT_5),
     ))
     assert len(cands) == 1
@@ -619,7 +751,7 @@ def test_third_party_review_assertion_is_signal_only():
 def test_detection_is_unchanged_for_non_blocking_assertions():
     """The detector is NOT disarmed: a false third-party assertion is still
     extracted and still confronted -- only its exit code changes."""
-    cands = select_candidates(_thread(
+    cands, _ = select_candidates(_thread(
         ("clusterManager-Myia", "2026-08-18T14:29:00Z",
          "Perimetre : 2 fichiers twins uniquement, aucune autre modification."),
     ))
@@ -632,7 +764,7 @@ def test_detection_is_unchanged_for_non_blocking_assertions():
 def test_founding_incident_still_blocks_from_the_pr_body():
     """#11227 encoded end to end: the same false assertion, posted where its
     author can fix it, still fails the gate."""
-    cands = select_candidates([_body(
+    cands, _ = select_candidates([_body(
         "author",
         "Perimetre : 2 fichiers twins uniquement, aucune autre modification.")])
     blocking = [c for c in cands if c.blocking]
