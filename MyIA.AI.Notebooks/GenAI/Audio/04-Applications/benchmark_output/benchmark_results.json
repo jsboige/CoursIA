@@ -1,61 +1,67 @@
 [
   {
     "model": "kokoro",
-    "sample": "narration",
-    "status": "error",
-    "error": "HTTPConnectionPool(host='localhost', port=8191): Max retries exceeded with url: "
+    "voice": "af_sky",
+    "latency_ms": 7301.633299999594,
+    "audio_size_bytes": 259244,
+    "status": "ok",
+    "sample": "narration"
   },
   {
     "model": "qwen3",
     "sample": "narration",
     "status": "error",
-    "error": "HTTPConnectionPool(host='localhost', port=8196): Max retries exceeded with url: "
+    "error": "503 Server Error: Service Unavailable for url: http://localhost:8196/qwen/v1/aud"
   },
   {
     "model": "openai/tts-1",
     "voice": "alloy",
-    "latency_ms": 2697.040200000629,
-    "audio_size_bytes": 268800,
+    "latency_ms": 4685.374200000297,
+    "audio_size_bytes": 269568,
     "status": "ok",
     "sample": "narration"
   },
   {
     "model": "kokoro",
-    "sample": "dialogue",
-    "status": "error",
-    "error": "HTTPConnectionPool(host='localhost', port=8191): Max retries exceeded with url: "
+    "voice": "af_sky",
+    "latency_ms": 3222.3023000005924,
+    "audio_size_bytes": 251180,
+    "status": "ok",
+    "sample": "dialogue"
   },
   {
     "model": "qwen3",
     "sample": "dialogue",
     "status": "error",
-    "error": "HTTPConnectionPool(host='localhost', port=8196): Max retries exceeded with url: "
+    "error": "503 Server Error: Service Unavailable for url: http://localhost:8196/qwen/v1/aud"
   },
   {
     "model": "openai/tts-1",
     "voice": "nova",
-    "latency_ms": 2693.177100009052,
-    "audio_size_bytes": 188928,
+    "latency_ms": 3842.608199998722,
+    "audio_size_bytes": 199296,
     "status": "ok",
     "sample": "dialogue"
   },
   {
     "model": "kokoro",
-    "sample": "monologue",
-    "status": "error",
-    "error": "HTTPConnectionPool(host='localhost', port=8191): Max retries exceeded with url: "
+    "voice": "af_bella",
+    "latency_ms": 4000.3085999996983,
+    "audio_size_bytes": 341804,
+    "status": "ok",
+    "sample": "monologue"
   },
   {
     "model": "qwen3",
     "sample": "monologue",
     "status": "error",
-    "error": "HTTPConnectionPool(host='localhost', port=8196): Max retries exceeded with url: "
+    "error": "503 Server Error: Service Unavailable for url: http://localhost:8196/qwen/v1/aud"
   },
   {
     "model": "openai/tts-1",
     "voice": "shimmer",
-    "latency_ms": 2531.3440000172704,
-    "audio_size_bytes": 304512,
+    "latency_ms": 2426.669700000275,
+    "audio_size_bytes": 298752,
     "status": "ok",
     "sample": "monologue"
   }
