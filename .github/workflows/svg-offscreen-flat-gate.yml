@@ -49,6 +49,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: svg-offscreen-flat-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   svg-offscreen-flat:
     name: "No offscreen-flat SVG in changed notebooks"

@@ -33,6 +33,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lean-kelly-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main

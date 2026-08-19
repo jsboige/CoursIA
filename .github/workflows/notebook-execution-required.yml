@@ -44,6 +44,10 @@ permissions:
   issues: write
   pull-requests: write
 
+concurrency:
+  group: notebook-execution-required-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   detect-changes:
     name: Detect notebook changes

@@ -23,6 +23,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: notebook-navlink-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-navlinks:
     runs-on: ubuntu-latest

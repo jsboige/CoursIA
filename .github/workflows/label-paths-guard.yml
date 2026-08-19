@@ -35,6 +35,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: label-paths-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   label-paths-guard:
     name: "Label-poser workflows self-cover (blocking)"

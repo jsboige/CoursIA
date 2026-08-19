@@ -10,6 +10,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: stale-base-warning-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-base-age:
     name: Check base branch staleness
