@@ -79,6 +79,15 @@ concurrency:
 jobs:
   reaggregate:
     name: Re-aggregate after guard flip
+    # A CANCELLED guard produced no verdict, so there is nothing to
+    # re-aggregate -- and its payload carries the SUPERSEDED head SHA, so
+    # acting on it would rerun a gate for a head that is no longer the PR's.
+    # Before the ref-keyed concurrency groups added alongside this, guard
+    # cancellations were rare; now every superseded generation ends this way,
+    # which would have turned each saved guard run into a wasted gate rerun.
+    if: >-
+      github.event_name != 'workflow_run'
+      || github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     steps:
       - name: Re-run the original PR gate for the PR head

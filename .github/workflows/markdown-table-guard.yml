@@ -44,6 +44,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: markdown-table-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   md-table-syntax-advisory:
     name: "Markdown table syntax advisory (label, non-blocking)"

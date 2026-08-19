@@ -53,6 +53,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: svg-decimal-comma-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   svg-decimal-comma:
     name: "No SVG decimal-comma defect in changed notebooks"

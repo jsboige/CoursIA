@@ -39,6 +39,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: lane-claim-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # Blocking. Nom portant `-required` -> is_advisory() = False (pr_gate.py).
   # Pas de filtre `paths:` : un job filtre par chemin reste `pending` a vie sur

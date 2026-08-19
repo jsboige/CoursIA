@@ -24,6 +24,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: prose-counts-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   prose-counts:
     runs-on: ubuntu-latest

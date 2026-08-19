@@ -252,6 +252,103 @@ def test_wait_loop_times_out_into_a_failure():
     assert "timed out" in msg and "Slow CI" in msg
 
 
+# --- #11751 -- phantom FAIL when the deadline fires between polls ------------
+#
+# The defect: the wait loop's last poll reports `pending=[X]`; the deadline
+# fires before the next poll; `X` finishes in the gap; the gate announces
+# `FAIL -- timed out waiting for: (none listed)` even though the set is fully
+# green. The fix is a final re-read at the deadline: an empty `pending` AND
+# empty `bad` after the re-read is treated as a clean settle (after the rule-8
+# canary). Acceptance tests below pin the four cases listed in #11751.
+
+
+def test_11751_phantom_fail_recovers_when_constituent_settles_in_gap():
+    """Last poll sees 1 pending, re-read at deadline sees 0 -> PASS.
+
+    Mirrors PR #11746 / run 32242324342: poll N reported `Analyze (actions)`
+    pending, the deadline fired, and `Analyze (actions)` completed in the 31s
+    gap. Before the fix the gate reported FAIL with an empty list. After the
+    fix the re-read at the deadline catches the freshly-settled constituent
+    and the verdict is PASS.
+    """
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        # First poll: 1 pending (Analyze). Re-read at deadline: 0 pending.
+        return {1: [run("Analyze (actions)", None, status="in_progress")]}.get(
+            len(polls),
+            [run("Analyze (actions)", "success", status="completed")],
+        )
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=0, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 0, msg
+    assert len(polls) == 2, "the deadline path must trigger exactly one re-read"
+
+
+def test_11751_genuine_still_pending_named_after_reread():
+    """A constituent that is STILL pending after the re-read is named in FAIL.
+
+    Non-regression: the re-read does not swallow a real timeout. The verdict
+    names the constituent, so a reader can act on it (rerun, investigate).
+    """
+    def fetch(_repo, _sha):
+        return [run("Slow CI", None, status="in_progress")]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=0, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1
+    assert "Slow CI" in msg, (
+        "a still-pending constituent must be named, not hidden"
+    )
+
+
+def test_11751_red_constituent_observed_in_reread_is_not_a_pass():
+    """A check that flips red between polls is reported by name.
+
+    Negative control for the recovery path: an all-green gate would be
+    indistinguishable from a gate that lost track of a red. The re-read uses
+    the same `classify` path that runs in the loop, so a red observed at the
+    re-read is reported exactly like a red observed in any other poll.
+    """
+    def fetch(_repo, _sha):
+        return [run("Broken CI", "failure", status="completed")]
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=0, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1
+    assert "Broken CI" in msg
+
+
+def test_11751_no_path_emits_none_listed_placeholder():
+    """`(none listed)` is unreachable after the fix.
+
+    Two scenarios used to print it: (a) the wait-loop path with an empty
+    re-read pending, now recovered to PASS; (b) `verdict()` itself when called
+    with `pending=[]` and `settled=False`, now guarded. We exercise both at
+    the verdict layer (the wait-loop layer is covered by the tests above).
+    """
+    code, msg = pr_gate.verdict(pending=[], bad=[], settled=False)
+    assert code == 1
+    assert "none listed" not in msg, (
+        "(none listed) placeholder is unreachable after #11751"
+    )
+    assert "gate bug" in msg, (
+        "an empty unsettled verdict must declare itself a gate bug, "
+        "not look like a benign display"
+    )
+
+
+# --- legacy commit statuses --------------------------------------------------
+
+
 # --- legacy commit statuses --------------------------------------------------
 
 

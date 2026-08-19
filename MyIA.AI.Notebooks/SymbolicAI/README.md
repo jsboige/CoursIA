@@ -13,9 +13,13 @@ maturity: BETA=222, ALPHA=6, DRAFT=4
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
 
-Vous y découvrirez huit domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **résolution SMT** (Z3, satisfiability modulo theories) automatise la décision sous contraintes — cryptarithmes, planification, vérification de propriétés. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
+Vous y découvrirez huit domaines complémentaires qui, ensemble, couvrent le **cycle complet du raisonnement vérifiable** à l'ère des LLMs : **représenter** la connaissance (Tweety pour les logiques formelles et l'argumentation, SemanticWeb pour le web de données RDF/SPARQL/OWL), **prouver** quand la certitude est exigée (Lean 4 et le vérificateur de preuves Mathlib4 — y compris les théorèmes phares 2026 : Sendov, *Analysis I* Tao, PFR, MIMO, M₂₃), **décider sous contraintes** (SMT / Z3, le solveur industriel de référence, en API impérative Python et en binding déclaratif C# via Z3.Linq), **agir dans le monde réel** (Planners pour la planification PDDL/CP-SAT, SmartContracts pour la logique vérifiable sur blockchain), **apprendre à partir de connaissances** plutôt que de données (SymbolicLearning, AIMA ch. 19), et **relier ce pipeline aux LLMs** (Argument Analysis, jette un pont exploitable entre sémantique formelle et IA générative). Chaque sous-série est autonome et peut être suivie isolément, mais elles sont traversées par un **fil rouge** : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps et deviennent deux couches d'un même système fiable. La carte mermaid ci-dessous matérialise les ponts entre ces domaines — nœuds colorés selon leur rôle (fondations, applications, ponts neuro-symboliques).
 
-**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques) :
+**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques). Lecture de la carte : les **flèches pleines** (`-->`) marquent un pont conceptuel direct (la sous-série aval **consomme** ou **généralise** l'amont) ; les **flèches pointillées** (`-.->`) marquent un pont par **companion** (un notebook natif dans une autre série qui formalise la théorie). Trois classes visuelles séparent les rôles :
+
+- **Fondations** (bleu) : les formalismes de base du raisonnement symbolique — Tweety, SemanticWeb, Lean.
+- **Applications** (vert) : les séries qui **exploitent** les formalismes dans le monde réel — SMT, Planners, SmartContracts.
+- **Ponts neuro-symboliques** (ambre) : les séries qui **relient** le symbolique au génératif — Argument Analysis, SymbolicLearning.
 
 ```mermaid
 flowchart TD
@@ -28,14 +32,19 @@ flowchart TD
     AA["Argument Analysis<br/>Pont LLM (sophismes, SK)"]
     SL["SymbolicLearning<br/>Apprentissage symbolique (AIMA 19)"]
 
+    %% Ponts conceptuels (flesches pleines = consommation / généralisation)
     TW -->|"generalise en representation"| SW
-    TW -.->|"companion natif (Tweety-5b)"| LEAN
-    LEAN -.->|"companion (planners_lean)"| PL
-    SMT -.->|"meme solveur Z3"| PL
     LEAN -->|"verification de proprietes"| SMT
-    TW --> AA
-    SW -->|"GraphRAG / linked data"| AA
-    AA --> SL
+    SMT -->|"meme solveur Z3 (CP-SAT)|"| PL
+    PL -->|"contraintes executees sur blockchain"| SC
+    SW -->|"graphes de connaissances + GraphRAG"| AA
+    AA -->|"induction logique + regles LLM"| SL
+
+    %% Ponts par companion (flesches pointillees = notebook natif en Lean)
+    TW -.->|"Tweety-5b (proof natif)"| LEAN
+    LEAN -.->|"planners_lean (h-add)"| PL
+    LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
+    TW -.->|"induction logique (FOIL)"| SL
 
     classDef found fill:#e8f0fe,stroke:#1a73e8
     classDef app fill:#e6f4ea,stroke:#188038
@@ -44,6 +53,8 @@ flowchart TD
     class SMT,PL,SC app
     class AA,SL bridge
 ```
+
+**Lecture recommandée** : les apprenants qui découvrent l'IA symbolique peuvent lire la carte comme un **parcours** — Tweety ou SemanticWeb en entrée (représentation), Lean comme verrou de rigueur (vérification), SMT ou Planners en première application (décision), avant les ponts LLM (Argument Analysis) et l'apprentissage symbolique (SymbolicLearning). Les chercheurs en vérification formelle peuvent **inverser** la lecture : Lean → SMT → Planners (companion `planners_lean`) → SmartContracts (companion `sensitivity_lean`), avant de revenir à Tweety pour l'argumentation structurée.
 
 **À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python, SymbolicLearning) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
 
@@ -59,11 +70,11 @@ Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les 
 
 ### Phase 3 : Vérification formelle (Lean, ~10h)
 
-La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
+La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Les notebooks 13-18 prolongent avec les hommages aux mathématiciens (Grothendieck, Conway) et les théorèmes fondamentaux (Kochen-Specker, Libre Arbitre, noeuds de Conway, optimalité A*). Les notebooks 19-23, fraîchement intégrés, portent les **théorèmes phares 2026** : conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la conjecture PFR par méthode entropique (Lean-21, lac `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
 
-### Phase 4 : Applications (Planners + SmartContracts, ~30h)
+### Phase 4 : Applications (SMT + Planners + SmartContracts, ~32h)
 
-Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (23 notebooks : 13 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+Trois séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **résolution SMT** (46 notebooks : 28 Z3-API Python + C# jumeaux + 18 Z3-Linq2Z3 C#) constitue la passerelle naturelle entre la Phase 3 (Lean, vérification formelle) et les solveurs industriels : Z3 (Microsoft Research) en API impérative Python (z3-py) et en binding déclaratif C# (Z3.Linq + LINQ). Couvre arithmétique linéaire, bit-vectors, tableaux, chaînes, MaxSAT, cryptarithmes, et capstones `Meal Planner` (série 16..16e). La **planification automatique** (23 notebooks : 13 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
@@ -88,6 +99,7 @@ La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
 | **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
+| **SMT / Z3** | `SMT/Z3-API/Z3-Python-01-Introduction.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
 
 **Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne nécessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
 
@@ -104,7 +116,7 @@ La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch
 | **SmartContracts** | Python | Solidity/solc, Foundry | py-solc-x, web3 | OPENAI_API_KEY (8b) |
 | **SymbolicLearning** | Python | Aucun (WSL pour la section Popper de SL-4) | sklearn, rdflib, clingo (optionnels) | OPENROUTER_API_KEY optionnelle (SL-8/SL-10) |
 | **Argument Analysis** | Python | Java/JPype | semantic-kernel | OPENAI_API_KEY |
-| **Autres** | .NET C# | Aucun | Google.OrTools, Z3.Linq | Non |
+| **SMT / Z3** | Python / .NET C# | Aucun | z3-solver (Python), Z3.Linq (C#) | Non |
 
 ---
 
@@ -180,7 +192,7 @@ Documentation complète : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Vérification Formelle
 
-Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b), les jeux de Conway (Lean-16a/16b/16c/16d/16e) avec ports natifs Lean, les noeuds de Conway (Lean-17a/17b), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14) et l'optimalité A* (Lean-18).
+Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b), les jeux de Conway (Lean-16a/16b/16c/16d/16e) avec ports natifs Lean, les noeuds de Conway (Lean-17a/17b), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14), l'optimalité A* (Lean-18), la conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la méthode entropique de la conjecture PFR (Lean-21, `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538).
 
 ### Structure détaillée
 
@@ -217,15 +229,88 @@ Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 17 | [Lean-17-Knots-a-Conway-and-Proofs](Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Python WSL | Noeuds de Conway : introduction, énoncés, premier port formel adossé à `conway_knots_lean/` | 3 |
 | 17b | [Lean-17-Knots-b-Invariants-Companion](Lean/Lean-17-Knots-b-Invariants-Companion.ipynb) | Python WSL | Companion natif : invariants de noeuds, snippets WSL, sources `conway_knots_lean/` | 3 |
 | 18 | [Lean-18-Search-AStar-Optimality](Lean/Lean-18-Search-AStar-Optimality.ipynb) | Lean 4 / WSL | Preuve d'optimalité A* dans le lake `planners_lean` : consistance, admissibilité, branchement | 3 |
+| **Théorèmes phares 2026** |  |  |  |  |
+| 19 | [Lean-19-Sendov-Complex-Analysis](Lean/Lean-19-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
+| 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb) | Python WSL | Manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 4 |
+| 21 | [Lean-21-PFR-Entropy-Method](Lean/Lean-21-PFR-Entropy-Method.ipynb) | Python WSL | Conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 0 |
+| 22 | [Lean-22-MIMO-Detection-Flips](Lean/Lean-22-MIMO-Detection-Flips.ipynb) | Python WSL | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 3 |
+| 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean/Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Python WSL | Problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 à l'écran (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 3 |
 
 ### Kernels requis
 
 - **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 13, 15 (preuves Lean natives)
-- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 15b, 16a-16c, 16f (setup, LLM, LeanDojo, hommages)
+- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 15b, 16a-16c, 16f, 19-23 (setup, LLM, LeanDojo, hommages, théorèmes phares 2026)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problèmes chemins)
 
 Documentation complète : [Lean/README.md](Lean/README.md)
+
+---
+
+## SMT - Résolution SMT / Z3
+
+Série de **46 notebooks** sur la résolution **SMT** (*Satisfiability Modulo Theories*) via le solveur **Z3** (Microsoft Research). Deux bindings complémentaires coexistent : **`Z3-API`** (28 notebooks : 22 Python + 6 jumeaux C# sur 01..06) procure l'API impérative complète (`z3-py` / `Z3.API` natif C#) — exponentielle expressive (BitVec, Array, String, Regex, optimisation) ; **`Z3-Linq2Z3`** (18 notebooks C#) offre un binding déclaratif natif .NET via LINQ — exprimer des contraintes sans quitter le langage hôte. Couvre du puzzle classique (Sudoku, missionnaires et cannibales, einstein, cryptarithmes) aux capstones `Meal Planner` (série 16 / 16b / 16c / 16d / 16e : modélisation, données externes, patient capstone, convergence à l'échelle, optimisation) qui enchaînent synthèse de modèles, validation de propriétés, et preuve de bornitude.
+
+La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme** la vérification de propriétés de Lean (Phase 3, par exemple Lean-10 ou SMT-LIB dumps) et **fournit** le solveur sous-jacent à Planners (CP-SAT et outils dérivés, voir Phase 4). Pour les étudiants, SMT est aussi la manière la plus rapide de passer de la logique propositionnelle (Phase 1, Tweety) à un outil industriel moderne.
+
+### Structure détaillée
+
+| # | Notebook | Kernel | Contenu | Exercices |
+|---|----------|--------|---------|-----------|
+| **Fondations Z3-API (Python + jumeaux C#)** |   |   |   |   |
+| 01 | [Z3-Python-01-Introduction](SMT/Z3-API/Z3-Python-01-Introduction.ipynb) · [C#](SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb) | Python / .NET | Premier solve() : booléens, entiers, solveur, modèle | 3 |
+| 02 | [Z3-Python-02-Sudoku](SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) · [C#](SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb) | Python / .NET | Sudoku 9×9 par contraintes, propagation, unicité | 3 |
+| 03 | [Z3-Python-03-Tactics](SMT/Z3-API/Z3-Python-03-Tactics.ipynb) · [C#](SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb) | Python / .NET | Tactiques (simplify, solve-eq, bit-blast), combinaison de solveurs | 3 |
+| 04 | [Z3-Python-04-Strings-Regex](SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) · [C#](SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb) | Python / .NET | Théorie des chaînes, regex, exemples Sphinx | 3 |
+| 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) · [C#](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
+| 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) · [C#](SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
+| **Z3-API patterns impératifs (Python)** |   |   |   |   |
+| 07 | [Z3-Python-07-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
+| 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
+| 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
+| 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |
+| 11 | [Z3-Python-11-Graph-Coloring](SMT/Z3-API/Z3-Python-11-Graph-Coloring.ipynb) | Python | Coloration de graphes, k-coloriage, contraintes de différence | 3 |
+| 12 | [Z3-Python-12-Real-Arithmetic](SMT/Z3-API/Z3-Python-12-Real-Arithmetic.ipynb) | Python | Arithmétique réelle, contraintes linéaires, comparaison | 3 |
+| 13 | [Z3-Python-13-UnsatCores](SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | Python | Unsat cores, extraction de sous-ensembles incohérents | 3 |
+| 14 | [Z3-Python-14-BitVectors-Overflow](SMT/Z3-API/Z3-Python-14-BitVectors-Overflow.ipynb) | Python | Bit-vectors, overflow, unsigned/signed, wrap-around | 3 |
+| 15 | [Z3-Python-15-Nested-Arrays-2D](SMT/Z3-API/Z3-Python-15-Nested-Arrays-2D.ipynb) | Python | Tableaux imbriqués, select/store, modèles 2D | 3 |
+| **Capstone Meal Planner (16..16e)** |   |   |   |   |
+| 16 | [Z3-Python-16-Meal-Planner](SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | Python | Modélisation du problème de planification de repas | 3 |
+| 16b | [Z3-Python-16b-Meal-Planner-Data-External](SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb) | Python | Données externes (CSV, JSON), intégration | 3 |
+| 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
+| 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
+| 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
+| 17 | [Z3-Python-17-Array-Theory](SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
+| 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-Python-18-Sudoku-Modes.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
+| **Z3-Linq2Z3 (C# déclaratif)** |   |   |   |   |
+| 1 | [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
+| 2 | [02_Sudoku_Theorem_vs_Array](SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | .NET C# | Sudoku : approche theorem vs Array via LINQ | 3 |
+| 3 | [03_Sudoku_Modes_Comparison](SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | .NET C# | Comparaison des modes Sudoku (standard, jigsaw, killer) | 3 |
+| 4 | [04_Array_Theory](SMT/Z3-Linq2Z3/04_Array_Theory.ipynb) | .NET C# | Array theory appliquée via LINQ | 3 |
+| 5 | [05_Nested_Arrays_2D](SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb) | .NET C# | Tableaux imbriqués 2D, bindings LINQ | 3 |
+| 6 | [06_Meal_Planner_Modelisation](SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.ipynb) | .NET C# | Modélisation déclarative du Meal Planner | 3 |
+| 7 | [07_Meal_Planner_Data_External](SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb) | .NET C# | Données externes via LINQ-to-Z3 | 3 |
+| 8 | [08_Meal_Planner_Patient_Capstone](SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb) | .NET C# | Capstone patient, contraintes médicales | 3 |
+| 9 | [09_Meal_Planner_Convergence_Scale](SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb) | .NET C# | Convergence et passage à l'échelle | 3 |
+| 10 | [10_Witness_Generation_Automata](SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) | .NET C# | Génération de témoins via automates | 3 |
+| 11 | [11_Job_Shop_Scheduling](SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) | .NET C# | Job-shop scheduling, précédences, machines | 3 |
+| 12 | [12_Graph_Coloring_Petersen](SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb) | .NET C# | Coloration du graphe de Petersen | 3 |
+| 13 | [13_Cryptarithmetic_SMT](SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) | .NET C# | Cryptarithmétique via LINQ | 3 |
+| 14 | [14_Optimize_MaxSAT](SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) | .NET C# | Optimisation MaxSAT, Pareto | 3 |
+| 15 | [15_BitVectors_Overflow](SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb) | .NET C# | Bit-vectors Z3.Linq, overflow | 3 |
+| 16 | [16_RealArithmetic](SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb) | .NET C# | Arithmétique réelle via Z3.Linq | 3 |
+| 17 | [17_UnsatCores](SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) | .NET C# | Unsat cores en C# | 3 |
+| 18 | [18_Einsteins_Riddle](SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb) | .NET C# | Énigme d'Einstein en LINQ déclaratif | 3 |
+
+### Kernels et packages
+
+- **Z3-API (Python)** : `pip install z3-solver` — notebooks 01..06 + 07..18, kernel Python 3.10+
+- **Z3-API (jumeaux C#)** : `dotnet add package Z3.Linq` — notebooks `*-Csharp.ipynb` (01..06), kernel `.NET Interactive`
+- **Z3-Linq2Z3 (C#)** : binding `Z3.Linq` natif — notebooks 01..18, kernel `.NET Interactive`
+
+> Note : Les notebooks C# SMT dépendent de `dotnet-interactive` fonctionnel. Sur Windows, la policy d'exécution peut bloquer `dotnet-interactive.exe` (Win32Exception 4551) — fix `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` en admin PowerShell.
+
+Documentation complète : [SMT/README.md](SMT/README.md)
 
 ---
 
@@ -378,14 +463,13 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 
 ## Autres Notebooks
 
-### Optimisation et Contraintes (2 notebooks)
+### Optimisation et Contraintes (1 notebook)
 
 | Notebook | Kernel | Contenu | Exercices |
 |----------|--------|---------|-----------|
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Problème de Stigler, programmation linéaire avec OR-Tools | 2 |
-| [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 
-Le notebook Z3 inaugure la série [SMT/Z3-Linq2Z3/](SMT/Z3-Linq2Z3/README.md) (SMT declaratif via Z3.Linq), regroupée avec la série Python [SMT/Z3-API/](SMT/Z3-API/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
+> Note : La série SMT / Z3 (46 notebooks) est traitée dans la section dédiée ci-dessus. La série Z3 (LINQ C# + Python) et ses capstones Meal Planner font partie de la Phase 4 Applications.
 
 ---
 
@@ -401,10 +485,25 @@ SymbolicAI/
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (28 notebooks : 18 proof natifs + 10 companions Python/WSL)
-│   ├── Lean-1-Setup.ipynb ... Lean-18-Search-AStar-Optimality.ipynb
+├── Lean/                      # Serie Lean 4 (33 notebooks : 18 proof natifs + 15 companions Python/WSL)
+│   ├── Lean-1-Setup.ipynb ... Lean-23-Galois-Probleme-Inverse-M23.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
+│   ├── conway_lean/            # Companion lean du Lean-16 (ports natifs Game of Life, FRACTRAN)
+│   ├── grothendieck_lean/      # Companion lean du Lean-15 (atelier Micro-Formalisation)
+│   ├── sensitivity_lean/       # Companion lean du Lean-12 (Huang 2019)
+│   ├── knot_lean/              # Companion lean du Lean-17 (noeuds de Conway)
+│   ├── galois_lean/            # Companion lean du Lean-23 (M₂₃ simple, PR #10486)
+│   ├── mimo_lean/              # Companion lean du Lean-22 (détection MIMO)
+│   ├── calibration_lean/       # Companion lean du Lean-14 (finitude des dérivées)
+│   ├── finiteness_lean/        # Companion lean du Lean-14 (finitude Mathlib)
+│   ├── mathlib_examples/       # Exemples Mathlib
+│   ├── examples/               # Exemples Lean (assistés LLM)
+│   ├── agent_tests/            # Tests harnais Lean
+│   ├── tests/                  # Tests unitaires Lean
+│   ├── assets/                 # Figures, snippets .lean
+│   ├── _run_lean_snippet.sh    # Script WSL exécution snippet
+│   ├── install_wsl_kernel.md   # Doc install kernel `Lean 4 (WSL)`
 │   └── README.md
 │
 ├── SemanticWeb/               # Web semantique (25 notebooks : 13 C# + 12 Python, incluant RDF.Net-Legacy)
@@ -445,13 +544,16 @@ SymbolicAI/
 │   ├── reference/             # Notes AIMA ch. 19
 │   └── README.md
 │
-├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories)
+├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories) — 46 notebooks (cf. marqueur CATALOG-STATUS)
 │   ├── Z3-Linq2Z3/             # Serie Z3.Linq C# (SMT declaratif via LINQ) (18 notebooks)
 │   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
-│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (24 notebooks : 18 Python [01..06 + 07..18] + 6 jumeaux C# sur 01..06)
-│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-06-Advanced-Optimization.ipynb (+ *-Csharp)
+│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (28 notebooks : 22 Python [01..18 dont 16b-16e] + 6 jumeaux C# sur 01..06)
+│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-18-Sudoku-Modes.ipynb (+ *-Csharp pour 01..06)
 │   │   └── README.md
+│   ├── Z3.Linq/                # Submodule / package a part (solutions/polyglot-repro CrossSubmissionCaptureRepro.ipynb) — support
+│   ├── Automata/               # Submodule support (temoignages, generation de witnesses)
+│   ├── Resharp/                # DLLs natives .deploy — support non pedagogique
 │   └── README.md              # Chapeau SMT
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
 │
@@ -587,7 +689,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | **PySAT** | Solveurs SAT natifs | Tweety |
 | **Clingo** | Answer Set Programming | Tweety |
 | **SPASS / EProver** | Prouveurs de théorèmes | Tweety |
-| **Z3** | SMT solver | Tweety, Z3 |
+| **Z3** | SMT solver | SMT, Tweety |
 | **elan / Lean 4** | Proof assistant | Lean |
 | **Mathlib4** | Bibliothèque maths Lean | Lean |
 | **Semantic Kernel** | Orchestration LLM | Argument Analysis, Lean |
@@ -737,7 +839,9 @@ Les huit domaines ci-dessus ne sont pas huit sujets indépendants : ils forment 
 - **Apprendre** à partir de connaissances plutôt que de données brutes (SymbolicLearning : de l'induction logique aux pipelines neuro-symboliques).
 - **Relier** ce pipeline aux LLMs (Argument Analysis : le symbolique comme garde-fou vérifiable du génératif).
 
-La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis).
+Ce pipeline n'est pas une simple énumération — c'est un **cercle**. Une décision Z3 (SMT) peut être certifiée par une preuve Lean (prouveurs externes au format SMT-LIB) ; un planificateur PDDL (Planners) peut s'exécuter sur une blockchain (SmartContracts) en garantissant que le plan n'a pas été altéré ; un argument détecté par LLM (Argument Analysis) peut être formalisé en logique Tweety, validé par un prouveur, puis rejoué dans un notebook d'apprentissage (SymbolicLearning). La **boucle complète** est ce que chaque sous-série contribue à fermer, par un bout différent. C'est aussi pourquoi les **companions Lean** (Tweety-5b, Planners-5b, sensitivity_lean) ne sont pas des sous-produits : ce sont les **points de certification** où le symbolique passe du raisonnement plausible à la **preuve vérifiée**.
+
+La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis). La série couvre ainsi toute la **bande passante** entre la logique formelle pure et le déploiement industriel — depuis le toy example du croque-mort qui raisonne sur Tweety jusqu'au solveur Z3 qui valide un billion d'instructions cryptographiques sur une blockchain. C'est cette **amplitude** qui fait la cohérence de la famille, et qui rend chacun des huit domaines plus profond quand on l'aborde avec les sept autres en tête.
 
 ### Prochaines étapes
 

@@ -42,6 +42,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: pedagogy-density-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pedagogy-density-advisory:
     name: "Pedagogy density >= 1200 c/cell advisory (label, non-blocking)"

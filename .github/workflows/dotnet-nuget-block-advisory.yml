@@ -46,6 +46,10 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: dotnet-nuget-block-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   dotnet-nuget-block-advisory:
     name: ".NET exec-block-without-nuget advisory (label, non-blocking)"
