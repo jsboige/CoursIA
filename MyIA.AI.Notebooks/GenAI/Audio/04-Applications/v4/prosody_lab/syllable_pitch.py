@@ -30,12 +30,28 @@ Env: base Python 3.13 has librosa 0.11 / numpy / scipy / matplotlib / soundfile.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
+
+
+def _module_sha256() -> str:
+    """Short SHA-256 of this module's own source (first 16 hex chars).
+
+    Surfaced in every verdict so the consumer can tell *which* version of
+    the instrument rendered the reading. The bug class this closes:
+    a constant value coming from the instrument instead of from the
+    audio. Without the SHA, two runs on different module versions are
+    indistinguishable — and a stale or pinned version that returns 120
+    for every clip reads the same as a fresh version that varies.
+    """
+    h = hashlib.sha256()
+    h.update(Path(__file__).resolve().read_bytes())
+    return h.hexdigest()[:16]
 
 # Reuse the validated F0 extractor from the global-contour instrument.
 try:
@@ -319,6 +335,8 @@ def analyze_syllables(
         "label": Path(path).stem,
         "duration_s": round(float(len(y) / sr), 2),
         "n_syllables": len(syllables),
+        "syllable_rate_hz": round(len(syllables) / max(float(len(y) / sr), 0.1), 2),
+        "module_sha": _module_sha256(),
         "syllables": syllables,
     }
 
@@ -432,7 +450,11 @@ def plot_score(analyses, out_png: str, title: Optional[str] = None) -> str:
 
 def print_score_table(a: Dict) -> None:
     """Pretty-print the per-syllable note sequence + melodic summary."""
-    print(f"\n=== {a['label']}  ({a['duration_s']}s, {a['n_syllables']} syllables) ===")
+    sha = a.get("module_sha", "?")
+    print(
+        f"\n=== {a['label']}  ({a['duration_s']}s, {a['n_syllables']} syllables, "
+        f"module={sha[:12]}) ==="
+    )
     if not a.get("syllables"):
         print("  insufficient voiced syllables to transcribe")
         return
