@@ -59,7 +59,7 @@ Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les 
 
 ### Phase 3 : Vérification formelle (Lean, ~10h)
 
-La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
+La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Les notebooks 13-18 prolongent avec les hommages aux mathématiciens (Grothendieck, Conway) et les théorèmes fondamentaux (Kochen-Specker, Libre Arbitre, noeuds de Conway, optimalité A*). Les notebooks 19-23, fraîchement intégrés, portent les **théorèmes phares 2026** : conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la conjecture PFR par méthode entropique (Lean-21, lac `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
 
 ### Phase 4 : Applications (SMT + Planners + SmartContracts, ~32h)
 
@@ -181,7 +181,7 @@ Documentation complète : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Vérification Formelle
 
-Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b), les jeux de Conway (Lean-16a/16b/16c/16d/16e) avec ports natifs Lean, les noeuds de Conway (Lean-17a/17b), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14) et l'optimalité A* (Lean-18).
+Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b), les jeux de Conway (Lean-16a/16b/16c/16d/16e) avec ports natifs Lean, les noeuds de Conway (Lean-17a/17b), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14), l'optimalité A* (Lean-18), la conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la méthode entropique de la conjecture PFR (Lean-21, `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538).
 
 ### Structure détaillée
 
@@ -218,11 +218,17 @@ Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 17 | [Lean-17-Knots-a-Conway-and-Proofs](Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Python WSL | Noeuds de Conway : introduction, énoncés, premier port formel adossé à `conway_knots_lean/` | 3 |
 | 17b | [Lean-17-Knots-b-Invariants-Companion](Lean/Lean-17-Knots-b-Invariants-Companion.ipynb) | Python WSL | Companion natif : invariants de noeuds, snippets WSL, sources `conway_knots_lean/` | 3 |
 | 18 | [Lean-18-Search-AStar-Optimality](Lean/Lean-18-Search-AStar-Optimality.ipynb) | Lean 4 / WSL | Preuve d'optimalité A* dans le lake `planners_lean` : consistance, admissibilité, branchement | 3 |
+| **Théorèmes phares 2026** |  |  |  |  |
+| 19 | [Lean-19-Sendov-Complex-Analysis](Lean/Lean-19-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
+| 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb) | Python WSL | Manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 4 |
+| 21 | [Lean-21-PFR-Entropy-Method](Lean/Lean-21-PFR-Entropy-Method.ipynb) | Python WSL | Conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 0 |
+| 22 | [Lean-22-MIMO-Detection-Flips](Lean/Lean-22-MIMO-Detection-Flips.ipynb) | Python WSL | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 3 |
+| 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean/Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Python WSL | Problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 à l'écran (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 3 |
 
 ### Kernels requis
 
 - **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 13, 15 (preuves Lean natives)
-- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 15b, 16a-16c, 16f (setup, LLM, LeanDojo, hommages)
+- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 15b, 16a-16c, 16f, 19-23 (setup, LLM, LeanDojo, hommages, théorèmes phares 2026)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problèmes chemins)
 
@@ -468,10 +474,25 @@ SymbolicAI/
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (28 notebooks : 18 proof natifs + 10 companions Python/WSL)
-│   ├── Lean-1-Setup.ipynb ... Lean-18-Search-AStar-Optimality.ipynb
+├── Lean/                      # Serie Lean 4 (33 notebooks : 18 proof natifs + 15 companions Python/WSL)
+│   ├── Lean-1-Setup.ipynb ... Lean-23-Galois-Probleme-Inverse-M23.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
+│   ├── conway_lean/            # Companion lean du Lean-16 (ports natifs Game of Life, FRACTRAN)
+│   ├── grothendieck_lean/      # Companion lean du Lean-15 (atelier Micro-Formalisation)
+│   ├── sensitivity_lean/       # Companion lean du Lean-12 (Huang 2019)
+│   ├── knot_lean/              # Companion lean du Lean-17 (noeuds de Conway)
+│   ├── galois_lean/            # Companion lean du Lean-23 (M₂₃ simple, PR #10486)
+│   ├── mimo_lean/              # Companion lean du Lean-22 (détection MIMO)
+│   ├── calibration_lean/       # Companion lean du Lean-14 (finitude des dérivées)
+│   ├── finiteness_lean/        # Companion lean du Lean-14 (finitude Mathlib)
+│   ├── mathlib_examples/       # Exemples Mathlib
+│   ├── examples/               # Exemples Lean (assistés LLM)
+│   ├── agent_tests/            # Tests harnais Lean
+│   ├── tests/                  # Tests unitaires Lean
+│   ├── assets/                 # Figures, snippets .lean
+│   ├── _run_lean_snippet.sh    # Script WSL exécution snippet
+│   ├── install_wsl_kernel.md   # Doc install kernel `Lean 4 (WSL)`
 │   └── README.md
 │
 ├── SemanticWeb/               # Web semantique (25 notebooks : 13 C# + 12 Python, incluant RDF.Net-Legacy)
