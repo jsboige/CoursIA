@@ -7,11 +7,12 @@ name: Lean CI (planning_lean)
 # Justifie formellement les heuristiques de relaxation h_max/h_add/FF. Premier Lean lake
 # de la série Planning (roadmap #4038 Tier 2, issue #4053).
 #
-# sorry-filter-mode=standalone-tactic, baseline=0 : la bibliothèque est intégralement
+# sorry-filter-mode=real, baseline=0 : la bibliothèque est intégralement
 # sans sorry ; le théorème phare `relaxed_plan_admissible` (h⁺ ≤ h*) et les lemmas de
 # support (`run_subset_runR`, `runR_mono`) sont prouvés. Ce CI garde qu'AUCUN nouveau
-# `sorry` tactic standalone n'est introduit (jamais de faux positif sur les mentions
-# prose « non-sorry »/« 0 sorry » ; rattrape tout nouveau sorry standalone).
+# `sorry` n'est introduit (jamais de faux positif sur les mentions prose « non-sorry »/
+# « 0 sorry » ; rattrape tout nouveau sorry, y compris `exact sorry`,
+# `theorem foo := by sorry`, `def f : T := sorry`, `<;> sorry`).
 
 on:
   push:
@@ -40,4 +41,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean
       display-name: planning_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

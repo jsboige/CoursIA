@@ -22,6 +22,13 @@
       csharp_sha: f12577ec1f58276b26bcfb9930aa308fc5c2fa73
       content_python_sha: 8799d27d95a3ba205ee59b07ffa12251345eeab00993b60ce653b925fde413a5
       content_csharp_sha: 6650c05a8bc89978437d49fdd10c93a1adf4a5a8eaaa61c5d1f0be21a2c5f364
+    - date: "2026-08-16"
+      by: myia-po-2026:CoursIA-2
+      python_sha: 66381decea4bdb1798db047a50b4d7c2f90c484f
+      csharp_sha: f12577ec1f58276b26bcfb9930aa308fc5c2fa73
+      content_python_sha: 33e78fe34ea0d7d7ebd418fb7018268c2499b691ec6f093b819597abb2484778
+      content_csharp_sha: 6650c05a8bc89978437d49fdd10c93a1adf4a5a8eaaa61c5d1f0be21a2c5f364
+      reason: "Re-exec seq CLEAN 1..16 (#11112 etage 3, cote Python, commit 2ebe8cbff) : moteur HTN up_aries 0.5.0 installe regle F (premier run KO : UPNoSuitableEngineAvailable -- aucun moteur HIERARCHICAL present ; unified_planning 1.3.0 preserve). Divergences documentees C.4 cause (a) env : (1) le run main (python 3.13.12) avait un stdout sans accents alors que le source imprime des chaines accentuees -- le run frais (3.11.9) produit la vraie sortie accentuee, 10 cellules restaurees ; (2) plan aries cell 9 : les deux cotes SOLVED_SATISFICING 7 actions, memes livraisons, ordre des actions different (plans optimaux equivalents, tie-breaking sensible a la version moteur/env). csharp_sha inchange (jumeau C# rebaseline par #11282 plus tot dans la journee)."
   known_differences:
     - "Concept : Hierarchical Task Network (decomposition de taches, methodes, backtracking)."
     - "Python : unified-planning HTN. C# : from-scratch BCL .NET (Predicat grounde, Etat, decomposition de methodes)."

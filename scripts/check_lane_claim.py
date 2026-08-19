@@ -504,6 +504,31 @@ def _empty_scope_in(parts: list[str] | None,
     return [p for p in parts if not _glob_matches_tracked(p, tracked)]
 
 
+def _claim_scope_effectively_epic_wide(ev: ClaimEvent) -> bool:
+    """Return True if `ev`'s declared scope locks ZERO tracked files (#11098).
+
+    Mirrors the #10958 fail-safe used by `_filter_by_claim_scope`: a claim
+    whose `paths:` clause globs ALL fail to match any tracked file is broken,
+    not permissive -- the safe hypothesis is that the lane meant something.
+    An effectively-epic-wide claim intersects any override scope (epic-wide
+    semantics), so the override closes it just like a plain `[CLAIMED]`
+    without a `paths:` clause.
+
+    The witness `empty_scope` is attached by `_run_check` after the tracked
+    walk; reducer-direct callers (unit tests passing events straight in)
+    carry no witness and the helper degrades to False -- no lift, no
+    behaviour change for the unit-test paths. This is the read-side mirror
+    of `_filter_by_claim_scope`'s caller-side lift (#10958 + #11098).
+    """
+    paths = ev.get("paths")
+    if not paths:
+        return False  # the no-`paths` branch is handled by the caller
+    empty = ev.get("empty_scope")
+    if empty is None:
+        return False  # reducer-direct / no witness -> no lift
+    return len(empty) >= len(paths)
+
+
 def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEvent]]:
     """Reduce a chronologically-ordered event list to active claims per lane.
 
@@ -530,14 +555,21 @@ def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEve
             # optional `paths:` clause (#10342, #10505) BOUNDS the "close
             # others" effect to the override's scope instead of closing every
             # other lane unconditionally. An unscoped override keeps the legacy
-            # epic-wide semantics (closes all). A scoped override closes only
-            # claims that INTERSECT it -- where intersection reuses the same
-            # convention as `_filter_by_claim_scope`: a claim with no `paths`
-            # clause is epic-wide (claims everything) so it intersects any
-            # scope and is closed; a scoped claim is closed iff its paths
-            # match the override's (fnmatch via `_path_matches_any`). The
-            # symmetry is deliberate: disjointness must require BOTH sides to
-            # declare a scope, at the reducer just as at the filter.
+            # epic-wide semantics (closes all). A scoped override closes every
+            # claim that does NOT survive its scope test -- the same test as
+            # `_filter_by_claim_scope`: a claim is epic-wide (intersects any
+            # override scope, hence closed) if it carries no `paths:` clause
+            # OR every declared glob fails to match any tracked file (the
+            # `empty_scope` witness attached by `_run_check`, #10958). A
+            # scoped claim with at least one live glob stays scoped and is
+            # closed iff its live paths intersect the override's. The symmetry
+            # with `_filter_by_claim_scope` is deliberate: disjointness must
+            # require BOTH sides to declare a LIVE scope, at the reducer just
+            # as at the filter. (#11098 -- the reducer previously ignored
+            # `empty_scope` entirely, leaving a clause-but-dead claim
+            # uncloseable by any scoped override; the only escape was an
+            # epic-wide override, which swept legitimate scoped claims of
+            # sibling lanes along with the broken one.)
             # Later events (open/close) still apply on top in walk order.
             scope = ev.get("paths")
             if not scope:
@@ -547,7 +579,10 @@ def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEve
                     ln: e for ln, e in state.items()
                     if ln == ev.lane
                     or (
+                        # scoped claim with at least one live glob AND
+                        # disjoint from the override's scope -> keep.
                         e.get("paths") is not None
+                        and not _claim_scope_effectively_epic_wide(e)
                         and not _path_matches_any(scope, e.get("paths") or [])
                     )
                 }

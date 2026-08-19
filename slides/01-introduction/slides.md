@@ -46,7 +46,7 @@ image: ./images/img_001.jpg
     </ul>
   </li>
   <li v-click>Intelligence exploratoire
-    <ul><li>Comment chercher la solution a un probleme ?</li></ul>
+    <ul><li>Comment chercher la solution a un problème ?</li></ul>
   </li>
   <li v-click>Intelligence Symbolique
     <ul><li>Comment utiliser le raisonnement et les mathematiques ?</li></ul>
@@ -58,7 +58,7 @@ image: ./images/img_001.jpg
     <ul><li>Comment tenir compte des autres ?</li></ul>
   </li>
   <li v-click>Apprentissage
-    <ul><li>Comment utiliser les données et l'experience ?</li></ul>
+    <ul><li>Comment utiliser les données et l'expérience ?</li></ul>
   </li>
   <li v-click>Application : le langage naturel</li>
 </ul>
@@ -70,12 +70,12 @@ image: ./images/img_001.jpg
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'etude
+  - Les domaines d'étude
   - Un peu d'histoire
   - L'état de l'art
-- Systemes d'agents
+- Systèmes d'agents
   - Agents rationnels
-  - Environnements taches
+  - Environnements tâches
   - Types d'Agents
 - Presentation des projets de groupe
 
@@ -89,7 +89,7 @@ A l'issue de ce cours, vous serez capables de :
   - Identifier les principaux domaines et leurs applications
   - Disposer des bases pour approfondir chacun d'entre eux
 - **Concevoir des programmes intelligents dans des domaines varies :**
-  - Recherche de solutions et jeux strategiques
+  - Recherche de solutions et jeux stratégiques
   - Representation de connaissances et raisonnement logique
   - Modelisation probabiliste et prise de decision sous incertitude
   - Apprentissage automatique (supervise, non supervise, par renforcement)
@@ -99,13 +99,13 @@ A l'issue de ce cours, vous serez capables de :
 
 # Objectifs du cours (2/2)
 
-- **Concevoir des systemes intelligents en conditions réelles**
-  - Integrer les differentes briques pour construire un systeme complet
+- **Concevoir des systèmes intelligents en conditions réelles**
+  - Integrer les différentes briques pour construire un système complet
   - Gerer les contraintes du monde réel : incertitude, temps de calcul, données imparfaites
-- **BONUS : Mieux comprendre l'intelligence elle-meme**
+- **BONUS : Mieux comprendre l'intelligence elle-même**
   - Comment l'intelligence emerge-t-elle dans la nature ?
   - Comment fonctionne le cerveau humain, et en quoi l'IA s'en inspire ?
-  - Comment definir et mesurer la rationalite ?
+  - Comment définir et mesurer la rationalite ?
 
 ---
 
@@ -116,7 +116,7 @@ A l'issue de ce cours, vous serez capables de :
 <li>Resolution de problemes</li>
 <li>Bases de connaissances et logique</li>
 <li>Raisonnement probabiliste</li>
-<li>Theorie des jeux</li>
+<li>Théorie des jeux</li>
 <li>Apprentissage</li>
 <li>Traitement du langage naturel</li>
 <li>Presentations des projets</li>
@@ -136,12 +136,12 @@ layout: section
 - Presentation du cursus
 - **Introduction**
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'etude
+  - Les domaines d'étude
   - Un peu d'histoire
   - L'état de l'art
-- Systemes d'agents
+- Systèmes d'agents
   - Agents rationnels
-  - Environnements taches
+  - Environnements tâches
   - Types d'agents
 - TP: Mise en place de l'environnement de travail
 - Presentation des projets de groupe
@@ -153,10 +153,10 @@ layout: section
 <img src="./images/img_002.png" style="position:absolute; top:80px; right:20px; width:340px;" alt="Quatre definitions de l'IA" />
 
 - **Des definitions multiples et un concept evolutif**
-  - L'IA n'a pas de definition unique : elle recouvre des<br>approches tres differentes
-  - Concevoir un systeme intelligent n'implique pas de<br>comprendre l'intelligence
+  - L'IA n'a pas de definition unique : elle recouvre des<br>approches très différentes
+  - Concevoir un système intelligent n'implique pas de<br>comprendre l'intelligence
 - **Une definition qui evolue avec la technologie :**
-  - Automates → Calculateurs → Algorithmes →<br>Bases de connaissances → Systemes experts →<br>Apprentissage profond → IA generative
+  - Automates → Calculateurs → Algorithmes →<br>Bases de connaissances → Systèmes experts →<br>Apprentissage profond → IA generative
 
 ---
 
@@ -178,15 +178,15 @@ imageClass: mid-right large
 
 L'IA est une discipline profondement interdisciplinaire :
 
-- **Philosophie :** logique, methodes de raisonnement, nature de l'esprit, langage, apprentissage
+- **Philosophie :** logique, méthodes de raisonnement, nature de l'esprit, langage, apprentissage
 - **Mathematiques :** representation formelle et preuve, algorithmes, calcul, complexite, (in)decidabilite, probabilités
-- **Economie :** utilite, theorie de la decision, theorie des jeux, agents economiques rationnels
+- **Economie :** utilite, théorie de la decision, théorie des jeux, agents economiques rationnels
 - **Biologie :** intelligence naturelle et animale, evolution
 - **Neurosciences :** substrat physique de l'activite mentale (cerveau, neurones, plasticite)
-- **Psychologie :** perception, cognition, controle moteur, comportement, techniques experimentales
+- **Psychologie :** perception, cognition, contrôle moteur, comportement, techniques experimentales
 - **Informatique :** puissance de calcul, logiciel, architectures, langages
-- **Theorie du controle :** maximiser une fonction objective dans le temps, retroaction
-- **Linguistique :** grammaires, representation du sens, semantique
+- **Théorie du contrôle :** maximiser une fonction objective dans le temps, retroaction
+- **Linguistique :** grammaires, representation du sens, sémantique
 
 ---
 layout: image-overlay
@@ -205,7 +205,7 @@ image: ./images/img_004.png
   - Samuel (jeu de dames), Newell & Simon (theoricien logique)
   - Gelernter (geometrie), naissance de Lisp
 - **1965** : Robinson propose un algorithme complet<br>de raisonnement logique
-- **1969-79** : age d'or des systemes experts<br>(bases de connaissances)
+- **1969-79** : age d'or des systèmes experts<br>(bases de connaissances)
 
 ---
 
@@ -214,10 +214,10 @@ image: ./images/img_004.png
 **Maturite et "hivers de l'IA" (1970-2010)**
 
 - **1970s** : l'IA se heurte a la complexite calculatoire -- premier "hiver"
-- **1980s** : l'IA devient une industrie (robotique, vision, systemes experts)
+- **1980s** : l'IA devient une industrie (robotique, vision, systèmes experts)
 - **1986** : retour des reseaux de neurones grace a la retropropagation
 - **1990s** : l'IA se mathematise (probabilités, optimisation)
-- **2000s** : data mining, apprentissage bayesien, web semantique
+- **2000s** : data mining, apprentissage bayesien, web sémantique
 
 **Renaissance et explosion (2010-aujourd'hui)**
 
@@ -360,7 +360,7 @@ image: ./images/img_020.png
 # Penser de facon rationnelle : lois de la raison
 
 - **Depuis Aristote : quels sont les arguments corrects ?**
-  - La logique formelle fournit des regles de derivation rigoureuses
+  - La logique formelle fournit des règles de derivation rigoureuses
 - **La logique au service de l'IA**
   - Representer les faits du monde sous forme formelle
   - Utiliser l'inference pour deduire de nouvelles connaissances
@@ -368,7 +368,7 @@ image: ./images/img_020.png
 - **Limites de l'approche purement logique**
   - Le monde réel est incertain (capteurs imparfaits, information incomplete)
   - Tout comportement intelligent ne relève pas d'une délibération logique
-  - En pratique, il faut aussi definir des buts et evaluer des couts
+  - En pratique, il faut aussi définir des buts et evaluer des couts
 
 ---
 
@@ -379,9 +379,9 @@ image: ./images/img_020.png
 - **Agir rationnellement n'implique pas forcement de penser**
   - Un réflexe (cligner des yeux) peut être rationnel sans délibération
   - Mais la reflexion reste un outil puissant au service de l'action
-- **Lien avec la theorie de la decision**
+- **Lien avec la théorie de la decision**
   - Evaluer les états possibles et les actions disponibles
-  - Maximiser l'utilite esperee, meme sous incertitude
+  - Maximiser l'utilite esperee, même sous incertitude
 - **C'est l'approche centrale de ce cours** : concevoir des agents rationnels
 
 ---
@@ -393,16 +393,16 @@ layout: section
 ---
 
 
-# Systemes d'agents
+# Systèmes d'agents
 
 - Presentation du cursus
 - Introduction
   - Qu'est-ce que l'intelligence artificielle?
-  - Les domaines d'etude
+  - Les domaines d'étude
   - Un peu d'histoire
   - L'état de l'art
 - **Agents rationnels**
-- **Environnements taches**
+- **Environnements tâches**
 - **Types d'agents**
 - TP: Mise en place de l'environnement de travail
 - Presentation des projets de groupe
@@ -434,7 +434,7 @@ image: ./images/img_021.png
 - **Decision basee sur** : la suite des percepts recus et les connaissances prealables
 - **Rationnel ne signifie pas omniscient**
   - L'agent explore pour completer ses connaissances
-  - Il s'adapte par l'experience (apprentissage)
+  - Il s'adapte par l'expérience (apprentissage)
   - Il est reactif *et* proactif
 
 ---
@@ -469,7 +469,7 @@ image: ./images/img_021.png
 
 ---
 
-# Environnement de tache
+# Environnement de tâche
 
 **Description PEAS:**
 - **P**erformance (Mesure de)
@@ -489,7 +489,7 @@ image: ./images/img_021.png
 
 ---
 
-# Environnements de tache: exemples
+# Environnements de tâche: exemples
 
 <div class="center-image">
 <img src="./images/img_028.png" style="max-width: 800px; margin: auto; display: block;">
@@ -499,14 +499,14 @@ image: ./images/img_021.png
 
 # Types d'environnement (1/2)
 
-Chaque environnement de tache possede des proprietes qui influencent la conception de l'agent :
+Chaque environnement de tâche possede des proprietes qui influencent la conception de l'agent :
 
 - **Completement vs partiellement observable**
   - L'agent a-t-il acces a l'etat complet de l'environnement ?
-- **Deterministe vs stochastique**
+- **Déterministe vs stochastique**
   - L'etat suivant est-il entierement determine par l'état courant et l'action ?
-  - Cas particulier : *strategique* = deterministe sauf les actions des autres agents
-- **Episodique vs sequentiel**
+  - Cas particulier : *stratégique* = déterministe sauf les actions des autres agents
+- **Episodique vs séquentiel**
   - Les decisions sont-elles independantes ou liees entre elles ?
 - **Statique vs dynamique**
   - L'environnement change-t-il pendant que l'agent delibere ?
@@ -530,13 +530,13 @@ Chaque environnement de tache possede des proprietes qui influencent la concepti
 <div v-click="3">
 
 - **Connu vs inconnu**
-  - L'agent connait-il les regles de l'environnement ?
+  - L'agent connait-il les règles de l'environnement ?
 
 </div>
 
 <div v-click="4">
 
-**En pratique**, le monde réel combine les cas les plus difficiles : partiellement observable, stochastique, sequentiel, dynamique, continu, multiagent.
+**En pratique**, le monde réel combine les cas les plus difficiles : partiellement observable, stochastique, séquentiel, dynamique, continu, multiagent.
 
 </div>
 
@@ -585,7 +585,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 - **Pas de memoire**
 - **Percepts courants**
-- **Regles Conditions / Actions**
+- **Règles Conditions / Actions**
 
 <div v-click="1">
 
@@ -611,7 +611,7 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 <img src="./images/img_035.png" style="position:absolute; bottom:30px; right:30px; width:320px; background:white; padding:4px; border-radius:4px;" alt="Pseudocode agent fonde sur un modèle" />
 
-**Caracteristiques :**
+**Caractéristiques :**
 
 - Etat du monde
 - Historique des percepts
@@ -666,10 +666,10 @@ Un agent naif pourrait stocker une table "percepts → action" :<br>la table ser
 
 **Quatre composants internes :**
 
-- **Element de performance** : choisit les actions
-- **Element d'apprentissage** : ameliore la performance<br>a partir de l'experience
-- **Critique** : evalue les resultats par rapport a un standard fixe
-- **Generateur de problemes** : suggere des actions exploratoires
+- **Élément de performance** : choisit les actions
+- **Élément d'apprentissage** : ameliore la performance<br>a partir de l'expérience
+- **Critique** : evalue les résultats par rapport a un standard fixe
+- **Générateur de problemes** : suggere des actions exploratoires
 
 **Formes d'apprentissage :** supervise, par renforcement, non supervise
 
@@ -726,7 +726,7 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 <li>Resolution de problemes</li>
 <li>Bases de connaissances et logique</li>
 <li>Raisonnement probabiliste</li>
-<li>Theorie des jeux</li>
+<li>Théorie des jeux</li>
 <li>Apprentissage</li>
 <li>Traitement du langage naturel</li>
 <li>Presentations des projets</li>
@@ -738,13 +738,13 @@ Trois niveaux de representation des etats, du plus simple au plus expressif :
 
 Chaque chapitre du cours est accompagne de travaux pratiques sous forme de notebooks Jupyter :
 
-- **Exploration** : `Search/Part1-Foundations/` (11 notebooks), `Search/Part2-CSP/` (9 notebooks), `Sudoku/` (16 notebooks) -- recherche, CSP, algorithmes genetiques, optimisation
+- **Exploration** : `Search/Part1-Foundations/` (11 notebooks), `Search/Part2-CSP/` (9 notebooks), `Sudoku/` (16 notebooks) -- recherche, CSP, algorithmes génétiques, optimisation
 - **Logique** : `SymbolicAI/` -- Z3, Tweety, Lean 4, argumentation, smart-contracts
 - **Probabilités** : `Probas/Infer/` -- inference bayesienne, reseaux de decision (Infer.NET)
 - **Jeux** : `GameTheory/` -- equilibres de Nash, jeux bayesiens, MARL (OpenSpiel)
 - **Apprentissage** : `ML/` -- classification, regression, renforcement (ML.NET)
 - **IA Generative** : `GenAI/` -- Image (19 notebooks), Audio (16), Video (16), Texte (10)
-- **Trading** : `QuantConnect/` -- 28 notebooks + 67 strategies backtestees
+- **Trading** : `QuantConnect/` -- 28 notebooks + 67 stratégies backtestees
 
 > **Depot :** `github.com/jsboige/CoursIA` > dossier `MyIA.AI.Notebooks/`
 

@@ -12,7 +12,14 @@ name: Lean CI (learning_theory_lean)
 # The bound `novikoff_mistake_bound` is proved fully 0-sorry via alignment growth
 # (Lemme A) + norm growth (Lemme B) + Cauchy–Schwarz.
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the library is fully sorry-free;
+# sorry-filter-mode=real, baseline=0: the library is fully sorry-free;
+# this guards that NO new compiled-tactic `sorry` form is introduced
+# (`exact sorry`, `:= by sorry`, bare `sorry`, `sorry -- c`). `real`
+# = canonical awk (lean-build.yml:111-134) + word-bounded grep, the
+# prover harness `count_real_sorries` (FX-6 #1453). Top-level prose
+# mentions of "0-sorry"/"sans sorry" are inside `--` line comments
+# stripped by the awk depth-tracking — they’re NEVER counted. All
+# milestones (Novikoff bound, both growth lemmas) are proved.
 # this guards that NO new standalone `sorry` tactic is introduced (never
 # false-positives on prose mentions of "0-sorry"/"sans sorry"; catches any NEW
 # standalone sorry). All milestones (Novikoff bound, both growth lemmas) are proved.
@@ -44,4 +51,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/ML/learning_theory_lean
       display-name: learning_theory_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
