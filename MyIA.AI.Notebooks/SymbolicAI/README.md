@@ -63,11 +63,11 @@ La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les 
 
 ### Phase 4 : Applications (SMT + Planners + SmartContracts, ~32h)
 
-Trois séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **résolution SMT** (46 notebooks : 28 Z3-API Python + C# jumeaux + 18 Z3-Linq2Z3 C#) constitue la passerelle naturelle entre la Phase 3 (Lean, vérification formelle) et les solveurs industriels : Z3 (Microsoft Research) en API impérative Python (z3-py) et en binding déclaratif C# (Z3.Linq + LINQ). Couvre arithmétique linéaire, bit-vectors, tableaux, chaînes, MaxSAT, cryptarithmes, et capstones `Meal Planner` (série 16..16e). La **planification automatique** (23 notebooks : 13 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+Trois séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **résolution SMT** (46 notebooks : 28 Z3-API Python + C# jumeaux + 18 Z3-Linq2Z3 C#) constitue la passerelle naturelle entre la Phase 3 (Lean, vérification formelle) et les solveurs industriels : Z3 (Microsoft Research) en API impérative Python (z3-py) et en binding déclaratif C# (Z3.Linq + LINQ). Couvre arithmétique linéaire, bit-vectors, tableaux, chaînes, MaxSAT, cryptarithmes, et capstones `Meal Planner` (série 16..16e). La **planification automatique** (23 notebooks : 13 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956, et 1 companion natif Lean Planners-5b-Lean-Relaxation qui formalise la relaxation h-add dans le lake `planners_lean`) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
-Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (24 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 13 notebooks d'analyse Dung/ranking/routage/restitution, plus 1 groupe-I2 contre-arguments ASPIC, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
+Si vous vous intéressez au croisement IA symbolique / IA neuronale, la série Argument Analysis (25 notebooks : 10 `Agentic-*` d'orchestration — 6 principaux + 4 traces d'exécution `_agent` — et 14 notebooks d'analyse Dung/ranking/routage/restitution, plus 1 groupe-I2 contre-arguments ASPIC, adossés au port verbatim des sources Argumentum EPITA-IS, EPIC #4960) implémente un pipeline multi-agents avec Semantic Kernel : détection de sophismes par LLM, formalisation en logique propositionnelle, et validation par TweetyProject. C'est une démo concrète du pont entre les deux paradigmes, présupposant les bases de Tweety (Phase 1) et un accès API OpenAI.
 
 ### Parcours alternatif : Apprentissage symbolique (SymbolicLearning, ~9h30)
 
@@ -498,7 +498,7 @@ SymbolicAI/
 │   ├── 06-Real-World/         # SC-23 a SC-26 (Cross-chain, Deploy, Project)
 │   └── README.md
 │
-├── Argument_Analysis/         # Analyse argumentative (22 notebooks : 10 Agentic + 11 analytiques + 1 groupe-I2 ASPIC ; sources Argumentum verbatim EPIC #4960)
+├── Argument_Analysis/         # Analyse argumentative (25 notebooks : 10 Agentic + 14 analytiques + 1 groupe-I2 ASPIC ; sources Argumentum verbatim EPIC #4960)
 │   ├── Argument_Analysis_Agentic-0-init.ipynb ... UI_configuration.ipynb
 │   ├── Argument_Analysis_ArgumentProfile.ipynb ... Restitution_3_Actes.ipynb
 │   │   # 12 modules Argumentum/EPITA-IS verbatim port EPIC #4960 MERGED
@@ -680,7 +680,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | Tweety (Python/JPype + C#/.NET) | 32 | 31 pédagogiques (13 Python + 18 C# jumeaux) | 1 Probe (`_probes/Tweety-IKVM-Init-Probe`, non pédagogique) | Très bon |
 | Lean (proofs natifs + companions Python) | 31 | 28 (90%) | 3 (Lean-1-Setup + Lean-7b-Examples + Lean-21-PFR) | Très bon |
 | SemanticWeb (C# + Python) | 25 | 25 pédagogiques (13 C# incluant RDF.Net-Legacy + 12 Python) | 0 | Très bon |
-| Planners (PDDL classique + neuro-symbolique) | 23 | 22 pédagogiques (13 Python + 9 C# jumeaux) | 1 (Planners-0-Setup) ; archive Fast-Downward-Legacy hors compte | Très bon |
+| Planners (PDDL classique + neuro-symbolique) | 23 | 23 pédagogiques (13 Python + 9 C# jumeaux + 1 Lean companion Planners-5b-Lean-Relaxation) | 1 (Planners-0-Setup) ; archive Fast-Downward-Legacy hors compte | Très bon |
 | SmartContracts | 27 | 27 (100%) | 0 | Excellent |
 | Argument Analysis (Argumentum + Agentic demo) | 25 | 21 (84%) | 4 (Argument_Analysis_Agentic-0-init + 3 Agentic demo, dont le `_0-init` est le setup projet) | N/A (projet) |
 | SymbolicLearning (AIMA ch. 19 + SL-12 differentiable logic gates) | 20 | 18 (90%) | 2 (`_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, archives) | Excellent |
