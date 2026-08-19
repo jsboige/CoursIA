@@ -331,8 +331,8 @@ def test_fence_line_indices_skip_only_enclosed_lines():
     assert indices == {5, 6, 7, 8, 9, 10}, (
         f"expected only the body lines inside the fence to be flagged, got {sorted(indices)}"
     )
-    assert unterminated is False, (
-        "a well-formed fence (opener + closer) must NOT be reported unterminated"
+    assert unterminated is None, (
+        "a well-formed fence (opener + closer) must NOT report an orphan opener"
     )
 
 
@@ -474,11 +474,13 @@ def test_unterminated_fence_helper_pins_true_on_founder_body():
     assert _check_unterminated_fence(L11678_FOUNDER_BODY) is True, (
         "orphan opener on founder body must raise unterminated_fence"
     )
-    # Direct: the tuple's second element also carries the flag.
-    indices, unterminated = _fence_line_indices(L11678_FOUNDER_BODY)
-    assert unterminated is True, (
-        "_fence_line_indices must report unterminated_at_eof when an opener "
-        "is never closed"
+    # Direct: the tuple's second element carries the orphan opener's line
+    # index (#11723) -- pinned, not just boolean: founder body lines are
+    # 0:"intro", 1:"```", so the orphan opener is 0-based index 1.
+    indices, orphan_opener = _fence_line_indices(L11678_FOUNDER_BODY)
+    assert orphan_opener == 1, (
+        f"_fence_line_indices must return the orphan opener's 0-based index "
+        f"(1 on the founder body), got {orphan_opener!r}"
     )
     # The flag must NOT silently swallow the closing state: every line from
     # the orphan opener onward (but NOT the opener itself) is in the set.
@@ -506,8 +508,8 @@ def test_unterminated_fence_helper_pins_false_on_closed_fence():
         "a fully closed fence must NOT trip unterminated_fence"
     )
     indices, unterminated = _fence_line_indices(body)
-    assert unterminated is False, (
-        "well-formed opener+closer must report unterminated_at_eof=False"
+    assert unterminated is None, (
+        "well-formed opener+closer must report no orphan opener (None)"
     )
     # Opener and closer are NOT in the set; the body line IS in the set.
     assert 1 not in indices and 3 not in indices, (
@@ -535,8 +537,8 @@ def test_unterminated_fence_propagates_through_select_candidates():
     )
     items = [{"kind": "body", "author": "owner", "body": body_closed, "source": "body"}]
     cands, unterminated = select_candidates(items)
-    assert unterminated is False, (
-        "closed body must NOT trip unterminated_body_fence"
+    assert unterminated is None, (
+        "closed body must NOT report an orphan opener"
     )
     assert all(check_assertion(FILES_OK, c.text) == [] for c in cands), (
         "matching prose claim over the right perimeter must still pass"
@@ -552,9 +554,9 @@ def test_unterminated_fence_propagates_through_select_candidates():
         "source": "body",
     }]
     cands_bad, unterminated_bad = select_candidates(items_bad)
-    assert unterminated_bad is True, (
-        "founder body with orphan opener must propagate the flag "
-        "through select_candidates"
+    assert unterminated_bad == 1, (
+        "founder body with orphan opener must propagate its 0-based line "
+        "index (1) through select_candidates, not just a boolean"
     )
     # The body line of the founder case still surfaces as a candidate
     # (the orphan fence does NOT swallow the line for the perimeter
@@ -567,6 +569,42 @@ def test_unterminated_fence_propagates_through_select_candidates():
     ), (
         "orphan fence swallows the post-opener line from the scan; "
         "this is the silent-no-op shape #11678 measures"
+    )
+
+
+def test_orphan_opener_line_is_pinned_on_founder_case():
+    """#11723 acceptance 3: the orphan opener's line number is PINNED at both
+    levels, not just its existence. An index that is off by one localizes the
+    defect to the wrong line -- worse than no index at all, because the
+    reviewer stops trusting the notice (``assert is not None`` would let an
+    index of 0, 2 or 4 pass silently).
+
+    Founder #11678 body layout (0-based): 0 "intro", 1 "```" (orphan opener,
+    never closed), 2 "$ echo hi", 3 "", 4 "Perimetre : ...". The orphan
+    opener is therefore 0-based index 1 -- printed as line 2 (1-based) in the
+    ``UNFINISHED_FENCE`` notice.
+    """
+    _, opener = _fence_line_indices(L11678_FOUNDER_BODY)
+    assert opener == 1, (
+        f"founder body's orphan opener sits at 0-based index 1, got {opener!r}"
+    )
+    _, propagated = select_candidates([{
+        "kind": "body",
+        "author": "owner",
+        "body": L11678_FOUNDER_BODY,
+        "source": "body",
+    }])
+    assert propagated == 1, (
+        f"select_candidates must carry the same pinned index, got {propagated!r}"
+    )
+
+    # Off-by-one guard: an orphan opener placed one line lower must pin one
+    # index lower -- the value must track the opener's actual position, not
+    # a constant.
+    body_lower = "intro\ntitle\n```\n$ echo hi\n"
+    _, opener_lower = _fence_line_indices(body_lower)
+    assert opener_lower == 2, (
+        f"opener moved to 0-based index 2 must be reported as 2, got {opener_lower!r}"
     )
 
 
