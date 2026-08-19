@@ -300,6 +300,47 @@ def _markers_all_quoted(line: str) -> bool:
     return True
 
 
+def _fence_line_indices(text: str) -> set[int]:
+    """Return the 0-based indices of lines that sit INSIDE a markdown fence.
+
+    Mirrors the existing _quote_spans exemption idea: a fence is transcription,
+    never an author's own claim. Workers document their L898 cross-lane
+    verification in fences (command output verbatim), and that transcription
+    carries file counts ("0 fichiers en commun") that would otherwise be
+    mis-extracted as authorial perimeter assertions. Issue #11670 founder
+    case: PR #11664 body contains L898 proof in a fenced block; the line
+    "0 fichiers en commun avec les autres PR" sits inside the fence without
+    the fence delimiters on the line itself, so the line-level scanner used
+    by `--scan-thread` would otherwise surface it. The check is line-based
+    and O(n) once per text.
+
+    Fence delimiters are lines starting with three or more backticks OR
+    three or more tildes. The closing delimiter matches either family.
+    Delimiter lines themselves are NOT in the returned set (only the lines
+    they enclose).
+    """
+    indices: set[int] = set()
+    in_fence = False
+    for idx, raw_line in enumerate(text.splitlines()):
+        stripped = raw_line.lstrip()
+        # A closing delimiter closes the fence BEFORE we record this line:
+        # the delimiter itself is not part of the fenced body.
+        if in_fence and (stripped.startswith("`" * 3) or stripped.startswith("~" * 3)):
+            in_fence = False
+            continue
+        if not in_fence:
+            # Open the fence on the next iteration.
+            if (stripped.startswith("`" * 3) and len(stripped) >= 3) or (
+                stripped.startswith("~" * 3) and len(stripped) >= 3
+            ):
+                in_fence = True
+            continue
+        # We're inside a fence (opening was on a previous line, no closing on
+        # this one). Add this line to the set.
+        indices.add(idx)
+    return indices
+
+
 def extract_perimeter_assertions(text: str) -> list[str]:
     """Pull candidate perimeter assertions from review/PR prose.
 
@@ -329,9 +370,12 @@ def extract_perimeter_assertions(text: str) -> list[str]:
     must stay caught -- a backlink exemption would also be a trivial
     evasion.
     """
+    fence_indices = _fence_line_indices(text)
     candidates: list[str] = []
-    for line in text.splitlines():
-        line = line.strip()
+    for idx, raw_line in enumerate(text.splitlines()):
+        if idx in fence_indices:
+            continue  # Issue #11670 founder case: L898 transcription, not an authorial claim
+        line = raw_line.strip()
         if not line:
             continue
         if line.startswith("|"):

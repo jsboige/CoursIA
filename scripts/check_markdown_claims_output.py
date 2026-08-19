@@ -191,6 +191,146 @@ def _strip_md_structure(src: str) -> str:
     return "\n".join(kept)
 
 
+# Tokens that, when appearing immediately before a number, mark the
+# number as a version reference (not a quantitative claim). Case
+# insensitive, word-boundary anchored. The list is OPEN: c.366 FP
+# manifest opened on SMT-LIB 2.6, Python 3.10, .NET 9.0, PEP 8,
+# Mathlib 4, CUDA 12.x, pandas 2.x, Version=10.0.0, v2.5, Lean 4.
+_VERSION_PREFIX_RE = re.compile(
+    r"(?i)\b(?:"
+    r"smt[-\s]?lib|sm[-\s]?lib|smlib|pep\b|python\b|\.?net\b|mathlib\b|"
+    r"cuda\b|pandas\b|pytorch\b|numpy\b|scipy\b|transformers\b|peft\b|"
+    r"bitsandbytes\b|huggingface\b|onnx\b|tensorflow\b|opencv\b|rust\b|"
+    r"cargo\b|java\b|scala\b|kotlin\b|haskell\b|fsharp\b|f#|lean\b|"
+    r"pypy\b|node\.?js?|golang\b|swift\b|angular\b|react\b|next\.?js?|"
+    r"nuxt\b|svelte\b|spark\b|jupyter\b|latex\b|tex\b|miktex\b|"
+    r"matlab\b|simulink\b|qt\b|kde\b|gnome\b|wayland\b|x11\b|"
+    r"sqlite\b|mysql\b|postgres\b|redis\b|kafka\b|nginx\b|apache\b|"
+    r"tomcat\b|maven\b|gradle\b|eslint\b|prettier\b|webpack\b|vite\b|"
+    r"rollup\b|v\b|version\b|ver\b|release\b|rel\b|"
+    r"r\b"
+    r")\s*[=:=]?\s*$"
+)
+
+
+def _is_version_token(prose: str, match_pos: int) -> bool:
+    """Return True if the numeric match at `match_pos` follows a version
+    prefix token (SMT-LIB, Python, .NET, v, Version=).
+
+    Looks at the 30 chars BEFORE the match, looking for the deepest
+    version-prefix token that ends right before the match. Used to skip
+    false positives where the markdown prose names a software version,
+    not a measurement. c.366 / #11694."""
+    prefix_start = max(0, match_pos - 30)
+    prefix = prose[prefix_start:match_pos]
+    # rstrip only trailing whitespace -- the regex anchors on 'end of
+    # stripped prefix' so the literal token must be the LAST thing in
+    # the prefix.
+    stripped = prefix.rstrip()
+    if not stripped:
+        return False
+    return bool(_VERSION_PREFIX_RE.search(stripped))
+
+
+# Hints that mark an inline-code span as QUOTED text (exception message,
+# version string, file path) rather than a measurement. The detector MUST
+# skip these: the notebook reports a literal text, not a number it
+# measured. c.366 / #11694.
+_EXCEPTION_HINT_RE = re.compile(
+    r"(?:" r"Exception|Error|Version=|FileNotFound|PermissionError|"
+    r"ModuleNotFound|ImportError|OSError|RuntimeError|TypeError|"
+    r"ValueError|KeyError|ServerError|ClientError|CudaError|"
+    r"NaN|Inf|\.dll|\.so|\.jar|\.exe|\.pdb|\.lib|"
+    r":[\\\\/]|\\\\Users\\\\|/Users/|:\\\\|/home/|Traceback|"
+    r"assembly|Framework|version|FATAL"
+    r")",
+    re.IGNORECASE,
+)
+
+# Tightened hint set used ONLY for the LINE-scoped fallback. We restrict
+# it to strongly-quoted-text signals so a line that happens to say
+# "kernel" or "error" doesn't suppress unrelated legitimate numerics on
+# the same line.
+_EXCEPTION_LINE_HINT_RE = re.compile(
+    r"(?:Exception|Version=|FileNotFound|Traceback|assembly)\b",
+    re.IGNORECASE,
+)
+
+
+def _in_exception_code_span(src: str, match_pos: int, match_end: int) -> bool:
+    """Return True if the numeric match sits inside an inline code span
+    (between two backticks) whose text carries an exception/version/path
+    hint. The span is then QUOTED text, not a measurement.
+
+    Detection: trace the inline code span containing `match_pos` by
+    counting backticks from the START of the cell (markdown inline
+    spans are toggled by pairs of backticks; unescaped single backticks
+    delimit span boundaries). If the matched span text carries a hint,
+    the number is quoted. c.366 / #11694.
+
+    Fallback: if the SPAN check misses (e.g. quoted assembly string
+    "FSharp.Core.dll 10.x, assembly 10.0.0.0" outside any backtick pair),
+    look at the surrounding LINE -- if the same line carries a hint,
+    the line is reporting a literal text it saw, not measuring. We bound
+    the hint-fallback to a single line so legitimate prose numbers on
+    unrelated lines stay detected.
+    """
+    span_text = _nearest_inline_code_span(src, match_pos)
+    if span_text is not None and _EXCEPTION_HINT_RE.search(span_text):
+        return True
+    # Line-scoped fallback: same-line carries a strongly-quoted-text
+    # signal (Exception / Version= / FileNotFound / Traceback / "assembly
+    # 10.0.0.0" pattern). Distinguishes "talking about a 4.5 in prose"
+    # from "quoting a file that says Version=10.0.0".
+    line_start = src.rfind("\n", 0, match_pos) + 1
+    line_end = src.find("\n", match_end)
+    if line_end < 0:
+        line_end = len(src)
+    line = src[line_start:line_end]
+    return bool(_EXCEPTION_LINE_HINT_RE.search(line))
+
+
+def _nearest_inline_code_span(src: str, pos: int) -> str | None:
+    """Walk backticks inside a 200-char window around `pos` to find the
+    enclosing inline code span (single-backtick convention); return its
+    text or None if the position is not inside a span.
+
+    Algorithm: collect backtick positions in [pos-200, pos+200). Find
+    a PAIR (open, close) such that open < pos < close and no other
+    opening between open and pos. Return src[open+1:close].
+    """
+    WIN = 200
+    lo = max(0, pos - WIN)
+    hi = min(len(src), pos + WIN)
+    window = src[lo:hi]
+    # Find all backtick positions within the window (offset back to
+    # absolute by adding lo).
+    ticks = [lo + i for i, c in enumerate(window) if c == "`"]
+    # Locate pos within the global list
+    pos_idx = -1
+    for i, t in enumerate(ticks):
+        if t <= pos:
+            pos_idx = i
+        else:
+            break
+    if pos_idx < 0:
+        return None
+    # pos sits AFTER ticks[pos_idx]. If that tick is the OPENING of a
+    # span, find the NEXT tick in ticks (the closing one). The span
+    # contains pos iff ticks[pos_idx] < pos < ticks[pos_idx + 1].
+    if pos_idx + 1 >= len(ticks):
+        return None
+    open_pos = ticks[pos_idx]
+    close_pos = ticks[pos_idx + 1]
+    if open_pos >= pos or close_pos <= pos:
+        return None
+    # If there is a tick between open_pos and pos with no matching
+    # closing on the same side, the span structure is ambiguous;
+    # still take the immediately enclosing pair -- it's what
+    # markdown renderers do for adjacent spans.
+    return src[open_pos + 1:close_pos]
+
+
 def check_notebook(path: Path) -> dict:
     """Scan a single notebook. Returns a structured dict compatible with
     JSON serialization (so the script can be consumed by CI gates)."""
@@ -242,11 +382,22 @@ def check_notebook(path: Path) -> dict:
             skipped_no_output += 1
             continue
         out_text = "\n".join(out_chunks)
-        # Extract numeric claims from the markdown prose
-        claims = NUMERIC_RE.findall(prose)
-        for raw in claims:
+        # Extract numeric claims from the markdown prose. We iterate via
+        # finditer so we get (span_start, span_end, raw) for each match
+        # -- this is needed for the version-token and inline-code-span
+        # filters added in c.366 / #11694.
+        for m in NUMERIC_RE.finditer(prose):
+            raw = m.group(0)
+            match_pos = m.start()
+            match_end = m.end()
             norm = _normalize_num(raw)
             if not _substantive(norm):
+                continue
+            # FP filters (c.366): skip version-number citations and
+            # numbers inside quoted exception/version/path spans.
+            if _is_version_token(prose, match_pos):
+                continue
+            if _in_exception_code_span(prose, match_pos, match_end):
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")

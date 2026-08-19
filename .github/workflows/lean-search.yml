@@ -10,10 +10,12 @@ name: Lean CI (search_lean)
 # Renamed astar_lean -> search_lean (lake rename, multi-module vocation: A* proven,
 # future WFC/CSP modules as sibling libs). Lib «Astar» unchanged. See #4365.
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the lake is fully
+# sorry-filter-mode=real, baseline=0: the lake is fully
 # sorry-free across all modules (Graph, Heuristic, Optimality, Consistency).
-# standalone-tactic counts only standalone `sorry` tokens (never false-positives on
-# prose); baseline 0 = any new standalone sorry fails CI. See lean-build.yml.
+# `real` strips `--` and `/- -/` then counts `\bsorry\b` word-bounded
+# (catches `exact sorry`, `theorem foo := by sorry`, `def f : T := sorry`,
+# `<;> sorry`; never false-positives on prose); baseline 0 = any new sorry
+# fails CI. See lean-build.yml.
 
 on:
   push:
@@ -42,4 +44,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/Search/search_lean
       display-name: search_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
