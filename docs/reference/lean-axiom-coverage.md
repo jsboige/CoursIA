@@ -193,20 +193,25 @@ forbidden union : []
 
 | Lake | Workflow `lean-*.yml` | Appelle `lean-axiom.yml` ? | Verdict au gate |
 |---|---|---|---|
-| `knot_lean` | `lean-knot.yml` | OUI (pilote) | GREEN post-#8725 |
-| `conway_lean` | `lean-conway.yml` | **NON** | serait RED (113 tactic uses) |
-| 14 autres lacs | workflows existants | **NON** | GREEN si câblés (sauf 3 borderline sur `Classical.choice`) |
+| `knot_lean` | `lean-knot.yml` | OUI (pilote, c.948) | GREEN post-#8725 |
+| `mimo_lean` | `lean-mimo.yml` | OUI (tranche 1, PR #11699 c.367) | GREEN par défaut (2 `noncomputable def` ⇒ `Classical.choice`, whitelist par défaut `lean-axiom.yml` ; `native_decide`/`sorryAx` absents — mesurés firsthand 2026-08-19 sur commit `1ac8a40e6`) |
+| `conway_lean` | `lean-conway.yml` | OUI (c.951, post-#8746) | GREEN (19 noms `native_decide` whitelistés, `target-modules: "*"` runtime derivation #10889, `fail-on-sorry: false` audit job pour les 8 sorries p4) |
+| `galois_lean` | `lean-galois.yml` | OUI (c.1039) | GREEN (footprint mesuré = whitelist par défaut : `[propext, Classical.choice, Quot.sound]`) |
+| `grothendieck_lean` | `lean-grothendieck.yml` | OUI (post-#8941) | GREEN avec `Classical.choice` whitelisté explicitement (théorie intrinsèquement non-constructive, §3.5) |
+| `sensitivity_lean` | `lean-sensitivity.yml` | OUI (c.101) | GREEN (0 `native_decide`, `Classical.choice` whitelist par défaut) |
+| 15 autres lacs | workflows existants | **NON** | GREEN si câblés (sauf 3 borderline sur `Classical.choice` : `sudoku_lean`, `learning_theory_lean`, `decision_theory_lean`) |
 
-Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du scope #8738 (chaque workflow lake est un livrable à part avec son `target-modules` adapté).
+Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du scope #8738 (chaque workflow lake est un livrable à part avec son `target-modules` adapté). Voir #11699 pour la roadmap tranche-par-tranche des 15 restants (mimo_lean = tranche 1 livrée par PR de cette PR).
 
 ## 5. Acceptance step 3 — verdict
 
 - [x] **knot_lean re-mesuré** : GREEN post-#8725 (cf. [#8738](https://github.com/jsboige/CoursIA/issues/8738) body §« Mesure firsthand »)
-- [x] **conway_lean re-mesuré** : RED — whitelist `native_decide.*` (19 noms explicites) recommandée avec issue nommée `#8749` (triage THEOREME PAR THEOREME)
-- [x] **3 lacs borderline** identifiés : whitelist `Classical.choice` recommandée au câblage futur avec issue nommée par lake
+- [x] **conway_lean re-mesuré** : RED initial — whitelist `native_decide.*` (19 noms explicites) recommandée avec issue nommée `#8749` (triage THEOREME PAR THEOREME) ; GREEN post-câblage (PR #8746 + follow-ups)
+- [x] **mimo_lean câblé (PR #11699 tranche 1)** : GREEN par défaut — `native_decide`/`sorryAx` absents du source, 2 `noncomputable def` ⇒ `Classical.choice` couvert par la whitelist par défaut de `lean-axiom.yml`. `target-modules: "*"` (issue #10889) + `include-i18n-siblings: "true"` énumèrent les 12 modules (Bridge, Converse, Descent, Lmmse, NormTails, Objective + 6 `_en`). Premier lac câblé à layout plat (pas de sous-dossier `Mimo/`, namespace racine `Mimo` par fichier).
+- [x] **3 lacs borderline** identifiés : whitelist `Classical.choice` recommandée au câblage futur avec issue nommée par lake (`sudoku_lean`, `learning_theory_lean`, `decision_theory_lean`)
 - [x] **14 lacs GREEN** : câblage futur sans coût
 
-**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage `lean-conway.yml` → `lean-axiom.yml` est un MED/lean-ci-tooling dédié.
+**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage tranche-par-tranche est suivi sous [#11699](https://github.com/jsboige/CoursIA/issues/11699) (mimo = tranche 1 livrée, 15 restants).
 
 ## 6. Acceptance step 4 — note sur §B.3 pr-review-discipline.md
 
@@ -220,8 +225,8 @@ Le gate `proof-integrity` couvre désormais `native_decide` (post-#8740). La rè
 - PR [#8746](https://github.com/jsboige/CoursIA/pull/8746) — `ci(lean,#8677): proof-integrity gate v2 — KochenSpecker+FreeWillTheorem + 19 explicit native_decide names` (c.951, MERGED 2026-07-29)
 - PR [#8725](https://github.com/jsboige/CoursIA/pull/8725) — `Knots/Invariant.lean` retire `native_decide` tactic (po-2026, MERGED 2026-07-27)
 - [#8749](https://github.com/jsboige/CoursIA/issues/8749) — triage THEOREME PAR THEOREME des 19 axiomes `native_decide` sur `conway_lean` (par lots 3-5, schema #8731 vs whitelist)
-- `.github/workflows/lean-axiom.yml` — job réutilisable proof-integrity (4 inputs : `project-path`, `display-name`, `target-modules`, `allow-axioms`, `fail-on-sorry`)
-- `.github/workflows/lean-knot.yml` — seul workflow lake à appeler `lean-axiom.yml` actuellement
+- `.github/workflows/lean-axiom.yml` — job réutilisable proof-integrity (5 inputs : `project-path`, `display-name`, `target-modules`, `allow-axioms`, `fail-on-sorry`, plus `include-i18n-siblings` depuis #10889)
+- `.github/workflows/lean-knot.yml`, `lean-mimo.yml` (c.367 tranche 1 #11699), `lean-conway.yml`, `lean-galois.yml`, `lean-grothendieck.yml`, `lean-sensitivity.yml` — workflows lake câblés sur `lean-axiom.yml`
 - `.github/workflows/lean-conway.yml` — cible câblage (19 axiomes dans `allow-axioms`, scope=Conway.KochenSpecker+Conway.FreeWillTheorem en tranche 2)
 - `.claude/rules/pr-review-discipline.md` §B.3 — règle de review Lean PRs (mise à jour c.948 gélée pour sign-off user)
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py` — `LeanVerifier._extract_axioms` (parser multiline fixé par c.947)

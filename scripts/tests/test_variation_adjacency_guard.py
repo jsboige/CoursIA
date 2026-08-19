@@ -128,3 +128,123 @@ def test_tier_of_prev_does_not_matter():
 def test_empty_inputs_pass():
     assert vag.check(None)["guard_pass"] is True
     assert vag.check("")["guard_pass"] is True
+
+
+# --- G-VAR-3 override, clause 24h (#11708) --------------------------------
+#
+# variation-protocol section 3 grants the coordinator a decision -- "Passe
+# 24 h : merger, ou fermer en nommant le remplacant" -- that the gate could
+# not hear, so a correctly-blocked PR aged forever. These cases pin BOTH
+# directions: the override must work, and it must not become a silent waiver.
+
+_BLOCKED = ("Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- "
+            "prev: LIGHT/guard #11675")
+
+
+def _ov(author, body):
+    return vag.parse_override([{"author": author, "body": body}])
+
+
+def test_override_absent_still_blocks():
+    # POSITIVE CONTROL. A gate whose whole lot passes is indistinguishable
+    # from a gate that is unplugged: without a marker, the real adjacency
+    # must still fail. This is the case that proves the other six mean
+    # something.
+    v = vag.check(_BLOCKED, override=None)
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    # and the message must name the way out, not just the ban
+    assert "G-VAR-3 OVERRIDE" in v["reason"]
+
+
+def test_override_by_coordinator_lifts_with_named_replacement():
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01",
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: lean"))
+    assert v["guard_pass"] is True
+    assert v["overridden"] is True
+    assert v["override_next"] == "lean"
+    assert v["adjacent"] is True  # the adjacency was REAL; it is waived, not denied
+
+
+def test_override_by_worker_is_ignored():
+    # A lane cannot self-exempt -- the whole point of writing the arbitration
+    # down (#10223 precedent on lane claims).
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-po-2026",
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: lean"))
+    assert v["guard_pass"] is False
+
+
+def test_override_without_replacement_is_ignored():
+    # "HOLD sans remplacement = echec coordinateur" (section 3): a marker
+    # naming no successor is not a decision, it is an abdication.
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA"))
+    assert v["guard_pass"] is False
+
+
+def test_override_naming_the_blocking_genre_is_vacuous():
+    # A waiver that promises to replay the same adjacency is not a waiver.
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01",
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: guard"))
+    assert v["guard_pass"] is False
+    assert "n'en est pas une" in v["reason"]
+
+
+def test_override_replacement_goes_through_the_alias_table():
+    # Same normalisation as the genre comparison itself: `slidev` folds to
+    # `slides`, so a coordinator writing either names the same successor.
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01",
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: slidev"))
+    assert v["guard_pass"] is True
+    assert v["override_next"] == "slides"
+
+
+def test_override_genre_outside_the_enum_passes_through():
+    # variation-protocol section 1: a genre outside the list is an alias the
+    # merge-gate normalises, "pas une violation" -- so an unrecognised
+    # successor is kept verbatim rather than dropping the marker. It still
+    # lifts, because what makes an override non-vacuous is that it DIFFERS
+    # from the blocking genre, not that it sits in the enum.
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01",
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: documentation"))
+    assert v["guard_pass"] is True
+    assert v["override_next"] == "documentation"
+
+
+def test_last_coordinator_marker_wins():
+    ov = vag.parse_override([
+        {"author": "myia-po-2026", "body": "[G-VAR-3 OVERRIDE] next: lean"},
+        {"author": "jsboige", "body": "[G-VAR-3 OVERRIDE] next: qc"},
+    ])
+    assert ov is not None and ov["next_genre"] == "qc"
+    assert vag.check(_BLOCKED, override=ov)["guard_pass"] is True
+
+
+def test_override_does_not_touch_the_advisory_branch():
+    # DEEP/MED adjacency was never blocking; the override must not turn it
+    # into something else.
+    v = vag.check(
+        "Grain: DEEP/lean -- lane myia-po-2026:CoursIA -- prev: DEEP/lean #11600",
+        override=_ov("myia-ai-01", "[G-VAR-3 OVERRIDE] next: qc"))
+    assert v["guard_pass"] is True
+    assert v["adjacent"] is True
+    assert v.get("overridden") is not True
+
+
+def test_parse_override_tolerates_gh_author_object():
+    # `gh pr view --json comments` nests the login; accept both shapes.
+    ov = vag.parse_override([{"author": {"login": "myia-ai-01"},
+                              "body": "[G-VAR-3 OVERRIDE] next: lean"}])
+    assert ov is not None and ov["author"] == "myia-ai-01"
+
+
+def test_parse_override_empty_and_malformed():
+    assert vag.parse_override(None) is None
+    assert vag.parse_override([]) is None
+    assert vag.parse_override(
+        [{"author": "myia-ai-01", "body": "rien a voir"}]) is None
