@@ -116,7 +116,7 @@ jobs:
         with:
           header: render-volume-delta-advisory
           message: |
-            ${{ steps.run.outputs.findings_total == '0' && '✅ No render volume delta signal (notebooks modified vs merge-base preserve >= 50% of base rendered output per MIME family).' || steps.run.outputs.findings_total == 'abstain' && '⚠️ Render volume delta: **base introuvable** (merge-base origin/main HEAD impossible). Le détecteur s\'abstient -- relancer avec un fetch plus profond, ou rebase la branche sur main. Pas de verdict.' || format('⚠️ {0} render volume delta signal(s): one or more modified notebooks lost >= 50% of their rendered output per MIME family (base = merge-base origin/main HEAD). Review against the source code -- advisory, NOT a merge gate.', steps.run.outputs.findings_total) }}
+            ${{ steps.run.outputs.findings_total == '0' && '✅ No render volume delta signal (notebooks modified vs merge-base preserve >= 50% of base rendered output per MIME family).' || steps.run.outputs.findings_total == 'abstain' && '⚠️ Render volume delta: **base introuvable** (merge-base origin/main HEAD impossible). Le détecteur s''abstient -- relancer avec un fetch plus profond, ou rebase la branche sur main. Pas de verdict.' || format('⚠️ {0} render volume delta signal(s): one or more modified notebooks lost >= 50% of their rendered output per MIME family (base = merge-base origin/main HEAD). Review against the source code -- advisory, NOT a merge gate.', steps.run.outputs.findings_total) }}
 
             See `python scripts/notebook_tools/check_render_volume_delta.py --help` for re-running locally.
             Detector rationale: #11656 / #11351 pathologie (840 B remnants in 195 692 B cells = absolute detectors blind).
