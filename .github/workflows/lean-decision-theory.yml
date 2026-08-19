@@ -4,7 +4,32 @@ name: Lean CI (decision_theory_lean)
 # at the Probas series root, lifted from Probas/Infer/gittins_lean in PR #4058
 # (lake content unchanged by the lift). First module: Gittins index. Research scaffolding.
 #
-# sorry-filter-mode=standalone-tactic, baseline=2: regression floor matching what
+# sorry-filter-mode=real, baseline=2: regression floor matching what
+# the CI counter actually reports. lean-build.yml counts FR files only
+# (`find ! -name '*_en.lean'`), so the EN siblings are OUT of the gate's scope.
+# GittinsTheorem.lean (FR) carries 2 standalone `sorry` (gittins_optimality, the
+# value V := sorry and the inequality proof sorry, both INTRINSIC #4039 MDP
+# barrier) — and 2 is ALSO the `real`-mode count (no inline `exact sorry`
+# forms), so standalone-tactic did not undercount here. The EN sibling
+# GittinsTheorem_en.lean mirrors them 1:1 (i18n #4980 byte-identical proofs)
+# but, being `_en`, is never scanned — its parity with FR is enforced by
+# the i18n convention, not by this gate.
+#
+# `real` mode is the prover harness canonical count (FX-6 #1453):
+# depth-tracked `/-- ... -/` and `/- ... -/` strip, then word-bounded
+# `\bsorry\b` grep. Catches every compiled-tactic form (`:= by sorry`,
+# `exact sorry`, bare `sorry`, case-bullet `· sorry`) while ignoring
+# prose mentions in docstrings/comments. The discount sub-module
+# (Discount.lean, 0 since #2911) is EN-sibling-clean; the 2 baseline
+# captures the INTRINSIC gittins_optimality barrier honestly.
+#
+# Was baseline=4: that value counted FR(2)+EN(2), but the counter excludes
+# `_en`, so the EN half was never seen — a scope mismatch that left the
+# floor 2 above the real count (Discount.lean, also 0 since #2911, compounded
+# it). A floor 2 above real defeats the §D anti-regression gate: a 2-sorry
+# regression (2->4) would pass undetected (CI run 29857938621 already reports
+# "Real sorry (standalone-tactic): 2 / Known baseline: 4"). Corrected to 2
+# so the gate is sensitive again. Consolidated per ai-01 DRY decision.
 # the CI counter actually reports. lean-build.yml counts FR files only
 # (`find ! -name '*_en.lean'`), so the EN siblings are OUT of the gate's scope.
 # GittinsTheorem.lean (FR) carries 2 standalone `sorry` (gittins_optimality, the
@@ -50,4 +75,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/Probas/decision_theory_lean
       display-name: decision_theory_lean
       sorry-baseline: "2"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

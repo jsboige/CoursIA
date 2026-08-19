@@ -1,6 +1,10 @@
-# Slide Analyzer Agent Memory
+# Slide Analyzer — observabilité sk-agent (Marp vs PPTX + prompts)
 
-## sk-agent analyze_image: Observed Behavior
+> **Origine** : fichier `.claude/agent-memory/slide-analyzer/MEMORY.md` (relocalisé en c.1301+210 dans le cadre de l'EPIC #9535, item 7 — agent-memory relocalisation en doc pérenne). Le contenu est conservé tel quel (anti-régression : cf triage jsboigeEpita, durable vs scratch) ; seul un sommaire FR est ajouté.
+>
+> **Statut** : durable. Le contenu documente (a) le **comportement observé** de `sk-agent analyze_image` (routage `glm-4.6v`, indépendamment du paramètre `model`) ; (b) deux **prompts canoniques** (primaire FR + retry FR court) qui contournent les hallucinations sur slides logo-heavy ; (c) une **grille de comparaison** Marp vs PPTX (deck `01-introduction`) qui sert de baseline pour les audits futurs de slides. Ce sont des invariants d'environnement, pas du scratch daté.
+
+## Sk-agent analyze_image : comportement observé
 
 ### Model Used
 - sk-agent routes requests to `glm-4.6v` regardless of the `model` parameter value.
