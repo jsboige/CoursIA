@@ -554,3 +554,42 @@ def test_find_non_closing_refs_empty_and_none():
     assert gt.find_non_closing_refs(None) == []
     assert gt.find_non_closing_refs("") == []
     assert gt.find_non_closing_refs("nothing here") == []
+
+
+def test_grain_word_boundary_graine_heading_does_not_shadow_real_tag():
+    # #11771 (mesure 2026-08-19) : le body portait un titre `## Graine / Tag`
+    # AVANT sa ligne `Grain:` conforme. Le motif acceptait ZERO separateur apres
+    # `Grain`, donc « Graine » matchait comme `Grain` suivi de « e / Tag » et
+    # l'extracteur rendait tier="E" / genre="tag" -- deux labels rouges
+    # (variation-tag-malformed + variation-tag-genre-offlist) sur une PR dont le
+    # tag etait parfaitement conforme. Un separateur est desormais EXIGE.
+    body = """## Graine / Tag
+
+Grain: DEEP/notebook-dotnet -- lane myia-po-2026:CoursIA-2
+"""
+    g = gt.parse_grain_tag(body)
+    assert g is not None
+    assert g["tier"] == "DEEP"
+    assert g["genre"] == "notebook-dotnet"
+
+
+def test_grain_word_boundary_graine_alone_is_not_a_tag():
+    # Controle negatif : « Graine » SEULE ne doit produire aucun tag -- sinon le
+    # fix ne ferait que deplacer le faux positif au lieu de le fermer.
+    assert gt.parse_grain_tag("## Graine / Tag\n") is None
+
+
+def test_grain_separator_forms_still_accepted_after_boundary_fix():
+    # Non-regression #9485 : les 5 formes tolerees survivent au durcissement
+    # (chacune porte au moins un separateur apres `Grain`).
+    for body in (
+        "Grain: LIGHT/guard -- lane myia-po-2023:CoursIA",
+        "**Grain:** LIGHT/guard - lane myia-po-2023:CoursIA",
+        "## Grain\n\nLIGHT/guard -- lane myia-po-2023:CoursIA",
+        "`Grain` LIGHT/guard -- lane myia-po-2023:CoursIA",
+        "**Grain** : LIGHT/guard -- lane myia-po-2023:CoursIA",
+    ):
+        g = gt.parse_grain_tag(body)
+        assert g is not None, body
+        assert g["tier"] == "LIGHT", body
+        assert g["genre"] == "guard", body
