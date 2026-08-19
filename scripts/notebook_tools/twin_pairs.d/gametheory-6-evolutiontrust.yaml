@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Verdict a deux niveaux (reclassification #10459 : axe PythonNet omis de la taxonomie bucket-3 #10382, axelrod inclus -- l angle mort qui avait fait conclure INTRINSIC a tort en #10406). (1) axelrod-la-lib : PONT .NET demontre en annexe du notebook C# (cellule 30) via PythonNet (.NET -> Python.Runtime -> CPython 3.11.9 -> axelrod 4.14.0, meme axe que GT-13 pyspiel CFR, GT-17 pyspiel rollout, Search-7 pyspiel MCTS) -- axl.Tournament(Cooperator, Defector, TitForTat, Grudger) invoque depuis C# (20 tours x 3 reps) + classement IPD reel commite (TitForTat/Grudger strategies nice dominent le round-robin, resultat Axelrod 1980 TFT champion). Pont installe (pythonnet NuGet 3.0.5 + axelrod pip 4.14.0, regle F) et branche : SOTA-OK pour ce role. (2) From-scratch C# (sections 3-9) : reste la contrepartie pedagogique (niveau semantic) -- le pont est EN PLUS jamais A LA PLACE (mandat #10382). L integralite d axelrod cote Python est desormais reachable via le pont ; aucun reste INTRINSIC."
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Bascule verdict (registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : le pont axelrod PythonNet (cell[29], execution_count=13, `#r nuget pythonnet 3.0.5`, axe 5 #10459) est installe et execute dans le notebook commite -- le reason precedent concluait deja SOTA-OK pour ce role sous un label reste RECOVERABLE-LOCAL : label aligne sur la conclusion. parity_level semantic preserve (gel #11200)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

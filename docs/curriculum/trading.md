@@ -20,10 +20,10 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 200 |
+| Notebooks | 201 |
 | PRODUCTION | 0 |
 | BETA | 180 |
-| ALPHA | 20 |
+| ALPHA | 21 |
 
 ## ML/DataScienceWithAgents (28 notebooks)
 
@@ -167,7 +167,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |---|----------|----------|------------|
 | 1 | M3b - HAR Asymetrique : Decomposition Semivariance et E | BETA | Non |
 
-## QuantConnect/Python (46 notebooks)
+## QuantConnect/Python (47 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -195,28 +195,29 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 22 | QC-Py-21 - Portfolio Optimization avec Machine Learning | BETA | Non |
 | 23 | Objectifs d'Apprentissage | BETA | Non |
 | 24 | Objectifs d'Apprentissage | BETA | Non |
-| 25 | QC-Py-24 - Modèles Génératifs pour Anomaly Detection et | BETA | Non |
-| 26 | Objectifs d'Apprentissage | BETA | Non |
+| 25 | QC-Py-23b - PatchTST et iTransformer pour Prevision Fin | ALPHA | Non |
+| 26 | QC-Py-24 - Modèles Génératifs pour Anomaly Detection et | BETA | Non |
 | 27 | Objectifs d'Apprentissage | BETA | Non |
-| 28 | QC-Py-27 - Production Deployment | BETA | Non |
-| 29 | QC-Py-28 - Market Regime Detection | BETA | Non |
-| 30 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | BETA | Non |
-| 31 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | ALPHA | Non |
-| 32 | QC-Py-32 - Reinforcement Learning DQN pour le Trading | BETA | Non |
-| 33 | QC-Py-33 - Reinforcement Learning PPO pour le Trading | BETA | Non |
-| 34 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL pour le | BETA | Non |
-| 35 | QC-Py-35 - Reinforcement Learning pour la Construction  | ALPHA | Non |
-| 36 | QC-Py-40 : Paper Trading Binance - Mean Reversion Crypt | ALPHA | Non |
-| 37 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | ALPHA | Non |
-| 38 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC Cl | ALPHA | Non |
-| 39 | QC-Py-Cloud-02 : Classification de Texte et Sentiment N | ALPHA | Non |
-| 40 | QC-Py-Cloud-03 — Dual Momentum : Asset Sélection Matter | BETA | Non |
-| 41 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | BETA | Non |
-| 42 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trading | ALPHA | Non |
-| 43 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP) | ALPHA | Non |
-| 44 | Value Factor Z-Score — Sélection multi-facteurs fondame | BETA | Non |
-| 45 | Option Wheel — Le paradoxe du win-rate eleve | BETA | Non |
-| 46 | Workflow : Téléchargement et gestion des datasets | ALPHA | Non |
+| 28 | Objectifs d'Apprentissage | BETA | Non |
+| 29 | QC-Py-27 - Production Deployment | BETA | Non |
+| 30 | QC-Py-28 - Market Regime Detection | BETA | Non |
+| 31 | QC-Py-30 - LSTM Training Multi-Asset (GPU) | BETA | Non |
+| 32 | QC-Py-31 - Transformer Encoder Multi-Asset (GPU) | ALPHA | Non |
+| 33 | QC-Py-32 - Reinforcement Learning DQN pour le Trading | BETA | Non |
+| 34 | QC-Py-33 - Reinforcement Learning PPO pour le Trading | BETA | Non |
+| 35 | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL pour le | BETA | Non |
+| 36 | QC-Py-35 - Reinforcement Learning pour la Construction  | ALPHA | Non |
+| 37 | QC-Py-40 : Paper Trading Binance - Mean Reversion Crypt | ALPHA | Non |
+| 38 | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | ALPHA | Non |
+| 39 | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC Cl | ALPHA | Non |
+| 40 | QC-Py-Cloud-02 : Classification de Texte et Sentiment N | ALPHA | Non |
+| 41 | QC-Py-Cloud-03 — Dual Momentum : Asset Sélection Matter | BETA | Non |
+| 42 | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | BETA | Non |
+| 43 | QC-Py-Cloud-04 : Reinforcement Learning - DQN Trading | ALPHA | Non |
+| 44 | QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP) | ALPHA | Non |
+| 45 | Value Factor Z-Score — Sélection multi-facteurs fondame | BETA | Non |
+| 46 | Option Wheel — Le paradoxe du win-rate eleve | BETA | Non |
+| 47 | Workflow : Téléchargement et gestion des datasets | ALPHA | Non |
 
 ## QuantConnect/kelly_lean (1 notebooks)
 

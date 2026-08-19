@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 17
-breakdown: root=17
-maturity: BETA=17
+pedagogical_count: 21
+breakdown: root=21
+maturity: BETA=21
 -->
 
 > **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (17 notebooks canoniques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 10/07/2026 :
@@ -48,6 +48,28 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 11 | [rl_11_pomdp](rl_11_pomdp.ipynb) | POMDP, Tiger Problem, belief tracking, Q-MDP | 45-50 min |
 | 12 | [rl_12_distributional_rl](rl_12_distributional_rl.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [rl_13_curiosity_exploration](rl_13_curiosity_exploration.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
+| pt-1 | [rlpt_1_ppo_lm_rlhf](rlpt_1_ppo_lm_rlhf.ipynb) | PPO pour alignement d'un petit LM (RLHF toy, from scratch, char-level) : reward model jouet, KL vs politique SFT de référence, multi-seed 4 — la signature RLHF, différenciée de rl_6c (PPO CartPole) et rl_6e (GRPO) | 40-45 min |
+| pt-2 | [rlpt_2_grpo_minimal](rlpt_2_grpo_minimal.ipynb) | GRPO sur Qwen3.5-0.8B local (8 Go Viability), reward vérifiable, budget steps borné — le cœur « à la Deepseek » : group rollouts, avantage sans value net, pont #5105 | 45-55 min |
+| pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) | 35-40 min |
+| pt-4 | [rlpt_4_dpo_vs_ppo](rlpt_4_dpo_vs_ppo.ipynb) | DPO/ORPO offline vs GRPO online sur même tâche conversationnelle, même budget 40 steps, préférences auto-fabriquées — verdict multi-seed {42,0,1,7} honnête DM, dispersion inter-seed documentée | 50-55 min |
+
+## Frontière avec GenAI/PostTraining — où ouvre `rlpt_*`, où ouvre `PT_*`
+
+Les sous-séries [`rlpt_*`](.) et [GenAI/PostTraining](../GenAI/PostTraining/README.md) couvrent **le même terrain** (post-training d'un LM) à des niveaux de pile différents. La frontière est posée explicitement pour qu'un lecteur sache **quel notebook ouvrir pour quelle question**.
+
+| Question pédagogique | Ouvrir | Pourquoi |
+|---|---|---|
+| « Comment marche PPO-RLHF en petit, sans framework ? » | [`rlpt_1`](rlpt_1_ppo_lm_rlhf.ipynb) | RLHF from scratch sur LM char-level — on voit les gradients, le reward model jouet, la KL vs la politique SFT de référence, multi-seed 4. |
+| « Comment GRPO est câblé *intérieurement* (group rollouts, avantage intra-groupe, no critic) ? » | [`rlpt_2`](rlpt_2_grpo_minimal.ipynb) | GRPO Qwen3.5-0.8B local **sans `trl` complet** — la boucle d'entraînement est écrite à la main, on voit chaque rollout, chaque reward. |
+| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Comment l'inoculer ? » | [`rlpt_3`](rlpt_3_reward_hacking.ipynb) | Cas clinique minimal : 3 voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible (seed fixée). |
+| « DPO offline vs GRPO online à budget égal — qui gagne ? » | [`rlpt_4`](rlpt_4_dpo_vs_ppo.ipynb) | Comparaison à budget 40 steps, préférences auto-fabriquées, verdict multi-seed {42,0,1,7} honnête Diebold-Mariano, dispersion inter-seed documentée. |
+| « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb), [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
+| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. |
+| « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `rlpt_3` (qui en est la version compacte). |
+
+**Une phrase à retenir** : `rlpt_*` = *la mécanique, en petit, sans framework* (from scratch, CPU/char-level ou Qwen3.5-0.8B sans la pile `trl` complète — on voit chaque rollout et chaque gradient) ; `GenAI/PostTraining` = *la chaîne réelle, à l'échelle* (`trl`, vrai LLM, solveur vérifiable, multi-seed, détecteurs Goodhart). Si votre question porte sur **pourquoi** un algorithme fonctionne, ouvrez `rlpt_*`. Si votre question porte sur **comment le déployer en SOTA 2025**, ouvrez `PT_*`.
+
+Le constat d'éventuelle duplication entre `rlpt_2 ↔ PT-11a` et `rlpt_3 ↔ PT-07` est traité en [#11460](https://github.com/jsboige/CoursIA/issues/11460) : la différenciation tient à *ce qu'on regarde* (mécanique vs déploiement outillé), pas à *ce qu'on calcule* — c'est précisément ce qui justifie les deux.
 
 ## Parcours recommandé
 
@@ -89,7 +111,7 @@ Le notebook 4 pose la question fondatrice du RL : comment choisir entre explorer
 
 **Phase 4 : Les maths sous le capot (~10h, notebooks 5-13)**
 
-Les notebooks 5 à 13 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 6e clôt la lignée policy-gradient avec **GRPO** (Group Relative Policy Optimization, l'algorithme d'entraînement RL de DeepSeek-R1) : l'avantage y est estimé par comparaison au sein d'un groupe de rollouts, sans réseau critique — le pont le plus direct de la série vers le RLHF des LLMs. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow. Le notebook 13 termine sur l'exploration par motivation intrinsèque : RND (Random Network Distillation) transforme l'erreur de prédiction d'un réseau cible figé en bonus de nouveauté, débloquant les récompenses parcimonieuses hors de portée d'epsilon-greedy.
+Les notebooks 5 à 13 quittent le framework pour implémenter les algorithmes depuis zéro. Le notebook 5 formalise le problème RL (MDP, équation de Bellman, Value/Policy Iteration) et introduit le Q-Learning tabulaire sur FrozenLake et CliffWalking. Le notebook 6 passe à l'échelle avec les réseaux de neurones : DQN et REINFORCE implémentés en PyTorch pur. Le notebook 6b introduit l'architecture Actor-Critic (A2C). Le notebook 6c pousse plus loin avec PPO et son mécanisme de clipping, introduit GAE, et compare les approches. Le notebook 6d approfondit avec SAC (Soft Actor-Critic) et le framework maximum entropy pour les actions continues. Le notebook 6e clôt la lignée policy-gradient avec **GRPO** (Group Relative Policy Optimization, l'algorithme d'entraînement RL de DeepSeek-R1) : l'avantage y est estimé par comparaison au sein d'un groupe de rollouts, sans réseau critique — le pont le plus direct de la série vers le RLHF des LLMs. Le notebook 7 aborde le multi-agent : plusieurs agents qui apprennent simultanément, coopèrent ou s'affrontent (TicTacToe avec self-play). Le notebook 8 ouvre la voie model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), avec les ponts vers MCTS, AlphaZero et MuZero. Le notebook 9 retire le droit d'interagir : apprendre d'un dataset figé (RL offline), avec le Behavior Cloning, l'erreur d'extrapolation du Q-learning naïf, la contrainte de support (BCQ-lite) et le pont vers RLHF/DPO. Le notebook 10 s'attaque au problème du reward sparse : comment guider l'agent quand la récompense est rare ? Le reward shaping potential-based (Ng et al. 1999) accélère la convergence sans biaiser la politique optimale, le curriculum learning organise la difficulté progressive, et le pont vers RLHF montre que le reward model appris est un shaping automatisé. Le notebook 11 aborde la partial observability : l'agent ne voit plus l'état vrai mais une observation bruitée. Le Tiger Problem (Cassandra 1994) illustre le POMDP, le belief tracking (filtre bayésien) maintient une estimation de l'état caché, et le Q-MDP approximation montre les limites de l'approche tabulaire. Le notebook 12 enrichit l'objectif lui-même : au lieu d'apprendre l'espérance du retour comme un DQN, C51 (Categorical DQN, Bellemare et al. 2017) apprend sa **distribution complète** $Z(s,a)$ sur un support à atomes fixes, via une projection catégorielle de la cible de Bellman — ce qui débloque les politiques sensibles au risque (CVaR) impossibles avec une valeur scalaire, et ouvre la lignée QR-DQN / IQN / Rainbow. Le notebook 13 termine sur l'exploration par motivation intrinsèque : RND (Random Network Distillation) transforme l'erreur de prédiction d'un réseau cible figé en bonus de nouveauté, débloquant les récompenses parcimonieuses hors de portée d'epsilon-greedy. Une **sous-série Post-Training** (`rlpt_*`) prolonge cette lignée vers le RL appliqué aux modèles de langage : PPO-RLHF from scratch sur un petit LM char-level (rlpt_1), GRPO sur Qwen3.5-0.8B avec reward vérifiable (rlpt_2, run réel 8 Go), l'anatomie du reward hacking et son inoculation (rlpt_3), puis la comparaison offline-vs-online entre DPO et GRPO à budget égal (rlpt_4). Chaque notebook de la sous-série stub ≥3 exercices, ancre ses interprétations sur des sorties réellement exécutées (C.2), et documente son verdict d'honnêteté multi-seed — la série constitue la **transition naturelle** entre rl_6e (GRPO from scratch) et le pipeline capstone ICT-25 / Post-Training (#5105).
 
 ## Prerequisites
 
@@ -120,6 +142,9 @@ pip install torch
 
 # Pour le notebook 7 (multi-agent)
 pip install "pettingzoo[classic]>=1.24.0"
+
+# Pour la sous-série rlpt_* (Post-Training RLHF/GRPO/DPO sur petits LM)
+pip install "trl>=1.9.2" transformers datasets accelerate
 ```
 
 ### Dépendances
@@ -135,6 +160,10 @@ pip install "pettingzoo[classic]>=1.24.0"
 | pettingzoo | >=1.24.0 | Multi-agent (notebook 7) |
 | highway-env | latest | Parking-v0 (notebook 3) |
 | moviepy | latest | Enregistrement vidéo |
+| trl | >=1.9.2 | RLHF/GRPO/DPO trainer (sous-série rlpt_*, notebooks pt-1 à pt-4) |
+| transformers | latest | Modèles de langage (Qwen3.5-0.8B dans rlpt_2, sentence-transformers dans rlpt_4) |
+| datasets | latest | Préférences auto-fabriquées (rlpt_4) |
+| accelerate | latest | Backend d'entraînement distribué (rlpt_2) |
 
 ## Contenu détaillé
 

@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Verdict a deux niveaux (reclassification #10459 : axe PythonNet omis de la taxonomie bucket-3). (1) OpenSpiel-la-lib : PONT .NET demontre en annexe S10 du notebook C# via PythonNet (.NET -> Python.Runtime -> pyspiel -> OpenSpiel C++, meme axe que SemanticKernel-09 et que le moteur QuantConnect/Lean) -- load_game('kuhn_poker') + rollout reel executes depuis C#, sortie commitee (joueurs=2, actions=2, gains=[-2,2]). Pont installe (pythonnet NuGet + open_spiel pip, regle F) et branche : SOTA-OK pour ce role. (2) NFSP/AlphaZero neuronaux (PyTorch/TF + MCTS) : reste INTRINSIC (pas d'equivalent .NET unifie pour le RL neuronal a grande echelle) ; la version table-based couverte sections 3-7 reste portable. From-scratch C# = contrepartie pedagogique, le pont est EN PLUS jamais A LA PLACE (mandat #10382)."
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Pont pyspiel execute (bascule registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : cellule pont `#r nuget pythonnet 3.0.5` (cell[25], execution_count=12) invoque CPython -> pyspiel (axe 5 #10459). Verdict RECOVERABLE-LOCAL -> SOTA-OK : pont execute dans le notebook commite, verdict non rebasculé. parity_level semantic preserve (gel #11200)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

@@ -8,7 +8,7 @@ package «game_theory_lean» where
   ]
 
 require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.0"
+  "https://github.com/leanprover-community/mathlib4.git" @ "v4.32.1"
 
 -- EPIC #4365 — anti-proliferation GameTheory (6->2) : cible « game_theory_lean »
 -- regroupera `social_choice` + `cooperative_games` + `stable_marriage` +

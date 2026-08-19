@@ -20,6 +20,7 @@ the sorry is REACHED, not hidden; a module with zero enumerated decls reads
 """
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -137,7 +138,40 @@ def test_audit_allowlists_native_decide_axioms():
     (2) under the `Conway_en.*` namespaces (with `Pillars_en` keeping the FR
     `Conway.Life.*` path -- namespace heterogeneity is why names are
     enumerated from the build, never derived by rule). Same legitimacy rule
-    as #9341: every added name is attributable to a newly covered module."""
+    as #9341: every added name is attributable to a newly covered module.
+
+    **Widened to 61 by #11349** (`ci(lean,#11349)`), and this one does NOT fit
+    the "newly covered module" phrasing above -- it is the first widening that
+    does not, so the criterion is stated properly here rather than stretched.
+    Grain 3a (#11303, `c3bd40cc1`) added two theorems to the ALREADY covered
+    `Conway.Life.HashlifeCorrectness` and widened the workflow allow-list by
+    exactly their two names. It DID annotate them in the workflow comment
+    (L204-208, header updated to "All 61") -- what it omitted was this pin, and
+    that omission is the ratchet working as designed: an attribution written by
+    the same hand that widens cannot self-certify, so `main` goes red until a
+    second reading confirms it. This is that reading. Verified before raising:
+
+    * `p4at_witness_k1` / `p4at_witness_k2` (L848, L861) are the P4-At mirrors
+      of the already-allow-listed `p4_wf_witness_k1` / `p4_wf_witness_k2`
+      (L758, L775): SAME cells (centered block still-life; centered glider),
+      SAME generation counts (2, 4), SAME `restrictGridTo` windows -- only the
+      engine differs (`hashlifeResultAt j` instead of `hashlifeResultAux (j+2)`),
+      which is the whole point of grain 3a.
+    * Both are STANDALONE: `git grep` finds zero references outside their own
+      declarations. They are concrete finite sanity checks, not premises.
+    * Grain 3a's headline theorem `hashlifeResultAt_base_central` (L806) is
+      universally quantified over `c : MacroCell` and `j : Nat` and is proven
+      by structural tactics (`cases`/`omega`/`obtain`/`simp only`), closing on
+      the already-proven `hashlifeResult_central_correct`. No `native_decide`
+      in it -- the general claim is NOT hollowed out by these two escapes.
+
+    The operative criterion is therefore **attributable AND non-hollowing**, of
+    which "attributable to a newly covered module" was one instance, not the
+    definition. A name attributable to a newly added THEOREM is equally
+    legitimate provided (a) the theorem is a concrete finite witness, (b) it is
+    referenced by nothing, and (c) the module's general theorems do not depend
+    on it. Absent any of the three, the pin stays put and the proof is reworked
+    -- unchanged from #9341."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -147,11 +181,12 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 59, (
-        f"audit allow-list must carry the 59 native_decide axioms of the whole "
+    assert len(names) == 61, (
+        f"audit allow-list must carry the 61 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
-        f"modules, each attributed in the workflow comment); got {len(names)}")
+        f"modules + 2 P4-At standalone witnesses from grain 3a #11303, each "
+        f"attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
     # #10889-widening family: the _en twins under Conway_en.*).
@@ -199,6 +234,196 @@ def test_blocking_and_audit_are_complementary():
     # keeps its explicit showcase-only list.
     assert audit_targets == "*"
     assert "Conway.Life.HashlifeCorrectness" not in blocking_targets
+
+
+# ---------------------------------------------------------------------------
+# Path-filter pin — point 3 of #11349 (deferred by PR #11495 acceptance
+# partielle). The native_decide ratchet is `test_audit_allowlists_*` above,
+# which lives under `scripts/lean/tests/` and so is only triggered by changes
+# in `scripts/**` (and the few cross-cutting paths scripts-tests.yml pins
+# explicitly). Before the #11495 rewire, this meant a PR that added a brand
+# new `native_decide` to `Conway.Life.HashlifeCorrectness.lean` could go
+# unnoticed by the ratchet: the test subject (allow-list footprint) would
+# shift, but no workflow would run on the diff, and the rouge from the new
+# `native_decide` would only land on the NEXT lane to edit any script.
+# The fix in PR #11495 wired `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**
+# *.lean` (+ lakefile + lean-toolchain) into BOTH `push:` and `pull_request:`
+# `paths:` of `scripts-tests.yml`. This test is the **structural pin**: it
+# greps the YAML to ensure both push and pr trigger blocks still carry those
+# four entries, so a future refactor of scripts-tests.yml (e.g. consolidating
+# paths back into a single glob, or removing the lake from the trigger because
+# `lean-conway.yml` "covers" it) is caught here.
+#
+# Why structural and not integration: a true end-to-end test would require
+# firing the GitHub Actions path-filter against a synthetic commit, which
+# cannot be done hermetically. This pin is the second best thing: if the
+# YAML literal is missing, the workflow will not run on a lake-only diff,
+# and the ratchet will sleep through the next widening. A textual pin
+# catches that exactly.
+# ---------------------------------------------------------------------------
+
+SCRIPTS_TESTS_WF = REPO / ".github" / "workflows" / "scripts-tests.yml"
+
+# These four entries correspond to PR #11495 (commit 9b2d9e5c1) and are the
+# load-bearing wiring of the #11349 fix. Their MIRROR in push: and
+# pull_request: is what closes the vert-hors-cible: a single PR touching only
+# a `.lean` file in conway_lean/ should trigger scripts-tests.yml, which runs
+# test_audit_allowlists_native_decide_axioms above.
+_CONWAY_LEAN_TRIGGER_PATHS = [
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain",
+]
+
+
+def _load_scripts_tests_text() -> str:
+    assert SCRIPTS_TESTS_WF.is_file(), (
+        f"missing {SCRIPTS_TESTS_WF} -- #11349 fix PR #11495 needs the "
+        f"`scripts-tests.yml` workflow file present"
+    )
+    return SCRIPTS_TESTS_WF.read_text(encoding="utf-8")
+
+
+def test_workflow_scripts_tests_exists():
+    """#11349: scripts-tests.yml is the workflow that runs the
+    native_decide ratchet. Removing the file would unmount the ratchet
+    entirely; pin its presence."""
+    assert SCRIPTS_TESTS_WF.is_file(), (
+        f"missing {SCRIPTS_TESTS_WF}"
+    )
+
+
+def test_native_decide_ratchet_wired_on_conway_lean_paths():
+    """#11349 / PR #11495: scripts-tests.yml MUST carry the four
+    `MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**` paths (or any glob
+    form that catches them: e.g. `conway_lean/**.lean` with the bare
+    `MyIA.AI.Notebooks/SymbolicAI/Lean/` prefix inferred by the workflow
+    runtime root, OR `**` at the workflow root -- a future maintainer
+    might rebase the path onto a different relative-root layout) in
+    BOTH the `push:` and `pull_request:` `paths:` blocks. Mirror symmetry
+    is load-bearing: an asymmetric wiring would let `pull_request` red
+    without the matching `push` ever seeing the lake; the ratchet is
+    only as wide as the narrower of the two.
+
+    The pin is on substring (NOT yaml.safe_load): the test guards against
+    `paths:` entries being deleted or commented out, which yaml.safe_load
+    would silently strip. A deleted conway_lean entry would not raise an
+    error at YAML parse time, but it WOULD mean a future PR adding a
+    fresh `native_decide` to conway_lean/ would not be caught by the
+    ratchet until it rippled into a `scripts/**` change.
+    """
+    text = _load_scripts_tests_text()
+
+    # Check that the four mandatory globs appear in BOTH the push trigger
+    # and the pull_request trigger. We use a positional split — everything
+    # between the `on:` declaration and the next `permissions:` (or `jobs:`)
+    # key is the trigger block; we then split it on the trigger keys.
+    assert "on:" in text, (
+        "scripts-tests.yml appears to be malformed (no `on:` block)")
+    on_idx = text.index("on:")
+    # Truncate to the next top-level key after `on:`. We do a regex over
+    # the post-`on:` slice for the next '^[a-z_]+:' key (YAML top-level
+    # keys are at column 0 with no indent). This is a TEXT pin by design
+    # — yaml.safe_load would lose the format that matters here.
+    post_on = text[on_idx:]
+    next_top = re.search(r"\n[a-z_][a-z_0-9]*:", post_on[len("on:"):])
+    if next_top is None:
+        on_block = post_on
+    else:
+        on_block = post_on[: next_top.start() + len("on:")]
+
+    push_marker = "push:"
+    pr_marker = "pull_request:"
+    assert push_marker in on_block, (
+        "scripts-tests.yml is missing the `push:` trigger block -- "
+        "the #11349 ratchet would never run on direct pushes to main"
+    )
+    assert pr_marker in on_block, (
+        "scripts-tests.yml is missing the `pull_request:` trigger block -- "
+        "the #11349 ratchet would not catch PRs from contributors"
+    )
+
+    # Slice the push: and pull_request: blocks separately. A push-only or
+    # pr-only rewire would otherwise mask a regression in the other trigger.
+    push_block, pr_block = _split_push_pr_blocks(on_block)
+
+    # Substring pin per path, per block. The test does not attempt glob
+    # semantics: a future maintainer who moves the path under a different
+    # prefix must update BOTH the workflow and the test literal together
+    # (deliberate coupling -- silent drift is the bug class #11349 names).
+    for path in _CONWAY_LEAN_TRIGGER_PATHS:
+        # Allow either the verbatim path string OR an equivalent glob form
+        # rooted at the workflow's working directory. We accept any of:
+        #   - exact path
+        #   - same path with a different quoting (single/double quotes)
+        #   - the bare suffix after `MyIA.AI.Notebooks/SymbolicAI/Lean/`
+        #     (workflows fire from the repo root, so the absolute prefix is
+        #     unnecessary and some refactors drop it)
+        quoted_exact = path
+        quoted_no_prefix = path[len("MyIA.AI.Notebooks/SymbolicAI/Lean/"):]
+        for block, label in [(push_block, "push:"), (pr_block, "pull_request:")]:
+            ok = (
+                quoted_exact in block
+                or quoted_no_prefix in block
+            )
+            if not ok:
+                # Last resort: a wild-card-equivalent prefix. We do this
+                # generously so the pin tracks reasonable refactors but
+                # still catches a wholesale deletion (a deleted entry is
+                # absent from ALL THREE forms).
+                leaf = path.rsplit("/", 1)[-1]  # 'lakefile.lean', '**/*.lean', ...
+                bare_glob = leaf  # e.g. '**/*.lean'
+                ok = bare_glob in block
+            assert ok, (
+                f"#11349 path-filter pin: scripts-tests.yml {label} trigger "
+                f"is missing the entry for {path!r}. The native_decide "
+                f"ratchet (`test_audit_allowlists_native_decide_axioms` above) "
+                f"would not run on conway_lean-only diffs and main would go "
+                f"red only on the next unrelated `scripts/**` push. PR "
+                f"#11495 (commit 9b2d9e5c1) added this wiring; reverting it "
+                f"without re-wiring the test pin masks a real regression."
+            )
+
+
+def _split_push_pr_blocks(on_block: str) -> tuple[str, str]:
+    """Split the `on:` block into the `push:` and `pull_request:` slices.
+
+    Each is the contiguous YAML text starting from its trigger key (e.g.
+    `push:`) up to the next top-level trigger key (`pull_request:`,
+    `workflow_dispatch:`) or the closing brace. The function returns the
+    raw text — substring pins are done by the caller.
+
+    Note: the `pull_request:` literal can also appear inside a YAML comment
+    (e.g. `# mirrored under pull_request: below`). A naive `text.find()`
+    would pick up that comment mention instead of the trigger key. We work
+    around this with a positional split: each trigger key (`push:` /
+    `pull_request:`) MUST be preceded by 0-or-more whitespace at column
+    2 (under `on:`) followed by no leading comment marker.
+    """
+    text = on_block
+    # Find trigger keys that look like YAML children of `on:` — i.e.
+    # preceded by a newline and 2-space indent (column 2), and NOT the
+    # first line of the on_block (which contains 'on:' at column 0).
+    push_matches = list(re.finditer(r"\n  push:\n", text))
+    pr_matches = list(re.finditer(r"\n  pull_request:\n", text))
+
+    if not push_matches:
+        # No push block -- the ratchet would never run on a push to main,
+        # but we still want a precise failure mode. Return empty.
+        return "", ""
+    push_start = push_matches[0].start() + 1  # advance past the leading \n
+
+    if not pr_matches:
+        return text[push_start:], ""
+
+    pr_start = pr_matches[0].start() + 1
+
+    if push_start < pr_start:
+        return text[push_start:pr_start], text[pr_start:]
+    # Defensive: if pr comes before push (unlikely under `on:`), still
+    # return a non-empty pair so the caller can diagnose.
+    return text[pr_start:push_start] if False else text[push_start:], text[pr_start:]
 
 
 if __name__ == "__main__":

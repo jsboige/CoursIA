@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-7-ExtensiveForm-Csharp.ipynb
   parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Verdict a deux niveaux (reclassification #10459 : axe PythonNet omis de la taxonomie bucket-3 #10382, open_spiel inclus -- l angle mort qui classait GT-7 en INTRINSIC implicite). (1) pyspiel-la-lib : PONT .NET demontre en annexe du notebook C# (cellules 28-29) via PythonNet (.NET -> Python.Runtime -> CPython 3.11.9 -> pyspiel 2.0.1 natif Windows, meme axe que GT-13 pyspiel CFR, GT-17 pyspiel rollout, Search-7 pyspiel MCTS, GT-6 axelrod) -- kuhn_poker (Kuhn 1950) charge depuis C# : caracteristiques du jeu, simulation deterministe d une partie, exploration de l arbre avec infosets (DFS borne 14 noeuds), et equilibre par Counterfactual Regret Minimization (CFR, 30 iterations) : NashConv 0.0230 + valeur du jeu P0 = -0.0571 (theorie -1/18 = -0.0556), sortie reelle commitee. Pont installe (pythonnet NuGet 3.0.5 + open_spiel pip 2.0.1, regle F) et branche : SOTA-OK pour ce role. (2) From-scratch C# (sections 1-7 : modele GameNode/ExtensiveFormGame, backward induction, conversion extensive-vers-normale) : reste la contrepartie pedagogique (niveau semantic) -- le pont est EN PLUS jamais A LA PLACE (mandat #10382). L integralite de pyspiel cote Python (section 6 du jumeau) est desormais reachable via le pont ; aucun reste INTRINSIC."
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Pont pyspiel execute (bascule registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : cellule pont `#r nuget pythonnet 3.0.5` (cell[28], execution_count=11) invoque CPython -> pyspiel (axe 5 #10459). Verdict RECOVERABLE-LOCAL -> SOTA-OK : pont execute dans le notebook commite, verdict non rebasculé. parity_level semantic preserve (gel #11200)."
   audits:
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA

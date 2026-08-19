@@ -23,7 +23,9 @@ Ce module formalise les briques probabilistes du converse du seuil `2 log N`
    quadratique centrée du bruit standard `w` (lake externe
    `YuanheZ/lean-stat-learning-theory`, `hanson_wright_inequality`), appliquée
    au vecteur gaussien standard `stdGaussianPi` — la queue chi-square de `‖w‖²`
-   du §11.
+   du §11. Le cas `A = 1` (Brique 3b, `chisq_norm_concentration`) en tire la
+   concentration chi-carré explicite `P(|∑ wᵢ² − n| ≥ t) ≤
+   2·exp(−(1/4C)·min(t²/n, t))`, χ² étant absent de Mathlib v4.32.0.
 
 L'assemblage (`gaussian_coordinate_escape_bound`) : par indépendance des
 coordonnées (`Measure.pi_pi`), la probabilité que le bruit échappe aux `n`
@@ -211,6 +213,148 @@ theorem hanson_wright_noise {n : ℕ} {A : Matrix (Fin n) (Fin n) ℝ} {C t : �
     exact hasSubgaussianMGF_eval_stdGaussianPi i
   simpa using hanson_wright_inequality (μ := stdGaussianPi n) (K := 1) (C := C)
     (t := t) one_pos hC hC₁ hC₂ hC₃ hC₄ hF hOp iIndepFun_eval_stdGaussianPi hcert ht
+
+/-! ## Brique 3b — concentration chi-carré de `‖w‖²` (cas `A = 1`)
+
+Instanciation `A = 1` (identité) de la Brique 3 : la forme quadratique
+`quadraticForm 1 w` est la norme euclidienne au carré `∑ wᵢ²`, sa moyenne
+est `E‖w‖² = n` (second moment `N(0,1)` de chaque coordonnée), donc
+`centeredQuadraticForm` devient exactement `‖w‖² − n`. Hanson–Wright donne
+alors la queue chi-carré `P(|∑ wᵢ² − n| ≥ t) ≤ 2·exp(−(1/4C)·min(t²/n, t))`.
+C'est la brique « queues chi-squared » de la cartographie #11152 — χ² étant
+absent de Mathlib v4.32.0, elle est formalisée via Hanson–Wright plutôt que
+par une loi χ² dédiée. -/
+
+/-- Forme quadratique identité : contracter `w` avec la matrice identité
+donne la somme des carrés des coordonnées. -/
+lemma quadraticForm_one {n : ℕ} (w : Fin n → ℝ) :
+    quadraticForm (1 : Matrix (Fin n) (Fin n) ℝ) w = ∑ i, w i * w i := by
+  simp [quadraticForm, Matrix.one_apply]
+
+/-- Frobenius carré de l'identité : `‖1‖_F² = n` (une entrée 1 par ligne). -/
+lemma frobeniusNormSq_one {n : ℕ} :
+    frobeniusNormSq (1 : Matrix (Fin n) (Fin n) ℝ) = (n : ℝ) := by
+  simp [frobeniusNormSq, Matrix.one_apply]
+
+/-- Frobenius de l'identité au carré : `‖1‖_F² = n`. Version directement
+utilisable dans la borne Hanson–Wright. -/
+lemma frobeniusNorm_one_sq {n : ℕ} :
+    frobeniusNorm (1 : Matrix (Fin n) (Fin n) ℝ) ^ 2 = (n : ℝ) := by
+  have h : frobeniusNorm (1 : Matrix (Fin n) (Fin n) ℝ) = Real.sqrt ((n : ℝ)) :=
+    show Real.sqrt (frobeniusNormSq (1 : Matrix (Fin n) (Fin n) ℝ)) = _ by
+      rw [frobeniusNormSq_one]
+  rw [h, Real.sq_sqrt (Nat.cast_nonneg n)]
+
+/-- Norme d'opérateur de l'identité : `‖1‖_op = 1` pour `n ≥ 1`. L'identité
+matricielle agit comme l'identité sur l'espace euclidien (`one_mulVec`), donc
+la norme vaut 1 par encadrement : `‖x‖ ≤ 1·‖x‖` et `1 = ‖e_{i₀}‖ ≤ ‖1‖·1`
+sur un vecteur de base. -/
+lemma operatorNorm_one {n : ℕ} (hn : 0 < n) :
+    operatorNorm (1 : Matrix (Fin n) (Fin n) ℝ) = 1 := by
+  obtain ⟨i₀⟩ : Nonempty (Fin n) := Fin.pos_iff_nonempty.mp hn
+  have happl : ∀ x : EuclideanSpace ℝ (Fin n),
+      Matrix.toEuclideanCLM (𝕜 := ℝ) (1 : Matrix (Fin n) (Fin n) ℝ) x = x := by
+    intro x
+    have h : WithLp.ofLp (Matrix.toEuclideanCLM (𝕜 := ℝ)
+        (1 : Matrix (Fin n) (Fin n) ℝ) x) = WithLp.ofLp x := by
+      rw [Matrix.ofLp_toEuclideanCLM, Matrix.one_mulVec]
+    exact @WithLp.ofLp_injective _ _ _ _ h
+  refine le_antisymm ?_ ?_
+  · exact ContinuousLinearMap.opNorm_le_bound _ zero_le_one
+      fun x => by rw [happl x, one_mul]
+  · have hx : ‖(EuclideanSpace.single i₀ (1 : ℝ) : EuclideanSpace ℝ (Fin n))‖ = 1 := by
+      simp
+    have hle := ContinuousLinearMap.le_opNorm
+      (Matrix.toEuclideanCLM (𝕜 := ℝ) (1 : Matrix (Fin n) (Fin n) ℝ))
+      (EuclideanSpace.single i₀ (1 : ℝ))
+    rw [happl, hx, mul_one] at hle
+    exact hle
+
+/-- Second moment d'une coordonnée du bruit standard : `E[(wᵢ)²] = 1`.
+Variance de `N(0,1)` transportée par la loi image `map_eval_stdGaussianPi`. -/
+lemma integral_sq_eval_stdGaussianPi {n : ℕ} (i : Fin n) :
+    ∫ w : Fin n → ℝ, (w i) ^ 2 ∂stdGaussianPi n = 1 := by
+  have hg : AEStronglyMeasurable (fun x : ℝ => x ^ 2)
+      ((stdGaussianPi n).map (fun w => w i)) := by
+    rw [map_eval_stdGaussianPi i]
+    exact (measurable_id.pow_const 2).aestronglyMeasurable
+  calc ∫ w : Fin n → ℝ, (w i) ^ 2 ∂stdGaussianPi n
+      = ∫ x : ℝ, x ^ 2 ∂(stdGaussianPi n).map (fun w => w i) :=
+        (integral_map (α := Fin n → ℝ) (β := ℝ) (μ := stdGaussianPi n)
+          (φ := fun w => w i) (f := fun x : ℝ => x ^ 2)
+          (measurable_pi_apply i).aemeasurable hg).symm
+    _ = ∫ x : ℝ, x ^ 2 ∂gaussianReal 0 1 := by rw [map_eval_stdGaussianPi i]
+    _ = 1 := by
+        have h := variance_fun_id_gaussianReal (μ := 0) (v := 1)
+        rw [variance_eq_integral measurable_id'.aemeasurable] at h
+        simpa using h
+
+/-- Moyenne de la norme euclidienne au carrée du bruit standard :
+`E‖w‖² = n` (échange somme/intégrale fini, chaque coordonnée contribuant
+son second moment `E[(wᵢ)²] = 1`). -/
+theorem integral_sqnorm_stdGaussianPi {n : ℕ} :
+    ∫ w : Fin n → ℝ, ∑ i, w i * w i ∂stdGaussianPi n = (n : ℝ) := by
+  have hinteg : ∀ i : Fin n,
+      Integrable (fun w : Fin n → ℝ => w i * w i) (stdGaussianPi n) := by
+    intro i
+    have h : Integrable (fun w : Fin n → ℝ => (w i) ^ 2) (stdGaussianPi n) :=
+      integrable_sq_eval_stdGaussianPi i
+    rwa [show (fun w : Fin n → ℝ => (w i) ^ 2) = fun w => w i * w i from
+      by funext w; ring] at h
+  rw [integral_finsetSum Finset.univ (fun i _ => hinteg i)]
+  have h1 : ∀ i : Fin n, ∫ w : Fin n → ℝ, w i * w i ∂stdGaussianPi n = 1 := by
+    intro i
+    calc ∫ w : Fin n → ℝ, w i * w i ∂stdGaussianPi n
+        = ∫ w : Fin n → ℝ, (w i) ^ 2 ∂stdGaussianPi n :=
+          integral_congr_ae (ae_of_all _ (fun w => by ring))
+      _ = 1 := integral_sq_eval_stdGaussianPi i
+  have hsum : ∑ i : Fin n, ∫ w : Fin n → ℝ, w i * w i ∂stdGaussianPi n
+      = ∑ i : Fin n, 1 := Finset.sum_congr rfl fun i _ => h1 i
+  rw [hsum]
+  simp
+
+/-- **Concentration chi-carré de la norme du bruit** (brique « queues
+chi-squared » de la cartographie #11152) : pour `w ~ N(0, Iₙ)` avec `n ≥ 1`,
+la déviation de la norme euclidienne au carré à sa moyenne `n` est
+sous-exponentielle —
+
+`P(|∑ wᵢ² − n| ≥ t) ≤ 2·exp(−(1/(4C))·min(t²/n, t))`.
+
+Cas `A = 1` de `hanson_wright_noise` : forme quadratique identité
+(`quadraticForm_one`), moyenne `E‖w‖² = n` (`integral_sqnorm_stdGaussianPi`),
+normes `‖1‖_F² = n` et `‖1‖_op = 1`. La composante quadratique redonne la
+déviation gaussienne classique, la composante linéaire la borne
+sous-exponentielle des grandes déviations de `‖w‖²`. -/
+theorem chisq_norm_concentration {n : ℕ} (hn : 0 < n) {C t : ℝ}
+    (hC : 0 < C) (hC₁ : 4 * Real.exp 1 ≤ C) (hC₂ : 8 * Real.exp 1 ^ 3 ≤ C)
+    (hC₃ : 16 * Real.exp 1 ≤ C ^ 2) (hC₄ : 64 * Real.exp 1 ^ 2 ≤ C)
+    (ht : 0 ≤ t) :
+    (stdGaussianPi n {w : Fin n → ℝ | t ≤ |∑ i, w i * w i - (n : ℝ)|}).toReal ≤
+      2 * Real.exp (-(1 / (4 * C)) * min (t ^ 2 / (n : ℝ)) t) := by
+  have hF : 0 < frobeniusNorm (1 : Matrix (Fin n) (Fin n) ℝ) :=
+    Real.sqrt_pos.mpr (by
+      show 0 < frobeniusNormSq (1 : Matrix (Fin n) (Fin n) ℝ)
+      rw [frobeniusNormSq_one]
+      exact Nat.cast_pos.mpr hn)
+  have hOp : 0 < operatorNorm (1 : Matrix (Fin n) (Fin n) ℝ) := by
+    rw [operatorNorm_one hn]
+    norm_num
+  have hev : ∀ w : Fin n → ℝ,
+      centeredQuadraticForm (stdGaussianPi n) (1 : Matrix (Fin n) (Fin n) ℝ)
+          (fun i w => w i) w = ∑ i, w i * w i - (n : ℝ) := by
+    intro w
+    simp only [centeredQuadraticForm, randomQuadraticForm, quadraticForm_one]
+    rw [integral_sqnorm_stdGaussianPi]
+  have hset : {w : Fin n → ℝ | t ≤ |∑ i, w i * w i - (n : ℝ)|} =
+      {w : Fin n → ℝ | t ≤ |centeredQuadraticForm (stdGaussianPi n)
+        (1 : Matrix (Fin n) (Fin n) ℝ) (fun i w => w i) w|} := by
+    ext w
+    simp only [Set.mem_setOf_eq]
+    rw [hev w]
+  rw [hset]
+  have hw := hanson_wright_noise (A := (1 : Matrix (Fin n) (Fin n) ℝ))
+    hC hC₁ hC₂ hC₃ hC₄ hF hOp ht
+  rwa [frobeniusNorm_one_sq, operatorNorm_one hn, div_one] at hw
 
 /-! ## Assemblage — squelette de l'argument d'impossibilité du §11 -/
 

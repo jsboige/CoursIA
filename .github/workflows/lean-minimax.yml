@@ -11,10 +11,11 @@ name: Lean CI (minimax_lean)
 # affine⇒quasi-convex/quasi-concave + continuous⇒LSC/USC) is the OPEN next milestone,
 # honestly documented (NOT sorry-stubbed).
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the library is fully sorry-free;
-# this guards that NO new standalone `sorry` tactic is introduced (never
+# sorry-filter-mode=real, baseline=0: the library is fully sorry-free;
+# this guards that NO new `sorry` is introduced (never
 # false-positives on prose mentions of "0-sorry"/"sans sorry"; catches any NEW
-# standalone sorry). All proved lemmas (bilinearity, continuity) are 0-sorry.
+# sorry, including `exact sorry`, `theorem foo := by sorry`, `def f : T := sorry`,
+# `<;> sorry`). All proved lemmas (bilinearity, continuity) are 0-sorry.
 
 on:
   push:
@@ -43,4 +44,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/GameTheory/minimax_lean
       display-name: minimax_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

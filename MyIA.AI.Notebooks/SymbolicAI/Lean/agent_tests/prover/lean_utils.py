@@ -152,6 +152,78 @@ def count_real_sorries(content: str) -> int:
     return len(_SORRY_TOKEN_RE.findall(strip_lean_comments(content)))
 
 
+# Implicit-sorry detection (Epic #1500, c.1301+209):
+#
+# Tactic strategies like ``apply?`` / ``exact?`` / ``solve_by_elim`` fall back
+# to an implicit ``sorry`` when they cannot find a proof. The compiled module
+# still builds, but Lean emits a warning of the form:
+#
+#     warning: declaration uses 'sorry'
+#
+# This warning is NOT detected by ``count_real_sorries`` (which counts the
+# textual token in source) — the source file genuinely contains no ``sorry``
+# anymore, the proof was merely compiled as ``sorry`` by a failing tactic.
+# Without this check, the prover reports success and the harness accepts a
+# false positive (founding incident: BG2 GaleShapley L98, 2026-05-23).
+#
+# Two distinct patterns appear in Lean output:
+#
+# 1. ``declaration uses 'sorry'`` (Lake 4.x onwards — modern wording)
+# 2. ``uses 'sorry'`` (older wording — kept as a fallback)
+#
+# Both are matched by a SINGLE regex with an optional ``declaration``
+# prefix; this avoids double-counting when both patterns would match the
+# same substring.
+_IMPLICIT_SORRY_RE = re.compile(r"(?:declaration )?uses ['\"]?sorry['\"]?")
+
+
+def count_implicit_sorries(build_output: Optional[str]) -> int:
+    """Count implicit-sorry warnings emitted by ``lake build`` (Epic #1500).
+
+    A "real" sorry dropped by ``count_real_sorries`` is paired with an
+    implicit sorry when the replacement tactic (typically ``apply?`` or
+    ``exact?``) failed to find a proof and silently fell back to ``sorry``.
+    Lean reports this through ``declaration uses 'sorry'`` (or the older
+    ``uses 'sorry'``) warning.
+
+    Args:
+        build_output: Raw ``lake build`` output (stdout/stderr captured).
+            ``None`` or empty string yields 0 (no build ran → no warning).
+
+    Returns:
+        Number of ``(declaration )?uses 'sorry'`` warnings found. Each
+        occurrence is counted once, regardless of which of the two wordings
+        Lean emitted.
+
+    Notes:
+        Casing is matched case-sensitively: Lean emits ``declaration uses
+        'sorry'`` in lowercase. The matching does NOT strip comments because
+        Lake output is plain text, not Lean source.
+    """
+    if not build_output:
+        return 0
+    return len(_IMPLICIT_SORRY_RE.findall(build_output))
+
+
+def count_sorries_combined(content: str, build_output: Optional[str]) -> int:
+    """Combined count: REAL (textual) + IMPLICIT (build-warning) sorries.
+
+    This is the function callers should use when a Lean build output is
+    available — it is the only counter that catches ``apply?`` /
+    ``exact?`` fallbacks (Epic #1500).
+
+    Args:
+        content: Source text of the Lean file.
+        build_output: Raw ``lake build`` output (or ``None`` if no build ran).
+
+    Returns:
+        ``count_real_sorries(content) + count_implicit_sorries(build_output)``.
+        When ``build_output`` is ``None`` or empty, the result equals
+        ``count_real_sorries(content)`` (i.e. implicit count = 0).
+    """
+    return count_real_sorries(content) + count_implicit_sorries(build_output)
+
+
 _DECL_START_RE = re.compile(
     r"^\s*(?:@\[[^\]]*\]\s*)?"
     r"(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+)*"
@@ -308,12 +380,27 @@ def is_true_placeholder_goal(filepath: str, sorry_line: int) -> Tuple[bool, str]
     new_lines = lines[:sorry_line - 1] + [indent_str + _TRUE_PROBE] + lines[sorry_line:]
     tmp_path.write_text("\n".join(new_lines), encoding="utf-8")
     try:
-        raw_output = verifier.verify_project_file(relative_path).get("raw_output", "") or ""
+        probe_result = verifier.verify_project_file(relative_path)
     finally:
         try:
             tmp_path.unlink()
         except OSError:
             pass
+
+    # FX-5b (#1453 iteration 1): a probe build that timed out or crashed
+    # (LeanVerifier TimeoutExpired / FileNotFoundError branches) yields
+    # success=False with an EMPTY raw_output — and ``_probe_closes_goal("")``
+    # sees "no error at the sorry line" and false-positives the goal as
+    # ``True``. Observed firsthand (2026-08-17): Folk.lean:127, a genuine
+    # Fudenberg–Maskin stretch goal, refused as TRUE_PLACEHOLDER after the
+    # 600s probe build timed out under host memory pressure — the run never
+    # entered its loop. Empty output on a failed build is NO evidence either
+    # way; only a probe that produced output (or succeeded cleanly) may
+    # decide. Non-empty output keeps full prior semantics: errors far from
+    # the probed line stay valid evidence the elaborator ran there.
+    raw_output = probe_result.get("raw_output", "") or ""
+    if not probe_result.get("success") and not raw_output.strip():
+        return False, ""
 
     if _probe_closes_goal(raw_output, sorry_line):
         return True, (
@@ -1089,8 +1176,15 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     # P2: require absence of ALL errors in _SorryVerify.lean, not just nearby.
     # Distant errors indicate the replacement broke something elsewhere.
     has_distant_error = len(distant_errors) > 0
+    # P3 (Epic #1500, c.1301+209): also reject when the probe build output
+    # carries an implicit-sorry warning (``declaration uses 'sorry'``). This
+    # catches the ``apply?`` / ``exact?`` / ``solve_by_elim`` fallback case
+    # where the textual sorry is gone from the source but the proof is still
+    # compiled as ``sorry``. Founding incident: BG2 GaleShapley L98
+    # (2026-05-23) — counter reported 1→0, real sorry still present.
+    implicit_sorry_in_probe = count_implicit_sorries(raw_output) > 0
     is_success = (not has_direct_error and not has_cascade_error
-                  and not has_distant_error)
+                  and not has_distant_error and not implicit_sorry_in_probe)
 
     # Extract residual goals from cascade errors (lines starting with ⊢)
     residual_goals = []
@@ -1122,6 +1216,19 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             + "\n".join(distant_errors[:2])
         )
         error_type = "distant_errors"
+    elif implicit_sorry_in_probe:
+        # P3 (Epic #1500): the probe compiled with no error but Lean emitted
+        # ``declaration uses 'sorry'`` — the replacement tactic fell back to
+        # an implicit sorry (``apply?`` / ``exact?`` / ``solve_by_elim``).
+        # This is a FALSE POSITIVE on success; the real sorry count is flat.
+        n_implicit = count_implicit_sorries(raw_output)
+        error_msg = (
+            f"Tactic at line {sorry_line} compiled but emitted "
+            f"{n_implicit} 'declaration uses sorry' warning(s) — likely "
+            f"apply?/exact? fallback. Treat as FALSE POSITIVE "
+            f"(see Epic #1500)."
+        )
+        error_type = "implicit_sorry"
     else:
         error_msg = ""
         error_type = None

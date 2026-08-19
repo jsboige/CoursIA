@@ -2,10 +2,15 @@
   family: Sudoku
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib idiomatic-stack probabiliste : Python = NumPyro (SOTA Python probabilistic programming framework sur JAX, MCMC + inference variationnelle, stochastic). C# = Infer.NET (Microsoft Research legacy, SOTA .NET probabilistic programming framework, MCMC + expectation propagation + variational message passing, deterministic compilation). Les deux utilisent la SOTA PPL de leur stack respective. Pont cross-stack impossible : NumPyro est JAX-based (Python only, JAX compile XLA), Infer.NET est .NET only (compilation deterministe vers C#). Aucun bytecode commun bridgeable (pas de JPype, pas d'IKVM -- les deux PPL sont compiles dans leur stack respective). Verifie firsthand (c.235 audit 2026-08-12, myia-po-2023:CoursIA-2) : Python 34 cells / C# 47 cells, structure pedagogique symetrique (modele probabiliste Sudoku, observations, inference posterior). Asymetrie : Python = stochastic MCMC (echantillonnage NUTS), C# = deterministic variational message passing (EP/VMP). Les deux methodes sont SOTA dans leur stack, et l'objectif pedagogique (modeliser l'incertitude sur les valeurs Sudoku) est tenu. Verdict SOTA-OK : lib-vs-lib idiomatic-stack PPL, aucune asymetrie engine-mismatch a corriger."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 9c9644c74bd05c238944c93c2828fedaf23eabd6
+      csharp_sha: 4f37b203d3e70f7e894b2602ef8333374adf8197
+      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint NumPyro/JAX (SVI, Trace_ELBO, import jax + numpyro.infer), C# atteint Infer.NET (Microsoft.ML.Probabilistic). Les deux cotes executent un moteur de programmation probabiliste de production. Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
     - date: "2026-08-03"
       by: myia-po-2023:CoursIA
       python_sha: d1282426b7eea1e38e808669eace82467deb0567
@@ -20,7 +25,20 @@
       csharp_sha: ef5632ca0b72c78238ffff335fd612369c064a78
       content_python_sha: b1ee07eca7b6504fa3398ce9263e423c29407bf8770c9601269869b5eba30e87
       content_csharp_sha: 3f30f4248ed93c96eaef8624d47203ecd4fbea45bc11b67c6bde751b14ffeba7
+    - date: "2026-08-16"
+      by: myia-po-2025:CoursIA
+      python_sha: 9c9644c74bd05c238944c93c2828fedaf23eabd6
+      csharp_sha: 67a9e214e7cdff686215e7f494bf30d151b0cca1
+      content_python_sha: b1ee07eca7b6504fa3398ce9263e423c29407bf8770c9601269869b5eba30e87
+      content_csharp_sha: 4e52d4b51759f726c4e932eefc742f05d8a37f508bc982f758db7fb1dd06a1ba
+    - date: "2026-08-17"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 9c9644c74bd05c238944c93c2828fedaf23eabd6
+      csharp_sha: 4f37b203d3e70f7e894b2602ef8333374adf8197
+      content_python_sha: b1ee07eca7b6504fa3398ce9263e423c29407bf8770c9601269869b5eba30e87
+      content_csharp_sha: bc5077c94b514dd5fd8300931684088c1ea14a22dde311216989b7c1fbd1e61f
   known_differences:
+    - "Rebaseline 2026-08-17 : cote C# draine des timings MACHINE-DEP en cellule[24] (4 valeurs : 350 s, 349,9 s, 0,92 s, 922 ms, 5,8 minutes) et cellule[42] (4 valeurs : ~14-26 s, ~100 ms, ~1,8 s, ~18-112 ms, ~30-60 s) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Rebaseline 2026-08-05 : cote Python deplace par de-pin des versions JAX/NumPyro depuis la table de la cellule[3] (criterion 2 #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
     - "Socle pedagogique commun : resolution PROBABILISTE du Sudoku par inference bayesienne/probabiliste, meme concept (modeliser l'incertitude sur les cases, inferrer les valeurs les plus probables), meme angle (approche non-deterministe par contraste avec les solveurs exacts de la serie)."
     - "Divergence de framework probabiliste : Python = NumPyro (MCMC, inference variationnelle, stochastic) ; C# = Infer.NET (modelisation probabiliste .NET, message passing). Meme paradigme (inference probabiliste), deux frameworks stochastiques distincts -- les sorties numeriques different d'une execution a l'autre (MCMC sampling), parite au niveau du concept et de la demarche, pas des valeurs exactes."
