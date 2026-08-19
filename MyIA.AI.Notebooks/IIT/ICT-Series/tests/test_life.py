@@ -12,6 +12,7 @@ import os
 import sys
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -155,3 +156,36 @@ def test_trajectory_symbols_glider_cycle_length():
     symbols, states = trajectory_symbols(traj)
     assert len(states) == 64
     assert symbols[0] == symbols[-1]  # la fenetre referme le cycle
+
+
+# ------------------------------------------- ensemble des graines (phase narrative #5726)
+def test_torus_ensemble_tpm_deterministic_and_degenerate():
+    from ict.life import torus_ensemble_tpm
+
+    tpm, succ = torus_ensemble_tpm(2)
+    assert tpm.shape == (16, 16)
+    # determinisme : chaque ligne est un one-hot
+    assert np.allclose(tpm.sum(axis=1), 1.0)
+    assert np.all((tpm == 0.0) | (tpm == 1.0))
+    # degenerescence mesuree de B3/S23 sur le tore 2x2 : 5 successeurs distincts
+    assert len(set(succ.tolist())) == 5
+    # k hors cap -> erreur explicite (jamais de TPM 65536x65536 silencieuse)
+    with pytest.raises(ValueError):
+        torus_ensemble_tpm(4)
+
+
+def test_fate_and_population_strata_partition_exhaustive():
+    from ict.life import fate_strata, live_count_strata, torus_ensemble_tpm
+
+    _, succ = torus_ensemble_tpm(2)
+    fate = fate_strata(succ)
+    flat = [s for g in fate for s in g]
+    assert sorted(flat) == list(range(16))
+    # les strates de destin sont les fibres : une strate = un seul successeur
+    assert all(len(set(succ[g].tolist())) == 1 for g in fate)
+
+    pop = live_count_strata(2, succ)
+    flat = [s for g in pop for s in g]
+    assert sorted(flat) == list(range(16))
+    # strates de population d'un tore 2x2 : tailles du triangle de Pascal
+    assert [len(g) for g in pop] == [1, 4, 6, 4, 1]

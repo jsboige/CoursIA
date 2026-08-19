@@ -53,6 +53,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: twin-parity-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   twin-parity:
     name: "Twin parity audit (#8057)"

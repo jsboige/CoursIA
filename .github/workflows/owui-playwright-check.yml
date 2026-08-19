@@ -33,6 +33,10 @@ defaults:
 permissions:
   contents: read
 
+concurrency:
+  group: owui-playwright-check-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   compile-collect:
     name: Compile & Collect (no live server)

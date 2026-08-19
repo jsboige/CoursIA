@@ -1,4 +1,9 @@
 # Compiled models from Infer.NET
-CompiledModels/
+# CompiledModels/ is COMMITTED on purpose: it carries the precompiled
+# RobustSudokuModel (.cs source + .dll) so the PrecompiledRobustSudokuModel
+# preload path (DLL first, .cs compile fallback, from-scratch last) works
+# out of the box on a fresh clone instead of paying the first-run compile.
+# GeneratedSource/ stays ignored: intermediate compiler scratch (multiple
+# stale Model*_EP.cs versions), the curated artifact lives in CompiledModels/.
 GeneratedSource/
 *.jar

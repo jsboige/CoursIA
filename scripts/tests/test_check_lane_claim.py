@@ -2686,3 +2686,99 @@ def test_release_body_renders_paths_clause():
     )
     assert body.split("\n")[0] == \
         "[RELEASED] lane myia-po-2024:CoursIA -- PR #42 -- paths: x/**"
+
+
+# --- #11755: epic-wide claim without paths: clause -- diagnostic + body inference ---
+
+def test_inferred_paths_simple_label():
+    # #11755 acceptance (2): a comment body carrying `Path:` advertises an
+    # intended path. The helper surfaces it as a single-item list (the most
+    # natural form). Order is body order -- the line that mentions the path
+    # first wins.
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+        "\n"
+        "Path : MyIA.AI.Notebooks/GenAI/Audio/04-7.ipynb\n"
+    )
+    assert clc._infer_paths_from_body(body) == [
+        "MyIA.AI.Notebooks/GenAI/Audio/04-7.ipynb",
+    ]
+
+
+def test_inferred_paths_multiple_labels_and_form_variants():
+    # #11755 acceptance (2) breadth: a single body may carry several labels
+    # in different locales (`Path :`, `Paths :`, `Fichier :`, `Notebook :`).
+    # All are captured, deduplicated, in body order.
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- umbrella\n"
+        "\n"
+        "Path : MyIA.AI.Notebooks/GenAI/Audio/a.ipynb\n"
+        "Paths : MyIA.AI.Notebooks/GenAI/Audio/b.ipynb\n"
+        "Fichier : MyIA.AI.Notebooks/GenAI/Audio/c.ipynb\n"
+        "Notebook : MyIA.AI.Notebooks/GenAI/Audio/a.ipynb\n"  # duplicate
+    )
+    out = clc._infer_paths_from_body(body)
+    assert out == [
+        "MyIA.AI.Notebooks/GenAI/Audio/a.ipynb",
+        "MyIA.AI.Notebooks/GenAI/Audio/b.ipynb",
+        "MyIA.AI.Notebooks/GenAI/Audio/c.ipynb",
+    ]
+
+
+def test_inferred_paths_inline_marker_label():
+    # #11755 acceptance (2) -- the inline form: `Path : ...` may appear on the
+    # same line as the marker itself. The decorative prefix (`- **[`, `> [`,
+    # `## [`) is tolerated; the helper still extracts the path. The trailing
+    # `**` of the markdown decoration is PART of the capture group (the regex
+    # only strips `.`, `,`, `;`, `:`) -- the proposer is expected to leave
+    # the closing decoration on a separate line if the cleanup matters.
+    body = (
+        "### [CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+        "\n"
+        "Path : MyIA.AI.Notebooks/GenAI/Audio/x.ipynb\n"
+    )
+    assert clc._infer_paths_from_body(body) == [
+        "MyIA.AI.Notebooks/GenAI/Audio/x.ipynb",
+    ]
+
+
+def test_inferred_paths_empty_or_absent():
+    # #11755 acceptance (2) -- when no label is present, the helper returns an
+    # empty list. The lint degrades gracefully (no WARN noise, just the legacy
+    # INFO line -- no inferred suffix).
+    assert clc._infer_paths_from_body("") == []
+    assert clc._infer_paths_from_body(
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+    ) == []
+
+
+def test_lint_epic_wide_marker_with_inferred_path_echoes_expected_shape(capsys):
+    # #11755 acceptance (3): when an OPEN marker has NO `paths:` clause AND
+    # the body advertises a `Path:`, the WARN echoes BOTH the inferred path
+    # AND the expected machine clause shape. The verdict is unchanged (still
+    # epic-wide / blocking) -- the warning is a usability nudge, not a
+    # gate. This pins backward compatibility: a caller relying on the legacy
+    # epic-wide behaviour is not silently broken.
+    # Body must be parsed through `_parse_claim_events` so `_body` is attached
+    # to the event (the lint mines `ev.get("_body")`).
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+        "\n"
+        "Path : MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n"
+    )
+    events = clc._parse_claim_events(comment(body, "2026-08-18T00:00:00Z"))
+    clc._lint_claim_events(events, issue_number=11112)
+    captured = capsys.readouterr()
+    assert "INFO: marqueur CLAIMED epic-wide" in captured.err
+    assert (
+        "MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb"
+        in captured.err
+    ), (
+        "The inferred `Path:` MUST appear on stderr so the lane learns at "
+        "the call site that the body declared an intent the marker did not "
+        "carry (#11755 Piste 2)."
+    )
+    assert "Forme attendue : `[CLAIMED] lane <machine:workspace> -- paths:" in captured.err, (
+        "The WARN must name the expected machine-clause shape so the lane "
+        "can reissue without consulting the docs (#11755 Piste 3)."
+    )
