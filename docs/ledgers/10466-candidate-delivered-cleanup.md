@@ -128,7 +128,7 @@ Chaque entry = 1 cycle worker, avec :
 
 - [scripts/candidate_delivered.py](https://github.com/jsboige/CoursIA/blob/main/scripts/candidate_delivered.py) — l'organe qui pose le label
 - [scripts/candidate_delivered.py::EPICs exclusion](https://github.com/jsboige/CoursIA/blob/main/scripts/candidate_delivered.py) — exclusion des EPICs par titre/label
-- [proactive-coordination.md](../.claude/rules/proactive-coordination.md) règle R5 — pool global, jamais siloté
+- [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) règle R5 — pool global, jamais siloté
 - EPIC #10466 — diagnostic du compteur delivered-urn saturé
 - Issue #10918 — registre permanent ai-01 (orphan-branch-scan cron 05:57 UTC)
 - Issue #3979 — READMEs feuilles (umbrella lean math, RELEASED épic-wide po-2026 10:15Z le 2026-08-17)
