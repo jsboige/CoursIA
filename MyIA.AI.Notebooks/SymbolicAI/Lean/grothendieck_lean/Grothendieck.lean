@@ -9,6 +9,8 @@ import Grothendieck.Construction
 import Grothendieck.Cover
 import Grothendieck.CoverageGen
 import Grothendieck.CoversArrow
+import Grothendieck.CoversAtomicArrow
+import Grothendieck.CoversAtomicArrow_en
 import Grothendieck.CoversBind
 import Grothendieck.CoversCoverageArrow
 import Grothendieck.CoversCoverageArrow_en
@@ -16,6 +18,8 @@ import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPrecoverageArrow
 import Grothendieck.CoversPrecoverageArrow_en
+import Grothendieck.CoversPretopologyArrow
+import Grothendieck.CoversPretopologyArrow_en
 import Grothendieck.CoversPullback
 import Grothendieck.CoversPushforward
 import Grothendieck.CoversTopologies
