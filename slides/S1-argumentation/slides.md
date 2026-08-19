@@ -141,7 +141,7 @@ layout: cover
   - et (prémisse de réfutation)
   - Alors (Conclusion)
 
-<!-- Toulmin : Donnees → Garantie → Conclusion, + Fondement, Qualificateur, Refutation -->
+<!-- Toulmin : Données → Garantie → Conclusion, + Fondement, Qualificateur, Refutation -->
 
 
 ---
@@ -465,7 +465,7 @@ layout: two-cols
 - **Objectif de l'inférence logique**
   - Vérifier qu'un énoncé est une conséquence de la KB, i.e. un théorème
 - **Inférence par la preuve**
-  - Utilisation de règles de dérivation cohérentes pour produire une chaine de conclusions conduisant au but
+  - Utilisation de règles de dérivation cohérentes pour produire une chaîne de conclusions conduisant au but
 
 **Exemple de règles cohérentes**
 

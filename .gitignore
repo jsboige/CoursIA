@@ -961,3 +961,12 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/.dialogues-build/
 # patch state), never committed.
 .quarto_csharp_fix_manifest.json
 .quarto_yaml_safe_manifest.json
+
+# Infer.NET factor-graph render side-artifacts (#11685)
+# InferHelpers/Graphviz rendering writes a timestamped Model_<MM_DD_YY_HH_MM_SS_ff>.gv + .svg
+# pair next to the notebook on every execution — the SVG that matters is embedded in the cell
+# output, these on-disk copies are transient. Timestamped names mean each re-exec drops a new
+# pair, so tracking them accumulates junk forever. Nothing in the repo references them (git
+# ls-files '*.gv' is empty).
+MyIA.AI.Notebooks/**/Model_[0-9]*.gv
+MyIA.AI.Notebooks/**/Model_[0-9]*.svg

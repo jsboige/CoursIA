@@ -2,10 +2,15 @@
   family: Tweety/IKVM-JPype
   python: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Java TweetyProject (argumentation abstraite de Dung + semantique CF2 + 11 notions d'equivalence) : C# branche IKVM 8.15.0 avec `tweety-dung.dll` + `tweety-rpcl.dll` (DLLs source-recompilees selon pattern c.220 IKVM causal rebuild, tracked sur disque) + 30 refs `org.tweetyproject.*` (cell 26 SccCF2Reasoner cell 28 11 notions equivalence via Assembly.LoadFrom + reflection IKVM sur les types exposes par les DLLs shade). Python branche JPype + `from org.tweetyproject.arg.dung.syntax import DungTheory, Argument` + meme moteur Java. Verifie firsthand (c.229, 2026-08-12, po-2023:CoursIA-2) : DLLs source compilees (pas bytecode 59 maven-shade), C# `Console.WriteLine` confirme `DLL tweety-dung chargee : ... v1.30.0`, Python `jpype.getDefaultJVMPath()` + init JVM. NB : le C# N'UTILISE PAS de `using org.tweetyproject` explicite mais instancie les types via reflection `Assembly.LoadFrom(...).GetType(...)` (pattern IKVM 8.x : IKVM traduit les packages Java en types .NET, accessibles par reflection sans `using` direct). Pont IKVM-bytecode .NET vs JPype-JVM-runtime sur le meme moteur Java."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52
+      csharp_sha: 1cb02535990e166e31594dd2d5b852dd04877aff
+      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint TweetyProject via JPype (9 imports + 25 references), C# atteint les DLLs Tweety compilees IKVM (20 references). Meme moteur Tweety des deux cotes. Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
     - date: "2026-08-04"
       by: myia-po-2026:CoursIA
       python_sha: 809a7fa5443afb8aa73aeeb82f870c575aaf1e52

@@ -19,7 +19,7 @@ Intelligence Artificielle -- S4 -- Partie 1 : Fondamentaux
 - Comprendre les fondamentaux du trading algorithmique
 - Apprendre a utiliser Lean/QuantConnect
 - Concevoir et implementer un algorithme de trading
-- Evaluer et optimiser une strategie algorithmique
+- Evaluer et optimiser une stratégie algorithmique
 - Maitriser le traitement de données et l'IA pour le trading
 
 ---
@@ -34,7 +34,7 @@ Intelligence Artificielle -- S4 -- Partie 1 : Fondamentaux
 <div v-click="1">
 
 - **Pourquoi ce cours ?**
-  - Comprendre les mecanismes qui regissent les marches modernes
+  - Comprendre les mécanismes qui regissent les marches modernes
   - Acquerir les competences pratiques avec Lean/QuantConnect
   - Developper une pensee critique face aux promesses du trading automatise
   - Preparer une carriere en finance quantitative ou en data science financiere
@@ -62,12 +62,12 @@ Ce cours est organise en 3 decks thematiques :
   - Types de trading (HFT, MFT, LFT)
   - Marches financiers et instruments
   - Ordres de trading
-  - Trouver et evaluer une strategie
+  - Trouver et evaluer une stratégie
 
 <div v-click="1">
 
-- **Deck 2 : Strategies et Gestion du Risque**
-  - Strategies de trading (Momentum, Mean Reversion, Arbitrage...)
+- **Deck 2 : Stratégies et Gestion du Risque**
+  - Stratégies de trading (Momentum, Mean Reversion, Arbitrage...)
   - Backtesting et metriques de performance
   - Gestion du risque (Kelly, stop loss, diversification)
 
@@ -88,7 +88,7 @@ Ce cours est organise en 3 decks thematiques :
 **Deck 1 : Fondamentaux** -- ce que nous allons couvrir :
 
 - Qu'est-ce que le trading algorithmique ? Profil du trader quant
-- Types de trading : HFT, MFT, LFT et leurs differences
+- Types de trading : HFT, MFT, LFT et leurs différences
 - Les acteurs du marche (Renaissance, Two Sigma, Citadel, QC)
 <div v-click="1">
 
@@ -99,7 +99,7 @@ Ce cours est organise en 3 decks thematiques :
 <div v-click="2">
 
 - Types d'ordres (Market, Limit, Stop, Trailing, Iceberg, OCO)
-- Trouver et evaluer une strategie (Sharpe, drawdown, pieges)
+- Trouver et evaluer une stratégie (Sharpe, drawdown, pieges)
 - Le livre de reference : *Hands-On AI Trading* (Wiley 2025)
 </div>
 
@@ -113,7 +113,7 @@ Ce cours est organise en 3 decks thematiques :
 
 <div v-click="1">
 
-- **Methodes d'analyse**
+- **Méthodes d'analyse**
   - Analyse technique (indicateurs, patterns graphiques)
   - Données fondamentales (revenus, indicateurs macroeconomiques)
   - Données extra-financieres (flux d'actualites, sentiment du marche)
@@ -123,7 +123,7 @@ Ce cours est organise en 3 decks thematiques :
 
 - **Universalite**
   - Tout ce qui est numerisable peut etre utilise en trading quantitatif
-  - Diversification facilitee sur plusieurs strategies simultanees
+  - Diversification facilitee sur plusieurs stratégies simultanees
 
 </div>
 
@@ -155,7 +155,7 @@ Ce cours est organise en 3 decks thematiques :
 </div>
 <div v-click="3">
 
-- **Experience pratique**
+- **Expérience pratique**
   - Finance et programmation cruciales
   - Avoir des economies pour les periodes sans gains
   - Discipline et gestion du stress indispensables
@@ -197,7 +197,7 @@ Ce cours est organise en 3 decks thematiques :
 </div>
 <div v-click="5">
 
-- **Message** : le trading algo n'est plus reserve aux institutions. Les outils modernes permettent a des individuels de developper et tester des strategies professionnelles.
+- **Message** : le trading algo n'est plus reserve aux institutions. Les outils modernes permettent a des individuels de developper et tester des stratégies professionnelles.
 
 </div>
 
@@ -207,14 +207,14 @@ Ce cours est organise en 3 decks thematiques :
 
 - **Scalabilite**
   - Augmenter les volumes sans effort supplementaire
-  - Gerer plusieurs strategies en parallele, sur differents marches
+  - Gerer plusieurs stratégies en parallele, sur différents marches
   - Passage a l'echelle impossible en trading manuel
 <div v-click="1">
 
 - **Optimisation du temps**
-  - Automatisation des taches repetitives (screening, execution)
+  - Automatisation des tâches repetitives (screening, exécution)
   - Plus de temps pour la recherche et l'amelioration des modèles
-  - Execution 24/7 sur les marches crypto et forex
+  - Exécution 24/7 sur les marches crypto et forex
 </div>
 
 ---
@@ -223,11 +223,11 @@ Ce cours est organise en 3 decks thematiques :
 
 - **Elimination des biais emotionnels**
   - Pas de peur, de cupidite ou d'hesitation
-  - Execution disciplinee selon des regles predefinies
-  - Resultats reproductibles et mesurables
+  - Exécution disciplinee selon des règles predefinies
+  - Résultats reproductibles et mesurables
 <div v-click="1">
 
-- **Autonomie et independance**
+- **Autonomie et indépendance**
   - Pas besoin de clients ni de mandats de gestion
   - Focus sur la performance pure du modèle
   - Possibilite de demarrer avec un capital modeste
@@ -238,15 +238,15 @@ Ce cours est organise en 3 decks thematiques :
 # Types de Trading Algorithmique (1/2)
 
 - **HFT (High-Frequency Trading)**
-  - Operations en millisecondes ou microsecondes
+  - Opérations en millisecondes ou microsecondes
   - Objectif: Exploiter de petites inefficacites du marche
   - Technologie: Necessite une infrastructure technologique de pointe
 
 <div v-click="1">
 
 - **MFT (Medium-Frequency Trading)**
-  - Operations sur des secondes, minutes a quelques heures
-  - Objectif: Arbitrage, suivi de tendance, et autres strategies
+  - Opérations sur des secondes, minutes a quelques heures
+  - Objectif: Arbitrage, suivi de tendance, et autres stratégies
   - Flexibilite: Moins exigeant technologiquement mais necessite une analyse de données robuste
 
 </div>
@@ -256,7 +256,7 @@ Ce cours est organise en 3 decks thematiques :
 # Types de Trading Algorithmique (2/2)
 
 - **LFT (Low-Frequency Trading)** -- notre terrain de jeu dans ce cours
-  - Operations sur des jours, semaines ou mois
+  - Opérations sur des jours, semaines ou mois
   - Objectif : investissement base sur des facteurs fondamentaux ou des indicateurs techniques
   - Accessible avec un PC personnel, Python, et un compte QC gratuit
 
@@ -264,9 +264,9 @@ Ce cours est organise en 3 decks thematiques :
 
 - **Notre positionnement dans ce cours**
   - Nous travaillons en **LFT** (rebalancement journalier a bimensuel)
-  - Capital simule de 100 000 $ pour la comparabilite entre strategies
+  - Capital simule de 100 000 $ pour la comparabilite entre stratégies
   - Objectif Sharpe > 0.5 (battre le buy-and-hold SPY), idealement > 1.0
-  - Les strategies MFT et HFT sont presentees pour la culture mais ne sont pas praticables dans notre cadre
+  - Les stratégies MFT et HFT sont presentees pour la culture mais ne sont pas praticables dans notre cadre
 
 </div>
 
@@ -284,7 +284,7 @@ Ce cours est organise en 3 decks thematiques :
 | **Capital min.** | > 1M$ | 10K - 100K$ | 1K - 50K$ |
 | **Infrastructure** | Co-location, FPGA | Serveur dedie | PC personnel |
 | **Competences** | C++, reseaux, hardware | Python, stats | Finance, analyse |
-| **Barriere a l'entrée** | Tres haute | Moyenne | Basse |
+| **Barriere a l'entrée** | Très haute | Moyenne | Basse |
 
 </div>
 
@@ -332,7 +332,7 @@ Un processus iteratif en 6 étapes :
   - Actions, Forex, Futures, Cryptomonnaies
 <div v-click="1">
 
-- **Roles des Participants**
+- **Rôles des Participants**
   - Traders particuliers, institutionnels, market makers, arbitragistes
   - Fournisseurs de liquidite, preneurs de liquidite
 
@@ -374,13 +374,13 @@ Un processus iteratif en 6 étapes :
 <div v-click="3">
 
 - **Cryptomonnaies**
-  - Monnaies numeriques qui utilisent la cryptographie pour securiser les transactions
+  - Monnaies numériques qui utilisent la cryptographie pour securiser les transactions
   - Aspects reglementaires variables
 </div>
 <div v-click="4">
 
 - **Classes d'actifs**
-  - Categories d'investissement (actions, obligations, matieres premieres)
+  - Catégories d'investissement (actions, obligations, matieres premières)
   - Diversification du risque
 
 </div>
@@ -396,7 +396,7 @@ imageClass: top-right visible
 # Analyse Technique et Fondamentale
 
 - **Analyse Technique**
-  - Etude des graphiques de prix et de volume
+  - Étude des graphiques de prix et de volume
   - Indicateurs : moyennes mobiles, RSI, MACD, Bollinger
   - Patterns : chandeliers, tete-epaules, triangles
   - Un chandelier encode 4 infos : open, close, high, low
@@ -412,7 +412,7 @@ imageClass: top-right visible
 <div v-click="2">
 
 - **Combinaison des deux approches**
-  - Technique pour le timing, fondamentale pour la selection
+  - Technique pour le timing, fondamentale pour la sélection
   - Les traders quantitatifs combinent les deux
 
 </div>
@@ -474,7 +474,7 @@ imageClass: mid-right visible
 <div v-click="3">
 
 - **Latence et Couts**
-  - Delais d'execution: Temps entre la soumission et l'execution d'un ordre
+  - Delais d'exécution: Temps entre la soumission et l'exécution d'un ordre
   - Couts de transaction: Frais associes a l'achat et a la vente d'actifs
 </div>
 <div v-click="4">
@@ -510,7 +510,7 @@ imageClass: mid-right visible
 <div v-click="2">
 
 - **Pourquoi c'est important**
-  - Comprendre le carnet d'ordres est fondamental pour toute strategie
+  - Comprendre le carnet d'ordres est fondamental pour toute stratégie
   - Les market makers profitent du spread
   - Les ordres iceberg cachent la vraie profondeur
 
@@ -523,14 +523,14 @@ imageClass: mid-right visible
 # Types d'Ordres Essentiels
 
 - **Market Order** (Ordre au marche)
-  - Execution immediate au meilleur prix disponible
+  - Exécution immediate au meilleur prix disponible
   - Simple mais risque de slippage en marche peu liquide
 
 <div v-click="1">
 
 - **Limit Order** (Ordre a cours limite)
-  - Execution au prix specifie ou mieux
-  - Controle du prix d'execution, mais pas de garantie d'execution
+  - Exécution au prix specifie ou mieux
+  - Contrôle du prix d'exécution, mais pas de garantie d'exécution
 
 </div>
 <div v-click="2">
@@ -561,14 +561,14 @@ imageClass: mid-right visible
 <div v-click="1">
 
 - **OCO (One-Cancels-Other)**
-  - Deux ordres lies : l'execution de l'un annule automatiquement l'autre
+  - Deux ordres lies : l'exécution de l'un annule automatiquement l'autre
   - Exemple : un take profit et un stop loss simultanes
 
 </div>
 <div v-click="2">
 
 - **OTO (One-Triggers-Other)**
-  - Un ordre declenche automatiquement un autre a son execution
+  - Un ordre declenche automatiquement un autre a son exécution
   - Exemple : achat declenche un stop loss automatique
 
 </div>
@@ -610,14 +610,14 @@ imageClass: mid-right visible
 
 ---
 
-# Trouver une Strategie qui vous Convient (1/2)
+# Trouver une Stratégie qui vous Convient (1/2)
 
 - **Sources d'Idees**
   - Articles academiques, blogs, forums, medias
-  - Suivi des meilleures strategies sur plateformes
+  - Suivi des meilleures stratégies sur plateformes
 <div v-click="1">
 
-- **Modification de Strategies**
+- **Modification de Stratégies**
   - Ajustements pour rentabilite
 
 </div>
@@ -628,7 +628,7 @@ imageClass: mid-right visible
 </div>
 <div v-click="3">
 
-- **Strategies qui vous conviennent**
+- **Stratégies qui vous conviennent**
   - Temps disponible: Temps complet vs temps partiel
   - Academiques vs. Publiques: Complexite vs simplicite
   - Competences en programmation: Elargit les options
@@ -639,7 +639,7 @@ imageClass: mid-right visible
 
 ---
 
-# Trouver une Strategie qui vous Convient (2/2)
+# Trouver une Stratégie qui vous Convient (2/2)
 
 - **Votre Capital de Trading**
   - Ancien minimum conseille de 50 000 $ (pattern day trader rule aux US)
@@ -649,7 +649,7 @@ imageClass: mid-right visible
 <div v-click="1">
 
 - **Votre Objectif**
-  - Revenu regulier : strategies a haute frequence de trades (scalping, mean-reversion intraday)
+  - Revenu regulier : stratégies a haute frequence de trades (scalping, mean-reversion intraday)
   - Gains en capital : suivi de tendance long terme (momentum, allocation tactique)
   - Couverture (hedging) : proteger un portefeuille existant contre les baisses de marche
 
@@ -659,13 +659,13 @@ imageClass: mid-right visible
 - **Votre Tolerance au Risque**
   - Quel drawdown maximum pouvez-vous supporter ? (10% conservateur, 25% modere, 50% agressif)
   - Horizon d'investissement : court terme (semaines) vs long terme (annees)
-  - Regle d'or : ne jamais trader de l'argent dont on ne peut pas se permettre la perte totale
+  - Règle d'or : ne jamais trader de l'argent dont on ne peut pas se permettre la perte totale
 
 </div>
 
 ---
 
-# Comment Evaluer une Strategie?
+# Comment Evaluer une Stratégie?
 
 - **Mesures Standard**
   - **Ratio de Sharpe** : SR = (R_p - R_f) / sigma_p -- le "Saint Graal" de l'evaluation
@@ -674,19 +674,19 @@ imageClass: mid-right visible
 
 <div v-click="1">
 
-- **Criteres de performance**
+- **Critères de performance**
   - Rendement annualise (CAGR) : le rendement compose annuel
   - Volatilite des rendements : mesure du risque
   - Ratio gain/perte moyen : taille moyenne des gains vs pertes
-  - Taux de reussite (win rate) : attention, un win rate de 30% peut etre tres profitable !
+  - Taux de reussite (win rate) : attention, un win rate de 30% peut etre très profitable !
 
 </div>
 <div v-click="2">
 
 - **Exemple concret**
-  - Strategie A : Rendement 15%, Volatilite 20% => Sharpe = 0.75
-  - Strategie B : Rendement 10%, Volatilite 8% => Sharpe = 1.25
-  - La strategie B est meilleure sur base ajustee au risque malgre un rendement brut plus faible
+  - Stratégie A : Rendement 15%, Volatilite 20% => Sharpe = 0.75
+  - Stratégie B : Rendement 10%, Volatilite 8% => Sharpe = 1.25
+  - La stratégie B est meilleure sur base ajustee au risque malgre un rendement brut plus faible
 
 </div>
 
@@ -694,19 +694,19 @@ imageClass: mid-right visible
 
 ---
 
-# Strategies Plausibles et leurs Pieges (1/2)
+# Stratégies Plausibles et leurs Pieges (1/2)
 
-- **Drawdowns** (la realite brutale de toute strategie)
+- **Drawdowns** (la realite brutale de toute stratégie)
   - Perte de valeur depuis un pic : profondeur, duree, et vitesse de recuperation a evaluer
-  - Exemple : notre meilleure strategie (EMA-Cross-Alpha, Sharpe 0.98) a un MaxDD de 19% -- acceptable
+  - Exemple : notre meilleure stratégie (EMA-Cross-Alpha, Sharpe 0.98) a un MaxDD de 19% -- acceptable
   - Mais InverseVolatility-Rank v1 avait un MaxDD de 54.7% -- inacceptable pour un capital réel
-  - Regle : si vous ne pouvez pas dormir avec votre drawdown, reduisez votre exposition
+  - Règle : si vous ne pouvez pas dormir avec votre drawdown, reduisez votre exposition
 <div v-click="1">
 
-- **Slippage** (l'ecart entre theorie et realite)
-  - Difference entre le prix prevu et le prix d'execution réelle
-  - Causes : volatilite, taille de l'ordre, liquidite du marche, latence du systeme
-  - Impact : peut transformer une strategie profitable en strategie perdante sur petits alphas
+- **Slippage** (l'ecart entre théorie et realite)
+  - Différence entre le prix prevu et le prix d'exécution réelle
+  - Causes : volatilite, taille de l'ordre, liquidite du marche, latence du système
+  - Impact : peut transformer une stratégie profitable en stratégie perdante sur petits alphas
 
 </div>
 <div v-click="2">
@@ -714,20 +714,20 @@ imageClass: mid-right visible
 - **Couts de Transaction** (le tueur silencieux de rendements)
   - Commissions : de 0$ (Robinhood) a 0.005$/action (Interactive Brokers)
   - Spread bid-ask : cout cache, particulierement significatif sur les small caps
-  - Impact proportionnel a la frequence : une strategie qui trade 50x/jour paie 50x plus qu'une strategie mensuelle
+  - Impact proportionnel a la frequence : une stratégie qui trade 50x/jour paie 50x plus qu'une stratégie mensuelle
 </div>
 <div v-click="3">
 
-- **Evolution du Marche** (les strategies ont une date de peremption)
+- **Evolution du Marche** (les stratégies ont une date de peremption)
   - Les anomalies disparaissent une fois publiees : les arbitrageurs les exploitent et les eliminent
   - Exemple : l'effet Janvier s'est fortement attenue depuis les annees 2000 (trop connu, trop exploite)
-  - Consequence : une strategie doit etre re-evaluee regulierement, pas juste deployee et oubliee
+  - Consequence : une stratégie doit etre re-evaluee regulierement, pas juste deployee et oubliee
 
 </div>
 
 ---
 
-# Strategies Plausibles et leurs Pieges (2/2)
+# Stratégies Plausibles et leurs Pieges (2/2)
 
 - **Changements de Regime** (le risque le plus sous-estime)
   - Les données historiques pre-COVID ne predisent pas le comportement post-COVID
@@ -737,15 +737,15 @@ imageClass: mid-right visible
 <div v-click="1">
 
 - **Overfitting** (le piege le plus courant en trading quantitatif)
-  - Plus vous testez de strategies, plus vous trouverez de "faux positifs" par hasard
+  - Plus vous testez de stratégies, plus vous trouverez de "faux positifs" par hasard
   - Un Sharpe de 2.0 sur 3 ans avec 50 paramètres est probablement du surajustement
-  - Regle : si votre strategie ne marche que sur une periode precise, elle est overfittee
+  - Règle : si votre stratégie ne marche que sur une periode precise, elle est overfittee
 
 </div>
 <div v-click="2">
 
 - **Frais de financement** (le cout cache du levier)
-  - Positions a marge : interet annuel sur le capital emprunte (4-8% en 2024-2026)
+  - Positions a marge : intérêt annuel sur le capital emprunte (4-8% en 2024-2026)
   - Short selling : cout d'emprunt des titres + risque de rappel (short squeeze, cf. GameStop 2021)
   - Ces frais erosent la performance réelle par rapport au backtest "ideal"
 
@@ -755,7 +755,7 @@ imageClass: mid-right visible
 
 ---
 
-# Intelligence Artificielle et Selection de Stocks
+# Intelligence Artificielle et Sélection de Stocks
 
 - **Scepticisme initial sur l'IA**
   - Tendance a surajuster les données historiques
@@ -771,10 +771,10 @@ imageClass: mid-right visible
 </div>
 <div v-click="2">
 
-- **Strategies "Sous le Radar"**
+- **Stratégies "Sous le Radar"**
   - Marches de niche a faible capacité (small caps, crypto alt coins)
   - Moins d'arbitrage par les grands fonds qui ne s'y interessent pas
-  - Opportunite pour les traders individuels et les petites equipes
+  - Opportunite pour les traders individuels et les petites équipes
 </div>
 <div v-click="3">
 
@@ -794,7 +794,7 @@ imageClass: mid-right visible
 
 <div v-click="1">
 
-- **FAUX** : Beaucoup de strategies perdent de l'argent. Sur nos 67 strategies backtestees, certaines ont un Sharpe negatif.
+- **FAUX** : Beaucoup de stratégies perdent de l'argent. Sur nos 67 stratégies backtestees, certaines ont un Sharpe negatif.
 
 </div>
 
@@ -834,6 +834,6 @@ imageClass: mid-right visible
 layout: section
 ---
 
-# Suite : Strategies et Gestion du Risque
+# Suite : Stratégies et Gestion du Risque
 
 Deck 2
