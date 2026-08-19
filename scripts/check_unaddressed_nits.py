@@ -139,6 +139,14 @@ LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
     "Je lève", "Je leve", "Levée de", "Levee de",
+    # #11677 : « je lève ma CHANGES_REQUESTED » (#11664 fondateur) — LIFT
+    # historique ne captait que « levée » (mot complet), donc « lève ma » ne
+    # matchait pas. Les 2 formes idiomatiques « je lève / je leve » ajoutent
+    # la levee explicite d'une reserve par son auteur. Casse + accent
+    # normalises par `_unaccent` (preserve la casse). CONDITIONAL_LIFT gere
+    # l'aval (« corrige X et je leve » → la levee est conditionnelle, pas
+    # acquise), comme deja pour « et je merge ».
+    "je lève", "je leve",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
@@ -220,6 +228,19 @@ def _strip_mentioned_verdicts(body: str) -> str:
 # : COMMENT_WITHOUT_CONCERNS » #7583). C'est le miroir exact de
 # COMMENT_WITH_CONCERNS : quand le verdict formel est rendu, il decide.
 VERDICT_POSITIVE = "COMMENT_WITHOUT_CONCERNS"
+
+# Verdicts positifs HUMAINS (#11677) : un reviewer UI qui tape « APPROVE » /
+# « APPROVED » / « LGTM » (avec ou sans decoration markdown : **APPROVE**,
+# `APPROVE`, # APPROVE) emet un verdict positif, equivalent formel du `state:
+# APPROVED` natif. Word-bounded : « I approve the design » d'un commentaire
+# narratif ne conclut pas une approbation de review. Hermes utilise deja
+# `COMMENT_WITHOUT_CONCERNS` (string unique), ces 3 formes ajoutent le
+# vocabulaire humain standard. Insensible a la casse (`re.IGNORECASE`).
+HUMAN_VERDICT_POSITIVE = ("APPROVE", "APPROVED", "LGTM")
+_HUMAN_VERDICT_RE = re.compile(
+    r"(?:^|[\s\*_`#>])(" + "|".join(HUMAN_VERDICT_POSITIVE) + r")(?:$|[\s\*_`.,;:!?)])",
+    re.IGNORECASE,
+)
 
 # Approbations SOUPES : ne rescussitent un commentaire que s'il ne porte AUCUNE
 # reserve vivante. Une review mixte (« [COMMENT_WITH_CONCERNS] — 2 concerns...
@@ -456,7 +477,9 @@ def classify(author: str, body: str) -> str | None:
     # de reserve. Uniquement pour CONCERN_MARKERS : LIFT_MARKERS et
     # VERDICT_POSITIVE gardent le body brut (surface minimale du fix — le
     # controle positif deux formes vit dans les tests, cote a cote).
-    live_concern = has_live_marker(_strip_mentioned_verdicts(body), CONCERN_MARKERS)
+    live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
+    if not live_concern and _HUMAN_VERDICT_RE.search(body):
+        return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(AGENT_PREFIXES):
@@ -601,6 +624,17 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         kind = classify(login, body)
         if r.get("state") == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
+        # #11677 — symetrique APPROVED : l'etat natif GitHub `APPROVED` temoigne
+        # qu'aucune reserve n'est posee. Si classify() a deja retourne un kind
+        # (HUMAN ou BOT-CONCERN), c'est qu'une reserve VIVANTE survit dans la
+        # prose (« j'approuve mais le point 2 reste ouvert ») — on respecte.
+        # Sinon (None) : on CONFIRME l'extinction par l'etat, kind reste None
+        # et la review APPROVED ne devient jamais un signal bloquant. Sans
+        # cette branche, le verdict positif est calcule sur la prose seule,
+        # alors que la preuve la plus dure (l'etat natif) est disponible
+        # deux lignes plus haut. Meme symetrie que CHANGES_REQUESTED ci-dessus.
+        elif r.get("state") == "APPROVED" and kind is None:
+            pass  # kind reste None (l'etat natif confirme l'extinction)
         if kind:
             signals.append((ts(r.get("submittedAt")), kind, login, body,
                             f"review:{r.get('state')}"))

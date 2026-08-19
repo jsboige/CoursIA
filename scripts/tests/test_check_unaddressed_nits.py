@@ -961,3 +961,158 @@ def test_coord_override_leve_aussi_le_state_changes_requested():
         "commits": [{"committedDate": at(19)}],
     }
     assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+# --- #11677 : check_unaddressed_nits classe une review APPROVED en BOT-CONCERN
+# L'etat natif GitHub n'etait pas cable pour les reviews APPROVED (la branche
+# CHANGES_REQUESTED etait la seule symetrique documentee). 4 changes minimaux :
+#   1. LIFT_MARKERS etendu avec « je leve / je leve » (#11664 fondateur)
+#   2. HUMAN_VERDICT_POSITIVE (APPROVE / APPROVED / LGTM) word-bounded
+#   3. symetrique APPROVED dans `analyse()` : kind = None si etat natif
+#      GitHub APPROVED + aucune reserve VIVANTE dans la prose
+#   4. _strip_quoted etendu aux CONCERN_MARKERS (citations en bloc `> ...`)
+
+
+def test_11677_founder_body_rend_none():
+    """#11664 fondateur : « APPROVE — je leve ma CHANGES_REQUESTED et j'accorde
+    l'ack explicite de merge [...] *before merge* » — la review leve
+    explicitement la CHANGES_REQUESTED qu'elle nomme, ET cite la regle du gate
+    B.0 « *before merge* » dans une emphase markdown. Avant le fix, le gate
+    classait cette review en BOT-CONCERN (CHANGES_REQUESTED + before merge
+    vivants), empechant le merge legitime."""
+    body = (
+        "APPROVE — je lève ma CHANGES_REQUESTED et j'accorde l'ack explicite "
+        "de merge.\n\n"
+        "Le gate B.0 exige une reponse ecrite ; le commit 06956bd0a repond "
+        "aux deux nits user. La regle qui impose un reviewer ack *before "
+        "merge* est honoree par cette review APPROVED.\n\n"
+        "## Ce que j'ai verifie\n"
+        "- Les marqueurs cites ci-dessus ne sont pas des emissions : « je "
+        "leve » precede le marqueur, « *before merge* » est une citation "
+        "du gate."
+    )
+    assert mod.classify("myia-ai-01", body) is None
+
+
+def test_11677_human_approve_word_bounded_ne_flagge_pas():
+    """#11677 acceptance : « APPROVE » (verdict humain positif) eteint le
+    signal — equivalent formel du `state: APPROVED` natif. Word-bounded :
+    `**APPROVE**`, `## APPROVE`, `# APPROVE` matchent (decoration markdown),
+    mais « I approve the design » (en milieu de phrase narrative, sans
+    decoration) matche aussi — c'est limite, documente dans le PR body."""
+    for body in [
+        "APPROVE",
+        "**APPROVE**",
+        "## APPROVE\n\nLooking good.",
+        "APPROVED",
+        "`APPROVED`.",
+    ]:
+        assert mod.classify("jsboige", body) is None, f"FAIL: {body!r}"
+
+
+def test_11677_approve_mais_reserve_vivante_reste_bot_concern():
+    """Acceptance 2 (controle positif) : un verdict positif APPROVE
+    n'eteint PAS une reserve VIVANTE dans la meme prose. « APPROVE mais
+    il va falloir corriger X » reste BOT-CONCERN — sinon le fix eteint
+    la reserve qu'il est cense laisser passer."""
+    body = (
+        "J'approuve cette PR — mais le point 2 reste ouvert : il va "
+        "falloir ajouter le test manquant avant le merge. APPROVE pour "
+        "le reste."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_11677_changements_requested_non_regression_11222():
+    """Non-regression #11222 : une review CHANGES_REQUESTED reste BLOQUANT
+    et ne se leve que par re-review APPROVED du meme auteur, dismissal,
+    ou phrase explicite non conditionnelle."""
+    cr = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "CHANGES_REQUESTED", "submittedAt": at(10),
+        "body": "[Hermes] — CHANGES_REQUESTED\nCellule 12 cassee.",
+    }
+    # Sans levee → bloque
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [], "reviews": [cr],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is True
+    # Avec re-review APPROVED du meme auteur → leve
+    rereview = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "[Hermes] — APPROVED\nLe fix repond au nit.",
+    }
+    data["reviews"].append(rereview)
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_11677_strip_quoted_etendu_aux_concern_markers():
+    """#11677 acceptance 1 (composante « strip citations ») : une review
+    APPROVED qui contient un CONCERN_MARKER UNIQUEMENT dans une citation
+    en backticks ou bloc code ou guillemets fran鏰is typographiques rend
+    classify None — la citation est neutralisee par `_strip_quoted` avant
+    la recherche de CONCERN_MARKERS (meme hygiene que CONDITIONAL_LIFT,
+    l.462). Les blockquotes Markdown `> ...` NE SONT PAS dans le perimetre
+    actuel de `_strip_quoted` (limite documentee, scope inline seulement)."""
+    body = (
+        "APPROVED.\n\n"
+        "`Must fix before merge` (citation d'un commentaire precedent).\n\n"
+        "La citation en backticks est neutralisee, le verdict est APPROVED "
+        "pur."
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_11677_symetrique_approved_dans_analyse():
+    """Acceptance 1 (composante « symetrique APPROVED ») : dans `analyse()`,
+    une review avec `state: APPROVED` natif ET classify() qui retourne None
+    (verdict positif + aucune reserve vivante) n'emet PAS de signal
+    bloquant — kind reste None, la review APPROVED est MUETTE pour le gate.
+    Avant le fix, kind pouvait etre « BOT-CONCERN » si la prose contenait
+    un CONCERN_MARKER, etait-cite (#11664 fondateur)."""
+    approved = {
+        "author": {"login": "jsboige"},  # l'auteur PR = peut lever
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": "**APPROVE** — je leve ma CHANGES_REQUESTED.",
+    }
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [], "reviews": [approved],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_11677_approved_avec_reserve_vivante_reste_bloquant():
+    """Acceptance 2 dans `analyse()` (controle positif) : une review
+    `state: APPROVED` qui contient une reserve VIVANTE (ex: « j'approuve
+    mais le point 2 reste ouvert ») garde le kind `BOT-CONCERN` retourne
+    par classify() — la symetrique ne le降下来 PAS."""
+    approved_mixed = {
+        "author": {"login": "clusterManager-Myia"},
+        "state": "APPROVED", "submittedAt": at(15),
+        "body": (
+            "J'approuve cette PR — mais le point 2 reste ouvert : il va "
+            "falloir ajouter le test manquant avant le merge. APPROVE "
+            "pour le reste."
+        ),
+    }
+    data = {
+        "number": 0, "title": "t", "author": {"login": "jsboige"},
+        "comments": [], "reviews": [approved_mixed],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is True
+
+
+def test_11677_je_leve_leve_changements_requested_dans_prose():
+    """Complement LIFT_MARKERS : « je leve ma X » leve X explicitement.
+    Avant le fix, « leve » (incomplet) ne matchait pas LIFT_MARKERS
+    (qui ne captait que « levee » mot complet), donc le bot classait
+    la levee explicite en BOT-CONCERN. Apres le fix, « je leve » est
+    un LIFT_MARKER, et le corps est reconnu comme levee."""
+    body = "je leve ma CHANGES_REQUESTED — le commit 06956bd0a repond au nit."
+    assert mod.classify("myia-ai-01", body) is None
