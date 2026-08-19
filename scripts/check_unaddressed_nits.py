@@ -147,6 +147,12 @@ LIFT_MARKERS = (
     # l'aval (« corrige X et je leve » → la levee est conditionnelle, pas
     # acquise), comme deja pour « et je merge ».
     "je lève", "je leve",
+    # #11542 : forme francaise SANS pronom en tete de phrase, avec un
+    # verdict NON backquote — « Leve la CHANGES_REQUESTED de <auteur> ».
+    # Le strip des verdicts cites (ci-dessus) couvre deja la variante
+    # backquotee ; celle-ci lui echappe, et le marqueur de concern se
+    # trouve alors *a l'interieur* de la phrase qui le leve.
+    "lève la", "leve la", "Lève la", "Leve la",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge

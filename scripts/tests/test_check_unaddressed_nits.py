@@ -1116,3 +1116,38 @@ def test_11677_je_leve_leve_changements_requested_dans_prose():
     un LIFT_MARKER, et le corps est reconnu comme levee."""
     body = "je leve ma CHANGES_REQUESTED — le commit 06956bd0a repond au nit."
     assert mod.classify("myia-ai-01", body) is None
+
+
+def test_11542_leve_sans_pronom_leve_aussi():
+    """Forme francaise SANS pronom : « Leve la remarque X de <auteur> ».
+
+    Cas reel, PR #11542 : po-2023 ecrit « Leve la remarque
+    `CHANGES_REQUESTED` de clusterManager-Myia (PRR_...) sur la cellule
+    h44 ». C'est une phrase de LEVEE, et le marqueur de concern est
+    *a l'interieur* de la phrase qui le leve. LIFT_MARKERS connaissait
+    « je leve » / « levee de » / « est levee » mais pas la forme sans
+    pronom en tete de phrase — le gate rendait donc EXIT=1 sur une PR
+    dont la remarque etait reellement adressee (verifie firsthand :
+    commit 8113e8436 + prose vraie contre le code).
+
+    Le faux positif d'un gate coute autant que le faux negatif : une
+    lane qui voit un rouge inexplicable va chercher un defaut absent,
+    et pendant ce temps la PR vieillit."""
+    body = ("Reformulation qualitative de la cellule h44, commit 8113e8436. "
+            "Leve la remarque `CHANGES_REQUESTED` de clusterManager-Myia "
+            "(PRR_kwDOH2Odns8AAAABJ1wwZA) sur la cellule h44.")
+    assert mod.classify("myia-po-2023", body) is None
+
+
+def test_11542_leve_accentue_sans_pronom():
+    """Meme forme, accentuee — `_unaccent` doit rendre les deux equivalentes."""
+    body = "Leve la CHANGES_REQUESTED de Hermes : le commit 8113e8436 y repond."
+    body = body.replace("Leve", "L\u00e8ve")
+    assert mod.classify("myia-po-2023", body) is None
+
+
+def test_11542_negation_ne_leve_pas():
+    """Controle NEGATIF : sans lui, un lot entierement vert serait
+    indiscernable d'un gate debranche. Une reserve vivante reste vivante."""
+    body = "Je maintiens : CHANGES_REQUESTED tant que la cellule 8 est vide."
+    assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
