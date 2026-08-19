@@ -22,7 +22,7 @@ formalize EGA/SGA. The goal is to give learners a curated entry point into:
 
 ## The arc
 
-The **47 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
+The **51 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
 the raw site up to cohomology:
 
 ```mermaid
@@ -89,7 +89,7 @@ laws and the lattice of topologies.
 
 ## Code structure
 
-The formalization spans **47 leaf modules** + **1 umbrella** `Grothendieck.lean`
+The formalization spans **51 leaf modules** + **1 umbrella** `Grothendieck.lean`
 (imports-only, bilingual inline FR/EN). The three `SheafCohomology/`
 sub-modules are Parts 20, 22, and 23 of the table.
 
@@ -153,7 +153,7 @@ roughly as much again.*
 - **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-12, "Build completed successfully". The explicit target `lake build Grothendieck` (the umbrella's import closure) currently omits `ExceptionalDirect` — see [#11286](https://github.com/jsboige/CoursIA/issues/11286).
 - **Proofs**: **0 `sorry`, 0 axiom added** — every module is complete at creation. (A naive `grep sorry` matches prose mentions in the bilingual docstrings, notably two in `ExceptionalDirect.lean`; CI counts in `real` mode — after comment stripping — and reads 0.)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — **48 FR files** (1 umbrella + 47 canonical leaves) and **47 `_en.lean` siblings**, integral 1:1 ratio (the historical `PullbackFunctor.lean` gap is closed: `PullbackFunctor_en.lean` is present on disk; the earlier prose saying it was missing was stale — found by the Part 56 §E audit, c.2026-08-18). `_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable. The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — **52 FR files** (1 umbrella + 51 canonical leaves) and **51 `_en.lean` siblings**, integral 1:1 ratio (the historical `PullbackFunctor.lean` gap is closed: `PullbackFunctor_en.lean` is present on disk; the earlier prose saying it was missing was stale — found by the §E audit, c.2026-08-19). `_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable. The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
 
 *Coherence note*: the earlier note about a "46/46 discordance + `PullbackFunctor` gap" is obsolete — `PullbackFunctor_en.lean` is present on disk (verified c.2026-08-18) and the FR/`_en` ratio is 1:1. The lakefile `globs` auto-discovers all leaves; the i18n CI checks the target 1:1 ratio.
 
@@ -172,7 +172,7 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 ## See also
 
 - Epic #1646 (Grothendieck tribute) — Issue #2159 (formalization depth: Phase 1 shipped, Phase 2 = #10357, Phase 5 = Parts 35-44)
-- EPIC #4980 — Lean i18n convention (Option A sibling pair; 44 `_en` pairs in this lake)
+- EPIC #4980 — Lean i18n convention (Option A sibling pair; 51 `_en` pairs in this lake)
 - Epic #1453 (prover harness calibration) — Issue #8960 (reconciling the two `Part` numberings)
 - [#11286](https://github.com/jsboige/CoursIA/issues/11286) — pending umbrella import of `ExceptionalDirect`
 - Conway tribute workspace (`../conway_lean/`) — Lean notebook series (`../README.md`)
