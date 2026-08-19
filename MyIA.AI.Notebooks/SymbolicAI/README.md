@@ -13,9 +13,13 @@ maturity: BETA=222, ALPHA=6, DRAFT=4
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette série explore en profondeur.
 
-Vous y découvrirez huit domaines complémentaires. Le **Web Sémantique** (RDF, SPARQL, OWL) montre comment structurer les connaissances du web pour les rendre exploitables par les machines. La **vérification formelle** avec Lean 4 vous apprend à écrire des preuves mathématiques vérifiées par un ordinateur. L'**argumentation computationnelle** (TweetyProject) modélise le débat et la délibération. La **résolution SMT** (Z3, satisfiability modulo theories) automatise la décision sous contraintes — cryptarithmes, planification, vérification de propriétés. La **planification automatique** résout des problèmes concrets de logistique et d'ordonnancement. Les **smart contracts** relient la cryptographie et la logique formelle aux blockchains. L'**analyse argumentative** avec les LLMs jette un pont entre l'IA symbolique et l'IA neuronale. Et l'**apprentissage symbolique** (AIMA ch. 19) montre comment un agent apprend à partir de connaissances existantes plutôt que de données brutes, jusqu'aux pipelines neuro-symboliques couplés aux LLMs. Chaque sous-série est autonome, mais ensemble elles dessinent une vision cohérente de l'IA symbolique moderne.
+Vous y découvrirez huit domaines complémentaires qui, ensemble, couvrent le **cycle complet du raisonnement vérifiable** à l'ère des LLMs : **représenter** la connaissance (Tweety pour les logiques formelles et l'argumentation, SemanticWeb pour le web de données RDF/SPARQL/OWL), **prouver** quand la certitude est exigée (Lean 4 et le vérificateur de preuves Mathlib4 — y compris les théorèmes phares 2026 : Sendov, *Analysis I* Tao, PFR, MIMO, M₂₃), **décider sous contraintes** (SMT / Z3, le solveur industriel de référence, en API impérative Python et en binding déclaratif C# via Z3.Linq), **agir dans le monde réel** (Planners pour la planification PDDL/CP-SAT, SmartContracts pour la logique vérifiable sur blockchain), **apprendre à partir de connaissances** plutôt que de données (SymbolicLearning, AIMA ch. 19), et **relier ce pipeline aux LLMs** (Argument Analysis, jette un pont exploitable entre sémantique formelle et IA générative). Chaque sous-série est autonome et peut être suivie isolément, mais elles sont traversées par un **fil rouge** : du formalisme pur à la vérification certifiée, jusqu'au moment où le symbolique et le neuronal cessent d'être deux camps et deviennent deux couches d'un même système fiable. La carte mermaid ci-dessous matérialise les ponts entre ces domaines — nœuds colorés selon leur rôle (fondations, applications, ponts neuro-symboliques).
 
-**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques) :
+**Carte de la famille** — les huit sous-séries et leurs ponts (formalismes fondamentaux → applications → ponts neuro-symboliques). Lecture de la carte : les **flèches pleines** (`-->`) marquent un pont conceptuel direct (la sous-série aval **consomme** ou **généralise** l'amont) ; les **flèches pointillées** (`-.->`) marquent un pont par **companion** (un notebook natif dans une autre série qui formalise la théorie). Trois classes visuelles séparent les rôles :
+
+- **Fondations** (bleu) : les formalismes de base du raisonnement symbolique — Tweety, SemanticWeb, Lean.
+- **Applications** (vert) : les séries qui **exploitent** les formalismes dans le monde réel — SMT, Planners, SmartContracts.
+- **Ponts neuro-symboliques** (ambre) : les séries qui **relient** le symbolique au génératif — Argument Analysis, SymbolicLearning.
 
 ```mermaid
 flowchart TD
@@ -28,14 +32,19 @@ flowchart TD
     AA["Argument Analysis<br/>Pont LLM (sophismes, SK)"]
     SL["SymbolicLearning<br/>Apprentissage symbolique (AIMA 19)"]
 
+    %% Ponts conceptuels (flesches pleines = consommation / généralisation)
     TW -->|"generalise en representation"| SW
-    TW -.->|"companion natif (Tweety-5b)"| LEAN
-    LEAN -.->|"companion (planners_lean)"| PL
-    SMT -.->|"meme solveur Z3"| PL
     LEAN -->|"verification de proprietes"| SMT
-    TW --> AA
-    SW -->|"GraphRAG / linked data"| AA
-    AA --> SL
+    SMT -->|"meme solveur Z3 (CP-SAT)|"| PL
+    PL -->|"contraintes executees sur blockchain"| SC
+    SW -->|"graphes de connaissances + GraphRAG"| AA
+    AA -->|"induction logique + regles LLM"| SL
+
+    %% Ponts par companion (flesches pointillees = notebook natif en Lean)
+    TW -.->|"Tweety-5b (proof natif)"| LEAN
+    LEAN -.->|"planners_lean (h-add)"| PL
+    LEAN -.->|"sensitivity_lean (Huang 2019)"| SC
+    TW -.->|"induction logique (FOIL)"| SL
 
     classDef found fill:#e8f0fe,stroke:#1a73e8
     classDef app fill:#e6f4ea,stroke:#188038
@@ -44,6 +53,8 @@ flowchart TD
     class SMT,PL,SC app
     class AA,SL bridge
 ```
+
+**Lecture recommandée** : les apprenants qui découvrent l'IA symbolique peuvent lire la carte comme un **parcours** — Tweety ou SemanticWeb en entrée (représentation), Lean comme verrou de rigueur (vérification), SMT ou Planners en première application (décision), avant les ponts LLM (Argument Analysis) et l'apprentissage symbolique (SymbolicLearning). Les chercheurs en vérification formelle peuvent **inverser** la lecture : Lean → SMT → Planners (companion `planners_lean`) → SmartContracts (companion `sensitivity_lean`), avant de revenir à Tweety pour l'argumentation structurée.
 
 **À qui s'adresse cette série** : étudiants en IA, ingénieurs logiciel curieux de logique formelle, et chercheurs souhaitant aller au-delà du machine learning. Les notebooks Python (Tweety, Planners, SmartContracts, SemanticWeb Python, SymbolicLearning) ne nécessitent que Python 3.10+. Les notebooks .NET C# (SemanticWeb, optimisation) requièrent .NET 9.0 + dotnet-interactive. Les notebooks Lean nécessitent WSL + elan. Aucun prérequis en logique avancée : chaque série introduit ses concepts progressivement depuis les fondements.
 
@@ -59,7 +70,7 @@ Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les 
 
 ### Phase 3 : Vérification formelle (Lean, ~10h)
 
-La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
+La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Les notebooks 13-18 prolongent avec les hommages aux mathématiciens (Grothendieck, Conway) et les théorèmes fondamentaux (Kochen-Specker, Libre Arbitre, noeuds de Conway, optimalité A*). Les notebooks 19-23, fraîchement intégrés, portent les **théorèmes phares 2026** : conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la conjecture PFR par méthode entropique (Lean-21, lac `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538). Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
 
 ### Phase 4 : Applications (SMT + Planners + SmartContracts, ~32h)
 
@@ -181,7 +192,7 @@ Documentation complète : [Tweety/README.md](Tweety/README.md)
 
 ## Lean - Vérification Formelle
 
-Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b), les jeux de Conway (Lean-16a/16b/16c/16d/16e) avec ports natifs Lean, les noeuds de Conway (Lean-17a/17b), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14) et l'optimalité A* (Lean-18).
+Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie des types dépendants. Couvre des fondations théoriques jusqu'à l'intégration des LLMs pour l'assistance automatique aux preuves, un tribut à Grothendieck (Lean-15/15b), les jeux de Conway (Lean-16a/16b/16c/16d/16e) avec ports natifs Lean, les noeuds de Conway (Lean-17a/17b), les théorèmes de Kochen-Specker (Lean-13) et du Libre Arbitre (Lean-16f), la sensibilité de Huang (Lean-12/12b), la finitude des dérivées (Lean-14), l'optimalité A* (Lean-18), la conjecture de Sendov (Lean-19, preuve L. Mazur 2026 digérée par T. Tao), le manuel *Analysis I* de T. Tao en lac Lean 4 (Lean-20), la méthode entropique de la conjecture PFR (Lean-21, `teorth/pfr`), la détection MIMO par flips de coordonnées (Lean-22, Papailiopoulos 2026) et le problème inverse de Galois refermé pour M₂₃ (Lean-23, arXiv:2608.08538).
 
 ### Structure détaillée
 
@@ -218,11 +229,17 @@ Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 17 | [Lean-17-Knots-a-Conway-and-Proofs](Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Python WSL | Noeuds de Conway : introduction, énoncés, premier port formel adossé à `conway_knots_lean/` | 3 |
 | 17b | [Lean-17-Knots-b-Invariants-Companion](Lean/Lean-17-Knots-b-Invariants-Companion.ipynb) | Python WSL | Companion natif : invariants de noeuds, snippets WSL, sources `conway_knots_lean/` | 3 |
 | 18 | [Lean-18-Search-AStar-Optimality](Lean/Lean-18-Search-AStar-Optimality.ipynb) | Lean 4 / WSL | Preuve d'optimalité A* dans le lake `planners_lean` : consistance, admissibilité, branchement | 3 |
+| **Théorèmes phares 2026** |  |  |  |  |
+| 19 | [Lean-19-Sendov-Complex-Analysis](Lean/Lean-19-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
+| 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean/Lean-20-Analysis-I-Tao-Workflow.ipynb) | Python WSL | Manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 4 |
+| 21 | [Lean-21-PFR-Entropy-Method](Lean/Lean-21-PFR-Entropy-Method.ipynb) | Python WSL | Conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 0 |
+| 22 | [Lean-22-MIMO-Detection-Flips](Lean/Lean-22-MIMO-Detection-Flips.ipynb) | Python WSL | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 3 |
+| 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean/Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Python WSL | Problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 à l'écran (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 3 |
 
 ### Kernels requis
 
 - **Lean 4 (WSL)** : Notebooks 2-6, 11, 12, 13, 15 (preuves Lean natives)
-- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 15b, 16a-16c, 16f (setup, LLM, LeanDojo, hommages)
+- **Python 3 (WSL)** : Notebooks 1, 7-10, 11py, 15b, 16a-16c, 16f, 19-23 (setup, LLM, LeanDojo, hommages, théorèmes phares 2026)
 
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problèmes chemins)
 
@@ -468,10 +485,25 @@ SymbolicAI/
 │   ├── ext_tools/             # Clingo, SPASS, EProver
 │   └── README.md
 │
-├── Lean/                      # Serie Lean 4 (28 notebooks : 18 proof natifs + 10 companions Python/WSL)
-│   ├── Lean-1-Setup.ipynb ... Lean-18-Search-AStar-Optimality.ipynb
+├── Lean/                      # Serie Lean 4 (33 notebooks : 18 proof natifs + 15 companions Python/WSL)
+│   ├── Lean-1-Setup.ipynb ... Lean-23-Galois-Probleme-Inverse-M23.ipynb
 │   ├── lean_runner.py         # Backend Python multi-mode
 │   ├── scripts/               # Installation, validation WSL
+│   ├── conway_lean/            # Companion lean du Lean-16 (ports natifs Game of Life, FRACTRAN)
+│   ├── grothendieck_lean/      # Companion lean du Lean-15 (atelier Micro-Formalisation)
+│   ├── sensitivity_lean/       # Companion lean du Lean-12 (Huang 2019)
+│   ├── knot_lean/              # Companion lean du Lean-17 (noeuds de Conway)
+│   ├── galois_lean/            # Companion lean du Lean-23 (M₂₃ simple, PR #10486)
+│   ├── mimo_lean/              # Companion lean du Lean-22 (détection MIMO)
+│   ├── calibration_lean/       # Companion lean du Lean-14 (finitude des dérivées)
+│   ├── finiteness_lean/        # Companion lean du Lean-14 (finitude Mathlib)
+│   ├── mathlib_examples/       # Exemples Mathlib
+│   ├── examples/               # Exemples Lean (assistés LLM)
+│   ├── agent_tests/            # Tests harnais Lean
+│   ├── tests/                  # Tests unitaires Lean
+│   ├── assets/                 # Figures, snippets .lean
+│   ├── _run_lean_snippet.sh    # Script WSL exécution snippet
+│   ├── install_wsl_kernel.md   # Doc install kernel `Lean 4 (WSL)`
 │   └── README.md
 │
 ├── SemanticWeb/               # Web semantique (25 notebooks : 13 C# + 12 Python, incluant RDF.Net-Legacy)
@@ -807,7 +839,9 @@ Les huit domaines ci-dessus ne sont pas huit sujets indépendants : ils forment 
 - **Apprendre** à partir de connaissances plutôt que de données brutes (SymbolicLearning : de l'induction logique aux pipelines neuro-symboliques).
 - **Relier** ce pipeline aux LLMs (Argument Analysis : le symbolique comme garde-fou vérifiable du génératif).
 
-La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis).
+Ce pipeline n'est pas une simple énumération — c'est un **cercle**. Une décision Z3 (SMT) peut être certifiée par une preuve Lean (prouveurs externes au format SMT-LIB) ; un planificateur PDDL (Planners) peut s'exécuter sur une blockchain (SmartContracts) en garantissant que le plan n'a pas été altéré ; un argument détecté par LLM (Argument Analysis) peut être formalisé en logique Tweety, validé par un prouveur, puis rejoué dans un notebook d'apprentissage (SymbolicLearning). La **boucle complète** est ce que chaque sous-série contribue à fermer, par un bout différent. C'est aussi pourquoi les **companions Lean** (Tweety-5b, Planners-5b, sensitivity_lean) ne sont pas des sous-produits : ce sont les **points de certification** où le symbolique passe du raisonnement plausible à la **preuve vérifiée**.
+
+La thèse de la série, posée dès l'introduction et rappelée dans la FAQ : à l'ère des modèles statistiques opaques, l'IA symbolique apporte ce que les LLMs ne garantissent pas — un raisonnement **vérifiable, explicable et certifié**. Les deux paradigmes ne s'opposent pas : l'avenir est neuro-symbolique, et chaque sous-série montre un point de jonction concret (GraphRAG en SemanticWeb, AlphaProof/LeanCopilot en Lean, le capstone de SymbolicLearning, le pipeline Argument Analysis). La série couvre ainsi toute la **bande passante** entre la logique formelle pure et le déploiement industriel — depuis le toy example du croque-mort qui raisonne sur Tweety jusqu'au solveur Z3 qui valide un billion d'instructions cryptographiques sur une blockchain. C'est cette **amplitude** qui fait la cohérence de la famille, et qui rend chacun des huit domaines plus profond quand on l'aborde avec les sept autres en tête.
 
 ### Prochaines étapes
 

@@ -585,6 +585,54 @@ def _check_unterminated_fence(text: str) -> bool:
     return unterminated
 
 
+def _format_signal_explanation(candidates: list[Candidate]) -> str:
+    """#11796: the trailing explanation of a SIGNAL block must match the
+    composition of the candidates. The original wording printed "assertion
+    d'un tiers : a lever par son auteur" UNCONDITIONALLY -- which is wrong
+    when every signal is an INCIDENTAL count from the AUTHOR's own body
+    (PRs #11786 / #11775): the author cannot "lever" their own incidental
+    count, the count is what it is.
+
+    Three shapes:
+
+    - body+incidental only -> the author wrote it, but the count is not a
+      perimeter claim (LOCATIVE_PREP, threshold, zero, etc.). Nothing to
+      lever; the reviewer notes it.
+    - thread only -> a reviewer/bot posted a false perimeter claim. The
+      reviewer is the only one who can correct their own review.
+    - mixed -> both shapes, each cited with its actual reason.
+
+    FN safety: this function only formats; it does not change which
+    candidates are blocking (that's `Candidate.blocking`). A candidate that
+    is `blocking=True` never enters `signals` in `main()` -- so by
+    construction, every candidate here is either body+incidental or thread.
+    """
+    has_body_incidental = any(
+        c.source == "body" for c in candidates
+    )
+    has_thread = any(c.source == "thread" for c in candidates)
+
+    if has_body_incidental and not has_thread:
+        return (
+            "Compte(s) INCIDENTAL du body de l'auteur (inventaire, scan scope, "
+            "seuil cite, attestation de zero -- #11712) : pas une assertion "
+            "de perimetre. Le reviewer qui merge le considere. Ne tient "
+            "pas la PR."
+        )
+    if has_thread and not has_body_incidental:
+        return (
+            "Assertion d'un tiers (reviewer ou bot) non editable par "
+            "l'auteur : a lever par son auteur (poster une assertion "
+            "corrigee). Ne tient pas la PR."
+        )
+    # Mixed: name both shapes with their actual reason.
+    return (
+        "Mix : compte(s) INCIDENTAL du body de l'auteur (ci-dessus, pas "
+        "une assertion de perimetre) + assertion(s) d'un tiers (a lever "
+        "par leur auteur). Ne tient pas la PR."
+    )
+
+
 def format_report(report: Report, assertion: Optional[str]) -> str:
     lines = []
     lines.append(f"Périmètre effectif : {len(report.files)} fichier(s)")
@@ -812,9 +860,11 @@ def main() -> int:
         print("        seuil cite, attestation de zero -- #11712) :")
         for sg in signals:
             print(f"  ~~ {sg}")
-        print("  -> assertion d'un tiers : a lever par son auteur (poster une assertion")
-        print("     corrigee). Compte incidental : le reviewer qui merge le considere.")
-        print("     Ne tient pas la PR.")
+        # #11796: the trailing explanation must match the composition of the
+        # signals. All body+incidental -> "not a perimeter claim, just a
+        # note"; all thread -> "tier to correct"; mixed -> both. The old
+        # blanket phrase was wrong for the all-body case (#11786 / #11775).
+        print(f"  -> {_format_signal_explanation(candidates)}")
     if unterminated_seen:
         # #11678: the body scanned had an unterminated fence. CommonMark
         # renders it to EOF (correct behaviour, what GitHub does), but the

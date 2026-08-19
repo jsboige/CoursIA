@@ -1,0 +1,150 @@
+"""Registre des gardes de la VOIE RAPIDE (#11835).
+
+Motivation mesuree (2026-08-19) : dans les workflows de garde de ce depot,
+`actions/checkout` represente **89 a 99 %** du temps d'execution, et l'analyse
+elle-meme 1 a 5 secondes -- parce que le depot pese 2,1 Go et que 46 workflows
+le clonent avec `fetch-depth: 0`. Chaque garde qui lit trois lignes de diff
+paie donc un clone integral.
+
+    Cell-order gate        checkout 225,5 s   travail  ~1 s   99,1 %
+    Notebook Navlink       checkout 172,0 s   travail   3 s   98,0 %
+    prose-counts-guard     checkout 122,0 s   travail   1 s   98,4 %
+    banner-guard           checkout 121,5 s   travail   2 s   97,2 %
+    perimeter-review       checkout  64,0 s   travail   2 s   94,8 %
+    solution-leak          checkout  63,5 s   travail 5,5 s   89,4 %
+
+La voie rapide paie **un** checkout puis enchaine les analyses dans le meme
+job, en emettant **un check-run nomme par garde** via l'API Checks : la
+granularite visible sur la PR est preservee (protection de branche, surfaces
+de review B.0), seule l'infrastructure est mutualisee.
+
+Ce module ne contient QUE des donnees : la mecanique est dans `fast_lane.py`,
+ce qui rend le registre lisible et testable sans executer quoi que ce soit.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass(frozen=True)
+class Guard:
+    """Un garde de la voie rapide.
+
+    name        Nom EXACT du check-run emis. En phase pilote il est prefixe
+                par `shadow_prefix` (cf fast_lane.py) pour cohabiter avec le
+                workflow d'origine sans lui voler son nom.
+    paths       Globs (syntaxe fnmatch, evaluee sur des chemins POSIX
+                relatifs a la racine). Vide = le garde tourne toujours.
+                Reproduit le bloc `paths:` du workflow d'origine -- la
+                difference est qu'ici c'est du code, donc testable.
+    argv        Commande a executer, deja decoupee (pas de shell : un shell
+                introduirait une seconde couche de quoting sur des chemins
+                qui viennent du diff).
+    blocking    True  -> un echec doit rougir la PR (conclusion `failure`).
+                False -> advisory : le verdict est publie, jamais bloquant
+                (conclusion `neutral`), conformement au caractere annonce du
+                workflow d'origine. Neutraliser un advisory en `success`
+                effacerait le signal ; le rendre `failure` mentirait sur son
+                statut.
+    needs_base  Le garde compare HEAD a la base : le runner lui garantit que
+                `origin/<base_ref>` est joignable.
+    delta_argv  Present => le garde est un DELTA en trois temps : `argv` est
+                execute sur HEAD (sa sortie standard est capturee comme
+                `head.json`), puis sur l'arbre bascule a la base
+                (`base.json`), puis `delta_argv` compare les deux. Le
+                placeholder `{base_json}` / `{head_json}` y est substitue.
+    swap_paths  Sous-arbres a basculer a la base pour la phase 2. Le
+                basculement est MUTANT : c'est le seul danger propre a la
+                mutualisation d'un job, puisqu'un garde pourrait lire l'arbre
+                d'un autre. Le runner y repond par trois mesures -- les
+                gardes non-mutants passent tous AVANT, la bascule est faite
+                UNE fois pour tous les gardes delta (au lieu d'une par garde
+                aujourd'hui), et la restauration est **verifiee** avant de
+                rendre le moindre verdict.
+    source      Workflow d'origine, pour que la correspondance reste tracable
+                quand on retirera le workflow unitaire.
+    """
+
+    name: str
+    argv: list[str]
+    source: str
+    paths: list[str] = field(default_factory=list)
+    blocking: bool = True
+    needs_base: bool = False
+    delta_argv: list[str] = field(default_factory=list)
+    swap_paths: list[str] = field(default_factory=list)
+
+
+NOTEBOOK_GLOBS = ["**/*.ipynb"]
+
+# ---------------------------------------------------------------------------
+# Lot pilote (#11835). Cinq gardes choisis pour couvrir les quatre formes que
+# le moteur doit savoir traiter, et non pour leur nombre :
+#
+#   - banner-guard        : bloquant, scan global, sans base
+#   - pip-leak-guard      : bloquant, delta HEAD-vs-base
+#   - solution-leak-guard : ADVISORY, delta HEAD-vs-base (verifie qu'un
+#                           advisory ne peut pas rougir par accident)
+#   - prose-counts-guard  : advisory, diff-range direct
+#   - perimeter-review    : bloquant, appelle l'API GitHub (a besoin de
+#                           GH_TOKEN, pas seulement de l'arbre)
+#
+# Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
+# lot entierement vert serait indiscernable d'un moteur debranche.
+# ---------------------------------------------------------------------------
+PILOT: list[Guard] = [
+    Guard(
+        name="banner-guard",
+        source="banner-guard.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/strip_probe_banner.py",
+            ".github/workflows/banner-guard.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/strip_probe_banner.py",
+            "--scan-all", "--check", "--exclude-submodules",
+        ],
+        blocking=True,
+    ),
+    Guard(
+        name="pip-leak-guard",
+        source="pip-leak-guard.yml",
+        paths=NOTEBOOK_GLOBS,
+        argv=["python", "scripts/notebook_tools/audit_pip_install_cells.py",
+              "--scan-all", "--json"],
+        delta_argv=["python", "scripts/notebook_tools/pip_leak_delta.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=["MyIA.AI.Notebooks"],
+        blocking=True,
+        needs_base=True,
+    ),
+    Guard(
+        name="solution-leak-guard",
+        source="solution-leak-guard.yml",
+        paths=NOTEBOOK_GLOBS,
+        argv=["python", "scripts/notebook_tools/audit_solution_leaks.py", "--json"],
+        delta_argv=["python", "scripts/notebook_tools/solution_leak_delta.py",
+                    "{base_json}", "{head_json}"],
+        swap_paths=["MyIA.AI.Notebooks"],
+        blocking=False,          # WARN phase (#8053) -- ne rougit jamais
+        needs_base=True,
+    ),
+    Guard(
+        name="prose-counts-guard",
+        source="prose-counts-guard.yml",
+        paths=["**/*.ipynb", "**/*.md"],
+        argv=["python", "scripts/notebook_tools/check_prose_quantitative_claims.py",
+              "--diff", "{base_ref}...HEAD"],
+        blocking=False,          # ADVISORY tant que #9377 n'est pas resorbe
+        needs_base=True,
+    ),
+    Guard(
+        name="perimeter-review-guard",
+        source="perimeter-review-guard.yml",
+        paths=[],                # sans filtre : porte sur le corps de la PR
+        argv=["python", "scripts/check_pr_perimeter.py", "{pr_number}",
+              "--scan-thread"],
+        blocking=True,
+    ),
+]

@@ -202,21 +202,65 @@ def _strip_quoted(body: str) -> str:
 # L'emission reelle reste « MARKER: » nue ou portee par le state de la review —
 # les marqueurs naturels (« avant merge », « a changer ») ne sont pas des noms
 # de verdict et restent hors de cette voie.
+#
+# #11744 — extension a 2 positions supplementaires : un verdict peut etre en
+# mention (a) en TITRE de section `## ...VERDICT...`, ou (b) en prose INLINE
+# apres un mot-cle de mention (« le verdict CHANGES_REQUESTED que je levais »).
+# Les deux instances mesurees le 2026-08-19 : #11625 (« ## Remedes au
+# CHANGES_REQUESTED » en tete de rapport de remediation, classe BOT-CONCERN
+# comme si c'etait la SORTIE d'un verdict neuf) ; #11428 (« mon message
+# d'approbation nommant le verdict qu'il levait, au fil du texte » — auto-
+# bloquant apres que la levee par re-review APPROVED eut deja fonctionne).
+# Compteur cumulatif : les 3 positions sont cumulees, pas OU-exclusives.
 _MENTION_VERDICT = re.compile(
     r"(?i)\b(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
     r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
 
+# #11744 — Position A : titre de section `## ...VERDICT...`. La section est en
+# mention par construction (un titre ne « declare » jamais un verdict, il
+# l'evoque). Limite : 80 chars du `##` au verdict pour eviter les titres tres
+# longs qui seraient des resumes sections sans mention explicite. Compteur
+# cumulatif : l'eventuelle emission en corps de section est geree separement
+# par les CONCERN_MARKERS et `_is_cited` (les emissions reelles passent par
+# `MARKER:` nu ou par le state de la review, pas par un nom de verdict
+# eparpille dans une prose narrative).
+# Critere : nom de verdict = (a) TOUT en majuscules (>=4 chars) OU (b) contient
+# un underscore. Un titre ne contient presque jamais un mot de 4+ majuscules
+# consecutives SAUF un nom de verdict — c'est exactement la signature qu'on
+# cherche. Le pattern `[A-Z][A-Z_]{3,}` (v1) etait trop court (matche aussi
+# « Remedes » partiellement). **PAS de `(?i)` ici** : on veut strictement
+# `[A-Z]` (majuscule), pas `[a-zA-Z]` (case-insensitive).
+_MENTION_VERDICT_HEADING = re.compile(
+    r"(?m)^#{1,6}[^\n]{0,80}?([A-Z]{4,})(?![A-Za-z0-9_])")
+
+# #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
+# cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,
+# `levee`, `levait`, `que je levais`, ...) le precede dans les 60 chars et
+# qu'il N'est PAS suivi immediatement de « : » ou « . » qui marquerait une
+# fin de phrase d'emission. Borne obligatoire : UNIQUEMENT les noms de
+# VERDICT_FORMELS (les marqueurs naturels « avant merge » / « a changer »
+# ne sont pas des noms de verdict).
+_MENTION_VERDICT_INLINE = re.compile(
+    r"(?i)(?:^|[\s,;:(])"  # frontiere de mot
+    r"(?:nomm(?:e|ant|ation)|cit(?:e|ant|ation)|"
+    r"verdict(?![:.])\s+\w+|d[ée]crivan?t|"
+    r"(?:le|la|les|du|mon|ma|ces?\s+)?verdict(?![:.])|"
+    r"que\s+je\s+lev\w*|que\s+je\s+lift\w*)"
+    r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])")
+
 
 def _strip_mentioned_verdicts(body: str) -> str:
-    """Neutralise les noms de verdict cites en position de mention (#11636).
+    """Neutralise les noms de verdict cites en position de mention (#11636, #11744).
 
     Remplace le verdict par des espaces de meme longueur : les offsets du
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    return _MENTION_VERDICT.sub(
-        lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE):
+        body = pat.sub(
+            lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    return body
 
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars

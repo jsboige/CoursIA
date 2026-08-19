@@ -70,6 +70,7 @@ import Conway.Life.HashlifeCorrectness.Walls.NW
 import Conway.Life.HashlifeCorrectness.Walls.NE
 import Conway.Life.HashlifeCorrectness.Walls.SW
 import Conway.Life.HashlifeCorrectness.Walls.SE
+import Conway.Life.HashlifeMemo
 
 namespace Conway
 namespace Life
@@ -5975,6 +5976,89 @@ theorem hashlifeResultAt_step_converse_mem {M j : Nat} (hj : j + 2 ≤ M)
                     | trivial
                   | skip
 
+/-! ### P4-At induction forte : correction de la fenetre centrale (grain 3b, 5h)
+
+Assemblage final du grain 3b : l'egalite de fenetre certifiee du moteur
+decorrele est etablie par induction ordinaire sur l'excedent de niveau
+`k = level - (j+2)` (forme sans soustraction). Le cas de base `k = 0`
+delegue a `hashlifeResultAt_base_central` (moteur plein a fuel sature) ;
+le pas `k + 1` consomme les deux directions du pas inductif (forward 5f +
+converse 5g) reliees par le pont d'extensionnalite `p4at_ext_bridge` :
+l'hypothese d'induction, re-instantiee sur les neuf briques de niveau
+exact `j + 2 + k`, fournit la biconditionnelle point par point exacte.
+Les seize petits-enfants sont exposes par la double inversion OPAQUE
+`cellWf_of_wf` (parent, puis chaque enfant par niveau) — le `Bool`
+transparent diverge en whnf sur les `node` (Foundation, note c.142).
+
+Les normalisations d'exposants se font exclusivement par `rw`
+directionnels : les formes `M - 2` ne sont PAS defeq des formes propres
+(soustraction sur fvars), et les motifs les plus grands sont reecrits
+en premier (`j + k + 1` avant `j + k`) pour eviter les captures de
+sous-termes. -/
+set_option maxHeartbeats 2000000 in
+theorem hashlifeResultAt_central_correct (j : Nat) :
+    ∀ (k : Nat) (c : MacroCell), c.wf = true → c.level = j + 2 + k →
+    (hashlifeResultAt j c).toGrid ((2^(j+k) : Nat), (2^(j+k) : Nat))
+      = restrictGridTo (evolve (2^j) (c.toGrid (0, 0))) (2^(j+k) : Int) (2^(j+k+1)) := by
+  intro k
+  induction k with
+  | zero =>
+    intro c hwf hL
+    rw [show j + 2 + 0 = j + 2 from by omega] at hL
+    rw [show j + 0 = j from by omega]
+    exact hashlifeResultAt_base_central c j hwf hL
+  | succ k ih =>
+    intro c hwf hL
+    have hnode : ∀ q : MacroCell, 1 ≤ q.level → ∃ p1 p2 p3 p4, q = MacroCell.node p1 p2 p3 p4 := by
+      intro q hq
+      cases q with
+      | leaf _ => simp only [MacroCell.level] at hq; omega
+      | node p1 p2 p3 p4 => exact ⟨p1, p2, p3, p4, rfl⟩
+    have hc1 : 1 ≤ c.level := by omega
+    obtain ⟨A, B, C, D, rfl⟩ := hnode c hc1
+    -- egalites de niveau extraites du wf Bool directement (technique de la
+    -- preuve de cellWf_of_wf, Foundation) : la decomposition rcases du
+    -- cellWf OPAQUE perd les noms dans ce contexte (probe5 : champs
+    -- inaccessibles), le simp_all sur le Bool transparent fonctionne.
+    have hAB : A.level = B.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    have hAC : A.level = C.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    have hAD : A.level = D.level := by simp_all [MacroCell.wf, beq_iff_eq]
+    simp only [MacroCell.level] at hL
+    have hAl : A.level = j + 2 + k := by omega
+    obtain ⟨a1, a2, a3, a4, rfl⟩ := hnode A (by omega)
+    simp only [MacroCell.level] at hAl
+    have hBl : B.level = j + 2 + k := by omega
+    have hCl : C.level = j + 2 + k := by omega
+    have hDl : D.level = j + 2 + k := by omega
+    obtain ⟨b1, b2, b3, b4, rfl⟩ := hnode B (by omega)
+    obtain ⟨c1, c2, c3, c4, rfl⟩ := hnode C (by omega)
+    obtain ⟨d1, d2, d3, d4, rfl⟩ := hnode D (by omega)
+    -- hypothese d'induction re-exprimee dans la forme exacte du hIH des bras (M := j+k+2)
+    have hIH' : ∀ n : MacroCell, n.level = j + k + 2 → n.wf = true →
+      (hashlifeResultAt j n).toGrid ((2^(j+k+2-2) : Nat), (2^(j+k+2-2) : Nat))
+        = restrictGridTo (evolve (2^j) (n.toGrid (0, 0))) (2^(j+k+2-2) : Int) (2^(j+k+2-1)) := by
+      intro n hnl hnw
+      rw [show j + k + 2 - 2 = j + k from by omega,
+          show j + k + 2 - 1 = j + k + 1 from by omega]
+      exact ih n hnw (by omega)
+    have hfw := hashlifeResultAt_step_forward_mem (M := j + k + 2)
+      (show j + 2 ≤ j + k + 2 by omega)
+      a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf
+      (show a1.level = j + k + 2 - 1 by omega) hIH'
+    have hcv := hashlifeResultAt_step_converse_mem (M := j + k + 2)
+      (show j + 2 ≤ j + k + 2 by omega)
+      a1 a2 a3 a4 b1 b2 b3 b4 c1 c2 c3 c4 d1 d2 d3 d4 hwf
+      (show a1.level = j + k + 2 - 1 by omega) hIH'
+    rw [show j + k + 2 - 1 = j + k + 1 from by omega] at hfw hcv
+    -- but ramene a la forme exacte du pont (M := j+k+3), puis biconditionnelle par forward/converse
+    rw [show j + (k + 1) + 1 = j + k + 3 - 1 from by omega]
+    rw [show j + (k + 1) = j + k + 3 - 2 from by omega]
+    refine p4at_ext_bridge _ j (j + k + 3) ?_
+    intro p
+    rw [show j + k + 3 - 2 = j + k + 1 from by omega,
+        show j + k + 3 - 1 = j + k + 2 from by omega]
+    exact ⟨hfw p, hcv p⟩
+
 /-! ## P5. Fuel-exhaustion invariant (Gap 1)
 
 A definitional building block toward the full P5 theorem. The auxiliary
@@ -6854,6 +6938,271 @@ def line7 : Grid := [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6)]
 -- nouveau cadre lvl 4 → js' = 4), exercice du bras récursif multi-sauts.
 #eval evolveHashlifeFastAtN 12 glider == evolve 12 glider
 
+/-! ### Grain 3 (#11161) : derivation inconditionnelle de `OneJumpAtCorrect`
+
+La brique un-saut du squelette (grain 2) cesse d'etre une hypothese :
+l'induction P4-At (tranche 5, `hashlifeResultAt_central_correct`) + la
+geometrie du rembourrage central (`padCenter2_toGrid_shift`, contenu a
+l'offset 3·2^(lvl-1)) + la vitesse de la lumiere (`evolve_reach_chebyshev`,
+portee Chebyshev ≤ t) la derivent SANS aucune hypothese de capture.
+
+L'argument cle : la marge geometrique du contenu dans la fenetre centrale
+[2^lvl, 2^lvl + 2^(lvl+1)) est 2^(lvl-1) de chaque cote (contenu dans
+[3·2^(lvl-1), 5·2^(lvl-1))), tandis que l'evolution 2^(lvl-2) ne deplace
+un point vivant que d'au plus 2^(lvl-2) — la MOITIE de la marge. Le depot
+du restrict, sous capture chez le moteur original (`restrictGridTo_eq_self`
+consommee par `jumpCaptured_iff`), devient ici un argument de cone de
+lumiere : [3S' - 2^j, 5S' + 2^j) ⊂ [2^lvl, 2^lvl + 2^(lvl+1)) avec
+S' = 2^(lvl-1), j = lvl - 2 (i.e. [5X, 11X) ⊂ [4X, 12X), X = 2^(lvl-2)). -/
+
+/-- Miroir N de BR1 (`mem_toGrid_gridToMacroCellWithOffset`, MacroCell) :
+    meme preuve, le constructeur conscient de n. Inline ici (pattern des
+    briques inlinees, c.6464) plutot que dans MacroCell.lean, dont le
+    sibling `_en` exigerait la paire i18n. -/
+private theorem mem_toGrid_gridToMacroCellWithOffsetN' (n : Nat) (g : Grid)
+    (p : Int × Int) :
+    p ∈ (gridToMacroCellWithOffsetN n g).2.toGrid (gridToMacroCellWithOffsetN n g).1
+      ↔ p ∈ g := by
+  cases hF : gridFrameN n g with
+  | mk off lvl =>
+      simp only [gridToMacroCellWithOffsetN, hF, MacroCell.toGrid, mem_sortDedup]
+      rw [MacroCell.mem_toCellsAux_buildFromGrid g lvl off.1 off.2 p]
+      constructor
+      · exact fun h => h.2
+      · intro hp
+        refine ⟨?_, hp⟩
+        have hreg := gridFrameN_contains_g n g p hp
+        rw [hF] at hreg
+        exact hreg
+
+/-- Miroir anti-cycle de `LightCone.chebDist_le_one_of_moore` : le miroir
+    homonyme de Foundation est private a ce module. Byte-identique. -/
+private theorem chebDist_le_one_of_moore_inline (p q : Int × Int)
+    (hq : q ∈ mooreNeighbors p) : chebDist p q ≤ 1 := by
+  unfold chebDist mooreNeighbors at *
+  simp only [List.mem_cons] at hq
+  rcases hq with h | h | h | h | h | h | h | h | h
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = -1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 0 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 0 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = -1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 0 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · have hd1 : q.1 - p.1 = 1 := by rw [h]; omega
+    have hd2 : q.2 - p.2 = 1 := by rw [h]; omega
+    rw [hd1, hd2]; decide
+  · simp at h
+
+/-- Miroir anti-cycle de `LightCone.evolve_reach_chebyshev` (vitesse de
+    la lumiere Chebyshev) : toute cellule vivante apres t generations a un
+    ancetre vivant initial a portee Chebyshev <= t. `LightCone` est EN AVAL
+    (il importe ce fichier) — meme schema que les miroirs boîte-Chebyshev
+    de Foundation (c.2988) et l'inlining des briques de saut (c.6464).
+    Preuve byte-identique, `isAlive_true_iff_mem_local` (Foundation) et
+    `chebDist_le_one_of_moore_inline` ci-dessus remplaçant les originaux
+   aval. -/
+private theorem evolve_reach_chebyshev_inline (t : Nat) (g : Grid) (q : Int × Int)
+    (h_alive : isAlive (evolve t g) q = true) :
+    ∃ p, isAlive g p = true ∧ chebDist p q ≤ t := by
+  induction t generalizing q with
+  | zero =>
+    simp only [evolve_zero] at h_alive
+    exact ⟨q, h_alive, (chebDist_self q).le⟩
+  | succ n ih =>
+    simp only [evolve_succ] at h_alive
+    rw [isAlive_step_eq_aliveNext] at h_alive
+    have hmem : q ∈ candidates (evolve n g) :=
+      aliveNext_true_mem_candidates (evolve n g) q h_alive
+    unfold candidates at hmem
+    rw [List.mem_append] at hmem
+    rcases hmem with h_self | h_nbr
+    · have hq : isAlive (evolve n g) q = true :=
+        (isAlive_true_iff_mem_local (evolve n g) q).mpr h_self
+      obtain ⟨p, hp, hcheb⟩ := ih q hq
+      exact ⟨p, hp, hcheb.trans (Nat.le_succ n)⟩
+    · rw [List.mem_flatMap] at h_nbr
+      obtain ⟨r, hr_mem, hrq⟩ := h_nbr
+      have hr : isAlive (evolve n g) r = true :=
+        (isAlive_true_iff_mem_local (evolve n g) r).mpr hr_mem
+      obtain ⟨p, hp, hpr⟩ := ih r hr
+      refine ⟨p, hp, ?_⟩
+      have hrq_cheb : chebDist r q ≤ 1 := chebDist_le_one_of_moore_inline r q hrq
+      exact (chebDist_triangle p q r).trans (add_le_add hpr hrq_cheb)
+
+/-- **Saut un-jump At inconditionnel (grain 3, #11161).** Pour toute
+    cellule bien formee de niveau ≥ 2, la lecture centrale du moteur
+    decorrele `hashlifeJumpAt (lvl - 2)` rend EXACTEMENT l'evolue 2^(lvl-2)
+    du contenu remboure — le restrict de la fenetre centrale se depose par
+    cone de lumiere (marge 2^(lvl-1) vs portee 2^(lvl-2)), sans capture. -/
+private theorem hashlifeJumpAt_correct_uncond (c : MacroCell)
+    (hwf : c.wf = true) (hlvl : 2 ≤ c.level) :
+    (hashlifeJumpAt (c.level - 2) c).toGrid ((2 ^ c.level : Nat), (2 ^ c.level : Nat))
+      = evolve (2 ^ (c.level - 2)) ((padCenter2 c).toGrid (0, 0)) := by
+  have hj1 : 1 ≤ c.level := by omega
+  have hplvl : (padCenter2 c).level = c.level + 2 := level_padCenter2 c hj1
+  have hpwf : (padCenter2 c).wf = true := wf_padCenter2 c hwf
+  have hcentral := hashlifeResultAt_central_correct (c.level - 2) 2 (padCenter2 c) hpwf
+    (by rw [hplvl]; omega)
+  -- j + k = lvl - 2 + 2 : le rw simple reecrit AUSSI le sous-terme de
+  -- (lvl - 2) + 2 + 1 (taille), un seul geste normalise les trois exposants
+  rw [show c.level - 2 + 2 = c.level from by omega] at hcentral
+  -- normalisations de puissances vers l'atome X = ↑(2 ^ (lvl - 2))
+  have hp2 : ((2 ^ (c.level - 1) : Nat) : Int)
+      = 2 * ((2 ^ (c.level - 2) : Nat) : Int) := by
+    have hp : (2 : Nat) ^ (c.level - 2 + 1) = 2 ^ (c.level - 2) * 2 := Nat.pow_succ _ _
+    rw [show c.level - 2 + 1 = c.level - 1 from by omega] at hp
+    rw [hp, Nat.cast_mul]
+    push_cast
+    ring
+  have hp4 : ((2 ^ c.level : Nat) : Int)
+      = 4 * ((2 ^ (c.level - 2) : Nat) : Int) := by
+    have hk : c.level - 2 + 2 = c.level := by omega
+    have hp : (2 : Nat) ^ (c.level - 2 + 2) = 2 ^ (c.level - 2) * 4 := by
+      rw [Nat.pow_add]
+    rw [hk] at hp
+    rw [hp, Nat.cast_mul]
+    push_cast
+    ring
+  have hp8 : ((2 ^ (c.level + 1) : Nat) : Int)
+      = 8 * ((2 ^ (c.level - 2) : Nat) : Int) := by
+    have hk : c.level - 2 + 3 = c.level + 1 := by omega
+    have hp : (2 : Nat) ^ (c.level - 2 + 3) = 2 ^ (c.level - 2) * 8 := by
+      rw [Nat.pow_add]
+    rw [hk] at hp
+    rw [hp, Nat.cast_mul]
+    push_cast
+    ring
+  have hnp1 : (2 : Int) ^ (c.level - 1) = ((2 ^ (c.level - 1) : Nat) : Int) :=
+    (Nat.cast_pow (2 : Nat) (c.level - 1)).symm
+  have hnp4 : (2 : Int) ^ c.level = ((2 ^ c.level : Nat) : Int) :=
+    (Nat.cast_pow (2 : Nat) c.level).symm
+  unfold hashlifeJumpAt
+  rw [hcentral]
+  refine restrictGridTo_eq_self _ _ _ ?_
+  intro p hp
+  rw [← isAlive_true_iff_mem_local] at hp
+  obtain ⟨q, hqa, hcheb⟩ := evolve_reach_chebyshev_inline _ _ p hp
+  rw [isAlive_true_iff_mem_local] at hqa
+  rw [padCenter2_toGrid_shift c hj1, mem_shift] at hqa
+  obtain ⟨hr1, hr2, hr3, hr4⟩ := mem_toGrid_extent c 0 0 _ hwf hqa
+  dsimp only at hr1 hr2 hr3 hr4
+  obtain ⟨hb1, hb2⟩ := coord_bound_of_chebDist_le q p _ hcheb
+  rw [hnp1, hp2] at hr1 hr3
+  rw [hnp1, hp2, hnp4] at hr2 hr4
+  -- natAbs Nat-typé -> |·| Int puis bornes scindées (recipe c.3512-3517,
+  -- omega ne deplie pas Int.natAbs sous cast Nat)
+  have hx1 : |p.1 - q.1| ≤ ((2 ^ (c.level - 2) : Nat) : Int) := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast hb1
+  have hx2 : |p.2 - q.2| ≤ ((2 ^ (c.level - 2) : Nat) : Int) := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast hb2
+  obtain ⟨hl1, hh1⟩ := abs_le.mp hx1
+  obtain ⟨hl2, hh2⟩ := abs_le.mp hx2
+  rw [hnp4]
+  refine ⟨?_, ?_, ?_, ?_⟩ <;> omega
+
+/-- **Frame mirror du saut un-jump At (grain 3, #11161).** Miroir de
+    `one_jump_toGrid_correct` (c.6517) : la lecture du resultat At a
+    l'ancre `jumpResultOff` rend l'evolue 2^(lvl-2) de la grille ORIGINALE,
+    l'algebre de decalages etant identique a celle du moteur original
+    (les quantites ne dependent pas de la taille du saut). -/
+private theorem one_jumpAt_toGrid_correct (g : Grid) (off : Int × Int) (mc : MacroCell)
+    (hmem : ∀ p, p ∈ mc.toGrid off ↔ p ∈ g)
+    (hwf : mc.wf = true) (hlvl : 2 ≤ mc.level) :
+    (hashlifeJumpAt (mc.level - 2) mc).toGrid (jumpResultOff off mc.level)
+      = evolve (jumpSizeAt mc.level) g := by
+  have hj1 : 1 ≤ mc.level := by omega
+  have hnjs : 0 < 2 ^ (mc.level - 2) := Nat.two_pow_pos _
+  have h1js : 1 ≤ 2 ^ (mc.level - 2) := by omega
+  have h2k : ((2 ^ mc.level : Nat) : Int)
+      = 2 * ((2 ^ (mc.level - 1) : Nat) : Int) := by
+    have hp : (2 : Nat) ^ (mc.level - 1 + 1) = 2 ^ (mc.level - 1) * 2 := by
+      rw [Nat.pow_succ]
+    rw [show mc.level - 1 + 1 = mc.level from by omega] at hp
+    rw [hp, Nat.cast_mul]
+    push_cast
+    ring
+  have hbrick := hashlifeJumpAt_correct_uncond mc hwf hlvl
+  have hnew : jumpResultOff off mc.level
+      = (off.1 - (2 ^ (mc.level - 1) : Nat),
+         off.2 - (2 ^ (mc.level - 1) : Nat)) := by
+    unfold jumpResultOff
+    split
+    · next h0 =>
+        exfalso
+        have hb : Nat.beq mc.level 0 = true := by simpa [BEq] using h0
+        have hz : mc.level = 0 := Nat.eq_of_beq_eq_true hb
+        omega
+    · rfl
+  have hmc0 : mc.toGrid (0, 0)
+      = shift (0 - off.1, 0 - off.2) (mc.toGrid (off.1, off.2)) :=
+    toGrid_shift_grid mc 0 0 off.1 off.2
+  have hmem' : ∀ p, p ∈ mc.toGrid (off.1, off.2) ↔ p ∈ g := by
+    simpa using hmem
+  simp only [jumpSizeAt]
+  rw [hnew,
+    toGrid_shift_grid (hashlifeJumpAt (mc.level - 2) mc) _ _ (2 ^ mc.level : Nat)
+      (2 ^ mc.level : Nat),
+    hbrick, padCenter2_toGrid_shift mc hj1, ← evolve_shift, hmc0,
+    ← evolve_shift, evolve_congr hmem' h1js, shift_shift, shift_shift]
+  have hpow : (2 : Int) ^ (mc.level - 1) = ((2 ^ (mc.level - 1) : Nat) : Int) := by
+    exact (Nat.cast_pow (2 : Nat) (mc.level - 1)).symm
+  have hz1 : (off.1 - (2 ^ (mc.level - 1) : Nat)) - (2 ^ mc.level : Nat)
+      + 3 * (2 ^ (mc.level - 1) : Int) + (0 - off.1) = 0 := by
+    rw [hpow, h2k]
+    omega
+  have hz2 : (off.2 - (2 ^ (mc.level - 1) : Nat)) - (2 ^ mc.level : Nat)
+      + 3 * (2 ^ (mc.level - 1) : Int) + (0 - off.2) = 0 := by
+    rw [hpow, h2k]
+    omega
+  rw [hz1, hz2, shift_zero (canonical_evolve_of_pos hnjs g)]
+
+/-- **Grain 3 (#11161) : `OneJumpAtCorrect` est un theoreme.** La brique
+    un-saut du squelette d'induction fuel (grain 2) se derive
+    inconditionnellement : l'invariant du cadre N (miroir BR1 ci-dessus)
+    fournit le `(off, mc)` de l'enonce, la wf vient de `buildFromGrid_wf`,
+    et le corps est le frame mirror. Aucune hypothese de capture — c'est
+    la sortie du re-cadrage Gosper : la capture etait un artefact du
+    moteur mono-ronde ORIGINAL, pas une propriete du monde. -/
+theorem one_jumpAt_correct : OneJumpAtCorrect := by
+  intro n g hlvl
+  cases hF : gridFrameN n g with
+  | mk fo lvl =>
+      simp only [gridToMacroCellWithOffsetN, hF] at hlvl ⊢
+      have hun : gridToMacroCellWithOffsetN n g
+          = (fo, MacroCell.buildFromGrid g fo.1 fo.2 lvl) := by
+        simp only [gridToMacroCellWithOffsetN, hF]
+      have hmem : ∀ p, p ∈ (MacroCell.buildFromGrid g fo.1 fo.2 lvl).toGrid fo
+          ↔ p ∈ g := by
+        intro p
+        have hbr1 := mem_toGrid_gridToMacroCellWithOffsetN' n g p
+        rw [hun] at hbr1
+        exact hbr1
+      exact one_jumpAt_toGrid_correct g fo (MacroCell.buildFromGrid g fo.1 fo.2 lvl)
+        hmem (buildFromGrid_wf g _ _ _) hlvl
+
+/-- **Capstone du re-cadrage Gosper (#11161)** : la correction du moteur
+    decorrele n'est plus conditionnelle — l'hypothese `hbr` du squelette
+    (grain 2) est dechargee par `one_jumpAt_correct` (grain 3). Pour toute
+    grille et tout horizon, `evolveHashlifeFastAtN n g = evolve n g`. -/
+theorem evolveHashlifeFastAtN_correct_uncond (n : Nat) (g : Grid) :
+    evolveHashlifeFastAtN n g = evolve n g :=
+  evolveHashlifeFastAtN_correct one_jumpAt_correct n g
+
 /-! ## Sanity witnesses (native_decide)
 
 Concrete instantiations of `hashlife_correct` on small patterns verify that
@@ -6931,6 +7280,72 @@ theorem hashlife_correct_implies_beacon_2
     evolveHashlifeFast 2 beacon = evolve 2 beacon := by
   have hpad : BoxAssezGrand beacon 2 := by native_decide
   exact H 2 beacon hpad
+
+/-! ## Axe efficacité (#6724) : stabilisation du moteur, classe 1 — patterns périodiques
+
+L'efficacité de hashlife (cache Golly) vit sur les motifs dont l'arbre de
+macrocells se stabilise ; les motifs périodiques en sont le cas d'école —
+la trajectoire ne produit que `p` états distincts, donc le cache sert
+indéfiniment les mêmes nœuds. Cette section formalise ce « l'arbre se
+stabilise » au niveau sémantique : pour un oscillateur de période `p`,
+TOUT horizon du moteur mémoïsé retombe dans le cycle
+(`evolveHashlifeFastMemo_oscillator_cycle`). La correction du moteur non
+décorrélé reste conditionnelle à la capture de la trajectoire
+(`hashlife_correctN`) ; pour un oscillateur borné la capture s'établit
+par motif (témoins `jumpCaptured_block`, `jumpCaptured_glider`). Le
+moteur décorrélé (`evolveHashlifeFastAtN`, #11161) la décharge
+entièrement — la présente section n'en dépend pas. -/
+
+/-- Oscillateur de période `p` : au moins une étape, et l'état initial
+    revient après `p` générations. Classe « patterns périodiques » de
+    l'axe efficacité #6724. -/
+def IsOscillator (p : Nat) (g : Grid) : Prop :=
+  0 < p ∧ evolve p g = g
+
+/-- Tout multiple de la période redonne l'état initial : la trajectoire
+    sémantique d'un oscillateur ne visite que `p` états. -/
+theorem evolve_oscillator_mul (p : Nat) (g : Grid) (h : evolve p g = g) :
+    ∀ k, evolve (k * p) g = g := by
+  intro k
+  induction k with
+  | zero => simp
+  | succ k ih => rw [Nat.succ_mul, evolve_add, h, ih]
+
+/-- Stabilisation du moteur mémoïsé sur la classe des oscillateurs :
+    tout horizon `n` retombe sur l'état `n % p` du cycle. C'est
+    l'invariant de stabilisation « l'arbre se stabilise » formalisé pour
+    la classe des patterns périodiques (critère « axe efficacité » de
+    #6724) : la sortie du moteur ne quitte jamais le cycle à `p` états. -/
+theorem evolveHashlifeFastMemo_oscillator_cycle
+    (p n : Nat) (g : Grid) (hosc : IsOscillator p g)
+    (hcap : ∀ t ≤ n, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo n g = evolve (n % p) g := by
+  have hcorr := hashlife_correctN n g hcap
+  have hcycle : evolve (p * (n / p)) g = g := by
+    rw [Nat.mul_comm]
+    exact evolve_oscillator_mul p g hosc.2 (n / p)
+  have hn : p * (n / p) + n % p = n := Nat.div_add_mod n p
+  have hcomm : p * (n / p) + n % p = n % p + p * (n / p) := by omega
+  have hmod : n % p % p = n % p :=
+    Nat.mod_eq_of_lt (Nat.mod_lt n hosc.1)
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hcorr, ← hn, hcomm,
+    evolve_add, hcycle, Nat.add_mul_mod_self_left, hmod]
+
+/-- Corollaire : aux multiples de la période, le moteur mémoïsé redonne
+    exactement l'état initial — la sortie est stable de période `p`. -/
+theorem evolveHashlifeFastMemo_oscillator_stable
+    (p k : Nat) (g : Grid) (hosc : IsOscillator p g)
+    (hcap : ∀ t ≤ k * p, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo (k * p) g = g := by
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hashlife_correctN _ _ hcap,
+    evolve_oscillator_mul p g hosc.2 k]
+
+/-! Sanity witnesses : le blinker horizontal est un oscillateur de période 2,
+et le moteur mémoïsé le stabilise — à tout multiple de la période il redonne
+exactement l'état initial. -/
+
+#eval evolve 2 blinker_h == blinker_h
+#eval evolveHashlifeFastMemo 8 blinker_h == blinker_h
 
 end Life
 end Conway

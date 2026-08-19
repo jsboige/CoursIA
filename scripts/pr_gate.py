@@ -394,12 +394,23 @@ def verdict(pending: Sequence[str], bad: Sequence[str], settled: bool) -> tuple[
 
     `settled` is False when the wait loop ran out of time. Unsettled is a
     failure even with zero bad checks: we do not know, therefore we refuse.
+
+    Note (#11751): the wait loop now re-reads the check set one last time at
+    the deadline; an empty `pending` AND empty `bad` at that point is treated
+    as `settled=True` BEFORE this function is reached, so this `not settled`
+    branch with an empty `pending` should be unreachable in practice. The
+    diagnostic message no longer prints `(none listed)` -- it now states the
+    case explicitly, so a regression that re-introduces the phantom FAIL does
+    not look like a benign display issue.
     """
     if bad:
         return 1, "FAIL -- failing checks: " + ", ".join(bad)
     if not settled:
-        listed = ", ".join(pending) if pending else "(none listed)"
-        return 1, f"FAIL -- timed out waiting for: {listed}"
+        if pending:
+            return 1, "FAIL -- timed out waiting for: " + ", ".join(pending)
+        return 1, (
+            "FAIL -- timed out with empty wait set (gate bug, see #11751)"
+        )
     if pending:
         return 1, "FAIL -- still pending at settle time: " + ", ".join(pending)
     return 0, "PASS -- no failing checks"
@@ -611,8 +622,60 @@ def wait_and_decide(
                 return verdict(pending, bad, settled=True)
 
         if now() >= deadline:
-            _report_advisory(advisory)
-            return verdict(pending, bad, settled=False)
+            # Issue #11751 -- phantom FAIL when the deadline fires BETWEEN the
+            # last poll and the last constituent's completion. The classic case:
+            # poll N reports 1 pending (say `Analyze (actions)`); the deadline
+            # fires before poll N+1; `Analyze (actions)` finishes in the gap;
+            # the gate announces `FAIL -- timed out waiting for: (none listed)`
+            # even though the set is fully green. Re-read the state once more
+            # before deciding -- a timeout is a signal to look again, not a
+            # verdict in itself (same shape as `select()` with a deadline).
+            final_checks = fetch(repo, sha)
+            final_pending, final_bad, final_ok, final_advisory = classify(
+                final_checks, self_name
+            )
+            if not final_pending and not final_bad:
+                # Everything settled in the gap: treat as a clean settle.
+                # Still consult the delivery canary (rule 8) so an empty
+                # bouquet is not silently flipped to PASS by the timeout itself.
+                final_canary = _canary_verdict(
+                    final_checks, always_on_jobs or frozenset()
+                )
+                if final_canary is not None:
+                    _report_advisory(final_advisory)
+                    print(f"[pr-gate] {final_canary[1]}", flush=True)
+                    return final_canary
+                _report_advisory(final_advisory)
+                print(
+                    f"[pr-gate] settled at deadline: {len(final_ok)} check(s) "
+                    "green (phantom-FAIL recovered, #11751)",
+                    flush=True,
+                )
+                return verdict(final_pending, final_bad, settled=True)
+            # Genuine still-pending (or a red we just observed): fail with a
+            # message that names the constituents. Empty list here would mean
+            # the rule-1 invariant broke -- say so explicitly instead of the
+            # former `(none listed)` placeholder that read like a degradation.
+            if final_bad:
+                _report_advisory(final_advisory)
+                return verdict(final_pending, final_bad, settled=True)
+            if not final_pending:
+                # Defensive: settle_polls path did not fire (timeout) and the
+                # re-read is also empty -- this is unreachable under current
+                # `classify` (an empty set routes to `pending == []`), and we
+                # want a loud diagnostic if it ever stops being unreachable.
+                _report_advisory(final_advisory)
+                print(
+                    "[pr-gate] FAIL -- timed out with empty wait set (gate bug, "
+                    "see #11751): this should be unreachable; the constituent "
+                    "set is empty AND the deadline fired without settle.",
+                    flush=True,
+                )
+                return 1, (
+                    "FAIL -- timed out with empty wait set (gate bug, see #11751)"
+                )
+            _report_advisory(final_advisory)
+            return verdict(final_pending, final_bad, settled=False)
 
         print(
             f"[pr-gate] waiting on {len(pending)} check(s): "

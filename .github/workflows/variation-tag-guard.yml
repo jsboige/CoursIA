@@ -43,6 +43,15 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
     branches: [main]
+  # #11718 : le marqueur [G-VAR-3 OVERRIDE] vit en COMMENTAIRE de PR, mais
+  # issue_comment etait absent -- poster le marqueur ne relancait rien. Un run
+  # issue_comment checkout la branche par defaut (main), donc execute le gate
+  # COURANT : c'est le seul chemin qui echappe au gel de refs/pull/N/merge
+  # (diagnostic ai-01 sur #11718 : la PR re-execute la version du gate qui
+  # existait a son dernier push, pas celle de main). created ET edited : le
+  # marqueur peut etre poste ou corrige.
+  issue_comment:
+    types: [created, edited]
   workflow_dispatch:
 
 permissions:
@@ -55,6 +64,7 @@ concurrency:
 
 jobs:
   check-variation-tag:
+    if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
     name: Check Grain tag conformity
     runs-on: ubuntu-latest
     steps:
@@ -153,7 +163,7 @@ jobs:
               note_defect variation-tag-malformed
             fi
             if [ "$GENRE_VALID" != "True" ]; then
-              echo "::warning::GENRE '${GENRE:-vide}' hors enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
+              echo "::warning::GENRE '${GENRE:-vide}' hors enumeration §1 (lean, qc, training, genai, notebook-python, notebook-dotnet, notebook-lean, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). G-VAR-3 compare des genres consecutifs : un genre inedit rend l'adjacence invisible. Mappe-le sur le genre qui decrit le TYPE DE TRAVAIL, pas le repertoire traverse."
               note_defect variation-tag-genre-offlist
             fi
             if [ -z "$LANE" ] || [ "$LANE" = "None" ]; then
@@ -238,6 +248,7 @@ jobs:
   # dans les deux sens. Sans lui, le compteur flaggait du travail legitiment
   # re-qualifie (1 FP/2 flags sur la vague 2026-07-30 : #8930 LIGHT->MED).
   check-light-cap:
+    if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
     name: G-VAR-2 light cap (cross-PR)
     runs-on: ubuntu-latest
     steps:
@@ -396,6 +407,7 @@ jobs:
   #      Pinned by `test_check_name_is_not_advisory_friendly` in
   #      `scripts/tests/test_variation_tag_required.py`.
   check-variation-tag-required:
+    if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
     name: Require Grain tag (block on absent, #10045)
     runs-on: ubuntu-latest
     steps:
@@ -479,7 +491,7 @@ jobs:
           Grain: <DEEP|MED|LIGHT>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>
           \`\`\`
 
-          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
+          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, notebook-lean, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
           EOF
           )" 2>/dev/null || true
 
@@ -515,6 +527,7 @@ jobs:
   # A standalone `Fixes #N` (intended close) is NOT flagged: the
   # discriminator is the `prev:` prefix, not the keyword alone.
   check-prev-close-keyword-required:
+    if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
     name: 'Require prev: non-closing (block on close-keyword genre, #10093)'
     runs-on: ubuntu-latest
     steps:
@@ -629,6 +642,7 @@ jobs:
   # classifier in `scripts/pr_gate.py` does NOT silence it -- same reason as
   # the tag-required and prev-close-keyword-required jobs.
   check-close-keyword-pr-ref-required:
+    if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
     name: 'Require no close-keyword + PR-number (block on auto-close of a PR, #10101)'
     runs-on: ubuntu-latest
     steps:
@@ -769,6 +783,7 @@ jobs:
   # plomberie. The job name carries the `-required` suffix so PR #10036's
   # `is_advisory()` classifier in `scripts/pr_gate.py` does NOT silence it.
   check-variation-adjacency-required:
+    if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
     name: 'Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
     runs-on: ubuntu-latest
     steps:
@@ -875,4 +890,135 @@ jobs:
           EOF
           )" 2>/dev/null || true
 
+          exit 1
+
+  # ---------------------------------------------------------------------------
+  # #11718 : chemin COMMENTAIRE du gate d'adjacence G-VAR-3.
+  #
+  # Pourquoi un job dedie plutot qu'etendre check-variation-adjacency-required :
+  # sur issue_comment, github.event.pull_request N'EXISTE PAS et github.sha
+  # pointe la branche par defaut. Ce job resolve lui-meme la PR (numero =
+  # github.event.issue.number), son body, son SHA de tete, et rattache son
+  # check-run a CE SHA -- sinon le check se pose sur main et l'agregateur PR
+  # gate (qui lit les check-runs de la tete) ne le voit pas (meme famille que
+  # le fantome workflow_run deja mesure : un SHA qui porte un check sans dire
+  # de quoi le check parle).
+  #
+  # Le check-run porte le MEME nom que le job pull_request ; le verdict le plus
+  # recent par nom supplante le rouge gele de la vieille run dans la vue PR.
+  #
+  # Anti-boucle : ce job NE POSTE PAS de commentaire en retour (le chemin
+  # bloquant s'exprime dans l'output du check-run), et il s'ignore lui-meme :
+  # les commentaires du bot (github-actions[bot]) ne redeclenchent rien.
+  # Les commentaires d'ISSUE (hors PR) sont filtres au niveau du job.
+  check-variation-adjacency-comment:
+    name: 'Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
+    # #11782 : garde d'entree sur la presence du marqueur. Un if: de job est
+    # evalue SANS allouer de runner -- un commentaire sans [G-VAR-3 OVERRIDE]
+    # ne coute rien du tout. Sans lui, chaque commentaire de PR (steer, ACK,
+    # review, reponse) relance ce job pour ne rien decider : un fil de 10
+    # messages valait autant de runs qu'une refonte du code. Le marqueur est
+    # le seul objet que ce job sait evaluer (#11718), tout le reste est du
+    # passage a vide. NB : combine en ET a la condition existante -- la forme
+    # `event_name != 'issue_comment' || contains(...)` censee dans l'issue
+    # laisserait AUSSI entrer les evenements pull_request dans ce job chemin-
+    # commentaire (doublon du job pull_request, acceptance 3 de #11782).
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      github.event.comment.user.login != 'github-actions[bot]' &&
+      contains(github.event.comment.body, '[G-VAR-3 OVERRIDE]')
+    runs-on: ubuntu-latest
+    permissions:
+      # Job-level permissions REMPLACENT (ne fusionnent pas) celles du
+      # workflow : redeclarer ce dont ce job a besoin.
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Checkout the adjacency helper (sparse, branche par defaut = gate COURANT)
+        uses: actions/checkout@v4
+        with:
+          # Pas de ref : sur issue_comment le checkout est la branche par
+          # defaut -- c'est le point. Le gate execute est celui de main,
+          # jamais la version gelee dans refs/pull/N/merge (diagnostic #11718).
+          sparse-checkout: |
+            scripts/ci/variation_adjacency_guard.py
+            scripts/variation_light_cap.py
+            scripts/grain_tag.py
+      - name: 'Resolve PR head, body, comments -- run gate, post check-run on head SHA'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -uo pipefail
+
+          # --- Resolution de la PR depuis le commentaire -------------------
+          PR_JSON=$(gh api "repos/${GH_REPO}/pulls/${ISSUE_NUMBER}")
+          PR_NUMBER=$(printf '%s' "$PR_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['number'])")
+          PR_BODY=$(printf '%s' "$PR_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin).get('body') or '')")
+          PR_AUTHOR=$(printf '%s' "$PR_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['user']['login'])")
+          IS_FORK=$(printf '%s' "$PR_JSON" | python3 -c "import json,sys; print(str(json.load(sys.stdin)['head']['repo']['fork']).lower())")
+          HEAD_SHA=$(printf '%s' "$PR_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['head']['sha'])")
+          echo "PR #$PR_NUMBER head=$HEAD_SHA (resolu depuis le commentaire)"
+
+          CHECK_NAME='Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
+
+          post_check () {
+            # post_check <conclusion> <summary>
+            python3 - "$1" "$2" <<'PYC'
+          import json, os, subprocess, sys
+          conclusion, summary = sys.argv[1], sys.argv[2]
+          payload = {
+              "name": "Require genre diversity vs prev: (block on LIGHT adjacency, #11170)",
+              "head_sha": os.environ["HEAD_SHA"],
+              "status": "completed",
+              "conclusion": conclusion,
+              "output": {
+                  "title": "G-VAR-3 adjacency (comment path, gate courant)",
+                  "summary": summary,
+              },
+          }
+          subprocess.run(
+              ["gh", "api", "--method", "POST",
+               f"repos/{os.environ['GH_REPO']}/check-runs",
+               "--input", "-"],
+              input=json.dumps(payload), text=True, check=False)
+          PYC
+          }
+          export HEAD_SHA GH_REPO
+
+          # --- Hors scope : bots et forks (meme politique que les autres jobs)
+          case "$PR_AUTHOR" in
+            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; post_check success "Auteur bot : hors scope."; exit 0 ;;
+          esac
+          if [ "$IS_FORK" = "true" ]; then
+            echo "PR issuee d'un fork : hors scope (PR etudiante)."
+            post_check success "PR etudiante (fork) : hors scope."
+            exit 0
+          fi
+
+          # --- Meme gate, memes entrees que le chemin pull_request ---------
+          printf '%s' "$PR_BODY" > /tmp/pr_body.txt
+          gh pr view "$PR_NUMBER" --json comments             --jq '[.comments[] | {author: .author.login, body: .body}]'             > /tmp/pr_comments.json 2>/dev/null || rm -f /tmp/pr_comments.json
+          COMMENTS_ARG=""
+          if [ -s /tmp/pr_comments.json ]; then
+            COMMENTS_ARG="--comments-file /tmp/pr_comments.json"
+          fi
+
+          # shellcheck disable=SC2086  # deliberate 0-or-2 token split
+          python3 scripts/ci/variation_adjacency_guard.py             --body-file /tmp/pr_body.txt $COMMENTS_ARG             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+          if [ -s /tmp/verdict.err ]; then echo "--- helper stderr ---"; cat /tmp/verdict.err; fi
+          echo "--- verdict ---"; cat /tmp/verdict.json 2>/dev/null || echo "(vide)"
+
+          SUMMARY=$(cat /tmp/verdict.json 2>/dev/null || echo '{}')
+          if [ "$RC" -eq 0 ]; then
+            echo "Adjacence OK (comment path)."
+            post_check success "Verdict du gate COURANT (main), declenche par commentaire :$SUMMARY"
+            exit 0
+          fi
+          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo unknown)
+          echo "::error::G-VAR-3 LIGHT-genre adjacency (comment path): $REASON"
+          post_check failure "Verdict du gate COURANT (main), declenche par commentaire : $REASON -- le remede (OVERRIDE ou grain d'un autre genre) est decrit dans le body du garde."
           exit 1
