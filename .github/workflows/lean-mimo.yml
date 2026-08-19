@@ -8,9 +8,10 @@ name: Lean CI (mimo_lean)
 # Lemmas 11.1 / 5.1) and Phase 3 the external SLT lake; the `require` lines
 # will land with those phases, keeping each PR one-subject.
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the library ships entirely
-# sorry-free. This CI only guards that NO new standalone `sorry` tactic is
-# introduced (no false positive on prose mentions; catches any new sorry).
+# sorry-filter-mode=real, baseline=0: the library ships entirely
+# sorry-free. This CI guards that NO new `sorry` is introduced
+# (no false positive on prose mentions; catches any new sorry, including
+# `exact sorry`, `theorem foo := by sorry`, `def f : T := sorry`, `<;> sorry`).
 
 on:
   push:
@@ -39,4 +40,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean
       display-name: mimo_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
