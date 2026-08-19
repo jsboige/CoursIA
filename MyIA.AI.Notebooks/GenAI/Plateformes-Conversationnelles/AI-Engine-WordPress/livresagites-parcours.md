@@ -187,6 +187,22 @@ catalogue), pas pour le cœur éditorial.
 > documenté pour la classe système dans
 > [`verification-verte-systeme-casse.md`](../../../../docs/reference/verification-verte-systeme-casse.md).
 
+> **Notebook compagnon (série « par son API »).**
+> [`interroger-lassistant-de-lediteur-par-l-api.ipynb`](interroger-lassistant-de-lediteur-par-l-api.ipynb)
+> ouvre la face API de ce Copilot : la route `mwai-ui/v1/editor/submit`,
+> partagée avec le namespace visiteur mais séparée de lui par la paire
+> cookie de session + nonce `wp_rest` (le nonce visiteur de
+> `start_session` y prend un 403 mesuré). Le contrat s'y découvre par
+> les refus — aucun arg déclaré, un 400 « Empty message. » nomme
+> `newMessage` — et la réponse inscrit la frontière commerciale du
+> plugin dans ses propres champs : completion réelle, `usage` rendu à
+> l'appelant (le prix du raisonnement visible), et un champ `actions`
+> **vide** — le Copilot payant retourne des actions sur les blocs,
+> l'assistant gratuit ne retourne que du texte. La route est
+> stateless : le tour isolé oublie, celui qui re-apporte `messages`
+> souvient. Neuvième note : le tour des faces (admin, agent,
+> visiteur, éditeur) est complet.
+
 ---
 
 ## Parcours 2 — RAG sur corpus, et le piège du multi-environnement

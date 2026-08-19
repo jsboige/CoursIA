@@ -247,8 +247,17 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     in silence.
     """
     problems: list[str] = []
+    # A zero count is never the perimeter. On a mixed line -- "0 fichier
+    # catalogue, 2 fichiers touches" -- the claim under test is the non-zero
+    # one; reading the first match confronts "0" with a file list that cannot
+    # be empty, so the line could never pass whatever the PR contained. This
+    # is the FINDING raised in review of #11730 (#11735): the fence mask fixed
+    # WHERE we scan, this fixes WHICH count we scan for. Both are needed.
     scan_target = _fence_mask(assertion)
-    count_claim = COUNT_CLAIM.search(scan_target)
+    count_claim = next(
+        (mm for mm in COUNT_CLAIM.finditer(scan_target) if int(mm.group(1)) != 0),
+        None,
+    )
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):

@@ -20,10 +20,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 157 |
+| Notebooks | 161 |
 | PRODUCTION | 0 |
-| BETA | 146 |
-| ALPHA | 11 |
+| BETA | 149 |
+| ALPHA | 12 |
 
 ## GenAI (1 notebooks)
 
@@ -42,12 +42,14 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | 00-5: ComfyUI Local - Test Rapide | BETA | Non |
 | 6 | Deploiement Docker Local des Services GenAI | BETA | Non |
 
-## GenAI/Aspire (2 notebooks)
+## GenAI/Aspire (4 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Aspire : orchestrer notre pile GenAI en C# | BETA | Non |
 | 2 | Aspire : orchestrer la pile GenAI **réelle** du cluster | BETA | Non |
+| 3 | Aspire 3 : Observabilite .NET moderne — Serilog, OpenTe | BETA | Oui |
+| 4 | Aspire : des tests d'intégration modernes — Testcontain | BETA | Oui |
 
 ## GenAI/Audio (30 notebooks)
 
@@ -84,13 +86,14 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 29 | Lecture Analytique pour Audiobook | BETA | Oui |
 | 30 | Voice Casting : Attribution de voix TTS par personnage | BETA | Non |
 
-## GenAI/CaseStudies (3 notebooks)
+## GenAI/CaseStudies (4 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | Duel Verbal : Barbie vs l'Âne de Shrek | BETA | Non |
-| 2 | Docteur vs ChatGPT : Chatbot medical multi-agent | BETA | Non |
-| 3 | Générateur de Recettes PDF | BETA | Non |
+| 2 | Vue d'ensemble : un duel d'agents Père Fouras vs Lauren | ALPHA | Non |
+| 3 | Docteur vs ChatGPT : Chatbot medical multi-agent | BETA | Non |
+| 4 | Générateur de Recettes PDF | BETA | Non |
 
 ## GenAI/FineTuning (5 notebooks)
 
@@ -124,7 +127,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 16 | 🏭 Production Integration - GenAI | BETA | Non |
 | 17 | Génération d’un patron de point de croix à partir d’une | ALPHA | Non |
 
-## GenAI/Plateformes-Conversationnelles (15 notebooks)
+## GenAI/Plateformes-Conversationnelles (16 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -133,16 +136,17 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | Choisir le modèle derrière son chatbot — une mini-évalu | BETA | Non |
 | 4 | Ingestion RAG d'un corpus long structure | BETA | Oui |
 | 5 | Mesurer la dérive d'un copilot — le gate par étape ne p | BETA | Oui |
-| 6 | Presenter AI Engine par son API — instance jetable Mais | BETA | Non |
-| 7 | Séparer les environnements de vecteurs | BETA | Oui |
-| 8 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
-| 9 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
-| 10 | Module 02 — Navigation & Authentification | BETA | Oui |
-| 11 | Module 03 — Chat & Streaming LLM | BETA | Oui |
-| 12 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
-| 13 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
-| 14 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
-| 15 | Différencier plusieurs assistants — mesurer ce qu'un pr | BETA | Non |
+| 6 | Obtenir des données structurées — la case json, le fall | BETA | Non |
+| 7 | Presenter AI Engine par son API — instance jetable Mais | BETA | Non |
+| 8 | Séparer les environnements de vecteurs | BETA | Oui |
+| 9 | Parcours QA-OWUI — Notebook chapeau de la mission | ALPHA | Oui |
+| 10 | Module 01 — Découverte de Playwright & Open WebUI | BETA | Oui |
+| 11 | Module 02 — Navigation & Authentification | BETA | Oui |
+| 12 | Module 03 — Chat & Streaming LLM | BETA | Oui |
+| 13 | Module 04 — RAG, Outils MCP & Fonctionnalités avancées | BETA | Oui |
+| 14 | Module 05 — Multi-tenant, API Testing & CI/CD | BETA | Oui |
+| 15 | Module 06 — Tester les nouveautés v0.10 (« l'ère agenti | BETA | Non |
+| 16 | Différencier plusieurs assistants — mesurer ce qu'un pr | BETA | Non |
 
 ## GenAI/PostTraining (14 notebooks)
 
