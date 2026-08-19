@@ -43,6 +43,24 @@ on:
       # run hermetically without agent_framework (see pytest step).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #11349 native_decide ratchet rewire: scripts/lean/tests/test_proof_integrity_audit_wiring.py
+      # pins the conway_lean proof-integrity-audit allow-list to the build-enumerated
+      # footprint (61 names after #11368). The test lives under scripts/** so its only
+      # trigger was an scripts/** push -- which means a PR adding a new native_decide
+      # to conway_lean could pass un-rattled and the rouge would land on the first
+      # next scripts/** pusher. Wire the lake path so the ratchet fires when its
+      # subject moves; mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      # #1028 melody verdict: scripts/tests/test_syllable_pitch_verdict.py pins
+      # classify_melody, which lives in the prosody_lab module below. Same shape
+      # as the conway entry just above -- a test under scripts/** whose SUBJECT
+      # is outside it only ever fired on an unrelated scripts/** push, so a
+      # change to the verdict policy could land un-rattled. Mirrored under
+      # pull_request: below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
   pull_request:
     branches: [main]
     paths:
@@ -59,6 +77,13 @@ on:
       # #6790 prover forensic-guards (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
+      # #11349 native_decide ratchet rewire (mirror of the push paths above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
+      # #1028 melody verdict (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
   workflow_dispatch:
 
 permissions:

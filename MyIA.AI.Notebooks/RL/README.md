@@ -53,6 +53,24 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | pt-3 | [rlpt_3_reward_hacking](rlpt_3_reward_hacking.ipynb) | Reward hacking × inoculation, version compacte du capstone #5105 : le hack sur récompense vérifiable faillible, la détection rewardspy, l'inoculation comme variable expérimentale, verdict reproductible (seed fixée) | 35-40 min |
 | pt-4 | [rlpt_4_dpo_vs_ppo](rlpt_4_dpo_vs_ppo.ipynb) | DPO/ORPO offline vs GRPO online sur même tâche conversationnelle, même budget 40 steps, préférences auto-fabriquées — verdict multi-seed {42,0,1,7} honnête DM, dispersion inter-seed documentée | 50-55 min |
 
+## Frontière avec GenAI/PostTraining — où ouvre `rlpt_*`, où ouvre `PT_*`
+
+Les sous-séries [`rlpt_*`](.) et [GenAI/PostTraining](../GenAI/PostTraining/README.md) couvrent **le même terrain** (post-training d'un LM) à des niveaux de pile différents. La frontière est posée explicitement pour qu'un lecteur sache **quel notebook ouvrir pour quelle question**.
+
+| Question pédagogique | Ouvrir | Pourquoi |
+|---|---|---|
+| « Comment marche PPO-RLHF en petit, sans framework ? » | [`rlpt_1`](rlpt_1_ppo_lm_rlhf.ipynb) | RLHF from scratch sur LM char-level — on voit les gradients, le reward model jouet, la KL vs la politique SFT de référence, multi-seed 4. |
+| « Comment GRPO est câblé *intérieurement* (group rollouts, avantage intra-groupe, no critic) ? » | [`rlpt_2`](rlpt_2_grpo_minimal.ipynb) | GRPO Qwen3.5-0.8B local **sans `trl` complet** — la boucle d'entraînement est écrite à la main, on voit chaque rollout, chaque reward. |
+| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Comment l'inoculer ? » | [`rlpt_3`](rlpt_3_reward_hacking.ipynb) | Cas clinique minimal : 3 voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible (seed fixée). |
+| « DPO offline vs GRPO online à budget égal — qui gagne ? » | [`rlpt_4`](rlpt_4_dpo_vs_ppo.ipynb) | Comparaison à budget 40 steps, préférences auto-fabriquées, verdict multi-seed {42,0,1,7} honnête Diebold-Mariano, dispersion inter-seed documentée. |
+| « GRPO + RLVR sur un vrai LLM, avec `trl` + reward vérifiable + détecteurs Goodhart en ligne ? » | [PT-11a](../GenAI/PostTraining/PT_11_grpo_qwen35_rlvr.ipynb), [PT-11b](../GenAI/PostTraining/PT_11_grpo_qwen_rlvr_on_verifiers.ipynb) | La chaîne *SOTA 2024-2025* appliquée : `trl.GRPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + Z3/SymPy vérificateur + `rewardspy.watch_trl` en ligne. |
+| « Quels sont les 6 détecteurs statistiques du reward hacking ? » | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (Component Dominance, Length Drift, etc.). Outil — `rlpt_3` est le cas d'usage. |
+| « InoculationRL complet, panel persona × reward hackable, la réplique poids du capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final, **distinct** de `rlpt_3` (qui en est la version compacte). |
+
+**Une phrase à retenir** : `rlpt_*` = *la mécanique, en petit, sans framework* (from scratch, CPU/char-level ou Qwen3.5-0.8B sans la pile `trl` complète — on voit chaque rollout et chaque gradient) ; `GenAI/PostTraining` = *la chaîne réelle, à l'échelle* (`trl`, vrai LLM, solveur vérifiable, multi-seed, détecteurs Goodhart). Si votre question porte sur **pourquoi** un algorithme fonctionne, ouvrez `rlpt_*`. Si votre question porte sur **comment le déployer en SOTA 2025**, ouvrez `PT_*`.
+
+Le constat d'éventuelle duplication entre `rlpt_2 ↔ PT-11a` et `rlpt_3 ↔ PT-07` est traité en [#11460](https://github.com/jsboige/CoursIA/issues/11460) : la différenciation tient à *ce qu'on regarde* (mécanique vs déploiement outillé), pas à *ce qu'on calcule* — c'est précisément ce qui justifie les deux.
+
 ## Parcours recommandé
 
 ```

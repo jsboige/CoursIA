@@ -1,7 +1,7 @@
 ---
 theme: ../theme-ia101
-title: "Web Semantique - dotNetRDF & Python"
-info: IA 101 - Web semantique, ontologies et graphes de connaissances
+title: "Web Sémantique - dotNetRDF & Python"
+info: IA 101 - Web sémantique, ontologies et graphes de connaissances
 paginate: true
 drawings:
   persist: false
@@ -10,10 +10,10 @@ mdc: true
 layout: cover
 ---
 
-# Web Semantique — RDF, SPARQL, OWL et Knowledge Graphs
+# Web Sémantique — RDF, SPARQL, OWL et Knowledge Graphs
 
-- Modele de donnees : RDF, triplets, graphes nommes
-- Interrogation : SPARQL, requetes federees, Linked Data
+- Modèle de données : RDF, triplets, graphes nommes
+- Interrogation : SPARQL, requêtes federees, Linked Data
 - Schema et ontologies : RDFS, OWL 2, SHACL
 - Web moderne : JSON-LD, RDF-Star, Knowledge Graphs
 - Integration IA : GraphRAG, raisonneurs OWL
@@ -30,16 +30,16 @@ layout: section
 
 ## Objectifs pedagogiques
 
-- Comprendre le **modele RDF** : triplets, URI, types de noeuds, serialisation
+- Comprendre le **modèle RDF** : triplets, URI, types de noeuds, serialisation
 - Interroger des graphes avec **SPARQL** et les endpoints du Web of Data
 - Modeliser des **ontologies** : RDFS (classes, proprietes) et OWL 2 (logiques de description)
-- Valider des donnees avec **SHACL** et manipuler JSON-LD, RDF-Star
+- Valider des données avec **SHACL** et manipuler JSON-LD, RDF-Star
 - Construire des **Knowledge Graphs** et des pipelines **GraphRAG**
 
 ## Prerequis
 
 - C# .NET Interactive (series SW-1 a SW-7) · Python 3.10+ (series SW-2b, SW-4b, SW-5b, SW-7b, SW-8+)
-- Connaissances de base en logique et en bases de donnees relationnelles
+- Connaissances de base en logique et en bases de données relationnelles
 
 ## Duree totale estimee
 
@@ -55,10 +55,10 @@ layout: section
 
 # SW-1 — Configuration et Pile Technologique
 
-## La vision du Web Semantique (Berners-Lee, 2001)
+## La vision du Web Sémantique (Berners-Lee, 2001)
 
-- Web actuel : donnees pour les humains (HTML)
-- Web Semantique : donnees comprehensibles par les **machines**
+- Web actuel : données pour les humains (HTML)
+- Web Sémantique : données comprehensibles par les **machines**
 - Pile technologique : **URI → RDF → RDFS → OWL → SPARQL → SHACL**
 
 ## dotNetRDF : la bibliotheque de reference
@@ -74,7 +74,7 @@ graph.LoadFromFile("data.ttl");
 Console.WriteLine($"Triplets : {graph.Triples.Count}");
 ```
 
-- **dotNetRDF** : parsing, requetes, raisonnement pour .NET
+- **dotNetRDF** : parsing, requêtes, raisonnement pour .NET
 - Formats supportes : Turtle, RDF/XML, N-Triples, JSON-LD
 - Namespace central : `VDS.RDF` + sous-espaces `Parsing`, `Query`, `Writing`
 
@@ -86,7 +86,7 @@ Console.WriteLine($"Triplets : {graph.Triples.Count}");
 
 ## Anatomie d'un triplet RDF
 
-Un triplet = `(sujet, predicat, objet)` — la phrase atomique du Web Semantique
+Un triplet = `(sujet, predicat, objet)` — la phrase atomique du Web Sémantique
 
 | Composant | Type | Exemple |
 |-----------|------|---------|
@@ -145,7 +145,7 @@ print(g.serialize(format="turtle"))
 
 ---
 
-# SW-3 — Operations sur les Graphes
+# SW-3 — Opérations sur les Graphes
 
 ## Lecture et ecriture de fichiers RDF
 
@@ -171,7 +171,7 @@ ttlWriter.Save(merged, writer);
 - **Named Graph** : graphe avec une URI propre (`ex:graph1`)
 - **TripleStore** : ensemble de graphes nommes (quad-store)
 - **InMemoryDataset** : dataset SPARQL multi-graphes
-- Requetes sur l'union de tous les graphes ou un graphe specifique
+- Requêtes sur l'union de tous les graphes ou un graphe spécifique
 
 > **Notebook** : `SW-3-CSharp-GraphOperations.ipynb` — 50 min
 
@@ -183,18 +183,18 @@ layout: section
 
 ---
 
-# SW-4 — SPARQL : Le SQL du Web Semantique
+# SW-4 — SPARQL : Le SQL du Web Sémantique
 
-## Types de requetes SPARQL
+## Types de requêtes SPARQL
 
-| Requete | Usage |
+| Requête | Usage |
 |---------|-------|
 | **SELECT** | Retourne des tables de variables |
 | **CONSTRUCT** | Construit un nouveau graphe RDF |
 | **ASK** | Teste l'existence d'un pattern |
 | **DESCRIBE** | Decrit une ressource |
 
-## Requete SELECT avec dotNetRDF
+## Requête SELECT avec dotNetRDF
 
 ```csharp
 var query = @"
@@ -210,7 +210,7 @@ foreach (var result in results)
     Console.WriteLine($"{result["person"]} → {result["name"]}");
 ```
 
-- **OPTIONAL** : jointure externe · **UNION** : disjonction · **MINUS** : difference
+- **OPTIONAL** : jointure externe · **UNION** : disjonction · **MINUS** : différence
 - Agregats : `COUNT`, `SUM`, `GROUP BY`, `HAVING`
 
 > **Notebooks** : `SW-4-CSharp-SPARQL.ipynb` — 45 min | `SW-4b-Python-SPARQL.ipynb` — 30 min
@@ -223,13 +223,13 @@ foreach (var result in results)
 
 | Etoiles | Critere |
 |---------|---------|
-| ★ | Donnees sur le Web, quelle que soit la licence |
-| ★★ | Donnees structurees (Excel, JSON) |
+| ★ | Données sur le Web, quelle que soit la licence |
+| ★★ | Données structurees (Excel, JSON) |
 | ★★★ | Format ouvert non-proprietaire (CSV, RDF) |
 | ★★★★ | URI pour identifier les ressources |
-| ★★★★★ | Liens vers d'autres sources de donnees |
+| ★★★★★ | Liens vers d'autres sources de données |
 
-## Requetes federees SPARQL
+## Requêtes federees SPARQL
 
 ```csharp
 // Requete sur l'endpoint public DBpedia
@@ -245,7 +245,7 @@ SELECT ?scientist ?birth WHERE {
 } LIMIT 20");
 ```
 
-- **SERVICE** : federe plusieurs endpoints en une requete
+- **SERVICE** : federe plusieurs endpoints en une requête
 - Wikidata SPARQL endpoint : `https://query.wikidata.org/sparql`
 
 > **Notebooks** : `SW-5-CSharp-LinkedData.ipynb` — 50 min | `SW-5b-Python-LinkedData.ipynb` — 35 min
@@ -262,8 +262,8 @@ layout: section
 
 ## Le vocabulaire RDFS
 
-- **`rdfs:subClassOf`** : hierarchie de classes (transitive)
-- **`rdfs:subPropertyOf`** : hierarchie de proprietes
+- **`rdfs:subClassOf`** : hiérarchie de classes (transitive)
+- **`rdfs:subPropertyOf`** : hiérarchie de proprietes
 - **`rdfs:domain`** / **`rdfs:range`** : typage implicite par inference
 - **`rdfs:label`** / **`rdfs:comment`** : documentation lisible
 
@@ -319,7 +319,7 @@ foreach (var sub in person.DirectSubClasses)
 ```
 
 - **OWL 2 EL** : expressivite polynomiale (ontologies medicales)
-- **OWL 2 RL** : regles de production (integration avec bases de donnees)
+- **OWL 2 RL** : règles de production (integration avec bases de données)
 - **OWL 2 DL** : maximum d'expressivite decidable (HermiT, Pellet)
 
 > **Notebooks** : `SW-7-CSharp-OWL.ipynb` — 55 min | `SW-7b-Python-OWL.ipynb` — 45 min
@@ -328,11 +328,11 @@ foreach (var sub in person.DirectSubClasses)
 layout: section
 ---
 
-# Web Semantique Moderne
+# Web Sémantique Moderne
 
 ---
 
-# SW-8 — SHACL : Validation des Donnees RDF
+# SW-8 — SHACL : Validation des Données RDF
 
 ## SHACL vs OWL : deux philosophies
 
@@ -368,7 +368,7 @@ print(results[2])  # rapport Turtle
 
 ---
 
-# SW-9 — JSON-LD : Le Web Semantique rencontre JSON
+# SW-9 — JSON-LD : Le Web Sémantique rencontre JSON
 
 ## JSON-LD : bridge entre JSON et Linked Data
 
@@ -398,7 +398,7 @@ compacted = jsonld.compact(doc, {"foaf": "http://xmlns.com/foaf/0.1/"})
 
 - **`@context`** : mappe les cles JSON vers des URI
 - **`@type`** : declare la classe de l'entite
-- **Framing** : restructurer un graphe RDF en JSON specifique
+- **Framing** : restructurer un graphe RDF en JSON spécifique
 - Adoption massive : Schema.org, ActivityPub, Verifiable Credentials
 
 > **Notebook** : `SW-9-Python-JSONLD.ipynb` — 40 min
@@ -407,7 +407,7 @@ compacted = jsonld.compact(doc, {"foaf": "http://xmlns.com/foaf/0.1/"})
 
 # SW-10 — RDF 1.2 (RDF-Star) : Assertions sur des Assertions
 
-## Le probleme de la reification classique
+## Le problème de la reification classique
 
 **But** : annoter un triplet (confiance, source, date...)
 
@@ -456,7 +456,7 @@ Un **graphe de connaissances** = graphe RDF a grande echelle, oriente metier
 | Exemples | Triplets | Usage |
 |---------|---------|-------|
 | **Wikidata** | ~14 milliards | Encyclopedie universelle |
-| **Google KG** | ~500 milliards | Recherche semantique |
+| **Google KG** | ~500 milliards | Recherche sémantique |
 | **DBpedia** | ~3 milliards | Extraction Wikipedia |
 | **Schema.org** | — | Balisage SEO universel |
 
@@ -527,7 +527,7 @@ for s, p, o in extract_triples(document):
 |-----------|---------|-------------|
 | **owlrl** | Python | Leger, RDFS + OWL RL |
 | **HermiT** | Java | OWL 2 DL complet, reference |
-| **reasonable** | Rust | Tres rapide, OWL RL |
+| **reasonable** | Rust | Très rapide, OWL RL |
 | **Growl** | Python | Interface simple, owlready2 |
 | **Pellet** | Java | OWL 2 DL, explications |
 
@@ -562,16 +562,16 @@ layout: section
 
 ---
 
-# Ecosysteme Web Semantique
+# Ecosysteme Web Sémantique
 
 ## Notebooks de la serie
 
-| Notebook | Theme | Langage | Duree |
+| Notebook | Thème | Langage | Duree |
 |---------|-------|---------|-------|
 | SW-1 | Setup, pile technologique | C# | 20 min |
 | SW-2 / SW-2b | RDF : triplets, serialisation | C# / Python | 45+40 min |
-| SW-3 | Operations graphes, TripleStore | C# | 50 min |
-| SW-4 / SW-4b | SPARQL : requetes, agregats | C# / Python | 45+30 min |
+| SW-3 | Opérations graphes, TripleStore | C# | 50 min |
+| SW-4 / SW-4b | SPARQL : requêtes, agregats | C# / Python | 45+30 min |
 | SW-5 / SW-5b | Linked Data, DBpedia, Wikidata | C# / Python | 50+35 min |
 | SW-6 | RDFS : schema, inference | C# | 45 min |
 | SW-7 / SW-7b | OWL 2 : ontologies, profils | C# / Python | 55+45 min |
@@ -589,7 +589,7 @@ layout: section
 ## Connexions dans le cours IA 101
 
 - **S6-TweetyProject** : raisonnement en Description Logics (DL) via TweetyProject — complement OWL
-- **S7-Lean** : preuves formelles de proprietes logiques — fondements theoriques des ontologies
+- **S7-Lean** : preuves formelles de proprietes logiques — fondements théoriques des ontologies
 - **03-logique** : cours magistral sur la logique, base pour RDFS/OWL
 - **GameTheory/social_choice_lean** : exemple de formalisation avec Arrow/Sen
 
@@ -626,7 +626,7 @@ W3C Semantic Web Stack
 - Integration **Neo4j** (Cypher + plugin RDF) pour visualisation de KG
 - **SPARQL federation** : combiner Wikidata + DBpedia + endpoints prives
 - **Ontologie medicale** : SNOMED-CT, GO (Gene Ontology) avec raisonneurs EL
-- **LLM + SPARQL** : generation automatique de requetes (Text-to-SPARQL)
+- **LLM + SPARQL** : generation automatique de requêtes (Text-to-SPARQL)
 
 ---
 layout: section
@@ -640,6 +640,6 @@ layout: end
 
 # Merci
 
-Serie Web Semantique — IA 101
+Serie Web Sémantique — IA 101
 
 `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/`

@@ -8,9 +8,24 @@ name: Lean CI (mimo_lean)
 # Lemmas 11.1 / 5.1) and Phase 3 the external SLT lake; the `require` lines
 # will land with those phases, keeping each PR one-subject.
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the library ships entirely
-# sorry-free. This CI only guards that NO new standalone `sorry` tactic is
-# introduced (no false positive on prose mentions; catches any new sorry).
+# sorry-filter-mode=real, baseline=0: the library ships entirely
+# sorry-free. This CI guards that NO new `sorry` is introduced
+# (no false positive on prose mentions; catches any new sorry, including
+# `exact sorry`, `theorem foo := by sorry`, `def f : T := sorry`, `<;> sorry`).
+#
+# Proof-integrity gate (See #11699, B.3 criterion). Catches forbidden axioms
+# (transitive `sorryAx`, `native_decide.*`, `Classical.choice` whitelist
+# defaults) that the textual sorry counter cannot see. mimo_lean carries 2
+# `noncomputable def` (Lmmse.lean: B_ρ ; Objective.lean: mimoObj) whose closure
+# pulls `Classical.choice` — whitelisted by default in lean-axiom.yml, so the
+# gate does NOT need an explicit `allow-axioms` entry for those two. The
+# `*` target-modules picks up every compiled module (Bridge, Converse,
+# Descent, Lmmse, NormTails, Objective + _en siblings) via runtime derivation
+# (#10889), so adding a new file lands in the gate by construction -- no
+# hand-maintained list to drift. `include-i18n-siblings: "true"` keeps the 6
+# `_en` mirrors in scope (byte-identical to FR, but enumerated by
+# `#print axioms` independently -- a gate that omits half a bilingual pair
+# is a #8782 pitfall 2).
 
 on:
   push:
@@ -39,4 +54,45 @@ jobs:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean
       display-name: mimo_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real
+
+  # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
+  # Closes #11699 tranche 1 — mimo_lean was not wired into the gate before
+  # this PR (5 of 21 lakes were wired: conway, galois, grothendieck, knot,
+  # sensitivity). `target-modules: "*"` (issue #10889) is the runtime
+  # derivation: the gate walks every compiled .lean under the project root
+  # (minus .lake/.git/lakefile*/lean-toolchain) and inspects each by
+  # construction. `include-i18n-siblings: "true"` enumerates the 6 `_en`
+  # mirrors too — their axioms are byte-identical to FR but
+  # `#print axioms` resolves them independently (See #8782 pitfall 2).
+  # `allow-axioms: ""` — `Classical.choice` is already in the default
+  # whitelist of `lean-axiom.yml`, which covers the 2 `noncomputable def`
+  # of mimo_lean (Lmmse.lean: B_ρ ; Objective.lean: mimoObj) without a
+  # hand-maintained entry. `fail-on-sorry: true` — the lake ships at
+  # baseline 0 (count_code_sorry.py --lake mimo_lean: code_sorry 0,
+  # distinct_code_sorry 0), so any transitive `sorryAx` introduction
+  # must fail the run. Native `Decide.*`/`native_decide.*` will also
+  # fail if introduced (no current usage, measured by `grep -E
+  # 'native_decide|decide' MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/
+  # *.lean` — 0 hits).
+  #
+  # NOTE: mimo_lean is the FIRST wired lake with a flat layout (all .lean at
+  # the lake root, namespace `Mimo` opens per-file — no `Mimo/` subdir).
+  # `discover_modules(project, None)` therefore yields `{Bridge, Converse,
+  # Descent, Lmmse, NormTails, Objective, _en siblings}` (12 modules) rather
+  # than the `{Mimo.Bridge, Mimo.Converse, ...}` a subdir layout would give.
+  # The runtime gate passes these as-is to LeanVerifier — no namespace prefix
+  # required. (Verified via `python scripts/lean/check_target_coverage.py`
+  # with `--project-path MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean`,
+  # walk = 12 modules.) No advisory target-coverage job below because the
+  # `--lib-root` heuristic in `check_target_coverage.py` does not cover a
+  # flat lake; sensitivity_lean (also wired) takes the same shortcut.
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean
+      display-name: mimo_lean
+      target-modules: "*"
+      include-i18n-siblings: "true"
+      allow-axioms: ""
+      fail-on-sorry: true

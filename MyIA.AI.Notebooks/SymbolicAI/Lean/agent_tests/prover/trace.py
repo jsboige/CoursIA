@@ -7,7 +7,7 @@ Uses agent_framework.observability when available, graceful fallback otherwise.
 import json
 import time
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Optional
 
 # B.12: OTel integration — optional, graceful degradation
@@ -234,7 +234,7 @@ class TraceLogger:
     def save_full_trace(self, name: str = None):
         """Save complete trace with thinking content to a separate file."""
         if not name:
-            name = f"full_trace_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            name = f"full_trace_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
         path = self.output_dir / f"{name}.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.entries, f, indent=2, ensure_ascii=False)
@@ -242,7 +242,7 @@ class TraceLogger:
 
     def save(self, name: str = None):
         if not name:
-            name = f"trace_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            name = f"trace_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
         path = self.output_dir / f"{name}.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(self.entries, f, indent=2, ensure_ascii=False)

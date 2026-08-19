@@ -272,6 +272,22 @@ champ de configuration de premier niveau.
 > la démonstration est sécurisée par instantané complet en mémoire,
 > puis restauration à l'identique.
 
+> **Notebook compagnon (série « par son API »).**
+> [`obtenir-des-donnees-structurees-par-l-api.ipynb`](obtenir-des-donnees-structurees-par-l-api.ipynb)
+> écrit enfin la case que le précédent ne faisait que lire : la route
+> `/ai/json` ignore structurellement `envId`/`model` et hérite
+> toujours de la case **json** de la matrice — vide par défaut, et
+> sans issue sur une instance custom-only (le repli `gpt-5-mini` sans
+> environnement ne passe jamais la validation : *The environment is
+> required.*). Remplie par read-modify-write du bloc complet, la
+> route rend du JSON directement exploitable — et le notebook mesure
+> ce que vaut la promesse : le **null silencieux** du parser (une
+> réponse non-JSON rend `success: true, data: null` sans un mot)
+> reste réel dans le code mais neutralisé ici, car pour un
+> environnement custom la contrainte descend au **niveau fil**
+> (`response_format`), départagé par comparaison directe avec le
+> moteur — avec et sans. État initial restauré à l'identique.
+
 ---
 
 ## Parcours 3 — WordPress comme serveur MCP métier
@@ -355,6 +371,24 @@ la distance entre ses outils et le schéma de persistance.
 > outils sont tous génériques `wp_*` — la leçon ci-dessus (« les verbes du
 > métier ») se lit en négatif : les 24 outils métier de l'installation
 > client viennent du plugin custom, consommables par le même protocole.
+
+> **Notebook compagnon (face autorisation).**
+> [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](autour-du-consent-oauth-du-serveur-mcp.ipynb)
+> répond à la question que le précédent laisse ouverte : un client
+> tiers réel (Claude Desktop, un IDE) n'a pas l'application password
+> de l'admin — et ne doit pas l'avoir. Le plugin embarque un serveur
+> d'autorisation **OAuth 2.0 complet** dans les mêmes routes `mcp/v1` :
+> découverte (RFC 9728 puis 8414), enregistrement dynamique (RFC 7591,
+> client public sans secret), **PKCE exigé** (RFC 7636), et un
+> consentement **réservé aux administrateurs** — un compte editor
+> dédié le mesure à 400 : « Only administrators can authorize MCP
+> applications ». Le flow complet est mécanisé (consent admin,
+> nonce maison `_mwai_nonce`, refus par défaut `action=deny`), le code
+> échangé contre un jeton borné (`expires_in` mesuré), et l'appel MCP
+> passe au bearer délégué — avant révocation et mesure de la mort.
+> C'est la réponse du protocole à la première remarque de sécurité
+> ci-dessous : la délégation bornée et consentie, en alternative au
+> jeton unique porteur de tout.
 
 ### Comparaison OWUI
 

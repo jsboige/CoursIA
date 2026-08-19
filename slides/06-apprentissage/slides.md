@@ -73,9 +73,9 @@ Intelligence Artificielle -- VI
 
 # Agent Apprenant
 
-- **4 modules** : performance, apprentissage, critique, generateur de problemes
+- **4 modules** : performance, apprentissage, critique, générateur de problemes
 - Le module d'apprentissage ameliore le composant de performance a partir du feedback du critique
-- Le generateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
+- Le générateur de problemes suggere de nouvelles expériences pour enrichir l'apprentissage
 
 
 ---
@@ -418,7 +418,7 @@ layout: dense
 
 # Résumé arbres de décision
 
-- L’induction d’arbres de decision est l’une des methodes d’apprentissage les plus utilisees
+- L’induction d’arbres de decision est l’une des méthodes d’apprentissage les plus utilisees
 - Surpasse les humains dans de nombreux problemes, apprentissage par gain informationnel
 - **Points forts** : rapide, simple, comprehensible, empiriquement valide, robuste au bruit
 
@@ -607,7 +607,7 @@ layout: dense
 
 <!-- Image: images/img_020.png -->
 
-<!-- Bagging = echantillons paralleles, Boosting = echantillons sequentiels ponderes -->
+<!-- Bagging = echantillons paralleles, Boosting = echantillons séquentiels ponderes -->
 
 
 ---
@@ -732,7 +732,7 @@ layout: two-cols
 # Apprentissage par retropropagation
 
 - **Principe** : propager l'erreur de la sortie vers les couches cachees
-- Calcul du gradient de l'erreur par la règle de la chaine (chain rule)
+- Calcul du gradient de l'erreur par la règle de la chaîne (chain rule)
 - Mise a jour des poids : W_j ← W_j - alpha * dE/dW_j
 - Permet d'entrainer des réseaux multi-couches (invention cle du deep learning)
 
@@ -750,7 +750,7 @@ layout: two-cols
 - 100 exemples
 - Convergence exacte
 - Caractéristiques
-- Bons pour les taches de reconnaissance complexe
+- Bons pour les tâches de reconnaissance complexe
 - Convergence peut être lente
 - Soucis de Minima locaux / surapprentissage
 - Eviter trop de paramètres / d’unités
@@ -1032,7 +1032,7 @@ layout: two-cols
 -  Couches distinctes plus flexibles (MLPs)
 - DeepWalk (plongement appris)
 - Random Walk  skip-grams (~Word2Vec)
-- Softmax hierarchique (optimisation)
+- Softmax hiérarchique (optimisation)
 - GraphSage
 -  DeepWalk pas adaptatif
 - Solution: Agrégation de voisinage
@@ -1293,14 +1293,14 @@ $$y_i(w \cdot x_i + b) \geq 1 \quad \forall i$$
 - **Astuce 1** : Identifier les points les plus proches du plan de separation optimal (les "vecteurs supports") et travailler directement a partir de ces instances.
 
 <div v-click="2">
-- **Astuce 2** : Formuler comme un probleme d'optimisation quadratique et utiliser les techniques de programmation quadratique.
+- **Astuce 2** : Formuler comme un problème d'optimisation quadratique et utiliser les techniques de programmation quadratique.
 </div>
 
 <div v-click="3">
 - **Astuce 3** (le "kernel trick") :
   - Au lieu d'utiliser directement les caractéristiques, representer les données dans un espace de grande dimension construit a partir de fonctions de base (combinaisons polynomiales et gaussiennes des caractéristiques d'origine).
   - Trouver un hyperplan separateur / SVM dans cet espace de grande dimension.
-  - Resultat : un classifieur non lineaire !
+  - Résultat : un classifieur non lineaire !
 
 <!-- SVM : hyperplan optimal, vecteurs supports sur la marge maximale -->
 
@@ -2076,7 +2076,7 @@ layout: dense
 - Ex pour TD et Q-learning:
 - **Convergence garantie**
   - pour cas simples uniquement
-- Egalement utile pour apprendre un modèle
+- Également utile pour apprendre un modèle
 - Si observable  Apprentissage inductif
 - Sinon plus difficile (HMM)
 
@@ -2132,7 +2132,7 @@ layout: dense
 - Mise à jour des poids par backpropagation
 - Mais convergence très lente
 -  tricks pour l’accélérer
-- Ex: Experience replay: des scénarios sont gardés en mémoire et rejoués en batchs
+- Ex: Expérience replay: des scénarios sont gardés en mémoire et rejoués en batchs
 -  moins de similarité dans les échantillons  échappe aux minima locaux
 - Problème de l’exploration
 - (cf. bandits manchot)
@@ -2226,7 +2226,7 @@ layout: dense
 - Choix de l’espace d’hypothèses H, paramètres actualisés par l’approche TD
 - Exploration de politique
 - Amélioration directe de π à partir des observations. Domaines stochastiques compliqués
-- Simulations et « Experience replay » importants
+- Simulations et « Expérience replay » importants
 - Deep Q learning
 - Etat de l’art: Deep NN = espace idéal
 - Accélération de la convergence: tricks multiples
@@ -2376,7 +2376,7 @@ layout: section
 
 > **ML.NET** (C#) : `ML/ML.Net/` - Classification, regression, clustering
 > **Reinforcement Learning** : `RL/` - CartPole, DQN, Stable Baselines3
-> **Algorithmes genetiques** : `Sudoku/Sudoku-2-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
+> **Algorithmes génétiques** : `Sudoku/Sudoku-2-Genetic.ipynb`, `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 > **Deep Learning et GenAI** : `GenAI/` - Transformers, diffusion, LLMs
 > **Probabilités et inference** : `Probas/` - Infer.NET, réseaux bayesiens
 
