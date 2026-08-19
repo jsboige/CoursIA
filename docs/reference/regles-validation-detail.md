@@ -127,6 +127,39 @@ Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 
 ---
 
+## Ratchet exec-sequence (#11112 tier 2) — échecs fail-by-design assumés (#11577)
+
+Le gate `notebook-exec-sequence-ratchet.yml` échoue **par design** sur toute séquence CLEAN → non-CLEAN. Il existe un cas légitime où l'échec est inévitable : une PR RECOVERABLE-MACHINE qui re-exécute **une cellule unique** (ex. fix d'un loader, #11420) sans pouvoir re-exécuter les cellules aval — l'artefact `scripts/results/**` est gitignored et son runtime (GPU, 10 h+) est hors scope de la PR. La cellule re-exécutée bump son `execution_count` → verdict aval DUPLICATE / NOT_FROM_1.
+
+**Critères (les 3 requis simultanément)** :
+
+1. La re-exécution complète du notebook est hors scope vérifiable de la PR (artefact aval gitignored + runtime documenté dans le body).
+2. Le guard est **correct** — il détecte exactement ce qu'il doit détecter. Aucun contournement : jamais de hand-edit d'`execution_count` ni de sortie de cellule (règle 6 [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — falsifier la preuve d'exécution).
+3. Le body PR documente la séquence dégradée (avant/après chiffrés) **et** le reviewer (ai-01) accuse réception explicitement avant merge.
+
+**Précédents** : #11574 (freshness guard fail-by-design, résolu par #11575), #11420 (première instance exec-sequence), #11577 (présente section).
+
+**Template de commentaire PR réutilisable** (copier, remplacer les `<...>`) :
+
+```markdown
+**Ratchet exec-sequence — fail-by-design assumé (pattern #11577)**
+
+La séquence de `<notebook>` passe de CLEAN à `<VERDICT>` sur cette PR :
+
+- base : `<séquence, ex. 1,2,3,4,5>`
+- PR   : `<séquence, ex. 2,2,3,4,5>`
+
+Cause : re-exécution locale de la cellule <N> seule (<raison — ex. fix loader
+RECOVERABLE-MACHINE, issue #...>). Les cellules aval dépendent de l'artefact
+`<chemin gitignored>` (runtime <durée>, hors scope de cette PR).
+
+Le guard est correct — il détecte ce qu'il doit détecter. La re-exécution
+complète est hors scope. Séquence dégradée documentée ici ; ack reviewer
+explicite requis avant merge.
+```
+
+---
+
 ## References connexes
 
 - [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) — Rules C.1/C.2/C.3 notebook

@@ -462,3 +462,74 @@ class TestMarkdownCli:
         p = _md(tmp_path, original)
         rac.main([str(p), "--dry-run"])
         assert p.read_text(encoding="utf-8") == original
+
+
+# ---------------------------------------------------------------------------
+# 7. faux negatif listes-seules + zone grise FR/EN (delta po-2024 sur #11548)
+# ---------------------------------------------------------------------------
+class TestListOnlySegmentNotFrontmatter:
+    """_YAML_CONT_RE matche aussi les items de liste (`^\s*-\s`) : un segment
+    fait uniquement de puces satisfaisait "toutes lignes = cles ou continuations"
+    et etait protege comme frontmatter -> 0 cure silencieuse. Un frontmatter
+    Slidev reel commence TOUJOURS par une cle : la premiere ligne non vide doit
+    matcher _YAML_KEY_RE."""
+
+    def test_list_only_slide_is_cured(self, tmp_path):
+        deck = "---\ntheme: ../theme-ia101\n---\n\n---\n\n- Les strategies deployees par le modele\n- Le modele de theorie\n\n---\n"
+        p = _md(tmp_path, deck)
+        rac.cure_markdown(p, write=True)
+        out = p.read_text(encoding="utf-8")
+        assert "stratégies" in out and "modèle" in out
+
+    def test_list_line_without_separator_is_cured(self, tmp_path):
+        # variante minimale mesuree : pas meme de separateur ---
+        p = _md(tmp_path, "- Les strategies deployees par le modele\n")
+        res = rac.cure_markdown(p, write=False)
+        assert res["cures"] >= 1
+
+    def test_real_frontmatter_still_protected(self, tmp_path):
+        deck = "---\nlayout: two-cols\n---\n\n- Les strategies du modele\n"
+        p = _md(tmp_path, deck)
+        rac.cure_markdown(p, write=True)
+        out = p.read_text(encoding="utf-8")
+        assert "layout: two-cols" in out  # cle intacte
+        assert "stratégies" in out  # la liste, elle, est curee
+
+
+class TestEnglishGrayZone:
+    """Formes en collision FR/EN : curees seulement sur preuve POSITIVE de
+    contexte francais. La detection negative (mots-outils EN) sous-detecte :
+    `- **Value Iteration**` n'en porte aucun (FP mesure #11508, reproduit sur
+    l'adaptateur #11548 : `The strategies of execution and the role of the
+    model` -> `The stratégies of exécution and the rôle of the model`)."""
+
+    def test_bare_english_term_skipped(self, tmp_path):
+        p = _md(tmp_path, "**Value Iteration**\n**Policy Iteration**\n")
+        rac.cure_markdown(p, write=True)
+        assert "Itération" not in p.read_text(encoding="utf-8")
+
+    def test_english_line_skipped(self, tmp_path):
+        p = _md(tmp_path, "The strategies of execution and the role of the model\n")
+        rac.cure_markdown(p, write=True)
+        out = p.read_text(encoding="utf-8")
+        assert out == "The strategies of execution and the role of the model\n"
+
+    def test_reference_title_skipped(self, tmp_path):
+        p = _md(tmp_path, "Boole, An Investigation of the Mathematical Theories of Logic\n")
+        rac.cure_markdown(p, write=True)
+        assert "Théories" not in p.read_text(encoding="utf-8")
+
+    def test_french_line_same_form_cured(self, tmp_path):
+        # la MEME forme sur une ligne a preuve FR est curee : decision par
+        # contexte, jamais par mot
+        p = _md(tmp_path, "- Les strategies deployees par le modele\n")
+        rac.cure_markdown(p, write=True)
+        assert "stratégies" in p.read_text(encoding="utf-8")
+
+    def test_non_colliding_form_cured_without_fr_marker(self, tmp_path):
+        # les formes HORS collision ne demandent pas de preuve FR : la cure
+        # conservatrice est non-ambigue par construction du dictionnaire
+        p = _md(tmp_path, "Un parametre et un probleme\n")
+        rac.cure_markdown(p, write=True)
+        out = p.read_text(encoding="utf-8")
+        assert "paramètre" in out and "problème" in out

@@ -5,9 +5,10 @@ name: Lean CI (sudoku_lean)
 # #4038 Tier 3, issue #4055. Coordination with #2978 verified (no overlap: #2978's Lean
 # angle is finiteness-derivatives regex termination).
 #
-# sorry-filter-mode=standalone-tactic, baseline=0: the module is entirely sorry-free.
-# standalone-tactic counts only standalone `sorry` tokens (never prose false-positives).
-# See lean-build.yml.
+# sorry-filter-mode=real, baseline=0: the module is entirely sorry-free.
+# `real` strips `--` and `/- -/` then counts `\bsorry\b` word-bounded
+# (catches `exact sorry`, `theorem foo := by sorry`, `def f : T := sorry`,
+# `<;> sorry`; never prose false-positives). See lean-build.yml.
 
 on:
   push:
@@ -36,4 +37,4 @@ jobs:
       project-path: MyIA.AI.Notebooks/Sudoku/sudoku_lean
       display-name: sudoku_lean
       sorry-baseline: "0"
-      sorry-filter-mode: standalone-tactic
+      sorry-filter-mode: real

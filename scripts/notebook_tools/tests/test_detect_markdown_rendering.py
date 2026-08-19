@@ -36,6 +36,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from detect_markdown_rendering import (  # noqa: E402
     _inside_fence_lines,
     _is_frontmatter_block,
+    _is_yaml_block_open_no_close,
+    _notebook_targets_from_render_list,
+    _quarto_render_list,
+    _selfcheck,
     scan_cell,
 )
 
@@ -507,6 +511,310 @@ class TestRealCorpusRegressionGuards:
         assert "source_list_missing_newlines" not in rules, (
             f"Sudoku-16 c#28 regressed into the #10397 shape: {rules}"
         )
+
+
+class TestYamlBlockOpenNoClose:
+    """Pin the new ``yaml_block_open_no_close`` rule (#11630).
+
+    Reproduces the 2026-08-17 main breakage on
+    ``MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb``:
+    8 of 20 cells started with ``---\\n### Dataset N -- ...`` (no closing
+    ``---``), and Pandoc extended the YAML block through every following cell
+    until the next ``---``, breaking the whole page. ``_is_frontmatter_block``
+    only catches cells with a CLOSING ``---`` -- this rule covers the
+    opener-without-closer shape that the previous detector missed entirely.
+    """
+
+    def test_positive_control_pre_11629_shape(self):
+        """The exact cell shape from pre-#11629 fallacious_datasets_landscape.
+
+        The cell source starts with ``---\\n### Dataset 1 -- ...`` and has
+        NO closing ``---``. The detector MUST flag it as
+        ``yaml_block_open_no_close`` (this is the angle the previous
+        ``_is_frontmatter_block`` missed -- the previous detector required a
+        closing ``---``).
+        """
+        src = (
+            "---\n"
+            "### Dataset 1 -- Logic / LogicClimate (Jin et al. 2021)\n\n"
+            "**Papier** : Jin et al., *Logical Fallacy Detection*, Findings "
+            "EMNLP 2021 -- [arXiv:2202.13758](https://arxiv.org/abs/2202.13758). "
+            "Premier dataset de fallacies logiques formelles, 7 categories, "
+            "environ 2500 exemples."
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        assert "yaml_block_open_no_close" in rules, (
+            f"the #11630 pre-fix shape was not flagged: {rules}"
+        )
+
+    def test_sl8_form_blank_line_after_opener_is_flagged(self):
+        """``---\\n\\n### H`` at the head of a cell IS a YAML opener -- flagged.
+
+        The pre-#11630 exemption claimed a blank line after the opening ``---``
+        made it a "thematic break, not a YAML opener". ai-01's arbitration
+        (2026-08-18) refuted it empirically: SL-8-KnowledgeGraphs-ILP.ipynb --
+        the notebook that took the site down the SECOND time, at 20:27Z, AFTER
+        #11629 -- is exactly ``---\\n\\n## Titre`` in all 15 markdown cells,
+        and the oracle js-yaml renders ``scanned=1 bad=1`` (*bad indentation of
+        a mapping entry*). Pandoc opens the yaml_metadata_block whether or not
+        a blank line follows the opener. This pin is the second observed form.
+        """
+        src = (
+            "---\n"
+            "\n"
+            "### Section heading\n\n"
+            "Body of the section follows the YAML opener."
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        assert "yaml_block_open_no_close" in rules, (
+            f"the SL-8 form (--- + blank + heading) was not flagged: {rules}"
+        )
+
+    def test_bare_divider_alone_not_flagged(self):
+        """A cell containing ONLY the ``---`` line is a thematic break.
+
+        Pandoc needs a following non-blank line to start a YAML block; a bare
+        ``---`` cell renders as ``<hr>`` and is safe. This is the one
+        head-``---`` shape the corrected rule must keep silent on.
+        """
+        rules = _rules(scan_cell(_cell("---\n")))
+        assert "yaml_block_open_no_close" not in rules, (
+            f"bare --- divider false-positive: {rules}"
+        )
+
+    def test_horizontal_rule_alone_not_flagged(self):
+        """A bare ``---`` between two blank lines (thematic break alone)
+        must NOT be flagged. The discriminant: a thematic break is followed
+        by a blank line OR nothing; a YAML opener is followed by content."""
+        src = (
+            "Paragraph above.\n"
+            "\n"
+            "---\n"
+            "\n"
+            "Paragraph below."
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        assert "yaml_block_open_no_close" not in rules, (
+            f"thematic-break false-positive: {rules}"
+        )
+
+    def test_complete_frontmatter_still_routed_to_existing_rule(self):
+        """A cell with both opening AND closing ``---`` must still go through
+        ``frontmatter_supersize`` / ``frontmatter_rawyaml`` -- this new rule
+        early-returns so the existing classification wins. Pin: the new rule
+        does NOT swallow complete-frontmatter cells (it would be a regression
+        of the existing frontmatter_supersize / frontmatter_rawyaml signal).
+        """
+        src = (
+            "---\n"
+            "title: A notebook\n"
+            "cost:\n"
+            "  api_usd_est: 0.01\n"
+            "\n"  # blank line before closing ``---`` -> rawyaml shape
+            "---\n"
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        assert "yaml_block_open_no_close" not in rules, (
+            f"complete-frontmatter was swallowed by the new rule: {rules}"
+        )
+        assert "frontmatter_rawyaml" in rules, (
+            f"complete-frontmatter was not classified: {rules}"
+        )
+
+    def test_fenced_dash_not_counted_as_closer(self):
+        """A ``---`` inside a fenced code block (verbatim) is literal text,
+        not a YAML closer. The cell STARTS with ``---`` only if the first
+        line of the cell is ``---`` -- if the first line is a fenced-code
+        opener like ``\\`\\`\\`python``, the cell is not a YAML opener
+        regardless of what comes later. This test pins the FENCE awareness
+        to avoid the false-positive where someone writes ``---`` as ASCII
+        art at the start of a notebook before any code block."""
+        src = (
+            "---\n"  # first line: YAML opener shape
+            "```python\n"
+            "print('---')\n"  # literal --- inside fenced code, NOT a closer
+            "```\n"
+            "Body after the code block."
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        # This cell has the YAML-opener shape at the top and a fenced code
+        # block containing a ``---`` line -- the fenced closer (```) does not
+        # count as a YAML closer, so the YAML block is still open when the
+        # cell ends. The detector SHOULD flag it (this is precisely the
+        # pattern we want -- opening YAML without a YAML closer anywhere in
+        # the cell, regardless of fence contents).
+        assert "yaml_block_open_no_close" in rules, (
+            f"YAML opener with fenced---only-closer should still flag: {rules}"
+        )
+
+    def test_selfcheck_fires_on_both_observed_forms(self):
+        """The embedded control game carries BOTH #11630 forms (acceptance).
+
+        The arbitration's core demand: a positive control calibrated on the
+        FIRST form (``---`` + immediate content) let the SECOND form (``---`` +
+        blank + title, SL-8) pass and took the site down twice. The selfcheck
+        must therefore assert both forms fire and the negatives stay silent --
+        exit 0 means the game is green. A future refactor that loses a form
+        turns this red instead of rendering a cleaner violation count.
+        """
+        assert _selfcheck() == 0
+
+
+class TestQuartoClosure:
+    """Pin the ``--closure`` mode of detect_markdown_rendering.
+
+    The 2026-08-17 main breakage on
+    ``MyIA.AI.Notebooks/FallacyDetection/02_fallacy_datasets_landscape.ipynb``
+    was NOT detectable by a repo-wide scan + filter on the PR's touched
+    paths: the PR that broke main (#11480) didn't touch the broken notebook
+    -- it added a link from ``FallacyDetection/README.md`` (rendered) to the
+    notebook (previously unread by Quarto). The closure scan follows
+    ``.ipynb`` links one hop out of the render-list, catching exactly the
+    set of notebooks that Quarto will *transitively* render.
+    """
+
+    def test_render_list_yaml_parse(self, tmp_path):
+        yml = tmp_path / "_quarto.yml"
+        yml.write_text(
+            "project:\n"
+            "  type: site\n"
+            "  render:\n"
+            "    - 'index.qmd'\n"
+            "    - 'MyIA.AI.Notebooks/Search/index.qmd'\n"
+            "    - '*.qmd'\n"  # globs are skipped (caller decides what to do)
+            "    - 'MyIA.AI.Notebooks/Foo.ipynb'\n"
+            "    - 'docs/bar.md'\n",
+            encoding="utf-8",
+        )
+        out = _quarto_render_list(yml)
+        # Globs are filtered out; only concrete paths remain.
+        names = [p.name for p in out]
+        assert "index.qmd" in names
+        assert "Foo.ipynb" in names
+        assert "bar.md" in names
+        # The ``*.qmd`` glob is excluded -- the scanner can't expand it.
+        assert all("*" not in str(p) for p in out)
+
+    def test_notebook_targets_from_render_list_follows_ipynb_links(self, tmp_path):
+        """A rendered README linking to a notebook pulls that notebook into
+        the closure, even if it is NOT in the render-list. This is exactly
+        the 2026-08-17 failure mode: the broken notebook was added to the
+        transitive closure by a link from a rendered README, not by a
+        render-list addition.
+        """
+        # Filesystem scaffold:
+        #   <tmp>/_quarto.yml
+        #   <tmp>/docs/render.md     (in render-list)
+        #   <tmp>/docs/other.ipynb   (link target, NOT in render-list)
+        repo = tmp_path
+        yml = repo / "_quarto.yml"
+        yml.write_text(
+            "project:\n  render:\n    - 'docs/render.md'\n",
+            encoding="utf-8",
+        )
+        (repo / "docs").mkdir()
+        (repo / "docs" / "render.md").write_text(
+            "Some prose linking to [the notebook](other.ipynb).\n",
+            encoding="utf-8",
+        )
+        (repo / "docs" / "other.ipynb").write_text(
+            '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}',
+            encoding="utf-8",
+        )
+        render_paths = _quarto_render_list(yml)
+        targets = _notebook_targets_from_render_list(repo, render_paths)
+        # The notebook linked from the rendered page is in the closure.
+        assert Path("docs/other.ipynb") in targets, (
+            f"link from render-list did not pull notebook into closure: {targets}"
+        )
+
+    def test_ipynb_link_with_html_href(self, tmp_path):
+        """An ``href=\".../foo.ipynb\"`` link also pulls the target in."""
+        repo = tmp_path
+        yml = repo / "_quarto.yml"
+        yml.write_text(
+            "project:\n  render:\n    - 'docs/render.md'\n",
+            encoding="utf-8",
+        )
+        (repo / "docs").mkdir()
+        (repo / "docs" / "render.md").write_text(
+            '<a href="linked.ipynb">link</a>\n',
+            encoding="utf-8",
+        )
+        (repo / "docs" / "linked.ipynb").write_text(
+            '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}',
+            encoding="utf-8",
+        )
+        targets = _notebook_targets_from_render_list(repo, _quarto_render_list(yml))
+        assert Path("docs/linked.ipynb") in targets
+
+    def test_ipynb_link_followed_by_terminal_period(self, tmp_path):
+        """A bare notebook link at the END of a sentence (followed by ``.``)
+        must still resolve -- the period is sentence punctuation, not part of
+        the filename. Without this, the closure silently misses notebooks that
+        are only reachable via sentence-final bare links (Hermes FN reserve on
+        #11643).
+
+        Motif ``... voir foo.ipynb.`` -- the regex lookahead ``(?=[.,;:!?]|$)``
+        lets the regex stop at ``.`` (which becomes the post-match rstrip's
+        job to clean). The captured URL is ``foo.ipynb`` -> resolves to the
+        file on disk.
+        """
+        repo = tmp_path
+        yml = repo / "_quarto.yml"
+        yml.write_text(
+            "project:\n  render:\n    - 'docs/render.md'\n",
+            encoding="utf-8",
+        )
+        (repo / "docs").mkdir()
+        (repo / "docs" / "render.md").write_text(
+            # Sentence-final bare link. The 'voir ' prefix puts a space before
+            # the URL; the trailing '.' is sentence punctuation.
+            "Pour la suite, voir other.ipynb.\n",
+            encoding="utf-8",
+        )
+        (repo / "docs" / "other.ipynb").write_text(
+            '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}',
+            encoding="utf-8",
+        )
+        targets = _notebook_targets_from_render_list(repo, _quarto_render_list(yml))
+        # The pin: sentence-final period MUST NOT cause the link to fall out
+        # of the closure. Pre-#11643 fix this assertion fails -- the regex
+        # stopped on the '.' and the post-match rstrip never fired.
+        assert Path("docs/other.ipynb") in targets, (
+            f"sentence-final bare link was dropped from the closure: {targets}"
+        )
+
+    def test_ipynb_link_followed_by_other_terminal_punctuation(self, tmp_path):
+        """Same FN class, but for ``!``, ``?``, ``,``, ``;``, ``:`` -- any
+        terminal punctuation that ends a sentence or clause. Each is a real
+        shape in prose; each must NOT silently drop the link from closure.
+        """
+        repo = tmp_path
+        yml = repo / "_quarto.yml"
+        yml.write_text(
+            "project:\n  render:\n    - 'docs/render.md'\n",
+            encoding="utf-8",
+        )
+        (repo / "docs").mkdir()
+        # One line per punctuation, comma is mid-clause (not really terminal
+        # -- but covered for symmetry since the lookahead accepts it).
+        (repo / "docs" / "render.md").write_text(
+            "Voir other.ipynb! Aussi other2.ipynb? "
+            "Enfin other3.ipynb, ou other4.ipynb; "
+            "puis other5.ipynb: c'est tout.\n",
+            encoding="utf-8",
+        )
+        for name in ("other", "other2", "other3", "other4", "other5"):
+            (repo / "docs" / f"{name}.ipynb").write_text(
+                '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}',
+                encoding="utf-8",
+            )
+        targets = _notebook_targets_from_render_list(repo, _quarto_render_list(yml))
+        for name in ("other", "other2", "other3", "other4", "other5"):
+            assert Path(f"docs/{name}.ipynb") in targets, (
+                f"link '...{name}.ipynb<TP>' was dropped from closure: {targets}"
+            )
 
 
 if __name__ == "__main__":

@@ -1,16 +1,16 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-17**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-18**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**912** notebooks référencés au catalogue.
+**914** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 755 | 82.8% |
+| READY | 757 | 82.8% |
 | DEMO | 155 | 17.0% |
 | BROKEN | 2 | 0.2% |
 
@@ -18,7 +18,7 @@
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 571 |
+| **local** (exécutable sans GPU/cloud/WSL) | 573 |
 | WSL requis | 47 |
 | GPU requis | 105 |
 | Cloud requis (QC / GenAI Docker) | 111 |
@@ -31,22 +31,22 @@
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
 | FallacyDetection | 2 | 0 | 0 | 2 | 100% |
 | GameTheory | 56 | 0 | 0 | 56 | 100% |
-| GenAI | 78 | 91 | 2 | 171 | 46% |
-| IIT | 55 | 0 | 0 | 55 | 100% |
+| GenAI | 78 | 92 | 2 | 172 | 45% |
+| IIT | 56 | 0 | 0 | 56 | 100% |
 | ML | 45 | 3 | 0 | 48 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
 | QuantConnect | 60 | 48 | 0 | 108 | 56% |
 | RL | 19 | 2 | 0 | 21 | 90% |
 | Search | 118 | 0 | 0 | 118 | 100% |
 | Sudoku | 35 | 2 | 0 | 37 | 95% |
-| SymbolicAI | 222 | 9 | 0 | 231 | 96% |
+| SymbolicAI | 223 | 8 | 0 | 231 | 97% |
 | cross-series | 1 | 0 | 0 | 1 | 100% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 588 |
+| Python 3 | 590 |
 | .NET (C#) | 234 |
 | Python 3 (ipykernel) | 23 |
 | Lean 4 (WSL) | 18 |

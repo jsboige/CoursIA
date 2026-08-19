@@ -2,10 +2,15 @@
   family: Sudoku
   python: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb
   csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Lib-vs-lib meme moteur Google OR-Tools (3 sous-modules : ConstraintSolver routing, LinearSolver LP, Sat CP-SAT) : Python = `ortools` PyPI package (`from ortools.sat.python import cp_model`, `from ortools.linear_solver import pywraplp`, `from ortools.constraint_solver import pywrapcp`). C# = `Google.OrTools.{Sat,LinearSolver,ConstraintSolver}` NuGet packages (bindings SWIG officiels). Meme solveur C++ natif upstreams de Google Operations Research, accessible via les bindings Python (.whl) et C# (.nupkg). Verifie firsthand (c.235 audit 2026-08-12, myia-po-2023:CoursIA-2) : Python 30 cells / C# 35 cells, structure pedagogique symetrique (memes configurations de puzzles, memes benchmarks CP-SAT, memes options solver). Pont cross-stack impossible : bindings SWIG non bridgeables (meme pattern que Sudoku-18 precedent c.234). Parite semantique mecaniquement preservee tant que les versions PyPI/NuGet restent synchronisees. Verdict SOTA-OK : OR-Tools est la SOTA OR solver pour les deux stacks."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 70f823c8b712136c465fd938f1b75cf866682fdb
+      csharp_sha: 2b03463a08e447e52305d4e20c6a7c30101ca43a
+      reason: "parity_level basculee -> native-both (arbitrage ai-01 2026-08-16 #11200 Option A, parite de moteur lib-vs-lib) : Python atteint ortools (CP-SAT, 5 imports), C# atteint Google.OrTools (#r nuget + using, 29 occurrences). Meme moteur CP-SAT des deux cotes. Imports/invocations verifies firsthand sur les notebooks de la paire (re-grep origin/main 2026-08-18). bridge_verdict_reason inchangee."
     - date: "2026-08-04"
       by: myia-po-2023:CoursIA
       python_sha: 25c9790ba0ba6e5e4747515ff7fc7c60829569bb
