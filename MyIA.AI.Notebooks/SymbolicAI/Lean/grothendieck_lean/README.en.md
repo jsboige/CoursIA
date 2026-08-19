@@ -22,7 +22,7 @@ formalize EGA/SGA. The goal is to give learners a curated entry point into:
 
 ## The arc
 
-The **44 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
+The **47 leaf modules** (0 `sorry`, 0 axiom added) trace a coherent path, from
 the raw site up to cohomology:
 
 ```mermaid
@@ -89,13 +89,13 @@ laws and the lattice of topologies.
 
 ## Code structure
 
-The formalization spans **44 leaf modules** + **1 umbrella** `Grothendieck.lean`
+The formalization spans **47 leaf modules** + **1 umbrella** `Grothendieck.lean`
 (imports-only, bilingual inline FR/EN). The three `SheafCohomology/`
 sub-modules are Parts 20, 22, and 23 of the table.
 
 | Part | File | `_en` | Content | Lines |
 |------|------|-------|---------|-------|
-| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only + bilingual FR/EN doctring); imports 43 of the 44 leaves — the `ExceptionalDirect` import is pending ([#11286](https://github.com/jsboige/CoursIA/issues/11286)) | 218 |
+| root | `Grothendieck.lean` | (bilingual inline) | **Umbrella root** (imports-only + bilingual FR/EN doctring); imports **all 46 leaves** (full coverage, no module pending — `ExceptionalDirect` imported c.2026-08-15, closing #11286) | 218 |
 | 1 | `Grothendieck/CategoryAndSites.lean` | `CategoryAndSites_en.lean` | Sieves, Grothendieck topologies (trivial/discrete/dense), three axioms | 243 |
 | 2 | `Grothendieck/SchemesTour.lean` | `SchemesTour_en.lean` | Scheme type, Spec functor, Γ, `homeoOfIso`, fully-faithful | 196 |
 | 3 | `Grothendieck/ZariskiSite.lean` | `ZariskiSite_en.lean` | Zariski pretopology, `zariskiTopology_eq` bridge theorem, subcanonical | 139 |
@@ -140,6 +140,9 @@ sub-modules are Parts 20, 22, and 23 of the table.
 | 42 | `Grothendieck/PullbackCoversLaws.lean` | `PullbackCoversLaws_en.lean` | Arrow-form laws under iterated pullback: `covers_pullback_assoc`, `covers_pullback_id`, `covers_pullback_generate` (#11217, Phase 5 of #2159) | 160 |
 | 43 | `Grothendieck/CoversLattice.lean` | `CoversLattice_en.lean` | Indexed lattice laws of the arrow form: `sInf/sSup_covering`, `sInf/sSup_covers` (#11231, Phase 5 of #2159) | 106 |
 | 44 | `Grothendieck/CoversTopologies.lean` | `CoversTopologies_en.lean` | Arrow form of the dense topology: `dense_covers_iff`, `dense_covers_precomp` (precomposition stability), `dense_covers_id` (#11244, Phase 5 of #2159) | 115 |
+| 45 | `Grothendieck/CoversBind.lean` | `CoversBind_en.lean` | Sequential composition of the arrow form `J.Covers`: `covers_bind`, `covers_bind_assoc`, `covers_bind_id_left/right`, `covers_bind_of_covering` (PR #11285 MERGED 2026-08-16 by po-2025, Part 46 of #2159) | 138 |
+| 46 | `Grothendieck/CoversPushforward.lean` | `CoversPushforward_en.lean` | Direct image of the arrow form along a functor: `covers_pushforward`, `covers_pushforward_comp`, `covers_pushforward_iso`, `covers_pushforward_of_covering` (PR #11262 MERGED 2026-08-16 by po-2025, Part 45 of #2159) | 152 |
+| 57 | `Grothendieck/CoversAtomicArrow.lean` | `CoversAtomicArrow_en.lean` | Arrow form of the **atomic topology** (`GrothendieckTopology.atomic`, right Ore condition): pointwise bridge `atomic_covering` (the missing analogue of `dense_covering`), `covers_iff_atomic` (central), `covers_atomic_of_mem`, stability `covers_atomic_precomp`, collapses `covers_atomic_id`/`covers_atomic_top` (Phase 5 of #2159) | 159 |
 
 *The `Lines` column counts the **FR file alone**; the `_en` sibling adds
 roughly as much again.*
@@ -150,7 +153,9 @@ roughly as much again.*
 - **Build**: `lake build` (WSL required). The default target (`globs := #[`Grothendieck.*]` in `lakefile.lean`) compiles **all** FR and `_en` modules. Last verified build: 2026-08-12, "Build completed successfully". The explicit target `lake build Grothendieck` (the umbrella's import closure) currently omits `ExceptionalDirect` — see [#11286](https://github.com/jsboige/CoursIA/issues/11286).
 - **Proofs**: **0 `sorry`, 0 axiom added** — every module is complete at creation. (A naive `grep sorry` matches prose mentions in the bilingual docstrings, notably two in `ExceptionalDirect.lean`; CI counts in `real` mode — after comment stripping — and reads 0.)
 - **Dependencies**: Mathlib 4 (via `lakefile.lean`)
-- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — 45 FR files (1 umbrella + 44 canonical leaves) and 44 `_en.lean` siblings (`_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable). The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
+- **i18n** (EPIC #4980, Option A convention ratified 2026-07-04): complete bilingual coverage — **48 FR files** (1 umbrella + 47 canonical leaves) and **47 `_en.lean` siblings**, integral 1:1 ratio (the historical `PullbackFunctor.lean` gap is closed: `PullbackFunctor_en.lean` is present on disk; the earlier prose saying it was missing was stale — found by the Part 56 §E audit, c.2026-08-18). `_en` namespaces anti-collision, non-docstring content byte-identical, CI-detectable. The umbrella is bilingual inline *by design* (FR canonical first, EN mirrored in the same file). **[`README.md`](./README.md)** is the FR canonical sibling of this file. Out-of-scope: `.lake/packages/`, vendored libs.
+
+*Coherence note*: the earlier note about a "46/46 discordance + `PullbackFunctor` gap" is obsolete — `PullbackFunctor_en.lean` is present on disk (verified c.2026-08-18) and the FR/`_en` ratio is 1:1. The lakefile `globs` auto-discovers all leaves; the i18n CI checks the target 1:1 ratio.
 
 ## References
 

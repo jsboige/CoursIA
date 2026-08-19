@@ -107,3 +107,13 @@ Critère de relecture : **la prose modifiée cite-t-elle encore un nombre qui re
 
 See #9377, #8052, #9434.
 
+## Compagnon a kernel Lean pour les lakes (rule C.6)
+
+**Mandat user 2026-08-19** : « ma preference quand c'est possible va a la mise en place d'un **Notebook sous kernel Lean** a cote du Notebook Python, plus lisible que des loaders surtout quand il s'agit de presenter des lakes complexes. Idealement on veut les deux, mais bon c'est du travail, alors fais au mieux. »
+
+Presenter un lake (`*_lean/`) via un notebook `python3` qui **affiche du `.lean` comme du texte** est la forme degradee. La forme preferee est un notebook a kernel **`lean4-wsl`** ou les enonces **compilent** dans le notebook, place **a cote** du notebook Python (qui garde la narration, les figures, l'interfacage) — pas a sa place.
+
+Le patron existe deja dans le depot, avec sa convention de nommage : `Lean-12` / **`Lean-12b`**, `Lean-16b` / **`Lean-16d`**, **`Lean-11`** / `Lean-11-Python`, et tous les `GameTheory-Nb-Lean-*`. Il y a a l'etendre, pas a l'inventer.
+
+- « quand c'est possible » et « fais au mieux » sont dans le mandat : un compagnon Lean n'est pas un gate de merge. Un notebook Python seul reste mergeable — c'est le **defaut cible** qui change, pas le seuil de refus.
+- Un lake enrichi sans qu'aucun notebook ne cite les modules ajoutes est le vrai defaut : **c'est la visibilite du travail formel qui disparait**, mesuree a 13-20 % de declarations citees et **97 modules sur 177 invisibles** (2026-08-19). Suivi : **EPIC #11703**.
