@@ -336,6 +336,19 @@ def main(argv=None):
         return self_test()
 
     if args.all:
+        # Name what was measured. --all reads the WORKING TREE, so its answer
+        # is only as current as the checkout -- and a stale tree returns a
+        # smaller, cleaner, wrong sweep without raising anything. Measured
+        # while building this file: a sweep run one commit behind origin/main
+        # reported the two founding notebooks as clean, because the commit
+        # that broke them was not in the tree yet.
+        head = (git("rev-parse", "HEAD") or "?").strip()[:12]
+        behind = (git("rev-list", "--count", "HEAD..origin/main")
+                  or "?").strip()
+        dirty = "dirty" if (git("status", "--porcelain", "--", "*.ipynb")
+                            or "").strip() else "clean"
+        provenance = ("tree HEAD " + head + " | " + behind
+                      + " commit(s) behind origin/main | notebooks " + dirty)
         rows = []
         for path in all_notebooks():
             found = scan(read_notebook_at(None, path))
@@ -347,10 +360,13 @@ def main(argv=None):
                     "MACHINE_PATH": [{"cell": c, "match": t}
                                      for c, t in found["MACHINE_PATH"]]})
         if args.as_json:
-            print(json.dumps({"mode": "sweep", "notebooks": len(rows),
+            print(json.dumps({"mode": "sweep", "provenance": provenance,
+                              "head": head, "behind_origin_main": behind,
+                              "worktree": dirty, "notebooks": len(rows),
                               "rows": rows}, indent=2, ensure_ascii=False))
         else:
-            print("ADVISORY sweep: " + str(len(rows)) + " notebooks carry "
+            print("ADVISORY sweep [" + provenance + "]")
+            print(str(len(rows)) + " notebooks carry "
                   "failure text or machine paths in committed outputs")
             for r in rows:
                 print("  " + r["notebook"]
