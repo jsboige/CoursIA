@@ -2003,7 +2003,11 @@ sorry-free body), which gathers the four sub-lemmas below. The aggregator's
 its `k → k+1` case applies `p4_ext_bridge` to the `p4_succ_membership`
 biconditional to close. The **live open target** is now the P5 large-`n` jump
 `p5_large_n_jumpN` (aggregator, `:= by sorry`), which is P4-gated on exactly
-this inductive step being closed.
+this inductive step being closed. Note (c.8174, `See #6724`): the aggregator's
+hypothesis `BoxAssezGrandN g n` was removed from the signature since it is
+tautological (`boxAssezGrandN_trivial` in `JumpCapture.lean`); the statement
+is now unconditional on the n-aware frame, with the universal satisfiability
+of `BoxAssezGrandN` retained here via `box_assez_grandN_single_cell`.
 
 NOTE for readers/provers: earlier drafts carried the biconditional as
 `p4_ext_bridge c (k+1) (fun p => by sorry)` — that sorry is gone (the call-site
