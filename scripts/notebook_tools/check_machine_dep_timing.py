@@ -69,6 +69,32 @@ Acceptance (cf. #10169, frontiere residuelle)
       --show-toplevel``), resultat vide = erreur explicite (exit 1).
 - [x] Controle positif `Sudoku-13` preserve (Z3 wall-clock strict reste detecte).
 
+Acceptance (tranche GenAI/Audio #9434, 2026-08-19 -- 04-6/04-11/04-12)
+- [x] « de l'ordre de N s » / « de l'ordre de grandeur de N s » reconnus
+      comme marqueurs d'ordre de grandeur DETACHES (forme en toutes lettres
+      du tilde ; 04-11 c10 : « chaque segment prend de l'ordre de 3 s a
+      generer »). Le mandat #9434 sanctionne l'ordre de grandeur -- le
+      scanner n'exemptait que la forme tildée.
+- [x] Borne inferieure stricte « > N unit » exemptee comme borne superieure
+      (symetrique oublie de #10162 ; 04-12 c22 « narration longs (> 10
+      secondes) » = seuil d'exercice) -- SAUF le « > » de blockquote en
+      debut de ligne (research_m12_har_rv_j_minute c0 « > 25 s... » =
+      duree mesuree d'un run, reste wallclock).
+- [x] ``PARAM_DURATION_RE`` : parametres de DESIGN d'un pipeline audio
+      (silence/fade/crossfade/pause/break SSML/extrait/seuil/rate-limit +
+      duree a proximite, fenetre 40 chars sans '.' ni '|') classes
+      ``domain_quantity`` -- constante du code, pas une mesure machine.
+      ~30 findings wallclock sur les 3 notebooks de la tranche etaient
+      exactement cette classe.
+- [x] « durée finale » rejoint « durée cible/totale/maximale/optimale » dans
+      CONTENT_DURATION_CONSTRAINT_RE (04-12 c12 : duree ffprobe du fichier
+      MP3 commite = contenu, pas execution).
+- [x] Arithmetique deterministe etendue a la multiplication « N x Mms = K s »
+      (04-12 c12/c14/c17 : « 13 x 500ms = 6.5s » = silences d'assemblage).
+- [x] Controles positifs preserves : Sudoku-13 (Z3 wall-clock strict),
+      Sudoku-18 post-#11512 (0 wallclock attendu, toujours 0), 04-7
+      post-#10707 (0 wallclock attendu, toujours 0).
+
 Note : `ambiguous=0` est structural (defaut conservateur = wallclock). Aucun
 finding ne reste ambigue apres la passe 1 -- le defaut de `_categorize`
 classe toute ligne sans mot-cle en wallclock. La categorie `ambiguous`
@@ -170,10 +196,30 @@ PROTOCOL_KEYWORDS = re.compile(
 # compute) ne matche AUCUN de ces signaux et reste wallclock.
 CONTENT_DURATION_CONSTRAINT_RE = re.compile(
     r"(?:\bcontrainte[s]?\s+(?:de\s+)?dur[ée]e\b"
-    r"|\bdur[ée]e\s+(?:cible|totale|maximale|optimale)\b"
+    r"|\bdur[ée]e\s+(?:cible|totale|maximale|optimale|finale)\b"
     r"|\bdur[ée]e\s+de\s+la\s+vid[ée]o\b"
     r"|\bYouTube\s+Shorts\b"
     r"|\bmodule\s+de\s+cours\b)",
+    re.IGNORECASE,
+)
+
+# Parametre de DESIGN d'un pipeline audio/mediatique : silence, fade,
+# crossfade, pause, break SSML, extrait -- la duree est une CONSTANTE
+# choisie par l'auteur du pipeline (visible dans le code), pas une mesure
+# d'execution. Elle ne derive ni de la machine ni d'un re-run. Mesure du
+# 2026-08-19 sur la tranche GenAI/Audio (#9434) : ~30 findings wallclock
+# sur 3 notebooks (04-6/04-11/04-12) sont exactement cette classe
+# (« Silence inter-segment: 500ms », « fade in/out de 200ms », « silences
+# de 0.5 s generes par anullsrc », « <break time="500ms"/> », « un extrait
+# de 30 s », « rate-limit de 0.2 s »). Proximite exigee (fenetre de 40
+# chars sans '.' ni '|' : fin de phrase ou changement de cellule de table
+# coupent le lien) pour ne pas exempter une duree qui cotoie le mot param
+# par hasard.
+PARAM_DURATION_RE = re.compile(
+    r"\b(?:silences?|fades?|crossfades?|pauses?|breaks?|interludes?"
+    r"|extraits?|seuils?|th?resholds?|rate[\s\-]?limits?)\b"
+    r"[^.|]{0,40}?"
+    r"\d+(?:[.,]\d+)?\s*(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?|s)\b",
     re.IGNORECASE,
 )
 
@@ -232,9 +278,19 @@ def _is_range_bound(line: str, match_start: int, match_end: int) -> bool:
     # Test 1 : fourchette 'N1-N2 unit' -- '\d-\d' en fin de la fenetre.
     if re.search(r"\d\s*-\s*\d\s*$", window):
         return True
-    # Test 2 : borne superieure '< N' ou '<= N' -- le '<' est en fin de fenetre.
-    if re.search(r"<\s*=?\s*\d\s*$", window):
-        return True
+    # Test 2 : borne '< N' ou '<= N' / borne '> N' ou '>= N' -- la borne en
+    # fin de fenetre. La borne inferieure stricte est le symetrique oublie
+    # de #10162 (04-12-Compilation-Audio c22 : « narration longs (> 10
+    # secondes) » = seuil de classification d'exercice, pas une mesure).
+    # NB : un '>' en DEBUT de ligne est un BLOCKQUOTE markdown, pas une
+    # borne mathematique -- « > 25 s, zero barre minute chargee »
+    # (research_m12_har_rv_j_minute c0, duree mesuree d'un run) reste
+    # wallclock. On exige donc du contenu non-blanc AVANT la borne.
+    m2 = re.search(r"([<>])\s*=?\s*\d\s*$", window)
+    if m2:
+        bound_pos = line.rfind(m2.group(1), 0, match_start)
+        if bound_pos > 0 and line[:bound_pos].strip():
+            return True
     # Test 3 : borne inferieure 'N+' -> le match est 'N X' et le caractere
     # APRES le debut du nombre est '+'. Ex : '5+ min' -> match = '5 min',
     # match_start pointe sur '5', line[match_start:match_start+3] = '5+ '.
@@ -256,7 +312,20 @@ def _is_detached_approximate(line: str, match_start: int) -> bool:
     # Fenetre de 3 chars avant le match : le marqueur + eventuelle espace.
     lo = max(0, match_start - 3)
     window = line[lo:match_start]
-    return bool(re.search(r"[~≈]\s*$", window))
+    if re.search(r"[~≈]\s*$", window):
+        return True
+    # Forme FRANCAISE du marqueur d'ordre de grandeur : « de l'ordre de N s »,
+    # « de l'ordre de grandeur de N s » (04-11-Generation-TTS c10 : « chaque
+    # segment prend de l'ordre de 3 s a generer » -- deja le traitement
+    # sanctionne par le mandat, mais ecrit en toutes lettres la ou le tilde
+    # etait attendu). Fenetre elargie a 25 chars : le marqueur le plus long
+    # est « ordre de grandeur de ~ ».
+    lo2 = max(0, match_start - 25)
+    window2 = line[lo2:match_start]
+    return bool(re.search(
+        r"(?:l['’]\s*)?ordre(?:\s+de\s+grandeur)?\s+de\s*~?\s*$", window2,
+        re.IGNORECASE,
+    ))
 
 
 # --------------------------------------------------------------------------- #
@@ -301,6 +370,10 @@ def _categorize(line: str, snippet: str) -> str:
     # Borne du domaine, pas une duree machine -- les 2 FP GenAI/Video cell[12].
     if CONTENT_DURATION_CONSTRAINT_RE.search(line):
         return CATEGORY_DOMAIN_QUANTITY
+    # Parametre de design d'un pipeline audio (silence/fade/pause/extrait...)
+    # -- constante du code, pas une duree machine. Cf. PARAM_DURATION_RE.
+    if PARAM_DURATION_RE.search(line):
+        return CATEGORY_DOMAIN_QUANTITY
     # Frontiere FP (frontier issue) : cout d'action dans une table de plan.
     # La duree est le RESULTAT d'une arithmetique « N + M = K unit » (ex
     # Planners-8-Temporal cell[37] « 5 + 4 = 9 min » = duree d'une livraison
@@ -308,7 +381,12 @@ def _categorize(line: str, snippet: str) -> str:
     # duree machine. Le motif est precis (un vrai wallclock ne se rend presque
     # jamais comme une somme explicite `a + b = c unit`) -- Sudoku-13 (controle
     # positif) n'a aucune ligne de cette forme, donc reste detecte.
-    if re.search(r"\d+\s*\+\s*\d+\s*=\s*\d+\s*(?:min(?:utes?)?|sec(?:ondes?)?|s\b|h(?:eures)?)", line):
+    # « 13 x 500ms = 6.5s » (04-12 c12/c14/c17, silences d'assemblage) est
+    # la meme classe deterministe en multiplication -- l'unite interne du
+    # facteur droit (500ms) est acceptee.
+    if re.search(
+        r"\d+\s*[+×x*]\s*\d+\s*(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?|s)?\s*=\s*\d+(?:[.,]\d+)?\s*"
+        r"(?:min(?:utes?)?|sec(?:ondes?)?|s\b|h(?:eures)?)", line):
         return CATEGORY_DOMAIN_QUANTITY
     if WALLCLOCK_KEYWORDS.search(line):
         return CATEGORY_WALLCLOCK
