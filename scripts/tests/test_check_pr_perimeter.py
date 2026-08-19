@@ -772,6 +772,54 @@ def test_founding_incident_still_blocks_from_the_pr_body():
     assert check_assertion(FILES_11227, blocking[0].text)
 
 
+# --- #11695: --assert false-positives when the fence PRECEDES the prose ---------
+# Measured 2026-08-18 by po-2026 (post-merge verify of #11675): the gate path
+# (--scan-thread) was fixed at extraction level, but the MANUAL reviewer path
+# (--assert, whole body to check_assertion) still trips COUNT_CLAIM on a fenced
+# L898 transcription when it appears BEFORE the correct prose claim -- search()
+# stops at the first occurrence, so the founder body of #11675 passed only by
+# coincidence of ordering. A pass that depends on appearance order proves nothing.
+
+FENCE_FIRST_BODY = (
+    "## Preuve anti-collision (L898)\n"
+    "\n"
+    "```\n"
+    "$ gh pr list --state open --json files\n"
+    "0 fichiers en commun avec les autres PR\n"
+    "```\n"
+    "\n"
+    "Perimetre : 1 fichier modifie.\n"
+)
+FENCE_ONLY_BODY = (
+    "## L898 verifie\n"
+    "\n"
+    "```\n"
+    "$ gh pr list --state open --json files\n"
+    "0 fichiers en commun\n"
+    "```\n"
+)
+FILES_11695 = [{"path": "MyIA.AI.Notebooks/GenAI/Audio/XTTS/foo.ipynb", "additions": 5, "deletions": 2}]
+
+
+def test_assert_fence_before_prose_does_not_misread_transcription():
+    """#11695 case 1: fenced '0 fichiers en commun' BEFORE the prose claim.
+    The transcription is not the author's assertion; the prose claim (1 fichier)
+    matches the file list exactly -> must NOT report a problem."""
+    assert check_assertion(FILES_11695, FENCE_FIRST_BODY) == []
+
+
+def test_assert_fence_only_body_is_not_a_valid_assertion():
+    """#11695 case 2: body made ONLY of a fence transcription carries no
+    verifiable author claim. After the fix, fences are masked in the scan so
+    the count check ignores the transcribed 0 -- and the 'non verifiable'
+    guard, run on the ORIGINAL text, must still flag it (a body of pure
+    transcription cannot pass silently)."""
+    problems = check_assertion(FILES_11695, FENCE_ONLY_BODY)
+    assert problems, "a transcription-only body must not pass in silence"
+    assert not any("pretend 0" in p for p in problems), (
+        f"must not misread the fenced 0 as the author's claim, got: {problems!r}"
+    )
+
 # ---------------------------------------------------------------------------
 # #11712 -- incidental counts. Detection stays (the line is still extracted
 # and confronted); only the blocking consequence moves (#11648 path). Each
