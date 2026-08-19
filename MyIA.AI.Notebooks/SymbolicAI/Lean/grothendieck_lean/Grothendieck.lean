@@ -12,8 +12,12 @@ import Grothendieck.CoversArrow
 import Grothendieck.CoversAtomicArrow
 import Grothendieck.CoversAtomicArrow_en
 import Grothendieck.CoversBind
+import Grothendieck.CoversCoherentArrow
+import Grothendieck.CoversCoherentArrow_en
 import Grothendieck.CoversCoverageArrow
 import Grothendieck.CoversCoverageArrow_en
+import Grothendieck.CoversExtensiveArrow
+import Grothendieck.CoversExtensiveArrow_en
 import Grothendieck.CoversLattice
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPrecoverageArrow
@@ -22,6 +26,8 @@ import Grothendieck.CoversPretopologyArrow
 import Grothendieck.CoversPretopologyArrow_en
 import Grothendieck.CoversPullback
 import Grothendieck.CoversPushforward
+import Grothendieck.CoversRegularArrow
+import Grothendieck.CoversRegularArrow_en
 import Grothendieck.CoversTopologies
 import Grothendieck.CoversZariskiArrow
 import Grothendieck.CoversZariskiArrow_en

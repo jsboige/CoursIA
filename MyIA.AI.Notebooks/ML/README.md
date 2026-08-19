@@ -124,6 +124,7 @@ ML/
 ├── DataScienceWithAgents/            # Data Science Python + AI Agents
 │   ├── 01-PythonForDataScience/      # Fondations NumPy/Pandas
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
+│   │   └── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean
 │   ├── Track1-LangChain/   # Track LangChain (Labs 1-7)
 │   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-17)
 │
@@ -289,9 +290,10 @@ Documentation complète : [DataScienceWithAgents/Track2-GoogleADK/README.md](Dat
 
 ## Théorie formelle (Lean)
 
-Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise un résultat théorique canonique de l'apprentissage : [`learning_theory_lean/`](learning_theory_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et le notebook pédagogique vient en pendant.
+Au-delà des notebooks empiriques (ML.NET, Python), la série ML accueille un **lake Lean 4** qui formalise deux résultats théoriques canoniques de l'apprentissage : [`learning_theory_lean/`](learning_theory_lean/). Convention des **lakes frères** — le lake est le livrable formel, `lake build` SUCCESS en est la preuve d'exécution, et le notebook pédagogique vient en pendant : ici [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb), compagnon **kernel Lean** (`lean4-wsl`) placé contre son jumeau empirique [`2.8-Theorie-PAC.ipynb`](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) (EPIC #11703).
 
 - **[`learning_theory_lean/`](learning_theory_lean/)** — **théorème de convergence du perceptron** (Novikoff, 1962) : pour des données linéairement séparables de marge γ et de rayon R, l'algorithme du perceptron effectue au plus `(R/γ)²` mises à jour avant de trouver un classifieur correct. Preuve **géométrique élémentaire et entièrement 0-sorry** (croissance de l'alignement `⟨wₖ,u⟩ ≥ kγ` + croissance de la norme `‖wₖ‖² ≤ kR²` + Cauchy–Schwarz), sur un espace préhilbertien réel abstrait via Mathlib.
+- **Module `PacLearning`** — **théorie PAC** (Valiant, 1984) : la chaîne complète de la **borne de complexité d'échantillon** en classe finie `m ≥ (1/ε)(ln|H| + ln(1/δ))` (concentration de Hoeffding pour Bernoulli + borne de l'union) et la **borne de généralisation agnostic** — toutes deux **0-sorry**. C'est ce module que le notebook [2.8b](DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) rend exécutable déclaration par déclaration, en pendant formel du [2.8](DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) qui en mesure la prédiction empirique.
 
 C'est le **pendant prouvé** des notebooks de classification linéaire (`ML.Net/ML-3` entraîne des classifieurs, `02-ML-Cours/2.3` pose régression linéaire/logistique) : là où les notebooks *montrent* que le perceptron converge en pratique, le lake *prouve* la borne. Voir le [README du lake](learning_theory_lean/README.md) pour les modules et le détail de la preuve.
 

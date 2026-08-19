@@ -927,3 +927,14 @@ def test_founding_count_assertions_stay_blocking_11712():
     ]:
         cand = Candidate(line, "body", "author", "body")
         assert cand.blocking is True, f"must stay blocking: {line[:50]}"
+
+
+def test_mixed_line_confronts_the_non_zero_count():
+    """"0 fichier catalogue, 2 fichiers touches" over a 2-file PR passes.
+
+    The zero is a property claim; the perimeter claim is the 2. Reading the
+    first match instead confronts "0" with a list that cannot be empty, so
+    the line could never pass whatever the PR contained.
+    """
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []

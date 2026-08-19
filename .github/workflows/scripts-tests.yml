@@ -89,6 +89,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: scripts-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   scripts-tests:
     name: Scripts Tests (CPU)

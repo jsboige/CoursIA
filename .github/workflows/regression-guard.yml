@@ -45,6 +45,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: regression-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   guard:
     name: "No notebook health regression"

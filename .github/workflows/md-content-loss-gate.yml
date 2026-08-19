@@ -45,6 +45,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: md-content-loss-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   md-content-loss:
     name: "No markdown content loss in changed notebooks"
