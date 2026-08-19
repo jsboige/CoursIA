@@ -53,6 +53,25 @@ def iter_notebooks(root: Path):
         yield path
 
 
+def iter_targets(root: Path, single_path: Path | None):
+    """Yield notebook paths to operate on. ``single_path`` (when set) is treated
+    as a single-file override — useful for spot-checking one notebook before a
+    bulk run, or for the acceptance test on Search-15-NetworkX-Csharp. Path
+    must be inside ``root`` (resolved); otherwise ValueError."""
+    if single_path is None:
+        yield from iter_notebooks(root)
+        return
+    sp = single_path.resolve()
+    rr = root.resolve()
+    try:
+        sp.relative_to(rr)
+    except ValueError:
+        raise ValueError(f"--path {sp} is outside --root {rr}")
+    if not sp.exists():
+        raise FileNotFoundError(sp)
+    yield sp
+
+
 def patched_spans(data: bytes, token_re):
     """Yield (start, end) byte spans of language tokens inside .NET kernelspecs."""
     for ks in KERNELSPEC_RE.finditer(data):
@@ -62,14 +81,14 @@ def patched_spans(data: bytes, token_re):
             yield ks.start() + m.start(2), ks.start() + m.end(2)
 
 
-def cmd_apply(root: Path, manifest_path: Path) -> int:
+def cmd_apply(root: Path, manifest_path: Path, single_path: Path | None = None) -> int:
     if manifest_path.exists():
         print(f"[apply] manifest {manifest_path} already exists — restore first "
               f"(refusing to overwrite offsets of an in-flight patch)")
         return 1
     manifest = {}
     patched = 0
-    for path in iter_notebooks(root):
+    for path in iter_targets(root, single_path):
         data = path.read_bytes()
         spans = list(patched_spans(data, LANG_CSHARP_TOKEN_RE))
         if not spans:
@@ -88,13 +107,23 @@ def cmd_apply(root: Path, manifest_path: Path) -> int:
     return 0
 
 
-def cmd_restore(manifest_path: Path, root: Path) -> int:
+def cmd_restore(manifest_path: Path, root: Path, single_path: Path | None = None) -> int:
     if not manifest_path.exists():
         print(f"[restore] no manifest at {manifest_path} — nothing to restore")
         return 0
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     failures = 0
     for rel, offsets in manifest.items():
+        if single_path is not None:
+            sp = single_path.resolve()
+            rr = root.resolve()
+            try:
+                sp.relative_to(rr)
+                expected_rel = str(sp.relative_to(rr)).replace("\\", "/")
+            except ValueError:
+                expected_rel = None
+            if rel != expected_rel:
+                continue  # skip files outside the single-file scope
         path = root / rel
         if not path.exists():
             print(f"[restore] MISSING {rel} — file gone since apply, skipping")
@@ -120,9 +149,9 @@ def cmd_restore(manifest_path: Path, root: Path) -> int:
     return 0
 
 
-def cmd_check(root: Path, strict: bool) -> int:
+def cmd_check(root: Path, strict: bool, single_path: Path | None = None) -> int:
     unpatched = patched = 0
-    for path in iter_notebooks(root):
+    for path in iter_targets(root, single_path):
         data = path.read_bytes()
         if list(patched_spans(data, LANG_CSHARP_TOKEN_RE)):
             rel = str(path.relative_to(root)).replace("\\", "/")
@@ -142,20 +171,26 @@ def main() -> int:
     ap_apply = sub.add_parser("apply", help="patch language C# -> csharp (records offsets)")
     ap_apply.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     ap_apply.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    ap_apply.add_argument("--path", type=Path, default=None,
+                          help="single-file override (must be inside --root)")
     ap_restore = sub.add_parser("restore", help="revert using the manifest")
     ap_restore.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     ap_restore.add_argument("--root", type=Path, default=DEFAULT_ROOT,
                             help="root the manifest paths are relative to")
+    ap_restore.add_argument("--path", type=Path, default=None,
+                            help="single-file override (only this entry of the manifest is restored)")
     ap_check = sub.add_parser("check", help="report patched/unpatched state")
     ap_check.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     ap_check.add_argument("--strict", action="store_true",
                           help="exit 1 if any .net-csharp notebook still carries C#")
+    ap_check.add_argument("--path", type=Path, default=None,
+                          help="single-file override")
     args = ap.parse_args()
     if args.cmd == "apply":
-        return cmd_apply(args.root.resolve(), args.manifest)
+        return cmd_apply(args.root.resolve(), args.manifest, args.path)
     if args.cmd == "restore":
-        return cmd_restore(args.manifest, args.root.resolve())
-    return cmd_check(args.root.resolve(), args.strict)
+        return cmd_restore(args.manifest, args.root.resolve(), args.path)
+    return cmd_check(args.root.resolve(), args.strict, args.path)
 
 
 if __name__ == "__main__":

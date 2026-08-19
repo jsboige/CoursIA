@@ -1,0 +1,101 @@
+name: perimeter-review-guard
+
+# (#11268) Confront every perimeter assertion posted on a PR (PR body +
+# top-level reviews) with the EFFECTIVE file list via
+# scripts/check_pr_perimeter.py --scan-thread.
+#
+# The founding incident: a Hermes review asserted "Périmètre : 2 fichiers
+# twins uniquement, aucune autre modification." over a 3-file PR whose third
+# file was a CI workflow moving sorry-baseline. The perimeter report here is
+# derived from `gh pr view --json files` -- the only truth source -- so a
+# false file count, or an exclusivity claim that does not name a touched
+# .github/workflows/** file, fails the check on the PR itself.
+#
+# Triggers: pull_request (opened/synchronize/edited/reopened -- catches the
+# PR body, INCLUDING body edits: without an explicit `types:` list GitHub's
+# default excludes `edited`, so a false assertion corrected by editing the
+# body would never re-trigger the check -- nit named by ai-01 on #11635;
+# `reopened` restores full parity with the default, which the explicit list
+# drops -- a body edited while the PR was closed would otherwise go
+# unchecked until the next review -- nit Hermes on #11654) and
+# pull_request_review (submitted/edited -- re-runs the SAME check name on
+# the same head SHA the moment a review is posted).
+# Baseline moves are reported with direction (issue criterion 3) but do not
+# hard-fail here: the output names the move and the reviewer applies
+# CHANGES_REQUESTED on unjustified loosening.
+#
+# ---------------------------------------------------------------------------
+# WHO CAN EXTINGUISH THIS RED, AND HOW (#11648 acceptance criterion 3)
+# ---------------------------------------------------------------------------
+# The consequence follows who can act on the surface, not who is wrong:
+#
+#   * assertion in the PR BODY  -> BLOCKS (exit 1).
+#     The PR author owns the body. Edit it, and the `edited` trigger above
+#     re-runs this check on the same SHA: the green is reachable by the very
+#     person the red is aimed at.
+#
+#   * assertion in a REVIEW     -> SIGNALS (printed under "SIGNAL", exit 0).
+#     The PR author cannot edit someone else's review, and a COMMENTED review
+#     cannot be dismissed either (dismissal covers APPROVED and
+#     CHANGES_REQUESTED only). Blocking there left NO lever at all -- measured
+#     2026-08-18 on #11642 and #11646, both held red by third-party counts
+#     nobody could retract. The reviewer who merges reads the signal and
+#     decides; the reviewer who wrote it can retract it by posting a
+#     corrected assertion, which supersedes their own earlier one (below).
+#
+# SUPERSESSION: only each author's LAST assertion-carrying review is
+# confronted. An author who corrects themselves extinguishes their own red --
+# the one lever that acts solely on oneself, hence safe to grant. A later
+# review that says nothing about the perimeter is silence, not a retraction.
+#
+# The detector itself is UNCHANGED: every false assertion is still found and
+# still printed, third-party ones included. Only the exit code moved. Do not
+# "fix" a future false-positive by narrowing the detection -- that loses both
+# properties at once (#11648, point 2).
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, edited, reopened ]
+  pull_request_review:
+    branches: [ main ]
+    types: [ submitted, edited ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+# The concurrency group carries github.event_name: the two triggers fire on
+# the SAME (PR, head SHA) pair, and a shared group with cancel-in-progress
+# lets a review-event run CANCEL a still-QUEUED pull_request run (measured on
+# #11649: pull_request run queued 14:26Z under the CI queue backlog, review
+# run started 14:57Z in the same group, the queued run died CANCELLED and
+# left a cancelled check-run on the head SHA). With event_name in the key,
+# pushes supersede pushes and reviews supersede reviews, but the two
+# triggers never cancel each other.
+concurrency:
+  group: perimeter-review-guard-${{ github.event_name }}-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+jobs:
+  perimeter:
+    name: "perimeter review guard (#11268)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Assert review perimeter vs effective file list"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR="${{ github.event.pull_request.number }}"
+          python scripts/check_pr_perimeter.py "$PR" --scan-thread || {
+            echo "::error::A perimeter assertion on this PR (body or review) contradicts the effective file list, or an exclusivity claim does not name a touched .github/workflows/** file. Truth source: gh pr view $PR --json files (#11268). Fix the assertion to enumerate the real files."
+            exit 1
+          }

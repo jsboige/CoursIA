@@ -1,0 +1,68 @@
+name: Notebook Output Failure Ratchet
+
+# #11685 — a re-execution must not ADD tool-failure text or absolute machine
+# paths to committed notebook outputs.
+#
+# Founding incident: commit 9881553 (merge of #11622) re-executed Infer-3 and
+# Infer-8 on a machine without Graphviz. Six failure banners ("Problem with
+# converting DOT to SVG", "install Graphviz") and twelve machine paths
+# ("D:\dev\CoursIA-2-...") entered two published pedagogical notebooks, and
+# every surface consulted at merge time returned CLEAN: output_type=="error"
+# was 0 (the .NET helper prints to stdout, it never raises), render volume by
+# MIME family moved +862/-1411 B (the SVG survived via a fallback), and the
+# three hand-written patterns of check_render_volume_delta matched none of
+# the real message.
+#
+# Ratchet, not a sweep: only notebooks CHANGED between the merge base and the
+# PR head are judged, and only classes whose count GREW. The 123 notebooks
+# already carrying such text on main (measured 2026-08-19) never enter the
+# diff, so the gate is green on main from day one. A notebook ADDED by the
+# branch has no baseline and is reported advisory, never gated.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/check_output_failure_text.py'
+      - '.github/workflows/notebook-output-failure-ratchet.yml'
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base ref to ratchet against (default origin/main)'
+        required: false
+        default: 'origin/main'
+
+permissions:
+  contents: read
+
+jobs:
+  ratchet:
+    name: Ratchet (base vs PR)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The self-test runs FIRST and gates the gate: it asserts every witness
+      # string is matched, that benign pedagogical output stays silent, and
+      # that replaying the founding commit still fires. A detector that cannot
+      # be shown to fire is indistinguishable from one that is unplugged --
+      # which is exactly how the three surfaces above passed this through.
+      - name: Detector self-test (positive + negative control)
+        run: python scripts/notebook_tools/check_output_failure_text.py --self-test
+
+      # Refs reach the script via env, never inline in the run script
+      # (script-injection guard, same as notebook-papermill-ratchet.yml).
+      - name: Ratchet check
+        env:
+          BASE_REF: ${{ github.event.inputs.base_ref }}
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
+          python scripts/notebook_tools/check_output_failure_text.py "$BASE"

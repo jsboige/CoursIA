@@ -32,23 +32,36 @@ name: PR gate
 # (re-aggregate on guard completion via `workflow_run`) is non-trivial -- a
 # `workflow_run`-triggered job posts its check-run on the workflow's default
 # branch commit, NOT on the PR head SHA, so it is invisible to `gh pr checks`
-# and to mergeState until the job also POSTS a check-run onto the PR head SHA
-# via the Checks API. That posting step is implemented in the sister workflow
-# pr-gate-rerun.yml (#10433 item-1): a `workflow_run` trigger on Variation Tag
-# Guard completion + `--post-check-run` in pr_gate.py POSTs the re-aggregated
-# conclusion onto github.event.workflow_run.head_sha. Kept in a separate file
-# so this workflow's pull_request trigger does not make the delivery canary
-# (derive_always_on_jobs) wait for a workflow_run-only job on every PR.
+# and to mergeState until the job also POSTs a check-run onto the PR head SHA
+# via the Checks API. That unblock path lives in the sister workflow
+# pr-gate-rerun.yml (#10433 item-1, #11519): a `workflow_run` trigger on guard
+# completion re-runs THIS workflow for the PR head SHA, so the fresh verdict
+# lands in the original check suite (a POSTed same-named check-run lands in a
+# foreign suite and GitHub ANDs the two -- measured 78 PRs blocked, #11519).
+# Kept in a separate file so this workflow's pull_request trigger does not
+# make the delivery canary (derive_always_on_jobs) wait for a
+# workflow_run-only job on every PR.
 
 on:
   pull_request:
     branches: [main]
+  # No inputs. This leg aggregates the ref it runs on, nothing else.
+  #
+  # It carried a `sha` input ('Head SHA to aggregate') that the run step never
+  # referenced -- the invocation below reads
+  # `github.event.pull_request.head.sha || github.sha`, so on a dispatch it
+  # always aggregated the default-branch commit and silently ignored the SHA it
+  # was handed. Worse, this job has no `--post-check-run`: its check-run lands
+  # on the commit it ran on, so even a wired input could not have moved a PR's
+  # mergeState. Removed rather than wired, because the input made
+  # `gh workflow run pr-gate.yml -f sha=<pr head>` look like the remedy for a
+  # stale gate verdict -- it is a no-op, and it was tried as such on #11532
+  # (2026-08-17) before the real path was found.
+  #
+  # To re-aggregate a PR head: dispatch pr-gate-rerun.yml (inputs pr_number +
+  # head_sha), which POSTs onto the PR head via `--post-check-run`. The
+  # scheduled sweep in pr-gate-stale-sweep.yml does it automatically.
   workflow_dispatch:
-    inputs:
-      sha:
-        description: 'Head SHA to aggregate (defaults to the current ref)'
-        required: false
-        default: ''
 
 permissions:
   contents: read
@@ -72,10 +85,12 @@ jobs:
     # `cancelled`, which is far less legible than "timed out waiting for X").
     # #11405: was 100 min while the script polled 90 -- under runner
     # starvation (11+/14 runners held by PR gate) the queue wait alone
-    # exceeded that budget. The pull_request leg now polls short and hands
-    # the terminal verdict to pr-gate-rerun.yml (triggered on completion of
-    # the slow guards), which re-aggregates and POSTs the check-run on the
-    # PR head SHA. Semantics unchanged: unsettled = FAIL = BLOCKED.
+    # exceeded that budget. The pull_request leg now polls short; when a slow
+    # guard settles after this leg concluded, pr-gate-rerun.yml re-runs this
+    # workflow for the PR head SHA (#11519: a rerun, never a same-named
+    # POSTed check-run -- GitHub ANDs every check-run bearing the required
+    # name, so the POSTed duplicate could only add failures). Semantics
+    # unchanged: unsettled = FAIL = BLOCKED.
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4

@@ -14,7 +14,7 @@ layout: cover
 
 Intelligence Artificielle -- S4
 
-**De la theorie au backtest en 5 minutes : plateforme Lean + agent IA codeur**
+**De la théorie au backtest en 5 minutes : plateforme Lean + agent IA codeur**
 
 - Plateforme QuantConnect : setup, algorithmes, framework Alpha
 - Workflow agentique : VSCode + Claude Code + MCP
@@ -64,7 +64,7 @@ layout: section
 </div>
 <div v-click="2">
 
-- **3. Implementation** : Coder la strategie dans Lean (Python)
+- **3. Implementation** : Coder la stratégie dans Lean (Python)
   - Initialize, OnData, gestion des ordres
 </div>
 <div v-click="3">
@@ -75,7 +75,7 @@ layout: section
 <div v-click="4">
 
 - **5. Paper Trading** : Tester en temps réel sans capital
-  - Derniere validation avant engagement de capital
+  - Dernière validation avant engagement de capital
 </div>
 <div v-click="5">
 
@@ -128,22 +128,22 @@ layout: section
 # Installation de l'Environnement (1/2)
 
 - **QuantConnect Cloud** (recommande pour demarrer)
-  - Creer un compte sur quantconnect.com
+  - Créer un compte sur quantconnect.com
   - Organisations : regroupez vos projets et collaborateurs
   - Noeuds de ressources : backtesting et live trading
 
 <div v-click="1">
 
-- **Lean-cli + VS Code** (pour le developpement local)
+- **Lean-cli + VS Code** (pour le développement local)
   - Synchronisation bidirectionnelle avec le Cloud
-  - Execution locale via containers Docker
+  - Exécution locale via containers Docker
 </div>
 <div v-click="2">
 
 - **Pourquoi le Cloud d'abord ?**
   - Zéro configuration, données incluses
   - Backtests rapides sans installation locale
-  - Creez un compte gratuit sur quantconnect.com
+  - Créez un compte gratuit sur quantconnect.com
 
 </div>
 
@@ -181,7 +181,7 @@ layout: section
 
 - **Sur QuantConnect**
   - My Account -- Request Token Information
-  - Creez un compte gratuit sur quantconnect.com
+  - Créez un compte gratuit sur quantconnect.com
 
 </div>
 <div v-click="2">
@@ -202,7 +202,7 @@ layout: section
 # Environnement d'Algorithme (1/2)
 
 - **QCAlgorithm** : la classe de base de tout algorithme Lean
-  - Modele **evenementiel** : votre code réagit aux données de marché, pas de lookahead possible
+  - Modèle **evenementiel** : votre code réagit aux données de marché, pas de lookahead possible
   - Le moteur garantit que vous ne voyez jamais le futur -- elimine le look-ahead bias par design
   - Strategic Development Framework integre (5 composants modulaires)
 
@@ -237,7 +237,7 @@ layout: section
 
 ---
 
-# Evenements (1/2)
+# Événements (1/2)
 
 - **initialize** : point d'entree de configuration
   - `set_start_date`, `set_end_date`, `set_cash`
@@ -258,7 +258,7 @@ layout: section
 
 ---
 
-# Evenements (2/2)
+# Événements (2/2)
 
 - **on_data (suite)** : logique de decision
   - Verification : `self.portfolio.invested`, seuils de temps
@@ -275,7 +275,7 @@ layout: section
 
 - **Autres points d'entree**
   - `on_securities_changed`, `on_end_of_day`, `on_warmup_finished`
-  - Evenements planifies via `self.schedule`
+  - Événements planifies via `self.schedule`
 
 </div>
 
@@ -301,7 +301,7 @@ layout: section
 
 - **Bonnes pratiques**
   - Toujours laisser au moins 7 jours avant aujourd'hui (données non finalisées)
-  - Definir la monnaie AVANT le cash initial
+  - Définir la monnaie AVANT le cash initial
   - Pour les crypto : `self.set_account_currency("BTC")`
 
 </div>
@@ -403,15 +403,15 @@ layout: section
   - **Alpha Creation** : *Quels signaux generer ?* (insights : direction, magnitude, confiance)
   - **Portfolio Construction** : *Comment allouer le capital ?* (equal weight, optimisation Markowitz, risk parity)
   - **Risk Management** : *Comment limiter les pertes ?* (drawdown max, trailing stop, exposure sectorielle)
-  - **Execution** : *Comment passer les ordres ?* (immediat, VWAP, spread-based)
+  - **Exécution** : *Comment passer les ordres ?* (immediat, VWAP, spread-based)
 
 <div v-click="1">
 
 - **Avantage du framework**
   - Chaque module est interchangeable et testable independamment
   - Possible de mixer primitives bas niveau et modules haut niveau
-  - Facilite la composition : plusieurs Alphas contribuent au meme portefeuille
-  - Exemples complets : `projects/Framework_Composite_*` (4 strategies composites)
+  - Facilite la composition : plusieurs Alphas contribuent au même portefeuille
+  - Exemples complets : `projects/Framework_Composite_*` (4 stratégies composites)
 
 </div>
 
@@ -486,7 +486,7 @@ layout: dense
 | **2 - Univers et Assets** | QC-Py-05 a 08 | Universe, Options, Futures, Multi-Asset |
 | **3 - Trading avance** | QC-Py-09 a 12 | Orders, Risk, Indicators, Backtesting |
 | **4 - Framework** | QC-Py-13 a 15 | Alpha, Portfolio, Optimization |
-| **5 - Donnees alternatives** | QC-Py-16 a 17 | Alternative Data, Sentiment |
+| **5 - Données alternatives** | QC-Py-16 a 17 | Alternative Data, Sentiment |
 | **6 - ML classique** | QC-Py-18 a 21 | Features, Classification, Regression, Portfolio-ML |
 | **7 - Deep Learning** | QC-Py-22 a 25 | LSTM, Unsupervised, NLP, RL |
 | **8 - Production** | QC-Py-26 a 28 | LLM-Signals, Deployment, Regime Detection |
@@ -494,7 +494,7 @@ layout: dense
 <div v-click="1">
 
 - **67 projets** dans `QuantConnect/projects/` : des EMA Crossover aux composites multi-Alpha (meilleur Sharpe : 1.16)
-- **Progression** : chaque phase suppose la maitrise des precedentes
+- **Progression** : chaque phase suppose la maitrise des précédentes
 - **Chemin rapide** : Phases 1-3 pour les fondamentaux (~8h), Phase 4 pour le framework (~3h)
 
 </div>
@@ -547,7 +547,7 @@ layout: section
 - **Pourquoi explorer avant de coder ?**
   - Valider votre intuition sur les données avant d'ecrire un algorithme
   - Visualiser les correlations, la distribution des returns, les regimes
-  - Eviter de coder une strategie sur une idee fausse
+  - Eviter de coder une stratégie sur une idee fausse
 
 </div>
 <div v-click="2">
@@ -561,7 +561,7 @@ layout: section
 
 ---
 
-# QuantBook : l'API de Donnees
+# QuantBook : l'API de Données
 
 ```python
 from QuantConnect.Research import *
@@ -582,7 +582,7 @@ df_spy = history.loc["SPY"]
 
 <div v-click="1">
 
-- **Difference cle avec `QCAlgorithm.History()`** :
+- **Différence cle avec `QCAlgorithm.History()`** :
   - QuantBook retourne un **DataFrame pandas** directement
   - Pas de lookahead protection → vous etes responsable de ne pas biaiser
 
@@ -658,14 +658,14 @@ layout: section
 - **Exemples** :
   - Claude Code (Anthropic) -- celui que nous utilisons
   - GitHub Copilot, Cursor, Windsurf
-  - Tous partagent le meme principe : contexte (votre code) + action (modifications)
+  - Tous partagent le même principe : contexte (votre code) + action (modifications)
 </div>
 <div v-click="2">
 
 - **Pour le trading quant** :
-  - L'agent connait l'API QuantConnect, les patterns de strategie, les metriques
+  - L'agent connait l'API QuantConnect, les patterns de stratégie, les metriques
   - Il peut ecrire un algorithme complet, le compiler, le backtester
-  - Il iterere sur les resultats pour ameliorer la strategie
+  - Il iterere sur les résultats pour ameliorer la stratégie
 
 </div>
 
@@ -714,7 +714,7 @@ layout: section
 
 ---
 
-# Le Workflow Agentique en 5 Etapes
+# Le Workflow Agentique en 5 Étapes
 
 ```
 1. IDEE          "Je veux une strategie momentum sur SPY"
@@ -790,7 +790,7 @@ et backteste-le sur 2015-2025 avec 100k USD"
 1. Lit le fichier `main.py` du projet local
 2. Appelle `create_project` dans l'organisation QuantConnect
 3. Appelle `create_file` pour uploader `main.py`
-4. Appelle `create_compile` et attend le resultat
+4. Appelle `create_compile` et attend le résultat
 5. Si erreur de syntaxe : corrige et recompile
 
 </div>
@@ -802,7 +802,7 @@ et backteste-le sur 2015-2025 avec 100k USD"
 **Étape backtest** :
 
 - L'agent appelle `create_backtest(projectId, compileId, name)`
-- Puis `read_backtest(projectId, backtestId)` pour les resultats
+- Puis `read_backtest(projectId, backtestId)` pour les résultats
 
 <div v-click="1">
 
@@ -819,8 +819,8 @@ et backteste-le sur 2015-2025 avec 100k USD"
 </div>
 <div v-click="2">
 
-- **Iteration automatique** : l'agent analyse les metriques, ajuste le code, rebackteste
-- **Votre role** : observer, poser des questions, orienter l'agent
+- **Itération automatique** : l'agent analyse les metriques, ajuste le code, rebackteste
+- **Votre rôle** : observer, poser des questions, orienter l'agent
 
 </div>
 
@@ -831,14 +831,14 @@ et backteste-le sur 2015-2025 avec 100k USD"
 - **Peut faire** :
   - Ecrire un algorithme complet a partir d'une description
   - Corriger les erreurs de syntaxe et de compilation
-  - Lancer des backtests et lire les resultats
+  - Lancer des backtests et lire les résultats
   - Proposer des ameliorations basees sur les metriques
   - Adapter les paramètres pour optimiser les performances
 <div v-click="1">
 
 - **Ne peut pas faire** :
   - Garantir un Sharpe > 2 (surapprentissage = danger)
-  - Remplacer votre jugement sur la coherence de la strategie
+  - Remplacer votre jugement sur la coherence de la stratégie
   - Penser a votre place : vous devez orienter l'agent
   - Detecter tous les biais (look-ahead, survivorship, etc.)
 
@@ -862,7 +862,7 @@ layout: section
 |---------|----------|-----------------------|
 | **Price-based** | return 1j/5j/20j, log-return, vol 30j | Momentum, regime |
 | **Indicator-based** | RSI(14), SMA ratio, EMA ratio, MACD | Overbought, tendance |
-| **Labeling** | rendement futur 10j > seuil → 1/0 | Target du modele |
+| **Labeling** | rendement futur 10j > seuil → 1/0 | Target du modèle |
 
 </div>
 <div v-click="2">
@@ -904,7 +904,7 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 
 <div v-click="1">
 
-- Re-entrainement automatique chaque mois sur fenetre glissante de 4 ans
+- Re-entrainement automatique chaque mois sur fenêtre glissante de 4 ans
 - Regime bull/bear detecte par SPY vs SMA200
 
 </div>
@@ -926,8 +926,8 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 <div v-click="1">
 
 - **Lecon cle** : le ML seul ne suffit pas — v3 (ML naif) est pire que v2b (momentum pur)
-- L'iteration sur le feature engineering et le regime fait passer de 0.29 a 0.47
-- Une règle simple bien calibrée (Trend-Following) bat le ML sur ce probleme
+- L'itération sur le feature engineering et le regime fait passer de 0.29 a 0.47
+- Une règle simple bien calibrée (Trend-Following) bat le ML sur ce problème
 
 </div>
 <div v-click="2">
@@ -958,7 +958,7 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 
 - **Pour votre projet** : si vous choisissez ML, partez du template Advanced
   - `templates/advanced/main.py` : RF sur BTCUSDT, 100 arbres, re-entrainement mensuel
-  - Commencez simple (5 features), ajoutez par iteration
+  - Commencez simple (5 features), ajoutez par itération
 
 </div>
 
@@ -968,7 +968,7 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 layout: section
 ---
 
-# Resultats ML — Curriculum V2
+# Résultats ML — Curriculum V2
 
 <br>
 
@@ -1095,7 +1095,7 @@ layout: section
 
 <div v-click="1">
 
-> Un resultat "promising" sur 1 seed x 1 fold = invalide. Seule la replication cross-seed compte.
+> Un résultat "promising" sur 1 seed x 1 fold = invalide. Seule la replication cross-seed compte.
 
 </div>
 
@@ -1107,7 +1107,7 @@ layout: section
 
 ---
 
-# Resultats Composites Avances (1/2)
+# Résultats Composites Avances (1/2)
 
 - **C4.1 : TrendWeather Composite**
   - Combinaison : Trend-Following + Weather signals
@@ -1127,14 +1127,14 @@ layout: section
 
 ---
 
-# Resultats Composites Avances (2/2)
+# Résultats Composites Avances (2/2)
 
 - **C4.3 : Multi-Alpha Ensemble** -- architecture 5 couches complete
   - **Universe** : Top 50 par volume (rebalance hebdo)
   - **Alphas** : EMA Cross + RSI + MACD (3 signaux independants)
   - **Portfolio** : BlackLittermanOptimization (pondere par confiance)
   - **Risk** : MaximumSectorExposure + MaximumDrawdownPercentPortfolio
-  - **Execution** : VolumeWeightedAveragePrice (minimise impact)
+  - **Exécution** : VolumeWeightedAveragePrice (minimise impact)
 
 <div v-click="1">
 
@@ -1144,7 +1144,7 @@ layout: section
 | + Alpha RSI | 0.62 | +0.17 |
 | + PCM BlackLitterman | 0.89 | +0.27 |
 | + Risk Management | 1.05 | +0.16 |
-| **+ Execution VWAP** | **1.31** | **+0.26** |
+| **+ Exécution VWAP** | **1.31** | **+0.26** |
 
 </div>
 <div v-click="2">
@@ -1196,15 +1196,15 @@ layout: section
 | Critere | Poids | Minimum requis |
 |---------|:-----:|----------------|
 | **Backtest** | 30% | Sharpe > 0, periode > 2 ans, comparaison benchmark |
-| **Strategie** | 30% | Logique claire, 2+ indicateurs, stop-loss present |
-| **Presentation** | 20% | Graphiques de resultats, timing 10 min +/- 1 min |
-| **Code** | 20% | Compile sans erreur, README, parametres visibles |
+| **Stratégie** | 30% | Logique claire, 2+ indicateurs, stop-loss present |
+| **Presentation** | 20% | Graphiques de résultats, timing 10 min +/- 1 min |
+| **Code** | 20% | Compile sans erreur, README, paramètres visibles |
 
 </div>
 <div v-click="2">
 
 - **Workflow recommande pour le projet** :
-  1. Choisir une strategie de base parmi les projets du depot
+  1. Choisir une stratégie de base parmi les projets du depot
   2. Utiliser l'agent pour personnaliser (actifs, périodes, seuils)
   3. Valider manuellement : relire le code, verifier les metriques
   4. Documenter vos choix et limites identifiees
@@ -1224,7 +1224,7 @@ layout: section
 
 - **Overfitting** : Sharpe > 3 sur un backtest = probablement surajuste
   - Tester sur des périodes différentes (in-sample / out-of-sample)
-  - Un bon Sharpe réel : 0.5-1.5 pour une strategie robuste
+  - Un bon Sharpe réel : 0.5-1.5 pour une stratégie robuste
 </div>
 <div v-click="2">
 
@@ -1269,5 +1269,5 @@ Jean-Sylvain Boige -- jsboige@myia.org
 - **Claude Code** : claude.ai/code
 - **Documentation QC** : quantconnect.com/docs
 
-> Le trading algorithmique est un domaine ou la pratique precede la theorie.
-> Le meilleur apprentissage : modifiez une strategie existante, backtestez, analysez les resultats, iterez.
+> Le trading algorithmique est un domaine ou la pratique precede la théorie.
+> Le meilleur apprentissage : modifiez une stratégie existante, backtestez, analysez les résultats, iterez.
