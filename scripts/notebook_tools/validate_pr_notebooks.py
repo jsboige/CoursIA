@@ -183,7 +183,11 @@ def get_kernel_name(nb_path: Path) -> str:
 def _output_text(output: dict) -> str:
     """Concatenate the textual payload of an output so text-rendered errors
     (Lean/alectryon) can be scanned. Covers display_data / execute_result
-    (text/plain + text/html) and stream outputs."""
+    (text/plain + text/html), stream outputs, and the IPython-native
+    ``output_type: "error"`` (ename/evalue/traceback — emitted by kernels
+    including C# / .NET Interactive on exception, needed for the #11756
+    mirror: a `//`-collapsed cell whose kernel threw an error is not a
+    comment, regardless of the source-line shape)."""
     parts = []
     otype = output.get("output_type")
     if otype in ("display_data", "execute_result"):
@@ -194,6 +198,16 @@ def _output_text(output: dict) -> str:
     elif otype == "stream":
         t = output.get("text", "")
         parts.append("".join(t) if isinstance(t, list) else str(t))
+    elif otype == "error":
+        # IPython error format: ename + evalue + traceback[]. The traceback
+        # itself contains "Exception" strings that re-fire the
+        # ("error" in text and "no errors" not in text) branch reliably, but
+        # the explicit ename/evalue keep the test deterministic for short
+        # tracebacks (e.g. .NET Interactive kernels emit terse tracebacks).
+        parts.append(str(output.get("ename", "")))
+        parts.append(str(output.get("evalue", "")))
+        for line in output.get("traceback", []) or []:
+            parts.append("".join(line) if isinstance(line, list) else str(line))
     return " ".join(parts)
 
 
@@ -300,8 +314,37 @@ def validate_notebook(nb_path: Path) -> dict:
         else:
             comment_prefix = "#"
         lines = [l.strip() for l in source.split("\n") if l.strip()]
+        # A real `--`/`//`/`#` comment cell carries NO error output (true
+        # transition notes, not executable). The collapse pitfall of #11756:
+        # if `source` is a single list element without trailing "\n",
+        # `source.split("\n")` yields one line — and that ONE line, starting
+        # with `--` by accident or by very-short typo, would silently skip an
+        # entire cell whose outputs carry `severity: error`. The discriminant
+        # is therefore the OUTPUT, not the source shape alone. If the cell
+        # produced error payloads (Lean REPL `{"messages":[{"severity":"error"
+        # , ...}]}`, or printable Lean error text in stream/output), it is a
+        # code cell that FAILED — never a comment. Mirror the scan_c1
+        # no-cell-output-scrubbing rule (#6 of [secrets-hygiene.md]): we don't
+        # skip on shape, we skip on (shape AND outcome). Conversion of #11665
+        # lives separately for `.ipynb` `_output.ipynb` parity (c.147) — the
+        # present carve-out only widens the comment-skip when an error
+        # accompanies it.
         if all(l.startswith(comment_prefix) for l in lines):
-            continue
+            outputs = cell.get("outputs", [])
+            has_error_output = False
+            if outputs:
+                for out in outputs:
+                    raw = json.dumps(out)
+                    text = _output_text(out).lower() if out else ""
+                    if (
+                        '"severity":"error"' in raw
+                        or "unexpected" in text
+                        or ("error" in text and "no errors" not in text)
+                    ):
+                        has_error_output = True
+                        break
+            if not has_error_output:
+                continue
 
         result["total_code"] += 1
 

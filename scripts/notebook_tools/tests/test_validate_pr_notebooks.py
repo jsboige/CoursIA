@@ -650,6 +650,101 @@ class TestValidateNotebookLeanTextErrors:
         result = validate_notebook(nb)
         assert result["passed"] is True
 
+    # ----------------------------------------------------------------- #11756
+    # Source-list-collapse pitfall: a Lean cell whose `source` is a single
+    # list element with no trailing "\n" collapses to ONE line under
+    # `source.split("\n")`. If that one line starts with `--`, the gate
+    # classified the entire cell as a comment and skipped it — even when
+    # its outputs carry `severity: error`. The "comment-only" discriminant
+    # must therefore also pass the OUTPUT shape, not just the source shape.
+
+    def test_11756_lean_source_collapse_with_error_not_skipped(self, tmp_path):
+        """Lean cell whose source is single-element (no '\n') starting with
+        `--` but whose output is a Lean error message — NOT a comment, must
+        be counted in `total_code` and flagged."""
+        # Source as a single list element without trailing newline → collapse.
+        # The cell is a real attempt, not a comment, BECAUSE the output is an
+        # error payload.
+        err_out = {
+            "output_type": "display_data",
+            "data": {"text/plain": [
+                '{"messages": [{"severity": "error", "pos": {"line": 1, '
+                '"column": 1}, "data": "unexpected end of input"}]}',
+            ]},
+        }
+        cell = {
+            "cell_type": "code",
+            "source": ["-- some single-line typo that happens to start with --"],
+            "execution_count": 2,
+            "outputs": [err_out],
+        }
+        nb = _write_nb(tmp_path / "test.ipynb", [cell],
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        # BEFORE the fix: this cell was silently skipped (treated as
+        # comment), `total_code == 0`, `passed is True`. AFTER the fix:
+        # counted as code, error output blocks the notebook.
+        assert result["total_code"] == 1, (
+            f"#11756 collapse: cell with error output was skipped "
+            f"(total_code={result['total_code']})"
+        )
+        assert result["passed"] is False
+        assert any("Lean toolchain error" in e for e in result["errors"])
+
+    def test_11756_lean_real_comment_cell_still_skipped(self, tmp_path):
+        """A genuine Lean comment cell — multi-line, all `--`, NO output — is
+        still a true comment and must remain skipped (fix mustn't regress the
+        #5151 carve-out)."""
+        cell = {
+            "cell_type": "code",
+            "source": [
+                "--\n",
+                "-- Description de la transition, aucun code exécutable.\n",
+                "-- (commentaire multi-ligne, pas une cellule de code effective)",
+            ],
+            "execution_count": None,
+            "outputs": [],
+        }
+        nb = _write_nb(tmp_path / "test.ipynb", [cell],
+                       kernelspec={"name": "lean4", "language": "lean4"})
+        result = validate_notebook(nb)
+        assert result["total_code"] == 0
+        assert result["passed"] is True
+
+    def test_11756_csharp_collapse_with_error_not_skipped(self, tmp_path):
+        """Same carve-out for C#: a `//`-prefixed collapse-skip must NOT
+        silence a cell whose kernel threw an error. For .NET the H.1 error
+        output is *advisory* (`SKIP_EXEC_KERNELS` policy: CI cannot Papermill-
+        exec a .NET kernel), so the verdict stays `passed=True` — but the
+        cell MUST still be counted as ``total_code == 1`` (the structural
+        signal: this is real code, not a comment). The point of #11756 was
+        not to flip .NET from green→red but to prevent comment-skip from
+        silencing `total_code` entirely."""
+        err_out = {
+            "output_type": "error",
+            "ename": "Exception",
+            "evalue": "boom",
+            "traceback": ["RuntimeError: boom"],
+        }
+        cell = {
+            "cell_type": "code",
+            "source": ["// single-line typo that happens to start with //"],
+            "execution_count": 1,
+            "outputs": [err_out],
+        }
+        nb = _write_nb(tmp_path / "test.ipynb", [cell],
+                       kernelspec={"name": ".net-csharp", "language": "C#"})
+        result = validate_notebook(nb)
+        assert result["total_code"] == 1, (
+            "#11756 mirror: C# '//'-collapsed cell with error output was skipped"
+        )
+        # .NET .net-csharp is in SKIP_EXEC_KERNELS → H.1 advisory → passed=True
+        # is the documented behaviour. The carve-out does NOT change the
+        # advisory policy; it only ensures the cell is counted. The error is
+        # still surfaced as an "advisory" entry for the reviewer to spot.
+        assert result["passed"] is True
+        assert any("advisory" in e for e in result["errors"])
+
 
 # ---------------------------------------------------------------------------
 # validate_notebook — blank-render forensic verdict (#6971 / L644-L1)
