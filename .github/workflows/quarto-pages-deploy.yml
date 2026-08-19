@@ -44,7 +44,10 @@ on:
 
 # Annule les runs obsolètes pour économiser des minutes CI (mêmes pushes en rafale)
 concurrency:
-  group: pages-deploy
+  # Cle portee par github.ref pour eviter qu'un push sur main n'annule un run
+  # PR en cours (hazard de production : sans la reference, les runs push et PR
+  # partagent la meme cle et s'annulent entre eux). #11616 rouge 2.
+  group: pages-deploy-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -52,6 +55,11 @@ permissions:
 
 jobs:
   build:
+    # Garde : ne tourne que sur push main (le job `validate-pr` porte la voie PR).
+    # Sans cette garde, build + validate-PR tournent en double sur PR, et deploy
+    # cascadant sur build se fait rejeter par la protection env (refs/pull/.../merge
+    # non autorise). #11616 rouge 1.
+    if: github.event_name == 'push'
     name: Build Quarto site
     runs-on: ubuntu-latest
     permissions:
@@ -141,6 +149,11 @@ jobs:
           # name: pas nécessaire, l'action lit le path
 
   deploy:
+    # Garde explicite : actions/deploy-pages ne doit PAS tourner sur PR
+    # (refs/pull/.../merge rejete par la protection env github-pages).
+    # Boucle avec `if: github.event_name == 'push'` sur `build` : deploy
+    # herite par needs, mais la garde ici est defensive. #11616 rouge 1.
+    if: github.event_name == 'push'
     name: Deploy to GitHub Pages
     needs: build
     runs-on: ubuntu-latest
