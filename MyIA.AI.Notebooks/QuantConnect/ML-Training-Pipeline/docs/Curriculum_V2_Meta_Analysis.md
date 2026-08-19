@@ -24,7 +24,7 @@ Both KEEPERS use the **anti-FAANG/Mag7 universe** (SPY, TLT, XLF, XLK, XLE, XLV,
 | Sub-stage | Model | Verdict | Key Metric |
 |-----------|-------|---------|------------|
 | M12 HAR-RV-J | HAR + jump component | **BEATS** | p=0.0015, 56/84 delta-Sharpe positive |
-| M15 LSTM h=32 | 32-day horizon LSTM | **BEATS** | p=0.0107, 53/84 delta-Sharpe positive |
+| M15 LSTM h=32 | 32-day horizon LSTM | **NO BEATS** | §C re-run (#11395) : p=0.372, edge MSE negatif, claim retractee |
 | M15 Long-Horizon | 8/16 tested | **BEATS** | XRP h=66 (13.5σ), ETH h=132 (5.0σ), BTC h=22/66 |
 | All others | MLP/RF/LASSO/GARCH/Hybrid | NO BEATS | dir_acc ≠ edge (0.93 direction but -0.4 Sharpe) |
 
@@ -163,7 +163,7 @@ Regime switches: ~5/year
 | Stage | Verdict | Delta | Seeds | Status |
 |-------|---------|-------|-------|--------|
 | S1 M12 HAR-RV-J | BEATS | — | 84 | KEEPER |
-| S1 M15 LSTM h=32 | BEATS | — | 84 | KEEPER |
+| S1 M15 LSTM h=32 | NO BEATS | — | 84 | RETIRED (#11395) |
 | S2 DM Ensemble | NO BEATS | -0.068 | 0/4 | CLOSED |
 | S2 GSP Cross-Asset | NO BEATS | — | — | CLOSED |
 | S3 HMM Regime | **BEATS** | +0.669 | 4/4 | **KEEPER** |
