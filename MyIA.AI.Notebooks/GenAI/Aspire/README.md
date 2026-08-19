@@ -19,6 +19,8 @@ paradigme de test absent du dépôt, démontré réel ».
 | [`GenAiStackReel.AppHost-wt2/apphost.cs`](GenAiStackReel.AppHost-wt2/apphost.cs) | Copie pour la 2e instance isolée |
 | [`01-Aspire-Orchestration-GenAi.ipynb`](01-Aspire-Orchestration-GenAi.ipynb) | Notebook .NET Interactive : lancement `--isolated` de **deux instances simultanées**, `aspire describe`/`logs`, transcription réelle par le service orchestré, 3 exercices |
 | [`02-Aspire-GenAiStack-Reel.ipynb`](02-Aspire-GenAiStack-Reel.ipynb) | Notebook #10857 : deux instances isolées de la pile réelle, `describe`/`logs`, **appels traversants authentifiés** (complétion vLLM `qwen3.6-35b-a3b`, `system_stats` ComfyUI), 3 exercices |
+| [`04-Aspire-Streaming-Agent.ipynb`](04-Aspire-Streaming-Agent.ipynb) | Notebook #11516 (A1+A2) : le pattern **agent streaming** en .NET — `System.Threading.Channels` (canaux inbound/outbound, backpressure), `BackgroundService` (cycle de vie), minimal API typée `TypedResults` — 3 exercices |
+| [`StreamingAgent.App/`](StreamingAgent.App/) | Projet .NET 10 du notebook 04 : un service d'agent réel (BackgroundService + Channels) exposé par des endpoints typés `/health`, `/greet`, `/stream` |
 | [`05-Aspire-Tests-Integration.ipynb`](05-Aspire-Tests-Integration.ipynb) | Notebook #11516 Grain 2 (axes A5/A6/A7) : **tests d'intégration modernes** — TUnit + Microsoft Testing Platform, Testcontainers Postgres 18 jetable à port aléatoire, isolation par rollback transactionnel, filtres `--treenode-filter`, 3 exercices |
 | [`IntegrationTests/`](IntegrationTests/) | Projet de tests auto-contenu (TUnit 1.65 + Testcontainers.PostgreSql 4.14 + EF Core 10 sur `net10.0`) : `dotnet test` démarre un vrai Postgres 18, 5/5 tests verts, conteneur auto-purgé |
 | [`assets/echantillon-test-fr.wav`](assets/echantillon-test-fr.wav) | Échantillon audio FR de test (synthèse SAPI Windows) envoyé au service orchestré |
@@ -30,6 +32,7 @@ paradigme de test absent du dépôt, démontré réel ».
 - GPU NVIDIA (le conteneur exige `--gpus all` ; la config est dans l'AppHost, `CUDA_VISIBLE_DEVICES=1` = RTX 3090 externe)
 - Cache HuggingFace hôte contenant le modèle `faster-whisper-large-v3-turbo` (sinon, premier appel = téléchargement ~1.6 Go, une seule fois)
 - Pour le notebook 02 (#10857) : la **pile réelle** joignable — conteneur `comfyui-qwen` démarré (8188) et `VLLM_API_KEY` rendu dans `GenAI/.env` (modèle : [`.env.example`](../.env.example)) via `scripts/secrets/render_envs.py` depuis `master.env`
+- Pour le notebook 04 (#11516) : **aucun Docker requis** — `StreamingAgent.App` compile avec le SDK .NET 10 seul (`dotnet build`), puis le notebook le lance et l'interroge (port local 5128)
 - Pour le notebook 05 / `IntegrationTests/` (#11516 Grain 2) : Docker suffit — l'image `postgres:18` est tirée au premier `dotnet test` (~30 s), les conteneurs de test s'auto-purgent
 
 ## Démarrage rapide
@@ -64,4 +67,5 @@ sans collision — ports randomisés, noms de conteneurs suffixés.
 - Issue [#10838](https://github.com/jsboige/CoursIA/issues/10838) · Issue [#10857](https://github.com/jsboige/CoursIA/issues/10857) · Epic [#10473](https://github.com/jsboige/CoursIA/issues/10473)
 - Digestion [#11516](https://github.com/jsboige/CoursIA/issues/11516) (Parts 3-5 : streaming agent, tests d'intégration, observabilité) — série source [chrlschn.dev](https://chrlschn.dev/blog/2026/08/the-unexpected-ai-stack-csharp-dotnet-part-4/)
 - Grain #10474 : backend d'observabilité OTLP [`aspire-otel/`](../SemanticKernel/aspire-otel/) (même pattern SDK file-based)
+- Observabilité de la série SemanticKernel : [`04-Filters-Observability.ipynb`](../SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb) (même famille A9, application directe au service streaming)
 - Pile GenAI : [`docker-configurations/`](../../../docker-configurations/)
