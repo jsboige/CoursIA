@@ -241,6 +241,32 @@ _HTML_ATTR_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Zone grise FR/EN : formes du dictionnaire qui sont AUSSI des mots anglais valides
+# (`strategies`, `execution`, `role`, `iteration`...). Mesure #11508 (commentaire
+# de l'inventaire) : ~15 formes, dont les FP reels ASPIC *Structured Preferences*,
+# Boole *Mathematical Theories*, **Value/Policy Iteration**. Une cure sans garde
+# accentue une ligne entierement anglaise (« The strategies of execution and the
+# role of the model » -> « The stratégies of exécution and the rôle of the model »,
+# mesure firsthand sur l'adaptateur #11548). La detection NEGATIVE (chercher des
+# mots-outils anglais) sous-detecte : « - **Value Iteration** » n'en porte aucun.
+# On exige donc la PREUVE POSITIVE d'un contexte francais (mot-outil univoquement
+# FR sur la ligne) pour curer une forme en collision — doctrine
+# accent-cure-defense-in-depth : ne pas toucher vaut mieux que risquer.
+_EN_COLLIDING_FORMS = {
+    "strategies", "execution", "executions", "experience", "experiences",
+    "preferences", "preference", "role", "roles", "selection",
+    "iteration", "iterations", "theories", "theorie", "scenarios",
+    "element", "elements", "difference", "differences",
+    "operations", "operation", "categories", "categorie",
+    "theme", "themes", "different", "generation", "generations",
+    "scenario", "resultat", "resultats",
+}
+_EN_COLLIDING = {k for k in ACCENT_PAIRS if k in _EN_COLLIDING_FORMS}
+_FR_MARKER_RE = re.compile(
+    r"\b(le|la|les|des|du|de|une|et|ou|dans|pour|sur|avec|par|au|aux|ce|cet|"
+    r"cette|ces|sont|nous|vous|il|elle|ils|elles|qui|que|quoi|dont|mais|donc|"
+    r"puis|en)\b")
+
 
 def _fence_mask(lines: list[str]) -> list[bool]:
     """True pour chaque ligne d'un bloc de code, delimiteurs inclus.
@@ -267,11 +293,19 @@ def _frontmatter_and_fence_mask(lines: list[str]) -> list[bool]:
     Le fence est suivi en premier : un `---` a l'interieur d'un bloc de code n'est
     pas un separateur de slide.
 
-    Un segment (entre deux `---`) est reconnu comme frontmatter quand *toutes* ses
-    lignes non vides sont des cles YAML ou des continuations indentees. Un segment
-    qui porte la moindre ligne de prose n'en est pas un — la direction sure : dans
-    le doute, on ne protege pas plus large que necessaire, mais on ne cure jamais
-    un segment dont chaque ligne ressemble a de la configuration.
+    Un segment (entre deux `---`) est reconnu comme frontmatter quand sa premiere
+    ligne non vide est une cle YAML et que toutes les suivantes sont cles ou
+    continuations indentees. Un segment qui porte la moindre ligne de prose n'en
+    est pas un — la direction sure : dans le doute, on ne protege pas plus large
+    que necessaire, mais on ne cure jamais un segment dont chaque ligne ressemble
+    a de la configuration.
+
+    L'exigence sur la PREMIERE ligne non vide est le correctif d'un faux negatif
+    mesure (po-2024, 2026-08-18) : `_YAML_CONT_RE` matche aussi les items de
+    liste (`^\\s*-\\s`), donc un segment fait uniquement de puces — une slide
+    sans phrase, cas frequent — satisfaisait "toutes lignes = cles ou
+    continuations" et etait protege en bloc : 0 cure la ou la prose etait
+    accentuable. Un frontmatter reel de Slidev commence TOUJOURS par une cle.
     """
     n = len(lines)
     # 1. fences
@@ -285,15 +319,19 @@ def _frontmatter_and_fence_mask(lines: list[str]) -> list[bool]:
         body = [lines[i] for i in seg if lines[i].strip()]
         if not body:
             continue
-        if all(_YAML_KEY_RE.match(ln) or _YAML_CONT_RE.match(ln) for ln in body):
+        if not _YAML_KEY_RE.match(body[0]):
+            continue
+        if all(_YAML_KEY_RE.match(ln) or _YAML_CONT_RE.match(ln) for ln in body[1:]):
             for i in seg:
                 protected[i] = True
     return protected
 
 
 def _cure_markdown_line(line: str) -> tuple[str, int]:
-    """Cure une ligne de markdown pur : masque code inline + attributs HTML, puis
-    delegue au coeur `_cure_line` (qui protege deja les cibles de liens).
+    """Cure une ligne de markdown pur : masque code inline + attributs HTML,
+    applique la zone grise FR/EN (preuve positive de contexte francais pour les
+    formes en collision), puis delegue au coeur `_cure_line` (qui protege deja
+    les cibles de liens).
     """
     spans: list[str] = []
 
@@ -303,6 +341,16 @@ def _cure_markdown_line(line: str) -> tuple[str, int]:
 
     masked = _INLINE_CODE_RE.sub(_mask, line)
     masked = _HTML_ATTR_RE.sub(_mask, masked)
+    if _EN_COLLIDING and not _FR_MARKER_RE.search(masked):
+        # Pas de preuve de contexte francais : neutraliser les formes en
+        # collision en les masquant (le coeur ne les verra pas).
+        def _mask_form(m):
+            spans.append(m.group(0))
+            return "\x00MD{}\x00".format(len(spans) - 1)
+        masked = _CURE_RE.sub(
+            lambda m: _mask_form(m) if m.group(0).lower() in _EN_COLLIDING
+            else m.group(0),
+            masked)
     cured, n = _cure_line(masked)
     for i, original in enumerate(spans):
         cured = cured.replace("\x00MD{}\x00".format(i), original, 1)

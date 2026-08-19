@@ -372,6 +372,24 @@ la distance entre ses outils et le schéma de persistance.
 > métier ») se lit en négatif : les 24 outils métier de l'installation
 > client viennent du plugin custom, consommables par le même protocole.
 
+> **Notebook compagnon (face autorisation).**
+> [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](autour-du-consent-oauth-du-serveur-mcp.ipynb)
+> répond à la question que le précédent laisse ouverte : un client
+> tiers réel (Claude Desktop, un IDE) n'a pas l'application password
+> de l'admin — et ne doit pas l'avoir. Le plugin embarque un serveur
+> d'autorisation **OAuth 2.0 complet** dans les mêmes routes `mcp/v1` :
+> découverte (RFC 9728 puis 8414), enregistrement dynamique (RFC 7591,
+> client public sans secret), **PKCE exigé** (RFC 7636), et un
+> consentement **réservé aux administrateurs** — un compte editor
+> dédié le mesure à 400 : « Only administrators can authorize MCP
+> applications ». Le flow complet est mécanisé (consent admin,
+> nonce maison `_mwai_nonce`, refus par défaut `action=deny`), le code
+> échangé contre un jeton borné (`expires_in` mesuré), et l'appel MCP
+> passe au bearer délégué — avant révocation et mesure de la mort.
+> C'est la réponse du protocole à la première remarque de sécurité
+> ci-dessous : la délégation bornée et consentie, en alternative au
+> jeton unique porteur de tout.
+
 ### Comparaison OWUI
 
 C'est ici qu'AI-Engine se distingue le plus franchement. Open WebUI

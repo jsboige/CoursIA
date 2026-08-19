@@ -45,12 +45,23 @@ name: PR gate
 on:
   pull_request:
     branches: [main]
+  # No inputs. This leg aggregates the ref it runs on, nothing else.
+  #
+  # It carried a `sha` input ('Head SHA to aggregate') that the run step never
+  # referenced -- the invocation below reads
+  # `github.event.pull_request.head.sha || github.sha`, so on a dispatch it
+  # always aggregated the default-branch commit and silently ignored the SHA it
+  # was handed. Worse, this job has no `--post-check-run`: its check-run lands
+  # on the commit it ran on, so even a wired input could not have moved a PR's
+  # mergeState. Removed rather than wired, because the input made
+  # `gh workflow run pr-gate.yml -f sha=<pr head>` look like the remedy for a
+  # stale gate verdict -- it is a no-op, and it was tried as such on #11532
+  # (2026-08-17) before the real path was found.
+  #
+  # To re-aggregate a PR head: dispatch pr-gate-rerun.yml (inputs pr_number +
+  # head_sha), which POSTs onto the PR head via `--post-check-run`. The
+  # scheduled sweep in pr-gate-stale-sweep.yml does it automatically.
   workflow_dispatch:
-    inputs:
-      sha:
-        description: 'Head SHA to aggregate (defaults to the current ref)'
-        required: false
-        default: ''
 
 permissions:
   contents: read

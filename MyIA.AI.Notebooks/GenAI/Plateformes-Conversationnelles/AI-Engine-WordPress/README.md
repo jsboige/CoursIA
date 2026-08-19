@@ -200,6 +200,22 @@ silencieux** du parser PHP (observable ou neutralisé ?) et la nature
 de la contrainte de format — prompt seul ou `response_format` au
 niveau fil, départagée par comparaison directe avec le moteur.
 État initial restauré à l'identique.
+[`autour-du-consent-oauth-du-serveur-mcp.ipynb`](autour-du-consent-oauth-du-serveur-mcp.ipynb)
+reprend la question laissée ouverte par le quatrième notebook : comment
+un client tiers se connecte-t-il **sans les clés de l'admin** ? La
+réponse est un serveur d'autorisation OAuth 2.0 embarqué dans les
+mêmes routes `mcp/v1` — deux documents de découverte (RFC 9728 puis
+8414), enregistrement dynamique (RFC 7591, client public sans secret),
+puis l'**escalier des refus** mesuré marche par marche : PKCE exigé
+(RFC 7636), consentement réservé aux administrateurs (un compte editor
+dédié le mesure à 400). Le consentement admin est mécanisé — formulaire
+portant le nonce maison `_mwai_nonce` et refus **par défaut**
+(`action=deny` surchargé par le bouton Approve) — puis code → token
+(PKCE S256, `expires_in` mesuré) → appel MCP réel au bearer délégué.
+Le notebook clôt par le contraste des trois authentifications croisées
+par la série : application password (identité pleine), token OAuth
+(délégation bornée et consentie), nonce visiteur (anti-CSRF sans
+identité), puis révoque son jeton et mesure la mort (401).
 
 ---
 
@@ -336,6 +352,10 @@ attendues.
   environnements et matrice d'usages multi-provider : catalogues, connexions, bascules, et le PUT déguisé de settings/update
 - [`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](parler-au-chatbot-en-visiteur-par-l-api.ipynb) —
   la face navigateur du visiteur : page sans jetons, session bootstrap, conversation anonyme au nonce
+- [`obtenir-des-donnees-structurees-par-l-api.ipynb`](obtenir-des-donnees-structurees-par-l-api.ipynb) —
+  sorties JSON structurees : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
+- [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](autour-du-consent-oauth-du-serveur-mcp.ipynb) —
+  OAuth embarque du serveur MCP : decouverte, registration dynamique, escalier des refus, consent admin, token PKCE, appel delegue
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

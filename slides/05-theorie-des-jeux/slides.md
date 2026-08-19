@@ -1,7 +1,7 @@
 ---
 theme: ../theme-ia101
-title: "Intelligence Artificielle - Theorie des jeux"
-info: IA 101 - Theorie des jeux, analyse strategique, mecanismes
+title: "Intelligence Artificielle - Théorie des jeux"
+info: IA 101 - Théorie des jeux, analyse stratégique, mécanismes
 paginate: true
 drawings:
   persist: false
@@ -10,14 +10,14 @@ mdc: true
 layout: cover
 ---
 
-# Theorie des jeux
+# Théorie des jeux
 
 INTELLIGENCE ARTIFICIELLE -- V
 
-**Analyse strategique**
+**Analyse stratégique**
 
 - Jeux Bayesiens
-- Theorie des mecanismes
+- Théorie des mécanismes
   - Jeux differentiels
 
 ---
@@ -36,7 +36,7 @@ layout: default
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
 - IV. Incertitude et modèles probabilistes
-- **V. Theorie des jeux**
+- **V. Théorie des jeux**
 - VI. Apprentissage
 - VII. Traitement du langage naturel
 - VIII. Presentation projets
@@ -45,7 +45,7 @@ layout: default
 layout: dense
 ---
 
-# Theorie des jeux
+# Théorie des jeux
 
 ## Environnement multi-agent
 
@@ -53,47 +53,47 @@ layout: dense
   - Planification / Synchronisation
   - Multi-Effecteurs / Multi-corps (decouplage)
     - Centralise (state = pool) vs decentralise
-- Decideurs multiples -> theorie des jeux
+- Decideurs multiples -> théorie des jeux
   - But commun / buts propres, adversite et/ou collaboratif
   - Information parfaite / imparfaite
   - A un tour: Joueurs, actions, recompenses
 
-## Etudes des interdependances strategiques
+## Études des interdependances stratégiques
 
 - Objectif double
-  - Design d'agent: Quelle est la meilleure strategie?
-  - Design de mecanisme: Quelles sont les bonnes regles?
-- Optimisation de strategies: pure / mixte (randomisee)
+  - Design d'agent: Quelle est la meilleure stratégie?
+  - Design de mécanisme: Quelles sont les bonnes règles?
+- Optimisation de stratégies: pure / mixte (randomisee)
 - Von Neumann -> Maximin: Jeux a somme nulle
 
 ---
 layout: section
 ---
 
-# Analyse strategique
+# Analyse stratégique
 
 ---
 layout: dense
 ---
 
-# Analyse strategique
+# Analyse stratégique
 
 ## Jeux simultanes
 
 - Matrice de gains
 - Dilemme du prisonnier: Parler ou se taire
-  - Strategie pure strictement dominante (stable)
+  - Stratégie pure strictement dominante (stable)
   - Mais Pareto dominee (global mais instable)
 
 ## IESDS
 
-- Elimination iterative des strategies strictement dominees
+- Elimination iterative des stratégies strictement dominees
 - Reduction progressive de la matrice
 
 ## Equilibre de Nash
 
 - Optimum local dans l'espace des politiques
-- Aucun agent n'a de motivation a changer de strategie
+- Aucun agent n'a de motivation a changer de stratégie
   - = Une loi que personne n'enfreint sans la police
 - Garanti d'exister / importance de la Coordination
 
@@ -106,15 +106,15 @@ layout: dense
 layout: dense
 ---
 
-# Strategies mixtes
+# Stratégies mixtes
 
 ## Occurrences
 
 - Ex: Penalty, pile ou face -- Jeux a somme nulle
-- Distribution probabiliste de strategies pures
+- Distribution probabiliste de stratégies pures
 - Theoreme de Nash: 1 equilibre doit exister
 
-## Algorithme de strategie mixte
+## Algorithme de stratégie mixte
 
 - Utilites esperees -> equations pour l'indifference a l'equilibre
   - `EU_L = sigma_u(-3) + (1-sigma_u)(1) = EU_R = sigma_u(2) + (1-sigma_u)(0)` -> `sigma_u = 1/6`
@@ -129,9 +129,9 @@ layout: dense
 layout: dense
 ---
 
-# Equilibres de strategie mixte
+# Equilibres de stratégie mixte
 
-## Strategie mixte dominant strictement une pure
+## Stratégie mixte dominant strictement une pure
 
 - Ex: 3 lignes, milieu dominee, calcul des probas
 
@@ -144,10 +144,10 @@ layout: dense
 
 - Ex: equilibres partiellement mixtes
 
-## Regle impaire
+## Règle impaire
 
 - Presque tous les jeux ont un nombre impair d'equilibres
-- Nombre infini ou pair generalement lie a la dominance faible
+- Nombre infini ou pair généralement lie a la dominance faible
   - Ex nombre pair: l'argent gratuit
   - Sinon verifier si on n'a pas oublie une mixte
 
@@ -155,14 +155,14 @@ layout: dense
 layout: dense
 ---
 
-# Jeux sequentiels
+# Jeux séquentiels
 
 ## Jeux a tours successifs
 
 - Conflits, negociations etc.
 - Jeu de la guerre des prix (in/out)
   - Accept, out = equilibres
-  - Difference = menace credible?
+  - Différence = menace credible?
 - Equilibre parfait de sous-jeu (SPE)
   - Sous-jeu Firm 2 -> accept
   - "out" plus en equilibre -> question des menaces credibles
@@ -189,11 +189,11 @@ layout: dense
 - Sous-jeux simultanes, Gains independants, connaissance du passe
 - Difficile a dessiner (exponentiel)
 - Theoremes:
-  - Derniere étape -> Equilibre de Nash (passe non modifiable)
+  - Dernière étape -> Equilibre de Nash (passe non modifiable)
   - Autres: jouer equilibres de Nash = 1 equilibre de sous-jeu
   - Mais autres equilibres de sous-jeu possibles (cooperation)
 
-## Strategies de punition
+## Stratégies de punition
 
 - Ex: Prisonnier puis Argent gratuit -> equilibre faible (0,0) = menace de punition
 - Menaces "credibles" importantes
@@ -205,7 +205,7 @@ layout: dense
 ## Problemes de l'induction arriere
 
 - Ex: le millepattes -- equilibre pessimiste, pas constate en pratique
-- Hypotheses -> Maths -> conclusions (probleme: rationalite limitee)
+- Hypotheses -> Maths -> conclusions (problème: rationalite limitee)
 - Induction avant = passe rationnel (supprime un equilibre)
 
 ## Dilemmes repetes
@@ -216,11 +216,11 @@ layout: dense
 layout: dense
 ---
 
-# Formes strategiques avancees
+# Formes stratégiques avancees
 
 ## Raisonner avec des variables
 
-- Ex: bataille des sexes, A>B>C, algorithme de strategie mixte
+- Ex: bataille des sexes, A>B>C, algorithme de stratégie mixte
   - `sigma_u = (b-c)/(a+b-2c)` et `0 < sigma_u < 1`
 - Ex: Topologie complete 2x2
 
@@ -238,8 +238,8 @@ layout: dense
 
 ## Pierre, papier, ciseaux
 
-- Pas de strategie pure -> cycle
-- Support des strategies mixtes, EU egales dans le support
+- Pas de stratégie pure -> cycle
+- Support des stratégies mixtes, EU egales dans le support
 - Theoreme: 2 joueurs, symetrique a somme nulle -> EU = 0
 - Resolution: indifference `sigma_L = 1/4` (ciseaux pour compenser)
 
@@ -247,18 +247,18 @@ layout: dense
 layout: default
 ---
 
-# Espaces de strategies infinis
+# Espaces de stratégies infinis
 
 ## Jeux sans equilibre
 
-- Nombre fini de strategies pures -> Matrices + theoremes de Nash
-- Certains jeux ont une infinite de strategies pures
+- Nombre fini de stratégies pures -> Matrices + theoremes de Nash
+- Certains jeux ont une infinite de stratégies pures
   - Pas de matrice, pas forcement d'equilibre de Nash
 
 ## Duels
 
-- 100 m, 2 balles, precisions differentes (0% a 100m, 100% a 0m)
-- Equilibre = meme distance (preuve par contradiction)
+- 100 m, 2 balles, precisions différentes (0% a 100m, 100% a 0m)
+- Equilibre = même distance (preuve par contradiction)
 - Ex: date de sortie de produits concurrents
 
 ## Loi de Hotelling et l'electeur median
@@ -292,7 +292,7 @@ layout: dense
 
 - N joueurs, Omega etats de la nature, A_i actions du joueur i
 - T_i type du joueur i, U_i recompense, p_i distribution des types
-- Strategies pures: `S_i = {s_i: T_i -> A_i}`
+- Stratégies pures: `S_i = {s_i: T_i -> A_i}`
 
 ## Equilibres de Nash Bayesien
 
@@ -302,7 +302,7 @@ layout: dense
 ## Ex: Dilemme du Sheriff
 
 - Criminel (p) vs civil (1-p), tirer ou pas
-- Strategies dominantes: tirer pour criminel, pas pour civil
+- Stratégies dominantes: tirer pour criminel, pas pour civil
 - Pour le Sheriff: `E(tirer) = p-1`, `E(pas) = -2p`
   - p>1/3 = tirer
 
@@ -312,30 +312,30 @@ layout: dense
 
 # Equilibres Bayesiens parfaits (PBE)
 
-## Jeux sequentiels
+## Jeux séquentiels
 
 - Rappel SPE -> equilibres non plausibles (menaces non credibles)
-- Systemes de croyance: assignations de probabilités sur les types
-  - "Consistant" -> Probabilités par application des strategies (Bayes)
-- Rationalite sequentielle: recompense esperee maximale
+- Systèmes de croyance: assignations de probabilités sur les types
+  - "Consistant" -> Probabilités par application des stratégies (Bayes)
+- Rationalite séquentielle: recompense esperee maximale
 
 ## Definition PBE
 
-- Profile strategique et systeme de croyance consistant tels que les strategies sont sequentiellement rationnelles
+- Profile stratégique et système de croyance consistant tels que les stratégies sont sequentiellement rationnelles
 
 ## Jeux de signalisation
 
 - Emetteur S (connait son type) -> message m, Recepteur R -> action a
-- 3 categories de PBE:
-  - **Pooling**: emetteurs choisissent le meme message (pas de signal)
-  - **Separating**: messages toujours differents -> croyance deterministe
+- 3 catégories de PBE:
+  - **Pooling**: emetteurs choisissent le même message (pas de signal)
+  - **Separating**: messages toujours différents -> croyance déterministe
   - **Semi-separation** (partial-pooling): mixte
 
 ## Exemples
 
 - Jeu de reputation (guerre des prix): pooling ou separating
 - Jeu d'education: doue ou pas, diplome ou pas (signal) -> PBE de separation
-- Biere-quiche: P=0.9 -> pooling, P=0.2 -> strategies mixtes
+- Biere-quiche: P=0.9 -> pooling, P=0.2 -> stratégies mixtes
 
 ---
 layout: section
@@ -362,7 +362,7 @@ layout: dense
   - Nash -> meilleure reponse myope incrementale
 - Cas general similaire a un POMDP + theta
 
-## Theorie des jeux cooperatifs
+## Théorie des jeux cooperatifs
 
 - Utilite transferable de coalition: `G = {N, v}`, `V(C) >= 0`
 - Partitions = Structures de Coalitions CS(N)
@@ -377,23 +377,23 @@ layout: dense
 - Reseaux de contribution marginale (representation compacte)
   - `phi_i(R) = sum x/|C|` pour les coalitions contenant i
 - Structures de coalition optimales: NP-Hard
-  - Bons resultats avec exploration du graphe de structure
+  - Bons résultats avec exploration du graphe de structure
 
 ---
 layout: section
 ---
 
-# Conception de mecanismes
+# Conception de mécanismes
 
 ---
 layout: dense
 ---
 
-# Conception de mecanismes
+# Conception de mécanismes
 
-## Theorie des jeux inverse
+## Théorie des jeux inverse
 
-- Si les agents sont rationnels, quelles sont les bonnes regles?
+- Si les agents sont rationnels, quelles sont les bonnes règles?
 - Dans le cadre Bayesien d'information imparfaite
   - Le "principal" souhaite inciter a reveler la vraie utilite
 
@@ -405,11 +405,11 @@ layout: dense
 
 ## Principe de revelation
 
-- Mecanisme incitatif verace (IC): non manipulable, revelateur
+- Mécanisme incitatif verace (IC): non manipulable, revelateur
   - `theta_hat(theta) = theta`
-- S'il existe un mecanisme y implementant f, alors il existe une version IC
+- S'il existe un mécanisme y implementant f, alors il existe une version IC
 - 2 versions:
-  - **DSIC**: Implementation en strategies dominantes
+  - **DSIC**: Implementation en stratégies dominantes
   - **BNIC**: Equilibre de Nash Bayesien (plus faible)
 
 ---
@@ -424,16 +424,16 @@ layout: dense
 - Enchere anglaise (ascendante): Efficace mais risque de collusion
 - Enchere de Vickrey (second prix)
   - Equilibre DSIC = chacun declare la valeur "honnete"
-  - Tres repandu: eBay, AdWords etc.
+  - Très repandu: eBay, AdWords etc.
 - Theoreme d'equivalence de revenue
 
 ## Bien commun
 
 - Tragedie des communs (ex: pollution)
-  - Strategie de pollution dominante mais pas optimale (Pareto)
+  - Stratégie de pollution dominante mais pas optimale (Pareto)
   - Necessite d'expliciter les externalites (ex: taxe carbone)
 
-## Mecanisme de Vickrey-Clarke-Groves (VCG)
+## Mécanisme de Vickrey-Clarke-Groves (VCG)
 
 - N Encherisseurs declarent utilite de M ressources
 - Allocation maximisant la somme des utilites
@@ -445,19 +445,19 @@ layout: dense
 
 # Allocation par les votes
 
-## Theorie du choix social
+## Théorie du choix social
 
-- Preferences individuelles rationnelles -> Ordre de preference social
+- Préférences individuelles rationnelles -> Ordre de préférence social
 - Proprietes d'une bonne fonction de choix social:
   1. Condition de Pareto / critere d'unanimite
-  2. Independance des alternatives non pertinentes
+  2. Indépendance des alternatives non pertinentes
   3. Pas de dictature
 
-## Resultats negatifs
+## Résultats negatifs
 
 - **Paradoxe de Condorcet**: A,B,C -> 2/3 de mecontents
 - **Theoreme de Arrow**: Impossible de satisfaire 1, 2 et 3 simultanement (>= 3 options)
-- **Theoreme de Gibbard-Satterthwaite**: Toute FCS deterministe avec Pareto et >2 choix est manipulable ou dictatoriale
+- **Theoreme de Gibbard-Satterthwaite**: Toute FCS déterministe avec Pareto et >2 choix est manipulable ou dictatoriale
 
 ---
 layout: dense
@@ -479,9 +479,9 @@ layout: dense
 
 ## Si pas de vainqueur de Condorcet
 
-- Methode **Minimax**: celui qui fait le mieux au pire
-  - Mais tres strategique (ex: anarchistes)
-- Methode de **Schulze**: elimination iterative des derniers du peloton de tete
+- Méthode **Minimax**: celui qui fait le mieux au pire
+  - Mais très stratégique (ex: anarchistes)
+- Méthode de **Schulze**: elimination iterative des derniers du peloton de tete
   - Robuste a la manipulation (electeurs raisonnables)
 
 ---
@@ -490,26 +490,26 @@ layout: dense
 
 # Procedures de votes connues
 
-- **Referendum**: 2 options -> methode de la majorite robuste (la seule)
+- **Referendum**: 2 options -> méthode de la majorite robuste (la seule)
 - **Vote pluraliste uninominal** (n candidats): critique (vote utile)
-- **Vote a second-tour instantane**: Preferences, elimination du dernier
+- **Vote a second-tour instantane**: Préférences, elimination du dernier
   - Pas de critere de Condorcet
-- **Methode de Condorcet**: comparaisons paires a paires -> Schulze
+- **Méthode de Condorcet**: comparaisons paires a paires -> Schulze
 
-## Methodes utilitaristes
+## Méthodes utilitaristes
 
-- **Compte de Borda**: preferences, score = ordre (manipulable)
+- **Compte de Borda**: préférences, score = ordre (manipulable)
 - **Vote par assentiment**: elimination, majorite d'approbation
   - Theoreme de robustesse au mensonge
 - **Scrutin au jugement majoritaire**: mediane des scores
-  - Seule procedure avec majorite d'une meme note validee + monotonie
+  - Seule procedure avec majorite d'une même note validee + monotonie
 
 ## Scrutins stochastiques
 
 - **Scrutin Stochocratique**: option preferee puis tirage au sort
-  - Theoreme d'Hylland: seule methode avec unanimite non strategique
+  - Theoreme d'Hylland: seule méthode avec unanimite non stratégique
 - **Condorcet randomisee**: loterie ponderee dans le peloton de tete
-  - Ponderation selon equilibre de Nash -- critere de Condorcet + non strategique
+  - Ponderation selon equilibre de Nash -- critere de Condorcet + non stratégique
 
 ---
 layout: default
@@ -519,7 +519,7 @@ layout: default
 
 ## Modèle des offres alternees
 
-- Si pas d'accord: Accord de conflit -> fenetre de negociation
+- Si pas d'accord: Accord de conflit -> fenêtre de negociation
 - Nombre de manches:
   - 1 manche: Ultimatum (J1 a tout le pouvoir)
   - 2 manches: J2 a tout le pouvoir
@@ -527,12 +527,12 @@ layout: default
 - Agents impatients: facteurs de discompte `0 <= gamma_i < 1`
   - Offre a l'equilibre: `A_1 = (1-gamma_2)/(1-gamma_1*gamma_2)`
 
-## Domaines orientes taches
+## Domaines orientes tâches
 
-- Offres (T1, T2) de repartitions de taches parmi T
+- Offres (T1, T2) de repartitions de tâches parmi T
 - Protocole de concession monotone
 
-## Strategie de Zeuthen
+## Stratégie de Zeuthen
 
 - Mesure de l'aversion au risque de conflit
 - Le risque plus faible concede, sinon tirage au sort
@@ -541,7 +541,7 @@ layout: default
 layout: default
 ---
 
-# Theorie de la negociation
+# Théorie de la negociation
 
 ## Demarche
 
@@ -576,15 +576,15 @@ layout: dense
 
 # Jeux differentiels
 
-## Theorie des jeux + theorie du controle
+## Théorie des jeux + théorie du contrôle
 
 - Interdependance: agents economiques, pollution, marches
 - Dynamique: habitudes, technologies, accumulations, traffic
-- Comportement strategique: buts antagonistes, choix
+- Comportement stratégique: buts antagonistes, choix
 
 ## Definitions
 
-- Joueurs M={1,...,m}, Vecteur de controle `u_j(t)`
+- Joueurs M={1,...,m}, Vecteur de contrôle `u_j(t)`
 - Vecteur d'etat `x(t)`, equation d'etat: `x'(t) = f(x(t), u(t), t)`
 - Fonction de gain: `J_j = S_j(x(T)) - integral g_j dt` -> Minimisation de L
 
@@ -593,7 +593,7 @@ layout: dense
 - **Boucle ouverte**: conditions initiales + temps: `u_j(t) = mu_j(x_0, t)`
 - **Markovienne**: `u_j(t) = sigma_j(t, x(t))` (lineaire, quadratique, seuil)
 - Non Markovienne: utilisation de l'historique
-- **Hierarchique**: le leader annonce sa strategie
+- **Hiérarchique**: le leader annonce sa stratégie
 
 ---
 layout: dense
@@ -630,17 +630,17 @@ layout: dense
 layout: default
 ---
 
-# Methodes calculatoires
+# Méthodes calculatoires
 
-## Methodes directes
+## Méthodes directes
 
 - Formulation du programme mathematique et resolution
 
-## Methodes indirectes
+## Méthodes indirectes
 
 - Utilisation d'equations differentielles partielles
 
-## Methode d'echantillonnage incremental
+## Méthode d'echantillonnage incremental
 
 - Ex: poursuite evasion
 - RRT -> exploration d'arbre
@@ -673,7 +673,7 @@ layout: default
 - II. Resolution de problemes
 - III. Bases de connaissances et logique
 - IV. Incertitude et modèles probabilistes
-- V. Theorie des jeux
+- V. Théorie des jeux
 - **VI. Apprentissage**
 - VII. Traitement du langage naturel
 - VIII. Presentation projets
@@ -687,11 +687,11 @@ layout: dense
 1. Moteur de recherche augmente par le raisonnement et le langage naturel
 2. Conception de bots de services sur reseaux sociaux
 3. Conception d'un modèle d'inference pour l'analyse de sentiment
-4. Création d'une plateforme semantique LDP
+4. Création d'une plateforme sémantique LDP
 5. Resolution de Captchas par deep learning
-6. Entrainement de strategies de trading algorithmiques sur crypto monnaies
+6. Entrainement de stratégies de trading algorithmiques sur crypto monnaies
 7. Amelioration par l'apprentissage d'un agent joueur de Go simple
-8. Evolution de vaisseaux spatiaux par algorithmes genetiques dans le jeu de la vie
+8. Evolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie
 9. Pilotage d'un cluster de cache distribue pour le portage d'applications dans le Cloud
 
 ---
