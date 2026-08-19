@@ -2,10 +2,15 @@
   family: Search/Part1-Foundations
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-1-StateSpace-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "2026-08-16 (po-2025) : design-gate tranche (option a) -- networkx 3.6.1 installe et bridge dans Search-1-StateSpace.ipynb (section 'Verification de l'optimalite avec networkx' : Dijkstra + centralite d'intermediarite, sorties re-executees C.2). Les DEUX cotes invoquent desormais un moteur SOTA-tier (Python = networkx, C# = QuikGraph 2.5.0) : verdict SOTA-OK. parity_level conserve a semantic : la divergence structurelle (11 vs 13 villes) rend la paire non-native sous la lecture 'cellule-par-cellule' du _schema.yaml, et la semantique de native-both reste a trancher (#11200). --- Etat precedent (2026-08-16 ai-01) : la clause 'pas de lib SOTA-tier' ci-dessous est FALSIFIEE cote C#. QuikGraph 2.5.0 (portage .NET de Boost.Graph) s'installe et s'invoque sans obstacle sur la section 'Recherche d'itineraire' ; le pont est livre et execute (Dijkstra sur le franceGraph existant). Cote C# : desormais SOTA-OK. Cote Python : toujours stdlib pure -- networkx n'est PAS installe dans l'env courant, et la question de savoir si Search-1 doit le bridger ou si le role revient a Search-15-NetworkX (meme repertoire) est un design-gate ouvert, d'ou le maintien de parity_level: semantic (l'enum ne porte pas de valeur 'native d'un seul cote'). Verdict RECOVERABLE-LOCAL maintenu : le gap residuel est cote Python et il est local. --- Etat anterieur (2026-08-01..14, conserve pour tracabilite) : Python = stdlib only (collections.deque BFS + copy.deepcopy state cloning + math/numpy helper viz). Pas de lib SOTA-tier pour state-space search en Python pur (la reference AIMA 3e ed. est pedagogique from-scratch). C# = BCL pure (Queue<T> BFS + Stack<T> DFS + LinkedList<T> state space from-scratch, 0 NuGet SOTA tiers)."
   audits:
+    - date: "2026-08-18"
+      by: myia-po-2026:CoursIA
+      python_sha: 703c4076ee369500682bde8b52ff1411352cc180
+      csharp_sha: 6dae97fd46083e33673cc86dc6f8c2f8a010f639
+      reason: "parity_level basculee -> native-both conformement a l'arbitrage ai-01 2026-08-16 sur #11200 Option A (parite de moteur, lib-vs-lib) : Python atteint NetworkX (librairie graphes de reference en Python), C# atteint QuikGraph (librairie graphes de reference de l'ecosysteme .NET). bridge_verdict_reason inchangee -- le bridge etait deja documente dans le verdict existant. Imports verifies firsthand sur les notebooks de la paire (re-grep 2026-08-18)."
     - date: "2026-08-01"
       by: myia-po-2023:CoursIA-2
       python_sha: eec0668ba49d9b95a067fafc1674a83edccdb055

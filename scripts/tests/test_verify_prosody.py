@@ -157,6 +157,82 @@ def test_kokoro_v1_ground_truth_is_warn_not_pass():
     assert "ERRATIC" in r["reasons"]
 
 
+# --- erratic_axes: which axis fired, and "not measured" != "nothing fired" --
+
+def test_erratic_axes_names_the_span_axis():
+    r = classify_segment(**_healthy(melody_verdict="EXPRESSIVE",
+                                    melodic_span_st=ERRATIC_SPAN_ST + 2,
+                                    mean_abs_interval_st=1.5))
+    assert r["erratic_axes"] == ["span"]
+
+
+def test_erratic_axes_names_the_motion_axis():
+    r = classify_segment(**_healthy(melody_verdict="EXPRESSIVE",
+                                    melodic_span_st=12.0,
+                                    mean_abs_interval_st=ERRATIC_MOTION_ST + 0.5))
+    assert r["erratic_axes"] == ["motion"]
+
+
+def test_erratic_axes_names_both_when_both_fire():
+    r = classify_segment(**_healthy(melody_verdict="EXPRESSIVE",
+                                    melodic_span_st=ERRATIC_SPAN_ST + 2,
+                                    mean_abs_interval_st=ERRATIC_MOTION_ST + 0.5))
+    assert r["erratic_axes"] == ["span", "motion"]
+
+
+def test_erratic_axes_empty_when_measured_and_nothing_fired():
+    r = classify_segment(**_healthy(melody_verdict="EXPRESSIVE",
+                                    melodic_span_st=11.3,
+                                    mean_abs_interval_st=1.85))
+    assert r["gate"] == "PASS-TO-EAR"
+    assert r["erratic_axes"] == []
+
+
+def test_erratic_axes_is_none_when_the_segment_was_never_evaluated():
+    """The invariant: too short -> the axes were not measured, and that must not
+    be spelled the same way as "measured, nothing fired" ([]). Same separation
+    syllable_pitch.classify_melody already makes for the structural axis."""
+    r = classify_segment(**_healthy(melody_verdict="EXPRESSIVE",
+                                    n_syllables=MIN_SYLLABLES - 1,
+                                    melodic_span_st=40.0,
+                                    mean_abs_interval_st=5.0))
+    assert r["gate"] == "INCONCLUSIVE"
+    assert r["erratic_axes"] is None
+
+
+def test_erratic_does_not_discriminate_on_the_cloning_route():
+    """Regression on a *reading*, not on a threshold.
+
+    Measured on the seven #1028 review clips (2026-08-18): every clip carrying
+    ERRATIC is one of the good EXPRESSIVE takes, and none of the three DRONE
+    takes carries it. A reviewer consumed the bare label as a reservation about
+    one take; it is an abstention that tracks melodic richness on this route.
+    Pinned here so the reading cannot be re-made silently.
+    """
+    # (clip, span_st, motion_st, melody verdict) -- firsthand measurements
+    good = [("B_regenere", 20.4, 2.30), ("G1_melodique", 15.9, 3.06),
+            ("L3_long_melodique", 16.5, 2.94)]
+    drone = [("A_servi_depuis_mai", 12.2, 1.21), ("E_plat_grave", 9.8, 1.29),
+             ("F1_plat_clair", 8.9, 1.63)]
+
+    for name, span, motion in good:
+        r = classify_segment(**_healthy(melody_verdict="EXPRESSIVE",
+                                        n_syllables=80, melodic_span_st=span,
+                                        mean_abs_interval_st=motion))
+        # Asserted on `reasons`, which predates this change: the pin is on the
+        # BEHAVIOUR (good takes carry the flag), so it holds against the module
+        # as it was -- it is a guard on a future silent change, not a proof that
+        # the old code was wrong.
+        assert "ERRATIC" in r["reasons"], f"{name}: expected the flag on a good take"
+
+    for name, span, motion in drone:
+        r = classify_segment(**_healthy(melody_verdict="DRONE",
+                                        n_syllables=80, melodic_span_st=span,
+                                        mean_abs_interval_st=motion))
+        assert "ERRATIC" not in r["reasons"], f"{name}: DRONE must not carry ERRATIC"
+        assert r["gate"] == "REJECT"
+
+
 # --- WARN: DRIFTING / FADING (informational, surface with caveat) ----------
 
 def test_drifting_voice_warns():
@@ -181,3 +257,35 @@ def test_reject_beats_warn():
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+# --- DRONE: the repeating-melody class (added 2026-08-18) -------------------
+# Local metrics (motion, flat-%) cannot see a melody that *repeats*: a chant
+# alternating two adjacent notes has normal step size. syllable_pitch now emits
+# DRONE from structural criteria (effective notes / top-3 concentration /
+# repeated 3-note motifs). These tests lock it to the same REJECT class as FLAT,
+# so the new verdict cannot silently fall through the gate as "not FLAT".
+
+def test_drone_is_rejected_as_monotone():
+    out = classify_segment(**_healthy(melody_verdict="DRONE"))
+    assert out["gate"] == "REJECT"
+    assert "MONOTONE" in out["reasons"]
+
+
+def test_drone_rejected_even_with_healthy_global_span():
+    """The v4 extract's own shape: global span looks fine, melody repeats."""
+    out = classify_segment(**_healthy(melody_verdict="DRONE", global_range_st=12.24))
+    assert out["gate"] == "REJECT"
+    assert "MONOTONE" in out["reasons"]
+
+
+def test_drone_does_not_also_raise_global_flat_warn():
+    """GLOBAL-FLAT is the 'syllable verdict disagrees' hedge; DRONE agrees."""
+    out = classify_segment(**_healthy(melody_verdict="DRONE", global_range_st=1.0))
+    assert out["gate"] == "REJECT"
+    assert "GLOBAL-FLAT" not in out["reasons"]
+
+
+def test_moderate_still_passes_so_drone_is_not_a_blanket_reject():
+    """Guard against over-correction: MODERATE must remain acceptable."""
+    assert classify_segment(**_healthy(melody_verdict="MODERATE"))["gate"] == "PASS-TO-EAR"

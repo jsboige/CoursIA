@@ -1,7 +1,7 @@
 ---
 theme: ../theme-ia101
-title: "S4 Trading Algorithmique - Partie 2 : Strategies et Risque"
-info: Cours Intelligence Artificielle - Strategies de Trading et Gestion du Risque
+title: "S4 Trading Algorithmique - Partie 2 : Stratégies et Risque"
+info: Cours Intelligence Artificielle - Stratégies de Trading et Gestion du Risque
 paginate: true
 drawings:
   persist: false
@@ -10,7 +10,7 @@ mdc: true
 layout: cover
 ---
 
-# Strategies de Trading et Gestion du Risque
+# Stratégies de Trading et Gestion du Risque
 
 Intelligence Artificielle -- S4 -- Partie 2
 
@@ -19,7 +19,7 @@ Intelligence Artificielle -- S4 -- Partie 2
 - Backtesting et plateformes (Lean/QuantConnect)
 - Mesures de performance et pieges
 - Gestion du risque (Kelly, VaR, psychologie)
-- Strategies classiques : mean reversion, momentum, regime switching, factoriels
+- Stratégies classiques : mean reversion, momentum, regime switching, factoriels
 - Panorama ML/AI : du Random Forest aux LLMs
 - Lecons du terrain : 67 projets backtestes, echecs inclus
 
@@ -30,16 +30,16 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
 # Backtesting (1/2)
 
 - **Le backtesting : votre laboratoire de trading**
-  - Simulation d'une strategie sur des données historiques (prix, volumes, fondamentaux)
-  - Question fondamentale : *"Si j'avais applique cette strategie en 2015, qu'aurais-je obtenu ?"*
-  - C'est la premiere étape obligatoire AVANT d'engager le moindre centime de capital réel
+  - Simulation d'une stratégie sur des données historiques (prix, volumes, fondamentaux)
+  - Question fondamentale : *"Si j'avais applique cette stratégie en 2015, qu'aurais-je obtenu ?"*
+  - C'est la première étape obligatoire AVANT d'engager le moindre centime de capital réel
 <div v-click="1">
 
 - **Pourquoi c'est important**
   - Valider l'efficacite de la recherche avant d'engager du capital réel
   - Experimenter avec des variations (paramètres, periodes, actifs, univers)
   - Estimer les metriques cles : Sharpe, CAGR, drawdown max, win rate, nombre de trades
-  - Comparer objectivement plusieurs strategies entre elles sur la meme periode
+  - Comparer objectivement plusieurs stratégies entre elles sur la même periode
 
 </div>
 <div v-click="2">
@@ -63,11 +63,11 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
   - Données ajustees pour les splits et dividendes : risque de faux signaux historiques
   - Biais de survie : les entreprises faillies disparaissent des données (vos backtests ne testent que les "gagnants")
   - Slippage et couts de transaction : le backtest "parfait" n'existe pas en conditions réelles
-  - **Regle empirique : le rendement live est 30 a 50% inferieur au backtest** -- prevoir cette marge
+  - **Règle empirique : le rendement live est 30 a 50% inferieur au backtest** -- prevoir cette marge
 <div v-click="1">
 
 - **Dans le cas ou le Machine Learning est utilise**
-  - Le backtesting doit prendre en compte les biais de selection de données
+  - Le backtesting doit prendre en compte les biais de sélection de données
   - Separer convenablement les ensembles (training, validation, test)
   - Evaluer la generalisation sur des données jamais vues
   - **Walk-forward** : decoupe temporelle glissante (jamais de shuffle)
@@ -79,7 +79,7 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
   - Periode standard : 2015-2026 (11 ans, couvrant bull + bear + COVID + hausse taux)
   - Toujours comparer au benchmark (SPY buy-and-hold, Sharpe ~0.50)
   - Reporter Sharpe, CAGR, MaxDD, et nombre de trades
-  - Capital initial standard : 100 000$ pour la comparabilite entre strategies
+  - Capital initial standard : 100 000$ pour la comparabilite entre stratégies
 
 </div>
 
@@ -97,7 +97,7 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
 <div v-click="1">
 
 - **MATLAB**
-  - Utilise en institutionnel, excellent pour tester des strategies sur de grands portefeuilles
+  - Utilise en institutionnel, excellent pour tester des stratégies sur de grands portefeuilles
   - Modules statistiques avances (Financial Toolbox, Econometrics Toolbox)
   - Inconvenients: Couteux (~2000$/an) et moins efficace pour executer les trades
 
@@ -121,7 +121,7 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
 # Plateformes de Backtesting (2/2)
 
 - **TradeStation et autres plateformes proprietaires**
-  - Execution + données integrees, mais langage proprietaire (EasyLanguage) et lock-in courtier
+  - Exécution + données integrees, mais langage proprietaire (EasyLanguage) et lock-in courtier
 
 <div v-click="1">
 
@@ -157,7 +157,7 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
 
 - **Avantages techniques**
   - Données ajustees (splits, dividendes) : 75,000+ actions US, 100+ forex, 200+ crypto, futures, options
-  - Framework modulaire : Alpha, Portfolio, Risk, Execution (separation des responsabilites)
+  - Framework modulaire : Alpha, Portfolio, Risk, Exécution (separation des responsabilites)
   - ML natif sur le cloud (sklearn, numpy, pandas), paper trading -> live sans changement de code
   - Exemples crypto : `projects/EMA-Cross-Crypto`, `projects/BTC-MACD-ADX`
 
@@ -168,7 +168,7 @@ Livre de reference : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wile
   - **AlphaModel** : signaux (direction + magnitude + confiance)
   - **PortfolioConstructionModel** : traduit signaux en poids de portefeuille
   - **RiskManagementModel** : limites (MaxDD, trailing stop, position max)
-  - **ExecutionModel** : execution des ordres (VWAP, immediat, market on close)
+  - **ExecutionModel** : exécution des ordres (VWAP, immediat, market on close)
   - Debut : `QC-Py-01-Setup.ipynb` puis `QC-Py-02-Platform-Fundamentals.ipynb`
 
 </div>
@@ -216,7 +216,7 @@ imageClass: mid-right visible
 </div>
 <div v-click="2">
 
-- **Regles pratiques d'interpretation**
+- **Règles pratiques d'interpretation**
   - Sharpe > 0.5 : acceptable, > 1.0 : bon, > 2.0 : excellent (mais verifier l'overfitting)
   - MaxDD < 20% : acceptable pour la plupart des investisseurs (institutionnels : < 10%)
   - Minimum 100 trades pour la significativite statistique
@@ -232,15 +232,15 @@ imageClass: mid-right visible
 - **Look-ahead bias** (le piege le plus dangereux et le plus sournois)
   - Utilisation de données decalees (toujours `shift(1)` en pandas, `History()` en QC)
   - Forward-testing (paper trading) pour valider en conditions réelles sans biais
-  - Exemple classique : utiliser le prix de cloture du jour pour decider d'acheter le meme jour
+  - Exemple classique : utiliser le prix de cloture du jour pour decider d'acheter le même jour
   - Autre piege : normaliser les features sur toute la periode (inclut le futur dans la normalisation)
 <div v-click="1">
 
 - **Data-Snooping Bias** (overfitting sur l'historique -- le tueur silencieux)
   - Peu de paramètres : chaque paramètre est une opportunite d'overfitting
   - Augmentation, division et adaptation des données de backtest (cross-temporal validation)
-  - Test de robustesse : la strategie marche-t-elle sur des periodes/actifs differents ?
-  - Test de Bonferroni : corriger pour les tests multiples (si vous testez 100 strategies, 5 seront "significatives" par hasard a 5%)
+  - Test de robustesse : la stratégie marche-t-elle sur des periodes/actifs différents ?
+  - Test de Bonferroni : corriger pour les tests multiples (si vous testez 100 stratégies, 5 seront "significatives" par hasard a 5%)
   - "If you torture the data long enough, it will confess to anything" -- Ronald Coase
 
 </div>
@@ -251,16 +251,16 @@ imageClass: mid-right visible
 
 - **Modèles de trading sans paramètres** (le Graal de la robustesse)
   - Pas de surajustement possible, fiabilite maximale mais alpha plus faible
-  - Exemple : momentum pur (acheter les 10% meilleurs du mois precedent, vendre les 10% pires)
-  - Le seul "paramètre" est la fenetre temporelle (3, 6, 12 mois) -- tres etudie academiquement
+  - Exemple : momentum pur (acheter les 10% meilleurs du mois précédent, vendre les 10% pires)
+  - Le seul "paramètre" est la fenêtre temporelle (3, 6, 12 mois) -- très etudie academiquement
 
 <div v-click="1">
 
-- **Validation out-of-sample** (la regle d'or de tout backtest serieux)
+- **Validation out-of-sample** (la règle d'or de tout backtest serieux)
   - Split temporel 60/20/20 : entrainement, validation, test final -- jamais de shuffle temporel
-  - Walk-forward : fenetre glissante qui avance dans le temps (simule un deploiement réel)
+  - Walk-forward : fenêtre glissante qui avance dans le temps (simule un deploiement réel)
   - Si le Sharpe chute de >50% hors-echantillon, c'est probablement de l'overfitting
-  - Toutes nos strategies sont backtestees sur 2015-2026 (11 ans, couvrant bull + bear + COVID + hausse des taux)
+  - Toutes nos stratégies sont backtestees sur 2015-2026 (11 ans, couvrant bull + bear + COVID + hausse des taux)
 
 </div>
 
@@ -287,18 +287,18 @@ layout: compact
 <div v-click="3">
 
 - **Repartition du capital de trading** (diversification des alphas)
-  - Repartir entre differentes strategies decorreles pour diminuer la variance globale
+  - Repartir entre différentes stratégies decorreles pour diminuer la variance globale
   - Exemple : 40% trend, 30% mean-reversion, 30% factoriel
 </div>
 <div v-click="4">
 
 - **Couts de Transaction** (souvent sous-estimes)
-  - A integrer dans le Backtest pour des resultats plus realistes
+  - A integrer dans le Backtest pour des résultats plus realistes
   - Composantes : commissions + spread + slippage + impact de marche (pour les gros ordres)
 </div>
 <div v-click="5">
 
-- **Derive des données (data drift)** (le probleme fondamental)
+- **Derive des données (data drift)** (le problème fondamental)
   - Revalider les modèles regulierement (trimestriel minimum)
   - Ce qui marchait il y a 5 ans peut ne plus marcher (regime change)
 
@@ -308,10 +308,10 @@ layout: compact
 
 ---
 
-# Affinement de la Strategie
+# Affinement de la Stratégie
 
-- **Le Probleme** (l'erosion inevitable de l'alpha -- la "loi de la jungle" des marches)
-  - Rendements diminuent quand une strategie devient populaire (alpha decay)
+- **Le Problème** (l'erosion inevitable de l'alpha -- la "loi de la jungle" des marches)
+  - Rendements diminuent quand une stratégie devient populaire (alpha decay)
   - Le marche est un ecosysteme adaptatif : les participants copient ce qui marche, ce qui annule l'avantage
   - Exemple frappant : l'anomalie du "low P/E" (Basu, 1977) a ete reduite de 50% depuis sa publication
 <div v-click="1">
@@ -320,14 +320,14 @@ layout: compact
   - Variations Mineures: Petites variations de paramètres peuvent ameliorer les rendements
   - Exclusion de Stocks: Eviter certains types d'actions (micro-caps illiquides, ADRs)
   - Changement de Timing: Ajuster les points d'entrée et de sortie (rebalancing frequency)
-  - Innovation: Combiner des alphas connus de manière originale (composite strategies)
+  - Innovation: Combiner des alphas connus de manière originale (composite stratégies)
 
 </div>
 <div v-click="2">
 
 - **Exemple du depot : evolution progressive**
   - `EMA-Cross-Stocks` (0.87) -> `EMA-Cross-Alpha` (0.98) -> `EMATrend-Composite` (0.87) -> `Framework_Composite_TrendWeather` (1.16)
-  - Chaque iteration ajoute sophistication mais aussi risque d'overfitting
+  - Chaque itération ajoute sophistication mais aussi risque d'overfitting
 
 </div>
 
@@ -335,11 +335,11 @@ layout: compact
 layout: dense
 ---
 
-# Panorama des Strategies (1/2) -- Classiques
+# Panorama des Stratégies (1/2) -- Classiques
 
 <div class="colored-table">
 
-| Strategie | Categorie | Sharpe | CAGR | MaxDD | Periode |
+| Stratégie | Catégorie | Sharpe | CAGR | MaxDD | Periode |
 |-----------|-----------|--------|------|-------|---------|
 | **Framework_Composite_TrendWeather** | Composite | 1.155 | 19.3% | -14.2% | 2015-2026 |
 | **EMA-Cross-Alpha** | Trend | 0.980 | 17.8% | -18.5% | 2015-2026 |
@@ -360,11 +360,11 @@ Echecs pedagogiques : PairsTrading (-0.36), ForexCarry (-0.32), InverseVolatilit
 layout: dense
 ---
 
-# Panorama des Strategies (2/2) -- ML/AI
+# Panorama des Stratégies (2/2) -- ML/AI
 
 <div class="colored-table">
 
-| Strategie | Modèle ML | Sharpe | Ref Livre |
+| Stratégie | Modèle ML | Sharpe | Ref Livre |
 |-----------|----------|--------|-----------|
 | **ML-Random-Forest** | Random Forest | 0.903 | Ch5 Ex09 |
 | **XGBoost-Classification** | XGBoost | 0.571 | Ch5 |
@@ -414,8 +414,8 @@ layout: compact
 # Lecon M15 : l'horizon de prediction est un hyperparametre critique
 
 - **L'hypothese de base** : "LSTM ne marche pas en finance" est **fausse** -- c'est l'horizon h=1 qui ne marche pas
-- Sur SPY/TLT (actions/obligations) : le signal reste faible meme a h>1 (ratio signal/bruit trop bas)
-- Sur crypto : la vol structurelle cree des tendances exploitables aux horizons 1-6 mois
+- Sur SPY/TLT (actions/obligations) : le signal reste faible même a h>1 (ratio signal/bruit trop bas)
+- Sur crypto : la vol structurelle créé des tendances exploitables aux horizons 1-6 mois
 
 - **Implication pratique pour le quant** :
   1. Ne pas rejeter un modèle sur un seul horizon -- tester h=1, 5, 22, 66, 132
@@ -441,15 +441,15 @@ layout: compact
 - **Maximisation de la Croissance** (formule fondamentale)
   - Objectif : maximiser la croissance **composee** (geometrique) du capital a long terme
   - Formule : g = m - s^2/2 (la croissance composee est REDUITE par la variance)
-  - Implication contre-intuitive : reduire la variance augmente la croissance meme a rendement egal
+  - Implication contre-intuitive : reduire la variance augmente la croissance même a rendement egal
   - Exemple : 10% rendement, 20% vol -> g = 8% ; 10% rendement, 40% vol -> g = 2%
 
 </div>
 <div v-click="2">
 
-- **Eviter la Ruine** (la regle numero zero)
+- **Eviter la Ruine** (la règle numéro zero)
   - Drawdown : mesure de la pire chute depuis le dernier sommet (peak-to-trough)
-  - Regle pratique : limiter le risque a 1-2% du capital par trade (position sizing)
+  - Règle pratique : limiter le risque a 1-2% du capital par trade (position sizing)
   - Exemple du depot : `AllWeather` MaxDD -15% vs `MomentumStrategy` MaxDD -25%
   - La probabilité de ruine augmente exponentiellement avec le levier
 
@@ -474,12 +474,12 @@ imageClass: mid-right visible
 - **Value-at-Risk (VaR)**
   - Estime la perte maximale potentielle sur une periode avec un niveau de confiance
   - Exemple : VaR 95% journaliere = 2% signifie qu'on a 5% de chances de perdre plus de 2%
-  - Methodes : historique, parametrique (gaussien), Monte Carlo
+  - Méthodes : historique, parametrique (gaussien), Monte Carlo
 </div>
 <div v-click="2">
 
 - **Conditional Value-at-Risk (CVaR / Expected Shortfall)**
-  - Estime la perte moyenne au-dela du VaR (dans les pires scenarios)
+  - Estime la perte moyenne au-dela du VaR (dans les pires scénarios)
   - Plus conservateur que le VaR, prend en compte les "fat tails"
   - Prefere par les regulateurs (Bale III) car le CVaR est sous-additif (coherent)
 
@@ -493,11 +493,11 @@ imageClass: mid-right visible
 
 # Exemple : Formule de Kelly en Pratique
 
-- **Scenario typique d'une strategie quantitative**
+- **Scénario typique d'une stratégie quantitative**
   - Probabilité de gain (p) = 55%, Probabilité de perte (q) = 45%
   - Gains moyens = 2%, Pertes moyennes = 1.5%
   - Ratio gain/perte (b) = 2% / 1.5% = 1.33
-  - Ce scenario est realiste : une bonne strategie gagne un peu plus souvent qu'elle ne perd
+  - Ce scénario est realiste : une bonne stratégie gagne un peu plus souvent qu'elle ne perd
 
 <div v-click="1">
 
@@ -505,7 +505,7 @@ imageClass: mid-right visible
   - f* = (p x b - q) / b = (0.55 x 1.33 - 0.45) / 1.33
   - f* = (0.73 - 0.45) / 1.33 = **0.21 soit 21% du capital** par trade (Kelly plein)
   - Demi-Kelly : 10.5% -- recommande en pratique (marge de securite, paramètres incertains)
-  - Quart-Kelly : 5.25% -- pour les traders tres conservateurs
+  - Quart-Kelly : 5.25% -- pour les traders très conservateurs
   - La plupart des fonds ne risquent que 1-5% par trade (beaucoup moins que Kelly)
 
 </div>
@@ -514,10 +514,10 @@ imageClass: mid-right visible
 
 # Formule de Kelly : Intuition et Limites
 
-- **Theorie vs pratique**
+- **Théorie vs pratique**
   - Kelly maximise la croissance composee a long terme (geometrique, pas arithmetique)
   - Un sur-levier (miser plus que Kelly) garantit la ruine mathematique a long terme
-  - La distribution normale sous-estime les evenements extremes ("fat tails")
+  - La distribution normale sous-estime les événements extremes ("fat tails")
 <div v-click="1">
 
 - **En pratique**
@@ -538,16 +538,16 @@ imageClass: mid-right visible
 <div v-click="1">
 
 - **Contagion Financiere** (risque systemique)
-  - 2008 (Lehman) et 2020 (COVID) : tous les actifs baissent en meme temps
+  - 2008 (Lehman) et 2020 (COVID) : tous les actifs baissent en même temps
   - Diversifier entre classes decorreles, mais les correlations augmentent en crise
 
 </div>
 <div v-click="2">
 
-- **Evenements Extremes (Black Swans, Nassim Taleb)**
+- **Événements Extremes (Black Swans, Nassim Taleb)**
   - Kelly ne prend pas en compte les "fat tails" (queues epaisses, kurtosis > 3)
-  - Un evenement "6 sigma" arrive tous les 5-10 ans au lieu de 1x par 1.5M jours
-  - Gestion : VaR, CVaR, stress testing, scenarios Monte Carlo
+  - Un événement "6 sigma" arrive tous les 5-10 ans au lieu de 1x par 1.5M jours
+  - Gestion : VaR, CVaR, stress testing, scénarios Monte Carlo
 
 </div>
 <div v-click="3">
@@ -568,14 +568,14 @@ layout: compact
 - **Risque de Modèle** (le risque que votre modèle soit faux)
   - Biais de survie, biais de lookahead, et erreurs de données (garbage in, garbage out)
   - Changements structurels du marche : nouvelles reglementations, innovations technologiques
-  - Exemple : une strategie entrainee pre-COVID echoue pendant le COVID (changement de regime)
-  - Exemple : une strategie de carry FX qui marchait avant 2020 echoue apres (taux convergents)
+  - Exemple : une stratégie entrainee pre-COVID echoue pendant le COVID (changement de regime)
+  - Exemple : une stratégie de carry FX qui marchait avant 2020 echoue après (taux convergents)
 
 <div v-click="1">
 
 - **Risque Logiciel** (la machine peut se tromper aussi)
   - Bugs, latence et decalages de données (data feed delayed de quelques secondes)
-  - Assurez-vous que le systeme de trading automatise est bien teste et surveille 24/7
+  - Assurez-vous que le système de trading automatise est bien teste et surveille 24/7
   - Exemple celebre : Knight Capital (2012), bug de deploiement, perte de 440M$ en 45 minutes
   - Exemple : un off-by-one dans l'indice des données = look-ahead bias invisible
 
@@ -587,7 +587,7 @@ layout: compact
   - Solution de secours obligatoire : serveurs redondants, plan de recuperation
   - Risque de liquidite : impossible de sortir d'une position pendant un flash crash (bid vide)
   - Risque de contrepartie : faillite du courtier (MF Global 2011 : 1.6Md$, FTX 2022 : 8Md$)
-  - Risque reglementaire : changement de regles en cours de jeu (interdiction du short selling, etc.)
+  - Risque reglementaire : changement de règles en cours de jeu (interdiction du short selling, etc.)
 
 </div>
 
@@ -595,22 +595,22 @@ layout: compact
 
 # Preparation Psychologique (1/2)
 
-- **Emotions en Trading** (meme en algo, le trader doit gerer sa psychologie)
+- **Emotions en Trading** (même en algo, le trader doit gerer sa psychologie)
   - Overtrading en periode de gains : "je suis un genie, augmentons le levier"
   - Aversion au risque en periode de pertes : desactiver l'algo au pire moment (panic exit)
-  - Tentation de modifier les paramètres apres chaque perte (tweaking compulsif)
+  - Tentation de modifier les paramètres après chaque perte (tweaking compulsif)
   - Le trading algorithmique ne supprime PAS l'emotion : il la deplace vers la supervision
-  - Etude : 80% des traders retail perdent de l'argent, principalement a cause de biais psychologiques
+  - Étude : 80% des traders retail perdent de l'argent, principalement a cause de biais psychologiques
 
 <div v-click="1">
 
 - **Biais Comportementaux** (Kahneman & Tversky, Prospect Theory, prix Nobel 2002)
-  - **Effet de dotation** : surestimer ce qu'on possede deja (garder une position perdante trop longtemps)
+  - **Effet de dotation** : surestimer ce qu'on possede déjà (garder une position perdante trop longtemps)
   - **Aversion a la perte** : une perte de 1000$ fait 2x plus mal qu'un gain de 1000$ ne fait plaisir
   - **Biais de confirmation** : ne chercher que les preuves qui confirment notre these initiale
-  - **Biais de representativite** : "la derniere fois que ca ressemblait a ca, le marche a monte"
+  - **Biais de representativite** : "la dernière fois que ca ressemblait a ca, le marche a monte"
   - **Ancrage** : fixer un "prix d'achat" mental qui influence irrationnellement les decisions de vente
-  - **Illusion de controle** : croire qu'on peut predire le marche mieux que les autres
+  - **Illusion de contrôle** : croire qu'on peut predire le marche mieux que les autres
 
 </div>
 
@@ -629,15 +629,15 @@ layout: compact
   - Commencez petit : paper trading pendant 3 mois minimum
   - Ne jamais trader l'argent dont on a besoin (tampon financier obligatoire)
   - Tenir un journal de trading : decisions ET emotions (post-mortem regulier)
-  - Regles de pause : apres 3 pertes consecutives, arreter pour la journee
+  - Règles de pause : après 3 pertes consecutives, arreter pour la journee
 
 </div>
 <div v-click="2">
 
 - **Avantage du trading algorithmique**
   - L'algo execute sans emotion, mais le trader doit resister a l'envie de le "debrancher"
-  - Regle : definir les regles de supervision AVANT le deploiement (MaxDD, perte max/jour)
-  - Arret automatique si regles violees : `MaximumDrawdownPercentPerSecurity`
+  - Règle : définir les règles de supervision AVANT le deploiement (MaxDD, perte max/jour)
+  - Arret automatique si règles violees : `MaximumDrawdownPercentPerSecurity`
 
 </div>
 
@@ -647,7 +647,7 @@ image: ./images/bollinger_bands.png
 imageClass: mid-right visible
 ---
 
-# Strategies de Moyenne Reversion
+# Stratégies de Moyenne Reversion
 
 - **Moyenne Reversion** (concept fondamental en finance)
   - Les prix tendent a revenir vers une moyenne a long terme (hypothese d'Ornstein-Uhlenbeck)
@@ -657,7 +657,7 @@ imageClass: mid-right visible
 <div v-click="1">
 
 - **Pieges courants** (pourquoi la mean-reversion est difficile)
-  - Biais de Survie : actifs delistes faussent les resultats (ils ne "revertent" pas, ils disparaissent)
+  - Biais de Survie : actifs delistes faussent les résultats (ils ne "revertent" pas, ils disparaissent)
   - Co-integration necessaire (pas juste la correlation -- la correlation peut changer sans warning)
   - Plus une anomalie est connue, plus elle s'erode (alpha decay accelere par les ETFs smart-beta)
 </div>
@@ -666,14 +666,14 @@ imageClass: mid-right visible
 
 # Mean Reversion : Projets et Lecons
 
-- **Projets du depot** (resultats backtestes 2015-2026)
+- **Projets du depot** (résultats backtestes 2015-2026)
   - `MeanReversion` (Sharpe 0.29) -- RSI mean-reversion classique sur actions US
   - `PairsTrading` (Sharpe -0.36) -- Echec pedagogique : co-integration instable dans le temps
   - `TrendFilteredMeanReversion` (Sharpe -0.02) -- Mean reversion + filtre SMA200
 <div v-click="1">
 
-- **Pourquoi les resultats sont modestes** (ce que nos backtests revelent)
-  - La mean-reversion fonctionne sur des horizons courts (intraday, quelques jours) mais nos strategies operent en daily/weekly
+- **Pourquoi les résultats sont modestes** (ce que nos backtests revelent)
+  - La mean-reversion fonctionne sur des horizons courts (intraday, quelques jours) mais nos stratégies operent en daily/weekly
   - Sur actions US : le momentum domine le mean-reversion depuis 2010 (marche haussier structurel)
   - Le pairs trading exige une co-integration stable, mais les relations entre actifs derivent (regime changes)
   - Le filtre SMA200 ajoute du "cash drag" : on est souvent hors-marche pendant les meilleures periodes
@@ -694,11 +694,11 @@ image: ./images/macd_chart.png
 imageClass: top-right visible
 ---
 
-# Strategies Fondamentales de Momentum
+# Stratégies Fondamentales de Momentum
 
 - **Momentum** (anomalie la plus documentee en finance)
   - Un actif qui monte tend a continuer a monter
-  - Jegadeesh & Titman (1993) : effet present 30+ ans apres
+  - Jegadeesh & Titman (1993) : effet present 30+ ans après
   - Le MACD est un indicateur classique de momentum
   - Principe : acheter les "gagnants" 3-12 mois, vendre les "perdants"
 <div v-click="1">
@@ -720,7 +720,7 @@ imageClass: top-right visible
 
 ---
 
-# Momentum : Projets et Resultats
+# Momentum : Projets et Résultats
 
 - **Projets du depot** (backtestes 2015-2026)
   - `EMA-Cross-Alpha` (Sharpe 0.98) -- croisement de moyennes mobiles optimise, notre meilleur alpha
@@ -729,7 +729,7 @@ imageClass: top-right visible
   - `DualMomentum` (Sharpe 0.35) -- momentum absolu + relatif (Gary Antonacci)
 <div v-click="1">
 
-- **Ce que nos resultats confirment** (patterns recurrents)
+- **Ce que nos résultats confirment** (patterns recurrents)
   - Le momentum simple (EMA crossover) bat les approches plus sophistiquees sur nos données
   - La rotation sectorielle ajoute de la diversification mais reduit le Sharpe vs stock-picking
   - Le DualMomentum est plus defensif (meilleur MaxDD) mais sacrifie du rendement
@@ -737,7 +737,7 @@ imageClass: top-right visible
 </div>
 <div v-click="2">
 
-- **Lecon** : le momentum est la strategie la plus robuste historiquement, malgre les "crash risks"
+- **Lecon** : le momentum est la stratégie la plus robuste historiquement, malgre les "crash risks"
   - Notebook : `QC-Py-13-Alpha-Models.ipynb`
 
 </div>
@@ -746,10 +746,10 @@ imageClass: top-right visible
 
 ---
 
-# Strategies de Regime Switching (1/2)
+# Stratégies de Regime Switching (1/2)
 
 - **Concept & Types de regimes**
-  - Les Marches varient entre differents regimes qui changent les correlations et la volatilite
+  - Les Marches varient entre différents regimes qui changent les correlations et la volatilite
   - Regimes typiques : haussier/baissier, haute/basse volatilite, inflation/deflation, risk-on/risk-off
   - La Prediction de ces regimes est un defi majeur : les transitions sont rares et soudaines
   - Exemple : le passage au regime COVID (mars 2020) en quelques jours
@@ -769,14 +769,14 @@ imageClass: top-right visible
 layout: compact
 ---
 
-# Strategies de Regime Switching (2/2)
+# Stratégies de Regime Switching (2/2)
 
 - **Modèles probabilistes** (l'elite de la detection de regime)
   - **HMM** (Hidden Markov Models) : detectent les regimes latents (bull/bear/sideways)
   - **Filtre de Kalman** : estimation continue de l'etat cache du marche en temps réel
   - **GARCH a regimes** : volatilite conditionnelle qui change selon l'etat du marche
   - Necessite un modèle de variables hypothetiques ou variables latentes
-  - Tres puissant mais complexe a calibrer : choix du nombre d'etats, initialisation sensible
+  - Très puissant mais complexe a calibrer : choix du nombre d'etats, initialisation sensible
 
 <div v-click="1">
 
@@ -805,7 +805,7 @@ layout: compact
 - **VWAP - Volume Weighted Average Price**
   - Objectif: Obtenir un prix moyen pondere par le volume sur la journee
   - Utilisation: Frequemment utilise en trading institutionnel pour minimiser l'impact du marche
-  - Mecanisme: Calcule le rapport cout/volume a des intervalles reguliers et execute des ordres en fonction
+  - Mécanisme: Calcule le rapport cout/volume a des intervalles reguliers et execute des ordres en fonction
   - Un ordre est "bien execute" s'il bat le VWAP
 
 <div v-click="1">
@@ -813,16 +813,16 @@ layout: compact
 - **TWAP - Time Weighted Average Price**
   - Objectif: Obtenir un prix moyen pondere par le temps
   - Utilisation: Utilise lorsque l'impact du volume sur le prix est moins pertinent
-  - Mecanisme: Divise un gros ordre en plus petits morceaux, executes a intervalles reguliers
+  - Mécanisme: Divise un gros ordre en plus petits morceaux, executes a intervalles reguliers
   - Plus simple que VWAP, utile pour les marches peu liquides
 </div>
 <div v-click="2">
 
-- **TWAP/VWAP sont les standards de l'execution institutionnelle**
+- **TWAP/VWAP sont les standards de l'exécution institutionnelle**
   - Pour eviter un prix moyen trop deforme par un seul gros ordre (market impact)
   - QuantConnect Lean offre un `VolumeWeightedAveragePriceExecutionModel` natif
-  - Dans le framework : c'est le role de l'**ExecutionModel** (separe de la strategie)
-  - Pour un retail trader : les ordres sont assez petits pour que l'execution immediate suffise
+  - Dans le framework : c'est le rôle de l'**ExecutionModel** (separe de la stratégie)
+  - Pour un retail trader : les ordres sont assez petits pour que l'exécution immediate suffise
 
 </div>
 
@@ -832,10 +832,10 @@ image: ./images/security_market_line.png
 imageClass: top-right visible
 ---
 
-# Strategies Basees sur les Données - Modèles Factoriels
+# Stratégies Basees sur les Données - Modèles Factoriels
 
 - **Exposition Factorielle** (decomposer le rendement)
-  - Sensibilité d'un actif aux facteurs systematiques
+  - Sensibilité d'un actif aux facteurs systématiques
   - Macro : taux, inflation, PIB, credit spreads
   - Style : taille, valeur, momentum, quality
   - Fama-French (1992) : ~90% de la variance expliquee
@@ -845,9 +845,9 @@ imageClass: top-right visible
 - **Rendement Factoriel & Spécifique**
   - R(i) = alpha + beta1 x Market + beta2 x SMB
     &nbsp;&nbsp;+ beta3 x HML + epsilon
-  - Factoriel = betas (exposition systematique)
+  - Factoriel = betas (exposition systématique)
   - Spécifique = alpha + epsilon (idiosyncrasique)
-  - Objectif : capturer l'alpha residuel apres controle
+  - Objectif : capturer l'alpha residuel après contrôle
 </div>
 
 ---
@@ -860,15 +860,15 @@ imageClass: top-right visible
   - Aujourd'hui : les 5 facteurs Fama-French + momentum expliquent ~90% de la variance des portefeuilles
 <div v-click="1">
 
-- **Projets du depot** (resultats backtestes 2015-2026)
+- **Projets du depot** (résultats backtestes 2015-2026)
   - `FamaFrench` (Sharpe 0.54) -- Modèle classique 3 facteurs, stable et comprehensible
   - `RiskParity` (Sharpe 0.40) -- Allocation par parite de contribution au risque (Bridgewater-style)
 
 </div>
 <div v-click="2">
 
-- **Application pratique** (comment utiliser les facteurs dans vos strategies)
-  - Les facteurs servent a decomposer votre alpha : votre strategie capte-t-elle du vrai alpha ou juste du beta deguise ?
+- **Application pratique** (comment utiliser les facteurs dans vos stratégies)
+  - Les facteurs servent a decomposer votre alpha : votre stratégie capte-t-elle du vrai alpha ou juste du beta deguise ?
   - Un Sharpe de 1.0 avec un beta de 1.5 est moins impressionnant qu'un Sharpe de 0.5 avec un beta de 0.3
   - Combiner facteurs + momentum est l'approche la plus robuste dans nos backtests
   - Notebook : `QC-Py-10-Risk-Portfolio-Management.ipynb`
@@ -879,7 +879,7 @@ imageClass: top-right visible
 
 ---
 
-# Strategies Basees sur les Données - Sentiment Analysis
+# Stratégies Basees sur les Données - Sentiment Analysis
 
 - **Objectif** (l'alpha cache dans le texte non structure)
   - Exploiter les données textuelles non structurees pour predire les mouvements du marche
@@ -895,10 +895,10 @@ imageClass: top-right visible
 </div>
 <div v-click="2">
 
-- **Mecanisme et pipeline** (de la collecte au signal)
+- **Mécanisme et pipeline** (de la collecte au signal)
   - Le sentiment du marche est extrait des données textuelles (score continu de -1 a +1)
   - Le score de sentiment est utilise comme feature additionnelle pour generer des signaux
-  - Pipeline : collecte texte -> preprocessing -> scoring NLP -> aggregation -> signal -> execution
+  - Pipeline : collecte texte -> preprocessing -> scoring NLP -> aggregation -> signal -> exécution
   - Defis : bruit (faux positifs), latence (le marche reagit en minutes), sarcasme, jargon financier
 </div>
 
@@ -915,7 +915,7 @@ imageClass: top-right visible
 - **Le pipeline concret pour un quant individuel**
   - Source gratuite : Tiingo News API (integree a QC) -- des milliers d'articles/jour
   - Scoring : FinBERT (pre-entraine, ~15% accuracy vs BERT generique) ou LLM via API
-  - Signal : aggreger les scores sur une fenetre temporelle, filtrer le bruit (seuils)
+  - Signal : aggreger les scores sur une fenêtre temporelle, filtrer le bruit (seuils)
   - Integration : le score de sentiment devient une feature parmi d'autres dans votre alpha
 
 </div>
@@ -931,9 +931,9 @@ imageClass: top-right visible
 layout: compact
 ---
 
-# Strategies de Trading a Haute Frequence (1/2)
+# Stratégies de Trading a Haute Frequence (1/2)
 
-- **Principe : exploiter des micro-inefficacites a tres grande vitesse**
+- **Principe : exploiter des micro-inefficacites a très grande vitesse**
   - Profit par trade minuscule (< 0.01%) mais multiplie par des milliers/millions de trades/jour
   - Fournit de la liquidite au marche en echange d'un spread (market making HFT)
   - Represente 50-70% du volume quotidien sur les marches US (estimation SEC)
@@ -942,8 +942,8 @@ layout: compact
 
 - **Ratio de Sharpe Eleve** (la loi des grands nombres en action)
   - Loi des grands nombres : des milliers de petits paris (quasi-)independants chaque jour
-  - Sharpe annualise > 5 courant pour les firmes HFT (vs < 2 pour la plupart des strategies)
-  - Volatilite du P&L tres faible sur une base journaliere (profit presque garanti par jour)
+  - Sharpe annualise > 5 courant pour les firmes HFT (vs < 2 pour la plupart des stratégies)
+  - Volatilite du P&L très faible sur une base journaliere (profit presque garanti par jour)
   - Exemple : Virtu Financial a eu 1 seul jour de perte en 1238 jours de trading (2009-2014)
   - Le HFT est le seul domaine ou le Sharpe est structurellement > 3 grace au volume de trades
 
@@ -952,7 +952,7 @@ layout: compact
 
 - **Difficultes et Defis** (pas pour les debutants)
   - Couts de transaction : a cette echelle, chaque centime de spread compte enormement
-  - Course a la latence : difference de microsecondes = avantage competitif (winner-takes-all)
+  - Course a la latence : différence de microsecondes = avantage competitif (winner-takes-all)
   - Risque de "flash crash" : pertes catastrophiques en quelques millisecondes si le modèle deraille
   - Barrieres a l'entrée colossales : infrastructure coutant des millions de dollars par an
   - Marche oligopolistique : domie par 5-10 firmes (Citadel Securities, Virtu, Jump Trading, etc.)
@@ -961,11 +961,11 @@ layout: compact
 
 ---
 
-# Strategies de Trading a Haute Frequence (2/2)
+# Stratégies de Trading a Haute Frequence (2/2)
 
 - **Machine Learning et AI pour le HFT** (la frontiere technologique)
   - Utilisation de modèles de Deep Learning pour prediction de micro-tendances (tick-level)
-  - Reinforcement Learning pour l'ajustement dynamique de strategies d'execution
+  - Reinforcement Learning pour l'ajustement dynamique de stratégies d'exécution
   - Les modèles doivent etre ultra-rapides : inference en microsecondes (FPGA, ASIC)
   - Tendance : modèles de plus en plus legers (distillation, quantisation) pour la vitesse
 
@@ -973,7 +973,7 @@ layout: compact
 
 - **Latence Ultra-Faible** (la course aux microsecondes)
   - Utilisation de FPGA (Field-Programmable Gate Arrays) pour des ordres en < 1 microseconde
-  - Co-location de serveurs dans le meme datacenter que la bourse (NYSE: Mahwah NJ, CME: Aurora IL)
+  - Co-location de serveurs dans le même datacenter que la bourse (NYSE: Mahwah NJ, CME: Aurora IL)
   - Fibres optiques dediees, micro-ondes et lasers entre datacenters (Chicago-New York en 4ms)
   - Budget infrastructure : 10-100M$/an pour les firmes HFT majeures (Citadel Securities, Virtu, Jump)
 
@@ -991,7 +991,7 @@ layout: compact
 
 ---
 
-# Strategies de Trading Saisonnier
+# Stratégies de Trading Saisonnier
 
 - **Effet de Janvier** (l'effet saisonnier le plus etudie)
   - Petites capitalisations beneficient en janvier (tax-loss selling en decembre)
@@ -1000,8 +1000,8 @@ layout: compact
   - Exemple US : le Russell 2000 surperformait le S&P 500 de ~2% en janvier (1980-2000)
 <div v-click="1">
 
-- **Strategies Mensuelles et "Turn of the Month"**
-  - Acheter/vendre selon la performance du mois precedent (reversal mensuel)
+- **Stratégies Mensuelles et "Turn of the Month"**
+  - Acheter/vendre selon la performance du mois précédent (reversal mensuel)
   - "Sell in May and go away" : effet historique mais inconsistant depuis 2010
   - Turn of the Month : rendements plus eleves les 3 derniers + 3 premiers jours du mois
   - Explication : flux de liquidite des fonds de pension et paies en fin de mois
@@ -1009,7 +1009,7 @@ layout: compact
 </div>
 <div v-click="2">
 
-- **Strategies Matieres Premieres** (ancrees dans la realite physique)
+- **Stratégies Matieres Premières** (ancrees dans la realite physique)
   - Essence et gaz naturel : saisonnalite liee aux saisons physiques (offre/demande réelle)
   - Fiable car base sur besoins economiques réels (petrole en ete = driving season, gaz en hiver = chauffage)
   - Aussi : cereales (saison de plantation/recolte), metaux (construction, saisonnier)
@@ -1019,22 +1019,22 @@ layout: compact
 
 # Trading Saisonnier : Precautions et Projets
 
-- **Precautions** (pourquoi les resultats sont faibles)
+- **Precautions** (pourquoi les résultats sont faibles)
   - Biais de Data-Snooping : avec 252 jours de trading, on trouvera toujours un "pattern" par hasard
   - Les effets saisonniers purs generent peu d'alpha en 2025 (trop connus, trop exploites par les ETFs)
-  - Les saisonnalites fonctionnent mieux comme **filtre additionnel** que comme strategie primaire
+  - Les saisonnalites fonctionnent mieux comme **filtre additionnel** que comme stratégie primaire
 <div v-click="1">
 
-- **Projets du depot** (resultats backtestes 2015-2026)
-  - `TurnOfMonth` (Sharpe 0.13) -- Strategie calendaire pure, alpha quasi nul apres frais
+- **Projets du depot** (résultats backtestes 2015-2026)
+  - `TurnOfMonth` (Sharpe 0.13) -- Stratégie calendaire pure, alpha quasi nul après frais
   - `VIX-TermStructure` (Sharpe 0.05) -- Structure des termes VIX, Sharpe trop faible pour deployer
 
 </div>
 <div v-click="2">
 
-- **Lecon** : nos backtests confirment la theorie -- les anomalies calendaires seules ne suffisent pas
+- **Lecon** : nos backtests confirment la théorie -- les anomalies calendaires seules ne suffisent pas
   - Approche recommandee : utiliser la saisonnalite comme un filtre parmi d'autres (ex: eviter mai-septembre)
-  - La VIX term structure reste un indicateur de regime utile, meme si elle ne genere pas d'alpha seule
+  - La VIX term structure reste un indicateur de regime utile, même si elle ne genere pas d'alpha seule
 
 </div>
 
@@ -1070,23 +1070,23 @@ layout: compact
 
 # Portefeuille a Haut Levier vs Haut Beta (2/2)
 
-- **Ratio de Sharpe et croissance composee** (la theorie de Markowitz)
+- **Ratio de Sharpe et croissance composee** (la théorie de Markowitz)
   - Mesure le rendement ajuste au risque : SR = (R - Rf) / sigma
   - Croissance composee g = m - s^2/2 : proportionnelle au carre du ratio de Sharpe
   - Implication : un portefeuille a faible beta + levier peut battre un portefeuille a haut beta
-  - C'est le fondement theorique de "Betting Against Beta" (Frazzini & Pedersen, 2014)
+  - C'est le fondement théorique de "Betting Against Beta" (Frazzini & Pedersen, 2014)
 <div v-click="1">
 
 - **Allocation d'Actifs** (la decision la plus importante en investissement)
-  - Repartition du portefeuille entre differentes classes d'actifs (actions, obligations, matieres premieres)
+  - Repartition du portefeuille entre différentes classes d'actifs (actions, obligations, matieres premières)
   - Optimisation 23-77 : entre actions a faible beta et obligations pour un risque minimal (Markowitz)
-  - Le "All-Weather" de Ray Dalio : 30% actions, 40% obligations longues, 15% obligations moyennes, 7.5% or, 7.5% matieres premieres
+  - Le "All-Weather" de Ray Dalio : 30% actions, 40% obligations longues, 15% obligations moyennes, 7.5% or, 7.5% matieres premières
 
 </div>
 <div v-click="2">
 
-- **Projets du depot** (resultats backtestes 2015-2026)
-  - `AllWeather` (Sharpe 0.67, MaxDD -15%) -- "Toutes saisons" inspire de Ray Dalio, tres stable
+- **Projets du depot** (résultats backtestes 2015-2026)
+  - `AllWeather` (Sharpe 0.67, MaxDD -15%) -- "Toutes saisons" inspire de Ray Dalio, très stable
   - `Portfolio-Optimization-ML` (Sharpe 0.90, MaxDD -13%) -- Optimisation ML, notre meilleur
   - `RiskParity` (Sharpe 0.40, MaxDD -12%) -- Allocation par parite de contribution au risque
   - Notebook : `QC-Py-21-Portfolio-Optimization-ML.ipynb`
@@ -1095,7 +1095,7 @@ layout: compact
 
 ---
 
-# Lecons apprises : 10 patterns de nos 67 strategies
+# Lecons apprises : 10 patterns de nos 67 stratégies
 
 Ce que 67 backtests et 11 ans de données nous ont enseigne :
 
@@ -1152,14 +1152,14 @@ Ce que 67 backtests et 11 ans de données nous ont enseigne :
 
 ---
 
-# Echecs pedagogiques : pourquoi certaines strategies echouent
+# Echecs pedagogiques : pourquoi certaines stratégies echouent
 
-*"L'experience, c'est le nom que chacun donne a ses erreurs."* -- Oscar Wilde. Documenter les echecs est aussi important que celebrer les succes.
+*"L'expérience, c'est le nom que chacun donne a ses erreurs."* -- Oscar Wilde. Documenter les echecs est aussi important que celebrer les succes.
 
 <div v-click="1">
 
 - **PairsTrading** (Sharpe -0.36) -- l'echec le plus instructif
-  - La co-integration est instable dans le temps (fenetre de 2 ans insuffisante)
+  - La co-integration est instable dans le temps (fenêtre de 2 ans insuffisante)
   - Ce qui marchait en 2010 ne marche plus en 2020 : les marches evoluent
   - La relation statistique entre deux actifs derive inexorablement
   - Test d'Engle-Granger positif en-sample, negatif hors-sample : piege classique
@@ -1169,16 +1169,16 @@ Ce que 67 backtests et 11 ans de données nous ont enseigne :
 
 - **ForexCarry** (Sharpe -0.32) -- victime du regime monetaire
   - La prime de carry s'est evaporee avec la convergence des taux G10 post-2020
-  - Strategie structurellement cassee : quand tous les taux sont proches de zero, pas de carry
-  - Meme apres la hausse des taux 2022-2024, le carry ne s'est pas retabli de facon stable
+  - Stratégie structurellement cassee : quand tous les taux sont proches de zero, pas de carry
+  - Même après la hausse des taux 2022-2024, le carry ne s'est pas retabli de facon stable
 
 </div>
 <div v-click="3">
 
-- **InverseVolatility-Rank** (3 iterations -- exemple d'echec methodique)
+- **InverseVolatility-Rank** (3 itérations -- exemple d'echec methodique)
   - v1 : MaxDD 54.7% -- drawdown inacceptable, allocation trop agressive
   - v2 : MaxDD 22.7% mais Sharpe negatif -- amelioration du risque, rendement toujours negatif
-  - v3 : MaxDD 41%, Sharpe 0.12 -- plafond structurel confirme apres 3 iterations
+  - v3 : MaxDD 41%, Sharpe 0.12 -- plafond structurel confirme après 3 itérations
   - Lecon : parfois l'hypothese de depart est fausse, il faut savoir abandonner
 
 </div>
@@ -1192,7 +1192,7 @@ layout: compact
 <div v-click="1">
 
 - **1990s** : Regression lineaire, facteurs Fama-French (1992)
-  - Les premiers modèles quantitatifs systematiques (LTCM, DE Shaw, Renaissance)
+  - Les premiers modèles quantitatifs systématiques (LTCM, DE Shaw, Renaissance)
 
 </div>
 <div v-click="2">
@@ -1229,7 +1229,7 @@ layout: compact
 
 - **2025** : LLMs pour sentiment, agents IA autonomes
   - Notre `QC-Py-26-LLM-Trading-Signals` -- la frontiere actuelle
-  - Agents autonomes : observation -> raisonnement -> execution en boucle
+  - Agents autonomes : observation -> raisonnement -> exécution en boucle
 
 </div>
 
@@ -1257,7 +1257,7 @@ La question cle n'est pas "quel modèle utiliser ?" mais "ai-je assez de signal 
 
 <div v-click="1">
 
-- **Étape 1** (Ch3) : Classifier direction (up/down) plutot que predire le prix. Definir l'horizon.
+- **Étape 1** (Ch3) : Classifier direction (up/down) plutot que predire le prix. Définir l'horizon.
 - **Étape 2** (Ch4) : 80% du travail -- EDA, outliers, feature engineering, normalisation, PCA. Attention au data leakage.
 
 </div>
@@ -1303,7 +1303,7 @@ layout: two-cols
 - Features correlees sans PCA
 - Données du futur (look-ahead bias)
 
-**Regle d'or** : toute feature doit etre stationnaire (rendements, pas prix) et disponible au moment de la decision (pas de look-ahead).
+**Règle d'or** : toute feature doit etre stationnaire (rendements, pas prix) et disponible au moment de la decision (pas de look-ahead).
 
 </div>
 
@@ -1327,19 +1327,19 @@ layout: compact
 
 <div v-click="1">
 
-- **State** : Features techniques + fondamentales, fenetre 20j (~60 features)
+- **State** : Features techniques + fondamentales, fenêtre 20j (~60 features)
 - **Action** : AGGRESSIVE (80/20) / MODERATE (50/50) / DEFENSIVE (20/80)
 
 </div>
 <div v-click="2">
 
-- **Reward** : Sharpe ratio glissant 30j, replay buffer 5000 experiences
+- **Reward** : Sharpe ratio glissant 30j, replay buffer 5000 expériences
 - **Notre implementation** : `RL-DQN-Trading` (Sharpe 0.53), MLP(64,32), surpasse 60/40
 
 </div>
 <div v-click="3">
 
-- **Limites** : environnement non-stationnaire, signal bruite, plus prometteur pour l'execution (VWAP adaptatif) que pour les signaux alpha
+- **Limites** : environnement non-stationnaire, signal bruite, plus prometteur pour l'exécution (VWAP adaptatif) que pour les signaux alpha
 
 </div>
 
@@ -1396,7 +1396,7 @@ Les marches financiers sont un environnement hostile pour les modèles : bruit e
 </div>
 <div v-click="2">
 
-- **Strategies classiques** : mean-reversion (difficile), momentum (robuste), factoriel (stable)
+- **Stratégies classiques** : mean-reversion (difficile), momentum (robuste), factoriel (stable)
   - Le momentum est l'anomalie la plus persistante de la finance moderne
 </div>
 <div v-click="3">

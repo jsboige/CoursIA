@@ -179,6 +179,43 @@ embeddings) lue et écrite par l'API, l'interrogation d'un provider
 cycle déclarer/basculer/rétablir d'un second environnement — et le
 piège mesuré par accident : `settings/update` **ne met pas à jour, il
 remplace** (démonstration sécurisée par instantané et restauration).
+[`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](parler-au-chatbot-en-visiteur-par-l-api.ipynb)
+ouvre la troisième face, celle du **navigateur d'un visiteur anonyme**
+(namespace `mwai-ui/v1`) : la page publique du chatbot n'embarque
+aucun jeton (design anti-cache), l'amorçage passe par `start_session`
+(le seul endpoint réellement public), et la conversation par
+`chats/submit` au header `X-WP-Nonce` — frontière 401 mesurée sans le
+nonce, et la nuance : un nonce est un anti-CSRF, pas une
+authentification.
+[`obtenir-des-donnees-structurees-par-l-api.ipynb`](obtenir-des-donnees-structurees-par-l-api.ipynb)
+ferme la dernière veine « non prouvée » : la route `/ai/json`. L'appel
+à froid échoue sur `The environment is required.` — la route ignore
+structurellement `envId`/`model` et lit la **case json de la matrice
+d'usages**, vide sur une instance custom-only où le repli interne
+`gpt-5-mini` sans environnement ne peut jamais passer la validation.
+Le notebook reproduit l'erreur, remplit la case par read-modify-write
+du bloc complet, obtient du JSON réellement exploitable (catalogue
+Valmont structuré), puis mesure honnêtement la promesse : le **null
+silencieux** du parser PHP (observable ou neutralisé ?) et la nature
+de la contrainte de format — prompt seul ou `response_format` au
+niveau fil, départagée par comparaison directe avec le moteur.
+État initial restauré à l'identique.
+[`autour-du-consent-oauth-du-serveur-mcp.ipynb`](autour-du-consent-oauth-du-serveur-mcp.ipynb)
+reprend la question laissée ouverte par le quatrième notebook : comment
+un client tiers se connecte-t-il **sans les clés de l'admin** ? La
+réponse est un serveur d'autorisation OAuth 2.0 embarqué dans les
+mêmes routes `mcp/v1` — deux documents de découverte (RFC 9728 puis
+8414), enregistrement dynamique (RFC 7591, client public sans secret),
+puis l'**escalier des refus** mesuré marche par marche : PKCE exigé
+(RFC 7636), consentement réservé aux administrateurs (un compte editor
+dédié le mesure à 400). Le consentement admin est mécanisé — formulaire
+portant le nonce maison `_mwai_nonce` et refus **par défaut**
+(`action=deny` surchargé par le bouton Approve) — puis code → token
+(PKCE S256, `expires_in` mesuré) → appel MCP réel au bearer délégué.
+Le notebook clôt par le contraste des trois authentifications croisées
+par la série : application password (identité pleine), token OAuth
+(délégation bornée et consentie), nonce visiteur (anti-CSRF sans
+identité), puis révoque son jeton et mesure la mort (401).
 
 ---
 
@@ -313,6 +350,12 @@ attendues.
   WordPress comme serveur MCP : handshake JSON-RPC, catalogue d'outils, tools/call en lecture et écriture
 - [`brancher-plusieurs-providers-par-l-api.ipynb`](brancher-plusieurs-providers-par-l-api.ipynb) —
   environnements et matrice d'usages multi-provider : catalogues, connexions, bascules, et le PUT déguisé de settings/update
+- [`parler-au-chatbot-en-visiteur-par-l-api.ipynb`](parler-au-chatbot-en-visiteur-par-l-api.ipynb) —
+  la face navigateur du visiteur : page sans jetons, session bootstrap, conversation anonyme au nonce
+- [`obtenir-des-donnees-structurees-par-l-api.ipynb`](obtenir-des-donnees-structurees-par-l-api.ipynb) —
+  sorties JSON structurees : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
+- [`autour-du-consent-oauth-du-serveur-mcp.ipynb`](autour-du-consent-oauth-du-serveur-mcp.ipynb) —
+  OAuth embarque du serveur MCP : decouverte, registration dynamique, escalier des refus, consent admin, token PKCE, appel delegue
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

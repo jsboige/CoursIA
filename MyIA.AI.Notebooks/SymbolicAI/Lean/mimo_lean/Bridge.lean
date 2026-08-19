@@ -340,6 +340,89 @@ theorem flip_bat_prob_lower (A : (Fin N → ℝ) →ₗ[ℝ] EuclideanSpace ℝ 
         exact (ENNReal.toReal_le_toReal (measure_ne_top _ _)
           (measure_ne_top _ _)).mpr hmassmono
 
+/-! ## Grain 4 (#11152, étape 3) — échec global : l'échappement coordonnée borne le succès ML
+
+La Brique 2 (`gaussian_coordinate_escape_bound`, Phase 3b) borne la probabilité
+que TOUTES les coordonnées du bruit échappent à un même intervalle, par
+indépendance du produit. Ce grain franchit le pas de l'étape 3 de #11152 :
+sous une hypothèse de couverture diagonale (« si une coordonnée du bruit
+tombe dans l'intervalle, un flip bat `x*` »), l'événement « aucun flip ne bat
+`x*` » est inclus dans l'échappement produit, donc a probabilité `≤ e^{−M·p}`.
+C'est le pont de l'échappement par coordonnée (Brique 2) à l'échec global :
+une descente stricte depuis `x*` qui s'en éloigne doit accepter un premier
+flip, qui bat — le terme `log log N` naîtra dans l'assemblage (grain 5) du
+comptage du réseau de codewords. -/
+
+/-- **Échec global (étape 3).** Hypothèse de couverture diagonale : si une
+coordonnée du bruit `w` tombe dans `I(c, ε) = (c−ε/2, c+ε/2] ⊆ [−2, 2]`,
+alors un flip bat `x*`. Alors la probabilité qu'aucun flip ne batte `x*`
+est `≤ exp(−M·ε·φ(2))` avec `φ(2) = exp(−2)/√(2π)`. Enchaînement :
+contraposée de la couverture (« aucun flip ne bat » ⊆ « toutes les
+coordonnées échappent »), transport `stdGaussian = (stdGaussianPi M).map
+(WithLp.toLp 2)` (`stdGaussianPi_map_toLp`), puis Brique 2. -/
+theorem no_flip_beats_prob_le {N M : ℕ} (hM : 0 < M)
+    (A : (Fin N → ℝ) →ₗ[ℝ] EuclideanSpace ℝ (Fin M)) {s c ε : ℝ}
+    (hε : 0 < ε) (hc : |c| + ε / 2 ≤ 2)
+    (hp1 : ε * Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤ 1)
+    (hcover : ∀ w : EuclideanSpace ℝ (Fin M),
+      (∃ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∈ Set.Ioc (c - ε / 2) (c + ε / 2)) →
+        ∃ i : Fin N, mimoObj A w s (flipAt i) < mimoObj A w s 0) :
+    (stdGaussian (EuclideanSpace ℝ (Fin M))
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)}).toReal
+      ≤ Real.exp (-((M : ℝ) * (ε * Real.exp (-2) / Real.sqrt (2 * Real.pi)))) := by
+  have hsub : {w : EuclideanSpace ℝ (Fin M) |
+      ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)} ⊆
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} := by
+    intro w hw j hj
+    exact ((hcover w ⟨j, hj⟩).elim hw).elim
+  have hmeas : MeasurableSet
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} := by
+    have hEq : {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} =
+        ⋂ j : Fin M,
+            {w : EuclideanSpace ℝ (Fin M) |
+              (WithLp.ofLp w : Fin M → ℝ) j ∈ (Set.Ioc (c - ε / 2) (c + ε / 2))ᶜ} := by
+      ext w
+      simp only [Set.mem_setOf_eq, Set.mem_iInter, Set.mem_compl_iff]
+    rw [hEq]
+    refine MeasurableSet.iInter fun j => ?_
+    exact measurableSet_Ioc.compl.preimage
+      (by fun_prop : Measurable (fun w : EuclideanSpace ℝ (Fin M) =>
+        (WithLp.ofLp w : Fin M → ℝ) j))
+  have hpre : (WithLp.toLp 2 : (Fin M → ℝ) → EuclideanSpace ℝ (Fin M)) ⁻¹'
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}
+      = {v : Fin M → ℝ | ∀ j : Fin M, v j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} := by
+    ext v
+    simp only [Set.mem_preimage, Set.mem_setOf_eq]
+  have hmass : (stdGaussian (EuclideanSpace ℝ (Fin M))
+        {w : EuclideanSpace ℝ (Fin M) |
+          ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)})
+      = (stdGaussianPi M
+          {v : Fin M → ℝ | ∀ j : Fin M, v j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}) := by
+    rw [← stdGaussianPi_map_toLp,
+      Measure.map_apply (by fun_prop :
+        Measurable (WithLp.toLp 2 : (Fin M → ℝ) → EuclideanSpace ℝ (Fin M))) hmeas,
+      hpre]
+  have hesc := gaussian_coordinate_escape_bound (n := M) (c := c) (ε := ε)
+    hM hε hc hp1
+  calc (stdGaussian (EuclideanSpace ℝ (Fin M))
+        {w : EuclideanSpace ℝ (Fin M) |
+          ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)}).toReal
+      ≤ (stdGaussian (EuclideanSpace ℝ (Fin M))
+          {w : EuclideanSpace ℝ (Fin M) |
+            ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j
+              ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}).toReal :=
+        (ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)).mpr
+          (measure_mono hsub)
+    _ = (stdGaussianPi M
+          {v : Fin M → ℝ | ∀ j : Fin M, v j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}).toReal :=
+        by rw [hmass]
+    _ ≤ Real.exp (-((M : ℝ) * (ε * Real.exp (-2) / Real.sqrt (2 * Real.pi)))) := hesc
+
 end Converse
 
 end Mimo

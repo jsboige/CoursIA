@@ -41,8 +41,8 @@ SPEAKER_TO_VOICE: dict[CanonicalSpeaker, str] = {
     "follenvie": "v4_loiseau_vulgar",
     "madame_loiseau": "v4_mme_loiseau_shrew",
     "madame_follenvie": "v4_mme_loiseau_shrew",
-    "cornudet": "v4_cornudet_mocking",
-    "carre_lamadon": "v4_cornudet_mocking",
+    "cornudet": "v4_cornudet_mocking_v2",
+    "carre_lamadon": "v4_cornudet_mocking_v2",
     "soeurs": "v4_soeurs_pious",
     "officier": "v4_officier_german",
 }
@@ -153,13 +153,19 @@ VOICE_PROFILES: dict[str, dict] = {
         ),
         "preset": "neutral_female",
     },
-    "v4_cornudet_mocking": {
+    "v4_cornudet_mocking_v2": {
         "speakers": ["cornudet", "carre_lamadon"],
         "register": "sardonic, cynical, ironically detached",
+        # Interrogative/exclamative sample on purpose: a clone made from a purely
+        # declarative sample flattens pitch range on declarative text (seg118
+        # REJECT-MONOTONE at every seed, spans 1.8-3.8 st) even though that
+        # sample scored 12.65 st. The question/exclamation-rich sample restores
+        # melodic movement through the clone (seg118 -> MODERATE 7.1 st, WARN
+        # FADING only). Evidence: #11346, gate 2026-08-17_cornudet_v2.
         "sample_text": (
-            "Eh bien, messieurs, voilà où mènent les grandes phrases sur l'honneur "
-            "et la patrie. On demande à une femme de se sacrifier pour qu'ensuite "
-            "on la traite comme une moins que rien. C'est magnifique, ce zèle collectif."
+            "Eh quoi ! C'est donc là tout votre patriotisme ? Des mots, toujours des mots ! "
+            "Vous parlez d'honneur, messieurs... mais lequel, au juste ? "
+            "Celui qui vous arrange, n'est-ce pas ? Voilà qui est bien commode, je trouve."
         ),
         "preset": "expressive_male_cold",
     },

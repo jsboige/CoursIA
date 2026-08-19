@@ -20,10 +20,10 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 179 |
+| Notebooks | 186 |
 | PRODUCTION | 0 |
-| BETA | 175 |
-| ALPHA | 4 |
+| BETA | 183 |
+| ALPHA | 3 |
 
 ## GameTheory (49 notebooks)
 
@@ -76,7 +76,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 45 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
 | 46 | GameTheory 8c - Jeux Combinatoires : Approfondissement  | BETA | Oui |
 | 47 | GameTheory 8c - Jeux Combinatoires : Approfondissement  | BETA | Oui |
-| 48 | GameTheory-9-BackwardInduction (C#) | ALPHA | Oui |
+| 48 | GameTheory-9-BackwardInduction (C#) | BETA | Oui |
 | 49 | GameTheory-9-BackwardInduction | BETA | Oui |
 
 ## GameTheory/SocialChoice (7 notebooks)
@@ -99,7 +99,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 2 | IIT - Sujets Avances : Partitionnement, Repertoires Cau | BETA | Oui |
 | 3 | IIT-3. Coarse-graining, blackboxing et l'échelle du $\P | BETA | Oui |
 
-## IIT/ICT-Series (45 notebooks)
+## IIT/ICT-Series (48 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -137,17 +137,20 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 32 | ICT-29 — Inoculation d'un concept (expérience D, strate | BETA | Oui |
 | 33 | ICT-3 — Robustesse & délai de gratification : étude qua | BETA | Oui |
 | 34 | ICT-30 — Invention inhibée (expérience E, strate 7) | BETA | Oui |
-| 35 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
-| 36 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
-| 37 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
-| 38 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
-| 39 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | BETA | Oui |
-| 40 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | BETA | Oui |
-| 41 | ICT — Substrat argumentation : trajectoires de croyance | BETA | Oui |
-| 42 | Boucle auto-referentielle p_hat (case 2 / Epic #9533) | BETA | Oui |
-| 43 | ICT -- Dissociation saillance / pregnance (case `s ⟂ π` | BETA | Oui |
-| 44 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | BETA | Non |
-| 45 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
+| 35 | ICT-31 — Le contraste **mesuré** à trois substrats : bi | BETA | Oui |
+| 36 | ICT-4 — Tableaux chimériques & agrégation émergente («  | BETA | Oui |
+| 37 | ICT-5 : Émergence causale — quelle échelle décrit le mi | BETA | Oui |
+| 38 | ICT-6 — Du tri a la chaîne de Markov : emergence causal | BETA | Oui |
+| 39 | ICT-7 — Signatures *scale-free* & criticalite | BETA | Oui |
+| 40 | ICT-8 — Paysages d'attracteurs & signaux precurseurs :  | BETA | Oui |
+| 41 | ICT-9 — Agence & regeneration : *reparer sa forme, ou s | BETA | Oui |
+| 42 | ICT — Annexe : la contextualité du zoo de proxys est un | BETA | Oui |
+| 43 | ICT — Substrat argumentation : trajectoires de croyance | BETA | Oui |
+| 44 | Boucle auto-referentielle p_hat (case 2 / Epic #9533) | BETA | Oui |
+| 45 | ICT -- Dissociation saillance / pregnance (case `s ⟂ π` | BETA | Oui |
+| 46 | ICT-Life — Substrat de calibration certifié : le Jeu de | BETA | Oui |
+| 47 | Tete-a-tete SAE <-> J-space -- les deux lentilles du wo | BETA | Non |
+| 48 | ICT-Synthèse — un seul appareil de mesure, cinq substra | BETA | Non |
 
 ## Probas (2 notebooks)
 
@@ -227,7 +230,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 18 | PyMC-8 : TrueSkill - Classement et Apprentissage en Lig | BETA | Oui |
 | 19 | PyMC-9 : Classification Bayesienne et Tests A/B | BETA | Oui |
 
-## RL (17 notebooks)
+## RL (21 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -237,7 +240,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 4 | RL 13 - Exploration par curiosité : Random Network Dist | BETA | Oui |
 | 5 | Tutoriel Stable Baselines3 - Premiers pas | BETA | Oui |
 | 6 | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement, Multi | BETA | Non |
-| 7 | Notebook 3 – Hindsight Expérience Replay (HER) et Sauve | BETA | Oui |
+| 7 | Notebook 3 – Hindsight Experience Replay (HER) et Sauve | BETA | Oui |
 | 8 | RL-4 : Bandits Manchots et le Compromis Exploration-Exp | BETA | Oui |
 | 9 | RL-5 : MDP, Programmation Dynamique et Q-Learning Tabul | BETA | Oui |
 | 10 | RL-6 : Deep Q-Network (DQN) et Policy Gradient | BETA | Oui |
@@ -248,3 +251,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 15 | RL-7 : Introduction a l'Apprentissage Multi-Agent | BETA | Oui |
 | 16 | RL-8 : Model-Based RL — Dyna-Q et planification | BETA | Oui |
 | 17 | RL-9 : RL offline — Behavior Cloning et erreur d'extrap | BETA | Oui |
+| 18 | RL Post-Training — 1 : PPO pour l'alignement d'un petit | BETA | Oui |
+| 19 | RL Post-Training — 2 : GRPO minimal — alignement d'un p | BETA | Non |
+| 20 | RL Post-Training — 3 : Reward hacking — anatomie d'un h | BETA | Non |
+| 21 | RL Post-Training — 4 : DPO offline vs RL online — même  | BETA | Non |

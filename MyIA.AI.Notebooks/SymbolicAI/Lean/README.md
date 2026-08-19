@@ -135,8 +135,9 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean-20-Analysis-I-Tao-Workflow.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
 | 21 | [Lean-21-PFR-Entropy-Method](Lean-21-PFR-Entropy-Method.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
 | 22 | [Lean-22-MIMO-Detection-Flips](Lean-22-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 40 min |
+| 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Le problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 **à l'écran** (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 45 min |
 
-**Durée totale** : ~20h55
+**Durée totale** : ~21h40
 
 ## Acquis d'apprentissage
 
@@ -152,7 +153,7 @@ A l'issue de la série, vous saurez :
 - **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks 16a-16e.
 - **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook 16f.
 - **Formaliser les invariants de nœuds** : PD-codes, mouvements de Reidemeister et tricolorabilité de Fox, en s'appuyant sur le companion `knot_lean` (transfert de tricolorabilité le long d'un twist R1 connecté, preuve forward sorry-free + backward partielle). Notebooks 17a, 17b.
-- **Lire le paysage galoisien moderne** : la preuve formelle que **M₂₃ (groupe sporadique de Mathieu d'ordre 10 200 960) est simple** est *vendored* dans le companion `galois_lean/` (PR #10486, août 2026, Apache-2.0) ; la question ouverte — *M₂₃ est-il un groupe de Galois sur ℚ ?* — est ramenée à un problème de théorie des nombres (polynôme irréductible de degré 23 à racines dans M₂₃, discriminant, identification `23T5 = M23`, Poonen et al., arXiv:2608.08538) — voir Epic #10478 pour le notebook pédagogique à venir.
+- **Lire le paysage galoisien moderne** : la preuve formelle que **M₂₃ (groupe sporadique de Mathieu d'ordre 10 200 960) est simple** est *vendored* dans le companion `galois_lean/` (PR #10486, août 2026, Apache-2.0) ; la réalisation galoisienne — *M₂₃ groupe de Galois sur ℚ* — est **prouvée** dans le préprint (Huang–Jackson–Lee–Poonen–Pries–Zhang, arXiv:2608.08538, 9 août 2026 : polynôme explicite f₁ de degré 23, identification `23T5`) mais **non formalisée** — le notebook [Lean-23](Lean-23-Galois-Probleme-Inverse-M23.ipynb) exécute la preuve formelle côté groupe et vérifie f₁ computationnellement, les deux énoncés soigneusement distingués (Epic #10478).
 
 Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
 
@@ -184,6 +185,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 16f | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
 | 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
 | 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
+| 23 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
@@ -374,7 +376,7 @@ Lean/
 ├── grothendieck_lean/              # Grothendieck tribute workspace (0 sorry, Lake build)
 ├── knot_lean/                      # Knot theory workspace (théorie des nœuds, companion Lean-17a/b, sorries résiduels documentés, Lake build)
 ├── calibration_lean/               # Cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) - 0 sorry, Lake build
-├── galois_lean/                    # Problème inverse de Galois : M₂₃ (Mathieu 23) groupe simple + preuve formelle vendored (Apache-2.0, [KitaKen1/finite-simple-groups-lean](https://github.com/KitaKen1/finite-simple-groups-lean)) - 0 sorry, Lake build ; cible pédagogique ouverte Epic #10478 (Poonen et al., arXiv:2608.08538, août 2026)
+├── galois_lean/                    # Problème inverse de Galois : M₂₃ (Mathieu 23) groupe simple + preuve formelle vendored (Apache-2.0, [KitaKen1/finite-simple-groups-lean](https://github.com/KitaKen1/finite-simple-groups-lean)) - 0 sorry, Lake build ; companion du notebook Lean-23 (Epic #10478, arXiv:2608.08538, août 2026)
 ├── mathlib_examples/               # Smoke test Mathlib (ring/linarith/omega/rw, 4 buts) - 0 sorry, Lake build
 ├── agent_tests/                    # Prover daemon (autonomous Lean proof)
 │   ├── multi_agent_proof.py        # CLI principal

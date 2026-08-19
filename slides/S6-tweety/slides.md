@@ -15,7 +15,7 @@ layout: cover
 - Logiques formelles : Propositionnelle, FOL, Modale, DL
 - Argumentation computationnelle : Dung, ASPIC+, ABA
 - Revision de croyances et incoherence
-- Agents dialogiques et preferences
+- Agents dialogiques et préférences
 - Integration Python via JPype
 
 ---
@@ -84,7 +84,7 @@ from org.tweetyproject.logics.fol.syntax import *
 ## Logique Propositionnelle
 
 - Syntaxe : `PlFormula`, `Proposition`, connecteurs (And, Or, Not, Impl)
-- Semantique : `PossibleWorld`, `PlBeliefSet`
+- Sémantique : `PossibleWorld`, `PlBeliefSet`
 - Solveurs : `SimplePlReasoner`, `SatSolver` (SAT4J)
 
 ## Logique du Premier Ordre
@@ -109,7 +109,7 @@ sig.add(Predicate("Mortal", [sig.getSort("Person")]))
 
 ## Description Logics (DL)
 
-- Ontologies TBox / ABox : concepts, roles, individus
+- Ontologies TBox / ABox : concepts, rôles, individus
 - Raisonnement : subsomption, coherence, instanciation
 - Intégration **OWL** via raisonneur HermiT
 
@@ -123,7 +123,7 @@ diamond_phi = Diamond(phi)  # Possibly
 ```
 
 - **QBF** : formules booleennes quantifiees (∀x ∃y ...)
-- **Logique Conditionnelle** : regles conditionnelles et inference non-monotone
+- **Logique Conditionnelle** : règles conditionnelles et inference non-monotone
 
 > **Notebook** : `Tweety-3-Advanced-Logics.ipynb` — 40 min
 
@@ -137,7 +137,7 @@ layout: section
 
 # Tweety 4 — Revision de Croyances
 
-## Le probleme de la revision
+## Le problème de la revision
 
 Quand nouvelles informations **contredisent** les croyances existantes, que faire ?
 
@@ -176,9 +176,9 @@ layout: section
 
 Un framework d'argumentation = `(A, →)` : ensemble d'arguments + relation d'attaque
 
-## Semantiques d'extension
+## Sémantiques d'extension
 
-| Semantique | Definition |
+| Sémantique | Definition |
 |-----------|------------|
 | **Admissible** | auto-defende, sans attaque interne |
 | **Preferred** | maximale admissible |
@@ -200,9 +200,9 @@ af.add(Attack(a, b)); af.add(Attack(b, c))
 
 ## ASPIC+ : Arguments structurees
 
-- **Regles strictes** (modus ponens) et **defeasibles** (revisables)
+- **Règles strictes** (modus ponens) et **defeasibles** (revisables)
 - **Attaques** : rebut, undercut, undermining
-- **Preference** sur les regles pour resoudre les conflits
+- **Préférence** sur les règles pour resoudre les conflits
 
 ## DeLP et ABA
 
@@ -230,7 +230,7 @@ Generalise les frameworks de Dung : **acceptance conditions** par argument
 ## Frameworks bipolaires et ponderés
 
 - **Bipolar AF** : attaque + support
-- **Weighted AF** : poids numeriques sur les attaques
+- **Weighted AF** : poids numériques sur les attaques
 - **SetAF** : attaques d'ensembles d'arguments
 
 ```python
@@ -239,7 +239,7 @@ from org.tweetyproject.arg.bipolar.syntax import BipolarArgFramework
 ```
 
 - **SAF** (Social AF) : agregation de vote sur les attaques
-- **CF2** : semantique pour frameworks avec cycles pairs
+- **CF2** : sémantique pour frameworks avec cycles pairs
 
 > **Notebook** : `Tweety-7a-Extended-Frameworks.ipynb` — 50 min
 
@@ -247,7 +247,7 @@ from org.tweetyproject.arg.bipolar.syntax import BipolarArgFramework
 
 # Tweety 7b — Ranking et Probabiliste
 
-## Semantiques de ranking
+## Sémantiques de ranking
 
 Ordonner les arguments par **force** plutot que les grouper en extensions
 
@@ -256,7 +256,7 @@ Ordonner les arguments par **force** plutot que les grouper en extensions
 | **Categoriser** | Iterative graded semantics |
 | **BBS** | Burden-Based Semantics |
 | **StratInc** | Stratified Incoherence |
-| **Euler** | Force numerique (PageRank-style) |
+| **Euler** | Force numérique (PageRank-style) |
 
 ## Argumentation Probabiliste
 
@@ -300,13 +300,13 @@ session.run()
 
 ---
 
-# Tweety 9 — Preferences et Vote
+# Tweety 9 — Préférences et Vote
 
-## Ordres de preference
+## Ordres de préférence
 
-- **Preference order** : relations totales / partielles sur alternatives
-- **Agregation** : combiner les preferences de plusieurs agents
-- **Theorie du vote** : Borda, Copeland, Schulze, STV
+- **Préférence order** : relations totales / partielles sur alternatives
+- **Agregation** : combiner les préférences de plusieurs agents
+- **Théorie du vote** : Borda, Copeland, Schulze, STV
 
 ```python
 from org.tweetyproject.preferences.syntax import PreferenceOrder
@@ -333,7 +333,7 @@ layout: section
 
 ## Modules couverts dans la serie
 
-| Module | Theme | Notebooks |
+| Module | Thème | Notebooks |
 |--------|-------|-----------|
 | `logics.pl`, `logics.fol` | Logiques de base | 2-3 |
 | `logics.dl`, `logics.ml` | Logiques avancees | 3 |
@@ -342,11 +342,11 @@ layout: section
 | `arg.aspic`, `arg.aba` | Argumentation structuree | 6 |
 | `arg.adf`, `arg.bipolar` | Frameworks etendus | 7a |
 | `agents.dialogues` | Agents dialogiques | 8 |
-| `preferences` | Vote et preferences | 9 |
+| `preferences` | Vote et préférences | 9 |
 
 ## Liens avec les autres series
 
-- **S1-argumentation** : fondements theoriques de l'argumentation
+- **S1-argumentation** : fondements théoriques de l'argumentation
 - **S7-lean** : preuves formelles des theoremes d'impossibilite (Arrow)
 - **03-logique** : cours magistral logique et planification
 
@@ -375,7 +375,7 @@ SymbolicAI/
 
 - Intégration avec **Neo4j** pour les graphes d'argumentation
 - Visualisation interactive des frameworks (D3.js / Cytoscape)
-- Argumentation pour l'**explicabilite des modeles ML**
+- Argumentation pour l'**explicabilite des modèles ML**
 
 ---
 layout: section
