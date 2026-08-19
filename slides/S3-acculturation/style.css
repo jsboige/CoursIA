@@ -1,0 +1,60 @@
+/* S3-acculturation — ajustements de mise en page
+ *
+ * Contexte : la migration PPTX -> Slidev a posé un plafond uniforme
+ * `max-h-[300px]` sur chaque image, sans égard pour ce que la colonne
+ * d'accueil peut se permettre. Une image de 300 px CSS dans une colonne
+ * utile de ~540 px passe encore seule ; avec un titre, un chapeau et cinq
+ * puces, elle pousse le contenu hors du cadre 980x552. Slide 37 empile
+ * cinq images à ce plafond : la colonne monte à 765 px pour 647 utiles.
+ *
+ * Mesuré sur le rendu (93 slides, hauteur des boîtes contre le bas de la
+ * page) : 12 slides débordaient, de 8 à 146 px.
+ *
+ * Le correctif ne retouche aucune image et ne retire aucun contenu. Il
+ * borne le layout à la page, fait des colonnes des conteneurs flex, et
+ * rend les images compressibles : `object-contain` étant déjà posé sur
+ * chacune, réduire la boîte préserve le rapport d'aspect. L'image cède
+ * l'espace au texte, qui lui ne peut pas se réduire.
+ */
+
+/* 1. Le layout ne dépasse jamais la page. Sans cette borne, les colonnes
+ *    grandissent avec leur contenu et rien ne déclenche la compression. */
+.slidev-layout.two-cols {
+  height: 100%;
+  max-height: 100%;
+}
+
+/* 2. Colonnes = conteneurs flex verticaux. `min-height: 0` lève le
+ *    minimum implicite qui, autrement, empêche un enfant flex de passer
+ *    sous sa taille de contenu. */
+.slidev-layout.two-cols > .col-left,
+.slidev-layout.two-cols > .col-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+/* 3. Les images cèdent en premier (`flex-shrink: 1`), le texte jamais. */
+.slidev-layout img {
+  flex: 0 1 auto;
+  min-height: 0;
+  object-fit: contain;
+}
+
+/* 4. Les grilles d'images sont elles-mêmes compressibles, et leurs
+ *    images suivent la grille plutôt que leur plafond individuel. */
+.slidev-layout .img-grid,
+.slidev-layout .img-grid-2x2 {
+  min-height: 0;
+  flex: 0 1 auto;
+}
+
+/* 5. Listes à forte densité (slide « Prise de décision » : 17 puces sur une
+ *    seule colonne, la grille d'images occupant la droite en absolu). Le
+ *    texte ne peut pas céder par flex : on resserre la typographie plutôt
+ *    que de retirer des puces. */
+.slidev-layout .dense-list ul {
+  font-size: 0.86em;
+  line-height: 1.35;
+}

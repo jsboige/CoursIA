@@ -30,12 +30,28 @@ Env: base Python 3.13 has librosa 0.11 / numpy / scipy / matplotlib / soundfile.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
+
+
+def _module_sha256() -> str:
+    """Short SHA-256 of this module's own source (first 16 hex chars).
+
+    Surfaced in every verdict so the consumer can tell *which* version of
+    the instrument rendered the reading. The bug class this closes:
+    a constant value coming from the instrument instead of from the
+    audio. Without the SHA, two runs on different module versions are
+    indistinguishable — and a stale or pinned version that returns 120
+    for every clip reads the same as a fresh version that varies.
+    """
+    h = hashlib.sha256()
+    h.update(Path(__file__).resolve().read_bytes())
+    return h.hexdigest()[:16]
 
 # Reuse the validated F0 extractor from the global-contour instrument.
 try:
@@ -60,6 +76,99 @@ MOTION_FLAT_MAX = 1.0       # st/syllable: below this == monotone chant
 MOTION_MODERATE_MAX = 1.6   # st/syllable
 FLATPCT_FLAT_MIN = 55.0     # % flat transitions above this == chant
 FLATPCT_MODERATE_MIN = 40.0 # %
+
+# --- Structural (melody-level) criteria -------------------------------------
+# motion/pct_flat are LOCAL measures: a drone alternating two adjacent notes
+# has perfectly normal step size and slips through. These three catch the
+# shape of the melody itself. Calibrated on three references measured
+# 2026-08-18 (see docstring of melody_stats).
+EFFNOTES_DRONE_MAX = 7.0     # 2**entropy over note names; kokoro 11.8, v4 6.0
+TOP3_DRONE_MIN = 65.0        # % of syllables on the 3 commonest notes
+MOTIF3_DRONE_MIN = 60.0      # % of 3-gram positions inside a repeated motif
+MIN_SYLL_FOR_STRUCTURE = 60  # below this, concentration stats are unreliable
+
+
+# ---------------------------------------------------------------------------
+# Pure verdict policy (no audio, no I/O) -- CI-testable without clips, the same
+# separation ``verify_prosody.classify_segment`` uses for the gate policy.
+# ---------------------------------------------------------------------------
+
+def classify_melody(
+    motion: float,
+    flat_pct: float,
+    effective_notes: Optional[float] = None,
+    top3_note_pct: Optional[float] = None,
+    motif3_repeat_pct: Optional[float] = None,
+) -> Dict:
+    """Turn the measured metrics into a verdict. Deterministic, audio-free.
+
+    Two axes, and the distinction between them is the whole point:
+
+    * LOCAL (``motion``, ``flat_pct``) -- always measurable, even on a
+      two-second clip. Yields ``FLAT`` / ``MODERATE`` / ``EXPRESSIVE``.
+    * STRUCTURAL (``effective_notes``, ``top3_note_pct``, ``motif3_repeat_pct``)
+      -- the chant detector, and it needs ``MIN_SYLL_FOR_STRUCTURE`` syllables
+      before its concentration statistics mean anything. Yields ``DRONE``.
+
+    ``melody_stats`` already refuses to return a silent zero when the sample is
+    too short ("never silently zero, which would read as clean"). This function
+    honours that refusal one level up: when the structural axis was NOT
+    computed, ``drone_reasons`` is ``None`` -- never ``[]``, which is reserved
+    for "the three criteria ran and none fired". *Not looked* and *nothing
+    found* must not share a value, or a clip nobody assessed reads exactly like
+    a clip that passed.
+
+    Consequence for the verdict itself, deliberately ASYMMETRIC:
+
+    * ``FLAT`` survives an unassessed structure -- flatness is a *reject* class,
+      measured on the local axis alone, and abstaining there would weaken the
+      floor on the very clips it should catch.
+    * ``MODERATE`` / ``EXPRESSIVE`` do NOT survive it. Both read as an all-clear,
+      and an all-clear that skipped the chant detector is not one. They degrade
+      to ``INSUFFICIENT``, which the caller (``verify_prosody.classify_segment``)
+      already maps to an abstention -- ``INCONCLUSIVE``, "the instruments abstain
+      rather than cry wolf" -- rather than to a pass.
+
+    Measured consequence, 2026-08-18: the five v4 character extracts sitting in
+    the review folder (7 to 24 syllables) all returned ``MODERATE`` with
+    ``drone_reasons == []`` -- indistinguishable from an assessed clean clip, on
+    material where the three chant criteria had never run.
+
+    Returns ``{"verdict", "local_verdict", "structure_assessed", "drone_reasons"}``.
+    """
+    if motion < MOTION_FLAT_MAX or flat_pct >= FLATPCT_FLAT_MIN:
+        local = "FLAT"
+    elif motion < MOTION_MODERATE_MAX or flat_pct >= FLATPCT_MODERATE_MIN:
+        local = "MODERATE"
+    else:
+        local = "EXPRESSIVE"
+
+    assessed = effective_notes is not None
+    reasons: Optional[List[str]] = [] if assessed else None
+    if assessed:
+        if effective_notes < EFFNOTES_DRONE_MAX:
+            reasons.append(
+                "effective_notes %.1f < %.1f" % (effective_notes, EFFNOTES_DRONE_MAX))
+        if top3_note_pct >= TOP3_DRONE_MIN:
+            reasons.append(
+                "top3_note_pct %.1f%% >= %.1f%%" % (top3_note_pct, TOP3_DRONE_MIN))
+        if motif3_repeat_pct >= MOTIF3_DRONE_MIN:
+            reasons.append(
+                "motif3_repeat_pct %.1f%% >= %.1f%%" % (motif3_repeat_pct, MOTIF3_DRONE_MIN))
+
+    if reasons:
+        verdict = "DRONE"
+    elif not assessed and local != "FLAT":
+        verdict = "INSUFFICIENT"
+    else:
+        verdict = local
+
+    return {
+        "verdict": verdict,
+        "local_verdict": local,
+        "structure_assessed": assessed,
+        "drone_reasons": reasons,
+    }
 
 
 def hz_to_midi(f0_hz: float) -> float:
@@ -125,6 +234,52 @@ def detect_syllable_nuclei(
     return [int(p) for p in peaks if voiced[p]]
 
 
+def melody_stats(notes):
+    """Structural description of a note sequence: how many notes it really uses,
+    how concentrated it is, and how much of it is literal repetition.
+
+    Reference values measured 2026-08-18 on Boule de Suif material:
+
+    ==========================  =========  ======  =========  ===========
+    clip                        eff_notes  top-3   motif-3    verdict
+    ==========================  =========  ======  =========  ===========
+    v1 kokoro (no cloning)          11.8   44.5%      14.5%   EXPRESSIVE
+    v2 fishaudio tags-only           5.3   79.7%      90.9%   FLAT
+    v4 extrait_ouverture_2min30      6.0   72.8%      82.2%   DRONE
+    ==========================  =========  ======  =========  ===========
+
+    Returns a dict; keys are None (with ``structure_na_reason`` set) when the
+    sample is too short for the concentration statistics to mean anything --
+    never silently zero, which would read as "clean".
+    """
+    import collections, math
+    n = len(notes)
+    out = {"n_notes_distinct": len(set(notes)), "n_syllables_scored": n}
+    if n < MIN_SYLL_FOR_STRUCTURE:
+        out.update({
+            "effective_notes": None, "top3_note_pct": None,
+            "motif3_repeat_pct": None, "top_motifs": [],
+            "structure_na_reason": "only %d syllables, need >= %d" % (n, MIN_SYLL_FOR_STRUCTURE),
+        })
+        return out
+    c = collections.Counter(notes)
+    H = -sum((v / n) * math.log2(v / n) for v in c.values())
+    top = c.most_common(3)
+    grams = collections.Counter(tuple(notes[i:i + 3]) for i in range(n - 2))
+    tot = n - 2
+    rep = sum(v for g, v in grams.items() if v >= 2)
+    out.update({
+        "effective_notes": round(2 ** H, 1),
+        "note_entropy_bits": round(H, 2),
+        "top3_note_pct": round(100.0 * sum(v for _, v in top) / n, 1),
+        "top3_notes": [k for k, _ in top],
+        "motif3_repeat_pct": round(100.0 * rep / tot, 1),
+        "top_motifs": ["-".join(g) + " x%d" % v for g, v in grams.most_common(3)],
+        "structure_na_reason": None,
+    })
+    return out
+
+
 def analyze_syllables(
     path: str,
     fmin: float = 65.0,
@@ -180,6 +335,8 @@ def analyze_syllables(
         "label": Path(path).stem,
         "duration_s": round(float(len(y) / sr), 2),
         "n_syllables": len(syllables),
+        "syllable_rate_hz": round(len(syllables) / max(float(len(y) / sr), 0.1), 2),
+        "module_sha": _module_sha256(),
         "syllables": syllables,
     }
 
@@ -202,16 +359,32 @@ def analyze_syllables(
                 "rel_semitones": [round(float(x), 2) for x in rel],
             }
         )
-        motion = result["mean_abs_interval_st"]
-        flat_pct = result["pct_flat_transitions"]
-        if motion < MOTION_FLAT_MAX or flat_pct >= FLATPCT_FLAT_MIN:
-            result["verdict"] = "FLAT"
-        elif motion < MOTION_MODERATE_MAX or flat_pct >= FLATPCT_MODERATE_MIN:
-            result["verdict"] = "MODERATE"
-        else:
-            result["verdict"] = "EXPRESSIVE"
+        # max-minus-min is driven by single outlier syllables: on the v4 extract
+        # ONE syllable out of 401 (E3, 0.2%) lifted span from ~8 to 12.24 st.
+        # Report the robust interdecile span alongside it.
+        result["melodic_span_p5p95_st"] = round(
+            float(np.percentile(midis, 95) - np.percentile(midis, 5)), 2
+        )
+        result.update(melody_stats([s["note"] for s in syllables]))
+
+        # Structural override: a repeating melody is monotonous even when its
+        # local step size looks healthy. The v4 extract missed FLAT by 0.21
+        # st and 1.2 points on the two local axes while spending 73% of its
+        # 401 syllables on three adjacent semitones. When the clip is too short
+        # for those three criteria to run, classify_melody abstains instead of
+        # handing back the local reading as though it had been assessed.
+        result.update(classify_melody(
+            result["mean_abs_interval_st"],
+            result["pct_flat_transitions"],
+            result.get("effective_notes"),
+            result.get("top3_note_pct"),
+            result.get("motif3_repeat_pct"),
+        ))
     else:
         result["verdict"] = "INSUFFICIENT"
+        result["local_verdict"] = None
+        result["structure_assessed"] = False
+        result["drone_reasons"] = None
     return result
 
 
@@ -277,26 +450,105 @@ def plot_score(analyses, out_png: str, title: Optional[str] = None) -> str:
 
 def print_score_table(a: Dict) -> None:
     """Pretty-print the per-syllable note sequence + melodic summary."""
-    print(f"\n=== {a['label']}  ({a['duration_s']}s, {a['n_syllables']} syllables) ===")
-    if a.get("verdict") == "INSUFFICIENT":
+    sha = a.get("module_sha", "?")
+    print(
+        f"\n=== {a['label']}  ({a['duration_s']}s, {a['n_syllables']} syllables, "
+        f"module={sha[:12]}) ==="
+    )
+    if not a.get("syllables"):
         print("  insufficient voiced syllables to transcribe")
         return
     notes = " ".join(s["note"] for s in a["syllables"])
     print(f"  melody: {notes}")
     print(
-        f"  span={a['melodic_span_st']} st | motion={a['mean_abs_interval_st']} st/syll"
+        f"  span={a['melodic_span_st']} st (p5-p95 {a.get('melodic_span_p5p95_st')} st)"
+        f" | motion={a['mean_abs_interval_st']} st/syll"
         f" | flat-transitions={a['pct_flat_transitions']}% | rate={a['syllable_rate_hz']}/s"
-        f" | median={a['median_pitch_hz']} Hz -> {a['verdict']}"
+        f" | median={a['median_pitch_hz']} Hz"
     )
+    if a.get("structure_na_reason"):
+        print(f"  structure: n/a ({a['structure_na_reason']})")
+    elif a.get("effective_notes") is not None:
+        print(
+            f"  structure: {a['effective_notes']} notes effectives sur {a['n_notes_distinct']} distinctes"
+            f" | top-3 {a['top3_notes']} = {a['top3_note_pct']}%"
+            f" | motifs 3-notes repetes {a['motif3_repeat_pct']}%"
+        )
+        print(f"  motifs   : {' | '.join(a.get('top_motifs', []))}")
+    print(f"  VERDICT  : {a['verdict']}")
+    if a.get("drone_reasons") is None and a.get("syllables"):
+        print("             (criteres de bourdon NON evalues -> lecture locale "
+              "'%s' non certifiee)" % a.get("local_verdict"))
+    for r in (a.get("drone_reasons") or []):
+        print(f"             drone: {r}")
+
+
+def _synth(midi_sequence, syll_per_s=3.0, sr=22050):
+    """Build a syllable-like signal whose f0 follows the given MIDI sequence."""
+    import numpy as np
+    dur = 1.0 / syll_per_s
+    n = int(sr * dur)
+    t = np.arange(n) / sr
+    env = np.hanning(n) ** 0.5  # amplitude dip between syllables -> nuclei
+    out = []
+    for m in midi_sequence:
+        f = 440.0 * (2.0 ** ((m - 69) / 12.0))
+        sig = np.zeros(n)
+        for k in (1, 2, 3, 4):  # harmonics so pyin locks on
+            sig += (1.0 / k) * np.sin(2 * np.pi * f * k * t)
+        out.append(sig * env)
+    y = np.concatenate(out)
+    return (y / (np.max(np.abs(y)) + 1e-9) * 0.9).astype("float32"), sr
+
+
+def self_test() -> int:
+    """Positive control. A detector that cannot fail loudly is worthless:
+    this asserts the analyzer actually FIRES on a synthetic drone and stays
+    quiet on a synthetic varied melody. Exit non-zero on either failure.
+    """
+    import tempfile, os, random
+    import numpy as np
+    import soundfile as sf
+
+    random.seed(0)
+    n = 120
+    drone = [45 + random.choice([0, 0, 0, 1, -1]) for _ in range(n)]   # A2 +/- 1 st
+    varied = [45 + random.choice(range(-8, 13)) for _ in range(n)]      # 21-st ambitus
+
+    ok = True
+    tmp = tempfile.mkdtemp(prefix="syllpitch_selftest_")
+    for name, seq, must_be_drone in (("drone", drone, True), ("varied", varied, False)):
+        y, sr = _synth(seq)
+        wav = os.path.join(tmp, name + ".wav")
+        sf.write(wav, y, sr)
+        a = analyze_syllables(wav)
+        is_drone = a.get("verdict") == "DRONE"
+        status = "PASS" if is_drone == must_be_drone else "FAIL"
+        if status == "FAIL":
+            ok = False
+        print(
+            "[self-test] %-6s expected drone=%-5s got verdict=%-10s"
+            " eff_notes=%s top3=%s motif3=%s n_syll=%d -> %s"
+            % (name, must_be_drone, a.get("verdict"), a.get("effective_notes"),
+               a.get("top3_note_pct"), a.get("motif3_repeat_pct"),
+               a.get("n_syllables", 0), status)
+        )
+    print("[self-test] %s" % ("OK" if ok else "FAILED -- the detector is not measuring what it claims"))
+    return 0 if ok else 1
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Syllable-level pitch analyzer")
-    ap.add_argument("clips", nargs="+", help="audio files (mp3/wav)")
+    ap.add_argument("clips", nargs="*", help="audio files (mp3/wav)")
     ap.add_argument("--out-dir", default=None, help="dir for the score PNG")
     ap.add_argument("--json", default=None, help="write all analyses to this JSON")
     ap.add_argument("--dip-db", type=float, default=2.0)
+    ap.add_argument("--self-test", action="store_true",
+                    help="run the synthetic drone/varied positive control and exit")
     args = ap.parse_args()
+
+    if args.self_test:
+        raise SystemExit(self_test())
 
     analyses = []
     for clip in args.clips:

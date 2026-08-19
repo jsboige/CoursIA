@@ -52,8 +52,21 @@ les consomme sans rien savoir de leur provenance.
 Garde-fous d'honnetete (5) — a reporter dans le notebook
 --------------------------------------------------------
 1. **J-lens != SAE** -- l'article identifie le J-space par *jacobien des logits*,
-   pas par SAE. Nous operationalisons parallelement (features SAE), nous ne
-   repliquons pas. Ne pas vend re comme jacobien ce qui est activite SAE.
+   pas par SAE. Ne pas vend re comme jacobien ce qui est activite SAE ; les deux
+   representations sont de **nature mathematique differente** (features apprises
+   vs vocabulaire de desembedding, voir `ict.jlens_traces` et garde-fou #1 du
+   tete-a-tete). **Depuis Track S**, le depot fait tourner les DEUX appareils
+   sur le meme substrat (Qwen3.5-9B-Base couche 16) et les confronte
+   (`ICT-SAE-JLens-TeteATete.ipynb`, 31 cellules, 11/11 code executees) :
+   la correlation **faible** est un resultat, pas un echec -- Pearson
+   concentration Gini top-50 sur T=2699 positions est +0.0846 (TRAINED) vs
+   +0.0164 (CONTROL), delta +0.0683 dans le sens attendu (l'ablation degrade
+   le signal croise). La correlation de structure (matrices de separation de
+   jeux, K_DIFF=64) est +0.3273 (moderee). Convergence globale **faible** mais
+   **coherente avec l'attendu au scoping** (cf. #5681, mesure 2026-07-18 :
+   « ~+0.08 attendu »). Conserver comme verite negative honnete : on NE
+   pretend PAS une equivalence directe des deux lectures, on REPORTE une
+   convergence partielle mesuree.
 2. **structurel vs temporel** -- Anthropic mesure la **connectivite**
    (cablage), PAS l'ignition temporelle. L'ignition (pics de concentration
    persistants) est NOTRE lecture Dehaene, dite comme telle.
