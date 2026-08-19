@@ -405,3 +405,43 @@ a {
   max-height: 100%;
   object-fit: contain;
 }
+
+/* -------------------------------------------------------------------- */
+/* Tables markdown nues (hors .colored-table)                           */
+/* Sans regle explicite, aucun padding de cellule n'est applique : les   */
+/* colonnes se collent ("sinistralite" / "sinistr" sur la slide Tokens). */
+/* Les 10 decks qui portent des tables markdown sont concernes ; aucun   */
+/* n'utilise .colored-table, dont les reglages restent intacts.          */
+/*                                                                       */
+/* Padding HORIZONTAL uniquement. Mesure firsthand sur S8-semantic-web   */
+/* (28 slides, le deck le plus dense en tables) : un padding vertical de */
+/* 5px par cellule fait passer les slides en debordement bas de 7 a 12.  */
+/* En horizontal seul : 7 -> 8 (l'en-tete en gras se re-enroule).        */
+/* Les filets de 1px, eux, ne coutent rien (8 avec comme sans).          */
+/* Ces slides debordent deja sur main : defaut pre-existant, suivi a     */
+/* part dans l'Epic slides.                                              */
+/* -------------------------------------------------------------------- */
+
+.slidev-layout table:not(.colored-table) {
+  border-collapse: collapse;
+}
+
+.slidev-layout table:not(.colored-table) th,
+.slidev-layout table:not(.colored-table) td {
+  padding: 0 18px 0 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.slidev-layout table:not(.colored-table) th {
+  color: var(--color-header);
+  font-weight: bold;
+}
+
+.slidev-layout table:not(.colored-table) thead th {
+  border-bottom: 1px solid var(--color-accent);
+}
+
+.slidev-layout table:not(.colored-table) tbody tr + tr td {
+  border-top: 1px solid var(--color-bg-dark);
+}

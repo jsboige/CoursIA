@@ -33,6 +33,7 @@ on:
     branches: [ main ]
     paths:
       - '**.ipynb'
+      - '_quarto.yml'
       - 'scripts/notebook_tools/detect_markdown_rendering.py'
       - 'scripts/notebook_tools/scan_md_hierarchy.py'
       - 'scripts/notebook_tools/markdown_rendering_baseline.json'
@@ -41,6 +42,7 @@ on:
     branches: [ main ]
     paths:
       - '**.ipynb'
+      - '_quarto.yml'
       - 'scripts/notebook_tools/detect_markdown_rendering.py'
       - 'scripts/notebook_tools/scan_md_hierarchy.py'
       - 'scripts/notebook_tools/markdown_rendering_baseline.json'
@@ -90,3 +92,15 @@ jobs:
           echo ""
           echo "Hint-as-heading lines (Indice/Astuce/Conseil/Piste as an H1..H3 -> oversized):"
           python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks | grep -c 'HINT-AS-HEADING' || true
+
+      # Quarto closure scan: detects frontmatter / setext defects in notebooks
+      # linked from the render-list (one hop). The trigger paths include
+      # ``**/*.ipynb`` and ``_quarto.yml`` so this catches the failure mode of
+      # #11630 where a PR added a link to a broken notebook without touching
+      # the notebook itself. Informational for now -- the corpus carries
+      # ~358 known violations to remediate. (#11630 acceptance #1+#4.)
+      - name: "Informational -- Quarto closure scan (render-list + linked notebooks)"
+        if: always()
+        run: |
+          python scripts/notebook_tools/detect_markdown_rendering.py \
+                 --closure --quarto-yml _quarto.yml MyIA.AI.Notebooks | head -8 || true

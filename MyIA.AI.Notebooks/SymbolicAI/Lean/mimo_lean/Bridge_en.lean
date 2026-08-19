@@ -338,6 +338,88 @@ theorem flip_bat_prob_lower (A : (Fin N → ℝ) →ₗ[ℝ] EuclideanSpace ℝ 
         exact (ENNReal.toReal_le_toReal (measure_ne_top _ _)
           (measure_ne_top _ _)).mpr hmassmono
 
+/-! ## Grain 4 (#11152, step 3) — global failure: coordinate escape bounds ML success
+
+Brick 2 (`gaussian_coordinate_escape_bound`, Phase 3b) bounds the probability
+that ALL noise coordinates escape a common interval, by independence of the
+product. This grain carries out step 3 of #11152: under a diagonal coverage
+hypothesis ("if a noise coordinate lands in the interval, a flip beats
+`x*`"), the event "no flip beats `x*`" is included in the product escape,
+hence has probability `≤ e^{−M·p}`. This is the bridge from per-coordinate
+escape (Brick 2) to global failure: a strict descent away from `x*` must
+accept a first flip, which beats — the `log log N` term will be born in the
+assembly (grain 5) from counting the codeword lattice. -/
+
+/-- **Global failure (step 3).** Diagonal coverage hypothesis: if a noise
+coordinate of `w` lands in `I(c, ε) = (c−ε/2, c+ε/2] ⊆ [−2, 2]`, then a flip
+beats `x*`. Then the probability that no flip beats `x*` is
+`≤ exp(−M·ε·φ(2))` with `φ(2) = exp(−2)/√(2π)`. Chain: contrapositive of
+the coverage ("no flip beats" ⊆ "all coordinates escape"), transport
+`stdGaussian = (stdGaussianPi M).map (WithLp.toLp 2)`
+(`stdGaussianPi_map_toLp`), then Brick 2. -/
+theorem no_flip_beats_prob_le {N M : ℕ} (hM : 0 < M)
+    (A : (Fin N → ℝ) →ₗ[ℝ] EuclideanSpace ℝ (Fin M)) {s c ε : ℝ}
+    (hε : 0 < ε) (hc : |c| + ε / 2 ≤ 2)
+    (hp1 : ε * Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤ 1)
+    (hcover : ∀ w : EuclideanSpace ℝ (Fin M),
+      (∃ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∈ Set.Ioc (c - ε / 2) (c + ε / 2)) →
+        ∃ i : Fin N, mimoObj A w s (flipAt i) < mimoObj A w s 0) :
+    (stdGaussian (EuclideanSpace ℝ (Fin M))
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)}).toReal
+      ≤ Real.exp (-((M : ℝ) * (ε * Real.exp (-2) / Real.sqrt (2 * Real.pi)))) := by
+  have hsub : {w : EuclideanSpace ℝ (Fin M) |
+      ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)} ⊆
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} := by
+    intro w hw j hj
+    exact ((hcover w ⟨j, hj⟩).elim hw).elim
+  have hmeas : MeasurableSet
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} := by
+    have hEq : {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} =
+        ⋂ j : Fin M,
+            {w : EuclideanSpace ℝ (Fin M) |
+              (WithLp.ofLp w : Fin M → ℝ) j ∈ (Set.Ioc (c - ε / 2) (c + ε / 2))ᶜ} := by
+      ext w
+      simp only [Set.mem_setOf_eq, Set.mem_iInter, Set.mem_compl_iff]
+    rw [hEq]
+    refine MeasurableSet.iInter fun j => ?_
+    exact measurableSet_Ioc.compl.preimage
+      (by fun_prop : Measurable (fun w : EuclideanSpace ℝ (Fin M) =>
+        (WithLp.ofLp w : Fin M → ℝ) j))
+  have hpre : (WithLp.toLp 2 : (Fin M → ℝ) → EuclideanSpace ℝ (Fin M)) ⁻¹'
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}
+      = {v : Fin M → ℝ | ∀ j : Fin M, v j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)} := by
+    ext v
+    simp only [Set.mem_preimage, Set.mem_setOf_eq]
+  have hmass : (stdGaussian (EuclideanSpace ℝ (Fin M))
+        {w : EuclideanSpace ℝ (Fin M) |
+          ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)})
+      = (stdGaussianPi M
+          {v : Fin M → ℝ | ∀ j : Fin M, v j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}) := by
+    rw [← stdGaussianPi_map_toLp,
+      Measure.map_apply (by fun_prop :
+        Measurable (WithLp.toLp 2 : (Fin M → ℝ) → EuclideanSpace ℝ (Fin M))) hmeas,
+      hpre]
+  have hesc := gaussian_coordinate_escape_bound (n := M) (c := c) (ε := ε)
+    hM hε hc hp1
+  calc (stdGaussian (EuclideanSpace ℝ (Fin M))
+        {w : EuclideanSpace ℝ (Fin M) |
+          ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)}).toReal
+      ≤ (stdGaussian (EuclideanSpace ℝ (Fin M))
+          {w : EuclideanSpace ℝ (Fin M) |
+            ∀ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j
+              ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}).toReal :=
+        (ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)).mpr
+          (measure_mono hsub)
+    _ = (stdGaussianPi M
+          {v : Fin M → ℝ | ∀ j : Fin M, v j ∉ Set.Ioc (c - ε / 2) (c + ε / 2)}).toReal :=
+        by rw [hmass]
+    _ ≤ Real.exp (-((M : ℝ) * (ε * Real.exp (-2) / Real.sqrt (2 * Real.pi)))) := hesc
+
 end Converse
 
 end Mimo_en

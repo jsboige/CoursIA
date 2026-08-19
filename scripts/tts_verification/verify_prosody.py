@@ -11,7 +11,14 @@ This stage composes the three prosody instruments the user mandated
 (``MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/``, #1273/#1877):
 
 * ``syllable_pitch.analyze_syllables``  — the MELODY, syllable by syllable
-  ("partition de musique"): motion per syllable, flat-transition %, span
+  ("partition de musique"): motion per syllable, flat-transition %, span, and
+  the STRUCTURAL criteria (effective notes, top-3 concentration, repeated
+  3-note motifs) that yield the ``DRONE`` verdict. Motion and flat-% are LOCAL:
+  a chant alternating two adjacent notes has perfectly normal step size and
+  slipped through as ``MODERATE``. Measured 2026-08-18 on the extract served
+  for review: 401 syllables, 6.0 effective notes, 73% on three adjacent
+  semitones (A2/G#2/A#2), 82% of 3-note positions inside a repeated motif —
+  it missed ``FLAT`` by 0.21 st and 1.2 points on the two local axes.
   -> FLAT / MODERATE / EXPRESSIVE.
 * ``prosody_metrics.compute_metrics``   — the GLOBAL melody: ``f0_semitone_range``
   (< ~4 st = monotone, ~8-12 st = expressive audiobook narration).
@@ -33,11 +40,38 @@ and never auto-rejected — it is an explicit "send this one to the ear" flag.
 Gate outcomes
 -------------
 * ``REJECT``       — a bad class is detected with confidence; do not surface. Reasons:
-                     ``MONOTONE`` (melody FLAT or global span < flat floor),
+                     ``MONOTONE`` (melody FLAT or DRONE, or global span < flat floor),
                      ``WINDED`` (true breath failure), ``VOICE-SWAP`` (INCONSISTENT).
 * ``WARN``         — surface *to the ear* with a caveat. Reasons: ``ERRATIC`` (over-
                      modulated, the Kokoro class), ``DRIFTING`` (mild timbre drift),
                      ``FADING`` (energy declination — noisy on short clips, informational).
+
+``ERRATIC`` is an *abstention*, not a finding — read it that way
+---------------------------------------------------------------
+The docstring above already says no melody metric can separate over-modulation
+from healthy expressivity, so the flag defers to the ear. It bears repeating at
+the point of consumption, because the bare label reads like a defect and has
+been consumed as one: a review note built on it told a reader the instrument had
+a reservation about one specific take.
+
+Measured on the seven #1028 review clips (2026-08-18), the flag does not
+discriminate on the voice-cloning route — it tracks melodic *richness*:
+
+===========================  =================  =================
+clips                        effective notes    flagged ERRATIC
+===========================  =================  =================
+the 3 flagged                12.4 – 14.9        yes — all EXPRESSIVE
+the 4 not flagged            5.4 – 10.2         no  — incl. all 3 DRONE
+===========================  =================  =================
+
+All three flagged clips are the *good* material; none of the three DRONE clips
+is flagged. The thresholds also sit far below the ground truth that calibrated
+them (Kokoro v1: span 33.6 st, motion 3.43 st/syll), which is the correct bias
+for a send-to-the-ear flag and the reason it is over-inclusive by design.
+
+``erratic_axes`` therefore reports *which* axis fired, so a consumer can see
+whether a clip is near the calibrating pathology or merely melodic. An empty
+list means the flag did not fire — it never means "measured clean".
 * ``PASS-TO-EAR``  — objective floor cleared; the ear makes the final call.
 * ``INCONCLUSIVE`` — too short / too few voiced syllables for a reliable reading
                      (the instruments abstain rather than cry wolf). Needs the ear.
@@ -82,7 +116,11 @@ def classify_segment(
 ) -> Dict[str, object]:
     """Map instrument verdicts to a gate outcome + reasons. Deterministic.
 
-    Returns ``{"gate": <REJECT|WARN|PASS-TO-EAR|INCONCLUSIVE>, "reasons": [...]}``.
+    Returns ``{"gate": <REJECT|WARN|PASS-TO-EAR|INCONCLUSIVE>, "reasons": [...],
+    "erratic_axes": [...]}``. ``erratic_axes`` names which over-modulation axis
+    fired (``"span"`` / ``"motion"``); it is ``None`` — never ``[]`` — when the
+    segment was too short to evaluate, so "not measured" and "measured, nothing
+    fired" never share one value.
     A single REJECT reason wins over any WARN; a WARN wins over PASS-TO-EAR.
     Kept free of audio so the decision policy is unit-testable without clips.
     """
@@ -91,14 +129,16 @@ def classify_segment(
 
     # Not enough voiced material for a reliable reading -> abstain (the ear decides).
     if n_syllables < MIN_SYLLABLES or melody_verdict in (None, "INSUFFICIENT"):
-        return {"gate": "INCONCLUSIVE", "reasons": ["TOO-SHORT"]}
+        # Nothing was measured here: the axes are unevaluated, not clean.
+        return {"gate": "INCONCLUSIVE", "reasons": ["TOO-SHORT"],
+                "erratic_axes": None}
 
     # --- REJECT classes (confident bad) ---
     # Monotone is decided on the SYLLABLE verdict (robust: per-syllable motion +
     # flat-transition %), the signal the syllable_pitch author calibrated on. A low
     # GLOBAL span alone is outlier-driven and noisy on short clips, so when the
     # syllable verdict disagrees (MODERATE/EXPRESSIVE) it only WARNs, never rejects.
-    if melody_verdict == "FLAT":
+    if melody_verdict in ("FLAT", "DRONE"):
         reject.append("MONOTONE")
     if breath_verdict == "WINDED":
         reject.append("WINDED")
@@ -109,13 +149,17 @@ def classify_segment(
     # Over-modulation: the Kokoro-v1 failure mode. High span AND/OR high motion
     # is NOT monotony but instability; a melody metric cannot tell it from good
     # expressivity, so flag it for the ear instead of guessing.
-    if (melodic_span_st is not None and melodic_span_st >= ERRATIC_SPAN_ST) or (
-        mean_abs_interval_st is not None and mean_abs_interval_st >= ERRATIC_MOTION_ST
-    ):
+    erratic_axes: List[str] = []
+    if melodic_span_st is not None and melodic_span_st >= ERRATIC_SPAN_ST:
+        erratic_axes.append("span")
+    if mean_abs_interval_st is not None and mean_abs_interval_st >= ERRATIC_MOTION_ST:
+        erratic_axes.append("motion")
+    if erratic_axes:
         warn.append("ERRATIC")
     # Global span flat while the (robust) syllable verdict is not FLAT: borderline
     # monotone on a noisy short-clip global — surface to the ear, do not reject.
-    if global_range_st is not None and global_range_st < GLOBAL_FLAT_ST and melody_verdict != "FLAT":
+    if (global_range_st is not None and global_range_st < GLOBAL_FLAT_ST
+            and melody_verdict not in ("FLAT", "DRONE")):
         warn.append("GLOBAL-FLAT")
     if voice_verdict == "DRIFTING":
         warn.append("DRIFTING")
@@ -123,10 +167,11 @@ def classify_segment(
         warn.append("FADING")
 
     if reject:
-        return {"gate": "REJECT", "reasons": reject + warn}
+        return {"gate": "REJECT", "reasons": reject + warn,
+                "erratic_axes": erratic_axes}
     if warn:
-        return {"gate": "WARN", "reasons": warn}
-    return {"gate": "PASS-TO-EAR", "reasons": []}
+        return {"gate": "WARN", "reasons": warn, "erratic_axes": erratic_axes}
+    return {"gate": "PASS-TO-EAR", "reasons": [], "erratic_axes": erratic_axes}
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +228,11 @@ def analyze_segment(path: str, instruments) -> Dict[str, object]:
         "gate": decision["gate"],
         "reasons": decision["reasons"],
         "melody_verdict": mel.get("verdict"),
+        "drone_reasons": mel.get("drone_reasons", []),
+        "effective_notes": mel.get("effective_notes"),
+        "top3_note_pct": mel.get("top3_note_pct"),
+        "motif3_repeat_pct": mel.get("motif3_repeat_pct"),
+        "melodic_span_p5p95_st": mel.get("melodic_span_p5p95_st"),
         "n_syllables": mel.get("n_syllables"),
         "melodic_span_st": mel.get("melodic_span_st"),
         "mean_abs_interval_st": mel.get("mean_abs_interval_st"),
