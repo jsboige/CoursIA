@@ -17,7 +17,7 @@ Intelligence Artificielle -- VIII
 **Panorama, enjeux et pratiques de l'IA generative**
 
 - Decouvrir les bases et les grands principes de l'IA generative
-- Comprendre les differents usages applicatifs (texte, image, audio...)
+- Comprendre les différents usages applicatifs (texte, image, audio...)
 - Identifier les limites et les enjeux ethiques
 
 ---
@@ -63,17 +63,17 @@ imageClass: mid-right
   - Complexite des prompts, intervention humaine necessaire
 - **Approche multidisciplinaire**
   - ML + NLP + Vision par ordinateur
-  - Embeddings + mecanismes d'attention
+  - Embeddings + mécanismes d'attention
 
 ---
 
-# Systemes ISPO
+# Systèmes ISPO
 
-- **Input, Storage, Process, Output** : les quatre fonctions fondamentales d'un systeme informatique
+- **Input, Storage, Process, Output** : les quatre fonctions fondamentales d'un système informatique
   - **Input** : données d'entrée (texte, image, audio, video)
   - **Storage** : memoire des poids du modèle et du contexte de la conversation
   - **Process** : inference par le modèle (attention, generation token par token)
-  - **Output** : resultat genere (texte, image, code, audio...)
+  - **Output** : résultat genere (texte, image, code, audio...)
 - Proprietes : vitesse, precision, regularite, polyvalence, fiabilite, programmabilite
 
 ---
@@ -92,7 +92,7 @@ imageClass: mid-right
 - **Pipeline de données**
   - Acquisition → Nettoyage → Preparation → Annotation
 - **Données synthetiques**
-  - Alternative pour creer en masse, proteger la confidentialite
+  - Alternative pour créer en masse, proteger la confidentialite
   - 2025 : risque de Model Collapse
 
 ---
@@ -106,8 +106,8 @@ imageClass: mid-right
 - **Scalabilite et cout energetique**
   - Necessite d'infrastructures puissantes (datacenters)
   - Optimisations : modèles distilles, datacenters verts
-- **Methodes d'entrainement**
-  - *Apprentissage de base* : tres couteux, modèles fondationnels
+- **Méthodes d'entrainement**
+  - *Apprentissage de base* : très couteux, modèles fondationnels
   - *Fine-Tuning* : ajustement spécifique, LoRAs, RL
   - *Apprentissage en contexte* : peu couteux, prompt engineering
 - **Activite : Sources de données**
@@ -122,11 +122,11 @@ imageClass: mid-right
 # Fonctionnement des LLMs : Tokens et Embeddings
 
 - **Tokens**
-  - Representation numerique des mots
+  - Representation numérique des mots
   - Vocabulaire de 50k a 128k tokens
 - **Embeddings**
   - Representation vectorielle des mots/phrases
-  - Permet de calculer la proximite semantique
+  - Permet de calculer la proximite sémantique
   - *King - Man + Woman = Queen*
 - **Activite : Mind-Meld**
   - Par deux, mots aléatoires simultanes
@@ -162,9 +162,9 @@ imageClass: mid-right
 
 - **Les mots sont choisis en sequence**
   - En fonction de leur probabilité d'occurrence
-  - Dans un contexte donne (= mots qui precedent)
+  - Dans un contexte donne (= mots qui précédent)
 - **Paramètres de generation :**
-  - *Temperature* : controle la variabilite des resultats
+  - *Temperature* : contrôle la variabilite des résultats
   - *Top-p sampling* : seuil de distribution cumulatif
   - *Top-k sampling* : k mots les plus probables
 
@@ -203,7 +203,7 @@ imageClass: mid-right
   - Prototypes visuels, dessins, photos
   - Outils : MidJourney, Stable Diffusion, ChatGPT, Gemini
 - **Litterature et redaction creative**
-  - Scenarios, recits interactifs, co-ecriture, poesie
+  - Scénarios, recits interactifs, co-ecriture, poesie
   - Outils : ChatGPT, Claude, Llama
 - **Entreprenariat et innovation**
   - Ideation, validation d'idees, prototypage
@@ -222,7 +222,7 @@ imageClass: mid-right
 
 - **Positionnement Metier** (ex: Microsoft Copilot)
 - **Communication d'entreprise**
-  - Synthese de contenu, themes majeurs
+  - Synthese de contenu, thèmes majeurs
   - Structuration d'arguments persuasifs
 - **Marketing et interaction client**
   - Contenu reseaux sociaux, blogs, videos publicitaires
@@ -240,14 +240,14 @@ imageClass: mid-right
 - **Recrutement et formation**
   - Descriptions de poste inclusives
   - Resume automatique des candidatures
-  - Scenarios d'entretien personnalises
+  - Scénarios d'entretien personnalises
   - Parcours de formation adaptatifs
 - **Analytics et prise de decision**
   - Automatisation des pipelines de données
   - Modelisation avancee, visualisation rapide
   - Synthese de tableaux de bord complexes
 - **Activite : Campagne Marketing fictive : Nouveau Soda**
-  - Un slogan, 1 visuel, 3 posts reseaux sociaux, 1 scenario de pub
+  - Un slogan, 1 visuel, 3 posts reseaux sociaux, 1 scénario de pub
 
 <!-- Second image: ./images/img_018.jpg -->
 
@@ -274,10 +274,10 @@ layout: dense
 # Techniques : Generation de texte
 
 - **Prompt Engineering** : instructions explicites, few-shot learning, variantes stylistiques
-- **Prompts Systemes** : structuration pour taches complexes (CoT, ToT)
+- **Prompts Systèmes** : structuration pour tâches complexes (CoT, ToT)
 - **RAG** (Retrieval Augmented Generation)
   - Combinaison modèles generatifs + bases documentaires
-  - Chunks, embeddings, requetes contextuelles
+  - Chunks, embeddings, requêtes contextuelles
 - **Function Calling** : appels API, generation structuree
 - **Orchestration** : Semantic Kernel, LangChain
 - **Agentique avancee** : coordination multi-agents (AutoGen, Semantic Kernel)
@@ -405,14 +405,14 @@ layout: dense
 - **Fiabilite** : hallucinations, fabrications, impact confiance
   - Solutions : algorithmes robustes, verification croisee multi-modèles
 - **Tests et validation**
-  - "Auditeurs IA" : detection de biais en scenarios fictifs
+  - "Auditeurs IA" : detection de biais en scénarios fictifs
   - **Activite :** recommandation voyage, sources de données in/out
-- **Securite** : risques de mauvaise utilisation, perte de controle
+- **Securite** : risques de mauvaise utilisation, perte de contrôle
   - Niveaux de securite Anthropic, Constitutional AI
 - **Points critiques** : perte d'emplois, homogeneisation creative, deepfakes
-  - **Activite : Constitutional AI** → definir une constitution, tester
+  - **Activite : Constitutional AI** → définir une constitution, tester
 
-> **Niveaux Anthropic** : ASL-1 (pas de risque) → ASL-2 (risque modere, garde-fous) → ASL-3 (capacités avancees, controle renforce) → ASL-4+ (autonomie, risque systemique)
+> **Niveaux Anthropic** : ASL-1 (pas de risque) → ASL-2 (risque modere, garde-fous) → ASL-3 (capacités avancees, contrôle renforce) → ASL-4+ (autonomie, risque systemique)
 
 ---
 layout: dense
@@ -420,8 +420,8 @@ layout: dense
 
 # Responsabilite sociale
 
-- **Role des entreprises** : transparence, codes ethiques
-- **Role des utilisateurs** : formation, adoption responsable
+- **Rôle des entreprises** : transparence, codes ethiques
+- **Rôle des utilisateurs** : formation, adoption responsable
 - **Impact environnemental**
   - Rapport IEA 2025 : consommation datacenters x2 en 3 ans (= Japon)
 - **IA pour le bien commun**
@@ -429,7 +429,7 @@ layout: dense
   - Surveillance deforestation, gestion des ressources en eau
 - **Activite : Propositions novatrices** (avec et sans guidance)
 
-> **Chiffres cles** : GPT-4 entrainement ≈ 50 GWh | 1 requete ChatGPT ≈ 10x une recherche Google | Datacenters IA : 4% electricite mondiale d'ici 2030 (IEA)
+> **Chiffres cles** : GPT-4 entrainement ≈ 50 GWh | 1 requête ChatGPT ≈ 10x une recherche Google | Datacenters IA : 4% electricite mondiale d'ici 2030 (IEA)
 
 ---
 

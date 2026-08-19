@@ -1,11 +1,11 @@
 # CoursIA Notebook Catalog
 
-Generated: 2026-08-17 03:57
-Total notebooks: 912
+Generated: 2026-08-18 03:54
+Total notebooks: 914
 
 ## Status Summary
 
-- **READY**: 755
+- **READY**: 757
 - **DEMO**: 155
 - **RESEARCH**: 0
 - **BROKEN**: 2
@@ -13,14 +13,14 @@ Total notebooks: 912
 ## Maturity Summary
 
 - **PRODUCTION**: 0
-- **BETA**: 825
+- **BETA**: 827
 - **TEMPLATE**: 4
-- **ALPHA**: 47
-- **DRAFT**: 36
+- **ALPHA**: 46
+- **DRAFT**: 37
 
 ## By Series
 
-### GenAI (171 notebooks) — BROKEN:2, DEMO:91, READY:78 | ALPHA:11, BETA:146, DRAFT:11, TEMPLATE:3
+### GenAI (172 notebooks) — BROKEN:2, DEMO:92, READY:78 | ALPHA:11, BETA:146, DRAFT:12, TEMPLATE:3
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -98,103 +98,104 @@ Total notebooks: 912
 | 72 | Choisir le modèle derrière son chatbot — une mini- | Python 3 (ipykernel) | DEMO | BETA | 30min | po-2025 |
 | 73 | Ingestion RAG d'un corpus long structure | Python 3 | READY | BETA | 30min | po-2025 |
 | 74 | Mesurer la dérive d'un copilot — le gate par étape | Python 3 | READY | BETA | 30min | po-2025 |
-| 75 | Piloter WordPress par MCP — le serveur, pas l'API  | Python 3 | READY | DRAFT | 30min | po-2025 |
-| 76 | Presenter AI Engine par son API — instance jetable | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 77 | Séparer les environnements de vecteurs | Python 3 | READY | BETA | 30min | po-2025 |
-| 78 | Parcours QA-OWUI — Notebook chapeau de la mission | Python 3 | READY | ALPHA | 15min | po-2025 |
-| 79 | Module 01 — Découverte de Playwright & Open WebUI | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 80 | Module 02 — Navigation & Authentification | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 81 | Module 03 — Chat & Streaming LLM | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 82 | Module 04 — RAG, Outils MCP & Fonctionnalités avan | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 83 | Module 05 — Multi-tenant, API Testing & CI/CD | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 84 | Module 06 — Tester les nouveautés v0.10 (« l'ère a | Python 3 | READY | BETA | 30min | po-2025 |
-| 85 | Différencier plusieurs assistants — mesurer ce qu' | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 86 | PT-01 — Introduction et vue d'ensemble | Python 3 | READY | BETA | 30min | po-2025 |
-| 87 | PT-02 — Supervised Fine-Tuning baseline (SFT) | coursia-ml-training | READY | BETA | 45min | po-2025 |
-| 88 | PT-03 — Direct Préférence Optimization (DPO) | Python 3 | READY | ALPHA | 45min | po-2025 |
-| 89 | PT-04 — Group Relative Policy Optimization (GRPO) | coursia-ml-training | READY | ALPHA | 45min | po-2025 |
-| 90 | PT-05 — Reinforcement Learning with Verifiable Rew | Python 3 | READY | BETA | 45min | po-2025 |
-| 91 | PT-06 — Evaluation Comparative du Post-Training | coursia-ml-training | READY | BETA | 30min | po-2025 |
-| 92 | PT-07 — Détecter le reward hacking avec rewardspy | Python 3 | READY | BETA | 15min | po-2025 |
-| 93 | PT-08 — GRPO from scratch : la mécanique du signal | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
-| 94 | PT-09 — RLOO (REINFORCE Leave-One-Out) from scratc | coursia-ml-training | READY | BETA | 30min | po-2025 |
-| 95 | PT-10 — GAE from scratch : pourquoi un mini-critic | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
-| 96 | PT-11 — GRPO + RLVR sur Qwen3.5-0.8B : la série Po | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
-| 97 | PT-11 — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewards | Python (coursia-ml-training) | READY | BETA | 45min | po-2025 |
-| 98 | PT-11b — RLVR multi-seed sur Qwen3.5-0.8B (4 seeds | Python (coursia-ml-training) | READY | ALPHA | 45min | po-2025 |
-| 99 | PT-12 — Crédit différé multi-step : GAE-λ sur un e | Coursia ML Training | READY | ALPHA | 45min | po-2025 |
-| 100 | Hands-On Grounding — Qdrant en mémoire | Python 3 | READY | BETA | 30min | po-2025 |
-| 101 | SK-1-Fundamentals : Introduction a Semantic Kernel | Python 3 | READY | BETA | 30min | po-2025 |
-| 102 | SK-2-Functions : Function Calling, Memory et Fonct | Python 3 | READY | BETA | 30min | po-2025 |
-| 103 | SK-3-Agents : Agent Framework Semantic Kernel | Python 3 | READY | BETA | 15min | po-2025 |
-| 104 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | BETA | 30min | po-2025 |
-| 105 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | READY | BETA | 30min | po-2025 |
-| 106 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | BETA | 30min | po-2025 |
-| 107 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
-| 108 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | BETA | 30min | po-2025 |
-| 109 | SK-9-Building-CLR : Interoperabilite Python/.NET v | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 110 | SK-10-NotebookMaker : Système Multi-Agents pour Ge | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 111 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 75 | Parler au chatbot en visiteur — la face navigateur | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 76 | Piloter WordPress par MCP — le serveur, pas l'API  | Python 3 | READY | DRAFT | 30min | po-2025 |
+| 77 | Presenter AI Engine par son API — instance jetable | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 78 | Séparer les environnements de vecteurs | Python 3 | READY | BETA | 30min | po-2025 |
+| 79 | Parcours QA-OWUI — Notebook chapeau de la mission | Python 3 | READY | ALPHA | 15min | po-2025 |
+| 80 | Module 01 — Découverte de Playwright & Open WebUI | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 81 | Module 02 — Navigation & Authentification | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 82 | Module 03 — Chat & Streaming LLM | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 83 | Module 04 — RAG, Outils MCP & Fonctionnalités avan | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 84 | Module 05 — Multi-tenant, API Testing & CI/CD | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
+| 85 | Module 06 — Tester les nouveautés v0.10 (« l'ère a | Python 3 | READY | BETA | 30min | po-2025 |
+| 86 | Différencier plusieurs assistants — mesurer ce qu' | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 87 | PT-01 — Introduction et vue d'ensemble | Python 3 | READY | BETA | 30min | po-2025 |
+| 88 | PT-02 — Supervised Fine-Tuning baseline (SFT) | coursia-ml-training | READY | BETA | 45min | po-2025 |
+| 89 | PT-03 — Direct Préférence Optimization (DPO) | Python 3 | READY | ALPHA | 45min | po-2025 |
+| 90 | PT-04 — Group Relative Policy Optimization (GRPO) | coursia-ml-training | READY | ALPHA | 45min | po-2025 |
+| 91 | PT-05 — Reinforcement Learning with Verifiable Rew | Python 3 | READY | BETA | 45min | po-2025 |
+| 92 | PT-06 — Evaluation Comparative du Post-Training | coursia-ml-training | READY | BETA | 30min | po-2025 |
+| 93 | PT-07 — Détecter le reward hacking avec rewardspy | Python 3 | READY | BETA | 15min | po-2025 |
+| 94 | PT-08 — GRPO from scratch : la mécanique du signal | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
+| 95 | PT-09 — RLOO (REINFORCE Leave-One-Out) from scratc | coursia-ml-training | READY | BETA | 30min | po-2025 |
+| 96 | PT-10 — GAE from scratch : pourquoi un mini-critic | Python 3 (ipykernel) | READY | BETA | 45min | po-2025 |
+| 97 | PT-11 — GRPO + RLVR sur Qwen3.5-0.8B : la série Po | Python 3 (coursia-ml-training) | READY | BETA | 45min | po-2025 |
+| 98 | PT-11 — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewards | Python (coursia-ml-training) | READY | BETA | 45min | po-2025 |
+| 99 | PT-11b — RLVR multi-seed sur Qwen3.5-0.8B (4 seeds | Python (coursia-ml-training) | READY | ALPHA | 45min | po-2025 |
+| 100 | PT-12 — Crédit différé multi-step : GAE-λ sur un e | Coursia ML Training | READY | ALPHA | 45min | po-2025 |
+| 101 | Hands-On Grounding — Qdrant en mémoire | Python 3 | READY | BETA | 30min | po-2025 |
+| 102 | SK-1-Fundamentals : Introduction a Semantic Kernel | Python 3 | READY | BETA | 30min | po-2025 |
+| 103 | SK-2-Functions : Function Calling, Memory et Fonct | Python 3 | READY | BETA | 30min | po-2025 |
+| 104 | SK-3-Agents : Agent Framework Semantic Kernel | Python 3 | READY | BETA | 15min | po-2025 |
+| 105 | SK-4-Filters : Filtres et Observabilite | Python 3 | READY | BETA | 30min | po-2025 |
+| 106 | SK-5-VectorStores : RAG avec Qdrant | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 107 | SK-6-ProcessFramework : Workflows et Orchestration | Python 3 | READY | BETA | 30min | po-2025 |
+| 108 | SK-7-MultiModal : Images, Audio et Vision | Python 3 | READY | BETA | 30min | po-2025 |
+| 109 | SK-8-MCP : Model Context Protocol et Integration | Python 3 | READY | BETA | 30min | po-2025 |
+| 110 | SK-9-Building-CLR : Interoperabilite Python/.NET v | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 111 | SK-10-NotebookMaker : Système Multi-Agents pour Ge | Python 3 | DEMO | BETA | 30min | po-2025 |
 | 112 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | DRAFT | 45min | po-2025 |
-| 113 | Projet Createur de Mail personnalise | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 114 | Notebook de travail | Python 3 | READY | BETA | 30min | po-2025 |
-| 115 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
-| 116 | Notebook de conception de Notebook | .NET (C#) | DEMO | BETA | 45min | po-2025 |
-| 117 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
-| 118 | Notebook de travail | .NET (C#) | BROKEN | TEMPLATE | 30min | po-2025 |
-| 119 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | DRAFT | 30min | po-2025 |
-| 120 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 121 | 10. Hébergement Local de Modèles Génératifs | Python 3 | READY | BETA | 45min | po-2025 |
-| 122 | 11. Quantization | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 123 | 12. Test Time Scaling | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 124 | 13. Orchestration agentique du test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
-| 125 | 14. Memoire persistante pour le test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
-| 126 | 15. Tree-of-Thoughts sur de vrais problemes de rec | Python 3 | READY | BETA | 30min | po-2025 |
-| 127 | 16. Scaling du test-time compute (Snell 2024) | Python 3 | READY | BETA | 30min | po-2025 |
-| 128 | 17. Modèles a raisonnement natif vs scaling du tes | Python 3 | READY | BETA | 30min | po-2025 |
-| 129 | 18. Plugins Semantic Kernel pour le test-time scal | Python 3 | READY | BETA | 30min | po-2025 |
-| 130 | 19. Orchestration et tâches planifiées avec Open W | Python 3 | READY | BETA | 30min | po-2025 |
-| 131 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 132 | 20. OWUI Native API v0.9.6 — introspection REST et | Python 3 | READY | BETA | 30min | po-2025 |
-| 133 | 21. Fine-tuning LoRA / QLoRA — Adapter un LLM sans | Python (coursia-ml-training) | READY | DRAFT | 45min | po-2025 |
-| 134 | 2. Prompt Engineering : Techniques Avancées | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 135 | 3. Structured Outputs : Sorties JSON Garanties | Python 3 | READY | BETA | 30min | po-2025 |
-| 136 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 137 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | BETA | 45min | po-2025 |
-| 138 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | BETA | 30min | po-2025 |
-| 139 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | BETA | 30min | po-2025 |
-| 140 | 8. Reasoning Models | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 141 | 9. Production Patterns | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 142 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
-| 143 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 45min | po-2025 |
-| 144 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 45min | po-2025 |
-| 145 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
-| 146 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 45min | po-2025 |
-| 147 | Claude Code via Claudish | Python 3 | READY | BETA | 15min | po-2025 |
-| 148 | CSharpRepl attache a un process .NET vivant | .NET (C#) | READY | ALPHA | 1h | po-2025 |
-| 149 | Garde-fous Roslyn pour le code genere par agent | .NET (C#) | READY | BETA | 30min | po-2025 |
-| 150 | Opérations de Base sur les Videos | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 151 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 152 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 153 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 154 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 155 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 156 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 157 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 158 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 159 | LTX-2 - Generation Audiovisuelle Conjointe (Video  | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 160 | MiniMax H3 (Hailuo 3.0) — Architecture, capacités… | Python 3 | DEMO | BETA | 15min | po-2025 |
-| 161 | CogVideoX - Generation Video depuis Texte (Open We | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 162 | Comparaison Multi-Modèles de Generation Video | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 163 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
-| 164 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 165 | Generation de Videos Educatives | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 166 | Workflows Video Creatifs | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 167 | Sora API - Generation Video Cloud | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 168 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
-| 169 | MiniMax H3 (Hailuo) — Génération vidéo par le serv | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 170 | MiniMax video-01 (v1) — Service cloud generation v | Python 3 | DEMO | BETA | 30min | po-2025 |
-| 171 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
+| 113 | 🚀 Conception Automatique de Notebook par Agents IA | Python 3 | DEMO | DRAFT | 45min | po-2025 |
+| 114 | Projet Createur de Mail personnalise | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 115 | Notebook de travail | Python 3 | READY | BETA | 30min | po-2025 |
+| 116 | Notebook de travail | Python 3 | BROKEN | TEMPLATE | 15min | po-2025 |
+| 117 | Notebook de conception de Notebook | .NET (C#) | DEMO | BETA | 45min | po-2025 |
+| 118 | Notebook de travail | .NET (C#) | READY | TEMPLATE | 30min | po-2025 |
+| 119 | Notebook de travail | .NET (C#) | BROKEN | TEMPLATE | 30min | po-2025 |
+| 120 | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | DRAFT | 30min | po-2025 |
+| 121 | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 122 | 10. Hébergement Local de Modèles Génératifs | Python 3 | READY | BETA | 45min | po-2025 |
+| 123 | 11. Quantization | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 124 | 12. Test Time Scaling | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 125 | 13. Orchestration agentique du test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
+| 126 | 14. Memoire persistante pour le test-time scaling | Python 3 | READY | BETA | 30min | po-2025 |
+| 127 | 15. Tree-of-Thoughts sur de vrais problemes de rec | Python 3 | READY | BETA | 30min | po-2025 |
+| 128 | 16. Scaling du test-time compute (Snell 2024) | Python 3 | READY | BETA | 30min | po-2025 |
+| 129 | 17. Modèles a raisonnement natif vs scaling du tes | Python 3 | READY | BETA | 30min | po-2025 |
+| 130 | 18. Plugins Semantic Kernel pour le test-time scal | Python 3 | READY | BETA | 30min | po-2025 |
+| 131 | 19. Orchestration et tâches planifiées avec Open W | Python 3 | READY | BETA | 30min | po-2025 |
+| 132 | 1. Introduction a l'IA generative avec l'API OpenA | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 133 | 20. OWUI Native API v0.9.6 — introspection REST et | Python 3 | READY | BETA | 30min | po-2025 |
+| 134 | 21. Fine-tuning LoRA / QLoRA — Adapter un LLM sans | Python (coursia-ml-training) | READY | DRAFT | 45min | po-2025 |
+| 135 | 2. Prompt Engineering : Techniques Avancées | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 136 | 3. Structured Outputs : Sorties JSON Garanties | Python 3 | READY | BETA | 30min | po-2025 |
+| 137 | Function Calling : Connecter les LLMs au Monde Rée | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 138 | 5. RAG Modern - Retrieval Augmented Generation | Python 3 | READY | BETA | 45min | po-2025 |
+| 139 | PDF et Web Search : Sources Documentaires avec Ope | Python 3 | READY | BETA | 30min | po-2025 |
+| 140 | Code Interpreter : Exécution de Code avec OpenAI | Python 3 | READY | BETA | 30min | po-2025 |
+| 141 | 8. Reasoning Models | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 142 | 9. Production Patterns | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 143 | Claude CLI - Les Bases | Python 3 | READY | BETA | 45min | po-2025 |
+| 144 | Claude CLI - Gestion des Sessions | Python 3 | READY | BETA | 45min | po-2025 |
+| 145 | Claude CLI - References et Contexte | Python 3 | READY | BETA | 45min | po-2025 |
+| 146 | Claude CLI - Agents et Subagents | Python 3 | READY | BETA | 30min | po-2025 |
+| 147 | Claude CLI - Automatisation Avancee | Python 3 | READY | BETA | 45min | po-2025 |
+| 148 | Claude Code via Claudish | Python 3 | READY | BETA | 15min | po-2025 |
+| 149 | CSharpRepl attache a un process .NET vivant | .NET (C#) | READY | ALPHA | 1h | po-2025 |
+| 150 | Garde-fous Roslyn pour le code genere par agent | .NET (C#) | READY | BETA | 30min | po-2025 |
+| 151 | Opérations de Base sur les Videos | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 152 | GPT-5 Video Understanding - Comprehension Video pa | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 153 | Qwen2.5-VL Video Analysis - Comprehension Video Lo | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 154 | Video Enhancement - Real-ESRGAN et Interpolation d | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 155 | AnimateDiff - Introduction a la Generation Text-to | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 156 | HunyuanVideo - Generation Video Haute Qualite**Mod | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 157 | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 158 | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 159 | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 160 | LTX-2 - Generation Audiovisuelle Conjointe (Video  | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 161 | MiniMax H3 (Hailuo 3.0) — Architecture, capacités… | Python 3 | DEMO | BETA | 15min | po-2025 |
+| 162 | CogVideoX - Generation Video depuis Texte (Open We | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 163 | Comparaison Multi-Modèles de Generation Video | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 164 | Orchestration de Pipelines Video | Python 3 | DEMO | ALPHA | 45min | po-2025 |
+| 165 | ComfyUI - Workflows Video via API | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 166 | Generation de Videos Educatives | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 167 | Workflows Video Creatifs | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 168 | Sora API - Generation Video Cloud | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 169 | Pipeline Video de Production | Python 3 | DEMO | BETA | 45min | po-2025 |
+| 170 | MiniMax H3 (Hailuo) — Génération vidéo par le serv | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 171 | MiniMax video-01 (v1) — Service cloud generation v | Python 3 | DEMO | BETA | 30min | po-2025 |
+| 172 | GenAI E2E Quant Validation | Python 3 | READY | BETA | 30min | po-2025 |
 
 ### Search (118 notebooks) — READY:118 | ALPHA:5, BETA:110, DRAFT:3
 
@@ -372,7 +373,7 @@ Total notebooks: 912
 | 47 | ML-9 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | 45min | po-2023 |
 | 48 | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | 30min | po-2023 |
 
-### SymbolicAI (231 notebooks) — DEMO:9, READY:222 | ALPHA:6, BETA:221, DRAFT:4
+### SymbolicAI (231 notebooks) — DEMO:8, READY:223 | ALPHA:6, BETA:221, DRAFT:4
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -454,7 +455,7 @@ Total notebooks: 912
 | 76 | Planners-8-Temporal - Planification Temporelle | Python 3 | READY | BETA | 45min | po-2024 |
 | 77 | Planners-9-HTN (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 78 | Planners-9-HTN - Planification Hiérarchique | Python 3 | READY | BETA | 45min | po-2024 |
-| 79 | Planners-10: LLMs pour la Planification | Python 3 | DEMO | BETA | 45min | po-2024 |
+| 79 | Planners-10: LLMs pour la Planification | Python 3 | READY | BETA | 45min | po-2024 |
 | 80 | Planners-11: Unified Planning | Python 3 | READY | BETA | 45min | po-2024 |
 | 81 | Planners-12: Learning to Plan avec LOOP | Python 3 | READY | BETA | 45min | po-2024 |
 | 82 | Z3 (C# / .NET) — Introduction au solveur SMT | .NET (C#) | READY | BETA | 30min | po-2024 |
@@ -721,7 +722,7 @@ Total notebooks: 912
 | 107 | Research QuantBook: VIX-TermStructure (Short Volat | Python 3 | READY | BETA | 45min | po-2026 |
 | 108 | Top-4 Sharpe > 0.5 Stratégies: OOS Deep-Dive (Issu | Python 3 | READY | BETA | 15min | po-2026 |
 
-### GameTheory (56 notebooks) — READY:56 | ALPHA:4, BETA:52
+### GameTheory (56 notebooks) — READY:56 | ALPHA:3, BETA:53
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -772,7 +773,7 @@ Total notebooks: 912
 | 45 | GameTheory 8b - Jeux Combinatoires en Lean | Lean 4 (WSL) | READY | BETA | 15min | po-2024 |
 | 46 | GameTheory 8c - Jeux Combinatoires : Approfondisse | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 47 | GameTheory 8c - Jeux Combinatoires : Approfondisse | Python (GameTheory WSL + OpenS | READY | BETA | 30min | po-2024 |
-| 48 | GameTheory-9-BackwardInduction (C#) | .NET (C#) | READY | ALPHA | 45min | po-2024 |
+| 48 | GameTheory-9-BackwardInduction (C#) | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 49 | GameTheory-9-BackwardInduction | Python 3 | READY | BETA | 45min | po-2024 |
 | 50 | SocialChoice 01 : Théorème d'impossibilité d'Arrow | .NET (C#) | READY | BETA | 45min | po-2024 |
 | 51 | SocialChoice 01 - Theoreme d'Arrow : Preuve Formel | Python 3 | READY | BETA | 30min | po-2024 |
@@ -887,7 +888,7 @@ Total notebooks: 912
 | 57 | PyMC-9 : Classification Bayesienne et Tests A/B | Python 3 | READY | BETA | 30min | po-2023 |
 | 58 | Le Framework Rational Speech Act (RSA) | Python 3 | READY | BETA | 45min | po-2023 |
 
-### IIT (55 notebooks) — READY:55 | BETA:50, DRAFT:5
+### IIT (56 notebooks) — READY:56 | BETA:51, DRAFT:5
 
 | # | Notebook | Kernel | Status | Maturity | Duration | Owner |
 |---|----------|--------|--------|----------|----------|-------|
@@ -937,15 +938,16 @@ Total notebooks: 912
 | 44 | ICT-7 — Signatures *scale-free* & criticalite | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
 | 45 | ICT-8 — Paysages d'attracteurs & signaux precurseu | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
 | 46 | ICT-9 — Agence & regeneration : *reparer sa forme, | Python 3 (ipykernel) | READY | BETA | 30min | po-2025 |
-| 47 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
-| 48 | Boucle auto-referentielle p_hat (case 2 / Epic #95 | Python 3 | READY | BETA | 30min | po-2025 |
-| 49 | ICT -- Dissociation saillance / pregnance (case `s | Python 3 | READY | BETA | 30min | po-2025 |
-| 50 | ICT-Life — Substrat de calibration certifié : le J | Python 3 | READY | BETA | 30min | po-2025 |
-| 51 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | BETA | 45min | po-2025 |
-| 52 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
-| 53 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
-| 54 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
-| 55 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
+| 47 | ICT — Annexe : la contextualité du zoo de proxys e | Python 3 | READY | BETA | 30min | po-2025 |
+| 48 | ICT — Substrat argumentation : trajectoires de cro | Python 3 | READY | BETA | 30min | po-2025 |
+| 49 | Boucle auto-referentielle p_hat (case 2 / Epic #95 | Python 3 | READY | BETA | 30min | po-2025 |
+| 50 | ICT -- Dissociation saillance / pregnance (case `s | Python 3 | READY | BETA | 30min | po-2025 |
+| 51 | ICT-Life — Substrat de calibration certifié : le J | Python 3 | READY | BETA | 30min | po-2025 |
+| 52 | Tete-a-tete SAE <-> J-space -- les deux lentilles  | Python 3 | READY | BETA | 45min | po-2025 |
+| 53 | ICT-Synthèse — un seul appareil de mesure, cinq su | Python 3 | READY | BETA | 45min | po-2025 |
+| 54 | IIT - Introduction à PyPhi et Integrated Informati | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
+| 55 | IIT - Sujets Avances : Partitionnement, Repertoire | Python 3 (PyPhi/IIT) | READY | BETA | 45min | po-2025 |
+| 56 | IIT-3. Coarse-graining, blackboxing et l'échelle d | pyphi | READY | BETA | 30min | po-2025 |
 
 ### RL (21 notebooks) — DEMO:2, READY:19 | BETA:21
 
@@ -980,4 +982,4 @@ Total notebooks: 912
 - **GPU**: 105 notebooks
 - **Cloud**: 111 notebooks
 - **WSL**: 47 notebooks
-- **Local**: 571 notebooks
+- **Local**: 573 notebooks

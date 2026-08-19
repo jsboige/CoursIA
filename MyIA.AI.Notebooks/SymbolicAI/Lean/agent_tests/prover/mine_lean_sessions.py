@@ -14,7 +14,7 @@ import logging
 import re
 import sys
 from collections import Counter, defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -531,7 +531,7 @@ def run_mining(
     if not dry_run:
         kb["tactic_cookbook"]["patterns"] = merged_p
         kb["failed_approaches"] = merged_f
-        kb["last_updated"] = datetime.now().isoformat()
+        kb["last_updated"] = datetime.now(timezone.utc).isoformat()
         save_json(kb_path, kb)
     return stats
 

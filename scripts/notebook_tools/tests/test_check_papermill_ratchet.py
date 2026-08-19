@@ -67,6 +67,55 @@ def commit(repo, msg):
                           encoding="utf-8").stdout.strip()
 
 
+class TestBaseAdvancedMeanwhile:
+    """A branch behind its base is judged on ITS diff, not on the gap.
+
+    Every other test in this file passes a base that is an ANCESTOR of HEAD,
+    where tree-to-tree and merge-base comparisons coincide -- which is why
+    the tree-to-tree diff went unnoticed until #11528 blamed a one-line
+    markdown fix for 9 regressions in notebooks it never opened.
+    """
+
+    def _diverge(self, repo):
+        """base holds two notebooks; the branch edits one, base advances the
+        other. Returns (base_tip_sha, branch_name)."""
+        write_nb(repo, "mine.ipynb", make_nb([OUT1], papermill=PM))
+        write_nb(repo, "theirs.ipynb", make_nb([OUT1], papermill=PM))
+        commit(repo, "base")
+        base_branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=repo,
+            check=True, capture_output=True, encoding="utf-8").stdout.strip()
+        git_ok(repo, "checkout", "-q", "-b", "feature")
+        nb = make_nb([OUT1], papermill=PM)
+        nb["cells"].insert(0, {"cell_type": "markdown",
+                               "source": "# new prose", "metadata": {}})
+        write_nb(repo, "mine.ipynb", nb)
+        commit(repo, "feature: markdown only")
+        git_ok(repo, "checkout", "-q", base_branch)
+        # the base re-executes the OTHER notebook, block refreshed and all
+        write_nb(repo, "theirs.ipynb", make_nb([OUT2], papermill=PM2))
+        tip = commit(repo, "base advances")
+        git_ok(repo, "checkout", "-q", "feature")
+        return tip
+
+    def test_base_side_changes_are_not_attributed_to_the_branch(self, repo):
+        tip = self._diverge(repo)
+        recs = gate.ratchet(tip, cwd=repo)
+        assert [r["notebook"] for r in recs] == ["mine.ipynb"]
+        assert recs[0]["regression"] is False
+        assert recs[0]["verdict"] == "OUTPUTS_UNCHANGED"
+
+    def test_a_real_regression_on_a_stale_branch_is_still_caught(self, repo):
+        """The fix removes false positives without blunting the gate."""
+        tip = self._diverge(repo)
+        write_nb(repo, "mine.ipynb", make_nb([OUT2], papermill=PM))
+        commit(repo, "feature: outputs changed, block untouched")
+        recs = gate.ratchet(tip, cwd=repo)
+        assert [r["notebook"] for r in recs] == ["mine.ipynb"]
+        assert recs[0]["regression"] is True
+        assert recs[0]["verdict"] == "STALE_BLOCK"
+
+
 class TestRegression:
     def test_changed_outputs_identical_block_fails(self, repo):
         """The exact case #11155: outputs changed, block byte-identical."""
