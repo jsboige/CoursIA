@@ -19,6 +19,8 @@ import Grothendieck.CoversPrecoverageArrow_en
 import Grothendieck.CoversPullback
 import Grothendieck.CoversPushforward
 import Grothendieck.CoversTopologies
+import Grothendieck.CoversZariskiArrow
+import Grothendieck.CoversZariskiArrow_en
 import Grothendieck.DenseTopology
 import Grothendieck.DirectImage
 import Grothendieck.ExceptionalDirect
