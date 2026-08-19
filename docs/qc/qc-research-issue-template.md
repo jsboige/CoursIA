@@ -89,7 +89,7 @@ Copier-coller ce bloc dans le body de la sous-issue. Remplacer chaque `[…]` pa
 gh issue comment <N> --body "[CLAIMED] lane <machine:workspace> — <article-title>"
 ```
 
-Sans timestamp dans le corps (cf [lane-claim-protocol.md](../../claude/rules/lane-claim-protocol.md)) — le `createdAt` GitHub fait foi.
+Sans timestamp dans le corps (cf [lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)) — le `createdAt` GitHub fait foi.
 
 ## Cap journalier
 
@@ -146,8 +146,8 @@ Les trois premiers convergent vers une PR, le quatrième est un verdict de clôt
 ## Liens projet
 
 - [`docs/qc-strategies-status.md`](./qc-strategies-status.md) — source de vérité 130 stratégies
-- [`.claude/rules/audit-cross-source-distillation.md`](../../claude/rules/audit-cross-source-distillation.md) — méthode de distillation d'une source canonique
-- [`.claude/rules/lane-claim-protocol.md`](../../claude/rules/lane-claim-protocol.md) — claim cross-lane
-- [`.claude/rules/audit-reassessment.md`](../../claude/rules/audit-reassessment.md) — protocole 4 étapes de vérification
-- [`.claude/rules/anti-regression.md`](../../claude/rules/anti-regression.md) — règle D.5 : ne pas stripper une cellule `# Solution`
-- [`.claude/rules/pr-review-discipline.md`](../../claude/rules/pr-review-discipline.md) — critères CHANGES_REQUESTED
+- [`.claude/rules/audit-cross-source-distillation.md`](../../.claude/rules/audit-cross-source-distillation.md) — méthode de distillation d'une source canonique
+- [`.claude/rules/lane-claim-protocol.md`](../../.claude/rules/lane-claim-protocol.md) — claim cross-lane
+- [`.claude/rules/audit-reassessment.md`](../../.claude/rules/audit-reassessment.md) — protocole 4 étapes de vérification
+- [`.claude/rules/anti-regression.md`](../../.claude/rules/anti-regression.md) — règle D.5 : ne pas stripper une cellule `# Solution`
+- [`.claude/rules/pr-review-discipline.md`](../../.claude/rules/pr-review-discipline.md) — critères CHANGES_REQUESTED
