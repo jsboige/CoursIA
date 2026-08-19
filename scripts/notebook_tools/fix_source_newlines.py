@@ -51,10 +51,10 @@ _COLLAPSED_SINGLE_MIN_LEN = 80
 # We split at the EARLIEST occurrence of any of these markers AFTER the
 # heading marker '#'+spaces. The marker is INCLUDED in the body part.
 _BODY_MARKERS = [
-    re.compile(r"\s:\s+(?=[A-ZÀ-ŸÀ-Ü*])"),
-    re.compile(r"\s\*\*[A-ZÀ-ŸÀ-Ü*]"),
-    re.compile(r"\s-\s+(?=[A-ZÀ-ŸÀ-Ü*])"),
-    re.compile(r"\s\d+\.\s+(?=[A-ZÀ-ŸÀ-Ü*])"),
+    re.compile(r"\s:\s+(?=[A-ZÀ-Ÿ*])"),
+    re.compile(r"\s\*\*[A-ZÀ-Ÿ*]"),
+    re.compile(r"\s-\s+(?=[A-ZÀ-Ÿ*])"),
+    re.compile(r"\s\d+\.\s+(?=[A-ZÀ-Ÿ*])"),
     re.compile(r"\s> "),
 ]
 
