@@ -259,7 +259,9 @@ def test_wait_loop_times_out_into_a_failure():
 # `FAIL -- timed out waiting for: (none listed)` even though the set is fully
 # green. The fix is a final re-read at the deadline: an empty `pending` AND
 # empty `bad` after the re-read is treated as a clean settle (after the rule-8
-# canary). Acceptance tests below pin the four cases listed in #11751.
+# canary). Acceptance tests below pin the cases listed in #11751 (the four
+# originally enumerated by the issue, plus the red-only-at-reread control
+# added by #11793 to exercise the `if final_bad:` deadline branch).
 
 
 def test_11751_phantom_fail_recovers_when_constituent_settles_in_gap():
@@ -309,12 +311,13 @@ def test_11751_genuine_still_pending_named_after_reread():
 
 
 def test_11751_red_constituent_observed_in_reread_is_not_a_pass():
-    """A check that flips red between polls is reported by name.
+    """A red observed in the LOOP (fail-fast path) is reported by name.
 
     Negative control for the recovery path: an all-green gate would be
-    indistinguishable from a gate that lost track of a red. The re-read uses
-    the same `classify` path that runs in the loop, so a red observed at the
-    re-read is reported exactly like a red observed in any other poll.
+    indistinguishable from a gate that lost track of a red. The fail-fast
+    branch `if bad:` at the top of the loop reports a red observed at any
+    poll by name -- this test pins that path (a red seen at poll 1, before
+    the deadline re-read ever runs).
     """
     def fetch(_repo, _sha):
         return [run("Broken CI", "failure", status="completed")]
@@ -325,6 +328,43 @@ def test_11751_red_constituent_observed_in_reread_is_not_a_pass():
     )
     assert code == 1
     assert "Broken CI" in msg
+
+
+def test_11751_red_appearing_only_at_reread_is_reported_by_name():
+    """A red observed ONLY at the deadline re-read is reported by name.
+
+    Companion to the previous test (#11793 N1). The fail-fast `if bad:` at the
+    top of the loop covers a red seen at any poll; this test pins the
+    deadline re-read branch `if final_bad:` -- the one that protects against
+    a constituent flipping red in the gap between the last poll and the
+    re-read. Without it, the recovery path (`if not final_pending and not
+    final_bad`) could mask a fresh red by routing it through the
+    already-settled happy path. The fetch mock yields:
+
+      poll 1: 1 pending  (constituent still in flight at last poll)
+      re-read: 1 failure (constituent completes red in the gap)
+
+    Verdict must be FAIL with the constituent named -- not the `(none listed)`
+    placeholder the pre-#11751 code emitted.
+    """
+    polls = []
+
+    def fetch(_repo, _sha):
+        polls.append(1)
+        return {1: [run("Slow CI", None, status="in_progress")]}.get(
+            len(polls),
+            [run("Slow CI", "failure", status="completed")],
+        )
+
+    code, msg = pr_gate.wait_and_decide(
+        "o/r", "sha", "PR gate", timeout_min=0, poll_sec=0,
+        settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+    )
+    assert code == 1, msg
+    assert "Slow CI" in msg, (
+        "a red appearing at the deadline re-read must be named, not hidden"
+    )
+    assert len(polls) == 2, "the deadline path must trigger exactly one re-read"
 
 
 def test_11751_no_path_emits_none_listed_placeholder():
@@ -344,9 +384,6 @@ def test_11751_no_path_emits_none_listed_placeholder():
         "an empty unsettled verdict must declare itself a gate bug, "
         "not look like a benign display"
     )
-
-
-# --- legacy commit statuses --------------------------------------------------
 
 
 # --- legacy commit statuses --------------------------------------------------

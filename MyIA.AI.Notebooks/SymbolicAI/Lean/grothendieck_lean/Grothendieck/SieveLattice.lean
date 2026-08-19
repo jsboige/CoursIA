@@ -17,6 +17,7 @@ identités fondamentales du **pullback le long de morphismes** :
   - `pullback_inf` (Partie 8, `SieveOps.lean`) : pullback préserve ⊓
   - `pullback_union` : pullback préserve ⋃ (joins finis)
   - `pullback_imap` : pullback préserve les bornes supérieures indexées (iSup)
+  - `pullback_iinf` : pullback préserve les bornes inférieures indexées (iInf)
   - `pullback_ofObjects` : pullback distribue `Sieve.ofObjects` selon la cible
   - `mem_iff_pullback_eq_top` : `f ∈ S` ssi `Sieve.pullback f S = ⊤`
 
@@ -149,6 +150,28 @@ theorem pullback_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
     Sieve.pullback f (iSup S) = ⨆ i, Sieve.pullback f (S i) := by
   ext Z g
   simp [Sieve.pullback, iSup, Set.mem_range]
+
+/-!
+## Pullback distribue sur la borne inférieure indexée
+
+Dual de `pullback_imap` : tirer en arrière la borne inférieure d'une
+famille de cribles égale la borne inférieure de leurs pullbacks. C'est
+la propriété d'adjoint droit du pullback dans la connexion de Galois
+`pushforward ⊣ pullback` (`galoisConnection_pushforward_pullback`,
+Mathlib `Sites.Sieves`) : il préserve **toutes** les rencontres, pas
+seulement les intersections binaires.
+
+`pullback_inf` (Partie 8, `SieveOps.lean`) en est le cas particulier
+à deux éléments.
+-/
+
+/-- CALIBRATION (ext + simp) : pullback distribue sur le iInf d'une
+    famille indexée. Dual de `pullback_imap` (borne supérieure indexée). -/
+theorem pullback_iinf {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve X) :
+    Sieve.pullback f (iInf S) = ⨅ i, Sieve.pullback f (S i) := by
+  ext Z g
+  simp [Sieve.pullback, iInf, Set.mem_range]
 
 /-!
 ## Pullback distribue `ofObjects` selon la cible
