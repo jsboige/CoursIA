@@ -24,6 +24,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cell-order-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cell-order:
     name: "No cell-ordering regression in changed notebooks"

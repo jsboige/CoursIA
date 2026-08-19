@@ -49,6 +49,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: variation-tag-guard-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-variation-tag:
     name: Check Grain tag conformity

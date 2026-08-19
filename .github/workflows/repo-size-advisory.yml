@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: repo-size-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   large-blob-advisory:
     name: Large blob advisory (>= 10 MiB)

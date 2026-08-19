@@ -48,6 +48,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: manifest-description-visuelle-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   manifest-description-visuelle:
     name: "MANIFEST.md description_visuelle field enforced on changed files"
