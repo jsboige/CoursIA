@@ -17,7 +17,7 @@ name: Lean CI (decision_theory_lean)
 #
 # `real` mode is the prover harness canonical count (FX-6 #1453):
 # depth-tracked `/-- ... -/` and `/- ... -/` strip, then word-bounded
-# `sorry` grep. Catches every compiled-tactic form (`:= by sorry`,
+# `\bsorry\b` grep. Catches every compiled-tactic form (`:= by sorry`,
 # `exact sorry`, bare `sorry`, case-bullet `· sorry`) while ignoring
 # prose mentions in docstrings/comments. The discount sub-module
 # (Discount.lean, 0 since #2911) is EN-sibling-clean; the 2 baseline

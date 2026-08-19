@@ -10,7 +10,7 @@ name: Lean CI (finiteness_lean)
 # (verified firsthand 2026-06-25, `lake build Finiteness` SUCCESS 4 jobs,
 # 0 standalone-tactic sorry; re-verified with canonical awk: 0 real).
 # `real` mode = canonical awk (lean-build.yml:111-134) + word-bounded
-# `sorry` grep, catches every compiled-tactic form while ignoring
+# `\bsorry\b` grep, catches every compiled-tactic form while ignoring
 # prose mentions. standalone-tactic was the prior minimal-count mode;
 # `real` is a strict superset (catches `exact sorry`, `:= by sorry`,
 # case-bullet `· sorry`), still 0 here. See lean-build.yml.

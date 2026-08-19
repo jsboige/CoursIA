@@ -17,7 +17,7 @@ name: Lean CI (erc20_lean)
 # (verified: canonical awk + word-bounded grep on ERC20/*.lean = 0 on all
 # 6 files FR+EN, with `_en` excluded per lean-build.yml:96 — C513-L1 #6429).
 # `real` mode = canonical awk (lean-build.yml:111-134) + word-bounded
-# `sorry` grep, matches every compiled-tactic form (`exact sorry`,
+# `\bsorry\b` grep, matches every compiled-tactic form (`exact sorry`,
 # `:= by sorry`, bare `sorry`, case-bullet `· sorry`) while ignoring
 # prose mentions in docstrings/comments. See lean-build.yml.
 #
