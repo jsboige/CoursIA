@@ -48,7 +48,7 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 | [Semantic-kernel-AutoInteractive](Semantic-kernel-AutoInteractive.ipynb) | C# (.NET) | **Conception de notebook assistée** : SK + OpenAI function calling pour générer et exécuter d'autres notebooks .NET interactifs | 3 |
 | [Créateur de mail personnalisé](Créateur%20de%20mail%20personnalisé.ipynb) | Python | Workflow multi-agents SK (InputCollector, EmailGenerator) pour la rédaction de courriels | 3 |
 | [fort-boyard-csharp](fort-boyard-csharp.ipynb) | C# (.NET) | AgentGroupChat : duel Père Fouras vs Laurent Jalabert (jeu de devinette) | 3 |
-| [fort-boyard-python](fort-boyard-python.ipynb) | Python | Contrepartie Python du duel Fort Boyard (KernelFunctionTerminationStrategy) | 3 |
+| [fort-boyard-python](fort-boyard-python.ipynb) | Python | Contrepartie Python du duel Fort Boyard (TerminationStrategy personnalisee) | 3 |
 
 ## Templates
 

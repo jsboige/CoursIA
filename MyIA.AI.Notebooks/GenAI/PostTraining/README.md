@@ -201,10 +201,30 @@ Les autres deux notebooks de `rlpt_*` — `rlpt_1` (PPO-RLHF from scratch, char-
 
 | Série | Connection | Details |
 |-------|------------|---------|
-| **[RL](../../RL/)** | RL classique fondamentaux | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
+| **[RL](../../RL/)** | RL classique fondamentaux + sous-série `rlpt_*` | Les notebooks RL ([rl_5 MDP/Q-Learning](../../RL/rl_5_mdp_dp_qlearning.ipynb) et [rl_6c PPO from scratch](../../RL/rl_6c_ppo_from_scratch.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
+| **[RL — rlpt_2 GRPO](../../RL/rlpt_2_grpo_minimal.ipynb)** | GRPO *naked* (sans `trl`) | La mécanique de GRPO (group rollouts, avantage intra-groupe, no critic) écrite à la main sur Qwen3.5-0.8B. Bon prérequis conceptuel pour PT-11a/PT-11b. |
+| **[RL — rlpt_3 reward hacking](../../RL/rlpt_3_reward_hacking.ipynb)** | Cas clinique d'inoculation | Mini-cas : 3 voies pour déclencher le hack sur récompense vérifiable, inoculation comme variable. PT-07 est l'outil (catalogue de détecteurs), rlpt_3 le cas d'usage. |
+| **[RL — rlpt_4 DPO vs PPO](../../RL/rlpt_4_dpo_vs_ppo.ipynb)** | Comparaison offline vs online | DPO/ORPO offline vs GRPO online à budget 40 steps — prérequis empirique pour PT-06 (évaluation comparative). |
 | **[RL — rl_9 offline](../../RL/rl_9_offline_rl.ipynb)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
 | **[RL — rl_10 reward shaping](../../RL/rl_10_reward_shaping.ipynb)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.ipynb). |
 | **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique sur 5 notebooks. PostTraining = profondeur méthodologique (14 notebooks), FineTuning = recettes exécutables. |
+
+## Frontière avec RL/rlpt_* — où ouvre `PT_*`, où ouvre `rlpt_*`
+
+Les sous-séries [RL/rlpt_*](../../RL/) et cette série PostTraining couvrent **le même terrain** (post-training d'un LM) à des niveaux de pile différents. La frontière est posée explicitement pour qu'un lecteur sache **quel notebook ouvrir pour quelle question**.
+
+**Une phrase à retenir** : `PT_*` = *la chaîne réelle, à l'échelle* (`trl.GRPOTrainer` + `trl.DPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + vérificateur Z3/SymPy + détecteurs Goodhart en ligne + multi-seed) ; `rlpt_*` = *la mécanique, en petit, sans framework* (boucle d'entraînement écrite à la main, on voit chaque rollout et chaque gradient).
+
+| Question pédagogique | Ouvrir | Pourquoi |
+|---|---|---|
+| « Comment SFT/DPO/GRPO sont-ils *câblés* dans `trl` ? Comment lire une loss ? » | [PT-02](PT_02_sft_baseline.ipynb), [PT-03](PT_03_dpo_direct_preference.ipynb), [PT-04](PT_04_grpo_deepseek_r1.ipynb) | `trl.SFTTrainer`/`DPOTrainer`/`GRPOTrainer` sur vrai LLM Qwen3.5-0.8B QLoRA, vraies losses, vrais gradients via la pile HuggingFace. |
+| « Comment GRPO *fonctionne* intérieurement — group rollouts, avantage intra-groupe, no critic ? » | [PT-08](PT_08_grpo_from_scratch_toy_env.ipynb) (toy env) ou [RL/rlpt_2](../../RL/rlpt_2_grpo_minimal.ipynb) (vrai LM sans `trl`) | La mécanique écrite à la main — on voit chaque rollout, chaque reward, chaque log-prob ratio. |
+| « GRPO + RLVR sur vrai LLM, avec détecteur Goodhart en ligne, multi-seed ? » | [PT-11a](PT_11_grpo_qwen35_rlvr.ipynb), [PT-11b](PT_11_grpo_qwen_rlvr_on_verifiers.ipynb) | La pile SOTA 2025 : `trl.GRPOTrainer` + Z3/SymPy + `rewardspy.watch_trl` (Goodhart live), 4 seeds dans PT-11b-multi-seed. |
+| « Quels sont les détecteurs statistiques du reward hacking ? » | [PT-07](PT_07_rewardspy_reward_hacking.ipynb) | Catalogue `rewardspy.detectors` (6 classes : Component Dominance, Length Drift, etc.) — l'**outil**. |
+| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Cas clinique. » | [RL/rlpt_3](../../RL/rlpt_3_reward_hacking.ipynb) | Mini-cas : 3 voies pour déclencher le hack, inoculation comme variable — le **cas d'usage** de `rewardspy`. |
+| « InoculationRL complet, panel persona × reward hackable, capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final — **distinct** de `rlpt_3` (qui en est la version compacte). |
+
+Le constat d'éventuelle duplication `rlpt_2 ↔ PT-11a` et `rlpt_3 ↔ PT-07` est traité en [#11460](https://github.com/jsboige/CoursIA/issues/11460) : les deux séries *se complètent* par l'angle du regard (mécanique vs déploiement outillé), pas par duplication.
 
 ## Contexte industriel et historique 2017-2025
 

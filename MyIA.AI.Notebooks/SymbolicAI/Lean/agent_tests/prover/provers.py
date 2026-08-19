@@ -20,6 +20,7 @@ from .p4_final_verify import _evaluate_final_verify
 from .decomposition_regression import (
     is_decomposition_regression,
     is_same_count_zero_verified,
+    is_worsened_unproven,
 )
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
@@ -878,6 +879,9 @@ class MultiAgentSorryProver:
             # Default value so the success check after finally always has it,
             # even if an exception is raised mid-block before the verify runs.
             final_build_ok = False
+            # #1453 iter-2 write-guard latch: True when a run ENDED with MORE
+            # sorries than it started and proved nothing (reverted to entry).
+            regressed = False
 
             best_content = getattr(tactic_tools, "best_content", None)
             best_sorry = getattr(tactic_tools, "best_sorry_count",
@@ -899,6 +903,25 @@ class MultiAgentSorryProver:
                     Path(filepath).write_text(last_ok_content, encoding="utf-8")
                     final_sorry = last_ok_sorry if last_ok_sorry is not None else final_sorry
                     structural_progress = True
+
+            if is_worsened_unproven(final_sorry, original_sorry_count, proof_found):
+                # #1453 iter-2 write-guard: a run that ENDED with more sorries
+                # than it started and proved nothing must never persist that
+                # worsened file (L2551 4->8 was committed exactly this way via
+                # the kept-snapshot branch above, then mislabelled
+                # structural_only). Revert to the entry state and mark the run
+                # REGRESSED -- success is structurally impossible afterwards.
+                print(
+                    f"  REGRESSED: sorry {original_sorry_count} -> {final_sorry}"
+                    f" (delta>0, no proof). Reverting to the entry state -- the"
+                    f" harness never persists a worsened file (#1453 iter-2 guard)."
+                )
+                Path(filepath).write_text(original_content, encoding="utf-8")
+                final_sorry = original_sorry_count
+                structural_progress = False
+                regressed = True
+                tactic_tools._best_content = None
+                tactic_tools._best_sorry_count = original_sorry_count
 
             # MANDATORY final build verification on the committed file. This
             # catches false positives where the snapshot's build_check was
@@ -989,6 +1012,29 @@ class MultiAgentSorryProver:
                     )
                     final_sorry = _verify_sorry
                     structural_progress = False
+                    # #1453 iter-3 build-aware write-guard: the iter-2 guard
+                    # above compared TEXT counts (2==2), so the kept-snapshot
+                    # branch persisted a file whose BUILD-aware count actually
+                    # grew (2->3, one implicit sorry via apply?/exact?/
+                    # solve_by_elim). structural_progress=False alone does not
+                    # revert -- the worsened file stays on disk while the run
+                    # is merely marked non-success. Re-check the write-guard
+                    # with the build-aware count and revert on a genuine rise.
+                    if is_worsened_unproven(
+                            final_sorry, original_sorry_count, proof_found):
+                        print(
+                            f"  REGRESSED (build-aware): text count was "
+                            f"{original_sorry_count}, build reveals {_verify_sorry}"
+                            f" ({_verify_sorry - original_sorry_count} implicit "
+                            f"sorry, no proof). Reverting to the entry state -- "
+                            f"the harness never persists a build-aware-worsened "
+                            f"file (#1453 iter-3 guard)."
+                        )
+                        Path(filepath).write_text(original_content, encoding="utf-8")
+                        final_sorry = original_sorry_count
+                        structural_progress = False
+                        tactic_tools._best_content = None
+                        tactic_tools._best_sorry_count = original_sorry_count
 
         # Success now also covers structural progress: file changed but
         # compiles, even if sorry count didn't decrease. Provers.py used to
@@ -1061,6 +1107,7 @@ class MultiAgentSorryProver:
                  and verified_tactic_count > 0)
              or structural_progress)
             and final_build_ok
+            and not is_worsened_unproven(final_sorry, original_sorry_count, proof_found)
         )
         self.trace.end_session_span(success, f"{original_sorry_count}->{final_sorry}")
 
@@ -1149,6 +1196,10 @@ class MultiAgentSorryProver:
             # restructuring) so forensic ROI ranks these runs honestly instead
             # of counting an unproven sorry-spray as progress.
             "decomposition_regression": decomposition_regression,
+            # #1453 iter-2 write-guard: True when the run ended worsened and
+            # unproven (sorry delta>0, no proof_found) and the file was
+            # reverted to its entry state. Never persisted as success.
+            "regressed": regressed,
             # P5a-search (#7477 forensic): session-level reasoning wall-clock
             # latched either in the multi-agent `except _asyncio.TimeoutError`
             # or the autonomous WALL-CLOCK CAP branch. Surfaced so
