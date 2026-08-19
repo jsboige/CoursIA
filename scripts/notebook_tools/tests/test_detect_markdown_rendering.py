@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -33,6 +34,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import detect_markdown_rendering  # noqa: E402
 from detect_markdown_rendering import (  # noqa: E402
     _inside_fence_lines,
     _is_frontmatter_block,
@@ -815,6 +817,75 @@ class TestQuartoClosure:
             assert Path(f"docs/{name}.ipynb") in targets, (
                 f"link '...{name}.ipynb<TP>' was dropped from closure: {targets}"
             )
+
+
+class TestQuartoClosureDependency:
+    """Pin the #11850 fix: a missing pyyaml must never read as an empty render-list.
+
+    Pre-fix, ``_quarto_render_list`` swallowed the ImportError from
+    ``import yaml`` behind ``except Exception: return []``, and the CLI
+    reported "empty/invalid _quarto.yml" -- on a runner without pyyaml the
+    closure scan silently covered 0 of 792 render-list entries while accusing
+    a perfectly valid YAML file (the ``handrolled-pattern-set-undercounts-
+    silently`` defect class). These controls hold the two causes apart: a
+    missing dependency is named as a dependency; only genuinely invalid YAML
+    keeps the empty-list path.
+    """
+
+    def _write_yml(self, tmp_path: Path) -> Path:
+        yml = tmp_path / "_quarto.yml"
+        yml.write_text(
+            "project:\n  render:\n    - 'docs/render.md'\n",
+            encoding="utf-8",
+        )
+        return yml
+
+    def test_missing_pyyaml_raises_naming_the_dependency(self, tmp_path, monkeypatch):
+        # A None entry in sys.modules makes `import yaml` raise ImportError.
+        yml = self._write_yml(tmp_path)
+        monkeypatch.setitem(sys.modules, "yaml", None)
+        with pytest.raises(RuntimeError, match="pyyaml"):
+            _quarto_render_list(yml)
+
+    def test_invalid_yaml_still_returns_empty(self, tmp_path):
+        # Genuinely unparseable YAML keeps the OLD contract (empty list) --
+        # the caller's "empty/invalid" message is the right one for it.
+        yml = tmp_path / "_quarto.yml"
+        yml.write_text("project: [unclosed\n", encoding="utf-8")
+        assert _quarto_render_list(yml) == []
+
+    def test_cli_missing_pyyaml_exits_2_blaming_the_dependency(self, tmp_path):
+        # CLI level: run the real script in a subprocess where `import yaml`
+        # raises (a fake yaml.py first on sys.path = pyyaml absent, without
+        # uninstalling anything). The pin: exit 2 with a message that names
+        # the DEPENDENCY, never "empty/invalid".
+        yml = self._write_yml(tmp_path)
+        (tmp_path / "yaml.py").write_text(
+            'raise ImportError("simulated: pyyaml absent")\n', encoding="utf-8"
+        )
+        env = {**os.environ, "PYTHONPATH": str(tmp_path)}
+        script = Path(detect_markdown_rendering.__file__).resolve()
+        r = subprocess.run(
+            [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
+             str(tmp_path)],
+            capture_output=True, text=True, env=env, cwd=tmp_path,
+        )
+        assert r.returncode == 2, (r.stdout, r.stderr)
+        assert "pyyaml" in r.stderr
+        assert "empty/invalid" not in r.stderr
+
+    def test_cli_with_pyyaml_reads_the_render_list(self, tmp_path):
+        # Positive control: with pyyaml present the CLI reads the render-list
+        # and announces its size (the CI log line "--closure: render-list=N").
+        yml = self._write_yml(tmp_path)
+        script = Path(detect_markdown_rendering.__file__).resolve()
+        r = subprocess.run(
+            [sys.executable, str(script), "--closure", "--quarto-yml", str(yml),
+             str(tmp_path)],
+            capture_output=True, text=True, cwd=tmp_path,
+        )
+        assert r.returncode == 0, (r.stdout, r.stderr)
+        assert "--closure: render-list=1" in r.stderr
 
 
 if __name__ == "__main__":
