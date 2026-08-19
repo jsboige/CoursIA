@@ -770,3 +770,171 @@ def test_founding_incident_still_blocks_from_the_pr_body():
     blocking = [c for c in cands if c.blocking]
     assert blocking
     assert check_assertion(FILES_11227, blocking[0].text)
+
+
+# --- #11695: --assert false-positives when the fence PRECEDES the prose ---------
+# Measured 2026-08-18 by po-2026 (post-merge verify of #11675): the gate path
+# (--scan-thread) was fixed at extraction level, but the MANUAL reviewer path
+# (--assert, whole body to check_assertion) still trips COUNT_CLAIM on a fenced
+# L898 transcription when it appears BEFORE the correct prose claim -- search()
+# stops at the first occurrence, so the founder body of #11675 passed only by
+# coincidence of ordering. A pass that depends on appearance order proves nothing.
+
+FENCE_FIRST_BODY = (
+    "## Preuve anti-collision (L898)\n"
+    "\n"
+    "```\n"
+    "$ gh pr list --state open --json files\n"
+    "0 fichiers en commun avec les autres PR\n"
+    "```\n"
+    "\n"
+    "Perimetre : 1 fichier modifie.\n"
+)
+FENCE_ONLY_BODY = (
+    "## L898 verifie\n"
+    "\n"
+    "```\n"
+    "$ gh pr list --state open --json files\n"
+    "0 fichiers en commun\n"
+    "```\n"
+)
+FILES_11695 = [{"path": "MyIA.AI.Notebooks/GenAI/Audio/XTTS/foo.ipynb", "additions": 5, "deletions": 2}]
+
+
+def test_assert_fence_before_prose_does_not_misread_transcription():
+    """#11695 case 1: fenced '0 fichiers en commun' BEFORE the prose claim.
+    The transcription is not the author's assertion; the prose claim (1 fichier)
+    matches the file list exactly -> must NOT report a problem."""
+    assert check_assertion(FILES_11695, FENCE_FIRST_BODY) == []
+
+
+def test_assert_fence_only_body_is_not_a_valid_assertion():
+    """#11695 case 2: body made ONLY of a fence transcription carries no
+    verifiable author claim. After the fix, fences are masked in the scan so
+    the count check ignores the transcribed 0 -- and the 'non verifiable'
+    guard, run on the ORIGINAL text, must still flag it (a body of pure
+    transcription cannot pass silently)."""
+    problems = check_assertion(FILES_11695, FENCE_ONLY_BODY)
+    assert problems, "a transcription-only body must not pass in silence"
+    assert not any("pretend 0" in p for p in problems), (
+        f"must not misread the fenced 0 as the author's claim, got: {problems!r}"
+    )
+
+# ---------------------------------------------------------------------------
+# #11712 -- incidental counts. Detection stays (the line is still extracted
+# and confronted); only the blocking consequence moves (#11648 path). Each
+# test pairs an FP repaired with the nearest true assertion that must stay.
+# ---------------------------------------------------------------------------
+
+def test_incidental_threshold_citation_is_signal_not_blocking():
+    """#11710: '< 15 fichiers' cites the G.4 threshold the author is UNDER --
+    the guard blocked a PR for quoting the rule it exists to enforce."""
+    line = ("**2 notebooks + 1 grain = scope C.4 OK** "
+            "(< 3000 lignes, < 15 fichiers, 1 feature, 1 domaine Lean)")
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False, "a cited threshold is not a perimeter claim"
+
+
+def test_incidental_locative_scan_scope_is_signal_not_blocking():
+    """#11616 forme A + the grep-scope family: 'sur les N fichiers' is the
+    scope of a CHECK or a tool run, not the perimeter."""
+    lines = [
+        "- Check : `0 separator cells remaining` sur les 2 fichiers",
+        "- **0 violation C.1** : `grep -nE \"raise NotImplementedError|assert "
+        "False|1/0\"` sur 73 fichiers = 0 match code",
+        "- YAML parse OK sur les 158 fichiers du registre",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"scan scope must not block: {line[:50]}"
+
+
+def test_locative_count_with_diffstat_still_blocks():
+    """The locative rule must NOT swallow '+307 lignes / −0 sur 2 fichiers'
+    -- there 'sur 2 fichiers' names what the diffstat measured. FN control."""
+    line = "`+307 lignes / −0` sur 2 fichiers, aucun code existant supprimé ni stubé."
+    assert extract_perimeter_assertions(line) == [line]
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_incidental_artifact_qualified_count_is_signal_not_blocking():
+    """#11625 '22 fichiers MP3' / #11529 '5 fichiers scratch' /
+    '2 fichiers restants': kind or remainder, not the PR's file list."""
+    lines = [
+        "- **Outputs** : 22 fichiers MP3 (3 modèles × 3 textes = 9 lectures benchmark)",
+        "5 fichiers scratch d'une autre PR (#10023) sont concernés",
+        "il reste 2 fichiers restants à corriger dans la vague suivante",
+        "`lake update` → 8638 fichiers mathlib cache décompressés",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"kind/remainder must not block: {line[:50]}"
+
+
+def test_modified_files_count_with_qualifier_still_blocks():
+    """'3 fichiers ajoutes' carries the modification act -- must stay
+    blocking even though a word follows the count. FN control (#11614)."""
+    line = "- **catalog-pr-hygiene.md R1** : catalogue byte-identique a main (3 fichiers ajoutes, pas de regen)."
+    assert extract_perimeter_assertions(line) == [line]
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_incidental_zero_count_is_signal_not_blocking():
+    """'0 fichier machine-path' is a scrub attestation -- a PR never has
+    0 files, the equality confrontation can never pass."""
+    line = "- **0 fichier machine-path** (C.1 / L213-A scrub)"
+    assert extract_perimeter_assertions(line) == [line]
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_incidental_parenthetical_exclusivity_is_signal_not_blocking():
+    """#11616 forme B: '(SL-8/SL-9 only, scope minimal)' co-presents 'only'
+    and 'scope' by lexical coincidence inside one parenthetical qualifier."""
+    line = "- **Phase 3** : v1 (SL-8/SL-9 only, scope minimal) + v2 (PR-gate)"
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_bare_exclusivity_outside_parens_still_blocks():
+    """'Aucune autre modification.' keeps its authorial force. FN control."""
+    line = "Aucune autre modification."
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_scope_word_count_line_still_blocks():
+    """Any count line carrying a strong scope word is never downgraded by the
+    qualifier/locative rules. FN control (corpus: 43 such lines preserved)."""
+    line = "Périmètre : 4 fichiers modifiés, rien d'autre."
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_founding_count_assertions_stay_blocking_11712():
+    """The issue's named true assertions -- diffstat-neighborhood counts --
+    must all survive the classifier. FN control."""
+    for line in [
+        "2 fichiers, +100/−13 — pas de composite (G.4).",
+        "**3 fichiers, +512 insertions / 0 deletions** :",
+        "**Fichiers:** 3 fichiers modifiés",
+    ]:
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is True, f"must stay blocking: {line[:50]}"
+
+
+def test_mixed_line_confronts_the_non_zero_count():
+    """"0 fichier catalogue, 2 fichiers touches" over a 2-file PR passes.
+
+    The zero is a property claim; the perimeter claim is the 2. Reading the
+    first match instead confronts "0" with a list that cannot be empty, so
+    the line could never pass whatever the PR contained.
+    """
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []

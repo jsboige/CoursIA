@@ -9,6 +9,7 @@ import os
 import sys
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -175,3 +176,51 @@ def test_apportionment_table_shape():
     assert len(table) == len(res["scales"])
     assert table[0][-1] is None       # delta_cp du micro = None
     assert all(len(row) == 6 for row in table)
+
+
+# ------------------------------------------- partitions dessinees (issue #5726, ICT-32)
+def test_partition_profile_fate_restores_effectiveness():
+    """La partition par destin bat le micro degenerescent ; verifiee sur B3/S23."""
+    import numpy as np
+    from ict.life import fate_strata, torus_ensemble_tpm
+
+    tpm, succ = torus_ensemble_tpm(2)
+    micro = CE.causal_profile(tpm)
+    macro = CE.partition_profile(tpm, fate_strata(succ))
+    # substrat deterministe : determinisme conserve par la partition par destin
+    assert macro["determinism"] == pytest.approx(1.0)
+    # le gain mesure : effectiveness macro > micro (delta ~ +0.67 sur le 2x2)
+    assert macro["effectiveness"] > micro["effectiveness"] + 0.5
+
+
+def test_partition_profile_population_is_negative_control():
+    """Témoin négatif : la partition par population NE suit PAS la cause."""
+    import numpy as np
+    from ict.life import live_count_strata, torus_ensemble_tpm
+
+    tpm, succ = torus_ensemble_tpm(2)
+    micro = CE.causal_profile(tpm)
+    macro = CE.partition_profile(tpm, live_count_strata(2, succ))
+    assert macro["effectiveness"] < micro["effectiveness"]
+
+
+def test_partition_profile_rejects_incomplete_partition():
+    import numpy as np
+
+    tpm = np.eye(4)
+    with pytest.raises(ValueError):
+        CE.partition_profile(tpm, [[0, 1], [2]])  # etat 3 absent
+
+
+def test_partition_profile_greedy_lands_on_fate_partition():
+    """Le glouton 2x2 re-derive de lui-meme la partition par destin (5 strates)."""
+    from ict.life import fate_strata, torus_ensemble_tpm
+
+    tpm, _ = torus_ensemble_tpm(2)
+    res = CE.greedy_apportionment(tpm)
+    # l'echelle terminale a la taille du nombre de strates de destin...
+    assert res["scales"][-1]["size"] == len(fate_strata(torus_ensemble_tpm(2)[1]))
+    # ...et l'effectiveness termine a 1.0 (chemin monotone)
+    assert res["scales"][-1]["effectiveness"] == pytest.approx(1.0)
+    vals = [s["effectiveness"] for s in res["scales"]]
+    assert all(b >= a - 1e-12 for a, b in zip(vals, vals[1:]))

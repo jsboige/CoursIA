@@ -960,6 +960,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/.dialogues-build/
 # consumed by `restore`, deleted when restore completes. Ephemeral (in-flight
 # patch state), never committed.
 .quarto_csharp_fix_manifest.json
+.quarto_yaml_safe_manifest.json
 
 # Infer.NET factor-graph render side-artifacts (#11685)
 # InferHelpers/Graphviz rendering writes a timestamped Model_<MM_DD_YY_HH_MM_SS_ff>.gv + .svg

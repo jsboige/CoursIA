@@ -65,6 +65,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: fabricated-output-gate-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   fabricated-output:
     name: "No fabricated text output in changed notebooks"

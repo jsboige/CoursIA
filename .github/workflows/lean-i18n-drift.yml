@@ -37,6 +37,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: lean-i18n-drift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   i18n-drift:
     name: "i18n sibling drift"

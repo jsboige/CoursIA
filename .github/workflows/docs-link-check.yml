@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: docs-link-check-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-links:
     runs-on: ubuntu-latest

@@ -423,6 +423,161 @@ theorem no_flip_beats_prob_le {N M : ℕ} (hM : 0 < M)
         by rw [hmass]
     _ ≤ Real.exp (-((M : ℝ) * (ε * Real.exp (-2) / Real.sqrt (2 * Real.pi)))) := hesc
 
+/-! ## Grain 5 (#11152, étape 4) — assemblage : le seuil `2 log N − log log N`
+
+Le grain 4 a borné la probabilité qu'aucun flip ne batte `x*` par
+`exp(−M·ε·φ(2))`. Ce grain franchit la dernière distance vers l'énoncé du
+converse du Thm 2.1 :
+
+1. **Le code.** Les codewords sont `{±1}^N` ; le point de départ est le
+   vecteur tout-`1`, dont les déviations sont `u ∈ {0, 2}^N` (`u = 1 − x`).
+   Un flip `flipAt i = 2·eᵢ` est une déviation valide (le codeword `1 − 2·eᵢ`
+   a sa i-ème coordonnée à `−1`).
+2. **L'événement d'erreur ML.** ML minimise `‖y − √s·A x‖²` sur le code ;
+   si le canal est `y = √s·A·1 + w` et le point de départ `x* = 1`, le
+   décodage **échoue** dès qu'un codeword concurrent est strictement plus
+   proche de `y` que `1`, c.-à-d. `∃ u ∈ {0,2}^N, u ≠ 0, mimoObj A w s u <
+   mimoObj A w s 0`.
+3. **La réduction.** Si un flip bat `x*`, ML échoue (`flipAt i` est une
+   déviation valide non nulle) ; donc « pas d'erreur ML » ⊆ « aucun flip ne
+   bat ». La borne du grain 4 (sur ce dernier événement) minore la
+   probabilité d'échec ML.
+4. **Le seuil.** Sous la couverture diagonale, si `M·ε·φ(2) ≥ 2·log N − log
+   log N`, alors `P(ML échoue) ≥ 1 − exp(−(2·log N − log log N))`. C'est la
+   forme d'assemblage qui fait apparaître le terme du Thm 2.1 ; le
+   raffinement `− s_N` (terme de réseau d'ordre inférieur) et le lien exact
+   `SNR ↔ ε` restent la suite documentée du §11. -/
+
+/-- **Boîte des déviations du code `{±1}^N` depuis le point `1`** : les
+vecteurs `u : Fin N → ℝ` dont chaque coordonnée est `0` (pas de flip) ou
+`2` (coordonnée flippée à `−1`). `x = 1 − u` parcourt exactement `{±1}^N`. -/
+def DeviationBox (N : ℕ) : Set (Fin N → ℝ) :=
+  {u : Fin N → ℝ | ∀ i : Fin N, u i = 0 ∨ u i = 2}
+
+/-- **Erreur de décodage ML sur le code `{±1}^N`** pour le point de départ
+`1` : un codeword concurrent est strictement plus proche de `y = √s·A·1 + w`
+que `1` lui-même, c.-à-d. une déviation `u ∈ {0,2}^N` non nulle vérifie
+`mimoObj A w s u < mimoObj A w s 0`. -/
+def mlError (A : (Fin N → ℝ) →ₗ[ℝ] EuclideanSpace ℝ (Fin M)) (w : EuclideanSpace ℝ (Fin M))
+    (s : ℝ) : Prop :=
+  ∃ u : Fin N → ℝ, u ∈ DeviationBox N ∧ u ≠ 0 ∧ mimoObj A w s u < mimoObj A w s 0
+
+/-- Un flip `flipAt i = 2·eᵢ` est une déviation valide du code : sa
+coordonnée `i` vaut `2`, toutes les autres `0`. -/
+theorem flipAt_mem_deviationBox (i : Fin N) : flipAt i ∈ DeviationBox N := by
+  intro j
+  by_cases h : j = i
+  · subst h
+    right
+    simp [flipAt, Pi.single_eq_same]
+  · left
+    simp [flipAt, Pi.single_eq_of_ne h]
+
+/-- Un flip est une déviation non nulle. -/
+theorem flipAt_ne_zero (i : Fin N) : flipAt i ≠ 0 := by
+  intro h
+  have hc := congr_fun h i
+  simp [flipAt, Pi.single_eq_same] at hc
+
+/-- **Réduction flip → erreur ML.** Si un flip bat `x*` (`∃ i, mimoObj A w s
+(flipAt i) < mimoObj A w s 0`), alors le décodage ML sur `{±1}^N` échoue :
+le codeword concurrent `1 − flipAt i` est strictement plus proche de `y` que
+`1`. C'est le pont qui fait de la borne du grain 4 un minorant de la
+probabilité d'erreur ML. -/
+theorem flip_bat_implies_mlError (A : (Fin N → ℝ) →ₗ[ℝ] EuclideanSpace ℝ (Fin M))
+    (w : EuclideanSpace ℝ (Fin M)) (s : ℝ)
+    (hw : ∃ i : Fin N, mimoObj A w s (flipAt i) < mimoObj A w s 0) :
+    mlError A w s := by
+  rcases hw with ⟨i, hi⟩
+  exact ⟨flipAt i, flipAt_mem_deviationBox i, flipAt_ne_zero i, hi⟩
+
+/-- **Assemblage — échec ML sous le seuil.** Sous la couverture diagonale
+(`hcover` : une coordonnée du bruit dans `I(c, ε)` ⟹ un flip bat `x*`), si
+`M·ε·φ(2) ≥ 2·log N − log log N`, alors la probabilité d'erreur ML est
+`≥ 1 − exp(−(2·log N − log log N))`. Le grain 4 borne l'événement
+« aucun flip ne bat » par `exp(−M·ε·φ(2))` ; la réduction
+`flip_bat_implies_mlError` combine avec l'événement contraire (« pas d'erreur
+ML » ⊆ « aucun flip ne bat ») ; on exploite la sous-additivité de la mesure
+(`P(s) + P(sᶜ) ≥ 1`, vraie sans mesurabilité) pour passer à l'erreur ML ;
+enfin la condition de seuil remplace `M·ε·φ(2)` par le terme
+`2·log N − log log N` du Thm 2.1 (monotonie de `x ↦ exp(−x)`). Le
+raffinement `− s_N` et le lien `SNR ↔ ε` restent la suite du §11. -/
+theorem ml_error_prob_ge_threshold {N M : ℕ} (hM : 0 < M)
+    (A : (Fin N → ℝ) →ₗ[ℝ] EuclideanSpace ℝ (Fin M)) {s c ε : ℝ}
+    (hε : 0 < ε) (hc : |c| + ε / 2 ≤ 2)
+    (hp1 : ε * Real.exp (-2) / Real.sqrt (2 * Real.pi) ≤ 1)
+    (hcover : ∀ w : EuclideanSpace ℝ (Fin M),
+      (∃ j : Fin M, (WithLp.ofLp w : Fin M → ℝ) j ∈ Set.Ioc (c - ε / 2) (c + ε / 2)) →
+        ∃ i : Fin N, mimoObj A w s (flipAt i) < mimoObj A w s 0)
+    (hseuil : (M : ℝ) * (ε * Real.exp (-2) / Real.sqrt (2 * Real.pi))
+      ≥ 2 * Real.log N - Real.log (Real.log N)) :
+    1 - Real.exp (-(2 * Real.log N - Real.log (Real.log N))) ≤
+      (stdGaussian (EuclideanSpace ℝ (Fin M)) {w : EuclideanSpace ℝ (Fin M) | mlError A w s}).toReal := by
+  set p : ℝ := ε * Real.exp (-2) / Real.sqrt (2 * Real.pi) with hp_def
+  set T : ℝ := 2 * Real.log N - Real.log (Real.log N) with hT_def
+  let μ : Measure (EuclideanSpace ℝ (Fin M)) := stdGaussian (EuclideanSpace ℝ (Fin M))
+  -- 1. Contraposée de la réduction : « pas d'erreur ML » ⟹ « aucun flip ne bat ».
+  have hsub : {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s} ⊆
+      {w : EuclideanSpace ℝ (Fin M) |
+        ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)} := by
+    intro w hw i
+    by_contra hbi
+    exact hw (flip_bat_implies_mlError A w s ⟨i, hbi⟩)
+  -- 2. Bornes de probabilités : P(no-flip) ≤ exp(−M·p), puis P(¬mlError) ≤ P(no-flip).
+  have hno := no_flip_beats_prob_le (N := N) (M := M) hM A (s := s) (c := c) (ε := ε)
+    hε hc hp1 hcover
+  have hle : (μ {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s}).toReal ≤
+      Real.exp (-((M : ℝ) * p)) := by
+    have hmonoμ : (μ {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s}).toReal ≤
+        (μ {w : EuclideanSpace ℝ (Fin M) |
+          ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)}).toReal :=
+      (ENNReal.toReal_le_toReal (measure_ne_top _ _) (measure_ne_top _ _)).mpr
+        (measure_mono hsub)
+    have hno' : (μ {w : EuclideanSpace ℝ (Fin M) |
+          ∀ i : Fin N, ¬(mimoObj A w s (flipAt i) < mimoObj A w s 0)}).toReal ≤
+        Real.exp (-((M : ℝ) * p)) := by
+      simpa [μ, hp_def] using hno
+    exact le_trans hmonoμ hno'
+  -- 3. Sous-additivité : 1 − P(mlError) ≤ P(¬mlError) (sans mesurabilité).
+  have hsubadd : 1 ≤ (μ {w : EuclideanSpace ℝ (Fin M) | mlError A w s}).toReal +
+      (μ {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s}).toReal := by
+    have h1 : (μ Set.univ).toReal = 1 := by
+      rw [measure_univ]
+      simp
+    have huniv : {w : EuclideanSpace ℝ (Fin M) | mlError A w s} ∪
+          {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s} =
+        (Set.univ : Set (EuclideanSpace ℝ (Fin M))) := by
+      classical
+      ext w
+      tauto
+    have hle' : μ (Set.univ : Set (EuclideanSpace ℝ (Fin M))) ≤
+        μ {w : EuclideanSpace ℝ (Fin M) | mlError A w s} +
+        μ {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s} := by
+      rw [← huniv]
+      exact measure_union_le _ _
+    have htor : (μ (Set.univ : Set (EuclideanSpace ℝ (Fin M)))).toReal ≤
+        (μ {w : EuclideanSpace ℝ (Fin M) | mlError A w s} +
+         μ {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s}).toReal :=
+      ((ENNReal.toReal_le_toReal (measure_ne_top _ _)
+        (ENNReal.add_ne_top.mpr ⟨measure_ne_top _ _, measure_ne_top _ _⟩)).mpr hle')
+    rw [h1] at htor
+    rw [ENNReal.toReal_add (measure_ne_top _ _) (measure_ne_top _ _)] at htor
+    exact htor
+  have hcomp : 1 - (μ {w : EuclideanSpace ℝ (Fin M) | mlError A w s}).toReal ≤
+      (μ {w : EuclideanSpace ℝ (Fin M) | ¬ mlError A w s}).toReal := by
+    linarith [hsubadd]
+  -- 4. Chaîne finale.
+  have hlt : 1 - (μ {w : EuclideanSpace ℝ (Fin M) | mlError A w s}).toReal ≤
+      Real.exp (-((M : ℝ) * p)) := le_trans hcomp hle
+  have hab : 1 - Real.exp (-((M : ℝ) * p)) ≤
+      (μ {w : EuclideanSpace ℝ (Fin M) | mlError A w s}).toReal := by
+    linarith [hlt]
+  have hmono : Real.exp (-((M : ℝ) * p)) ≤ Real.exp (-T) :=
+    Real.exp_le_exp.mpr (by linarith [hseuil])
+  calc
+    1 - Real.exp (-T) ≤ 1 - Real.exp (-((M : ℝ) * p)) := by linarith [hmono]
+    _ ≤ (μ {w : EuclideanSpace ℝ (Fin M) | mlError A w s}).toReal := hab
+
 end Converse
 
 end Mimo
