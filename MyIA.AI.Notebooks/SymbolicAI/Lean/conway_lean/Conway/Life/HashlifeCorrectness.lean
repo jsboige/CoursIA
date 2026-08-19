@@ -70,6 +70,7 @@ import Conway.Life.HashlifeCorrectness.Walls.NW
 import Conway.Life.HashlifeCorrectness.Walls.NE
 import Conway.Life.HashlifeCorrectness.Walls.SW
 import Conway.Life.HashlifeCorrectness.Walls.SE
+import Conway.Life.HashlifeMemo
 
 namespace Conway
 namespace Life
@@ -6931,6 +6932,72 @@ theorem hashlife_correct_implies_beacon_2
     evolveHashlifeFast 2 beacon = evolve 2 beacon := by
   have hpad : BoxAssezGrand beacon 2 := by native_decide
   exact H 2 beacon hpad
+
+/-! ## Axe efficacité (#6724) : stabilisation du moteur, classe 1 — patterns périodiques
+
+L'efficacité de hashlife (cache Golly) vit sur les motifs dont l'arbre de
+macrocells se stabilise ; les motifs périodiques en sont le cas d'école —
+la trajectoire ne produit que `p` états distincts, donc le cache sert
+indéfiniment les mêmes nœuds. Cette section formalise ce « l'arbre se
+stabilise » au niveau sémantique : pour un oscillateur de période `p`,
+TOUT horizon du moteur mémoïsé retombe dans le cycle
+(`evolveHashlifeFastMemo_oscillator_cycle`). La correction du moteur non
+décorrélé reste conditionnelle à la capture de la trajectoire
+(`hashlife_correctN`) ; pour un oscillateur borné la capture s'établit
+par motif (témoins `jumpCaptured_block`, `jumpCaptured_glider`). Le
+moteur décorrélé (`evolveHashlifeFastAtN`, #11161) la décharge
+entièrement — la présente section n'en dépend pas. -/
+
+/-- Oscillateur de période `p` : au moins une étape, et l'état initial
+    revient après `p` générations. Classe « patterns périodiques » de
+    l'axe efficacité #6724. -/
+def IsOscillator (p : Nat) (g : Grid) : Prop :=
+  0 < p ∧ evolve p g = g
+
+/-- Tout multiple de la période redonne l'état initial : la trajectoire
+    sémantique d'un oscillateur ne visite que `p` états. -/
+theorem evolve_oscillator_mul (p : Nat) (g : Grid) (h : evolve p g = g) :
+    ∀ k, evolve (k * p) g = g := by
+  intro k
+  induction k with
+  | zero => simp
+  | succ k ih => rw [Nat.succ_mul, evolve_add, h, ih]
+
+/-- Stabilisation du moteur mémoïsé sur la classe des oscillateurs :
+    tout horizon `n` retombe sur l'état `n % p` du cycle. C'est
+    l'invariant de stabilisation « l'arbre se stabilise » formalisé pour
+    la classe des patterns périodiques (critère « axe efficacité » de
+    #6724) : la sortie du moteur ne quitte jamais le cycle à `p` états. -/
+theorem evolveHashlifeFastMemo_oscillator_cycle
+    (p n : Nat) (g : Grid) (hosc : IsOscillator p g)
+    (hcap : ∀ t ≤ n, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo n g = evolve (n % p) g := by
+  have hcorr := hashlife_correctN n g hcap
+  have hcycle : evolve (p * (n / p)) g = g := by
+    rw [Nat.mul_comm]
+    exact evolve_oscillator_mul p g hosc.2 (n / p)
+  have hn : p * (n / p) + n % p = n := Nat.div_add_mod n p
+  have hcomm : p * (n / p) + n % p = n % p + p * (n / p) := by omega
+  have hmod : n % p % p = n % p :=
+    Nat.mod_eq_of_lt (Nat.mod_lt n hosc.1)
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hcorr, ← hn, hcomm,
+    evolve_add, hcycle, Nat.add_mul_mod_self_left, hmod]
+
+/-- Corollaire : aux multiples de la période, le moteur mémoïsé redonne
+    exactement l'état initial — la sortie est stable de période `p`. -/
+theorem evolveHashlifeFastMemo_oscillator_stable
+    (p k : Nat) (g : Grid) (hosc : IsOscillator p g)
+    (hcap : ∀ t ≤ k * p, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo (k * p) g = g := by
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hashlife_correctN _ _ hcap,
+    evolve_oscillator_mul p g hosc.2 k]
+
+/-! Sanity witnesses : le blinker horizontal est un oscillateur de période 2,
+et le moteur mémoïsé le stabilise — à tout multiple de la période il redonne
+exactement l'état initial. -/
+
+#eval evolve 2 blinker_h == blinker_h
+#eval evolveHashlifeFastMemo 8 blinker_h == blinker_h
 
 end Life
 end Conway
