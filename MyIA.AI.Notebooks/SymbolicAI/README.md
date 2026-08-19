@@ -61,9 +61,9 @@ Le Web Sémantique généralise les concepts logiques de la Phase 1 au web. Les 
 
 La série Lean 4 passe de la théorie à la pratique de la preuve formelle. Les notebooks 1-5 posent les fondations : types dépendants, Curry-Howard, quantificateurs, mode tactique. Les notebooks 6-10 explorent l'état de l'art 2024-2026 : Mathlib4, intégration LLM (AlphaProof, LeanCopilot), agents autonomes (Harmonic, Erdos), et Semantic Kernel multi-agents. Les notebooks 11-11py relient la vérification formelle au machine learning (certificats de robustesse pour réseaux de neurones), et le notebook 12 porte le théorème de sensibilité de Huang (2019) en Lean 4. Cette phase est la plus exigeante techniquement (WSL obligatoire, concepts mathématiques avancés) mais aussi la plus innovante.
 
-### Phase 4 : Applications (Planners + SmartContracts, ~30h)
+### Phase 4 : Applications (SMT + Planners + SmartContracts, ~32h)
 
-Deux séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **planification automatique** (23 notebooks : 13 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
+Trois séries applicatives indépendantes exploitent les formalismes des phases précédentes. La **résolution SMT** (46 notebooks : 28 Z3-API Python + C# jumeaux + 18 Z3-Linq2Z3 C#) constitue la passerelle naturelle entre la Phase 3 (Lean, vérification formelle) et les solveurs industriels : Z3 (Microsoft Research) en API impérative Python (z3-py) et en binding déclaratif C# (Z3.Linq + LINQ). Couvre arithmétique linéaire, bit-vectors, tableaux, chaînes, MaxSAT, cryptarithmes, et capstones `Meal Planner` (série 16..16e). La **planification automatique** (23 notebooks : 13 Python incluant Planners-0-Setup, doublés de 9 jumeaux C# livrés par le marathon parité #4956) couvre PDDL, Fast-Downward, CP-SAT (OR-Tools), planification temporelle, HTN, et l'intégration LLM pour la génération de plans, plus un companion natif Lean (Planners-5b) qui formalise la relaxation h-add dans le lake `planners_lean`. Les **smart contracts** (27 notebooks) constituent la plus longue sous-série : Solidity fondamental, DeFi (ERC-20/721, swaps, liquidités), DAO, vérification formelle (Foundry fuzz/invariants), cryptographie avancée (ZK proofs, chiffrement homomorphe, vote vérifiable), écosystèmes alternatifs (Move, Solana, Bitcoin, Vyper), et déploiement mainnet. Chaque série est autonome mais enrichie par les phases 1-3.
 
 ### Parcours alternatif : Pont LLM (Argument Analysis, ~4h)
 
@@ -88,6 +88,7 @@ La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch
 | **SmartContracts** | `SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb` | `pip install py-solc-x web3` |
 | **SymbolicLearning** | `SymbolicLearning/SL-1-LogicalLearning.ipynb` | Python 3.10+ standard library, aucune installation |
 | **Argument Analysis** | `Argument_Analysis/Argument_Analysis_Agentic-0-init.ipynb` | `pip install semantic-kernel jpype1` + `.env` |
+| **SMT / Z3** | `SMT/Z3-API/Z3-Python-01-Introduction.ipynb` (Python) ou `SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb` (C#) | `pip install z3-solver` (Python) ; pour C# `dotnet add package Z3.Linq` |
 
 **Pour commencer sans rien installer** : les notebooks Python (Tweety, Planners, SemanticWeb Python, SmartContracts) ne nécessitent que `pip install jupyter ipykernel` + les packages listes ci-dessus.
 
@@ -104,7 +105,7 @@ La série SymbolicLearning (20 notebooks : 12 Python + 8 jumeaux C# from-scratch
 | **SmartContracts** | Python | Solidity/solc, Foundry | py-solc-x, web3 | OPENAI_API_KEY (8b) |
 | **SymbolicLearning** | Python | Aucun (WSL pour la section Popper de SL-4) | sklearn, rdflib, clingo (optionnels) | OPENROUTER_API_KEY optionnelle (SL-8/SL-10) |
 | **Argument Analysis** | Python | Java/JPype | semantic-kernel | OPENAI_API_KEY |
-| **Autres** | .NET C# | Aucun | Google.OrTools, Z3.Linq | Non |
+| **SMT / Z3** | Python / .NET C# | Aucun | z3-solver (Python), Z3.Linq (C#) | Non |
 
 ---
 
@@ -226,6 +227,73 @@ Série de **28 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 > Note : Les kernels Windows ne fonctionnent pas (signal.SIGPIPE, problèmes chemins)
 
 Documentation complète : [Lean/README.md](Lean/README.md)
+
+---
+
+## SMT - Résolution SMT / Z3
+
+Série de **46 notebooks** sur la résolution **SMT** (*Satisfiability Modulo Theories*) via le solveur **Z3** (Microsoft Research). Deux bindings complémentaires coexistent : **`Z3-API`** (28 notebooks : 22 Python + 6 jumeaux C# sur 01..06) procure l'API impérative complète (`z3-py` / `Z3.API` natif C#) — exponentielle expressive (BitVec, Array, String, Regex, optimisation) ; **`Z3-Linq2Z3`** (18 notebooks C#) offre un binding déclaratif natif .NET via LINQ — exprimer des contraintes sans quitter le langage hôte. Couvre du puzzle classique (Sudoku, missionnaires et cannibales, einstein, cryptarithmes) aux capstones `Meal Planner` (série 16 / 16b / 16c / 16d / 16e : modélisation, données externes, patient capstone, convergence à l'échelle, optimisation) qui enchaînent synthèse de modèles, validation de propriétés, et preuve de bornitude.
+
+La série joue un rôle charnière dans la famille SymbolicAI : elle **consomme** la vérification de propriétés de Lean (Phase 3, par exemple Lean-10 ou SMT-LIB dumps) et **fournit** le solveur sous-jacent à Planners (CP-SAT et outils dérivés, voir Phase 4). Pour les étudiants, SMT est aussi la manière la plus rapide de passer de la logique propositionnelle (Phase 1, Tweety) à un outil industriel moderne.
+
+### Structure détaillée
+
+| # | Notebook | Kernel | Contenu | Exercices |
+|---|----------|--------|---------|-----------|
+| **Fondations Z3-API (Python + jumeaux C#)** |   |   |   |   |
+| 01 | [Z3-Python-01-Introduction](SMT/Z3-API/Z3-Python-01-Introduction.ipynb) · [C#](SMT/Z3-API/Z3-Python-01-Introduction-Csharp.ipynb) | Python / .NET | Premier solve() : booléens, entiers, solveur, modèle | 3 |
+| 02 | [Z3-Python-02-Sudoku](SMT/Z3-API/Z3-Python-02-Sudoku.ipynb) · [C#](SMT/Z3-API/Z3-Python-02-Sudoku-Csharp.ipynb) | Python / .NET | Sudoku 9×9 par contraintes, propagation, unicité | 3 |
+| 03 | [Z3-Python-03-Tactics](SMT/Z3-API/Z3-Python-03-Tactics.ipynb) · [C#](SMT/Z3-API/Z3-Python-03-Tactics-Csharp.ipynb) | Python / .NET | Tactiques (simplify, solve-eq, bit-blast), combinaison de solveurs | 3 |
+| 04 | [Z3-Python-04-Strings-Regex](SMT/Z3-API/Z3-Python-04-Strings-Regex.ipynb) · [C#](SMT/Z3-API/Z3-Python-04-Strings-Regex-Csharp.ipynb) | Python / .NET | Théorie des chaînes, regex, exemples Sphinx | 3 |
+| 05 | [Z3-Python-05-Quantifiers-Proofs](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs.ipynb) · [C#](SMT/Z3-API/Z3-Python-05-Quantifiers-Proofs-Csharp.ipynb) | Python / .NET | Quantificateurs ∀/∃, preuve par instantiation, incomplétude | 3 |
+| 06 | [Z3-Python-06-Advanced-Optimization](SMT/Z3-API/Z3-Python-06-Advanced-Optimization.ipynb) · [C#](SMT/Z3-API/Z3-Python-06-Advanced-Optimization-Csharp.ipynb) | Python / .NET | Optimisation MaxSAT, Optimize(), Pareto | 3 |
+| **Z3-API patterns impératifs (Python)** |   |   |   |   |
+| 07 | [Z3-Python-07-Style-Declaratif-Linq](SMT/Z3-API/Z3-Python-07-Style-Declaratif-Linq.ipynb) | Python | Comparaison style impératif vs LINQ-like avec Z3 Python | 2 |
+| 08 | [Z3-Python-08-Ordonnancement](SMT/Z3-API/Z3-Python-08-Ordonnancement.ipynb) | Python | Ordonnancement de tâches, précédences, disjonctions | 3 |
+| 09 | [Z3-Python-09-Enigme-Einstein](SMT/Z3-API/Z3-Python-09-Enigme-Einstein.ipynb) | Python | Énigme d'Einstein, 5 maisons, 5 attributs × 5 valeurs | 3 |
+| 10 | [Z3-Python-10-Cryptarithmetic](SMT/Z3-API/Z3-Python-10-Cryptarithmetic.ipynb) | Python | Cryptarithmes SEND+MORE=MONEY, alphamétique | 3 |
+| 11 | [Z3-Python-11-Graph-Coloring](SMT/Z3-API/Z3-Python-11-Graph-Coloring.ipynb) | Python | Coloration de graphes, k-coloriage, contraintes de différence | 3 |
+| 12 | [Z3-Python-12-Real-Arithmetic](SMT/Z3-API/Z3-Python-12-Real-Arithmetic.ipynb) | Python | Arithmétique réelle, contraintes linéaires, comparaison | 3 |
+| 13 | [Z3-Python-13-UnsatCores](SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb) | Python | Unsat cores, extraction de sous-ensembles incohérents | 3 |
+| 14 | [Z3-Python-14-BitVectors-Overflow](SMT/Z3-API/Z3-Python-14-BitVectors-Overflow.ipynb) | Python | Bit-vectors, overflow, unsigned/signed, wrap-around | 3 |
+| 15 | [Z3-Python-15-Nested-Arrays-2D](SMT/Z3-API/Z3-Python-15-Nested-Arrays-2D.ipynb) | Python | Tableaux imbriqués, select/store, modèles 2D | 3 |
+| **Capstone Meal Planner (16..16e)** |   |   |   |   |
+| 16 | [Z3-Python-16-Meal-Planner](SMT/Z3-API/Z3-Python-16-Meal-Planner.ipynb) | Python | Modélisation du problème de planification de repas | 3 |
+| 16b | [Z3-Python-16b-Meal-Planner-Data-External](SMT/Z3-API/Z3-Python-16b-Meal-Planner-Data-External.ipynb) | Python | Données externes (CSV, JSON), intégration | 3 |
+| 16c | [Z3-Python-16c-Meal-Planner-Patient-Capstone](SMT/Z3-API/Z3-Python-16c-Meal-Planner-Patient-Capstone.ipynb) | Python | Profil patient, contraintes médicales, capstone | 3 |
+| 16d | [Z3-Python-16d-Meal-Planner-Convergence-Scale](SMT/Z3-API/Z3-Python-16d-Meal-Planner-Convergence-Scale.ipynb) | Python | Convergence à l'échelle, temps de réponse, bench | 3 |
+| 16e | [Z3-Python-16e-Meal-Planner-Optimize](SMT/Z3-API/Z3-Python-16e-Meal-Planner-Optimize.ipynb) | Python | Optimisation multi-critères, Pareto, compromis | 3 |
+| 17 | [Z3-Python-17-Array-Theory](SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb) | Python | Array theory avancée, axiomes, modèles | 3 |
+| 18 | [Z3-Python-18-Sudoku-Modes](SMT/Z3-API/Z3-Python-18-Sudoku-Modes.ipynb) | Python | Sudoku modes étendus (diagonal, jigsaw, killer) | 3 |
+| **Z3-Linq2Z3 (C# déclaratif)** |   |   |   |   |
+| 1 | [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
+| 2 | [02_Sudoku_Theorem_vs_Array](SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb) | .NET C# | Sudoku : approche theorem vs Array via LINQ | 3 |
+| 3 | [03_Sudoku_Modes_Comparison](SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb) | .NET C# | Comparaison des modes Sudoku (standard, jigsaw, killer) | 3 |
+| 4 | [04_Array_Theory](SMT/Z3-Linq2Z3/04_Array_Theory.ipynb) | .NET C# | Array theory appliquée via LINQ | 3 |
+| 5 | [05_Nested_Arrays_2D](SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb) | .NET C# | Tableaux imbriqués 2D, bindings LINQ | 3 |
+| 6 | [06_Meal_Planner_Modelisation](SMT/Z3-Linq2Z3/06_Meal_Planner_Modelisation.ipynb) | .NET C# | Modélisation déclarative du Meal Planner | 3 |
+| 7 | [07_Meal_Planner_Data_External](SMT/Z3-Linq2Z3/07_Meal_Planner_Data_External.ipynb) | .NET C# | Données externes via LINQ-to-Z3 | 3 |
+| 8 | [08_Meal_Planner_Patient_Capstone](SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb) | .NET C# | Capstone patient, contraintes médicales | 3 |
+| 9 | [09_Meal_Planner_Convergence_Scale](SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb) | .NET C# | Convergence et passage à l'échelle | 3 |
+| 10 | [10_Witness_Generation_Automata](SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) | .NET C# | Génération de témoins via automates | 3 |
+| 11 | [11_Job_Shop_Scheduling](SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb) | .NET C# | Job-shop scheduling, précédences, machines | 3 |
+| 12 | [12_Graph_Coloring_Petersen](SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb) | .NET C# | Coloration du graphe de Petersen | 3 |
+| 13 | [13_Cryptarithmetic_SMT](SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb) | .NET C# | Cryptarithmétique via LINQ | 3 |
+| 14 | [14_Optimize_MaxSAT](SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb) | .NET C# | Optimisation MaxSAT, Pareto | 3 |
+| 15 | [15_BitVectors_Overflow](SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb) | .NET C# | Bit-vectors Z3.Linq, overflow | 3 |
+| 16 | [16_RealArithmetic](SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb) | .NET C# | Arithmétique réelle via Z3.Linq | 3 |
+| 17 | [17_UnsatCores](SMT/Z3-Linq2Z3/17_UnsatCores.ipynb) | .NET C# | Unsat cores en C# | 3 |
+| 18 | [18_Einsteins_Riddle](SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb) | .NET C# | Énigme d'Einstein en LINQ déclaratif | 3 |
+
+### Kernels et packages
+
+- **Z3-API (Python)** : `pip install z3-solver` — notebooks 01..06 + 07..18, kernel Python 3.10+
+- **Z3-API (jumeaux C#)** : `dotnet add package Z3.Linq` — notebooks `*-Csharp.ipynb` (01..06), kernel `.NET Interactive`
+- **Z3-Linq2Z3 (C#)** : binding `Z3.Linq` natif — notebooks 01..18, kernel `.NET Interactive`
+
+> Note : Les notebooks C# SMT dépendent de `dotnet-interactive` fonctionnel. Sur Windows, la policy d'exécution peut bloquer `dotnet-interactive.exe` (Win32Exception 4551) — fix `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` en admin PowerShell.
+
+Documentation complète : [SMT/README.md](SMT/README.md)
 
 ---
 
@@ -378,14 +446,13 @@ Documentation complète : [SymbolicLearning/README.md](SymbolicLearning/README.m
 
 ## Autres Notebooks
 
-### Optimisation et Contraintes (2 notebooks)
+### Optimisation et Contraintes (1 notebook)
 
 | Notebook | Kernel | Contenu | Exercices |
 |----------|--------|---------|-----------|
 | [OR-tools-Stiegler](OR-tools-Stiegler.ipynb) | .NET C# | Problème de Stigler, programmation linéaire avec OR-Tools | 2 |
-| [01_Linq2Z3_Intro](SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb) | .NET C# | SMT avec LINQ, Z3.Linq, Missionnaires et Cannibales | 3 |
 
-Le notebook Z3 inaugure la série [SMT/Z3-Linq2Z3/](SMT/Z3-Linq2Z3/README.md) (SMT declaratif via Z3.Linq), regroupée avec la série Python [SMT/Z3-API/](SMT/Z3-API/README.md) sous le chapeau [SMT/](SMT/README.md) (Satisfiability Modulo Theories).
+> Note : La série SMT / Z3 (46 notebooks) est traitée dans la section dédiée ci-dessus. La série Z3 (LINQ C# + Python) et ses capstones Meal Planner font partie de la Phase 4 Applications.
 
 ---
 
@@ -445,13 +512,16 @@ SymbolicAI/
 │   ├── reference/             # Notes AIMA ch. 19
 │   └── README.md
 │
-├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories)
+├── SMT/                       # Solveurs SMT (Satisfiability Modulo Theories) — 46 notebooks (cf. marqueur CATALOG-STATUS)
 │   ├── Z3-Linq2Z3/             # Serie Z3.Linq C# (SMT declaratif via LINQ) (18 notebooks)
 │   │   ├── 01_Linq2Z3_Intro.ipynb ... 18_Einsteins_Riddle.ipynb
 │   │   └── README.md
-│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (24 notebooks : 18 Python [01..06 + 07..18] + 6 jumeaux C# sur 01..06)
-│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-06-Advanced-Optimization.ipynb (+ *-Csharp)
+│   ├── Z3-API/                 # Serie z3-py (API complete imperative) (28 notebooks : 22 Python [01..18 dont 16b-16e] + 6 jumeaux C# sur 01..06)
+│   │   ├── Z3-Python-01-Introduction.ipynb ... Z3-Python-18-Sudoku-Modes.ipynb (+ *-Csharp pour 01..06)
 │   │   └── README.md
+│   ├── Z3.Linq/                # Submodule / package a part (solutions/polyglot-repro CrossSubmissionCaptureRepro.ipynb) — support
+│   ├── Automata/               # Submodule support (temoignages, generation de witnesses)
+│   ├── Resharp/                # DLLs natives .deploy — support non pedagogique
 │   └── README.md              # Chapeau SMT
 ├── OR-tools-Stiegler.ipynb    # Optimisation LP
 │
@@ -587,7 +657,7 @@ Le setup est entièrement automatisé via `Tweety-1-Setup.ipynb` :
 | **PySAT** | Solveurs SAT natifs | Tweety |
 | **Clingo** | Answer Set Programming | Tweety |
 | **SPASS / EProver** | Prouveurs de théorèmes | Tweety |
-| **Z3** | SMT solver | Tweety, Z3 |
+| **Z3** | SMT solver | SMT, Tweety |
 | **elan / Lean 4** | Proof assistant | Lean |
 | **Mathlib4** | Bibliothèque maths Lean | Lean |
 | **Semantic Kernel** | Orchestration LLM | Argument Analysis, Lean |
