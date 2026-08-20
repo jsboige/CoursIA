@@ -568,20 +568,20 @@ def update_pair(
     que le registre existe precisement pour empecher (cf #8570).
 
     Retourne (audit_dict, sha_utilise_pour_python ou None si missing, is_noop).
-    Le 3e element `is_noop` est True ssi les SHAs de comparaison (content_sha si
-    disponible, sinon git blob SHA, cf `_shas_match`) du nouveau audit sont
-    identiques a ceux de `_latest_audit(pair)` -- c.-a-d. **rien n'a change
-    pedagogiquement** depuis le dernier audit. Le caller peut alors refuser
-    d'ecrire (faux audit = dater une attestation identique, design-gate #9399
-    critere 2) ou laisser `--force` outrepasser.
+    Le 3e element `is_noop` est True ssi les content SHAs ET les git blob SHAs
+    du nouveau audit sont identiques a ceux de `_latest_audit(pair)` (#11919 :
+    les DEUX grandeurs -- un blob orphelin par squash a contenu identique n'est
+    PAS un no-op, cf `_shas_match`). Le caller peut alors refuser d'ecrire
+    (faux audit = dater une attestation identique, design-gate #9399 critere 2)
+    ou laisser `--force` outrepasser.
 
-    Pas de rebaseline silencieux sur metadata-only : un tampon `metadata.cost`
-    seul deplace le git blob SHA mais preserve le content_sha (_shas_match
-    compare via content_sha d'abord). C'est precisement la classe de drift
-    pre-existante Sudoku-8/14 BDD/9 GraphColoring que ai-01 design-gate a
-    designee comme devant etre ignoree par le rebaseline (cf commentaire
-    ai-01 2026-08-04T23:23Z sur #9399 : « ne les rebaselinez pas avec
-    --update ; deux disparaitront d'eux-memes avec volet (c) »).
+    Blob different a contenu constant = ecriture legitime, pas un faux audit :
+    le registre enregistre les blob SHAs et `verify_recorded_sha` les compare
+    strictement, donc tant qu'ils ne sont pas re-attestes les deux
+    sous-commandes rendent des verdicts opposes (incident Probas-13
+    Crowdsourcing 2026-08-20 : squash #11878 orphelinant bd40c841e143 --
+    MISMATCH au verify, « rien a reparer » au update). Les blob SHAs frais
+    SONT l'information nouvelle.
     """
     py = pair["python"]
     cs = pair["csharp"]
@@ -598,10 +598,10 @@ def update_pair(
         "content_python_sha": cur_cpy,
         "content_csharp_sha": cur_ccs,
     }
-    # No-op detection : si les SHAs de comparaison (content_sha d'abord, puis
-    # git blob SHA en fallback legacy) sont identiques au `_latest_audit`
-    # actuel, le rebaseline n'apporterait aucune information nouvelle -- c'est
-    # un faux audit au sens du design-gate #9399 critere 2.
+    # No-op detection (#9399 critere 2, etendu #11919) : un vrai no-op exige
+    # les content SHAs ET les blob SHAs identiques au `_latest_audit` actuel --
+    # un blob orphelin par squash a contenu constant apporte une information
+    # nouvelle (les blob SHAs frais) et DOIT pouvoir etre repare sans --force.
     latest = _latest_audit(pair)
     is_noop = bool(latest) and _shas_match(latest, audit)
     return audit, cur_py, is_noop
@@ -819,18 +819,39 @@ def _cmp_pair_shas(d: dict) -> tuple:
 
 
 def _shas_match(record: dict, new_entry: dict) -> bool:
-    """True ssi `record` et `new_entry` partagent les memes SHAs de comparaison (no-op).
+    """True ssi `record` et `new_entry` partagent les MEMES content SHAs **et**
+    les memes git blob SHAs (no-op).
 
-    Un changement **metadata-only** (ex: tampon `metadata.cost`) change les git
-    blob SHAs mais PAS les `content_*_sha` : via `_cmp_pair_shas` cela devient un
-    no-op, donc le `--update` n'APPEND PAS de nouvelle entree d'audit pour un
-    changement qui n'est pas pedagogique (faux audit, cf ai-01 design-gate #9399).
+    #11919 : l'egalite des content SHAs seule ne fait plus un no-op. Le registre
+    enregistre aussi les blob SHAs, et `verify_recorded_sha` les compare
+    strictement -- apres un squash-merge, le blob enregistre peut etre orphelin
+    alors que le contenu est arrive intact, et les deux sous-commandes du meme
+    outil rendaient des verdicts OPPOSES sur la meme paire (MISMATCH d'un cote,
+    « rien a reparer » de l'autre). Un blob qui bouge a contenu constant porte
+    une information reelle (les nouveaux blob SHAs) : ce n'est pas un faux
+    audit, c'est exactement la reparation squash-orphan, et elle passe sans
+    `--force`. L'avertissement « faux audit » reste reserve au vrai no-op (les
+    DEUX grandeurs identiques) pousse via --force.
+
+    La detection DRIFT (`--check` / CI, via `_cmp_pair_shas`) reste, elle,
+    content-preferred : un tampon metadata-only ne produit TOUJOURS PAS de
+    DRIFT (critere ai-01 #9399 volet c). Seul le garde no-op du `--update`
+    tient compte des deux grandeurs.
     """
     rec_py, rec_cs = _cmp_pair_shas(record)
     new_py, new_cs = _cmp_pair_shas(new_entry)
     if new_py is None or new_cs is None:
         return False
-    return str(rec_py) == str(new_py) and str(rec_cs) == str(new_cs)
+    if str(rec_py) != str(new_py) or str(rec_cs) != str(new_cs):
+        return False
+    rec_blob_py = record.get("python_sha")
+    rec_blob_cs = record.get("csharp_sha")
+    new_blob_py = new_entry.get("python_sha")
+    new_blob_cs = new_entry.get("csharp_sha")
+    if None in (rec_blob_py, rec_blob_cs, new_blob_py, new_blob_cs):
+        return False
+    return (str(rec_blob_py) == str(new_blob_py)
+            and str(rec_blob_cs) == str(new_blob_cs))
 
 
 def _legacy_body_as_list_item(body_lines):
@@ -1042,8 +1063,10 @@ def main(argv=None) -> int:
                         "blob SHA sans toucher le contenu calcule et invaliderait cette "
                         "attestation, cf #8957). Depuis #9399 critere 2, --update "
                         "REFUSE par defaut d'ecrire une nouvelle entree d'audit si "
-                        "les SHAs de comparaison sont identiques au `_latest_audit` "
-                        "(no-op = faux audit, --update devient facultatif). "
+                        "les content ET blob SHAs sont identiques au `_latest_audit` "
+                        "(no-op = faux audit, --update devient facultatif ; #11919 : "
+                        "un blob orphelin par squash a contenu constant n'est PAS un "
+                        "no-op et passe sans --force). "
                         "Utilisez --force pour outrepasser avec un avertissement.")
     p.add_argument("--json", action="store_true", help="Sortie machine JSON")
     p.add_argument("--summary-by-verdict", action="store_true",
@@ -1446,8 +1469,8 @@ def main(argv=None) -> int:
         # s'il a une raison explicite de re-attester.
         if no_op:
             print(
-                f"Refusees (no-op, --update facultatif post-volet-b : les SHAs "
-                f"enregistres sont deja ceux du carnet a HEAD) : "
+                f"Refusees (no-op, --update facultatif post-volet-b : les content "
+                f"ET blob SHAs enregistres sont deja ceux du carnet a HEAD) : "
                 f"{', '.join(no_op)}",
                 file=sys.stderr,
             )
@@ -1634,7 +1657,8 @@ def main(argv=None) -> int:
                 if content_py_drift or content_cs_drift:
                     cat["n_drift_content"] += 1
                 elif blob_py_drift or blob_cs_drift:
-                    # Churn metadata-only carnet : INFORMATIF, jamais bloquant.
+                    # Churn metadata-only carnet (ou blob orphelin par squash,
+                    # meme signature) : INFORMATIF, jamais bloquant.
                     # `_content_sha` hache les cellules ET leurs outputs, en
                     # n'excluant que `nb["metadata"]` (cost / papermill /
                     # kernelspec / language_info). Donc « blob bouge, content
@@ -1646,18 +1670,19 @@ def main(argv=None) -> int:
                     # les 2 paires nommees dans cette meme docstring -- avec un
                     # `::error ...::<none>` qui ne designait aucune paire (leur
                     # `status` reste OK, donc `_cron_extract_drift` n'en listait
-                    # aucune). Et le remede prescrit (`--update`) est un NO-OP
-                    # par design puisque `_shas_match` compare les content_sha :
-                    # un gate que son propre remede ne peut pas eteindre.
+                    # aucune). Depuis #11919 le remede prescrit (`--update`)
+                    # FONCTIONNE sur cette classe : il re-atteste les blob SHAs
+                    # frais sans --force (le garde no-op exige desormais les
+                    # DEUX grandeurs identiques).
                     cat["n_drift_legacy_after_content"] += 1
                     entry_ci["metadata_only_blob_drift"] = True
                     entry_ci["details"].append(
                         "blob SHA drift MAIS content_sha OK : churn metadata-only "
-                        "(metadata.cost / papermill / kernelspec) -- aucune divergence "
-                        "pedagogique. INFORMATIF : ne fait pas rougir le gate. "
-                        "`--update` est un no-op par design ici (il compare les "
-                        "content_sha) ; re-tamponner le blob SHA exigerait --force et "
-                        "n'apporterait aucune information nouvelle (cf #9399 critere 2)."
+                        "(metadata.cost / papermill / kernelspec) ou blob orphelin "
+                        "par squash -- aucune divergence pedagogique. INFORMATIF : "
+                        "ne fait pas rougir le gate. `--update --pair <nom>` "
+                        "re-atteste les blob SHAs frais SANS --force (#11919 : le "
+                        "garde no-op exige content ET blob SHAs identiques)."
                     )
                 else:
                     cat["n_ok_content"] += 1

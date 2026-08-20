@@ -122,17 +122,42 @@ def test_cmp_pair_shas_falls_back_to_blob_for_legacy():
     assert ctp._cmp_pair_shas(d) == ("blobP", "blobC")
 
 
-# --- 3. _shas_match : metadata-only = no-op (pas de faux audit) -------------
+# --- 3. _shas_match : no-op = les DEUX grandeurs identiques (#11919) ---------
 
-def test_shas_match_metadata_only_change_is_noop():
-    # l'ancien audit a enregistre content_sha ; une metadata-only change ne
-    # doit PAS declencher un nouvel audit (faux audit, ai-01 design-gate).
-    record = {"content_python_sha": "cp", "content_csharp_sha": "cc"}
-    new_entry = {"python_sha": "newBlob",  # blob a change (metadata)
+def test_shas_match_blob_move_at_constant_content_is_not_noop():
+    # #11919 (falsifieur) : blob different, content identique -- topologie
+    # squash-orphan (le blob enregistre n'existe plus dans l'historique) ou
+    # churn metadata-only. AVANT le fix c'etait un no-op (le garde ne voyait
+    # que les content_sha) : l'outil de reparation refusait de reparer
+    # exactement quand il y avait quelque chose a reparer. DESORMAIS ce n'est
+    # PAS un no-op -- les blob SHAs frais sont l'information nouvelle.
+    record = {"python_sha": "blobP", "csharp_sha": "blobC",
+              "content_python_sha": "cp", "content_csharp_sha": "cc"}
+    new_entry = {"python_sha": "newBlob",  # blob a change (squash / metadata)
                  "csharp_sha": "blobC",
                  "content_python_sha": "cp",  # content inchange
                  "content_csharp_sha": "cc"}
+    assert ctp._shas_match(record, new_entry) is False
+
+
+def test_shas_match_true_noop_requires_both_quantities():
+    # le vrai no-op : content ET blob identiques -> toujours refuse sans
+    # --force (faux audit au sens design-gate #9399 critere 2).
+    record = {"python_sha": "blobP", "csharp_sha": "blobC",
+              "content_python_sha": "cp", "content_csharp_sha": "cc"}
+    new_entry = {"python_sha": "blobP", "csharp_sha": "blobC",
+                 "content_python_sha": "cp", "content_csharp_sha": "cc"}
     assert ctp._shas_match(record, new_entry) is True
+
+
+def test_shas_match_record_without_blob_shas_is_not_noop():
+    # record degenere (content seulement, sans python_sha/csharp_sha -- ne
+    # survit pas dans le registre reel, les cles existent depuis l'origine) :
+    # les blob SHAs ne peuvent pas etre compares -> pas un no-op.
+    record = {"content_python_sha": "cp", "content_csharp_sha": "cc"}
+    new_entry = {"python_sha": "newBlob", "csharp_sha": "blobC",
+                 "content_python_sha": "cp", "content_csharp_sha": "cc"}
+    assert ctp._shas_match(record, new_entry) is False
 
 
 def test_shas_match_prose_change_is_not_noop():
