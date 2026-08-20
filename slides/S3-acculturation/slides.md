@@ -104,10 +104,6 @@ layout: section
 
 <img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
-layout: two-cols
----
-
-
 
 # Développement (1/2)
 
@@ -127,9 +123,6 @@ layout: two-cols
 <img src="./images/img_006.png" class="h-24 mx-auto mt-4" alt="Repères historiques" />
 
 
-::right::
-
-
 **État de l'art**
 
 - 1997 : Deep Blue (échecs)
@@ -140,10 +133,8 @@ layout: two-cols
   - 2016 : AlphaGo
 - NLP : Transformers, LLMs
 
-<div class="flex gap-4 mt-4 items-center">
-  <img src="./images/img_007.jpg" class="h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
-</div>
+<img src="./images/img_007.jpg" class="absolute top-[340px] left-[40px] h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
+<img src="./images/img_008.jpg" class="absolute top-[345px] left-[260px] h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
 
 
 
@@ -204,10 +195,6 @@ layout: two-cols
 
 <img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
 ---
-layout: two-cols
----
-
-
 
 # Conception d'agents
 
@@ -221,13 +208,9 @@ layout: two-cols
 - Pas de mémoire, réagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
-<img src="./images/img_010.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_010.png" class="w-[260px] max-w-full max-h-[220px] object-contain" />
 
-
-::right::
-
-
-<img src="./images/img_011.png" class="w-[380px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_011.png" class="absolute top-[350px] right-[20px] w-[360px] max-w-full max-h-[260px] object-contain" alt="Agent réflexe" />
 
 
 
@@ -302,9 +285,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
 
 
 # Agent explorateur
@@ -317,25 +297,15 @@ layout: two-cols
 
 <img src="./images/img_016.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
 
-
-::right::
-
-
 **Résolution de problèmes**
 
 - Objectif ?
 - Actions ?
 - Représentation ?
 
-<img src="./images/img_017.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-
-
-
+<img src="./images/img_017.png" class="absolute top-[110px] right-[20px] w-[300px]" alt="Résolution de problèmes" />
 
 ---
-layout: two-cols
----
-
 
 
 # Formulation de problèmes
@@ -343,7 +313,7 @@ layout: two-cols
 
 **Itinéraire**
 
-<img src="./images/img_018.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_018.png" class="absolute top-[110px] right-[20px] w-[260px] max-h-[220px] object-contain" />
 
 - État initial, test de but
 - Transitions
@@ -351,26 +321,18 @@ layout: two-cols
 - Coût de chemin
 - Solution = Séquence
 
-
-::right::
-
-
 **Abstractions**
 
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_019.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_020.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_021.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_019.png" class="absolute top-[360px] right-[20px] w-[200px]" alt="Assemblage robotique" />
+<img src="./images/img_020.png" class="absolute top-[360px] right-[230px] w-[200px]" alt="Problèmes jouets 1" />
+<img src="./images/img_021.png" class="absolute top-[360px] right-[440px] w-[200px]" alt="Problèmes jouets 2" />
 
 
 
 ---
-layout: two-cols
----
-
-
 
 # Arbre d'exploration
 
@@ -387,18 +349,14 @@ layout: two-cols
   - = Stratégie d'exploration
 
 
-
-::right::
-
-
 **Exemple: Énigme**
 
 - Missionnaires et cannibales
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="w-[280px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_024.png" class="w-[460px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_023.png" class="absolute top-[100px] right-[20px] w-[280px] max-h-[300px] object-contain" alt="Missionnaires et cannibales" />
+<img src="./images/img_024.png" class="absolute top-[400px] right-[20px] w-[460px] max-h-[300px] object-contain" alt="États possibles" />
 
 
 
@@ -415,10 +373,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
-
 
 # Stratégies d'exploration (1/2)
 
@@ -426,8 +380,6 @@ layout: two-cols
 <div class="bg-orange-700 text-white px-6 py-3 text-xl font-bold text-center">Non informées</div>
 <div class="bg-slate-800 text-white px-6 py-3 text-xl font-bold text-center">Informées</div>
 </div>
-
-<div class="grid grid-cols-2 gap-8 mt-6">
 
 <div>
 
@@ -441,7 +393,6 @@ layout: two-cols
 
 </div>
 
-<div>
 
 - Évaluation des états
   - **Heuristique**
@@ -452,20 +403,12 @@ layout: two-cols
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-
-</div>
-
-</div>
+<img src="./images/img_027.png" class="absolute top-[780px] right-[20px] w-[300px] max-h-[300px] object-contain" alt="Algorithme A*" />
+<img src="./images/img_028.png" class="absolute top-[1080px] right-[20px] w-[300px] max-h-[300px] object-contain" alt="Pathfinding.js demo" />
 
 
 
 ---
-layout: two-cols
----
-
-
 
 # Stratégies d'exploration (2/2)
 
@@ -480,10 +423,6 @@ layout: two-cols
 <img src="./images/img_030.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_031.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
 
-
-::right::
-
-
 - Problèmes :
   - Bloqué sur un optimum local
 - Solutions:
@@ -494,17 +433,13 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<img src="./images/img_032.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_033.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_032.png" class="absolute top-[760px] right-[20px] w-[220px] max-h-[300px] object-contain" alt="Recuit simulé" />
+<img src="./images/img_033.png" class="absolute top-[1060px] right-[20px] w-[220px] max-h-[300px] object-contain" alt="Algorithmes génétiques" />
 
 
 
 
 ---
-layout: two-cols
----
-
-
 
 # Jeux
 
@@ -530,9 +465,6 @@ layout: two-cols
   - Libratus (poker), Starcraft 2
 
 
-::right::
-
-
 **Arbre Minimax**
 
 - Actions joueurs Max et Min + utilité terminale
@@ -545,7 +477,7 @@ layout: two-cols
 - Expectiminimax
 - Méthodes de Monte-Carlo
 
-<img src="./images/img_031.png" class="w-[350px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_031.png" class="absolute top-[100px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre Minimax" />
 
 
 
