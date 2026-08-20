@@ -124,9 +124,6 @@ layout: section
 <img src="./images/img_006.png" class="h-24 mx-auto mt-4" alt="Repères historiques" />
 
 
-::right::
-
-
 **État de l'art**
 
 - 1997 : Deep Blue (échecs)
