@@ -29,6 +29,18 @@ the second mouth of the same trap.
 import argparse, json, re, sys, pathlib
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
+# Heading nested inside a list item or blockquote (`- # Indice : ...`,
+# `> # Note`, `1. # Astuce`, nested `  - 1. # ...`). CommonMark renders an ATX
+# heading inside a container as a REAL H1-H6, so `- # Indice` renders in the
+# same giant font as a bare `# Indice` -- but HEADING_RE's `^` anchor never saw
+# it, which is how 1325 in-list H1s across 138 notebooks survived the #3968
+# burndown unflagged (repro: PR #11823, 6 hits, scanner said 0/1 flagged). The
+# prefix grammar covers up to 3 container markers (bullet / ordered / blockquote,
+# each optionally indented). A heading here is reported as HEADING-IN-LIST and
+# deliberately does NOT feed the H1-DEEP / MULTI-H1 counters: the in-list
+# placement is the primary defect, reported once, by its own kind. See #11829.
+CONTAINER_HEADING_RE = re.compile(
+    r'^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$')
 # Fenced code block delimiter (```... or ~~~...), possibly indented. Lines inside
 # a fence are code, not markdown: a `# comment` there is a shell/python comment,
 # NOT a heading, and must not be counted as H1 / HINT-AS-HEADING.
@@ -159,7 +171,13 @@ def scan_notebook(path):
             src = raw.splitlines(keepends=False)
         else:
             cell_text = ''.join(raw)
-            src = raw
+            # Normalize to real LINES, not list elements: nbformat allows a
+            # whole cell as a single-element multi-line list (e.g. QC-Py-Cloud-04
+            # cells 2/10/12), and iterating elements makes every line inside
+            # such an element invisible to all the line-based checks below.
+            # Rendering-wise source is the concatenation, so splitlines of the
+            # join IS what the renderer sees. See #11829.
+            src = cell_text.splitlines(keepends=False)
         # COLLAPSED-MARKDOWN (#3966): table separator glued on one line.
         if _has_collapsed_markdown(cell_text):
             findings.append({'kind': 'COLLAPSED-MARKDOWN', 'cell': ci, 'level': 0,
@@ -175,6 +193,11 @@ def scan_notebook(path):
                 continue
             m = HEADING_RE.match(line.rstrip('\n'))
             if not m:
+                cm = CONTAINER_HEADING_RE.match(line.rstrip('\n'))
+                if cm:
+                    findings.append({'kind': 'HEADING-IN-LIST', 'cell': ci,
+                                     'level': len(cm.group(1)),
+                                     'text': cm.group(2).strip()[:90]})
                 continue
             level = len(m.group(1))
             text = m.group(2).strip()
