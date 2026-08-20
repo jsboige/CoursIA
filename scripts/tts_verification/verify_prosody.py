@@ -358,9 +358,10 @@ def verify_batch(
     }
     if output_path:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        # codeql[py/clear-text-storage] -- FP: dumps prosody-gate classification summary (counts/reasons), no secrets/credentials/PII
         Path(output_path).write_text(
             json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
-        )  # codeql[py/clear-text-storage] -- FP: dumps prosody-gate classification summary (counts/reasons), no secrets/credentials/PII
+        )
         print(f"\n[json] {output_path}")
     return summary
 
@@ -395,7 +396,8 @@ def main() -> None:
     if args.single:
         instruments = _import_instruments(Path(args.lab_dir) if args.lab_dir else _default_lab_dir())
         r = analyze_segment(args.single, instruments)
-        print(json.dumps(r, indent=2, ensure_ascii=False))  # codeql[py/clear-text-logging] -- FP: prints single-clip prosody verdict (gate+reasons), no secrets/credentials/PII
+        # codeql[py/clear-text-logging] -- FP: prints single-clip prosody verdict (gate+reasons), no secrets/credentials/PII
+        print(json.dumps(r, indent=2, ensure_ascii=False))
         return
 
     if not args.audio_dir:
