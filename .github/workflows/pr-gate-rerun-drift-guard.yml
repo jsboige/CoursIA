@@ -1,0 +1,56 @@
+name: Rerun Workflows Drift Guard
+
+# Organe anti-derive (#11865) : la liste `workflow_run.workflows` de
+# pr-gate-rerun.yml (le rattrapage evenementiel du PR gate) est une
+# enumeration explicite -- `workflow_run` n'accepte pas de joker -- mais elle
+# est desormais DERIVEE par scripts/ci/derive_pr_gate_rerun_workflows.py et
+# non plus ecrite a la main. Une liste figee sous-couvre en silence : mesure
+# 2026-08-19, 5 noms couvraient 14 jobs sur 113 ; #11776 et #11839 ont
+# expire sur des workflows hors liste (Catalog Drift, Quarto, CodeQL,
+# Secret Scan) sans aucun chemin de rattrapage. Ce garde rougit quand la
+# liste committee diverge de la liste derivee : chaque workflow ajoute au
+# depot doit desormais regenerer la liste dans la meme PR.
+#
+# Filtre `paths:` assumé (contrairement a lane-claim-guard) : ce garde n'est
+# pas -- et ne doit jamais être -- un check requis en branch protection ; en
+# dehors de son scope il ne produit AUCUN check (un workflow skippe par
+# paths ne rapporte meme pas `skipped`), donc il ne laisse jamais de
+# `pending` fantome sur les PR hors scope. Il ne court que quand les
+# workflows ou le script de derivation changent -- les seuls commits qui
+# peuvent creer du drift.
+#
+# Exit codes du script : 0 = sync, 1 = drift (bloquant), 2 = instrument casse
+# (controle positif FAIL : le mapping n'a pas retrouve le workflow proprietaire
+# du job PR gate -- verdict NUL, jamais un vert de complaisance).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/ci/derive_pr_gate_rerun_workflows.py'
+      - 'scripts/pr_gate.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Nom portant `-required` -> is_advisory() = False (pr_gate.py, motif etabli
+  # par variation-tag-guard.yml / lane-claim-guard.yml).
+  check-rerun-list-required:
+    name: 'Require pr-gate-rerun workflow list to match the derivation (#11865)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the derivation script and workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows
+            scripts/ci/derive_pr_gate_rerun_workflows.py
+            scripts/pr_gate.py
+      - name: 'Compare committed rerun list against the derivation'
+        run: |
+          set -eu
+          python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+          python3 scripts/ci/derive_pr_gate_rerun_workflows.py --check
