@@ -333,10 +333,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
-
 
 # Arbre d'exploration
 
@@ -353,18 +349,14 @@ layout: two-cols
   - = Stratégie d'exploration
 
 
-
-::right::
-
-
 **Exemple: Énigme**
 
 - Missionnaires et cannibales
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="w-[280px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_024.png" class="w-[460px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_023.png" class="absolute top-[100px] right-[20px] w-[280px] max-h-[300px] object-contain" alt="Missionnaires et cannibales" />
+<img src="./images/img_024.png" class="absolute top-[400px] right-[20px] w-[460px] max-h-[300px] object-contain" alt="États possibles" />
 
 
 
@@ -448,10 +440,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
-
 
 # Jeux
 
@@ -477,9 +465,6 @@ layout: two-cols
   - Libratus (poker), Starcraft 2
 
 
-::right::
-
-
 **Arbre Minimax**
 
 - Actions joueurs Max et Min + utilité terminale
@@ -492,7 +477,7 @@ layout: two-cols
 - Expectiminimax
 - Méthodes de Monte-Carlo
 
-<img src="./images/img_031.png" class="w-[350px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_031.png" class="absolute top-[100px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre Minimax" />
 
 
 
