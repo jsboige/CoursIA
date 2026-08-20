@@ -381,6 +381,7 @@ layout: section
 
 
 ---
+
 # Stratégies d'exploration (1/2)
 
 <div class="grid grid-cols-2 gap-0 -mt-4">
@@ -416,6 +417,7 @@ layout: section
 
 
 ---
+
 # Stratégies d'exploration (2/2)
 
 
