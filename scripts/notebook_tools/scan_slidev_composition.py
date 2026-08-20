@@ -58,8 +58,6 @@ import json
 import sys
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright
-
 
 CANVAS_DEFAULT = (980, 552)
 BORNE = "ADVISORY only — ne remplace pas le QA visuel humain pour la composition"
@@ -462,6 +460,11 @@ def main():
     results = []
     stale_streaks = []
     prev_head = None
+    # Import lazy : les fonctions pures (split, triage) restent importables
+    # sans playwright — les tests unitaires n'en ont pas besoin (la mesure
+    # navigateur est couverte par le contrôle positif, cf tests/).
+    from playwright.sync_api import sync_playwright
+
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         ctx = browser.new_context(viewport={"width": canvas_w, "height": canvas_h})
