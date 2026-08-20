@@ -120,11 +120,12 @@ layout: section
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-<img src="./images/img_006.png" class="h-24 mx-auto mt-4" alt="Repères historiques" />
+
+<img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[300px] max-w-full object-contain" alt="Repères historiques" />
 
 
-<div class="flex gap-4 items-center justify-center mt-2">
-  <img src="./images/img_007.jpg" class="h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
+<div class="absolute top-[300px] right-[20px] w-[300px] flex gap-4 items-center justify-center">
+  <img src="./images/img_007.jpg" class="h-10 max-w-[45%] object-contain" alt="Logo DARPA" />
   <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
 </div>
 
