@@ -381,19 +381,12 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
-
-
 # Stratégies d'exploration (1/2)
 
 <div class="grid grid-cols-2 gap-0 -mt-4">
 <div class="bg-orange-700 text-white px-6 py-3 text-xl font-bold text-center">Non informées</div>
 <div class="bg-slate-800 text-white px-6 py-3 text-xl font-bold text-center">Informées</div>
 </div>
-
-<div class="grid grid-cols-2 gap-8 mt-6">
 
 <div>
 
@@ -407,7 +400,6 @@ layout: two-cols
 
 </div>
 
-<div>
 
 - Évaluation des états
   - **Heuristique**
@@ -418,21 +410,12 @@ layout: two-cols
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-
-</div>
-
-</div>
+<img src="./images/img_027.png" class="absolute top-[780px] right-[20px] w-[300px] max-h-[300px] object-contain" alt="Algorithme A*" />
+<img src="./images/img_028.png" class="absolute top-[1080px] right-[20px] w-[300px] max-h-[300px] object-contain" alt="Pathfinding.js demo" />
 
 
 
 ---
-layout: two-cols
----
-
-
-
 # Stratégies d'exploration (2/2)
 
 
@@ -446,10 +429,6 @@ layout: two-cols
 <img src="./images/img_030.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
 <img src="./images/img_031.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
 
-
-::right::
-
-
 - Problèmes :
   - Bloqué sur un optimum local
 - Solutions:
@@ -460,8 +439,8 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<img src="./images/img_032.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_033.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_032.png" class="absolute top-[760px] right-[20px] w-[220px] max-h-[300px] object-contain" alt="Recuit simulé" />
+<img src="./images/img_033.png" class="absolute top-[1060px] right-[20px] w-[220px] max-h-[300px] object-contain" alt="Algorithmes génétiques" />
 
 
 
