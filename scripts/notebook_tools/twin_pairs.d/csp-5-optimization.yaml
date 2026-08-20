@@ -1,47 +1,69 @@
-- name: "CSP-5 Optimization"
+- name: CSP-5 Optimization
   family: Search/Part2-CSP
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-Csharp.ipynb
-  parity_level: semantic
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = `ortools.sat.python.cp_model` (Google, Apache-2.0, CP-SAT SOTA optimisation : `CpModel()` + variables + `AddMaxEquality` + `model.Minimize(obj)` + `solver.Solve()` pour recherche d'optimum global). C# = Choco-solver 4.10.17 (Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711) avec `org.chocosolver.solver.Model` + `IntVar` + `arithm` + `getSolver().findOptimalSolution(obj, Optimization.MAXIMIZE/MINIMIZE)` pour recherche branch-and-bound. Verdict RECOVERABLE-LOCAL : ASYMETRIE DE MACHINERIE -- PY = Google OR-Tools CP-SAT (moteur C++ SOTA avec `Minimize` natif) vs C# = Choco (moteur Java SOTA via IKVM avec `findOptimalSolution` + borne sup/inf). Les DEUX cotes sont SOTA-TIER optimisation CSP mais DIFFERENTS moteurs. `pychoco` (binding natif Choco Python, MIT) alignerait les 2 cotes sur Choco ; `Google.OrTools` NuGet (Apache-2.0, precedent PR #10557 App tranche) alignerait les 2 cotes sur OR-Tools. Le notebook preserve le pattern actuel (OR-Tools PY, Choco CS) comme comparaison pedagogique double moteur. `parity_level: semantic` preserve : parite sur les concepts cibles (CSP optimisation, borne sup/inf, branch-and-bound) malgre l'asymetrie de solveur."
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: '2026-08-20 (po-2024) : pont livree -- section 5.1 ''CP-SAT natif .NET (Google.OrTools)'' ajoutee au jumeau C# : `#r "nuget: Google.OrTools, 9.11.4210"` + formulation booléenne
+    miroir du Python (x[i,j]/y[j], capacité linéarisée, symmetry breaking, Minimize(sum(y))) sur les mêmes données [2,5,4,7,2]/cap 10. Re-exec .NET Interactive complète : status Optimal, 3 bins = même optimum
+    que Choco section 1 et que solve_bin_packing_cp Python. Les DEUX côtés invoquent désormais le même moteur C++ CP-SAT (C# natif NuGet, Python cp_model) -- l''asymétrie de machinerie du verdict précédent
+    est fermée par la voie Google.OrTools que ce verdict identifiait déjà. parity_level -> native-both (parité de moteur lib-vs-lib, lecture #11200). Choco/IKVM reste aux sections 1-4 comme comparaison
+    pédagogique double moteur. --- Etat precedent (2026-08-04, conserve pour tracabilite) : Python = `ortools.sat.python.cp_model` (Google, Apache-2.0, CP-SAT SOTA optimisation : `CpModel()` + variables
+    + `AddMaxEquality` + `model.Minimize(obj)` + `solver.Solve()` pour recherche d''optimum global). C# = Choco-solver 4.10.17 (Apache-2.0) via IKVM 8.15.0 home shade DLL (recette #4711) avec `org.chocosolver.solver.Model`
+    + `IntVar` + `arithm` + `getSolver().findOptimalSolution(obj, Optimization.MAXIMIZE/MINIMIZE)` pour recherche branch-and-bound. Verdict RECOVERABLE-LOCAL : ASYMETRIE DE MACHINERIE -- PY = Google OR-Tools
+    CP-SAT (moteur C++ SOTA avec `Minimize` natif) vs C# = Choco (moteur Java SOTA via IKVM avec `findOptimalSolution` + borne sup/inf). Les DEUX cotes sont SOTA-TIER optimisation CSP mais DIFFERENTS moteurs.
+    `pychoco` (binding natif Choco Python, MIT) alignerait les 2 cotes sur Choco ; `Google.OrTools` NuGet (Apache-2.0, precedent PR #10557 App tranche) alignerait les 2 cotes sur OR-Tools. Le notebook preserve
+    le pattern actuel (OR-Tools PY, Choco CS) comme comparaison pedagogique double moteur. `parity_level: semantic` preserve : parite sur les concepts cibles (CSP optimisation, borne sup/inf, branch-and-bound)
+    malgre l''asymetrie de solveur.'
   audits:
-    - date: "2026-08-04"
-      by: myia-po-2023:CoursIA
-      python_sha: 4c6ddd792c6842627cb4029718d378b3b2337381
-      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-    - date: "2026-08-07"
-      by: myia-po-2024:CoursIA
-      python_sha: cf04e71d022cfb777825037e941f80adf01cb295
-      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-      content_python_sha: 6563b2715a604c74b61ec57af8eea6f1c85324dcb5e8a36d5f96add0b913b8a4
-      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-    - date: "2026-08-08"
-      by: myia-po-2025:CoursIA
-      python_sha: 2ad77fde630361eb5982902f422eacde55764a0d
-      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-      content_python_sha: f06f816becae0b3966041b0f7c42e272899e68158066e524ebf25dcd513080cc
-      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-    - date: "2026-08-09"
-      by: myia-po-2024:CoursIA
-      python_sha: f726ac900734829014e9597ec5aa7867e9ae0f15
-      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-      content_python_sha: 0a45dd0027ca0494801eb0ae517667c62ac5fcd111f0d3c93690d9f7433f0767
-      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-    - date: "2026-08-14"
-      by: myia-po-2025:CoursIA-2
-      python_sha: a18147be4fb4074baa9fc7f83d071c3be358b1a8
-      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-      content_python_sha: 9a994af3f08db50e123705626579c972e553b036c4d0f0830024553623f1bb5b
-      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-    - date: "2026-08-17"
-      by: myia-po-2025:CoursIA
-      python_sha: b67c13c4b93136d5832991d907d9465c52f392c1
-      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-      content_python_sha: c17eabcb17182945a816f312bf22726e8eb671da9c95794396513d15a5fcd52f
-      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+  - date: '2026-08-04'
+    by: myia-po-2023:CoursIA
+    python_sha: 4c6ddd792c6842627cb4029718d378b3b2337381
+    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+  - date: '2026-08-07'
+    by: myia-po-2024:CoursIA
+    python_sha: cf04e71d022cfb777825037e941f80adf01cb295
+    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+    content_python_sha: 6563b2715a604c74b61ec57af8eea6f1c85324dcb5e8a36d5f96add0b913b8a4
+    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+  - date: '2026-08-08'
+    by: myia-po-2025:CoursIA
+    python_sha: 2ad77fde630361eb5982902f422eacde55764a0d
+    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+    content_python_sha: f06f816becae0b3966041b0f7c42e272899e68158066e524ebf25dcd513080cc
+    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+  - date: '2026-08-09'
+    by: myia-po-2024:CoursIA
+    python_sha: f726ac900734829014e9597ec5aa7867e9ae0f15
+    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+    content_python_sha: 0a45dd0027ca0494801eb0ae517667c62ac5fcd111f0d3c93690d9f7433f0767
+    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+  - date: '2026-08-14'
+    by: myia-po-2025:CoursIA-2
+    python_sha: a18147be4fb4074baa9fc7f83d071c3be358b1a8
+    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+    content_python_sha: 9a994af3f08db50e123705626579c972e553b036c4d0f0830024553623f1bb5b
+    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+  - date: '2026-08-17'
+    by: myia-po-2025:CoursIA
+    python_sha: b67c13c4b93136d5832991d907d9465c52f392c1
+    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+    content_python_sha: c17eabcb17182945a816f312bf22726e8eb671da9c95794396513d15a5fcd52f
+    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
   known_differences:
-    - "Edition 2026-08-17 (myia-po-2025:CoursIA, #9434) : le twin Python a evacue ses durees wall-clock machine-dependantes de la prose d'interpretation de la cellule 33 (benchmark FFD vs CP-SAT, pins ~20 ms / ~0,5 s / limite 30 s / < 1 ms / n <= 50 en une seconde) au profit d'ordres de grandeur + renvois vers la sortie du benchmark (cellule 32 ci-dessus), avec note mandat #9377/#9434. Les resultats deterministes (gaps 50 %/0 %/7 %, statuts OPTIMAL/FEASIBLE) sont conserves verbatim. Markdown-only, pas de re-exec (exception C.2). Twin C# non modifie (pins absents cote C#, 19 cellules sans benchmark scaling). Parite semantique tenue : socle optimisation, modelisation, contraintes, benchmark empirique inchanges."
-    - "Socle pedagogique commun (parity semantic) : les deux cotes couvrent les 4 problemes classiques d'optimisation combinatoire -- Bin Packing (BPP), Knapsack 0/1, Cutting Stock, Optimisation de Portefeuille -- avec la meme progression pedagogique (formulation variables/constraints/objectif -> exemple resolu -> interpretation). Meme theorie sous-jacente (minimisation bins, maximisation valeur sous capacite, patterns de coupe optimaux, allocation lineaire sous contraintes de risque)."
-    - "Idiomes framework : Python = **OR-Tools CP-SAT** (`ortools.sat.python.cp_model`) + `numpy` + `matplotlib` (visualisation du bin packing, benchmark de passage a l'echelle). C# = **Choco-solver via IKVM** (`org.chocosolver.solver.dll`, recette #4711) sur runtime .NET -- le solveur Java est invoque depuis C# via l'assembleur IKVM."
-    - "Asymetrie de couverture : Python plus etendu (56 vs 19 cellules) -- ajoute la visualisation du bin packing (`plot_bin_packing`), un benchmark comparatif heuristique First-Fit-Decreasing vs CP-SAT (complexite pratique vs garantie d'optimalite), une section dediee au Dominance Breaking, et 2 exemples guides (Multi-Knapsack, Bin Packing avec conflits). Le C# se concentre sur la resolution des 4 problemes cles via Choco + 3 exercices d'approfondissement, avec une cellule de comparaison OR-Tools CP-SAT vs Choco. Meme socle algorithmique (combinatorial optimization), leviers de demonstration differents (viz riche + benchmark empirique cote Python vs resolutions Choco compactes cote C#)."
+  - 'Edition 2026-08-17 (myia-po-2025:CoursIA, #9434) : le twin Python a evacue ses durees wall-clock machine-dependantes de la prose d''interpretation de la cellule 33 (benchmark FFD vs CP-SAT, pins ~20
+    ms / ~0,5 s / limite 30 s / < 1 ms / n <= 50 en une seconde) au profit d''ordres de grandeur + renvois vers la sortie du benchmark (cellule 32 ci-dessus), avec note mandat #9377/#9434. Les resultats
+    deterministes (gaps 50 %/0 %/7 %, statuts OPTIMAL/FEASIBLE) sont conserves verbatim. Markdown-only, pas de re-exec (exception C.2). Twin C# non modifie (pins absents cote C#, 19 cellules sans benchmark
+    scaling). Parite semantique tenue : socle optimisation, modelisation, contraintes, benchmark empirique inchanges.'
+  - 'Socle pedagogique commun (parity semantic) : les deux cotes couvrent les 4 problemes classiques d''optimisation combinatoire -- Bin Packing (BPP), Knapsack 0/1, Cutting Stock, Optimisation de Portefeuille
+    -- avec la meme progression pedagogique (formulation variables/constraints/objectif -> exemple resolu -> interpretation). Meme theorie sous-jacente (minimisation bins, maximisation valeur sous capacite,
+    patterns de coupe optimaux, allocation lineaire sous contraintes de risque).'
+  - 'Idiomes framework : Python = **OR-Tools CP-SAT** (`ortools.sat.python.cp_model`) + `numpy` + `matplotlib` (visualisation du bin packing, benchmark de passage a l''echelle). C# = **Choco-solver via
+    IKVM** (`org.chocosolver.solver.dll`, recette #4711) sur runtime .NET -- le solveur Java est invoque depuis C# via l''assembleur IKVM.'
+  - 'Asymetrie de couverture : Python plus etendu (56 vs 19 cellules) -- ajoute la visualisation du bin packing (`plot_bin_packing`), un benchmark comparatif heuristique First-Fit-Decreasing vs CP-SAT (complexite
+    pratique vs garantie d''optimalite), une section dediee au Dominance Breaking, et 2 exemples guides (Multi-Knapsack, Bin Packing avec conflits). Le C# se concentre sur la resolution des 4 problemes
+    cles via Choco + 3 exercices d''approfondissement, avec une cellule de comparaison OR-Tools CP-SAT vs Choco. Meme socle algorithmique (combinatorial optimization), leviers de demonstration differents
+    (viz riche + benchmark empirique cote Python vs resolutions Choco compactes cote C#).'
+  - 'Pont 2026-08-20 (po-2024, #10382 bucket 1 OR-Tools) : le twin C# ajoute une section 5.1 CP-SAT natif (Google.OrTools 9.11.4210 NuGet, sans IKVM) qui reprend la formulation booléenne du Python (x[i,j]/y[j],
+    Minimize(sum(y))) sur les mêmes données BPP. Sortie exécutée : Optimal, 3 bins -- convergence avec Choco section 1 et Python. Les idiomes framework ci-dessus décrivent l''état pré-pont (sections 1-4
+    Choco/IKVM, inchangées) ; la parité de moteur lib-vs-lib est désormais atteinte sur la section 5.1 (les DEUX jumeaux sur CP-SAT), ce qui porte parity_level à native-both.'
