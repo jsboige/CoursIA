@@ -1151,3 +1151,116 @@ def test_11542_negation_ne_leve_pas():
     indiscernable d'un gate debranche. Une reserve vivante reste vivante."""
     body = "Je maintiens : CHANGES_REQUESTED tant que la cellule 8 est vide."
     assert mod.classify("myia-ai-01", body) == "BOT-CONCERN"
+
+
+# ---------------------------------------------------------------------------
+# #11744 — extension de `_strip_mentioned_verdicts` aux positions hors
+# parentheses (titre de section, prose inline). Les deux instances mesurees
+# (#11625 "## Remedes au CHANGES_REQUESTED", #11428 "le verdict CHANGES_REQUESTED
+# que je levait") restent BOT-CONCERN par erreur tant que les patterns
+# `_MENTION_VERDICT_HEADING` / `_MENTION_VERDICT_INLINE` ne les neutralisent
+# pas. Le controle negatif obligatoire : une emission reelle portee par
+# `MARKER:` nu ou par le state de la review reste BOT-CONCERN.
+# ---------------------------------------------------------------------------
+
+
+def test_11744_section_heading_mention_ne_flagge_pas():
+    """#11744 — Position A : titre de section `## Remedes au CHANGES_REQUESTED`
+    en tete de rapport de remediation. Avant le fix : classifie BOT-CONCERN
+    par erreur. Apres : classify() rend None (mention, pas emission)."""
+    body = (
+        "## Remedes au CHANGES_REQUESTED\n"
+        "\n"
+        "Fix 1: aucun nouveau warning introduit. "
+        "Le point leve dans la review Hermes etait un faux positif (cf. log)."
+    )
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [{"author": {"login": "myia-po-2026"}, "createdAt": at(10),
+                      "body": body}],
+        "reviews": [], "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_11744_inline_prose_mention_ne_flagge_pas():
+    """#11744 — Position B : prose inline. Avant le fix : la phrase « mon message
+    d'approbation nommant le verdict CHANGES_REQUESTED au fil du texte » est
+    classee BOT-CONCERN. Apres : mention inline reconnue, classify() rend None."""
+    body = (
+        "Pour clarifier ma levee : mon message d'approbation nommant le "
+        "verdict CHANGES_REQUESTED au fil du texte reapparait comme item "
+        "bloquant alors qu'il etait deja leve par re-review APPROVED."
+    )
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [{"author": {"login": "myia-ai-01"}, "createdAt": at(10),
+                      "body": body}],
+        "reviews": [], "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_11744_emission_reelle_marker_reste_bot_concern():
+    """#11744 — CONTROLE NEGATIF : une emission reelle (MARKER: nu ou `state:
+    CHANGES_REQUESTED` de la review) doit RESTER BOT-CONCERN. Sans quoi le
+    fix debranche le gate et rouvre le failure mode fondateur de B.0."""
+    cr = {"author": {"login": "hermes-bot"},
+          "state": "CHANGES_REQUESTED", "submittedAt": at(10),
+          "body": "CHANGES_REQUESTED: edge case non couvert."}
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [], "reviews": [cr],
+        "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is True
+
+
+def test_11744_emission_reelle_marker_nu_reste_bot_concern():
+    """#11744 — Variante emission reelle : comment user avec `CHANGES_REQUESTED:`
+    en tete de phrase (forme `MARKER:` nue). Doit RESTER BOT-CONCERN."""
+    body = "CHANGES_REQUESTED: le fichier attendu n'est pas joint."
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [{"author": {"login": "user-fi"}, "createdAt": at(10),
+                      "body": body}],
+        "reviews": [], "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is True
+
+
+def test_11744_non_regression_11636_parenthesee_toujours_neutralisee():
+    """#11744 — Non-regression : le pattern `[a]` (parentheses + verbe de
+    reference) doit toujours fonctionner apres l'ajout des 2 nouveaux
+    patterns. Cas fondateur #11628 / #11636."""
+    body = (
+        "Fix review ai-01 (CHANGES_REQUESTED) — commit 06956bd0a corrige "
+        "le warning introduit sur le PR-guard."
+    )
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [{"author": {"login": "myia-po-2026"}, "createdAt": at(10),
+                      "body": body}],
+        "reviews": [], "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+def test_11744_trois_positions_combinees_neutralisees():
+    """#11744 — Combinaison : plusieurs positions de mention dans le meme
+    body. Toutes neutralisees, classify() rend None."""
+    body = (
+        "## Remedes au CHANGES_REQUESTED\n"
+        "\n"
+        "Fix de la review (CHANGES_REQUESTED) emis par Hermes-bot. "
+        "Le verdict CHANGES_REQUESTED est leve par commit 06956bd0a. "
+        "Aucune emission reelle (`MARKER:` nu absent) : le rapport est "
+        "une mention, pas une nouvelle reserve."
+    )
+    data = {
+        "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
+        "comments": [{"author": {"login": "myia-po-2026"}, "createdAt": at(10),
+                      "body": body}],
+        "reviews": [], "commits": [{"committedDate": at(19)}],
+    }
+    assert mod.analyse(data, [], MERGED)["blocked"] is False

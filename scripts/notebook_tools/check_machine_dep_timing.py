@@ -69,6 +69,67 @@ Acceptance (cf. #10169, frontiere residuelle)
       --show-toplevel``), resultat vide = erreur explicite (exit 1).
 - [x] Controle positif `Sudoku-13` preserve (Z3 wall-clock strict reste detecte).
 
+Acceptance (tranche GenAI/Audio #9434, 2026-08-19 -- 04-6/04-11/04-12)
+- [x] « de l'ordre de N s » / « de l'ordre de grandeur de N s » reconnus
+      comme marqueurs d'ordre de grandeur DETACHES (forme en toutes lettres
+      du tilde ; 04-11 c10 : « chaque segment prend de l'ordre de 3 s a
+      generer »). Le mandat #9434 sanctionne l'ordre de grandeur -- le
+      scanner n'exemptait que la forme tildée.
+- [x] Borne inferieure stricte « > N unit » exemptee comme borne superieure
+      (symetrique oublie de #10162 ; 04-12 c22 « narration longs (> 10
+      secondes) » = seuil d'exercice) -- SAUF le « > » de blockquote en
+      debut de ligne (research_m12_har_rv_j_minute c0 « > 25 s... » =
+      duree mesuree d'un run, reste wallclock).
+- [x] ``PARAM_DURATION_RE`` : parametres de DESIGN d'un pipeline audio
+      (silence/fade/crossfade/pause/break SSML/extrait/seuil/rate-limit +
+      duree a proximite, fenetre 40 chars sans '.' ni '|') classes
+      ``domain_quantity`` -- constante du code, pas une mesure machine.
+      ~30 findings wallclock sur les 3 notebooks de la tranche etaient
+      exactement cette classe.
+- [x] « durée finale » rejoint « durée cible/totale/maximale/optimale » dans
+      CONTENT_DURATION_CONSTRAINT_RE (04-12 c12 : duree ffprobe du fichier
+      MP3 commite = contenu, pas execution).
+- [x] Arithmetique deterministe etendue a la multiplication « N x Mms = K s »
+      (04-12 c12/c14/c17 : « 13 x 500ms = 6.5s » = silences d'assemblage).
+- [x] Controles positifs preserves : Sudoku-13 (Z3 wall-clock strict),
+      Sudoku-18 post-#11512 (0 wallclock attendu, toujours 0), 04-7
+      post-#10707 (0 wallclock attendu, toujours 0).
+
+Acceptance (tranche SymbolicAI #9434, 2026-08-19 -- 19 wallclock -> 1)
+- [x] ``TIMEOUT_LIMIT_RE`` : timeout/limite de temps POSE sur le pipeline
+      (solveur, build, service) = constante de config, classe
+      ``domain_quantity``. 5 findings SymbolicAI (Planners-7 c16, Lean-13
+      c25, FD-Legacy c3/c14, RDF.Net c69) + 12 findings TN verifies
+      firsthand sur d'autres familles (la classe reparait une lacune
+      repo-wide : tout timeout de config etait flagge wallclock).
+- [x] ``STUDENT_PACING_RE`` etendu au pacing IMPERATIF (« prenez 5 minutes
+      pour lire », « (essayez 5 min) ») et a la borne ADVISORY cold-start
+      (« peut prendre 30 minutes a plusieurs heures », « Si ca prend plus
+      de 15 minutes, interrompez ») -- attente adressee a l'etudiant, pas
+      mesure. Le passe mesure « a pris plus de » ne matche pas.
+- [x] ``PROTOCOL_KEYWORDS`` etendu aux cadences d'INFRASTRUCTURE
+      (cadence/cron/periodicite) -- Lean-20 c7 « 30 min cadence » = periode
+      du cron du cluster, constante de config.
+- [x] Trois exemptions positionnelles : numero de section DECIMAL dans un
+      header (« ### 2.3 MIN (FIN) » = section sur l'axiome MIN de
+      Conway-Kochen, Lean-16f c9), conversion d'UNITE parenthetique d'une
+      constante primaire (« 500s (8.3 min) », FD-Legacy c9 -- la forme
+      entiere etait deja couverte par la parenthese pacing #10162),
+      traduction litterale d'un ``sleep()`` du code (« sleep(0.1) ... 100ms
+      », Argument_Analysis_UI c22 -- la valeur EST le code).
+- [x] Drainage prose reel (le seul) : Z3-Linq2Z3/09 c16 -- 5 epingles
+      numeriques dupliquant les sorties committes de la cellule de mesure
+      c17 (0,29 s / 8,7 s / 600 s / 0,01-0,03 s / 0,05 s) remplacees par
+      des descripteurs + renvoi aux sorties live ; le 600 s devient « la
+      borne du protocole de bench » (constante, cf. sortie).
+- [x] Controle de non-regression repo-wide : diff base->new sur 1033
+      notebooks = 25 findings neutralises (13 cibles + 12 timeouts TN
+      verifies ligne par ligne), 0 finding apparu. Sudoku-13-Python etait
+      deja a 0 sur la base (draine par une PR anterieure) -- le controle
+      positif vit dans les tests unitaires (Z3 25,2 s), tous verts.
+- [x] Lean-22 c7 (30 minutes) RESTE wallclock : hors perimetre de cette
+      tranche (rework actif po-2024, claim paths Sudoku-18).
+
 Note : `ambiguous=0` est structural (defaut conservateur = wallclock). Aucun
 finding ne reste ambigue apres la passe 1 -- le defaut de `_categorize`
 classe toute ligne sans mot-cle en wallclock. La categorie `ambiguous`
@@ -153,7 +214,12 @@ PROTOCOL_KEYWORDS = re.compile(
     r"\b(?:settle[\s\-_]?delay|settlement|temps\s+de\s+bloc|block[\s\-]?time|"
     r"blocs?(?:\s+(?:d['Ee]thereum|ethereum|de\s+bitcoin|bitcoin))?|"
     r"finalit[ée]|epoch|slot|confirmation|consensus|"
-    r"canal\s+de\s+paiement|payment\s+channel)\b",
+    r"canal\s+de\s+paiement|payment\s+channel|"
+    # Tranche SymbolicAI #9434 (2026-08-19) : cadence d'INFRASTRUCTURE
+    # (« Cluster CoursIA (4 workers, 30 min cadence) » -- Lean-20 c7).
+    # La duree est la periode du cron, constante de configuration du
+    # cluster, pas une mesure machine.
+    r"cadences?|crons?|p[ée]riodicit[ée]|intervalle\s+de\s+r[ée]veil)\b",
     re.IGNORECASE,
 )
 
@@ -170,10 +236,49 @@ PROTOCOL_KEYWORDS = re.compile(
 # compute) ne matche AUCUN de ces signaux et reste wallclock.
 CONTENT_DURATION_CONSTRAINT_RE = re.compile(
     r"(?:\bcontrainte[s]?\s+(?:de\s+)?dur[ée]e\b"
-    r"|\bdur[ée]e\s+(?:cible|totale|maximale|optimale)\b"
+    r"|\bdur[ée]e\s+(?:cible|totale|maximale|optimale|finale)\b"
     r"|\bdur[ée]e\s+de\s+la\s+vid[ée]o\b"
     r"|\bYouTube\s+Shorts\b"
     r"|\bmodule\s+de\s+cours\b)",
+    re.IGNORECASE,
+)
+
+# Parametre de DESIGN d'un pipeline audio/mediatique : silence, fade,
+# crossfade, pause, break SSML, extrait -- la duree est une CONSTANTE
+# choisie par l'auteur du pipeline (visible dans le code), pas une mesure
+# d'execution. Elle ne derive ni de la machine ni d'un re-run. Mesure du
+# 2026-08-19 sur la tranche GenAI/Audio (#9434) : ~30 findings wallclock
+# sur 3 notebooks (04-6/04-11/04-12) sont exactement cette classe
+# (« Silence inter-segment: 500ms », « fade in/out de 200ms », « silences
+# de 0.5 s generes par anullsrc », « <break time="500ms"/> », « un extrait
+# de 30 s », « rate-limit de 0.2 s »). Proximite exigee (fenetre de 40
+# chars sans '.' ni '|' : fin de phrase ou changement de cellule de table
+# coupent le lien) pour ne pas exempter une duree qui cotoie le mot param
+# par hasard.
+PARAM_DURATION_RE = re.compile(
+    r"\b(?:silences?|fades?|crossfades?|pauses?|breaks?|interludes?"
+    r"|extraits?|seuils?|th?resholds?|rate[\s\-]?limits?)\b"
+    r"[^.|]{0,40}?"
+    r"\d+(?:[.,]\d+)?\s*(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?|s)\b",
+    re.IGNORECASE,
+)
+
+# Constante de CONFIG d'execution : timeout / limite de temps POSE sur le
+# pipeline (solveur, build, service externe) -- le chiffre est un parametre
+# choisi par l'auteur (visible dans le code qui le pose), pas une mesure
+# machine. Mesure du 2026-08-19 sur la tranche SymbolicAI (#9434) : 5
+# findings wallclock sur 5 notebooks etaient exactement cette classe
+# (« Lancons le solveur CP-SAT avec un timeout de 30 secondes », « timeout
+# de 15 minutes » via wsl_papermill, « Un timeout de 30 minutes est
+# configure », « Le temps total est limite a 30 minutes », « Timeout =
+# 30000, // 30 secondes » dans un listing C# en markdown). Proximite 40
+# chars sans '.' ni '|' comme PARAM_DURATION_RE. NB : « limite a N » sans
+# mot temps/timeout reste volontairement ABSENT de cette classe -- la forme
+# « limitee a N requetes » est un quota de domaine, pas notre sujet ici.
+TIMEOUT_LIMIT_RE = re.compile(
+    r"\b(?:time[\s\-]?outs?|temps\s+total\s+(?:est\s+)?limit[ée]\s+(?:a|à)\b)"
+    r"[^.|]{0,40}?"
+    r"\d+(?:[.,]\d+)?\s*(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?|s)\b",
     re.IGNORECASE,
 )
 
@@ -205,7 +310,16 @@ STUDENT_PACING_RE = re.compile(
     # probabilite de domaine (P(trajet < 18 min)), PAS de pacing, et ne doit PAS
     # etre exemptee (cf. brainstorm G.1 : sur-exemption cassait la propagation
     # per-cell #10162 et flagait des wallclock reels « plus de 4 secondes »).
-    r"|\d+\s*(?:min(?:utes?)?|sec(?:ondes?)?|h(?:eures)?)\s*\(\s*(?:lecture|cours|travaux\s+pratiques|tp\b))",
+    r"|\d+\s*(?:min(?:utes?)?|sec(?:ondes?)?|h(?:eures)?)\s*\(\s*(?:lecture|cours|travaux\s+pratiques|tp\b)"
+    # Extensions tranche SymbolicAI (#9434, 2026-08-19) : pacing IMPERATIF
+    # adresse a l'etudiant (« prenez 5 minutes pour lire », « (essayez 5
+    # min) ») et borne ADVISORY de garde cold-start (« peut prendre 30
+    # minutes a plusieurs heures », « Si ca prend plus de 15 minutes,
+    # interrompez »). L'un et l'autre parlent de l'ATTENTE attendue de
+    # l'etudiant, pas d'une mesure d'execution ; la forme passe « a pris
+    # plus de N » (mesure) ne matche pas « prend plus de » (present).
+    r"|\b(?:essayez|prenez|accordez[\s\-]?vous|consacrez)\b[^.|\n]{0,30}?\d+(?:[.,]\d+)?\s*(?:min(?:utes?)?|sec(?:ondes?)?|s)\b"
+    r"|\b(?:peut\s+(?:prendre|durer)|prend\s+plus\s+de|prendre\s+plus\s+de)\b)",
     re.IGNORECASE,
 )
 
@@ -232,9 +346,19 @@ def _is_range_bound(line: str, match_start: int, match_end: int) -> bool:
     # Test 1 : fourchette 'N1-N2 unit' -- '\d-\d' en fin de la fenetre.
     if re.search(r"\d\s*-\s*\d\s*$", window):
         return True
-    # Test 2 : borne superieure '< N' ou '<= N' -- le '<' est en fin de fenetre.
-    if re.search(r"<\s*=?\s*\d\s*$", window):
-        return True
+    # Test 2 : borne '< N' ou '<= N' / borne '> N' ou '>= N' -- la borne en
+    # fin de fenetre. La borne inferieure stricte est le symetrique oublie
+    # de #10162 (04-12-Compilation-Audio c22 : « narration longs (> 10
+    # secondes) » = seuil de classification d'exercice, pas une mesure).
+    # NB : un '>' en DEBUT de ligne est un BLOCKQUOTE markdown, pas une
+    # borne mathematique -- « > 25 s, zero barre minute chargee »
+    # (research_m12_har_rv_j_minute c0, duree mesuree d'un run) reste
+    # wallclock. On exige donc du contenu non-blanc AVANT la borne.
+    m2 = re.search(r"([<>])\s*=?\s*\d\s*$", window)
+    if m2:
+        bound_pos = line.rfind(m2.group(1), 0, match_start)
+        if bound_pos > 0 and line[:bound_pos].strip():
+            return True
     # Test 3 : borne inferieure 'N+' -> le match est 'N X' et le caractere
     # APRES le debut du nombre est '+'. Ex : '5+ min' -> match = '5 min',
     # match_start pointe sur '5', line[match_start:match_start+3] = '5+ '.
@@ -256,7 +380,74 @@ def _is_detached_approximate(line: str, match_start: int) -> bool:
     # Fenetre de 3 chars avant le match : le marqueur + eventuelle espace.
     lo = max(0, match_start - 3)
     window = line[lo:match_start]
-    return bool(re.search(r"[~≈]\s*$", window))
+    if re.search(r"[~≈]\s*$", window):
+        return True
+    # Forme FRANCAISE du marqueur d'ordre de grandeur : « de l'ordre de N s »,
+    # « de l'ordre de grandeur de N s » (04-11-Generation-TTS c10 : « chaque
+    # segment prend de l'ordre de 3 s a generer » -- deja le traitement
+    # sanctionne par le mandat, mais ecrit en toutes lettres la ou le tilde
+    # etait attendu). Fenetre elargie a 25 chars : le marqueur le plus long
+    # est « ordre de grandeur de ~ ».
+    lo2 = max(0, match_start - 25)
+    window2 = line[lo2:match_start]
+    return bool(re.search(
+        r"(?:l['’]\s*)?ordre(?:\s+de\s+grandeur)?\s+de\s*~?\s*$", window2,
+        re.IGNORECASE,
+    ))
+
+
+# --- Exemptions positionnelles tranche SymbolicAI (#9434, 2026-08-19) ----- #
+# Trois formes ou le match MACHINE_RE n'est PAS une duree mais un token
+# derive d'une constante : numero de section decimal, conversion d'unite
+# parenthetique, traduction litterale d'un sleep() du code.
+
+
+def _is_section_number(line: str, match_start: int, snippet: str) -> bool:
+    """Numero de section DECIMAL dans un header markdown.
+
+    « ### 2.3 MIN (FIN) -- l'independance des choix » (Lean-16f cell[9]) :
+    le match « 2.3 MIN » est le titre de la section 2.3 portant sur l'axiome
+    MIN de Conway-Kochen -- pas « 2,3 minutes ». Discriminant double : le
+    snippet COMMENCE par un decimal (une vraie duree s'ecrit « 2,3 min » ou
+    « 2 min 30 », jamais en position de titre) et un header markdown
+    (#..######) precede immediatement le match.
+    """
+    if not re.match(r"\d+[.,]\d+", snippet):
+        return False
+    lo = max(0, match_start - 8)
+    return bool(re.search(r"#{2,6}\s*$", line[lo:match_start]))
+
+
+def _is_unit_conversion(line: str, match_start: int) -> bool:
+    """Conversion D'UNITE entre parentheses d'une constante primaire.
+
+    « | Recherche | 500s (8.3 min) | 8000 MB | » (Fast-Downward-Legacy
+    cell[9]) : le match « 8.3 min » derive arithmetiquement de la borne de
+    config 500s posee par l'auteur de la table -- c'est la meme constante
+    convertie, pas une mesure machine. Discriminant : une valeur+unite de
+    temps ouvre la parenthese immediatement avant le match. (La forme
+    entiere « (5 min) » etait deja exoneree par la parenthese pacing
+    #10162 ; seul le decimal lui echappait.)
+    """
+    lo = max(0, match_start - 16)
+    return bool(re.search(
+        r"\d+(?:[.,]\d+)?\s*(?:ms|s|sec(?:ondes?)?)\s*\(\s*$", line[lo:match_start],
+        re.IGNORECASE,
+    ))
+
+
+def _is_code_constant_translation(line: str, match_start: int) -> bool:
+    """Traduction litterale d'une constante sleep() du code, meme ligne.
+
+    « `ui_events().poll(10)` avec `sleep(0.1)` = polling toutes les 100ms »
+    (Argument_Analysis_UI cell[22]) : le 100ms est la conversion affichee de
+    la constante `sleep(0.1)` visible dans la ligne -- il ne peut pas
+    deriver d'une machine a l'autre puisqu'il EST le code. Discriminant :
+    un appel sleep(N) apparait AVANT le match dans la meme ligne.
+    """
+    return bool(re.search(
+        r"\bsleep\s*\(\s*\d+(?:[.,]\d+)?\s*\)", line[:match_start],
+    ))
 
 
 # --------------------------------------------------------------------------- #
@@ -301,6 +492,14 @@ def _categorize(line: str, snippet: str) -> str:
     # Borne du domaine, pas une duree machine -- les 2 FP GenAI/Video cell[12].
     if CONTENT_DURATION_CONSTRAINT_RE.search(line):
         return CATEGORY_DOMAIN_QUANTITY
+    # Parametre de design d'un pipeline audio (silence/fade/pause/extrait...)
+    # -- constante du code, pas une duree machine. Cf. PARAM_DURATION_RE.
+    if PARAM_DURATION_RE.search(line):
+        return CATEGORY_DOMAIN_QUANTITY
+    # Constante de CONFIG d'execution (timeout/limite pose sur le pipeline)
+    # -- cf. TIMEOUT_LIMIT_RE. Parametre du code, pas une mesure machine.
+    if TIMEOUT_LIMIT_RE.search(line):
+        return CATEGORY_DOMAIN_QUANTITY
     # Frontiere FP (frontier issue) : cout d'action dans une table de plan.
     # La duree est le RESULTAT d'une arithmetique « N + M = K unit » (ex
     # Planners-8-Temporal cell[37] « 5 + 4 = 9 min » = duree d'une livraison
@@ -308,7 +507,12 @@ def _categorize(line: str, snippet: str) -> str:
     # duree machine. Le motif est precis (un vrai wallclock ne se rend presque
     # jamais comme une somme explicite `a + b = c unit`) -- Sudoku-13 (controle
     # positif) n'a aucune ligne de cette forme, donc reste detecte.
-    if re.search(r"\d+\s*\+\s*\d+\s*=\s*\d+\s*(?:min(?:utes?)?|sec(?:ondes?)?|s\b|h(?:eures)?)", line):
+    # « 13 x 500ms = 6.5s » (04-12 c12/c14/c17, silences d'assemblage) est
+    # la meme classe deterministe en multiplication -- l'unite interne du
+    # facteur droit (500ms) est acceptee.
+    if re.search(
+        r"\d+\s*[+×x*]\s*\d+\s*(?:ms|millisecondes?|sec(?:ondes?)?|min(?:utes?)?|s)?\s*=\s*\d+(?:[.,]\d+)?\s*"
+        r"(?:min(?:utes?)?|sec(?:ondes?)?|s\b|h(?:eures)?)", line):
         return CATEGORY_DOMAIN_QUANTITY
     if WALLCLOCK_KEYWORDS.search(line):
         return CATEGORY_WALLCLOCK
@@ -383,6 +587,15 @@ def _scan_notebook(nb_path: Path) -> list[dict]:
                 # Residu 2 #10169 : tilde DETACHE (`~ 2 min`, marqueur + espace).
                 # Ordre de grandeur, comme le tilde colle et la fourchette.
                 if _is_detached_approximate(line, m.start()):
+                    continue
+                # Tranche SymbolicAI #9434 : token derive d'une constante
+                # (numero de section decimal, conversion d'unite
+                # parenthetique, traduction d'un sleep() du code).
+                if _is_section_number(line, m.start(), snippet):
+                    continue
+                if _is_unit_conversion(line, m.start()):
+                    continue
+                if _is_code_constant_translation(line, m.start()):
                     continue
                 category = _categorize(line, snippet)
                 findings.append({

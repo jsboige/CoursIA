@@ -534,15 +534,27 @@ def gather(root: Path) -> list[dict]:
 def _quarto_render_list(quarto_yml: Path) -> list[Path]:
     """Files Quarto renders explicitly listed under ``project.render``.
 
-    Returns relative paths (as they appear in the YAML). Empty list on parse
-    failure or missing key -- the caller falls back to the full repo scan.
+    Returns relative paths (as they appear in the YAML). Empty list on a
+    missing file, invalid YAML or missing key -- the caller falls back to the
+    full repo scan. A missing PyYAML dependency is NOT an empty-list case:
+    it raises RuntimeError naming the dependency, so a dead closure scan can
+    never masquerade as "nothing to render" (#11850 -- pre-fix, a runner
+    without pyyaml silently scanned 0 of 792 render-list entries while the
+    error accused _quarto.yml of being empty/invalid).
     """
     if not quarto_yml.exists():
         return []
     try:
         import yaml  # local import: the script otherwise stays yaml-free
+    except ImportError as exc:
+        raise RuntimeError(
+            "pyyaml is not installed -- the Quarto render-list cannot be read. "
+            "This is a missing dependency (fix: pip install pyyaml), NOT an "
+            "empty or invalid quarto-yml."
+        ) from exc
+    try:
         data = yaml.safe_load(quarto_yml.read_text(encoding="utf-8"))
-    except Exception:
+    except yaml.YAMLError:
         return []
     render = (((data or {}).get("project") or {}).get("render") or [])
     out: list[Path] = []
@@ -691,7 +703,8 @@ def gather_closure(repo_root: Path, quarto_yml: Path) -> list[dict]:
     See ``_notebook_targets_from_render_list`` for the definition. Returns the
     same finding shape as ``gather``. Empty list on YAML parse failure (the
     caller decides whether to fail or fall back -- the CLI exits 2 with a
-    clear message).
+    clear message). Raises RuntimeError when pyyaml is missing -- never
+    report an empty closure for an unreadable dependency (#11850).
     """
     render_paths = _quarto_render_list(quarto_yml)
     if not render_paths:
@@ -759,7 +772,13 @@ def main(argv=None) -> int:
         # from any rendered page. See #11630. Repo-root = the directory holding
         # _quarto.yml (we resolve relative to the cwd, same as the YAML path).
         repo_root = args.quarto_yml.resolve().parent
-        render_paths = _quarto_render_list(args.quarto_yml)
+        try:
+            render_paths = _quarto_render_list(args.quarto_yml)
+        except RuntimeError as exc:
+            # Missing pyyaml -- name the dependency, never the YAML file
+            # (#11850: this used to exit as "empty/invalid _quarto.yml").
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
         if not render_paths:
             print(f"error: --closure requires a parseable {args.quarto_yml} "
                   f"with a project.render list; got empty/invalid", file=sys.stderr)

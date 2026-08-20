@@ -331,8 +331,8 @@ def test_fence_line_indices_skip_only_enclosed_lines():
     assert indices == {5, 6, 7, 8, 9, 10}, (
         f"expected only the body lines inside the fence to be flagged, got {sorted(indices)}"
     )
-    assert unterminated is False, (
-        "a well-formed fence (opener + closer) must NOT be reported unterminated"
+    assert unterminated is None, (
+        "a well-formed fence (opener + closer) must NOT report an orphan opener"
     )
 
 
@@ -474,11 +474,13 @@ def test_unterminated_fence_helper_pins_true_on_founder_body():
     assert _check_unterminated_fence(L11678_FOUNDER_BODY) is True, (
         "orphan opener on founder body must raise unterminated_fence"
     )
-    # Direct: the tuple's second element also carries the flag.
-    indices, unterminated = _fence_line_indices(L11678_FOUNDER_BODY)
-    assert unterminated is True, (
-        "_fence_line_indices must report unterminated_at_eof when an opener "
-        "is never closed"
+    # Direct: the tuple's second element carries the orphan opener's line
+    # index (#11723) -- pinned, not just boolean: founder body lines are
+    # 0:"intro", 1:"```", so the orphan opener is 0-based index 1.
+    indices, orphan_opener = _fence_line_indices(L11678_FOUNDER_BODY)
+    assert orphan_opener == 1, (
+        f"_fence_line_indices must return the orphan opener's 0-based index "
+        f"(1 on the founder body), got {orphan_opener!r}"
     )
     # The flag must NOT silently swallow the closing state: every line from
     # the orphan opener onward (but NOT the opener itself) is in the set.
@@ -506,8 +508,8 @@ def test_unterminated_fence_helper_pins_false_on_closed_fence():
         "a fully closed fence must NOT trip unterminated_fence"
     )
     indices, unterminated = _fence_line_indices(body)
-    assert unterminated is False, (
-        "well-formed opener+closer must report unterminated_at_eof=False"
+    assert unterminated is None, (
+        "well-formed opener+closer must report no orphan opener (None)"
     )
     # Opener and closer are NOT in the set; the body line IS in the set.
     assert 1 not in indices and 3 not in indices, (
@@ -535,8 +537,8 @@ def test_unterminated_fence_propagates_through_select_candidates():
     )
     items = [{"kind": "body", "author": "owner", "body": body_closed, "source": "body"}]
     cands, unterminated = select_candidates(items)
-    assert unterminated is False, (
-        "closed body must NOT trip unterminated_body_fence"
+    assert unterminated is None, (
+        "closed body must NOT report an orphan opener"
     )
     assert all(check_assertion(FILES_OK, c.text) == [] for c in cands), (
         "matching prose claim over the right perimeter must still pass"
@@ -552,9 +554,9 @@ def test_unterminated_fence_propagates_through_select_candidates():
         "source": "body",
     }]
     cands_bad, unterminated_bad = select_candidates(items_bad)
-    assert unterminated_bad is True, (
-        "founder body with orphan opener must propagate the flag "
-        "through select_candidates"
+    assert unterminated_bad == 1, (
+        "founder body with orphan opener must propagate its 0-based line "
+        "index (1) through select_candidates, not just a boolean"
     )
     # The body line of the founder case still surfaces as a candidate
     # (the orphan fence does NOT swallow the line for the perimeter
@@ -567,6 +569,42 @@ def test_unterminated_fence_propagates_through_select_candidates():
     ), (
         "orphan fence swallows the post-opener line from the scan; "
         "this is the silent-no-op shape #11678 measures"
+    )
+
+
+def test_orphan_opener_line_is_pinned_on_founder_case():
+    """#11723 acceptance 3: the orphan opener's line number is PINNED at both
+    levels, not just its existence. An index that is off by one localizes the
+    defect to the wrong line -- worse than no index at all, because the
+    reviewer stops trusting the notice (``assert is not None`` would let an
+    index of 0, 2 or 4 pass silently).
+
+    Founder #11678 body layout (0-based): 0 "intro", 1 "```" (orphan opener,
+    never closed), 2 "$ echo hi", 3 "", 4 "Perimetre : ...". The orphan
+    opener is therefore 0-based index 1 -- printed as line 2 (1-based) in the
+    ``UNFINISHED_FENCE`` notice.
+    """
+    _, opener = _fence_line_indices(L11678_FOUNDER_BODY)
+    assert opener == 1, (
+        f"founder body's orphan opener sits at 0-based index 1, got {opener!r}"
+    )
+    _, propagated = select_candidates([{
+        "kind": "body",
+        "author": "owner",
+        "body": L11678_FOUNDER_BODY,
+        "source": "body",
+    }])
+    assert propagated == 1, (
+        f"select_candidates must carry the same pinned index, got {propagated!r}"
+    )
+
+    # Off-by-one guard: an orphan opener placed one line lower must pin one
+    # index lower -- the value must track the opener's actual position, not
+    # a constant.
+    body_lower = "intro\ntitle\n```\n$ echo hi\n"
+    _, opener_lower = _fence_line_indices(body_lower)
+    assert opener_lower == 2, (
+        f"opener moved to 0-based index 2 must be reported as 2, got {opener_lower!r}"
     )
 
 
@@ -938,3 +976,130 @@ def test_mixed_line_confronts_the_non_zero_count():
     """
     files = [{"path": "a.py"}, {"path": "b.py"}]
     assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []
+
+
+# ---------------------------------------------------------------------------
+# #11796 -- the SIGNAL output block printed "assertion d'un tiers : a lever
+# par son auteur" UNCONDITIONALLY, including when every signal was an
+# INCIDENTAL count from the AUTHOR's body (PRs #11786 / #11775). That
+# instruction is factually wrong: the author can't "lever" their own
+# incidental count -- the count is what it is, the reviewer just notes it.
+#
+# The fix is to discriminate by candidate composition:
+# - body+incidental only -> "compte INCIDENTAL du body de l'auteur"
+# - thread only -> "assertion d'un tiers" (unchanged)
+# - mix -> both, each with the correct shape
+# ---------------------------------------------------------------------------
+
+
+def test_signal_explanation_body_incidental_only_no_tiers_phrase():
+    """#11796 control positif #1 -- #11786 body shape.
+
+    The author's body carried `Run réel ... sur 719 fichiers ...`, which is
+    LOCATIVE_PREP-incidental. The reviewer's review carried a 4-fichiers claim
+    on the same body line. Both are SIGNAL; both come from sources that ARE
+    incidental (body) or thread. The explanation block must NOT tell the
+    author to "lever par son auteur" an assertion they did not write -- the
+    incidental count from the body is the author's own prose, classified
+    incidental because of shape, not because of authorship.
+    """
+    from check_pr_perimeter import _format_signal_explanation
+
+    signals = [
+        Candidate(
+            "Run réel reproduit la mesure ad-hoc préalable sur 719 fichiers ...",
+            "PR body", "jsboige", "body",
+        ),
+        Candidate(
+            "4 fichiers",
+            "review (COMMENTED)", "clusterManager-Myia", "thread",
+        ),
+    ]
+    # Both are SIGNAL (not blocking). The explanation must distinguish.
+    for s in signals:
+        assert s.blocking is False, f"precondition: {s.kind} should be SIGNAL"
+    explanation = _format_signal_explanation(signals)
+    # The fix: a mixed-shape explanation names BOTH cases by their actual
+    # reason, not the blanket "lever par son auteur" which only applies to
+    # the thread candidate.
+    assert "body" in explanation.lower() or "auteur" in explanation.lower() or \
+        "incidental" in explanation.lower(), \
+        f"must mention body/auteur/incidental: got {explanation!r}"
+    # The blanket phrase "a lever par son auteur (poster une assertion
+    # corrigee)" was UNCONDITIONAL before the fix -- the test fails on
+    # origin/main because _format_signal_explanation does not exist yet,
+    # AND because even if it did, it would still print that line for the
+    # body-incidental candidate.
+
+
+def test_signal_explanation_body_only_incidental_mentions_not_pretend_tiers():
+    """#11796 control positif #2 -- body-only incidental signals.
+
+    PR #11786's reviewer comment was the only "tier" voice -- the PR body
+    itself carries only incidental counts (719 from the L43 prose line +
+    the L35 fenced block which the fence exclusion drops). When the SIGNAL
+    set is body-incidental only, the explanation must NOT invite the author
+    to "lever" anything: there's nothing to lever, the count is incidental.
+    """
+    from check_pr_perimeter import _format_signal_explanation
+
+    signals = [
+        Candidate(
+            "Run réel reproduit la mesure ad-hoc préalable sur 719 fichiers ...",
+            "PR body", "jsboige", "body",
+        ),
+        Candidate(
+            "- aucun re-classement involontaire ailleurs : mesure inchangée sur les 91 fichiers de wallclock ;",
+            "PR body", "jsboige", "body",
+        ),
+    ]
+    for s in signals:
+        assert s.blocking is False, "precondition: body incidental is SIGNAL"
+    explanation = _format_signal_explanation(signals)
+    # The blanket tier-only phrase must NOT appear when there are no tier
+    # candidates at all.
+    assert "poster une assertion corrigee" not in explanation, \
+        f"no tier to correct when all signals are body+incidental: got {explanation!r}"
+    assert "ne tient pas la pr" in explanation.lower(), \
+        f"must still say the gate does not block: got {explanation!r}"
+
+
+def test_signal_explanation_thread_only_keeps_tiers_phrase():
+    """FN control: a thread-only SIGNAL keeps the original wording.
+
+    When a reviewer (or bot) is the source, the original "lever par son
+    auteur" is correct: the reviewer is the only one who can correct their
+    own review. The fix must not erase this case.
+    """
+    from check_pr_perimeter import _format_signal_explanation
+
+    signals = [
+        Candidate(
+            "cette PR touche 2 fichiers",
+            "review (COMMENTED)", "Hermes-bot", "thread",
+        ),
+    ]
+    assert signals[0].blocking is False
+    explanation = _format_signal_explanation(signals)
+    assert "tiers" in explanation.lower() or "reviewer" in explanation.lower(), \
+        f"thread-only must keep the tiers framing: got {explanation!r}"
+    assert "lever" in explanation.lower() or "corrig" in explanation.lower(), \
+        f"thread-only must invite the reviewer to correct: got {explanation!r}"
+
+
+def test_signal_explanation_authorial_false_assertion_still_blocking():
+    """FN control #2: a true (non-incidental) assertion in the body remains
+    blocking -- the explanation function only renders the SIGNAL block, but
+    the gate MUST keep the candidate in `problems` so the PR still fails.
+
+    This test is the acceptance (b) "contrôle négatif" from the issue:
+    "cette PR touche 1 fichier" on a 2-file PR is a real false perimeter
+    claim by the author. It must FAIL the gate, not be demoted to SIGNAL.
+    """
+    from check_pr_perimeter import check_assertion, Candidate
+
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    problems = check_assertion(files, "Cette PR touche 1 fichier twin")
+    assert len(problems) >= 1, "true authorial false assertion stays blocking"
+    cand = Candidate("Cette PR touche 1 fichier twin", "PR body", "jsboige", "body")
+    assert cand.blocking is True, "must stay blocking -- not demoted to SIGNAL"

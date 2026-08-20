@@ -222,7 +222,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 3 | State-Space | Explosion combinatoire $O(2^n)$, nécessité des heuristiques, graphe d'états |
 | 4 | Fast-Downward | Architecture 3 étapes (translator/preprocessor/search), A* vs Greedy vs EHC via Docker |
 | 5 | Heuristics | Classification admissible/non-admissible : $h^{add}$, $h^{max}$, $h^{FF}$, LM-cut, comparaison expérimentale |
-| 5b | Lean-Relaxation | Companion **natif** (kernel Lean 4) : preuve formelle 0-sorry de l'admissibilité de la relaxation ($h^{+} \leq h^{*}$) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel |
+| 5b | Lean-Relaxation | Companion **natif** (kernel Lean 4) : preuve formelle 0-sorry de l'admissibilité de la relaxation ($h^{+} \leq h^{*}$) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel ; lemmes de monotonie `step_mono`/`run_mono` démontrés sur un domaine jouet exécutable (§4bis) |
 | 6 | Domains | Domaines IPC standards (Blocks, Logistics, Gripper, Satellite), complexité croissante |
 | 7 | OR-Tools | CP-SAT, programmation par contraintes, modélisation de scheduling, contraintes alldifferent |
 | 8 | Temporal | PDDL 2.1, durées d'actions, parallélisme, contraintes temporelles, ordonnancement |
@@ -259,7 +259,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 4 (C#) | [Planners-4-Fast-Downward-Csharp](02-Classical/Planners-4-Fast-Downward-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : planificateur SAS+ from-scratch (prevail/pre/eff), A\*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics (See #4956) | 45 min |
 | 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
 | 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : h-max/h-add/h-FF/landmarks from-scratch, démo non-admissibilité h^add (See #4956) | 40 min |
-| 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
+| 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel, lemmes de monotonie `step_mono`/`run_mono` sur domaine jouet exécutable (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 | 6 (C#) | [Planners-6-Domains-Csharp](02-Classical/Planners-6-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : planificateur STRIPS from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle), domaines Block World + Hanoï + Gripper (See #4956) | 45 min |
 

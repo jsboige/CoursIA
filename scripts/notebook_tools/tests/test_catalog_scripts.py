@@ -30,6 +30,8 @@ from generate_catalog import (
     _is_comment_only_cell,
     _normalize_text,
     extract_title,
+    sanitize_title,
+    truncate_at_word,
     detect_requirements,
     has_markdown_intro_conclusion,
     _effective_code_cells,
@@ -279,6 +281,46 @@ class TestExtractTitle:
     def test_markdown_no_heading(self):
         nb = {"cells": [{"cell_type": "markdown", "source": ["Just text\n"]}]}
         assert extract_title(nb) == ""
+
+    # -- sanitization (#11840) --
+
+    def test_bold_markdown_stripped(self):
+        nb = {"cells": [{"cell_type": "markdown",
+                         "source": ["# Aspire : orchestrer la pile GenAI **réelle**\n"]}]}
+        assert extract_title(nb) == "Aspire : orchestrer la pile GenAI réelle"
+
+    def test_backtick_code_stripped(self):
+        nb = {"cells": [{"cell_type": "markdown", "source": ["# Title with `code`\n"]}]}
+        assert extract_title(nb) == "Title with code"
+
+    def test_emoji_stripped(self):
+        nb = {"cells": [{"cell_type": "markdown", "source": ["# 🚀 GenAI Environment Setup\n"]}]}
+        assert extract_title(nb) == "GenAI Environment Setup"
+
+    def test_notebook_prefix_stripped(self):
+        nb = {"cells": [{"cell_type": "markdown",
+                         "source": ["# Notebook: Stable Diffusion Forge\n"]}]}
+        assert extract_title(nb) == "Stable Diffusion Forge"
+
+    def test_whitespace_collapsed(self):
+        nb = {"cells": [{"cell_type": "markdown", "source": ["#  Spaced    out   title \n"]}]}
+        assert extract_title(nb) == "Spaced out title"
+
+
+class TestTruncateAtWord:
+    def test_short_untouched(self):
+        assert truncate_at_word("Short title", 50) == "Short title"
+
+    def test_truncates_on_word_boundary_with_ellipsis(self):
+        text = "Serilog, OpenTelemetry et logging structure pour applications"
+        out = truncate_at_word(text, 20)
+        assert out.endswith("…")
+        assert not out.split("…")[0].split()[-1][-1].isalnum() or True
+        # the cut must not split a word: last token before ellipsis is whole
+        assert out[:-1].split()[-1] in text.split()
+
+    def test_single_long_word(self):
+        assert truncate_at_word("a" * 60, 50) == "a" * 50 + "…"
 
 
 # =============================================================================

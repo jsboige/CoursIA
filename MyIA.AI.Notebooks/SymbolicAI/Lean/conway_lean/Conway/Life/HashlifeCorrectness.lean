@@ -70,6 +70,7 @@ import Conway.Life.HashlifeCorrectness.Walls.NW
 import Conway.Life.HashlifeCorrectness.Walls.NE
 import Conway.Life.HashlifeCorrectness.Walls.SW
 import Conway.Life.HashlifeCorrectness.Walls.SE
+import Conway.Life.HashlifeMemo
 
 namespace Conway
 namespace Life
@@ -7279,6 +7280,155 @@ theorem hashlife_correct_implies_beacon_2
     evolveHashlifeFast 2 beacon = evolve 2 beacon := by
   have hpad : BoxAssezGrand beacon 2 := by native_decide
   exact H 2 beacon hpad
+
+/-! ## Axe efficacité (#6724) : stabilisation du moteur, classe 1 — patterns périodiques
+
+L'efficacité de hashlife (cache Golly) vit sur les motifs dont l'arbre de
+macrocells se stabilise ; les motifs périodiques en sont le cas d'école —
+la trajectoire ne produit que `p` états distincts, donc le cache sert
+indéfiniment les mêmes nœuds. Cette section formalise ce « l'arbre se
+stabilise » au niveau sémantique : pour un oscillateur de période `p`,
+TOUT horizon du moteur mémoïsé retombe dans le cycle
+(`evolveHashlifeFastMemo_oscillator_cycle`). La correction du moteur non
+décorrélé reste conditionnelle à la capture de la trajectoire
+(`hashlife_correctN`) ; pour un oscillateur borné la capture s'établit
+par motif (témoins `jumpCaptured_block`, `jumpCaptured_glider`). Le
+moteur décorrélé (`evolveHashlifeFastAtN`, #11161) la décharge
+entièrement — la présente section n'en dépend pas. -/
+
+/-- Oscillateur de période `p` : au moins une étape, et l'état initial
+    revient après `p` générations. Classe « patterns périodiques » de
+    l'axe efficacité #6724. -/
+def IsOscillator (p : Nat) (g : Grid) : Prop :=
+  0 < p ∧ evolve p g = g
+
+/-- Tout multiple de la période redonne l'état initial : la trajectoire
+    sémantique d'un oscillateur ne visite que `p` états. -/
+theorem evolve_oscillator_mul (p : Nat) (g : Grid) (h : evolve p g = g) :
+    ∀ k, evolve (k * p) g = g := by
+  intro k
+  induction k with
+  | zero => simp
+  | succ k ih => rw [Nat.succ_mul, evolve_add, h, ih]
+
+/-- Stabilisation du moteur mémoïsé sur la classe des oscillateurs :
+    tout horizon `n` retombe sur l'état `n % p` du cycle. C'est
+    l'invariant de stabilisation « l'arbre se stabilise » formalisé pour
+    la classe des patterns périodiques (critère « axe efficacité » de
+    #6724) : la sortie du moteur ne quitte jamais le cycle à `p` états. -/
+theorem evolveHashlifeFastMemo_oscillator_cycle
+    (p n : Nat) (g : Grid) (hosc : IsOscillator p g)
+    (hcap : ∀ t ≤ n, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo n g = evolve (n % p) g := by
+  have hcorr := hashlife_correctN n g hcap
+  have hcycle : evolve (p * (n / p)) g = g := by
+    rw [Nat.mul_comm]
+    exact evolve_oscillator_mul p g hosc.2 (n / p)
+  have hn : p * (n / p) + n % p = n := Nat.div_add_mod n p
+  have hcomm : p * (n / p) + n % p = n % p + p * (n / p) := by omega
+  have hmod : n % p % p = n % p :=
+    Nat.mod_eq_of_lt (Nat.mod_lt n hosc.1)
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hcorr, ← hn, hcomm,
+    evolve_add, hcycle, Nat.add_mul_mod_self_left, hmod]
+
+/-- Corollaire : aux multiples de la période, le moteur mémoïsé redonne
+    exactement l'état initial — la sortie est stable de période `p`. -/
+theorem evolveHashlifeFastMemo_oscillator_stable
+    (p k : Nat) (g : Grid) (hosc : IsOscillator p g)
+    (hcap : ∀ t ≤ k * p, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo (k * p) g = g := by
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hashlife_correctN _ _ hcap,
+    evolve_oscillator_mul p g hosc.2 k]
+
+/-! Sanity witnesses : le blinker horizontal est un oscillateur de période 2,
+et le moteur mémoïsé le stabilise — à tout multiple de la période il redonne
+exactement l'état initial. -/
+
+#eval evolve 2 blinker_h == blinker_h
+#eval evolveHashlifeFastMemo 8 blinker_h == blinker_h
+
+/-! ## Axe efficacité (#6724) : stabilisation du moteur, classe 2 — motifs à répétition par tuiles (spaceships)
+
+Le pendant « space-filler » de la classe 1 : un vaisseau de période `p` et de
+déplacement `v` ne produit lui aussi qu'un nombre borné d'états — à translation
+près. L'arbre de macrocells se stabilise de la même façon : les tuiles se
+récurent, le cache sert indéfiniment les mêmes nœuds (front qui avance à
+vitesse bornée `|v|/p` par génération, structure interne périodique). Cette
+section formalise ce retour : pour un spaceship, tout horizon retombe sur
+l'état `n % p` du cycle, translaté de `(n / p) • v`. -/
+
+/-- Vaisseau de période `p` et de déplacement `v` : au moins une étape, une
+    grille canonique, et l'état initial réapparaît après `p` générations,
+    translaté de `v`. Classe « motifs à tuiles répétées / space-fillers » de
+    l'axe efficacité #6724 (le glider en est le représentant canonique).
+    La canonicalité n'est pas cosmétique : sans elle `shift (0, 0) g ≠ g`
+    (le `sortDedup` de `shift` réordonne), et le retour du motif à `k = 0`
+    échouerait. -/
+def IsSpaceship (p : Nat) (v : Int × Int) (g : Grid) : Prop :=
+  0 < p ∧ Canonical g ∧ evolve p g = shift v g
+
+/-- Une étape de spaceship : avancer de `p` générations revient à translater
+    l'état courant — la brique additive de la trajectoire. -/
+theorem evolve_spaceship_step (p : Nat) (v : Int × Int) (g : Grid)
+    (h : evolve p g = shift v g) (n : Nat) :
+    evolve (n + p) g = shift v (evolve n g) := by
+  rw [evolve_add, h, ← evolve_shift]
+
+/-- Tout multiple de la période reproduit le motif translaté de `k • v` :
+    la trajectoire sémantique d'un spaceship ne visite que `p` états à
+    translation près. -/
+theorem evolve_spaceship_mul (p : Nat) (v : Int × Int) (g : Grid)
+    (h : evolve p g = shift v g) (hg : Canonical g) :
+    ∀ k, evolve (k * p) g = shift (k * v.1, k * v.2) g := by
+  obtain ⟨v1, v2⟩ := v
+  intro k
+  induction k with
+  | zero => simp [evolve, shift_zero hg]
+  | succ k ih =>
+      rw [Nat.succ_mul, evolve_spaceship_step p (v1, v2) g h, ih, shift_shift]
+      apply congrArg (fun w => shift w g)
+      ext <;> (simp only [Nat.succ_eq_add_one]; push_cast; ring)
+
+/-- Stabilisation du moteur mémoïsé sur la classe des spaceships : tout
+    horizon multiple de la période fait retomber le moteur sur l'état
+    initial translaté de `k • v`. L'invariant « l'arbre se stabilise »
+    formalisé pour la classe des motifs à tuiles répétées (critère « axe
+    efficacité » de #6724, classe 2) : la sortie du moteur ne quitte jamais
+    la famille translatée du motif — le front avance à vitesse bornée, la
+    structure interne reste confinée au cycle à `p` états. -/
+theorem evolveHashlifeFastMemo_spaceship_stable
+    (p k : Nat) (v : Int × Int) (g : Grid) (hsp : IsSpaceship p v g)
+    (hcap : ∀ t ≤ k * p, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo (k * p) g = shift (k * v.1, k * v.2) g := by
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hashlife_correctN _ _ hcap,
+    evolve_spaceship_mul p v g hsp.2.2 hsp.2.1 k]
+
+/-- Horizon général : tout horizon `n` retombe sur l'état `n % p` du cycle,
+    translaté de `(n / p) • v` — le prolongement du théorème de cycle de la
+    classe 1 aux spaceships. -/
+theorem evolveHashlifeFastMemo_spaceship_cycle
+    (p n : Nat) (v : Int × Int) (g : Grid) (hsp : IsSpaceship p v g)
+    (hcap : ∀ t ≤ n, jumpCaptured (gridToMacroCellWithOffset (evolve t g)).2 = true) :
+    evolveHashlifeFastMemo n g
+      = shift ((n / p) * v.1, (n / p) * v.2) (evolve (n % p) g) := by
+  rw [evolveHashlifeFastMemo_eq_evolveHashlifeFast, hashlife_correctN n g hcap]
+  obtain ⟨v1, v2⟩ := v
+  have key : ∀ m q : Nat, evolve (m + q * p) g
+      = shift (q * v1, q * v2) (evolve m g) := by
+    intro m q
+    rw [evolve_add, evolve_spaceship_mul p (v1, v2) g hsp.2.2 hsp.2.1 q, evolve_shift]
+  have hn : n % p + n / p * p = n := by
+    rw [Nat.mul_comm]; exact Nat.mod_add_div n p
+  calc evolve n g = evolve (n % p + n / p * p) g := by rw [hn]
+    _ = shift ((n / p) * v1, (n / p) * v2) (evolve (n % p) g) := key (n % p) (n / p)
+
+/-! Sanity witnesses : le glider est un vaisseau de période 4 et de
+déplacement `(1, -1)` (témoin `glider_spaceship` de `Conway.Life`), et le
+moteur mémoïsé le stabilise — à tout multiple de la période il redonne
+l'état initial translaté de `k • (1, -1)`. -/
+
+#eval evolve 4 glider == shift (1, -1) glider
+#eval evolveHashlifeFastMemo 8 glider == shift (2, -2) glider
 
 end Life
 end Conway
