@@ -26,6 +26,12 @@
       csharp_sha: d8d4083ef458119fdef3d07b84646d4524f1573f
       content_python_sha: c466def4c9cedf109edf5b7ed8f1bef786465e59918483b5dbedb4a95821716b
       content_csharp_sha: f82a3d6741b0b60b7026307c8463b1eb2b6d8c725dc00c0f15670e62f774b6b6
+    - date: "2026-08-20"
+      by: myia-po-2025:CoursIA
+      python_sha: 04c3449c43d7c9b6ef0b0cf40aaca47f12d1d266
+      csharp_sha: 92f792973932c494cb95ba2238573847675451ce
+      content_python_sha: f7751edbe2780a0b82f1b936ee0d257627355157ee4f7a729886c2e664e6f83f
+      content_csharp_sha: db426b202767f2c20749207a43c121af0d20a569b5c80120ec7bc1cc06c84562
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Les DEUX branches atteignent desormais un moteur de production de leur ecosysteme sur la MEME instance. Annexe SAT double-face (2026-08-20, axe 5 PythonNet #10382) : le twin Python encode l'existence d'une SWF Pareto+IIA+non-dictature en CNF (216 profils, 1296 litteraux, 36453 clauses) et la resout NATIVEMENT via pysat (Glucose3/MiniSat22/CaDiCaL103 -> UNSAT x3, frontiere |A|=2 SAT) ; le twin C# produit le meme encodage en C# et execute les memes solveurs par pont PythonNet (pythonnet 3.1.0, Runtime.PythonDLL -> CPython 3.13, PATH-prepend du repertoire CPython pour la resolution des DLL dependantes) -> instance et verdicts IDENTIQUES des deux cotes. Le pont est en plus, jamais a la place : la force brute deterministe reste l'outil pedagogique, le pont apporte la jambe industrielle (pattern 'meme moteur, deux ponts' etabli CSP-5 pour Tweety). Le socle pedagogique (Arrow 1951, 3 axiomes, Geanakoplos 2005 cote Python) est preserve. parity_level: semantic preserve."
 
