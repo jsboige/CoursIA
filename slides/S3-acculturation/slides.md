@@ -104,10 +104,6 @@ layout: section
 
 <img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
-layout: two-cols
----
-
-
 
 # Développement (1/2)
 
@@ -125,9 +121,6 @@ layout: two-cols
 - 1990s : L'IA devient une science
 
 <img src="./images/img_006.png" class="h-24 mx-auto mt-4" alt="Repères historiques" />
-
-
-::right::
 
 
 **État de l'art**
@@ -204,11 +197,6 @@ layout: two-cols
 
 <img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
 ---
-layout: two-cols
----
-
-
-
 # Conception d'agents
 
 
@@ -223,11 +211,7 @@ layout: two-cols
 
 <img src="./images/img_010.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
 
-
-::right::
-
-
-<img src="./images/img_011.png" class="w-[380px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_011.png" class="absolute top-[410px] right-[20px] w-[380px] max-w-full max-h-[300px] object-contain" alt="Agent réflexe" />
 
 
 
