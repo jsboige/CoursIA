@@ -16,46 +16,46 @@
     le pattern actuel (OR-Tools PY, Choco CS) comme comparaison pedagogique double moteur. `parity_level: semantic` preserve : parite sur les concepts cibles (CSP optimisation, borne sup/inf, branch-and-bound)
     malgre l''asymetrie de solveur.'
   audits:
-  - date: '2026-08-04'
-    by: myia-po-2023:CoursIA
-    python_sha: 4c6ddd792c6842627cb4029718d378b3b2337381
-    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-  - date: '2026-08-07'
-    by: myia-po-2024:CoursIA
-    python_sha: cf04e71d022cfb777825037e941f80adf01cb295
-    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-    content_python_sha: 6563b2715a604c74b61ec57af8eea6f1c85324dcb5e8a36d5f96add0b913b8a4
-    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-  - date: '2026-08-08'
-    by: myia-po-2025:CoursIA
-    python_sha: 2ad77fde630361eb5982902f422eacde55764a0d
-    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-    content_python_sha: f06f816becae0b3966041b0f7c42e272899e68158066e524ebf25dcd513080cc
-    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-  - date: '2026-08-09'
-    by: myia-po-2024:CoursIA
-    python_sha: f726ac900734829014e9597ec5aa7867e9ae0f15
-    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-    content_python_sha: 0a45dd0027ca0494801eb0ae517667c62ac5fcd111f0d3c93690d9f7433f0767
-    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-  - date: '2026-08-14'
-    by: myia-po-2025:CoursIA-2
-    python_sha: a18147be4fb4074baa9fc7f83d071c3be358b1a8
-    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-    content_python_sha: 9a994af3f08db50e123705626579c972e553b036c4d0f0830024553623f1bb5b
-    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-  - date: '2026-08-17'
-    by: myia-po-2025:CoursIA
-    python_sha: b67c13c4b93136d5832991d907d9465c52f392c1
-    csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
-    content_python_sha: c17eabcb17182945a816f312bf22726e8eb671da9c95794396513d15a5fcd52f
-    content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
-  - date: "2026-08-20"
-    by: myia-po-2024:CoursIA
-    python_sha: b67c13c4b93136d5832991d907d9465c52f392c1
-    csharp_sha: de5936e0f2c5290c263b26ec607761d334e332d3
-    content_python_sha: c17eabcb17182945a816f312bf22726e8eb671da9c95794396513d15a5fcd52f
-    content_csharp_sha: ed842c506480dbc9edde3c8dbb61298554bfb129a3537f57608730b47a0096d4
+    - date: '2026-08-04'
+      by: myia-po-2023:CoursIA
+      python_sha: 4c6ddd792c6842627cb4029718d378b3b2337381
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+    - date: '2026-08-07'
+      by: myia-po-2024:CoursIA
+      python_sha: cf04e71d022cfb777825037e941f80adf01cb295
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+      content_python_sha: 6563b2715a604c74b61ec57af8eea6f1c85324dcb5e8a36d5f96add0b913b8a4
+      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+    - date: '2026-08-08'
+      by: myia-po-2025:CoursIA
+      python_sha: 2ad77fde630361eb5982902f422eacde55764a0d
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+      content_python_sha: f06f816becae0b3966041b0f7c42e272899e68158066e524ebf25dcd513080cc
+      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+    - date: '2026-08-09'
+      by: myia-po-2024:CoursIA
+      python_sha: f726ac900734829014e9597ec5aa7867e9ae0f15
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+      content_python_sha: 0a45dd0027ca0494801eb0ae517667c62ac5fcd111f0d3c93690d9f7433f0767
+      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+    - date: '2026-08-14'
+      by: myia-po-2025:CoursIA-2
+      python_sha: a18147be4fb4074baa9fc7f83d071c3be358b1a8
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+      content_python_sha: 9a994af3f08db50e123705626579c972e553b036c4d0f0830024553623f1bb5b
+      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+    - date: '2026-08-17'
+      by: myia-po-2025:CoursIA
+      python_sha: b67c13c4b93136d5832991d907d9465c52f392c1
+      csharp_sha: cd0d73e8fee0fe5c17b2a5df10554a32f2d9498e
+      content_python_sha: c17eabcb17182945a816f312bf22726e8eb671da9c95794396513d15a5fcd52f
+      content_csharp_sha: 842524dae2c561df22a19efde82c8fcd0583b66367fec5ede557160eb2dc019d
+    - date: "2026-08-20"
+      by: myia-po-2024:CoursIA
+      python_sha: b67c13c4b93136d5832991d907d9465c52f392c1
+      csharp_sha: de5936e0f2c5290c263b26ec607761d334e332d3
+      content_python_sha: c17eabcb17182945a816f312bf22726e8eb671da9c95794396513d15a5fcd52f
+      content_csharp_sha: ed842c506480dbc9edde3c8dbb61298554bfb129a3537f57608730b47a0096d4
   known_differences:
   - 'Edition 2026-08-17 (myia-po-2025:CoursIA, #9434) : le twin Python a evacue ses durees wall-clock machine-dependantes de la prose d''interpretation de la cellule 33 (benchmark FFD vs CP-SAT, pins ~20
     ms / ~0,5 s / limite 30 s / < 1 ms / n <= 50 en une seconde) au profit d''ordres de grandeur + renvois vers la sortie du benchmark (cellule 32 ci-dessus), avec note mandat #9377/#9434. Les resultats
