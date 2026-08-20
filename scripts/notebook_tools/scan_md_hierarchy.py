@@ -20,6 +20,16 @@ Detects (source-level, render-agnostic):
 Usage: python scan_md_hierarchy.py <notebook-or-dir> [more...] [--fail-on-findings]
 Outputs a per-notebook report + a machine-readable summary line per finding.
 
+Drift mode (#11831): `--baseline --diff` compares the CURRENT per-notebook
+finding counts against a committed baseline (`md_hierarchy_baseline.json`,
+repo-relative posix paths -> {kind: count}). Exit 2 when any notebook/kind
+INCREASED (new rendering defects introduced -- per-notebook, not net: fixing 10
+in notebook A does not excuse adding 3 in notebook B), exit 0 when every delta
+is <= 0 (pure cosmetic fixes are OK), exit 1 on broken input (unreadable
+baseline, vacuous scan). `--update-baseline` re-seeds the file (deterministic:
+sorted paths, sorted kinds) -- run it in the SAME commit as a scanner rule
+change, else every subsequent PR shows false drift.
+
 An EMPTY scan is never reported as a clean scan: no argument, a mistyped path,
 or a directory holding no notebook exits 2 with a message on stderr instead of
 printing `0/0 notebooks flagged`. This scanner has already been fooled once by
@@ -27,6 +37,8 @@ a vacuous zero (the #3968 acceptance criterion, see HINT_RE below); `0/0` was
 the second mouth of the same trap.
 """
 import argparse, json, re, sys, pathlib
+
+BASELINE_DEFAULT = pathlib.Path(__file__).with_name('md_hierarchy_baseline.json')
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
 # Heading nested inside a list item or blockquote (`- # Indice : ...`,
@@ -234,6 +246,116 @@ def iter_notebooks(args):
     if unresolved:
         raise ValueError('not a notebook nor a directory: ' + ', '.join(unresolved))
 
+
+# --- Drift mode (#11831) ------------------------------------------------------
+
+def _repo_root():
+    """Git toplevel du depot, sinon cwd (les corpus de test vivent hors repo)."""
+    import subprocess
+    try:
+        out = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                             capture_output=True, text=True, timeout=10)
+        if out.returncode == 0:
+            return pathlib.Path(out.stdout.strip())
+    except Exception:
+        pass
+    return pathlib.Path.cwd()
+
+
+def notebook_key(nb_path, repo_root=None):
+    """Cle stable d'un notebook dans la baseline : posix RELATIVE au repo root.
+
+    Seeded depuis la racine du repo (CI comme local), la cle est
+    `MyIA.AI.Notebooks/...ipynb` -- identique que l'invocation passe un chemin
+    relatif ou absolu. Hors repo (corpus de test tmp), retombe sur un chemin
+    relatif au cwd : stable au sein d'un meme run, ce qui suffit aux fixtures.
+    """
+    p = pathlib.Path(nb_path)
+    root = repo_root if repo_root is not None else _repo_root()
+    for base in (root, pathlib.Path.cwd()):
+        try:
+            return p.resolve().relative_to(base.resolve()).as_posix()
+        except ValueError:
+            continue
+    return p.as_posix()
+
+
+def compute_counts(paths):
+    """Per-notebook finding counts: {stable key: {kind: count}}.
+
+    Keys are POSIX repo-relative (see notebook_key) so the baseline matches
+    across invocation styles and OSes. READ_ERROR (unparseable notebook) counts
+    as its own kind: a newly-corrupted notebook IS a regression the gate should
+    catch, not a silent skip.
+    """
+    root = _repo_root()
+    counts = {}
+    for nb in iter_notebooks(paths):
+        if '_output' in nb.name or '.ipynb_checkpoints' in str(nb):
+            continue
+        kinds = {}
+        for f in scan_notebook(nb):
+            kinds[f['kind']] = kinds.get(f['kind'], 0) + 1
+        if kinds:
+            counts[notebook_key(nb, root)] = kinds
+    return counts
+
+
+def diff_against_baseline(current, baseline):
+    """(regressions, improvements) -- per notebook/kind deltas.
+
+    regressions: [(key, kind, delta)] with delta > 0 (new defects; a kind
+    absent from the baseline entry counts its full count as delta). improvements:
+    same shape with delta < 0 -- burndown progress, reported, never a failure.
+    A notebook that went fully clean (or was deleted) burns down every one of
+    its baseline kinds: the per-kind detail IS the review, an aggregate "gone"
+    line would hide it.
+    Per-notebook, deliberately NOT netted: offsetting a new defect in notebook B
+    by a fix in notebook A must still flag B (the fix in A and the defect in B
+    are two different reviews).
+    """
+    regressions, improvements = [], []
+    keys = set(current) | set(baseline)
+    for path in sorted(keys):
+        cur = current.get(path, {})
+        base = baseline.get(path, {})
+        for kind in sorted(set(cur) | set(base)):
+            delta = cur.get(kind, 0) - base.get(kind, 0)
+            if delta > 0:
+                regressions.append((path, kind, delta))
+            elif delta < 0:
+                improvements.append((path, kind, delta))
+    return regressions, improvements
+
+
+def load_baseline(path):
+    """Parse the baseline JSON -> {relpath: {kind: count}}. Raises on garbage."""
+    raw = json.loads(pathlib.Path(path).read_text(encoding='utf-8'))
+    notebooks = raw.get('notebooks')
+    if not isinstance(notebooks, dict):
+        raise ValueError(
+            f"baseline '{path}' lacks a 'notebooks' mapping -- regenerate with "
+            f"--update-baseline (format is owned by this scanner)")
+    return notebooks
+
+
+def write_baseline(path, counts):
+    """Serialize counts deterministically (sorted paths, sorted kinds)."""
+    payload = {
+        '_comment': ('Per-notebook finding counts of scan_md_hierarchy.py. '
+                     'BURNDOWN, do not grow: a PR that increases any count is '
+                     'flagged by scan-md-hierarchy-drift.yml (#11831). '
+                     'Regenerate (same commit as any scanner rule change) with: '
+                     'python scripts/notebook_tools/scan_md_hierarchy.py '
+                     'MyIA.AI.Notebooks/ --update-baseline'),
+        'total_findings': sum(sum(k.values()) for k in counts.values()),
+        'notebooks': {p: dict(sorted(k.items())) for p, k in sorted(counts.items())},
+    }
+    pathlib.Path(path).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=1, sort_keys=False) + '\n',
+        encoding='utf-8')
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
@@ -243,12 +365,61 @@ def main(argv=None):
     parser.add_argument('--fail-on-findings', action='store_true',
                         help='exit 1 when at least one notebook is flagged '
                              '(default: always exit 0, census mode)')
+    parser.add_argument('--baseline', nargs='?', const=str(BASELINE_DEFAULT),
+                        default=None, metavar='BASELINE_JSON',
+                        help='baseline path for drift mode '
+                             '(default: scripts/notebook_tools/md_hierarchy_baseline.json)')
+    parser.add_argument('--diff', action='store_true',
+                        help='drift mode: report per-notebook deltas vs the '
+                             'baseline; exit 2 on any increase, 0 on pure '
+                             'burndown, 1 on broken input (#11831)')
+    parser.add_argument('--update-baseline', action='store_true',
+                        help='(re)seed the baseline from the current scan '
+                             'instead of diffing -- SAME commit as any scanner '
+                             'rule change, else every PR shows false drift')
     args = parser.parse_args(argv)
 
     try:
         notebooks = list(iter_notebooks(args.paths))
     except ValueError as exc:
         parser.error(str(exc))
+
+    if args.baseline is not None and not (args.diff or args.update_baseline):
+        parser.error('--baseline requires --diff or --update-baseline')
+    drift = args.diff or args.update_baseline
+
+    if drift:
+        # Diff mode re-scans through compute_counts (same filters as census).
+        # A scan where every notebook is CLEAN yields counts={} -- legitimate;
+        # vacuous means iter_notebooks itself designated nothing.
+        if not notebooks:
+            print('ERROR: no notebook found under the given paths -- nothing '
+                  'was scanned, this is NOT an all-clear.', file=sys.stderr)
+            return 1
+        baseline_path = args.baseline or str(BASELINE_DEFAULT)
+        counts = compute_counts(args.paths)
+        if args.update_baseline:
+            write_baseline(baseline_path, counts)
+            print(f'baseline updated: {baseline_path} '
+                  f'({len(counts)} notebooks, '
+                  f'{sum(sum(k.values()) for k in counts.values())} findings)')
+            return 0
+        try:
+            baseline = load_baseline(baseline_path)
+        except (OSError, ValueError, json.JSONDecodeError) as e:
+            print(f'ERROR: unreadable baseline {baseline_path}: {e}',
+                  file=sys.stderr)
+            return 1
+        regressions, improvements = diff_against_baseline(counts, baseline)
+        for path, kind, delta in regressions:
+            print(f'  +{delta} {kind}  {path}')
+        for path, kind, delta in improvements:
+            print(f'  {delta} {kind}  {path}  (burndown)')
+        # Last stdout line, same contract as census mode (CI reads tail -1).
+        print(f'\n=== drift: +{sum(d for _, _, d in regressions)} '
+              f'across {len({p for p, _, _ in regressions})} notebook(s), '
+              f'{sum(-d for _, _, d in improvements)} burned down ===')
+        return 2 if regressions else 0
 
     total = 0
     flagged = 0
