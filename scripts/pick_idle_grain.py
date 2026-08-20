@@ -15,6 +15,15 @@ seule requete) et rend la selection *aleatoire ponderee* au lieu de
 Il **ne decide pas**. Il tire une poignee de candidats et laisse a l'agent le
 choix final selon les criteres de variete de sa lane courante (G-VAR-1/2/3).
 
+Regime : voie normale, pas filet de secours (mandat user 2026-08-20)
+--------------------------------------------------------------------
+Ce tirage est le **premier geste de chaque cycle**, pas le recours d'une lane
+en panne de grain. Un steering nomme par le coordinateur reste possible -- il
+devient l'**exception**, et doit lui-meme etre equilibre entre familles et
+genres. La raison est mecanique : tant que la selection par defaut restait
+"ce que je vois", elle restait "ce qui est recent", et les sujets conduits a
+leur terme etaient toujours ceux du moment.
+
 Trois urnes, parce que le pool n'est pas homogene
 -------------------------------------------------
 - **grains**    : issues unitaires, directement executables.
@@ -124,6 +133,7 @@ def fetch_pool() -> list[dict]:
             "title": title,
             "labels": labels,
             "age": age_days(it["createdAt"]),
+            "idle": age_days(it["updatedAt"]),
             "genre": infer_genre(title, labels),
             "klass": (
                 "delivered" if "candidate-delivered" in labels
@@ -143,6 +153,13 @@ def weight(item: dict, prev_genre: str | None) -> float:
     # Anciennete : sert "faire refluer doucement" -- la traine est la ou le
     # compte s'accumule. 6 mois pesent ~4x une issue de la semaine.
     w = 1.0 + math.log2(1.0 + item["age"] / 7.0)
+    # Delaissement : jours depuis la DERNIERE activite, distinct de l'age de
+    # creation (mesure du 2026-08-20 sur les 140 ouvertes : pearson r = 0.334,
+    # donc pas redondant). 91/140 avaient bouge dans les 24 h -- le bruit du
+    # moment ; les 12 plus inactives comptaient 9 EPICs. C'est cette population
+    # que le tirage doit atteindre : un EPIC intouche depuis 53 j pese ~2.4x un
+    # sujet du jour, assez pour remonter, trop peu pour devenir la seule veine.
+    w *= 1.0 + math.log2(1.0 + item["idle"] / 14.0)
     # G-VAR-3 au tirage plutot qu'en HOLD a posteriori.
     if prev_genre and item["genre"] == prev_genre:
         w *= 0.25
@@ -274,17 +291,21 @@ def main() -> int:
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genre precedent penalise : {args.prev_genre}" if args.prev_genre else ""))
     print()
-    header = f"{'urne':<10} {'issue':<8} {'age':>5}  {'genre':<16} {'p':>5}  titre"
+    header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6}  "
+              f"{'genre':<16} {'p':>5}  titre")
     print(header)
     print("-" * len(header))
     for p in picks:
         mark = "*" if p["genre"] in CONTENU else " "
-        print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j  "
+        print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j  "
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
-            print(f"{'':>10} {'':>8} {'':>5}  claim: {claims[p['number']]}")
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6}  claim: {claims[p['number']]}")
     print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
+    print("inact = jours depuis la derniere activite. Une inactivite haute est le")
+    print("        signe d'un sujet delaisse devant ceux du moment : c'est ce que")
+    print("        le tirage remonte, et ce que la lane est attendue de conduire.")
     print("umbrella  -> pioche ou cree un SOUS-grain dedans, ne claim pas l'EPIC entier.")
     print("delivered -> verifie firsthand que la PR livrante satisfait l'acceptance :")
     print("             si oui `gh issue close`, sinon retire le label en disant pourquoi.")
