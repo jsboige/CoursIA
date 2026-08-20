@@ -48,6 +48,7 @@ REPL_TOOLCHAIN_TAGS = {
     "v4.30.0-rc2": "repl-4.30.0-rc2",
     "v4.31.0-rc1": "repl-4.31.0-rc1",
     "v4.32.0": "repl-4.32.0",
+    "v4.32.1": "repl-4.32.1",
 }
 # Durable fork of utensil/lean4_jupyter baking the direct-launch patch directly into
 # repl.py (survives a clean ``pip install``/reinstall, closing the durability gap of the
