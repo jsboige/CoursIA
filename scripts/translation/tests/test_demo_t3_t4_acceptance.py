@@ -95,9 +95,17 @@ def test_drift_count_is_consistent():
     assert drift["src_drift_total"] > 0
     # src_drift_in_csv <= src_drift_total (toutes les cellules sont dans le CSV test)
     assert drift["src_drift_in_csv"] <= drift["src_drift_total"]
-    # Tous les drifts observes sur le perimetre de test sont des cellules markdown
-    # dont text_en est rempli (issue #10042).
-    assert drift["drift_with_filled_text_en"] == drift["src_drift_in_csv"]
+    # drift_with_filled_text_en <= src_drift_in_csv (les cellules SRC_DRIFT
+    # avec text_en rempli sont un sous-ensemble des cellules en drift du CSV
+    # test). Le T1 full-perimeter seeding #11934 a falsifie src_hash sur des
+    # cellules non-traduites (text_en vide) -- elles sont en SRC_DRIFT mais
+    # leur text_en n'est PAS rempli. C'est un etat legitime : le seeding
+    # marque le besoin de retraduction sans inventer un text_en. Le pivot
+    # #10287 / #10042 ne pretendait pas que TOUTES les SRC_DRIFT ont text_en
+    # rempli ; il dit que les SRC_DRIFT avec text_en rempli doivent etre
+    # eligibles au plan T3 -- c'est ce que verifie test_t3_captures_drift_now
+    # (assert translations_planned >= drift_with_filled_text_en).
+    assert drift["drift_with_filled_text_en"] <= drift["src_drift_in_csv"]
 
 
 def test_t3_captures_drift_now():
