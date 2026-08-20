@@ -133,10 +133,8 @@ layout: section
   - 2016 : AlphaGo
 - NLP : Transformers, LLMs
 
-<div class="flex gap-4 mt-4 items-center">
-  <img src="./images/img_007.jpg" class="h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
-</div>
+<img src="./images/img_007.jpg" class="absolute top-[340px] left-[40px] h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
+<img src="./images/img_008.jpg" class="absolute top-[345px] left-[260px] h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
 
 
 
@@ -197,6 +195,7 @@ layout: section
 
 <img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
 ---
+
 # Conception d'agents
 
 
@@ -209,9 +208,9 @@ layout: section
 - Pas de mémoire, réagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
-<img src="./images/img_010.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_010.png" class="w-[260px] max-w-full max-h-[220px] object-contain" />
 
-<img src="./images/img_011.png" class="absolute top-[410px] right-[20px] w-[380px] max-w-full max-h-[300px] object-contain" alt="Agent réflexe" />
+<img src="./images/img_011.png" class="absolute top-[350px] right-[20px] w-[360px] max-w-full max-h-[260px] object-contain" alt="Agent réflexe" />
 
 
 
@@ -314,7 +313,7 @@ layout: section
 
 **Itinéraire**
 
-<img src="./images/img_018.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_018.png" class="absolute top-[110px] right-[20px] w-[260px] max-h-[220px] object-contain" />
 
 - État initial, test de but
 - Transitions
@@ -327,9 +326,9 @@ layout: section
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_019.png" class="absolute top-[290px] right-[20px] w-[200px]" alt="Assemblage robotique" />
-<img src="./images/img_020.png" class="absolute top-[290px] right-[230px] w-[200px]" alt="Problèmes jouets 1" />
-<img src="./images/img_021.png" class="absolute top-[290px] right-[440px] w-[200px]" alt="Problèmes jouets 2" />
+<img src="./images/img_019.png" class="absolute top-[360px] right-[20px] w-[200px]" alt="Assemblage robotique" />
+<img src="./images/img_020.png" class="absolute top-[360px] right-[230px] w-[200px]" alt="Problèmes jouets 1" />
+<img src="./images/img_021.png" class="absolute top-[360px] right-[440px] w-[200px]" alt="Problèmes jouets 2" />
 
 
 
