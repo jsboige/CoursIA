@@ -91,7 +91,15 @@ jobs:
     # POSTed check-run -- GitHub ANDs every check-run bearing the required
     # name, so the POSTed duplicate could only add failures). Semantics
     # unchanged: unsettled = FAIL = BLOCKED.
-    timeout-minutes: 15
+    # #11770: `--timeout-min 28` raises the bounded wait above the p75 of
+    # Quarto Pages Deploy (measured 2026-08-20: median 1217s p75 1478s,
+    # 94% of PR runs > 12min). Without the raise, the pull_request leg
+    # expires while every constituent is still in flight, misclassifies as
+    # FAIL, and relies on pr-gate-rerun.yml to correct on the same SHA --
+    # that works but burns a runner-aggregate cycle on every Quarto-touched
+    # PR. Workflow timeout raised in lockstep to keep the script's budget
+    # below the runner's ceiling (28 vs the prior 12).
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
 
@@ -132,7 +140,7 @@ jobs:
             --repo "${{ github.repository }}" \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --self-name "PR gate" \
-            --timeout-min 12 \
+            --timeout-min 28 \
             --poll-sec 30 \
             --settle-polls 2 \
             $IS_FORK_ARG
