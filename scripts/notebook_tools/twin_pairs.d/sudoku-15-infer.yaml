@@ -67,7 +67,14 @@
       csharp_sha: 512fba1e200c93e18a783f836db20ffb72e46072
       content_python_sha: a37b842071b3e6a5f45b77b3e26f4a684d1f7fdfbc94a60b1f470b0028c8006e
       content_csharp_sha: fc20b2e34d282b3f5e5199f779d1330bdfa29bafc5afce3113c8835fc54b8a6b
+    - date: "2026-08-20"
+      by: myia-po-2023:CoursIA
+      python_sha: fcc793f05211fa5d50e45ae7a6de063ae3190063
+      csharp_sha: 15606e9ec80357c57ab32cf51ac89cd72c1f2f1a
+      content_python_sha: a37b842071b3e6a5f45b77b3e26f4a684d1f7fdfbc94a60b1f470b0028c8006e
+      content_csharp_sha: 90f675f3b428b3d820565fb7bf3e2b8961421404f83d49f022d4cb3a0c8c4071
   known_differences:
+    - "Rebaseline 2026-08-20 : cote C#, cellule[40] LoadPrecompiledModel -- catch (IOException) elargi en catch (Exception) avec fallback .cs recompile (#11778) : apres un bump NuGet Microsoft.ML.Probabilistic, la DLL precompilee leve ReflectionTypeLoadException/TypeLoadException/BadImageFormatException/FileLoadException, aucune n'heritant d'IOException. +9 lignes source-only, outputs et exec_count preserves. Cote Python non modifie (pas de DLL precompilee). Attestation = nouveau content_csharp_sha."
     - "Rebaseline 2026-08-17 : cote C# draine des timings MACHINE-DEP en cellule[24] (4 valeurs : 350 s, 349,9 s, 0,92 s, 922 ms, 5,8 minutes) et cellule[42] (4 valeurs : ~14-26 s, ~100 ms, ~1,8 s, ~18-112 ms, ~30-60 s) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Rebaseline 2026-08-17 : cote Python draine des timings MACHINE-DEP en cellule[27] (table comparaison vs C# : 6 wall-clock ~34ms / ~5s / ~57ms / ~140x / ~83x / ~100x) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Resultats de resolution et tendance qualitative conserves. Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA (python) et content_python_sha du cote Python."
     - "Rebaseline 2026-08-05 : cote Python deplace par de-pin des versions JAX/NumPyro depuis la table de la cellule[3] (criterion 2 #9434, edition markdown-only). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA du cote Python."
