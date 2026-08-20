@@ -135,3 +135,82 @@ def test_retro_11628_le_gate_passe():
     }
     merged = datetime(2026, 8, 18, 13, 30, tzinfo=timezone.utc)
     assert mod.analyse(data, [], merged)["blocked"] is False
+
+
+# ---------------------------------------------------------------------------
+# #11809 — Position C : verdict DEVANT le marqueur de levee. Le motif
+# `_MENTION_VERDICT_LIFTED` exige : un nom de verdict, un verbe de levee,
+# puis une REFERENCE POINTABLE (commit SHA / PR # / issue #) entre
+# parentheses. Une emission reelle (verdict avec description a suivre) ne
+# matche pas — la voie discrimine par la presence de la reference.
+# ---------------------------------------------------------------------------
+
+
+def test_11809_verdict_devant_avec_commit_sha_devient_mention():
+    """Forme du ticket : `CHANGES_REQUESTED adresse (commit <sha>)`.
+    Verdict devant, levee par adresse + pointeur vers le commit qui leve."""
+    body = "Suite a la review : CHANGES_REQUESTED adresse (commit 3dcd00029)."
+    assert mod.classify("myia-po-2024", body) is None, body
+
+
+def test_11809_verdict_devant_avec_pr_number_devient_mention():
+    """Forme alternative : `SUSPECT_REGRESSION leve (PR #11806)`.
+    PR #N est un identifiant pointable comme commit SHA."""
+    body = "Le SUSPECT_REGRESSION leve (PR #11806) — verifie a la main."
+    assert mod.classify("myia-po-2024", body) is None, body
+
+
+def test_11809_verdict_devant_avec_issue_number_devient_mention():
+    """Forme `(... leve (#N))` — le #N peut etre une issue, pas forcement PR.
+    Le discriminateur est le `#` + digits en parens."""
+    body = "Le CHANGES_REQUESTED traite (#11809), voie prise."
+    assert mod.classify("myia-po-2024", body) is None, body
+
+
+def test_11809_formes_accentuees_couvertes():
+    """Cluster ecrit massivement sans accents (#11639) MAIS certains agents
+    accentuent. Le pattern tolere les deux formes — `traite` et `traité`,
+    `repondu` et `répondu`, `adresse` et `adressé`."""
+    for body in (
+        "CHANGES_REQUESTED traité (commit abc1234).",
+        "CHANGES_REQUESTES adressé (PR #11758).",
+        "COMMENT_WITH_CONCERNS répondu (commit def5678).",
+        "SUSPECT_REGRESSION levée (PR #11744).",
+    ):
+        assert mod.classify("myia-po-2024", body) is None, body
+
+
+def test_11809_emission_avec_description_reste_vivante():
+    """Non-regression fondamentale : une emission reelle avec description a
+    suivre ne doit PAS etre neutralisee. Le ticket insiste — « le remede
+    evident `VERDICT <mot-de-levee>` rendrait le garde aveugle ». La
+    contrainte ajoutee est la presence d'une REFERENCE POINTABLE."""
+    body = (
+        "CHANGES_REQUESTED : la sequence exec est UNORDERED, "
+        "a corriger avant merge — voir le diff pour le detail."
+    )
+    # L'emission nue « CHANGES_REQUESTED: » reste comptée comme telle.
+    # Hermes-bot (auteur) sans lift, verdict au state=CHANGES_REQUESTED :
+    # le gate a deja un signal bloquant via le state, pas le body.
+    # classify sur body seul doit rendre BOT-CONCERN (le verdict reste emis
+    # dans la prose).
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", body
+
+
+def test_11809_verdict_devant_sans_reference_reste_vivant():
+    """Forme `CHANGES_REQUESTED adresse le bug` — le verbe de levee est la,
+    mais PAS de reference pointable entre parentheses. La mention n'est pas
+    etablie — le verdict reste emis. C'est exactement le discriminant que
+    le ticket demande : « une levee designe *ce qui* leve ; une emission
+    n'a rien a designer »."""
+    body = "Le CHANGES_REQUESTED adresse le bug constrnct — pas de fix livre."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", body
+
+
+def test_11809_commit_sha_sans_verdict_ne_matche_pas():
+    """Le pattern exige un verdict AVANT le verbe de levee — un SHA seul
+    n'est pas un signal de mention. Non-regression : pas de FP sur les
+    refs techniques pures."""
+    body = "Le fix est dans (commit abc1234) — pas un verdict, juste un SHA."
+    # classify doit rendre None (pas de CONCERN_MARKER dans cette prose).
+    assert mod.classify("hermes-bot", body) is None, body
