@@ -107,9 +107,6 @@ layout: section
 
 # Développement (1/2)
 
-<div class="grid grid-cols-2 gap-10">
-  <div>
-
 **Histoire succincte**
 
 - 1940-70 : Enthousiasme des débuts
@@ -122,28 +119,14 @@ layout: section
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-  </div>
-  <div>
+<img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[300px] max-w-full object-contain" alt="Repères historiques" />
 
-**État de l'art**
-
-- 1997 : Deep Blue (échecs)
-- 2000s : Prouveurs, planification
-- 2007 : Jeu de dames résolu
-- 2010s : Explosion deep-learning
-  - 2014 : GANs
-  - 2016 : AlphaGo
-- NLP : Transformers, LLMs
-
-  </div>
-</div>
-
-<img src="./images/img_006.png" class="absolute top-[320px] right-[20px] w-[430px] max-w-full object-contain" alt="Repères historiques" />
-
-<div class="absolute top-[480px] right-[20px] w-[430px] flex gap-4 items-center justify-center">
+<div class="absolute top-[300px] right-[20px] w-[300px] flex gap-4 items-center justify-center">
   <img src="./images/img_007.jpg" class="h-10 max-w-[45%] object-contain" alt="Logo DARPA" />
   <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
 </div>
+
+> **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
 ---
 
