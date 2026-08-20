@@ -112,7 +112,7 @@ jobs:
     with:
       project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean
       display-name: knot_lean
-      sorry-baseline: "14"
+      sorry-baseline: "13"
       sorry-filter-mode: real
 
   # Level 3 proof-integrity gate (criterion B.3 of pr-review-discipline).
@@ -133,7 +133,7 @@ jobs:
       display-name: knot_lean
       target-modules: "*"
       allow-axioms: ""
-      # 14 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
+      # 13 acknowledged tactic `sorry`s = the `sorry-baseline` declared by the
       # build job above; the gate tolerates them (`fail-on-sorry: false`) but
       # still reports `has_sorry` per module and hard-fails forbidden axioms.
       # The per-module enumeration now lives in the gate's runtime derivation

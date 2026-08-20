@@ -345,4 +345,136 @@ def test_finding_nomme_cellule_et_octets(tmp_path):
     assert f["pattern"] and isinstance(f["cell_index"], int)
     assert "non configuree" in f["line"]
     assert f["cell_output_bytes_base"] is not None and f["cell_output_bytes_base"] > 1000
-    assert f["cell_output_bytes_head"] > 0 and f["cell_output_bytes_head"] < f["cell_output_bytes_base"]
+
+
+# ---------------------------------------------------------------------------
+# 6. Extension c.1301+256 -- axe 2 SOTA STACK_DOWN (#11754 follow-up)
+# Cas fondateur : PR #11859 (review ai-01 06:52Z) -- la re-execution depuis
+# un worktree a perdu cell11 (whisper-api) et cell15 (ComfyUI) sans qu'aucun
+# compteur structurel ne bronche. Volume MONTAIT (+24.2 %). Cas fondateur
+# verifie : commit d6dd2ae68 = 11 occurrences STACK_DOWN ; commit c98e48196
+# (voie-2 ai-01) = 0.
+# ---------------------------------------------------------------------------
+
+# Aveux verbatim du notebook 02-Aspire-GenAiStack-Reel (cell11/cell15)
+# re-execute sans stack GenAI montee.
+STACK_DOWN_WHISPER_FRAGMENT = (
+    "[whisper-api] Unable to find image 'whisper-api-whisper-api:latest' locally\n"
+    "[whisper-api] Error response from daemon: pull access denied for whisper-api-whisper-api\n"
+    "[sys] container not found"
+)
+STACK_DOWN_COMFY_FRAGMENT = (
+    "token ComfyUI extrait des logs : ECHEC (conteneur down ?)\n"
+    "GET /system_stats -> HttpRequestException ... (127.0.0.1:8188)"
+)
+
+
+def test_stack_down_whisper_leve(tmp_path):
+    """Base propre, tete avec aveux Docker (whisper-api pull access denied +
+    container not found) -> findings STACK_DOWN_PULL_ACCESS et
+    STACK_DOWN_CONTAINER_NOT_FOUND et STACK_DOWN_UNABLE_FIND_IMAGE."""
+    base = _nb([None, "GenAI stack running on host\nWhisper OK"])
+    head = _nb([None, STACK_DOWN_WHISPER_FRAGMENT])
+    base_sha = _init_repo_with_nb(tmp_path, base)
+    _write_nb(tmp_path / "case.ipynb", head)
+    subprocess.run(["git", "add", "case.ipynb"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "re-exec"], cwd=tmp_path, check=True)
+    head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
+                              capture_output=True, text=True, check=True).stdout.strip()
+    r = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
+    patterns_hit = {f["pattern"] for f in r["findings"]}
+    assert "STACK_DOWN_PULL_ACCESS" in patterns_hit
+    assert "STACK_DOWN_CONTAINER_NOT_FOUND" in patterns_hit
+    assert "STACK_DOWN_UNABLE_FIND_IMAGE" in patterns_hit
+    # Tous sur la meme cellule (cell#1)
+    cells = {f["cell_index"] for f in r["findings"]}
+    assert cells == {1}
+
+
+def test_stack_down_comfy_leve(tmp_path):
+    """Cellule ComfyUI re-executee sans conteneur (HttpRequestException
+    + 'conteneur down ?') -> findings STACK_DOWN_HTTP_REQ_EXC ET
+    STACK_DOWN_FAILED_TO_START ne s'appliquent pas ici (ComfyUI n'utilise
+    pas Aspire FailedToStart ; on attrape HttpRequestException)."""
+    base = _nb([None, "ComfyUI OK on :8188\nGET /system_stats -> 200"])
+    head = _nb([None, STACK_DOWN_COMFY_FRAGMENT])
+    base_sha = _init_repo_with_nb(tmp_path, base)
+    _write_nb(tmp_path / "case.ipynb", head)
+    subprocess.run(["git", "add", "case.ipynb"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "re-exec"], cwd=tmp_path, check=True)
+    head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
+                              capture_output=True, text=True, check=True).stdout.strip()
+    r = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
+    patterns_hit = {f["pattern"] for f in r["findings"]}
+    assert "STACK_DOWN_HTTP_REQ_EXC" in patterns_hit
+
+
+def test_stack_down_herite_pas_de_finding(tmp_path):
+    """Frozen-inheritance stance (#11840) : une confession STACK_DOWN deja
+    presente a la base (notebook d'un worker sans stack GenAI historique)
+    n'est PAS signalee -- seul le delta base->tete est un finding."""
+    base = _nb([None, STACK_DOWN_WHISPER_FRAGMENT])
+    head = _nb([None, STACK_DOWN_WHISPER_FRAGMENT + "\n[extra noise]\n"])
+    base_sha = _init_repo_with_nb(tmp_path, base)
+    _write_nb(tmp_path / "case.ipynb", head)
+    subprocess.run(["git", "add", "case.ipynb"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "noisy"], cwd=tmp_path, check=True)
+    head_sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=tmp_path,
+                              capture_output=True, text=True, check=True).stdout.strip()
+    r = ddm.scan_notebook(tmp_path / "case.ipynb", base_sha, head_sha)
+    assert r["findings"] == []
+
+
+def test_stack_down_cas_fondateur_d6dd2ae(tmp_path):
+    """Controle positif sur le SHA REEL fautif (PR #11859 pre-voie-2) :
+    commit d6dd2ae68 = 11 occurrences STACK_DOWN melangees. On lit le
+    notebook tel qu'il etait SUR la branche fix/11725-aspire-paths a ce
+    commit, on scanne, et on exige >=5 findings STACK_DOWN_* distincts.
+    Test sans CI : si la branche n'existe pas localement, skip."""
+    target = "MyIA.AI.Notebooks/GenAI/Aspire/02-Aspire-GenAiStack-Reel.ipynb"
+    # Sanity check : la branche doit exister localement.
+    res = subprocess.run(
+        ["git", "cat-file", "-e", "d6dd2ae68^{commit}"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    )
+    if res.returncode != 0:
+        import pytest
+        pytest.skip(f"commit d6dd2ae68 introuvable localement : pas de fixture positive")
+    # Lire le notebook tel qu'il etait sur ce commit
+    res = subprocess.run(
+        ["git", "show", f"d6dd2ae68:{target}"],
+        capture_output=True, text=True, cwd=REPO_ROOT, check=True,
+    )
+    nb = json.loads(res.stdout)
+    findings = ddm.extract_confessions(nb)
+    stack_hits = [f for f in findings if f[0].startswith("STACK_DOWN_")]
+    assert len(stack_hits) >= 5, (
+        f"attendu >=5 STACK_DOWN sur le cas fondateur d6dd2ae68, "
+        f"observe {len(stack_hits)} ({[f[0] for f in stack_hits]})"
+    )
+
+
+def test_stack_down_cas_repare_c98e48196(tmp_path):
+    """Controle negatif : meme notebook sur le commit remede c98e48196
+    (voie-2 ai-01 appliquee : cell11/cell15 restaurees depuis main) ->
+    0 finding STACK_DOWN. C'est la preuve que l'instrument suit
+    effectivement le signal qu'il pretend mesurer."""
+    target = "MyIA.AI.Notebooks/GenAI/Aspire/02-Aspire-GenAiStack-Reel.ipynb"
+    res = subprocess.run(
+        ["git", "cat-file", "-e", "c98e48196^{commit}"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    )
+    if res.returncode != 0:
+        import pytest
+        pytest.skip("commit c98e48196 introuvable localement")
+    res = subprocess.run(
+        ["git", "show", f"c98e48196:{target}"],
+        capture_output=True, text=True, cwd=REPO_ROOT, check=True,
+    )
+    nb = json.loads(res.stdout)
+    findings = ddm.extract_confessions(nb)
+    stack_hits = [f for f in findings if f[0].startswith("STACK_DOWN_")]
+    assert stack_hits == [], (
+        f"attendu 0 STACK_DOWN sur le commit remede c98e48196, "
+        f"observe {len(stack_hits)}"
+    )

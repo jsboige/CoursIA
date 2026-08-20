@@ -34,6 +34,14 @@ occurrences whose count GREW are reported. A notebook that already carried
 such text keeps it: this is a ratchet, not a repo-wide scold. Pre-existing
 debt is surfaced by ``--all`` (advisory sweep), never by the gate.
 
+The sweep also ventilates a third class, ``DEGRADED_HINT`` (#11692): the two
+soft "non disponible / not available" motifs, which on an absolute sweep are
+the large majority of hits and are mostly DELIBERATE fallback banners. They
+stay inside TOOL_FAILURE_PATTERNS for the gate (a 0 -> N jump on a branch is
+still signal) but are reported in their own count by ``--all`` and never
+summed into the TOOL_FAILURE total -- so an advisory sweep no longer reads
+as a cleanup backlog that is mostly noise.
+
 Usage:
     python check_output_failure_text.py <base-ref> [--json]
     python check_output_failure_text.py --all [--json]
@@ -74,6 +82,20 @@ BS = chr(92)
 # --- class 1: an external tool could not be started -------------------------
 # Every pattern here has a witness in _PATTERN_WITNESSES below. Adding one
 # without its witness is how a pattern set starts lying.
+#
+# DEGRADED_HINT_PATTERNS are the two soft motifs inherited unmeasured from
+# check_render_volume_delta._UNAVAILABLE_PATTERNS (#11692): on a fresh sweep
+# they are ~93% of the absolute hits, and they are overwhelmingly DELIBERATE
+# outputs -- the secrets-hygiene "'configuree' if key else '(non configuree)'"
+# shape and designed batch-mode fallbacks. They stay inside
+# TOOL_FAILURE_PATTERNS because the GATE counts them in delta (0 -> N on a
+# branch is still a signal worth seeing) and the founding-commit replay
+# depends on that; the --all SWEEP alone ventilates them out so an advisory
+# total does not read as a cleanup backlog that is 93% noise.
+DEGRADED_HINT_PATTERNS = (
+    re.compile(r"non\s+disponible", re.IGNORECASE),
+    re.compile(r"not\s+available", re.IGNORECASE),
+)
 TOOL_FAILURE_PATTERNS = (
     re.compile(r"problem with converting", re.IGNORECASE),
     re.compile(r"an error occurred trying to start process", re.IGNORECASE),
@@ -89,8 +111,7 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"fichier .{0,12} est introuvable", re.IGNORECASE),
     re.compile(r"no such file or directory", re.IGNORECASE),
     # inherited from check_render_volume_delta._UNAVAILABLE_PATTERNS
-    re.compile(r"non\s+disponible", re.IGNORECASE),
-    re.compile(r"not\s+available", re.IGNORECASE),
+    *DEGRADED_HINT_PATTERNS,
     re.compile(r"importerror", re.IGNORECASE),
 )
 
@@ -263,6 +284,15 @@ def scan(nb):
     return found
 
 
+def _is_degraded_hint(match_text):
+    """Ventilation --all (#11692): True if a TOOL_FAILURE hit's extracted
+    text IS one of the two soft motifs. The extract is the match of the
+    FIRST pattern that fired, and no substantial pattern's match contains a
+    soft motif as substring, so this is a faithful discriminator. Used by
+    the sweep only -- the gate keeps both classes merged by design."""
+    return any(p.search(match_text) for p in DEGRADED_HINT_PATTERNS)
+
+
 def compare(base_ref, head_ref, paths, cwd=None):
     """Per-notebook growth of each class between base_ref and head_ref."""
     rows = []
@@ -399,24 +429,46 @@ def main(argv=None):
         for path in all_notebooks():
             found = scan(read_notebook_at(None, path))
             if found["TOOL_FAILURE"] or found["MACHINE_PATH"]:
+                # Ventilation (#11692): soft-motif hits leave the
+                # TOOL_FAILURE count and are reported as DEGRADED_HINT --
+                # never summed back.
+                tool = [(c, t) for c, t in found["TOOL_FAILURE"]
+                        if not _is_degraded_hint(t)]
+                hint = [(c, t) for c, t in found["TOOL_FAILURE"]
+                        if _is_degraded_hint(t)]
                 rows.append({
                     "notebook": path,
                     "TOOL_FAILURE": [{"cell": c, "match": t}
-                                     for c, t in found["TOOL_FAILURE"]],
+                                     for c, t in tool],
+                    "DEGRADED_HINT": [{"cell": c, "match": t}
+                                      for c, t in hint],
                     "MACHINE_PATH": [{"cell": c, "match": t}
                                      for c, t in found["MACHINE_PATH"]]})
+        total_tool = sum(len(r["TOOL_FAILURE"]) for r in rows)
+        total_hint = sum(len(r["DEGRADED_HINT"]) for r in rows)
+        total_path = sum(len(r["MACHINE_PATH"]) for r in rows)
         if args.as_json:
             print(json.dumps({"mode": "sweep", "provenance": provenance,
                               "head": head, "behind_origin_main": behind,
                               "worktree": dirty, "notebooks": len(rows),
+                              "hits": {"TOOL_FAILURE": total_tool,
+                                       "DEGRADED_HINT": total_hint,
+                                       "MACHINE_PATH": total_path},
                               "rows": rows}, indent=2, ensure_ascii=False))
         else:
             print("ADVISORY sweep [" + provenance + "]")
-            print(str(len(rows)) + " notebooks carry "
-                  "failure text or machine paths in committed outputs")
+            print(str(len(rows)) + " notebooks carry failure text, degraded "
+                  "hints or machine paths in committed outputs")
+            # #11692: the sweep names what it measures. TOOL_FAILURE is the
+            # substantial backlog; DEGRADED_HINT (deliberate "non disponible"
+            # banners) is reported for visibility and NEVER added to it.
+            print("TOOL_FAILURE " + str(total_tool)
+                  + " | DEGRADED_HINT " + str(total_hint)
+                  + " (reported, not summed) | MACHINE_PATH " + str(total_path))
             for r in rows:
                 print("  " + r["notebook"]
                       + "  tool=" + str(len(r["TOOL_FAILURE"]))
+                      + " hint=" + str(len(r["DEGRADED_HINT"]))
                       + " path=" + str(len(r["MACHINE_PATH"])))
         return 0
 
