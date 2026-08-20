@@ -68,6 +68,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      # The Quarto closure scan (below) reads _quarto.yml via PyYAML -- a bare
+      # setup-python environment does not provide it, and pre-#11850 the
+      # resulting ImportError was swallowed as an "empty render-list", killing
+      # the closure scan while accusing _quarto.yml of being invalid.
+      - name: "Install detector dependencies (pyyaml for the closure scan)"
+        run: pip install pyyaml
+
       - name: "HARD gate -- fail on any NEW frontmatter / setext oversize"
         run: |
           if ! python scripts/notebook_tools/detect_markdown_rendering.py \
