@@ -257,10 +257,21 @@ _EXCEPTION_LINE_HINT_RE = re.compile(
 )
 
 
-def _in_exception_code_span(src: str, match_pos: int, match_end: int) -> bool:
+def _in_exception_code_span(prose: str, match_pos: int, match_end: int) -> bool:
     """Return True if the numeric match sits inside an inline code span
     (between two backticks) whose text carries an exception/version/path
     hint. The span is then QUOTED text, not a measurement.
+
+    NOTE: the first argument MUST be `prose` (the markdown source with
+    structural lines stripped by `_strip_md_structure`), not the raw
+    cell source. The match positions `match_pos` / `match_end` are
+    computed against `prose` (see c.415-L1 ★★). Passing the raw cell
+    source under the misleading name `src` was a c.366 latent bug --
+    offsets in the prose-stripped text don't match the raw source when
+    headings / table headers / fences were removed, and the line
+    fallback (`line_start = src.rfind("\\n", 0, match_pos) + 1`) would
+    point to the wrong line. The productive call site (l. below) has
+    always passed `prose` correctly; this rename pins the contract.
 
     Detection: trace the inline code span containing `match_pos` by
     counting backticks from the START of the cell (markdown inline
@@ -275,34 +286,34 @@ def _in_exception_code_span(src: str, match_pos: int, match_end: int) -> bool:
     the hint-fallback to a single line so legitimate prose numbers on
     unrelated lines stay detected.
     """
-    span_text = _nearest_inline_code_span(src, match_pos)
+    span_text = _nearest_inline_code_span(prose, match_pos)
     if span_text is not None and _EXCEPTION_HINT_RE.search(span_text):
         return True
     # Line-scoped fallback: same-line carries a strongly-quoted-text
     # signal (Exception / Version= / FileNotFound / Traceback / "assembly
     # 10.0.0.0" pattern). Distinguishes "talking about a 4.5 in prose"
     # from "quoting a file that says Version=10.0.0".
-    line_start = src.rfind("\n", 0, match_pos) + 1
-    line_end = src.find("\n", match_end)
+    line_start = prose.rfind("\n", 0, match_pos) + 1
+    line_end = prose.find("\n", match_end)
     if line_end < 0:
-        line_end = len(src)
-    line = src[line_start:line_end]
+        line_end = len(prose)
+    line = prose[line_start:line_end]
     return bool(_EXCEPTION_LINE_HINT_RE.search(line))
 
 
-def _nearest_inline_code_span(src: str, pos: int) -> str | None:
+def _nearest_inline_code_span(prose: str, pos: int) -> str | None:
     """Walk backticks inside a 200-char window around `pos` to find the
     enclosing inline code span (single-backtick convention); return its
     text or None if the position is not inside a span.
 
     Algorithm: collect backtick positions in [pos-200, pos+200). Find
     a PAIR (open, close) such that open < pos < close and no other
-    opening between open and pos. Return src[open+1:close].
+    opening between open and pos. Return prose[open+1:close].
     """
     WIN = 200
     lo = max(0, pos - WIN)
-    hi = min(len(src), pos + WIN)
-    window = src[lo:hi]
+    hi = min(len(prose), pos + WIN)
+    window = prose[lo:hi]
     # Find all backtick positions within the window (offset back to
     # absolute by adding lo).
     ticks = [lo + i for i, c in enumerate(window) if c == "`"]
@@ -328,7 +339,7 @@ def _nearest_inline_code_span(src: str, pos: int) -> str | None:
     # closing on the same side, the span structure is ambiguous;
     # still take the immediately enclosing pair -- it's what
     # markdown renderers do for adjacent spans.
-    return src[open_pos + 1:close_pos]
+    return prose[open_pos + 1:close_pos]
 
 
 def check_notebook(path: Path) -> dict:
