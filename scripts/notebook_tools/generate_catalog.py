@@ -226,17 +226,19 @@ def detect_kernel(notebook: dict) -> str:
 
 _MARKDOWN_EMPHASIS_RE = re.compile(r"(\*\*|__|`+)")
 _NOTEBOOK_PREFIX_RE = re.compile(r"^Notebook\s*:\s*", re.IGNORECASE)
-# Emoji / pictograms: symbols & pictographs, misc symbols, dingbats, transport,
-# supplemental symbols, flags, variation selectors, skin-tone modifiers.
+# Emoji / pictograms: symbols & pictographs (astral plane, includes flags
+# U+1F1E6-U+1F1FF and skin-tone modifiers U+1F3FB-U+1F3FF), misc symbols,
+# dingbats, transport, supplemental symbols, variation selector. Flags and
+# skin tones are NOT listed separately: they are subsets of the 1F000-1FAFF
+# range, and re-declaring them triggers CodeQL "overly permissive range"
+# for zero coverage gain (#11852).
 _EMOJI_RE = re.compile(
     "["
     "\U0001F000-\U0001FAFF"
     "\U00002600-\U000027BF"
     "\U00002190-\U000021FF"
     "\U00002B00-\U00002BFF"
-    "\U0001F1E6-\U0001F1FF"
     "\U0000FE0F"
-    "\U0001F3FB-\U0001F3FF"
     "]+",
 )
 
