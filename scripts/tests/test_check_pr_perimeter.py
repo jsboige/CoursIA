@@ -898,6 +898,86 @@ def test_locative_count_with_diffstat_still_blocks():
     assert cand.blocking is True
 
 
+# --- #11800: negated-diff shape (semantic exemption) -----------------------
+
+def test_negated_diff_count_is_signal_not_blocking():
+    """#11800: the COUNT_CLAIM regex matched '91 fichiers' BEFORE the
+    negation word was parsed. The count qualifies files as NOT changed --
+    the negation of the diff -- which the guard cannot confront with the
+    effective file list (which lists what the diff DOES touch). Fix scope
+    is NEGATED_DIFF_TAIL applied per-match.
+
+    The FN-safety contract: a line with a scope word or a diffstat
+    neighborhood is NEVER incidental via the qualifier/locative rules
+    (#11712 acceptance). When the negated-diff count is the SOLE count on
+    the line (no scope word elsewhere), the per-match exemption fires and
+    the line is incidental. The 'scope delta' formulation that co-presents
+    a negated-diff count with a scope word remains blocking by design --
+    it would be out of scope for #11800 to relax that contract."""
+    lines = [
+        # Sole negated-diff count, no scope word -- the canonical #11800 case
+        "91 fichiers inchanges (mesure sur la tranche)",
+        # Variant with english negation
+        "73 files unchanged (delta nul)",
+        # Variant 'intacts'
+        "5 fichiers intacts",
+        # Variant 'non modifies' with parentheses (no scope word)
+        "73 fichiers non modifies, delta nul",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"negated-diff must not block: {line[:50]}"
+
+
+def test_false_perimeter_assertion_still_blocks():
+    """#11800 acceptance #2: a genuine false perimeter assertion must still
+    FAIL the guard after the negated-diff exemption is added. The exemption
+    only applies when the count is qualified as NOT changed -- an unqualified
+    'N fichiers' stays blocking."""
+    line = "Perimetre : 5 fichiers (verif de coherence)."
+    # Detection unchanged -- the line is still a candidate.
+    assert extract_perimeter_assertions(line) == [line]
+    # But on a PR with 2 files, the equality confrontation must fail.
+    problems = check_assertion(
+        files=[{"path": "a.py"}, {"path": "b.py"}],
+        assertion=line,
+    )
+    assert problems, "a false '5 fichiers' claim on a 2-file PR must produce a problem"
+    assert any("5 fichier" in p for p in problems), f"problem message must name the claim: {problems}"
+
+
+def test_zero_count_exemption_still_holds():
+    """#11800 acceptance #3a: the existing '0 fichier X' scrub-absence
+    exemption (l.369) must still pass after the negated-diff exemption is
+    added. Non-regression."""
+    line = "- **0 fichier machine-path** (C.1 / L213-A scrub)"
+    assert extract_perimeter_assertions(line) == [line]
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False, "zero-count exemption must still hold"
+
+
+def test_comparison_prefix_exemption_still_holds():
+    """#11800 acceptance #3b: the existing '< 15 fichiers' threshold-citation
+    exemption (COMPARISON_PREFIX) must still pass. Non-regression."""
+    line = ("**2 notebooks + 1 grain = scope C.4 OK** "
+            "(< 3000 lignes, < 15 fichiers, 1 feature, 1 domaine Lean)")
+    assert extract_perimeter_assertions(line) == [line]
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False, "comparison-prefix exemption must still hold"
+
+
+def test_negated_diff_does_not_swallow_modified_count():
+    """#11800 FN control: the negated-diff exemption must NOT apply when the
+    count is qualified as ACTUALLY modified ('ajoutes', 'modifies', 'touches').
+    A line like '5 fichiers modifies, 91 fichiers inchanges' must stay
+    blocking on the '5 fichiers modifies' half."""
+    line = "5 fichiers modifies, 91 fichiers inchanges -- scope delta confirme"
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True, "modified-count half must stay blocking"
+
+
 def test_incidental_artifact_qualified_count_is_signal_not_blocking():
     """#11625 '22 fichiers MP3' / #11529 '5 fichiers scratch' /
     '2 fichiers restants': kind or remainder, not the PR's file list."""
