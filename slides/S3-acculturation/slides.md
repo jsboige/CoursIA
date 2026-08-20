@@ -330,8 +330,6 @@ layout: section
 
 **Itinéraire**
 
-<img src="./images/img_018.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-
 - État initial, test de but
 - Transitions
 - États, Actions
@@ -343,9 +341,10 @@ layout: section
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_019.png" class="absolute top-[290px] right-[20px] w-[200px]" alt="Assemblage robotique" />
-<img src="./images/img_020.png" class="absolute top-[290px] right-[230px] w-[200px]" alt="Problèmes jouets 1" />
-<img src="./images/img_021.png" class="absolute top-[290px] right-[440px] w-[200px]" alt="Problèmes jouets 2" />
+<img src="./images/img_018.png" class="absolute top-[110px] right-[20px] w-[300px]" alt="Échiquier" />
+<img src="./images/img_019.png" class="absolute top-[430px] right-[20px] w-[180px]" alt="Assemblage robotique" />
+<img src="./images/img_020.png" class="absolute top-[430px] right-[210px] w-[150px]" alt="Problèmes jouets 1" />
+<img src="./images/img_021.png" class="absolute top-[430px] right-[370px] w-[150px]" alt="Problèmes jouets 2" />
 
 
 
