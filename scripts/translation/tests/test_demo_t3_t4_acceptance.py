@@ -82,10 +82,23 @@ def test_couture_active():
 def test_drift_count_is_consistent():
     """Le nombre de cellules en SRC_DRIFT est rapporte de maniere coherente.
 
-    Fixture synthetique (voir _make_drifted_csv) : le corpus live etant
-    resynchronise par l'amorcage #10329 etape 2, la demonstration du drift
-    s'appuie sur un CSV derive falsifie, pas sur la dette reelle.
+    Fixture synthetique (voir _make_drifted_csv) : le drift est garanti par
+    falsification de 2 lignes, pas par la dette reelle du corpus.
+
+    L'assertion porte sur le DELTA que la falsification introduit, jamais sur
+    les totaux absolus. La version d'origine comparait
+    ``drift_with_filled_text_en == src_drift_in_csv``, ce qui n'est vrai que si
+    le corpus live porte zero dette -- l'etat du jour ou #10329 etape 2 l'a
+    resynchronise, et d'aucun autre : la moindre re-execution d'un notebook
+    FineTuning fait rederiver des ``src_hash`` et casse l'egalite. Mesure du
+    2026-08-20 sur ``main`` : ``finetuning.csv`` reporte 3 lignes en drift dont
+    1 seule avec ``text_en`` rempli, d'ou ``assert 3 == 5``.
+
+    Le meme piege avait ete vu et desamorce dans ``test_t3_captures_drift_now``
+    (#11934, commentaire « l'egalite stricte ne tenait que sur l'ancien corpus
+    endette ») ; il est reste entier dans ce test-ci.
     """
+    base = _run_demo("--csv", str(Path("translations") / "genai" / "finetuning.csv"))["drift"]
     drifted_csv = _make_drifted_csv()
     try:
         report = _run_demo("--csv", str(drifted_csv))
@@ -95,9 +108,16 @@ def test_drift_count_is_consistent():
     assert drift["src_drift_total"] > 0
     # src_drift_in_csv <= src_drift_total (toutes les cellules sont dans le CSV test)
     assert drift["src_drift_in_csv"] <= drift["src_drift_total"]
-    # Tous les drifts observes sur le perimetre de test sont des cellules markdown
-    # dont text_en est rempli (issue #10042).
-    assert drift["drift_with_filled_text_en"] == drift["src_drift_in_csv"]
+    # Les 2 lignes falsifiees ont text_fr ET text_en remplis : chacune ajoute
+    # +1 a src_drift_in_csv ET +1 a drift_with_filled_text_en (pivot #10287 --
+    # un drift dont la traduction est deja remplie doit etre detecte quand
+    # meme). La dette preexistante s'annule dans la difference, donc le test
+    # mesure la propriete voulue et rien d'autre.
+    #
+    # Controle negatif (2026-08-20) : en portant la fixture de 2 a 3 lignes
+    # falsifiees, ce test echoue en « assert (6 - 3) == 2 ». Il mord.
+    assert drift["src_drift_in_csv"] - base["src_drift_in_csv"] == 2
+    assert drift["drift_with_filled_text_en"] - base["drift_with_filled_text_en"] == 2
 
 
 def test_t3_captures_drift_now():
