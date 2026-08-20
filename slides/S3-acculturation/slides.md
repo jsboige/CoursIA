@@ -302,9 +302,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
 
 
 # Agent explorateur
@@ -317,25 +314,15 @@ layout: two-cols
 
 <img src="./images/img_016.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
 
-
-::right::
-
-
 **Résolution de problèmes**
 
 - Objectif ?
 - Actions ?
 - Représentation ?
 
-<img src="./images/img_017.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-
-
-
+<img src="./images/img_017.png" class="absolute top-[110px] right-[20px] w-[300px]" alt="Résolution de problèmes" />
 
 ---
-layout: two-cols
----
-
 
 
 # Formulation de problèmes
@@ -351,18 +338,14 @@ layout: two-cols
 - Coût de chemin
 - Solution = Séquence
 
-
-::right::
-
-
 **Abstractions**
 
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_019.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_020.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_021.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_019.png" class="absolute top-[290px] right-[20px] w-[200px]" alt="Assemblage robotique" />
+<img src="./images/img_020.png" class="absolute top-[290px] right-[230px] w-[200px]" alt="Problèmes jouets 1" />
+<img src="./images/img_021.png" class="absolute top-[290px] right-[440px] w-[200px]" alt="Problèmes jouets 2" />
 
 
 
