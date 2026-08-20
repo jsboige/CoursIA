@@ -358,14 +358,30 @@ def measure_slide(page, slide_idx: int, canvas_w: int, canvas_h: int) -> dict:
     if raw is None:
         return {"slide": slide_idx, "error": "no #slide-content"}
 
+    hors = raw.get("horsCanvas", [])
     return {
         "slide": slide_idx,
         "text_head": text_head,
         "canvas": [canvas_w, canvas_h],
-        "hors_canvas": raw.get("horsCanvas", []),
+        "hors_canvas": hors,
+        "container_only": bool(hors) and not any(h.get("tag") in CONTENT_TAGS for h in hors),
         "chevauchements": raw.get("chevauchements", []),
         "occupation": raw.get("occupation"),
     }
+
+
+CONTENT_TAGS = {
+    "P", "LI", "H1", "H2", "H3", "H4", "H5", "H6", "TD", "TH", "BLOCKQUOTE",
+    "PRE", "CODE", "IMG", "SVG", "CANVAS", "VIDEO", "IFRAME", "SPAN",
+}
+
+
+def content_overflow(r: dict) -> bool:
+    """Un débordement est un défaut VISUEL seulement s'il coupe du contenu
+    (texte, image, code). Un conteneur seul qui déborde (le classique
+    `div.slidev-layout` à [0,0,980,587]) est une boîte CSS dont le dépassement
+    n'est pas nécessairement visible — la slide n'est pas comptée."""
+    return any(h.get("tag") in CONTENT_TAGS for h in r.get("hors_canvas", []))
 
 
 def occupation_flagged(r: dict, canvas_h: int) -> bool:
@@ -377,7 +393,7 @@ def occupation_flagged(r: dict, canvas_h: int) -> bool:
     if not side_empty:
         return False
     bottom = occ.get("content_bottom", 0)
-    overflow = bool(r.get("hors_canvas"))
+    overflow = content_overflow(r)
     return overflow or bottom > canvas_h * 0.95
 
 
@@ -389,11 +405,19 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
     for r in report.get("results", []):
         line = lines_by_slide.get(r["slide"], 1)
         head = (r.get("text_head") or "?")[:40].replace("\n", " ")
-        for h in r.get("hors_canvas", [])[:3]:
-            out.append(
-                f"::warning file={rel},line={line}::[HORS_CANVAS] slide {r['slide']} ({head}) — "
-                f"{h['tag']}.{h['cls'][:30]} bbox={h['bbox']}"
-            )
+        if r.get("hors_canvas"):
+            if content_overflow(r):
+                for h in r.get("hors_canvas", [])[:3]:
+                    out.append(
+                        f"::warning file={rel},line={line}::[HORS_CANVAS] slide {r['slide']} ({head}) — "
+                        f"{h['tag']}.{h['cls'][:30]} bbox={h['bbox']}"
+                    )
+            else:
+                h = r["hors_canvas"][0]
+                out.append(
+                    f"::notice file={rel},line={line}::[HORS_CANVAS container-only] slide {r['slide']} ({head}) — "
+                    f"boîte CSS {h['tag']}.{h['cls'][:30]} bbox={h['bbox']} sans contenu coupé"
+                )
         for c in r.get("chevauchements", [])[:3]:
             out.append(
                 f"::warning file={rel},line={line}::[CHEVAUCHEMENT] slide {r['slide']} ({head}) — "
@@ -480,7 +504,7 @@ def main():
         browser.close()
 
     n_total = len(results)
-    n_hors = sum(1 for r in results if r.get("hors_canvas"))
+    n_hors = sum(1 for r in results if content_overflow(r))
     n_chev = sum(1 for r in results if r.get("chevauchements"))
     n_occ = sum(1 for r in results if occupation_flagged(r, canvas_h))
 
@@ -493,7 +517,7 @@ def main():
             ctrl_positif_ok = False
             ctrl_positif_msg = f"baseline slide {args.baseline_slide} absente du deck"
         else:
-            signals = bool(ctrl.get("hors_canvas")) or bool(ctrl.get("chevauchements"))
+            signals = content_overflow(ctrl) or bool(ctrl.get("chevauchements"))
             flagged_occ = occupation_flagged(ctrl, canvas_h)
             # la slide 5 @ 6cabc826b : débordement bas 4px (HORS_CANVAS) + images
             # en flux au centre, tiers droit vide (OCCUPATION) — un de ces signaux suffit

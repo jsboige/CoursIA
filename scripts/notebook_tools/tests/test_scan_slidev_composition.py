@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scan_slidev_composition import (  # noqa: E402
+    content_overflow,
     occupation_flagged,
     parse_headmatter_canvas,
     split_slides_source,
@@ -99,6 +100,28 @@ def test_canvas_defaults_and_overrides(tmp_path):
     ratio = DECK.replace("theme: ../theme-ia101", "theme: x\naspectRatio: 4/3")
     p.write_text(ratio, encoding="utf-8")
     assert parse_headmatter_canvas(p) == (4, 3)
+
+
+def test_content_overflow_ignores_container_only_boxes():
+    # un DIV conteneur qui déborde seul (slidev-layout [0,0,980,587]) = boîte
+    # CSS, pas un défaut visuel
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]}
+    ]}) is False
+    # le même conteneur AVEC un enfant texte/image qui déborde = défaut réel
+    assert content_overflow({"hors_canvas": [
+        {"tag": "DIV", "cls": "slidev-layout default", "bbox": [0, 0, 980, 587]},
+        {"tag": "LI", "cls": "", "bbox": [48, 581, 932, 609]},
+    ]}) is True
+    assert content_overflow({"hors_canvas": [
+        {"tag": "IMG", "cls": "", "bbox": [327, 0, 653, 700]}
+    ]}) is True
+    # pré/code (bloc de code qui déborde) = contenu
+    assert content_overflow({"hors_canvas": [
+        {"tag": "PRE", "cls": "shiki", "bbox": [48, 472, 932, 722]}
+    ]}) is True
+    # pas d'item -> pas de défaut
+    assert content_overflow({"hors_canvas": []}) is False
 
 
 def test_occupation_requires_side_empty_AND_vertical_saturation():
