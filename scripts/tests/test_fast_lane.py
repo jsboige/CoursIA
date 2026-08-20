@@ -157,6 +157,87 @@ def test_advisory_flags_match_the_source_workflows():
     assert by_name["banner-guard"].blocking is True
     assert by_name["pip-leak-guard"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
+    # 4 gardes ajoutees (extension 5 -> 9) -- bloquer par defaut
+    assert by_name["bare-cross-dir-load-gate"].blocking is True
+    assert by_name["notebook-navlink-check"].blocking is True
+    assert by_name["notebook-interp-positioning-guard"].blocking is True
+    assert by_name["markdown-rendering-guard"].blocking is True
+
+
+def test_iterates_paths_guards_carry_the_placeholder():
+    """Le Pattern 1 (boucle bash absorbee) repose sur `{changed_paths}` dans
+    argv. Si un garde `iterates_paths=True` ne porte pas ce placeholder,
+    `run_iter` ne ferait qu'un seul appel avec un placeholder non-substitue
+    -- un faux vert silencieux que ce test empeche."""
+    for g in PILOT:
+        if g.iterates_paths:
+            assert "{changed_paths}" in g.argv, (
+                f"{g.name} est iterates_paths=True mais argv ne porte pas "
+                "le placeholder {changed_paths} -- run_iter ne ferait rien "
+                "d'utile."
+            )
+
+
+def test_non_iterate_guards_have_no_paths_placeholder():
+    """Inverse de la precedente : un garde non-iter ne devrait pas avoir
+    `{changed_paths}` dans argv (le placeholder n'aurait pas de sens). On
+    verifie au moins que les 5 gardes existants en sont exempts."""
+    by_name = {g.name: g for g in PILOT}
+    for name in ("banner-guard", "pip-leak-guard", "solution-leak-guard",
+                 "prose-counts-guard", "perimeter-review-guard"):
+        assert "{changed_paths}" not in by_name[name].argv, (
+            f"{name} n'est pas iterates_paths mais porte le placeholder"
+        )
+
+
+# ---------------------------------------------------------------------------
+# 7. iterates_paths : `expand_paths_token` + `run_iter`
+# ---------------------------------------------------------------------------
+
+def test_expand_paths_token_inserts_one_token_per_path():
+    """Chaque chemin produit un token dans l'argv, les autres places sont
+    preservees. C'est ce qui permet au Pattern 1 d'origine (boucle bash
+    `while ... ; do python detector "$nb" --check ; done`) d'etre absorbe
+    en un seul appel `run_iter`."""
+    argv = ["python", "x.py", "{changed_paths}", "--check"]
+    out = fast_lane.expand_paths_token(argv, ["a.ipynb", "b.ipynb"])
+    assert out == ["python", "x.py", "a.ipynb", "b.ipynb", "--check"]
+
+
+def test_expand_paths_token_preserves_when_no_placeholder():
+    """Sans `{changed_paths}`, l'argv est inchange (no-op). Aucun garde
+    non-iter ne devrait subir cette substitution accidentelle."""
+    out = fast_lane.expand_paths_token(["python", "x.py", "--check"], ["a"])
+    assert out == ["python", "x.py", "--check"]
+
+
+def test_run_iter_empty_paths_is_a_zero_no_op():
+    """Un CI sans chemin est un vert silencieux, pas un garde qui a travaille.
+    Le rc=0 explicite + log temoin distingue ce cas d'un garde reussi."""
+    rc, log = fast_lane.run_iter(["python", "x.py", "{changed_paths}"], [], {})
+    assert rc == 0
+    assert "iterates_paths vide" in log
+
+
+def test_run_iter_aggregates_zero_for_all_success():
+    """Si chaque iteration rend 0, l'agregat est 0 (succes global)."""
+    argv = [sys.executable, "-c", "import sys; sys.exit(0)"]
+    rc, log = fast_lane.run_iter(argv, ["a", "b", "c"], {})
+    assert rc == 0
+    assert "--- a ---" in log
+    assert "--- b ---" in log
+    assert "--- c ---" in log
+
+
+def test_run_iter_aggregates_first_failure_to_one():
+    """Au moins une iteration echoue => rc agrege > 0. Le moteur traduit
+    ensuite `rc != 0` en conclusion `failure` (pour les gardes `blocking`).
+    On verifie juste l'agregat > 0 ici."""
+    argv = [sys.executable, "-c",
+            "import sys; sys.exit(1 if '{changed_paths}' == 'b' else 0)"]
+    rc, log = fast_lane.run_iter(argv, ["a", "b", "c"], {})
+    assert rc == 1
+    assert "exit 1" in log
 
 
 # ---------------------------------------------------------------------------

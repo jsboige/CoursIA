@@ -143,7 +143,7 @@ jobs:
           echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
 
           python - <<'PY' > /tmp/candidates.txt
-          import json
+          import json, os
 
           # REST /check-runs is lowercase where GraphQL's rollup is uppercase.
           # A check counts as settled-green when it has completed with a
@@ -151,9 +151,21 @@ jobs:
           # green for this purpose: GitHub treats them as non-blocking, and a
           # path-filtered guard that skipped must not keep a PR in the pool.
           GREEN = {"success", "neutral", "skipped"}
-          RED = {"failure", "timed_out", "action_required"}
+          # `cancelled` is a gate-leg terminal state that means "verdict never
+          # rendered, render it again" (pr-gate.yml cancels in-flight gates on
+          # every supersession: push, synchronize, re-dispatch), NOT an outcome
+          # GitHub counts as success -- so a cancelled required gate leaves the
+          # PR BLOCKED with nothing red. It belongs here, on the GATE side only:
+          # for other checks a cancelled run is either superseded (the fold
+          # below keeps the later verdict) or a real interruption that must not
+          # be greenwashed. Asymmetric on purpose (#11862).
+          RED = {"failure", "timed_out", "action_required", "cancelled"}
 
-          for line in open("/tmp/runs.jsonl", encoding="utf-8"):
+          # Test seam: the shipped selector is exec'd verbatim by
+          # scripts/tests/test_pr_gate_sweep_select.py, which points this at a
+          # fixture. Default is the sweep's own collection file.
+          for line in open(os.environ.get("SWEEP_RUNS_FILE", "/tmp/runs.jsonl"),
+                           encoding="utf-8"):
               line = line.strip()
               if not line:
                   continue

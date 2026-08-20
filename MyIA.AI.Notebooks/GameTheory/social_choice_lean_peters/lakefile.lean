@@ -26,7 +26,7 @@ package «social_choice_peters» where
 
 require mathlib from git
   "https://github.com/leanprover-community/mathlib4.git"
-    @ "8cb9319191fd34b6f23d7ffea58a4f8fb674cefd"
+    @ "520045ab14e26149ee970e2e617ca04b09bde5d6"
 
 require SocialChoiceLean from git
   "https://github.com/DominikPeters/SocialChoiceLean.git"
