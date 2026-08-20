@@ -104,9 +104,6 @@ layout: section
 
 <img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
-layout: two-cols
----
-
 
 
 # Développement (1/2)
@@ -140,10 +137,8 @@ layout: two-cols
   - 2016 : AlphaGo
 - NLP : Transformers, LLMs
 
-<div class="flex gap-4 mt-4 items-center">
-  <img src="./images/img_007.jpg" class="h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
-  <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
-</div>
+<img src="./images/img_007.jpg" class="absolute top-[300px] right-[160px] h-10" alt="Logo DARPA" />
+<img src="./images/img_008.jpg" class="absolute top-[304px] right-[20px] h-8" alt="Logo ImageNet" />
 
 
 
@@ -204,9 +199,6 @@ layout: two-cols
 
 <img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
 ---
-layout: two-cols
----
-
 
 
 # Conception d'agents
@@ -223,11 +215,7 @@ layout: two-cols
 
 <img src="./images/img_010.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
 
-
-::right::
-
-
-<img src="./images/img_011.png" class="w-[380px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_011.png" class="absolute top-[180px] right-[20px] w-[380px]" alt="Conception d'agents" />
 
 
 
