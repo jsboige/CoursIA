@@ -32,13 +32,13 @@ Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, 
 
 ### GENRE — énumération CLOSE
 
-`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `slides` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test` · `tooling` · `research-code`.
+`lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `notebook-lean` · `slides` · `docs` · `guard` · `refactor` · `ledger` · `readme` · `test` · `tooling` · `research-code`.
 
 **L'énumération se partitionne en deux, et la frontière porte G-VAR-1 :**
 
 | Classe | Genres | Ce qu'un grain y produit |
 |---|---|---|
-| **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `slides` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
+| **CONTENU** | `lean` · `qc` · `training` · `genai` · `notebook-python` · `notebook-dotnet` · `notebook-lean` · `slides` · `research-code` | une capacité, une preuve, un résultat, du matériel pédagogique — ce que le dépôt existe pour offrir |
 | **META** | `guard` · `tooling` · `ledger` · `docs` · `readme` · `test` · `refactor` | l'outillage, les garde-fous et la prose *autour* du contenu — nécessaire, jamais suffisant |
 
 Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
@@ -86,6 +86,7 @@ Le HOLD **ne sanctionne jamais la lane en idle** ([coordinator-discipline.md](co
 
 La cause racine est **autant** un défaut de provisionnement qu'un réflexe de facilité worker : sans substance stockée, le worker tombe sur les veines faciles. Chaque cycle `/coordinate`, `ai-01` :
 
+0. **Le tirage est la voie par défaut** (règle 5 de [proactive-coordination.md](proactive-coordination.md), mandat user 2026-08-20) : une lane qui n'a pas reçu de steering **tire** et n'attend rien. Le provisionnement ci-dessous reste dû — il devient l'**exception nommée**, et c'est *parce que* c'est une exception qu'il doit être le plus équilibré possible : un steering qui répète le genre du cycle précédent fait pire que le tirage, puisqu'il **écarte** un mécanisme conçu pour ne pas biaiser.
 1. **Provisionne ≥1 grain DEEP/MED de CONTENU par lane**, **groundé firsthand** (`gh issue view`), varié en genre d'une lane à l'autre. Un provisionnement uniquement `guard`/`tooling`/`docs` ne satisfait pas l'obligation — il garantit que toutes les lanes manqueront leur plancher.
    Deux corollaires mesurés : **agréger les GENRES des merges récents** avant de provisionner, pas seulement leurs tiers (« 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook`) ; et **un batch-close de famille crée une dette de provisionnement**, à honorer dans le même cycle (précédent ICT).
 2. **Varie la loterie** d'un cycle à l'autre — le coordinateur applique G-VAR-3 à son propre dispatch.

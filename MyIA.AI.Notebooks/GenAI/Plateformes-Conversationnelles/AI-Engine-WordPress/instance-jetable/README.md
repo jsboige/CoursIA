@@ -76,6 +76,11 @@ docker exec valmont-wordpress_cli-1 sh -c "wp user application-password create $
 Les notebooks lisent `instance-jetable/.env` (base URL + admin + app password).
 Rien d'autre n'est requis : ils appellent l'API de l'instance en HTTP local.
 
+Le compte de test `consent.editor` — créé par le notebook OAuth puis réutilisé
+par le notebook assistant de l'éditeur — porte le mot de passe
+`VALMONT_EDITOR_PASSWORD` (même `.env`) : choisir une valeur, aucun défaut
+littéral dans les notebooks (#11747).
+
 ## Verification rapide
 
 ```powershell
@@ -85,6 +90,23 @@ curl http://localhost:8093/wp-json/    # repond {name: "Maison Valmont", ...}
 Pour verifier l'acces authentifie (chatbots, completions), executer
 `presenter-ai-engine-par-son-api.ipynb` : c'est exactement ce que font ses
 cellules 3 a 6, avec l'application password lu depuis `.env`.
+
+## Maintenance
+
+### Upload de fichiers : permission du dossier uploads
+
+Si un appel a `mwai-ui/v1/files/upload` rend 500 « Could not move
+the file. », le dossier `wp-content/uploads/` du conteneur n'appartient
+pas a WordPress (le volume monte peut etre cree par root au premier
+demarrage) :
+
+```bash
+docker exec valmont-wordpress-1 sh -c "chown -R www-data:www-data /var/www/html/wp-content/uploads"
+```
+
+Apres quoi l'upload passe (verifie sur l'instance de reference). Le
+notebook fichiers de la serie pose cette precondition dans ses
+prerequis.
 
 ## Nettoyage
 

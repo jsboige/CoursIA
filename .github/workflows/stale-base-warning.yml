@@ -19,9 +19,28 @@ jobs:
     name: Check base branch staleness
     runs-on: ubuntu-latest
     steps:
+      # Ce garde ne lit AUCUN contenu de fichier : `git rev-list --count` et
+      # `git show -s --format=%ct` n'interrogent que le graphe de commits
+      # (`-s` supprime le diff). Un `fetch-depth: 0` nu transfere pourtant les
+      # 1,82 Gio du pack -- dont ~800 Mo de revisions historiques de blobs
+      # (une seule cellule TTS pese ~400 Mo en cumul de revisions) -- pour lire
+      # des dates de commits.
+      #
+      # `filter: blob:none` garde le graphe complet, requis par `rev-list
+      # BASE..origin/main --count`, et rend les blobs paresseux ; le
+      # `sparse-checkout` limite ce que l'arbre de travail materialise a
+      # `.github` (0,6 Mo), au lieu des 1058 Mo de HEAD (757 Mo de
+      # MyIA.AI.Notebooks/ + 246 Mo de slides/). Le `git fetch origin main` de
+      # l'etape suivante herite du filtre du clone partiel.
+      #
+      # Mesure attendue, a lire dans la duree de l'etape « Set up job » /
+      # checkout de ce workflow avant et apres : c'est la seule facon de la
+      # constater, elle ne se reproduit pas en local. See #11835.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: .github
       - name: Check base age
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

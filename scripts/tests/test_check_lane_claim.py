@@ -2782,3 +2782,147 @@ def test_lint_epic_wide_marker_with_inferred_path_echoes_expected_shape(capsys):
         "The WARN must name the expected machine-clause shape so the lane "
         "can reissue without consulting the docs (#11755 Piste 3)."
     )
+
+
+# --- blocs fences : citer un marqueur n'est pas le poser (2026-08-20) --------
+#
+# Signale par po-2026 sur DM le 2026-08-20, mesure firsthand le meme jour :
+# toutes les formes de citation en debut de ligne matchaient `_MARKER_RE`, y
+# compris le bloc fence -- la forme canonique pour citer mot pour mot. Un
+# arbitrage de coordinateur qui cite le `[CLAIMED]` qu'il tranche le
+# RESSUSCITAIT, avec le `createdAt` (plus recent) du commentaire citeur.
+#
+# Ces tests pinnent les DEUX cotes : la sur-accusation fermee, et les faux
+# negatifs a ne pas ouvrir en la fermant (#10906 blockquote/puce/gras).
+
+
+def test_marker_quoted_in_fenced_block_is_not_an_event():
+    body = (
+        "Arbitrage : le claim ci-dessous est clos, la lane ne repond plus.\n"
+        "\n"
+        "```\n"
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: MyIA.AI.Notebooks/**\n"
+        "```\n"
+    )
+    assert clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z")) == [], (
+        "un marqueur cite dans un bloc fence est de la citation, pas un acte"
+    )
+
+
+def test_control_same_text_unfenced_is_an_event():
+    # Controle positif du test precedent : sans les fences, la MEME ligne doit
+    # rester un evenement. Sans lui, un `_parse_claim_events` casse rendrait
+    # aussi une liste vide et le test ci-dessus passerait sans rien prouver.
+    body = "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: MyIA.AI.Notebooks/**\n"
+    events = clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z"))
+    assert len(events) == 1 and events[0].is_open
+    assert events[0].lane == "myia-po-2024:CoursIA-2"
+
+
+def test_real_marker_outside_the_fence_is_still_read():
+    # Le faux negatif a ne PAS ouvrir : un arbitrage cite le claim adverse
+    # dans une fence ET pose son propre marqueur en clair. Seul le second est
+    # un acte -- mais il doit l'etre.
+    body = (
+        "Le marqueur que je tranche :\n"
+        "\n"
+        "```\n"
+        "[CLAIMED] lane myia-po-2024:CoursIA-2\n"
+        "```\n"
+        "\n"
+        "[OVERRIDE] lane myia-po-2025:CoursIA -- paths: MyIA.AI.Notebooks/**\n"
+    )
+    events = clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z"))
+    assert len(events) == 1, "le marqueur hors fence doit rester lu"
+    assert events[0].is_override and events[0].lane == "myia-po-2025:CoursIA"
+
+
+def test_blockquote_and_bullet_markers_survive_the_fence_fix():
+    # Non-regression #10906 : ces deux formes ont ete explicitement rehabilitees
+    # apres avoir mesure 8 marqueurs legitimes annules par l'ancre stricte.
+    # Le correctif fences ne doit pas les reprendre.
+    for form in ("> [CLAIMED] lane myia-po-2023:CoursIA\n",
+                 "- [CLAIMED] lane myia-po-2023:CoursIA\n",
+                 "**[CLAIMED] lane myia-po-2023:CoursIA**\n"):
+        events = clc._parse_claim_events(comment(form, "2026-08-20T01:00:00Z"))
+        assert len(events) == 1 and events[0].is_open, f"forme annulee a tort : {form!r}"
+
+
+def test_tilde_fence_masks_too():
+    body = "~~~\n[CLAIMED] lane myia-po-2024:CoursIA\n~~~\n"
+    assert clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z")) == []
+
+
+def test_unterminated_fence_masks_to_end_like_github_renders_it():
+    # Une fence non refermee rend TOUT le reste en code cote GitHub : ce qu'un
+    # relecteur voit est du code, l'organe doit voir la meme chose.
+    body = "Extrait :\n```\n[CLAIMED] lane myia-po-2024:CoursIA\n"
+    assert clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z")) == []
+
+
+def test_release_quoting_the_claim_it_settles_does_not_resurrect_it():
+    # Le scenario complet, au niveau du reducteur, dans l'ordre qui MORD : le
+    # coordinateur clot d'abord, puis cite le marqueur clos « pour memoire ».
+    # C'est la forme naturelle d'un arbitrage -- et la citation, etant APRES la
+    # cloture, rouvrait le claim par-dessus elle.
+    #
+    # L'ordre inverse (citation puis marqueur) est sauve par accident : le
+    # marqueur qui suit referme ce que la citation venait d'ouvrir. Un test
+    # ecrit dans cet ordre-la passerait avec ET sans le correctif, donc ne
+    # prouverait rien.
+    claim = comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+        "2026-08-19T10:00:00Z",
+        author="myia-po-2024",
+    )
+    arbitrage = comment(
+        "[RELEASED] lane myia-po-2024:CoursIA-2\n"
+        "\n"
+        "Pour memoire, le marqueur que je clos :\n"
+        "\n"
+        "```\n"
+        "[CLAIMED] lane myia-po-2024:CoursIA-2\n"
+        "```\n",
+        "2026-08-20T01:00:00Z",
+        author="myia-ai-01",
+    )
+    events = clc._sort_events(payload(claim, arbitrage))
+    active, _ = clc.compute_active_claims(events)
+    assert "myia-po-2024:CoursIA-2" not in active, (
+        "la citation verbatim, posee APRES le [RELEASED], a ressuscite le "
+        "claim que l'arbitrage venait de clore -- le defaut signale par "
+        "po-2026 le 2026-08-20"
+    )
+
+
+def test_malformed_marker_lint_ignores_fenced_quotes():
+    # Meme raison cote lint #11239 : citer une ligne mal formee pour EXPLIQUER
+    # qu'elle ne sera pas lue ne doit pas declencher l'avertissement sur son
+    # auteur -- sinon la doc du defaut devient le defaut.
+    body = (
+        "Ta ligne n'a pas ete lue parce qu'il lui manque les crochets :\n"
+        "\n"
+        "```\n"
+        "CLAIMED #11222 -- lane myia-po-2024:CoursIA\n"
+        "```\n"
+    )
+    assert clc._find_malformed_markers(payload(comment(body, "2026-08-20T01:00:00Z"))) == []
+
+
+def test_malformed_marker_lint_still_fires_unfenced():
+    # Controle positif du precedent.
+    body = "CLAIMED #11222 -- lane myia-po-2024:CoursIA\n"
+    found = clc._find_malformed_markers(payload(comment(body, "2026-08-20T01:00:00Z")))
+    assert len(found) == 1 and found[0]["marker"] == "CLAIMED"
+
+
+def test_fence_mask_preserves_offsets_for_verbatim_line_extraction():
+    # Le masque doit conserver la longueur caractere pour caractere : les
+    # offsets des matches sont relus sur le corps ORIGINAL par
+    # `_line_for_match`. Une divergence d'un seul octet decalerait la ligne
+    # verbatim rapportee a l'utilisateur.
+    body = "```\nquoi que ce soit\n```\n[CLAIMED] lane myia-po-2023:CoursIA -- paths: a/**\n"
+    assert len(clc._mask_fenced_blocks(body)) == len(body)
+    events = clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z"))
+    assert len(events) == 1
+    assert events[0].paths == ["a/**"], "la clause paths est relue sur la ligne originale"

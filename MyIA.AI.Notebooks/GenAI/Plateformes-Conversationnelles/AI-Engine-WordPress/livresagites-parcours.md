@@ -113,6 +113,27 @@ Deux conséquences pratiques :
 > charge le site ; le contrôle d'accès réel de cette face vit aux
 > limites de débit.
 
+> **Notebook compagnon (module Client, face pièces jointes).**
+> [`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb)
+> ouvre la cinquième surface de la série — la famille
+> `mwai-ui/v1/files/*`, celle qui donne au chatbot ses pièces
+> jointes : un manuscrit à relire, un extrait audio, une image. Le
+> trait le plus caractéristique y est **mesuré par calcul** : la
+> fiche du fichier porte `created` et `expires`, et la soustraction
+> rend exactement **une heure** — la mémoire fichiers est éphémère
+> par architecture, pas par configuration, un choix lisible dans la
+> réponse même de l'API. Autour : le contrat d'upload découvert par
+> refus (400 « Purpose is required. » nomme le champ obligatoire),
+> l'URL publique servie par la médiathèque WordPress (contenu vérifié
+> octet pour octet), la partition par utilisateur — table
+> `mwai_files`, deux auteurs ne voient ni n'effacent les pièces
+> jointes de l'autre, jusqu'aux sessions anonymes qui ont chacune la
+> leur —, le delete par refus (400 « No valid files to delete » pour
+> `{id}` : le contrat veut `{"files": [refId]}`), et le miroir admin
+> `mwai/v1/openai/files/*` où les mêmes fichiers reviennent, augmentés
+> de `download` et `finetune`. Le fichier téléversé est synthétique
+> et détruit en fin de parcours — cleanup mesuré, total 0 → 1 → 0.
+
 ---
 
 ## Parcours 1 — Copilot pour l'éditeur WordPress

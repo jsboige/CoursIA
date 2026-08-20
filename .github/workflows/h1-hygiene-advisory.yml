@@ -1,0 +1,67 @@
+name: h1-hygiene-advisory
+
+# Advisory (non-blocking) H1 hygiene signal for notebook PRs (#11840).
+# Labels a PR whose ADDED notebooks carry an H1 with inline markdown
+# (**bold**, `code`), emojis, or the redundant "Notebook:" prefix — the
+# defects the catalog now sanitizes at generation (sanitize_title,
+# generate_catalog.py). Never fails a PR: inherited defects are tolerated
+# (same frozen-inheritance stance as pip-leak-guard #6314); only NEW
+# notebooks are flagged so authors write clean H1s going forward.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.ipynb'
+      - 'scripts/notebook_tools/h1_hygiene_scan.py'
+      - '.github/workflows/h1-hygiene-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: h1-hygiene-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  h1-hygiene:
+    name: H1 hygiene advisory (label, non-blocking, #11840)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # base ref must be reachable for the added-files diff
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Scan notebooks ADDED by the PR (advisory)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          ADDED=$(git diff --name-only --diff-filter=A "$BASE_SHA"..HEAD -- '*.ipynb' || true)
+          if [ -z "$ADDED" ]; then
+            echo "No notebooks added by this PR — advisory skips."
+            exit 0
+          fi
+          echo "Added notebooks:"; echo "$ADDED"
+          # Advisory scan: exit 0 always; findings emit a ::warning and label.
+          python scripts/notebook_tools/h1_hygiene_scan.py $ADDED > /tmp/scan.txt || true
+          cat /tmp/scan.txt
+          if grep -q "scan complete: 0 notebook" /tmp/scan.txt; then
+            echo "No H1 hygiene defects in added notebooks."
+            exit 0
+          fi
+          gh label create "h1-hygiene-advisory" \
+            --description "Added notebook(s) carry H1 markdown/emoji/'Notebook:' prefix (#11840, advisory)" \
+            --color "D4AC0D" --force 2>/dev/null || true
+          gh pr edit "$PR_NUMBER" --add-label "h1-hygiene-advisory" 2>/dev/null || true
+          echo "::warning::H1 hygiene advisory: see scan output above (#11840)"
