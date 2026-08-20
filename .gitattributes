@@ -31,6 +31,10 @@ translations/**/*.csv text eol=lf
 # detecte un diff byte-level sans substance reelle (meme motif que L268 +
 # twin_pairs.d/*.yaml). `eol=lf` rend l'invariant structurel.
 scripts/notebook_tools/forensic_results.json text eol=lf
+# Quarto site config (#11109) : _quarto.yml est consomme par Quarto CLI (Linux
+# dans CI, local Windows). CRLF le brise silencieusement (parsing YAML + render
+# pages github.io). Meme motif L268.
+_quarto.yml text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
