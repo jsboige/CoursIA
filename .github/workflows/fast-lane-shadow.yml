@@ -47,14 +47,14 @@ concurrency:
 
 jobs:
   fast-lane:
-    name: "Fast lane (ombre) -- 5 gardes, 1 checkout"
+    name: "Fast lane (ombre) -- 9 gardes, 1 checkout"
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
       # `fetch-depth: 0` est requis ici pour la meme raison que dans les
       # workflows d'origine (la base doit etre joignable pour les deltas) --
-      # mais il est paye UNE fois pour les cinq gardes au lieu de cinq fois.
+      # mais il est paye UNE fois pour les neuf gardes au lieu de neuf fois.
       # Le resserrer est un sujet distinct, suivi dans #11835.
       - uses: actions/checkout@v4
         with:
@@ -63,6 +63,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      # Dependances requises par les detecteurs (pyyaml pour le scan de
+      # closure markdown-rendering, Pillow pour scan_md_hierarchy). Bare
+      # setup-python ne fournit pas pyyaml ; sans install, le scan de
+      # closure se traduit en ImportError et la cause est reportee a tort
+      # comme un _quarto.yml invalide (issue #11850).
+      - name: "Installer dependances detecteurs (pyyaml, Pillow)"
+        run: pip install --quiet pyyaml Pillow
 
       - name: "Gardes de la voie rapide (verdicts en check-runs nommes)"
         env:

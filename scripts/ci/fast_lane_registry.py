@@ -38,6 +38,10 @@ class Guard:
                 relatifs a la racine). Vide = le garde tourne toujours.
                 Reproduit le bloc `paths:` du workflow d'origine -- la
                 difference est qu'ici c'est du code, donc testable.
+                Si `iterates_paths=True`, le garde recoit la liste des
+                fichiers qui matchent ces globs et est execute UNE FOIS PAR
+                fichier (le placeholder `{changed_paths}` dans `argv` est
+                alors substitue par un chemin a la fois).
     argv        Commande a executer, deja decoupee (pas de shell : un shell
                 introduirait une seconde couche de quoting sur des chemins
                 qui viennent du diff).
@@ -74,13 +78,14 @@ class Guard:
     needs_base: bool = False
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
+    iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
 
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
 # ---------------------------------------------------------------------------
-# Lot pilote (#11835). Cinq gardes choisis pour couvrir les quatre formes que
-# le moteur doit savoir traiter, et non pour leur nombre :
+# Lot pilote (#11835). Neuf gardes choisis pour couvrir les formes que le
+# moteur doit savoir traiter, et non pour leur nombre :
 #
 #   - banner-guard        : bloquant, scan global, sans base
 #   - pip-leak-guard      : bloquant, delta HEAD-vs-base
@@ -89,6 +94,10 @@ NOTEBOOK_GLOBS = ["**/*.ipynb"]
 #   - prose-counts-guard  : advisory, diff-range direct
 #   - perimeter-review    : bloquant, appelle l'API GitHub (a besoin de
 #                           GH_TOKEN, pas seulement de l'arbre)
+#   - bare-cross-dir-load-gate : bloquant, EXECUTION PAR FICHIER (Pattern 1)
+#   - notebook-navlink-check   : bloquant, scan global
+#   - notebook-interp-positioning-guard : bloquant, scan global baselined
+#   - markdown-rendering-guard : bloquant, scan global baselined
 #
 # Un lot homogene aurait valide le moteur sur un seul cas de figure -- et un
 # lot entierement vert serait indiscernable d'un moteur debranche.
@@ -145,6 +154,67 @@ PILOT: list[Guard] = [
         paths=[],                # sans filtre : porte sur le corps de la PR
         argv=["python", "scripts/check_pr_perimeter.py", "{pr_number}",
               "--scan-thread"],
+        blocking=True,
+    ),
+    # -- extension pilote (5 -> 9) ------------------------------------------
+    # Pattern 1 : execute une fois par chemin matchant (boucle bash d'origine
+    # absorbee). Le placeholder `{changed_paths}` est substitue par un chemin
+    # a la fois ; le verdict agrege est failure si l'une des iterations
+    # echoue avec un code `failure` (rc=1 pour les detecteurs deterministes).
+    Guard(
+        name="bare-cross-dir-load-gate",
+        source="bare-cross-dir-load-gate.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/detect_bare_cross_dir_load.py",
+            ".github/workflows/bare-cross-dir-load-gate.yml",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_bare_cross_dir_load.py",
+            "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+    ),
+    Guard(
+        name="notebook-navlink-check",
+        source="notebook-navlink-check.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_notebook_navlinks.py",
+            "scripts/tests/baseline_nb_navlinks.json",
+            ".github/workflows/notebook-navlink-check.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
+              "--check"],
+        blocking=True,
+    ),
+    Guard(
+        name="notebook-interp-positioning-guard",
+        source="notebook-interp-positioning.yml",
+        paths=NOTEBOOK_GLOBS + [
+            "scripts/notebook_tools/check_interp_positioning.py",
+            "scripts/notebook_tools/interp_positioning_baseline.json",
+            ".github/workflows/notebook-interp-positioning.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/check_interp_positioning.py",
+              "--check",
+              "--baseline", "scripts/notebook_tools/interp_positioning_baseline.json"],
+        blocking=True,
+    ),
+    Guard(
+        name="markdown-rendering-guard",
+        source="markdown-rendering-guard.yml",
+        paths=[
+            "**/*.ipynb",
+            "_quarto.yml",
+            "scripts/notebook_tools/detect_markdown_rendering.py",
+            "scripts/notebook_tools/scan_md_hierarchy.py",
+            "scripts/notebook_tools/markdown_rendering_baseline.json",
+            ".github/workflows/markdown-rendering-guard.yml",
+        ],
+        argv=["python", "scripts/notebook_tools/detect_markdown_rendering.py",
+              "--check",
+              "--baseline",
+              "scripts/notebook_tools/markdown_rendering_baseline.json"],
         blocking=True,
     ),
 ]
