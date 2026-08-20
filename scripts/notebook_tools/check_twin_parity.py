@@ -604,6 +604,26 @@ def update_pair(
     # un faux audit au sens du design-gate #9399 critere 2.
     latest = _latest_audit(pair)
     is_noop = bool(latest) and _shas_match(latest, audit)
+    # Cas d'orphelin par squash (#11919) : un squash-merge peut re-hasher le
+    # blob sans toucher le contenu du notebook. Les `python_sha`/`csharp_sha`
+    # (git blob, legacy) enregistres ne sont alors PLUS ancetres de main, mais
+    # les `content_*_sha` sont identiques (le contenu est intact). Le no-op
+    # detection ci-dessus verrait « rien n'a change pedagogiquement » -- mais
+    # `--verify-recorded-sha` detecterait un MISMATCH sur le git blob SHA, et
+    # laisser cette paire en orphelin signifierait qu'aucun `--update` ne peut
+    # la ressoumettre au HEAD courant (le rebaseline necessaire est uniquement
+    # sur les git blob SHA, pas sur le contenu).
+    #
+    # Discrimination : sur un no-op, comparer les git blob SHA du recorded
+    # contre le HEAD. Si au moins un diverge, c'est un orphelin par squash
+    # -> ce n'est PAS un no-op, le rebaseline doit corriger les git blob SHA.
+    if is_noop and latest:
+        rec_py = latest.get("python_sha")
+        rec_cs = latest.get("csharp_sha")
+        if (rec_py is not None and cur_py is not None and rec_py != cur_py) or (
+            rec_cs is not None and cur_cs is not None and rec_cs != cur_cs
+        ):
+            is_noop = False
     return audit, cur_py, is_noop
 
 
