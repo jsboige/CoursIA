@@ -91,6 +91,23 @@ Pour verifier l'acces authentifie (chatbots, completions), executer
 `presenter-ai-engine-par-son-api.ipynb` : c'est exactement ce que font ses
 cellules 3 a 6, avec l'application password lu depuis `.env`.
 
+## Maintenance
+
+### Upload de fichiers : permission du dossier uploads
+
+Si un appel a `mwai-ui/v1/files/upload` rend 500 « Could not move
+the file. », le dossier `wp-content/uploads/` du conteneur n'appartient
+pas a WordPress (le volume monte peut etre cree par root au premier
+demarrage) :
+
+```bash
+docker exec valmont-wordpress-1 sh -c "chown -R www-data:www-data /var/www/html/wp-content/uploads"
+```
+
+Apres quoi l'upload passe (verifie sur l'instance de reference). Le
+notebook fichiers de la serie pose cette precondition dans ses
+prerequis.
+
 ## Nettoyage
 
 ```powershell

@@ -129,6 +129,40 @@ def run_argv(argv: list[str], ctx: dict[str, str]) -> tuple[int, str]:
     )
 
 
+def expand_paths_token(argv: list[str], paths: list[str]) -> list[str]:
+    """Remplace `{changed_paths}` par un chemin a la fois ; les autres
+    tokens restent inchanges. Si le placeholder n'est pas present, c'est
+    un no-op (la fonction rend l'argv inchange)."""
+    if "{changed_paths}" not in argv:
+        return argv
+    out: list[str] = []
+    for token in argv:
+        if token == "{changed_paths}":
+            out.extend(paths)
+        else:
+            out.append(token)
+    return out
+
+
+def run_iter(argv_template: list[str], paths: list[str],
+             ctx: dict[str, str]) -> tuple[int, str]:
+    """Execute un garde Pattern 1 (boucle par chemin) en aggregeant un rc
+    = max(rc_par_iteration) et une log concatenee. Si `paths` est vide,
+    rend un rc=0 no-op (log explicite) -- un CI sans chemin est un vert
+    silencieux, pas un garde qui a travaille."""
+    if not paths:
+        return 0, "[fast-lane] iterates_paths vide : aucun fichier a examiner"
+    rc_agg = 0
+    chunks: list[str] = []
+    for path in paths:
+        local_ctx = dict(ctx, changed_paths=path)
+        rc, log = run_argv(argv_template, local_ctx)
+        chunks.append(f"--- {path} ---\n{log}")
+        if rc > rc_agg:
+            rc_agg = rc
+    return rc_agg, "\n\n".join(chunks)
+
+
 def payload_of(log: str) -> str:
     """Sortie standard seule, sans l'en-tete ajoute par `run_argv`."""
     parts = log.split("\n\n", 1)
@@ -235,6 +269,15 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- phase 1 : HEAD, aucun garde ne mute l'arbre -------------------------
     for guard in selected:
+        if guard.iterates_paths:
+            arg_paths = sorted({f for f in changed
+                                for p in guard.paths
+                                if path_matches(f, p)})
+            rc, log = run_iter(guard.argv, arg_paths, ctx)
+            results[guard.name] = (rc, log)
+            print(f"[fast-lane] phase 1 {guard.name} (iter sur {len(arg_paths)} "
+                  f"fichier(s)) : exit {rc}")
+            continue
         rc, log = run_argv(guard.argv, ctx)
         if guard.delta_argv:
             dest = tmp / f"{guard.name}.head.json"
