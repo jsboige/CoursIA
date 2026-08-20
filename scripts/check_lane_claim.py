@@ -123,6 +123,71 @@ _MALFORMED_MARKER_RE = re.compile(
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
+
+
+def _blank_keeping_shape(line: str) -> str:
+    """Meme longueur, memes fins de ligne, tout le reste efface."""
+    return "".join(c if c in "\r\n" else " " for c in line)
+
+
+def _mask_fenced_blocks(body: str) -> str:
+    """Blanchit les blocs de code fences -- ce que GitHub rend comme du CODE.
+
+    Signale par po-2026 le 2026-08-20, mesure firsthand le meme jour : citer un
+    marqueur VERBATIM dans un commentaire d'arbitrage le RESSUSCITE. Toutes les
+    formes de citation en debut de ligne matchent `_MARKER_RE` -- blockquote,
+    puce, gras, et le bloc fence, qui est precisement la forme canonique pour
+    citer un marqueur mot pour mot. L'evenement est alors attribue a la lane
+    nommee dans la citation, avec le `createdAt` du commentaire CITEUR, donc
+    plus recent : l'arbitrage qui devait clore un claim le rouvre.
+
+    Consequence mesuree : un `[OVERRIDE]` de ai-01 qui cite le `[CLAIMED]`
+    qu'il arbitre reinstalle ce claim par-dessus son propre verdict.
+
+    Le remede est le meme principe que le correctif YAML de #11881 quelques
+    heures plus tot : scanner ce que le CONSOMMATEUR rend, pas les octets
+    bruts. Un bloc fence est de la citation par construction -- GitHub ne
+    l'interprete jamais comme un acte, l'organe non plus.
+
+    Portee volontairement etroite -- les FENCES seulement :
+
+    - le blockquote `> [CLAIMED]` et la puce `- [CLAIMED]` restent des
+      marqueurs valides : #10906 les a explicitement rehabilites apres avoir
+      mesure 8 marqueurs legitimes annules par l'ancre stricte. Les exclure
+      ici rouvrirait ce faux negatif-la ;
+    - le bloc indente a 4 espaces n'est pas masque : l'indentation appartient
+      aussi aux listes imbriquees, ou les marqueurs sont legitimes.
+
+    Une fence non refermee masque jusqu'a la fin -- c'est exactement ce que
+    GitHub affiche, donc ce qu'un relecteur humain voit.
+
+    La longueur est preservee caractere pour caractere : les offsets des
+    matches restent valides sur le corps ORIGINAL, que `_line_for_match`
+    continue de lire pour extraire la ligne verbatim.
+    """
+    out: list[str] = []
+    fence: str | None = None
+    for line in body.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if fence is None:
+            opener = None
+            for ch in ("`", "~"):
+                if stripped.startswith(ch * 3):
+                    opener = ch * (len(stripped) - len(stripped.lstrip(ch)))
+                    break
+            if opener is None:
+                out.append(line)
+            else:
+                fence = opener
+                out.append(_blank_keeping_shape(line))
+        else:
+            out.append(_blank_keeping_shape(line))
+            tail = stripped.rstrip()
+            if tail.startswith(fence) and not tail.strip(fence[0]):
+                fence = None
+    return "".join(out)
+
+
 _OPEN = {"CLAIMED"}
 _CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
@@ -323,7 +388,10 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
     created_at = comment.get("createdAt")
     url = comment.get("url")
     events: list[ClaimEvent] = []
-    for m in _MARKER_RE.finditer(body):
+    # Les blocs fences sont de la citation, jamais un acte (voir
+    # `_mask_fenced_blocks`). Le masque preserve les longueurs, donc les
+    # offsets restent valides sur `body` -- que `_line_for_match` relit.
+    for m in _MARKER_RE.finditer(_mask_fenced_blocks(body)):
         marker = m.group(1).upper()
         line = _line_for_match(body, m)
         if marker in _OPEN:
@@ -997,7 +1065,10 @@ def _find_malformed_markers(payload: dict) -> list[dict]:
     for c in payload.get("comments", []):
         body = c.get("body") or ""
         author = (c.get("author") or {}).get("login")
-        for m in _MALFORMED_MARKER_RE.finditer(body):
+        # Meme raison que dans `_parse_claim_events` : une ligne citee dans un
+        # bloc fence n'est pas une tentative de claim mal formee, c'est une
+        # citation. La signaler enverrait son auteur corriger une prose saine.
+        for m in _MALFORMED_MARKER_RE.finditer(_mask_fenced_blocks(body)):
             line = _line_for_match(body, m)
             found.append({
                 "marker": m.group(1).upper(),
