@@ -123,18 +123,12 @@ layout: section
 <img src="./images/img_006.png" class="h-24 mx-auto mt-4" alt="Repères historiques" />
 
 
-**État de l'art**
+<div class="flex gap-4 items-center justify-center mt-2">
+  <img src="./images/img_007.jpg" class="h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
+  <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
+</div>
 
-- 1997 : Deep Blue (échecs)
-- 2000s : Prouveurs, planification
-- 2007 : Jeu de dames résolu
-- 2010s : Explosion deep-learning
-  - 2014 : GANs
-  - 2016 : AlphaGo
-- NLP : Transformers, LLMs
-
-<img src="./images/img_007.jpg" class="absolute top-[340px] left-[40px] h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
-<img src="./images/img_008.jpg" class="absolute top-[345px] left-[260px] h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
+> **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
 
 
@@ -210,7 +204,7 @@ layout: section
 
 <img src="./images/img_010.png" class="w-[260px] max-w-full max-h-[220px] object-contain" />
 
-<img src="./images/img_011.png" class="absolute top-[350px] right-[20px] w-[360px] max-w-full max-h-[260px] object-contain" alt="Agent réflexe" />
+<img src="./images/img_011.png" class="absolute top-[290px] right-[20px] w-[360px] max-w-full max-h-[240px] object-contain" alt="Agent réflexe" />
 
 
 
