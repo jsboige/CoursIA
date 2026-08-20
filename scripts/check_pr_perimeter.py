@@ -331,7 +331,24 @@ COMPARISON_PREFIX = re.compile(r"[<>=≤≥]\s*$")
 # what the diffstat measured (a true assertion: "+307 lignes / −0 sur 2
 # fichiers").
 LOCATIVE_PREP = re.compile(
-    r"\b(?:sur|dans|across|on)\s+(?:les\s+|le\s+|la\s+|the\s+)?\d+\s*(?:fichiers?|files?)\b",
+    r"\b(?:sur|dans|across|on)\s+(?:les\s+|le\s+|la\s+|the\s+)?\d+\s*"
+    r"(?:fichiers?|files?|touches)\b",
+    re.IGNORECASE,
+)
+# A count qualifying files as NOT changed ("91 fichiers inchanges", "2 fichiers
+# non modifies", "73 files unchanged") is the NEGATION of a diff -- the author
+# is reporting what the diff does NOT touch, which the guard cannot confront
+# with the effective file list (which lists what the diff DOES touch). Issue
+# #11800: the founder body of #11775 l.31 ("91 fichiers inchanges sur 2
+# touches -- scope delta confirme") was blocked by the COUNT_CLAIM regex
+# matching "91 fichiers" before the negation word was parsed. Fix: exempt the
+# negated-diff shape syntactically. The negated-diff attestation is a property
+# of the specific count that carries the negation word, NOT of the whole line
+# -- otherwise a "5 fichiers modifies, 91 fichiers inchanges" line would have
+# its blocking 5-files count swept under the negated-diff umbrella of 91.
+NEGATED_DIFF_TAIL = re.compile(
+    r"^\s*(?:inchang[eé]s?|non[\s-]+modifi[eé]s?|non[\s-]+touch[eé]s?"
+    r"|intacts?|untouched|unchanged|unmodified)\b",
     re.IGNORECASE,
 )
 DIFFSTAT_NEIGHBORHOOD = re.compile(
@@ -341,7 +358,16 @@ DIFFSTAT_NEIGHBORHOOD = re.compile(
 
 
 def _has_strong_scope(low: str) -> bool:
-    return any(w in low for w in STRONG_SCOPE_WORDS)
+    # Whole-word match -- "change" must not fire on "inchanges" (#11800 FN
+    # vector: the negated-diff count's tail is "inchanges" / "non modifies"
+    # etc., which carries "change" as a substring of "inchanges" via the
+    # plain `in` test, blocking the per-match NEGATED_DIFF_TAIL exemption).
+    # The 8 STRONG_SCOPE_WORDS are all standalone vocabulary in French/English;
+    # a regex boundary costs nothing and removes a class of false positives.
+    return any(
+        re.search(rf"\b{re.escape(w)}\b", low, re.IGNORECASE)
+        for w in STRONG_SCOPE_WORDS
+    )
 
 
 def _count_is_incidental(line: str) -> bool:
@@ -372,7 +398,16 @@ def _count_is_incidental(line: str) -> bool:
             continue  # "< N fichiers" cites a threshold
         if LOCATIVE_PREP.search(line):
             continue  # scan scope: "grep ... sur N fichiers"
+        # #11800: per-count negation tail-check. The match's tail is the
+        # segment immediately after the count -- if it starts with a
+        # negation word, this specific count is an attestation of
+        # unchanged files, not a perimeter claim. Scope is per-COUNT so
+        # that a line like "5 fichiers modifies, 91 fichiers inchanges"
+        # keeps its blocking 5-files count (the "modifies" tail is not a
+        # negation word).
         after = line[m.end():]
+        if NEGATED_DIFF_TAIL.match(after):
+            continue
         mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
         if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
             continue  # "N fichiers MP3/scratch/restants/..." -- kind or remainder
