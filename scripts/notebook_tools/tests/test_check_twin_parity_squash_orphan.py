@@ -74,29 +74,56 @@ def _commit(repo: Path, rel: str, nb: dict, msg: str) -> None:
 def _squash_replace_blob(repo: Path, rel: str, new_content: bytes) -> str:
     """Simule un squash-merge qui re-hashe le blob sans changer le contenu.
 
-    Truc : on commit un blob DIFFERENT (meme contenu textuel apres json.dumps)
-    qu'on rebascule ensuite. Le SHA change, le contenu non. C'est le scenario
-    fondateur : un agent re-commit en deux etapes distinctes, le SHA git blob
-    final n'est pas celui de l'attestation d'origine, alors que le contenu
-    est identique.
+    Scenario fondateur #11919 : le recorded pointe sur un blob qui N'EST
+    PLUS accessible depuis HEAD (orphelin par squash). On simule cela en :
+      1. capturant le blob v1 (le recorded d'origine),
+      2. creant une branche ephemere qui pose un blob v2 (meme contenu
+         didactique, juste un champ metadata ajoute qui ne touche pas aux
+         cellules -> content_sha reste identique, mais le git blob SHA change),
+      3. detruisant cette branche + reflog expire + gc pour rendre le blob
+         v2 inaccessible depuis HEAD.
 
-    Retourne le NOUVEAU blob SHA.
+    Apres : HEAD contient toujours le blob v1, mais le registre pointe sur
+    le blob v2 (orphelin). Discrimination : `_blob_ancestor_in(HEAD, v2)
+    == False` -> ce n'est PAS un no-op.
+
+    Retourne le blob v2 (recorded sera v2, calcule sera v1).
     """
-    # 1. Re-commit avec un padding metadata (le contenu didactique reste
-    #    identique : `_nb(source=...)` produit un notebook stable cote `cells`).
-    #    On usa de `_commit` normal pour poser un SHAsuch que le git blob SHA
-    #    change : modifier la date ou ajouter un champ metadata distinct.
-    #    Ici on ajoute une clef metadata differente (kernelspec.display_name
-    #    change) : le content_sha (metadata-immune) reste identique, mais le
-    #    git blob SHA change.
+    blob_v1 = ctp._git_blob_sha(repo, rel)
+    # Creer une branche ephemere qui pose un blob distinct.
+    subprocess.run(["git", "checkout", "-q", "-b", "_ephemeral_orphan"],
+                   cwd=repo, check=True, capture_output=True)
+    # Modifier le notebook en ajoutant un champ metadata qui ne touche pas
+    # aux cellules -> content_sha reste stable, mais git blob SHA change.
     p = repo / rel
     nb = json.loads(p.read_text(encoding="utf-8"))
-    nb["metadata"]["kernelspec"]["display_name"] = "Python 3 (squash)"
+    md = dict(nb.get("metadata", {}))
+    md["_squash_orphan_marker"] = "v2-orphaned-on-purpose"
+    nb["metadata"] = md
     p.write_text(json.dumps(nb), encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-qm", "squash repr"], cwd=repo,
+    subprocess.run(["git", "commit", "-qm", "ephemeral feat"], cwd=repo,
                    check=True, capture_output=True)
-    return ctp._git_blob_sha(repo, rel)
+    blob_v2 = ctp._git_blob_sha(repo, rel)
+    assert blob_v2 != blob_v1, "le blob SHA aurait du changer apres le commit ephemere"
+    # Detruire la branche ephemere + reflog + gc pour rendre v2 orphelin.
+    subprocess.run(["git", "checkout", "-q", "-"], cwd=repo,
+                   check=True, capture_output=True)
+    subprocess.run(["git", "branch", "-D", "_ephemeral_orphan"], cwd=repo,
+                   check=True, capture_output=True)
+    subprocess.run(["git", "reflog", "expire", "--expire=now", "--all"],
+                   cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "gc", "--prune=now"], cwd=repo,
+                   check=True, capture_output=True)
+    # Verifier que v2 est bien orphelin depuis HEAD et v1 accessible.
+    assert not ctp._blob_ancestor_in(repo, blob_v2), (
+        f"le blob v2 {blob_v2[:12]} aurait du etre orphelin apres le gc, "
+        f"mais `_blob_ancestor_in` le voit encore."
+    )
+    assert ctp._blob_ancestor_in(repo, blob_v1), (
+        f"le blob v1 {blob_v1[:12]} aurait du rester accessible depuis HEAD"
+    )
+    return blob_v2
 
 
 def _make_pair_yaml_with_content_sha(
@@ -144,8 +171,11 @@ def test_squash_orphan_mismatch_then_noop_defect(tmp_path):
     assert py_blob_v1 and cs_blob_v1 and py_content and cs_content
 
     # Simuler un squash-merge : le contenu didactique reste le meme, mais le
-    # blob SHA git change (sur le notebook python ; le csharp est laisse tel
-    # quel pour ne declencher qu'un seul cote -- adapte au cas fondateur).
+    # blob SHA git change. Apres la simulation, HEAD pointe toujours sur
+    # py_blob_v1, mais le blob v2 (orphelin) est reference par le registre
+    # recorded -- reproduisant le cas fondateur Probas-13 Crowdsourcing ou
+    # le contenu est intact mais le git blob SHA enregistre pointe sur un
+    # blob inaccessible.
     new_py_blob = _squash_replace_blob(repo, py_rel, b"")
     assert new_py_blob != py_blob_v1, "le blob SHA aurait du changer"
     # content_sha dépend uniquement des cellules -> identiques avant/apres.
@@ -153,13 +183,22 @@ def test_squash_orphan_mismatch_then_noop_defect(tmp_path):
         "le content_sha est cense etre inchange apres un squash sans modif "
         "pedagogique"
     )
+    # HEAD est reste sur v1 (la branche ephemere n'a pas ete fusionnee) :
+    cur_py_at_HEAD = ctp._git_blob_sha(repo, py_rel)
+    assert cur_py_at_HEAD == py_blob_v1, (
+        f"HEAD aurait du rester sur v1 ({py_blob_v1[:12]}), "
+        f"mais pointe sur {cur_py_at_HEAD[:12]}"
+    )
 
-    # Ecriture du registre avec les SHAs recorded (pre-squash).
+    # Ecriture du registre : recorded pointe sur le blob ORPHELIN (v2), pas
+    # sur HEAD (v1). C'est precisement le cas fondateur : le contenu est
+    # identique, mais le git blob SHA enregistre n'est plus ancre d'aucun
+    # commit accessible.
     pairs_dir = repo / "twin_pairs.d"
     pairs_dir.mkdir()
     _make_pair_yaml_with_content_sha(
         pairs_dir, "Probas-13 Crowdsourcing", py_rel, cs_rel,
-        py_blob_v1, cs_blob_v1, py_content, cs_content,
+        new_py_blob, cs_blob_v1, py_content, cs_content,
     )
 
     # 1. --verify-recorded-sha detecte MISMATCH sur python_sha (le recorded
@@ -178,13 +217,23 @@ def test_squash_orphan_mismatch_then_noop_defect(tmp_path):
     #    on valide le bind --update ne refuse plus.
     pair = ctp.load_registry(pairs_dir)[0]
     audit, cur_py, is_noop = ctp.update_pair(repo, pair)
-    assert audit["python_sha"] == new_py_blob, (
-        "le rebaseline devrait calculer le git blob SHA du HEAD (post-squash)"
+    # HEAD porte v1 (= py_blob_v1). Le recorded pointait sur v2 (orphelin).
+    # Le rebaseline doit calculer cur_py = HEAD = v1 et lever is_noop=False
+    # (le recorded v2 est orphelin -- le rebaseline ecrase le recorded avec
+    # le SHA accessible, restaurant la coherence).
+    assert cur_py == py_blob_v1, (
+        f"update_pair aurait du calculer cur_py = HEAD = v1 "
+        f"({py_blob_v1[:12]}), a obtenu {cur_py[:12]}"
+    )
+    assert audit["python_sha"] == py_blob_v1
+    assert audit["content_python_sha"] == py_content, (
+        "content_sha doit etre preserve par update_pair"
     )
     assert is_noop is False, (
         "un orphelin par squash devrait PAS etre un no-op : le contenu "
-        "est identique mais le git blob SHA diverge, ce qui est precisement "
-        "la classe de cas que le fix #11919 doit debloquer"
+        "est identique mais le git blob SHA recorded est orphelin (v2), "
+        "ce qui est precisement la classe de cas que le fix #11919 doit "
+        "debloquer via reachability check (_blob_ancestor_in)"
     )
 
 

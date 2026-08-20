@@ -330,6 +330,44 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     return None
 
 
+def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool:
+    """Vrai si `blob_sha` est accessible depuis `ref` (= un commit ancetre le reference).
+
+    Discrimination cle du fix #11919 : un squash-merge peut re-hasher le git
+    blob SHA d'un notebook sans toucher le contenu didactique. Le recorded
+    `python_sha`/`csharp_sha` pointe alors sur un blob qui n'est PLUS ancre
+    d'aucun commit accessible (orphelin par squash). Mais un cas
+    distinct -- metadata-only drift (Sudoku-8/14 BDD, design-gate #9399
+    critere 2) -- produit lui aussi un recorded blob SHA divergent de HEAD
+    (le `_git_blob_sha` actuel change quand `nb["metadata"]` change, meme si
+    `content_*_sha` est preserve). Les deux cas ont la MEME signature sur
+    `rec_X != cur_X`, mais le deuxieme n'est PAS un orphelin : son blob
+    reste accessible (il est reference par un commit ancetre de HEAD, juste
+    pas le commit HEAD lui-meme).
+
+    La discrimination : `git rev-list --objects <ref>` enumere tous les blobs
+    reference par les commits accessibles depuis `<ref>`. Si `blob_sha` y
+    figure, c'est un metadata-only drift (pas un orphelin). Sinon, c'est un
+    orphelin par squash : le rebaseline doit le corriger.
+
+    Cout : `rev-list --objects HEAD` parcourt tout l'historique ; le defacto
+    full scan reste borne par la taille du depot (~5-10s sur CoursIA). Pour
+    un seul test is_noop par paire, c'est acceptable. Une optimisation
+    ulterieure (cache par ref+blob) n'est pas justifiee a c.409.
+    """
+    if not blob_sha or len(blob_sha) != 40:
+        return False
+    r = subprocess.run(
+        ["git", "rev-list", "--objects", ref],
+        capture_output=True, text=True, cwd=str(repo_root),
+    )
+    if r.returncode != 0:
+        return False
+    # Chaque ligne de `rev-list --objects` est soit "<commit_sha>" soit
+    # "<commit_sha> <blob_sha>". On grep simplement le blob SHA sur la sortie.
+    return blob_sha in r.stdout
+
+
 def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
     """SHA-256 canonique du notebook SANS sa metadonnee de niveau carnet (#9399 volet c).
 
@@ -614,15 +652,20 @@ def update_pair(
     # la ressoumettre au HEAD courant (le rebaseline necessaire est uniquement
     # sur les git blob SHA, pas sur le contenu).
     #
-    # Discrimination : sur un no-op, comparer les git blob SHA du recorded
-    # contre le HEAD. Si au moins un diverge, c'est un orphelin par squash
-    # -> ce n'est PAS un no-op, le rebaseline doit corriger les git blob SHA.
+    # Discrimination : sur un no-op, demander a git si le recorded blob SHA
+    # est accessible depuis HEAD (`_blob_ancestor_in`). Un vrai orphelin
+    # (squash) N'EST PAS accessible ; un metadata-only drift l'est (le blob
+    # est reference par un commit ancetre de HEAD, juste pas HEAD lui-meme).
+    # C'est la cle qui distingue les deux cas ayant pourtant la meme
+    # signature `rec_X != cur_X` -- sans cette discrimination, le fix
+    # violerait le design-gate #9399 critere 2 (metadata-only drift DOIT
+    # rester no-op, Sudoku-8/14 BDD du 2026-08-04).
     if is_noop and latest:
         rec_py = latest.get("python_sha")
         rec_cs = latest.get("csharp_sha")
-        if (rec_py is not None and cur_py is not None and rec_py != cur_py) or (
-            rec_cs is not None and cur_cs is not None and rec_cs != cur_cs
-        ):
+        py_orphan = rec_py is not None and not _blob_ancestor_in(repo_root, rec_py)
+        cs_orphan = rec_cs is not None and not _blob_ancestor_in(repo_root, rec_cs)
+        if py_orphan or cs_orphan:
             is_noop = False
     return audit, cur_py, is_noop
 
