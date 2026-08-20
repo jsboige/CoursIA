@@ -155,6 +155,7 @@ jobs:
   # job is ever added, which is exactly where the conway copy went stale
   # (it reported the audit job's module as a blind spot). See #8782.
   target-coverage:
+    name: knot target-coverage
     runs-on: ubuntu-latest
     if: always()
     steps:

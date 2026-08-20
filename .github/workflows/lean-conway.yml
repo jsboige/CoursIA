@@ -251,6 +251,7 @@ jobs:
   # false about precisely the module the audit job inspects. A drift-detector
   # that keeps its own copy of the list detects everyone's drift but its own.
   target-coverage:
+    name: conway target-coverage
     runs-on: ubuntu-latest
     if: always()
     steps:
