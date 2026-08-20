@@ -1184,6 +1184,37 @@ def main(argv=None) -> int:
                 "OU --yes-all-pairs. Le defaut '--update' seul reecrirait le last_audit "
                 "de TOUTES les paires du registre, ce qui masque des DRIFTs legitimes "
                 "(cf issue #8508 + lecons L963/L974).")
+    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
+    # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
+    # final du notebook -- au commit du merge, les notebooks obtiennent de
+    # nouveaux blobs, et l'attestation fraichement ecrite est deja DRIFT avant
+    # meme que la CI ne la voie. Variante operationnelle de #8957 (« attester
+    # en DERNIER ») : le commit du merge lui-meme deplace le blob apres
+    # attestation. Refus : on commit d'abord, puis on re-atteste.
+    if args.update:
+        try:
+            if args.repo_root:
+                repo_root_for_state = Path(args.repo_root)
+            else:
+                repo_root_for_state = _repo_root()
+        except SystemExit:
+            repo_root_for_state = None
+        if repo_root_for_state is not None:
+            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
+            # depot est en cours de merge/rebase interactif. Le check precede
+            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
+            # deja connue (mais apres args.repo_root parse, qui peut etre override
+            # dans les tests --repo-root sur tmp_path).
+            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+                r = subprocess.run(
+                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    capture_output=True, text=True, cwd=str(repo_root_for_state),
+                )
+                if r.returncode == 0:
+                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
+                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
+                            f"(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:
