@@ -14,9 +14,22 @@
       csharp_sha: 7d0fca43674a5478f7a96de1af75ffe165005a2f
       content_python_sha: abc64ad748b456153cff4fe6af3a4b8017a11f1a053dec9f4c0fd3655f409de2
       content_csharp_sha: beb9eb6d1f081e52a33cbe880ae0659ac31a65ef2468a4439f4113f0c77a65cd
+    - date: "2026-08-20"
+      by: myia-po-2024:CoursIA
+      python_sha: e536cc4c95af84a5131a97c55b693ee2d5c4f37d
+      csharp_sha: ed58f8768b32326e363e07830feeac9c7fdae212
+      content_python_sha: abc64ad748b456153cff4fe6af3a4b8017a11f1a053dec9f4c0fd3655f409de2
+      content_csharp_sha: f63bd5e2fbb49b05ef259fbd36a56e72b85757668b96befbf47ec95d7d4b5e70
+    - date: "2026-08-20"
+      by: myia-po-2024:CoursIA
+      python_sha: 9db93fa4f8c00d91c1f13abe51142fb3a6abb4f2
+      csharp_sha: ed58f8768b32326e363e07830feeac9c7fdae212
+      content_python_sha: 0a46147ef60e8716d05fbbb7fd658820d157beaefbaadc3468f6411bc835ff0e
+      content_csharp_sha: f63bd5e2fbb49b05ef259fbd36a56e72b85757668b96befbf47ec95d7d4b5e70
   bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = numpy + matplotlib + module local `cooperative_games` + itertools (enumeration des coalitions/permutations, 54 cellules dont 25 code). C# = BCL .NET 9 pur (System.Linq, System.Collections.Generic, 0 NuGet), calcul de Shapley from-scratch via permutations Linq (34 cellules dont 13 code). Verdict RECOVERABLE-LOCAL : socle pedagogique paritable (Shapley 1953, axiomes efficacite/symetrie/joueur nul/additivite, glove game canonique). L'asymetrie reside dans la couverture -- Python dispose d'un module local dedie + visualisations matplotlib + proprietes additionnelles des jeux cooperatifs ; C# se concentre sur le glove game et le calcul de Shapley from-scratch. Aucune lib SOTA partagee (numpy vs System.Linq from-scratch). parity_level: semantic preserve."
+  bridge_verdict_reason: "Python = numpy + matplotlib + module local `cooperative_games` + itertools (enumeration des coalitions/permutations, 54 cellules dont 25 code). C# = BCL .NET 9 pur (System.Linq, System.Collections.Generic, 0 NuGet), calcul de Shapley from-scratch via permutations Linq (45 cellules dont 18 code apres le portage 2026-08-20 du bloc jeux d'assistance : Paperclip Game seuils 0.446/0.554 + valeur de l'information, Off-Switch Game E[U|ATTENDRE]=p vs E[U|AGIR]=2p-1 seuil critique 90%, design SUR tau(sigma)=0.9+0.1*sigma avec effondrement de la bande de resistance, + exercice 6 stub). Verdict RECOVERABLE-LOCAL maintenu : le bloc le plus distinctif du Python (lien AI-safety du cours) est desormais porte cote C#, mais l'asymetrie de couverture RESIDUELLE persiste -- sections legislatives 2024 et Monte Carlo du Python (cellules ~34-45) sans equivalent C#, et visualisations matplotlib remplacees par des sweeps numeriques (convention BCL 0-NuGet du twin). Aucune lib SOTA partagee (numpy vs from-scratch assumé, marathon #4956). parity_level: semantic preserve."
   known_differences:
+    - "2026-08-20 (po-2024) #10382 : portage du bloc jeux d'assistance (section 6 du twin C#, 11 cellules : Paperclip/Off-Switch/SUR + exercice 6). Les sweep numeriques C# revelent que la prose du jumeau Python (cellule 24 : 'perte maximale au centre, theta ~ 0.5') est mathematiquement inexacte -- la perte est NULLE a theta=0.5 (50-each est aussi l'optimal info parfaite) et ne vit que dans deux micro-bandes aux frontieres 0.446/0.554 (largeur ~0.0016, perte max ~0.14). Le twin C# presente les vrais chiffres (perte moyenne $0.0001) ; correction de la prose Python = issue dediee, pas touchee ici."
     - "2026-08-08 (po-2025) #8052 secrets-hygiene : cell[1] import imprimait le chemin absolu resolu du module (_gametheory_dir) dans l'output committé -> leak de worktree machine (D:\\Dev\\CoursIA-gt15-shapley-exo\\...). Fix source {_gametheory_dir.name}/cooperative_games/ + re-exec genuine (Stop&Repair, pas de scrub). csharp_sha inchange (twin C# non touche). python_sha rebaseline suite a ce changement de blob."
     - "Socle pedagogique commun : jeux cooperatifs a utilite transferable, fonction caracteristique et coalitions, valeur de Shapley (Shapley 1953) et ses axiomes (efficacite, symetrie, joueur nul, additivite), glove game (jeu des gants) comme exemple canonique."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + module local `cooperative_games` + `itertools` (enumeration des coalitions/permutations). C# = BCL .NET 9 pur (`System.Linq`, `System.Collections.Generic`, 0 NuGet), calcul de Shapley from-scratch via permutations Linq."

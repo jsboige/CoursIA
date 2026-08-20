@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- La these en une ligne : l'analyseur voyage AVEC la compilation.
+         OutputItemType="Analyzer" = Roslyn charge la DLL comme garde-fou
+         de CE projet ; ReferenceOutputAssembly="false" = elle n'est pas
+         une dependance runtime, uniquement un diagnostic. -->
+    <ProjectReference Include="../AgentGuard.Analyzers/AgentGuard.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>
