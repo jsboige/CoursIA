@@ -23,6 +23,8 @@ import json
 import sys
 from pathlib import Path
 
+from generate_catalog import truncate_at_word
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_PATH = REPO_ROOT / "COURSE_CATALOG.generated.json"
 PARCOURS_DIR = REPO_ROOT / "docs" / "curriculum"
@@ -178,7 +180,7 @@ def generate_parcours_page(
             f"|---|----------|----------|------------|",
         ])
         for i, e in enumerate(items, 1):
-            name = e["title"][:55]
+            name = truncate_at_word(e["title"], 55)
             maturity = e.get("maturity", "?")
             exe = "Oui" if e.get("executable_locally") else "Non"
             lines.append(f"| {i} | {name} | {maturity} | {exe} |")
