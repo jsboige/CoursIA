@@ -30,7 +30,7 @@ concurrency:
 
 jobs:
   ratchet:
-    name: Ratchet (base vs PR)
+    name: Papermill ratchet (base vs PR)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
