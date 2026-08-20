@@ -32,22 +32,28 @@ name: PR gate (re-aggregate)
 # name. The aggregation logic itself reads check state live via the API, so
 # the rerun verdict is fresh even though the pull_request payload is frozen.
 #
-# Loop bounding: this workflow triggers only on the FIVE guard workflows
-# below, and "PR gate" is not among them, so a rerun cannot re-trigger this
+# Loop bounding: this workflow triggers on completion of the workflows listed
+# below, and "PR gate" is never among them, so a rerun cannot re-trigger this
 # workflow. If two guards complete close together, the second reaggregate job
 # sees the target run already in_progress and skips -- each unblock attempt
 # requires a NEW guard completion, so the chain cannot self-sustain.
 
 on:
   workflow_run:
-    # #11405: the rerun leg is the terminal verdict-holder, so it must fire on
-    # completion of the guards that finish AFTER the (now short) pull_request
-    # leg settles. Slow guards observed never settling under runner starvation
-    # (notebook-execution-required, translation-drift,
-    # machine-dep-timing-advisory) plus the two original stale-aggregate
-    # loops (#10433): Variation Tag Guard / Lane Claim Guard (the latter
-    # listens to `edited`, which pr-gate.yml's own trigger does not).
-    workflows: ["Variation Tag Guard", "Lane Claim Guard", "Notebook Execution Required", "Translation Drift Check", "machine-dep-timing-advisory"]
+    # DERIVED LIST (#11865) -- regenerate, never hand-edit:
+    #   python scripts/ci/derive_pr_gate_rerun_workflows.py --print-yaml
+    # Membership rule: every workflow with a pull_request trigger producing
+    # >= 1 non-advisory job (advisory checks never reach the gate's pending
+    # list, so their completion cannot flip a verdict). #11405 chose the
+    # first five by hand among guards observed slow at the time; under runner
+    # starvation that set stopped being the slow one -- #11776 (Catalog
+    # Drift / Quarto / CodeQL) and #11839 (Secret Scan) timed the gate out
+    # on workflows with NO event-driven rescue path. workflow_run accepts no
+    # wildcard, so the enumeration stays explicit in this YAML, but
+    # pr-gate-rerun-drift-guard.yml reddens any PR that lets the committed
+    # list diverge from the derivation -- each new workflow must regenerate
+    # this list in the same PR.
+    workflows: ["Bare cross-dir", "Bash Syntax Advisory", "Catalog Drift Check", "Cell-order gate", "Degenerate figure gate", "Docs Link Check", "Fabricated text output gate", "Fast lane (ombre)", "ICT-Series Tests", "Lane Claim Guard", "Lean CI (argumentation_lean)", "Lean CI (conway_cgt_lean)", "Lean CI (decision_theory_lean)", "Lean CI (erc20_lean)", "Lean CI (finiteness_lean)", "Lean CI (kelly_lean)", "Lean CI (learning_theory_lean)", "Lean CI (mathlib_examples)", "Lean CI (mimo_lean)", "Lean CI (minimax_lean)", "Lean CI (planning_lean)", "Lean CI (search_lean)", "Lean CI (sensitivity_lean)", "Lean CI (social_choice_lean_peters)", "Lean CI (sudoku_lean)", "Lean Calibration CI", "Lean Conway CI", "Lean Galois CI", "Lean Game Defs CI", "Lean Game Defs Ext CI", "Lean Game Theory CI", "Lean Grothendieck CI", "Lean Knot CI", "Lean Social Choice CI", "Lean i18n sibling drift", "ML & Prover Tests", "Manifest description_visuelle gate", "Markdown content-loss gate", "Notebook Exec Sequence Ratchet", "Notebook Execution Required", "Notebook Navlink Check", "Notebook Output Failure Ratchet", "Notebook Papermill Ratchet", "Notebook Validation", "OWUI Playwright — Compile & Collect", "QuantConnect notebook freshness", "Quarto Pages Deploy", "Regression Guard", "Rerun Workflows Drift Guard", "SVG broken-geometry gate", "SVG decimal-comma gate", "SVG empty-display gate", "SVG offscreen-flat gate", "Scripts & Notebook-Tools Tests", "Secret Scan", "Stale Base Branch Warning", "Translation Drift Check", "Translation Guard", "Translation parity gate (advisory)", "Twin Parity Check", "Validation Matrix", "Variation Tag Guard", "Workflow Label-Paths Coverage Guard", "banner-guard", "exercise-leak-ci", "harness-coauthor-guard", "hooks-parity", "machine-dep-timing-advisory", "markdown-rendering-guard", "notebook-interp-positioning-guard", "perimeter-review-guard", "pip-leak-guard", "prose-counts-guard", "solution-leak-guard", "testpaths-coverage-guard"]
     types: [completed]
   # Manual dispatch for testing the rerun path without waiting for a guard.
   # PR_NUMBER/HEAD_SHA default to empty; the job then no-ops unless both are
@@ -79,6 +85,36 @@ concurrency:
 jobs:
   reaggregate:
     name: Re-aggregate after guard flip
+    # A CANCELLED guard produced no verdict, so there is nothing to
+    # re-aggregate -- and its payload carries the SUPERSEDED head SHA, so
+    # acting on it would rerun a gate for a head that is no longer the PR's.
+    # Before the ref-keyed concurrency groups added alongside this, guard
+    # cancellations were rare; now every superseded generation ends this way,
+    # which would have turned each saved guard run into a wasted gate rerun.
+    #
+    # ... et un `workflow_run` SANS PR dans son payload n'a aucune tete de PR a
+    # re-agreger : l'etape ci-dessous sortait deja en `exit 0` sur ce cas
+    # (« no PR head to re-aggregate -- skip »), mais apres avoir consomme un
+    # runner et une place de file pour l'apprendre. Un `if:` de job faux est
+    # evalue par le service Actions AVANT toute allocation de runner, donc le
+    # meme non-travail devient gratuit.
+    #
+    # Mesure qui motive l'ajout (2026-08-19T19:20Z, file a 400 runs pour 19
+    # slots) : sur le SHA `main` du merge de #11771, **39 runs de ce workflow**
+    # (29 queued + 8 completed + 2 pending), tous `pull_requests: 0` et
+    # `head_branch: main`. Le groupe de concurrence ne les dedoublonne pas :
+    # sa cle retombe sur `github.run_id`, unique par run, donc chacun fait
+    # groupe a lui seul. Chaque merge dans main payait ainsi ~39 slots pour 39
+    # « skip ».
+    #
+    # Le comportement observable est INCHANGE, y compris pour les PR de forks
+    # (~95 forks etudiants), dont `workflow_run.pull_requests` est vide par
+    # conception cote GitHub : ces runs ne re-agregeaient deja rien, ils le
+    # feront desormais sans occuper de runner. See #11835.
+    if: >-
+      github.event_name != 'workflow_run'
+      || (github.event.workflow_run.conclusion != 'cancelled'
+          && github.event.workflow_run.pull_requests[0])
     runs-on: ubuntu-latest
     steps:
       - name: Re-run the original PR gate for the PR head

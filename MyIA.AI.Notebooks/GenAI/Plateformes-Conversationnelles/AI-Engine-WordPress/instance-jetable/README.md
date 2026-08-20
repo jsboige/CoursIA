@@ -76,6 +76,11 @@ docker exec valmont-wordpress_cli-1 sh -c "wp user application-password create $
 Les notebooks lisent `instance-jetable/.env` (base URL + admin + app password).
 Rien d'autre n'est requis : ils appellent l'API de l'instance en HTTP local.
 
+Le compte de test `consent.editor` — créé par le notebook OAuth puis réutilisé
+par le notebook assistant de l'éditeur — porte le mot de passe
+`VALMONT_EDITOR_PASSWORD` (même `.env`) : choisir une valeur, aucun défaut
+littéral dans les notebooks (#11747).
+
 ## Verification rapide
 
 ```powershell

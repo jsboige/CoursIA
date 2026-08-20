@@ -24,6 +24,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: notebook-papermill-ratchet-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ratchet:
     name: Ratchet (base vs PR)

@@ -466,18 +466,20 @@ def _markers_all_quoted(line: str) -> bool:
     return True
 
 
-def _fence_line_indices(text: str) -> tuple[set[int], bool]:
-    """Return (in_fence_indices, unterminated_at_eof).
+def _fence_line_indices(text: str) -> tuple[set[int], int | None]:
+    """Return (in_fence_indices, orphan_opener_line).
 
     The set contains the 0-based indices of lines that sit INSIDE a markdown
-    fence. The boolean is True iff a fence was opened but never closed -- in
-    CommonMark terms the fence runs to EOF, which is the correct rendering
-    behaviour (and what GitHub does), but it has a perverse downstream
-    consequence: every line after the orphan opener is excluded from the
-    scan, and the gate becomes a silent no-op for the rest of the body. The
-    boolean lets `--scan-thread` distinguish "no candidates found" from "no
-    candidates read", which is exactly the false-negative shape that
-    #11678's founder case measured.
+    fence. The int is the 0-based index of the orphan opener line -- the
+    delimiter that was opened but never closed, so the fence runs to EOF --
+    and None when every fence is closed (#11723). In CommonMark terms the
+    fence running to EOF is the correct rendering behaviour (and what GitHub
+    does), but it has a perverse downstream consequence: every line after
+    the orphan opener is excluded from the scan, and the gate becomes a
+    silent no-op for the rest of the body. Localizing the opener lets
+    `--scan-thread` distinguish "no candidates found" from "no candidates
+    read" AND point the author at the exact line to close, which is exactly
+    the false-negative shape #11678's founder case measured.
 
     Mirrors the existing _quote_spans exemption idea: a fence is transcription,
     never an author's own claim. Workers document their L898 cross-lane
@@ -497,12 +499,14 @@ def _fence_line_indices(text: str) -> tuple[set[int], bool]:
     """
     indices: set[int] = set()
     in_fence = False
+    orphan_opener: int | None = None
     for idx, raw_line in enumerate(text.splitlines()):
         stripped = raw_line.lstrip()
         # A closing delimiter closes the fence BEFORE we record this line:
         # the delimiter itself is not part of the fenced body.
         if in_fence and (stripped.startswith("`" * 3) or stripped.startswith("~" * 3)):
             in_fence = False
+            orphan_opener = None
             continue
         if not in_fence:
             # Open the fence on the next iteration.
@@ -510,11 +514,12 @@ def _fence_line_indices(text: str) -> tuple[set[int], bool]:
                 stripped.startswith("~" * 3) and len(stripped) >= 3
             ):
                 in_fence = True
+                orphan_opener = idx
             continue
         # We're inside a fence (opening was on a previous line, no closing on
         # this one). Add this line to the set.
         indices.add(idx)
-    return indices, in_fence
+    return indices, orphan_opener
 
 
 def extract_perimeter_assertions(text: str) -> list[str]:
@@ -578,11 +583,61 @@ def _check_unterminated_fence(text: str) -> bool:
     candidacy, and the gate becomes a no-op for the rest of the body. Issue
     #11678 makes this distinction visible: "no candidates found" is no
     longer indistinguishable from "no candidates read". This wraps
-    `_fence_line_indices` and discards the index set, keeping the unterminated
-    flag for callers that only need the boolean (`--scan-thread`).
+    `_fence_line_indices` and discards the index set AND the opener line
+    (#11723), keeping the boolean for callers that only need "is there an
+    orphan" -- callers that need to localize it read `_fence_line_indices`
+    directly.
     """
     _, unterminated = _fence_line_indices(text)
-    return unterminated
+    return unterminated is not None
+
+
+def _format_signal_explanation(candidates: list[Candidate]) -> str:
+    """#11796: the trailing explanation of a SIGNAL block must match the
+    composition of the candidates. The original wording printed "assertion
+    d'un tiers : a lever par son auteur" UNCONDITIONALLY -- which is wrong
+    when every signal is an INCIDENTAL count from the AUTHOR's own body
+    (PRs #11786 / #11775): the author cannot "lever" their own incidental
+    count, the count is what it is.
+
+    Three shapes:
+
+    - body+incidental only -> the author wrote it, but the count is not a
+      perimeter claim (LOCATIVE_PREP, threshold, zero, etc.). Nothing to
+      lever; the reviewer notes it.
+    - thread only -> a reviewer/bot posted a false perimeter claim. The
+      reviewer is the only one who can correct their own review.
+    - mixed -> both shapes, each cited with its actual reason.
+
+    FN safety: this function only formats; it does not change which
+    candidates are blocking (that's `Candidate.blocking`). A candidate that
+    is `blocking=True` never enters `signals` in `main()` -- so by
+    construction, every candidate here is either body+incidental or thread.
+    """
+    has_body_incidental = any(
+        c.source == "body" for c in candidates
+    )
+    has_thread = any(c.source == "thread" for c in candidates)
+
+    if has_body_incidental and not has_thread:
+        return (
+            "Compte(s) INCIDENTAL du body de l'auteur (inventaire, scan scope, "
+            "seuil cite, attestation de zero -- #11712) : pas une assertion "
+            "de perimetre. Le reviewer qui merge le considere. Ne tient "
+            "pas la PR."
+        )
+    if has_thread and not has_body_incidental:
+        return (
+            "Assertion d'un tiers (reviewer ou bot) non editable par "
+            "l'auteur : a lever par son auteur (poster une assertion "
+            "corrigee). Ne tient pas la PR."
+        )
+    # Mixed: name both shapes with their actual reason.
+    return (
+        "Mix : compte(s) INCIDENTAL du body de l'auteur (ci-dessus, pas "
+        "une assertion de perimetre) + assertion(s) d'un tiers (a lever "
+        "par leur auteur). Ne tient pas la PR."
+    )
 
 
 def format_report(report: Report, assertion: Optional[str]) -> str:
@@ -699,7 +754,7 @@ class Candidate:
         return self.source == "body" and not _is_incidental_assertion(self.text)
 
 
-def select_candidates(items: list[dict]) -> tuple[list[Candidate], bool]:
+def select_candidates(items: list[dict]) -> tuple[list[Candidate], int | None]:
     """Extract assertions, keeping only each thread author's LAST ones.
 
     #11648-b1 (supersession). The founding measurement: on #11646 the guard
@@ -714,21 +769,25 @@ def select_candidates(items: list[dict]) -> tuple[list[Candidate], bool]:
     silence, not a retraction. The PR body is never superseded: there is only
     one of it, and it is always the current text.
 
-    Returns (candidates, unterminated_body_fence). The latter is True iff
-    the PR body had a fence opened but never closed before EOF -- the
-    silent-no-op shape #11678 measured on #11675/serde. The flag does NOT
-    change the gate's verdict (CommonMark-fence-to-EOF is correct rendering);
-    it makes the false-negative shadow visible to the reviewer.
+    Returns (candidates, orphan_opener_line). The latter is the 0-based line
+    index of the FIRST body-scanning-order body that had a fence opened but
+    never closed before EOF (None when every body is clean) -- the
+    silent-no-op shape #11678 measured on #11675/serde, localized per #11723.
+    The flag does NOT change the gate's verdict (CommonMark-fence-to-EOF is
+    correct rendering); it makes the false-negative shadow visible to the
+    reviewer AND actionable (the author is told which line to close).
     """
     body_items = [i for i in items if i.get("source") != "thread"]
     thread_items = [i for i in items if i.get("source") == "thread"]
 
     out: list[Candidate] = []
-    unterminated_seen = False
+    orphan_opener: int | None = None
     for item in body_items:
         body = item["body"]
-        if _check_unterminated_fence(body):
-            unterminated_seen = True
+        if orphan_opener is None:
+            _, opener = _fence_line_indices(body)
+            if opener is not None:
+                orphan_opener = opener
         for text in extract_perimeter_assertions(body):
             out.append(Candidate(text, item["kind"], item["author"], "body"))
 
@@ -750,7 +809,7 @@ def select_candidates(items: list[dict]) -> tuple[list[Candidate], bool]:
             out.append(
                 Candidate(text, item["kind"], author, "thread", item.get("ts") or "")
             )
-    return out, unterminated_seen
+    return out, orphan_opener
 
 
 def main() -> int:
@@ -779,11 +838,11 @@ def main() -> int:
     if args.assertion:
         report.problems.extend(check_assertion(report.files, args.assertion))
     signals: list[str] = []
-    unterminated_seen = False
+    orphan_opener: int | None = None
     if args.scan_thread:
-        candidates, unterminated_body = select_candidates(fetch_review_thread(args.pr))
-        if unterminated_body:
-            unterminated_seen = True
+        candidates, body_orphan = select_candidates(fetch_review_thread(args.pr))
+        if body_orphan is not None:
+            orphan_opener = body_orphan
         for cand in candidates:
             for p in check_assertion(report.files, cand.text):
                 line = f"[{cand.kind} / {cand.author}] {p}"
@@ -812,21 +871,26 @@ def main() -> int:
         print("        seuil cite, attestation de zero -- #11712) :")
         for sg in signals:
             print(f"  ~~ {sg}")
-        print("  -> assertion d'un tiers : a lever par son auteur (poster une assertion")
-        print("     corrigee). Compte incidental : le reviewer qui merge le considere.")
-        print("     Ne tient pas la PR.")
-    if unterminated_seen:
+        # #11796: the trailing explanation must match the composition of the
+        # signals. All body+incidental -> "not a perimeter claim, just a
+        # note"; all thread -> "tier to correct"; mixed -> both. The old
+        # blanket phrase was wrong for the all-body case (#11786 / #11775).
+        print(f"  -> {_format_signal_explanation(candidates)}")
+    if orphan_opener is not None:
         # #11678: the body scanned had an unterminated fence. CommonMark
         # renders it to EOF (correct behaviour, what GitHub does), but the
         # downstream perimeter scan sees an empty second half. Emit a
         # non-blocking notice so the reviewer can ask the author to close
-        # the fence or split the body. A scan with 0 candidates and a
-        # `unterminated: true` is a different shape from a scan with 0
+        # the fence or split the body. A scan with 0 candidates and an
+        # unterminated fence is a different shape from a scan with 0
         # candidates and a clean read -- the former is suspect, the latter
-        # is just clean.
+        # is just clean. #11723: the notice names the orphan opener's line
+        # (1-based for the human reading the PR body in a browser/editor) --
+        # a signal that does not localize gets watched, not acted on.
         print("")
-        print("UNFINISHED_FENCE: True")
-        print("  -> le body de la PR contient une fence ``` ou ~~~ non fermee.")
+        print(f"UNFINISHED_FENCE: orphan opener at line {orphan_opener + 1} (1-based)")
+        print("  -> le body de la PR contient une fence ``` ou ~~~ non fermee,")
+        print(f"     ouverte a la ligne {orphan_opener + 1} et jamais fermee.")
         print("     CommonMark la rend jusqu'en fin de body, ce qui est correct ;")
         print("     mais le scan de perimetre a ignore toutes les lignes qu'elle")
         print("     enferme. Demander a l'auteur de fermer la fence (ou de la")

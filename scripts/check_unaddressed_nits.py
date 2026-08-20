@@ -139,6 +139,20 @@ LIFT_MARKERS = (
     "levée", "levee", "LGTM", "Mergé", "Merged", "je merge", "Merge.",
     "est adressé", "sont adressés", "sont levées", "est levée",
     "Je lève", "Je leve", "Levée de", "Levee de",
+    # #11677 : « je lève ma CHANGES_REQUESTED » (#11664 fondateur) — LIFT
+    # historique ne captait que « levée » (mot complet), donc « lève ma » ne
+    # matchait pas. Les 2 formes idiomatiques « je lève / je leve » ajoutent
+    # la levee explicite d'une reserve par son auteur. Casse + accent
+    # normalises par `_unaccent` (preserve la casse). CONDITIONAL_LIFT gere
+    # l'aval (« corrige X et je leve » → la levee est conditionnelle, pas
+    # acquise), comme deja pour « et je merge ».
+    "je lève", "je leve",
+    # #11542 : forme francaise SANS pronom en tete de phrase, avec un
+    # verdict NON backquote — « Leve la CHANGES_REQUESTED de <auteur> ».
+    # Le strip des verdicts cites (ci-dessus) couvre deja la variante
+    # backquotee ; celle-ci lui echappe, et le marqueur de concern se
+    # trouve alors *a l'interieur* de la phrase qui le leve.
+    "lève la", "leve la", "Lève la", "Leve la",
 )
 
 # Un LIFT en construction CONDITIONNELLE (« corrige X et je merge », « je merge
@@ -188,21 +202,65 @@ def _strip_quoted(body: str) -> str:
 # L'emission reelle reste « MARKER: » nue ou portee par le state de la review —
 # les marqueurs naturels (« avant merge », « a changer ») ne sont pas des noms
 # de verdict et restent hors de cette voie.
+#
+# #11744 — extension a 2 positions supplementaires : un verdict peut etre en
+# mention (a) en TITRE de section `## ...VERDICT...`, ou (b) en prose INLINE
+# apres un mot-cle de mention (« le verdict CHANGES_REQUESTED que je levais »).
+# Les deux instances mesurees le 2026-08-19 : #11625 (« ## Remedes au
+# CHANGES_REQUESTED » en tete de rapport de remediation, classe BOT-CONCERN
+# comme si c'etait la SORTIE d'un verdict neuf) ; #11428 (« mon message
+# d'approbation nommant le verdict qu'il levait, au fil du texte » — auto-
+# bloquant apres que la levee par re-review APPROVED eut deja fonctionne).
+# Compteur cumulatif : les 3 positions sont cumulees, pas OU-exclusives.
 _MENTION_VERDICT = re.compile(
     r"(?i)\b(?:fix(?:ed|ée?e?)?|corrig\w+|suite\s+[àa]|en\s+r[ée]ponse\s+[àa]"
     r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
     r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
 
+# #11744 — Position A : titre de section `## ...VERDICT...`. La section est en
+# mention par construction (un titre ne « declare » jamais un verdict, il
+# l'evoque). Limite : 80 chars du `##` au verdict pour eviter les titres tres
+# longs qui seraient des resumes sections sans mention explicite. Compteur
+# cumulatif : l'eventuelle emission en corps de section est geree separement
+# par les CONCERN_MARKERS et `_is_cited` (les emissions reelles passent par
+# `MARKER:` nu ou par le state de la review, pas par un nom de verdict
+# eparpille dans une prose narrative).
+# Critere : nom de verdict = (a) TOUT en majuscules (>=4 chars) OU (b) contient
+# un underscore. Un titre ne contient presque jamais un mot de 4+ majuscules
+# consecutives SAUF un nom de verdict — c'est exactement la signature qu'on
+# cherche. Le pattern `[A-Z][A-Z_]{3,}` (v1) etait trop court (matche aussi
+# « Remedes » partiellement). **PAS de `(?i)` ici** : on veut strictement
+# `[A-Z]` (majuscule), pas `[a-zA-Z]` (case-insensitive).
+_MENTION_VERDICT_HEADING = re.compile(
+    r"(?m)^#{1,6}[^\n]{0,80}?([A-Z]{4,})(?![A-Za-z0-9_])")
+
+# #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
+# cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,
+# `levee`, `levait`, `que je levais`, ...) le precede dans les 60 chars et
+# qu'il N'est PAS suivi immediatement de « : » ou « . » qui marquerait une
+# fin de phrase d'emission. Borne obligatoire : UNIQUEMENT les noms de
+# VERDICT_FORMELS (les marqueurs naturels « avant merge » / « a changer »
+# ne sont pas des noms de verdict).
+_MENTION_VERDICT_INLINE = re.compile(
+    r"(?i)(?:^|[\s,;:(])"  # frontiere de mot
+    r"(?:nomm(?:e|ant|ation)|cit(?:e|ant|ation)|"
+    r"verdict(?![:.])\s+\w+|d[ée]crivan?t|"
+    r"(?:le|la|les|du|mon|ma|ces?\s+)?verdict(?![:.])|"
+    r"que\s+je\s+lev\w*|que\s+je\s+lift\w*)"
+    r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])")
+
 
 def _strip_mentioned_verdicts(body: str) -> str:
-    """Neutralise les noms de verdict cites en position de mention (#11636).
+    """Neutralise les noms de verdict cites en position de mention (#11636, #11744).
 
     Remplace le verdict par des espaces de meme longueur : les offsets du
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    return _MENTION_VERDICT.sub(
-        lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE):
+        body = pat.sub(
+            lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
+    return body
 
 # NOTE — proposition ecartee (triage 07-15..07-31, retiree au rebase 2026-08-16).
 # Un `NO_CONCERN_TAIL_MARKERS` dechargeant tout body dont les 300 derniers chars
@@ -220,6 +278,32 @@ def _strip_mentioned_verdicts(body: str) -> str:
 # : COMMENT_WITHOUT_CONCERNS » #7583). C'est le miroir exact de
 # COMMENT_WITH_CONCERNS : quand le verdict formel est rendu, il decide.
 VERDICT_POSITIVE = "COMMENT_WITHOUT_CONCERNS"
+
+# Verdicts positifs HUMAINS (#11677) : un reviewer UI qui tape « APPROVE » /
+# « APPROVED » / « LGTM » (avec ou sans decoration markdown : **APPROVE**,
+# `APPROVE`, # APPROVE) emet un verdict positif, equivalent formel du `state:
+# APPROVED` natif. Hermes utilise deja `COMMENT_WITHOUT_CONCERNS` (string
+# unique), ces 3 formes ajoutent le vocabulaire humain standard. Insensible
+# a la casse (`re.IGNORECASE`).
+#
+# Ce que le word-bounding fait, et ce qu'il ne fait PAS (mesure, pas
+# supposition -- #11753 F2, NanoClaw) : il ecarte bien les mots dont le
+# verdict n'est qu'un fragment (`the approver left a note`, `disapprove
+# entirely` -> pas de match), mais il ne distingue PAS l'usage narratif
+# (`I approve the design` -> MATCH, parce que « approve » y est bel et bien
+# un mot entoure d'espaces ; aucune quantite de word-bounding ne separe un
+# verbe de son verdict homographe).
+#
+# Ce n'est pas un trou, parce que cette branche est subordonnee : elle ne
+# rend None que si `live_concern` est deja faux. Une phrase narrative ne
+# peut donc eteindre qu'une review qui ne portait aucune reserve vivante --
+# ou il n'y avait rien a eteindre. Le garde tient par l'ORDRE des branches,
+# pas par la finesse du motif.
+HUMAN_VERDICT_POSITIVE = ("APPROVE", "APPROVED", "LGTM")
+_HUMAN_VERDICT_RE = re.compile(
+    r"(?:^|[\s\*_`#>])(" + "|".join(HUMAN_VERDICT_POSITIVE) + r")(?:$|[\s\*_`.,;:!?)])",
+    re.IGNORECASE,
+)
 
 # Approbations SOUPES : ne rescussitent un commentaire que s'il ne porte AUCUNE
 # reserve vivante. Une review mixte (« [COMMENT_WITH_CONCERNS] — 2 concerns...
@@ -456,7 +540,9 @@ def classify(author: str, body: str) -> str | None:
     # de reserve. Uniquement pour CONCERN_MARKERS : LIFT_MARKERS et
     # VERDICT_POSITIVE gardent le body brut (surface minimale du fix — le
     # controle positif deux formes vit dans les tests, cote a cote).
-    live_concern = has_live_marker(_strip_mentioned_verdicts(body), CONCERN_MARKERS)
+    live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
+    if not live_concern and _HUMAN_VERDICT_RE.search(body):
+        return None  # verdict humain positif (APPROVE / APPROVED / LGTM) SANS reserve vivante : equivalent state:APPROVED
     if not live_concern and has_live_marker(body, POSITIVE_MARKERS):
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(AGENT_PREFIXES):
@@ -601,6 +687,17 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         kind = classify(login, body)
         if r.get("state") == "CHANGES_REQUESTED":
             kind = "BOT-CONCERN" if kind is None else kind
+        # #11677 — symetrique APPROVED : l'etat natif GitHub `APPROVED` temoigne
+        # qu'aucune reserve n'est posee. Si classify() a deja retourne un kind
+        # (HUMAN ou BOT-CONCERN), c'est qu'une reserve VIVANTE survit dans la
+        # prose (« j'approuve mais le point 2 reste ouvert ») — on respecte.
+        # Sinon (None) : on CONFIRME l'extinction par l'etat, kind reste None
+        # et la review APPROVED ne devient jamais un signal bloquant. Sans
+        # cette branche, le verdict positif est calcule sur la prose seule,
+        # alors que la preuve la plus dure (l'etat natif) est disponible
+        # deux lignes plus haut. Meme symetrie que CHANGES_REQUESTED ci-dessus.
+        elif r.get("state") == "APPROVED" and kind is None:
+            pass  # kind reste None (l'etat natif confirme l'extinction)
         if kind:
             signals.append((ts(r.get("submittedAt")), kind, login, body,
                             f"review:{r.get('state')}"))

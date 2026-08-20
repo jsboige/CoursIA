@@ -61,6 +61,12 @@ on:
       # change to the verdict policy could land un-rattled. Mirrored under
       # pull_request: below.
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
+      # #11835 no-op guard: scripts/tests/test_pr_gate_rerun_noop_guard.py pins
+      # the job-level if: of pr-gate-rerun.yml. Without this entry a PR touching
+      # ONLY the workflow fires no scripts-tests run -- the guard is blind to
+      # its own subject (#10416 pattern, flagged A2 by Hermes on #11845).
+      # Mirrored under pull_request: below.
+      - '.github/workflows/pr-gate-rerun.yml'
   pull_request:
     branches: [main]
     paths:
@@ -84,10 +90,16 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lean-toolchain'
       # #1028 melody verdict (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
+      # #11835 no-op guard (mirror of the push path above).
+      - '.github/workflows/pr-gate-rerun.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: scripts-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   scripts-tests:

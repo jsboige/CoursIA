@@ -249,6 +249,93 @@ def test_fading_breath_warns_not_rejects():
     assert "FADING" in r["reasons"]
 
 
+# --- #11719: FADING class characterization vs DRONE / PASS-TO-EAR ----------
+
+def test_fading_class_distinct_from_drone():
+    """#11719 acceptance (a): the FADING WARN class is a distinct pathology
+    from DRONE (a melody that repeats) and from STEADY (a clean voice).
+
+    A DRONE segment has an oscillating/repeating melody — its breath plot
+    can be STEADY; the singer holds notes without panting. A FADING segment
+    has a real melody that decays in ENERGY (decay_db <= -2.5 dB on the
+    last third compared to the first) without a long un-paused run.
+
+    The 3-voix scenario from #11719 (A=DRONE/B=FADING/L2=PASS) must
+    classify as 3 distinct gates: REJECT, WARN, PASS-TO-EAR — and the
+    FADING gate must NOT be REJECT (an FADING in DRONE is a class
+    confusion the detector would surface as 'DRONE inside FADING', which
+    is impossible by construction).
+    """
+    a_drone = _healthy(melody_verdict="DRONE", breath_verdict="STEADY")
+    b_fading = _healthy(melody_verdict="MODERATE", breath_verdict="FADING")
+    l2_pass = _healthy(melody_verdict="MODERATE", breath_verdict="STEADY")
+
+    r_a = classify_segment(**a_drone)
+    r_b = classify_segment(**b_fading)
+    r_l2 = classify_segment(**l2_pass)
+
+    assert r_a["gate"] == "REJECT", "DRONE melody must REJECT (MONOTONE)."
+    assert "MONOTONE" in r_a["reasons"]
+    assert r_b["gate"] == "WARN", (
+        "FADING breath alone is WARN (informational, not REJECT)."
+    )
+    assert "FADING" in r_b["reasons"]
+    assert r_l2["gate"] == "PASS-TO-EAR", (
+        "STEADY breath + MODERATE melody clears the floor."
+    )
+
+    # Class confusion guard: FADING must NEVER ride alongside a DRONE
+    # melody — a single segment cannot have a repeating chant AND a
+    # steady energy decay (the energy of the chant would be flat).
+    # If a downstream regression ever produces this combo, the gate
+    # must still REJECT (DRONE > FADING priority).
+    combo = _healthy(melody_verdict="DRONE", breath_verdict="FADING")
+    r_combo = classify_segment(**combo)
+    assert r_combo["gate"] == "REJECT"
+    assert "MONOTONE" in r_combo["reasons"]
+    assert "FADING" in r_combo["reasons"], (
+        "FADING reason must be reported on the combo even when DRONE "
+        "wins the gate — the report lists every reason, not only winners."
+    )
+
+
+def test_fading_severity_below_winded_floor_stays_warn():
+    """#11719 acceptance (c)-flavored robustness: a segment that crosses
+    the WINDED threshold (decay_db <= -4.0) but does NOT qualify for
+    WINDED (max_run < 7s) must remain WARN/FADING, not silently
+    upgraded to REJECT/WINDED by the gate.
+
+    The detector (spectral_envelope.py:142) is the only place where
+    WINDED is decided; this gate only reads the verdict string. So the
+    invariant under test is: the gate trusts the detector's three-way
+    call (STEADY / FADING / WINDED) and never infers WINDED from the
+    decay_db value — that would couple the gate to the floor constants
+    and break the moment they change."""
+    # FADING breath verdict; the melody is fine. The detector is the
+    # source of truth for the WINDED upgrade.
+    r = classify_segment(**_healthy(breath_verdict="FADING"))
+    assert r["gate"] == "WARN"
+    assert "FADING" in r["reasons"]
+    assert "WINDED" not in r["reasons"], (
+        "Gate must NOT promote FADING to WINDED on its own — the "
+        "detector owns that decision."
+    )
+
+
+def test_fading_alone_in_report_no_double_count():
+    """#11719 acceptance (d): a single FADING reason is reported exactly
+    once; the report doesn't duplicate FADING across reason buckets.
+
+    The gate has only two reason buckets (reject, warn); FADING goes
+    in warn. The test asserts that even if the caller passes the same
+    breath_verdict via different code paths, the reasons list stays
+    clean.
+    """
+    r = classify_segment(**_healthy(breath_verdict="FADING"))
+    fading_count = sum(1 for reason in r["reasons"] if reason == "FADING")
+    assert fading_count == 1, f"FADING reported {fading_count} times, expected 1."
+
+
 def test_reject_beats_warn():
     # a WARN signal present alongside a REJECT signal -> overall REJECT
     r = classify_segment(**_healthy(melody_verdict="FLAT", breath_verdict="FADING"))

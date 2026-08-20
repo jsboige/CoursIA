@@ -44,6 +44,10 @@ permissions:
   issues: write
   pull-requests: write
 
+concurrency:
+  group: notebook-execution-required-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   detect-changes:
     name: Detect notebook changes
@@ -103,17 +107,36 @@ jobs:
         run: pip install nbformat
 
       - name: Validate notebooks
+        # #11822 second-defaut: `> /tmp/...` + `cat` swallows the failure
+        # detail (the validator's own `::error::` lines + per-notebook
+        # reasons). The CI reader sees a generic "KeyError: 'passed'"
+        # from the JSON-load step when the validator exits 1, with no
+        # indication of *which* notebook failed or *why*. `tee` keeps
+        # stdout visible while persisting the JSON, and `set +e` +
+        # explicit exit-code capture ensures the validator's own exit
+        # code drives the gate.
         run: |
+          set +e
           python scripts/notebook_tools/validate_pr_notebooks.py \
-            origin/${{ github.base_ref }} --json > /tmp/validation_results.json
-          cat /tmp/validation_results.json
+            origin/${{ github.base_ref }} --json 2>&1 | tee /tmp/validation_results.json
+          VALIDATOR_EXIT=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$VALIDATOR_EXIT" -ne 0 ]; then
+            echo ""
+            echo "::error::Notebook validation failed (exit $VALIDATOR_EXIT). See output above."
+            echo "Fix: re-execute notebooks locally and commit with outputs."
+            echo "  python scripts/notebook_tools/notebook_tools.py execute <path>"
+            echo ""
+            echo "Validator JSON output (last 60 lines):"
+            tail -60 /tmp/validation_results.json || true
+            exit 1
+          fi
 
           PASSED=$(python -c "import json; print(json.load(open('/tmp/validation_results.json'))['passed'])")
           if [ "$PASSED" != "True" ]; then
             echo ""
-            echo "::error::Notebook validation failed. See results above."
-            echo "Fix: re-execute notebooks locally and commit with outputs."
-            echo "  python scripts/notebook_tools/notebook_tools.py execute <path>"
+            echo "::error::Notebook validation reported passed=False despite exit 0. See output above."
             exit 1
           fi
           echo "All notebooks passed static validation."

@@ -47,10 +47,10 @@ Cette série montre que les deux approches ne s'opposent pas — elles se **comp
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 21 (12 Python canoniques + 8 jumeaux C# marathon parité #4956 + 1 compagnon Lean kernel `lean4-wsl`) |
+| Notebooks | 20 (12 Python canoniques + 8 jumeaux C# marathon parité #4956) |
 | Exercices (table de pioche) | 46 |
-| Kernel | Python 3 + .NET Interactive (jumeaux C#) + Lean 4 via WSL (compagnon SL-1b) |
-| Durée estimée | ~1130 min (~18 h 50, Python ~11 h 20 + jumeaux C# ~6 h 50 + compagnon Lean ~40 min) |
+| Kernel | Python 3 + .NET Interactive (jumeaux C#) |
+| Durée estimée | ~1090 min (~18 h 10, Python ~11 h 20 + jumeaux C# ~6 h 50) |
 | Prérequis | Python 3.10+ (standard library + sklearn pour SL-3/SL-4, rdflib pour SL-8, difflogic+torch pour SL-12, clé OpenRouter optionnelle pour SL-9/SL-11) + .NET Interactive 1.4+ pour les 8 jumeaux C# |
 
 ## Parcours d'apprentissage
@@ -188,7 +188,6 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 |---|----------|---------|-------|
 | 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
 | 1 (C#) | [SL-1 - Apprentissage Logique (Twin C#)](SL-1-LogicalLearning-Csharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min |
-| 1b | [SL-1b - Compagnon Lean (learning_theory_lean)](SL-1b-Lean-LogicalLearning.ipynb) | **Compagnon Lean** (kernel `lean4-wsl`) — rend visibles 9 des 15 modules invisibles du lake `ML/learning_theory_lean` : `expect`/Markov compté, MGF de Bernoulli, Hoeffding (Monte-Carlo seedée), borne de l'union, ERM jouable, complexité d'échantillon PAC (See #11703) | 40 min |
 | 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |
 | 2 (C#) | [SL-2 - Apprentissage et Connaissance (Twin C#)](SL-2-KnowledgeBasedLearning-Csharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |
 | 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
@@ -459,7 +458,6 @@ Le treillis des déterminations croît exponentiellement avec le nombre d'attrib
 SymbolicLearning/
 ├── SL-1-LogicalLearning.ipynb              # CBH, Version Space
 ├── SL-1-LogicalLearning-Csharp.ipynb       # Jumeau C# (.NET Interactive) — CBH + Candidate Elimination from-scratch, parité #4956
-├── SL-1b-Lean-LogicalLearning.ipynb        # Compagnon Lean (kernel lean4-wsl) — visibilité du lake ML/learning_theory_lean, EPIC #11703
 ├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
 ├── SL-2-KnowledgeBasedLearning-Csharp.ipynb # Jumeau C# (.NET Interactive) — EBL + RBL, parité #4956
 ├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
@@ -507,8 +505,6 @@ maturity: BETA=18, ALPHA=2
 | **Phase 5 — Neuro-symbolique** | 4 (SL-7, SL-8, SL-9 + jumeau C# SL-8) | BETA=3, ALPHA=1 | T-norms différentiables, LTN, DeepProbLog ; rdflib + AMIE rule mining + complétion KG + ASP clingo ; boucle LLM-symbolique d'extraction et vérification (Gemini 3.5 Flash optionnel via OpenRouter). Jumeau C# : KG familial dotNetRDF 3.4.1 + AMIE from-scratch + PCA + complétion 5→14 + saturation (ALPHA en stabilisation) |
 | **Phase 6 — Actif + capstone** | 4 (SL-10, SL-11, SL-12 + jumeau C# SL-10) | BETA=3, ALPHA=1 | L* d'Angluin (table d'observation, requêtes MQ/EQ, Myhill-Nerode, bornes PAC) ; capstone pipeline neuro-symbolique 6 étages avec LLM réel + provenance ; réseaux de portes logiques différentiables (difflogic, Petersen NeurIPS 2022). Jumeau C# : DFA + ObservationTable + contre-exemples + oracle bruité + agrégation d'evidence (ALPHA en stabilisation) |
 | **Total** | **20** | **BETA=18, ALPHA=2** | Python 3.10+ stdlib + .NET Interactive 1.4+ (sauf SL-3 sklearn+rdflib, SL-4/SL-6 SWI-Prolog+Popper kernel Linux/WSL, SL-7 rdflib, SL-9/SL-11 OpenRouter optionnel) |
-
-*Hors tableau : [SL-1b-Lean-LogicalLearning.ipynb](SL-1b-Lean-LogicalLearning.ipynb) (compagnon Lean, kernel `lean4-wsl`, EPIC #11703) porte la série à 21 notebooks sur disque ; le bloc `CATALOG-STATUS` et ce tableau retraceront le pickup via le cron catalogue (`catalog-cron.yml`). Le compagnon rend visibles 9 des 15 modules jusqu'alors invisibles du lake `ML/learning_theory_lean`.*
 
 **Note explicite maturité 18 BETA + 2 ALPHA** : la série SymbolicLearning compte 20 notebooks canoniques au catalogue (12 Python + 8 jumeaux C# marathon parité #4956). La maturité n'est plus 100 % PRODUCTION comme avant le marathon parité : les 12 notebooks Python historiques sont PRODUCTION-equivalent (AIMA chapitre 19, implémentations de référence stables vendored dans `reference/aima_knowledge.py`) ; les 8 jumeaux C# livrés en marathon #4956 (SL-1, SL-2, SL-3, SL-4, SL-5, SL-6, SL-8, SL-10) sont **BETA** par défaut, sauf SL-8-C# (KG mining : verdict SOTA du twin Python note clingo ASP=INTRINSIC en .NET) et SL-10-C# (L* forward sum-product + agrégation bayésienne : algorithme le plus récent, vérifications de bornes encore en cours) qui restent **ALPHA** au catalogue. Les notebooks s'exécutent localement avec Python 3.10+ stdlib pour SL-1/2/5/7/10, `scikit-learn`+`numpy` pour SL-3, `rdflib`+`clingo` pour SL-8, et `SWI-Prolog >= 9.1.12`+`janus_swi`+`popper-ilp==4.4.0` pour SL-4/SL-6 via kernel Linux/WSL ; les 8 jumeaux C# s'exécutent sur .NET Interactive 1.4+ (`Microsoft.dotnet-interactive`).
 

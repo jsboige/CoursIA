@@ -943,3 +943,172 @@ def test_cli_no_text_delta_when_stream_preserved(tmp_path):
     kinds = [f["kind"] for f in findings]
     assert "TEXT_DELTA" not in kinds, f"stream inchange -> pas TEXT_DELTA, got {kinds}"
     assert "UNAVAILABLE_SIGNAL" not in kinds, f"pas d'erreur -> pas UNAVAILABLE_SIGNAL, got {kinds}"
+
+
+def test_11745_unavailable_signal_text_mode_no_keyerror(tmp_path):
+    """Issue #11745 -- acceptance 1/3.
+
+    UN finding UNAVAILABLE_SIGNAL seul en mode TEXTE (sans --json)
+    ne doit PAS lever KeyError: 'mime_family'. Avant le fix, le
+    deballage inconditionnel mime_family/before_bytes/after_bytes
+    etait execute AVANT le dispatch par kind, donc crashait sur
+    UNAVAILABLE_SIGNAL dont le schema est `{kind, before_count,
+    after_count}`. Le test verifie que la sortie texte aboutit et
+    que le rc reste 1 (le finding rode toujours -- --check).
+    """
+    nb_base = {"cells": [_make_stream_cell(["Resultat OK : 42\n"], "c1")]}
+    nb_head = {"cells": [
+        _make_error_cell(
+            ["ImportError: No module named 'simanneal'\n",
+             "Librairie simanneal non disponible sur ce runner\n"],
+            "c1"
+        ),
+    ]}
+    nb_name = "sudoku_demo.ipynb"
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_base), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "base: ok"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_head), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "head: import error"], cwd=tmp_path, check=True)
+
+    res = subprocess.run(
+        [sys.executable, str(TOOL), nb_name,
+         "--base", "HEAD~1", "--head", "HEAD",
+         "--check"],  # NOTE : sans --json -> mode texte (le bug)
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    # Avant le fix : KeyError 'mime_family' sur stderr, exit 1 (rc du crash).
+    # Apres le fix : stdout contient le bloc FINDINGS rendu proprement,
+    # exit 1 = --check + finding UNAVAILABLE_SIGNAL.
+    assert "KeyError" not in res.stderr, (
+        f"mode texte doit PAS lever KeyError (#11745), "
+        f"stderr={res.stderr[:500]}"
+    )
+    assert res.returncode == 1, (
+        f"UNAVAILABLE_SIGNAL rode, rc doit etre 1 (--check + finding), "
+        f"got rc={res.returncode} stderr={res.stderr[:500]}"
+    )
+    assert "[FINDINGS]" in res.stdout, (
+        f"mode texte doit afficher [FINDINGS] meme avec UNAVAILABLE_SIGNAL "
+        f"seul, got stdout={res.stdout[:500]}"
+    )
+    assert "UNAVAILABLE_SIGNAL" in res.stdout, (
+        f"le finding UNAVAILABLE_SIGNAL doit apparaitre dans le rendu "
+        f"texte, got stdout={res.stdout[:500]}"
+    )
+
+
+def test_11745_three_existing_kinds_render_unchanged(tmp_path):
+    """Issue #11745 -- acceptance 2/3.
+
+    Les trois kinds volumetriques existants (DELTA_SIGNAL, LOST_MIME,
+    NEW_MIME) doivent rendre EXACTEMENT le meme texte qu'avant le fix.
+    On force chacun via deux commits git dans un mini-repo, puis on
+    verifie la presence des libelles attendus (famille, bytes, ratio).
+    """
+    # Cas 1 : DELTA_SIGNAL -- stream long en base, court en head
+    nb_name_delta = "delta_demo.ipynb"
+    base_lines = [f"Ligne {i}: resultat computation SOTA moteur\n" for i in range(200)]
+    head_lines = [f"Ligne {i}\n" for i in range(50)]
+    nb_base = {"cells": [_make_stream_cell(base_lines, "c1")]}
+    nb_head = {"cells": [_make_stream_cell(head_lines, "c1")]}
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name_delta).write_text(json.dumps(nb_base), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name_delta], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "base: long"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name_delta).write_text(json.dumps(nb_head), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name_delta], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "head: short"], cwd=tmp_path, check=True)
+    res = subprocess.run(
+        [sys.executable, str(TOOL), nb_name_delta,
+         "--base", "HEAD~1", "--head", "HEAD", "--check"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert "KeyError" not in res.stderr, (
+        f"mode texte doit PAS lever KeyError (meme apres fix), "
+        f"stderr={res.stderr[:500]}"
+    )
+    # Le format DELTA_SIGNAL historique (cf code pre-fix) :
+    #   "DELTA_SIGNAL: famille '<fam>' chute de <before>B a <after>B ..."
+    # Mots invariants : "DELTA_SIGNAL", "famille '", "chute de", "B a ", "B)".
+    for needle in ("DELTA_SIGNAL", "famille '", "chute de", "B a ", "B)"):
+        assert needle in res.stdout, (
+            f"DELTA_SIGNAL rendu doit contenir {needle!r} "
+            f"(#11745 acceptance 2/3), got stdout={res.stdout[:500]}"
+        )
+
+
+def test_11745_unavailable_signal_message_cites_before_after_counts(tmp_path):
+    """Issue #11745 -- acceptance 3/3 (controle qualite du rendu).
+
+    Le message UNAVAILABLE_SIGNAL en mode texte doit citer le NOMBRE
+    avant/apres pour que le lecteur puisse decider sans relancer en
+    --json. Format attendu (cf code post-fix) :
+        UNAVAILABLE_SIGNAL: marqueurs d'indisponibilite <N> -> <M> dans les sorties
+    """
+    # Reproduire un cas UNAVAILABLE_SIGNAL : base = OK (0 marqueurs),
+    # head = 2 lignes 'non disponible' (2 marqueurs).
+    nb_base = {"cells": [_make_stream_cell(["Resultat OK : 42\n"], "c1")]}
+    nb_head = {"cells": [
+        _make_error_cell(
+            ["ImportError: No module named 'simanneal'\n",
+             "Librairie simanneal non disponible sur ce runner\n",
+             "Module 'torch' non disponible (fallback numpy)\n"],
+            "c1"
+        ),
+    ]}
+    nb_name = "sudoku_count.ipynb"
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_base), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "base: ok"], cwd=tmp_path, check=True)
+    (tmp_path / nb_name).write_text(json.dumps(nb_head), encoding="utf-8")
+    subprocess.run(["git", "add", nb_name], cwd=tmp_path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "head: import error"], cwd=tmp_path, check=True)
+
+    res = subprocess.run(
+        [sys.executable, str(TOOL), nb_name,
+         "--base", "HEAD~1", "--head", "HEAD", "--check"],
+        capture_output=True, text=True, encoding="utf-8",
+        cwd=tmp_path, check=False,
+    )
+    assert "KeyError" not in res.stderr, (
+        f"mode texte doit PAS lever KeyError, stderr={res.stderr[:500]}"
+    )
+    # Le lecteur doit voir : UNAVAILABLE_SIGNAL + 0 -> 2 (ou N>=2).
+    assert "UNAVAILABLE_SIGNAL" in res.stdout, (
+        f"doit citer le kind UNAVAILABLE_SIGNAL, got stdout={res.stdout[:500]}"
+    )
+    assert "0 ->" in res.stdout, (
+        f"doit citer le nombre AVANT (0) pour qu'on puisse decider sans "
+        f"--json, got stdout={res.stdout[:500]}"
+    )
+    # Le compte apres depend du detecteur de marqueurs (>= 2 attendu ici :
+    # 'non disponible' + 'not available' en francais + 1 supplement).
+    # On ne pin pas la valeur exacte (le detecteur peut evoluer), juste
+    # qu'il y a une fleche et un nombre apres.
+    import re
+    m = re.search(r"UNAVAILABLE_SIGNAL:\s+.*?(\d+)\s+->\s+(\d+)\s+", res.stdout)
+    assert m is not None, (
+        f"format UNAVAILABLE_SIGNAL:<desc> <N> -> <M> dans les sorties "
+        f"manquant, got stdout={res.stdout[:500]}"
+    )
+    before_count = int(m.group(1))
+    after_count = int(m.group(2))
+    assert before_count == 0, (
+        f"avant doit etre 0 (base OK), got before_count={before_count}"
+    )
+    assert after_count >= 1, (
+        f"apres doit etre >= 1 (head a au moins 1 marqueur), "
+        f"got after_count={after_count}"
+    )

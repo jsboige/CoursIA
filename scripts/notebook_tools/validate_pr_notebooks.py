@@ -293,6 +293,16 @@ def validate_notebook(nb_path: Path) -> dict:
         # a transition note, not executable code, so it must not be counted as
         # total_code nor flagged for a missing execution_count. Mirrors the '//'
         # awareness of scan_c1_source (#5261) in the same ecosystem.
+        #
+        # #11752 — collapse guard. A notebook whose `source` list contains a
+        # single element without a trailing '\n' collapses to one line when
+        # joined. If that line begins with the comment prefix, the whole cell
+        # looks like a comment — but it may actually be a Lean command cell
+        # whose source was malformed at write time. The defensive check is: if
+        # the cell carries an output error (output_type=='error' OR a
+        # text-rendered `severity:error` from Lean/alectryon), the cell is NOT
+        # a comment — it executed and failed. Never skip it. The skip remains
+        # a pure structural shortcut when the source is unambiguous.
         if "lean" in kernel:
             comment_prefix = "--"
         elif "csharp" in kernel or "fsharp" in kernel:
@@ -300,8 +310,27 @@ def validate_notebook(nb_path: Path) -> dict:
         else:
             comment_prefix = "#"
         lines = [l.strip() for l in source.split("\n") if l.strip()]
-        if all(l.startswith(comment_prefix) for l in lines):
-            continue
+        looks_like_comment = bool(lines) and all(
+            l.startswith(comment_prefix) for l in lines
+        )
+        if looks_like_comment:
+            # A real comment cell never produces an error output. Pre-check
+            # (cheap, before allocating extras) so the skip remains a pure
+            # structural shortcut when the source is unambiguous.
+            cell_has_error_output = any(
+                output.get("output_type") == "error"
+                or any(
+                    sig in _output_text(output)
+                    for sig in TEXT_RENDERED_ERROR_SIGNATURES
+                )
+                for output in cell.get("outputs", [])
+            )
+            if not cell_has_error_output:
+                continue
+            # Otherwise, fall through to the H.1 check that runs below on
+            # every non-skipped code cell. The accumulated error report
+            # already names the kernel, so the reader sees this is a
+            # comment-shaped cell that nonetheless produced an error.
 
         result["total_code"] += 1
 

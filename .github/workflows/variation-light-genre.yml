@@ -38,6 +38,10 @@ permissions:
   pull-requests: write
   issues: write
 
+concurrency:
+  group: variation-light-genre-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-light-genre-signals:
     name: G-VAR-2/3 GENRE signals (advisory, #10020)
