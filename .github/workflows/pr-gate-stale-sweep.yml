@@ -142,62 +142,13 @@ jobs:
           done < /tmp/openprs.txt
           echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
 
-          python - <<'PY' > /tmp/candidates.txt
-          import json
-
-          # REST /check-runs is lowercase where GraphQL's rollup is uppercase.
-          # A check counts as settled-green when it has completed with a
-          # conclusion that does not redden a rollup. neutral / skipped are
-          # green for this purpose: GitHub treats them as non-blocking, and a
-          # path-filtered guard that skipped must not keep a PR in the pool.
-          GREEN = {"success", "neutral", "skipped"}
-          RED = {"failure", "timed_out", "action_required"}
-
-          for line in open("/tmp/runs.jsonl", encoding="utf-8"):
-              line = line.strip()
-              if not line:
-                  continue
-              p = json.loads(line)
-              # Same-name check-runs accumulate on a SHA (reruns, re-dispatch).
-              # For NON-required checks, only the most recent one matters: a
-              # guard that failed and was re-run green must not keep a PR out
-              # of the pool.
-              latest = {}
-              for c in (p.get("checks") or []):
-                  name = c.get("name") or "?"
-                  started = c.get("started_at") or ""
-                  if name not in latest or started >= latest[name][0]:
-                      latest[name] = (started, c)
-
-              # `PR gate` is the REQUIRED check, and there latest-wins is FALSE.
-              # Two check-runs bearing a required name can coexist on one SHA in
-              # DIFFERENT check suites, and GitHub requires EVERY one of them to
-              # be green -- an AND, not latest-wins. A newer posted SUCCESS does
-              # NOT clear an older FAILURE.
-              #
-              # Measured 2026-08-17 on #11532: `21:38 failure` (suite ...36591)
-              # and `22:46 success` (suite ...31015) coexisted, and the PR stayed
-              # BLOCKED. Folding by name kept only the 22:46 success, so this
-              # filter called the PR healthy and skipped it. Over the 116 open
-              # PRs that day, that fold hid 52 of them -- the majority of the
-              # blocked pool, and precisely the ones this sweep exists for.
-              gate_legs = [c for c in (p.get("checks") or []) if (c.get("name") or "") == "PR gate"]
-              if not gate_legs:
-                  continue  # absent gate is pr-gate-missing-advisory.yml's case
-              if not any((c.get("conclusion") or "") in RED for c in gate_legs):
-                  continue
-
-              others = [(n, c) for n, (t, c) in latest.items() if n != "PR gate"]
-              # Every other check must be finished AND green. An unfinished one
-              # means the gate may still be legitimately waiting: re-aggregating
-              # then would just burn another verdict on the same incomplete set.
-              if not all((c.get("status") or "") == "completed" for _, c in others):
-                  continue
-              if not all((c.get("conclusion") or "") in GREEN for _, c in others):
-                  continue
-
-              print(f'{p["number"]} {p["sha"]} {str(p.get("fork", False)).lower()}')
-          PY
+          # Selector extracted from the heredoc that used to live here, so the
+          # #11862 fix (gate `cancelled` -> RED_GATE) is unit-testable without
+          # invoking a workflow run. The module lives in scripts/ci/; it
+          # preserves the original semantics (latest-wins for non-required
+          # checks, AND over same-named required legs, neutral/skipped green)
+          # AND adds `cancelled` to the gate-only RED set.
+          python "$GITHUB_WORKSPACE/scripts/ci/pr_gate_sweep_select.py" /tmp/runs.jsonl > /tmp/candidates.txt
 
           COUNT=$(wc -l < /tmp/candidates.txt | tr -d ' ')
           echo "[stale-sweep] PRs whose only red is a stale \`PR gate\`: $COUNT"
