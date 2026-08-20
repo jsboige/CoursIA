@@ -241,15 +241,44 @@ Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la sé
 
 ## Références académiques
 
-| Référence | Couverture |
-|-----------|------------|
-| Christiano et al., "Deep RL from human preferences" (NeurIPS 2017) | Origine RLHF |
-| Stiennon et al., "Learning to summarize with human feedback" (NeurIPS 2020) | RLHF appliquée aux LMs |
-| Ouyang et al., "Training language models to follow instructions" (InstructGPT, NeurIPS 2022) | SFT + RM + PPO canonique |
-| Rafailov et al., "Direct Preference Optimization" (NeurIPS 2023) | DPO origin |
-| Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning" (2024) | GRPO origin |
-| Deepseek-AI, "Deepseek-R1: Incentivizing Reasoning Capability via RL" (2025) | RLVR + GRPO at scale |
-| Lambert et al., "Tulu 3" (2024) | Survey post-training methods |
+Les références sont cliquables (arXiv / publisher). Les chiffres que la série cite d'articles externes sont toujours préfixés « rapporte par » ou « selon [source] » — jamais confondus avec nos mesures locales.
+
+| Référence | Lien | Couverture |
+|-----------|------|------------|
+| Christiano et al., "Deep reinforcement learning from human preferences" (NeurIPS 2017) | [arXiv:1706.03741](https://arxiv.org/abs/1706.03741) | Origine RLHF |
+| Stiennon et al., "Learning to summarize with human feedback" (NeurIPS 2020) | [arXiv:2009.01325](https://arxiv.org/abs/2009.01325) | RLHF appliquée aux LMs |
+| Ouyang et al., "Training language models to follow instructions" (InstructGPT, NeurIPS 2022) | [arXiv:2203.02155](https://arxiv.org/abs/2203.02155) | SFT + RM + PPO canonique |
+| Rafailov et al., "Direct Preference Optimization" (NeurIPS 2023) | [arXiv:2305.18290](https://arxiv.org/abs/2305.18290) | DPO origin |
+| Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning" (2024) | [arXiv:2402.03300](https://arxiv.org/abs/2402.03300) | GRPO origin |
+| Deepseek-AI, "Deepseek-R1: Incentivizing Reasoning Capability via RL" (2025) | [rapport technique](https://github.com/deepseek-ai/DeepSeek-R1) | RLVR + GRPO at scale |
+| Lambert et al., "Tulu 3" (2024) | [arXiv:2411.15124](https://arxiv.org/abs/2411.15124) | Survey post-training methods |
+| Hoffmann et al., "Chinchilla" (NeurIPS 2022) | [arXiv:2203.15556](https://arxiv.org/abs/2203.15556) | Scaling laws compute-optimal (référencé dans la narration coût/token) |
+| Penedo et al., "FineWeb-Edu" (2024) | [arXiv:2406.17557](https://arxiv.org/abs/2406.17557) | Dataset de pré-entraînement éducatif (barème coût/token) |
+| Liu / Su et al., "Moonlight / Muon" (2025) | [arXiv:2502.16982](https://arxiv.org/abs/2502.16982) | Optimizer Muon (vérifié firsthand) — note prospective architecture from-scratch |
+| Zhai, "XSA: X-only Sparse Attention" (2026) | [arXiv:2603.09078](https://arxiv.org/abs/2603.09078) | Architecture XSA remplaçant DiffAttn (vérifié firsthand) — note prospective |
+| Ye et al., "Differential Attention" (Microsoft, 2024) | [arXiv:2410.05258](https://arxiv.org/abs/2410.05258) | Attention différentielle (citée par la série Substack) |
+| Ainslie et al., "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints" (Google, 2023) | [arXiv:2305.13245](https://arxiv.org/abs/2305.13245) | Grouped-Query Attention (citée par la série Substack) |
+
+## Éclairage externe — série Substack "modern-llm" (JohnEnev)
+
+Première citation Substack du dépôt. La série de 4 posts (juillet→août 2026) + 1 bonus documente en open un from-scratch 350–672M paramètres avec post-training. Les chiffres externes sont toujours cités "selon JohnEnev Part N" — pas confondus avec nos mesures locales.
+
+| Post | Date | Lien | Couverture / leçon mobilisée |
+|------|------|------|-------------------------------|
+| **Part 1** — *Building a 350M transformer from scratch* | 2026-07-03 | [johne.substack.com/p/modern-llm-part-1](https://johne.substack.com/p/modern-llm-part-1-building-a-350m-transformer-from) | V1 = 353M, 10B tok FineWeb-Edu, $101 — barème coût/token (29 tok/param, sous Chinchilla 20 ⇒ pré-entraînement sous-optimal assumé pour aller vite). Base model "qui parle anglais couramment mais ne suit pas les instructions" — doctrine **SFT obligatoire** (PT_02). |
+| **Part 2** — *Modernizing the architecture* | 2026-07-08 | [johne.substack.com/p/modern-llm-part-2](https://johne.substack.com/p/modern-llm-part-2-modernizing-the-architecture) | V2 = 315M, GQA 4:1 + DiffAttn + QK-Norm + **Muon** retenu + EMA. **mHC rejetée** sur mesure throughput (−41% à 2 streams, −49% à 4, ~$93→$155→$175 sans gain de loss) — parallèle direct avec le trade-off critic/no-critic de PT_08 (coût ×4.0). |
+| **Part 3** — *Post-training: SFT and GRPO* | 2026-07-21 | [johne.substack.com/p/modern-llm-part-3](https://johne.substack.com/p/modern-llm-part-3-post-training-sft-and-grpo) | **Cœur du sujet.** SFT OK, GRPO dégradant. V2 ppl 46.81 → 71.06 post-GRPO ; −4/6 accuracy. Modes d'échec : *group no-signal* (std=0 → avantage=0), *easy stage unlearnable*, KL 0.01–0.03 peu informatif. Verbatim canonique : "RL ne peut amplifier que ce que le modèle fait déjà parfois, pas créer ce qu'il ne fait jamais" — fonde notre narration GRPO fragile (PT_08, PT_11, PT_11b, rlpt_2, rlpt_4, ICT-25). |
+| **Part 4** — *V3: Inference and serving models* | 2026-08-13 | [johne.substack.com/p/modern-llm-part-4](https://johne.substack.com/p/modern-llm-part-4-v3-inference-and-serving-models) | V3 = 672M, 30B tok, 2×B200 DDP, $315, 26.7h. ppl wikitext base 22.30 → SFT 32.11 → GRPO 33.65 (GRPO dégrade même SFT) ; GSM8K ~0. **XSA remplace DiffAttn** (<1% throughput vs 28%). FastAPI + SSE streaming. Convergence triple (V2 + V3 + notre PT_11b) sur "GRPO ne crée pas le signal qu'il prétend créer". |
+| **Bonus** — *Distilling reasoning into a 14B model (NYT Connections)* | 2026-02-XX | [johne.substack.com](https://johne.substack.com/) — voir bonus "NYT Connections" dans la série modern-llm | SFT-distillation de traces GPT-4o fait passer Qwen2.5-14B de 9.3% → 30.0% sur NYT Connections, vs GPT-4o 22.7% — **sans RL**. Coût rapporté ~$10 total / ~20 min/modèle sur A100 80GB. Mise en regard directe avec notre POC GRPO Qwen3.5-0.8B INCONCLUSIVE (PT_11) : le pattern "SFT > RL" traverse les échelles (0.8B ↔ 14B). |
+
+**Citations académiques principales de la série Substack** (vérifiées firsthand) :
+
+- XSA — Zhai 2026, arXiv:2603.09078 (vérifié 2026-08-20)
+- Muon / Moonlight — Liu / Su et al. 2025, arXiv:2502.16982 (vérifié 2026-08-20)
+- Differential Attention — Ye et al. 2024, arXiv:2410.05258
+- GQA — Ainslie et al. 2023, arXiv:2305.13245
+
+Ces 4 entrées sont incluses dans le tableau principal ci-dessus avec liens cliquables.
 
 ## Ressources en ligne
 
