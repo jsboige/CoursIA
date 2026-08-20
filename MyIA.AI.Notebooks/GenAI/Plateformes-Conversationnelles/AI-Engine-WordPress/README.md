@@ -233,6 +233,25 @@ La route est stateless (le tour isolé oublie, le tour qui re-apporte
 `messages` souvient), `envId` est écouté, et un `model` sans
 environnement redonne l'erreur à froid du grain précédent — « The
 environment is required. » : le routeur exige le couple, pas le nom.
+[`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb)
+ouvre la cinquième surface : la famille `mwai-ui/v1/files/*`, celle
+des **pièces jointes** — la mémoire du chatbot au-delà du texte tapé,
+un manuscrit à relire ou un extrait audio. Le trait le plus
+caractéristique y est mesuré par calcul : la fiche du fichier porte
+`created` et `expires`, et la soustraction rend exactement **une
+heure** — les pièces jointes sont éphémères par architecture, pas
+par configuration, et le notebook le démontre à la seconde près.
+Autour de la mesure : le contrat d'upload découvert par refus
+(400 « Purpose is required. » nomme le champ obligatoire), l'URL
+publique servie par la médiathèque WordPress (contenu vérifié octet
+pour octet), la **partition par utilisateur** — table `mwai_files`,
+deux auteurs ne voient ni n'effacent les pièces jointes de l'autre,
+jusqu'aux sessions anonymes qui ont chacune la leur —, le delete par
+refus (400 « No valid files to delete » pour `{id}` : le contrat
+veut `{"files": [refId]}`), et le miroir admin
+`mwai/v1/openai/files/*` où les mêmes fichiers reviennent, augmentés
+de `download` et `finetune`. Le fichier synthétique est détruit en
+fin de parcours — cleanup mesuré, total 0 → 1 → 0.
 
 ---
 
@@ -375,6 +394,8 @@ attendues.
   OAuth embarque du serveur MCP : decouverte, registration dynamique, escalier des refus, consent admin, token PKCE, appel delegue
 - [`interroger-lassistant-de-lediteur-par-l-api.ipynb`](interroger-lassistant-de-lediteur-par-l-api.ipynb) —
   la face editeur : assistant de redaction, nonce wp_rest, contrat par refus, usage rendu, actions vides (frontiere gratuite/Pro)
+- [`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb) —
+  la face pieces jointes : upload par refus, TTL d'une heure mesure par soustraction, partition par utilisateur, delete par refus, miroir admin
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —

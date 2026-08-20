@@ -249,15 +249,47 @@ _MENTION_VERDICT_INLINE = re.compile(
     r"que\s+je\s+lev\w*|que\s+je\s+lift\w*)"
     r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])")
 
+# #11809 — Position C : verdict DEVANT le marqueur de levee. La forme
+# naturelle d'une levee ecrite est « CHANGES_REQUESTED adresse (commit <sha>) »
+# ou « SUSPECT_REGRESSION leve (PR #N) » : le verdict precede le verbe de levee,
+# qui est suivi d'un identifiant pointant sur ce qui leve. Le marqueur CITERS
+# couvre la negation (« No CHANGES_REQUESTED ») mais pas la mention positive :
+# les motifs precedents (_MENTION_VERDICT, _MENTION_VERDICT_HEADING,
+# _MENTION_VERDICT_INLINE) exigent tous que le marqueur de mention precede le
+# verdict. La forme inverse restait comptee comme emission, et bloquait un
+# merge sur une phrase qui dit exactement le contraire de ce que le garde en
+# comprend.
+#
+# Le discriminant n'est pas la position du verdict mais **qui parle de quoi** :
+# une levee pointe sur ce qu'elle leve (`(commit <sha>)`, `(PR #N)`,
+# `(#<n>)`), une emission cree l'obligation. Le pattern exige donc, apres le
+# verbe de levee, une **reference pointable** (commit SHA, PR/issue number,
+# pull/<n>) entre parentheses immediates. Pas de reference = pas de match =
+# le verdict reste emis (meme garde qu'avant, FP neutralise).
+#
+# Negocie avec les 3 motifs existants : ils utilisent deja `[ée]` pour tolerer
+# les accents francais (cluster ecrit massivement sans accents), donc ici
+# egalement. Les verbes de levee retenus sont ceux qui disent « j'ai adresse
+# ce qui etait dans ce commit/PR » : `adresse(r)`, `traite(r)`, `repondu`,
+# `leve(r)`, `lift`. Le `leve` couvre deja la serie `leve / levee / levees /
+# lever / levees / leves`. `lift` garde la variante anglaise.
+_MENTION_VERDICT_LIFTED = re.compile(
+    r"(?<![\w/])([A-Z][A-Z_]{3,})\s+"
+    r"(?:adresse|adresser|adressé|adressée|adressés|adressées"
+    r"|traite|traiter|traité|traitée|traités|traitées"
+    r"|repondu|répondu|repondre|répondre"
+    r"|leve|lever|levé|levée|levés|levées|lift)"
+    r"\w*\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)")
+
 
 def _strip_mentioned_verdicts(body: str) -> str:
-    """Neutralise les noms de verdict cites en position de mention (#11636, #11744).
+    """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
     Remplace le verdict par des espaces de meme longueur : les offsets du
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body

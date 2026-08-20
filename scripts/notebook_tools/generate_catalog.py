@@ -224,15 +224,57 @@ def detect_kernel(notebook: dict) -> str:
     return ks.get("display_name", ks.get("name", "unknown"))
 
 
+_MARKDOWN_EMPHASIS_RE = re.compile(r"(\*\*|__|`+)")
+_NOTEBOOK_PREFIX_RE = re.compile(r"^Notebook\s*:\s*", re.IGNORECASE)
+# Emoji / pictograms: symbols & pictographs (astral plane, includes flags
+# U+1F1E6-U+1F1FF and skin-tone modifiers U+1F3FB-U+1F3FF), misc symbols,
+# dingbats, transport, supplemental symbols, variation selector. Flags and
+# skin tones are NOT listed separately: they are subsets of the 1F000-1FAFF
+# range, and re-declaring them triggers CodeQL "overly permissive range"
+# for zero coverage gain (#11852).
+_EMOJI_RE = re.compile(
+    "["
+    "\U0001F000-\U0001FAFF"
+    "\U00002600-\U000027BF"
+    "\U00002190-\U000021FF"
+    "\U00002B00-\U00002BFF"
+    "\U0000FE0F"
+    "]+",
+)
+
+
+def sanitize_title(title: str) -> str:
+    """Normalize a notebook H1 for catalog display (#11840).
+
+    Strips inline markdown (**bold**, __bold__, `code`), emojis, and the
+    redundant "Notebook:" prefix; collapses leftover whitespace.
+    """
+    title = _MARKDOWN_EMPHASIS_RE.sub("", title)
+    title = _EMOJI_RE.sub("", title)
+    title = _NOTEBOOK_PREFIX_RE.sub("", title)
+    return " ".join(title.split())
+
+
+def truncate_at_word(text: str, limit: int) -> str:
+    """Truncate on a word boundary with an ellipsis instead of mid-word cuts."""
+    if len(text) <= limit:
+        return text
+    cut = text[: limit + 1]
+    boundary = cut.rfind(" ")
+    if boundary <= 0:
+        return text[:limit] + "…"
+    return cut[:boundary].rstrip() + "…"
+
+
 def extract_title(notebook: dict) -> str:
-    """Extract title from first markdown heading."""
+    """Extract title from first markdown heading (sanitized for display)."""
     for cell in notebook.get("cells", []):
         if cell["cell_type"] == "markdown":
             src = "".join(cell.get("source", []))
             for line in src.split("\n"):
                 line = line.strip()
                 if line.startswith("#"):
-                    return line.lstrip("#").strip()
+                    return sanitize_title(line.lstrip("#").strip())
     return ""
 
 
@@ -1199,8 +1241,8 @@ def generate_markdown_report(entries: list[dict]) -> str:
         lines.append(f"| # | Notebook | Kernel | Status | Maturity | Duration | Owner |")
         lines.append(f"|---|----------|--------|--------|----------|----------|-------|")
         for i, e in enumerate(items, 1):
-            name = e["title"][:50]
-            kernel = e["kernel"][:30]
+            name = truncate_at_word(e["title"], 50)
+            kernel = truncate_at_word(e["kernel"], 30)
             maturity = e.get("maturity", "UNKNOWN")
             duration = e.get("duree_estimee", "")
             owner = e.get("owner_logique", "")

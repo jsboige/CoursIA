@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Ici l'analyseur est reference comme BIBLIOTHEQUE (pas OutputItemType=
+         Analyzer) : le Verifier instancie la classe et pilote l'API Roslyn
+         avec. C'est le canal "tests/IDE", a comparer au canal build du
+         projet Demo. -->
+    <ProjectReference Include="../AgentGuard.Analyzers/AgentGuard.Analyzers.csproj" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
+  </ItemGroup>
+</Project>
