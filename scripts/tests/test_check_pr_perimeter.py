@@ -1435,3 +1435,191 @@ def test_11985_rule1_requires_declarative_correct_count():
     assert header.body_declares_effective_count is False, (
         "an incidental scan scope must not arm the downgrade"
     )
+
+
+# ----------------------------------------------------------------------------
+# #12024 / #11985 extension: COUNT_WORDS closed list (French/English cardinals
+# 1-10). The authorial perimeter declaration can be spelled out in words
+# ("trois fichiers", "five files"). The numeric scan in select_candidates
+# (line ~1020 in check_pr_perimeter.py) does NOT see this -- the word-form
+# branch in this PR is the missing half.
+# ----------------------------------------------------------------------------
+
+def test_11985_count_words_french_three_fichiers_sets_body_declares():
+    """#12024: body says "Trois fichiers (+184/-3)" + a numeric second-count
+    line. The word-form declaration must arm body_declares_effective_count
+    just like the numeric form would, and the numeric line stays a mention.
+    """
+    body = (
+        "## Summary\n"
+        "**Perimetre : trois fichiers** (+184/-3)\n"
+        "- **G.4** : atomicite (1 helper + 1 modification + 1 fichier test "
+        "adapte, 1 bug, 1 discrimination).\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=3)
+    header = next(c for c in candidates if "Perimetre" in c.text)
+    arg = next(c for c in candidates if "helper" in c.text)
+    assert header.body_declares_effective_count is True, (
+        "the word-form 'trois fichiers' must arm body_declares_effective_count"
+    )
+    # The numeric second-count line inherits the downgrade (mention, not fresh
+    # assertion) -- the rule 1 invariant.
+    assert arg.body_declares_effective_count is True
+
+
+def test_11985_count_words_english_five_files_sets_body_declares():
+    """#12024: English variant of test_11985_count_words_french_three_fichiers."""
+    body = (
+        "## Summary\n"
+        "**Perimeter: five files** (+200/-20)\n"
+        "- helper function + 1 new test\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=5)
+    header = next(c for c in candidates if "Perimeter:" in c.text)
+    assert header.body_declares_effective_count is True
+
+
+def test_11985_count_words_mismatch_does_not_set_body_declares():
+    """#12024 FN control: body says "trois fichiers" but n_files=2. The word
+    form must NOT arm body_declares_effective_count -- the closed-list mapping
+    is checked against n_files, and a mismatch keeps the existing behaviour
+    (declaration does not validate a wrong perimeter)."""
+    body = (
+        "## Summary\n"
+        "**Perimetre : trois fichiers** (+184/-3)\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=2)
+    header = next(c for c in candidates if "Perimetre" in c.text)
+    assert header.body_declares_effective_count is False, (
+        "word-form 'trois' must not arm body_declares_effective_count when "
+        "n_files=2"
+    )
+
+
+def test_11985_count_words_closed_list_boundary():
+    """#12024 FN control: 'onze fichiers' / 'eleven files' (beyond the closed
+    list 1-10) must NOT arm body_declares_effective_count. The whole point of
+    the closed list is fail-loud: a reviewer catches the next 'eleven' body
+    and the mapping is expanded. This test pins the boundary."""
+    body = (
+        "## Summary\n"
+        "**Perimetre : onze fichiers** (+184/-3)\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=11)
+    # 'onze fichiers' is OUTSIDE the closed list 1-10 -> the line is not
+    # extracted as a candidate, so no header candidate exists. This is the
+    # fail-loud shape: a body using 'onze fichiers' is NOT protected by rule 1
+    # and the reviewer will see a mismatch against the actual n_files=11
+    # (which is also outside the closed list, so the numeric form would also
+    # be caught). The closed list's whole purpose: contain the FN cost.
+    assert candidates == [], (
+        "'onze fichiers' is outside COUNT_WORDS (closed list 1-10) -- the "
+        "line must NOT enter the candidate list. Closed list = fail loud."
+    )
+
+
+def test_12024_numeric_count_inside_codespan_is_not_a_candidate():
+    """#12024 / codespan-exclusion: a numeric COUNT_CLAIM inside a backtick
+    code-span (`` `2 fichiers` ``) is a CITED example, not an authorial
+    perimeter declaration. Founder case: PR #12024 body v3 listed illustrative
+    counts between backticks and the perimeter-review-guard flagged them as
+    unverifiable assertions. After the codespan-exclusion fix, lines whose
+    only COUNT_CLAIM trigger sits inside a backtick span are skipped.
+
+    This pins the FN control: 89/89 prior tests passed because the suite
+    contained no code-span example -- a detector is validated by the cases
+    it must NOT catch, not by the cases it does.
+    """
+    # Line whose ONLY count trigger sits inside a code-span -- must be skipped.
+    text = (
+        "Voici l'exemple documente : `2 fichiers` puis `three files`.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"a numeric count inside backticks must not enter the candidate "
+        f"stream; got {found!r}"
+    )
+
+
+def test_12024_word_form_inside_codespan_is_not_a_candidate():
+    """#12024 / codespan-exclusion word-form variant: `` `trois fichiers` ``
+    and `` `five files` `` between backticks are CITED examples. Founder case
+    on PR #12024 body v3 (perimeter-review-guard FAIL x3 lines on those exact
+    patterns). After the codespan-exclusion fix, lines whose only word-form
+    trigger sits inside a code-span are skipped.
+    """
+    # Body lines 61/62 from PR #12024 body v3: word-form counts between
+    # backticks. With the fix, neither line enters the candidate stream.
+    text = (
+        "- [x] Forme FR `trois fichiers` arming `body_declares_effective_count`\n"
+        "- [x] Forme EN `five files` arming `body_declares_effective_count`\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"word-form counts inside backticks must not enter the candidate "
+        f"stream; got {found!r}"
+    )
+
+
+def test_12024_codespan_exclusion_does_not_silence_real_assertion():
+    """#12024 / codespan-exclusion: a line that mixes a code-span example AND
+    an out-of-codespan count claim is STILL a candidate -- the real assertion
+    is the un-cited one. The exclusion is "all triggers inside", not
+    "any trigger inside".
+    """
+    text = (
+        "Cette PR remplace l'ancien format `trois fichiers` par le nouveau "
+        "qui declare 2 fichiers au total.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert any("2 fichiers" in c for c in found), (
+        f"a real out-of-codespan count claim must still enter the candidate "
+        f"stream even when the line also carries a code-spanned example; "
+        f"got {found!r}"
+    )
+
+
+def test_12024_double_backtick_codespan_is_excluded():
+    """#12024 / codespan-exclusion double-backtick variant: `` ``trois fichiers`` ``
+    (a code-span whose content itself contains a backtick) is still a
+    code-span, and its content is CITED, not claimed. CommonMark allows the
+    longer opener to host a single backtick inside.
+    """
+    text = (
+        "Use the pattern ``trois fichiers`` as the example.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"double-backtick code-spans must also be excluded; got {found!r}"
+    )
+
+
+def test_12024_real_body_fragment_does_not_enter_candidates():
+    """#12024 / end-to-end on a body fragment that reproduced the 3 FAIL lines
+    ai-01 cited in the diagnostic. The 4 occurrences (L9 prose x2, L61/62
+    code-span x2) must collapse to 0 candidates once (1)+(2) is in place:
+    L9 prose entries are pinned by separate tests above, the L61/L62 entries
+    collapse under the codespan-exclusion fix.
+    """
+    body = (
+        "## Summary\n"
+        "Cette PR livre la forme en toutes lettres -- par exemple "
+        "`trois fichiers` ou `five files` -- pour les PRs qui n'utilisent pas "
+        "de chiffres.\n"
+        "## Tests\n"
+        "- [x] Forme FR `trois fichiers` arming body_declares_effective_count\n"
+        "- [x] Forme EN `five files` arming body_declares_effective_count\n"
+    )
+    found = extract_perimeter_assertions(body)
+    assert found == [], (
+        f"body fragment that reproduces the founder FAIL lines must yield "
+        f"0 candidates under the codespan-exclusion fix; got {found!r}"
+    )
