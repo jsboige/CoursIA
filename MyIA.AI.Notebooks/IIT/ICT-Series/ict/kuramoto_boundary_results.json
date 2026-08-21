@@ -1,0 +1,183 @@
+{
+  "protocol": {
+    "grid": 64,
+    "K": 1.0,
+    "dt": 0.05,
+    "relax_steps": 500,
+    "horizon": 200,
+    "window": 50,
+    "kick_dphi": 0.5,
+    "kick_radius": 5.0,
+    "coherence_thresh": 0.8,
+    "band_rows": [
+      28,
+      36
+    ],
+    "seeds": [
+      0,
+      1,
+      7,
+      42,
+      99
+    ],
+    "pairs": 4,
+    "numpy_only_cpu": true
+  },
+  "calibration_null": {
+    "twin_detail": [
+      {
+        "seed": 0,
+        "twin_1": 0.09709821428571429,
+        "twin_2": 0.11439732142857142,
+        "diff": -0.017299107142857137
+      },
+      {
+        "seed": 1,
+        "twin_1": 0.07868303571428571,
+        "twin_2": 0.07310267857142858,
+        "diff": 0.005580357142857137
+      },
+      {
+        "seed": 7,
+        "twin_1": 0.18582589285714285,
+        "twin_2": 0.17689732142857142,
+        "diff": 0.008928571428571425
+      },
+      {
+        "seed": 42,
+        "twin_1": 0.08426339285714286,
+        "twin_2": 0.07979910714285714,
+        "diff": 0.004464285714285726
+      },
+      {
+        "seed": 99,
+        "twin_1": 0.06584821428571429,
+        "twin_2": 0.06305803571428571,
+        "diff": 0.0027901785714285754
+      }
+    ],
+    "sigma_delta": 0.01041450737611325,
+    "eps_topo": 0.005207253688056625,
+    "note": "executée AVANT le test principal (anti-HARKing)"
+  },
+  "per_seed": [
+    {
+      "seed": 0,
+      "defects_t0": 11,
+      "defects_t200": 8,
+      "valid": false,
+      "r_cross_topo": 0.13950892857142858,
+      "propa_within_topo": 1.0,
+      "propa_cross_topo": 0.13950892857142858,
+      "r_cross_ctrl": 0.09709821428571429,
+      "propa_within_ctrl": 1.0,
+      "propa_cross_ctrl": 0.09709821428571429,
+      "delta_topo": NaN,
+      "disruption": {
+        "defects_reset": 8,
+        "defects_post_relax": 8,
+        "r_cross_post": 0.12611607142857142
+      }
+    },
+    {
+      "seed": 1,
+      "defects_t0": 8,
+      "defects_t200": 8,
+      "valid": true,
+      "r_cross_topo": 0.07700892857142858,
+      "propa_within_topo": 1.0,
+      "propa_cross_topo": 0.07700892857142858,
+      "r_cross_ctrl": 0.07868303571428571,
+      "propa_within_ctrl": 1.0,
+      "propa_cross_ctrl": 0.07868303571428571,
+      "delta_topo": 0.001674107142857137,
+      "disruption": {
+        "defects_reset": 9,
+        "defects_post_relax": 6,
+        "r_cross_post": 0.07254464285714286
+      }
+    },
+    {
+      "seed": 7,
+      "defects_t0": 12,
+      "defects_t200": 11,
+      "valid": true,
+      "r_cross_topo": 0.13895089285714285,
+      "propa_within_topo": 1.0,
+      "propa_cross_topo": 0.13895089285714285,
+      "r_cross_ctrl": 0.18582589285714285,
+      "propa_within_ctrl": 1.0,
+      "propa_cross_ctrl": 0.18582589285714285,
+      "delta_topo": 0.046875,
+      "disruption": {
+        "defects_reset": 11,
+        "defects_post_relax": 11,
+        "r_cross_post": 0.125
+      }
+    },
+    {
+      "seed": 42,
+      "defects_t0": 11,
+      "defects_t200": 6,
+      "valid": false,
+      "r_cross_topo": 0.08705357142857142,
+      "propa_within_topo": 1.0,
+      "propa_cross_topo": 0.08705357142857142,
+      "r_cross_ctrl": 0.08426339285714286,
+      "propa_within_ctrl": 1.0,
+      "propa_cross_ctrl": 0.08426339285714286,
+      "delta_topo": NaN,
+      "disruption": {
+        "defects_reset": 6,
+        "defects_post_relax": 6,
+        "r_cross_post": 0.07310267857142858
+      }
+    },
+    {
+      "seed": 99,
+      "defects_t0": 10,
+      "defects_t200": 6,
+      "valid": false,
+      "r_cross_topo": 0.10993303571428571,
+      "propa_within_topo": 1.0,
+      "propa_cross_topo": 0.10993303571428571,
+      "r_cross_ctrl": 0.06584821428571429,
+      "propa_within_ctrl": 1.0,
+      "propa_cross_ctrl": 0.06584821428571429,
+      "delta_topo": NaN,
+      "disruption": {
+        "defects_reset": 7,
+        "defects_post_relax": 4,
+        "r_cross_post": 0.03515625
+      }
+    }
+  ],
+  "scoreboard": {
+    "median_r_cross_topo": 0.10797991071428571,
+    "median_r_cross_ctrl": 0.13225446428571427,
+    "median_delta_topo": 0.02427455357142857,
+    "median_r_cross_post_disruption": 0.09877232142857142,
+    "ic95_topo": [
+      0.07700892857142858,
+      0.13895089285714285
+    ],
+    "ic95_ctrl": [
+      0.07868303571428571,
+      0.18582589285714285
+    ],
+    "ic95_delta": [
+      0.001674107142857137,
+      0.046875
+    ],
+    "ic95_post": [
+      0.07254464285714286,
+      0.125
+    ],
+    "seeds_valid": 2,
+    "seeds_rejected": 3,
+    "n_delta_below_eps": 1,
+    "verdict": "INCONCLUSIF (>= 2 graines rejetees — vortex instables)",
+    "borderline_prudence_pm_0_05": false,
+    "disruption_verdict": "NON CONCLUANT (entre les deux seuils)"
+  }
+}
