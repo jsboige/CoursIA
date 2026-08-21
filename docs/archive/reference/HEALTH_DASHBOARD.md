@@ -1,28 +1,28 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-19**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-08-21**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**919** notebooks référencés au catalogue.
+**936** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 761 | 82.8% |
-| DEMO | 156 | 17.0% |
+| READY | 772 | 82.5% |
+| DEMO | 162 | 17.3% |
 | BROKEN | 2 | 0.2% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 575 |
-| WSL requis | 48 |
+| **local** (exécutable sans GPU/cloud/WSL) | 578 |
+| WSL requis | 56 |
 | GPU requis | 105 |
 | Cloud requis (QC / GenAI Docker) | 111 |
-| API key requise | 148 |
+| API key requise | 154 |
 
 ## Distribution par série
 
@@ -30,34 +30,36 @@
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
 | FallacyDetection | 2 | 0 | 0 | 2 | 100% |
-| GameTheory | 56 | 0 | 0 | 56 | 100% |
-| GenAI | 81 | 93 | 2 | 176 | 46% |
-| IIT | 56 | 0 | 0 | 56 | 100% |
-| ML | 45 | 3 | 0 | 48 | 94% |
+| GameTheory | 57 | 0 | 0 | 57 | 100% |
+| GenAI | 80 | 100 | 2 | 182 | 44% |
+| IIT | 58 | 0 | 0 | 58 | 100% |
+| ML | 46 | 3 | 0 | 49 | 94% |
 | Probas | 58 | 0 | 0 | 58 | 100% |
 | QuantConnect | 60 | 48 | 0 | 108 | 56% |
 | RL | 19 | 2 | 0 | 21 | 90% |
 | Search | 118 | 0 | 0 | 118 | 100% |
-| Sudoku | 35 | 2 | 0 | 37 | 95% |
-| SymbolicAI | 224 | 8 | 0 | 232 | 97% |
+| Sudoku | 36 | 1 | 0 | 37 | 97% |
+| SymbolicAI | 231 | 8 | 0 | 239 | 97% |
 | cross-series | 1 | 0 | 0 | 1 | 100% |
 
 ## Kernels
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 593 |
-| .NET (C#) | 236 |
-| Python 3 (ipykernel) | 23 |
-| Lean 4 (WSL) | 18 |
-| Python (GameTheory WSL + OpenSpiel) | 10 |
+| Python 3 | 598 |
+| .NET (C#) | 239 |
+| Lean 4 (WSL) | 24 |
+| Python 3 (ipykernel) | 24 |
+| Python (GameTheory WSL + OpenSpiel) | 9 |
 | Python 3 (WSL) | 7 |
 | Python (coursia-ml-training) | 7 |
 | coursia-ml-training | 4 |
 | Python 3 (coursia-ml-training) | 4 |
 | Python 3 (PyPhi/IIT) | 4 |
 | Lean 4 | 3 |
+| Python3 | 2 |
 | .venv | 2 |
+| Python 3 (coursia-sae) | 1 |
 | Coursia ML Training | 1 |
 | unknown | 1 |
 | pyphi | 1 |
