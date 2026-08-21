@@ -65,12 +65,18 @@ pratique sur ce depot mais ce n'est pas une preuve d'identite : un nit user
 poste via `gh` serait manque (faux negatif), un agent collant du CRLF serait
 signale a tort (faux positif). Le gate signale, l'humain tranche.
 
-Limite honnete du CONDITIONAL_LIFT (#11201)
--------------------------------------------
-La regex neutralise le marqueur « je merge » au niveau du BODY ENTIER : un
-commentaire contenant a la fois une annonce vraie (« c'est bon, je merge ») et
-une construction conditionnelle (« corrige X et je merge ») est integralement
-de-leve — l'annonce vraie y perd son effet (faux positif possible). La branche
+Limite honnete du CONDITIONAL_LIFT (#11201, resserree #12074)
+-------------------------------------------------------------
+La regex neutralise le marqueur « je merge » quand la construction est
+conditionnelle. #12074 a resserre la neutralisation : un marqueur de levee
+EXPLICITE par son auteur (« je leve ma reserve », « Levee de mon
+CHANGES_REQUESTED ») EN AMONT du match conditionnel preserve le LIFT — « je
+leve ma reserve et je merge » est la formulation naturelle d'une levee, le
+« et je merge » n'y est que la consequence annoncee (comparaison d'offsets,
+cf `_lift_cancelled`). Residuel assume : une annonce NON explicite (« c'est
+bon, je merge ») coexistant avec une construction conditionnelle dans le meme
+body reste integralement de-levee (faux positif possible) — rescaper « je
+merge »/« Merge. » rouvrirait #11201 par la porte de service. La branche
 « des » peut aussi matcher « je merge des PRs » (pluriel direct, pas « dès »).
 Choix assume : le cout d'un faux positif (un flag a trier) est inferieur au
 cout du faux negatif corrige ici (un nit invisible fondu dans sa propre
@@ -169,6 +175,20 @@ CONDITIONAL_LIFT = re.compile(
     r"(et je merge|puis je merge|ensuite je merge"
     r"|je merge (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
 
+# #12074 — marqueurs de levee EXPLICITE par son auteur : quand l'un d'eux
+# PRECEDE le match CONDITIONAL_LIFT, la construction n'est pas une condition —
+# « je leve ma reserve et je merge » : la levee est acquise, le merge n'en est
+# que la consequence annoncee. Distinct des annonces generiques (« je merge »,
+# « Merge. ») : les rescaper rouvrirait #11201 (« corrige X et je merge »
+# redeviendrait une levee). Miroir des entrees d'auteur de LIFT_MARKERS —
+# casse preservee et accents normalises par `_unaccent`, comme pour ces
+# derniers.
+EXPLICIT_LIFT_MARKERS = (
+    "Je lève", "Je leve", "je lève", "je leve",
+    "Levée de", "Levee de", "levée de", "levee de",
+    "Lève la", "Leve la", "lève la", "leve la",
+)
+
 # #11246 — use vs mention : CONDITIONAL_LIFT lisait les exemples CITES du motif
 # comme des usages. Une review qui explique « corrige X et je merge » se
 # flaggait elle-meme (2/15 findings de l'audit --limit 400 : les 2 seules
@@ -185,6 +205,27 @@ _QUOTED_RANGES = re.compile(r"```.*?```|«.*?»|`[^`]*`", re.DOTALL)
 def _strip_quoted(body: str) -> str:
     """Retire les segments cites (guillemets typo, backtick, bloc code)."""
     return _QUOTED_RANGES.sub(" ", body)
+
+
+def _lift_cancelled(stripped: str) -> bool:
+    """#12074 — le CONDITIONAL_LIFT n'annule le LIFT que si AUCUN marqueur de
+    levee explicite d'auteur ne precede le match conditionnel.
+
+    « **Je leve mon CHANGES_REQUESTED** et je merge. » s'auto-bloquait : le
+    « et je merge » annulait le LIFT au niveau du body entier, le commentaire
+    de levee etait re-compte comme un nit de plus, et la reserve qu'il levait
+    redevenait vivante. Le discriminateur est la POSITION — ce qui PRECEDE le
+    connecteur decide : antecedent imperatif (« corrige X et je merge ») =
+    condition bloquante ; antecedent de levee accomplie = consequence
+    annoncee. Les offsets sont compares sur la meme chaine passee par
+    `_strip_quoted` : une levee CITEE (« ... ») ne rescape rien (use vs
+    mention, #11246). `_unaccent` preserve la longueur, donc les offsets de la
+    chaine stripee restent ceux de la chaine originale.
+    """
+    for m in CONDITIONAL_LIFT.finditer(stripped):
+        if not has_marker(stripped[: m.start()], EXPLICIT_LIFT_MARKERS):
+            return True
+    return False
 
 # #11636 — use vs mention, 2e reformulation de la classe #11246 : un rapport
 # de correction qui NOMME le verdict qu'il corrige n'emet pas de reserve. Cas
@@ -594,10 +635,11 @@ def classify(author: str, body: str) -> str | None:
     if author in BOT_LOGINS or not body:
         return None
     stripped = body.lstrip()
-    if has_marker(body, LIFT_MARKERS) and not CONDITIONAL_LIFT.search(_strip_quoted(body)):
+    if has_marker(body, LIFT_MARKERS) and not _lift_cancelled(_strip_quoted(body)):
         return None  # annonce de levee / de merge : resolution, pas reserve
-    # (construction conditionnelle « et je merge » : voir CONDITIONAL_LIFT —
-    # l'annonce conditionnee n'est pas une levee, le commentaire continue)
+    # (construction conditionnelle « et je merge » : voir _lift_cancelled —
+    # l'annonce conditionnee n'est pas une levee, SAUF levee explicite d'auteur
+    # en amont (#12074) ; le commentaire continue sinon)
     if has_live_marker(body, (VERDICT_POSITIVE,)):
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —
@@ -731,7 +773,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
         and has_marker(c.get("body", ""), LIFT_MARKERS)
-        and not CONDITIONAL_LIFT.search(_strip_quoted(c.get("body", "")))
+        and not _lift_cancelled(_strip_quoted(c.get("body", "")))
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
