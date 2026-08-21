@@ -30,6 +30,11 @@ matche ``non configuree - comparaison skippee``) :
     SKIPPED        : 27
     NOT_FOUND      : 43  (dont le tell du worktree : ``WARNING: .env non trouve``)
     UNAVAILABLE_FR : 16  (``indisponible``, distinct de ``non disponible``)
+    STACK_DOWN_*   : 0 preexistant (calibre 2026-08-20 sur 1042 notebooks) ;
+                     axe 2 SOTA defect-mesure : la re-execution sur stack GenAI
+                     absente imprime des aveux que les compteurs d'erreurs
+                     structurels ne voient pas (volume peut meme MONTER -- cf
+                     PR #11859 cell11/cell15 review ai-01 06:52Z).
 
 Ces comptes prouvent le deuxieme principe de conception : **la comparaison
 se fait contre la base de fusion** (multiset de lignes confession base vs
@@ -88,12 +93,29 @@ from collections import Counter
 from pathlib import Path
 
 # --- Patterns d'aveu (calibres sur corpus 2026-08-19, cf docstring) ----------
+# Les motifs STACK_DOWN (#11754 extension c.1301+256) couvrent les aveux
+# d'une stack GenAI / Docker / Aspire qui n'est pas montee au moment de la
+# re-execution. Cas fondateur : PR #11859 (review ai-01 06:52Z) -- la
+# re-execution depuis un worktree a perdu cell11 (whisper-api : Unable to
+# find image / pull access denied) et cell15 (ComfyUI : HttpRequestException)
+# sans que les compteurs d'erreurs structurels ne bronchent. Volume agrege
+# MONTAIT (+24.2 %) -- un detecteur de volume n'aurait rien vu non plus.
+# C'est exactement le profil d'un aveu textuel que la stance frozen-inheritance
+# permet d'attraper : 0 hit pre-existant sur main (1042 notebooks scannes
+# 2026-08-20), hit positif sur le commit fautif d6dd2ae68 (11 occurrences),
+# hit nul sur le commit remede c98e48196.
 
 CONFESSION_PATTERNS: dict[str, re.Pattern[str]] = {
     "NON_CONFIGURED": re.compile(r"non\s+configur", re.IGNORECASE),
     "SKIPPED": re.compile(r"\bskipp", re.IGNORECASE),
     "NOT_FOUND": re.compile(r"non\s+trouv|introuvable", re.IGNORECASE),
     "UNAVAILABLE_FR": re.compile(r"indisponible", re.IGNORECASE),
+    # c.1301+256 -- axe 2 SOTA detecteur defect-mesure
+    "STACK_DOWN_FAILED_TO_START": re.compile(r"FailedToStart", re.IGNORECASE),
+    "STACK_DOWN_PULL_ACCESS": re.compile(r"pull access denied", re.IGNORECASE),
+    "STACK_DOWN_UNABLE_FIND_IMAGE": re.compile(r"Unable to find image", re.IGNORECASE),
+    "STACK_DOWN_HTTP_REQ_EXC": re.compile(r"HttpRequestException", re.IGNORECASE),
+    "STACK_DOWN_CONTAINER_NOT_FOUND": re.compile(r"container not found", re.IGNORECASE),
 }
 
 # Lignes d'aveu tronquees a cette longueur dans les rapports (les sorties

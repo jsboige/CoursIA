@@ -14,7 +14,14 @@
       by: myia-po-2024:CoursIA
       python_sha: fb091daf6b35345dc6ceb726af32411b687f5f87
       csharp_sha: defc0e484993e6dd8f966430dea7ea5c8f7430bc
+    - date: "2026-08-20"
+      by: myia-po-2026:CoursIA
+      python_sha: f4d9805d65d94e6a1b0eb318e146a12172c30b18
+      csharp_sha: defc0e484993e6dd8f966430dea7ea5c8f7430bc
+      content_python_sha: dd50d7c01a403f3d99b637be524bdb8ffd3ce78f092e9e86dde4e1ac70b2d3e2
+      content_csharp_sha: f9d39130590fea705a6fe028c15e6e43cb0ec1a74d0251fae8a85cc92e9e469f
   known_differences:
+    - "2026-08-20 : conversion markdown-only ASCII->Mermaid du diagramme de pipeline Fast Downward (PDDL->Translator->Preprocessor->Search->Plan, cell 3 cote python, PR #12011 / #11962) - 0 cellule code touchee, parite engine native-both intacte, rebaseline d'attestation."
     - "Concept : planificateur classique Fast Downward (SAS+, heuristic search, A*/GBFS/EHC)."
     - "Python : invoque le VRAI solveur SOTA Fast Downward via conteneur Docker (jsboige/coursia-fast-downward, API HTTP port 8200) + unified-planning. C# : deux tranches — Tranche 1 from-scratch BCL .NET (representation SAS+, heuristiques h^max/h^FF par relaxation de planning graph, recherche A*/GBFS/EHC, cells 0-27) + Tranche 2 Fast Downward natif via System.Net.Http.HttpClient sur l'API Docker du meme conteneur (port 8200, depuis 2026-08-11)."
     - "Parite engine (native-both depuis 2026-08-11) : les deux cotes invoquent le moteur de production Fast Downward — Python via urllib, C# via HttpClient sur le MEME conteneur Docker (vraie parite lib-vs-lib, pas d'installation de binaire natif C#). Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382. Instance Blocks World PDDL canonique : plan optimal = 2 actions (pick-up a, stack a b), cout = 2, des deux cotes."

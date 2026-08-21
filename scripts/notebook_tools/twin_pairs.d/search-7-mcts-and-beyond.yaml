@@ -3,8 +3,8 @@
   python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-7-MCTS-And-Beyond-Csharp.ipynb
   parity_level: native-both
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "pyspiel 2.0.1 natif Windows + pythonnet 3.0.5 bridge .NET 10 -> CPython 3.11.9 -> pyspiel (DLL designee par PYTHONNET_PYDLL, pas de chemin hardcode). Les DEUX jumeaux invoquent reellement OpenSpiel/MCTSBot(seed=42, 1000 sim, c=sqrt(2)) sur tic_tac_toe et obtiennent l'action 4 (cross-twin proof)."
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les DEUX jumeaux invoquent reellement OpenSpiel/MCTSBot(seed=42, 1000 sim, c=sqrt(2)) sur tic_tac_toe et obtiennent l'action 4 (cross-twin proof) : Python en direct (pyspiel 2.0.1 natif Windows, cellule 16, `pyspiel.load_game('tic_tac_toe')` + `mcts.MCTSBot`) ; C# via bridge pythonnet 3.0.5 (.NET -> CPython -> pyspiel, `Runtime.PythonDLL` designee par `PYTHONNET_PYDLL`, cellule pont executee, outputs reels `action = 4`, 0 erreur, sequence [1..17]). Verdict SOTA-OK (bascule registre #10382, 2026-08-20, lane myia-po-2026:CoursIA) : le pont est LIVRE et EXECUTE dans le notebook committe -- le verdict RECOVERABLE-LOCAL historique decrivait l'etat d'avant-livraison (reclassification #10459, tranche po-2026:CoursIA-2) et n'avait pas ete rebascule. Meme cas de figure que GT-7 (2026-08-16) et app-15 (2026-08-18). `parity_level: native-both` deja basculee par la reclassification (les DEUX jumeaux invoquent le meme moteur pyspiel, Python en direct, C# via bridge)."
   audits:
     - date: "2026-08-01"
       by: myia-po-2024:CoursIA-2

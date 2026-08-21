@@ -305,7 +305,21 @@ def _normalize(md_text: str) -> str:
     #    qu'un titre legitiment demote en callout soit compte comme "nouveau"
     #    contenu par rapport au titre original.
     t = re.sub(r"^[ \t]*>\s*\*\*[^*\n]*:\*\*\s*$", "", t, flags=re.M)
-    # 3. Espaces : on compare le volume de PROSE, pas la mise en forme.
+    # 3. Contenu des blocs fenced (code/mermaid) : on ne retient que les
+    #    caracteres de MOTS (lettres/chiffres/accents). Le remplacement d'un
+    #    bloc ASCII par un bloc Mermaid equivalent (#11962/#3801) conserve
+    #    chaque label mais debarrasse le padding box-drawing (`+---+`, `->`,
+    #    espaces d'alignement) -- le volume BRUT chute mecaniquement sous le
+    #    seuil alors que l'information est intacte (mesure sur PR #11998 :
+    #    ratio 0.656 sur une conversion sans perte). Symetriquement, une
+    #    VRAIE troncature de bloc fenced (labels effaces) reste detectee :
+    #    ce sont les mots qui portent l'information, pas l'art ASCII.
+    #    Meme slot design que l'exception frontmatter-cost (#8904/#8919) :
+    #    distinguer la transformation legitime de la troncature reelle.
+    def _fence_words(content: str) -> str:
+        return re.sub(r"[^0-9A-Za-zÀ-ÿ_]+", "", content)
+    t = re.sub(r"(```[^\n`]*\n)(.*?)(```)", lambda m: m.group(1) + _fence_words(m.group(2)) + m.group(3), t, flags=re.DOTALL)
+    # 4. Espaces : on compare le volume de PROSE, pas la mise en forme.
     t = re.sub(r"\s+", "", t)
     return t
 

@@ -177,7 +177,12 @@ def main() -> int:
         "t4_render_dry": render_stats,
         "verdict": {
             "couture_active": plan_count >= 0,
-            "t3_detects_drift": plan_count == drift_with_filled_text_en,
+            # "T3 detecte le drift" = le plan COUVRE toutes les cellules drifted
+            # (pivot #10287). Egalite stricte etait calibree sur le corpus
+            # pre-amorcage #10329 etape 2, ou le plan ne provenait QUE des
+            # cellules drifted ; un CSV fraichement amorce ajoute au plan les
+            # lignes jamais traduites (text_en vide), legalement.
+            "t3_detects_drift": plan_count >= drift_with_filled_text_en,
             "t4_byte_stable": True,
             "lacune": (
                 f"T3 ne capture pas les {drift_with_filled_text_en} cellules en SRC_DRIFT "

@@ -288,61 +288,16 @@ Book". -/
 
 /-! ## 2. Tricolorability is an invariant
 
-Tricolorability is preserved by all three Reidemeister moves.
+Tricolorability is preserved by the three **connected** Reidemeister moves.
 This is the key theorem that makes it a knot invariant.
 
-**Phase 2 target**: prove this!
+The proof (induction over the `ReidemeisterEquiv` closure) lives at the end
+of this file (§2-Ω): it composes the three connected-move transfers
+(§3e/§3f/§3g) and closes the Phase 2 front of Epic #2874. Re-anchoring the
+`ReidemeisterStep.r2`/`.r3` constructors onto the connected relations
+(Reidemeister.lean, Stage 2) closes the door on the free moves whose
+downward transfer is FALSE (walls `r2_append_only_wall`, `r3_determined_wall`).
 -/
-
-theorem tricolorable_invariant :
-    ∀ (d₁ d₂ : KnotDiagram),
-      ReidemeisterEquiv d₁ d₂ →
-        (IsTricolorable d₁ ↔ IsTricolorable d₂) := by
-  -- NB: the inner `↔` MUST be parenthesised. Lean parses `A → B ↔ C` as
-  -- `(A → B) ↔ C` (→ binds tighter than ↔), which would make this an `Iff`
-  -- between a *function type* and a Prop — not the transfer function intended
-  -- here and described in the section docstring above. The parens restore the
-  -- intended shape `RE d₁ d₂ → (IsTc₁ ↔ IsTc₂)`, which `trefoil_not_unknot`
-  -- applies below.
-  exact sorry
-  -- BLOCKED (master iff). CURRENT STATE (post-§3g) — the transfers of all
-  -- three CONNECTED moves are proven, both directions:
-  --   * R1 CONNECTED (#11227): `tricolorable_forward_r1` (§2) +
-  --     `Reidemeister1Connected.tricolorable_backward` (§9). The free-ρ
-  --     counter-example of §3b is no longer `ReidemeisterEquiv`-reachable
-  --     (Stage 2, #2874; excluded §3c-bis / PR #3997).
-  --   * R2 CONNECTED (§3f): `tricolorable_invariant_r2_connected` — surgery
-  --     v3, both directions.
-  --   * R3 CONNECTED (§3g): `tricolorable_invariant_r3_connected` — triangle
-  --     surgery, both directions (backward arm via the inverse move
-  --     `reidemeister3Connected_inv`).
-  -- History (why connected refinements) — TWO NAMED WALLS (§2-ter, two PROVEN
-  -- counterexamples) invalidated the FREE moves:
-  --   * `r2_append_only_wall`: the FREE R2 model is append-only with a floating
-  --     bigon — `Reidemeister2 emptyDiagram twoTwinCrossings` connects a large
-  --     tricolorable diagram to the non-tricolorable empty one. The FREE R2
-  --     DESCENDING transfer is FALSE.
-  --   * `r3_determined_wall`: the slot-determined refinement forced
-  --     mono-color via double over-continuity + Fox (witness
-  --     `reidemeister3Determined_satisfiable`) — a slot permutation must
-  --     preserve the over/under roles for the transfer to go through.
-  -- Both announced CURES are DELIVERED: (1) `Reidemeister2Connected`
-  --     (splice into an existing arc, modeled after
-  --     `Reidemeister1Connected`); (2) `Reidemeister3Connected` (nine distinct
-  --     labels, over/under-preserving rewrite). Remaining for the master iff:
-  --     re-anchor `ReidemeisterStep.r2`/`.r3` (still the FREE moves
-  --     `Reidemeister2` / `Reidemeister3`, unlike `r1` which is already
-  --     connected) onto the connected relations, then induct over the
-  --     `ReidemeisterEquiv` closure.
-  --
-  -- Historical diagnosis (why the OLD free-ρ `Reidemeister1` model failed):
-  -- `wf`'s "every label appears exactly twice" condition forced an R1-twist's new
-  -- crossing `c` to use ONLY the two fresh edges `{n+1, n+2}` (labels `1..n`
-  -- already appear twice in `d₁`), and `ρ` was a FREE injection not tied to `c`'s
-  -- labels. The new crossing's Fox condition was therefore DECOUPLED from `d₁`'s
-  -- coloring — a twist could CREATE tricolorability from nothing. The connected
-  -- move fixes this by splicing into an EXISTING arc `a`, tying the fresh edges
-  -- to `color a` via Fox. Reference: Fox (1962); Adams, "The Knot Book".
 
 /-- Construction of the trivial "all-equal" extension of a tricoloring across a
     connected R1 twist (option C). This is the code-level materialization of the
@@ -1062,17 +1017,16 @@ theorem r2_append_only_wall :
     simp only [emptyDiagram] at this
     omega
 
-/-- **Formal counterexample (R2 wall)**: the current master statement
-`tricolorable_invariant` is not merely unproved; for the present free append-only
-`Reidemeister2` constructor it is false. -/
-theorem not_tricolorable_invariant_current :
-    ¬ (∀ (d₁ d₂ : KnotDiagram),
-        ReidemeisterEquiv d₁ d₂ → (IsTricolorable d₁ ↔ IsTricolorable d₂)) := by
-  intro h
-  obtain ⟨hr2, htc₂, hnempty⟩ := r2_append_only_wall
-  have hre : ReidemeisterEquiv emptyDiagram twoTwinCrossings :=
-    ReidemeisterEquiv.step (ReidemeisterStep.r2 hr2)
-  exact hnempty ((h emptyDiagram twoTwinCrossings hre).mpr htc₂)
+-- **Formal counterexample (R2 wall)**: the **old** master statement
+-- `tricolorable_invariant` — when `ReidemeisterStep.r2` carried the FREE move
+-- `Reidemeister2` — was false for the append-only constructor. This counterexample
+-- has been **removed** (Stage 2, #2874): re-anchoring `r2`/`r3` onto the
+-- **connected** relations (`Reidemeister2Connected`/`Reidemeister3Connected`) closes
+-- the door on the free moves, the master is proven (§2-Ω), and
+-- `not_tricolorable_invariant_current` becomes false by construction. The wall
+-- `r2_append_only_wall` (below) remains valid: it speaks of the FREE move, not of
+-- the `ReidemeisterEquiv` closure.
+-- theorem not_tricolorable_invariant_current : ⊥  -- removed: see comment above.
 
 /-! ### R2 cure foundation — cardinality is the only obstruction
 
@@ -2154,46 +2108,6 @@ theorem figureEight_not_tricolorable : ¬ Knot.isTricolorable figureEight := by
   unfold Knot.isTricolorable
   set_option maxRecDepth 100000 in
   decide
-
-/-! ## 5. Corollary: the trefoil is not the unknot
-
-Since tricolorability is an invariant, and the trefoil has it
-but the unknot doesn't, they are different knots.
--/
-
-theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
-  intro h
-  -- trefoil ≈ unknot ⇒ trefoil tricolorable ↔ unknot tricolorable (invariant).
-  -- trefoil IS tricolorable, unknot IS NOT ⇒ contradiction.
-  -- The sketch that was left as `sorry` now type-checks: `tricolorable_invariant`
-  -- exists (sorry-bearing) and the two pieces are proven, so the corollary
-  -- composes them — its soundness rests SOLELY on the invariant's transfer sorry,
-  -- with no independent sorry of its own (standalone-tactic sorry 5 → 4). When
-  -- the Reidemeister transfer lands, this closes with zero rewiring.
-  --
-  -- The `Knot`-level wrappers (`KnotEquiv`, `Knot.isTricolorable`) are opaque
-  -- `def`s that delta-reduce on demand to the `KnotDiagram` level
-  -- (`ReidemeisterEquiv`, `IsTricolorable`); the `have` annotations force that
-  -- reduction, re-anchoring `h`/`trefoil_tricolorable`/`unknot_not_tricolorable`
-  -- at the diagram level the invariant speaks of.
-  have hreid : ReidemeisterEquiv trefoilDiagram unknotDiagram := h
-  have htc : IsTricolorable trefoilDiagram := trefoil_tricolorable
-  have hnunk : ¬ IsTricolorable unknotDiagram := unknot_not_tricolorable
-  exact hnunk ((tricolorable_invariant trefoilDiagram unknotDiagram hreid).mp htc)
-  -- BLOCKED (Phase 4 update): the natural route (tricolorable_invariant +
-  -- trefoil_tricolorable + unknot_not_tricolorable) is gated by
-  -- tricolorable_invariant (this file), whose remaining blocker is the transfer
-  -- lemma across Reidemeister moves (see the diagnostic there). The two pieces
-  -- it composes — `trefoil_tricolorable` and `unknot_not_tricolorable` — are
-  -- now both proven under the real Fox condition, so once the invariant lands
-  -- this corollary follows by the sketch above.
-  -- Alternative route attempted: prove ¬KnotEquiv directly by showing the diagrams
-  -- cannot be Reidemeister-equivalent. Reidemeister1/2/3 are concrete, but
-  -- ReidemeisterEquiv is the RTC of those steps; to show two diagrams are NOT
-  -- connected one must classify all diagrams reachable from trefoilDiagram —
-  -- out of reach without a normalisation invariant (e.g. crossing-number
-  -- monotonicity under the moves, itself needing the true minimal crossing number).
-  -- Dependency: tricolorable_invariant (→ transfer lemma across moves).
 
 /-! ## 6. Crossing number bounds
 
@@ -3470,5 +3384,67 @@ theorem tricolorable_invariant_r3_connected {d₁ d₂ : KnotDiagram}
     IsTricolorable d₁ ↔ IsTricolorable d₂ :=
   ⟨Reidemeister3Connected.tricolorable_forward h,
    Reidemeister3Connected.tricolorable_backward h⟩
+
+/-! ## 2-Ω. The master theorem: tricolorability is a knot invariant
+
+Induction over the reflexive-transitive closure `ReidemeisterEquiv` composes
+the three connected-move transfers (§3e/§3f/§3g). Each `ReidemeisterStep`
+carries its direction in a `d d' ∨ d' d` disjunction (Stage 2, #2874): the
+`Or.inl` branch is the direct transfer, the `Or.inr` branch its symmetric
+(`Iff.symm`). Transitivity composes via `Iff.trans`.
+-/
+
+theorem tricolorable_invariant :
+    ∀ (d₁ d₂ : KnotDiagram),
+      ReidemeisterEquiv d₁ d₂ →
+        (IsTricolorable d₁ ↔ IsTricolorable d₂) := by
+  intro d₁ d₂ h
+  -- NB: the inner `↔` MUST be parenthesised. Lean parses `A → B ↔ C` as
+  -- `(A → B) ↔ C` (→ binds tighter than ↔), which would make this an `Iff`
+  -- between a *function type* and a Prop — not the transfer function intended
+  -- here and described in the section docstring. The parens restore the
+  -- intended shape `RE d₁ d₂ → (IsTc₁ ↔ IsTc₂)`, which `trefoil_not_unknot`
+  -- applies below.
+  induction h with
+  | refl d => exact Iff.rfl
+  | step hstep =>
+    cases hstep with
+    | r1 h =>
+      cases h with
+      | inl h => exact ⟨tricolorable_forward_r1 h, Reidemeister1Connected.tricolorable_backward h⟩
+      | inr h => exact Iff.symm ⟨tricolorable_forward_r1 h, Reidemeister1Connected.tricolorable_backward h⟩
+    | r2 h =>
+      cases h with
+      | inl h => exact tricolorable_invariant_r2_connected h
+      | inr h => exact Iff.symm (tricolorable_invariant_r2_connected h)
+    | r3 h =>
+      cases h with
+      | inl h => exact tricolorable_invariant_r3_connected h
+      | inr h => exact Iff.symm (tricolorable_invariant_r3_connected h)
+  | trans _ _ ih₁ ih₂ => exact Iff.trans ih₁ ih₂
+
+/-! ## 5. Corollary: the trefoil is not the unknot
+
+Since tricolorability is an invariant, and the trefoil has it
+but the unknot doesn't, they are different knots.
+-/
+
+theorem trefoil_not_unknot : ¬ KnotEquiv trefoil unknot := by
+  intro h
+  -- trefoil ≈ unknot ⇒ trefoil tricolorable ↔ unknot tricolorable (invariant).
+  -- trefoil IS tricolorable, unknot IS NOT ⇒ contradiction.
+  -- `tricolorable_invariant` is now proven, so the corollary composes it with
+  -- the two pieces (`trefoil_tricolorable`, `unknot_not_tricolorable`), both
+  -- proven under the real Fox condition.
+  --
+  -- The `Knot`-level wrappers (`KnotEquiv`, `Knot.isTricolorable`) are opaque
+  -- `def`s that delta-reduce on demand to the `KnotDiagram` level
+  -- (`ReidemeisterEquiv`, `IsTricolorable`); the `have` annotations force that
+  -- reduction, re-anchoring `h`/`trefoil_tricolorable`/`unknot_not_tricolorable`
+  -- at the diagram level the invariant speaks of.
+  have hreid : ReidemeisterEquiv trefoilDiagram unknotDiagram := h
+  have htc : IsTricolorable trefoilDiagram := trefoil_tricolorable
+  have hnunk : ¬ IsTricolorable unknotDiagram := unknot_not_tricolorable
+  exact hnunk ((tricolorable_invariant trefoilDiagram unknotDiagram hreid).mp htc)
 
 end Knots_en

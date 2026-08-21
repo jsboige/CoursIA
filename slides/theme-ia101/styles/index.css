@@ -20,6 +20,11 @@
   background-color: var(--color-bg);
   padding: 28px 40px;
   text-align: left;
+  /* Le fond doit couvrir le canvas entier : sans hauteur, la boite est
+   * dimensionnee par son contenu, et une slide courte laisse une bande
+   * blanche sous le pale (mesure : pale s'arretant a 442px pour 552). */
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 /* Headers */

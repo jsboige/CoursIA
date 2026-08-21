@@ -47,7 +47,14 @@
       csharp_sha: e20cd3d4db92085a84d61b5a7941f91b0d8a079b
       content_python_sha: db934d114b25f50499a9c857eadb10cbb69f9cc02df6bd9ee09c7a228a777ad5
       content_csharp_sha: ae1a73913b8814a0c8840c8c1e6a2d5ffa3c60a40cefc92b383b43dc02c75ba1
+    - date: "2026-08-20"
+      by: myia-po-2026:CoursIA
+      python_sha: 5835e102449dfa89299f507d29a2c03b10243eff
+      csharp_sha: e20cd3d4db92085a84d61b5a7941f91b0d8a079b
+      content_python_sha: f677276f33c3b5c474ba0d3c79defb5870eed046020d6e92d1e2c8bf0904c05c
+      content_csharp_sha: ae1a73913b8814a0c8840c8c1e6a2d5ffa3c60a40cefc92b383b43dc02c75ba1
   known_differences:
+    - "2026-08-20 : conversion markdown-only ASCII->Mermaid de la table de verite (cell 3 cote python, PR #12011 / #11962) - 0 cellule code touchee, parite intacte, rebaseline d'attestation."
     - "2026-08-17 : tranche densite #11224 markdown-only sur le cote C# (10 cellules code byte-identiques, +1 cellule markdown + squelettes enrichis, PR #11338) - parite de contenu intacte, rebaseline d'attestation."
     - "Socle commun : logiques classiques propositionnelles et du premier ordre (FOL) via la bibliotheque Java TweetyProject."
     - "Lib-vs-lib meme moteur Java : C# via IKVM (`#r \"nuget: IKVM, 8.15.0\"` + `#r \"org.tweetyproject.tweety-pl.dll\"` + `using org.tweetyproject.*` ; bytecode Java traduit en .NET, pas de JVM au runtime). Python via JPype (`import jpype` + `from org.tweetyproject.* import` + `from java.util import` ; pont vers une JVM)."

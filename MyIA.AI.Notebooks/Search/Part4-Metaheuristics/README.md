@@ -26,7 +26,7 @@ L'enseignement transversal rejoint celui des Parties 1-2 : aucune métaheuristiq
 | Bibliothèque | Langage | Représentation | Philosophie | Lien |
 |--------------|---------|----------------|-------------|------|
 | **MetaGeneticSharp** | C# .NET 9 | Agnostique (gènes = interfaces GeneticSharp) | **Composants > métaphores** : algorithmes reconstruits depuis des primitives composables | [jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) |
-| GeneticSharp | C# .NET | Agnostique (bit, permutation, arbre, float) | Bibliothèque GA classique, opérateurs en interfaces | [giacomelli/GeneticSharp](https://github.com/giacomelli/GeneticSharp) (sous-module, v3.1.4, non patché) |
+| GeneticSharp | C# .NET | Agnostique (bit, permutation, arbre, float) | Bibliothèque GA classique, opérateurs en interfaces | [giacomelli/GeneticSharp](https://github.com/giacomelli/GeneticSharp) (sous-module, v3.1.4-9 / upstream master 4406ad7, non patché) |
 | mealpy | Python | Vecteurs (continus surtout) | Catalogue large, tronc commun vectoriel, très compact | [thieu1995/mealpy](https://github.com/thieu1995/mealpy) |
 | HeuristicLab | C# .NET | Plugin-based, GUI lourde | Plateforme d'expérimentation, optimisation interactive | [heal-research/HeuristicLab](https://github.com/heal-research/HeuristicLab) |
 

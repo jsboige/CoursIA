@@ -31,6 +31,10 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+      # A manifest bump swaps the Mathlib under the proofs -- it MUST trigger
+      # the axiom/build gates (cf #8712, same class: a gate blind to a change
+      # that alters proof dependencies is no gate).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lake-manifest.json'
       - '.github/workflows/lean-grothendieck.yml'
       - '.github/workflows/lean-axiom.yml'
       - '.github/workflows/lean-build.yml'
@@ -46,6 +50,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/lake-manifest.json'
       # The gate must run on the PR that introduces or changes it, else a defect
       # in the gate ships unverified (cf #8712: a gate whose first run is
       # post-merge is no gate). These three lines make the workflow a gate input.

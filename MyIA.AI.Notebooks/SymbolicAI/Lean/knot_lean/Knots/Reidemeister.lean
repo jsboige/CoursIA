@@ -971,15 +971,24 @@ theorem reidemeister3Connected_inv {d₁ d₂ : KnotDiagram}
 
 /-! ## 2. Pas de Reidemeister unique
 
-Un pas unique est n'importe lequel de R1, R2 ou R3.
+Un pas unique est l'un des trois mouvements de Reidemeister **connectés**
+(`Reidemeister1Connected`, `Reidemeister2Connected`, `Reidemeister3Connected`),
+chacun portant sa direction dans une disjonction `d d' ∨ d' d`. Le ré-ancrage
+des constructeurs `r2`/`r3` sur les relations connectées (Stage 2, #2874)
+ferme la porte aux moves libres `Reidemeister2`/`Reidemeister3` dont le
+transfert descendant est FAUX (murs `r2_append_only_wall`, `r3_determined_wall`).
 -/
 
 inductive ReidemeisterStep (d : KnotDiagram) : KnotDiagram → Prop where
   | r1 {d'} :
       (Reidemeister1Connected d d' ∨ Reidemeister1Connected d' d) →
       ReidemeisterStep d d'
-  | r2 {d'} : Reidemeister2 d d' → ReidemeisterStep d d'
-  | r3 {d'} : Reidemeister3 d d' → ReidemeisterStep d d'
+  | r2 {d'} :
+      (Reidemeister2Connected d d' ∨ Reidemeister2Connected d' d) →
+      ReidemeisterStep d d'
+  | r3 {d'} :
+      (Reidemeister3Connected d d' ∨ Reidemeister3Connected d' d) →
+      ReidemeisterStep d d'
 
 /-! ## 3. Équivalence de Reidemeister (fermeture réflexive transitive)
 

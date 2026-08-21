@@ -33,7 +33,7 @@ import yaml
 
 WORKFLOW = Path(__file__).resolve().parents[2] / ".github" / "workflows" / "variation-tag-guard.yml"
 
-ADJACENCY_CHECK_NAME = "Require genre diversity vs prev: (block on LIGHT adjacency, #11170)"
+ADJACENCY_CHECK_NAME = "Require genre diversity vs prev (comment, block on LIGHT adjacency, #11170)"
 COMMENT_JOB = "check-variation-adjacency-comment"
 
 
@@ -101,14 +101,22 @@ def test_comment_job_resolves_head_sha_and_posts_check_run_on_it():
 
 
 def test_comment_job_check_run_name_matches_pull_request_job():
-    """Meme nom que le job pull_request : le verdict recent supplant le rouge
-    gele dans la vue PR et l'agregateur."""
+    """Le nom du job commentaire est celui porte par le check-run : le verdict
+    recent supplant le rouge gele dans la vue PR et l'agregateur.
+
+    Note (#11869 + c.389) : les 2 jobs `check-variation-adjacency-*` portent
+    desormais des noms distincts (`(required, ...)` vs `(comment, ...)`) pour
+    casser l'homonymie qui faisait dedoublonner `pr_gate.py::dedupe_latest`
+    par NOM et ecraser un rouge reellement significatif. Ce test verifie
+    donc l'**unicite stricte** du porteur (et non l'egalite entre 2 jobs).
+    """
     wf = _load()
-    names = {j.get("name") for j in wf["jobs"].values()}
     assert wf["jobs"][COMMENT_JOB]["name"] == ADJACENCY_CHECK_NAME
-    # ... et ce nom est bien celui du job pull_request (unicite du porteur)
     bearers = [jid for jid, j in wf["jobs"].items() if j.get("name") == ADJACENCY_CHECK_NAME]
-    assert sorted(bearers) == sorted([COMMENT_JOB, "check-variation-adjacency-required"])
+    assert bearers == [COMMENT_JOB], (
+        f"unicite du porteur compromise : {bearers} portent {ADJACENCY_CHECK_NAME!r} "
+        f"-- un doublon reintroduit le dedupe par NOM qui a fait rougir #11869"
+    )
 
 
 def test_comment_job_checks_out_default_branch_code():

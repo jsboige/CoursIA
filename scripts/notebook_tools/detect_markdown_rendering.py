@@ -103,6 +103,7 @@ RULE_SEVERITY = {
     "yaml_block_open_no_close": ERROR,
     "setext_oversized": ERROR,
     "oversized_hint": WARN,
+    "heading_in_list": WARN,
     "source_list_missing_newlines": ERROR,
 }
 
@@ -120,6 +121,15 @@ _YAML_KV_RE = re.compile(r"^\s*[A-Za-z_][\w .\-]*:\s?(\S.*)?$")
 # (those are legitimate section headings, not the oversized-hint defect).
 _HINT_RE = re.compile(r"\b(indice|indices|astuce|astuces|hint|hints)\b", re.IGNORECASE)
 _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
+# Heading nested in a list item / blockquote (`- # Indice : ...`, `> # Note`,
+# `1. # Astuce`, up to 3 container markers, each optionally indented). Same
+# in-list blind spot as scan_md_hierarchy.py's `^`-anchored HEADING_RE: CommonMark
+# renders these as real H1-H6 (giant font) while the anchored regex never sees
+# them -- 1325 pre-existing hits corpus-wide, incl. the 6 unflagged ones of PR
+# #11823. WARN (parity with oversized_hint): the class pre-dates the rule, the
+# drift gate on new hits is #11829 sous-issue #2. See #11829.
+_CONTAINER_HEADING_RE = re.compile(
+    r"^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$")
 
 # single-element newline-stripping artifact: a markdown cell whose `source` is a
 # one-element list whose string has 0 '\n', starts with an ATX heading, and is long.
@@ -492,6 +502,27 @@ def scan_cell(cell) -> list[dict]:
                 "hash": _cell_hash(rule, text),
             })
             break
+
+    # ---- heading nested in a list item / blockquote (#11829) ---------------------
+    # Fence-aware (parity with oversized_hint above): a `# comment` inside a code
+    # block is literal code, not a heading. One finding per cell (the hash is
+    # per-cell anyway); the evidence names the first offending line.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        m = _CONTAINER_HEADING_RE.match(ln)
+        if not m:
+            continue
+        rule = "heading_in_list"
+        level = len(m.group(1))
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": f"heading nested in a list/blockquote (renders as giant H{level})",
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
 
     return findings
 

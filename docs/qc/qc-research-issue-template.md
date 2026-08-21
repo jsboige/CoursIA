@@ -2,7 +2,7 @@
 
 > **Epic parent** : [#11698](https://github.com/jsboige/CoursIA/issues/11698)
 > **Label obligatoire** : `quantconnect-research`
-> **Filtre de voisinage** : `docs/qc-strategies-status.md` (source de vérité 130 stratégies)
+> **Filtre de voisinage** : `docs/qc/qc-strategies-status.md` (source de vérité, 111 stratégies)
 
 ## Pourquoi ce template
 
@@ -38,7 +38,7 @@ Copier-coller ce bloc dans le body de la sous-issue. Remplacer chaque `[…]` pa
 
 ### Différenciation vs bouquet existant
 
-- **Filtre** : `docs/qc-strategies-status.md` (livré par #1621 phase 5)
+- **Filtre** : `docs/qc/qc-strategies-status.md` (livré par #1621 phase 5)
 - **Projets voisins** : [lister 1-3 projets existants qui touchent le même angle]
 - **L'article est-il redondant ?** OUI / NON / PARTIELLEMENT [+ justification courte]
 
@@ -52,7 +52,7 @@ Copier-coller ce bloc dans le body de la sous-issue. Remplacer chaque `[…]` pa
 ## Acceptance locale
 
 - [ ] Article lu en entier (≥30 min de lecture effective)
-- [ ] Voisinage `qc-strategies-status.md` re-vérifié
+- [ ] Voisinage `docs/qc/qc-strategies-status.md` re-vérifié
 - [ ] Sources primaires identifiées (≥1) et tracées
 - [ ] Verdict coché avec justification
 - [ ] PR ou commentaire GH associé si verdict CONSOLIDATION / PÉDAGOGIQUE / NOUVEAU
@@ -62,7 +62,7 @@ Copier-coller ce bloc dans le body de la sous-issue. Remplacer chaque `[…]` pa
 - **Epic parent** : [#11698](https://github.com/jsboige/CoursIA/issues/11698)
 - **EPIC sibling** : [#1621](https://github.com/jsboige/CoursIA/issues/1621) (consolidation QC)
 - **EPIC sibling** : [#11168](https://github.com/jsboige/CoursIA/issues/11168) (vérification citations arXiv)
-- **Source de vérité voisinage** : [`docs/qc-strategies-status.md`](./qc-strategies-status.md)
+- **Source de vérité voisinage** : [`docs/qc/qc-strategies-status.md`](./qc-strategies-status.md)
 - **Méthode audit-distillation** : `.claude/rules/audit-cross-source-distillation.md`
 ```
 
@@ -123,7 +123,7 @@ Sans timestamp dans le corps (cf [lane-claim-protocol.md](../../.claude/rules/la
 - Article : « Crowdsourced alpha extraction from SEC filings »
 - Voisinage : aucun projet ne croise avec NLP/SEC filings en QC.
 - Verdict : NOUVEAU
-- Justification : « L'article propose un pipeline NLP→alpha sur les filings SEC, angle non couvert par les 130 projets existants (cf cartographie #1621). Le secteur fundamental US est stratégique pour le cours EPITA-IS. Création d'un notebook `research/research_nlp_sec_alpha.ipynb` standalone (pas un projet complet — un POC de recherche). »
+- Justification : « L'article propose un pipeline NLP→alpha sur les filings SEC, angle non couvert par les 111 projets existants (cf cartographie #1621). Le secteur fundamental US est stratégique pour le cours EPITA-IS. Création d'un notebook `research/research_nlp_sec_alpha.ipynb` standalone (pas un projet complet — un POC de recherche). »
 - PR associée : oui.
 
 ### Exemple 4 — Verdict IGNORE
@@ -145,7 +145,7 @@ Les trois premiers convergent vers une PR, le quatrième est un verdict de clôt
 
 ## Liens projet
 
-- [`docs/qc-strategies-status.md`](./qc-strategies-status.md) — source de vérité 130 stratégies
+- [`docs/qc/qc-strategies-status.md`](./qc-strategies-status.md) — source de vérité, 111 stratégies
 - [`.claude/rules/audit-cross-source-distillation.md`](../../.claude/rules/audit-cross-source-distillation.md) — méthode de distillation d'une source canonique
 - [`.claude/rules/lane-claim-protocol.md`](../../.claude/rules/lane-claim-protocol.md) — claim cross-lane
 - [`.claude/rules/audit-reassessment.md`](../../.claude/rules/audit-reassessment.md) — protocole 4 étapes de vérification

@@ -940,15 +940,24 @@ theorem reidemeister3Connected_inv {d₁ d₂ : KnotDiagram}
 
 /-! ## 2. Single Reidemeister step
 
-A single step is any of R1, R2, or R3.
+A single step is one of the three **connected** Reidemeister moves
+(`Reidemeister1Connected`, `Reidemeister2Connected`, `Reidemeister3Connected`),
+each carrying its direction in a `d d' ∨ d' d` disjunction. Re-anchoring
+the `r2`/`r3` constructors onto the connected relations (Stage 2, #2874)
+closes the door on the free moves `Reidemeister2`/`Reidemeister3` whose
+downward transfer is FALSE (walls `r2_append_only_wall`, `r3_determined_wall`).
 -/
 
 inductive ReidemeisterStep (d : KnotDiagram) : KnotDiagram → Prop where
   | r1 {d'} :
       (Reidemeister1Connected d d' ∨ Reidemeister1Connected d' d) →
       ReidemeisterStep d d'
-  | r2 {d'} : Reidemeister2 d d' → ReidemeisterStep d d'
-  | r3 {d'} : Reidemeister3 d d' → ReidemeisterStep d d'
+  | r2 {d'} :
+      (Reidemeister2Connected d d' ∨ Reidemeister2Connected d' d) →
+      ReidemeisterStep d d'
+  | r3 {d'} :
+      (Reidemeister3Connected d d' ∨ Reidemeister3Connected d' d) →
+      ReidemeisterStep d d'
 
 /-! ## 3. Reidemeister equivalence (reflexive transitive closure)
 

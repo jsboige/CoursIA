@@ -1,0 +1,62 @@
+name: Unique Check-Run Names Guard
+
+# Organe anti-homonymie (#11869) : `scripts/pr_gate.py::dedupe_latest` replie
+# les check-runs par NOM seul. La premisse "le nom identifie le job" est
+# enforcee ici : tout doublon de nom rendu entre jobs de workflows
+# `pull_request` distincts fait rougir ce garde. Mesure fondatrice : SHA
+# `cf968dcf` (PR #11856) portait 3 check-runs homonymes `Ratchet (base vs PR)`
+# (notebook-papermill FAIL + 2 SUCCESS siblings plus tardifs) -- le repli a
+# garde le SUCCESS, le PR gate a rapporte PASS sur un SHA qui portait un
+# vrai FAIL. Le defaut est double :
+#   1. le nom de job ne porte pas l'identite du workflow proprietaire
+#   2. le repli garde le started_at max, indifferent a la consequence
+# La correction est organisationnelle (renommer les doublons) et non
+# algorithmique -- ne PAS tenter de dedupe par (workflow, name) comme
+# rustine (cf. docstring dedupe_latest).
+#
+# Bare `main` (commit `05251bea3`) portait 3 doublons :
+#   - `Ratchet (base vs PR)` x3 (3 ratchets, ACTIF sur toute PR notebook)
+#   - `target-coverage` x2 (lean-conway + lean-knot, latent sur PR multi-lake)
+#   - `Require genre diversity vs prev: (block on LIGHT adjacency, #11170)` x2
+#     (variation-tag-guard: check-variation-adjacency-required + ...-comment)
+# Renommes dans la PR #11869 (papermill / exec-sequence / output-failure,
+# conway/knot target-coverage, suffix `required`/`comment`).
+#
+# `paths:` assumme : ce garde ne concerne QUE les workflows et le script.
+# En dehors de son scope il ne produit AUCUN check (un workflow skippe par
+# paths ne rapporte meme pas `skipped`), donc il ne laisse jamais de
+# `pending` fantome sur les PRs sans impact.
+#
+# Exit codes du script : 0 = OK, 1 = duplicates trouves (rouge), 2 =
+# instrument casse (verdict NUL, jamais un vert de complaisance).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+      - 'scripts/ci/check_unique_check_run_names.py'
+      - 'scripts/pr_gate.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Nom portant `-required` -> is_advisory() = False (pr_gate.py, motif etabli
+  # par variation-tag-guard.yml / pr-gate-rerun-drift-guard.yml).
+  check-unique-names-required:
+    name: 'Require unique rendered check-run names across PR workflows (#11869)'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout workflows + script
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/workflows
+            scripts/ci/check_unique_check_run_names.py
+      - name: 'Detect duplicate rendered check-run names'
+        run: |
+          set -eu
+          python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml
+          python3 scripts/ci/check_unique_check_run_names.py --check

@@ -1,0 +1,69 @@
+name: MD Hierarchy Drift Advisory
+
+# #11831 (EPIC #11829) : une PR qui introduit de nouveaux defauts de rendu
+# markdown (headings geants dans des listes, hints-as-heading, ...) ne doit
+# plus passer inapercue parce qu'un autre notebook de la meme PR brule
+# l'equivalent ailleurs (cas fondateur : PR #11823, 6 hits, CI vert).
+#
+# Mode ADVISORY au premier tour (mandat de l'issue) : le job reste VERT, un
+# commentaire nomme chaque (notebook, kind, delta). Le passage en bloquant
+# sera decide ulterieurement une fois le scan stabilise.
+#
+# La baseline (scripts/notebook_tools/md_hierarchy_baseline.json) est un
+# artefact d'automatisation : elle est re-seedee dans le MEME commit que toute
+# regle de scanner (via --update-baseline), jamais a la main.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - "MyIA.AI.Notebooks/**/*.ipynb"
+      - "scripts/notebook_tools/scan_md_hierarchy.py"
+      - "scripts/notebook_tools/md_hierarchy_baseline.json"
+  workflow_dispatch:
+
+permissions:
+  pull-requests: write
+
+jobs:
+  drift:
+    name: scan_md_hierarchy drift (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Drift check vs baseline
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set +e
+          python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ \
+            --baseline --diff > drift_report.txt 2> drift_err.txt
+          rc=$?
+          set -e
+          if [ "$rc" -eq 2 ]; then
+            {
+              echo "## MD hierarchy drift -- ${HEAD_SHA:0:9}"
+              echo ""
+              echo "Cette PR augmente le compte de defauts de rendu markdown"
+              echo "(baseline = burndown, ne pas croitre). Nouveaux defauts :"
+              echo ""
+              echo '```'
+              cat drift_report.txt
+              echo '```'
+              echo ""
+              echo "Corriger (ex. \`- # Indice : ...\` -> \`- **Indice :** ...\`) ou,"
+              echo "si la regle scanner change dans CETTE PR, re-seeder la baseline"
+              echo "dans le meme commit : \`--update-baseline\`. See #11831."
+            } > comment_body.md
+            gh pr comment "$PR_NUMBER" --body-file comment_body.md
+            echo "::warning file=scripts/notebook_tools/md_hierarchy_baseline.json::MD hierarchy drift detected (advisory, #11831) -- see PR comment"
+            exit 0
+          elif [ "$rc" -eq 1 ]; then
+            echo "::error::scan_md_hierarchy drift mode broken (unreadable baseline / vacuous scan):"
+            cat drift_err.txt
+            exit 1
+          fi
+          echo "No drift: every per-notebook delta <= 0."

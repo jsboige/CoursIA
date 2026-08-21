@@ -171,7 +171,25 @@ def test_audit_allowlists_native_decide_axioms():
     legitimate provided (a) the theorem is a concrete finite witness, (b) it is
     referenced by nothing, and (c) the module's general theorems do not depend
     on it. Absent any of the three, the pin stays put and the proof is reworked
-    -- unchanged from #9341."""
+    -- unchanged from #9341.
+
+    **Widened to 69 by #11910** (`feat(lean,#6724)`): the criterion-3
+    characterization of #6724 added the first infinite CLASS of jump-captured
+    patterns to `Conway.Life.JumpCapture`. The 8 added entries are the
+    native_decide footprints of exactly its 3 class witnesses --
+    `jumpCaptured_beehive` (2), `jumpCaptured_blinker` (3),
+    `jumpCaptured_block_of_class` (3) -- finite concrete instances re-derived
+    from the class theorem. Same attributed-and-non-hollowing criterion as
+    #11349, applied to new theorems rather than modules: each witness is a
+    concrete pattern (beehive and block are still-lives, blinker is a
+    period-2 oscillator -- the first non-still-life in the class, which is
+    why it carries 3 entries), none is referenced outside its own
+    declaration, and the headline `jumpCaptured_of_period_divides` is
+    structural (`#print axioms` = [propext, Classical.choice, Quot.sound] on
+    it: no native_decide), so the general claim is NOT hollowed out. The
+    pre-existing isolated witness `jumpCaptured_block` stays allow-listed;
+    `jumpCaptured_block_of_class.ax_1_*` is a distinct re-derivation via the
+    class theorem."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -181,12 +199,13 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 61, (
-        f"audit allow-list must carry the 61 native_decide axioms of the whole "
+    assert len(names) == 69, (
+        f"audit allow-list must carry the 69 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
-        f"modules + 2 P4-At standalone witnesses from grain 3a #11303, each "
-        f"attributed in the workflow comment); got {len(names)}")
+        f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
+        f"class-witness entries from the #6724 criterion-3 characterization "
+        f"[PR #11910], each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
     # #10889-widening family: the _en twins under Conway_en.*).
@@ -196,6 +215,7 @@ def test_audit_allowlists_native_decide_axioms():
         "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1",
         "Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1",
         "Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1",
+        "Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1",
         "Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1",
     ]:
         assert sample in names, (

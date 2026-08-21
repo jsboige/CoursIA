@@ -58,14 +58,25 @@ jobs:
     # only produce spurious failures on an advisory job.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Checkout (full history)
+      - name: Checkout (full history, blobless)
+        # Partial clone, serie #11843 (workflow 2). The scan interrogates the
+        # commit graph (merge-base --is-ancestor, cat-file -e, diff --quiet
+        # two-dot scoped to candidate paths) and the gh API -- it reads no
+        # repository content blob. blob:none keeps the graph complete; the
+        # fetch below inherits the filter. Sparse-checkout materializes only
+        # scripts/ (14 Mo: the audited script + siblings) instead of the full
+        # 1058 Mo tree. A missing script would fail loudly (python: can't
+        # open file), not silently scan less.
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: scripts
 
       - name: Fetch ALL remote heads
         # actions/checkout@v4 only fetches the default branch. Ancestry of a
         # mergeCommit against origin/main requires every remote head present.
+        # Inherits the blob:none filter of the partial clone (graph only).
         run: |
           git fetch origin '+refs/heads/*:refs/remotes/origin/*' || true
 

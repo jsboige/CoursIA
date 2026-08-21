@@ -1,0 +1,163 @@
+name: Slides Composition Advisory
+
+# Garde-fou CI de composition des slides (#11923) — MESURE RENDUE, ADVISORY.
+# Mesure géométrique (HORS_CANVAS / CHEVAUCHEMENT / OCCUPATION) sur le deck
+# servi headless : ce que le markdown REND à 980×552, pas ce qu'il dit.
+# Complète slides-build-advisory.yml (qui prouve que le deck CONSTRUIT) :
+# ici on prouve ce que la construction produit.
+#
+# La spec est explicite (directive user 2026-08-20) : le bon positionnement
+# des images est une composition esthétique — les garde-fous CI bornent le
+# mécanisable (débordement, chevauchement, occupation), le JUGEMENT de
+# composition reste à une lane qui voit (ai-01 / MiniMax). Une PR verte à ce
+# gate reste soumise au QA visuel humain : le tool imprime cette borne dans
+# chaque rapport. `APPROVED` malgré une slide signalée par ce gate sans
+# verdict visuel = revoir pr-review-discipline §H.
+#
+# ADVISORY, jamais bloquant sur les constats : les findings sortent en
+# ::warning file=,line= (annotations de PR), exit 0. Exit 1 uniquement sur
+# META-défaillance du gate lui-même (zéro deck découvert alors que slides/
+# a changé — un gate qui énumère zéro cible est vert et muet, #8807 trap 1).
+#
+# Le contrôle positif (slide 5 S3-acculturation @ 6cabc826b DOIT être
+# signalée) vit côté tests locaux : run_composition_control.py — nécessite
+# l'objet git 6cabc826b, hors d'un checkout shallow CI.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+    paths:
+      - 'slides/**'
+      # self-cover : la PR qui câble ce workflow ne touche pas slides/, et un
+      # revert ultérieur ne doit pas laisser le gate muet (#8822)
+      - '.github/workflows/slides-composition-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: slides-composition-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  slides-composition-advisory:
+    name: "Slidev composition advisory (#11923, non-blocking)"
+    runs-on: ubuntu-latest
+    # Same-repo PRs only : les forks étudiants suivent la review bienveillante
+    # (student-pr-reviews.md), pas de content gate.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    steps:
+      - name: Checkout (blobless, sparse slides)
+        uses: actions/checkout@v4
+        with:
+          # base..head pour le diff des decks touchés + contenu slides/ seul —
+          # clone partiel (série #11843) : blob:none suffit, pas d'historique
+          # de contenu hors slides/.
+          fetch-depth: 0
+          filter: blob:none
+          sparse-checkout: |
+            slides
+            scripts/notebook_tools
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache slides node_modules
+        id: cache-nm
+        uses: actions/cache@v4
+        with:
+          path: slides/node_modules
+          key: slides-node_modules-${{ runner.os }}-${{ hashFiles('slides/package-lock.json') }}
+
+      - name: Install Slidev deps
+        working-directory: slides
+        run: |
+          if [ "${{ steps.cache-nm.outputs.cache-hit }}" = "true" ] && [ -d node_modules/@slidev ]; then
+            echo "node_modules cache hit -- skipping install"
+          else
+            npm ci --no-audit --no-fund
+          fi
+
+      - name: Install Playwright (chromium)
+        run: |
+          pip install playwright
+          python -m playwright install chromium --with-deps
+
+      - name: Measure composition of impacted decks (advisory)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -uo pipefail
+          echo "## Slides composition (advisory #11923)" >> "$GITHUB_STEP_SUMMARY"
+          echo "Plancher mécanique — ne remplace pas le QA visuel humain." >> "$GITHUB_STEP_SUMMARY"
+
+          # ---- decks touchés : le deck dont le dir a changé, ou TOUS si infra partagée ----
+          CHANGED=$(git diff --name-only "$BASE...$HEAD" -- slides/ || true)
+          if grep -qE 'slides/(theme-ia101|package(-lock)?\.json)' <<< "$CHANGED"; then
+            MAPS=$(find slides -name slides.md -not -path '*/node_modules/*' -not -path '*/archive/*')
+          else
+            MAPS=$(grep -oE '^slides/[^/]+/slides\.md$' <<< "$CHANGED" || true)
+          fi
+
+          if [ -z "$MAPS" ]; then
+            if [ -n "$CHANGED" ]; then
+              echo "::error title=Composition gate meta-failure::slides/ a changé mais aucun deck slides.md découvert dans le diff — gate muet, à investiguer (#8807 trap 1)"
+              exit 1
+            fi
+            echo "Aucun deck impacté." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          META_FAIL=0
+          PORT=8890
+          for MD in $MAPS; do
+            DIR=$(dirname "$MD")
+            PORT=$((PORT+1))
+            echo "### $MD" >> "$GITHUB_STEP_SUMMARY"
+            cp "$MD" "$DIR/dev.md"
+            (cd "$DIR" && ../../node_modules/.bin/slidev dev.md --port "$PORT" --open false \
+               > /tmp/slidev_$PORT.log 2>&1 &)
+            for i in $(seq 1 40); do
+              curl -sf "http://localhost:$PORT/" > /dev/null && break
+              sleep 3
+            done
+            if ! curl -sf "http://localhost:$PORT/" > /dev/null; then
+              echo "::warning file=$MD::Serveur slidev jamais prêt — deck non mesuré (voir slides-build-advisory pour le build)"
+              echo "Serveur jamais prêt — non mesuré." >> "$GITHUB_STEP_SUMMARY"
+              rm -f "$DIR/dev.md"; kill %1 2>/dev/null || true; continue
+            fi
+            python scripts/notebook_tools/scan_slidev_composition.py \
+              --url "http://localhost:$PORT/" \
+              --slides-md "$MD" \
+              --github-annotations \
+              --out "/tmp/report_$PORT.json" > /tmp/scan_$PORT.log 2>&1
+            SCAN_EXIT=$?
+            python - "$MD" "/tmp/report_$PORT.json" "$SCAN_EXIT" >> "$GITHUB_STEP_SUMMARY" <<'PYEOF'
+          import json, sys
+          md, rp, exit_code = sys.argv[1], sys.argv[2], int(sys.argv[3])
+          try:
+              d = json.load(open(rp, encoding="utf-8"))
+          except Exception as e:
+              print(f"- instrument: report illisible ({e}) — meta-failure")
+              sys.exit(0)
+          print(f"- {d.get('n_slides')} slides mesurées : {d.get('n_hors_canvas')} hors-canvas, "
+                f"{d.get('n_chevauchements')} chevauchements, {d.get('n_occupation_flagged')} occupation "
+                f"(scanner exit {exit_code}, advisory)")
+          if d.get("stale_warnings"):
+              print(f"- stale: {len(d['stale_warnings'])} avertissement(s) de mesure")
+          PYEOF
+            rm -f "$DIR/dev.md"
+            kill %1 2>/dev/null || true
+          done
+          exit 0
