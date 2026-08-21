@@ -134,6 +134,26 @@ Deux conséquences pratiques :
 > de `download` et `finetune`. Le fichier téléversé est synthétique
 > et détruit en fin de parcours — cleanup mesuré, total 0 → 1 → 0.
 
+> **Notebook compagnon (module Client, consommation des pièces jointes).**
+> [`joindre-un-fichier-au-chatbot-par-l-api.ipynb`](joindre-un-fichier-au-chatbot-par-l-api.ipynb)
+> pose la question qui suit le stockage : **comment un fichier
+> téléversé entre-t-il dans une completion ?** La réponse mesurée
+> donne à une pièce jointe trois destins possibles, aucun lisible sur
+> le code de statut. *Ignorée* : la route `chats/submit` lit
+> `newFileId`, et un `fileId` à sa place rend un 200 silencieux — le
+> fichier n'est même pas regardé. *Annotée puis jetée* : avec le bon
+> nom, le plugin traite le fichier (`purpose` → `analysis`,
+> métadonnées de session) mais le contenu d'un fichier texte n'entre
+> jamais dans le prompt — compte de tokens identique à un tour sans
+> fichier, canary absent, le modèle le dit honnêtement. *Vraiment
+> vue* : une image, elle, traverse — encodée `image_url` base64, le
+> format de fil standard — et un PNG bicolore construit par le
+> notebook (stdlib `struct` + `zlib`, couleurs connues par
+> construction) est correctement décrit sur l'endpoint auto-hébergé :
+> **la frontière du multimodal est le format, pas le provider**. Le
+> contrôle négatif (même question sans image → aucune couleur citée)
+> ferme la porte à la devinette.
+
 ---
 
 ## Parcours 1 — Copilot pour l'éditeur WordPress

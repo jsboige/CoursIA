@@ -1,7 +1,10 @@
 name: Lean CI (conway_cgt_lean)
 
 # CI for conway_cgt_lean (GameTheory/conway_cgt_lean).
-# Combinatorial game theory port. 0 sorry (raw=0, verified). Toolchain v4.31.0-rc1.
+# Combinatorial game theory port. 0 sorry (raw=0, verified). Toolchain v4.31.0-rc2
+# by design: matched to upstream CombinatorialGames @ 3c6dcdbc (cf lakefile, #6116).
+# Fleet is on v4.32.1 but upstream never lived under it (jumped v4.31.0-rc2 ->
+# v4.33.0-rc1 in 3c0e6d35): bumping requires a fleet-level call, not a lane one.
 # Consolidated per ai-01 DRY decision (option 2: matrix). See lean-build.yml.
 
 on:
@@ -12,6 +15,10 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain'
+      # A manifest bump swaps the Mathlib under the proofs -- it MUST trigger
+      # the axiom/build gates (cf #8712, same class: a gate blind to a change
+      # that alters proof dependencies is no gate).
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json'
   pull_request:
     branches: [main]
     paths:
@@ -19,6 +26,7 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json'
   workflow_dispatch:
 
 permissions:

@@ -581,3 +581,63 @@ class TestExceptionSpanHelper:
         result = _in_exception_code_span(src, pos, end)
         assert result is True or result is False  # weak pin
 
+
+
+class TestFrDecimalOutputNormalization:
+    """#12076: the output text goes through the same comma->dot normalization
+    as the cited token (direct search only), so a francophone-decimal output
+    matches DIRECTLY instead of surviving through the 12-digit-bounded fuzzy
+    fallback. Before the fix, the verdict depended on how many digits happened
+    to follow in the same output."""
+
+    def test_fr_decimal_claim_matched_directly_in_fr_output(self, tmp_path: Path):
+        """The exact #12070 cell-15 shape: prose '1,8260', output printing
+        '1,8260' surrounded by other comma-decimals -- CLEAN, no finding."""
+        nb = _mk_nb([
+            _code_cell("print(stats)", [
+                _stream_output(
+                    "      Uniforme moyenne  : 0,1320\n"
+                    "      Heterogene moyenne: 1,8260\n"
+                    "      Amelioration      : -1283,3%\n"
+                ),
+            ]),
+            _md_cell("L'analyse donne une moyenne heterogene de 1,8260 contre 0,1320 en uniforme."),
+        ])
+        nb_path = tmp_path / "fr_direct.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "CLEAN", res
+
+    def test_verdict_independent_of_trailing_digit_count(self, tmp_path: Path):
+        """The property the issue establishes: same cited number, same prose,
+        only the number of digits that FOLLOW in the same output changes --
+        both must give the same verdict. Pre-fix, the long tail flipped to
+        FABRICATION through the fuzzy (c) 12-digit bound."""
+        tails = [
+            "1,8260 fin\n",
+            "1,8260 puis 0,9999999999999999 et 2,718281828459045 fin\n",
+        ]
+        verdicts = []
+        for i, tail in enumerate(tails):
+            nb = _mk_nb([
+                _code_cell("print(x)", [_stream_output("moyenne: " + tail)]),
+                _md_cell("La moyenne heterogene constatee est 1,8260."),
+            ])
+            nb_path = tmp_path / f"tail_{i}.ipynb"
+            nb_path.write_text(json.dumps(nb), encoding="utf-8")
+            verdicts.append(check_notebook(nb_path)["verdict"])
+        assert verdicts == ["CLEAN", "CLEAN"], verdicts
+
+    def test_fabrication_still_detected_against_fr_output(self, tmp_path: Path):
+        """The fix must not blind the detector: a number truly absent from a
+        comma-formatted output is still flagged."""
+        nb = _mk_nb([
+            _code_cell("print(x)", [_stream_output("Uniforme moyenne : 0,1320")]),
+            _md_cell("La moyenne heterogene constatee est 1,8260."),
+        ])
+        nb_path = tmp_path / "fr_fab.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "FABRICATION_DETECTED", res
+        norms = {f["normalized"] for f in res["findings"]}
+        assert "1.8260" in norms, res

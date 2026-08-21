@@ -49,6 +49,7 @@ REPL_TOOLCHAIN_TAGS = {
     "v4.31.0-rc1": "repl-4.31.0-rc1",
     "v4.32.0": "repl-4.32.0",
     "v4.32.1": "repl-4.32.1",
+    "v4.34.0-rc1": "repl-4.34.0-rc1",
 }
 # Durable fork of utensil/lean4_jupyter baking the direct-launch patch directly into
 # repl.py (survives a clean ``pip install``/reinstall, closing the durability gap of the
@@ -83,7 +84,9 @@ REPL_PY_PATCH = '''    @staticmethod
         # with REPL_TOOLCHAIN_TAGS in setup_native_lean4_import.py).
         mapping = {'v4.30.0-rc2': 'repl-4.30.0-rc2',
                    'v4.31.0-rc1': 'repl-4.31.0-rc1',
-                   'v4.32.0': 'repl-4.32.0'}
+                   'v4.32.0': 'repl-4.32.0',
+                   'v4.32.1': 'repl-4.32.1',
+                   'v4.34.0-rc1': 'repl-4.34.0-rc1'}
         try:
             tc_file = os.path.join(lake_root, 'lean-toolchain')
             tc = open(tc_file).read().strip() if os.path.isfile(tc_file) else ''
