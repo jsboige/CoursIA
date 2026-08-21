@@ -79,6 +79,60 @@ def test_unverifiable_wording_is_flagged():
     assert any("non verifiable" in p for p in problems)
 
 
+# --- #12092 -- check_assertion must also read COUNT_WORDS (closed FR/EN
+# cardinals 1-10). Before the fix, "trois fichiers" over a 3-file PR was
+# rejected as "non verifiable" even though the numeric form "3 fichiers"
+# passed. The mirror logic existed in extract_perimeter_assertions but the
+# RHS of the organe never consulted it.
+
+def test_count_words_fr_three_files_passes_12092():
+    """Acceptance #12092: 'trois fichiers' over a 3-file list must pass
+    (the founding PR #11951 body that was wrongly blocked)."""
+    assert check_assertion(
+        FILES_11227, "**trois fichiers** (142/32 lignes, tests inclus):"
+    ) == []
+
+
+def test_count_words_en_three_files_passes_12092():
+    """English equivalent of the acceptance: 'three files' over 3 files."""
+    assert check_assertion(
+        FILES_11227, "**three files** (142/32 lines, tests included):"
+    ) == []
+
+
+def test_count_words_fr_mismatch_still_fails_12092():
+    """A misspelled count in words is still a real mismatch (deux vs 3)."""
+    problems = check_assertion(
+        FILES_11227, "**deux fichiers** (142/32 lignes, tests inclus):"
+    )
+    assert problems, "deux fichiers over 3 files must fail"
+    assert any("2" in p and "3" in p for p in problems)
+
+
+def test_count_words_en_mismatch_still_fails_12092():
+    """English counterpart: 'two files' over 3 files still fails."""
+    problems = check_assertion(
+        FILES_11227, "**two files** (142/32 lines, tests included):"
+    )
+    assert problems, "two files over 3 files must fail"
+
+
+def test_count_words_does_not_match_when_word_is_in_prose_12092():
+    """Anti-pattern: the word 'trois' alone, without 'fichiers|files',
+    is still not a perimeter claim. Negative control."""
+    problems = check_assertion(
+        FILES_11227, "Les trois considerations precedentes ne sont pas verifiees."
+    )
+    assert any("non verifiable" in p for p in problems)
+
+
+def test_numeric_form_still_works_unchanged_12092():
+    """Regression check: the numeric form must keep working."""
+    assert check_assertion(
+        FILES_11227, "**3 fichiers** (142/32 lignes, tests inclus):"
+    ) == []
+
+
 def test_sorry_baseline_down_is_tighten_up_is_loosen():
     moves = extract_baseline_moves(DIFF_11227)
     m = [x for x in moves if x.key == "sorry-baseline"]

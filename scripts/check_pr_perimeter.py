@@ -277,11 +277,35 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
         (mm for mm in COUNT_CLAIM.finditer(scan_target) if int(mm.group(1)) != 0),
         None,
     )
+    # #12092 mirror: COUNT_WORDS (closed list FR/EN cardinals 1-10, see ~L98)
+    # was already read by extract_perimeter_assertions to flip
+    # body_declares_effective_count, but check_assertion only consulted
+    # COUNT_CLAIM -- so "trois fichiers" survived as a candidate upstream
+    # and died here as "non verifiable". Both halves of the organe must read
+    # the same vocabulary or the spelled-out form is structurally unpassable.
+    word_claim = None
+    if not count_claim:
+        for word, n in COUNT_WORDS.items():
+            if n == 0:
+                continue
+            pat = re.compile(
+                rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                re.IGNORECASE,
+            )
+            if pat.search(scan_target):
+                word_claim = n
+                break
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):
             problems.append(
                 f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
+                + ", ".join(f["path"] for f in files)
+            )
+    elif word_claim is not None:
+        if word_claim != len(files):
+            problems.append(
+                f"l'assertion pretend {word_claim} fichier(s), la liste effective en compte {len(files)} : "
                 + ", ".join(f["path"] for f in files)
             )
     exclusive = _has_exclusivity(scan_target.lower())
@@ -294,7 +318,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                         f"assertion d'exclusivite sans nommer le workflow touche {f['path']} "
                         "(critere #11268-2 : tout .github/workflows/** doit etre enumere nommement)"
                     )
-    if not count_claim and not exclusive:
+    if not count_claim and word_claim is None and not exclusive:
         problems.append(
             "assertion sans compte de fichiers ni marqueur d'exclusivite reconnaissable -- "
             "formulation non verifiable (ecrire par ex. 'N fichiers : a, b, c')"
