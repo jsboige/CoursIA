@@ -1435,3 +1435,92 @@ def test_11985_rule1_requires_declarative_correct_count():
     assert header.body_declares_effective_count is False, (
         "an incidental scan scope must not arm the downgrade"
     )
+
+
+# ----------------------------------------------------------------------------
+# #12024 / #11985 extension: COUNT_WORDS closed list (French/English cardinals
+# 1-10). The authorial perimeter declaration can be spelled out in words
+# ("trois fichiers", "five files"). The numeric scan in select_candidates
+# (line ~1020 in check_pr_perimeter.py) does NOT see this -- the word-form
+# branch in this PR is the missing half.
+# ----------------------------------------------------------------------------
+
+def test_11985_count_words_french_three_fichiers_sets_body_declares():
+    """#12024: body says "Trois fichiers (+184/-3)" + a numeric second-count
+    line. The word-form declaration must arm body_declares_effective_count
+    just like the numeric form would, and the numeric line stays a mention.
+    """
+    body = (
+        "## Summary\n"
+        "**Perimetre : trois fichiers** (+184/-3)\n"
+        "- **G.4** : atomicite (1 helper + 1 modification + 1 fichier test "
+        "adapte, 1 bug, 1 discrimination).\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=3)
+    header = next(c for c in candidates if "Perimetre" in c.text)
+    arg = next(c for c in candidates if "helper" in c.text)
+    assert header.body_declares_effective_count is True, (
+        "the word-form 'trois fichiers' must arm body_declares_effective_count"
+    )
+    # The numeric second-count line inherits the downgrade (mention, not fresh
+    # assertion) -- the rule 1 invariant.
+    assert arg.body_declares_effective_count is True
+
+
+def test_11985_count_words_english_five_files_sets_body_declares():
+    """#12024: English variant of test_11985_count_words_french_three_fichiers."""
+    body = (
+        "## Summary\n"
+        "**Perimeter: five files** (+200/-20)\n"
+        "- helper function + 1 new test\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=5)
+    header = next(c for c in candidates if "Perimeter:" in c.text)
+    assert header.body_declares_effective_count is True
+
+
+def test_11985_count_words_mismatch_does_not_set_body_declares():
+    """#12024 FN control: body says "trois fichiers" but n_files=2. The word
+    form must NOT arm body_declares_effective_count -- the closed-list mapping
+    is checked against n_files, and a mismatch keeps the existing behaviour
+    (declaration does not validate a wrong perimeter)."""
+    body = (
+        "## Summary\n"
+        "**Perimetre : trois fichiers** (+184/-3)\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=2)
+    header = next(c for c in candidates if "Perimetre" in c.text)
+    assert header.body_declares_effective_count is False, (
+        "word-form 'trois' must not arm body_declares_effective_count when "
+        "n_files=2"
+    )
+
+
+def test_11985_count_words_closed_list_boundary():
+    """#12024 FN control: 'onze fichiers' / 'eleven files' (beyond the closed
+    list 1-10) must NOT arm body_declares_effective_count. The whole point of
+    the closed list is fail-loud: a reviewer catches the next 'eleven' body
+    and the mapping is expanded. This test pins the boundary."""
+    body = (
+        "## Summary\n"
+        "**Perimetre : onze fichiers** (+184/-3)\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=11)
+    # 'onze fichiers' is OUTSIDE the closed list 1-10 -> the line is not
+    # extracted as a candidate, so no header candidate exists. This is the
+    # fail-loud shape: a body using 'onze fichiers' is NOT protected by rule 1
+    # and the reviewer will see a mismatch against the actual n_files=11
+    # (which is also outside the closed list, so the numeric form would also
+    # be caught). The closed list's whole purpose: contain the FN cost.
+    assert candidates == [], (
+        "'onze fichiers' is outside COUNT_WORDS (closed list 1-10) -- the "
+        "line must NOT enter the candidate list. Closed list = fail loud."
+    )

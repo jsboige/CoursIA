@@ -96,6 +96,25 @@ GENERIC_KNOB = re.compile(r"(?i)(baseline|threshold|ratchet|_cap\b|\bcap\b)")
 
 # Assertion vocabulary: file-count claims and exclusivity markers.
 COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
+# #11985 rule 1 extension (CLOSED LIST -- never expand to unknown vocabulary):
+# a body can declare its perimeter in words ("trois fichiers", "five files").
+# The authorial declaration is the same shape; we just spell-check the
+# spelled-out number too. French and English cardinals 1-10. Beyond that
+# range we fail loud (false-negative default -- the next body with "onze
+# fichiers" / "eleven files" will be caught by a reviewer and the mapping
+# expanded). Closed list = false-negative cost is bounded and visible.
+COUNT_WORDS = {
+    "un": 1, "une": 1,
+    "deux": 2, "two": 2,
+    "trois": 3, "three": 3,
+    "quatre": 4, "four": 4,
+    "cinq": 5, "five": 5,
+    "six": 6, "six": 6,
+    "sept": 7, "seven": 7,
+    "huit": 8, "eight": 8,
+    "neuf": 9, "nine": 9,
+    "dix": 10, "ten": 10,
+}
 EXCLUSIVITY_MARKERS = (
     "uniquement",
     "seulement",
@@ -726,6 +745,19 @@ def extract_perimeter_assertions(text: str) -> list[str]:
                 continue  # quoting a count (reported speech), not claiming it
             candidates.append(line)
             continue
+        # #12024 / #11985 word-form extension: a body can declare its
+        # perimeter with a spelled-out cardinal ("trois fichiers",
+        # "five files"). Without this branch, the word form never enters
+        # the candidate list and body_declares_effective_count is never
+        # set for word-only declarations. Closed list FR/EN cardinals
+        # 1-10 (see COUNT_WORDS rationale at line ~98).
+        if any(
+            re.search(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                      line, re.IGNORECASE)
+            for word in COUNT_WORDS
+        ):
+            candidates.append(line)
+            continue
         if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
             if _markers_all_quoted(line):
                 continue  # quoting an exclusivity claim, not making it
@@ -1005,6 +1037,30 @@ def select_candidates(
         ):
             for c in body_candidates:
                 c.body_declares_effective_count = True
+        # #11985 / #12024 rule 1 word-form extension: a body can declare its
+        # perimeter with a spelled-out cardinal ("trois fichiers", "five
+        # files"). The numeric scan above misses this entirely (false
+        # negative: a PR body that says "Trois fichiers (+184/-3)" never
+        # gets body_declares_effective_count set). Mirror the numeric check
+        # for COUNT_WORDS (closed list FR/EN cardinals 1-10 -- see line ~98
+        # rationale).
+        if n_files is not None and not any(
+            c.body_declares_effective_count for c in body_candidates
+        ):
+            for word, n in COUNT_WORDS.items():
+                if n != n_files:
+                    continue
+                pat = re.compile(
+                    rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                    re.IGNORECASE,
+                )
+                if any(
+                    not _is_incidental_assertion(c.text) and pat.search(c.text)
+                    for c in body_candidates
+                ):
+                    for c in body_candidates:
+                        c.body_declares_effective_count = True
+                    break
         out.extend(body_candidates)
 
     # Per thread author, keep the latest assertion-carrying review.
