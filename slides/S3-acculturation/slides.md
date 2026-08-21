@@ -412,11 +412,6 @@ layout: two-cols
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Cycle d'un algorithme génétique" />
-<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Croisement sur le problème des huit reines" />
-
-</div>
-
 </div>
 
 
@@ -444,11 +439,10 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
-<img src="./images/img_030.png" class="max-h-[300px] max-w-full object-contain" />
-<img src="./images/img_031.png" class="max-h-[300px] max-w-full object-contain" />
-<img src="./images/img_032.png" class="max-h-[300px] max-w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
-<img src="./images/img_033.png" class="max-h-[300px] max-w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
+<div class="flex gap-2 flex-wrap items-start">
+<img src="./images/img_030.png" class="w-[180px] max-w-full max-h-[140px] object-contain" alt="Paysage d'optimisation avec trajectoire de descente" />
+<img src="./images/img_027.png" class="w-[180px] max-w-full max-h-[140px] object-contain" alt="Cycle d'un algorithme génétique : Initial Population → Fitness → Selection → Cross-Over → Mutation" />
+<img src="./images/img_028.png" class="w-[180px] max-w-full max-h-[140px] object-contain" alt="Croisement sur le problème des huit reines : deux parents combinés par croisement" />
 </div>
 
 
