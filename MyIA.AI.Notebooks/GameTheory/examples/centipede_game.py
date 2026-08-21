@@ -4,7 +4,7 @@ Centipede Game - Backward Induction Paradox
 ===========================================
 
 Demonstrates the centipede game and backward induction.
-Related to GameTheory-8-BackwardInduction.ipynb
+Related to GameTheory-08-BackwardInduction.ipynb
 
 The centipede game shows a tension between backward induction
 (which predicts immediate defection) and empirical behavior

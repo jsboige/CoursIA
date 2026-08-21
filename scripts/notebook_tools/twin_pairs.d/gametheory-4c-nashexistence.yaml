@@ -1,7 +1,7 @@
 - name: "GameTheory-4c NashExistence"
   family: GameTheory
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Python.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Csharp.ipynb
   parity_level: semantic
   audits:
     - date: "2026-08-04"
@@ -24,6 +24,12 @@
       csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
       content_python_sha: 85820028c0c456b7522c80315ee04d794c1ef827fc3ed227a466e1b70d316dd6
       content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
+    - date: "2026-08-22"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 4df428824d6bbf412f76e1c04aaa1eaecdd3e9e7
+      csharp_sha: 44fdf2297476133ed1a842a228b7fce67163f9cb
+      content_python_sha: ecd67a0d673215b39b8aa6c6689d3c3ea6661e214f161cebb46a60cb3e6c4d65
+      content_csharp_sha: 9b630ebb551a98b84b23b752a6b5717dde369f6a5830014b8e3ba442a3ed8a1a
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Tri du residu #10382 (2026-08-16, lane myia-po-2024:CoursIA-2) : FAUX POSITIF de la liste des 51 -- le jumeau Python n'embarque AUCUN moteur SOTA (imports mesures firsthand : numpy/matplotlib/typing uniquement, 0 nashpy). numpy = signal faible au sens de l'issue (helper numerique, pas un moteur de jeu), les DEUX jumeaux font la demonstration constructive du point fixe from-scratch. Verdict reformule : pas d'asymetrie lib-vs-lib a combler ; asymetrie de machinerie seulement (visualisation numpy/matplotlib vs System.* + SVG zero-dependance). parity_level semantic preserve (gel #11200)."
   known_differences:

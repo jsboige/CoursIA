@@ -1,7 +1,7 @@
 - name: "GameTheory-4 NashEquilibrium"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4-NashEquilibrium-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : nashpy (lib SOTA du twin Python, `nash.Game(A,B).support_enumeration()`) invoque depuis le notebook C# via CLI Process.Start (cellule 6.3) sur les 5 jeux canoniques (PD, MP, BoS, RPS, Asym 3x2), en plus du pont Gambit CLI deja branche (cellule 6.2, PR #10442). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). Axe 6 : nashpy couvre le meme role que le SupportEnumeration from-scratch (enumeration de supports pour les NE purs et mixtes) -> le pont est desormais wire. Comparaison numerique (cellule 6.3 du C#) : 5/5 jeux concordent (ecart max 3.3e-07, exploitabilite = 0 partout). RPS : nashpy retrouve l'equilibre uniforme (1/3,1/3,1/3) ; BoS : 3 NE (2 purs + mixte 2/3,1/3) ; Asym : 2 NE mixtes -- identiques aux resultats du twin Python (meme moteur nashpy). From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE. parity_level `semantic` conservee (cf. jumeaux part-2 et GT-4, precedent pont Gambit)."
@@ -70,6 +70,12 @@
       csharp_sha: 20421c61c000b1413adebb2b2f9767e96739c02d
       content_python_sha: 969f44d1f55a24c59159c97f0f28864264f46c865a08efae379ad67a270b6e26
       content_csharp_sha: e74e65d334414bf687d6ca94e46d5785454a5c86b0f054e4f7dc251023f592d4
+    - date: "2026-08-22"
+      by: myia-po-2025:CoursIA-2
+      python_sha: a3eb173dcba358d58c9c06601bdc9ff613eed918
+      csharp_sha: 8deff13852c4cb4d0cacabdf30eb2e765d6df8b0
+      content_python_sha: 6354c30515d82c8933963dc0164a337fe59bd6d358decd2a56717f039ede8911
+      content_csharp_sha: 6e92437a3eea64dff8721dd0b35bce2e6c43a8284d147725ef838d477e24c70d
   known_differences:
     - "2026-08-15 : ajout du pont nashpy CLI (cellule 6.3, meme schema que le pont Gambit 6.2 et la tranche GT-2 #11055). Le C# invoque nashpy (moteur du twin Python) via Process.Start, resout les 5 jeux (PD, MP, BoS, RPS, Asym) et compare l'ensemble des equilibres au SupportEnumeration from-scratch : 5/5 concordent (ecart max 3.3e-07, exploitabilite 0). RunGambit (cell 25) : resolution portable du binaire (GAMBIT_DIR, Program Files (x86), %USERPROFILE%\\gambit) pour reproductibilite sans elevation UAC. Bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK (pont reellement execute)."
     - "2026-08-11 : C.4 enrichment du twin C# (2 cellules markdown interpretation apres les outputs Nash pur §2.1 + Nash mixte) pour egaler la densite pedagogique du twin Python (qui fournit deja ces lectures aux memes positions). Markdown-only, aucun changement d'engine/outputs. Parite semantique preservee (meme theorie, meme interpretation conceptuelle). Attestation rebaselinee par myia-po-2023:CoursIA-2 apres arbitrage ai-01 (DM 2026-08-11) — la PR jumelle #10351 (doublon) est retiree, #10352 est le canonique."

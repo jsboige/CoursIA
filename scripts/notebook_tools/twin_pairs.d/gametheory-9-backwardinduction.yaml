@@ -1,7 +1,7 @@
 - name: "GameTheory-9 BackwardInduction"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-9-BackwardInduction.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-9-BackwardInduction-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Csharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele #10382 solver-free par conception : theorie des jeux algorithmique enseignee from-scratch des deux cotes (l algorithme - induction arriere, existence Nash, SPE, formes extensive/combinatoire/cooperative - EST la lecon ; il n existe pas de bibliotheque .NET canonique de solveur de jeu a invoquer, contrairement aux paires lib-vs-lib comme PyMC/Infer.NET ou scikit/ML.NET). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du formalisme mathematique. Pair verifiee firsthand (census moteur : CS=scratch, PY=scratch)."
@@ -34,6 +34,12 @@
       csharp_sha: 9b95706acd7986c556a4a987bd0357996db21841
       content_python_sha: 48aad24ad7fb9fe793a131d471b4f4cf639c2a9ec5738c33a8047b63212393e2
       content_csharp_sha: ba1d75b90e9ff7b24286a3b60a9ed9b38f5e27ab3aec9179f78c904220816e45
+    - date: "2026-08-22"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 5149aff72fab1e1b9a39c2d8db30eb33753afd59
+      csharp_sha: e2ba5d8587f082137e30650c643a4cf2b9dd6d59
+      content_python_sha: a18c8a6b5c9fdb1d5a3826f48e3a93344f692dbb48132afd197761b03db8aac6
+      content_csharp_sha: ea7752f57bdad7479be792aa89057d1c3b54f9bc0045f88275d3770295e9c72b
   known_differences:
     - "Socle pedagogique commun : l'algorithme d'induction en arriere (backward induction) pour resoudre les jeux sequentiels et calculer les equilibres de sous-jeu parfait (SPE, Selten 1965), applique aux paradoxes canoniques : jeu du mille-pattes (Centipede Game), guerre d'usure (War of Attrition), paradoxe de la chaine de magasins (Chain-Store paradox, Selten 1978). Distinct du GT-7 ExtensiveForm (qui pose la formalisme extensive-form + reduction extensive-vers-normale) : le GT-9 centre l'algorithme d'induction arriere et les paradoxes qu'il fait surgir."
     - "2026-08-11 (ai-01) : correction d'honnetete -- l'entree precedente creditait `networkx` de l'arbre de jeu cote Python. C'etait un import MORT (zero reference `nx.`), retire par #10438. L'arbre de jeu est from-scratch DES DEUX COTES ; il n'y a jamais eu d'asymetrie de librairie de graphes ici. Le defaut d'origine : l'entree a ete redigee depuis la LISTE D'IMPORTS, pas depuis les appels. Cf #10382 §2."
