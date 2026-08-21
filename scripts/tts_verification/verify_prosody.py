@@ -281,7 +281,7 @@ def analyze_segment(path: str, instruments) -> Dict[str, object]:
 
     return {
         "label": Path(path).stem,
-        "path": str(path),
+        "path": Path(path).name,  # pas de chemin machine absolu dans le rapport partage (CodeQL clear-text + regle 6)
         "duration_s": duration_s,
         "gate": decision["gate"],
         "reasons": decision["reasons"],
@@ -351,7 +351,7 @@ def verify_batch(
         results = [r for r in results if r["gate"] in ("REJECT", "ERROR")]
 
     summary = {
-        "audio_dir": str(audio_dir),
+        "audio_dir": Path(audio_dir).name,  # basename : pas de parent machine dans le rapport
         "total": len(clips),
         "counts": counts,
         "results": results,
@@ -359,7 +359,6 @@ def verify_batch(
     if output_path:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         Path(output_path).write_text(
-            # codeql[py/clear-text-storage-sensitive-data] -- FP: dumps prosody-gate classification summary (counts/reasons), no secrets/credentials/PII
             json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
         )
         print(f"\n[json] {output_path}")
@@ -396,7 +395,6 @@ def main() -> None:
     if args.single:
         instruments = _import_instruments(Path(args.lab_dir) if args.lab_dir else _default_lab_dir())
         r = analyze_segment(args.single, instruments)
-        # codeql[py/clear-text-logging-sensitive-data] -- FP: prints single-clip prosody verdict (gate+reasons), no secrets/credentials/PII
         print(json.dumps(r, indent=2, ensure_ascii=False))
         return
 
