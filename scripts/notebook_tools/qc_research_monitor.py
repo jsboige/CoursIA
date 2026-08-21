@@ -17,7 +17,7 @@ Comportement :
     existants restent semables a la demande par ai-01/workers (le cron ne
     couvre que le flux NOUVEAU).
   - runs suivants : IDs absents de l'etat -> gh issue create avec le template
-    docs/qc-research-issue-template.md prerempli (URL + titre), cap --max-issues
+    docs/qc/qc-research-issue-template.md prerempli (URL + titre), cap --max-issues
     par run (defaut 5), etat mis a jour uniquement pour les IDs reellement
     semes (un echec de creation laisse l'ID hors etat -> retente au run suivant).
 
@@ -39,7 +39,7 @@ from pathlib import Path
 
 SITEMAP_URL = "https://www.quantconnect.com/research.posts.sitemap.xml"
 STATE_PATH = Path("docs/qc/qc-research-seeded.json")
-TEMPLATE_PATH = Path("docs/qc-research-issue-template.md")
+TEMPLATE_PATH = Path("docs/qc/qc-research-issue-template.md")
 LABEL = "quantconnect-research"
 USER_AGENT = "CoursIA-qc-research-monitor/1.0 (github.com/jsboige/CoursIA #11698)"
 ARTICLE_RE = re.compile(r"/research/(\d+)/([a-z0-9-]+)/")
@@ -91,11 +91,17 @@ def title_from_slug(slug: str) -> str:
 
 
 def issue_body(article: dict) -> str:
-    template = ""
-    if TEMPLATE_PATH.exists():
-        template = TEMPLATE_PATH.read_text(encoding="utf-8", errors="replace")
-        # retirer les commentaires de mode d'emploi du template s'il en embarque
-        template = re.sub(r"<!--.*?-->", "", template, flags=re.DOTALL)
+    # Un template introuvable est une erreur de config (chemin deplace), pas un
+    # cas nominal : produire un corps vide en silence semerait des issues vides
+    # pendant des semaines avant que quelqu'un n'en lise une. Fail loud.
+    if not TEMPLATE_PATH.is_file():
+        raise FileNotFoundError(
+            f"template introuvable : {TEMPLATE_PATH} — verifier le chemin "
+            f"(le template vit sous docs/qc/)"
+        )
+    template = TEMPLATE_PATH.read_text(encoding="utf-8", errors="replace")
+    # retirer les commentaires de mode d'emploi du template s'il en embarque
+    template = re.sub(r"<!--.*?-->", "", template, flags=re.DOTALL)
     header = (
         f"## Article source\n"
         f"- URL : {article['url']}\n"
@@ -150,6 +156,14 @@ def main() -> int:
     seeded: dict[str, dict] = state["seeded"]
     bootstrap = not seeded
     fresh = [a for a in articles if str(a["id"]) not in seeded]
+
+    # Garde precoce : en mode flux, un template introuvable doit arreter le run
+    # AVANT la premiere creation d'issue (sinon des issues a corps vide sont
+    # semees et l'etat les marque semees — defaut decouvert en review #12036).
+    if not bootstrap and fresh and not args.dry_run and not TEMPLATE_PATH.is_file():
+        print(f"FAIL : template introuvable : {TEMPLATE_PATH} "
+              f"(chemin deplace ?) — aucun semis n'a eu lieu", file=sys.stderr)
+        return 2
 
     print(f"sitemap : {len(articles)} articles ; etat : {len(seeded)} semes ; "
           f"nouveaux : {len(fresh)} ; mode : {'BOOTSTRAP' if bootstrap else 'flux'}")
