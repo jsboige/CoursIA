@@ -320,14 +320,18 @@ class TestUnreadableNotebookSkipped:
 
 # These values pin the corpus baseline measured c.259 on 2026-08-21 against
 # origin/main at SHA 4e9ffc5ad1 (post-PR #11918). Drift 13->11 findings /
-# 10->9 files since c.259 = the ASCII->Mermaid conversion PRs merged in
-# between (re-measured firsthand, see `--json` below): 2 findings on
-# QuantConnect/Python disappeared with #11998/#12010/#12011 conversions.
+# 11->6 findings / 9->4 files, re-mesure firsthand le 2026-08-21 : les PRs de
+# conversion ASCII->Mermaid mergees depuis ont resorbe 5 constats. Le pin
+# n'avait pas suivi, donc le test echouait sur `main` pour TOUTE PR touchant
+# des notebooks -- un cliquet qui rougit dans le bon sens reste un cliquet
+# casse tant qu'on ne le re-pique pas. Reste 6 constats sur 4 notebooks :
+# GenAI/Vibe-Coding/.../03-Claude-CLI-References (c21), QC-Py-14 (c80, x2),
+# QC-Py-17 (c43, x2), QC-Py-22 (c48).
 # Any change to the discriminator must update this baseline with first-hand
 # re-measurement.
 
-CORPUS_BASELINE_TOTAL = 11
-CORPUS_BASELINE_FILES_WITH = 9
+CORPUS_BASELINE_TOTAL = 6
+CORPUS_BASELINE_FILES_WITH = 4
 
 
 class TestCorpusBaseline:
