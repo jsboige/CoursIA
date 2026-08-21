@@ -1387,7 +1387,7 @@ layout: two-cols
 - Utilisation de dimensions supérieures
 - Classification linéaire
 
-<img src="./images/img_090.png" class="w-[620px] max-w-full mt-6 mx-auto object-contain" alt="Astuce du noyau : données non séparables linéairement en 2D, séparables par un plan après passage en 3D" />
+<img src="./images/img_089.png" class="w-[620px] max-w-full mt-6 mx-auto object-contain" alt="Astuce du noyau : données non séparables linéairement en 2D, séparables par un plan après passage en 3D" />
 
 
 ---
@@ -1404,7 +1404,7 @@ layout: two-cols
   - Expressivité croissante
 
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
-<img src="./images/img_089.png" class="max-h-[300px] max-w-full object-contain" alt="Neurone biologique : dendrites, soma, axone — l'inspiration des réseaux artificiels" />
+<img src="./images/img_090.png" class="max-h-[300px] max-w-full object-contain" alt="Neurone biologique : dendrites, soma, axone — l'inspiration des réseaux artificiels" />
 <img src="./images/img_091.png" class="max-h-[300px] max-w-full object-contain" />
 <img src="./images/img_092.png" class="max-h-[300px] max-w-full object-contain" />
 <img src="./images/img_093.png" class="max-h-[300px] max-w-full object-contain" />
