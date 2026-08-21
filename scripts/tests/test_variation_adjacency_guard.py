@@ -248,3 +248,109 @@ def test_parse_override_empty_and_malformed():
     assert vag.parse_override([]) is None
     assert vag.parse_override(
         [{"author": "myia-ai-01", "body": "rien a voir"}]) is None
+
+
+# --- Malformed override is ANNOUNCED, never confusable with absent (#12096) --
+#
+# #11963: the coordinator posted `[G-VAR-3 OVERRIDE] lane <...>` with the
+# marker ending at the lane echo -- `next:` never came. parse_override
+# returned None, the SAME value as "no comment of the coordinator at all",
+# the gate re-blocked mute, and the coordinator read the silence as the guard
+# ignoring the arbitration. "Rejete" and "absent" must never share a return
+# value. A helper returning only the negative control proves nothing: an
+# unplugged organ produces the same output -- these tests pin the WORDS.
+
+def test_malformed_override_missing_next_is_announced():
+    # Acceptance negative A of #12096: coordinator marker WITHOUT `next:`.
+    # The gate must block AND the verdict must name the rejected marker,
+    # its author, and the reason -- this is the #11963 shape verbatim.
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA"))
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["overridden"] is False
+    assert "lu et rejete" in v["reason"]
+    assert "myia-ai-01" in v["reason"]
+    assert "`next:` manquant" in v["reason"]
+    assert "Forme attendue" in v["reason"]
+
+
+def test_malformed_override_next_off_line_is_announced():
+    # Acceptance negative B of #12096: `next:` on the LINE FOLLOWING the
+    # marker -- the exact form that failed in #11963 (the regex is
+    # single-line by design, CommonMark-style; the remedy is feedback, not
+    # multiline parsing).
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01",
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA\nnext: lean"))
+    assert v["guard_pass"] is False
+    assert "pas sur la meme ligne" in v["reason"]
+    assert "lu et rejete" in v["reason"]
+
+
+def test_malformed_override_bad_genre_shape_is_announced():
+    # `next:` whose value is not a genre shape (digit-first, punctuation):
+    # the third malformed clause of #12096. Distinct from out-of-enum
+    # genres, which pass through verbatim (section 1 -- see
+    # test_override_genre_outside_the_enum_passes_through).
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] next: 123"))
+    assert v["guard_pass"] is False
+    assert "n'est pas un genre" in v["reason"]
+    assert v["override_rejected"]["author"] == "myia-ai-01"
+
+
+def test_override_rejected_field_is_named_and_absence_means_unread():
+    # Acceptance 5 of #12096: the added verdict field is NAMED so a future
+    # reader of the verdict knows its absence means "no coordinator marker
+    # read", never "not looked".
+    v_bad = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] sans next"))
+    assert v_bad["override_rejected"]["reason"]  # named, carries the reason
+    v_clean = vag.check(_BLOCKED, override=None)
+    assert "override_rejected" not in v_clean  # absent = nothing was read
+    # the vacuous next:-names-the-blocked-genre case carries the field too
+    v_vacuous = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] next: guard"))
+    assert v_vacuous["override_rejected"]["author"] == "myia-ai-01"
+
+
+def test_malformed_override_by_worker_stays_invisible():
+    # Acceptance negative C of #12096, documented choice: a WORKER-authored
+    # malformed marker remains indistinguishable from absent (a lane cannot
+    # self-exempt, and a worker's marker carries no arbitration to reject).
+    # It blocks, and announces nothing -- same as a well-formed worker marker.
+    ov = vag.parse_override([{"author": "myia-po-2026",
+                              "body": "[G-VAR-3 OVERRIDE] sans next"}])
+    assert ov is None
+    v = vag.check(_BLOCKED, override=ov)
+    assert v["guard_pass"] is False
+    assert "override_rejected" not in v
+
+
+def test_well_formed_override_still_lifts_after_12096():
+    # POSITIVE CONTROL of the #12096 batch: the three-state parse did not
+    # break the path it exists to serve. Same shape as
+    # test_override_by_coordinator_lifts_with_named_replacement, kept here
+    # so the malformed cases above are provably not passing by accident of
+    # a disconnected helper.
+    v = vag.check(_BLOCKED, override=_ov(
+        "jsboige", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"))
+    assert v["guard_pass"] is True
+    assert v["overridden"] is True
+    assert v["override_next"] == "qc"
+
+
+def test_parse_override_malformed_reasons_distinct():
+    # The three malformed clauses produce three DISTINCT reasons -- a single
+    # generic "malformed" message would put the diagnosis burden back on the
+    # coordinator (#12096: "avec la raison et la forme attendue").
+    r_missing = vag.parse_override([{"author": "jsboige",
+                                     "body": "[G-VAR-3 OVERRIDE] lane x:y"}])
+    r_offline = vag.parse_override([{"author": "jsboige",
+                                     "body": "[G-VAR-3 OVERRIDE] lane x:y\nnext: lean"}])
+    r_shape = vag.parse_override([{"author": "jsboige",
+                                   "body": "[G-VAR-3 OVERRIDE] next: 7days"}])
+    assert "manquant" in r_missing["malformed"]
+    assert "meme ligne" in r_offline["malformed"]
+    assert "n'est pas un genre" in r_shape["malformed"]

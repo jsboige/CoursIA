@@ -106,16 +106,40 @@ _OVERRIDE_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Bare marker, no `next:` requirement: lets parse_override tell "a coordinator
+# marker was read but malformed" apart from "no marker read" (#12096) --
+# "rien trouve" and "pas regarde" must never share a return value.
+_MARKER_RE = re.compile(r"\[\s*G-?VAR-?3\s+OVERRIDE\s*\]", re.IGNORECASE)
+_MARKER_LINE_RE = re.compile(
+    r"^[^\n]*\[\s*G-?VAR-?3\s+OVERRIDE\s*\][^\n]*$", re.IGNORECASE | re.MULTILINE)
+_NEXT_ANYWHERE_RE = re.compile(r"next\s*:", re.IGNORECASE)
+_GENRE_SHAPE_RE = re.compile(r"next\s*:\s*(?P<next>\S+)", re.IGNORECASE)
+
+OVERRIDE_EXPECTED_FORM = (
+    "`[G-VAR-3 OVERRIDE] lane <machine:workspace> -- next: <genre>`, "
+    "sur une seule ligne"
+)
+
 
 def parse_override(comments: list[dict] | None) -> dict | None:
     """Read a coordinator `[G-VAR-3 OVERRIDE] ... next: <genre>` marker.
 
     `comments` is a list of ``{"author", "body"}`` (the shape `gh pr view
     --json comments` returns, with `author` flattened to a login). Pure
-    function: the caller does the network. Returns None when no valid
-    marker is present -- an invalid one (worker-authored, or naming no
-    replacement) is deliberately indistinguishable from absent, so a
-    malformed override never silently waives the gate.
+    function: the caller does the network. Three states, never two (#12096):
+
+      * ``None`` -- no coordinator marker read. Covers absent markers AND
+        worker-authored ones: a lane cannot self-exempt, so a worker marker
+        stays deliberately indistinguishable from absent (control C of
+        #12096; the choice is documented here).
+      * ``{"malformed": "<raison>", "author": ...}`` -- a COORDINATOR marker
+        was read and REJECTED: ``next:`` missing, off the marker's line, or
+        its value not a genre shape. The gate stays down -- a malformed
+        override never waives it -- but `check` announces the rejection in
+        the verdict so the coordinator gets feedback instead of a mute
+        re-block (#11963).
+      * well-formed dict -- ``author`` + ``lane`` + ``next_genre`` (kept
+        verbatim when outside the enum, per the pass-through of section 1).
     """
     if not comments:
         return None
@@ -125,14 +149,28 @@ def parse_override(comments: list[dict] | None) -> dict | None:
             login = login.get("login") or ""
         if login not in COORDINATOR_LOGINS:
             continue
-        m = _OVERRIDE_RE.search(c.get("body") or "")
-        if not m:
-            continue
-        return {
-            "author": login,
-            "lane": m.group("lane"),
-            "next_genre": canonicalize_genre(m.group("next")) or m.group("next").lower(),
-        }
+        body = c.get("body") or ""
+        m = _OVERRIDE_RE.search(body)
+        if m:
+            return {
+                "author": login,
+                "lane": m.group("lane"),
+                "next_genre": canonicalize_genre(m.group("next")) or m.group("next").lower(),
+            }
+        if _MARKER_RE.search(body):
+            # Coordinator marker present but the full contract does not hold.
+            # Name WHICH clause failed, in the priority order of #12096.
+            line = _MARKER_LINE_RE.search(body)
+            on_line = _GENRE_SHAPE_RE.search(line.group(0)) if line else None
+            if on_line and not re.fullmatch(r"[A-Za-z][\w-]*", on_line.group("next")):
+                reason = (f"`next: {on_line.group('next')}` -- valeur qui n'est pas "
+                          f"un genre (forme attendue : une lettre puis lettres/"
+                          f"chiffres/tirets)")
+            elif _NEXT_ANYWHERE_RE.search(body):
+                reason = "`next:` pas sur la meme ligne que le marqueur"
+            else:
+                reason = "`next:` manquant (aucun remplacant nomme)"
+            return {"author": login, "lane": None, "malformed": reason}
     return None
 
 
@@ -213,13 +251,32 @@ def check(body: str | None, override: dict | None = None) -> dict:
                 ),
             }
         hint = ""
+        extra = {}
         if override and override.get("next_genre") == genre:
             hint = (
                 f" Un marqueur d'override existe mais nomme `next: {genre}` "
                 f"-- soit le genre meme qui bloque : une levee qui promet de "
                 f"rejouer l'adjacence n'en est pas une, elle est ignoree."
             )
-        return {
+            extra["override_rejected"] = {
+                "author": override["author"],
+                "reason": f"next: {genre} -- le genre meme qui bloque",
+            }
+        elif override and override.get("malformed"):
+            # #12096: "rejete" et "absent" ne doivent jamais partager une
+            # valeur de retour. Le coordinateur qui a ecrit un marqueur
+            # bancal voit le gate re-bloquer ET la raison -- pas un silence
+            # qui se lit comme un arbitrage ignore.
+            hint = (
+                f" Un marqueur [G-VAR-3 OVERRIDE] de {override['author']} a "
+                f"ete lu et rejete : {override['malformed']}. Forme attendue : "
+                f"{OVERRIDE_EXPECTED_FORM}."
+            )
+            extra["override_rejected"] = {
+                "author": override["author"],
+                "reason": override["malformed"],
+            }
+        verdict = {
             "guard_pass": False, "blocking": True, "adjacent": True,
             "genre": genre, "prev_genre": prev_genre, "lane": lane,
             "overridden": False,
@@ -232,6 +289,10 @@ def check(body: str | None, override: dict | None = None) -> dict:
                 f"<genre>` (section 3), il ne laisse pas vieillir.{hint}"
             ),
         }
+        # `override_rejected` absent du verdict = "aucun marqueur de
+        # coordinateur lu" -- jamais "pas regarde" (#12096, acceptance 5).
+        verdict.update(extra)
+        return verdict
     return {
         "guard_pass": True, "blocking": False, "adjacent": True,
         "genre": genre, "prev_genre": prev_genre, "lane": lane,
