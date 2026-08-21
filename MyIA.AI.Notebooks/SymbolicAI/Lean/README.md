@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 33
-breakdown: Lean=33
-maturity: BETA=31, DRAFT=2
+pedagogical_count: 38
+breakdown: Lean=38
+maturity: BETA=36, DRAFT=2
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -138,9 +138,10 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean-20-Analysis-I-Tao-Workflow.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
 | 21 | [Lean-21-PFR-Entropy-Method](Lean-21-PFR-Entropy-Method.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
 | 22 | [Lean-22-MIMO-Detection-Flips](Lean-22-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
+| 22b | [Lean-22b-MIMO-Converse-Native](Lean-22b-MIMO-Converse-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
 | 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Le problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 **à l'écran** (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 45 min |
 
-**Durée totale** : ~21h40
+**Durée totale** : ~22h20
 
 ## Acquis d'apprentissage
 

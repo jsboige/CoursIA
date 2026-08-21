@@ -235,6 +235,18 @@ _PATHS_CLAUSE_RE = re.compile(
 # spaces) is never cut. Em/en dashes are included because fleet markers use
 # both (` -- ` in timestamps, ` — ` in prose rationales).
 _ANNOTATION_SUFFIX_RE = re.compile(r"\s+(?:--|—|–)\s+")
+# #12052 -- the parenthetical annotation separator. Fleet markers sometimes
+# append a prose parenthetical after the glob list (often a tranche or phase
+# label): `paths: MyIA.AI.Notebooks/GenAI/** (Phase 2, tranche A)`. Without
+# this separator, the parenthetical rides the LAST glob into `_split_paths_brace_aware`
+# where the comma inside the parens splits it further -- yielding one or more
+# GLOB-FREE fragments that fnmatch will never match (e.g. `tranche A)`), so
+# the scoped claim silently ends up with a PARTIALLY-DEAD scope and is
+# lifted to epic-wide by `_empty_scope_in` (fail-CLOSED, not fail-open -- a
+# broken claim is not a permissive claim). The separator requires a SPACE
+# before the opening paren so legitimate filename characters (e.g. a glob
+# with a paren in it -- rare but possible) are not cut.
+_PAREN_ANNOTATION_RE = re.compile(r" \(")
 
 
 class ClaimEvent(dict):
@@ -537,6 +549,15 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
     m_suffix = _ANNOTATION_SUFFIX_RE.search(raw)
     if m_suffix:
         raw = raw[:m_suffix.start()]
+    # #12052 -- cut a trailing parenthetical annotation off the glob list.
+    # Mirrors the `_ANNOTATION_SUFFIX_RE` discipline: a ` (` (space +
+    # opening paren) introduces prose, not a glob. Cutting at the FIRST one
+    # keeps the entire prose annotation (whatever's between the parens) out
+    # of the split. An internal paren (no leading space) is left untouched
+    # -- legitimate filename characters.
+    m_paren = _PAREN_ANNOTATION_RE.search(raw)
+    if m_paren:
+        raw = raw[:m_paren.start()]
     parts = _split_paths_brace_aware(raw)
     expanded: list[str] = []
     for p in parts:
@@ -546,7 +567,8 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
 
 
 def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
-    """Return the subset of `parts` that still contain literal `{` or `}`.
+    """Return the subset of `parts` that look UNMATCHABLE: brace residue
+    (`{` / `}`) OR a glob-free prose fragment (no `/`, no fnmatch meta).
 
     After `_extract_paths_clause` and `_expand_brace_groups`, any pattern
     residue containing braces is a SCOPE THAT FNMATCH WILL NEVER MATCH
@@ -554,11 +576,36 @@ def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
     read is to treat the claim as epic-wide (conservateur -- #10597
     acceptance #2). The list returned here is the witness, so the
     reducer and the JSON audit can surface it without re-parsing.
-    Empty when the scope is fully parseable.
+
+    #12052 -- a second class of unmatchable residue: PROSE WITHOUT SLASHES OR
+    METACHARACTERS (e.g. `tranche A)` after a parenthetical annotation split).
+    Such a fragment survives the brace-aware comma split because it carries no
+    `{` and no `,` at depth 0, but fnmatch still will not match it (fnmatch
+    uses the entire string as a glob; a bare word like `tranche` matches only
+    files literally named `tranche`). Pre-#12052 the witness silently skipped
+    these and the dead-glob hardener (`_empty_scope_in`) was the only line of
+    defence -- but `_empty_scope_in` requires a `git ls-files` walk and
+    surfaces the problem AFTER the lift has already fired. This witness
+    surfaces the FRAGMENT in the JSON so the declaring lane can SEE the
+    truncation was incomplete. Empty when the scope is fully parseable.
+    Empty on `parts is None` (no clause -> epic-wide semantics handled by
+    the caller).
     """
     if not parts:
         return []
-    return [p for p in parts if "{" in p or "}" in p]
+    fnmatch_metas = set("*?[!")
+    residue: list[str] = []
+    for p in parts:
+        if "{" in p or "}" in p:
+            residue.append(p)
+            continue
+        # A glob contains at least one path separator OR one fnmatch meta.
+        # A bare word without either is prose that fnmatch will treat as a
+        # literal filename (matching only the literal string) -- on tracked
+        # files this is effectively never the intent.
+        if "/" not in p and not any(m in p for m in fnmatch_metas):
+            residue.append(p)
+    return residue
 
 
 def _empty_scope_in(parts: list[str] | None,

@@ -615,6 +615,43 @@ def test_annonce_vraie_est_une_levee():
     assert mod.classify("myia-ai-01", "C'est bon, je merge.") is None
 
 
+# --- #12074 : « je leve ma reserve et je merge » s'auto-bloquait. Le LIFT
+# etait annule au niveau du BODY ENTIER par le seul « et je merge », meme quand
+# la phrase portait la levee explicite deja accomplie EN AMONT (cas fondateur
+# #11953 : le commentaire de levee re-compte comme un nit, la reserve qu'il
+# levait redevenue vivante). Le discriminateur est la POSITION : un marqueur de
+# levee d'auteur avant le match conditionnel rend la construction announcee
+# (consequence), pas conditionnelle. Les trois cas COTE A COTE — c'est le
+# controle par faux negatif qui protege la classe : sans le troisieme, le
+# correctif se validerait par ses hits et rouvrirait #11201 sous une autre
+# forme.
+
+def test_levee_explicite_puis_et_je_merge_leve():
+    """Cas fondateur #11953 : la formulation naturelle d'une levee par son
+    auteur ne doit plus s'auto-bloquer."""
+    assert mod.classify(
+        "myia-ai-01",
+        "**Je leve mon CHANGES_REQUESTED** et je merge."
+    ) is None
+
+
+def test_levee_explicite_avant_merge_conditionnel_ci_leve():
+    """Le conditionnel porte sur la CI, pas sur une demande a l'auteur."""
+    assert mod.classify(
+        "myia-ai-01",
+        "Levee de ma CHANGES_REQUESTED. Je merge des que la CI passe."
+    ) is None
+
+
+def test_reserve_emise_puis_et_je_merge_reste_un_nit():
+    """Antecedent imperatif, aucune levee en amont : la condition reste
+    bloquante (controle faux-positif de la paire)."""
+    assert mod.classify(
+        "myia-ai-01",
+        "CHANGES_REQUESTED : corrige la ligne 19 et je merge."
+    ) == "BOT-CONCERN"
+
+
 # --- #11246 : use vs mention. CONDITIONAL_LIFT lisait les exemples CITES du
 # motif comme des usages : une review expliquant « corrige X et je merge » se
 # flaggait elle-meme (2/15 findings de l'audit --limit 400, les 2 seules

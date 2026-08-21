@@ -136,14 +136,19 @@ jobs:
           : > /tmp/runs.jsonl
           while read -r NUM SHA FORK; do
             [ -z "${NUM:-}" ] && continue
+            # details_url (.../actions/runs/{run_id}/job/{job_id}) is collected
+            # on purpose: it is the only field carrying the run id, which the
+            # selector needs to fold check-runs per (run_id, name) instead of
+            # per name -- three workflows emit a job named "Ratchet (base vs
+            # PR)" and a name-only fold merges their verdicts (#11808).
             BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | {name, status, conclusion, started_at}]' 2>/dev/null) || continue
+                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url}]' 2>/dev/null) || continue
             printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
           echo "[stale-sweep] open PRs inspected: $(wc -l < /tmp/runs.jsonl | tr -d ' ')"
 
           python - <<'PY' > /tmp/candidates.txt
-          import json, os
+          import json, os, re, sys
 
           # REST /check-runs is lowercase where GraphQL's rollup is uppercase.
           # A check counts as settled-green when it has completed with a
@@ -164,22 +169,39 @@ jobs:
           # Test seam: the shipped selector is exec'd verbatim by
           # scripts/tests/test_pr_gate_sweep_select.py, which points this at a
           # fixture. Default is the sweep's own collection file.
+          #
+          # Fold key is (run_id, name), NEVER the name alone (#11808). Three
+          # workflows emit a job displaying the same name "Ratchet (base vs
+          # PR)"; folding by name lets the most recent of the three erase the
+          # verdicts of the other two -- measured 2026-08-19 on #11804: an
+          # Output-Failure SUCCESS at 16:21 covered a live Papermill FAILURE
+          # from 16:19, and this sweep re-ran a gate on a PR that was NOT
+          # healthy. The run id is not in the REST payload; details_url
+          # (.../actions/runs/{run_id}/job/{job_id}) carries it at no extra
+          # API call. `gh run rerun` rewrites a run's check-run IN PLACE, so
+          # same (run_id, name) keeps latest-wins -- the fold's original
+          # purpose, a superseded attempt of the SAME workflow -- and only the
+          # cross-workflow merge disappears.
+          def _fold_key(c):
+              m = re.search(r"/runs/(\d+)/", c.get("details_url") or "")
+              return (m.group(1) if m else "unattributed", c.get("name") or "?")
+
+          def _diag(p, why, blockers):
+              print(f'[stale-sweep] #{p["number"]}: red gate, kept out -- {why}: '
+                    + ", ".join(blockers), file=sys.stderr)
+
           for line in open(os.environ.get("SWEEP_RUNS_FILE", "/tmp/runs.jsonl"),
                            encoding="utf-8"):
               line = line.strip()
               if not line:
                   continue
               p = json.loads(line)
-              # Same-name check-runs accumulate on a SHA (reruns, re-dispatch).
-              # For NON-required checks, only the most recent one matters: a
-              # guard that failed and was re-run green must not keep a PR out
-              # of the pool.
               latest = {}
               for c in (p.get("checks") or []):
-                  name = c.get("name") or "?"
+                  key = _fold_key(c)
                   started = c.get("started_at") or ""
-                  if name not in latest or started >= latest[name][0]:
-                      latest[name] = (started, c)
+                  if key not in latest or started >= latest[key][0]:
+                      latest[key] = (started, c)
 
               # `PR gate` is the REQUIRED check, and there latest-wins is FALSE.
               # Two check-runs bearing a required name can coexist on one SHA in
@@ -199,13 +221,25 @@ jobs:
               if not any((c.get("conclusion") or "") in RED for c in gate_legs):
                   continue
 
-              others = [(n, c) for n, (t, c) in latest.items() if n != "PR gate"]
+              others = [(k, c) for k, (t, c) in latest.items() if k[1] != "PR gate"]
               # Every other check must be finished AND green. An unfinished one
               # means the gate may still be legitimately waiting: re-aggregating
               # then would just burn another verdict on the same incomplete set.
-              if not all((c.get("status") or "") == "completed" for _, c in others):
+              # Exclusions are NAMED on stderr (#11808): "1 candidate, N
+              # excluded" is indistinguishable from a disconnected filter, and
+              # the #11804 incident was read off exactly such a count.
+              unfinished = [k for k, c in others
+                            if (c.get("status") or "") != "completed"]
+              if unfinished:
+                  _diag(p, "unfinished", [
+                      f"{k[1]}[run {k[0]}]" for k in unfinished])
                   continue
-              if not all((c.get("conclusion") or "") in GREEN for _, c in others):
+              red_others = [(k, c) for k, c in others
+                            if (c.get("conclusion") or "") not in GREEN]
+              if red_others:
+                  _diag(p, "red", [
+                      f"{k[1]}[run {k[0]}]={c.get('conclusion')}"
+                      for k, c in red_others])
                   continue
 
               print(f'{p["number"]} {p["sha"]} {str(p.get("fork", False)).lower()}')
