@@ -6,6 +6,13 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : nashpy (lib SOTA du twin Python, `nash.Game(A,B).support_enumeration()`) invoque depuis le notebook C# via CLI Process.Start (cellule 6.3) sur les 5 jeux canoniques (PD, MP, BoS, RPS, Asym 3x2), en plus du pont Gambit CLI deja branche (cellule 6.2, PR #10442). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). Axe 6 : nashpy couvre le meme role que le SupportEnumeration from-scratch (enumeration de supports pour les NE purs et mixtes) -> le pont est desormais wire. Comparaison numerique (cellule 6.3 du C#) : 5/5 jeux concordent (ecart max 3.3e-07, exploitabilite = 0 partout). RPS : nashpy retrouve l'equilibre uniforme (1/3,1/3,1/3) ; BoS : 3 NE (2 purs + mixte 2/3,1/3) ; Asym : 2 NE mixtes -- identiques aux resultats du twin Python (meme moteur nashpy). From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE. parity_level `semantic` conservee (cf. jumeaux part-2 et GT-4, precedent pont Gambit)."
   audits:
+    - date: "2026-08-21"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 33b1d7bc743d45430a959d8b55280f40285c25bd
+      csharp_sha: e3a20c5a309c90f173c5494dc7cd032aa77fe37c
+      content_python_sha: c08914b5
+      content_csharp_sha: 22b635165857585f64e21f62348f41f83e1d7193105a71e0efe5534b571aefbc
+      reason: "fix(gametheory,#9434) PR #11966 (c.1301+284 lane po-2025:CoursIA-2) drain de 13 claims artifactuels. Sur cette paire, GT-4 cell#33 : strip '(44 cellules, kernel Lean 4)' depuis la cross-reference GT-4b -- claim drifte (le GT-4b actuel = 44 cellules, le claim était 38). csharp_sha inchange. twin parity rebaseline (script check_twin_parity.py --update, leçon #11966)."
     - date: "2026-08-18"
       by: myia-po-2026:CoursIA
       python_sha: c74eabd61cd743f4247dd1e29cc9a4f813859e74
