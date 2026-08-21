@@ -136,7 +136,42 @@ CONCERN_MARKERS = (
     # Garde-fou FP : « rien a changer » nie le nit — le citer « rien »
     # (CITERS, ci-dessous) rend l'occurrence citee.
     "a changer",
+    # Glyphes de severite d'Hermes (#12143). Le mot par lequel il NOMME ses
+    # constats est « FINDING » — et c'est precisement le mot qu'il ne faut PAS
+    # ajouter ici : mesure sur les 150 dernieres PR mergees, 13 reviews sur 35
+    # contiennent « finding », dont 9 sans aucune reserve reelle (« 1 finding
+    # max par cell » = nom d'une sortie de scanner ; « les 4 findings restants
+    # ... cadrage honnete » ; « 2 FINDINGS non-bloquants »). C'est le
+    # vocabulaire courant du domaine, pas un marqueur.
+    #
+    # Le discriminant est le GLYPHE, que la convention Hermes porte de facon
+    # stable : sur ces 35 reviews, 23 portent △ (micro-nit explicitement non
+    # bloquant, exclu ici), 5 portent 🟡 et 1 porte 🔴. Les 5 🟡 relevent tous
+    # d'une seule classe — la claim du body dementie par l'artefact, soit le
+    # point 1 des 5 de la revue (« la PR fait ce qu'elle annonce »).
+    #
+    # Consequence d'ordre, et c'est la vraie reparation : `live_concern`
+    # redevient vrai, donc la branche HUMAN_VERDICT_POSITIVE ne peut plus
+    # eteindre la review. Le « LGTM structural sur les 3 fixes + 1 FINDING »
+    # de #12077 etait scope dans sa propre phrase ; l'organe lisait le LGTM et
+    # pas le « + 1 FINDING », et rendait exit 0 sur une reserve vivante. Le
+    # garde tient par l'ORDRE des branches (cf. HUMAN_VERDICT_POSITIVE
+    # ci-dessous) — ce qui avait cede, c'est la premiere.
+    #
+    # Cout mesure de la promotion : 6 reviews flaggees sur 35 au lieu de 2 ;
+    # sur les 150 PR du scan, une seule (#12059) aurait ete bloquee sans levee
+    # ecrite, les 4 autres ayant deja une suite (commits ou commentaires) qui
+    # l'aurait levee.
 )
+
+# Les deux glyphes seuls, nommes : la branche LIFT_MARKERS de `classify` en a
+# besoin, et une reserve EMISE par glyphe ne se laisse pas eteindre par un mot
+# de levee situe ailleurs dans le meme body.
+SEVERITY_GLYPHS = (
+    "\U0001F7E1",  # 🟡 constat substantiel
+    "\U0001F534",  # 🔴 bloquant
+)
+CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 # la resolution. Sans ce filtre, chaque « CHANGES_REQUESTED levée » est compte
@@ -635,7 +670,23 @@ def classify(author: str, body: str) -> str | None:
     if author in BOT_LOGINS or not body:
         return None
     stripped = body.lstrip()
-    if has_marker(body, LIFT_MARKERS) and not _lift_cancelled(_strip_quoted(body)):
+    # #12143 -- correction de mon propre diagnostic. J'avais impute le exit 0
+    # de #12077 a la branche HUMAN_VERDICT_POSITIVE plus bas ; elle est bien
+    # subordonnee a `live_concern`, comme son commentaire l'affirme, et n'etait
+    # donc PAS en cause. Le coupable est CETTE branche-ci : `LIFT_MARKERS`
+    # contient « LGTM », elle s'execute AVANT que `live_concern` ne soit
+    # calcule, et elle n'est subordonnee a rien. Le « LGTM structural sur les
+    # 3 fixes + 1 FINDING » rendait None ici meme, sans que le glyphe de
+    # severite qui suivait ait jamais ete lu.
+    #
+    # Le correctif reste etroit : un glyphe de severite VIVANT annule la levee.
+    # C'est le sens de la convention -- le glyphe est une EMISSION, et une
+    # emission ne se laisse pas eteindre par un mot de levee pose ailleurs dans
+    # la meme prose (« LGTM structural » scopait une partie du diff, pas le
+    # constat). Aucun body sans glyphe ne change de classement.
+    if (has_marker(body, LIFT_MARKERS)
+            and not _lift_cancelled(_strip_quoted(body))
+            and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)):
         return None  # annonce de levee / de merge : resolution, pas reserve
     # (construction conditionnelle « et je merge » : voir _lift_cancelled —
     # l'annonce conditionnee n'est pas une levee, SAUF levee explicite d'auteur

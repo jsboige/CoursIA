@@ -1301,3 +1301,108 @@ def test_11744_trois_positions_combinees_neutralisees():
         "reviews": [], "commits": [{"committedDate": at(19)}],
     }
     assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+# --- #12143 : glyphe de severite d'Hermes ----------------------------------
+#
+# L'organe rendait exit 0 sur une review dont le body disait, noir sur blanc,
+# que la claim de la PR est contredite par l'artefact committe (#12077).
+#
+# Le discriminant retenu est le GLYPHE, pas le mot. « FINDING » est le
+# vocabulaire courant du domaine : sur les 150 dernieres PR mergees, 13 des 35
+# reviews Hermes contiennent « finding », dont 9 sans aucune reserve reelle.
+# L'ajouter aux marqueurs sur-accuserait. Le glyphe, lui, est stable : 23 △
+# (non bloquant, exclu), 5 GLYPHE_JAUNE, 1 GLYPHE_ROUGE — et les 5 jaunes
+# relevent tous d'une seule classe, la claim du body dementie par l'artefact.
+#
+# La moitie de ces tests sont des controles NEGATIFS. Un motif de detection se
+# valide par ses faux negatifs, et celui-ci se valide autant par les reviews
+# saines qu'il doit laisser passer.
+
+Y = "\U0001F7E1"
+R = "\U0001F534"
+TRI = "\u25B3"
+
+
+def test_12143_glyphe_jaune_survit_au_lgtm_scope():
+    """Controle POSITIF #12077 : « LGTM structural sur les 3 fixes + 1
+    FINDING » suivi d'un constat glyphe. Le LGTM y est scope dans sa propre
+    phrase ; l'organe lisait le LGTM et pas le constat."""
+    body = (
+        "[Hermes] LGTM structural sur les 3 fixes + 1 FINDING\n"
+        + Y + " FINDING — la claim « img_020 est disclosing » est contredite "
+        "par l'artefact committe : elle devient orpheline NON disclosing."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12143_le_coupable_est_la_branche_lift_pas_human_verdict():
+    """Le diagnostic initial de #12143 imputait le exit 0 a
+    HUMAN_VERDICT_POSITIVE. Cette branche est bien subordonnee a
+    `live_concern`, comme son commentaire l'affirme -- elle n'etait pas en
+    cause. Le coupable est la branche LIFT_MARKERS, qui contient « LGTM »,
+    s'execute AVANT le calcul de `live_concern`, et n'est subordonnee a rien.
+
+    Ce test fixe la distinction : un « LGTM » NU (sans glyphe) continue de
+    lever, un « LGTM » accompagne d'un glyphe vivant ne leve plus."""
+    assert mod.classify("clusterManager-Myia", "[Hermes] LGTM — rien a signaler.") is None
+    assert mod.classify("clusterManager-Myia", "[Hermes] LGTM\n" + Y + " la claim du body est fausse.") == "BOT-CONCERN"
+
+
+def test_12143_glyphe_rouge_bloque():
+    body = "[Hermes] " + R + " BLOQUANT — la cellule 12 leve une exception au head."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12143_triangle_reste_muet():
+    """Controle NEGATIF #11864 : △ est la marque EXPLICITE du non bloquant,
+    et couvre les deux tiers des reviews Hermes. La promouvoir ferait rougir
+    23 reviews saines sur 35."""
+    body = (
+        "[Hermes] APPROVED\n" + TRI + " 2 FINDINGS non-bloquants : nommage "
+        "de variable, et un lien relatif qui pourrait etre absolu."
+    )
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_12143_le_mot_finding_seul_ne_flagge_pas():
+    """Controles NEGATIFS #12088 et #12066 : « finding » est le nom d'une
+    sortie de scanner et une unite de comptage. C'est exactement le correctif
+    naif qu'il ne fallait pas faire."""
+    for body in (
+        "[Hermes] APPROVED — le scanner plafonne a 1 finding max par cell, "
+        "ce qui borne le bruit. Rien a signaler.",
+        "[Hermes] APPROVED — les 4 findings scanner restants sont un cadrage "
+        "honnete, l'auteur les declare dans le body.",
+    ):
+        assert mod.classify("clusterManager-Myia", body) is None, body
+
+
+def test_12143_glyphe_cite_adjacent_est_neutralise():
+    """Controle NEGATIF : un glyphe precede d'un mot de citation (`Re`, `pas
+    de`, `aucun`...) est une narration, pas une emission -- meme hygiene
+    `_is_cited` que pour les marqueurs textuels."""
+    body = "[Hermes] APPROVED\nRe " + Y + " : la reserve est levee par 06956bd0a."
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_12143_glyphe_narre_a_distance_sur_flagge_residu_assume():
+    """RESIDU ASSUME, fixe ici pour qu'il soit VU et non decouvert.
+
+    `_is_cited` ne regarde que le mot precedant l'occurrence, plus UN mot
+    d'attribution (#11044). Un glyphe narre plus loin dans la phrase
+    (« la review precedente portait un GLYPHE ») n'est donc pas neutralise et
+    sur-flagge. Elargir la fenetre est le mauvais remede : il fabriquerait des
+    faux NEGATIFS sur de vraies emissions, ce qu'un garde de merge ne peut pas
+    se permettre. La sur-accusation coute une relecture ; la sous-accusation
+    coute un merge."""
+    body = (
+        "[Hermes] APPROVED\nAucune reserve. Pour reference, la review "
+        "precedente portait un " + Y + " qui est leve par le commit 06956bd0a."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12143_non_regression_marqueur_textuel_historique():
+    body = "[Hermes] COMMENT_WITH_CONCERNS — le scope deborde du titre."
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+    assert mod.classify("clusterManager-Myia", "[Hermes] APPROVED — rien a signaler.") is None
