@@ -371,6 +371,10 @@ layout: section
 
 
 ---
+layout: two-cols
+---
+
+
 
 # Stratégies d'exploration (1/2)
 
@@ -378,6 +382,8 @@ layout: section
 <div class="bg-orange-700 text-white px-6 py-3 text-xl font-bold text-center">Non informées</div>
 <div class="bg-slate-800 text-white px-6 py-3 text-xl font-bold text-center">Informées</div>
 </div>
+
+<div class="grid grid-cols-2 gap-8 mt-6">
 
 <div>
 
@@ -391,6 +397,7 @@ layout: section
 
 </div>
 
+<div>
 
 - Évaluation des états
   - **Heuristique**
@@ -401,14 +408,16 @@ layout: section
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<div class="img-stack absolute top-[110px] right-[20px] w-[300px]">
-<img src="./images/img_027.png" class="max-h-[300px] max-w-full object-contain" alt="Algorithme A*" />
-<img src="./images/img_028.png" class="max-h-[300px] max-w-full object-contain" alt="Pathfinding.js demo" />
+<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Cycle d'un algorithme génétique" />
+<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Croisement sur le problème des huit reines" />
+
+</div>
+
 </div>
 
 
-
 ---
+
 
 # Stratégies d'exploration (2/2)
 
