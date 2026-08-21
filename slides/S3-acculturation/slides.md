@@ -412,9 +412,6 @@ layout: two-cols
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Cycle d'un algorithme génétique" />
-<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Croisement sur le problème des huit reines" />
-
 </div>
 
 </div>
@@ -443,6 +440,11 @@ layout: two-cols
   - Ex: Perdus en foret
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
+
+<div class="grid grid-cols-2 gap-4 mt-2">
+<img src="./images/img_027.png" class="max-h-[200px] max-w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
+<img src="./images/img_028.png" class="max-h-[200px] max-w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
+</div>
 
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_030.png" class="max-h-[300px] max-w-full object-contain" />
