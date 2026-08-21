@@ -206,8 +206,18 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
 
 
 def scan_notebook(path: Path) -> dict:
-    """Scan un notebook ; renvoie les cellules markdown contenant des flowcharts ASCII."""
-    nb = nbformat.read(path, as_version=4)
+    """Scan un notebook ; renvoie les cellules markdown contenant des flowcharts ASCII.
+
+    En cas de notebook illisible (BOM UTF-8 mal gere par nbformat, JSON
+    corrompu, validation error sur cellule), retourne un dict avec `error`
+    et `findings=[]` au lieu de lever. Le sibling `detect_ascii_workaround.py`
+    porte deja cette garde (#3801, L344-350) ; ce portage unifie les deux
+    detecteurs sur le meme contrat (cf #12097, 2/1062 notebooks illisibles
+    mesures sur la tete de #11964)."""
+    try:
+        nb = nbformat.read(path, as_version=4)
+    except (OSError, nbformat.reader.NotJSONError, nbformat.ValidationError) as exc:
+        return {"path": str(path), "error": str(exc), "findings": []}
     findings = []
     for cell_idx, cell in enumerate(nb.cells):
         if cell.get("cell_type") != "markdown":
@@ -227,14 +237,21 @@ def scan_notebook(path: Path) -> dict:
                 "labels": blk["labels"],
                 "evidence": blk["verbatim"][:240],  # troncature pour le rapport
             })
-    return {"path": str(path), "findings": findings}
+    return {"path": str(path), "findings": findings, "error": None}
 
 
 def scan_paths(paths: list[Path]) -> dict:
-    """Scan une liste de notebooks ; agrege les resultats."""
+    """Scan une liste de notebooks ; agrege les resultats.
+
+    Apres #12097, les notebooks illisibles ne cassent plus le scan : ils sont
+    comptes dans `files_unreadable` (avec le message d'erreur) et le scan
+    continue sur les fichiers suivants. Sans cette garde, un seul notebook
+    corrompu (BOM UTF-8, JSON invalide) interrompait tout et rendait une
+    abstention globale la ou l'organe aurait pu rendre des findings reels."""
     all_findings = []
     files_scanned = 0
     files_with_findings = 0
+    files_unreadable: list[dict] = []
     for p in paths:
         if not p.exists():
             continue
@@ -242,18 +259,31 @@ def scan_paths(paths: list[Path]) -> dict:
             for nb_path in sorted(p.rglob("*.ipynb")):
                 files_scanned += 1
                 result = scan_notebook(nb_path)
+                if result.get("error"):
+                    files_unreadable.append({
+                        "path": str(nb_path),
+                        "error": result["error"],
+                    })
+                    continue
                 if result["findings"]:
                     files_with_findings += 1
                 all_findings.extend(result["findings"])
         else:
             files_scanned += 1
             result = scan_notebook(p)
+            if result.get("error"):
+                files_unreadable.append({
+                    "path": str(p),
+                    "error": result["error"],
+                })
+                continue
             if result["findings"]:
                 files_with_findings += 1
             all_findings.extend(result["findings"])
     return {
         "files_scanned": files_scanned,
         "files_with_findings": files_with_findings,
+        "files_unreadable": files_unreadable,
         "total_findings": len(all_findings),
         "findings": all_findings,
     }
@@ -273,11 +303,15 @@ def main() -> int:
     else:
         print(f"Notebooks scanned   : {result['files_scanned']}")
         print(f"With findings       : {result['files_with_findings']}")
+        print(f"Unreadable          : {len(result['files_unreadable'])}")
         print(f"Total findings      : {result['total_findings']}")
         for f in result["findings"][:10]:
             print(f"\n  {f['path']}:{f['start_line']}-{f['end_line']}  "
                   f"boxes={f['boxes']} connectors={f['connectors']} labels={f['labels']}")
             print(f"    > {f['evidence'][:120]}")
+        for u in result["files_unreadable"]:
+            print(f"\n  [UNREADABLE] {u['path']}")
+            print(f"    > {u['error'][:200]}")
     return 0
 
 

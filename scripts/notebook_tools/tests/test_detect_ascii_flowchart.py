@@ -16,6 +16,19 @@ Calibration baseline c.259 on 1042 pedagogical notebooks (run 2026-08-20) :
   - SymbolicAI/Lean         : 2 (Lean-7)
   - GenAI/Vibe-Coding       : 1 (03-Claude-CLI-References)
 
+Calibration baseline c.439 on 2026-08-21 (post-#12011 ASCII->Mermaid tranche
++ post-#12020 + post-#11994), re-measured firsthand with #12097 try/except fix
+applied (without which the scan crashed on BTC-ML-Researcher.ipynb before
+reaching the body) : **9 files with 11 findings**, distribution:
+  - SymbolicAI/SemanticWeb : 4 (SW-6, SW-6b, SW-7, SW-12 ; SW-1 ASCII->Mermaid par #12011)
+  - QuantConnect/Python     : 4 (QC-Py-14, 17, 22, ...)
+  - SymbolicAI/Lean         : 2 (Lean-7)
+  - GenAI/Vibe-Coding       : 1 (03-Claude-CLI-References)
+
+Drift = 2 findings resolved by tranche ASCII->Mermaid #12011 (1 SW-1 + 1
+autre) + 1 unreadable (Sudoku-15-Infer-Csharp.ipynb missing metadata,
+mesure c.439).
+
 Prevalence 0.96 % — narrow enough that each hit can be processed as substance
 in its own right (not bulk-sweep like detect_degraded_mode.py).
 
@@ -252,6 +265,7 @@ class TestScanNotebook:
         nbformat.write(nb, path)
         result = scan_notebook(path)
         assert result["findings"] == []
+        assert result.get("error") is None
 
     def test_scan_sw12_founder(self, tmp_path):
         """The founder case is detected via the notebook entry-point."""
@@ -265,17 +279,95 @@ class TestScanNotebook:
         assert f["boxes"] >= 2
         assert f["connectors"] >= 2
 
+    def test_scan_corrupt_json_returns_error_not_crash_12097(self, tmp_path):
+        """#12097 acceptance : a notebook whose body is invalid JSON (e.g. raw
+        text starting with '{' but missing proper structure) MUST return
+        {error, findings=[]} instead of raising. Mirrors the sibling
+        detect_ascii_workaround.py L344-350 contract."""
+        path = tmp_path / "corrupt.ipynb"
+        path.write_text("{ not valid json at all", encoding="utf-8")
+        result = scan_notebook(path)
+        assert result["findings"] == []
+        assert result.get("error"), "expected error message for corrupt JSON"
+        assert "NotJSONError" in result["error"] or "JSON" in result["error"]
+
+    def test_scan_bom_prefix_returns_error_12097(self, tmp_path):
+        """#12097 BOM-prefixed notebook (classic case from BTC-ML-Researcher) :
+        nbformat raises NotJSONError because the BOM byte shifts the JSON
+        parser. The new guard treats this like any other read failure."""
+        path = tmp_path / "bom.ipynb"
+        # nbformat rejects a UTF-8 BOM prefix on a non-JSON-leading byte
+        path.write_bytes(b"\xef\xbb\xbfnot json")
+        result = scan_notebook(path)
+        assert result["findings"] == []
+        assert result.get("error"), "expected error message for BOM-prefixed content"
+
+    def test_scan_validation_error_returns_error_12097(self, tmp_path):
+        """A JSON file that parses as JSON but does not pass nbformat's
+        schema validation (e.g. missing required 'cells' field) should
+        also be guarded. Mirrors Sudoku-15-Infer-Csharp.ipynb founder case."""
+        path = tmp_path / "invalid_schema.ipynb"
+        path.write_text('{"cells": "this should be a list"}', encoding="utf-8")
+        result = scan_notebook(path)
+        assert result["findings"] == []
+        assert result.get("error"), "expected error for nbformat validation failure"
+
+
+class TestScanPaths:
+    """#12097 : scan_paths must aggregate unreadable notebooks without
+    interrupting the whole scan. Mirrors the sibling L344-350 behavior."""
+
+    def test_scan_paths_unreadable_does_not_interrupt_12097(self, tmp_path):
+        """A clean notebook + a corrupt one + another clean one in the same
+        directory : scan_paths must report the 2 clean findings AND the
+        unreadable entry, without crashing on the corrupt middle file."""
+        # Clean 1
+        nb_clean = _make_nb_with_md(SW_12_FOUNDER)
+        nb_clean_path = tmp_path / "a_clean.ipynb"
+        nbformat.write(nb_clean, nb_clean_path)
+        # Corrupt in the middle (alphabetically before a_clean or after, doesn't matter)
+        corrupt_path = tmp_path / "b_corrupt.ipynb"
+        corrupt_path.write_text("{ not json", encoding="utf-8")
+        # Clean 2
+        nb_clean2 = _make_nb_with_md("# Just text")
+        nb_clean2_path = tmp_path / "c_clean.ipynb"
+        nbformat.write(nb_clean2, nb_clean2_path)
+
+        from detect_ascii_flowchart import scan_paths
+        result = scan_paths([tmp_path])
+        assert result["files_scanned"] == 3
+        assert len(result["files_unreadable"]) == 1
+        assert result["files_unreadable"][0]["path"] == str(corrupt_path)
+        # Both clean notebooks must produce findings (or at least be counted)
+        assert result["files_with_findings"] == 1  # only SW_12 has flowchart
+        assert len(result["findings"]) == 1
+
+    def test_scan_paths_baseline_pinned_12097(self, tmp_path):
+        """After the fix, the corpus baseline scan must succeed end-to-end
+        (it would have failed before when hitting BTC-ML-Researcher.ipynb).
+        Sanity-check that scan_paths does not crash on the corpus."""
+        # No real corpus in tmp_path ; just verify no crash on empty dir
+        from detect_ascii_flowchart import scan_paths
+        result = scan_paths([tmp_path])
+        assert result["files_scanned"] == 0
+        assert result["files_unreadable"] == []
+        assert result["findings"] == []
+
 
 # ---------------------------------------------------------------------------
 # 5. Corpus baseline pin (anti-regression)
 # ---------------------------------------------------------------------------
 
 # These values pin the corpus baseline measured c.259 on 2026-08-20 against
-# origin/main at SHA fbe61eb57 (post-PR #11918). Any change to the
-# discriminator must update this baseline with first-hand re-measurement.
+# origin/main at SHA fbe61eb57 (post-PR #11918), and re-measured firsthand c.439
+# on 2026-08-21 against current origin/main (post-#12011 ASCII->Mermaid tranche
+# + post-#12020 Lean-22b + post-#11994 Lean-17c). 11 findings / 9 files is the
+# new baseline; 2 findings resolved by the ASCII->Mermaid sweep #12011.
+# Any further change to the discriminator must re-measure firsthand and update
+# this baseline with first-hand re-measurement.
 
-CORPUS_BASELINE_TOTAL = 13
-CORPUS_BASELINE_FILES_WITH = 10
+CORPUS_BASELINE_TOTAL = 11
+CORPUS_BASELINE_FILES_WITH = 9
 
 
 class TestCorpusBaseline:
