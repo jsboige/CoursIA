@@ -4,7 +4,7 @@
 series: Search
 pedagogical_count: 118
 breakdown: Applications=43, Part1-Foundations=29, Part4-Metaheuristics=22, Part2-CSP=18, Part3-Advanced=6
-maturity: BETA=110, ALPHA=5, DRAFT=3
+maturity: BETA=109, ALPHA=6, DRAFT=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
