@@ -162,6 +162,8 @@ layout: section
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
+<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+
 
 ---
 
@@ -316,9 +318,9 @@ layout: section
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_019.png" class="absolute top-[360px] right-[20px] w-[200px]" alt="Assemblage robotique" />
-<img src="./images/img_020.png" class="absolute top-[360px] right-[230px] w-[200px]" alt="Problèmes jouets 1" />
-<img src="./images/img_021.png" class="absolute top-[360px] right-[440px] w-[200px]" alt="Problèmes jouets 2" />
+<img src="./images/img_robot_extracted.png" class="absolute top-[345px] right-[20px] w-[380px] max-h-[170px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
+<img src="./images/img_019.png" class="absolute top-[460px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
+<img src="./images/img_021.png" class="absolute top-[460px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
 
 
 
