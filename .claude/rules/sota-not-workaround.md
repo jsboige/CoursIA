@@ -33,7 +33,7 @@ Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'ke
 | 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
 | 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
 
-**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H).
+**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La taxonomie des 5 verdicts est **inchangee** : seul l'etablissement d'`INTRINSIC` se durcit.
 
 **Origine** (#10459) : 3 verdicts `INTRINSIC` OpenSpiel convergents, aucun n'ayant examine l'axe PythonNet ; l'axe est desormais **prouve** par 5 PRs mergees. Deuxieme omission apres `IKVM`. Recit, verbatim user et mesures : [detail §2](../../docs/reference/sota-verdicts-detail.md).
 
