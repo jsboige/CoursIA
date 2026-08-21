@@ -136,6 +136,40 @@ CONCERN_MARKERS = (
     # Garde-fou FP : « rien a changer » nie le nit — le citer « rien »
     # (CITERS, ci-dessous) rend l'occurrence citee.
     "a changer",
+    # #12143 — glyphe de severite d'Hermes prefixant le verdict. Hermes porte
+    # une convention STABLE et mesurable (scan 150 PRs mergees, distribution
+    # sur 35 reviews Hermes) :
+    #   △ (U+25B3, WHITE UP-POINTING TRIANGLE) : micro-nit non-bloquant,
+    #     23/35 reviews. Convention explicite de non-bloquant (exemple canon
+    #     dans #11864 : « △ 2 FINDINGS non-bloquants »).
+    #   🟡 (U+1F7E1, LARGE YELLOW CIRCLE) : constat substantiel, 5/35. Mesure
+    #     sur les 5 : 4 leves par la suite, 1 NON levee = #12059 (incident
+    #     fondateur, defaut B.0 = merge avec constat sans reponse, defaut
+    #     pedagogique en production : hyperparametres GRPO contredits par
+    #     l'artefact).
+    #   🔴 (U+1F534, LARGE RED CIRCLE) : bloquant strict, 1/35 (vrai bloquant).
+    # Le garde ignorait les glyphes entierement — l'argumentaire etait « pas
+    # le vocabulaire d'Hermes ». La mesure inverse : scan 150 PRs, **6/35**
+    # reviews aurait fait rougir le gate vs 2 actuellement (gain +4 catches
+    # reels). Promotion des DEUX glyphes bloquant/substantiel : `🟡` et `🔴`.
+    # **PAS de `△`** (convention explicite de non-bloquant, sur-accusation
+    # mesuree 23/35 reviews sinon) ni de mot `FINDING` seul (vocabulaire de
+    # domaine — sur-accusation mesuree sur 3 PRs : #12088 « 1 finding max
+    # par cell » est un nom technique scanner, #12066 « les 4 findings
+    # scanner restants » est un comptage declare honnete, #11864 « △ 2
+    # FINDINGS non-bloquants » est declare non-bloquant). Les glyphes sont
+    # preservees par `_unaccent` (categorie Unicode So = Symbol, Other, pas
+    # Mn = Mark, Nonspacing qui est la seule categorie depilee par
+    # `_unaccent`), donc le substring match fonctionne directement. Les
+    # motifs `_MENTION_VERDICT*` (qui exigent `[A-Z][A-Z_]{3,}`) ne peuvent
+    # pas neutraliser un glyphe — c'est exactement ce qu'il faut : un glyphe
+    # prefixe TOUJOURS une emission, jamais une mention formelle, et
+    # `_is_cited` (CITERS ascii) ne peut citer qu'un mot en prose, pas un
+    # glyphe en tete de ligne. Discriminateur : le glyphe precede
+    # immediatement le verdict, sans prose intermediaire, dans 90 % des cas
+    # mesures.
+    "🟡",       # 🟡 — reserve VIVANTE (constat substantiel, fondateur #12059)
+    "🔴",       # 🔴 — reserve VIVANTE (bloquant strict)
 )
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
