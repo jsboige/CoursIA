@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*.ipynb
+---
+
 # Cellules d'interprétation — ancrage sémantique, pas positionnel (HARD)
 
 S'applique à **tous les agents** insérant ou déplaçant une cellule markdown d'interprétation (header `### Lecture du résultat : …`, `### Interprétation : …`, ou prose « on observe / le résultat montre »), et à **tous les reviewers** (bots + humains) d'une PR d'enrichissement. Source : Epic **#10678** (désordre massif PyMC-15, PR #10580 / #10562 — angle mort review). Incident fondateur : 5 cellules d'interprétation ancrées par id arbitraire, décalées de 5 à 26 cellules de l'output qu'elles commentent, passées à travers NanoClaw + CI H.1/H.3 + golden-set + merge sans broncher.
