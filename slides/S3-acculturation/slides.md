@@ -548,7 +548,7 @@ layout: two-cols
 <div class="img-grid-2x2">
 <img src="./images/img_035.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
 <img src="./images/img_036.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
-<img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Diagrammes de Venn des connecteurs logiques : ou, et, implication, équivalence" />
+<img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
 
 </div>
 
@@ -634,7 +634,7 @@ layout: two-cols
 
 <div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_038.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Table de vérité en français des connecteurs logiques P, Q (négation, conjonction, disjonction, implication)" />
-<img src="./images/img_039.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Grammaire BNF de la logique propositionnelle avec priorité des opérateurs" />
+<img src="./images/img_039.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Diagrammes de Venn des connecteurs logiques : (P ∨ Q), (P ∧ Q), (P ⇒ Q), (P ⇔ Q)" />
 <img src="./images/img_040.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 ---
@@ -793,8 +793,8 @@ layout: two-cols
 
 <div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_043.png" class="max-h-[300px] max-w-full object-contain" alt="Graphe de planification : Start, Go(HWS), Go(SM), Buy(Drill/Milk/Bananas), Finish avec états At/Have" />
-<img src="./images/img_044.png" class="max-h-[300px] max-w-full object-contain" alt="Néon « Quiz time » rose et cyan" />
-<img src="./images/img_045.png" class="max-h-[300px] max-w-full object-contain" alt="Cartes à jouer vintage disposées en spirale arc-en-ciel sur une table en bois" />
+<img src="./images/img_044.png" class="max-h-[300px] max-w-full object-contain" alt="Décomposition HTN « Build House » : Obtain Permit, Construction et sous-tâches" />
+<img src="./images/img_045.png" class="max-h-[300px] max-w-full object-contain" alt="Plan de transport aérien en logique : Init, Goal, actions Load/Unload/Fly avec préconditions et effets" />
 <img src="./images/img_046.png" class="max-h-[300px] max-w-full object-contain" alt="Plan d'actions logiques : Load(C1,P1,SFO), Fly(P1,SFO,JFK), Unload (transport aérien)" />
 </div>
 ---
@@ -815,8 +815,8 @@ layout: two-cols
   - Linked Data
 
 <div class="img-stack absolute top-[110px] right-[20px] w-[460px]">
-<img src="./images/img_048.png" class="w-full object-contain" alt="Découpage apprentissage/validation/test avec sélection de modèle par itérations" />
-<img src="./images/img_049.png" class="w-full object-contain" alt="Web décentralisé : deux ordinateurs reliés par une poignée de main, symboles Bitcoin et Ethereum" />
+<img src="./images/img_048.png" class="w-full object-contain" alt="Cartographie des médias et réseaux sociaux : TV, presse, blogs, forums, podcasts, partage vidéo et photo" />
+<img src="./images/img_049.png" class="w-full object-contain" alt="Architecture du web sémantique : Trust, Proof, Logic, Ontology, RDF, XML, URI, Unicode" />
 </div>
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
@@ -933,7 +933,7 @@ layout: two-cols
 <div class="img-grid">
 <img src="./images/img_052.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Ajustement d'un nuage de points par une courbe bleue oscillante, une droite rouge et un segment vert" />
 <img src="./images/img_053.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surapprentissage : courbe orange très oscillante collée aux points, contre droite et segment de régression" />
-<img src="./images/img_054.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Découpage des données : échantillonnage, entraînement, validation, test avec sélection de modèle" />
+<img src="./images/img_054.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
 
 </div>
 
@@ -959,9 +959,9 @@ layout: two-cols
   - Observations bruitées
 
 <div class="img-grid">
-<img src="./images/img_055.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Arbre de décision « Faut-il attendre ? » : clients, attente estimée, faim, alternatives, bar, pluie" />
-<img src="./images/img_056.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Partition d'attributs par Clients? et Type? : ronds verts et rouges répartis en sous-ensembles" />
-<img src="./images/img_057.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Forêt aléatoire : un nœud X distribué vers plusieurs arbres, combinés par vote ou moyenne" />
+<img src="./images/img_055.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Chaîne de Markov cachée : états X₁ à Xₙ, observations E₁ à Eₙ" />
+<img src="./images/img_056.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Fourmis stylisées avec symboles x1 à x4 et ondes bleues et rouges (illustration intelligence en essaim)" />
+<img src="./images/img_057.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Réseau bayésien météo : soleil, nuages, pluie reliés par probabilités conditionnelles" />
 </div>
 
 
@@ -980,8 +980,8 @@ layout: two-cols
 - Apprentissage
 
 <div class="img-grid">
-<img src="./images/img_058.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Neurone biologique : dendrite, corps cellulaire, noyau, axone, synapse" />
-<img src="./images/img_059.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Données non séparables en 2D (points dans un cercle) et séparées dans un espace 3D par des plans" />
+<img src="./images/img_058.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Modèle à états cachés temporel : états X_t et observations Z_t au fil du temps" />
+<img src="./images/img_059.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Graphe orienté : nœuds bleus reliés par flèches pleines et pointillées" />
 
 </div>
 
@@ -1015,9 +1015,9 @@ layout: two-cols
 </div>
 
 <div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
-<img src="./images/img_061.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Néon « Quiz time » rose et cyan" />
+<img src="./images/img_061.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Courbe d'utilité concave : utilité U en fonction du montant en dollars" />
 <img src="./images/img_062.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Diagramme d'influence : décision AirportSite, conséquences Deaths/Noise/Cost, utilité U" />
-<img src="./images/img_063.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Processus de décision markovien à six états S0-S5 avec actions, récompenses +5/-1 et probabilités" />
+<img src="./images/img_063.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Processus de décision markovien : états S0-S2, actions a0-a1, récompenses +5/-1, probabilités de transition" />
 <img src="./images/img_064.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grille 3x3 de navigation avec flèches de politique, cases +1/-1, piège, et inégalité sur R(s)" />
 </div>
 ---
@@ -1057,7 +1057,7 @@ layout: two-cols
 <div class="img-grid">
 <img src="./images/img_067.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Matrice du dilemme du prisonnier : se taire/avouer, peines de (-1,-1) à (-8,-8)" />
 <img src="./images/img_068.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Arbre de jeu Stackelberg : Burn/Not Burn, Invade/Concede, Fight/Retreat avec utilités" />
-<img src="./images/img_069.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs (2,1) et (1,2)" />
+<img src="./images/img_069.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
 
 </div>
 
@@ -1085,7 +1085,7 @@ layout: two-cols
 - Purs et mixtes (2n+1)
 - Topologie
 
-<img src="./images/img_070.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Arbre de jeu de poker en trois rues : Pre-flop, Flop, Turn avec Fold/Call/Check/Raise" />
+<img src="./images/img_070.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Matrice de gains du jeu Ballet/Fight : préférences croisées des deux joueurs, valeurs (2,1) et (1,2)" />
 
 
 ::right::
@@ -1136,8 +1136,8 @@ layout: two-cols
 - Deepstack
 
 <div class="img-grid">
-<img src="./images/img_072.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Néon « Quiz time » violet et bleu" />
-<img src="./images/img_073.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Arbre de décision de poker avec nœuds de chance violets, nœuds d'action et terminaux triangulaires" />
+<img src="./images/img_072.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Composition abstraite : panneau jaune, point rouge et point bleu, bandes verticales" />
+<img src="./images/img_073.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surface 3D incurvée en selle, rendu bleu translucide sans texte" />
 <img src="./images/img_074.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Surface 3D incurvée f(x,y) dans une boîte avec un point rouge marqué" />
 
 </div>
@@ -1217,7 +1217,7 @@ layout: two-cols
   - Jugement majoritaire
   - Scrutin bipartipludique
 
-<img src="./images/img_078.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Néon « Quiz time » violet sur fond noir" />
+<img src="./images/img_078.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Zone d'accord de négociation salariale : salages rejetés par chacun, fourchette 0 à 50 dollars" />
 
 
 
@@ -1449,10 +1449,10 @@ layout: two-cols
   - Réseaux adversériaux
 
 <div class="img-grid absolute top-[130px] right-[20px] w-[400px]">
-<img src="./images/img_098.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Cellule LSTM : portes sigmoïdes, tanh, multiplications, états cachés h entre les pas de temps" />
-<img src="./images/img_099.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Hiérarchie de caractéristiques CNN : bords et textures, motifs, objets, puis classifieur" />
+<img src="./images/img_098.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="RNN déroulé : cellule récurrente A, entrées x0 à xt, sorties h0 à ht" />
+<img src="./images/img_099.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Cellule récurrente LSTM : portes sigmoïdes σ, tanh, états cachés h entre les pas de temps" />
 <img src="./images/img_100.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="RNN à cinq cellules A alignées : entrées x0-x4, sorties h0-h4" />
-<img src="./images/img_101.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Image dégradée illisible (figure à régénérer — voir issue dédiée)" />
+<img src="./images/img_101.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Porte sigmoïde σ de cellule LSTM — rendu dégradé, figure à régénérer (voir issue dédiée)" />
 <img src="./images/img_102.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="GAN : bruit aléatoire, générateur produisant une image forgée, discriminateur classant réel/factice" />
 <img src="./images/img_103.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Bloc résiduel ResNet : deux couches, connexion identité, H(x)=F(x)+x" />
 </div>
