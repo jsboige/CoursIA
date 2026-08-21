@@ -51,7 +51,7 @@ cp .env.example .env
 | `HF_TOKEN` | - | Token Hugging Face |
 | `COMFYUI_LOGIN_ENABLED` | `true` | Activer authentification |
 | `COMFYUI_USERNAME` | - | Utilisateur |
-| `COMFYUI_PASSWORD` | - | Mot de passe |
+| `COMFYUI_VIDEO_PASSWORD` | - | Mot de passe (centralise `.secrets/master.env` via `render_envs.py`, #10985) |
 | `COMFYUI_VIDEO_TOKEN` | - | Bearer token API |
 | `API_TIMEOUT` | `600` | Timeout requetes API (secondes) |
 

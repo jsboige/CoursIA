@@ -109,11 +109,13 @@ Ces secrets sont légitimement **différents par instance** (un mot de passe par
 
 | Secret | Instances | Pourquoi par-instance |
 |--------|-----------|----------------------|
-| `COMFYUI_PASSWORD`, `COMFYUI_USERNAME` | comfyui-qwen, comfyui-video | Chaque ComfyUI a son propre login |
+| `COMFYUI_PASSWORD`, `COMFYUI_USERNAME` | comfyui-qwen | Chaque ComfyUI a son propre login |
 | `FORGE_PASSWORD`, `FORGE_USER` | forge-turbo, sd-forge-main | Chaque Forge a son propre login |
 | `WHISPER_PASSWORD`/`WHISPER_USER`, `WHISPER_WEBUI_PASSWORD`/`WHISPER_WEBUI_USER` | whisper-api, whisper-webui | Logins par instance |
 
 Leur **prévention du drift** = la règle du restart (ci-dessous) + le self-check entrypoint, PAS la centralisation.
+
+**Exception #10985 (décision user 2026-08-20) — comfyui-video :** le mot de passe de comfyui-video est **centralisé** dans `master.env` sous le nom instance-scopé **`COMFYUI_VIDEO_PASSWORD`** (propagé par render vers `comfyui-video/.env` et le `.env` client GenAI). Le compose mappe cette clé vers l'env conteneur `COMFYUI_PASSWORD` (nom lu par `entrypoint.sh` et ComfyUI-Login, inchangé). Le nom homonyme nu `COMFYUI_PASSWORD` reste **interdit** dans `SECRET_KEYS` : comfyui-qwen porte une valeur différente légitime (conflit dur au bootstrap). Motivation : rotation trousseau partagé po-2023 ↔ ai-01, aucun mot de passe en clair dans ce qui remonte sur github.com.
 
 ## Règle du restart ComfyUI-Login (le piège du drift)
 

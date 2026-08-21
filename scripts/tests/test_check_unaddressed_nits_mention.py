@@ -214,3 +214,101 @@ def test_11809_commit_sha_sans_verdict_ne_matche_pas():
     body = "Le fix est dans (commit abc1234) — pas un verdict, juste un SHA."
     # classify doit rendre None (pas de CONCERN_MARKER dans cette prose).
     assert mod.classify("hermes-bot", body) is None, body
+
+
+# ---------------------------------------------------------------------------
+# #11984 — Position D : nominal `revue`/`review` + reference pointable.
+# Instance fondatrice : #11911, commentaire 2026-08-20T14:50:21Z (corps
+# EXACT ci-dessous) — un rapport de re-review classe BOT-CONCERN comme
+# s'il emettait la reserve qu'il rapporte. Cinquieme reformulation de la
+# classe use-vs-mention. Le discriminant n'est PAS le nominal seul : le
+# contre-exemple de l'issue (« Cette review CHANGES_REQUESTED reste
+# bloquante ») porte le nominal ET emet une reserve vivante.
+# ---------------------------------------------------------------------------
+
+FIXTURE_11911_BODY = (
+    "Re-review request — la réparation demandée est livrée sur `221349b441` "
+    "(tête actuelle, post-revue).\n"
+    "\n"
+    "La revue CHANGES_REQUESTED (07:32Z, SHA `5aa6e035`) pointait 2 défauts : "
+    "(1) 0 output `image/png` committé, (2) stdout régressé (supprimé). "
+    "Vérifié firsthand sur la tête actuelle :\n"
+    "\n"
+    "**1. Frames image/png présentes** : 8 outputs `image/png` committés dans "
+    "les cells 10/15/20. Re-exéc authentique avec ComfyUI-Video joignable "
+    "(`localhost:8189`, HTTP 401 = service UP, `run_generation=True`).\n"
+    "\n"
+    "CI CLEAN (0 fail). La revue visait l'ancien SHA `5aa6e035` — la tête "
+    "`221349b441` adresse les 2 points bloquants."
+)
+
+
+def test_11984_fixture_reelle_11911_nest_plus_un_nit():
+    """Le corps EXACT du commentaire bloqueur de #11911 : le verdict
+    rapporte est neutralise, le commentaire n'est plus BOT-CONCERN."""
+    assert mod.classify("jsboige", FIXTURE_11911_BODY) is None
+
+
+def test_11984_revue_en_gras_avec_ref_pointable_devient_mention():
+    """« La **revue** CHANGES_REQUESTED (07:32Z, SHA `...`) » — le gras
+    markdown autour du nominal est couvert (frontiere etendue a `*`)."""
+    body = "La **revue** CHANGES_REQUESTED (07:32Z, SHA `5aa6e035`) pointait 2 défauts."
+    assert mod.classify("hermes-bot", body) is None, body
+
+
+def test_11984_anglais_the_review_couvert():
+    body = "the review CHANGES_REQUESTED (07:32Z, SHA 5aa6e035) flagged two defects."
+    assert mod.classify("hermes-bot", body) is None, body
+
+
+def test_11984_reference_pr_issue_couvertes():
+    body = "la revue CHANGES_REQUESTED (cf #11911) est adressée par le commit."
+    assert mod.classify("hermes-bot", body) is None, body
+
+
+def test_11984_contre_exemple_issue_reste_vivant():
+    """LE contre-exemple de l'issue, a ne PAS neutraliser : le nominal est
+    devant le verdict mais il EMET une reserve vivante — aucune reference
+    pointable n'etablit le rapport d'evenement passe."""
+    body = "Cette review CHANGES_REQUESTED reste bloquante."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", body
+
+
+def test_11984_revue_sans_reference_pointable_reste_vivant():
+    """Nominal + verdict mais la suite ne porte pas de reference pointable :
+    la mention n'est pas etablie, le verdict reste emis."""
+    body = "la revue CHANGES_REQUESTED du matin était sévère."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", body
+
+
+def test_11984_parenthese_non_pointable_reste_vivant():
+    """Une parenthese qui ne porte NI SHA, NI numero, NI horodatage ne
+    designe rien : « (de ai-01) » n'etablit pas le rapport passe."""
+    body = "La review CHANGES_REQUESTED (de ai-01) reste bloquante."
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", body
+
+
+def test_11984_emission_marker_deux_points_reste_vivante():
+    """« Review CHANGES_REQUESTED: ... » — la forme MARKER: nue reste une
+    emission (le garde `verdict(?![:.])` du nominal + l'absence de paren
+    pointable la preservent)."""
+    body = (
+        "Review CHANGES_REQUESTED: la séquence exec est UNORDERED, "
+        "à corriger avant merge."
+    )
+    assert mod.classify("hermes-bot", body) == "BOT-CONCERN", body
+
+
+def test_11984_forme_11628_non_regie_par_le_nouveau_motif():
+    """Non-regression : « Fix review ai-01 (CHANGES_REQUESTED) — commit ... »
+    reste gere par le motif d'ORIGINE #11636 (verbe de reference + verdict
+    entre parentheses), pas par la position D. Le strip applique au body
+    doit neutraliser le verdict via _MENTION_VERDICT, et le nouveau motif
+    ne doit PAS matcher seul sur cette forme."""
+    body = "Fix review ai-01 (CHANGES_REQUESTED) — commit 06956bd0a."
+    # Le nouveau motif seul ne matche pas (verdict entre parentheses, pas
+    # de parenthese-pointable APRES le verdict).
+    m = mod._MENTION_VERDICT_REVIEW.search(body)
+    assert m is None, body
+    # Le strip global neutralise toujours (via #11636).
+    assert "CHANGES_REQUESTED" not in mod._strip_mentioned_verdicts(body)

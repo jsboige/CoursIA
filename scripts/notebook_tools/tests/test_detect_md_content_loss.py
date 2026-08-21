@@ -703,3 +703,96 @@ class TestFrontmatterCostReviewFixes:
         head = _nb(_md(body))  # aucun metadata.cost
         r = self._scan(tmp_path, base, head)
         assert any(f["kind"] == "FRONTMATTER_COST_DIVERGENCE" for f in r["findings"])
+
+
+# ---------------------------------------------------------------------------
+# Fenced-block remplacement (vocabulaire #11998 : ASCII -> Mermaid, EPIC
+# #11962 / Prong-A #3801). Un bloc fenced remplace par un bloc fenced
+# equivalent conserve les MOTS (labels) mais debarrasse le padding
+# box-drawing : le volume BRUT chute mecaniquement sous le seuil alors que
+# l'information est intacte. La normalisation ne retient des blocs fenced
+# que leurs caracteres de mots (meme slot design que #8904/#8919).
+# ---------------------------------------------------------------------------
+ASCII_FLOWCHART = (
+    "### Architecture du pipeline\n\n"
+    "```\n"
+    "    +------------------+\n"
+    "    | Universe Filter  |     Coarse: Vol > $10M, Price > $10\n"
+    "    | (Coarse + Fine)  | --> Fine: Market Cap > $5B\n"
+    "    +--------+---------+     -> 30 stocks\n"
+    "             |\n"
+    "             v\n"
+    "    +------------------+\n"
+    "    |  Alpha Model     |     Momentum 60 jours\n"
+    "    | (Momentum)       | --> Direction, Magnitude, Confidence\n"
+    "    +--------+---------+     -> Insights\n"
+    "             |\n"
+    "             v\n"
+    "    +------------------+\n"
+    "    | Risk Management  |     Max DD 5%, Max Sector 25%\n"
+    "    | (Composite)      | --> Ajuste les targets\n"
+    "    +------------------+     -> Targets ajustes\n"
+    "```\n"
+)
+
+MERMAID_FLOWCHART = (
+    "### Architecture du pipeline\n\n"
+    "```mermaid\n"
+    'flowchart TD\n'
+    '    UF["Universe Filter (Coarse + Fine)<br/>Coarse: Vol > $10M, Price > $10<br/>Fine: Market Cap > $5B -> 30 stocks"] --> AM["Alpha Model (Momentum)<br/>Momentum 60 jours -> Direction, Magnitude, Confidence"]\n'
+    '    AM --> RM["Risk Management (Composite)<br/>Max DD 5%, Max Sector 25% -> Targets ajustes"]\n'
+    "```\n"
+)
+
+# Forme reelle mesuree sur PR #11998 QC-Py-14 cell 80 (ratio brut 0.656 < 0.75).
+class TestFencedBlockReplacement:
+    def test_ascii_to_mermaid_no_signal(self):
+        # La conversion EPIC #11962 : labels conserves, padding ASCII debarrasse.
+        base = _nb(_md(ASCII_FLOWCHART))
+        head = _nb(_md(MERMAID_FLOWCHART))
+        findings = dml._compare_cells(dml.extract_md_cells(base), dml.extract_md_cells(head))
+        assert findings == []
+
+    def test_mermaid_to_ascii_no_signal(self):
+        # Symetrie : la conversion inverse ne doit pas signaler non plus.
+        base = _nb(_md(MERMAID_FLOWCHART))
+        head = _nb(_md(ASCII_FLOWCHART))
+        findings = dml._compare_cells(dml.extract_md_cells(base), dml.extract_md_cells(head))
+        assert findings == []
+
+    def test_fenced_labels_deleted_still_signals(self):
+        # Controle positif : un bloc fenced dont les LABELS sont effaces
+        # (padding seul reste) est une vraie troncature -> signal conserve.
+        gutted = (
+            "### Architecture du pipeline\n\n"
+            "```\n"
+            "+--------+\n"
+            "|        | -->\n"
+            "+--------+\n"
+            "```\n"
+        )
+        base = _nb(_md(ASCII_FLOWCHART))
+        head = _nb(_md(gutted))
+        findings = dml._compare_cells(dml.extract_md_cells(base), dml.extract_md_cells(head))
+        assert len(findings) == 1 and findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["ratio"] < dml.DROP_THRESHOLD
+
+    def test_prose_truncated_beside_intact_fence_still_signals(self):
+        # Prose tronquee autour d'un bloc fenced intact : le signal reste
+        # (la normalisation fenced ne desarme pas la detection de prose).
+        before = (
+            "## Objectif\n\n" + ("Contenu pedagogique substantiel autour du schema. " * 12)
+            + "\n\n" + ASCII_FLOWCHART
+        )
+        after = "## Objectif\n\nCourt.\n\n" + ASCII_FLOWCHART
+        base = _nb(_md(before))
+        head = _nb(_md(after))
+        findings = dml._compare_cells(dml.extract_md_cells(base), dml.extract_md_cells(head))
+        assert any(f["kind"] == "TRUNCATED_CELL" for f in findings)
+
+    def test_normalize_keeps_fence_words_drops_padding(self):
+        # Unite : le contenu fenced normalise ne retient que les mots.
+        n = dml._normalize("```\n+---+-->|\n| A | B |\n+---+\n```")
+        # les caracteres box-drawing sont retires, les labels gardes
+        assert "+" not in n and "-" not in n
+        assert "A" in n and "B" in n
