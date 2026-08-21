@@ -107,6 +107,32 @@ RULE_SEVERITY = {
     "source_list_missing_newlines": ERROR,
 }
 
+# Reparation outillee, PAR REGLE (#12089). Le garde rougissait sans jamais nommer
+# la commande qui repare : `grep -rn fix_hr_separator .github/workflows/` rendait
+# zero, et chaque auteur qui tombait dessus devait la redecouvrir. Mesure du
+# 2026-08-21 : 14 PRs sur 5 lanes le matin, puis 11 PRs sur 3 lanes l'apres-midi,
+# toutes sur `yaml_block_open_no_close`, toutes reparees par la meme commande.
+#
+# La table est volontairement PARTIELLE : `fix_hr_separator.py` ne traite QUE le
+# separateur `---` en tete de cellule. Les six autres regles n'ont pas de fixer
+# outille, et leur absence ici EST le message — annoncer une reparation
+# automatique pour une regle qui n'en a pas couterait plus cher que le silence.
+RULE_REPAIR = {
+    "yaml_block_open_no_close": (
+        "python scripts/notebook_tools/fix_hr_separator.py --apply <notebook>"
+    ),
+}
+
+# Le gating par hash de baseline rend ce rappel necessaire : le garde ne rougit
+# que sur les violations NOUVELLES, mais editer une cellule deja en violation
+# change son hash et la fait resurgir comme neuve. Reparer la seule tranche
+# touchee laisse donc le garde rouge.
+_REPAIR_SCOPE_NOTE = (
+    "Lancer la reparation sur le notebook ENTIER, pas sur les seules cellules "
+    "modifiees : le gating par baseline fait resurgir toute cellule en "
+    "violation dont le hash a change."
+)
+
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
 _SETEXT_RE = re.compile(r"^\s{0,3}(-{3,}|={3,})\s*$")
 # a fenced-code marker: >=3 backticks OR tildes, optionally indented up to 3 spaces.
@@ -757,6 +783,28 @@ def load_baseline(path: Path) -> set[str]:
     return set(data.get("hashes", []))
 
 
+
+def _print_repair_hints(blocking: list) -> None:
+    """Nomme la commande de reparation des regles qui en ont une (#12089).
+
+    Ne dit RIEN pour les regles absentes de `RULE_REPAIR` : un garde qui
+    suggererait une commande inoperante ferait perdre plus de temps qu'il n'en
+    fait gagner. Les regles sans fixer sont listees a part, explicitement, pour
+    que l'auteur sache que le silence est mesure et non un oubli.
+    """
+    rules = {f["rule"] for f in blocking}
+    fixable = sorted(r for r in rules if r in RULE_REPAIR)
+    manual = sorted(r for r in rules if r not in RULE_REPAIR)
+    if fixable:
+        print("\nReparation outillee :", file=sys.stderr)
+        for rule in fixable:
+            print(f"  [{rule}] {RULE_REPAIR[rule]}", file=sys.stderr)
+        print(f"  {_REPAIR_SCOPE_NOTE}", file=sys.stderr)
+    if manual:
+        print("\nSans reparation outillee (edition manuelle de la cellule) : "
+              + ", ".join(manual), file=sys.stderr)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("root", nargs="?", default="MyIA.AI.Notebooks",
@@ -880,6 +928,7 @@ def main(argv=None) -> int:
                   file=sys.stderr)
             for f in blocking[:50]:
                 print(f"  {f['file']} cell#{f['cell']} [{f['rule']}] {f['evidence']}", file=sys.stderr)
+            _print_repair_hints(blocking)
             return 1
         print("OK: no new ERROR-level markdown-rendering violations.")
     return 0
