@@ -757,7 +757,7 @@ layout: two-cols
   - Fair-play
 
 <div class="img-grid">
-<img src="./images/img_041.jpg" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Plan de transport aérien : Init, Goal et actions Load/Unload/Fly avec préconditions et effets" />
+<img src="./images/img_041.jpg" class="w-[220px] max-w-full max-h-[300px] object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
 
 </div>
 
