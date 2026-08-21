@@ -410,7 +410,7 @@ layout: two-cols
 - Par le meilleur d'abord
   - Exploration gloutonne
   - Algorithme A*
-  - [Demo Pathfinding.js](#)
+  - [Demo Pathfinding.js](https://qiao.github.io/PathFinding.js/visual/)
 
 <img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Cycle d'un algorithme génétique" />
 <img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Croisement sur le problème des huit reines" />
