@@ -445,8 +445,10 @@ layout: section
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="absolute top-[170px] right-[20px] w-[340px] max-h-[300px] object-contain" alt="Algorithme A*" />
-<img src="./images/img_028.png" class="absolute top-[305px] right-[20px] w-[340px] max-h-[300px] object-contain" alt="Pathfinding.js demo" />
+<div class="img-stack absolute top-[110px] right-[20px] w-[300px]">
+<img src="./images/img_027.png" class="max-h-[300px] max-w-full object-contain" alt="Algorithme A*" />
+<img src="./images/img_028.png" class="max-h-[300px] max-w-full object-contain" alt="Pathfinding.js demo" />
+</div>
 
 
 
@@ -462,8 +464,6 @@ layout: section
   - Optimisation d'une fonction
   - Escalade, descente de gradient
 
-<img src="./images/img_030.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_031.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
 
 - Problèmes :
   - Bloqué sur un optimum local
@@ -475,8 +475,12 @@ layout: section
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<img src="./images/img_032.png" class="absolute top-[140px] right-[20px] w-[260px] max-h-[300px] object-contain" alt="Recuit simulé" />
-<img src="./images/img_033.png" class="absolute top-[260px] right-[20px] w-[260px] max-h-[300px] object-contain" alt="Algorithmes génétiques" />
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
+<img src="./images/img_030.png" class="max-h-[300px] max-w-full object-contain" />
+<img src="./images/img_031.png" class="max-h-[300px] max-w-full object-contain" />
+<img src="./images/img_032.png" class="max-h-[300px] max-w-full object-contain" alt="Recuit simulé" />
+<img src="./images/img_033.png" class="max-h-[300px] max-w-full object-contain" alt="Algorithmes génétiques" />
+</div>
 
 
 
