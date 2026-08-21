@@ -37,6 +37,7 @@ docs/reference/wsl-kernels-detail.md.
 """
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
@@ -46,6 +47,7 @@ WSL_DISTRO = "Ubuntu"
 # Canonical matched-REPL install paths (one per toolchain tag).
 REPL_TOOLCHAIN_TAGS = {
     "v4.30.0-rc2": "repl-4.30.0-rc2",
+    "v4.31.0": "repl-4.31.0",
     "v4.31.0-rc1": "repl-4.31.0-rc1",
     "v4.32.0": "repl-4.32.0",
     "v4.32.1": "repl-4.32.1",
@@ -150,10 +152,16 @@ def _wsl(cmd, timeout=120):
 
 def _find_repl_py():
     """Locate lean4_jupyter/repl.py inside the WSL lean4 venv."""
-    r = _wsl("ls /home/*/.lean4-venv/lib/python3.*/site-packages/lean4_jupyter/repl.py "
+    r = _wsl("ls /root/.lean4-venv/lib/python3.*/site-packages/lean4_jupyter/repl.py "
+             "/home/*/.lean4-venv/lib/python3.*/site-packages/lean4_jupyter/repl.py "
              "2>/dev/null | head -1", timeout=30)
     path = r.stdout.strip()
     return path or None
+
+
+def _venv_interp(rp):
+    """venv python3 path from a site-packages repl.py path (root or /home venv)."""
+    return rp.split('/lib/')[0] + '/bin/python3'
 
 
 def cmd_install():
@@ -175,7 +183,7 @@ def cmd_install():
     chk = _wsl(f"grep -q '{PATCH_MARKER}' {rp} && echo PATCHED || echo UNPATCHED", timeout=20)
     state = chk.stdout.strip()
     print("post-install patch state:", state)
-    rc = _wsl(f"/home/*/.lean4-venv/bin/python3 -m py_compile {rp} && echo OK", timeout=30)
+    rc = _wsl(f"{_venv_interp(rp)} -m py_compile {rp} && echo OK", timeout=30)
     print("py_compile:", (rc.stdout or rc.stderr or "").strip())
     return 0 if state == "PATCHED" else 1
 
@@ -234,34 +242,100 @@ def cmd_patch():
     tmp_wsl = "/tmp/_lean4_native_patcher.py"
     _wsl(f"cp '{tmp_unix_src}' {tmp_wsl}", timeout=20)
     os.unlink(tmp_win)
-    r = _wsl(f"/home/*/.lean4-venv/bin/python3 {tmp_wsl}", timeout=40)
+    r = _wsl(f"{_venv_interp(rp)} {tmp_wsl}", timeout=40)
     out = (r.stdout or r.stderr or "").strip()
     _wsl(f"rm -f {tmp_wsl}", timeout=10)
     print("patch:", out)
     # Compile check.
-    rc = _wsl(f"/home/*/.lean4-venv/bin/python3 -m py_compile {rp} && echo OK", timeout=30)
+    rc = _wsl(f"{_venv_interp(rp)} -m py_compile {rp} && echo OK", timeout=30)
     print("py_compile:", (rc.stdout or rc.stderr or "").strip())
     return 0 if ("PATCHED" in out or "already" in out) else 1
 
 
-def cmd_build_repl(tag):
+def _resolve_repl_source_tag(tag):
+    """Nearest repl-repo tag <= the requested toolchain tag, or None.
+
+    Runs in Python on purpose: shell one-liners piped through wsl.exe ->
+    bash -lc lose their single quotes at the argument boundary, which once
+    made the awk version filter return v4.33.0 for tag v4.32.1.
+    """
+    r = _wsl("git ls-remote --tags https://github.com/leanprover-community/repl.git",
+             timeout=60)
+    tags = {m.group(1) for m in re.finditer(r"refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)$",
+                                            r.stdout or "", re.M)}
+
+    def key(t):
+        return tuple(int(p) for p in t[1:].split("."))
+
+    try:
+        want = key(tag)
+    except ValueError:
+        return None
+    lower = sorted((t for t in tags if key(t) <= want), key=key)
+    return lower[-1] if lower else None
+
+
+def cmd_build_repl(tag, default=False):
     if tag not in REPL_TOOLCHAIN_TAGS:
         print(f"ERROR: unknown tag {tag}. Known: {list(REPL_TOOLCHAIN_TAGS)}", file=sys.stderr)
         return 1
     name = REPL_TOOLCHAIN_TAGS[tag]
-    cmds = (
-        f"export PATH=/home/*/.elan/bin:/usr/local/bin:/usr/bin:/bin; "
+    # $HOME, not /home/*: WSL distros running as root keep elan under /root/.elan
+    # (a literal /home/* glob in PATH never expands there -> lake not found).
+    # The repl repo does not tag every Lean patch release (e.g. v4.32.1 has no
+    # tag). When the exact tag is absent, check out the nearest LOWER tag and
+    # override lean-toolchain to the requested version (upstream bumps the
+    # toolchain file the same way per release). The checkout MUST be verified:
+    # a silently-failed checkout leaves HEAD on the previous tag and builds a
+    # version-skewed repl whose only symptom is "incompatible header" /
+    # Unknown identifier at import time (incident 2026-08-21: repl-4.32.1 was
+    # actually v4.31.0).
+    # Tag selection happens in Python, not in a shell pipeline: single quotes
+    # do not survive the wsl.exe argument boundary (bash -lc receives an
+    # unquoted awk program, expands $0 itself and the version filter silently
+    # selects the wrong tag — measured: v4.33.0 returned for tag v4.32.1).
+    src_tag = _resolve_repl_source_tag(tag)
+    if not src_tag:
+        print(f"NO-SOURCE-TAG: repl repo has no tag <= {tag}")
+        return 1
+    override = src_tag != tag
+    print(f"building repl {tag} from repl source tag {src_tag}"
+          f"{' (nearest lower tag, toolchain overridden)' if override else ''} "
+          f"-> ~/.elan/bin/{name}{' (also as default repl)' if default else ''} "
+          "(this takes a few minutes)...")
+    # Phase 1: fetch + checkout. The checkout is verified afterwards by
+    # comparing git rev-parse output IN PYTHON: command substitution and
+    # test brackets piped through wsl.exe -> bash -lc get mangled at the
+    # argument boundary (a [ \"$(...)\" = tag ] check reported a mismatch on
+    # a checkout that was in fact correct).
+    _wsl(
+        f"export PATH=$HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin; "
         f"mkdir -p ~/repl-build && cd ~/repl-build && "
-        f"if [ ! -d repl ]; then git clone --depth 1 https://github.com/leanprover-community/repl.git; fi && "
-        f"cd repl && git checkout {tag} 2>&1 | tail -1 && "
+        f"if [ ! -d repl ]; then git clone https://github.com/leanprover-community/repl.git; fi && "
+        f"cd repl && git fetch --tags --force origin 2>&1 | tail -1; "
+        f"git checkout {src_tag} 2>&1 | tail -1",
+        timeout=300)
+    head = (_wsl("cd ~/repl-build/repl && git rev-parse HEAD", timeout=30).stdout or "").strip()
+    tagc = (_wsl(f"cd ~/repl-build/repl && git rev-parse {src_tag}^{{commit}}",
+                 timeout=30).stdout or "").strip()
+    if not tagc or head != tagc:
+        print(f"CHECKOUT-MISMATCH: HEAD={head or '<empty>'} != {src_tag}^{tagc or '<empty>'}")
+        return 1
+    # Phase 2: toolchain override + build + install.
+    cmds = (
+        f"export PATH=$HOME/.elan/bin:/usr/local/bin:/usr/bin:/bin; cd ~/repl-build/repl; "
+        + (f"echo leanprover/lean4:{tag} > lean-toolchain && echo TOOLCHAIN-OVERRIDE-{src_tag}-TO-{tag}; " if override else "")
+        + f"grep -q {tag} lean-toolchain || {{ echo TOOLCHAIN-MISMATCH: $(cat lean-toolchain); exit 1; }}; "
         f"lake clean >/dev/null 2>&1; lake build repl 2>&1 | tail -3; "
         f"if [ -f .lake/build/bin/repl ]; then cp .lake/build/bin/repl ~/.elan/bin/{name} "
-        f"&& echo INSTALLED-{name}; else echo BUILD-FAILED; fi"
+        f"&& echo INSTALLED-{name}"
+        + (" && cp .lake/build/bin/repl ~/.elan/bin/repl && echo INSTALLED-DEFAULT" if default else "")
+        + "; else echo BUILD-FAILED; fi"
     )
-    print(f"building repl {tag} -> ~/.elan/bin/{name} (this takes a few minutes)...")
-    r = _wsl(cmds, timeout=600)
+    r = _wsl(cmds, timeout=900)
     print(r.stdout.strip()[-800:])
-    return 0 if f"INSTALLED-{name}" in r.stdout else 1
+    ok = f"INSTALLED-{name}" in r.stdout and (not default or "INSTALLED-DEFAULT" in r.stdout)
+    return 0 if ok else 1
 
 
 def main():
@@ -270,6 +344,8 @@ def main():
                     default="status")
     ap.add_argument("tag", nargs="?", help="toolchain tag for build-repl (e.g. v4.30.0-rc2)")
     ap.add_argument("--check", action="store_true", help="alias for status")
+    ap.add_argument("--default", action="store_true",
+                    help="build-repl: also install as ~/.elan/bin/repl (kernel default)")
     args = ap.parse_args()
     if args.check or args.command == "status":
         return cmd_status()
@@ -281,7 +357,7 @@ def main():
         if not args.tag:
             print("ERROR: build-repl requires a tag", file=sys.stderr)
             return 1
-        return cmd_build_repl(args.tag)
+        return cmd_build_repl(args.tag, default=args.default)
     return 0
 
 

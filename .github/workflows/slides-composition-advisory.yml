@@ -16,8 +16,16 @@ name: Slides Composition Advisory
 #
 # ADVISORY, jamais bloquant sur les constats : les findings sortent en
 # ::warning file=,line= (annotations de PR), exit 0. Exit 1 uniquement sur
-# META-défaillance du gate lui-même (zéro deck découvert alors que slides/
-# a changé — un gate qui énumère zéro cible est vert et muet, #8807 trap 1).
+# META-défaillance du gate lui-même — trois causes, même classe (#8807 trap 1,
+# « un gate qui énumère zéro cible est vert et muet ») :
+#   (a) zéro deck découvert alors que slides/ a changé ;
+#   (b) binaire slidev introuvable — aucun deck n'est mesurable ;
+#   (c) deck découvert mais serveur jamais prêt — ce deck n'est PAS mesuré.
+# (b) et (c) sont ajoutées après coup (#12147) : le gate a rendu trois verts
+# les 20-21/08 sans mesurer une seule slide — chemin node_modules faux d'un
+# niveau, puis warning + continue + exit 0. Un vert qui n'a rien mesuré est
+# indiscernable d'un vert qui n'a rien trouvé : c'est ce que ces trois causes
+# séparent.
 #
 # Le contrôle positif (slide 5 S3-acculturation @ 6cabc826b DOIT être
 # signalée) vit côté tests locaux : run_composition_control.py — nécessite
@@ -119,6 +127,16 @@ jobs:
             exit 0
           fi
 
+          # Le binaire vit dans slides/node_modules : npm ci tourne avec
+          # working-directory: slides, et le cache porte sur slides/node_modules.
+          # Chemin ABSOLU -- un relatif depuis $DIR suppose une profondeur de deck
+          # que la branche `find` ci-dessus ne garantit pas.
+          SLIDEV_BIN="$PWD/slides/node_modules/.bin/slidev"
+          if [ ! -x "$SLIDEV_BIN" ]; then
+            echo "::error title=Composition gate meta-failure::binaire slidev introuvable a $SLIDEV_BIN -- aucun deck ne peut etre mesure"
+            exit 1
+          fi
+
           META_FAIL=0
           PORT=8890
           for MD in $MAPS; do
@@ -126,15 +144,22 @@ jobs:
             PORT=$((PORT+1))
             echo "### $MD" >> "$GITHUB_STEP_SUMMARY"
             cp "$MD" "$DIR/dev.md"
-            (cd "$DIR" && ../../node_modules/.bin/slidev dev.md --port "$PORT" --open false \
+            (cd "$DIR" && "$SLIDEV_BIN" dev.md --port "$PORT" --open false \
                > /tmp/slidev_$PORT.log 2>&1 &)
             for i in $(seq 1 40); do
               curl -sf "http://localhost:$PORT/" > /dev/null && break
               sleep 3
             done
             if ! curl -sf "http://localhost:$PORT/" > /dev/null; then
-              echo "::warning file=$MD::Serveur slidev jamais prêt — deck non mesuré (voir slides-build-advisory pour le build)"
-              echo "Serveur jamais prêt — non mesuré." >> "$GITHUB_STEP_SUMMARY"
+              # Un deck DECOUVERT mais NON MESURE est une meta-defaillance au meme
+              # titre que « zero deck decouvert » (#8807 trap 1) : dans les deux cas
+              # le gate est vert et muet, indiscernable d'un deck sain. Il rougit
+              # donc, et imprime sa cause au lieu de la laisser dans /tmp.
+              echo "::error title=Composition gate meta-failure::$MD decouvert mais serveur slidev jamais pret -- deck NON MESURE (le vert de ce job ne dirait rien de sa composition)"
+              echo "Serveur jamais pret -- deck NON MESURE (meta-defaillance)." >> "$GITHUB_STEP_SUMMARY"
+              echo "--- tail /tmp/slidev_$PORT.log ---"
+              tail -40 "/tmp/slidev_$PORT.log" 2>/dev/null || echo "(aucun log serveur)"
+              META_FAIL=1
               rm -f "$DIR/dev.md"; kill %1 2>/dev/null || true; continue
             fi
             python scripts/notebook_tools/scan_slidev_composition.py \
@@ -143,6 +168,13 @@ jobs:
               --github-annotations \
               --out "/tmp/report_$PORT.json" > /tmp/scan_$PORT.log 2>&1
             SCAN_EXIT=$?
+            # --github-annotations ecrit sur STDOUT ; la redirection ci-dessus les
+            # enterre dans /tmp, ou GitHub ne les lit jamais -- le gate mesurait
+            # sans jamais annoter. On les rejoue ici, ce que l'acceptance de #11923
+            # demande explicitement (« file=,line= exploitable en annotation CI »).
+            # grep APRES l'affectation de SCAN_EXIT : un pipe rendrait le statut du
+            # dernier maillon, pas celui du scanner.
+            grep -E '^::(warning|error) ' "/tmp/scan_$PORT.log" || true
             python - "$MD" "/tmp/report_$PORT.json" "$SCAN_EXIT" >> "$GITHUB_STEP_SUMMARY" <<'PYEOF'
           import json, sys
           md, rp, exit_code = sys.argv[1], sys.argv[2], int(sys.argv[3])
@@ -160,4 +192,10 @@ jobs:
             rm -f "$DIR/dev.md"
             kill %1 2>/dev/null || true
           done
+          # Les CONSTATS restent advisory (exit 0) : c'est la doctrine de ce gate.
+          # Seule la META-defaillance rougit -- un gate qui n'a PAS mesure doit se
+          # distinguer d'un gate qui a mesure et n'a rien trouve.
+          if [ "$META_FAIL" -ne 0 ]; then
+            exit 1
+          fi
           exit 0
