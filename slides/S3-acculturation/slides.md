@@ -2347,8 +2347,8 @@ Et son corollaire, plus dur à admettre :
 </div>
 </div>
 
-> 27 règles écrites, chargées automatiquement à chaque session. La documentation
-> qui n'est pas chargée n'existe pas.
+> Un harnais de règles écrit, chargé automatiquement à chaque session. La
+> documentation qui n'est pas chargée n'existe pas.
 
 
 ---
