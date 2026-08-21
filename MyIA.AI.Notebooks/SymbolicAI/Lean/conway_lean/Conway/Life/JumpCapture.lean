@@ -436,5 +436,173 @@ theorem one_jump_toGrid_correct (g : Grid) (off : Int × Int) (mc : MacroCell)
     omega
   rw [hz1, hz2, shift_zero (canonical_evolve_of_pos hnjs g)]
 
+/-! ## 6. Caractérisation : la classe périodique est capturée (critère 3, #6724)
+
+Les témoins `jumpCaptured_block` / `jumpCaptured_glider` sont des points
+isolés prouvés par `native_decide`. Le critère 3 de #6724 demande une
+**classe** : voici la classe des motifs **périodiques en place** de période
+`T` divisant l'horizon du jump `2^k` — une classe infinie (tout niveau
+`k ≥ 1`, toute période `T ∣ 2^k`), prouvée **structurellement** (pas de
+`native_decide` dans le théorème principal).
+
+Deux ingrédients nouveaux :
+
+1. `cellWf_toGrid_bounds` : le domaine d'une cellule bien formée de niveau
+   `n` vit dans `[0, 2^n)²` — la borne de cadrage manquante, par induction
+   sur le prédicat opaque `cellWf` (c.142 de HashlifeCorrectness) ;
+2. `evolve_mul_of_period` : une période `T` se répète — `evolve T g = g`
+   entraîne `evolve (m·T) g = g` pour tout multiple.
+
+La géométrie : `padCenter2` translate le contenu de `3·2^(k-1)` ; le
+contenu borné `[0, 2^k)` atterrit donc dans `[3·2^(k-1), 3·2^(k-1) + 2^k)
+= [3·2^(k-1), 5·2^(k-1))`, strictement intérieur à la fenêtre
+`[2^k, 2^k + 2^(k+1)) = [2·2^(k-1), 6·2^(k-1))` — marges exactes
+`2^(k-1)` de part et d'autre. Un motif périodique en place ne bouge
+jamais : sa génération finale est lui-même, donc capturé.
+
+Ce théorème **caractérise** aussi le contraste avec `jumpCaptured_not_trivial`
+(ligne-7) : ce qui fait échapper la ligne n'est pas sa taille mais son burst
+transitoire à vitesse 1 — tout motif sans burst (périodique en place) reste
+capturé à tout niveau. -/
+
+/-- **Borne de domaine d'une cellule bien formée** : toute cellule vivante
+    du `toGrid` d'une `MacroCell` bien formée (au sens opaque `cellWf`) de
+    niveau `n` vit dans le carré `[r0, r0 + 2^n) × [c0, c0 + 2^n)`.
+    Induction sur `cellWf` : chaque feuille émet au plus son coin, chaque
+    nœud distribue ses quatre enfants de niveau `n` sur les quadrants
+    d'offset `0` ou `2^n`, donc le nœud de niveau `n+1` couvre
+    `[·, · + 2·2^n) = [·, · + 2^(n+1))`. -/
+theorem cellWf_toGrid_bounds {c : MacroCell} (hc : cellWf c) (r0 c0 : Int)
+    {p : Int × Int} (hp : p ∈ c.toGrid (r0, c0)) :
+    r0 ≤ p.1 ∧ p.1 < r0 + (2 ^ c.level : Int) ∧
+      c0 ≤ p.2 ∧ p.2 < c0 + (2 ^ c.level : Int) := by
+  induction hc generalizing r0 c0 with
+  | leaf b =>
+    rw [mem_toGrid] at hp
+    cases b with
+    | true =>
+      simp only [MacroCell.toCellsAux, Prod.fst, Prod.snd, List.mem_singleton] at hp
+      obtain ⟨hrr, hcc⟩ : p.1 = r0 ∧ p.2 = c0 := Prod.ext_iff.mp hp
+      subst hrr hcc
+      simp only [MacroCell.level, pow_zero]
+      omega
+    | false => simp [MacroCell.toCellsAux] at hp
+  | node hnw hne hsw hse hne_lvl hsw_lvl hse_lvl inw ine isw ise =>
+    rename_i nw ne sw se
+    simp only [mem_toGrid, MacroCell.toCellsAux, List.mem_append, or_assoc] at hp
+    push_cast at hp
+    have hlvl : MacroCell.level (MacroCell.node nw ne sw se) = nw.level + 1 := by
+      simp only [MacroCell.level]; omega
+    have hpos : (0 : Int) ≤ 2 ^ nw.level := by positivity
+    rcases hp with hp | hp | hp | hp
+    · have hb := inw r0 c0 (mem_toGrid.mpr hp)
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := ine r0 (c0 + (2 ^ nw.level : Int)) (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := isw (r0 + (2 ^ nw.level : Int)) c0 (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+    · have hb := ise (r0 + (2 ^ nw.level : Int)) (c0 + (2 ^ nw.level : Int))
+        (mem_toGrid.mpr hp)
+      simp only [← hne_lvl, ← hsw_lvl, ← hse_lvl] at hb
+      rw [hlvl, pow_succ]
+      omega
+
+/-- **Une période se répète** : si `g` est de période `T` (au sens faible
+    `evolve T g = g`), alors tout multiple `m·T` d'étapes la
+    ramène à elle-même. Par induction sur `m` via `evolve_add`. -/
+theorem evolve_mul_of_period {T : Nat} (g : Grid)
+    (hper : evolve T g = g) (m : Nat) :
+    evolve (m * T) g = g := by
+  induction m with
+  | zero => simp
+  | succ m ih =>
+    have hsplit : (m + 1) * T = m * T + T := by ring
+    rw [hsplit, evolve_add, hper, ih]
+
+/-- **Critère 3 — la classe périodique est capturée** : tout motif de
+    période `T ≥ 1` divisant l'horizon du jump `2^c.level`, porté par une
+    cellule bien formée de niveau `k ≥ 1`, satisfait `jumpCaptured`. La
+    génération finale du jump est le motif lui-même (période répétée),
+    inchangé dans son cadrage `padCenter2` — donc dans la fenêtre centrale
+    par la géométrie `[3·2^(k-1), 5·2^(k-1)) ⊂ [2^k, 3·2^k)`. -/
+theorem jumpCaptured_of_period_divides (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {T : Nat} (hT : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hdiv : T ∣ 2 ^ c.level) :
+    jumpCaptured c = true := by
+  have hcw : cellWf c := cellWf_of_wf c hwf
+  obtain ⟨m, hm⟩ := hdiv
+  have hself : evolve (2 ^ c.level) (c.toGrid (0, 0)) = c.toGrid (0, 0) := by
+    rw [hm, Nat.mul_comm]
+    exact evolve_mul_of_period _ hper m
+  have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
+      = shift ((3 * 2 ^ (c.level - 1) : Int), (3 * 2 ^ (c.level - 1) : Int))
+          (c.toGrid (0, 0)) := by
+    rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift, hself]
+  rw [jumpCaptured_iff]
+  intro p hp
+  rw [hfinal, mem_shift] at hp
+  -- Bornes du contenu dans son propre cadrage `[0, 2^c.level)²`…
+  obtain ⟨hb1, hb2, hb3, hb4⟩ := cellWf_toGrid_bounds hcw 0 0 hp
+  dsimp only at hb1 hb2 hb3 hb4
+  -- …et relations linéaires entre les trois atomes `2^(c.level-1)`,
+  -- `2^c.level`, `2^(c.level+1)` — le reste est `omega`.
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  omega
+
+/-- **Corollaire still-life** (`T = 1`) : toute nature morte — motif avec
+    `evolve 1 g = g`, au sens fort un point fixe de `step` — est capturée
+    à tout niveau `k ≥ 1`. C'est la forme consommable de la classe pour
+    les objets Life usuels (bloc, ruche, pain, baril…). -/
+theorem jumpCaptured_of_still_life (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level)
+    (hfix : evolve 1 (c.toGrid (0, 0)) = c.toGrid (0, 0)) :
+    jumpCaptured c = true :=
+  jumpCaptured_of_period_divides c hwf hlvl (T := 1) (by omega) hfix (by omega)
+
+/-- **Ruche (nature morte ≠ bloc, 6 cellules) en niveau 3** : témoin de
+    classe au-delà du bloc — même famille `T = 1`, forme différente. -/
+private def beehiveCell3 : MacroCell :=
+  buildFromGrid [(1, 0), (0, 1), (0, 2), (1, 3), (2, 1), (2, 2)] 0 0 3
+
+theorem jumpCaptured_beehive : jumpCaptured beehiveCell3 = true :=
+  jumpCaptured_of_still_life beehiveCell3
+    (buildFromGrid_wf [(1, 0), (0, 1), (0, 2), (1, 3), (2, 1), (2, 2)] 0 0 3)
+    (by native_decide) (by native_decide)
+
+/-- **Clignotant (oscillateur période 2, PAS une nature morte) en niveau 2** :
+    `2 ∣ 2^2 = 4` — le jump de niveau 2 ramène le clignotant sur lui-même.
+    Témoin que la classe dépasse strictement les natures mortes vers les
+    vrais oscillateurs. -/
+private def blinkerCell2 : MacroCell :=
+  buildFromGrid [(1, 0), (1, 1), (1, 2)] 0 0 2
+
+theorem jumpCaptured_blinker : jumpCaptured blinkerCell2 = true :=
+  jumpCaptured_of_period_divides blinkerCell2
+    (buildFromGrid_wf [(1, 0), (1, 1), (1, 2)] 0 0 2)
+    (by native_decide) (T := 2) (by omega) (by native_decide) (by native_decide)
+
+/-- **Le témoin bloc initial est un membre de la classe** : re-dérivation
+    de `jumpCaptured_block` par le théorème de classe (le bloc est une
+    nature morte), démontrant que la classe caractérise bien le témoin
+    existant — le `native_decide` isolé devient instance d'un théorème. -/
+theorem jumpCaptured_block_of_class : jumpCaptured blockCell2 = true :=
+  jumpCaptured_of_still_life blockCell2
+    (by native_decide) (by native_decide) (by native_decide)
+
 end Life
 end Conway

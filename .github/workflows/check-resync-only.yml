@@ -1,0 +1,94 @@
+name: Resync-Only Advisory
+
+# Purpose
+# -------
+# DETECT (non-blocking, advisory) when a PR's only effect on translations/*.csv
+# is a pure FR-only resync (no text_<lang> column added for any of the 7 target
+# languages). Pattern measured on the 8 resync PRs that landed between
+# 2026-07-21 and 2026-07-25 (#7577, #7695, #7772, #7773, #7806, #7916, #7949,
+# #8431): each one was a single CSV file with insertions ≈ deletions and zero
+# content in any non-fr column.
+#
+# This is the "second half" of issue #6949 ("arrêt des resync CSV dans le
+# vide") that was not addressed by the standalone check_resync_only.py
+# script shipped in #9848. Without a wiring workflow, the script's tests pass
+# but the behaviour it should prevent remains possible. Un détecteur qui n'est
+# jamais invoqué ne détecte rien — cf leçon L992 ★★ sur les organes vs la
+# vigilance déguisée en garde.
+#
+# The script and its tests live in scripts/translation/. Per coord ruling
+# 2026-07-28 (issue #6949, see c.757): "plus de PR *resync-only* sur
+# translations/**/*.csv jusqu'au GO moteur" — the ruling is a coordinator
+# decision and remains so; this advisory only surfaces it at merge-gate review
+# time so a human reviewer (or ai-01) can re-confirm the intentionality of a
+# resync against current policy.
+#
+# ADVISORY ONLY by design. The job exits 0 in BOTH cases (resync-only or not)
+# and surfaces its verdict as a notice annotation. Blocking it would create a
+# gate that contradicts coordinator policy; cf pr-review-discipline.md §H — a
+# gate that cannot be wrong is suspicious.
+#
+# See #6949, #11884 (this wiring), #1650 (i18n epic).
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'translations/**/*.csv'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: resync-only-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  resync-only-advisory:
+    name: "Resync-only advisory"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Non-blocking: the script exits 0 in both cases (verdict="resync_only" or
+      # verdict="ok"). A crashed script must announce itself — a detector that
+      # silently fails to load would emit 0 logs and an indistinguishable green,
+      # the exact failure mode the issue warns against (#11884 / #11861).
+      - name: Detect resync-only PR
+        id: detect
+        run: |
+          if [ ! -d translations ]; then
+            echo "::notice title=Resync-only advisory (informational)::No translations/ directory yet (pre-T1 phase). Nothing to verify."
+            echo "verdict=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          STDERR_FILE="$(mktemp)"
+          REPORT="$(python scripts/translation/check_resync_only.py \
+              --diff-range "origin/main...HEAD" --json-only 2>"$STDERR_FILE")"
+          SCRIPT_EXIT=$?
+          STDERR_CONTENT="$(cat "$STDERR_FILE")"
+          rm -f "$STDERR_FILE"
+          if [ "$SCRIPT_EXIT" -ne 0 ] || ! echo "$REPORT" | python -c 'import sys,json; json.load(sys.stdin)' 2>/dev/null; then
+            echo "::warning title=Resync-only check (broken)::The detector itself failed (exit $SCRIPT_EXIT, non-JSON stdout). The advisory cannot be trusted. Investigate the job log. Stderr: $STDERR_CONTENT"
+            echo "verdict=broken" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          VERDICT="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin)["verdict"])')"
+          TRANSLATIONS_ONLY="$(echo "$REPORT" | python -c 'import sys,json; print(json.load(sys.stdin)["translations_only"])')"
+          CHANGED_COUNT="$(echo "$REPORT" | python -c 'import sys,json; print(len(json.load(sys.stdin)["changed_files"]))')"
+          echo "verdict=${VERDICT}" >> "$GITHUB_OUTPUT"
+          if [ "${VERDICT}" = "resync_only" ]; then
+            echo "::notice title=Resync-only PR detected::This PR touches only translations/**/*.csv and adds zero content in any of the 7 target languages (en/es/ar/fa/zh/ru/pt). ${CHANGED_COUNT} CSV file(s) changed, insertions ≈ deletions (pure FR-only refresh). Per coord ruling #6949, resync-only PRs are paused until the translation motor GO. Reviewer: please confirm the resync is intentional against current policy. Policy: https://github.com/jsboige/CoursIA/issues/6949#issuecomment-2328497962"
+          else
+            echo "::notice title=Resync-only check (clean)::Not a resync-only PR (verdict=${VERDICT}, translations_only=${TRANSLATIONS_ONLY}). No action."
+          fi

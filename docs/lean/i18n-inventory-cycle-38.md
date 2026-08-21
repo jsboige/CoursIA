@@ -97,3 +97,7 @@
 - **Commit** : à venir (atomique 1 fichier `docs/lean/i18n-inventory-cycle-38.md`)
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+## État du rollout i18n (déporté de `.claude/rules/code-style.md`, 2026-08-21)
+
+**Rollout** : fleet **DRAINED** (c.505, firsthand `check_i18n_siblings.py --all` : 168 paires, 166 byte-identical + 2 OK-CONSUMER, **0 drift / 0 orphan**, 1 « unbuilt » = Peters v4.27 INTRINSIC exception #7081). L'ancien backlog « 4 lakes EN-dominants » (`cooperative_games_lean`, `social_choice_lean`, `stable_marriage_lean`, `decision_theory_lean`) est **obsolète post-#4365** (GT 6→2) : `cooperative_games_lean`/`stable_marriage_lean` absorbés dans `game_theory_lean/` (leaves ont `_en`), `social_choice_lean` vide (absorbé), `decision_theory_lean` done (12/12). `sudoku_lean` pilote done (4/4). **« Pas de `_en` sibling » ≠ « gap i18n »** : les *root aggregators* (ex. `CooperativeGames.lean`, `Grothendieck.lean`, `Finiteness.lean` — imports-only + docstring FR, 0 déclaration) sont FR-only *by design* (#5883), les leaves `_en` étant auto-découverts par `globs`. Source de vérité = le checker canonique, pas une liste statique.
