@@ -1,0 +1,868 @@
+{
+ "seeded": {
+  "21143": {
+   "url": "https://www.quantconnect.com/research/21143/harvesting-the-volatility-risk-premium-with-a-dual-vix-signal/",
+   "lastmod": "2026-08-11T10:46:30+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "21132": {
+   "url": "https://www.quantconnect.com/research/21132/sizing-market-exposure-with-aggregate-sales-growth/",
+   "lastmod": "2026-08-01T06:47:10+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "21066": {
+   "url": "https://www.quantconnect.com/research/21066/intraday-volume-periodicity/",
+   "lastmod": "2026-07-29T18:05:32+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "21050": {
+   "url": "https://www.quantconnect.com/research/21050/cross-asset-etf-momentum-with-a-correlation-based-short-hedge/",
+   "lastmod": "2026-07-17T12:05:13+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "20966": {
+   "url": "https://www.quantconnect.com/research/20966/filing-language-stability-as-a-selection-signal/",
+   "lastmod": "2026-07-11T12:22:55+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "20937": {
+   "url": "https://www.quantconnect.com/research/20937/dynamic-conversion-arbitrage-on-the-magnificent-7/",
+   "lastmod": "2026-06-19T11:33:55+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "20886": {
+   "url": "https://www.quantconnect.com/research/20886/the-max-effect-with-vix-based-leverage-scaling/",
+   "lastmod": "2026-06-12T13:58:59+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "20371": {
+   "url": "https://www.quantconnect.com/research/20371/volatility-targeted-qqq-tlt-rotation-with-a-multi-scale-cnn-lstm-forecast/",
+   "lastmod": "2026-06-10T13:23:36+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "20262": {
+   "url": "https://www.quantconnect.com/research/20262/lppls-for-bubbles-in-speculative-markets/",
+   "lastmod": "2026-03-16T19:08:12+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "19465": {
+   "url": "https://www.quantconnect.com/research/19465/filtering-trades-with-the-fear-and-greed-index/",
+   "lastmod": "2025-08-13T14:09:46+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18987": {
+   "url": "https://www.quantconnect.com/research/18987/portfolio-construction-using-topological-data-analysis/",
+   "lastmod": "2025-07-31T07:08:43+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18811": {
+   "url": "https://www.quantconnect.com/research/18811/optimizing-a-gold-spy-portfolio-using-hidden-markov-models-for-market-downtime/",
+   "lastmod": "2025-06-13T08:38:42+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18784": {
+   "url": "https://www.quantconnect.com/research/18784/digital-asset-stockpile-portfolio-construction-techniques/",
+   "lastmod": "2025-03-11T23:52:19+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18766": {
+   "url": "https://www.quantconnect.com/research/18766/reducing-option-writing-risk-with-iv-rank-and-strike-clusters/",
+   "lastmod": "2025-03-22T21:23:01+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18469": {
+   "url": "https://www.quantconnect.com/research/18469/low-beta-portfolios-across-industries/",
+   "lastmod": "2025-08-25T17:40:53+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18444": {
+   "url": "https://www.quantconnect.com/research/18444/opening-range-breakout-for-stocks-in-play/",
+   "lastmod": "2026-05-01T21:21:49+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18312": {
+   "url": "https://www.quantconnect.com/research/18312/kelly-criterion-applications-in-trading-systems/",
+   "lastmod": "2025-01-04T02:47:27+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18285": {
+   "url": "https://www.quantconnect.com/research/18285/factor-optimization-framework-on-spy-constituents/",
+   "lastmod": "2025-01-06T14:28:31+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18186": {
+   "url": "https://www.quantconnect.com/research/18186/upcoming-holiday-momentum-for-amazon/",
+   "lastmod": "2024-11-04T18:29:18+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18155": {
+   "url": "https://www.quantconnect.com/research/18155/searching-for-alpha-in-us-presidential-elections/",
+   "lastmod": "2024-10-10T20:24:49+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "18049": {
+   "url": "https://www.quantconnect.com/research/18049/reimagining-the-60-40-portfolio-in-an-era-of-ai-and-falling-rates/",
+   "lastmod": "2025-01-14T15:24:39+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17902": {
+   "url": "https://www.quantconnect.com/research/17902/bitcoin-as-a-leading-indicator/",
+   "lastmod": "2025-02-14T06:21:50+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17900": {
+   "url": "https://www.quantconnect.com/research/17900/intraday-application-of-hidden-markov-models/",
+   "lastmod": "2025-12-10T08:53:46+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17896": {
+   "url": "https://www.quantconnect.com/research/17896/factor-sector-rotation-with-kavout/",
+   "lastmod": "2024-10-07T15:07:59+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17886": {
+   "url": "https://www.quantconnect.com/research/17886/copying-congress-trades/",
+   "lastmod": "2024-09-13T14:23:26+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17882": {
+   "url": "https://www.quantconnect.com/research/17882/trading-volatility-with-options/",
+   "lastmod": "2026-02-19T19:37:30+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17879": {
+   "url": "https://www.quantconnect.com/research/17879/a-risk-parity-approach-to-leveraged-etfs/",
+   "lastmod": "2024-11-01T15:13:30+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17871": {
+   "url": "https://www.quantconnect.com/research/17871/automating-the-wheel-strategy/",
+   "lastmod": "2025-10-08T22:59:28+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17843": {
+   "url": "https://www.quantconnect.com/research/17843/micro-study-yen-carry-trade/",
+   "lastmod": "2024-09-11T01:02:37+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "17112": {
+   "url": "https://www.quantconnect.com/research/17112/probabilistic-sharpe-ratio/",
+   "lastmod": "2024-11-06T10:41:25+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "16977": {
+   "url": "https://www.quantconnect.com/research/16977/greeks-and-iv-implementation/",
+   "lastmod": "2025-04-11T17:37:31+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "16041": {
+   "url": "https://www.quantconnect.com/research/16041/trend-and-carry-allocation/",
+   "lastmod": "2024-04-18T18:56:39+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "16014": {
+   "url": "https://www.quantconnect.com/research/16014/futures-spot-trend/",
+   "lastmod": "2024-09-30T17:44:21+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "16001": {
+   "url": "https://www.quantconnect.com/research/16001/combined-carry-and-trend/",
+   "lastmod": "2024-05-29T15:44:57+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15990": {
+   "url": "https://www.quantconnect.com/research/15990/risk-premia-sizing-long-future-portfolio/",
+   "lastmod": "2025-04-21T14:53:37+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15989": {
+   "url": "https://www.quantconnect.com/research/15989/futures-trend-following-and-carry-in-different-risk-regimes/",
+   "lastmod": "2026-01-02T22:16:34+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15959": {
+   "url": "https://www.quantconnect.com/research/15959/adjusted-trend-on-futures/",
+   "lastmod": "2023-09-05T21:25:19+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15938": {
+   "url": "https://www.quantconnect.com/research/15938/idea-streams-12-yield-rates/",
+   "lastmod": "2024-03-12T21:18:45+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15937": {
+   "url": "https://www.quantconnect.com/research/15937/idea-streams-10-buying-bitcoin/",
+   "lastmod": "2026-03-30T07:28:47+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15936": {
+   "url": "https://www.quantconnect.com/research/15936/idea-streams-8-reducing-portfolio-political-risk-using-trump-beta/",
+   "lastmod": "2021-05-28T13:21:28+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15935": {
+   "url": "https://www.quantconnect.com/research/15935/idea-streams-7-why-is-everyone-buying-gold/",
+   "lastmod": "2024-06-17T22:39:28+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15934": {
+   "url": "https://www.quantconnect.com/research/15934/idea-streams-6-biden-trump-impact-on-healthcare-stocks/",
+   "lastmod": "2021-05-19T18:41:08+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15933": {
+   "url": "https://www.quantconnect.com/research/15933/idea-streams-5-tail-risk-hedging/",
+   "lastmod": "2024-05-02T14:23:43+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15932": {
+   "url": "https://www.quantconnect.com/research/15932/idea-streams-4-nowcasting-news-announcements-of-vaccine-trials/",
+   "lastmod": "2021-05-18T14:03:14+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15931": {
+   "url": "https://www.quantconnect.com/research/15931/idea-streams-3-seeking-diversification-amidst-global-market-correlations/",
+   "lastmod": "2024-01-02T17:19:41+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15930": {
+   "url": "https://www.quantconnect.com/research/15930/idea-streams-2-modeling-unemployment-rates-with-sklearn/",
+   "lastmod": "2023-11-29T00:27:12+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15929": {
+   "url": "https://www.quantconnect.com/research/15929/idea-streams-1-tranche-rebalancing-risk-parity/",
+   "lastmod": "2024-03-12T21:05:10+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15928": {
+   "url": "https://www.quantconnect.com/research/15928/sortino-portfolio-optimization-with-alpha-streams-algorithms/",
+   "lastmod": "2024-05-24T22:07:35+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15927": {
+   "url": "https://www.quantconnect.com/research/15927/rotating-inversely-correlated-assets-nifty-and-usdinr/",
+   "lastmod": "2023-08-09T01:19:42+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15926": {
+   "url": "https://www.quantconnect.com/research/15926/harnessing-the-twitter-api-for-sentiment-strategies/",
+   "lastmod": "2023-08-09T01:25:31+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15925": {
+   "url": "https://www.quantconnect.com/research/15925/the-importance-of-benchmarking/",
+   "lastmod": "2023-08-09T01:27:30+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15924": {
+   "url": "https://www.quantconnect.com/research/15924/rsi-indicator-with-martingale-position-sizing/",
+   "lastmod": "2023-08-09T01:31:22+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15923": {
+   "url": "https://www.quantconnect.com/research/15923/three-common-implementation-mistakes/",
+   "lastmod": "2023-08-09T01:39:18+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15875": {
+   "url": "https://www.quantconnect.com/research/15875/futures-fast-trend-following-with-trend-strength/",
+   "lastmod": "2024-10-21T17:00:35+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15731": {
+   "url": "https://www.quantconnect.com/research/15731/prediction-on-futures-contango/",
+   "lastmod": "2024-06-18T16:10:05+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15728": {
+   "url": "https://www.quantconnect.com/research/15728/piotroski-f-score-investing/",
+   "lastmod": "2025-11-04T20:20:07+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15603": {
+   "url": "https://www.quantconnect.com/research/15603/head-amp-shoulders-ta-pattern-detection/",
+   "lastmod": "2023-10-02T08:22:07+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15536": {
+   "url": "https://www.quantconnect.com/research/15536/measuring-hope-vs-fear-in-the-s-amp-p500-news/",
+   "lastmod": "2024-03-12T21:11:59+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15382": {
+   "url": "https://www.quantconnect.com/research/15382/volatility-risk-premium-effect/",
+   "lastmod": "2024-04-17T23:06:28+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15381": {
+   "url": "https://www.quantconnect.com/research/15381/volatility-effect-in-stocks/",
+   "lastmod": "2024-04-17T21:28:19+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15380": {
+   "url": "https://www.quantconnect.com/research/15380/vix-predicts-stock-index-returns/",
+   "lastmod": "2024-04-19T22:21:35+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15379": {
+   "url": "https://www.quantconnect.com/research/15379/value-effect-within-countries/",
+   "lastmod": "2024-05-03T16:39:10+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15378": {
+   "url": "https://www.quantconnect.com/research/15378/using-news-sentiment-to-predict-price-direction-of-drug-manufacturers/",
+   "lastmod": "2024-05-03T23:18:57+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15377": {
+   "url": "https://www.quantconnect.com/research/15377/turn-of-the-month-in-equity-indexes/",
+   "lastmod": "2024-04-18T17:52:02+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15376": {
+   "url": "https://www.quantconnect.com/research/15376/trading-with-wti-brent-spread/",
+   "lastmod": "2024-04-19T17:52:25+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15374": {
+   "url": "https://www.quantconnect.com/research/15374/the-momentum-strategy-based-on-the-low-frequency-component-of-forex-market/",
+   "lastmod": "2024-04-17T17:37:48+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15373": {
+   "url": "https://www.quantconnect.com/research/15373/the-dynamic-breakout-ii-strategy/",
+   "lastmod": "2024-05-14T20:48:38+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15372": {
+   "url": "https://www.quantconnect.com/research/15372/term-structure-effect-in-commodities/",
+   "lastmod": "2024-04-18T16:11:36+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15371": {
+   "url": "https://www.quantconnect.com/research/15371/svm-wavelet-forecasting/",
+   "lastmod": "2024-05-03T23:13:48+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15370": {
+   "url": "https://www.quantconnect.com/research/15370/stock-selection-strategy-based-on-fundamental-factors/",
+   "lastmod": "2025-09-27T13:07:08+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15369": {
+   "url": "https://www.quantconnect.com/research/15369/standardized-unexpected-earnings/",
+   "lastmod": "2024-05-03T20:19:21+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15368": {
+   "url": "https://www.quantconnect.com/research/15368/small-capitalization-stocks-premium-anomaly/",
+   "lastmod": "2024-04-18T14:56:40+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15367": {
+   "url": "https://www.quantconnect.com/research/15367/short-term-reversal/",
+   "lastmod": "2024-04-17T22:17:48+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15366": {
+   "url": "https://www.quantconnect.com/research/15366/short-term-reversal-with-futures/",
+   "lastmod": "2026-02-18T20:05:44+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15364": {
+   "url": "https://www.quantconnect.com/research/15364/momentum-effect-in-stocks/",
+   "lastmod": "2024-04-17T22:26:10+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15363": {
+   "url": "https://www.quantconnect.com/research/15363/momentum-effect-in-stocks-in-small-portfolios/",
+   "lastmod": "2024-05-03T16:41:40+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15362": {
+   "url": "https://www.quantconnect.com/research/15362/momentum-effect-in-reits/",
+   "lastmod": "2024-04-19T18:00:23+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15361": {
+   "url": "https://www.quantconnect.com/research/15361/momentum-effect-in-country-equity-indexes/",
+   "lastmod": "2024-04-17T22:46:36+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15360": {
+   "url": "https://www.quantconnect.com/research/15360/momentum-effect-in-commodities-futures/",
+   "lastmod": "2024-04-17T23:30:26+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15359": {
+   "url": "https://www.quantconnect.com/research/15359/momentum-effect-combined-with-term-structure-in-commodities/",
+   "lastmod": "2024-04-18T16:24:55+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15358": {
+   "url": "https://www.quantconnect.com/research/15358/momentum-and-style-rotation-effect/",
+   "lastmod": "2024-04-19T17:46:50+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15357": {
+   "url": "https://www.quantconnect.com/research/15357/momentum-and-state-of-market-filters/",
+   "lastmod": "2024-04-19T22:15:40+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15356": {
+   "url": "https://www.quantconnect.com/research/15356/momentum-and-reversal-combined-with-volatility-effect-in-stocks/",
+   "lastmod": "2024-04-19T22:20:32+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15355": {
+   "url": "https://www.quantconnect.com/research/15355/mean-reversion-statistical-arbitrage-strategy-in-stocks/",
+   "lastmod": "2024-05-03T17:22:31+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15354": {
+   "url": "https://www.quantconnect.com/research/15354/mean-reversion-effect-in-country-equity-indexes/",
+   "lastmod": "2024-05-02T13:51:29+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15353": {
+   "url": "https://www.quantconnect.com/research/15353/lunar-cycle-in-equity-market/",
+   "lastmod": "2024-04-19T22:12:24+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15352": {
+   "url": "https://www.quantconnect.com/research/15352/liquidity-effect-in-stocks/",
+   "lastmod": "2024-04-17T23:02:25+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15351": {
+   "url": "https://www.quantconnect.com/research/15351/leveraged-etfs-with-systematic-risk-management/",
+   "lastmod": "2024-05-03T21:51:09+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15350": {
+   "url": "https://www.quantconnect.com/research/15350/january-effect-in-stocks/",
+   "lastmod": "2024-04-19T20:23:43+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15349": {
+   "url": "https://www.quantconnect.com/research/15349/january-barometer/",
+   "lastmod": "2024-04-19T20:50:29+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15348": {
+   "url": "https://www.quantconnect.com/research/15348/intraday-etf-momentum/",
+   "lastmod": "2024-05-03T22:02:05+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15347": {
+   "url": "https://www.quantconnect.com/research/15347/intraday-dynamic-pairs-trading-using-correlation-and-cointegration-approach/",
+   "lastmod": "2024-04-17T17:35:32+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15345": {
+   "url": "https://www.quantconnect.com/research/15345/capm-alpha-ranking-strategy-on-dow-30-companies/",
+   "lastmod": "2025-09-18T13:45:01+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15344": {
+   "url": "https://www.quantconnect.com/research/15344/can-crude-oil-predict-equity-returns/",
+   "lastmod": "2024-07-10T14:39:01+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15343": {
+   "url": "https://www.quantconnect.com/research/15343/book-to-market-value-anomaly/",
+   "lastmod": "2024-04-18T16:42:23+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15342": {
+   "url": "https://www.quantconnect.com/research/15342/beta-factors-in-stocks/",
+   "lastmod": "2024-04-19T23:19:10+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15341": {
+   "url": "https://www.quantconnect.com/research/15341/beta-factor-in-country-equity-indexes/",
+   "lastmod": "2024-05-03T16:51:29+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15340": {
+   "url": "https://www.quantconnect.com/research/15340/asset-growth-effect/",
+   "lastmod": "2024-04-18T23:13:57+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15339": {
+   "url": "https://www.quantconnect.com/research/15339/asset-class-trend-following/",
+   "lastmod": "2024-04-17T19:35:40+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15338": {
+   "url": "https://www.quantconnect.com/research/15338/asset-class-momentum/",
+   "lastmod": "2024-04-17T19:42:32+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15337": {
+   "url": "https://www.quantconnect.com/research/15337/accrual-anomaly/",
+   "lastmod": "2024-04-19T17:32:37+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15336": {
+   "url": "https://www.quantconnect.com/research/15336/12-month-cycle-in-cross-section-of-stocks-returns/",
+   "lastmod": "2024-05-03T16:28:17+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15311": {
+   "url": "https://www.quantconnect.com/research/15311/short-term-reversal-strategy-in-stocks/",
+   "lastmod": "2024-04-17T18:03:29+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15310": {
+   "url": "https://www.quantconnect.com/research/15310/sentiment-and-style-rotation-effect-in-stocks/",
+   "lastmod": "2024-04-18T22:03:23+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15309": {
+   "url": "https://www.quantconnect.com/research/15309/sector-rotation-based-on-news-sentiment/",
+   "lastmod": "2025-01-17T09:53:46+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15308": {
+   "url": "https://www.quantconnect.com/research/15308/sector-momentum/",
+   "lastmod": "2024-04-17T21:01:14+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15307": {
+   "url": "https://www.quantconnect.com/research/15307/seasonality-effect-based-on-same-calendar-month-returns/",
+   "lastmod": "2024-05-03T20:10:26+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15306": {
+   "url": "https://www.quantconnect.com/research/15306/roe-effect-within-stocks/",
+   "lastmod": "2024-04-19T21:47:02+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15305": {
+   "url": "https://www.quantconnect.com/research/15305/risk-premia-in-forex-markets/",
+   "lastmod": "2024-05-03T19:13:39+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15304": {
+   "url": "https://www.quantconnect.com/research/15304/residual-momentum/",
+   "lastmod": "2024-04-18T14:45:28+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15303": {
+   "url": "https://www.quantconnect.com/research/15303/price-earnings-anomaly/",
+   "lastmod": "2024-05-03T17:01:00+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15302": {
+   "url": "https://www.quantconnect.com/research/15302/price-and-earnings-momentum/",
+   "lastmod": "2024-05-03T20:20:42+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15301": {
+   "url": "https://www.quantconnect.com/research/15301/pre-holiday-effect/",
+   "lastmod": "2024-04-19T22:50:21+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15300": {
+   "url": "https://www.quantconnect.com/research/15300/pairs-trading-with-stocks/",
+   "lastmod": "2024-04-17T22:03:52+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15299": {
+   "url": "https://www.quantconnect.com/research/15299/pairs-trading-with-country-etfs/",
+   "lastmod": "2024-04-18T20:39:59+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15298": {
+   "url": "https://www.quantconnect.com/research/15298/pairs-trading-copula-vs-cointegration/",
+   "lastmod": "2024-04-17T17:16:03+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15297": {
+   "url": "https://www.quantconnect.com/research/15297/paired-switching/",
+   "lastmod": "2024-04-18T15:17:35+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15296": {
+   "url": "https://www.quantconnect.com/research/15296/overnight-anomaly/",
+   "lastmod": "2024-04-17T21:06:25+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15295": {
+   "url": "https://www.quantconnect.com/research/15295/option-expiration-week-effect/",
+   "lastmod": "2024-04-19T18:14:06+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15294": {
+   "url": "https://www.quantconnect.com/research/15294/optimal-pairs-trading/",
+   "lastmod": "2024-05-07T19:44:10+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15293": {
+   "url": "https://www.quantconnect.com/research/15293/momentum-short-term-reversal-strategy/",
+   "lastmod": "2026-06-30T08:12:05+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15272": {
+   "url": "https://www.quantconnect.com/research/15272/improved-momentum-strategy-on-commodities-futures/",
+   "lastmod": "2019-09-17T00:00:00+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15270": {
+   "url": "https://www.quantconnect.com/research/15270/gradient-boosting-model/",
+   "lastmod": "2025-08-18T17:29:48+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15269": {
+   "url": "https://www.quantconnect.com/research/15269/gold-market-timing/",
+   "lastmod": "2025-08-08T21:33:41+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15268": {
+   "url": "https://www.quantconnect.com/research/15268/gaussian-naive-bayes-model/",
+   "lastmod": "2024-12-23T17:49:08+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15267": {
+   "url": "https://www.quantconnect.com/research/15267/g-score-investing/",
+   "lastmod": "2024-05-07T17:59:46+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15266": {
+   "url": "https://www.quantconnect.com/research/15266/fundamental-factor-long-short-strategy/",
+   "lastmod": "2024-04-17T19:25:59+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15265": {
+   "url": "https://www.quantconnect.com/research/15265/forex-momentum/",
+   "lastmod": "2024-04-17T21:52:06+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15264": {
+   "url": "https://www.quantconnect.com/research/15264/forex-carry-trade/",
+   "lastmod": "2024-01-12T23:40:48+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15263": {
+   "url": "https://www.quantconnect.com/research/15263/forecasting-stock-prices-using-a-temporal-cnn-model/",
+   "lastmod": "2025-08-09T05:34:43+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15262": {
+   "url": "https://www.quantconnect.com/research/15262/fama-french-five-factors/",
+   "lastmod": "2024-05-03T17:14:35+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15261": {
+   "url": "https://www.quantconnect.com/research/15261/exploiting-term-structure-of-vix-futures/",
+   "lastmod": "2024-11-05T22:21:10+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15260": {
+   "url": "https://www.quantconnect.com/research/15260/expected-idiosyncratic-skewness/",
+   "lastmod": "2024-10-30T06:45:52+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15259": {
+   "url": "https://www.quantconnect.com/research/15259/earnings-quality-factor/",
+   "lastmod": "2024-04-25T21:57:32+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15258": {
+   "url": "https://www.quantconnect.com/research/15258/dual-thrust-trading-algorithm/",
+   "lastmod": "2024-04-17T17:25:01+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15257": {
+   "url": "https://www.quantconnect.com/research/15257/commodities-futures-trend-following/",
+   "lastmod": "2024-05-07T16:36:02+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15256": {
+   "url": "https://www.quantconnect.com/research/15256/combining-momentum-effect-with-volume/",
+   "lastmod": "2024-04-25T22:51:20+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "15255": {
+   "url": "https://www.quantconnect.com/research/15255/combining-mean-reversion-and-momentum-in-forex-market/",
+   "lastmod": "2024-04-17T17:12:04+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "14902": {
+   "url": "https://www.quantconnect.com/research/14902/detecting-impactful-news-in-etf-constituents/",
+   "lastmod": "2023-07-18T12:08:38+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "14843": {
+   "url": "https://www.quantconnect.com/research/14843/country-rotation-based-on-regulatory-alerts-sentiment/",
+   "lastmod": "2024-03-07T07:48:12+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "10752": {
+   "url": "https://www.quantconnect.com/research/10752/idea-streams-11-replicating-a-goldman-sachs-index-using-quant-strategies/",
+   "lastmod": "2021-02-26T01:55:43+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "9268": {
+   "url": "https://www.quantconnect.com/research/9268/intraday-arbitrage-between-index-etfs/",
+   "lastmod": "2024-05-04T00:20:49+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "9031": {
+   "url": "https://www.quantconnect.com/research/9031/ichimoku-clouds-in-the-energy-sector/",
+   "lastmod": "2025-11-07T13:40:22+00:00",
+   "seeded_at": null,
+   "issue": null
+  },
+  "21160": {
+   "url": "https://www.quantconnect.com/research/21160/momentum-in-capital-gain-stocks/",
+   "lastmod": "2026-08-17T12:19:33+00:00",
+   "seeded_at": "2026-08-21",
+   "issue": 12034
+  }
+ }
+}

@@ -38,6 +38,10 @@ operations de treillis. Ce module les enonce et les prouve :
     stable par pullback).
   - `sSup_covering` : la version infinie — `S ∈ sSup s X` si et seulement si
     `S` est couvert par toute borne superieure du membre `s`.
+  - `iInf_covering` / `iInf_covers` : la version indexee de l'infimum —
+    `S ∈ (⨅ i, J i) X` si et seulement si `S ∈ J i X` pour tout `i`.
+  - `iSup_covering` / `iSup_covers` : la version indexee du supremum — la
+    topologie engendree par la famille `J`.
 
 Chaque preuve est une **preuve tactique reelle** (veine DEEP) : les axiomes
 de treillis (`le_sInf`, `sInf_le`, `le_sSup`, `sSup_le`, `le_inf`,
@@ -207,5 +211,85 @@ theorem sSup_covering {C : Type*} [Category C] {X : C} (s : Set (GrothendieckTop
     exact le_covering.mp (sSup_le hK) S hS
   · intro h
     exact h (sSup s) fun J hJ => le_sSup hJ
+
+/-!
+## Section 4 : familles indexees (iInf, iSup)
+
+Les sections 2-3 caracterisent les bornes binaires (`inf`, `sup`) et
+ensemblistes (`sSup`). Cette section etablit les versions **indexees** :
+l'infimum d'une famille `J : ι → GrothendieckTopology C` est l'intersection
+ponctuelle de leurs cribles couvrants, le supremum la topologie engendree
+par la famille. Chaque borne indexee est le `sInf`/`sSup` de l'image
+(`Set.range J`) par definition dans Mathlib, et les caracterisations
+reutilisent `mem_sInf` et `sSup_covering`.
+-/
+
+/-- Borne inferieure d'une famille indexee, caracterisation ponctuelle :
+    `S ∈ (⨅ i, J i) X` si et seulement si `S ∈ J i X` pour tout `i`.
+    Preuve : `⨅ i, J i = sInf (Set.range J)` par definition, `mem_sInf`
+    donne la quantification sur les membres, et l'appartenance a `Set.range J`
+    se decompose par `Set.mem_range_self` / `Set.mem_range`. -/
+theorem iInf_covering {C : Type*} [Category C] {ι : Type*} {X : C}
+    (J : ι → GrothendieckTopology C) (S : Sieve X) :
+    S ∈ (⨅ i, J i) X ↔ ∀ i, S ∈ J i X := by
+  have h : (⨅ i, J i) = sInf (Set.range J) := rfl
+  rw [h, GrothendieckTopology.mem_sInf]
+  constructor
+  · intro hS i
+    exact hS (J i) (Set.mem_range_self i)
+  · intro h K hK
+    obtain ⟨i, rfl⟩ := hK
+    exact h i
+
+/-- Traduction de `iInf_covering` a la forme fleche : couvrir par l'infimum
+    d'une famille equivaut a couvrir par chaque membre.
+    Preuve : `covers_iff` des deux cotes puis `iInf_covering`. -/
+theorem iInf_covers {C : Type*} [Category C] {ι : Type*} {X Y : C}
+    (J : ι → GrothendieckTopology C) (S : Sieve X) (f : Y ⟶ X) :
+    (⨅ i, J i).Covers S f ↔ ∀ i, (J i).Covers S f := by
+  rw [GrothendieckTopology.covers_iff, iInf_covering]
+  constructor
+  · intro h i
+    rw [GrothendieckTopology.covers_iff]
+    exact h i
+  · intro h i
+    rw [← GrothendieckTopology.covers_iff]
+    exact h i
+
+/-- Borne superieure d'une famille indexee, caracterisation par recouvrement :
+    `S ∈ (⨆ i, J i) X` si et seulement si `S ∈ K X` pour toute topologie `K`
+    au-dessus de toute la famille (la topologie engendree).
+    Preuve : `⨆ i, J i = sSup (Set.range J)` par definition, puis
+    `sSup_covering` et transport de la quantification membre <-> indice. -/
+theorem iSup_covering {C : Type*} [Category C] {ι : Type*} {X : C}
+    (J : ι → GrothendieckTopology C) (S : Sieve X) :
+    S ∈ (⨆ i, J i) X ↔
+      ∀ K : GrothendieckTopology C, (∀ i, J i ≤ K) → S ∈ K X := by
+  have h : (⨆ i, J i) = sSup (Set.range J) := rfl
+  rw [h, sSup_covering]
+  constructor
+  · intro hS K hK
+    refine hS K (fun J' hJ' => ?_)
+    obtain ⟨i, rfl⟩ := hJ'
+    exact hK i
+  · intro h K hK
+    exact h K (fun i => hK (J i) (Set.mem_range_self i))
+
+/-- Traduction de `iSup_covering` a la forme fleche.
+    Preuve : `covers_iff` des deux cotes puis `iSup_covering`. -/
+theorem iSup_covers {C : Type*} [Category C] {ι : Type*} {X Y : C}
+    (J : ι → GrothendieckTopology C) (S : Sieve X) (f : Y ⟶ X) :
+    (⨆ i, J i).Covers S f ↔
+      ∀ K : GrothendieckTopology C, (∀ i, J i ≤ K) → K.Covers S f := by
+  rw [GrothendieckTopology.covers_iff]
+  constructor
+  · intro hS K hK
+    rw [GrothendieckTopology.covers_iff]
+    exact iSup_covering J (S.pullback f) |>.mp hS K hK
+  · intro h
+    rw [← GrothendieckTopology.covers_iff]
+    refine iSup_covering J (S.pullback f) |>.mpr (fun K hK => ?_)
+    rw [← GrothendieckTopology.covers_iff]
+    exact h K hK
 
 end Grothendieck.TopologyLattice

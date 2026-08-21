@@ -96,6 +96,25 @@ GENERIC_KNOB = re.compile(r"(?i)(baseline|threshold|ratchet|_cap\b|\bcap\b)")
 
 # Assertion vocabulary: file-count claims and exclusivity markers.
 COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
+# #11985 rule 1 extension (CLOSED LIST -- never expand to unknown vocabulary):
+# a body can declare its perimeter in words ("trois fichiers", "five files").
+# The authorial declaration is the same shape; we just spell-check the
+# spelled-out number too. French and English cardinals 1-10. Beyond that
+# range we fail loud (false-negative default -- the next body with "onze
+# fichiers" / "eleven files" will be caught by a reviewer and the mapping
+# expanded). Closed list = false-negative cost is bounded and visible.
+COUNT_WORDS = {
+    "un": 1, "une": 1,
+    "deux": 2, "two": 2,
+    "trois": 3, "three": 3,
+    "quatre": 4, "four": 4,
+    "cinq": 5, "five": 5,
+    "six": 6, "six": 6,
+    "sept": 7, "seven": 7,
+    "huit": 8, "eight": 8,
+    "neuf": 9, "nine": 9,
+    "dix": 10, "ten": 10,
+}
 EXCLUSIVITY_MARKERS = (
     "uniquement",
     "seulement",
@@ -321,6 +340,8 @@ INCIDENTAL_QUALIFIERS = frozenset({
     "nouvelle", "nouvelles", "varies", "variés", "synthetiques",
     "synthétiques", "scripts", "cache", "generes", "générés", "produits",
     "produites", "sources", "source",
+    # #11985 formes 3-4: artifact kinds and scan inventories.
+    "audio", "distinct", "distincts", "distinctes", "non-notebook",
 })
 # A cited threshold ("< 15 fichiers", ">= 10 fichiers") quotes a rule, it does
 # not claim a perimeter.
@@ -351,6 +372,81 @@ NEGATED_DIFF_TAIL = re.compile(
     r"|intacts?|untouched|unchanged|unmodified)\b",
     re.IGNORECASE,
 )
+# ---------------------------------------------------------------------------
+# #11985 -- counts that describe ANOTHER OBJECT than the PR's head. Measured
+# on the 20/08 corpus: 7 of 9 perimeter-red PRs were false positives, and the
+# founding asymmetry is that the guard's EQUALITY confrontation (claimed ==
+# len(files)) can never validate these shapes -- it confronts a sub-sum, an
+# inventory, a past revision or a rejected alternative. Same path as #11712:
+# detection UNCHANGED (the line is still extracted and printed), only the
+# consequence moves.
+# ---------------------------------------------------------------------------
+# Forme 5, past self-description: an imparfait + a commit SHA or a #PR ref on
+# the same line describe a SUPERSEDED version of the PR. The diffstat in that
+# line measures the old commit, not the head -- so this rule overrides the
+# diffstat guard (#11790: "couvrait 160 fichiers / +31502/-80470", real PR = 1
+# file). The imparfait is closed-list: genuine perimeter assertions are in the
+# present tense.
+PAST_REFERENCE = re.compile(
+    r"\b(?:couvrait|contenait|comprenait|comportait|touchait)\b", re.IGNORECASE
+)
+HASH_OR_PR_REF = re.compile(r"\b[0-9a-f]{7,40}\b|#\d+")
+# Forme 6, counterfactual: the count describes the PR that was NOT written.
+# The marker must sit BEFORE the first count -- "3 fichiers plutot que 15"
+# keeps its authorial 3. Measured on #11963: "> 1 PR composite (15 fichiers /
+# >3000 lignes)".
+COUNTERFACTUAL_MARKER = re.compile(
+    r"(?:au lieu de|plut[oô]t que|plut[oô]t d'|contrefactuel|\bcomposite\b)",
+    re.IGNORECASE,
+)
+# Forme 1, enumeration component: "X.py (...) + N fichiers de tests" -- the
+# body enumerates 1 + 2 = 3 (exact), the guard reads the sub-sum 2 and can
+# never validate it (#11935). Requires a NAMED file before the "+ N fichiers
+# de tests" tail: the shape is an enumeration of components, not a total.
+ENUMERATION_TAIL = re.compile(
+    r"\+\s*\d+\s*fichiers?\s+de\s+tests?\b", re.IGNORECASE
+)
+NAMED_FILE = re.compile(
+    r"\b[\w.-]+\.(?:py|cs|yml|yaml|json|md|ipynb|ts|js|sh|toml|cfg|ini)\b",
+    re.IGNORECASE,
+)
+# Forme 4, scan result: a "N hits" antecedent before the count ("Apres : 1
+# hit / 1 fichier") counts what the detector FOUND, not what the PR modifies
+# (#11966 l.42).
+HIT_ANTECEDENT = re.compile(r"\b\d+\s*hits?\b", re.IGNORECASE)
+# Forme 5, compte-antecedent parenthetique: "<N> <unites> (<M> fichiers)" --
+# le compte entre parentheses qualifie la PROVENANCE du nombre qui precede
+# ("32 prescriptions avant (2 fichiers) -> 32 apres"), jamais le perimetre de
+# la PR (#12057). Meme famille que HIT_ANTECEDENT: mauvaise surface, pas
+# mauvais compte.
+#
+# L'antecedent NUMERIQUE est ce qui borne l'exemption. Sans lui, la simple
+# presence de parentheses suffirait et "Perimetre (2 fichiers)" -- une vraie
+# assertion -- passerait. C'est le controle positif de #12057.
+PAREN_ANTECEDENT_NUM = re.compile(r"\d")
+# Forme 6, verbe de reference: "N fichiers pointent ici / referencent / citent"
+# -- le compte porte sur des REFERENTS ENTRANTS, qui par construction ne sont
+# pas dans le diff. Compter les liens entrants est EXIGE par le protocole de
+# fusion arrete en #12051; le garde ne peut pas punir la mesure que le
+# protocole rend obligatoire (#12057).
+REFERENCE_VERB_TAIL = re.compile(
+    r"^\s*(?:pointent|pointe|r[ée]f[ée]rencent|r[ée]f[ée]rence|citent|cite|"
+    r"renvoient|renvoie|mentionnent|mentionne|link|links|reference|references)\b",
+    re.IGNORECASE,
+)
+# Formes 2-4, two-word qualifier window: artifact kinds and enumeration tails
+# are often compound ("fichiers audio generes", "fichiers de tests", "fichier
+# test adapte") -- the closed list matches the first OR second word after the
+# count, or their pair.
+# "de tests"/"de test" deliberately ABSENT: the enumeration form 1 requires
+# the "+ N fichiers de tests" tail AND a named file on the line
+# (ENUMERATION_TAIL + NAMED_FILE below). A bare pair would make
+# "2 fichiers de tests modifies" incidental with no named-file guard (#11985
+# FN control).
+INCIDENTAL_QUALIFIER_PAIRS = frozenset({
+    "audio generes", "audio générés",
+    "test adapte", "test adapté",
+})
 DIFFSTAT_NEIGHBORHOOD = re.compile(
     r"\+\d+\s*/\s*[-−]?\d+|insertions?|deletions?|\blignes?\b|\blines?\b",
     re.IGNORECASE,
@@ -374,12 +470,19 @@ def _count_is_incidental(line: str) -> bool:
     """True when every count on the line denotes something other than the PR's
     file list. Caller-facing guarantee: a line with a scope word or a diffstat
     neighborhood is NEVER incidental via the qualifier/locative rules (FN
-    safety, #11712 acceptance). Two shapes override even those guards, because
+    safety, #11712 acceptance). Four shapes override even those guards, because
     they can never be validated by the guard's EQUALITY confrontation anyway:
-    a zero count (a PR never has 0 files) and a comparison-prefixed count
-    ("< 15 fichiers" cites a threshold; the guard confronts claimed ==
-    len(files), which "<" is not)."""
+    a zero count (a PR never has 0 files), a comparison-prefixed count
+    ("< 15 fichiers" cites a threshold), and -- #11985 -- a count describing
+    ANOTHER object than the head (a table row, a superseded revision, a
+    rejected alternative, an enumeration sub-sum)."""
     low = line.lower()
+    # #11985 forme 4 (table case): a markdown table row is a report structure
+    # (the tube separates the qualifier from its number -- no cell pairing is
+    # a perimeter claim). Extraction already skips rows; this pins the
+    # classification for any direct caller.
+    if line.lstrip().startswith("|"):
+        return True
     matches = list(COUNT_CLAIM.finditer(line))
     if not matches:
         return False
@@ -387,6 +490,16 @@ def _count_is_incidental(line: str) -> bool:
     first_before = line[: first.start()].rstrip()
     if int(first.group(1)) == 0 or COMPARISON_PREFIX.search(first_before):
         return True
+    # #11985 formes 5/6/1 -- the count describes another object than the head:
+    # its diffstat and scope words belong to that object, so these rules sit
+    # BEFORE the guards below.
+    if PAST_REFERENCE.search(low) and HASH_OR_PR_REF.search(line):
+        return True  # superseded revision: "couvrait 160 fichiers" (#11790)
+    marker = COUNTERFACTUAL_MARKER.search(low)
+    if marker and first.start() > marker.start():
+        return True  # rejected alternative: "1 PR composite (15 fichiers)" (#11963)
+    if ENUMERATION_TAIL.search(line) and NAMED_FILE.search(line):
+        return True  # enumeration sub-sum: "X.py + 2 fichiers de tests" (#11935)
     if _has_strong_scope(low) or DIFFSTAT_NEIGHBORHOOD.search(line):
         return False
     for m in matches:
@@ -408,9 +521,39 @@ def _count_is_incidental(line: str) -> bool:
         after = line[m.end():]
         if NEGATED_DIFF_TAIL.match(after):
             continue
+        # #11985 forme 4: a scan antecedent ("1 hit / 1 fichier") -- the count
+        # is what the detector found, not what the PR modifies (#11966).
+        if HIT_ANTECEDENT.search(line[: m.start()]):
+            continue
+        # #12057 forme 6: verbe de reference -- "27 fichiers pointent ici"
+        # compte des referents ENTRANTS, hors diff par construction.
+        if REFERENCE_VERB_TAIL.match(after):
+            continue
+        # #12057 forme 5: compte-antecedent parenthetique -- le compte est
+        # entoure de parentheses ET precede d'un antecedent numerique sur la
+        # meme ligne ("32 avant (2 fichiers) -> 32 apres"). L'antecedent
+        # numerique est obligatoire: il laisse "Perimetre (2 fichiers)" et
+        # "Perimetre : 2 fichiers twins uniquement" bloquants.
+        if (before.endswith("(")
+                and after.lstrip().startswith(")")
+                and PAREN_ANTECEDENT_NUM.search(before[:-1])):
+            continue
+        # #11985 formes 2-3: compound qualifier window -- the kind or the
+        # enumeration tail can sit on the SECOND word after the count
+        # ("fichiers audio generes", "fichier test adapte").
         mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
+        mw2 = re.match(
+            r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
+            r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
+            after,
+        )
         if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
             continue  # "N fichiers MP3/scratch/restants/..." -- kind or remainder
+        if mw2:
+            pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
+            if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
+                    or pair in INCIDENTAL_QUALIFIER_PAIRS):
+                continue  # "N fichiers audio generes / de tests / test adapte"
         return False  # this count looks authorial -> the line stays blocking
     return True
 
@@ -476,6 +619,70 @@ def _quote_spans(line: str) -> list[tuple[int, int]]:
 
 def _trigger_quoted(line: str, pos: int, length: int) -> bool:
     return any(a <= pos and pos + length <= b for a, b in _quote_spans(line))
+
+
+def _codespan_spans(line: str) -> list[tuple[int, int]]:
+    """Char spans of inline code on a single line (`` `...` ``, ````...````).
+
+    A trigger that sits inside a backtick code-span is CITED content -- the
+    author using code formatting to *show* an example (or to escape a
+    technical word), not making their own assertion. Same class as quoted
+    speech (see _quote_spans): the marker carries intent to be displayed,
+    not claimed.
+
+    CommonMark rules: `` `code` `` is a single-backtick span;
+    `` ``code with ` inside`` `` is the double-backtick variant. We handle
+    both, plus the case where a longer backtick run opens but no matching
+    closer appears on the line -- the span then runs to end of line
+    (CommonMark behaviour for unterminated inline code, and what GitHub
+    renders).
+
+    Measured on #12024 body v3 -- a 6-line snippet "(\\`trois fichiers\\` /
+    \\`five files\\`)" flagged 4 lines as `trois fichiers` / `five files`
+    candidates even though backticks clearly showed them as examples. The
+    pre-fix extractor had no code-span awareness; the founder case here
+    is "citer un exemple en l'écrivant comme du code n'est pas en faire
+    une assertion".
+    """
+    spans: list[tuple[int, int]] = []
+    i = 0
+    while i < len(line):
+        if line[i] != "`":
+            i += 1
+            continue
+        n = 0
+        while i + n < len(line) and line[i + n] == "`":
+            n += 1
+        close_pat = "`" * n
+        j = line.find(close_pat, i + n)
+        if j < 0:
+            spans.append((i, len(line)))
+            break
+        spans.append((i, j + n))
+        i = j + n
+    return spans
+
+
+def _trigger_in_codespan(line: str, pos: int, length: int) -> bool:
+    return any(a <= pos and pos + length <= b for a, b in _codespan_spans(line))
+
+
+def _trigger_in_quoted_or_codespan(line: str, pos: int, length: int) -> bool:
+    return _trigger_quoted(line, pos, length) or _trigger_in_codespan(line, pos, length)
+
+
+def _counts_all_quoted_or_codespan(line: str) -> bool:
+    """Every numeric COUNT_CLAIM on the line sits inside a quotation OR a code-span.
+
+    Wraps the original _counts_all_quoted with code-span awareness: a count
+    cited as `` `trois fichiers` `` (the founder case on #12024 body v3) is
+    displayed, not claimed. A line that only carries quoted / code-spanned
+    counts is not a perimeter assertion.
+    """
+    return all(
+        _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
+        for m in COUNT_CLAIM.finditer(line)
+    )
 
 
 def _counts_all_quoted(line: str) -> bool:
@@ -598,8 +805,34 @@ def extract_perimeter_assertions(text: str) -> list[str]:
             continue  # markdown table row: report structure, not an assertion
         low = line.lower()
         if COUNT_CLAIM.search(line):
-            if _counts_all_quoted(line):
-                continue  # quoting a count (reported speech), not claiming it
+            if _counts_all_quoted_or_codespan(line):
+                continue  # citing a count (reported speech / code example), not claiming it
+            candidates.append(line)
+            continue
+        # #12024 / #11985 word-form extension: a body can declare its
+        # perimeter with a spelled-out cardinal ("trois fichiers",
+        # "five files"). Without this branch, the word form never enters
+        # the candidate list and body_declares_effective_count is never
+        # set for word-only declarations. Closed list FR/EN cardinals
+        # 1-10 (see COUNT_WORDS rationale at line ~98).
+        word_triggers = [
+            (m, word)
+            for word in COUNT_WORDS
+            for m in re.finditer(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                                  line, re.IGNORECASE)
+        ]
+        if word_triggers:
+            # Same exclusion as numeric form: a word-form count cited inside
+            # a code-span (`` `trois fichiers` ``) is an example, not an
+            # authorial perimeter declaration. Founder case #12024: body v3
+            # listed two illustrative examples between backticks, the
+            # perimeter-review-guard flagged them as unverifiable assertions.
+            # An all-in-codespan word-form pattern is reported display.
+            if all(
+                _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
+                for m, _ in word_triggers
+            ):
+                continue
             candidates.append(line)
             continue
         if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
@@ -757,6 +990,38 @@ def fetch_review_thread(pr: int) -> list[dict]:
     return items
 
 
+def _first_confrontable_count(text: str) -> Optional[int]:
+    """The count `check_assertion` would confront for this text: the first
+    non-zero file-count claim outside fences (None when there is none)."""
+    scan_target = _fence_mask(text)
+    mm = next(
+        (m for m in COUNT_CLAIM.finditer(scan_target) if int(m.group(1)) != 0),
+        None,
+    )
+    return int(mm.group(1)) if mm else None
+
+
+# A count-mismatch problem starts with this prefix (the wording is ours, in
+# check_assertion). Used by the #11985 body-level downgrade to reclassify ONLY
+# count mismatches -- exclusivity violations (#11268-2) and unverifiable
+# wordings keep their blocking force in every case.
+COUNT_MISMATCH_PREFIX = "l'assertion pretend"
+
+
+def is_downgradable_mismatch(cand: "Candidate", problem: str) -> bool:
+    """#11985 regle 1: a blocking count-mismatch from a body that ALSO
+    declares the effective count elsewhere is reclassified to SIGNAL. The
+    rule never disarms: it fires only on count mismatches (never on the
+    #11268-2 workflow criterion) and only when a DECLARATIVE candidate of the
+    same body states the effective count -- an incidental scan scope carrying
+    the right number by coincidence does not validate a wrong header."""
+    return (
+        cand.blocking
+        and cand.body_declares_effective_count
+        and problem.startswith(COUNT_MISMATCH_PREFIX)
+    )
+
+
 @dataclass
 class Candidate:
     """One perimeter assertion, with what decides its consequence."""
@@ -766,6 +1031,13 @@ class Candidate:
     author: str
     source: str  # "body" (author-controlled -> blocking) | "thread" (signal)
     ts: str = ""
+    # #11985 regle 1: True when the SAME body carries another, DECLARATIVE
+    # candidate whose count EQUALS the effective file count. The body then
+    # asserts its perimeter correctly somewhere; its other count mismatches
+    # (atomicity arguments, produced artifacts, scan residues) are reclassified
+    # from blocking to signal by the caller. Filled by `select_candidates`
+    # when given `n_files`; the `blocking` property below is untouched.
+    body_declares_effective_count: bool = False
 
     @property
     def blocking(self) -> bool:
@@ -789,7 +1061,9 @@ class Candidate:
         return self.source == "body" and not _is_incidental_assertion(self.text)
 
 
-def select_candidates(items: list[dict]) -> tuple[list[Candidate], int | None]:
+def select_candidates(
+    items: list[dict], n_files: Optional[int] = None
+) -> tuple[list[Candidate], int | None]:
     """Extract assertions, keeping only each thread author's LAST ones.
 
     #11648-b1 (supersession). The founding measurement: on #11646 the guard
@@ -811,6 +1085,12 @@ def select_candidates(items: list[dict]) -> tuple[list[Candidate], int | None]:
     The flag does NOT change the gate's verdict (CommonMark-fence-to-EOF is
     correct rendering); it makes the false-negative shadow visible to the
     reviewer AND actionable (the author is told which line to close).
+
+    #11985 regle 1: when `n_files` is given, each body's candidates get
+    `body_declares_effective_count` set iff a DECLARATIVE (non-incidental)
+    candidate of that same body states the effective count. The body then
+    asserts its perimeter correctly somewhere, and the caller reclassifies
+    that body's other count mismatches as signals.
     """
     body_items = [i for i in items if i.get("source") != "thread"]
     thread_items = [i for i in items if i.get("source") == "thread"]
@@ -823,8 +1103,42 @@ def select_candidates(items: list[dict]) -> tuple[list[Candidate], int | None]:
             _, opener = _fence_line_indices(body)
             if opener is not None:
                 orphan_opener = opener
-        for text in extract_perimeter_assertions(body):
-            out.append(Candidate(text, item["kind"], item["author"], "body"))
+        body_candidates = [
+            Candidate(text, item["kind"], item["author"], "body")
+            for text in extract_perimeter_assertions(body)
+        ]
+        if n_files is not None and any(
+            not _is_incidental_assertion(c.text)
+            and _first_confrontable_count(c.text) == n_files
+            for c in body_candidates
+        ):
+            for c in body_candidates:
+                c.body_declares_effective_count = True
+        # #11985 / #12024 rule 1 word-form extension: a body can declare its
+        # perimeter with a spelled-out cardinal ("trois fichiers", "five
+        # files"). The numeric scan above misses this entirely (false
+        # negative: a PR body that says "Trois fichiers (+184/-3)" never
+        # gets body_declares_effective_count set). Mirror the numeric check
+        # for COUNT_WORDS (closed list FR/EN cardinals 1-10 -- see line ~98
+        # rationale).
+        if n_files is not None and not any(
+            c.body_declares_effective_count for c in body_candidates
+        ):
+            for word, n in COUNT_WORDS.items():
+                if n != n_files:
+                    continue
+                pat = re.compile(
+                    rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                    re.IGNORECASE,
+                )
+                if any(
+                    not _is_incidental_assertion(c.text) and pat.search(c.text)
+                    for c in body_candidates
+                ):
+                    for c in body_candidates:
+                        c.body_declares_effective_count = True
+                    break
+        out.extend(body_candidates)
 
     # Per thread author, keep the latest assertion-carrying review.
     latest: dict[str, tuple[str, int, dict, list[str]]] = {}
@@ -875,7 +1189,9 @@ def main() -> int:
     signals: list[str] = []
     orphan_opener: int | None = None
     if args.scan_thread:
-        candidates, body_orphan = select_candidates(fetch_review_thread(args.pr))
+        candidates, body_orphan = select_candidates(
+            fetch_review_thread(args.pr), n_files=len(report.files)
+        )
         if body_orphan is not None:
             orphan_opener = body_orphan
         for cand in candidates:
@@ -883,8 +1199,12 @@ def main() -> int:
                 line = f"[{cand.kind} / {cand.author}] {p}"
                 # Every catch stays visible either way -- the detector is not
                 # disarmed, only its consequence is placed where it can be
-                # acted on (#11648).
-                if cand.blocking:
+                # acted on (#11648). #11985 regle 1: a count mismatch from a
+                # body that declares the effective count elsewhere is a
+                # signal, not a block -- the body asserts its perimeter
+                # correctly; the mismatched count denotes another object
+                # (atomicity argument, produced artifact, scan residue).
+                if cand.blocking and not is_downgradable_mismatch(cand, p):
                     report.problems.append(line)
                 else:
                     signals.append(line)
