@@ -1,6 +1,6 @@
 # SOTA : vrai outil + probleme non-trivial — install/invoke/re-plug, faire valoir le moteur (HARD)
 
-S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21 (3 messages : outil **installe ou invoque**, sinon **branche/rebranche** — au besoin sur la machine au bon env ; tenir un **registre** + resserrer le harnais ET les bots, le **reflexe workaround degrade** etant le defaut a corriger ; **problemes trop basiques** a complexifier pour faire valoir les moteurs). Registre = **EPIC #3801**. Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
+S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21, 3 messages — verbatim en [detail §1](../../docs/reference/sota-verdicts-detail.md). Registre = **EPIC #3801**. Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
 
 **Verbatims du mandat, incidents d'axes, mesures anti-fabrication** : [docs/reference/sota-verdicts-detail.md](../../docs/reference/sota-verdicts-detail.md).
 
@@ -22,7 +22,7 @@ Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'ke
 
 ### Procedure d'etablissement INTRINSIC — checklist 6 axes obligatoire (NEW c.8243, #10459)
 
-Un verdict `INTRINSIC` est le plus restrictif des 5 (il declare une impossibilite), et c'est **le plus dangéreux** a laisser passer sans verification : il justifie une substitution durable dans le code, qui devient invisible pour les auditeurs suivants. Pour cette raison, **chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
+`INTRINSIC` declare une impossibilite : il justifie une substitution durable, invisible pour les auditeurs suivants. Donc **chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
 
 | # | Axe | Question a repondre dans le body PR |
 |---|---|---|
@@ -33,9 +33,9 @@ Un verdict `INTRINSIC` est le plus restrictif des 5 (il declare une impossibilit
 | 5 | **`PythonNet`** (pont CPython) **(NEW c.8243)** | **La lib a-t-elle un binding Python ?** Si oui, le pont `.NET → CPython → pyspiel`-like est disponible via `pythonnet 3.0.5` + `Runtime.PythonDLL` — pas d'`INTRINSIC` sans l'avoir teste. |
 | 6 | **Lib differente a role equivalent** | Un autre moteur SOTA .NET tient-il le role ? (cf PyMC ↔ Infer.NET, OR-Tools ↔ choco, mealpy ↔ MetaGeneticSharp) |
 
-**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H). La liste des 5 verdicts est conservee ; c'est **la procedure d'etablissement** d'`INTRINSIC` qui se durcit.
+**Regle d'enforcement** : un verdict `INTRINSIC` dont le body **ne repond pas nominativement les 6 axes** (y compris « axe 5 N/A parce que la cible n'a pas de binding Python, vérifié sur PyPI au commit SHA … ») est **incomplet** → **`CHANGES_REQUESTED`** ([pr-review-discipline.md](pr-review-discipline.md) §H).
 
-**Origine de la 6ᵉ entree** (#10459) : trois verdicts `INTRINSIC` OpenSpiel convergents dans 3 PRs distinctes, aucun n'ayant examine l'axe PythonNet — alors que le depot certifiait deja le pont (SK-09, `SOTA-OK` au ledger #3801). L'axe est desormais **prouve** par 5 PRs mergees posant le pont `.NET → CPython → pyspiel`. Deuxieme omission d'axe apres `IKVM` : une regle non explicite ne se corrige pas par plus de vigilance, elle demande un **organe** (la checklist). Verbatim user, PRs et mesures : [sota-verdicts-detail.md §2](../../docs/reference/sota-verdicts-detail.md).
+**Origine** (#10459) : 3 verdicts `INTRINSIC` OpenSpiel convergents, aucun n'ayant examine l'axe PythonNet ; l'axe est desormais **prouve** par 5 PRs mergees. Deuxieme omission apres `IKVM`. Recit, verbatim user et mesures : [detail §2](../../docs/reference/sota-verdicts-detail.md).
 
 ### Stop & Repair — JAMAIS hand-editer une sortie de cellule (mandat user 2026-06-22)
 
@@ -72,4 +72,4 @@ Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/c
 - [anti-regression.md](anti-regression.md) — ne pas stripper le code reel
 - [three-exercises-per-notebook.md](three-exercises-per-notebook.md) — richesse pedagogique (exercices)
 - **EPIC #3801** — registre axe-2 SOTA + problem-richness, par famille (GenAI/po-2023 en tete)
-- **#10459** — omission d'axe PythonNet dans la taxonomie bucket-3 (3 verdicts INTRINSIC OpenSpiel reclasses, 5 PRs livrees). La checklist 6 axes de ce fichier est l'organe qui ferme la classe d'incidents.
+- **#10459** — omission d'axe PythonNet, close par la checklist 6 axes ([detail §2](../../docs/reference/sota-verdicts-detail.md))
