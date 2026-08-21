@@ -5,8 +5,6 @@ using Microsoft.DotNet.Interactive.Events;
 using Microsoft.Extensions.Logging;
 using KernelInfo = Microsoft.DotNet.Interactive.Documents.KernelInfo;
 
-namespace MyNotebookLib;
-
 public class NotebookExecutor
 {
 	private readonly CompositeKernel _kernel;
@@ -218,4 +216,3 @@ public class NotebookExecutor
 				break;
 		}
 	}
-}
