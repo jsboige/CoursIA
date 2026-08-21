@@ -2,7 +2,7 @@
   family: SymbolicAI/SymbolicLearning
   python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb
-  parity_level: semantic
+  parity_level: native-both
   audits:
     - date: "2026-08-01"
       by: myia-po-2023:CoursIA
@@ -14,10 +14,16 @@
       csharp_sha: 8013c9d785020bb014f29f74e4cf64e4a413f595
       content_python_sha: d041e06781b2ed2e041cfcca3786d08777a4a503fbfb12283e79eb0b6841e0ca
       content_csharp_sha: 152ac61c16a03acd5a6729fbbb165e870cfbef28e5ced2d1b4931f87bf3ead79
-  bridge_verdict: RECOVERABLE-LOCAL
-  bridge_verdict_reason: "Python = `aima-python` (AIMA reference implementation, MIT, Russell/Norvig) pour CBH/Candidate Elimination/Version Space sur domaine restaurant + matplotlib pour la visualisation graphique de l'evolution du Version Space ; le coeur pedagogique est code from-scratch (pas de lib ILP tierce). C# = BCL .NET from-scratch (`Dictionary` + `HashSet` + `List<T>`) pour CBH + Candidate Elimination + 10 sections textuelles, sans visualisation graphique. Verdict RECOVERABLE-LOCAL : le coeur pedagogique (CBH = Current-Best-Hypothesis, Candidate Elimination, Version Space sur domaine AIMA restaurant) est PARITABLE des deux cotes (memes algorithmes, meme domaine), l'asymetrie reside dans la portee pedagogique (Python = version de reference complete + visualisation + comparaison aima-python ; C# = tranche focalisee sur les 2 algorithmes). Le socle BCL C# preserve comme choix pedagogique assume (ILP foundations = construire les algorithmes d'apprentissage a la main avant d'utiliser une lib). `parity_level: semantic` preserve : parite sur les concepts cibles malgre l'asymetrie de portee."
+    - date: "2026-08-20"
+      by: myia-po-2026:CoursIA
+      python_sha: c0395f1f0ee82f67cc1827cb9c0323f4def48635
+      csharp_sha: dda5fd3102a097a455af919218a7038472ace4fc
+      content_python_sha: d041e06781b2ed2e041cfcca3786d08777a4a503fbfb12283e79eb0b6841e0ca
+      content_csharp_sha: 8e1eae85db55d6d5bc392ea4a4216c045adaf45a6ae9a09667fe2090b06536a0
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python = BCL from-scratch pour CBH/Candidate Elimination/Version Space sur domaine restaurant + section 9 confrontant le CBH a l'implementation de reference aima-python (`reference/aima_knowledge.py`, knowledge.py Fig 19.2, MIT, Russell/Norvig). C# = BCL .NET from-scratch (`Dictionary` + `HashSet` + `List<T>`) pour CBH + Candidate Elimination. NB : l'ancienne raison invoquait matplotlib cote Python -- verification firsthand (tranche 2026-08-20) : AUCUN matplotlib dans le jumeau Python, la vraie asymetrie etait la section 9 aima-python. Verdict initial RECOVERABLE-LOCAL (2026-08-01) REVOQUE par la tranche sl-1 (epic #10382, 2026-08-20) : le jumeau C# branche le pendant exact de la section 9 Python -- un pont **PythonNet** (.NET -> CPython, pythonnet 3.0.5 NuGet) invoque le MEME module vendore `reference/aima_knowledge.py`, meme graine (42), meme hypothese initiale (premier exemple positif), memes 12 exemples convertis au format GOAL (section 6bis) : les 5 disjonctions D1-D5 sont byte-identiques a la sortie de la section 9 du jumeau Python, accuracy 12/12 des deux cotes. Le pont est un plus, jamais un remplacement : les sections 4-6 gardent le CBH et le Candidate Elimination codes a la main (sujet du notebook) ; la reference externe joue le role d'arbitre, exactement comme la section 9 Python. Axes binding #10459 : PythonNet = le canal (pythonnet 3.0.5, pas de reimplementation), NuGet = canal du package pythonnet lui-meme, P/Invoke N/A, CLI N/A, IKVM N/A. `parity_level: native-both` : les deux jumeaux referencent le meme moteur de reference (aima_knowledge : import direct cote Python, pont PythonNet cote C#) autour du from-scratch conserve."
   known_differences:
     - "Socle commun : apprentissage logique symbolique -- Current-Best-Hypothesis (CBH) et Version Space / Candidate Elimination, sur le domaine restaurant (AIMA)."
-    - "Asymetrie de couverture : le jumeau Python (58 cellules, 18 code) couvre 9 sections incluant visualisation de l'evolution du Version Space et une section 'implementation de reference : aima-python' ; le jumeau C# (21 cellules, 9 code) est plus compact (10 sections, pas de visualisation graphique)."
-    - "Implementation : les deux cotes codent CBH et Candidate Elimination from-scratch (pas de librairie ILP tierce) -- c'est le coeur pedagogique. Sortie textuelle C# vs matplotlib/aima-python cote Python."
-    - "Le jumeau Python est la version de reference complete (avec comparaison a l'implementation aima-python) ; le C# est la tranche pedagogique focalisee sur les 2 algorithmes."
+    - "Asymetrie de couverture : le jumeau Python (58 cellules, 18 code) couvre 9 sections incluant l'evolution du Version Space, le rasoir d'Occam/MDL et un echantillonnage multi-graines ; le jumeau C# (23 cellules, 10 code) est plus compact (10 sections + section 6bis de reference)."
+    - "Implementation : les deux cotes codent CBH et Candidate Elimination from-scratch (pas de librairie ILP tierce) -- c'est le coeur pedagogique. Sortie textuelle des deux cotes."
+    - "Reference aima-python : les DEUX jumeaux confrontent leur from-scratch au module vendore reference/aima_knowledge.py (graine 42, premier positif comme hypothese initiale, 5 disjonctions identiques, 12/12) -- import direct section 9 cote Python, pont PythonNet section 6bis cote C# (depuis 2026-08-20)."
