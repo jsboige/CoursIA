@@ -1,0 +1,64 @@
+# Mistral Vibe Workspace Configuration - CoursIA
+# Local override de ~/.vibe/config.toml
+# Machine: myia-po-2025
+# Workspace: D:\dev\CoursIA
+
+# Héritage : Ce fichier override ~/.vibe/config.toml pour ce workspace
+# Format: TOML (Vibe 3.5+)
+# Documentation: https://github.com/mistralai/mistral-vibe/blob/main/README.md#mcp-server-configuration
+
+# Default agent for worker mode (doit rester AVANT le premier header [table] :
+# en TOML, une cle apres un header appartient a cette table)
+default_agent = "auto-approve"
+
+# ---
+
+## MCP Servers (stdio transport)
+# Note: Les paths sont relatifs au workspace ou absolus machine-specific
+# Pour une configuration portable, utiliser les paths réseau ou variable d'environnement
+
+# roo-state-manager (herité du global ~/.vibe/config.toml)
+# Si besoin d'override local, decommenter ci-dessous:
+#[[mcp_servers]]
+#name = "roo-state-manager"
+#transport = "stdio"
+#command = "node"
+#args = ["d:/dev/roo-extensions/mcps/internal/servers/roo-state-manager/mcp-wrapper.cjs"]
+#cwd = "d:/dev/roo-extensions/mcps/internal/servers/roo-state-manager/"
+#startup_timeout_sec = 20.0
+#tool_timeout_sec = 180.0
+
+# ---
+
+## Tool Permissions (roo-state-manager)
+# Permissions locales qui s'ajoutent au global
+
+[tools.roo-state-manager_roosync_dashboard]
+permission = "always"
+
+[tools.roo-state-manager_roosync_messages]
+permission = "always"
+
+[tools.roo-state-manager_roosync_search]
+permission = "always"
+
+# ---
+
+## Session & Logging
+
+[session_logging]
+enabled = true
+save_dir = ".vibe/logs/session"
+session_prefix = "coursia-session"
+
+# ---
+
+## Agent Configuration
+# (default_agent figure en tete de fichier : cle top-level TOML)
+
+# ---
+
+## Notes
+# - Ce fichier est optionnel : si absent, Vibe utilise ~/.vibe/config.toml
+# - Pour ajouter des MCP : `vibe mcp add <name> --transport stdio --command <cmd> --args <args>`
+# - Les permissions tools sont cumulatives (global + local)

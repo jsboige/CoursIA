@@ -103,8 +103,41 @@ RULE_SEVERITY = {
     "yaml_block_open_no_close": ERROR,
     "setext_oversized": ERROR,
     "oversized_hint": WARN,
+    "heading_in_list": WARN,
     "source_list_missing_newlines": ERROR,
+    # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
+    # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
+    # precision is what buys blocking status; a wider pattern set would need
+    # its own FP re-measure first ([[handrolled-pattern-set-undercounts-silently]]
+    # cuts both ways: widening silently under- AND over-counts).
+    "code_stmt_in_markdown": ERROR,
 }
+
+# Reparation outillee, PAR REGLE (#12089). Le garde rougissait sans jamais nommer
+# la commande qui repare : `grep -rn fix_hr_separator .github/workflows/` rendait
+# zero, et chaque auteur qui tombait dessus devait la redecouvrir. Mesure du
+# 2026-08-21 : 14 PRs sur 5 lanes le matin, puis 11 PRs sur 3 lanes l'apres-midi,
+# toutes sur `yaml_block_open_no_close`, toutes reparees par la meme commande.
+#
+# La table est volontairement PARTIELLE : `fix_hr_separator.py` ne traite QUE le
+# separateur `---` en tete de cellule. Les six autres regles n'ont pas de fixer
+# outille, et leur absence ici EST le message — annoncer une reparation
+# automatique pour une regle qui n'en a pas couterait plus cher que le silence.
+RULE_REPAIR = {
+    "yaml_block_open_no_close": (
+        "python scripts/notebook_tools/fix_hr_separator.py --apply <notebook>"
+    ),
+}
+
+# Le gating par hash de baseline rend ce rappel necessaire : le garde ne rougit
+# que sur les violations NOUVELLES, mais editer une cellule deja en violation
+# change son hash et la fait resurgir comme neuve. Reparer la seule tranche
+# touchee laisse donc le garde rouge.
+_REPAIR_SCOPE_NOTE = (
+    "Lancer la reparation sur le notebook ENTIER, pas sur les seules cellules "
+    "modifiees : le gating par baseline fait resurgir toute cellule en "
+    "violation dont le hash a change."
+)
 
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
 _SETEXT_RE = re.compile(r"^\s{0,3}(-{3,}|={3,})\s*$")
@@ -120,6 +153,33 @@ _YAML_KV_RE = re.compile(r"^\s*[A-Za-z_][\w .\-]*:\s?(\S.*)?$")
 # (those are legitimate section headings, not the oversized-hint defect).
 _HINT_RE = re.compile(r"\b(indice|indices|astuce|astuces|hint|hints)\b", re.IGNORECASE)
 _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
+# Heading nested in a list item / blockquote (`- # Indice : ...`, `> # Note`,
+# `1. # Astuce`, up to 3 container markers, each optionally indented). Same
+# in-list blind spot as scan_md_hierarchy.py's `^`-anchored HEADING_RE: CommonMark
+# renders these as real H1-H6 (giant font) while the anchored regex never sees
+# them -- 1325 pre-existing hits corpus-wide, incl. the 6 unflagged ones of PR
+# #11823. WARN (parity with oversized_hint): the class pre-dates the rule, the
+# drift gate on new hits is #11829 sous-issue #2. See #11829.
+_CONTAINER_HEADING_RE = re.compile(
+    r"^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$")
+
+# #12064 -- a bare code-statement line in a markdown cell. A stub MOVED from a
+# code cell into markdown renders as prose (not code), is invisible to
+# count_exercises.py (it counts code cells), and to the H.3 pre-commit (a
+# markdown cell has neither execution_count nor outputs to fail on) -- the
+# move doesn't satisfy H.3, it makes H.3 inapplicable. Observed on PR #11952
+# cells 15/17/19 (Console.WriteLine exercise stubs) and on main as PT_11
+# cell 5 (a Papermill `parameters` anchor that never executes, contradicting
+# the executed cell 4). The leading `(?: {0,3})` is load-bearing: a block
+# indented 4+ spaces is a legitimate markdown indented-code block and must
+# NOT match (measured: excluding it drops corpus noise by ~3x -- 3 hits
+# become 1). Pattern set deliberately narrow (8 forms, the observed class);
+# widening requires re-measuring FPs with new positive controls.
+_STMT_LINE_RE = re.compile(
+    r"^(?: {0,3})("
+    r"Console\.WriteLine\(|print\(|return\s+\S|import\s+\w|"
+    r"using\s+\w+;|def\s+\w+\(|var\s+\w+\s*=|#r\s+\"nuget)"
+)
 
 # single-element newline-stripping artifact: a markdown cell whose `source` is a
 # one-element list whose string has 0 '\n', starts with an ATX heading, and is long.
@@ -277,6 +337,44 @@ def _selfcheck() -> int:
     print("selfcheck OK: yaml_block_open_no_close fires on both observed forms "
           "(FallacyDetection/02 + SL-8), silent on bare divider / complete "
           "frontmatter / prose")
+
+    # ---- code_stmt_in_markdown (#12064) ----------------------------------------
+    # Positive control = the cell-15 fixture of PR #11952 verbatim; negatives =
+    # the two LEGITIMATE renderings of the same code (indented-4 block, fenced
+    # block) plus plain prose. Validates through scan_cell (the real entry
+    # point), not just the regex.
+    stmt_fixtures: list[tuple[str, str, bool]] = [
+        ("PR #11952 cell 15 (Console.WriteLine stub, bare)",
+         'Exercice 5 -- affichez la valeur.\nConsole.WriteLine("Exercice 5 a completer");\n',
+         True),
+        ("PT_11 cell 5 (parameters anchor, print())",
+         '# Set True for real training on GPU.\n'
+         'LOAD_MODEL_AND_TRAIN = False\n'
+         'print(f"LOAD_MODEL_AND_TRAIN = {LOAD_MODEL_AND_TRAIN}")\n',
+         True),
+        ("same stub, indented 4 spaces (legit code block)",
+         "Exercice 5 -- affichez la valeur.\n\n    Console.WriteLine(\"Exercice 5 a completer\");\n",
+         False),
+        ("same stub, inside a fence (legit code block)",
+         "Exercice 5 -- affichez la valeur.\n\n```csharp\nConsole.WriteLine(\"Exercice 5 a completer\");\n```\n",
+         False),
+        ("plain prose (no statement line)",
+         "# Titre\n\nUn paragraphe qui explique l'exercice, sans code nu.\n",
+         False),
+    ]
+    for name, src, expected in stmt_fixtures:
+        fired = any(f["rule"] == "code_stmt_in_markdown"
+                    for f in scan_cell({"cell_type": "markdown", "source": src}))
+        if fired != expected:
+            failed.append(f"{name}: code_stmt_in_markdown fired={fired}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: code_stmt_in_markdown fires on both observed forms "
+          "(#11952 stub + PT_11 parameters anchor), silent on indented block / "
+          "fence / prose")
     return 0
 
 
@@ -492,6 +590,49 @@ def scan_cell(cell) -> list[dict]:
                 "hash": _cell_hash(rule, text),
             })
             break
+
+    # ---- heading nested in a list item / blockquote (#11829) ---------------------
+    # Fence-aware (parity with oversized_hint above): a `# comment` inside a code
+    # block is literal code, not a heading. One finding per cell (the hash is
+    # per-cell anyway); the evidence names the first offending line.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        m = _CONTAINER_HEADING_RE.match(ln)
+        if not m:
+            continue
+        rule = "heading_in_list"
+        level = len(m.group(1))
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": f"heading nested in a list/blockquote (renders as giant H{level})",
+            "evidence": ln.strip()[:100],
+            "hash": _cell_hash(rule, text),
+        })
+        break
+
+    # ---- bare code statement in markdown (#12064) --------------------------------
+    # Fence-aware AND indent-aware: a statement inside a ``` fence renders as
+    # code (legit), and a block indented 4+ spaces is an indented-code block
+    # (legit). The `_STMT_LINE_RE` leading `(?: {0,3})` carries the indent
+    # exclusion; the `idx in fenced` skip carries the fence exclusion.
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        if _STMT_LINE_RE.match(ln):
+            rule = "code_stmt_in_markdown"
+            findings.append({
+                "rule": rule,
+                "severity": RULE_SEVERITY[rule],
+                "message": ("bare code statement in a markdown cell renders as prose, is "
+                            "invisible to count_exercises.py, and escapes the H.3 pre-commit "
+                            "(a markdown cell has no execution_count to be null). Either "
+                            "restore it as a code cell or wrap it in a ``` fence"),
+                "evidence": ln.strip()[:100],
+                "hash": _cell_hash(rule, text),
+            })
+            break  # one per cell is enough
 
     return findings
 
@@ -726,6 +867,28 @@ def load_baseline(path: Path) -> set[str]:
     return set(data.get("hashes", []))
 
 
+
+def _print_repair_hints(blocking: list) -> None:
+    """Nomme la commande de reparation des regles qui en ont une (#12089).
+
+    Ne dit RIEN pour les regles absentes de `RULE_REPAIR` : un garde qui
+    suggererait une commande inoperante ferait perdre plus de temps qu'il n'en
+    fait gagner. Les regles sans fixer sont listees a part, explicitement, pour
+    que l'auteur sache que le silence est mesure et non un oubli.
+    """
+    rules = {f["rule"] for f in blocking}
+    fixable = sorted(r for r in rules if r in RULE_REPAIR)
+    manual = sorted(r for r in rules if r not in RULE_REPAIR)
+    if fixable:
+        print("\nReparation outillee :", file=sys.stderr)
+        for rule in fixable:
+            print(f"  [{rule}] {RULE_REPAIR[rule]}", file=sys.stderr)
+        print(f"  {_REPAIR_SCOPE_NOTE}", file=sys.stderr)
+    if manual:
+        print("\nSans reparation outillee (edition manuelle de la cellule) : "
+              + ", ".join(manual), file=sys.stderr)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("root", nargs="?", default="MyIA.AI.Notebooks",
@@ -849,6 +1012,7 @@ def main(argv=None) -> int:
                   file=sys.stderr)
             for f in blocking[:50]:
                 print(f"  {f['file']} cell#{f['cell']} [{f['rule']}] {f['evidence']}", file=sys.stderr)
+            _print_repair_hints(blocking)
             return 1
         print("OK: no new ERROR-level markdown-rendering violations.")
     return 0

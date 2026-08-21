@@ -18,7 +18,7 @@ print(f"Validating ComfyUI Auth at {BASE_URL}")
 
 def test_token(token_name, token_value):
     print(f"\n--- Testing with {token_name} ---")
-    print(f"Token: {token_value[:10]}...")
+    print(f"Token: {'fourni' if token_value else '(absent)'}")
     
     headers = {"Authorization": f"Bearer {token_value}"}
     try:
@@ -38,16 +38,23 @@ def test_token(token_name, token_value):
 print("\n--- Testing Client Auto-Discovery ---")
 try:
     client = create_client()
-    print(f"Client loaded token: {client.api_token[:10] if client.api_token else 'None'}...")
+    print(f"Client loaded token: {'configure' if client.api_token else '(non configure)'}")
     stats = client.get_system_stats()
     print("✅ Success with Auto-Discovery!")
 except Exception as e:
     print(f"❌ Failed with Auto-Discovery: {e}")
 
-# Test 2: Explicit check with known hash (sanity check)
-# This hash is what we expect the server to use
-EXPECTED_HASH = "$2b$12$6707ngR1uLGnTOFpgBRZDunYJ9PrnE7J86byQKxSZ1EQAQwbz/1Zy"
-success_hash = test_token("EXPECTED HASH TOKEN", EXPECTED_HASH)
+# Test 2: explicit check against the token the server is configured with.
+# The value lives in .secrets/master.env (gitignored) and is propagated to each
+# consumer .env by scripts/secrets/render_envs.py -- never inline here.
+EXPECTED_HASH = os.getenv("COMFYUI_API_TOKEN")
+if not EXPECTED_HASH:
+    print("")
+    print("[skip] COMFYUI_API_TOKEN absent de l'environnement.")
+    print("       Renseigner .secrets/master.env puis:")
+    print("         python scripts/secrets/render_envs.py")
+    sys.exit(1)
+success_hash = test_token("COMFYUI_API_TOKEN", EXPECTED_HASH)
 
 if success_hash:
     print("\n✅ VALIDATION SUCCESSFUL: Authentication is working correctly.")

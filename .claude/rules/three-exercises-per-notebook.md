@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*.ipynb
+---
+
 # Convention : 3 exercices par notebook pedagogique
 
 **Source** : mandat user 2026-06-02. Issue #2161.

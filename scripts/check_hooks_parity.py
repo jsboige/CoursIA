@@ -26,7 +26,8 @@ names a target it stopped watching.
 
 The PyYAML-aware walker in this script reads the YAML structure
 instead of line regexes, so the pairing is correct (gitleaks has no
-entry, and the five local hooks are each paired with their own entry).
+entry, and every local hook is paired with its own entry -- the count
+follows the config: 7 as of #12075).
 
 What it checks
 --------------
