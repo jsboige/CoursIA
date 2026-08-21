@@ -445,8 +445,8 @@ layout: section
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="absolute top-[130px] right-[20px] w-[300px] max-h-[300px] object-contain" alt="Algorithme A*" />
-<img src="./images/img_028.png" class="absolute top-[250px] right-[20px] w-[300px] max-h-[300px] object-contain" alt="Pathfinding.js demo" />
+<img src="./images/img_027.png" class="absolute top-[170px] right-[20px] w-[340px] max-h-[300px] object-contain" alt="Algorithme A*" />
+<img src="./images/img_028.png" class="absolute top-[305px] right-[20px] w-[340px] max-h-[300px] object-contain" alt="Pathfinding.js demo" />
 
 
 
@@ -475,8 +475,8 @@ layout: section
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<img src="./images/img_032.png" class="absolute top-[130px] right-[20px] w-[220px] max-h-[300px] object-contain" alt="Recuit simulé" />
-<img src="./images/img_033.png" class="absolute top-[240px] right-[20px] w-[220px] max-h-[300px] object-contain" alt="Algorithmes génétiques" />
+<img src="./images/img_032.png" class="absolute top-[140px] right-[20px] w-[260px] max-h-[300px] object-contain" alt="Recuit simulé" />
+<img src="./images/img_033.png" class="absolute top-[260px] right-[20px] w-[260px] max-h-[300px] object-contain" alt="Algorithmes génétiques" />
 
 
 
