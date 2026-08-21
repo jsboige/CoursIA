@@ -23,7 +23,17 @@ Reads the PR body, parses the Grain tag + its `prev:` field (both through
 the SHARED extractor `scripts/grain_tag.py`, so this organ and the guard
 never diverge on what a tag is), normalises both genres through the SAME
 alias table as the G-VAR-2 organ (`variation_light_cap.canonicalize_genre`),
-and compares:
+and compares. Since #12095 the predecessor genre comes from the MERGED
+sequence when the caller provides it (`--merged-prs-file`, resolved through
+`resolve_merged_prev_genre`): the `prev:` field is frozen at PR-open time, so
+a lane that merges grains while the PR sits open made the gate block PRs the
+rule never aimed at (#11963 measured `prev: MED/guard #11841` exact at
+redaction but followed by four merged grains -- the real predecessor was
+`notebook-python`). The declared `prev:` keeps its documentary value
+(exposed as `declared_prev_genre`) but is the source of truth ONLY when the
+lane has no merged grain to consult (a first grain, or a fetch failure --
+never a crash). The verdict reports which source it used in `prev_source`
+(`merged-sequence` | `declared`). Comparing:
 
   * **BLOCK** (exit 1) when `genre == prev_genre` AND the genre is in the
     LIGHT set `{guard, ledger, docs, readme, test}` -- the absolute ban of
@@ -136,7 +146,51 @@ def parse_override(comments: list[dict] | None) -> dict | None:
     return None
 
 
-def check(body: str | None, override: dict | None = None) -> dict:
+def resolve_merged_prev_genre(merged_prs: list[dict] | None, lane: str | None) -> tuple:
+    """Return the lane's REAL predecessor: (canonical_genre, pr_number).
+
+    G-VAR-3 adjacency is a property of the MERGED sequence of the lane, which
+    moves while a PR sits open. The `prev:` field in the body is frozen at
+    open time, so a PR acquires a false violation purely by aging -- issue
+    #11963 measured a `prev: MED/guard #11841` that was exact at redaction
+    (2026-08-20T08:27Z) but preceded by four grains merged since (#12025,
+    #12022, #12059, #12063, the last being `LIGHT/notebook-python`): the
+    declared field said `guard`, the real predecessor was `notebook-python`,
+    and the gate blocked a PR the rule never aimed at. The same mechanism
+    produces the symmetric false negative (a lane that merged the SAME genre
+    while the PR sat open passes despite real adjacency).
+
+    `merged_prs` is the list `gh pr list --state merged --json
+    number,body,mergedAt` returns -- the same data source as
+    variation_light_cap.py --replay. Each PR is attributed to a lane through
+    the SAME extractor as the gate (`grain_tag.parse_grain_tag`), so this
+    organ never diverges from the guard on what a tag is. Returns
+    ``(genre, pr_number)`` for the most recent lane-attributed PR with a
+    parseable Grain tag, or ``(None, None)`` when no such PR exists -- the
+    caller then falls back to the declared `prev:` field (a lane with no
+    merged grain has no merged sequence to consult). The genre is
+    canonicalised so the comparison uses the SAME alias table as the gate.
+    """
+    if not merged_prs or not lane:
+        return (None, None)
+    lane_prs = []
+    for pr in merged_prs:
+        g = gt.parse_grain_tag(pr.get("body"))
+        if g is None or g["lane"] != lane:
+            continue
+        genre = canonicalize_genre(g["genre"])
+        if genre is None:
+            continue
+        lane_prs.append((pr.get("mergedAt") or "", pr.get("number"), genre))
+    if not lane_prs:
+        return (None, None)
+    # Most recent first. `mergedAt` is ISO-8601, lexicographic == chronological.
+    lane_prs.sort(key=lambda t: t[0], reverse=True)
+    return (lane_prs[0][2], lane_prs[0][1])
+
+
+def check(body: str | None, override: dict | None = None,
+          merged_prev: tuple | None = None) -> dict:
     """Return the adjacency verdict for a PR body.
 
     Pure function so unit tests pin each branch without going through the
@@ -173,19 +227,45 @@ def check(body: str | None, override: dict | None = None) -> dict:
     # invisible -- variation-protocol §1 warns that two invented labels suffice
     # to never trip the ban.
     genre = canonicalize_genre(g["genre"])
-    prev_genre = canonicalize_genre(pv["genre"])
     lane = g["lane"]
+    declared_prev_genre = canonicalize_genre(pv["genre"])
+    declared_prev_pr = pv["pr_number"]
+
+    # Effective predecessor (#12095): the MERGED sequence is the source of
+    # truth -- the adjacency is a property of what the lane actually merged,
+    # not of what the author believed at open time. The declared `prev:` keeps
+    # its documentary value (it says what the author believed) but stops being
+    # the gate's authority. Fall back to the declared field when the lane has
+    # no merged grain to consult (a first grain, or a lane that has never
+    # merged).
+    if merged_prev is not None and merged_prev[0] is not None:
+        prev_genre = merged_prev[0]
+        prev_pr = merged_prev[1]
+        prev_source = "merged-sequence"
+    else:
+        prev_genre = declared_prev_genre
+        prev_pr = declared_prev_pr
+        prev_source = "declared"
+
     if genre is None or prev_genre is None:
         return {
             "guard_pass": True, "blocking": False, "adjacent": False,
             "genre": genre, "prev_genre": prev_genre, "lane": lane,
+            "prev_source": prev_source,
+            "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
             "reason": "genre or prev-genre not normalisable -- adjacency not evaluable",
         }
+
+    src_note = ""
+    if prev_source == "merged-sequence" and prev_pr:
+        src_note = f" (predecesseur reel: #{prev_pr}, sequence mergee)"
 
     if genre != prev_genre:
         return {
             "guard_pass": True, "blocking": False, "adjacent": False,
             "genre": genre, "prev_genre": prev_genre, "lane": lane,
+            "prev_source": prev_source,
+            "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
             "reason": f"genres differ ({genre} vs {prev_genre}) -- no adjacency",
         }
 
@@ -202,6 +282,8 @@ def check(body: str | None, override: dict | None = None) -> dict:
                 "overridden": True,
                 "override_author": override["author"],
                 "override_next": override["next_genre"],
+                "prev_source": prev_source,
+                "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
                 "reason": (
                     f"G-VAR-3: adjacence {genre} apres {prev_genre} REELLE, "
                     f"mais levee par {override['author']} au titre de la "
@@ -209,7 +291,7 @@ def check(body: str | None, override: dict | None = None) -> dict:
                     f"le remplacant »). Prochain grain nomme pour la lane "
                     f"{lane} : {override['next_genre']}. Le travail ecrit "
                     f"n'est pas jete ; la lane change de genre au grain "
-                    f"suivant."
+                    f"suivant.{src_note}"
                 ),
             }
         hint = ""
@@ -223,18 +305,22 @@ def check(body: str | None, override: dict | None = None) -> dict:
             "guard_pass": False, "blocking": True, "adjacent": True,
             "genre": genre, "prev_genre": prev_genre, "lane": lane,
             "overridden": False,
+            "prev_source": prev_source,
+            "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
             "reason": (
                 f"G-VAR-3: {genre} succede a {prev_genre} -- deux grains LIGHT "
                 f"consecutifs pour la lane {lane}. La regle est un ban absolu "
                 f"(§2): piochez un grain d'UN AUTRE genre, ne retaguez pas "
                 f"le meme travail (#11170). Tenu > 24 h : le coordinateur "
                 f"tranche par `[G-VAR-3 OVERRIDE] lane {lane} -- next: "
-                f"<genre>` (section 3), il ne laisse pas vieillir.{hint}"
+                f"<genre>` (section 3), il ne laisse pas vieillir.{hint}{src_note}"
             ),
         }
     return {
         "guard_pass": True, "blocking": False, "adjacent": True,
         "genre": genre, "prev_genre": prev_genre, "lane": lane,
+        "prev_source": prev_source,
+        "declared_prev_genre": declared_prev_genre, "prev_pr": prev_pr,
         "reason": (
             f"adjacence {genre}->{prev_genre} hors liste LIGHT : §2 l'autorise "
             f"si chaque grain est une substance genument distincte -- "
@@ -250,6 +336,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--comments-file", metavar="FILE", default=None,
                    help="JSON list of {author, body} PR comments, scanned for "
                         "a coordinator [G-VAR-3 OVERRIDE] marker (#11708)")
+    p.add_argument("--merged-prs-file", metavar="FILE", default=None,
+                   help="JSON list of merged PRs {number, body, mergedAt}, to "
+                        "resolve the lane's real predecessor from the merged "
+                        "sequence instead of the frozen `prev:` field (#12095). "
+                        "Same data source as variation_light_cap.py --replay.")
     args = p.parse_args(argv)
 
     try:
@@ -269,7 +360,18 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"warning": f"comments unreadable: {e}"}),
                   file=sys.stderr)
 
-    verdict = check(body, override=override)
+    merged_prev = None
+    if args.merged_prs_file:
+        try:
+            with open(args.merged_prs_file, encoding="utf-8") as f:
+                merged_prs = json.load(f)
+            g = gt.parse_grain_tag(body)
+            merged_prev = resolve_merged_prev_genre(merged_prs, g["lane"] if g else None)
+        except (OSError, ValueError) as e:
+            print(json.dumps({"warning": f"merged-prs unreadable: {e}"}),
+                  file=sys.stderr)
+
+    verdict = check(body, override=override, merged_prev=merged_prev)
     print(json.dumps(verdict, ensure_ascii=False))
     return 0 if verdict["guard_pass"] else 1
 
