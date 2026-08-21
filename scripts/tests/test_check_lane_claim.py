@@ -2100,6 +2100,119 @@ def test_paths_clause_keeps_non_spaced_separator_inside_glob():
         == ["docs/foo--bar.md", "scripts/a.py"]
 
 
+# --- #12052 parenthetical annotation: 4 forms from the issue body --------------
+# Acceptance: a trailing parenthetical prose annotation (`paths: glob (Phase 2,
+# tranche A)`) must TRUNCATE at the FIRST space-paren, yielding the same clean
+# glob list as the dash-separated form. Pre-#12052 the parenthetical rode into
+# `_split_paths_brace_aware` and the inner comma fragmented the prose into two
+# glob-free fragments (`['glob (Phase 2', 'tranche A)']`) -- both unmatched,
+# so `_empty_scope_in` lifted the scope to epic-wide and the claiming lane
+# falsely blocked every other lane. The four forms reproduce the issue's
+# measurement table.
+
+
+def test_paths_clause_truncates_parenthetical_annotation_forms():
+    """Acceptance #1: the four measured forms of the issue all parse to a
+    clean glob list -- parenthesised form included."""
+    base = "[CLAIMED] lane L:CoursIA -- paths: {}"
+    # Form A (OK baseline, no annotation).
+    assert clc._extract_paths_clause(base.format(
+        "MyIA.AI.Notebooks/GenAI/**")) == ["MyIA.AI.Notebooks/GenAI/**"]
+    # Form B (parenthetical -- the one that broke). Cut at FIRST ` (`.
+    assert clc._extract_paths_clause(base.format(
+        "MyIA.AI.Notebooks/GenAI/** (Phase 2, tranche A)")) == \
+        ["MyIA.AI.Notebooks/GenAI/**"]
+    # Form C (comma list, em-dash prose after the last glob).
+    assert clc._extract_paths_clause(base.format(
+        "a/**, b/** -- Phase 2 : prose")) == ["a/**", "b/**"]
+    # Form D (comma list, NO separator before prose -- the dead-glob witness
+    # is the only line of defence here: `_extract_paths_clause` does NOT
+    # cut, but `_unparseable_scope_in` must still flag the bare-word prose
+    # so the JSON audit surfaces it).
+    parts_d = clc._extract_paths_clause(base.format(
+        "a/**, prose sans separateur"))
+    assert parts_d == ["a/**", "prose sans separateur"]
+    # And the dead-prose fragment is reported, not silently dropped:
+    assert "prose sans separateur" in clc._unparseable_scope_in(parts_d)
+    # ...while the glob stays clean.
+    assert "prose sans separateur" not in clc._unparseable_scope_in(["a/**"])
+
+
+def test_paths_clause_paren_needs_leading_space():
+    """Acceptance #2: the paren separator requires a LEADING SPACE. A glob
+    containing an internal `(` (no preceding space) is left untouched --
+    legitimate filename characters. Mirrors the `_ANNOTATION_SUFFIX_RE`
+    discipline (#10958)."""
+    # No leading space -> NOT cut, the glob survives as-is.
+    assert clc._extract_paths_clause(
+        "[CLAIMED] lane L:CoursIA -- paths: docs/(archive)/file.md") == \
+        ["docs/(archive)/file.md"]
+    # Leading space -> cut, prose dropped.
+    assert clc._extract_paths_clause(
+        "[CLAIMED] lane L:CoursIA -- paths: docs/file.md (archive)") == \
+        ["docs/file.md"]
+
+
+def test_unparseable_scope_in_flags_bare_word_prose():
+    """Acceptance #3: `_unparseable_scope_in` reports a glob-free prose
+    fragment (no `/`, no fnmatch meta) as unmatchable, so the JSON audit
+    surfaces it even when `_extract_paths_clause` itself does not cut
+    (Form D of the issue table)."""
+    # Bare word with no slash, no meta -> unmatchable.
+    assert clc._unparseable_scope_in(
+        ["a/**", "prose sans separateur"]) == ["prose sans separateur"]
+    # Mixed: live glob stays clean, prose fragment is flagged.
+    assert clc._unparseable_scope_in(
+        ["scripts/check_lane_claim.py", "tranche A)"]) == ["tranche A)"]
+    # Glob with a slash but no meta -> clean (a plain path).
+    assert clc._unparseable_scope_in(["docs/foo.md"]) == []
+    # Glob with a fnmatch meta (`*`) -> clean.
+    assert clc._unparseable_scope_in(["docs/*.md"]) == []
+    # Brace residue still flagged (legacy #10597 contract preserved).
+    assert clc._unparseable_scope_in(["{a,b}/x.py"]) == ["{a,b}/x.py"]
+    # Empty / None -> empty witness (caller semantics).
+    assert clc._unparseable_scope_in([]) == []
+    assert clc._unparseable_scope_in(None) == []
+
+
+def test_run_check_paren_annotation_does_not_fabricate_block(capsys):
+    """Acceptance #4: end-to-end, a scoped claim with the parenthetical form
+    from Form B parses to a single live glob and DOES NOT block another lane
+    that touches only files OUTSIDE that glob. Pre-#12052 the parenthetical
+    fragmented into two glob-free residues, the scope was lifted to epic-wide,
+    and the other lane was falsely BLOCKED -- the 6 marqueurs C2 reported on
+    2026-08-21 at 03:32 on the dashboard CoursIA."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA -- "
+            "paths: MyIA.AI.Notebooks/GenAI/Video/** (Phase 2, tranche A)",
+            "2026-08-21T03:30:00Z",
+        ),
+    )
+    # Caller declares its own SCOPE -- `my_paths` -- so the disjointness check
+    # is run. The caller touches a TRACKED file in GenAI/Audio (different
+    # subdir from Video): the `_empty_scope_in` fail-safe needs at least one
+    # live glob to confirm my_scope is real, otherwise the caller-side
+    # #10958 mirror returns all others unfiltered.
+    rc = clc._run_check(
+        p, "myia-po-2026:CoursIA-2",
+        my_paths=["MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # CLEAR, not BLOCKED: the truncation yielded a single glob
+    # `MyIA.AI.Notebooks/GenAI/Video/**` which doesn't intersect
+    # `MyIA.AI.Notebooks/GenAI/Audio/something.py`.
+    assert rc == 0, (
+        f"Expected CLEAR (disjoint scope) but got BLOCKED. stderr:\n"
+        f"{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "BLOCKED" not in captured.err
+    # And the audit JSON names the claim scope (parsed cleanly, no residue).
+    assert "MyIA.AI.Notebooks/GenAI/Video/**" in captured.out
+    # Clean parse: no unparseable_scope witness carried forward.
+    assert '"unparseable_scope": []' in captured.out
+
+
 def test_empty_scope_in_witness():
     """`_empty_scope_in` returns the globs matching ZERO tracked files (the
     #10958 witness). None tracked (no repo walk) -> no witness, no lift."""
