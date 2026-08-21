@@ -75,6 +75,14 @@ jobs:
       - name: "Install detector dependencies (pyyaml for the closure scan)"
         run: pip install pyyaml
 
+      # #12064: the embedded positive/negative controls were documented as
+      # "the guard workflow runs it" but nothing called --selfcheck -- a rule
+      # refactor losing an observed defect form would have passed CI silently.
+      # Runs the controls for ALL rules that carry them (yaml_block_open_no_close
+      # both outage forms, code_stmt_in_markdown stub/indent/fence game).
+      - name: "Rule selfcheck -- embedded positive/negative controls"
+        run: python scripts/notebook_tools/detect_markdown_rendering.py --selfcheck
+
       - name: "HARD gate -- fail on any NEW frontmatter / setext oversize"
         run: |
           if ! python scripts/notebook_tools/detect_markdown_rendering.py \
