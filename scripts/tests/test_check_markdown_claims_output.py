@@ -54,6 +54,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 from check_markdown_claims_output import (  # noqa: E402
     _fuzzy_present,
     _is_md_heading_line,
+    _is_section_reference,
     _is_version_token,
     _in_exception_code_span,
     _lit_skip,
@@ -548,6 +549,73 @@ class TestVersionTokenHelper:
         prose = "Mathlib 4 contient ce lemme"
         pos = prose.find("4")
         assert _is_version_token(prose, pos)
+
+
+class TestSectionReferenceFilter:
+    """c.421 / #12093: a section reference ("La section 4.5", "(§3.2)")
+    is a pointer to another part of the document, not a quantitative
+    claim. GT-16 4/4 FPs were all of this form. The filter must drop
+    them WITHOUT suppressing a real fabrication."""
+
+    def test_section_word_prefix(self):
+        prose = "La section 4.5 vient de montrer que VCG peut perdre"
+        pos = prose.find("4.5")
+        assert _is_section_reference(prose, pos)
+
+    def test_section_in_parenthesis(self):
+        prose = "compatible avec VCG (section 4.5) : VCG est truthful"
+        pos = prose.find("4.5")
+        assert _is_section_reference(prose, pos)
+
+    def test_pilcrow_glyph(self):
+        prose = "L'enchere au second prix (§3.2), dite enchere de Vickrey"
+        pos = prose.find("3.2")
+        assert _is_section_reference(prose, pos)
+
+    def test_section_with_dot_in_number(self):
+        prose = "La section 6.1 enonce le theoreme de Gibbard-Satterthwaite"
+        pos = prose.find("6.1")
+        assert _is_section_reference(prose, pos)
+
+    def test_not_section_for_fabrication(self):
+        prose = "On attend ~0,09 % des parametres"
+        pos = prose.find("0,09")
+        assert not _is_section_reference(prose, pos)
+
+    def test_not_section_at_start(self):
+        prose = "0.09% de parametres"
+        assert not _is_section_reference(prose, 0)
+
+    def test_section_ref_cleared_on_gt16_shape(self, tmp_path: Path):
+        """The exact GT-16 FPs: 'La section 4.5' / 'section 4.5' /
+        'La section 6.1' / '(§3.2)' are all CLEAN (not fabricated)."""
+        cases = [
+            "La section 4.5 vient de montrer que VCG peut perdre.",
+            "VCG (section 4.5) est truthful par construction.",
+            "La section 6.1 enonce le theoreme de Gibbard-Satterthwaite.",
+            "L'enchere au second prix (§3.2), dite enchere de Vickrey.",
+        ]
+        for i, md in enumerate(cases):
+            nb = _mk_nb([
+                _code_cell("print('hello')", [_stream_output("hello")]),
+                _md_cell(md),
+            ])
+            nb_path = tmp_path / f"sec_{i}.ipynb"
+            nb_path.write_text(json.dumps(nb), encoding="utf-8")
+            res = check_notebook(nb_path)
+            assert res["verdict"] == "CLEAN", (i, md, res)
+
+    def test_real_fabrication_not_suppressed(self, tmp_path: Path):
+        """The filter must not blind the detector: a number truly absent
+        from the output is still flagged, even if the prose is rich."""
+        nb = _mk_nb([
+            _code_cell("print('loss=3.38 -> 1.93')", [_stream_output("loss=3.38 -> 1.93")]),
+            _md_cell("On observe une perte de 0,09 %, avec un ratio de 1,2 M."),
+        ])
+        nb_path = tmp_path / "real_section_neighbor.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "FABRICATION_DETECTED", res
 
 
 class TestExceptionSpanHelper:
