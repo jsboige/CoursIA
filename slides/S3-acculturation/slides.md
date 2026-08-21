@@ -344,6 +344,8 @@ layout: two-cols
 - **Choix des nœuds**
   - = Stratégie d'exploration
 
+<img src="./images/img_020.png" class="w-[420px] max-w-full max-h-[280px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
+
 
 
 ::right::
