@@ -18,8 +18,10 @@ from check_pr_perimeter import (  # noqa: E402
     extract_baseline_moves,
     extract_perimeter_assertions,
     format_report,
+    is_downgradable_mismatch,
     select_candidates,
     _check_unterminated_fence,
+    _count_is_incidental,
     _fence_line_indices,
 )
 
@@ -1002,6 +1004,61 @@ def test_modified_files_count_with_qualifier_still_blocks():
     assert cand.blocking is True
 
 
+# #12057 -- compte-antecedent. "N unites (M fichiers)" et "M fichiers pointent
+# ici" nomment la PROVENANCE ou la PORTEE d'une mesure, jamais le perimetre de
+# la PR. Meme famille que HIT_ANTECEDENT: mauvaise surface, pas mauvais compte.
+
+
+def test_incidental_paren_antecedent_count_is_signal_not_blocking():
+    """#12057 forme 5: '(2 fichiers)' qualifie la provenance du compte qui
+    precede. Phrase reelle de PR #12054 l.18, qui touche 5 fichiers."""
+    lines = [
+        "**Garde-fou** : 32 prescriptions impératives avant (2 fichiers) → 32 après.",
+        "13 024 → 11 181 octets (2 fichiers sources) après fusion",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"provenance, pas perimetre: {line[:50]}"
+
+
+def test_incidental_reference_verb_count_is_signal_not_blocking():
+    """#12057 forme 6: des referents ENTRANTS ne sont par construction pas
+    dans le diff. Phrase reelle de PR #12056 l.34, qui touche 1 fichier.
+
+    Compter les liens entrants est EXIGE par le protocole de fusion arrete en
+    #12051 -- le garde ne peut pas punir la mesure qu'une regle rend obligatoire.
+    """
+    lines = [
+        "aucune ancre entrante ne casse (27 fichiers pointent ici ; aucun via `#ancre`)",
+        "12 fichiers référencent cette règle",
+        "3 fichiers citent la section §H",
+        "8 fichiers renvoient à ce document",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"referents entrants: {line[:50]}"
+
+
+def test_perimeter_claim_without_numeric_antecedent_still_blocks():
+    """CONTROLE POSITIF #12057. L'exemption parenthetique exige un antecedent
+    NUMERIQUE; sans lui une vraie assertion reste bloquante, parentheses ou pas.
+
+    Un detecteur se valide par ses faux negatifs, pas par ses hits: si ces
+    trois lignes cessaient de bloquer, l'exemption aurait desarme le garde.
+    """
+    lines = [
+        "Périmètre : 2 fichiers twins uniquement",  # exemple du docstring, l.8
+        "Périmètre : 27 fichiers",
+        "Périmètre (2 fichiers)",  # parentheses SANS antecedent numerique
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line]
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is True, f"vraie assertion doit bloquer: {line[:50]}"
+
+
 def test_incidental_zero_count_is_signal_not_blocking():
     """'0 fichier machine-path' is a scrub attestation -- a PR never has
     0 files, the equality confrontation can never pass."""
@@ -1183,3 +1240,198 @@ def test_signal_explanation_authorial_false_assertion_still_blocking():
     assert len(problems) >= 1, "true authorial false assertion stays blocking"
     cand = Candidate("Cette PR touche 1 fichier twin", "PR body", "jsboige", "body")
     assert cand.blocking is True, "must stay blocking -- not demoted to SIGNAL"
+# ---------------------------------------------------------------------------
+# #11985 -- the six out-of-perimeter count forms and the body-level rule.
+# Every test uses the EXACT line measured on the 20/08 corpus (the issue's
+# recipe: "not a paraphrase -- it is the table tube, the passe compose and the
+# word 'generes' that carry the defect").
+# ---------------------------------------------------------------------------
+
+
+def test_11985_form_table_row_is_incidental():
+    """#11964: the tube separates the qualifier from its number -- no cell
+    pairing is a perimeter claim. Extraction already skips rows; this pins
+    the classification for any direct caller."""
+    line = "| Fichiers avec flowchart(s) ASCII | 10 |"
+    assert _count_is_incidental(line) is True
+
+
+def test_11985_form_scan_result_distinct_is_incidental():
+    """#11964: '10 fichiers distincts, chacun avec 1-3 flowcharts' counts what
+    the detector FOUND, not what the PR modifies (real PR: 3 files)."""
+    line = "10 fichiers distincts, chacun avec 1-3 flowcharts."
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_11985_form_past_self_description_is_incidental():
+    """#11790 l.5: an imparfait + commit SHA describes the SUPERSEDED initial
+    PR -- its diffstat (+31502/-80470) measures the old commit, not the head
+    (real PR: 1 file). This rule overrides the diffstat guard."""
+    line = (
+        "Le PR #11790 initial (commit 3b221fa1c) couvrait "
+        "**160 fichiers / +31502/-80470 lignes** :"
+    )
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_11985_past_tense_without_hash_or_pr_ref_still_blocks():
+    """FN control: an imparfait ALONE is not a superseded-revision proof --
+    the closed rule requires a SHA or a #PR ref on the same line."""
+    line = "La version precedente couvrait 3 fichiers."
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_11985_form_inventory_non_notebook_is_incidental():
+    """#11790 l.7/l.64: '155 fichiers non-notebook' inventories the RESTS of
+    the original commit (kind-of-artifact qualifier, like mp3/mathlib)."""
+    line = "- 155 fichiers non-notebook (rules, workflows, scripts, tests, translations)"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_11985_form_counterfactual_is_incidental():
+    """#11963: '> 1 PR composite (15 fichiers / >3000 lignes)' describes the
+    PR that was NOT written. The marker sits BEFORE the count; the line's
+    'lignes' would otherwise trip the diffstat guard."""
+    line = (
+        "3 PRs distinctes (cette PR + 2 a venir) > 1 PR composite "
+        "(15 fichiers / >3000 lignes)."
+    )
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_11985_counterfactual_count_before_marker_still_blocks():
+    """FN control: when the count comes BEFORE the marker it describes the
+    real object ('3 fichiers plutot que 15') and stays authorial."""
+    line = "3 fichiers plutot que 15 fichiers dans une PR composite."
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_11985_form_enumeration_component_is_incidental():
+    """#11935: 'check_twin_parity.py (...) + 2 fichiers de tests' enumerates
+    1 + 2 = 3 (exact); the guard reads the sub-sum 2 and its equality
+    confrontation can never validate it."""
+    line = (
+        "Perimetre:  scripts/notebook_tools/check_twin_parity.py "
+        "(_shas_match + messages CLI) + 2 fichiers de tests"
+    )
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_11985_enumeration_tail_without_named_file_still_blocks():
+    """FN control: the enumeration rule requires a NAMED file before the
+    '+ N fichiers de tests' tail -- a bare tail stays authorial."""
+    line = "2 fichiers de tests modifies"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True
+
+
+def test_11985_form_produced_artifacts_is_incidental():
+    """#11956: '2 fichiers audio generes, HTTP/1.1 200 OK' attests REAL
+    EXECUTION -- the artifacts are cell outputs, not repo files (real PR:
+    5 files). The compound kind sits on the SECOND word after the count."""
+    line = (
+        "- 04-2 c6 : execution reelle via OpenAI TTS "
+        "(2 fichiers audio generes, HTTP/1.1 200 OK)"
+    )
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_11985_form_scan_hit_antecedent_is_incidental():
+    """#11966 l.42: '1 hit / 1 fichier' is a scan residue -- the 'hit'
+    antecedent before the count marks detector output (real PR: 4 files)."""
+    line = (
+        "- **Apres** : 1 hit / 1 fichier (le **21 notebooks** dans la "
+        "conclusion de GT-15b cell#49 -- voir Residuel ci-dessous)."
+    )
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is False
+
+
+def test_11985_issue_positive_control_stays_incidental():
+    """The issue's own control: the three ALREADY-covered forms keep
+    classifying correctly (a BLOQUANT-everywhere would be indistinguishable
+    from a disarmed classifier)."""
+    for line in [
+        "pour rester sous le seuil A de pr-review-discipline.md "
+        "(<=15 fichiers, <=3000 lignes, 1 feature)",
+        "scan sur 73 fichiers",
+        "inventaire : 22 fichiers MP3",
+    ]:
+        assert _count_is_incidental(line) is True, line[:50]
+
+
+def test_11985_rule1_body_correct_count_downgrades_other_mismatches():
+    """#11951: the body declares '3 fichiers / +167/-15' (exact, declarative)
+    AND carries the G.4 atomicity argument '1 helper + 1 modification +
+    1 fichier test adapte' (count 1). The correct declaration reclassifies
+    the OTHER count mismatches of the SAME body from blocking to signal."""
+    body = (
+        "## Summary\n"
+        "- **G.4** : PR atomic (1 helper + 1 modification de fonction "
+        "+ 1 fichier test adapte, 1 bug, 1 discrimination).\n"
+        "- **L978 ★★** : périmètre déclaré en début de body (3 fichiers / +167/-15).\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=3)
+    assert len(candidates) == 2, "both lines stay detected (detection unchanged)"
+    arg = next(c for c in candidates if "helper" in c.text)
+    decl = next(c for c in candidates if "+167/-15" in c.text)
+    # The atomicity argument keeps its line-level blocking property -- the
+    # downgrade lives in the ROUTING, not in blocking.
+    assert arg.blocking is True
+    assert arg.body_declares_effective_count is True
+    assert decl.body_declares_effective_count is True
+    mismatch = check_assertion(
+        [{"path": "a.py"}, {"path": "b.py"}, {"path": "c.py"}], arg.text
+    )[0]
+    assert mismatch.startswith("l'assertion pretend")
+    assert is_downgradable_mismatch(arg, mismatch) is True
+
+
+def test_11985_rule1_never_touches_exclusivity_problems():
+    """FN control (#11268-2): a body that declares the right count still
+    BLOCKS on an exclusivity claim that does not name the touched workflow."""
+    cand = Candidate(
+        "Perimetre : 2 fichiers uniquement, aucune autre modification.",
+        "PR body", "author", "body",
+    )
+    cand.body_declares_effective_count = True
+    problem = (
+        "assertion d'exclusivite sans nommer le workflow touche "
+        ".github/workflows/x.yml (critere #11268-2)"
+    )
+    assert is_downgradable_mismatch(cand, problem) is False
+
+
+def test_11985_rule1_requires_declarative_correct_count():
+    """FN control: an INCIDENTAL count that happens to carry the right number
+    (a scan scope) does not validate a wrong header -- only a DECLARATIVE
+    candidate stating the effective count arms the downgrade."""
+    body = (
+        "## Summary\n"
+        "- Perimetre (1 fichier, source-only)\n"
+        "- scan sur 2 fichiers\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=2)
+    header = next(c for c in candidates if "Perimetre" in c.text)
+    assert header.blocking is True
+    assert header.body_declares_effective_count is False, (
+        "an incidental scan scope must not arm the downgrade"
+    )
