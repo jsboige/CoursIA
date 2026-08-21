@@ -34,7 +34,7 @@ Installation MASTER en 7 parties pour ComfyUI Qwen avec authentification.
 - **État**: success
 - **Hash synchronisé**: True
 - **Token**: `2%=tVJ6@!Nc(7#VTvj-Bh3^nm0WY-L...`
-- **Hash**: `$2b$12$6707ngR1uLGnTOFpgBRZDun...`
+- **Hash**: `[redacted]` (cf. secrets-hygiene regle 2)
 - **Message**: Credentials synchronisés
 
 ### PARTIE 4 : Redémarrage Docker
