@@ -354,3 +354,109 @@ def test_parse_override_malformed_reasons_distinct():
     assert "manquant" in r_missing["malformed"]
     assert "meme ligne" in r_offline["malformed"]
     assert "n'est pas un genre" in r_shape["malformed"]
+
+
+# --- merged-sequence predecessor (#12095) ----------------------------------
+#
+# G-VAR-3 adjacency is a property of the MERGED sequence, which moves while a
+# PR sits open. The `prev:` field is frozen at open time, so a PR acquires a
+# false violation purely by aging. These cases pin BOTH directions from issue
+# #11963 -- the false positive (declared guard, real predecessor
+# notebook-python -> pass) and the symmetric false negative (declared
+# notebook-python, real predecessor guard -> still blocks) -- plus the
+# no-merged-PR fallback and the other-lane isolation.
+
+_MERGED_LANE = "myia-po-2024:CoursIA-2"
+
+# The #11963 shape: `prev: MED/guard #11841` was exact at redaction
+# (2026-08-20T08:27Z), but the lane merged four grains since, the last being
+# notebook-python. The declared field says `guard`, the real predecessor is
+# `notebook-python` -- the gate must not block a PR the rule never aimed at.
+_MERGED_11963 = [
+    {"number": 12025, "mergedAt": "2026-08-20T23:30:00Z",
+     "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #1"},
+    {"number": 12022, "mergedAt": "2026-08-21T03:16:00Z",
+     "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #2"},
+    {"number": 12059, "mergedAt": "2026-08-21T03:17:00Z",
+     "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #3"},
+    {"number": 12063, "mergedAt": "2026-08-21T04:25:00Z",
+     "body": "Grain: LIGHT/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #4"},
+]
+
+
+def test_resolve_merged_prev_genre_picks_last_lane_pr():
+    mp = vag.resolve_merged_prev_genre(_MERGED_11963, _MERGED_LANE)
+    assert mp == ("notebook-python", 12063)
+
+
+def test_resolve_skips_other_lanes_and_untagged():
+    merged = _MERGED_11963 + [
+        {"number": 12100, "mergedAt": "2026-08-21T05:00:00Z",
+         "body": "Grain: LIGHT/guard -- lane myia-po-2023:CoursIA -- prev: MED/tooling #5"},
+        {"number": 12101, "mergedAt": "2026-08-21T05:30:00Z",
+         "body": "No Grain tag here."},
+    ]
+    mp = vag.resolve_merged_prev_genre(merged, _MERGED_LANE)
+    assert mp == ("notebook-python", 12063)
+
+
+def test_11963_declared_guard_merged_notebook_python_passes():
+    # The issue's measured case: the declared `prev: MED/guard #11841` was
+    # exact at redaction, but the real predecessor from the merged sequence is
+    # notebook-python. The gate must PASS -- this is the false positive #12095
+    # fixes (a PR blocked by the passage of time, not by its own genre).
+    body = ("Grain: MED/guard -- lane myia-po-2024:CoursIA-2 -- "
+            "prev: MED/guard #11841")
+    v = vag.check(body, merged_prev=vag.resolve_merged_prev_genre(
+        _MERGED_11963, _MERGED_LANE))
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["prev_genre"] == "notebook-python"
+    assert v["prev_source"] == "merged-sequence"
+    assert v["prev_pr"] == 12063
+    assert v["declared_prev_genre"] == "guard"
+
+
+def test_symmetric_false_negative_still_blocks():
+    # Positive control (same invocation): the lane REALLY merged a guard last.
+    # Even if the declared prev announces a different genre, the gate must
+    # still block -- the symmetric false negative the issue names.
+    body = ("Grain: MED/guard -- lane myia-po-2024:CoursIA-2 -- "
+            "prev: MED/notebook-python #12063")
+    merged = [
+        {"number": 12025, "mergedAt": "2026-08-20T23:30:00Z",
+         "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #1"},
+        {"number": 12063, "mergedAt": "2026-08-21T04:25:00Z",
+         "body": "Grain: LIGHT/guard -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #2"},
+    ]
+    v = vag.check(body, merged_prev=vag.resolve_merged_prev_genre(merged, _MERGED_LANE))
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["prev_genre"] == "guard"
+    assert v["prev_source"] == "merged-sequence"
+
+
+def test_no_merged_pr_falls_back_to_declared():
+    # A lane with no merged grain has no merged sequence to consult: the gate
+    # falls back to the declared `prev:` (the pre-#12095 behaviour), no crash,
+    # and the verdict is honest about the source.
+    v = vag.check(_BLOCKED, merged_prev=vag.resolve_merged_prev_genre([], "myia-po-2026:CoursIA"))
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["prev_source"] == "declared"
+    # A declaring-different-genre case passes too, same fallback.
+    v2 = vag.check(
+        "Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- prev: MED/tooling #12063",
+        merged_prev=vag.resolve_merged_prev_genre(None, "myia-po-2026:CoursIA"))
+    assert v2["guard_pass"] is True
+    assert v2["prev_source"] == "declared"
+
+
+def test_merged_sequence_other_lane_ignored():
+    # A merged PR from ANOTHER lane must not become this lane's predecessor.
+    merged = [
+        {"number": 12025, "mergedAt": "2026-08-20T23:30:00Z",
+         "body": "Grain: LIGHT/guard -- lane myia-po-2023:CoursIA -- prev: MED/tooling #1"},
+    ]
+    mp = vag.resolve_merged_prev_genre(merged, "myia-po-2026:CoursIA")
+    assert mp == (None, None)
