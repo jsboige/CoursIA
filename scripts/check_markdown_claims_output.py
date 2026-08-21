@@ -151,6 +151,22 @@ def _output_text(outputs: list) -> str:
     return "\n".join(chunks)
 
 
+def _normalize_output_text(out_text: str) -> str:
+    """Rewrite comma-formatted numbers in an output text to their _normalize_num
+    form (#12076): francophone decimal commas ('1,8260' -> '1.8260') and
+    anglophone thousands ('3,145,728' -> '3145.728') -- the same heuristic the
+    CITED token already goes through. Used for the direct search only: a claim
+    normalized to '1.8260' used to be searched against the RAW output ('1,8260')
+    and only survived through the fuzzy fallback, whose clause (c) caps the
+    magnitude run at 12 digits -- making the verdict depend on how many digits
+    happen to follow in the same output."""
+    return re.sub(
+        r"(?<![A-Za-z0-9])\d+(?:,\d+)+(?![A-Za-z0-9])",
+        lambda m: _normalize_num(m.group(0)),
+        out_text,
+    )
+
+
 def _lit_skip(source: str) -> bool:
     """Tell: a markdown cell is a literature block (long prose) vs a quantitative
     interpolation cell. We DON'T skip on length alone: c.290 pathologie sat in
@@ -381,7 +397,11 @@ def check_notebook(path: Path) -> dict:
         if not any_output:
             skipped_no_output += 1
             continue
-        out_text = "\n".join(out_chunks)
+        raw_out_text = "\n".join(out_chunks)
+        # #12076: the direct search compares normalized claim vs normalized
+        # output; the fuzzy fallback keeps the RAW text (its comma-gate, clause
+        # (c), reads large-number signals from the commas themselves).
+        out_text = _normalize_output_text(raw_out_text)
         # Extract numeric claims from the markdown prose. We iterate via
         # finditer so we get (span_start, span_end, raw) for each match
         # -- this is needed for the version-token and inline-code-span
@@ -401,7 +421,7 @@ def check_notebook(path: Path) -> dict:
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
-            if norm not in out_text and not _fuzzy_present(norm, out_text):
+            if norm not in out_text and not _fuzzy_present(norm, raw_out_text):
                 findings.append({
                     "markdown_cell": idx,
                     "code_cell": prev_code_idxs[0],
