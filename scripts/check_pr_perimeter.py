@@ -273,6 +273,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     # is the FINDING raised in review of #11730 (#11735): the fence mask fixed
     # WHERE we scan, this fixes WHICH count we scan for. Both are needed.
     scan_target = _fence_mask(assertion)
+    word_count = _word_form_count(scan_target)
     count_claim = next(
         (mm for mm in COUNT_CLAIM.finditer(scan_target) if int(mm.group(1)) != 0),
         None,
@@ -292,6 +293,17 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                     f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
                     + ", ".join(f["path"] for f in files)
                 )
+    elif word_count is not None and word_count != len(files):
+        # #12092: word-form cardinal ("trois fichiers"). COUNT_WORDS exists
+        # since #12024 and gates extract (the word form enters candidates)
+        # but check_assertion only read COUNT_CLAIM (digits): the word line
+        # reached the terminal "unverifiable" branch despite being a true
+        # perimeter claim. Read the same closed list, same first-non-zero
+        # rule. FR cardinals are unique 1-10 (no false twin like EN "six").
+        problems.append(
+            f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
+            + ", ".join(f["path"] for f in files)
+        )
     exclusive = _has_exclusivity(scan_target.lower())
     if exclusive:
         for f in files:
@@ -302,7 +314,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                         f"assertion d'exclusivite sans nommer le workflow touche {f['path']} "
                         "(critere #11268-2 : tout .github/workflows/** doit etre enumere nommement)"
                     )
-    if not count_claim and not exclusive:
+    if not count_claim and word_count is None and not exclusive:
         problems.append(
             "assertion sans compte de fichiers ni marqueur d'exclusivite reconnaissable -- "
             "formulation non verifiable (ecrire par ex. 'N fichiers : a, b, c')"
@@ -525,6 +537,19 @@ def _additive_line_sum(line: str) -> int:
         for m in COUNT_CLAIM.finditer(line)
         if not _count_is_exempt(line, m)
     )
+
+
+def _word_form_count(text: str) -> int | None:
+    """#12092: first spelled-out cardinal followed by fichiers/files (closed
+    list COUNT_WORDS, FR/EN 1-10). None when the line carries no word-form
+    count -- mirror of COUNT_CLAIM for the word shape. Reuses the exact
+    trigger pattern of extract_perimeter_assertions (~L829) so both halves
+    of the organ agree on what a word count is."""
+    low = text.lower()
+    for word, n in COUNT_WORDS.items():
+        if re.search(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b", low):
+            return n
+    return None
 
 
 def _count_is_incidental(line: str) -> bool:

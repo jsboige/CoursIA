@@ -1676,3 +1676,44 @@ def test_additive_enumeration_zero_count_not_summed():
     sum (0 + 2 = 2 == len). Behavior preserved."""
     files = [{"path": "a.py"}, {"path": "b.py"}]
     assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []
+
+
+# ---------------------------------------------------------------------------
+# #12092 -- word-form cardinal: "trois fichiers" == "3 fichiers". COUNT_WORDS
+# gated extract since #12024 (the word form enters candidates) but
+# check_assertion only read COUNT_CLAIM (digits): the word line fell into the
+# terminal "unverifiable" branch. The invariant violated: same file list, same
+# phrase, only the number SHAPE changes -> same verdict required.
+# ---------------------------------------------------------------------------
+
+
+def test_word_form_and_digit_form_same_verdict():
+    """#12092 invariant: 'trois fichiers' and '3 fichiers' over the same
+    3-file list must both pass (PASS)."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    word = check_assertion(files, "**trois fichiers** (142/32 lignes, tests inclus):")
+    digit = check_assertion(files, "**3 fichiers** (142/32 lignes, tests inclus):")
+    assert word == digit == [], (
+        f"word and digit forms must agree; word={word!r} digit={digit!r}"
+    )
+
+
+def test_word_form_wrong_count_still_fails():
+    """#12092 negative: a word cardinal that does not match len(files) must
+    fail, exactly like its digit twin."""
+    files = [{"path": "a"}, {"path": "b"}]
+    assert check_assertion(files, "**trois fichiers** :") != []
+    assert check_assertion(files, "**3 fichiers** :") != []
+
+
+def test_word_form_english_three_files():
+    """#12092 EN twin: 'three files' over 3 files passes."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    assert check_assertion(files, "**three files** (tests included):") == []
+
+
+def test_word_form_not_recognized_absent_files_referent():
+    """#12092 FN guard: a bare word cardinal without the fichiers/files
+    referent stays unverifiable (not silently accepted)."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    assert check_assertion(files, "**trois** modifications:") != []
