@@ -161,7 +161,7 @@ class GenAIAuthManager:
             except OSError:
                 pass
                 
-            logger.info("Configuration sauvegardee: %s", self.config_file)
+            logger.info("Configuration sauvegardee : comfyui_auth_tokens.conf")
             return True
 
         except Exception as e:
