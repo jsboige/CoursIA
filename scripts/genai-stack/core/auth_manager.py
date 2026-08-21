@@ -161,7 +161,7 @@ class GenAIAuthManager:
             except OSError:
                 pass
                 
-            logger.info("Configuration sauvegardee: %s", self.config_file)
+            logger.info("Configuration sauvegardee: %s", self.config_file.name)
             return True
 
         except Exception as e:

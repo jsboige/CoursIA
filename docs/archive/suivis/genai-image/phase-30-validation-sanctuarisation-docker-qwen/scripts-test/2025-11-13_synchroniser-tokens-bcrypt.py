@@ -34,7 +34,7 @@ def main():
         with open(env_generated_file, 'r') as f:
             content = f.read().strip()
             token_brut = content.split('=')[1] if '=' in content else content
-        print(f"🔑 Token brut lu : {token_brut}")
+        print("🔑 Token brut lu : configuré" if token_brut else "🔑 Token brut lu : MANQUANT")
     except Exception as e:
         print(f"❌ Erreur lecture token brut : {e}")
         return False
@@ -46,7 +46,7 @@ def main():
         salt = bcrypt.gensalt()
         hash_bcrypt = bcrypt.hashpw(token_brut.encode('utf-8'), salt)
         hash_str = hash_bcrypt.decode('utf-8')
-        print(f"✅ Hash généré : {hash_str}")
+        print("✅ Hash généré : configuré" if hash_str else "✅ Hash généré : MANQUANT")
     except Exception as e:
         print(f"❌ Erreur génération hash : {e}")
         return False
@@ -85,7 +85,7 @@ def main():
     try:
         with open(token_file, 'w') as f:
             f.write(hash_str)
-        print(f"✅ Fichier serveur mis à jour : {token_file}")
+        print(f"✅ Fichier serveur mis à jour : {token_file.name}")
     except Exception as e:
         print(f"❌ Erreur mise à jour serveur : {e}")
         return False
@@ -116,8 +116,6 @@ def main():
     print()
     print("📋 RÉSUMÉ DES MODIFICATIONS")
     print("=" * 40)
-    print(f"🔑 Token brut (inchangé) : {token_brut}")
-    print(f"🔐 Nouveau hash bcrypt : {hash_str}")
     print(f"📄 Fichier serveur : {token_file}")
     print(f"🐳 Configuration Docker : {docker_env_file}")
     print(f"📄 Fichier token brut : {env_generated_file} (inchangé)")

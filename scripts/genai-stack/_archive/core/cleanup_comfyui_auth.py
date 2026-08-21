@@ -114,7 +114,7 @@ class CleanupManager:
                 # Backup avant suppression
                 backup_path = config_path.with_suffix(f".backup.{int(time.time())}")
                 shutil.copy2(config_path, backup_path)
-                logger.info(f"Backup créé: {backup_path}")
+                logger.info("Backup créé: %s", backup_path.name)
                 
                 config_path.unlink()
                 logger.info("✅ Configuration des tokens supprimée")
