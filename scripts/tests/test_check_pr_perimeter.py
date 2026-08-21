@@ -1623,3 +1623,97 @@ def test_12024_real_body_fragment_does_not_enter_candidates():
         f"body fragment that reproduces the founder FAIL lines must yield "
         f"0 candidates under the codespan-exclusion fix; got {found!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# #12103 -- additive enumeration: "1 fichier modifie, 1 fichier ajoute" =
+# 2 files. The guard read the first non-zero count (1) and could never
+# validate a 2-file PR. Fix: confront the SUM of the counts surviving the
+# per-count filters. Safe by construction (a FAIL becomes a PASS only when
+# the sum is exactly len(files)).
+# ---------------------------------------------------------------------------
+
+
+def test_additive_enumeration_one_plus_one_passes():
+    """Positif -- '1 fichier modifie, 1 fichier ajoute' over a 2-file PR."""
+    files = [{"path": "slides/S3-acculturation/slides.md"},
+             {"path": "slides/S3-acculturation/images/img_robot_extracted.png"}]
+    assert check_assertion(
+        files,
+        "**1 fichier modifie, 1 fichier ajoute** :",
+    ) == []
+
+
+def test_additive_enumeration_two_plus_three_passes():
+    """Positif -- '2 fichiers modifies, 3 fichiers ajoutes' over 5 files."""
+    files = [{"path": f"a{i}.py"} for i in range(5)]
+    assert check_assertion(files, "2 fichiers modifies, 3 fichiers ajoutes.") == []
+
+
+def test_additive_enumeration_wrong_sum_still_fails():
+    """Negatif -- '1 + 1' declared over 3 files: the sum (2) does not match."""
+    files = [{"path": f"a{i}.py"} for i in range(3)]
+    assert check_assertion(
+        files, "1 fichier modifie, 1 fichier ajoute.",
+    ) != []
+
+
+def test_additive_enumeration_negated_diff_not_summed():
+    """Non-regression #11800 -- '5 fichiers modifies, 91 fichiers inchanges'
+    over 5 files: the negated-diff count (91) must NOT join the sum. If it
+    did, 5 + 91 = 96 != 5 and the line would fail. The guard passes on the
+    5-files half exactly as before."""
+    files = [{"path": f"a{i}.py"} for i in range(5)]
+    assert check_assertion(
+        files,
+        "5 fichiers modifies, 91 fichiers inchanges -- scope delta confirme",
+    ) == []
+
+
+def test_additive_enumeration_zero_count_not_summed():
+    """Non-regression #11735 -- '0 fichier catalogue, 2 fichiers touches'
+    over 2 files: the zero is a property attestation, only the 2 joins the
+    sum (0 + 2 = 2 == len). Behavior preserved."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []
+
+
+# ---------------------------------------------------------------------------
+# #12092 -- word-form cardinal: "trois fichiers" == "3 fichiers". COUNT_WORDS
+# gated extract since #12024 (the word form enters candidates) but
+# check_assertion only read COUNT_CLAIM (digits): the word line fell into the
+# terminal "unverifiable" branch. The invariant violated: same file list, same
+# phrase, only the number SHAPE changes -> same verdict required.
+# ---------------------------------------------------------------------------
+
+
+def test_word_form_and_digit_form_same_verdict():
+    """#12092 invariant: 'trois fichiers' and '3 fichiers' over the same
+    3-file list must both pass (PASS)."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    word = check_assertion(files, "**trois fichiers** (142/32 lignes, tests inclus):")
+    digit = check_assertion(files, "**3 fichiers** (142/32 lignes, tests inclus):")
+    assert word == digit == [], (
+        f"word and digit forms must agree; word={word!r} digit={digit!r}"
+    )
+
+
+def test_word_form_wrong_count_still_fails():
+    """#12092 negative: a word cardinal that does not match len(files) must
+    fail, exactly like its digit twin."""
+    files = [{"path": "a"}, {"path": "b"}]
+    assert check_assertion(files, "**trois fichiers** :") != []
+    assert check_assertion(files, "**3 fichiers** :") != []
+
+
+def test_word_form_english_three_files():
+    """#12092 EN twin: 'three files' over 3 files passes."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    assert check_assertion(files, "**three files** (tests included):") == []
+
+
+def test_word_form_not_recognized_absent_files_referent():
+    """#12092 FN guard: a bare word cardinal without the fichiers/files
+    referent stays unverifiable (not silently accepted)."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    assert check_assertion(files, "**trois** modifications:") != []
