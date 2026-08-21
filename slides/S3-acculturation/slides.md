@@ -443,8 +443,8 @@ layout: two-cols
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_030.png" class="max-h-[300px] max-w-full object-contain" />
 <img src="./images/img_031.png" class="max-h-[300px] max-w-full object-contain" />
-<img src="./images/img_032.png" class="max-h-[300px] max-w-full object-contain" alt="Recuit simulé" />
-<img src="./images/img_033.png" class="max-h-[300px] max-w-full object-contain" alt="Algorithmes génétiques" />
+<img src="./images/img_032.png" class="max-h-[300px] max-w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
+<img src="./images/img_033.png" class="max-h-[300px] max-w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
 </div>
 
 
