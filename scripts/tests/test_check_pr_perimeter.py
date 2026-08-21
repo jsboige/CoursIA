@@ -1004,6 +1004,61 @@ def test_modified_files_count_with_qualifier_still_blocks():
     assert cand.blocking is True
 
 
+# #12057 -- compte-antecedent. "N unites (M fichiers)" et "M fichiers pointent
+# ici" nomment la PROVENANCE ou la PORTEE d'une mesure, jamais le perimetre de
+# la PR. Meme famille que HIT_ANTECEDENT: mauvaise surface, pas mauvais compte.
+
+
+def test_incidental_paren_antecedent_count_is_signal_not_blocking():
+    """#12057 forme 5: '(2 fichiers)' qualifie la provenance du compte qui
+    precede. Phrase reelle de PR #12054 l.18, qui touche 5 fichiers."""
+    lines = [
+        "**Garde-fou** : 32 prescriptions impératives avant (2 fichiers) → 32 après.",
+        "13 024 → 11 181 octets (2 fichiers sources) après fusion",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"provenance, pas perimetre: {line[:50]}"
+
+
+def test_incidental_reference_verb_count_is_signal_not_blocking():
+    """#12057 forme 6: des referents ENTRANTS ne sont par construction pas
+    dans le diff. Phrase reelle de PR #12056 l.34, qui touche 1 fichier.
+
+    Compter les liens entrants est EXIGE par le protocole de fusion arrete en
+    #12051 -- le garde ne peut pas punir la mesure qu'une regle rend obligatoire.
+    """
+    lines = [
+        "aucune ancre entrante ne casse (27 fichiers pointent ici ; aucun via `#ancre`)",
+        "12 fichiers référencent cette règle",
+        "3 fichiers citent la section §H",
+        "8 fichiers renvoient à ce document",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"referents entrants: {line[:50]}"
+
+
+def test_perimeter_claim_without_numeric_antecedent_still_blocks():
+    """CONTROLE POSITIF #12057. L'exemption parenthetique exige un antecedent
+    NUMERIQUE; sans lui une vraie assertion reste bloquante, parentheses ou pas.
+
+    Un detecteur se valide par ses faux negatifs, pas par ses hits: si ces
+    trois lignes cessaient de bloquer, l'exemption aurait desarme le garde.
+    """
+    lines = [
+        "Périmètre : 2 fichiers twins uniquement",  # exemple du docstring, l.8
+        "Périmètre : 27 fichiers",
+        "Périmètre (2 fichiers)",  # parentheses SANS antecedent numerique
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line]
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is True, f"vraie assertion doit bloquer: {line[:50]}"
+
+
 def test_incidental_zero_count_is_signal_not_blocking():
     """'0 fichier machine-path' is a scrub attestation -- a PR never has
     0 files, the equality confrontation can never pass."""

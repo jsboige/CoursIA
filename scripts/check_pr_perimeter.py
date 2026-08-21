@@ -395,6 +395,26 @@ NAMED_FILE = re.compile(
 # hit / 1 fichier") counts what the detector FOUND, not what the PR modifies
 # (#11966 l.42).
 HIT_ANTECEDENT = re.compile(r"\b\d+\s*hits?\b", re.IGNORECASE)
+# Forme 5, compte-antecedent parenthetique: "<N> <unites> (<M> fichiers)" --
+# le compte entre parentheses qualifie la PROVENANCE du nombre qui precede
+# ("32 prescriptions avant (2 fichiers) -> 32 apres"), jamais le perimetre de
+# la PR (#12057). Meme famille que HIT_ANTECEDENT: mauvaise surface, pas
+# mauvais compte.
+#
+# L'antecedent NUMERIQUE est ce qui borne l'exemption. Sans lui, la simple
+# presence de parentheses suffirait et "Perimetre (2 fichiers)" -- une vraie
+# assertion -- passerait. C'est le controle positif de #12057.
+PAREN_ANTECEDENT_NUM = re.compile(r"\d")
+# Forme 6, verbe de reference: "N fichiers pointent ici / referencent / citent"
+# -- le compte porte sur des REFERENTS ENTRANTS, qui par construction ne sont
+# pas dans le diff. Compter les liens entrants est EXIGE par le protocole de
+# fusion arrete en #12051; le garde ne peut pas punir la mesure que le
+# protocole rend obligatoire (#12057).
+REFERENCE_VERB_TAIL = re.compile(
+    r"^\s*(?:pointent|pointe|r[ée]f[ée]rencent|r[ée]f[ée]rence|citent|cite|"
+    r"renvoient|renvoie|mentionnent|mentionne|link|links|reference|references)\b",
+    re.IGNORECASE,
+)
 # Formes 2-4, two-word qualifier window: artifact kinds and enumeration tails
 # are often compound ("fichiers audio generes", "fichiers de tests", "fichier
 # test adapte") -- the closed list matches the first OR second word after the
@@ -485,6 +505,19 @@ def _count_is_incidental(line: str) -> bool:
         # #11985 forme 4: a scan antecedent ("1 hit / 1 fichier") -- the count
         # is what the detector found, not what the PR modifies (#11966).
         if HIT_ANTECEDENT.search(line[: m.start()]):
+            continue
+        # #12057 forme 6: verbe de reference -- "27 fichiers pointent ici"
+        # compte des referents ENTRANTS, hors diff par construction.
+        if REFERENCE_VERB_TAIL.match(after):
+            continue
+        # #12057 forme 5: compte-antecedent parenthetique -- le compte est
+        # entoure de parentheses ET precede d'un antecedent numerique sur la
+        # meme ligne ("32 avant (2 fichiers) -> 32 apres"). L'antecedent
+        # numerique est obligatoire: il laisse "Perimetre (2 fichiers)" et
+        # "Perimetre : 2 fichiers twins uniquement" bloquants.
+        if (before.endswith("(")
+                and after.lstrip().startswith(")")
+                and PAREN_ANTECEDENT_NUM.search(before[:-1])):
             continue
         # #11985 formes 2-3: compound qualifier window -- the kind or the
         # enumeration tail can sit on the SECOND word after the count
