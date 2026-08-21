@@ -85,7 +85,7 @@ def main():
     try:
         with open(token_file, 'w') as f:
             f.write(hash_str)
-        print(f"✅ Fichier serveur mis à jour : {token_file.name}")
+        print("✅ Fichier serveur mis à jour : qwen-api-user.token")
     except Exception as e:
         print(f"❌ Erreur mise à jour serveur : {e}")
         return False

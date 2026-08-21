@@ -112,9 +112,10 @@ class CleanupManager:
         if config_path.exists():
             try:
                 # Backup avant suppression
-                backup_path = config_path.with_suffix(f".backup.{int(time.time())}")
+                backup_suffix = f".backup.{int(time.time())}"
+                backup_path = config_path.with_suffix(backup_suffix)
                 shutil.copy2(config_path, backup_path)
-                logger.info("Backup créé: %s", backup_path.name)
+                logger.info("Backup créé: comfyui_auth_tokens.conf%s", backup_suffix)
                 
                 config_path.unlink()
                 logger.info("✅ Configuration des tokens supprimée")
