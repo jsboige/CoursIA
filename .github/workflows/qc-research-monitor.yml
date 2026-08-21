@@ -1,0 +1,56 @@
+name: QC research monitor
+
+# Epic #11698 — detection hebdo des nouveaux articles quantconnect.com/research/
+# et semis des sous-issues labellees quantconnect-research pour lecture analytique.
+# Source : research.posts.sitemap.xml (statique). Bootstrap deja fait a la livraison
+# (144 IDs amortces dans docs/qc/qc-research-seeded.json, 0 issue) : ce cron ne couvre
+# que le flux NOUVEAU, cap 5 issues/run. Les ~143 articles pre-existants restent
+# semables a la demande par ai-01/workers (gh issue create manuel ou --max-issues eleve).
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"  # lundi 04:23 UTC (off-:00/:30), rythme ~1 article/semaine
+  workflow_dispatch:
+    inputs:
+      max_issues:
+        description: "Cap de sous-issues creees ce run (defaut 5)"
+        required: false
+        default: "5"
+
+permissions:
+  issues: write
+  contents: write
+
+concurrency:
+  group: qc-research-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Detect new research articles and seed sub-issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          MAX="${{ github.event.inputs.max_issues || '5' }}"
+          python scripts/notebook_tools/qc_research_monitor.py --max-issues "$MAX"
+
+      - name: Commit updated seed state
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/qc/qc-research-seeded.json
+          if git diff --cached --quiet; then
+            echo "etat inchange, rien a committer"
+          else
+            git commit -m "chore(qc-research,#11698): etat semis monitor [skip ci]"
+            git push
+          fi

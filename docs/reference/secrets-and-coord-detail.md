@@ -84,6 +84,19 @@ La cause tombe dans l'un de TROIS cas (le scanner ne les distingue PAS — c'est
 
 ---
 
+
+### 1.7 Pourquoi le numero de version gitleaks ne se recopie pas — incident #10143 (2026-08-10)
+
+> Deporte de `.claude/rules/secrets-hygiene.md` le 2026-08-21 (issue #12051). La **prescription** reste dans
+> la rule ; ce qui suit est la justification datee qui l'explique.
+
+La ligne de la rule a porte `v8.21.2` longtemps apres que les deux surfaces reelles soient passees a
+**8.24.3** (`.pre-commit-config.yaml` `rev:` et `GITLEAKS_VERSION:` dans le workflow, que le workflow compare
+lui-meme et fait echouer en cas de drift). Consequence mesuree le 2026-08-10 sur #10143 : un scan lance sous
+8.21.2 en le croyant « la version epinglee » a renvoye **0 finding** la ou 8.24.3 en trouvait **37** deux
+jours plus tot — dont, a l'epoque, ~7 credentials reellement fuites. Un scan sous un binaire different n'est
+pas une mesure de ce que la CI applique : c'est une mesure d'autre chose, et elle **paraissait rassurante**.
+
 ## 2. Coordinator discipline (ai-01)
 
 ### 2.1 Merge actif (directement sous `myia-ai-01`)
@@ -191,3 +204,45 @@ Les 4 mecanismes correctifs (chaque cycle, par lane) :
    - **(b) DIVERSITE DU BACKLOG EN SOUFFRANCE** (mandat 2026-06-26, cf [[diversity-backlog-aged-issues]]) : dizaines d'issues anciennes/priority-low/EPICs partiels a **avancer au compte-goutte** (#16, #417, #569, #1206, #1210, #2137, #3436…). **Piocher une tranche concrete par cycle** (pas l'EPIC entier), **varier genres ET familles**, ne JAMAIS tunneliser. Grounder firsthand avant de dispatcher.
 
 **Tell d'auto-detection** (avant de poster un steer) : « (a) ce grain est-il verifie OPEN/non-sature firsthand a l'instant ? (b) la decision atteint-elle l'inbox du worker ? (c) ai-je tranche, ou defere ? ». Trois oui requis. Sinon = phantom, le worker idlera.
+
+
+## 3. Secrets via RooSync — recits et justification datee
+
+> Deporte de `.claude/rules/secrets-roosync-policy.md` le 2026-08-21 (issue #12051, slimming vague 2),
+> quand cette rule a ete fusionnee dans [`.claude/rules/secrets-hygiene.md`](../../.claude/rules/secrets-hygiene.md).
+> **Les prescriptions n'ont PAS ete deportees** : elles vivent toutes dans `secrets-hygiene.md`, section
+> « Transmission d'un secret — canal RooSync prive ». Ce qui suit est du recit d'incident et de la
+> justification datee — le contexte qui explique *pourquoi* ces regles existent, pas les regles elles-memes.
+
+### 3.1 Provenance & honnetete (note d'audit)
+
+**Statut de la decision** : ACTIVE. Decision user 2026-07-02, **reaffirmee en session directe 2026-07-03**.
+
+La decision de lever l'interdit (2026-07-02) est corroboree par deux sources contemporaines : le message de
+challenge de po-2023 (`msg-20260702T115323-dzxy6q`, qui rapporte firsthand « le user a defendu l'usage ») et
+la reponse ai-01 (`msg-20260702T120049-p79z01`). Une version anterieure de cette policy citait un « verbatim
+user » horodate avec une precision que ai-01 **ne peut pas attester** (aucune memoire cross-session +
+incoherence d'horodatage) ; ce faux-verbatim a ete **retire**. La decision reste valide — elle est reaffirmee
+par le user en session directe le 2026-07-03.
+
+### 3.2 Incident fondateur de la clause anti-stonewall — blocage Kokoro/OWUI 2026-07-02→03
+
+Incident fondateur de la clause anti-stonewall : blocage Kokoro/OWUI 2026-07-02→03. La regle absolue
+« JAMAIS secrets via RooSync » + une clause d'abus « user override = refuser » avaient ete empilees de sorte
+qu'un worker pouvait refuser indefiniment un relais pourtant legitime. La regle absolue est **levee** ; la
+clause d'abus **retiree** ; seul subsiste le noyau conserve dans `secrets-hygiene.md` (escalade rapide au
+user, pas de stonewall).
+
+### 3.3 Incident fondateur du quorum de contreseing — 2026-07-14
+
+**Incident fondateur 2026-07-14** : ai-01 (provision + HTTP 200) + po-2023 (corrobore `master.env` present +
+HTTP 200) + po-2026 (provision + HTTP 200) = initiateur + 2 contreseings = **quorum deja atteint**. po-2024 a
+gate sur le user — defendable sous l'ancienne regle (« relais non verifiable »), mais le contreseing-quorum
+remplace ce gate : sur 2 contreseings firsthand, l'agent ecrit. Le user a tranche en interactif (« circulez
+les cles, avec prudence mais de facon determinee ») **et** pose ce mecanisme.
+
+### 3.4 Sources historiques
+
+- Incident 2026-06-02 (`feedback_no_secrets_roosync.md`, memory) : la vraie lecon = « utiliser `master.env`
+  quand il couvre la cible », **pas** « jamais RooSync ».
+- Pipeline `master.env` : `secrets-centralized-management-3160.md` (memory).

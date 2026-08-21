@@ -27,7 +27,7 @@ docker compose -f docker-configurations/services/<svc>/docker-compose.yml restar
 
 **Spécificité Qdrant (cross-repo) :** la compose Qdrant vit dans `roo-extensions` (autre repo), pas CoursIA. Le côté **client** (`QDRANT_API_KEY`, notebooks CoursIA) est centralisé dans `master.env` via `SECRET_KEYS` → rotation auto côté notebooks. Le côté **serveur** (`QDRANT__SERVICE__API_KEY`, double underscore) reste une op manuelle inter-repo sur `roo-extensions` (même valeur que le client). Détail convention client/serveur : [docs/genai/secrets-management.md](../docs/genai/secrets-management.md).
 
-**Mots de passe par instance** (`COMFYUI_PASSWORD`, `FORGE_PASSWORD`, `WHISPER_*_PASSWORD`) NE sont PAS centralisés (un par container) — leur drift est prévenu par la règle du restart + self-check entrypoint, pas par render. Cf [docs/genai/secrets-management.md](../docs/genai/secrets-management.md).
+**Mots de passe par instance** (`COMFYUI_PASSWORD` comfyui-qwen, `FORGE_PASSWORD`, `WHISPER_*_PASSWORD`) NE sont PAS centralisés (un par container) — leur drift est prévenu par la règle du restart + self-check entrypoint, pas par render. **Exception #10985 (décision user 2026-08-20)** : le mot de passe ComfyUI-Video est centralisé dans `master.env` sous le nom instance-scopé `COMFYUI_VIDEO_PASSWORD` (le compose le mappe vers l'env conteneur `COMFYUI_PASSWORD`) ; le nom homonyme nu reste interdit dans `SECRET_KEYS` (conflit dur avec la valeur par instance de comfyui-qwen). Cf [docs/genai/secrets-management.md](../docs/genai/secrets-management.md).
 
 ## Executive Summary
 

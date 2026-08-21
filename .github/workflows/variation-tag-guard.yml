@@ -784,7 +784,7 @@ jobs:
   # `is_advisory()` classifier in `scripts/pr_gate.py` does NOT silence it.
   check-variation-adjacency-required:
     if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
-    name: 'Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
+    name: 'Require genre diversity vs prev (required, block on LIGHT adjacency, #11170)'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the adjacency helper (sparse)
@@ -912,7 +912,7 @@ jobs:
   # les commentaires du bot (github-actions[bot]) ne redeclenchent rien.
   # Les commentaires d'ISSUE (hors PR) sont filtres au niveau du job.
   check-variation-adjacency-comment:
-    name: 'Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
+    name: 'Require genre diversity vs prev (comment, block on LIGHT adjacency, #11170)'
     # #11782 : garde d'entree sur la presence du marqueur. Un if: de job est
     # evalue SANS allouer de runner -- un commentaire sans [G-VAR-3 OVERRIDE]
     # ne coute rien du tout. Sans lui, chaque commentaire de PR (steer, ACK,

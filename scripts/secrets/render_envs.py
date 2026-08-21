@@ -154,6 +154,13 @@ SECRET_KEYS: frozenset[str] = frozenset({
     "OWUI_API_KEY", "TTS_GATEWAY_API_KEY",
     # ComfyUI client tokens (notebook client <-> service must agree)
     "COMFYUI_VIDEO_TOKEN", "COMFYUI_API_TOKEN",
+    # ComfyUI-Video web login password (user decision #10985, 2026-08-20):
+    # centralized in master.env under an INSTANCE-SCOPED name -- plain
+    # COMFYUI_PASSWORD must NOT enter SECRET_KEYS because comfyui-qwen carries
+    # a legitimately different per-instance value (bootstrap would flag a hard
+    # same-priority conflict). The compose maps master's
+    # COMFYUI_VIDEO_PASSWORD -> container env COMFYUI_PASSWORD.
+    "COMFYUI_VIDEO_PASSWORD",
     # Qwen / ComfyUI-Login bearer token (#10265). Consumed by:
     #   - MyIA.AI.Notebooks/GenAI/00-5-ComfyUI-Local-Test.ipynb cell as
     #     ``os.getenv("COMFYUI_API_TOKEN") or os.getenv("QWEN_API_TOKEN")``

@@ -69,7 +69,9 @@ services:
       # Configuration authentification
       - COMFYUI_LOGIN_ENABLED=${COMFYUI_LOGIN_ENABLED:-true}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME}
-      - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
+      # .env key COMFYUI_VIDEO_PASSWORD (centralisee master.env, #10985) ; le nom
+      # d'env CONTENEUR reste COMFYUI_PASSWORD (lu par entrypoint.sh / ComfyUI-Login)
+      - COMFYUI_PASSWORD=${COMFYUI_VIDEO_PASSWORD}
       - COMFYUI_VIDEO_TOKEN=${COMFYUI_VIDEO_TOKEN}
       - CORS_ENABLED=${CORS_ENABLED:-true}
       - API_TIMEOUT=${API_TIMEOUT:-600}
@@ -112,7 +114,7 @@ services:
       - CHECK_INTERVAL=${CHECK_INTERVAL:-60}
       - COMFYUI_AUTH_TOKEN=${COMFYUI_VIDEO_TOKEN}
       - COMFYUI_USERNAME=${COMFYUI_USERNAME:-admin}
-      - COMFYUI_PASSWORD=${COMFYUI_PASSWORD}
+      - COMFYUI_PASSWORD=${COMFYUI_VIDEO_PASSWORD}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - TZ=${TZ:-Europe/Paris}
 
