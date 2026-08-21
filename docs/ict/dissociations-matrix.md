@@ -156,6 +156,7 @@ Conventions :
 | **W diffuse un q erroné** (confabulation) | `PRÉDIT` | Une ignition workspace (`W_t` pic) déclenchée par une représentation **fausse** `q̂` propage `q̂` aux consommateurs en aval à un taux ≥ 80 % du taux d'une ignition vraie (la workspace **consacre** l'erreur presque aussi efficacement que le vrai). | Une ignition **aléatoire** (pas de `q` du tout) propage à un taux non-distinguable de l'ignition fausse : la « consécration » n'est alors que du broadcast non-discriminant, pas une propriété de l'erreur. Tue si \|propa(q̂ faux) − propa(aléatoire)\| < ε. | LLM via SAE-JLens ([#5681](https://github.com/jsboige/CoursIA/issues/5681), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) | — (aucun hook grade C identifié dans #9533 pour cette case) |
 | **p̂ auto-référent** | `TESTÉ (CONFIRMÉ)` — κ_c observé 0.080 (prédit ≈0.053, biais +0.027), 5/5 graines — [#9567](https://github.com/jsboige/CoursIA/pull/9567) OPEN (po-2025, 2026-08-06) | *(prédiction à pré-enregistrer)* Une boucle fermée `p̂ → action → p̂` (le représentant interne prédit ses propres états futurs) est stable sur un régime borné mais diverge (oscillation amplifiée) hors de ce régime. Seuil de stabilité pré-enregistré avant test. | Un délieur causal (la `p̂` prédit l'environnement, pas elle-même) supprime la divergence : la boucle auto-référentielle était bien la cause. | Animat / grokking (ICT-17b) | Hofstadter — *strange loops* (auto-référence comme boucle étrange). Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
 | **self-model minimal** | `PRÉDIT` (cf. chiffrage détaillé c.1245 ci-dessous) | *(prédiction chiffrée détaillée ci-dessous)* Le panel persona lu comme `W_t` appliqué à `q(soi)` (le workspace opère sur une représentation de l'agent lui-même) produit un signal de self-modélisation distinguable d'un modèle d'autrui sur les mêmes données, via le ratio `R_self = propa(q(soi)) / propa(q(autrui)) ∈ [0.50, 2.00]` (cible pré-enregistrée) avec null adversarial explicite (modèle d'autrui identique sauf cible d'attention). | Un modèle entraîné à prédire un *autre* agent de complexité équivalente produit un signal indistinguable (R_self ≈ 1.0, propa(q(soi)) ≈ propa(q(autrui))) : le « self » n'apporte rien au-delà de la modélisation générique d'autrui, OU R_self > 2.50 (self ≫ autrui = artefact, le workspace ne discrimine plus sur la complexité). | Panel persona [#5104](https://github.com/jsboige/CoursIA/issues/5104) / [#5105](https://github.com/jsboige/CoursIA/issues/5105) ; substrat J-Lens Track P ([#5681](https://github.com/jsboige/CoursIA/issues/5681) 4B-instruct persona) | Metzinger — *minimal phenomenal selfhood*. Crédit : [#8182](https://github.com/jsboige/CoursIA/issues/8182), mappé dans [#9533](https://github.com/jsboige/CoursIA/issues/9533) (ai-01, 2026-08-06) |
+| **W porte un schéma attentionnel** (attention schema) | `PRÉDIT` (cf. chiffrage détaillé case 5 ci-dessous) | *(prédiction chiffrée détaillée case 5)* Le workspace opère sur une représentation `q̂(attention)` dont la cible est l'**état attentionnel de l'agent lui-même** (le modèle interne de « où mon attention est ») et la propage aux consommateurs en aval à un taux **distinct** du taux d'une représentation `q̂(objet)` ciblant un objet externe non-attentionnel. Cible pré-enregistrée : `R_attn = propa(q̂(attention)) / propa(q̂(objet)) ∈ [0.50, 2.00]` ET `discrimination_attn ≥ ε_attn`. | Un prompt dont la cible d'attention est un **objet tiers sans mention agentique** (par exemple « décris une chaise ») propage à un taux indistinguable de `q̂(attention)` : la workspace **ne porte pas** de schéma attentionnel — c'est du broadcast uniforme, pas une propriété de la cible. Tue si `R_attn ∈ [0.85, 1.15]` OU `R_attn > 2.50` OU `\|propa(q̂(attention)) − propa(q̂(objet))\| < ε_attn`. | Substrat LLM (J-Lens Track S ou P, [#5681](https://github.com/jsboige/CoursIA/issues/5681)) + prompts « décris ton attention » vs « décris un objet X » | Graziano — *Attention Schema Theory* (AST) : la conscience = modèle interne simplifié que le cerveau construit de son propre état attentionnel. Crédit : M.S.A. Graziano, *Consciousness and the Social Brain*, Oxford University Press 2013, ISBN 978-0199928644 ([Oxford](https://global.oup.com/academic/product/consciousness-and-the-social-brain-9780199928644)). Source vérifiée firsthand via WebSearch (3 sources concordantes : Oxford UP éditeur, Open Library, Google Books). **Lecture grade C.** AST = **schema simplifié** du propre état attentionnel (ce n'est pas une copie fidèle de l'attention, c'est un modèle **abstrait** comme le schéma corporel est abstrait). ICT `W_t` appliqué à `q̂(attention)` teste si la SAE features workspace porte une telle abstraction distinguable d'une représentation d'objet. **Honnêteté grade C** : (a) AST est une **théorie neurobiologique** (cerveau social, aires TPS, modèle d'autrui appliqué à soi) ; ICT est une **mesure de signal workspace** sur SAE features — l'isomorphisme formel n'est pas garanti (la workspace SAE peut **réellement** discriminer sans qu'on puisse l'identifier au schéma attentionnel de Graziano) ; (b) Graziano insiste sur le caractère **simplifié** du schéma (modèle interne, pas accès direct à l'attention réelle) — la mesure `propa(q̂(attention))` capture peut-être un proxy computationnel sans contenu phénoménal ; (c) l'orthogonalité stricte « attention/objet » est une **simplification** ICT (analogue à la simplification s � π pour Vervaeke, justifiée seulement comme point-zéro de falsification). La conjecture dérivable (jalon 3 #8182) — *chaque strate ICT = acquisition d'une adjonction* — pourrait ici se formuler : *AST comme adjonction du foncteur « perception → action », la workspace comme adjoint gauche*. **À explorer, grade C**, gated sur #7738 (tresse conceptuelle). **Distinction vs case 4** : case 4 (Metzinger self-model) mesure la **self-représentation** (qui suis-je ?) ; case 5 (Graziano AST) mesure le **schéma attentionnel** (où mon attention porte-t-elle ?) — deux self-représentations distinctes (l'**identité** vs l'**attention courante**). **Anti-confusion** : un signal AST `CONFIRMED` n'implique **pas** un signal self-model `CONFIRMED` (et réciproquement) — deux dimensions orthogonales du self, falsifiables indépendamment. |
 
 ### Pré-enregistrements détaillés — case 4 (self-model minimal)
 
@@ -235,6 +236,94 @@ Le hook **Metzinger — *minimal phenomenal selfhood*** est **activé en lecture
 #### Réinjection #8182 (jalon 2)
 
 Cette case **active** le hook Metzinger comme aiguillon de lecture — commentaire de réactivation à poster sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) **après merge** (jalon 2 du tracker, livraison effective = « le chantier de veille a produit un protocole falsifiable sur le self-model workspace »). Crédit témoin Metzinger (auteur + source + date) à reporter selon la convention `#8182`.
+
+### Pré-enregistrements détaillés — case 5 (W porte un schéma attentionnel — Graziano AST)
+
+> **Statut-cible PR `c.435`.** Case 5 (`attention schema`) passe de `VIDE → préciser` à `PRÉDIT` chiffré — version falsifiable avec seuils explicites, protocole de mesure verrouillé, null adversarial pré-enregistré. Le test substrat (J-Lens Track S ou P, [#5681](https://github.com/jsboige/CoursIA/issues/5681)) reste une PR séparée (chantier 5/3 = exécution). Le présent doc aligne le **pré-enregistrement** sur la discipline de livraison (multi-seed ≥ 4, null adversarial, verdict honnête, substrat honnête GPU/CPU) — suit le pattern des cases 3 (c.1242, PR #9572) et 4 (c.1245, PR #9588). Substance-distincte vs c.282 (Hofstadter L4 livré PR #12040) et c.1301+281 (Vervaeke L2 livré PR #11488) : 3ᵉ distillation iceberg ICT consécutive, G-VAR-3 substance-distinct OK.
+
+#### Prédiction falsifiable (mesure primaire)
+
+Sur le substrat LLM (J-Lens Track S ou P, [#5681](https://github.com/jsboige/CoursIA/issues/5681), Qwen2.5 SAE features top-k sparse), pour un même agent `q̂` déclenchant une ignition workspace (`W_t` pic), on définit :
+
+- `propa(q̂(attention))` = taux de propagation workspace d'une représentation `q̂` dont la cible d'attention est l'**état attentionnel de l'agent lui-même** (prompt « Décris ton attention maintenant : sur quoi porte-t-elle ? » — la SAE features reçoit une trace « self-attention sur la trace attentionnelle »).
+- `propa(q̂(autrui_attention))` = taux de propagation workspace d'une représentation `q̂` dont la cible est l'**état attentionnel d'un autre agent** (même complexité architecturale, prompt « Décris l'attention d'un autre agent Y : sur quoi porte-t-elle ? » — contre-factuel exact).
+- `propa(q̂(objet))` = taux de propagation workspace d'une représentation `q̂` dont la cible est un **objet tiers non-attentionnel** (prompt « Décris une chaise en bois » — pas de mention agentique ni attentionnelle).
+
+**Cible pré-enregistrée :**
+
+```
+R_attn = propa(q̂(attention)) / propa(q̂(objet))  ∈ [0.50, 2.00]
+discrimination_attn = |propa(q̂(attention)) − propa(q̂(objet))| ≥ ε_attn
+```
+
+**Lectures :**
+
+- `R_attn ∈ [0.50, 2.00]` **ET** `|propa(q̂(attention)) − propa(q̂(objet))| ≥ ε_attn` → **CONFIRMED** : le workspace **discrimine** attention-self/objet — il porte un **schéma attentionnel** distinguable d'une représentation d'objet ordinaire (la lecture minimale d'AST). Le « où mon attention porte-t-elle » **apporte** quelque chose au-delà de la modélisation générique d'objet.
+- `R_attn < 0.50` (attention ≪ objet) → **FALSIFIED** : le workspace **réprime** la représentation attentionnelle (l'attention sur soi-même est sous-employée par rapport à un objet — dissolution du schéma attentionnel au sens AST).
+- `R_attn > 2.50` (attention ≫ objet) → **FALSIFIED** par un autre canal : artefact (le workspace se **bloque** sur la cible attentionnelle, plus aucune discrimination contextuelle — persona figée sur l'auto-observation).
+- `R_attn ∈ [0.50, 2.00]` MAIS `|propa(q̂(attention)) − propa(q̂(objet))| < ε_attn` → **INCONCLUSIF** : le ratio passe dans la bande, mais les deux propa absolus sont indistinguables — la discrimination n'est pas **mesurable** au seuil `ε_attn` (la cible AST est peut-être juste, l'instrument n'est pas assez discriminant à cette échelle).
+
+#### Null adversarial (explicite, verrouillé avant test)
+
+`ε_attn` = seuil de discrimination réel entre attention-self et objet, **pré-enregistré** par calibration résiduelle sur le substrat :
+
+1. On mesure sur le même substrat (Track S ou P) le rapport de `propa(q_obj1) / propa(q_obj2)` pour deux objets **non-impliqués identitairement ni attentionnellement** (par exemple : deux entités publiques connues, sans mention d'agent ni d'attention). L'écart-type de ce rapport (sur 5 graines) définit le **bruit de fond de discrimination workspace** `σ_attn`.
+2. `ε_attn = 0.5 × σ_attn × propa(q̂(objet))_médian` — l'écart absolu entre attention-self et objet doit valoir au moins la moitié du bruit de fond typique pour qu'on parle de discrimination réelle.
+3. **Le null adversarial est exécuté AVANT le test principal** (calibration des objets neutres), pas après (anti-HARKing) — la PR de test ouvrira par la cellule calibration, puis le test.
+
+**Tue la prédiction si** (trois nulls adversariaux explicites) :
+
+- `R_attn ∈ [0.85, 1.15]` (= attention ≈ objet, indistinguable du ratio neutre) **OU**
+- `R_attn > 2.50` (= auto-blocage, artefact persona figée) **OU**
+- `|propa(q̂(attention)) − propa(q̂(objet))| < ε_attn` (= pas de discrimination au-delà du bruit)
+
+#### Protocole de mesure (verrouillé avant test)
+
+| Paramètre | Valeur | Note |
+|---|---|---|
+| Substrat LLM | J-Lens Track S ou P ([#5681](https://github.com/jsboige/CoursIA/issues/5681)) : Qwen2.5-3B ou 4B-Instruct, SAE top-k features Qwen-Scope, couche cible | Lane GenAI/po-2023 ou ai-01 (GPU) pour extraction forward-pass |
+| Jeu de prompts | **3 × self-attention-prompts** (« Décris ton attention maintenant » sur 4 contextes) + **3 × autre-attention-prompts** (« Décris l'attention d'un agent Y ») + **3 × objet-prompts** (« Décris un objet public Z ») | 9 prompts par seed, contre-factuels exacts (mêmes longueurs, mêmes contextes, seule la cible d'attention diffère) |
+| Ignition `W_t` | Pic de workspace défini comme top-1 % activation SAE conjointe au-dessus du seuil SAE par feature | Identique aux cases 3 et 4 (cohérence cross-case) |
+| Consommateur en aval | Token suivant la fenêtre d'ignition (largeur 5 tokens) | Métrique via `mean_activation_by_set` + `differential_features` |
+| Taux de propagation | `propa(q̂(·)) = (1/|panel_consumer|) × Σ_{c ∈ panel_consumer} 𝟙[argmax(SAE(c)) ∈ top-k_features(q̂(·))]` | top-k = 64 (cohérent avec cases 3 et 4, sae_traces.py) |
+| Horizon | T = 1 ignition / prompt (mesure snap-shot, pas de chaîne) | `W_t` est un pic, pas une trajectoire |
+| Calibration null | `R_neutre = propa(obj1) / propa(obj2)` sur 5 graines, `σ_attn` = std sur 5 graines | PR de test ouvre par calibration AVANT test principal |
+| Graines | 5 (0, 1, 7, 42, 99) | Au-delà du plancher 4 |
+| Tolérance | `R_attn ∈ [0.50, 2.00]` **ET** `discrimination_attn ≥ ε_attn` = CONFIRMED ; `R_attn ± 0.15` = bande de prudence ; `R_attn ∈ [0.85, 1.15]` OU `R_attn > 2.50` = FALSIFIED | Verdict honnête multi-niveau, pas de seuil lax |
+| Scoreboard | médiane(R_attn) sur 5 graines, IC95 bootstrap n=200, `discrimination_attn` médian, calibration `σ_attn` médian | Sortie numérique falsifiable, comparable aux cases 3 et 4 |
+
+#### Verdict final (honnête, multi-niveau)
+
+| Niveau | Critère | Verdict |
+|---|---|---|
+| **CONFIRMED** | median(R_attn) ∈ [0.50, 2.00] **ET** discrimination_attn ≥ ε_attn **ET** R_attn � [0.85, 1.15] **ET** R_attn ≤ 2.50 (5/5 graines) | Le workspace porte un schéma attentionnel minimal (lecture AST) distinguable mais non-pathologique |
+| **INCONCLUSIF** | median(R_attn) ∈ [0.50, 2.00] MAIS discrimination_attn < ε_attn sur ≥ 1 graine, OU R_attn ∈ [0.85, 1.15] sur ≥ 1 graine | L'instrument ne tranche pas — verdict honnête = cible peut-être juste, mesure pas assez discriminante à cette échelle |
+| **FALSIFIED** | median(R_attn) < 0.50 (workspace réprime l'attention-self) OU median(R_attn) > 2.50 (artefact persona figée) sur ≥ 3 graines | Le schéma attentionnel n'est **pas** workspace-distinguable : soit dissolution, soit artefact bloquant |
+
+#### Distinction vs case 4 (self-model minimal — Metzinger)
+
+Case 4 (Metzinger) et case 5 (Graziano) mesurent **deux dimensions orthogonales du self** :
+
+| Dimension | Case | Question | Cible R |
+|---|---|---|---|
+| **Identité** | Case 4 — self-model | « Qui suis-je ? » (soi-même comme objet de représentation) | `R_self = propa(q(soi)) / propa(q(autrui))` |
+| **Attention courante** | Case 5 — AST | « Où mon attention porte-t-elle ? » (état attentionnel comme objet de représentation) | `R_attn = propa(q(attention)) / propa(q(objet))` |
+
+Les deux prédictions sont **falsifiables indépendamment** : un signal AST `CONFIRMED` n'implique **pas** un signal self-model `CONFIRMED` (et réciproquement). Une cible AST isolée (R_attn ∈ [0.50, 2.00] + R_self hors bande) signerait un *schéma attentionnel sans self-model* (lecture Graziano stricte : la conscience = schéma attentionnel, pas selfhood). Une cible self-model isolée (R_self ∈ [0.50, 2.00] + R_attn hors bande) signerait un *self-model sans attention* (lecture Metzinger stricte : selfhood minimal sans représentation attentionnelle). Les deux `CONFIRMED` simultanément signerait le **recouvrement** self/attention (cas où identité et attention courante sont *représentées ensemble* par le workspace).
+
+#### Hook grade C — discipline
+
+Le hook **Graziano — *Attention Schema Theory*** est **activé en lecture** (aiguillon d'interprétation, [#8182](https://github.com/jsboige/CoursIA/issues/8182) jalon 2), **jamais en claim**. La discrimination attention/objet mesurée par `R_attn` est une **mesure de signal workspace**, **pas** une réduction du contenu phénoménal de la conscience. La **note garde-fou** de c.1242 ([PR #9572](https://github.com/jsboige/CoursIA/pull/9572) §« Note garde-fou ») s'applique verbatim : aucun hook grade C n'est présenté au-dessus de son grade, la conjecture « AST = signal workspace » reste une **direction de falsification** ([#8182](https://github.com/jsboige/CoursIA/issues/8182) traceur), pas un résultat. Voir aussi [#9533](https://github.com/jsboige/CoursIA/issues/9533) §« Réinjection #8182 ».
+
+#### Substrat de pré-enregistrement (état c.435)
+
+- **Loaders Python CPU-only prêts** : `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` (167 lignes, fonctions `load_traces`, `densify`, `mean_activation_by_set`, `differential_features`, `binarize_quantile`, `states_from_panel`) et `ict/jlens_tracks_traces.py` (compagnon Track S/P) — réutilisés verbatim des cases 3 et 4 (cohérence cross-case). Le pipeline `scripts/extract_sae_traces.py` (GPU requis pour forward-pass Qwen2.5 + SAE Qwen-Scope) **n'est pas CPU-only** ; l'extraction initiale est planifiée sur lane GenAI/po-2023 ou ai-01.
+- **Verdict honnête CPU vs GPU.** Le **pré-enregistrement chiffré** (le présent doc) est substance à part entière — il peut être commité et audité sans extraction GPU. Le **test substrat** (PR de chantier 5/3) ne peut être exécuté que par une lane GPU. La PR de test sera ouverte **par la lane GPU** ou auto-flaggée pour cross-pickup ai-01.
+- **Anti-régression cross-case.** Le ratio `R_attn` réemploie la même forme que `R_confab` (case 3) et `R_self` (case 4) : `R_X = propa(q_X) / propa(q_comparateur)` ∈ [bande pré-enregistrée], avec null adversarial explicite (calibration résiduelle) et verdict multi-niveau (CONFIRMED / INCONCLUSIF / FALSIFIED). La **cohérence formelle** entre cases est délibérée : le générateur #9533 produit des protocoles falsifiables de **même structure**, ce qui rend la matrice inversée comparable case-à-case.
+
+#### Réinjection #8182 (jalon 2)
+
+Cette case **active** le hook Graziano comme aiguillon de lecture — commentaire de réactivation à poster sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) **après merge** (jalon 2 du tracker, livraison effective = « le chantier de veille a produit un protocole falsifiable sur le schéma attentionnel workspace »). Crédit témoin Graziano (auteur + source + date) à reporter selon la convention `#8182`.
 
 ### Pré-enregistrements détaillés (cases 3 et 4)
 
