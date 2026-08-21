@@ -20,6 +20,7 @@ from check_pr_perimeter import (  # noqa: E402
     format_report,
     is_downgradable_mismatch,
     select_candidates,
+    _additive_line_sum,
     _check_unterminated_fence,
     _count_is_incidental,
     _fence_line_indices,
@@ -1717,3 +1718,85 @@ def test_word_form_not_recognized_absent_files_referent():
     referent stays unverifiable (not silently accepted)."""
     files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
     assert check_assertion(files, "**trois** modifications:") != []
+
+
+# --- #12184 : forme 7, outil de mesure --------------------------------------
+#
+# Fondateur : #12181, ligne verbatim du body (pre-contournement) :
+#   "Pont Lean vivant : `count_code_sorry.py` exécuté depuis le notebook —
+#    `HashlifeCorrectness.lean` 36 naïfs = 0 réel ; **lake 70 fichiers**,
+#    1 sorry réel distinct (`HashlifeMarginFragment.lean`, #9568)."
+# Le compte 70 est le rendu de l'OUTIL sur le lake Lean, pas une assertion de
+# périmètre (PR réelle : 1 fichier). Le garde lisait le premier compte non
+# nul du body et échouait la PR. Le remède #12184 : exempter le compte dont
+# le contexte AVANT porte un marqueur de mesure (nom d'objet adjacent 7a, ou
+# invocation d'outil + verbe d'exécution 7b). Détection inchangée -- la ligne
+# reste candidate et imprimée, seule la conséquence passe de blocage à signal
+# (chemin #11712/#11985).
+
+FOUNDER_12181_LINE = (
+    "Pont Lean vivant : `count_code_sorry.py` exécuté depuis le notebook — "
+    "`HashlifeCorrectness.lean` 36 naïfs = 0 réel ; **lake 70 fichiers**, "
+    "1 sorry réel distinct (`HashlifeMarginFragment.lean`, #9568)."
+)
+
+
+def test_12184_founder_line_is_incidental():
+    """Contrôle positif : la ligne fondatrice devient incidental."""
+    assert _count_is_incidental(FOUNDER_12181_LINE) is True
+
+
+def test_12184_founder_line_not_blocking_via_candidate():
+    """Replay du chemin réel : la ligne fondatrice en source body, contre un
+    périmètre d'1 fichier, ne bloque plus (le Candidate n'est pas blocking)."""
+    items = [{"source": "body", "kind": "PR body", "author": "jsboige",
+              "body": FOUNDER_12181_LINE}]
+    candidates, _ = select_candidates(items, n_files=1)
+    assert len(candidates) == 1
+    assert candidates[0].blocking is False
+
+
+def test_12184_adjacent_measured_noun_exempt():
+    """Forme 7a : 'lake N fichiers' / 'corpus N fichiers' (adjacence)."""
+    assert _count_is_incidental("lake 70 fichiers") is True
+    assert _count_is_incidental("corpus 3 fichiers") is True
+
+
+def test_12184_fn_colon_breaks_adjacency():
+    """Contrôle FN : 'scan du corpus : 3 fichiers touchés' -- les deux-points
+    rompent l'adjacence, et 'touchés' qualifie le périmètre ; la ligne reste
+    authorial (un vrai positif de la classe #11956 ne doit pas verdir)."""
+    assert _count_is_incidental("scan du corpus : 3 fichiers touchés") is False
+
+
+def test_12184_fn_tool_without_exec_verb_stays_authorial():
+    """Contrôle FN 7b : un nom d'outil SANS verbe d'exécution n'exempte pas
+    ('modifie build.py : 3 fichiers' -- build.py peut être un fichier du
+    diff, le compte est authorial)."""
+    assert _count_is_incidental("Cette PR modifie build.py et 3 fichiers de tests") is False
+
+
+def test_12184_fn_scope_word_still_blocks():
+    """Contrôle FN : le mot-clé de périmètre garde sa force -- 'Périmètre :
+    3 fichiers' et le scope strict de #12065 restent authorial."""
+    assert _count_is_incidental("Périmètre : 3 fichiers") is False
+    line_12065 = ("**Scope strict** : 5 fichiers, 5 lignes du claim = "
+                  "5 fichiers = scope respecté.")
+    assert _count_is_incidental(line_12065) is False
+
+
+def test_12184_exec_verb_twin_shapes():
+    """Forme 7b : l'invocation+d'exécution s'exempte dans les deux ordres
+    (outil puis verbe, verbe puis outil), le compte reste confrontable sans
+    l'outil."""
+    assert _count_is_incidental(
+        "`count_code_sorry.py` exécuté depuis le notebook : 70 fichiers"
+    ) is True
+    assert _count_is_incidental("exécution de build_lake.sh : 70 fichiers") is True
+
+
+def test_12184_exempt_count_not_in_additive_sum():
+    """Régression #12103 : un compte exonéré par la forme 7 ne rejoint pas la
+    somme additive ('lake 70 fichiers, 1 fichier modifié' ne vaut pas 71)."""
+    line = "lake 70 fichiers, 1 fichier modifié"
+    assert _additive_line_sum(line) == 1
