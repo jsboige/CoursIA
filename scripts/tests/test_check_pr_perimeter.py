@@ -1623,3 +1623,56 @@ def test_12024_real_body_fragment_does_not_enter_candidates():
         f"body fragment that reproduces the founder FAIL lines must yield "
         f"0 candidates under the codespan-exclusion fix; got {found!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# #12103 -- additive enumeration: "1 fichier modifie, 1 fichier ajoute" =
+# 2 files. The guard read the first non-zero count (1) and could never
+# validate a 2-file PR. Fix: confront the SUM of the counts surviving the
+# per-count filters. Safe by construction (a FAIL becomes a PASS only when
+# the sum is exactly len(files)).
+# ---------------------------------------------------------------------------
+
+
+def test_additive_enumeration_one_plus_one_passes():
+    """Positif -- '1 fichier modifie, 1 fichier ajoute' over a 2-file PR."""
+    files = [{"path": "slides/S3-acculturation/slides.md"},
+             {"path": "slides/S3-acculturation/images/img_robot_extracted.png"}]
+    assert check_assertion(
+        files,
+        "**1 fichier modifie, 1 fichier ajoute** :",
+    ) == []
+
+
+def test_additive_enumeration_two_plus_three_passes():
+    """Positif -- '2 fichiers modifies, 3 fichiers ajoutes' over 5 files."""
+    files = [{"path": f"a{i}.py"} for i in range(5)]
+    assert check_assertion(files, "2 fichiers modifies, 3 fichiers ajoutes.") == []
+
+
+def test_additive_enumeration_wrong_sum_still_fails():
+    """Negatif -- '1 + 1' declared over 3 files: the sum (2) does not match."""
+    files = [{"path": f"a{i}.py"} for i in range(3)]
+    assert check_assertion(
+        files, "1 fichier modifie, 1 fichier ajoute.",
+    ) != []
+
+
+def test_additive_enumeration_negated_diff_not_summed():
+    """Non-regression #11800 -- '5 fichiers modifies, 91 fichiers inchanges'
+    over 5 files: the negated-diff count (91) must NOT join the sum. If it
+    did, 5 + 91 = 96 != 5 and the line would fail. The guard passes on the
+    5-files half exactly as before."""
+    files = [{"path": f"a{i}.py"} for i in range(5)]
+    assert check_assertion(
+        files,
+        "5 fichiers modifies, 91 fichiers inchanges -- scope delta confirme",
+    ) == []
+
+
+def test_additive_enumeration_zero_count_not_summed():
+    """Non-regression #11735 -- '0 fichier catalogue, 2 fichiers touches'
+    over 2 files: the zero is a property attestation, only the 2 joins the
+    sum (0 + 2 = 2 == len). Behavior preserved."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []
