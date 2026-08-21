@@ -610,3 +610,75 @@ def test_grain_separator_forms_still_accepted_after_boundary_fix():
         assert g is not None, body
         assert g["tier"] == "LIGHT", body
         assert g["genre"] == "guard", body
+
+# --- workspace containing spaces (#12145) ----------------------------------
+#
+# `myia-po-2025:Microsoft VS Code` is a real cluster lane. Truncating it at the
+# first blank made it DIFFERENT FROM ITSELF in check_lane_claim: the lane read
+# `myia-po-2025:Microsoft` from its own [CLAIMED] comment, compared it to the
+# untruncated `--lane`, and reported itself as a blocking lane.
+#
+# Half of these cases are non-regressions and false-positive guards, not hits.
+# A pattern that admits spaces is validated by what it REFUSES to swallow --
+# a dash separator, an annotation key, running prose -- far more than by the
+# one string it was written for.
+
+def test_lane_workspace_with_spaces():
+    g = gt.extract_lane("[CLAIMED] lane myia-po-2025:Microsoft VS Code -- paths: a/**")
+    assert g == "myia-po-2025:Microsoft VS Code"
+
+
+def test_lane_workspace_with_spaces_no_annotation():
+    g = gt.extract_lane("[CLAIMED] lane myia-po-2025:Microsoft VS Code")
+    assert g == "myia-po-2025:Microsoft VS Code"
+
+
+def test_lane_workspace_with_spaces_paren_annotation():
+    # #12052 form: parenthetical annotation, space then opening paren.
+    g = gt.extract_lane("[CLAIMED] lane myia-po-2025:Microsoft VS Code (Phase 2)")
+    assert g == "myia-po-2025:Microsoft VS Code"
+
+
+def test_lane_hyphenated_workspace_unchanged():
+    # The non-regression that matters most: the hyphen inside `CoursIA-2` must
+    # stay part of the name, never be read as the start of an annotation.
+    g = gt.extract_lane("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: b/**")
+    assert g == "myia-po-2024:CoursIA-2"
+
+
+def test_lane_stops_at_em_and_en_dash():
+    for dash in ("\u2014", "\u2013"):
+        g = gt.extract_lane("[CLAIMED] lane myia-x:W %s paths: c/**" % dash)
+        assert g == "myia-x:W", dash
+
+
+def test_lane_stops_at_plain_hyphen_separator():
+    # ` - ` is the separator several bodies use instead of an em dash. Admitting
+    # spaces must not make the lane eat it (the hyphen IS in the token class).
+    body = "Grain: MED/guard - lane myia-ai-01:CoursIA - prev: MED/tooling #12102"
+    assert gt.extract_lane(body) == "myia-ai-01:CoursIA"
+
+
+def test_lane_stops_before_lowercase_annotation_key():
+    assert gt.extract_lane("lane myia-ai-01:CoursIA prev: MED/guard #1") == "myia-ai-01:CoursIA"
+
+
+def test_lane_does_not_swallow_prose():
+    # The upper-case-initial constraint on continuation words is what keeps a
+    # sentence from becoming part of the lane name. Both languages, because the
+    # dashboards carry both.
+    assert gt.extract_lane("La lane myia-ai-01:CoursIA a livre trois PRs.") == "myia-ai-01:CoursIA"
+    assert gt.extract_lane("lane myia-x:W and it works fine") == "myia-x:W"
+
+
+def test_lane_fallback_twin_moves_with_the_primary(  ):
+    # #10395 fallback (marker line, no literal `lane` keyword). Fixing one half
+    # of a duplicated mechanism and not the other leaves the defect whole in the
+    # copy -- so the twin carries the same case.
+    line = "[CLAIMED] myia-po-2025:Microsoft VS Code -- paths: a/**"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-po-2025:Microsoft VS Code"
+
+
+def test_lane_fallback_historical_form_unchanged():
+    line = "[CLAIMED] #9764 - myia-po-2025:CoursIA 2026-08-07T00:52Z"
+    assert gt.extract_lane("no lane keyword here", marker_line=line) == "myia-po-2025:CoursIA"

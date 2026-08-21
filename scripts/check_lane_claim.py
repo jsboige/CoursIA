@@ -247,6 +247,19 @@ _ANNOTATION_SUFFIX_RE = re.compile(r"\s+(?:--|—|–)\s+")
 # before the opening paren so legitimate filename characters (e.g. a glob
 # with a paren in it -- rare but possible) are not cut.
 _PAREN_ANNOTATION_RE = re.compile(r" \(")
+# #12072 -- off-marker scope declaration. `_PATHS_CLAUSE_RE` reads the `paths:`
+# clause ONLY on the marker line (`[^\n]*?` forbids the newline): a clause
+# written on its OWN line in a separate paragraph is read as None -> epic-wide,
+# silently, while the declaring lane believes it scoped. This regex finds a
+# scope-declaration-shaped line ANYWHERE in the body (line-start `paths:` /
+# `Paths:` / `Path :`, case-insensitive, same decoration tolerance as the
+# marker regexes) so the event can expose it and the lint can say so instead of
+# staying silent. Used only as a SIGNAL (`scope_declared_off_marker`) -- the
+# claim is NOT re-classified (see #12072: re-reading an off-marker prose line
+# as the machine clause would make the scope depend on an heuristic).
+_OFF_MARKER_SCOPE_RE = re.compile(
+    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
+)
 
 
 class ClaimEvent(dict):
@@ -316,6 +329,22 @@ class ClaimEvent(dict):
         filters `others` by scope intersection (`_filter_by_claim_scope`).
         """
         return self.get("paths")
+
+    @property
+    def scope_declared_off_marker(self) -> list[str]:
+        """#12072 -- scope-declaration lines found OFF the marker line.
+
+        Non-empty ONLY on an epic-wide event (`paths is None`) whose comment
+        nevertheless contains a line-start `paths?` clause elsewhere (e.g. a
+        `Paths: ...` paragraph under the `[CLAIMED]` line). The reducer could
+        not read that clause (`_PATHS_CLAUSE_RE` is marker-line-anchored), so
+        the claim reduced to EPIC-WIDE while the declaring lane believed it
+        scoped. This field is a SIGNAL, not a re-classification: the claim is
+        NOT lifted back to a scoped state (that would make the scope depend on
+        a heuristic). Consumers (JSON summary, lint WARN) use it to say so
+        explicitly instead of staying silent.
+        """
+        return self.get("scope_declared_off_marker") or []
 
     @property
     def unparseable_scope(self) -> list[str]:
@@ -403,7 +432,20 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
     # Les blocs fences sont de la citation, jamais un acte (voir
     # `_mask_fenced_blocks`). Le masque preserve les longueurs, donc les
     # offsets restent valides sur `body` -- que `_line_for_match` relit.
-    for m in _MARKER_RE.finditer(_mask_fenced_blocks(body)):
+    masked_body = _mask_fenced_blocks(body)
+    # #12072 -- pre-computed off-marker scope declaration lines. `_PATHS_CLAUSE_RE`
+    # only ever reads the marker's OWN line, so a `paths:`/`Paths:`/`Path :`
+    # clause written on a separate line of the same comment is dead prose from
+    # the reducer's point of view (epic-wide, silently). We scan the fenced-masked
+    # body once and hand each event its own matching lines: the masked body
+    # preserves offsets, so `_line_for_match` can still resolve verbatim text on
+    # the real `body`. The clause regex is line-anchored to a line STARTING with
+    # `paths?`, so it can never match the marker line itself (which starts with
+    # the bracket after decoration) -- no overlap with the marker's own clause.
+    off_marker_scope_lines = [
+        _line_for_match(body, om).strip() for om in _OFF_MARKER_SCOPE_RE.finditer(masked_body)
+    ]
+    for m in _MARKER_RE.finditer(masked_body):
         marker = m.group(1).upper()
         line = _line_for_match(body, m)
         if marker in _OPEN:
@@ -436,6 +478,14 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
             # accidental empty" -- the exact defect that motivated #10597.
             unparseable_scope=_unparseable_scope_in(paths) if paths else [],
             intent=_intent_from_line(line),
+            # #12072 -- structured signal for a scope declared OFF the marker
+            # line (line-start `paths?` elsewhere in the comment, e.g. a
+            # `Paths: ...` paragraph below the `[CLAIMED]` line). The reducer
+            # read `paths is None` -> the claim reduced to EPIC-WIDE while the
+            # declaring lane believed it scoped. The field only exists when
+            # the marker's OWN line carried no clause (a captured scope needs
+            # no warning); the lint layer decides how loudly to say so.
+            scope_declared_off_marker=off_marker_scope_lines if paths is None else [],
             # #11755: the body is needed downstream by `_lint_claim_events`
             # to mine for an inferred `Path:` clause when the marker has no
             # `paths:` field. Carrying it on the event (one extra reference)
@@ -1045,6 +1095,13 @@ def _lint_claim_events(
     re-classified (legacy semantics preserved -- see #11755 Piste 1 rationale).
     The lane keeps its epic-wide read; the warning is a usability nudge to
     reissue with the explicit clause.
+
+    #12072: distinct from the #11755 nudge, when the event carries the
+    structured `scope_declared_off_marker` signal (a line-start `paths?`
+    clause on a SEPARATE line of the comment), an explicit WARN names the
+    faulty line and the expected marker-line syntax. Fires only on the
+    signal -- an intentional epic-wide declaration (no off-marker clause)
+    stays silent, so the lint never penalises a deliberate full-lane lock.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -1065,6 +1122,22 @@ def _lint_claim_events(
         if ev.get("action") not in ("open", "override"):
             continue
         if ev.paths is None:
+            # #12072 -- the structured off-marker signal. Fires ONLY when the
+            # comment declares a scope somewhere other than the marker line
+            # (a `Paths:`/`path:`/`Path :` line in a separate paragraph): the
+            # reducer could not read it, so the claim reduced to EPIC-WIDE
+            # while the writer believed it scoped. Explicit intent stays
+            # legitimate (no signal -> no noise); the claim is NOT re-scoped.
+            off_marker = ev.scope_declared_off_marker
+            if off_marker:
+                print(
+                    f"WARN: scope declare hors ligne de marqueur -- cette "
+                    f"declaration n'est PAS lue (#12072) : "
+                    f"{off_marker[0]!r} (lane {ev.lane or '?'}). "
+                    f"La clause paths: doit etre SUR la ligne du marqueur : "
+                    f"`[CLAIMED] lane <machine:workspace> -- paths: <g1>, <g2>`.",
+                    file=sys.stderr,
+                )
             inferred = _infer_paths_from_body(ev.get("_body"))
             inferred_str = (
                 " ; chemin(s) inféré(s) du body : "
@@ -1279,6 +1352,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # when it covers the whole scope the claim is lifted to
                 # epic-wide (a broken claim is not a permissive claim).
                 "empty_scope": ev.get("empty_scope") or [],
+                # #12072 -- the off-marker scope-declaration witness. Non-empty
+                # ONLY on an epic-wide claim (`paths` is null) whose comment
+                # still declares a `paths?` clause on a separate line (e.g. a
+                # `Paths: ...` paragraph under the `[CLAIMED]` line). The
+                # reducer could not read it (marker-line-anchored clause), so
+                # the claim reduced to epic-wide while the writer believed it
+                # scoped. Signal only -- never re-scopes the claim.
+                "scope_declared_off_marker": ev.scope_declared_off_marker,
             }
             for ln, ev in sorted(active.items())
         },
