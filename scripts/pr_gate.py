@@ -300,6 +300,18 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     real failure. Ordering key is `started_at` then `id`, both monotonic per name;
     entries missing both keep their input order as a last resort.
 
+    PREMISE -- the rendered check-run `name` identifies the job uniquely. This
+    premise is enforced by `scripts/ci/check_unique_check_run_names.py` and its
+    CI guard (workflow `unique-check-run-names-guard.yml`). When the premise
+    fails, the fold collapses two distinct workflows' verdicts onto the same
+    bucket and the most-recent wins regardless of consequence: a real FAIL
+    can be swallowed under a sibling SUCCESS that started later (#11869,
+    measured on `cf968dcf`: `notebook-papermill-ratchet` FAILed at 22:12:53Z
+    under two sibling successes at 22:08:46Z and 22:13:25Z -- PR gate
+    reported PASS). Do NOT extend this function to dedupe by (workflow, name)
+    as a substitute for fixing the name collision -- the unit of judgement
+    is the JOB, and the job's name must identify it on its own.
+
     NOTE: the monotonicity premise holds at the check-run level
     (`commits/<sha>/check-runs` — a rerun creates a fresh entry, larger id AND
     started_at), NOT at the `actions/runs` level, where an attempt=2 of an old

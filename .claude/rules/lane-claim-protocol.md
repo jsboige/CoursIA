@@ -30,15 +30,11 @@ non-ecrits qu'on ecrit ici noir sur blanc. Un organe debloquant les enforce
 desormais : `.github/workflows/lane-claim-guard.yml` (`check-lane-claim-required`).
 
 8. **Claim-issue > claim-dashboard, meme quand le dashboard est anterieur.**
-   Un `[CLAIMED]` sur l'issue bat un `[CLAIMED]` dashboard, **independamment
-   de l'horodatage**. La raison est mecanique, pas punitive : le dashboard est
-   silote par lane (invisible cross-workspace pendant la fenetre decision ->
-   push), auto-condense (un verrou ramasse par le GC n'est pas un verrou), et
-   ses stamps melent heure locale et UTC (cf §ci-dessus). Sur #10169, po-2026
-   avait ~12 minutes d'avance sur le dashboard workspace-CoursIA — et a perdu
-   contre le claim d'issue de po-2025, parce que seul ce dernier etait au locus
-   cross-lane. Le `createdAt` serveur de l'issue fait foi ; un stamp dashboard
-   anterieur ne l'invalide pas.
+   Un `[CLAIMED]` sur l'issue bat un `[CLAIMED]` dashboard **independamment de
+   l'horodatage**, pour les trois raisons mecaniques du § ci-dessus (silotage,
+   condensation, stamps locaux) — pas par punition. Sur #10169, ~12 minutes
+   d'avance au dashboard n'ont pas suffi : seul le claim d'issue etait au locus
+   cross-lane. Le `createdAt` serveur fait foi.
 9. **Override coordinateur permis, mais ecrit sur l'issue.** Le coordinateur
    garde le droit de merger contre un claim detenu quand la substance le
    justifie — mais il **perd la possibilite de le faire sans l'ecrire**.

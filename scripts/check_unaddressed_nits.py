@@ -282,6 +282,39 @@ _MENTION_VERDICT_LIFTED = re.compile(
     r"\w*\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)")
 
 
+# #11984 — Position D : le nominal `revue` / `review` DEVANT le verdict, avec
+# reference pointable APRES. Cinquieme reformulation de la classe use-vs-
+# mention (#11246 → #11636 → #11744 → #11809 → celle-ci) : les correctifs
+# precedents portaient le nominal `verdict` (avec ses determinants) mais pas
+# `revue`/`review`, la facon la plus naturelle d'ecrire la meme mention en
+# francais comme en anglais. Instance fondatrice : #11911, commentaire du
+# 2026-08-20T14:50:21Z — « La revue CHANGES_REQUESTED (07:32Z, SHA
+# `5aa6e035`) pointait 2 defauts » — un rapport de re-review classe
+# BOT-CONCERN comme s'il emettait la reserve qu'il rapporte.
+#
+# ELARGIR une neutralisation ouvre le sens dangereux : le faux negatif (une
+# reserve reelle eteinte), failure mode fondateur de B.0 (#10761) — il ne se
+# signale pas. Le discriminant n'est donc PAS le nominal seul — le contre-
+# exemple de l'issue, « Cette review CHANGES_REQUESTED reste bloquante »,
+# porte le nominal devant le verdict ET emet une reserve vivante. On exige
+# la piste (a) de l'issue, calquee sur le precedent #11809 : une reference
+# POINTABLE entre parentheses dans la suite immediate du verdict — SHA hex
+# 7+, numero PR/issue, date ISO ou horodatage. Un rapport de correction
+# designe l'evenement passe qu'il rapporte (`(07:32Z, SHA ...)`) ; une
+# emission revendique sans pointer. Pas de reference pointable = pas de
+# match = le verdict reste emis. Frontiere elargie a `*` : le mot est
+# souvent en gras (« La **revue** CHANGES_REQUESTED »).
+_MENTION_VERDICT_REVIEW = re.compile(
+    r"(?i)(?:^|[\s,;:(*])"  # frontiere (inclut * pour **revue**)
+    r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
+    r"(?:revue|review)(?![:.])"
+    r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"[^():\n.]{0,12}?"
+    r"\([^()\n]{0,80}?"
+    r"(?:[a-f0-9]{7,}|#\d+|\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?Z?)"
+    r"[^()\n]{0,40}\)")
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -289,7 +322,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
