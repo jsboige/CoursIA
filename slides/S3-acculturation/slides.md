@@ -412,19 +412,15 @@ layout: two-cols
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Cycle d'un algorithme génétique" />
+<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Croisement sur le problème des huit reines" />
 
 </div>
 
 </div>
 
 
-
 ---
-layout: two-cols
----
-
 
 
 # Stratégies d'exploration (2/2)
@@ -437,12 +433,6 @@ layout: two-cols
   - Optimisation d'une fonction
   - Escalade, descente de gradient
 
-<img src="./images/img_030.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_031.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-
-
-::right::
-
 
 - Problèmes :
   - Bloqué sur un optimum local
@@ -454,8 +444,12 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<img src="./images/img_032.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_033.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
+<img src="./images/img_030.png" class="max-h-[300px] max-w-full object-contain" />
+<img src="./images/img_031.png" class="max-h-[300px] max-w-full object-contain" />
+<img src="./images/img_032.png" class="max-h-[300px] max-w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
+<img src="./images/img_033.png" class="max-h-[300px] max-w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
+</div>
 
 
 

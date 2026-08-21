@@ -27,7 +27,7 @@ from pathlib import Path
 # Configuration
 COMFYUI_URL = "http://localhost:8188"
 COMFYUI_USERNAME = "admin"
-COMFYUI_PASSWORD = "rZDS3XQa/8!v9L"
+COMFYUI_PASSWORD = os.getenv("COMFYUI_PASSWORD", "")
 
 def print_section(title):
     """Affiche une section avec formatage"""
@@ -183,8 +183,8 @@ def generate_bcrypt_token():
     # Convertir en string pour l'affichage
     token_str = hashed.decode('utf-8')
     
-    print(f"Mot de passe: {COMFYUI_PASSWORD}")
-    print(f"Token bcrypt: {token_str}")
+    print("Mot de passe: configuré" if COMFYUI_PASSWORD else "Mot de passe: MANQUANT")
+    print(f"Token bcrypt: {'configuré' if token_str else 'MANQUANT'}")
     
     return token_str
 

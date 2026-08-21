@@ -44,13 +44,13 @@ def main():
     
     # Afficher les résultats
     print(f"\n📍 Token depuis .secrets/qwen-api-user.token:")
-    print(f"   {secrets_token[:30] if secrets_token else 'MANQUANT'}...")
+    print(f"   {'configuré' if secrets_token else 'MANQUANT'}")
     
     print(f"\n📍 Token depuis .env (COMFYUI_API_TOKEN):")
-    print(f"   {env_token[:30] if env_token else 'MANQUANT'}...")
+    print(f"   {'configuré' if env_token else 'MANQUANT'}")
     
     print(f"\n📍 Token depuis docker/.env (COMFYUI_BEARER_TOKEN):")
-    print(f"   {docker_token[:30] if docker_token else 'MANQUANT'}...")
+    print(f"   {'configuré' if docker_token else 'MANQUANT'}")
     
     # Vérifier la cohérence
     tokens = [secrets_token, env_token, docker_token]
@@ -62,7 +62,7 @@ def main():
         return False
     elif len(set(tokens)) == 1:
         print("   ✅ TOUS LES TOKENS SONT IDENTIQUES")
-        print(f"   🎯 Token unique: {tokens[0][:30]}...")
+        print(f"   🎯 Token unique: {'configuré' if tokens else 'MANQUANT'}")
         return True
     else:
         print(f"   ❌ {len(set(tokens))} TOKENS DIFFÉRENTS TROUVÉS")
@@ -74,7 +74,7 @@ def main():
                 source += ".env "
             if token == docker_token:
                 source += "docker "
-            print(f"   {i}. {source}: {token[:30]}...")
+            print(f"   {i}. {source}: {'configuré' if token else 'MANQUANT'}")
         return False
 
 if __name__ == "__main__":

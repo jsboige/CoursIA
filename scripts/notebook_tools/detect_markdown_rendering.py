@@ -40,6 +40,15 @@ Rules
   accidentally promoted to an oversized heading.
 - ``oversized_hint``         (WARN):  a hint/indice/astuce/note line written as an
   ``#``/``##``/``###`` header (renders larger than surrounding text).
+- ``unclosed_bold``          (WARN):  a paragraph with an ODD number of ``**``
+  delimiters. CommonMark cannot close emphasis across a blank line, so an odd
+  count guarantees at least one ``**`` that renders literally or overflows into
+  bold (stray closer, mid-word ``**``, opener whose closer fell in another
+  paragraph). Count excludes code spans (paired backticks) and thematic-break
+  lines (``***``/``---`` alone on a line are block boundaries); list items and
+  ATX headings start their own paragraph so a stray cannot be balanced by the
+  next item. WARN-first discipline (parity with ``oversized_hint``): the class
+  is measured at 16 cells corpus-wide (issue #12112), to be burned down.
 - ``source_list_missing_newlines`` (ERROR): markdown cell whose ``source`` lost the
   ``\n`` that its structure implies. Two manifestations of the same newline-stripping
   artifact, both caught here BEFORE ``_as_text`` joins the list verbatim (which would
@@ -104,6 +113,10 @@ RULE_SEVERITY = {
     "setext_oversized": ERROR,
     "oversized_hint": WARN,
     "heading_in_list": WARN,
+    # #12112: WARN-first -- the class is measured at 16 cells corpus-wide; the
+    # drift gate on new hits is the issue's acceptance. A stray '**' is a
+    # cosmetic rendering defect, not a page-breaking one (unlike the ERRORs).
+    "unclosed_bold": WARN,
     "source_list_missing_newlines": ERROR,
     # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
     # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
@@ -141,6 +154,15 @@ _REPAIR_SCOPE_NOTE = (
 
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
 _SETEXT_RE = re.compile(r"^\s{0,3}(-{3,}|={3,})\s*$")
+# a thematic-break line (*, -, _) -- a BLOCK boundary in CommonMark, so it is
+# never part of a paragraph and its stars must not count toward emphasis.
+# Used by the unclosed_bold rule (#12112); the spaced forms (- - -, * * *)
+# fall through to _LIST_ITEM_RE, which is also a block boundary.
+_THEMATIC_BREAK_RE = re.compile(r"^\s{0,3}(?:\*{3,}|-{3,}|_{3,})\s*$")
+# a list-item start (CommonMark: 1-9 digits + . or ) + space, or a bullet).
+# Each item is its own paragraph, so a stray '**' cannot be balanced away by
+# the next item's stars (#12112).
+_LIST_ITEM_RE = re.compile(r"^\s{0,3}(?:[-*+]|\d{1,9}[.)])\s+")
 # a fenced-code marker: >=3 backticks OR tildes, optionally indented up to 3 spaces.
 # A ``` / ~~~ block renders its content VERBATIM, so a `---`/`===` line inside it is
 # literal text (ASCII art, a cryptarithme divider, a box-drawing rule) — NOT a setext
@@ -375,6 +397,51 @@ def _selfcheck() -> int:
     print("selfcheck OK: code_stmt_in_markdown fires on both observed forms "
           "(#11952 stub + PT_11 parameters anchor), silent on indented block / "
           "fence / prose")
+
+    # ---- unclosed_bold (#12112) ------------------------------------------------
+    # The six controls that validated the corpus scan: fires on the two
+    # CONFIRMED defect shapes of #12112 (mid-word stray balancing an earlier
+    # opener, bold opener with no closer); silent on the four legit renderings
+    # (valid bold, SOFT line break = valid CommonMark, thematic break, code
+    # span); fires again when a filet and a defect COEXIST in the same cell
+    # (the filet exclusion must not silence a real defect next to it).
+    bold_fixtures: list[tuple[str, str, bool]] = [
+        ("unclosed bold, mid-word stray (rl_6b cell 19 shape)",
+         "Le **bootstrap** est annule sur `terminated`. La valeur future reste "
+         "une estim**ee valide.",
+         True),
+        ("unclosed bold opener, no closer (QC-Py-10 cell 31 shape)",
+         "**Methode `CanEnterPosition()` : validation multi-niveaux.",
+         True),
+        ("valid bold",
+         "Texte avec **gras valide** bien ferme.",
+         False),
+        ("soft line break (valid CommonMark)",
+         "**gras sur\ndeux lignes** sans ligne vide.",
+         False),
+        ("thematic break line",
+         "Paragraphe un.\n\n---\n\nParagraphe deux.",
+         False),
+        ("code span (literal stars)",
+         "Texte avec `**pas du gras**` dedans.",
+         False),
+        ("filet + defect coexist in the same cell",
+         "**gras valide** ici.\n\n---\n\nTexte avec **defaut",
+         True),
+    ]
+    for name, src, expected in bold_fixtures:
+        fired = any(f["rule"] == "unclosed_bold"
+                    for f in scan_cell({"cell_type": "markdown", "source": src}))
+        if fired != expected:
+            failed.append(f"{name}: unclosed_bold fired={fired}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: unclosed_bold fires on both confirmed #12112 shapes "
+          "and on filet+defect coexistence; silent on valid bold / soft break / "
+          "thematic break / code span")
     return 0
 
 
@@ -440,6 +507,76 @@ def _looks_like_prose(text: str) -> bool:
         return True
     # a real title rarely ends with a period / contains multiple sentences
     return t.count(".") >= 1 and len(t.split()) >= 8
+
+
+def _strip_inline_code(text: str) -> str:
+    """Drop inline code spans (paired backtick runs) so their content is not counted.
+
+    CommonMark: an inline code span is a run of N backticks, matching content, and a
+    closing run of N backticks; an UNCLOSED run extends to the end of the paragraph.
+    The toggle mirrors that: a backtick run flips in/out of code, and an odd number of
+    runs leaves the tail in code (its '**' are literal, never emphasis delimiters).
+    """
+    out: list[str] = []
+    in_code = False
+    i, n = 0, len(text)
+    while i < n:
+        if text[i] == "`":
+            j = i
+            while j < n and text[j] == "`":
+                j += 1
+            in_code = not in_code
+            i = j
+        else:
+            if not in_code:
+                out.append(text[i])
+            i += 1
+    return "".join(out)
+
+
+def _unclosed_bold_cell(lines, fenced: set[int]) -> str | None:
+    """Return the first paragraph with an odd '**' count, else None (#12112).
+
+    Paragraph = contiguous non-blank, non-fence, non-thematic-break lines; ATX
+    headings and list-item starts begin their own paragraph (CommonMark). Odd
+    '**' count per paragraph -> at least one '**' renders literally or overflows
+    into bold (emphasis cannot cross a blank line, so an opener cannot close in
+    the next paragraph). Code spans are stripped before counting. The return
+    value is the offending paragraph (single-line, for evidence); the caller
+    emits one finding per cell.
+    """
+    para: list[str] = []
+
+    def flush() -> str | None:
+        if not para:
+            return None
+        txt = _strip_inline_code("\n".join(para))
+        if txt.count("**") % 2 == 1:
+            return " ".join(ln.strip() for ln in para)
+        return None
+
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            hit = flush()
+            if hit:
+                return hit
+            para = []
+            continue
+        stripped = ln.strip()
+        if not stripped or _THEMATIC_BREAK_RE.match(ln):
+            hit = flush()
+            if hit:
+                return hit
+            para = []
+            continue
+        if _HEADING_RE.match(ln) or _LIST_ITEM_RE.match(ln):
+            hit = flush()
+            if hit:
+                return hit
+            para = [ln]
+            continue
+        para.append(ln)
+    return flush()
 
 
 def scan_cell(cell) -> list[dict]:
@@ -633,6 +770,27 @@ def scan_cell(cell) -> list[dict]:
                 "hash": _cell_hash(rule, text),
             })
             break  # one per cell is enough
+
+    # ---- unclosed bold (#12112) -------------------------------------------------
+    # Count '**' per paragraph (CommonMark: emphasis cannot cross a blank line,
+    # so an odd count = at least one literal or overflowing '**'). Code spans
+    # are stripped (their '**' is literal); thematic-break lines are paragraph
+    # boundaries; list items / headings start their own paragraph so a stray
+    # '**' cannot be balanced by the next item's stars.
+    hit = _unclosed_bold_cell(lines, fenced)
+    if hit:
+        rule = "unclosed_bold"
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": ("odd number of '**' delimiters in a paragraph (CommonMark "
+                        "cannot close emphasis across a blank line): at least one "
+                        "'**' renders literally or overflows into bold. Match every "
+                        "opener with a closer inside the same paragraph, or remove "
+                        "the stray '**'"),
+            "evidence": hit[:100],
+            "hash": _cell_hash(rule, text),
+        })
 
     return findings
 
