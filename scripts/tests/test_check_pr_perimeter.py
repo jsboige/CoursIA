@@ -1524,3 +1524,102 @@ def test_11985_count_words_closed_list_boundary():
         "'onze fichiers' is outside COUNT_WORDS (closed list 1-10) -- the "
         "line must NOT enter the candidate list. Closed list = fail loud."
     )
+
+
+def test_12024_numeric_count_inside_codespan_is_not_a_candidate():
+    """#12024 / codespan-exclusion: a numeric COUNT_CLAIM inside a backtick
+    code-span (`` `2 fichiers` ``) is a CITED example, not an authorial
+    perimeter declaration. Founder case: PR #12024 body v3 listed illustrative
+    counts between backticks and the perimeter-review-guard flagged them as
+    unverifiable assertions. After the codespan-exclusion fix, lines whose
+    only COUNT_CLAIM trigger sits inside a backtick span are skipped.
+
+    This pins the FN control: 89/89 prior tests passed because the suite
+    contained no code-span example -- a detector is validated by the cases
+    it must NOT catch, not by the cases it does.
+    """
+    # Line whose ONLY count trigger sits inside a code-span -- must be skipped.
+    text = (
+        "Voici l'exemple documente : `2 fichiers` puis `three files`.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"a numeric count inside backticks must not enter the candidate "
+        f"stream; got {found!r}"
+    )
+
+
+def test_12024_word_form_inside_codespan_is_not_a_candidate():
+    """#12024 / codespan-exclusion word-form variant: `` `trois fichiers` ``
+    and `` `five files` `` between backticks are CITED examples. Founder case
+    on PR #12024 body v3 (perimeter-review-guard FAIL x3 lines on those exact
+    patterns). After the codespan-exclusion fix, lines whose only word-form
+    trigger sits inside a code-span are skipped.
+    """
+    # Body lines 61/62 from PR #12024 body v3: word-form counts between
+    # backticks. With the fix, neither line enters the candidate stream.
+    text = (
+        "- [x] Forme FR `trois fichiers` arming `body_declares_effective_count`\n"
+        "- [x] Forme EN `five files` arming `body_declares_effective_count`\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"word-form counts inside backticks must not enter the candidate "
+        f"stream; got {found!r}"
+    )
+
+
+def test_12024_codespan_exclusion_does_not_silence_real_assertion():
+    """#12024 / codespan-exclusion: a line that mixes a code-span example AND
+    an out-of-codespan count claim is STILL a candidate -- the real assertion
+    is the un-cited one. The exclusion is "all triggers inside", not
+    "any trigger inside".
+    """
+    text = (
+        "Cette PR remplace l'ancien format `trois fichiers` par le nouveau "
+        "qui declare 2 fichiers au total.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert any("2 fichiers" in c for c in found), (
+        f"a real out-of-codespan count claim must still enter the candidate "
+        f"stream even when the line also carries a code-spanned example; "
+        f"got {found!r}"
+    )
+
+
+def test_12024_double_backtick_codespan_is_excluded():
+    """#12024 / codespan-exclusion double-backtick variant: `` ``trois fichiers`` ``
+    (a code-span whose content itself contains a backtick) is still a
+    code-span, and its content is CITED, not claimed. CommonMark allows the
+    longer opener to host a single backtick inside.
+    """
+    text = (
+        "Use the pattern ``trois fichiers`` as the example.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"double-backtick code-spans must also be excluded; got {found!r}"
+    )
+
+
+def test_12024_real_body_fragment_does_not_enter_candidates():
+    """#12024 / end-to-end on a body fragment that reproduced the 3 FAIL lines
+    ai-01 cited in the diagnostic. The 4 occurrences (L9 prose x2, L61/62
+    code-span x2) must collapse to 0 candidates once (1)+(2) is in place:
+    L9 prose entries are pinned by separate tests above, the L61/L62 entries
+    collapse under the codespan-exclusion fix.
+    """
+    body = (
+        "## Summary\n"
+        "Cette PR livre la forme en toutes lettres -- par exemple "
+        "`trois fichiers` ou `five files` -- pour les PRs qui n'utilisent pas "
+        "de chiffres.\n"
+        "## Tests\n"
+        "- [x] Forme FR `trois fichiers` arming body_declares_effective_count\n"
+        "- [x] Forme EN `five files` arming body_declares_effective_count\n"
+    )
+    found = extract_perimeter_assertions(body)
+    assert found == [], (
+        f"body fragment that reproduces the founder FAIL lines must yield "
+        f"0 candidates under the codespan-exclusion fix; got {found!r}"
+    )

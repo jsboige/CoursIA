@@ -621,6 +621,70 @@ def _trigger_quoted(line: str, pos: int, length: int) -> bool:
     return any(a <= pos and pos + length <= b for a, b in _quote_spans(line))
 
 
+def _codespan_spans(line: str) -> list[tuple[int, int]]:
+    """Char spans of inline code on a single line (`` `...` ``, ````...````).
+
+    A trigger that sits inside a backtick code-span is CITED content -- the
+    author using code formatting to *show* an example (or to escape a
+    technical word), not making their own assertion. Same class as quoted
+    speech (see _quote_spans): the marker carries intent to be displayed,
+    not claimed.
+
+    CommonMark rules: `` `code` `` is a single-backtick span;
+    `` ``code with ` inside`` `` is the double-backtick variant. We handle
+    both, plus the case where a longer backtick run opens but no matching
+    closer appears on the line -- the span then runs to end of line
+    (CommonMark behaviour for unterminated inline code, and what GitHub
+    renders).
+
+    Measured on #12024 body v3 -- a 6-line snippet "(\\`trois fichiers\\` /
+    \\`five files\\`)" flagged 4 lines as `trois fichiers` / `five files`
+    candidates even though backticks clearly showed them as examples. The
+    pre-fix extractor had no code-span awareness; the founder case here
+    is "citer un exemple en l'écrivant comme du code n'est pas en faire
+    une assertion".
+    """
+    spans: list[tuple[int, int]] = []
+    i = 0
+    while i < len(line):
+        if line[i] != "`":
+            i += 1
+            continue
+        n = 0
+        while i + n < len(line) and line[i + n] == "`":
+            n += 1
+        close_pat = "`" * n
+        j = line.find(close_pat, i + n)
+        if j < 0:
+            spans.append((i, len(line)))
+            break
+        spans.append((i, j + n))
+        i = j + n
+    return spans
+
+
+def _trigger_in_codespan(line: str, pos: int, length: int) -> bool:
+    return any(a <= pos and pos + length <= b for a, b in _codespan_spans(line))
+
+
+def _trigger_in_quoted_or_codespan(line: str, pos: int, length: int) -> bool:
+    return _trigger_quoted(line, pos, length) or _trigger_in_codespan(line, pos, length)
+
+
+def _counts_all_quoted_or_codespan(line: str) -> bool:
+    """Every numeric COUNT_CLAIM on the line sits inside a quotation OR a code-span.
+
+    Wraps the original _counts_all_quoted with code-span awareness: a count
+    cited as `` `trois fichiers` `` (the founder case on #12024 body v3) is
+    displayed, not claimed. A line that only carries quoted / code-spanned
+    counts is not a perimeter assertion.
+    """
+    return all(
+        _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
+        for m in COUNT_CLAIM.finditer(line)
+    )
+
+
 def _counts_all_quoted(line: str) -> bool:
     """Every file-count claim on the line sits inside a quotation."""
     return all(
@@ -741,8 +805,8 @@ def extract_perimeter_assertions(text: str) -> list[str]:
             continue  # markdown table row: report structure, not an assertion
         low = line.lower()
         if COUNT_CLAIM.search(line):
-            if _counts_all_quoted(line):
-                continue  # quoting a count (reported speech), not claiming it
+            if _counts_all_quoted_or_codespan(line):
+                continue  # citing a count (reported speech / code example), not claiming it
             candidates.append(line)
             continue
         # #12024 / #11985 word-form extension: a body can declare its
@@ -751,11 +815,24 @@ def extract_perimeter_assertions(text: str) -> list[str]:
         # the candidate list and body_declares_effective_count is never
         # set for word-only declarations. Closed list FR/EN cardinals
         # 1-10 (see COUNT_WORDS rationale at line ~98).
-        if any(
-            re.search(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
-                      line, re.IGNORECASE)
+        word_triggers = [
+            (m, word)
             for word in COUNT_WORDS
-        ):
+            for m in re.finditer(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                                  line, re.IGNORECASE)
+        ]
+        if word_triggers:
+            # Same exclusion as numeric form: a word-form count cited inside
+            # a code-span (`` `trois fichiers` ``) is an example, not an
+            # authorial perimeter declaration. Founder case #12024: body v3
+            # listed two illustrative examples between backticks, the
+            # perimeter-review-guard flagged them as unverifiable assertions.
+            # An all-in-codespan word-form pattern is reported display.
+            if all(
+                _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
+                for m, _ in word_triggers
+            ):
+                continue
             candidates.append(line)
             continue
         if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
