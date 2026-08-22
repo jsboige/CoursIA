@@ -91,8 +91,14 @@ The following are foundational Grothendieck concepts NOT yet in Mathlib:
   - Motives (pure motives, Voevodsky's DM category)
   - Six operations (Grothendieck's full formalism) — Mathlib provides the base
     instance `f^* ⊣ f_*` on module sheaves (`AlgebraicGeometry.Modules.Sheaf`,
-    indexed by `DirectImage_en.lean`); `f_!` / `f^!` and the full formalism
-    remain absent
+    indexed by `DirectImage_en.lean`). This lake now delivers — at the
+    **presheaf** level, for an arbitrary functor `f : C ⥤ D` and `H = Type*`
+    — the pair of adjunctions `f_! ⊣ f^* ⊣ f^!` (`ExceptionalDirect_en.lean`
+    Part 34 + `ExceptionalInverse_en.lean` Part 35), i.e. the exact
+    symmetrics of `f^* ⊣ f_*` at the presheaf level. The sheaf-theoretic
+    proper-support `f_!` and the Verdier `f^!` remain **out of scope** (they
+    demand properness of `f` and Poincare duality respectively) — see the
+    "Honest ceiling" sections of both modules for the detail.
   - Grothendieck-Riemann-Roch
   - Grothendieck duality
   - Crystalline cohomology
