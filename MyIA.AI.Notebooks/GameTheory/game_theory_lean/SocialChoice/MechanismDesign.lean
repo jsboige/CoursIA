@@ -321,15 +321,16 @@ theorem sw_table_aa_ap : [sw .o1 .aa .ap, sw .o2 .aa .ap, sw .o3 .aa .ap, sw .o4
 theorem sw_table_ap_aa : [sw .o1 .ap .aa, sw .o2 .ap .aa, sw .o3 .ap .aa, sw .o4 .ap .aa] = [4, 5, 3, 0] := by decide
 theorem sw_table_ap_ap : [sw .o1 .ap .ap, sw .o2 .ap .ap, sw .o3 .ap .ap, sw .o4 .ap .ap] = [7, 5, 6, 0] := by decide
 
-/-! ### Proposition 6 : M₁ est un strict MOM (forme v1 : caractéristiques 1 et 2) -/
+/-! ### Proposition 6, caractéristique 2 + dominance stricte (caractéristique 1 non formalisée) -/
 
-/-- **Proposition 6 (Othman-Sandholm 2009)** — il existe des strict MOM
-    multi-agents avec objectif de bien-être social. Formellement, sur ce
-    domaine fini : (1) rapporter a' est strictement dominant pour les deux
-    agents, donc M₁ (qui choisit toujours o1) est le mécanisme truthful
-    « boxed » de mech ; (2) dès qu'un agent de type a dévie et joue a, le
-    bien-être social dépasse strictement celui de M₁ — le mécanisme fait
-    *mieux avec Byzantine*. -/
+/-- **Proposition 6 (Othman-Sandholm 2009)** — sur ce domaine fini : la
+    caractéristique 2 est formalisée ici — dès qu'un agent de type a dévie
+    et joue a, le bien-être social dépasse strictement celui de M₁ qui
+    choisit o1. La caractéristique 1 (M₁ Pareto-undominated parmi les
+    mécanismes truthful, argument `M_D` page 9) n'est **pas** formalisée
+    ici ; `o1_optimal_at_ap_ap` en est le premier appui : o1 est optimal
+    pour le profil (a', a'). Une formalisation complète de la caractéristique
+    1 reste un grain propre et borné pour un cycle suivant. -/
 theorem prop6_strict_mom :
     (∀ tr rc, uRow (mech .ap rc) tr > uRow (mech .aa rc) tr)
     ∧ (∀ tc rr, uCol (mech rr .ap) tc > uCol (mech rr .aa) tc)

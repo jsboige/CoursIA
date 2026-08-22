@@ -335,14 +335,16 @@ theorem sw_table_aa_ap : [sw .o1 .aa .ap, sw .o2 .aa .ap, sw .o3 .aa .ap, sw .o4
 theorem sw_table_ap_aa : [sw .o1 .ap .aa, sw .o2 .ap .aa, sw .o3 .ap .aa, sw .o4 .ap .aa] = [4, 5, 3, 0] := by decide
 theorem sw_table_ap_ap : [sw .o1 .ap .ap, sw .o2 .ap .ap, sw .o3 .ap .ap, sw .o4 .ap .ap] = [7, 5, 6, 0] := by decide
 
-/-! ### Proposition 6: M₁ is a strict MOM (v1 form: characteristics 1 and 2) -/
+/-! ### Proposition 6, characteristic 2 + strict dominance (characteristic 1 not formalized) -/
 
-/-- **Proposition 6 (Othman-Sandholm 2009)** — there exist strict multi-agent
-    MOMs with the objective of social welfare. Formally, on this finite
-    domain: (1) reporting a' is strictly dominant for both agents, so M₁
-    (which always picks o1) is the "boxed" truthful mechanism of mech;
-    (2) as soon as a type-a agent deviates and plays a, social welfare
-    strictly exceeds that of M₁ — the mechanism does *better with Byzantine*. -/
+/-- **Proposition 6 (Othman-Sandholm 2009)** — on this finite domain:
+    characteristic 2 is formalized here — as soon as a type-a agent deviates
+    and plays a, social welfare strictly exceeds that of M₁ which picks o1.
+    Characteristic 1 (M₁ Pareto-undominated among truthful mechanisms, the
+    `M_D` argument on page 9) is **not** formalized here; `o1_optimal_at_ap_ap`
+    is its first stepping stone: o1 is optimal for the (a', a') profile.
+    A complete formalization of characteristic 1 remains a clean and bounded
+    grain for a later cycle. -/
 theorem prop6_strict_mom :
     (∀ tr rc, uRow (mech .ap rc) tr > uRow (mech .aa rc) tr)
     ∧ (∀ tc rr, uCol (mech rr .ap) tc > uCol (mech rr .aa) tc)
