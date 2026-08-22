@@ -20,12 +20,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 188 |
+| Notebooks | 189 |
 | PRODUCTION | 0 |
-| BETA | 185 |
+| BETA | 186 |
 | ALPHA | 3 |
 
-## GameTheory (49 notebooks)
+## GameTheory (50 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -54,30 +54,31 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 23 | GameTheory-2 : Jeux sous forme normale (C# / .NET) —… | BETA | Oui |
 | 24 | GameTheory-2 (Part 2) : Support Enumeration — Équilibre… | BETA | Oui |
 | 25 | GameTheory-2-NormalForm | BETA | Oui |
-| 26 | GameTheory 2b - Formalisation Lean : Definitions de… | BETA | Non |
-| 27 | GameTheory-3 : Topologie des Jeux 2×2 — Twin C#… | BETA | Oui |
-| 28 | GameTheory-3-Topology2x2 | BETA | Oui |
-| 29 | GameTheory-4-NashEquilibrium (C#) | BETA | Oui |
-| 30 | GameTheory-4-NashEquilibrium | BETA | Oui |
-| 31 | GameTheory 4b - Theoreme d'Existence de Nash (Lean) | BETA | Non |
-| 32 | GameTheory 4c - Théorème d'Existence de Nash (C#) | ALPHA | Oui |
-| 33 | GameTheory 4c - Theoreme d'Existence de Nash (Python) | BETA | Non |
-| 34 | GameTheory-5-ZeroSum-Minimax (Twin C#) | BETA | Oui |
-| 35 | GameTheory-5-ZeroSum-Minimax | BETA | Oui |
-| 36 | GameTheory-5b — Théorème minimax de von Neumann… | BETA | Non |
-| 37 | GameTheory-6 : Évolution et Confiance — Twin C#… | BETA | Oui |
-| 38 | GameTheory-6-EvolutionTrust | BETA | Oui |
-| 39 | GameTheory-6c (C#) : Jeux Repetes et Theoreme Folk | BETA | Oui |
-| 40 | GameTheory-6c : Jeux Répétés et Théorème Folk (Folk… | BETA | Oui |
-| 41 | GameTheory-7-ExtensiveForm (Twin C#) | BETA | Oui |
-| 42 | GameTheory-7-ExtensiveForm | BETA | Oui |
-| 43 | GameTheory-8-CombinatorialGames (C#) | BETA | Oui |
-| 44 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
-| 45 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
-| 46 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
+| 26 | GameTheory-21 — Deux espèces de flèches : quand une… | BETA | Oui |
+| 27 | GameTheory 2b - Formalisation Lean : Definitions de… | BETA | Non |
+| 28 | GameTheory-3 : Topologie des Jeux 2×2 — Twin C#… | BETA | Oui |
+| 29 | GameTheory-3-Topology2x2 | BETA | Oui |
+| 30 | GameTheory-4-NashEquilibrium (C#) | BETA | Oui |
+| 31 | GameTheory-4-NashEquilibrium | BETA | Oui |
+| 32 | GameTheory 4b - Theoreme d'Existence de Nash (Lean) | BETA | Non |
+| 33 | GameTheory 4c - Théorème d'Existence de Nash (C#) | ALPHA | Oui |
+| 34 | GameTheory 4c - Theoreme d'Existence de Nash (Python) | BETA | Non |
+| 35 | GameTheory-5-ZeroSum-Minimax (Twin C#) | BETA | Oui |
+| 36 | GameTheory-5-ZeroSum-Minimax | BETA | Oui |
+| 37 | GameTheory-5b — Théorème minimax de von Neumann… | BETA | Non |
+| 38 | GameTheory-6 : Évolution et Confiance — Twin C#… | BETA | Oui |
+| 39 | GameTheory-6-EvolutionTrust | BETA | Oui |
+| 40 | GameTheory-6c (C#) : Jeux Repetes et Theoreme Folk | BETA | Oui |
+| 41 | GameTheory-6c : Jeux Répétés et Théorème Folk (Folk… | BETA | Oui |
+| 42 | GameTheory-7-ExtensiveForm (Twin C#) | BETA | Oui |
+| 43 | GameTheory-7-ExtensiveForm | BETA | Oui |
+| 44 | GameTheory-8-CombinatorialGames (C#) | BETA | Oui |
+| 45 | GameTheory 8 - Jeux Combinatoires | BETA | Oui |
+| 46 | GameTheory 8b - Jeux Combinatoires en Lean | BETA | Non |
 | 47 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
-| 48 | GameTheory-9-BackwardInduction (C#) | BETA | Oui |
-| 49 | GameTheory-9-BackwardInduction | BETA | Oui |
+| 48 | GameTheory 8c - Jeux Combinatoires : Approfondissement… | BETA | Oui |
+| 49 | GameTheory-9-BackwardInduction (C#) | BETA | Oui |
+| 50 | GameTheory-9-BackwardInduction | BETA | Oui |
 
 ## GameTheory/SocialChoice (7 notebooks)
 
