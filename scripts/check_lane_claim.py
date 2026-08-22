@@ -81,8 +81,18 @@ from grain_tag import extract_lane
 
 # A comment is a claim EVENT only if it carries one of these bracketed markers.
 # `[DONE]`/`[RELEASED]`/`[CANCELLED]`/`[ABANDONED]` close a claim; `[CLAIMED]`
-# opens one. Read on ISSUE comments (the claim registry per #9774), not on the
-# dashboard. Case-insensitive, tolerates inner spaces.
+# opens one; `[DELIVERED]` (#12320) closes a claim AND records the PR number
+# that carries the substance -- the 3rd marker, distinct from `[RELEASED]`
+# ("abandoned, reprenez") and `[DONE]` ("my work is in"): `[DELIVERED]` says
+# "the substance is on a PR, verify its state before re-claiming". Closing
+# semantics are identical to `[RELEASED]` for the reducer (it pops the lane
+# from `state`); the `pr_ref` attribute on the event is the durable trace
+# that downstream consumers can read. The future v2 conditional semantics
+# ("`[DELIVERED]` blocks while PR is OPEN, lifts when PR is CLOSED-without-
+# merge, locks permanently when PR is MERGED") is gated on coordinator
+# sign-off and lives in a follow-up -- this v1 closes the WRITING GAP, not
+# the CONDITIONAL GAP. Read on ISSUE comments (the claim registry per
+# #9774), not on the dashboard. Case-insensitive, tolerates inner spaces.
 # Line-anchored (`(?m)^...`): a marker only enacts a state change when it
 # STARTS a line -- the convention of every `--claim`/`--release` post and every
 # coordinator dispatch. A marker MENTIONED mid-sentence in prose is not an event.
@@ -103,7 +113,7 @@ from grain_tag import extract_lane
 # a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
 # match -- the mid-prose non-regression property is preserved.
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
+    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
@@ -119,7 +129,7 @@ _MARKER_RE = re.compile(
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
     r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*"
-    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\b"
+    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
@@ -189,7 +199,7 @@ def _mask_fenced_blocks(body: str) -> str:
 
 
 _OPEN = {"CLAIMED"}
-_CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
+_CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
 # gesture. Distinct from CLAIMED (grants to one) and RELEASED/DONE (closes one):
@@ -225,6 +235,18 @@ _OVERRIDE = {"OVERRIDE"}
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
     r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+)
+# #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
+# a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
+# RELEASED, but the vocabulary choice still records the writer's intent of
+# "my work is in a PR I have the number for"). Captured as an integer (the
+# first `#\d+` on the marker line), or None when absent. The `PR #` prefix is
+# required (loose `\d+` would catch issue numbers and other integers) so the
+# intent is unambiguous and the writer cannot accidentally invent a PR
+# reference that the consumer will go fetch. The fetch itself (state of PR
+# N) is left to consumers: the reducer stays pure.
+_DELIVERED_PR_REF_RE = re.compile(
+    r"(?im)\bPR\s*#(\d+)\b"
 )
 # #10958 -- the annotation suffix separator. Fleet claims append a trailing
 # annotation after the glob list: `paths: a/** -- 2026-08-11T18:10Z` (body
@@ -281,6 +303,29 @@ class ClaimEvent(dict):
     @property
     def is_open(self) -> bool:
         return self.get("action") == "open"
+
+    @property
+    def is_delivered(self) -> bool:
+        """True on a `[DELIVERED]` marker (#12320).
+
+        The reducer treats it like any other close marker (the lane is popped
+        from `state`), but the predicate is the readable form for consumers
+        that want to distinguish "abandoned" from "delivered to a PR". The
+        `pr_ref` attribute (int | None) holds the captured PR number when
+        the marker line carried `PR #N`; otherwise None.
+        """
+        return self.get("marker") == "DELIVERED"
+
+    @property
+    def pr_ref(self) -> int | None:
+        """The PR number captured from a `[DELIVERED] … PR #N` marker (#12320).
+
+        None on every non-DELIVERED marker, and on a DELIVERED marker whose
+        line carried no `PR #N` (a legal but unreferenced close). Future v2
+        conditional logic (PR OPEN = block, PR MERGED = lock) reads this
+        field to drive its gate; v1 only surfaces it in the JSON summary.
+        """
+        return self.get("pr_ref")
 
     @property
     def is_override(self) -> bool:
@@ -455,6 +500,14 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
         else:
             action = "close"
         paths = _extract_paths_clause(line) if line else None
+        # #12320 -- [DELIVERED] carries an optional `PR #N` reference on the
+        # same marker line. Parse it here so downstream consumers (the JSON
+        # summary, future v2 conditional logic) can read the PR number without
+        # re-walking the body. `pr_ref` is the integer number (e.g. 12271), or
+        # None when absent or on a non-DELIVERED marker. The PR state itself
+        # (OPEN/CLOSED/MERGED) is left to the consumer to fetch via `gh` --
+        # the reducer stays pure and side-effect-free, by design.
+        pr_ref = _extract_delivered_pr_ref(line) if marker == "DELIVERED" else None
         # Lane attribution per marker line: the marker's OWN line first, then
         # the whole body as fallback. The line-first order is the fix -- the
         # legacy whole-body search always picked the FIRST `lane <token>` of
@@ -470,6 +523,12 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
             author=author,
             url=url,
             paths=paths,
+            # #12320 -- pr_ref is populated ONLY for DELIVERED markers (the
+            # rest keep None). The summary exposes it so a consumer reading
+            # "my_active_claim: false" can still surface the historical PR
+            # reference for forensics, and so a v2 conditional reducer can
+            # gate the close on the PR state.
+            pr_ref=pr_ref,
             # #10597 hardener -- preserve the unparseable subset of the scope
             # (residual `{` or `}` after `_expand_brace_groups`). The reducer
             # and check layer use this to lift the claim back to EPIC-WIDE
@@ -614,6 +673,22 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
         for e in _expand_brace_groups(p):
             expanded.append(e)
     return expanded or None
+
+
+def _extract_delivered_pr_ref(line: str | None) -> int | None:
+    """Return the integer PR number from a `[DELIVERED] ... PR #N` line (#12320).
+
+    `None` when the line carries no `PR #N` reference (a legal but
+    unreferenced DELIVERED). The marker word must already have been
+    matched (this helper is a pure extractor; it does NOT validate the
+    marker itself). The `PR` prefix is required so a stray `#1234` in
+    the body cannot be mistaken for a PR reference -- the writer must
+    explicitly name `PR #N` for the close to record the linkage.
+    """
+    if not line:
+        return None
+    m = _DELIVERED_PR_REF_RE.search(line)
+    return int(m.group(1)) if m else None
 
 
 def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
@@ -773,7 +848,12 @@ def _gh_issue_comments(issue: str) -> dict:
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
-            "--json", "number,title,comments",
+            # #12156 -- `labels` added so the umbrella classifier
+            # (`_is_umbrella_issue`) can read the canonical `EPIC` label the
+            # picker hydrates from. The label-route is the authoritative one;
+            # the title-route stays a fallback for the historic pre-label
+            # inventory.
+            "--json", "number,title,labels,comments",
         ],
         capture_output=True, text=True, shell=False,
     )
@@ -1229,6 +1309,34 @@ def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
     return (now - parsed).total_seconds() / 3600.0
 
 
+def _is_umbrella_issue(payload: dict) -> bool:
+    """Return True if `payload` describes an umbrella / EPIC-style issue (#12156).
+
+    Mirrors `scripts/pick_idle_grain.py:130` so the two organs speak the same
+    language: an issue is classified as an umbrella when (a) one of its labels
+    is the literal string `EPIC` (case-sensitive -- that is the label the picker
+    hydrates from `gh issue list --label EPIC`), OR (b) the title starts with
+    `[EPIC` / `EPIC` after stripping the leading `[`. The label-route is the
+    authoritative one; the title-route catches the historic pre-label inventory
+    that the picker also accepts.
+
+    Returns False on missing keys (defensive: the from-json path may carry a
+    subset of fields). Never raises -- a malformed payload should degrade to
+    the pre-#12156 behaviour (no umbrella flag) rather than crash.
+    """
+    try:
+        labels = payload.get("labels") or []
+        for lab in labels:
+            name = lab.get("name") if isinstance(lab, dict) else None
+            if isinstance(name, str) and name == "EPIC":
+                return True
+        title = payload.get("title") or ""
+        upper = title.upper().lstrip("[")
+        return upper.startswith("EPIC")
+    except (AttributeError, TypeError):
+        return False
+
+
 def _parse_iso_utc(iso: str) -> datetime | None:
     """Parse a GitHub server `createdAt` (ISO 8601 UTC, trailing 'Z').
 
@@ -1325,6 +1433,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
 
+    # #12156 -- umbrella signal. Two booleans surface the diagnostic that
+    # the body of #12156 asks to expose in `check_lane_claim.py`'s JSON:
+    # (a) `is_umbrella` mirrors `pick_idle_grain.py:130` (label `EPIC` or
+    #     title prefix `[EPIC`/`EPIC`), so a caller can know which urn an
+    #     issue would have come from; (b) `epic_wide_on_umbrella` flags the
+    #     pathology the body names -- an umbrella whose blocking claims
+    #     are all epic-wide (no `paths:` or every glob dead per #10958 /
+    #     #12072). The flag is True ONLY when an umbrella is held
+    #     effectively-epic-wide by another lane AND the umbrella has no
+    #     scoped claim; on a CLEAR issue or on a unit issue the flag stays
+    #     False (the umbrella umbrellas nothing, or there is nothing to
+    #     umbrella).
+    is_umbrella = _is_umbrella_issue(payload)
+    if is_umbrella and others:
+        epic_wide_on_umbrella = all(
+            (ev.get("paths") is None)
+            or _claim_scope_effectively_epic_wide(ev)
+            or bool(ev.scope_declared_off_marker)
+            for ev in others.values()
+        )
+    else:
+        epic_wide_on_umbrella = False
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -1332,6 +1463,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
         "stale_claims": sorted(stale_others),
+        # #12156 -- umbrella classifier (`is_umbrella`) and the pathology it
+        # describes (`epic_wide_on_umbrella`). Both default False: on a
+        # unit-issue the umbrella flag stays False; on a CLEAR umbrella the
+        # PATHOLOGY flag stays False too (the lock is empty, not held
+        # wrong). The flags let a coordinator's sweep aggregate
+        # `epic_wide_on_umbrella=True` across issues to count how many
+        # umbrellas are stuck in the pattern #12156 names.
+        "is_umbrella": is_umbrella,
+        "epic_wide_on_umbrella": epic_wide_on_umbrella,
         "active_claims": {
             ln: {
                 "claimed_at": ev.created_at,
@@ -1339,6 +1479,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "marker": ev.marker,
                 "url": ev.url,
                 "paths": ev.get("paths"),
+                # #12320 -- PR reference on a `[DELIVERED]` marker. Surfaced
+                # alongside the rest of the claim fields so a consumer that
+                # reads "my_active_claim: false" can still pull the historical
+                # PR for forensics, and so a v2 conditional reducer can drive
+                # its gate on the live PR state. None on every non-DELIVERED
+                # marker, and on a DELIVERED marker that did not name a PR.
+                "pr_ref": ev.get("pr_ref"),
                 # #10597 hardener -- surface the witness list of residual
                 # `{`/`}` so a human reviewer can see WHY an unparseable claim
                 # is being treated as epic-wide. The list may be empty (the
@@ -1363,6 +1510,21 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             }
             for ln, ev in sorted(active.items())
         },
+        # #12320 -- `delivered_claims` is the forensic record of every lane
+        # that CLOSED via `[DELIVERED]` on this issue. The reducer already
+        # popped those lanes from `active_claims` (a DELIVERED closes), so
+        # their history would otherwise be invisible to a lane that arrives
+        # AFTER the close. Surfaced here so a `check` that returns
+        # `my_active_claim: false` AND `blocking_lanes: []` still tells the
+        # reader "another lane already delivered this, on PR #N -- verify
+        # the PR state before you start work". v1 only exposes the captured
+        # PR number; v2 (gated on coordinator sign-off) will look up the
+        # LIVE PR state and add `pr_state: OPEN|CLOSED|MERGED`.
+        "delivered_claims": sorted({
+            ev.get("pr_ref")
+            for ev in events
+            if ev.marker == "DELIVERED" and ev.get("pr_ref")
+        }),
         "unattributed_markers": len(unattributed),
         # #11239 -- bare-marker lines (no brackets) carrying a claim motif.
         # The organ does not read them (`_MARKER_RE` requires the brackets),

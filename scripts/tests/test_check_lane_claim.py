@@ -11,6 +11,7 @@ These tests replay that exact trap and assert the tool is not fooled.
 Run: python -m pytest scripts/tests/test_check_lane_claim.py
 """
 import fnmatch
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,8 +33,16 @@ def comment(body, created_at, author="jsboige", url=None):
     }
 
 
-def payload(*comments, number=9764, title="t"):
-    return {"number": number, "title": title, "comments": list(comments)}
+def payload(*comments, number=9764, title="t", labels=None):
+    # #12156 -- `labels` defaults to None (absent key) so pre-existing tests
+    # that don't care about the umbrella signal stay byte-equivalent: the
+    # helper in `_is_umbrella_issue` falls back to `payload.get("labels") or []`
+    # and degrades to the title-route. Tests that need the umbrella signal
+    # pass `labels=[{"name": "EPIC"}]` explicitly.
+    d = {"number": number, "title": title, "comments": list(comments)}
+    if labels is not None:
+        d["labels"] = labels
+    return d
 
 
 # --- extract_lane (grain_tag, now reused by the guard) -----------------------
@@ -120,7 +129,7 @@ def test_parse_open_claim():
 
 
 def test_parse_close_markers():
-    for marker in ("RELEASED", "DONE", "CANCELLED", "ABANDONED"):
+    for marker in ("RELEASED", "DONE", "CANCELLED", "ABANDONED", "DELIVERED"):
         ev = clc.parse_claim_event(comment(
             f"[{marker}] lane myia-po-2024:CoursIA -- done",
             "2026-08-06T23:00:00Z",
@@ -128,6 +137,64 @@ def test_parse_close_markers():
         assert ev is not None
         assert ev.is_open is False
         assert ev.marker == marker
+
+
+def test_parse_delivered_captures_pr_ref():
+    """#12320 -- `[DELIVERED] lane X -- PR #N` records the PR reference.
+
+    The PR number is a parsed integer on the event, distinguishing
+    "delivered to a PR I have the number for" from a bare DELIVERED. The
+    reducer treats both as closes, so v1 only verifies that the writer's
+    intent is durably recorded for the summary and the future v2 gate.
+    """
+    ev = clc.parse_claim_event(comment(
+        "[DELIVERED] lane myia-po-2023:CoursIA-2 -- PR #12271",
+        "2026-08-22T12:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_delivered is True
+    assert ev.pr_ref == 12271
+    assert ev.is_open is False
+
+
+def test_parse_delivered_without_pr_ref_still_closes():
+    """A DELIVERED without a PR reference is a legal close; just no pr_ref.
+
+    The marker closes the claim like a RELEASED would. The empty pr_ref
+    is honest about the gap: the writer chose the DELIVERED vocabulary
+    without naming a PR, so the consumer cannot fetch one.
+    """
+    ev = clc.parse_claim_event(comment(
+        "[DELIVERED] lane myia-po-2023:CoursIA-2 -- substance shipped",
+        "2026-08-22T12:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_delivered is True
+    assert ev.pr_ref is None
+    assert ev.is_open is False
+
+
+def test_extract_delivered_pr_ref_handles_stray_hash():
+    """`#1234` without the `PR` prefix is NOT a PR reference (#12320).
+
+    The writer must explicitly name `PR #N` -- this prevents an issue
+    number (e.g. `#12320` in the body text) from being mistaken for a
+    PR reference the consumer would go fetch. Stray hash is ignored.
+    """
+    assert clc._extract_delivered_pr_ref(
+        "[DELIVERED] lane X -- see #12320 for the issue"
+    ) is None
+    # The PR keyword IS required
+    assert clc._extract_delivered_pr_ref(
+        "[DELIVERED] lane X -- PR #12320"
+    ) == 12320
+    # And `Pull Request` is not accepted (we want a short form, easy to
+    # grep, easy to type).
+    assert clc._extract_delivered_pr_ref(
+        "[DELIVERED] lane X -- Pull Request #12320"
+    ) is None
 
 
 def test_parse_non_marker_is_none():
@@ -3225,3 +3292,270 @@ def test_run_check_summary_off_marker_field_empty_without_signal(capsys):
     clc._run_check(p, "myia-po-2025:CoursIA")
     out = capsys.readouterr().out
     assert '"scope_declared_off_marker": []' in out
+
+
+# --- #12156 -- umbrella / epic-wide-on-umbrella summary fields ---------------
+
+
+def test_run_check_summary_is_umbrella_true_on_EPIC_label(capsys):
+    # #12156 acceptance (1) -- un umbrella labellise `EPIC` expose
+    # `is_umbrella: true` au niveau top-level du summary, miroir du picker
+    # qui lit la meme etiquette (cf `scripts/pick_idle_grain.py:130`).
+    # Note : un umbrella + claim epic-wide sans `paths:` est
+    # simultanement `is_umbrella: true` ET `epic_wide_on_umbrella: true`
+    # (la pathologie que le body denomme). Les deux flags sont
+    # orthogonaux -- le premier classifie, le second diagnostique.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    # Le test suivant (`test_run_check_summary_epic_wide_on_umbrella_true_*`)
+    # est l'acceptance explicite de la pathologie sur le meme pattern.
+    # Ici on verifie juste que le classifieur fonctionne ; le controle
+    # pathologie-false est dans `..._false_when_scoped`.
+    assert '"epic_wide_on_umbrella":' in out
+
+
+def test_run_check_summary_is_umbrella_true_on_title_prefix(capsys):
+    # #12156 acceptance (2) -- fallback title-route : un titre commencant par
+    # "[EPIC" est classifie umbrella meme sans label explicite (le picker
+    # accepte la meme forme).
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (pre-label inventory)",
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+
+
+def test_run_check_summary_is_umbrella_false_on_unit_issue(capsys):
+    # Controle : une issue unitaire (label `documentation`, titre sans
+    # `EPIC`) expose `is_umbrella: false` -- la classification ne contamine
+    # pas le cas general.
+    p = payload(
+        number=9890,
+        title="Emojis dans comparatif-owui-vs-ai-engine.md",
+        labels=[{"name": "documentation"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": false' in out
+    assert '"epic_wide_on_umbrella": false' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_true_when_blocking_epic_wide(capsys):
+    # #12156 acceptance (3) -- la pathologie que le body denomme : un
+    # umbrella dont l'unique claim bloquant est epic-wide (pas de clause
+    # `paths:`) expose `epic_wide_on_umbrella: true`. C'est exactement le
+    # cas mesure sur #1206 par l'auteur de l'issue.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2026:CoursIA\n",
+            "2026-08-11T12:29:34Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (umbrella pathologique)",
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": true' in out
+    assert '"blocking_lanes": [\n    "myia-po-2026:CoursIA"' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_when_scoped(capsys):
+    # #12156 acceptance (4) -- le meme umbrella, mais avec un claim scope
+    # (`paths: ...`) qui matche un fichier REEL du repo expose
+    # `epic_wide_on_umbrella: false`. Le mecanisme discerne bien la
+    # pathologie du cas nominal -- un glob mort (vide) serait au
+    # contraire releve par le fail-CLOSED #10958 et remonte en
+    # effectively-epic-wide, ce qui est un COMPORTEMENT VOUULU (un glob
+    # mort = broken claim). On utilise donc un glob qui pointe vers un
+    # fichier Lean qui existe sur `main` (CGT) pour valider la voie
+    # saine.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/*.lean\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    # Sanity : le scope est bien enregistre, pas lift en epic-wide.
+    assert '"empty_scope": []' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_on_clear_umbrella(capsys):
+    # Controle : un umbrella sans aucun claim actif expose
+    # `epic_wide_on_umbrella: false` (la pathologie presuppose un blocage).
+    p = payload(
+        number=12207,
+        labels=[{"name": "EPIC"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    assert '"blocked": false' in out
+
+
+def test_is_umbrella_issue_handles_missing_labels_key():
+    # Le helper degrade proprement sur un payload qui n'a pas la cle
+    # `labels` (sous-ensemble du from-json historique) -- pas d'exception,
+    # retour False (= defaut pre-#12156).
+    assert clc._is_umbrella_issue({"title": "[EPIC] anything"}) is True
+    assert clc._is_umbrella_issue({"title": "anything"}) is False
+    assert clc._is_umbrella_issue({}) is False
+    # Label invalide (None / dict sans name) : pas de crash.
+    assert clc._is_umbrella_issue({"labels": [None, {}, {"name": "x"}]}) is False
+
+
+# --- #12320 -- [DELIVERED] vocabulary for "substance is on a PR" closes ----
+# See #12320 / #12223. Two lanes shipped the same Lean-16g notebook; the
+# first [RELEASED] said "libre" and the second lane read it as such, missed
+# the "PR #12271 deja livree" prose three words away, and re-shipped the
+# same file. A third marker `[DELIVERED] lane X -- PR #N` makes the
+# vocabulary unambiguous: the substance is on a PR, the consumer goes
+# to check the PR state before re-claiming. This test family pins the
+# v1 surface: the reducer treats DELIVERED as a close (the lane pops
+# from `state`), and the JSON summary surfaces the captured PR number
+# under `delivered_claims`. The v2 conditional gate (PR OPEN = block,
+# PR CLOSED = lift, PR MERGED = lock permanently) is gated on
+# coordinator sign-off and is NOT covered here.
+
+
+def _json_out(captured) -> dict:
+    """Split capsys output to extract the JSON summary, ignoring the trailing CLEAR line.
+
+    The check prints the JSON first, then a `CLEAR: no other lane claims #N`
+    or `BLOCKED: ...` trailer on stdout. The test only cares about the
+    JSON; the trailer makes a bare `json.loads(out)` raise on extra data.
+    """
+    text = captured.out
+    # The trailer begins with a newline-then-non-JSON line. Cut at the
+    # first newline-followed-by-non-`{` to keep the JSON block only.
+    head = text.split("\nCLEAR:")[0].split("\nBLOCKED:")[0]
+    return json.loads(head)
+
+
+def test_delivered_close_drops_lane_from_active_claims(capsys):
+    """A [DELIVERED] close behaves like [RELEASED] in the reducer (#12320).
+
+    The two markers are distinguishable on the event (`ev.marker` and
+    `ev.is_delivered`) but REDUCE the same way: the lane is popped from
+    `state`. The summary shows `my_active_claim: false` for the
+    delivering lane and `blocking_lanes: []` for any other lane that
+    arrives after the close.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: Lean-16g-*.ipynb",
+                "2026-08-22T01:41:00Z"),
+        comment("[DELIVERED] lane myia-po-2024:CoursIA-2 -- PR #12271 (substance shipped)",
+                "2026-08-22T04:14:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    # The forensic record: a PR number that lived in the issue's history
+    # even though no active claim holds it any more.
+    assert out["delivered_claims"] == [12271]
+
+
+def test_delivered_claims_in_json_summarises_history(capsys):
+    """The `delivered_claims` list in the summary is the forensic trace (#12320).
+
+    When a lane reads a CLEAR issue, the summary now reports every
+    historical `[DELIVERED] … PR #N` close on the issue. v1 surfaces
+    only the PR numbers (sorted, deduplicated); v2 will add the live
+    PR state. The motivating use case is #12223: po-2024 reads CLEAR,
+    the summary tells po-2024 "PR #12271 was delivered here, go check
+    it before you start".
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12270",
+                "2026-08-22T02:00:00Z"),
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance B",
+                "2026-08-22T03:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12275",
+                "2026-08-22T05:00:00Z"),
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = _json_out(capsys.readouterr())
+    assert out["delivered_claims"] == [12270, 12275]
+
+
+def test_delivered_does_not_block_subsequent_claim(capsys):
+    """v1: a [DELIVERED] does NOT block a subsequent [CLAIMED] from a different lane.
+
+    The vocabulary change closes the WRITING GAP (the writer's intent
+    is now recorded), not the CONDITIONAL GAP (v2 will gate the close
+    on the live PR state). Until v2 lands, a [DELIVERED] is a close --
+    a subsequent [CLAIMED] from a different lane on the same issue is
+    NOT blocked by the historical delivery. The PR number survives in
+    the summary as the forensic record, but the gate is open.
+
+    This is intentional: the alternative (a [DELIVERED] blocks until
+    the PR is MERGED) requires reading the PR state from `gh`, which
+    is a side effect the reducer was deliberately built without.
+    Coordinator sign-off gates the v2 release.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12270",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    # PR #12270 still surfaced as a forensic record.
+    assert out["delivered_claims"] == [12270]
+
+
+def test_is_delivered_property_distinguishes_marker():
+    """`is_delivered` is the readable form for the v1 close.
+
+    `is_open` and `is_override` are the existing predicates. The new
+    one is the analogue for the 3rd marker: it reads true ONLY on a
+    `[DELIVERED]` event, false on every other event (RELEASED, DONE,
+    CANCELLED, ABANDONED, CLAIMED, OVERRIDE).
+    """
+    # DELIVERED
+    ev = clc.parse_claim_event(comment(
+        "[DELIVERED] lane X -- PR #1", "2026-08-22T01:00:00Z"))
+    assert ev.is_delivered is True
+    assert ev.is_open is False
+    # RELEASED is NOT delivered
+    ev = clc.parse_claim_event(comment(
+        "[RELEASED] lane X -- abandoned", "2026-08-22T01:00:00Z"))
+    assert ev.is_delivered is False
+    assert ev.is_open is False
+    # CLAIMED is NOT delivered
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED] lane X -- working", "2026-08-22T01:00:00Z"))
+    assert ev.is_delivered is False
+    assert ev.is_open is True

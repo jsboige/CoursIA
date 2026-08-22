@@ -3,8 +3,6 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
-namespace MyNotebookLib;
-
 public class WorkbookUpdateInteraction(string notebookPath, ILogger logger)
 	: WorkbookInteractionBase(notebookPath, logger)
 {
@@ -112,4 +110,3 @@ public class WorkbookUpdateInteraction(string notebookPath, ILogger logger)
 		_logger.LogInformation(message);
 		return Task.FromResult(message);
 	}
-}

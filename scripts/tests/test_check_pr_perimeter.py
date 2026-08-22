@@ -1005,6 +1005,92 @@ def test_modified_files_count_with_qualifier_still_blocks():
     assert cand.blocking is True
 
 
+# #12184 -- measurement antecedent. "lake 70 fichiers" / "corpus N fichiers"
+# / "count_code_sorry.py ... N fichiers" -- the count is an EXTERNAL tool
+# output on a third-party corpus (Lean lake, registry, scan target), NEVER
+# the PR's file list. Founder case #12181 l.26: "lake de 70 modules, 1 sorry
+# reel distinct" red on a 1-file PR. Same family as HIT_ANTECEDENT / LOCATIVE_PREP.
+
+
+def test_incidental_measurement_antecedent_is_signal_not_blocking():
+    """#12184: 'lake N fichiers' / 'corpus N fichiers' / 'count_code_sorry.py N'
+    measure a third-party corpus, not the PR's diff. Founder case #12181
+    (body variant 'lake de 70 modules') does not even match COUNT_CLAIM
+    (modules, not fichiers), so the class of concern is future bodies that
+    explicitly say 'lake N fichiers' -- the antecedent exemption is preventive."""
+    lines = [
+        # The preventive shape that the issue body text anticipated
+        "lake 70 fichiers, 1 sorry reel distinct",
+        "lake of 70 files, 1 real sorry distinct",
+        # count_code_sorry.py script name
+        "`count_code_sorry.py` rendu: 36 fichiers naifs sur le corpus Lean",
+        # corpus / scan / registre / registry
+        "corpus 158 fichiers du registre ICT",
+        "scan sur 73 fichiers du depot",
+        "registre 200 fichiers de la vague",
+        # mesures sur
+        "mesures sur 1 500 fichiers",
+        # check_* script name
+        "check_pr_perimeter : 4 fichiers en fenetre",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"measurement tool output, not perimeter: {line[:60]}"
+
+
+def test_measurement_antecedent_does_not_swallow_real_perimeter_assertion():
+    """#12184 FN control: a line that mentions 'lake' but actually asserts a
+    perimeter (scope word + diffstat neighborhood) MUST stay blocking. The
+    exemption sits inside the FN-safety guards in _count_is_incidental
+    (no scope word, no diffstat) -- a perimeter-shaped line is not
+    incidental regardless of antecedent vocabulary."""
+    lines = [
+        # scope word + diffstat -> real assertion, must stay blocking
+        "Perimetre : lake 70 fichiers modifies (PR ship lake de 70 fichiers)",
+        # count under exclusivity marker + scope word
+        "lake 70 fichiers uniquement, scope = perimetre PR",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is True, f"real perimeter assertion must stay blocking: {line[:60]}"
+
+
+def test_measurement_antecedent_vocabulary_closed_list():
+    """#12184 closed-list: only the tool names enumerated in MEASUREMENT_ANTECEDENT
+    trigger the exemption. Random words (e.g. 'rapport', 'output') must not
+    absorb genuine perimeter assertions."""
+    line = "rapport de 70 fichiers envoyes au CI"
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True, "closed-list antecedent: 'rapport' is not an external measurement tool"
+
+
+def test_founder_body_12181_lake_modules_passes_unchanged():
+    """#12184 FN control on the actual founder body. The body of #12181
+    line 26 says 'lake de 70 modules, 1 sorry reel distinct' -- 'modules'
+    is not in COUNT_CLAIM (fichiers|files only) so the line never extracts
+    as a candidate and the guard passes. The antecedent exemption is a
+    safety net for FUTURE bodies that use the equivalent 'lake N fichiers'
+    phrasing (the issue body example), not a fix to the founder body
+    itself."""
+    line = "lake de 70 modules, 1 sorry reel distinct"
+    # 'modules' does not match COUNT_CLAIM -- not a candidate
+    assert extract_perimeter_assertions(line) == [], "modules is not fichiers/files"
+    # `--scan-thread` calls `select_candidates` first; an empty candidate
+    # list means no body assertion is confronted -> the guard's verdict is
+    # determined by the file list alone (1 file, no claim), and the issue
+    # #12181 reports `VERDICT: OK`. The direct `--assert` path, in
+    # contrast, would flag the line as 'unverifiable wording' -- a
+    # DIFFERENT organ concern (the line alone isn't a perimeter claim,
+    # which is exactly the property the antecedent exemption preserves for
+    # the scan-thread path).
+    items = [{"kind": "PR body", "author": "jsboige", "body": line, "source": "body", "ts": ""}]
+    cands, _ = select_candidates(items, n_files=1)
+    assert cands == [], "no candidates in --scan-thread mode for the founder body line"
+
+
 # #12057 -- compte-antecedent. "N unites (M fichiers)" et "M fichiers pointent
 # ici" nomment la PROVENANCE ou la PORTEE d'une mesure, jamais le perimetre de
 # la PR. Meme famille que HIT_ANTECEDENT: mauvaise surface, pas mauvais compte.

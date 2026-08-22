@@ -2,8 +2,6 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
-namespace MyNotebookLib;
-
 public class WorkbookValidation(string notebookPath, ILogger logger) : WorkbookInteractionBase(notebookPath, logger)
 {
 
@@ -22,4 +20,3 @@ public class WorkbookValidation(string notebookPath, ILogger logger) : WorkbookI
 		_logger.LogInformation(message);
 		return Task.FromResult(message);
 	}
-}
