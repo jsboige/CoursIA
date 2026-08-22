@@ -119,8 +119,17 @@ COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
 OVERRIDE_LANE = re.compile(r"\[OVERRIDE\]\s+lane\s+\S+")
 
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
+# #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
+# complete `CHANGES_REQUESTED` (nom) : Hermes self-bot est force a state:COMMENTED
+# par GitHub (PR sur son propre compte), donc son verdict = texte du body. Verifier
+# les 2 formes couvre 9 corpus mesures (cf issue #12311), dont #12267 et #12288
+# rendus mergeable a tort par l'absence du verbe. `has_live_marker` filtre les
+# sous-chaines citees (CITERS ligne 455+), donc ajouter un verbe n'ouvre pas la
+# porte aux faux positifs « 0 REQUEST_CHANGES » (#11916 controle negatif) :
+# CITERS inclut deja « zero » et sera etendu de « 0 » (cf ligne ~470).
 CONCERN_MARKERS = (
-    "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "NEEDS_CHANGES", "CONCERNS",
+    "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
+    "NEEDS_CHANGES", "CONCERNS",
     "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
     "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
     # Miroir anglais de « avant merge » : fenetre 04-23..04-30 (triage po-2023,
@@ -282,22 +291,22 @@ _MENTION_VERDICT = re.compile(
     r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
     r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
 
-# #11744 — Position A : titre de section `## ...VERDICT...`. La section est en
-# mention par construction (un titre ne « declare » jamais un verdict, il
-# l'evoque). Limite : 80 chars du `##` au verdict pour eviter les titres tres
-# longs qui seraient des resumes sections sans mention explicite. Compteur
-# cumulatif : l'eventuelle emission en corps de section est geree separement
-# par les CONCERN_MARKERS et `_is_cited` (les emissions reelles passent par
-# `MARKER:` nu ou par le state de la review, pas par un nom de verdict
-# eparpille dans une prose narrative).
-# Critere : nom de verdict = (a) TOUT en majuscules (>=4 chars) OU (b) contient
-# un underscore. Un titre ne contient presque jamais un mot de 4+ majuscules
-# consecutives SAUF un nom de verdict — c'est exactement la signature qu'on
-# cherche. Le pattern `[A-Z][A-Z_]{3,}` (v1) etait trop court (matche aussi
-# « Remedes » partiellement). **PAS de `(?i)` ici** : on veut strictement
-# `[A-Z]` (majuscule), pas `[a-zA-Z]` (case-insensitive).
+# #12311 (cf grain) — Position A : titre de section. Le pattern historique
+# (`[A-Z]{4,}` puis `[A-Z][A-Z_]{2,}[A-Z]`) neutralisait en sous-chaine les
+# VERBES d'emission directe dans les titres, ex. « ## [Hermes] Review —
+# REQUEST_CHANGES (...) » capturait `CHANGES` (7 majuscules) au sein de
+# `REQUEST_CHANGES`. Hermes self-bot force a state:COMMENTED (#12311) ecrit
+# son verdict dans le TITRE — neutraliser systematiquement le titre rend la
+# detection aveugle exactement sur le canal qu'elle doit lire.
+# Discrimination : un titre **avec prefixe agent reviewer** (`[Hermes]`,
+# `[NanoClaw]`, `[Claude]`, `[Review]`, `[Hermes self-bot]`, etc.) est une
+# EMISSION (le reviewer declare son verdict dans le titre). Un titre **sans
+# prefixe** (ex. `## Remedes au CHANGES_REQUESTED`) est une MENTION (rapport
+# de remediation qui evoque un verdict anterieur). On preserve le verdict
+# uniquement dans le premier cas. Le tag agent est matche dans les 80 chars
+# entre `##` et le verdict (cf limite d'origine).
 _MENTION_VERDICT_HEADING = re.compile(
-    r"(?m)^#{1,6}[^\n]{0,80}?([A-Z]{4,})(?![A-Za-z0-9_])")
+    r"(?m)^#{1,6}(?![^\n]*\[[A-Z][A-Za-z_-]{2,40}\])[^\n]{0,80}?([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
 
 # #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
 # cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,
@@ -469,6 +478,14 @@ CITERS = (
     # « pending dismissal of stale CHANGES_REQUESTED » (#977) : comme
     # « previous », le mot ne peut que narrer une reserve passee.
     "stale",
+    # « **0 REQUEST_CHANGES** : reviewDecision: "" » (#11916 commentaire
+    # 5379577822) : le chiffre « 0 » precede REQUEST_CHANGES au sens d'un
+    # COMPTE nul (et non d'une negation anglaise comme « no »). Sans cette
+    # entree, `_is_cited` ne matche pas (`"0"` absent de CITERS) et le controle
+    # negatif du grain #12311 deviendrait un faux positive massif.
+    # (Le mot francais equivalent « zero » est deja dans CITERS via la liste
+    # initiale ligne 455.)
+    "0",
     # « CONFLICTING — needs rebase before merge » (#887, recidive de #729
     # fenetre 05-01..05-07) : demande procedurelle satisfaite par le merge
     # lui-meme — git n'autorise pas le merge d'une branche en conflit.
