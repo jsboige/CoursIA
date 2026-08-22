@@ -20,7 +20,9 @@ name: Slides Composition Advisory
 # « un gate qui énumère zéro cible est vert et muet ») :
 #   (a) zéro deck découvert alors que slides/ a changé ;
 #   (b) binaire slidev introuvable — aucun deck n'est mesurable ;
-#   (c) deck découvert mais serveur jamais prêt — ce deck n'est PAS mesuré.
+#   (c) deck découvert mais serveur jamais prêt — ce deck n'est PAS mesuré ;
+#   (d) scanner sorti en 2 — contrôle positif tombé ou `__slidev__.nav.total`
+#       absent : le deck a été visité mais aucune slide n'a été mesurée.
 # (b) et (c) sont ajoutées après coup (#12147) : le gate a rendu trois verts
 # les 20-21/08 sans mesurer une seule slide — chemin node_modules faux d'un
 # niveau, puis warning + continue + exit 0. Un vert qui n'a rien mesuré est
@@ -162,12 +164,18 @@ jobs:
               META_FAIL=1
               rm -f "$DIR/dev.md"; kill %1 2>/dev/null || true; continue
             fi
+            # `set -uo pipefail` en tete de step NE desarme PAS le `-e` que GitHub
+            # met dans `shell: bash -e {0}`. Sans `|| SCAN_EXIT=$?`, le premier
+            # constat de composition (scanner -> 1) tuait le step ICI, avant le
+            # rejeu d'annotations et avant le resume : la doctrine « les CONSTATS
+            # restent advisory » n'etait pas implementee, et le rouge sortait MUET
+            # (0 octet de stdout -- mesure sur #12189/#12192/#12196 le 21/08).
+            SCAN_EXIT=0
             python scripts/notebook_tools/scan_slidev_composition.py \
               --url "http://localhost:$PORT/" \
               --slides-md "$MD" \
               --github-annotations \
-              --out "/tmp/report_$PORT.json" > /tmp/scan_$PORT.log 2>&1
-            SCAN_EXIT=$?
+              --out "/tmp/report_$PORT.json" > /tmp/scan_$PORT.log 2>&1 || SCAN_EXIT=$?
             # --github-annotations ecrit sur STDOUT ; la redirection ci-dessus les
             # enterre dans /tmp, ou GitHub ne les lit jamais -- le gate mesurait
             # sans jamais annoter. On les rejoue ici, ce que l'acceptance de #11923
@@ -175,6 +183,17 @@ jobs:
             # grep APRES l'affectation de SCAN_EXIT : un pipe rendrait le statut du
             # dernier maillon, pas celui du scanner.
             grep -E '^::(warning|error) ' "/tmp/scan_$PORT.log" || true
+            # Le scanner separe lui-meme constat (1) et defaillance d'instrument
+            # (2 : controle positif tombe, ou `__slidev__.nav.total` absent donc
+            # AUCUNE slide mesuree). Seul 2 est une meta-defaillance -- 1 reste
+            # advisory. Les confondre est precisement ce que ce gate existe pour
+            # eviter, dans le sens rouge cette fois.
+            if [ "$SCAN_EXIT" -ge 2 ]; then
+              echo "::error title=Composition gate meta-failure::$MD : scanner sorti en $SCAN_EXIT (defaillance d instrument, pas un constat) -- deck NON MESURE de facon fiable"
+              echo "--- tail /tmp/scan_$PORT.log ---"
+              tail -40 "/tmp/scan_$PORT.log" 2>/dev/null || echo "(aucun log scanner)"
+              META_FAIL=1
+            fi
             python - "$MD" "/tmp/report_$PORT.json" "$SCAN_EXIT" >> "$GITHUB_STEP_SUMMARY" <<'PYEOF'
           import json, sys
           md, rp, exit_code = sys.argv[1], sys.argv[2], int(sys.argv[3])
