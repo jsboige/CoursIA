@@ -661,6 +661,31 @@ class TestYamlBlockOpenNoClose:
         """
         assert _selfcheck() == 0
 
+    def test_yaml_opener_does_not_mask_other_rules(self):
+        """#12338: the yaml finding must not stop the scan of the cell body.
+
+        Pre-#12338 the yaml branch ended with ``return findings``, so no rule
+        after it ever ran on a yaml cell. Measured on the 8 QC-Py notebooks of
+        #12332: all 18 cells carrying ``- # Indice :`` heading_in_list lines
+        were yaml cells, and the detector reported ``heading_in_list = 0`` on
+        the whole family -- a zero of denominator, not of numerator. This cell
+        reproduces the shape: YAML opener + an in-list heading further down.
+        Both findings must appear.
+        """
+        src = (
+            "---\n"
+            "### Exercice 3 : Sortino Ratio par regime\n"
+            "\n"
+            "- # Indice : Groupby par label de regime : `df.groupby('regime')`\n"
+        )
+        rules = _rules(scan_cell(_cell(src)))
+        assert "yaml_block_open_no_close" in rules, (
+            f"yaml opener lost: {rules}"
+        )
+        assert "heading_in_list" in rules, (
+            f"heading_in_list still masked by the yaml branch: {rules}"
+        )
+
 
 class TestQuartoClosure:
     """Pin the ``--closure`` mode of detect_markdown_rendering.
