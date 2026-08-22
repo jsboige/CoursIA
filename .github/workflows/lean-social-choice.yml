@@ -56,9 +56,9 @@ jobs:
 
     - name: Check for sorry in certified modules
       run: |
-        echo "Checking sorry count in certified modules (Arrow, Sen, Framework, Basic)..."
+        echo "Checking sorry count in certified modules (Arrow, Sen, Framework, Basic, MechanismDesign)..."
         SORRY_COUNT=0
-        for f in SocialChoice/Arrow.lean SocialChoice/Sen.lean SocialChoice/Framework.lean SocialChoice/Basic.lean; do
+        for f in SocialChoice/Arrow.lean SocialChoice/Sen.lean SocialChoice/Framework.lean SocialChoice/Basic.lean SocialChoice/MechanismDesign.lean SocialChoice/MechanismDesign_en.lean; do
           if [ -f "$f" ]; then
             COUNT=$(grep -c "sorry" "$f" || true)
             if [ "$COUNT" -gt 0 ]; then
