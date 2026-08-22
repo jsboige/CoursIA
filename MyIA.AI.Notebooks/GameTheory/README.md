@@ -261,7 +261,18 @@ flowchart TD
 | 17 | [GameTheory-17-MultiAgent-RL](GameTheory-17-MultiAgent-RL.ipynb) | Python | NFSP, PSRO, AlphaZero intro | 55 min |
 | 17 (C#) | [GameTheory-17-MultiAgent-RL-Csharp](GameTheory-17-MultiAgent-RL-Csharp.ipynb) | .NET (C#) | Twin C# du 17 : **Self-Play naif (cycle R-P-S)**, **Fictitious Play** (BR vs frequence empirique, convergence Robinson 1951), **exploitabilite**, **NFSP table-based** (Q-values + memoire, caveat convergence G.1), **PSRO** (population + meta-Nash) from-scratch, BCL .NET 9, **courbes d'exploitabilite SVG inline** (Self-Play naif oscille, FP -> 0 Robinson 1951, NFSP chute puis plafonne) via `SvgChartHelper.Overlay` zero-CDN [#6855] (See #4956) | 50 min |
 
-**Durée totale** : ~26h45 (avec side tracks b/c et sous-série SocialChoice complète)
+### Partie 4 : Strate 7 — extensions du vocabulaire stratégique (notebooks 18+)
+
+La vague « strate 7 » étend la série au-delà du fil historique : chaque notebook y isole un geste qui **modifie l'espace des jeux** (engagement, témoin, extension de vocabulaire) plutôt qu'une solution dans un jeu donné. La numérotation est non séquentielle — les numéros se remplissent au fil des livraisons parallèles.
+
+| # | Notebook | Kernel | Contenu | Durée |
+|---|----------|--------|---------|-------|
+| 20 | [GameTheory-20-Commitment-Stackelberg](GameTheory-20-Commitment-Stackelberg.ipynb) | Python | Stackelberg : la performativité sans mystère — l'engagement contraignant qui **transforme la meilleure réponse d'autrui** (action sous-optimale à l'équilibre simultané, delta +2 mesuré), l'annonce révocable dissoute par induction à rebours (cheap talk), et le seuil de crédibilité **s\* = écart de tentation** (caution minimale calculée) | 40 min |
+| 21 | [GameTheory-21-Deux-Especes-de-Fleches](GameTheory-21-Deux-Especes-de-Fleches.ipynb) | Python | Deux espèces de flèches : le théorème fini du chemin minimal de swaps (un swap R(a,b) traverse un mur ssi colonne {a,b} ET mur habité — conjecture naïve réfutée sur 288 désaccords, condition vérifiée 3456/3456, comptage 432/576 dérivé) | 60 min |
+
+> En livraison parallèle sur la même vague : 18 (open games et lentilles, #12212), 22 (manipulation Gibbard-Satterthwaite comme témoin, #12239), 23 (échange de reins, #12240) — issues ouvertes, fichiers pas encore sur `main`.
+
+**Durée totale** : ~28h25 (avec side tracks b/c, sous-série SocialChoice et Partie 4 livrée)
 
 ## Concepts clés
 
