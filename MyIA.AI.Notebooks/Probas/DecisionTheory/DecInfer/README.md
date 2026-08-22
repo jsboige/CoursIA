@@ -17,7 +17,7 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 | # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
 | 1 | [DecInfer-1-Utility-Foundations](DecInfer-1-Utility-Foundations.ipynb) | 50 min | Loteries, axiomes VNM, utilité espérée |
-| 2 | [DecInfer-2-Lean-ExpectedUtility](DecInfer-2-Lean-ExpectedUtility.ipynb) | 45 min | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM dans le lake `decision_theory_lean` |
+| 2 | [DecInfer-2-Lean-ExpectedUtility](DecInfer-2-Lean-ExpectedUtility.ipynb) | 45 min | **Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM + cohérence de de Finetti (Dutch Book) dans le lake `decision_theory_lean` |
 | 3 | [DecInfer-3-Utility-Money](DecInfer-3-Utility-Money.ipynb) | 45 min | Paradoxe St-Petersbourg, CARA, CRRA |
 | 4 | [DecInfer-4-Multi-Attribute](DecInfer-4-Multi-Attribute.ipynb) | 50 min | MAUT, SMART, swing weights |
 | 5 | [DecInfer-5-Decision-Networks](DecInfer-5-Decision-Networks.ipynb) | 55 min | Diagrammes d'influence, politique optimale |
@@ -57,11 +57,11 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 
 Les loteries comme représentation des choix stochastiques ; les **axiomes de Von Neumann-Morgenstern** (complétude, transitivité, continuité, indépendance) ; dérivation de la fonction d'utilité par calibration ; l'agent rationnel maximise E[U]. Applications : décision médicale, assurance, investissement.
 
-### DecInfer-2 : Companion Lean — théorème vNM (sound)
+### DecInfer-2 : Companion Lean — théorème vNM (sound) + cohérence de de Finetti
 
 **Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-1, bases Lean 4
 
-**Companion natif** de [DecInfer-1](DecInfer-1-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`.
+**Companion natif** de [DecInfer-1](DecInfer-1-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 étendent au socle probabiliste lui-même (lib `Coherence`, EPIC visibilité #11703) : la **cohérence de de Finetti** — prix incohérents ⟹ Dutch Book à quatre tickets (witness constructif), et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` (quatre témoins explicites, une par borne violée).
 
 ### DecInfer-3 : Utilité de l'argent et aversion au risque
 

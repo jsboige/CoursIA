@@ -471,6 +471,12 @@ _GENRE_ALIASES = {
     "test-coverage": "test",
     "data": "ledger",
     "slidev": "slides",              # outil -> type de travail (cf #11059)
+    # #12158 -- measured good-faith synonyms that were falling through
+    # silently (each one was an adjacency hole: an unknown word can never
+    # equal the previous genre, so G-VAR-3 was unreachable by word choice).
+    "scripts": "tooling",
+    "infra": "tooling",
+    "csp": "research-code",
 }
 
 # Compoments `<famille>-<genre>` always reduce to the head genre (the family
@@ -807,6 +813,10 @@ def compute_signals(
       * `GENRE-MISMATCH`         -- `candidate_genre is not None` AND
                                     `_genre_from_paths(candidate_files)` is
                                     not None AND the two disagree.
+      * `GENRE-UNKNOWN`          -- `canonicalize_genre(candidate_genre)`
+                                    returned a word outside the closed GENRES
+                                    enumeration (#12158): an adjacency hole,
+                                    surfaced for coordinator requalification.
       * `VEIN-RUN`               -- ANY vein in `vein_runs()` of `count >= 2`.
                                     The 5th axis (#11343): a (lane, issue#)
                                     pair cited by 2+ PRs of the lane on the
@@ -870,6 +880,14 @@ def compute_signals(
     # the GENRE-RUN threshold, the same adjacency convention.
     vein_list = vein_runs(merged_prs, target_lane)
 
+    # GENRE-UNKNOWN (#12158): the canonical folding produced a word that is
+    # NOT in the closed enumeration. By construction such a word can never
+    # equal the previous genre, so it silently defeats G-VAR-3 adjacency --
+    # the signal surfaces it so the coordinator can requalify in the body
+    # (what the protocol already asks; it lacked the visibility). The word
+    # itself rides along in `candidate_genre_unknown_word`.
+    genre_unknown = can_canon is not None and can_canon not in GENRES
+
     return {
         "lane": target_lane,
         "tally": tally,
@@ -880,11 +898,13 @@ def compute_signals(
             "CAP-EXCEEDED-BY-GENRE": cap_exceeded,
             "GENRE-MISMATCH": genre_mismatch,
             "VEIN-RUN": bool(vein_list),
+            "GENRE-UNKNOWN": genre_unknown,
         },
         "long_runs": long_runs,
         "vein_runs": vein_list,
         "inferred_genre_from_paths": inferred,
         "candidate_genre_canonical": can_canon,
+        "candidate_genre_unknown_word": can_canon if genre_unknown else None,
         # Whether the OPEN candidate is itself a LIGHT-genre grain, i.e. a
         # CONTRIBUTOR to the pattern the three aggregate signals denounce.
         # False when the candidate is CONTENT (genai/lean/qc/notebook-.../)

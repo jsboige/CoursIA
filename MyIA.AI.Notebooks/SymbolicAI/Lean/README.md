@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 33
-breakdown: Lean=33
-maturity: BETA=31, DRAFT=2
+pedagogical_count: 38
+breakdown: Lean=38
+maturity: BETA=36, DRAFT=2
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
 
-Cette série introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel basé sur la théorie des types dépendants. Le fil rouge va des fondations (types dépendants, mode tactique, Mathlib) vers l'état de l'art : assistance aux preuves par LLM et vérification formelle de réseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), théorie des nœuds (mouvements de Reidemeister, tricolorabilité de Fox, noeud de Conway et preuve de Piccirillo), et hommages aux mathématiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre).
+Cette série introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel basé sur la théorie des types dépendants. Le fil rouge va des fondations (types dépendants, mode tactique, Mathlib) vers l'état de l'art : assistance aux preuves par LLM et vérification formelle de réseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), théorie des nœuds (mouvements de Reidemeister, tricolorabilité de Fox, noeud de Conway et preuve de Piccirillo), hommages aux mathématiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre), et théorie de la décision (cohérence de de Finetti : le Dutch book comme témoin d'une incohérence).
 
 ## Aperçu — Lean en images
 
@@ -64,7 +64,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Intégration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalités incluant LeanDojo et théorème de sensibilité |
 | **Avec Pilier 1.B** | 1-12, 13 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
-| **Avec hommages** | 1-12, 13, 15, 16a, 16b, 16c, 16d, 16e, 16f | ~17h20 | Ajoute Lean-15 (Grothendieck), Lean-16a (Conway, l'homme et l'oeuvre), Lean-16b (Conway, Game of Life), Lean-16d (Conway, Game of Life sur kernel Lean natif), Lean-16e (Conway, FRACTRAN sur kernel Lean natif) et Lean-16f (Conway, théorème du libre arbitre - adossé à Lean-13) |
+| **Avec hommages** | 1-12, 13, 15, 16a, 16b, 16c, 16d, 16e, 16f, 16g | ~18h05 | Ajoute Lean-15 (Grothendieck), Lean-16a (Conway, l'homme et l'oeuvre), Lean-16b (Conway, Game of Life), Lean-16d (Conway, Game of Life sur kernel Lean natif), Lean-16e (Conway, FRACTRAN sur kernel Lean natif), Lean-16f (Conway, théorème du libre arbitre - adossé à Lean-13) et Lean-16g (Conway, canons - le barreau 2 de l'échelle des témoins Life) |
 | **Avec théorie des nœuds** | 1-12, 13, 15, 16a-c, 16f, 17a, 17b | ~17h30 | Ajoute Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilité de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
 
 ## Structure
@@ -115,6 +115,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 16d | [Lean-16d-Conway-Game-of-Life-Lean-Native](Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb) | Game of Life sur **kernel Lean natif** (`lean4-wsl`) : grille, règle B3/S23, moteur `step`/`evolve`, motifs (bloc, clignoteur, planeur) et faits certifiés par `decide`/`native_decide`, sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16e | [Lean-16e-Conway-FRACTRAN-Lean-Native](Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | FRACTRAN sur **kernel Lean natif** (`lean4-wsl`) : type `Frac` (preuve `den > 0`), moteur `fracMulNat`/`fractranStep`/`fractranRun`, programmes (doubler, diviser) et le générateur de nombres premiers de Conway (14 fractions), faits certifiés par `decide` sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16f | [Lean-16f-Conway-Free-Will-Theorem](Lean-16f-Conway-Free-Will-Theorem.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adossé à `FreeWillTheorem.lean` (chaîne de réduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilité - Epic #2162 / #2156 | 40 min |
+| 16g | [Lean-16g-Conway-Canons](Lean-16g-Conway-Canons.ipynb) | Barreau 2 de l'échelle des témoins Life (#12223, chantier #12205) : la source périodique (canon de Gosper) — reconnaître (période 30, transitoire 0, cadence d'émission 30 mesurées), générer (recherche bornée 3 000 soupes, zéro calibré par contrôle positif), certifier (prédicat `core (evolve 30 gosper_gun) = core gosper_gun` évalué `#eval` sur horizons 30/60/90 depuis le lake), barreaux 3-4 nommés hors d'atteinte | 45 min |
 
 ### Partie 5 : Théorie des noeuds
 
@@ -130,7 +131,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 18 | [Lean-18-Search-AStar-Optimality](Lean-18-Search-AStar-Optimality.ipynb) | Optimalité de A* sous heuristique admissible : graphe pondéré ℝ≥0 et coût additif `pathCost`, prédicats `Admissible`/`Consistent`, théorème phare `admissible_implies_optimal` (borne en f), téléscopage `consistent_implies_path_bound` + monotonie de f - companion `search_lean` (lake `Search/`, 0 sorry, registre #3801 prong B) | 35 min |
 
-### Partie 7 : Digestions de résultats profonds (Sendov, Tao, PFR, MIMO)
+### Partie 7 : Digestions de résultats profonds et companions (Sendov, Tao, PFR, MIMO, Galois, ERC-20, calibration, décision)
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
@@ -138,9 +139,14 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 20 | [Lean-20-Analysis-I-Tao-Workflow](Lean-20-Analysis-I-Tao-Workflow.ipynb) | Le manuel *Analysis I* de T. Tao en lac Lean 4 (`teorth/analysis`) : architecture du lac, philosophie d'auto-contenance vs Mathlib, cinq lemmes emblématiques parmi 44k LOC, méta-récit single-agent vs cluster distribué | 40 min |
 | 21 | [Lean-21-PFR-Entropy-Method](Lean-21-PFR-Entropy-Method.ipynb) | La conjecture PFR (polynomial Freiman–Ruzsa, ZMod 2) : méthode entropique de la preuve `teorth/pfr` — énoncé combinatoire, illustrations cosets dans F₂³, `#check` réels et axiomes du lac compilé | 45 min |
 | 22 | [Lean-22-MIMO-Detection-Flips](Lean-22-MIMO-Detection-Flips.ipynb) | Détection MIMO par flips de coordonnées (Papailiopoulos 2026) : le seuil 2·log N — descente simulée et comptage de flips, probabilité d'échappement du bruit (Monte-Carlo vs `e^{−np}`), `#check` réels des quatre phases et du converse complet `ml_error_prob_ge_threshold` (P(erreur ML) ≥ 1 − e^{−(2·log N − log log N)}) du companion `mimo_lean` (sorry-free, lake externe SLT pour Hanson–Wright) | 45 min |
+| 22b | [Lean-22b-MIMO-Converse-Native](Lean-22b-MIMO-Converse-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
 | 23 | [Lean-23-Galois-Probleme-Inverse-M23](Lean-23-Galois-Probleme-Inverse-M23.ipynb) | Le problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 **à l'écran** (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 45 min |
+| 24 | [Lean-24-ERC20-Invariant-Companion](Lean-24-ERC20-Invariant-Companion.ipynb) | L'invariant de conservation d'un jeton ERC-20 (`Σ balances = totalSupply`) : traces jouets en Python, lectures statiques des 17 déclarations du lake `erc20_lean`, propreté axiomatique par absence de `sorry`, Monte-Carlo sur la tolérance numérique (#11710) | 40 min |
+| 24b | [Lean-24b-Lean-ERC20-Native-Companion](Lean-24b-Lean-ERC20-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `erc20_lean` : les 17 déclarations **résolues par le kernel** (`#check`), l'invariant et les transitions `mint`/`burn`/`transfer` **évalués** sur un état concret (`by decide`), `#print axioms` natif sur les 5 théorèmes phares, la pyramide op → trace `Reachable` → invariant type-checkée avec ses gardes (#11721) | 30 min |
+| 26 | [Lean-26-Calibration-Native-Companion](Lean-26-Calibration-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `calibration_lean` : les cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) importées et exécutées — chaque définition/théorème interrogé par `#check`/`#eval`/`#print axioms`, sorties du compilateur Lean | 35 min |
+| 27 | [Lean-27-Coherence-et-Temoin](Lean-27-Coherence-et-Temoin.ipynb) | Cohérence de de Finetti et témoin (Dutch book) : miroir Python **exact** (`fractions.Fraction`) du lake `decision_theory_lean` — un livret (+1,+1,−1,−1) encaisse l'écart d'inclusion-exclusion uniformément dans les 4 états, balayage borné exhaustif (390 625 combinaisons) qui certifie l'absence de livre sur le système réparé, stabilité affine vNM mesurée (0 divergence pour 3u+2 contre 124 pour u² sur les 2145 paires de 66 loteries du simplexe) | 40 min |
 
-**Durée totale** : ~21h40
+**Durée totale** : ~29h
 
 ## Acquis d'apprentissage
 
@@ -155,8 +161,10 @@ A l'issue de la série, vous saurez :
 - **Situer l'oeuvre de Conway** dans sa largeur : des nombres surréels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en exécutant les premières noix formalisées (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
 - **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks 16a-16e.
 - **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook 16f.
+- **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook 16g.
 - **Formaliser les invariants de nœuds** : PD-codes, mouvements de Reidemeister et tricolorabilité de Fox, en s'appuyant sur le companion `knot_lean` (transfert de tricolorabilité le long d'un twist R1 connecté, preuve forward sorry-free + backward partielle). Notebooks 17a, 17b.
 - **Lire le paysage galoisien moderne** : la preuve formelle que **M₂₃ (groupe sporadique de Mathieu d'ordre 10 200 960) est simple** est *vendored* dans le companion `galois_lean/` (PR #10486, août 2026, Apache-2.0) ; la réalisation galoisienne — *M₂₃ groupe de Galois sur ℚ* — est **prouvée** dans le préprint (Huang–Jackson–Lee–Poonen–Pries–Zhang, arXiv:2608.08538, 9 août 2026 : polynôme explicite f₁ de degré 23, identification `23T5`) mais **non formalisée** — le notebook [Lean-23](Lean-23-Galois-Probleme-Inverse-M23.ipynb) exécute la preuve formelle côté groupe et vérifie f₁ computationnellement, les deux énoncés soigneusement distingués (Epic #10478).
+- **Construire le témoin d'une incohérence** : le Dutch book de de Finetti — si les prix violent l'inclusion-exclusion, un livret (+1,+1,−1,−1) encaisse l'écart uniformément dans tous les états (miroir exact du lake `decision_theory_lean`, arithmétique exacte `Fraction`), et un balayage borné certifie l'absence de livre sur le système réparé ; symétriquement, seule la transformation **affine** d'une utilité vNM préserve les préférences (0 divergence) quand le carré en fabrique (124 sur les 2145 paires de 66 loteries). Notebook 27.
 
 Pour l'état formel détaillé des modules support (preuves résolues vs `sorry` résiduels), voir [LEAN_INVENTORY.md](../../GameTheory/LEAN_INVENTORY.md), le [README du projet conway_lean](conway_lean/README.md), et le [README du projet grothendieck_lean](grothendieck_lean/README.md).
 
@@ -178,17 +186,34 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
 | 11a | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
 | 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
+| 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
 | 14 | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
+| 14b | Finiteness-Lean-Companion | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 15 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
 | 15b | Lean-Grothendieck (atelier) | ~40 | 4 | Oui | **NOUVEAU** |
+| 15c | Lean-Grothendieck-Companion | ~25 | 2 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 16a | Conway-Man-and-Work | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
 | 16b | Conway-Game-of-Life-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
 | 16c | Conway-Game-of-Life-Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
+| 16d | Conway-Game-of-Life-Lean-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| 16e | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
 | 16f | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
+| 16g | Conway-Canons | ~23 | 3 | - | **NOUVEAU** (barreau 2 #12223) |
 | 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
 | 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
+| 17c | Knots-Companion-Formel | ~33 | 3 | 0 | **NOUVEAU** (kernel python3) |
+| 18 | Search-AStar-Optimality | ~24 | 6 | 0 | **NOUVEAU** |
+| 19 | Sendov-Complex-Analysis | ~22 | 3 | 0 | **NOUVEAU** |
+| 20 | Analysis-I-Tao-Workflow | ~18 | 3 | 0 | **NOUVEAU** |
+| 21 | PFR-Entropy-Method | ~23 | 3 | 0 | **NOUVEAU** |
+| 22 | MIMO-Detection-Flips | ~34 | 6 | 0 | **NOUVEAU** |
+| 22b | MIMO-Converse-Native | ~30 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
 | 23 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
+| 24 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
+| 24b | Lean-ERC20-Native-Companion | ~30 | 2 | - | **NOUVEAU** (kernel `lean4-wsl`) |
+| 26 | Calibration-Native-Companion | ~27 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
+| 27 | Coherence-et-Temoin | ~21 | 3 | 0 | **NOUVEAU** (kernel python3, miroir exact du lake) |
 
 Tous les notebooks incluent :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
@@ -365,12 +390,25 @@ Lean/
 ├── Lean-16c-Conway-Game-of-Life-Golly.ipynb  # Python kernel - hommage Conway (Game of Life en images, compagnon Golly)
 ├── Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb  # Lean4 (WSL) kernel - Game of Life natif (grille, B3/S23, decide/native_decide, 0 sorry)
 ├── Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb      # Lean4 (WSL) kernel - FRACTRAN natif (machine universelle de Conway, générateur de premiers)
+├── Lean-16g-Conway-Canons.ipynb                    # Python kernel - barreau 2 de l'échelle des témoins : source périodique (canon de Gosper) mesurée, cherchée, certifiée #eval (#12223)
 ├── Lean-13-Kochen-Specker.ipynb    # Lean4 kernel - théorème de Kochen-Specker (Pilier 1.B)
 ├── Lean-14-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-14b-Finiteness-Lean-Companion.ipynb # Lean kernel - companion natif du lake finiteness_lean (7 déclarations citées)
 ├── Lean-16f-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
 ├── Lean-17-Knots-a-Conway-and-Proofs.ipynb # Python kernel - Conway, les nœuds et la preuve de Piccirillo (noeud de Conway)
 ├── Lean-17-Knots-b-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
+├── Lean-17c-Knots-Companion-Formel.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
+├── Lean-18-Search-AStar-Optimality.ipynb # Python kernel - optimalité de A* sous heuristique admissible (companion search_lean, 0 sorry)
+├── Lean-19-Sendov-Complex-Analysis.ipynb # Python kernel - conjecture de Sendov (preuve Mazur 2026, digestion et formalisation Tao)
+├── Lean-20-Analysis-I-Tao-Workflow.ipynb # Python kernel - le lac Analysis I de Tao (architecture, 5 lemmes emblématiques)
+├── Lean-21-PFR-Entropy-Method.ipynb # Python kernel - conjecture PFR (méthode entropique, #check réels du lac compilé)
+├── Lean-22-MIMO-Detection-Flips.ipynb # Python kernel - détection MIMO par flips (seuil 2·log N, companion mimo_lean)
+├── Lean-22b-MIMO-Converse-Native.ipynb # Lean4 (WSL) kernel - converse MIMO natif (NormTails, Hanson-Wright, #print axioms)
+├── Lean-23-Galois-Probleme-Inverse-M23.ipynb # Python kernel - problème inverse de Galois (M₂₃ simple prouvé, f₁ degré 23 vérifié)
+├── Lean-24-ERC20-Invariant-Companion.ipynb # Python kernel - invariant ERC-20 (lecture statique du lake erc20_lean, Monte-Carlo)
+├── Lean-24b-Lean-ERC20-Native-Companion.ipynb # Lean4 (WSL) kernel - ERC-20 natif (17 déclarations résolues par le kernel)
+├── Lean-26-Calibration-Native-Companion.ipynb # Lean4 (WSL) kernel - calibration_lean natif (cibles prover P1-P5, #print axioms)
+├── Lean-27-Coherence-et-Temoin.ipynb # Python kernel - cohérence de de Finetti (Dutch book, miroir exact de decision_theory_lean)
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md

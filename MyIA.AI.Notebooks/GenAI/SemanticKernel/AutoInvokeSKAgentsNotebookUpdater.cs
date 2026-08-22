@@ -6,8 +6,6 @@ using Microsoft.SemanticKernel.Agents.Chat;
 using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
-namespace MyNotebookLib;
-
 [Experimental("SKEXP0110")]
 public class AutoInvokeSKAgentsNotebookUpdater(string notebookPath, ILogger logger)
 	: NotebookUpdaterBase(notebookPath, logger)
@@ -107,4 +105,3 @@ public class AutoInvokeSKAgentsNotebookUpdater(string notebookPath, ILogger logg
 			}
 		}
 	}
-}

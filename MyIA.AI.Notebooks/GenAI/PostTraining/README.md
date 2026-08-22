@@ -17,7 +17,7 @@ Série pédagogique dédiée aux techniques de **post-training** des LMs ouverts
 
 Le post-training est le maillon qui transforme un modèle pré-entraîné — au mieux un excellent statisticien du langage — en assistant aligné sur des préférences humaines ou des objectifs vérifiables. Pendant longtemps, la chaîne canonique était RLHF : Supervised Fine-Tuning, puis Reward Model, puis PPO. Trois étapes, trois bugs potentiels, beaucoup d'instabilité. Les techniques récentes (DPO en 2023, GRPO en 2024, RLVR en 2024-2025) ont réduit cette chaîne en s'attaquant aux deux maillons faibles : la dépendance au Reward Model appris (DPO le supprime) et la lourdeur mémoire de PPO (GRPO la divise).
 
-En janvier 2025, Deepseek-R1 a publiquement validé cette progression en montrant qu'un modèle moyen entraîné avec GRPO sur des tâches à récompense vérifiable (math, code) peut atteindre un niveau de raisonnement compétitif avec des modèles bien plus gros entraînés de façon classique. Cette série didactise cette chaîne de techniques avec des reproductions concrètes sur **petits modèles** (Qwen2.5-0.5B/1.5B) déployables sur **GPU 8 Go** (RTX 3070), conformément à l'esprit "po-2024 pionnier parcimonieux" de l'Epic #1454.
+En janvier 2025, Deepseek-R1 a publiquement validé cette progression en montrant qu'un modèle moyen entraîné avec GRPO sur des tâches à récompense vérifiable (math, code) peut atteindre un niveau de raisonnement compétitif avec des modèles bien plus gros entraînés de façon classique. Cette série didactise cette chaîne de techniques avec des reproductions concrètes sur **petits modèles** (Qwen3.5-0.8B en QLoRA 4-bit ; Qwen2.5-0.5B/1.5B historiquement) déployables sur **GPU 8 Go** (RTX 3070), conformément à l'esprit "po-2024 pionnier parcimonieux" de l'Epic #1454.
 
 L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaque technique. Trop de tutoriels existants montrent une cellule `trainer.train()` qui converge sans donner l'intuition de pourquoi DPO marche, pourquoi GRPO économise la mémoire, ou pourquoi RLVR contourne le besoin d'un Reward Model. Cette série inverse l'ordre : d'abord la formule, puis l'intuition, puis l'implémentation TRL/HuggingFace, puis les outputs réels d'entraînement.
 
@@ -31,7 +31,7 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 | PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289 |
 | PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen3.5-0.8B (QLoRA 4-bit) | #5078 |
 | PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable clé) | `trl.GRPOTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289 |
-| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen2.5-0.5B | #1771 |
+| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen3.5-0.8B (QLoRA 4-bit) | #10487, #10504 (orig. #1771) |
 | PT-06 | `PT_06_eval_comparative.ipynb` | Évaluation comparative SFT vs DPO vs GRPO vs RLVR | Tableaux, chart, framework décision | tous | #1772, #10819 |
 | PT-07 | `PT_07_rewardspy_reward_hacking.ipynb` | Détecter le reward hacking (Goodhart) — observabilité reward | `rewardspy.watch`/`audit` (offline, sans GPU) | N/A (offline) | #4538 |
 | PT-08 | `PT_08_grpo_from_scratch_toy_env.ipynb` | GRPO **from scratch** (toy env CPU) — mécanique du group-relative advantage, écart PPO↔GRPO, comparaison « avec vs sans critic » | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
@@ -42,7 +42,7 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 | PT-11b multi-seed | `PT_11b_multiseed_qwen35_4x100.ipynb` | RLVR **multi-seed** 4 seeds × 100 steps — reproductibilité du run PT-11b (Qwen3.5-0.8B QLoRA 4-bit), opposition au run mono-seed, métrique informative de groupe (`num_generations`, #10603), verdict MECANISME_REPRO | `trl.GRPOTrainer` + verifiers SymPy/Z3 | Qwen3.5-0.8B (QLoRA 4-bit) | See #10289 |
 | PT-12 | `PT_12_multistep_delayed_credit.ipynb` | GAE-λ sur env **multi-step à crédit différé causal** (`count_ones`, terminal dépendant de toute la séquence) — re-mesure des 5 estimateurs REINFORCE/GRPO/RLOO/GAE-λ=0/GAE-λ=0.95, **5 seeds**, vérificateur terminal Z3 | `torch` from-scratch (no `trl`) + Z3 (RLVR) | MLP jouet acteur-critique (CPU, ~5.5k params) | See #1454 |
 
-> **Migration vers Qwen3.5 (en cours).** Qwen2.5 est *superseded* par [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-0.8B) (modèle vision-langage unifié, multimodal). **PT-03 est migré** vers Qwen3.5-0.8B (#5078) : l'évaluation DPO est désormais une vraie *forward pass* (accuracy mesurée 40 % sur 10 préférences *held-out*, vs 50 % aléatoire — le DPO n'a pas convergé sur 50 exemples, verdict honnête documenté dans le notebook) qui remplace l'ancienne accuracy *hardcodée* à 72 %. **PT-02 est migré** vers Qwen3.5-0.8B (#10289, #10813) : le SFT s'exécute sur le vrai petit modèle SOTA (architecture hybride 18×linear_attn + 6×self_attn, LoRA ciblant les deux types + MLP) — verdict honnête documenté : sur 50 exemples (3 steps), le loss oscille (1.92→2.17→1.76) et la génération se dégrade (SFT sous-alimenté sur modèle déjà instruct-tuned, pas un bug). **PT-04 est migré** vers Qwen3.5-0.8B (cette PR) : le GRPO s'exécute sur le vrai petit modèle SOTA (vrai GRPO GPU, QLoRA 4-bit, récompense basée sur le score). **PT-06 est migré** vers Qwen3.5-0.8B (#10819) : l'évaluation comparative porte désormais sur le modèle migré. **PT-05** utilise encore Qwen2.5-0.5B et reste à migrer (entraînement GPU) — les références Qwen2.5 dans le reste de ce README décrivent l'état actuel de ce notebook. Architecture Qwen3.5 multimodale (`Qwen3_5ForConditionalGeneration`) chargée via `AutoModelForImageTextToText` (et non `AutoModelForCausalLM`).
+> **Migration vers Qwen3.5 (complète sur les notebooks GPU).** Qwen2.5 est *superseded* par [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-0.8B) (modèle vision-langage unifié, multimodal). **PT-03 est migré** vers Qwen3.5-0.8B (#5078) : l'évaluation DPO est désormais une vraie *forward pass* (accuracy mesurée 40 % sur 10 préférences *held-out*, vs 50 % aléatoire — le DPO n'a pas convergé sur 50 exemples, verdict honnête documenté dans le notebook) qui remplace l'ancienne accuracy *hardcodée* à 72 %. **PT-02 est migré** vers Qwen3.5-0.8B (#10289, #10813) : le SFT s'exécute sur le vrai petit modèle SOTA (architecture hybride 18×linear_attn + 6×self_attn, LoRA ciblant les deux types + MLP) — verdict honnête documenté : sur 50 exemples (3 steps), le loss oscille (1.92→2.17→1.76) et la génération se dégrade (SFT sous-alimenté sur modèle déjà instruct-tuned, pas un bug). **PT-04 est migré** vers Qwen3.5-0.8B (#10817, re-exec #11442) : le GRPO s'exécute sur le vrai petit modèle SOTA (vrai GRPO GPU, QLoRA 4-bit, récompense basée sur le score). **PT-06 est migré** vers Qwen3.5-0.8B (#10819) : l'évaluation comparative porte désormais sur le modèle migré. **PT-05 est migré** vers Qwen3.5-0.8B (#10487 : re-ciblage + run GPU réel commité — delta honnête documenté 12.5 % → 0.0 %, et #10504 : reward branché sur le ground truth). Architecture Qwen3.5 multimodale (`Qwen3_5ForConditionalGeneration`) chargée via `AutoModelForImageTextToText` (et non `AutoModelForCausalLM`).
 
 ## Progression pédagogique
 
@@ -91,7 +91,7 @@ Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pr
 ```
                   ┌──────────────────────┐
                   │  Base LM (pretrained)│
-                  │  Qwen2.5-0.5B-Base   │
+                  │  Qwen3.5-0.8B-Base   │
                   └──────────┬───────────┘
                              │
                   ┌──────────▼───────────┐
@@ -119,7 +119,7 @@ Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pr
 
 ## Contraintes RTX 3070 8 Go (parcimonie po-2024)
 
-- **Modèles ≤ 1.5B params**, priorise Qwen2.5-0.5B/1.5B
+- **Modèles ≤ 1.5B params**, modèle de référence Qwen3.5-0.8B en QLoRA 4-bit (pic VRAM mesuré ~2,5 Go, PT-05)
 - **Quantization 4-bit** (`bitsandbytes`) obligatoire pour modèles > 0.5B
 - **LoRA** rank ≤ 16, alpha ≤ 32, adapters sur attention + MLP
 - **Batch size** ≤ 4, gradient accumulation jusqu'à 16 pour batch effectif 64
@@ -147,7 +147,7 @@ jupyter notebook PT_01_intro_post_training.ipynb
 Les notebooks anticipent et adressent explicitement plusieurs **erreurs d'interprétation** que les apprenants développent typiquement face à ces techniques :
 
 - **"DPO est juste un SFT sur les préférences"** — faux. DPO contient un terme de divergence par rapport au modèle de référence (`π_ref`) qui empêche le drift catastrophique. Un SFT sur paires préférées seules effondrerait la diversité. PT-03 isole expérimentalement ce terme via un ablation (`β = 0` vs `β = 0.1`) pour rendre visible son effet.
-- **"Plus de seeds GRPO = mieux"** — faux jusqu'à un seuil. Au-delà de N ≈ 16, le baseline intra-groupe devient stable mais le coût VRAM explose. PT-04 documente la courbe rendement/coût avec N ∈ {4, 8, 16, 32} sur Qwen2.5-0.5B.
+- **"Plus de seeds GRPO = mieux"** — faux jusqu'à un seuil. Au-delà de N ≈ 16, le baseline intra-groupe devient stable mais le coût VRAM explose. PT-04 exécute G = 4 et renvoie le dimensionnement en N à l'exercice `estimer_memoire_grpo` (coût VRAM par taille de groupe) — l'arbitrage rendement/coût est posé, pas pré-calculé.
 - **"RLVR remplace toutes les autres méthodes"** — faux. RLVR est restreint aux tâches vérifiables. Pour écriture créative, conversation ouverte, assistance, DPO reste l'approche dominante. PT-05 expose cette limite via un contre-exemple : appliquer RLVR à une tâche subjective produit un modèle dégénéré qui exploite la fonction de reward exacte.
 - **"LoRA = moins de qualité que full fine-tuning"** — vrai marginalement, faux pratiquement. Sur un budget GPU 8 Go, LoRA atteint 95-98% de la qualité d'un full FT à 5% du coût mémoire. PT-02 documente ce trade-off explicitement.
 - **"Le post-training résout les hallucinations"** — faux. Les hallucinations viennent du pre-training (sous-représentation factuelle) ; le post-training les masque parfois en augmentant la confiance des refus, mais ne les supprime pas. PT-06 illustre via TruthfulQA : SFT/DPO/GRPO améliorent surface, pas substance.
@@ -227,7 +227,7 @@ La chaîne SFT → RLHF → DPO → GRPO → RLVR n'est pas une succession liné
 
 ## Compatibilité matérielle et choix d'implémentation
 
-Le choix Qwen2.5-0.5B / 1.5B / Math-1.5B n'est pas anodin. Il résulte d'un arbitrage explicite entre :
+Le choix initial Qwen2.5-0.5B / 1.5B / Math-1.5B n'était pas anodin, et l'arbitrage vaut toujours pour le modèle de référence actuel (Qwen3.5-0.8B, migration #10289). Il résulte d'un arbitrage explicite entre :
 
 - **Petite taille pour itération rapide** : un GRPO sur 0.5B converge en ~30 min sur RTX 3070, ce qui rend les exercices réalisables en TP. Un même exercice sur 7B prendrait 6-8h et nécessiterait du gradient checkpointing agressif.
 - **Qualité suffisante pour observer les effets** : un modèle trop petit (< 0.5B) montre des effets de régularisation rendant l'observation des techniques bruitée. 0.5B-1.5B est la zone Goldilocks pour observer **clairement** les effets de SFT/DPO/GRPO.
@@ -241,15 +241,44 @@ Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la sé
 
 ## Références académiques
 
-| Référence | Couverture |
-|-----------|------------|
-| Christiano et al., "Deep RL from human preferences" (NeurIPS 2017) | Origine RLHF |
-| Stiennon et al., "Learning to summarize with human feedback" (NeurIPS 2020) | RLHF appliquée aux LMs |
-| Ouyang et al., "Training language models to follow instructions" (InstructGPT, NeurIPS 2022) | SFT + RM + PPO canonique |
-| Rafailov et al., "Direct Preference Optimization" (NeurIPS 2023) | DPO origin |
-| Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning" (2024) | GRPO origin |
-| Deepseek-AI, "Deepseek-R1: Incentivizing Reasoning Capability via RL" (2025) | RLVR + GRPO at scale |
-| Lambert et al., "Tulu 3" (2024) | Survey post-training methods |
+Les références sont cliquables (arXiv / publisher). Les chiffres que la série cite d'articles externes sont toujours préfixés « rapporte par » ou « selon [source] » — jamais confondus avec nos mesures locales.
+
+| Référence | Lien | Couverture |
+|-----------|------|------------|
+| Christiano et al., "Deep reinforcement learning from human preferences" (NeurIPS 2017) | [arXiv:1706.03741](https://arxiv.org/abs/1706.03741) | Origine RLHF |
+| Stiennon et al., "Learning to summarize with human feedback" (NeurIPS 2020) | [arXiv:2009.01325](https://arxiv.org/abs/2009.01325) | RLHF appliquée aux LMs |
+| Ouyang et al., "Training language models to follow instructions" (InstructGPT, NeurIPS 2022) | [arXiv:2203.02155](https://arxiv.org/abs/2203.02155) | SFT + RM + PPO canonique |
+| Rafailov et al., "Direct Preference Optimization" (NeurIPS 2023) | [arXiv:2305.18290](https://arxiv.org/abs/2305.18290) | DPO origin |
+| Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning" (2024) | [arXiv:2402.03300](https://arxiv.org/abs/2402.03300) | GRPO origin |
+| Deepseek-AI, "Deepseek-R1: Incentivizing Reasoning Capability via RL" (2025) | [rapport technique](https://github.com/deepseek-ai/DeepSeek-R1) | RLVR + GRPO at scale |
+| Lambert et al., "Tulu 3" (2024) | [arXiv:2411.15124](https://arxiv.org/abs/2411.15124) | Survey post-training methods |
+| Hoffmann et al., "Chinchilla" (NeurIPS 2022) | [arXiv:2203.15556](https://arxiv.org/abs/2203.15556) | Scaling laws compute-optimal (référencé dans la narration coût/token) |
+| Penedo et al., "FineWeb-Edu" (2024) | [arXiv:2406.17557](https://arxiv.org/abs/2406.17557) | Dataset de pré-entraînement éducatif (barème coût/token) |
+| Liu / Su et al., "Moonlight / Muon" (2025) | [arXiv:2502.16982](https://arxiv.org/abs/2502.16982) | Optimizer Muon (vérifié firsthand) — note prospective architecture from-scratch |
+| Zhai, "XSA: X-only Sparse Attention" (2026) | [arXiv:2603.09078](https://arxiv.org/abs/2603.09078) | Architecture XSA remplaçant DiffAttn (vérifié firsthand) — note prospective |
+| Ye et al., "Differential Attention" (Microsoft, 2024) | [arXiv:2410.05258](https://arxiv.org/abs/2410.05258) | Attention différentielle (citée par la série Substack) |
+| Ainslie et al., "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints" (Google, 2023) | [arXiv:2305.13245](https://arxiv.org/abs/2305.13245) | Grouped-Query Attention (citée par la série Substack) |
+
+## Éclairage externe — série Substack "modern-llm" (JohnEnev)
+
+Première citation Substack du dépôt. La série de 4 posts (juillet→août 2026) + 1 bonus documente en open un from-scratch 350–672M paramètres avec post-training. Les chiffres externes sont toujours cités "selon JohnEnev Part N" — pas confondus avec nos mesures locales.
+
+| Post | Date | Lien | Couverture / leçon mobilisée |
+|------|------|------|-------------------------------|
+| **Part 1** — *Building a 350M transformer from scratch* | 2026-07-03 | [johne.substack.com/p/modern-llm-part-1](https://johne.substack.com/p/modern-llm-part-1-building-a-350m-transformer-from) | V1 = 353M, 10B tok FineWeb-Edu, $101 — barème coût/token (29 tok/param, sous Chinchilla 20 ⇒ pré-entraînement sous-optimal assumé pour aller vite). Base model "qui parle anglais couramment mais ne suit pas les instructions" — doctrine **SFT obligatoire** (PT_02). |
+| **Part 2** — *Modernizing the architecture* | 2026-07-08 | [johne.substack.com/p/modern-llm-part-2](https://johne.substack.com/p/modern-llm-part-2-modernizing-the-architecture) | V2 = 315M, GQA 4:1 + DiffAttn + QK-Norm + **Muon** retenu + EMA. **mHC rejetée** sur mesure throughput (−41% à 2 streams, −49% à 4, ~$93→$155→$175 sans gain de loss) — parallèle direct avec le trade-off critic/no-critic de PT_08 (coût ×4.0). |
+| **Part 3** — *Post-training: SFT and GRPO* | 2026-07-21 | [johne.substack.com/p/modern-llm-part-3](https://johne.substack.com/p/modern-llm-part-3-post-training-sft-and-grpo) | **Cœur du sujet.** SFT OK, GRPO dégradant. V2 ppl 46.81 → 71.06 post-GRPO ; −4/6 accuracy. Modes d'échec : *group no-signal* (std=0 → avantage=0), *easy stage unlearnable*, KL 0.01–0.03 peu informatif. Verbatim canonique : "RL ne peut amplifier que ce que le modèle fait déjà parfois, pas créer ce qu'il ne fait jamais" — fonde notre narration GRPO fragile (PT_08, PT_11, PT_11b, rlpt_2, rlpt_4, ICT-25). |
+| **Part 4** — *V3: Inference and serving models* | 2026-08-13 | [johne.substack.com/p/modern-llm-part-4](https://johne.substack.com/p/modern-llm-part-4-v3-inference-and-serving-models) | V3 = 672M, 30B tok, 2×B200 DDP, $315, 26.7h. ppl wikitext base 22.30 → SFT 32.11 → GRPO 33.65 (GRPO dégrade même SFT) ; GSM8K ~0. **XSA remplace DiffAttn** (<1% throughput vs 28%). FastAPI + SSE streaming. Convergence triple (V2 + V3 + notre PT_11b) sur "GRPO ne crée pas le signal qu'il prétend créer". |
+| **Bonus** — *Distilling reasoning into a 14B model (NYT Connections)* | 2026-02-XX | [johne.substack.com](https://johne.substack.com/) — voir bonus "NYT Connections" dans la série modern-llm | SFT-distillation de traces GPT-4o fait passer Qwen2.5-14B de 9.3% → 30.0% sur NYT Connections, vs GPT-4o 22.7% — **sans RL**. Coût rapporté ~$10 total / ~20 min/modèle sur A100 80GB. Mise en regard directe avec notre POC GRPO Qwen3.5-0.8B INCONCLUSIVE (PT_11) : le pattern "SFT > RL" traverse les échelles (0.8B ↔ 14B). |
+
+**Citations académiques principales de la série Substack** (vérifiées firsthand) :
+
+- XSA — Zhai 2026, arXiv:2603.09078 (vérifié 2026-08-20)
+- Muon / Moonlight — Liu / Su et al. 2025, arXiv:2502.16982 (vérifié 2026-08-20)
+- Differential Attention — Ye et al. 2024, arXiv:2410.05258
+- GQA — Ainslie et al. 2023, arXiv:2305.13245
+
+Ces 4 entrées sont incluses dans le tableau principal ci-dessus avec liens cliquables.
 
 ## Ressources en ligne
 
@@ -267,7 +296,7 @@ Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742).
 
 ### OOM CUDA pendant GRPO ou DPO
 
-Les notebooks PT-03 à PT-05 sont conçus pour RTX 3070 (8 Go) avec Qwen2.5-0.5B, mais OOM reste possible si l'environnement n'est pas optimal. Stratégies :
+Les notebooks PT-03 à PT-05 sont conçus pour RTX 3070 (8 Go) avec Qwen3.5-0.8B QLoRA 4-bit (pic mesuré ~2,5 Go), mais OOM reste possible si l'environnement n'est pas optimal. Stratégies :
 
 - Vérifier que `bitsandbytes` est installé et que la quantization 4-bit est activée (`load_in_4bit=True`).
 - Réduire `per_device_train_batch_size` à 1 et augmenter `gradient_accumulation_steps` pour garder un batch effectif correct.
@@ -325,7 +354,7 @@ Sur Windows, `bitsandbytes` peut nécessiter CUDA 12.x. Si erreur DLL not found,
 
 ### Peut-on reproduire Deepseek-R1 avec cette serie ?
 
-Non directement, mais les briques conceptuelles sont les mêmes. Deepseek-R1 utilise GRPO + RLVR sur des modèles 671B (architecture MoE) avec une infrastructure distribuée massive. Cette série reproduit les mêmes techniques sur Qwen2.5-0.5B/1.5B pour rendre les concepts accessibles sur GPU 8 Go. Les formules de loss, les mécanismes de reward, et les stratégies d'évaluation sont identiques — seule l'échelle change. PT-04 (GRPO) et PT-05 (RLVR) reproduisent fidèlement le pipeline Deepseek-R1 en miniature.
+Non directement, mais les briques conceptuelles sont les mêmes. Deepseek-R1 utilise GRPO + RLVR sur des modèles 671B (architecture MoE) avec une infrastructure distribuée massive. Les notebooks GPU de la série (PT-04, PT-05) reproduisent ces mêmes techniques sur Qwen3.5-0.8B (QLoRA 4-bit) pour rendre les concepts accessibles sur GPU 8 Go. Les formules de loss, les mécanismes de reward, et les stratégies d'évaluation sont identiques — seule l'échelle change. PT-04 (GRPO) et PT-05 (RLVR) reproduisent fidèlement le pipeline Deepseek-R1 en miniature.
 
 ## Licence
 

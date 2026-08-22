@@ -174,6 +174,31 @@ theorem pullback_iinf {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
   simp [Sieve.pullback, iInf, Set.mem_range]
 
 /-!
+## Pushforward distribue sur la borne supérieure indexée
+
+Pendant `pushforward` de `pullback_imap` : pousser en avant la borne
+supérieure d'une famille indexée de cribles égale la borne supérieure de
+leurs pushforwards. C'est la propriété d'**adjoint gauche** du pushforward
+dans la connexion de Galois `pushforward ⊣ pullback`
+(`Sieve.galoisConnection`, Mathlib `Sites.Sieves`) — la même connexion dont
+`pullback_iinf` lit la propriété d'adjoint droit. Mathlib fournit le cas
+binaire (`Sieve.pushforward_union`, prouvé par `GaloisConnection.l_sup`) ;
+la généralisation indexée suit par `GaloisConnection.l_iSup`.
+
+Complète le tableau de treillis : le pullback préserve sups ET infs
+(`pullback_imap` / `pullback_iinf`), le pushforward préserve les sups.
+-/
+
+/-- GALOIS (l_iSup) : pushforward distribue sur le iSup d'une famille
+    indexée — propriété d'adjoint gauche de la connexion de Galois
+    `pushforward ⊣ pullback`. Généralisation indexée de
+    `Sieve.pushforward_union` (cas binaire). -/
+theorem pushforward_imap {C : Type*} [Category C] {X Y : C} (f : Y ⟶ X)
+    {ι : Type*} (S : ι → Sieve Y) :
+    Sieve.pushforward f (iSup S) = ⨆ i, Sieve.pushforward f (S i) :=
+  (Sieve.galoisConnection f).l_iSup
+
+/-!
 ## Pullback distribue `ofObjects` selon la cible
 
 `Sieve.ofObjects X Y` est le crible maximal « sous-objet » engendre par la

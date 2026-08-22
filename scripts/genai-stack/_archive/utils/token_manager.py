@@ -39,7 +39,6 @@ class TokenManager:
             print(f"   - __file__: {__file__}")
             print(f"   - Resolved: {current_file}")
             print(f"   - Project Root calculated: {self.project_root}")
-            print(f"   - Secrets Dir: {self.secrets_dir}")
             print(f"   - CWD: {os.getcwd()}")
     
     def get_bcrypt_hash(self) -> str:

@@ -133,7 +133,7 @@ def synchronize_credentials():
             token_value = extract_token_from_env(env_content)
             hash_value = generate_bcrypt_hash(token_value)
             WINDOWS_HASH_FILE.write_text(hash_value, encoding='utf-8')
-            log(f"✅ Hash bcrypt généré: {hash_value[:30]}...")
+            log("✅ Hash bcrypt généré")
         
         # 2. Lire les credentials Windows
         log("📖 Lecture credentials Windows...")
@@ -141,8 +141,8 @@ def synchronize_credentials():
         token_value = extract_token_from_env(env_content)
         hash_value = WINDOWS_HASH_FILE.read_text(encoding='utf-8').strip()
         
-        log(f"✅ Token brut: {token_value[:15]}...")
-        log(f"✅ Hash bcrypt: {hash_value[:30]}...")
+        log("✅ Token brut lu")
+        log("✅ Hash bcrypt lu")
         
         # 3. Créer le répertoire .secrets WSL
         log("📁 Création répertoire .secrets WSL...")
@@ -174,7 +174,7 @@ def synchronize_credentials():
         synced_hash = verify['stdout']
         
         if synced_hash != hash_value:
-            log(f"❌ Hash non synchronisé: '{synced_hash[:30]}...' != '{hash_value[:30]}...'")
+            log("❌ Hash non synchronisé (valeurs différentes)")
             return False
         
         log("✅ Synchronisation vérifiée avec succès")

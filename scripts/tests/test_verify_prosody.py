@@ -22,6 +22,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "tts_verification"))
 
 from verify_prosody import (  # noqa: E402
+    DECAY_MIN_DURATION_S,
     ERRATIC_MOTION_ST,
     ERRATIC_SPAN_ST,
     GLOBAL_FLAT_ST,
@@ -340,6 +341,184 @@ def test_reject_beats_warn():
     r = classify_segment(**_healthy(melody_verdict="FLAT", breath_verdict="FADING"))
     assert r["gate"] == "REJECT"
     assert "MONOTONE" in r["reasons"]
+
+
+# --- reason_kinds: informational vs finding (c.378 self-descriptive) ------
+
+def test_reason_kinds_key_present_even_when_empty():
+    """The new self-descriptive axis is a list of equal length to reasons, so
+    consumers can render each reason with its severity. Always present (even
+    when no reason fires) — empty list is the right answer for PASS-TO-EAR."""
+    r = classify_segment(**_healthy())
+    assert r["gate"] == "PASS-TO-EAR"
+    assert r["reasons"] == []
+    assert r["reason_kinds"] == []
+
+
+def test_too_short_has_informational_kind():
+    """INCONCLUSIVE abstention is informational, never a finding."""
+    r = classify_segment(**_healthy(n_syllables=MIN_SYLLABLES - 1))
+    assert r["gate"] == "INCONCLUSIVE"
+    assert r["reason_kinds"] == ["informational"]
+
+
+def test_reject_reasons_are_findings():
+    """MONOTONE / WINDED / VOICE-SWAP are disqualifications -> 'finding'."""
+    r = classify_segment(**_healthy(melody_verdict="FLAT",
+                                    breath_verdict="WINDED",
+                                    voice_verdict="INCONSISTENT"))
+    assert r["gate"] == "REJECT"
+    assert r["reason_kinds"][:3] == ["finding", "finding", "finding"]
+
+
+def test_fading_kind_is_informational():
+    """FADING is an abstention (defer to ear), not a disqualification."""
+    r = classify_segment(**_healthy(breath_verdict="FADING"))
+    assert r["gate"] == "WARN"
+    assert "FADING" in r["reasons"]
+    idx = r["reasons"].index("FADING")
+    assert r["reason_kinds"][idx] == "informational"
+
+
+def test_drifting_kind_is_informational():
+    """DRIFTING (mild timbre drift) is an abstention, not a disqualification."""
+    r = classify_segment(**_healthy(voice_verdict="DRIFTING"))
+    assert r["gate"] == "WARN"
+    assert "DRIFTING" in r["reasons"]
+    idx = r["reasons"].index("DRIFTING")
+    assert r["reason_kinds"][idx] == "informational"
+
+
+def test_global_flat_kind_is_informational():
+    """GLOBAL-FLAT hedges the noisy short-clip global span — also informational."""
+    r = classify_segment(**_healthy(global_range_st=GLOBAL_FLAT_ST - 0.5))
+    assert r["gate"] == "WARN"
+    assert "GLOBAL-FLAT" in r["reasons"]
+    idx = r["reasons"].index("GLOBAL-FLAT")
+    assert r["reason_kinds"][idx] == "informational"
+
+
+def test_erratic_kind_is_finding():
+    """ERRATIC is an over-modulation flag calibrated on a known-bad class
+    (Kokoro v1). It is a disqualification-of-suspicion, not an abstention —
+    the consumer should treat it as actionable (send to the ear at minimum)."""
+    r = classify_segment(**_healthy(melody_verdict="EXPRESSIVE",
+                                    melodic_span_st=ERRATIC_SPAN_ST + 5))
+    assert r["gate"] == "WARN"
+    assert "ERRATIC" in r["reasons"]
+    idx = r["reasons"].index("ERRATIC")
+    assert r["reason_kinds"][idx] == "finding"
+
+
+def test_fading_masked_when_breath_not_trusted():
+    """Short-clip guard: when breath_trusted=False, FADING is suppressed so a
+    20-second clip can never be flagged FADING (the decay_db reading is noise).
+    The breath_verdict passed in is preserved by the caller (analyze_segment
+    rewrites it to STEADY on a short clip); the gate sees STEADY and stays
+    clean. This is the unit-level mirror of the analyze_segment guard."""
+    # FADING + breath_trusted=False -> not surfaced at all.
+    r = classify_segment(**_healthy(breath_verdict="STEADY", breath_trusted=False))
+    assert r["gate"] == "PASS-TO-EAR"
+    assert "FADING" not in r["reasons"]
+    # Default (breath_trusted=True) still surfaces FADING when present.
+    r2 = classify_segment(**_healthy(breath_verdict="FADING", breath_trusted=True))
+    assert "FADING" in r2["reasons"]
+
+
+def test_winded_still_surfaces_even_on_short_clips():
+    """WINDED is a confidence-finding (true breath failure) — NOT masked by
+    breath_trusted=False. Only the borderline FADING abstention is masked."""
+    r = classify_segment(**_healthy(breath_verdict="WINDED", breath_trusted=False))
+    assert r["gate"] == "REJECT"
+    assert "WINDED" in r["reasons"]
+
+
+# --- DECAY_MIN_DURATION_S: length guard for the breath instrument ---------
+
+def test_decay_min_duration_threshold_is_exported():
+    """The 60-s floor is the documented threshold. Pinned here so a silent
+    change to a higher/lower value cannot move without a test red."""
+    from verify_prosody import DECAY_MIN_DURATION_S
+    assert DECAY_MIN_DURATION_S == 60.0
+
+
+# --- analyze_segment masking end-to-end (mocked instruments, no audio) ------
+
+def test_analyze_segment_masks_decay_db_on_short_clip():
+    """End-to-end mirror of the unit-level breath_trusted guard. Mock the three
+    instruments (no librosa needed), feed a 32-s clip with FADING+decay_db=-4.5,
+    and assert the output has decay_db=None, breath_verdict_effective='STEADY',
+    and gate=PASS-TO-EAR. Same instrument on a 113-s clip preserves both.
+    Pinned here so the gate, the duration guard, and the JSON output schema
+    cannot drift apart silently."""
+    from verify_prosody import analyze_segment, DECAY_MIN_DURATION_S
+
+    def _stub_instruments(*, mel_overrides=None, glob_overrides=None,
+                          spec_overrides=None):
+        def _analyze_syllables(_path):
+            base = {"verdict": "EXPRESSIVE", "n_syllables": 80,
+                    "effective_notes": 12.0, "top3_note_pct": 0.32,
+                    "motif3_repeat_pct": 0.18,
+                    "melodic_span_p5p95_st": 11.0,
+                    "melodic_span_st": 11.0, "mean_abs_interval_st": 1.4,
+                    "pct_flat_transitions": 0.25, "drone_reasons": []}
+            base.update(mel_overrides or {})
+            return base
+
+        def _compute_metrics(_path):
+            return {"f0_semitone_range": 9.0, **(glob_overrides or {})}
+
+        def _analyze_spectral(_path):
+            base = {"breath_verdict": "FADING",
+                    "decay_db": -4.5, "max_voiced_run_s": 12.0,
+                    "voice_verdict": "CONSISTENT", "n_voice_clusters": 1}
+            base.update(spec_overrides or {})
+            return base
+
+        return (_analyze_syllables, _compute_metrics, _analyze_spectral)
+
+    # --- case A: short clip (32.3 s, FADING+decay_db=-4.5) ---
+    short_overrides = {"duration_s": 32.3}
+    inst = _stub_instruments(mel_overrides=short_overrides)
+    r_short = analyze_segment("/fake/clip.mp3", inst)
+    assert r_short["duration_s"] == 32.3
+    assert r_short["decay_db"] is None, (
+        f"expected decay_db masked on 32-s clip, got {r_short['decay_db']!r}"
+    )
+    assert r_short["decay_trusted"] is False
+    assert r_short["breath_verdict_effective"] == "STEADY"
+    assert r_short["breath_verdict"] == "FADING"  # raw reading preserved for audit
+    assert r_short["gate"] == "PASS-TO-EAR", (
+        f"FADING must not surface on a short clip; got gate={r_short['gate']}"
+    )
+    assert "FADING" not in r_short["reasons"]
+
+    # --- case B: long clip (113.9 s, same FADING+decay_db=-4.5) ---
+    long_overrides = {"duration_s": 113.9}
+    inst = _stub_instruments(mel_overrides=long_overrides)
+    r_long = analyze_segment("/fake/clip.mp3", inst)
+    assert r_long["duration_s"] == 113.9
+    assert r_long["decay_db"] == -4.5
+    assert r_long["decay_trusted"] is True
+    assert r_long["breath_verdict_effective"] == "FADING"
+    assert r_long["gate"] == "WARN"
+    assert "FADING" in r_long["reasons"]
+    idx = r_long["reasons"].index("FADING")
+    assert r_long["reason_kinds"][idx] == "informational"
+
+    # --- case C: boundary, exactly at the threshold ---
+    boundary_overrides = {"duration_s": DECAY_MIN_DURATION_S}
+    inst = _stub_instruments(mel_overrides=boundary_overrides)
+    r_boundary = analyze_segment("/fake/clip.mp3", inst)
+    assert r_boundary["decay_trusted"] is True
+    assert r_boundary["decay_db"] == -4.5
+
+    # --- case D: just below the threshold ---
+    below_overrides = {"duration_s": DECAY_MIN_DURATION_S - 0.1}
+    inst = _stub_instruments(mel_overrides=below_overrides)
+    r_below = analyze_segment("/fake/clip.mp3", inst)
+    assert r_below["decay_trusted"] is False
+    assert r_below["decay_db"] is None
 
 
 if __name__ == "__main__":

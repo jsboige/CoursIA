@@ -85,6 +85,19 @@ namespace QuantConnect.Algorithm.CSharp
         private bool _rebalanceWeek = false;
         public bool RebalanceWeek { get { return _rebalanceWeek; } }
 
+        // === Capital-gain filter (#12034, consolidation QC research 21160) ===
+        // Cannon & Lynch (2025, Review of Finance 29(4)): return extrapolation — and thus
+        // the momentum premium — concentrates in non-dividend-paying ("capital-gain")
+        // stocks (1.417%/month vs 0.684% among dividend payers). When enabled, the
+        // weekly ranking excludes any stock that distributed at least one dividend over
+        // the trailing twelve months (history request on Dividend objects).
+        // Default OFF: the baseline strategy (slope momentum on OEF constituents) is
+        // unchanged unless the flag is flipped — the two arms are compared honestly.
+        private bool _filterDividendPayers = false;
+        private DateTime _lastDividendScan = DateTime.MinValue;
+        private readonly Dictionary<Symbol, bool> _paysDividend = new Dictionary<Symbol, bool>();
+        private static readonly TimeSpan DividendScanInterval = TimeSpan.FromDays(7);
+
         ///Broker fee to take into account to check if Cash is avalaible
         private const decimal BrokerFee = 0.005m;
 
@@ -137,21 +150,42 @@ namespace QuantConnect.Algorithm.CSharp
                 TimeRules.AfterMarketOpen("SPY", 1), ScheduledOnWednesday1MinuteAfterMarketOpen);
         }
 
+        // Capital-gain filter (#12034): refresh the TTM dividend-payer cache weekly.
+        // A stock that distributed >= 1 dividend over the trailing 365 days is a payer.
+        private void UpdateDividendPayerCache()
+        {
+            if (Time - _lastDividendScan < DividendScanInterval) return;
+            _lastDividendScan = Time;
+            _paysDividend.Clear();
+            var dividends = History<Dividend>(_customIndicators.Keys.ToList(), TimeSpan.FromDays(365));
+            foreach (var dataDict in dividends)
+            {
+                foreach (var kvp in dataDict)
+                {
+                    _paysDividend[kvp.Key] = true;
+                }
+            }
+        }
+
         // SECURITY RANKING, SELL, REBALANCE AND BUY
         private void ScheduledOnWednesday1MinuteAfterMarketOpen()
         {
             if (IsWarmingUp) return;
+
+            if (_filterDividendPayers) UpdateDividendPayerCache();
 
             // First, we order by slope and we take top 20% ranked
             var sortedEquityListBySlope = _customIndicators.Where(x => x.Value.IsReady)
             .OrderByDescending(x => x.Value.AnnualizedSlope)
             .Take(_topNStockOfSp500)
             .ToList();
-            // Second, we filter by minimum slope, above moving average and max gap
+            // Second, we filter by minimum slope, above moving average and max gap,
+            // and (flag on) by the capital-gain criterion: exclude TTM dividend payers.
             sortedEquityListBySlope = sortedEquityListBySlope
             .Where(x => x.Value.AnnualizedSlope > _minimumAnnualizedSlope
                 && Securities[x.Key].Price > x.Value.MovingAverage
-                && x.Value.Gap < _maximumGap).ToList();
+                && x.Value.Gap < _maximumGap
+                && (!_filterDividendPayers || !_paysDividend.ContainsKey(x.Key))).ToList();
 
             //Sell if security is not in list
             foreach (var security in Portfolio.Values.Where(x => x.Invested))
