@@ -36,6 +36,17 @@ Trois urnes, parce que le pool n'est pas homogene
                   l'agent verifie firsthand (G.9) puis ferme avec preuve, ou
                   retire le label en disant pourquoi.
 
+Reparer son rouge AVANT de piocher (mandat user 2026-08-22)
+------------------------------------------------------------
+Le picker **refuse de tirer** (sortie 2, aucun candidat rendu) tant que la
+lane porte une PR bloquee ouverte depuis plus de 24 h. La reparation d'une PR
+rouge n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser ni
+corriger a sa place, donc une lane qui pioche du neuf en laissant son rouge
+derriere elle fabrique un residu que personne d'autre ne peut resorber.
+"Bloquee" se lit sur le champ GraphQL `isRequired` -- ce que la protection de
+branche exige vraiment -- et non sur "au moins un check rouge", qui rougissait
+52 PRs sur 55 le 2026-08-22 en comptant les advisories. Voir `red_backlog`.
+
 Usage
 -----
     python scripts/pick_idle_grain.py --lane myia-po-2026:CoursIA
@@ -43,6 +54,8 @@ Usage
     python scripts/pick_idle_grain.py --lane <l> --reroll 1        # nouveau tirage
     python scripts/pick_idle_grain.py --lane <l> --check-claims    # + verif claims
     python scripts/pick_idle_grain.py --lane <l> --json            # sortie machine
+    python scripts/pick_idle_grain.py --lane <l> --ignore-red      # rouge non reparable
+                                                                   # par cette lane, ECRIT sur la PR
 
 Le tirage est **deterministe par (lane, heure UTC, reroll)** : deux lanes
 tirent des candidats differents a la meme minute, et une meme lane qui relance
@@ -63,6 +76,14 @@ import subprocess
 import sys
 
 REPO = "jsboige/CoursIA"
+
+# Lecteur PARTAGE du tag `Grain:` (#9485). C'est la SEULE ancre qui rattache
+# une PR a une lane : mesure du 2026-08-22 sur les 55 PRs ouvertes -- 50 sont
+# poussees sous le compte `jsboige`, l'auteur GitHub ne porte donc aucune
+# information de lane. Reutiliser l'extracteur plutot qu'en ecrire un
+# troisieme : deux lecteurs divergents avaient deja rendu 38 % d'une journee
+# de merges invisibles au cap G-VAR-2.
+from grain_tag import parse_grain_tag  # noqa: E402
 
 # Enumeration CLOSE de variation-protocol.md, partitionnee CONTENU / META.
 CONTENU = {
@@ -291,6 +312,266 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
     return notes
 
 
+# --- garde "reparer son rouge d'abord" (mandat user 2026-08-22) ------------
+#
+# Pourquoi ce garde vit DANS le picker et pas dans une consigne
+# -------------------------------------------------------------
+# Le residu de PRs anciennes ne vient pas d'un debit de merge insuffisant
+# (65 PRs mergees le 2026-08-22, 100 la veille) : il vient de ce qu'une lane
+# qui se reveille pioche un grain NEUF au lieu de reparer le rouge qu'elle a
+# laisse. La reparation d'une PR rouge appartient a sa lane -- le coordinateur
+# ne peut ni rebaser ni corriger a sa place -- donc tant que la lane ne
+# revient pas dessus, la PR reste ouverte indefiniment pendant que les PRs du
+# jour, elles, mergent. Une consigne de plus ne changerait rien : le picker
+# est le point de passage de la selection, c'est donc lui qui doit refuser.
+#
+# Ce qui compte comme "rouge" -- et ce qui n'en est PAS
+# -----------------------------------------------------
+# Mesure du 2026-08-22 sur les 55 PRs ouvertes : la definition naive
+# "au moins un check en echec" rougissait **52 PRs sur 55**, un garde qui
+# refuse tout a tout le monde et se fait contourner le jour meme. La cause
+# est que la flotte fait tourner des checks ADVISORY (`... advisory`,
+# `fast-lane (ombre)`, `Degraded-mode confessions`) dont l'echec n'empeche
+# aucun merge. Le discriminant retenu n'est pas un motif de nom -- fragile,
+# et il faudrait le maintenir a chaque nouvel advisory -- mais le champ
+# GraphQL `isRequired(pullRequestNumber:)`, qui dit ce que la protection de
+# branche exige VRAIMENT. Avec lui : 47 PRs bloquees au lieu de 52, les 4
+# ecartees ne l'etant QUE sur des advisories. Si la protection change, le
+# garde suit sans edition.
+#
+# Trois causes bloquantes, toutes reparables par la lane :
+#   1. un check REQUIS en echec        -> corriger la substance, ou relancer
+#   2. `mergeable: CONFLICTING`        -> rebaser
+#   3. un CHANGES_REQUESTED non leve   -> repondre / corriger
+#
+# L'horloge est l'AGE DE LA PR (`createdAt`), pas la date du dernier echec :
+# un timestamp de check se remet a zero a chaque push, ce qui rendrait le
+# garde evitable par un commit vide. L'age d'ouverture ne se falsifie pas, et
+# il vise exactement la population que le user a pointee -- "les vieilles de
+# plus de 12 h" qui trainent pendant que les neuves passent.
+
+RED_HOURS_DEFAULT = 24
+
+# CANCELLED / SKIPPED / NEUTRAL sont volontairement absents : un run annule
+# par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
+# faux positif qui rend un garde de cascade inutilisable.
+CHECK_FAILED = {"FAILURE", "TIMED_OUT", "ACTION_REQUIRED", "STARTUP_FAILURE", "ERROR"}
+
+_PR_STATE_FRAGMENT = """
+  p%(n)d: pullRequest(number:%(n)d) {
+    number mergeable
+    reviews(last:40) { nodes { state submittedAt author { login } } }
+    commits(last:1) { nodes { commit { statusCheckRollup { contexts(first:100) { nodes {
+      ... on CheckRun      { name    conclusion completedAt startedAt isRequired(pullRequestNumber:%(n)d) }
+      ... on StatusContext { context state       createdAt              isRequired(pullRequestNumber:%(n)d) }
+    } } } } } }
+  }
+"""
+
+
+def _hours_since(iso: str) -> float:
+    return (NOW - dt.datetime.fromisoformat(iso.replace("Z", "+00:00"))).total_seconds() / 3600.0
+
+
+def fetch_open_prs() -> list[dict]:
+    """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane)."""
+    out = subprocess.run(
+        ["gh", "pr", "list", "--repo", REPO, "--state", "open", "--limit", "300",
+         "--json", "number,title,body,createdAt,isDraft"],
+        capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
+    ).stdout
+    return json.loads(out)
+
+
+def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
+    """Etat de merge + checks (avec `isRequired`) + reviews, par lots de 8.
+
+    Une seule requete par lot : le garde n'interroge que les PRs DE LA LANE
+    (typiquement 2 a 11), jamais les 55 ouvertes.
+    """
+    states: dict[int, dict] = {}
+    for i in range(0, len(numbers), 8):
+        chunk = numbers[i:i + 8]
+        query = ('query { repository(owner:"jsboige", name:"CoursIA") {'
+                 + "".join(_PR_STATE_FRAGMENT % {"n": n} for n in chunk) + "} }")
+        try:
+            raw = subprocess.run(
+                ["gh", "api", "graphql", "-f", "query=" + query],
+                capture_output=True, text=True, encoding="utf-8", check=True, timeout=90,
+            ).stdout
+            repo = json.loads(raw)["data"]["repository"]
+        except Exception:  # noqa: BLE001 - diagnostic best-effort
+            continue
+        for value in repo.values():
+            if value:
+                states[value["number"]] = value
+    return states
+
+
+def _ctx_stamp(ctx: dict) -> str:
+    """Horodatage comparable d'un contexte. Chaine vide si le run n'a rien rendu."""
+    return ctx.get("completedAt") or ctx.get("createdAt") or ctx.get("startedAt") or ""
+
+
+def drop_superseded(contexts: list[dict]) -> list[dict]:
+    """Retire les echecs PERIMES : un rouge anterieur au dernier vert du meme nom.
+
+    Le discriminant est TEMPOREL, jamais nominal, et les deux erreurs symetriques
+    sont documentees : dedupliquer par nom seul masque un rouge vivant emis par un
+    workflow jumeau (#11894), ne pas dedupliquer du tout en fabrique de faux
+    (#12054, 9 rouges pour 0 reel). La regle qui tranche les deux : un echec
+    ANTERIEUR au dernier non-echec du meme nom est de l'histoire ; un echec
+    CONTEMPORAIN ou posterieur est un jumeau vivant, on le garde.
+
+    Mesure du 2026-08-22 sur #11916 : `Require genre diversity vs prev:` porte un
+    FAILURE du 20/08 et un SUCCESS du 22/08 sur le meme head. Sans ce filtre le
+    garde renvoyait la lane reparer un check deja vert.
+    """
+    newest_ok: dict[str, str] = {}
+    for ctx in contexts:
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict in CHECK_FAILED:
+            continue
+        name = ctx.get("name") or ctx.get("context") or "?"
+        stamp = _ctx_stamp(ctx)
+        if stamp > newest_ok.get(name, ""):
+            newest_ok[name] = stamp
+    kept = []
+    for ctx in contexts:
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if verdict in CHECK_FAILED and _ctx_stamp(ctx) < newest_ok.get(name, ""):
+            continue  # rouge anterieur au dernier vert du meme nom : perime
+        kept.append(ctx)
+    return kept
+
+
+def blocking_causes(state: dict) -> list[str]:
+    """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
+
+    `mergeStateStatus: BLOCKED` n'est deliberement PAS une cause : il vaut
+    aussi pour "en attente de review", que la lane ne peut pas lever -- c'est
+    au coordinateur de merger. Verifie firsthand sur #12108 le 2026-08-22 :
+    BLOCKED, MERGEABLE, zero check en echec. L'accuser aurait renvoye la lane
+    reparer une PR qui n'a rien a reparer.
+    """
+    causes: list[str] = []
+    advisory: list[str] = []
+    commits = state.get("commits", {}).get("nodes") or []
+    rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
+    for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
+        name = ctx.get("name") or ctx.get("context") or "?"
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict not in CHECK_FAILED:
+            continue
+        if ctx.get("isRequired"):
+            cause = f"check requis en echec : {name}"
+            if cause not in causes:
+                causes.append(cause)
+        elif name not in advisory:
+            advisory.append(name)
+    if state.get("mergeable") == "CONFLICTING":
+        causes.append("conflits avec main -> rebaser")
+    latest: dict[str, dict] = {}
+    for review in (state.get("reviews", {}) or {}).get("nodes") or []:
+        if review["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
+            latest[review["author"]["login"]] = review
+    for login, review in latest.items():
+        if review["state"] == "CHANGES_REQUESTED":
+            causes.append(f"CHANGES_REQUESTED non leve ({login})")
+    if causes and advisory:
+        causes.append("(diagnostic, non bloquant : " + ", ".join(advisory[:3]) + ")")
+    return causes
+
+
+def red_backlog(lane: str, threshold_hours: float) -> dict:
+    """PRs de la lane, bloquees et ouvertes depuis plus de `threshold_hours`.
+
+    Rend aussi `unattributed_blocked` : les PRs bloquees dont le tag `Grain:`
+    est illisible. Elles ne peuvent bloquer AUCUNE lane -- c'est la bonne
+    arithmetique (deviner une lane serait pire) -- mais les taire donnerait a
+    croire que le garde couvre tout l'ouvert. Il ne le couvre pas : leur tag
+    manquant est lui-meme le defaut a corriger.
+    """
+    try:
+        prs = fetch_open_prs()
+    except Exception as exc:  # noqa: BLE001 - le garde ne doit jamais bloquer sur une panne reseau
+        return {"unavailable": f"{type(exc).__name__}", "red": [], "unattributed_blocked": []}
+
+    mine, others = [], []
+    for pr in prs:
+        if pr.get("isDraft"):
+            continue
+        age = _hours_since(pr["createdAt"])
+        if age < threshold_hours:
+            continue
+        tag = parse_grain_tag(pr.get("body") or "")
+        pr_lane = tag.get("lane") if tag else None
+        (mine if pr_lane == lane else others).append(pr)
+
+    states = fetch_pr_states([pr["number"] for pr in mine])
+    red = []
+    for pr in mine:
+        state = states.get(pr["number"])
+        if state is None:
+            continue
+        causes = blocking_causes(state)
+        if causes:
+            red.append({"number": pr["number"], "title": pr["title"],
+                        "age_hours": round(_hours_since(pr["createdAt"])),
+                        "causes": causes})
+    red.sort(key=lambda r: -r["age_hours"])
+
+    untagged = [pr for pr in others if parse_grain_tag(pr.get("body") or "") is None]
+    untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
+    unattributed = [
+        {"number": pr["number"], "title": pr["title"],
+         "age_hours": round(_hours_since(pr["createdAt"]))}
+        for pr in untagged
+        if untagged_states.get(pr["number"]) and blocking_causes(untagged_states[pr["number"]])
+    ]
+    # Les NUMEROS, pas un compte : le coordinateur est le seul a pouvoir les
+    # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
+    return {"red": red, "unattributed_blocked": unattributed}
+
+
+def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
+    red = backlog["red"]
+    print(f"REFUS DE TIRAGE -- lane {lane} porte {len(red)} PR(s) bloquee(s) "
+          f"ouverte(s) depuis plus de {threshold_hours:g} h.")
+    print()
+    print("Reparer son propre rouge est la PREMIERE tache du cycle, avant tout")
+    print("grain neuf : la PR ne peut etre reparee que par sa lane, le")
+    print("coordinateur ne peut ni rebaser ni corriger a sa place.")
+    print()
+    for item in red:
+        print(f"  #{item['number']}  ouverte depuis {item['age_hours']} h  -- {item['title'][:66]}")
+        for cause in item["causes"]:
+            print(f"       {cause}")
+    print()
+    print("Trois gestes, dans cet ordre -- le premier repare souvent seul :")
+    print("  1. `gh pr update-branch <N>` : rejoue les checks sur une tete fraiche.")
+    print("     Un rouge peut dater d'AVANT la correction du garde qui l'a produit")
+    print("     (mesure du 2026-08-21 : 5 PRs sur 9 n'avaient rien a corriger).")
+    print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
+    print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
+    print("     est seule sur la branche.")
+    print("  3. corriger la substance, pousser, et REPONDRE au CHANGES_REQUESTED")
+    print("     par ecrit : un push muet ne leve aucune remarque.")
+    print()
+    if backlog.get("unattributed_blocked"):
+        numbers = ", ".join(f"#{u['number']}" for u in backlog["unattributed_blocked"])
+        print(f"Portee : {len(backlog['unattributed_blocked'])} autre(s) PR(s) bloquee(s) ({numbers})")
+        print("n'ont pas de tag")
+        print("`Grain:` lisible et ne sont donc imputables a aucune lane -- ce garde ne")
+        print("les voit pas. Leur tag manquant est lui-meme le defaut a corriger.")
+        print()
+    print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
+    print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
+    print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
+    print("elle ne se prend pas en silence.")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -302,8 +583,27 @@ def main() -> int:
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
     ap.add_argument("--check-claims", action="store_true", help="verifie les claims sur les tires")
+    ap.add_argument("--red-hours", type=float, default=RED_HOURS_DEFAULT,
+                    help=f"seuil du garde 'reparer son rouge d'abord' (defaut {RED_HOURS_DEFAULT} h)")
+    ap.add_argument("--ignore-red", action="store_true",
+                    help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     args = ap.parse_args()
+
+    # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
+    # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
+    backlog = red_backlog(args.lane, args.red_hours)
+    if backlog["red"] and not args.ignore_red:
+        if args.json:
+            print(json.dumps({"lane": args.lane, "refus": "rouge-a-reparer",
+                              "red_hours": args.red_hours, **backlog},
+                             ensure_ascii=False, indent=2))
+        else:
+            print_red_refusal(args.lane, backlog, args.red_hours)
+        return 2
+    if backlog.get("unavailable") and not args.json:
+        print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
+        print()
 
     pool = fetch_pool()
     by_class = {k: [it for it in pool if it["klass"] == k]
@@ -331,6 +631,7 @@ def main() -> int:
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
             "recent_delivery": {str(k): v for k, v in delivery.items()},
+            "red_backlog": backlog,
         }, ensure_ascii=False, indent=2))
         return 0
 
@@ -338,6 +639,11 @@ def main() -> int:
           f"= {len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
           f"+ {len(by_class['delivered'])} candidate-delivered")
+    if backlog["red"]:
+        numbers = ", ".join(f"#{r['number']}" for r in backlog["red"])
+        print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "
+              f"a reparer ({numbers}).")
+        print("   La justification doit etre ECRITE sur chacune, pas seulement invoquee ici.")
     print(f"Lane {args.lane} | graine {stamp}"
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genre precedent penalise : {args.prev_genre}" if args.prev_genre else ""))
