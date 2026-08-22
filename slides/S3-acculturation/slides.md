@@ -325,10 +325,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
-
 
 # Arbre d'exploration
 
@@ -347,18 +343,14 @@ layout: two-cols
 <img src="./images/img_020.png" class="w-[420px] max-w-full max-h-[280px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
 
 
-
-::right::
-
-
 **Exemple: Énigme**
 
 - Missionnaires et cannibales
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
-<img src="./images/img_024.png" class="w-[460px] max-w-full max-h-[300px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+<img src="./images/img_023.png" class="absolute top-[110px] right-[20px] w-[280px] max-h-[200px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
+<img src="./images/img_024.png" class="absolute top-[300px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
 
 
 
@@ -458,10 +450,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
----
-
-
 
 # Jeux
 
@@ -487,9 +475,6 @@ layout: two-cols
   - Libratus (poker), Starcraft 2
 
 
-::right::
-
-
 **Arbre Minimax**
 
 - Actions joueurs Max et Min + utilité terminale
@@ -502,7 +487,7 @@ layout: two-cols
 - Expectiminimax
 - Méthodes de Monte-Carlo
 
-<img src="./images/img_031.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
 
 
 
