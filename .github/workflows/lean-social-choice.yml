@@ -11,16 +11,31 @@ on:
     branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      # The gates' own implementation: a change to them must re-run them
+      # (conway lesson, #8951 -- a gate whose own edits don't trigger it
+      # can be rewritten red-free and never prove anything again).
+      - '.github/workflows/lean-social-choice.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_certified_sorry.py'
+      - 'scripts/lean/count_code_sorry.py'
+      - 'scripts/tests/test_check_certified_sorry.py'
   pull_request:
     branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
+      - '.github/workflows/lean-social-choice.yml'
+      - '.github/workflows/lean-axiom.yml'
+      - 'scripts/lean/check_certified_sorry.py'
+      - 'scripts/lean/count_code_sorry.py'
+      - 'scripts/tests/test_check_certified_sorry.py'
   workflow_dispatch:
 
 permissions:
@@ -31,57 +46,77 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  fail-on-sorry:
-    name: "Proof integrity (no sorry)"
+  # #12330: this job was named "Proof integrity (no sorry)" while being a
+  # fail-open `grep -c sorry` over a hardcoded 4-file list -- a name that
+  # promised the three forbidden-axiom classes (sorryAx / native_decide /
+  # Classical whitelist) while testing none of them. It is now two jobs:
+  #   - `certified-no-sorry` (below): the source-level contract, named for
+  #     what it does -- canonical instrument, fail-CLOSED on a missing
+  #     certified file, exhaustiveness against SocialChoice/CERTIFIED.txt.
+  #   - `proof-integrity` (lean-axiom.yml, below): the REAL axiom gate --
+  #     transitive sorryAx, native_decide, Classical whitelist -- so the
+  #     name "Proof integrity" finally means what B.3 says it means.
+  certified-no-sorry:
+    name: "Certified modules: no code sorry (SocialChoice)"
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install elan
-      run: |
-        curl -sSfL https://github.com/leanprover/elan/releases/latest/download/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
-        ./elan-init -y --default-toolchain none
-        echo "$HOME/.elan/bin" >> $GITHUB_PATH
-
-    - name: Cache Mathlib oleans
-      uses: actions/cache@v4
+    - uses: actions/setup-python@v5
       with:
-        path: MyIA.AI.Notebooks/GameTheory/game_theory_lean/.lake
-        key: lake-sc-${{ runner.os }}-${{ hashFiles('MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean', 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain') }}
-        restore-keys: lake-sc-${{ runner.os }}-
+        python-version: '3.x'
 
-    - name: Check for sorry in certified modules
+    - name: Lake-wide honest report (canonical instrument, advisory)
+      # Reports the WHOLE lake -- including the acknowledged stretch sorry in
+      # RepeatedGames/Folk.lean -- so a reader of the log sees the lake's real
+      # total, not only the certified subtree's zero. --repo autodetects from
+      # the script location, so cwd is irrelevant here.
       run: |
-        echo "Checking sorry count in certified modules (Arrow, Sen, Framework, Basic)..."
-        SORRY_COUNT=0
-        for f in SocialChoice/Arrow.lean SocialChoice/Sen.lean SocialChoice/Framework.lean SocialChoice/Basic.lean; do
-          if [ -f "$f" ]; then
-            COUNT=$(grep -c "sorry" "$f" || true)
-            if [ "$COUNT" -gt 0 ]; then
-              echo "FAIL: $f has $COUNT sorry"
-              grep -n "sorry" "$f"
-              SORRY_COUNT=$((SORRY_COUNT + COUNT))
-            else
-              echo "OK: $f (0 sorry)"
-            fi
-          fi
-        done
-        if [ "$SORRY_COUNT" -gt 0 ]; then
-          echo ""
-          echo "FAILED: $SORRY_COUNT sorry found in certified modules"
-          echo "These modules are formally verified and must not contain sorry."
-          exit 1
-        fi
-        echo "All certified modules are sorry-free."
+        python "scripts/lean/count_code_sorry.py" \
+          --lake MyIA.AI.Notebooks/GameTheory/game_theory_lean --no-vacuous || true
+
+    - name: Certified contract gate (fail-closed, #12330)
+      run: |
+        python "$GITHUB_WORKSPACE/scripts/lean/check_certified_sorry.py" \
+          --repo "$GITHUB_WORKSPACE" \
+          --lake MyIA.AI.Notebooks/GameTheory/game_theory_lean \
+          --subdir SocialChoice
+
+    - name: Positive-control tests of the gate itself
+      # A gate whose whole lot passes is also what a de-wired gate produces:
+      # the difference is made at the positive controls, not at the green.
+      run: |
+        python -m pip install --quiet pytest pyyaml
+        python -m pytest scripts/tests/test_check_certified_sorry.py -q
+
+  # The real proof-integrity gate (#12330 criterion 4, first branch): the
+  # reusable axiom checker already serving conway/knot/galois/grothendieck/
+  # mimo/sensitivity. Blocking (fail-on-sorry: true) on the certified
+  # modules -- the SocialChoice subtree carries 0 sorry on main, so this
+  # gate is green-by-truth, not green-by-construction. The Folk.lean
+  # stretch sorry (RepeatedGames, outside SocialChoice) is deliberately NOT
+  # in target-modules: it is acknowledged debt with its own scope (#4880
+  # STRETCH doctrine), not a certified module. target-modules is pinned to
+  # SocialChoice/CERTIFIED.txt by
+  # scripts/tests/test_check_certified_sorry.py::test_workflow_targets_match_manifest.
+  proof-integrity:
+    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/GameTheory/game_theory_lean
+      display-name: game_theory_lean
+      target-modules: "SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en"
+      # allow-axioms inherits the workflow default (named standard set:
+      # propext, funext, Classical.choice, Quot.*) -- same contract as conway.
+      fail-on-sorry: true
 
   build:
     name: "Lake build"
     runs-on: ubuntu-latest
-    needs: fail-on-sorry
+    # Serialized only behind the CHEAP text-level gate (fail fast before
+    # spending a Mathlib build); proof-integrity (lean-axiom.yml) runs its own
+    # full build in parallel rather than doubling this one in series.
+    needs: certified-no-sorry
     defaults:
       run:
         working-directory: MyIA.AI.Notebooks/GameTheory/game_theory_lean

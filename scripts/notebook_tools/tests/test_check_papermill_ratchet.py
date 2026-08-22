@@ -241,3 +241,61 @@ class TestMain:
         with pytest.raises(SystemExit) as exc:
             gate.main()
         assert exc.value.code == 0
+
+
+class TestSanctionedOutputStrips:
+    """A pre-commit strip is not a re-execution (#12366).
+
+    Three hooks of .pre-commit-config.yaml rewrite committed outputs with no
+    kernel involved; two of them touch the code-cell outputs this gate
+    hashes. They exist BECAUSE re-execution does not fix what they remove --
+    the strip-dotnet-nuget-ext description says the leak "is re-injected at
+    every kernel re-execution". So a branch that merely edits a markdown cell
+    of a notebook still carrying such a leak gets its outputs rewritten at
+    commit time by an organ of this repo, and was judged as riding a stale
+    block. Measured on PR #12366: 1 REGRESSION on a one-line stderr warning,
+    and 6 notebooks repo-wide carry the same landmine.
+
+    The exemption is exact, not heuristic: it holds only when the base blob,
+    passed through the SAME tools, reproduces the head evidence byte for
+    byte. The second test is the positive control -- a hand-edited output is
+    still caught, because no strip tool produces a hand-edit.
+    """
+
+    LEAK = "C:\\Users\\someuser\\AppData\\Roaming\\Python\\Python313\\site-packages\\diffusers\\models\\lora.py:391: FutureWarning: deprecated\\n"
+
+    def _leaky(self, text):
+        return [{"output_type": "stream", "name": "stderr", "text": [text]}]
+
+    def _branch_from(self, repo, head_outputs):
+        write_nb(repo, "a.ipynb",
+                 make_nb([self._leaky(self.LEAK)], papermill=PM))
+        base = commit(repo, "base: notebook carrying a machine-path leak")
+        git_ok(repo, "checkout", "-q", "-b", "feature")
+        nb = make_nb([head_outputs], papermill=PM)
+        nb["cells"].insert(0, {"cell_type": "markdown",
+                               "source": "# prose", "metadata": {}})
+        write_nb(repo, "a.ipynb", nb)
+        commit(repo, "feature: markdown edit")
+        return base
+
+    def test_strip_hook_rewrite_is_not_a_stale_block(self, repo):
+        stripped = gate.stripped_evidence(
+            json.dumps(make_nb([self._leaky(self.LEAK)], papermill=PM)))
+        assert "<USER_PATH>" in stripped, (
+            "positive control: the strip tool must actually redact this leak, "
+            "otherwise the test below would pass for the wrong reason")
+        base = self._branch_from(
+            repo, self._leaky(self.LEAK.replace(
+                "C:" + chr(92) + "Users" + chr(92) + "someuser",
+                "<USER_PATH>")))
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["OUTPUTS_STRIPPED"]
+        assert recs[0]["regression"] is False
+
+    def test_a_hand_edited_output_is_still_caught(self, repo):
+        base = self._branch_from(
+            repo, self._leaky("HAND-EDITED-BY-A-HUMAN"))
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["STALE_BLOCK"]
+        assert recs[0]["regression"] is True
