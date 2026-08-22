@@ -14,7 +14,9 @@ Incident fondateur du genre (#11656) : un organe accepte au merge sans avoir
 jamais cree un seul job. Le heredoc n'est pas exec-able par CI seul ; ce test
 est la seule execution hors-run du selecteur livré.
 
-Acceptance #11862 (3 cas) + regressions du comportement historique :
+Acceptance #11862 (3 cas) + #11808 (repli par (run_id, name), pas par nom --
+trois workflows emettent un job homonyme "Ratchet (base vs PR)") + regressions
+du comportement historique :
   1. gate ``cancelled`` seul -> relance (comportement NOUVEAU ; ce test echoue
      sur le RED sans ``cancelled``, c'est le test de falsification) ;
   2. gate ``cancelled`` + autre check rouge -> abstention ;
@@ -60,6 +62,12 @@ SELECTOR = _extract_selector()
 
 def _run_selector(tmp_path, rows):
     """Exec le selecteur livré sur des lignes de fixtures, capture stdout."""
+    return _run_selector_both(tmp_path, rows).stdout
+
+
+def _run_selector_both(tmp_path, rows):
+    """Comme _run_selector mais rend le process complet (stdout + stderr) --
+    les diagnostics d'exclusion (#11808) vont sur stderr."""
     fixture = tmp_path / "runs.jsonl"
     fixture.write_text(
         "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
@@ -70,19 +78,28 @@ def _run_selector(tmp_path, rows):
         capture_output=True, text=True, encoding="utf-8", env=env, cwd=tmp_path,
     )
     assert out.returncode == 0, out.stderr
-    return out.stdout
+    return out
 
 
 def _pr(number, checks, sha="deadbeef", fork=False):
-    return {
-        "number": number,
-        "sha": sha,
-        "fork": fork,
-        "checks": [
-            {"name": n, "status": s, "conclusion": c, "started_at": t}
-            for (n, s, c, t) in checks
-        ],
-    }
+    """checks = tuples (name, status, conclusion, started_at[, run_id]).
+
+    Sans 5e element, la fixture ne porte pas de details_url : le selecteur
+    replie alors sous la cle sentinel ``unattributed`` (comportement des
+    donnees collectees avant #11808). Avec un run_id, la fixture porte le
+    details_url REST (.../actions/runs/{run_id}/job/...).
+    """
+    rows = []
+    for ch in checks:
+        n, s, c, t = ch[:4]
+        row = {"name": n, "status": s, "conclusion": c, "started_at": t}
+        if len(ch) > 4 and ch[4]:
+            row["details_url"] = (
+                "https://github.com/jsboige/CoursIA/actions/runs/"
+                f"{ch[4]}/job/96158568958"
+            )
+        rows.append(row)
+    return {"number": number, "sha": sha, "fork": fork, "checks": rows}
 
 
 GATE_OK = ("PR gate", "completed", "success", "2026-01-01T10:00:00Z")
@@ -161,3 +178,78 @@ def test_selector_has_cancelled_in_red_not_green(tmp_path):
     assert m and "cancelled" in m.group(0)
     m = re.search(r'GREEN = \{[^}]*\}', SELECTOR)
     assert m and "cancelled" not in m.group(0)
+
+
+# --- #11808 : le repli des check-runs par NOM fusionne des workflows homonymes ---
+
+# L'incident mesure sur #11804 (2026-08-19) : trois workflows emettent un job
+# affichant "Ratchet (base vs PR)". Replie par nom, le SUCCESS 16:21 (Exec
+# Sequence) efface le FAILURE 16:19 (Papermill) -- la sweep a relance le gate
+# d'une PR qui portait un rouge vivant.
+RATCHET_OK_1616 = ("Ratchet (base vs PR)", "completed", "success",
+                   "2026-08-19T16:16:01Z", 32274924047)
+RATCHET_FAIL_1619 = ("Ratchet (base vs PR)", "completed", "failure",
+                     "2026-08-19T16:19:45Z", 32274924272)
+RATCHET_OK_1621 = ("Ratchet (base vs PR)", "completed", "success",
+                   "2026-08-19T16:21:06Z", 32274924088)
+
+
+def test_same_name_three_workflows_red_not_erased(tmp_path):
+    """Acceptance 1 (#11808) -- le test de falsification : trois check-runs
+    homonymes de run_ids DIFFERENTS, [SUCCESS, FAILURE, SUCCESS]. Le repli par
+    nom garde le plus recent (vert) et declare la PR saine ; la PR doit au
+    contraire rester HORS candidats tant qu'un des trois est rouge. Ce test
+    echoue sur le RED d'avant le fix (la PR y etait candidate)."""
+    out = _run_selector(
+        tmp_path,
+        [_pr(109, [GATE_FAIL, RATCHET_OK_1616, RATCHET_FAIL_1619, RATCHET_OK_1621])],
+    )
+    assert out.strip() == ""
+
+
+def test_same_run_rerun_latest_wins(tmp_path):
+    """Acceptance 2 : non-regression du latest-wins INTRA-workflow -- memes
+    run_id et nom, FAILURE 16:19 puis SUCCESS 16:21 : la relance efface son
+    propre verdict perime, la PR reste candidate."""
+    fail_then_green = [
+        ("Hermes review", "completed", "failure", "2026-01-01T16:19:00Z", 111),
+        ("Hermes review", "completed", "success", "2026-01-01T16:21:00Z", 111),
+    ]
+    out = _run_selector(tmp_path, [_pr(110, [GATE_FAIL] + fail_then_green)])
+    assert out.strip() == "110 deadbeef false"
+
+
+def test_cross_workflow_green_and_red_keeps_pr_out(tmp_path):
+    """Meme nom, deux run_ids, un vert + un rouge (sans troisieme leg) : le
+    rouge d'un AUTRE workflow suffit a ecarter -- variante minimale du cas
+    #11804."""
+    out = _run_selector(
+        tmp_path, [_pr(111, [GATE_FAIL, RATCHET_FAIL_1619, RATCHET_OK_1621])]
+    )
+    assert out.strip() == ""
+
+
+def test_excluded_pr_names_its_blocking_check(tmp_path):
+    """Acceptance 5 : la sortie NOMME, pour chaque PR ecartee, quel check
+    l'ecarte (et son run) -- sur stderr, pour ne pas polluer candidates.txt.
+    Un compte seul serait indiscernable d'un filtre debranche (#11804)."""
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(109, [GATE_FAIL, RATCHET_FAIL_1619, RATCHET_OK_1621])],
+    )
+    assert proc.stdout.strip() == ""
+    assert "#109" in proc.stderr
+    assert "Ratchet (base vs PR)" in proc.stderr
+    assert "failure" in proc.stderr
+    assert "32274924272" in proc.stderr
+
+
+def test_excluded_incomplete_pr_names_its_blocking_check(tmp_path):
+    """Meme acceptance 5, cas d'un check inacheve (le gate attend peut-etre
+    legitiment) -- nomme aussi, verdict 'unfinished'."""
+    queued = ("Ratchet (base vs PR)", "queued", None,
+              "2026-08-19T16:21:06Z", 32274924088)
+    proc = _run_selector_both(tmp_path, [_pr(112, [GATE_FAIL, queued])])
+    assert proc.stdout.strip() == ""
+    assert "#112" in proc.stderr
+    assert "unfinished" in proc.stderr

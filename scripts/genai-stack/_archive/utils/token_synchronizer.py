@@ -286,7 +286,7 @@ class TokenSynchronizer:
             if not raw_token:
                 import secrets
                 raw_token = secrets.token_urlsafe(32)
-                self.log(f"Nouveau token brut généré: {raw_token[:8]}...", "INFO")
+                self.log("Nouveau token brut généré", "INFO")
             
             # Générer le hash bcrypt correspondant
             bcrypt_hash = self.generate_bcrypt_hash(raw_token)

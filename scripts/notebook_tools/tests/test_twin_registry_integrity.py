@@ -745,6 +745,9 @@ def test_update_pair_no_op_when_content_sha_matches(tmp_path, monkeypatch):
     import check_twin_parity as ct
     monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": sha_py if p == "X.ipynb" else sha_cs)
     monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": cpy if p == "X.ipynb" else ccs)
+    # Discrimination reachability (#11919) : recorded == courant (meme SHA),
+    # donc trivialement accessible depuis HEAD. Pas un orphelin.
+    monkeypatch.setattr(ct, "_blob_ancestor_in", lambda rr, blob_sha, ref="HEAD": True)
 
     audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
     assert cur_py == sha_py, "cur_py should match the recorded git blob SHA"
@@ -790,7 +793,14 @@ def test_update_pair_metadata_only_drift_is_noop(tmp_path, monkeypatch):
     git blob SHA mais preserve le content_sha (_shas_match utilise content_sha
     d'abord). -> is_noop True, NE PAS ecrire (sinon faux audit). C'est
     precisement la classe de drift Sudoku-8/14 BDD/9 GraphColoring que le
-    design-gate a designee comme devant etre ignoree."""
+    design-gate a designee comme devant etre ignoree.
+
+    Discrimination reachability (#11919) : le recorded git blob SHA EST
+    accessible depuis HEAD (le commit qui le porte est un ancetre, juste pas
+    HEAD lui-meme -- le buffer metadata a change entre ce commit et HEAD).
+    C'est la difference fondamentale avec un orphelin par squash : dans le
+    cas metadata-only, le blob reste reference par un commit ancetre.
+    """
     fake_pair = {
         "name": "Test-Metadata-Only",
         "family": "Sudoku",
@@ -811,6 +821,11 @@ def test_update_pair_metadata_only_drift_is_noop(tmp_path, monkeypatch):
     # content_sha preserve (la structure pedagogique n'a pas change).
     monkeypatch.setattr(ct, "_git_blob_sha", lambda rr, p, git_ref="HEAD": "1" * 40 if p == "X.ipynb" else "2" * 40)
     monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": "c" * 64 if p == "X.ipynb" else "d" * 64)
+    # Discrimination reachability : le recorded blob SHA EST accessible (le
+    # commit qui le porte est ancetre de HEAD). C'est ce qui distingue
+    # metadata-only drift d'un orphelin par squash (#11919) -- les deux cas
+    # ont la meme signature `rec_X != cur_X`, differencies par reachability.
+    monkeypatch.setattr(ct, "_blob_ancestor_in", lambda rr, blob_sha, ref="HEAD": True)
 
     audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
     assert cur_py == "1" * 40, "git blob SHA moved (metadata-only change)"
@@ -878,6 +893,9 @@ def test_update_pair_no_op_via_git_blob_sha_fallback(tmp_path, monkeypatch):
     # Calculated content_sha aussi None (legacy total) : _shas_match
     # tombe en fallback git blob SHA, qui sont egaux -> no-op.
     monkeypatch.setattr(ct, "_content_sha", lambda rr, p, git_ref="HEAD": None)
+    # Discrimination reachability (#11919) : recorded == courant (meme SHA),
+    # donc trivialement accessible depuis HEAD.
+    monkeypatch.setattr(ct, "_blob_ancestor_in", lambda rr, blob_sha, ref="HEAD": True)
 
     audit, cur_py, is_noop = update_pair(tmp_path, fake_pair)
     assert cur_py == "a" * 40

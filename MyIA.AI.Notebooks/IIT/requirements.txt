@@ -21,6 +21,11 @@
 # Core (strates PyPhi)
 pyphi==1.2.0                 # IIT computation -- epingle l'env sur Py3.9 + NumPy<2
 
+# Pin racine : pyphi tire pyemd depuis une sdist compilee contre numpy 2.x au
+# build -> "numpy.dtype size changed" a l'import. Le wheel pyemd 0.5.1 (cp39,
+# compile contre numpy 1.x) est le combo known-good avec numpy 1.26.
+pyemd==0.5.1                 # EMD backend de pyphi (wheel numpy1-compatible)
+
 # Scientific
 numpy>=1.21,<2.0             # Numerical computing (numpy<2 for pyemd/pyphi compat)
 scipy>=0.13.3                # Scientific computing

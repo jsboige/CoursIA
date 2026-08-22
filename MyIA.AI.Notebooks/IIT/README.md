@@ -31,6 +31,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 | 1 | [IIT-1-IntroToPyPhi](IIT-1-IntroToPyPhi.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation | 60-90 min |
 | 2 | [IIT-2-AdvancedTopics](IIT-2-AdvancedTopics.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
 | 3 | [IIT-3-CoarseGrainingMacroPhi](IIT-3-CoarseGrainingMacroPhi.ipynb) | Module `pyphi.macro` : information efficace (Hoel), énumération des regroupements, comparaison Φ micro/macro, causal emergence | 45-60 min |
+| 4 | [IIT-4-Le-Probleme-de-Frontiere](IIT-4-Le-Probleme-de-Frontiere.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, double dissociation Φ vs EI | 45-60 min |
 
 ## Parcours recommandés
 
@@ -42,14 +43,18 @@ Notebook 2 (Sujets avancés)
     |
     v
 Notebook 3 (Coarse-graining & échelle du Φ)
+    |
+    v
+Notebook 4 (Le problème de frontière)
 ```
 
 | Objectif | Parcours |
 |----------|----------|
 | Découverte rapide | Notebook 1 seul |
-| Maîtrise complète | Notebook 1 puis 2, puis 3 |
+| Maîtrise complète | Notebook 1 puis 2, puis 3, puis 4 |
 | Focus philosophie | Notebook 1 (sections CES + débats) + Notebook 2 (section IIT 4.0) |
 | Focus emergence & échelle | Notebook 1 + Notebook 3 (causal emergence de Hoel) |
+| Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage) |
 
 ### Parcours d'apprentissage
 
@@ -64,6 +69,10 @@ Le deuxième notebook déconstruit le calcul de Phi : vous manipulez les biparti
 **Phase 3 : Échelle et emergence (~60 min, notebook 3)**
 
 Le troisième notebook opérationnalise le module `pyphi.macro` resté conceptuel jusque-là : vous mesurez l'**information efficace** (EI) de Hoel, énumérez les regroupements (coarse-grain) possibles d'un réseau, et comparez $\Phi$ à l'échelle micro et macro sur l'exemple canonique de pyphi. Surtout, il examine **honnêtement** la prédiction contre-intuitive de *causal emergence* (Hoel 2013) : pourquoi le $\Phi$ macro ne dépasse le $\Phi$ micro que sur des réseaux probabilistes où le coarse-grain filtre du bruit, et pas sur des toys déterministes. Les 3 exercices portent sur la dégénérescence (réseau AND), l'énumération des regroupements et le test d'une hypothèse d'emergence.
+
+**Phase 4 : Le problème de frontière (~60 min, notebook 4)**
+
+Le quatrième notebook pose la question d'avant toute analyse de recollement : qui décide où sont les bords ? Sur un substrat inchangé (deux paires d'échange), vous énumérez les 11 frontières candidates et mesurez $\Phi$ et l'EI induit pour chacune — découpages **calculés**, jamais discutés. Le résultat est une **double dissociation** mesurée : $\Phi$ privilégie les frontières transversales (ex æquo, la mesure ne tranche pas), l'EI induit privilégie le tout, et les favorites de $\Phi$ coupent une dépendance — hors du domaine même de l'EI. Le *boundary problem* (Gómez Emilsson, cité comme proposition) devient un objet de mesure. Les 3 exercices refont la démarche sur votre propre substrat, jusqu'au verdict explicite.
 
 ## Prérequis
 
@@ -179,6 +188,17 @@ flowchart TD
 | Comparaison micro/macro | $\Phi$ macro vs $\Phi$ micro, interprétation honnête de l'emergence |
 | Causal emergence | Hoel 2013 : pourquoi l'emergence positive n'est ni automatique ni garantie |
 
+### IIT-4-Le-Probleme-de-Frontiere.ipynb
+
+| Section | Contenu |
+|---------|---------|
+| Substrat | Deux paires d'échange 4-nœuds, inchangées d'une section à l'autre |
+| Énumération | 11 frontières candidates (≥ 2 nœuds) — le découpage comme choix explicite |
+| Table centrale | Φ et EI induit calculés pour les 11 frontières du même substrat |
+| Maximiseur | Extraction de argmax — l'ex æquo AC/BD est un résultat (la mesure ne tranche pas) |
+| Double dissociation | Φ privilégie les frontières transversales, EI le tout — et les favorites de Φ sont hors du domaine de l'EI (frontières coupantes) |
+| Boundary problem | Gómez Emilsson cité comme proposition, jamais comme réponse établie |
+
 ## Théorie IIT
 
 La Théorie de l'Information Intégrée (IIT) propose une approche mathématique de la conscience :
@@ -283,6 +303,7 @@ IIT/
 ├── IIT-1-IntroToPyPhi.ipynb           # Notebook 1 : introduction
 ├── IIT-2-AdvancedTopics.ipynb         # Notebook 2 : sujets avances
 ├── IIT-3-CoarseGrainingMacroPhi.ipynb # Notebook 3 : coarse-graining & échelle du Φ
+├── IIT-4-Le-Probleme-de-Frontiere.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -416,7 +437,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 56
-breakdown: ICT-Series=53, root=3
-maturity: BETA=51, DRAFT=5
+pedagogical_count: 58
+breakdown: ICT-Series=55, root=3
+maturity: BETA=53, DRAFT=5
 -->

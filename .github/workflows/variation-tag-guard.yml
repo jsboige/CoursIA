@@ -59,7 +59,17 @@ permissions:
   issues: write
 
 concurrency:
-  group: variation-tag-guard-${{ github.ref }}
+  # #12175 : sur `issue_comment`, github.ref vaut TOUJOURS refs/heads/main --
+  # tous les commentaires de toutes les PR partageaient donc un seul groupe,
+  # et cancel-in-progress les faisait s'annuler mutuellement. Un run d'override
+  # poste sur la PR A mourait au premier commentaire sur la PR B, sans poster
+  # de check-run : vu du dehors, le marqueur [G-VAR-3 OVERRIDE] ne faisait rien.
+  # Mesure du 2026-08-21 : le run 32506481706 (override sur #12170) annule par
+  # un commentaire sans marqueur poste 5 min plus tard sur une autre PR.
+  # Le numero de PR separe les deux espaces de cles sans collision : sur
+  # pull_request, github.event.issue.number est vide et on retombe sur
+  # github.ref (= refs/pull/N/merge, deja distinct par PR).
+  group: variation-tag-guard-${{ github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -784,7 +794,7 @@ jobs:
   # `is_advisory()` classifier in `scripts/pr_gate.py` does NOT silence it.
   check-variation-adjacency-required:
     if: github.event_name != 'issue_comment'  # #11718 : le chemin commentaire est servi par check-variation-adjacency-comment
-    name: 'Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
+    name: 'Require genre diversity vs prev (required, block on LIGHT adjacency, #11170)'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the adjacency helper (sparse)
@@ -837,13 +847,33 @@ jobs:
             COMMENTS_ARG="--comments-file /tmp/pr_comments.json"
           fi
 
+          # Merged PRs, to resolve the lane's REAL predecessor (#12095): the
+          # declared `prev:` is frozen at open time, so a lane merging grains
+          # while the PR sits open made this gate block PRs the rule never
+          # aimed at (#11963 measured `prev: MED/guard #11841` exact at
+          # redaction but followed by four merged grains -- real predecessor
+          # `notebook-python`). Same data source as the G-VAR-2 job above
+          # (`gh pr list --state merged`); no `merged:$TODAY` search here --
+          # the predecessor may sit on any past day, the script sorts by
+          # mergedAt itself. A fetch failure degrades to the declared `prev:`
+          # (the flag stays absent), never to a crash or a silent pass.
+          gh pr list --state merged --limit 100 \
+            --json number,body,mergedAt \
+            > /tmp/merged_prs.json 2>/dev/null || rm -f /tmp/merged_prs.json
+
+          MERGED_ARG=""
+          if [ -s /tmp/merged_prs.json ]; then
+            MERGED_ARG="--merged-prs-file /tmp/merged_prs.json"
+          fi
+
           # The helper emits one JSON verdict and exits 0 (pass/advisory) or
           # 1 (block on LIGHT adjacency). The &&/|| list captures RC on BOTH
           # branches and is exempt from errexit (same fix as
           # check-variation-tag-required).
-          # shellcheck disable=SC2086  # COMMENTS_ARG is a deliberate 0-or-2 token split
+          # shellcheck disable=SC2086  # COMMENTS_ARG/MERGED_ARG are deliberate 0-or-2 token splits
           python3 scripts/ci/variation_adjacency_guard.py \
-            --body-file /tmp/pr_body.txt $COMMENTS_ARG > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+            --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG \
+            > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
 
           if [ -s /tmp/verdict.err ]; then
             echo "--- helper stderr ---"
@@ -912,7 +942,7 @@ jobs:
   # les commentaires du bot (github-actions[bot]) ne redeclenchent rien.
   # Les commentaires d'ISSUE (hors PR) sont filtres au niveau du job.
   check-variation-adjacency-comment:
-    name: 'Require genre diversity vs prev: (block on LIGHT adjacency, #11170)'
+    name: 'Require genre diversity vs prev (comment, block on LIGHT adjacency, #11170)'
     # #11782 : garde d'entree sur la presence du marqueur. Un if: de job est
     # evalue SANS allouer de runner -- un commentaire sans [G-VAR-3 OVERRIDE]
     # ne coute rien du tout. Sans lui, chaque commentaire de PR (steer, ACK,
@@ -1007,8 +1037,18 @@ jobs:
             COMMENTS_ARG="--comments-file /tmp/pr_comments.json"
           fi
 
-          # shellcheck disable=SC2086  # deliberate 0-or-2 token split
-          python3 scripts/ci/variation_adjacency_guard.py             --body-file /tmp/pr_body.txt $COMMENTS_ARG             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
+          # Merged PRs for the lane's REAL predecessor (#12095) -- same
+          # plumbing as the pull_request job above.
+          gh pr list --state merged --limit 100 \
+            --json number,body,mergedAt \
+            > /tmp/merged_prs.json 2>/dev/null || rm -f /tmp/merged_prs.json
+          MERGED_ARG=""
+          if [ -s /tmp/merged_prs.json ]; then
+            MERGED_ARG="--merged-prs-file /tmp/merged_prs.json"
+          fi
+
+          # shellcheck disable=SC2086  # deliberate 0-or-2 token splits
+          python3 scripts/ci/variation_adjacency_guard.py             --body-file /tmp/pr_body.txt $COMMENTS_ARG $MERGED_ARG             > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
           if [ -s /tmp/verdict.err ]; then echo "--- helper stderr ---"; cat /tmp/verdict.err; fi
           echo "--- verdict ---"; cat /tmp/verdict.json 2>/dev/null || echo "(vide)"
 

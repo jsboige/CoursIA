@@ -23,6 +23,27 @@ L'issue GitHub ferme les trois d'un coup : locus **unique cross-lane par constru
 6. **Partitionner explicitement par fichier** des que plusieurs lanes convergent sur une meme cible (precedent : `HashlifeCorrectness.lean` partitionne P4-mpr / murs SW-SE / MarginFragment entre trois lanes sur #6724). Le partitionnement s'ecrit mecaniquement depuis #10419 : un `[CLAIMED]` portant une clause `paths:` ne bloque qu'une lane dont le scope **intersecte** le sien (fnmatch). Deux lanes aux scopes **disjoints** sur une meme issue-parapluie (cas nominal d'un audit multi-instances type #10382, une lane par notebook) sont donc libres en parallele. Syntaxe : `[CLAIMED] lane <machine:workspace> -- paths: glob1, glob2`. Sans la clause, le `[CLAIMED]` reste **epic-wide** (bloque toutes les autres lanes -- semantique heritee, preservee). L'organe lit le scope depuis le commentaire d'issue ET, en complement, depuis le `--paths` du caller ; la disjointness n'est honoree que quand **les deux** claims declarent un scope.
 7. **Lire les DEUX dashboards avant de provisionner** (rappel R3 [coordinator-discipline.md](coordinator-discipline.md)) — necessaire mais insuffisant seul : il ne couvre pas la fenetre inter-cycle, d'ou les points 5-6.
 
+## Forme canonique de la clause `paths:` (#10597, #10958, #11064, #12052)
+
+La clause `paths:` est parsee par `_extract_paths_clause` dans `scripts/check_lane_claim.py`. **Quatre regles** la rendent matchable — toute deviation fabrique un scope mort et fait passer la claim en epic-wide (fail-CLOSED : un claim casse n'est PAS permissif, il bloque toutes les autres lanes).
+
+| Forme | Canonique | Casse | Issue |
+| --- | --- | --- | --- |
+| Annotation tiret | `paths: a/**, b/** -- 2026-08-11T18:10Z` | `paths: a/**, b/**2026-08-11T18:10Z` (pas de ` -- `) | #10958 |
+| Annotation parenthese | `paths: a/** (Phase 2, tranche A)` | parenthese NON separee par espace = caractere legitime preserve | #12052 |
+| Accolades | `paths: search-{6,8,9}-*.yaml` (fnmatch n'a pas `{a,b}`) | `paths: search-{a,b-*.yaml` (accolade non fermee) | #10597 |
+| `--paths` CLI | `gh issue comment N --body-file body.md --paths g1 --paths g2` | `--paths ` seul avec valeur vide | #11064 |
+
+**Regles de syntaxe (toutes obligatoires)** :
+
+1. **Globs separes par des virgules.** Pas de `;`, pas de retour a la ligne.
+2. **Aucune parenthese dans la liste de globs.** Annotation parenthétique = espace + ouvrante ` (`, tronquée au premier séparateur (#12052). Une parenthese COLLEE (sans espace) est un caractère de filename légitime, préservée intacte.
+3. **Annotation éventuelle apres un ` -- ` délimité par des espaces** (ou ` — `, ` – `), sur la MEME ligne.
+4. **Accolades fermées** et expandables (`{a,b,c}` → 3 globs frères). Une accolade non fermée = `unparseable_scope`, claim portée epic-wide par défaut.
+5. **Chaque glob contient au moins un `/`** OU un métacaractère fnmatch (`*`, `?`, `[seq]`, `[!seq]`). Un mot isolé sans slash ni métacaractère est un fragment de prose — `_unparseable_scope_in` (#12052) le signale dans le JSON d'audit pour que la lane déclarante puisse le corriger. Sans slash ni métacaractère, fnmatch traite le fragment comme un nom de fichier LITERAL (qui ne matche rien en pratique).
+
+**Référence organe** : `scripts/check_lane_claim.py:_extract_paths_clause` + `scripts/tests/test_check_lane_claim.py::test_paths_clause_*`. **Référence diagnostic** : issue **#12052** (parenthèse + prose), #10958 (annotation tiret), #10597 (accolades), #11064 (`--paths`).
+
 ## Tie-break — l'issue l'emporte, l'override s'ecrit (#10223)
 
 Les deux collisions du 2026-08-09 (#10169 puis #10161) ont revele deux
@@ -30,15 +51,11 @@ non-ecrits qu'on ecrit ici noir sur blanc. Un organe debloquant les enforce
 desormais : `.github/workflows/lane-claim-guard.yml` (`check-lane-claim-required`).
 
 8. **Claim-issue > claim-dashboard, meme quand le dashboard est anterieur.**
-   Un `[CLAIMED]` sur l'issue bat un `[CLAIMED]` dashboard, **independamment
-   de l'horodatage**. La raison est mecanique, pas punitive : le dashboard est
-   silote par lane (invisible cross-workspace pendant la fenetre decision ->
-   push), auto-condense (un verrou ramasse par le GC n'est pas un verrou), et
-   ses stamps melent heure locale et UTC (cf §ci-dessus). Sur #10169, po-2026
-   avait ~12 minutes d'avance sur le dashboard workspace-CoursIA — et a perdu
-   contre le claim d'issue de po-2025, parce que seul ce dernier etait au locus
-   cross-lane. Le `createdAt` serveur de l'issue fait foi ; un stamp dashboard
-   anterieur ne l'invalide pas.
+   Un `[CLAIMED]` sur l'issue bat un `[CLAIMED]` dashboard **independamment de
+   l'horodatage**, pour les trois raisons mecaniques du § ci-dessus (silotage,
+   condensation, stamps locaux) — pas par punition. Sur #10169, ~12 minutes
+   d'avance au dashboard n'ont pas suffi : seul le claim d'issue etait au locus
+   cross-lane. Le `createdAt` serveur fait foi.
 9. **Override coordinateur permis, mais ecrit sur l'issue.** Le coordinateur
    garde le droit de merger contre un claim detenu quand la substance le
    justifie — mais il **perd la possibilite de le faire sans l'ecrire**.

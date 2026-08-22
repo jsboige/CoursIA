@@ -1,0 +1,130 @@
+name: ASCII-flowchart detector (advisory)
+
+# Durable advisory for the #11962 pathologie: a notebook commit introduces a
+# new ASCII flowchart in markdown cells where a Mermaid `flowchart LR`
+# rendering is the canonical SOTA replacement (Prong-A complement, scope =
+# flowcharts, sibling of #3801 which targets bar charts).
+#
+# Founding case: SW-12-Python-GraphRAG.ipynb cell ## 2. Architecture d'un
+# pipeline GraphRAG (l.208, preserved by PR #11906 byte-identique) :
+#
+#   Textes bruts                   Graphe de connaissances
+#   +-----------+                  +---------+
+#   | Document1 |--+               | Entite1 |---relation---| Entite2 |
+#   +-----------+  |  Extraction   +---------+              +---------+
+#   ...
+#   |   LLM    |<-- Sous-graphe comme contexte
+#   +----------+
+#
+# This block is ASCII-only and reproduces an architecture pipeline that
+# natively renders in Mermaid. The detector flags NEW introductions
+# (frozen-inheritance, cf. h1_hygiene_scan #11840 / pip-leak-guard #6314):
+# a cell that already had the flowchart on main does NOT re-flag, only the
+# delta from merge-base to HEAD counts.
+#
+# Why ADVISORY (not blocking): the corpus baseline c.259 is **13 pre-existing
+# occurrences** on main (10 files, 4 families : SymbolicAI/SemanticWeb,
+# QuantConnect/Python, SymbolicAI/Lean, GenAI/Vibe-Coding). The detector only
+# signals NEW introductions vs merge-base. A reviewer triages; never block
+# a merge on this signal alone -- the recommended replacement is
+# Mermaid `flowchart LR`, which is a real rewrite of pedagogical content
+# (not a one-line fix), and belongs in a substance PR per notebook
+# (cf. #11962 acceptance : detection only, conversion = substance par
+# notebook).
+#
+# Expression-safety note (ai-01 lesson, 2026-08-19T21:43Z): the
+# render-volume advisory shipped an unparseable `${{ ... }}` expression
+# with an apostrophe -- GitHub Actions knows no backslash escape, and the
+# run died BEFORE creating any job. This file keeps NO apostrophe inside
+# any `${{ }}` expression on purpose.
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'MyIA.AI.Notebooks/**/*.ipynb'
+      - 'scripts/notebook_tools/detect_ascii_flowchart.py'
+      - 'scripts/notebook_tools/tests/test_detect_ascii_flowchart.py'
+      - '.github/workflows/ascii-flowchart-advisory.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ascii-flowchart-advisory-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ascii-flowchart-advisory:
+    name: "ASCII flowchart introductions (#11962 advisory)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run unit tests
+        run: |
+          python -m pip install --quiet pytest nbformat
+          python -m pytest scripts/notebook_tools/tests/test_detect_ascii_flowchart.py -v
+
+      - name: Run detector (advisory, do not gate)
+        id: run
+        run: |
+          set +e
+          BASE=$(git merge-base origin/main HEAD 2>/dev/null)
+          if [ -z "$BASE" ]; then
+            echo "findings_total=abstain" >> "$GITHUB_OUTPUT"
+            echo "::warning::ascii-flowchart: merge-base origin/main HEAD introuvable -- detector abstains (shallow fetch or unanchored branch)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD | grep -E '\.ipynb$' | head -50)
+          if [ -z "$CHANGED" ]; then
+            echo "findings_total=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Detect against merge-base -- not against origin/main two-dots,
+          # which would read evolutions outside the PR for a stale-base branch.
+          python scripts/notebook_tools/detect_ascii_flowchart.py \
+            $CHANGED \
+            --json > /tmp/ascii-flowchart.json 2> /tmp/ascii-flowchart.err
+          rc=$?
+          if [ "$rc" != "0" ]; then
+            echo "findings_total=abstain" >> "$GITHUB_OUTPUT"
+            echo "::warning::ascii-flowchart: detector returned rc=$rc -- abstains. See workflow log." >> "$GITHUB_STEP_SUMMARY"
+            cat /tmp/ascii-flowchart.err >&2
+            exit 0
+          fi
+          findings_total=$(python -c "import json;print(json.load(open('/tmp/ascii-flowchart.json'))['total_findings'])" 2>/dev/null || echo "abstain")
+          echo "findings_total=$findings_total" >> "$GITHUB_OUTPUT"
+          python - <<'PY'
+          import json
+          d = json.load(open('/tmp/ascii-flowchart.json'))
+          for f in d.get('findings', []):
+              fenced = "fenced" if f.get('fenced', False) else "unfenced"
+              print(f"::warning file={f['path']}::"
+                    f"NEW ASCII flowchart cell#{f['cell_index']} "
+                    f"L{f['start_line']}-{f['end_line']} ({fenced}) "
+                    f"boxes={f['boxes']} connectors={f['connectors']} labels={f['labels']} : "
+                    f"{f['evidence'][:120]}")
+          PY
+          set -e
+
+      - name: Post advisory comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: ascii-flowchart-advisory
+          message: |
+            ${{ steps.run.outputs.findings_total == '0' && 'No new ASCII flowchart introductions in modified notebooks (vs merge-base). Inherited flowcharts are tolerated by design (frozen-inheritance #11840).' || steps.run.outputs.findings_total == 'abstain' && 'ASCII-flowchart detector ABSTAINS: merge-base unresolved or structural error -- no verdict. See workflow log.' || format('WARNING: {0} new ASCII flowchart block(s) introduced in markdown cells (vs merge-base). Recommendation: replace with Mermaid ```mermaid flowchart LR``` for native GitHub/Jupyter/Slidev rendering. The detector lists file:cell_index and the verbatim ASCII block. This is ADVISORY (not a merge gate); substance conversion = per-notebook PR (cf. #11962 acceptance : detection only).', steps.run.outputs.findings_total) }}
+
+            Detector: `python scripts/notebook_tools/detect_ascii_flowchart.py <notebooks> --json`
+            Rationale: #11962 / SW-12 cell ## 2. Architecture d'un pipeline GraphRAG (founding case, ASCII pipeline vs Mermaid `flowchart LR`).
+            Sibling scope: `detect_ascii_workaround.py` (#3801) targets bar charts; this organ targets flowcharts.

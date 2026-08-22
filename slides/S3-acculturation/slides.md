@@ -104,13 +104,8 @@ layout: section
 
 <img src="./images/img_005.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Qu'est-ce que l'intelligence artificielle?" />
 ---
-layout: two-cols
----
-
-
 
 # Développement (1/2)
-
 
 **Histoire succincte**
 
@@ -124,28 +119,14 @@ layout: two-cols
   - Robotique, vision
 - 1990s : L'IA devient une science
 
-<img src="./images/img_006.png" class="h-24 mx-auto mt-4" alt="Repères historiques" />
+<img src="./images/img_006.png" class="absolute top-[110px] right-[20px] w-[300px] max-w-full object-contain" alt="Repères historiques" />
 
-
-::right::
-
-
-**État de l'art**
-
-- 1997 : Deep Blue (échecs)
-- 2000s : Prouveurs, planification
-- 2007 : Jeu de dames résolu
-- 2010s : Explosion deep-learning
-  - 2014 : GANs
-  - 2016 : AlphaGo
-- NLP : Transformers, LLMs
-
-<div class="flex gap-4 mt-4 items-center">
-  <img src="./images/img_007.jpg" class="h-10 max-w-[35%] object-contain" alt="Logo DARPA" />
+<div class="absolute top-[300px] right-[20px] w-[300px] flex gap-4 items-center justify-center">
+  <img src="./images/img_007.jpg" class="h-10 max-w-[45%] object-contain" alt="Logo DARPA" />
   <img src="./images/img_008.jpg" class="h-8 max-w-[55%] object-contain" alt="Logo ImageNet" />
 </div>
 
-
+> **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
 ---
 
@@ -181,6 +162,8 @@ layout: two-cols
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
+<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+
 
 ---
 
@@ -204,10 +187,6 @@ layout: two-cols
 
 <img src="./images/img_009.png" class="absolute top-[110px] right-[20px] w-[460px]" alt="Les agents" />
 ---
-layout: two-cols
----
-
-
 
 # Conception d'agents
 
@@ -221,13 +200,9 @@ layout: two-cols
 - Pas de mémoire, réagit aux percepts courants
 - Regles condition → action (si obstacle, alors freiner)
 
-<img src="./images/img_010.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_010.png" class="w-[260px] max-w-full max-h-[220px] object-contain" />
 
-
-::right::
-
-
-<img src="./images/img_011.png" class="w-[380px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_011.png" class="absolute top-[290px] right-[20px] w-[360px] max-w-full max-h-[240px] object-contain" alt="Agent réflexe" />
 
 
 
@@ -302,9 +277,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
 
 
 # Agent explorateur
@@ -317,25 +289,15 @@ layout: two-cols
 
 <img src="./images/img_016.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
 
-
-::right::
-
-
 **Résolution de problèmes**
 
 - Objectif ?
 - Actions ?
 - Représentation ?
 
-<img src="./images/img_017.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-
-
-
+<img src="./images/img_017.png" class="absolute top-[110px] right-[20px] w-[300px]" alt="Résolution de problèmes" />
 
 ---
-layout: two-cols
----
-
 
 
 # Formulation de problèmes
@@ -343,7 +305,7 @@ layout: two-cols
 
 **Itinéraire**
 
-<img src="./images/img_018.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_018.png" class="absolute top-[110px] right-[20px] w-[260px] max-h-[220px] object-contain" />
 
 - État initial, test de but
 - Transitions
@@ -351,18 +313,14 @@ layout: two-cols
 - Coût de chemin
 - Solution = Séquence
 
-
-::right::
-
-
 **Abstractions**
 
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_019.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_020.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_021.png" class="w-[200px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_robot_extracted.png" class="absolute top-[345px] right-[20px] w-[380px] max-h-[170px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
+<img src="./images/img_019.png" class="absolute top-[460px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
+<img src="./images/img_021.png" class="absolute top-[460px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
 
 
 
@@ -385,6 +343,8 @@ layout: two-cols
 - Développement des états successeur
 - **Choix des nœuds**
   - = Stratégie d'exploration
+
+<img src="./images/img_020.png" class="w-[420px] max-w-full max-h-[280px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
 
 
 
@@ -452,19 +412,15 @@ layout: two-cols
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
+<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Cycle d'un algorithme génétique" />
+<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Croisement sur le problème des huit reines" />
 
 </div>
 
 </div>
 
 
-
 ---
-layout: two-cols
----
-
 
 
 # Stratégies d'exploration (2/2)
@@ -477,12 +433,6 @@ layout: two-cols
   - Optimisation d'une fonction
   - Escalade, descente de gradient
 
-<img src="./images/img_030.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_031.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-
-
-::right::
-
 
 - Problèmes :
   - Bloqué sur un optimum local
@@ -494,8 +444,12 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<img src="./images/img_032.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_033.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
+<div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
+<img src="./images/img_030.png" class="max-h-[300px] max-w-full object-contain" />
+<img src="./images/img_031.png" class="max-h-[300px] max-w-full object-contain" />
+<img src="./images/img_032.png" class="max-h-[300px] max-w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
+<img src="./images/img_033.png" class="max-h-[300px] max-w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
+</div>
 
 
 
@@ -2393,8 +2347,8 @@ Et son corollaire, plus dur à admettre :
 </div>
 </div>
 
-> 27 règles écrites, chargées automatiquement à chaque session. La documentation
-> qui n'est pas chargée n'existe pas.
+> Un harnais de règles écrit, chargé automatiquement à chaque session. La
+> documentation qui n'est pas chargée n'existe pas.
 
 
 ---

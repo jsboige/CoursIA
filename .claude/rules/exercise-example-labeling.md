@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**/*.ipynb
+---
+
 # Labeling Exemple / Exercice — content-based, STOP au flip-flop
 
 S'applique a **tous les agents de-leak** (po-2023, po-2024, po-2025, po-2026, ai-01) sur les notebooks pedagogiques.

@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace MyNotebookLib;
-
 public class DisplayLoggerProvider : ILoggerProvider
 {
 	private readonly LogLevel _logLevel;
@@ -17,4 +15,3 @@ public class DisplayLoggerProvider : ILoggerProvider
 	}
 
 	public void Dispose() { }
-}

@@ -65,12 +65,18 @@ pratique sur ce depot mais ce n'est pas une preuve d'identite : un nit user
 poste via `gh` serait manque (faux negatif), un agent collant du CRLF serait
 signale a tort (faux positif). Le gate signale, l'humain tranche.
 
-Limite honnete du CONDITIONAL_LIFT (#11201)
--------------------------------------------
-La regex neutralise le marqueur « je merge » au niveau du BODY ENTIER : un
-commentaire contenant a la fois une annonce vraie (« c'est bon, je merge ») et
-une construction conditionnelle (« corrige X et je merge ») est integralement
-de-leve — l'annonce vraie y perd son effet (faux positif possible). La branche
+Limite honnete du CONDITIONAL_LIFT (#11201, resserree #12074)
+-------------------------------------------------------------
+La regex neutralise le marqueur « je merge » quand la construction est
+conditionnelle. #12074 a resserre la neutralisation : un marqueur de levee
+EXPLICITE par son auteur (« je leve ma reserve », « Levee de mon
+CHANGES_REQUESTED ») EN AMONT du match conditionnel preserve le LIFT — « je
+leve ma reserve et je merge » est la formulation naturelle d'une levee, le
+« et je merge » n'y est que la consequence annoncee (comparaison d'offsets,
+cf `_lift_cancelled`). Residuel assume : une annonce NON explicite (« c'est
+bon, je merge ») coexistant avec une construction conditionnelle dans le meme
+body reste integralement de-levee (faux positif possible) — rescaper « je
+merge »/« Merge. » rouvrirait #11201 par la porte de service. La branche
 « des » peut aussi matcher « je merge des PRs » (pluriel direct, pas « dès »).
 Choix assume : le cout d'un faux positif (un flag a trier) est inferieur au
 cout du faux negatif corrige ici (un nit invisible fondu dans sa propre
@@ -113,8 +119,17 @@ COORDINATOR_LOGINS = {"myia-ai-01", "jsboige"}
 OVERRIDE_LANE = re.compile(r"\[OVERRIDE\]\s+lane\s+\S+")
 
 # Marqueurs de reserve d'un reviewer bot (le verdict est dans le body, pas l'etat).
+# #12311 — `REQUEST_CHANGES` (verbe, e.g. « [Hermes] Review — REQUEST_CHANGES »)
+# complete `CHANGES_REQUESTED` (nom) : Hermes self-bot est force a state:COMMENTED
+# par GitHub (PR sur son propre compte), donc son verdict = texte du body. Verifier
+# les 2 formes couvre 9 corpus mesures (cf issue #12311), dont #12267 et #12288
+# rendus mergeable a tort par l'absence du verbe. `has_live_marker` filtre les
+# sous-chaines citees (CITERS ligne 455+), donc ajouter un verbe n'ouvre pas la
+# porte aux faux positifs « 0 REQUEST_CHANGES » (#11916 controle negatif) :
+# CITERS inclut deja « zero » et sera etendu de « 0 » (cf ligne ~470).
 CONCERN_MARKERS = (
-    "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "NEEDS_CHANGES", "CONCERNS",
+    "COMMENT_WITH_CONCERNS", "CHANGES_REQUESTED", "REQUEST_CHANGES",
+    "NEEDS_CHANGES", "CONCERNS",
     "SUSPECT_", "STRUCTURAL_ONLY", "SCOPE FLAG", "scope mismatch",
     "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
     # Miroir anglais de « avant merge » : fenetre 04-23..04-30 (triage po-2023,
@@ -131,6 +146,30 @@ CONCERN_MARKERS = (
     # (CITERS, ci-dessous) rend l'occurrence citee.
     "a changer",
 )
+
+# #12143 — Hermes severity glyphes (substance du premier PR #12148 fondateur).
+# Extrait en constante separee pour subordonner la levee par LIFT_MARKERS
+# (cf `classify` ci-dessous) : un glyphe est une EMISSION, et une emission
+# ne se laisse pas eteindre par un mot de levee pose ailleurs dans la meme
+# prose. Distribution scan 150 PRs mergees (35 reviews Hermes) :
+#   △ (U+25B3) : micro-nit non-bloquant, 23/35 (exclu de CONCERN_MARKERS).
+#   🟡 (U+1F7E1) : constat substantiel, 5/35. Promote car 4 leves par la suite,
+#     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
+#     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
+#   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
+# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_strip_mentioned_verdicts`
+# ne les neutralise pas (regex _MENTION_VERDICT* ciblent ASCII verdict formel),
+# `_is_cited` reste symetrique via CITERS ascii.
+SEVERITY_GLYPHS = (
+    "🟡",  # constat substantiel (fondateur #12059)
+    "🔴",  # bloquant strict
+)
+# Concatene pour que `live_concern` (has_live_marker sur CONCERN_MARKERS) capture
+# aussi les glyphes isoles — sans cette ligne, un body compose uniquement d'un
+# glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
+CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
+
+# Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 # la resolution. Sans ce filtre, chaque « CHANGES_REQUESTED levée » est compte
@@ -169,6 +208,20 @@ CONDITIONAL_LIFT = re.compile(
     r"(et je merge|puis je merge|ensuite je merge"
     r"|je merge (?:dès|des|une fois|quand|après|apres|si\b))", re.I)
 
+# #12074 — marqueurs de levee EXPLICITE par son auteur : quand l'un d'eux
+# PRECEDE le match CONDITIONAL_LIFT, la construction n'est pas une condition —
+# « je leve ma reserve et je merge » : la levee est acquise, le merge n'en est
+# que la consequence annoncee. Distinct des annonces generiques (« je merge »,
+# « Merge. ») : les rescaper rouvrirait #11201 (« corrige X et je merge »
+# redeviendrait une levee). Miroir des entrees d'auteur de LIFT_MARKERS —
+# casse preservee et accents normalises par `_unaccent`, comme pour ces
+# derniers.
+EXPLICIT_LIFT_MARKERS = (
+    "Je lève", "Je leve", "je lève", "je leve",
+    "Levée de", "Levee de", "levée de", "levee de",
+    "Lève la", "Leve la", "lève la", "leve la",
+)
+
 # #11246 — use vs mention : CONDITIONAL_LIFT lisait les exemples CITES du motif
 # comme des usages. Une review qui explique « corrige X et je merge » se
 # flaggait elle-meme (2/15 findings de l'audit --limit 400 : les 2 seules
@@ -185,6 +238,27 @@ _QUOTED_RANGES = re.compile(r"```.*?```|«.*?»|`[^`]*`", re.DOTALL)
 def _strip_quoted(body: str) -> str:
     """Retire les segments cites (guillemets typo, backtick, bloc code)."""
     return _QUOTED_RANGES.sub(" ", body)
+
+
+def _lift_cancelled(stripped: str) -> bool:
+    """#12074 — le CONDITIONAL_LIFT n'annule le LIFT que si AUCUN marqueur de
+    levee explicite d'auteur ne precede le match conditionnel.
+
+    « **Je leve mon CHANGES_REQUESTED** et je merge. » s'auto-bloquait : le
+    « et je merge » annulait le LIFT au niveau du body entier, le commentaire
+    de levee etait re-compte comme un nit de plus, et la reserve qu'il levait
+    redevenait vivante. Le discriminateur est la POSITION — ce qui PRECEDE le
+    connecteur decide : antecedent imperatif (« corrige X et je merge ») =
+    condition bloquante ; antecedent de levee accomplie = consequence
+    annoncee. Les offsets sont compares sur la meme chaine passee par
+    `_strip_quoted` : une levee CITEE (« ... ») ne rescape rien (use vs
+    mention, #11246). `_unaccent` preserve la longueur, donc les offsets de la
+    chaine stripee restent ceux de la chaine originale.
+    """
+    for m in CONDITIONAL_LIFT.finditer(stripped):
+        if not has_marker(stripped[: m.start()], EXPLICIT_LIFT_MARKERS):
+            return True
+    return False
 
 # #11636 — use vs mention, 2e reformulation de la classe #11246 : un rapport
 # de correction qui NOMME le verdict qu'il corrige n'emet pas de reserve. Cas
@@ -217,22 +291,22 @@ _MENTION_VERDICT = re.compile(
     r"|r[ée]ponse\s+[àa]|lev\w+|lift\w*|adress\w+|trait\w+|repondu\s+[àa])"
     r"[^()\n]{0,40}\(\s*([A-Z][A-Z_]{3,})\s*\)")
 
-# #11744 — Position A : titre de section `## ...VERDICT...`. La section est en
-# mention par construction (un titre ne « declare » jamais un verdict, il
-# l'evoque). Limite : 80 chars du `##` au verdict pour eviter les titres tres
-# longs qui seraient des resumes sections sans mention explicite. Compteur
-# cumulatif : l'eventuelle emission en corps de section est geree separement
-# par les CONCERN_MARKERS et `_is_cited` (les emissions reelles passent par
-# `MARKER:` nu ou par le state de la review, pas par un nom de verdict
-# eparpille dans une prose narrative).
-# Critere : nom de verdict = (a) TOUT en majuscules (>=4 chars) OU (b) contient
-# un underscore. Un titre ne contient presque jamais un mot de 4+ majuscules
-# consecutives SAUF un nom de verdict — c'est exactement la signature qu'on
-# cherche. Le pattern `[A-Z][A-Z_]{3,}` (v1) etait trop court (matche aussi
-# « Remedes » partiellement). **PAS de `(?i)` ici** : on veut strictement
-# `[A-Z]` (majuscule), pas `[a-zA-Z]` (case-insensitive).
+# #12311 (cf grain) — Position A : titre de section. Le pattern historique
+# (`[A-Z]{4,}` puis `[A-Z][A-Z_]{2,}[A-Z]`) neutralisait en sous-chaine les
+# VERBES d'emission directe dans les titres, ex. « ## [Hermes] Review —
+# REQUEST_CHANGES (...) » capturait `CHANGES` (7 majuscules) au sein de
+# `REQUEST_CHANGES`. Hermes self-bot force a state:COMMENTED (#12311) ecrit
+# son verdict dans le TITRE — neutraliser systematiquement le titre rend la
+# detection aveugle exactement sur le canal qu'elle doit lire.
+# Discrimination : un titre **avec prefixe agent reviewer** (`[Hermes]`,
+# `[NanoClaw]`, `[Claude]`, `[Review]`, `[Hermes self-bot]`, etc.) est une
+# EMISSION (le reviewer declare son verdict dans le titre). Un titre **sans
+# prefixe** (ex. `## Remedes au CHANGES_REQUESTED`) est une MENTION (rapport
+# de remediation qui evoque un verdict anterieur). On preserve le verdict
+# uniquement dans le premier cas. Le tag agent est matche dans les 80 chars
+# entre `##` et le verdict (cf limite d'origine).
 _MENTION_VERDICT_HEADING = re.compile(
-    r"(?m)^#{1,6}[^\n]{0,80}?([A-Z]{4,})(?![A-Za-z0-9_])")
+    r"(?m)^#{1,6}(?![^\n]*\[[A-Z][A-Za-z_-]{2,40}\])[^\n]{0,80}?([A-Z][A-Z_]{2,}[A-Z])(?![A-Za-z0-9_])")
 
 # #11744 — Position B : prose inline. Un verdict est en mention quand un mot-
 # cle de mention (`verdict`, `nit`, `remark`, `previous`, `previous`, `precedent`,
@@ -282,6 +356,39 @@ _MENTION_VERDICT_LIFTED = re.compile(
     r"\w*\s+\((?:commit\s+[a-f0-9]+|#\d+|PR\s*#?\d+|pull/\d+)\)")
 
 
+# #11984 — Position D : le nominal `revue` / `review` DEVANT le verdict, avec
+# reference pointable APRES. Cinquieme reformulation de la classe use-vs-
+# mention (#11246 → #11636 → #11744 → #11809 → celle-ci) : les correctifs
+# precedents portaient le nominal `verdict` (avec ses determinants) mais pas
+# `revue`/`review`, la facon la plus naturelle d'ecrire la meme mention en
+# francais comme en anglais. Instance fondatrice : #11911, commentaire du
+# 2026-08-20T14:50:21Z — « La revue CHANGES_REQUESTED (07:32Z, SHA
+# `5aa6e035`) pointait 2 defauts » — un rapport de re-review classe
+# BOT-CONCERN comme s'il emettait la reserve qu'il rapporte.
+#
+# ELARGIR une neutralisation ouvre le sens dangereux : le faux negatif (une
+# reserve reelle eteinte), failure mode fondateur de B.0 (#10761) — il ne se
+# signale pas. Le discriminant n'est donc PAS le nominal seul — le contre-
+# exemple de l'issue, « Cette review CHANGES_REQUESTED reste bloquante »,
+# porte le nominal devant le verdict ET emet une reserve vivante. On exige
+# la piste (a) de l'issue, calquee sur le precedent #11809 : une reference
+# POINTABLE entre parentheses dans la suite immediate du verdict — SHA hex
+# 7+, numero PR/issue, date ISO ou horodatage. Un rapport de correction
+# designe l'evenement passe qu'il rapporte (`(07:32Z, SHA ...)`) ; une
+# emission revendique sans pointer. Pas de reference pointable = pas de
+# match = le verdict reste emis. Frontiere elargie a `*` : le mot est
+# souvent en gras (« La **revue** CHANGES_REQUESTED »).
+_MENTION_VERDICT_REVIEW = re.compile(
+    r"(?i)(?:^|[\s,;:(*])"  # frontiere (inclut * pour **revue**)
+    r"(?:le|la|les|du|mon|ma|ce|cet|cette|ces|the|my)?\s*"
+    r"(?:revue|review)(?![:.])"
+    r"[^():\n.]{0,60}?(?-i:([A-Z][A-Z_]{3,}))(?![A-Za-z0-9_])"
+    r"[^():\n.]{0,12}?"
+    r"\([^()\n]{0,80}?"
+    r"(?:[a-f0-9]{7,}|#\d+|\d{4}-\d{2}-\d{2}|\d{1,2}:\d{2}(?::\d{2})?Z?)"
+    r"[^()\n]{0,40}\)")
+
+
 def _strip_mentioned_verdicts(body: str) -> str:
     """Neutralise les noms de verdict cites en position de mention (#11636, #11744, #11809).
 
@@ -289,7 +396,7 @@ def _strip_mentioned_verdicts(body: str) -> str:
     reste du body sont preserves (les fenetres de `_is_cited` restent
     calibrees sur la vraie position des occurrences survivantes).
     """
-    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED):
+    for pat in (_MENTION_VERDICT, _MENTION_VERDICT_HEADING, _MENTION_VERDICT_INLINE, _MENTION_VERDICT_LIFTED, _MENTION_VERDICT_REVIEW):
         body = pat.sub(
             lambda m: m.group(0).replace(m.group(1), " " * len(m.group(1))), body)
     return body
@@ -371,6 +478,14 @@ CITERS = (
     # « pending dismissal of stale CHANGES_REQUESTED » (#977) : comme
     # « previous », le mot ne peut que narrer une reserve passee.
     "stale",
+    # « **0 REQUEST_CHANGES** : reviewDecision: "" » (#11916 commentaire
+    # 5379577822) : le chiffre « 0 » precede REQUEST_CHANGES au sens d'un
+    # COMPTE nul (et non d'une negation anglaise comme « no »). Sans cette
+    # entree, `_is_cited` ne matche pas (`"0"` absent de CITERS) et le controle
+    # negatif du grain #12311 deviendrait un faux positive massif.
+    # (Le mot francais equivalent « zero » est deja dans CITERS via la liste
+    # initiale ligne 455.)
+    "0",
     # « CONFLICTING — needs rebase before merge » (#887, recidive de #729
     # fenetre 05-01..05-07) : demande procedurelle satisfaite par le merge
     # lui-meme — git n'autorise pas le merge d'une branche en conflit.
@@ -561,10 +676,28 @@ def classify(author: str, body: str) -> str | None:
     if author in BOT_LOGINS or not body:
         return None
     stripped = body.lstrip()
-    if has_marker(body, LIFT_MARKERS) and not CONDITIONAL_LIFT.search(_strip_quoted(body)):
+    # #12143 — Hermes severity glyphes (subordonne LIFT_MARKERS, fix concomitant
+    # du PR #12148 fondateur) : un glyphe est une EMISSION, et une emission
+    # ne se laisse pas eteindre par un mot de levee (LGTM, Merged, etc.) pose
+    # ailleurs dans la meme prose. Sans cette subordination, 3 des 4 cas reels
+    # mesures par ai-01 sur PR #12148 — #12083 (🟡 SPY 6/8 contredit),
+    # #12059 (🟡 hyperparametres GRPO contredits), #12077 (🟡 claim img_020
+    # contredite) — etaient absorbes par le LGTM en tete avant evaluation de
+    # CONCERN_MARKERS. Mesure corpus 80 PRs (2026-08-20T16:27Z →
+    # 2026-08-21T12:46Z) : avant = 0 flagged, apres = 3 flagged.
+    # Principe borne : un LGTM *scopé* sur une partie du diff (« LGTM
+    # structural / 🟡 ... ») ne leve pas la partie non-LGTM. `has_live_marker`
+    # preserve l'hygiene `_is_cited`, donc un glyphe cite (« Re 🟡 : leve »)
+    # reste muet — la sous-accusation coute un merge, la sur-accusation coute
+    # une relecture. Aucun body sans glyphe ne change de classement : la
+    # table de distribution d'ai-01 reste exacte.
+    if (has_marker(body, LIFT_MARKERS)
+            and not _lift_cancelled(_strip_quoted(body))
+            and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)):
         return None  # annonce de levee / de merge : resolution, pas reserve
-    # (construction conditionnelle « et je merge » : voir CONDITIONAL_LIFT —
-    # l'annonce conditionnee n'est pas une levee, le commentaire continue)
+    # (construction conditionnelle « et je merge » : voir _lift_cancelled —
+    # l'annonce conditionnee n'est pas une levee, SAUF levee explicite d'auteur
+    # en amont (#12074) ; le commentaire continue sinon)
     if has_live_marker(body, (VERDICT_POSITIVE,)):
         return None  # verdict structurel positif rendu : il decide, la prose ne compte plus
     # #11636 : la recherche porte le body nettoye de ses verdicts MENTIONNES —
@@ -698,7 +831,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime) -> dict:
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
         and has_marker(c.get("body", ""), LIFT_MARKERS)
-        and not CONDITIONAL_LIFT.search(_strip_quoted(c.get("body", "")))
+        and not _lift_cancelled(_strip_quoted(c.get("body", "")))
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
 
