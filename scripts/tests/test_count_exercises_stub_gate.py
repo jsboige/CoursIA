@@ -169,6 +169,65 @@ def test_fixture_d_title_alone_counts_zero(tmp_path):
     # is on `count`, not `conforming`.
 
 
+def test_fixture_e_numbered_header_with_complete_solution_counts_zero(tmp_path):
+    """PR #12246 / GT-20 case (the actual founder of #12305).
+
+    A numbered header `## Exercice 1` followed by a complete solution
+    (`def solve(): ...; assert result == 30` -- multi-line, no `# TODO` /
+    `pass` / `return None` / `# Indice` markers, ~10 effective code lines)
+    must NOT count as an exercise.
+
+    c.458's first attempt over-applied the gate (`_is_stub_code` AND
+    `_code_cell_mentions_exercise`), which broke the corpus's canonical
+    stubs that use `# TODO` as the marker (TODO does not contain the
+    word "exercice"). c.459 relaxes to `_is_stub_code` alone, which is
+    what the issue text prescribes: "n'ajouter le ExerciseHit de titre
+    que si la cellule code appariee est un stub au sens de _is_stub_code".
+    """
+    cells = [
+        {"cell_type": "markdown", "source": ["## Exercice 1 : complete solution follows"], "metadata": {}},
+        {
+            "cell_type": "code",
+            "source": [
+                "def solve():\n",
+                "    x = 5\n",
+                "    y = 10\n",
+                "    z = x + y\n",
+                "    return z * 2\n",
+                "\n",
+                "result = solve()\n",
+                "assert result == 30\n",
+                "print(result)\n",
+            ],
+            "metadata": {},
+            "outputs": [],
+            "execution_count": 1,
+        },
+    ]
+    p = _write_notebook(tmp_path, "fixture_e.ipynb", cells)
+    nb = count_exercises_in_notebook(p)
+    assert nb.count == 0, f"GT-20 case: expected 0 (numbered + complete solution), got {nb.count}"
+
+
+def test_fixture_f_todo_stub_marker_counts(tmp_path):
+    """Canonical corpus pattern : `# TODO` + `pass` (no "exercice" word).
+
+    The corpus's most common stub form is `# TODO etudiant` / `# TODO` /
+    `# Indice` followed by `pass` / `return None`. These do NOT contain the
+    word "exercice". c.458's first attempt over-applied by requiring
+    `_code_cell_mentions_exercise` (an "exercice" reference in a comment),
+    which broke the corpus. c.459 uses `_is_stub_code` alone -- `# TODO`
+    matches STUB_PATTERNS, so the cell qualifies as a stub.
+    """
+    cells = [
+        {"cell_type": "markdown", "source": ["## Exercice 1 : canon"], "metadata": {}},
+        {"cell_type": "code", "source": ["# TODO etudiant\n", "pass\n"], "metadata": {}, "outputs": [], "execution_count": 1},
+    ]
+    p = _write_notebook(tmp_path, "fixture_f.ipynb", cells)
+    nb = count_exercises_in_notebook(p)
+    assert nb.count == 1, f"expected 1 (TODO+pass canonical stub), got {nb.count}"
+
+
 # --- non-regression on the corpus --------------------------------------------
 
 

@@ -609,23 +609,29 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     # sequential layout (header N -> stub N -> header N+1): there the stub's
     # number N differs from the following header's number N+1, so the match
     # fails and both are counted as distinct exercises (no under-count).
+    #
+    # Stub gate: `_is_stub_code` ALONE. The earlier c.458 attempt also required
+    # `_code_cell_mentions_exercise` (a comment naming "exercice") -- but the
+    # canonical stub markers in the corpus are `# TODO` / `# TODO etudiant` /
+    # `# Indice` / `# Etape N`, which DO NOT mention "exercice" by name. Adding
+    # that conjunct made the pairing pass silent on every legitimate stub
+    # (review feedback on PR #12316, 11 existing tests in `scripts/notebook_tools
+    # /tests/test_count_exercises.py` broke). The issue text is explicit:
+    # "n'ajouter le ExerciseHit de titre que si la cellule code appariee est un
+    # stub au sens de _is_stub_code" -- single gate, not conjunctive.
     paired_code_indices: set[int] = set()
     for idx in sorted(header_cell_indices):
         instance_count = header_instance_counts[idx]
         header_source = header_sources[idx]
         header_num = _exercise_number(header_source)
         # Forward (common): the stub just below the header, within 3 cells.
-        # GATE: the candidate code cell must (a) be a stub and (b) reference
-        # the exercise word. Without (a), a complete solution immediately
-        # following the header would be silently absorbed as the exercise —
-        # which is exactly the PR #12246 bug.
         forward_stub: int | None = None
         for j in range(idx + 1, min(idx + 4, len(cells))):
             jcell = cells[j]
             if jcell.get("cell_type") != "code":
                 continue
             j_source = "".join(jcell.get("source", []))
-            if _is_stub_code(j_source) and _code_cell_mentions_exercise(j_source):
+            if _is_stub_code(j_source):
                 forward_stub = j
                 paired_code_indices.add(j)
                 break
@@ -634,31 +640,53 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
             # Bug 1's original pairing policy is preserved here).
             break
         # Backward (stub-then-header layout): the nearest preceding code cell,
-        # absorbed only when it references the SAME exercise number as the
-        # header AND is itself a stub. Numberless headers/stubs are left
-        # unpaired (conservative). Stub gate added in #12305.
+        # absorbed only when it is itself a stub. NUMBERED headers additionally
+        # require the stub to reference the SAME exercise number as the header
+        # (so a stub belonging to the *previous* numbered exercise in a
+        # sequential layout is never absorbed). NUMBERLESS headers pair to
+        # any stub (no number check possible); the pair is NOT deduplicated
+        # because the conservative policy on numberless references leaves both
+        # counted (test_stub_preceding_numberless_header_left_unpaired).
+        # Stub gate added in #12305, number-check loosening for numberless
+        # added in c.459 review feedback.
         backward_stub: int | None = None
-        if header_num is not None:
-            for j in range(idx - 1, max(idx - 4, -1), -1):
-                jcell = cells[j]
-                if jcell.get("cell_type") != "code":
-                    continue
-                j_source = "".join(jcell.get("source", []))
-                if (
-                    _is_stub_code(j_source)
-                    and _code_cell_mentions_exercise(j_source)
-                    and _exercise_number(j_source) == header_num
-                ):
+        for j in range(idx - 1, max(idx - 4, -1), -1):
+            jcell = cells[j]
+            if jcell.get("cell_type") != "code":
+                continue
+            j_source = "".join(jcell.get("source", []))
+            if _is_stub_code(j_source):
+                if header_num is None:
+                    # Numberless header: any nearest stub qualifies; do NOT
+                    # mark it as paired (pass 2 will count it too -- the
+                    # conservative numberless policy leaves a residual
+                    # double-count rather than under-counting).
+                    backward_stub = j
+                elif _exercise_number(j_source) == header_num:
+                    # Numbered header: number must match; absorb the stub.
                     backward_stub = j
                     paired_code_indices.add(j)
-                break  # nearest preceding code cell is the only candidate
+            break  # nearest preceding code cell is the only candidate
         # Only push markdown_header ExerciseHits when a stub was found in
         # either direction. Header-but-no-stub is the PR #12246 / GT-20 case:
         # we want the title silently dropped, not counted (and the fix also
         # closes the matching D case: a title with NO code cell after it at
         # all, e.g. a section header mistakenly caught as singular).
+        #
+        # Discrimination (#12305 + #12316 review feedback): NUMBERED headers
+        # require a paired stub -- this is the "header + complete solution =
+        # silently dropped" rule that closes the PR #12246 bug. NUMBERLESS
+        # headers (`## Exercice : ...`) are treated conservatively: a numberless
+        # header that pairs to any stub (forward, no number check) is counted;
+        # a numberless header with no stub at all is also counted (the corpus
+        # has legitimate numberless sections where pass 2 picks up the stub).
+        # This preserves the pre-fix behavior on numberless cases (c.458-L1)
+        # while still dropping the GT-20 numbered-header-with-solution case.
         if forward_stub is None and backward_stub is None:
-            continue
+            if header_num is not None:
+                # NUMBERED header without a paired stub: silently dropped.
+                continue
+            # NUMBERLESS header without a paired stub: counted (conservative).
         for _ in range(instance_count):
             result.exercises.append(
                 ExerciseHit(
