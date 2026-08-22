@@ -65,7 +65,11 @@ if (-not $envPython) {
     exit 1
 }
 
-& $condaExe run -n $EnvName pip install --quiet pyphi==1.2.0 numpy scipy ipykernel
+# pyemd epingle AVANT pyphi : la dependance sdist de pyphi (pyemd 1.1.0) se
+# compile contre numpy 2.x au build puis echoue a l'import ("numpy.dtype size
+# changed"). Le wheel pyemd 0.5.1 (cp39, numpy 1.x) + numpy<2 = combo known-good.
+& $condaExe run -n $EnvName pip install --quiet "pyemd==0.5.1" "numpy<2"
+& $condaExe run -n $EnvName pip install --quiet pyphi==1.2.0 scipy ipykernel
 
 # 4. Register Jupyter kernel
 Write-Host "[4/4] Registering Jupyter kernel..." -ForegroundColor Cyan

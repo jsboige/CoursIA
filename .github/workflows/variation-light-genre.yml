@@ -166,6 +166,8 @@ jobs:
           SIG_RUN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-RUN'))" 2>/dev/null || echo "False")
           SIG_CAPEXC=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('CAP-EXCEEDED-BY-GENRE'))" 2>/dev/null || echo "False")
           SIG_MISMATCH=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-MISMATCH'))" 2>/dev/null || echo "False")
+          SIG_UNKNOWN=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('signals',{}).get('GENRE-UNKNOWN'))" 2>/dev/null || echo "False")
+          UNKNOWN_WORD=$(python3 -c "import json; print(json.load(open('/tmp/signals.json')).get('candidate_genre_unknown_word') or '')" 2>/dev/null || echo "")
           TALLY=$(python3 -c "import json; t=json.load(open('/tmp/signals.json')).get('tally',{}); print(f\"declared={t.get('light_declared',0)} genre={t.get('light_genre',0)} cap={t.get('cap',1)}\")" 2>/dev/null || echo "inconnu")
           # #10341 -- the three aggregate signals (TIER-INFLATION, GENRE-RUN,
           # CAP-EXCEEDED-BY-GENRE) measure the LANE-DAY, not the candidate.
@@ -188,7 +190,8 @@ jobs:
             "variation-tier-inflation:FEF2C0:TIER-INFLATION:declared LIGHT << effective LIGHT-genre (#10020, advisory)" \
             "variation-genre-run:FEF2C0:GENRE-RUN:>= 2 grains consecutifs du meme genre LIGHT pour la lane (#10020, advisory)" \
             "variation-genre-cap-exceeded:FBCA04:CAP-EXCEEDED-BY-GENRE:light_genre > cap partage G-VAR-2 (#10020, advisory)" \
-            "variation-genre-mismatch:FEF2C0:GENRE-MISMATCH:declared genre != genre infere depuis les chemins du diff (#10020, advisory)"
+            "variation-genre-mismatch:FEF2C0:GENRE-MISMATCH:declared genre != genre infere depuis les chemins du diff (#10020, advisory)" \
+            "variation-genre-unknown:FBCA04:GENRE-UNKNOWN:genre canonise hors enumeration close -- trou d'adjacence G-VAR-3, requalifier dans le body (#12158, advisory)"
           do
             LABEL=$(echo "$LABEL_PAIR" | cut -d: -f1)
             COLOR=$(echo "$LABEL_PAIR" | cut -d: -f2)
@@ -206,6 +209,7 @@ jobs:
               GENRE-RUN)             SIGVAR="SIG_RUN"; MAY_LABEL_INNOCENT="no" ;;
               CAP-EXCEEDED-BY-GENRE) SIGVAR="SIG_CAPEXC"; MAY_LABEL_INNOCENT="no" ;;
               GENRE-MISMATCH)        SIGVAR="SIG_MISMATCH"; MAY_LABEL_INNOCENT="yes" ;;
+              GENRE-UNKNOWN)         SIGVAR="SIG_UNKNOWN"; MAY_LABEL_INNOCENT="yes" ;;
               *)
                 echo "Signal non reconnnu : ${SIGNAL} (PR ${PR_NUMBER})"
                 SIGVAR="__UNDEFINED__"
@@ -253,6 +257,8 @@ jobs:
           - **CAP-EXCEEDED-BY-GENRE** : light_genre > cap partage G-VAR-2 (tally : ${TALLY})"
           [ "$SIG_MISMATCH" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
           - **GENRE-MISMATCH** : declared genre != genre infere depuis les chemins du diff"
+          [ "$SIG_UNKNOWN" = "True" ] && ACTIVE_LINES="${ACTIVE_LINES}
+          - **GENRE-UNKNOWN** : le genre canonise \\\`${UNKNOWN_WORD:-?}\\\` est hors enumeration close -- trou d'adjacence G-VAR-3, requalifier le genre dans le body (#12158)"
 
           # #10341 nuance : si la PR courante est CONTENU (non LIGHT-genre)
           # et qu'un signal agrege est actif, le dire explicitement -- le
@@ -271,7 +277,7 @@ jobs:
           **G-VAR-2/3 GENRE signals** (advisory, non bloquant, #10020).
           La lane \\\`${LANE}\\\` voit ces signaux actifs sur les mergees du jour (UTC ${TODAY}) :${ACTIVE_LINES}
 
-          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`) -- la decision de merge reste au coordinateur."
+          G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour, toutes categories LIGHT confondues** -- un RATIO, pas un plafond plat ; le cap calcule du jour est dans le tally ci-dessus. G-VAR-3 interdit deux genres LIGHT consecutifs. Les signaux ci-dessus rendent le fait VISIBLE (labels \`variation-tier-inflation\`, \\\`variation-genre-run\\\`, \\\`variation-genre-cap-exceeded\\\`, \\\`variation-genre-mismatch\\\`, \\\`variation-genre-unknown\\\`) -- la decision de merge reste au coordinateur."
             EXISTING_ID=$(gh pr view "$PR_NUMBER" --json comments --jq '.comments[] | select(.body | startswith("'"$MARK"'")) | .id' 2>/dev/null | head -1 || echo "")
             if [ -n "$EXISTING_ID" ]; then
               gh api -X PATCH "repos/${GH_REPO}/issues/comments/${EXISTING_ID}" \

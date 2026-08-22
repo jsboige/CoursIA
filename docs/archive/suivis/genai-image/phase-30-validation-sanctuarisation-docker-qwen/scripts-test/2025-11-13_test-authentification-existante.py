@@ -43,12 +43,12 @@ def test_token_manager():
         # Récupération du hash
         print("  🔑 Récupération du hash bcrypt...")
         hash_token = tm.get_bcrypt_hash()
-        print(f"  ✅ Hash: {hash_token[:30]}...")
+        print(f"  ✅ Hash: {'configuré' if hash_token else 'MANQUANT'}")
         
         # Récupération du token brut
         print("  🔓 Récupération du token brut...")
         raw_token = tm.get_raw_token()
-        print(f"  ✅ Token brut: {raw_token[:15]}...")
+        print(f"  ✅ Token brut: {'configuré' if raw_token else 'MANQUANT'}")
         
         # Génération des headers
         print("  📝 Génération des headers...")

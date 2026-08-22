@@ -153,7 +153,7 @@ class GlobalValidationManager:
         config_path = SECRETS_DIR / "comfyui_auth_tokens.conf"
         
         if not config_path.exists():
-            logger.error(f"❌ Config tokens introuvable: {config_path}")
+            logger.error("❌ Config tokens introuvable : comfyui_auth_tokens.conf")
             return False
             
         try:

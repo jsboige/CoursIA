@@ -45,6 +45,7 @@ from detect_ascii_flowchart import (  # noqa: E402
     _line_has_connector,
     _line_is_box,
     scan_notebook,
+    scan_paths,
 )
 
 
@@ -267,15 +268,70 @@ class TestScanNotebook:
 
 
 # ---------------------------------------------------------------------------
+# 4bis. Unreadable notebook skipped, scan continues (#12097)
+# ---------------------------------------------------------------------------
+
+class TestUnreadableNotebookSkipped:
+    def test_bom_notjson_reported_in_skipped(self, tmp_path):
+        """A UTF-8 BOM prelude (NotJSONError) -> path lands in `skipped`,
+        and the scan keeps going (a second clean notebook still produces its
+        finding). Proves the guard is per-file, not a silent `except: pass`.
+        """
+        bad = tmp_path / "bom.ipynb"
+        # BOM + valid notebook body = nbformat.reader.NotJSONError on some
+        # parsers; safest unreadable twin: a truncated JSON.
+        bad.write_text('{"cells": [\n', encoding="utf-8")
+        good = tmp_path / "good.ipynb"
+        nb = _make_nb_with_md(SW_12_FOUNDER)
+        nbformat.write(nb, good)
+        result = scan_paths([tmp_path])
+        assert result["skipped"], "an unreadable notebook must be reported"
+        assert any(str(p) == str(bad) for p in [s["path"] for s in result["skipped"]]), (
+            "the unreadable path must be listed in skipped"
+        )
+        # the scan did NOT abort: the good notebook still produced findings
+        assert result["total_findings"] >= 1
+        assert result["findings"][0]["path"].endswith("good.ipynb")
+
+    def test_validation_error_reported_in_skipped(self, tmp_path):
+        """A notebook nbformat cannot validate (missing key) -> skipped, scan
+        continues to the siblings (the unreadable one is not counted in
+        files_with_findings, and is not silently dropped).
+        """
+        # v4 notebook valide dont on retire la cle `metadata` (== cas reel
+        # Sudoku-15-Infer-Csharp.ipynb : `ValidationError` a la lecture).
+        nb_bytes = nbformat.writes(nbformat.v4.new_notebook())
+        bad = tmp_path / "bad.ipynb"
+        no_meta = nbformat.reads(nb_bytes, as_version=4)
+        del no_meta["metadata"]
+        bad.write_text(json.dumps(no_meta), encoding="utf-8")
+        good = tmp_path / "good.ipynb"
+        nb = _make_nb_with_md("plain text only")
+        nbformat.write(nb, good)
+        result = scan_paths([tmp_path])
+        assert any(s["path"].endswith("bad.ipynb") for s in result["skipped"])
+        assert result["findings"] == []
+        assert result["files_scanned"] == 2
+
+
+# ---------------------------------------------------------------------------
 # 5. Corpus baseline pin (anti-regression)
 # ---------------------------------------------------------------------------
 
-# These values pin the corpus baseline measured c.259 on 2026-08-20 against
-# origin/main at SHA fbe61eb57 (post-PR #11918). Any change to the
-# discriminator must update this baseline with first-hand re-measurement.
+# These values pin the corpus baseline measured c.259 on 2026-08-21 against
+# origin/main at SHA 4e9ffc5ad1 (post-PR #11918). Drift 13->11 findings /
+# 11->6 findings / 9->4 files, re-mesure firsthand le 2026-08-21 : les PRs de
+# conversion ASCII->Mermaid mergees depuis ont resorbe 5 constats. Le pin
+# n'avait pas suivi, donc le test echouait sur `main` pour TOUTE PR touchant
+# des notebooks -- un cliquet qui rougit dans le bon sens reste un cliquet
+# casse tant qu'on ne le re-pique pas. Reste 6 constats sur 4 notebooks :
+# GenAI/Vibe-Coding/.../03-Claude-CLI-References (c21), QC-Py-14 (c80, x2),
+# QC-Py-17 (c43, x2), QC-Py-22 (c48).
+# Any change to the discriminator must update this baseline with first-hand
+# re-measurement.
 
-CORPUS_BASELINE_TOTAL = 13
-CORPUS_BASELINE_FILES_WITH = 10
+CORPUS_BASELINE_TOTAL = 6
+CORPUS_BASELINE_FILES_WITH = 4
 
 
 class TestCorpusBaseline:

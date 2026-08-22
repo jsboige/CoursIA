@@ -162,6 +162,8 @@ layout: section
 - **Image numérique** : détection de visages, mise au point, compression
 - **Jeux** : personnages et adversaires intelligents (NPCs adaptatifs)
 
+<img src="./images/img_013.jpg" class="absolute top-[260px] right-[20px] w-[260px] max-h-[260px] object-contain" alt="Écosystème IoT — objets du quotidien connectés" />
+
 
 ---
 
@@ -316,9 +318,9 @@ layout: section
 - Assemblage robotique
 - Problèmes jouets
 
-<img src="./images/img_019.png" class="absolute top-[360px] right-[20px] w-[200px]" alt="Assemblage robotique" />
-<img src="./images/img_020.png" class="absolute top-[360px] right-[230px] w-[200px]" alt="Problèmes jouets 1" />
-<img src="./images/img_021.png" class="absolute top-[360px] right-[440px] w-[200px]" alt="Problèmes jouets 2" />
+<img src="./images/img_robot_extracted.png" class="absolute top-[345px] right-[20px] w-[380px] max-h-[170px] object-contain" alt="Bras robotique articulé — assemblage robotique" />
+<img src="./images/img_019.png" class="absolute top-[460px] right-[40px] w-[160px]" alt="8-puzzle (état initial mélangé)" />
+<img src="./images/img_021.png" class="absolute top-[460px] right-[210px] w-[160px]" alt="Missionnaires et cannibales" />
 
 
 
@@ -341,6 +343,8 @@ layout: two-cols
 - Développement des états successeur
 - **Choix des nœuds**
   - = Stratégie d'exploration
+
+<img src="./images/img_020.png" class="w-[420px] max-w-full max-h-[280px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
 
 
 
@@ -408,19 +412,12 @@ layout: two-cols
   - Algorithme A*
   - [Demo Pathfinding.js](#)
 
-<img src="./images/img_027.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_028.png" class="w-[300px] max-w-full max-h-[300px] object-contain" />
-
 </div>
 
 </div>
 
 
-
 ---
-layout: two-cols
----
-
 
 
 # Stratégies d'exploration (2/2)
@@ -433,12 +430,6 @@ layout: two-cols
   - Optimisation d'une fonction
   - Escalade, descente de gradient
 
-<img src="./images/img_030.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_031.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-
-
-::right::
-
 
 - Problèmes :
   - Bloqué sur un optimum local
@@ -450,8 +441,18 @@ layout: two-cols
   - Sélection naturelle = combinaison
   - Algorithmes génétiques
 
-<img src="./images/img_032.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
-<img src="./images/img_033.png" class="w-[220px] max-w-full max-h-[300px] object-contain" />
+<div class="absolute top-[130px] right-[20px] w-[560px] flex flex-col gap-2">
+<div class="flex gap-2">
+<img src="./images/img_027.png" class="w-[275px] max-h-[120px] max-w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
+<img src="./images/img_028.png" class="w-[275px] max-h-[120px] max-w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
+</div>
+<div class="img-grid-2x2">
+<img src="./images/img_030.png" class="max-h-[140px] max-w-full object-contain" alt="Paysage d'optimisation avec trajectoire de descente" />
+<img src="./images/img_031.png" class="max-h-[140px] max-w-full object-contain" />
+<img src="./images/img_032.png" class="max-h-[140px] max-w-full object-contain" alt="Représentations d'états : atomique, factorisée, structurée" />
+<img src="./images/img_033.png" class="max-h-[140px] max-w-full object-contain" alt="Niveaux d'abstraction imbriqués d'un espace d'états" />
+</div>
+</div>
 
 
 
@@ -2349,8 +2350,8 @@ Et son corollaire, plus dur à admettre :
 </div>
 </div>
 
-> 27 règles écrites, chargées automatiquement à chaque session. La documentation
-> qui n'est pas chargée n'existe pas.
+> Un harnais de règles écrit, chargé automatiquement à chaque session. La
+> documentation qui n'est pas chargée n'existe pas.
 
 
 ---

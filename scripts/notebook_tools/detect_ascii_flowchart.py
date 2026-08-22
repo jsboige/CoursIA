@@ -76,6 +76,8 @@ import sys
 from pathlib import Path
 
 import nbformat
+from nbformat.reader import NotJSONError
+from nbformat.validator import ValidationError
 
 # --- Signaux -----------------------------------------------------------
 
@@ -207,7 +209,13 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
 
 def scan_notebook(path: Path) -> dict:
     """Scan un notebook ; renvoie les cellules markdown contenant des flowcharts ASCII."""
-    nb = nbformat.read(path, as_version=4)
+    try:
+        nb = nbformat.read(path, as_version=4)
+    except (OSError, NotJSONError, ValidationError) as exc:
+        # Garde par-fichier (#12097) : un notebook illisible (BOM UTF-8,
+        # JSON tronque, validation echouee) ne doit pas interrompre le scan
+        # entier — il est reporte dans `skipped`, pas avale silencieusement.
+        return {"path": str(path), "error": str(exc), "findings": []}
     findings = []
     for cell_idx, cell in enumerate(nb.cells):
         if cell.get("cell_type") != "markdown":
@@ -227,7 +235,7 @@ def scan_notebook(path: Path) -> dict:
                 "labels": blk["labels"],
                 "evidence": blk["verbatim"][:240],  # troncature pour le rapport
             })
-    return {"path": str(path), "findings": findings}
+    return {"path": str(path), "error": None, "findings": findings}
 
 
 def scan_paths(paths: list[Path]) -> dict:
@@ -235,19 +243,20 @@ def scan_paths(paths: list[Path]) -> dict:
     all_findings = []
     files_scanned = 0
     files_with_findings = 0
+    skipped = []
     for p in paths:
         if not p.exists():
             continue
         if p.is_dir():
-            for nb_path in sorted(p.rglob("*.ipynb")):
-                files_scanned += 1
-                result = scan_notebook(nb_path)
-                if result["findings"]:
-                    files_with_findings += 1
-                all_findings.extend(result["findings"])
+            nb_paths = sorted(p.rglob("*.ipynb"))
         else:
+            nb_paths = [p]
+        for nb_path in nb_paths:
             files_scanned += 1
-            result = scan_notebook(p)
+            result = scan_notebook(nb_path)
+            if result.get("error"):
+                skipped.append({"path": str(nb_path), "error": result["error"]})
+                continue
             if result["findings"]:
                 files_with_findings += 1
             all_findings.extend(result["findings"])
@@ -255,6 +264,7 @@ def scan_paths(paths: list[Path]) -> dict:
         "files_scanned": files_scanned,
         "files_with_findings": files_with_findings,
         "total_findings": len(all_findings),
+        "skipped": skipped,
         "findings": all_findings,
     }
 
@@ -274,6 +284,8 @@ def main() -> int:
         print(f"Notebooks scanned   : {result['files_scanned']}")
         print(f"With findings       : {result['files_with_findings']}")
         print(f"Total findings      : {result['total_findings']}")
+        for skip in result["skipped"]:
+            print(f"\n  SKIPPED {skip['path']}: {skip['error'][:120]}")
         for f in result["findings"][:10]:
             print(f"\n  {f['path']}:{f['start_line']}-{f['end_line']}  "
                   f"boxes={f['boxes']} connectors={f['connectors']} labels={f['labels']}")
