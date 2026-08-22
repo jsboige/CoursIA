@@ -1344,6 +1344,22 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # merge a write that should have pinged a held lane).
     others = _filter_by_claim_scope(others, my_paths, mine, tracked=tracked)
 
+    # #12322 -- query_scope classifier. A call whose CARRYING scope is empty
+    # (`my_paths` is None AND the caller's own active claim carries no `paths:`
+    # clause) cannot prove disjointness from any blocker, so it lands in
+    # `EPIC_WIDE_NO_PATHS_DECLARED`. This is NOT the same as a real blocker --
+    # the caller has the option to re-run the check WITH `--paths` to scope-bind
+    # the query and lift the over-block. Distinguishing the two is what gives
+    # the caller an actionable next step (vs the old `exit 1` + `blocking_lanes:
+    # [...4 lanes...]` which reads as a hard block and prompts one of the costly
+    # fumbles measured on #11112: a same-author ISSUE comment on the blockers'
+    # lanes, or a DM `URGENT` to ai-01, both wrong).
+    mine_paths = mine.get("paths") if mine else None
+    if others and my_paths is None and mine_paths is None:
+        query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    else:
+        query_scope = "PATH_SCOPED"
+
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
     # (age from the server createdAt, NEVER the body) is treated as STALE -- it
     # no longer blocks, but a warning is printed and the new claimant MUST post
@@ -1437,6 +1453,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "malformed_markers": len(malformed),
         "malformed_marker_lines": [m["line"] for m in malformed],
         "blocked": bool(others),
+        # #12322 -- query_scope is the read-mode classifier for THIS call.
+        # `EPIC_WIDE_NO_PATHS_DECLARED` means the caller did not pass `--paths`
+        # AND did not post an active scoped claim, so we cannot prove
+        # disjointness from any blocker. `PATH_SCOPED` covers everything else
+        # (the caller is scoped one way or another). Co-rolled with the
+        # `exit 2` verdict (vs `exit 1`) below -- the difference is the
+        # actionable next step for the caller (re-run with `--paths` to lift
+        # the over-block).
+        "query_scope": query_scope,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -1487,6 +1512,36 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             excerpt = (ev.get("intent") if hasattr(ev, "get") else None) or "(no intent)"
             intent_lines.append(f"{tag}{excerpt}")
         intent_block = "\n".join(intent_lines)
+        # #12322 -- distinct verdict for EPIC_WIDE_NO_PATHS_DECLARED. The
+        # caller is asking without scoping themselves -- this is a
+        # `non-scope question` showing up as a `block`, which is the trap
+        # measured on #11112 (1 ESCALATION HIGH + 1 ASK HIGH in one day,
+        # both from the user, both rooted in the same `exit 1 + blocker names
+        # without the "re-scope to lift" hint). We keep `exit 1` semantics
+        # for the genuine-scope case (PATH_SCOPED with blockers, including
+        # the case where the caller narrowed their own scope and it still
+        # intersects a blocker), and split out `exit 2` for the call whose
+        # answer changes when the caller re-runs with `--paths`.
+        if query_scope == "EPIC_WIDE_NO_PATHS_DECLARED":
+            print(
+                f"\nNOT_SCOPED: this call did not pass `--paths` so we cannot "
+                f"prove disjointness on #{payload.get('number')}. The blockers "
+                f"below may not actually conflict with the files you intend to "
+                f"edit.\n"
+                f"  Blocked-by (legacy `blocking_lanes` field, taken at face value): "
+                f"{who}\n"
+                f"  Claimed scopes (marker-line excerpts -- #10395 Variante 2):\n"
+                f"{intent_block}\n"
+                f"  ACTION: re-run with `--paths <glob1> --paths <glob2> ...` "
+                f"matching the files you intend to edit. If your files intersect "
+                f"the blockers' scopes the call returns BLOCKED at `exit 1` "
+                f"(real conflict); if they are disjoint the call returns CLEAR "
+                f"at `exit 0`. Exiting with `exit 2` (distinct from real "
+                f"`exit 1` conflicts) so callers can branch on the verdict "
+                f"without false-alarming on a scope-typo.",
+                file=sys.stderr,
+            )
+            return 2
         print(
             f"\nBLOCKED: another lane holds an active claim on "
             f"#{payload.get('number')}: {who}.\n"
