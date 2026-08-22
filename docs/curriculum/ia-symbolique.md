@@ -20,9 +20,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 235 |
+| Notebooks | 237 |
 | PRODUCTION | 0 |
-| BETA | 229 |
+| BETA | 231 |
 | ALPHA | 6 |
 
 ## SymbolicAI (1 notebooks)
@@ -60,7 +60,7 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 23 | Argument_Analysis — Argumentation basée sur les valeurs… | BETA | Oui |
 | 24 | I2 - Génération de contre-arguments par raisonnement… | BETA | Oui |
 
-## SymbolicAI/Lean (36 notebooks)
+## SymbolicAI/Lean (38 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -92,14 +92,16 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 26 | Lean-22b : le lake mimo_lean par ses énoncés —… | BETA | Non |
 | 27 | Lean-23 : Le problème inverse de Galois — M₂₃ refermé… | BETA | Non |
 | 28 | Lean-24 : ERC-20 sous Lean 4 — l'invariant de… | BETA | Non |
-| 29 | Lean 3 - Propositions et Preuves | BETA | Non |
-| 30 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
-| 31 | Lean 5 - Mode Tactique | BETA | Non |
-| 32 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
-| 33 | Lean 7 - Integration des LLMs pour l'Assistance aux… | BETA | Non |
-| 34 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
-| 35 | Lean 8 - Agents Autonomes pour Demonstration de… | BETA | Non |
-| 36 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
+| 29 | Lean-24b — ERC-20 natif : l'invariant de conservation… | BETA | Non |
+| 30 | Lean-26 : le lake calibration_lean par ses énoncés —… | BETA | Non |
+| 31 | Lean 3 - Propositions et Preuves | BETA | Non |
+| 32 | Lean 4 - Quantificateurs et Logique du Premier Ordre | BETA | Non |
+| 33 | Lean 5 - Mode Tactique | BETA | Non |
+| 34 | Lean 6 - Mathlib4 : La Bibliotheque Mathematique | BETA | Non |
+| 35 | Lean 7 - Integration des LLMs pour l'Assistance aux… | BETA | Non |
+| 36 | Lean 7b - Exemples Progressifs et Benchmarks | BETA | Non |
+| 37 | Lean 8 - Agents Autonomes pour Demonstration de… | BETA | Non |
+| 38 | Lean 9 : Multi-Agents avec Semantic Kernel | BETA | Non |
 
 ## SymbolicAI/Planners (23 notebooks)
 

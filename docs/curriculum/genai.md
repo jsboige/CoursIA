@@ -20,9 +20,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 166 |
+| Notebooks | 167 |
 | PRODUCTION | 0 |
-| BETA | 154 |
+| BETA | 155 |
 | ALPHA | 12 |
 
 ## GenAI (1 notebooks)
@@ -48,7 +48,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | Aspire : orchestrer notre pile GenAI en C# | BETA | Non |
 | 2 | Aspire : orchestrer la pile GenAI réelle du cluster | BETA | Non |
-| 3 | Aspire 3 : Observabilite .NET moderne — Serilog,… | BETA | Oui |
+| 3 | Aspire 3 : Observabilite .NET moderne — Serilog,… | BETA | Non |
 | 4 | Aspire : un agent streaming en C# — Channels,… | BETA | Non |
 | 5 | Aspire : des tests d'intégration modernes —… | BETA | Oui |
 | 6 | Aspire : garde-fous du code d'agent — l'analyseur… | BETA | Oui |
@@ -183,7 +183,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | Hands-On Grounding — Qdrant en mémoire | BETA | Oui |
 
-## GenAI/SemanticKernel (14 notebooks)
+## GenAI/SemanticKernel (15 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -197,10 +197,11 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 8 | SK-8-MCP : Model Context Protocol et Integration | BETA | Non |
 | 9 | SK-9-Building-CLR : Interoperabilite Python/.NET via… | BETA | Non |
 | 10 | SK-10-NotebookMaker : Système Multi-Agents pour… | BETA | Non |
-| 11 | Projet Createur de Mail personnalise | BETA | Non |
-| 12 | Notebook de travail | BETA | Oui |
-| 13 | Notebook de conception de Notebook | BETA | Non |
-| 14 | Jeu de devinette : Père Fouras vs Laurent Jalabert | BETA | Non |
+| 11 | Conception Automatique de Notebook par Agents IA | BETA | Non |
+| 12 | Projet Createur de Mail personnalise | BETA | Non |
+| 13 | Notebook de travail | BETA | Oui |
+| 14 | Notebook de conception de Notebook | BETA | Non |
+| 15 | Jeu de devinette : Père Fouras vs Laurent Jalabert | BETA | Non |
 
 ## GenAI/Texte (20 notebooks)
 
