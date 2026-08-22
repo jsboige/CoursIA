@@ -580,6 +580,30 @@ def _is_cited(window: str) -> bool:
     w = w.lower()
     for c in CITERS:
         c = c.rstrip("'’")
+        # Compteur numerique (« 0 » dans CITERS, grain #12311) — cas reel
+        # `**0 REQUEST_CHANGES** » (#11916) : on veut que `**0` (markdown
+        # bold) matche, mais pas `v2.0`, `4.0`, `P-0`, `(0)`. La regle est :
+        # extraire le DERNIER mot du window, strip typographie markdown
+        # (`*`, `_`, backtick) des deux cotes, puis tester que le token
+        # resultant est EXACTEMENT ce compteur. Sans le strip de debut,
+        # `**0` ne matche pas (le `*` final est deja degage mais le `*`
+        # initial ne l'est pas) ; sans l'egalite stricte, `v2.0` matche
+        # (endswith « 0 » + caractere precedent non-alphanum `.`). Cf
+        # issue #12335 (defaut latent — portee mesuree : 0/120 PR corpus,
+        # mais 4 formes ordinaires atteignables).
+        if c.isdigit():
+            if not w:
+                continue
+            parts = w.rsplit(None, 1)
+            tail = parts[-1]
+            token = tail
+            while token and token[0] in "*_`":
+                token = token[1:]
+            while token and token[-1] in "*_`":
+                token = token[:-1]
+            if token == c:
+                return True
+            continue
         if w == c or (w.endswith(c) and not w[-len(c) - 1].isalnum()):
             return True
     # Fenetre 05-29..06-04 (#11044) — le mot d'ATTRIBUTION entre le citer et
@@ -595,6 +619,11 @@ def _is_cited(window: str) -> bool:
     if head:
         for c in CITERS:
             c = c.rstrip("'’")
+            if c.isdigit():
+                # Pas de propagation au mot d'attribution — un compteur nu
+                # comme « 0 » n'a pas de raison d'etre precede d'un nom
+                # d'agent. Si le cas se presente, le citer fait foi tel quel.
+                continue
             if head == c or (head.endswith(c) and not head[-len(c) - 1].isalnum()):
                 return True
     return False
