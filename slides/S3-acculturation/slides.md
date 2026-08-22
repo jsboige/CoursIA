@@ -410,7 +410,7 @@ layout: two-cols
 - Par le meilleur d'abord
   - Exploration gloutonne
   - Algorithme A*
-  - [Demo Pathfinding.js](#)
+  - [Demo Pathfinding.js](https://qiao.github.io/PathFinding.js/visual/)
 
 </div>
 
