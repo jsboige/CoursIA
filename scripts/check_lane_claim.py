@@ -1159,6 +1159,9 @@ def _lint_claim_events(
     issue_number: int | None,
     repo_root: str | None = None,
     tracked: list[str] | None = None,
+    active_claims: dict[str, ClaimEvent] | None = None,
+    others_verdict: dict[str, ClaimEvent] | None = None,
+    my_lane: str | None = None,
 ) -> None:
     """Emit WARN/INFO lines for malformed claim markers (#10881). Non-blocking.
 
@@ -1182,6 +1185,20 @@ def _lint_claim_events(
     faulty line and the expected marker-line syntax. Fires only on the
     signal -- an intentional epic-wide declaration (no off-marker clause)
     stays silent, so the lint never penalises a deliberate full-lane lock.
+
+    #12327 (verdict qualifier): when `active_claims` and `others_verdict` are
+    provided (caller has already reduced), each epic-wide marker is qualified
+    by its EFFECTIVE state at the time of the verdict:
+    - **superseded** by a later claim of the same lane (the marker exists as
+      legacy noise, the active claim supersedes it -- print as hygiene debt,
+      not as a blocker);
+    - **hors scope declare** when the lane's claim does NOT intersect the
+      verdict's `others` set (the claim was epic-wide in form but did not
+      actually block the caller -- print as informational, never as `il bloque`);
+    - **il bloque** ONLY when the lane IS in `others_verdict` (the claim is
+      what the reducer actually kept against the caller).
+    Without these args, the lint falls back to the legacy behaviour (every
+    epic-wide marker prints `il bloque`), which is the bug #12327 names.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -1225,10 +1242,51 @@ def _lint_claim_events(
                 if inferred
                 else ""
             )
+            # #12327 -- qualify the epic-wide lint by the verdict the reducer
+            # actually reached. Three buckets (others_verdict may be None when
+            # the caller has not yet reduced -- legacy path keeps the old
+            # `il bloque` wording for back-compat):
+            ev_lane = ev.lane or "?"
+            ev_active = active_claims.get(ev_lane) if active_claims else None
+            in_others = (others_verdict is not None
+                         and ev_lane in others_verdict)
+            if (active_claims is not None
+                    and ev_active is not None
+                    and ev_active is not ev
+                    and _event_is_active_for(ev, ev_active)):
+                # The marker is shadowed by a later active claim of the SAME
+                # lane -- superseded, sans effet. Hygiene debt: the lane should
+                # [RELEASED] the old marker, but the organ never blocks on it.
+                print(
+                    f"INFO: marqueur {ev.marker} epic-wide SUPERSEDED "
+                    f"(lane {ev_lane}) -- un claim actif ulterieur de la "
+                    f"meme lane tient le verrou (scope: {ev_active.get('paths') or 'epic-wide'}). "
+                    f"Sans effet sur le verdict. Hygiene: "
+                    f"`[RELEASED]` l'ancien marqueur (cf. #12327).{inferred_str}",
+                    file=sys.stderr,
+                )
+                continue
+            if others_verdict is not None and not in_others and ev_lane != my_lane:
+                # Epic-wide form, but the lane did NOT survive the reducer's
+                # scope filter: either the lane re-posted a scoped claim, or
+                # the caller declared `--paths` and the claim does not
+                # intersect. The lint must NOT say `il bloque`.
+                print(
+                    f"INFO: marqueur {ev.marker} epic-wide (lane {ev_lane}) "
+                    f"-- SANS effet sur #{issue_number} "
+                    f"(claim de la lane filtre par scope ou re-poste depuis). "
+                    f"Forme attendue : `[CLAIMED] lane <machine:workspace> "
+                    f"-- paths: <g1>, <g2>` (cf. #11755).{inferred_str}",
+                    file=sys.stderr,
+                )
+                continue
+            # Legacy wording: the marker IS in `others_verdict` (real blocker)
+            # OR the caller has not reduced yet (back-compat). Keep the
+            # original `il bloque toutes les autres lanes` text.
             print(
                 f"INFO: marqueur {ev.marker} epic-wide (pas de clause paths:) "
                 f"-- il bloque toutes les autres lanes sur #{issue_number} "
-                f"(lane {ev.lane or '?'}).{inferred_str} "
+                f"(lane {ev_lane}).{inferred_str} "
                 f"Forme attendue : `[CLAIMED] lane <machine:workspace> "
                 f"-- paths: <g1>, <g2>` (cf. #11755).",
                 file=sys.stderr,
@@ -1247,6 +1305,30 @@ def _lint_claim_events(
                     f"(lane {ev.lane or '?'})",
                     file=sys.stderr,
                 )
+
+
+def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
+    """True when `active` is the live claim that supersedes `legacy`.
+
+    Two markers from the SAME lane supersede each other when the active one
+    was posted LATER (later `created_at`) OR carries a `paths:` clause (the
+    legacy was epic-wide, the active is scoped -- the scoped form is more
+    precise and replaces the legacy intent). If the active marker is OLDER
+    than the legacy one, this is a sequence anomaly -- the legacy was
+    INTENDED to supersede the active, and the active is itself legacy
+    noise; in that case the caller wants the SHARED verdict to surface.
+    """
+    if active is None or active is legacy:
+        return False
+    # A scoped marker always supersedes an epic-wide one of the same lane.
+    if active.get("paths") is not None and legacy.get("paths") is None:
+        return True
+    # Two markers of the same lane, both epic-wide: the LATER one wins.
+    legacy_at = legacy.get("created_at")
+    active_at = active.get("created_at")
+    if legacy_at and active_at and active_at > legacy_at:
+        return True
+    return False
 
 
 def _find_malformed_markers(payload: dict) -> list[dict]:
@@ -1381,11 +1463,6 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # #10958 empty-scope witness (best-effort: None outside a git repo, in
     # which case both features degrade to their pre-#10958 behaviour).
     tracked = _git_tracked_files()
-    # #10881 lint -- malformed paths: clauses surface on stderr when the
-    # marker is read: visible to every lane running the check, never changing
-    # a verdict. The four 2026-08-14 markers on #10678 shared the defect the
-    # three checks name (epic-wide by accident / prose swallowed as globs).
-    _lint_claim_events(events, payload.get("number"), tracked=tracked)
     # #11239 lint -- bare markers without brackets (invisible to the organ).
     # Same non-blocking spirit as the #10881 lint above: the writer learns at
     # the call site that their lock was never registered, instead of two lanes
@@ -1454,6 +1531,21 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
+
+    # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
+    # lint can no longer say `il bloque toutes les autres lanes` for a
+    # marker whose lane did not survive the scope filter or whose lane
+    # re-posted a scoped claim since. We pass `active` (claim-per-lane) and
+    # the FINAL `others` dict so the lint can bucket each epic-wide marker
+    # into `superseded` / `sans effet` / `il bloque`.
+    _lint_claim_events(
+        events,
+        payload.get("number"),
+        tracked=tracked,
+        active_claims=active,
+        others_verdict=others,
+        my_lane=my_lane,
+    )
 
     # #12322 -- query_scope classifier (POST stale-filter, so the verdict
     # reflects the FINAL blocker set, not the pre-stale one). A call whose
