@@ -753,7 +753,12 @@ def scan_cell(cell) -> list[dict]:
             "evidence": lines[0].strip(),
             "hash": _cell_hash("yaml_block_open_no_close", text),
         })
-        return findings  # the YAML-opener shape fully describes this cell
+        # #12338: no early return here. The YAML-opener finding describes the
+        # cell's head, not its body: a `- # Indice` line further down is a
+        # separate rendering defect (heading_in_list) that this return was
+        # silencing -- on the 8 QC-Py notebooks of #12332, all 18 cells with
+        # heading_in_list were yaml cells, and the detector reported 0. The
+        # finding hashes are per-rule, so both can coexist in the baseline.
 
     # ---- frontmatter-in-markdown ------------------------------------------------
     if _is_frontmatter_block(lines):
