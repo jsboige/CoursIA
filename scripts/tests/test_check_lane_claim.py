@@ -462,7 +462,13 @@ def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(cap
     active scoped claim (`paths:`) on the same issue. Their scope merges
     with the call site via the #10419 rule. The verdict is `PATH_SCOPED`
     at exit 1 -- the caller is, in effect, scoped through their own active
-    claim, so the unscoped-caller hint does not apply."""
+    claim, so the unscoped-caller hint does not apply.
+
+    # #12345 -- the caller's own claim scopes to `Sudoku-9.ipynb`, which does
+    # NOT exist as a tracked file. Post-#12345, the scope-vivacity classifier
+    # sees `caller_empty_scope == my_scope` and routes to
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (a broken scope is a non-scope).
+    """
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA -- "
@@ -476,8 +482,14 @@ def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(cap
     )
     rc = clc._run_check(p, "myia-po-2024:CoursIA")
     out = capsys.readouterr().out
-    assert rc == 1  # BLOCKED -- other lane is epic-wide, still blocks caller
-    assert '"query_scope": "PATH_SCOPED"' in out
+    # #12345 -- the caller's own scope (`Sudoku-9.ipynb`) is dead, so the
+    # classifier sees an entirely-dead scope and routes to
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2. The other lane's epic-wide
+    # claim still blocks the caller; the verdict is `NOT_SCOPED` (exit 2),
+    # not `BLOCKED` (exit 1), because the broken scope proves nothing about
+    # disjointness.
+    assert rc == 2  # NOT_SCOPED -- caller's own scope is dead (#12345)
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
     # Verify the caller's own scoped claim is in the active_claims dict.
     assert '"myia-po-2024:CoursIA"' in out
 
@@ -1384,6 +1396,12 @@ def test_check_override_no_paths_preserves_legacy_epic_wide_behaviour(capsys):
 
 
 def test_check_override_paths_blocks_other_lane_on_matching_path(capsys):
+    # #12345 -- the caller's `--paths` `Foo.lean` and the override claim's
+    # `SymbolicAI/Lean/**` are both ENTIRELY dead in this test repo (the
+    # tests live outside any actual SymbolicAI tree). Pre-#12345 the
+    # presence-of-flag predicate returned exit 1 + BLOCKED, hiding the
+    # broken scope. Post-#12345 the caller's scope is entirely dead ->
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (fail-CLOSED).
     # Override with `paths: A/**` to lane X; I (lane Z) want to edit a file
     # UNDER A/ -> my path intersects the scope -> Z is BLOCKED.
     p = payload(
@@ -1400,9 +1418,14 @@ def test_check_override_paths_blocks_other_lane_on_matching_path(capsys):
         "myia-po-2025:CoursIA-2",
         my_paths=["MyIA.AI.Notebooks/SymbolicAI/Lean/Foo.lean"],
     )
-    assert rc == 1
+    # #12345 -- the caller's scope `Foo.lean` does NOT exist in this test
+    # repo (and the override claim's `SymbolicAI/Lean/**` glob is also
+    # dead). Post-#12345, an entirely-dead caller scope routes to
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (fail-CLOSED -- a broken
+    # scope is a non-scope, NOT a permissive one).
+    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
     assert "myia-po-2024:CoursIA" in captured.out
 
 
@@ -1661,6 +1684,11 @@ def test_check_claimed_one_scoped_one_plain_blocks(capsys):
     # One scoped claim + one plain (epic-wide) claim -> BLOCKED. Disjointness is
     # only honoured when BOTH sides declare a scope (acceptance #2 of #10419);
     # a plain claim's intent is unknown, so it conservatively blocks.
+    # #12345 -- the caller's OWN claim scope `Search/Search-3.ipynb` is dead
+    # in this test repo (no Search tree exists here). Post-#12345 the scope
+    # is entirely dead -> `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (the broken
+    # scope proves nothing about disjointness against `B`'s plain claim,
+    # so the verdict is `NOT_SCOPED`, not `BLOCKED`).
     p = payload(
         comment("[CLAIMED] lane A:CoursIA -- paths: Search/Search-3.ipynb",
                 "2026-08-11T04:02:00Z"),
@@ -1668,7 +1696,7 @@ def test_check_claimed_one_scoped_one_plain_blocks(capsys):
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
-    assert rc == 1
+    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
     assert "B:CoursIA-2" in capsys.readouterr().err
 
 
@@ -2422,7 +2450,15 @@ def test_run_check_summary_exposes_empty_scope_field(capsys):
 def test_run_check_my_dead_scope_keeps_others(capsys):
     """Caller-side guard: when MY OWN scope is entirely dead, I cannot use
     disjointness to clear another lane -- globs that lock nothing prove
-    nothing. Every other lane stays -> BLOCKED until my claim is reissued."""
+    nothing. Every other lane stays -> NOT_SCOPED until my claim is reissued.
+
+    # #12345 -- pre-#12345 the verdict was `BLOCKED` at exit 1 (a real-
+    # conflict surface), masking the fact that the caller's own broken scope
+    # is what disabled disjointness. Post-#12345 the verdict is
+    # `NOT_SCOPED` at exit 2 -- the caller learns at the call site that the
+    # issue is THEIR scope, not the other lane's, and the actionable next
+    # step is the same as the no-scope case (re-run with valid `--paths`).
+    """
     p = payload(
         comment("[CLAIMED] lane A:CoursIA -- paths: scripts/nowhere/typo.py",
                 "2026-08-11T04:02:00Z"),
@@ -2430,8 +2466,11 @@ def test_run_check_my_dead_scope_keeps_others(capsys):
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
-    assert rc == 1
-    assert "BLOCKED" in capsys.readouterr().err
+    # #12345 -- caller's own scope is entirely dead (`nowhere/typo.py` is not
+    # tracked). The verdict is NOT_SCOPED (exit 2), not BLOCKED (exit 1):
+    # a broken scope is a non-scope, NOT a real conflict against B.
+    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
+    assert "NOT_SCOPED" in capsys.readouterr().err
 
 
 def test_run_check_partially_dead_scope_stays_scoped(capsys):
@@ -2493,7 +2532,16 @@ def test_run_check_emits_scope_zero_coverage_warning(capsys):
     """End-to-end: the lane declares a scoped claim whose globs match
     no real file, then calls `_run_check` for its OWN claim -- the
     `SCOPE_ZERO_COVERAGE` line lands on stderr. This pins the user-visible
-    UX of the bonus hardener."""
+    UX of the bonus hardener.
+
+    # #12345 -- pre-#12345 the verdict was CLEAR at exit 0 (the lane owns
+    # the only claim on the issue, and no other lane blocks). Post-#12345
+    # the verdict is NOT_SCOPED at exit 2 (fail-CLOSED -- a broken scope is
+    # NOT a permissive scope, even when no one else is blocking). The lane
+    # keeps the `SCOPE_ZERO_COVERAGE` guidance and additionally sees a
+    # caller-side `SCOPE_DEAD_GLOB` WARN and the `caller_empty_scope` JSON
+    # field populated with the dead globs.
+    """
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
@@ -2501,12 +2549,19 @@ def test_run_check_emits_scope_zero_coverage_warning(capsys):
             "2026-08-12T11:00:00Z",
         ),
     )
-    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")  # own lane, CLEAR
-    assert rc == 0
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")  # own lane, scope dead
+    # #12345 -- fail-CLOSED: broken scope is not a permissive scope.
+    assert rc == 2  # NOT_SCOPED -- caller's own scope is dead (#12345)
     captured = capsys.readouterr()
+    # Both warnings fire: the legacy SCOPE_ZERO_COVERAGE (declaring-side
+    # hint) and the new SCOPE_DEAD_GLOB (caller-side witness list).
     assert "SCOPE_ZERO_COVERAGE" in captured.err
+    assert "SCOPE_DEAD_GLOB" in captured.err
     # The scope itself is named verbatim so the lane can reissue.
     assert "definitely-not-a-real-glob-*.zxyq" in captured.err
+    # And the JSON summary carries the dead-glob witness on the caller side.
+    assert '"caller_empty_scope": [' in captured.out
+    assert "definitely-not-a-real-glob-*.zxyq" in captured.out
 
 
 def test_run_check_no_warning_when_scope_matches_files(capsys):
@@ -2886,6 +2941,194 @@ def test_claim_body_without_paths_stays_epic_wide():
         "[CLAIMED] lane myia-po-2024:CoursIA -- fix ML-4"
 
 
+# --- #12345 -- caller-side scope-vivacity classifier -------------------------
+#
+# #12345 v2 acceptance points (one test each, with the per-point assertion
+# the comment on #12322's PR review named explicitly):
+#   (1) every glob in `--paths` is dead  -> exit 2 + `SCOPE_DEAD_GLOB` WARN
+#       naming each dead glob + `caller_empty_scope: [...]` JSON field;
+#   (2) SOME globs are dead               -> `SCOPE_DEAD_GLOB` WARN on those,
+#       the remaining live glob continues to carry disjointness;
+#   (3) outside a git repo (`tracked=None`) -> silent degradation, NO false
+#       WARN -- a caller without a tracked-files walk must not see a
+#       `SCOPE_DEAD_GLOB` for globs that may be live elsewhere;
+#   (4) positive control: a LIVE glob produces NO `SCOPE_DEAD_GLOB` WARN --
+#       a silenced detector and a disabled detector render the same output,
+#       and this test pins the distinction (without it, a future refactor
+#       could break the WARN path without any test catching it);
+#   (5) fail-CLOSED: an entirely-dead scope with ZERO blockers does NOT
+#       clear to `exit 0` -- the verdict is `NOT_SCOPED` at `exit 2` with
+#       a dedicated stderr message naming the dead globs, so the caller
+#       learns that the missing write-authorisation is THEIR scope.
+
+
+def test_check_caller_scope_all_globsmdead_routes_to_not_scoped(capsys, monkeypatch):
+    """#12345 acceptance (1) -- every glob in `--paths` is dead -> exit 2 +
+    `SCOPE_DEAD_GLOB` WARN + `caller_empty_scope: [...]` JSON field.
+    Caller has TWO dead globs; both must surface in the WARN and the JSON."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    rc = clc._run_check(
+        p, "B:CoursIA",
+        my_paths=["dead1/glob.ipynb", "dead2/other.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # #12345 -- entirely-dead scope -> NOT_SCOPED (exit 2), not BLOCKED (exit 1).
+    # The blocker `x/**` would have been a true conflict if the caller's
+    # scope had been live; the broken scope prevents the disjointness test.
+    assert rc == 2
+    assert "SCOPE_DEAD_GLOB" in captured.err
+    # Both dead globs named verbatim so the caller can reissue.
+    assert "dead1/glob.ipynb" in captured.err
+    assert "dead2/other.ipynb" in captured.err
+    # And the JSON summary carries the dead-glob witness on the caller side.
+    assert '"caller_empty_scope": [' in captured.out
+    assert "dead1/glob.ipynb" in captured.out
+    assert "dead2/other.ipynb" in captured.out
+
+
+def test_check_caller_scope_partially_dead_warns_but_keeps_live(capsys, monkeypatch):
+    """#12345 acceptance (2) -- SOME globs are dead -> `SCOPE_DEAD_GLOB` WARN
+    on those, the live glob continues to carry disjointness. The verdict is
+    `PATH_SCOPED` (not `EPIC_WIDE_NO_PATHS_DECLARED`) because at least one
+    glob is alive -- the partial lift only kicks in when the WHOLE scope
+    is dead."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    # Caller's scope: one live glob (`x/a.ipynb` -- intersect with `x/**`),
+    # one dead glob (`dead/nowhere.ipynb`). The live glob forces the verdict
+    # to PATH_SCOPED + BLOCKED; the dead glob is surfaced as a hint.
+    rc = clc._run_check(
+        p, "B:CoursIA",
+        my_paths=["x/a.ipynb", "dead/nowhere.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # The LIVE glob intersects the blocker -> real BLOCKED at exit 1.
+    assert rc == 1
+    assert "BLOCKED" in captured.err
+    # The DEAD glob is named in the WARN (partial coverage).
+    assert "SCOPE_DEAD_GLOB" in captured.err
+    assert "dead/nowhere.ipynb" in captured.err
+    # The live glob does NOT appear in the WARN (selectivity pin).
+    assert "x/a.ipynb" not in captured.err.split("SCOPE_DEAD_GLOB")[1] if "SCOPE_DEAD_GLOB" in captured.err else True
+    # JSON exposes the dead globs list (only the dead ones, not the live ones).
+    assert 'dead/nowhere.ipynb' in captured.out
+    # The live glob DOES NOT appear in the caller_empty_scope field.
+    out_json = captured.out
+    assert "\"caller_empty_scope\": [\n    \"dead/nowhere.ipynb\"\n  ]" in out_json or \
+           '"caller_empty_scope": ["dead/nowhere.ipynb"]' in out_json
+
+
+def test_check_caller_scope_silent_outside_git_repo(capsys, monkeypatch):
+    """#12345 acceptance (3) -- outside a git repo (`tracked=None`) we
+    degrade silently: NO `SCOPE_DEAD_GLOB` WARN, `caller_empty_scope: []`
+    in the JSON. Without this pin, a caller running the check outside a
+    git repo (e.g. just `--from-json` for triage) would see false-positive
+    WARNs on every scope.
+
+    The verdict semantics under `tracked=None`: `_empty_scope_in` short-
+    circuits to `[]` when the walk failed, so the dead-glob classifier
+    cannot fire. The verdict falls to PATH_SCOPED; `_filter_by_claim_scope`
+    cannot lift the blocker `x/**` (the lift requires `tracked is not None`)
+    and cannot prove disjointness (fnmatch on `does/not/exist/in/repo.ipynb`
+    against `x/**` returns no match), so the blocker is DROPPED and the
+    call returns CLEAR at exit 0. The verdict is the legacy behaviour, the
+    PIN this test cares about is exclusively the silent-degradation aspect
+    (no WARN, empty JSON witness list).
+    """
+    # Mock `_git_tracked_files` to return the None sentinel (the real walk
+    # returns None when not in a git repo or when git is missing). The
+    # organ calls the helper with one positional arg (`repo_root`), so the
+    # mock accepts and ignores it.
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda repo_root=None: None)
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+                "2026-08-15T00:00:00Z"),
+        number=11064, title="t",
+    )
+    # Caller's `--paths` would normally be dead in this repo, but the
+    # tracked-files walk failed -- the WARN must NOT fire (best-effort),
+    # and the verdict falls to the legacy PATH_SCOPED branch (CLEAR or
+    # BLOCKED depending on fnmatch disjointness).
+    rc = clc._run_check(
+        p, "B:CoursIA",
+        my_paths=["does/not/exist/in/repo.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # Under `tracked=None`, fnmatch says `does/not/exist/in/repo.ipynb` is
+    # disjoint from `x/**` (the path does not match the pattern), so the
+    # blocker is dropped -> CLEAR at exit 0. The verdict semantics here
+    # are the legacy behaviour -- the PIN is silent degradation.
+    assert rc == 0
+    # PIN: silent degradation. NO WARN, empty JSON witness list.
+    assert "SCOPE_DEAD_GLOB" not in captured.err
+    assert '"caller_empty_scope": []' in captured.out
+
+
+def test_check_caller_scope_live_glob_produces_no_warn(capsys, monkeypatch):
+    """#12345 acceptance (4) -- POSITIVE CONTROL: a live glob produces NO
+    `SCOPE_DEAD_GLOB` WARN. Without this test, a silent detector and a
+    disabled detector would render the same output, and a future refactor
+    that breaks the WARN path would not be caught by any other test (the
+    failure modes `WARN-always` and `WARN-never` are equally broken from
+    a caller's standpoint -- both mask the actual dead-glob state)."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb", "z/deep/f.ipynb"])
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+                "2026-08-15T00:00:00Z"),
+        number=11064, title="t",
+    )
+    # `z/deep/f.ipynb` is in the mock AND disjoint from `x/**` -> CLEAR at
+    # exit 0. Crucially: NO `SCOPE_DEAD_GLOB` WARN (the live glob is live).
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["z/deep/f.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "SCOPE_DEAD_GLOB" not in captured.err
+    # The dead-glob witness list is empty in the JSON too.
+    assert '"caller_empty_scope": []' in captured.out
+
+
+def test_check_caller_scope_fail_closed_when_no_blockers(capsys, monkeypatch):
+    """#12345 acceptance (5) -- fail-CLOSED: an entirely-dead scope with
+    ZERO blockers does NOT clear to `exit 0`. The verdict is `NOT_SCOPED`
+    at `exit 2` with a dedicated stderr message naming the dead globs, so
+    the caller learns that the missing write-authorisation is THEIR scope
+    (not "nothing blocks me, I'm free to write"). This is the third property
+    of #12345's acceptance list -- the most important because it converts
+    a silent `exit 0` into an explicit refusal."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    # ONLY the caller has a claim (their own, scoped, dead). No other lane.
+    body = clc._CLAIM_BODY_TMPL.format(
+        lane="B:CoursIA", intention="tranche",
+        paths_clause=clc._paths_clause(["dead/nowhere.ipynb"]),
+    )
+    p = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
+    rc = clc._run_check(p, "B:CoursIA")  # own lane, no other claims
+    captured = capsys.readouterr()
+    # #12345 -- fail-CLOSED. Broken scope is not a permissive scope.
+    assert rc == 2  # NOT_SCOPED, NOT CLEAR
+    assert "NOT_SCOPED" in captured.err
+    # The dedicated message names the dead glob.
+    assert "dead/nowhere.ipynb" in captured.err
+    # And it explicitly explains that this is NOT a permissive CLEAR.
+    assert "broken scope" in captured.err or "fail-CLOSED" in captured.err
+    # The JSON shows the dead-glob witness list.
+    assert '"caller_empty_scope": [' in captured.out
+    assert "dead/nowhere.ipynb" in captured.out
+
+
 def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
     # #11064 acceptance (4): a claim posted with --paths is read back by the
     # check as SCOPED -- a disjoint lane stays free (exit 0), an intersecting
@@ -2904,17 +3147,57 @@ def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
     )
     pl = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
     assert clc._run_check(pl, "B:CoursIA", my_paths=["z/**"]) == 0       # disjoint -> CLEAR
-    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/sub/f.ipynb"]) == 1  # intersect -> BLOCKED
+    # #12345 -- the leg below USED to be `== 1` (intersect -> BLOCKED) on
+    # the path `x/sub/f.ipynb` matching `x/**`. Post-#12345, `x/sub/f.ipynb`
+    # is NOT in the mock tracked-files list -- the caller's scope is entirely
+    # dead -> `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (fail-CLOSED). The
+    # genuine-intersection case is now pinned separately in
+    # `test_claim_paths_roundtrip_reads_back_scoped_intersect_live_glob`
+    # below with a glob that IS in the mock (`z/deep/f.ipynb`).
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/sub/f.ipynb"]) == 2  # dead scope -> NOT_SCOPED
     # The unscoped-caller leg: previously `== 1` (false-positive real conflict).
     # #12322 lifts this to `== 2` (NOT_SCOPED) -- the verdict is honest about
     # the missing scope binding instead of pretending to be a hard block.
     assert clc._run_check(pl, "B:CoursIA") == 2
 
 
+def test_claim_paths_roundtrip_reads_back_scoped_intersect_live_glob(monkeypatch):
+    """Companion to `test_claim_paths_roundtrip_reads_back_scoped` (above) --
+    pins the LEGITIMATE intersection case (caller's glob DOES match a tracked
+    file AND falls under the claimant's `paths:` clause). Pre-#12345 this
+    leg was on the same test as the dead-glob case (it was forced to use a
+    dead glob because the assertion was `== 1`). Post-#12345 the dead-glob
+    leg is #12345-routed to exit 2; the live-intersection leg is here."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb", "z/deep/f.ipynb"])
+    body = clc._CLAIM_BODY_TMPL.format(
+        lane="A:CoursIA", intention="tranche x",
+        paths_clause=clc._paths_clause(["x/**", "y/01.ipynb"]),
+    )
+    pl = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
+    # The claimant's claim scope is `x/**, y/01.ipynb`. A caller scope
+    # `z/deep/f.ipynb` is LIVE (in the mock) but does NOT match `x/**` or
+    # `y/01.ipynb` -> disjoint -> CLEAR exit 0. We need a glob that is BOTH
+    # in the mock AND under the claim's `paths:` clause -> `x/a.ipynb`.
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/a.ipynb"]) == 1  # live intersect -> BLOCKED
+
+
 def test_claim_refuses_when_blocked(monkeypatch, tmp_path):
     # #11064 acceptance (1): `--claim` runs the check before posting and
-    # REFUSES (exit 1, nothing posted) when another lane holds an overlapping
-    # claim -- instead of posting first and printing a reassuring success.
+    # REFUSES (nothing posted) when another lane holds an overlapping claim
+    # -- instead of posting first and printing a reassuring success. The
+    # refusal channel is `exit != 0` (the caller's `--claim` must NOT post
+    # a comment); the EXACT exit code distinguishes two distinct refusal
+    # modes that pre-#12345 were collapsed:
+    #   - `exit 1` (BLOCKED): a true overlap, the caller's `--paths` matches
+    #     a live tracked file under the claimant's scope. The lane MUST wait
+    #     for release or post a `[RELEASED]` on its own claim.
+    #   - `exit 2` (NOT_SCOPED, #12345): the caller's `--paths` is entirely
+    #     dead in this repo (the glob matches zero tracked files). The
+    #     refusal is the same (do not post), but the actionable next step
+    #     is re-run with a valid `--paths` glob, not wait-for-release.
+    # #12345 -- the test's caller `--paths x/sub/f.ipynb` is dead in the real
+    # repo (no `x/` tree). Post-#12345 the refusal is `exit 2` (NOT_SCOPED).
     blocker = comment(
         "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
         "2026-08-15T00:00:00Z",
@@ -2926,7 +3209,10 @@ def test_claim_refuses_when_blocked(monkeypatch, tmp_path):
                         lambda issue, body: posted.append((issue, body)))
     rc = clc.main(["--lane", "B:CoursIA", "--paths", "x/sub/f.ipynb",
                    "--claim", "tranche x", "11064", "--from-json", json_path])
-    assert rc == 1
+    # #12345 -- the caller's glob is dead -> NOT_SCOPED (exit 2), NOT
+    # BLOCKED (exit 1). The refusal channel (no post) is what the test
+    # actually pins; the exit code is the diagnostic.
+    assert rc == 2  # NOT_SCOPED -- caller's --paths is dead (#12345)
     assert posted == []
 
 
