@@ -32,8 +32,16 @@ def comment(body, created_at, author="jsboige", url=None):
     }
 
 
-def payload(*comments, number=9764, title="t"):
-    return {"number": number, "title": title, "comments": list(comments)}
+def payload(*comments, number=9764, title="t", labels=None):
+    # #12156 -- `labels` defaults to None (absent key) so pre-existing tests
+    # that don't care about the umbrella signal stay byte-equivalent: the
+    # helper in `_is_umbrella_issue` falls back to `payload.get("labels") or []`
+    # and degrades to the title-route. Tests that need the umbrella signal
+    # pass `labels=[{"name": "EPIC"}]` explicitly.
+    d = {"number": number, "title": title, "comments": list(comments)}
+    if labels is not None:
+        d["labels"] = labels
+    return d
 
 
 # --- extract_lane (grain_tag, now reused by the guard) -----------------------
@@ -3225,3 +3233,137 @@ def test_run_check_summary_off_marker_field_empty_without_signal(capsys):
     clc._run_check(p, "myia-po-2025:CoursIA")
     out = capsys.readouterr().out
     assert '"scope_declared_off_marker": []' in out
+
+
+# --- #12156 -- umbrella / epic-wide-on-umbrella summary fields ---------------
+
+
+def test_run_check_summary_is_umbrella_true_on_EPIC_label(capsys):
+    # #12156 acceptance (1) -- un umbrella labellise `EPIC` expose
+    # `is_umbrella: true` au niveau top-level du summary, miroir du picker
+    # qui lit la meme etiquette (cf `scripts/pick_idle_grain.py:130`).
+    # Note : un umbrella + claim epic-wide sans `paths:` est
+    # simultanement `is_umbrella: true` ET `epic_wide_on_umbrella: true`
+    # (la pathologie que le body denomme). Les deux flags sont
+    # orthogonaux -- le premier classifie, le second diagnostique.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    # Le test suivant (`test_run_check_summary_epic_wide_on_umbrella_true_*`)
+    # est l'acceptance explicite de la pathologie sur le meme pattern.
+    # Ici on verifie juste que le classifieur fonctionne ; le controle
+    # pathologie-false est dans `..._false_when_scoped`.
+    assert '"epic_wide_on_umbrella":' in out
+
+
+def test_run_check_summary_is_umbrella_true_on_title_prefix(capsys):
+    # #12156 acceptance (2) -- fallback title-route : un titre commencant par
+    # "[EPIC" est classifie umbrella meme sans label explicite (le picker
+    # accepte la meme forme).
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (pre-label inventory)",
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+
+
+def test_run_check_summary_is_umbrella_false_on_unit_issue(capsys):
+    # Controle : une issue unitaire (label `documentation`, titre sans
+    # `EPIC`) expose `is_umbrella: false` -- la classification ne contamine
+    # pas le cas general.
+    p = payload(
+        number=9890,
+        title="Emojis dans comparatif-owui-vs-ai-engine.md",
+        labels=[{"name": "documentation"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": false' in out
+    assert '"epic_wide_on_umbrella": false' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_true_when_blocking_epic_wide(capsys):
+    # #12156 acceptance (3) -- la pathologie que le body denomme : un
+    # umbrella dont l'unique claim bloquant est epic-wide (pas de clause
+    # `paths:`) expose `epic_wide_on_umbrella: true`. C'est exactement le
+    # cas mesure sur #1206 par l'auteur de l'issue.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2026:CoursIA\n",
+            "2026-08-11T12:29:34Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (umbrella pathologique)",
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": true' in out
+    assert '"blocking_lanes": [\n    "myia-po-2026:CoursIA"' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_when_scoped(capsys):
+    # #12156 acceptance (4) -- le meme umbrella, mais avec un claim scope
+    # (`paths: ...`) qui matche un fichier REEL du repo expose
+    # `epic_wide_on_umbrella: false`. Le mecanisme discerne bien la
+    # pathologie du cas nominal -- un glob mort (vide) serait au
+    # contraire releve par le fail-CLOSED #10958 et remonte en
+    # effectively-epic-wide, ce qui est un COMPORTEMENT VOUULU (un glob
+    # mort = broken claim). On utilise donc un glob qui pointe vers un
+    # fichier Lean qui existe sur `main` (CGT) pour valider la voie
+    # saine.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/*.lean\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    # Sanity : le scope est bien enregistre, pas lift en epic-wide.
+    assert '"empty_scope": []' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_on_clear_umbrella(capsys):
+    # Controle : un umbrella sans aucun claim actif expose
+    # `epic_wide_on_umbrella: false` (la pathologie presuppose un blocage).
+    p = payload(
+        number=12207,
+        labels=[{"name": "EPIC"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    assert '"blocked": false' in out
+
+
+def test_is_umbrella_issue_handles_missing_labels_key():
+    # Le helper degrade proprement sur un payload qui n'a pas la cle
+    # `labels` (sous-ensemble du from-json historique) -- pas d'exception,
+    # retour False (= defaut pre-#12156).
+    assert clc._is_umbrella_issue({"title": "[EPIC] anything"}) is True
+    assert clc._is_umbrella_issue({"title": "anything"}) is False
+    assert clc._is_umbrella_issue({}) is False
+    # Label invalide (None / dict sans name) : pas de crash.
+    assert clc._is_umbrella_issue({"labels": [None, {}, {"name": "x"}]}) is False
