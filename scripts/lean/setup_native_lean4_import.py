@@ -252,6 +252,26 @@ def cmd_patch():
     return 0 if ("PATCHED" in out or "already" in out) else 1
 
 
+def _repl_tag_sort_key(t):
+    """Total order over repl tags: (maj, min, patch, is_release, rcN).
+
+    #12168: the key must be total over ``-rcN`` suffixes too -- the script's
+    own docstring advertises ``build-repl v4.30.0-rc2`` and REPL_TOOLCHAIN_TAGS
+    carries rc keys. rcN < release for the same triple (v4.30.0-rc2 precedes
+    v4.30.0): an rc is the candidate OF that release, so resolving "nearest
+    tag <= v4.30.0-rc2" must be able to land on the rc itself, never skip it.
+    Anything malformed sorts below everything rather than raising -- the old
+    ``int()`` KeyError/ValueError path silently degraded the resolver to None
+    (the misleading NO-SOURCE-TAG of #12168).
+    """
+    m = re.fullmatch(r"v(\d+)\.(\d+)\.(\d+)(?:-rc(\d+))?", t)
+    if not m:
+        return (-1, -1, -1, 0, 0)
+    maj, minor, patch, rc = m.groups()
+    return (int(maj), int(minor), int(patch), 0 if rc is not None else 1,
+            int(rc) if rc is not None else 0)
+
+
 def _resolve_repl_source_tag(tag):
     """Nearest repl-repo tag <= the requested toolchain tag, or None.
 
@@ -261,15 +281,15 @@ def _resolve_repl_source_tag(tag):
     """
     r = _wsl("git ls-remote --tags https://github.com/leanprover-community/repl.git",
              timeout=60)
-    tags = {m.group(1) for m in re.finditer(r"refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+)$",
-                                            r.stdout or "", re.M)}
+    # #12168: the filter used to drop rc tags outright -- while the docstring
+    # and REPL_TOOLCHAIN_TAGS both advertise them.
+    tags = {m.group(1) for m in re.finditer(
+        r"refs/tags/(v[0-9]+\.[0-9]+\.[0-9]+(?:-rc[0-9]+)?)$",
+        r.stdout or "", re.M)}
 
-    def key(t):
-        return tuple(int(p) for p in t[1:].split("."))
-
-    try:
-        want = key(tag)
-    except ValueError:
+    key = _repl_tag_sort_key
+    want = key(tag)
+    if want[0] < 0:
         return None
     lower = sorted((t for t in tags if key(t) <= want), key=key)
     return lower[-1] if lower else None
