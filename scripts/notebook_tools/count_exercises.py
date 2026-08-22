@@ -564,14 +564,24 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
 
     cells = nb.get("cells", [])
 
-    # First pass: detect markdown-header exercises, counting ONE instance per
-    # SINGULAR exercise header LINE (not per cell). A markdown cell that groups
-    # several exercise statements (`### Exercice 1`, `### Exercice 2`, ...) under
-    # sub-headers therefore yields N instances, not 1 (#6051 Bug 1). PLURAL
-    # section headers (`## 9. Exercices`) carry no instance and do NOT make the
-    # cell a header cell -- so they neither count nor forward-pair the next code
-    # cell (Bug 2: the section used to steal the real Exercice 1 stub below it).
+    # First pass: enumerate markdown cells whose header lines name SINGULAR
+    # exercise instances (`### Exercice 1`, `### Exercice 2`, ...). One header
+    # LINE per instance (Bug 1: a single cell grouping N sub-headers yields N
+    # candidates, not 1). PLURAL section headers (`## 9. Exercices`) are not
+    # instances and do not make the cell a header cell (Bug 2: the section used
+    # to steal the real Exercice 1 stub below it).
+    #
+    # Critically, this pass no longer pushes ExerciseHits: instance_lines are
+    # collected here only so the pairing pass (below) can decide whether each
+    # header's claim is backed by an actual stub. Counting titles alone — i.e.
+    # pushing `ExerciseHit(detected_by="markdown_header")` here — counted
+    # `## Exercice 1 : ...` followed by a *complete solution* as a real
+    # exercise (PR #12246 / GT-20 rendered `count=4, conforming=True` with 0
+    # stubs in the notebook). The fix (#12305) defers the push to the pairing
+    # pass and gates it on `_is_stub_code` of the paired cell.
     header_cell_indices: set[int] = set()
+    header_instance_counts: dict[int, int] = {}
+    header_sources: dict[int, str] = {}
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
             continue
@@ -579,51 +589,85 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         instance_lines = _markdown_instance_header_lines(source)
         if not instance_lines:
             continue
-        for _line in instance_lines:
+        header_cell_indices.add(i)
+        header_instance_counts[i] = len(instance_lines)
+        header_sources[i] = source
+
+    # Pairing pass: a markdown header is a real exercise ONLY if a stub is
+    # found either just below it (forward, within 3 cells) or just above it
+    # (backward, within 3 cells, gated by matching exercise number). When a
+    # stub is found, the header cell contributes one ExerciseHit per
+    # `instance_line` it carries (grouped headers: 3 sub-headers + 1 grouped
+    # stub forward emit 3 hits, matching the pre-fix granularity on the
+    # legitimate stub layout). When NO stub is found — the PR #12246 case — the
+    # header is silently dropped: a title whose paired cell is a complete
+    # solution (or is missing altogether) is not an exercise by the C.1 / E.1
+    # content rules (`exercise-example-labeling.md`, `three-exercises-per-notebook.md`).
+    #
+    # The backward direction is gated by a MATCHING EXERCISE NUMBER so we never
+    # absorb a stub that belongs to the *previous* exercise in the normal
+    # sequential layout (header N -> stub N -> header N+1): there the stub's
+    # number N differs from the following header's number N+1, so the match
+    # fails and both are counted as distinct exercises (no under-count).
+    paired_code_indices: set[int] = set()
+    for idx in sorted(header_cell_indices):
+        instance_count = header_instance_counts[idx]
+        header_source = header_sources[idx]
+        header_num = _exercise_number(header_source)
+        # Forward (common): the stub just below the header, within 3 cells.
+        # GATE: the candidate code cell must (a) be a stub and (b) reference
+        # the exercise word. Without (a), a complete solution immediately
+        # following the header would be silently absorbed as the exercise —
+        # which is exactly the PR #12246 bug.
+        forward_stub: int | None = None
+        for j in range(idx + 1, min(idx + 4, len(cells))):
+            jcell = cells[j]
+            if jcell.get("cell_type") != "code":
+                continue
+            j_source = "".join(jcell.get("source", []))
+            if _is_stub_code(j_source) and _code_cell_mentions_exercise(j_source):
+                forward_stub = j
+                paired_code_indices.add(j)
+                break
+            # First code cell in the window is NOT a stub -> stop the search;
+            # any later code cell is unlikely to be the paired exercise (#6051
+            # Bug 1's original pairing policy is preserved here).
+            break
+        # Backward (stub-then-header layout): the nearest preceding code cell,
+        # absorbed only when it references the SAME exercise number as the
+        # header AND is itself a stub. Numberless headers/stubs are left
+        # unpaired (conservative). Stub gate added in #12305.
+        backward_stub: int | None = None
+        if header_num is not None:
+            for j in range(idx - 1, max(idx - 4, -1), -1):
+                jcell = cells[j]
+                if jcell.get("cell_type") != "code":
+                    continue
+                j_source = "".join(jcell.get("source", []))
+                if (
+                    _is_stub_code(j_source)
+                    and _code_cell_mentions_exercise(j_source)
+                    and _exercise_number(j_source) == header_num
+                ):
+                    backward_stub = j
+                    paired_code_indices.add(j)
+                break  # nearest preceding code cell is the only candidate
+        # Only push markdown_header ExerciseHits when a stub was found in
+        # either direction. Header-but-no-stub is the PR #12246 / GT-20 case:
+        # we want the title silently dropped, not counted (and the fix also
+        # closes the matching D case: a title with NO code cell after it at
+        # all, e.g. a section header mistakenly caught as singular).
+        if forward_stub is None and backward_stub is None:
+            continue
+        for _ in range(instance_count):
             result.exercises.append(
                 ExerciseHit(
-                    cell_index=i,
+                    cell_index=idx,
                     cell_type="markdown",
-                    source=source,
+                    source=header_source,
                     detected_by="markdown_header",
                 )
             )
-        header_cell_indices.add(i)
-
-    # Track which code cells are the paired stub of an exercise header so we
-    # do not double-count them in the second pass. A stub may sit EITHER just
-    # below its header (common) OR just above it (a "fill-in box then
-    # description" layout, where the stub at cell i precedes its own header at
-    # cell i+1). The backward direction is gated by a MATCHING EXERCISE NUMBER
-    # so we never absorb a stub that belongs to the *previous* exercise in the
-    # normal sequential layout (header N -> stub N -> header N+1): there the
-    # stub's number N differs from the following header's number N+1, so the
-    # match fails and both are counted as distinct exercises (no under-count).
-    paired_code_indices: set[int] = set()
-    for idx in sorted(header_cell_indices):
-        # Forward (common): the stub just below the header, within 3 cells.
-        for j in range(idx + 1, min(idx + 4, len(cells))):
-            if cells[j].get("cell_type") == "code":
-                paired_code_indices.add(j)
-                break
-        # Backward (stub-then-header layout): the nearest preceding code cell,
-        # absorbed only when it references the SAME exercise number as the
-        # header. Numberless headers/stubs are left unpaired (conservative).
-        header_source = "".join(cells[idx].get("source", []))
-        header_num = _exercise_number(header_source)
-        if header_num is None:
-            continue
-        for j in range(idx - 1, max(idx - 4, -1), -1):
-            cell = cells[j]
-            if cell.get("cell_type") != "code":
-                continue
-            stub_source = "".join(cell.get("source", []))
-            if (
-                _code_cell_mentions_exercise(stub_source)
-                and _exercise_number(stub_source) == header_num
-            ):
-                paired_code_indices.add(j)
-            break  # nearest preceding code cell is the only candidate
 
     # Second pass: code-cell exercises with NO preceding markdown header.
     #
