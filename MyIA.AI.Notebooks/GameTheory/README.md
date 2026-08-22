@@ -200,7 +200,9 @@ flowchart TD
 | 2 | [GameTheory-2-NormalForm](GameTheory-2-NormalForm.ipynb) | Python | Matrices de gains, dominance, best response | 45 min |
 | 2b | [GameTheory-2b-Lean-Definitions](GameTheory-2b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
 | 3 | [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique | 55 min |
-| 3b | [GameTheory-3-Topology2x2-Csharp](GameTheory-3-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
+| 3 (C#) | [GameTheory-3-Topology2x2-Csharp](GameTheory-3-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
+| 3b | [GameTheory-3b-Chambres-et-Murs](GameTheory-3b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich) : les 576 jeux stricts comme chambres d'un arrangement, les égalités comme murs de codimension — 75 ordres faibles, incidence double-face mur/chambre, BFS connexe diamètre 6, swaps en longueurs de Coxeter, make_tie/break_tie duales (chantier 4 #12207, versant D2) | 45 min |
+| 3c | [GameTheory-3c-Meta-Actions-Tarifees](GameTheory-3c-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées : changer les règles comme action payante — NE/BR sur les 576 jeux (72 injouables), coût en échelons de rang avec seuil de migration 56→16→8→4 %, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe du Dilemme EST un équilibre (3,3), 4 échecs de coordination dur (chantier 4 #12207, versant D4) | 45 min |
 | 4 | [GameTheory-4-NashEquilibrium](GameTheory-4-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique | 60 min |
 | 4 (C#) | [GameTheory-4-NashEquilibrium-Csharp](GameTheory-4-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
 | 4b | [GameTheory-4b-Lean-NashExistence](GameTheory-4b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
@@ -269,10 +271,12 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 |---|----------|--------|---------|-------|
 | 20 | [GameTheory-20-Commitment-Stackelberg](GameTheory-20-Commitment-Stackelberg.ipynb) | Python | Stackelberg : la performativité sans mystère — l'engagement contraignant qui **transforme la meilleure réponse d'autrui** (action sous-optimale à l'équilibre simultané, delta +2 mesuré), l'annonce révocable dissoute par induction à rebours (cheap talk), et le seuil de crédibilité **s\* = écart de tentation** (caution minimale calculée) | 40 min |
 | 21 | [GameTheory-21-Deux-Especes-de-Fleches](GameTheory-21-Deux-Especes-de-Fleches.ipynb) | Python | Deux espèces de flèches : le théorème fini du chemin minimal de swaps (un swap R(a,b) traverse un mur ssi colonne {a,b} ET mur habité — conjecture naïve réfutée sur 288 désaccords, condition vérifiée 3456/3456, comptage 432/576 dérivé) | 60 min |
+| 3b | [GameTheory-3b-Chambres-et-Murs](GameTheory-3b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich, chantier 4 #12207 versant D2) : l'espace des jeux comme arrangement — 24 chambres × 24 = 576 jeux, les égalités comme murs de codimension (75 ordres faibles), incidence double-face mur/chambre, graphe des chambres connexe de diamètre 6, make_tie/break_tie duales | 45 min |
+| 3c | [GameTheory-3c-Meta-Actions-Tarifees](GameTheory-3c-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées (chantier 4 #12207 versant D4) : changer les règles comme action payante — coût en échelons de rang, seuil de migration 56→16→8→4 % au sweep c=0..3, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe EST un équilibre (3,3), 4 échecs de coordination dur (tous NE Pareto-dominés) | 45 min |
 
-> En livraison parallèle sur la même vague : 18 (open games et lentilles, #12212), 22 (manipulation Gibbard-Satterthwaite comme témoin, #12239), 23 (échange de reins, #12240) — issues ouvertes, fichiers pas encore sur `main`.
+> En livraison parallèle sur la même vague : 18 (open games et lentilles, #12212), 22 (manipulation Gibbard-Satterthwaite comme témoin, #12239), 23 (échange de reins, #12240) — issues ouvertes, fichiers pas encore sur `main`. Le chantier 4 (#12207) poursuit la vague : 3b livré, 3c livré ici, versants D1/D3 ouverts.
 
-**Durée totale** : ~28h25 (avec side tracks b/c, sous-série SocialChoice et Partie 4 livrée)
+**Durée totale** : ~29h55 (avec side tracks b/c, sous-série SocialChoice et Partie 4 livrée)
 
 ## Concepts clés
 
@@ -289,6 +293,7 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 | **Théorème d'Arrow** | Impossibilité d'agrégation parfaite des préférences |
 | **Processus de Moran** | Dynamique stochastique d'évolution en population FINIE (Axelrod) — fixation d'une stratégie par dérive génétique, distincte du replicator déterministe mean-field |
 | **Stochastic finite-population fixation** | À population finie, le bruit d'échantillonnage peut fixer des stratégies sous-optimales (Defector 28 % sur 25 graines Moran, alors qu'il est dominé en round-robin) |
+| **Méta-action tarifée (strate 7)** | Réécrire ses propres préférences déclarées au prix d'échelons de rang — l'action de changer les règles a un coût, un seuil de migration et ses propres équilibres (GT-3c) |
 
 ## Ce que chaque notebook apporte
 
@@ -301,6 +306,8 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 1 | Setup | Installation Nashpy/OpenSpiel, premier dilemme du prisonnier |
 | 2 | NormalForm | Matrices de gains, dominance, meilleure réponse, équilibre pur |
 | 3 | Topology2x2 | Classification géométrique des 144 jeux 2x2 (Robinson-Goforth) |
+| 3b | Chambres-et-Murs | Les égalités comme objets géométriques : murs de codimension, incidence double-face, BFS du graphe des chambres |
+| 3c | Meta-Actions-Tarifees | Changer les règles comme action payante : seuil de migration, méta-jeu et évasion du Dilemme par équilibre |
 | 4 | NashEquilibrium | Nash mixte, Lemke-Howson, analyse paramétrique, support enumeration |
 | 5 | ZeroSum-Minimax | Théorème minimax, dualité LP, programmation linéaire pour jeux |
 | 6 | EvolutionTrust | Tournoi Axelrod, tit-for-tat, **processus de Moran (stochastic fixation finie vs replicator mean-field)** [#7594], émergence coopération |
@@ -317,6 +324,8 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 15 | CooperativeGames | Valeur de Shapley, Core, Bondareva-Shapley |
 | 16 | MechanismDesign | Principe de révélation, VCG (incl. non-monotonie du revenu), matching, enchères |
 | 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
+| 20 | Commitment-Stackelberg | La performativité sans mystère : l'engagement contraignant transforme la meilleure réponse d'autrui (seuil de crédibilité s\* mesuré) |
+| 21 | Deux-Especes-de-Fleches | Théorème fini du chemin minimal de swaps : préserver le monde vs le transformer (conjecture naïve réfutée, condition exacte) |
 
 ### Side tracks Lean 4 (formalisation)
 
@@ -622,6 +631,8 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 2 | NormalForm | ~25 | 3 | **COMPLET** |
 | 2b | Lean-Definitions | ~25 | 3 | **COMPLET** |
 | 3 | Topology2x2 | ~30 | 3 | **COMPLET** |
+| 3b | Chambres-et-Murs | ~38 | 3 | **NOUVEAU** (chantier 4 #12207) |
+| 3c | Meta-Actions-Tarifees | ~30 | 3 | **NOUVEAU** (chantier 4 #12207) |
 | 4 | NashEquilibrium | ~35 | 3 | **COMPLET** |
 | 4b | Lean-NashExistence | ~20 | 3 | **COMPLET** |
 | 4c | NashExistence-Python | ~20 | 2 | **COMPLET** |
@@ -649,6 +660,8 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | SC-03 | Voting-Methods | ~43 | 3 | **COMPLET** |
 | SC-04 | Computational-Aggregation-SAT-Z3 | ~66 | 2 | **COMPLET** |
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
+| 20 | Commitment-Stackelberg | ~18 | 3 | **NOUVEAU** (strate 7) |
+| 21 | Deux-Especes-de-Fleches | ~30 | 3 | **NOUVEAU** (strate 7) |
 
 **Jumeaux C#** : le tableau ci-dessus liste les notebooks Python/Lean de référence. Chaque notebook du fil principal (GT-2 à GT-17, plus 4c/6c/8c/15c et SC-01/SC-03/SC-04) dispose en outre d'un **jumeau C#** (`*-Csharp.ipynb`, 23 jumeaux distincts — 24 fichiers `.ipynb` en comptant la tranche `Part2` du GT-2) livré par le marathon parité #4956 — algorithmes from-scratch en BCL .NET 9, voir la section « Parité .NET » en tête de fichier.
 
