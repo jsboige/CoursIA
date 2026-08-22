@@ -136,41 +136,31 @@ CONCERN_MARKERS = (
     # Garde-fou FP : « rien a changer » nie le nit — le citer « rien »
     # (CITERS, ci-dessous) rend l'occurrence citee.
     "a changer",
-    # #12143 — glyphe de severite d'Hermes prefixant le verdict. Hermes porte
-    # une convention STABLE et mesurable (scan 150 PRs mergees, distribution
-    # sur 35 reviews Hermes) :
-    #   △ (U+25B3, WHITE UP-POINTING TRIANGLE) : micro-nit non-bloquant,
-    #     23/35 reviews. Convention explicite de non-bloquant (exemple canon
-    #     dans #11864 : « △ 2 FINDINGS non-bloquants »).
-    #   🟡 (U+1F7E1, LARGE YELLOW CIRCLE) : constat substantiel, 5/35. Mesure
-    #     sur les 5 : 4 leves par la suite, 1 NON levee = #12059 (incident
-    #     fondateur, defaut B.0 = merge avec constat sans reponse, defaut
-    #     pedagogique en production : hyperparametres GRPO contredits par
-    #     l'artefact).
-    #   🔴 (U+1F534, LARGE RED CIRCLE) : bloquant strict, 1/35 (vrai bloquant).
-    # Le garde ignorait les glyphes entierement — l'argumentaire etait « pas
-    # le vocabulaire d'Hermes ». La mesure inverse : scan 150 PRs, **6/35**
-    # reviews aurait fait rougir le gate vs 2 actuellement (gain +4 catches
-    # reels). Promotion des DEUX glyphes bloquant/substantiel : `🟡` et `🔴`.
-    # **PAS de `△`** (convention explicite de non-bloquant, sur-accusation
-    # mesuree 23/35 reviews sinon) ni de mot `FINDING` seul (vocabulaire de
-    # domaine — sur-accusation mesuree sur 3 PRs : #12088 « 1 finding max
-    # par cell » est un nom technique scanner, #12066 « les 4 findings
-    # scanner restants » est un comptage declare honnete, #11864 « △ 2
-    # FINDINGS non-bloquants » est declare non-bloquant). Les glyphes sont
-    # preservees par `_unaccent` (categorie Unicode So = Symbol, Other, pas
-    # Mn = Mark, Nonspacing qui est la seule categorie depilee par
-    # `_unaccent`), donc le substring match fonctionne directement. Les
-    # motifs `_MENTION_VERDICT*` (qui exigent `[A-Z][A-Z_]{3,}`) ne peuvent
-    # pas neutraliser un glyphe — c'est exactement ce qu'il faut : un glyphe
-    # prefixe TOUJOURS une emission, jamais une mention formelle, et
-    # `_is_cited` (CITERS ascii) ne peut citer qu'un mot en prose, pas un
-    # glyphe en tete de ligne. Discriminateur : le glyphe precede
-    # immediatement le verdict, sans prose intermediaire, dans 90 % des cas
-    # mesures.
-    "🟡",       # 🟡 — reserve VIVANTE (constat substantiel, fondateur #12059)
-    "🔴",       # 🔴 — reserve VIVANTE (bloquant strict)
 )
+
+# #12143 — Hermes severity glyphes (substance du premier PR #12148 fondateur).
+# Extrait en constante separee pour subordonner la levee par LIFT_MARKERS
+# (cf `classify` ci-dessous) : un glyphe est une EMISSION, et une emission
+# ne se laisse pas eteindre par un mot de levee pose ailleurs dans la meme
+# prose. Distribution scan 150 PRs mergees (35 reviews Hermes) :
+#   △ (U+25B3) : micro-nit non-bloquant, 23/35 (exclu de CONCERN_MARKERS).
+#   🟡 (U+1F7E1) : constat substantiel, 5/35. Promote car 4 leves par la suite,
+#     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
+#     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
+#   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
+# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_strip_mentioned_verdicts`
+# ne les neutralise pas (regex _MENTION_VERDICT* ciblent ASCII verdict formel),
+# `_is_cited` reste symetrique via CITERS ascii.
+SEVERITY_GLYPHS = (
+    "🟡",  # constat substantiel (fondateur #12059)
+    "🔴",  # bloquant strict
+)
+# Concatene pour que `live_concern` (has_live_marker sur CONCERN_MARKERS) capture
+# aussi les glyphes isoles — sans cette ligne, un body compose uniquement d'un
+# glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
+CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
+
+# Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 # la resolution. Sans ce filtre, chaque « CHANGES_REQUESTED levée » est compte
@@ -669,7 +659,24 @@ def classify(author: str, body: str) -> str | None:
     if author in BOT_LOGINS or not body:
         return None
     stripped = body.lstrip()
-    if has_marker(body, LIFT_MARKERS) and not _lift_cancelled(_strip_quoted(body)):
+    # #12143 — Hermes severity glyphes (subordonne LIFT_MARKERS, fix concomitant
+    # du PR #12148 fondateur) : un glyphe est une EMISSION, et une emission
+    # ne se laisse pas eteindre par un mot de levee (LGTM, Merged, etc.) pose
+    # ailleurs dans la meme prose. Sans cette subordination, 3 des 4 cas reels
+    # mesures par ai-01 sur PR #12148 — #12083 (🟡 SPY 6/8 contredit),
+    # #12059 (🟡 hyperparametres GRPO contredits), #12077 (🟡 claim img_020
+    # contredite) — etaient absorbes par le LGTM en tete avant evaluation de
+    # CONCERN_MARKERS. Mesure corpus 80 PRs (2026-08-20T16:27Z →
+    # 2026-08-21T12:46Z) : avant = 0 flagged, apres = 3 flagged.
+    # Principe borne : un LGTM *scopé* sur une partie du diff (« LGTM
+    # structural / 🟡 ... ») ne leve pas la partie non-LGTM. `has_live_marker`
+    # preserve l'hygiene `_is_cited`, donc un glyphe cite (« Re 🟡 : leve »)
+    # reste muet — la sous-accusation coute un merge, la sur-accusation coute
+    # une relecture. Aucun body sans glyphe ne change de classement : la
+    # table de distribution d'ai-01 reste exacte.
+    if (has_marker(body, LIFT_MARKERS)
+            and not _lift_cancelled(_strip_quoted(body))
+            and not has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)):
         return None  # annonce de levee / de merge : resolution, pas reserve
     # (construction conditionnelle « et je merge » : voir _lift_cancelled —
     # l'annonce conditionnee n'est pas une levee, SAUF levee explicite d'auteur
