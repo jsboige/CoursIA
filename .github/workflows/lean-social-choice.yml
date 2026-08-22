@@ -87,7 +87,7 @@ jobs:
       # A gate whose whole lot passes is also what a de-wired gate produces:
       # the difference is made at the positive controls, not at the green.
       run: |
-        python -m pip install --quiet pyyaml
+        python -m pip install --quiet pytest pyyaml
         python -m pytest scripts/tests/test_check_certified_sorry.py -q
 
   # The real proof-integrity gate (#12330 criterion 4, first branch): the
