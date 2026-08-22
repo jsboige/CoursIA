@@ -362,8 +362,8 @@ _PR_STATE_FRAGMENT = """
     number mergeable
     reviews(last:40) { nodes { state submittedAt author { login } } }
     commits(last:1) { nodes { commit { statusCheckRollup { contexts(first:100) { nodes {
-      ... on CheckRun      { name    conclusion isRequired(pullRequestNumber:%(n)d) }
-      ... on StatusContext { context state      isRequired(pullRequestNumber:%(n)d) }
+      ... on CheckRun      { name    conclusion completedAt startedAt isRequired(pullRequestNumber:%(n)d) }
+      ... on StatusContext { context state       createdAt              isRequired(pullRequestNumber:%(n)d) }
     } } } } } }
   }
 """
@@ -408,6 +408,44 @@ def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
     return states
 
 
+def _ctx_stamp(ctx: dict) -> str:
+    """Horodatage comparable d'un contexte. Chaine vide si le run n'a rien rendu."""
+    return ctx.get("completedAt") or ctx.get("createdAt") or ctx.get("startedAt") or ""
+
+
+def drop_superseded(contexts: list[dict]) -> list[dict]:
+    """Retire les echecs PERIMES : un rouge anterieur au dernier vert du meme nom.
+
+    Le discriminant est TEMPOREL, jamais nominal, et les deux erreurs symetriques
+    sont documentees : dedupliquer par nom seul masque un rouge vivant emis par un
+    workflow jumeau (#11894), ne pas dedupliquer du tout en fabrique de faux
+    (#12054, 9 rouges pour 0 reel). La regle qui tranche les deux : un echec
+    ANTERIEUR au dernier non-echec du meme nom est de l'histoire ; un echec
+    CONTEMPORAIN ou posterieur est un jumeau vivant, on le garde.
+
+    Mesure du 2026-08-22 sur #11916 : `Require genre diversity vs prev:` porte un
+    FAILURE du 20/08 et un SUCCESS du 22/08 sur le meme head. Sans ce filtre le
+    garde renvoyait la lane reparer un check deja vert.
+    """
+    newest_ok: dict[str, str] = {}
+    for ctx in contexts:
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        if verdict in CHECK_FAILED:
+            continue
+        name = ctx.get("name") or ctx.get("context") or "?"
+        stamp = _ctx_stamp(ctx)
+        if stamp > newest_ok.get(name, ""):
+            newest_ok[name] = stamp
+    kept = []
+    for ctx in contexts:
+        verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
+        name = ctx.get("name") or ctx.get("context") or "?"
+        if verdict in CHECK_FAILED and _ctx_stamp(ctx) < newest_ok.get(name, ""):
+            continue  # rouge anterieur au dernier vert du meme nom : perime
+        kept.append(ctx)
+    return kept
+
+
 def blocking_causes(state: dict) -> list[str]:
     """Causes qui empechent VRAIMENT le merge, formulees en geste de reparation.
 
@@ -421,14 +459,16 @@ def blocking_causes(state: dict) -> list[str]:
     advisory: list[str] = []
     commits = state.get("commits", {}).get("nodes") or []
     rollup = (commits[0]["commit"].get("statusCheckRollup") if commits else None) or {}
-    for ctx in (rollup.get("contexts", {}) or {}).get("nodes") or []:
+    for ctx in drop_superseded((rollup.get("contexts", {}) or {}).get("nodes") or []):
         name = ctx.get("name") or ctx.get("context") or "?"
         verdict = (ctx.get("conclusion") or ctx.get("state") or "").upper()
         if verdict not in CHECK_FAILED:
             continue
         if ctx.get("isRequired"):
-            causes.append(f"check requis en echec : {name}")
-        else:
+            cause = f"check requis en echec : {name}"
+            if cause not in causes:
+                causes.append(cause)
+        elif name not in advisory:
             advisory.append(name)
     if state.get("mergeable") == "CONFLICTING":
         causes.append("conflits avec main -> rebaser")

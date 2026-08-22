@@ -144,7 +144,9 @@ def _state(*, checks=(), mergeable="MERGEABLE", reviews=()):
             for s, a in reviews
         ]},
         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
-            {"name": n, "conclusion": c, "isRequired": r} for n, c, r in checks
+            {"name": t[0], "conclusion": t[1], "isRequired": t[2],
+             "completedAt": t[3] if len(t) > 3 else "2026-08-20T00:00:00Z"}
+            for t in checks
         ]}}}}]},
     }
 
@@ -268,3 +270,40 @@ def test_network_failure_does_not_block_the_draw(monkeypatch):
     out = pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert out["red"] == [] and out["unavailable"] == "RuntimeError"
     assert out["unattributed_blocked"] == []
+
+
+# --- echecs perimes : le discriminant est temporel, jamais nominal -----------
+
+
+def test_failure_older_than_a_green_of_the_same_name_is_history():
+    """Mesure #11916 : FAILURE du 20/08 + SUCCESS du 22/08, meme nom, meme head.
+
+    Le rouge est de l'histoire -- renvoyer la lane le reparer l'enverrait
+    reparer un check deja vert.
+    """
+    state = _state(checks=[
+        ("Require genre diversity vs prev:", "FAILURE", True, "2026-08-20T09:54:52Z"),
+        ("Require genre diversity vs prev:", "SUCCESS", True, "2026-08-22T09:36:40Z"),
+    ])
+    assert pig.blocking_causes(state) == []
+
+
+def test_failure_contemporaneous_with_a_green_twin_is_kept():
+    """Symetrique (#11894) : deux workflows jumeaux emettent le meme nom au meme
+
+    moment. Le rouge est vivant ; le filtrer par nom seul le masquerait.
+    """
+    state = _state(checks=[
+        ("Fast lane (ombre)", "SUCCESS", True, "2026-08-22T10:00:00Z"),
+        ("Fast lane (ombre)", "FAILURE", True, "2026-08-22T10:00:07Z"),
+    ])
+    assert pig.blocking_causes(state) == ["check requis en echec : Fast lane (ombre)"]
+
+
+def test_repeated_identical_failures_are_named_once():
+    """#12107 portait deux FAILURE du meme nom : la cause se lit une fois."""
+    state = _state(checks=[
+        ("PR gate", "FAILURE", True, "2026-08-22T13:32:17Z"),
+        ("PR gate", "FAILURE", True, "2026-08-22T13:40:33Z"),
+    ])
+    assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
