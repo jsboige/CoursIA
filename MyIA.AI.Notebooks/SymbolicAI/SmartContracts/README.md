@@ -35,8 +35,8 @@ A l'issue de cette série, vous serez capable de :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 27 (SC-0 à SC-26) |
-| Durée totale | ~22 heures |
+| Notebooks | 28 (SC-0 à SC-27) |
+| Durée totale | ~23 heures |
 | Langage | Python (kernel Jupyter) |
 | Kernels | Python 3 |
 | Outils | Foundry (forge/cast/anvil), web3.py, py-solcx |
@@ -146,6 +146,9 @@ Fondations (SC-0-2) + Solidity basique (SC-3-6) + Testing avancé (SC-12-14) + V
       │
       ▼
   SC-26 (Projet capstone)
+      │
+      ▼
+  SC-27 (Épilogue mesuré : la dette d'irréversibilité)
 ```
 
 **Objectifs par partie** :
@@ -170,7 +173,7 @@ SmartContracts/
 ├── 03-Foundry-Testing/         # Tests et sécurité (3 notebooks)
 ├── 04-Privacy-Cryptography/    # ZKP, HE, Vote E2E (3 notebooks)
 ├── 05-Alternative-Chains/      # Vyper, XRP, Bitcoin, Move, Solana (5 notebooks)
-├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet (4 notebooks)
+├── 06-Real-World/              # Cross-chain, deploy testnet/mainnet + épilogue mesuré (5 notebooks)
 ├── foundry-lib/                # Workspace Foundry + sous-modules (forge-std, OpenZeppelin, ERC-4337)
 ├── erc20_lean/                 # Projet Lake Lean 4 (invariant de conservation ERC-20, 0 sorry, cf #4047) — 1er lake Lean de la série
 ├── mon-premier-projet/         # Projet Foundry de démarrage (squelette scaffold)
@@ -246,7 +249,7 @@ SmartContracts/
 
 **Objectifs** : Vyper, XRP, Bitcoin scripting, Move, Solana
 
-### Partie 6 : Real-World (~3h45)
+### Partie 6 : Real-World (~4h30)
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -254,6 +257,7 @@ SmartContracts/
 | 24 | [SC-24-Testnet-Deploy](06-Real-World/SC-24-Testnet-Deploy.ipynb) | 50 min | Deploy Sepolia + XRP testnet |
 | 25 | [SC-25-Mainnet-Deploy](06-Real-World/SC-25-Mainnet-Deploy.ipynb) | 40 min | Deploy L2 (Base/Polygon) |
 | 26 | [SC-26-Final-Project](06-Real-World/SC-26-Final-Project.ipynb) | 90 min | Projet capstone complet |
+| 27 | [SC-27-Dette-Irreversibilite](06-Real-World/SC-27-Dette-Irreversibilite.ipynb) | 45 min | Épilogue : boucle gouvernance mesurée (gas, retour arrière, table de dette) |
 
 **Objectifs** : Déploiement réel, testnets, mainnet, projet intégré
 
@@ -572,7 +576,7 @@ En parcourant cette série des **cypherpunks aux blockchains modernes**, vous av
 - **Construire en Solidity** (Phases 1-3) : types, héritage, standards ERC, primitives DeFi, gouvernance — un langage et ses patterns idiomatiques, déployés réellement sur Anvil à chaque étape.
 - **Sécuriser avant de déployer** (Phase 3) : tests unitaires, fuzzing, invariants, et surtout la **vérification formelle** (SC-14) — le pont entre l'ingénierie blockchain et la preuve mathématique de correction.
 - **Protéger la vie privée** (Phase 4) : ZKP, chiffrement homomorphique, vote E2E vérifiable — montrer que transparence et confidentialité ne sont pas incompatibles sur une chaîne publique.
-- **Élargir le regard** (Phases 5-6) : cinq paradigmes non-EVM (Vyper, XRP, Bitcoin, Move, Solana) puis le passage au monde réel (cross-chain, testnet, mainnet), couronné par le **projet capstone SC-26**.
+- **Élargir le regard** (Phases 5-6) : cinq paradigmes non-EVM (Vyper, XRP, Bitcoin, Move, Solana) puis le passage au monde réel (cross-chain, testnet, mainnet), couronné par le **projet capstone SC-26** et refermé par l'**épilogue mesuré SC-27** — la dette d'irréversibilité de la gouvernance, quantifiée sur anvil.
 
 ### Prochaines étapes
 
@@ -609,10 +613,10 @@ maturity: PRODUCTION=27
 | **03-Foundry-Testing** | 3 | PRODUCTION=3, BETA=0 | Fuzzing Foundry (invariant testing, Echidna), tests intégration cross-contrats, **SC-14 vérification formelle (Certora + SMTChecker)** |
 | **04-Privacy-Cryptography** | 3 | PRODUCTION=3, BETA=0 | Zero-Knowledge Proofs (zk-SNARKs Groth16, Plonk, Halo2), chiffrement homomorphe (Paillier, BFV/BGV), vote E2E vérifiable (ElectionGuard, MACI) |
 | **05-Alternative-Chains** | 5 | PRODUCTION=5, BETA=0 | Vyper (alternative EVM), XRP Ledger (modèle UTXO différent), Bitcoin Script (limites intentionnelles), Move (Aptos/Sui resource-oriented), Solana (BPF parallèle) |
-| **06-Real-World** | 4 | PRODUCTION=4, BETA=0 | Cross-chain bridges (atomic swap, IBC, LayerZero), déploiement testnet/mainnet (Goerli/Sepolia), **SC-26 Final Project capstone** |
-| **Total** | **27** | **PRODUCTION=27** | Python 3.9+ (web3.py), Solidity ^0.8.x, Foundry stable (forge/anvil/cast), kernel Python 3 (exécution) |
+| **06-Real-World** | 5 | PRODUCTION=5, BETA=0 | Cross-chain bridges (atomic swap, IBC, LayerZero), déploiement testnet/mainnet (Goerli/Sepolia), **SC-26 Final Project capstone**, **SC-27 dette d'irréversibilité mesurée** |
+| **Total** | **28** | **PRODUCTION=28** | Python 3.9+ (web3.py), Solidity ^0.8.x, Foundry stable (forge/anvil/cast), kernel Python 3 (exécution) |
 
-**Note explicite maturité 100% PRODUCTION** : la série SmartContracts est l'une des séries les plus matures du dépôt. Les 27 notebooks sont validés pour exécution locale (Foundry toolchain installée, Anvil local sur port 8545) et déploiement testnet (Goerli/Sepolia via Infura/Alchemy). Le seul prérequis non-Python est Foundry (`curl -L https://foundry.paradigm.xyz | bash` puis `foundryup`) qui installe `forge`/`anvil`/`cast`/`chisel` — toolchain SOTA-OK pour le développement Solidity professionnel.
+**Note explicite maturité 100% PRODUCTION** : la série SmartContracts est l'une des séries les plus matures du dépôt. Les 28 notebooks sont validés pour exécution locale (Foundry toolchain installée, Anvil local sur port 8545) et déploiement testnet (Goerli/Sepolia via Infura/Alchemy). Le seul prérequis non-Python est Foundry (`curl -L https://foundry.paradigm.xyz | bash` puis `foundryup`) qui installe `forge`/`anvil`/`cast`/`chisel` — toolchain SOTA-OK pour le développement Solidity professionnel.
 
 **Paragraphe conformité C.1** : stubs `student/` (patterns `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) dans tous les notebooks Solidity. Les fonctions Solidity elles-mêmes ne suivent pas C.1 (elles sont des contrats déployés, pas des stubs Python), mais les **cellules Python** (déploiement web3.py, simulation Anvil, tests Foundry en Python) respectent C.1. Dépendances : `web3>=6.0`, `py-solc-x>=1.12`, `eth-account>=0.10`, `eth-abi>=4.0`, `pytest>=7.0`, Foundry stable externe.
 
