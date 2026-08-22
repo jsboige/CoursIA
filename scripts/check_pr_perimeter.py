@@ -434,6 +434,39 @@ NAMED_FILE = re.compile(
 # hit / 1 fichier") counts what the detector FOUND, not what the PR modifies
 # (#11966 l.42).
 HIT_ANTECEDENT = re.compile(r"\b\d+\s*hits?\b", re.IGNORECASE)
+# Forme 4b, measurement antecedent: a "lake 70 fichiers" / "corpus 12 fichiers"
+# / "count_code_sorry.py ... 70 fichiers" / "scan ... N fichiers" shape --
+# the count is the OUTPUT of an EXTERNAL measurement tool, not the PR
+# perimeter (#12184, founder case #12181 l.26 "lake de 70 modules, 1 sorry
+# reel distinct"). Same family as HIT_ANTECEDENT / LOCATIVE_PREP: bad
+# surface, not bad count -- the body reports what the tool measured on some
+# corpus (a Lean lake, a registry, a scan target), never what the diff
+# touches.
+#
+# Closed-list antecedent vocabulary: external measurement tools named in the
+# corpus (lake, corpus, registry, count_code_sorry.py, scan, mesure,
+# mesures, count_code_sorry, check_*). Extension is gated by the FN-control
+# of #11985: a new vocabulary term needs to be measured against #11956 /
+# #12065 (real perimeter assertions that must remain blocking). A bare
+# antecedent is intentionally WEAK: it must sit within a small window before
+# the count AND the count must remain excluded by the FN-safety guards in
+# _count_is_incidental (no scope word, no diffstat neighborhood). The
+# founder case is the asphalt.
+#
+# The pattern matches the antecedent ALONE (no count baked in); the count
+# exemption is per-match and uses line[:m.end()] to allow the antecedent to
+# sit anywhere in the run-up to the count (the per-match exemption already
+# anchors the count at m.start/end).
+MEASUREMENT_ANTECEDENT = re.compile(
+    r"\b(?:lake\s+(?:de\s+|of\s+)?|"
+    r"corpus(?:\s+(?:de|of))?|"
+    r"count_code_sorry(?:\.py)?|"
+    r"scan(?:\s+(?:sur|of|on))?|"
+    r"mesures?(?:\s+(?:sur|of|on))?|"
+    r"registry|registre(?:\s+(?:de|of))?|"
+    r"check_(?:unaddressed_nits|pr_perimeter|perimeter))\b",
+    re.IGNORECASE,
+)
 # Forme 5, compte-antecedent parenthetique: "<N> <unites> (<M> fichiers)" --
 # le compte entre parentheses qualifie la PROVENANCE du nombre qui precede
 # ("32 prescriptions avant (2 fichiers) -> 32 apres"), jamais le perimetre de
@@ -504,6 +537,8 @@ def _count_is_exempt(line: str, m: re.Match) -> bool:
     if NEGATED_DIFF_TAIL.match(after):
         return True
     if HIT_ANTECEDENT.search(line[: m.start()]):
+        return True
+    if MEASUREMENT_ANTECEDENT.search(line[: m.end()]):
         return True
     if REFERENCE_VERB_TAIL.match(after):
         return True
