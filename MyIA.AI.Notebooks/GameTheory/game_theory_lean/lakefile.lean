@@ -86,3 +86,13 @@ lean_lib RepeatedGames where
   -- Includes: stage game (Prisoner's Dilemma), discounting, grim trigger
   -- Theorem phare: grim_trigger_sustains_iff (one-shot deviation principle)
   globs := #[`RepeatedGames.*, `RepeatedGames_en]
+
+-- c.5383117259 (po-2025) : ajout `lean_lib Swaps` — grain #12222
+-- (GameTheory-3c, chemins de swaps). Vérificateur certifié des chemins
+-- de générateurs adjacents : certificat d'arrivée (`rfl`), bornes
+-- inférieures par énumération décidable, distance exacte Dilemme-Chicken.
+-- VOLONTAIREMENT sans Mathlib (calcul fini sur listes littérales) —
+-- `lake build Swaps` ne déclenche aucune compilation de dépendance.
+@[default_target]
+lean_lib Swaps where
+  globs := #[`Swaps.*]

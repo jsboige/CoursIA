@@ -32,8 +32,16 @@ def comment(body, created_at, author="jsboige", url=None):
     }
 
 
-def payload(*comments, number=9764, title="t"):
-    return {"number": number, "title": title, "comments": list(comments)}
+def payload(*comments, number=9764, title="t", labels=None):
+    # #12156 -- `labels` defaults to None (absent key) so pre-existing tests
+    # that don't care about the umbrella signal stay byte-equivalent: the
+    # helper in `_is_umbrella_issue` falls back to `payload.get("labels") or []`
+    # and degrades to the title-route. Tests that need the umbrella signal
+    # pass `labels=[{"name": "EPIC"}]` explicitly.
+    d = {"number": number, "title": title, "comments": list(comments)}
+    if labels is not None:
+        d["labels"] = labels
+    return d
 
 
 # --- extract_lane (grain_tag, now reused by the guard) -----------------------
@@ -3039,3 +3047,323 @@ def test_fence_mask_preserves_offsets_for_verbatim_line_extraction():
     events = clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z"))
     assert len(events) == 1
     assert events[0].paths == ["a/**"], "la clause paths est relue sur la ligne originale"
+
+
+# --- #12072: clause de scope HORS ligne de marqueur -- signal structure -------
+#
+# Defaut mesure sur #10382 (2026-08-20T19:15:42Z, po-2023) : une clause
+# `Paths: ...` ecrite sur SA PROPRE ligne (paragraphe separe sous le marqueur)
+# est invisible pour `_PATHS_CLAUSE_RE` (ancre a la ligne du marqueur, `[^\n]*?`
+# interdit le saut de ligne) -> le claim reduit a EPIC-WIDE en silence, alors
+# que la lane declarante croyait avoir scope. #12072 expose le signal
+# `scope_declared_off_marker` (structure, JSON + WARN) SANS re-classifier le
+# claim (relire une ligne de prose comme la clause machine rendrait le scope
+# dependant d'une heuristique).
+
+
+def test_off_marker_scope_signal_on_separate_line():
+    # #12072 acceptance (3) -- le controle par faux negatif : la clause sur
+    # une ligne SEPAREE doit produire le signal. Reproduction exacte du corps
+    # de la mesure (ligne `Paths: ...` sous le marqueur, #10382).
+    body = (
+        "[CLAIMED] tranche search-7-mcts-and-beyond -- "
+        "lane myia-po-2023:CoursIA\n"
+        "\n"
+        "Paths: `scripts/notebook_tools/twin_pairs.d/"
+        "search-7-mcts-and-beyond.yaml`. Grain: MED/tooling. "
+        "Scope disjoint des PRs en vol.\n"
+    )
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T19:15:42Z"))
+    assert len(evs) == 1
+    ev = evs[0]
+    assert ev.paths is None, "la clause hors-marqueur ne doit PAS etre lue comme paths"
+    assert ev.scope_declared_off_marker == [
+        "Paths: `scripts/notebook_tools/twin_pairs.d/"
+        "search-7-mcts-and-beyond.yaml`. Grain: MED/tooling. "
+        "Scope disjoint des PRs en vol.",
+    ], "la ligne fautive est exposee verbatim"
+
+
+def test_off_marker_scope_signal_form_variants():
+    # #12072 breadth -- les 4 formes observees de la declaration hors-ligne :
+    # `Paths:` capitalise, `paths:` minuscule, `Path :` avec espace avant le
+    # deux-points, et puce/gras (tolerance de decoration identique aux regex
+    # de marqueur, #10906). Toutes produisent le signal.
+    forms = [
+        "Paths: scripts/check_lane_claim.py\n",
+        "paths: scripts/check_lane_claim.py\n",
+        "Path : scripts/check_lane_claim.py\n",
+        "- **Paths :** scripts/check_lane_claim.py\n",
+    ]
+    for extra in forms:
+        body = "[CLAIMED] lane myia-po-2024:CoursIA\n\n" + extra
+        evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+        assert len(evs) == 1, extra
+        assert evs[0].paths is None, extra
+        assert len(evs[0].scope_declared_off_marker) == 1, extra
+
+
+def test_off_marker_scope_signal_absent_without_declaration():
+    # Controle positif : un epic-wide INTENTIONNEL (aucune clause hors-ligne)
+    # ne produit AUCUN signal. Le lint ne doit pas bruiter un verrou plein
+    # scope delibere.
+    body = "[CLAIMED] lane myia-po-2024:CoursIA\n"
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].paths is None
+    assert evs[0].scope_declared_off_marker == []
+
+
+def test_off_marker_scope_signal_absent_when_clause_on_marker_line():
+    # Controle croise : la clause SUR la ligne du marqueur est lue par le
+    # reducer -> `paths` non-None -> aucun signal off-marker (rien de perdu,
+    # rien a signaler). Le signal ne se leve que pour une declaration NON
+    # capturee.
+    body = "[CLAIMED] lane myia-po-2024:CoursIA -- paths: scripts/**\n"
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].paths == ["scripts/**"]
+    assert evs[0].scope_declared_off_marker == []
+
+
+def test_off_marker_scope_signal_ignores_fenced_citation():
+    # Une `Paths:` citee dans un bloc fence est de la citation (meme logique
+    # que `_MARKER_RE` vs `_mask_fenced_blocks`) : le masque remplace le
+    # contenu du fence, donc aucune declaration off-marker n'est detectee.
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA\n"
+        "\n"
+        "```\n"
+        "Paths: scripts/check_lane_claim.py\n"
+        "```\n"
+    )
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].paths is None
+    assert evs[0].scope_declared_off_marker == [], (
+        "citer un scope dans un fence n'est pas en declarer un"
+    )
+
+
+def test_off_marker_scope_signal_mid_sentence_is_prose():
+    # Une mention de `paths:` EN PHRASE (pas en debut de ligne) n'est pas une
+    # declaration de scope -- meme logique d'ancrage que `_INFERRED_PATH_PATTERNS`
+    # (#11755 : la forme "discussion" ne nourrit pas l'inference).
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA\n"
+        "\n"
+        "on discute des paths: a, b en prose, ce n'est pas un scope\n"
+    )
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].scope_declared_off_marker == []
+
+
+def test_lint_warns_off_marker_scope_on_epic_wide(capsys):
+    # #12072 acceptance (2) -- la sortie humaine : sur un claim epic-wide
+    # portant le signal, le lint imprime explicitement que le commentaire
+    # declare un scope NON applique, avec la ligne fautive et la syntaxe
+    # attendue. Le claim n'est PAS re-scope (verdict inchange).
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+        "\n"
+        "Paths: MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n"
+    )
+    events = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    clc._lint_claim_events(events, issue_number=12072)
+    captured = capsys.readouterr()
+    assert "scope declare hors ligne de marqueur" in captured.err, (
+        "le WARN doit nommer explicitement le defaut (#12072)"
+    )
+    assert "04-7-TTS-Voice-Benchmark.ipynb" in captured.err, (
+        "la ligne fautive doit etre exposee verbatim"
+    )
+    assert "paths: <g1>, <g2>" in captured.err, (
+        "la syntaxe attendue (clause SUR la ligne du marqueur) doit etre rappelee"
+    )
+
+
+def test_lint_silent_on_intentional_epic_wide(capsys):
+    # Controle : un epic-wide INTENTIONNEL (pas de clause hors-ligne) ne
+    # produit que l'INFO legacy #11755 -- JAMAIS le WARN #12072. Le lint ne
+    # penalise pas un verrou plein scope delibere.
+    body = "[CLAIMED] lane myia-po-2024:CoursIA-2\n"
+    events = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    clc._lint_claim_events(events, issue_number=12072)
+    captured = capsys.readouterr()
+    assert "INFO: marqueur CLAIMED epic-wide" in captured.err, (
+        "l'INFO legacy #11755 reste pour retro-compat"
+    )
+    assert "hors ligne de marqueur" not in captured.err, (
+        "aucun WARN #12072 sans declaration hors-ligne"
+    )
+
+
+def test_run_check_summary_exposes_scope_declared_off_marker(capsys):
+    # #12072 acceptance (1) -- le champ structure monte dans le JSON de sortie
+    # sous `active_claims.<lane>.scope_declared_off_marker`, a cote des autres
+    # temoins (unparseable_scope, empty_scope). Vide sur un claim sans signal.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+            "\n"
+            "Paths: MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n",
+            "2026-08-20T12:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 1  # epic-wide (paths None) -> bloque
+    out = capsys.readouterr().out
+    assert '"scope_declared_off_marker"' in out
+    assert "04-7-TTS-Voice-Benchmark.ipynb" in out
+    # Le claim n'est PAS re-scope : `paths` reste null dans le JSON.
+    assert '"paths": null' in out
+
+
+def test_run_check_summary_off_marker_field_empty_without_signal(capsys):
+    # Controle : un claim epic-wide sans declaration hors-ligne expose le
+    # champ avec une liste vide (consistance du schema JSON, meme logique que
+    # `unparseable_scope`/`empty_scope` toujours presents).
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA")
+    out = capsys.readouterr().out
+    assert '"scope_declared_off_marker": []' in out
+
+
+# --- #12156 -- umbrella / epic-wide-on-umbrella summary fields ---------------
+
+
+def test_run_check_summary_is_umbrella_true_on_EPIC_label(capsys):
+    # #12156 acceptance (1) -- un umbrella labellise `EPIC` expose
+    # `is_umbrella: true` au niveau top-level du summary, miroir du picker
+    # qui lit la meme etiquette (cf `scripts/pick_idle_grain.py:130`).
+    # Note : un umbrella + claim epic-wide sans `paths:` est
+    # simultanement `is_umbrella: true` ET `epic_wide_on_umbrella: true`
+    # (la pathologie que le body denomme). Les deux flags sont
+    # orthogonaux -- le premier classifie, le second diagnostique.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    # Le test suivant (`test_run_check_summary_epic_wide_on_umbrella_true_*`)
+    # est l'acceptance explicite de la pathologie sur le meme pattern.
+    # Ici on verifie juste que le classifieur fonctionne ; le controle
+    # pathologie-false est dans `..._false_when_scoped`.
+    assert '"epic_wide_on_umbrella":' in out
+
+
+def test_run_check_summary_is_umbrella_true_on_title_prefix(capsys):
+    # #12156 acceptance (2) -- fallback title-route : un titre commencant par
+    # "[EPIC" est classifie umbrella meme sans label explicite (le picker
+    # accepte la meme forme).
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (pre-label inventory)",
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+
+
+def test_run_check_summary_is_umbrella_false_on_unit_issue(capsys):
+    # Controle : une issue unitaire (label `documentation`, titre sans
+    # `EPIC`) expose `is_umbrella: false` -- la classification ne contamine
+    # pas le cas general.
+    p = payload(
+        number=9890,
+        title="Emojis dans comparatif-owui-vs-ai-engine.md",
+        labels=[{"name": "documentation"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": false' in out
+    assert '"epic_wide_on_umbrella": false' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_true_when_blocking_epic_wide(capsys):
+    # #12156 acceptance (3) -- la pathologie que le body denomme : un
+    # umbrella dont l'unique claim bloquant est epic-wide (pas de clause
+    # `paths:`) expose `epic_wide_on_umbrella: true`. C'est exactement le
+    # cas mesure sur #1206 par l'auteur de l'issue.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2026:CoursIA\n",
+            "2026-08-11T12:29:34Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (umbrella pathologique)",
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": true' in out
+    assert '"blocking_lanes": [\n    "myia-po-2026:CoursIA"' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_when_scoped(capsys):
+    # #12156 acceptance (4) -- le meme umbrella, mais avec un claim scope
+    # (`paths: ...`) qui matche un fichier REEL du repo expose
+    # `epic_wide_on_umbrella: false`. Le mecanisme discerne bien la
+    # pathologie du cas nominal -- un glob mort (vide) serait au
+    # contraire releve par le fail-CLOSED #10958 et remonte en
+    # effectively-epic-wide, ce qui est un COMPORTEMENT VOUULU (un glob
+    # mort = broken claim). On utilise donc un glob qui pointe vers un
+    # fichier Lean qui existe sur `main` (CGT) pour valider la voie
+    # saine.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/*.lean\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    # Sanity : le scope est bien enregistre, pas lift en epic-wide.
+    assert '"empty_scope": []' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_on_clear_umbrella(capsys):
+    # Controle : un umbrella sans aucun claim actif expose
+    # `epic_wide_on_umbrella: false` (la pathologie presuppose un blocage).
+    p = payload(
+        number=12207,
+        labels=[{"name": "EPIC"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    assert '"blocked": false' in out
+
+
+def test_is_umbrella_issue_handles_missing_labels_key():
+    # Le helper degrade proprement sur un payload qui n'a pas la cle
+    # `labels` (sous-ensemble du from-json historique) -- pas d'exception,
+    # retour False (= defaut pre-#12156).
+    assert clc._is_umbrella_issue({"title": "[EPIC] anything"}) is True
+    assert clc._is_umbrella_issue({"title": "anything"}) is False
+    assert clc._is_umbrella_issue({}) is False
+    # Label invalide (None / dict sans name) : pas de crash.
+    assert clc._is_umbrella_issue({"labels": [None, {}, {"name": "x"}]}) is False

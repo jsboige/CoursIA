@@ -24,8 +24,9 @@ les cellules saines du corpus, pas une invention de ce script.
 
 **Invariant de round-trip** : le script n'INSERE que des backticks. Aucun
 caractere n'est supprime ni reordonne ; le contenu prive de backticks est
-byte-identique avant et apres. ``--check`` verifie cet invariant sur chaque
-cellule touchee et refuse d'ecrire s'il est viole.
+byte-identique avant et apres. Cet invariant est verifie systematiquement sur
+chaque cellule touchee -- il n'y a pas de drapeau a passer -- et le script
+refuse d'ecrire s'il est viole.
 
 Ce que le script NE fait PAS
 ---------------------------

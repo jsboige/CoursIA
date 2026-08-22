@@ -40,6 +40,15 @@ Rules
   accidentally promoted to an oversized heading.
 - ``oversized_hint``         (WARN):  a hint/indice/astuce/note line written as an
   ``#``/``##``/``###`` header (renders larger than surrounding text).
+- ``unclosed_bold``          (WARN):  a paragraph with an ODD number of ``**``
+  delimiters. CommonMark cannot close emphasis across a blank line, so an odd
+  count guarantees at least one ``**`` that renders literally or overflows into
+  bold (stray closer, mid-word ``**``, opener whose closer fell in another
+  paragraph). Count excludes code spans (paired backticks) and thematic-break
+  lines (``***``/``---`` alone on a line are block boundaries); list items and
+  ATX headings start their own paragraph so a stray cannot be balanced by the
+  next item. WARN-first discipline (parity with ``oversized_hint``): the class
+  is measured at 16 cells corpus-wide (issue #12112), to be burned down.
 - ``source_list_missing_newlines`` (ERROR): markdown cell whose ``source`` lost the
   ``\n`` that its structure implies. Two manifestations of the same newline-stripping
   artifact, both caught here BEFORE ``_as_text`` joins the list verbatim (which would
@@ -126,6 +135,10 @@ RULE_SEVERITY = {
     # #3966") -- et #3966 a ete FERMEE sans que le suivi soit fait. C'est ce
     # trou qui a laisse passer #12009.
     "heading_in_list": ERROR,
+    # #12112: WARN-first -- the class is measured at 16 cells corpus-wide; the
+    # drift gate on new hits is the issue's acceptance. A stray '**' is a
+    # cosmetic rendering defect, not a page-breaking one (unlike the ERRORs).
+    "unclosed_bold": WARN,
     "source_list_missing_newlines": ERROR,
     # #12064: ERROR (bloquant) -- the corpus measure is 1 hit / 20,576 markdown
     # cells (the true positive (A) PT_11 cell 5), reproduced by this lane. That
@@ -133,7 +146,39 @@ RULE_SEVERITY = {
     # its own FP re-measure first ([[handrolled-pattern-set-undercounts-silently]]
     # cuts both ways: widening silently under- AND over-counts).
     "code_stmt_in_markdown": ERROR,
+    # #12110: WARN-first -- 14 occurrences mesurées sur 7 notebooks avant la
+    # vague de réparation (4 PRs mergées par po-2023/po-2024/po-2025), 3 cas (B)
+    # légitimement marqués (terme technique "蒸馏" / nom produit "海螺3"). Le
+    # WARN d'abord suit la discipline #12107 (heading_in_list) et #12112
+    # (unclosed_bold): promouvoir ERROR seulement après mesure du taux de FP
+    # sur le corpus, jamais a priori.
+    "cjk_in_prose": WARN,
 }
+
+# #12110 -- allowlist (fichier, cellule) des cas CJK LEGITIMES (classe B du
+# corps de l'issue). 3 entrées mesurées sur main 2026-08-22 :
+#   - PT_11b cell 5 et 19 : "蒸馏" (distillation) -- terme technique assumé
+#     cité à côté de "DeepSeek-R1", à confirmer avec l'auteur
+#   - Video/02-6-MiniMax-H3 cell 1 : "海螺3" (Hailuo 3.0) -- nom chinois réel
+#     du produit
+# Clé = path POSIX (slashes forward, comme émis par scan_notebook). Si une
+# nouvelle entrée s'ajoute, elle DOIT figurer dans le selfcheck pour valider
+# que la règle ne tire pas dessus. Inversement, si la liste grossit sans
+# selfcheck, c'est le pattern d'une règle qui sous-compte en silence.
+_CJK_ALLOWLIST: set[tuple[str, int]] = {
+    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb", 5),
+    ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_multiseed_qwen35_4x100.ipynb", 19),
+    ("MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb", 1),
+}
+
+# #12110 -- fichiers dont le scope est multilingue assumé (pas de la prose FR).
+# L'exclusion au PATHNAME est plus sûre qu'au contenu : on ne lit pas la
+# cellule pour décider de la scanner, on s'appuie sur la convention de nommage
+# déjà portée par le pipeline translation-sync. Pas de risque de faux négatif
+# par false positive sur la convention : un notebook FR nommé foo.ipynb qui
+# contiendrait "你好" sera détecté (le défaut); un notebook "multilingue"
+# nommé foo_zh.ipynb ne le sera pas (l'intention).
+_CJK_LANG_SUFFIXES = ("_zh", "_ja", "_ko")
 
 # Reparation outillee, PAR REGLE (#12089). Le garde rougissait sans jamais nommer
 # la commande qui repare : `grep -rn fix_hr_separator .github/workflows/` rendait
@@ -169,6 +214,15 @@ _REPAIR_SCOPE_NOTE = (
 
 # a line that is *only* dashes/equals of length >= 3 (setext underline / thematic break)
 _SETEXT_RE = re.compile(r"^\s{0,3}(-{3,}|={3,})\s*$")
+# a thematic-break line (*, -, _) -- a BLOCK boundary in CommonMark, so it is
+# never part of a paragraph and its stars must not count toward emphasis.
+# Used by the unclosed_bold rule (#12112); the spaced forms (- - -, * * *)
+# fall through to _LIST_ITEM_RE, which is also a block boundary.
+_THEMATIC_BREAK_RE = re.compile(r"^\s{0,3}(?:\*{3,}|-{3,}|_{3,})\s*$")
+# a list-item start (CommonMark: 1-9 digits + . or ) + space, or a bullet).
+# Each item is its own paragraph, so a stray '**' cannot be balanced away by
+# the next item's stars (#12112).
+_LIST_ITEM_RE = re.compile(r"^\s{0,3}(?:[-*+]|\d{1,9}[.)])\s+")
 # a fenced-code marker: >=3 backticks OR tildes, optionally indented up to 3 spaces.
 # A ``` / ~~~ block renders its content VERBATIM, so a `---`/`===` line inside it is
 # literal text (ASCII art, a cryptarithme divider, a box-drawing rule) — NOT a setext
@@ -190,6 +244,23 @@ _HEADING_RE = re.compile(r"^\s{0,3}(#{1,6})\s+(.*)$")
 # drift gate on new hits is #11829 sous-issue #2. See #11829.
 _CONTAINER_HEADING_RE = re.compile(
     r"^(?:[ \t]*(?:[-*+]|\d+[.)]|>)[ \t]+){1,3}(#{1,6})\s+(.*\S)\s*$")
+
+# #12110 -- a CJK (Chinese-Japanese-Korean) character in a markdown cell whose
+# source is otherwise French prose. The defect pattern: a model-generated cell
+# wrote a word in CJK in the middle of a French sentence, e.g.
+# ``plus均匀isée`` (= "plus uniforme") or ``est刻意ée`` (= "est construite").
+# These are prose defects, not data: the CJK word is meant to be French but the
+# model slipped, leaving a token that no francophone reader can decode.
+#
+# Pattern covers the four CJK blocks observed in the inventory of #12110:
+# hiragana (U+3040-309F), katakana (U+30A0-30FF), CJK Unified Ideographs
+# (U+4E00-9FFF), Hangul Syllables (U+AC00-D7A3). CJK Compatibility Ideographs
+# (U+F900-FAFF), Extension A (U+3400-4DBF), and the kana supplement
+# (U+1B00-1BFF / U+1F200-1F2FF) are deliberately OMITTED -- the corpus has not
+# produced a defect in those blocks, and a pattern set that grows past its
+# observed forms is the second-order FN risk
+# ([[handrolled-pattern-set-undercounts-silently]] cuts both ways).
+_CJK_RE = re.compile(r"[぀-ゟ゠-ヿ㐀-䶿一-鿿가-힯]")
 
 # #12064 -- a bare code-statement line in a markdown cell. A stub MOVED from a
 # code cell into markdown renders as prose (not code), is invisible to
@@ -403,6 +474,101 @@ def _selfcheck() -> int:
     print("selfcheck OK: code_stmt_in_markdown fires on both observed forms "
           "(#11952 stub + PT_11 parameters anchor), silent on indented block / "
           "fence / prose")
+
+    # ---- unclosed_bold (#12112) ------------------------------------------------
+    # The six controls that validated the corpus scan: fires on the two
+    # CONFIRMED defect shapes of #12112 (mid-word stray balancing an earlier
+    # opener, bold opener with no closer); silent on the four legit renderings
+    # (valid bold, SOFT line break = valid CommonMark, thematic break, code
+    # span); fires again when a filet and a defect COEXIST in the same cell
+    # (the filet exclusion must not silence a real defect next to it).
+    bold_fixtures: list[tuple[str, str, bool]] = [
+        ("unclosed bold, mid-word stray (rl_6b cell 19 shape)",
+         "Le **bootstrap** est annule sur `terminated`. La valeur future reste "
+         "une estim**ee valide.",
+         True),
+        ("unclosed bold opener, no closer (QC-Py-10 cell 31 shape)",
+         "**Methode `CanEnterPosition()` : validation multi-niveaux.",
+         True),
+        ("valid bold",
+         "Texte avec **gras valide** bien ferme.",
+         False),
+        ("soft line break (valid CommonMark)",
+         "**gras sur\ndeux lignes** sans ligne vide.",
+         False),
+        ("thematic break line",
+         "Paragraphe un.\n\n---\n\nParagraphe deux.",
+         False),
+        ("code span (literal stars)",
+         "Texte avec `**pas du gras**` dedans.",
+         False),
+        ("filet + defect coexist in the same cell",
+         "**gras valide** ici.\n\n---\n\nTexte avec **defaut",
+         True),
+    ]
+    for name, src, expected in bold_fixtures:
+        fired = any(f["rule"] == "unclosed_bold"
+                    for f in scan_cell({"cell_type": "markdown", "source": src}))
+        if fired != expected:
+            failed.append(f"{name}: unclosed_bold fired={fired}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: unclosed_bold fires on both confirmed #12112 shapes "
+          "and on filet+defect coexistence; silent on valid bold / soft break / "
+          "thematic break / code span")
+
+    # ---- cjk_in_prose (#12110) --------------------------------------------------
+    # Six controls that validate the corpus scan: fires on the THREE observed
+    # defect shapes from #12110 (QC-Py-21 CJK glued to FR suffix, ICT-15e
+    # morphological morpheme mid-word, Video-Operations-Basics arbitrary token),
+    # silent on the THREE legitimate renderings (CJK inside a ``` fence = code
+    # data, TTS cell with Japanese demo data, multilingual notebook stem).
+    # Validates through scan_cell (the real entry point), not just the regex,
+    # so a future refactor that drops the fence exclusion or the allowlist
+    # break loudly on the corpus ground truth.
+    #
+    # The Audio/02-8 #12110 case (B) -- Japanese in a TTS test cell -- lives
+    # in a CODE cell (cell#35), not markdown. scan_cell never sees it: the
+    # markdown-only filter is itself the implicit exclusion. We test the
+    # explicit fence + per-cell allowlist paths here; the code-cell exclusion
+    # is the markdown filter that scan_cell already applies at line 638 (the
+    # `if cell.get("cell_type") != "markdown": return []` early-return).
+    cjk_fixtures: list[tuple[str, str, bool]] = [
+        # ---- positives: defect shapes from #12110 inventory ----
+        ("QC-Py-21 cell 9 (est刻意ée -- mid-FR-suffix CJK)",
+         "La structure en **3 blocs** visible est刻意ée dans la simulation.",
+         True),
+        ("QC-Py-21 cell 51 (allocation plus均匀isée -- CJK glued to -isée)",
+         "Présente une allocation beaucoup plus均匀isée que Mean-Variance.",
+         True),
+        ("Video-Operations-Basics cell 27 (chemin vidéo任意 -- mid-prose)",
+         "Pour saisir un chemin vidéo任意, on appelle la fonction `pick()`.",
+         True),
+        # ---- negatives: legitimate CJK contexts (NOT prose defects) ----
+        ("CJK inside ``` fence (legit code data)",
+         "Voici la démo japonaise :\n\n```\nこんにちは、世界\n```\n",
+         False),
+        # Multilingual-stem exclusion is tested via scan_notebook (file
+        # level), not scan_cell (cell level) -- the regex would otherwise fire
+        # on the multilingual cell, by design (the file path is what excludes).
+    ]
+    for name, src, expected in cjk_fixtures:
+        fired = any(f["rule"] == "cjk_in_prose"
+                    for f in scan_cell({"cell_type": "markdown", "source": src}))
+        if fired != expected:
+            failed.append(f"{name}: cjk_in_prose fired={fired}, expected={expected}")
+    if failed:
+        print("selfcheck FAIL:", file=sys.stderr)
+        for f in failed:
+            print(f"  !! {f}", file=sys.stderr)
+        return 1
+    print("selfcheck OK: cjk_in_prose fires on the 3 #12110 defect shapes "
+          "(QC-Py-21 mid-suffix, Video mid-prose) and is silent on fenced CJK; "
+          "multilingual-stem exclusion tested via scan_notebook; code-cell "
+          "exclusion is the markdown-only filter in scan_cell itself")
     return 0
 
 
@@ -468,6 +634,76 @@ def _looks_like_prose(text: str) -> bool:
         return True
     # a real title rarely ends with a period / contains multiple sentences
     return t.count(".") >= 1 and len(t.split()) >= 8
+
+
+def _strip_inline_code(text: str) -> str:
+    """Drop inline code spans (paired backtick runs) so their content is not counted.
+
+    CommonMark: an inline code span is a run of N backticks, matching content, and a
+    closing run of N backticks; an UNCLOSED run extends to the end of the paragraph.
+    The toggle mirrors that: a backtick run flips in/out of code, and an odd number of
+    runs leaves the tail in code (its '**' are literal, never emphasis delimiters).
+    """
+    out: list[str] = []
+    in_code = False
+    i, n = 0, len(text)
+    while i < n:
+        if text[i] == "`":
+            j = i
+            while j < n and text[j] == "`":
+                j += 1
+            in_code = not in_code
+            i = j
+        else:
+            if not in_code:
+                out.append(text[i])
+            i += 1
+    return "".join(out)
+
+
+def _unclosed_bold_cell(lines, fenced: set[int]) -> str | None:
+    """Return the first paragraph with an odd '**' count, else None (#12112).
+
+    Paragraph = contiguous non-blank, non-fence, non-thematic-break lines; ATX
+    headings and list-item starts begin their own paragraph (CommonMark). Odd
+    '**' count per paragraph -> at least one '**' renders literally or overflows
+    into bold (emphasis cannot cross a blank line, so an opener cannot close in
+    the next paragraph). Code spans are stripped before counting. The return
+    value is the offending paragraph (single-line, for evidence); the caller
+    emits one finding per cell.
+    """
+    para: list[str] = []
+
+    def flush() -> str | None:
+        if not para:
+            return None
+        txt = _strip_inline_code("\n".join(para))
+        if txt.count("**") % 2 == 1:
+            return " ".join(ln.strip() for ln in para)
+        return None
+
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            hit = flush()
+            if hit:
+                return hit
+            para = []
+            continue
+        stripped = ln.strip()
+        if not stripped or _THEMATIC_BREAK_RE.match(ln):
+            hit = flush()
+            if hit:
+                return hit
+            para = []
+            continue
+        if _HEADING_RE.match(ln) or _LIST_ITEM_RE.match(ln):
+            hit = flush()
+            if hit:
+                return hit
+            para = [ln]
+            continue
+        para.append(ln)
+    return flush()
 
 
 def scan_cell(cell) -> list[dict]:
@@ -662,6 +898,60 @@ def scan_cell(cell) -> list[dict]:
             })
             break  # one per cell is enough
 
+    # ---- unclosed bold (#12112) -------------------------------------------------
+    # Count '**' per paragraph (CommonMark: emphasis cannot cross a blank line,
+    # so an odd count = at least one literal or overflowing '**'). Code spans
+    # are stripped (their '**' is literal); thematic-break lines are paragraph
+    # boundaries; list items / headings start their own paragraph so a stray
+    # '**' cannot be balanced by the next item's stars.
+    hit = _unclosed_bold_cell(lines, fenced)
+    if hit:
+        rule = "unclosed_bold"
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": ("odd number of '**' delimiters in a paragraph (CommonMark "
+                        "cannot close emphasis across a blank line): at least one "
+                        "'**' renders literally or overflows into bold. Match every "
+                        "opener with a closer inside the same paragraph, or remove "
+                        "the stray '**'"),
+            "evidence": hit[:100],
+            "hash": _cell_hash(rule, text),
+        })
+
+    # ---- CJK in French prose (#12110) -------------------------------------------
+    # A CJK token glued to a French suffix (e.g. ``plus均匀isée``) renders as
+    # garbled prose for a francophone reader -- the model wrote the word in
+    # CJK and kept going in French. Per-line scan, fence-aware: a CJK token
+    # inside a ``` / ~~~ block is verbatim code, not prose (same exclusion
+    # rationale as the other fence-aware rules). Hits are NOT filtered by the
+    # allowlist here -- ``scan_notebook`` consults ``_CJK_ALLOWLIST`` to drop
+    # the 3 corpus-measured legitimate cells (terme technique / nom produit).
+    # Without that allowlist, this rule would systematically over-fire on
+    # PT_11 (蒸馏) and Video/02-6 (海螺3). Why per-line: a single-line evidence
+    # is more readable than the full text snippet in the report, and the regex
+    # does not span lines in 100% of observed cases (#12110 inventory).
+    for idx, ln in enumerate(lines):
+        if idx in fenced:
+            continue
+        m = _CJK_RE.search(ln)
+        if not m:
+            continue
+        rule = "cjk_in_prose"
+        findings.append({
+            "rule": rule,
+            "severity": RULE_SEVERITY[rule],
+            "message": ("CJK character in French prose -- likely a model that wrote "
+                        "a word in CJK mid-sentence (e.g. ``plus均匀isée`` -> "
+                        "``plus uniforme``). Either rewrite the cell in French, "
+                        "or add the (file, cell) pair to ``_CJK_ALLOWLIST`` with "
+                        "an explicit justification if the token is legitimate "
+                        "(nom produit, terme technique assumé)"),
+            "evidence": f"U+{ord(m.group(0)):04X} ({m.group(0)!r}) in: {ln.strip()[:80]}",
+            "hash": _cell_hash(rule, text),
+        })
+        break  # one finding per cell is enough
+
     return findings
 
 
@@ -674,11 +964,30 @@ def scan_notebook(path: Path) -> list[dict]:
             "severity": WARN, "message": f"cannot parse notebook: {exc}",
             "evidence": "", "hash": "",
         }]
+    # #12110 -- multilingual notebooks (filename suffix _zh / _ja / _ko) are
+    # ASSUMED to contain CJK legitimately. Skipping at the file level avoids
+    # the per-cell allowlist having to enumerate every cell of every
+    # translation target. Convention already enforced by translation-sync.yml.
+    posix_path = str(path).replace("\\", "/")
+    stem_lower = path.stem.lower()
+    if any(stem_lower.endswith(suffix) for suffix in _CJK_LANG_SUFFIXES):
+        return []
     out: list[dict] = []
     for i, cell in enumerate(nb.get("cells", [])):
-        for f in scan_cell(cell):
+        # #12110 -- per-(file, cell) allowlist for corpus-measured legitimate
+        # cells (3 entries on main 2026-08-22: PT_11b 蒸馏 and 02-6-MiniMax 海螺3).
+        # The allowlist is consulted AFTER scan_cell emits the finding (so the
+        # cell is still scanned for OTHER rules like unclosed_bold), and only
+        # filters out the cjk_in_prose finding, never the rest of the report.
+        cell_findings = scan_cell(cell)
+        cell_findings = [
+            f for f in cell_findings
+            if not (f["rule"] == "cjk_in_prose"
+                    and (posix_path, i) in _CJK_ALLOWLIST)
+        ]
+        for f in cell_findings:
             f = dict(f)
-            f["file"] = str(path).replace("\\", "/")
+            f["file"] = posix_path
             f["cell"] = i
             out.append(f)
     return out

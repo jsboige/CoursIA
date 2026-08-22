@@ -35,12 +35,14 @@ Cette formulation relève d'une **littérature *unawareness*** (modèles logique
 Le vrai candidat formel est **le choix d'une extension** :
 
 ```
-ξ_t ∈ Ext(L_t, L_{t+1})
+ξ_t ∈ AdmExt(L_t)
 ```
 
-où `Ext(L_t, L_{t+1})` est l'**ensemble des extensions** d'un espace local `L_t` en un espace global `L_{t+1}` qui le contient. L'incertitude porte sur **le choix de l'extension** : l'agent, à l'instant `t`, doit choisir *comment* prolonger l'ancien espace — et ce choix est *non-canonique* (il y a, en général, plusieurs prolongements non équivalents).
+où `AdmExt(L_t)` est l'**ensemble des extensions admissibles** d'un espace local `L_t` — les espaces globaux `L_{t+1}` qui le contiennent, à équivalence près. L'ensemble est indexé par la **source seule** : `L_{t+1}` est le *résultat* du choix, pas une donnée du problème. L'incertitude porte sur **le choix de l'extension** : l'agent, à l'instant `t`, doit choisir *comment* prolonger l'ancien espace — et ce choix est *non-canonique* (il y a, en général, plusieurs prolongements non équivalents).
 
-Lien grothendieckien (cf. [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md)) : un objet local admet *plusieurs* extensions globales non équivalentes (cf. obstruction cohomologique `H¹ ≠ 0`, [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) §« Pourquoi cette grille »). Le choix d'extension est précisément **là où l'agent intervient comme décideur** : `H¹ ≠ 0` est la mesure *qu'il y a quelque chose à choisir* ; `|Ext(L_t, L_{t+1})|` est la mesure *combien* il y a à choisir ; et la **qualité du choix** (cf. §4) est ce qui distingue une extension utile d'une extension manipulatrice.
+> **Note de notation.** `AdmExt`, et non `Ext`. Dans ce voisinage — où l'on invoque Grothendieck, `H¹ ≠ 0` et l'obstruction cohomologique — `Ext(A, B)` se lit inévitablement comme le **foncteur dérivé** `Ext¹(A, B)` : un groupe abélien, avec somme de Baer et suite longue. Ce n'est **pas** ce dont il s'agit ici : `AdmExt(L_t)` est un *ensemble* de prolongements admissibles, dont aucune structure de groupe n'a été établie. Emprunter le nom reviendrait à emprunter la structure sans l'avoir démontrée.
+
+Lien grothendieckien (cf. [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md)) : un objet local admet *plusieurs* extensions globales non équivalentes (cf. obstruction cohomologique `H¹ ≠ 0`, [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) §« Pourquoi cette grille »). Le choix d'extension est précisément **là où l'agent intervient comme décideur** : `H¹ ≠ 0` est la mesure *qu'il y a quelque chose à choisir* ; `|AdmExt(L_t)|` est la mesure *combien* il y a à choisir ; et la **qualité du choix** (cf. §4) est ce qui distingue une extension utile d'une extension manipulatrice.
 
 ### 1.3 Barrière conservée : pas de bit physique ex nihilo
 
@@ -125,9 +127,9 @@ Mesure l'**ouverture linguistique** du système : est-ce qu'il y a, entre `t` et
 
 Mesure la **conséquence pratique** de l'expansion ontologique : l'ajout d'un mot dans le lexique ne compte comme extension *politique* que si ce mot *ouvre* des actions nouvelles. Un concept ornemental (qui ne change rien à ce que les agents peuvent faire) n'augmente pas `ΔA_t`. C'est un **garde-fou contre le verbiage** : l'expansion ontologique n'est mesurable qu'à travers sa *capacité à ouvrir des actions*.
 
-### 3.3 C_t = |Ext(G_t)| — non-canonicité
+### 3.3 C_t = |AdmExt(G_t)| — non-canonicité
 
-> **Définition.** `C_t = |Ext(G_t)|` — le nombre d'extensions non équivalentes de `G_t` en `G_{t+1}`.
+> **Définition.** `C_t = |AdmExt(G_t)|` — le nombre d'extensions non équivalentes de `G_t` en `G_{t+1}`.
 
 Mesure la **non-canonicité** du prolongement : y a-t-il *plus d'une* façon de prolonger l'espace ? Si `C_t = 1` (canonique), la strate 7 est *triviale* — il n'y a rien à choisir, le système se prolonge de lui-même. Si `C_t > 1`, il y a *quelque chose à choisir*, et l'agent (ou le mécanisme `M`) doit *trancher*. C'est le proxy le plus directement lié à la grammaire extensionnelle (cf. §1.2) : sans `C_t > 1`, la strate 7 n'a pas d'objet.
 
@@ -171,7 +173,7 @@ L'erreur classique de la strate 7 (celle que la boussole D3 met en garde contre)
 
 ### 4.2 La précision du choix
 
-La performativité — ce que la strate 7 cherche réellement à capturer — n'est **pas la self-référence** ; c'est la **précision du choix de la coordonnée libre**. Un système qui se contente d'auto-référencer *sans choisir* est *cheap*. Un système qui, à chaque pas de temps, *choisit* parmi `C_t = |Ext(G_t)|` extensions non équivalentes, et dont le choix *agit causalement* sur le système (`P(R) > 0`) et *persiste* (institutionnalisation), est *performant*.
+La performativité — ce que la strate 7 cherche réellement à capturer — n'est **pas la self-référence** ; c'est la **précision du choix de la coordonnée libre**. Un système qui se contente d'auto-référencer *sans choisir* est *cheap*. Un système qui, à chaque pas de temps, *choisit* parmi `C_t = |AdmExt(G_t)|` extensions non équivalentes, et dont le choix *agit causalement* sur le système (`P(R) > 0`) et *persiste* (institutionnalisation), est *performant*.
 
 Le verbe lui-même est une **variable libre** : *se dévoiler* / *se résumer* / *exploser* (cf. D3, [`strate7-boussole-myth.md`](strate7-boussole-myth.md) §« Les trois verbes comme variables libres ») sont trois choix **non-canoniques** au sens où chacun engage une posture différente (réalisme caché, constructivisme de compression, générativité incontrôlée). *Choisir particulièrement bien* ses variables libres, c'est choisir le verbe qui **ouvre** la plus grande `ΔA_t` tout en gardant `P(R)` élevé — c'est une opération **d'équilibration** entre l'expansion et la causalité.
 
