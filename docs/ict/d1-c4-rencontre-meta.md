@@ -48,7 +48,7 @@ Ce que **C4 porte en plus** (que D1 ne porte pas) :
 Ce que **D1 porte en plus** (que C4 ne porte pas) :
 
 - Le **jeu évolutif** `G_t = (N, L_t, S_t, A_t, U_t, P_t)` et son **mécanisme** `M` (D1 §2.2-2.4). C4 *assume* un mécanisme qui décide ce qui devient public (C4 §1.3, §4.1) mais ne le *formalise* pas comme un objet à 6 composantes.
-- La **non-canonicité** `C_t = |Ext(G_t)|` (D1 §1.2) comme grandeur propre — la *mesure* du fait qu'il y a plusieurs extensions admissibles. C4 utilise l'idée (la grammaire de propagation est elle-même non-canonique) mais ne la *pose* pas comme grandeur mesurable.
+- La **non-canonicité** `C_t = |AdmExt(G_t)|` (D1 §1.2) comme grandeur propre — la *mesure* du fait qu'il y a plusieurs extensions admissibles. C4 utilise l'idée (la grammaire de propagation est elle-même non-canonique) mais ne la *pose* pas comme grandeur mesurable.
 - Les **6 proxys** comme **6-uplet** *simultané* (D1 §3) — pas une mesure séquentielle. C4 fait l'un après l'autre (π, puis W, puis P(R)), D1 les pose *ensemble* comme un test d'acceptation composite (sans agrégation en scalaire, cf. §3 ci-dessous).
 
 L'isomorphisme est donc *réel* (le seuil est le même objet) mais *non réducteur* (les deux faces portent des contenus non-substituables).
@@ -85,7 +85,7 @@ L'articulation D1 ↔ C4 hérite donc de la dissolution : c'est une articulation
 
 L'articulation permet à un raisonnement sur la strate 7 de **basculeur** entre les deux faces sans perte :
 
-- Un argument *formel* (« le coup `η` est non-canonique — il y a plusieurs extensions admissibles — donc `η` peut être performatif ») peut être **traduit** en argument *opérationnel* (« la représentation locale `r` a plusieurs prolongements possibles — donc elle est candidate à la bascule ») sans perte de substance. Le pont `C_t = |Ext(G_t)| ↔ C4 §1.3 « la grammaire est elle-même non-canonique » est *exactement* ce passage.
+- Un argument *formel* (« le coup `η` est non-canonique — il y a plusieurs extensions admissibles — donc `η` peut être performatif ») peut être **traduit** en argument *opérationnel* (« la représentation locale `r` a plusieurs prolongements possibles — donc elle est candidate à la bascule ») sans perte de substance. Le pont `C_t = |AdmExt(G_t)| ↔ C4 §1.3 « la grammaire est elle-même non-canonique » est *exactement* ce passage.
 - Un argument *opérationnel* (« la bascule est mesurée par `P(R)` — la divergence KL entre les trajectoires sous `do(R)` et `do(¬R)` ») peut être **traduit** en argument *formel* (« le coup `η` est performatif ssi sa distribution d'effet est non confondable avec celle de `¬η` — c'est la définition do-calculus de la causalité »). Le pont `P(R)` (D1 §3) ↔ `P(R)` (C4 §2.3) est *exactement* ce passage.
 
 Ces deux traductions sont **non triviales** : elles exigent que le lecteur saisisse pourquoi la *forme* du coup (D1) et la *substance* de la bascule (C4) sont interchangeables *ici*, alors qu'elles ne le seraient pas *ailleurs* (par exemple, pour décrire un phénomène physique sans agentivité).

@@ -3,7 +3,8 @@
 #
 # Note: 20 notebooks are C# (.NET Interactive) using Infer.NET.
 # Python notebooks: Pyro_RSA_Hyperbole, PyMC-HMM-Trading-Alpha,
-#   and PyMC/PyMC-* series (20 notebooks).
+#   and PyMC/PyMC-* series (20 notebooks),
+#   plus DoWhy-1-Estimand-et-Intervention (DoWhy).
 
 # === Pyro (RSA Hyperbole) ===
 pyro-ppl>=1.8                # Probabilistic programming (Pyro)
@@ -26,3 +27,6 @@ scikit-learn>=1.2            # StandardScaler (HMM), LatentDirichletAllocation (
 
 # === Optional (not imported but used indirectly) ===
 # networkx>=3.0              # Graph utilities
+
+# === DoWhy (DoWhy-1-Estimand-et-Intervention) ===
+dowhy>=0.12                  # Identification causale (estimand backdoor/frontdoor + refuters)

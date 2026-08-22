@@ -773,7 +773,12 @@ def _gh_issue_comments(issue: str) -> dict:
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
-            "--json", "number,title,comments",
+            # #12156 -- `labels` added so the umbrella classifier
+            # (`_is_umbrella_issue`) can read the canonical `EPIC` label the
+            # picker hydrates from. The label-route is the authoritative one;
+            # the title-route stays a fallback for the historic pre-label
+            # inventory.
+            "--json", "number,title,labels,comments",
         ],
         capture_output=True, text=True, shell=False,
     )
@@ -1229,6 +1234,34 @@ def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
     return (now - parsed).total_seconds() / 3600.0
 
 
+def _is_umbrella_issue(payload: dict) -> bool:
+    """Return True if `payload` describes an umbrella / EPIC-style issue (#12156).
+
+    Mirrors `scripts/pick_idle_grain.py:130` so the two organs speak the same
+    language: an issue is classified as an umbrella when (a) one of its labels
+    is the literal string `EPIC` (case-sensitive -- that is the label the picker
+    hydrates from `gh issue list --label EPIC`), OR (b) the title starts with
+    `[EPIC` / `EPIC` after stripping the leading `[`. The label-route is the
+    authoritative one; the title-route catches the historic pre-label inventory
+    that the picker also accepts.
+
+    Returns False on missing keys (defensive: the from-json path may carry a
+    subset of fields). Never raises -- a malformed payload should degrade to
+    the pre-#12156 behaviour (no umbrella flag) rather than crash.
+    """
+    try:
+        labels = payload.get("labels") or []
+        for lab in labels:
+            name = lab.get("name") if isinstance(lab, dict) else None
+            if isinstance(name, str) and name == "EPIC":
+                return True
+        title = payload.get("title") or ""
+        upper = title.upper().lstrip("[")
+        return upper.startswith("EPIC")
+    except (AttributeError, TypeError):
+        return False
+
+
 def _parse_iso_utc(iso: str) -> datetime | None:
     """Parse a GitHub server `createdAt` (ISO 8601 UTC, trailing 'Z').
 
@@ -1325,6 +1358,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
 
+    # #12156 -- umbrella signal. Two booleans surface the diagnostic that
+    # the body of #12156 asks to expose in `check_lane_claim.py`'s JSON:
+    # (a) `is_umbrella` mirrors `pick_idle_grain.py:130` (label `EPIC` or
+    #     title prefix `[EPIC`/`EPIC`), so a caller can know which urn an
+    #     issue would have come from; (b) `epic_wide_on_umbrella` flags the
+    #     pathology the body names -- an umbrella whose blocking claims
+    #     are all epic-wide (no `paths:` or every glob dead per #10958 /
+    #     #12072). The flag is True ONLY when an umbrella is held
+    #     effectively-epic-wide by another lane AND the umbrella has no
+    #     scoped claim; on a CLEAR issue or on a unit issue the flag stays
+    #     False (the umbrella umbrellas nothing, or there is nothing to
+    #     umbrella).
+    is_umbrella = _is_umbrella_issue(payload)
+    if is_umbrella and others:
+        epic_wide_on_umbrella = all(
+            (ev.get("paths") is None)
+            or _claim_scope_effectively_epic_wide(ev)
+            or bool(ev.scope_declared_off_marker)
+            for ev in others.values()
+        )
+    else:
+        epic_wide_on_umbrella = False
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -1332,6 +1388,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
         "stale_claims": sorted(stale_others),
+        # #12156 -- umbrella classifier (`is_umbrella`) and the pathology it
+        # describes (`epic_wide_on_umbrella`). Both default False: on a
+        # unit-issue the umbrella flag stays False; on a CLEAR umbrella the
+        # PATHOLOGY flag stays False too (the lock is empty, not held
+        # wrong). The flags let a coordinator's sweep aggregate
+        # `epic_wide_on_umbrella=True` across issues to count how many
+        # umbrellas are stuck in the pattern #12156 names.
+        "is_umbrella": is_umbrella,
+        "epic_wide_on_umbrella": epic_wide_on_umbrella,
         "active_claims": {
             ln: {
                 "claimed_at": ev.created_at,
