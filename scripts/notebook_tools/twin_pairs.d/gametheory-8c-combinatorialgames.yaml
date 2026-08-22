@@ -1,7 +1,7 @@
 - name: "GameTheory-8c CombinatorialGames"
   family: GameTheory
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
   audits:
     - date: "2026-08-04"
@@ -20,6 +20,12 @@
       csharp_sha: 71822adc60c62edbe98ca11e6509dbb474e22ffe
       content_python_sha: c460456cfc08047af3d157e9ae60e4649a2eef99ed665f173340d00a96da35a2
       content_csharp_sha: 892ef07f5e6afc3189fb015079164aa1635ee7c50bda6e1314419f5f10ad545c
+    - date: "2026-08-22"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 9dbfa1962bc7c09e49c22925c8d3d1517757fd2f
+      csharp_sha: 614ce7a50fc71d429ac3bdb5f2996a5e54c1854d
+      content_python_sha: 001b864d33550689742ea5df42608ed834f6d68c89014ee0f521e1566a4f8da4
+      content_csharp_sha: 7ca4202d5e97731ff3d70a9085f61f9eb5588b857763cfabec26842abbb20006
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Sprague-Grundy 1936 + XOR nim-sum (theoreme sur la somme de jeux, Nim et sa strategie gagnante) portes from-scratch par les deux jumeaux (Python numpy/matplotlib pour visualisation graphe et table Grundy, C# BCL pure System.Linq 0 NuGet). Les DEUX cotes implementent les MEMES algorithmes de theorie combinatoire (calcul Grundy recursif + nim-sum XOR) en from-scratch -- la portabilite cross-lang est dans la specification formelle Sprague-Grundy 1936. Ni Python ni C# n'invoque de moteur SOTA partage, aucune lib bridgeable entre les deux ecosystemes sans quitter le gabarit pedagogique. Verdict SOTA-OK (solver-free by design des deux cotes, asymetrie medium de sortie preservee (viz Python vs texte C#), aucune asymetrie de couverture moteur a corriger)."
   known_differences:

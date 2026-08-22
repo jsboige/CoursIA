@@ -1,7 +1,7 @@
 - name: "GameTheory-6c RepeatedGames-FolkTheorem"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb
   parity_level: semantic
   audits:
     - date: "2026-08-04"
@@ -20,6 +20,12 @@
       csharp_sha: 510f61137fbcee6997eb12d0dc7bd28ceace25bd
       content_python_sha: 16fc7fed75f73c1fb4af5b1403ad1de7ec8117eeef2e3b46d1c678fa8cc6910d
       content_csharp_sha: 71a9b839faace3b9fb3dbada0beb4ef06572f1c41d9a945df7fd546928215d67
+    - date: "2026-08-22"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 68256b43b8be2a5fae76778035c7bf7b87c6ab52
+      csharp_sha: 5f1c8a3e4badde2662acdc60986dc99bb020de2e
+      content_python_sha: 762f03c35eb4c9aa97712fea8710e235e274ea732968bc828cd71df84a1a6055
+      content_csharp_sha: 01a5a1c7d8bea115b2e094f6246407415dec3ff855e91283de7c1d5689e9deda
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Jeux repetes + Folk Theorem (grim trigger, TFT, horizon fini/infini + facteur d'escompte) portes from-scratch par les deux jumeaux (Python matplotlib.patches.Polygon pour le quadrilatere des paiements faisables, C# BCL pure ASCII art 0 NuGet). Numerique pur des deux cotes -- ni nashpy, ni scipy, ni aucun moteur theorie des jeux dans l'un ou l'autre ecosysteme. Les DEUX cotes implementent les MEMES strategies repetitives en from-scratch -- la portabilite cross-lang est dans la specification formelle (Aumann 1959, Fudenberg-Maskin 1986). Verdict SOTA-OK (solver-free by design des deux cotes, ASCII art pedagogique du cote C# = choix pedagogique assumme, asymetrie medium de visualisation preservee, aucune asymetrie de couverture moteur a corriger)."
   known_differences:
