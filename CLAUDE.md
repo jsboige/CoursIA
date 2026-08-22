@@ -38,7 +38,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 ## Règles modulaires `.claude/rules/`
 
-**20 des 27 règles sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. Les **7 autres portent un frontmatter `paths:`** et ne se chargent que si la session touche les fichiers visés — `notebook-conventions`, `cell-interpretation-ordering`, `exercise-example-labeling`, `three-exercises-per-notebook` (notebooks) · `genai-config` (GenAI) · `wsl-kernels`, `lean-merge-discipline` (Lean/GameTheory). **Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; les §C de ce fichier en sont le précis toujours chargé, pas une redondance. Inventaire complet : [claude-code-config.md §Rules](docs/reference/claude-code-config.md).
+**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés — `notebook-conventions`, `cell-interpretation-ordering`, `exercise-example-labeling`, `three-exercises-per-notebook` (notebooks) · `genai-config` (GenAI) · `wsl-kernels`, `lean-merge-discipline` (Lean/GameTheory). **Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; les §C de ce fichier en sont le précis toujours chargé, pas une redondance. Inventaire complet : [claude-code-config.md §Rules](docs/reference/claude-code-config.md).
 
 ---
 

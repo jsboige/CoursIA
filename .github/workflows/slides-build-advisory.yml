@@ -87,6 +87,39 @@ jobs:
           # Need base..head history for `git diff` of changed slides.
           fetch-depth: 0
 
+      # Runs BEFORE the Node setup, deliberately: the two defects it catches are
+      # invisible to `slidev build`, so this step must survive an install failure.
+      #
+      # The orphan `::right::` is the reason this exists. Removing `layout:
+      # two-cols` without removing the paired marker leaves it with no slot;
+      # Slidev BUILDS GREEN and silently drops everything after it. A source grep
+      # cannot see it either -- the text is still in the markdown. Measured on
+      # #11912: `grep -c 'Jeu de dames'` returned 1 on the broken head exactly as
+      # on the sound one. Only a render or a structural parser sees the loss.
+      #
+      # Advisory like the rest of this workflow: `|| true` keeps the step green,
+      # the payload is the inline annotation on the PR diff. The denominator is
+      # printed so a zero can never be read as "nothing to look at" -- the same
+      # silent-skip trap named in this file's header.
+      - name: Slidev structural defects (advisory annotations)
+        run: |
+          set -uo pipefail
+          # Positive control first: a detector whose pattern broke reports
+          # "nothing found", which is indistinguishable from a sound repo --
+          # smaller and cleaner than the truth. Refuse to trust a zero we have
+          # not earned.
+          if ! python scripts/check_slidev_structure.py --selftest; then
+            echo "::error::positive control FAILED -- the detector is not measuring anything"
+            exit 1
+          fi
+          # `--github` makes the SCRIPT emit the annotations: it holds path and
+          # line as separate values, so nothing downstream re-splits a formatted
+          # string. A shell loop doing `${line%%:*}` looked correct and was not --
+          # it truncates any path containing a colon (measured: `C:/Users/...`
+          # became file `C`). The producer has the structured data; it renders it.
+          python scripts/check_slidev_structure.py --all --github || true
+          echo "structural scan done -- the count line above is the denominator"
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
