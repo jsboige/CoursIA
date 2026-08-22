@@ -62,6 +62,12 @@ layout: default
 
 ## Fonction KB-AGENT
 
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_001.png" alt="Pseudocode KB-AGENT : fonction Tell/Ask avec compteur de temps et base de connaissances persistante" />
+
+</div>
+
 ```
 fonction KB-AGENT(percept) retourne une action
   persistante: KB, une base de connaissances
@@ -75,6 +81,12 @@ fonction KB-AGENT(percept) retourne une action
 ```
 
 ## Composants
+
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_002.png" alt="Architecture d'un agent base sur les connaissances : KB, moteur d'inference, module d'action" />
+
+</div>
 
 - Une base de connaissance (KB), composee d'enonces formules dans un langage formel de representation des connaissances
 - Un système d'infrence (raisonnement) qui produit de nouveaux enonces pour prendre des decisions
@@ -239,6 +251,12 @@ layout: default
 
 ## Symboles
 
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_005.png" alt="Tableau des symboles logiques : connecteurs NON, ET, OU, IMPLIQUE, EQUIVAUT, parentheses" />
+
+</div>
+
 - Propositions: P, Q, R, ...
 - Connecteurs: ET, OU, NON, =>, <=>
 - Parentheses: (, )
@@ -264,6 +282,12 @@ layout: default
 - Attribution d'une valeur de verite (Vrai/Faux) a chaque proposition
 
 ## Tables de verite
+
+<div class="img-stack">
+
+<img src="./images/img_009.png" alt="Tables de verite pour NON, ET, OU, IMPLIQUE, EQUIVAUT : colonnes p, q, op1, op2 avec resultats booleens 0/1" />
+
+</div>
 
 <table style="border-collapse:collapse; margin: 0.4em 0 1em 0; font-size: 0.92em;">
 <thead>
@@ -297,6 +321,12 @@ layout: default
 # Infrence propositionnelle
 
 ## Entailment (consequence sémantique)
+
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_006.png" alt="Diagramme entailment : KB |= alpha, la base de connaissances KB implique l'enonce alpha" />
+
+</div>
 
 - KB |= alpha : "KB entraine alpha"
 - Alpha est vrai dans tous les modèles ou KB est vrai
@@ -689,6 +719,12 @@ layout: default
 - Interpretation des predicats: relations sur le domaine
 
 ## Satisfaction
+
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_012.png" alt="Regles de satisfaction FOL : Tautologie, Contradiction, Satisfaisable avec exemples" />
+
+</div>
 
 - Une interpretation satisfait ∀x P(x) si P(x) est vrai pour tout élément du domaine
 - Une interpretation satisfait ∃x P(x) si P(x) est vrai pour au moins un élément
@@ -1513,6 +1549,12 @@ layout: default
 
 # Exemple PDDL: Transport logistique
 
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_026.png" alt="Exemple PDDL complet : domaine Logistique avec packages, trucks, avions et entrepots, mission initiale et but" />
+
+</div>
+
 ```
 Init(At(C1, SFO) ET At(C2, JFK) ET At(P1, SFO) ET At(P2, JFK)
     ET Cargo(C1) ET Cargo(C2) ET Plane(P1) ET Plane(P2)
@@ -1558,6 +1600,12 @@ layout: default
 - Utilisation des CSP
 
 ## Calcul situationnel
+
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_032.png" alt="Situation Calculus Have Cake / Eat Cake : axiomes d'action unique pour raisonner sur les consequences d'une action dans le monde du Wumpus" />
+
+</div>
 
 - Logique du premier ordre
 - Utilisation de theoremes pour prouver les bonnes sequences
@@ -1618,6 +1666,14 @@ layout: default
 
 
 ## Structure de données
+
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 380px;">
+
+<img src="./images/img_031.png" alt="Graphe de planification : niveau actions (proposition level 0) et niveau fluents (proposition level 1)" />
+
+<img src="./images/img_028.png" alt="Liens de maintien entre actions precondition et effets" style="margin-top: 8px;" />
+
+</div>
 
 - Generee a partir d'un problème de planification
 - Divisee en niveaux:
@@ -1820,6 +1876,14 @@ layout: default
 
 # Resume planification
 
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 320px;">
+
+<img src="./images/img_029.png" alt="Graphe de planification 3D : visualisation d'un plan dans l'espace des etats avec couches d'actions connectees" style="margin-bottom: 8px;" />
+
+<img src="./images/img_037.png" alt="Tableau International Planning Competition 1998-2008 : systemes vainqueurs (GAMER, LAMA, SATPLAN, FAST, LPG, FF, IPP, TLPLAN)" />
+
+</div>
+
 ## Approches
 
 - Recherche dans l'espace d'etats (STRIPS, chainage avant, etc.)
@@ -1848,6 +1912,12 @@ layout: default
 # Ontologies
 
 <img src="./images/img_020.png" style="position:absolute; top:118px; right:34px; width:300px; max-height:420px;" alt="Ontologie - graphe de connaissances" />
+
+<div class="img-stack absolute" style="top: 60px; left: 30px; width: 380px;">
+
+<img src="./images/img_038.png" alt="Hierarchie d'ontologie : classes, sous-classes, instances et relations semantiques" />
+
+</div>
 
 <style scoped>
 .slidev-layout { font-size: 0.88em; }
@@ -1879,6 +1949,16 @@ layout: default
 ---
 
 # Web sémantique
+
+<div class="img-stack absolute" style="top: 60px; right: 30px; width: 320px;">
+
+<img src="./images/img_039.png" alt="Pile du Web semantique : URI, XML, RDF, RDFS, OWL, SPARQL, Inference" style="margin-bottom: 8px;" />
+
+<img src="./images/img_040.png" alt="RDF Triple : sujet, predicat, objet avec exemple (Tim knows Jane)" style="margin-bottom: 8px;" />
+
+<img src="./images/img_043.png" alt="LOD cloud : nuage des donnees liees interconnectees" />
+
+</div>
 
 
 ## Resource Description Framework (RDF)

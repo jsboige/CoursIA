@@ -7,7 +7,7 @@ Borner la levee d'une reserve a son auteur (piste Hermes) rendrait l'organe
 plus strict ; la decision exige la mesure. Ce script compagnon NE TOUCHE PAS
 l'organe gate (`check_unaddressed_nits.py`) : il reutilise son modele de
 donnees et ses memes predicats (classify, can_lift, LIFT_MARKERS,
-CONDITIONAL_LIFT, CITERS) pour classifier chaque levee observee sur un
+_lift_cancelled, CITERS) pour classifier chaque levee observee sur un
 corpus de PRs mergees :
 
   SELF      — la reserve est levee par son propre auteur
@@ -86,7 +86,7 @@ def measure_pr(pr_data: dict) -> dict:
         for c in (pr_data.get("comments") or [])
         if nits.can_lift(c)
         and nits.has_marker(c.get("body", ""), nits.LIFT_MARKERS)
-        and not nits.CONDITIONAL_LIFT.search(nits._strip_quoted(c.get("body", "")))
+        and not nits._lift_cancelled(nits._strip_quoted(c.get("body", "")))
     ]
     comment_lifts = [(t, a) for (t, a) in comment_lifts if t is not None]
     explicit_lifts = [(t, a) for (t, a) in explicit_lifts if t is not None]

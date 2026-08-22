@@ -151,6 +151,22 @@ def _output_text(outputs: list) -> str:
     return "\n".join(chunks)
 
 
+def _normalize_output_text(out_text: str) -> str:
+    """Rewrite comma-formatted numbers in an output text to their _normalize_num
+    form (#12076): francophone decimal commas ('1,8260' -> '1.8260') and
+    anglophone thousands ('3,145,728' -> '3145.728') -- the same heuristic the
+    CITED token already goes through. Used for the direct search only: a claim
+    normalized to '1.8260' used to be searched against the RAW output ('1,8260')
+    and only survived through the fuzzy fallback, whose clause (c) caps the
+    magnitude run at 12 digits -- making the verdict depend on how many digits
+    happen to follow in the same output."""
+    return re.sub(
+        r"(?<![A-Za-z0-9])\d+(?:,\d+)+(?![A-Za-z0-9])",
+        lambda m: _normalize_num(m.group(0)),
+        out_text,
+    )
+
+
 def _lit_skip(source: str) -> bool:
     """Tell: a markdown cell is a literature block (long prose) vs a quantitative
     interpolation cell. We DON'T skip on length alone: c.290 pathologie sat in
@@ -213,6 +229,20 @@ _VERSION_PREFIX_RE = re.compile(
 )
 
 
+# Tokens that mark a number as a SECTION reference ("La section 4.5",
+# "(§3.2)") rather than a quantitative claim. A section pointer is
+# structural -- it names another part of the document -- and must not
+# be cross-referenced against the previous code cell's output.
+# c.421 / #12093: GT-16 4/4 FPs were all of this form. A short decimal
+# like '4.5' passes the _substantive short-decimal test and used to be
+# reported as fabricated.
+_SECTION_REF_PREFIX_RE = re.compile(
+    r"(?i)(?:\b(?:section|sous[- ]?section|chapitre|chapter|annexe|appendix|"
+    r"partie|part|module|unite|unit|etape|legon|lesson|titre|semaine|week|"
+    r"tranche|volet)\b|§)\s*$"
+)
+
+
 def _is_version_token(prose: str, match_pos: int) -> bool:
     """Return True if the numeric match at `match_pos` follows a version
     prefix token (SMT-LIB, Python, .NET, v, Version=).
@@ -230,6 +260,24 @@ def _is_version_token(prose: str, match_pos: int) -> bool:
     if not stripped:
         return False
     return bool(_VERSION_PREFIX_RE.search(stripped))
+
+
+def _is_section_reference(prose: str, match_pos: int) -> bool:
+    """Return True if the numeric match at `match_pos` is a section reference
+    ("La section 4.5", "(§3.2)") -- a pointer to another part of the document,
+    not a quantitative claim. c.421 / #12093 (GT-16 4/4 FP).
+
+    Looks at the 40 chars BEFORE the match; if the deepest section-marker
+    token ends right before the number, the number names a section, not a
+    measurement. The marker may be a word ("section", "annexe") or the §
+    glyph directly abutting the number ("§3.2").
+    """
+    prefix_start = max(0, match_pos - 40)
+    prefix = prose[prefix_start:match_pos]
+    stripped = prefix.rstrip()
+    if not stripped:
+        return False
+    return bool(_SECTION_REF_PREFIX_RE.search(stripped))
 
 
 # Hints that mark an inline-code span as QUOTED text (exception message,
@@ -381,7 +429,11 @@ def check_notebook(path: Path) -> dict:
         if not any_output:
             skipped_no_output += 1
             continue
-        out_text = "\n".join(out_chunks)
+        raw_out_text = "\n".join(out_chunks)
+        # #12076: the direct search compares normalized claim vs normalized
+        # output; the fuzzy fallback keeps the RAW text (its comma-gate, clause
+        # (c), reads large-number signals from the commas themselves).
+        out_text = _normalize_output_text(raw_out_text)
         # Extract numeric claims from the markdown prose. We iterate via
         # finditer so we get (span_start, span_end, raw) for each match
         # -- this is needed for the version-token and inline-code-span
@@ -395,13 +447,15 @@ def check_notebook(path: Path) -> dict:
                 continue
             # FP filters (c.366): skip version-number citations and
             # numbers inside quoted exception/version/path spans.
+            if _is_section_reference(prose, match_pos):
+                continue
             if _is_version_token(prose, match_pos):
                 continue
             if _in_exception_code_span(prose, match_pos, match_end):
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
-            if norm not in out_text and not _fuzzy_present(norm, out_text):
+            if norm not in out_text and not _fuzzy_present(norm, raw_out_text):
                 findings.append({
                     "markdown_cell": idx,
                     "code_cell": prev_code_idxs[0],

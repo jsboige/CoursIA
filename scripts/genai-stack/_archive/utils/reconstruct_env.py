@@ -311,7 +311,7 @@ class EnvReconstructor:
                 if line.startswith('COMFYUI_BEARER_TOKEN='):
                     token = line.split('=')[1].strip()
                     if not token.startswith('$2b$12$') or len(token) != 60:
-                        self.log(f"Token bcrypt invalide: {token[:20]}...", "ERROR")
+                        self.log("Token bcrypt invalide (format ou longueur)", "ERROR")
                         return False
                     break
             

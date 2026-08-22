@@ -83,6 +83,27 @@ repos:
         files: '\.ipynb$'
         stages: [pre-commit]
 
+      - id: fix-hr-separator
+        name: Auto-fix decorative '---' cell openers (yaml_block_open_no_close)
+        description: |
+          Auto-converts a decorative `---` opening a markdown cell into `***`
+          (same `<hr>` render, no YAML semantics) on staged notebooks — the
+          fix for the `yaml_block_open_no_close` rule that the
+          markdown-rendering guard below blocks. The density rollouts
+          (#11601/#11271) prefix enriched cells with a decorative `---`,
+          which opened a Pandoc YAML metadata block that never closes: 140
+          occurrences across 14 open PRs at #12075. Declared BEFORE the
+          blocking guard so the pipeline auto-fixes then verifies (same
+          pattern as fix-source-newlines). The tool does not touch code
+          blocks, setext underlines, or a real cell-0 frontmatter; outputs
+          and execution_count are byte-intact (no re-execution, no falsified
+          proof). See #11451 (tool) and #12075 (this wiring).
+        entry: python scripts/notebook_tools/fix_hr_separator.py --apply
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
+        stages: [pre-commit]
+
       - id: markdown-rendering-guard
         name: Block NEW oversized markdown-rendering defects (frontmatter / setext)
         description: |

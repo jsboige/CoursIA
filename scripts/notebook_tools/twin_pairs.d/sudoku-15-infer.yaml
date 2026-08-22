@@ -67,6 +67,43 @@
       csharp_sha: 512fba1e200c93e18a783f836db20ffb72e46072
       content_python_sha: a37b842071b3e6a5f45b77b3e26f4a684d1f7fdfbc94a60b1f470b0028c8006e
       content_csharp_sha: fc20b2e34d282b3f5e5199f779d1330bdfa29bafc5afce3113c8835fc54b8a6b
+    - date: "2026-08-20"
+      by: myia-po-2024:CoursIA
+      python_sha: 806b7d1493ccf94a38494943e3e1797f18eaae2e
+      csharp_sha: 512fba1e200c93e18a783f836db20ffb72e46072
+      content_python_sha: b3d0aee61107421ec0a703b172299f0a41f04322a1e59a08a0973733f28ab88f
+      content_csharp_sha: fc20b2e34d282b3f5e5199f779d1330bdfa29bafc5afce3113c8835fc54b8a6b
+    - date: "2026-08-20"
+      by: myia-po-2024:CoursIA
+      python_sha: 62d06424631c65c5ecb9c86601b366fc67cbb8e5
+      csharp_sha: 512fba1e200c93e18a783f836db20ffb72e46072
+      content_python_sha: d495bc4bf7bb782d013f5031583963c2adf66bf99f15036e05f931872d8a562f
+      content_csharp_sha: fc20b2e34d282b3f5e5199f779d1330bdfa29bafc5afce3113c8835fc54b8a6b
+    - date: "2026-08-21"
+      by: myia-po-2024:CoursIA-2
+      python_sha: fcc793f05211fa5d50e45ae7a6de063ae3190063
+      csharp_sha: 512fba1e200c93e18a783f836db20ffb72e46072
+      content_python_sha: a37b842071b3e6a5f45b77b3e26f4a684d1f7fdfbc94a60b1f470b0028c8006e
+      content_csharp_sha: 120581912c9d1d52e019368c45670877dc8bc4e50fce6dc8fb0432cc958ac19c
+      reason: "Rebaseline PR #11806 (c.1331p318 REPAIR-2) : cote C# modifie pour elargir le catch du loader Infer.NET (cell #35, 7 classes filtre 'when') + ajout cell #37 test (REPAIR-1). REPAIR-2 c.1331p318 : cell #37 code (exec_count=None post-coupure 17 min kernel .NET sur po-2024) convertie en markdown synthetisant snippets verbatim + note D.5 (CAUSE_DOCUMENTED_ONLY). Aucun code C# fonctionnel touche en dehors du catch elargi (deja couvert par audit precedent). Markdown-only + 1 cellule code transformee en markdown. Cote Python inchange. Parite semantique inchangee (concept, approche, structure pedagogique). 18 cellules code preservees byte-identique hors catch."
+    - date: "2026-08-21"
+      by: myia-po-2024:CoursIA-2
+      python_sha: fcc793f05211fa5d50e45ae7a6de063ae3190063
+      csharp_sha: cf79abd2053aac52ada7f37b452f4c860fb039d9
+      content_python_sha: a37b842071b3e6a5f45b77b3e26f4a684d1f7fdfbc94a60b1f470b0028c8006e
+      content_csharp_sha: 39f1ce02408bb345c6deb614cdf5188f563fd869c6e7428955f0193d850bb18b
+    - date: "2026-08-21"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 62d06424631c65c5ecb9c86601b366fc67cbb8e5
+      csharp_sha: c2100ccd27eba2b777b8f6bc9824a5c8869f3b73
+      content_python_sha: d495bc4bf7bb782d013f5031583963c2adf66bf99f15036e05f931872d8a562f
+      content_csharp_sha: c7831395d0bc8c91b29b43b284cb7229f0af5369cc22d7f33221430969a693d0
+    - date: "2026-08-21"
+      by: myia-po-2026:CoursIA
+      python_sha: 62d06424631c65c5ecb9c86601b366fc67cbb8e5
+      csharp_sha: 0628ac36093355b89e745ed7f9d2e6294b836020
+      content_python_sha: d495bc4bf7bb782d013f5031583963c2adf66bf99f15036e05f931872d8a562f
+      content_csharp_sha: f5c08ebca92a76719c33364408e12b704016dbc4961a9a75021bebafb40b1457
   known_differences:
     - "Rebaseline 2026-08-17 : cote C# draine des timings MACHINE-DEP en cellule[24] (4 valeurs : 350 s, 349,9 s, 0,92 s, 922 ms, 5,8 minutes) et cellule[42] (4 valeurs : ~14-26 s, ~100 ms, ~1,8 s, ~18-112 ms, ~30-60 s) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote Python non modifie. Attestation = nouveau blob SHA du cote C#."
     - "Rebaseline 2026-08-17 : cote Python draine des timings MACHINE-DEP en cellule[27] (table comparaison vs C# : 6 wall-clock ~34ms / ~5s / ~57ms / ~140x / ~83x / ~100x) -- mandat #9377/#9434, drain des wall-clock prose (mandat user : seules les valeurs reproductibles d'une execution a l'autre sont conservees). Resultats de resolution et tendance qualitative conserves. Parite semantique inchangee (aucune cellule code, aucune sortie, aucun exec_count touche) ; cote C# non modifie. Attestation = nouveau blob SHA (python) et content_python_sha du cote Python."

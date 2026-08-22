@@ -118,7 +118,11 @@ def fingerprint(value: str) -> str:
     """
     if not value:
         return "<empty>"
-    return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]  # noqa: S324 -- discriminant only, not auth # codeql[py/weak-sensitive-data-hashing] -- cf #10275: cle API haute entropie, aucune decision d'auth
+    # NOTE: ce sha256[:8] est un discriminant (tag de coherence), pas une
+    # fonction d'auth (cf #10275). Aucun mecanisme de securite ne depend
+    # de sa resistance aux collisions. Le commentaire `# codeql[py/weak-sensitive-data-hashing]`
+    # retire ici etait inerte (default setup, pas de AlertSuppression.ql) -- cf #12100.
+    return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:8]  # noqa: S324 -- discriminant only, not auth
 
 
 # --------------------------------------------------------------------------- #

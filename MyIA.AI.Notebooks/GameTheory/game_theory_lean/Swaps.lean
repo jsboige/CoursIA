@@ -1,0 +1,29 @@
+/-
+  Swaps — root aggregator FR
+  ==========================
+
+  Chemins de swaps sur les jeux 2×2 ordinaux : compagnon formel du
+  notebook `GameTheory-3c-Chemins-de-Swaps.ipynb` (grain #12222).
+
+  Le module substantiel vit dans `Swaps/Basic.lean` : type `Table`,
+  les six générateurs adjacents (`Etape`), l'application d'un chemin
+  (`applique`), et les quatre théorèmes du certificat —
+  `certificat_chemin` (arrivée, par `rfl`), `chemin_valide_non_minimal`
+  (valide ≠ minimal), `aucun_chemin_court` (borne inférieure par
+  énumération décidable) et `distance_dilemme_chicken` (la distance
+  Dilemme → Chicken vaut exactement 2).
+
+  Ce fichier existe parce que le `lean_lib Swaps` du lakefile déclare
+  `globs := #[`Swaps.*]` : Lake résout la racine `Swaps` de la
+  bibliothèque, et son absence rend `error: Swaps: some modules have
+  bad imports` (CI de la PR #12260). Les quatre bibliothèques sœurs du
+  même package suivent exactement cette convention — `SocialChoice.lean`,
+  `CooperativeGames.lean`, `RepeatedGames.lean`, `StableMarriage.lean`
+  sont chacune une racine qui n'agrège que des imports.
+
+  Volontairement SANS Mathlib : tout est calcul fini décidable sur des
+  listes littérales, clos par `rfl` et `decide`. `lake build Swaps` ne
+  déclenche donc aucune compilation de dépendance.
+-/
+
+import Swaps.Basic

@@ -22,16 +22,16 @@
 
 La série ICT a déjà rencontré Thom — mais en **pointillés** :
 
-- [ICT-10-CatastropheGrammar](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb)
+- [ICT-10-CatastropheGrammar](ICT-10-CatastropheGrammar.ipynb)
   nomme explicitement la **catastrophe fronce**, le **métathéorème** et le
   **lacet de prédation** (cycle d'hystérésis à 2 catastrophes avec
   perception J et capture K, aire signée non nulle, représentant interne
   `p̂`).
-- [ICT-12-ValenceFieldsAndAnimats](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb)
+- [ICT-12-ValenceFieldsAndAnimats](ICT-12-ValenceFieldsAndAnimats.ipynb)
   prolonge en mesurant les rôles actantiels (capture, évasion, irréversibilité,
   switching) — l'animat anticipateur `p̂` y gagne en balistique, perd en
   erratique.
-- [ICT-0-Framing](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md)
+- [ICT-0-Framing](ICT-0-Framing.md)
   cite le lacet de prédation, le cycle d'hystérésis, l'échappement
   d'horlogerie, les cusps et le métathéorème — toujours dans le sillage de
   Thom.
@@ -125,7 +125,7 @@ catastrophes.
 
 **Usage ICT strate 6.** Les **classes de drift Argumentum** (IN_SYNC,
 SRC_DRIFT, TRAD_DRIFT, MISSING_LANG, ORPHAN_ROW, mesurées dans
-[ICT-Argumentation-BeliefTrajectories](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb))
+[ICT-Argumentation-BeliefTrajectories](ICT-Argumentation-BeliefTrajectories.ipynb))
 sont des **espèces** au sens de Thom — elles ne se confondent pas, et leurs
 transitions sont des catastrophes : passage IN_SYNC → SRC_DRIFT = une
 scission (le corpus se dédouble), TRAD_DRIFT → MISSING_LANG = une
@@ -536,9 +536,9 @@ Hopf, des « **rivières** qui préfigurent les **variétés stables** du cycle
 d'hystérésis » — image topologique d'une anticipation structurelle.
 
 **Usage ICT strate 5-7.** Le **cycle d'hystérésis** est l'objet mesuré par
-[ICT-10-CatastropheGrammar](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb)
+[ICT-10-CatastropheGrammar](ICT-10-CatastropheGrammar.ipynb)
 (lacet de prédation = cycle à 2 catastrophes J/K) et
-[ICT-12c-PregnanceAnimat](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12c-PregnanceAnimat.ipynb)
+[ICT-12c-PregnanceAnimat](ICT-12c-PregnanceAnimat.ipynb)
 (prégnance = potentiel gradient). Les **« rivières »** de Diener sont une
 **anticipation visuelle** du cycle d'hystérésis : même quand l'attracteur
 ponctuel est encore stable, les courbes stables du futur cycle
@@ -787,7 +787,7 @@ le **« réveil » du prédateur** :
 **Pour la série ICT.** Le dédoublement perception/capture en deux cycles
 aux caractères temporels opposés (réveil *discontinu* en $R$,
 assoupissement *continu* sur l'arc $K_1 s$) est la structure que mesure
-[ICT-10-CatastropheGrammar](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb) :
+[ICT-10-CatastropheGrammar](ICT-10-CatastropheGrammar.ipynb) :
 périodicité du lacet, aire signée non nulle, verdict régime-dépendant
 (gagne en balistique, perd en erratique, perd sur source bruitée — 5/5 sur
 trajectoire lisse). La *discontinuité du réveil* est la signature
@@ -963,7 +963,7 @@ $h(Z)$ est une courbe du plan BP.
    opérationnellement la notion de **préprogramme** centrale en strate 7
    (§Ch.8 §B (bis) *Genres = préprogramme*) : le génome « canalise
    l'attracteur » du métabolisme sans codage précis. La lecture
-   [ICT-13](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb)
+   [ICT-13](ICT-13-AxelrodStrategicMorphodynamics.ipynb)
    (préprogrammes morphologiques du dilemme itéré) et l'opposition
    discret/champ s'enracinent ici : un **préprogramme est un profil
    d'amplitudes d'oscillateurs**, non une suite d'instructions.
@@ -973,7 +973,7 @@ $h(Z)$ est une courbe du plan BP.
    *prêt à être investi* par une prégnance (stimulus saillant) qui s'y
    propagera. Un substrat n'est pas passif, il est **pré-formé** par les
    arcs lents qui l'attendent. Pont
-   [ICT-14](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb)
+   [ICT-14](ICT-14-FreeEnergySurprise.ipynb)
    (représentation = capture d'un saillant par un champ réceptif).
 3. **Pathologie = collapsus d'attracteur.** « Une pathologie est une
    simplification : un attracteur de faible dimension prenant la place
@@ -986,8 +986,8 @@ $h(Z)$ est une courbe du plan BP.
    complet attendu et l'attracteur faible observé.
 4. **SNS = espace de contrôle quotienté.** Lire le SNC comme un
    quotient $h(Z)$ de l'espace de contrôle local fournit un cadre pour
-   [ICT-19b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb)
-   / [ICT-24](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb)
+   [ICT-19b](ICT-19b-EnjeuBattery-Raffinement.ipynb)
+   / [ICT-24](ICT-24-WorkspaceIgnition.ipynb)
    : un **workspace** $W$ est, morphologiquement, une projection-quotient
    qui sélectionne quelles activités locales deviennent globalement
    communicables (arcs rapides $S_gT$) et lesquelles restent locales
@@ -1106,9 +1106,9 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
 
 1. **Discret observé, continu sous-jacent.** Le principe thomien (« tout
    être discret est réalisé par une figure continue ») offre un cadre de
-   lecture pour [ICT-17](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine.ipynb)
+   lecture pour [ICT-17](ICT-17-EpsilonMachine.ipynb)
    (machine-ε : un automate discret extrait d'un processus continu) et
-   [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb)
+   [ICT-17b](ICT-17b-Grokking-CompressionProgress.ipynb)
    (grokking = compression progressive) : la **mesure discrète** (tokens,
    classes, états-ε) est toujours une section d'un **champ continu**
    sous-jacent. Un verdict de dissociation peut se relire comme l'écart
@@ -1116,7 +1116,7 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
 2. **Logos = spectre de réactions.** Le *logos* thomien (ensemble des
    actes/réactions aux perturbations) est structurellement un
    **spectre** — ce qu'on mesure en
-   [ICT-15b-SensitivityCanonicity](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity.ipynb)
+   [ICT-15b-SensitivityCanonicity](ICT-15b-SensitivityCanonicity.ipynb)
    (sensibilité locale $s(f)$) : un proxy n'est pas défini par une
    valeur ponctuelle mais par son **comportement sous perturbation**.
    Pont vers Huang 2019 $s(f) \geq \sqrt{\deg(f)}$ (cf. matrice #7734
@@ -1127,7 +1127,7 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
    capture et oriente le substrat, **modifiable par accident local**, et
    créant des **στερητικὰς διαθέσεις** (dispositions privatives) chez
    ses actants. Pont
-   [ICT-13](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb) :
+   [ICT-13](ICT-13-AxelrodStrategicMorphodynamics.ipynb) :
    les préprogrammes morphologiques du dilemme itéré sont des
    **genres** au sens thomien — des obstacles-crible qui sélectionnent
    quelles stratégies (substrat) peuvent s'exprimer, laissant des
@@ -1171,7 +1171,7 @@ semi-cubique $B$ pour la barrière de capture, **représentant interne**
 $\hat{p}$ avec $v(\hat{p}) > v(p)$. Argémi : *coïncidence des coplis*.
 Van der Pol : projection $p \to p = $ segment paramétré par $\lambda$.
 
-**Référence :** [ICT-10-CatastropheGrammar](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb) — déjà mesuré, multi-graine (5/5 sur trajectoire lisse), verdict régime-dépendant (gagne en balistique, perd en erratique, perd sur source bruitée).
+**Référence :** [ICT-10-CatastropheGrammar](ICT-10-CatastropheGrammar.ipynb) — déjà mesuré, multi-graine (5/5 sur trajectoire lisse), verdict régime-dépendant (gagne en balistique, perd en erratique, perd sur source bruitée).
 
 ### Blastula physiologique (Ch.4 §D) — ICT-9 + ICT-19b
 
@@ -1184,7 +1184,7 @@ Affensattelpunkt chorde, métamérie, somites) est une **concaténation de
 cycles d'hystérésis** — Thom y voit un théorème de Poincaré : la scission
 d'un cycle correspond à la scission d'une singularité.
 
-**Référence :** [ICT-9-AgencyRegeneration](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-9-AgencyRegeneration.ipynb) (régénération Gray-Scott comme morphogenèse), [ICT-19b-EnjeuBattery-Raffinement](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb) (`repair_gain` +0.82±0.27 sur S4).
+**Référence :** [ICT-9-AgencyRegeneration](ICT-9-AgencyRegeneration.ipynb) (régénération Gray-Scott comme morphogenèse), [ICT-19b-EnjeuBattery-Raffinement](ICT-19b-EnjeuBattery-Raffinement.ipynb) (`repair_gain` +0.82±0.27 sur S4).
 
 ### Plan Général d'Organisation (Ch.5) — controverse Cuvier / Geoffroy
 
@@ -1272,7 +1272,7 @@ Cette distillation reste au **grade C-documentaire** :
 
 - Le **cadre mathématique** (catastrophes, dynamiques lentes-rapides,
   cuspides, fronces, plis) est au **grade A** : formalisé, mesurable,
-  reproductible. Cf. [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb)
+  reproductible. Cf. [ICT-10](ICT-10-CatastropheGrammar.ipynb)
   qui opère sur la fronce et le lacet de prédation avec des bancs
   multi-graines et des contrôles adverses.
 - La **lecture ICT** (les dissociations sont des obstructions cohomologiques,
@@ -1317,13 +1317,13 @@ extension, pas une redite.
 ### Cross-références Thom 1991 par chapitre
 
 - **Ch.1 — La théorie des catastrophes** : cf. usages
-  [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb)
+  [ICT-10](ICT-10-CatastropheGrammar.ipynb)
   (fronce, métathéorème, lacet de prédation).
 - **Ch.2 — Le langage** : cf. §Strate 6 ci-dessus (universalisme
   linguistique, valence Tesnière, transitivité prototypique).
 - **Ch.3 — Modélisation mathématique et Philosophie** : cf. §Strate 6
   (généralisation, invention de l'instrument) + usages
-  [ICT-12](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb)
+  [ICT-12](ICT-12-ValenceFieldsAndAnimats.ipynb)
   (coplis, prolongement analytique).
 - **Ch.4 — Embryologie et dynamique** : cf. §Socle transversal
   [Ch.4 §C](#socle-transversal--la-dynamique-de-prédation-ch4-c-et-lorigine-du-représentant-interne-p)
@@ -1348,27 +1348,27 @@ extension, pas une redite.
 
 ### Documents de la série ICT
 
-- [ICT-0-Framing](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md)
+- [ICT-0-Framing](ICT-0-Framing.md)
   §Strate 2 (morphogenèse dynamique, catastrophes) — référence de base.
-- [ICT-0-Annexe-IntegratedComplexityTheory](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Annexe-IntegratedComplexityTheory.md)
+- [ICT-0-Annexe-IntegratedComplexityTheory](ICT-0-Annexe-IntegratedComplexityTheory.md)
   — fondements théoriques complémentaires.
-- [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb)
+- [ICT-10](ICT-10-CatastropheGrammar.ipynb)
   — catastrophe fronce + lacet de prédation + `p̂`.
-- [ICT-12](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats.ipynb)
+- [ICT-12](ICT-12-ValenceFieldsAndAnimats.ipynb)
   — animats actantiels, mesure de la valence.
-- [ICT-13](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics.ipynb)
+- [ICT-13](ICT-13-AxelrodStrategicMorphodynamics.ipynb)
   — préprogrammes morphologiques du dilemme itéré.
-- [ICT-14](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise.ipynb)
+- [ICT-14](ICT-14-FreeEnergySurprise.ipynb)
   — jambe représentationnelle (surprise, free energy).
-- [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress.ipynb)
+- [ICT-17b](ICT-17b-Grokking-CompressionProgress.ipynb)
   — compression progressive et dissociations.
-- [ICT-18b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget.ipynb)
+- [ICT-18b](ICT-18b-ReversibilityBudget.ipynb)
   — triade moyen / fin / enjeu, dissociation $\sigma$ / Levin.
-- [ICT-19b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement.ipynb)
+- [ICT-19b](ICT-19b-EnjeuBattery-Raffinement.ipynb)
   — Gray-Scott S4, mesure espace de champ.
-- [ICT-24](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition.ipynb)
+- [ICT-24](ICT-24-WorkspaceIgnition.ipynb)
   — workspace $W$ (Gates 22-23 livrés, dissociation documentée).
-- [ICT-Argumentation-BeliefTrajectories](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories.ipynb)
+- [ICT-Argumentation-BeliefTrajectories](ICT-Argumentation-BeliefTrajectories.ipynb)
   — 5 classes Argumentum (espèces thomiennes).
 
 ### Documents de synthèse
@@ -1406,7 +1406,7 @@ exploiter :
 
 - **Thom Ch.1, Ch.2 lus mais non exploités directement** ici — Ch.1
   (introduction à la théorie des catastrophes) est en partie couvert par
-  [ICT-10](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar.ipynb),
+  [ICT-10](ICT-10-CatastropheGrammar.ipynb),
   Ch.2 (le langage) est exploité en strate 6 mais son contenu propre
   (formalisme des schémas linguistiques) reste à creuser.
 - **Ch.5 §E-G** (régulation physiologique, préprogramme génétique,

@@ -252,6 +252,25 @@ veut `{"files": [refId]}`), et le miroir admin
 `mwai/v1/openai/files/*` où les mêmes fichiers reviennent, augmentés
 de `download` et `finetune`. Le fichier synthétique est détruit en
 fin de parcours — cleanup mesuré, total 0 → 1 → 0.
+[`joindre-un-fichier-au-chatbot-par-l-api.ipynb`](joindre-un-fichier-au-chatbot-par-l-api.ipynb)
+ferme le dossier pièces jointes par la question qui suit le stockage :
+**comment un fichier téléversé entre-t-il dans une completion ?** La
+réponse mesurée est un drame en trois actes. Acte 1, le contrat mal
+nommé : la route `chats/submit` lit `newFileId`, et un `fileId` envoyé
+à sa place rend un 200 parfaitement silencieux — aucune erreur, le
+fichier n'est même pas regardé (le `purpose` ne bouge pas). Acte 2,
+le texte annoté puis jeté : avec le bon nom, la couche applicative
+traite la pièce jointe (`purpose` → `analysis`, métadonnées de session)
+mais le contenu n'entre jamais dans le prompt — compte de tokens
+identique à un tour sans fichier, canary absent, et le modèle le dit
+honnêtement ; seules les images sont câblées par le moteur chatml.
+Acte 3, l'image réellement vue : un PNG bicolore construit par le
+notebook en stdlib (`struct` + `zlib`, couleurs connues par
+construction et prouvées par re-décodage) est décrit correctement —
+« le rouge et le bleu » — sur un endpoint auto-hébergé compatible
+OpenAI : la frontière du multimodal est le **format de fil**
+(`image_url` base64), pas le provider. Contrôle négatif : la même
+question sans image ne produit aucune couleur.
 
 ---
 
@@ -396,6 +415,8 @@ attendues.
   la face editeur : assistant de redaction, nonce wp_rest, contrat par refus, usage rendu, actions vides (frontiere gratuite/Pro)
 - [`donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb`](donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb) —
   la face pieces jointes : upload par refus, TTL d'une heure mesure par soustraction, partition par utilisateur, delete par refus, miroir admin
+- [`joindre-un-fichier-au-chatbot-par-l-api.ipynb`](joindre-un-fichier-au-chatbot-par-l-api.ipynb) —
+  la consommation des pieces jointes : contrat newFileId, texte annote-puis-jete (tokens a l'appui), image reellement vue sur env custom (controle bicolore)
 - Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
   refonte pédagogique GenAI (ce parcours en est une extension)
 - Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
