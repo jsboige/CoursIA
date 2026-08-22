@@ -1,6 +1,6 @@
 # Tour de la plateforme AI Engine
 
-[← AI-Engine-WordPress](../README.md) | [← Plateformes conversationnelles](../../README.md) | [← Documentation GenAI](../../../README.md) | [Tour Open WebUI](../Open-WebUI/00-Tour-Plateforme/README.md)
+[← AI-Engine-WordPress](../README.md) | [← Plateformes conversationnelles](../../README.md) | [← Documentation GenAI](../../../README.md) | [Tour Open WebUI](../../Open-WebUI/00-Tour-Plateforme/README.md)
 
 > **Parcours découverte.** Ce tour guidé présente, écran par écran, *à quoi
 > ressemble AI Engine et comment on s'en sert depuis son interface
@@ -236,7 +236,7 @@ les variables attendues.
 - Pour monter l'instance jetable chez soi et rejouer ce tour :
   [`../instance-jetable/README.md`](../instance-jetable/README.md).
 - Pour la même visite côté Open WebUI, voir le
-  [Tour Open WebUI](../Open-WebUI/00-Tour-Plateforme/README.md).
+  [Tour Open WebUI](../../Open-WebUI/00-Tour-Plateforme/README.md).
 
 ---
 
