@@ -1412,11 +1412,33 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
 
+    # #12345 / #12322 v2 -- the caller's CARRYING scope is computed EARLY
+    # (before `query_scope` classification) so the classifier can read it.
+    # `my_scope` = `--paths` merged with the caller's OWN active-claim
+    # `paths:` clause (#10419). When `my_paths is None` AND the caller has
+    # no own active claim with a `paths:` clause, `my_scope` is None -- the
+    # caller declared no intent at all (legacy case, unchanged).
+    mine_paths = mine.get("paths") if mine else None
+    my_scope = list(dict.fromkeys((my_paths or []) + (mine_paths or []))) or None
+    # Dead-glob witness on the CALLER side (mirror of `empty_scope` on the
+    # claim side, #10958). `caller_empty_scope` lists the globs in `my_scope`
+    # that match ZERO tracked files in the repo. Empty list when:
+    # (a) `my_scope` is None (no declared scope -- legacy case),
+    # (b) every glob in `my_scope` matches at least one tracked file,
+    # (c) `tracked is None` (no git walk possible -- degrade silently).
+    # The list is JSON-serialised in `caller_empty_scope` (#12345) so the
+    # caller can see WHY a scope they thought is alive is being treated
+    # as empty.
+    caller_empty_scope = _empty_scope_in(my_scope, tracked) if tracked is not None else []
+
     # Override-scope filter (#10342): an `[OVERRIDE]` with a `paths:` clause
     # only locks lanes whose intended files intersect the scope. Without
     # `my_paths`, we conservatively treat every scoped override as blocking
     # (the caller's intent is unknown -- better to over-block than silently
-    # merge a write that should have pinged a held lane).
+    # merge a write that should have pinged a held lane). Note: `_filter_by_
+    # claim_scope` already short-circuits when `my_scope` is entirely dead
+    # (#10958 caller-side lift, line ~1614) so an entirely-dead MY scope
+    # does not get to false-clear other lanes.
     others = _filter_by_claim_scope(others, my_paths, mine, tracked=tracked)
 
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
@@ -1432,6 +1454,30 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
+
+    # #12322 -- query_scope classifier (POST stale-filter, so the verdict
+    # reflects the FINAL blocker set, not the pre-stale one). A call whose
+    # CARRYING scope is empty (no `--paths` AND no `paths:` on the caller's
+    # own claim) cannot prove disjointness from any FINAL blocker, so it
+    # lands in `EPIC_WIDE_NO_PATHS_DECLARED`. #12345 v2: a call whose
+    # declared scope is ENTIRELY dead (every glob matches zero tracked
+    # files) is structurally indistinguishable from the no-scope case -- the
+    # caller cannot prove disjointness because the claim they think they
+    # made locks nothing. Same verdict (`EPIC_WIDE_NO_PATHS_DECLARED`),
+    # same `exit 2`, plus a WARN stderr naming each dead glob so the caller
+    # fixes the typo before re-running. The fail-CLOSED (the third property
+    # of #12345's acceptance) lives at the verdict-emission point below --
+    # a scope that is entirely dead does NOT clear to `exit 0`, it changes
+    # verdict and acquires an explanation.
+    if others and my_scope is None:
+        query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    elif caller_empty_scope and my_scope and len(caller_empty_scope) >= len(my_scope):
+        # #12345 -- every glob in `my_scope` is dead: the caller declared a
+        # scope they believe is alive, but it matches zero tracked files.
+        # Cannot prove disjointness -> same verdict as the no-scope case.
+        query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    else:
+        query_scope = "PATH_SCOPED"
 
     # #12156 -- umbrella signal. Two booleans surface the diagnostic that
     # the body of #12156 asks to expose in `check_lane_claim.py`'s JSON:
@@ -1534,8 +1580,47 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "malformed_markers": len(malformed),
         "malformed_marker_lines": [m["line"] for m in malformed],
         "blocked": bool(others),
+        # #12322 -- query_scope is the read-mode classifier for THIS call.
+        # `EPIC_WIDE_NO_PATHS_DECLARED` means the caller did not pass `--paths`
+        # AND did not post an active scoped claim, so we cannot prove
+        # disjointness from any blocker. `PATH_SCOPED` covers everything else
+        # (the caller is scoped one way or another). Co-rolled with the
+        # `exit 2` verdict (vs `exit 1`) below -- the difference is the
+        # actionable next step for the caller (re-run with `--paths` to lift
+        # the over-block).
+        "query_scope": query_scope,
+        # #12345 -- dead-glob witness on the CALLER side (mirror of
+        # `empty_scope` on the claim side, #10958). Lists the globs in
+        # `my_scope` that match zero tracked files in the repo. Empty
+        # when (a) caller declared no scope, (b) every glob is live, or
+        # (c) `tracked` was None (no git walk possible). Non-empty means
+        # the caller reissued with a typo'd path or a deleted file -- the
+        # verdict below has already routed the call to `NOT_SCOPED` when
+        # the dead globs cover the whole scope, otherwise the live globs
+        # continue to carry the disjointness test.
+        "caller_empty_scope": caller_empty_scope,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+    # #12345 -- SCOPE_DEAD_GLOB warning. When the caller declared a scope
+    # whose globs include at least one dead glob, surface the witness list
+    # on stderr so the caller fixes the typo at the call site instead of
+    # re-running with the same broken path. Best-effort: when the file walk
+    # failed (`tracked is None`), `caller_empty_scope` is empty by
+    # construction -- we never false-WARN outside a git repo. The warning
+    # is non-blocking on purpose: a PARTIALLY-dead scope still carries
+    # disjointness on its live part (`_filter_by_claim_scope` uses `my_scope`
+    # as-is); only an ENTIRELY-dead scope fails-CLOSED to `NOT_SCOPED` at
+    # `exit 2` via the verdict block below.
+    if caller_empty_scope:
+        dead = ", ".join(repr(g) for g in caller_empty_scope)
+        print(
+            f"SCOPE_DEAD_GLOB: your declared scope contains globs that "
+            f"match zero tracked files in this repo: {dead}. The live "
+            f"globs (if any) continue to carry disjointness; reissue with "
+            f"valid paths to lift this hint.",
+            file=sys.stderr,
+        )
 
     # #10597 bonus -- SCOPE_ZERO_COVERAGE warning. When a lane declares a
     # SCOPED claim whose expanded globs do not match any tracked file in
@@ -1584,6 +1669,36 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             excerpt = (ev.get("intent") if hasattr(ev, "get") else None) or "(no intent)"
             intent_lines.append(f"{tag}{excerpt}")
         intent_block = "\n".join(intent_lines)
+        # #12322 -- distinct verdict for EPIC_WIDE_NO_PATHS_DECLARED. The
+        # caller is asking without scoping themselves -- this is a
+        # `non-scope question` showing up as a `block`, which is the trap
+        # measured on #11112 (1 ESCALATION HIGH + 1 ASK HIGH in one day,
+        # both from the user, both rooted in the same `exit 1 + blocker names
+        # without the "re-scope to lift" hint). We keep `exit 1` semantics
+        # for the genuine-scope case (PATH_SCOPED with blockers, including
+        # the case where the caller narrowed their own scope and it still
+        # intersects a blocker), and split out `exit 2` for the call whose
+        # answer changes when the caller re-runs with `--paths`.
+        if query_scope == "EPIC_WIDE_NO_PATHS_DECLARED":
+            print(
+                f"\nNOT_SCOPED: this call did not pass `--paths` so we cannot "
+                f"prove disjointness on #{payload.get('number')}. The blockers "
+                f"below may not actually conflict with the files you intend to "
+                f"edit.\n"
+                f"  Blocked-by (legacy `blocking_lanes` field, taken at face value): "
+                f"{who}\n"
+                f"  Claimed scopes (marker-line excerpts -- #10395 Variante 2):\n"
+                f"{intent_block}\n"
+                f"  ACTION: re-run with `--paths <glob1> --paths <glob2> ...` "
+                f"matching the files you intend to edit. If your files intersect "
+                f"the blockers' scopes the call returns BLOCKED at `exit 1` "
+                f"(real conflict); if they are disjoint the call returns CLEAR "
+                f"at `exit 0`. Exiting with `exit 2` (distinct from real "
+                f"`exit 1` conflicts) so callers can branch on the verdict "
+                f"without false-alarming on a scope-typo.",
+                file=sys.stderr,
+            )
+            return 2
         print(
             f"\nBLOCKED: another lane holds an active claim on "
             f"#{payload.get('number')}: {who}.\n"
@@ -1594,6 +1709,32 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             file=sys.stderr,
         )
         return 1
+    # #12345 -- fail-CLOSED on an entirely-dead scope, EVEN with no
+    # blockers. Without this branch, a caller who typo'd every glob in
+    # `--paths` would see CLEAR + `exit 0` on an issue no one else has
+    # claimed, and the broken lock would authorise them to write anywhere.
+    # The acceptance on #12345 names this explicitly: a scope that is
+    # entirely dead "changes verdict and acquires an explanation; it
+    # does not gain the authorisation to write." We route to the same
+    # `NOT_SCOPED` + `exit 2` verdict the BLOCKED branch above emits,
+    # minus the blocker names (there are none) -- the actionable next
+    # step is the same: re-issue with valid globs.
+    if query_scope == "EPIC_WIDE_NO_PATHS_DECLARED":
+        dead = ", ".join(repr(g) for g in caller_empty_scope)
+        print(
+            f"\nNOT_SCOPED: this call's declared scope is entirely dead "
+            f"on #{payload.get('number')}: every glob in `--paths` matches "
+            f"zero tracked files ({dead}). The lock is empty -- the call "
+            f"does NOT clear to `exit 0` because a broken scope is not a "
+            f"permissive scope (#12345 fail-CLOSED). Re-run with valid "
+            f"`--paths <glob>` matching the files you intend to edit; if "
+            f"they intersect any blocker the call returns BLOCKED at "
+            f"`exit 1`, otherwise CLEAR at `exit 0`. Exiting with `exit 2` "
+            f"so callers can branch on the verdict without false-alarming "
+            f"on a scope-typo.",
+            file=sys.stderr,
+        )
+        return 2
     parts = []
     if mine:
         parts.append("resuming your own active claim")
