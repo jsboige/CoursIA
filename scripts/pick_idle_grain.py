@@ -134,6 +134,7 @@ def fetch_pool() -> list[dict]:
             "labels": labels,
             "age": age_days(it["createdAt"]),
             "idle": age_days(it["updatedAt"]),
+            "updated_at": it["updatedAt"],
             "genre": infer_genre(title, labels),
             "klass": (
                 "delivered" if "candidate-delivered" in labels
@@ -242,6 +243,54 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
     return verdicts
 
 
+def recent_delivery(picks: list[dict]) -> dict[int, str]:
+    """Annote les candidats tires dont une PR mergee les reference plus
+    recemment que la derniere mise a jour de l'issue.
+
+    #12174 : le label ``candidate-delivered`` est pose par un workflow
+    ``schedule:`` quotidien, dans une flotte qui merge plusieurs PRs par heure
+    -- au tirage de 16:47Z, #12014 etait classee ``grain`` alors que #12077
+    (mergee 16:19Z) avait deja livre 3 de ses 4 items. Le body d'une issue est
+    date de sa redaction et un claim ne dit rien d'une livraison : la
+    recherche de PRs mergees est la troisieme surface de grounding, et ce
+    geste doit vivre dans l'outil qui propose le grain, pas dans la discipline
+    de qui le lit. Une requete par candidat tire, jamais un balayage du pool.
+
+    L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
+    ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
+    en dit, pas s'il est pris.
+    """
+    notes: dict[int, str] = {}
+    for p in picks:
+        n = p["number"]
+        try:
+            out = subprocess.run(
+                ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+                 "--limit", "20", "--search", f"{n} in:title,body",
+                 "--json", "number,mergedAt"],
+                capture_output=True, text=True, encoding="utf-8", check=True,
+                timeout=30,
+            ).stdout
+            prs = json.loads(out)
+        except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+            notes[n] = f"(recherche livraison indisponible: {type(exc).__name__})"
+            continue
+        if not prs:
+            continue
+        latest = max(prs, key=lambda pr: pr.get("mergedAt") or "")
+        merged = latest.get("mergedAt") or ""
+        # Fusion plus recente que la derniere activite de l'issue = le corps
+        # visible est potentiellement periéme par rapport au reel. Une fusion
+        # ANTERIEURE a updatedAt est deja digeree par le body (ou les
+        # commentaires) : pas d'annotation, sinon le signal noie.
+        if merged and merged > p.get("updated_at", ""):
+            extra = f" (+{len(prs) - 1} autres)" if len(prs) > 1 else ""
+            notes[n] = (f"LIVRAISON RECENTE : #{latest['number']} mergee {merged}{extra} "
+                        f"(issue non mise a jour depuis {p.get('updated_at', '?')}) "
+                        f"-> confronter le body au reel AVANT de dispatcher")
+    return notes
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -274,12 +323,14 @@ def main() -> int:
     )
 
     claims = check_claims([p["number"] for p in picks], args.lane) if args.check_claims else {}
+    delivery = recent_delivery(picks)
 
     if args.json:
         print(json.dumps({
             "lane": args.lane, "seed_src": seed_src,
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "recent_delivery": {str(k): v for k, v in delivery.items()},
         }, ensure_ascii=False, indent=2))
         return 0
 
@@ -301,6 +352,12 @@ def main() -> int:
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
             print(f"{'':>10} {'':>8} {'':>5} {'':>6}  claim: {claims[p['number']]}")
+        if p["number"] in delivery:
+            note = delivery[p["number"]]
+            head, sep, tail = note.partition("-> ")
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6}  {head.strip()}")
+            if tail:
+                print(f"{'':>10} {'':>8} {'':>5} {'':>6}  -> {tail}")
     print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
     print("inact = jours depuis la derniere activite. Une inactivite haute est le")

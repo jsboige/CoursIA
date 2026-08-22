@@ -93,7 +93,7 @@ Conventions :
 | **ICT-15** | Φ/F/K convergent sur le banc cross-substrat | `s` ✓, `q` ○, `W` ○ | Φ, F, K mesurés indépendamment | Substrats témoins (random, persistance) | 4-5 substrats | speculative_hypothesis | **Spéculatif** | **Verdict honnête : Φ et F covarient, K diverge** ; le triplet **ne converge pas** universellement ; ICT-15b (sensitivity) et ICT-15c (meta-proxy obstruction) creusent |
 | **ICT-15b** | La sensibilité locale `s_max` borne le degré global `deg_proxy` : transpose du théorème de Huang 2019 (`s(f) ≥ √deg(f)`) au zoo ICT | `s` ✓ | `boolean_sensitivity`, `multilinear_degree`, `s_max` vs `√deg_proxy` | Borne spectrale Huang (A² = n·Id, entrelacement Cauchy) | fonctions OR/ET/MAJ/parité (exemples guide) | established_external + reproduced_in_toy_model | **Fortement soutenu** | Théorème de Huang **établi** (externe, 2 pages) ; la borne globale ICT `s_max ≥ √deg_proxy` est **conjecturale** (candidate). Fonctions symétriques usuelles satisfont largement ; cas tendus = fonctions spécialisées (*tribes*) non testées ici. See [#7288](https://github.com/jsboige/CoursIA/issues/7288) |
 | **ICT-15c** | Le **motif de désaccord** entre proxys est stable cross-substrat = obstruction informative (≠ dispersion d'échelle) | `s` ✓ | Vecteur d'obstruction `(a−b)/(\|a\|+\|b\|+ε)`, `mean_norm_L2`, verdict `STABLE`/`NOISE` | `f(x)=x%2` saturait (artefact plafonné) → `f(x)=x` (identité) restaure un panel non-plafonné | 4 substrats (Gray-Scott, Axelrod, Grokking, May) | proxy_interpretation | **Spéculatif** | **Candidat obstruction** (régime 2, *pas* érigé en obstruction cohomologique régime 3 — cf garde-fou A2). Verdict falsifiable `STABLE` si `mean_norm_L2 ≤ 0.05`. See [#7395](https://github.com/jsboige/CoursIA/issues/7395) |
-| **ICT-15d** | La cochaîne de Čech pondérée discriminate les substrats (`NON_TRIVIAL` = les proxys ne se recollent pas en 1D) | `s` ✓ | `mean_coboundary`, `s2_over_s1`, `effective_rank`, verdict `TRIVIAL`/`NON_TRIVIAL` | Sanity check + 4 substrats ICT-15c | 4 substrats × 3 proxys × fenêtrage | reproduced_in_toy_model | **Spéculatif** | **Verdict honnête négatif : 0/4 substrats `NON_TRIVIAL`** — tous `TRIVIAL` (s2/s1=0, rank=1). L'obstruction Čech **n'est pas constatée** sur ces observables à 3 proxys (rang plafonné). Résultat négatif = information (le candidat ne tient pas ici), pas un trou à combler. See [#7744](https://github.com/jsboige/CoursIA/issues/7744) |
+| **ICT-15d** | La cochaîne de Čech pondérée discriminate les substrats (`NON_TRIVIAL` = les proxys ne se recollent pas en 1D) | `s` ✓ | `mean_coboundary`, `s2_over_s1`, `effective_rank`, verdict `TRIVIAL`/`NON_TRIVIAL` | Sanity check + 4 substrats ICT-15c | 4 substrats × 3 proxys × fenêtrage | reproduced_in_toy_model | **Spéculatif** *(réserve de non-discrimination — voir [§ ICT-15d-corr](#note-ict-15d-corr--requalification-2026-08-21))* | 4/4 substrats `NON_TRIVIAL` sur la mesure courante ; l'« honnête négatif 0/4 » de la version précédente mesurait un `sensitivity.py` défectueux (réparé par [#9792](https://github.com/jsboige/CoursIA/pull/9792)). **Réserve** : la sortie reste dominée par la SVD (`s2_over_s1`, `effective_rank`) ; le contre-exemple `axelrod` (`mean_cocycle=0`, `obstruction_ratio=0`, `sign_consistency=0`) ne consulte ni le nerf ni H¹. Le verdict **ne porte pas** l'énoncé « Čech discrimine les substrats ». Issue [#7744](https://github.com/jsboige/CoursIA/issues/7744) closed-archived. |
 | **ICT-15e** | La trajectoire de réparation **est** un signal distinct d'un random walk calibré (recouvrabilité = agentivité, ≠ simple gain) | `s` ✓, `q` ○, `π` ○ | Distance de Mahalanobis sur signature 5-D, seuil p95 par permutation null | Random walk calibré sur mêmes extrema + 1 contrôle structural ; conjecture pré-enregistrée | 3 configs Gray-Scott (pearl/spots/seed=7) | reproduced_in_toy_model | **Fortement soutenu** | `CONFIRMED` sur substrats à dynamique réaction-diffusion informative (signature `slope_ratio` élevé) ; `FALSIFIED` sinon (random walk reproduit la structure) — verdict nuancé honnête, *pas* universel. See [#8077](https://github.com/jsboige/CoursIA/issues/8077) |
 | **ICT-16** | `F` = partie résiduelle de `K` + bosse complexité-entropie | `s` ✓ | MDL two-part code | Modèles témoins sans bosse | RNG multi-source | established_external | **Établi** | Bosse Crutchfield-Feldman 1998 mesurée à H* ≈ 1.99 bits/symbole ; cave emptor : **un seul couple (modèle, famille de sources)** dans la figure rendue |
 | **ICT-17** | L'ε-machine (Crutchfield) ≠ Hoel : deux lectures de l'émergence causale | `s` ✓, `W` ○ | États causaux + complexité statistique + entropie d'excès | Hoel info effective, CE 2.0 | multi-substrat | conceptual_analogy | **Fortement soutenu** | Dissociation reconnue mais pas hiérarchisée |
@@ -112,6 +112,51 @@ Conventions :
 | **ICT-24** Gate 24 | Le clamp sélectif d'une feature workspace modifie causalement l'ignition | `s` ✓, `W` ✓ | Ablation sélective | Substrat non-clampé | phase GPU 2 | reproduced_in_toy_model | **OPEN** | Coordonnateur GPU2 ; verdict en attente |
 | **ICT-SAE-JLens** | SAE Qwen-Scope ≠ jacobien J-Lens neuronpedia sur le même modèle | `s` ✓, `W` ○ | Features différentielles (K_DIFF = 64), séries de concentration, matrices de séparation, dégradation top-k | 4 fixtures pré-extraites | 1 modèle (9B-Base, couche 16) | reproduced_in_toy_model | **Établi** | GPU-free ; banc numpy-only confrontant deux lentilles du même workspace |
 | **ICT-25** | L'inoculation (permission) vs inoculation (interdit) : impact sur persona features | `s` ✓, `q` ✓, `π` ✓, `W` ✓ | GRPO × récompense hackable × 3 bras N/I/P | Bras pénalité-contraste | jalon PR1 CPU | reproduced_in_toy_model | **OPEN (phase 2 GPU)** | Réalignement 3 bras nécessaire (#5105) : le bras livré réprime (pénalité + interdit) au lieu de *permettre* (protocole Anthropic) |
+
+#### Note ICT-15d-corr — requalification (2026-08-21)
+
+La rangée ci-dessus porte désormais **trois temps**, pas un verdict. Cette section les explicite et les ancre.
+
+##### 1. Mesure courante (commit `4cf9df047`, post-[#9792](https://github.com/jsboige/CoursIA/pull/9792))
+
+Outputs des cellules 6 et 8 de `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction.ipynb` :
+
+```
+   substrat |   s2/s1 |     cob | rank |     verdict
+---------------------------------------------------------
+  gray_scott |  0.1939 |  0.3418 |    2 | NON_TRIVIAL
+     axelrod |  0.5508 |  0.5976 |    2 | NON_TRIVIAL
+    grokking |  0.5624 |  0.7649 |    3 | NON_TRIVIAL
+         may |  0.4081 |  0.5992 |    3 | NON_TRIVIAL
+Substrats NON_TRIVIAL : 4/4
+```
+
+##### 2. Péremption datée et sa cause
+
+L'ancienne rangée affichait « **Verdict honnête négatif : 0/4 substrats `NON_TRIVIAL`** » (tous `TRIVIAL`, `s2/s1=0`, `rank=1`). Cause remontée par `git log` : un seul commit sur le notebook depuis le 06/08 —
+
+```
+4cf9df047 fix(ict,#9764): re-execute ICT-15c/15d after sensitivity.py fixes
+                       (#9770/#9766/#9776)  (PR #9792)
+```
+
+— qui a corrigé un `sensitivity.py` défectueux puis a relancé le banc. La mesure du 04/08 (`rank=1`, `s2/s1=0`) provenait donc d'un instrument défectueux : le rang plafonné à 1 était l'artefact du bug, pas une propriété des substrats. Cause C.4 `(d)` régression de dépendance corrigée en amont, jamais répercutée en aval — `CAUSE_FIXED` côté notebook, `CAUSE_DOCUMENTED_ONLY` côté matrice (corrigé par cette note).
+
+##### 3. Réserve de non-discrimination
+
+Bascule du verdict en « 4/4, claim Čech tient » serait une **seconde erreur**, de signe opposé. Le verdict se déclenche sur les quatre substrats — dont `axelrod`, qui affiche trois zéros exacts :
+
+| Métrique              | axelrod |
+| --------------------- | ------- |
+| `mean_cocycle`        | 0.0000  |
+| `obstruction_ratio`   | 0.0000  |
+| `sign_consistency`    | 0.0000  |
+
+Un verdict qui se déclenche sur un substrat dont le cocycle est exactement nul ne soutient pas l'énoncé « la cochaîne **discrimine** les substrats » : il est dominé par la SVD (`s2_over_s1`, `effective_rank`) et ne consulte jamais la grandeur qui porterait la discrimination. Le verdict `NON_TRIVIAL` actuel **ne suffit pas** à valider la claim « Čech discrimine ». La claim reste **spéculative** ; la discrimination reste à fournir par une grandeur qui consulte le nerf ou H¹ — chantier tracké en [#12257](https://github.com/jsboige/CoursIA/issues/12257) (suite directe à la micro-nit Hermes de PR #12248).
+
+##### Acceptation éditoriale
+
+Issue [#12183](https://github.com/jsboige/CoursIA/issues/12183) tranche cette correction en grain `docs` non éligible au plancher G-VAR-1 (`#11690` strand 2). La **requalification de la claim ICT-15d** (retrait, reformulation, conversion en conjecture) reste au user — la rangée corrigée est ce qui permet d'arbitrer sur un état vrai plutôt que sur un négatif fabriqué par un bug.
 
 ### Strate 7 — collectif et invention (jambe D2, #7746)
 
@@ -396,7 +441,7 @@ R_cross(TOPO) ∈ [0.25, 0.75]
 | **Attention courante** | Case 5 — AST | « Où mon attention porte-t-elle ? » | `R_attn = propa(q(attention)) / propa(q(objet))` |
 | **Géométrie de la frontière** | Case 6 — boundary | « Où s'arrête l'unité intégrée ? » | `R_cross = propa(cross) / propa(within)` |
 
-Cases 4-5 mesurent le **contenu** des self-représentations sur substrat LLM SAE ; case 6 mesure la **géométrie** de l'unité intégrée sur substrat de phase — observable et substrat distincts, falsifiable indépendamment. **Anti-confusion vs ICT-15d** : ICT-15d testait l'obstruction Čech au **recollement des proxys** (verdict négatif honnête 0/4 `NON_TRIVIAL`) ; case 6 teste la **coïncidence** frontière topologique / frontière fonctionnelle — même famille local→global, observable différente ; le négatif 15d n'y préjuge rien.
+Cases 4-5 mesurent le **contenu** des self-représentations sur substrat LLM SAE ; case 6 mesure la **géométrie** de l'unité intégrée sur substrat de phase — observable et substrat distincts, falsifiable indépendamment. **Anti-confusion vs ICT-15d** : ICT-15d testait l'obstruction Čech au **recollement des proxys** (verdict courant 4/4 `NON_TRIVIAL`, mais **réserve de non-discrimination** : sortie dominée par la SVD, contre-exemple `axelrod` à cocycle/obstruction/sign_consistency tous nuls — voir [§ ICT-15d-corr](#note-ict-15d-corr--requalification-2026-08-21)) ; case 6 teste la **coïncidence** frontière topologique / frontière fonctionnelle — même famille local→global, observable différente ; le verdict 15d — quel que soit son signe — ne préjuge rien de case 6.
 
 #### Hook grade C — discipline
 

@@ -59,7 +59,17 @@ permissions:
   issues: write
 
 concurrency:
-  group: variation-tag-guard-${{ github.ref }}
+  # #12175 : sur `issue_comment`, github.ref vaut TOUJOURS refs/heads/main --
+  # tous les commentaires de toutes les PR partageaient donc un seul groupe,
+  # et cancel-in-progress les faisait s'annuler mutuellement. Un run d'override
+  # poste sur la PR A mourait au premier commentaire sur la PR B, sans poster
+  # de check-run : vu du dehors, le marqueur [G-VAR-3 OVERRIDE] ne faisait rien.
+  # Mesure du 2026-08-21 : le run 32506481706 (override sur #12170) annule par
+  # un commentaire sans marqueur poste 5 min plus tard sur une autre PR.
+  # Le numero de PR separe les deux espaces de cles sans collision : sur
+  # pull_request, github.event.issue.number est vide et on retombe sur
+  # github.ref (= refs/pull/N/merge, deja distinct par PR).
+  group: variation-tag-guard-${{ github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
