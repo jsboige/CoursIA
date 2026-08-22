@@ -1553,3 +1553,78 @@ def test_12148_glyphe_narre_a_plus_d_un_mot_citer_surflagge_assume():
     # Sur-flag assume : le glyphe precede de 'un ' (a >1 mot du 'portait'),
     # donc `_is_cited` ne neutralise pas et le glyphe reste vivant -> BOT-CONCERN.
     assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+# === GRAIN #12311 — REQUEST_CHANGES (verbe) complete CHANGES_REQUESTED (nom) ===
+# Hermes self-bot est force a state:COMMENTED par GitHub (PR sur son propre
+# compte) ; le verdict transite par le TITRE du commentaire comme verbe
+# d'action (« [Hermes] Review — REQUEST_CHANGES (...) »). L'ancien CONCERN_MARKERS
+# ne captait que la forme nominale CHANGES_REQUESTED -> 9 PRs corpus rendues
+# mergeable a tort (cf issue #12311). Le test verifie 2 cas reels (+1 controle
+# negatif) ET documente le strip heading desactive (les titres preservent leurs
+# verdicts intacts).
+
+
+def test_12311_hermes_verb_request_changes_comment_flagge():
+    """Cas reel : commentaire 5377062968 sur PR #12267, ecrit par jsboige
+    (self-bot Hermes). Le verbe REQUEST_CHANGES est dans le TITRE du
+    commentaire. Le strip mention-verdict-heading est desactive (cf grain),
+    donc REQUEST_CHANGES survit au strip et CONCERN_MARKERS le capture."""
+    body = (
+        "**[Hermes] Review — REQUEST_CHANGES (commentaire, self-review cap)**\n\n"
+        "Issue-first check (#12229) : la methode diverge sur le point central."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12311_hermes_verb_request_changes_review_flagge():
+    """Cas reel : review 4999732811 sur PR #12288, ecrit par jsboige
+    (self-bot Hermes). Titre markdown `## [Hermes] GT-18 — REQUEST_CHANGES (...)`.
+    Le strip mention-verdict-heading capture `REQUEST_CHANGES` (15 chars, 1
+    underscore, debut/fin majuscule) sans le neutraliser — l'instrument
+    desactive la position A (heading) preserve le verdict en emission."""
+    body = (
+        "## [Hermes] GT-18 Open Games — REQUEST_CHANGES (COMMENT, contrainte "
+        "self-review token) : la table de validation du body contredit "
+        "l'artefact commit\n\n"
+        "Verifie firsthand au head 57528bdd (checkout du notebook commit, "
+        "checks programmatiques) :\n\n"
+        "**Le notebook n'est PAS execute.**"
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12311_controle_negatif_ne_flagge_pas():
+    """Cas reel : commentaire 5379577822 sur PR #11916, ecrit par jsboige.
+    Le compte explicite `0 REQUEST_CHANGES` doit rester muet — le citer
+    chiffre `0` (ajoute a CITERS au grain #12311) preserve l'hygiene
+    anti-FP du sous-pattern « narration d'une absence »."""
+    body = (
+        "[RELEASED attesting LIVRE-URN authentique cross-lane conditionnel]\n\n"
+        "3 conditions verifiees (LIVRE-URN authentique) :\n"
+        "- (a) Acceptance LIVREE exhaustive\n"
+        "- (b) **0 REQUEST_CHANGES** : reviewDecision: \"\"\n"
+        "- (c) Substance LIVREE exhaustive"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12311_no_changerequested_ne_flagge_pas():
+    """Garde-fou anti-FP du grain : la negation anglaise `No REQUEST_CHANGES`
+    doit etre rendue muette par le CITERS `no` (deja present). Forme
+    symetrique au controle negatif chiffre."""
+    body = (
+        "Pas de REQUEST_CHANGES sur cette PR — le merge est canonique.\n"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12311_verb_in_heading_preserved_against_strip():
+    """L'instrument desactive le strip mention-verdict-heading (position A).
+    Le titre preserve son verdict. Verifie qu'un CHANGES_REQUESTED dans un
+    titre ne se fait PLUS neutraliser (regression fixee par le grain)."""
+    body = (
+        "## [Hermes] GT-18 — CHANGES_REQUESTED (blocker sur tables)\n\n"
+        "Verifie : le notebook commit ne contient aucun output."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
