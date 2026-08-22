@@ -112,6 +112,7 @@ jobs:
 
   build:
     name: "Lake build"
+    runs-on: ubuntu-latest
     # Serialized only behind the CHEAP text-level gate (fail fast before
     # spending a Mathlib build); proof-integrity (lean-axiom.yml) runs its own
     # full build in parallel rather than doubling this one in series.
