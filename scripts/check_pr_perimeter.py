@@ -500,6 +500,28 @@ INCIDENTAL_QUALIFIER_PAIRS = frozenset({
     "audio generes", "audio générés",
     "test adapte", "test adapté",
 })
+# Forme 7, outil de mesure (#12184): le compte rend ce qu'un OUTIL a mesure,
+# pas ce que la PR modifie ("un compte rendu PAR la PR n'est pas un compte
+# DE la PR"). Fondateur #12181 : "lake 70 fichiers" -- le rendu de
+# count_code_sorry.py sur un lake Lean, confronte a un perimetre reel d'1
+# fichier. Deux sous-formes, toutes deux bornees au contexte AVANT le compte
+# sur la meme ligne :
+#   7a. nom d'objet mesure ADJACENT -- "lake 70 fichiers", "corpus 3
+#       fichiers". L'adjacence stricte est le controle FN : "scan du
+#       corpus : 3 fichiers touches" garde ses deux points de rupture
+#       (les ":" et le qualificatif "touches") et reste authorial.
+#   7b. invocation d'outil + verbe d'execution -- "`count_code_sorry.py`
+#       execute ... 70 fichiers" : le compte est la SORTIE de l'outil. Le
+#       verbe d'execution est le discriminant FN : "modifie build.py :
+#       3 fichiers" reste authorial (pas de verbe d'execution -- et le
+#       .py nomme peut etre un fichier du diff).
+MEASURED_NOUN_ADJACENT = re.compile(r"\b(?:lake|corpus)\s*$", re.IGNORECASE)
+_TOOL_FILE = r"[\w.-]+\.(?:py|sh|ps1)\b"
+_EXEC_VERB = r"\b(?:ex[eé]cut\w*|run\b|running\b|lanc\w*|rend\w*|produit\b)"
+TOOL_EXEC_BEFORE = re.compile(
+    rf"{_TOOL_FILE}.*{_EXEC_VERB}|{_EXEC_VERB}.*{_TOOL_FILE}",
+    re.IGNORECASE,
+)
 DIFFSTAT_NEIGHBORHOOD = re.compile(
     r"\+\d+\s*/\s*[-−]?\d+|insertions?|deletions?|\blignes?\b|\blines?\b",
     re.IGNORECASE,
@@ -523,8 +545,8 @@ def _count_is_exempt(line: str, m: re.Match) -> bool:
     """True when the specific COUNT match `m` on `line` is exempted by the
     per-count filters (zero, threshold citation, locative scan scope,
     negated-diff tail, scan antecedent, reference verb, parenthesized
-    antecedent, incidental qualifier). Shared by _count_is_incidental and
-    _additive_line_sum (#12103)."""
+    antecedent, incidental qualifier, measurement tool #12184). Shared by
+    _count_is_incidental and _additive_line_sum (#12103)."""
     claimed = int(m.group(1))
     if claimed == 0:
         return True
@@ -542,6 +564,14 @@ def _count_is_exempt(line: str, m: re.Match) -> bool:
         return True
     if REFERENCE_VERB_TAIL.match(after):
         return True
+    # #12184 forme 7 (outil de mesure) : adjacency d'abord (le motif le plus
+    # ferre), invocation+verbe ensuite. Les deux ne regardent que le contexte
+    # AVANT : "70 fichiers lake" ne serait pas une mesure mais une
+    # qualification bizarre du perimetre -- on ne l'exempte pas.
+    if MEASURED_NOUN_ADJACENT.search(before):
+        return True  # "lake 70 fichiers" : le rendu de count_code_sorry.py (#12181)
+    if TOOL_EXEC_BEFORE.search(before):
+        return True  # "`count_code_sorry.py` execute ... 70 fichiers"
     if (before.endswith("(") and after.lstrip().startswith(")")
             and PAREN_ANTECEDENT_NUM.search(before[:-1])):
         return True
