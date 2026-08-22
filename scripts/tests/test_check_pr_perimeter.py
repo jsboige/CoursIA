@@ -1803,6 +1803,19 @@ def test_founding_incident_11227_criteria_met_on_main():
     import subprocess
     if not shutil.which("gh"):
         pytest.skip("gh CLI not available -- end-to-end requires it")
+    # GitHub Actions runners ship gh WITHOUT GH_TOKEN: `shutil.which` alone
+    # lets the test run and die on 'To use GitHub CLI in a GitHub Actions
+    # workflow, set the GH_TOKEN environment variable'. Guard the runner
+    # env deterministically, then probe stored auth for the general case.
+    if os.environ.get("GH_ACTIONS") == "true" and not (
+        os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    ):
+        pytest.skip("GitHub Actions runner without GH_TOKEN")
+    auth_probe = subprocess.run(
+        ["gh", "auth", "status"], capture_output=True, text=True
+    )
+    if auth_probe.returncode != 0:
+        pytest.skip("gh CLI present but unauthenticated")
     # Run against PR #11227 with the exact phrase from the founder review.
     # The script will reach out to gh API; if the PR is missing or
     # permissions fail, it returns non-zero AND stdout/stderr lack the
