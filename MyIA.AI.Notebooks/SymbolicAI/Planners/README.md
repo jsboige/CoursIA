@@ -13,7 +13,7 @@ Cette série de notebooks introduit la **Planification Automatique**, une branch
 
 La planification répond à une question différente de celle de l'apprentissage : non pas « que prédire ? » mais « **que faire ?** ». À partir d'un modèle du monde — un état initial, des actions avec leurs préconditions et effets, un but — un planificateur cherche automatiquement une suite d'actions qui mène au but. C'est une technologie éprouvée : elle pilote des robots (manipulation, navigation), optimise la logistique et l'ordonnancement, et a dirigé des engins spatiaux autonomes (Remote Agent sur Deep Space 1, planification d'activités des rovers martiens). Le langage **PDDL** a standardisé la manière de décrire ces problèmes, donnant naissance à tout un écosystème de solveurs comparables. La planification connaît aujourd'hui un regain d'intérêt avec les LLMs, comme moyen de doter les modèles de langage d'une capacité d'action vérifiable et orientée vers un but.
 
-**14 numéros logiques** (23 fichiers `.ipynb` : 14 Python + 9 CSharp twins + 1 Lean companion, cf. marqueur `<!-- CATALOG-STATUS -->` ci-dessus) | **5 parties** | **~10h**
+**15 numéros logiques** (24 fichiers `.ipynb` : 15 Python dont 1 companion Lean + 9 CSharp twins, cf. marqueur `<!-- CATALOG-STATUS -->` ci-dessus) | **5 parties** | **~11h**
 
 **À qui s'adresse cette série** : étudiants en IA, ingénieurs en robotique et logistique, développeurs souhaitant intégrer la planification symbolique dans leurs applications. Aucun prérequis en planification : les concepts sont introduits progressivement depuis les fondements STRIPS jusqu'aux approches neuro-symboliques modernes.
 
@@ -21,8 +21,8 @@ La planification répond à une question différente de celle de l'apprentissage
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 14 (1 setup + 3 foundation + 4 classical dont 1 companion Lean + 3 advanced + 3 neuro-symbolic) |
-| Durée totale | ~10h |
+| Notebooks | 15 (1 setup + 3 foundation + 5 classical dont 1 companion Lean + 3 advanced + 3 neuro-symbolic) |
+| Durée totale | ~11h |
 | Langage | Python 3.9+ |
 | Kernel | Python 3 |
 | Solveurs | Fast Downward, OR-Tools CP-SAT, unified-planning |
@@ -57,7 +57,7 @@ La série débute par le notebook Setup (0) qui configure automatiquement l'envi
 
 ### Phase 2 : Planification Classique (Notebooks 4-6, ~3h)
 
-Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Le notebook **5b** (Lean-Relaxation) est un **companion natif** au kernel Lean 4 : il prouve formellement, sans `sorry`, l'admissibilité de la relaxation $h^{+} \leq h^{*}$ dans le lake `planning_lean` — la certification mathématique de la propriété que le notebook 5 constate empiriquement. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, et modéliser n'importe quel domaine IPC.
+Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Le notebook **5b** (Lean-Relaxation) est un **companion natif** au kernel Lean 4 : il prouve formellement, sans `sorry`, l'admissibilité de la relaxation $h^{+} \leq h^{*}$ dans le lake `planning_lean` — la certification mathématique de la propriété que le notebook 5 constate empiriquement. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. Le notebook **13** (Différentiel d'atteignabilité, strate 7) retourne au moteur STRIPS minimal pour poser la question inverse : non plus « quel plan pour ce but ? » mais « **quelle nouvelle classe de plans devient atteignable quand on ajoute une primitive ?** » — un protocole en quatre pas (inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré) qui consomme les garanties du lake `planning_lean` au lieu de les rejouer. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, modéliser n'importe quel domaine IPC — et mesurer ce qu'un élargissement de vocabulaire vaut face à un approfondissement de recherche.
 
 <p align="center"><a href="02-Classical/Planners-5-Heuristics.ipynb"><img src="assets/readme/planners5-heuristics.png" width="540" alt="Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration."></a></p>
 
@@ -145,6 +145,7 @@ Pour les approches combinées apprentissage profond + symbolique :
 | Approche neuro-symbolique avancée | **Planners-12-LOOP** (85.8% IPC coverage) |
 | Comparer tous les solveurs (satisfaction) | **Planners-11-Unified-Planning** |
 | Comparer satisfaction **vs** optimisation (`MinimizeActionCosts`) | **Planners-11-Unified-Planning** ([#7592](https://github.com/jsboige/CoursIA/pull/7592)) |
+| Mesurer ce qu'une **nouvelle primitive** rend possible (strate 7) | **Planners-13-Differentiel-Atteignabilite** (protocole 4 pas, stdlib pur) |
 
 ## Objectifs d'apprentissage
 
@@ -183,7 +184,8 @@ SymbolicAI/Planners/
 │   ├── Planners-5-Heuristics-Csharp.ipynb # Twin C# h-max/h-add/h-FF/landmarks (See #4956)
 │   ├── Planners-5b-Lean-Relaxation.ipynb # Companion Lean 4 : preuve h+ <= h*
 │   ├── Planners-6-Domains.ipynb         # Domaines classiques
-│   └── Planners-6-Domains-Csharp.ipynb  # Twin C# STRIPS from-scratch (BFS, Block World/Hanoi/Gripper) (See #4956)
+│   ├── Planners-6-Domains-Csharp.ipynb  # Twin C# STRIPS from-scratch (BFS, Block World/Hanoi/Gripper) (See #4956)
+│   └── Planners-13-Differentiel-Atteignabilite.ipynb # Differentiel d'atteignabilite : primitive ajoutee, delta mesure (strate 7, #12233)
 ├── 03-Advanced/
 │   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
 │   ├── Planners-7-OR-Tools-Csharp.ipynb # Twin C# Job-Shop CP solver from-scratch (propagation + backtracking) (See #4956)
@@ -262,6 +264,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel, lemmes de monotonie `step_mono`/`run_mono` sur domaine jouet exécutable (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
 | 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
 | 6 (C#) | [Planners-6-Domains-Csharp](02-Classical/Planners-6-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : planificateur STRIPS from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle), domaines Block World + Hanoï + Gripper (See #4956) | 45 min |
+| 13 | [Planners-13-Differentiel-Atteignabilite](02-Classical/Planners-13-Differentiel-Atteignabilite.ipynb) | Python | **Différentiel d'atteignabilité** (strate 7) : protocole en 4 pas — inatteignabilité **prouvée** par énumération exhaustive (36 états), contrôle d'effort (BFS/A\*+h_max/IDDFS échouent sur le même espace, budgets rapportés), primitive **nommée et payante** (`raft-across`, planchette consommée + détour), delta mesuré (Δ={g1,g2}, h\* 7 et 6, espace 36→60). Consomme les théorèmes du lake `planning_lean` (h_max ≤ h⁺ ≤ h\*, `Admissibility.lean:41`) — chaîne h_max(3) ≤ h\*(8) strict vérifiée, rive droite invisible même au monde relaxé. Stdlib pur, déterministe (See #12233) | 45 min |
 
 ### Partie 3 : Approches Avancées ([03-Advanced/](03-Advanced/README.md))
 
@@ -363,6 +366,7 @@ curl -s http://localhost:8200/health
 | **STRIPS** | Modèle de planification avec préconditions/add/delete (1971) |
 | **PDDL** | Planning Domain Definition Language - standard IPC depuis 1998 |
 | **Heuristique** | Fonction estimant le coût pour atteindre le but |
+| **h_max** | Heuristique admissible : max des distances relaxées par atome — maillon calculable de la chaîne $h_{max} \le h^{+} \le h^{*}$ (notebook 13) |
 | **A*** | Algorithme de recherche optimale avec heuristique admissible |
 | **Landmark** | Fait qui doit être vrai à un moment du plan |
 | **HTN** | Hierarchical Task Network - décomposition de tâches |
@@ -518,7 +522,7 @@ python -c "import unified_planning; from ortools.sat.python import cp_model; pri
 jupyter notebook 01-Foundation/Planners-1-Introduction.ipynb
 ```
 
-Pour les notebooks 4-6 (Fast Downward), l'image Docker `jsboige/coursia-fast-downward` fournit un serveur API HTTP sur le port 8200 : `docker pull jsboige/coursia-fast-downward:latest`. Les notebooks théoriques (1-3, 7-12) ne nécessitent que Python.
+Pour les notebooks 4-6 (Fast Downward), l'image Docker `jsboige/coursia-fast-downward` fournit un serveur API HTTP sur le port 8200 : `docker pull jsboige/coursia-fast-downward:latest`. Les notebooks théoriques (1-3, 7-13) ne nécessitent que Python.
 
 ## Navigation guide
 
@@ -710,7 +714,7 @@ if status == cp_model.INFEASIBLE:
    # Puis pointer unified-planning vers le binaire
    ```
 
-Les notebooks théoriques (1-3, 7-12) ne nécessitent **pas** Docker et fonctionnent avec uniquement `pip install unified-planning ortools`.
+Les notebooks théoriques (1-3, 7-13) ne nécessitent **pas** Docker et fonctionnent avec uniquement `pip install unified-planning ortools`.
 
 ## Contribution
 
@@ -754,12 +758,12 @@ Le décompte exact ci-dessous est synchronisé avec le bloc `<!-- CATALOG-STATUS
 |------------|-----------|----------|-------------|
 | **00-Environment** | 1 | PRODUCTION=1, BETA=0 | Setup `unified-planning` + OR-Tools + vérification Docker Fast Downward (port 8200) |
 | **01-Foundation** | 3 | PRODUCTION=3, BETA=0 | Triptyque État-Action-But, modèle STRIPS, syntaxe PDDL, explosion combinatoire $O(2^n)$ |
-| **02-Classical** | 4 | PRODUCTION=3, BETA=1 | Fast Downward (translator→preprocessor→search), heuristiques admissibles ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), domaines IPC (Blocks World, Logistics, Gripper, Satellite), companion Lean `5b-Lean-Relaxation` |
+| **02-Classical** | 5 | PRODUCTION=3, BETA=2 | Fast Downward (translator→preprocessor→search), heuristiques admissibles ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), domaines IPC (Blocks World, Logistics, Gripper, Satellite), companion Lean `5b-Lean-Relaxation`, différentiel d'atteignabilité (`13-Differentiel-Atteignabilite`, strate 7) |
 | **03-Advanced** | 3 | PRODUCTION=3, BETA=0 | CP-SAT (OR-Tools), planification temporelle PDDL 2.1 (durées, parallélisme), HTN/SHOP2 (décomposition hiérarchique, HDDL) |
 | **04-NeuroSymbolic** | 3 | PRODUCTION=3, BETA=0 | LLM-Planning (génération plans depuis langage naturel, plan repair), `unified-planning` (portabilité cross-solveur), LOOP — *Learning to Plan* (state encoder + policy + value nets, 85.8% IPC coverage) |
-| **Total** | **14** | **PRODUCTION=13, BETA=1** | Python 3.9+, kernel Python 3, solveurs : Fast Downward (Docker) + OR-Tools 9.8+ + unified-planning 1.1+ |
+| **Total** | **15** | **PRODUCTION=13, BETA=2** | Python 3.9+, kernel Python 3, solveurs : Fast Downward (Docker) + OR-Tools 9.8+ + unified-planning 1.1+ |
 
-> **Note sur la maturité.** Le notebook `BETA=1` correspond à `Planners-5b-Lean-Relaxation.ipynb` (companion natif du lake `planning_lean/`) : la **preuve formelle 0-sorry** de l'admissibilité $h^{+} \leq h^{*}$ y est certifiée par `lake build` ; le statut `BETA` reflète la phase de relecture pédagogique (intégration au parcours d'apprentissage) plutôt qu'un défaut technique. Le déploiement industriel est validé.
+> **Note sur la maturité.** Les notebooks `BETA=2` correspondent à `Planners-5b-Lean-Relaxation.ipynb` (companion natif du lake `planning_lean/` : la **preuve formelle 0-sorry** de l'admissibilité $h^{+} \leq h^{*}$ y est certifiée par `lake build`) et à `Planners-13-Differentiel-Atteignabilite.ipynb` (nouveau, strate 7). Le statut `BETA` reflète la phase de relecture pédagogique (intégration au parcours d'apprentissage) plutôt qu'un défaut technique. Le déploiement industriel est validé.
 
 **Conformité C.1 — stubs d'exercice.** Les cellules de chaque notebook suivent les patterns conformes (jamais `raise NotImplementedError`) : `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`. Chaque notebook s'exécute end-to-end même avant résolution des exercices. Dépendances Python (cf `requirements.txt` racine) : `unified-planning>=1.1`, `networkx>=3.1`, `matplotlib>=3.7`, `numpy>=1.24`, `ortools>=9.8`, `torch>=2.0` (LOOP uniquement) ; optionnels LLM : `openai>=1.0`, `anthropic>=0.30`, `python-dotenv`, `pandas>=2.0`. **Docker** requis pour Fast Downward (port 8200). **Lean 4** (`elan`) requis pour `5b-Lean-Relaxation` via le sous-lake `planning_lean/` (toolchain `lean-toolchain` local). Côté pratique : `pip install -r requirements.txt` puis exécution kernel Python 3 standard. **Note : Planners ne contient pas de variante `student/` dédiée** (à la différence de Tweety ou Sudoku) ; les exercices sont intégrés directement dans les notebooks de la série, sous les labels `# Exercice` / `# Exemple guide` conformément à la convention contenu-based.
 
