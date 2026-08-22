@@ -30,8 +30,7 @@
       content_python_sha: 8875c36b493aa80600dda58e11d9742d0fcdcb60328924cc7cd2b8eb992126a3
       content_csharp_sha: 2fe455e1237af951ed29ca9eafe5c7599c813cbf90b73c799a88079806e65e13
   known_differences:
-  - 'PR #12108 (2026-08-22, reprise #12104) : cote C#, normalisation source_list_missing_newlines (
- manquants sur elements de liste source, 16 cellules NO_AUTO_FIX reprises manuellement) -- drift de forme JSON uniquement, contenu pedagogique et cellules code inchanges.'
+    - 'PR #12108 (2026-08-22, reprise #12104) : cote C#, normalisation source_list_missing_newlines (backslash-n manquants sur elements de liste source, 16 cellules NO_AUTO_FIX reprises manuellement) -- drift de forme JSON uniquement, contenu pedagogique et cellules code inchanges.'
     - "Socle commun : CSP distribue (DisCSP) -- formalisation, ABT (Asynchronous Backtracking, Yokoo 1992), AWC (Asynchronous Weak-Commitment, Yokoo 1995), Privacy-Preserving CSP, application multi-hopital, benchmark synthetique ABT vs AWC. Le C# se declare explicitement 'binome .NET du CSP-9-Distributed.ipynb' (H1) et cite Yokoo 1992."
     - "PARITE CELLULAIRE EXACTE : 47 cellules des deux cotes (19 code, 28 markdown) -- le twin le plus proche cellule-a-cellule des 5 residuels. Sections logiques 1-7 identiques ; le C# concentre parfois plusieurs H2 logiques dans une meme cellule markdown (surcomptage brut d'en-tetes a 34) mais la couverture structurelle reelle matche le Python."
     - "Solver-free by design DES DEUX COTES : ABT/AWC/PrivacyPreserving implementes from-scratch (ni OR-Tools, ni Z3, ni Choco des deux cotes -- verifie par grep des imports/#r). Le H1 C# le dit explicitement : 'l'ABT n'a pas de moteur SOTA centralise, c'est l'algorithme qui est le sujet'. Aucune asymetrie de machinerie."
