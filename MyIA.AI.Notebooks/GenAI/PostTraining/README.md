@@ -31,7 +31,7 @@ L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaq
 | PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289 |
 | PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen3.5-0.8B (QLoRA 4-bit) | #5078 |
 | PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable clé) | `trl.GRPOTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289 |
-| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen3.5-0.8B (QLoRA 4-bit) | #1771, #10487, #10504 |
+| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) | `trl.GRPOTrainer` + verifier SymPy | Qwen3.5-0.8B (QLoRA 4-bit) | #10487, #10504 (orig. #1771) |
 | PT-06 | `PT_06_eval_comparative.ipynb` | Évaluation comparative SFT vs DPO vs GRPO vs RLVR | Tableaux, chart, framework décision | tous | #1772, #10819 |
 | PT-07 | `PT_07_rewardspy_reward_hacking.ipynb` | Détecter le reward hacking (Goodhart) — observabilité reward | `rewardspy.watch`/`audit` (offline, sans GPU) | N/A (offline) | #4538 |
 | PT-08 | `PT_08_grpo_from_scratch_toy_env.ipynb` | GRPO **from scratch** (toy env CPU) — mécanique du group-relative advantage, écart PPO↔GRPO, comparaison « avec vs sans critic » | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
@@ -354,7 +354,7 @@ Sur Windows, `bitsandbytes` peut nécessiter CUDA 12.x. Si erreur DLL not found,
 
 ### Peut-on reproduire Deepseek-R1 avec cette serie ?
 
-Non directement, mais les briques conceptuelles sont les mêmes. Deepseek-R1 utilise GRPO + RLVR sur des modèles 671B (architecture MoE) avec une infrastructure distribuée massive. Cette série reproduit les mêmes techniques sur Qwen3.5-0.8B (QLoRA 4-bit) pour rendre les concepts accessibles sur GPU 8 Go. Les formules de loss, les mécanismes de reward, et les stratégies d'évaluation sont identiques — seule l'échelle change. PT-04 (GRPO) et PT-05 (RLVR) reproduisent fidèlement le pipeline Deepseek-R1 en miniature.
+Non directement, mais les briques conceptuelles sont les mêmes. Deepseek-R1 utilise GRPO + RLVR sur des modèles 671B (architecture MoE) avec une infrastructure distribuée massive. Les notebooks GPU de la série (PT-04, PT-05) reproduisent ces mêmes techniques sur Qwen3.5-0.8B (QLoRA 4-bit) pour rendre les concepts accessibles sur GPU 8 Go. Les formules de loss, les mécanismes de reward, et les stratégies d'évaluation sont identiques — seule l'échelle change. PT-04 (GRPO) et PT-05 (RLVR) reproduisent fidèlement le pipeline Deepseek-R1 en miniature.
 
 ## Licence
 
