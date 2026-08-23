@@ -13827,7 +13827,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb
 
 Le sous-titre de la série Conway est *« source de vérité formelle »*. Pourtant, jusqu'ici, le formalisme Lean était **encapsulé derrière des appels Python** (`run_lake`, `run_lean_snippet`) dans [Lean-16b](Lean-16b-Conway-Game-of-Life-Lean.ipynb). L'étudiant n'interagissait jamais avec Lean directement.
 
-Ce notebook corrige cette incohérence : on utilise le **kernel `lean4-wsl`**, qui exécute chaque cellule comme une commande Lean 4 dans un REPL. C'est la même expérience que les notebooks [GameTheory-2b](../../GameTheory/GameTheory-02b-Lean-Definitions.ipynb), `4b`, `8b`, `15b`.
+Ce notebook corrige cette incohérence : on utilise le **kernel `lean4-wsl`**, qui exécute chaque cellule comme une commande Lean 4 dans un REPL. C'est la même expérience que les notebooks [GameTheory-2b](../../GameTheory/GameTheory-2b-Lean-Definitions.ipynb), `4b`, `8b`, `15b`.
 
 **Vérifions que le kernel répond** (deux diagnostics standard) :",,,,,,,,c0ef3f2374de4224,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb,d8ffde6f,code,fr,febcfca6d67429df,"#eval 2 + 2
