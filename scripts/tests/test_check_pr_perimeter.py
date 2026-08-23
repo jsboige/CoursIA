@@ -224,6 +224,44 @@ def test_only_standalone_still_flags():
     assert extract_perimeter_assertions(line) == [line]
 
 
+def test_extract_skips_negated_exclusivity_marker():
+    """A marker under negation asserts universality, not exclusivity.
+
+    Measured on #12547: the body line "Le gate attend tous les checks
+    non-advisory, pas seulement les requis" -- a claim about CI semantics
+    that WIDENS the set it describes -- was read as an exclusivity assertion
+    and fired criterion #11268-2 on two untouched-by-the-claim workflow
+    files, turning the required PR gate red on a correct body. Same failure
+    shape as the read-only compound above: the marker is present, its force
+    is not.
+    """
+    line = ("Le gate attend tous les checks non-advisory, pas seulement "
+            "les requis.")
+    assert extract_perimeter_assertions(line) == []
+    perim = __import__("check_pr_perimeter")
+    for negated in ("pas seulement les requis",
+                    "non seulement les requis mais tous les checks",
+                    "not only the required ones",
+                    "ce n'est pas uniquement une question de perimetre"):
+        assert not perim._has_exclusivity(negated), negated
+
+
+def test_bare_exclusivity_still_flags_after_negation_fix():
+    """Control positive: the negation skip must disarm nothing.
+
+    Every marker in its plain, unnegated form stays a live exclusivity
+    assertion. This is the fixture class whose absence let the negation
+    blindness ship in the first place.
+    """
+    perim = __import__("check_pr_perimeter")
+    for live in ("cette pr touche uniquement ces 2 fichiers",
+                 "seulement le workflow x est modifie",
+                 "aucune autre modification",
+                 "only the sweep is touched",
+                 "nothing else is modified"):
+        assert perim._has_exclusivity(live), live
+
+
 def test_extract_skips_markdown_table_rows():
     """A markdown table row is a report structure, not a live assertion.
 
