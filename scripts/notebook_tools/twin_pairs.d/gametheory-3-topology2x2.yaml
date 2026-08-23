@@ -33,6 +33,12 @@
       csharp_sha: 557357476ebfce45ccd122af62c2b3c31a708485
       content_python_sha: 1e8d4c4aa6c8bf1bcb0914eefea2f99958897b6e5618c6a0933bff528af97081
       content_csharp_sha: fdd5f1c160f2b8602f7f83cfce67236e3677593e05944fb2468a9792008c426c
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: a3040cafa7c64c8d8246ee60edcbef9b608ff3e4
+      csharp_sha: 557357476ebfce45ccd122af62c2b3c31a708485
+      content_python_sha: e7311bc96309c31cbed41ec004a977db77966fb8ea09aad2aaae0f8b301a98f9
+      content_csharp_sha: fdd5f1c160f2b8602f7f83cfce67236e3677593e05944fb2468a9792008c426c
   known_differences:
     - "Socle pedagogique commun : representation ordinale des jeux 2x2 (4 rangs par joueur), classification topologique des 5 archetypes strategiques (Prisonnier, Stag Hunt, BoS, Poulet, Matching Pennies) sur le carre des preferences ordinales."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `networkx` + classe `OrdinalGame` from-scratch (dataclass + equals). C# = `System.*` (Collections.Generic, Linq) + classe `OrdinalGame` from-scratch (IEquatable<OrdinalGame>)."
