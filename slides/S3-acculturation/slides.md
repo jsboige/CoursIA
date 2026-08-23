@@ -492,8 +492,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
----
 
 
 
@@ -504,6 +502,8 @@ layout: two-cols
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Techniques</div>
 </div>
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Définition CSPs**
 
@@ -516,9 +516,8 @@ layout: two-cols
 - Exemple
   - Coloration de carte
 
-
-::right::
-
+</div>
+<div>
 
 **Techniques**
 
@@ -538,6 +537,9 @@ layout: two-cols
 <img src="./images/img_036.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
 <img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
 
+</div>
+
+</div>
 </div>
 
 
@@ -566,13 +568,14 @@ layout: section
 
 
 ---
-layout: two-cols
----
 
 
 
 # Représentation et logique
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Enoncés**
 
@@ -586,9 +589,8 @@ layout: two-cols
 - Propriétés
 - correction, consistance, complétude
 
-
-::right::
-
+</div>
+<div>
 
 **Bases de connaissances**
 
@@ -596,6 +598,9 @@ layout: two-cols
 
 <img src="./images/img_035.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
 <img src="./images/img_036.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+
+</div>
+</div>
 
 
 
@@ -626,13 +631,14 @@ layout: two-cols
 <img src="./images/img_040.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 ---
-layout: two-cols
----
 
 
 
 # Logique du premier ordre (FOL)
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - Modélise
   - Objets, Propriétés
@@ -643,9 +649,8 @@ layout: two-cols
 - Sémantiques multiples
   - de base de données
 
-
-::right::
-
+</div>
+<div>
 
 **Exemple: investigation**
 
@@ -655,6 +660,9 @@ layout: two-cols
 - Américain(x) ET Arme(y) ET Vend(x,y,z) ET Hostile(z) => Criminel(x)
 
 <img src="./images/img_040.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
+
+</div>
+</div>
 
 
 
