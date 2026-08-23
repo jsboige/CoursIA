@@ -4,7 +4,7 @@ Topology of 2x2 Games - Periodic Table Classification
 ======================================================
 
 Implements the Robinson-Goforth classification of 2x2 games.
-Related to GameTheory-3-Topology2x2.ipynb
+Related to GameTheory-03-Topology2x2.ipynb
 
 The "periodic table" classifies all strict ordinal 2x2 games
 based on their strategic properties.

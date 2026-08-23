@@ -25,7 +25,7 @@ Un assistant de codage sans mémoire externe ré-explore le même terrain à cha
 
 - **Opérateurs d'agents** qui veulent comprendre comment leurs outils sont *ancrés* dans un historique vérifié.
 - **Curieux d'infrastructure ML / vectorielle** qui cherchent un récit honnête de mise en production (Docker, WSL2, quantization, anti-split-brain).
-- **Lecteurs du notebook pratique** `01-Hands-On-Grounding.ipynb` qui veulent le contexte de l'infrastructure avant de manipuler Qdrant en mémoire.
+- **Lecteurs des notebooks pratiques** `01-Hands-On-Grounding.ipynb` (le contexte de l'infrastructure avant de manipuler Qdrant) et `03-Embeddings-From-Scratch.ipynb` (ce qu'un embedding *est*, avant de s'en servir).
 - **Personnes ayant vécu un incident** (perte de données, dérive de montage disque, sauvegardes à moitié câblées) et cherchant des leçons partageables.
 
 ## Objectifs d'apprentissage
@@ -39,11 +39,12 @@ Un assistant de codage sans mémoire externe ré-explore le même terrain à cha
 
 ## Notebooks et documents
 
-Cette section ne contient qu'**un seul notebook** (mise en pratique sur Qdrant en mémoire) et **quatre documents** de cadrage :
+Cette section contient **deux notebooks** (mise en pratique sur Qdrant en mémoire, et construction d'embeddings from scratch) et **quatre documents** de cadrage :
 
 | Support | Type | Vous y trouverez |
 |---------|------|------------------|
 | [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb) | Notebook pratique | Manipuler Qdrant en mémoire : embeddings, upsert, recherche, index de payload — zéro dépendance externe |
+| [`03-Embeddings-From-Scratch.ipynb`](03-Embeddings-From-Scratch.ipynb) | Notebook pratique | Construire un word2vec (skip-gram NSG) en NumPy : co-occurrences + PMI, la géométrie qui émerge, et le pont vers un transformer contextuel |
 | [`01-Pourquoi-Memoire-Semantique.md`](docs/01-Pourquoi-Memoire-Semantique.md) | Document de cadrage | Le besoin : grounding, SDDD, RAG |
 | [`02-Infrastructure-Qdrant.md`](docs/02-Infrastructure-Qdrant.md) | Document de déploiement | Docker, WSL2, quantization, anti-split-brain |
 | [`03-Utilisation-MCP-Indexation.md`](docs/03-Utilisation-MCP-Indexation.md) | Document d'usage | Brancher un agent via MCP, indexer, rechercher |
@@ -121,6 +122,7 @@ Quatre briques coopèrent pour former la chaîne de grounding :
 RAG-et-Memoire-Semantique/
 ├── README.md                              # Ce fichier — cadrage et vue d'ensemble
 ├── 01-Hands-On-Grounding.ipynb            # Notebook pratique — Qdrant en mémoire, zéro dépendance
+├── 03-Embeddings-From-Scratch.ipynb       # Notebook pratique — word2vec from scratch + pont transformer
 ├── docs/
 │   ├── 01-Pourquoi-Memoire-Semantique.md  # Le besoin : grounding, SDDD, RAG
 │   ├── 02-Infrastructure-Qdrant.md        # Le déploiement : Docker, WSL2, quantization
@@ -175,10 +177,10 @@ R : La mémoire sémantique est *indexée par le sens* (embeddings + recherche v
 
 ## Conclusion / Prochaines étapes
 
-`RAG-et-Memoire-Semantique` est une section modeste en volume (1 notebook + 4 documents) mais dense en leçons opérationnelles : chaque incident documenté a renforcé une règle de durcissement (disque dédié, sauvegardes testées, anti-split-brain). Pour aller plus loin :
+`RAG-et-Memoire-Semantique` est une section modeste en volume (2 notebooks + 4 documents) mais dense en leçons opérationnelles : chaque incident documenté a renforcé une règle de durcissement (disque dédié, sauvegardes testées, anti-split-brain). Pour aller plus loin :
 
 - **Lire les incidents.** Le document [04 - Incidents et leçons](docs/04-Incidents-et-Lecons.md) est la matière pédagogique la plus utile de cette section — il documente des pannes *réelles* et leurs *solutions*.
-- **Faire tourner le notebook.** [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb) fonctionne en mémoire, sans Docker, en quelques minutes.
+- **Faire tourner les notebooks.** [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb) fonctionne en mémoire, sans Docker, en quelques minutes ; [`03-Embeddings-From-Scratch.ipynb`](03-Embeddings-From-Scratch.ipynb) construit un word2vec en NumPy, puis le compare à un transformer contextuel, en quelques secondes.
 - **Brancher un agent.** Le document [03 - Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md) montre comment relier Claude Code ou Roo Code à Qdrant via MCP.
 
 Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`5_RAG_Modern.ipynb`](../Texte/5_RAG_Modern.ipynb) et [`14_Persistent_Memory.ipynb`](../Texte/14_Persistent_Memory.ipynb) de la section Texte.
@@ -188,6 +190,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 ### Liens transverses
 
 - [Notebook pratique — Hands-On Grounding](01-Hands-On-Grounding.ipynb)
+- [Notebook pratique — Embeddings from scratch](03-Embeddings-From-Scratch.ipynb)
 - [Pourquoi la mémoire sémantique](docs/01-Pourquoi-Memoire-Semantique.md)
 - [Infrastructure Qdrant](docs/02-Infrastructure-Qdrant.md)
 - [Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md)
@@ -206,6 +209,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 | [03 - Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md) | Brancher un agent via MCP, indexer code et conversations, requêter par le sens | Intermédiaire |
 | [04 - Incidents et leçons](docs/04-Incidents-et-Lecons.md) | Diagnostiquer une dérive de montage, une perte de données, durcir les sauvegardes | Avancé |
 | [Notebook — Hands-On Grounding](01-Hands-On-Grounding.ipynb) | Manipuler Qdrant en mémoire : embeddings, upsert, recherche, index de payload | Pratique |
+| [Notebook — Embeddings from scratch](03-Embeddings-From-Scratch.ipynb) | Construire un word2vec (skip-gram NSG) en NumPy, lire la géométrie, comparer à un transformer | Pratique |
 
 ---
 

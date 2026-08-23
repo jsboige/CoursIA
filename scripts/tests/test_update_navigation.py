@@ -24,13 +24,13 @@ from update_navigation import (
 
 class TestFilenames:
     def test_main_filename(self):
-        assert get_notebook_filename(1, "Setup") == "GameTheory-1-Setup.ipynb"
+        assert get_notebook_filename(1, "Setup") == "GameTheory-01-Setup.ipynb"
 
     def test_side_track_filename(self):
         assert get_side_track_filename("2b") == "GameTheory-2b.ipynb"
 
     def test_complex_name(self):
-        assert get_notebook_filename(4, "NashEquilibrium") == "GameTheory-4-NashEquilibrium.ipynb"
+        assert get_notebook_filename(4, "NashEquilibrium") == "GameTheory-04-NashEquilibrium.ipynb"
 
 
 # ---------------------------------------------------------------------------
@@ -96,14 +96,14 @@ class TestUpdateReferences:
         f = tmp_path / "test.txt"
         f.write_text("See GameTheory-8-BackwardInduction and GameTheory-17-Lean-Definitions", encoding="utf-8")
         mapping = {
-            "GameTheory-8-BackwardInduction": "GameTheory-9-BackwardInduction",
-            "GameTheory-17-Lean-Definitions": "GameTheory-2b-Lean-Definitions",
+            "GameTheory-8-BackwardInduction": "GameTheory-09-BackwardInduction",
+            "GameTheory-17-Lean-Definitions": "GameTheory-02b-Lean-Definitions",
         }
         result = update_internal_references(str(f), mapping)
         assert result is True
         content = f.read_text(encoding="utf-8")
-        assert "GameTheory-9-BackwardInduction" in content
-        assert "GameTheory-2b-Lean-Definitions" in content
+        assert "GameTheory-09-BackwardInduction" in content
+        assert "GameTheory-02b-Lean-Definitions" in content
         assert "GameTheory-8-BackwardInduction" not in content
 
     def test_no_changes_needed(self, tmp_path):

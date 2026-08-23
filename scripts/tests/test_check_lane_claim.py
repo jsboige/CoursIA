@@ -1706,7 +1706,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/GameTheory/"
-                "GameTheory-4-NashEquilibrium-Csharp.ipynb",
+                "GameTheory-04-NashEquilibrium-Csharp.ipynb",
                 "2026-08-11T04:07:00Z"),
     )
     for lane in (
