@@ -4628,3 +4628,126 @@ def test_lint_12327_no_supersede_marker_when_only_rele(capsys):
         "pas de SUPERSEDED non plus (pas d'actif pour le supplanter)"
     )
 
+
+# --- #12656 fail-OPEN : caller a joker vs claim path-scope --------------------
+#
+# The guard read `_path_matches_any(my_scope, scope)` with the CALLER's glob
+# as the fnmatch `filename` operand and the other lane's concrete path as the
+# `pattern`, so `fnmatch("dir/**", "dir/file.md")` was False and a joker
+# caller was told CLEAR against a claim that demonstrably covered its target.
+# `_scopes_intersect` is the symmetric replacement. A game of pattern goes by
+# its FALSE NEGATIVES: the six repro rows of the issue table, jokers included,
+# must all report BLOCKED, and genuinely-disjoint jokers must still CLEAR.
+
+_RAG = "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique"
+_RAG_CLAIM = [
+    f"{_RAG}/README.md",
+    f"{_RAG}/02-Retrieval-Avance.ipynb",
+]
+_RAG_TRACKED = _RAG_CLAIM + [f"{_RAG}/01-Introduction.ipynb"]
+
+
+def test_scopes_intersect_six_repro_rows_block():
+    """#12656 table row-by-row: every caller form names the tracked README.md
+    that the po-2025 claim scopes, so it must INTERSECT (block), not clear.
+    The literal form is the control that already worked; the 5 joker forms
+    are the fail-OPEN this test pins closed."""
+    callers = [
+        f"{_RAG}/README.md",                  # literal -- control
+        f"{_RAG}/README*",                    # trailing joker
+        f"{_RAG}/READM?.md",                  # single-char joker
+        f"{_RAG}/**",                         # directory-recursive joker
+        f"{_RAG}/*",                          # single-level joker
+        "MyIA.AI.Notebooks/GenAI/**",         # upstream joker
+    ]
+    for caller in callers:
+        assert clc._scopes_intersect([caller], _RAG_CLAIM, _RAG_TRACKED) is True, (
+            f"repro row {caller!r} did not intersect the claim scope -- fail-OPEN"
+        )
+
+
+def test_scopes_intersect_disjoint_jokers_no_block():
+    """Acceptance #2: genuine disjoint globs (FineTuning/** vs RAG/**) must
+    NOT intersect -- the #10419 acquit must not be paid by over-obstruction."""
+    tracked = [
+        f"MyIA.AI.Notebooks/GenAI/FineTuning/README.md",
+        f"{_RAG}/README.md",
+    ]
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/GenAI/FineTuning/**"],
+        [f"{_RAG}/README.md"],
+        tracked,
+    ) is False
+
+
+def test_scopes_intersect_no_tracked_concrete_vs_glob():
+    """Reducer path (`compute_active_claims` has no repo walk): a scoped
+    override with a joker must CLOSE a concrete claim it covers -- the same
+    operand-order bug left it unable to."""
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/Reidemeister.lean"],
+    ) is True
+
+
+def test_scopes_intersect_no_tracked_disjoint_globs():
+    assert clc._scopes_intersect(
+        ["scripts/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+    ) is False
+
+
+def test_scopes_intersect_no_tracked_identical_glob():
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+    ) is True
+
+
+def test_run_check_joker_caller_blocks_scoped_claim(capsys):
+    """#12656 acceptance #1 end-to-end: a `--paths` that carries a joker
+    covering a tracked file named in another lane's `paths:` claim must
+    return exit 1 (BLOCKED) -- the 5 joker forms were the reported fail-OPEN,
+    the literal form is the control."""
+    callers = [
+        f"{_RAG}/README.md",
+        f"{_RAG}/README*",
+        f"{_RAG}/READM?.md",
+        f"{_RAG}/**",
+        f"{_RAG}/*",
+        "MyIA.AI.Notebooks/GenAI/**",
+    ]
+    p = payload(
+        comment(
+            f"[CLAIMED] lane myia-po-2025:CoursIA -- paths: "
+            f"{_RAG}/README.md, {_RAG}/02-Retrieval-Avance.ipynb",
+            "2026-08-23T19:04:33Z",
+        ),
+    )
+    for caller_paths in callers:
+        rc = clc._run_check(p, "myia-po-2023:CoursIA-2", my_paths=[caller_paths])
+        assert rc == 1, (
+            f"joker caller {caller_paths!r} vs a path-scope claim covering "
+            f"README.md returned rc={rc} (expected 1 / blocked) -- #12656 "
+            f"fail-OPEN"
+        )
+
+
+def test_run_check_disjoint_joker_caller_clear(capsys):
+    """Acceptance #2 end-to-end: disjoint joker scopes must CLEAR (exit 0).
+    The caller targets RAG/**, the other lane's claim covers only FineTuning."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA -- paths: "
+            "MyIA.AI.Notebooks/GenAI/FineTuning/README.md",
+            "2026-08-23T19:04:33Z",
+        ),
+    )
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=[f"{_RAG}/**"],
+    )
+    assert rc == 0, (
+        f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
+    )
+
