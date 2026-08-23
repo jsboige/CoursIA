@@ -40,7 +40,7 @@ Deux topologies canoniques la réalisent, aux deux extrémités du spectre :
 
 Toutes deux vérifient les trois lois — la première trivialement, la seconde par
 les lois de `Sieve` (`pullback_top`, `le_top`, `inf_idem`). La **frontière
-honnête** est consignée en §7 : la correspondance « topologie de Grothendieck
+honnête** de cette partie : la correspondance « topologie de Grothendieck
 ↔ topologie de Lawvere–Tierney » (le `j` induit par la clôture `J`-closure)
 exige un opérateur `GrothendieckTopology.closure` absent de Mathlib v4.32.1 ;
 elle reste hors de portée de cette partie, comme l'instance `ElementaryTopos`

@@ -39,8 +39,8 @@ Two canonical topologies realize it, at the two ends of the spectrum:
   - **indiscrete** (`j S = ⊤`): the closure is maximal, only `⊤` is closed.
 
 Both satisfy the three laws — the first trivially, the second through the laws
-of `Sieve` (`pullback_top`, `le_top`, `inf_idem`). The **honest frontier** is
-recorded in §7: the correspondence "Grothendieck topology ↔ Lawvere–Tierney
+of `Sieve` (`pullback_top`, `le_top`, `inf_idem`). The **honest frontier** of
+this part: the correspondence "Grothendieck topology ↔ Lawvere–Tierney
 topology" (the `j` induced by the `J`-closure operator) requires a
 `GrothendieckTopology.closure` operator absent from Mathlib v4.32.1; it remains
 out of reach of this part, as the `ElementaryTopos` instance was for Part 58.
