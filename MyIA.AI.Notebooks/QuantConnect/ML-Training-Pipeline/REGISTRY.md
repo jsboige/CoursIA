@@ -7,7 +7,7 @@ Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais
 Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11011): BEATS 3/3 (linear → mse : changement de jambe, pas de modèle)
 Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
 Updated: 2026-08-15 — M15 LSTM-vol §C re-run perte de précision (issue #11034): 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS
-Updated: 2026-08-23 — M4 DLinear-vol §C extension ETF (Epic #1454): **BEATS 9/9** — l'edge BTC log-RV transfère à SPY/TLT/GLD (première entrée §C hors BTC)
+Updated: 2026-08-24 — M4 DLinear-vol §C extension ETF (Epic #1454): **NO BEATS** — l'edge brut (+16,75 %) est le biais² de la baseline HAR ; hors biais +0,02 % sur 9/9 cellules (réfutation #12684, décomposition refaite)
 Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barreau ETF direction 9/9 NO BEATS (#11427) absents du header — cf sections respectives
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
@@ -181,50 +181,75 @@ que HAR porte l'essentiel (`har_bias_oos` −0,23/−0,34/−0,45).
 
 ## M4 DLinear-vol — extension §C ETF (2026-08-23) — Epic #1454
 
-Première entrée §C **hors BTC** : la question était de savoir si l'edge M4 (BEATS 3/3 sur BTC
-log-RV, #11036) est spécifique au terrain crypto ou transfère aux ETF anti-biais. Réponse :
-**il transfère, 9/9 cellules BEATS**, conjonction tenue partout (jambe σ ET jambe DM), zéro
-seed BEATEN sur 36 combos.
+**Verdict §C : NO BEATS.** Première entrée §C **hors BTC**. La question posée était de savoir
+si l'edge M4 (BEATS 3/3 sur BTC log-RV, #11036) est spécifique au terrain crypto ou transfère
+aux ETF anti-biais. La réponse est **non** : ce qui transfère est la **miscalibration de la
+baseline**, pas une capacité prédictive. Une première rédaction de cette entrée concluait
+« BEATS 9/9 » sur l'edge brut ; #12684 l'a réfutée et la décomposition ci-dessous, refaite
+indépendamment sur les 9 cellules, la confirme.
 
 **Modèle** : DLinear (Zeng et al. AAAI 2023), `seq_len=22 -> horizon`, ~22 params — identique
 à l'entrée BTC (#11036). **Univers** : SPY / TLT / GLD daily 2005-01-03 → 2026-08-14
-(`datasets/panier/`, 5 438 obs par symbole, ~2,4× le terrain BTC ; aucun FAANG/Mag7).
-**Cible** : log-RV quotidien estimée par **Garman-Klass (1980)** sur OHLC daily
-(`0.5·ln(H/L)² − (2ln2−1)·ln(C/O)²`, ~7,4× plus efficace que rendements²). L'estimateur
-diffère de la somme horaire du terrain BTC (pas de données intraday ETF sur disque) — la
-comparabilité §C est **interne** (modèle et HAR sur la même série GK, même walk-forward),
-pas cross-terrain. **Baselines** : HAR (Corsi 2009) + persistence (random walk).
-**DM** : `scripts/dm_test.py`, HAC Newey-West + HLN, `loss_fn="mse"` (jambe de précision,
-#11010) ; biais signé OOS rapporté par modèle ET baseline (§C point 7).
-**Protocol** : walk-forward 5-fold expanding, `refit_every=110` (cadence M15, REGISTRY
-2026-08-14), seeds {0,1,7,42} (4/5 du set §C), horizons {1,5,10}. **Compute** : CPU
-(harnais `dlinear_vol` par construction, zéro `.to(device)`).
+(`datasets/panier/`, 5 438 obs par symbole ; aucun FAANG/Mag7). **Cible** : log-RV quotidien
+estimée par **Garman-Klass (1980)** sur OHLC daily (`0.5·ln(H/L)² − (2ln2−1)·ln(C/O)²`).
+L'estimateur diffère de la somme horaire du terrain BTC (pas d'intraday ETF sur disque) — la
+comparabilité est **interne**, pas cross-terrain. **Baselines** : HAR (Corsi 2009) +
+persistence. **DM** : `scripts/dm_test.py`, HAC Newey-West + HLN, `loss_fn="mse"`.
+**Protocole** : walk-forward 5-fold expanding, `refit_every=110`, seeds {0,1,7,42},
+horizons {1,5,10}. **Compute** : CPU.
 
-| Symbole | h=1 edge (σ, dm_p) | h=5 edge (σ, dm_p) | h=10 edge (σ, dm_p) | Verdict §C |
-|---------|--------------------|--------------------|---------------------|------------|
-| SPY | +3,9 % (0,07 pt ; 1,9e-05) | +12,9 % (0,24 pt ; 3,2e-06) | +20,1 % (0,23 pt ; 4,8e-07) | **BEATS 3/3** |
-| TLT | +6,5 % (0,08 pt ; 8,8e-10) | +23,4 % (0,17 pt ; 1,6e-12) | +34,8 % (0,13 pt ; 1,0e-14) | **BEATS 3/3** |
-| GLD | +4,0 % (0,04 pt ; 6,1e-06) | +17,3 % (0,14 pt ; 5,2e-08) | +27,9 % (0,15 pt ; 4,3e-09) | **BEATS 3/3** |
+### Décomposition biais-variance — la mesure qui tranche
 
-Chaque cellule : 4/4 seeds BEATS baseline, 0 BEATEN, edge ≥ 2σ (ex. GLD h=1 : +4,0 % vs
-2×0,04 pt), `dm_p_median ≤ 1,9e-05`. La dispersion cross-seed est négligeable (0,04-0,28 pt)
-— DLinear quasi déterministe sur ce terrain. L'edge croît avec l'horizon (patron BTC reproduit),
-le plus fort sur TLT (+34,8 % à h=10).
+`MSE = biais² + variance`. Le tableau donne les deux edges : celui du MSE total (ce qu'un
+DM sur `mse` mesure) et celui de la **variance seule**, c'est-à-dire la précision une fois
+les deux prévisionneurs recalés sur leur moyenne.
 
-**Lecture honnête** : biais OOS DLinear faible (−0,005 à +0,049 log-RV) vs biais HAR massif
-(−0,156 à −0,309, HAR **sous-prévoit** log-RV sur les 3 ETF comme sur BTC) — l'edge mse est
-porté par la précision, pas par un différentiel de biais défavorable ; le contrôle `linear`
-(biais) reste à jouer comme jambe séparée si claim de déploiement. Persistence battue partout
-(MSE 0,57-1,14). **Coûts de transaction** : prévision (MSE log-RV), aucune stratégie dérivée →
-coût non imputé ; borne 5 bps SPY / 10 bps si conversion future en overlay de vol-timing
-(note, pas un claim). **Contrepoint M15** (même terrain, run parallèle #1454 du 23/08) : le
-LSTM h=64 ne transfère pas (INCONCLUSIVE sur les cellules complétées à ce stade) —
-l'edge ETF-vol est porté par DLinear, pas par la famille deep seq.
+| Symbole | h | MSE HAR | biais HAR | MSE DL | biais DL | edge brut | **edge hors biais** |
+|---|---|---|---|---|---|---|---|
+| SPY | 1  | 0,70490 | −0,15614 | 0,67767 | +0,00910 | +3,86 %  | **+0,43 %** |
+| SPY | 5  | 0,43526 | −0,23207 | 0,37904 | +0,01425 | +12,92 % | **+0,67 %** |
+| SPY | 10 | 0,45129 | −0,30060 | 0,36056 | +0,01683 | +20,10 % | **+0,18 %** |
+| TLT | 1  | 0,57879 | −0,19761 | 0,54131 | −0,00425 | +6,47 %  | **−0,29 %** |
+| TLT | 5  | 0,27556 | −0,25318 | 0,21095 | −0,00235 | +23,45 % | **+0,24 %** |
+| TLT | 10 | 0,27543 | −0,30853 | 0,17967 | −0,00459 | +34,77 % | **+0,33 %** |
+| GLD | 1  | 0,72318 | −0,18029 | 0,69440 | +0,02748 | +3,98 %  | **−0,43 %** |
+| GLD | 5  | 0,29913 | −0,23270 | 0,24734 | +0,03870 | +17,31 % | **−0,35 %** |
+| GLD | 10 | 0,26761 | −0,27958 | 0,19296 | +0,04861 | +27,90 % | **−0,61 %** |
+
+**Moyenne : +16,75 % brut → +0,02 % hors biais. 9 cellules sur 9 sous 1 %, 4 négatives.**
+Les variances sont identiques à la 4ᵉ décimale : DLinear n'ajoute **aucune précision**
+mesurable. L'edge brut est arithmétiquement le biais² de la baseline — vérification directe,
+SPY h=10 : biais² = 0,0904 soit 20,0 % de 0,45129, edge annoncé 20,10 %.
+
+Les DM sont corrects et fortement significatifs (`p` de 1,0e-14 à 1,9e-05 sur ~4 500
+prédictions) : ils mesurent fidèlement un écart de MSE **réel**. C'est l'interprétation de cet
+écart qui était fausse — un test significatif sur la bonne perte peut porter sur le mauvais
+effet.
+
+### Ce que l'entrée établit malgré tout
+
+- **HAR sous-prévoit systématiquement le log-RV**, sur les 3 ETF comme sur BTC, et le biais
+  **croît avec l'horizon** (−0,16 à −0,31). C'est un défaut réel de la baseline telle
+  qu'implémentée, reproductible sur 4 terrains.
+- **DLinear apprend à être non biaisé** (|biais| ≤ 0,049) sans que ce soit un objectif
+  explicite. Le modèle est bien calibré ; il ne suit simplement pas mieux la dynamique.
+- **La bonne baseline pour la suite est un HAR débiaisé** (correction d'intercept OOS). Toute
+  comparaison future de cette famille sur ce terrain doit la prendre comme référence, faute
+  de quoi elle re-mesurera le même offset. `dlinear_vol.py` porte déjà `debias` côté modèle
+  (l. 203, 242-243, 279-280) et **calcule** `har_bias_oos` (l. 434) sans jamais l'appliquer :
+  l'asymétrie est là, elle est corrigeable.
+- **Contrepoint M15** : sous la même correction, 3 verdicts LSTM sur 4 **s'inversent**
+  (jusqu'à −21 %). La famille deep-seq ne bat pas non plus un HAR recalé.
+
+### Reproduction
 
 - **Data** : `datasets/panier/{SPY,TLT,GLD}_daily.csv` (2005-2026, 5 438 lignes chacune)
-- **Run** : `python -u etf_vol.py --symbols SPY TLT GLD --horizons 1 5 10 --seeds 0 1 7 42 --epochs 100 --refit-every 110 --loss-fn mse --out-json results/m4_dlinear_vol_etf_sc_mse/results.json` (4 328 s ; resume depuis checkpoint après kill externe)
+- **Run** : `python -u etf_vol.py --symbols SPY TLT GLD --horizons 1 5 10 --seeds 0 1 7 42 --epochs 100 --refit-every 110 --loss-fn mse --out-json results/m4_dlinear_vol_etf_sc_mse/results.json` (4 328 s)
 - **Harnais** : `scripts/etf_vol.py` (réutilise `walk_forward_har`, `walk_forward_dlinear`, `dm_verdict` ; RV GK dans `garman_klass_rv`)
-- **Verdict §C** : **9/9 BEATS** — première extension de terrain validée de la famille vol-forecasting
+- **Décomposition** : reproductible depuis les checkpoints `bg_logs/etf_vol*.log` (couples
+  `HAR MSE`/`bias_OOS` et `DLinear MSE`/`bias` par cellule) — variance = MSE − biais²
+- **Suite ouverte** : #12684 (débiaisage de la baseline), #12681 (la ligne de log affiche le
+  MSE HAR agrégé quand le verdict porte sur l'aligné)
 
 ## Ladder #1409 — Final Verdicts (2026-06-12)
 

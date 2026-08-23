@@ -106,7 +106,7 @@ def eval_one_symbol(
             har_mse = har_out["aggregate_mse_logrv"]
             har_errors = (har_out["forecasts"] - har_out["targets"]).dropna().values
             har_bias_oos = float(np.mean(har_errors)) if len(har_errors) else float("nan")
-            print(f"  h={h} HAR MSE={har_mse:.5f} bias_OOS={har_bias_oos:+.5f} "
+            print(f"  h={h} HAR MSE(agrege)={har_mse:.5f} bias_OOS={har_bias_oos:+.5f} "
                   f"({har_out['n_total_preds']} preds)")
         except Exception as exc:
             print(f"  h={h} HAR baseline FAILED: {exc}")
@@ -146,6 +146,9 @@ def eval_one_symbol(
             tgt = lstm_tgt.reindex(common).dropna()
             lstm_err = (lstm_fc.reindex(tgt.index) - tgt).values.astype(float)
             har_err = (har_out["forecasts"].reindex(tgt.index) - tgt).values.astype(float)
+            # Le verdict (DM et edge_pct) porte sur l'echantillon ALIGNE, pas sur
+            # l'agregat HAR : c'est cette valeur qu'il faut imprimer (#12681).
+            mse_har_aligned = float(np.mean(har_err ** 2)) if len(har_err) else float("nan")
 
             dm_info = {}
             if len(lstm_err) >= 10 and np.all(np.isfinite(lstm_err)) and np.all(np.isfinite(har_err)):
@@ -158,6 +161,7 @@ def eval_one_symbol(
                         "dm_mean_loss_diff": dm["mean_loss_diff"],
                     }
                     print(f"  h={h} seed={seed} LSTM MSE={lstm_mse:.5f} "
+                          f"vs HAR aligne {mse_har_aligned:.5f} "
                           f"bias={lstm_bias_oos:+.5f} DM={dm['dm_statistic']:.3f} "
                           f"p={dm['p_value']:.4f} -> {dm['verdict']}")
                 except Exception as exc:
@@ -166,7 +170,6 @@ def eval_one_symbol(
             else:
                 dm_info = {"dm_verdict": "INSUFFICIENT_DATA"}
 
-            mse_har_aligned = float(np.mean(har_err ** 2)) if len(har_err) else float("nan")
             row = {
                 "coin": symbol, "horizon": h, "seed": seed,
                 "window": window, "hidden_size": hidden_size,
