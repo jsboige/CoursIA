@@ -120,7 +120,10 @@ def _is_assignment(line: str) -> bool:
 def _finding_hash(f: dict[str, Any]) -> str:
     import hashlib
     src = f.get("evidence", "")
-    payload = f"{f['file']}:{f['cell']}:{f['rule']}:{f['line']}:{src}"
+    # Normalize path separators to POSIX for cross-platform stability:
+    # baseline generated on Windows (backslash) doesn't match Linux scan (slash).
+    file_path = f['file'].replace("\\", "/")
+    payload = f"{file_path}:{f['cell']}:{f['rule']}:{f['line']}:{src}"
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
