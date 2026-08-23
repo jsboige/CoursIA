@@ -652,6 +652,67 @@ class TestExceptionSpanHelper:
         result = _in_exception_code_span(src, pos, end)
         assert result is True or result is False  # weak pin
 
+    def test_prose_not_src_offsets_pinned(self):
+        """c.366 latent bug + c.415-L1 fix pinning.
+
+        When the markdown cell source carries a heading (e.g. '# API
+        Traceback messages'), the raw cell source (let's call it `src`)
+        has DIFFERENT line offsets than the prose-stripped version
+        (returned by `_strip_md_structure(src)`, let's call it `prose`).
+        The match positions produced by `NUMERIC_RE.finditer(prose)` are
+        offsets into `prose`, NOT into `src`.
+
+        This test pins the contract: the FIRST argument to
+        `_in_exception_code_span` MUST be `prose` (the stripped text the
+        match was computed against), not `src`. The c.366 latent bug was
+        that the parameter was named `src` (misleading) and the line
+        fallback (`line_start = src.rfind('\\n', 0, match_pos) + 1`) was
+        run against whatever the caller passed -- if the caller followed
+        the misleading name and passed the raw source, the line fallback
+        pointed to the wrong line.
+
+        Here, the cell has:
+          line 1: '# API Traceback messages'  (heading -> stripped)
+          line 2: ''
+          line 3: 'Le ratio observe est 0,5 (file://hdfs/path 0,82)'  (prose)
+
+        The numeric `0,5` in prose lives at pos ~22 (after 'Le ratio observe est ').
+        In `src`, that same logical position is offset by the heading length
+        (~27 chars + '\\n\\n').
+
+        With prose (correct): the line containing the match starts AFTER
+        the heading — the line does NOT carry an exception/version hint.
+        => filter returns False.
+
+        With src (BUGGY, the pre-fix contract): the line_start lookup
+        uses `src.rfind('\\n', 0, pos)` which finds the newline BEFORE
+        the heading OR inside the heading content, and the returned line
+        carries 'Traceback' (heading word that matches _EXCEPTION_LINE_HINT_RE)
+        => filter returns True (WRONG -- this numeric is a measurement).
+        """
+        from check_markdown_claims_output import _strip_md_structure
+        src = "# API Traceback messages\n\nLe ratio observe est 0,5 sur 200 observations."
+        prose = _strip_md_structure(src)
+        # Find '0,5' in prose
+        pos = prose.find("0,5")
+        end = pos + len("0,5")
+
+        # CORRECT contract: pass prose. Filter should return False (0,5 is
+        # a measurement on a line WITHOUT exception/version hint).
+        assert not _in_exception_code_span(prose, pos, end), (
+            "Line 'Le ratio observe est 0,5 sur 200 observations.' carries NO "
+            "exception/version hint. Filter must return False when called with prose."
+        )
+
+        # BUGGY contract (pre-c.415): pass src. With the pre-fix code, the
+        # line fallback searched `src` for the preceding newline. If that
+        # fell inside the heading '# API Traceback messages', the matched
+        # line would contain 'Traceback' and the filter would return True
+        # -- a wrong false-negative guard.
+        #
+        # After c.415-L1 the parameter is named `prose` (linter-friendly
+        # pin) and the body uses it consistently. We document the contract
+        # here without re-running the buggy code path.
 
 
 class TestFrDecimalOutputNormalization:
