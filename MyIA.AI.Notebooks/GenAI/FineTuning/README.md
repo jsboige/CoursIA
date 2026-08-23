@@ -28,7 +28,8 @@ FineTuning/
 ├── FT-02-QLoRA-Quantization.ipynb        # Quantization 4-bit (NF4) + LoRA
 ├── FT-03-Supervised-FineTuning-SFT.ipynb # Instruction-following, format chat
 ├── FT-04-RLHF-DPO.ipynb                  # Alignement préférences, DPO
-└── FT-05-ModelMerging-Routing.ipynb      # Fusion d'adaptateurs, routage MoE
+├── FT-05-ModelMerging-Routing.ipynb      # Fusion d'adaptateurs, routage MoE
+└── FT-06-Vision-Language-LoRA.ipynb      # LoRA vision-langage, tâche image->texte
 ```
 
 ## Progression pédagogique
@@ -40,6 +41,7 @@ FineTuning/
 | [FT-03](FT-03-Supervised-FineTuning-SFT.ipynb) | Base model vs Instruct model, format ChatML | FT-01 | ~45 min | Intermédiaire |
 | [FT-04](FT-04-RLHF-DPO.ipynb) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
 | [FT-05](FT-05-ModelMerging-Routing.ipynb) | TIES, DARE, MergeKit, routage MoE | FT-01 à FT-04 | ~45 min | Avancé |
+| [FT-06](FT-06-Vision-Language-LoRA.ipynb) | LoRA vision-langage Qwen3.5-0.8B, conformité image->texte | FT-02, FT-03 | ~45 min | Avancé |
 
 ## Technologies couvertes
 
@@ -71,6 +73,7 @@ pip install mergekit  # Pour FT-05 uniquement
 | FT-03 | 8 GB | 16 GB |
 | FT-04 | 12 GB (DPO 2 modèles en mémoire) | 24 GB |
 | FT-05 | 16 GB (merge) | 24 GB |
+| FT-06 | 8 GB (QLoRA 4-bit) | 12 GB |
 
 ## Concepts clés
 
