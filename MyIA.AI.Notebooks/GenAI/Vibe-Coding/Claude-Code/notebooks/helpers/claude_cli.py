@@ -143,8 +143,12 @@ def run_claude(
     if not verify_installation():
         return "", f"Erreur: Claude CLI {installation_status()['state']} ({installation_status()['message']})", 1
 
-    # Construction de la commande (resolver : shim Windows -> cmd.exe /c)
-    cmd = _resolve_claude_command() + ["-p", prompt]
+    # Construction de la commande (resolver : shim Windows -> cmd.exe /c).
+    # Le prompt passe par STDIN, jamais en argument : la couche cmd.exe /c
+    # tronque un argument multi-lignes a la premiere newline (echec silencieux,
+    # rc=0) — verifie par test A/B argv-vs-stdin. `-p` sans argument positionnel
+    # lit le prompt sur stdin.
+    cmd = _resolve_claude_command() + ["-p"]
 
     if model and model != "sonnet":
         cmd.extend(["--model", model])
@@ -158,6 +162,7 @@ def run_claude(
     try:
         result = subprocess.run(
             cmd,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -334,14 +339,16 @@ def run_claude_continue(
     if not verify_installation():
         return "", "Erreur: Claude CLI n'est pas installe", 1
 
-    cmd = _resolve_claude_command() + ["-c"]
+    # Prompt par stdin pour la meme raison que run_claude : un argument
+    # multi-lignes est tronque par la couche cmd.exe /c sous Windows.
+    cmd = _resolve_claude_command() + ["-c", "-p"]
     if fork:
         cmd.append("--fork-session")
-    cmd.append(prompt)
 
     try:
         result = subprocess.run(
             cmd,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout
