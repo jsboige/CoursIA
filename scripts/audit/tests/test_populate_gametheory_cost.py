@@ -94,7 +94,7 @@ def test_tranches_no_duplicate_across_tranches():
 # ---------------------------------------------------------------------------
 
 def test_build_cost_has_all_schema_fields():
-    cost = pgt.build_cost("GameTheory-1-Setup", by="x", today="2026-08-03")
+    cost = pgt.build_cost("GameTheory-01-Setup", by="x", today="2026-08-03")
     expected_keys = {
         "api_usd_est", "api_provider", "qcc_tokens_est", "cpu_min", "gpu_min",
         "gpu_required", "vram_gb", "vram_tier", "network", "external_account",
@@ -107,7 +107,7 @@ def test_build_cost_has_all_schema_fields():
 
 def test_build_cost_gametheory_constants():
     """GameTheory family-wide constants (cpu/GPU/VRAM = 0, no API, no account)."""
-    cost = pgt.build_cost("GameTheory-2-NormalForm", by="x", today="2026-08-03")
+    cost = pgt.build_cost("GameTheory-02-NormalForm", by="x", today="2026-08-03")
     assert cost["api_usd_est"] == 0.0
     assert cost["api_provider"] == "none"
     assert cost["qcc_tokens_est"] == 0
@@ -123,8 +123,8 @@ def test_build_cost_gametheory_constants():
 
 def test_build_cost_derives_profile_fields():
     """cpu_min/network/validator/notes are pulled from the notebook's PROFILES entry."""
-    cost = pgt.build_cost("GameTheory-1-Setup", by="x", today="2026-08-03")
-    prof = pgt.PROFILES["GameTheory-1-Setup"]
+    cost = pgt.build_cost("GameTheory-01-Setup", by="x", today="2026-08-03")
+    prof = pgt.PROFILES["GameTheory-01-Setup"]
     assert cost["cpu_min"] == prof["cpu_min"]
     assert cost["network"] == prof["network"]
     assert cost["validator"] == prof["validator"]
@@ -132,15 +132,15 @@ def test_build_cost_derives_profile_fields():
 
 
 def test_build_cost_today_stamp_injected():
-    assert pgt.build_cost("GameTheory-2-NormalForm", by="x", today="2026-01-09")["metadata_written"] == "2026-01-09"
-    assert pgt.build_cost("GameTheory-2-NormalForm", by="x", today="2030-12-31")["metadata_written"] == "2030-12-31"
+    assert pgt.build_cost("GameTheory-02-NormalForm", by="x", today="2026-01-09")["metadata_written"] == "2026-01-09"
+    assert pgt.build_cost("GameTheory-02-NormalForm", by="x", today="2030-12-31")["metadata_written"] == "2030-12-31"
 
 
 def test_build_cost_setup_network_true_others_false():
     # Setup needs pip install nashpy/openspiel -> network True; the rest CPU-pure.
-    assert pgt.build_cost("GameTheory-1-Setup", by="x", today="t")["network"] is True
-    assert pgt.build_cost("GameTheory-2-NormalForm", by="x", today="t")["network"] is False
-    assert pgt.build_cost("GameTheory-5-ZeroSum-Minimax", by="x", today="t")["network"] is False
+    assert pgt.build_cost("GameTheory-01-Setup", by="x", today="t")["network"] is True
+    assert pgt.build_cost("GameTheory-02-NormalForm", by="x", today="t")["network"] is False
+    assert pgt.build_cost("GameTheory-05-ZeroSum-Minimax", by="x", today="t")["network"] is False
 
 
 def test_build_cost_unknown_notebook_raises():
@@ -178,7 +178,7 @@ def test_populate_skipped_no_profile(tmp_path):
 
 def test_populate_skipped_has_cost_idempotent(tmp_path):
     # A notebook already carrying metadata.cost is NEVER overwritten.
-    p = _write_nb(tmp_path, "GameTheory-1-Setup", _make_nb("GameTheory-1-Setup", with_cost=True))
+    p = _write_nb(tmp_path, "GameTheory-01-Setup", _make_nb("GameTheory-01-Setup", with_cost=True))
     assert pgt.populate_notebook(p, by="x", today="t", apply=True) == "skipped-has-cost"
     # The pre-existing cost is preserved untouched.
     after = json.loads(p.read_text(encoding="utf-8"))
@@ -186,7 +186,7 @@ def test_populate_skipped_has_cost_idempotent(tmp_path):
 
 
 def test_populate_dry_run_writes_nothing(tmp_path):
-    p = _write_nb(tmp_path, "GameTheory-1-Setup", _make_nb("GameTheory-1-Setup"))
+    p = _write_nb(tmp_path, "GameTheory-01-Setup", _make_nb("GameTheory-01-Setup"))
     size_before = p.stat().st_size
     status = pgt.populate_notebook(p, by="x", today="t", apply=False)
     assert status == "populated"
@@ -196,19 +196,19 @@ def test_populate_dry_run_writes_nothing(tmp_path):
 
 
 def test_populate_apply_writes_cost_block(tmp_path):
-    p = _write_nb(tmp_path, "GameTheory-2-NormalForm", _make_nb("GameTheory-2-NormalForm"))
+    p = _write_nb(tmp_path, "GameTheory-02-NormalForm", _make_nb("GameTheory-02-NormalForm"))
     status = pgt.populate_notebook(p, by="x", today="2026-08-03", apply=True)
     assert status == "populated"
     after = json.loads(p.read_text(encoding="utf-8"))
     cost = after["metadata"]["cost"]
-    assert cost["cpu_min"] == pgt.PROFILES["GameTheory-2-NormalForm"]["cpu_min"]
+    assert cost["cpu_min"] == pgt.PROFILES["GameTheory-02-NormalForm"]["cpu_min"]
     assert cost["metadata_written"] == "2026-08-03"
     assert cost["api_usd_est"] == 0.0
 
 
 def test_populate_apply_output_is_lf_only(tmp_path):
     # Windows write_bytes must NOT introduce CRLF (L965/L925-E byte-stability).
-    p = _write_nb(tmp_path, "GameTheory-1-Setup", _make_nb("GameTheory-1-Setup"))
+    p = _write_nb(tmp_path, "GameTheory-01-Setup", _make_nb("GameTheory-01-Setup"))
     pgt.populate_notebook(p, by="x", today="t", apply=True)
     raw = p.read_bytes()
     assert b"\r\n" not in raw, "CRLF leaked into written notebook"
@@ -221,7 +221,7 @@ def test_populate_preserves_existing_cells_and_metadata(tmp_path):
         {"cell_type": "code", "execution_count": 1, "metadata": {},
          "outputs": [], "source": ["import numpy\n"]},
     ]
-    p = _write_nb(tmp_path, "GameTheory-1-Setup", _make_nb("GameTheory-1-Setup", cells=cells))
+    p = _write_nb(tmp_path, "GameTheory-01-Setup", _make_nb("GameTheory-01-Setup", cells=cells))
     pgt.populate_notebook(p, by="x", today="t", apply=True)
     after = json.loads(p.read_text(encoding="utf-8"))
     assert len(after["cells"]) == 2
@@ -231,7 +231,7 @@ def test_populate_preserves_existing_cells_and_metadata(tmp_path):
 
 
 def test_populate_unreadable_file_returns_error(tmp_path):
-    p = tmp_path / "GameTheory-1-Setup.ipynb"
+    p = tmp_path / "GameTheory-01-Setup.ipynb"
     p.write_text("{not valid json", encoding="utf-8")  # malformed
     status = pgt.populate_notebook(p, by="x", today="t", apply=True)
     assert status.startswith("error:")
@@ -270,7 +270,7 @@ def test_main_apply_populates_fake_tranche(tmp_path, monkeypatch, capsys):
     assert "APPLY" in out
     assert "populated" in out
     # Verify one notebook got its cost block.
-    nb = json.loads((gt_dir / "GameTheory-1-Setup.ipynb").read_text(encoding="utf-8"))
+    nb = json.loads((gt_dir / "GameTheory-01-Setup.ipynb").read_text(encoding="utf-8"))
     assert nb["metadata"]["cost"]["metadata_written"] == "2026-08-03"
 
 

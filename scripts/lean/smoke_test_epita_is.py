@@ -30,7 +30,7 @@ SESSION_WEEK_4H_LEAN = [  # Week 4h Lean+GameTheory
     "SymbolicAI/Lean/Lean-5-Tactics.ipynb",
     "SymbolicAI/Lean/Lean-6-Mathlib-Essentials.ipynb",
     "GameTheory/GameTheory-15b-Lean-CooperativeGames.ipynb",
-    "GameTheory/GameTheory-2b-Lean-Definitions.ipynb",
+    "GameTheory/GameTheory-02b-Lean-Definitions.ipynb",
 ]
 ALL_NOTEBOOKS = SESSION_MONDAY_2H + SESSION_WEEK_4H_LEAN
 

@@ -367,7 +367,7 @@ layout: section
 
 
 ---
-layout: two-cols
+layout: default
 ---
 
 
@@ -492,7 +492,7 @@ layout: two-cols
 
 
 ---
-layout: two-cols
+layout: default
 ---
 
 
@@ -505,6 +505,10 @@ layout: two-cols
 </div>
 
 
+<div class="grid grid-cols-2 gap-8">
+
+<div>
+
 **Définition CSPs**
 
 - Jusqu'ici: représentation atomique
@@ -516,9 +520,9 @@ layout: two-cols
 - Exemple
   - Coloration de carte
 
+</div>
 
-::right::
-
+<div>
 
 **Techniques**
 
@@ -537,6 +541,10 @@ layout: two-cols
 <img src="./images/img_035.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
 <img src="./images/img_036.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
 <img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
+
+</div>
+
+</div>
 
 </div>
 
@@ -566,13 +574,17 @@ layout: section
 
 
 ---
-layout: two-cols
+layout: default
 ---
 
 
 
 # Représentation et logique
 
+
+<div class="grid grid-cols-2 gap-8">
+
+<div>
 
 **Enoncés**
 
@@ -586,9 +598,9 @@ layout: two-cols
 - Propriétés
 - correction, consistance, complétude
 
+</div>
 
-::right::
-
+<div>
 
 **Bases de connaissances**
 
@@ -596,6 +608,10 @@ layout: two-cols
 
 <img src="./images/img_035.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
 <img src="./images/img_036.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+
+</div>
+
+</div>
 
 
 
