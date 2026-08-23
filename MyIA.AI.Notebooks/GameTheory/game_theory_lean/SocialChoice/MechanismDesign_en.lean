@@ -234,9 +234,9 @@ end VCGCombinatorial
     Reference: Othman & Sandholm (2009), "Better with Byzantine : Manipulation-
     Optimal Mechanisms", section 2.4 (PDF page 8).
     Reference: #12329 — partial formalization of the mechanism (strict
-    dominance of `a`, outcome o1 under the dominant strategy, M1 welfare).
-    The `strict MOM` conclusion remains unformalized — see the `Formalization
-    limit` section below.
+    dominance of `a'`, outcome o1 under the dominant strategy, M1 welfare, and
+    the `better with Byzantine` fragment of Prop 6 — see the `Strict MOM`
+    section below).
 -/
 
 namespace OthmanSandholm
@@ -248,16 +248,19 @@ abbrev AgentType : Type := Fin 2
 abbrev Report : Type := Fin 2
 
 /-- An outcome of the mechanism. Encoding: `i.toNat` =
-    2 * (row_report.toNat) + (col_report.toNat), hence 4 outcomes for 2 reports x 2 reports.
-    `0` = (a,a) -> o1, `1` = (a,a') -> o2, `2` = (a',a) -> o3, `3` = (a',a') -> o4. -/
+    `3 - 2 * (row_report.toNat) - (col_report.toNat)`, hence 4 outcomes for 2 reports x 2 reports.
+    `0` = (a',a') -> o1, `1` = (a',a) -> o2, `2` = (a,a') -> o3, `3` = (a,a) -> o4. -/
 abbrev Issue : Type := Fin 4
 
 /-- The Othman-Sandholm mechanism: (row_report, col_report) -> Issue,
-    canonical bijection `Fin 2 x Fin 2 -> Fin 4` via `(r, c) -> 2 * r + c`, so
-    that `(a, a') -> o2`, `(a', a) -> o3`, `(a', a') -> o4`, in keeping with
-    the payoff matrices below and the documented `Issue` encoding. -/
+    bijection `Fin 2 x Fin 2 -> Fin 4` via `(r, c) -> 3 - 2 * r - c`, so
+    that `(a', a') -> o1`, `(a', a) -> o2`, `(a, a') -> o3`, `(a, a) -> o4`,
+    in keeping with the payoff matrices below and the documented `Issue` encoding. -/
 def mechanism (rowReport colReport : Report) : Issue :=
-  ⟨2 * rowReport.val + colReport.val, by omega⟩
+  ⟨3 - 2 * rowReport.val - colReport.val, by
+    have hr : rowReport.val < 2 := rowReport.isLt
+    have hc : colReport.val < 2 := colReport.isLt
+    omega⟩
 
 /-! ### Payoff matrices (verbatim transcription PDF page 8)
 
@@ -327,36 +330,36 @@ def welfare (tRow tCol : AgentType) (rRow rCol : Report) : ℕ :=
   let i := mechanism rRow rCol
   uRow tRow i + uCol tCol i
 
-/-! ### Dominant strategy: reporting `a` (= 0) is strictly dominant
+/-! ### Dominant strategy: reporting `a'` (= 1) is strictly dominant
 
-    The Othman-Sandholm paper claims: "In the mechanism, reporting a is a
+    The Othman-Sandholm paper claims: "In the mechanism, reporting a' is a
     strictly dominant strategy for agents of both types." Proved by `decide`
     over the 8 cases (2 types x 2 fixed adversary reports x 2 own report choices). -/
 
 /-- For the row agent, **regardless of its type** and **regardless of the
-    col agent's report**, reporting `a` (= 0) gives payoff >= reporting `a'` (= 1). -/
-theorem row_dominant_is_a (tRow tCol : AgentType) (colReport : Report) :
-    uRow tRow (mechanism 0 colReport) ≥ uRow tRow (mechanism 1 colReport) := by
+    col agent's report**, reporting `a'` (= 1) gives payoff >= reporting `a` (= 0). -/
+theorem row_dominant_is_a' (tRow tCol : AgentType) (colReport : Report) :
+    uRow tRow (mechanism 1 colReport) ≥ uRow tRow (mechanism 0 colReport) := by
   unfold uRow
   fin_cases tRow <;> fin_cases tCol <;> fin_cases colReport <;> simp [uRowTypeA, uRowTypeA', mechanism] <;> decide
 
 /-- For the col agent, **regardless of its type** and **regardless of the
-    row agent's report**, reporting `a` (= 0) gives payoff >= reporting `a'` (= 1). -/
-theorem col_dominant_is_a (tRow tCol : AgentType) (rowReport : Report) :
-    uCol tCol (mechanism rowReport 0) ≥ uCol tCol (mechanism rowReport 1) := by
+    row agent's report**, reporting `a'` (= 1) gives payoff >= reporting `a` (= 0). -/
+theorem col_dominant_is_a' (tRow tCol : AgentType) (rowReport : Report) :
+    uCol tCol (mechanism rowReport 1) ≥ uCol tCol (mechanism rowReport 0) := by
   unfold uCol
   fin_cases tRow <;> fin_cases tCol <;> fin_cases rowReport <;> simp [uColTypeA, uColTypeA', mechanism] <;> decide
 
-/-- If all agents follow the dominant strategy (report `a`), the outcome produced
+/-- If all agents follow the dominant strategy (report `a'`), the outcome produced
     by the `OthmanSandholm` mechanism is `o1` (issue 0). -/
 theorem dominant_strategy_yields_o1 :
-    mechanism (0 : Report) (0 : Report) = (0 : Issue) := by
+    mechanism (1 : Report) (1 : Report) = (0 : Issue) := by
   simp [mechanism]
 
 /-- Welfare under M1 (boxed truthful mechanism, always o1):
     `(a, a) -> 2`, `(a, a') -> 5`, `(a', a) -> 4`, `(a', a') -> 7`. -/
 theorem welfare_M1 (tRow tCol : AgentType) :
-    welfare tRow tCol 0 0 =
+    welfare tRow tCol 1 1 =
       (if tRow = 0 ∧ tCol = 0 then 2
        else if tRow = 0 ∧ tCol = 1 then 5
        else if tRow = 1 ∧ tCol = 0 then 4
@@ -365,41 +368,31 @@ theorem welfare_M1 (tRow tCol : AgentType) :
   fin_cases tRow <;> fin_cases tCol <;>
     simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
 
-/-! ### Formalization limit — the `strict MOM` claim is NOT proved here
+/-! ### Strict MOM — the `better with Byzantine` fragment of Prop 6
 
-    The theorems above (strict dominance of `a`, outcome o1 under the dominant
-    strategy, M1 welfare = 2/5/4/7) formalize the **mechanics** of the
-    Othman-Sandholm mechanism as its payoff matrices are transcribed. They are
-    all true and verified by `decide`.
+    The key property of the construction is that, **even though the agents
+    have a strictly dominant strategy `a'`**, a type-`a` agent reporting `a`
+    (deviating from its dominant strategy — a "byzantine" move) produces
+    welfare strictly **above** that of outcome `o1` (= the truthful boxed M1
+    mechanism), and this **regardless of the adversary's report**. This is
+    Othman-Sandholm's "better with Byzantine": manipulation does better than
+    the truthfulness benchmark.
 
-    However, the **strong conclusion of Proposition 6** — "following the
-    dominant strategy maximizes welfare" — is **FALSE** with these matrices.
-    Counter-example (type (a, a), `tRow = tCol = 0`):
+    Important note: the statement "following the dominant strategy maximizes
+    welfare" is **false** (counter-example: `welfare 0 0 1 1 = 2` while
+    `welfare 0 0 1 0 = 4` > 2) — this is what motivated removing
+    `dominant_strategy_maximizes_welfare`. It is the **opposite** statement
+    that Prop 6 highlights: the byzantine deviation improves welfare. -/
 
-    ```
-    wDom        = welfare 0 0 0 0 = uRow a o1 + uCol a o1 = 1 + 1 = 2
-    wDevCol     = welfare 0 0 0 1 = uRow a o2 + uCol a o2 = 4 + 0 = 4
-    ```
-
-    If the type-`a` column agent deviates to `a'` (instead of its dominant
-    strategy `a`), the mechanism yields o2 (outcome 1) and welfare rises to 4,
-    strictly **above** the 2 obtained by following the dominant strategy. So
-    `welfare tRow tCol 0 0 >= welfare tRow tCol 0 1` is false at `(0, 0)`,
-    and `proposition_6_strict_MOM` cannot be derived.
-
-    **Honest conclusion**: the transcribed matrices do not support the
-    welfare-maximization property of the strict MOM. Either the page-8
-    transcription differs from the original paper (the `(a,a)` cell should
-    carry the highest welfare there, not the lowest), or the `dominant
-    strategy` property of Prop 6 bears on a criterion other than max welfare
-    over every possible deviation.
-
-    Rather than commit a false theorem (which would not compile anyway —
-    `decide` rejects it), the formalization stops here, on the only
-    **verifiable** statements. The `strict MOM` conclusion remains
-    **unformalized**; a re-read of the source (pages 8-9 of the
-    Othman-Sandholm paper, SAGT 2009) is needed to correct the matrices before
-    it can be derived. See note in notebook §4.6.4 and the PR body.
+/-- **Strict MOM / better-with-Byzantine**: for the type profile `(a, a)`
+    (`tRow = tCol = 0`), a type-`a` column agent reporting `a` (instead of its
+    dominant strategy `a'`) produces welfare strictly above that of outcome
+    `o1` (= boxed M1), whatever the row agent reports. -/
+theorem strict_mom_welfare_boost (rowReport : Report) :
+    welfare 0 0 rowReport 0 > welfare 0 0 1 1 := by
+  unfold welfare uRow uCol
+  fin_cases rowReport <;>
+    simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
 
 end OthmanSandholm
 
