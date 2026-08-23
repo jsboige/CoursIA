@@ -30,9 +30,10 @@ Wrap `ssl.SSLContext._load_windows_store_certs` dans une fonction qui :
 - Reversible : `disable_safe_windows_store()` restaure la version d'origine.
 - Testable : `is_patched()` retourne un booleen, `force_raise`
   permet de simuler un store malforme pour les tests.
-- Pas d'effet de bord sur Linux/Mac : le code natif `_load_windows_store_certs`
-    n'existe que sur Windows. Sur les autres OS, `hasattr(ctx, '_load_windows_store_certs')`
-    est `False` et le patch est un no-op documente.
+- Pas d'effet de bord sur Linux/Mac : `_load_windows_store_certs` existe sur
+    TOUTES les plateformes CPython (no-op hors Windows), donc la detection de
+    plateforme se fait par `sys.platform`, PAS par `hasattr`. Sur les autres OS,
+    `sys.platform != 'win32'` et le patch est un no-op documente.
 
 ## L'usage
 
@@ -56,6 +57,7 @@ Trois formes d'usage, par preference :
 from __future__ import annotations
 
 import ssl
+import sys
 from typing import Callable, List
 
 __all__ = [
@@ -123,15 +125,17 @@ def _patched_load(self: ssl.SSLContext, *args, **kwargs):  # noqa: ANN001
 def install_safe_windows_store() -> bool:
     """Installe le wrapper safe sur `ssl.SSLContext._load_windows_store_certs`.
 
-    Idempotent : si deja patche, ne fait rien. Si `_load_windows_store_certs`
-    n'existe pas sur la plateforme (Linux, macOS), no-op documente.
+    Idempotent : si deja patche, ne fait rien. Hors Windows
+    (`sys.platform != 'win32'`), no-op documente — `_load_windows_store_certs`
+    existe aussi hors Windows mais n'a pas d'effet (la detection par `hasattr`
+    serait donc fausse et patcherait incorrectement).
 
     Returns:
         True si le patch a ete applique (ou etait deja applique).
         False si la plateforme n'expose pas la methode.
     """
     global _original_load
-    if not hasattr(ssl.SSLContext, "_load_windows_store_certs"):
+    if not sys.platform.startswith("win"):
         return False
     if _original_load is not None:
         return True
