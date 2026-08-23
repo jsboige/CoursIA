@@ -54,6 +54,7 @@ Usage
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -107,14 +108,28 @@ def _line_evidence(line: str, max_len: int = 120) -> str:
 
 
 def _is_assignment(line: str) -> bool:
-    m = _PY_ASSIGN_RE.match(line.strip())
+    stripped = line.strip()
+    m = _PY_ASSIGN_RE.match(stripped)
     if not m:
         return False
     rhs = m.group("value").strip()
     # Skip walrus / equality / annotation-only (no value)
     if rhs.startswith("=") or not rhs:
         return False
-    return True
+    # The regex alone accepts any ``name = <arbitrary text>``, which French
+    # prose citing a parameter satisfies as soon as two such lines wrap
+    # consecutively ("n_est=200 obtient le meilleur Sharpe (0.600), devant" /
+    # "n_est=100 (0.564) et n_est=50 (0.568)."). Same for an indented maths
+    # block ("a = -T * s   (facteur normal)"). A line is a Python assignment
+    # iff Python parses it as one -- that is the discriminant, and it keeps
+    # real pasted code (``GLOBAL_LLM_SERVICE="OpenAI"  # comment``) flagged.
+    try:
+        tree = ast.parse(stripped)
+    except (SyntaxError, ValueError):
+        return False
+    return len(tree.body) == 1 and isinstance(
+        tree.body[0], (ast.Assign, ast.AnnAssign)
+    )
 
 
 def _finding_hash(f: dict[str, Any]) -> str:
