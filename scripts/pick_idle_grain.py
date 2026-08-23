@@ -352,6 +352,18 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
 
 RED_HOURS_DEFAULT = 24
 
+# ...mais l'age seul laisse passer l'essentiel. Mesure du 2026-08-23 sur les 58
+# PRs bloquees de la flotte : **51 sur 58 avaient moins de 24 h**, donc etaient
+# INVISIBLES a ce garde. Une lane pouvait porter 8 rouges et tirer un grain neuf
+# sans que rien ne rougisse (verifie sur myia-po-2024:CoursIA-2, 8 rouges, garde
+# n'en voyant qu'1). Le compte est donc le second declencheur, independant de
+# l'age : au-dela de RED_COUNT_DEFAULT rouges simultanes, la lane repare avant
+# de produire. Seuil choisi sur la distribution mesuree (8,8,7,6,5,5,5,2,1,1,1) :
+# a 3, toutes les lanes lourdes sont prises, les legeres tirent encore.
+# Mandat user 2026-08-23 : "s'il y a des dizaines de rouge, les agents ne
+# devraient pas produire de nouveaux grains mais etre en train de les traiter".
+RED_COUNT_DEFAULT = 3
+
 # CANCELLED / SKIPPED / NEUTRAL sont volontairement absents : un run annule
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
 # faux positif qui rend un garde de cascade inutilisable.
@@ -484,8 +496,14 @@ def blocking_causes(state: dict) -> list[str]:
     return causes
 
 
-def red_backlog(lane: str, threshold_hours: float) -> dict:
-    """PRs de la lane, bloquees et ouvertes depuis plus de `threshold_hours`.
+def red_backlog(lane: str, threshold_hours: float,
+                count_threshold: int = RED_COUNT_DEFAULT) -> dict:
+    """PRs de la lane reellement bloquees, avec DEUX declencheurs de refus.
+
+    `aged` : au moins une rouge ouverte depuis plus de `threshold_hours` --
+    la queue longue, celle qui pourrit. `count` : au moins `count_threshold`
+    rouges simultanees quel que soit leur age -- le tas, que le seul critere
+    d'age ne voyait pas (51/58 invisibles, mesure du 2026-08-23).
 
     Rend aussi `unattributed_blocked` : les PRs bloquees dont le tag `Grain:`
     est illisible. Elles ne peuvent bloquer AUCUNE lane -- c'est la bonne
@@ -496,15 +514,15 @@ def red_backlog(lane: str, threshold_hours: float) -> dict:
     try:
         prs = fetch_open_prs()
     except Exception as exc:  # noqa: BLE001 - le garde ne doit jamais bloquer sur une panne reseau
-        return {"unavailable": f"{type(exc).__name__}", "red": [], "unattributed_blocked": []}
+        return {"unavailable": f"{type(exc).__name__}", "red": [],
+                "triggers": [], "unattributed_blocked": []}
 
     mine, others = [], []
     for pr in prs:
         if pr.get("isDraft"):
             continue
-        age = _hours_since(pr["createdAt"])
-        if age < threshold_hours:
-            continue
+        # Plus de filtre d'age ici : une rouge recente compte pour le
+        # declencheur `count`. Le tri par age se fait apres l'analyse.
         tag = parse_grain_tag(pr.get("body") or "")
         pr_lane = tag.get("lane") if tag else None
         (mine if pr_lane == lane else others).append(pr)
@@ -522,6 +540,13 @@ def red_backlog(lane: str, threshold_hours: float) -> dict:
                         "causes": causes})
     red.sort(key=lambda r: -r["age_hours"])
 
+    triggers = []
+    aged = [r for r in red if r["age_hours"] >= threshold_hours]
+    if aged:
+        triggers.append("aged")
+    if len(red) >= count_threshold:
+        triggers.append("count")
+
     untagged = [pr for pr in others if parse_grain_tag(pr.get("body") or "") is None]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
     unattributed = [
@@ -532,13 +557,27 @@ def red_backlog(lane: str, threshold_hours: float) -> dict:
     ]
     # Les NUMEROS, pas un compte : le coordinateur est le seul a pouvoir les
     # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
-    return {"red": red, "unattributed_blocked": unattributed}
+    return {"red": red, "aged": aged, "triggers": triggers,
+            "red_hours": threshold_hours, "red_count_threshold": count_threshold,
+            "unattributed_blocked": unattributed}
 
 
 def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
-    print(f"REFUS DE TIRAGE -- lane {lane} porte {len(red)} PR(s) bloquee(s) "
-          f"ouverte(s) depuis plus de {threshold_hours:g} h.")
+    triggers = backlog.get("triggers") or []
+    aged = backlog.get("aged") or []
+    if "count" in triggers and "aged" in triggers:
+        motif = (f"porte {len(red)} PR(s) bloquee(s) simultanees "
+                 f"(seuil {backlog.get('red_count_threshold', RED_COUNT_DEFAULT)}), "
+                 f"dont {len(aged)} ouverte(s) depuis plus de {threshold_hours:g} h")
+    elif "count" in triggers:
+        motif = (f"porte {len(red)} PR(s) bloquee(s) simultanees -- seuil "
+                 f"{backlog.get('red_count_threshold', RED_COUNT_DEFAULT)}. "
+                 f"Le tas compte, meme quand chaque PR est recente")
+    else:
+        motif = (f"porte {len(aged)} PR(s) bloquee(s) ouverte(s) depuis plus de "
+                 f"{threshold_hours:g} h")
+    print(f"REFUS DE TIRAGE -- lane {lane} {motif}.")
     print()
     print("Reparer son propre rouge est la PREMIERE tache du cycle, avant tout")
     print("grain neuf : la PR ne peut etre reparee que par sa lane, le")
@@ -585,6 +624,9 @@ def main() -> int:
     ap.add_argument("--check-claims", action="store_true", help="verifie les claims sur les tires")
     ap.add_argument("--red-hours", type=float, default=RED_HOURS_DEFAULT,
                     help=f"seuil du garde 'reparer son rouge d'abord' (defaut {RED_HOURS_DEFAULT} h)")
+    ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
+                    help=f"nombre de rouges simultanees qui refuse le tirage "
+                         f"quel que soit leur age (defaut {RED_COUNT_DEFAULT})")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--json", action="store_true", help="sortie machine")
@@ -592,8 +634,8 @@ def main() -> int:
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
-    backlog = red_backlog(args.lane, args.red_hours)
-    if backlog["red"] and not args.ignore_red:
+    backlog = red_backlog(args.lane, args.red_hours, args.red_count)
+    if backlog.get("triggers") and not args.ignore_red:
         if args.json:
             print(json.dumps({"lane": args.lane, "refus": "rouge-a-reparer",
                               "red_hours": args.red_hours, **backlog},
@@ -639,7 +681,7 @@ def main() -> int:
           f"= {len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
           f"+ {len(by_class['delivered'])} candidate-delivered")
-    if backlog["red"]:
+    if backlog.get("triggers"):
         numbers = ", ".join(f"#{r['number']}" for r in backlog["red"])
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "
               f"a reparer ({numbers}).")

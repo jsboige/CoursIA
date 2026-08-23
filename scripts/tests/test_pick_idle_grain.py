@@ -234,15 +234,55 @@ def _pr(n, lane, age_hours, *, draft=False):
 
 
 def test_red_backlog_scopes_to_the_lane_and_the_threshold(monkeypatch):
+    """La lane et le brouillon filtrent ; l'age ne filtre PLUS le comptage.
+
+    Une rouge fraiche reste dans `red` (elle nourrit le declencheur `count`)
+    mais seule la vieille arme le declencheur `aged`.
+    """
     red = _state(checks=[("PR gate", "FAILURE", True)])
     _patch_backlog(monkeypatch, [
-        _pr(1, "myia-po-2026:CoursIA", 30),          # ma lane, vieille, rouge -> compte
-        _pr(2, "myia-po-2026:CoursIA", 3),           # ma lane, fraiche        -> non
+        _pr(1, "myia-po-2026:CoursIA", 30),          # ma lane, vieille, rouge -> red + aged
+        _pr(2, "myia-po-2026:CoursIA", 3),           # ma lane, fraiche        -> red seulement
         _pr(3, "myia-po-2023:CoursIA", 30),          # autre lane              -> non
         _pr(4, "myia-po-2026:CoursIA", 30, draft=True),  # brouillon           -> non
     ], {1: red, 2: red, 3: red, 4: red})
-    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
-    assert [r["number"] for r in out["red"]] == [1]
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2]
+    assert [r["number"] for r in out["aged"]] == [1]
+    assert out["triggers"] == ["aged"]
+
+
+def test_a_pile_of_fresh_reds_refuses_the_draw(monkeypatch):
+    """Le declencheur que l'age seul ne voyait pas (mandat user 2026-08-23).
+
+    Mesure du jour : 51 des 58 PRs bloquees de la flotte avaient moins de
+    24 h -- invisibles au garde. Une lane portant 3 rouges de 2 h doit
+    reparer avant de produire, exactement comme celle qui en porte une de 30 h.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2026:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: red for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert out["aged"] == []
+    assert out["triggers"] == ["count"]
+
+
+def test_under_the_count_threshold_a_fresh_red_still_draws(monkeypatch):
+    """Controle positif : le garde n'est pas bloque-a-l'allumage.
+
+    Deux rouges fraiches sous le seuil ne refusent RIEN -- sinon toute lane
+    normalement active serait immobilisee, et l'echappatoire `--ignore-red`
+    deviendrait la voie ordinaire, ce qui viderait le garde de son sens.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2026:CoursIA", 2) for n in (1, 2)
+    ], {n: red for n in (1, 2)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert len(out["red"]) == 2
+    assert out["triggers"] == []
 
 
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
@@ -257,7 +297,7 @@ def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
         _pr(1, "myia-po-2026:CoursIA", 30),
         _pr(9, None, 30),
     ], {1: red, 9: red})
-    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
     assert [r["number"] for r in out["red"]] == [1]
     assert [u["number"] for u in out["unattributed_blocked"]] == [9]
 
