@@ -219,7 +219,10 @@ end VCGCombinatorial
 
     Référence : Othman & Sandholm (2009), "Better with Byzantine : Manipulation-
     Optimal Mechanisms", section 2.4 (page 8 du PDF).
-    Référence : #12329 — formalisation de la Proposition 6.
+    Référence : #12329 — formalisation partielle du mécanisme (dominance stricte
+    de `a`, issue o1 sous la stratégie dominante, welfare M1). La conclusion
+    « strict MOM » reste non formalisée — voir la section « Limite » plus bas.
+
 -/
 
 namespace OthmanSandholm
@@ -231,14 +234,17 @@ abbrev AgentType : Type := Fin 2
 abbrev Report : Type := Fin 2
 
 /-- Une issue du mécanisme. Encodage : `i.toNat` =
-    (row_report.toNat) + 2 * (col_report.toNat), donc 4 issues pour 2 reports × 2 reports.
+    2 * (row_report.toNat) + (col_report.toNat), donc 4 issues pour 2 reports × 2 reports.
     `0` = (a,a) → o1, `1` = (a,a') → o2, `2` = (a',a) → o3, `3` = (a',a') → o4. -/
 abbrev Issue : Type := Fin 4
 
 /-- Le mécanisme Othman-Sandholm : (row_report, col_report) ↦ Issue,
-    bijection canonique `Fin 2 × Fin 2 → Fin 4` via `(r, c) ↦ r + 2 * c`. -/
+    bijection canonique `Fin 2 × Fin 2 → Fin 4` via `(r, c) ↦ 2 * r + c`,
+    de sorte que `(a, a') ↦ o2`, `(a', a) ↦ o3`, `(a', a') ↦ o4`,
+    en cohérence avec les matrices de payoff ci-dessous et l'encodage
+    documenté de `Issue`. -/
 def mechanism (rowReport colReport : Report) : Issue :=
-  ⟨rowReport.val + 2 * colReport.val, by omega⟩
+  ⟨2 * rowReport.val + colReport.val, by omega⟩
 
 /-! ### Matrices de payoff (transcription verbatim page 8 du PDF)
 
@@ -364,78 +370,42 @@ theorem welfare_M1 (tRow tCol : AgentType) :
   fin_cases tRow <;> fin_cases tCol <;>
     simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
 
-/-! ### Théorème central : la welfare sous le mécanisme manipulable est
-    strictement supérieure pour certaines déviations honnêtes.
+/-! ### Limite de la formalisation — le claim « strict MOM » n'est PAS prouvé ici
 
-    Le papier dit (page 9) : "when an agent of type a plays a rather than a',
-    social welfare is strictly higher than with o1 (this property holds
-    regardless of how the other agent behaves)." On l'illustre ici sur le cas
-    où le col agent est de type `a` et reporte `a` (sa dominant strategy),
-    tandis que le row agent de type `a'` dévie vers `a'` : welfare = 3, alors
-    que M1 (toujours o1) aurait donné welfare = 4 — pas strictement supérieur.
+    Les théorèmes ci-dessus (dominance stricte de `a`, issue o1 sous la
+    stratégie dominante, welfare M1 = 2/5/4/7) formalisent la **mécanique**
+    du mécanisme Othman-Sandholm tel que ses matrices de payoff sont
+    transcrites. Ils sont tous vrais et vérifiés par `decide`.
 
-    Reformulation : pour le row agent de type `a'` qui reporte `a'` quand
-    M1 aurait produit o1 (welfare = 4), le mécanisme manipulable produit o4
-    (issue 3), welfare = uRow(a', o4) + uCol(a, o4) = 0 + 0 = 0, donc MOINS
-    que M1. Mais sur d'autres profils, le mécanisme manipulable fait mieux.
+    En revanche, la **conclusion forte de la Proposition 6** — « suivre la
+    stratégie dominante maximise la welfare » — est **FAUSSE** avec ces
+    matrices. Contre-exemple (type (a, a), `tRow = tCol = 0`) :
 
-    L'illustration la plus parlante : row type `a'`, col type `a'`, tous deux
-    honnêtes (reportent `a'`), welfare = 7 (o4 → 3+0 = 3? Non, 3+0=3, pas 7).
+    ```
+    wDom        = welfare 0 0 0 0 = uRow a o1 + uCol a o1 = 1 + 1 = 2
+    wDevCol     = welfare 0 0 0 1 = uRow a o2 + uCol a o2 = 4 + 0 = 4
+    ```
 
-    Reformulons : welfare = somme uRow(tRow, oi) + uCol(tCol, oi) où oi est
-    l'issue effective. Pour type (a', a') reports (a', a') : mécanisme produit
-    o4 (issue 3), welfare = uRow(a', 3) + uCol(a', 3) = 0 + 0 = 0.
+    Si le col agent de type `a` dévie vers `a'` (au lieu de sa stratégie
+    dominante `a`), le mécanisme produit o2 (issue 1) et la welfare passe à 4,
+    strictement **au-dessus** du 2 obtenu en suivant la stratégie dominante.
+    Donc `welfare tRow tCol 0 0 ≥ welfare tRow tCol 0 1` est faux en
+    `(0, 0)`, et `proposition_6_strict_MOM` ne se laisse pas dériver.
 
-    Hmm, ce ne sont pas 7. Vérifions le tableau page 9 qui dit
-    "True types a',a' o1=7, o2=5, o3=6, o4=0" — donc welfare(a',a', oi)
-    = (3+4=7), (5+0=5), (0+6=6), (0+0=0). Le papier donne 4 welfare par
-    outcome, où la welfare dépend de l'issue atteinte.
+    **Conclusion honnête** : les matrices transcrites ne supportent pas la
+    propriété de maximisation du bien-être du strict MOM. Soit la transcription
+    page 8 diffère du papier original (le sommet `(a,a)` devrait y porter la
+    welfare la plus élevée, pas la plus basse), soit la propriété « dominant
+    strategy » de la Prop 6 porte sur un autre critère que le max de welfare
+    par rapport à toute déviation possible.
 
-    Pour notre mécanisme, l'issue atteinte dépend des reports, pas des types.
-    Si row type a' et col type a' **suivent** la dominant strategy et
-    reportent `a`, alors issue = o1, welfare(a', a', o1) = 3 + 4 = 7. ✓
-
-    Le théorème central devient : **pour tout profil de types, suivre la
-    dominant strategy (reporter a) donne la welfare maximale parmi les issues
-    accessibles par ce profil sous le mécanisme Othman-Sandholm**. -/
-
-theorem dominant_strategy_maximizes_welfare (tRow tCol : AgentType) :
-    -- welfare en suivant la dominant strategy (reporter a)
-    let wDom := welfare tRow tCol 0 0
-    -- welfare en déviant (reporter a')
-    let wDevRow := welfare tRow tCol 1 0
-    let wDevCol := welfare tRow tCol 0 1
-    let wDevBoth := welfare tRow tCol 1 1
-    wDom ≥ wDevRow ∧ wDom ≥ wDevCol ∧ wDom ≥ wDevBoth := by
-  unfold welfare uRow uCol
-  fin_cases tRow <;> fin_cases tCol <;>
-    simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
-
-/-! ### Proposition 6 (énoncé et conclusion)
-
-    La construction ci-dessus est un **strict MOM** : il existe un mécanisme
-    non-truthful tel qu'aucun mécanisme truthful ne le Pareto-domine, et où
-    la stratégie dominante (`a`) est strictement meilleure que toute déviation
-    pour les agents qui dévient.
-
-    Conclusion de la preuve : la welfare sous la stratégie dominante est
-    toujours ≥ la welfare sous n'importe quelle déviation (et strictement >
-    pour au moins un profil — laissé en commentaire car non-formalisé ici).
--/
-
-/-- **Proposition 6 (Othman-Sandholm, 2009)** : Il existe des MOMs stricts
-    multi-agents à objectif de maximisation du bien-être social. -/
-theorem proposition_6_strict_MOM :
-    -- Le mécanisme Othman-Sandholm est bien défini (mécanisme non-truthful).
-    -- La stratégie dominante (reporter `a`) est ≥ toute déviation.
-    ∀ (tRow tCol : AgentType),
-      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 1 0) ∧
-      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 0 1) ∧
-      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 1 1) := by
-  intro tRow tCol
-  exact ⟨(dominant_strategy_maximizes_welfare tRow tCol).1,
-         (dominant_strategy_maximizes_welfare tRow tCol).2.1,
-         (dominant_strategy_maximizes_welfare tRow tCol).2.2⟩
+    Plutôt que de committer un théorème faux (qui ne compilerait de toute
+    façon pas — `decide` le rejette), la formalisation s'arrête ici, sur les
+    seuls énoncés **vérifiables**. La conclusion `strict MOM` reste **non
+    formalisée** ; un travail de relecture de la source (page 8-9 du papier
+    Othman-Sandholm, SAGT 2009) est nécessaire pour corriger les matrices
+    avant de pouvoir la dériver. Voir note dans le notebook §4.6.4 et le body
+    de la PR.
 
 end OthmanSandholm
 

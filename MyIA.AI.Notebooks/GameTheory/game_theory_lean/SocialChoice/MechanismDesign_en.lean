@@ -233,7 +233,10 @@ end VCGCombinatorial
 
     Reference: Othman & Sandholm (2009), "Better with Byzantine : Manipulation-
     Optimal Mechanisms", section 2.4 (PDF page 8).
-    Reference: #12329 — formalization of Proposition 6.
+    Reference: #12329 — partial formalization of the mechanism (strict
+    dominance of `a`, outcome o1 under the dominant strategy, M1 welfare).
+    The `strict MOM` conclusion remains unformalized — see the `Formalization
+    limit` section below.
 -/
 
 namespace OthmanSandholm
@@ -245,14 +248,16 @@ abbrev AgentType : Type := Fin 2
 abbrev Report : Type := Fin 2
 
 /-- An outcome of the mechanism. Encoding: `i.toNat` =
-    (row_report.toNat) + 2 * (col_report.toNat), hence 4 outcomes for 2 reports x 2 reports.
+    2 * (row_report.toNat) + (col_report.toNat), hence 4 outcomes for 2 reports x 2 reports.
     `0` = (a,a) -> o1, `1` = (a,a') -> o2, `2` = (a',a) -> o3, `3` = (a',a') -> o4. -/
 abbrev Issue : Type := Fin 4
 
 /-- The Othman-Sandholm mechanism: (row_report, col_report) -> Issue,
-    canonical bijection `Fin 2 x Fin 2 -> Fin 4` via `(r, c) -> r + 2 * c`. -/
+    canonical bijection `Fin 2 x Fin 2 -> Fin 4` via `(r, c) -> 2 * r + c`, so
+    that `(a, a') -> o2`, `(a', a) -> o3`, `(a', a') -> o4`, in keeping with
+    the payoff matrices below and the documented `Issue` encoding. -/
 def mechanism (rowReport colReport : Report) : Issue :=
-  ⟨rowReport.val + 2 * colReport.val, by omega⟩
+  ⟨2 * rowReport.val + colReport.val, by omega⟩
 
 /-! ### Payoff matrices (verbatim transcription PDF page 8)
 
@@ -360,29 +365,41 @@ theorem welfare_M1 (tRow tCol : AgentType) :
   fin_cases tRow <;> fin_cases tCol <;>
     simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
 
-/-- For any type profile, following the dominant strategy (report `a`) yields
-    welfare >= welfare under any deviation. -/
-theorem dominant_strategy_maximizes_welfare (tRow tCol : AgentType) :
-    let wDom := welfare tRow tCol 0 0
-    let wDevRow := welfare tRow tCol 1 0
-    let wDevCol := welfare tRow tCol 0 1
-    let wDevBoth := welfare tRow tCol 1 1
-    wDom ≥ wDevRow ∧ wDom ≥ wDevCol ∧ wDom ≥ wDevBoth := by
-  unfold welfare uRow uCol
-  fin_cases tRow <;> fin_cases tCol <;>
-    simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
+/-! ### Formalization limit — the `strict MOM` claim is NOT proved here
 
-/-- **Proposition 6 (Othman-Sandholm, 2009)**: there exist strict multi-agent
-    MOMs whose objective is social welfare maximization. -/
-theorem proposition_6_strict_MOM :
-    ∀ (tRow tCol : AgentType),
-      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 1 0) ∧
-      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 0 1) ∧
-      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 1 1) := by
-  intro tRow tCol
-  exact ⟨(dominant_strategy_maximizes_welfare tRow tCol).1,
-         (dominant_strategy_maximizes_welfare tRow tCol).2.1,
-         (dominant_strategy_maximizes_welfare tRow tCol).2.2⟩
+    The theorems above (strict dominance of `a`, outcome o1 under the dominant
+    strategy, M1 welfare = 2/5/4/7) formalize the **mechanics** of the
+    Othman-Sandholm mechanism as its payoff matrices are transcribed. They are
+    all true and verified by `decide`.
+
+    However, the **strong conclusion of Proposition 6** — "following the
+    dominant strategy maximizes welfare" — is **FALSE** with these matrices.
+    Counter-example (type (a, a), `tRow = tCol = 0`):
+
+    ```
+    wDom        = welfare 0 0 0 0 = uRow a o1 + uCol a o1 = 1 + 1 = 2
+    wDevCol     = welfare 0 0 0 1 = uRow a o2 + uCol a o2 = 4 + 0 = 4
+    ```
+
+    If the type-`a` column agent deviates to `a'` (instead of its dominant
+    strategy `a`), the mechanism yields o2 (outcome 1) and welfare rises to 4,
+    strictly **above** the 2 obtained by following the dominant strategy. So
+    `welfare tRow tCol 0 0 >= welfare tRow tCol 0 1` is false at `(0, 0)`,
+    and `proposition_6_strict_MOM` cannot be derived.
+
+    **Honest conclusion**: the transcribed matrices do not support the
+    welfare-maximization property of the strict MOM. Either the page-8
+    transcription differs from the original paper (the `(a,a)` cell should
+    carry the highest welfare there, not the lowest), or the `dominant
+    strategy` property of Prop 6 bears on a criterion other than max welfare
+    over every possible deviation.
+
+    Rather than commit a false theorem (which would not compile anyway —
+    `decide` rejects it), the formalization stops here, on the only
+    **verifiable** statements. The `strict MOM` conclusion remains
+    **unformalized**; a re-read of the source (pages 8-9 of the
+    Othman-Sandholm paper, SAGT 2009) is needed to correct the matrices before
+    it can be derived. See note in notebook §4.6.4 and the PR body.
 
 end OthmanSandholm
 
