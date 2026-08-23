@@ -40,8 +40,15 @@ SIDE_TRACKS = {
     "16c": (16, "Simulations Python du choix social"),
 }
 
+def _pad_track(track):
+    """Zero-pad the leading numeric run of a track ref (2b-... -> 02b-...)."""
+    m = re.match(r'^(\d+)', track)
+    if m and len(m.group(1)) == 1:
+        return '0' + track
+    return track
+
 def get_notebook_filename(num, name):
-    return f"GameTheory-{num}-{name}.ipynb"
+    return f"GameTheory-{num:02d}-{name}.ipynb"
 
 def get_side_track_filename(track_id):
     return f"GameTheory-{track_id}.ipynb"
@@ -57,12 +64,12 @@ def create_main_navigation(num, name, side_tracks):
     if num > 1:
         prev_num = num - 1
         prev_name = STRUCTURE[prev_num][0]
-        prev_link = f"[<< {prev_num}-{prev_name}](GameTheory-{prev_num}-{prev_name}.ipynb)"
+        prev_link = f"[<< {prev_num}-{prev_name}]({get_notebook_filename(prev_num, prev_name)})"
 
     if num < 17:
         next_num = num + 1
         next_name = STRUCTURE[next_num][0]
-        next_link = f"[{next_num}-{next_name} >>](GameTheory-{next_num}-{next_name}.ipynb)"
+        next_link = f"[{next_num}-{next_name} >>]({get_notebook_filename(next_num, next_name)})"
 
     nav_line = " | ".join(filter(None, [prev_link, "[Index](README.md)", next_link]))
     lines.append(f"**Navigation** : {nav_line}")
@@ -71,7 +78,7 @@ def create_main_navigation(num, name, side_tracks):
     if side_tracks:
         track_links = []
         for track in side_tracks:
-            track_links.append(f"[{track}](GameTheory-{track}.ipynb)")
+            track_links.append(f"[{track}](GameTheory-{_pad_track(track)}.ipynb)")
         lines.append(f"\n**Side tracks** : {' | '.join(track_links)}")
 
     return "\n".join(lines)
@@ -80,7 +87,7 @@ def create_side_track_navigation(track_id):
     """Create navigation markdown for a side track notebook."""
     parent_num, desc = SIDE_TRACKS[track_id]
     parent_name = STRUCTURE[parent_num][0]
-    parent_link = f"[{parent_num}-{parent_name}](GameTheory-{parent_num}-{parent_name}.ipynb)"
+    parent_link = f"[{parent_num}-{parent_name}]({get_notebook_filename(parent_num, parent_name)})"
 
     # Find sibling side tracks
     siblings = STRUCTURE[parent_num][1]
@@ -88,7 +95,7 @@ def create_side_track_navigation(track_id):
     for s in siblings:
         s_id = s.split("-")[0]
         if s_id != track_id:
-            sibling_links.append(f"[{s}](GameTheory-{s}.ipynb)")
+            sibling_links.append(f"[{s}](GameTheory-{_pad_track(s)}.ipynb)")
 
     lines = [f"**Navigation** : [<< {parent_num}-{parent_name} (track principal)]({parent_link}) | [Index](README.md)"]
     if sibling_links:
@@ -185,7 +192,7 @@ def main():
 
     # Mapping of old names to new names for reference updates
     old_to_new = {
-        "GameTheory-8-BackwardInduction": "GameTheory-9-BackwardInduction",
+        "GameTheory-8-BackwardInduction": "GameTheory-09-BackwardInduction",
         "GameTheory-9-ForwardInduction-SPE": "GameTheory-10-ForwardInduction-SPE",
         "GameTheory-10-BayesianGames": "GameTheory-11-BayesianGames",
         "GameTheory-11-ReputationGames": "GameTheory-12-ReputationGames",
@@ -194,11 +201,11 @@ def main():
         "GameTheory-14-CooperativeGames": "GameTheory-15-CooperativeGames",
         "GameTheory-15-MechanismDesign": "GameTheory-16-MechanismDesign",
         "GameTheory-16-MultiAgent-RL": "GameTheory-17-MultiAgent-RL",
-        "GameTheory-17-Lean-Definitions": "GameTheory-2b-Lean-Definitions",
-        "GameTheory-18-Lean-NashExistence": "GameTheory-4b-Lean-NashExistence",
-        "GameTheory-18b-NashExistence-Python": "GameTheory-4c-NashExistence-Python",
-        "GameTheory-19-Lean-CombinatorialGames": "GameTheory-8b-Lean-CombinatorialGames",
-        "GameTheory-19b-CombinatorialGames-Python": "GameTheory-8c-CombinatorialGames-Python",
+        "GameTheory-17-Lean-Definitions": "GameTheory-02b-Lean-Definitions",
+        "GameTheory-18-Lean-NashExistence": "GameTheory-04b-Lean-NashExistence",
+        "GameTheory-18b-NashExistence-Python": "GameTheory-04c-NashExistence-Python",
+        "GameTheory-19-Lean-CombinatorialGames": "GameTheory-08b-Lean-CombinatorialGames",
+        "GameTheory-19b-CombinatorialGames-Python": "GameTheory-08c-CombinatorialGames-Python",
         "GameTheory-20-Lean-SocialChoice": "GameTheory-16b-Lean-SocialChoice",
         "GameTheory-20b-SocialChoice-Python": "GameTheory-16c-SocialChoice-Python",
         "GameTheory-21-Lean-CooperativeGames": "GameTheory-15b-Lean-CooperativeGames",
