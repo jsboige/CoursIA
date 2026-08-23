@@ -37,6 +37,7 @@ torch>=2.0.0
 torchvision>=0.15.0
 torchaudio>=2.0.0
 transformers>=4.35.0
+sentencepiece>=0.1.99
 datasets>=2.14.0
 huggingface-hub>=0.20.0
 diffusers>=0.24.0
