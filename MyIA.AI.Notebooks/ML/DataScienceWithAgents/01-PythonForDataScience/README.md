@@ -13,7 +13,7 @@ Avant d'orchestrer des agents LLM qui *écrivent* du code data science (labs Lan
 | Notebook | Contenu | Durée |
 |----------|---------|-------|
 | [1.2-NumPy](notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | `ndarray`, opérations vectorisées, agrégations (`sum`, `mean`), gain de performance vs boucles | ~45 min |
-| [1.3-Pandas](notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | `DataFrame`, sélection de colonnes, filtrage booléen, manipulation tabulaire | ~60 min |
+| [1.3-Pandas](notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | `DataFrame`, sélection de colonnes, filtrage booléen, **jointures** (`merge`), **données manquantes** (`dropna`/`fillna`), **séries temporelles** (`resample`), **lecture CSV** (`read_csv`) | ~75 min |
 
 > **Numérotation.** La série commence à `1.2` car le `1.1` d'introduction est couvert par le [README parent](../README.md). La continuité logique est `1.2` (NumPy) → `1.3` (Pandas) → [Lab 1](../Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) (mise en pratique sur ventes synthétiques) → [02-ML-Cours 2.1](../02-ML-Cours/2.1-Workflow-ML.ipynb).
 
@@ -25,6 +25,7 @@ Avant d'orchestrer des agents LLM qui *écrivent* du code data science (labs Lan
 2. Mesurer l'avantage de performance de la vectorisation NumPy sur le Python natif.
 3. Construire un DataFrame Pandas et y sélectionner des colonnes avec la notation `[]`.
 4. Filtrer des lignes par conditions booléennes et préparer un jeu de données pour l'analyse.
+5. Fusionner deux tables avec `merge` (et comprendre les variantes `how`), diagnostiquer les valeurs manquantes (`isna`, `dropna`, `fillna`), agréger une série temporelle (`resample`) et lire un vrai CSV (`read_csv`).
 
 ## Prérequis
 
