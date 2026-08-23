@@ -25,15 +25,15 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 | Notebook | Sujet | Concept-phare | Validation |
 |----------|-------|---------------|------------|
 | [3.1-Retropropagation](3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** : différence finie vs analytique, parité exacte avec PyTorch | écart 1,3e-11 (seuil 1e-6) ; loss initiale, premier pas et trajectoire 3000 iters identiques à 1,1e-16 près ; init nulle = gradient nul (0,500 figé) |
+| [3.2-Optimisateurs](3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits en NumPy pur puis validés pas à pas contre `torch.optim` | **La parité exacte** : les 5 mises à jour sont celles de torch | GD/momentum/Adam à 1,11e-16, Adagrad bit-à-bit (0,00e+00), RMSProp à 2,22e-16 (float64, 1 pas) ; Beale : 5 trajectoires superposées (facteur 200 entre lr utilisables) ; MLP du 3.1 : 5 optimisateurs × 3 graines (RMSProp 0,059 < Adam 0,061 < … < GD 0,070) ; schedules : coût en full-batch déterministe, gain sous le plancher de bruit en mini-batch |
 
 ## Feuille de route
 
 La suite est planifiée (issues ouvertes) : théorie de l'information appliquée — entropie, KL,
-cross-entropy (#12420) ; optimisateurs — momentum, Adagrad, RMSProp, Adam, schedules, sur le MLP
-du 3.1 (#12408) ; régularisation — dropout, weight decay, early stopping (#12409) ; attention et
-transformer jusqu'à un mini-GPT entraîné in notebook (#12410) ; grokking et double descent
-(#12414). Le fil directeur ne change pas : chaque mécanisme écrit à la main, vérifié contre
-torch, puis consommé via l'API officielle.
+cross-entropy (#12420) ; régularisation — dropout, weight decay, early stopping (#12409) ;
+attention et transformer jusqu'à un mini-GPT entraîné in notebook (#12410) ; grokking et double
+descent (#12414). Le fil directeur ne change pas : chaque mécanisme écrit à la main, vérifié
+contre torch, puis consommé via l'API officielle.
 
 ## Prérequis
 
