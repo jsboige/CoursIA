@@ -7,6 +7,8 @@ Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais
 Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11011): BEATS 3/3 (linear → mse : changement de jambe, pas de modèle)
 Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
 Updated: 2026-08-15 — M15 LSTM-vol §C re-run perte de précision (issue #11034): 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS
+Updated: 2026-08-23 — M4 DLinear-vol §C extension ETF (Epic #1454): **BEATS 9/9** — l'edge BTC log-RV transfère à SPY/TLT/GLD (première entrée §C hors BTC)
+Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barreau ETF direction 9/9 NO BEATS (#11427) absents du header — cf sections respectives
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -176,6 +178,53 @@ que HAR porte l'essentiel (`har_bias_oos` −0,23/−0,34/−0,45).
 - **Run** : `python m15_lstm_rv.py --coins BTC-USD --seeds 0,1,7,42 --horizons 1,5,10 --loss-fn mse --refit-every 110 --output results/m15_lstm_rv_btc_sc_mse` (1563 s, resume depuis checkpoint 9/12)
 - **Notebook** : section 7 de `m15_lstm_rv_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
 - **Verdict §C (jambe de précision)** : **2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
+
+## M4 DLinear-vol — extension §C ETF (2026-08-23) — Epic #1454
+
+Première entrée §C **hors BTC** : la question était de savoir si l'edge M4 (BEATS 3/3 sur BTC
+log-RV, #11036) est spécifique au terrain crypto ou transfère aux ETF anti-biais. Réponse :
+**il transfère, 9/9 cellules BEATS**, conjonction tenue partout (jambe σ ET jambe DM), zéro
+seed BEATEN sur 36 combos.
+
+**Modèle** : DLinear (Zeng et al. AAAI 2023), `seq_len=22 -> horizon`, ~22 params — identique
+à l'entrée BTC (#11036). **Univers** : SPY / TLT / GLD daily 2005-01-03 → 2026-08-14
+(`datasets/panier/`, 5 438 obs par symbole, ~2,4× le terrain BTC ; aucun FAANG/Mag7).
+**Cible** : log-RV quotidien estimée par **Garman-Klass (1980)** sur OHLC daily
+(`0.5·ln(H/L)² − (2ln2−1)·ln(C/O)²`, ~7,4× plus efficace que rendements²). L'estimateur
+diffère de la somme horaire du terrain BTC (pas de données intraday ETF sur disque) — la
+comparabilité §C est **interne** (modèle et HAR sur la même série GK, même walk-forward),
+pas cross-terrain. **Baselines** : HAR (Corsi 2009) + persistence (random walk).
+**DM** : `scripts/dm_test.py`, HAC Newey-West + HLN, `loss_fn="mse"` (jambe de précision,
+#11010) ; biais signé OOS rapporté par modèle ET baseline (§C point 7).
+**Protocol** : walk-forward 5-fold expanding, `refit_every=110` (cadence M15, REGISTRY
+2026-08-14), seeds {0,1,7,42} (4/5 du set §C), horizons {1,5,10}. **Compute** : CPU
+(harnais `dlinear_vol` par construction, zéro `.to(device)`).
+
+| Symbole | h=1 edge (σ, dm_p) | h=5 edge (σ, dm_p) | h=10 edge (σ, dm_p) | Verdict §C |
+|---------|--------------------|--------------------|---------------------|------------|
+| SPY | +3,9 % (0,07 pt ; 1,9e-05) | +12,9 % (0,24 pt ; 3,2e-06) | +20,1 % (0,23 pt ; 4,8e-07) | **BEATS 3/3** |
+| TLT | +6,5 % (0,08 pt ; 8,8e-10) | +23,4 % (0,17 pt ; 1,6e-12) | +34,8 % (0,13 pt ; 1,0e-14) | **BEATS 3/3** |
+| GLD | +4,0 % (0,04 pt ; 6,1e-06) | +17,3 % (0,14 pt ; 5,2e-08) | +27,9 % (0,15 pt ; 4,3e-09) | **BEATS 3/3** |
+
+Chaque cellule : 4/4 seeds BEATS baseline, 0 BEATEN, edge ≥ 2σ (ex. GLD h=1 : +4,0 % vs
+2×0,04 pt), `dm_p_median ≤ 1,9e-05`. La dispersion cross-seed est négligeable (0,04-0,28 pt)
+— DLinear quasi déterministe sur ce terrain. L'edge croît avec l'horizon (patron BTC reproduit),
+le plus fort sur TLT (+34,8 % à h=10).
+
+**Lecture honnête** : biais OOS DLinear faible (−0,005 à +0,049 log-RV) vs biais HAR massif
+(−0,156 à −0,309, HAR **sous-prévoit** log-RV sur les 3 ETF comme sur BTC) — l'edge mse est
+porté par la précision, pas par un différentiel de biais défavorable ; le contrôle `linear`
+(biais) reste à jouer comme jambe séparée si claim de déploiement. Persistence battue partout
+(MSE 0,57-1,14). **Coûts de transaction** : prévision (MSE log-RV), aucune stratégie dérivée →
+coût non imputé ; borne 5 bps SPY / 10 bps si conversion future en overlay de vol-timing
+(note, pas un claim). **Contrepoint M15** (même terrain, run parallèle #1454 du 23/08) : le
+LSTM h=64 ne transfère pas (INCONCLUSIVE sur les cellules complétées à ce stade) —
+l'edge ETF-vol est porté par DLinear, pas par la famille deep seq.
+
+- **Data** : `datasets/panier/{SPY,TLT,GLD}_daily.csv` (2005-2026, 5 438 lignes chacune)
+- **Run** : `python -u etf_vol.py --symbols SPY TLT GLD --horizons 1 5 10 --seeds 0 1 7 42 --epochs 100 --refit-every 110 --loss-fn mse --out-json results/m4_dlinear_vol_etf_sc_mse/results.json` (4 328 s ; resume depuis checkpoint après kill externe)
+- **Harnais** : `scripts/etf_vol.py` (réutilise `walk_forward_har`, `walk_forward_dlinear`, `dm_verdict` ; RV GK dans `garman_klass_rv`)
+- **Verdict §C** : **9/9 BEATS** — première extension de terrain validée de la famille vol-forecasting
 
 ## Ladder #1409 — Final Verdicts (2026-06-12)
 
