@@ -180,6 +180,29 @@ def tree_is_clean(paths: list[str]) -> tuple[bool, str]:
     return (proc.stdout.strip() == ""), proc.stdout.strip()
 
 
+def stale_added_paths(porcelain: str) -> list[str]:
+    """Chemins en addition staged (``A ``) d'un `git status --porcelain`.
+
+    Apres `git checkout <base> -- <dir>` puis `git checkout HEAD -- <dir>`,
+    les fichiers presents a la base mais renommes (donc absents) dans HEAD
+    survivent : `git checkout <tree> -- <path>` ecrit les fichiers de
+    <tree>, il ne supprime JAMAIS ceux qui n'y sont pas. Ces fantomes sont
+    staged comme additions ; les purger restaure l'arbre exact de HEAD.
+    Les untracked (``??``) ne sont PAS purges : un garde qui ecrit dans le
+    repo doit continuer de declencher l'arret net.
+    """
+    out = []
+    for line in porcelain.splitlines():
+        if not line.startswith("A "):
+            continue
+        path = line[3:].strip()
+        if path.startswith('"') and path.endswith('"'):
+            path = path[1:-1]
+        if path:
+            out.append(path)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Emission des check-runs
 # ---------------------------------------------------------------------------
@@ -311,6 +334,13 @@ def main(argv: list[str] | None = None) -> int:
                     base_json[guard.name] = str(dest)
             finally:
                 git("checkout", "HEAD", "--", *swap)
+                # git checkout <tree> -- <path> ne supprime pas les fichiers
+                # absents de <tree> : les renames base->HEAD laissent des
+                # additions fantomes qu'on purge avant l'attestation.
+                st = git("status", "--porcelain", "--", *swap)
+                stale = stale_added_paths(st.stdout)
+                if stale:
+                    git("rm", "-fq", "--", *stale)
             clean, dirt = tree_is_clean(swap)
             if not clean:
                 # Arret net : les verdicts suivants porteraient sur un arbre
