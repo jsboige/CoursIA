@@ -1834,8 +1834,8 @@ def test_perimeter_workflow_file_exists_on_main():
     """The cable's first leg: `.github/workflows/perimeter-review-guard.yml`
     MUST exist on the working tree. A future refactor that renames or
     archives it without updating the workflow list would otherwise leave
-    the gate referencing a phantom name (which pr-gate-rerun-drift-guard
-    catches, but only as a downstream symptom)."""
+    the gate referencing a phantom name, caught only as a downstream
+    symptom."""
     wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
     assert wf.is_file(), f"missing cable leg 1: {wf}"
 
