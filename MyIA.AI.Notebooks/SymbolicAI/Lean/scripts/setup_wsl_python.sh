@@ -21,7 +21,10 @@ echo "Installation des dependances Python..."
 pip install --quiet --upgrade pip
 
 # Dependances de base pour LLM
-pip install --quiet python-dotenv openai anthropic matplotlib
+# ipykernel : exige par le kernel python3-wsl ET par validate_lean_setup.py
+# (check "Packages dans venv" : import ipykernel) — sans lui le kernelspec
+# pose sur ~/.python3-wsl-venv meurt au demarrage (ModuleNotFoundError).
+pip install --quiet python-dotenv openai anthropic matplotlib ipykernel
 
 # Semantic Kernel pour orchestration multi-agents (Lean-8)
 echo "Installation de Semantic Kernel..."

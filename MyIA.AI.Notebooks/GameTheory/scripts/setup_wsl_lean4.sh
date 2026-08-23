@@ -139,6 +139,15 @@ def convert_windows_path(path):
     # Check for mangled path (backslashes eaten by WSL shell)
     # Pattern: c:UsersjsboiAppDataRoamingjupyterruntimekernel-xxx.json
     if len(path) >= 2 and path[1] == ":":
+        # nbclient place le connection file dans %LOCALAPPDATA%\Temp (tmp*.json),
+        # pas dans le runtime dir Roaming couvert ci-dessous. Cas mangle :
+        # c:Users<u>AppDataLocalTemp<name>.json
+        m_local = re.match(
+            r"([a-zA-Z]):Users([a-zA-Z0-9_]+)AppDataLocalTemp(kernel-[a-f0-9-]+|tmp[a-z0-9_]+)\.json$",
+            path, re.IGNORECASE)
+        if m_local:
+            return "/mnt/{}/Users/{}/AppData/Local/Temp/{}.json".format(
+                m_local.group(1).lower(), m_local.group(2), m_local.group(3))
         if "Users" in path and "\\" not in path and "/" not in path[2:]:
             match = re.match(r"([a-zA-Z]):Users([a-z0-9_]+)AppDataRoaming(.+)", path, re.IGNORECASE)
             if match:
