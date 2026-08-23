@@ -42,7 +42,7 @@ from pathlib import Path
 
 # === Profils canoniques par NB (tranches 1+2) ===
 #
-# Schéma calqué sur `Infer-3-Factor-Graphs` + `GameTheory-1-Setup` ajusté :
+# Schéma calqué sur `Infer-3-Factor-Graphs` + `GameTheory-01-Setup` ajusté :
 # - Setup : `network: true` (pip install nashpy/openspiel)
 # - NormalForm / Topology2x2 / ZeroSum / EvolutionTrust : CPU pure, `network: false`
 # - C# twins : `validator: dotnet-interactive` (Microsoft.SemanticKernel local)
@@ -52,35 +52,35 @@ from pathlib import Path
 
 PROFILES = {
     # === Tranche 1 (c.927, GT-1/2/3) ===
-    "GameTheory-1-Setup": {
+    "GameTheory-01-Setup": {
         "kernel": "python3",
         "validator": "papermill",
         "cpu_min": 5,            # pip install + 21 cellules code
         "network": True,         # pip install nashpy/openspiel + imports distants
         "notes": "Setup OpenSpiel + nashpy via pip install WSL; import numpy/matplotlib/networkx. Première cellule = installation.",
     },
-    "GameTheory-2-NormalForm": {
+    "GameTheory-02-NormalForm": {
         "kernel": "python3",
         "validator": "papermill",
         "cpu_min": 3,            # 16 cellules, équilibre Nash
         "network": False,
         "notes": "Normal-form games via nashpy ; numpy/matplotlib pour visualisations (polygone d'utilité, courbes d'indifférence).",
     },
-    "GameTheory-2-NormalForm-Csharp": {
+    "GameTheory-02-NormalForm-Csharp": {
         "kernel": ".net-csharp",
         "validator": "dotnet-interactive",
         "cpu_min": 3,            # 11 cellules .NET Interactive
         "network": False,
         "notes": "Jumeau .NET Interactive C# : Microsoft.SemanticKernel/GametheoryUtils en local. cf L532 MEMORY : strip_probe_banner.py post-re-exec.",
     },
-    "GameTheory-3-Topology2x2": {
+    "GameTheory-03-Topology2x2": {
         "kernel": "gametheory-wsl",
         "validator": "papermill",
         "cpu_min": 4,            # 17 cellules, classification topologique 2×2
         "network": False,
         "notes": "Classification topologique des jeux 2×2 (4 classes : prisoner's dilemma, stag hunt, etc.) ; kernel gametheory-wsl Python+nashpy.",
     },
-    "GameTheory-3-Topology2x2-Csharp": {
+    "GameTheory-03-Topology2x2-Csharp": {
         "kernel": ".net-csharp",
         "validator": "dotnet-interactive",
         "cpu_min": 4,            # 12 cellules .NET
@@ -88,28 +88,28 @@ PROFILES = {
         "notes": "Jumeau .NET Interactive C# : classification topologique 2×2. cf L532 MEMORY : strip_probe_banner.py post-re-exec.",
     },
     # === Tranche 2 (c.934, GT-5/6) ===
-    "GameTheory-5-ZeroSum-Minimax": {
+    "GameTheory-05-ZeroSum-Minimax": {
         "kernel": "gametheory-wsl",
         "validator": "papermill",
         "cpu_min": 4,            # 14 cellules, jeux à somme nulle + théorème Minimax
         "network": False,
         "notes": "Jeux à somme nulle + théorème du Minimax (Von Neumann 1928) ; équilibre via nashpy, visualisations numpy/matplotlib. Kernel gametheory-wsl Python+nashpy.",
     },
-    "GameTheory-5-ZeroSum-Minimax-Csharp": {
+    "GameTheory-05-ZeroSum-Minimax-Csharp": {
         "kernel": ".net-csharp",
         "validator": "dotnet-interactive",
         "cpu_min": 3,            # 12 cellules .NET
         "network": False,
         "notes": "Jumeau .NET Interactive C# : jeux à somme nulle + Minimax. cf L532 MEMORY : strip_probe_banner.py post-re-exec.",
     },
-    "GameTheory-6-EvolutionTrust": {
+    "GameTheory-06-EvolutionTrust": {
         "kernel": "python3",
         "validator": "papermill",
         "cpu_min": 5,            # 20 cellules, dilemme itéré + évolution
         "network": False,
         "notes": "Dilemme du Prisonnier itéré + évolution de la confiance (Axelrod IPD Tournament) ; stratégies TFT, Pavlov, Generous, etc. via numpy. Reproduction déterministe (seed fixe).",
     },
-    "GameTheory-6-EvolutionTrust-Csharp": {
+    "GameTheory-06-EvolutionTrust-Csharp": {
         "kernel": ".net-csharp",
         "validator": "dotnet-interactive",
         "cpu_min": 3,            # 12 cellules .NET
@@ -122,17 +122,17 @@ PROFILES = {
 # Mapping tranche -> liste ordonnée de NBs
 TRANCHES = {
     1: [
-        "GameTheory-1-Setup",
-        "GameTheory-2-NormalForm",
-        "GameTheory-2-NormalForm-Csharp",
-        "GameTheory-3-Topology2x2",
-        "GameTheory-3-Topology2x2-Csharp",
+        "GameTheory-01-Setup",
+        "GameTheory-02-NormalForm",
+        "GameTheory-02-NormalForm-Csharp",
+        "GameTheory-03-Topology2x2",
+        "GameTheory-03-Topology2x2-Csharp",
     ],
     2: [
-        "GameTheory-5-ZeroSum-Minimax",
-        "GameTheory-5-ZeroSum-Minimax-Csharp",
-        "GameTheory-6-EvolutionTrust",
-        "GameTheory-6-EvolutionTrust-Csharp",
+        "GameTheory-05-ZeroSum-Minimax",
+        "GameTheory-05-ZeroSum-Minimax-Csharp",
+        "GameTheory-06-EvolutionTrust",
+        "GameTheory-06-EvolutionTrust-Csharp",
     ],
 }
 

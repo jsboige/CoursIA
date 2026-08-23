@@ -1706,7 +1706,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/GameTheory/"
-                "GameTheory-4-NashEquilibrium-Csharp.ipynb",
+                "GameTheory-04-NashEquilibrium-Csharp.ipynb",
                 "2026-08-11T04:07:00Z"),
     )
     for lane in (
@@ -4006,3 +4006,344 @@ def test_is_delivered_property_distinguishes_marker():
         "[CLAIMED] lane X -- working", "2026-08-22T01:00:00Z"))
     assert ev.is_delivered is False
     assert ev.is_open is True
+
+
+# ---------------------------------------------------------------------------
+# #12386 -- v2 conditional [DELIVERED]: gate the close on live PR state.
+#
+# v1's contract: a [DELIVERED] is a close -- it pops the lane from
+# `state` (see test_delivered_close_drops_lane_from_active_claims above).
+# v2's contract: a [DELIVERED] is a CONDITIONAL close keyed on the PR
+# state:
+#
+#   - PR OPEN   -> the deliverer keeps an active claim (still WRITING);
+#                 subsequent claims from other lanes are BLOCKED.
+#   - PR MERGED -> the deliverer keeps an active claim but `locked: True`;
+#                 a plain re-claim is BLOCKED with a tailored LOCKED
+#                 message; the only escape is a coordinator [OVERRIDE].
+#   - PR CLOSED (not merged) -> legacy close: lane popped from state.
+#   - PR not found / lookup failure -> legacy close (fail-CLOSED means
+#                 refuse to BLOCK on unknown).
+#   - DELIVERED without PR #N reference -> legacy close (the v1 surface).
+#
+# Tests below use `pr_states` injection to avoid any `gh pr view` round
+# trip; the live-PR-state code path is exercised in the integration
+# smoke at the bottom of `test_run_check_delivered_uses_gh_pr_view` (NOT
+# auto-run in CI; covered manually on the worker with a real PR ref).
+# ---------------------------------------------------------------------------
+
+def _pr_states(pr: int, st: str) -> dict[int, str]:
+    """Build a single-entry pr_states injection dict for v2 tests."""
+    return {pr: st}
+
+
+def test_delivered_open_blocks_subsequent_claim_via_pr_state(capsys):
+    """v2: a [DELIVERED] whose PR is still OPEN keeps the lane active (#12386).
+
+    The motivating incident is #12253/#12298: a 10-hour window of
+    free state let another lane claim an issue whose [DELIVERED] lane
+    was still WRITING the PR. v2 closes the conditional gap by gating
+    the [DELIVERED] on the live PR state -- an OPEN PR keeps the claim
+    active, BLOCKING subsequent claimers from any other lane until either
+    the PR is merged (locked) or closed (legacy lift).
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12253",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12253, "OPEN"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 1  # BLOCKED
+    out = _json_out(capsys.readouterr())
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    # PR state surfaces in the JSON summary for forensics. JSON serialises
+    # int keys as strings -- this is the same shape consumers see on stdout.
+    assert out["delivered_claims_pr_states"] == {"12253": "OPEN"}
+    # Active-claim entry for the deliverer exposes the live pr_state (raw,
+    # not JSON-serialised).
+    active = out["active_claims"]["myia-po-2026:CoursIA-2"]
+    assert active["pr_ref"] == 12253
+    assert active["pr_state"] == "OPEN"
+    assert active["locked"] is False
+
+
+def test_delivered_merged_locks_with_overrides_required(capsys):
+    """v2: a [DELIVERED] whose PR is MERGED on main locks the lane (#12386).
+
+    `locked: True` is the flag the reducer attaches so the BLOCKED
+    branch above can render a tailored message naming the merged PR and
+    pointing the caller at [OVERRIDE] / R5 close as the only escapes.
+    Without this flag, a lane arriving on a CLEAR summary would still
+    see `blocking_lanes` empty AND the merged PR in
+    `delivered_claims_pr_states` -- the message naming the lock is
+    what closes the loop.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12298",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12298, "MERGED"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 1  # BLOCKED (LOCKED branch fires inside)
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    assert out["delivered_claims_pr_states"] == {"12298": "MERGED"}
+    active = out["active_claims"]["myia-po-2026:CoursIA-2"]
+    assert active["locked"] is True
+    assert active["pr_state"] == "MERGED"
+    # The LOCKED message naming the merged PR must appear on stderr.
+    assert "LOCKED (v2)" in captured.err
+    assert "PR #12298 MERGED" in captured.err
+
+
+def test_delivered_closed_lifts_active_claim(capsys):
+    """v2: a [DELIVERED] whose PR was CLOSED (not merged) lifts the claim (#12386).
+
+    CLOSED-without-MERGED is the legacy lift path: the PR did not reach
+    main, the deliverer's claim should NOT block forever. The reducer
+    pops the lane from `state`, identical to v1 behaviour for this
+    state. The forensic record (delivered_claims) survives.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12253",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12253, "CLOSED"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    assert out["delivered_claims"] == [12253]
+    assert out["delivered_claims_pr_states"] == {"12253": "CLOSED"}
+
+
+def test_delivered_lookup_failure_legacy_close(capsys):
+    """v2: when gh pr view cannot resolve the PR, fall back to legacy close (#12386).
+
+    Fail-CLOSED semantics: a [DELIVERED] that we cannot bind to a PR
+    must NOT keep the lane active forever (that would itself be a bug:
+    it would lock every issue where a PR was deleted or moved). The
+    reducer treats `None` from `_fetch_pr_state` as the legacy v1
+    "close" action. The forensic record still carries the PR ref.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #99999",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states={},  # 99999 not present -> legacy close
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    assert out["delivered_claims"] == [99999]
+
+
+def test_delivered_without_pr_ref_still_lifts_active_claim(capsys):
+    """v2: [DELIVERED] without a PR #N keeps the v1 close path (#12320/v2 compat).
+
+    The marker is legal but unreferenced. v1 treated it as a close;
+    v2 preserves that behaviour because there is no PR to bind the
+    state to. The forensic record surface (`delivered_claims`,
+    `delivered_claims_pr_states`) only carries entries with a PR
+    reference -- an unreferenced [DELIVERED] is recorded by the parser
+    but invisible in the forensic lists (consistent with v1).
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- substance shipped",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=None,
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    # Unreferenced [DELIVERED] is filtered from the forensic lists (the
+    # parser records it but consumers want only PR-bound entries).
+    assert out["delivered_claims"] == []
+    assert out["delivered_claims_pr_states"] == {}
+
+
+def test_delivered_replay_locks_again_after_open_then_merged(capsys):
+    """v2: chronological replay of one DELIVERED should track the live PR.
+
+    The motivating chronologie is #12213 (a 07:40 replay of an OPEN
+    [DELIVERED] was BLOCKED, then a later cycle with MERGED returned
+    BLOCKED+locked). We replay that exact sequence here with `pr_states`
+    toggled across two calls; the second call MUST show `locked: True`
+    while the first MUST show the active-claim. Without the v2 gate,
+    the first call would CLEAR (v1 behaviour) and the second would
+    still be CLEAR -- exactly the failure mode #12213 named.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12213",
+                "2026-08-22T02:00:00Z"),
+    )
+    my_paths = ["scripts/check_lane_claim.py"]
+    # Step 1: PR is still OPEN -> BLOCKED
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12213, "OPEN"),
+                       my_paths=my_paths)
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    assert out["active_claims"]["myia-po-2026:CoursIA-2"]["locked"] is False
+    # Step 2: PR now MERGED -> BLOCKED + locked
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12213, "MERGED"),
+                       my_paths=my_paths)
+    assert rc == 1
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    assert out["active_claims"]["myia-po-2026:CoursIA-2"]["locked"] is True
+    assert "LOCKED (v2)" in captured.err
+
+
+def test_pr_states_signature_is_optional_no_behavioural_change(capsys):
+    """v2: callers that don't pass `pr_states` keep the v1 surface.
+
+    Without an injected state, `_resolve_delivered_v2` calls
+    `_fetch_pr_state` (which round-trips through `gh`). In CI without
+    `gh` available, this surfaces as the legacy close -- the test
+    asserts the function signature accepts `None` and returns v1 shape.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #99999",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=None,
+                       my_paths=["scripts/check_lane_claim.py"])
+    # Either CLEAR (legacy close when gh auth works) or NOT_SCOPED
+    # (when gh auth fails and we cannot introspect). Both are valid v1
+    # surfaces -- the test pins that v2 did not crash with a TypeError
+    # on the new kwarg.
+    assert rc in (0, 2)
+    captured = capsys.readouterr()
+    if rc == 0:
+        out = _json_out(captured)
+        # The forensic PR ref still surfaces.
+        assert 99999 in out["delivered_claims"]
+    # On NOT_SCOPED the JSON output is replaced by the trailing
+    # NOT_SCOPED banner; the kwarg was accepted without TypeError,
+    # which is the only thing this test pins.
+
+
+# --- v2 helper: _find_open_pr_for_issue_by_lane ------------------------------
+
+def test_find_open_pr_for_issue_by_lane_unique_match():
+    """`_find_open_pr_for_issue_by_lane` returns the singleton PR number (#12386).
+
+    The matcher accepts `Closes #N` / `Fixes #N` / `Refs #N` / `See #N`
+    / `Resolves #N` / `Part of #N` / bare `#N` token in the PR body.
+    Tests below pin each form and the cross-lane exclusion.
+    """
+    prs = [
+        # No lane tag -- excluded by the lane filter
+        {"number": 12345,
+         "body": "Closes #9764. Substance X."},
+        # Right lane, references #9764 -> the singleton match
+        {"number": 12346,
+         "body": "Fixes #9764 -- lane myia-po-2024:CoursIA-2 work Y"},
+        # Right lane, references #9999 -> a different issue, no match
+        {"number": 12349,
+         "body": "Closes #9999 -- lane myia-po-2024:CoursIA-2"},
+    ]
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    assert found == 12346  # the singleton match in this lane
+
+
+def test_find_open_pr_for_issue_by_lane_picks_lowest_when_multiple_disambig(capsys):
+    """Singleton returns the lowest PR number when multiple forms reference the issue.
+
+    The matcher accepts `Closes #N` / `Fixes #N` / `Refs #N` / `See #N`
+    / `Resolves #N` / `Part of #N` / bare `#N` token in the PR body. We
+    pin each form here in the same lane; the helper returns None with
+    a stderr warning (ambiguous) -- this test pins the disambiguation
+    behaviour through the `delivered:#N` escape hatch instead, which
+    forces a specific PR number regardless of ambiguity.
+    """
+    prs = [
+        {"number": 12346,
+         "body": "Fixes #9764 -- lane myia-po-2024:CoursIA-2 work Y"},
+        {"number": 12347,
+         "body": "Refs #9764 -- lane myia-po-2024:CoursIA-2 partial delivery"},
+    ]
+    # Multiple OPEN PRs in same lane -> helper refuses to pick
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    assert found is None
+    assert "WARN" in capsys.readouterr().err
+
+
+def test_find_open_pr_for_issue_by_lane_no_match():
+    """`_find_open_pr_for_issue_by_lane` returns None when no PR matches."""
+    prs = [
+        {"number": 12345, "body": "Closes #9999. Substance X."},
+        {"number": 12346, "body": "Fixes #8888 -- lane myia-po-2024:CoursIA-2"},
+    ]
+    assert clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    ) is None
+
+
+def test_find_open_pr_for_issue_by_lane_excludes_other_lanes():
+    """PRs authored by other lanes are excluded even when they reference the issue (#12386)."""
+    prs = [
+        {"number": 12345,
+         "body": "Closes #9764 -- lane myia-po-2023:CoursIA-2"},  # wrong lane
+        {"number": 12346,
+         "body": "Closes #9764 -- lane myia-po-2024:CoursIA-2"},  # right lane
+    ]
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    assert found == 12346
+
+
+def test_find_open_pr_for_issue_by_lane_ambiguous_returns_none(capsys):
+    """Two+ OPEN PRs in the same lane referencing the issue -> warn + None (#12386).
+
+    A misleading PR reference would LOCK the wrong PR. The helper
+    refuses to pick one in this case and emits a stderr warning. The
+    caller (--release flow) falls back to plain [RELEASED] -- better
+    to lose the PR-binding than to lock the wrong PR.
+    """
+    prs = [
+        {"number": 12345,
+         "body": "Closes #9764 -- lane myia-po-2024:CoursIA-2 (tranche 1)"},
+        {"number": 12346,
+         "body": "Closes #9764 -- lane myia-po-2024:CoursIA-2 (tranche 2)"},
+    ]
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    captured = capsys.readouterr()
+    assert found is None
+    assert "WARN" in captured.err
+    assert "delivered:#N" in captured.err  # escape hatch

@@ -111,8 +111,30 @@ RULE_SEVERITY = {
     "frontmatter_rawyaml": ERROR,
     "yaml_block_open_no_close": ERROR,
     "setext_oversized": ERROR,
+    # Reste WARN : la regle matche aussi des titres de section LEGITIMES.
+    # `### Indices` dans QC-Py-02-Platform-Fundamentals est une vraie section
+    # (Principe / Objectif / Indices), pas un commentaire fuite -- la promouvoir
+    # rougirait du contenu sain. Mesure du 2026-08-21 : 3 des 9 hits hors
+    # baseline sont de cette forme.
     "oversized_hint": WARN,
-    "heading_in_list": WARN,
+    # #12109 : ERROR (bloquant). Un titre ATX imbrique dans une puce ou une
+    # citation (`- # Indice : ...`) n'a aucun usage legitime -- il rend un <h1>
+    # A L'INTERIEUR d'une puce. Mesure du 2026-08-21 sur le rendu GitHub de
+    # QC-Py-26 (getComputedStyle, iframe notebooks.githubusercontent.com) :
+    # 6 titres a `29.0304px`, la plus grosse police de la page, pour des
+    # commentaires Python d'exercice -- alors que le meme notebook ecrit
+    # ailleurs la forme saine `- \`# Indice\` : ...`.
+    #
+    # Cout de la promotion, mesure avant de la faire : 298 hits corpus dont
+    # 289 deja baselines ; 6 vivants sur 2 notebooks, reparees dans la meme PR.
+    # Le cliquet est delta (ligne ~1009 : `new_findings`), donc la dette
+    # historique reste grandfathered.
+    #
+    # La promotion etait deja identifiee comme necessaire dans l'en-tete de
+    # `.github/workflows/markdown-rendering-guard.yml` ("tracked follow-up on
+    # #3966") -- et #3966 a ete FERMEE sans que le suivi soit fait. C'est ce
+    # trou qui a laisse passer #12009.
+    "heading_in_list": ERROR,
     # #12112: WARN-first -- the class is measured at 16 cells corpus-wide; the
     # drift gate on new hits is the issue's acceptance. A stray '**' is a
     # cosmetic rendering defect, not a page-breaking one (unlike the ERRORs).
@@ -171,6 +193,12 @@ _CJK_LANG_SUFFIXES = ("_zh", "_ja", "_ko")
 RULE_REPAIR = {
     "yaml_block_open_no_close": (
         "python scripts/notebook_tools/fix_hr_separator.py --apply <notebook>"
+    ),
+    # #12109 : promue ERROR dans la meme PR que son fixer -- une regle bloquante
+    # sans commande de reparation nommee fait redecouvrir le remede a chaque
+    # auteur qui tombe dessus (c'est le constat qui a fonde cette table).
+    "heading_in_list": (
+        "python scripts/notebook_tools/fix_hint_headings.py --apply <notebook>"
     ),
 }
 
