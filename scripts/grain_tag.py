@@ -142,8 +142,32 @@ _GRAIN_FULL_RE = re.compile(
 # and `**Lane** :` (after `*` is stripped -> `Lane :`). The lane is structural
 # (the worker's workspace) and may sit anywhere in the body -- extracted
 # independently of the Grain line (#9485 point 4).
+# A workspace name MAY contain spaces (`myia-po-2025:Microsoft VS Code`, the
+# Mistral lane). Truncating at the first blank made that lane DIFFERENT FROM
+# ITSELF for `check_lane_claim`: it read `myia-po-2025:Microsoft` from the
+# lane's own claim, compared it to the untruncated `--lane`, and reported the
+# lane as blocked by itself (#12145). Continuation words are admitted under
+# three constraints, each of which is a false positive the pattern must NOT
+# produce:
+#   * `(?-i:[A-Z0-9])` -- a continuation starts with an upper-case letter or
+#     a digit. IGNORECASE is disabled LOCALLY, otherwise the flag would make
+#     that class match lower case and the pattern would swallow running prose
+#     ("lane myia-x:W and it works"). This is what separates a workspace name
+#     from a sentence.
+#   * `(?![A-Za-z0-9._-])` -- forces maximal munch on the word, so the
+#     `(?![:@])` that follows cannot be defeated by backtracking into it
+#     (`prev` would otherwise match as `pre` with a lookahead on `v`).
+#   * `{0,3}` -- bounds the reach. No cluster workspace needs more, and the
+#     bound keeps a malformed marker from eating a paragraph.
+# Dash annotations (" -- ", em dash, en dash) and parenthetical ones stop the
+# match by construction: none of their opening characters is in the
+# continuation class -- the same bounds `_extract_paths_clause` already uses
+# in check_lane_claim.py.
 _LANE_RE = re.compile(
-    r"lane\s*:?\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)", re.IGNORECASE
+    r"lane\s*:?\s+"
+    r"([A-Za-z0-9._-]+:[A-Za-z0-9._-]+"
+    r"(?:[ \t]+(?-i:[A-Z0-9])[A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})",
+    re.IGNORECASE,
 )
 
 # Fallback lane token for claim comments that omit the `lane` keyword (#10395
@@ -161,8 +185,14 @@ _LANE_RE = re.compile(
 # the search to the marker line -- URLs, time stamps and code tokens that
 # happen to contain a colon are NOT lane IDs. Token shape: `myia-<slug>:<ws>`
 # (lowercase, hyphens allowed) or any single-word `lower:Pascal` pair.
+# Same space tolerance as `_LANE_RE` -- the sibling has to move with it, or a
+# claim that omits the literal `lane` keyword keeps truncating. Fixing one
+# half of a duplicated mechanism and not grepping for the other is the
+# recurring shape of this class of bug (#12145). No IGNORECASE on this one,
+# so `[A-Z0-9]` already means upper case.
 _LANE_FALLBACK_RE = re.compile(
-    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-z][A-Za-z0-9._-]*)\b"
+    r"\b(myia-[A-Za-z0-9._-]+:[A-Za-z][A-Za-z0-9._-]*"
+    r"(?:[ \t]+[A-Z0-9][A-Za-z0-9._-]*(?![A-Za-z0-9._-])(?![:@])){0,3})"
 )
 
 # `prev` (case-insensitive), optional colon, whitespace, then the SAME

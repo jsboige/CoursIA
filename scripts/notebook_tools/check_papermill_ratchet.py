@@ -32,9 +32,13 @@ changed-outputs + identical-block regression exists.
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # Same exclusions as check_exec_ratchet.py / notebook-execution-required.yml:
 # archived, papermill-output and research copies are not deliverable notebooks.
@@ -109,6 +113,58 @@ def papermill_block(nb):
     return json.dumps(block, sort_keys=True, ensure_ascii=False)
 
 
+# --- sanctioned output strips -------------------------------------------
+# Three pre-commit hooks in .pre-commit-config.yaml rewrite committed cell
+# outputs without any re-execution. Two of them touch the code-cell outputs
+# this gate hashes:
+#
+#   strip-probeaddresses-banner -> strip_probe_banner.py --apply
+#   strip-dotnet-nuget-ext      -> strip_machine_paths.py --apply
+#
+# (The third, scrub-papermill-paths, rewrites metadata.papermill and is
+# therefore already visible to the block comparison, not to exec_evidence.)
+#
+# Both hooks exist precisely BECAUSE re-execution does not fix what they
+# remove: the strip-dotnet-nuget-ext description says the message "is
+# re-injected at every kernel re-execution ... so the durable fix is this
+# output-only pre-commit strip - no source change, execution_count
+# preserved". A branch that merely touches a markdown cell of a notebook
+# still carrying such a leak therefore gets its OUTPUTS rewritten at commit
+# time, by an organ of this very repository - and would be judged as riding
+# a stale block, which it is not.
+#
+# The test is exact, not heuristic: the base blob is passed through the same
+# tools, and the result must equal the head evidence BYTE FOR BYTE. A
+# hand-edited output does not survive it, because no strip tool produces a
+# hand-edit.
+STRIP_TOOLS = ("strip_machine_paths", "strip_probe_banner")
+
+
+def stripped_evidence(content):
+    """exec_evidence of `content` after the output-touching strip hooks.
+
+    Returns None when the tools cannot run, so a failure here can only leave
+    the caller on its previous (stricter) verdict - never turn a FAIL into a
+    PASS by accident.
+    """
+    handle, tmp = tempfile.mkstemp(suffix=".ipynb")
+    os.close(handle)
+    try:
+        Path(tmp).write_text(content, encoding="utf-8")
+        import strip_machine_paths
+        import strip_probe_banner
+        strip_machine_paths.strip_in_place(tmp)
+        strip_probe_banner.strip_banner_in_place(tmp)
+        return exec_evidence(json.loads(Path(tmp).read_text(encoding="utf-8")))
+    except Exception:
+        return None
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+
 def state_at_base(base, path, cwd=None):
     """(evidence, block) of the notebook blob at base ref.
 
@@ -117,12 +173,16 @@ def state_at_base(base, path, cwd=None):
     """
     content = git("show", f"{base}:{path}", cwd=cwd)
     if content is None:
-        return "ABSENT", None, None
+        return "ABSENT", None, None, None
     try:
         nb = json.loads(content)
     except Exception:
-        return "PARSE_ERROR", None, None
-    return "OK", exec_evidence(nb), papermill_block(nb)
+        return "PARSE_ERROR", None, None, None
+    # Lazy: the strip tools cost ~150 ms per notebook and are only ever
+    # consulted on the STALE_BLOCK branch, which is the rare one. A thunk
+    # keeps a 200-notebook PR at the cost it had before this exemption.
+    return ("OK", exec_evidence(nb), papermill_block(nb),
+            lambda: stripped_evidence(content))
 
 
 def state_at_head(path, cwd=None):
@@ -130,14 +190,14 @@ def state_at_head(path, cwd=None):
     try:
         nb = json.loads((Path(cwd or ".") / path).read_text(encoding="utf-8"))
     except Exception:
-        return "PARSE_ERROR", None, None
-    return "OK", exec_evidence(nb), papermill_block(nb)
+        return "PARSE_ERROR", None, None, None
+    return "OK", exec_evidence(nb), papermill_block(nb), None
 
 
 def classify(base_state, head_state):
     """Verdict of one changed notebook. Regression iff stale block ridden."""
-    b_status, b_ev, b_block = base_state
-    h_status, h_ev, h_block = head_state
+    b_status, b_ev, b_block, b_ev_stripped = base_state  # 4th is a thunk
+    h_status, h_ev, h_block, _ = head_state
     if b_status == "ABSENT":
         return "ADDED", False
     if b_status == "PARSE_ERROR" or h_status == "PARSE_ERROR":
@@ -148,6 +208,12 @@ def classify(base_state, head_state):
     if h_ev == b_ev:
         # Outputs untouched: a markdown-only edit rides the block legally.
         return "OUTPUTS_UNCHANGED", False
+    if b_ev_stripped is not None and h_ev == b_ev_stripped():
+        # The whole delta is what the sanctioned output-strip hooks produce.
+        # No run happened, so the block is not stale - it still describes the
+        # execution that produced these outputs, minus a machine-path leak
+        # that no re-execution could have removed.
+        return "OUTPUTS_STRIPPED", False
     if h_block == b_block:
         # Outputs changed but the block is byte-identical: it describes the
         # previous run, not the one that produced the committed outputs.

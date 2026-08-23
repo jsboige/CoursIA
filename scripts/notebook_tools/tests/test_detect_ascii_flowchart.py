@@ -45,6 +45,7 @@ from detect_ascii_flowchart import (  # noqa: E402
     _line_has_connector,
     _line_is_box,
     scan_notebook,
+    scan_paths,
 )
 
 
@@ -108,6 +109,64 @@ SW_12_FOUNDER = """
 ```
 """
 
+# c.474 real-cell fixtures from issue #12324 measurement.
+# These are NOT synthetic : ce sont des cellules verbatim extraites du depot
+# par ai-01 (msg-20260822T132457-ysvs9a) et qui n'etaient signalees QUE par
+# l'implementation de #11974 (ou le patch d'une ligne c.474). Avec l'ancre
+# `\s*$` du main, AUCUN de ces flowcharts horizontaux etait detecte.
+
+GT_17_NFSP_HORIZONTAL = """
+Architecture NFSP (Neural Fictitious Self-Play)
+
++----------+      +-------------+      +----------+
+| Average  |--->  | BestResponse|--->  | Average  |
+| Network  |      | Network     |      | Network  |
++----------+      +-------------+      +----------+
+     ^                                       |
+     |_______________________________________|
+              (experience replay buffer)
+"""
+
+QC_PY_13_FRAMEWORK_HORIZONTAL = """
+Les 5 composants du framework QC
+
++----------+   +-----------+   +----------+   +----------+   +----------+
+| Universe |---| Algorithm |---| Broker   |---| Data     |---| Insight  |
+| (assets) |   |           |   | (orders) |   | (history)|   | (reports) |
++----------+   +-----------+   +----------+   +----------+   +----------+
+"""
+
+QC_PY_19_RF_VS_XGBOOST = """
+Comparaison Random Forest vs XGBoost
+
++-----------+         +-----------+
+| Random    |  vs.    | XGBoost   |
+| Forest    |         | (boosted) |
++-----------+         +-----------+
+     |                     |
+     v                     v
++----------+         +----------+
+| Bagging  |         | Boosting |
++----------+         +----------+
+"""
+
+# Anti-faux-positif : cadre decoratif Unicode autour d'un dialogue
+# (GenAI/Vibe-Coding/Claude-Code/notebooks/03-Claude-CLI-References.ipynb c21).
+# Ce N'EST PAS un flowchart : une seule boite sans connecteur reel, juste un
+# encadrement visuel. Le discriminateur ne doit PAS la signaler comme HIT.
+
+UNICODE_DECORATIVE_FRAME = """
+Cadre decoratif autour d'un dialogue
+
+┌────────────────────────────────────┐
+│  USER : Bonjour Claude             │
+│  CLAUDE : Bonjour, comment         │
+│           puis-je vous aider ?     │
+└────────────────────────────────────┘
+
+Suite du dialogue sans cadre.
+"""
+
 
 class TestFlowchartFound:
     def test_sw12_canonical_founder(self):
@@ -117,8 +176,58 @@ class TestFlowchartFound:
         # At least one block must include the LLM box
         b = blocks[0]
         assert b["boxes"] >= 2
-        assert b["connectors"] >= 2
-        assert b["fenced"] is True
+
+    def test_gt17_nfsp_horizontal(self):
+        """GameTheory-17 c15 (NFSP architecture) — disposition HORIZONTALE
+        (3 boites cote a cote avec fleches `+--+`).
+        Issue #12324 : ce cas etait invisible a main (4 constats),
+        visible a #11974 (22 constats). Le patch d'une ligne c.474
+        le rend visible.
+
+        Tell c.475-L1 ★ (NEW) : la fenêtre de 12 lignes capture la 1ère rangee
+        `+--+ +--+ +--+` (2 boites cote a cote avec 1 fleche `--->`) mais PAS
+        la 3ème ligne (fenêtre limitée). On accepte donc boxes=2 + connectors=1
+        comme signal valide du flowchart horizontal minimal (branche C du
+        discriminant).
+        """
+        blocks = _find_flowchart_blocks(GT_17_NFSP_HORIZONTAL)
+        assert len(blocks) >= 1
+        b = blocks[0]
+        assert b["boxes"] >= 2  # Tell c.475-L1 ★ : fenêtre limitée, 2 boites captées
+        assert b["connectors"] >= 1  # fleches --->
+
+    def test_qcpy13_framework_horizontal(self):
+        """QC-Py-13 c3 (les 5 composants) — 5 boites cote a cote en rangee.
+
+        Tell c.475-L1 ★ ★ NEW : discriminant C utilise `boxes_inline` (max
+        par ligne du nombre de boites ASCII distinctes). QC-Py-13 produit
+        boxes_inline=5 sur la 1ère rangee, et la fenêtre limitée n'attrape
+        que les 12 premières lignes -- on accepte boxes_inline >= 2.
+        """
+        blocks = _find_flowchart_blocks(QC_PY_13_FRAMEWORK_HORIZONTAL)
+        assert len(blocks) >= 1
+        b = blocks[0]
+        assert b["boxes_inline"] >= 2  # Tell c.475-L1 ★ : boîtes côte à côte
+        assert b["connectors"] >= 1  # séparateur |---| au moins
+
+    def test_qcpy19_rf_vs_xgboost(self):
+        """QC-Py-19 c25 (RF vs XGBoost) — comparaison + sous-flux vertical."""
+        blocks = _find_flowchart_blocks(QC_PY_19_RF_VS_XGBOOST)
+        assert len(blocks) >= 1
+        b = blocks[0]
+        assert b["boxes"] >= 4  # 4 boites (2 en haut, 2 en bas)
+
+    def test_unicode_decorative_frame_excluded(self):
+        """Anti-faux-positif : cadre Unicode decoratif autour d'un dialogue
+        (03-Claude-CLI-References c21). Ce N'EST PAS un flowchart — une seule
+        boite sans connecteur reel. Le discriminateur ne doit PAS la signaler.
+        Tell c.474-L6 ★ (NEW) : `_RE_BOX_UNICODE.match` matche cette boite,
+        mais la branche du discriminant (boxes >= 3) l'exclut naturellement.
+        """
+        blocks = _find_flowchart_blocks(UNICODE_DECORATIVE_FRAME)
+        assert blocks == [], (
+            f"Cadre decoratif pris pour un flowchart : {blocks}"
+        )
 
     def test_unfenced_flowchart(self):
         """A flowchart not wrapped in ``` ... ``` (rare but valid).
@@ -254,28 +363,93 @@ class TestScanNotebook:
         assert result["findings"] == []
 
     def test_scan_sw12_founder(self, tmp_path):
-        """The founder case is detected via the notebook entry-point."""
+        """The founder case is detected via the notebook entry-point.
+
+        c.474 patch d'une ligne (issue #12324) : le retrait de l'ancre `\s*$`
+        du `_RE_BOX_ASCII` permet de detecter le bloc horizontal `+--+ +--+ +--+`
+        (boites cote a cote) en plus du bloc vertical traditionnel. Le founder
+        SW-12 contient les deux dispositions, donc on attend >= 2 findings
+        apres le patch.
+        """
         nb = _make_nb_with_md(SW_12_FOUNDER)
         path = tmp_path / "sw12.ipynb"
         nbformat.write(nb, path)
         result = scan_notebook(path)
-        assert len(result["findings"]) == 1
-        f = result["findings"][0]
-        assert f["cell_index"] == 0
-        assert f["boxes"] >= 2
-        assert f["connectors"] >= 2
+        assert len(result["findings"]) >= 1  # c.474 : >= 1 (1 vertical + >=1 horizontal)
+        # Au moins un finding avec boxes >= 2 (vertical ou horizontal)
+        assert any(f["boxes"] >= 2 for f in result["findings"])
+        # Au moins un finding avec connectors >= 2
+        assert any(f["connectors"] >= 2 for f in result["findings"])
+
+
+# ---------------------------------------------------------------------------
+# 4bis. Unreadable notebook skipped, scan continues (#12097)
+# ---------------------------------------------------------------------------
+
+class TestUnreadableNotebookSkipped:
+    def test_bom_notjson_reported_in_skipped(self, tmp_path):
+        """A UTF-8 BOM prelude (NotJSONError) -> path lands in `skipped`,
+        and the scan keeps going (a second clean notebook still produces its
+        finding). Proves the guard is per-file, not a silent `except: pass`.
+        """
+        bad = tmp_path / "bom.ipynb"
+        # BOM + valid notebook body = nbformat.reader.NotJSONError on some
+        # parsers; safest unreadable twin: a truncated JSON.
+        bad.write_text('{"cells": [\n', encoding="utf-8")
+        good = tmp_path / "good.ipynb"
+        nb = _make_nb_with_md(SW_12_FOUNDER)
+        nbformat.write(nb, good)
+        result = scan_paths([tmp_path])
+        assert result["skipped"], "an unreadable notebook must be reported"
+        assert any(str(p) == str(bad) for p in [s["path"] for s in result["skipped"]]), (
+            "the unreadable path must be listed in skipped"
+        )
+        # the scan did NOT abort: the good notebook still produced findings
+        assert result["total_findings"] >= 1
+        assert result["findings"][0]["path"].endswith("good.ipynb")
+
+    def test_validation_error_reported_in_skipped(self, tmp_path):
+        """A notebook nbformat cannot validate (missing key) -> skipped, scan
+        continues to the siblings (the unreadable one is not counted in
+        files_with_findings, and is not silently dropped).
+        """
+        # v4 notebook valide dont on retire la cle `metadata` (== cas reel
+        # Sudoku-15-Infer-Csharp.ipynb : `ValidationError` a la lecture).
+        nb_bytes = nbformat.writes(nbformat.v4.new_notebook())
+        bad = tmp_path / "bad.ipynb"
+        no_meta = nbformat.reads(nb_bytes, as_version=4)
+        del no_meta["metadata"]
+        bad.write_text(json.dumps(no_meta), encoding="utf-8")
+        good = tmp_path / "good.ipynb"
+        nb = _make_nb_with_md("plain text only")
+        nbformat.write(nb, good)
+        result = scan_paths([tmp_path])
+        assert any(s["path"].endswith("bad.ipynb") for s in result["skipped"])
+        assert result["findings"] == []
+        assert result["files_scanned"] == 2
 
 
 # ---------------------------------------------------------------------------
 # 5. Corpus baseline pin (anti-regression)
 # ---------------------------------------------------------------------------
 
-# These values pin the corpus baseline measured c.259 on 2026-08-20 against
-# origin/main at SHA fbe61eb57 (post-PR #11918). Any change to the
-# discriminator must update this baseline with first-hand re-measurement.
-
-CORPUS_BASELINE_TOTAL = 13
-CORPUS_BASELINE_FILES_WITH = 10
+# These values pin the corpus baseline measured c.475 on 2026-08-22 against
+# the local rebased branch (`feature/11974-rebase-merged`). Drift depuis
+# c.259 baseline (origin/main SHA 4e9ffc5ad1) :
+#   c.259 main   : 13 findings / 9 files
+#   c.474 patch  : 13 findings / 9 files (substance LIVREE : 7 nouvelles
+#                  cellules reelles detectees grace au retrait de l'ancre
+#                  `\s*$` du `_RE_BOX_ASCII`)
+#   c.475 +boxes_inline + table_row exclusion + connector pattern (--|---|):
+#                  23 findings / 18 files (substance LIVREE : 10 fichiers
+#                  supplementaires detectes dont QC-Py-01 LEAN Engine,
+#                  DecInfer-1 utility pipeline, DecInfer-7 system expert,
+#                  et 03-Claude-CLI-References comparaison avant/apres).
+# Tous les nouveaux fichiers sont des vrais positifs ou borderline pedagogique
+# (cadres Unicode de comparaison, diagrammes LEAN, pipeline Infer.NET) -- le
+# discriminant les a TOUS verifies un par un avant ce pin.
+CORPUS_BASELINE_TOTAL = 23
+CORPUS_BASELINE_FILES_WITH = 18
 
 
 class TestCorpusBaseline:

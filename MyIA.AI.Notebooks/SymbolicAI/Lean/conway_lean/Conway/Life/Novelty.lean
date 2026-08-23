@@ -19,21 +19,20 @@ cardinal au plus `p` contenant toute la trajectoire
 par `p`, independamment de l'horizon : c'est le pendant quantitatif du
 constat empirique « Golly est rapide sur les oscillateurs ».
 
-**Portee et limite, documentees.** La borne est au niveau GRILLE (etats
-distincts). La nouveaute operationnelle de hashlife se mesure au niveau des
-NOEUDS de macrocells (taux de hit du cache de memoisation, avec partage de
-sous-arbres) : pour un oscillateur borde, chaque etat periodique engendre un
-arbre dont les sous-arbres se repetent, mais le passage grille -> arbre de
-macrocells a une taille qui croit avec la fenetre, et la borne au niveau
-noeud demande une induction sur la structure de `MacroCell` qui reste
-hors de portee de ce module (diagnostic ecrit, cf #11162 acceptation :
-l'alternative « borne deriverie ou diagnostic » est ici le diagnostic de la
-borne noeud, la borne grille etant livree).
-
-La caracterisation « quels motifs ont une nouveaute persistante » est
-indecidable a la limite (Life est Turing-complet : une machine de Turing
-programmee encode la production infinie de motifs neufs) — les patterns
-pathologiques (MT, #6724) sont les temoins de ce plafond.
+**Portee et limite, documentees.** Deux niveaux de borne sont livres :
+GRILLE (`trajectory_states_le_of_period` : au plus `p` etats distincts) et
+NOEUDS (`nodes_novelty_bound_of_period` : au plus `p * nodesBound k`
+sous-arbres distincts de la trajectoire cadree au niveau `k`). La seconde
+est la quantite operationnelle de hashlife — le taux de hit du cache de
+memoisation, avec partage de sous-arbres : l'induction sur la structure de
+`MacroCell` que ce module declarait hors de portee lors de la livraison
+initiale (#11162, ou l'alternative « borne ou diagnostic » avait retenu le
+diagnostic) est desormais le contenu de la section dediee ci-dessous. Reste
+ouvert, et pour de bon : la caracterisation « quels motifs ont une
+nouveaute persistante » est indecidable a la limite (Life est
+Turing-complet : une machine de Turing programmee encode la production
+infinie de motifs neufs) — les patterns pathologiques (MT, #6724) sont les
+temoins de ce plafond.
 
 Ce module est entierement prouve (aucun `sorry`, aucun axiome natif).
 -/
@@ -48,6 +47,7 @@ Ce module est entierement prouve (aucun `sorry`, aucun axiome natif).
 -/
 
 import Conway.Life
+import Conway.Life.MacroCell
 import Conway.Life.HashlifeCorrectness.Foundation
 
 namespace Conway
@@ -125,6 +125,145 @@ l'horizon de simulation. -/
 theorem blinker_h_trajectory_states_le :
     ∃ s : Finset Grid, s.card ≤ 2 ∧ ∀ t : Nat, evolve t blinker_h ∈ s :=
   trajectory_states_le_of_period _ 2 (by norm_num) (by decide)
+
+open Conway.Life.MacroCell
+
+/-! ## Borne de nouveaute au niveau noeuds (macrocells)
+
+Le diagnostic du preambule est ici leve : l'induction sur la structure de
+`MacroCell` y etait declaree hors de portee, elle est le contenu de cette
+section. La nouveaute operationnelle de hashlife se mesure au niveau des
+NOEUDS du quadtree — les cles du cache de memoisation, avec partage de
+sous-arbres. La trajectoire d'un oscillateur, cadree au niveau `k`, ne
+visite qu'un nombre borne de sous-arbres distincts, de majorant
+`p * nodesBound k` independant de l'horizon : le pendant quantitatif, au
+niveau du cache, de la borne grille ci-dessus. -/
+
+/-- Compte les noeuds d'un quadtree parfait de profondeur `k` : la somme
+geometrique `1 + 4 + 16 + ... + 4^k = (4^(k+1) - 1) / 3`, definie par sa
+recurrence — la forme manipulable en preuve. -/
+def nodesBound : Nat → Nat
+  | 0 => 1
+  | k + 1 => 1 + 4 * nodesBound k
+
+/-- Profondeur structurelle d'une macrocell : la hauteur de l'arbre,
+mesuree sur la plus profonde des quatre sous-cellules. Contrairement a
+`level` (qui ne regarde que le quadrant nord-ouest), elle ne suppose pas la
+bonne formation : c'est le parametre naturel de la borne de cardinal
+ci-dessous, valide pour toute macrocell, equilibree ou non. -/
+def depth : MacroCell → Nat
+  | leaf _ => 0
+  | node nw ne sw se =>
+      1 + max (depth nw) (max (depth ne) (max (depth sw) (depth se)))
+
+/-- Tous les sous-arbres d'une macrocell, elle-meme incluse. Chaque element
+est un noeud du quadtree — une cle potentielle du cache de memoisation de
+hashlife. La nouveaute niveau noeuds d'un etat, c'est le cardinal de cet
+ensemble. -/
+def allSubtrees (c : MacroCell) : Finset MacroCell :=
+  match c with
+  | leaf _ => {c}
+  | node nw ne sw se =>
+      insert c (allSubtrees nw ∪ allSubtrees ne ∪ allSubtrees sw ∪ allSubtrees se)
+
+/-- `nodesBound` croit avec la profondeur. -/
+theorem nodesBound_mono {k m : Nat} (h : k ≤ m) : nodesBound k ≤ nodesBound m := by
+  obtain ⟨n, rfl⟩ : ∃ n, m = k + n := ⟨m - k, by omega⟩
+  clear h
+  induction n with
+  | zero => exact Nat.le_refl _
+  | succ n ih =>
+    calc nodesBound k ≤ nodesBound (k + n) := ih
+      _ ≤ 1 + 4 * nodesBound (k + n) := by omega
+      _ = nodesBound ((k + n) + 1) := rfl.symm
+      _ = nodesBound (k + (n + 1)) := by rw [Nat.add_assoc]
+
+/-- Une macrocell de profondeur `d` porte au plus `nodesBound d` sous-arbres
+distincts : l'induction sur la structure de `MacroCell` annoncee en
+preambule. L'union peut dedoubler (sous-arbres partages entre quadrants),
+jamais grossir — la borne vaut meme pour les arbres non equilibrés. -/
+theorem allSubtrees_card (c : MacroCell) : (allSubtrees c).card ≤ nodesBound (depth c) := by
+  induction c with
+  | leaf b =>
+    simp only [allSubtrees, depth, nodesBound]
+    simp
+  | node nw ne sw se ihnw ihne ihsw ihse =>
+    simp only [allSubtrees, depth]
+    set M := max (depth nw) (max (depth ne) (max (depth sw) (depth se))) with hM
+    have h1 := Finset.card_insert_le (a := node nw ne sw se)
+      (s := allSubtrees nw ∪ allSubtrees ne ∪ allSubtrees sw ∪ allSubtrees se)
+    have e1 := Finset.card_union_le (allSubtrees nw ∪ allSubtrees ne ∪ allSubtrees sw)
+      (allSubtrees se)
+    have e2 := Finset.card_union_le (allSubtrees nw ∪ allSubtrees ne) (allSubtrees sw)
+    have e3 := Finset.card_union_le (allSubtrees nw) (allSubtrees ne)
+    have hn : (allSubtrees nw).card ≤ nodesBound M := ihnw.trans (nodesBound_mono (by omega))
+    have he : (allSubtrees ne).card ≤ nodesBound M := ihne.trans (nodesBound_mono (by omega))
+    have hs : (allSubtrees sw).card ≤ nodesBound M := ihsw.trans (nodesBound_mono (by omega))
+    have hd : (allSubtrees se).card ≤ nodesBound M := ihse.trans (nodesBound_mono (by omega))
+    have hstep : nodesBound (1 + M) = 1 + 4 * nodesBound M := by
+      rw [Nat.add_comm]; rfl
+    omega
+
+/-- Le cadrage de niveau `k` d'une grille est un quadtree exactement de
+profondeur `k` : `buildFromGrid` construit l'arbre parfait couvrant le
+carre, tous les quadrants presents jusqu'aux feuilles. -/
+theorem depth_buildFromGrid (g : Grid) (lvl : Nat) (r0 c0 : Int) :
+    depth (buildFromGrid g r0 c0 lvl) = lvl := by
+  induction lvl generalizing r0 c0 with
+  | zero => rfl
+  | succ n ih =>
+    simp only [buildFromGrid, depth]
+    simp only [ih]
+    omega
+
+/-- **Borne de nouveaute au niveau noeuds pour un oscillateur** : si
+`evolve p g = g` avec `p > 0`, alors la trajectoire complete, cadree au
+niveau `k` en `(r0, c0)`, ne visite qu'un nombre borne de noeuds distincts —
+au plus `p * nodesBound k` sous-arbres, un majorant independant de
+l'horizon. Chaque instant de la trajectoire reduit a l'un des `p` premiers
+instants (`novelty_bound_of_period`), et chacun de ces instants contribue
+au plus `nodesBound k` noeuds (`allSubtrees_card`, sur un cadrage de
+profondeur exactement `k` par `depth_buildFromGrid`). C'est le pendant
+quantitatif, au niveau du cache de hashlife, de la borne grille : le taux
+de hit de la memoisation ne peut pas se degrader avec l'horizon, sur la
+classe des oscillateurs. -/
+theorem nodes_novelty_bound_of_period (g : Grid) (p : Nat) (hp0 : 0 < p)
+    (hp : evolve p g = g) (k : Nat) (r0 c0 : Int) :
+    ∃ s : Finset MacroCell, s.card ≤ p * nodesBound k ∧
+      ∀ t : Nat, ∀ x ∈ allSubtrees (buildFromGrid (evolve t g) r0 c0 k), x ∈ s := by
+  refine ⟨(Finset.range p).biUnion
+    fun r => allSubtrees (buildFromGrid (evolve r g) r0 c0 k), ?_, ?_⟩
+  · calc ((Finset.range p).biUnion
+          fun r => allSubtrees (buildFromGrid (evolve r g) r0 c0 k)).card
+        ≤ ∑ r ∈ Finset.range p,
+            (allSubtrees (buildFromGrid (evolve r g) r0 c0 k)).card := Finset.card_biUnion_le
+      _ ≤ ∑ _r ∈ Finset.range p, nodesBound k := Finset.sum_le_sum fun r _ => by
+          have h := allSubtrees_card (buildFromGrid (evolve r g) r0 c0 k)
+          rw [depth_buildFromGrid] at h
+          exact h
+      _ = p * nodesBound k := by rw [Finset.sum_const, Finset.card_range, Nat.nsmul_eq_mul]
+  · intro t x hx
+    obtain ⟨r, hr, heq⟩ := novelty_bound_of_period g p hp0 hp t
+    rw [heq] at hx
+    exact Finset.mem_biUnion.2 ⟨r, Finset.mem_range.2 hr, hx⟩
+
+/-! ### Application : le blinker, niveau noeuds -/
+
+/-- Le blinker (periode 2), cadre au niveau `k` : au plus
+`2 * nodesBound k` noeuds distincts visites sur toute la trajectoire, quel
+que soit l'horizon. -/
+theorem blinker_h_nodes_novelty_bound (k : Nat) (r0 c0 : Int) :
+    ∃ s : Finset MacroCell, s.card ≤ 2 * nodesBound k ∧
+      ∀ t : Nat, ∀ x ∈ allSubtrees (buildFromGrid (evolve t blinker_h) r0 c0 k), x ∈ s :=
+  nodes_novelty_bound_of_period _ 2 (by norm_num) (by decide) k r0 c0
+
+/-- Temoin numerique exact : le cadre de niveau 2 du blinker porte
+exactement 6 noeuds distincts — la racine, trois quadrants distincts (les
+deux quadrants Est, vides, s'identifient) et les deux feuilles — pour une
+borne generale de `nodesBound 2 = 21` sur un seul etat. -/
+theorem blinker_h_level2_nodes_card :
+    (allSubtrees (buildFromGrid blinker_h (-1) (-1) 2)).card = 6 := by
+  decide
 
 end Life
 end Conway

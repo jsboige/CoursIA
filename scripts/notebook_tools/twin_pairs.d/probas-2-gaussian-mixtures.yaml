@@ -38,7 +38,14 @@
       content_python_sha: 5c150caadf433625cc764cd5cb0748861e3aed2ee5150a42487836b63eda07bd
       content_csharp_sha: 6135e55132a90ce9267ffbc973570b98629bc4bbdf7d8fdacb22686ec8da4214
       reason: "Re-execution du seul cote Python (#11522, PyMC-2 sequence UNORDERED -> CLEAN 1..11) : le blob SHA se deplace a chaque edition, y compris quand le contenu pedagogique ne bouge pas. csharp_sha ET content_csharp_sha sont inchanges (bb5e9603 / 6135e551) -- la parite n'a pas ete reparee, elle a ete RE-ATTESTEE apres un mouvement unilateral. Controle anti-#11351 avant attestation : volume de rendu mesure base-de-fusion (947ce428) -> tete de PR, 4 blocs image/png preserves, 152789 -> 148096 octets (variance de re-rendu, aucun bloc perdu), 11/11 execution_count non nuls, 0 erreur. Aucun strip outille en attente (0 chemin machine, papermill deja en basename) : l'attestation ne sera pas invalidee apres coup (#8957)."
+    - date: "2026-08-21"
+      by: myia-po-2024:CoursIA-2
+      python_sha: fcf86dde45e77d2ab336b26420852669e50ea6d3
+      csharp_sha: f7d507ae2ac763906e13d6ba61240219f5193ab4
+      content_python_sha: 5c150caadf433625cc764cd5cb0748861e3aed2ee5150a42487836b63eda07bd
+      content_csharp_sha: 193d1a1aa8d5a5fe5da8159efcba581bcbc402afb68247a3c3e14d78f380a76a
   known_differences:
+  - '2026-08-21 (rebaseline asymetrique myia-po-2024:CoursIA-2) : PR #12065 corrige heading_in_list cote C# (Infer-2-Gaussian-Mixtures.ipynb, 1 finding) tandis que le jumeau Python (PyMC-2-Gaussian-Mixtures.ipynb) etait deja a 0 finding. La convergence unilaterale est legitime (cf ai-01 arbitrage 2026-08-21 15:00Z, DM msg-20260821T130006-lc9u2c) : la parite reelle s''ameliore, elle n''est pas enshrinee. Aucun strip outille en attente (probe banner 0, papermill 0, machine paths 0).'
   - 'Socle pedagogique commun : melanges de distributions gaussiennes (GMM) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
