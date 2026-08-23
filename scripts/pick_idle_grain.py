@@ -70,6 +70,7 @@ import datetime as dt
 import hashlib
 import json
 import math
+import pathlib
 import random
 import re
 import subprocess
@@ -120,6 +121,47 @@ GENRE_RULES: list[tuple[str, str]] = [
     (r"refactor|consolidation|migration", "refactor"),
 ]
 
+# Attribution PR -> issue, pour l'AFFLUENCE (combien de PRs de la flotte ont
+# visite cette issue). Ce n'est PAS la meme grandeur que la "veine" du cap
+# (`variation_light_cap.extract_vein_key`, #11343), et la difference est
+# deliberee -- ne pas "unifier" les deux sans relire ceci :
+#
+#   * Le cap demande "a quelle ombrelle UNIQUE cette PR appartient-elle ?",
+#     pour compter des tranches par lane. Il lui faut UNE cle, donc le premier
+#     `#N` du corps, et une sur-attribution y serait une fausse accusation.
+#   * L'affluence demande "combien d'attention cette issue a-t-elle recue ?".
+#     Il lui faut du RAPPEL : rater une citation fait lire une ombrelle chaude
+#     comme froide, donc la sur-pondere -- l'inverse exact du but.
+#
+# Mesure du 2026-08-23 sur 10 issues (verite = `gh pr list --search "N
+# in:title,body"` restreint a la fenetre) : le premier-`#N` rappelle 59 %, le
+# schema ci-dessous 76 %. Cas d'ecole : #12591 s'intitule `fix(notebooks,#11947)`
+# et porte `See #11947`, mais son premier `#N` de corps est #11949 (la tranche
+# soeur) -- la veine y est juste pour le cap, et fausse pour l'affluence.
+_REF_RE = re.compile(r"#(\d{4,6})\b")
+_PREV_RE = re.compile(r"prev:\s*[^\n]*?#(\d{4,6})\b")
+# Verbes de rattachement de ce depot (`Closes/See/Part of` -- catalog-pr-hygiene)
+# plus les tournures maison. `See #N` porte l'essentiel du travail d'ombrelle :
+# la convention reserve `Closes` a la resolution complete.
+_DECL_RE = re.compile(
+    r"(?:closes|fixes|resolves|see|refs?|part of|voir|ombrelle|epic)"
+    r"\s+#(\d{4,6})\b",
+    re.I)
+
+
+def cited_issues(pr: dict) -> set[int]:
+    """Issues qu'une PR DECLARE servir : refs du titre + clauses de rattachement.
+
+    La clause `prev:` du tag `Grain:` est masquee -- elle documente le grain
+    PRECEDENT de la lane (adjacence G-VAR-3), jamais le sujet de la PR. Sans ce
+    masque, chaque PR voterait pour le sujet de la precedente.
+    """
+    body = _PREV_RE.sub("prev: <adjacence>", pr.get("body") or "")
+    found = {int(m.group(1)) for m in _DECL_RE.finditer(body)}
+    found |= {int(m.group(1)) for m in _REF_RE.finditer(pr.get("title") or "")}
+    return found - {pr.get("number")}
+
+
 NOW = dt.datetime.now(dt.timezone.utc)
 
 
@@ -166,7 +208,63 @@ def fetch_pool() -> list[dict]:
     return pool
 
 
-def weight(item: dict, prev_genre: str | None) -> float:
+# Fenetre d'affluence : la MEME que celle du cap de veine (`vein_cap`, par
+# lane et par jour). Le cap est aveugle a la flotte -- il ne voit qu'une lane a
+# la fois -- alors que la concentration observee vient surtout de plusieurs
+# lanes restant CHACUNE sous son cap. Mesure du 2026-08-23 sur 308 PRs mergees
+# en 3 jours : #11601 a recu 22 PRs reparties sur 8 cellules (lane x jour), et
+# 6 de ces 8 cellules etaient DANS les clous. Aucun garde ne pouvait le voir.
+VISITS_WINDOW_DAYS = 1
+# Echelle de l'amortissement. Diviseur = 1 + log2(1 + vus / VISITS_SCALE) :
+# 0 vu -> intact, 4 vus -> poids /2, 10 vus -> /2.6, 22 vus -> /3.1. Doux a 1
+# vu (/1.3 : une PR du jour sur un sujet est du travail normal, pas une veine),
+# mordant en tete de distribution -- qui est exactement la ou le desequilibre
+# se trouve.
+VISITS_SCALE = 4.0
+
+
+def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | None]:
+    """Combien de PRs mergees par LA FLOTTE citent chaque issue sur la fenetre.
+
+    Rend ``(compteur, erreur)``. En cas d'echec, le compteur est vide **et**
+    l'erreur est non nulle : l'appelant doit dire que l'affluence n'a pas ete
+    mesuree plutot que de laisser un zero d'absence de mesure se lire comme un
+    zero d'affluence.
+
+    Le filtre de date est **serveur** (`--search "merged:>=..."`), et ce n'est
+    pas un detail de style. ``gh pr list --state merged --limit N`` trie par
+    date de **creation** decroissante : couper a N puis filtrer sur ``mergedAt``
+    cote client laisse tomber toute PR creee avant la coupe mais mergee dans la
+    fenetre. Mesure du 2026-08-23 sur la meme fenetre de 24 h : 101 PRs pechees
+    ainsi contre 181 reelles -- **44 % de la population absente**, et 3 des
+    "ratages d'attribution" que je poursuivais n'etaient que des PRs jamais
+    pechees. Cle de tri != cle de filtre est un faux silencieux.
+    """
+    cutoff = NOW - dt.timedelta(days=days)
+    stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    try:
+        raw = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+             "--limit", "400", "--search", f"merged:>={stamp}",
+             "--json", "number,title,body,mergedAt"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=True, timeout=60,
+        ).stdout
+        prs = json.loads(raw)
+    except (subprocess.CalledProcessError, json.JSONDecodeError,
+            subprocess.TimeoutExpired, OSError) as exc:
+        return {}, f"{type(exc).__name__}: {exc}"
+
+    counts: dict[int, int] = {}
+    for pr in prs:
+        for key in cited_issues(pr):
+            counts[key] = counts.get(key, 0) + 1
+    return counts, None
+
+
+
+def weight(item: dict, prev_genre: str | None,
+           visits: dict[int, int] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -188,16 +286,26 @@ def weight(item: dict, prev_genre: str | None) -> float:
     # G-VAR-1 : le plancher exige DEEP/MED **et** CONTENU.
     if item["genre"] in CONTENU:
         w *= 2.0
+    # Affluence de FLOTTE : combien de PRs mergees citent deja cette issue sur
+    # la fenetre, toutes lanes confondues. C'est le facteur qui manquait --
+    # l'anciennete et le delaissement remontent le fond du pool, mais rien ne
+    # redescendait la tete. Un sujet qui a deja recu dix grains aujourd'hui n'a
+    # pas besoin du onzieme ; un sujet a zero visite garde son poids intact.
+    seen = (visits or {}).get(item["number"], 0)
+    if seen:
+        w /= 1.0 + math.log2(1.0 + seen / VISITS_SCALE)
+    item["visits"] = seen
     return w
 
 
-def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None) -> list[dict]:
+def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
+         visits: dict[int, int] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre)
+        w = weight(it, prev_genre, visits)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -205,6 +313,7 @@ def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None) 
     for _, w, it in keyed[:n]:
         it = dict(it)
         it["weight"] = round(w, 2)
+        it.setdefault("visits", 0)
         picked.append(it)
     return picked
 
@@ -616,10 +725,12 @@ def main() -> int:
     seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
     rng = random.Random(seed)
 
+    visits, visits_err = fetch_visits()
+
     picks = (
-        draw(by_class["grain"], args.grains, rng, args.prev_genre)
-        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre)
-        + draw(by_class["delivered"], args.delivered, rng, None)
+        draw(by_class["grain"], args.grains, rng, args.prev_genre, visits)
+        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre, visits)
+        + draw(by_class["delivered"], args.delivered, rng, None, visits)
     )
 
     claims = check_claims([p["number"] for p in picks], args.lane) if args.check_claims else {}
@@ -630,6 +741,11 @@ def main() -> int:
             "lane": args.lane, "seed_src": seed_src,
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "visits_window_days": VISITS_WINDOW_DAYS,
+            "visits_measured": visits_err is None,
+            "visits_error": visits_err,
+            "visits_top": sorted(({"issue": k, "n": v} for k, v in visits.items()),
+                                 key=lambda d: (-d["n"], d["issue"]))[:10],
             "recent_delivery": {str(k): v for k, v in delivery.items()},
             "red_backlog": backlog,
         }, ensure_ascii=False, indent=2))
@@ -648,24 +764,34 @@ def main() -> int:
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genre precedent penalise : {args.prev_genre}" if args.prev_genre else ""))
     print()
-    header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6}  "
+    header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
     print(header)
     print("-" * len(header))
     for p in picks:
         mark = "*" if p["genre"] in CONTENU else " "
-        print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j  "
+        vus = "n/m" if visits_err else str(p.get("visits", 0))
+        print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j {vus:>4}  "
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
-            print(f"{'':>10} {'':>8} {'':>5} {'':>6}  claim: {claims[p['number']]}")
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  claim: {claims[p['number']]}")
         if p["number"] in delivery:
             note = delivery[p["number"]]
             head, sep, tail = note.partition("-> ")
-            print(f"{'':>10} {'':>8} {'':>5} {'':>6}  {head.strip()}")
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  {head.strip()}")
             if tail:
-                print(f"{'':>10} {'':>8} {'':>5} {'':>6}  -> {tail}")
+                print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  -> {tail}")
     print()
+    if visits_err:
+        print(f"!! affluence NON MESUREE ({visits_err}) : la colonne `vus` affiche")
+        print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
+        print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
+        print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
+    print(f"vus = PRs mergees citant cette issue sur {VISITS_WINDOW_DAYS} j, TOUTES LANES.")
+    print("      Le cap de veine ne voit qu'une lane a la fois : plusieurs lanes")
+    print("      restant chacune sous son cap concentrent quand meme la flotte")
+    print("      sur un meme sujet. C'est ce que cette colonne amortit.")
     print("inact = jours depuis la derniere activite. Une inactivite haute est le")
     print("        signe d'un sujet delaisse devant ceux du moment : c'est ce que")
     print("        le tirage remonte, et ce que la lane est attendue de conduire.")

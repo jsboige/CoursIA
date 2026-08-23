@@ -307,3 +307,99 @@ def test_repeated_identical_failures_are_named_once():
         ("PR gate", "FAILURE", True, "2026-08-22T13:40:33Z"),
     ])
     assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+# --- affluence flotte : cited_issues / fetch_visits / amortissement --------
+#
+# Le defaut que ces tests auraient attrape (2026-08-23, avant merge) : la
+# colonne `vus` rendait 0 sur TOUTES les issues, y compris celles que la ligne
+# d'annotation juste en dessous disait fraichement livrees. Deux causes
+# distinctes, toutes deux silencieuses :
+#
+#   1. attribution -- on reutilisait `extract_vein_key` (premier `#N` du corps),
+#      qui rend la tranche SOEUR pour une PR d'ombrelle : #12591 s'intitule
+#      `fix(notebooks,#11947)` et porte `See #11947`, mais son premier `#N` de
+#      corps est #11949. Rappel mesure sur 10 issues : 59 % contre 76 %.
+#   2. peche -- `gh pr list --state merged --limit N` trie par date de CREATION ;
+#      filtrer ensuite sur `mergedAt` cote client perdait 44 % de la population
+#      (101 PRs vues pour 181 reelles sur la meme fenetre de 24 h).
+#
+# Un zero d'absence de mesure se lit exactement comme un zero d'affluence : d'ou
+# le controle positif, et d'ou `visits_measured` dans la sortie JSON.
+
+
+def _visit_pr(number, title, body):
+    """PR minimale pour l'attribution. Nom distinct du `_pr` du bloc rouge."""
+    return {"number": number, "title": title, "body": body}
+
+
+def test_umbrella_declared_by_title_and_see_is_attributed():
+    """Cas fondateur #12591 : l'ombrelle est dans le titre et dans `See`."""
+    pr = _visit_pr(12591,
+                   "fix(notebooks,#11947): tranche CaseStudies heading_in_list",
+                   "Grain: MED/notebook-python -- lane myia-po-2025:CoursIA -- "
+                   "prev: MED/notebook-lean (#12491)\n\n"
+                   "La tranche po-2023 d'origine (#11949) couvrait DecInfer.\n"
+                   "See #11947 (contribution partielle)")
+    cited = pig.cited_issues(pr)
+    assert 11947 in cited, "l'ombrelle declaree doit compter"
+    assert 12491 not in cited, "la clause prev: documente le grain PRECEDENT"
+
+
+def test_prose_only_citation_is_not_a_visit():
+    """Une citation de prose nue ne vaut pas declaration de sujet."""
+    pr = _visit_pr(1000, "fix(x,#5000): quelque chose",
+                   "Comparable au cas de #10143, pour memoire.\nSee #5000")
+    assert pig.cited_issues(pr) == {5000}
+
+
+def test_self_reference_never_counts():
+    pr = _visit_pr(7777, "fix(x,#7777): auto", "Closes #7777")
+    assert pig.cited_issues(pr) == set()
+
+
+def test_fetch_visits_filters_dates_server_side(monkeypatch):
+    """La requete DOIT porter `merged:>=` : le tri de gh est par creation."""
+    seen = {}
+
+    def fake_run(cmd, **kwargs):
+        seen["cmd"] = cmd
+        return _FakeCompleted(json.dumps([
+            _visit_pr(1001, "fix(a,#1100): x", "See #1100"),
+            _visit_pr(1002, "fix(b,#1100): y", "Closes #1100"),
+            _visit_pr(1003, "fix(c,#1200): z", "See #1200"),
+        ]))
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    visits, err = pig.fetch_visits()
+    assert err is None
+    assert visits == {1100: 2, 1200: 1}
+    assert any(a.startswith("merged:>=") for a in seen["cmd"]), seen["cmd"]
+
+
+def test_fetch_visits_failure_is_reported_not_silently_zero(monkeypatch):
+    def boom(cmd, **kwargs):
+        raise OSError("gh absent")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    visits, err = pig.fetch_visits()
+    assert visits == {}
+    assert err and "OSError" in err
+
+
+def test_crowding_damps_a_visited_issue():
+    hot = {"number": 1, "age": 30, "idle": 1, "genre": "docs"}
+    cold = {"number": 2, "age": 30, "idle": 1, "genre": "docs"}
+    assert pig.weight(hot, None, {1: 12}) < pig.weight(cold, None, {2: 0})
+
+
+def test_unmeasured_crowding_leaves_the_weight_intact():
+    """Compteur vide = pas de mesure ; il ne doit PAS peser comme un zero."""
+    item = {"number": 1, "age": 30, "idle": 1, "genre": "docs"}
+    assert pig.weight(dict(item), None, {}) == pig.weight(dict(item), None, None)
+
+
+def test_crowding_never_zeroes_a_candidate():
+    """Amortir, jamais exclure : une issue tres visitee reste tirable."""
+    item = {"number": 1, "age": 400, "idle": 90, "genre": "lean"}
+    assert pig.weight(item, None, {1: 50}) > 0
