@@ -1,0 +1,35 @@
+# Certified modules contract — gate by scripts/lean/check_certified_sorry.py (#12330).
+#
+# One filename per line. Every module listed here is part of the no-sorry
+# certification carried over from the absorption of `social_choice_lean`
+# (PR #6058, c.357) and extended since. A module MUST be added here in the
+# same PR that adds it to this subtree — the gate flags any *.lean that is
+# neither certified nor explicitly excluded (STALE-LIST).
+#
+# `!name.lean` = deliberate exclusion, kept visible: an exclusion is a
+# decision, not a silence.
+#
+# Instrument: count_code_sorry.scan_file (comment-stripped — a `sorry` inside
+# a docstring does not count; a real tactic `sorry` fails the gate).
+
+# FR modules (7)
+Arrow.lean
+Basic.lean
+Framework.lean
+MechanismDesign.lean
+Sen.lean
+SortedListCounting.lean
+Voting.lean
+
+# EN i18n siblings (#4980) — compiled modules, proofs byte-identical, gated too
+Arrow_en.lean
+Basic_en.lean
+Framework_en.lean
+MechanismDesign_en.lean
+Sen_en.lean
+SortedListCounting_en.lean
+Voting_en.lean
+
+# Explicit exclusion
+# lake-local smoke test, not part of the certification
+!_SmokeTest.lean
