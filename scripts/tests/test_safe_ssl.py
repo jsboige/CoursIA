@@ -135,8 +135,10 @@ def test_module_docstring_preserved():
 
 def test_no_op_on_non_windows():
     """Sur Linux/Mac, install() retourne False sans alterer ssl.SSLContext."""
-    if hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        pytest.skip("Windows — _load_windows_store_certs existe")
+    # `_load_windows_store_certs` existe sur TOUTES les plateformes CPython
+    # (no-op hors Windows), donc le skip se base sur `sys.platform`, pas `hasattr`.
+    if sys.platform.startswith("win"):
+        pytest.skip("Windows — store de certificats natif actif")
     # Pas de plateforme Windows : on documente le no-op.
     result = safe_ssl.install_safe_windows_store()
     assert result is False
