@@ -38,6 +38,12 @@
       content_csharp_sha: 01f83eddcb3821b0dae4899b90d4b7545c70d8387afb9c7414f88e1d9d5c8ea9
       note: "Pont SOTA Gambit rajoute cote C# (cellule 24) : gambit-enummixed via CLI Process.Start, 4/4 jeux CORRESPOND (dist < 1e-3, exploitabilite = 0). bridge_verdict SOTA-OK, pont symetrique avec nashpy cote Python. From-scratch BCL conserve."
       bridge_verdict: SOTA-OK
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 8138a7a49ff2774b4c3b6dce10d4274f2521902f
+      csharp_sha: ce00f38332fc86f42a5a907b5fb08e1989f5052e
+      content_python_sha: 05f52c7c7fa9678d69cc6a6e29907f303bcf7e86d180b9a80ef21f8d82246233
+      content_csharp_sha: 217e7f7900bb5d747698e53ec2fb8facdf8f6ca7114be18cd005da9dad7e7ea8
   known_differences:
     - "Socle pedagogique commun : support enumeration des equilibres de Nash mixtes NxN (indifference + Gauss pivot partiel + best-response), sur 4 jeux canoniques (RPS, RPS biaise, Prisonnier, Matching Pennies) + 3 exercices (BoS, RPSLS, complexite)."
     - "Idiomes framework : Python = `numpy` pur pour le from-scratch (meme algorithme que le C#), PLUS `nashpy` comme verification independante (pont SOTA, cell 8). C# = pur BCL .NET (System.*, pas de lib tiers) pour le from-scratch, PLUS `gambit-enummixed` via CLI Process.Start comme pont SOTA (cell 24). nashpy n'existe pas en .NET, mais Gambit (McKelvey-McLennan-Page, GPL-2.0) est l'outil de reference canonique et couvre le meme role (support enumeration pour NE mixtes)."

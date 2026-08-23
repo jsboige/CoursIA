@@ -83,6 +83,12 @@
       csharp_sha: 20421c61c000b1413adebb2b2f9767e96739c02d
       content_python_sha: c08914b5059f2ee39c0f20eef5588a7a89f3aeb65464eebf853759a444d42695
       content_csharp_sha: e74e65d334414bf687d6ca94e46d5785454a5c86b0f054e4f7dc251023f592d4
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 1cfa887d9ea9c2621cb2f2560180fafe3d8d2790
+      csharp_sha: a04765c9a019637d77c08d12f904c120bdffc056
+      content_python_sha: 42aa1545f29307006c0a3c068807135f144712fedcd584703fdfab01a84073c5
+      content_csharp_sha: 357ec8e601c47b0b774d61a3a4a0d0a32caefbe1d61d304e173b0426a3da83bd
   known_differences:
     - "2026-08-15 : ajout du pont nashpy CLI (cellule 6.3, meme schema que le pont Gambit 6.2 et la tranche GT-2 #11055). Le C# invoque nashpy (moteur du twin Python) via Process.Start, resout les 5 jeux (PD, MP, BoS, RPS, Asym) et compare l'ensemble des equilibres au SupportEnumeration from-scratch : 5/5 concordent (ecart max 3.3e-07, exploitabilite 0). RunGambit (cell 25) : resolution portable du binaire (GAMBIT_DIR, Program Files (x86), %USERPROFILE%\\gambit) pour reproductibilite sans elevation UAC. Bridge_verdict RECOVERABLE-LOCAL -> SOTA-OK (pont reellement execute)."
     - "2026-08-11 : C.4 enrichment du twin C# (2 cellules markdown interpretation apres les outputs Nash pur §2.1 + Nash mixte) pour egaler la densite pedagogique du twin Python (qui fournit deja ces lectures aux memes positions). Markdown-only, aucun changement d'engine/outputs. Parite semantique preservee (meme theorie, meme interpretation conceptuelle). Attestation rebaselinee par myia-po-2023:CoursIA-2 apres arbitrage ai-01 (DM 2026-08-11) — la PR jumelle #10351 (doublon) est retiree, #10352 est le canonique."

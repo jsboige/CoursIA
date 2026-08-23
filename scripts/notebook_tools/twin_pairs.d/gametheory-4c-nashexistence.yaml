@@ -37,6 +37,12 @@
       csharp_sha: ca1c73ac33c1ffbec1f99ba3a60da33bce3cfea1
       content_python_sha: b9dad4992333ea37bb9f86e94cf89ed9575a798b2eeb9a59fbf3663fe6ee5491
       content_csharp_sha: 82d60c399cda33b90a8c122b9eaee52d6b09bf13877336c7832a1868c91cbabd
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: 8170ace98ade213f6e12e63c83d3ef0032b66ae1
+      csharp_sha: 77eb6de57dc7f7a821c41b5c1fce803e379d26b5
+      content_python_sha: e1dc742c697ec440681ed14b9e43c226f546781bea5d8f4553c8b566656b2d74
+      content_csharp_sha: 97244140ce32c3968b0993745e2f1d1f1e49c48bc2eb9232e67a34e1c0c4b225
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Tri du residu #10382 (2026-08-16, lane myia-po-2024:CoursIA-2) : FAUX POSITIF de la liste des 51 -- le jumeau Python n'embarque AUCUN moteur SOTA (imports mesures firsthand : numpy/matplotlib/typing uniquement, 0 nashpy). numpy = signal faible au sens de l'issue (helper numerique, pas un moteur de jeu), les DEUX jumeaux font la demonstration constructive du point fixe from-scratch. Verdict reformule : pas d'asymetrie lib-vs-lib a combler ; asymetrie de machinerie seulement (visualisation numpy/matplotlib vs System.* + SVG zero-dependance). parity_level semantic preserve (gel #11200)."
   known_differences:
