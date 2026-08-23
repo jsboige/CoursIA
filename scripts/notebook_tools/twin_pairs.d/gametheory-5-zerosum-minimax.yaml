@@ -1,7 +1,7 @@
 - name: "GameTheory-5 ZeroSum-Minimax"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-5-ZeroSum-Minimax-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib (modele owner #10382 'PyMC vs Infer' analytics transpose en GT : nashpy+OR-Tools GLOP). Python = nashpy (SOTA, lemke-howson + support enumeration) + scipy.optimize.linprog (LP battle-tested). C# = Google.OrTools.LinearSolver (SOTA, PR #10443 MERGED, GLOP solver) en Tranche 2 + Gambit CLI (McKelvey-McLennan-Turocy 2016, GPL-2.0) en Tranche 3 via Process.Start. Les deux cotes atteignent des moteurs SOTA de leur ecosysteme -- ni pont intermediaire (IKVM/PythonNet) ni reimplementation from-scratch seule. La Tranche 3 ajoute un 3eme solveur LP distinct (Gambit, externe, sans NuGet ni vendoring) qui conforte la lib-vs-lib par cross-validation LP-LP-LP (Dantzig from-scratch vs Glop vs Gambit, meme valeur v et meme strategie sigma au epsilon machine pres sur mp/rps/asym). Asymetrie d'ecosysteme documentee (nashpy Python vs OR-Tools+Gambit C#) fermee par la maturite des trois libs. Verifie firsthand : C# `using Google.OrTools.LinearSolver` + `#r \"nuget: Google.OrTools\"` + `Process.Start gambit-lp.exe` (Tranche 3) + execution_count, Python `import nashpy as nash` + `nash.Game(...)`."

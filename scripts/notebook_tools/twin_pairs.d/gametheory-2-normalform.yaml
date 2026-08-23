@@ -1,7 +1,7 @@
 - name: "GameTheory-2 NormalForm"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Csharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : nashpy (lib SOTA du twin Python, `nash.Game(A,B).support_enumeration()`) invoque depuis le notebook C# via CLI Process.Start (cellule 8) sur les 4 jeux canoniques (PD, BoS, MP, RPS). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). Axe 6 : nashpy couvre le meme role que le from-scratch BCL (enumeration de supports pour les NE mixtes) -> le pont est desormais wire. Comparaison numerique (cellule 8 du C#) : 4/4 jeux concordent (dist < 1e-3) + exploitabilite = 0 partout (premier principe verifie). RPS : nashpy retrouve l'equilibre uniforme (1/3,1/3,1/3), identique au resultat du twin Python. From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE. parity_level `semantic` conservee (cf. jumeau part-2, precedent pont Gambit)."

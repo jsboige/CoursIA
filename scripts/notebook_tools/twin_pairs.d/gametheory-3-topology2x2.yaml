@@ -1,7 +1,7 @@
 - name: "GameTheory-3 Topology2x2"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-3-Topology2x2-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = networkx (lib SOTA, graphe des topologies 2x2 PD/Chicken/Stag-Hunt/Coordination, viz des regions d'equilibre Nash). C# = tranche 1 from-scratch en pur Linq (BCL .NET 9, 0 NuGet) PUIS tranche 2 (2026-08-15) bridge le moteur .NET natif QuikGraph 2.5.0 : graphe des swaps construit sur les 576 jeux (1728 aretes = 576 x 6 / 2, degre moyen 6,0 = 3 swaps x 2 joueurs, comptes verifies contre le twin networkx), BFS shortest-path via UndirectedBreadthFirstSearchAlgorithm, parite BFS QuikGraph vs BFS maison : IDENTIQUE 25/25 distances (matrice des jeux classiques). SOTA-OK : le vrai moteur est branche et produit des sorties reelles."

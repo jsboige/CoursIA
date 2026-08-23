@@ -1,7 +1,7 @@
 - name: "GameTheory-6 EvolutionTrust"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6-EvolutionTrust-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Csharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Bascule verdict (registre #10382, 2026-08-16, lane myia-po-2024:CoursIA-2) : le pont axelrod PythonNet (cell[29], execution_count=13, `#r nuget pythonnet 3.0.5`, axe 5 #10459) est installe et execute dans le notebook commite -- le reason precedent concluait deja SOTA-OK pour ce role sous un label reste RECOVERABLE-LOCAL : label aligne sur la conclusion. parity_level semantic preserve (gel #11200)."

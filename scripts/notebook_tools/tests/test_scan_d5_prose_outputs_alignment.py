@@ -1258,7 +1258,7 @@ class TestNotebookCrossReferenceFilter:
         # des MISSING_FROM_OUTPUTS) : barre de navigation entre notebooks d'une
         # serie a indice entier. Le « 7 » de « GameTheory-7 » est l'indice du
         # notebook pointe, dans le texte ET dans l'URL du lien .ipynb.
-        text = ("**Navigation** : [GameTheory-7](GameTheory-7-ExtensiveForm-Csharp.ipynb) "
+        text = ("**Navigation** : [GameTheory-7](GameTheory-07-ExtensiveForm-Csharp.ipynb) "
                 "| [GameTheory-11 (Bayesien)](GameTheory-11-BayesianGames.ipynb)")
         assert mod._is_notebook_cross_reference(7.0, text) is True
         assert mod._is_notebook_cross_reference(11.0, text) is True

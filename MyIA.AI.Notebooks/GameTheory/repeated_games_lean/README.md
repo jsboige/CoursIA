@@ -17,7 +17,7 @@
 > le contenu mathématique (théorème grim-trigger, principe de déviation one-shot, seuil δ) reste
 > **entièrement valable** et se retrouve à l'identique dans le home canonique.
 
-> **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré). Les sources actives vivent dans [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
+> **Compagnon formel** du notebook pédagogique [GameTheory-6c](../GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) (`Jeux répétés` — Dilemme du prisonnier itéré). Les sources actives vivent dans [`game_theory_lean/RepeatedGames/`](../game_theory_lean/RepeatedGames/).
 
 ## Théorème-phare
 
@@ -93,5 +93,5 @@ Cibles : `Discounting.discount_threshold_rewrite`, `GrimTrigger.grim_trigger_sus
 
 - [Issue #4880 (création du lake)](https://github.com/jsboige/CoursIA/issues/4880)
 - [Issue #4363 (junction shared Mathlib cache)](https://github.com/jsboige/CoursIA/issues/4363)
-- Notebook : [`GameTheory-6c.ipynb`](../GameTheory-6c-RepeatedGames-FolkTheorem.ipynb)
+- Notebook : [`GameTheory-6c.ipynb`](../GameTheory-06c-RepeatedGames-FolkTheorem.ipynb)
 - Lake jumeau `cooperative_games_lean` (sorries closed 2026-06-09, voir BONDAREVA_SHAPLEY_HARDNESS.md)

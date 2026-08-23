@@ -1,7 +1,7 @@
 - name: "GameTheory-2 NormalForm Part 2 (Support Enumeration)"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Part2-Python.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm-Csharp-Part2.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Csharp-Part2.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Pont SOTA rajoute cote C# (mandat #10382) : gambit-enummixed via CLI Process.Start sur les 4 jeux canoniques (RPS, RPS biaise, Prisonnier, Matching Pennies). Axes binding (#10459) : CLI pur (axe 3) -- AUCUN binding .NET/NuGet (axe 1), AUCUN P/Invoke (axe 2), AUCUNE IKVM (axe 4), AUCUN PythonNet (axe 5). nashpy (Python) et Gambit (McKelvey-McLennan-Page, CLI autonome GPL-2.0) sont deux libs differentes (axe 6) couvrant le meme role (support enumeration pour NE mixtes) -> pont desormais SYMETRIQUE. Comparaison numerique (cellule 24 du C#) : 4/4 equilibres gambit apparaillent le from-scratch BCL (dist < 1e-3) + exploitabilite = 0 partout (premier principe verifie). From-scratch BCL .NET conserve : le pont est EN PLUS jamais A LA PLACE."

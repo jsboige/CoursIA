@@ -1,7 +1,7 @@
 - name: "GameTheory-6c RepeatedGames-FolkTheorem"
   family: GameTheory/.NET-Parity
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb
   parity_level: semantic
   audits:
     - date: "2026-08-04"

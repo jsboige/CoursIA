@@ -1,7 +1,7 @@
 - name: "GameTheory-8c CombinatorialGames"
   family: GameTheory
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Python.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-8c-CombinatorialGames-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Csharp.ipynb
   parity_level: semantic
   audits:
     - date: "2026-08-04"

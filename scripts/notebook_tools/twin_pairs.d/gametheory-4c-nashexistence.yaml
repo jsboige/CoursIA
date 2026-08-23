@@ -1,7 +1,7 @@
 - name: "GameTheory-4c NashExistence"
   family: GameTheory
-  python: MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Python.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Csharp.ipynb
   parity_level: semantic
   audits:
     - date: "2026-08-21"

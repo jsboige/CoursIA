@@ -185,7 +185,7 @@ def main():
 
     # Mapping of old names to new names for reference updates
     old_to_new = {
-        "GameTheory-8-BackwardInduction": "GameTheory-9-BackwardInduction",
+        "GameTheory-8-BackwardInduction": "GameTheory-09-BackwardInduction",
         "GameTheory-9-ForwardInduction-SPE": "GameTheory-10-ForwardInduction-SPE",
         "GameTheory-10-BayesianGames": "GameTheory-11-BayesianGames",
         "GameTheory-11-ReputationGames": "GameTheory-12-ReputationGames",
@@ -194,11 +194,11 @@ def main():
         "GameTheory-14-CooperativeGames": "GameTheory-15-CooperativeGames",
         "GameTheory-15-MechanismDesign": "GameTheory-16-MechanismDesign",
         "GameTheory-16-MultiAgent-RL": "GameTheory-17-MultiAgent-RL",
-        "GameTheory-17-Lean-Definitions": "GameTheory-2b-Lean-Definitions",
-        "GameTheory-18-Lean-NashExistence": "GameTheory-4b-Lean-NashExistence",
-        "GameTheory-18b-NashExistence-Python": "GameTheory-4c-NashExistence-Python",
-        "GameTheory-19-Lean-CombinatorialGames": "GameTheory-8b-Lean-CombinatorialGames",
-        "GameTheory-19b-CombinatorialGames-Python": "GameTheory-8c-CombinatorialGames-Python",
+        "GameTheory-17-Lean-Definitions": "GameTheory-02b-Lean-Definitions",
+        "GameTheory-18-Lean-NashExistence": "GameTheory-04b-Lean-NashExistence",
+        "GameTheory-18b-NashExistence-Python": "GameTheory-04c-NashExistence-Python",
+        "GameTheory-19-Lean-CombinatorialGames": "GameTheory-08b-Lean-CombinatorialGames",
+        "GameTheory-19b-CombinatorialGames-Python": "GameTheory-08c-CombinatorialGames-Python",
         "GameTheory-20-Lean-SocialChoice": "GameTheory-16b-Lean-SocialChoice",
         "GameTheory-20b-SocialChoice-Python": "GameTheory-16c-SocialChoice-Python",
         "GameTheory-21-Lean-CooperativeGames": "GameTheory-15b-Lean-CooperativeGames",
