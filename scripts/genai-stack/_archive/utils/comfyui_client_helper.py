@@ -91,10 +91,9 @@ class ComfyUIClient:
                 # Pour l'instant on garde Bearer par défaut pour compatibilité
                 self.session.headers['Authorization'] = f'Bearer {config.api_key}'
             
-            # DEBUG: Afficher le header d'autorisation (masqué)
+            # DEBUG: Afficher la présence du header d'autorisation (règle 6 cause C : jamais de fragment de token)
             auth_header = self.session.headers['Authorization']
-            masked_auth = auth_header[:15] + "..." + auth_header[-5:] if len(auth_header) > 20 else "***"
-            print(f"🔑 Auth Header configuré: {masked_auth}")
+            print(f"🔑 Auth Header configuré: {'présent' if auth_header else 'absent'}")
     
     def _get_base_url(self) -> str:
         """Retourne l'URL de base de l'API ComfyUI"""

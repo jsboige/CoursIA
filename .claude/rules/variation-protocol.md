@@ -53,6 +53,24 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 
 **Entrer dans la liste LIGHT de G-VAR-3 se mesure, jamais s'intuitionne** : un genre y entre dès **≥ 2 grains LIGHT mergés**.
 
+### Grain REPAIR — hérite du genre de la PR qu'il répare
+
+Un grain dont le livrable principal est **réparer une PR pré-existante** (la débloquer après un PR-gate rouge, lever une review REQUEST_CHANGES, fixer un ratchet Papermill, etc.) **hérite du genre de la PR qu'il répare** :
+
+- Réparer une PR `notebook-python` (ex : #12141 tranche E #12128) → tag `MED/notebook-python` → genre **CONTENU** → tient le plancher G-VAR-1.
+- Réparer une PR `lean` (ex : #12252 Lean-21b companion) → tag `MED/notebook-lean` → genre **CONTENU** → tient le plancher.
+- Réparer une PR `guard` (ex : #11997 fix #11732 abort --update) → tag `MED/guard` → genre **META** → ne tient **pas** le plancher, comme toute PR META.
+
+Le raisonnement : G-VAR-1 demande « qu'est-ce qui atteint `main` quand ce travail aboutit ? » — la réponse regarde ce qui **arrive sur `main`**, pas ce que le REPAIR a fait. Quand une PR de notebook passe au vert et merge, ce qui arrive sur `main` est un notebook. Le REPAIR est de la fabrication qui sortait de l'entrepôt, pas de l'outillage.
+
+**Cas négatif explicite** : un REPAIR d'une PR **META** reste **META**. Une lane qui ne réparerait que ses propres PR de tooling/docs ne tiendrait toujours pas G-VAR-1. L'échappatoire se ferme d'elle-même.
+
+**Forme du tag** : le REPAIR déclare directement le genre hérité, sans annotation spéciale. Le fait que ce soit un REPAIR se lit dans le titre (préfixe `fix(`) et le diff (`<fichiers de la PR originale> + ajustements`). Une annotation `MED/notebook-python (repair de #11722)` ajoute du bruit sans information : le tag existe pour répondre « quel genre de substance ce grain met-il sur `main` », et la réponse est la même dans les deux cas.
+
+**Tier du REPAIR** : trancher par le litmus habituel. Un REPAIR qui demande une **ré-exécution complète + diagnostic de ratchet** est `MED` (ré-exécution + change quelque chose). Un REPAIR d'**une ligne de body** reste `LIGHT` et consomme le budget G-VAR-2 — `variation-protocol.md` ne crée pas d'exception.
+
+**Sources de l'arbitrage** : ticket #11815 (escalade formelle po-2023 après 3 cycles G-VAR-1 non-tenu sur REPAIR de notebooks, voir DM `msg-20260819T163135-h66acw` et arbitrage `msg-20260819T171752-4jd3od`). La présente clause en codifie la lecture **au cas** en forme **durable**, sous sign-off user (CLAUDE.md §A).
+
 ## 2. Les trois gates durs
 
 - **G-VAR-1 — Plat principal DEEP ou MED, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP ou MED **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier.** Le pool global porte toujours du DEEP/MED de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.

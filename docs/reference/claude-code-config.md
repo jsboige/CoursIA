@@ -43,7 +43,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 
 ## Rules (`.claude/rules/`)
 
-**Toutes auto-chargées à chaque session** — leur contenu est déjà en contexte pour un agent en cours de travail. Cet inventaire sert à qui lit le dépôt sans session active, ou cherche quelle règle porte quel sujet.
+**Auto-chargées à chaque session, sauf celles portant un frontmatter `paths:`** (voir [CLAUDE.md §Règles modulaires](../../CLAUDE.md)) — leur contenu est déjà en contexte pour un agent en cours de travail. Cet inventaire sert à qui lit le dépôt sans session active, ou cherche quelle règle porte quel sujet.
 
 | Règle | Ce qu'elle porte |
 |---|---|

@@ -20,12 +20,14 @@ Le fil conducteur : le notebook 3 (partie 1) a montré que la recherche aveugle 
 |---|----------|-------|---------|
 | 4 | [Planners-4-Fast-Downward](Planners-4-Fast-Downward.ipynb) | 45 min | Architecture 3 étapes (translator PDDL→SAS+, preprocessor, search) ; A*, GBFS, EHC via Docker sur Blocks World et Logistics |
 | 5 | [Planners-5-Heuristics](Planners-5-Heuristics.ipynb) | 40 min | Classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut) ; comparaison expérimentale du nombre de nœuds expansés |
+| 5b | [Planners-5b-Lean-Relaxation](Planners-5b-Lean-Relaxation.ipynb) | 45 min | Companion **natif** kernel Lean 4 : preuve formelle 0-sorry de $h^{+} \leq h^{*}$ dans le lake `planning_lean` |
 | 6 | [Planners-6-Domains](Planners-6-Domains.ipynb) | 50 min | Domaines IPC standards (Blocks World, Logistics, Gripper, Ferry, Hanoï) de complexité croissante |
+| 13 | [Planners-13-Differentiel-Atteignabilite](Planners-13-Differentiel-Atteignabilite.ipynb) | 45 min | Différentiel d'atteignabilité (strate 7) : protocole 4 pas — inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré ; consomme les théorèmes du lake `planning_lean` ; stdlib pur, sans Docker |
 
 ## Prérequis
 
 - **Partie 1** maîtrisée : modélisation PDDL, espace d'états (notebooks 1-3)
-- **Docker** : les notebooks 4-6 appellent le serveur HTTP Fast Downward (`jsboige/coursia-fast-downward`, port 8200)
+- **Docker** : les notebooks 4-6 appellent le serveur HTTP Fast Downward (`jsboige/coursia-fast-downward`, port 8200) — les notebooks 5b et 13 n'en dépendent pas (5b : kernel Lean via WSL ; 13 : stdlib pur)
 - **Algorithmique** : A*, recherche heuristique dans les graphes
 
 Si Docker n'est pas disponible, les notebooks théoriques (explication de l'architecture, classification des heuristiques) restent accessibles ; seules les exécutions de planification en ligne seront sautées.
@@ -38,6 +40,7 @@ Vous saurez :
 2. **Choisir** l'heuristique adéquate (LM-cut pour l'optimalité, h-FF pour la vitesse)
 3. **Modéliser** n'importe quel domaine IPC classique en PDDL
 4. **Distinguer** heuristiques admissibles (garantie d'optimalité) et non-admissibles (rapidité)
+5. **Mesurer** ce qu'une nouvelle primitive rend possible — différentiel d'atteignabilité vs approfondissement de recherche (notebook 13)
 
 ## Pour continuer
 

@@ -81,8 +81,18 @@ from grain_tag import extract_lane
 
 # A comment is a claim EVENT only if it carries one of these bracketed markers.
 # `[DONE]`/`[RELEASED]`/`[CANCELLED]`/`[ABANDONED]` close a claim; `[CLAIMED]`
-# opens one. Read on ISSUE comments (the claim registry per #9774), not on the
-# dashboard. Case-insensitive, tolerates inner spaces.
+# opens one; `[DELIVERED]` (#12320) closes a claim AND records the PR number
+# that carries the substance -- the 3rd marker, distinct from `[RELEASED]`
+# ("abandoned, reprenez") and `[DONE]` ("my work is in"): `[DELIVERED]` says
+# "the substance is on a PR, verify its state before re-claiming". Closing
+# semantics are identical to `[RELEASED]` for the reducer (it pops the lane
+# from `state`); the `pr_ref` attribute on the event is the durable trace
+# that downstream consumers can read. The future v2 conditional semantics
+# ("`[DELIVERED]` blocks while PR is OPEN, lifts when PR is CLOSED-without-
+# merge, locks permanently when PR is MERGED") is gated on coordinator
+# sign-off and lives in a follow-up -- this v1 closes the WRITING GAP, not
+# the CONDITIONAL GAP. Read on ISSUE comments (the claim registry per
+# #9774), not on the dashboard. Case-insensitive, tolerates inner spaces.
 # Line-anchored (`(?m)^...`): a marker only enacts a state change when it
 # STARTS a line -- the convention of every `--claim`/`--release` post and every
 # coordinator dispatch. A marker MENTIONED mid-sentence in prose is not an event.
@@ -103,7 +113,7 @@ from grain_tag import extract_lane
 # a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
 # match -- the mid-prose non-regression property is preserved.
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\s*\]",
+    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
@@ -119,7 +129,7 @@ _MARKER_RE = re.compile(
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
     r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*"
-    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE)\b"
+    r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
@@ -189,7 +199,7 @@ def _mask_fenced_blocks(body: str) -> str:
 
 
 _OPEN = {"CLAIMED"}
-_CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE"}
+_CLOSE = {"RELEASED", "CANCELLED", "ABANDONED", "DONE", "DELIVERED"}
 # `[OVERRIDE] lane <machine:workspace>` (#10223): coordinator adjudication --
 # GRANTS the claim to the named lane and CLOSES every other lane's claim in one
 # gesture. Distinct from CLAIMED (grants to one) and RELEASED/DONE (closes one):
@@ -226,6 +236,18 @@ _OVERRIDE = {"OVERRIDE"}
 _PATHS_CLAUSE_RE = re.compile(
     r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
+# #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
+# a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
+# RELEASED, but the vocabulary choice still records the writer's intent of
+# "my work is in a PR I have the number for"). Captured as an integer (the
+# first `#\d+` on the marker line), or None when absent. The `PR #` prefix is
+# required (loose `\d+` would catch issue numbers and other integers) so the
+# intent is unambiguous and the writer cannot accidentally invent a PR
+# reference that the consumer will go fetch. The fetch itself (state of PR
+# N) is left to consumers: the reducer stays pure.
+_DELIVERED_PR_REF_RE = re.compile(
+    r"(?im)\bPR\s*#(\d+)\b"
+)
 # #10958 -- the annotation suffix separator. Fleet claims append a trailing
 # annotation after the glob list: `paths: a/** -- 2026-08-11T18:10Z` (body
 # timestamp) or `paths: .../** — Phase 2 : ...` (prose rationale). The clause
@@ -247,6 +269,19 @@ _ANNOTATION_SUFFIX_RE = re.compile(r"\s+(?:--|—|–)\s+")
 # before the opening paren so legitimate filename characters (e.g. a glob
 # with a paren in it -- rare but possible) are not cut.
 _PAREN_ANNOTATION_RE = re.compile(r" \(")
+# #12072 -- off-marker scope declaration. `_PATHS_CLAUSE_RE` reads the `paths:`
+# clause ONLY on the marker line (`[^\n]*?` forbids the newline): a clause
+# written on its OWN line in a separate paragraph is read as None -> epic-wide,
+# silently, while the declaring lane believes it scoped. This regex finds a
+# scope-declaration-shaped line ANYWHERE in the body (line-start `paths:` /
+# `Paths:` / `Path :`, case-insensitive, same decoration tolerance as the
+# marker regexes) so the event can expose it and the lint can say so instead of
+# staying silent. Used only as a SIGNAL (`scope_declared_off_marker`) -- the
+# claim is NOT re-classified (see #12072: re-reading an off-marker prose line
+# as the machine clause would make the scope depend on an heuristic).
+_OFF_MARKER_SCOPE_RE = re.compile(
+    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
+)
 
 
 class ClaimEvent(dict):
@@ -268,6 +303,29 @@ class ClaimEvent(dict):
     @property
     def is_open(self) -> bool:
         return self.get("action") == "open"
+
+    @property
+    def is_delivered(self) -> bool:
+        """True on a `[DELIVERED]` marker (#12320).
+
+        The reducer treats it like any other close marker (the lane is popped
+        from `state`), but the predicate is the readable form for consumers
+        that want to distinguish "abandoned" from "delivered to a PR". The
+        `pr_ref` attribute (int | None) holds the captured PR number when
+        the marker line carried `PR #N`; otherwise None.
+        """
+        return self.get("marker") == "DELIVERED"
+
+    @property
+    def pr_ref(self) -> int | None:
+        """The PR number captured from a `[DELIVERED] … PR #N` marker (#12320).
+
+        None on every non-DELIVERED marker, and on a DELIVERED marker whose
+        line carried no `PR #N` (a legal but unreferenced close). Future v2
+        conditional logic (PR OPEN = block, PR MERGED = lock) reads this
+        field to drive its gate; v1 only surfaces it in the JSON summary.
+        """
+        return self.get("pr_ref")
 
     @property
     def is_override(self) -> bool:
@@ -316,6 +374,22 @@ class ClaimEvent(dict):
         filters `others` by scope intersection (`_filter_by_claim_scope`).
         """
         return self.get("paths")
+
+    @property
+    def scope_declared_off_marker(self) -> list[str]:
+        """#12072 -- scope-declaration lines found OFF the marker line.
+
+        Non-empty ONLY on an epic-wide event (`paths is None`) whose comment
+        nevertheless contains a line-start `paths?` clause elsewhere (e.g. a
+        `Paths: ...` paragraph under the `[CLAIMED]` line). The reducer could
+        not read that clause (`_PATHS_CLAUSE_RE` is marker-line-anchored), so
+        the claim reduced to EPIC-WIDE while the declaring lane believed it
+        scoped. This field is a SIGNAL, not a re-classification: the claim is
+        NOT lifted back to a scoped state (that would make the scope depend on
+        a heuristic). Consumers (JSON summary, lint WARN) use it to say so
+        explicitly instead of staying silent.
+        """
+        return self.get("scope_declared_off_marker") or []
 
     @property
     def unparseable_scope(self) -> list[str]:
@@ -403,7 +477,20 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
     # Les blocs fences sont de la citation, jamais un acte (voir
     # `_mask_fenced_blocks`). Le masque preserve les longueurs, donc les
     # offsets restent valides sur `body` -- que `_line_for_match` relit.
-    for m in _MARKER_RE.finditer(_mask_fenced_blocks(body)):
+    masked_body = _mask_fenced_blocks(body)
+    # #12072 -- pre-computed off-marker scope declaration lines. `_PATHS_CLAUSE_RE`
+    # only ever reads the marker's OWN line, so a `paths:`/`Paths:`/`Path :`
+    # clause written on a separate line of the same comment is dead prose from
+    # the reducer's point of view (epic-wide, silently). We scan the fenced-masked
+    # body once and hand each event its own matching lines: the masked body
+    # preserves offsets, so `_line_for_match` can still resolve verbatim text on
+    # the real `body`. The clause regex is line-anchored to a line STARTING with
+    # `paths?`, so it can never match the marker line itself (which starts with
+    # the bracket after decoration) -- no overlap with the marker's own clause.
+    off_marker_scope_lines = [
+        _line_for_match(body, om).strip() for om in _OFF_MARKER_SCOPE_RE.finditer(masked_body)
+    ]
+    for m in _MARKER_RE.finditer(masked_body):
         marker = m.group(1).upper()
         line = _line_for_match(body, m)
         if marker in _OPEN:
@@ -413,6 +500,14 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
         else:
             action = "close"
         paths = _extract_paths_clause(line) if line else None
+        # #12320 -- [DELIVERED] carries an optional `PR #N` reference on the
+        # same marker line. Parse it here so downstream consumers (the JSON
+        # summary, future v2 conditional logic) can read the PR number without
+        # re-walking the body. `pr_ref` is the integer number (e.g. 12271), or
+        # None when absent or on a non-DELIVERED marker. The PR state itself
+        # (OPEN/CLOSED/MERGED) is left to the consumer to fetch via `gh` --
+        # the reducer stays pure and side-effect-free, by design.
+        pr_ref = _extract_delivered_pr_ref(line) if marker == "DELIVERED" else None
         # Lane attribution per marker line: the marker's OWN line first, then
         # the whole body as fallback. The line-first order is the fix -- the
         # legacy whole-body search always picked the FIRST `lane <token>` of
@@ -428,6 +523,12 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
             author=author,
             url=url,
             paths=paths,
+            # #12320 -- pr_ref is populated ONLY for DELIVERED markers (the
+            # rest keep None). The summary exposes it so a consumer reading
+            # "my_active_claim: false" can still surface the historical PR
+            # reference for forensics, and so a v2 conditional reducer can
+            # gate the close on the PR state.
+            pr_ref=pr_ref,
             # #10597 hardener -- preserve the unparseable subset of the scope
             # (residual `{` or `}` after `_expand_brace_groups`). The reducer
             # and check layer use this to lift the claim back to EPIC-WIDE
@@ -436,6 +537,14 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
             # accidental empty" -- the exact defect that motivated #10597.
             unparseable_scope=_unparseable_scope_in(paths) if paths else [],
             intent=_intent_from_line(line),
+            # #12072 -- structured signal for a scope declared OFF the marker
+            # line (line-start `paths?` elsewhere in the comment, e.g. a
+            # `Paths: ...` paragraph below the `[CLAIMED]` line). The reducer
+            # read `paths is None` -> the claim reduced to EPIC-WIDE while the
+            # declaring lane believed it scoped. The field only exists when
+            # the marker's OWN line carried no clause (a captured scope needs
+            # no warning); the lint layer decides how loudly to say so.
+            scope_declared_off_marker=off_marker_scope_lines if paths is None else [],
             # #11755: the body is needed downstream by `_lint_claim_events`
             # to mine for an inferred `Path:` clause when the marker has no
             # `paths:` field. Carrying it on the event (one extra reference)
@@ -564,6 +673,22 @@ def _extract_paths_clause(text: str | None) -> list[str] | None:
         for e in _expand_brace_groups(p):
             expanded.append(e)
     return expanded or None
+
+
+def _extract_delivered_pr_ref(line: str | None) -> int | None:
+    """Return the integer PR number from a `[DELIVERED] ... PR #N` line (#12320).
+
+    `None` when the line carries no `PR #N` reference (a legal but
+    unreferenced DELIVERED). The marker word must already have been
+    matched (this helper is a pure extractor; it does NOT validate the
+    marker itself). The `PR` prefix is required so a stray `#1234` in
+    the body cannot be mistaken for a PR reference -- the writer must
+    explicitly name `PR #N` for the close to record the linkage.
+    """
+    if not line:
+        return None
+    m = _DELIVERED_PR_REF_RE.search(line)
+    return int(m.group(1)) if m else None
 
 
 def _unparseable_scope_in(parts: list[str] | None) -> list[str]:
@@ -723,7 +848,12 @@ def _gh_issue_comments(issue: str) -> dict:
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
-            "--json", "number,title,comments",
+            # #12156 -- `labels` added so the umbrella classifier
+            # (`_is_umbrella_issue`) can read the canonical `EPIC` label the
+            # picker hydrates from. The label-route is the authoritative one;
+            # the title-route stays a fallback for the historic pre-label
+            # inventory.
+            "--json", "number,title,labels,comments",
         ],
         capture_output=True, text=True, shell=False,
     )
@@ -1045,6 +1175,13 @@ def _lint_claim_events(
     re-classified (legacy semantics preserved -- see #11755 Piste 1 rationale).
     The lane keeps its epic-wide read; the warning is a usability nudge to
     reissue with the explicit clause.
+
+    #12072: distinct from the #11755 nudge, when the event carries the
+    structured `scope_declared_off_marker` signal (a line-start `paths?`
+    clause on a SEPARATE line of the comment), an explicit WARN names the
+    faulty line and the expected marker-line syntax. Fires only on the
+    signal -- an intentional epic-wide declaration (no off-marker clause)
+    stays silent, so the lint never penalises a deliberate full-lane lock.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -1065,6 +1202,22 @@ def _lint_claim_events(
         if ev.get("action") not in ("open", "override"):
             continue
         if ev.paths is None:
+            # #12072 -- the structured off-marker signal. Fires ONLY when the
+            # comment declares a scope somewhere other than the marker line
+            # (a `Paths:`/`path:`/`Path :` line in a separate paragraph): the
+            # reducer could not read it, so the claim reduced to EPIC-WIDE
+            # while the writer believed it scoped. Explicit intent stays
+            # legitimate (no signal -> no noise); the claim is NOT re-scoped.
+            off_marker = ev.scope_declared_off_marker
+            if off_marker:
+                print(
+                    f"WARN: scope declare hors ligne de marqueur -- cette "
+                    f"declaration n'est PAS lue (#12072) : "
+                    f"{off_marker[0]!r} (lane {ev.lane or '?'}). "
+                    f"La clause paths: doit etre SUR la ligne du marqueur : "
+                    f"`[CLAIMED] lane <machine:workspace> -- paths: <g1>, <g2>`.",
+                    file=sys.stderr,
+                )
             inferred = _infer_paths_from_body(ev.get("_body"))
             inferred_str = (
                 " ; chemin(s) inféré(s) du body : "
@@ -1156,6 +1309,34 @@ def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
     return (now - parsed).total_seconds() / 3600.0
 
 
+def _is_umbrella_issue(payload: dict) -> bool:
+    """Return True if `payload` describes an umbrella / EPIC-style issue (#12156).
+
+    Mirrors `scripts/pick_idle_grain.py:130` so the two organs speak the same
+    language: an issue is classified as an umbrella when (a) one of its labels
+    is the literal string `EPIC` (case-sensitive -- that is the label the picker
+    hydrates from `gh issue list --label EPIC`), OR (b) the title starts with
+    `[EPIC` / `EPIC` after stripping the leading `[`. The label-route is the
+    authoritative one; the title-route catches the historic pre-label inventory
+    that the picker also accepts.
+
+    Returns False on missing keys (defensive: the from-json path may carry a
+    subset of fields). Never raises -- a malformed payload should degrade to
+    the pre-#12156 behaviour (no umbrella flag) rather than crash.
+    """
+    try:
+        labels = payload.get("labels") or []
+        for lab in labels:
+            name = lab.get("name") if isinstance(lab, dict) else None
+            if isinstance(name, str) and name == "EPIC":
+                return True
+        title = payload.get("title") or ""
+        upper = title.upper().lstrip("[")
+        return upper.startswith("EPIC")
+    except (AttributeError, TypeError):
+        return False
+
+
 def _parse_iso_utc(iso: str) -> datetime | None:
     """Parse a GitHub server `createdAt` (ISO 8601 UTC, trailing 'Z').
 
@@ -1231,11 +1412,33 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
 
+    # #12345 / #12322 v2 -- the caller's CARRYING scope is computed EARLY
+    # (before `query_scope` classification) so the classifier can read it.
+    # `my_scope` = `--paths` merged with the caller's OWN active-claim
+    # `paths:` clause (#10419). When `my_paths is None` AND the caller has
+    # no own active claim with a `paths:` clause, `my_scope` is None -- the
+    # caller declared no intent at all (legacy case, unchanged).
+    mine_paths = mine.get("paths") if mine else None
+    my_scope = list(dict.fromkeys((my_paths or []) + (mine_paths or []))) or None
+    # Dead-glob witness on the CALLER side (mirror of `empty_scope` on the
+    # claim side, #10958). `caller_empty_scope` lists the globs in `my_scope`
+    # that match ZERO tracked files in the repo. Empty list when:
+    # (a) `my_scope` is None (no declared scope -- legacy case),
+    # (b) every glob in `my_scope` matches at least one tracked file,
+    # (c) `tracked is None` (no git walk possible -- degrade silently).
+    # The list is JSON-serialised in `caller_empty_scope` (#12345) so the
+    # caller can see WHY a scope they thought is alive is being treated
+    # as empty.
+    caller_empty_scope = _empty_scope_in(my_scope, tracked) if tracked is not None else []
+
     # Override-scope filter (#10342): an `[OVERRIDE]` with a `paths:` clause
     # only locks lanes whose intended files intersect the scope. Without
     # `my_paths`, we conservatively treat every scoped override as blocking
     # (the caller's intent is unknown -- better to over-block than silently
-    # merge a write that should have pinged a held lane).
+    # merge a write that should have pinged a held lane). Note: `_filter_by_
+    # claim_scope` already short-circuits when `my_scope` is entirely dead
+    # (#10958 caller-side lift, line ~1614) so an entirely-dead MY scope
+    # does not get to false-clear other lanes.
     others = _filter_by_claim_scope(others, my_paths, mine, tracked=tracked)
 
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
@@ -1252,6 +1455,53 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
 
+    # #12322 -- query_scope classifier (POST stale-filter, so the verdict
+    # reflects the FINAL blocker set, not the pre-stale one). A call whose
+    # CARRYING scope is empty (no `--paths` AND no `paths:` on the caller's
+    # own claim) cannot prove disjointness from any FINAL blocker, so it
+    # lands in `EPIC_WIDE_NO_PATHS_DECLARED`. #12345 v2: a call whose
+    # declared scope is ENTIRELY dead (every glob matches zero tracked
+    # files) is structurally indistinguishable from the no-scope case -- the
+    # caller cannot prove disjointness because the claim they think they
+    # made locks nothing. Same verdict (`EPIC_WIDE_NO_PATHS_DECLARED`),
+    # same `exit 2`, plus a WARN stderr naming each dead glob so the caller
+    # fixes the typo before re-running. The fail-CLOSED (the third property
+    # of #12345's acceptance) lives at the verdict-emission point below --
+    # a scope that is entirely dead does NOT clear to `exit 0`, it changes
+    # verdict and acquires an explanation.
+    if others and my_scope is None:
+        query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    elif caller_empty_scope and my_scope and len(caller_empty_scope) >= len(my_scope):
+        # #12345 -- every glob in `my_scope` is dead: the caller declared a
+        # scope they believe is alive, but it matches zero tracked files.
+        # Cannot prove disjointness -> same verdict as the no-scope case.
+        query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    else:
+        query_scope = "PATH_SCOPED"
+
+    # #12156 -- umbrella signal. Two booleans surface the diagnostic that
+    # the body of #12156 asks to expose in `check_lane_claim.py`'s JSON:
+    # (a) `is_umbrella` mirrors `pick_idle_grain.py:130` (label `EPIC` or
+    #     title prefix `[EPIC`/`EPIC`), so a caller can know which urn an
+    #     issue would have come from; (b) `epic_wide_on_umbrella` flags the
+    #     pathology the body names -- an umbrella whose blocking claims
+    #     are all epic-wide (no `paths:` or every glob dead per #10958 /
+    #     #12072). The flag is True ONLY when an umbrella is held
+    #     effectively-epic-wide by another lane AND the umbrella has no
+    #     scoped claim; on a CLEAR issue or on a unit issue the flag stays
+    #     False (the umbrella umbrellas nothing, or there is nothing to
+    #     umbrella).
+    is_umbrella = _is_umbrella_issue(payload)
+    if is_umbrella and others:
+        epic_wide_on_umbrella = all(
+            (ev.get("paths") is None)
+            or _claim_scope_effectively_epic_wide(ev)
+            or bool(ev.scope_declared_off_marker)
+            for ev in others.values()
+        )
+    else:
+        epic_wide_on_umbrella = False
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -1259,6 +1509,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
         "stale_claims": sorted(stale_others),
+        # #12156 -- umbrella classifier (`is_umbrella`) and the pathology it
+        # describes (`epic_wide_on_umbrella`). Both default False: on a
+        # unit-issue the umbrella flag stays False; on a CLEAR umbrella the
+        # PATHOLOGY flag stays False too (the lock is empty, not held
+        # wrong). The flags let a coordinator's sweep aggregate
+        # `epic_wide_on_umbrella=True` across issues to count how many
+        # umbrellas are stuck in the pattern #12156 names.
+        "is_umbrella": is_umbrella,
+        "epic_wide_on_umbrella": epic_wide_on_umbrella,
         "active_claims": {
             ln: {
                 "claimed_at": ev.created_at,
@@ -1266,6 +1525,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "marker": ev.marker,
                 "url": ev.url,
                 "paths": ev.get("paths"),
+                # #12320 -- PR reference on a `[DELIVERED]` marker. Surfaced
+                # alongside the rest of the claim fields so a consumer that
+                # reads "my_active_claim: false" can still pull the historical
+                # PR for forensics, and so a v2 conditional reducer can drive
+                # its gate on the live PR state. None on every non-DELIVERED
+                # marker, and on a DELIVERED marker that did not name a PR.
+                "pr_ref": ev.get("pr_ref"),
                 # #10597 hardener -- surface the witness list of residual
                 # `{`/`}` so a human reviewer can see WHY an unparseable claim
                 # is being treated as epic-wide. The list may be empty (the
@@ -1279,9 +1545,32 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # when it covers the whole scope the claim is lifted to
                 # epic-wide (a broken claim is not a permissive claim).
                 "empty_scope": ev.get("empty_scope") or [],
+                # #12072 -- the off-marker scope-declaration witness. Non-empty
+                # ONLY on an epic-wide claim (`paths` is null) whose comment
+                # still declares a `paths?` clause on a separate line (e.g. a
+                # `Paths: ...` paragraph under the `[CLAIMED]` line). The
+                # reducer could not read it (marker-line-anchored clause), so
+                # the claim reduced to epic-wide while the writer believed it
+                # scoped. Signal only -- never re-scopes the claim.
+                "scope_declared_off_marker": ev.scope_declared_off_marker,
             }
             for ln, ev in sorted(active.items())
         },
+        # #12320 -- `delivered_claims` is the forensic record of every lane
+        # that CLOSED via `[DELIVERED]` on this issue. The reducer already
+        # popped those lanes from `active_claims` (a DELIVERED closes), so
+        # their history would otherwise be invisible to a lane that arrives
+        # AFTER the close. Surfaced here so a `check` that returns
+        # `my_active_claim: false` AND `blocking_lanes: []` still tells the
+        # reader "another lane already delivered this, on PR #N -- verify
+        # the PR state before you start work". v1 only exposes the captured
+        # PR number; v2 (gated on coordinator sign-off) will look up the
+        # LIVE PR state and add `pr_state: OPEN|CLOSED|MERGED`.
+        "delivered_claims": sorted({
+            ev.get("pr_ref")
+            for ev in events
+            if ev.marker == "DELIVERED" and ev.get("pr_ref")
+        }),
         "unattributed_markers": len(unattributed),
         # #11239 -- bare-marker lines (no brackets) carrying a claim motif.
         # The organ does not read them (`_MARKER_RE` requires the brackets),
@@ -1291,8 +1580,47 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "malformed_markers": len(malformed),
         "malformed_marker_lines": [m["line"] for m in malformed],
         "blocked": bool(others),
+        # #12322 -- query_scope is the read-mode classifier for THIS call.
+        # `EPIC_WIDE_NO_PATHS_DECLARED` means the caller did not pass `--paths`
+        # AND did not post an active scoped claim, so we cannot prove
+        # disjointness from any blocker. `PATH_SCOPED` covers everything else
+        # (the caller is scoped one way or another). Co-rolled with the
+        # `exit 2` verdict (vs `exit 1`) below -- the difference is the
+        # actionable next step for the caller (re-run with `--paths` to lift
+        # the over-block).
+        "query_scope": query_scope,
+        # #12345 -- dead-glob witness on the CALLER side (mirror of
+        # `empty_scope` on the claim side, #10958). Lists the globs in
+        # `my_scope` that match zero tracked files in the repo. Empty
+        # when (a) caller declared no scope, (b) every glob is live, or
+        # (c) `tracked` was None (no git walk possible). Non-empty means
+        # the caller reissued with a typo'd path or a deleted file -- the
+        # verdict below has already routed the call to `NOT_SCOPED` when
+        # the dead globs cover the whole scope, otherwise the live globs
+        # continue to carry the disjointness test.
+        "caller_empty_scope": caller_empty_scope,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
+
+    # #12345 -- SCOPE_DEAD_GLOB warning. When the caller declared a scope
+    # whose globs include at least one dead glob, surface the witness list
+    # on stderr so the caller fixes the typo at the call site instead of
+    # re-running with the same broken path. Best-effort: when the file walk
+    # failed (`tracked is None`), `caller_empty_scope` is empty by
+    # construction -- we never false-WARN outside a git repo. The warning
+    # is non-blocking on purpose: a PARTIALLY-dead scope still carries
+    # disjointness on its live part (`_filter_by_claim_scope` uses `my_scope`
+    # as-is); only an ENTIRELY-dead scope fails-CLOSED to `NOT_SCOPED` at
+    # `exit 2` via the verdict block below.
+    if caller_empty_scope:
+        dead = ", ".join(repr(g) for g in caller_empty_scope)
+        print(
+            f"SCOPE_DEAD_GLOB: your declared scope contains globs that "
+            f"match zero tracked files in this repo: {dead}. The live "
+            f"globs (if any) continue to carry disjointness; reissue with "
+            f"valid paths to lift this hint.",
+            file=sys.stderr,
+        )
 
     # #10597 bonus -- SCOPE_ZERO_COVERAGE warning. When a lane declares a
     # SCOPED claim whose expanded globs do not match any tracked file in
@@ -1341,6 +1669,36 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             excerpt = (ev.get("intent") if hasattr(ev, "get") else None) or "(no intent)"
             intent_lines.append(f"{tag}{excerpt}")
         intent_block = "\n".join(intent_lines)
+        # #12322 -- distinct verdict for EPIC_WIDE_NO_PATHS_DECLARED. The
+        # caller is asking without scoping themselves -- this is a
+        # `non-scope question` showing up as a `block`, which is the trap
+        # measured on #11112 (1 ESCALATION HIGH + 1 ASK HIGH in one day,
+        # both from the user, both rooted in the same `exit 1 + blocker names
+        # without the "re-scope to lift" hint). We keep `exit 1` semantics
+        # for the genuine-scope case (PATH_SCOPED with blockers, including
+        # the case where the caller narrowed their own scope and it still
+        # intersects a blocker), and split out `exit 2` for the call whose
+        # answer changes when the caller re-runs with `--paths`.
+        if query_scope == "EPIC_WIDE_NO_PATHS_DECLARED":
+            print(
+                f"\nNOT_SCOPED: this call did not pass `--paths` so we cannot "
+                f"prove disjointness on #{payload.get('number')}. The blockers "
+                f"below may not actually conflict with the files you intend to "
+                f"edit.\n"
+                f"  Blocked-by (legacy `blocking_lanes` field, taken at face value): "
+                f"{who}\n"
+                f"  Claimed scopes (marker-line excerpts -- #10395 Variante 2):\n"
+                f"{intent_block}\n"
+                f"  ACTION: re-run with `--paths <glob1> --paths <glob2> ...` "
+                f"matching the files you intend to edit. If your files intersect "
+                f"the blockers' scopes the call returns BLOCKED at `exit 1` "
+                f"(real conflict); if they are disjoint the call returns CLEAR "
+                f"at `exit 0`. Exiting with `exit 2` (distinct from real "
+                f"`exit 1` conflicts) so callers can branch on the verdict "
+                f"without false-alarming on a scope-typo.",
+                file=sys.stderr,
+            )
+            return 2
         print(
             f"\nBLOCKED: another lane holds an active claim on "
             f"#{payload.get('number')}: {who}.\n"
@@ -1351,6 +1709,32 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             file=sys.stderr,
         )
         return 1
+    # #12345 -- fail-CLOSED on an entirely-dead scope, EVEN with no
+    # blockers. Without this branch, a caller who typo'd every glob in
+    # `--paths` would see CLEAR + `exit 0` on an issue no one else has
+    # claimed, and the broken lock would authorise them to write anywhere.
+    # The acceptance on #12345 names this explicitly: a scope that is
+    # entirely dead "changes verdict and acquires an explanation; it
+    # does not gain the authorisation to write." We route to the same
+    # `NOT_SCOPED` + `exit 2` verdict the BLOCKED branch above emits,
+    # minus the blocker names (there are none) -- the actionable next
+    # step is the same: re-issue with valid globs.
+    if query_scope == "EPIC_WIDE_NO_PATHS_DECLARED":
+        dead = ", ".join(repr(g) for g in caller_empty_scope)
+        print(
+            f"\nNOT_SCOPED: this call's declared scope is entirely dead "
+            f"on #{payload.get('number')}: every glob in `--paths` matches "
+            f"zero tracked files ({dead}). The lock is empty -- the call "
+            f"does NOT clear to `exit 0` because a broken scope is not a "
+            f"permissive scope (#12345 fail-CLOSED). Re-run with valid "
+            f"`--paths <glob>` matching the files you intend to edit; if "
+            f"they intersect any blocker the call returns BLOCKED at "
+            f"`exit 1`, otherwise CLEAR at `exit 0`. Exiting with `exit 2` "
+            f"so callers can branch on the verdict without false-alarming "
+            f"on a scope-typo.",
+            file=sys.stderr,
+        )
+        return 2
     parts = []
     if mine:
         parts.append("resuming your own active claim")

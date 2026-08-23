@@ -1,0 +1,73 @@
+{
+  "canonical_speakers": {
+    "narrateur": {
+      "name": "Le narrateur",
+      "aliases": ["narrateur", "le narrateur"],
+      "traits": ["observateur", "patient", "tisse le cadre"],
+      "voice_register": "neutre chaud, medio-grave, debit pose",
+      "emotional_arc": {
+        "ouverture": "calme nocturne",
+        "culmination": "inquietude contenue",
+        "resolution": "acceptation mysterieuse"
+      },
+      "prosody_defaults": ["pause longue apres les descriptions de la riviere", "intonation descendante en fin de paragraphe"],
+      "relationships": {
+        "mahaut_reverdy": "regard principal du recit",
+        "leonie_charpentre": "garde du temps long",
+        "evariste_bonneau": "moteur de l'intrigue"
+      }
+    },
+    "mahaut_reverdy": {
+      "name": "Mahaut Reverdy",
+      "aliases": ["mahaut", "mahaut reverdy"],
+      "traits": ["decisive", "protectrice", "concrete"],
+      "voice_register": "feminin medium, timbre net, articulation franche",
+      "emotional_arc": {
+        "ouverture": "inquietude active",
+        "culmination": "volonte",
+        "resolution": "apaisement par l'action"
+      },
+      "prosody_defaults": ["attaque franche des questions", "accent d'insistance sur les verbes d'action"],
+      "relationships": {
+        "evariste_bonneau": "complice de quete",
+        "leonie_charpentre": "confiance filiale inversée"
+      }
+    },
+    "leonie_charpentre": {
+      "name": "Léonie Charpentre",
+      "aliases": ["leonie", "leonie charpentre", "la vieille"],
+      "traits": ["sage", "enigmatique", "maternelle"],
+      "voice_register": "feminin age, grave souple, rythme lent",
+      "emotional_arc": {
+        "ouverture": "serenite",
+        "culmination": "gravite douce",
+        "resolution": "humour feutre"
+      },
+      "prosody_defaults": ["allongement des voyelles finales", "micro-pauses avant les sentences"],
+      "relationships": {
+        "mahaut_reverdy": "protegee",
+        "evariste_bonneau": "enfant du village"
+      }
+    },
+    "evariste_bonneau": {
+      "name": "Évariste Bonneau",
+      "aliases": ["evariste", "evariste bonneau"],
+      "traits": ["obnubile par les archives", "entete", "ardent"],
+      "voice_register": "masculin jeune, tenor clair, debit rapide",
+      "emotional_arc": {
+        "ouverture": "absence febrile",
+        "culmination": "exaltation de la decouverte",
+        "resolution": "resolution partagee"
+      },
+      "prosody_defaults": ["debits acceleres sur les citations d'archives", "montee melodique sur les revelations"],
+      "relationships": {
+        "mahaut_reverdy": "alliee de la premiere heure",
+        "leonie_charpentre": "sage-femme de son enthousiasme"
+      }
+    }
+  },
+  "figurants": [],
+  "figurant_voice_map": {},
+  "total_speakers": 4,
+  "total_dialogue_segments": 9
+}

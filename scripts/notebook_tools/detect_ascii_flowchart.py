@@ -76,17 +76,30 @@ import sys
 from pathlib import Path
 
 import nbformat
+from nbformat.reader import NotJSONError
+from nbformat.validator import ValidationError
 
 # --- Signaux -----------------------------------------------------------
 
 # Boite : `+---------+`, `+========+`, `[ ... ]`, `┌───┐`, etc.
 # On accepte les boites ASCII classiques `+---+` (3+ dashes/equals entre +)
 # et les boites Unicode box-drawing. Exclure les tables Markdown `| --- |`.
-_RE_BOX_ASCII = re.compile(r"^\s*\+[-=]{3,}\+\s*$")
-_RE_BOX_UNICODE = re.compile(r"^\s*[┌┐└┘├┤┬┴┼][─━]{3,}[┌┐└┘├┤┬┴┼]")
+# c.475 patch (Tell c.475-L2 ★ NEW) : on preserve le leading whitespace
+# (les boites peuvent etre indentees dans une liste markdown) MAIS sans
+# l'ancre de fin `\s*$` qui rendait le pattern aveugle aux boites
+# cote a cote sur la meme ligne. `_line_is_box` utilise match() qui
+# ancre implicitement au debut de la chaine.
+_RE_BOX_ASCII = re.compile(r"\s*\+[-=]{3,}\+")
+_RE_BOX_UNICODE = re.compile(r"\s*[┌┐└┘├┤┬┴┼][─━]{3,}[┌┐└┘├┤┬┴┼]")
 
 # Connecteurs : `--->`, `<--`, `<--->`, `-->`, `|`, `v`, `^` (en contexte ligne)
-_RE_CONNECTOR_ARROW = re.compile(r"(--?>|<--?-+|={2,}>|<={2,})")
+# c.474 patch d'une ligne (issue #12324) : ajout de `|---|` / `---` pour les
+# separateurs entre boites cote a cote (ex. QC-Py-13 c3 : `| Universe |---|
+# Algorithm |---| Broker |...`). Sans ce pattern, la disposition horizontale
+# a 5 boites cote a cote ne matche aucun connecteur, et le flowchart echappe
+# a la detection. On accepte les separateurs `--|---|` (au moins 3 dashes
+# entre deux boites ou a l'extremite) comme connecteur de flux.
+_RE_CONNECTOR_ARROW = re.compile(r"(--?>|<--?-+|={2,}>|<={2,}|--\||---{2,}\||---{3,})")
 _RE_CONNECTOR_VLINE = re.compile(r"\|\s*(v|\^| Extraction| Construction| Indexation| Interrogation| Generation)\s*\|?")
 _RE_CONNECTOR_VERTICAL = re.compile(r"^\s*\|\s*$")  # ligne de bare verticale isolee
 # Lignes courtes avec un seul caractere de connexion (`v`, `^`, `|`, `>`)
@@ -97,6 +110,9 @@ _RE_LABEL_LINE = re.compile(r"^\s{2,}([A-Z][a-zA-Z]{3,}( [a-z]+){0,3})\s*$")
 
 
 def _line_is_box(line: str) -> bool:
+    # c.475 : match() ancre au debut de ligne, donc on garde la semantique
+    # originelle (ligne qui COMMENCE par une boite). _count_boxes_on_line
+    # utilise findall() sur la regex non-ancree pour compter N boites.
     return bool(_RE_BOX_ASCII.match(line) or _RE_BOX_UNICODE.match(line))
 
 
@@ -111,7 +127,17 @@ def _line_has_connector(line: str) -> bool:
     La detection d'un flowchart se fait au niveau FENETRE : si la fenetre
     a des boites ET des bare-connecteurs en nombre coherent, c'est un
     flowchart (les bare-connecteurs sont confirmes par le contexte).
+
+    c.475 patch (Tell c.475-L4 ★ NEW) : une ligne qui EST une boite ASCII
+    (`+--------+`) contient `--` qui matche `_RE_CONNECTOR_ARROW`, ce qui
+    faisait compter les boites elles-memes comme connecteurs, et un simple
+    encadre de titre `+--------+ / | Title | / +--------+` (single box) etait
+    interprete comme un flowchart a 2 boites + 2 connecteurs. La correction :
+    une boite ASCII ou Unicode n'est JAMAI un connecteur. On retourne
+    `False` si la ligne est une boite.
     """
+    if _line_is_box(line):
+        return False
     if _RE_CONNECTOR_ARROW.search(line):
         return True
     if _RE_CONNECTOR_VLINE.search(line):
@@ -133,6 +159,22 @@ def _line_has_bare_connector(line: str) -> bool:
 def _is_markdown_table_separator(line: str) -> bool:
     """Exclure `| --- | --- |` des tables Markdown (scan_md_table_syntax.py)."""
     return bool(re.match(r"^\s*\|?[\s:|-]{3,}\|[\s:|-]+\|?\s*$", line))
+
+
+def _is_markdown_table_row(line: str) -> bool:
+    """Exclure les lignes de cellules de tableau Markdown `| col1 | col2 |`.
+
+    Tell c.475-L5 ★ NEW : une ligne de tableau peut contenir une fleche
+    (`| Process | ... | Generate -> Review -> Publish |`) qui matche
+    `_RE_CONNECTOR_ARROW`. Si la fenetre demarre sur une telle ligne, le
+    detecteur traite le tableau markdown comme un flowchart (faux positif
+    massif : les cellules avec `->` dans les colonnes sont ubiquitaires).
+    """
+    stripped = line.strip()
+    if not stripped:
+        return False
+    # Format `| col | col |` (commence et finit par `|`, contient au moins 1 `|`)
+    return stripped.startswith("|") and stripped.endswith("|") and stripped.count("|") >= 2
 
 
 def _is_inside_fence(lines: list[str], idx: int) -> bool:
@@ -157,6 +199,30 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
     On detecte DANS les fences egalement (le contenu reste un flowchart ASCII
     degrade), mais on flagge `fenced=True` pour que la remediation proposee
     inclue le remplacement de la fence ```` ``` ```` par ```` ```mermaid ````.
+
+    c.474 patch d'une ligne (issue #12324) : l'ancre `\s*$` du `_RE_BOX_ASCII`
+    a ete retiree, ce qui rend visible la **disposition horizontale** (boites
+    cote a cote sur la meme ligne) en plus de la disposition verticale
+    traditionnelle. Les 3 branches du discriminant :
+
+      A. `(boxes >= 2 and connectors >= 2)` -- pipeline vertical dense
+         (deux connecteurs explicites dans la fenetre).
+      B. `(boxes >= 3 and connectors >= 1)` -- block diagram aligne
+         (au moins 3 boites = structure multi-stage claire).
+      C. `(boxes_inline >= 2 and connectors >= 1)` -- flowchart horizontal
+         (au moins 2 boites **sur la meme ligne** + un connecteur ; cette
+         condition stricte evite le faux positif `single_box_only` ou 2
+         boites occupees par 2 rangees verticales distinctes). Tell c.475-L2 ★
+         (NEW) : `boxes_inline` = max par ligne du nombre de boites ASCII
+         cote a cote ; discriminant pour flowcharts horizontaux.
+
+    Tell c.475-L3 ★ (NEW) : la condition `boxes_inline >= 2` distingue
+    veritablement un flowchart horizontal (boites separees par `---`/`|---|`
+    sur la meme ligne) d'une simple **juxtaposition verticale** (boites
+    empilees dans la meme fenetre sans lien de flux). Mesure empirique c.475 :
+    QC-Py-13 c3 produit boxes_inline=5 (5 boites sur 1 ligne), GT-17 NFSP c15
+    produit boxes_inline=3 (3 boites sur 1 ligne), single_box_only produit
+    boxes_inline=1 (1 boite par ligne) -- d'ou le seuil 2.
     """
     lines = cell_source.split("\n")
     blocks = []
@@ -164,6 +230,13 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
     i = 0
     while i < n:
         if _is_markdown_table_separator(lines[i]):
+            i += 1
+            continue
+        # c.475 patch (Tell c.475-L5 ★ NEW) : exclure aussi les lignes de
+        # cellules de tableau `| col | col |` du point de depart de la
+        # fenetre (sinon les fleches `->` dans une colonne de tableau
+        # declenchent la branche C comme faux positif massif).
+        if _is_markdown_table_row(lines[i]):
             i += 1
             continue
         if not (_line_is_box(lines[i]) or _line_has_connector(lines[i])):
@@ -174,19 +247,18 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
         window = lines[i:window_end]
         # Compter boites et connecteurs dans la fenetre
         boxes = sum(1 for ln in window if _line_is_box(ln))
+        boxes_inline = max(_count_boxes_on_line(ln) for ln in window)
         connectors = sum(1 for ln in window if _line_has_connector(ln))
         bare_connectors = sum(1 for ln in window if _line_has_bare_connector(ln))
         labels = sum(1 for ln in window if _RE_LABEL_LINE.match(ln))
-        # Critere : >= 2 boites ET >= 2 vrais connecteurs (les v/^/| isoles
-        # sont trop generiques, on les accepte SEULEMENT en complement dans
-        # une fenetre deja candidate).
-        # OU : >= 2 boites ET >= 1 vrai connecteur ET >= 2 bare-connecteurs
-        # (pipeline vertical : `Box | v Box | v Box`).
-        # OU : >= 3 boites ET >= 1 vrai connecteur (block diagramme aligne).
+        # 3 branches du discriminant (voir docstring)
+        # C. relaxation c.474 : boites_inline >= 2 et >= 1 connecteur pour
+        # les flowcharts horizontaux (GT-17 NFSP c15, QC-Py-13 c3, etc.)
         is_flowchart = (
             (boxes >= 2 and connectors >= 2)
             or (boxes >= 3 and connectors >= 1)
             or (boxes >= 2 and connectors >= 1 and bare_connectors >= 2 and labels >= 1)
+            or (boxes_inline >= 2 and connectors >= 1)  # c.474 : flowchart horizontal
         )
         if is_flowchart:
             in_fence = _is_inside_fence(lines, i)
@@ -194,6 +266,7 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
                 "start_line": i + 1,  # 1-indexed
                 "end_line": window_end,
                 "boxes": boxes,
+                "boxes_inline": boxes_inline,
                 "connectors": connectors,
                 "labels": labels,
                 "fenced": in_fence,
@@ -205,9 +278,27 @@ def _find_flowchart_blocks(cell_source: str) -> list[dict]:
     return blocks
 
 
+def _count_boxes_on_line(line: str) -> int:
+    """Compte le nombre de boites ASCII `+---+` distinctes sur une ligne.
+
+    Tell c.475-L2 ★ (NEW) : une flowchart horizontal a N boites sur la MEME
+    ligne (separees par `---` ou `|---|`). Une juxtaposition verticale a
+    1 boite par ligne. Le discriminant `max(boxes_inline)` sur la fenetre
+    detecte la disposition horizontale.
+    """
+    # Compter les positions de `+---` debut de boite
+    return len(_RE_BOX_ASCII.findall(line)) + len(_RE_BOX_UNICODE.findall(line))
+
+
 def scan_notebook(path: Path) -> dict:
     """Scan un notebook ; renvoie les cellules markdown contenant des flowcharts ASCII."""
-    nb = nbformat.read(path, as_version=4)
+    try:
+        nb = nbformat.read(path, as_version=4)
+    except (OSError, NotJSONError, ValidationError) as exc:
+        # Garde par-fichier (#12097) : un notebook illisible (BOM UTF-8,
+        # JSON tronque, validation echouee) ne doit pas interrompre le scan
+        # entier — il est reporte dans `skipped`, pas avale silencieusement.
+        return {"path": str(path), "error": str(exc), "findings": []}
     findings = []
     for cell_idx, cell in enumerate(nb.cells):
         if cell.get("cell_type") != "markdown":
@@ -227,7 +318,7 @@ def scan_notebook(path: Path) -> dict:
                 "labels": blk["labels"],
                 "evidence": blk["verbatim"][:240],  # troncature pour le rapport
             })
-    return {"path": str(path), "findings": findings}
+    return {"path": str(path), "error": None, "findings": findings}
 
 
 def scan_paths(paths: list[Path]) -> dict:
@@ -235,19 +326,20 @@ def scan_paths(paths: list[Path]) -> dict:
     all_findings = []
     files_scanned = 0
     files_with_findings = 0
+    skipped = []
     for p in paths:
         if not p.exists():
             continue
         if p.is_dir():
-            for nb_path in sorted(p.rglob("*.ipynb")):
-                files_scanned += 1
-                result = scan_notebook(nb_path)
-                if result["findings"]:
-                    files_with_findings += 1
-                all_findings.extend(result["findings"])
+            nb_paths = sorted(p.rglob("*.ipynb"))
         else:
+            nb_paths = [p]
+        for nb_path in nb_paths:
             files_scanned += 1
-            result = scan_notebook(p)
+            result = scan_notebook(nb_path)
+            if result.get("error"):
+                skipped.append({"path": str(nb_path), "error": result["error"]})
+                continue
             if result["findings"]:
                 files_with_findings += 1
             all_findings.extend(result["findings"])
@@ -255,6 +347,7 @@ def scan_paths(paths: list[Path]) -> dict:
         "files_scanned": files_scanned,
         "files_with_findings": files_with_findings,
         "total_findings": len(all_findings),
+        "skipped": skipped,
         "findings": all_findings,
     }
 
@@ -274,6 +367,8 @@ def main() -> int:
         print(f"Notebooks scanned   : {result['files_scanned']}")
         print(f"With findings       : {result['files_with_findings']}")
         print(f"Total findings      : {result['total_findings']}")
+        for skip in result["skipped"]:
+            print(f"\n  SKIPPED {skip['path']}: {skip['error'][:120]}")
         for f in result["findings"][:10]:
             print(f"\n  {f['path']}:{f['start_line']}-{f['end_line']}  "
                   f"boxes={f['boxes']} connectors={f['connectors']} labels={f['labels']}")
