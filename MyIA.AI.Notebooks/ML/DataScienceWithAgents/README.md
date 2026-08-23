@@ -24,7 +24,7 @@ La formation couvre deux stacks complémentaires :
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 31 (7 LangChain + 10 ADK + 2 fondations Python + 11 fondations ML + 1 deep learning) |
+| Notebooks | 32 (7 LangChain + 10 ADK + 2 fondations Python + 11 fondations ML + 2 deep learning) |
 | Kernel | Python 3.11+ |
 | Durée totale | ~7 jours |
 
@@ -93,8 +93,9 @@ DataScienceWithAgents/
 │   ├── 2.8c-Borne-Temoin-Concentration.ipynb
 │   └── 2.9-Grokking-Generalisation.ipynb
 │
-├── 03-DeepLearning/            # Deep learning from scratch (1 notebook)
-│   └── 3.1-Retropropagation.ipynb
+├── 03-DeepLearning/            # Deep learning from scratch (2 notebooks)
+│   ├── 3.1-Retropropagation.ipynb
+│   └── 3.2-Optimisateurs.ipynb
 │
 ├── Track1-LangChain/ # Track LangChain (7 labs)
 │   ├── Day1-Foundations/Labs/              # Revision
@@ -142,6 +143,7 @@ Le prolongement direct du socle : là où [2.2](02-ML-Cours/2.2-Descente-de-grad
 | Notebook | Sujet | Concept-phare |
 |----------|-------|---------------|
 | [3.1-Retropropagation](03-DeepLearning/3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** (différence finie 1,3e-11 ; parité exacte avec PyTorch ; init nulle = gradient nul) |
+| [3.2-Optimisateurs](03-DeepLearning/3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits puis validés pas à pas contre `torch.optim` | **La parité exacte** (5 mises à jour identiques à ≤2,2e-16 ; Beale 5 trajectoires ; MLP 3 graines ; schedules : coût en déterministe, gain en bruité) |
 
 Documentation complète : [03-DeepLearning/README.md](03-DeepLearning/README.md)
 
