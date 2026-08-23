@@ -221,9 +221,13 @@ def test_blocked_awaiting_review_is_not_a_red():
     assert pig.blocking_causes(_state(checks=[("PR gate", "SUCCESS", True)])) == []
 
 
-def _patch_backlog(monkeypatch, prs, states):
+def _patch_backlog(monkeypatch, prs, states, nits=None):
     monkeypatch.setattr(pig, "fetch_open_prs", lambda: prs)
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {n: states[n] for n in nums if n in states})
+    # Neutraliser l'organe B.0 par DEFAUT : sans cela chaque test partirait sur
+    # le reseau interroger des numeros de PR fictifs (mesure : 2,9 s pour trois
+    # numeros), et la suite deviendrait non deterministe sans jamais rougir.
+    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
 
 
 def _pr(n, lane, age_hours, *, draft=False):
@@ -307,3 +311,90 @@ def test_repeated_identical_failures_are_named_once():
         ("PR gate", "FAILURE", True, "2026-08-22T13:40:33Z"),
     ])
     assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+# --- points de review non leves : la 4e cause (mandat user 2026-08-24) -------
+#
+# "Fais en sorte que les agents ne produisent plus tant qu'il leur reste des
+# points a traiter dans leurs vieilles PRs, ca doit leur etre propose en
+# premier lieu a chaque cycle."
+#
+# Les trois causes preexistantes (check requis, conflit, CHANGES_REQUESTED)
+# sont structurellement aveugles aux trois surfaces de B.0 : nits du user en
+# issue comments, reserves d'Hermes en prefixe de body sous `state: COMMENTED`,
+# threads inline dans `reviewThreads`. Une PR peut etre VERTE, sans conflit,
+# sans CHANGES_REQUESTED -- et rester non mergeable.
+
+
+def test_unaddressed_review_point_is_a_red_on_an_otherwise_green_pr(monkeypatch):
+    """Le cas que les trois causes preexistantes laissaient passer."""
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: green},
+                   nits={1: 2})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
+    assert [r["number"] for r in out["red"]] == [1]
+    cause = out["red"][0]["causes"][0]
+    assert "2 point(s) de review non leve(s)" in cause
+
+
+def test_review_points_come_first_among_the_causes(monkeypatch):
+    """Proposes EN PREMIER : le mandat porte sur l'ordre, pas seulement le fait.
+
+    Une PR qui cumule un rouge de CI et un nit doit montrer le nit d'abord --
+    c'est le seul des deux qu'un `update-branch` ne reparera jamais.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: red},
+                   nits={1: 1})
+    causes = pig.red_backlog("myia-po-2026:CoursIA", 24)["red"][0]["causes"]
+    assert "point(s) de review non leve(s)" in causes[0]
+    assert any("check requis" in c for c in causes[1:])
+
+
+def test_no_review_point_leaves_a_green_pr_drawable(monkeypatch):
+    """Faux positif : une lane a l'ardoise propre doit pouvoir tirer."""
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)], {1: green})
+    assert pig.red_backlog("myia-po-2026:CoursIA", 24)["red"] == []
+
+
+def test_only_the_lane_s_own_prs_are_examined(monkeypatch):
+    """L'organe coute 2 appels API par PR : ne l'appeler que sur `mine`."""
+    seen = []
+    monkeypatch.setattr(pig, "fetch_open_prs", lambda: [
+        _pr(1, "myia-po-2026:CoursIA", 30),
+        _pr(2, "myia-po-2023:CoursIA", 30),
+        _pr(3, "myia-po-2026:CoursIA", 3),
+    ])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {})
+    monkeypatch.setattr(pig, "unaddressed_review_points",
+                        lambda nums: seen.extend(nums) or {})
+    pig.red_backlog("myia-po-2026:CoursIA", 24)
+    assert seen == [1]
+
+
+def test_organ_failure_is_said_not_swallowed(monkeypatch):
+    """Un zero de denominateur ne doit pas se lire comme un zero de numerateur.
+
+    Si l'organe est injoignable, la lane peut tirer -- mais le tirage ne prouve
+    plus que son ardoise est propre, et la sortie doit le DIRE.
+    """
+    green = _state(checks=[("PR gate", "SUCCESS", True)])
+    def boom(nums):
+        raise RuntimeError("gh down")
+    monkeypatch.setattr(pig, "fetch_open_prs",
+                        lambda: [_pr(1, "myia-po-2026:CoursIA", 30)])
+    monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {1: green})
+    monkeypatch.setattr(pig, "unaddressed_review_points", boom)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
+    assert out["red"] == []
+    assert out["nits_unavailable"] == "RuntimeError"
+
+
+def test_the_gap_warning_speaks_only_when_the_surface_was_unread(capsys):
+    pig.print_nits_gap({"nits_unavailable": None})
+    assert capsys.readouterr().out == ""
+    pig.print_nits_gap({"nits_unavailable": "RuntimeError"})
+    said = capsys.readouterr().out
+    assert "n'ont PAS pu etre lus" in said
+    assert "check_unaddressed_nits.py" in said
