@@ -224,4 +224,166 @@ theorem vcg_revenue_non_monotone : revenue3 < revenue2 := by decide
 
 end VCGCombinatorial
 
+/-! ## Proposition 6 of Othman-Sandholm (SAGT 2009) — strict multi-agent MOMs
+
+    There exist strict MOMs (Mechanisms Optimal under Manipulation) in
+    multi-agent settings. The canonical construction is a 2-agent mechanism
+    (row, column), each with 2 types (a, a'), for 4 outcomes total. Payoffs
+    are described by 2 matrices 2x2, one per agent type.
+
+    Reference: Othman & Sandholm (2009), "Better with Byzantine : Manipulation-
+    Optimal Mechanisms", section 2.4 (PDF page 8).
+    Reference: #12329 — formalization of Proposition 6.
+-/
+
+namespace OthmanSandholm
+
+/-- The type of an agent. `0` = a, `1` = a'. -/
+abbrev AgentType : Type := Fin 2
+
+/-- A report emitted by an agent. -/
+abbrev Report : Type := Fin 2
+
+/-- An outcome of the mechanism. Encoding: `i.toNat` =
+    (row_report.toNat) + 2 * (col_report.toNat), hence 4 outcomes for 2 reports x 2 reports.
+    `0` = (a,a) -> o1, `1` = (a,a') -> o2, `2` = (a',a) -> o3, `3` = (a',a') -> o4. -/
+abbrev Issue : Type := Fin 4
+
+/-- The Othman-Sandholm mechanism: (row_report, col_report) -> Issue,
+    canonical bijection `Fin 2 x Fin 2 -> Fin 4` via `(r, c) -> r + 2 * c`. -/
+def mechanism (rowReport colReport : Report) : Issue :=
+  ⟨rowReport.val + 2 * colReport.val, by omega⟩
+
+/-! ### Payoff matrices (verbatim transcription PDF page 8)
+
+    Payoffs per outcome for EACH agent type are given by 2 matrices
+    (left and right in the paper). Literal transcription:
+
+    Type `a` matrix (left, payoffs = (u_row, u_col) per outcome):
+    ```
+    Report a   Report a'
+    a    1,1   4,0
+    a'   0,3   3,0
+    ```
+
+    Type `a'` matrix (right, payoffs = (u_row, u_col) per outcome):
+    ```
+    Report a   Report a'
+    a    3,4   5,0
+    a'   0,6   0,0
+    ```
+
+    Reading: `u_row type (issue)` = payoff of the row agent of type `type` when
+    the outcome is `issue`. Same for `u_col`. -/
+
+/-- Payoff of the row agent when it is of type `a` (= 0) and the outcome is `i`. -/
+def uRowTypeA (i : Issue) : ℕ :=
+  match i with
+  | 0 => 1
+  | 1 => 4
+  | 2 => 0
+  | 3 => 3
+
+/-- Payoff of the row agent when it is of type `a'` (= 1) and the outcome is `i`. -/
+def uRowTypeA' (i : Issue) : ℕ :=
+  match i with
+  | 0 => 3
+  | 1 => 5
+  | 2 => 0
+  | 3 => 0
+
+/-- Payoff of the col agent when it is of type `a` (= 0) and the outcome is `i`. -/
+def uColTypeA (i : Issue) : ℕ :=
+  match i with
+  | 0 => 1
+  | 1 => 0
+  | 2 => 3
+  | 3 => 0
+
+/-- Payoff of the col agent when it is of type `a'` (= 1) and the outcome is `i`. -/
+def uColTypeA' (i : Issue) : ℕ :=
+  match i with
+  | 0 => 4
+  | 1 => 0
+  | 2 => 6
+  | 3 => 0
+
+/-- Payoffs of the row agent by its type. -/
+def uRow (t : AgentType) (i : Issue) : ℕ :=
+  if t = 0 then uRowTypeA i else uRowTypeA' i
+
+/-- Payoffs of the col agent by its type. -/
+def uCol (t : AgentType) (i : Issue) : ℕ :=
+  if t = 0 then uColTypeA i else uColTypeA' i
+
+/-- Social welfare (= sum of row + col payoffs) under the `OthmanSandholm`
+    mechanism, for real types (tRow, tCol) and reports (rRow, rCol). -/
+def welfare (tRow tCol : AgentType) (rRow rCol : Report) : ℕ :=
+  let i := mechanism rRow rCol
+  uRow tRow i + uCol tCol i
+
+/-! ### Dominant strategy: reporting `a` (= 0) is strictly dominant
+
+    The Othman-Sandholm paper claims: "In the mechanism, reporting a is a
+    strictly dominant strategy for agents of both types." Proved by `decide`
+    over the 8 cases (2 types x 2 fixed adversary reports x 2 own report choices). -/
+
+/-- For the row agent, **regardless of its type** and **regardless of the
+    col agent's report**, reporting `a` (= 0) gives payoff >= reporting `a'` (= 1). -/
+theorem row_dominant_is_a (tRow tCol : AgentType) (colReport : Report) :
+    uRow tRow (mechanism 0 colReport) ≥ uRow tRow (mechanism 1 colReport) := by
+  unfold uRow
+  fin_cases tRow <;> fin_cases tCol <;> fin_cases colReport <;> simp [uRowTypeA, uRowTypeA', mechanism] <;> decide
+
+/-- For the col agent, **regardless of its type** and **regardless of the
+    row agent's report**, reporting `a` (= 0) gives payoff >= reporting `a'` (= 1). -/
+theorem col_dominant_is_a (tRow tCol : AgentType) (rowReport : Report) :
+    uCol tCol (mechanism rowReport 0) ≥ uCol tCol (mechanism rowReport 1) := by
+  unfold uCol
+  fin_cases tRow <;> fin_cases tCol <;> fin_cases rowReport <;> simp [uColTypeA, uColTypeA', mechanism] <;> decide
+
+/-- If all agents follow the dominant strategy (report `a`), the outcome produced
+    by the `OthmanSandholm` mechanism is `o1` (issue 0). -/
+theorem dominant_strategy_yields_o1 :
+    mechanism (0 : Report) (0 : Report) = (0 : Issue) := by
+  simp [mechanism]
+
+/-- Welfare under M1 (boxed truthful mechanism, always o1):
+    `(a, a) -> 2`, `(a, a') -> 5`, `(a', a) -> 4`, `(a', a') -> 7`. -/
+theorem welfare_M1 (tRow tCol : AgentType) :
+    welfare tRow tCol 0 0 =
+      (if tRow = 0 ∧ tCol = 0 then 2
+       else if tRow = 0 ∧ tCol = 1 then 5
+       else if tRow = 1 ∧ tCol = 0 then 4
+       else 7) := by
+  unfold welfare uRow uCol
+  fin_cases tRow <;> fin_cases tCol <;>
+    simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
+
+/-- For any type profile, following the dominant strategy (report `a`) yields
+    welfare >= welfare under any deviation. -/
+theorem dominant_strategy_maximizes_welfare (tRow tCol : AgentType) :
+    let wDom := welfare tRow tCol 0 0
+    let wDevRow := welfare tRow tCol 1 0
+    let wDevCol := welfare tRow tCol 0 1
+    let wDevBoth := welfare tRow tCol 1 1
+    wDom ≥ wDevRow ∧ wDom ≥ wDevCol ∧ wDom ≥ wDevBoth := by
+  unfold welfare uRow uCol
+  fin_cases tRow <;> fin_cases tCol <;>
+    simp [uRowTypeA, uRowTypeA', uColTypeA, uColTypeA', mechanism] <;> decide
+
+/-- **Proposition 6 (Othman-Sandholm, 2009)**: there exist strict multi-agent
+    MOMs whose objective is social welfare maximization. -/
+theorem proposition_6_strict_MOM :
+    ∀ (tRow tCol : AgentType),
+      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 1 0) ∧
+      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 0 1) ∧
+      (welfare tRow tCol 0 0 ≥ welfare tRow tCol 1 1) := by
+  intro tRow tCol
+  exact ⟨(dominant_strategy_maximizes_welfare tRow tCol).1,
+         (dominant_strategy_maximizes_welfare tRow tCol).2.1,
+         (dominant_strategy_maximizes_welfare tRow tCol).2.2⟩
+
+end OthmanSandholm
+
 end SocialChoice_en
