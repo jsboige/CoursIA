@@ -325,10 +325,6 @@ layout: section
 
 
 ---
-layout: two-cols
----
-
-
 
 # Arbre d'exploration
 
@@ -347,18 +343,14 @@ layout: two-cols
 <img src="./images/img_020.png" class="w-[420px] max-w-full max-h-[280px] object-contain" alt="Arbre d'exploration Arad → Bucharest (Roumanie, AIMA) — exemple canonique de recherche dans un graphe d'états" />
 
 
-
-::right::
-
-
 **Exemple: Énigme**
 
 - Missionnaires et cannibales
   - Barque de 2 places
   - Jamais + de cannibales
 
-<img src="./images/img_023.png" class="w-[280px] max-w-full max-h-[300px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
-<img src="./images/img_024.png" class="w-[460px] max-w-full max-h-[300px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
+<img src="./images/img_023.png" class="absolute top-[110px] right-[20px] w-[280px] max-h-[200px] object-contain" alt="Graphe d'états avec frontière de recherche en pointillés rouges et valeurs d'évaluation 380-420" />
+<img src="./images/img_024.png" class="absolute top-[300px] right-[20px] w-[460px] max-h-[100px] object-contain" alt="Séquence d'arbres binaires A-G avec curseur sur le nœud en cours d'exploration" />
 
 
 
@@ -375,7 +367,7 @@ layout: section
 
 
 ---
-layout: two-cols
+layout: default
 ---
 
 
@@ -410,7 +402,7 @@ layout: two-cols
 - Par le meilleur d'abord
   - Exploration gloutonne
   - Algorithme A*
-  - [Demo Pathfinding.js](#)
+  - [Demo Pathfinding.js](https://qiao.github.io/PathFinding.js/visual/)
 
 </div>
 
@@ -458,10 +450,6 @@ layout: two-cols
 
 
 ---
-layout: two-cols
----
-
-
 
 # Jeux
 
@@ -487,9 +475,6 @@ layout: two-cols
   - Libratus (poker), Starcraft 2
 
 
-::right::
-
-
 **Arbre Minimax**
 
 - Actions joueurs Max et Min + utilité terminale
@@ -502,12 +487,12 @@ layout: two-cols
 - Expectiminimax
 - Méthodes de Monte-Carlo
 
-<img src="./images/img_031.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
+<img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
 
 
 
 ---
-layout: two-cols
+layout: default
 ---
 
 
@@ -520,6 +505,10 @@ layout: two-cols
 </div>
 
 
+<div class="grid grid-cols-2 gap-8">
+
+<div>
+
 **Définition CSPs**
 
 - Jusqu'ici: représentation atomique
@@ -531,9 +520,9 @@ layout: two-cols
 - Exemple
   - Coloration de carte
 
+</div>
 
-::right::
-
+<div>
 
 **Techniques**
 
@@ -552,6 +541,10 @@ layout: two-cols
 <img src="./images/img_035.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
 <img src="./images/img_036.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
 <img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
+
+</div>
+
+</div>
 
 </div>
 
@@ -581,13 +574,17 @@ layout: section
 
 
 ---
-layout: two-cols
+layout: default
 ---
 
 
 
 # Représentation et logique
 
+
+<div class="grid grid-cols-2 gap-8">
+
+<div>
 
 **Enoncés**
 
@@ -601,9 +598,9 @@ layout: two-cols
 - Propriétés
 - correction, consistance, complétude
 
+</div>
 
-::right::
-
+<div>
 
 **Bases de connaissances**
 
@@ -611,6 +608,10 @@ layout: two-cols
 
 <img src="./images/img_035.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
 <img src="./images/img_036.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+
+</div>
+
+</div>
 
 
 
@@ -641,13 +642,14 @@ layout: two-cols
 <img src="./images/img_040.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 ---
-layout: two-cols
----
 
 
 
 # Logique du premier ordre (FOL)
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - Modélise
   - Objets, Propriétés
@@ -659,8 +661,8 @@ layout: two-cols
   - de base de données
 
 
-::right::
-
+</div>
+<div>
 
 **Exemple: investigation**
 
@@ -671,8 +673,8 @@ layout: two-cols
 
 <img src="./images/img_040.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 
-
-
+</div>
+</div>
 ---
 layout: two-cols
 ---
@@ -866,13 +868,14 @@ layout: section
 
 
 ---
-layout: two-cols
----
 
 
 
 # Agir dans l'incertitude
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Le monde est incertain**
 
@@ -886,8 +889,8 @@ layout: two-cols
   - Inférence incomplète
 
 
-::right::
-
+</div>
+<div>
 
 **Agent fondé sur l'utilité**
 
@@ -898,17 +901,19 @@ layout: two-cols
 
 <img src="./images/img_051.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x (données à ajuster)" />
 
+</div>
+</div>
 
 
-
----
-layout: two-cols
 ---
 
 
 
 # Probabilité
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Fondements**
 
@@ -922,8 +927,8 @@ layout: two-cols
 - P(Cause | Effet) = P(Effet | Cause) x P(Cause) / P(Effet)
 
 
-::right::
-
+</div>
+<div>
 
 **Programmation probabiliste**
 
@@ -939,8 +944,8 @@ layout: two-cols
 <img src="./images/img_054.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
 
 </div>
-
-
+</div>
+</div>
 
 ---
 layout: two-cols

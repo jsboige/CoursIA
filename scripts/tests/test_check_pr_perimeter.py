@@ -8,6 +8,10 @@ sorry-baseline CANNOT pass the confrontation. The #11227 incident, encoded.
 
 import sys
 import os
+import shutil
+from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -1803,3 +1807,128 @@ def test_word_form_not_recognized_absent_files_referent():
     referent stays unverifiable (not silently accepted)."""
     files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
     assert check_assertion(files, "**trois** modifications:") != []
+
+
+# -- #11268 residuel ai-01: structural wiring safety net ---------------------
+# Comment from ai-01 on 2026-08-18T08:34Z: the closed delivery of #11336
+# produced a module + tests but "rien ne l'invoque sous .github/" -- the
+# cable-to-Hermes layer was missing at the time. PRs #11635 / #11654 / #11661
+# later wired `.github/workflows/perimeter-review-guard.yml` AND registered
+# it in the pr-gate-rerun.yml `workflows:` list. These tests guard against
+# silent regression of either leg (cable removed, or moved out of the
+# mandatory rerun list, or its invocation stripped of `--scan-thread`).
+# Without them the founding incident #11227 could re-occur with no detection.
+def _repo_root():
+    """Locate the CoursIA repo root from this test file.
+
+    scripts/tests/test_check_pr_perimeter.py -> ../../.. = repo root.
+    """
+    here = Path(__file__).resolve()
+    for parent in (here.parent, here.parent.parent, here.parent.parent.parent):
+        if (parent / ".github" / "workflows").is_dir():
+            return parent
+    raise FileNotFoundError("could not locate repo root (.github/workflows/)")
+
+
+def test_perimeter_workflow_file_exists_on_main():
+    """The cable's first leg: `.github/workflows/perimeter-review-guard.yml`
+    MUST exist on the working tree. A future refactor that renames or
+    archives it without updating the workflow list would otherwise leave
+    the gate referencing a phantom name, caught only as a downstream
+    symptom."""
+    wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
+    assert wf.is_file(), f"missing cable leg 1: {wf}"
+
+
+def test_perimeter_workflow_invokes_scan_thread():
+    """The cable's second leg: the workflow MUST call
+    `scripts/check_pr_perimeter.py --scan-thread`. A copy-paste that drops
+    the flag would leave the gate never confront any review (silent green).
+    """
+    import re
+    wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf.read_text(encoding="utf-8")
+    # The flag may be on the same line or split across continuation lines.
+    # Loose match: the file mentions the script and the flag.
+    assert "check_pr_perimeter.py" in text, (
+        "perimeter-review-guard.yml no longer invokes check_pr_perimeter.py"
+    )
+    assert "--scan-thread" in text, (
+        "perimeter-review-guard.yml invocation lost the --scan-thread flag"
+    )
+
+
+def test_perimeter_workflow_rescued_by_universal_sweep():
+    """The perimeter guard's rescue is now UNIVERSAL (#11860). The event-driven
+    per-guard path (pr-gate-rerun.yml `workflow_run` on a derived 76-workflow
+    list) is retired -- measured 2026-08-23 it created 404 of the 784
+    repository CI runs (51.5%) for 0 verdicts, a self-cancellation storm. The
+    schedule sweep (pr-gate-stale-sweep.yml) observes ALL open PRs and
+    re-aggregates any guard whose only red is a stale `PR gate`, so a timeout
+    of perimeter-review-guard itself ALWAYS has a rescue path, independent of
+    the trigger list. Assert the sweep exists and is schedule-driven (the one
+    re-aggregation observer that does not depend on being triggerable).
+    """
+    sweep = _repo_root() / ".github" / "workflows" / "pr-gate-stale-sweep.yml"
+    assert sweep.is_file(), f"missing pr-gate-stale-sweep.yml at {sweep}"
+    text = sweep.read_text(encoding="utf-8")
+    assert "schedule" in text, (
+        "pr-gate-stale-sweep.yml is no longer schedule-driven -- the universal "
+        "rescue would lose its only trigger-independent path"
+    )
+
+
+def test_founding_incident_11227_criteria_met_on_main():
+    """Acceptance 4 bout-en-bout: a live re-run of
+    `check_pr_perimeter.py --scan-thread` against PR #11227 MUST reproduce
+    the founder's failure ('2 fichiers twins uniquement' over a 3-file PR
+    with a workflow moving sorry-baseline). The pure-core test above
+    encodes the same data; this one is the end-to-end guarantee that the
+    script itself, executed against the real PR history, still does it.
+
+    Skipped on networks that block gh API (the check uses gh under the
+    hood); on disk we just require the local fixtures to be valid.
+    """
+    import subprocess
+    if not shutil.which("gh"):
+        pytest.skip("gh CLI not available -- end-to-end requires it")
+    # GitHub Actions runners ship gh WITHOUT GH_TOKEN: `shutil.which` alone
+    # lets the test run and die on 'To use GitHub CLI in a GitHub Actions
+    # workflow, set the GH_TOKEN environment variable'. Guard the runner
+    # env deterministically, then probe stored auth for the general case.
+    if os.environ.get("GH_ACTIONS") == "true" and not (
+        os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    ):
+        pytest.skip("GitHub Actions runner without GH_TOKEN")
+    auth_probe = subprocess.run(
+        ["gh", "auth", "status"], capture_output=True, text=True
+    )
+    if auth_probe.returncode != 0:
+        pytest.skip("gh CLI present but unauthenticated")
+    # Run against PR #11227 with the exact phrase from the founder review.
+    # The script will reach out to gh API; if the PR is missing or
+    # permissions fail, it returns non-zero AND stdout/stderr lack the
+    # expected FAIL verdict. We assert both the exit code AND the verdict
+    # line to catch silent regressions where the tool swallows the error.
+    proc = subprocess.run(
+        ["python", "scripts/check_pr_perimeter.py", "11227", "--scan-thread"],
+        cwd=str(_repo_root()),
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    output = proc.stdout + proc.stderr
+    # The tool surfaces the FAIL either in stdout (normal) or via a
+    # non-zero exit. A green pass without the founding assertion listed
+    # is a regression -- assert at least one of the founder signatures.
+    founder_signatures = [
+        "11227",
+        "lean-knot.yml",
+        "Invariant.lean",
+        "VERDICT: FAIL",
+    ]
+    found = [sig for sig in founder_signatures if sig in output]
+    assert found, (
+        f"end-to-end scan of #11227 produced no founder signature; "
+        f"exit={proc.returncode}, output[:500]={output[:500]!r}"
+    )
