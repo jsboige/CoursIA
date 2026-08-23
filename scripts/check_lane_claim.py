@@ -831,9 +831,13 @@ def compute_active_claims(
                     or (
                         # scoped claim with at least one live glob AND
                         # disjoint from the override's scope -> keep.
+                        # _scopes_intersect (not _path_matches_any): the
+                        # operand order of the old read was inverted when the
+                        # override's scope carried a joker, so a concrete
+                        # claim it covered was never closed (#12656).
                         e.get("paths") is not None
                         and not _claim_scope_effectively_epic_wide(e)
-                        and not _path_matches_any(scope, e.get("paths") or [])
+                        and not _scopes_intersect(scope, e.get("paths") or [])
                     )
                 }
                 state[ev.lane] = ev
@@ -2232,7 +2236,7 @@ def _filter_by_claim_scope(
         if empty and len(empty) >= len(scope):
             filtered[ln] = ev  # lifted to epic-wide -- always blocking
             continue
-        if _path_matches_any(my_scope, scope):
+        if _scopes_intersect(my_scope, scope, tracked):
             filtered[ln] = ev  # scopes intersect -> real collision
         # else: both scoped, disjoint -> free, drop from others
     return filtered
@@ -2243,6 +2247,94 @@ def _path_matches_any(paths: list[str], patterns: list[str]) -> bool:
     for p in paths:
         if _path_matches(p, patterns):
             return True
+    return False
+
+
+def _glob_has_meta(glob: str) -> bool:
+    """True if `glob` carries fnmatch meta (`*`, `?`, `[`) beyond literals."""
+    return any(c in glob for c in "*?[")
+
+
+def _literal_prefix(glob: str) -> str:
+    """Leading run of literal (non-meta) characters in `glob`."""
+    i = 0
+    while i < len(glob) and glob[i] not in "*?[":
+        i += 1
+    return glob[:i]
+
+
+def _prefixes_compatible(pa: str, pb: str) -> bool:
+    """True if two literal prefixes can both prefix a single common string.
+
+    ``''`` (a glob that opens on meta, e.g. ``**``) proves nothing, so it is
+    compatible with anything. Two non-empty prefixes are compatible when they
+    agree on every shared position -- they can then be extended to a common
+    string, so we cannot cheaply prove disjointness.
+    """
+    if not pa or not pb:
+        return True
+    n = min(len(pa), len(pb))
+    return pa[:n] == pb[:n]
+
+
+def _glob_overlap(ga: str, gb: str) -> bool:
+    """Conservative ``True`` if globs `ga` and `gb` MAY match a common string.
+
+    Sound in the disjoint direction: if their literal prefixes conflict, no
+    string matches both. Otherwise we cannot cheaply prove disjointness, so
+    we report overlap (over-block). The fleet's globs are overwhelmingly
+    ``*`` / ``?`` / literal (paths-scoped claims and ``--paths``); character
+    classes are rare and only ever over-approximated here, which is the safe
+    direction for a collision guard.
+    """
+    pa, pb = _literal_prefix(ga), _literal_prefix(gb)
+    if pa and pb and not _prefixes_compatible(pa, pb):
+        return False
+    return True
+
+
+def _scopes_intersect(
+    a: list[str], b: list[str], tracked: list[str] | None = None
+) -> bool:
+    """True if path-scope `a` and path-scope `b` may cover a common file.
+
+    This is the symmetric fix for the operand-order bug that #12656 exposed.
+    The old read was ``_path_matches_any(my_scope, scope)`` -- it fed the
+    CALLER's glob as the ``filename`` operand and the other lane's concrete
+    path as the ``pattern``, so ``fnmatch("dir/**", "dir/file.md")`` is False
+    and a joker caller was told CLEAR against a claim that demonstrably
+    covered its target (fail-OPEN).
+
+    With a `tracked` walk (the normal ``_run_check`` path and every
+    check-level test) the test is EXACT: two scopes intersect iff some real
+    tracked file matches both. Without it (`compute_active_claims`, which has
+    no repo walk) we fall back to a conservative provable-disjoint test:
+    concrete members of either side are matched against the other side's
+    globs, then remaining glob-vs-glob pairs are decided by the literal
+    prefix test of `_glob_overlap`. The fallback never wrongly reports
+    "disjoint" (it over-blocks when unsure), which is the safe direction for
+    a collision guard.
+    """
+    if not a or not b:
+        return False
+    if tracked is not None:
+        for path in tracked:
+            if _path_matches(path, a) and _path_matches(path, b):
+                return True
+        return False
+    # no repo walk: concrete members of each side, matched against the other
+    for side, other in ((a, b), (b, a)):
+        for g in side:
+            if not _glob_has_meta(g) and _path_matches(g, other):
+                return True
+    for ga in a:
+        if not _glob_has_meta(ga):
+            continue
+        for gb in b:
+            if not _glob_has_meta(gb):
+                continue
+            if _glob_overlap(ga, gb):
+                return True
     return False
 
 

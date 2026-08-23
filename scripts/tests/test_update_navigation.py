@@ -1,6 +1,8 @@
 """Tests for scripts/update_navigation.py — GameTheory navigation link updater."""
 
 import json
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -10,8 +12,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from update_navigation import (
     STRUCTURE,
     SIDE_TRACKS,
+    _pad_track,
     create_main_navigation,
     create_side_track_navigation,
+    get_gametheory_dir,
     get_notebook_filename,
     get_side_track_filename,
     update_internal_references,
@@ -138,3 +142,34 @@ class TestStructureConsistency:
     def test_structure_has_17_entries(self):
         assert len(STRUCTURE) == 17
         assert set(STRUCTURE.keys()) == set(range(1, 18))
+
+
+# ---------------------------------------------------------------------------
+# Regressions #12549 : nested-link, base_dir, zero-pad side tracks
+# ---------------------------------------------------------------------------
+
+class TestRegressions12549:
+    def test_side_track_parent_href_is_filename_not_nested_link(self):
+        """Defaut 1 : l'URL du lien parent doit etre un nom de fichier, pas un lien markdown."""
+        nav = create_side_track_navigation("8b")
+        assert "(GameTheory-08-CombinatorialGames.ipynb)" in nav
+        # l'ancre ne doit PAS contenir de '[' dans son URL (lien imbrique)
+        assert "]([" not in nav
+
+    def test_gametheory_dir_resolves_to_notebooks(self):
+        """Defaut 2 : get_gametheory_dir() doit pointer sur MyIA.AI.Notebooks/GameTheory,
+        pas sur scripts/."""
+        d = get_gametheory_dir()
+        norm = os.path.normpath(d)
+        assert norm.endswith(os.path.join('MyIA.AI.Notebooks', 'GameTheory'))
+        assert os.path.isdir(norm), f"{norm} n'existe pas"
+
+    def test_side_track_loop_filenames_are_padded(self):
+        """Manifestation 3 : les noms construits pour la boucle side-tracks doivent
+        porter le zero-pad (#12241)."""
+        for track_id in SIDE_TRACKS:
+            for num, (name, tracks) in STRUCTURE.items():
+                for t in tracks:
+                    if t.startswith(track_id):
+                        filename = f"GameTheory-{_pad_track(t)}.ipynb"
+                        assert re.match(r'GameTheory-\d{2}', filename), filename
