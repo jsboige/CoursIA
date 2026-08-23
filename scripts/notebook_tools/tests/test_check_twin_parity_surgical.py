@@ -537,6 +537,49 @@ def test_indent2_regression_normal_style_still_works():
     assert "sibling indent-2" in out
 
 
+def test_append_preserves_indentationless_audit_items_12617():
+    """Un item au meme niveau que ``audits:`` impose la meme marge a l'append.
+
+    L'ancien rendu ajoutait quatre espaces absolus et melangeait deux styles de
+    sequence dans ce bloc indent-4, ce qui produisait un YAML non parsable.
+    """
+    import yaml
+
+    new = {"date": "2026-08-23", "by": "test-lane",
+           "python_sha": "c" * 40, "csharp_sha": "b" * 40}
+    out, touched = ctp.surgical_rebaseline(_INDENT4_RAW, {"Indent4Pair": new})
+
+    assert touched == 1
+    entry = yaml.safe_load(out)[0]
+    assert len(entry["audits"]) == 2
+    assert entry["audits"][1]["python_sha"] == "c" * 40
+    assert "\n    - date: \"2026-08-23\"\n" in out
+    assert "\n      date: \"2026-08-23\"\n" not in out
+
+
+def test_append_preserves_indented_audit_items_12617():
+    """Le style usuel item-indent = header-indent + 2 reste byte-coherent."""
+    import yaml
+
+    raw = (
+        "- name: IndentedPair\n"
+        "  audits:\n"
+        "    - date: '2020-01-01'\n"
+        "      by: old-auditor\n"
+        "      python_sha: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n"
+        "      csharp_sha: bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n"
+    )
+    new = {"date": "2026-08-23", "by": "test-lane",
+           "python_sha": "c" * 40, "csharp_sha": "b" * 40}
+    out, touched = ctp.surgical_rebaseline(raw, {"IndentedPair": new})
+
+    assert touched == 1
+    entry = yaml.safe_load(out)[0]
+    assert len(entry["audits"]) == 2
+    assert entry["audits"][1]["python_sha"] == "c" * 40
+    assert "\n    - date: \"2026-08-23\"\n" in out
+
+
 def test_touched_zero_when_header_genuinely_absent():
     """Contrat dont depend la garde loud-failure (#10430) du chemin multi-fichiers.
 
