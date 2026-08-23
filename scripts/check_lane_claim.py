@@ -776,7 +776,10 @@ def _claim_scope_effectively_epic_wide(ev: ClaimEvent) -> bool:
     return len(empty) >= len(paths)
 
 
-def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEvent]]:
+def compute_active_claims(
+    events: list[ClaimEvent],
+    pr_states: dict[int, str] | None = None,
+) -> tuple[dict, list[ClaimEvent]]:
     """Reduce a chronologically-ordered event list to active claims per lane.
 
     Returns `(active_by_lane, unattributed)`:
@@ -828,14 +831,34 @@ def compute_active_claims(events: list[ClaimEvent]) -> tuple[dict, list[ClaimEve
                     or (
                         # scoped claim with at least one live glob AND
                         # disjoint from the override's scope -> keep.
+                        # _scopes_intersect (not _path_matches_any): the
+                        # operand order of the old read was inverted when the
+                        # override's scope carried a joker, so a concrete
+                        # claim it covered was never closed (#12656).
                         e.get("paths") is not None
                         and not _claim_scope_effectively_epic_wide(e)
-                        and not _path_matches_any(scope, e.get("paths") or [])
+                        and not _scopes_intersect(scope, e.get("paths") or [])
                     )
                 }
                 state[ev.lane] = ev
         elif ev.is_open:
             state[ev.lane] = ev
+        elif ev.is_delivered:
+            # #12386 -- v2 conditional gate. `is_delivered` already separated
+            # `[DELIVERED]` from `[RELEASED]` (close markers in v1); v2 keeps
+            # the close behaviour for two of the three branches (CLOSED /
+            # lookup-failed) and re-marks the event as `open` for OPEN / MERGED.
+            # `locked: True` on the MERGED branch is the cross-check the
+            # #10223 `[OVERRIDE]` machinery can read to refuse a plain
+            # re-claim (the override branch in `_run_check` honours it).
+            v2_action = _resolve_delivered_v2(ev, pr_states)
+            if v2_action == "open":
+                state[ev.lane] = ev
+            elif v2_action == "open_locked":
+                ev["locked"] = True
+                state[ev.lane] = ev
+            else:  # "close" -- legacy v1 behaviour preserved on this branch
+                state.pop(ev.lane, None)
         else:
             state.pop(ev.lane, None)
     return state, unattributed
@@ -883,6 +906,150 @@ def _sort_events(payload: dict) -> list[ClaimEvent]:
     # Server createdAt, ISO 8601 UTC -> lexicographic order == chronological.
     events.sort(key=lambda e: e.created_at or "")
     return events
+
+
+# #12386 -- PR-state lookup for the `[DELIVERED]` v2 conditional reducer.
+#
+# A `[DELIVERED] lane X -- PR #N` carries a PR reference, and the v2 conditional
+# gate binds the marker's effective action to the LIVE PR state:
+#
+#   - PR OPEN       -> DELIVERED is re-marked as `action: open` (the substance
+#                      is in flight; the lane stays blocked). A second lane
+#                      arriving at this issue MUST NOT re-claim -- this closes
+#                      the 10 h 24 window measured on #12213 where the deliverer
+#                      released the lock and another lane re-shipped the same work.
+#   - PR MERGED      -> DELIVERED is re-marked as `action: open` AND the event
+#                      carries `locked: True`. Re-claiming demands a written
+#                      `[OVERRIDE]` from a coordinator; the substance has been
+#                      accepted by main and the issue is considered resolved.
+#   - PR CLOSED (not merged) -> legacy v1 behaviour: DELIVERED pops the lane.
+#                      The attempt failed, the lane is free.
+#
+# The reducer was deliberately built without side effects (#12320 in the v1
+# docstring: "the fetch itself (state of PR N) is left to consumers: the
+# reducer stays pure"). v2 walks that line by passing an injected `pr_states`
+# map (testability + opt-out) -- the default path reads from `gh` lazily, only
+# for `[DELIVERED]` events that carry a `pr_ref`. Callers that already know the
+# state (replay of an audit log, an offline test) can pass the map directly.
+#
+# Failures are surfaced as `pr_state: None` (the reducer falls back to legacy
+# v1 close-on-DELIVERED). The previous v1 semantics are PRESERVED on a fetch
+# failure -- an unreachable `gh` MUST NOT cause a `[DELIVERED]` to suddenly
+# start blocking. The failure is visible in `delivered_claims_failed` so an
+# operator can see which lookups were silently degraded.
+_PR_STATE_CACHE: dict[int, tuple[str | None, str | None]] = {}
+# value shape: (pr_state, error_message) where pr_state in
+# {"OPEN","MERGED","CLOSED",None} and error_message is None on success.
+
+
+def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
+    """Return (pr_state, error) for a PR number, with a per-process cache.
+
+    `pr_state` is one of:
+      - "OPEN"    : the PR is still mergeable / not yet closed or merged
+      - "CLOSED"  : closed WITHOUT being merged
+      - "MERGED"  : closed AND merged (the substance reached main)
+      - None      : the lookup failed (no network, gh error, PR not found)
+
+    `error` is a short string on failure, None on success. The cache prevents
+    repeated `gh pr view` calls when a single check visit processes several
+    DELIVERED events on the same PR (rare but seen on audit issues with
+    multiple deliveries from different lanes).
+
+    The function is NOT called from the parser: parse_claim_event stays pure,
+    per the #12320 contract. The reducer (`compute_active_claims`) is the only
+    caller, and only for events that already have `pr_ref != None`.
+    """
+    if pr_ref in _PR_STATE_CACHE:
+        return _PR_STATE_CACHE[pr_ref]
+    try:
+        proc = subprocess.run(
+            [
+                "gh", "pr", "view", str(pr_ref),
+                "--json", "state,merged",
+            ],
+            capture_output=True, text=True, shell=False,
+        )
+    except Exception as exc:  # pragma: no cover -- defensive
+        result = (None, f"gh exec failed: {exc}")
+        _PR_STATE_CACHE[pr_ref] = result
+        return result
+    if proc.returncode != 0:
+        result = (None, f"gh pr view {pr_ref} exit {proc.returncode}: {proc.stderr.strip()[:200]}")
+        _PR_STATE_CACHE[pr_ref] = result
+        return result
+    try:
+        d = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        result = (None, f"gh pr view {pr_ref} non-JSON: {exc}")
+        _PR_STATE_CACHE[pr_ref] = result
+        return result
+    # GH field model: `state` in {OPEN, CLOSED, MERGED}, `merged` is a bool.
+    # When `state == "MERGED"`, the reducer should still treat the substance as
+    # locked -- the PR reached main. `merged=True` on its own is enough to lock
+    # even if `state` was raced (defence in depth: the bool was the canonical
+    # source until 2026).
+    if d.get("merged") is True:
+        result = ("MERGED", None)
+    elif d.get("state") == "MERGED":
+        result = ("MERGED", None)
+    elif d.get("state") == "CLOSED":
+        result = ("CLOSED", None)
+    elif d.get("state") == "OPEN":
+        result = ("OPEN", None)
+    else:
+        result = (None, f"unexpected gh state payload: {d!r}")
+    _PR_STATE_CACHE[pr_ref] = result
+    return result
+
+
+def _resolve_delivered_v2(
+    ev: ClaimEvent,
+    pr_states: dict[int, str] | None,
+) -> str:
+    """Compute the effective action for a `[DELIVERED]` event under the v2 semantics.
+
+    Returns one of:
+      - "open"          : the PR is OPEN; the substance is in flight; the lane
+                          MUST stay blocked. Equivalent to re-marking the event
+                          as a `[CLAIMED]`.
+      - "open_locked"   : the PR is MERGED; the substance has been accepted;
+                          the lane MUST stay blocked AND cannot be re-claimed
+                          without a coordinator `[OVERRIDE]`.
+      - "close"         : the PR is CLOSED without merge, OR the PR state could
+                          not be resolved, OR the event carries no `pr_ref`.
+                          Equivalent to legacy v1 behaviour (lane pops from state).
+
+    Side effect (#12386, JSON summary): when a `pr_ref` is present, the resolved
+    state is attached to the event as `ev["pr_state"]` so the JSON summary can
+    surface it to consumers (the `delivered_claims_pr_states` map and the
+    per-active-claim `pr_state` field both read this attribute). On a
+    `pr_ref is None` event, no `pr_state` is attached -- the legacy v1 path
+    is unchanged for unreferenced deliveries.
+
+    `pr_states` is an optional injection map (testable): if supplied, the
+    reducer does NOT call `gh`. If absent or the pr_ref is unknown to the map,
+    the reducer calls `gh pr view` via `_fetch_pr_state`. The map and the live
+    fetch are mutually exclusive -- a test that provides the map can run
+    offline, an end-to-end test can omit it.
+    """
+    pr_ref = ev.get("pr_ref")
+    if pr_ref is None:
+        return "close"  # legacy: a DELIVERED without a PR ref is a close
+    if pr_states is not None:
+        st = pr_states.get(pr_ref)
+    else:
+        st, _err = _fetch_pr_state(pr_ref)
+    # Attach the resolved state to the event for the JSON summary. On a None
+    # state (lookup failed) we still attach None so the consumer sees that we
+    # TRIED -- the absence of the key would otherwise be indistinguishable from
+    # a non-DELIVERED event.
+    ev["pr_state"] = st
+    if st == "OPEN":
+        return "open"
+    if st == "MERGED":
+        return "open_locked"
+    return "close"
 
 
 def _post_comment(issue: str, body: str) -> None:
@@ -942,6 +1109,84 @@ def _gh_open_prs_with_files() -> list[dict]:
         )
 
 
+# #12386 v2 -- `_find_open_pr_for_issue_by_lane` returns the unique OPEN PR
+# in `lane` whose body references `issue_number` (case insensitive
+# `Closes #N` / `Fixes #N` / `Refs #N` / `See #N` / plain `#N`), OR `None`
+# when no match (caller falls back to plain `[RELEASED]`).
+#
+# Why the helper is here and not in `main`: callers (`--release` smart
+# branch) want ONE function that returns "the PR to bind", and we want
+# the predicate (open + same-lane + references-the-issue) to live in
+# exactly one place. The legacy `_gh_open_prs_with_files()` is reused
+# because we already paginate 200 OPEN PRs (enough for typical work) and
+# we already consume its body field elsewhere.
+#
+# Test injection: callers may pre-fetch the PRs once and pass `prs` to
+# avoid double `gh pr list` round-trips in tests; otherwise we fetch
+# here. The lane-tag reading uses the SHARED `extract_lane` helper --
+# never a private regex -- so the rule stays single-sourced (#9485).
+def _find_open_pr_for_issue_by_lane(
+    issue_number: int,
+    lane: str,
+    prs: list[dict] | None = None,
+) -> int | None:
+    """Return the unique OPEN PR number in `lane` referencing `issue_number`.
+
+    The matcher accepts any of: `Closes #N` / `Fixes #N` / `Refs #N` / `See
+    #N` / `Resolves #N` / a bare `#N` token in the PR body. The
+    `Refs #N` / `See #N` forms are the dispatch style (#10555) where a PR
+    only partially closes an epic. The bare `#N` form covers PRs that
+    mention the issue informally -- we keep it lenient because the
+    `[DELIVERED]` marker is itself the binding attestation; the PR-body
+    match just surfaces WHICH PR to record.
+    """
+    if prs is None:
+        prs = _gh_open_prs_with_files()
+    pat = re.compile(
+        r"(?i)\b(?:closes|fixes|refs|see|resolves|part\s+of|part-of)\s*"
+        + r"#(\d+)\b|\B#(\d+)\b"
+    )
+    matches: list[int] = []
+    for pr in prs:
+        body = (pr.get("body") or "")
+        # Per #9485 single-reader: use the SAME `extract_lane` the rest
+        # of the file uses. `extract_lane(body)` returns the first lane
+        # token it finds, accepting both `lane myia-po-2023:CoursIA-2`
+        # and `<!-- lane: ... -->` forms.
+        pr_lane = extract_lane(body)
+        if pr_lane != lane:
+            continue
+        for m in pat.finditer(body):
+            captured = m.group(1) or m.group(2)
+            if captured is None:
+                continue
+            try:
+                if int(captured) == issue_number:
+                    matches.append(int(pr["number"]))
+                    break
+            except (KeyError, ValueError, TypeError):
+                continue
+    if len(matches) == 0:
+        return None
+    if len(matches) > 1:
+        # Multiple OPEN PRs in the same lane reference the issue -- the
+        # caller has been racing themselves. We pick the lowest number
+        # (deterministic, oldest PR wins) and emit a stderr warning so
+        # the dashboard [DONE] can flag the ambiguity. We do NOT post
+        # DELIVERED silently here: a misleading PR reference would
+        # LOCK the wrong PR. Callers should fall back to plain
+        # `[RELEASED]` in this case.
+        print(
+            f"WARN: {len(matches)} OPEN PRs in lane {lane} reference "
+            f"#{issue_number}; refusing to pick one to bind to "
+            f"[DELIVERED]. Use --release with --note 'delivered:#N' to "
+            f"force a specific PR, or close/merge the others first.",
+            file=sys.stderr,
+        )
+        return None
+    return matches[0]
+
+
 def _path_matches(path: str, patterns: list[str]) -> bool:
     """Return True if `path` matches any of the caller-provided patterns.
 
@@ -979,6 +1224,23 @@ _CLAIM_BODY_TMPL = (
 )
 _RELEASE_BODY_TMPL = (
     "[RELEASED] lane {lane} -- {note}{paths_clause}\n"
+)
+# #12386 v2 -- `[DELIVERED]` carries an explicit PR reference. The `locked:
+# True` reducer branch on `_fetch_pr_state(pr_ref) == "MERGED"` is the
+# v2 gate; a plain `[RELEASED]` would only free the active_claims slot,
+# losing the merged-link that powers the LOCKED verdict above. The
+# `--release` flow in `main` chooses DELIVERED when (a) the caller has
+# exactly one OPEN PR in their lane referencing the issue (body or
+# refs/closes), and (b) the PR number parses; otherwise it falls back to
+# RELEASED for backwards compat (caller can be releasing without an OPEN
+# PR -- the "released" plain form still applies).
+_DELIVERED_BODY_TMPL = (
+    "[DELIVERED] lane {lane} -- PR #{pr_ref}{paths_clause}\n\n"
+    "(#12386 v2: PR state-bound. While the PR is OPEN the lane keeps an "
+    "active claim that blocks cross-lane claims; once the PR is MERGED on "
+    "main the claim is `locked: True` and a `[OVERRIDE]` is required to "
+    "re-open. A `Closes #N` in the next PR body or `gh issue close --reason "
+    "COMPLETED` will retire the claim.)\n"
 )
 
 
@@ -1159,6 +1421,9 @@ def _lint_claim_events(
     issue_number: int | None,
     repo_root: str | None = None,
     tracked: list[str] | None = None,
+    active_claims: dict[str, ClaimEvent] | None = None,
+    others_verdict: dict[str, ClaimEvent] | None = None,
+    my_lane: str | None = None,
 ) -> None:
     """Emit WARN/INFO lines for malformed claim markers (#10881). Non-blocking.
 
@@ -1182,6 +1447,20 @@ def _lint_claim_events(
     faulty line and the expected marker-line syntax. Fires only on the
     signal -- an intentional epic-wide declaration (no off-marker clause)
     stays silent, so the lint never penalises a deliberate full-lane lock.
+
+    #12327 (verdict qualifier): when `active_claims` and `others_verdict` are
+    provided (caller has already reduced), each epic-wide marker is qualified
+    by its EFFECTIVE state at the time of the verdict:
+    - **superseded** by a later claim of the same lane (the marker exists as
+      legacy noise, the active claim supersedes it -- print as hygiene debt,
+      not as a blocker);
+    - **hors scope declare** when the lane's claim does NOT intersect the
+      verdict's `others` set (the claim was epic-wide in form but did not
+      actually block the caller -- print as informational, never as `il bloque`);
+    - **il bloque** ONLY when the lane IS in `others_verdict` (the claim is
+      what the reducer actually kept against the caller).
+    Without these args, the lint falls back to the legacy behaviour (every
+    epic-wide marker prints `il bloque`), which is the bug #12327 names.
     """
     if tracked is None:
         tracked = _git_tracked_files(repo_root)
@@ -1225,10 +1504,51 @@ def _lint_claim_events(
                 if inferred
                 else ""
             )
+            # #12327 -- qualify the epic-wide lint by the verdict the reducer
+            # actually reached. Three buckets (others_verdict may be None when
+            # the caller has not yet reduced -- legacy path keeps the old
+            # `il bloque` wording for back-compat):
+            ev_lane = ev.lane or "?"
+            ev_active = active_claims.get(ev_lane) if active_claims else None
+            in_others = (others_verdict is not None
+                         and ev_lane in others_verdict)
+            if (active_claims is not None
+                    and ev_active is not None
+                    and ev_active is not ev
+                    and _event_is_active_for(ev, ev_active)):
+                # The marker is shadowed by a later active claim of the SAME
+                # lane -- superseded, sans effet. Hygiene debt: the lane should
+                # [RELEASED] the old marker, but the organ never blocks on it.
+                print(
+                    f"INFO: marqueur {ev.marker} epic-wide SUPERSEDED "
+                    f"(lane {ev_lane}) -- un claim actif ulterieur de la "
+                    f"meme lane tient le verrou (scope: {ev_active.get('paths') or 'epic-wide'}). "
+                    f"Sans effet sur le verdict. Hygiene: "
+                    f"`[RELEASED]` l'ancien marqueur (cf. #12327).{inferred_str}",
+                    file=sys.stderr,
+                )
+                continue
+            if others_verdict is not None and not in_others and ev_lane != my_lane:
+                # Epic-wide form, but the lane did NOT survive the reducer's
+                # scope filter: either the lane re-posted a scoped claim, or
+                # the caller declared `--paths` and the claim does not
+                # intersect. The lint must NOT say `il bloque`.
+                print(
+                    f"INFO: marqueur {ev.marker} epic-wide (lane {ev_lane}) "
+                    f"-- SANS effet sur #{issue_number} "
+                    f"(claim de la lane filtre par scope ou re-poste depuis). "
+                    f"Forme attendue : `[CLAIMED] lane <machine:workspace> "
+                    f"-- paths: <g1>, <g2>` (cf. #11755).{inferred_str}",
+                    file=sys.stderr,
+                )
+                continue
+            # Legacy wording: the marker IS in `others_verdict` (real blocker)
+            # OR the caller has not reduced yet (back-compat). Keep the
+            # original `il bloque toutes les autres lanes` text.
             print(
                 f"INFO: marqueur {ev.marker} epic-wide (pas de clause paths:) "
                 f"-- il bloque toutes les autres lanes sur #{issue_number} "
-                f"(lane {ev.lane or '?'}).{inferred_str} "
+                f"(lane {ev_lane}).{inferred_str} "
                 f"Forme attendue : `[CLAIMED] lane <machine:workspace> "
                 f"-- paths: <g1>, <g2>` (cf. #11755).",
                 file=sys.stderr,
@@ -1247,6 +1567,30 @@ def _lint_claim_events(
                     f"(lane {ev.lane or '?'})",
                     file=sys.stderr,
                 )
+
+
+def _event_is_active_for(legacy: ClaimEvent, active: ClaimEvent) -> bool:
+    """True when `active` is the live claim that supersedes `legacy`.
+
+    Two markers from the SAME lane supersede each other when the active one
+    was posted LATER (later `created_at`) OR carries a `paths:` clause (the
+    legacy was epic-wide, the active is scoped -- the scoped form is more
+    precise and replaces the legacy intent). If the active marker is OLDER
+    than the legacy one, this is a sequence anomaly -- the legacy was
+    INTENDED to supersede the active, and the active is itself legacy
+    noise; in that case the caller wants the SHARED verdict to surface.
+    """
+    if active is None or active is legacy:
+        return False
+    # A scoped marker always supersedes an epic-wide one of the same lane.
+    if active.get("paths") is not None and legacy.get("paths") is None:
+        return True
+    # Two markers of the same lane, both epic-wide: the LATER one wins.
+    legacy_at = legacy.get("created_at")
+    active_at = active.get("created_at")
+    if legacy_at and active_at and active_at > legacy_at:
+        return True
+    return False
 
 
 def _find_malformed_markers(payload: dict) -> list[dict]:
@@ -1357,7 +1701,8 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
-               my_paths: list[str] | None = None) -> int:
+               my_paths: list[str] | None = None,
+               pr_states: dict[int, str] | None = None) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Args:
@@ -1381,11 +1726,6 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # #10958 empty-scope witness (best-effort: None outside a git repo, in
     # which case both features degrade to their pre-#10958 behaviour).
     tracked = _git_tracked_files()
-    # #10881 lint -- malformed paths: clauses surface on stderr when the
-    # marker is read: visible to every lane running the check, never changing
-    # a verdict. The four 2026-08-14 markers on #10678 shared the defect the
-    # three checks name (epic-wide by accident / prose swallowed as globs).
-    _lint_claim_events(events, payload.get("number"), tracked=tracked)
     # #11239 lint -- bare markers without brackets (invisible to the organ).
     # Same non-blocking spirit as the #10881 lint above: the writer learns at
     # the call site that their lock was never registered, instead of two lanes
@@ -1408,7 +1748,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         for ev in events:
             if ev.get("paths"):
                 ev["empty_scope"] = _empty_scope_in(ev["paths"], tracked)
-    active, unattributed = compute_active_claims(events)
+    active, unattributed = compute_active_claims(events, pr_states=pr_states)
     others = {ln: ev for ln, ev in active.items() if ln != my_lane}
     mine = active.get(my_lane)
 
@@ -1454,6 +1794,21 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
+
+    # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
+    # lint can no longer say `il bloque toutes les autres lanes` for a
+    # marker whose lane did not survive the scope filter or whose lane
+    # re-posted a scoped claim since. We pass `active` (claim-per-lane) and
+    # the FINAL `others` dict so the lint can bucket each epic-wide marker
+    # into `superseded` / `sans effet` / `il bloque`.
+    _lint_claim_events(
+        events,
+        payload.get("number"),
+        tracked=tracked,
+        active_claims=active,
+        others_verdict=others,
+        my_lane=my_lane,
+    )
 
     # #12322 -- query_scope classifier (POST stale-filter, so the verdict
     # reflects the FINAL blocker set, not the pre-stale one). A call whose
@@ -1532,6 +1887,21 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # its gate on the live PR state. None on every non-DELIVERED
                 # marker, and on a DELIVERED marker that did not name a PR.
                 "pr_ref": ev.get("pr_ref"),
+                # #12386 -- v2 conditional gate witness. Surfaces the live PR
+                # state that the reducer used to bind the event's effective
+                # action. None on a non-DELIVERED event, on a DELIVERED event
+                # whose `pr_ref` is None, OR on a DELIVERED event whose PR
+                # state could not be fetched (degraded to legacy v1 close).
+                # Strings: "OPEN" (substance in flight), "MERGED" (locked),
+                # "CLOSED" (attempt failed, lane free), or None (lookup-failed).
+                "pr_state": ev.get("pr_state"),
+                # #12386 -- locked witness for v2 MERGED branch. True ONLY on
+                # an event the reducer re-marked as `open` because the PR is
+                # MERGED: the substance reached main, the issue is resolved,
+                # and re-claiming requires a coordinator `[OVERRIDE]`. None
+                # on every other branch (legacy v1 close, OPEN, RELEASED,
+                # etc.).
+                "locked": ev.get("locked", False),
                 # #10597 hardener -- surface the witness list of residual
                 # `{`/`}` so a human reviewer can see WHY an unparseable claim
                 # is being treated as epic-wide. The list may be empty (the
@@ -1571,6 +1941,20 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             for ev in events
             if ev.marker == "DELIVERED" and ev.get("pr_ref")
         }),
+        # #12386 -- v2 PR-state map for every historical `[DELIVERED]` close on
+        # this issue. Keys = PR number, value = the LIVE state the reducer read
+        # (`OPEN` / `MERGED` / `CLOSED`) or `None` when the lookup failed. A
+        # consumer that needs to decide "should I re-claim?" looks up its
+        # `delivered_claims` list here: any non-CLOSED value is information,
+        # any CLOSED value is "free to re-claim" only if the original attempt
+        # failed (no MERGED on the same number). The map is keyed by PR number
+        # to match `delivered_claims`. An issue with NO deliveries has an
+        # empty map.
+        "delivered_claims_pr_states": {
+            ev.get("pr_ref"): ev.get("pr_state")
+            for ev in events
+            if ev.marker == "DELIVERED" and ev.get("pr_ref") is not None
+        },
         "unattributed_markers": len(unattributed),
         # #11239 -- bare-marker lines (no brackets) carrying a claim motif.
         # The organ does not read them (`_MARKER_RE` requires the brackets),
@@ -1708,6 +2092,38 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"`[CLAIMED] paths: ...`, or wait for release.",
             file=sys.stderr,
         )
+        # #12386 -- v2 LOCKED verdict. When the blocker is a `[DELIVERED]`
+        # whose PR reached main (`locked: True`), a plain re-claim is NOT a
+        # path forward -- the issue is resolved. We surface a tailored message
+        # naming the merged PR and pointing at the `[OVERRIDE]` lane-comment
+        # machinery as the only escape (cf #10223, marker semantics: a
+        # coordinator `[OVERRIDE]` is the documented way to re-open a locked
+        # claim). Without this branch, a lane arriving on a CLEAR-summary
+        # would still see `blocking_lanes` empty AND the merged PR in
+        # `delivered_claims_pr_states` -- the message naming the lock is what
+        # closes the loop. We do NOT raise the exit code: 1 stays the
+        # `BLOCKED` verdict for both branches; the message discriminates.
+        locked_blockers = [
+            ev for ev in others.values() if ev.get("locked")
+        ]
+        if locked_blockers:
+            lines = []
+            for ev in locked_blockers:
+                pr = ev.get("pr_ref")
+                ln = ev.get("lane") or "?"
+                lines.append(f"  - lane {ln} -- PR #{pr} MERGED on main")
+            print(
+                f"\nLOCKED (v2): the issue is resolved on main by a MERGED "
+                f"PR. A plain re-claim is not a path forward -- the substance "
+                f"has reached `main` and the issue is considered done. The "
+                f"only mechanical escape is a coordinator `[OVERRIDE] lane "
+                f"<m:w>` comment on #{payload.get('number')} (cf #10223); "
+                f"the writer lane that delivered the merge (or any other "
+                f"lane) can also close the issue R5 (`Closes #N` in the next "
+                f"PR body, or `gh issue close --reason COMPLETED`).\n"
+                + "\n".join(lines),
+                file=sys.stderr,
+            )
         return 1
     # #12345 -- fail-CLOSED on an entirely-dead scope, EVEN with no
     # blockers. Without this branch, a caller who typo'd every glob in
@@ -1820,7 +2236,7 @@ def _filter_by_claim_scope(
         if empty and len(empty) >= len(scope):
             filtered[ln] = ev  # lifted to epic-wide -- always blocking
             continue
-        if _path_matches_any(my_scope, scope):
+        if _scopes_intersect(my_scope, scope, tracked):
             filtered[ln] = ev  # scopes intersect -> real collision
         # else: both scoped, disjoint -> free, drop from others
     return filtered
@@ -1831,6 +2247,94 @@ def _path_matches_any(paths: list[str], patterns: list[str]) -> bool:
     for p in paths:
         if _path_matches(p, patterns):
             return True
+    return False
+
+
+def _glob_has_meta(glob: str) -> bool:
+    """True if `glob` carries fnmatch meta (`*`, `?`, `[`) beyond literals."""
+    return any(c in glob for c in "*?[")
+
+
+def _literal_prefix(glob: str) -> str:
+    """Leading run of literal (non-meta) characters in `glob`."""
+    i = 0
+    while i < len(glob) and glob[i] not in "*?[":
+        i += 1
+    return glob[:i]
+
+
+def _prefixes_compatible(pa: str, pb: str) -> bool:
+    """True if two literal prefixes can both prefix a single common string.
+
+    ``''`` (a glob that opens on meta, e.g. ``**``) proves nothing, so it is
+    compatible with anything. Two non-empty prefixes are compatible when they
+    agree on every shared position -- they can then be extended to a common
+    string, so we cannot cheaply prove disjointness.
+    """
+    if not pa or not pb:
+        return True
+    n = min(len(pa), len(pb))
+    return pa[:n] == pb[:n]
+
+
+def _glob_overlap(ga: str, gb: str) -> bool:
+    """Conservative ``True`` if globs `ga` and `gb` MAY match a common string.
+
+    Sound in the disjoint direction: if their literal prefixes conflict, no
+    string matches both. Otherwise we cannot cheaply prove disjointness, so
+    we report overlap (over-block). The fleet's globs are overwhelmingly
+    ``*`` / ``?`` / literal (paths-scoped claims and ``--paths``); character
+    classes are rare and only ever over-approximated here, which is the safe
+    direction for a collision guard.
+    """
+    pa, pb = _literal_prefix(ga), _literal_prefix(gb)
+    if pa and pb and not _prefixes_compatible(pa, pb):
+        return False
+    return True
+
+
+def _scopes_intersect(
+    a: list[str], b: list[str], tracked: list[str] | None = None
+) -> bool:
+    """True if path-scope `a` and path-scope `b` may cover a common file.
+
+    This is the symmetric fix for the operand-order bug that #12656 exposed.
+    The old read was ``_path_matches_any(my_scope, scope)`` -- it fed the
+    CALLER's glob as the ``filename`` operand and the other lane's concrete
+    path as the ``pattern``, so ``fnmatch("dir/**", "dir/file.md")`` is False
+    and a joker caller was told CLEAR against a claim that demonstrably
+    covered its target (fail-OPEN).
+
+    With a `tracked` walk (the normal ``_run_check`` path and every
+    check-level test) the test is EXACT: two scopes intersect iff some real
+    tracked file matches both. Without it (`compute_active_claims`, which has
+    no repo walk) we fall back to a conservative provable-disjoint test:
+    concrete members of either side are matched against the other side's
+    globs, then remaining glob-vs-glob pairs are decided by the literal
+    prefix test of `_glob_overlap`. The fallback never wrongly reports
+    "disjoint" (it over-blocks when unsure), which is the safe direction for
+    a collision guard.
+    """
+    if not a or not b:
+        return False
+    if tracked is not None:
+        for path in tracked:
+            if _path_matches(path, a) and _path_matches(path, b):
+                return True
+        return False
+    # no repo walk: concrete members of each side, matched against the other
+    for side, other in ((a, b), (b, a)):
+        for g in side:
+            if not _glob_has_meta(g) and _path_matches(g, other):
+                return True
+    for ga in a:
+        if not _glob_has_meta(ga):
+            continue
+        for gb in b:
+            if not _glob_has_meta(gb):
+                continue
+            if _glob_overlap(ga, gb):
+                return True
     return False
 
 
@@ -2119,17 +2623,77 @@ def main(argv: list[str] | None = None) -> int:
         print(f"posted [CLAIMED] lane {args.lane} on #{args.issue}{scope}")
         return 0
     if args.release is not None:
+        # #12386 v2 -- smart DELIVERED-vs-RELEASED selection. A `[RELEASED]`
+        # would only free the active_claims slot and lose the merged-link
+        # that powers the LOCKED verdict above. When the caller has a single
+        # OPEN PR in their lane referencing the issue, we post
+        # `[DELIVERED] … -- PR #N` instead; the PR-state gate then stays
+        # live until the PR reaches MERGED (`locked: True`).
+        #
+        # Smart-selection rules (the `--note` arg can override):
+        #   1. `--note` literal starting with `delivered:#N` forces
+        #      `[DELIVERED]` with that exact PR (escape hatch for the
+        #      multi-PR ambiguity case).
+        #   2. Else, `_find_open_pr_for_issue_by_lane` returns a single
+        #      PR or None.
+        #   3. Single match -> `[DELIVERED]` with that PR.
+        #   4. None match -> `[RELEASED]` (back-compat: caller may be
+        #      releasing without an OPEN PR referencing this issue).
+        #   5. Multi-match -> `[RELEASED]` (the WARN has been emitted by
+        #      the helper; the caller should disambiguate next cycle).
         note = args.release or "released"
-        body = _RELEASE_BODY_TMPL.format(
-            lane=args.lane, note=note, paths_clause=_paths_clause(args.paths),
-        )
+        chosen_kind = "RELEASED"
+        chosen_pr: int | None = None
+        forced = note.lower().startswith("delivered:#")
+        if forced:
+            forced_str = note.split(":", 1)[1].strip()
+            try:
+                chosen_pr = int(forced_str.lstrip("#"))
+                chosen_kind = "DELIVERED"
+            except ValueError:
+                print(
+                    f"WARN: --note {note!r} starts with 'delivered:#' but "
+                    f"cannot be parsed as an integer; falling back to "
+                    f"[RELEASED].",
+                    file=sys.stderr,
+                )
+                chosen_kind = "RELEASED"
+                chosen_pr = None
+        else:
+            try:
+                chosen_pr = _find_open_pr_for_issue_by_lane(
+                    int(args.issue), args.lane,
+                )
+            except (RuntimeError, ValueError) as exc:
+                # gh failure or non-integer issue -- degrade to RELEASED
+                # rather than refusing the post (the comment is the
+                # primary contract; the PR-binding is a nicety).
+                print(
+                    f"WARN: could not scan OPEN PRs to bind "
+                    f"[DELIVERED]: {exc}. Falling back to [RELEASED].",
+                    file=sys.stderr,
+                )
+                chosen_pr = None
+            if chosen_pr is not None:
+                chosen_kind = "DELIVERED"
+        if chosen_kind == "DELIVERED":
+            body = _DELIVERED_BODY_TMPL.format(
+                lane=args.lane, pr_ref=chosen_pr,
+                paths_clause=_paths_clause(args.paths),
+            )
+        else:
+            body = _RELEASE_BODY_TMPL.format(
+                lane=args.lane, note=note,
+                paths_clause=_paths_clause(args.paths),
+            )
         try:
             _post_comment(args.issue, body)
         except RuntimeError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         scope = f" (paths: {', '.join(args.paths)})" if args.paths else ""
-        print(f"posted [RELEASED] lane {args.lane} on #{args.issue}{scope}")
+        marker = "[DELIVERED]" if chosen_kind == "DELIVERED" else "[RELEASED]"
+        print(f"posted {marker} lane {args.lane} on #{args.issue}{scope}")
         return 0
 
     # Check mode (default). `--paths` (when supplied with an issue) threads

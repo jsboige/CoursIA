@@ -89,10 +89,14 @@ Mathlib 4 has a rich category theory library built on these ideas.
 The following are foundational Grothendieck concepts NOT yet in Mathlib:
   - Etale cohomology (site etale, l-adic cohomology)
   - Motives (pure motives, Voevodsky's DM category)
-  - Six operations (Grothendieck's full formalism) — Mathlib provides the base
-    instance `f^* ⊣ f_*` on module sheaves (`AlgebraicGeometry.Modules.Sheaf`,
-    indexed by `DirectImage_en.lean`); `f_!` / `f^!` and the full formalism
-    remain absent
+  - Six operations (Grothendieck's full formalism) — Mathlib provides only the
+    base instance `f^* ⊣ f_*` on module sheaves
+    (`AlgebraicGeometry.Modules.Sheaf`, indexed by `DirectImage_en.lean`).
+    The full formalism remains outside Mathlib; at the presheaf level, this lake
+    has delivered the triple `f_! ⊣ f^* ⊣ f_*` (Parts 34-35,
+    `ExceptionalDirect.lean` / `ExceptionalTriple.lean`), and `f^!` collapses
+    there onto `f^*` (`exceptionalInverse_collapses_to_pullback`) — it exists
+    only with Verdier duality.
   - Grothendieck-Riemann-Roch
   - Grothendieck duality
   - Crystalline cohomology

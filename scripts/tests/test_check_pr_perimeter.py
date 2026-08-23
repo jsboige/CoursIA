@@ -1835,8 +1835,8 @@ def test_perimeter_workflow_file_exists_on_main():
     """The cable's first leg: `.github/workflows/perimeter-review-guard.yml`
     MUST exist on the working tree. A future refactor that renames or
     archives it without updating the workflow list would otherwise leave
-    the gate referencing a phantom name (which pr-gate-rerun-drift-guard
-    catches, but only as a downstream symptom)."""
+    the gate referencing a phantom name, caught only as a downstream
+    symptom."""
     wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
     assert wf.is_file(), f"missing cable leg 1: {wf}"
 
@@ -1859,20 +1859,23 @@ def test_perimeter_workflow_invokes_scan_thread():
     )
 
 
-def test_perimeter_workflow_listed_in_pr_gate_rerun():
-    """The cable's third leg: `perimeter-review-guard` MUST appear in the
-    `workflow_run.workflows:` list of pr-gate-rerun.yml. Without this entry
-    a timeout of perimeter-review-guard itself has NO event-driven rescue
-    path -- measured on #11776 / #11839 by the drift-guard organ.
+def test_perimeter_workflow_rescued_by_universal_sweep():
+    """The perimeter guard's rescue is now UNIVERSAL (#11860). The event-driven
+    per-guard path (pr-gate-rerun.yml `workflow_run` on a derived 76-workflow
+    list) is retired -- measured 2026-08-23 it created 404 of the 784
+    repository CI runs (51.5%) for 0 verdicts, a self-cancellation storm. The
+    schedule sweep (pr-gate-stale-sweep.yml) observes ALL open PRs and
+    re-aggregates any guard whose only red is a stale `PR gate`, so a timeout
+    of perimeter-review-guard itself ALWAYS has a rescue path, independent of
+    the trigger list. Assert the sweep exists and is schedule-driven (the one
+    re-aggregation observer that does not depend on being triggerable).
     """
-    rerun = _repo_root() / ".github" / "workflows" / "pr-gate-rerun.yml"
-    assert rerun.is_file(), f"missing pr-gate-rerun.yml at {rerun}"
-    text = rerun.read_text(encoding="utf-8")
-    # The list is one long literal in workflows:[...]; substring match
-    # suffices -- a precise YAML parse belongs to derive_pr_gate_rerun_workflows.py.
-    assert "perimeter-review-guard" in text, (
-        "perimeter-review-guard is no longer listed in pr-gate-rerun.yml "
-        "workflows:[] -- a perimeter timeout would have no rescue path"
+    sweep = _repo_root() / ".github" / "workflows" / "pr-gate-stale-sweep.yml"
+    assert sweep.is_file(), f"missing pr-gate-stale-sweep.yml at {sweep}"
+    text = sweep.read_text(encoding="utf-8")
+    assert "schedule" in text, (
+        "pr-gate-stale-sweep.yml is no longer schedule-driven -- the universal "
+        "rescue would lose its only trigger-independent path"
     )
 
 
