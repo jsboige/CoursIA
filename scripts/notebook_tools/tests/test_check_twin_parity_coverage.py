@@ -41,8 +41,8 @@ UNIVERSE = {
     # convention 2 -- suffix substituted
     f"{SUD}/Sudoku-7-Norvig-Csharp.ipynb",
     f"{SUD}/Sudoku-7-Norvig-Python.ipynb",
-    f"{GT}/GameTheory-4c-NashExistence-Csharp.ipynb",
-    f"{GT}/GameTheory-4c-NashExistence-Python.ipynb",
+    f"{GT}/GameTheory-04c-NashExistence-Csharp.ipynb",
+    f"{GT}/GameTheory-04c-NashExistence-Python.ipynb",
     # convention 3 -- medial token
     f"{SW}/SW-10-CSharp-RDFStar.ipynb",
     f"{SW}/SW-10-Python-RDFStar.ipynb",
@@ -50,7 +50,7 @@ UNIVERSE = {
     f"{TW}/Tweety-2c-FOL-Csharp.ipynb",
     f"{SUD}/Sudoku-0-Environment-Csharp.ipynb",
     f"{SW}/SW-1-CSharp-Setup.ipynb",
-    f"{GT}/GameTheory-2-NormalForm-Csharp-Part2.ipynb",
+    f"{GT}/GameTheory-02-NormalForm-Csharp-Part2.ipynb",
 }
 
 
@@ -85,10 +85,10 @@ def test_csharp_only_has_no_candidate():
 
 def test_part2_extension_is_csharp_only():
     """`-Csharp-Part2` is a C#-side extension: dropping the token yields
-    `GameTheory-2-NormalForm-Part2`, which does not exist. No false pairing
+    `GameTheory-02-NormalForm-Part2`, which does not exist. No false pairing
     against the Part1 Python notebook."""
     assert python_twin_candidates(
-        f"{GT}/GameTheory-2-NormalForm-Csharp-Part2.ipynb", UNIVERSE
+        f"{GT}/GameTheory-02-NormalForm-Csharp-Part2.ipynb", UNIVERSE
     ) == []
 
 

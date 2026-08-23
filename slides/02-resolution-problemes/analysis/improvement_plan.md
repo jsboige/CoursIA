@@ -66,7 +66,7 @@
 | 7, 16-29 | Exploration BFS/DFS/A* | `Search/Exploration_non_informee_et_informee_intro.ipynb` |
 | 12-13 | Taquin, 8 reines | `Sudoku/Sudoku-1-Backtracking.ipynb` (meme logique) |
 | 45 | Exploration locale, genetique | `Search/Portfolio_Optimization_GeneticSharp.ipynb`, `Sudoku/Sudoku-2-Genetic.ipynb` |
-| 60-65 | Minimax, Alpha-Beta, MCTS | `GameTheory/GameTheory-8-CombinatorialGames.ipynb` |
+| 60-65 | Minimax, Alpha-Beta, MCTS | `GameTheory/GameTheory-08-CombinatorialGames.ipynb` |
 | 70-85 | CSPs, Backtracking, AC-3 | `Search/CSPs_Intro.ipynb`, `Sudoku/Sudoku-3-ORTools.ipynb`, `Sudoku/Sudoku-4-Z3.ipynb` |
 | 80 | AllDiff, contraintes globales | `Sudoku/Sudoku-5-DancingLinks.ipynb` |
 

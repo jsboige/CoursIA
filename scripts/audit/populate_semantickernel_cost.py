@@ -43,7 +43,7 @@ from pathlib import Path
 # === Profils canoniques par NB (tranche 1, SK-01..09) ===
 #
 # Schema calque sur `01-SemanticKernel-Intro` costfm legacy (migre vers
-# metadata.cost via PR c.942) + `GameTheory-1-Setup` precedent po-2023 :
+# metadata.cost via PR c.942) + `GameTheory-01-Setup` precedent po-2023 :
 # - api_provider=openai (defaut), azure_openai en variante (NB 02 mentionne azure)
 # - gpu_required=false (inference cote serveur OpenAI/Azure)
 # - api_usd_est : estimation par comptage de cellules `kernel.invoke` / chat calls

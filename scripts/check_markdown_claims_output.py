@@ -212,6 +212,9 @@ def _strip_md_structure(src: str) -> str:
 # insensitive, word-boundary anchored. The list is OPEN: c.366 FP
 # manifest opened on SMT-LIB 2.6, Python 3.10, .NET 9.0, PEP 8,
 # Mathlib 4, CUDA 12.x, pandas 2.x, Version=10.0.0, v2.5, Lean 4.
+# c.415 (#11873): extended to cover LLM model names where the trailing
+# digit is a version suffix, not a measurement (GPT-3.5, LLaMA-2, Mistral-7B,
+# Claude-3, Gemini-1.5, Mixtral-8x7B, Phi-3, Llama-3.1, Gemma-2, etc.).
 _VERSION_PREFIX_RE = re.compile(
     r"(?i)\b(?:"
     r"smt[-\s]?lib|sm[-\s]?lib|smlib|pep\b|python\b|\.?net\b|mathlib\b|"
@@ -224,8 +227,14 @@ _VERSION_PREFIX_RE = re.compile(
     r"sqlite\b|mysql\b|postgres\b|redis\b|kafka\b|nginx\b|apache\b|"
     r"tomcat\b|maven\b|gradle\b|eslint\b|prettier\b|webpack\b|vite\b|"
     r"rollup\b|v\b|version\b|ver\b|release\b|rel\b|"
-    r"r\b"
-    r")\s*[=:=]?\s*$"
+    # LLM / model name families (c.415 #11873). Names end right before the
+    # trailing version digit: GPT-3.5 / GPT-4 / Claude-3 / Mistral-7B /
+    # LLaMA-2 / Llama-3.1 / Mixtral-8x7B / Phi-3 / Gemma-2 / Qwen-1.5 etc.
+    r"gpt\b|chatgpt\b|claude\b|mistral\b|mixtral\b|llama\b|llama\b|"
+    r"qwen\b|gemini\b|gemma\b|phi\b|deepseek\b|command\b|sonar\b|"
+    r"falcon\b|bert\b|roberta\b|t5\b|bloom\b|opt\b|starcoder\b|"
+    r"codellama\b|vicuna\b|wizardlm\b|orca\b|yi\b|zephyr\b"
+    r")\s*[=:=]?\s*[-]?\s*$"
 )
 
 
@@ -305,10 +314,21 @@ _EXCEPTION_LINE_HINT_RE = re.compile(
 )
 
 
-def _in_exception_code_span(src: str, match_pos: int, match_end: int) -> bool:
+def _in_exception_code_span(prose: str, match_pos: int, match_end: int) -> bool:
     """Return True if the numeric match sits inside an inline code span
     (between two backticks) whose text carries an exception/version/path
     hint. The span is then QUOTED text, not a measurement.
+
+    NOTE: the first argument MUST be `prose` (the markdown source with
+    structural lines stripped by `_strip_md_structure`), not the raw
+    cell source. The match positions `match_pos` / `match_end` are
+    computed against `prose` (see c.415-L1 ★★). Passing the raw cell
+    source under the misleading name `src` was a c.366 latent bug --
+    offsets in the prose-stripped text don't match the raw source when
+    headings / table headers / fences were removed, and the line
+    fallback (`line_start = src.rfind("\\n", 0, match_pos) + 1`) would
+    point to the wrong line. The productive call site (l. below) has
+    always passed `prose` correctly; this rename pins the contract.
 
     Detection: trace the inline code span containing `match_pos` by
     counting backticks from the START of the cell (markdown inline
@@ -323,34 +343,34 @@ def _in_exception_code_span(src: str, match_pos: int, match_end: int) -> bool:
     the hint-fallback to a single line so legitimate prose numbers on
     unrelated lines stay detected.
     """
-    span_text = _nearest_inline_code_span(src, match_pos)
+    span_text = _nearest_inline_code_span(prose, match_pos)
     if span_text is not None and _EXCEPTION_HINT_RE.search(span_text):
         return True
     # Line-scoped fallback: same-line carries a strongly-quoted-text
     # signal (Exception / Version= / FileNotFound / Traceback / "assembly
     # 10.0.0.0" pattern). Distinguishes "talking about a 4.5 in prose"
     # from "quoting a file that says Version=10.0.0".
-    line_start = src.rfind("\n", 0, match_pos) + 1
-    line_end = src.find("\n", match_end)
+    line_start = prose.rfind("\n", 0, match_pos) + 1
+    line_end = prose.find("\n", match_end)
     if line_end < 0:
-        line_end = len(src)
-    line = src[line_start:line_end]
+        line_end = len(prose)
+    line = prose[line_start:line_end]
     return bool(_EXCEPTION_LINE_HINT_RE.search(line))
 
 
-def _nearest_inline_code_span(src: str, pos: int) -> str | None:
+def _nearest_inline_code_span(prose: str, pos: int) -> str | None:
     """Walk backticks inside a 200-char window around `pos` to find the
     enclosing inline code span (single-backtick convention); return its
     text or None if the position is not inside a span.
 
     Algorithm: collect backtick positions in [pos-200, pos+200). Find
     a PAIR (open, close) such that open < pos < close and no other
-    opening between open and pos. Return src[open+1:close].
+    opening between open and pos. Return prose[open+1:close].
     """
     WIN = 200
     lo = max(0, pos - WIN)
-    hi = min(len(src), pos + WIN)
-    window = src[lo:hi]
+    hi = min(len(prose), pos + WIN)
+    window = prose[lo:hi]
     # Find all backtick positions within the window (offset back to
     # absolute by adding lo).
     ticks = [lo + i for i, c in enumerate(window) if c == "`"]
@@ -376,7 +396,140 @@ def _nearest_inline_code_span(src: str, pos: int) -> str | None:
     # closing on the same side, the span structure is ambiguous;
     # still take the immediately enclosing pair -- it's what
     # markdown renderers do for adjacent spans.
-    return src[open_pos + 1:close_pos]
+    return prose[open_pos + 1:close_pos]
+
+
+# c.415 (#11873): three additional pedagogical-prose FP families identified
+# in the 72%-FP-rate measurement. Each filter is line-scoped (looks at the
+# same line that contains the numeric match) so it cannot suppress
+# legitimate numerics on adjacent lines.
+#
+# Family A: imperative value lists. The prose gives the student a list of
+# values to try ("remplacez X par 0.5, 1.0, 2.0", "tester avec 0, 1, 2",
+# "choisir parmi 0.1, 0.5, 1.0"). These are not measurements of the
+# previous code cell's output; they're exercise parameters.
+_IMPERATIVE_LIST_HINT_RE = re.compile(
+    r"(?i)\b(?:"
+    r"remplacez|remplacer|testez|tester|essayer|essai[ez]?|"
+    r"choisir|choisissez|utilisez|utiliser|entrez|entrer|saisir|saisissez|"
+    r"fixer|fixez|r[ée]gler|param[ée]tre|valeur[s]?|compris[e]?s?|"
+    r"intervalle|plage|bornes?|"
+    r"entre|parmi|list[ée]e?s?|"
+    r"option[s]?|possibilit[ée]s?|"
+    r"multipliez|multiplier|ajustez|ajuster|faites|faire|"
+    r"variez|varier|modifiez|modifier|changez|changer"
+    r")\b"
+)
+
+# Family B: legend / scale definitions. The prose defines a numeric
+# anchor for the reader ("1.0 = parfaitement cohérente", "0.0 = hors-sujet",
+# "score 0 = aucun, 5 = excellent"). These are axis labels, not claims
+# about the previous code cell's output.
+_LEGEND_DEFINITION_RE = re.compile(
+    r"[=:]\s*(?:parfait|absent|aucun|excellent|moyen|bon|mauvais|"
+    r"faible|[ée]lev[ée]|n[ée]gligeable|maximum|minimum|"
+    r"hors[- ]sujet|"
+    r"\d+\s*=\s*\d+)"
+    r"|(?:coh[ée]rent|risque|impact|qualit[ée]|pertinence)"
+    r"\s*\(?\s*\d",
+    re.IGNORECASE,
+)
+
+# Family C: threshold / bound expressions. The prose qualifies a number
+# with a comparison operator ("confiance >= 0.8", "score <= 0.5",
+# "valeur > 1.0", "< 0.1"). These are decision thresholds, not measurements.
+_THRESHOLD_OP_RE = re.compile(
+    r"[<>≤≥]=?\s*\d|\d\s*[<>≤≥]=?",
+)
+
+
+def _line_around(src: str, match_pos: int, match_end: int) -> str:
+    """Return the source line containing the [match_pos, match_end) span.
+
+    Line boundaries are LF (markdown source is LF on disk for this repo).
+    Trailing CR is stripped from the returned line so Windows checkouts
+    don't carry \r into the regex search.
+    """
+    line_start = src.rfind("\n", 0, match_pos) + 1
+    line_end = src.find("\n", match_end)
+    if line_end < 0:
+        line_end = len(src)
+    return src[line_start:line_end].rstrip("\r")
+
+
+def _is_imperative_list_value(src: str, match_pos: int, match_end: int) -> bool:
+    """Family A (c.415 #11873): the numeric match sits inside an imperative
+    list of values given as exercise parameters. We require BOTH:
+      1. The same line carries an imperative verb hint (Family A list).
+      2. The numeric match is preceded within ~30 chars by a `par` /
+         `parmi` / `entre` / comma that signals a list position (so we
+         don't suppress a legitimate measurement on a line that ALSO
+         happens to say "remplacez" elsewhere).
+
+    Returns True only when both signals are on the same line.
+    """
+    line = _line_around(src, match_pos, match_end)
+    if not _IMPERATIVE_LIST_HINT_RE.search(line):
+        return False
+    # The list signal: 'par 0.5, 1.0, 2.0' / 'parmi 0, 1, 2' /
+    # 'between 0.1 and 1.0'. Look in the 30 chars BEFORE the match for
+    # a list-position marker (preceded by comma / 'par' / 'parmi' /
+    # 'entre' / 'or' / 'et').
+    pre_start = max(0, match_pos - 30)
+    pre = src[pre_start:match_pos]
+    if re.search(r"[,;]\s*$", pre):
+        return True
+    if re.search(
+        r"(?i)\b(?:par|parmi|entre|or|et|ou|and|or)\s*$",
+        pre,
+    ):
+        return True
+    # The numeric might be the FIRST item in the list: 'remplacez X par 0.5, 1.0, 2.0'.
+    # The line hint check above already covers this -- 'remplacez' + line
+    # + numeric == exercise parameter.
+    return False
+
+
+def _is_legend_equation(src: str, match_pos: int, match_end: int) -> bool:
+    """Family B (c.415 #11873): the numeric match is part of a legend or
+    scale definition (`X = ...` / `X: ...` / `score (0/5)`).
+
+    Returns True when the line matches `_LEGEND_DEFINITION_RE` AND the
+    numeric sits within ~20 chars of the colon/equals delimiter.
+    """
+    line = _line_around(src, match_pos, match_end)
+    if not _LEGEND_DEFINITION_RE.search(line):
+        return False
+    # Bounded by proximity: the numeric sits within 20 chars of the `=`
+    # or `:` (the legend delimiter) EITHER before OR after. This avoids
+    # suppressing legitimate prose numbers on a line that ALSO has a
+    # legend elsewhere. The legend pattern is `1.0 = parfaitement ...`
+    # (delimiter AFTER numeric) or `score (0.5 = ...)` -- check both
+    # directions on the same line.
+    pre_start = max(0, match_pos - 20)
+    post_end = min(len(src), match_end + 20)
+    window = src[pre_start:post_end]
+    # Case A: numeric precedes the delimiter: `1.0 = ...`
+    if re.search(r"\d\s*[=:]\s*\D", window) or re.search(r"\d\s*[=:]\s*\d", window):
+        return True
+    # Case B: numeric follows the delimiter: `coherent: 0.5`
+    if re.search(r"[=:]\s*\d", window):
+        return True
+    return False
+
+
+def _is_threshold_expression(src: str, match_pos: int, match_end: int) -> bool:
+    """Family C (c.415 #11873): the numeric match sits adjacent to a
+    comparison operator (>=, >, <=, <, >=, ≤, ≥), forming a threshold
+    specification rather than a measurement.
+
+    Returns True when `_THRESHOLD_OP_RE` matches within +/- 5 chars
+    of the numeric match.
+    """
+    pre_start = max(0, match_pos - 5)
+    post_end = min(len(src), match_end + 5)
+    span = src[pre_start:post_end]
+    return bool(_THRESHOLD_OP_RE.search(span))
 
 
 def check_notebook(path: Path) -> dict:
@@ -452,6 +605,24 @@ def check_notebook(path: Path) -> dict:
             if _is_version_token(prose, match_pos):
                 continue
             if _in_exception_code_span(prose, match_pos, match_end):
+                continue
+            # c.415 (#11873): three additional pedagogical-prose FP families
+            # measured at 72% baseline (216/300). Line-scoped filters that
+            # only suppress when the SAME line carries a list/legend/
+            # threshold signal, so unrelated legitimate prose numerics on
+            # adjacent lines stay detected.
+            #
+            # NB: match_pos/match_end are computed against `prose`
+            # (the markdown source with structural lines stripped), so the
+            # filter functions MUST also be called against `prose` to
+            # keep line offsets aligned. Calling them with `src` returns
+            # the wrong slice because line offsets in `src` don't match
+            # the offsets in `prose` (cf. c.415 #11873 verification).
+            if _is_imperative_list_value(prose, match_pos, match_end):
+                continue
+            if _is_legend_equation(prose, match_pos, match_end):
+                continue
+            if _is_threshold_expression(prose, match_pos, match_end):
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")

@@ -918,17 +918,36 @@ def _legacy_body_as_list_item(body_lines):
     return out
 
 
-def _render_new_audit_entry(entry: dict) -> list[str]:
-    """Rendre une NOUVELLE entree (sortie d'`update_pair`) en item de liste `audits:`."""
+def _render_new_audit_entry(entry: dict, item_indent: str = "    ") -> list[str]:
+    """Rendre une nouvelle entree en preservant la marge de la liste `audits:`."""
     lines = []
     keys = [k for k in _AUDIT_KEYS if entry.get(k) is not None]
+    field_indent = f"{item_indent}  "
     for idx, key in enumerate(keys):
         val = _fmt_audit_value(key, entry[key])
         if idx == 0:
-            lines.append(f"    - {key}: {val}\n")
+            lines.append(f"{item_indent}- {key}: {val}\n")
         else:
-            lines.append(f"      {key}: {val}\n")
+            lines.append(f"{field_indent}{key}: {val}\n")
     return lines
+
+
+def _audit_item_indent(block: list[str]) -> str:
+    """Detecte la marge des items existants, ou derive le style par defaut.
+
+    YAML autorise une sequence indentationless : l'item peut etre au meme niveau
+    que la cle ``audits:``. D'autres registres utilisent une marge de deux espaces
+    supplementaires. Melanger les deux styles dans un meme bloc rend le YAML
+    invalide ; l'append doit donc suivre le premier item existant.
+    """
+    for line in block[1:]:
+        match = re.match(r"^(\s*)-\s+", line)
+        if match:
+            return match.group(1)
+
+    header = re.match(r"^(\s*)audits:\s*$", block[0])
+    header_indent = header.group(1) if header else "  "
+    return f"{header_indent}  "
 
 
 def _transform_audit_block(form: str, block: list[str], new_entry: dict, force: bool = False) -> tuple[list[str], bool]:
@@ -955,7 +974,8 @@ def _transform_audit_block(form: str, block: list[str], new_entry: dict, force: 
             return block, False
         # force=True OU SHAs differents : APPEND une nouvelle entree
         # (avec --force c'est le faux audit designe par ai-01 -- averti sur stderr).
-        return block + _render_new_audit_entry(new_entry), True
+        item_indent = _audit_item_indent(block)
+        return block + _render_new_audit_entry(new_entry, item_indent), True
 
     # form == "last_audit" -> migration vers la forme append-only
     old_pairs = _parse_flat_audit(body)
