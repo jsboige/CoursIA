@@ -44,7 +44,7 @@ permissions:
 
 jobs:
   # Nom portant `-required` -> is_advisory() = False (pr_gate.py, motif etabli
-  # par variation-tag-guard.yml / pr-gate-rerun-drift-guard.yml).
+  # par variation-tag-guard.yml).
   check-unique-names-required:
     name: 'Require unique rendered check-run names across PR workflows (#11869)'
     runs-on: ubuntu-latest

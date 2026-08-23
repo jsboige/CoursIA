@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests du module examples/prisoners_dilemma.py (GameTheory-2/4).
 
-Backing notebooks : GameTheory-2-NormalForm.ipynb, GameTheory-4-NashEquilibrium.ipynb.
+Backing notebooks : GameTheory-02-NormalForm.ipynb, GameTheory-04-NashEquilibrium.ipynb.
 
 Le module expose trois fonctions : ``create_prisoners_dilemma`` (matrices de
 gains canoniques), ``analyze_dominance`` (detection de stratégies strictement

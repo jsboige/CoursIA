@@ -2,8 +2,8 @@
   {
     "model": "kokoro",
     "voice": "af_sky",
-    "latency_ms": 7301.633299999594,
-    "audio_size_bytes": 259244,
+    "latency_ms": 2732.206499960739,
+    "audio_size_bytes": 368300,
     "status": "ok",
     "sample": "narration"
   },
@@ -11,21 +11,21 @@
     "model": "qwen3",
     "sample": "narration",
     "status": "error",
-    "error": "503 Server Error: Service Unavailable for url: http://localhost:8196/qwen/v1/aud"
+    "error": "401 Client Error: Unauthorized for url: https://tts-multi.myia.io/qwen/v1/audio/"
   },
   {
     "model": "openai/tts-1",
     "voice": "alloy",
-    "latency_ms": 4685.374200000297,
-    "audio_size_bytes": 269568,
+    "latency_ms": 9615.12179998681,
+    "audio_size_bytes": 404736,
     "status": "ok",
     "sample": "narration"
   },
   {
     "model": "kokoro",
     "voice": "af_sky",
-    "latency_ms": 3222.3023000005924,
-    "audio_size_bytes": 251180,
+    "latency_ms": 3118.35110001266,
+    "audio_size_bytes": 541868,
     "status": "ok",
     "sample": "dialogue"
   },
@@ -33,21 +33,21 @@
     "model": "qwen3",
     "sample": "dialogue",
     "status": "error",
-    "error": "503 Server Error: Service Unavailable for url: http://localhost:8196/qwen/v1/aud"
+    "error": "401 Client Error: Unauthorized for url: https://tts-multi.myia.io/qwen/v1/audio/"
   },
   {
     "model": "openai/tts-1",
     "voice": "nova",
-    "latency_ms": 3842.608199998722,
-    "audio_size_bytes": 199296,
+    "latency_ms": 3510.8875000150874,
+    "audio_size_bytes": 416256,
     "status": "ok",
     "sample": "dialogue"
   },
   {
     "model": "kokoro",
     "voice": "af_bella",
-    "latency_ms": 4000.3085999996983,
-    "audio_size_bytes": 341804,
+    "latency_ms": 2685.3916000109166,
+    "audio_size_bytes": 409772,
     "status": "ok",
     "sample": "monologue"
   },
@@ -55,13 +55,13 @@
     "model": "qwen3",
     "sample": "monologue",
     "status": "error",
-    "error": "503 Server Error: Service Unavailable for url: http://localhost:8196/qwen/v1/aud"
+    "error": "401 Client Error: Unauthorized for url: https://tts-multi.myia.io/qwen/v1/audio/"
   },
   {
     "model": "openai/tts-1",
     "voice": "shimmer",
-    "latency_ms": 2426.669700000275,
-    "audio_size_bytes": 298752,
+    "latency_ms": 2790.3153999941424,
+    "audio_size_bytes": 396672,
     "status": "ok",
     "sample": "monologue"
   }

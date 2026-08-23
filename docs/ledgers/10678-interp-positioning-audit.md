@@ -21,7 +21,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 
 | Notebook | CHECK / total | Verdict |
 |----------|---------------|---------|
-| `GameTheory-2-NormalForm.ipynb` | 4/9 | MISPLACED |
+| `GameTheory-02-NormalForm.ipynb` | 4/9 | MISPLACED |
 | `7_Code_Interpreter.ipynb` | 2/11 | MISPLACED |
 | `Lean-11-TorchLean.ipynb` | 2/11 | MISPLACED |
 | `Lean-17-Knots-a-Conway-and-Proofs.ipynb` | 2/3 | MISPLACED |
@@ -41,7 +41,7 @@ Pour chaque cellule markdown d'interpretation (pattern `### Lecture du resultat`
 
 ## Detail des 24 cellules MISPLACED
 
-### `MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb` (4 cellules)
+### `MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm.ipynb` (4 cellules)
 #### cell[12] gap_b=1 gap_a=6
 - **interp** : `### Interprétation - Multiplicité des équilibres /  / **Résultats remarquables** : /  / | Jeu | Nombre d'équilibres purs | Caractéristique | / |-----|-------------------------|-----------------| / | Dilemme du Prisonnier | 1 | Unique, inefficient (gain 1 vs opti`
 - **prev_code[11]** : `# Analyser tous les jeux classiques / print("Analyse de dominance pour les jeux classiques") / print("=" * 50) /  / for game in games: /     print(f"\n{game.name}:") /      /     dom_row = find_dominant_strategy(ga`
@@ -213,7 +213,7 @@ Bug originel `#10678` cite `PyMC-15` (5 cellules mal placees) et `Voting-Methods
 
 - [x] **198 notebooks avec cellules interpretation identifies**
 - [x] **24 cellules MISPLACED candidates classifiees**
-- [x] **5 cas graves confirmes en premiere lecture** (GameTheory-2-NormalForm cellules 12-17 = cluster de 4 interp sur le meme output cell[11]) : ce sont les candidats Phase 2 prioritaires
+- [x] **5 cas graves confirmes en premiere lecture** (GameTheory-02-NormalForm cellules 12-17 = cluster de 4 interp sur le meme output cell[11]) : ce sont les candidats Phase 2 prioritaires
 - [x] Inventaire brut serialise `notebooks_interp_inventory.json` (198 entrees x listes interp + classification OK/CHECK)
 - [ ] Phase 2 (reparation PR par notebook) et Phase 3 (script `check_interp_positioning.py` + CI) - sub-grains separes pour c.238+
 

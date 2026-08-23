@@ -230,19 +230,11 @@ def test_print_yaml_round_trips_through_check(tmp_path):
 
 
 # --- regression against the real repository --------------------------------------
-
-
-def test_real_repo_list_is_in_sync():
-    """The committed pr-gate-rerun.yml must match the derivation from the
-    repository's own .github/workflows. A workflow added without
-    regenerating the list trips this test AND the CI drift guard -- that is
-    the forcing function, not an inconvenience to work around.
-    """
-    repo = Path(__file__).resolve().parents[2]
-    assert (
-        drv.check(
-            str(repo / ".github" / "workflows"),
-            str(repo / ".github" / "workflows" / "pr-gate-rerun.yml"),
-        )
-        == drv.EXIT_SYNC
-    )
+#
+# NOTE (#11860): `test_real_repo_list_is_in_sync` is intentionally ABSENT. The
+# real pr-gate-rerun.yml no longer carries a `workflow_run.workflows:` list --
+# the event-driven path is retired. `drv.check()` on a list-less file returns
+# EXIT_BROKEN by design ("cannot read the committed workflows list"), which is
+# no longer the expected state on the real repo. The derivation's pure-logic
+# tests above (positive control, membership rule, drift verdicts) remain, so the
+# script stays covered in case the event path is ever re-introduced.

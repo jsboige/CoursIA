@@ -33,7 +33,14 @@
       csharp_sha: a02e8a388fdca12b792594f7b5af9a3444a64b34
       content_python_sha: b665bf080f937710e18c735a31e46a486b3c9bedcf860ab487f38dc7304f3e44
       content_csharp_sha: a13e1ba953f4e778e78ffffdcea52b97e91ca4e17a7ac97239983f28460d17f8
+    - date: "2026-08-21"
+      by: myia-po-2024:CoursIA-2
+      python_sha: 76d2f1fabc983e6752960b198ab567e627ce1f79
+      csharp_sha: 7fdd5f18bef74f5071e29926820a34a0e2f056a3
+      content_python_sha: b665bf080f937710e18c735a31e46a486b3c9bedcf860ab487f38dc7304f3e44
+      content_csharp_sha: 0012cecae2969a5da38d9b13626d61ba127ef6e2837dc53a5ef9730739cb0f04
   known_differences:
+  - '2026-08-21 (rebaseline asymetrique myia-po-2024:CoursIA-2) : PR #12065 corrige heading_in_list cote C# (Infer-6-Debugging.ipynb, 3 findings) tandis que le jumeau Python (PyMC-6-Debugging.ipynb) etait deja a 0 finding. La convergence unilaterale est legitime (cf ai-01 arbitrage 2026-08-21 15:00Z, DM msg-20260821T130006-lc9u2c) : la parite reelle s''ameliore, elle n''est pas enshrinee. Aucun strip outille en attente (probe banner 0, papermill 0, machine paths 0).'
   - 'Socle pedagogique commun : debugging de modeles probabilistes (diagnostics d''inference) modelise dans les deux stacks.'
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
