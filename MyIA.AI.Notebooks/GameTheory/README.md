@@ -272,12 +272,14 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 |---|----------|--------|---------|-------|
 | 20 | [GameTheory-20-Commitment-Stackelberg](GameTheory-20-Commitment-Stackelberg.ipynb) | Python | Stackelberg : la performativité sans mystère — l'engagement contraignant qui **transforme la meilleure réponse d'autrui** (action sous-optimale à l'équilibre simultané, delta +2 mesuré), l'annonce révocable dissoute par induction à rebours (cheap talk), et le seuil de crédibilité **s\* = écart de tentation** (caution minimale calculée) | 40 min |
 | 21 | [GameTheory-21-Deux-Especes-de-Fleches](GameTheory-21-Deux-Especes-de-Fleches.ipynb) | Python | Deux espèces de flèches : le théorème fini du chemin minimal de swaps (un swap R(a,b) traverse un mur ssi colonne {a,b} ET mur habité — conjecture naïve réfutée sur 288 désaccords, condition vérifiée 3456/3456, comptage 432/576 dérivé) | 60 min |
+| 22 | [GameTheory-22-Manipulation-comme-Temoin](GameTheory-22-Manipulation-comme-Temoin.ipynb) | Python | Manipulation comme témoin : Gibbard-Satterthwaite sans mystère — une règle manipulable s'il existe un profil et un électeur qui, avec un bulletin insincère, obtient un résultat strictement préféré ; le témoin d'exploitation est exhibé par le code, pas postulé | 30 min |
+| 23 | [GameTheory-23-Echange-de-Reins](GameTheory-23-Echange-de-Reins.ipynb) | Python | L'échange de reins : de la valeur humaine à l'état institutionnel — graphe de compatibilité, cycles vs chaînes (donneurs altruistes), arbitrage cardinalité/équité dissocié par le code, pont cross-domain vers les lakes Lean | 35 min |
 | 3b | [GameTheory-3b-Chambres-et-Murs](GameTheory-3b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich, chantier 4 #12207 versant D2) : l'espace des jeux comme arrangement — 24 chambres × 24 = 576 jeux, les égalités comme murs de codimension (75 ordres faibles), incidence double-face mur/chambre, graphe des chambres connexe de diamètre 6, make_tie/break_tie duales | 45 min |
 | 3e | [GameTheory-3e-Meta-Actions-Tarifees](GameTheory-3e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées (chantier 4 #12207 versant D4) : changer les règles comme action payante — coût en échelons de rang, seuil de migration 56→16→8→4 % au sweep c=0..3, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe EST un équilibre (3,3), 4 échecs de coordination dur (tous NE Pareto-dominés) | 45 min |
 
-> En livraison parallèle sur la même vague : 18 (open games et lentilles, #12212), 22 (manipulation Gibbard-Satterthwaite comme témoin, #12239), 23 (échange de reins, #12240) — issues ouvertes, fichiers pas encore sur `main`. Le chantier 4 (#12207) poursuit la vague : 3b livré, 3e livré ici (le 3c « Le Joueur LLM » et le 3d « Plan de déformation » sont en livraison parallèle sur d'autres lanes), versants D1/D3 ouverts.
+> En livraison parallèle sur la même vague : 18 (open games et lentilles, #12212), 22 (manipulation Gibbard-Satterthwaite comme témoin, livré #12255), 23 (échange de reins, livré #12276) — fichiers sur `main`, lignes ci-dessus. Le chantier 4 (#12207) poursuit la vague : 3b livré, 3e livré ici (le 3c « Le Joueur LLM » et le 3d « Plan de déformation » sont en livraison parallèle sur d'autres lanes), versants D1/D3 ouverts. En file CI au moment de l'écriture : 24 (chemin minimal Robinson-Goforth, PR #12364) et 25 (translateur Life + certificat d'impossibilité, PR #12395) — leurs lignes seront ajoutées à leur merge.
 
-**Durée totale** : ~29h55 (avec side tracks b/c, sous-série SocialChoice et Partie 4 livrée)
+**Durée totale** : ~31h00 (avec side tracks b/c, sous-série SocialChoice et Partie 4 livrée)
 
 ## Concepts clés
 
@@ -327,6 +329,8 @@ Chaque notebook introduit un concept ou un modèle spécifique. Le tableau ci-de
 | 17 | MultiAgent-RL | NFSP, PSRO, AlphaZero intro, lien vers RL |
 | 20 | Commitment-Stackelberg | La performativité sans mystère : l'engagement contraignant transforme la meilleure réponse d'autrui (seuil de crédibilité s\* mesuré) |
 | 21 | Deux-Especes-de-Fleches | Théorème fini du chemin minimal de swaps : préserver le monde vs le transformer (conjecture naïve réfutée, condition exacte) |
+| 22 | Manipulation-comme-Temoin | Gibbard-Satterthwaite comme témoin : la manipulabilité s'exhibe (profil + bulletin insincère + gain strict mesuré), elle ne se postule pas |
+| 23 | Echange-de-Reins | L'échange rénal bout en bout : valeurs → contraintes → mécanisme ; cycles et chaînes sur le graphe de compatibilité ; cardinalité ≠ équité (dissociation mesurée) |
 
 ### Side tracks Lean 4 (formalisation)
 
@@ -663,6 +667,8 @@ Chaque notebook adopte la même trame pédagogique — introduction motivée, pl
 | 17 | MultiAgent-RL | ~35 | 3 | **COMPLET** |
 | 20 | Commitment-Stackelberg | ~18 | 3 | **NOUVEAU** (strate 7) |
 | 21 | Deux-Especes-de-Fleches | ~30 | 3 | **NOUVEAU** (strate 7) |
+| 22 | Manipulation-comme-Temoin | ~30 | 3 | **NOUVEAU** (strate 7) |
+| 23 | Echange-de-Reins | ~35 | 4 | **NOUVEAU** (strate 7) |
 
 **Jumeaux C#** : le tableau ci-dessus liste les notebooks Python/Lean de référence. Chaque notebook du fil principal (GT-2 à GT-17, plus 4c/6c/8c/15c et SC-01/SC-03/SC-04) dispose en outre d'un **jumeau C#** (`*-Csharp.ipynb`, 23 jumeaux distincts — 24 fichiers `.ipynb` en comptant la tranche `Part2` du GT-2) livré par le marathon parité #4956 — algorithmes from-scratch en BCL .NET 9, voir la section « Parité .NET » en tête de fichier.
 
