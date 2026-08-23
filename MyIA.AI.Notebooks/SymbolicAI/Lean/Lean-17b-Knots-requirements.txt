@@ -1,5 +1,5 @@
 # Lean-17 Knots series — Python dependencies
-# Install: pip install -r Lean-17-Knots-b-requirements.txt
+# Install: pip install -r Lean-17b-Knots-requirements.txt
 #
 # These tools cover all knot invariant computations used in the
 # Lean-17b companion notebook, replacing Mathematica + KnotTheory`.
