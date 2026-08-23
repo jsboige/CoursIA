@@ -257,6 +257,63 @@ class TestDetectColMismatch:
         assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
 
 
+class TestDetectCodeSpanPipe:
+    """CODE_SPAN_PIPE (raffinement #10097, cas 2.8c) : un ``|`` brut dans un code
+    span au sein d'une ligne de table reconnue. Le compte logique de colonnes
+    (COL_MISMATCH) l'exclut -- mais le renderer notebook (notebooks.github.com)
+    decoupe les cellules sur le ``|`` SANS proteger les code spans, donc une ligne
+    comme ``P[|emp-true|>eps]`` derive de l'en-tete et fait tomber toute la table
+    en paragraphe. Echapper en ``\\|`` est sur sur tous les renderers."""
+
+    def test_bare_pipe_in_code_span_flagged(self):
+        # Cas 2.8c-Borne-Temoin-Concentration cell[12] (#12220) : P[|emp-true|>eps]
+        # dans des backticks casse la mise en page de la table cote notebook.
+        lines = [
+            "| Triptyque | Borne | Concentration |",
+            "|-----------|-------|---------------|",
+            "| Hoeffding | `P[|emp-true|>eps] <= 2e` | `O(1/sqrt(n))` |",
+        ]
+        f = detect_md_table_syntax(lines)
+        p = [x for x in f if x["pathology"] == "CODE_SPAN_PIPE"]
+        assert len(p) == 1, f"got {f}"
+        assert p[0]["line"] == 3
+        # Ce n'est PAS un COL_MISMATCH : le compte logique reste a 3 colonnes.
+        assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
+
+    def test_escaped_pipe_in_code_span_not_flagged(self):
+        # \\| dans un code span est deja sur sur tous les renderers -> pas flagge.
+        lines = [
+            "| a | b |",
+            "|---|---|",
+            "| x | `a\\|b` |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "CODE_SPAN_PIPE"] == []
+
+    def test_clean_table_no_code_span_pipe(self):
+        lines = [
+            "| a | b |",
+            "|---|---|",
+            "| 1 | 2 |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "CODE_SPAN_PIPE"] == []
+
+    def test_mgs3_crossover_mutation_now_advisory_flagged(self):
+        # Echantillon canonique #10097 (MGS-3, `Crossover | Mutation` protege par
+        # backticks) : toujours AUCUN COL_MISMATCH sur le compte logique, mais il
+        # est desormais signale en CODE_SPAN_PIPE advisoire -- le renderer notebook
+        # ne protege pas les code spans, echapper en \\| est le fix portable.
+        lines = [
+            "| Strat | Valeur | Note |",
+            "|------|--------|------|",
+            "| Scope | `Crossover | Mutation` | ok |",
+        ]
+        f = detect_md_table_syntax(lines)
+        assert [x for x in f if x["pathology"] == "COL_MISMATCH"] == []
+        assert [x for x in f if x["pathology"] == "CODE_SPAN_PIPE"] != []
+
+
 class TestDetectNoSep:
     def test_three_pipe_lines_no_sep_flagged(self):
         # 3+ pipe-lines, no |---| separator -> GFM renders as <pre>, not a table.
