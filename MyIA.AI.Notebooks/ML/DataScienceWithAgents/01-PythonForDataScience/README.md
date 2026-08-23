@@ -12,7 +12,7 @@ Avant d'orchestrer des agents LLM qui *écrivent* du code data science (labs Lan
 
 | Notebook | Contenu | Durée |
 |----------|---------|-------|
-| [1.2-NumPy](notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | `ndarray`, opérations vectorisées, agrégations (`sum`, `mean`), gain de performance vs boucles | ~45 min |
+| [1.2-NumPy](notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | `ndarray`, vectorisation (timing vs boucle), broadcasting, indexation/masques booléens, `axis`, `default_rng(seed)` | ~60-75 min |
 | [1.3-Pandas](notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb) | `DataFrame`, sélection de colonnes, filtrage booléen, manipulation tabulaire | ~60 min |
 
 > **Numérotation.** La série commence à `1.2` car le `1.1` d'introduction est couvert par le [README parent](../README.md). La continuité logique est `1.2` (NumPy) → `1.3` (Pandas) → [Lab 1](../Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) (mise en pratique sur ventes synthétiques) → [02-ML-Cours 2.1](../02-ML-Cours/2.1-Workflow-ML.ipynb).
@@ -21,10 +21,12 @@ Avant d'orchestrer des agents LLM qui *écrivent* du code data science (labs Lan
 
 À l'issue de cette série, l'apprenant sait :
 
-1. Créer des tableaux NumPy depuis des listes Python et appliquer des opérations **vectorisées** (sans boucle explicite).
+1. Créer des tableaux NumPy (`ndarray`), les inspecter (`shape`, `dtype`) et appliquer des opérations **vectorisées** (sans boucle explicite).
 2. Mesurer l'avantage de performance de la vectorisation NumPy sur le Python natif.
-3. Construire un DataFrame Pandas et y sélectionner des colonnes avec la notation `[]`.
-4. Filtrer des lignes par conditions booléennes et préparer un jeu de données pour l'analyse.
+3. Appliquer le **broadcasting** (diffusion de formes) et savoir lire son message d'erreur.
+4. Sélectionner des sous-tableaux par **tranches**, **indexation avancée** et **masques booléens** (`a[a > x]`, `(a > 5) & (a < 20)`).
+5. Utiliser les réductions (`sum`, `mean`, `std`) avec la sémantique de `axis` et rendre un tirage aléatoire reproductible.
+6. Construire un DataFrame Pandas et y sélectionner des colonnes avec la notation `[]` (notebook 1.3).
 
 ## Prérequis
 
