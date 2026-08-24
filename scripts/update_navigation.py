@@ -87,7 +87,8 @@ def create_side_track_navigation(track_id):
     """Create navigation markdown for a side track notebook."""
     parent_num, desc = SIDE_TRACKS[track_id]
     parent_name = STRUCTURE[parent_num][0]
-    parent_link = f"[{parent_num}-{parent_name}]({get_notebook_filename(parent_num, parent_name)})"
+    # Le parent est un notebook du track principal : son href est le nom de fichier,
+    # PAS un lien markdown complet (sinon l'ancre externe imbrique un lien dans l'URL).
 
     # Find sibling side tracks
     siblings = STRUCTURE[parent_num][1]
@@ -97,7 +98,7 @@ def create_side_track_navigation(track_id):
         if s_id != track_id:
             sibling_links.append(f"[{s}](GameTheory-{_pad_track(s)}.ipynb)")
 
-    lines = [f"**Navigation** : [<< {parent_num}-{parent_name} (track principal)]({parent_link}) | [Index](README.md)"]
+    lines = [f"**Navigation** : [<< {parent_num}-{parent_name} (track principal)]({get_notebook_filename(parent_num, parent_name)}) | [Index](README.md)"]
     if sibling_links:
         lines.append(f"\n**Autres side tracks** : {' | '.join(sibling_links)}")
 
@@ -187,8 +188,15 @@ def update_internal_references(filepath, old_to_new_map):
 
     return modified
 
+def get_gametheory_dir():
+    """Repertoire GameTheory : scripts/ -> ../MyIA.AI.Notebooks/GameTheory."""
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), os.pardir,
+        'MyIA.AI.Notebooks', 'GameTheory',
+    )
+
 def main():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = get_gametheory_dir()
 
     # Mapping of old names to new names for reference updates
     old_to_new = {
@@ -234,7 +242,7 @@ def main():
         for num, (name, tracks) in STRUCTURE.items():
             for t in tracks:
                 if t.startswith(track_id):
-                    filename = f"GameTheory-{t}.ipynb"
+                    filename = f"GameTheory-{_pad_track(t)}.ipynb"
                     filepath = os.path.join(base_dir, filename)
                     if os.path.exists(filepath):
                         try:
