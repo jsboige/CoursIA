@@ -16,10 +16,64 @@ Exemple d'utilisation:
 import subprocess
 import json
 import shutil
+import sys
 from typing import Tuple, Dict, Any, Optional, List
 
 # Mode simulation : si True, les appels a Claude sont simules
 SIMULATION_MODE = False
+
+
+def _resolve_claude_command() -> List[str]:
+    """
+    Resout la commande Claude utilisable par subprocess sur cette plateforme.
+
+    Sous Windows, l'installation npm fournit un shim `claude.CMD` que
+    CreateProcess refuse d'executer directement (FileNotFoundError) alors que
+    shutil.which le trouve : il faut passer par cmd.exe /c. Une installation
+    native (claude.exe, Linux/macOS) s'invoque telle quelle.
+    """
+    exe = shutil.which("claude")
+    if exe is None:
+        return []
+    if sys.platform == "win32" and exe.lower().endswith((".cmd", ".bat")):
+        return ["cmd.exe", "/c", exe]
+    return [exe]
+
+
+def installation_status() -> Dict[str, Any]:
+    """
+    Diagnostique l'installation de la CLI en distinguant les trois etats :
+    introuvable, present mais non executable, executable.
+    """
+    resolved = shutil.which("claude")
+    if resolved is None:
+        return {"state": "introuvable", "message": "Claude CLI n'est pas installe (shutil.which ne le trouve pas)"}
+    cmd = _resolve_claude_command()
+    try:
+        result = subprocess.run(
+            cmd + ["--version"],
+            capture_output=True,
+            text=True,
+            timeout=15
+        )
+        if result.returncode == 0:
+            return {
+                "state": "executable",
+                "message": "Claude CLI installe et executable",
+                "version": result.stdout.strip(),
+                "resolved_path": resolved
+            }
+        return {
+            "state": "non-executable",
+            "message": f"Claude CLI trouve ({resolved_path}) mais 'claude --version' echoue (code {result.returncode})",
+            "resolved_path": resolved
+        }
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError) as e:
+        return {
+            "state": "non-executable",
+            "message": f"Claude CLI trouve ({resolved_path}) mais non executable: {e}",
+            "resolved_path": resolved
+        }
 
 # Reponses simulees pour le mode sans API
 SIMULATED_RESPONSES = {
@@ -32,10 +86,16 @@ SIMULATED_RESPONSES = {
 
 def verify_installation() -> bool:
     """
-    Verifie que Claude Code CLI est installe et accessible.
+    Verifie que Claude Code CLI est installe ET reellement executable.
+
+    Teste l'executabilite (un appel reel a 'claude --version'), pas seulement
+    la presence sur le PATH : sous Windows, un shim npm .CMD est trouve par
+    shutil.which mais refuse par CreateProcess — c'est l'ecart qui produisait
+    un faux 'prete: True' suivi d'echecs d'invocation. Voir installation_status()
+    pour le diagnostic detaille (introuvable / non-executable / executable).
 
     Returns:
-        bool: True si Claude est installe, False sinon.
+        bool: True si la CLI s'execute, False sinon.
 
     Example:
         >>> if verify_installation():
@@ -43,7 +103,7 @@ def verify_installation() -> bool:
         ... else:
         ...     print("Veuillez installer Claude CLI")
     """
-    return shutil.which("claude") is not None
+    return installation_status()["state"] == "executable"
 
 
 def run_claude(
@@ -81,10 +141,14 @@ def run_claude(
         return response, "", 0
 
     if not verify_installation():
-        return "", "Erreur: Claude CLI n'est pas installe", 1
+        return "", f"Erreur: Claude CLI {installation_status()['state']} ({installation_status()['message']})", 1
 
-    # Construction de la commande
-    cmd = ["claude", "-p", prompt]
+    # Construction de la commande (resolver : shim Windows -> cmd.exe /c).
+    # Le prompt passe par STDIN, jamais en argument : la couche cmd.exe /c
+    # tronque un argument multi-lignes a la premiere newline (echec silencieux,
+    # rc=0) — verifie par test A/B argv-vs-stdin. `-p` sans argument positionnel
+    # lit le prompt sur stdin.
+    cmd = _resolve_claude_command() + ["-p"]
 
     if model and model != "sonnet":
         cmd.extend(["--model", model])
@@ -98,6 +162,7 @@ def run_claude(
     try:
         result = subprocess.run(
             cmd,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -151,7 +216,7 @@ def run_claude_json(
         }
 
 
-def check_claude_status() -> Dict[str, Any]:
+def check_claude_status(timeout: int = 60) -> Dict[str, Any]:
     """
     Verifie le statut de connexion de Claude Code.
 
@@ -181,42 +246,31 @@ def check_claude_status() -> Dict[str, Any]:
             "error": "Claude CLI n'est pas installe"
         }
 
+    # /status n'existe qu'en mode interactif (il repond "isn't available in
+    # this environment" en one-shot) ; la sonde de vie canonique ici est un
+    # mini-appel -p : il valide installation, authentification et routage.
     try:
         result = subprocess.run(
-            ["claude", "/status"],
+            _resolve_claude_command() + ["-p", "Reponds uniquement: OK"],
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=timeout
         )
 
-        if result.returncode == 0:
-            # Parser la sortie de /status
-            output = result.stdout.lower()
-            connected = "connected" in output or "connecte" in output
-
-            # Extraire le modele si possible
-            model = "unknown"
-            if "model:" in output:
-                lines = output.split("\n")
-                for line in lines:
-                    if "model:" in line.lower():
-                        model = line.split(":")[-1].strip()
-                        break
-
+        if result.returncode == 0 and result.stdout.strip():
             return {
-                "connected": connected,
-                "model": model,
+                "connected": True,
+                "model": "detected",
                 "base_url": "detected",
-                "raw_output": result.stdout
+                "raw_output": result.stdout.strip()
             }
-        else:
-            return {
-                "connected": False,
-                "error": result.stderr or "Erreur de connexion"
-            }
+        return {
+            "connected": False,
+            "error": result.stderr.strip() or f"Erreur de connexion (code {result.returncode})"
+        }
 
     except subprocess.TimeoutExpired:
-        return {"connected": False, "error": "Timeout"}
+        return {"connected": False, "error": f"Timeout apres {timeout} secondes"}
     except Exception as e:
         return {"connected": False, "error": str(e)}
 
@@ -240,7 +294,7 @@ def get_claude_version() -> str:
 
     try:
         result = subprocess.run(
-            ["claude", "--version"],
+            _resolve_claude_command() + ["--version"],
             capture_output=True,
             text=True,
             timeout=10
@@ -285,14 +339,16 @@ def run_claude_continue(
     if not verify_installation():
         return "", "Erreur: Claude CLI n'est pas installe", 1
 
-    cmd = ["claude", "-c"]
+    # Prompt par stdin pour la meme raison que run_claude : un argument
+    # multi-lignes est tronque par la couche cmd.exe /c sous Windows.
+    cmd = _resolve_claude_command() + ["-c", "-p"]
     if fork:
         cmd.append("--fork-session")
-    cmd.append(prompt)
 
     try:
         result = subprocess.run(
             cmd,
+            input=prompt,
             capture_output=True,
             text=True,
             timeout=timeout
@@ -339,7 +395,7 @@ def run_claude_command(
 
     try:
         result = subprocess.run(
-            ["claude", command],
+            _resolve_claude_command() + [command],
             capture_output=True,
             text=True,
             timeout=timeout

@@ -1,0 +1,13 @@
+{
+  "name": "owui-tour-captures",
+  "private": true,
+  "type": "module",
+  "description": "Génération reproductible des captures du Tour de la plateforme (00-Tour-Plateforme) — projet autonome : le spec vit hors du testDir de la série QA et résout ici sa propre instance unique de @playwright/test (défaut d'origine #12135 : double chargement de module).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.2",
+    "dotenv": "^16.4.5"
+  }
+}
