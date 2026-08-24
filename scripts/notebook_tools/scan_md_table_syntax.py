@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Source-level lint for GFM markdown table syntax defects.
 
-Detects four pathologies that break table rendering in the GitHub preview
+Detects five pathologies that break table rendering in the GitHub preview
 (source-level, render-agnostic -- it flags the *convention violation* that
 breaks rendering on at least one common renderer, not a post-render check):
 
@@ -13,6 +13,17 @@ breaks rendering on at least one common renderer, not a post-render check):
     A source-level lint counts raw pipes (it does not try to honor inline-code
     spans, because not every renderer does either -- the portable convention is
     to escape the pipe as ``\\|``). See #10097 acceptance sample.
+
+  - **CODE_SPAN_PIPE**: a BARE ``|`` inside an inline code span (`` `` `...` `` ``)
+    within a recognized table row. The logical column counter (``_column_count``)
+    deliberately excludes code-span pipes, so this does NOT show as COL_MISMATCH
+    -- but the notebook renderer (notebooks.githubusercontent.com) splits cells on
+    raw ``|`` WITHOUT protecting code spans, so a row like
+    `` | ceci | `P[|emp-true|>eps]` | ... | `` acquires excess columns, drifts
+    from the header, and the WHOLE table is demoted to a paragraph (renders as
+    literal pipes + ``\n``). Confirmed on 2.8c-Borne-Temoin-Concentration cell[12]
+    (#12220). Escaping the pipe as ``\\|`` inside the code span is safe on every
+    renderer -- this is the actionable fix.
 
   - **NO_SEP**: a run of 3+ consecutive ``|``-shaped lines with NO
     ``:?-+:?`` separator row among them. GFM does not recognize the block as a
@@ -89,11 +100,13 @@ HEADING_RE = re.compile(r'^\s{0,3}#{1,6}\s')
 # Spans whose interior `|` must NOT count as a column delimiter (GFM-correct
 # column counting). Three classes, all NON-ACTIONABLE (flagging them would tell
 # the author to "fix" something that is already correct, or impossible to fix):
-#   1. Inline code spans `` `...` `` -- GFM table parsing protects them (the
-#      spec parses code spans BEFORE splitting cells). A `|` inside `` `a|b` ``
-#      is a literal, not a delimiter. Counting it (as the #10097 preliminary
-#      ``gh api`` sample did for `` `Crossover | Mutation` ``) is a FALSE
-#      POSITIVE: GitHub renders the cell correctly.
+#   1. Inline code spans `` `...` `` -- for the LOGICAL column count (COL_MISMATCH)
+#      a `|` inside `` `a|b` `` is a literal, not a delimiter; counting it (as
+#      the #10097 preliminary ``gh api`` sample did for `` `Crossover | Mutation` ``
+#      is a FALSE positive on the count (cmark-gfm / the standard GFM renderer
+#      protects code spans). NOTE: this protection does NOT hold on the notebook
+#      renderer, which splits cells on raw ``|`` -- so the same bare pipe is also
+#      surfaced by the separate CODE_SPAN_PIPE pathology.
 #   2. Escaped pipes ``\|`` -- the GFM-correct way to put a literal `|` in a
 #      cell. The author did it RIGHT; flagging it is a false positive
 #      (e.g. ``P(S=T\|C=T)`` in Infer-4 cell[7]).
@@ -240,6 +253,22 @@ def _column_count(line):
     return len(parts)
 
 
+def _has_bare_pipe_in_code_span(line):
+    """True if an inline code span in ``line`` holds a bare ``|`` (not ``\\|``).
+
+    The notebook renderer splits GFM table cells on raw ``|`` without protecting
+    inline code spans, so a bare pipe inside `` `` `...` `` `` in a table cell
+    breaks the column layout (the row drifts from the header and the whole table
+    is demoted to a paragraph). Escaped ``\\|`` inside the code span is safe on
+    every renderer, so only the bare form is flagged.
+    """
+    for m in CODE_SPAN_RE.finditer(line):
+        span = m.group(0)
+        if '|' in ESCAPED_PIPE_RE.sub('', span):
+            return True
+    return False
+
+
 def _is_blank(line):
     # A bare blockquote marker ``>`` (optionally followed by whitespace) renders
     # as a blank separator within a blockquote -- it provides the same visual
@@ -316,6 +345,25 @@ def detect_md_table_syntax(lines, source_label="line"):
                             ),
                             "snippet": d_line.strip()[:80],
                         })
+
+            # --- CODE_SPAN_PIPE: bare | inside an inline code span in a row ---
+            # The logical column count (COL_MISMATCH) excludes code-span pipes, so
+            # this does not surface there -- but the notebook renderer splits
+            # cells on raw | WITHOUT protecting code spans, so a bare pipe inside
+            # ``...`` makes the row drift from the header and demotes the whole
+            # table to a paragraph. Escape as \| (safe on every renderer).
+            for c_lnum, c_line in rows:
+                if _has_bare_pipe_in_code_span(c_line):
+                    findings.append({
+                        "pathology": "CODE_SPAN_PIPE",
+                        "line": c_lnum,
+                        "detail": (
+                            "pipe brute dans un code span (``...``) d'une cellule "
+                            "de table -> le renderer notebook decoupe la cellule "
+                            "et casse la table ; echapper en '\\|'"
+                        ),
+                        "snippet": c_line.strip()[:80],
+                    })
 
         # --- NO_BLANK_BEFORE: line immediately before the block is prose ---
         # block occupies lines [blk['start'] .. blk['end']] (1-indexed) in the

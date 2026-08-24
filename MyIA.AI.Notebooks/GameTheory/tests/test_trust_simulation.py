@@ -2,7 +2,7 @@
 """
 Tests pour le module trust_simulation (Iterated Prisoner's Dilemma).
 
-Backing notebook : GameTheory-6-EvolutionTrust.ipynb (Axelrod tournament /
+Backing notebook : GameTheory-06-EvolutionTrust.ipynb (Axelrod tournament /
 evolution of trust, inspire de Nicky Case).
 
 `trust_simulation/` expose :
