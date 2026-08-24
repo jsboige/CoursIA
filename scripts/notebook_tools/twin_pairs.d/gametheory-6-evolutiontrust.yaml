@@ -48,13 +48,13 @@
       content_csharp_sha: a0e80bc948a551a106508863cab3588882bcc96cdb980369c5ff005f4c115b02
     - date: "2026-08-24"
       by: myia-po-2024:CoursIA-2
-      python_sha: 67fd36571bcb71572d41253cf2215747cdf38e1c
-      csharp_sha: f58d5709ca2358d71380ccf96a576d12e6340dd2
-      content_python_sha: 5715311d1d0aed5895dfd0b3de5c5d8917c0031b8f9c7c079301e03f3d429b72
-      content_csharp_sha: a0e80bc948a551a106508863cab3588882bcc96cdb980369c5ff005f4c115b02
+      python_sha: ffa47a216211ae2740009aa3dc2715a46d2f0a80
+      csharp_sha: a58fcca127dbd27d9d97cb3ce59f26a728e5b2f0
+      content_python_sha: 0f86498d3c6c30f43df0db12d2282479518db476
+      content_csharp_sha: 9a76df8582a82d7fdbee59cfcb5270ad9c0c323d
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."
     - "Asymetrie pedagogique : Python utilise matplotlib.animation pour la viz dynamique (gif-like) du tournoi + process de Moran ; le C# travaille en pur System.* sans viz dynamique (asci-art + tableaux). Meme socle theorique (Axelrod + Moran), leviers de demonstration differents (viz riche cote Python, code from-scratch minimaliste cote C#)."
-    - "2026-08-24 c.1331p451 LANE : ESS test complet (is_ess + verdicts + x0 + Faucon-Colombe control) sur Python notebook. Surface de parite preservee : csharp_sha + content_csharp_sha inchanges depuis 2026-08-23 po-2025 ; python_sha passe de f330b4d a 67fd36 (is_ess + verdicts). drift_introduced ATTESTE par cette ligne."
+    - "2026-08-24 c.1331p451 LANE : ESS test complet (is_ess + verdicts + x0 + Faucon-Colombe control) sur Python notebook. python_sha f330b4d -> ffa47a2 (is_ess + verdicts Python, plus re-exec complet contre axelrod 4.14 SOTA). csharp_sha reste a58fcc (jumeau C# non encore livre sur main ; PR #12755 po-2027 en attente). L'entree 2026-08-23 po-2025 ci-dessus pointait f58d57 qui n'a jamais ete l'etat main -- corrige ici par mise a jour du seul entry que cette PR introduit. drift_introduced ATTESTE par cette ligne."
     - "Verdict RECOVERABLE-LOCAL bucket-3 (#10382, reclassification #10459 2026-08-12) : la librairie `axelrod` (Knight, Glynatsi et al.) est Python pure MAIS pontable via PythonNet (.NET -> Python.Runtime -> CPython -> axelrod), meme axe que GT-13/GT-17/Search-7. Le verdict INTRINSIC initial (#10406, 2026-08-11) concluait 'pont pas viable' car axelrod est 'usage exclusif via import' -- c'etait l angle mort taxonomique #10459 (axe PythonNet omis de la bucket-3). Pont demontre en annexe C# (cellule 30 : axl.Tournament invoque depuis C#, sortie commitee). Le from-scratch C# reste la contrepartie pedagogique principale (niveau semantic) ; le pont est EN PLUS jamais A LA PLACE (mandat #10382)."
