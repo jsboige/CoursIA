@@ -298,7 +298,7 @@ def test_external_reusable_workflow_is_rejected(tmp_path):
     assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 
 
-def test_same_repository_reusable_workflow_remains_auditable(tmp_path):
+def test_local_reusable_workflow_remains_auditable(tmp_path):
     write_workflow(tmp_path, "caller", """
         name: caller
         on: [pull_request]
@@ -309,6 +309,51 @@ def test_same_repository_reusable_workflow_remains_auditable(tmp_path):
     result = policy.scan_workflows(tmp_path)
     assert result.broken == []
     assert result.violations == []
+
+
+def test_same_repository_reusable_workflow_allows_main(tmp_path):
+    write_workflow(tmp_path, "caller", """
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: jsboige/CoursIA/.github/workflows/callee.yml@main
+        """)
+    assert policy.scan_workflows(tmp_path).violations == []
+
+
+def test_same_repository_reusable_workflow_allows_commit_sha(tmp_path):
+    sha = "0123456789abcdef0123456789abcdef01234567"
+    write_workflow(tmp_path, "caller", f"""
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: jsboige/CoursIA/.github/workflows/callee.yml@{sha}
+        """)
+    assert policy.scan_workflows(tmp_path).violations == []
+
+
+def test_same_repository_reusable_workflow_rejects_branch_ref(tmp_path):
+    write_workflow(tmp_path, "caller", """
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: jsboige/CoursIA/.github/workflows/callee.yml@feature/unsafe
+        """)
+    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
+
+
+def test_same_repository_reusable_workflow_rejects_short_sha(tmp_path):
+    write_workflow(tmp_path, "caller", """
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: jsboige/CoursIA/.github/workflows/callee.yml@0123456789abcdef
+        """)
+    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 
 
 def test_invalid_yaml_breaks_the_instrument(tmp_path):

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -44,9 +45,9 @@ GITHUB_HOSTED_LABELS = {
     "macos-14",
     "macos-13",
 }
-SAME_REPO_REUSABLE_PREFIXES = (
-    "./.github/workflows/",
-    "jsboige/CoursIA/.github/workflows/",
+LOCAL_REUSABLE_PREFIX = "./.github/workflows/"
+SAME_REPO_REUSABLE_PATTERN = re.compile(
+    r"^jsboige/CoursIA/\.github/workflows/[^@]+@(?:main|[0-9a-fA-F]{40})$"
 )
 SAME_REPO_GUARD = (
     "github.event.pull_request.head.repo.full_name == github.repository"
@@ -203,12 +204,17 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
 
             if "uses" in job:
                 reusable = str(job["uses"])
-                if not reusable.startswith(SAME_REPO_REUSABLE_PREFIXES):
+                is_local = reusable.startswith(LOCAL_REUSABLE_PREFIX)
+                is_auditable_same_repo = bool(
+                    SAME_REPO_REUSABLE_PATTERN.fullmatch(reusable)
+                )
+                if not is_local and not is_auditable_same_repo:
                     violations.append(Violation(
                         path.name,
                         str(job_name),
                         "REMOTE_REUSABLE_WORKFLOW",
-                        "reusable workflow must be pinned to jsboige/CoursIA or local",
+                        "reusable workflow must be local or pin jsboige/CoursIA "
+                        "to main or a 40-character commit SHA",
                     ))
                 continue
 
