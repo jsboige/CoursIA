@@ -287,8 +287,12 @@ effet.
   de quoi elle re-mesurera le même offset. `dlinear_vol.py` porte déjà `debias` côté modèle
   (l. 203, 242-243, 279-280) et **calcule** `har_bias_oos` (l. 434) sans jamais l'appliquer :
   l'asymétrie est là, elle est corrigeable.
-- **Contrepoint M15** : sous la même correction, 3 verdicts LSTM sur 4 **s'inversent**
-  (jusqu'à −21 %). La famille deep-seq ne bat pas non plus un HAR recalé.
+- **Contrepoint M15** : sous la même correction, la décomposition **complète** des 9 cellules
+  ETF (SPY/TLT/GLD × h=1/5/10) est **négative 9 fois sur 9** hors biais (jusqu'à −38,6 %),
+  y compris la seule qui tenait la conjonction σ+DM (TLT h=5 : +12,3 % brut → −20,2 % hors
+  biais). M15 ETF est **NO BEATS définitif**, pas « majoritairement inversé » : la famille
+  deep-seq ne bat pas non plus un HAR recalé. Le premier chiffrage (« 3 sur 4 ») portait sur
+  un échantillon partiel des cellules ; il est corrigé ici.
 
 ### Reproduction
 
