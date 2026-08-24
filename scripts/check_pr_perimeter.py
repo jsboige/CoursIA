@@ -96,6 +96,25 @@ GENERIC_KNOB = re.compile(r"(?i)(baseline|threshold|ratchet|_cap\b|\bcap\b)")
 
 # Assertion vocabulary: file-count claims and exclusivity markers.
 COUNT_CLAIM = re.compile(r"\b(\d+)\s*(?:fichiers?|files?)\b", re.IGNORECASE)
+# #11985 rule 1 extension (CLOSED LIST -- never expand to unknown vocabulary):
+# a body can declare its perimeter in words ("trois fichiers", "five files").
+# The authorial declaration is the same shape; we just spell-check the
+# spelled-out number too. French and English cardinals 1-10. Beyond that
+# range we fail loud (false-negative default -- the next body with "onze
+# fichiers" / "eleven files" will be caught by a reviewer and the mapping
+# expanded). Closed list = false-negative cost is bounded and visible.
+COUNT_WORDS = {
+    "un": 1, "une": 1,
+    "deux": 2, "two": 2,
+    "trois": 3, "three": 3,
+    "quatre": 4, "four": 4,
+    "cinq": 5, "five": 5,
+    "six": 6, "six": 6,
+    "sept": 7, "seven": 7,
+    "huit": 8, "eight": 8,
+    "neuf": 9, "nine": 9,
+    "dix": 10, "ten": 10,
+}
 EXCLUSIVITY_MARKERS = (
     "uniquement",
     "seulement",
@@ -254,6 +273,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     # is the FINDING raised in review of #11730 (#11735): the fence mask fixed
     # WHERE we scan, this fixes WHICH count we scan for. Both are needed.
     scan_target = _fence_mask(assertion)
+    word_count = _word_form_count(scan_target)
     count_claim = next(
         (mm for mm in COUNT_CLAIM.finditer(scan_target) if int(mm.group(1)) != 0),
         None,
@@ -261,10 +281,29 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):
-            problems.append(
-                f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
-                + ", ".join(f["path"] for f in files)
-            )
+            # #12103: additive enumeration -- "1 fichier modifie, 1 fichier
+            # ajoute" declares 1 + 1 = 2 files. The first non-zero count (1)
+            # can never equal a 2-file PR; confront the SUM of the counts
+            # that survive the per-count filters instead. Safe by
+            # construction: a FAIL becomes a PASS only when the sum is
+            # exactly len(files) -- never a new failure.
+            additive = _additive_line_sum(scan_target)
+            if additive != len(files):
+                problems.append(
+                    f"l'assertion pretend {claimed} fichier(s), la liste effective en compte {len(files)} : "
+                    + ", ".join(f["path"] for f in files)
+                )
+    elif word_count is not None and word_count != len(files):
+        # #12092: word-form cardinal ("trois fichiers"). COUNT_WORDS exists
+        # since #12024 and gates extract (the word form enters candidates)
+        # but check_assertion only read COUNT_CLAIM (digits): the word line
+        # reached the terminal "unverifiable" branch despite being a true
+        # perimeter claim. Read the same closed list, same first-non-zero
+        # rule. FR cardinals are unique 1-10 (no false twin like EN "six").
+        problems.append(
+            f"l'assertion pretend {word_count} fichier(s), la liste effective en compte {len(files)} : "
+            + ", ".join(f["path"] for f in files)
+        )
     exclusive = _has_exclusivity(scan_target.lower())
     if exclusive:
         for f in files:
@@ -275,7 +314,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                         f"assertion d'exclusivite sans nommer le workflow touche {f['path']} "
                         "(critere #11268-2 : tout .github/workflows/** doit etre enumere nommement)"
                     )
-    if not count_claim and not exclusive:
+    if not count_claim and word_count is None and not exclusive:
         problems.append(
             "assertion sans compte de fichiers ni marqueur d'exclusivite reconnaissable -- "
             "formulation non verifiable (ecrire par ex. 'N fichiers : a, b, c')"
@@ -395,6 +434,39 @@ NAMED_FILE = re.compile(
 # hit / 1 fichier") counts what the detector FOUND, not what the PR modifies
 # (#11966 l.42).
 HIT_ANTECEDENT = re.compile(r"\b\d+\s*hits?\b", re.IGNORECASE)
+# Forme 4b, measurement antecedent: a "lake 70 fichiers" / "corpus 12 fichiers"
+# / "count_code_sorry.py ... 70 fichiers" / "scan ... N fichiers" shape --
+# the count is the OUTPUT of an EXTERNAL measurement tool, not the PR
+# perimeter (#12184, founder case #12181 l.26 "lake de 70 modules, 1 sorry
+# reel distinct"). Same family as HIT_ANTECEDENT / LOCATIVE_PREP: bad
+# surface, not bad count -- the body reports what the tool measured on some
+# corpus (a Lean lake, a registry, a scan target), never what the diff
+# touches.
+#
+# Closed-list antecedent vocabulary: external measurement tools named in the
+# corpus (lake, corpus, registry, count_code_sorry.py, scan, mesure,
+# mesures, count_code_sorry, check_*). Extension is gated by the FN-control
+# of #11985: a new vocabulary term needs to be measured against #11956 /
+# #12065 (real perimeter assertions that must remain blocking). A bare
+# antecedent is intentionally WEAK: it must sit within a small window before
+# the count AND the count must remain excluded by the FN-safety guards in
+# _count_is_incidental (no scope word, no diffstat neighborhood). The
+# founder case is the asphalt.
+#
+# The pattern matches the antecedent ALONE (no count baked in); the count
+# exemption is per-match and uses line[:m.end()] to allow the antecedent to
+# sit anywhere in the run-up to the count (the per-match exemption already
+# anchors the count at m.start/end).
+MEASUREMENT_ANTECEDENT = re.compile(
+    r"\b(?:lake\s+(?:de\s+|of\s+)?|"
+    r"corpus(?:\s+(?:de|of))?|"
+    r"count_code_sorry(?:\.py)?|"
+    r"scan(?:\s+(?:sur|of|on))?|"
+    r"mesures?(?:\s+(?:sur|of|on))?|"
+    r"registry|registre(?:\s+(?:de|of))?|"
+    r"check_(?:unaddressed_nits|pr_perimeter|perimeter))\b",
+    re.IGNORECASE,
+)
 # Forme 5, compte-antecedent parenthetique: "<N> <unites> (<M> fichiers)" --
 # le compte entre parentheses qualifie la PROVENANCE du nombre qui precede
 # ("32 prescriptions avant (2 fichiers) -> 32 apres"), jamais le perimetre de
@@ -447,6 +519,74 @@ def _has_strong_scope(low: str) -> bool:
     )
 
 
+def _count_is_exempt(line: str, m: re.Match) -> bool:
+    """True when the specific COUNT match `m` on `line` is exempted by the
+    per-count filters (zero, threshold citation, locative scan scope,
+    negated-diff tail, scan antecedent, reference verb, parenthesized
+    antecedent, incidental qualifier). Shared by _count_is_incidental and
+    _additive_line_sum (#12103)."""
+    claimed = int(m.group(1))
+    if claimed == 0:
+        return True
+    before = line[: m.start()].rstrip()
+    if COMPARISON_PREFIX.search(before):
+        return True
+    if LOCATIVE_PREP.search(line):
+        return True
+    after = line[m.end():]
+    if NEGATED_DIFF_TAIL.match(after):
+        return True
+    if HIT_ANTECEDENT.search(line[: m.start()]):
+        return True
+    if MEASUREMENT_ANTECEDENT.search(line[: m.end()]):
+        return True
+    if REFERENCE_VERB_TAIL.match(after):
+        return True
+    if (before.endswith("(") and after.lstrip().startswith(")")
+            and PAREN_ANTECEDENT_NUM.search(before[:-1])):
+        return True
+    mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
+    mw2 = re.match(
+        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
+        r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
+        after,
+    )
+    if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
+        return True
+    if mw2:
+        pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
+        if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
+                or pair in INCIDENTAL_QUALIFIER_PAIRS):
+            return True
+    return False
+
+
+def _additive_line_sum(line: str) -> int:
+    """#12103: sum of the line's COUNT_CLAIM values that survive the per-count
+    filters. An additive enumeration -- "1 fichier modifie, 1 fichier ajoute" --
+    declares N + M files; the guard must confront the SUM, not the first
+    non-zero count. A count exempted by the filters (zero, negated-diff tail,
+    locative scope, ...) never joins the sum."""
+    return sum(
+        int(m.group(1))
+        for m in COUNT_CLAIM.finditer(line)
+        if not _count_is_exempt(line, m)
+    )
+
+
+def _word_form_count(text: str) -> int | None:
+    """#12092: first spelled-out cardinal followed by fichiers/files (closed
+    list COUNT_WORDS, FR/EN 1-10). None when the line carries no word-form
+    count -- mirror of COUNT_CLAIM for the word shape. Reuses the exact
+    trigger pattern of extract_perimeter_assertions (~L829) so both halves
+    of the organ agree on what a word count is."""
+    low = text.lower()
+    for word, n in COUNT_WORDS.items():
+        if re.search(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b", low):
+            return n
+    return None
+
+
 def _count_is_incidental(line: str) -> bool:
     """True when every count on the line denotes something other than the PR's
     file list. Caller-facing guarantee: a line with a scope word or a diffstat
@@ -484,58 +624,8 @@ def _count_is_incidental(line: str) -> bool:
     if _has_strong_scope(low) or DIFFSTAT_NEIGHBORHOOD.search(line):
         return False
     for m in matches:
-        claimed = int(m.group(1))
-        if claimed == 0:
-            continue  # "0 fichier X" is a scrub/absence attestation
-        before = line[: m.start()].rstrip()
-        if COMPARISON_PREFIX.search(before):
-            continue  # "< N fichiers" cites a threshold
-        if LOCATIVE_PREP.search(line):
-            continue  # scan scope: "grep ... sur N fichiers"
-        # #11800: per-count negation tail-check. The match's tail is the
-        # segment immediately after the count -- if it starts with a
-        # negation word, this specific count is an attestation of
-        # unchanged files, not a perimeter claim. Scope is per-COUNT so
-        # that a line like "5 fichiers modifies, 91 fichiers inchanges"
-        # keeps its blocking 5-files count (the "modifies" tail is not a
-        # negation word).
-        after = line[m.end():]
-        if NEGATED_DIFF_TAIL.match(after):
-            continue
-        # #11985 forme 4: a scan antecedent ("1 hit / 1 fichier") -- the count
-        # is what the detector found, not what the PR modifies (#11966).
-        if HIT_ANTECEDENT.search(line[: m.start()]):
-            continue
-        # #12057 forme 6: verbe de reference -- "27 fichiers pointent ici"
-        # compte des referents ENTRANTS, hors diff par construction.
-        if REFERENCE_VERB_TAIL.match(after):
-            continue
-        # #12057 forme 5: compte-antecedent parenthetique -- le compte est
-        # entoure de parentheses ET precede d'un antecedent numerique sur la
-        # meme ligne ("32 avant (2 fichiers) -> 32 apres"). L'antecedent
-        # numerique est obligatoire: il laisse "Perimetre (2 fichiers)" et
-        # "Perimetre : 2 fichiers twins uniquement" bloquants.
-        if (before.endswith("(")
-                and after.lstrip().startswith(")")
-                and PAREN_ANTECEDENT_NUM.search(before[:-1])):
-            continue
-        # #11985 formes 2-3: compound qualifier window -- the kind or the
-        # enumeration tail can sit on the SECOND word after the count
-        # ("fichiers audio generes", "fichier test adapte").
-        mw = re.match(r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)", after)
-        mw2 = re.match(
-            r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)"
-            r"\s+([\wàâäéèêëîïôöùûüçÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ-]+)",
-            after,
-        )
-        if mw and mw.group(1).lower() in INCIDENTAL_QUALIFIERS:
-            continue  # "N fichiers MP3/scratch/restants/..." -- kind or remainder
-        if mw2:
-            pair = f"{mw2.group(1)} {mw2.group(2)}".lower()
-            if (mw2.group(1).lower() in INCIDENTAL_QUALIFIERS
-                    or pair in INCIDENTAL_QUALIFIER_PAIRS):
-                continue  # "N fichiers audio generes / de tests / test adapte"
-        return False  # this count looks authorial -> the line stays blocking
+        if not _count_is_exempt(line, m):
+            return False  # this count looks authorial -> the line stays blocking
     return True
 
 
@@ -600,6 +690,70 @@ def _quote_spans(line: str) -> list[tuple[int, int]]:
 
 def _trigger_quoted(line: str, pos: int, length: int) -> bool:
     return any(a <= pos and pos + length <= b for a, b in _quote_spans(line))
+
+
+def _codespan_spans(line: str) -> list[tuple[int, int]]:
+    """Char spans of inline code on a single line (`` `...` ``, ````...````).
+
+    A trigger that sits inside a backtick code-span is CITED content -- the
+    author using code formatting to *show* an example (or to escape a
+    technical word), not making their own assertion. Same class as quoted
+    speech (see _quote_spans): the marker carries intent to be displayed,
+    not claimed.
+
+    CommonMark rules: `` `code` `` is a single-backtick span;
+    `` ``code with ` inside`` `` is the double-backtick variant. We handle
+    both, plus the case where a longer backtick run opens but no matching
+    closer appears on the line -- the span then runs to end of line
+    (CommonMark behaviour for unterminated inline code, and what GitHub
+    renders).
+
+    Measured on #12024 body v3 -- a 6-line snippet "(\\`trois fichiers\\` /
+    \\`five files\\`)" flagged 4 lines as `trois fichiers` / `five files`
+    candidates even though backticks clearly showed them as examples. The
+    pre-fix extractor had no code-span awareness; the founder case here
+    is "citer un exemple en l'écrivant comme du code n'est pas en faire
+    une assertion".
+    """
+    spans: list[tuple[int, int]] = []
+    i = 0
+    while i < len(line):
+        if line[i] != "`":
+            i += 1
+            continue
+        n = 0
+        while i + n < len(line) and line[i + n] == "`":
+            n += 1
+        close_pat = "`" * n
+        j = line.find(close_pat, i + n)
+        if j < 0:
+            spans.append((i, len(line)))
+            break
+        spans.append((i, j + n))
+        i = j + n
+    return spans
+
+
+def _trigger_in_codespan(line: str, pos: int, length: int) -> bool:
+    return any(a <= pos and pos + length <= b for a, b in _codespan_spans(line))
+
+
+def _trigger_in_quoted_or_codespan(line: str, pos: int, length: int) -> bool:
+    return _trigger_quoted(line, pos, length) or _trigger_in_codespan(line, pos, length)
+
+
+def _counts_all_quoted_or_codespan(line: str) -> bool:
+    """Every numeric COUNT_CLAIM on the line sits inside a quotation OR a code-span.
+
+    Wraps the original _counts_all_quoted with code-span awareness: a count
+    cited as `` `trois fichiers` `` (the founder case on #12024 body v3) is
+    displayed, not claimed. A line that only carries quoted / code-spanned
+    counts is not a perimeter assertion.
+    """
+    return all(
+        _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
+        for m in COUNT_CLAIM.finditer(line)
+    )
 
 
 def _counts_all_quoted(line: str) -> bool:
@@ -722,8 +876,34 @@ def extract_perimeter_assertions(text: str) -> list[str]:
             continue  # markdown table row: report structure, not an assertion
         low = line.lower()
         if COUNT_CLAIM.search(line):
-            if _counts_all_quoted(line):
-                continue  # quoting a count (reported speech), not claiming it
+            if _counts_all_quoted_or_codespan(line):
+                continue  # citing a count (reported speech / code example), not claiming it
+            candidates.append(line)
+            continue
+        # #12024 / #11985 word-form extension: a body can declare its
+        # perimeter with a spelled-out cardinal ("trois fichiers",
+        # "five files"). Without this branch, the word form never enters
+        # the candidate list and body_declares_effective_count is never
+        # set for word-only declarations. Closed list FR/EN cardinals
+        # 1-10 (see COUNT_WORDS rationale at line ~98).
+        word_triggers = [
+            (m, word)
+            for word in COUNT_WORDS
+            for m in re.finditer(rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                                  line, re.IGNORECASE)
+        ]
+        if word_triggers:
+            # Same exclusion as numeric form: a word-form count cited inside
+            # a code-span (`` `trois fichiers` ``) is an example, not an
+            # authorial perimeter declaration. Founder case #12024: body v3
+            # listed two illustrative examples between backticks, the
+            # perimeter-review-guard flagged them as unverifiable assertions.
+            # An all-in-codespan word-form pattern is reported display.
+            if all(
+                _trigger_in_quoted_or_codespan(line, m.start(), m.end() - m.start())
+                for m, _ in word_triggers
+            ):
+                continue
             candidates.append(line)
             continue
         if _has_exclusivity(low) and any(w in low for w in STRONG_SCOPE_WORDS):
@@ -1005,6 +1185,30 @@ def select_candidates(
         ):
             for c in body_candidates:
                 c.body_declares_effective_count = True
+        # #11985 / #12024 rule 1 word-form extension: a body can declare its
+        # perimeter with a spelled-out cardinal ("trois fichiers", "five
+        # files"). The numeric scan above misses this entirely (false
+        # negative: a PR body that says "Trois fichiers (+184/-3)" never
+        # gets body_declares_effective_count set). Mirror the numeric check
+        # for COUNT_WORDS (closed list FR/EN cardinals 1-10 -- see line ~98
+        # rationale).
+        if n_files is not None and not any(
+            c.body_declares_effective_count for c in body_candidates
+        ):
+            for word, n in COUNT_WORDS.items():
+                if n != n_files:
+                    continue
+                pat = re.compile(
+                    rf"\b{re.escape(word)}\s+(?:fichiers?|files?)\b",
+                    re.IGNORECASE,
+                )
+                if any(
+                    not _is_incidental_assertion(c.text) and pat.search(c.text)
+                    for c in body_candidates
+                ):
+                    for c in body_candidates:
+                        c.body_declares_effective_count = True
+                    break
         out.extend(body_candidates)
 
     # Per thread author, keep the latest assertion-carrying review.

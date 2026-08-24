@@ -330,6 +330,44 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     return None
 
 
+def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool:
+    """Vrai si `blob_sha` est accessible depuis `ref` (= un commit ancetre le reference).
+
+    Discrimination cle du fix #11919 : un squash-merge peut re-hasher le git
+    blob SHA d'un notebook sans toucher le contenu didactique. Le recorded
+    `python_sha`/`csharp_sha` pointe alors sur un blob qui n'est PLUS ancre
+    d'aucun commit accessible (orphelin par squash). Mais un cas
+    distinct -- metadata-only drift (Sudoku-8/14 BDD, design-gate #9399
+    critere 2) -- produit lui aussi un recorded blob SHA divergent de HEAD
+    (le `_git_blob_sha` actuel change quand `nb["metadata"]` change, meme si
+    `content_*_sha` est preserve). Les deux cas ont la MEME signature sur
+    `rec_X != cur_X`, mais le deuxieme n'est PAS un orphelin : son blob
+    reste accessible (il est reference par un commit ancetre de HEAD, juste
+    pas le commit HEAD lui-meme).
+
+    La discrimination : `git rev-list --objects <ref>` enumere tous les blobs
+    reference par les commits accessibles depuis `<ref>`. Si `blob_sha` y
+    figure, c'est un metadata-only drift (pas un orphelin). Sinon, c'est un
+    orphelin par squash : le rebaseline doit le corriger.
+
+    Cout : `rev-list --objects HEAD` parcourt tout l'historique ; le defacto
+    full scan reste borne par la taille du depot (~5-10s sur CoursIA). Pour
+    un seul test is_noop par paire, c'est acceptable. Une optimisation
+    ulterieure (cache par ref+blob) n'est pas justifiee a c.409.
+    """
+    if not blob_sha or len(blob_sha) != 40:
+        return False
+    r = subprocess.run(
+        ["git", "rev-list", "--objects", ref],
+        capture_output=True, text=True, cwd=str(repo_root),
+    )
+    if r.returncode != 0:
+        return False
+    # Chaque ligne de `rev-list --objects` est soit "<commit_sha>" soit
+    # "<commit_sha> <blob_sha>". On grep simplement le blob SHA sur la sortie.
+    return blob_sha in r.stdout
+
+
 def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
     """SHA-256 canonique du notebook SANS sa metadonnee de niveau carnet (#9399 volet c).
 
@@ -604,6 +642,31 @@ def update_pair(
     # un faux audit au sens du design-gate #9399 critere 2.
     latest = _latest_audit(pair)
     is_noop = bool(latest) and _shas_match(latest, audit)
+    # Cas d'orphelin par squash (#11919) : un squash-merge peut re-hasher le
+    # blob sans toucher le contenu du notebook. Les `python_sha`/`csharp_sha`
+    # (git blob, legacy) enregistres ne sont alors PLUS ancetres de main, mais
+    # les `content_*_sha` sont identiques (le contenu est intact). Le no-op
+    # detection ci-dessus verrait « rien n'a change pedagogiquement » -- mais
+    # `--verify-recorded-sha` detecterait un MISMATCH sur le git blob SHA, et
+    # laisser cette paire en orphelin signifierait qu'aucun `--update` ne peut
+    # la ressoumettre au HEAD courant (le rebaseline necessaire est uniquement
+    # sur les git blob SHA, pas sur le contenu).
+    #
+    # Discrimination : sur un no-op, demander a git si le recorded blob SHA
+    # est accessible depuis HEAD (`_blob_ancestor_in`). Un vrai orphelin
+    # (squash) N'EST PAS accessible ; un metadata-only drift l'est (le blob
+    # est reference par un commit ancetre de HEAD, juste pas HEAD lui-meme).
+    # C'est la cle qui distingue les deux cas ayant pourtant la meme
+    # signature `rec_X != cur_X` -- sans cette discrimination, le fix
+    # violerait le design-gate #9399 critere 2 (metadata-only drift DOIT
+    # rester no-op, Sudoku-8/14 BDD du 2026-08-04).
+    if is_noop and latest:
+        rec_py = latest.get("python_sha")
+        rec_cs = latest.get("csharp_sha")
+        py_orphan = rec_py is not None and not _blob_ancestor_in(repo_root, rec_py)
+        cs_orphan = rec_cs is not None and not _blob_ancestor_in(repo_root, rec_cs)
+        if py_orphan or cs_orphan:
+            is_noop = False
     return audit, cur_py, is_noop
 
 
@@ -855,17 +918,36 @@ def _legacy_body_as_list_item(body_lines):
     return out
 
 
-def _render_new_audit_entry(entry: dict) -> list[str]:
-    """Rendre une NOUVELLE entree (sortie d'`update_pair`) en item de liste `audits:`."""
+def _render_new_audit_entry(entry: dict, item_indent: str = "    ") -> list[str]:
+    """Rendre une nouvelle entree en preservant la marge de la liste `audits:`."""
     lines = []
     keys = [k for k in _AUDIT_KEYS if entry.get(k) is not None]
+    field_indent = f"{item_indent}  "
     for idx, key in enumerate(keys):
         val = _fmt_audit_value(key, entry[key])
         if idx == 0:
-            lines.append(f"    - {key}: {val}\n")
+            lines.append(f"{item_indent}- {key}: {val}\n")
         else:
-            lines.append(f"      {key}: {val}\n")
+            lines.append(f"{field_indent}{key}: {val}\n")
     return lines
+
+
+def _audit_item_indent(block: list[str]) -> str:
+    """Detecte la marge des items existants, ou derive le style par defaut.
+
+    YAML autorise une sequence indentationless : l'item peut etre au meme niveau
+    que la cle ``audits:``. D'autres registres utilisent une marge de deux espaces
+    supplementaires. Melanger les deux styles dans un meme bloc rend le YAML
+    invalide ; l'append doit donc suivre le premier item existant.
+    """
+    for line in block[1:]:
+        match = re.match(r"^(\s*)-\s+", line)
+        if match:
+            return match.group(1)
+
+    header = re.match(r"^(\s*)audits:\s*$", block[0])
+    header_indent = header.group(1) if header else "  "
+    return f"{header_indent}  "
 
 
 def _transform_audit_block(form: str, block: list[str], new_entry: dict, force: bool = False) -> tuple[list[str], bool]:
@@ -892,7 +974,8 @@ def _transform_audit_block(form: str, block: list[str], new_entry: dict, force: 
             return block, False
         # force=True OU SHAs differents : APPEND une nouvelle entree
         # (avec --force c'est le faux audit designe par ai-01 -- averti sur stderr).
-        return block + _render_new_audit_entry(new_entry), True
+        item_indent = _audit_item_indent(block)
+        return block + _render_new_audit_entry(new_entry, item_indent), True
 
     # form == "last_audit" -> migration vers la forme append-only
     old_pairs = _parse_flat_audit(body)
@@ -1121,6 +1204,37 @@ def main(argv=None) -> int:
                 "OU --yes-all-pairs. Le defaut '--update' seul reecrirait le last_audit "
                 "de TOUTES les paires du registre, ce qui masque des DRIFTs legitimes "
                 "(cf issue #8508 + lecons L963/L974).")
+    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
+    # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
+    # final du notebook -- au commit du merge, les notebooks obtiennent de
+    # nouveaux blobs, et l'attestation fraichement ecrite est deja DRIFT avant
+    # meme que la CI ne la voie. Variante operationnelle de #8957 (« attester
+    # en DERNIER ») : le commit du merge lui-meme deplace le blob apres
+    # attestation. Refus : on commit d'abord, puis on re-atteste.
+    if args.update:
+        try:
+            if args.repo_root:
+                repo_root_for_state = Path(args.repo_root)
+            else:
+                repo_root_for_state = _repo_root()
+        except SystemExit:
+            repo_root_for_state = None
+        if repo_root_for_state is not None:
+            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
+            # depot est en cours de merge/rebase interactif. Le check precede
+            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
+            # deja connue (mais apres args.repo_root parse, qui peut etre override
+            # dans les tests --repo-root sur tmp_path).
+            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+                r = subprocess.run(
+                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    capture_output=True, text=True, cwd=str(repo_root_for_state),
+                )
+                if r.returncode == 0:
+                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
+                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
+                            f"(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:

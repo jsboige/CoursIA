@@ -119,11 +119,11 @@ Les 83 notebooks curés-manquants ne sont **pas** des exclusions explicites ; il
 - `QuantConnect/projects/` : **61** notebooks non-curés (disque=110, cat=49)
 
 ### Drift GameTheory (5)
-- `GameTheory-8-CombinatorialGames-Csharp.ipynb`
-- `GameTheory-8-CombinatorialGames.ipynb`
-- `GameTheory-8b-Lean-CombinatorialGames.ipynb`
-- `GameTheory-8c-CombinatorialGames-Csharp.ipynb`
-- `GameTheory-8c-CombinatorialGames-Python.ipynb`
+- `GameTheory-08-CombinatorialGames-Csharp.ipynb`
+- `GameTheory-08-CombinatorialGames.ipynb`
+- `GameTheory-08b-Lean-CombinatorialGames.ipynb`
+- `GameTheory-08c-CombinatorialGames-Csharp.ipynb`
+- `GameTheory-08c-CombinatorialGames-Python.ipynb`
 
 ### Drift Search (2)
 - `Search/Part4-Metaheuristics/MGS-7c-RosenbrockGriewank.ipynb`

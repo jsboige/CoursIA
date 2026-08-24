@@ -58,7 +58,7 @@
 
 | Slide | Concept | Notebook |
 |-------|---------|----------|
-| 5-10 | Équilibre Nash | `GameTheory/GameTheory-2b-MDP.ipynb`, `GameTheory-3b-Nash.ipynb` |
+| 5-10 | Équilibre Nash | `GameTheory/GameTheory-02-NormalForm.ipynb`, `GameTheory-04-NashEquilibrium.ipynb` |
 
 ---
 
@@ -133,7 +133,7 @@
 | Slide(s) | Concept | Notebooks |
 |-----------|---------|-----------|
 | 1-5 | Introduction théorie des jeux | `GameTheory/GameTheory-1b-Intro.ipynb` |
-| 6-10 | Équilibre de Nash | `GameTheory/GameTheory-3b-Nash.ipynb`, `GameTheory-4b-Nash-Computation.ipynb` |
+| 6-10 | Équilibre de Nash | `GameTheory/GameTheory-04-NashEquilibrium.ipynb`, `GameTheory-04c-NashExistence.ipynb` |
 | 11-15 | Jeux Bayésiens | `GameTheory/GameTheory-5b-Bayesian-Games.ipynb`, `GameTheory-6b-Incomplete-Info.ipynb` |
 | 16-20 | Théorie des mécanismes | `GameTheory/GameTheory-7b-Mechanism-Design.ipynb`, `GameTheory-8b-Auctions.ipynb` |
 | 21-25 | Jeux différentiels | `GameTheory/GameTheory-13b-Differential-Games.ipynb` |
@@ -188,7 +188,7 @@
    - Mechanism design dans crypto/blockchain
 4. **Intégration notebooks OpenSpiel** :
    - Créer slides de transition avec captures d'écran `GameTheory/` notebooks
-   - Ajouter instructions pratiques : "Exercice : ouvrir `GameTheory-3b-Nash.ipynb` dans WSL"
+   - Ajouter instructions pratiques : "Exercice : ouvrir `GameTheory-04-NashEquilibrium.ipynb` dans WSL"
    - Note WSL : Mentionner kernel issues et workarounds (voir `.claude/rules/wsl-kernels.md`)
 
 ### Estimation totale : ~8.5h d'améliorations

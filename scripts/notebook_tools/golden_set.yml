@@ -111,7 +111,7 @@ notebooks:
   # Kernel python3. Certifie end-to-end par Papermill (40 cellules, 15 code, 0
   # erreur, ~12 s sur CPU, kernel coursia-ml-training = snapshot du lock).
   # Premiere serie GameTheory au golden-set (objectif ~1/serie de #4209).
-  - path: MyIA.AI.Notebooks/GameTheory/GameTheory-4c-NashExistence-Python.ipynb
+  - path: MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb
     series: GameTheory
     title: "GT-4c - Existence de Nash (point fixe de Brouwer, best-response numpy)"
     kernel: python3

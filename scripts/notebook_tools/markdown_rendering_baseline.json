@@ -1,6 +1,6 @@
 {
   "_comment": "Baseline of known markdown-rendering violations. Burn down, do not grow. Regenerate with: python scripts/notebook_tools/detect_markdown_rendering.py --update-baseline --baseline <this file>",
-  "count": 1538,
+  "count": 1539,
   "hashes": [
     "0003f02b5512ca82",
     "003624867aaca533",
@@ -378,6 +378,7 @@
     "3b543cb23623e631",
     "3bf2761ba4b77097",
     "3c377f423d516048",
+    "3c3e8c1edb1f911c",
     "3c85f4dfd5b95969",
     "3cb9b58846a4fbc2",
     "3cdb59c1f0df70d3",

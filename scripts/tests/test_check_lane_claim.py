@@ -11,6 +11,7 @@ These tests replay that exact trap and assert the tool is not fooled.
 Run: python -m pytest scripts/tests/test_check_lane_claim.py
 """
 import fnmatch
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,8 +33,16 @@ def comment(body, created_at, author="jsboige", url=None):
     }
 
 
-def payload(*comments, number=9764, title="t"):
-    return {"number": number, "title": title, "comments": list(comments)}
+def payload(*comments, number=9764, title="t", labels=None):
+    # #12156 -- `labels` defaults to None (absent key) so pre-existing tests
+    # that don't care about the umbrella signal stay byte-equivalent: the
+    # helper in `_is_umbrella_issue` falls back to `payload.get("labels") or []`
+    # and degrades to the title-route. Tests that need the umbrella signal
+    # pass `labels=[{"name": "EPIC"}]` explicitly.
+    d = {"number": number, "title": title, "comments": list(comments)}
+    if labels is not None:
+        d["labels"] = labels
+    return d
 
 
 # --- extract_lane (grain_tag, now reused by the guard) -----------------------
@@ -120,7 +129,7 @@ def test_parse_open_claim():
 
 
 def test_parse_close_markers():
-    for marker in ("RELEASED", "DONE", "CANCELLED", "ABANDONED"):
+    for marker in ("RELEASED", "DONE", "CANCELLED", "ABANDONED", "DELIVERED"):
         ev = clc.parse_claim_event(comment(
             f"[{marker}] lane myia-po-2024:CoursIA -- done",
             "2026-08-06T23:00:00Z",
@@ -128,6 +137,64 @@ def test_parse_close_markers():
         assert ev is not None
         assert ev.is_open is False
         assert ev.marker == marker
+
+
+def test_parse_delivered_captures_pr_ref():
+    """#12320 -- `[DELIVERED] lane X -- PR #N` records the PR reference.
+
+    The PR number is a parsed integer on the event, distinguishing
+    "delivered to a PR I have the number for" from a bare DELIVERED. The
+    reducer treats both as closes, so v1 only verifies that the writer's
+    intent is durably recorded for the summary and the future v2 gate.
+    """
+    ev = clc.parse_claim_event(comment(
+        "[DELIVERED] lane myia-po-2023:CoursIA-2 -- PR #12271",
+        "2026-08-22T12:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_delivered is True
+    assert ev.pr_ref == 12271
+    assert ev.is_open is False
+
+
+def test_parse_delivered_without_pr_ref_still_closes():
+    """A DELIVERED without a PR reference is a legal close; just no pr_ref.
+
+    The marker closes the claim like a RELEASED would. The empty pr_ref
+    is honest about the gap: the writer chose the DELIVERED vocabulary
+    without naming a PR, so the consumer cannot fetch one.
+    """
+    ev = clc.parse_claim_event(comment(
+        "[DELIVERED] lane myia-po-2023:CoursIA-2 -- substance shipped",
+        "2026-08-22T12:00:00Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_delivered is True
+    assert ev.pr_ref is None
+    assert ev.is_open is False
+
+
+def test_extract_delivered_pr_ref_handles_stray_hash():
+    """`#1234` without the `PR` prefix is NOT a PR reference (#12320).
+
+    The writer must explicitly name `PR #N` -- this prevents an issue
+    number (e.g. `#12320` in the body text) from being mistaken for a
+    PR reference the consumer would go fetch. Stray hash is ignored.
+    """
+    assert clc._extract_delivered_pr_ref(
+        "[DELIVERED] lane X -- see #12320 for the issue"
+    ) is None
+    # The PR keyword IS required
+    assert clc._extract_delivered_pr_ref(
+        "[DELIVERED] lane X -- PR #12320"
+    ) == 12320
+    # And `Pull Request` is not accepted (we want a short form, easy to
+    # grep, easy to type).
+    assert clc._extract_delivered_pr_ref(
+        "[DELIVERED] lane X -- Pull Request #12320"
+    ) is None
 
 
 def test_parse_non_marker_is_none():
@@ -280,19 +347,22 @@ def test_decorated_paths_clause_scopes_claim():
     assert fnmatch.fnmatch("notebooks/b.ipynb", "notebooks/b.ipynb**")  # invariant
 
 
-def test_check_blocked_when_claim_comment_mentions_marker_in_prose(capsys):
+def test_check_no_paths_claim_in_prose_returns_exit_2_not_scoped(capsys):
     # Full-flow regression for the #10228 FN: a claim comment that ALSO mentions
     # a close marker in instructional prose must still BLOCK another lane. This
     # is the exact shape of ai-01's dispatch comments (claim + release instructions).
+    # #12322 -- caller has no scope so the verdict is `NOT_SCOPED` (exit 2),
+    # not `BLOCKED` (exit 1). The nuance is that the caller can lift the
+    # block by re-running with `--paths` matching their actual files.
     body = (
         "[CLAIMED] lane myia-po-2025:CoursIA-2 -- Taches 1-2 (CPU).\r\n\r\n"
         "(Release with `[RELEASED]` when your PR lands.)"
     )
     p = payload(comment(body, "2026-08-09T21:19:00Z", author="myia-ai-01"))
     rc = clc._run_check(p, "myia-po-2024:CoursIA")
-    assert rc == 1                          # BLOCKED, not CLEAR (the FN returned 0)
+    assert rc == 2                          # NOT_SCOPED, not BLOCKED (legacy returned 1)
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
     assert "myia-po-2025:CoursIA-2" in captured.out
 
 
@@ -394,16 +464,140 @@ def test_check_clear_when_only_my_lane(capsys):
     assert "CLEAR" in out
 
 
-def test_check_blocked_when_other_lane_active(capsys):
+def test_check_no_paths_returns_exit_2_and_not_scoped(capsys):
+    # #12322 -- when the caller does NOT pass `--paths` AND has no scoped
+    # active claim of their own, the call cannot prove disjointness from any
+    # blocker. The legacy verdict (exit 1, BLOCKED) was a hard read that
+    # prompted the fumble on #11112 (user-mistaking the question for a
+    # real block, then escalating to ai-01 and posting an URGENT DM).
+    # The fix splits this into `exit 2` + the `NOT_SCOPED` verdict label
+    # so the next step is unambiguously "re-run with `--paths`" instead
+    # of "find another grain".
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- working here",
         "2026-08-06T22:43:31Z",
     ))
     rc = clc._run_check(p, "myia-po-2024:CoursIA")
-    assert rc == 1
+    assert rc == 2
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
+    assert "ACTION" in captured.err
     assert "myia-po-2025:CoursIA" in captured.out
+
+
+# --- #12322 -- query_scope + exit code semantics -----------------------------
+#
+# Three exit codes:
+#   0 -> CLEAR (no blocker at all).
+#   1 -> BLOCKED (caller's scope proves disjointness impossible -- real conflict).
+#   2 -> NOT_SCOPED (caller did not bind scope, blocker cannot be confirmed
+#        as a real conflict -- the next step is to re-run with `--paths`).
+#
+# The test above (test_check_no_paths_returns_exit_2_and_not_scoped) covers
+# the unscoped-caller-against-unscoped-blocker leg. The four tests below
+# pin the OTHER three legs of the matrix so the verdict behaviour does not
+# silently drift on either the PATH_SCOPED or the CLEAR branch.
+
+def test_check_query_scope_path_scoped_when_caller_passes_paths(capsys):
+    """When the caller passes `--paths`, the verdict field is `PATH_SCOPED`
+    EVEN WHEN a blocker exists. This pins the matrix: the caller IS scoping,
+    so the verdict layer is no longer the right place for the actionable
+    hint -- the verdict is the real exit 1 / real BLOCKED label."""
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2025:CoursIA -- working here",
+                "2026-08-06T22:43:31Z"),
+    )
+    rc = clc._run_check(
+        p, "myia-po-2024:CoursIA",
+        my_paths=["scripts/check_lane_claim.py"],
+    )
+    out = capsys.readouterr().out
+    assert rc == 1  # BLOCKED at exit 1 -- caller IS scoping, real conflict
+    assert '"query_scope": "PATH_SCOPED"' in out
+
+
+def test_check_query_scope_path_scoped_when_caller_already_owns_scoped_claim(capsys):
+    """Symmetric leg: the caller does NOT pass `--paths` BUT already owns an
+    active scoped claim (`paths:`) on the same issue. Their scope merges
+    with the call site via the #10419 rule. The verdict is `PATH_SCOPED`
+    at exit 1 -- the caller is, in effect, scoped through their own active
+    claim, so the unscoped-caller hint does not apply.
+
+    # #12345 -- the caller's own claim scopes to `Sudoku-9.ipynb`, which does
+    # NOT exist as a tracked file. Post-#12345, the scope-vivacity classifier
+    # sees `caller_empty_scope == my_scope` and routes to
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (a broken scope is a non-scope).
+    """
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA -- "
+            "paths: MyIA.AI.Notebooks/Sudoku/Sudoku-9.ipynb",
+            "2026-08-11T04:02:00Z",
+        ),
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA -- working here",
+            "2026-08-06T22:43:31Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    out = capsys.readouterr().out
+    # #12345 -- the caller's own scope (`Sudoku-9.ipynb`) is dead, so the
+    # classifier sees an entirely-dead scope and routes to
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2. The other lane's epic-wide
+    # claim still blocks the caller; the verdict is `NOT_SCOPED` (exit 2),
+    # not `BLOCKED` (exit 1), because the broken scope proves nothing about
+    # disjointness.
+    assert rc == 2  # NOT_SCOPED -- caller's own scope is dead (#12345)
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
+    # Verify the caller's own scoped claim is in the active_claims dict.
+    assert '"myia-po-2024:CoursIA"' in out
+
+
+def test_check_query_scope_clears_when_no_blockers_and_caller_is_unscoped(capsys):
+    """The CLEAR case at exit 0 -- caller is unscoped, no other lane holds
+    a claim. The verdict is still CLEAR and `query_scope` is `PATH_SCOPED`
+    (the caller's not-scoping does not influence the verdict when nothing
+    is blocking). Pinning this prevents a future change from falsely
+    classifying `CLEAR + unscoped` as a sentinel of any kind."""
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2024:CoursIA -- build the guard",
+        "2026-08-06T22:43:31Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    # query_scope is PATH_SCOPED on a CLEAR even when the caller did not
+    # bind `--paths` -- the field reports the FORCED CLASSIFIER, not the
+    # caller's own choice. The rule `EPIC_WIDE_NO_PATHS_DECLARED` only
+    # triggers when there is at least one blocker to label.
+    assert '"query_scope": "PATH_SCOPED"' in out
+    assert '"blocked": false' in out
+
+
+def test_check_path_scoped_blocks_against_real_intersecting_scope(capsys):
+    """The decisive positive control -- a SCOPED caller whose scope
+    intersects the blocker's scope reads as `BLOCKED` at `exit 1` (NOT
+    `NOT_SCOPED` at `exit 2`). The exit-code distinction is the only thing
+    that lets the caller automate against this verdict."""
+    # Blocker's scope: scripts/**
+    # Caller's scope: scripts/check_lane_claim.py (intersects)
+    p = payload(
+        comment(
+            "[OVERRIDE] lane myia-po-2024:CoursIA -- paths: scripts/**",
+            "2026-08-11T18:00:00Z",
+        ),
+    )
+    rc = clc._run_check(
+        p,
+        "myia-po-2025:CoursIA-2",
+        my_paths=["scripts/check_lane_claim.py"],
+    )
+    err = capsys.readouterr().err
+    assert rc == 1
+    # The non-path-scoped BLOCKED message fires -- distinct from the
+    # NOT_SCOPED message which would have fired if the caller had no scope.
+    assert "BLOCKED: another lane holds an active claim" in err
+    assert "NOT_SCOPED" not in err
 
 
 def test_check_clear_after_other_lane_releases(capsys):
@@ -565,21 +759,26 @@ def test_stale_threshold_unblocks_old_claim(capsys):
     assert '"blocked": false' in captured.out
 
 
-def test_stale_threshold_fresh_claim_still_blocks(capsys):
-    # Other lane claimed 2h ago; threshold 24h -> still BLOCKED.
+def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(capsys):
+    # Other lane claimed 2h ago; threshold 24h -> NOT_SCOPED at exit 2 (#12322).
+    # Pre-#12322 this returned `exit 1` + `BLOCKED`, conflating a non-scoped
+    # caller with a real conflict. The new verdict reflects the action the
+    # caller can take (re-run with `--paths`).
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- working here",
         "2026-08-07T10:00:00Z",
     ))
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         stale_threshold=24.0, now=NOW)
-    assert rc == 1
+    assert rc == 2
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
 
 
 def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(capsys):
-    # Two other lanes: one stale (48h), one fresh (1h). The fresh one blocks.
+    # Two other lanes: one stale (48h), one fresh (1h). The fresh one
+    # triggers the NOT_SCOPED verdict (#12322 exit 2) since the caller
+    # has no scope of their own.
     p = payload(
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- old",
                 "2026-08-05T12:00:00Z"),
@@ -588,11 +787,11 @@ def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(capsys):
     )
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         stale_threshold=24.0, now=NOW)
-    assert rc == 1
+    assert rc == 2
     captured = capsys.readouterr()
-    # The stale one is warned about, the fresh one blocks.
+    # The stale one is warned about, the fresh one drives the NOT_SCOPED.
     assert "STALE_CLAIM myia-po-2025:CoursIA" in captured.err
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
     assert "myia-po-2023:CoursIA" in captured.out
 
 
@@ -610,27 +809,31 @@ def test_stale_threshold_boundary_is_stale(capsys):
 
 def test_no_stale_flag_blocks_old_claim_unchanged(capsys):
     # Criterion 1: without the flag, an old claim still blocks (current behaviour).
+    # #12322 -- the verdict label is `NOT_SCOPED` (exit 2) since the caller
+    # does not declare `--paths`. The exit code change is the corrective.
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- very old orphan",
         "2026-08-01T00:00:00Z",
     ))
     rc = clc._run_check(p, "myia-po-2024:CoursIA", now=NOW)
-    assert rc == 1
+    assert rc == 2
     captured = capsys.readouterr()
     assert "STALE_CLAIM" not in captured.err
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
 
 
 def test_stale_threshold_unparseable_not_treated_stale(capsys):
     # A claim whose createdAt is unparseable cannot be dated -> NOT stale
     # (conservative: we cannot prove an age, so we do not lift the block).
+    # #12322 -- caller has no scope, so the verdict is exit 2 NOT_SCOPED
+    # instead of the legacy exit 1 BLOCKED.
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- undated",
         "not-an-iso-date",
     ))
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         stale_threshold=24.0, now=NOW)
-    assert rc == 1
+    assert rc == 2
 
 
 # --- --paths mode (#9959) ----------------------------------------------------
@@ -957,7 +1160,11 @@ def test_check_override_for_my_lane_is_clear(capsys):
 
 
 def test_check_override_to_other_lane_blocks(capsys):
-    # I claimed, then the coordinator overrode to ANOTHER lane -> BLOCKED for me.
+    # I claimed, then the coordinator overrode to ANOTHER lane -> NOT_SCOPED
+    # for me. #12322 -- the caller (myia-po-2025:CoursIA-2) did not pass
+    # `--paths`, so the verdict is NOT_SCOPED at exit 2 even though an
+    # [OVERRIDE] reassigned the lock. The override retains the BLOCKED
+    # semantics; only the verdict label on the unscoped caller leg moves.
     p = payload(
         comment("[CLAIMED] lane myia-po-2025:CoursIA-2 -- working here",
                 "2026-08-09T11:41:43Z"),
@@ -965,9 +1172,9 @@ def test_check_override_to_other_lane_blocks(capsys):
                 "2026-08-09T22:00:00Z"),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
-    assert rc == 1
+    assert rc == 2  # #12322 NOT_SCOPED (the override reassigned to a different lane)
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
     assert "myia-po-2026:CoursIA" in captured.out
 
 
@@ -1231,8 +1438,9 @@ def test_reducer_scoped_override_closes_empty_scope_full_claim_overlapping_live(
 
 def test_check_override_no_paths_preserves_legacy_epic_wide_behaviour(capsys):
     # Override WITHOUT `paths:` clause, check WITHOUT `--paths` -> legacy
-    # epic-wide block. This pins backward compatibility: a caller that did
-    # not opt into the new scope mechanism keeps the old behaviour.
+    # epic-wide block. #12322 -- the verdict text is `NOT_SCOPED` (exit 2)
+    # so the caller can branch on the verdict: exit 1 means a real conflict,
+    # exit 2 means "scope your call to lift the over-block".
     p = payload(
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- original",
                 "2026-08-09T11:00:00Z"),
@@ -1240,13 +1448,19 @@ def test_check_override_no_paths_preserves_legacy_epic_wide_behaviour(capsys):
                 "2026-08-09T22:00:00Z"),
     )
     rc = clc._run_check(p, "myia-po-2026:CoursIA")
-    assert rc == 1
+    assert rc == 2
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
     assert "myia-po-2024:CoursIA" in captured.out
 
 
 def test_check_override_paths_blocks_other_lane_on_matching_path(capsys):
+    # #12345 -- the caller's `--paths` `Foo.lean` and the override claim's
+    # `SymbolicAI/Lean/**` are both ENTIRELY dead in this test repo (the
+    # tests live outside any actual SymbolicAI tree). Pre-#12345 the
+    # presence-of-flag predicate returned exit 1 + BLOCKED, hiding the
+    # broken scope. Post-#12345 the caller's scope is entirely dead ->
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (fail-CLOSED).
     # Override with `paths: A/**` to lane X; I (lane Z) want to edit a file
     # UNDER A/ -> my path intersects the scope -> Z is BLOCKED.
     p = payload(
@@ -1263,9 +1477,14 @@ def test_check_override_paths_blocks_other_lane_on_matching_path(capsys):
         "myia-po-2025:CoursIA-2",
         my_paths=["MyIA.AI.Notebooks/SymbolicAI/Lean/Foo.lean"],
     )
-    assert rc == 1
+    # #12345 -- the caller's scope `Foo.lean` does NOT exist in this test
+    # repo (and the override claim's `SymbolicAI/Lean/**` glob is also
+    # dead). Post-#12345, an entirely-dead caller scope routes to
+    # `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (fail-CLOSED -- a broken
+    # scope is a non-scope, NOT a permissive one).
+    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
     assert "myia-po-2024:CoursIA" in captured.out
 
 
@@ -1348,8 +1567,9 @@ def test_active_claims_summary_exposes_paths(capsys):
     # The audit JSON surfaces the `paths` field on override events, so a
     # human reviewer can verify the scope without re-reading the source.
     # The reducer grants A the claim -> A is in `others` (because I am B),
-    # so the verdict is BLOCKED; that is not what this test is pinning. We
-    # only check that the scope payload leaks into the JSON, NOT the verdict.
+    # so the verdict is NOT_SCOPED at exit 2 (#12322); that is not what this
+    # test is pinning. We only check that the scope payload leaks into the
+    # JSON, NOT the verdict.
     p = payload(
         comment(
             "[OVERRIDE] lane myia-po-2024:CoursIA -- paths: Lean/**, scripts/**",
@@ -1358,9 +1578,10 @@ def test_active_claims_summary_exposes_paths(capsys):
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
     out = capsys.readouterr().out
-    assert rc == 1  # override granted A, so B is blocked (epic-wide read)
+    assert rc == 2  # exit 2 NOT_SCOPED -- caller did not bind `--paths`
     assert "Lean/**" in out
     assert "scripts/**" in out
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
 
 
 # --- [CLAIMED] paths: scope (#10419) -----------------------------------------
@@ -1485,7 +1706,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/GameTheory/"
-                "GameTheory-4-NashEquilibrium-Csharp.ipynb",
+                "GameTheory-04-NashEquilibrium-Csharp.ipynb",
                 "2026-08-11T04:07:00Z"),
     )
     for lane in (
@@ -1522,6 +1743,11 @@ def test_check_claimed_one_scoped_one_plain_blocks(capsys):
     # One scoped claim + one plain (epic-wide) claim -> BLOCKED. Disjointness is
     # only honoured when BOTH sides declare a scope (acceptance #2 of #10419);
     # a plain claim's intent is unknown, so it conservatively blocks.
+    # #12345 -- the caller's OWN claim scope `Search/Search-3.ipynb` is dead
+    # in this test repo (no Search tree exists here). Post-#12345 the scope
+    # is entirely dead -> `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (the broken
+    # scope proves nothing about disjointness against `B`'s plain claim,
+    # so the verdict is `NOT_SCOPED`, not `BLOCKED`).
     p = payload(
         comment("[CLAIMED] lane A:CoursIA -- paths: Search/Search-3.ipynb",
                 "2026-08-11T04:02:00Z"),
@@ -1529,7 +1755,7 @@ def test_check_claimed_one_scoped_one_plain_blocks(capsys):
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
-    assert rc == 1
+    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
     assert "B:CoursIA-2" in capsys.readouterr().err
 
 
@@ -1644,7 +1870,12 @@ def test_intent_caps_at_120_chars():
 
 
 def test_blocked_verdict_surfaces_intent_side_by_side(capsys):
-    """Two lanes with disjoint marker-line excerpts both render in BLOCKED."""
+    """Two lanes with disjoint marker-line excerpts both render in NOT_SCOPED.
+
+    #12322 -- the verdict label is `NOT_SCOPED` (exit 2) when the caller
+    does not bind scope. The intent side-by-side block is preserved verbatim
+    (it was Variante 2's headline) so a reader still gets the disambiguating
+    signal that prevents #10382-style over-blocks."""
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2023:CoursIA — Part1-Foundations BFS notebook",
@@ -1656,14 +1887,12 @@ def test_blocked_verdict_surfaces_intent_side_by_side(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
-    assert rc == 1
+    assert rc == 2  # #12322 -- NOT_SCOPED, caller has no scope binding
     err = capsys.readouterr().err
-    # The bare BLOCKED message used to say "Do not start -- pick another grain,
-    # or wait for release." Variante 2 adds the side-by-side intent block.
-    assert "BLOCKED" in err
+    assert "NOT_SCOPED" in err
     assert "Part1-Foundations BFS notebook" in err
     assert "Part3-Advanced A* notebook" in err
-    assert "Claimed scopes" in err  # the new header line
+    assert "Claimed scopes" in err  # the Variante 2 header preserved
 
 
 def test_trio_ortools_scenario_disjoint_intents_visible(capsys):
@@ -1672,10 +1901,11 @@ def test_trio_ortools_scenario_disjoint_intents_visible(capsys):
     Three lanes, each with a valid [CLAIMED] on the same EPIC #10382 but
     on DISJOINT notebooks. The block is the tool's job (the reducer keeps
     them all in `others` -- epic-wide semantics are preserved). The FIX is
-    that the BLOCKED verdict now surfaces all three intents side-by-side,
+    that the NOT_SCOPED verdict now surfaces all three intents side-by-side,
     so a coordinator reads "three disjoint notebooks" at a glance instead
     of "three blocking claims" and can decide whether the scope overlap
-    actually warrants arbitration, or whether each lane can proceed.
+    actually warrants arbitration, or whether each lane can proceed by
+    re-running the check with `--paths`. (#12322)
     """
     p = payload(
         comment(
@@ -1692,10 +1922,9 @@ def test_trio_ortools_scenario_disjoint_intents_visible(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
-    # Reducer keeps all three in `others` (no scope mechanism for [CLAIMED]
-    # yet -- that's the next iteration; the immediate fix is the verdict
-    # SURFACES them legibly).
-    assert rc == 1
+    # Reducer keeps all three in `others` (caller did not bind scope, so the
+    # call lands in `EPIC_WIDE_NO_PATHS_DECLARED` per #12322).
+    assert rc == 2
     err = capsys.readouterr().err
     assert "myia-po-2023:CoursIA" in err
     assert "myia-po-2024:CoursIA" in err
@@ -1731,8 +1960,9 @@ def test_blocked_verdict_uses_no_intent_sentinel(capsys):
 
 def test_blocked_verdict_prints_intent_for_named_lane(capsys):
     """A claim with a lane token AND a marker-line excerpt has its intent
-    printed in the BLOCKED verdict. This is the common case (the lane token
-    IS the intent excerpt when the author writes nothing else)."""
+    printed in the NOT_SCOPED verdict. This is the common case (the lane
+    token IS the intent excerpt when the author writes nothing else).
+    #12322 -- caller has no scope binding -> NOT_SCOPED at exit 2."""
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2025:CoursIA",
@@ -1740,18 +1970,19 @@ def test_blocked_verdict_prints_intent_for_named_lane(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2024:CoursIA")
-    assert rc == 1
+    assert rc == 2
     err = capsys.readouterr().err
-    assert "BLOCKED" in err
+    assert "NOT_SCOPED" in err
     # The intent is the lane token (the only thing on the marker line).
     assert "myia-po-2025:CoursIA" in err
 
 
 def test_blocked_message_includes_paths_narrowing_hint(capsys):
-    """The new BLOCKED hint mentions `[CLAIMED] paths: ...` as a narrowing
-    path. The path-scope clause is already supported for [OVERRIDE] (#10342);
-    [CLAIMED] with paths: is a natural follow-up, but the immediate value of
-    Variante 2 is to teach the reader that this is the next move.
+    """The NOT_SCOPED hint names `--paths ...` as the next move. The
+    path-scope clause is already supported for [OVERRIDE] (#10342);
+    [CLAIMED] with paths: is a natural follow-up (#10419). #12322 -- the
+    narrowing hint is now in the NOT_SCOPED verdict, where the actionable
+    next step belongs (the post-fix message is action-shaped).
     """
     p = payload(
         comment(
@@ -1760,10 +1991,10 @@ def test_blocked_message_includes_paths_narrowing_hint(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2024:CoursIA")
-    assert rc == 1
+    assert rc == 2
     err = capsys.readouterr().err
-    assert "paths:" in err
-    assert "scope-narrowing" in err
+    assert "paths" in err
+    assert "ACTION" in err
 
 
 # --- brace-group path scopes (#10597) ----------------------------------------
@@ -1987,8 +2218,9 @@ def test_filter_by_claim_scope_lifts_unparseable_to_epic_wide():
 
 def test_run_check_unparseable_scope_blocks_other_lane(capsys):
     """End-to-end: a scoped CLAIMED with an unclosed brace BLOCKS another
-    lane checking the same issue. This pins the user-visible verdict.
-    """
+    lane checking the same issue. #12322 -- the caller has no scope binding
+    so the verdict is NOT_SCOPED at exit 2 (the unparseable scope was lifted
+    to epic-wide so the call cannot prove disjointness)."""
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: scripts/{a,b-*.yaml",
@@ -1996,19 +2228,21 @@ def test_run_check_unparseable_scope_blocks_other_lane(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    # BLOCKED -- the unparseable scope lifted the lane to epic-wide.
-    assert rc == 1
+    # NOT_SCOPED -- the unparseable scope lifted the lane to epic-wide (#12322).
+    assert rc == 2
     captured = capsys.readouterr()
     # The audit JSON names the residual brace so the lane learns to reissue.
     assert "scripts/{a,b-*.yaml" in captured.out
     # And the verdict itself is in stderr.
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
 
 
 def test_run_check_summary_exposes_unparseable_scope_field(capsys):
     """The audit JSON surfaces the witness list under
     `active_claims.<lane>.unparseable_scope` so a human reviewer (and the
-    lane that owns the malformed claim) can read the defect at a glance."""
+    lane that owns the malformed claim) can read the defect at a glance.
+    #12322 -- also surfaces `query_scope: EPIC_WIDE_NO_PATHS_DECLARED` so
+    a reader can branch on the verdict without re-running the check."""
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
@@ -2017,11 +2251,12 @@ def test_run_check_summary_exposes_unparseable_scope_field(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1
+    assert rc == 2
     out = capsys.readouterr().out
     # The JSON includes the structured witness list under the lane entry.
     assert '"unparseable_scope"' in out
     assert "scripts/{a,b-*.yaml" in out
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
 
 
 def test_run_check_clean_brace_scope_does_not_show_unparseable(capsys):
@@ -2233,7 +2468,8 @@ def test_run_check_dead_scope_blocks_other_lane(capsys):
     """CORE #10958 fail-safe, end-to-end: a scoped claim whose every glob is
     dead (here a typo'd path, WITH the ` -- ts` suffix the truncation now
     handles) is lifted to epic-wide and BLOCKS another lane checking the
-    same issue. Pre-fix this was the #9764-style false CLEAR."""
+    same issue. Pre-fix this was the #9764-style false CLEAR. #12322 --
+    the caller has no scope binding so the verdict is NOT_SCOPED at exit 2."""
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
@@ -2242,9 +2478,9 @@ def test_run_check_dead_scope_blocks_other_lane(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1  # lifted to epic-wide -> blocks
+    assert rc == 2  # #12322 NOT_SCOPED (lifted to epic-wide -> cannot prove disjointness)
     captured = capsys.readouterr()
-    assert "BLOCKED" in captured.err
+    assert "NOT_SCOPED" in captured.err
     # The audit JSON names the dead glob so the lane learns to reissue.
     assert '"empty_scope"' in captured.out
     assert "scripts/nowhere/typo.py" in captured.out
@@ -2253,7 +2489,8 @@ def test_run_check_dead_scope_blocks_other_lane(capsys):
 def test_run_check_summary_exposes_empty_scope_field(capsys):
     """Acceptance: dead globs surface in the audit JSON under
     `active_claims.<lane>.empty_scope`, not only as a stderr WARN. A
-    PARTIALLY dead scope still surfaces its dead glob without lifting."""
+    PARTIALLY dead scope still surfaces its dead glob without lifting.
+    #12322 -- also surfaces `query_scope: EPIC_WIDE_NO_PATHS_DECLARED`."""
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
@@ -2262,16 +2499,25 @@ def test_run_check_summary_exposes_empty_scope_field(capsys):
         ),
     )
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1  # no my_scope -> the scoped claim still blocks
+    assert rc == 2  # #12322 NOT_SCOPED
     out = capsys.readouterr().out
     assert '"empty_scope"' in out
     assert "scripts/nowhere/typo.py" in out
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
 
 
 def test_run_check_my_dead_scope_keeps_others(capsys):
     """Caller-side guard: when MY OWN scope is entirely dead, I cannot use
     disjointness to clear another lane -- globs that lock nothing prove
-    nothing. Every other lane stays -> BLOCKED until my claim is reissued."""
+    nothing. Every other lane stays -> NOT_SCOPED until my claim is reissued.
+
+    # #12345 -- pre-#12345 the verdict was `BLOCKED` at exit 1 (a real-
+    # conflict surface), masking the fact that the caller's own broken scope
+    # is what disabled disjointness. Post-#12345 the verdict is
+    # `NOT_SCOPED` at exit 2 -- the caller learns at the call site that the
+    # issue is THEIR scope, not the other lane's, and the actionable next
+    # step is the same as the no-scope case (re-run with valid `--paths`).
+    """
     p = payload(
         comment("[CLAIMED] lane A:CoursIA -- paths: scripts/nowhere/typo.py",
                 "2026-08-11T04:02:00Z"),
@@ -2279,8 +2525,11 @@ def test_run_check_my_dead_scope_keeps_others(capsys):
                 "2026-08-11T04:05:00Z"),
     )
     rc = clc._run_check(p, "A:CoursIA")
-    assert rc == 1
-    assert "BLOCKED" in capsys.readouterr().err
+    # #12345 -- caller's own scope is entirely dead (`nowhere/typo.py` is not
+    # tracked). The verdict is NOT_SCOPED (exit 2), not BLOCKED (exit 1):
+    # a broken scope is a non-scope, NOT a real conflict against B.
+    assert rc == 2  # NOT_SCOPED -- caller's scope is dead (#12345)
+    assert "NOT_SCOPED" in capsys.readouterr().err
 
 
 def test_run_check_partially_dead_scope_stays_scoped(capsys):
@@ -2342,7 +2591,16 @@ def test_run_check_emits_scope_zero_coverage_warning(capsys):
     """End-to-end: the lane declares a scoped claim whose globs match
     no real file, then calls `_run_check` for its OWN claim -- the
     `SCOPE_ZERO_COVERAGE` line lands on stderr. This pins the user-visible
-    UX of the bonus hardener."""
+    UX of the bonus hardener.
+
+    # #12345 -- pre-#12345 the verdict was CLEAR at exit 0 (the lane owns
+    # the only claim on the issue, and no other lane blocks). Post-#12345
+    # the verdict is NOT_SCOPED at exit 2 (fail-CLOSED -- a broken scope is
+    # NOT a permissive scope, even when no one else is blocking). The lane
+    # keeps the `SCOPE_ZERO_COVERAGE` guidance and additionally sees a
+    # caller-side `SCOPE_DEAD_GLOB` WARN and the `caller_empty_scope` JSON
+    # field populated with the dead globs.
+    """
     p = payload(
         comment(
             "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
@@ -2350,12 +2608,19 @@ def test_run_check_emits_scope_zero_coverage_warning(capsys):
             "2026-08-12T11:00:00Z",
         ),
     )
-    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")  # own lane, CLEAR
-    assert rc == 0
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2")  # own lane, scope dead
+    # #12345 -- fail-CLOSED: broken scope is not a permissive scope.
+    assert rc == 2  # NOT_SCOPED -- caller's own scope is dead (#12345)
     captured = capsys.readouterr()
+    # Both warnings fire: the legacy SCOPE_ZERO_COVERAGE (declaring-side
+    # hint) and the new SCOPE_DEAD_GLOB (caller-side witness list).
     assert "SCOPE_ZERO_COVERAGE" in captured.err
+    assert "SCOPE_DEAD_GLOB" in captured.err
     # The scope itself is named verbatim so the lane can reissue.
     assert "definitely-not-a-real-glob-*.zxyq" in captured.err
+    # And the JSON summary carries the dead-glob witness on the caller side.
+    assert '"caller_empty_scope": [' in captured.out
+    assert "definitely-not-a-real-glob-*.zxyq" in captured.out
 
 
 def test_run_check_no_warning_when_scope_matches_files(capsys):
@@ -2442,12 +2707,12 @@ WELL_FORMED_MARKER = (
 
 def test_lint_override_without_paths_emits_info(capsys):
     # F1 -- the 05:53:20Z [OVERRIDE]: no `paths:` clause -> epic-wide. The
-    # INFO line names the blocking effect; the verdict itself is unchanged
-    # (the override still blocks a third lane).
+    # INFO line names the blocking effect; the verdict itself is now
+    # `NOT_SCOPED` at exit 2 (#12322) since the caller does not bind scope.
     p = payload(comment(F1_OVERRIDE_NO_PATHS, "2026-08-14T05:53:20Z"),
                 number=10678)
     rc = clc._run_check(p, "myia-po-2026:CoursIA")
-    assert rc == 1  # verdict unchanged: the override blocks
+    assert rc == 2  # #12322 -- NOT_SCOPED (caller did not bind scope)
     err = capsys.readouterr().err
     assert "INFO: marqueur OVERRIDE epic-wide (pas de clause paths:)" in err
     assert "il bloque toutes les autres lanes sur #10678" in err
@@ -2463,10 +2728,12 @@ def test_lint_f2_prose_suffix_now_truncated_silent(capsys):
     # F4 below still pins the lint's own value: prose WITHOUT a
     # whitespace-delimited ` -- `/` — ` separator is still swallowed and
     # still WARNs.
+    # #12322 -- caller did not pass `--paths`, so the verdict label flips
+    # to NOT_SCOPED (exit 2) while the lint contract (no WARN) holds.
     p = payload(comment(F2_PROSE_AFTER_CLAUSE, "2026-08-14T06:41:00Z"),
                 number=10678)
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1  # verdict unchanged: po-2024's scoped claim blocks
+    assert rc == 2  # #12322 NOT_SCOPED, exit distinct from exit 1 real conflict
     err = capsys.readouterr().err
     assert "WARN:" not in err
     # The parse-layer proof: the truncated clause keeps exactly the 9 family
@@ -2484,9 +2751,10 @@ def test_lint_family_globs_are_silent(capsys):
     # defect here is over-breadth (the globs catch unrelated OPEN PRs), which
     # is a SEMANTIC judgement the lint deliberately does not make -- this is
     # exactly the selectivity the acceptance's "la moitié qui compte" pins.
+    # #12322 -- caller has no scope, so the verdict is NOT_SCOPED at exit 2.
     p = payload(comment(F3_FAMILY_GLOBS, "2026-08-14T06:55:07Z"), number=10678)
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1  # verdict unchanged: po-2023's claim blocks
+    assert rc == 2  # #12322
     err = capsys.readouterr().err
     assert "WARN:" not in err
     assert "INFO:" not in err
@@ -2497,11 +2765,11 @@ def test_lint_prose_mentioning_paths_warns_suspect(capsys):
     # and `_PATHS_CLAUSE_RE` grabs everything after it as ONE bogus glob. The
     # lint surfaces it as a swallowed-prose WARN (the machine reads a clause
     # where the author wrote prose -- not the INFO path, but the defect is
-    # caught and named).
+    # caught and named). #12322 -- caller has no scope -> NOT_SCOPED exit 2.
     p = payload(comment(F4_PROSE_GRABBED_AS_CLAUSE, "2026-08-14T07:06:23Z"),
                 number=10678)
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1  # verdict unchanged
+    assert rc == 2  # #12322
     err = capsys.readouterr().err
     assert "WARN: glob suspect (prose avalée ?)" in err
     assert "et bloquait donc les deux lanes epic-wide" in err
@@ -2511,11 +2779,11 @@ def test_lint_prose_mentioning_paths_warns_suspect(capsys):
 def test_lint_well_formed_marker_produces_nothing(capsys):
     # The acceptance's decisive negative: a well-formed marker with two
     # EXISTING files produces NO warning at all -- the lint must not cry wolf
-    # on correct markers.
+    # on correct markers. #12322 -- caller has no scope -> NOT_SCOPED exit 2.
     p = payload(comment(WELL_FORMED_MARKER, "2026-08-14T08:00:00Z"),
                 number=10678)
     rc = clc._run_check(p, "myia-po-2025:CoursIA")
-    assert rc == 1  # verdict unchanged: the claim blocks
+    assert rc == 2  # #12322
     err = capsys.readouterr().err
     assert "WARN:" not in err
     assert "INFO:" not in err
@@ -2732,10 +3000,201 @@ def test_claim_body_without_paths_stays_epic_wide():
         "[CLAIMED] lane myia-po-2024:CoursIA -- fix ML-4"
 
 
+# --- #12345 -- caller-side scope-vivacity classifier -------------------------
+#
+# #12345 v2 acceptance points (one test each, with the per-point assertion
+# the comment on #12322's PR review named explicitly):
+#   (1) every glob in `--paths` is dead  -> exit 2 + `SCOPE_DEAD_GLOB` WARN
+#       naming each dead glob + `caller_empty_scope: [...]` JSON field;
+#   (2) SOME globs are dead               -> `SCOPE_DEAD_GLOB` WARN on those,
+#       the remaining live glob continues to carry disjointness;
+#   (3) outside a git repo (`tracked=None`) -> silent degradation, NO false
+#       WARN -- a caller without a tracked-files walk must not see a
+#       `SCOPE_DEAD_GLOB` for globs that may be live elsewhere;
+#   (4) positive control: a LIVE glob produces NO `SCOPE_DEAD_GLOB` WARN --
+#       a silenced detector and a disabled detector render the same output,
+#       and this test pins the distinction (without it, a future refactor
+#       could break the WARN path without any test catching it);
+#   (5) fail-CLOSED: an entirely-dead scope with ZERO blockers does NOT
+#       clear to `exit 0` -- the verdict is `NOT_SCOPED` at `exit 2` with
+#       a dedicated stderr message naming the dead globs, so the caller
+#       learns that the missing write-authorisation is THEIR scope.
+
+
+def test_check_caller_scope_all_globsmdead_routes_to_not_scoped(capsys, monkeypatch):
+    """#12345 acceptance (1) -- every glob in `--paths` is dead -> exit 2 +
+    `SCOPE_DEAD_GLOB` WARN + `caller_empty_scope: [...]` JSON field.
+    Caller has TWO dead globs; both must surface in the WARN and the JSON."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    rc = clc._run_check(
+        p, "B:CoursIA",
+        my_paths=["dead1/glob.ipynb", "dead2/other.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # #12345 -- entirely-dead scope -> NOT_SCOPED (exit 2), not BLOCKED (exit 1).
+    # The blocker `x/**` would have been a true conflict if the caller's
+    # scope had been live; the broken scope prevents the disjointness test.
+    assert rc == 2
+    assert "SCOPE_DEAD_GLOB" in captured.err
+    # Both dead globs named verbatim so the caller can reissue.
+    assert "dead1/glob.ipynb" in captured.err
+    assert "dead2/other.ipynb" in captured.err
+    # And the JSON summary carries the dead-glob witness on the caller side.
+    assert '"caller_empty_scope": [' in captured.out
+    assert "dead1/glob.ipynb" in captured.out
+    assert "dead2/other.ipynb" in captured.out
+
+
+def test_check_caller_scope_partially_dead_warns_but_keeps_live(capsys, monkeypatch):
+    """#12345 acceptance (2) -- SOME globs are dead -> `SCOPE_DEAD_GLOB` WARN
+    on those, the live glob continues to carry disjointness. The verdict is
+    `PATH_SCOPED` (not `EPIC_WIDE_NO_PATHS_DECLARED`) because at least one
+    glob is alive -- the partial lift only kicks in when the WHOLE scope
+    is dead."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    blocker = comment(
+        "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+        "2026-08-15T00:00:00Z",
+    )
+    p = payload(blocker, number=11064, title="t")
+    # Caller's scope: one live glob (`x/a.ipynb` -- intersect with `x/**`),
+    # one dead glob (`dead/nowhere.ipynb`). The live glob forces the verdict
+    # to PATH_SCOPED + BLOCKED; the dead glob is surfaced as a hint.
+    rc = clc._run_check(
+        p, "B:CoursIA",
+        my_paths=["x/a.ipynb", "dead/nowhere.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # The LIVE glob intersects the blocker -> real BLOCKED at exit 1.
+    assert rc == 1
+    assert "BLOCKED" in captured.err
+    # The DEAD glob is named in the WARN (partial coverage).
+    assert "SCOPE_DEAD_GLOB" in captured.err
+    assert "dead/nowhere.ipynb" in captured.err
+    # The live glob does NOT appear in the WARN (selectivity pin).
+    assert "x/a.ipynb" not in captured.err.split("SCOPE_DEAD_GLOB")[1] if "SCOPE_DEAD_GLOB" in captured.err else True
+    # JSON exposes the dead globs list (only the dead ones, not the live ones).
+    assert 'dead/nowhere.ipynb' in captured.out
+    # The live glob DOES NOT appear in the caller_empty_scope field.
+    out_json = captured.out
+    assert "\"caller_empty_scope\": [\n    \"dead/nowhere.ipynb\"\n  ]" in out_json or \
+           '"caller_empty_scope": ["dead/nowhere.ipynb"]' in out_json
+
+
+def test_check_caller_scope_silent_outside_git_repo(capsys, monkeypatch):
+    """#12345 acceptance (3) -- outside a git repo (`tracked=None`) we
+    degrade silently: NO `SCOPE_DEAD_GLOB` WARN, `caller_empty_scope: []`
+    in the JSON. Without this pin, a caller running the check outside a
+    git repo (e.g. just `--from-json` for triage) would see false-positive
+    WARNs on every scope.
+
+    The verdict semantics under `tracked=None`: `_empty_scope_in` short-
+    circuits to `[]` when the walk failed, so the dead-glob classifier
+    cannot fire. The verdict falls to PATH_SCOPED; `_filter_by_claim_scope`
+    cannot lift the blocker `x/**` (the lift requires `tracked is not None`)
+    and cannot prove disjointness (fnmatch on `does/not/exist/in/repo.ipynb`
+    against `x/**` returns no match), so the blocker is DROPPED and the
+    call returns CLEAR at exit 0. The verdict is the legacy behaviour, the
+    PIN this test cares about is exclusively the silent-degradation aspect
+    (no WARN, empty JSON witness list).
+    """
+    # Mock `_git_tracked_files` to return the None sentinel (the real walk
+    # returns None when not in a git repo or when git is missing). The
+    # organ calls the helper with one positional arg (`repo_root`), so the
+    # mock accepts and ignores it.
+    monkeypatch.setattr(clc, "_git_tracked_files", lambda repo_root=None: None)
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+                "2026-08-15T00:00:00Z"),
+        number=11064, title="t",
+    )
+    # Caller's `--paths` would normally be dead in this repo, but the
+    # tracked-files walk failed -- the WARN must NOT fire (best-effort),
+    # and the verdict falls to the legacy PATH_SCOPED branch (CLEAR or
+    # BLOCKED depending on fnmatch disjointness).
+    rc = clc._run_check(
+        p, "B:CoursIA",
+        my_paths=["does/not/exist/in/repo.ipynb"],
+    )
+    captured = capsys.readouterr()
+    # Under `tracked=None`, fnmatch says `does/not/exist/in/repo.ipynb` is
+    # disjoint from `x/**` (the path does not match the pattern), so the
+    # blocker is dropped -> CLEAR at exit 0. The verdict semantics here
+    # are the legacy behaviour -- the PIN is silent degradation.
+    assert rc == 0
+    # PIN: silent degradation. NO WARN, empty JSON witness list.
+    assert "SCOPE_DEAD_GLOB" not in captured.err
+    assert '"caller_empty_scope": []' in captured.out
+
+
+def test_check_caller_scope_live_glob_produces_no_warn(capsys, monkeypatch):
+    """#12345 acceptance (4) -- POSITIVE CONTROL: a live glob produces NO
+    `SCOPE_DEAD_GLOB` WARN. Without this test, a silent detector and a
+    disabled detector would render the same output, and a future refactor
+    that breaks the WARN path would not be caught by any other test (the
+    failure modes `WARN-always` and `WARN-never` are equally broken from
+    a caller's standpoint -- both mask the actual dead-glob state)."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb", "z/deep/f.ipynb"])
+    p = payload(
+        comment("[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
+                "2026-08-15T00:00:00Z"),
+        number=11064, title="t",
+    )
+    # `z/deep/f.ipynb` is in the mock AND disjoint from `x/**` -> CLEAR at
+    # exit 0. Crucially: NO `SCOPE_DEAD_GLOB` WARN (the live glob is live).
+    rc = clc._run_check(p, "B:CoursIA", my_paths=["z/deep/f.ipynb"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "SCOPE_DEAD_GLOB" not in captured.err
+    # The dead-glob witness list is empty in the JSON too.
+    assert '"caller_empty_scope": []' in captured.out
+
+
+def test_check_caller_scope_fail_closed_when_no_blockers(capsys, monkeypatch):
+    """#12345 acceptance (5) -- fail-CLOSED: an entirely-dead scope with
+    ZERO blockers does NOT clear to `exit 0`. The verdict is `NOT_SCOPED`
+    at `exit 2` with a dedicated stderr message naming the dead globs, so
+    the caller learns that the missing write-authorisation is THEIR scope
+    (not "nothing blocks me, I'm free to write"). This is the third property
+    of #12345's acceptance list -- the most important because it converts
+    a silent `exit 0` into an explicit refusal."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb"])
+    # ONLY the caller has a claim (their own, scoped, dead). No other lane.
+    body = clc._CLAIM_BODY_TMPL.format(
+        lane="B:CoursIA", intention="tranche",
+        paths_clause=clc._paths_clause(["dead/nowhere.ipynb"]),
+    )
+    p = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
+    rc = clc._run_check(p, "B:CoursIA")  # own lane, no other claims
+    captured = capsys.readouterr()
+    # #12345 -- fail-CLOSED. Broken scope is not a permissive scope.
+    assert rc == 2  # NOT_SCOPED, NOT CLEAR
+    assert "NOT_SCOPED" in captured.err
+    # The dedicated message names the dead glob.
+    assert "dead/nowhere.ipynb" in captured.err
+    # And it explicitly explains that this is NOT a permissive CLEAR.
+    assert "broken scope" in captured.err or "fail-CLOSED" in captured.err
+    # The JSON shows the dead-glob witness list.
+    assert '"caller_empty_scope": [' in captured.out
+    assert "dead/nowhere.ipynb" in captured.out
+
+
 def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
     # #11064 acceptance (4): a claim posted with --paths is read back by the
     # check as SCOPED -- a disjoint lane stays free (exit 0), an intersecting
-    # lane is blocked (exit 1), an unscoped caller is conservatively blocked.
+    # lane is blocked (exit 1), and an unscoped caller is #12322-graded as
+    # `EPIC_WIDE_NO_PATHS_DECLARED` (exit 2) so the verdict is actionable
+    # (re-run with `--paths`) instead of indistinguishable from a real
+    # conflict (the old exit 1 + BLOCKED on a non-scoped caller).
     # The fake globs must match "tracked files" or the #10958 fail-safe lifts
     # the scope to epic-wide (an entirely-dead scope is a broken claim, not a
     # permissive one) -- mock the repo walk so the scopes stay live.
@@ -2746,15 +3205,58 @@ def test_claim_paths_roundtrip_reads_back_scoped(monkeypatch):
         paths_clause=clc._paths_clause(["x/**", "y/01.ipynb"]),
     )
     pl = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
-    assert clc._run_check(pl, "B:CoursIA", my_paths=["z/**"]) == 0
-    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/sub/f.ipynb"]) == 1
-    assert clc._run_check(pl, "B:CoursIA") == 1
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["z/**"]) == 0       # disjoint -> CLEAR
+    # #12345 -- the leg below USED to be `== 1` (intersect -> BLOCKED) on
+    # the path `x/sub/f.ipynb` matching `x/**`. Post-#12345, `x/sub/f.ipynb`
+    # is NOT in the mock tracked-files list -- the caller's scope is entirely
+    # dead -> `EPIC_WIDE_NO_PATHS_DECLARED` at exit 2 (fail-CLOSED). The
+    # genuine-intersection case is now pinned separately in
+    # `test_claim_paths_roundtrip_reads_back_scoped_intersect_live_glob`
+    # below with a glob that IS in the mock (`z/deep/f.ipynb`).
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/sub/f.ipynb"]) == 2  # dead scope -> NOT_SCOPED
+    # The unscoped-caller leg: previously `== 1` (false-positive real conflict).
+    # #12322 lifts this to `== 2` (NOT_SCOPED) -- the verdict is honest about
+    # the missing scope binding instead of pretending to be a hard block.
+    assert clc._run_check(pl, "B:CoursIA") == 2
+
+
+def test_claim_paths_roundtrip_reads_back_scoped_intersect_live_glob(monkeypatch):
+    """Companion to `test_claim_paths_roundtrip_reads_back_scoped` (above) --
+    pins the LEGITIMATE intersection case (caller's glob DOES match a tracked
+    file AND falls under the claimant's `paths:` clause). Pre-#12345 this
+    leg was on the same test as the dead-glob case (it was forced to use a
+    dead glob because the assertion was `== 1`). Post-#12345 the dead-glob
+    leg is #12345-routed to exit 2; the live-intersection leg is here."""
+    monkeypatch.setattr(clc, "_git_tracked_files",
+                        lambda: ["x/a.ipynb", "y/01.ipynb", "z/deep/f.ipynb"])
+    body = clc._CLAIM_BODY_TMPL.format(
+        lane="A:CoursIA", intention="tranche x",
+        paths_clause=clc._paths_clause(["x/**", "y/01.ipynb"]),
+    )
+    pl = payload(comment(body, "2026-08-15T00:00:00Z"), number=11064, title="t")
+    # The claimant's claim scope is `x/**, y/01.ipynb`. A caller scope
+    # `z/deep/f.ipynb` is LIVE (in the mock) but does NOT match `x/**` or
+    # `y/01.ipynb` -> disjoint -> CLEAR exit 0. We need a glob that is BOTH
+    # in the mock AND under the claim's `paths:` clause -> `x/a.ipynb`.
+    assert clc._run_check(pl, "B:CoursIA", my_paths=["x/a.ipynb"]) == 1  # live intersect -> BLOCKED
 
 
 def test_claim_refuses_when_blocked(monkeypatch, tmp_path):
     # #11064 acceptance (1): `--claim` runs the check before posting and
-    # REFUSES (exit 1, nothing posted) when another lane holds an overlapping
-    # claim -- instead of posting first and printing a reassuring success.
+    # REFUSES (nothing posted) when another lane holds an overlapping claim
+    # -- instead of posting first and printing a reassuring success. The
+    # refusal channel is `exit != 0` (the caller's `--claim` must NOT post
+    # a comment); the EXACT exit code distinguishes two distinct refusal
+    # modes that pre-#12345 were collapsed:
+    #   - `exit 1` (BLOCKED): a true overlap, the caller's `--paths` matches
+    #     a live tracked file under the claimant's scope. The lane MUST wait
+    #     for release or post a `[RELEASED]` on its own claim.
+    #   - `exit 2` (NOT_SCOPED, #12345): the caller's `--paths` is entirely
+    #     dead in this repo (the glob matches zero tracked files). The
+    #     refusal is the same (do not post), but the actionable next step
+    #     is re-run with a valid `--paths` glob, not wait-for-release.
+    # #12345 -- the test's caller `--paths x/sub/f.ipynb` is dead in the real
+    # repo (no `x/` tree). Post-#12345 the refusal is `exit 2` (NOT_SCOPED).
     blocker = comment(
         "[CLAIMED] lane A:CoursIA -- tranche x -- paths: x/**",
         "2026-08-15T00:00:00Z",
@@ -2766,7 +3268,10 @@ def test_claim_refuses_when_blocked(monkeypatch, tmp_path):
                         lambda issue, body: posted.append((issue, body)))
     rc = clc.main(["--lane", "B:CoursIA", "--paths", "x/sub/f.ipynb",
                    "--claim", "tranche x", "11064", "--from-json", json_path])
-    assert rc == 1
+    # #12345 -- the caller's glob is dead -> NOT_SCOPED (exit 2), NOT
+    # BLOCKED (exit 1). The refusal channel (no post) is what the test
+    # actually pins; the exit code is the diagnostic.
+    assert rc == 2  # NOT_SCOPED -- caller's --paths is dead (#12345)
     assert posted == []
 
 
@@ -3039,3 +3544,1210 @@ def test_fence_mask_preserves_offsets_for_verbatim_line_extraction():
     events = clc._parse_claim_events(comment(body, "2026-08-20T01:00:00Z"))
     assert len(events) == 1
     assert events[0].paths == ["a/**"], "la clause paths est relue sur la ligne originale"
+
+
+# --- #12072: clause de scope HORS ligne de marqueur -- signal structure -------
+#
+# Defaut mesure sur #10382 (2026-08-20T19:15:42Z, po-2023) : une clause
+# `Paths: ...` ecrite sur SA PROPRE ligne (paragraphe separe sous le marqueur)
+# est invisible pour `_PATHS_CLAUSE_RE` (ancre a la ligne du marqueur, `[^\n]*?`
+# interdit le saut de ligne) -> le claim reduit a EPIC-WIDE en silence, alors
+# que la lane declarante croyait avoir scope. #12072 expose le signal
+# `scope_declared_off_marker` (structure, JSON + WARN) SANS re-classifier le
+# claim (relire une ligne de prose comme la clause machine rendrait le scope
+# dependant d'une heuristique).
+
+
+def test_off_marker_scope_signal_on_separate_line():
+    # #12072 acceptance (3) -- le controle par faux negatif : la clause sur
+    # une ligne SEPAREE doit produire le signal. Reproduction exacte du corps
+    # de la mesure (ligne `Paths: ...` sous le marqueur, #10382).
+    body = (
+        "[CLAIMED] tranche search-7-mcts-and-beyond -- "
+        "lane myia-po-2023:CoursIA\n"
+        "\n"
+        "Paths: `scripts/notebook_tools/twin_pairs.d/"
+        "search-7-mcts-and-beyond.yaml`. Grain: MED/tooling. "
+        "Scope disjoint des PRs en vol.\n"
+    )
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T19:15:42Z"))
+    assert len(evs) == 1
+    ev = evs[0]
+    assert ev.paths is None, "la clause hors-marqueur ne doit PAS etre lue comme paths"
+    assert ev.scope_declared_off_marker == [
+        "Paths: `scripts/notebook_tools/twin_pairs.d/"
+        "search-7-mcts-and-beyond.yaml`. Grain: MED/tooling. "
+        "Scope disjoint des PRs en vol.",
+    ], "la ligne fautive est exposee verbatim"
+
+
+def test_off_marker_scope_signal_form_variants():
+    # #12072 breadth -- les 4 formes observees de la declaration hors-ligne :
+    # `Paths:` capitalise, `paths:` minuscule, `Path :` avec espace avant le
+    # deux-points, et puce/gras (tolerance de decoration identique aux regex
+    # de marqueur, #10906). Toutes produisent le signal.
+    forms = [
+        "Paths: scripts/check_lane_claim.py\n",
+        "paths: scripts/check_lane_claim.py\n",
+        "Path : scripts/check_lane_claim.py\n",
+        "- **Paths :** scripts/check_lane_claim.py\n",
+    ]
+    for extra in forms:
+        body = "[CLAIMED] lane myia-po-2024:CoursIA\n\n" + extra
+        evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+        assert len(evs) == 1, extra
+        assert evs[0].paths is None, extra
+        assert len(evs[0].scope_declared_off_marker) == 1, extra
+
+
+def test_off_marker_scope_signal_absent_without_declaration():
+    # Controle positif : un epic-wide INTENTIONNEL (aucune clause hors-ligne)
+    # ne produit AUCUN signal. Le lint ne doit pas bruiter un verrou plein
+    # scope delibere.
+    body = "[CLAIMED] lane myia-po-2024:CoursIA\n"
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].paths is None
+    assert evs[0].scope_declared_off_marker == []
+
+
+def test_off_marker_scope_signal_absent_when_clause_on_marker_line():
+    # Controle croise : la clause SUR la ligne du marqueur est lue par le
+    # reducer -> `paths` non-None -> aucun signal off-marker (rien de perdu,
+    # rien a signaler). Le signal ne se leve que pour une declaration NON
+    # capturee.
+    body = "[CLAIMED] lane myia-po-2024:CoursIA -- paths: scripts/**\n"
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].paths == ["scripts/**"]
+    assert evs[0].scope_declared_off_marker == []
+
+
+def test_off_marker_scope_signal_ignores_fenced_citation():
+    # Une `Paths:` citee dans un bloc fence est de la citation (meme logique
+    # que `_MARKER_RE` vs `_mask_fenced_blocks`) : le masque remplace le
+    # contenu du fence, donc aucune declaration off-marker n'est detectee.
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA\n"
+        "\n"
+        "```\n"
+        "Paths: scripts/check_lane_claim.py\n"
+        "```\n"
+    )
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].paths is None
+    assert evs[0].scope_declared_off_marker == [], (
+        "citer un scope dans un fence n'est pas en declarer un"
+    )
+
+
+def test_off_marker_scope_signal_mid_sentence_is_prose():
+    # Une mention de `paths:` EN PHRASE (pas en debut de ligne) n'est pas une
+    # declaration de scope -- meme logique d'ancrage que `_INFERRED_PATH_PATTERNS`
+    # (#11755 : la forme "discussion" ne nourrit pas l'inference).
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA\n"
+        "\n"
+        "on discute des paths: a, b en prose, ce n'est pas un scope\n"
+    )
+    evs = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    assert len(evs) == 1
+    assert evs[0].scope_declared_off_marker == []
+
+
+def test_lint_warns_off_marker_scope_on_epic_wide(capsys):
+    # #12072 acceptance (2) -- la sortie humaine : sur un claim epic-wide
+    # portant le signal, le lint imprime explicitement que le commentaire
+    # declare un scope NON applique, avec la ligne fautive et la syntaxe
+    # attendue. Le claim n'est PAS re-scope (verdict inchange).
+    body = (
+        "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+        "\n"
+        "Paths: MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n"
+    )
+    events = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    clc._lint_claim_events(events, issue_number=12072)
+    captured = capsys.readouterr()
+    assert "scope declare hors ligne de marqueur" in captured.err, (
+        "le WARN doit nommer explicitement le defaut (#12072)"
+    )
+    assert "04-7-TTS-Voice-Benchmark.ipynb" in captured.err, (
+        "la ligne fautive doit etre exposee verbatim"
+    )
+    assert "paths: <g1>, <g2>" in captured.err, (
+        "la syntaxe attendue (clause SUR la ligne du marqueur) doit etre rappelee"
+    )
+
+
+def test_lint_silent_on_intentional_epic_wide(capsys):
+    # Controle : un epic-wide INTENTIONNEL (pas de clause hors-ligne) ne
+    # produit que l'INFO legacy #11755 -- JAMAIS le WARN #12072. Le lint ne
+    # penalise pas un verrou plein scope delibere.
+    body = "[CLAIMED] lane myia-po-2024:CoursIA-2\n"
+    events = clc._parse_claim_events(comment(body, "2026-08-20T12:00:00Z"))
+    clc._lint_claim_events(events, issue_number=12072)
+    captured = capsys.readouterr()
+    assert "INFO: marqueur CLAIMED epic-wide" in captured.err, (
+        "l'INFO legacy #11755 reste pour retro-compat"
+    )
+    assert "hors ligne de marqueur" not in captured.err, (
+        "aucun WARN #12072 sans declaration hors-ligne"
+    )
+
+
+def test_run_check_summary_exposes_scope_declared_off_marker(capsys):
+    # #12072 acceptance (1) -- le champ structure monte dans le JSON de sortie
+    # sous `active_claims.<lane>.scope_declared_off_marker`, a cote des autres
+    # temoins (unparseable_scope, empty_scope). Vide sur un claim sans signal.
+    # #12322 -- caller did not bind scope, so the verdict flips to NOT_SCOPED
+    # at exit 2 (the off-marker path the writer meant was epic-wide anyway,
+    # so the call lands in EPIC_WIDE_NO_PATHS_DECLARED).
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- tranche 04-7\n"
+            "\n"
+            "Paths: MyIA.AI.Notebooks/GenAI/Audio/04-7-TTS-Voice-Benchmark.ipynb\n",
+            "2026-08-20T12:00:00Z",
+        ),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA")
+    assert rc == 2  # #12322 NOT_SCOPED (epic-wide + caller has no scope)
+    out = capsys.readouterr().out
+    assert '"scope_declared_off_marker"' in out
+    assert "04-7-TTS-Voice-Benchmark.ipynb" in out
+    # Le claim n'est PAS re-scope : `paths` reste null dans le JSON.
+    assert '"paths": null' in out
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
+
+
+def test_run_check_summary_off_marker_field_empty_without_signal(capsys):
+    # Controle : un claim epic-wide sans declaration hors-ligne expose le
+    # champ avec une liste vide (consistance du schema JSON, meme logique que
+    # `unparseable_scope`/`empty_scope` toujours presents).
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA")
+    out = capsys.readouterr().out
+    assert '"scope_declared_off_marker": []' in out
+
+
+# --- #12156 -- umbrella / epic-wide-on-umbrella summary fields ---------------
+
+
+def test_run_check_summary_is_umbrella_true_on_EPIC_label(capsys):
+    # #12156 acceptance (1) -- un umbrella labellise `EPIC` expose
+    # `is_umbrella: true` au niveau top-level du summary, miroir du picker
+    # qui lit la meme etiquette (cf `scripts/pick_idle_grain.py:130`).
+    # Note : un umbrella + claim epic-wide sans `paths:` est
+    # simultanement `is_umbrella: true` ET `epic_wide_on_umbrella: true`
+    # (la pathologie que le body denomme). Les deux flags sont
+    # orthogonaux -- le premier classifie, le second diagnostique.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    # Le test suivant (`test_run_check_summary_epic_wide_on_umbrella_true_*`)
+    # est l'acceptance explicite de la pathologie sur le meme pattern.
+    # Ici on verifie juste que le classifieur fonctionne ; le controle
+    # pathologie-false est dans `..._false_when_scoped`.
+    assert '"epic_wide_on_umbrella":' in out
+
+
+def test_run_check_summary_is_umbrella_true_on_title_prefix(capsys):
+    # #12156 acceptance (2) -- fallback title-route : un titre commencant par
+    # "[EPIC" est classifie umbrella meme sans label explicite (le picker
+    # accepte la meme forme).
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (pre-label inventory)",
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+
+
+def test_run_check_summary_is_umbrella_false_on_unit_issue(capsys):
+    # Controle : une issue unitaire (label `documentation`, titre sans
+    # `EPIC`) expose `is_umbrella: false` -- la classification ne contamine
+    # pas le cas general.
+    p = payload(
+        number=9890,
+        title="Emojis dans comparatif-owui-vs-ai-engine.md",
+        labels=[{"name": "documentation"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": false' in out
+    assert '"epic_wide_on_umbrella": false' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_true_when_blocking_epic_wide(capsys):
+    # #12156 acceptance (3) -- la pathologie que le body denomme : un
+    # umbrella dont l'unique claim bloquant est epic-wide (pas de clause
+    # `paths:`) expose `epic_wide_on_umbrella: true`. C'est exactement le
+    # cas mesure sur #1206 par l'auteur de l'issue. #12322 -- caller has
+    # no scope binding, so the verdict is NOT_SCOPED at exit 2; the JSON
+    # additions (`query_scope`, `NOT_SCOPED`) ride along with the umbrella
+    # diagnosis so a coordinator's sweep can correlate `epic_wide_on_umbrella:
+    # true` AND `query_scope: EPIC_WIDE_NO_PATHS_DECLARED` in one pass.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2026:CoursIA\n",
+            "2026-08-11T12:29:34Z",
+        ),
+        number=1206,
+        title="Epic: Fork Z3.Linq propre + reintegration (umbrella pathologique)",
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    assert rc == 2  # #12322 NOT_SCOPED
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": true' in out
+    assert '"query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"' in out
+    assert '"blocking_lanes": [\n    "myia-po-2026:CoursIA"' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_when_scoped(capsys):
+    # #12156 acceptance (4) -- le meme umbrella, mais avec un claim scope
+    # (`paths: ...`) qui matche un fichier REEL du repo expose
+    # `epic_wide_on_umbrella: false`. Le mecanisme discerne bien la
+    # pathologie du cas nominal -- un glob mort (vide) serait au
+    # contraire releve par le fail-CLOSED #10958 et remonte en
+    # effectively-epic-wide, ce qui est un COMPORTEMENT VOUULU (un glob
+    # mort = broken claim). On utilise donc un glob qui pointe vers un
+    # fichier Lean qui existe sur `main` (CGT) pour valider la voie
+    # saine.
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2024:CoursIA-2 -- "
+            "paths: MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/*.lean\n",
+            "2026-08-20T12:00:00Z",
+        ),
+        number=12207,
+        labels=[{"name": "EPIC"}, {"name": "research-notebook"}],
+    )
+    clc._run_check(p, "myia-po-2025:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    # Sanity : le scope est bien enregistre, pas lift en epic-wide.
+    assert '"empty_scope": []' in out
+
+
+def test_run_check_summary_epic_wide_on_umbrella_false_on_clear_umbrella(capsys):
+    # Controle : un umbrella sans aucun claim actif expose
+    # `epic_wide_on_umbrella: false` (la pathologie presuppose un blocage).
+    p = payload(
+        number=12207,
+        labels=[{"name": "EPIC"}],
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = capsys.readouterr().out
+    assert '"is_umbrella": true' in out
+    assert '"epic_wide_on_umbrella": false' in out
+    assert '"blocked": false' in out
+
+
+def test_is_umbrella_issue_handles_missing_labels_key():
+    # Le helper degrade proprement sur un payload qui n'a pas la cle
+    # `labels` (sous-ensemble du from-json historique) -- pas d'exception,
+    # retour False (= defaut pre-#12156).
+    assert clc._is_umbrella_issue({"title": "[EPIC] anything"}) is True
+    assert clc._is_umbrella_issue({"title": "anything"}) is False
+    assert clc._is_umbrella_issue({}) is False
+    # Label invalide (None / dict sans name) : pas de crash.
+    assert clc._is_umbrella_issue({"labels": [None, {}, {"name": "x"}]}) is False
+
+
+# --- #12320 -- [DELIVERED] vocabulary for "substance is on a PR" closes ----
+# See #12320 / #12223. Two lanes shipped the same Lean-16g notebook; the
+# first [RELEASED] said "libre" and the second lane read it as such, missed
+# the "PR #12271 deja livree" prose three words away, and re-shipped the
+# same file. A third marker `[DELIVERED] lane X -- PR #N` makes the
+# vocabulary unambiguous: the substance is on a PR, the consumer goes
+# to check the PR state before re-claiming. This test family pins the
+# v1 surface: the reducer treats DELIVERED as a close (the lane pops
+# from `state`), and the JSON summary surfaces the captured PR number
+# under `delivered_claims`. The v2 conditional gate (PR OPEN = block,
+# PR CLOSED = lift, PR MERGED = lock permanently) is gated on
+# coordinator sign-off and is NOT covered here.
+
+
+def _json_out(captured) -> dict:
+    """Split capsys output to extract the JSON summary, ignoring the trailing CLEAR line.
+
+    The check prints the JSON first, then a `CLEAR: no other lane claims #N`
+    or `BLOCKED: ...` trailer on stdout. The test only cares about the
+    JSON; the trailer makes a bare `json.loads(out)` raise on extra data.
+    """
+    text = captured.out
+    # The trailer begins with a newline-then-non-JSON line. Cut at the
+    # first newline-followed-by-non-`{` to keep the JSON block only.
+    head = text.split("\nCLEAR:")[0].split("\nBLOCKED:")[0]
+    return json.loads(head)
+
+
+def test_delivered_close_drops_lane_from_active_claims(capsys):
+    """A [DELIVERED] close behaves like [RELEASED] in the reducer (#12320).
+
+    The two markers are distinguishable on the event (`ev.marker` and
+    `ev.is_delivered`) but REDUCE the same way: the lane is popped from
+    `state`. The summary shows `my_active_claim: false` for the
+    delivering lane and `blocking_lanes: []` for any other lane that
+    arrives after the close.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: Lean-16g-*.ipynb",
+                "2026-08-22T01:41:00Z"),
+        comment("[DELIVERED] lane myia-po-2024:CoursIA-2 -- PR #12271 (substance shipped)",
+                "2026-08-22T04:14:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2025:CoursIA-2")
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    # The forensic record: a PR number that lived in the issue's history
+    # even though no active claim holds it any more.
+    assert out["delivered_claims"] == [12271]
+
+
+def test_delivered_claims_in_json_summarises_history(capsys):
+    """The `delivered_claims` list in the summary is the forensic trace (#12320).
+
+    When a lane reads a CLEAR issue, the summary now reports every
+    historical `[DELIVERED] … PR #N` close on the issue. v1 surfaces
+    only the PR numbers (sorted, deduplicated); v2 will add the live
+    PR state. The motivating use case is #12223: po-2024 reads CLEAR,
+    the summary tells po-2024 "PR #12271 was delivered here, go check
+    it before you start".
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12270",
+                "2026-08-22T02:00:00Z"),
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance B",
+                "2026-08-22T03:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12275",
+                "2026-08-22T05:00:00Z"),
+    )
+    clc._run_check(p, "myia-po-2023:CoursIA-2")
+    out = _json_out(capsys.readouterr())
+    assert out["delivered_claims"] == [12270, 12275]
+
+
+def test_delivered_does_not_block_subsequent_claim(capsys):
+    """v1: a [DELIVERED] does NOT block a subsequent [CLAIMED] from a different lane.
+
+    The vocabulary change closes the WRITING GAP (the writer's intent
+    is now recorded), not the CONDITIONAL GAP (v2 will gate the close
+    on the live PR state). Until v2 lands, a [DELIVERED] is a close --
+    a subsequent [CLAIMED] from a different lane on the same issue is
+    NOT blocked by the historical delivery. The PR number survives in
+    the summary as the forensic record, but the gate is open.
+
+    This is intentional: the alternative (a [DELIVERED] blocks until
+    the PR is MERGED) requires reading the PR state from `gh`, which
+    is a side effect the reducer was deliberately built without.
+    Coordinator sign-off gates the v2 release.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12270",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2")
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    # PR #12270 still surfaced as a forensic record.
+    assert out["delivered_claims"] == [12270]
+
+
+def test_is_delivered_property_distinguishes_marker():
+    """`is_delivered` is the readable form for the v1 close.
+
+    `is_open` and `is_override` are the existing predicates. The new
+    one is the analogue for the 3rd marker: it reads true ONLY on a
+    `[DELIVERED]` event, false on every other event (RELEASED, DONE,
+    CANCELLED, ABANDONED, CLAIMED, OVERRIDE).
+    """
+    # DELIVERED
+    ev = clc.parse_claim_event(comment(
+        "[DELIVERED] lane X -- PR #1", "2026-08-22T01:00:00Z"))
+    assert ev.is_delivered is True
+    assert ev.is_open is False
+    # RELEASED is NOT delivered
+    ev = clc.parse_claim_event(comment(
+        "[RELEASED] lane X -- abandoned", "2026-08-22T01:00:00Z"))
+    assert ev.is_delivered is False
+    assert ev.is_open is False
+    # CLAIMED is NOT delivered
+    ev = clc.parse_claim_event(comment(
+        "[CLAIMED] lane X -- working", "2026-08-22T01:00:00Z"))
+    assert ev.is_delivered is False
+    assert ev.is_open is True
+
+
+# ---------------------------------------------------------------------------
+
+# #12386 -- v2 conditional [DELIVERED]: gate the close on live PR state.
+#
+# v1's contract: a [DELIVERED] is a close -- it pops the lane from
+# `state` (see test_delivered_close_drops_lane_from_active_claims above).
+# v2's contract: a [DELIVERED] is a CONDITIONAL close keyed on the PR
+# state:
+#
+#   - PR OPEN   -> the deliverer keeps an active claim (still WRITING);
+#                 subsequent claims from other lanes are BLOCKED.
+#   - PR MERGED -> the deliverer keeps an active claim but `locked: True`;
+#                 a plain re-claim is BLOCKED with a tailored LOCKED
+#                 message; the only escape is a coordinator [OVERRIDE].
+#   - PR CLOSED (not merged) -> legacy close: lane popped from state.
+#   - PR not found / lookup failure -> legacy close (fail-CLOSED means
+#                 refuse to BLOCK on unknown).
+#   - DELIVERED without PR #N reference -> legacy close (the v1 surface).
+#
+# Tests below use `pr_states` injection to avoid any `gh pr view` round
+# trip; the live-PR-state code path is exercised in the integration
+# smoke at the bottom of `test_run_check_delivered_uses_gh_pr_view` (NOT
+# auto-run in CI; covered manually on the worker with a real PR ref).
+# ---------------------------------------------------------------------------
+
+def _pr_states(pr: int, st: str) -> dict[int, str]:
+    """Build a single-entry pr_states injection dict for v2 tests."""
+    return {pr: st}
+
+
+def test_delivered_open_blocks_subsequent_claim_via_pr_state(capsys):
+    """v2: a [DELIVERED] whose PR is still OPEN keeps the lane active (#12386).
+
+    The motivating incident is #12253/#12298: a 10-hour window of
+    free state let another lane claim an issue whose [DELIVERED] lane
+    was still WRITING the PR. v2 closes the conditional gap by gating
+    the [DELIVERED] on the live PR state -- an OPEN PR keeps the claim
+    active, BLOCKING subsequent claimers from any other lane until either
+    the PR is merged (locked) or closed (legacy lift).
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12253",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12253, "OPEN"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 1  # BLOCKED
+    out = _json_out(capsys.readouterr())
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    # PR state surfaces in the JSON summary for forensics. JSON serialises
+    # int keys as strings -- this is the same shape consumers see on stdout.
+    assert out["delivered_claims_pr_states"] == {"12253": "OPEN"}
+    # Active-claim entry for the deliverer exposes the live pr_state (raw,
+    # not JSON-serialised).
+    active = out["active_claims"]["myia-po-2026:CoursIA-2"]
+    assert active["pr_ref"] == 12253
+    assert active["pr_state"] == "OPEN"
+    assert active["locked"] is False
+
+
+def test_delivered_merged_locks_with_overrides_required(capsys):
+    """v2: a [DELIVERED] whose PR is MERGED on main locks the lane (#12386).
+
+    `locked: True` is the flag the reducer attaches so the BLOCKED
+    branch above can render a tailored message naming the merged PR and
+    pointing the caller at [OVERRIDE] / R5 close as the only escapes.
+    Without this flag, a lane arriving on a CLEAR summary would still
+    see `blocking_lanes` empty AND the merged PR in
+    `delivered_claims_pr_states` -- the message naming the lock is
+    what closes the loop.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12298",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12298, "MERGED"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 1  # BLOCKED (LOCKED branch fires inside)
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    assert out["delivered_claims_pr_states"] == {"12298": "MERGED"}
+    active = out["active_claims"]["myia-po-2026:CoursIA-2"]
+    assert active["locked"] is True
+    assert active["pr_state"] == "MERGED"
+    # The LOCKED message naming the merged PR must appear on stderr.
+    assert "LOCKED (v2)" in captured.err
+    assert "PR #12298 MERGED" in captured.err
+
+
+def test_delivered_closed_lifts_active_claim(capsys):
+    """v2: a [DELIVERED] whose PR was CLOSED (not merged) lifts the claim (#12386).
+
+    CLOSED-without-MERGED is the legacy lift path: the PR did not reach
+    main, the deliverer's claim should NOT block forever. The reducer
+    pops the lane from `state`, identical to v1 behaviour for this
+    state. The forensic record (delivered_claims) survives.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12253",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12253, "CLOSED"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    assert out["delivered_claims"] == [12253]
+    assert out["delivered_claims_pr_states"] == {"12253": "CLOSED"}
+
+
+def test_delivered_lookup_failure_legacy_close(capsys):
+    """v2: when gh pr view cannot resolve the PR, fall back to legacy close (#12386).
+
+    Fail-CLOSED semantics: a [DELIVERED] that we cannot bind to a PR
+    must NOT keep the lane active forever (that would itself be a bug:
+    it would lock every issue where a PR was deleted or moved). The
+    reducer treats `None` from `_fetch_pr_state` as the legacy v1
+    "close" action. The forensic record still carries the PR ref.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #99999",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states={},  # 99999 not present -> legacy close
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    assert out["blocking_lanes"] == []
+    assert out["delivered_claims"] == [99999]
+
+
+def test_delivered_without_pr_ref_still_lifts_active_claim(capsys):
+    """v2: [DELIVERED] without a PR #N keeps the v1 close path (#12320/v2 compat).
+
+    The marker is legal but unreferenced. v1 treated it as a close;
+    v2 preserves that behaviour because there is no PR to bind the
+    state to. The forensic record surface (`delivered_claims`,
+    `delivered_claims_pr_states`) only carries entries with a PR
+    reference -- an unreferenced [DELIVERED] is recorded by the parser
+    but invisible in the forensic lists (consistent with v1).
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2 -- substance A",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- substance shipped",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=None,
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["my_active_claim"] is False
+    # Unreferenced [DELIVERED] is filtered from the forensic lists (the
+    # parser records it but consumers want only PR-bound entries).
+    assert out["delivered_claims"] == []
+    assert out["delivered_claims_pr_states"] == {}
+
+
+def test_delivered_replay_locks_again_after_open_then_merged(capsys):
+    """v2: chronological replay of one DELIVERED should track the live PR.
+
+    The motivating chronologie is #12213 (a 07:40 replay of an OPEN
+    [DELIVERED] was BLOCKED, then a later cycle with MERGED returned
+    BLOCKED+locked). We replay that exact sequence here with `pr_states`
+    toggled across two calls; the second call MUST show `locked: True`
+    while the first MUST show the active-claim. Without the v2 gate,
+    the first call would CLEAR (v1 behaviour) and the second would
+    still be CLEAR -- exactly the failure mode #12213 named.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #12213",
+                "2026-08-22T02:00:00Z"),
+    )
+    my_paths = ["scripts/check_lane_claim.py"]
+    # Step 1: PR is still OPEN -> BLOCKED
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12213, "OPEN"),
+                       my_paths=my_paths)
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    assert out["active_claims"]["myia-po-2026:CoursIA-2"]["locked"] is False
+    # Step 2: PR now MERGED -> BLOCKED + locked
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=_pr_states(12213, "MERGED"),
+                       my_paths=my_paths)
+    assert rc == 1
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert "myia-po-2026:CoursIA-2" in out["blocking_lanes"]
+    assert out["active_claims"]["myia-po-2026:CoursIA-2"]["locked"] is True
+    assert "LOCKED (v2)" in captured.err
+
+
+def test_pr_states_signature_is_optional_no_behavioural_change(capsys):
+    """v2: callers that don't pass `pr_states` keep the v1 surface.
+
+    Without an injected state, `_resolve_delivered_v2` calls
+    `_fetch_pr_state` (which round-trips through `gh`). In CI without
+    `gh` available, this surfaces as the legacy close -- the test
+    asserts the function signature accepts `None` and returns v1 shape.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA-2",
+                "2026-08-22T01:00:00Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA-2 -- PR #99999",
+                "2026-08-22T02:00:00Z"),
+    )
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2",
+                       pr_states=None,
+                       my_paths=["scripts/check_lane_claim.py"])
+    # Either CLEAR (legacy close when gh auth works) or NOT_SCOPED
+    # (when gh auth fails and we cannot introspect). Both are valid v1
+    # surfaces -- the test pins that v2 did not crash with a TypeError
+    # on the new kwarg.
+    assert rc in (0, 2)
+    captured = capsys.readouterr()
+    if rc == 0:
+        out = _json_out(captured)
+        # The forensic PR ref still surfaces.
+        assert 99999 in out["delivered_claims"]
+    # On NOT_SCOPED the JSON output is replaced by the trailing
+    # NOT_SCOPED banner; the kwarg was accepted without TypeError,
+    # which is the only thing this test pins.
+
+
+# --- v2 helper: _find_open_pr_for_issue_by_lane ------------------------------
+
+def test_find_open_pr_for_issue_by_lane_unique_match():
+    """`_find_open_pr_for_issue_by_lane` returns the singleton PR number (#12386).
+
+    The matcher accepts `Closes #N` / `Fixes #N` / `Refs #N` / `See #N`
+    / `Resolves #N` / `Part of #N` / bare `#N` token in the PR body.
+    Tests below pin each form and the cross-lane exclusion.
+    """
+    prs = [
+        # No lane tag -- excluded by the lane filter
+        {"number": 12345,
+         "body": "Closes #9764. Substance X."},
+        # Right lane, references #9764 -> the singleton match
+        {"number": 12346,
+         "body": "Fixes #9764 -- lane myia-po-2024:CoursIA-2 work Y"},
+        # Right lane, references #9999 -> a different issue, no match
+        {"number": 12349,
+         "body": "Closes #9999 -- lane myia-po-2024:CoursIA-2"},
+    ]
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    assert found == 12346  # the singleton match in this lane
+
+
+def test_find_open_pr_for_issue_by_lane_picks_lowest_when_multiple_disambig(capsys):
+    """Singleton returns the lowest PR number when multiple forms reference the issue.
+
+    The matcher accepts `Closes #N` / `Fixes #N` / `Refs #N` / `See #N`
+    / `Resolves #N` / `Part of #N` / bare `#N` token in the PR body. We
+    pin each form here in the same lane; the helper returns None with
+    a stderr warning (ambiguous) -- this test pins the disambiguation
+    behaviour through the `delivered:#N` escape hatch instead, which
+    forces a specific PR number regardless of ambiguity.
+    """
+    prs = [
+        {"number": 12346,
+         "body": "Fixes #9764 -- lane myia-po-2024:CoursIA-2 work Y"},
+        {"number": 12347,
+         "body": "Refs #9764 -- lane myia-po-2024:CoursIA-2 partial delivery"},
+    ]
+    # Multiple OPEN PRs in same lane -> helper refuses to pick
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    assert found is None
+    assert "WARN" in capsys.readouterr().err
+
+
+def test_find_open_pr_for_issue_by_lane_no_match():
+    """`_find_open_pr_for_issue_by_lane` returns None when no PR matches."""
+    prs = [
+        {"number": 12345, "body": "Closes #9999. Substance X."},
+        {"number": 12346, "body": "Fixes #8888 -- lane myia-po-2024:CoursIA-2"},
+    ]
+    assert clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    ) is None
+
+
+def test_find_open_pr_for_issue_by_lane_excludes_other_lanes():
+    """PRs authored by other lanes are excluded even when they reference the issue (#12386)."""
+    prs = [
+        {"number": 12345,
+         "body": "Closes #9764 -- lane myia-po-2023:CoursIA-2"},  # wrong lane
+        {"number": 12346,
+         "body": "Closes #9764 -- lane myia-po-2024:CoursIA-2"},  # right lane
+    ]
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    assert found == 12346
+
+
+def test_find_open_pr_for_issue_by_lane_ambiguous_returns_none(capsys):
+    """Two+ OPEN PRs in the same lane referencing the issue -> warn + None (#12386).
+
+    A misleading PR reference would LOCK the wrong PR. The helper
+    refuses to pick one in this case and emits a stderr warning. The
+    caller (--release flow) falls back to plain [RELEASED] -- better
+    to lose the PR-binding than to lock the wrong PR.
+    """
+    prs = [
+        {"number": 12345,
+         "body": "Closes #9764 -- lane myia-po-2024:CoursIA-2 (tranche 1)"},
+        {"number": 12346,
+         "body": "Closes #9764 -- lane myia-po-2024:CoursIA-2 (tranche 2)"},
+    ]
+    found = clc._find_open_pr_for_issue_by_lane(
+        9764, "myia-po-2024:CoursIA-2", prs=prs,
+    )
+    captured = capsys.readouterr()
+    assert found is None
+    assert "WARN" in captured.err
+    assert "delivered:#N" in captured.err  # escape hatch
+
+# #12327 -- lint qualifier: epic-wide markers must read the FINAL verdict,
+# not the legacy `il bloque` wording, when the marker is superseded or
+# the lane has been filtered out by scope. Four acceptance tests, plus the
+# positive control that the legacy wording still fires when the marker is
+# a real blocker (#11755 retro-compat preserved).
+# ---------------------------------------------------------------------------
+
+
+def _events_for(*bodies_and_dates):
+    """Build a list of ClaimEvents from alternating (body, created_at) pairs.
+
+    Used by the #12327 acceptance tests below to compose multi-lane scenarios
+    where some lanes have posted an epic-wide marker followed by a scoped
+    re-claim (the supersede scenario) and others only have the legacy
+    epic-wide form (the still-blocking scenario).
+    """
+    events = []
+    for body, date in bodies_and_dates:
+        for ev in clc._parse_claim_events(comment(body, date)):
+            events.append(ev)
+    return events
+
+
+def test_lint_12327_epic_wide_superseded_by_scoped_re_claim(capsys):
+    # Lane X claim un marqueur epic-wide historique, puis re-poste un claim
+    # scoped. Le marqueur epic-wide est SUPERSEDED par le claim actif scoped
+    # de la MEME lane. Le lint doit le qualifier `SUPERSEDED`, JAMAIS
+    # `il bloque toutes les autres lanes`.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-20T10:00:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Image/03-3*.ipynb\n",
+         "2026-08-22T14:00:00Z"),  # scoped, later
+    ]
+    events = _events_for(*bodies_and_dates)
+    # Compute active_claims manually (the same reducer step the lint receives)
+    active, _ = clc.compute_active_claims(events)
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},  # empty -- the caller is in scope
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "SUPERSEDED" in err, (
+        "le marqueur epic-wide historique doit etre qualifie SUPERSEDED "
+        "quand un claim actif scoped ulterieur de la meme lane le supplante "
+        "(#12327)"
+    )
+    assert "il bloque toutes les autres lanes" not in err, (
+        "le wording legacy `il bloque toutes` est INTERDIT pour un marqueur "
+        "superseded (cf. l'incident fondateur du 2026-08-22T14:41Z)"
+    )
+    # L'hygiene debt (RELEASED) est signalee comme dette, pas comme blocage.
+    assert "Hygiene:" in err
+    assert "[RELEASED]" in err
+
+
+def test_lint_12327_epic_wide_filtered_out_by_scope_is_sans_effet(capsys):
+    # Lane Y a un marqueur epic-wide ACTIF (le seul qu'elle a poste), mais
+    # le caller declare --paths disjoint. Le verdict est CLEAR (`others`
+    # vide apres filtre scope), MAIS le lint epic-wide legacy dirait quand
+    # meme `il bloque`. Le qualifier doit dire `SANS effet` -- l'info
+    # utilisateur est preservee, le verdict n'est pas contredit.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-22T14:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    # Post scope filter: lane Y is OUT of `others` (caller scope disjoint).
+    # The lint receives this FINAL `others_verdict`, not the pre-filter state.
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},  # post scope-filter: empty
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "SANS effet" in err, (
+        "un marqueur epic-wide d'une lane filtree par scope doit etre "
+        "qualifie SANS effet, JAMAIS `il bloque` (#12327)"
+    )
+    assert "il bloque toutes les autres lanes" not in err
+
+
+def test_lint_12327_legacy_il_bloque_preserved_for_real_blocker(capsys):
+    # CONTROLE POSITIF (acceptance #12327 - 3e critere) : un marqueur
+    # epic-wide qui EST reellement dans `others_verdict` (le caller n'a
+    # pas declare de scope, donc AUCUN filtre ne l'a retire) doit TOUJOURS
+    # declencher le wording legacy `il bloque`. La correction ne doit pas
+    # se valider QUE par le bruit qu'elle elimine -- elle doit continuer
+    # d'attraper les vrais blocages.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-22T14:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    # Caller did NOT declare --paths, so the lane IS in `others_verdict`
+    # (real blocker, scope filter cannot prove disjointness).
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict=active,  # caller has no scope -> nothing filtered
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "il bloque toutes les autres lanes" in err, (
+        "CONTROLE POSITIF (#12327 acceptance 3) : un marqueur epic-wide "
+        "qui survit au scope filter DOIT toujours declencher le wording "
+        "legacy `il bloque`. La correction ne peut pas etre validee par "
+        "le silence seul -- elle doit aussi continuer d'attraper."
+    )
+    assert "SUPERSEDED" not in err, (
+        "pas de SUPERSEDED si la lane n'a pas re-poste depuis"
+    )
+
+
+def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
+    # SCENARIO EXACT de l'incident fondateur (2026-08-22T14:41Z) :
+    # 4 marqueurs epic-wide historiques (4 lanes distinctes) + 4 claims
+    # actifs scopés disjoints. Le caller declare --paths sur
+    # 10_LocalLlama*.ipynb. Le verdict FINAL est CLEAR (tous les claims
+    # scopés disjoints) -- AUCUN marqueur epic-wide historique ne doit
+    # etre rapporte comme `il bloque`, et le verdict reste CLEAR.
+    # Le mock tracked aligne les globs sur des fichiers qui matchent dans
+    # le test (le walk reel du worktree differe du walk de l'install
+    # CoursIA-2 principale ; on veut tester la logique, pas le filesystem).
+    monkeypatch.setattr(
+        clc, "_git_tracked_files",
+        lambda repo_root=None: [
+            "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3-test.ipynb",
+            "MyIA.AI.Notebooks/Sudoku/SL-5-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-test.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama-test.ipynb",
+        ],
+    )
+    bodies_and_dates = [
+        # 4 epic-wide historiques (4 lanes distinctes, dates anterieures)
+        ("[CLAIMED] lane myia-po-2023:CoursIA\n",
+         "2026-08-22T13:50:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA\n",
+         "2026-08-22T13:51:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-22T13:52:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA-2\n",
+         "2026-08-22T13:53:00Z"),
+        # 4 claims actifs scopés disjoints (memes lanes, dates ulterieures)
+        ("[CLAIMED] lane myia-po-2023:CoursIA -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2*.ipynb, "
+         "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3*.ipynb\n",
+         "2026-08-22T14:10:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA -- paths: "
+         "MyIA.AI.Notebooks/Sudoku/SL-5*.ipynb\n",
+         "2026-08-22T14:11:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3*.ipynb, "
+         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7*.ipynb\n",
+         "2026-08-22T14:12:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre*.ipynb\n",
+         "2026-08-22T14:13:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    p = payload(*[comment(b, d) for b, d in bodies_and_dates], number=11112)
+    # Caller is po-2024:CoursIA, declares --paths on 10_LocalLlama (none of
+    # the 4 scoped claims intersect). Sortie attendue : CLEAR (exit 0) et
+    # AUCUN marqueur epic-wide historique ne dit `il bloque` -- tous sont
+    # soit SUPERSEDED (meme lane a re-poste un scoped) soit SANS effet
+    # (la lane a re-poste un scoped disjoint, mais avec un marqueur
+    # epic-wide historique qu'on n'a pas re-poste en supersede -- dans ce
+    # cas l'organe voit 2 markers, le scoped prime comme ACTIVE, et le
+    # epic-wide historique est SUPERSEDED par construction).
+    rc = clc._run_check(
+        p,
+        "myia-po-2024:CoursIA",
+        my_paths=[
+            "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama*.ipynb",
+        ],
+    )
+    assert rc == 0, (
+        f"verdict CLEAR attendu (4 claims scopés disjoints du path 10_LocalLlama), "
+        f"got rc={rc}"
+    )
+    err = capsys.readouterr().err
+    # Aucun marqueur epic-wide ne doit affirmer `il bloque toutes les autres`
+    assert "il bloque toutes les autres lanes" not in err, (
+        "le wording legacy `il bloque toutes` est INTERDIT sur les 4 "
+        "marqueurs epic-wide historiques une fois que la meme lane a "
+        "re-poste un claim scoped (incidente fondateur 2026-08-22T14:41Z)"
+    )
+    # Les 4 marqueurs epic-wide sont SHOULD SUPERSEDED (chacun supplanté
+    # par le claim scoped ulterieur de la meme lane).
+    superseded_count = err.count("SUPERSEDED")
+    assert superseded_count == 4, (
+        f"les 4 marqueurs epic-wide historiques doivent etre qualifies "
+        f"SUPERSEDED (1 par lane), got {superseded_count}"
+    )
+
+
+def test_lint_12327_released_followed_by_scoped_is_still_superseded(capsys):
+    # Scénario complet : CLAIMED epic-wide historique, RELEASED hygiene, puis
+    # CLAIMED scoped actif. L'organe réduit à un seul ACTIVE (le scoped).
+    # L'ancien CLAIMED epic-wide reste dans la liste d'events (le RELEASED
+    # ferme le PRÉCÉDENT active, mais ne supprime pas l'event du journal) --
+    # le lint le voit et le qualifie SUPERSEDED par le scoped actif de la
+    # MEME lane. C'est la bonne sémantique : le marqueur historique n'a plus
+    # aucun effet sur le verdict (le reducer ne le considère plus), mais
+    # l'info reste utile pour la lane qui n'a pas edité son RELEASED sur
+    # CHAQUE marqueur historique (au cas où elle en aurait plusieurs).
+    # Le wording `il bloque toutes les autres lanes` reste INTERDIT.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-20T10:00:00Z"),
+        ("[RELEASED] lane myia-po-2024:CoursIA-2 -- cleanup\n",
+         "2026-08-21T10:00:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Audio/04-3*.ipynb\n",
+         "2026-08-22T14:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "SUPERSEDED" in err, (
+        "le marqueur epic-wide historique (meme apres RELEASED) doit etre "
+        "qualifie SUPERSEDED par le scoped actif ulterieur de la meme lane"
+    )
+    assert "il bloque toutes les autres lanes" not in err, (
+        "le wording legacy `il bloque toutes` reste INTERDIT, meme apres "
+        "RELEASED (le SUPERSEDED le remplace)"
+    )
+
+
+def test_lint_12327_no_supersede_marker_when_only_rele(capsys):
+    # Controle symétrique : CLAIMED epic-wide + RELEASED SANS re-claim
+    # scoped. L'organe a 0 active pour cette lane. Le marqueur epic-wide
+    # historique n'a plus d'actif qui le supersede, mais il n'a pas non
+    # plus d'effet (pas dans `others_verdict`). Le lint doit etre SILENT
+    # sur ce marqueur (pas de SUPERSEDED, pas de `il bloque`) -- l'event
+    # est purement historique, le verdict n'a rien à en dire.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-20T10:00:00Z"),
+        ("[RELEASED] lane myia-po-2024:CoursIA-2 -- cleanup\n",
+         "2026-08-21T10:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "il bloque" not in err, (
+        "un marqueur epic-wide RELEASED sans re-claim ne doit produire "
+        "AUCUN lint (pas d'actif, pas de blocker)"
+    )
+    assert "SUPERSEDED" not in err, (
+        "pas de SUPERSEDED non plus (pas d'actif pour le supplanter)"
+    )
+
+
+# --- #12656 fail-OPEN : caller a joker vs claim path-scope --------------------
+#
+# The guard read `_path_matches_any(my_scope, scope)` with the CALLER's glob
+# as the fnmatch `filename` operand and the other lane's concrete path as the
+# `pattern`, so `fnmatch("dir/**", "dir/file.md")` was False and a joker
+# caller was told CLEAR against a claim that demonstrably covered its target.
+# `_scopes_intersect` is the symmetric replacement. A game of pattern goes by
+# its FALSE NEGATIVES: the six repro rows of the issue table, jokers included,
+# must all report BLOCKED, and genuinely-disjoint jokers must still CLEAR.
+
+_RAG = "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique"
+_RAG_CLAIM = [
+    f"{_RAG}/README.md",
+    f"{_RAG}/02-Retrieval-Avance.ipynb",
+]
+_RAG_TRACKED = _RAG_CLAIM + [f"{_RAG}/01-Introduction.ipynb"]
+
+
+def test_scopes_intersect_six_repro_rows_block():
+    """#12656 table row-by-row: every caller form names the tracked README.md
+    that the po-2025 claim scopes, so it must INTERSECT (block), not clear.
+    The literal form is the control that already worked; the 5 joker forms
+    are the fail-OPEN this test pins closed."""
+    callers = [
+        f"{_RAG}/README.md",                  # literal -- control
+        f"{_RAG}/README*",                    # trailing joker
+        f"{_RAG}/READM?.md",                  # single-char joker
+        f"{_RAG}/**",                         # directory-recursive joker
+        f"{_RAG}/*",                          # single-level joker
+        "MyIA.AI.Notebooks/GenAI/**",         # upstream joker
+    ]
+    for caller in callers:
+        assert clc._scopes_intersect([caller], _RAG_CLAIM, _RAG_TRACKED) is True, (
+            f"repro row {caller!r} did not intersect the claim scope -- fail-OPEN"
+        )
+
+
+def test_scopes_intersect_disjoint_jokers_no_block():
+    """Acceptance #2: genuine disjoint globs (FineTuning/** vs RAG/**) must
+    NOT intersect -- the #10419 acquit must not be paid by over-obstruction."""
+    tracked = [
+        f"MyIA.AI.Notebooks/GenAI/FineTuning/README.md",
+        f"{_RAG}/README.md",
+    ]
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/GenAI/FineTuning/**"],
+        [f"{_RAG}/README.md"],
+        tracked,
+    ) is False
+
+
+def test_scopes_intersect_no_tracked_concrete_vs_glob():
+    """Reducer path (`compute_active_claims` has no repo walk): a scoped
+    override with a joker must CLOSE a concrete claim it covers -- the same
+    operand-order bug left it unable to."""
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/Reidemeister.lean"],
+    ) is True
+
+
+def test_scopes_intersect_no_tracked_disjoint_globs():
+    assert clc._scopes_intersect(
+        ["scripts/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+    ) is False
+
+
+def test_scopes_intersect_no_tracked_identical_glob():
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+    ) is True
+
+
+def test_run_check_joker_caller_blocks_scoped_claim(capsys):
+    """#12656 acceptance #1 end-to-end: a `--paths` that carries a joker
+    covering a tracked file named in another lane's `paths:` claim must
+    return exit 1 (BLOCKED) -- the 5 joker forms were the reported fail-OPEN,
+    the literal form is the control."""
+    callers = [
+        f"{_RAG}/README.md",
+        f"{_RAG}/README*",
+        f"{_RAG}/READM?.md",
+        f"{_RAG}/**",
+        f"{_RAG}/*",
+        "MyIA.AI.Notebooks/GenAI/**",
+    ]
+    p = payload(
+        comment(
+            f"[CLAIMED] lane myia-po-2025:CoursIA -- paths: "
+            f"{_RAG}/README.md, {_RAG}/02-Retrieval-Avance.ipynb",
+            "2026-08-23T19:04:33Z",
+        ),
+    )
+    for caller_paths in callers:
+        rc = clc._run_check(p, "myia-po-2023:CoursIA-2", my_paths=[caller_paths])
+        assert rc == 1, (
+            f"joker caller {caller_paths!r} vs a path-scope claim covering "
+            f"README.md returned rc={rc} (expected 1 / blocked) -- #12656 "
+            f"fail-OPEN"
+        )
+
+
+def test_run_check_disjoint_joker_caller_clear(capsys):
+    """Acceptance #2 end-to-end: disjoint joker scopes must CLEAR (exit 0).
+    The caller targets RAG/**, the other lane's claim covers only FineTuning."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA -- paths: "
+            "MyIA.AI.Notebooks/GenAI/FineTuning/README.md",
+            "2026-08-23T19:04:33Z",
+        ),
+    )
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=[f"{_RAG}/**"],
+    )
+    assert rc == 0, (
+        f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
+    )
+

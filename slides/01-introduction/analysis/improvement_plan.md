@@ -112,7 +112,7 @@ Le deck Introduction est transversal : il presente les concepts que les notebook
 | 28 | Argumentation | `SymbolicAI/Argument_Analysis/` (5 notebooks) |
 | 29 | Inference bayesienne | `Probas/Infer-101.ipynb`, `Probas/Infer/Infer-3-Factor-Graphs.ipynb` a `Infer-14` |
 | 29 | Reseaux de decision | `Probas/Infer/Infer-14-Decision-Utility-Foundations.ipynb` |
-| 29 | Theorie des jeux | `GameTheory/GameTheory-2b-Lean-Definitions.ipynb` a `GameTheory-16b` |
+| 29 | Theorie des jeux | `GameTheory/GameTheory-02b-Lean-Definitions.ipynb` a `GameTheory-16b` |
 | 13 | Deep learning / GenAI | `GenAI/Image/` (15+ notebooks), `ML/ML.Net/` (5 notebooks) |
 | 13 | Trading algorithmique | `QuantConnect/` (27 notebooks - a verifier) |
 | 39 | Agent apprenant | `RL/rl_1_intro_cartpole.ipynb` a `rl_3_experience_replay_dqn` |

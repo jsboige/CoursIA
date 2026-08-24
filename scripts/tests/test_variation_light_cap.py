@@ -1637,3 +1637,63 @@ def test_genre_signals_picker_command_absent_when_clean():
     out = json.loads(proc.stdout)
     assert out["picker_command"] is None
     assert out["signals"]["VEIN-RUN"] is False
+
+
+# --- #12158 : GENRE-UNKNOWN --------------------------------------------------
+#
+# L'enumeration des genres est close pour proteger G-VAR-3 : un mot hors
+# table ne peut JAMAIS egaler le genre precedent, donc l'adjacence est
+# inatteignable par simple choix de mot. Le defaut : canonicalize_genre()
+# rendait le mot tel quel, en silence. Le remede n'est PAS d'elargir la
+# table au coup par coup (whack-a-mole) mais de SIGNALER (GENRE-UNKNOWN),
+# avec seulement les synonymes mesures a cible evidente ajoutes.
+
+def test_genre_unknown_positive_control_invented_genre():
+    # Controle positif OBLIGATOIRE (#12158 remede 3) : un genre invente DOIT
+    # lever GENRE-UNKNOWN. Sans lui, un signal qui ne se declenche jamais est
+    # indiscernable d'un signal debranche.
+    sig = vlc.compute_signals([], "myia-po-2023:CoursIA",
+                              candidate_genre="zzz-nonexistent")
+    assert sig["signals"]["GENRE-UNKNOWN"] is True
+    # Le mot signale est le CANONISE (la regle composet reduit `zzz-nonexistent`
+    # a sa queue `nonexistent`, qui reste hors table) -- c'est la preuve du
+    # hors-table, pas le body d'origine.
+    assert sig["candidate_genre_unknown_word"] == "nonexistent"
+    # Un simple mot sans tiret reste lui-meme.
+    sig2 = vlc.compute_signals([], "myia-po-2023:CoursIA",
+                               candidate_genre="zzznoexist")
+    assert sig2["signals"]["GENRE-UNKNOWN"] is True
+    assert sig2["candidate_genre_unknown_word"] == "zzznoexist"
+
+
+def test_genre_unknown_silent_on_canonical_and_aliased():
+    # Un genre canonique OU un alias qui reduit vers un canonique ne leve
+    # PAS le signal -- sinon le signal serait un bruit de fond permanent.
+    for genre in ("tooling", "genai", "translation", "scripts", "infra",
+                  "csp", "infra-tooling"):
+        sig = vlc.compute_signals([], "myia-po-2023:CoursIA",
+                                  candidate_genre=genre)
+        assert sig["signals"]["GENRE-UNKNOWN"] is False, genre
+        assert sig["candidate_genre_unknown_word"] is None, genre
+
+
+def test_genre_unknown_on_measured_fallthrough_words():
+    # Les cas mesures du body de l'issue : chacun doit soit reduire vers un
+    # canonique (scripts/infra -> tooling, csp -> research-code), soit lever
+    # le signal (genai-reexec : compose dont la queue `reexec` n'est ni
+    # canonique ni aliassee -- laisser au signal, decision explicite #12158).
+    assert vlc.canonicalize_genre("scripts") == "tooling"
+    assert vlc.canonicalize_genre("infra") == "tooling"
+    assert vlc.canonicalize_genre("csp") == "research-code"
+    sig = vlc.compute_signals([], "myia-po-2023:CoursIA",
+                              candidate_genre="genai-reexec")
+    assert sig["signals"]["GENRE-UNKNOWN"] is True
+    assert sig["candidate_genre_unknown_word"] == "reexec"
+
+
+def test_genre_unknown_absent_when_no_genre_claimed():
+    # Pas de genre declare -> pas de signal (symetrie avec GENRE-MISMATCH).
+    sig = vlc.compute_signals([], "myia-po-2023:CoursIA",
+                              candidate_genre=None)
+    assert sig["signals"]["GENRE-UNKNOWN"] is False
+    assert sig["candidate_genre_unknown_word"] is None

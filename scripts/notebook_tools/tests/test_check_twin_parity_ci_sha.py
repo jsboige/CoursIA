@@ -497,3 +497,116 @@ def test_real_content_drift_still_blocks_alongside_metadata_churn(tmp_path):
     assert out["n_blocking_drift"] == 1, (
         f"seule Search-B est bloquante, got {out['n_blocking_drift']}"
     )
+
+
+# --- 5. garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) ---------------
+
+def test_update_during_merge_aborts_with_systemexit(tmp_path):
+    """#11732 : --update pendant un merge non commite atteste l'ANCIENNE tete
+    (HEAD pointe sur la tete de branche d'avant le merge), pas le resultat
+    du merge. Au commit du merge, les notebooks obtiennent de nouveaux blobs
+    et l'attestation fraichement ecrite est deja DRIFT.
+
+    Le garde refuse --update si MERGE_HEAD existe dans `.git/`, et indique
+    a l'auteur de commiter d'abord puis re-attester (variante operationnelle
+    de #8957). SystemExit est valide -- argparse.p.error leve SystemExit(2),
+    et c'est exactement le pattern documente par
+    test_ci_strict_and_verify_recorded_sha_are_mutually_exclusive.
+    """
+    repo = _git_repo(tmp_path)
+    py_rel = "py/nb.ipynb"
+    cs_rel = "cs/nb.ipynb"
+    _commit(repo, py_rel, _nb(source=["# Title\n"]), "base py")
+    _commit(repo, cs_rel, _nb(source=["// Title\n"]), "base cs")
+    pairs_dir = tmp_path / "twin_pairs.d"
+    pairs_dir.mkdir()
+    py_blob = ctp._git_blob_sha(repo, py_rel)
+    cs_blob = ctp._git_blob_sha(repo, cs_rel)
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Probas-X", py_rel, cs_rel,
+        py_blob, cs_blob,
+        ctp._content_sha(repo, py_rel), ctp._content_sha(repo, cs_rel),
+    )
+    # Simuler un merge non commite : creer `.git/MERGE_HEAD` avec un SHA
+    # bidon. `git rev-parse -q --verify MERGE_HEAD` retourne rc=0 dans cet
+    # etat, ce que le garde detecte comme merge en cours.
+    (repo / ".git" / "MERGE_HEAD").write_text("0123456789abcdef0123456789abcdef01234567\n")
+    with pytest.raises(SystemExit):
+        ctp.main([
+            "--update", "--pair", "Probas-X",
+            "--by", "test",
+            "--registry", str(pairs_dir),
+            "--repo-root", str(repo),
+        ])
+    # Cleanup : enlever MERGE_HEAD pour les autres tests utilisant le meme tmp_path
+    (repo / ".git" / "MERGE_HEAD").unlink(missing_ok=True)
+
+
+def test_update_during_rebase_aborts_with_systemexit(tmp_path):
+    """#11732 : variante rebase interactif (REBASE_HEAD existe). Meme
+    semantique d'abort que la variante merge -- le garde refuse --update et
+    suggere de commiter d'abord.
+    """
+    repo = _git_repo(tmp_path)
+    py_rel = "py/nb.ipynb"
+    cs_rel = "cs/nb.ipynb"
+    _commit(repo, py_rel, _nb(source=["# Title\n"]), "base py")
+    _commit(repo, cs_rel, _nb(source=["// Title\n"]), "base cs")
+    pairs_dir = tmp_path / "twin_pairs.d"
+    pairs_dir.mkdir()
+    py_blob = ctp._git_blob_sha(repo, py_rel)
+    cs_blob = ctp._git_blob_sha(repo, cs_rel)
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Probas-Y", py_rel, cs_rel,
+        py_blob, cs_blob,
+        ctp._content_sha(repo, py_rel), ctp._content_sha(repo, cs_rel),
+    )
+    # Simuler un rebase interactif en cours
+    (repo / ".git" / "REBASE_HEAD").write_text("0123456789abcdef0123456789abcdef01234567\n")
+    with pytest.raises(SystemExit):
+        ctp.main([
+            "--update", "--pair", "Probas-Y",
+            "--by", "test",
+            "--registry", str(pairs_dir),
+            "--repo-root", str(repo),
+        ])
+    (repo / ".git" / "REBASE_HEAD").unlink(missing_ok=True)
+
+
+def test_update_after_merge_commit_proceeds(tmp_path):
+    """#11732 inverse : un depot git normal (sans MERGE_HEAD/REBASE_HEAD)
+    n'est PAS affecte par le garde -- --update fonctionne normalement.
+    Verifie qu'on n'a pas casse le cas nominal en ajoutant le check.
+
+    Le cas nominal ici est un update no-op : la paire vient d'etre atteste
+    avec les memes SHAs qu'a HEAD, donc le garde no-op du #9399 critere 2
+    refuse l'ecriture (avec un message sur stderr) et l'invoc retourne 0
+    (succes mais « rien a faire »). Ce qui compte pour ce test : on N'arrive
+    PAS au garde MERGE_HEAD/REBASE_HEAD (qui aurait leve SystemExit).
+    """
+    repo = _git_repo(tmp_path)
+    py_rel = "py/nb.ipynb"
+    cs_rel = "cs/nb.ipynb"
+    _commit(repo, py_rel, _nb(source=["# Title\n"]), "base py")
+    _commit(repo, cs_rel, _nb(source=["// Title\n"]), "base cs")
+    pairs_dir = tmp_path / "twin_pairs.d"
+    pairs_dir.mkdir()
+    py_blob = ctp._git_blob_sha(repo, py_rel)
+    cs_blob = ctp._git_blob_sha(repo, cs_rel)
+    _make_pair_yaml_with_content_sha(
+        pairs_dir, "Probas-Z", py_rel, cs_rel,
+        py_blob, cs_blob,
+        ctp._content_sha(repo, py_rel), ctp._content_sha(repo, cs_rel),
+    )
+    # Pas de MERGE_HEAD/REBASE_HEAD -- le depot est dans un etat nominal.
+    # Le garde no-op du #9399 critere 2 refuse l'ecriture (avec stderr
+    # « Refusees (no-op) : Probas-Z ») et retourne 0. Si le garde #11732
+    # etait declenche a tort, SystemExit serait leve -- ce qui n'est PAS
+    # le cas attendu.
+    rc = ctp.main([
+        "--update", "--pair", "Probas-Z",
+        "--by", "test",
+        "--registry", str(pairs_dir),
+        "--repo-root", str(repo),
+    ])
+    assert rc == 0, f"cas nominal doit retourner 0 (no-op), got {rc}"

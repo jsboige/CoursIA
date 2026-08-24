@@ -13,7 +13,7 @@
 C4 se tient à l'intersection de plusieurs fils :
 
 - **Fil thomien** : la *prégnance* π est directement héritée de la théorie des catastrophes (cf. [`docs/ict/synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md), et la lecture dédiée de la *Sémiophysique* — [#7739](https://github.com/jsboige/CoursIA/issues/7739), PR [#9559](https://github.com/jsboige/CoursIA/pull/9559) MERGED c.1240).
-- **Fil grothendieckien** : la *non-canonicité* des prolongements d'un espace local (cf. [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md)) donne la forme de la *grammaire* (plusieurs prolongements non-équivalents admissibles, `|Ext(L_t, L_{t+1})| > 1`).
+- **Fil grothendieckien** : la *non-canonicité* des prolongements d'un espace local (cf. [`docs/grothendieckian-lens.md`](../grothendieckian-lens.md)) donne la forme de la *grammaire* (plusieurs prolongements non-équivalents admissibles, `|AdmExt(L_t)| > 1`).
 - **Fil luhmanien / fristonien** : l'*autopoïesis* et l'*active inference* donnent la forme de la boucle *représentation locale → action sur la totalité* (le système n'est pas *représenté* passivement, il agit pour maintenir ses propres conditions d'existence).
 - **Fil do-calculus** : *P(R)* est directement l'application du do-calculus de Pearl (cf. *« Causality »*, Cambridge UP, 2009) à la grammaire de propagation : on interventionne la bascule représentation-locale → action-sur-tout, et on mesure la divergence des trajectoires.
 
@@ -164,13 +164,13 @@ D1 §2.4 introduit la notion de **mécanisme** `M(η_1, ..., η_n) = G_{t+1}` qu
 
 ### 4.2 Le seuil comme proxy P(R) parmi les 6
 
-Dans le 6-uplet de D1 §3 (`O_t, ΔA_t, C_t = |Ext(G_t)|, P(R), institutionnalisation, I(R)`), la grandeur `P(R)` (pouvoir performatif, do-calculus) est **directement** la grandeur `P(R)` de C4 §2.3. Les deux grandeurs sont *la même grandeur* : la divergence KL entre les distributions des trajectoires du système sous l'intervention et sous la non-intervention. C4 *spécifie* la mesure ; D1 *positionne* la grandeur dans le 6-uplet (comme une composante parmi 5 autres, pas comme un agrégat).
+Dans le 6-uplet de D1 §3 (`O_t, ΔA_t, C_t = |AdmExt(G_t)|, P(R), institutionnalisation, I(R)`), la grandeur `P(R)` (pouvoir performatif, do-calculus) est **directement** la grandeur `P(R)` de C4 §2.3. Les deux grandeurs sont *la même grandeur* : la divergence KL entre les distributions des trajectoires du système sous l'intervention et sous la non-intervention. C4 *spécifie* la mesure ; D1 *positionne* la grandeur dans le 6-uplet (comme une composante parmi 5 autres, pas comme un agrégat).
 
 Les autres grandeurs du 6-uplet trouvent aussi leur pendant en C4 :
 
 - `O_t` (expansion ontologique) ↔ le temps 2 de C4 (concentration d'information dans `r`).
 - `ΔA_t` (ouverture politique) ↔ le temps 3 de C4 (rendre `r` public = ouvrir des actions nouvelles).
-- `C_t = |Ext(G_t)|` (non-canonicité) ↔ l'extension non-canonique qui *choisit* quel `r` devient public (le mécanisme `M`).
+- `C_t = |AdmExt(G_t)|` (non-canonicité) ↔ l'extension non-canonique qui *choisit* quel `r` devient public (le mécanisme `M`).
 - `I(R)` (dette d'irréversibilité) ↔ l'hystérésis de C4 §2.4.
 
 ### 4.3 La grammaire de propagation *est* la tresse opérationnelle

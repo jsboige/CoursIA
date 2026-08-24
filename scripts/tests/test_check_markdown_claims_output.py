@@ -53,7 +53,11 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from check_markdown_claims_output import (  # noqa: E402
     _fuzzy_present,
+    _is_imperative_list_value,
+    _is_legend_equation,
     _is_md_heading_line,
+    _is_section_reference,
+    _is_threshold_expression,
     _is_version_token,
     _in_exception_code_span,
     _lit_skip,
@@ -550,6 +554,73 @@ class TestVersionTokenHelper:
         assert _is_version_token(prose, pos)
 
 
+class TestSectionReferenceFilter:
+    """c.421 / #12093: a section reference ("La section 4.5", "(§3.2)")
+    is a pointer to another part of the document, not a quantitative
+    claim. GT-16 4/4 FPs were all of this form. The filter must drop
+    them WITHOUT suppressing a real fabrication."""
+
+    def test_section_word_prefix(self):
+        prose = "La section 4.5 vient de montrer que VCG peut perdre"
+        pos = prose.find("4.5")
+        assert _is_section_reference(prose, pos)
+
+    def test_section_in_parenthesis(self):
+        prose = "compatible avec VCG (section 4.5) : VCG est truthful"
+        pos = prose.find("4.5")
+        assert _is_section_reference(prose, pos)
+
+    def test_pilcrow_glyph(self):
+        prose = "L'enchere au second prix (§3.2), dite enchere de Vickrey"
+        pos = prose.find("3.2")
+        assert _is_section_reference(prose, pos)
+
+    def test_section_with_dot_in_number(self):
+        prose = "La section 6.1 enonce le theoreme de Gibbard-Satterthwaite"
+        pos = prose.find("6.1")
+        assert _is_section_reference(prose, pos)
+
+    def test_not_section_for_fabrication(self):
+        prose = "On attend ~0,09 % des parametres"
+        pos = prose.find("0,09")
+        assert not _is_section_reference(prose, pos)
+
+    def test_not_section_at_start(self):
+        prose = "0.09% de parametres"
+        assert not _is_section_reference(prose, 0)
+
+    def test_section_ref_cleared_on_gt16_shape(self, tmp_path: Path):
+        """The exact GT-16 FPs: 'La section 4.5' / 'section 4.5' /
+        'La section 6.1' / '(§3.2)' are all CLEAN (not fabricated)."""
+        cases = [
+            "La section 4.5 vient de montrer que VCG peut perdre.",
+            "VCG (section 4.5) est truthful par construction.",
+            "La section 6.1 enonce le theoreme de Gibbard-Satterthwaite.",
+            "L'enchere au second prix (§3.2), dite enchere de Vickrey.",
+        ]
+        for i, md in enumerate(cases):
+            nb = _mk_nb([
+                _code_cell("print('hello')", [_stream_output("hello")]),
+                _md_cell(md),
+            ])
+            nb_path = tmp_path / f"sec_{i}.ipynb"
+            nb_path.write_text(json.dumps(nb), encoding="utf-8")
+            res = check_notebook(nb_path)
+            assert res["verdict"] == "CLEAN", (i, md, res)
+
+    def test_real_fabrication_not_suppressed(self, tmp_path: Path):
+        """The filter must not blind the detector: a number truly absent
+        from the output is still flagged, even if the prose is rich."""
+        nb = _mk_nb([
+            _code_cell("print('loss=3.38 -> 1.93')", [_stream_output("loss=3.38 -> 1.93")]),
+            _md_cell("On observe une perte de 0,09 %, avec un ratio de 1,2 M."),
+        ])
+        nb_path = tmp_path / "real_section_neighbor.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "FABRICATION_DETECTED", res
+
+
 class TestExceptionSpanHelper:
     """Helper-level tests of `_in_exception_code_span`."""
 
@@ -581,3 +652,428 @@ class TestExceptionSpanHelper:
         result = _in_exception_code_span(src, pos, end)
         assert result is True or result is False  # weak pin
 
+    def test_prose_not_src_offsets_pinned(self):
+        """c.366 latent bug + c.415-L1 fix pinning.
+
+        When the markdown cell source carries a heading (e.g. '# API
+        Traceback messages'), the raw cell source (let's call it `src`)
+        has DIFFERENT line offsets than the prose-stripped version
+        (returned by `_strip_md_structure(src)`, let's call it `prose`).
+        The match positions produced by `NUMERIC_RE.finditer(prose)` are
+        offsets into `prose`, NOT into `src`.
+
+        This test pins the contract: the FIRST argument to
+        `_in_exception_code_span` MUST be `prose` (the stripped text the
+        match was computed against), not `src`. The c.366 latent bug was
+        that the parameter was named `src` (misleading) and the line
+        fallback (`line_start = src.rfind('\\n', 0, match_pos) + 1`) was
+        run against whatever the caller passed -- if the caller followed
+        the misleading name and passed the raw source, the line fallback
+        pointed to the wrong line.
+
+        Here, the cell has:
+          line 1: '# API Traceback messages'  (heading -> stripped)
+          line 2: ''
+          line 3: 'Le ratio observe est 0,5 (file://hdfs/path 0,82)'  (prose)
+
+        The numeric `0,5` in prose lives at pos ~22 (after 'Le ratio observe est ').
+        In `src`, that same logical position is offset by the heading length
+        (~27 chars + '\\n\\n').
+
+        With prose (correct): the line containing the match starts AFTER
+        the heading — the line does NOT carry an exception/version hint.
+        => filter returns False.
+
+        With src (BUGGY, the pre-fix contract): the line_start lookup
+        uses `src.rfind('\\n', 0, pos)` which finds the newline BEFORE
+        the heading OR inside the heading content, and the returned line
+        carries 'Traceback' (heading word that matches _EXCEPTION_LINE_HINT_RE)
+        => filter returns True (WRONG -- this numeric is a measurement).
+        """
+        from check_markdown_claims_output import _strip_md_structure
+        src = "# API Traceback messages\n\nLe ratio observe est 0,5 sur 200 observations."
+        prose = _strip_md_structure(src)
+        # Find '0,5' in prose
+        pos = prose.find("0,5")
+        end = pos + len("0,5")
+
+        # CORRECT contract: pass prose. Filter should return False (0,5 is
+        # a measurement on a line WITHOUT exception/version hint).
+        assert not _in_exception_code_span(prose, pos, end), (
+            "Line 'Le ratio observe est 0,5 sur 200 observations.' carries NO "
+            "exception/version hint. Filter must return False when called with prose."
+        )
+
+        # BUGGY contract (pre-c.415): pass src. With the pre-fix code, the
+        # line fallback searched `src` for the preceding newline. If that
+        # fell inside the heading '# API Traceback messages', the matched
+        # line would contain 'Traceback' and the filter would return True
+        # -- a wrong false-negative guard.
+        #
+        # After c.415-L1 the parameter is named `prose` (linter-friendly
+        # pin) and the body uses it consistently. We document the contract
+        # here without re-running the buggy code path.
+
+
+class TestFrDecimalOutputNormalization:
+    """#12076: the output text goes through the same comma->dot normalization
+    as the cited token (direct search only), so a francophone-decimal output
+    matches DIRECTLY instead of surviving through the 12-digit-bounded fuzzy
+    fallback. Before the fix, the verdict depended on how many digits happened
+    to follow in the same output."""
+
+    def test_fr_decimal_claim_matched_directly_in_fr_output(self, tmp_path: Path):
+        """The exact #12070 cell-15 shape: prose '1,8260', output printing
+        '1,8260' surrounded by other comma-decimals -- CLEAN, no finding."""
+        nb = _mk_nb([
+            _code_cell("print(stats)", [
+                _stream_output(
+                    "      Uniforme moyenne  : 0,1320\n"
+                    "      Heterogene moyenne: 1,8260\n"
+                    "      Amelioration      : -1283,3%\n"
+                ),
+            ]),
+            _md_cell("L'analyse donne une moyenne heterogene de 1,8260 contre 0,1320 en uniforme."),
+        ])
+        nb_path = tmp_path / "fr_direct.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "CLEAN", res
+
+    def test_verdict_independent_of_trailing_digit_count(self, tmp_path: Path):
+        """The property the issue establishes: same cited number, same prose,
+        only the number of digits that FOLLOW in the same output changes --
+        both must give the same verdict. Pre-fix, the long tail flipped to
+        FABRICATION through the fuzzy (c) 12-digit bound."""
+        tails = [
+            "1,8260 fin\n",
+            "1,8260 puis 0,9999999999999999 et 2,718281828459045 fin\n",
+        ]
+        verdicts = []
+        for i, tail in enumerate(tails):
+            nb = _mk_nb([
+                _code_cell("print(x)", [_stream_output("moyenne: " + tail)]),
+                _md_cell("La moyenne heterogene constatee est 1,8260."),
+            ])
+            nb_path = tmp_path / f"tail_{i}.ipynb"
+            nb_path.write_text(json.dumps(nb), encoding="utf-8")
+            verdicts.append(check_notebook(nb_path)["verdict"])
+        assert verdicts == ["CLEAN", "CLEAN"], verdicts
+
+    def test_fabrication_still_detected_against_fr_output(self, tmp_path: Path):
+        """The fix must not blind the detector: a number truly absent from a
+        comma-formatted output is still flagged."""
+        nb = _mk_nb([
+            _code_cell("print(x)", [_stream_output("Uniforme moyenne : 0,1320")]),
+            _md_cell("La moyenne heterogene constatee est 1,8260."),
+        ])
+        nb_path = tmp_path / "fr_fab.ipynb"
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        res = check_notebook(nb_path)
+        assert res["verdict"] == "FABRICATION_DETECTED", res
+        norms = {f["normalized"] for f in res["findings"]}
+        assert "1.8260" in norms, res
+# -----------------------------------------------------------------------
+# c.415 (#11873) -- three new pedagogical-prose FP families
+# -----------------------------------------------------------------------
+
+
+class TestLLMModelNameVersion:
+    """LLM model names where the trailing digit is a version suffix,
+    not a measurement (GPT-3.5, LLaMA-2, Claude-3, Mistral-7B, etc.).
+    """
+
+    def test_gpt_3_5_in_list(self):
+        """Founding case verbatim: 02_fallacy_datasets_landscape.ipynb md[5]
+        cites '(GPT-3.5, LLaMA-2, Mistral...)' -- the 3.5 is a model version,
+        not a measurement.
+        """
+        src = "Une batterie de LLMs (GPT-3.5, LLaMA-2, Mistral)."
+        pos = src.find("3.5")
+        end = pos + len("3.5")
+        # The version token regex requires the prefix token (here "GPT-")
+        # to end within 30 chars before pos. GPT- is 4 chars before.
+        assert _is_version_token(src, pos)
+
+    def test_llama_2_in_list(self):
+        src = "...teste avec LLaMA-2 et Mistral-7B"
+        pos = src.find("2")
+        end = pos + len("2")
+        assert _is_version_token(src, pos)
+
+    def test_mistral_7b_in_list(self):
+        src = "comparaison avec Mistral-7B et Claude-3-Opus"
+        pos = src.find("7B")
+        end = pos + len("7B")
+        # Note: 'B' is not a digit, so NUMERIC_RE skips this case. The test
+        # documents the limitation rather than asserting the filter handles
+        # it -- version tokens with non-digit suffixes are out of scope for
+        # the numeric regex.
+        from check_markdown_claims_output import NUMERIC_RE
+        assert NUMERIC_RE.search(src) is None or _is_version_token(src, pos)
+
+    def test_claude_3_opus(self):
+        src = "Claude-3 Opus modele de reference"
+        pos = src.find("3 ")
+        end = pos + 1
+        # Trailing space: prefix ends with "-3", version regex anchors on
+        # the literal token followed by optional separator. Pin behavior:
+        # the regex MUST match for Claude-3 to be excluded.
+        assert _is_version_token(src, pos)
+
+    def test_gpt4_no_dot(self):
+        src = "...GPT-4 Turbo..."
+        pos = src.find("4 ")
+        end = pos + 1
+        assert _is_version_token(src, pos)
+
+
+class TestImperativeListValue:
+    """Family A (c.415 #11873): exercise parameter lists
+    ('remplacez X par 0.5, 1.0, 2.0' / 'testez avec 0, 1, 2').
+    """
+
+    def test_remplacez_with_comma_before(self):
+        """Founding case verbatim: SmartGrid-Energy md[13]
+        cites 'remplacez renewable_forecast_std par 0.5, 1.0, 2.0'.
+        The 1.0 is preceded by a comma (within 30 chars).
+        """
+        src = "Remplacez `renewable_forecast_std` par 0.5, 1.0, 2.0). Quelle heure devient la plus risquée ?"
+        pos = src.find("1.0")
+        end = pos + len("1.0")
+        assert _is_imperative_list_value(src, pos, end)
+
+    def test_testez_avec(self):
+        src = "Testez avec 0.1, 0.5, 1.0 et observez le comportement."
+        pos = src.find("0.5")
+        end = pos + len("0.5")
+        assert _is_imperative_list_value(src, pos, end)
+
+    def test_no_imperative_verb_no_filter(self):
+        """A numeric on a line WITHOUT an imperative verb should NOT be
+        filtered (legitimate measurement prose).
+        """
+        src = "Le resultat observe est 0.5 sur 200 observations."
+        pos = src.find("0.5")
+        end = pos + len("0.5")
+        assert not _is_imperative_list_value(src, pos, end)
+
+    def test_choisir_parmi(self):
+        src = "A choisir parmi 0, 1, 2 ou 3 selon votre cas."
+        pos = src.find("2 ")
+        end = pos + 1
+        assert _is_imperative_list_value(src, pos, end)
+
+
+class TestLegendEquation:
+    """Family B (c.415 #11873): axis / scale definitions
+    ('1.0 = parfaitement cohérente' / 'score 0 = aucun, 5 = excellent').
+    """
+
+    def test_perfectly_coherent_legend(self):
+        """Founding case verbatim: Diagnostic-Medical md[14]
+        cites '1.0 = parfaitement cohérente, 0.0 = hors-sujet'.
+        The 1.0 sits within ~20 chars of '='.
+        """
+        src = "Le tableau clinique du patient (1.0 = parfaitement cohérente, 0.0 = hors-sujet)"
+        pos = src.find("1.0 ")
+        end = pos + len("1.0 ")
+        assert _is_legend_equation(src, pos, end)
+
+    def test_hors_sujet_legend(self):
+        src = "... 0.0 = hors-sujet ..."
+        pos = src.find("0.0 ")
+        end = pos + len("0.0 ")
+        assert _is_legend_equation(src, pos, end)
+
+    def test_no_equals_no_filter(self):
+        """A bare numeric without '=' or ':' should NOT be filtered as
+        a legend equation (it's a measurement).
+        """
+        src = "Le ratio observe est 0.5 sur 200 observations."
+        pos = src.find("0.5")
+        end = pos + len("0.5")
+        assert not _is_legend_equation(src, pos, end)
+
+
+class TestThresholdExpression:
+    """Family C (c.415 #11873): decision thresholds
+    ('confiance >= 0.8' / 'score <= 0.5').
+    """
+
+    def test_confiance_ge_08(self):
+        """Founding case verbatim: Diagnostic-Medical md[14]
+        cites 'confiance >= 0.8'. The 0.8 sits adjacent to '>='.
+        """
+        src = "...confiance >= 0.8 ..."
+        pos = src.find("0.8")
+        end = pos + len("0.8")
+        assert _is_threshold_expression(src, pos, end)
+
+    def test_score_le_05(self):
+        src = "score <= 0.5 = risque faible"
+        pos = src.find("0.5")
+        end = pos + len("0.5")
+        assert _is_threshold_expression(src, pos, end)
+
+    def test_value_lt_threshold(self):
+        src = "valeur < 1.0 = aucun effet"
+        pos = src.find("1.0")
+        end = pos + len("1.0")
+        assert _is_threshold_expression(src, pos, end)
+
+    def test_value_gt_threshold(self):
+        src = "valeur > 0.5 = seuil critique"
+        pos = src.find("0.5")
+        end = pos + len("0.5")
+        assert _is_threshold_expression(src, pos, end)
+
+    def test_bare_numeric_no_threshold(self):
+        """A bare numeric (no adjacent operator) should NOT be filtered
+        as a threshold.
+        """
+        src = "Le ratio est 0.5 sur 200 observations."
+        pos = src.find("0.5")
+        end = pos + len("0.5")
+        assert not _is_threshold_expression(src, pos, end)
+
+
+# -----------------------------------------------------------------------
+# c.415 (#11873) -- integration: full notebook scan on founder fixtures
+# -----------------------------------------------------------------------
+
+
+class TestFoundingFixtures:
+    """Pin the BEFORE -> AFTER transition on the founder notebooks.
+
+    BEFORE (issue #11873): each of these notebooks returned
+    FABRICATION_DETECTED on a non-fabricated pedagogical prose.
+
+    AFTER (c.415): each returns CLEAN because the new line-scoped
+    filters suppress the false positive without touching real
+    fabrications elsewhere.
+
+    Implementation note: `check_notebook` reads a path, so we serialize
+    the dict to a tmp_path via `json.dumps` and feed the path back in.
+    """
+
+    def _scan_tmp(self, tmp_path, cells):
+        import json as _json
+        nb = _mk_nb(cells)
+        p = tmp_path / "fixture.ipynb"
+        p.write_text(_json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+        return check_notebook(p)
+
+    def test_fallacy_landscape_gpt35_clean(self, tmp_path):
+        """Founding case 1: 02_fallacy_datasets_landscape.ipynb md[5]
+        'GPT-3.5, LLaMA-2, Mistral' -- model versions, not measurements.
+        """
+        cells = [
+            _code_cell("x = compute_llm()\n", [_stream_output("42\n")]),
+            _md_cell(
+                "Une batterie de LLMs (GPT-3.5, LLaMA-2, Mistral) "
+                "est comparée sur 200 prompts.\n"
+            ),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", (
+            f"Expected CLEAN after c.415 LLM model-name filter, "
+            f"got {result['verdict']} with findings: {result['findings']}"
+        )
+
+    def test_smartgrid_imperative_list_clean(self, tmp_path):
+        """Founding case 2: SmartGrid-Energy md[13] 'par 0.5, 1.0, 2.0' --
+        exercise parameter list, not measurements.
+        """
+        cells = [
+            _code_cell("risk = 0.3\n", [_stream_output("0.3\n")]),
+            _md_cell(
+                "Remplacez `renewable_forecast_std` par 0.5, 1.0, 2.0. "
+                "Quelle heure devient la plus risquée ?\n"
+            ),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", (
+            f"Expected CLEAN after c.415 imperative-list filter, "
+            f"got {result['verdict']} with findings: {result['findings']}"
+        )
+
+    def test_diagnostic_medical_legend_clean(self, tmp_path):
+        """Founding case 3a: Diagnostic-Medical md[14] '1.0 = parfaitement
+        cohérente' -- axis legend.
+        """
+        cells = [
+            _code_cell("score = 0.5\n", [_stream_output("0.5\n")]),
+            _md_cell(
+                "Le tableau clinique du patient (1.0 = parfaitement "
+                "cohérente, 0.0 = hors-sujet).\n"
+            ),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", (
+            f"Expected CLEAN after c.415 legend filter, "
+            f"got {result['verdict']} with findings: {result['findings']}"
+        )
+
+    def test_diagnostic_medical_threshold_clean(self, tmp_path):
+        """Founding case 3b: Diagnostic-Medical md[14] 'confiance >= 0.8'
+        -- decision threshold.
+        """
+        cells = [
+            _code_cell("conf = 0.5\n", [_stream_output("0.5\n")]),
+            _md_cell(
+                "...confiance >= 0.8 pour valider le diagnostic...\n"
+            ),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", (
+            f"Expected CLEAN after c.415 threshold filter, "
+            f"got {result['verdict']} with findings: {result['findings']}"
+        )
+
+
+# -----------------------------------------------------------------------
+# c.415 (#11873) -- integration: REAL fabrication still detected
+# -----------------------------------------------------------------------
+
+
+class TestRealFabricationStillDetected:
+    """The c.290 / c.331 pathologie (a markdown citation that
+    contradicts the previous code cell's output) MUST still be flagged
+    after the new filters. Pin the false-negative guard.
+    """
+
+    def _scan_tmp(self, tmp_path, cells):
+        import json as _json
+        nb = _mk_nb(cells)
+        p = tmp_path / "fixture.ipynb"
+        p.write_text(_json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+        return check_notebook(p)
+
+    def test_290_qft_case_still_detected(self, tmp_path):
+        """The c.290 pathologie verbatim: code prints 'trainable params:
+        3,145,728 / 0.2385', markdown cites '~1,2 M / ~0,09 %'.
+        """
+        cells = [
+            _code_cell(
+                "model = train_lora()\n",
+                [_stream_output(
+                    "trainable params: 3,145,728 || all params: 1,318,903,808 || "
+                    "trainable%: 0.2385\n"
+                )],
+            ),
+            _md_cell(
+                "...on attend ~1,2 M de parametres entrainnables sur "
+                "1,3 Md au total = ~0,09 %...\n"
+            ),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", (
+            f"c.290 pathologie MUST still be flagged after c.415, "
+            f"got {result['verdict']} with findings: {result['findings']}"
+        )
+        # Pin the specific fabricated value (raw may carry trailing unit/space)
+        raws = [f["raw"] for f in result["findings"]]
+        assert any("0,09" in r or "0.09" in r for r in raws), (
+            f"Expected '0,09' / '0.09' substring in findings, got {raws}"
+        )

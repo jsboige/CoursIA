@@ -13,8 +13,6 @@ using Microsoft.DotNet.Interactive.PackageManagement;
 using Microsoft.Extensions.Logging;
 using Microsoft.SemanticKernel;
 
-namespace MyNotebookLib;
-
 public class WorkbookInteractionBase
 {
 	protected const string uniqueContentDescription = "A short string from the cell to update (e.g., a title in a markdown cell or a comment in a code cell) that is unique across all cells in the notebook";
@@ -305,5 +303,3 @@ public class WorkbookInteractionBase
 	{
 		return !string.IsNullOrEmpty(cell.KernelName); // Les cellules de code ont un KernelName défini.
 	}
-
-}

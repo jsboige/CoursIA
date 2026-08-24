@@ -8,6 +8,10 @@ sorry-baseline CANNOT pass the confrontation. The #11227 incident, encoded.
 
 import sys
 import os
+import shutil
+from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -1004,6 +1008,92 @@ def test_modified_files_count_with_qualifier_still_blocks():
     assert cand.blocking is True
 
 
+# #12184 -- measurement antecedent. "lake 70 fichiers" / "corpus N fichiers"
+# / "count_code_sorry.py ... N fichiers" -- the count is an EXTERNAL tool
+# output on a third-party corpus (Lean lake, registry, scan target), NEVER
+# the PR's file list. Founder case #12181 l.26: "lake de 70 modules, 1 sorry
+# reel distinct" red on a 1-file PR. Same family as HIT_ANTECEDENT / LOCATIVE_PREP.
+
+
+def test_incidental_measurement_antecedent_is_signal_not_blocking():
+    """#12184: 'lake N fichiers' / 'corpus N fichiers' / 'count_code_sorry.py N'
+    measure a third-party corpus, not the PR's diff. Founder case #12181
+    (body variant 'lake de 70 modules') does not even match COUNT_CLAIM
+    (modules, not fichiers), so the class of concern is future bodies that
+    explicitly say 'lake N fichiers' -- the antecedent exemption is preventive."""
+    lines = [
+        # The preventive shape that the issue body text anticipated
+        "lake 70 fichiers, 1 sorry reel distinct",
+        "lake of 70 files, 1 real sorry distinct",
+        # count_code_sorry.py script name
+        "`count_code_sorry.py` rendu: 36 fichiers naifs sur le corpus Lean",
+        # corpus / scan / registre / registry
+        "corpus 158 fichiers du registre ICT",
+        "scan sur 73 fichiers du depot",
+        "registre 200 fichiers de la vague",
+        # mesures sur
+        "mesures sur 1 500 fichiers",
+        # check_* script name
+        "check_pr_perimeter : 4 fichiers en fenetre",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is False, f"measurement tool output, not perimeter: {line[:60]}"
+
+
+def test_measurement_antecedent_does_not_swallow_real_perimeter_assertion():
+    """#12184 FN control: a line that mentions 'lake' but actually asserts a
+    perimeter (scope word + diffstat neighborhood) MUST stay blocking. The
+    exemption sits inside the FN-safety guards in _count_is_incidental
+    (no scope word, no diffstat) -- a perimeter-shaped line is not
+    incidental regardless of antecedent vocabulary."""
+    lines = [
+        # scope word + diffstat -> real assertion, must stay blocking
+        "Perimetre : lake 70 fichiers modifies (PR ship lake de 70 fichiers)",
+        # count under exclusivity marker + scope word
+        "lake 70 fichiers uniquement, scope = perimetre PR",
+    ]
+    for line in lines:
+        assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+        cand = Candidate(line, "body", "author", "body")
+        assert cand.blocking is True, f"real perimeter assertion must stay blocking: {line[:60]}"
+
+
+def test_measurement_antecedent_vocabulary_closed_list():
+    """#12184 closed-list: only the tool names enumerated in MEASUREMENT_ANTECEDENT
+    trigger the exemption. Random words (e.g. 'rapport', 'output') must not
+    absorb genuine perimeter assertions."""
+    line = "rapport de 70 fichiers envoyes au CI"
+    assert extract_perimeter_assertions(line) == [line], "detection unchanged"
+    cand = Candidate(line, "body", "author", "body")
+    assert cand.blocking is True, "closed-list antecedent: 'rapport' is not an external measurement tool"
+
+
+def test_founder_body_12181_lake_modules_passes_unchanged():
+    """#12184 FN control on the actual founder body. The body of #12181
+    line 26 says 'lake de 70 modules, 1 sorry reel distinct' -- 'modules'
+    is not in COUNT_CLAIM (fichiers|files only) so the line never extracts
+    as a candidate and the guard passes. The antecedent exemption is a
+    safety net for FUTURE bodies that use the equivalent 'lake N fichiers'
+    phrasing (the issue body example), not a fix to the founder body
+    itself."""
+    line = "lake de 70 modules, 1 sorry reel distinct"
+    # 'modules' does not match COUNT_CLAIM -- not a candidate
+    assert extract_perimeter_assertions(line) == [], "modules is not fichiers/files"
+    # `--scan-thread` calls `select_candidates` first; an empty candidate
+    # list means no body assertion is confronted -> the guard's verdict is
+    # determined by the file list alone (1 file, no claim), and the issue
+    # #12181 reports `VERDICT: OK`. The direct `--assert` path, in
+    # contrast, would flag the line as 'unverifiable wording' -- a
+    # DIFFERENT organ concern (the line alone isn't a perimeter claim,
+    # which is exactly the property the antecedent exemption preserves for
+    # the scan-thread path).
+    items = [{"kind": "PR body", "author": "jsboige", "body": line, "source": "body", "ts": ""}]
+    cands, _ = select_candidates(items, n_files=1)
+    assert cands == [], "no candidates in --scan-thread mode for the founder body line"
+
+
 # #12057 -- compte-antecedent. "N unites (M fichiers)" et "M fichiers pointent
 # ici" nomment la PROVENANCE ou la PORTEE d'une mesure, jamais le perimetre de
 # la PR. Meme famille que HIT_ANTECEDENT: mauvaise surface, pas mauvais compte.
@@ -1434,4 +1524,411 @@ def test_11985_rule1_requires_declarative_correct_count():
     assert header.blocking is True
     assert header.body_declares_effective_count is False, (
         "an incidental scan scope must not arm the downgrade"
+    )
+
+
+# ----------------------------------------------------------------------------
+# #12024 / #11985 extension: COUNT_WORDS closed list (French/English cardinals
+# 1-10). The authorial perimeter declaration can be spelled out in words
+# ("trois fichiers", "five files"). The numeric scan in select_candidates
+# (line ~1020 in check_pr_perimeter.py) does NOT see this -- the word-form
+# branch in this PR is the missing half.
+# ----------------------------------------------------------------------------
+
+def test_11985_count_words_french_three_fichiers_sets_body_declares():
+    """#12024: body says "Trois fichiers (+184/-3)" + a numeric second-count
+    line. The word-form declaration must arm body_declares_effective_count
+    just like the numeric form would, and the numeric line stays a mention.
+    """
+    body = (
+        "## Summary\n"
+        "**Perimetre : trois fichiers** (+184/-3)\n"
+        "- **G.4** : atomicite (1 helper + 1 modification + 1 fichier test "
+        "adapte, 1 bug, 1 discrimination).\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=3)
+    header = next(c for c in candidates if "Perimetre" in c.text)
+    arg = next(c for c in candidates if "helper" in c.text)
+    assert header.body_declares_effective_count is True, (
+        "the word-form 'trois fichiers' must arm body_declares_effective_count"
+    )
+    # The numeric second-count line inherits the downgrade (mention, not fresh
+    # assertion) -- the rule 1 invariant.
+    assert arg.body_declares_effective_count is True
+
+
+def test_11985_count_words_english_five_files_sets_body_declares():
+    """#12024: English variant of test_11985_count_words_french_three_fichiers."""
+    body = (
+        "## Summary\n"
+        "**Perimeter: five files** (+200/-20)\n"
+        "- helper function + 1 new test\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=5)
+    header = next(c for c in candidates if "Perimeter:" in c.text)
+    assert header.body_declares_effective_count is True
+
+
+def test_11985_count_words_mismatch_does_not_set_body_declares():
+    """#12024 FN control: body says "trois fichiers" but n_files=2. The word
+    form must NOT arm body_declares_effective_count -- the closed-list mapping
+    is checked against n_files, and a mismatch keeps the existing behaviour
+    (declaration does not validate a wrong perimeter)."""
+    body = (
+        "## Summary\n"
+        "**Perimetre : trois fichiers** (+184/-3)\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=2)
+    header = next(c for c in candidates if "Perimetre" in c.text)
+    assert header.body_declares_effective_count is False, (
+        "word-form 'trois' must not arm body_declares_effective_count when "
+        "n_files=2"
+    )
+
+
+def test_11985_count_words_closed_list_boundary():
+    """#12024 FN control: 'onze fichiers' / 'eleven files' (beyond the closed
+    list 1-10) must NOT arm body_declares_effective_count. The whole point of
+    the closed list is fail-loud: a reviewer catches the next 'eleven' body
+    and the mapping is expanded. This test pins the boundary."""
+    body = (
+        "## Summary\n"
+        "**Perimetre : onze fichiers** (+184/-3)\n"
+    )
+    items = [{"kind": "PR body", "author": "a", "body": body,
+              "source": "body", "ts": ""}]
+    candidates, _ = select_candidates(items, n_files=11)
+    # 'onze fichiers' is OUTSIDE the closed list 1-10 -> the line is not
+    # extracted as a candidate, so no header candidate exists. This is the
+    # fail-loud shape: a body using 'onze fichiers' is NOT protected by rule 1
+    # and the reviewer will see a mismatch against the actual n_files=11
+    # (which is also outside the closed list, so the numeric form would also
+    # be caught). The closed list's whole purpose: contain the FN cost.
+    assert candidates == [], (
+        "'onze fichiers' is outside COUNT_WORDS (closed list 1-10) -- the "
+        "line must NOT enter the candidate list. Closed list = fail loud."
+    )
+
+
+def test_12024_numeric_count_inside_codespan_is_not_a_candidate():
+    """#12024 / codespan-exclusion: a numeric COUNT_CLAIM inside a backtick
+    code-span (`` `2 fichiers` ``) is a CITED example, not an authorial
+    perimeter declaration. Founder case: PR #12024 body v3 listed illustrative
+    counts between backticks and the perimeter-review-guard flagged them as
+    unverifiable assertions. After the codespan-exclusion fix, lines whose
+    only COUNT_CLAIM trigger sits inside a backtick span are skipped.
+
+    This pins the FN control: 89/89 prior tests passed because the suite
+    contained no code-span example -- a detector is validated by the cases
+    it must NOT catch, not by the cases it does.
+    """
+    # Line whose ONLY count trigger sits inside a code-span -- must be skipped.
+    text = (
+        "Voici l'exemple documente : `2 fichiers` puis `three files`.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"a numeric count inside backticks must not enter the candidate "
+        f"stream; got {found!r}"
+    )
+
+
+def test_12024_word_form_inside_codespan_is_not_a_candidate():
+    """#12024 / codespan-exclusion word-form variant: `` `trois fichiers` ``
+    and `` `five files` `` between backticks are CITED examples. Founder case
+    on PR #12024 body v3 (perimeter-review-guard FAIL x3 lines on those exact
+    patterns). After the codespan-exclusion fix, lines whose only word-form
+    trigger sits inside a code-span are skipped.
+    """
+    # Body lines 61/62 from PR #12024 body v3: word-form counts between
+    # backticks. With the fix, neither line enters the candidate stream.
+    text = (
+        "- [x] Forme FR `trois fichiers` arming `body_declares_effective_count`\n"
+        "- [x] Forme EN `five files` arming `body_declares_effective_count`\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"word-form counts inside backticks must not enter the candidate "
+        f"stream; got {found!r}"
+    )
+
+
+def test_12024_codespan_exclusion_does_not_silence_real_assertion():
+    """#12024 / codespan-exclusion: a line that mixes a code-span example AND
+    an out-of-codespan count claim is STILL a candidate -- the real assertion
+    is the un-cited one. The exclusion is "all triggers inside", not
+    "any trigger inside".
+    """
+    text = (
+        "Cette PR remplace l'ancien format `trois fichiers` par le nouveau "
+        "qui declare 2 fichiers au total.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert any("2 fichiers" in c for c in found), (
+        f"a real out-of-codespan count claim must still enter the candidate "
+        f"stream even when the line also carries a code-spanned example; "
+        f"got {found!r}"
+    )
+
+
+def test_12024_double_backtick_codespan_is_excluded():
+    """#12024 / codespan-exclusion double-backtick variant: `` ``trois fichiers`` ``
+    (a code-span whose content itself contains a backtick) is still a
+    code-span, and its content is CITED, not claimed. CommonMark allows the
+    longer opener to host a single backtick inside.
+    """
+    text = (
+        "Use the pattern ``trois fichiers`` as the example.\n"
+    )
+    found = extract_perimeter_assertions(text)
+    assert found == [], (
+        f"double-backtick code-spans must also be excluded; got {found!r}"
+    )
+
+
+def test_12024_real_body_fragment_does_not_enter_candidates():
+    """#12024 / end-to-end on a body fragment that reproduced the 3 FAIL lines
+    ai-01 cited in the diagnostic. The 4 occurrences (L9 prose x2, L61/62
+    code-span x2) must collapse to 0 candidates once (1)+(2) is in place:
+    L9 prose entries are pinned by separate tests above, the L61/L62 entries
+    collapse under the codespan-exclusion fix.
+    """
+    body = (
+        "## Summary\n"
+        "Cette PR livre la forme en toutes lettres -- par exemple "
+        "`trois fichiers` ou `five files` -- pour les PRs qui n'utilisent pas "
+        "de chiffres.\n"
+        "## Tests\n"
+        "- [x] Forme FR `trois fichiers` arming body_declares_effective_count\n"
+        "- [x] Forme EN `five files` arming body_declares_effective_count\n"
+    )
+    found = extract_perimeter_assertions(body)
+    assert found == [], (
+        f"body fragment that reproduces the founder FAIL lines must yield "
+        f"0 candidates under the codespan-exclusion fix; got {found!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# #12103 -- additive enumeration: "1 fichier modifie, 1 fichier ajoute" =
+# 2 files. The guard read the first non-zero count (1) and could never
+# validate a 2-file PR. Fix: confront the SUM of the counts surviving the
+# per-count filters. Safe by construction (a FAIL becomes a PASS only when
+# the sum is exactly len(files)).
+# ---------------------------------------------------------------------------
+
+
+def test_additive_enumeration_one_plus_one_passes():
+    """Positif -- '1 fichier modifie, 1 fichier ajoute' over a 2-file PR."""
+    files = [{"path": "slides/S3-acculturation/slides.md"},
+             {"path": "slides/S3-acculturation/images/img_robot_extracted.png"}]
+    assert check_assertion(
+        files,
+        "**1 fichier modifie, 1 fichier ajoute** :",
+    ) == []
+
+
+def test_additive_enumeration_two_plus_three_passes():
+    """Positif -- '2 fichiers modifies, 3 fichiers ajoutes' over 5 files."""
+    files = [{"path": f"a{i}.py"} for i in range(5)]
+    assert check_assertion(files, "2 fichiers modifies, 3 fichiers ajoutes.") == []
+
+
+def test_additive_enumeration_wrong_sum_still_fails():
+    """Negatif -- '1 + 1' declared over 3 files: the sum (2) does not match."""
+    files = [{"path": f"a{i}.py"} for i in range(3)]
+    assert check_assertion(
+        files, "1 fichier modifie, 1 fichier ajoute.",
+    ) != []
+
+
+def test_additive_enumeration_negated_diff_not_summed():
+    """Non-regression #11800 -- '5 fichiers modifies, 91 fichiers inchanges'
+    over 5 files: the negated-diff count (91) must NOT join the sum. If it
+    did, 5 + 91 = 96 != 5 and the line would fail. The guard passes on the
+    5-files half exactly as before."""
+    files = [{"path": f"a{i}.py"} for i in range(5)]
+    assert check_assertion(
+        files,
+        "5 fichiers modifies, 91 fichiers inchanges -- scope delta confirme",
+    ) == []
+
+
+def test_additive_enumeration_zero_count_not_summed():
+    """Non-regression #11735 -- '0 fichier catalogue, 2 fichiers touches'
+    over 2 files: the zero is a property attestation, only the 2 joins the
+    sum (0 + 2 = 2 == len). Behavior preserved."""
+    files = [{"path": "a.py"}, {"path": "b.py"}]
+    assert check_assertion(files, "- 0 fichier catalogue, 2 fichiers touches.") == []
+
+
+# ---------------------------------------------------------------------------
+# #12092 -- word-form cardinal: "trois fichiers" == "3 fichiers". COUNT_WORDS
+# gated extract since #12024 (the word form enters candidates) but
+# check_assertion only read COUNT_CLAIM (digits): the word line fell into the
+# terminal "unverifiable" branch. The invariant violated: same file list, same
+# phrase, only the number SHAPE changes -> same verdict required.
+# ---------------------------------------------------------------------------
+
+
+def test_word_form_and_digit_form_same_verdict():
+    """#12092 invariant: 'trois fichiers' and '3 fichiers' over the same
+    3-file list must both pass (PASS)."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    word = check_assertion(files, "**trois fichiers** (142/32 lignes, tests inclus):")
+    digit = check_assertion(files, "**3 fichiers** (142/32 lignes, tests inclus):")
+    assert word == digit == [], (
+        f"word and digit forms must agree; word={word!r} digit={digit!r}"
+    )
+
+
+def test_word_form_wrong_count_still_fails():
+    """#12092 negative: a word cardinal that does not match len(files) must
+    fail, exactly like its digit twin."""
+    files = [{"path": "a"}, {"path": "b"}]
+    assert check_assertion(files, "**trois fichiers** :") != []
+    assert check_assertion(files, "**3 fichiers** :") != []
+
+
+def test_word_form_english_three_files():
+    """#12092 EN twin: 'three files' over 3 files passes."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    assert check_assertion(files, "**three files** (tests included):") == []
+
+
+def test_word_form_not_recognized_absent_files_referent():
+    """#12092 FN guard: a bare word cardinal without the fichiers/files
+    referent stays unverifiable (not silently accepted)."""
+    files = [{"path": "a"}, {"path": "b"}, {"path": "c"}]
+    assert check_assertion(files, "**trois** modifications:") != []
+
+
+# -- #11268 residuel ai-01: structural wiring safety net ---------------------
+# Comment from ai-01 on 2026-08-18T08:34Z: the closed delivery of #11336
+# produced a module + tests but "rien ne l'invoque sous .github/" -- the
+# cable-to-Hermes layer was missing at the time. PRs #11635 / #11654 / #11661
+# later wired `.github/workflows/perimeter-review-guard.yml` AND registered
+# it in the pr-gate-rerun.yml `workflows:` list. These tests guard against
+# silent regression of either leg (cable removed, or moved out of the
+# mandatory rerun list, or its invocation stripped of `--scan-thread`).
+# Without them the founding incident #11227 could re-occur with no detection.
+def _repo_root():
+    """Locate the CoursIA repo root from this test file.
+
+    scripts/tests/test_check_pr_perimeter.py -> ../../.. = repo root.
+    """
+    here = Path(__file__).resolve()
+    for parent in (here.parent, here.parent.parent, here.parent.parent.parent):
+        if (parent / ".github" / "workflows").is_dir():
+            return parent
+    raise FileNotFoundError("could not locate repo root (.github/workflows/)")
+
+
+def test_perimeter_workflow_file_exists_on_main():
+    """The cable's first leg: `.github/workflows/perimeter-review-guard.yml`
+    MUST exist on the working tree. A future refactor that renames or
+    archives it without updating the workflow list would otherwise leave
+    the gate referencing a phantom name, caught only as a downstream
+    symptom."""
+    wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
+    assert wf.is_file(), f"missing cable leg 1: {wf}"
+
+
+def test_perimeter_workflow_invokes_scan_thread():
+    """The cable's second leg: the workflow MUST call
+    `scripts/check_pr_perimeter.py --scan-thread`. A copy-paste that drops
+    the flag would leave the gate never confront any review (silent green).
+    """
+    import re
+    wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf.read_text(encoding="utf-8")
+    # The flag may be on the same line or split across continuation lines.
+    # Loose match: the file mentions the script and the flag.
+    assert "check_pr_perimeter.py" in text, (
+        "perimeter-review-guard.yml no longer invokes check_pr_perimeter.py"
+    )
+    assert "--scan-thread" in text, (
+        "perimeter-review-guard.yml invocation lost the --scan-thread flag"
+    )
+
+
+def test_perimeter_workflow_rescued_by_universal_sweep():
+    """The perimeter guard's rescue is now UNIVERSAL (#11860). The event-driven
+    per-guard path (pr-gate-rerun.yml `workflow_run` on a derived 76-workflow
+    list) is retired -- measured 2026-08-23 it created 404 of the 784
+    repository CI runs (51.5%) for 0 verdicts, a self-cancellation storm. The
+    schedule sweep (pr-gate-stale-sweep.yml) observes ALL open PRs and
+    re-aggregates any guard whose only red is a stale `PR gate`, so a timeout
+    of perimeter-review-guard itself ALWAYS has a rescue path, independent of
+    the trigger list. Assert the sweep exists and is schedule-driven (the one
+    re-aggregation observer that does not depend on being triggerable).
+    """
+    sweep = _repo_root() / ".github" / "workflows" / "pr-gate-stale-sweep.yml"
+    assert sweep.is_file(), f"missing pr-gate-stale-sweep.yml at {sweep}"
+    text = sweep.read_text(encoding="utf-8")
+    assert "schedule" in text, (
+        "pr-gate-stale-sweep.yml is no longer schedule-driven -- the universal "
+        "rescue would lose its only trigger-independent path"
+    )
+
+
+def test_founding_incident_11227_criteria_met_on_main():
+    """Acceptance 4 bout-en-bout: a live re-run of
+    `check_pr_perimeter.py --scan-thread` against PR #11227 MUST reproduce
+    the founder's failure ('2 fichiers twins uniquement' over a 3-file PR
+    with a workflow moving sorry-baseline). The pure-core test above
+    encodes the same data; this one is the end-to-end guarantee that the
+    script itself, executed against the real PR history, still does it.
+
+    Skipped on networks that block gh API (the check uses gh under the
+    hood); on disk we just require the local fixtures to be valid.
+    """
+    import subprocess
+    if not shutil.which("gh"):
+        pytest.skip("gh CLI not available -- end-to-end requires it")
+    # GitHub Actions runners ship gh WITHOUT GH_TOKEN: `shutil.which` alone
+    # lets the test run and die on 'To use GitHub CLI in a GitHub Actions
+    # workflow, set the GH_TOKEN environment variable'. Guard the runner
+    # env deterministically, then probe stored auth for the general case.
+    if os.environ.get("GH_ACTIONS") == "true" and not (
+        os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    ):
+        pytest.skip("GitHub Actions runner without GH_TOKEN")
+    auth_probe = subprocess.run(
+        ["gh", "auth", "status"], capture_output=True, text=True
+    )
+    if auth_probe.returncode != 0:
+        pytest.skip("gh CLI present but unauthenticated")
+    # Run against PR #11227 with the exact phrase from the founder review.
+    # The script will reach out to gh API; if the PR is missing or
+    # permissions fail, it returns non-zero AND stdout/stderr lack the
+    # expected FAIL verdict. We assert both the exit code AND the verdict
+    # line to catch silent regressions where the tool swallows the error.
+    proc = subprocess.run(
+        ["python", "scripts/check_pr_perimeter.py", "11227", "--scan-thread"],
+        cwd=str(_repo_root()),
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    output = proc.stdout + proc.stderr
+    # The tool surfaces the FAIL either in stdout (normal) or via a
+    # non-zero exit. A green pass without the founding assertion listed
+    # is a regression -- assert at least one of the founder signatures.
+    founder_signatures = [
+        "11227",
+        "lean-knot.yml",
+        "Invariant.lean",
+        "VERDICT: FAIL",
+    ]
+    found = [sig for sig in founder_signatures if sig in output]
+    assert found, (
+        f"end-to-end scan of #11227 produced no founder signature; "
+        f"exit={proc.returncode}, output[:500]={output[:500]!r}"
     )
