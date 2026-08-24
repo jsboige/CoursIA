@@ -47,9 +47,16 @@ import torch
 import torch.nn as nn
 
 
-def get_gpu_temp() -> int:
+def get_gpu_temp(index: Optional[int] = None) -> int:
     """
     Lit la temperature GPU via nvidia-smi.
+
+    Parameters
+    ----------
+    index : int, optional
+        Indice PHYSIQUE du GPU dans la sortie nvidia-smi. Si omis, suit
+        CUDA_VISIBLE_DEVICES (nvidia-smi reporte toujours les indices
+        physiques, torch lui remappe a partir de 0).
 
     Returns
     -------
@@ -62,7 +69,23 @@ def get_gpu_temp() -> int:
              '--format=csv,noheader,nounits'],
             capture_output=True, text=True, timeout=5
         )
-        return int(result.stdout.strip())
+        lines = [l.strip() for l in result.stdout.strip().splitlines() if l.strip()]
+        if not lines:
+            return 0
+        if index is None:
+            # Hotes multi-GPU (ai-01: 3x RTX 4090): nvidia-smi retourne une
+            # ligne par GPU et l'ancien int(stdout) levait ValueError -> 0
+            # silencieux -> watchdog no-op sur TOUT run de ces hotes (mesure
+            # 2026-08-23, temp retournee 0 avec GPU2 a 34C). On lit le GPU que
+            # torch utilise via CUDA_VISIBLE_DEVICES.
+            visible = os.environ.get('CUDA_VISIBLE_DEVICES', '').strip()
+            if visible and not visible.startswith('-'):
+                first = visible.split(',')[0].strip()
+                if first.isdigit() and int(first) < len(lines):
+                    index = int(first)
+        if index is None or not (0 <= index < len(lines)):
+            index = 0
+        return int(float(lines[index]))
     except Exception:
         return 0
 
@@ -134,17 +157,33 @@ def batch_thermal_check(
     return thermal_check(max_temp, cool_sleep, verbose)
 
 
-def setup_amp() -> Tuple[bool, torch.amp.GradScaler]:
+def setup_amp(
+    device: Optional[torch.device | str] = None,
+) -> Tuple[bool, torch.amp.GradScaler]:
     """
     Configure AMP (Mixed Precision) pour reduire VRAM et chaleur GPU.
+
+    AMP est arme pour le **device demande**, pas pour la machine : un run
+    explicitement demande en CPU n'arme jamais AMP, meme si CUDA est visible
+    (#12662). Sans argument, comportement historique conserve (disponibilite
+    globale CUDA) pour les appelants qui resolvent leur device eux-memes.
+
+    Parameters
+    ----------
+    device : torch.device | str | None
+        Device du run. None = disponibilite globale CUDA (legacy).
 
     Returns
     -------
     tuple (use_amp, grad_scaler)
-        use_amp : bool - True si AMP est actif (GPU disponible)
+        use_amp : bool - True si AMP est actif (device CUDA et CUDA disponible)
         grad_scaler : torch.amp.GradScaler - Scaler pour le gradient scaling
     """
-    use_amp = torch.cuda.is_available()
+    if device is None:
+        use_amp = torch.cuda.is_available()
+    else:
+        dev = torch.device(device)
+        use_amp = dev.type == "cuda" and torch.cuda.is_available()
     grad_scaler = torch.amp.GradScaler('cuda', enabled=use_amp)
     return use_amp, grad_scaler
 

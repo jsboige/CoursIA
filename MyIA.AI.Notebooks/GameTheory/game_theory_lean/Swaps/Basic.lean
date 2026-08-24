@@ -2,7 +2,7 @@
   Chemins de swaps sur les jeux 2×2 ordinaux — vérificateur certifié
   =================================================================
 
-  Compagnon Lean du notebook `GameTheory-3c-Chemins-de-Swaps.ipynb`
+  Compagnon Lean du notebook `GameTheory-03a-Chemins-de-Swaps.ipynb`
   (grain #12222, suite de GameTheory-3b « Chambres et Murs »).
 
   Répartition des rôles, que le notebook documente explicitement :

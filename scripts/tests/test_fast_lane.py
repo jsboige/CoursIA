@@ -331,3 +331,66 @@ def test_summary_is_truncated_below_the_api_limit(monkeypatch):
     fast_lane.emit_check_run("o/r", "sha", "n", "success", "t", "x" * 200000,
                              dry_run=False)
     assert len(captured["payload"]) < 70000
+
+
+# ---------------------------------------------------------------------------
+# 5. Bascule rename-safe : purge des additions fantomes
+# ---------------------------------------------------------------------------
+
+def test_stale_added_paths_extrait_les_additions_staged():
+    porcelain = (
+        "A  MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb\n"
+        "A  MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb\n"
+        "?? .fast-lane-tmp/ecrit-par-un-garde.json\n"
+        "M  scripts/ci/fast_lane.py\n"
+    )
+    assert fast_lane.stale_added_paths(porcelain) == [
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-1-Setup.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/GameTheory-2-NormalForm.ipynb",
+    ]
+
+
+def test_stale_added_paths_dequote_les_chemins_porcelain():
+    # porcelain C-quotte les chemins avec caracteres speciaux
+    porcelain = 'A  "MyIA.AI.Notebooks/GenAI/fig\303\251e.png"\n'
+    assert fast_lane.stale_added_paths(porcelain) == [
+        "MyIA.AI.Notebooks/GenAI/fig\303\251e.png"]
+
+
+def test_stale_added_paths_vide_sur_arbre_propre():
+    assert fast_lane.stale_added_paths("") == []
+
+
+def test_bascule_rename_safe_sur_mini_depot(tmp_path):
+    """Le cas exact de la PR zero-pad : base contient l'ancien nom, HEAD le
+    nouveau. Deux bascules laissaient l'ancien en addition staged ; la purge
+    doit restaurer l'arbre exact de HEAD."""
+    def g(*args):
+        return subprocess.run(["git", *args], cwd=tmp_path,
+                              capture_output=True, text=True)
+    g("init", "-q", ".")
+    g("config", "user.email", "t@example.com")
+    g("config", "user.name", "t")
+    (tmp_path / "dir").mkdir()
+    (tmp_path / "dir" / "old-name.txt").write_text("v1", encoding="utf-8")
+    g("add", "-A")
+    g("commit", "-qm", "base: old-name")
+    base_sha = g("rev-parse", "HEAD").stdout.strip()
+    (tmp_path / "dir" / "old-name.txt").rename(tmp_path / "dir" / "new-name.txt")
+    g("add", "-A")
+    g("commit", "-qm", "head: renamed")
+    # -- bascule puis restauration, comme en phase 2 ----------------------
+    assert g("checkout", base_sha, "--", "dir").returncode == 0
+    assert g("checkout", "HEAD", "--", "dir").returncode == 0
+    st = g("status", "--porcelain", "--", "dir")
+    stale = fast_lane.stale_added_paths(st.stdout)
+    assert stale == ["dir/old-name.txt"], (
+        "le fantome doit etre detecte ; sans lui la bascule n'est pas "
+        "rename-safe")
+    assert g("rm", "-fq", "--", *stale).returncode == 0
+    clean, dirt = fast_lane.tree_is_clean(["dir"]) if hasattr(
+        fast_lane, "tree_is_clean") else (None, None)
+    # tree_is_clean est bien expose : l'arbre doit etre revenu exact
+    assert (tmp_path / "dir" / "new-name.txt").exists()
+    assert not (tmp_path / "dir" / "old-name.txt").exists()
+    assert clean is True, dirt

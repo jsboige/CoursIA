@@ -30,6 +30,7 @@ le GPU est confine au script d'extraction).
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -79,6 +80,16 @@ def load_traces(path: str | Path) -> dict:
         missing = {"ids", "vals"} - set(entry)
         if missing:
             raise ValueError(f"trace {set_name}__{idx} incomplete : manque {missing}")
+        n_bad = int((~np.isfinite(entry["vals"])).sum())
+        if n_bad:
+            # Defaut BOS-inf du run 8B (#12388) : une trace portant des vals
+            # non-finies contamine les panneaux differentiels. Le producteur
+            # (extract_sae_traces.py corrige) exclut ces positions a la
+            # capture — une trace qui en porte est ANTERIEURE au correctif.
+            raise ValueError(
+                f"trace {set_name}__{idx} : {n_bad} vals non-finies — trace "
+                f"pre-correctif (#12388), regenerer via extract_sae_traces.py "
+                f"a jour (il exclut les positions non-finies a la capture)")
     return {"meta": meta, "prompts": prompts}
 
 
@@ -123,11 +134,29 @@ def differential_features(traces: dict, k: int = 64) -> np.ndarray:
     C'est la selection ``acts_topk`` du schema amende de #5101 : les features
     qui *discriminent les regimes* (code vs prose vs dialogue...), pas les plus
     actives en absolu (qui seraient dominees par la ponctuation/le formatage).
+
+    Les colonnes a score non fini (une seule activation ``inf``/``NaN`` en
+    amont suffit) sont **exclues** du classement et signalees par
+    ``RuntimeWarning`` : sans ce garde, ``var`` rend ``inf``/``NaN`` pour ces
+    colonnes et ``argsort()[::-1]`` les promeut **en tete** du top-k au lieu
+    de les ecarter — une donnee polluee devient une corruption de classement
+    invisible (#12560 : facteur 3,3 sur ``overlap_diff64`` des traces 8B).
+    S'il reste moins de ``k`` colonnes finies, la sortie est tronquee d'autant.
     """
     means = mean_activation_by_set(traces)
     stack = np.stack(list(means.values()))               # [n_sets, d_sae]
     score = stack.var(axis=0)
-    return np.argsort(score)[::-1][:k].astype(np.int64)
+    finite = np.isfinite(score)
+    if not finite.all():
+        warnings.warn(
+            f"differential_features : {int(np.count_nonzero(~finite))} colonne(s) "
+            "a score non fini (activation inf/NaN en amont) exclue(s) du "
+            "classement — la trace est polluee, corriger la cause avant "
+            "d'interpreter le top-k.",
+            RuntimeWarning, stacklevel=2)
+    finite_idx = np.flatnonzero(finite)
+    order = finite_idx[np.argsort(score[finite_idx])[::-1][:k]]
+    return order.astype(np.int64)
 
 
 def acts_topk_panels(traces: dict, feature_ids: np.ndarray) -> dict[tuple[str, int], np.ndarray]:
