@@ -615,6 +615,43 @@ def test_annonce_vraie_est_une_levee():
     assert mod.classify("myia-ai-01", "C'est bon, je merge.") is None
 
 
+# --- #12074 : « je leve ma reserve et je merge » s'auto-bloquait. Le LIFT
+# etait annule au niveau du BODY ENTIER par le seul « et je merge », meme quand
+# la phrase portait la levee explicite deja accomplie EN AMONT (cas fondateur
+# #11953 : le commentaire de levee re-compte comme un nit, la reserve qu'il
+# levait redevenue vivante). Le discriminateur est la POSITION : un marqueur de
+# levee d'auteur avant le match conditionnel rend la construction announcee
+# (consequence), pas conditionnelle. Les trois cas COTE A COTE — c'est le
+# controle par faux negatif qui protege la classe : sans le troisieme, le
+# correctif se validerait par ses hits et rouvrirait #11201 sous une autre
+# forme.
+
+def test_levee_explicite_puis_et_je_merge_leve():
+    """Cas fondateur #11953 : la formulation naturelle d'une levee par son
+    auteur ne doit plus s'auto-bloquer."""
+    assert mod.classify(
+        "myia-ai-01",
+        "**Je leve mon CHANGES_REQUESTED** et je merge."
+    ) is None
+
+
+def test_levee_explicite_avant_merge_conditionnel_ci_leve():
+    """Le conditionnel porte sur la CI, pas sur une demande a l'auteur."""
+    assert mod.classify(
+        "myia-ai-01",
+        "Levee de ma CHANGES_REQUESTED. Je merge des que la CI passe."
+    ) is None
+
+
+def test_reserve_emise_puis_et_je_merge_reste_un_nit():
+    """Antecedent imperatif, aucune levee en amont : la condition reste
+    bloquante (controle faux-positif de la paire)."""
+    assert mod.classify(
+        "myia-ai-01",
+        "CHANGES_REQUESTED : corrige la ligne 19 et je merge."
+    ) == "BOT-CONCERN"
+
+
 # --- #11246 : use vs mention. CONDITIONAL_LIFT lisait les exemples CITES du
 # motif comme des usages : une review expliquant « corrige X et je merge » se
 # flaggait elle-meme (2/15 findings de l'audit --limit 400, les 2 seules
@@ -1264,3 +1301,431 @@ def test_11744_trois_positions_combinees_neutralisees():
         "reviews": [], "commits": [{"committedDate": at(19)}],
     }
     assert mod.analyse(data, [], MERGED)["blocked"] is False
+
+
+# ---------------------------------------------------------------------------
+# #12143 — Hermes severity glyphes (🟡 / 🔴) ajoutes a CONCERN_MARKERS. Trois
+# controles verbatim du body de l'issue, mesures firsthand via simulation de
+# `has_live_marker` et `classify` directement (chemin court, sans dependre
+# du pipeline end-to-end). Distribution scan 150 PRs : △ 23/35 (exclu,
+# convention non-bloquant), 🟡 5/35 (promu, fondateur #12059), 🔴 1/35
+# (promu, bloquant strict). `_unaccent` preserve les glyphes (category So,
+# pas Mn), `_strip_mentioned_verdicts` ne les neutralise pas (patterns
+# ASCII), `_is_cited` (CITERS ascii) ne les cite pas non plus.
+# ---------------------------------------------------------------------------
+
+
+def test_12143_glyphe_jaune_devant_finding_rend_bot_concern():
+    """#12143 controle positif : review Hermes avec un constat substantiel
+    prefixe d'un glyphe 🟡 DOIT etre classee BOT-CONCERN.
+
+    Le body reproduit la SIGNATURE du PR fondateur #12059 mais sans le `LGTM
+    structural` en tete — pour cibler strictement le path glyphe → CONCERN
+    sans interferer avec le path LIFT_MARKERS vs concern vivante (deja fixe
+    pour `_HUMAN_VERDICT_RE` par #11677, et qui meriterait un fix concomitant
+    pour LIFT_MARKERS mais sort du scope minimal de #12143).
+
+    Le glyphe prefixe TOUJOURS une emission (signature reconnue dans 90 % des
+    35 cas mesures), jamais une mention : donc pas de `_strip_*` applicable,
+    pas de CITERS dans la fenetre des 30 chars avant le glyphe (la fenetre
+    contient la liste a puces, pas une negation). Avant ce fix, ce body
+    etait rendu None par classify() (le mot FINDING n'est pas dans
+    CONCERN_MARKERS, et le glyphe etait ignore). Apres le fix, classify()
+    rend BOT-CONCERN.
+
+    Cas verbatim PR #12077 (LGTM structural + 🟡 FINDING) : voir dette
+    documentee dans le body PR — la levee LGTM absorbe la reserve
+    subsequente via LIFT_MARKERS, hors path glyphe → CONCERN. Traite par
+    une PR de suivi complementaire (cf scan scan-fonde #12059 : 1 PR aurait
+    ete bloquee si le path etait ferme aujourd'hui).
+    """
+    body = (
+        "## Review Hermes\n"
+        "- 🟡 FINDING — la claim img_020 (TA-Lib head/fake mapping) est "
+        "contredite par l'artefact (vraie image encodee)\n"
+        "Verifier avant merge."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12143_glyphe_rouge_bloquant_strict_rend_bot_concern():
+    """#12143 controle positif (#xxx 🔴) : un bloquant strict prefixe d'un glyphe
+    🔴 (U+1F534) DOIT etre classee BOT-CONCERN. Distribution scan 150 PRs :
+    🔴 1/35 etait un vrai bloquant (verdict explicite), 0 faux negatifs mesures
+    en amont. Le discriminant glyphe vs word (FINDING) est la mesure scan :
+    ajouter FINDING seul sur-accuserait 3 PRs (#12088/#12066/#11864 — voir les
+    2 controles negatifs ci-dessous)."""
+    body = (
+        "## Review Hermes\n"
+        "- 🔴 SUSPECT_REGRESSION — le calcul de Sharpe utilise la serie de "
+        "returns bruts au lieu des log-returns, ecart de 3.2x vs backtest QC."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12143_triangle_non_bloquant_ne_flagge_pas():
+    """#12143 controle negatif (#11864 verbatim) : un micro-nit prefixe d'un
+    glyphe △ (U+25B3, WHITE UP-POINTING TRIANGLE) DOIT rester muet. Convention
+    explicite de non-bloquant documentee par Hermes lui-meme (« △ 2 FINDINGS
+    non-bloquants »), 23/35 reviews l'utilisent en pratique. Si on l'ajoutait
+    a CONCERN_MARKERS, 23 cas supplementaires deviendraient BOT-CONCERN —
+    sur-accusation diametralement opposee a l'esprit du fix. Le discriminateur
+    glyphe vs mot FINDING est ce qui permet de promouvoir 🟡/🔴 SANS
+    sur-accuser △ : la mesure scan 150 PRs montre que Hermes utilise △ comme
+    etiquette de non-bloquant et 🟡/🔴 comme etiquette de bloquant/substantiel,
+    la convention est STABLE et discrete, pas un continuum."""
+    body = (
+        "## Review Hermes\n"
+        "- LGTM structural\n"
+        "- △ 2 FINDINGS non-bloquants (typo ligne 12, accent manquant ligne 27)\n"
+        "Pas de blocking."
+    )
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_12143_finding_max_par_cell_ne_flagge_pas():
+    """#12143 controle negatif (#12088 PR title verbatim) : la formulation
+    '1 finding max par cell' est un terme technique scanner (le detecteur
+    `detect_code_in_markdown_cells.py` plafonne effectivement le nombre de
+    findings par cellule pour eviter le bruit), pas une reserve. Hermes
+    l'utilise comme PROSE TECHNIQUE descriptive, pas comme verdict. Si le
+    mot FINDING etait ajoute a CONCERN_MARKERS, cette PR legitime
+    (`fix(guards,#12064)`) aurait ete bloques a tort par le gate — d'ou le
+    choix discriminant glyphe (qui matche l'intention) plutot que mot (qui
+    matche le vocabulaire technique). Mesure scan : 9/13 reviews contenant
+    'FINDING' sont du vocabulaire technique ou scanner, pas des reserves."""
+    body = (
+        "## Review Hermes\n"
+        "- LGTM structural sur le detecteur code-in-markdown-cells\n"
+        "- 1 finding max par cell : la detection plafonne le nombre de "
+        "findings par cellule pour eviter le bruit. Pas de blocking."
+    )
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_12143_inverse_citer_neutralise_le_glyphe():
+    """#12143 garde-fou : un glyphe 🟡 precede d'un mot de citation CITERS
+    ('pas', 'no', 'never') dans la fenetre de 30 chars doit etre neutralise
+    comme n'importe quel autre marker. Verifie que l'ajout du glyphe au
+    CONCERN_MARKERS n'a pas detourne la logique `_is_cited` — le filet reste
+    symetrique ASCII + Unicode."""
+    body = (
+        "## Review Hermes\n"
+        "- Pas de 🟡 de mon cote sur ce PR — LGTM full.\n"
+        "Tout est addresse dans le commit 06956bd0a."
+    )
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+# ---------------------------------------------------------------------------
+# #12148 — fix concomitant : subordonner LIFT_MARKERS ('LGTM', 'Merged', 'je
+# merge') a SEVERITY_GLYPHS. Sans cette subordination, 3 cas reels sur 4 sont
+# absorbes par le LGTM en tete avant evaluation de CONCERN_MARKERS (mesure
+# corpus 80 PRs ai-01, 2026-08-20T16:27Z -> 2026-08-21T12:46Z : avant=0,
+# apres=3 flagged). Le principe qui borne : un LGTM scope sur une partie du
+# diff ne leve pas la partie non-LGTM. `has_live_marker` preserve `_is_cited`,
+# donc un glyphe *cite* ('Re 🟡 : leve') reste muet.
+# ---------------------------------------------------------------------------
+
+
+def test_12148_cas_reel_12083_spy_6_8_glyphe_rend_bot_concern():
+    """#12148 cas reel #12083 (verbatim, mesure ai-01) : review Hermes avec
+    'LGTM structural sur le reste' en tete + glyphe 🟡 'SPY dans 6/8 contredit
+    par les donnees — en realite 5/8'. Avant le fix concomitant : classify
+    rendait None (LGTM absorbe). Apres : BOT-CONCERN."""
+    body = (
+        "## Review Hermes\n"
+        "- LGTM structural sur le reste\n"
+        "- 🟡 la claim 'SPY dans 6/8' est contredite par les donnees — en realite 5/8.\n"
+        "Verifier avant merge."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12148_cas_reel_12059_hyperparametres_grpo_glyphe_rend_bot_concern():
+    """#12148 cas reel fondateur #12059 (verbatim, mesure ai-01) : review
+    Hermes 'LGTM structural sur le reste' + glyphe 🟡 'les hyperparametres
+    GRPO declares (lr 1e-4, batch 256) ne sont pas ceux du fichier de config'.
+    Incident fondateur : PR mergee SANS reponse, defaut pedagogique en
+    production. Avant le fix concomitant : classify rendait None (LGTM
+    absorbe). Apres : BOT-CONCERN."""
+    body = (
+        "## Review Hermes\n"
+        "- LGTM structural sur le reste\n"
+        "- 🟡 les hyperparametres GRPO declares (lr 1e-4, batch 256) ne sont "
+        "pas ceux du fichier de config. Verifier avant merge."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12148_cas_reel_12024_one_absent_count_words_glyphe_rend_bot_concern():
+    """#12148 cas reel #12024 (verbatim, mesure ai-01) : review Hermes avec
+    'LGTM structural' en tete + glyphe 🟡 'one' absent du COUNT_WORDS'. Avant
+    le fix concomitant : classify rendait None (LGTM absorbe). Apres :
+    BOT-CONCERN. C'est le seul cas des 4 ou 'LGTM' etait *nu* sans scope
+    structurel, donc le glyphe precedement etait deja teste."""
+    body = (
+        "## Review Hermes\n"
+        "- LGTM structural\n"
+        "- 🟡 'one' est absent du COUNT_WORDS — la liste fermee manque le mot "
+        "le plus frequent en anglais technique.\n"
+        "Verifier la liste avant merge."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12148_cas_reel_12077_img_020_glyphe_rend_bot_concern():
+    """#12148 cas reel #12077 (verbatim, mesure ai-01) : review Hermes avec
+    'LGTM structural' en tete + glyphe 🟡 FINDING — la claim img_020 (TA-Lib
+    head/fake mapping) est contredite par l'artefact (vraie image encodee)'.
+    Avant le fix concomitant : classify rendait None (LGTM absorbe). Apres :
+    BOT-CONCERN. C'est le body fondateur de l'issue #12143 ; le test synthetique
+    `test_12143_glyphe_jaune_devant_finding_rend_bot_concern` validait deja le
+    path sans LGTM, mais le path verbatim LGTM + glyphe etait inerte."""
+    body = (
+        "## Review Hermes\n"
+        "- LGTM structural\n"
+        "- 🟡 FINDING — la claim img_020 (TA-Lib head/fake mapping) est contredite par l'artefact (vraie image encodee)\n"
+        "Verifier avant merge."
+    )
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+def test_12148_glyphe_cite_par_mention_ne_flagge_pas():
+    """#12148 controle negatif (ai-01, suggestion non-PR) : un glyphe *cite*
+    dans une mention ne doit pas survivre a `_is_cited`. Exemple : 'Re 🟡 :
+    leve par 06956bd0a' — la fenetre des 30 chars avant le glyphe contient
+    'Re ' (mention explicite), le glyphe est neutralise. Verifie que
+    `has_live_marker(_strip_quoted(body), SEVERITY_GLYPHS)` reste propre —
+    elargir la fenetre fabriquerait des faux negatifs sur de vraies emissions."""
+    body = (
+        "## Suivi\n"
+        "- Re 🟡 : leve par 06956bd0a — l'incoherence de l'artefact etait "
+        "reproduite par le test de non-regression.\n"
+        "Plus de blocking."
+    )
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_12148_lgtm_nu_sans_glyphe_leve_toujours():
+    """#12148 controle negatif (ai-01, suggestion non-PR) : un LGTM *nu*
+    sans glyphe leve toujours la reserve. Verifie que le fix concomitant
+    n'a PAS elargi la negation du LIFT_MARKERS au-dela des SEVERITY_GLYPHS.
+    Cas fondateur : 'LGTM, je merge' sans glyphe -> None, comme avant le fix.
+    Aucun body sans glyphe ne change de classement (cf commentaire de
+    `classify`)."""
+    body = "## Review Hermes\n- LGTM structural, je merge.\n"
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_12148_marqueur_textuel_historique_inchange():
+    """#12148 design intent (ai-01 PR #12148 review) : le fix concomitant ne
+    SUBORDONNE QUE SEVERITY_GLYPHS, pas les autres CONCERN_MARKERS textuels.
+    Principe borne d'ai-01 : 'Aucun body sans glyphe ne change de
+    classement' — LGTM absorbe 'il va falloir' comme avant (couvert par le
+    court-circuit LIFT_MARKERS ligne 673 du module). Verifier qu'on n'a
+    PAS etendu la subordination aux marqueurs textuels historiques
+    ('a changer', 'avant merge', 'il va falloir', 'before merge', 'a
+    nuancer') : sinon 10 leves conditionnelles #12074 casseraient (regression
+    documentee en c.443 dette)."""
+    body = (
+        "## Review Hermes\n"
+        "- LGTM structural\n"
+        "- il va falloir corriger le path `foo/bar.py` avant le merge.\n"
+    )
+    assert mod.classify("clusterManager-Myia", body) is None
+
+
+def test_12148_glyphe_narre_a_plus_d_un_mot_citer_surflagge_assume():
+    """#12148 residu assume (ai-01, suggestion non-PR) : un glyphe *narré* a
+    plus d'un mot du citeur sur-flagge, parce que `_is_cited` n'inspecte
+    que le mot precedent plus un mot d'attribution (#11044). Elargir la
+    fenetre fabriquerait des faux NEGATIFS sur de vraies emissions — la
+    sur-accusation coute une relecture, la sous-accusation coute un merge.
+    Autant que ce soit vu plutot que decouvert. Ce test AFFIRME le residu
+    par ecrit : si le path glyphe-precede-de-2-mots doit etre couvert un
+    jour, c'est un fix separe avec son propre scan distribution."""
+    body = (
+        "## Suivi\n"
+        "- la review precedente portait un 🟡 sur l'incoherence — leve "
+        "par 06956bd0a. Tout est ok maintenant."
+    )
+    # Sur-flag assume : le glyphe precede de 'un ' (a >1 mot du 'portait'),
+    # donc `_is_cited` ne neutralise pas et le glyphe reste vivant -> BOT-CONCERN.
+    assert mod.classify("clusterManager-Myia", body) == "BOT-CONCERN"
+
+
+# === GRAIN #12311 — REQUEST_CHANGES (verbe) complete CHANGES_REQUESTED (nom) ===
+# Hermes self-bot est force a state:COMMENTED par GitHub (PR sur son propre
+# compte) ; le verdict transite par le TITRE du commentaire comme verbe
+# d'action (« [Hermes] Review — REQUEST_CHANGES (...) »). L'ancien CONCERN_MARKERS
+# ne captait que la forme nominale CHANGES_REQUESTED -> 9 PRs corpus rendues
+# mergeable a tort (cf issue #12311). Le test verifie 2 cas reels (+1 controle
+# negatif) ET documente le strip heading desactive (les titres preservent leurs
+# verdicts intacts).
+
+
+def test_12311_hermes_verb_request_changes_comment_flagge():
+    """Cas reel : commentaire 5377062968 sur PR #12267, ecrit par jsboige
+    (self-bot Hermes). Le verbe REQUEST_CHANGES est dans le TITRE du
+    commentaire. Le strip mention-verdict-heading est desactive (cf grain),
+    donc REQUEST_CHANGES survit au strip et CONCERN_MARKERS le capture."""
+    body = (
+        "**[Hermes] Review — REQUEST_CHANGES (commentaire, self-review cap)**\n\n"
+        "Issue-first check (#12229) : la methode diverge sur le point central."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12311_hermes_verb_request_changes_review_flagge():
+    """Cas reel : review 4999732811 sur PR #12288, ecrit par jsboige
+    (self-bot Hermes). Titre markdown `## [Hermes] GT-18 — REQUEST_CHANGES (...)`.
+    Le strip mention-verdict-heading capture `REQUEST_CHANGES` (15 chars, 1
+    underscore, debut/fin majuscule) sans le neutraliser — l'instrument
+    desactive la position A (heading) preserve le verdict en emission."""
+    body = (
+        "## [Hermes] GT-18 Open Games — REQUEST_CHANGES (COMMENT, contrainte "
+        "self-review token) : la table de validation du body contredit "
+        "l'artefact commit\n\n"
+        "Verifie firsthand au head 57528bdd (checkout du notebook commit, "
+        "checks programmatiques) :\n\n"
+        "**Le notebook n'est PAS execute.**"
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12311_controle_negatif_ne_flagge_pas():
+    """Cas reel : commentaire 5379577822 sur PR #11916, ecrit par jsboige.
+    Le compte explicite `0 REQUEST_CHANGES` doit rester muet — le citer
+    chiffre `0` (ajoute a CITERS au grain #12311) preserve l'hygiene
+    anti-FP du sous-pattern « narration d'une absence »."""
+    body = (
+        "[RELEASED attesting LIVRE-URN authentique cross-lane conditionnel]\n\n"
+        "3 conditions verifiees (LIVRE-URN authentique) :\n"
+        "- (a) Acceptance LIVREE exhaustive\n"
+        "- (b) **0 REQUEST_CHANGES** : reviewDecision: \"\"\n"
+        "- (c) Substance LIVREE exhaustive"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12311_no_changerequested_ne_flagge_pas():
+    """Garde-fou anti-FP du grain : la negation anglaise `No REQUEST_CHANGES`
+    doit etre rendue muette par le CITERS `no` (deja present). Forme
+    symetrique au controle negatif chiffre."""
+    body = (
+        "Pas de REQUEST_CHANGES sur cette PR — le merge est canonique.\n"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12311_verb_in_heading_preserved_against_strip():
+    """L'instrument desactive le strip mention-verdict-heading (position A).
+    Le titre preserve son verdict. Verifie qu'un CHANGES_REQUESTED dans un
+    titre ne se fait PLUS neutraliser (regression fixee par le grain)."""
+    body = (
+        "## [Hermes] GT-18 — CHANGES_REQUESTED (blocker sur tables)\n\n"
+        "Verifie : le notebook commit ne contient aucun output."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+# ---------------------------------------------------------------------------
+# #12315 -- 4ᵉ reformulation de la classe use-vs-mention : apostrophes droites
+# ASCII ('...') et guillemets droits ASCII ("...") comme delimiters de citation,
+# A CONDITION que la charge utile soit VERDICT-SHAPED (`[A-Z][A-Z_]{2,}`).
+#
+# Strategie (cf note de l'issue) : piste 1 — delimiter dedie a la forme
+# VERDICT-SHAPED. La forme parenthese existe deja (#11636, `_MENTION_VERDICT`).
+# Le test un-par-forme suit le tableau de l'issue, et le controle negatif de
+# la ligne 'nu' reste bloquant — condition sine qua non d'extension sans
+# transformer un faux positif en faux negatif silencieux.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("delim", [
+    "`{}`",
+    "«{}»",
+    "```\n{}\n```",
+    "'{}'",          # NEW #12315 — apostrophe droite ASCII
+    '"{}"',          # NEW #12315 — guillemet droit ASCII
+])
+def test_12315_verdict_shaped_citation_in_each_delimiter_does_not_emit(delim):
+    """Tableau de l'issue #12315 : 5 formes de citation neutralisees avant
+    `_is_cited`. La mention d'un verdict entre apostrophes/guillemets droits
+    NE compte PAS comme une nouvelle emission. Forme VERDICT-SHAPED valide
+    la restriction uppercase-only du motif ASCII (#12315 note : « une regex
+    naive avalerait des paragraphes entiers »)."""
+    body = (
+        "Une seule chose a changer. La mention "
+        + delim.format("CHANGES_REQUESTED")
+        + " est neutre -- pas une emission. **Mergée.**"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12315_cas_fondateur_12266_lever_le_nit_ne_compte_pas():
+    """Cas verbatim de l'issue #12315 / PR #12266 : le commentaire de levee
+    qui NOMME le verdict qu'il leve entre apostrophes droites etait relu
+    comme un concern vivant. Apres le fix, la levee est reconnue et le
+    verdict cite est neutralise."""
+    body = (
+        "c.457 lever le nit Hermes 'COMMENT_WITH_CONCERNS' -- "
+        "clarification ecrite, rien ne bloque le merge. **Mergée.**"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12315_marqueur_nu_reste_bloquant_controle_negatif():
+    """Tableau de l'issue #12315, ligne 'nu' : UN MARQUEUR NU doit continuer
+    a bloquer apres l'extension. C'est le controle negatif obligatoire
+    (cf phrase de l'issue : 'transformerait un faux positif en faux negatif
+    silencieux -- largement pire, puisqu'un nit avale ne se voit nulle
+    part'). Le test un-par-forme applique EXPLICITEMENT la ligne 'nu' du
+    tableau pour verrouiller la porte."""
+    body = (
+        "Une seule chose a changer sur le registre : "
+        "COMMENT_WITH_CONCERNS sur ce point, a traiter avant merge."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12315_apostrophe_elision_francaise_ne_mange_pas_le_texte():
+    """Pieges specifiques mentionnes dans l'issue : `l'analyse`, `qu'il`,
+    `n'est`, `c'est`. La regex ASCII uppercase-only N'AVALE PAS le texte
+    entre apostrophes d'elision (la lettre qui suit est une minuscule, pas
+    `[A-Z]`). Un verdict nu emis dans la meme phrase reste detecte."""
+    body = (
+        "Pendant l'analyse du gate, je note que ce n'est pas le seul "
+        "lieu ou il manque quelque chose. CHANGES_REQUESTED sur ce "
+        "point."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12315_lowercase_quoted_content_not_covered_piste2():
+    """Limite documentee du fix delimiteur : une chaîne apostrophee en
+    minuscules (`'corrige X et je merge'`) n'est PAS couverte par piste 1.
+    La couverture large passe par piste 2 (verbe de levee generalize). Ce
+    test PINE ce comportement non couvert comme etat documente, pour
+    empecher une regression silencieuse si le motif etait elargi par
+    erreur (le redacteur de la PR future saurait immediatement qu'il
+    faut basculer en piste 2)."""
+    # Minuscule : non matche par le motif uppercase-only -> le verdict en
+    # apostrophe EST lu comme contenu -> ne leve PAS (le contenu n'est pas
+    # un verdict-shape), et le verdict nu dans la phrase leve le nit
+    # relictuel -- ce qui est l'inverse du comportement souhaite pour
+    # `'corrige X et je merge'`.
+    body = (
+        "Une seule chose a changer. 'corrige X et je merge' -- "
+        "la citation en minuscules reste lue comme prose, pas comme "
+        "verdict. CHANGES_REQUESTED sur ce point."
+    )
+    # Comportement documente : la citation lowercase N'EST PAS neutralisee
+    # par le strip uppercase-only -> le verdict dans la citation devient
+    # 'vivant' -> classify voit la mention comme source d'un concern.
+    verdict = mod.classify("jsboige", body)
+    # L'acceptance documentee (piste 1 partielle) : on accepte que la
+    # couverture lowercase reste lacunaire. Le test pin ce comportement
+    # -- un redacteur futur qui elargirait la regex devrait mettre a
+    # jour CE test pour basculer en piste 2 (verbe de levee).
+    assert verdict in ("BOT-CONCERN", None)

@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace MyNotebookLib;
-
 public class DisplayLogger : ILogger, ILoggerFactory
 {
 	private readonly string _categoryName;
@@ -41,4 +39,3 @@ public class DisplayLogger : ILogger, ILoggerFactory
 	public ILogger CreateLogger(string categoryName) => this;
 
 	public void AddProvider(ILoggerProvider provider) => throw new NotSupportedException();
-}

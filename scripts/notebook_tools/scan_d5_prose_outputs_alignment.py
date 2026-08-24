@@ -634,7 +634,7 @@ def _is_notebook_cross_reference(value: float, text: str) -> bool:
 
     Entiers ET decimaux : certaines series nomment leurs notebooks par un INDICE
     DECIMAL (ML/DataScience : 2.8, 1.3), d'autres par un INDICE ENTIER (GameTheory,
-    SymbolicAI : « [GameTheory-7](GameTheory-7-ExtensiveForm.ipynb) »,
+    SymbolicAI : « [GameTheory-7](GameTheory-07-ExtensiveForm.ipynb) »,
     « [<< 12-Reputation](12-ReputationGames.ipynb) »). L'exclusion prematuree des
     entiers (historique : « un indice est toujours decimal ») a ete refutee par le
     forensic po-2023 c.188 sur SymbolicAI (375/2458 = 15%) et GameTheory (34%) --

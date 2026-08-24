@@ -43,7 +43,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 
 ## Rules (`.claude/rules/`)
 
-**Toutes auto-chargées à chaque session** — leur contenu est déjà en contexte pour un agent en cours de travail. Cet inventaire sert à qui lit le dépôt sans session active, ou cherche quelle règle porte quel sujet.
+**Auto-chargées à chaque session, sauf celles portant un frontmatter `paths:`** (voir [CLAUDE.md §Règles modulaires](../../CLAUDE.md)) — leur contenu est déjà en contexte pour un agent en cours de travail. Cet inventaire sert à qui lit le dépôt sans session active, ou cherche quelle règle porte quel sujet.
 
 | Règle | Ce qu'elle porte |
 |---|---|
@@ -57,7 +57,7 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `wsl-kernels` | kernels WSL (`GameTheory/**`, `Lean/**`) |
 | `student-pr-reviews` | anti-fuite soutenance, review bienveillante |
 | `lean-merge-discipline` | gates de merge propres au Lean |
-| `secrets-hygiene` · `secrets-roosync-policy` | content-based, Stop & Repair, canal RooSync privé + quorum |
+| `secrets-hygiene` | content-based, Stop & Repair, canal RooSync privé + quorum (fusion de `secrets-roosync-policy`, #12051) |
 | `audit-reassessment` · `audit-cross-source-distillation` | protocole 4 étapes, sortie = dashboard/issue jamais un fichier |
 | `verify-before-claiming` | G.1, firsthand avant tout claim |
 | `coordinator-discipline` | R1-R5 ai-01 (merge actif, no languishing, lanes indépendantes, jamais sanctionner l'idle, steer qui atteint) |

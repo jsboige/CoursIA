@@ -248,3 +248,215 @@ def test_parse_override_empty_and_malformed():
     assert vag.parse_override([]) is None
     assert vag.parse_override(
         [{"author": "myia-ai-01", "body": "rien a voir"}]) is None
+
+
+# --- Malformed override is ANNOUNCED, never confusable with absent (#12096) --
+#
+# #11963: the coordinator posted `[G-VAR-3 OVERRIDE] lane <...>` with the
+# marker ending at the lane echo -- `next:` never came. parse_override
+# returned None, the SAME value as "no comment of the coordinator at all",
+# the gate re-blocked mute, and the coordinator read the silence as the guard
+# ignoring the arbitration. "Rejete" and "absent" must never share a return
+# value. A helper returning only the negative control proves nothing: an
+# unplugged organ produces the same output -- these tests pin the WORDS.
+
+def test_malformed_override_missing_next_is_announced():
+    # Acceptance negative A of #12096: coordinator marker WITHOUT `next:`.
+    # The gate must block AND the verdict must name the rejected marker,
+    # its author, and the reason -- this is the #11963 shape verbatim.
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA"))
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["overridden"] is False
+    assert "lu et rejete" in v["reason"]
+    assert "myia-ai-01" in v["reason"]
+    assert "`next:` manquant" in v["reason"]
+    assert "Forme attendue" in v["reason"]
+
+
+def test_malformed_override_next_off_line_is_announced():
+    # Acceptance negative B of #12096: `next:` on the LINE FOLLOWING the
+    # marker -- the exact form that failed in #11963 (the regex is
+    # single-line by design, CommonMark-style; the remedy is feedback, not
+    # multiline parsing).
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01",
+        "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA\nnext: lean"))
+    assert v["guard_pass"] is False
+    assert "pas sur la meme ligne" in v["reason"]
+    assert "lu et rejete" in v["reason"]
+
+
+def test_malformed_override_bad_genre_shape_is_announced():
+    # `next:` whose value is not a genre shape (digit-first, punctuation):
+    # the third malformed clause of #12096. Distinct from out-of-enum
+    # genres, which pass through verbatim (section 1 -- see
+    # test_override_genre_outside_the_enum_passes_through).
+    v = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] next: 123"))
+    assert v["guard_pass"] is False
+    assert "n'est pas un genre" in v["reason"]
+    assert v["override_rejected"]["author"] == "myia-ai-01"
+
+
+def test_override_rejected_field_is_named_and_absence_means_unread():
+    # Acceptance 5 of #12096: the added verdict field is NAMED so a future
+    # reader of the verdict knows its absence means "no coordinator marker
+    # read", never "not looked".
+    v_bad = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] sans next"))
+    assert v_bad["override_rejected"]["reason"]  # named, carries the reason
+    v_clean = vag.check(_BLOCKED, override=None)
+    assert "override_rejected" not in v_clean  # absent = nothing was read
+    # the vacuous next:-names-the-blocked-genre case carries the field too
+    v_vacuous = vag.check(_BLOCKED, override=_ov(
+        "myia-ai-01", "[G-VAR-3 OVERRIDE] next: guard"))
+    assert v_vacuous["override_rejected"]["author"] == "myia-ai-01"
+
+
+def test_malformed_override_by_worker_stays_invisible():
+    # Acceptance negative C of #12096, documented choice: a WORKER-authored
+    # malformed marker remains indistinguishable from absent (a lane cannot
+    # self-exempt, and a worker's marker carries no arbitration to reject).
+    # It blocks, and announces nothing -- same as a well-formed worker marker.
+    ov = vag.parse_override([{"author": "myia-po-2026",
+                              "body": "[G-VAR-3 OVERRIDE] sans next"}])
+    assert ov is None
+    v = vag.check(_BLOCKED, override=ov)
+    assert v["guard_pass"] is False
+    assert "override_rejected" not in v
+
+
+def test_well_formed_override_still_lifts_after_12096():
+    # POSITIVE CONTROL of the #12096 batch: the three-state parse did not
+    # break the path it exists to serve. Same shape as
+    # test_override_by_coordinator_lifts_with_named_replacement, kept here
+    # so the malformed cases above are provably not passing by accident of
+    # a disconnected helper.
+    v = vag.check(_BLOCKED, override=_ov(
+        "jsboige", "[G-VAR-3 OVERRIDE] lane myia-po-2026:CoursIA -- next: qc"))
+    assert v["guard_pass"] is True
+    assert v["overridden"] is True
+    assert v["override_next"] == "qc"
+
+
+def test_parse_override_malformed_reasons_distinct():
+    # The three malformed clauses produce three DISTINCT reasons -- a single
+    # generic "malformed" message would put the diagnosis burden back on the
+    # coordinator (#12096: "avec la raison et la forme attendue").
+    r_missing = vag.parse_override([{"author": "jsboige",
+                                     "body": "[G-VAR-3 OVERRIDE] lane x:y"}])
+    r_offline = vag.parse_override([{"author": "jsboige",
+                                     "body": "[G-VAR-3 OVERRIDE] lane x:y\nnext: lean"}])
+    r_shape = vag.parse_override([{"author": "jsboige",
+                                   "body": "[G-VAR-3 OVERRIDE] next: 7days"}])
+    assert "manquant" in r_missing["malformed"]
+    assert "meme ligne" in r_offline["malformed"]
+    assert "n'est pas un genre" in r_shape["malformed"]
+
+
+# --- merged-sequence predecessor (#12095) ----------------------------------
+#
+# G-VAR-3 adjacency is a property of the MERGED sequence, which moves while a
+# PR sits open. The `prev:` field is frozen at open time, so a PR acquires a
+# false violation purely by aging. These cases pin BOTH directions from issue
+# #11963 -- the false positive (declared guard, real predecessor
+# notebook-python -> pass) and the symmetric false negative (declared
+# notebook-python, real predecessor guard -> still blocks) -- plus the
+# no-merged-PR fallback and the other-lane isolation.
+
+_MERGED_LANE = "myia-po-2024:CoursIA-2"
+
+# The #11963 shape: `prev: MED/guard #11841` was exact at redaction
+# (2026-08-20T08:27Z), but the lane merged four grains since, the last being
+# notebook-python. The declared field says `guard`, the real predecessor is
+# `notebook-python` -- the gate must not block a PR the rule never aimed at.
+_MERGED_11963 = [
+    {"number": 12025, "mergedAt": "2026-08-20T23:30:00Z",
+     "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #1"},
+    {"number": 12022, "mergedAt": "2026-08-21T03:16:00Z",
+     "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #2"},
+    {"number": 12059, "mergedAt": "2026-08-21T03:17:00Z",
+     "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #3"},
+    {"number": 12063, "mergedAt": "2026-08-21T04:25:00Z",
+     "body": "Grain: LIGHT/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #4"},
+]
+
+
+def test_resolve_merged_prev_genre_picks_last_lane_pr():
+    mp = vag.resolve_merged_prev_genre(_MERGED_11963, _MERGED_LANE)
+    assert mp == ("notebook-python", 12063)
+
+
+def test_resolve_skips_other_lanes_and_untagged():
+    merged = _MERGED_11963 + [
+        {"number": 12100, "mergedAt": "2026-08-21T05:00:00Z",
+         "body": "Grain: LIGHT/guard -- lane myia-po-2023:CoursIA -- prev: MED/tooling #5"},
+        {"number": 12101, "mergedAt": "2026-08-21T05:30:00Z",
+         "body": "No Grain tag here."},
+    ]
+    mp = vag.resolve_merged_prev_genre(merged, _MERGED_LANE)
+    assert mp == ("notebook-python", 12063)
+
+
+def test_11963_declared_guard_merged_notebook_python_passes():
+    # The issue's measured case: the declared `prev: MED/guard #11841` was
+    # exact at redaction, but the real predecessor from the merged sequence is
+    # notebook-python. The gate must PASS -- this is the false positive #12095
+    # fixes (a PR blocked by the passage of time, not by its own genre).
+    body = ("Grain: MED/guard -- lane myia-po-2024:CoursIA-2 -- "
+            "prev: MED/guard #11841")
+    v = vag.check(body, merged_prev=vag.resolve_merged_prev_genre(
+        _MERGED_11963, _MERGED_LANE))
+    assert v["guard_pass"] is True
+    assert v["blocking"] is False
+    assert v["prev_genre"] == "notebook-python"
+    assert v["prev_source"] == "merged-sequence"
+    assert v["prev_pr"] == 12063
+    assert v["declared_prev_genre"] == "guard"
+
+
+def test_symmetric_false_negative_still_blocks():
+    # Positive control (same invocation): the lane REALLY merged a guard last.
+    # Even if the declared prev announces a different genre, the gate must
+    # still block -- the symmetric false negative the issue names.
+    body = ("Grain: MED/guard -- lane myia-po-2024:CoursIA-2 -- "
+            "prev: MED/notebook-python #12063")
+    merged = [
+        {"number": 12025, "mergedAt": "2026-08-20T23:30:00Z",
+         "body": "Grain: DEEP/notebook-python -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #1"},
+        {"number": 12063, "mergedAt": "2026-08-21T04:25:00Z",
+         "body": "Grain: LIGHT/guard -- lane myia-po-2024:CoursIA-2 -- prev: MED/tooling #2"},
+    ]
+    v = vag.check(body, merged_prev=vag.resolve_merged_prev_genre(merged, _MERGED_LANE))
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["prev_genre"] == "guard"
+    assert v["prev_source"] == "merged-sequence"
+
+
+def test_no_merged_pr_falls_back_to_declared():
+    # A lane with no merged grain has no merged sequence to consult: the gate
+    # falls back to the declared `prev:` (the pre-#12095 behaviour), no crash,
+    # and the verdict is honest about the source.
+    v = vag.check(_BLOCKED, merged_prev=vag.resolve_merged_prev_genre([], "myia-po-2026:CoursIA"))
+    assert v["guard_pass"] is False
+    assert v["blocking"] is True
+    assert v["prev_source"] == "declared"
+    # A declaring-different-genre case passes too, same fallback.
+    v2 = vag.check(
+        "Grain: LIGHT/guard -- lane myia-po-2026:CoursIA -- prev: MED/tooling #12063",
+        merged_prev=vag.resolve_merged_prev_genre(None, "myia-po-2026:CoursIA"))
+    assert v2["guard_pass"] is True
+    assert v2["prev_source"] == "declared"
+
+
+def test_merged_sequence_other_lane_ignored():
+    # A merged PR from ANOTHER lane must not become this lane's predecessor.
+    merged = [
+        {"number": 12025, "mergedAt": "2026-08-20T23:30:00Z",
+         "body": "Grain: LIGHT/guard -- lane myia-po-2023:CoursIA -- prev: MED/tooling #1"},
+    ]
+    mp = vag.resolve_merged_prev_genre(merged, "myia-po-2026:CoursIA")
+    assert mp == (None, None)

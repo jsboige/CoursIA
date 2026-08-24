@@ -4,7 +4,7 @@ Prisoner's Dilemma - Classic Example
 ====================================
 
 Demonstrates the Prisoner's Dilemma using Nashpy.
-Related to GameTheory-2-NormalForm.ipynb and GameTheory-4-NashEquilibrium.ipynb
+Related to GameTheory-02-NormalForm.ipynb and GameTheory-04-NashEquilibrium.ipynb
 
 Payoff matrix:
               Player 2

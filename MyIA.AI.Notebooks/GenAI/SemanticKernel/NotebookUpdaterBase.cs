@@ -4,8 +4,6 @@ using Microsoft.SemanticKernel;
 using MyIA.AI.Notebooks.Config;
 using SKernel = Microsoft.SemanticKernel.Kernel;
 
-namespace MyNotebookLib;
-
 public abstract class NotebookUpdaterBase
 {
 	protected ILogger Logger;
@@ -235,4 +233,3 @@ Tool usage instructions apply to any function calls you make.";
 	}
 
 	protected abstract Task PerformNotebookUpdateAsync();
-}

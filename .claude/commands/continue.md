@@ -20,11 +20,23 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, choisir 
 
 ### Phase 2 : Choisir la tache
 
-**P0 — Missions coordinateur** : DM HIGH/URGENT, puis steers dashboard de ma lane.
+**Un seul geste ouvre le choix, et il etablit la priorite tout seul :**
 
-**P1 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee, deep-queue de la lane si posee sur le dashboard.
+```bash
+python scripts/pick_idle_grain.py --lane <machine:workspace> --prev-genre <genre du grain precedent>
+```
 
-**P2 — Pool global (auto-alimentation, JAMAIS d'idle)** : `gh issue list --state open` **en entier, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail. Prendre n'importe quelle issue techniquement executable (autre famille, autre langage : rien n'est "le turf d'un autre"), poser `[CLAIMED] <#N> — <machine:workspace> <ts>` sur le dashboard AVANT de commencer, livrer. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (>=1 PR/wakeup = PLANCHER, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
+**P0 — Reparer SON PROPRE rouge.** Si la commande sort en **code 2**, elle ne tire aucun grain : elle rend la liste des PRs de cette lane **bloquees et ouvertes depuis plus de 24 h**, avec la cause et le geste de reparation. **C'est la tache du cycle**, avant tout grain neuf. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
+
+- Une PR reparee **et mergee compte comme le grain livre du cycle** (plancher R1 tenu) : ce n'est pas un a-cote, c'est du travail deja ecrit qu'on porte a son terme.
+- Rouge **non reparable par cette lane** (garde casse sur main, dependance d'une autre PR) : l'**ecrire en commentaire sur la PR**, puis `--ignore-red`. L'echappatoire se justifie par ecrit, elle ne se prend pas en silence.
+- Seule preemption : une mission coordinateur **URGENT** (le coordinateur voit le plateau entier).
+
+**P1 — Missions coordinateur** : DM HIGH, puis steers dashboard de ma lane.
+
+**P2 — Travail en cours** : tache `[CLAIMED]` par cette lane non terminee, deep-queue de la lane si posee sur le dashboard.
+
+**P3 — Le tirage** (sortie 0) : les candidats rendus par la commande ci-dessus. Le pool est **tout l'ouvert, cross-lane** — la lane est une etiquette de reporting, pas une frontiere de travail : rien n'est "le turf d'un autre". Poser `[CLAIMED] <#N> — <machine:workspace> <ts>` AVANT d'editer, livrer. Regles completes : [proactive-coordination.md](../rules/proactive-coordination.md) (>=1 PR/wakeup = PLANCHER, variete R6, "rien a faire" avec >0 issues ouvertes = echec de methode).
 
 ### Phase 3 : Travailler et livrer
 
