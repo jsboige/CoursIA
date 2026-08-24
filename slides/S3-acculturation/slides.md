@@ -459,6 +459,8 @@ layout: default
 </div>
 
 
+<div class="dense-list">
+
 **Jeux vs Exploration**
 
 - Arbre de jeu
@@ -474,18 +476,14 @@ layout: default
   - Stochastiques, information imparfaite
   - Libratus (poker), Starcraft 2
 
-
-**Arbre Minimax**
-
-- Actions joueurs Max et Min + utilité terminale
-
 **Techniques**
 
+- Actions joueurs Max et Min + utilité terminale
 - Minimax, Alpha-Beta
 - Avec arrêt + évaluation heuristique
-- Techniques probabilistes
-- Expectiminimax
-- Méthodes de Monte-Carlo
+- Techniques probabilistes (Expectiminimax, Monte-Carlo)
+
+</div>
 
 <img src="./images/img_031.png" class="absolute top-[110px] right-[20px] w-[350px] max-h-[300px] object-contain" alt="Arbre minimax du morpion : niveaux MAX(X) et MIN(O), utilités -1/0/+1" />
 
@@ -537,10 +535,10 @@ layout: default
 - Structure des valeurs
   - Symétrie (rupture de)
 
-<div class="img-grid-2x2">
-<img src="./images/img_035.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
-<img src="./images/img_036.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
-<img src="./images/img_037.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
+<div class="flex gap-2">
+<img src="./images/img_035.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Schéma de sémantique : énoncés reliés par « a pour conséquence » et « causent » aux aspects du monde réel" />
+<img src="./images/img_036.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Illustration Winograd : ordinateur échangeant phrases et conclusions avec un humain et un robot" />
+<img src="./images/img_037.png" class="w-[120px] max-w-full max-h-[140px] object-contain" alt="Grammaire de la logique propositionnelle : Énoncé, ÉnoncéAtomique, priorité des opérateurs ¬, ∧, ∨, ⇒, ⇔" />
 
 </div>
 
@@ -642,13 +640,14 @@ layout: default
 <img src="./images/img_040.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 ---
-layout: two-cols
----
 
 
 
 # Logique du premier ordre (FOL)
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - Modélise
   - Objets, Propriétés
@@ -660,8 +659,8 @@ layout: two-cols
   - de base de données
 
 
-::right::
-
+</div>
+<div>
 
 **Exemple: investigation**
 
@@ -672,10 +671,8 @@ layout: two-cols
 
 <img src="./images/img_040.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 
-
-
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
@@ -687,6 +684,8 @@ layout: two-cols
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Qu'est-ce qu'un argument ?</div>
 </div>
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Code de conduite**
 
@@ -700,9 +699,8 @@ layout: two-cols
   - Suspension du jugement
   - Résolution
 
-
-::right::
-
+</div>
+<div>
 
 **Qu'est-ce qu'un argument?**
 
@@ -721,16 +719,16 @@ layout: two-cols
   - Légal  loi, jurisprudence etc.
   - Esthétique  critère
 
-
-
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
 
 # Analyse rhétorique
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Un bon argument**
 
@@ -747,9 +745,8 @@ layout: two-cols
 - Renforcer un argument
   - Balayer ces 5 critères
 
-
-::right::
-
+</div>
+<div>
 
 **Un argument fallacieux**
 
@@ -765,8 +762,8 @@ layout: two-cols
 
 </div>
 
-
-
+</div>
+</div>
 ---
 
 
@@ -867,13 +864,14 @@ layout: section
 
 
 ---
-layout: two-cols
----
 
 
 
 # Agir dans l'incertitude
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Le monde est incertain**
 
@@ -887,8 +885,8 @@ layout: two-cols
   - Inférence incomplète
 
 
-::right::
-
+</div>
+<div>
 
 **Agent fondé sur l'utilité**
 
@@ -899,17 +897,19 @@ layout: two-cols
 
 <img src="./images/img_051.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x (données à ajuster)" />
 
+</div>
+</div>
 
 
-
----
-layout: two-cols
 ---
 
 
 
 # Probabilité
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Fondements**
 
@@ -923,8 +923,8 @@ layout: two-cols
 - P(Cause | Effet) = P(Effet | Cause) x P(Cause) / P(Effet)
 
 
-::right::
-
+</div>
+<div>
 
 **Programmation probabiliste**
 
@@ -940,17 +940,17 @@ layout: two-cols
 <img src="./images/img_054.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
 
 </div>
+</div>
+</div>
 
-
-
----
-layout: two-cols
 ---
 
 
 
 # Réseaux bayésiens dynamiques
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Chaînes de Markov**
 
@@ -968,9 +968,8 @@ layout: two-cols
 <img src="./images/img_057.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Réseau bayésien météo : soleil, nuages, pluie reliés par probabilités conditionnelles" />
 </div>
 
-
-::right::
-
+</div>
+<div>
 
 **Applications**
 
@@ -989,7 +988,8 @@ layout: two-cols
 
 </div>
 
-
+</div>
+</div>
 ---
 
 
@@ -1433,6 +1433,7 @@ layout: two-cols
 
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_094.png" class="max-h-[300px] max-w-full object-contain" alt="Opération de convolution : volume d'entrée 7x7x3 et noyau 3x3x3 glissant sur la matrice" />
+<img src="./images/img_095.png" class="max-h-[300px] max-w-full object-contain" alt="Architecture CNN historique : couches « Simple cells » (convolutions multiples) et « Complex cells » (sous-échantillonnage par pooling)" />
 <img src="./images/img_096.png" class="max-h-[300px] max-w-full object-contain" alt="Transfert learning : photo de voiture, extracteur de caractéristiques, caractéristiques de haut niveau, classifieur entraînable" />
 <img src="./images/img_097.png" class="max-h-[300px] max-w-full object-contain" alt="RNN déroulé : cellule A récurrente, entrées x0 à xt, sorties h0 à ht" />
 </div>

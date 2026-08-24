@@ -112,8 +112,16 @@ from grain_tag import extract_lane
 # bold pair opener, then whitespace, then the bracket. A `[` NOT immediately at
 # a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
 # match -- the mid-prose non-regression property is preserved.
+# #12711 -- the decor class was ASCII-pure, so a leading non-ASCII decoration
+# (`→` U+2192, `➡` U+27A1, `➜` U+279C, `»` U+00BB, `•` U+2022, `–` U+2013,
+# `—` U+2014) voided the marker to BOTH regexes: the claim was never read (no
+# block) and the bare-marker lint never flagged it (no WARN). Measured on
+# #12465: `→DELIVERED #12465 ...` posted by po-2026 went unread, po-2027 then
+# got CLEAR and delivered the same notebook 15 h later (#12512 / #12638).
+# `_DECOR` is the shared, broadened decoration class for all four regexes.
+_DECOR = r"(?:[#>*+\-→➡➜»•–—]{1,6}[ \t]*)*"
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
@@ -128,7 +136,7 @@ _MARKER_RE = re.compile(
 # widening -- a malformed line must surface as a warning, never as a claim
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*"
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
     r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
@@ -234,7 +242,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -280,7 +288,7 @@ _PAREN_ANNOTATION_RE = re.compile(r" \(")
 # claim is NOT re-classified (see #12072: re-reading an off-marker prose line
 # as the machine clause would make the scope depend on an heuristic).
 _OFF_MARKER_SCOPE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
 )
 
 
@@ -831,9 +839,13 @@ def compute_active_claims(
                     or (
                         # scoped claim with at least one live glob AND
                         # disjoint from the override's scope -> keep.
+                        # _scopes_intersect (not _path_matches_any): the
+                        # operand order of the old read was inverted when the
+                        # override's scope carried a joker, so a concrete
+                        # claim it covered was never closed (#12656).
                         e.get("paths") is not None
                         and not _claim_scope_effectively_epic_wide(e)
-                        and not _path_matches_any(scope, e.get("paths") or [])
+                        and not _scopes_intersect(scope, e.get("paths") or [])
                     )
                 }
                 state[ev.lane] = ev
@@ -1790,6 +1802,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
+    else:
+        # #12751 -- a zero of absence-of-measurement must not re-read as a
+        # zero of absence-of-claim. Say the detection is OFF on stderr (the
+        # JSON `stale_detection` field is set to "disabled" alongside).
+        print("STALE_DETECTION disabled -- claims are NOT age-filtered "
+              "(--no-stale or threshold None). Old claims still block.",
+              file=sys.stderr)
 
     # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
     # lint can no longer say `il bloque toutes les autres lanes` for a
@@ -1859,7 +1878,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
-        "stale_claims": sorted(stale_others),
+        "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
+        # #12751 -- l'etat de la detection est nomme explicitement. "active" :
+        # un seuil est pose, les claims plus vieux sont age-filtered (le
+        # comportement par defaut, 48h). "disabled" : --no-stale / threshold
+        # None -- rien n'est mesure du tout, un claim zombie de 415 h bloquerait
+        # indefiniment. `stale_claims` vaut `null` quand disabled -- un zero
+        # d'ABSENCE de mesure ne doit pas se relire comme un zero d'absence de
+        # claim (avant, les deux rendaient `[]`).
+        "stale_detection": "active" if stale_threshold is not None else "disabled",
         # #12156 -- umbrella classifier (`is_umbrella`) and the pathology it
         # describes (`epic_wide_on_umbrella`). Both default False: on a
         # unit-issue the umbrella flag stays False; on a CLEAR umbrella the
@@ -2232,7 +2259,7 @@ def _filter_by_claim_scope(
         if empty and len(empty) >= len(scope):
             filtered[ln] = ev  # lifted to epic-wide -- always blocking
             continue
-        if _path_matches_any(my_scope, scope):
+        if _scopes_intersect(my_scope, scope, tracked):
             filtered[ln] = ev  # scopes intersect -> real collision
         # else: both scoped, disjoint -> free, drop from others
     return filtered
@@ -2243,6 +2270,94 @@ def _path_matches_any(paths: list[str], patterns: list[str]) -> bool:
     for p in paths:
         if _path_matches(p, patterns):
             return True
+    return False
+
+
+def _glob_has_meta(glob: str) -> bool:
+    """True if `glob` carries fnmatch meta (`*`, `?`, `[`) beyond literals."""
+    return any(c in glob for c in "*?[")
+
+
+def _literal_prefix(glob: str) -> str:
+    """Leading run of literal (non-meta) characters in `glob`."""
+    i = 0
+    while i < len(glob) and glob[i] not in "*?[":
+        i += 1
+    return glob[:i]
+
+
+def _prefixes_compatible(pa: str, pb: str) -> bool:
+    """True if two literal prefixes can both prefix a single common string.
+
+    ``''`` (a glob that opens on meta, e.g. ``**``) proves nothing, so it is
+    compatible with anything. Two non-empty prefixes are compatible when they
+    agree on every shared position -- they can then be extended to a common
+    string, so we cannot cheaply prove disjointness.
+    """
+    if not pa or not pb:
+        return True
+    n = min(len(pa), len(pb))
+    return pa[:n] == pb[:n]
+
+
+def _glob_overlap(ga: str, gb: str) -> bool:
+    """Conservative ``True`` if globs `ga` and `gb` MAY match a common string.
+
+    Sound in the disjoint direction: if their literal prefixes conflict, no
+    string matches both. Otherwise we cannot cheaply prove disjointness, so
+    we report overlap (over-block). The fleet's globs are overwhelmingly
+    ``*`` / ``?`` / literal (paths-scoped claims and ``--paths``); character
+    classes are rare and only ever over-approximated here, which is the safe
+    direction for a collision guard.
+    """
+    pa, pb = _literal_prefix(ga), _literal_prefix(gb)
+    if pa and pb and not _prefixes_compatible(pa, pb):
+        return False
+    return True
+
+
+def _scopes_intersect(
+    a: list[str], b: list[str], tracked: list[str] | None = None
+) -> bool:
+    """True if path-scope `a` and path-scope `b` may cover a common file.
+
+    This is the symmetric fix for the operand-order bug that #12656 exposed.
+    The old read was ``_path_matches_any(my_scope, scope)`` -- it fed the
+    CALLER's glob as the ``filename`` operand and the other lane's concrete
+    path as the ``pattern``, so ``fnmatch("dir/**", "dir/file.md")`` is False
+    and a joker caller was told CLEAR against a claim that demonstrably
+    covered its target (fail-OPEN).
+
+    With a `tracked` walk (the normal ``_run_check`` path and every
+    check-level test) the test is EXACT: two scopes intersect iff some real
+    tracked file matches both. Without it (`compute_active_claims`, which has
+    no repo walk) we fall back to a conservative provable-disjoint test:
+    concrete members of either side are matched against the other side's
+    globs, then remaining glob-vs-glob pairs are decided by the literal
+    prefix test of `_glob_overlap`. The fallback never wrongly reports
+    "disjoint" (it over-blocks when unsure), which is the safe direction for
+    a collision guard.
+    """
+    if not a or not b:
+        return False
+    if tracked is not None:
+        for path in tracked:
+            if _path_matches(path, a) and _path_matches(path, b):
+                return True
+        return False
+    # no repo walk: concrete members of each side, matched against the other
+    for side, other in ((a, b), (b, a)):
+        for g in side:
+            if not _glob_has_meta(g) and _path_matches(g, other):
+                return True
+    for ga in a:
+        if not _glob_has_meta(ga):
+            continue
+        for gb in b:
+            if not _glob_has_meta(gb):
+                continue
+            if _glob_overlap(ga, gb):
+                return True
     return False
 
 
@@ -2423,12 +2538,19 @@ def main(argv: list[str] | None = None) -> int:
                    help="your lane, e.g. myia-po-2024:CoursIA")
     p.add_argument("--from-json", metavar="FILE",
                    help="read `gh issue view` JSON from FILE (offline/test mode)")
-    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=None,
+    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=48.0,
                    help="treat OTHER lanes' claims older than HOURS as stale: "
                         "warn and do not block (age from server createdAt, never "
                         "the body). The new claimant must still post its own "
-                        "[CLAIMED] -- this is not a silent bypass. Without the "
-                        "flag every active claim blocks (current behaviour).")
+                        "[CLAIMED] -- this is not a silent bypass. Default 48 "
+                        "(#12751): the canonical invocation now MEASURES. "
+                        "`--no-stale` restores the legacy behaviour (every active "
+                        "claim blocks).")
+    p.add_argument("--no-stale", action="store_true", default=False,
+                   help="#12751: disable staleness detection entirely (legacy "
+                        "behaviour: every active claim blocks, nothing is "
+                        "age-filtered). The detected state is reported as "
+                        "`stale_detection: \"disabled\"`.")
     p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
                    help="path-mode (#9959): one or more file paths/globs. "
                         "Exits 2 if any OPEN PR of a different lane (or with "
@@ -2459,6 +2581,11 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
+    # the legacy behaviour (every claim blocks, nothing age-filtered); the
+    # disabled state is reported honestly as `stale_detection: "disabled"`.
+    if args.no_stale:
+        args.stale_threshold = None
 
     # #10881 -- `nargs='+'` on --paths swallows a TRAILING positional issue
     # number (`--lane X --paths a b 10678` puts "10678" into the paths list,

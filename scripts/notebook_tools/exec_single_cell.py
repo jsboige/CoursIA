@@ -33,6 +33,7 @@ import sys
 
 from jupyter_client.manager import start_new_kernel
 
+from _papermill_meta import strip_stale_papermill_metadata
 from notebook_helpers import bound_native_thread_pools
 
 
@@ -166,6 +167,9 @@ def main():
             o["execution_count"] = written_ec
     target["outputs"] = outputs
 
+    # Les sorties/ec fraîchement écrits décrivent CE run : un bloc papermill
+    # hérité d'une passe antérieure les daterait au mauvais run (#12722).
+    strip_stale_papermill_metadata(nb)
     with open(args.notebook, "w", encoding="utf-8") as f:
         json.dump(nb, f, ensure_ascii=False, indent=1)
         f.write("\n")

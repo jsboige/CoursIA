@@ -85,6 +85,37 @@ def test_get_gpu_temp_returns_zero_on_non_int_stdout(monkeypatch):
     assert gt.get_gpu_temp() == 0
 
 
+def test_get_gpu_temp_multi_gpu_first_line_without_cvd(monkeypatch):
+    # Multi-GPU host (ai-01 3x RTX 4090): one line per GPU. Without
+    # CUDA_VISIBLE_DEVICES torch uses physical GPU 0 -> first line.
+    # (Pre-fix this raised int("42\n45\n34") -> ValueError -> silent 0 -> no-op
+    # watchdog, measured 2026-08-23.)
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+    assert gt.get_gpu_temp() == 42
+
+
+def test_get_gpu_temp_multi_gpu_follows_cuda_visible_devices(monkeypatch):
+    # CUDA_VISIBLE_DEVICES=2 remaps torch cuda:0 to physical GPU 2; nvidia-smi
+    # keeps physical indices -> line 2.
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "2")
+    assert gt.get_gpu_temp() == 34
+
+
+def test_get_gpu_temp_multi_gpu_cvd_out_of_range_falls_back_first(monkeypatch):
+    # CVD pointing beyond the reported lines falls back to line 0, never 0-silent.
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "7")
+    assert gt.get_gpu_temp() == 42
+
+
+def test_get_gpu_temp_explicit_index_overrides_cvd(monkeypatch):
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "2")
+    assert gt.get_gpu_temp(index=1) == 45
+
+
 # --------------------------------------------------------------------------
 # thermal_check — CPU guard + hot/cool threshold logic
 # --------------------------------------------------------------------------
@@ -143,12 +174,42 @@ def test_batch_thermal_check_delegates_on_multiple(monkeypatch):
 # --------------------------------------------------------------------------
 
 
-def test_setup_amp_returns_disabled_scaler_on_cpu():
-    # On CPU, use_amp must be False; GradScaler constructed disabled.
-    use_amp, scaler = gt.setup_amp()
+def test_setup_amp_returns_disabled_scaler_on_cpu(monkeypatch):
+    # AMP suit le device DEMANDE, pas la visibilite CUDA de la machine :
+    # CUDA visible + run CPU => jamais arme, deterministe sur machine GPU (#12662).
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: True)
+    use_amp, scaler = gt.setup_amp(torch.device("cpu"))
     assert use_amp is False
     assert scaler is not None
     assert scaler.is_enabled() is False
+
+
+def test_setup_amp_arms_for_cuda_device_when_cuda_available(monkeypatch):
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: True)
+    use_amp, scaler = gt.setup_amp(torch.device("cuda"))
+    assert use_amp is True
+    assert scaler.is_enabled() is True
+
+
+def test_setup_amp_never_arms_when_cuda_absent(monkeypatch):
+    # Device cuda demande mais CUDA reellement absent : desarme, pas de crash.
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: False)
+    use_amp, scaler = gt.setup_amp(torch.device("cuda"))
+    assert use_amp is False
+    assert scaler.is_enabled() is False
+
+
+def test_setup_amp_legacy_no_arg_follows_global_cuda(monkeypatch):
+    # Sans argument : comportement historique (disponibilite globale),
+    # les 12 scripts d'entrainement appellent setup_amp() a nu.
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: False)
+    use_amp, scaler = gt.setup_amp()
+    assert use_amp is False
+    assert scaler.is_enabled() is False
+    monkeypatch.setattr(gt.torch.cuda, "is_available", lambda: True)
+    use_amp, scaler = gt.setup_amp()
+    assert use_amp is True
+    assert scaler.is_enabled() is True
 
 
 # --------------------------------------------------------------------------
