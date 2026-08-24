@@ -674,8 +674,6 @@ layout: default
 </div>
 </div>
 ---
-layout: two-cols
----
 
 
 
@@ -686,6 +684,8 @@ layout: two-cols
 <div class="bg-slate-800 text-white px-4 py-2 text-base font-bold text-center">Qu'est-ce qu'un argument ?</div>
 </div>
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Code de conduite**
 
@@ -699,9 +699,8 @@ layout: two-cols
   - Suspension du jugement
   - Résolution
 
-
-::right::
-
+</div>
+<div>
 
 **Qu'est-ce qu'un argument?**
 
@@ -720,16 +719,16 @@ layout: two-cols
   - Légal  loi, jurisprudence etc.
   - Esthétique  critère
 
-
-
----
-layout: two-cols
+</div>
+</div>
 ---
 
 
 
 # Analyse rhétorique
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Un bon argument**
 
@@ -746,9 +745,8 @@ layout: two-cols
 - Renforcer un argument
   - Balayer ces 5 critères
 
-
-::right::
-
+</div>
+<div>
 
 **Un argument fallacieux**
 
@@ -764,8 +762,8 @@ layout: two-cols
 
 </div>
 
-
-
+</div>
+</div>
 ---
 
 
@@ -946,13 +944,13 @@ layout: section
 </div>
 
 ---
-layout: two-cols
----
 
 
 
 # Réseaux bayésiens dynamiques
 
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Chaînes de Markov**
 
@@ -970,9 +968,8 @@ layout: two-cols
 <img src="./images/img_057.png" class="w-[150px] max-w-full max-h-[300px] object-contain" alt="Réseau bayésien météo : soleil, nuages, pluie reliés par probabilités conditionnelles" />
 </div>
 
-
-::right::
-
+</div>
+<div>
 
 **Applications**
 
@@ -991,7 +988,8 @@ layout: two-cols
 
 </div>
 
-
+</div>
+</div>
 ---
 
 
