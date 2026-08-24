@@ -2283,10 +2283,88 @@ problèmes, et ils se résolvent avec les mêmes objets.
 | Une **file de travail** par poste, jamais vide | Plan de charge |
 | Un **jeton de réservation** posé sur la tâche | « Qui fait quoi » — anti-doublon |
 | Une **revue obligatoire** avant intégration | Contrôle, double signature |
-| Des **règles écrites** (27) plutôt que des consignes orales | Procédures |
+| Des **règles écrites** (26) plutôt que des consignes orales | Procédures |
 
 Aucun de ces objets n'a été conçu pour l'IA : ce sont ceux d'une direction
 des opérations, transposés tels quels.
+
+---
+
+# L'organisation, à l'échelle
+
+<div class="grid grid-cols-[1fr_1.1fr] gap-6 mt-2">
+
+<div>
+
+```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 12, "rankSpacing": 26, "curve": "linear"}, "themeVariables": {"fontSize": "12px"}}}%%
+graph TD
+    H["Direction — 1 personne"] --> C["Coordinateur — 1 agent"]
+    C --> M1["Machine A<br/>2 postes"]
+    C --> M2["Machine B<br/>2 postes"]
+    C --> M3["Machines C-E<br/>6 postes"]
+    M1 --> S["21 profils spécialistes<br/>appelés à la demande"]
+    M2 --> S
+    M3 --> S
+```
+
+</div>
+
+<div>
+
+| Niveau | Effectif | Disponibilité |
+|---|---|---|
+| Direction, arbitrage | **1 personne** | 1-2 h / jour |
+| Coordination | **1 agent** | continue |
+| Production | **10 postes** | continue |
+| Spécialistes | **21 profils** | à la demande |
+
+<div class="text-sm text-slate-600 mt-5">
+<b>5 machines</b>, 2 périmètres de travail chacune :
+un poste = une machine × un périmètre.
+</div>
+
+</div>
+
+</div>
+
+<div class="text-sm text-slate-600 border-l-2 border-rose-800/40 pl-4 mt-3">
+Le chiffre à retenir n'est pas « 10 postes » : c'est le <b>rapport</b>. Une personne, une
+à deux heures par jour d'arbitrage, tient une structure qui produit en continu. Ce n'est
+pas un remplacement d'ETP — c'est un <b>changement de ce que fait l'ETP</b> : elle ne
+produit plus, elle décide et elle relit.
+</div>
+
+---
+
+# Quel agent, quel outil, pour quelle tâche
+
+Un **seul** outil d'agent — *Claude Code*, cité planche 21 — décliné en **profils**.
+Ce qui les distingue n'est pas le modèle : c'est le **jeu d'outils** que chacun reçoit.
+
+<div class="text-sm mt-3">
+
+| Profil | Les outils qu'il reçoit | Sa tâche |
+|---|---|---|
+| Exploration | lecture et recherche, **pas d'écriture** | Retrouver où vit une notion, sans rien modifier |
+| Rédaction pédagogique | édition de *notebooks* | Écrire cours et exercices |
+| Exécution | noyau Jupyter, Papermill | Faire tourner le cours et **capturer les sorties réelles** |
+| Preuve formelle | Lean 4 / Lake | Vérifier un théorème, mesurer la dette de preuve |
+| Entraînement | GPU, PyTorch, validation *walk-forward* | Entraîner et **falsifier** un modèle |
+| Marchés | API QuantConnect | Lancer un *backtest*, relever Sharpe / drawdown |
+| Génération d'images | ComfyUI + modèles auto-hébergés | Produire les illustrations du cours |
+| Relecture visuelle | rendu de planches + vision | Vérifier qu'une planche ne déborde pas |
+| Contrôle | tests, *build* — et le droit de **refuser** | Refuser ce qui ne passe pas |
+
+</div>
+
+<div class="text-sm text-slate-600 border-l-2 border-rose-800/40 pl-4 mt-2">
+Un agent n'est pas « une IA » : c'est un <b>périmètre écrit</b> plus un <b>jeu d'outils
+restreint</b>. Celui qui explore n'a pas le droit d'écrire ; celui qui exécute n'a pas le
+droit de fusionner. La séparation des pouvoirs y fait le même travail que dans une
+organisation — et elle est <b>plus facile à tenir</b>, parce qu'elle est déclarée dans un
+fichier plutôt que rappelée en réunion.
+</div>
 
 
 ---
