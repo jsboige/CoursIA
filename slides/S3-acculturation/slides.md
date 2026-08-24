@@ -2419,7 +2419,7 @@ produit plus, elle décide et elle relit.
 
 # Quel agent, quel outil, pour quelle tâche
 
-Un **seul** outil d'agent — *Claude Code*, cité planche 21 — décliné en **profils**.
+Un **seul** outil d'agent — *Claude Code*, celui déjà cité plus haut — décliné en **profils**.
 Ce qui les distingue n'est pas le modèle : c'est le **jeu d'outils** que chacun reçoit.
 
 <div class="text-sm mt-3">
