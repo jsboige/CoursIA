@@ -72,6 +72,10 @@ from dlinear_vol import (                           # noqa: E402
 )
 from gpu_training import thermal_check              # noqa: E402
 from har_model import walk_forward_har              # noqa: E402
+from log_lines import (                              # noqa: E402
+    format_dm_verdict_line,
+    format_har_baseline_line,
+)
 from realized_variance import realized_variance_to_log  # noqa: E402
 
 PANIER_DIR = SCRIPTS_DIR.parent / "datasets" / "panier"
@@ -158,8 +162,8 @@ def eval_one_symbol(
             har_mse = har_out["aggregate_mse_logrv"]
             har_errors = (har_out["forecasts"] - har_out["targets"]).dropna().values
             har_bias_oos = float(np.mean(har_errors)) if len(har_errors) else float("nan")
-            print(f"  h={h} HAR MSE={har_mse:.5f} bias_OOS={har_bias_oos:+.5f} "
-                  f"({har_out['n_total_preds']} preds)")
+            print(format_har_baseline_line(
+                h, har_mse, har_bias_oos, har_out["n_total_preds"]))
         except Exception as exc:
             print(f"  h={h} HAR baseline FAILED: {exc}")
             continue
@@ -191,8 +195,13 @@ def eval_one_symbol(
             dl_bias_oos = float(np.mean(dl_errors)) if len(dl_errors) else float("nan")
 
             dm_info = {}
+            # Le verdict DM porte sur l'echantillon ALIGNE (tronque a la
+            # longueur commune des deux series d'erreurs), pas sur l'agregat
+            # HAR : c'est cette valeur qu'il faut imprimer (#12681).
+            min_len = min(len(dl_errors), len(har_errors))
+            mse_har_aligned = (float(np.mean(har_errors[:min_len] ** 2))
+                               if min_len else float("nan"))
             if len(dl_errors) >= 10 and len(har_errors) >= 10:
-                min_len = min(len(dl_errors), len(har_errors))
                 try:
                     dm = dm_verdict(dl_errors[:min_len], har_errors[:min_len],
                                     horizon=h, loss_fn=loss_fn)
@@ -202,9 +211,10 @@ def eval_one_symbol(
                         "dm_verdict": dm["verdict"],
                         "dm_mean_loss_diff": dm["mean_loss_diff"],
                     }
-                    print(f"  h={h} seed={seed} DLinear MSE={dl_mse:.5f} "
-                          f"bias={dl_bias_oos:+.5f} DM={dm['dm_statistic']:.3f} "
-                          f"p={dm['p_value']:.4f} -> {dm['verdict']}")
+                    print(format_dm_verdict_line(
+                        "DLinear", h, seed, dl_mse, mse_har_aligned,
+                        dl_bias_oos, dm["dm_statistic"], dm["p_value"],
+                        dm["verdict"]))
                 except Exception as exc:
                     print(f"  h={h} seed={seed} DM FAILED: {exc}")
                     dm_info = {"dm_verdict": "DM_FAILED"}
@@ -221,6 +231,7 @@ def eval_one_symbol(
                 "n_predictions": int(dl_out["n_total_preds"]),
                 "dlinear_mse_logrv": float(dl_mse),
                 "har_mse_logrv": float(har_mse),
+                "har_mse_aligned": mse_har_aligned,
                 "mse_reduction_pct": (float((har_mse - dl_mse) / har_mse * 100)
                                       if har_mse > 0 else float("nan")),
                 **dm_info,
