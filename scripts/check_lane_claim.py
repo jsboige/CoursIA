@@ -59,6 +59,19 @@ references the issue is not auto-detected as a release -- the lane should
 `--release` (or post `[DONE]`) when its PR lands. Detecting merges is a future
 flag; the comment contract is the MVP.
 
+Composite comments, the WRITTEN tie-break (#12624): a comment carrying
+several markers is legal ONLY across lines -- each line-anchored marker is
+its own event and the walk order applies ("dernier marqueur gagne": a
+`[CLAIMED] lane X` followed on a LATER LINE by `[RELEASED] lane X` reduces
+to released). A second marker on the SAME line as a head marker is NEVER an
+event (the #10228 mid-prose protection must stand -- the claim template
+itself carries a mid-line `[RELEASED]` citation), so a one-line "lift +
+re-claim" repair comment enacts ONLY the head: the re-claim is silently
+swallowed. That shape is flagged (`composite_single_line_markers`) and the
+canonical repair gesture is documented in
+.claude/rules/lane-claim-protocol.md: ONE comment per marker, a broken
+marker is repaired by a NEW comment carrying only `[CLAIMED]`.
+
 Exit codes: 0 ok / 1 blocked (other lane holds active issue claim) /
 2 io-or-gh error (issue mode) OR cross-lane OPEN-PR collision (--paths mode).
 """
@@ -141,6 +154,46 @@ _MALFORMED_MARKER_RE = re.compile(
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
 )
+# #12624 -- quasi-marker lint (Defaut 1). `_MARKER_RE` requires the EXACT
+# keyword alone in brackets; `_MALFORMED_MARKER_RE` requires the keyword BARE
+# (no brackets). A bracketed line-head token that is ALMOST a keyword falls
+# between the two and is invisible to both: measured 2026-08-22 on #12329,
+# `[CLAGED] lane myia-po-2024:CoursIA-2 -- paths: ...` was never read, the
+# organ answered CLEAR, and a second lane formalised the same four files
+# nine hours later (#12343 / #12433, +375 lines of Lean). Two quasi shapes:
+#   - "typo": the first word in brackets is at edit distance <= 2 of a known
+#     keyword (`CLAGED` -> CLAIMED, `CLAMED` -> CLAIMED, `RELESED` -> RELEASED);
+#   - "suffix": the first word IS a known keyword but the bracket carries
+#     extra content (`[RELEASED claim-malformed]`) -- `_MARKER_RE`'s
+#     `\[\s*KEYWORD\s*\]` rejects it, so the gesture enacts nothing.
+# Same decoration tolerance as `_MARKER_RE`; same claim-motif gate as
+# `_MALFORMED_MARKER_RE` (a `lane <tok>` / `#N` / `paths:` on the line) so
+# prose that merely mentions an almost-word is not flagged. WARN-only by
+# design: the quasi marker is SIGNALED, never auto-corrected and never
+# enacted -- an auto-correction would guess intent where the writer must
+# re-post the canonical form themselves.
+_QUASI_MARKER_RE = re.compile(
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
+    r"\[([A-Za-z][A-Za-z_-]{2,})((?:[ \t][^\]\n]*)?)\]",
+    re.IGNORECASE,
+)
+# #12624 -- the claim motif that gates BOTH quasi shapes. Same selectivity
+# rationale as `_MALFORMED_MARKER_RE`'s tail: a bracketed almost-word on a
+# line that carries no claim motif is prose, not a failed gesture.
+_CLAIM_MOTIF_RE = re.compile(r"(?:lane\s+\S+:\S+|#\d+|paths?\s*:)", re.IGNORECASE)
+# #12624 -- composite single-line detection (Defaut 2). A line-anchored head
+# marker followed LATER ON THE SAME LINE by another exact bracketed keyword
+# carrying a claim motif: the incident's repair comment was one single line
+# `[RELEASED claim-malformed] ignore ... Re-claim ici : [CLAIMED] lane X --
+# paths: ...`. Only the HEAD token is line-anchored, so only the head can be
+# an event; the mid-line `[CLAIMED]` is deliberately NOT one (#10228
+# mid-prose protection -- the claim template itself carries a mid-line
+# `[RELEASED]`). The writer must learn that their re-claim was not read.
+_MIDLINE_KEYWORD_RE = re.compile(
+    r"\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    re.IGNORECASE,
+)
+_KEYWORDS = ("CLAIMED", "RELEASED", "CANCELLED", "ABANDONED", "DONE", "OVERRIDE", "DELIVERED")
 
 
 def _blank_keeping_shape(line: str) -> str:
@@ -1631,6 +1684,120 @@ def _find_malformed_markers(payload: dict) -> list[dict]:
     return found
 
 
+def _levenshtein(a: str, b: str) -> int:
+    """Plain Levenshtein distance (small strings -- keyword-length inputs)."""
+    if a == b:
+        return 0
+    if not a or not b:
+        return len(a) + len(b)
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(
+                prev[j] + 1,          # deletion
+                cur[j - 1] + 1,       # insertion
+                prev[j - 1] + (ca != cb),  # substitution
+            ))
+        prev = cur
+    return prev[-1]
+
+
+def _nearest_keyword(word: str) -> tuple[str | None, int]:
+    """Return (nearest known keyword, distance) for an upper-cased token."""
+    best: str | None = None
+    best_d = 99
+    for k in _KEYWORDS:
+        d = _levenshtein(word, k)
+        if d < best_d:
+            best, best_d = k, d
+    return best, best_d
+
+
+def _find_suspected_typo_markers(payload: dict) -> list[dict]:
+    """Bracketed line-head tokens that ALMOST form a marker (#12624 Defaut 1).
+
+    Covers the gap between `_MARKER_RE` (exact keyword, alone in brackets)
+    and `_MALFORMED_MARKER_RE` (bare keyword, no brackets): a bracketed
+    `[CLAGED]` / `[RELEASED claim-malformed]` at line head is read by
+    NEITHER, so the writer's gesture enacts nothing while they believe their
+    lock is posted. WARN-only, never enacted, never auto-corrected -- the
+    signal tells the writer to re-post the canonical form. Fenced blocks are
+    masked (a quoted quasi marker is a citation, not a gesture).
+    """
+    found: list[dict] = []
+    for c in payload.get("comments", []):
+        body = c.get("body") or ""
+        author = (c.get("author") or {}).get("login")
+        for m in _QUASI_MARKER_RE.finditer(_mask_fenced_blocks(body)):
+            word = m.group(1).upper()
+            suffix = (m.group(2) or "").strip()
+            if word in _KEYWORDS and not suffix:
+                continue  # real marker -- `_MARKER_RE` already enacted it
+            line = _line_for_match(body, m)
+            if not _CLAIM_MOTIF_RE.search(line):
+                continue  # prose mention, not a claim attempt (#11239 gate)
+            if word in _KEYWORDS:
+                kind, nearest = "suffix", word
+            else:
+                nearest, dist = _nearest_keyword(word)
+                # len >= 4: a 3-letter token is within distance 2 of DONE for
+                # almost any input -- the motif gate alone would not save us.
+                if nearest is None or dist > 2 or len(word) < 4:
+                    continue
+                kind = "typo"
+            found.append({
+                "nearest": nearest,
+                "token": m.group(1),
+                "kind": kind,
+                "line": line if len(line) <= 160 else line[:160] + "…",
+                "author": author,
+                "url": c.get("url"),
+            })
+    return found
+
+
+def _find_single_line_composites(payload: dict) -> list[dict]:
+    """Head marker + later exact keyword bracket on the SAME line (#12624 Defaut 2).
+
+    The incident's repair comment was ONE line: `[RELEASED claim-malformed]
+    ignore ... Re-claim ici : [CLAIMED] lane X -- paths: ...`. Only the head
+    token is line-anchored, so the mid-line `[CLAIMED]` is NOT an event (by
+    the #10228 mid-prose protection, which must stand -- the claim template
+    itself carries a mid-line `[RELEASED]` citation). The net effect: the
+    repair gesture enacted nothing, the re-claim never registered, and the
+    lane worked uncovered. This lint names the line so the writer re-posts
+    ONE COMMENT PER MARKER. Multi-LINE composites stay legal ("dernier
+    marqueur gagne" -- walk order, documented in the module docstring); only
+    the single-line shape is flagged, because only it silently swallows the
+    second marker.
+    """
+    found: list[dict] = []
+    for c in payload.get("comments", []):
+        body = c.get("body") or ""
+        author = (c.get("author") or {}).get("login")
+        masked = _mask_fenced_blocks(body)
+        for m in _QUASI_MARKER_RE.finditer(masked):
+            line = _line_for_match(body, m)
+            # masked preserves offsets, so m.end() is valid on `body`; the
+            # remainder of the SAME line is what can carry a swallowed marker.
+            tail = body[m.end():]
+            nl = tail.find("\n")
+            after_head = tail if nl == -1 else tail[:nl]
+            for k in _MIDLINE_KEYWORD_RE.finditer(after_head):
+                rest = after_head[k.end():]
+                if _CLAIM_MOTIF_RE.search(rest):
+                    found.append({
+                        "head": m.group(1).upper(),
+                        "swallowed": k.group(1).upper(),
+                        "line": line if len(line) <= 160 else line[:160] + "…",
+                        "author": author,
+                        "url": c.get("url"),
+                    })
+                    break  # one signal per line is enough
+    return found
+
+
 def _warn_bare_integer_paths(paths: list[str]) -> list[str]:
     """Return the `--paths` entries that are bare integers (#10881 trap).
 
@@ -1746,6 +1913,40 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f'WARN: marqueur sans crochets "{mm["marker"]}"{who} -- la forme '
             f'attendue est "[{mm["marker"]}]" ; sans crochets, l\'organe ne '
             f"le lit pas (unattributed_markers reste 0). {mm['line']}",
+            file=sys.stderr,
+        )
+    # #12624 Defaut 1 -- quasi-marker lint (bracketed almost-keyword at line
+    # head: `[CLAGED]`, `[RELEASED claim-malformed]`). Invisible to BOTH the
+    # marker regex and the #11239 bare lint -- the gesture enacts nothing
+    # while the writer believes their lock is posted. WARN-only.
+    suspected = _find_suspected_typo_markers(payload)
+    for s in suspected:
+        who = f" by @{s['author']}" if s["author"] else ""
+        if s["kind"] == "typo":
+            why = f'"{s["token"]}" (distance <= 2 de {s["nearest"]})'
+        else:
+            why = f'"{s["token"]}..." ({s["nearest"]} + suffixe dans les crochets)'
+        print(
+            f"WARN: quasi-marqueur {why}{who} -- l'organe ne le lit PAS "
+            f'(ni evenement, ni malformed_markers). Reposter la forme '
+            f'canonique "[{s["nearest"]}] lane <machine:workspace>" dans un '
+            f"commentaire neuf ; ne jamais corriger a la main le marqueur "
+            f"existant (le createdAt serveur fait foi). {s['line']}",
+            file=sys.stderr,
+        )
+    # #12624 Defaut 2 -- single-line composite lint. Only the HEAD token of
+    # a line is line-anchored, so a second marker later on the SAME line is
+    # never an event; the repair-gesture trap is the measured incident shape.
+    composites = _find_single_line_composites(payload)
+    for s in composites:
+        who = f" by @{s['author']}" if s["author"] else ""
+        print(
+            f"WARN: marqueur compose sur une seule ligne{who} -- seul le "
+            f'marqueur de TETE ({s["head"]}) est lu ; le [{s["swallowed"]}] '
+            f"mid-line n'est PAS un evenement (protection mid-prose #10228). "
+            f"Si l'intention etait un re-claim, il n'a PAS ete enregistre : "
+            f"reposter UN commentaire par marqueur (cf. geste de reparation "
+            f"#12624 dans .claude/rules/lane-claim-protocol.md). {s['line']}",
             file=sys.stderr,
         )
     # #10958 -- attach the dead-glob witness to every scoped event (own and
@@ -2020,6 +2221,20 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # the lock that never registered.
         "malformed_markers": len(malformed),
         "malformed_marker_lines": [m["line"] for m in malformed],
+        # #12624 -- quasi-marker witnesses (Defaut 1). A bracketed line-head
+        # token at edit distance <= 2 of a keyword (typo) or a keyword with a
+        # suffix inside the brackets (`[RELEASED claim-malformed]`) is read
+        # by neither the event parser nor the #11239 bare lint. Surfaced so
+        # the writer learns their lock never registered.
+        "suspected_typo_markers": len(suspected),
+        "suspected_typo_marker_lines": [s["line"] for s in suspected],
+        # #12624 -- single-line composite witnesses (Defaut 2). The head
+        # marker is the only line-anchored event of its line; any second
+        # bracketed keyword later on the same line is NOT an event. The
+        # measured repair-trap shape (lift + re-claim in one line) shows up
+        # here instead of silently swallowing the re-claim.
+        "composite_single_line_markers": len(composites),
+        "composite_single_line_marker_lines": [s["line"] for s in composites],
         "blocked": bool(others),
         # #12322 -- query_scope is the read-mode classifier for THIS call.
         # `EPIC_WIDE_NO_PATHS_DECLARED` means the caller did not pass `--paths`
