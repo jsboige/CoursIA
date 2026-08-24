@@ -42,7 +42,12 @@ import pandas as pd
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
+# Thermal watchdog lives in QuantConnect/shared/ (fix #12661). Without this
+# path, a bare `from gpu_training import ...` cannot resolve and callers fall
+# back to silent no-op stubs -- the exact failure mode #12661 closed.
+sys.path.insert(0, str(SCRIPT_DIR.parents[1] / "shared"))
 
+from gpu_training import thermal_check  # noqa: E402
 from har_model import HARModel, walk_forward_har  # noqa: E402
 from intraday_loader import load_yf_intraday  # noqa: E402
 from m11g_fee_aware_kelly import (  # noqa: E402
@@ -191,6 +196,12 @@ def walk_forward_lstm(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     for fold_idx, (train_end, test_start, test_end) in enumerate(splits):
+        # Thermal watchdog (MAX_TEMP=80C, cool_sleep=30): one cheap nvidia-smi
+        # probe per fold and per refit boundary. The LSTM is small but the
+        # sweep is long (12 combos x ~5 folds x ~17 refits).
+        if device.type == "cuda":
+            thermal_check(max_temp=80, cool_sleep=30)
+
         # Build training sequences
         train_feat = feat_vals[:train_end]
         train_target = target_vals[:train_end]
@@ -279,6 +290,8 @@ def walk_forward_lstm(
 
             # Refit periodically
             if (i - test_start) % refit_every == 0 and i > test_start:
+                if device.type == "cuda":
+                    thermal_check(max_temp=80, cool_sleep=30)
                 refit_feat = feat_vals[:i]
                 refit_target = target_vals[:i]
                 rf_mean = np.nanmean(refit_feat, axis=0)
@@ -498,6 +511,29 @@ def evaluate_one_combo(
     except ValueError:
         pass
 
+    # Per-observation persistence (lesson #12684): out-of-bias (recentred
+    # error) DM re-validation and direct bias attribution require the forecast
+    # series themselves, not only aggregates. All three arrays are aligned on
+    # target.index before the finite filter.
+    tgt_vals = target.values.astype(float)
+    lstm_vals = lstm_pred_aligned.values.astype(float)
+    har_vals = har_pred_aligned.values.astype(float)
+    fin = np.isfinite(tgt_vals) & np.isfinite(lstm_vals) & np.isfinite(har_vals)
+    persistence = {
+        "lstm_bias_oos": (
+            float(np.mean(lstm_vals[fin] - tgt_vals[fin])) if fin.any() else float("nan")
+        ),
+        "har_bias_oos": (
+            float(np.mean(har_vals[fin] - tgt_vals[fin])) if fin.any() else float("nan")
+        ),
+        "pred_dates": [
+            d.strftime("%Y-%m-%d") for d, f in zip(target.index, fin) if f
+        ],
+        "pred_lstm": [float(x) for x in lstm_vals[fin]],
+        "pred_har": [float(x) for x in har_vals[fin]],
+        "pred_target": [float(x) for x in tgt_vals[fin]],
+    }
+
     return {
         "coin": coin,
         "horizon": horizon,
@@ -516,6 +552,7 @@ def evaluate_one_combo(
         "lstm_preds": len(lstm_fc),
         "har_preds": len(har_fc),
         **dm_info,
+        **persistence,
     }
 
 
