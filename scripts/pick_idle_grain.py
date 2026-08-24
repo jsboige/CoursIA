@@ -36,16 +36,38 @@ Trois urnes, parce que le pool n'est pas homogene
                   l'agent verifie firsthand (G.9) puis ferme avec preuve, ou
                   retire le label en disant pourquoi.
 
-Reparer son rouge AVANT de piocher (mandat user 2026-08-22)
-------------------------------------------------------------
+Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
+--------------------------------------------------------------------------
 Le picker **refuse de tirer** (sortie 2, aucun candidat rendu) tant que la
-lane porte une PR bloquee ouverte depuis plus de 24 h. La reparation d'une PR
-rouge n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser ni
-corriger a sa place, donc une lane qui pioche du neuf en laissant son rouge
+lane porte une PR a reprendre, ouverte depuis plus de 24 h. La reparation
+n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser, ni corriger,
+ni repondre a sa place -- une lane qui pioche du neuf en laissant sa PR
 derriere elle fabrique un residu que personne d'autre ne peut resorber.
-"Bloquee" se lit sur le champ GraphQL `isRequired` -- ce que la protection de
-branche exige vraiment -- et non sur "au moins un check rouge", qui rougissait
-52 PRs sur 55 le 2026-08-22 en comptant les advisories. Voir `red_backlog`.
+
+Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
+
+1. **check requis en echec** -- lu sur le champ GraphQL `isRequired`, ce que la
+   protection de branche exige vraiment, et non "au moins un check rouge", qui
+   rougissait 52 PRs sur 55 le 2026-08-22 en comptant les advisories ;
+2. **conflit avec main** ;
+3. **CHANGES_REQUESTED non leve** ;
+4. **point de review non leve** (mandat 2026-08-24 : "ne plus produire tant
+   qu'il leur reste des points a traiter dans leurs vieilles PRs, ca doit leur
+   etre propose en premier lieu"). Les trois premieres causes sont
+   structurellement aveugles aux trois surfaces ou vit la substance des reviews
+   sur ce depot : nits du user en issue comments (aucune entree dans
+   `reviews[]`), reserves d'Hermes en prefixe de body sous `state: COMMENTED`,
+   threads inline dans `reviewThreads`. Une PR peut etre verte, sans conflit,
+   sans CHANGES_REQUESTED -- et rester non mergeable. Cette cause est donc
+   **placee en tete** de la liste : c'est la seule qu'un `update-branch` ne
+   reparera jamais.
+
+La 4e cause n'est pas redetectee ici : elle **delegue** a
+`check_unaddressed_nits.analyse`, l'organe du merge-gate B.0. Un jeu de motifs
+ecrit une seconde fois sous-compterait en silence, et surtout : si les deux
+gardes divergeaient, une lane pourrait etre autorisee a produire du neuf sur
+une PR que le merge-gate refusera. Voir `red_backlog` et
+`unaddressed_review_points`.
 
 Usage
 -----
@@ -70,6 +92,7 @@ import datetime as dt
 import hashlib
 import json
 import math
+import pathlib
 import random
 import re
 import subprocess
@@ -496,14 +519,64 @@ def blocking_causes(state: dict) -> list[str]:
     return causes
 
 
+def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
+    """Points de review non leves, par PR. Delegue a l'organe du merge-gate B.0.
+
+    Mandat user 2026-08-24 : une lane ne produit plus tant qu'il lui reste des
+    points a traiter sur ses vieilles PRs, et ces points lui sont proposes EN
+    PREMIER a chaque cycle.
+
+    Pourquoi deleguer plutot que redetecter : les trois surfaces qui portent la
+    substance des reviews sur ce depot (nits du user en issue comments, reserves
+    d'Hermes en prefixe de body sous `state: COMMENTED`, threads inline dans
+    `reviewThreads`) sont invisibles a `reviews[].state`. Un jeu de motifs
+    ecrit ici sous-compterait en silence -- et un detecteur qui sous-compte rend
+    un chiffre plus petit et plus propre, sans jamais lever d'erreur. Le meme
+    organe sert donc le pre-merge et le pre-tirage : s'ils divergeaient, une
+    lane pourrait etre autorisee a tirer sur une PR que le merge-gate refuse.
+
+    Panne d'import ou de reseau : dictionnaire vide plutot qu'une exception. Le
+    garde ne doit jamais empecher un tirage pour une raison technique -- mais
+    l'appelant DIT que la surface n'a pas ete regardee (cf `nits_unavailable`).
+    """
+    if not numbers:
+        return {}
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
+
+    now = dt.datetime.now(dt.timezone.utc)
+    out: dict[int, int] = {}
+    for n in numbers:
+        try:
+            data = nits.gh_json(["pr", "view", str(n), "--repo", REPO,
+                                 "--json", nits.FIELDS])
+            result = nits.analyse(data, nits.review_threads(n), now)
+        except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
+            continue
+        if result.get("blocked"):
+            out[n] = len(result.get("blocking") or [])
+    return out
+
+
 def red_backlog(lane: str, threshold_hours: float,
                 count_threshold: int = RED_COUNT_DEFAULT) -> dict:
-    """PRs de la lane reellement bloquees, avec DEUX declencheurs de refus.
+    """PRs de la lane reellement bloquees, avec TROIS declencheurs de refus.
 
     `aged` : au moins une rouge ouverte depuis plus de `threshold_hours` --
     la queue longue, celle qui pourrit. `count` : au moins `count_threshold`
     rouges simultanees quel que soit leur age -- le tas, que le seul critere
-    d'age ne voyait pas (51/58 invisibles, mesure du 2026-08-23).
+    d'age ne voyait pas (51/58 invisibles, mesure du 2026-08-23). `nits` : au
+    moins un point de review non leve, quel que soit l'age et le nombre.
+
+    Le troisieme n'est pas un ajout de perimetre : il PRESERVE une semantique
+    qui existait avant. Le filtre d'age s'appliquait en amont, donc une PR
+    portant des points de review non leves n'entrait dans `red` que si elle
+    etait deja vieille. Retirer ce filtre pour le declencheur `count` ferait
+    tomber les PRs recentes a points non leves dans `red` sans qu'elles
+    declenchent quoi que ce soit -- un affaiblissement silencieux du mandat
+    user du 2026-08-24 (« les agents ne produisent plus tant qu'il leur reste
+    des points a traiter »). Le declencheur `nits` rend cette regle explicite
+    au lieu de la laisser dependre d'un filtre retire ailleurs.
 
     Rend aussi `unattributed_blocked` : les PRs bloquees dont le tag `Grain:`
     est illisible. Elles ne peuvent bloquer AUCUNE lane -- c'est la bonne
@@ -515,7 +588,8 @@ def red_backlog(lane: str, threshold_hours: float,
         prs = fetch_open_prs()
     except Exception as exc:  # noqa: BLE001 - le garde ne doit jamais bloquer sur une panne reseau
         return {"unavailable": f"{type(exc).__name__}", "red": [],
-                "triggers": [], "unattributed_blocked": []}
+                "triggers": [], "unattributed_blocked": [],
+                "nits_unavailable": None}
 
     mine, others = [], []
     for pr in prs:
@@ -528,12 +602,23 @@ def red_backlog(lane: str, threshold_hours: float,
         (mine if pr_lane == lane else others).append(pr)
 
     states = fetch_pr_states([pr["number"] for pr in mine])
+    try:
+        nits_by_pr = unaddressed_review_points([pr["number"] for pr in mine])
+        nits_unavailable = None
+    except Exception as exc:  # noqa: BLE001
+        nits_by_pr, nits_unavailable = {}, f"{type(exc).__name__}"
     red = []
     for pr in mine:
         state = states.get(pr["number"])
         if state is None:
             continue
         causes = blocking_causes(state)
+        n_nits = nits_by_pr.get(pr["number"], 0)
+        if n_nits:
+            # Un point de review non leve est une cause A PART ENTIERE : la PR
+            # peut etre verte et sans conflit et rester non mergeable (B.0).
+            causes.insert(0, f"{n_nits} point(s) de review non leve(s) -> repondre, "
+                             f"corriger en citant le commit, ou ouvrir une issue de suivi nommee")
         if causes:
             red.append({"number": pr["number"], "title": pr["title"],
                         "age_hours": round(_hours_since(pr["createdAt"])),
@@ -541,6 +626,10 @@ def red_backlog(lane: str, threshold_hours: float,
     red.sort(key=lambda r: -r["age_hours"])
 
     triggers = []
+    if any(nits_by_pr.get(r["number"]) for r in red):
+        # D'abord dans la liste : c'est l'ordre dans lequel le mandat du
+        # 2026-08-24 veut que la lane les traite.
+        triggers.append("nits")
     aged = [r for r in red if r["age_hours"] >= threshold_hours]
     if aged:
         triggers.append("aged")
@@ -559,29 +648,51 @@ def red_backlog(lane: str, threshold_hours: float,
     # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
     return {"red": red, "aged": aged, "triggers": triggers,
             "red_hours": threshold_hours, "red_count_threshold": count_threshold,
-            "unattributed_blocked": unattributed}
+            "unattributed_blocked": unattributed,
+            "nits_unavailable": nits_unavailable}
+
+
+def print_nits_gap(backlog: dict) -> None:
+    """Dire qu'une surface n'a pas ete regardee, plutot que la taire.
+
+    Sans cette ligne, une panne de l'organe rend le meme silence qu'une lane
+    sans point en souffrance : un zero de denominateur se lirait comme un zero
+    de numerateur, et la lane tirerait un grain neuf en croyant son ardoise
+    propre.
+    """
+    if not backlog.get("nits_unavailable"):
+        return
+    print(f"ATTENTION -- les points de review n'ont PAS pu etre lus "
+          f"({backlog['nits_unavailable']}).")
+    print("Ce tirage ne prouve donc pas que l'ardoise de la lane est propre.")
+    print("Verifier a la main : `python scripts/check_unaddressed_nits.py <N>`")
+    print("sur chaque PR ouverte de la lane avant de produire du neuf.")
+    print()
 
 
 def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
     triggers = backlog.get("triggers") or []
     aged = backlog.get("aged") or []
-    if "count" in triggers and "aged" in triggers:
-        motif = (f"porte {len(red)} PR(s) bloquee(s) simultanees "
-                 f"(seuil {backlog.get('red_count_threshold', RED_COUNT_DEFAULT)}), "
-                 f"dont {len(aged)} ouverte(s) depuis plus de {threshold_hours:g} h")
-    elif "count" in triggers:
-        motif = (f"porte {len(red)} PR(s) bloquee(s) simultanees -- seuil "
-                 f"{backlog.get('red_count_threshold', RED_COUNT_DEFAULT)}. "
-                 f"Le tas compte, meme quand chaque PR est recente")
-    else:
-        motif = (f"porte {len(aged)} PR(s) bloquee(s) ouverte(s) depuis plus de "
-                 f"{threshold_hours:g} h")
-    print(f"REFUS DE TIRAGE -- lane {lane} {motif}.")
+    n_nits = sum(1 for r in red
+                 if any("point(s) de review" in c for c in (r.get("causes") or [])))
+    motifs = []
+    if "nits" in triggers:
+        # En tete : c'est la seule cause qu'un `gh pr update-branch` ne levera
+        # jamais -- ce qui leve une remarque est une phrase, pas un SHA.
+        motifs.append(f"porte {n_nits} PR(s) a points de review non leves")
+    if "count" in triggers:
+        motifs.append(f"porte {len(red)} PR(s) bloquee(s) simultanees (seuil "
+                      f"{backlog.get('red_count_threshold', RED_COUNT_DEFAULT)})")
+    if "aged" in triggers:
+        motifs.append(f"porte {len(aged)} PR(s) bloquee(s) ouverte(s) depuis plus "
+                      f"de {threshold_hours:g} h")
+    print(f"REFUS DE TIRAGE -- lane {lane} " + ", ".join(motifs) + ".")
     print()
-    print("Reparer son propre rouge est la PREMIERE tache du cycle, avant tout")
+    print_nits_gap(backlog)
+    print("Reprendre ses propres PRs est la PREMIERE tache du cycle, avant tout")
     print("grain neuf : la PR ne peut etre reparee que par sa lane, le")
-    print("coordinateur ne peut ni rebaser ni corriger a sa place.")
+    print("coordinateur ne peut ni rebaser, ni corriger, ni repondre a sa place.")
     print()
     for item in red:
         print(f"  #{item['number']}  ouverte depuis {item['age_hours']} h  -- {item['title'][:66]}")
@@ -595,8 +706,10 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
     print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
     print("     est seule sur la branche.")
-    print("  3. corriger la substance, pousser, et REPONDRE au CHANGES_REQUESTED")
-    print("     par ecrit : un push muet ne leve aucune remarque.")
+    print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
+    print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
+    print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
+    print("     chaque point non leve, son auteur et sa surface.")
     print()
     if backlog.get("unattributed_blocked"):
         numbers = ", ".join(f"#{u['number']}" for u in backlog["unattributed_blocked"])
@@ -612,6 +725,13 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
 
 
 def main() -> int:
+    # Console Windows cp1252 : un titre d'issue portant un caractere hors table
+    # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
+    # le tirage entier. UTF-8 + replace : le titre s'affiche degrades, le
+    # tirage vit.
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", required=True, help="machine:workspace, ex. myia-po-2026:CoursIA")
@@ -643,6 +763,8 @@ def main() -> int:
         else:
             print_red_refusal(args.lane, backlog, args.red_hours)
         return 2
+    if not args.json:
+        print_nits_gap(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
