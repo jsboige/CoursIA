@@ -28,6 +28,9 @@ pandas==3.0.2
 scikit-learn==1.8.0
 matplotlib==3.10.9
 networkx==3.6.1
+# Diagnostics OLS (VIF, het_white) — pinnes pour 2.3-Regression-lineaire-logistique (#12659)
+statsmodels==0.14.6
+scipy==1.17.0
 
 # --- Utilitaire manifeste ---
 PyYAML==6.0.3

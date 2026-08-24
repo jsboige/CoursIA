@@ -1104,6 +1104,41 @@ class VerifyExecutor(Executor):
                              f"{_fx6b_err}"),
                 )
 
+        # #12658 — DEF_BODY_SORRY, defense-in-depth mirror of the FX-6b block
+        # above: a sorry that IS the body of a definition-genre declaration
+        # (def/abbrev/instance/structure/inductive/class, after its ':=')
+        # can never be honestly proved — filling it AUTHORS the definition's
+        # value (``def alexanderPolynomial _ := 1`` defines a false object).
+        # The success gates count a sorry-drop + build-pass as progress, and
+        # STMT_MUTATION_FALSE_SUCCESS cannot see this form (the statement is
+        # untouched); the provers.py entry refusal normally fires first —
+        # this covers direct workflow entries, same rationale as FX-6b.
+        try:
+            from .lean_utils import sorry_is_def_body as _def_body_check
+            _db_src = getattr(self._sorry_ctx, "full_file", "") or ""
+            if _db_src and _def_body_check(
+                    _db_src, self._sorry_ctx.sorry_line):
+                msg.error = (
+                    "DEF_BODY_SORRY: the target sorry IS the body of a "
+                    "definition (after its ':='); filling it is a design "
+                    "decision, not a proof (#12658)."
+                )
+                msg.error_type = "def_body_sorry"
+                if self._trace:
+                    self._trace.log(
+                        agent="VerifyExecutor", role="def_body_guard",
+                        content=msg.error,
+                    )
+                await ctx.yield_output(msg)
+                return
+        except Exception as _def_body_err:
+            if self._trace:
+                self._trace.log(
+                    agent="VerifyExecutor", role="def_body_guard_error",
+                    content=(f"def-body check failed, falling through: "
+                             f"{_def_body_err}"),
+                )
+
         # P1 latch-success (Epic #1453, 2026-05-23 forensic): detect the case
         # where TacticAgent has ALREADY proved the target in-place before this
         # verify runs. tools.file_replace_lines edits the REAL target file on
