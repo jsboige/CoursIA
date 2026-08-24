@@ -1949,6 +1949,33 @@ class TacticTools:
 
             indent = len(sorry_text) - len(sorry_text.lstrip())
 
+            # #12658 — DEF_BODY_SORRY edit guard: refuse to author a
+            # definition body. A sorry that IS the body of a
+            # def/abbrev/instance/structure/inductive/class cannot be
+            # "proved" — replacing it writes the definition's VALUE (a
+            # design act). The provers.py entry refusal normally catches
+            # this before any agent runs; this covers direct tool calls.
+            from .lean_utils import sorry_is_def_body as _is_def_body
+            if _is_def_body(content, sorry_line):
+                if self._trace:
+                    self._trace.log(
+                        agent="TacticTools", role="def_body_guard",
+                        content=(f"BLOCKED file_replace_sorry: line "
+                                 f"{sorry_line} is the body of a definition "
+                                 f"(after ':='). Filling it is a design "
+                                 f"decision, not a proof (#12658)."),
+                        duration_s=0.01,
+                    )
+                return json.dumps({
+                    "error": (f"BLOCKED by def-body guard: the sorry at line "
+                              f"{sorry_line} IS the body of a definition "
+                              f"(def/abbrev/instance/structure/inductive/"
+                              f"class, after its ':='). Filling a definition "
+                              f"body is a design decision, not a proof — a "
+                              f"human must decide what the object IS (#12658)."),
+                    "replaced": sorry_text.strip(),
+                }, ensure_ascii=False)
+
             # Preserve relative indentation: find min indent in replacement,
             # strip it, then re-base to the sorry line's indent level.
             raw_lines = replacement.rstrip().split("\n")

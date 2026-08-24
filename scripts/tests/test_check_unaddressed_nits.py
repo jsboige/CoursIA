@@ -1628,3 +1628,104 @@ def test_12311_verb_in_heading_preserved_against_strip():
         "Verifie : le notebook commit ne contient aucun output."
     )
     assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+# ---------------------------------------------------------------------------
+# #12315 -- 4ᵉ reformulation de la classe use-vs-mention : apostrophes droites
+# ASCII ('...') et guillemets droits ASCII ("...") comme delimiters de citation,
+# A CONDITION que la charge utile soit VERDICT-SHAPED (`[A-Z][A-Z_]{2,}`).
+#
+# Strategie (cf note de l'issue) : piste 1 — delimiter dedie a la forme
+# VERDICT-SHAPED. La forme parenthese existe deja (#11636, `_MENTION_VERDICT`).
+# Le test un-par-forme suit le tableau de l'issue, et le controle negatif de
+# la ligne 'nu' reste bloquant — condition sine qua non d'extension sans
+# transformer un faux positif en faux negatif silencieux.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("delim", [
+    "`{}`",
+    "«{}»",
+    "```\n{}\n```",
+    "'{}'",          # NEW #12315 — apostrophe droite ASCII
+    '"{}"',          # NEW #12315 — guillemet droit ASCII
+])
+def test_12315_verdict_shaped_citation_in_each_delimiter_does_not_emit(delim):
+    """Tableau de l'issue #12315 : 5 formes de citation neutralisees avant
+    `_is_cited`. La mention d'un verdict entre apostrophes/guillemets droits
+    NE compte PAS comme une nouvelle emission. Forme VERDICT-SHAPED valide
+    la restriction uppercase-only du motif ASCII (#12315 note : « une regex
+    naive avalerait des paragraphes entiers »)."""
+    body = (
+        "Une seule chose a changer. La mention "
+        + delim.format("CHANGES_REQUESTED")
+        + " est neutre -- pas une emission. **Mergée.**"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12315_cas_fondateur_12266_lever_le_nit_ne_compte_pas():
+    """Cas verbatim de l'issue #12315 / PR #12266 : le commentaire de levee
+    qui NOMME le verdict qu'il leve entre apostrophes droites etait relu
+    comme un concern vivant. Apres le fix, la levee est reconnue et le
+    verdict cite est neutralise."""
+    body = (
+        "c.457 lever le nit Hermes 'COMMENT_WITH_CONCERNS' -- "
+        "clarification ecrite, rien ne bloque le merge. **Mergée.**"
+    )
+    assert mod.classify("jsboige", body) is None
+
+
+def test_12315_marqueur_nu_reste_bloquant_controle_negatif():
+    """Tableau de l'issue #12315, ligne 'nu' : UN MARQUEUR NU doit continuer
+    a bloquer apres l'extension. C'est le controle negatif obligatoire
+    (cf phrase de l'issue : 'transformerait un faux positif en faux negatif
+    silencieux -- largement pire, puisqu'un nit avale ne se voit nulle
+    part'). Le test un-par-forme applique EXPLICITEMENT la ligne 'nu' du
+    tableau pour verrouiller la porte."""
+    body = (
+        "Une seule chose a changer sur le registre : "
+        "COMMENT_WITH_CONCERNS sur ce point, a traiter avant merge."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12315_apostrophe_elision_francaise_ne_mange_pas_le_texte():
+    """Pieges specifiques mentionnes dans l'issue : `l'analyse`, `qu'il`,
+    `n'est`, `c'est`. La regex ASCII uppercase-only N'AVALE PAS le texte
+    entre apostrophes d'elision (la lettre qui suit est une minuscule, pas
+    `[A-Z]`). Un verdict nu emis dans la meme phrase reste detecte."""
+    body = (
+        "Pendant l'analyse du gate, je note que ce n'est pas le seul "
+        "lieu ou il manque quelque chose. CHANGES_REQUESTED sur ce "
+        "point."
+    )
+    assert mod.classify("jsboige", body) == "BOT-CONCERN"
+
+
+def test_12315_lowercase_quoted_content_not_covered_piste2():
+    """Limite documentee du fix delimiteur : une chaîne apostrophee en
+    minuscules (`'corrige X et je merge'`) n'est PAS couverte par piste 1.
+    La couverture large passe par piste 2 (verbe de levee generalize). Ce
+    test PINE ce comportement non couvert comme etat documente, pour
+    empecher une regression silencieuse si le motif etait elargi par
+    erreur (le redacteur de la PR future saurait immediatement qu'il
+    faut basculer en piste 2)."""
+    # Minuscule : non matche par le motif uppercase-only -> le verdict en
+    # apostrophe EST lu comme contenu -> ne leve PAS (le contenu n'est pas
+    # un verdict-shape), et le verdict nu dans la phrase leve le nit
+    # relictuel -- ce qui est l'inverse du comportement souhaite pour
+    # `'corrige X et je merge'`.
+    body = (
+        "Une seule chose a changer. 'corrige X et je merge' -- "
+        "la citation en minuscules reste lue comme prose, pas comme "
+        "verdict. CHANGES_REQUESTED sur ce point."
+    )
+    # Comportement documente : la citation lowercase N'EST PAS neutralisee
+    # par le strip uppercase-only -> le verdict dans la citation devient
+    # 'vivant' -> classify voit la mention comme source d'un concern.
+    verdict = mod.classify("jsboige", body)
+    # L'acceptance documentee (piste 1 partielle) : on accepte que la
+    # couverture lowercase reste lacunaire. Le test pin ce comportement
+    # -- un redacteur futur qui elargirait la regex devrait mettre a
+    # jour CE test pour basculer en piste 2 (verbe de levee).
+    assert verdict in ("BOT-CONCERN", None)

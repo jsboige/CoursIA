@@ -3,7 +3,7 @@
   ==========================
 
   Chemins de swaps sur les jeux 2×2 ordinaux : compagnon formel du
-  notebook `GameTheory-3c-Chemins-de-Swaps.ipynb` (grain #12222).
+  notebook `GameTheory-03a-Chemins-de-Swaps.ipynb` (grain #12222).
 
   Le module substantiel vit dans `Swaps/Basic.lean` : type `Table`,
   les six générateurs adjacents (`Etape`), l'application d'un chemin

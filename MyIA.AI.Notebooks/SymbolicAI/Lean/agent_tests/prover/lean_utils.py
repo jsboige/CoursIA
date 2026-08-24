@@ -287,6 +287,105 @@ def sorry_is_in_statement(content: str, sorry_line: int) -> bool:
     return False
 
 
+# #12658 — DEF_BODY_SORRY: a sorry that IS the body of a definition-genre
+# declaration. ``_DECL_START_RE`` above does not capture the genre keyword;
+# this twin regex does, so the predicate can gate on def/abbrev/instance/
+# structure/inductive/class while leaving theorem/lemma/example bodies alone.
+_DECL_GENRE_RE = re.compile(
+    r"^\s*(?:@\[[^\]]*\]\s*)?"
+    r"(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+)*"
+    r"(theorem|lemma|def|instance|example|abbrev|structure|inductive|"
+    r"class|opaque)\b"
+)
+
+_DEF_BODY_GENRES = frozenset(
+    {"def", "abbrev", "instance", "structure", "inductive", "class"})
+
+# Proof-local binders whose own ':=' can appear inside a def's body. A sorry
+# governed by one of these is a sub-goal obligation (its type is given), not
+# the definition's value: ``have h : P := by sorry`` must be spared.
+_PROOF_BINDER_RE = re.compile(
+    r"^\s*(?:@\[[^\]]*\]\s*)?"
+    r"(?:private\s+|protected\s+|noncomputable\s+)*"
+    r"(?:have|let|show|suffices|obtain)\b"
+)
+
+
+def sorry_is_def_body(content: str, sorry_line: int) -> bool:
+    """True when the sorry at ``sorry_line`` is the BODY of a definition-genre
+    declaration — def/abbrev/instance/structure/inductive/class — i.e. sits
+    AFTER that declaration's ``:=`` (#12658).
+
+    Filling such a hole is an act of DESIGN, not a proof: the body of
+    ``def alexanderPolynomial (k : Knot) : AlexanderPoly := sorry`` IS the
+    definition of the polynomial — replacing sorry with ``1`` does not prove
+    anything, it silently DEFINES a different (false) object (the trefoil
+    Delta function is t^2 - t + 1, not 1). No prover run can honestly close
+    it: what a definition says belongs to a human.
+
+    Body-form mirror of ``sorry_is_in_statement`` (FX-6b, #1453), which
+    covers the statement side. Theorem/lemma/example bodies remain
+    legitimate proof obligations.
+
+    Deliberately conservative (never blocks a legitimate run):
+    - sorry only inside a comment on the target line → False
+    - no enclosing declaration found → False
+    - enclosing genre is theorem/lemma/example/opaque → False
+    - sorry BEFORE the ':=' (in the type/statement) → False (FX-6b domain)
+    - no ':=' in the declaration (match-syntax ``| pat =>`` bodies) → False
+      (same accepted residual as FX-6b; none in the repo)
+    - the ':=' governing the sorry belongs to a proof binder
+      (have/let/show/suffices/obtain — ``have h := by sorry`` inside a
+      def's proof) → False (a sub-goal, a real obligation)
+    - residual: a multi-line binder header whose ':=' lands on a
+      continuation line (``have h :\\n  P := by\\n    sorry``) reads as a
+      def-body catch; accepted false-positive, documented, none in the repo
+
+    ``--`` line comments ARE stripped per-line before the structural scan.
+    """
+    content = _require_str("content", content, allow_empty=True)
+    lines = content.split("\n")
+    if not (1 <= sorry_line <= len(lines)):
+        return False
+
+    def _code(line: str) -> str:
+        return line.split("--", 1)[0]
+
+    m_sorry = _SORRY_TOKEN_RE.search(_code(lines[sorry_line - 1]))
+    if m_sorry is None:
+        return False
+
+    decl_idx = None
+    genre = None
+    for i in range(sorry_line - 1, -1, -1):
+        m_decl = _DECL_GENRE_RE.match(_code(lines[i]))
+        if m_decl:
+            decl_idx = i
+            genre = m_decl.group(1)
+            break
+    if decl_idx is None or genre not in _DEF_BODY_GENRES:
+        return False
+
+    # Same line: a ':=' before the sorry governs it. One-liner definition
+    # (``def f : T := sorry``) catches; a binder line (``have h := sorry``)
+    # spares; a sorry BEFORE the ':=' is the statement side → FX-6b domain.
+    same = _code(lines[sorry_line - 1]).find(":=")
+    if same >= 0:
+        if m_sorry.start() > same:
+            return not _PROOF_BINDER_RE.match(_code(lines[sorry_line - 1]))
+        return False
+
+    # Below the header: the nearest ':=' at-or-above governs (bounded by the
+    # declaration start). Binder line → sub-goal, spare. Anything else —
+    # including a multi-line definition header — is the definition's own
+    # ':=': the sorry is its body.
+    for j in range(sorry_line - 2, decl_idx - 1, -1):
+        code_j = _code(lines[j])
+        if ":=" in code_j:
+            return not _PROOF_BINDER_RE.match(code_j)
+    return False  # no ':=' in the declaration (match syntax) → not body
+
+
 # FX-5 (#1453) — TRUE_PLACEHOLDER_GOAL: refuse a sorry whose goal is the
 # trivial Prop `True`. Such a goal is never a legitimate proof obligation
 # (True is provable by `trivial` with zero content), so stubbing it with sorry
