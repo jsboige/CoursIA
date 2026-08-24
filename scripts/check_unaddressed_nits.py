@@ -232,7 +232,31 @@ EXPLICIT_LIFT_MARKERS = (
 # parseur qui ne doit pas lire ses propres exemples. La construction
 # conditionnelle EMPLOYEE (« corrige la ligne 19 et je merge ») reste bloquante
 # (#11201) : elle ne porte aucun de ces delimiteurs.
-_QUOTED_RANGES = re.compile(r"```.*?```|«.*?»|`[^`]*`", re.DOTALL)
+#
+# #12315 — 4ᵉ reformulation de la même classe use-vs-mention, délimiteurs ASCII
+# (apostrophe droite `'…'`, guillemet droit `"…"`). Cas fondateur #12266 :
+# `c.457 lever le nit Hermes 'COMMENT_WITH_CONCERNS' -- clarification ecrite` —
+# le verdict entre apostrophes droites ASCII était relu comme une mention nouvelle
+# et le nit restait bloquant. On etend `_QUOTED_RANGES` A CONDITION que la charge
+# utile soit VERDICT-SHAPED (`[A-Z][A-Z_]{2,}` minimum, sans whitespace ni
+# délimiteur interne) — c'est la forme d'un nom de verdict, jamais celle d'une
+# apostrophe d'élision française (`l'analyse`, `qu'il`, `n'est`, `c'est`,
+# precedees d'une minuscule et suivies d'une minuscule ou d'un espace). Cette
+# restriction discrimine naturellement les deux classes SANS risquer le piège
+# de la regex naïve `'[^']*'` (le commentaire pointe : "Une regex naïve
+# avalerait tout le texte entre deux apostrophes d'élision — potentiellement des
+# paragraphes entiers").
+#
+# Portée et limite volontaire : on NE COUVRE PAS les chaînes apostrophees en
+# minuscules (`'corrige X et je merge'`). La couverture plus large passe par
+# piste 2 (généraliser par le verbe de levée plutôt que par le délimiteur, cf
+# note de l'issue #12315) — le présent ticket ferme l'incident fondateur
+# verbatim par delimiteur, et le test un-par-forme pin chaque cas pour ne pas
+# régresser en silence.
+_QUOTED_RANGES = re.compile(
+    r"```.*?```|«.*?»|`[^`]*`|'[A-Z][A-Z_]{2,}'|\"[A-Z][A-Z_]{2,}\"",
+    re.DOTALL,
+)
 
 
 def _strip_quoted(body: str) -> str:

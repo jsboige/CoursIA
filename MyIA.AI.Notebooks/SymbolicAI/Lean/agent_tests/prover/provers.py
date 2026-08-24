@@ -25,8 +25,8 @@ from .decomposition_regression import (
 from .lean_utils import (
     extract_sorry_block, get_goal_state, verify_sorry_replacement,
     extract_hypotheses, extract_local_lemmas, build_def_type_warnings,
-    is_honest_sorry, sorry_is_in_statement, count_real_sorries,
-    is_true_placeholder_goal,
+    is_honest_sorry, sorry_is_in_statement, sorry_is_def_body,
+    count_real_sorries, is_true_placeholder_goal,
 )
 from .tools import SearchTools, TacticTools, CriticTools, CoordinatorTools, DiagnosisTools
 from .agents import (
@@ -215,6 +215,50 @@ def _refuse_in_statement_sorry(filepath: str, sorry_line: int,
         "success": False,
         "skipped": True,
         "reason": "in_statement_sorry",
+        "detail": msg,
+        "demo": demo_name,
+        "sorry_line": sorry_line,
+        "filepath": filepath,
+    }
+
+
+def _refuse_def_body_sorry(filepath: str, sorry_line: int,
+                           demo_name: str) -> Optional[dict]:
+    """Return an early-fail result dict if the target sorry is the BODY of
+    a definition-genre declaration.
+
+    #12658: a sorry after the ':=' of a def/abbrev/instance/structure/
+    inductive/class IS the definition's value — filling it is an act of
+    DESIGN, not a proof. ``def alexanderPolynomial (k : Knot) := sorry``
+    replaced by ``1`` does not prove anything: it silently DEFINES a false
+    object (the trefoil Delta function is t^2 - t + 1). Six live targets
+    (Conway.lean alexanderPolynomial / IsSmoothlySlice / IsTopologicallySlice,
+    FR + EN siblings) are exactly this shape. The downstream
+    STMT_MUTATION_FALSE_SUCCESS guard cannot see it: the file builds, the
+    sorry count drops, no statement was rewritten — a def body was authored.
+    Refusing at entry (before the FX-5 probe compile, unlike FX-5 itself a
+    pure string scan) saves the whole run. Mirrors
+    ``_refuse_in_statement_sorry``. Returns None when the file is unreadable
+    (the run proceeds; downstream guards still apply).
+    """
+    try:
+        content = Path(filepath).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if not sorry_is_def_body(content, sorry_line):
+        return None
+    msg = (
+        f"REFUSED: sorry at {filepath}:{sorry_line} is the BODY of a "
+        f"definition (def/abbrev/instance/structure/inductive/class, after "
+        f"its ':='). Filling a definition body is a design decision, not a "
+        f"proof — a human must decide what the object IS, not the prover. "
+        f"(#12658; body-form mirror of FX-6b)"
+    )
+    print(f"\n{'!'*70}\n{msg}\n{'!'*70}\n")
+    return {
+        "success": False,
+        "skipped": True,
+        "reason": "def_body_sorry",
         "detail": msg,
         "demo": demo_name,
         "sorry_line": sorry_line,
@@ -567,6 +611,13 @@ class MultiAgentSorryProver:
         in_stmt = _refuse_in_statement_sorry(filepath, sorry_line, demo["name"])
         if in_stmt is not None:
             return in_stmt
+
+        # #12658: refuse a sorry that IS the body of a definition-genre
+        # declaration — filling a def body is a design act, not a proof.
+        # Pure string scan: fires before the FX-5 probe compile below.
+        def_body = _refuse_def_body_sorry(filepath, sorry_line, demo["name"])
+        if def_body is not None:
+            return def_body
 
         # FX-5 (#1453): refuse a sorry whose goal is the trivial Prop `True`
         # — a degenerate/placeholder goal the TacticAgent loops on ("task
@@ -1380,6 +1431,13 @@ class AutonomousProver:
         in_stmt = _refuse_in_statement_sorry(filepath, sorry_line, demo["name"])
         if in_stmt is not None:
             return in_stmt
+
+        # #12658: refuse a sorry that IS the body of a definition-genre
+        # declaration — filling a def body is a design act, not a proof.
+        # Pure string scan: fires before the FX-5 probe compile below.
+        def_body = _refuse_def_body_sorry(filepath, sorry_line, demo["name"])
+        if def_body is not None:
+            return def_body
 
         # FX-5 (#1453): refuse a sorry whose goal is the trivial Prop `True`
         # — a degenerate/placeholder goal the TacticAgent loops on ("task

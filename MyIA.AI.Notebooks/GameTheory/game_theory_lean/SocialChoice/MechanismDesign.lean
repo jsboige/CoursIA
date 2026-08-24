@@ -210,4 +210,148 @@ theorem vcg_revenue_non_monotone : revenue3 < revenue2 := by decide
 
 end VCGCombinatorial
 
+/-! ## Manipulation-optimal mechanisms : Proposition 6 d'Othman-Sandholm (SAGT 2009) -/
+
+namespace OthmanSandholmProp6
+
+/- Construction de la Proposition 6 (« Better with Byzantine », SAGT 2009, page 8) :
+   il existe des strict MOM multi-agents avec objectif de bien-être social.
+
+   Deux agents (row, column), deux types chacun (a, a'), quatre issues o1..o4.
+   Le mécanisme mappe le profil de rapports (row, column) vers :
+     (a', a') -> o1 ; (a', a) -> o2 ; (a, a') -> o3 ; (a, a) -> o4.
+   (Dans le papier, row = ligne, column = colonne.)
+
+   Matrices de gains de la page 8, recopiées littéralement — gains du type a
+   à gauche, du type a' à droite (chaque cellule = (row, column)) :
+
+     Rapport   a'      a            Rapport   a'      a
+     a'      1,1     4,0            a'      3,4     5,0
+     a       0,3     3,0            a       0,6     0,0
+            type a                      type a'
+
+   Vue par issue (page 9 du papier, urow puis ucolumn pour chaque type) :
+
+     Issue   u_row(a)  u_row(a')  u_col(a)  u_col(a')
+     o1         1         3         1         4
+     o2         4         5         0         0
+     o3         0         0         3         6
+     o4         3         0         0         0
+
+   Ce sont exactement les valeurs du notebook GameTheory-16 §4.6.1 (u_row/u_col). -/
+
+/-- `T` = types possibles d'un agent : `aa` (type a) ou `ap` (type a'). -/
+inductive T | aa | ap
+deriving DecidableEq
+
+/-- `O` = les quatre issues du mécanisme. -/
+inductive O | o1 | o2 | o3 | o4
+deriving DecidableEq
+
+/-- Gain de l'agent row selon l'issue et son vrai type (valeurs page 8, type a à gauche, a' à droite). -/
+def uRow : O → T → ℕ
+  | .o1, .aa => 1  | .o1, .ap => 3
+  | .o2, .aa => 4  | .o2, .ap => 5
+  | .o3, .aa => 0  | .o3, .ap => 0
+  | .o4, .aa => 3  | .o4, .ap => 0
+
+/-- Gain de l'agent column selon l'issue et son vrai type (valeurs page 8). -/
+def uCol : O → T → ℕ
+  | .o1, .aa => 1  | .o1, .ap => 4
+  | .o2, .aa => 0  | .o2, .ap => 0
+  | .o3, .aa => 3  | .o3, .ap => 6
+  | .o4, .aa => 0  | .o4, .ap => 0
+
+/-- Le mécanisme original : mappe le profil de rapports vers une issue
+    (a',a')→o1, (a',a)→o2, (a,a')→o3, (a,a)→o4 — table page 8. -/
+def mech : T → T → O
+  | .ap, .ap => .o1
+  | .ap, .aa => .o2
+  | .aa, .ap => .o3
+  | .aa, .aa => .o4
+
+/-- Bien-être social d'une issue sous un profil de vrais types (somme des gains). -/
+def sw (o : O) (tr tc : T) : ℕ := uRow o tr + uCol o tc
+
+/-- Bien-être social produit par le mécanisme sous un profil de rapports. -/
+def swMech (rr rc : T) (tr tc : T) : ℕ := sw (mech rr rc) tr tc
+
+/-- `M₁`, le « boxed truthful mechanism » du papier : par le principe de
+    révélation (rapporter a' est strictement dominant), M₁ choisit toujours o1. -/
+def M1 : T → T → O := fun _ _ => .o1
+
+/-! ### Caractéristique 1 : a' est strictement dominant ; M₁ est truthful -/
+
+/-- Rapporter a' est strictement dominant pour l'agent row, quel que soit son
+    vrai type, le rapport de l'autre, et pour les deux mécanismes (mech et M₁) —
+    calculé ici sur `mech` : pour chaque (vrai type, rapport column), le gain de
+    rapporter a' dépasse strictement celui de rapporter a. -/
+theorem report_ap_strictly_dominant_row (tr : T) (rc : T) :
+    uRow (mech .ap rc) tr > uRow (mech .aa rc) tr := by
+  cases tr <;> cases rc <;> decide
+
+/-- Rapporter a' est strictement dominant pour l'agent column (symétrie). -/
+theorem report_ap_strictly_dominant_col (tc : T) (rr : T) :
+    uCol (mech rr .ap) tc > uCol (mech rr .aa) tc := by
+  cases tc <;> cases rr <;> decide
+
+/-! ### Caractéristique 2 : le bien-être social est strictement supérieur
+    dès qu'un agent de type a joue a -/
+
+/-- Caractéristique 2 (forme stricte) : si l'agent row (de vrai type a) joue a
+    au lieu de a', le bien-être social est strictement plus élevé que celui de
+    M₁ (o1), quel que soit le vrai type de l'agent column. -/
+theorem char2_row_plays_a (tc : T) :
+    swMech .aa .ap .aa tc > sw .o1 .aa tc := by
+  cases tc <;> decide
+
+/-- Caractéristique 2 (forme stricte) : si l'agent column (de vrai type a)
+    joue a au lieu de a', le bien-être social est strictement plus élevé que
+    celui de M₁, quel que soit le vrai type de l'agent row. -/
+theorem char2_col_plays_a (tr : T) :
+    swMech .ap .aa tr .aa > sw .o1 tr .aa := by
+  cases tr <;> decide
+
+/-! ### La table SW du papier (page 9) -/
+
+/-- La table de bien-être social de la page 9 : SW(o1,o2,o3,o4) pour chaque
+    profil de vrais types. Chaque ligne est un théorème vérifié par decide. -/
+theorem sw_table_aa_aa : [sw .o1 .aa .aa, sw .o2 .aa .aa, sw .o3 .aa .aa, sw .o4 .aa .aa] = [2, 4, 3, 3] := by decide
+theorem sw_table_aa_ap : [sw .o1 .aa .ap, sw .o2 .aa .ap, sw .o3 .aa .ap, sw .o4 .aa .ap] = [5, 4, 6, 3] := by decide
+theorem sw_table_ap_aa : [sw .o1 .ap .aa, sw .o2 .ap .aa, sw .o3 .ap .aa, sw .o4 .ap .aa] = [4, 5, 3, 0] := by decide
+theorem sw_table_ap_ap : [sw .o1 .ap .ap, sw .o2 .ap .ap, sw .o3 .ap .ap, sw .o4 .ap .ap] = [7, 5, 6, 0] := by decide
+
+/-! ### Proposition 6, caractéristique 2 + dominance stricte (caractéristique 1 non formalisée) -/
+
+/-- **Proposition 6 (Othman-Sandholm 2009)** — sur ce domaine fini : la
+    caractéristique 2 est formalisée ici — dès qu'un agent de type a dévie
+    et joue a, le bien-être social dépasse strictement celui de M₁ qui
+    choisit o1. La caractéristique 1 (M₁ Pareto-undominated parmi les
+    mécanismes truthful, argument `M_D` page 9) n'est **pas** formalisée
+    ici ; `o1_optimal_at_ap_ap` en est le premier appui : o1 est optimal
+    pour le profil (a', a'). Une formalisation complète de la caractéristique
+    1 reste un grain propre et borné pour un cycle suivant. -/
+theorem prop6_strict_mom :
+    (∀ tr rc, uRow (mech .ap rc) tr > uRow (mech .aa rc) tr)
+    ∧ (∀ tc rr, uCol (mech rr .ap) tc > uCol (mech rr .aa) tc)
+    ∧ (∀ tc, swMech .aa .ap .aa tc > sw .o1 .aa tc)
+    ∧ (∀ tr, swMech .ap .aa tr .aa > sw .o1 tr .aa) := by
+  constructor <;> [ exact report_ap_strictly_dominant_row
+                  ; constructor <;> [ exact report_ap_strictly_dominant_col
+                                    ; constructor <;> [ exact char2_row_plays_a
+                                                      ; exact char2_col_plays_a ] ] ]
+
+/-- M₁ choisit toujours o1 : sa table de bien-être est la colonne o1 de la
+    table SW. -/
+theorem M1_is_sw_o1 (tr tc : T) : sw (M1 tr tc) tr tc = sw .o1 tr tc := by
+  cases tr <;> cases tc <;> decide
+
+/-- o1 est optimal pour le profil (a', a') — c'est pourquoi M_D(a',a') = o1
+    dans l'argument de Pareto-indominabilité (page 9). -/
+theorem o1_optimal_at_ap_ap (o : O) : sw .o1 .ap .ap ≥ sw o .ap .ap := by
+  cases o <;> decide
+
+end OthmanSandholmProp6
+
+
 end SocialChoice

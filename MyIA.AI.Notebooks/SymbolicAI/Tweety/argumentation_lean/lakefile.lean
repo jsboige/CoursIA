@@ -35,4 +35,4 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Argumentation» where
-  globs := #[.submodules `Argumentation]
+  globs := #[.one `Argumentation, .submodules `Argumentation]

@@ -144,4 +144,50 @@ theorem descent_target_before_ceiling
   ⟨hnostall _ hterm,
    Nat.lt_of_le_of_lt (descent_flips_le_barrier hstrict s₀ rest B hbarrier hL) hceiling⟩
 
+/-! ## Decay failure — the defect as a dissociation
+
+The chantier thesis (operation 11, "descend under budget"): a **decay
+failure** — an accepted flip that does not strictly decrease the cost — is not
+an experiment failure to discard, it is a **dissociation** to record: the object
+that makes the strict-decay hypothesis pay. Rather than a numeric residual (Loi I
+of the chantier: "the residual is not the witness"), we make it first-class — an
+extractable witness inside a run. -/
+
+/-- **Decay-failure witness** in a run: a pair of consecutive states whose flip
+is accepted but does not strictly decrease the cost. `here` carries the defect
+at the run boundary, `later` delegates it to the tail; a run may carry several
+witnesses (this is an existence). -/
+inductive DescentFailure (accept : σ → σ → Prop) (cost : σ → Nat) : List σ → Prop
+  | here (s u : σ) (rest : List σ) (hA : accept s u) (hc : ¬ cost u < cost s) :
+      DescentFailure accept cost (s :: u :: rest)
+  | later (s u : σ) (rest : List σ)
+      (hf : DescentFailure accept cost (u :: rest)) :
+      DescentFailure accept cost (s :: u :: rest)
+
+/-- **Strict decay ⇒ no witness.** If every accepted flip strictly decreases
+the cost, then a run of accepted states (`Run`) carries no decay failure: strict
+descent is exactly the negation of the witness. -/
+theorem run_strictdescent_excludes_failure
+    (hstrict : ∀ s t, accept s t → cost t < cost s)
+    {L : List σ} (hL : Run accept L) : ¬ DescentFailure accept cost L := by
+  induction hL with
+  | nil => intro hf; cases hf
+  | single => intro hf; cases hf
+  | cons s u rest _ _ ih =>
+    intro hf
+    cases hf with
+    | here _ _ _ hA hc => exact absurd (hstrict s u hA) hc
+    | later _ _ _ htl => exact ih htl
+
+/-- **A witness makes the hypothesis pay.** If a run carries a decay failure,
+the global strict-decay property is false: the witness is the object that
+demonstrates the violation, not a vague experiment failure. -/
+theorem failure_witness_denies_global_strict
+    {L : List σ} (hw : DescentFailure accept cost L) :
+    ¬ (∀ s t, accept s t → cost t < cost s) := by
+  intro hstrict
+  induction hw with
+  | here s u _ hA hc => exact absurd (hstrict s u hA) hc
+  | later _ _ _ htl ih => exact ih
+
 end Mimo_en

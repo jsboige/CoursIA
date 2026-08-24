@@ -762,7 +762,7 @@ Intelligence Artificielle -- V
 # Pour aller plus loin : Notebooks
 
 - **Introduction** : `GameTheory/GameTheory-1b-Intro.ipynb`
-- **Équilibre de Nash** : `GameTheory/GameTheory-3b-Nash.ipynb`, `GameTheory-4b-Nash-Computation.ipynb`
+- **Équilibre de Nash** : `GameTheory/GameTheory-04-NashEquilibrium.ipynb`, `GameTheory-04c-NashExistence.ipynb`
 - **Jeux Bayesiens** : `GameTheory/GameTheory-5b-Bayesian-Games.ipynb`
 - **Mecanismes** : `GameTheory/GameTheory-7b-Mechanism-Design.ipynb`, `GameTheory-8b-Auctions.ipynb`
 - **Jeux differentiels** : `GameTheory/GameTheory-13b-Differential-Games.ipynb`

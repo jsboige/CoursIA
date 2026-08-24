@@ -26,9 +26,10 @@ Série progressive sur le fine-tuning des modèles de langue : des bases LoRA à
 FineTuning/
 ├── FT-01-Introduction-FineTuning.ipynb   # LoRA, full vs partial vs PEFT
 ├── FT-02-QLoRA-Quantization.ipynb        # Quantization 4-bit (NF4) + LoRA
-├── FT-03-Supervised-FineTuning-SFT.ipynb # Instruction-following, format chat
+├── FT-03-Supervised-FineTuning-SFT.ipynb # SFT : contrat de format, Qwen3.5-0.8B
 ├── FT-04-RLHF-DPO.ipynb                  # Alignement préférences, DPO
-└── FT-05-ModelMerging-Routing.ipynb      # Fusion d'adaptateurs, routage MoE
+├── FT-05-ModelMerging-Routing.ipynb      # Fusion d'adaptateurs, routage MoE
+└── FT-06-Vision-Language-LoRA.ipynb      # LoRA vision-langage, tâche image->texte
 ```
 
 ## Progression pédagogique
@@ -37,9 +38,10 @@ FineTuning/
 |----------|-------|-----------|-------|--------|
 | [FT-01](FT-01-Introduction-FineTuning.ipynb) | Fine-tuning complet, partiel, LoRA | Bases LLMs | ~30 min | Débutant |
 | [FT-02](FT-02-QLoRA-Quantization.ipynb) | Quantization NF4, QLoRA, bitsandbytes | FT-01 | ~30 min | Intermédiaire |
-| [FT-03](FT-03-Supervised-FineTuning-SFT.ipynb) | Base model vs Instruct model, format ChatML | FT-01 | ~45 min | Intermédiaire |
+| [FT-03](FT-03-Supervised-FineTuning-SFT.ipynb) | SFT sur Qwen3.5-0.8B : enseigner un contrat de format balisé | FT-01 | ~45 min | Intermédiaire |
 | [FT-04](FT-04-RLHF-DPO.ipynb) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
 | [FT-05](FT-05-ModelMerging-Routing.ipynb) | TIES, DARE, MergeKit, routage MoE | FT-01 à FT-04 | ~45 min | Avancé |
+| [FT-06](FT-06-Vision-Language-LoRA.ipynb) | LoRA vision-langage Qwen3.5-0.8B, conformité image->texte | FT-02, FT-03 | ~45 min | Avancé |
 
 ## Technologies couvertes
 
@@ -52,7 +54,7 @@ FineTuning/
 
 ### Modèles utilisés
 - **Petits modèles** (FT-01) : DistilBERT, TinyLlama
-- **Modèles 1-3B** (FT-02, FT-03) : Phi-3, Llama-3.2
+- **Modèles 1-3B** (FT-02) : Phi-3, Llama-3.2 · **Qwen3.5-0.8B** (FT-03, aligné sur la série PostTraining)
 - **Modèles 7B+** (FT-04, FT-05) : Mistral-7B, Llama-2-7B (avec QLoRA)
 
 ## Prérequis
@@ -71,6 +73,7 @@ pip install mergekit  # Pour FT-05 uniquement
 | FT-03 | 8 GB | 16 GB |
 | FT-04 | 12 GB (DPO 2 modèles en mémoire) | 24 GB |
 | FT-05 | 16 GB (merge) | 24 GB |
+| FT-06 | 8 GB (QLoRA 4-bit) | 12 GB |
 
 ## Concepts clés
 

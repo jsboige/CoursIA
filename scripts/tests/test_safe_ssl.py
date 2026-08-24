@@ -48,16 +48,18 @@ def test_is_patched_initially_false():
 def test_install_returns_bool():
     """install retourne un booleen (True ou False selon plateforme)."""
     result = safe_ssl.install_safe_windows_store()
-    if not hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        assert result is False
-    else:
+    # `_load_windows_store_certs` existe sur TOUTES les plateformes CPython
+    # (no-op hors Windows) : la branche se decide par `sys.platform`, pas `hasattr`.
+    if sys.platform.startswith("win"):
         assert result is True
+    else:
+        assert result is False
 
 
 def test_install_is_idempotent():
     """Deux install() consecutifs ne doublent pas le patch."""
-    if not hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        pytest.skip("not on Windows — _load_windows_store_certs absent")
+    if not sys.platform.startswith("win"):
+        pytest.skip("not on Windows — safe_ssl no-op")
     first = safe_ssl.install_safe_windows_store()
     second = safe_ssl.install_safe_windows_store()
     assert first is True
@@ -70,8 +72,8 @@ def test_install_is_idempotent():
 
 def test_disable_restores_original():
     """disable retire le wrapper et restaure la version d'origine."""
-    if not hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        pytest.skip("not on Windows — _load_windows_store_certs absent")
+    if not sys.platform.startswith("win"):
+        pytest.skip("not on Windows — safe_ssl no-op")
     safe_ssl.install_safe_windows_store()
     assert safe_ssl.is_patched() is True
     removed = safe_ssl.disable_safe_windows_store()
@@ -84,8 +86,8 @@ def test_disable_restores_original():
 
 def test_force_raise_catches_sslerror():
     """force_raise simule un store malforme, et le wrapper retourne []."""
-    if not hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        pytest.skip("not on Windows — _load_windows_store_certs absent")
+    if not sys.platform.startswith("win"):
+        pytest.skip("not on Windows — safe_ssl no-op")
     safe_ssl.install_safe_windows_store()
     safe_ssl.force_raise(True)
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -96,8 +98,8 @@ def test_force_raise_catches_sslerror():
 
 def test_force_raise_off_does_not_swallow_real_errors():
     """Sans force_raise, le wrapper ne masque pas les autres exceptions."""
-    if not hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        pytest.skip("not on Windows — _load_windows_store_certs absent")
+    if not sys.platform.startswith("win"):
+        pytest.skip("not on Windows — safe_ssl no-op")
     safe_ssl.install_safe_windows_store()
     # Avec force_raise=False, le wrapper appelle l'original.
     # Si l'original leve TypeError (args invalides), le wrapper doit laisser passer.
@@ -109,8 +111,8 @@ def test_force_raise_off_does_not_swallow_real_errors():
 
 def test_disable_after_force_raise_resets_state():
     """disable apres force_raise doit remettre a plat les deux flags."""
-    if not hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        pytest.skip("not on Windows — _load_windows_store_certs absent")
+    if not sys.platform.startswith("win"):
+        pytest.skip("not on Windows — safe_ssl no-op")
     safe_ssl.install_safe_windows_store()
     safe_ssl.force_raise(True)
     safe_ssl.disable_safe_windows_store()
@@ -135,8 +137,10 @@ def test_module_docstring_preserved():
 
 def test_no_op_on_non_windows():
     """Sur Linux/Mac, install() retourne False sans alterer ssl.SSLContext."""
-    if hasattr(ssl.SSLContext, "_load_windows_store_certs"):
-        pytest.skip("Windows — _load_windows_store_certs existe")
+    # `_load_windows_store_certs` existe sur TOUTES les plateformes CPython
+    # (no-op hors Windows), donc le skip se base sur `sys.platform`, pas `hasattr`.
+    if sys.platform.startswith("win"):
+        pytest.skip("Windows — store de certificats natif actif")
     # Pas de plateforme Windows : on documente le no-op.
     result = safe_ssl.install_safe_windows_store()
     assert result is False
