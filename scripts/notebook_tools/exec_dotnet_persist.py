@@ -7,6 +7,19 @@ import time
 import base64
 from pathlib import Path
 
+from _papermill_meta import strip_stale_papermill_metadata
+
+
+def _save_executed(nb: dict, path: Path) -> None:
+    """Ecrit le notebook execute en retirant un bloc papermill perime (#12722).
+
+    Fonction separee pour etre testable sans kernel .NET : c'est le point
+    d'ecriture de cet executeur, le strip doit y vivre.
+    """
+    strip_stale_papermill_metadata(nb)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(nb, f, indent=1, ensure_ascii=False)
+
 
 def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
     """Execute a .NET notebook cell-by-cell and write outputs back."""
@@ -162,8 +175,7 @@ def execute_and_persist(notebook_path: str, timeout_per_cell: int = 120):
     kc.stop_channels()
     km.shutdown_kernel(now=True)
 
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(nb, f, indent=1, ensure_ascii=False)
+    _save_executed(nb, path)
 
     print(f"  Done: {executed} cells executed, {errors} errors, saved to {path.name}")
     return executed, errors
