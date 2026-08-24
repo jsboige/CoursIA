@@ -30,6 +30,16 @@ baseline, vacuous scan). `--update-baseline` re-seeds the file (deterministic:
 sorted paths, sorted kinds) -- run it in the SAME commit as a scanner rule
 change, else every subsequent PR shows false drift.
 
+PR-scoping (#12735): `--pr-diff <file>` restricts both the scan target and the
+drift report to the notebooks modified by the PR (paths listed one per line,
+typically `git diff -M --name-only origin/main...HEAD`). This stops the
+constant-on-every-PR drift that pre-dated the fix: when a notebook is renamed
+elsewhere in the repo, an unscoped scan reads the new path against the old
+baseline key and emits a spurious regression. Path lists outside the repo are
+treated as forward slashes; non-notebook paths in the list are ignored at
+scan time. When `--pr-diff` is supplied WITHOUT any positional `paths`, the
+list itself supplies them.
+
 An EMPTY scan is never reported as a clean scan: no argument, a mistyped path,
 or a directory holding no notebook exits 2 with a message on stderr instead of
 printing `0/0 notebooks flagged`. This scanner has already been fooled once by
@@ -339,6 +349,32 @@ def load_baseline(path):
     return notebooks
 
 
+def load_pr_diff_paths(path):
+    """Read a `git diff -M --name-only` style file -> set of repo-root POSIX keys.
+
+    Normalises backslashes to slashes and strips the leading './' if present.
+    The returned set is matched against `notebook_key()` outputs (which are
+    also POSIX-relative to the repo root), so a path written by `git diff
+    --name-only` round-trips without further normalisation.
+
+    Empty lines and pure whitespace are skipped. A missing file raises; the
+    caller decides whether `--pr-diff` was optional.
+    """
+    p = pathlib.Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"--pr-diff file not found: {path}")
+    out = set()
+    for raw_line in p.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        line = line.replace('\\', '/')
+        if line.startswith('./'):
+            line = line[2:]
+        out.add(line)
+    return out
+
+
 def write_baseline(path, counts):
     """Serialize counts deterministically (sorted paths, sorted kinds)."""
     payload = {
@@ -377,6 +413,16 @@ def main(argv=None):
                         help='(re)seed the baseline from the current scan '
                              'instead of diffing -- SAME commit as any scanner '
                              'rule change, else every PR shows false drift')
+    parser.add_argument('--pr-diff', default=None, metavar='PATH_FILE',
+                        help='restrict the scan (and the drift report) to '
+                             'notebooks modified by the PR -- a file listing '
+                             'one path per line, typically the output of '
+                             '`git diff -M --name-only origin/main...HEAD` '
+                             '(see #12735). When supplied WITHOUT positional '
+                             'paths, the list itself supplies them. '
+                             'In drift mode: regressions/improvements outside '
+                             'the list are NOT printed (the baseline still '
+                             'participates so renames upstream do not bleed).')
     args = parser.parse_args(argv)
 
     try:
@@ -387,6 +433,36 @@ def main(argv=None):
     if args.baseline is not None and not (args.diff or args.update_baseline):
         parser.error('--baseline requires --diff or --update-baseline')
     drift = args.diff or args.update_baseline
+
+    # PR-scoping (#12735): when `--pr-diff` is given, restrict BOTH the scan
+    # target and the drift report to the files modified by the PR. A path is
+    # considered "in scope" if it appears in the diff list (POSIX-relative to
+    # repo root) AND ends in `.ipynb`. Other paths in the diff (Markdown,
+    # scripts, ...) are acknowledged but ignored here -- this scanner only
+    # cares about notebooks. Empty diff = vacuous; do NOT collapse to "clean".
+    pr_diff_paths = None
+    if args.pr_diff is not None:
+        try:
+            pr_diff_paths = load_pr_diff_paths(args.pr_diff)
+        except (OSError, ValueError) as e:
+            print(f'ERROR: unreadable --pr-diff file {args.pr_diff}: {e}',
+                  file=sys.stderr)
+            return 1
+        nb_in_pr = {p for p in pr_diff_paths if p.endswith('.ipynb')}
+        if not nb_in_pr:
+            print(f'ERROR: --pr-diff {args.pr_diff} contains no .ipynb paths '
+                  '-- nothing to scan, this is NOT an all-clear.',
+                  file=sys.stderr)
+            return 1
+        before = len(notebooks)
+        notebooks = [nb for nb in notebooks
+                     if notebook_key(nb) in nb_in_pr]
+        if not notebooks:
+            print(f'ERROR: --pr-diff restricts the scan to {len(nb_in_pr)} '
+                  f'notebook(s) but the positional `paths` resolved to none '
+                  f'of them ({before} candidate(s) outside the PR).',
+                  file=sys.stderr)
+            return 1
 
     if drift:
         # Diff mode re-scans through compute_counts (same filters as census).
@@ -411,6 +487,14 @@ def main(argv=None):
                   file=sys.stderr)
             return 1
         regressions, improvements = diff_against_baseline(counts, baseline)
+        if pr_diff_paths is not None:
+            # Keep ONLY the deltas that touch files modified by this PR.
+            # Baselines may still have stale keys (e.g. renamed notebooks) --
+            # those don't print here because no PR actually introduces them.
+            regressions = [(p, k, d) for p, k, d in regressions
+                           if p in pr_diff_paths]
+            improvements = [(p, k, d) for p, k, d in improvements
+                            if p in pr_diff_paths]
         for path, kind, delta in regressions:
             print(f'  +{delta} {kind}  {path}')
         for path, kind, delta in improvements:
