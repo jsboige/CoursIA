@@ -21,6 +21,11 @@
  */
 import { test, type Page, type Locator } from '@playwright/test';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// ESM : pas de __dirname natif (le projet capture/ est "type": "module").
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const URL = process.env.DEMO_OWUI_URL;
 const EMAIL = process.env.DEMO_OWUI_EMAIL;
