@@ -12,6 +12,7 @@ Run: python -m pytest scripts/tests/test_check_lane_claim.py
 """
 import fnmatch
 import json
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -5050,7 +5051,6 @@ def test_run_check_disjoint_joker_caller_clear(capsys):
     )
 
 
-
 # --- CLAIMED-AMEND recognised as replacing-open (#13022) ----------------------
 # Measured on #11703: po-2027's `[CLAIMED-AMEND] ... -- paths: <8 globs>` (union
 # of two scopes, 2026-08-25T22:36Z) was a no-op for `_MARKER_RE` -- the organ
@@ -5251,3 +5251,46 @@ def test_main_repeated_paths_genuinely_disjoint_clear(tmp_path, capsys):
     assert rc == 0
     assert summary["blocking_lanes"] == []
     assert summary["blocked"] is False
+
+
+# --- #12811 : gh/git émettent de l'UTF-8, l'encodage doit être épinglé --------
+
+
+def test_gh_calls_pin_utf8_regression_12811(monkeypatch):
+    """#12811 -- sans `encoding=` épinglé, `text=True` décode avec le locale de
+    l'OS. Sous Windows c'est cp1252, dont les positions non définies
+    (0x81/0x8D/0x8F/0x90/0x9D) lèvent UnicodeDecodeError sur la prose ICT
+    ordinaire (reproduit en direct sur l'issue #5635, Python 3.13 : erreur de
+    décodage dans le reader thread -> proc.stdout None -> json.loads(None)
+    TypeError, garde morte). Le faux ci-dessous décode en cp1252 chaque fois
+    que le site d'appel N'épingle PAS d'encodage -- simulation déterministe du
+    défaut Windows, indépendante du locale de la machine qui exécute les
+    tests."""
+    bad_char = "͏"  # COMBINING GRAPHEME JOINER : UTF-8 = CD 8F
+    # ensure_ascii=False : gh émet le JSON avec les caractères non-ASCII en
+    # clair (pas d'échappement \uXXXX) -- c'est ce qui met les octets bruts
+    # dans le flux et déclenche le décodage cp1252.
+    issue_raw = json.dumps({
+        "number": 5635,
+        "title": "t " + bad_char,
+        "labels": [],
+        "comments": [],
+    }, ensure_ascii=False).encode("utf-8")
+    prlist_raw = json.dumps([
+        {"number": 1, "title": "x " + bad_char, "headRefName": "b",
+         "body": "", "files": []},
+    ], ensure_ascii=False).encode("utf-8")
+    # garde-fou du fixture : le byte qui tue cp1252 est bien dans les payloads
+    assert b"\x8f" in issue_raw and b"\x8f" in prlist_raw
+
+    def fake_run(cmd, **kwargs):
+        raw = prlist_raw if "list" in cmd else issue_raw
+        enc = kwargs.get("encoding") or "cp1252"  # défaut Windows, simulé
+        decoded = raw.decode(enc, kwargs.get("errors") or "strict")
+        return subprocess.CompletedProcess(cmd, 0, stdout=decoded, stderr="")
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    issue_payload = clc._gh_issue_comments("5635")
+    assert issue_payload["title"].endswith(bad_char)
+    prs = clc._gh_open_prs_with_files()
+    assert prs[0]["title"].endswith(bad_char)
