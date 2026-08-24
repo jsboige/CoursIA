@@ -108,6 +108,24 @@ def test_execute_qcpy_docker_save_executed_strips_stale_block(tmp_path):
 
 # --- executeurs kernel generiques : subprocess reel sur kernel python3 ---------
 
+def _python3_kernel_available() -> bool:
+    """Le runner CI n'enregistre pas de kernelspec python3 : le subprocess
+    reel echouerait sur NoSuchKernel avant meme de toucher au code teste
+    (incident #12724, run 32681713419). On skippe l'integration, les tests
+    d'ecriture unitaires ci-dessus couvrent le cablage du strip."""
+    try:
+        from jupyter_client.kernelspec import KernelSpecManager
+        return "python3" in KernelSpecManager().find_kernel_specs()
+    except Exception:
+        return False
+
+
+requires_python3_kernel = pytest.mark.skipif(
+    not _python3_kernel_available(),
+    reason="kernel python3 non enregistre sur ce runner (NoSuchKernel)",
+)
+
+
 def _run_subprocess(script: str, args: list, tmp_path: Path):
     p = _write_fake_nb(tmp_path / "nb.ipynb")
     r = subprocess.run(
@@ -119,11 +137,13 @@ def _run_subprocess(script: str, args: list, tmp_path: Path):
         f"{script} reecrit le notebook sans retirer le bloc papermill perime")
 
 
+@requires_python3_kernel
 def test_dotnet_executor_subprocess_strips_stale_block(tmp_path):
     _run_subprocess("dotnet_executor.py", ["--kernel", "python3",
                                            "--timeout", "60"], tmp_path)
 
 
+@requires_python3_kernel
 def test_exec_single_cell_subprocess_strips_stale_block(tmp_path):
     _run_subprocess("exec_single_cell.py", ["--index", "0",
                                             "--timeout", "60"], tmp_path)
