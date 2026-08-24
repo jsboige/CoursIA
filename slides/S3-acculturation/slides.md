@@ -642,13 +642,14 @@ layout: default
 <img src="./images/img_040.png" class="w-[200px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 </div>
 ---
-layout: two-cols
----
 
 
 
 # Logique du premier ordre (FOL)
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 - Modélise
   - Objets, Propriétés
@@ -660,8 +661,8 @@ layout: two-cols
   - de base de données
 
 
-::right::
-
+</div>
+<div>
 
 **Exemple: investigation**
 
@@ -672,8 +673,8 @@ layout: two-cols
 
 <img src="./images/img_040.png" class="w-[300px] max-w-full max-h-[300px] object-contain" alt="Réseau sémantique : Mammals, Persons, Mary, John reliés par liens d'héritage et propriétés" />
 
-
-
+</div>
+</div>
 ---
 layout: two-cols
 ---
@@ -867,13 +868,14 @@ layout: section
 
 
 ---
-layout: two-cols
----
 
 
 
 # Agir dans l'incertitude
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Le monde est incertain**
 
@@ -887,8 +889,8 @@ layout: two-cols
   - Inférence incomplète
 
 
-::right::
-
+</div>
+<div>
 
 **Agent fondé sur l'utilité**
 
@@ -899,17 +901,19 @@ layout: two-cols
 
 <img src="./images/img_051.png" class="w-[350px] max-w-full max-h-[300px] object-contain" alt="Nuage de points en croix sur un repère f(x) en fonction de x (données à ajuster)" />
 
+</div>
+</div>
 
 
-
----
-layout: two-cols
 ---
 
 
 
 # Probabilité
 
+
+<div class="grid grid-cols-2 gap-5 -mt-2">
+<div>
 
 **Fondements**
 
@@ -923,8 +927,8 @@ layout: two-cols
 - P(Cause | Effet) = P(Effet | Cause) x P(Cause) / P(Effet)
 
 
-::right::
-
+</div>
+<div>
 
 **Programmation probabiliste**
 
@@ -940,8 +944,8 @@ layout: two-cols
 <img src="./images/img_054.png" class="w-[180px] max-w-full max-h-[300px] object-contain" alt="Courbe gaussienne centrée en 0, largeur σ (distribution normale)" />
 
 </div>
-
-
+</div>
+</div>
 
 ---
 layout: two-cols
