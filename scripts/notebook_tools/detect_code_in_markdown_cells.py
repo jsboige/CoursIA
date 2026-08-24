@@ -114,6 +114,19 @@ def _is_assignment(line: str) -> bool:
     # Skip walrus / equality / annotation-only (no value)
     if rhs.startswith("=") or not rhs:
         return False
+    # Lexical pass kept as the upstream gate (scope unchanged); the AST pass
+    # only adjudicates candidates the regex already retained — prose citing a
+    # parameter twice (`n_est=200 obtient le meilleur...`) parses as a Compare,
+    # not an Assign, and falls through (#12620).
+    import ast as _ast
+    try:
+        tree = _ast.parse(line.strip(), mode="exec")
+    except SyntaxError:
+        return False
+    if len(tree.body) != 1 or not isinstance(
+        tree.body[0], (_ast.Assign, _ast.AnnAssign)
+    ):
+        return False
     return True
 
 
@@ -184,10 +197,36 @@ def _scan_papermill_param(
     return None
 
 
+_FENCE_RE = re.compile(r"^ {0,3}(?:`{3,}|~{3,})")
+
+
+def _strip_fenced_blocks(lines: list[str]) -> list[str]:
+    """Blank out CommonMark fenced code blocks, preserving line numbering.
+
+    A fenced block in a markdown cell *renders as code* and never executes:
+    it is the legitimate way to quote an anti-pattern, another language, or
+    an excerpt of a source module. The scanners below target code that
+    renders as PROSE, so fenced regions must not reach them -- see the module
+    docstring, which already states the contract ("un-fenced"). Blank lines
+    are substituted rather than dropped so reported line numbers keep pointing
+    at the real cell offset, and so consecutive-assignment runs break at the
+    fence. An unclosed fence runs to the end of the cell, per CommonMark.
+    """
+    out: list[str] = []
+    inside = False
+    for line in lines:
+        if _FENCE_RE.match(line):
+            inside = not inside
+            out.append("\n")
+            continue
+        out.append("\n" if inside else line)
+    return out
+
+
 def scan_cell(cell: dict[str, Any], cell_index: int) -> list[dict[str, Any]]:
     if not _is_markdown_cell(cell):
         return []
-    lines = _source_lines(cell)
+    lines = _strip_fenced_blocks(_source_lines(cell))
     if not lines:
         return []
     tags = _cell_metadata_tags(cell)
@@ -286,6 +325,29 @@ def _selfcheck() -> int:
         # Negative : code cell — scanner does not visit
         {"cell_type": "code", "source": ["x = 1\n", "print(x)\n"],
          "metadata": {}},
+        # Negative : FENCED python block — renders as code, never executes.
+        # Control whose absence let 225 fenced findings ship as "baseline"
+        # (2026-08-23) : the module contract above already says "un-fenced".
+        {"cell_type": "markdown",
+         "source": ["Anti-pattern a NE PAS reproduire :\n",
+                    "```python\n",
+                    "critere = Job.duree_seconeds > 100\n",
+                    "liste = Job.select().where(critere)\n",
+                    "```\n"],
+         "metadata": {}},
+        # Negative : FENCED non-Python block (Lean) quoting a source module
+        {"cell_type": "markdown",
+         "source": ["Les trois predicats :\n",
+                    "```lean\n",
+                    "def isStillLife (g : Grid) : Bool := step g == g\n",
+                    "```\n"],
+         "metadata": {}},
+        # Positive : the SAME content UN-fenced is still flagged — proves the
+        # fence strip narrowed the surface without disabling the scanners.
+        {"cell_type": "markdown",
+         "source": ["critere = Job.duree_seconeds > 100\n",
+                    "liste = Job.select().where(critere)\n"],
+         "metadata": {}},
     ]
     expected_rules = {
         0: set(),
@@ -295,6 +357,9 @@ def _selfcheck() -> int:
             "markdown_cell_with_papermill_param"},
         4: {"markdown_cell_with_python_signature"},
         5: set(),
+        6: set(),
+        7: set(),
+        8: {"markdown_cell_with_python_assignment"},
     }
     failures: list[str] = []
     for i, cell in enumerate(cells):
