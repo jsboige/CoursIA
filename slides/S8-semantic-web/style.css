@@ -1,0 +1,87 @@
+/* S8-semantic-web — tenir dans le cadre 980x552.
+ *
+ * Mesuré au rendu headless (scan_slidev_composition, 28 slides) :
+ * 13 slides hors canvas. Deux familles : blocs de code Turtle/SPARQL
+ * trop hauts (PRE 600-712px, slides SW-2b/SW-3/SW-4/SW-8), et listes
+ * denses sous H2 empilés (SW-1, RDFS, etc.).
+ *
+ * Correctif pattern #11536 (S3) : compression typographique verticale
+ * + compression des blocs de code + utilitaire .dense-list. Aucun
+ * contenu n'est retiré.
+ */
+
+/* 1. Titres : récupérer l'espace vertical des marges. */
+.slidev-layout h1 {
+  margin-bottom: 0.35em;
+}
+.slidev-layout h2 {
+  margin-top: 0.45em;
+  margin-bottom: 0.2em;
+}
+
+/* 2. Listes et paragraphes : interligne resserré. */
+.slidev-layout li {
+  line-height: 1.3;
+  margin: 0.1em 0;
+}
+.slidev-layout p {
+  margin: 0.35em 0;
+}
+.slidev-layout blockquote {
+  margin: 0.4em 0;
+  padding: 0.2em 0.8em;
+  font-size: 0.85em;
+  line-height: 1.2;
+}
+.slidev-layout blockquote p {
+  margin: 0.1em 0;
+  line-height: 1.2;
+}
+
+/* 3. Blocs de code : compression verticale (pattern deck 02). */
+.slidev-layout pre {
+  font-size: 0.64em !important;
+  line-height: 1.2 !important;
+  margin: 0.4em 0;
+  padding: 0.5em 0.8em;
+}
+.slidev-layout pre code,
+.slidev-layout pre span {
+  line-height: 1.2 !important;
+}
+
+/* 4. Utilitaire densité maximale : <div class="dense-list">. */
+.slidev-layout .dense-list ul,
+.slidev-layout .dense-list ol {
+  font-size: 0.82em;
+  line-height: 1.22;
+}
+.slidev-layout .dense-list li {
+  margin: 0.02em 0;
+}
+.slidev-layout .dense-list h2 {
+  margin-top: 0.15em;
+}
+.slidev-layout .dense-list p {
+  margin: 0.2em 0;
+  font-size: 0.85em;
+  line-height: 1.2;
+}
+.slidev-layout .dense-list pre {
+  font-size: 0.58em;
+  line-height: 1.2;
+  padding: 0.3em 0.6em;
+}
+.slidev-layout .dense-list blockquote {
+  font-size: 0.86em;
+  line-height: 1.1;
+  margin: 0.15em 0;
+  padding: 0.1em 0.5em;
+}
+.slidev-layout .dense-list table {
+  font-size: 0.78em;
+}
+.slidev-layout .dense-list table th,
+.slidev-layout .dense-list table td {
+  padding: 0.1em 0.4em;
+}
