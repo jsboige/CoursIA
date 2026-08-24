@@ -61,12 +61,13 @@ Variables attendues (voir [`.env.example`](.env.example)) :
 
 ## Exécution
 
-Depuis la racine du projet Playwright de la série QA (qui fournit déjà
-`@playwright/test`) :
+Depuis **ce dossier** (`capture/` est un projet Playwright autonome — le spec
+vit hors du `testDir` de la série QA, signe lui-même et résout ici son
+instance unique de `@playwright/test`) :
 
 ```bash
-# charge le .env puis lance uniquement le script de capture
-npx playwright test 00-Tour-Plateforme/capture/tour-captures.spec.ts
+npm ci          # première fois seulement
+npx playwright test
 ```
 
 Les images sont écrites dans [`../assets/`](../assets/). **Vérifiez chaque image
