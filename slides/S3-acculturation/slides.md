@@ -1435,6 +1435,7 @@ layout: two-cols
 
 <div class="img-grid-2x2 absolute top-[130px] right-[20px] w-[400px]">
 <img src="./images/img_094.png" class="max-h-[300px] max-w-full object-contain" alt="Opération de convolution : volume d'entrée 7x7x3 et noyau 3x3x3 glissant sur la matrice" />
+<img src="./images/img_095.png" class="max-h-[300px] max-w-full object-contain" alt="Architecture CNN historique : couches « Simple cells » (convolutions multiples) et « Complex cells » (sous-échantillonnage par pooling)" />
 <img src="./images/img_096.png" class="max-h-[300px] max-w-full object-contain" alt="Transfert learning : photo de voiture, extracteur de caractéristiques, caractéristiques de haut niveau, classifieur entraînable" />
 <img src="./images/img_097.png" class="max-h-[300px] max-w-full object-contain" alt="RNN déroulé : cellule A récurrente, entrées x0 à xt, sorties h0 à ht" />
 </div>
