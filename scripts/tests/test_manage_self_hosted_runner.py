@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ast
+import collections
 import hashlib
 import importlib.util
 import io
@@ -98,6 +100,21 @@ def write_registry(path: Path, base_root: str, **overrides) -> None:
 
 def PureWindows(path: Path) -> str:
     return "C:\\" + "\\".join(path.parts[-3:])
+
+
+def test_manager_has_no_duplicate_top_level_definitions():
+    tree = ast.parse(MODULE_PATH.read_text(encoding="utf-8"))
+    names = [
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+    ]
+    duplicates = {
+        name: count
+        for name, count in collections.Counter(names).items()
+        if count > 1
+    }
+    assert duplicates == {}
 
 
 def test_committed_profiles_are_valid_and_distributed_across_pushers():

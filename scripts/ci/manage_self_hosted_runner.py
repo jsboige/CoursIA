@@ -484,32 +484,6 @@ if ($remaining.Count -ne 0) {{ throw 'Runner service still exists after deletion
 """
 
 
-def _teardown_service_script(profile: Profile) -> str:
-    values = json.dumps({"root": str(profile.root)})
-    return f"""
-$ErrorActionPreference = 'Stop'
-$c = ConvertFrom-Json @'
-{values}
-'@
-$root = [IO.Path]::GetFullPath($c.root).TrimEnd('\\')
-$owned = @(Get-CimInstance Win32_Service | Where-Object {{
-  $path = ([string]$_.PathName).Trim().Trim('"')
-  $path.StartsWith($root + '\\', [StringComparison]::OrdinalIgnoreCase)
-}})
-if ($owned.Count -gt 1) {{ throw 'Multiple services point inside the runner root.' }}
-foreach ($service in $owned) {{
-  if ($service.State -ne 'Stopped') {{ Stop-Service -Name $service.Name -Force -ErrorAction Stop }}
-  & sc.exe delete $service.Name | Out-Null
-  if ($LASTEXITCODE -ne 0) {{ throw "sc.exe delete failed with exit $LASTEXITCODE" }}
-}}
-$remaining = @(Get-CimInstance Win32_Service | Where-Object {{
-  $path = ([string]$_.PathName).Trim().Trim('"')
-  $path.StartsWith($root + '\\', [StringComparison]::OrdinalIgnoreCase)
-}})
-if ($remaining.Count -ne 0) {{ throw 'Runner service still exists after deletion.' }}
-"""
-
-
 def _default_download(url: str, target: Path) -> None:
     request = urllib.request.Request(url, headers={"User-Agent": "CoursIA-runner-manager/1"})
     with urllib.request.urlopen(request, timeout=120) as response, target.open("wb") as output:
