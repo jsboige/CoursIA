@@ -28,6 +28,11 @@ EXIT_BROKEN = 2
 
 REQUIRED_GROUP = "coursia-ephemeral"
 REQUIRED_LABELS = {"self-hosted", "coursia-ephemeral"}
+GITHUB_HOSTED_PREFIXES = ("ubuntu-", "windows-", "macos-")
+SAME_REPO_REUSABLE_PREFIXES = (
+    "./.github/workflows/",
+    "jsboige/CoursIA/.github/workflows/",
+)
 SAME_REPO_GUARD = (
     "github.event.pull_request.head.repo.full_name == github.repository"
 )
@@ -100,23 +105,39 @@ def _contains_expression(value: Any) -> bool:
     return False
 
 
+def _is_github_hosted_label(label: str) -> bool:
+    lowered = label.lower()
+    return lowered.startswith(GITHUB_HOSTED_PREFIXES)
+
+
 def _runner_selection(runs_on: Any) -> tuple[bool, str | None, set[str]]:
-    """Return (is_self_hosted, group, labels) for a static selection."""
+    """Return (is_self_hosted, group, labels) for a static selection.
+
+    Any explicit runner group is self-hosted. A scalar/list label is considered
+    GitHub-hosted only when every value names a documented hosted-image family;
+    custom labels route to self-hosted runners even when the implicit
+    ``self-hosted`` label is omitted from the workflow.
+    """
     if isinstance(runs_on, str):
-        return runs_on == "self-hosted", None, {runs_on}
+        labels = {runs_on.lower()}
+        return not _is_github_hosted_label(runs_on), None, labels
     if isinstance(runs_on, list):
-        labels = {str(item) for item in runs_on}
-        return "self-hosted" in labels, None, labels
+        labels = {str(item).lower() for item in runs_on}
+        is_self_hosted = any(not _is_github_hosted_label(item) for item in labels)
+        return is_self_hosted, None, labels
     if isinstance(runs_on, dict):
         group = runs_on.get("group")
         raw_labels = runs_on.get("labels", [])
         if isinstance(raw_labels, str):
-            labels = {raw_labels}
+            labels = {raw_labels.lower()}
         elif isinstance(raw_labels, list):
-            labels = {str(item) for item in raw_labels}
+            labels = {str(item).lower() for item in raw_labels}
         else:
             labels = set()
-        return "self-hosted" in labels, str(group) if group is not None else None, labels
+        is_self_hosted = group is not None or any(
+            not _is_github_hosted_label(item) for item in labels
+        )
+        return is_self_hosted, str(group) if group is not None else None, labels
     return False, None, set()
 
 
@@ -164,9 +185,19 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
             if not isinstance(job, dict):
                 broken.append(f"{path.name}:{job_name}: job is not a mapping")
                 continue
-            if "uses" in job:
-                continue
             jobs_scanned += 1
+
+            if "uses" in job:
+                reusable = str(job["uses"])
+                if not reusable.startswith(SAME_REPO_REUSABLE_PREFIXES):
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "REMOTE_REUSABLE_WORKFLOW",
+                        "reusable workflow must be pinned to jsboige/CoursIA or local",
+                    ))
+                continue
+
             runs_on = job.get("runs-on")
             if runs_on is None:
                 broken.append(f"{path.name}:{job_name}: missing runs-on")
@@ -192,6 +223,20 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     str(job_name),
                     "PULL_REQUEST_TARGET",
                     "pull_request_target must never reach a self-hosted runner",
+                ))
+            if "workflow_run" in triggers:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "WORKFLOW_RUN",
+                    "workflow_run artifacts must never reach a self-hosted runner",
+                ))
+            if "workflow_call" in triggers:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "REUSABLE_SELF_HOSTED",
+                    "self-hosted jobs must not hide inside reusable workflows",
                 ))
 
             if group != REQUIRED_GROUP:

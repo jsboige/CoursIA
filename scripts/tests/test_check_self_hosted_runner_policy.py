@@ -94,6 +94,52 @@ def test_self_hosted_list_without_group_is_rejected(tmp_path):
     assert "RUNNER_GROUP" in codes(policy.scan_workflows(tmp_path))
 
 
+def test_custom_label_without_self_hosted_token_is_still_self_hosted(tmp_path):
+    write_workflow(tmp_path, "custom", """
+        name: custom
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: coursia-ephemeral
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.self_hosted_jobs == 1
+    assert {"RUNNER_GROUP", "RUNNER_LABELS"} == codes(result)
+
+
+def test_group_selection_is_self_hosted_even_without_labels(tmp_path):
+    write_workflow(tmp_path, "group", """
+        name: group
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on:
+              group: coursia-ephemeral
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.self_hosted_jobs == 1
+    assert codes(result) == {"RUNNER_LABELS"}
+
+
+def test_self_hosted_label_is_case_insensitive(tmp_path):
+    write_workflow(tmp_path, "case", """
+        name: case
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [Self-Hosted, coursia-ephemeral]
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.self_hosted_jobs == 1
+    assert "RUNNER_GROUP" in codes(result)
+
+
 def test_wrong_group_and_missing_label_are_both_named(tmp_path):
     write_workflow(tmp_path, "unsafe", """
         name: unsafe
@@ -190,6 +236,64 @@ def test_pull_request_target_is_always_rejected(tmp_path):
               - run: echo unsafe
         """)
     assert "PULL_REQUEST_TARGET" in codes(policy.scan_workflows(tmp_path))
+
+
+def test_workflow_call_cannot_hide_self_hosted_job(tmp_path):
+    write_workflow(tmp_path, "callee", """
+        name: callee
+        on: workflow_call
+        jobs:
+          test:
+            runs-on:
+              group: coursia-ephemeral
+              labels: [self-hosted, coursia-ephemeral]
+            steps:
+              - run: echo hidden
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert "REUSABLE_SELF_HOSTED" in codes(result)
+
+
+def test_workflow_run_cannot_reach_self_hosted_job(tmp_path):
+    write_workflow(tmp_path, "artifact", """
+        name: artifact
+        on:
+          workflow_run:
+            workflows: [Build]
+            types: [completed]
+        jobs:
+          test:
+            runs-on:
+              group: coursia-ephemeral
+              labels: [self-hosted, coursia-ephemeral]
+            steps:
+              - run: echo artifact
+        """)
+    assert "WORKFLOW_RUN" in codes(policy.scan_workflows(tmp_path))
+
+
+def test_external_reusable_workflow_is_rejected(tmp_path):
+    write_workflow(tmp_path, "caller", """
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: attacker/repo/.github/workflows/run.yml@main
+        """)
+    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
+
+
+def test_same_repository_reusable_workflow_remains_auditable(tmp_path):
+    write_workflow(tmp_path, "caller", """
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: ./.github/workflows/callee.yml
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
 
 
 def test_invalid_yaml_breaks_the_instrument(tmp_path):
