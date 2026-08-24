@@ -105,6 +105,54 @@ non biaisé.
 - **Notebook** : section 8 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
 - **Verdict §C (jambe de précision)** : **3/3 BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
 
+### M4 DLinear-vol — re-run §C dé-biaisé + DM recentré (2026-08-24, issue #12734)
+
+Run **symétrique** demandé par #12734 : baseline HAR **débiaisée** (soustraction de `har_bias_oos`
+des prévisions HAR OOS, jamais du biais train — pas de fuite, acceptance #2 de #10938) **et**
+DM sur **erreurs recentrées** `loss_fn="mse"` (centrage `e − mean(e)` par prévisionneur). Le
+centrage annule le biais (`mean(loss_fn="linear") = 0`) donc le DM compare les variances
+uniquement — c'est la jambe **précision** que l'amendement §C #11010 rend obligatoire pour
+porter le verdict `BEATS`, appliquée ici **après dé-biaisage symétrique**.
+
+Pourquoi ce n'est pas une redite du mse de la section 8 / REGISTRY précédent : la section 8
+mesure la précision mais sur HAR **biaisée** — la baseline gonfle son MSE par son propre biais
+(`MSE = biais² + variance`, donc MSE brut surestime la variance de HAR). Cette entrée élimine
+le biais **sur les deux côtés** : DLinear brut, HAR débiaisée, puis DM recentré.
+
+| Horizon | edge (red MSE vs HAR deb, %) | σ cross-seed | dm_p_median (centered) | var ratio DL/HAR_deb | Verdict §C |
+|---------|----------------------------|--------------|------------------------|----------------------|-------------|
+| h=1  | +10,1 % | 0,15 | 1,5e-09 | 0,899 | **BEATS** |
+| h=5  | +7,3 %  | 0,23 | 9,7e-05 | 0,927 | **BEATS** |
+| h=10 | +3,7 %  | 0,19 | 1,0e-01 | 0,963 | **INCONCLUSIVE** |
+
+**Décomposition biais² + variance** : `har_bias_oos` −0,2266 / −0,3432 / −0,4502 log-RV
+(h=1/5/10, MESURÉ sur test OOS — biais `HAR` en sous-prévision de log-RV). Après dé-biaisage
+HAR, le résiduel biais²/variance chute à 5,8 % (h=1) → 22,6 % (h=5) → 35,5 % (h=10) — le
+dé-biaisage élimine bien le biais dominant sur h=1 mais le résiduel augmente avec l'horizon
+(le biais OLS d'une régression HAR est plus dispersé sur des fenêtres longues). `var_ratio =
+var_DL / var_HAR_debiased` reste < 1 sur les 3 horizons ⇒ DLinear **plus précis** (variance
+plus petite) que HAR une fois son biais soustrait.
+
+**Verdict M4 BTC (#12734 acceptance)** : M4 **survit hors biais sur h=1 et h=5**, devient
+**INCONCLUSIVE sur h=10** après dé-biaisage symétrique. Lecture honnête : le verdict
+**3/3 BEATS** de la section 8 (#11011, mse asymétrique) était **gonflé par le biais de
+HAR** — sans le biais, l'edge MSE se réduit de +38 % à +3,7 % (h=10) et le DM centered
+n'atteint plus le seuil `p < 0,05` (`p = 0,10`, juste au-dessus). Le verdict §C recentré
+est **2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS** — mesurable, défendable, et **plus strict**
+que les 3/3 BEATS de la mse asymétrique. M4 BTC keeper reste défendable : 2 horizons
+passent la conjonction, le 3ᵉ est statistiquement insuffisant (pas un échec).
+
+- **Run** : `python scripts/btc_vol.py --horizons 1 5 10 --seeds 0 7 42 99 --epochs 50 --out-json scripts/results/m4_dlinear_vol_btc_sc_debiased_recentered.json` (1786,9 s ≈ 30 min CPU, 12 combos)
+- **Notebook** : section 9 de `m4_dlinear_vol_sc_validation.ipynb` (recalcul indépendant de la conjonction recentrée, décomposition biais²+variance, outputs C.2)
+- **Verdict §C recentré** : **2/3 BEATS, 0/3 NO BEATS, 1/3 INCONCLUSIVE** (vs 3/3 BEATS mse asymétrique #11011 — la symétrie du dé-biaisage **réduit** l'edge sur h longs, ne le fabrique pas)
+
+**Note sur M15 BTC (slice 2/2 de #12734)** : `m15_lstm_rv.py` ne persiste ni `har_bias_oos`
+ni les prédictions LSTM (REGISTRY le note pour M15 brut #10941), donc le keeper M15 BTC
+#11041 reste **invérifiable post-hoc**. Le patch (collecte `lstm_errors`/`har_errors`/
+`har_bias_oos` dans `evaluate_one_combo` + rerun) est un travail substantiel à dispatcher
+au prochain cycle. Acceptance #4 de #12734 autorise explicitement cette voie (constat
+écrit + rerun requis avec raison) — c'est ce que cette entrée documente.
+
 ## M15 LSTM-vol — entrée §C (2026-08-14) — issue #10941
 
 2e entrée du registre conforme au barème `pr-review-discipline.md` §C (suite #10908/#10930) :
