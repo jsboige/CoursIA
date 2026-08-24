@@ -265,48 +265,83 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 
 
 def recent_delivery(picks: list[dict]) -> dict[int, str]:
-    """Annote les candidats tires dont une PR mergee les reference plus
-    recemment que la derniere mise a jour de l'issue.
+    """Annote les candidats tires qu'une autre PR couvre deja -- ouverte ou mergee.
 
     #12174 : le label ``candidate-delivered`` est pose par un workflow
     ``schedule:`` quotidien, dans une flotte qui merge plusieurs PRs par heure
     -- au tirage de 16:47Z, #12014 etait classee ``grain`` alors que #12077
     (mergee 16:19Z) avait deja livre 3 de ses 4 items. Le body d'une issue est
     date de sa redaction et un claim ne dit rien d'une livraison : la
-    recherche de PRs mergees est la troisieme surface de grounding, et ce
-    geste doit vivre dans l'outil qui propose le grain, pas dans la discipline
-    de qui le lit. Une requete par candidat tire, jamais un balayage du pool.
+    recherche de PRs est la troisieme surface de grounding, et ce geste doit
+    vivre dans l'outil qui propose le grain, pas dans la discipline de qui le
+    lit. Une requete par candidat tire, jamais un balayage du pool.
+
+    #12504 (rapporte par myia-po-2023:CoursIA, 2026-08-24) : ne regarder que
+    les PRs **mergees** laissait un angle mort plus couteux que celui qu'on
+    fermait. Une issue couverte par une PR encore **OUVERTE** ne porte aucune
+    trace de livraison -- ni label, ni body a jour, ni fusion a trouver -- et
+    ressort donc en tete d'urne comme un grain frais. Le tirage a place #12504
+    en tete (p=2.0) alors que #12519 la couvrait depuis des heures ; la lane
+    qui l'a prise a pose un claim **void**. Les deux etats se lisent dans la
+    **meme** requete (``--state all``), l'invariant "une requete par candidat"
+    est donc preserve.
+
+    Priorite du signal : une PR ouverte l'emporte sur une fusion recente. Une
+    fusion dit "c'est peut-etre deja fait" ; une PR ouverte dit "quelqu'un y
+    est en ce moment, ton claim sera void". Une PR **fermee sans fusion** ne
+    dit rien et est ignoree explicitement.
 
     L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
     ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
-    en dit, pas s'il est pris.
+    en dit, pas s'il est pris. Le verrou cross-lane reste
+    ``check_lane_claim.py``, que ``--check-claims`` interroge separement.
     """
     notes: dict[int, str] = {}
     for p in picks:
         n = p["number"]
         try:
             out = subprocess.run(
-                ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+                ["gh", "pr", "list", "--repo", REPO, "--state", "all",
                  "--limit", "20", "--search", f"{n} in:title,body",
-                 "--json", "number,mergedAt"],
+                 "--json", "number,state,isDraft,mergedAt"],
                 capture_output=True, text=True, encoding="utf-8", check=True,
                 timeout=30,
             ).stdout
             prs = json.loads(out)
         except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            notes[n] = f"(recherche livraison indisponible: {type(exc).__name__})"
+            notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
             continue
-        latest = max(prs, key=lambda pr: pr.get("mergedAt") or "")
-        merged = latest.get("mergedAt") or ""
+
+        # Une PR fermee-sans-fusion n'atteste de rien : on l'ecarte ici plutot
+        # que de la laisser peser dans les deux partitions ci-dessous.
+        opened = [pr for pr in prs if pr.get("state") == "OPEN"]
+        merged = [pr for pr in prs if pr.get("state") == "MERGED"]
+
+        if opened:
+            first = min(opened, key=lambda pr: pr["number"])
+            others = [pr["number"] for pr in opened if pr["number"] != first["number"]]
+            extra = f" (+{len(others)} autre(s) : " + ", ".join(
+                f"#{x}" for x in others) + ")" if others else ""
+            draft = " [draft]" if first.get("isDraft") else ""
+            notes[n] = (f"TRAVAIL EN COURS : PR #{first['number']}{draft} OUVERTE "
+                        f"couvre cette issue{extra} "
+                        f"-> claim probablement VOID ; lire "
+                        f"`gh pr view {first['number']}` AVANT de claimer")
+            continue
+
+        if not merged:
+            continue
+        latest = max(merged, key=lambda pr: pr.get("mergedAt") or "")
+        when = latest.get("mergedAt") or ""
         # Fusion plus recente que la derniere activite de l'issue = le corps
-        # visible est potentiellement periéme par rapport au reel. Une fusion
+        # visible est potentiellement perime par rapport au reel. Une fusion
         # ANTERIEURE a updatedAt est deja digeree par le body (ou les
         # commentaires) : pas d'annotation, sinon le signal noie.
-        if merged and merged > p.get("updated_at", ""):
-            extra = f" (+{len(prs) - 1} autres)" if len(prs) > 1 else ""
-            notes[n] = (f"LIVRAISON RECENTE : #{latest['number']} mergee {merged}{extra} "
+        if when and when > p.get("updated_at", ""):
+            extra = f" (+{len(merged) - 1} autres)" if len(merged) > 1 else ""
+            notes[n] = (f"LIVRAISON RECENTE : #{latest['number']} mergee {when}{extra} "
                         f"(issue non mise a jour depuis {p.get('updated_at', '?')}) "
                         f"-> confronter le body au reel AVANT de dispatcher")
     return notes
