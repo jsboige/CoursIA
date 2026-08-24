@@ -36,16 +36,38 @@ Trois urnes, parce que le pool n'est pas homogene
                   l'agent verifie firsthand (G.9) puis ferme avec preuve, ou
                   retire le label en disant pourquoi.
 
-Reparer son rouge AVANT de piocher (mandat user 2026-08-22)
-------------------------------------------------------------
+Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
+--------------------------------------------------------------------------
 Le picker **refuse de tirer** (sortie 2, aucun candidat rendu) tant que la
-lane porte une PR bloquee ouverte depuis plus de 24 h. La reparation d'une PR
-rouge n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser ni
-corriger a sa place, donc une lane qui pioche du neuf en laissant son rouge
+lane porte une PR a reprendre, ouverte depuis plus de 24 h. La reparation
+n'appartient qu'a sa lane : le coordinateur ne peut ni rebaser, ni corriger,
+ni repondre a sa place -- une lane qui pioche du neuf en laissant sa PR
 derriere elle fabrique un residu que personne d'autre ne peut resorber.
-"Bloquee" se lit sur le champ GraphQL `isRequired` -- ce que la protection de
-branche exige vraiment -- et non sur "au moins un check rouge", qui rougissait
-52 PRs sur 55 le 2026-08-22 en comptant les advisories. Voir `red_backlog`.
+
+Quatre causes, dont la derniere est arrivee en dernier et couvre le plus :
+
+1. **check requis en echec** -- lu sur le champ GraphQL `isRequired`, ce que la
+   protection de branche exige vraiment, et non "au moins un check rouge", qui
+   rougissait 52 PRs sur 55 le 2026-08-22 en comptant les advisories ;
+2. **conflit avec main** ;
+3. **CHANGES_REQUESTED non leve** ;
+4. **point de review non leve** (mandat 2026-08-24 : "ne plus produire tant
+   qu'il leur reste des points a traiter dans leurs vieilles PRs, ca doit leur
+   etre propose en premier lieu"). Les trois premieres causes sont
+   structurellement aveugles aux trois surfaces ou vit la substance des reviews
+   sur ce depot : nits du user en issue comments (aucune entree dans
+   `reviews[]`), reserves d'Hermes en prefixe de body sous `state: COMMENTED`,
+   threads inline dans `reviewThreads`. Une PR peut etre verte, sans conflit,
+   sans CHANGES_REQUESTED -- et rester non mergeable. Cette cause est donc
+   **placee en tete** de la liste : c'est la seule qu'un `update-branch` ne
+   reparera jamais.
+
+La 4e cause n'est pas redetectee ici : elle **delegue** a
+`check_unaddressed_nits.analyse`, l'organe du merge-gate B.0. Un jeu de motifs
+ecrit une seconde fois sous-compterait en silence, et surtout : si les deux
+gardes divergeaient, une lane pourrait etre autorisee a produire du neuf sur
+une PR que le merge-gate refusera. Voir `red_backlog` et
+`unaddressed_review_points`.
 
 Usage
 -----
@@ -70,6 +92,7 @@ import datetime as dt
 import hashlib
 import json
 import math
+import pathlib
 import random
 import re
 import subprocess
@@ -120,6 +143,47 @@ GENRE_RULES: list[tuple[str, str]] = [
     (r"refactor|consolidation|migration", "refactor"),
 ]
 
+# Attribution PR -> issue, pour l'AFFLUENCE (combien de PRs de la flotte ont
+# visite cette issue). Ce n'est PAS la meme grandeur que la "veine" du cap
+# (`variation_light_cap.extract_vein_key`, #11343), et la difference est
+# deliberee -- ne pas "unifier" les deux sans relire ceci :
+#
+#   * Le cap demande "a quelle ombrelle UNIQUE cette PR appartient-elle ?",
+#     pour compter des tranches par lane. Il lui faut UNE cle, donc le premier
+#     `#N` du corps, et une sur-attribution y serait une fausse accusation.
+#   * L'affluence demande "combien d'attention cette issue a-t-elle recue ?".
+#     Il lui faut du RAPPEL : rater une citation fait lire une ombrelle chaude
+#     comme froide, donc la sur-pondere -- l'inverse exact du but.
+#
+# Mesure du 2026-08-23 sur 10 issues (verite = `gh pr list --search "N
+# in:title,body"` restreint a la fenetre) : le premier-`#N` rappelle 59 %, le
+# schema ci-dessous 76 %. Cas d'ecole : #12591 s'intitule `fix(notebooks,#11947)`
+# et porte `See #11947`, mais son premier `#N` de corps est #11949 (la tranche
+# soeur) -- la veine y est juste pour le cap, et fausse pour l'affluence.
+_REF_RE = re.compile(r"#(\d{4,6})\b")
+_PREV_RE = re.compile(r"prev:\s*[^\n]*?#(\d{4,6})\b")
+# Verbes de rattachement de ce depot (`Closes/See/Part of` -- catalog-pr-hygiene)
+# plus les tournures maison. `See #N` porte l'essentiel du travail d'ombrelle :
+# la convention reserve `Closes` a la resolution complete.
+_DECL_RE = re.compile(
+    r"(?:closes|fixes|resolves|see|refs?|part of|voir|ombrelle|epic)"
+    r"\s+#(\d{4,6})\b",
+    re.I)
+
+
+def cited_issues(pr: dict) -> set[int]:
+    """Issues qu'une PR DECLARE servir : refs du titre + clauses de rattachement.
+
+    La clause `prev:` du tag `Grain:` est masquee -- elle documente le grain
+    PRECEDENT de la lane (adjacence G-VAR-3), jamais le sujet de la PR. Sans ce
+    masque, chaque PR voterait pour le sujet de la precedente.
+    """
+    body = _PREV_RE.sub("prev: <adjacence>", pr.get("body") or "")
+    found = {int(m.group(1)) for m in _DECL_RE.finditer(body)}
+    found |= {int(m.group(1)) for m in _REF_RE.finditer(pr.get("title") or "")}
+    return found - {pr.get("number")}
+
+
 NOW = dt.datetime.now(dt.timezone.utc)
 
 
@@ -166,7 +230,63 @@ def fetch_pool() -> list[dict]:
     return pool
 
 
-def weight(item: dict, prev_genre: str | None) -> float:
+# Fenetre d'affluence : la MEME que celle du cap de veine (`vein_cap`, par
+# lane et par jour). Le cap est aveugle a la flotte -- il ne voit qu'une lane a
+# la fois -- alors que la concentration observee vient surtout de plusieurs
+# lanes restant CHACUNE sous son cap. Mesure du 2026-08-23 sur 308 PRs mergees
+# en 3 jours : #11601 a recu 22 PRs reparties sur 8 cellules (lane x jour), et
+# 6 de ces 8 cellules etaient DANS les clous. Aucun garde ne pouvait le voir.
+VISITS_WINDOW_DAYS = 1
+# Echelle de l'amortissement. Diviseur = 1 + log2(1 + vus / VISITS_SCALE) :
+# 0 vu -> intact, 4 vus -> poids /2, 10 vus -> /2.6, 22 vus -> /3.1. Doux a 1
+# vu (/1.3 : une PR du jour sur un sujet est du travail normal, pas une veine),
+# mordant en tete de distribution -- qui est exactement la ou le desequilibre
+# se trouve.
+VISITS_SCALE = 4.0
+
+
+def fetch_visits(days: int = VISITS_WINDOW_DAYS) -> tuple[dict[int, int], str | None]:
+    """Combien de PRs mergees par LA FLOTTE citent chaque issue sur la fenetre.
+
+    Rend ``(compteur, erreur)``. En cas d'echec, le compteur est vide **et**
+    l'erreur est non nulle : l'appelant doit dire que l'affluence n'a pas ete
+    mesuree plutot que de laisser un zero d'absence de mesure se lire comme un
+    zero d'affluence.
+
+    Le filtre de date est **serveur** (`--search "merged:>=..."`), et ce n'est
+    pas un detail de style. ``gh pr list --state merged --limit N`` trie par
+    date de **creation** decroissante : couper a N puis filtrer sur ``mergedAt``
+    cote client laisse tomber toute PR creee avant la coupe mais mergee dans la
+    fenetre. Mesure du 2026-08-23 sur la meme fenetre de 24 h : 101 PRs pechees
+    ainsi contre 181 reelles -- **44 % de la population absente**, et 3 des
+    "ratages d'attribution" que je poursuivais n'etaient que des PRs jamais
+    pechees. Cle de tri != cle de filtre est un faux silencieux.
+    """
+    cutoff = NOW - dt.timedelta(days=days)
+    stamp = cutoff.strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    try:
+        raw = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+             "--limit", "400", "--search", f"merged:>={stamp}",
+             "--json", "number,title,body,mergedAt"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=True, timeout=60,
+        ).stdout
+        prs = json.loads(raw)
+    except (subprocess.CalledProcessError, json.JSONDecodeError,
+            subprocess.TimeoutExpired, OSError) as exc:
+        return {}, f"{type(exc).__name__}: {exc}"
+
+    counts: dict[int, int] = {}
+    for pr in prs:
+        for key in cited_issues(pr):
+            counts[key] = counts.get(key, 0) + 1
+    return counts, None
+
+
+
+def weight(item: dict, prev_genre: str | None,
+           visits: dict[int, int] | None = None) -> float:
     """Trois facteurs, tous doux, tous explicables en une ligne.
 
     Trop de ponderation reproduirait une monoculture avec des etapes en plus :
@@ -188,16 +308,26 @@ def weight(item: dict, prev_genre: str | None) -> float:
     # G-VAR-1 : le plancher exige DEEP/MED **et** CONTENU.
     if item["genre"] in CONTENU:
         w *= 2.0
+    # Affluence de FLOTTE : combien de PRs mergees citent deja cette issue sur
+    # la fenetre, toutes lanes confondues. C'est le facteur qui manquait --
+    # l'anciennete et le delaissement remontent le fond du pool, mais rien ne
+    # redescendait la tete. Un sujet qui a deja recu dix grains aujourd'hui n'a
+    # pas besoin du onzieme ; un sujet a zero visite garde son poids intact.
+    seen = (visits or {}).get(item["number"], 0)
+    if seen:
+        w /= 1.0 + math.log2(1.0 + seen / VISITS_SCALE)
+    item["visits"] = seen
     return w
 
 
-def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None) -> list[dict]:
+def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None,
+         visits: dict[int, int] | None = None) -> list[dict]:
     """Tirage pondere sans remise (Efraimidis-Spirakis : cle = u^(1/w))."""
     if not items:
         return []
     keyed = []
     for it in items:
-        w = weight(it, prev_genre)
+        w = weight(it, prev_genre, visits)
         u = rng.random() or 1e-12
         keyed.append((u ** (1.0 / w), w, it))
     keyed.sort(key=lambda t: t[0], reverse=True)
@@ -205,6 +335,7 @@ def draw(items: list[dict], n: int, rng: random.Random, prev_genre: str | None) 
     for _, w, it in keyed[:n]:
         it = dict(it)
         it["weight"] = round(w, 2)
+        it.setdefault("visits", 0)
         picked.append(it)
     return picked
 
@@ -265,48 +396,83 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, str]:
 
 
 def recent_delivery(picks: list[dict]) -> dict[int, str]:
-    """Annote les candidats tires dont une PR mergee les reference plus
-    recemment que la derniere mise a jour de l'issue.
+    """Annote les candidats tires qu'une autre PR couvre deja -- ouverte ou mergee.
 
     #12174 : le label ``candidate-delivered`` est pose par un workflow
     ``schedule:`` quotidien, dans une flotte qui merge plusieurs PRs par heure
     -- au tirage de 16:47Z, #12014 etait classee ``grain`` alors que #12077
     (mergee 16:19Z) avait deja livre 3 de ses 4 items. Le body d'une issue est
     date de sa redaction et un claim ne dit rien d'une livraison : la
-    recherche de PRs mergees est la troisieme surface de grounding, et ce
-    geste doit vivre dans l'outil qui propose le grain, pas dans la discipline
-    de qui le lit. Une requete par candidat tire, jamais un balayage du pool.
+    recherche de PRs est la troisieme surface de grounding, et ce geste doit
+    vivre dans l'outil qui propose le grain, pas dans la discipline de qui le
+    lit. Une requete par candidat tire, jamais un balayage du pool.
+
+    #12504 (rapporte par myia-po-2023:CoursIA, 2026-08-24) : ne regarder que
+    les PRs **mergees** laissait un angle mort plus couteux que celui qu'on
+    fermait. Une issue couverte par une PR encore **OUVERTE** ne porte aucune
+    trace de livraison -- ni label, ni body a jour, ni fusion a trouver -- et
+    ressort donc en tete d'urne comme un grain frais. Le tirage a place #12504
+    en tete (p=2.0) alors que #12519 la couvrait depuis des heures ; la lane
+    qui l'a prise a pose un claim **void**. Les deux etats se lisent dans la
+    **meme** requete (``--state all``), l'invariant "une requete par candidat"
+    est donc preserve.
+
+    Priorite du signal : une PR ouverte l'emporte sur une fusion recente. Une
+    fusion dit "c'est peut-etre deja fait" ; une PR ouverte dit "quelqu'un y
+    est en ce moment, ton claim sera void". Une PR **fermee sans fusion** ne
+    dit rien et est ignoree explicitement.
 
     L'annotation **n'ecarte pas** le candidat (parite avec la doctrine
     ``candidate-delivered`` : signale, ne ferme pas) : elle change ce qu'on
-    en dit, pas s'il est pris.
+    en dit, pas s'il est pris. Le verrou cross-lane reste
+    ``check_lane_claim.py``, que ``--check-claims`` interroge separement.
     """
     notes: dict[int, str] = {}
     for p in picks:
         n = p["number"]
         try:
             out = subprocess.run(
-                ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+                ["gh", "pr", "list", "--repo", REPO, "--state", "all",
                  "--limit", "20", "--search", f"{n} in:title,body",
-                 "--json", "number,mergedAt"],
+                 "--json", "number,state,isDraft,mergedAt"],
                 capture_output=True, text=True, encoding="utf-8", check=True,
                 timeout=30,
             ).stdout
             prs = json.loads(out)
         except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            notes[n] = f"(recherche livraison indisponible: {type(exc).__name__})"
+            notes[n] = f"(recherche PR indisponible: {type(exc).__name__})"
             continue
         if not prs:
             continue
-        latest = max(prs, key=lambda pr: pr.get("mergedAt") or "")
-        merged = latest.get("mergedAt") or ""
+
+        # Une PR fermee-sans-fusion n'atteste de rien : on l'ecarte ici plutot
+        # que de la laisser peser dans les deux partitions ci-dessous.
+        opened = [pr for pr in prs if pr.get("state") == "OPEN"]
+        merged = [pr for pr in prs if pr.get("state") == "MERGED"]
+
+        if opened:
+            first = min(opened, key=lambda pr: pr["number"])
+            others = [pr["number"] for pr in opened if pr["number"] != first["number"]]
+            extra = f" (+{len(others)} autre(s) : " + ", ".join(
+                f"#{x}" for x in others) + ")" if others else ""
+            draft = " [draft]" if first.get("isDraft") else ""
+            notes[n] = (f"TRAVAIL EN COURS : PR #{first['number']}{draft} OUVERTE "
+                        f"couvre cette issue{extra} "
+                        f"-> claim probablement VOID ; lire "
+                        f"`gh pr view {first['number']}` AVANT de claimer")
+            continue
+
+        if not merged:
+            continue
+        latest = max(merged, key=lambda pr: pr.get("mergedAt") or "")
+        when = latest.get("mergedAt") or ""
         # Fusion plus recente que la derniere activite de l'issue = le corps
-        # visible est potentiellement periéme par rapport au reel. Une fusion
+        # visible est potentiellement perime par rapport au reel. Une fusion
         # ANTERIEURE a updatedAt est deja digeree par le body (ou les
         # commentaires) : pas d'annotation, sinon le signal noie.
-        if merged and merged > p.get("updated_at", ""):
-            extra = f" (+{len(prs) - 1} autres)" if len(prs) > 1 else ""
-            notes[n] = (f"LIVRAISON RECENTE : #{latest['number']} mergee {merged}{extra} "
+        if when and when > p.get("updated_at", ""):
+            extra = f" (+{len(merged) - 1} autres)" if len(merged) > 1 else ""
+            notes[n] = (f"LIVRAISON RECENTE : #{latest['number']} mergee {when}{extra} "
                         f"(issue non mise a jour depuis {p.get('updated_at', '?')}) "
                         f"-> confronter le body au reel AVANT de dispatcher")
     return notes
@@ -351,6 +517,18 @@ def recent_delivery(picks: list[dict]) -> dict[int, str]:
 # plus de 12 h" qui trainent pendant que les neuves passent.
 
 RED_HOURS_DEFAULT = 24
+
+# ...mais l'age seul laisse passer l'essentiel. Mesure du 2026-08-23 sur les 58
+# PRs bloquees de la flotte : **51 sur 58 avaient moins de 24 h**, donc etaient
+# INVISIBLES a ce garde. Une lane pouvait porter 8 rouges et tirer un grain neuf
+# sans que rien ne rougisse (verifie sur myia-po-2024:CoursIA-2, 8 rouges, garde
+# n'en voyant qu'1). Le compte est donc le second declencheur, independant de
+# l'age : au-dela de RED_COUNT_DEFAULT rouges simultanes, la lane repare avant
+# de produire. Seuil choisi sur la distribution mesuree (8,8,7,6,5,5,5,2,1,1,1) :
+# a 3, toutes les lanes lourdes sont prises, les legeres tirent encore.
+# Mandat user 2026-08-23 : "s'il y a des dizaines de rouge, les agents ne
+# devraient pas produire de nouveaux grains mais etre en train de les traiter".
+RED_COUNT_DEFAULT = 3
 
 # CANCELLED / SKIPPED / NEUTRAL sont volontairement absents : un run annule
 # par `concurrency` n'est pas un echec, et le confondre avec un rouge est le
@@ -484,8 +662,64 @@ def blocking_causes(state: dict) -> list[str]:
     return causes
 
 
-def red_backlog(lane: str, threshold_hours: float) -> dict:
-    """PRs de la lane, bloquees et ouvertes depuis plus de `threshold_hours`.
+def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
+    """Points de review non leves, par PR. Delegue a l'organe du merge-gate B.0.
+
+    Mandat user 2026-08-24 : une lane ne produit plus tant qu'il lui reste des
+    points a traiter sur ses vieilles PRs, et ces points lui sont proposes EN
+    PREMIER a chaque cycle.
+
+    Pourquoi deleguer plutot que redetecter : les trois surfaces qui portent la
+    substance des reviews sur ce depot (nits du user en issue comments, reserves
+    d'Hermes en prefixe de body sous `state: COMMENTED`, threads inline dans
+    `reviewThreads`) sont invisibles a `reviews[].state`. Un jeu de motifs
+    ecrit ici sous-compterait en silence -- et un detecteur qui sous-compte rend
+    un chiffre plus petit et plus propre, sans jamais lever d'erreur. Le meme
+    organe sert donc le pre-merge et le pre-tirage : s'ils divergeaient, une
+    lane pourrait etre autorisee a tirer sur une PR que le merge-gate refuse.
+
+    Panne d'import ou de reseau : dictionnaire vide plutot qu'une exception. Le
+    garde ne doit jamais empecher un tirage pour une raison technique -- mais
+    l'appelant DIT que la surface n'a pas ete regardee (cf `nits_unavailable`).
+    """
+    if not numbers:
+        return {}
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
+
+    now = dt.datetime.now(dt.timezone.utc)
+    out: dict[int, int] = {}
+    for n in numbers:
+        try:
+            data = nits.gh_json(["pr", "view", str(n), "--repo", REPO,
+                                 "--json", nits.FIELDS])
+            result = nits.analyse(data, nits.review_threads(n), now)
+        except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
+            continue
+        if result.get("blocked"):
+            out[n] = len(result.get("blocking") or [])
+    return out
+
+
+def red_backlog(lane: str, threshold_hours: float,
+                count_threshold: int = RED_COUNT_DEFAULT) -> dict:
+    """PRs de la lane reellement bloquees, avec TROIS declencheurs de refus.
+
+    `aged` : au moins une rouge ouverte depuis plus de `threshold_hours` --
+    la queue longue, celle qui pourrit. `count` : au moins `count_threshold`
+    rouges simultanees quel que soit leur age -- le tas, que le seul critere
+    d'age ne voyait pas (51/58 invisibles, mesure du 2026-08-23). `nits` : au
+    moins un point de review non leve, quel que soit l'age et le nombre.
+
+    Le troisieme n'est pas un ajout de perimetre : il PRESERVE une semantique
+    qui existait avant. Le filtre d'age s'appliquait en amont, donc une PR
+    portant des points de review non leves n'entrait dans `red` que si elle
+    etait deja vieille. Retirer ce filtre pour le declencheur `count` ferait
+    tomber les PRs recentes a points non leves dans `red` sans qu'elles
+    declenchent quoi que ce soit -- un affaiblissement silencieux du mandat
+    user du 2026-08-24 (« les agents ne produisent plus tant qu'il leur reste
+    des points a traiter »). Le declencheur `nits` rend cette regle explicite
+    au lieu de la laisser dependre d'un filtre retire ailleurs.
 
     Rend aussi `unattributed_blocked` : les PRs bloquees dont le tag `Grain:`
     est illisible. Elles ne peuvent bloquer AUCUNE lane -- c'est la bonne
@@ -496,31 +730,54 @@ def red_backlog(lane: str, threshold_hours: float) -> dict:
     try:
         prs = fetch_open_prs()
     except Exception as exc:  # noqa: BLE001 - le garde ne doit jamais bloquer sur une panne reseau
-        return {"unavailable": f"{type(exc).__name__}", "red": [], "unattributed_blocked": []}
+        return {"unavailable": f"{type(exc).__name__}", "red": [],
+                "triggers": [], "unattributed_blocked": [],
+                "nits_unavailable": None}
 
     mine, others = [], []
     for pr in prs:
         if pr.get("isDraft"):
             continue
-        age = _hours_since(pr["createdAt"])
-        if age < threshold_hours:
-            continue
+        # Plus de filtre d'age ici : une rouge recente compte pour le
+        # declencheur `count`. Le tri par age se fait apres l'analyse.
         tag = parse_grain_tag(pr.get("body") or "")
         pr_lane = tag.get("lane") if tag else None
         (mine if pr_lane == lane else others).append(pr)
 
     states = fetch_pr_states([pr["number"] for pr in mine])
+    try:
+        nits_by_pr = unaddressed_review_points([pr["number"] for pr in mine])
+        nits_unavailable = None
+    except Exception as exc:  # noqa: BLE001
+        nits_by_pr, nits_unavailable = {}, f"{type(exc).__name__}"
     red = []
     for pr in mine:
         state = states.get(pr["number"])
         if state is None:
             continue
         causes = blocking_causes(state)
+        n_nits = nits_by_pr.get(pr["number"], 0)
+        if n_nits:
+            # Un point de review non leve est une cause A PART ENTIERE : la PR
+            # peut etre verte et sans conflit et rester non mergeable (B.0).
+            causes.insert(0, f"{n_nits} point(s) de review non leve(s) -> repondre, "
+                             f"corriger en citant le commit, ou ouvrir une issue de suivi nommee")
         if causes:
             red.append({"number": pr["number"], "title": pr["title"],
                         "age_hours": round(_hours_since(pr["createdAt"])),
                         "causes": causes})
     red.sort(key=lambda r: -r["age_hours"])
+
+    triggers = []
+    if any(nits_by_pr.get(r["number"]) for r in red):
+        # D'abord dans la liste : c'est l'ordre dans lequel le mandat du
+        # 2026-08-24 veut que la lane les traite.
+        triggers.append("nits")
+    aged = [r for r in red if r["age_hours"] >= threshold_hours]
+    if aged:
+        triggers.append("aged")
+    if len(red) >= count_threshold:
+        triggers.append("count")
 
     untagged = [pr for pr in others if parse_grain_tag(pr.get("body") or "") is None]
     untagged_states = fetch_pr_states([pr["number"] for pr in untagged]) if untagged else {}
@@ -532,17 +789,53 @@ def red_backlog(lane: str, threshold_hours: float) -> dict:
     ]
     # Les NUMEROS, pas un compte : le coordinateur est le seul a pouvoir les
     # reprendre (cf skill coordinate, phase 3.5), et un compte ne se traite pas.
-    return {"red": red, "unattributed_blocked": unattributed}
+    return {"red": red, "aged": aged, "triggers": triggers,
+            "red_hours": threshold_hours, "red_count_threshold": count_threshold,
+            "unattributed_blocked": unattributed,
+            "nits_unavailable": nits_unavailable}
+
+
+def print_nits_gap(backlog: dict) -> None:
+    """Dire qu'une surface n'a pas ete regardee, plutot que la taire.
+
+    Sans cette ligne, une panne de l'organe rend le meme silence qu'une lane
+    sans point en souffrance : un zero de denominateur se lirait comme un zero
+    de numerateur, et la lane tirerait un grain neuf en croyant son ardoise
+    propre.
+    """
+    if not backlog.get("nits_unavailable"):
+        return
+    print(f"ATTENTION -- les points de review n'ont PAS pu etre lus "
+          f"({backlog['nits_unavailable']}).")
+    print("Ce tirage ne prouve donc pas que l'ardoise de la lane est propre.")
+    print("Verifier a la main : `python scripts/check_unaddressed_nits.py <N>`")
+    print("sur chaque PR ouverte de la lane avant de produire du neuf.")
+    print()
 
 
 def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     red = backlog["red"]
-    print(f"REFUS DE TIRAGE -- lane {lane} porte {len(red)} PR(s) bloquee(s) "
-          f"ouverte(s) depuis plus de {threshold_hours:g} h.")
+    triggers = backlog.get("triggers") or []
+    aged = backlog.get("aged") or []
+    n_nits = sum(1 for r in red
+                 if any("point(s) de review" in c for c in (r.get("causes") or [])))
+    motifs = []
+    if "nits" in triggers:
+        # En tete : c'est la seule cause qu'un `gh pr update-branch` ne levera
+        # jamais -- ce qui leve une remarque est une phrase, pas un SHA.
+        motifs.append(f"porte {n_nits} PR(s) a points de review non leves")
+    if "count" in triggers:
+        motifs.append(f"porte {len(red)} PR(s) bloquee(s) simultanees (seuil "
+                      f"{backlog.get('red_count_threshold', RED_COUNT_DEFAULT)})")
+    if "aged" in triggers:
+        motifs.append(f"porte {len(aged)} PR(s) bloquee(s) ouverte(s) depuis plus "
+                      f"de {threshold_hours:g} h")
+    print(f"REFUS DE TIRAGE -- lane {lane} " + ", ".join(motifs) + ".")
     print()
-    print("Reparer son propre rouge est la PREMIERE tache du cycle, avant tout")
+    print_nits_gap(backlog)
+    print("Reprendre ses propres PRs est la PREMIERE tache du cycle, avant tout")
     print("grain neuf : la PR ne peut etre reparee que par sa lane, le")
-    print("coordinateur ne peut ni rebaser ni corriger a sa place.")
+    print("coordinateur ne peut ni rebaser, ni corriger, ni repondre a sa place.")
     print()
     for item in red:
         print(f"  #{item['number']}  ouverte depuis {item['age_hours']} h  -- {item['title'][:66]}")
@@ -556,8 +849,10 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
     print("     Dater le garde -- `git log -- <script>` -- avant de conclure.")
     print("  2. conflits : rebaser sur origin/main, `--force-with-lease` si la lane")
     print("     est seule sur la branche.")
-    print("  3. corriger la substance, pousser, et REPONDRE au CHANGES_REQUESTED")
-    print("     par ecrit : un push muet ne leve aucune remarque.")
+    print("  3. corriger la substance, pousser, et REPONDRE par ecrit -- au")
+    print("     CHANGES_REQUESTED comme au nit : un push muet ne leve aucune")
+    print("     remarque. `python scripts/check_unaddressed_nits.py <N>` detaille")
+    print("     chaque point non leve, son auteur et sa surface.")
     print()
     if backlog.get("unattributed_blocked"):
         numbers = ", ".join(f"#{u['number']}" for u in backlog["unattributed_blocked"])
@@ -592,6 +887,9 @@ def main() -> int:
     ap.add_argument("--check-claims", action="store_true", help="verifie les claims sur les tires")
     ap.add_argument("--red-hours", type=float, default=RED_HOURS_DEFAULT,
                     help=f"seuil du garde 'reparer son rouge d'abord' (defaut {RED_HOURS_DEFAULT} h)")
+    ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
+                    help=f"nombre de rouges simultanees qui refuse le tirage "
+                         f"quel que soit leur age (defaut {RED_COUNT_DEFAULT})")
     ap.add_argument("--ignore-red", action="store_true",
                     help="passer outre le garde -- exige une justification ECRITE sur la PR concernee")
     ap.add_argument("--json", action="store_true", help="sortie machine")
@@ -599,8 +897,8 @@ def main() -> int:
 
     # Garde "reparer son rouge d'abord" : AVANT le tirage, sinon le grain neuf
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
-    backlog = red_backlog(args.lane, args.red_hours)
-    if backlog["red"] and not args.ignore_red:
+    backlog = red_backlog(args.lane, args.red_hours, args.red_count)
+    if backlog.get("triggers") and not args.ignore_red:
         if args.json:
             print(json.dumps({"lane": args.lane, "refus": "rouge-a-reparer",
                               "red_hours": args.red_hours, **backlog},
@@ -608,6 +906,8 @@ def main() -> int:
         else:
             print_red_refusal(args.lane, backlog, args.red_hours)
         return 2
+    if not args.json:
+        print_nits_gap(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
@@ -623,10 +923,12 @@ def main() -> int:
     seed = int(hashlib.sha256(seed_src.encode()).hexdigest()[:16], 16)
     rng = random.Random(seed)
 
+    visits, visits_err = fetch_visits()
+
     picks = (
-        draw(by_class["grain"], args.grains, rng, args.prev_genre)
-        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre)
-        + draw(by_class["delivered"], args.delivered, rng, None)
+        draw(by_class["grain"], args.grains, rng, args.prev_genre, visits)
+        + draw(by_class["umbrella"], args.umbrellas, rng, args.prev_genre, visits)
+        + draw(by_class["delivered"], args.delivered, rng, None, visits)
     )
 
     claims = check_claims([p["number"] for p in picks], args.lane) if args.check_claims else {}
@@ -637,6 +939,11 @@ def main() -> int:
             "lane": args.lane, "seed_src": seed_src,
             "pool": {k: len(v) for k, v in by_class.items()},
             "picks": picks, "claims": {str(k): v for k, v in claims.items()},
+            "visits_window_days": VISITS_WINDOW_DAYS,
+            "visits_measured": visits_err is None,
+            "visits_error": visits_err,
+            "visits_top": sorted(({"issue": k, "n": v} for k, v in visits.items()),
+                                 key=lambda d: (-d["n"], d["issue"]))[:10],
             "recent_delivery": {str(k): v for k, v in delivery.items()},
             "red_backlog": backlog,
         }, ensure_ascii=False, indent=2))
@@ -646,7 +953,7 @@ def main() -> int:
           f"= {len(by_class['grain'])} grains "
           f"+ {len(by_class['umbrella'])} umbrella "
           f"+ {len(by_class['delivered'])} candidate-delivered")
-    if backlog["red"]:
+    if backlog.get("triggers"):
         numbers = ", ".join(f"#{r['number']}" for r in backlog["red"])
         print(f"!! --ignore-red : {len(backlog['red'])} PR(s) bloquee(s) de cette lane restent "
               f"a reparer ({numbers}).")
@@ -655,24 +962,34 @@ def main() -> int:
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genre precedent penalise : {args.prev_genre}" if args.prev_genre else ""))
     print()
-    header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6}  "
+    header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
     print(header)
     print("-" * len(header))
     for p in picks:
         mark = "*" if p["genre"] in CONTENU else " "
-        print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j  "
+        vus = "n/m" if visits_err else str(p.get("visits", 0))
+        print(f"{p['klass']:<10} #{p['number']:<7} {p['age']:>4}j {p['idle']:>5}j {vus:>4}  "
               f"{p['genre']:<15}{mark} {p['weight']:>5}  {p['title'][:62]}")
         if p["number"] in claims:
-            print(f"{'':>10} {'':>8} {'':>5} {'':>6}  claim: {claims[p['number']]}")
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  claim: {claims[p['number']]}")
         if p["number"] in delivery:
             note = delivery[p["number"]]
             head, sep, tail = note.partition("-> ")
-            print(f"{'':>10} {'':>8} {'':>5} {'':>6}  {head.strip()}")
+            print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  {head.strip()}")
             if tail:
-                print(f"{'':>10} {'':>8} {'':>5} {'':>6}  -> {tail}")
+                print(f"{'':>10} {'':>8} {'':>5} {'':>6} {'':>4}  -> {tail}")
     print()
+    if visits_err:
+        print(f"!! affluence NON MESUREE ({visits_err}) : la colonne `vus` affiche")
+        print("   `n/m` et le tirage n'a PAS amorti les sujets deja frequentes.")
+        print("   Un zero d'absence de mesure n'est pas un zero d'affluence.")
+        print()
     print("* = genre CONTENU (seul un genre CONTENU en DEEP/MED tient le plancher G-VAR-1).")
+    print(f"vus = PRs mergees citant cette issue sur {VISITS_WINDOW_DAYS} j, TOUTES LANES.")
+    print("      Le cap de veine ne voit qu'une lane a la fois : plusieurs lanes")
+    print("      restant chacune sous son cap concentrent quand meme la flotte")
+    print("      sur un meme sujet. C'est ce que cette colonne amortit.")
     print("inact = jours depuis la derniere activite. Une inactivite haute est le")
     print("        signe d'un sujet delaisse devant ceux du moment : c'est ce que")
     print("        le tirage remonte, et ce que la lane est attendue de conduire.")

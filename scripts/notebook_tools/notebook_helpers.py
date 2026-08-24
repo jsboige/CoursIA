@@ -29,6 +29,8 @@ from typing import Dict, List, Any, Optional, Callable, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from _papermill_meta import strip_stale_papermill_metadata
+
 
 @dataclass
 class CellInfo:
@@ -80,6 +82,9 @@ class NotebookHelper:
     def save(self, path: Optional[str] = None) -> None:
         """Save notebook JSON to file with LF line endings."""
         save_path = Path(path) if path else self.path
+        # Les sorties fraîches décrivent CE run : un bloc papermill hérité
+        # d'une passe antérieure les daterait au mauvais run (#12722).
+        strip_stale_papermill_metadata(self.notebook)
         with open(save_path, 'w', encoding='utf-8', newline='\n') as f:
             json.dump(self.notebook, f, indent=1, ensure_ascii=False)
             f.write('\n')
@@ -1387,6 +1392,7 @@ def read_notebook(path: str) -> Dict[str, Any]:
 
 def write_notebook(path: str, notebook: Dict[str, Any]) -> None:
     """Write notebook JSON to file."""
+    strip_stale_papermill_metadata(notebook)
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(notebook, f, indent=1, ensure_ascii=False)
         f.write('\n')

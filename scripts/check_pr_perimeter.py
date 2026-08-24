@@ -256,6 +256,45 @@ def _fence_mask(text: str) -> str:
     return "".join(masked_lines)
 
 
+# #12201 self-hosting : trois masques de citation pour la selection du claim.
+# Un compte situe DANS une citation (« ... » guillemets, `...` inline code)
+# est du discours rapporte -- le body cite la forme qu'il repare ou celle
+# d'une autre PR, il ne la revendique pas. Un compte suivi d'un intervalle
+# compact de noms ("12 fichiers `70.png`-`81.png`") designe une plage
+# d'artefacts rendus, jamais le format revue "N fichiers : a, b, c" (un
+# perimetre ne se declare jamais par borne d'intervalle). Apparies sur la
+# meme ligne : un delimiteur non ferme ne masque rien (FN par defaut).
+_GUILLEMET_SPAN = re.compile(r"«[^«»\n]*»")
+_INLINE_CODE_SPAN = re.compile(r"(?<!`)`[^`\n]+`(?!`)")
+_RANGE_ENUM_TAIL = re.compile(r"^\s*`[^`\n]+`\s*[-–—]\s*`[^`\n]+`")
+# #12201 bootstrap : le body d'une PR qui modifie le garde lui-meme est un
+# corpus diagnostique -- il cite obligatoirement des comptes d'exemple, des
+# controles FN et les perimetres des PRs fondatrices. La confrontation
+# d'egalite y est ECARTEE (pas assouplie) : l'exclusivite et les masques
+# restent actifs, seul le test d'egalite compte/fichiers est saute.
+GUARD_SELF_PATHS = frozenset({"scripts/check_pr_perimeter.py"})
+
+
+def _count_in_citation(line: str, m: re.Match) -> bool:
+    """True when the count match `m` sits inside a same-line citation span
+    (guillemets or inline code). Reported speech, not the author's claim."""
+    return any(
+        sp.start() <= m.start() and m.end() <= sp.end()
+        for rx in (_GUILLEMET_SPAN, _INLINE_CODE_SPAN)
+        for sp in rx.finditer(line)
+    )
+
+
+def _count_is_range_enum(line: str, m: re.Match) -> bool:
+    """True when the count is immediately followed by a compact name range
+    (`a.png`-`b.png`): an interval of rendered artifacts, not the review
+    enumeration format (#12273 founder). The tail is clamped to the match's
+    line -- the range shape is a same-line notation."""
+    tail = line[m.end():]
+    nl = tail.find("\n")
+    return bool(_RANGE_ENUM_TAIL.match(tail if nl < 0 else tail[:nl]))
+
+
 def check_assertion(files: list[dict], assertion: str) -> list[str]:
     """Confront a perimeter assertion with the effective file list.
 
@@ -264,20 +303,42 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
     body composed only of fence transcriptions: no claim OUTSIDE fences
     means no verifiable author assertion, and such a body must not pass
     in silence.
+
+    #12201: the claim is the first non-zero count that survives the SAME
+    per-count filters as the candidates and the additive sum (exemptions,
+    citations, ranges) -- selecting a count the filters exempt downstream
+    confronts a number the guard itself declares non-authorial. And the
+    body of a PR that modifies the guard itself is diagnostic corpus
+    (bootstrap): its counts describe other PRs and the forms being fixed,
+    so the equality confrontation is skipped entirely there.
     """
     problems: list[str] = []
+    guard_self = any(f["path"] in GUARD_SELF_PATHS for f in files)
     # A zero count is never the perimeter. On a mixed line -- "0 fichier
     # catalogue, 2 fichiers touches" -- the claim under test is the non-zero
     # one; reading the first match confronts "0" with a file list that cannot
     # be empty, so the line could never pass whatever the PR contained. This
     # is the FINDING raised in review of #11730 (#11735): the fence mask fixed
     # WHERE we scan, this fixes WHICH count we scan for. Both are needed.
+    # #12201: per-count EXEMPTIONS deliberately stay OUT of this selection
+    # (#11985 rule 1: an exempt count like "1 fichier test adapte" is still
+    # confronted, its mismatch downgraded at the ROUTING level). Only the
+    # citation/range masks sit here -- a count inside « » or ` `, or followed
+    # by a name range, is reported speech, not a claim at all.
     scan_target = _fence_mask(assertion)
-    word_count = _word_form_count(scan_target)
-    count_claim = next(
-        (mm for mm in COUNT_CLAIM.finditer(scan_target) if int(mm.group(1)) != 0),
-        None,
-    )
+    word_count = None if guard_self else _word_form_count(scan_target)
+    count_claim = None
+    if not guard_self:
+        count_claim = next(
+            (
+                mm
+                for mm in COUNT_CLAIM.finditer(scan_target)
+                if int(mm.group(1)) != 0
+                and not _count_in_citation(scan_target, mm)
+                and not _count_is_range_enum(scan_target, mm)
+            ),
+            None,
+        )
     if count_claim:
         claimed = int(count_claim.group(1))
         if claimed != len(files):
@@ -314,7 +375,7 @@ def check_assertion(files: list[dict], assertion: str) -> list[str]:
                         f"assertion d'exclusivite sans nommer le workflow touche {f['path']} "
                         "(critere #11268-2 : tout .github/workflows/** doit etre enumere nommement)"
                     )
-    if not count_claim and word_count is None and not exclusive:
+    if not count_claim and word_count is None and not exclusive and not guard_self:
         problems.append(
             "assertion sans compte de fichiers ni marqueur d'exclusivite reconnaissable -- "
             "formulation non verifiable (ecrire par ex. 'N fichiers : a, b, c')"
@@ -566,11 +627,16 @@ def _additive_line_sum(line: str) -> int:
     filters. An additive enumeration -- "1 fichier modifie, 1 fichier ajoute" --
     declares N + M files; the guard must confront the SUM, not the first
     non-zero count. A count exempted by the filters (zero, negated-diff tail,
-    locative scope, ...) never joins the sum."""
+    locative scope, ...) never joins the sum. #12201: a count inside a
+    citation span or followed by a name range is reported speech, not an
+    additive term -- same skip as the claim selection, so the two paths
+    read the same body the same way."""
     return sum(
         int(m.group(1))
         for m in COUNT_CLAIM.finditer(line)
         if not _count_is_exempt(line, m)
+        and not _count_in_citation(line, m)
+        and not _count_is_range_enum(line, m)
     )
 
 

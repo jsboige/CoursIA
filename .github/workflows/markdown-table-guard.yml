@@ -28,19 +28,13 @@ name: Markdown table syntax advisory
 # benevolent review applies, no internal content criterion runs against them.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
-    paths:
-      - '**/*.ipynb'
-      - '**/*.md'
-      - '**/README*'
-      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
-      # else it cannot re-run (so cannot remove its own label) once the matching
-      # paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
-      - '.github/workflows/markdown-table-guard.yml'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '15 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
   pull-requests: write
