@@ -22,7 +22,14 @@
       csharp_sha: 92b4291a20d6eb88ec9d57ca862419d518c2f87f
       content_python_sha: 36bceb666806321584194492099cacff733e410b9bfaa50ba9cd4a0a09fa1527
       content_csharp_sha: 1946e40f94e98ed72ccdbf29416bb2ed4f01a96ca857807f39acaa04d3643cdd
+    - date: "2026-08-24"
+      by: myia-po-2027:CoursIA
+      python_sha: 2d84290fefedd8f816a737a8de1f270c2a4a328b
+      csharp_sha: d1d4de77262b44e4b4a68ca8b25f4d0640c7d9b5
+      content_python_sha: 36bceb666806321584194492099cacff733e410b9bfaa50ba9cd4a0a09fa1527
+      content_csharp_sha: f10347475a925bdefc5c9e3de3471536177849640489a60fb7f1c1d8dc32628d
   known_differences:
+    - "Rebaseline 2026-08-24 : cote C# uniquement -- PFI honnete (#12520, PR #12777) : permutationCount 3 -> 20, c54 lit et affiche RSquared.Mean ± StandardError par slot (la sortie committee etait vide, le classement n'etait pas montre), c55 reecrit sur la sortie reelle (classement STABLE a 20 permutations, StandardError ~0.0001 ; zeros trip_distance/trip_time = artefact PFI variables correlees sur FastForest, cross-check FCC nomme). Re-exec complete .net-csharp 40/40, 0 erreur. Cote Python non modifie (byte-identique a main)."
     - "ASYSMETRIE MAJEURE DE PROFONDEUR : C# = 40 cellules de code (tour exhaustif d'evaluation : FastTree, OneHotEncoding, ReplaceMissingValues, Concatenate Features + `mlContext.Auto().Regression` AutoML complet) ; Python = 10 cellules (pendant tronque : LinearRegression + RandomForestRegressor + cross_validate/GridSearchCV)."
     - "Le pendant Python couvre le CONCEPT (evaluer + GridSearchCV + metrics r2/MAE/MSE) mais n'egale pas l'exhaustivite du C# (AutoML ML.NET absent cote Python, feature engineering detaille reduit)."
     - "parity_level = surface : meme theme (evaluation de modeles + recherche d'hyperparametres) mais le Python est une SELECTION, pas une parite cellule-par-cellule. A noter pour toute re-audit : combler l'ecart exigerait d'etendre le Python (multi-cycle, cf memo #4956)."
