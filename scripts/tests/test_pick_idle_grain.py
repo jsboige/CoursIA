@@ -238,15 +238,93 @@ def _pr(n, lane, age_hours, *, draft=False):
 
 
 def test_red_backlog_scopes_to_the_lane_and_the_threshold(monkeypatch):
+    """La lane et le brouillon filtrent ; l'age ne filtre PLUS le comptage.
+
+    Une rouge fraiche reste dans `red` (elle nourrit le declencheur `count`)
+    mais seule la vieille arme le declencheur `aged`.
+    """
     red = _state(checks=[("PR gate", "FAILURE", True)])
     _patch_backlog(monkeypatch, [
-        _pr(1, "myia-po-2026:CoursIA", 30),          # ma lane, vieille, rouge -> compte
-        _pr(2, "myia-po-2026:CoursIA", 3),           # ma lane, fraiche        -> non
+        _pr(1, "myia-po-2026:CoursIA", 30),          # ma lane, vieille, rouge -> red + aged
+        _pr(2, "myia-po-2026:CoursIA", 3),           # ma lane, fraiche        -> red seulement
         _pr(3, "myia-po-2023:CoursIA", 30),          # autre lane              -> non
         _pr(4, "myia-po-2026:CoursIA", 30, draft=True),  # brouillon           -> non
     ], {1: red, 2: red, 3: red, 4: red})
-    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
-    assert [r["number"] for r in out["red"]] == [1]
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2]
+    assert [r["number"] for r in out["aged"]] == [1]
+    assert out["triggers"] == ["aged"]
+
+
+def test_a_pile_of_fresh_reds_refuses_the_draw(monkeypatch):
+    """Le declencheur que l'age seul ne voyait pas (mandat user 2026-08-23).
+
+    Mesure du jour : 51 des 58 PRs bloquees de la flotte avaient moins de
+    24 h -- invisibles au garde. Une lane portant 3 rouges de 2 h doit
+    reparer avant de produire, exactement comme celle qui en porte une de 30 h.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2026:CoursIA", 2) for n in (1, 2, 3)
+    ], {n: red for n in (1, 2, 3)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1, 2, 3]
+    assert out["aged"] == []
+    assert out["triggers"] == ["count"]
+
+
+def test_under_the_count_threshold_a_fresh_red_still_draws(monkeypatch):
+    """Controle positif : le garde n'est pas bloque-a-l'allumage.
+
+    Deux rouges fraiches sous le seuil ne refusent RIEN -- sinon toute lane
+    normalement active serait immobilisee, et l'echappatoire `--ignore-red`
+    deviendrait la voie ordinaire, ce qui viderait le garde de son sens.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [
+        _pr(n, "myia-po-2026:CoursIA", 2) for n in (1, 2)
+    ], {n: red for n in (1, 2)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert len(out["red"]) == 2
+    assert out["triggers"] == []
+
+
+def test_a_fresh_pr_with_review_points_refuses_alone(monkeypatch):
+    """Un point de review non leve refuse SEUL : ni vieux, ni nombreux.
+
+    C'est la regression que le retrait du filtre d'age aurait introduite en
+    silence. Avant, le filtre s'appliquait en amont : une PR a points non
+    leves n'entrait dans `red` que si elle etait deja vieille. En le retirant
+    pour le declencheur `count`, une PR recente a points non leves tomberait
+    dans `red` sans rien declencher -- la lane tirerait un grain neuf avec une
+    remarque en souffrance, ce que le mandat user du 2026-08-24 interdit.
+
+    Une seule PR, 2 h d'age, sous les deux autres seuils : le refus doit
+    quand meme tomber, et `nits` doit etre le premier motif nomme.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 2)],
+                   {1: red}, nits={1: 2})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["triggers"] == ["nits"]        # ni "aged" ni "count"
+    assert out["aged"] == []
+    assert len(out["red"]) == 1
+    # Le point de review est en TETE des causes : c'est la seule qu'un
+    # `gh pr update-branch` ne levera jamais.
+    assert "point(s) de review" in out["red"][0]["causes"][0]
+
+
+def test_without_review_points_a_fresh_lone_red_still_draws(monkeypatch):
+    """Controle positif du test precedent : sans nits, rien ne se declenche.
+
+    Sans ce temoin, un `triggers == ["nits"]` obtenu parce que le garde refuse
+    TOUT serait indiscernable d'un declencheur qui marche.
+    """
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 2)], {1: red})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["triggers"] == []
+    assert len(out["red"]) == 1
 
 
 def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
@@ -261,7 +339,7 @@ def test_untagged_blocked_prs_are_counted_but_never_attributed(monkeypatch):
         _pr(1, "myia-po-2026:CoursIA", 30),
         _pr(9, None, 30),
     ], {1: red, 9: red})
-    out = pig.red_backlog("myia-po-2026:CoursIA", 24)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=99)
     assert [r["number"] for r in out["red"]] == [1]
     assert [u["number"] for u in out["unattributed_blocked"]] == [9]
 
@@ -359,7 +437,17 @@ def test_no_review_point_leaves_a_green_pr_drawable(monkeypatch):
 
 
 def test_only_the_lane_s_own_prs_are_examined(monkeypatch):
-    """L'organe coute 2 appels API par PR : ne l'appeler que sur `mine`."""
+    """L'organe coute 2 appels API par PR : ne l'appeler que sur `mine`.
+
+    Le filtre est la LANE, pas l'age. La PR 3 appartient a la lane et n'a que
+    3 h : elle est examinee, parce que les declencheurs `count` et `nits`
+    doivent la voir -- un tas de rouges recentes est precisement ce que le
+    seul critere d'age manquait. La PR 2 (autre lane) reste exclue, et c'est
+    l'invariant que ce test protege.
+
+    Le cout monte avec le nombre de PR recentes de la lane. C'est inherent :
+    on ne peut pas compter un tas sans regarder ce qui le compose.
+    """
     seen = []
     monkeypatch.setattr(pig, "fetch_open_prs", lambda: [
         _pr(1, "myia-po-2026:CoursIA", 30),
@@ -370,7 +458,8 @@ def test_only_the_lane_s_own_prs_are_examined(monkeypatch):
     monkeypatch.setattr(pig, "unaddressed_review_points",
                         lambda nums: seen.extend(nums) or {})
     pig.red_backlog("myia-po-2026:CoursIA", 24)
-    assert seen == [1]
+    assert seen == [1, 3]      # les deux PR de la lane
+    assert 2 not in seen       # jamais celles d'une autre lane
 
 
 def test_organ_failure_is_said_not_swallowed(monkeypatch):
