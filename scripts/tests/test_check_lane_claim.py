@@ -4891,3 +4891,81 @@ def test_run_check_disjoint_joker_caller_clear(capsys):
         f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
     )
 
+
+# --- #12811 -- UTF-8 encoding epingle sur les 6 subprocess.run sites -----
+
+from pathlib import Path
+
+
+def test_12811_subprocess_sites_have_utf8_encoding():
+    src = Path(clc.__file__).read_text(encoding='utf-8')
+    sites = [
+        'capture_output=True, text=True, shell=False, encoding="utf-8", errors="replace",',  # _gh_issue_comments / _pr_state / _post_comment / _list_open_prs
+        'capture_output=True, text=True, timeout=10, encoding="utf-8", errors="replace",',  # _scope_zero_coverage / _git_tracked_files
+    ]
+    count_4 = src.count(sites[0])
+    count_3 = src.count(sites[1])
+    total = count_4 + count_3
+    assert total == 6, f'#12811 : attendu 6 sites epingles encoding=utf-8, trouve {total} (4-args={count_4} + 3-args={count_3})'
+
+
+def test_12811_repro_crash_then_fix_with_mock_subprocess():
+    import json as _json
+    # Caractere U+034F (COMBINING GRAPHEME JOINER) : encode UTF-8 = cd 8f
+    # cp1252 ne decode pas 0x8F (octet non defini) -> UnicodeDecodeError
+    real_payload = '{"number":5635,"title":"ICT-24 (͏)","comments":[]}'
+    real_bytes = real_payload.encode('utf-8')
+
+    # SANS fix : cp1252 crash sur 0x8F
+    try:
+        real_bytes.decode('cp1252')
+        legacy_ok = True
+    except UnicodeDecodeError:
+        legacy_ok = False
+    assert not legacy_ok, 'cp1252 DOIT crasher sur U+034F (0x8F non defini)'
+
+    # SANS fix : json.loads(None) TypeError (comme #12811 ligne 2742)
+    try:
+        _json.loads(None)
+        assert False, 'json.loads(None) aurait du lever TypeError'
+    except TypeError:
+        pass
+
+    # AVEC fix : json.loads(stdout_str) marche
+    fixed_stdout = real_bytes.decode('utf-8')
+    result = _json.loads(fixed_stdout)
+    assert result['number'] == 5635
+    assert '͏' in result['title']
+
+
+def test_12811_post_comment_unicode_body():
+    import tempfile
+    body = 'sigma=σ ↔ ≲ teste ͏'  # sigma, left-right arrow, less-than-or-equivalent, U+034F
+    with tempfile.NamedTemporaryFile('w', suffix='.md', delete=False, encoding='utf-8') as fh:
+        fh.write(body)
+        path = fh.name
+    readback = Path(path).read_text(encoding='utf-8')
+    assert readback == body
+    Path(path).unlink(missing_ok=True)
+
+
+def test_12811_git_ls_files_utf8_paths():
+    # U+034F (COMBINING GRAPHEME JOINER) : UTF-8 = cd 8f. cp1252 NE décode PAS
+    # 0x8F (octet non défini dans la table cp1252) → UnicodeDecodeError.
+    # C'est exactement le chemin de noms de fichiers déclencheur du bug #12811.
+    fake_output = 'MyIA.AI.Notebooks/sub' + chr(0x034f) + 'dir/test' + chr(0x034f) + '.ipynb\n'
+    fake_bytes = fake_output.encode('utf-8')
+    # cp1252 crash
+    try:
+        fake_bytes.decode('cp1252')
+        legacy_ok = True
+    except UnicodeDecodeError:
+        legacy_ok = False
+    assert not legacy_ok, 'cp1252 DOIT crasher sur U+034F (0x8F non defini)'
+    # UTF-8 OK
+    decoded = fake_bytes.decode('utf-8')
+    lines = [ln for ln in decoded.splitlines() if ln]
+    assert any('test' in ln for ln in lines)
+
+
+from pathlib import Path

@@ -886,7 +886,13 @@ def _gh_issue_comments(issue: str) -> dict:
             # inventory.
             "--json", "number,title,labels,comments",
         ],
-        capture_output=True, text=True, shell=False,
+        # #12811 -- `encoding="utf-8"` épinglé : sur Windows le locale par défaut
+        # est cp1252, et un body d'issue Unicode (σ, ↔, ≲, ≪, U+034F) peut
+        # contenir des octets non-décodables (0x81, 0x8D, 0x8F, 0x90, 0x9D)
+        # qui font crasher le reader thread de subprocess → UnicodeDecodeError
+        # → proc.stdout = None → json.loads(None) TypeError. `errors="replace"`
+        # ne s'active que sur de la vraie corruption.
+        capture_output=True, text=True, shell=False, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -976,7 +982,8 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
                 "gh", "pr", "view", str(pr_ref),
                 "--json", "state,merged",
             ],
-            capture_output=True, text=True, shell=False,
+            # #12811 -- encoding utf-8 épinglé (cf _gh_issue_comments).
+            capture_output=True, text=True, shell=False, encoding="utf-8", errors="replace",
         )
     except Exception as exc:  # pragma: no cover -- defensive
         result = (None, f"gh exec failed: {exc}")
@@ -1074,7 +1081,8 @@ def _post_comment(issue: str, body: str) -> None:
         path = fh.name
     proc = subprocess.run(
         ["gh", "issue", "comment", str(issue), "--body-file", path],
-        capture_output=True, text=True, shell=False,
+        # #12811 -- encoding utf-8 épinglé : stderr peut citer le body d'origine.
+        capture_output=True, text=True, shell=False, encoding="utf-8", errors="replace",
     )
     Path(path).unlink(missing_ok=True)
     if proc.returncode != 0:
@@ -1102,7 +1110,10 @@ def _gh_open_prs_with_files() -> list[dict]:
             "--json", "number,title,headRefName,body,files",
             "--limit", "200",
         ],
-        capture_output=True, text=True, shell=False,
+        # #12811 -- encoding utf-8 épinglé : le scan --limit 200 couvre des
+        # bodies PR riches en Unicode ; un seul byte non-cp1252 tue le mode
+        # `--paths` (cf corps de #12811 ligne 1105).
+        capture_output=True, text=True, shell=False, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         raise RuntimeError(
@@ -1297,7 +1308,8 @@ def _scope_zero_coverage_warning(
     try:
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
-            capture_output=True, text=True, timeout=10,
+            # #12811 -- encoding utf-8 épinglé : chemins non-ASCII possibles.
+            capture_output=True, text=True, timeout=10, encoding="utf-8", errors="replace",
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -1353,7 +1365,8 @@ def _git_tracked_files(repo_root: str | None = None) -> list[str] | None:
     try:
         proc = subprocess.run(
             ["git", "-C", repo_root, "ls-files"],
-            capture_output=True, text=True, timeout=10,
+            # #12811 -- encoding utf-8 épinglé : chemins non-ASCII possibles.
+            capture_output=True, text=True, timeout=10, encoding="utf-8", errors="replace",
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
