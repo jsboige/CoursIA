@@ -127,7 +127,7 @@ class TestCountNotebooksInDir:
     def test_filename_with_bin_counted(self, tmp_path):
         """#9851 root fix: 'Foo-CombinatorialGames.ipynb' at root IS counted.
         The substring "bin" in the filename must NOT trigger EXCLUDE_ALWAYS."""
-        (tmp_path / "GameTheory-8-CombinatorialGames.ipynb").write_text(
+        (tmp_path / "GameTheory-08-CombinatorialGames.ipynb").write_text(
             "{}", encoding="utf-8"
         )
         result = count_notebooks_in_dir(tmp_path)
@@ -181,11 +181,11 @@ class TestCountNotebooksInDir:
         be counted; bin/ subdir notebook MUST be excluded."""
         # 5 root notebooks whose filenames contain 'bin' substring
         for name in [
-            "GameTheory-8-CombinatorialGames.ipynb",
-            "GameTheory-8-CombinatorialGames-Csharp.ipynb",
-            "GameTheory-8b-Lean-CombinatorialGames.ipynb",
-            "GameTheory-8c-CombinatorialGames-Csharp.ipynb",
-            "GameTheory-8c-CombinatorialGames-Python.ipynb",
+            "GameTheory-08-CombinatorialGames.ipynb",
+            "GameTheory-08-CombinatorialGames-Csharp.ipynb",
+            "GameTheory-08b-Lean-CombinatorialGames.ipynb",
+            "GameTheory-08c-CombinatorialGames-Csharp.ipynb",
+            "GameTheory-08c-CombinatorialGames-Python.ipynb",
         ]:
             (tmp_path / name).write_text("{}", encoding="utf-8")
         # 7 sub-series notebooks (SocialChoice)

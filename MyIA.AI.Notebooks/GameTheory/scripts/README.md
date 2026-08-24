@@ -105,11 +105,11 @@ Les notebooks Lean natifs sont suffixés `-b` (kernel Lean 4) ; les notebooks Py
 | Notebook | Kernel | Description |
 |----------|--------|-------------|
 | `GameTheory-1` à `GameTheory-12`, `-14`, `-16` | Python (Windows) | Notebooks Python classiques (Nashpy, sympy, networkx) |
-| `GameTheory-2b-Lean-Definitions` | **Lean 4 (WSL)** | Définitions formelles, cellules Lean natives |
-| `GameTheory-4b-Lean-NashExistence` | Python (WSL) | Lecture guidée, orchestration via `lean_runner.py` |
-| `GameTheory-4c-NashExistence-Python` | Python (Windows) | Miroir numérique (sympy, scipy) |
-| `GameTheory-8b-Lean-CombinatorialGames` | **Lean 4 (WSL)** | PGame mathlib, cellules Lean natives |
-| `GameTheory-8c-CombinatorialGames-Python` | Python (Windows) | Miroir Sprague-Grundy en Python |
+| `GameTheory-02b-Lean-Definitions` | **Lean 4 (WSL)** | Définitions formelles, cellules Lean natives |
+| `GameTheory-04b-Lean-NashExistence` | Python (WSL) | Lecture guidée, orchestration via `lean_runner.py` |
+| `GameTheory-04c-NashExistence-Python` | Python (Windows) | Miroir numérique (sympy, scipy) |
+| `GameTheory-08b-Lean-CombinatorialGames` | **Lean 4 (WSL)** | PGame mathlib, cellules Lean natives |
+| `GameTheory-08c-CombinatorialGames-Python` | Python (Windows) | Miroir Sprague-Grundy en Python |
 | `GameTheory-13-ImperfectInfo-CFR` | Python (WSL) | OpenSpiel CFR (WSL requis : pas de wheel Windows) |
 | `GameTheory-15-CooperativeGames` | Python (Windows) | Solutions coopératives (Shapley, core, nucleolus) |
 | `GameTheory-15b-Lean-CooperativeGames` | **Lean 4 (WSL)** | Formalisation Shapley (Lean 4) |

@@ -51,11 +51,11 @@ Le parcours commence par le setup (Nashpy, OpenSpiel) et les jeux sous forme nor
 
 ![Matrice de gains 2×2 du Dilemme du Prisonnier ; la case (Défaire, Défaire) = (1, 1) est encadrée en bleu comme unique équilibre de Nash.](assets/readme/gt1-setup.png)
 
-*`GameTheory-1-Setup` — représenter un jeu sous forme normale : la matrice des gains du Dilemme du Prisonnier. Chaque case porte le couple (gain Ligne, gain Colonne) ; la case (Défaire, Défaire) = (1, 1), encadrée en bleu, est l'unique équilibre de Nash — bien que (Coopérer, Coopérer) = (3, 3) soit collectivement supérieur.*
+*`GameTheory-01-Setup` — représenter un jeu sous forme normale : la matrice des gains du Dilemme du Prisonnier. Chaque case porte le couple (gain Ligne, gain Colonne) ; la case (Défaire, Défaire) = (1, 1), encadrée en bleu, est l'unique équilibre de Nash — bien que (Coopérer, Coopérer) = (3, 3) soit collectivement supérieur.*
 
 ![Le même jeu résolu par la méthode des meilleures réponses : soulignements bleus (joueur Ligne), rouges (joueur Colonne), case verte à leur intersection.](assets/readme/gt2-normalform.png)
 
-*`GameTheory-2-NormalForm` — résoudre un jeu : on souligne la meilleure réponse de chaque joueur (bleu = joueur Ligne, rouge = joueur Colonne). La seule case où les deux soulignements coïncident (en vert) est l'équilibre de Nash — la lecture graphique de la dominance vue à gauche.*
+*`GameTheory-02-NormalForm` — résoudre un jeu : on souligne la meilleure réponse de chaque joueur (bleu = joueur Ligne, rouge = joueur Colonne). La seule case où les deux soulignements coïncident (en vert) est l'équilibre de Nash — la lecture graphique de la dominance vue à gauche.*
 
 ### Phase 2 : Jeux dynamiques et information incomplète (Notebooks 7-12 + side tracks b/c, ~7h45)
 
@@ -83,7 +83,7 @@ La Phase 3 couvre les sujets avancés et les applications. Le notebook 13 (CFR) 
 
 ### Au-delà du round-robin : processus de Moran en population FINIE (GameTheory-6)
 
-La cellule 39 du notebook `GameTheory-6-EvolutionTrust` nomme explicitement la **dynamique de Moran** (librairie [`axelrod`](https://github.com/Axelrod-Python/Axelrod), Knight et al. *JORS* 2016) comme capacité écologique distinctive, et affirme que « *TitForTat domine surtout dans les formats Moran / écologiques* ». Avant la PR [#7594](https://github.com/jsboige/CoursIA/pull/7594) (2026-07-20, commit `95fef165e5`), cette affirmation n'avait **jamais été exécutée** sur le notebook : seule la cellule 38 (round-robin déterministe) tournait. C'est exactement le **Prong-B** identifié par EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) — une capacité nommée sans être head-to-head validée.
+La cellule 39 du notebook `GameTheory-06-EvolutionTrust` nomme explicitement la **dynamique de Moran** (librairie [`axelrod`](https://github.com/Axelrod-Python/Axelrod), Knight et al. *JORS* 2016) comme capacité écologique distinctive, et affirme que « *TitForTat domine surtout dans les formats Moran / écologiques* ». Avant la PR [#7594](https://github.com/jsboige/CoursIA/pull/7594) (2026-07-20, commit `95fef165e5`), cette affirmation n'avait **jamais été exécutée** sur le notebook : seule la cellule 38 (round-robin déterministe) tournait. C'est exactement le **Prong-B** identifié par EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) — une capacité nommée sans être head-to-head validée.
 
 **Ce que la PR #7594 a first-hand exécuté** (cellules 40-41 du notebook) :
 
@@ -105,7 +105,7 @@ La cellule 39 du notebook `GameTheory-6-EvolutionTrust` nomme explicitement la *
 
 ### Point fixe discriminant : pourquoi `regret=0` définit l'équilibre (GameTheory-4c)
 
-La cellule `perturbed_br` du notebook `GameTheory-4c-NashExistence-Python` (side-track Python du 4b Lean) illustre numériquement le théorème du point fixe de Brouwer appliqué à Matching Pennies : si `x*` est un point fixe de `perturbed_br`, alors la **carte n'en bouge pas** — c'est-à-dire que le vecteur de **regret** y est identiquement nul. Avant la PR [#7664](https://github.com/jsboige/CoursIA/pull/7664) (2026-07-21), cette cellule ne vérifiait qu'un seul seed `(0.5, 0.5)` — qui est précisément l'équilibre de Nash de Matching Pennies. Or à l'équilibre, le regret est `0` par définition, donc la perturbation `ε` est un **no-op** et la carte renvoie l'identité : « `(0.5, 0.5)` est point fixe » était **tautologiquement vrai par construction**, sans exercer la machinerie regret/perturbation. Le pattern Prong-B fondateur ([#3801](https://github.com/jsboige/CoursIA/issues/3801)) — un solveur démontré sur un cas où sa capacité distinctive ne fait rien (cf. BFS-vs-A* `8905f8845`).
+La cellule `perturbed_br` du notebook `GameTheory-04c-NashExistence-Python` (side-track Python du 4b Lean) illustre numériquement le théorème du point fixe de Brouwer appliqué à Matching Pennies : si `x*` est un point fixe de `perturbed_br`, alors la **carte n'en bouge pas** — c'est-à-dire que le vecteur de **regret** y est identiquement nul. Avant la PR [#7664](https://github.com/jsboige/CoursIA/pull/7664) (2026-07-21), cette cellule ne vérifiait qu'un seul seed `(0.5, 0.5)` — qui est précisément l'équilibre de Nash de Matching Pennies. Or à l'équilibre, le regret est `0` par définition, donc la perturbation `ε` est un **no-op** et la carte renvoie l'identité : « `(0.5, 0.5)` est point fixe » était **tautologiquement vrai par construction**, sans exercer la machinerie regret/perturbation. Le pattern Prong-B fondateur ([#3801](https://github.com/jsboige/CoursIA/issues/3801)) — un solveur démontré sur un cas où sa capacité distinctive ne fait rien (cf. BFS-vs-A* `8905f8845`).
 
 **Ce que la PR #7664 a first-hand exécuté** (cellules `70b72753` code + `134eeb5b` markdown du notebook) — un contraste à deux seeds qui rend visible *pourquoi* l'équilibre est un point fixe :
 
@@ -119,7 +119,7 @@ La cellule `perturbed_br` du notebook `GameTheory-4c-NashExistence-Python` (side
 **À retenir** :
 1. **`regret ≡ 0 ⟺ fixed point`** (par définition du regret-based no-regret learning, voir Hart & Mas-Colell 2000 *Simple Adaptive Strategies*). Brouwer appliqué à `perturbed_br` n'a rien de magique : c'est exactement le critère de no-regret qui définit la convergence vers Nash.
 2. **Anti-tautologie systématique.** Pour tout test de point fixe / optimalité / convergence, exiger **au moins un seed non-équilibre** qui doit être déplacé. Sans cela, le test ne prouve rien qu'une lecture de la définition ne donne déjà.
-3. **Lien avec le Lean 4b.** Le `Brouwer/Kakutani` prouvé formellement dans `GameTheory-4b-Lean-NashExistence` (lake `minimax_lean` côté Sion, sans `sorry`) **garantit l'existence** d'un tel point fixe ; le 4c-Python **l'illustre numériquement** par une carte `perturbed_br` concrète sur Matching Pennies — la preuve formelle et la simulation numérique se complètent sans se substituer.
+3. **Lien avec le Lean 4b.** Le `Brouwer/Kakutani` prouvé formellement dans `GameTheory-04b-Lean-NashExistence` (lake `minimax_lean` côté Sion, sans `sorry`) **garantit l'existence** d'un tel point fixe ; le 4c-Python **l'illustre numériquement** par une carte `perturbed_br` concrète sur Matching Pennies — la preuve formelle et la simulation numérique se complètent sans se substituer.
 
 ## Progression recommandée
 
@@ -196,41 +196,41 @@ flowchart TD
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 1 | [GameTheory-1-Setup](GameTheory-1-Setup.ipynb) | Python | Installation Nashpy, OpenSpiel, vérification | 20 min |
-| 2 | [GameTheory-2-NormalForm](GameTheory-2-NormalForm.ipynb) | Python | Matrices de gains, dominance, best response | 45 min |
-| 2b | [GameTheory-2b-Lean-Definitions](GameTheory-2b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
-| 3 | [GameTheory-3-Topology2x2](GameTheory-3-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique | 55 min |
-| 3 (C#) | [GameTheory-3-Topology2x2-Csharp](GameTheory-3-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
-| 3b | [GameTheory-3b-Chambres-et-Murs](GameTheory-3b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich) : les 576 jeux stricts comme chambres d'un arrangement, les égalités comme murs de codimension — 75 ordres faibles, incidence double-face mur/chambre, BFS connexe diamètre 6, swaps en longueurs de Coxeter, make_tie/break_tie duales (chantier 4 #12207, versant D2) | 45 min |
-| 3e | [GameTheory-3e-Meta-Actions-Tarifees](GameTheory-3e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées : changer les règles comme action payante — NE/BR sur les 576 jeux (72 injouables), coût en échelons de rang avec seuil de migration 56→16→8→4 %, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe du Dilemme EST un équilibre (3,3), 4 échecs de coordination dur (chantier 4 #12207, versant D4) | 45 min |
-| 4 | [GameTheory-4-NashEquilibrium](GameTheory-4-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique | 60 min |
-| 4 (C#) | [GameTheory-4-NashEquilibrium-Csharp](GameTheory-4-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
-| 4b | [GameTheory-4b-Lean-NashExistence](GameTheory-4b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
-| 4c | [GameTheory-4c-NashExistence-Python](GameTheory-4c-NashExistence-Python.ipynb) | Python | **Point fixe Brouwer discriminant** — `perturbed_br` (regret ⇒ déplacement), double seed non-équilibre/équilibre, anti-tautologie Prong-B [#7664] | 35 min |
-| 4c | [GameTheory-4c-NashExistence-Csharp](GameTheory-4c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
-| 5 | [GameTheory-5-ZeroSum-Minimax](GameTheory-5-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
-| 5 (C#) | [GameTheory-5-ZeroSum-Minimax-Csharp](GameTheory-5-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
-| 5b | [GameTheory-5b-Lean-Minimax](GameTheory-5b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
-| 6 | [GameTheory-6-EvolutionTrust](GameTheory-6-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, **processus de Moran stochastique (fixation finie, 25 graines)** [#7594], replicator dynamics | 65 min |
-| 6 (C#) | [GameTheory-6-EvolutionTrust-Csharp](GameTheory-6-EvolutionTrust-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : **moteur IPD + tournoi Axelrod + replicator dynamics from-scratch** (BCL .NET 9, 0 NuGet), 7 stratégies (TitForTat/Grudger/Pavlov/...), Euler ODE (See #4956) | 55 min |
-| 6b | [GameTheory-6b-Lean-RepeatedGames](GameTheory-6b-Lean-RepeatedGames.ipynb) | Lean (lecture) | Compagnon **lake** du 6c : les 7 modules noirs de `game_theory_lean` dévoilés par extraction réelle — Stage (PD forcé par le type), Discounting (seuil $\delta^*$ `coop_ge_deviate_iff`), **`grim_trigger_sustains_iff` 0 sorry #4880**, Folk STRETCH (1 sorry assumé, bord réparé), ConeKernel Bondareva-Farkas, infra SocialChoice ; re-mesure visibilité noirs 7→0 (See #11703) | 35 min |
-| 6c | [GameTheory-6c-RepeatedGames-FolkTheorem](GameTheory-6c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
-| 6c (C#) | [GameTheory-6c-RepeatedGames-FolkTheorem-Csharp](GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb) | .NET (C#) | Twin C# du 6c : **grim trigger + tit-for-tat + Folk Theorem from-scratch** (BCL .NET 9, 0 NuGet), série géométrique $\sum \delta^t g = g/(1-\delta)$, condition de crédibilité $\delta^* = (T-R)/(T-P) = 0.5$, comparaison des seuils grim vs TFT ($2/3$), ensemble faisable & IR en ASCII — parité bit-par-bit avec le Python (See #4956) | 45 min |
+| 1 | [GameTheory-01-Setup](GameTheory-01-Setup.ipynb) | Python | Installation Nashpy, OpenSpiel, vérification | 20 min |
+| 2 | [GameTheory-02-NormalForm](GameTheory-02-NormalForm.ipynb) | Python | Matrices de gains, dominance, best response | 45 min |
+| 2b | [GameTheory-02b-Lean-Definitions](GameTheory-02b-Lean-Definitions.ipynb) | Lean 4 | Formalisation Game2x2, stratégies, Nash | 45 min |
+| 3 | [GameTheory-03-Topology2x2](GameTheory-03-Topology2x2.ipynb) | Python | Classification Robinson-Goforth, table périodique | 55 min |
+| 3 (C#) | [GameTheory-03-Topology2x2-Csharp](GameTheory-03-Topology2x2-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — topologie ordinale from-scratch : permutations, swaps de rangs, BFS swap-path, Nash, classification des 576 jeux (parité #4956) | 50 min |
+| 3b | [GameTheory-03b-Chambres-et-Murs](GameTheory-03b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich) : les 576 jeux stricts comme chambres d'un arrangement, les égalités comme murs de codimension — 75 ordres faibles, incidence double-face mur/chambre, BFS connexe diamètre 6, swaps en longueurs de Coxeter, make_tie/break_tie duales (chantier 4 #12207, versant D2) | 45 min |
+| 3e | [GameTheory-03e-Meta-Actions-Tarifees](GameTheory-03e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées : changer les règles comme action payante — NE/BR sur les 576 jeux (72 injouables), coût en échelons de rang avec seuil de migration 56→16→8→4 %, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe du Dilemme EST un équilibre (3,3), 4 échecs de coordination dur (chantier 4 #12207, versant D4) | 45 min |
+| 4 | [GameTheory-04-NashEquilibrium](GameTheory-04-NashEquilibrium.ipynb) | Python | Nash pur/mixte, Lemke-Howson, analyse paramétrique | 60 min |
+| 4 (C#) | [GameTheory-04-NashEquilibrium-Csharp](GameTheory-04-NashEquilibrium-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : **NE pur (best-response mutuelle) + mixte 2x2 (indifférence) + support enumeration from-scratch (élimination de Gauss)**, Matching Pennies/BoS/Stag Hunt/PD/RPS (See #4956) | 50 min |
+| 4b | [GameTheory-04b-Lean-NashExistence](GameTheory-04b-Lean-NashExistence.ipynb) | Lean 4 | Brouwer, Kakutani, preuve existence Nash | 55 min |
+| 4c | [GameTheory-04c-NashExistence-Python](GameTheory-04c-NashExistence-Python.ipynb) | Python | **Point fixe Brouwer discriminant** — `perturbed_br` (regret ⇒ déplacement), double seed non-équilibre/équilibre, anti-tautologie Prong-B [#7664] | 35 min |
+| 4c | [GameTheory-04c-NashExistence-Csharp](GameTheory-04c-NashExistence-Csharp.ipynb) | C# (.NET) | **Jumeau C#** — Brouwer point fixe + Matching Pennies, from-scratch, parité #4956 | 45 min |
+| 5 | [GameTheory-05-ZeroSum-Minimax](GameTheory-05-ZeroSum-Minimax.ipynb) | Python | Théorème minimax, LP primal/dual, Von Neumann | 40 min |
+| 5 (C#) | [GameTheory-05-ZeroSum-Minimax-Csharp](GameTheory-05-ZeroSum-Minimax-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : **simplexe from-scratch** (Dantzig, règle de Bland) + dualité LP, Matching Pennies/RPS/Blotto (See #4956) | 45 min |
+| 5b | [GameTheory-05b-Lean-Minimax](GameTheory-05b-Lean-Minimax.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de von Neumann dans le lake `minimax_lean` (Sion), `#check` + `#print axioms` in-kernel — voir [#4054](https://github.com/jsboige/CoursIA/issues/4054) (création du lake) et `LEAN_INVENTORY.md` du dossier | 45 min |
+| 6 | [GameTheory-06-EvolutionTrust](GameTheory-06-EvolutionTrust.ipynb) | Python | Tournoi Axelrod, tit-for-tat, **processus de Moran stochastique (fixation finie, 25 graines)** [#7594], replicator dynamics | 65 min |
+| 6 (C#) | [GameTheory-06-EvolutionTrust-Csharp](GameTheory-06-EvolutionTrust-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : **moteur IPD + tournoi Axelrod + replicator dynamics from-scratch** (BCL .NET 9, 0 NuGet), 7 stratégies (TitForTat/Grudger/Pavlov/...), Euler ODE (See #4956) | 55 min |
+| 6b | [GameTheory-06b-Lean-RepeatedGames](GameTheory-06b-Lean-RepeatedGames.ipynb) | Lean (lecture) | Compagnon **lake** du 6c : les 7 modules noirs de `game_theory_lean` dévoilés par extraction réelle — Stage (PD forcé par le type), Discounting (seuil $\delta^*$ `coop_ge_deviate_iff`), **`grim_trigger_sustains_iff` 0 sorry #4880**, Folk STRETCH (1 sorry assumé, bord réparé), ConeKernel Bondareva-Farkas, infra SocialChoice ; re-mesure visibilité noirs 7→0 (See #11703) | 35 min |
+| 6c | [GameTheory-06c-RepeatedGames-FolkTheorem](GameTheory-06c-RepeatedGames-FolkTheorem.ipynb) | Python | Compagnon **formel** de GT-6 : horizon fini (effondrement par induction arrière), horizon infini, grim trigger, condition $\delta \geq (T-R)/(T-P)$, Folk Theorem (tout paiement IR faisable est SPNE pour $\delta$ assez proche de 1) | 45 min |
+| 6c (C#) | [GameTheory-06c-RepeatedGames-FolkTheorem-Csharp](GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb) | .NET (C#) | Twin C# du 6c : **grim trigger + tit-for-tat + Folk Theorem from-scratch** (BCL .NET 9, 0 NuGet), série géométrique $\sum \delta^t g = g/(1-\delta)$, condition de crédibilité $\delta^* = (T-R)/(T-P) = 0.5$, comparaison des seuils grim vs TFT ($2/3$), ensemble faisable & IR en ASCII — parité bit-par-bit avec le Python (See #4956) | 45 min |
 
 ### Partie 2 : Jeux dynamiques et raisonnement stratégique (Notebooks 7-12)
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 7 | [GameTheory-7-ExtensiveForm](GameTheory-7-ExtensiveForm.ipynb) | Python | Arbres de jeu, infosets, stratégies | 50 min |
-| 7 (C#) | [GameTheory-7-ExtensiveForm-Csharp](GameTheory-7-ExtensiveForm-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : **arbre de jeu + infosets + noeuds de nature from-scratch** + conversion forme extensive→normale (See #4956) | 50 min |
-| 8 | [GameTheory-8-CombinatorialGames](GameTheory-8-CombinatorialGames.ipynb) | Python | Positions P/N, Nim, Grundy, Sprague-Grundy | 55 min |
-| 8 (C#) | [GameTheory-8-CombinatorialGames-Csharp](GameTheory-8-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : **classification P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy** from-scratch, BCL .NET 9 (See #4956) | 45 min |
-| 8b | [GameTheory-8b-Lean-CombinatorialGames](GameTheory-8b-Lean-CombinatorialGames.ipynb) | Lean 4 | PGame mathlib, Nim formel | 50 min |
-| 8c | [GameTheory-8c-CombinatorialGames-Python](GameTheory-8c-CombinatorialGames-Python.ipynb) | Python | Approfondissement jeux combinatoires | 40 min |
-| 8c (C#) | [GameTheory-8c-CombinatorialGames-Csharp](GameTheory-8c-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8c : **périodicité Grundy (Guy 1996) + Wythoff (Beatty/nombre d'or) + jeux composites (Sprague-Grundy) + Chomp (Gale)** from-scratch, BCL .NET 9 (See #4956) | 40 min |
-| 8d | [GameTheory-8d-Lean-CGT-Native](GameTheory-8d-Lean-CGT-Native.ipynb) | Lean 4 (WSL) | Compagnon natif du lake `conway_cgt_lean` : `IGame`/`Game`, surréels, nimbers, **Sprague-Grundy exécuté** depuis `vihdzp/combinatorial-games` (post-Mathlib #35550) | 40 min |
-| 9 | [GameTheory-9-BackwardInduction](GameTheory-9-BackwardInduction.ipynb) | Python | Induction arrière, mille-pattes, escalade | 55 min |
-| 9 (C#) | [GameTheory-9-BackwardInduction-Csharp](GameTheory-9-BackwardInduction-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : induction arrière from-scratch, Entry/Centipede/War-of-Attrition/Chain-Store (See #4956) | 40 min |
+| 7 | [GameTheory-07-ExtensiveForm](GameTheory-07-ExtensiveForm.ipynb) | Python | Arbres de jeu, infosets, stratégies | 50 min |
+| 7 (C#) | [GameTheory-07-ExtensiveForm-Csharp](GameTheory-07-ExtensiveForm-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : **arbre de jeu + infosets + noeuds de nature from-scratch** + conversion forme extensive→normale (See #4956) | 50 min |
+| 8 | [GameTheory-08-CombinatorialGames](GameTheory-08-CombinatorialGames.ipynb) | Python | Positions P/N, Nim, Grundy, Sprague-Grundy | 55 min |
+| 8 (C#) | [GameTheory-08-CombinatorialGames-Csharp](GameTheory-08-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : **classification P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy** from-scratch, BCL .NET 9 (See #4956) | 45 min |
+| 8b | [GameTheory-08b-Lean-CombinatorialGames](GameTheory-08b-Lean-CombinatorialGames.ipynb) | Lean 4 | PGame mathlib, Nim formel | 50 min |
+| 8c | [GameTheory-08c-CombinatorialGames-Python](GameTheory-08c-CombinatorialGames-Python.ipynb) | Python | Approfondissement jeux combinatoires | 40 min |
+| 8c (C#) | [GameTheory-08c-CombinatorialGames-Csharp](GameTheory-08c-CombinatorialGames-Csharp.ipynb) | .NET (C#) | Twin C# du 8c : **périodicité Grundy (Guy 1996) + Wythoff (Beatty/nombre d'or) + jeux composites (Sprague-Grundy) + Chomp (Gale)** from-scratch, BCL .NET 9 (See #4956) | 40 min |
+| 8d | [GameTheory-08d-Lean-CGT-Native](GameTheory-08d-Lean-CGT-Native.ipynb) | Lean 4 (WSL) | Compagnon natif du lake `conway_cgt_lean` : `IGame`/`Game`, surréels, nimbers, **Sprague-Grundy exécuté** depuis `vihdzp/combinatorial-games` (post-Mathlib #35550) | 40 min |
+| 9 | [GameTheory-09-BackwardInduction](GameTheory-09-BackwardInduction.ipynb) | Python | Induction arrière, mille-pattes, escalade | 55 min |
+| 9 (C#) | [GameTheory-09-BackwardInduction-Csharp](GameTheory-09-BackwardInduction-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : induction arrière from-scratch, Entry/Centipede/War-of-Attrition/Chain-Store (See #4956) | 40 min | e33f875cf (chore(naming,#11840): zero-pad GameTheory series N in [1..9] -> 0N (tranche 1))
 | 10 | [GameTheory-10-ForwardInduction-SPE](GameTheory-10-ForwardInduction-SPE.ipynb) | Python | Induction avant, SPE, menaces crédibles | 60 min |
 | 10 (C#) | [GameTheory-10-ForwardInduction-SPE-Csharp](GameTheory-10-ForwardInduction-SPE-Csharp.ipynb) | .NET (C#) | Twin C# du 10 : SPE/backward-induction from-scratch, menaces crédibles, trembling-hand (ε), forward induction (Cho-Kreps), burn money (See #4956) | 60 min |
 | 11 | [GameTheory-11-BayesianGames](GameTheory-11-BayesianGames.ipynb) | Python | Jeux bayésiens, information incomplète | 55 min |
@@ -274,12 +274,14 @@ La vague « strate 7 » étend la série au-delà du fil historique : chaque not
 | 21 | [GameTheory-21-Deux-Especes-de-Fleches](GameTheory-21-Deux-Especes-de-Fleches.ipynb) | Python | Deux espèces de flèches : le théorème fini du chemin minimal de swaps (un swap R(a,b) traverse un mur ssi colonne {a,b} ET mur habité — conjecture naïve réfutée sur 288 désaccords, condition vérifiée 3456/3456, comptage 432/576 dérivé) | 60 min |
 | 22 | [GameTheory-22-Manipulation-comme-Temoin](GameTheory-22-Manipulation-comme-Temoin.ipynb) | Python | Manipulation comme témoin : Gibbard-Satterthwaite sans mystère — une règle manipulable s'il existe un profil et un électeur qui, avec un bulletin insincère, obtient un résultat strictement préféré ; le témoin d'exploitation est exhibé par le code, pas postulé | 30 min |
 | 23 | [GameTheory-23-Echange-de-Reins](GameTheory-23-Echange-de-Reins.ipynb) | Python | L'échange de reins : de la valeur humaine à l'état institutionnel — graphe de compatibilité, cycles vs chaînes (donneurs altruistes), arbitrage cardinalité/équité dissocié par le code, pont cross-domain vers les lakes Lean | 35 min |
-| 3b | [GameTheory-3b-Chambres-et-Murs](GameTheory-3b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich, chantier 4 #12207 versant D2) : l'espace des jeux comme arrangement — 24 chambres × 24 = 576 jeux, les égalités comme murs de codimension (75 ordres faibles), incidence double-face mur/chambre, graphe des chambres connexe de diamètre 6, make_tie/break_tie duales | 45 min |
-| 3e | [GameTheory-3e-Meta-Actions-Tarifees](GameTheory-3e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées (chantier 4 #12207 versant D4) : changer les règles comme action payante — coût en échelons de rang, seuil de migration 56→16→8→4 % au sweep c=0..3, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe EST un équilibre (3,3), 4 échecs de coordination dur (tous NE Pareto-dominés) | 45 min |
+| 3b | [GameTheory-03b-Chambres-et-Murs](GameTheory-03b-Chambres-et-Murs.ipynb) | Python | Chambres et murs (Bruns-Kimmich, chantier 4 #12207 versant D2) : l'espace des jeux comme arrangement — 24 chambres × 24 = 576 jeux, les égalités comme murs de codimension (75 ordres faibles), incidence double-face mur/chambre, graphe des chambres connexe de diamètre 6, make_tie/break_tie duales | 45 min |
+| 3e | [GameTheory-03e-Meta-Actions-Tarifees](GameTheory-03e-Meta-Actions-Tarifees.ipynb) | Python | Méta-actions tarifées (chantier 4 #12207 versant D4) : changer les règles comme action payante — coût en échelons de rang, seuil de migration 56→16→8→4 % au sweep c=0..3, le Dilemme exactement indifférent à c=1, méta-jeu 4x4 où l'évasion conjointe EST un équilibre (3,3), 4 échecs de coordination dur (tous NE Pareto-dominés) | 45 min |
+| 26 | [GameTheory-26-Ensembles-Limites-Poincare-Bendixson](GameTheory-26-Ensembles-Limites-Poincare-Bendixson.ipynb) | Python | Ensembles limites : Poincaré-Bendixson en dimension 2 — les trois issues (point fixe, orbite périodique, cycle hétéroclinique) exécutées sur Prisonnier / Matching Pennies / RPS et classées par un détecteur mécanique (module compagnon + 16 tests), le mur $w = l$ de la famille RPS vérifié par linéarisation $(l-w)/6$ et relié aux chambres/murs du 3b, l'échec du théorème au-delà du plan comme conclusion (Czechowski-Piliouras 2021) | 45 min |
+| 27 | [GameTheory-27-Munkres-Assignment](GameTheory-27-Munkres-Assignment.ipynb) | Python | Kuhn-Munkres en hommage à James Munkres († 2026) : l'affectation optimale from scratch en arithmétique entière exacte (arbre hongrois BFS, resserrement dual), confrontée à SciPy (50/50 instances identiques) et certifiée par le triple test LP (faisabilité duale, gap nul, arêtes d'égalité), le pont Shapley-Shubik (cœur = polytope dual, 254 coalitions testées, 0 violations), et le contraste Gale-Shapley (stabilité qui se paie +3 sur instance divergente seedée) | 45 min |
 
 > En livraison parallèle sur la même vague : 18 (open games et lentilles, #12212), 22 (manipulation Gibbard-Satterthwaite comme témoin, livré #12255), 23 (échange de reins, livré #12276) — fichiers sur `main`, lignes ci-dessus. Le chantier 4 (#12207) poursuit la vague : 3b livré, 3e livré ici (le 3c « Le Joueur LLM » et le 3d « Plan de déformation » sont en livraison parallèle sur d'autres lanes), versants D1/D3 ouverts. En file CI au moment de l'écriture : 24 (chemin minimal Robinson-Goforth, PR #12364) et 25 (translateur Life + certificat d'impossibilité, PR #12395) — leurs lignes seront ajoutées à leur merge.
 
-**Durée totale** : ~31h00 (avec side tracks b/c, sous-série SocialChoice et Partie 4 livrée)
+**Durée totale** : ~31h45 (avec side tracks b/c, sous-série SocialChoice et Partie 4 livrée)
 
 ## Concepts clés
 
@@ -379,7 +381,7 @@ GameTheory occupe une place à part dans la couche Lean : c'est la famille qui a
 | Famille | Lake phare | Théorème | Branchement notebook |
 | --- | --- | --- | --- |
 | **GameTheory** (choix social) | `game_theory_lean` (SocialChoice) | Théorème d'impossibilité d'Arrow + caractérisation Sen + valeur de Shapley (résolu 0 sorry) | Notebooks 16b (Arrow), Argument_Analysis |
-| **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-5b-Lean-Minimax (companion natif) |
+| **GameTheory** (équilibres) | `minimax_lean` (Sion) | Existence d'un équilibre en stratégies mixtes via point fixe (Brouwer-Sion) | GameTheory-05b-Lean-Minimax (companion natif) |
 | **GameTheory** (design) | `lean_game_defs_ext` | Vickrey (enchère au second prix = stratégie dominante), théorème de révélation | GameTheory-11b-Lean-BayesianGamesExt |
 | **GameTheory** (coopératif) | `game_theory_lean` (CooperativeGames) | Bondareva-Shapley résolu 0 sorry (#3954), Core non-vide sous balanced | Notebooks 15-15b (coopératif, valeur de Shapley) |
 | **GameTheory** (matching) | `game_theory_lean` (StableMarriage) | Gale-Shapley : existence + optimalité côté proposant | Notebooks 16-2 (matching, Gale-Shapley) |
@@ -497,7 +499,7 @@ cp .env.example .env
 pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
 
 # 2. Premier notebook
-jupyter notebook GameTheory-1-Setup.ipynb
+jupyter notebook GameTheory-01-Setup.ipynb
 
 # 3. Puis GameTheory-2 (formes normales, matrices de gains)
 ```
@@ -722,25 +724,25 @@ Tous les notebooks incluent :
 
 ```
 GameTheory/
-├── GameTheory-1-Setup.ipynb                        # 17 notebooks principaux (Python, fil rouge 1→17)
-├── GameTheory-2-NormalForm.ipynb
-├── GameTheory-2-NormalForm-Part2-Python.ipynb      #   Tranche 2 du Python NormalForm — support enumeration mixte NxN from-scratch (numpy) + vérification nashpy
-├── GameTheory-2-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
-├── GameTheory-2-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
-├── GameTheory-3-Topology2x2.ipynb
-├── GameTheory-3-Topology2x2-Csharp.ipynb           # Jumeau C# — classification ordinale 2×2 from-scratch
-├── GameTheory-4-NashEquilibrium.ipynb
-├── GameTheory-4-NashEquilibrium-Csharp.ipynb       # Jumeau C# — NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956)
-├── GameTheory-5-ZeroSum-Minimax.ipynb
-├── GameTheory-5-ZeroSum-Minimax-Csharp.ipynb       # Jumeau C# — simplexe from-scratch (marathon #4956)
-├── GameTheory-6-EvolutionTrust.ipynb
-├── GameTheory-6-EvolutionTrust-Csharp.ipynb        # Jumeau C# — tournoi d'Axelrod from-scratch
-├── GameTheory-7-ExtensiveForm.ipynb
-├── GameTheory-7-ExtensiveForm-Csharp.ipynb         # Jumeau C# — arbre de jeu + infosets from-scratch (marathon #4956)
-├── GameTheory-8-CombinatorialGames.ipynb
-├── GameTheory-8-CombinatorialGames-Csharp.ipynb    # Jumeau C# — P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
-├── GameTheory-9-BackwardInduction.ipynb
-├── GameTheory-9-BackwardInduction-Csharp.ipynb     # Jumeau C# — induction arrière + sous-jeux
+├── GameTheory-01-Setup.ipynb                        # 17 notebooks principaux (Python, fil rouge 1→17)
+├── GameTheory-02-NormalForm.ipynb
+├── GameTheory-02-NormalForm-Part2-Python.ipynb      #   Tranche 2 du Python NormalForm — support enumeration mixte NxN from-scratch (numpy) + vérification nashpy
+├── GameTheory-02-NormalForm-Csharp.ipynb            # Jumeau C# (.NET Interactive, parité #4956) — forme normale + Nash from-scratch (Tranche 1)
+├── GameTheory-02-NormalForm-Csharp-Part2.ipynb      #   Tranche 2 du jumeau C# NormalForm
+├── GameTheory-03-Topology2x2.ipynb
+├── GameTheory-03-Topology2x2-Csharp.ipynb           # Jumeau C# — classification ordinale 2×2 from-scratch
+├── GameTheory-04-NashEquilibrium.ipynb
+├── GameTheory-04-NashEquilibrium-Csharp.ipynb       # Jumeau C# — NE pur/mixte + support enum (Gauss) from-scratch (marathon #4956)
+├── GameTheory-05-ZeroSum-Minimax.ipynb
+├── GameTheory-05-ZeroSum-Minimax-Csharp.ipynb       # Jumeau C# — simplexe from-scratch (marathon #4956)
+├── GameTheory-06-EvolutionTrust.ipynb
+├── GameTheory-06-EvolutionTrust-Csharp.ipynb        # Jumeau C# — tournoi d'Axelrod from-scratch
+├── GameTheory-07-ExtensiveForm.ipynb
+├── GameTheory-07-ExtensiveForm-Csharp.ipynb         # Jumeau C# — arbre de jeu + infosets from-scratch (marathon #4956)
+├── GameTheory-08-CombinatorialGames.ipynb
+├── GameTheory-08-CombinatorialGames-Csharp.ipynb    # Jumeau C# — P/N + nim-sum (Bouton) + mex + Grundy DP + Sprague-Grundy (marathon #4956)
+├── GameTheory-09-BackwardInduction.ipynb
+├── GameTheory-09-BackwardInduction-Csharp.ipynb     # Jumeau C# — induction arrière + sous-jeux
 ├── GameTheory-10-ForwardInduction-SPE.ipynb
 ├── GameTheory-10-ForwardInduction-SPE-Csharp.ipynb # Jumeau C# — SPE/backward-induction + trembling-hand + forward induction + burn money (marathon #4956)
 ├── GameTheory-11-BayesianGames.ipynb
@@ -757,19 +759,19 @@ GameTheory/
 ├── GameTheory-16-MechanismDesign-Csharp.ipynb      # Jumeau C# — Vickrey + VCG (Clarke) + Gale-Shapley + double auction (marathon #4956)
 ├── GameTheory-17-MultiAgent-RL.ipynb
 ├── GameTheory-17-MultiAgent-RL-Csharp.ipynb        # Jumeau C# — Self-Play, FP, NFSP, PSRO
-├── GameTheory-2b-Lean-Definitions.ipynb            # Side tracks b — formalisation Lean 4 (6 notebooks : 2b, 4b, 5b, 8b, 11b, 15b)
-├── GameTheory-4b-Lean-NashExistence.ipynb
-├── GameTheory-5b-Lean-Minimax.ipynb
-├── GameTheory-8b-Lean-CombinatorialGames.ipynb
+├── GameTheory-02b-Lean-Definitions.ipynb            # Side tracks b — formalisation Lean 4 (6 notebooks : 2b, 4b, 5b, 8b, 11b, 15b)
+├── GameTheory-04b-Lean-NashExistence.ipynb
+├── GameTheory-05b-Lean-Minimax.ipynb
+├── GameTheory-08b-Lean-CombinatorialGames.ipynb
 ├── GameTheory-11b-Lean-BayesianGamesExt.ipynb
 ├── GameTheory-15b-Lean-CooperativeGames.ipynb
-├── GameTheory-4c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 8c, 15c)
-├── GameTheory-4c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
-├── GameTheory-6b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
-├── GameTheory-6c-RepeatedGames-FolkTheorem.ipynb
-├── GameTheory-6c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
-├── GameTheory-8c-CombinatorialGames-Python.ipynb
-├── GameTheory-8c-CombinatorialGames-Csharp.ipynb   #   Jumeau C# — Wythoff/Chomp/périodicité Grundy from-scratch (parité #4956)
+├── GameTheory-04c-NashExistence-Python.ipynb        # Side tracks c — approfondissement (Python 4c, 6c, 8c, 15c)
+├── GameTheory-04c-NashExistence-Csharp.ipynb        #   Jumeau C# (.NET Interactive) — Brouwer point fixe + Matching Pennies (parité #4956)
+├── GameTheory-06b-Lean-RepeatedGames.ipynb          # Compagnon lean (lecture) du 6c — lake game_theory_lean dévoilé, visibilité #11703
+├── GameTheory-06c-RepeatedGames-FolkTheorem.ipynb
+├── GameTheory-06c-RepeatedGames-FolkTheorem-Csharp.ipynb  #   Jumeau C# — grim trigger/TFT/Folk Theorem from-scratch (parité #4956)
+├── GameTheory-08c-CombinatorialGames-Python.ipynb
+├── GameTheory-08c-CombinatorialGames-Csharp.ipynb   #   Jumeau C# — Wythoff/Chomp/périodicité Grundy from-scratch (parité #4956)
 ├── GameTheory-15c-CooperativeGames-Python.ipynb
 ├── GameTheory-15c-CooperativeGames-Csharp.ipynb    #   Jumeau C# — Shapley (permutations) + Banzhaf + Core vide (majorité) + Mini-ONU + convexité from-scratch (parité #4956)
 ├── SocialChoice/                                   # Sous-série Choix Social (7 notebooks : 4 pères Python/Lean + 3 twins C#, parité #4956)
