@@ -114,6 +114,19 @@ def _is_assignment(line: str) -> bool:
     # Skip walrus / equality / annotation-only (no value)
     if rhs.startswith("=") or not rhs:
         return False
+    # Lexical pass kept as the upstream gate (scope unchanged); the AST pass
+    # only adjudicates candidates the regex already retained — prose citing a
+    # parameter twice (`n_est=200 obtient le meilleur...`) parses as a Compare,
+    # not an Assign, and falls through (#12620).
+    import ast as _ast
+    try:
+        tree = _ast.parse(line.strip(), mode="exec")
+    except SyntaxError:
+        return False
+    if len(tree.body) != 1 or not isinstance(
+        tree.body[0], (_ast.Assign, _ast.AnnAssign)
+    ):
+        return False
     return True
 
 
