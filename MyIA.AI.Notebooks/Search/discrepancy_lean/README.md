@@ -25,6 +25,7 @@ formalisées ici.
 | `Discrepancy/Basic.lean` | définitions (`IsColoring`, `discrepancy`, `degree`, `maxDegree`), 3 lemmes élémentaires, `BeckFialaConjecture` (`O(√k)`), cible `BeckFialaClassic` (`disc ≤ 2k − 1`) |
 | `Discrepancy/Komlos.lean` | `KomlosConjecture` (`O(1)`, colonnes unitaires), `BansalJiangLargeDegree` (`k ≥ log² n`), `KomlosBansalJiangWeak` (forme concrète affaiblie) |
 | `Discrepancy.lean` | agrégateur racine |
+| `Discrepancy/Basic_en.lean`, `Discrepancy/Komlos_en.lean`, `Discrepancy_en.lean` | siblings EN (i18n #4980) : docstrings traduites, signatures/preuves byte-identiques |
 
 État des preuves et découpage en boutes `b1..b4` (la « noix » Beck–Fiala
 classique, grignotée par petits bôuts multi-cycles) :
