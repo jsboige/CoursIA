@@ -50,8 +50,8 @@
       by: myia-po-2024:CoursIA-2
       python_sha: ffa47a216211ae2740009aa3dc2715a46d2f0a80
       csharp_sha: f58d5709ca2358d71380ccf96a576d12e6340dd2
-      content_python_sha: 0f86498d3c6c30f43df0db12d2282479518db476
-      content_csharp_sha: 9a76df8582a82d7fdbee59cfcb5270ad9c0c323d
+      content_python_sha: 0b4beabc96fb3b3411cfd15c8ac27c31773e974420b2f57734c9d9202f43f812
+      content_csharp_sha: a0e80bc948a551a106508863cab3588882bcc96cdb980369c5ff005f4c115b02
   known_differences:
     - "Socle pedagogique commun : Dilemme du Prisonnier Itere (IPD), tournoi d'Axelrod, strategies classiques (TitForTat, Pavlov, Generous TitForTat), dynamique evolutive (processus de Moran), emergence de la cooperation."
     - "Idiomes framework : Python = `numpy` + `matplotlib` + `matplotlib.animation` (viz dynamique du tournoi round-robin + courbes de Moran). C# = pur `System.*` (Collections.Generic, Linq) + moteur IPD from-scratch (T=5/R=3/P=1/S=0 convention Axelrod) ; 0 NuGet tiers."
