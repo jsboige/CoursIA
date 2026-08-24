@@ -109,6 +109,21 @@ def test_custom_label_without_self_hosted_token_is_still_self_hosted(tmp_path):
     assert {"RUNNER_GROUP", "RUNNER_LABELS"} == codes(result)
 
 
+def test_hosted_looking_custom_label_is_rejected_fail_closed(tmp_path):
+    write_workflow(tmp_path, "custom-looking", """
+        name: custom-looking
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: ubuntu-custom
+            steps:
+              - run: echo unsafe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.self_hosted_jobs == 1
+    assert {"RUNNER_GROUP", "RUNNER_LABELS"} == codes(result)
+
+
 def test_group_selection_is_self_hosted_even_without_labels(tmp_path):
     write_workflow(tmp_path, "group", """
         name: group

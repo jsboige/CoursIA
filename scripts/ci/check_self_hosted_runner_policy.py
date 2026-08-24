@@ -28,7 +28,22 @@ EXIT_BROKEN = 2
 
 REQUIRED_GROUP = "coursia-ephemeral"
 REQUIRED_LABELS = {"self-hosted", "coursia-ephemeral"}
-GITHUB_HOSTED_PREFIXES = ("ubuntu-", "windows-", "macos-")
+GITHUB_HOSTED_LABELS = {
+    "ubuntu-latest",
+    "ubuntu-24.04",
+    "ubuntu-22.04",
+    "ubuntu-20.04",
+    "ubuntu-slim",
+    "windows-latest",
+    "windows-2025",
+    "windows-2022",
+    "windows-2019",
+    "macos-latest",
+    "macos-26",
+    "macos-15",
+    "macos-14",
+    "macos-13",
+}
 SAME_REPO_REUSABLE_PREFIXES = (
     "./.github/workflows/",
     "jsboige/CoursIA/.github/workflows/",
@@ -106,8 +121,7 @@ def _contains_expression(value: Any) -> bool:
 
 
 def _is_github_hosted_label(label: str) -> bool:
-    lowered = label.lower()
-    return lowered.startswith(GITHUB_HOSTED_PREFIXES)
+    return label.lower() in GITHUB_HOSTED_LABELS
 
 
 def _runner_selection(runs_on: Any) -> tuple[bool, str | None, set[str]]:
