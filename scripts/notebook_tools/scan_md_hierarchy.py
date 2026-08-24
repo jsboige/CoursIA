@@ -22,24 +22,23 @@ Outputs a per-notebook report + a machine-readable summary line per finding.
 
 Drift mode (#11831): `--baseline --diff` compares the CURRENT per-notebook
 finding counts against a committed baseline (`md_hierarchy_baseline.json`,
-repo-relative posix paths -> {kind: count}).
+repo-relative posix paths -> {kind: count}). Exit 2 when any notebook/kind
+INCREASED (new rendering defects introduced -- per-notebook, not net: fixing 10
+in notebook A does not excuse adding 3 in notebook B), exit 0 when every delta
+is <= 0 (pure cosmetic fixes are OK), exit 1 on broken input (unreadable
+baseline, vacuous scan). `--update-baseline` re-seeds the file (deterministic:
+sorted paths, sorted kinds) -- run it in the SAME commit as a scanner rule
+change, else every subsequent PR shows false drift.
 
-Exit 2 when a notebook's NET count INCREASED (new rendering defects
-introduced -- net WITHIN a notebook, never ACROSS notebooks: fixing 10 in
-notebook A does not excuse adding 3 in notebook B, but adding 1 and fixing 9 in
-the SAME notebook is a burndown, not a "new defect"; a class migration like
-9 HEADING-IN-LIST -> 1 HINT-AS-HEADING is net -8). Exit 0 when every net delta
-is <= 0. Exit 1 on broken input (unreadable baseline, vacuous scan).
-
-`--name-status FILE` (git diff --name-status output, see #12735): PR-attribution.
-The drift computation is then restricted to the notebooks CHANGED by the PR
-(-- the gate, as shipped, scanned the whole corpus against a stale baseline and
-rendered a constant "+N across M notebooks" on EVERY PR, whatever it did). Two
-consequences: (a) a notebook not touched by the PR is never a "new defect of
-this PR"; (b) a legit rename (`4b -> 04b`, detected via git -M) does not count
-+1/-1 as two notebooks. `--update-baseline` re-seeds the file (deterministic:
-sorted paths, sorted kinds, dated `generated_at`) -- run it in the SAME commit as
-a scanner rule/rename change, else every subsequent PR shows false drift.
+PR-scoping (#12735): `--pr-diff <file>` restricts both the scan target and the
+drift report to the notebooks modified by the PR (paths listed one per line,
+typically `git diff -M --name-only origin/main...HEAD`). This stops the
+constant-on-every-PR drift that pre-dated the fix: when a notebook is renamed
+elsewhere in the repo, an unscoped scan reads the new path against the old
+baseline key and emits a spurious regression. Path lists outside the repo are
+treated as forward slashes; non-notebook paths in the list are ignored at
+scan time. When `--pr-diff` is supplied WITHOUT any positional `paths`, the
+list itself supplies them.
 
 An EMPTY scan is never reported as a clean scan: no argument, a mistyped path,
 or a directory holding no notebook exits 2 with a message on stderr instead of
@@ -48,7 +47,6 @@ a vacuous zero (the #3968 acceptance criterion, see HINT_RE below); `0/0` was
 the second mouth of the same trap.
 """
 import argparse, json, re, sys, pathlib
-from datetime import datetime, timezone
 
 BASELINE_DEFAULT = pathlib.Path(__file__).with_name('md_hierarchy_baseline.json')
 
@@ -266,8 +264,7 @@ def _repo_root():
     import subprocess
     try:
         out = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                             capture_output=True, text=True, timeout=10,
-                             encoding='utf-8', errors='replace')
+                             capture_output=True, text=True, timeout=10)
         if out.returncode == 0:
             return pathlib.Path(out.stdout.strip())
     except Exception:
@@ -314,91 +311,31 @@ def compute_counts(paths):
     return counts
 
 
-def parse_name_status(path):
-    """(heads, renames) from a `git diff --name-status` file (#12735).
+def diff_against_baseline(current, baseline):
+    """(regressions, improvements) -- per notebook/kind deltas.
 
-    git (non -z) emits TAB-separated lines: `M\\tA.py`, `R100\\told.py\\tnew.py`.
-    Return the set of HEAD-side paths (`heads`) and a NEW->OLD map for renames
-    (`renames`), so the drift gate can both restrict to a PR's apport AND match a
-    renamed notebook's baseline entry to its pre-rename path. Deleted (D) and
-    unmodified paths are dropped -- a deletion has no head file to scan. A
-    whitespace-separated fallback is kept for hand-written fixtures.
+    regressions: [(key, kind, delta)] with delta > 0 (new defects; a kind
+    absent from the baseline entry counts its full count as delta). improvements:
+    same shape with delta < 0 -- burndown progress, reported, never a failure.
+    A notebook that went fully clean (or was deleted) burns down every one of
+    its baseline kinds: the per-kind detail IS the review, an aggregate "gone"
+    line would hide it.
+    Per-notebook, deliberately NOT netted: offsetting a new defect in notebook B
+    by a fix in notebook A must still flag B (the fix in A and the defect in B
+    are two different reviews).
     """
-    heads: set[str] = set()
-    renames: dict[str, str] = {}
-    for raw in pathlib.Path(path).read_text(encoding='utf-8').splitlines():
-        line = raw.rstrip('\r')
-        if not line.strip():
-            continue
-        parts = line.split('\t') if '\t' in line else line.split(None, 2)
-        if not parts:
-            continue
-        status = parts[0]
-        if status and status[0] in ('R', 'C') and len(parts) >= 3:
-            old, new = parts[1].strip(), parts[2].strip()
-            if new:
-                heads.add(new)
-                renames[new] = old
-        elif len(parts) >= 2 and status and status[0] != 'D':
-            heads.add(parts[1].strip())
-    return heads, renames
-
-
-def _resolve_against(p, root):
-    """Resolve a possibly-repo-relative path against ``root`` (the git toplevel)."""
-    q = pathlib.Path(p)
-    return q if q.is_absolute() else (root / q)
-
-
-def diff_against_baseline(current, baseline, renames=None, only=None):
-    """(regressions, improvements, stable) -- per-notebook NET deltas.
-
-    regressions: [{path, net, kinds}] with net > 0 (the notebook introduced more
-    defects than it fixed). improvements: net < 0 (burndown). stable: net == 0
-    with non-zero kind churn (e.g. a within-notebook migration that nets out) --
-    reported for review, never a failure.
-
-    ``renames`` (NEW->OLD, from :func:`parse_name_status`) resolves a renamed
-    notebook's baseline entry: `04b.ipynb` not in the baseline but renamed from
-    `4b.ipynb` (which is) uses the old key, so a rename is not a +1/-1 phantom.
-
-    ``only`` (a set of path keys) restricts attribution to those keys -- the
-    PR-attribution mode (#12735): a notebook the PR did not touch is never a
-    "new defect of this PR", and a baseline-only notebook absent from the PR is
-    not reported as a burndown either.
-
-    NET is always recorded per notebook (sum of kind deltas); it is NEVER netted
-    across notebooks, preserving the #11831 invariant -- offsetting a defect in
-    notebook B by a fix in notebook A must still flag B.
-    """
-    regressions, improvements, stable = [], [], []
-    if only is not None:
-        keys = sorted(set(only))
-    else:
-        keys = sorted(set(current) | set(baseline))
-    for path in keys:
-        base_entry = baseline.get(path)
-        if base_entry is None and renames and path in renames:
-            base_entry = baseline.get(renames[path], {})
-        base_entry = base_entry or {}
+    regressions, improvements = [], []
+    keys = set(current) | set(baseline)
+    for path in sorted(keys):
         cur = current.get(path, {})
-        kind_deltas = []
-        net = 0
-        for kind in sorted(set(cur) | set(base_entry)):
-            delta = cur.get(kind, 0) - base_entry.get(kind, 0)
-            if delta != 0:
-                net += delta
-                kind_deltas.append((kind, delta))
-        if not kind_deltas:
-            continue
-        entry = {"path": path, "net": net, "kinds": kind_deltas}
-        if net > 0:
-            regressions.append(entry)
-        elif net < 0:
-            improvements.append(entry)
-        else:
-            stable.append(entry)
-    return regressions, improvements, stable
+        base = baseline.get(path, {})
+        for kind in sorted(set(cur) | set(base)):
+            delta = cur.get(kind, 0) - base.get(kind, 0)
+            if delta > 0:
+                regressions.append((path, kind, delta))
+            elif delta < 0:
+                improvements.append((path, kind, delta))
+    return regressions, improvements
 
 
 def load_baseline(path):
@@ -412,15 +349,34 @@ def load_baseline(path):
     return notebooks
 
 
-def write_baseline(path, counts, generated_at=None):
-    """Serialize counts deterministically (sorted paths, sorted kinds), dated.
+def load_pr_diff_paths(path):
+    """Read a `git diff -M --name-only` style file -> set of repo-root POSIX keys.
 
-    ``generated_at`` is an explicit parameter (default: now) so the byte
-    determinism test can pin a value -- an auto-timestamp would make two writes
-    differ and break the "re-seed is reproducible" guarantee.
+    Normalises backslashes to slashes and strips the leading './' if present.
+    The returned set is matched against `notebook_key()` outputs (which are
+    also POSIX-relative to the repo root), so a path written by `git diff
+    --name-only` round-trips without further normalisation.
+
+    Empty lines and pure whitespace are skipped. A missing file raises; the
+    caller decides whether `--pr-diff` was optional.
     """
-    if generated_at is None:
-        generated_at = datetime.now(timezone.utc).isoformat(timespec='seconds')
+    p = pathlib.Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"--pr-diff file not found: {path}")
+    out = set()
+    for raw_line in p.read_text(encoding='utf-8').splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        line = line.replace('\\', '/')
+        if line.startswith('./'):
+            line = line[2:]
+        out.add(line)
+    return out
+
+
+def write_baseline(path, counts):
+    """Serialize counts deterministically (sorted paths, sorted kinds)."""
     payload = {
         '_comment': ('Per-notebook finding counts of scan_md_hierarchy.py. '
                      'BURNDOWN, do not grow: a PR that increases any count is '
@@ -428,22 +384,12 @@ def write_baseline(path, counts, generated_at=None):
                      'Regenerate (same commit as any scanner rule change) with: '
                      'python scripts/notebook_tools/scan_md_hierarchy.py '
                      'MyIA.AI.Notebooks/ --update-baseline'),
-        'generated_at': generated_at,
         'total_findings': sum(sum(k.values()) for k in counts.values()),
         'notebooks': {p: dict(sorted(k.items())) for p, k in sorted(counts.items())},
     }
     pathlib.Path(path).write_text(
         json.dumps(payload, ensure_ascii=False, indent=1, sort_keys=False) + '\n',
         encoding='utf-8')
-
-
-def baseline_generated_at(path):
-    """The baseline's ``generated_at`` ('' if absent/foreign)."""
-    try:
-        raw = json.loads(pathlib.Path(path).read_text(encoding='utf-8'))
-    except Exception:
-        return ''
-    return str(raw.get('generated_at', '') or '')
 
 
 def main(argv=None):
@@ -467,15 +413,16 @@ def main(argv=None):
                         help='(re)seed the baseline from the current scan '
                              'instead of diffing -- SAME commit as any scanner '
                              'rule change, else every PR shows false drift')
-    parser.add_argument('--name-status', type=pathlib.Path, default=None,
-                        metavar='NAME_STATUS_FILE',
-                        help='PR-attribution (#12735): a `git diff -M '
-                             '--name-status base...head -- "*.ipynb"` file. The '
-                             'drift is then restricted to the notebooks the PR '
-                             'CHANGED (a notebook untouched by the PR is never a '
-                             '"new defect of this PR"), and a legit rename is '
-                             'resolved to its pre-rename baseline path so it '
-                             'does not count +1/-1 as two notebooks')
+    parser.add_argument('--pr-diff', default=None, metavar='PATH_FILE',
+                        help='restrict the scan (and the drift report) to '
+                             'notebooks modified by the PR -- a file listing '
+                             'one path per line, typically the output of '
+                             '`git diff -M --name-only origin/main...HEAD` '
+                             '(see #12735). When supplied WITHOUT positional '
+                             'paths, the list itself supplies them. '
+                             'In drift mode: regressions/improvements outside '
+                             'the list are NOT printed (the baseline still '
+                             'participates so renames upstream do not bleed).')
     args = parser.parse_args(argv)
 
     try:
@@ -487,81 +434,75 @@ def main(argv=None):
         parser.error('--baseline requires --diff or --update-baseline')
     drift = args.diff or args.update_baseline
 
+    # PR-scoping (#12735): when `--pr-diff` is given, restrict BOTH the scan
+    # target and the drift report to the files modified by the PR. A path is
+    # considered "in scope" if it appears in the diff list (POSIX-relative to
+    # repo root) AND ends in `.ipynb`. Other paths in the diff (Markdown,
+    # scripts, ...) are acknowledged but ignored here -- this scanner only
+    # cares about notebooks. Empty diff = vacuous; do NOT collapse to "clean".
+    pr_diff_paths = None
+    if args.pr_diff is not None:
+        try:
+            pr_diff_paths = load_pr_diff_paths(args.pr_diff)
+        except (OSError, ValueError) as e:
+            print(f'ERROR: unreadable --pr-diff file {args.pr_diff}: {e}',
+                  file=sys.stderr)
+            return 1
+        nb_in_pr = {p for p in pr_diff_paths if p.endswith('.ipynb')}
+        if not nb_in_pr:
+            print(f'ERROR: --pr-diff {args.pr_diff} contains no .ipynb paths '
+                  '-- nothing to scan, this is NOT an all-clear.',
+                  file=sys.stderr)
+            return 1
+        before = len(notebooks)
+        notebooks = [nb for nb in notebooks
+                     if notebook_key(nb) in nb_in_pr]
+        if not notebooks:
+            print(f'ERROR: --pr-diff restricts the scan to {len(nb_in_pr)} '
+                  f'notebook(s) but the positional `paths` resolved to none '
+                  f'of them ({before} candidate(s) outside the PR).',
+                  file=sys.stderr)
+            return 1
+
     if drift:
+        # Diff mode re-scans through compute_counts (same filters as census).
+        # A scan where every notebook is CLEAN yields counts={} -- legitimate;
+        # vacuous means iter_notebooks itself designated nothing.
+        if not notebooks:
+            print('ERROR: no notebook found under the given paths -- nothing '
+                  'was scanned, this is NOT an all-clear.', file=sys.stderr)
+            return 1
+        baseline_path = args.baseline or str(BASELINE_DEFAULT)
+        counts = compute_counts(args.paths)
         if args.update_baseline:
-            # Re-seed is a WHOLE-corpus operation (never PR-scoped) -- it records
-            # the accepted current state, including grandfathered historic defects.
-            if not notebooks:
-                print('ERROR: no notebook found under the given paths -- nothing '
-                      'was scanned, this is NOT an all-clear.', file=sys.stderr)
-                return 1
-            baseline_path = args.baseline or str(BASELINE_DEFAULT)
-            counts = compute_counts(args.paths)
             write_baseline(baseline_path, counts)
             print(f'baseline updated: {baseline_path} '
                   f'({len(counts)} notebooks, '
                   f'{sum(sum(k.values()) for k in counts.values())} findings)')
             return 0
-
-        baseline_path = args.baseline or str(BASELINE_DEFAULT)
-        renames = {}
-        only_set = None
-        if args.name_status:
-            try:
-                ns_heads, renames = parse_name_status(args.name_status)
-            except (OSError, ValueError) as e:
-                print(f'ERROR: unreadable --name-status {args.name_status}: {e}',
-                      file=sys.stderr)
-                return 1
-            ipynb_heads = [h for h in ns_heads
-                           if h.endswith('.ipynb')
-                           and '_output' not in h
-                           and '.ipynb_checkpoints' not in h]
-            if not ipynb_heads:
-                # A PR touching no notebook (scanner/baseline edit) is not a
-                # notebook regression -- say so, do NOT report phantoms.
-                print('No notebook changed in this PR -- no drift to report.')
-                return 0
-            root = _repo_root()
-            counts = compute_counts([_resolve_against(h, root) for h in ipynb_heads])
-            only_set = set(ipynb_heads)
-        else:
-            # Whole-corpus drift (the default; also the pre-#12735 behaviour).
-            if not notebooks:
-                print('ERROR: no notebook found under the given paths -- nothing '
-                      'was scanned, this is NOT an all-clear.', file=sys.stderr)
-                return 1
-            counts = compute_counts(args.paths)
         try:
             baseline = load_baseline(baseline_path)
         except (OSError, ValueError, json.JSONDecodeError) as e:
             print(f'ERROR: unreadable baseline {baseline_path}: {e}',
                   file=sys.stderr)
             return 1
-        regressions, improvements, stable = diff_against_baseline(
-            counts, baseline, renames=renames, only=only_set)
-        # Baseline used as the reference "before this PR": date it so the report
-        # cannot be read as a live state (#12735).
-        print(f'baseline: {baseline_path} '
-              f'(generated {baseline_generated_at(baseline_path) or "unknown"})')
-        for e in regressions:
-            print(f'  +{e["net"]}  {e["path"]}')
-            for kind, delta in e['kinds']:
-                if delta > 0:
-                    print(f'        +{delta} {kind}')
-        for e in improvements:
-            print(f'  {e["net"]}  {e["path"]}  (burndown)')
-            for kind, delta in e['kinds']:
-                if delta < 0:
-                    print(f'        {delta} {kind}')
-        for e in stable:
-            print(f'  {e["net"]}  {e["path"]}  (mixed, net 0)')
-            for kind, delta in e['kinds']:
-                print(f'        {delta:+d} {kind}')
+        regressions, improvements = diff_against_baseline(counts, baseline)
+        if pr_diff_paths is not None:
+            # Keep ONLY the deltas that touch files modified by this PR.
+            # Baselines may still have stale keys (e.g. renamed notebooks) --
+            # those don't print here because no PR actually introduces them.
+            regressions = [(p, k, d) for p, k, d in regressions
+                           if p in pr_diff_paths]
+            improvements = [(p, k, d) for p, k, d in improvements
+                            if p in pr_diff_paths]
+        for path, kind, delta in regressions:
+            print(f'  +{delta} {kind}  {path}')
+        for path, kind, delta in improvements:
+            print(f'  {delta} {kind}  {path}  (burndown)')
         # Last stdout line, same contract as census mode (CI reads tail -1).
-        print(f'\n=== drift: +{sum(e["net"] for e in regressions)} '
-              f'across {len(regressions)} notebook(s), '
-              f'{sum(-e["net"] for e in improvements)} burned down ===')
+        print(f'\n=== drift: +{sum(d for _, _, d in regressions)} '
+              f'across {len({p for p, _, _ in regressions})} notebook(s), '
+              f'{sum(-d for _, _, d in improvements)} burned down ===')
         return 2 if regressions else 0
 
     total = 0

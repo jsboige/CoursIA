@@ -5,6 +5,16 @@ name: MD Hierarchy Drift Advisory
 # plus passer inapercue parce qu'un autre notebook de la meme PR brule
 # l'equivalent ailleurs (cas fondateur : PR #11823, 6 hits, CI vert).
 #
+# #12735 : le scanner lit TOUT `MyIA.AI.Notebooks/`, pas seulement le diff PR.
+# Quand la baseline contient une cle pour un notebook qui a ete renomme
+# ailleurs dans le repo, le scanner voit le nouveau fichier comme un nouveau
+# defaut (`+1 HINT-AS-HEADING <new-name>`) et l'ancien nom comme un
+# burndown (`-1 HINT-AS-HEADING <old-name>`), meme quand la PR ne touche
+# aucun des deux. Verdict constant `+2 across 2 notebooks` sur chaque PR.
+# Fix : on restreint le rapport (et la cible de scan) aux fichiers du diff,
+# via `--pr-diff <(git diff -M --name-only origin/main...HEAD)`. Le scanner
+# legacy reste utilisable en local (sans --pr-diff) pour les audits depot.
+#
 # Mode ADVISORY au premier tour (mandat de l'issue) : le job reste VERT, un
 # commentaire nomme chaque (notebook, kind, delta). Le passage en bloquant
 # sera decide ulterieurement une fois le scan stabilise.
@@ -28,32 +38,29 @@ permissions:
 
 jobs:
   drift:
-    name: scan_md_hierarchy drift (advisory)
+    name: scan_md_hierarchy drift (advisory, PR-scoped #12735)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Drift check vs baseline
+      - name: Build PR diff paths
+        run: |
+          set +e
+          git fetch origin main --depth=1 2> fetch_err.txt
+          git diff -M --name-only origin/main...HEAD > pr_diff.txt 2>> fetch_err.txt
+          set -e
+          echo "--- pr_diff.txt ($(wc -l < pr_diff.txt) paths) ---"
+          cat pr_diff.txt
+      - name: Drift check vs baseline (PR-scoped)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # #12735: le gate juge l'apport de la PR, pas le corpus entier contre
-          # une baseline burndown. On restreint le scan aux notebooks que la PR
-          # a reels changes (git -M resout les renommages) ; a defaut (dispatch,
-          # BASE_SHA vide) on retombe sur un drift whole-corpus.
-          EXTRA=""
-          if [ -n "$BASE_SHA" ]; then
-            git diff -M --name-status "$BASE_SHA...$HEAD_SHA" \
-              -- 'MyIA.AI.Notebooks/' > name_status.txt
-            EXTRA="--name-status name_status.txt"
-          fi
           set +e
           python scripts/notebook_tools/scan_md_hierarchy.py MyIA.AI.Notebooks/ \
-            --baseline --diff $EXTRA > drift_report.txt 2> drift_err.txt
+            --baseline --diff --pr-diff pr_diff.txt > drift_report.txt 2> drift_err.txt
           rc=$?
           set -e
           if [ "$rc" -eq 2 ]; then
@@ -61,7 +68,9 @@ jobs:
               echo "## MD hierarchy drift -- ${HEAD_SHA:0:9}"
               echo ""
               echo "Cette PR augmente le compte de defauts de rendu markdown"
-              echo "(baseline = burndown, ne pas croitre). Nouveaux defauts :"
+              echo "(baseline = burndown, ne pas croitre). Verdict RESTREINT aux"
+              echo "notebooks du diff PR (\`git diff -M --name-only\`, --pr-diff"
+              echo "#12735) ; le bruit de fond du depot n'est plus imprime."
               echo ""
               echo '```'
               cat drift_report.txt
@@ -75,8 +84,8 @@ jobs:
             echo "::warning file=scripts/notebook_tools/md_hierarchy_baseline.json::MD hierarchy drift detected (advisory, #11831) -- see PR comment"
             exit 0
           elif [ "$rc" -eq 1 ]; then
-            echo "::error::scan_md_hierarchy drift mode broken (unreadable baseline / vacuous scan):"
+            echo "::error::scan_md_hierarchy drift mode broken (unreadable baseline / vacuous scan / no .ipynb in PR diff):"
             cat drift_err.txt
             exit 1
           fi
-          echo "No drift: every per-notebook delta <= 0."
+          echo "No drift: every per-notebook delta <= 0 (PR-scoped, #12735)."
