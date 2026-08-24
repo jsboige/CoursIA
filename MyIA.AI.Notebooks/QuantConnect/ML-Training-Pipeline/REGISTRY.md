@@ -8,6 +8,9 @@ Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11
 Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
 Updated: 2026-08-15 — M15 LSTM-vol §C re-run perte de précision (issue #11034): 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS
 Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
+Updated: 2026-08-24 — M4 DLinear-vol §C re-run dé-biaisé + DM recentré (issue #12734): 2/3 BEATS, 1/3 INCONCLUSIVE — le 3/3 de #11011 était gonflé par le biais de HAR
+Updated: 2026-08-24 — M4 DLinear-vol §C extension ETF (Epic #1454): **NO BEATS** — l'edge brut (+16,75 %) est le biais² de la baseline HAR ; hors biais +0,3 %, dm_p_median 0,41
+Updated: 2026-08-23 — backlog à déposer : M15 h=32 NO BEATS (#11468) et barreau ETF direction 9/9 NO BEATS (#11427) absents du header — cf sections respectives
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -685,5 +688,3 @@ Checkpoints: 5
 - Data hash: `synthetic-dryrun`
 - Metrics: best_val_loss=0.000252, direction_accuracy=0.4762, direction_accuracy_significant=0.4722, epochs_trained=2, mae=0.018693, mse=0.000542
 - Architecture: d_model=128, input_size=17, nhead=4, num_layers=4
-- Config: d_model=128, device=cpu, epochs=2, nhead=4, num_layers=4, symbol=SPY
-- Files: metadata.json, model.pt
