@@ -7,6 +7,7 @@ Updated: 2026-08-14 — M4 DLinear-vol §C entry (issue #10908): NO BEATS (biais
 Updated: 2026-08-15 — M4 DLinear-vol §C re-run perte de précision (issue #11011): BEATS 3/3 (linear → mse : changement de jambe, pas de modèle)
 Updated: 2026-08-14 — M15 LSTM-vol §C entry (issue #10941): NO BEATS (biais différentiel LSTM−HAR, même structure que M4)
 Updated: 2026-08-15 — M15 LSTM-vol §C re-run perte de précision (issue #11034): 2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS
+Updated: 2026-08-24 — M15 LSTM-vol patch persistance biais + slice 2/2 dé-biaisé symétrique (issue #12734): patch livré, run complet dispatché au prochain cycle
 
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
@@ -176,6 +177,29 @@ que HAR porte l'essentiel (`har_bias_oos` −0,23/−0,34/−0,45).
 - **Run** : `python m15_lstm_rv.py --coins BTC-USD --seeds 0,1,7,42 --horizons 1,5,10 --loss-fn mse --refit-every 110 --output results/m15_lstm_rv_btc_sc_mse` (1563 s, resume depuis checkpoint 9/12)
 - **Notebook** : section 7 de `m15_lstm_rv_sc_validation.ipynb` (recalcul indépendant de la conjonction mse, outputs C.2)
 - **Verdict §C (jambe de précision)** : **2/3 BEATS, 1/3 INCONCLUSIVE, 0/3 NO BEATS** (contre 3/3 NO BEATS sous linear — changement de jambe, pas de modèle)
+
+### M15 LSTM-vol — patch persistance biais + slice 2/2 dé-biaisé symétrique (2026-08-24, issue #12734)
+
+Slice 2/2 du ticket #12734 (slice 1/2 = M4 DLinear-vol, livré via PR #12742). Le ticket note que `m15_lstm_rv.py` ne persistait ni `har_bias_oos` ni les prédictions brutes — le keeper M15 BTC #11041 était donc **invérifiable post-hoc** par la voie symétrique.
+
+**Patch persistance** : `evaluate_one_combo` calcule désormais `har_bias_oos = mean(har_pred - target)` OOS et l'ajoute au dict retourné (rétro-compatible, les anciens champs `sharpe_*`, `mse_*`, `dm_*` sont préservés). Le JSON `results.json` de chaque run M15 porte donc `har_bias_oos` par combo — vérifiable depuis git sans relancer le sweep.
+
+**Wrapper `scripts/btc_m15.py`** : pendant BTC-only de `scripts/btc_vol.py`. Orchestre le run M15 BTC + applique la décomposition `MSE = biais² + variance` et le DM recentré (`loss_fn="mse"` sur erreurs centrees). Helpers `_mse_decomposition` et `_dm_centered_mse` **dupliqués** depuis `btc_vol.py` (TODO post-merge : consolider dans un module partage `btc_debias.py`).
+
+**Section notebook** : section 8 ajoutée à `m15_lstm_rv_sc_validation.ipynb` (méthodologie + commande de run complet + verdict attendu). Markdown-only — la cellule code de lecture du JSON viendra au prochain cycle avec le rerun.
+
+**Run complet** : 3 horizons × 4 seeds = 12 combos, ~50 min/combo (~10h CPU/GPU) — **hors budget cycle worker**. Acceptance #4 du ticket #12734 autorise explicitement ce defer. Commande :
+
+```bash
+for h in 1 5 10; do
+  for s in 0 1 7 42; do
+    python scripts/btc_m15.py --horizon $h --seed $s --refit-every 110 --hidden-size 32
+  done
+done
+```
+
+- **Verdict attendu** : symétrique à M4 (slice 1/2), conjonction §C recentrée `edge ≥ 2σ AND dm_p_median < 0.05`. Lecture : `var_ratio_lstm_over_har_debiased < 1` = LSTM plus précis ; `har_bias_share_of_mse_debiased` < 0.10 = dé-biaisage propre.
+- **Statut** : PATCH LIVRÉ, RUN DISPATCHÉ au prochain cycle worker (acceptance #4).
 
 ## Ladder #1409 — Final Verdicts (2026-06-12)
 

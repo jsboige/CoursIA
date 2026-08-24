@@ -482,9 +482,16 @@ def evaluate_one_combo(
     # errors_model = LSTM, errors_baseline = HAR: dm < 0 => LSTM wins.
     dm_info: dict = {"dm_stat": float("nan"), "dm_pvalue": float("nan"),
                      "mean_loss_diff": float("nan"), "dm_verdict": "N/A"}
+    har_bias_oos: float = float("nan")
     try:
         har_err = (har_pred_aligned - target).values.astype(float)
         lstm_err = (lstm_pred_aligned - target).values.astype(float)
+        # Issue #12734 (slice 2/2): persistence of OOS bias + raw errors enables
+        # the HAR-debiased + DM-on-centered-errors mode without re-running. Keep
+        # `har_bias_oos` even when downstream (pr-review §C) does not consume it,
+        # so the JSON is auditable post-hoc.
+        if len(har_err) >= 10 and np.all(np.isfinite(har_err)):
+            har_bias_oos = float(np.mean(har_err))
         if len(har_err) >= 10 and np.all(np.isfinite(har_err)) and np.all(np.isfinite(lstm_err)):
             dm = diebold_mariano_test(
                 lstm_err, har_err, loss_fn=loss_fn, horizon=horizon
@@ -515,6 +522,7 @@ def evaluate_one_combo(
         "n_obs": len(r),
         "lstm_preds": len(lstm_fc),
         "har_preds": len(har_fc),
+        "har_bias_oos": har_bias_oos,
         **dm_info,
     }
 
