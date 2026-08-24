@@ -227,7 +227,7 @@ Série de **33 notebooks** sur **Lean 4**, proof assistant basé sur la théorie
 | 16d | [Lean-16d-Conway-Game-of-Life-Lean-Native](Lean/Lean-16d-Conway-Game-of-Life-Lean-Native.ipynb) | Lean 4 / WSL | Port natif Lean du Game of Life : Life semantics, registres, preuves de conservation | 3 |
 | 16e | [Lean-16e-Conway-FRACTRAN-Lean-Native](Lean/Lean-16e-Conway-FRACTRAN-Lean-Native.ipynb) | Lean 4 / WSL | Port natif Lean de FRACTRAN : encodage fractions, machine à fractions, premiers programmes | 3 |
 | 17 | [Lean-17-Knots-a-Conway-and-Proofs](Lean/Lean-17-Knots-a-Conway-and-Proofs.ipynb) | Python WSL | Noeuds de Conway : introduction, énoncés, premier port formel adossé à `conway_knots_lean/` | 3 |
-| 17b | [Lean-17-Knots-b-Invariants-Companion](Lean/Lean-17-Knots-b-Invariants-Companion.ipynb) | Python WSL | Companion natif : invariants de noeuds, snippets WSL, sources `conway_knots_lean/` | 3 |
+| 17b | [Lean-17b-Knots-Invariants-Companion](Lean/Lean-17b-Knots-Invariants-Companion.ipynb) | Python WSL | Companion natif : invariants de noeuds, snippets WSL, sources `conway_knots_lean/` | 3 |
 | 18 | [Lean-18-Search-AStar-Optimality](Lean/Lean-18-Search-AStar-Optimality.ipynb) | Lean 4 / WSL | Preuve d'optimalité A* dans le lake `planners_lean` : consistance, admissibilité, branchement | 3 |
 | **Théorèmes phares 2026** |  |  |  |  |
 | 19 | [Lean-19-Sendov-Complex-Analysis](Lean/Lean-19-Sendov-Complex-Analysis.ipynb) | Python WSL | Conjecture de Sendov (preuve L. Mazur 2026, digestion et formalisation T. Tao) : pour un polynôme dont tous les zéros sont dans le disque unité, chaque zéro a un point critique à distance ≤ 1 — énoncé, illustrations numériques, contexte de la preuve | 4 |
