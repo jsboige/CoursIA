@@ -1,0 +1,45 @@
+name: Lean CI (assignment_lean)
+
+# CI for assignment_lean (GameTheory/assignment_lean) — assignment problem,
+# Kuhn-Munkres Hungarian method correction skeleton (Munkres tribute #12598):
+# weak LP duality, zero-gap optimality certificate, equality graph, and the
+# Hungarian tightening preserving dual feasibility. Companion lake of the
+# notebook GameTheory-27-Munkres-Assignment.ipynb.
+#
+# sorry-filter-mode=real, baseline=0: the library is fully sorry-free;
+# this guards that NO new `sorry` is introduced (never false-positives on
+# prose mentions; catches any NEW sorry, including `exact sorry`,
+# `theorem foo := by sorry`, `def f : T := sorry`, `<;> sorry`).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-assignment-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  ci:
+    uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
+    with:
+      project-path: MyIA.AI.Notebooks/GameTheory/assignment_lean
+      display-name: assignment_lean
+      sorry-baseline: "0"
+      sorry-filter-mode: real

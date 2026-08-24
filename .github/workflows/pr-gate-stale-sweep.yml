@@ -69,11 +69,29 @@ name: PR gate stale-verdict sweep
 
 on:
   schedule:
-    # Every 20 minutes on off-:00 minutes (anti-stampede convention, as in
-    # pr-gate-missing-advisory.yml). Frequent enough that a PR blocked by a
-    # stale verdict waits minutes, not a day; cheap enough (one short job)
-    # not to add meaningful load to a starved queue.
-    - cron: '7,27,47 * * * *'
+    # Hourly on an off-:00 minute (anti-stampede convention, as in
+    # pr-gate-missing-advisory.yml).
+    #
+    # #12728: this was every 20 minutes, and the cadence was destroying its own
+    # organ. The premise of the old comment -- "cheap enough (one short job) not
+    # to add meaningful load" -- is true of the WORK and false of the WAIT. On 30
+    # runs the job executed in 110-122 s but waited 1.6-2.2 h for a runner (98-99 %
+    # queue). Service ~2 h against a 20 min cadence means 5-6 sweeps are created
+    # behind the one that finally gets a slot; a concurrency group holds exactly
+    # ONE pending, so GitHub drops the rest. Measured outcome: 19 of 30 runs
+    # cancelled, median lifetime 1228 s -- which is 20.5 min, i.e. exactly one
+    # cron interval. That number excludes every cause except the next sweep.
+    #
+    # The loop closed on itself: the busier the queue, the longer the sweep waits,
+    # the more certainly it is cancelled -- so the organ that repairs stale
+    # PR gate verdicts went quiet precisely under the congestion that produces
+    # them. Matching the cadence to the observed service time is what stops the
+    # sweeps killing each other.
+    #
+    # This does NOT fix the 99 % queue wait -- see #12728 T2, which routes this
+    # workflow to the self-hosted runners of #12704. Repair still arrives late;
+    # it just stops failing to arrive at all.
+    - cron: '7 * * * *'
   workflow_dispatch:
     inputs:
       dry_run:

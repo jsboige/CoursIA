@@ -151,19 +151,36 @@ BENIGN_BANNERS = (
         r"the required library is not installed\.\s*"
         r"Falling back to torch implementation\.",
         re.IGNORECASE),
+    # Sandbox interception report (GenAI/Texte 12/13/14, #12508): the confined
+    # executor DEMONSTRATES the interception of an import outside its
+    # whitelist, and the demo's committed output carries the intercepted
+    # exception's class name as DATA -- the word "ImportError" printed by the
+    # report line, not a tool that failed to load. The prefix is emitted only
+    # by the sandbox runner itself (executer_tests_detaille in 12/13/14); a
+    # genuine missing-module failure never carries it. Same regime as the
+    # transformers banner: literal, narrow, and a real failure in the same
+    # stream still fires (asserted by --self-test).
+    re.compile(
+        r"echec de chargement intercepte : ImportError: module non autorise"
+        r" dans le bac a sable : \S+[^\n]*",
+        re.IGNORECASE),
 )
 
 # --- class 2: absolute path of the executing machine ------------------------
 MACHINE_PATH_PATTERNS = (
     # Windows drive-letter path with at least two segments: D:\dev\CoursIA
+    # A >=2-char first segment kills the escaped-newline FP -- an LLM answer
+    # carrying a literal backslash-n pair after "n:" read as a Windows path
+    # (its first "segment" was the single letter n). Real drive paths never
+    # have a one-character segment.
     # BS + BS is the regex source for "one literal backslash": a single BS
     # here would escape the following brace and require a literal "{1,2}"
     # in the text -- a pattern that matches nothing and raises nothing. The
     # witness below is what caught exactly that, before this shipped.
     re.compile("[A-Za-z]:" + BS + BS + "{1,2}"
-               + "[^" + BS + BS + '"\\s]{1,60}'
+               + "[^" + BS + BS + '"\\s]{2,60}'
                + BS + BS + "{1,2}"
-               + "[^" + BS + BS + '"\\s]{1,60}'),
+               + "[^" + BS + BS + '"\\s]{2,60}'),
     re.compile(r"/home/[A-Za-z0-9_.-]{2,32}/"),
     re.compile(r"/Users/[A-Za-z0-9_.-]{2,32}/"),
     re.compile(r"/mnt/[a-z]/[A-Za-z0-9_.-]{2,32}/"),
@@ -341,7 +358,11 @@ def self_test(cwd=None):
                    "Compiling model... done.",
                    "Solution trouvee en 11.39s (avec simanneal)",
                    "Energie finale: 0 | Solution valide: True",
-                   "Backtracking: 49/201/295 appels"):
+                   "Backtracking: 49/201/295 appels",
+                   # LLM-generated code sample: literal backslash-n ESCAPES in
+                   # the response text are data, not drive paths -- the
+                   # 2-char minimum segment quantifier keeps them out.
+                   r"pour 1..n:\n\ndef fizzbuzz(n):\n    result = []"):
         hit = ([p.pattern for p in TOOL_FAILURE_PATTERNS if p.search(benign)]
                + [p.pattern for p in MACHINE_PATH_PATTERNS if p.search(benign)])
         if hit:
@@ -366,6 +387,17 @@ def self_test(cwd=None):
         failures.append("benign transformers fast-path banner still fires")
     if not _one(_banner + "\nbash: dot: command not found"):
         failures.append("benign banner masked a real failure in the same "
+                        "stream")
+
+    # Sandbox interception banner: same two-direction control. The banner
+    # must be neutralised when alone, but must NOT hide a genuine missing
+    # module elsewhere in the same stream.
+    _sandbox = ("(4) import os  : (0/2)  echec de chargement intercepte : "
+                "ImportError: module non autorise dans le bac a sable : os")
+    if _one(_sandbox):
+        failures.append("benign sandbox interception banner still fires")
+    if not _one(_sandbox + "\nModuleNotFoundError: No module named 'simanneal'"):
+        failures.append("sandbox banner masked a real failure in the same "
                         "stream")
 
     # Replay the founding commit against its parent.

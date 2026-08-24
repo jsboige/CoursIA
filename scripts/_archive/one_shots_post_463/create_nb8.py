@@ -10,9 +10,9 @@ notebook = {
                 "\n",
                 "**Kernel** : Python 3\n",
                 "\n",
-                "**Navigation** : [<- ExtensiveForm](GameTheory-7-ExtensiveForm.ipynb) | [Index](README.md) | [Suivant ->](GameTheory-9-BackwardInduction.ipynb)\n",
+                "**Navigation** : [<- ExtensiveForm](GameTheory-07-ExtensiveForm.ipynb) | [Index](README.md) | [Suivant ->](GameTheory-09-BackwardInduction.ipynb)\n",
                 "\n",
-                "**Side tracks** : [8b-Lean-CombinatorialGames](GameTheory-8b-Lean-CombinatorialGames.ipynb) | [8c-CombinatorialGames-Python](GameTheory-8c-CombinatorialGames-Python.ipynb)\n",
+                "**Side tracks** : [8b-Lean-CombinatorialGames](GameTheory-08b-Lean-CombinatorialGames.ipynb) | [8c-CombinatorialGames-Python](GameTheory-08c-CombinatorialGames-Python.ipynb)\n",
                 "\n",
                 "---\n",
                 "\n",
@@ -472,7 +472,7 @@ notebook = {
                 "\n",
                 "---\n",
                 "\n",
-                "**Navigation** : [<- ExtensiveForm](GameTheory-7-ExtensiveForm.ipynb) | [Index](README.md) | [Suivant ->](GameTheory-9-BackwardInduction.ipynb)"
+                "**Navigation** : [<- ExtensiveForm](GameTheory-07-ExtensiveForm.ipynb) | [Index](README.md) | [Suivant ->](GameTheory-09-BackwardInduction.ipynb)"
             ]
         }
     ],
@@ -491,8 +491,8 @@ notebook = {
     "nbformat_minor": 4
 }
 
-with open('GameTheory-8-CombinatorialGames.ipynb', 'w', encoding='utf-8') as f:
+with open('GameTheory-08-CombinatorialGames.ipynb', 'w', encoding='utf-8') as f:
     json.dump(notebook, f, ensure_ascii=False, indent=1)
 
-print("Notebook GameTheory-8-CombinatorialGames.ipynb created successfully!")
+print("Notebook GameTheory-08-CombinatorialGames.ipynb created successfully!")
 print(f"Cells: {len(notebook['cells'])}")
