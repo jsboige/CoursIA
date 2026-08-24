@@ -1,12 +1,8 @@
 {
   "_comment": "Baseline of code-in-markdown-cells violations. Burn down, do not grow. Regenerate with: python scripts/notebook_tools/detect_code_in_markdown_cells.py --update-baseline --baseline <this file>",
-  "count": 6,
+  "count": 2,
   "hashes": [
     "14f7007ef0a0fe43",
-    "398012ebec395f7f",
-    "8c9e45215860abf1",
-    "96d844cbbdde350d",
-    "c641f44147b1260e",
-    "ed8aa4e4aa7d554e"
+    "96d844cbbdde350d"
   ]
 }
