@@ -573,6 +573,13 @@ def print_red_refusal(lane: str, backlog: dict, threshold_hours: float) -> None:
 
 
 def main() -> int:
+    # Console Windows cp1252 : un titre d'issue portant un caractere hors table
+    # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
+    # le tirage entier. UTF-8 + replace : le titre s'affiche degrades, le
+    # tirage vit.
+    for _stream in (sys.stdout, sys.stderr):
+        if hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--lane", required=True, help="machine:workspace, ex. myia-po-2026:CoursIA")
