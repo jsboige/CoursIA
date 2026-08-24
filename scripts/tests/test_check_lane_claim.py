@@ -347,6 +347,48 @@ def test_decorated_paths_clause_scopes_claim():
     assert fnmatch.fnmatch("notebooks/b.ipynb", "notebooks/b.ipynb**")  # invariant
 
 
+# --- non-ASCII leading decoration (#12711) -----------------------------------
+# A leading `→` (U+2192) / `➡` / `»` / `•` / `–` / `—` is an agent decoration,
+# not an ASCII decorator. The ASCII-pure decor class voided such a marker to
+# BOTH regexes on #12465 (po-2026's `→DELIVERED` went unread; po-2027 got CLEAR
+# and delivered the same notebook 15 h later). Broadening `_DECOR` re-reads the
+# marker and re-arms the malformed lint for the bracketless form.
+
+def test_parse_marker_non_ascii_arrow_decorated():
+    ev = clc.parse_claim_event(comment(
+        "→[CLAIMED] lane myia-po-2027:CoursIA-2 -- arrow prefix",
+        "2026-08-23T18:21:01Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2027:CoursIA-2"
+
+
+def test_parse_non_ascii_decorated_delivered_closes():
+    # The exact #12465 shape, bracketed: an arrow-prefixed DELIVERED with a
+    # lane must register as a close (this is what po-2026's line should have
+    # done before po-2027 delivered the same notebook).
+    ev = clc.parse_claim_event(comment(
+        "→[DELIVERED] lane myia-po-2026:CoursIA -- PR #12512 paths: .../Search-3-Informed.ipynb",
+        "2026-08-23T03:36:33Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_open is False
+    assert ev.lane == "myia-po-2026:CoursIA"
+
+
+def test_parse_non_ascii_decoration_mid_prose_still_ignored():
+    # A `→` followed by prose, then a mid-line `[CLAIMED]`, must NOT become an
+    # event (the bracket is not at a decorator position). Non-regression pinned.
+    ev = clc.parse_claim_event(comment(
+        "→ Cette PR reprend un [CLAIMED] discute plus tot",
+        "2026-08-23T09:00:00Z",
+    ))
+    assert ev is None
+
+
 def test_check_no_paths_claim_in_prose_returns_exit_2_not_scoped(capsys):
     # Full-flow regression for the #10228 FN: a claim comment that ALSO mentions
     # a close marker in instructional prose must still BLOCK another lane. This
@@ -690,6 +732,20 @@ def test_decorated_bare_marker_flagged(capsys):
     assert '"malformed_markers": 1' in captured.out
 
 
+def test_malformed_marker_non_ascii_decorated_surfaces(capsys):
+    # #12711 -- a `→`-prefixed BARE marker (no brackets) was invisible to the
+    # #11239 lint too: the writer believed their lock was posted yet the organ
+    # answered CLEAR. Broadening `_DECOR` re-arms the WARN.
+    p = payload(comment(
+        "→CLAIMED lane myia-po-2026:CoursIA -- working here",
+        "2026-08-23T03:36:33Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"malformed_markers": 1' in captured.out
+    assert 'WARN: marqueur sans crochets "CLAIMED"' in captured.err
+
+
 def test_malformed_close_marker_flagged(capsys):
     # Close markers are linted too: a bracketless `RELEASED` never registers
     # as a release, so the claim stays locked for other lanes.
@@ -834,6 +890,90 @@ def test_stale_threshold_unparseable_not_treated_stale(capsys):
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         stale_threshold=24.0, now=NOW)
     assert rc == 2
+
+
+def test_stale_claims_null_when_detection_disabled(capsys):
+    # #12751 -- detection OFF (no --stale-threshold): `stale_claims` must be
+    # `null` (not measured), NOT `[]` (measured, nothing stale). Previously
+    # both rendered `[]`, so the fleet ran with detection off and a 415h
+    # claim still read as "alive".
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- very old orphan",
+        "2026-08-01T00:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA", now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] is None
+    assert out["stale_detection"] == "disabled"
+    assert "STALE_DETECTION disabled" in captured.err
+
+
+def test_stale_claims_empty_when_detection_enabled_clean(capsys):
+    # Detection ON, no claim old enough -> `stale_claims` is `[]` (measured,
+    # clean) and `stale_detection` is "active" -- the disambiguated state vs
+    # `null`/`"disabled"` (not measured).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh",
+        "2026-08-07T10:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+
+
+def test_default_48_flags_17day_claim_stale(capsys):
+    # #12751 acceptance: at the default 48h threshold, a 17-day-old OTHER-lane
+    # claim is flagged STALE and removed from blocking_lanes (the zombie-lock
+    # fix -- a 415h claim was read as "alive" because `stale_claims` was `[]`).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- 17 days old",
+        "2026-07-21T00:00:00Z",   # ~396h before NOW
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == ["myia-po-2025:CoursIA"]
+    assert out["blocking_lanes"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM myia-po-2025:CoursIA" in captured.err
+    assert rc == 0
+
+
+def test_default_48_does_not_flag_2h_claim(capsys):
+    # #12751 acceptance: a fresh (2h) claim is NOT stale at the default 48h
+    # (positive polarity -- only genuinely-old claims age out).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh 2h",
+        "2026-08-07T10:00:00Z",   # 2h before NOW
+    ))
+    clc._run_check(p, "myia-po-2024:CoursIA",
+                   stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM" not in captured.err
 
 
 # --- --paths mode (#9959) ----------------------------------------------------
