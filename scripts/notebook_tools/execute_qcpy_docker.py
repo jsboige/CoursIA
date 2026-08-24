@@ -30,9 +30,22 @@ from pathlib import Path
 import requests
 import websocket
 
+from _papermill_meta import strip_stale_papermill_metadata
+
 BASE_URL_DEFAULT = "http://localhost:8888"
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 QCPY_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "QuantConnect" / "Python"
+
+
+def _save_executed(nb: dict, nb_path: Path) -> None:
+    """Ecrit le notebook execute en retirant un bloc papermill perime (#12722).
+
+    Fonction separee pour etre testable sans Docker/quantbook : c'est le point
+    d'ecriture de cet executeur, le strip doit y vivre.
+    """
+    strip_stale_papermill_metadata(nb)
+    nb_path.write_text(json.dumps(nb, indent=1, ensure_ascii=False),
+                       encoding="utf-8")
 
 # Shared session for XSRF token handling
 _http_session = None
@@ -251,8 +264,7 @@ def execute_notebook(nb_path: Path, base_url: str, kernel_id: str,
     ws.close()
 
     # Save executed notebook
-    nb_path.write_text(json.dumps(nb, indent=1, ensure_ascii=False),
-                       encoding="utf-8")
+    _save_executed(nb, nb_path)
 
     return {
         "path": str(nb_path.relative_to(REPO_ROOT)),
