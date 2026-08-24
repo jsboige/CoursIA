@@ -973,3 +973,6 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build/.dialogues-build/
 # ls-files '*.gv' is empty).
 MyIA.AI.Notebooks/**/Model_[0-9]*.gv
 MyIA.AI.Notebooks/**/Model_[0-9]*.svg
+
+# WSL admin credentials (po-2027 onboarding)
+.secrets/wsl_credentials
