@@ -163,10 +163,11 @@ class TestContentGuardsRejectNone:
         lu.count_real_sorries,
         lu.strip_lean_comments,
         lu.sorry_is_in_statement,
+        lu.sorry_is_def_body,
     ])
     def test_none_rejected(self, fn):
         with pytest.raises(ValueError, match="expected str"):
-            if fn is lu.sorry_is_in_statement:
+            if fn in (lu.sorry_is_in_statement, lu.sorry_is_def_body):
                 fn(None, 1)
             else:
                 fn(None)
