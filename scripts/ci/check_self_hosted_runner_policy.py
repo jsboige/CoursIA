@@ -3,10 +3,11 @@
 
 The repository is public. A self-hosted job that can receive a fork payload can
 execute untrusted code next to the cluster's credentials. This scanner therefore
-fails closed: every self-hosted job must use the dedicated runner group and
-label, and every pull_request job must carry the exact same-repository guard.
-Dynamic ``runs-on`` expressions are rejected because their target cannot be
-proved statically.
+fails closed: every self-hosted job must belong to an explicitly allowed
+workflow, use the exact dedicated label set, and avoid runner groups (unavailable
+for this personal-account repository). Every pull_request job must also carry
+the exact same-repository guard. Dynamic ``runs-on`` expressions are rejected
+because their target cannot be proved statically.
 
 Exit codes:
   0  policy satisfied (including the explicit baseline of zero self-hosted jobs)
@@ -27,8 +28,12 @@ EXIT_OK = 0
 EXIT_VIOLATION = 1
 EXIT_BROKEN = 2
 
-REQUIRED_GROUP = "coursia-ephemeral"
-REQUIRED_LABELS = {"self-hosted", "coursia-ephemeral"}
+REQUIRED_LABELS = {
+    "self-hosted",
+    "coursia-ephemeral",
+    "coursia-fast-guards",
+}
+SELF_HOSTED_WORKFLOW_ALLOWLIST = {"pr-gate-stale-sweep.yml"}
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
     "ubuntu-24.04",
@@ -47,7 +52,7 @@ GITHUB_HOSTED_LABELS = {
 }
 LOCAL_REUSABLE_PREFIX = "./.github/workflows/"
 SAME_REPO_REUSABLE_PATTERN = re.compile(
-    r"^jsboige/CoursIA/\.github/workflows/[^@]+@main$"
+    r"^jsboige/CoursIA/\.github/workflows/[^/@]+@main$"
 )
 SAME_REPO_GUARD = (
     "github.event.pull_request.head.repo.full_name == github.repository"
@@ -125,8 +130,10 @@ def _is_github_hosted_label(label: str) -> bool:
     return label.lower() in GITHUB_HOSTED_LABELS
 
 
-def _runner_selection(runs_on: Any) -> tuple[bool, str | None, set[str]]:
-    """Return (is_self_hosted, group, labels) for a static selection.
+def _runner_selection(
+    runs_on: Any,
+) -> tuple[bool, str | None, set[str], str | None]:
+    """Return (is_self_hosted, group, labels, error) for a static selection.
 
     Any explicit runner group is self-hosted. A scalar/list label is considered
     GitHub-hosted only when every value names a documented hosted-image family;
@@ -135,25 +142,35 @@ def _runner_selection(runs_on: Any) -> tuple[bool, str | None, set[str]]:
     """
     if isinstance(runs_on, str):
         labels = {runs_on.lower()}
-        return not _is_github_hosted_label(runs_on), None, labels
+        return not _is_github_hosted_label(runs_on), None, labels, None
     if isinstance(runs_on, list):
-        labels = {str(item).lower() for item in runs_on}
+        if not runs_on or not all(isinstance(item, str) for item in runs_on):
+            return False, None, set(), "runs-on list must contain labels"
+        labels = {item.lower() for item in runs_on}
         is_self_hosted = any(not _is_github_hosted_label(item) for item in labels)
-        return is_self_hosted, None, labels
+        return is_self_hosted, None, labels, None
     if isinstance(runs_on, dict):
         group = runs_on.get("group")
         raw_labels = runs_on.get("labels", [])
+        if group is None and "labels" not in runs_on:
+            return False, None, set(), "runs-on mapping needs group or labels"
+        if group is not None and not isinstance(group, str):
+            return False, None, set(), "runner group must be a string"
         if isinstance(raw_labels, str):
             labels = {raw_labels.lower()}
-        elif isinstance(raw_labels, list):
-            labels = {str(item).lower() for item in raw_labels}
-        else:
+        elif isinstance(raw_labels, list) and raw_labels and all(
+            isinstance(item, str) for item in raw_labels
+        ):
+            labels = {item.lower() for item in raw_labels}
+        elif raw_labels == [] and group is not None:
             labels = set()
+        else:
+            return False, None, set(), "runner labels must be a string or list"
         is_self_hosted = group is not None or any(
             not _is_github_hosted_label(item) for item in labels
         )
-        return is_self_hosted, str(group) if group is not None else None, labels
-    return False, None, set()
+        return is_self_hosted, group, labels, None
+    return False, None, set(), "runs-on has an unsupported type"
 
 
 def _normalise_condition(value: Any) -> str:
@@ -190,10 +207,20 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
             broken.append(f"{path.name}: invalid workflow YAML")
             continue
 
+        if "on" not in data and True not in data:
+            broken.append(f"{path.name}: missing on trigger")
+            continue
         triggers = _triggers(data)
-        jobs = data.get("jobs", {})
-        if not isinstance(jobs, dict):
-            broken.append(f"{path.name}: jobs is not a mapping")
+        if not triggers:
+            broken.append(f"{path.name}: on trigger is empty or unsupported")
+            continue
+
+        if "jobs" not in data:
+            broken.append(f"{path.name}: missing jobs")
+            continue
+        jobs = data["jobs"]
+        if not isinstance(jobs, dict) or not jobs:
+            broken.append(f"{path.name}: jobs is not a non-empty mapping")
             continue
 
         for job_name, job in jobs.items():
@@ -232,7 +259,10 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                 ))
                 continue
 
-            is_self_hosted, group, labels = _runner_selection(runs_on)
+            is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
+            if selection_error is not None:
+                broken.append(f"{path.name}:{job_name}: {selection_error}")
+                continue
             if not is_self_hosted:
                 continue
             self_hosted_jobs += 1
@@ -259,21 +289,35 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     "self-hosted jobs must not hide inside reusable workflows",
                 ))
 
-            if group != REQUIRED_GROUP:
+            if path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST:
                 violations.append(Violation(
                     path.name,
                     str(job_name),
-                    "RUNNER_GROUP",
-                    f"runner group must be {REQUIRED_GROUP!r}, got {group!r}",
+                    "WORKFLOW_NOT_ALLOWED",
+                    "self-hosted runners are restricted to explicitly allowed workflows",
+                ))
+
+            if group is not None:
+                violations.append(Violation(
+                    path.name,
+                    str(job_name),
+                    "RUNNER_GROUP_UNAVAILABLE",
+                    "runner groups are unavailable for this personal-account repository",
                 ))
 
             missing = sorted(REQUIRED_LABELS - labels)
-            if missing:
+            unexpected = sorted(labels - REQUIRED_LABELS)
+            if missing or unexpected:
+                detail = []
+                if missing:
+                    detail.append(f"missing: {', '.join(missing)}")
+                if unexpected:
+                    detail.append(f"unexpected: {', '.join(unexpected)}")
                 violations.append(Violation(
                     path.name,
                     str(job_name),
                     "RUNNER_LABELS",
-                    f"missing dedicated labels: {', '.join(missing)}",
+                    "dedicated labels must match exactly (" + "; ".join(detail) + ")",
                 ))
 
             if "pull_request" in triggers:

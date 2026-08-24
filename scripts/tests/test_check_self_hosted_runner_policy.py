@@ -32,15 +32,13 @@ def test_current_repository_has_explicit_zero_self_hosted_baseline(capsys):
 
 
 def test_safe_pull_request_job_is_accepted(tmp_path):
-    write_workflow(tmp_path, "safe", """
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
         name: safe
         on: [pull_request]
         jobs:
           test:
             if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-            runs-on:
-              group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
               - run: echo safe
         """)
@@ -50,21 +48,86 @@ def test_safe_pull_request_job_is_accepted(tmp_path):
     assert result.self_hosted_jobs == 1
 
 
-def test_safe_workflow_dispatch_job_does_not_need_pr_guard(tmp_path):
-    write_workflow(tmp_path, "manual", """
+def test_allowed_workflow_dispatch_job_does_not_need_pr_guard(tmp_path):
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
         name: manual
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo safe
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_exact_labels_outside_allowlist_are_rejected(tmp_path):
+    write_workflow(tmp_path, "other-workflow", """
+        name: other
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
+        """)
+    assert codes(policy.scan_workflows(tmp_path)) == {"WORKFLOW_NOT_ALLOWED"}
+
+
+def test_group_is_rejected_even_in_allowed_workflow(tmp_path):
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: group
         on: workflow_dispatch
         jobs:
           test:
             runs-on:
               group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+              labels: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
-              - run: echo safe
+              - run: echo unsafe
+        """)
+    assert codes(policy.scan_workflows(tmp_path)) == {"RUNNER_GROUP_UNAVAILABLE"}
+
+
+def test_missing_label_is_rejected_in_allowed_workflow(tmp_path):
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: labels
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral]
+            steps:
+              - run: echo unsafe
+        """)
+    assert codes(policy.scan_workflows(tmp_path)) == {"RUNNER_LABELS"}
+
+
+def test_unexpected_label_is_rejected_in_allowed_workflow(tmp_path):
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: labels
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards, windows]
+            steps:
+              - run: echo unsafe
+        """)
+    assert codes(policy.scan_workflows(tmp_path)) == {"RUNNER_LABELS"}
+
+
+def test_yaml_extension_cannot_alias_allowlisted_workflow(tmp_path):
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: extension-alias
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo unsafe
         """, suffix=".yaml")
-    result = policy.scan_workflows(tmp_path)
-    assert result.violations == []
-    assert result.self_hosted_jobs == 1
+    assert codes(policy.scan_workflows(tmp_path)) == {"WORKFLOW_NOT_ALLOWED"}
 
 
 def test_generic_self_hosted_scalar_is_rejected(tmp_path):
@@ -78,7 +141,7 @@ def test_generic_self_hosted_scalar_is_rejected(tmp_path):
               - run: echo unsafe
         """)
     result = policy.scan_workflows(tmp_path)
-    assert {"RUNNER_GROUP", "RUNNER_LABELS", "SAME_REPO_GUARD"} <= codes(result)
+    assert {"WORKFLOW_NOT_ALLOWED", "RUNNER_LABELS", "SAME_REPO_GUARD"} <= codes(result)
 
 
 def test_self_hosted_list_without_group_is_rejected(tmp_path):
@@ -91,7 +154,7 @@ def test_self_hosted_list_without_group_is_rejected(tmp_path):
             steps:
               - run: echo unsafe
         """)
-    assert "RUNNER_GROUP" in codes(policy.scan_workflows(tmp_path))
+    assert "WORKFLOW_NOT_ALLOWED" in codes(policy.scan_workflows(tmp_path))
 
 
 def test_custom_label_without_self_hosted_token_is_still_self_hosted(tmp_path):
@@ -106,7 +169,7 @@ def test_custom_label_without_self_hosted_token_is_still_self_hosted(tmp_path):
         """)
     result = policy.scan_workflows(tmp_path)
     assert result.self_hosted_jobs == 1
-    assert {"RUNNER_GROUP", "RUNNER_LABELS"} == codes(result)
+    assert {"WORKFLOW_NOT_ALLOWED", "RUNNER_LABELS"} == codes(result)
 
 
 def test_hosted_looking_custom_label_is_rejected_fail_closed(tmp_path):
@@ -121,7 +184,7 @@ def test_hosted_looking_custom_label_is_rejected_fail_closed(tmp_path):
         """)
     result = policy.scan_workflows(tmp_path)
     assert result.self_hosted_jobs == 1
-    assert {"RUNNER_GROUP", "RUNNER_LABELS"} == codes(result)
+    assert {"WORKFLOW_NOT_ALLOWED", "RUNNER_LABELS"} == codes(result)
 
 
 def test_group_selection_is_self_hosted_even_without_labels(tmp_path):
@@ -137,7 +200,11 @@ def test_group_selection_is_self_hosted_even_without_labels(tmp_path):
         """)
     result = policy.scan_workflows(tmp_path)
     assert result.self_hosted_jobs == 1
-    assert codes(result) == {"RUNNER_LABELS"}
+    assert codes(result) == {
+        "RUNNER_GROUP_UNAVAILABLE",
+        "RUNNER_LABELS",
+        "WORKFLOW_NOT_ALLOWED",
+    }
 
 
 def test_self_hosted_label_is_case_insensitive(tmp_path):
@@ -152,7 +219,7 @@ def test_self_hosted_label_is_case_insensitive(tmp_path):
         """)
     result = policy.scan_workflows(tmp_path)
     assert result.self_hosted_jobs == 1
-    assert "RUNNER_GROUP" in codes(result)
+    assert "WORKFLOW_NOT_ALLOWED" in codes(result)
 
 
 def test_wrong_group_and_missing_label_are_both_named(tmp_path):
@@ -168,7 +235,11 @@ def test_wrong_group_and_missing_label_are_both_named(tmp_path):
               - run: echo unsafe
         """)
     result = policy.scan_workflows(tmp_path)
-    assert {"RUNNER_GROUP", "RUNNER_LABELS"} == codes(result)
+    assert {
+        "RUNNER_GROUP_UNAVAILABLE",
+        "RUNNER_LABELS",
+        "WORKFLOW_NOT_ALLOWED",
+    } == codes(result)
 
 
 def test_dynamic_runs_on_is_rejected_fail_closed(tmp_path):
@@ -196,9 +267,7 @@ def test_pull_request_job_without_guard_is_rejected(tmp_path):
           pull_request:
         jobs:
           test:
-            runs-on:
-              group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
               - run: echo unsafe
         """)
@@ -211,9 +280,7 @@ def test_step_level_guard_does_not_protect_the_job(tmp_path):
         on: [pull_request]
         jobs:
           test:
-            runs-on:
-              group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
               - if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
                 run: echo too-late
@@ -228,9 +295,7 @@ def test_guard_weakened_by_or_is_rejected(tmp_path):
         jobs:
           test:
             if: ${{ github.event.pull_request.head.repo.full_name == github.repository || always() }}
-            runs-on:
-              group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
               - run: echo unsafe
         """)
@@ -244,9 +309,7 @@ def test_pull_request_target_is_always_rejected(tmp_path):
         jobs:
           test:
             if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-            runs-on:
-              group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
               - run: echo unsafe
         """)
@@ -259,9 +322,7 @@ def test_workflow_call_cannot_hide_self_hosted_job(tmp_path):
         on: workflow_call
         jobs:
           test:
-            runs-on:
-              group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
               - run: echo hidden
         """)
@@ -278,9 +339,7 @@ def test_workflow_run_cannot_reach_self_hosted_job(tmp_path):
             types: [completed]
         jobs:
           test:
-            runs-on:
-              group: coursia-ephemeral
-              labels: [self-hosted, coursia-ephemeral]
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
             steps:
               - run: echo artifact
         """)
@@ -356,6 +415,104 @@ def test_same_repository_reusable_workflow_rejects_short_sha(tmp_path):
     assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 
 
+def test_missing_trigger_breaks_instrument(tmp_path):
+    write_workflow(tmp_path, "broken-trigger", """
+        name: broken-trigger
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo no-trigger
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == ["broken-trigger.yml: missing on trigger"]
+
+
+def test_empty_runs_on_list_breaks_instrument(tmp_path):
+    write_workflow(tmp_path, "broken-runner", """
+        name: broken-runner
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: []
+            steps:
+              - run: echo no-runner
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == [
+        "broken-runner.yml:test: runs-on list must contain labels"
+    ]
+
+
+def test_missing_jobs_breaks_instrument(tmp_path):
+    write_workflow(tmp_path, "broken-jobs", """
+        name: broken-jobs
+        on: workflow_dispatch
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == ["broken-jobs.yml: missing jobs"]
+
+
+def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
+    write_workflow(tmp_path, "caller", """
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: jsboige/CoursIA/.github/workflows/../evil.yml@main
+        """)
+    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
+
+
+def test_missing_trigger_breaks_instrument(tmp_path):
+    write_workflow(tmp_path, "broken-trigger", """
+        name: broken-trigger
+        jobs:
+          test:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo no-trigger
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == ["broken-trigger.yml: missing on trigger"]
+
+
+def test_empty_runs_on_list_breaks_instrument(tmp_path):
+    write_workflow(tmp_path, "broken-runner", """
+        name: broken-runner
+        on: workflow_dispatch
+        jobs:
+          test:
+            runs-on: []
+            steps:
+              - run: echo no-runner
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == [
+        "broken-runner.yml:test: runs-on list must contain labels"
+    ]
+
+
+def test_missing_jobs_breaks_instrument(tmp_path):
+    write_workflow(tmp_path, "broken-jobs", """
+        name: broken-jobs
+        on: workflow_dispatch
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == ["broken-jobs.yml: missing jobs"]
+
+
+def test_same_repository_reusable_workflow_rejects_path_traversal(tmp_path):
+    write_workflow(tmp_path, "caller", """
+        name: caller
+        on: [pull_request]
+        jobs:
+          test:
+            uses: jsboige/CoursIA/.github/workflows/../evil.yml@main
+        """)
+    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
+
+
 def test_invalid_yaml_breaks_the_instrument(tmp_path):
     write_workflow(tmp_path, "broken", "on: [pull_request\njobs: [")
     result = policy.scan_workflows(tmp_path)
@@ -380,7 +537,7 @@ def test_json_output_names_violations_and_denominators(tmp_path, capsys):
     assert payload["jobs_scanned"] == 1
     assert payload["self_hosted_jobs"] == 1
     assert {item["code"] for item in payload["violations"]} == {
-        "RUNNER_GROUP",
+        "WORKFLOW_NOT_ALLOWED",
         "RUNNER_LABELS",
     }
 
