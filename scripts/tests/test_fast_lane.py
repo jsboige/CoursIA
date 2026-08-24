@@ -157,11 +157,26 @@ def test_advisory_flags_match_the_source_workflows():
     assert by_name["banner-guard"].blocking is True
     assert by_name["pip-leak-guard"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
-    # 4 gardes ajoutees (extension 5 -> 9) -- bloquer par defaut
+    # 5 gardes ajoutees (extension 5 -> 10) -- bloquer par defaut
     assert by_name["bare-cross-dir-load-gate"].blocking is True
     assert by_name["notebook-navlink-check"].blocking is True
     assert by_name["notebook-interp-positioning-guard"].blocking is True
     assert by_name["markdown-rendering-guard"].blocking is True
+    assert by_name["self-hosted-runner-policy"].blocking is True
+
+
+def test_self_hosted_policy_guard_is_wired_fail_closed():
+    guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
+    assert guard.source == "fast-lane-shadow.yml"
+    assert guard.argv == [
+        "python",
+        "scripts/ci/check_self_hosted_runner_policy.py",
+        "--check",
+    ]
+    assert ".github/workflows/*.yml" in guard.paths
+    assert ".github/workflows/*.yaml" in guard.paths
+    assert "scripts/ci/check_self_hosted_runner_policy.py" in guard.paths
+    assert "scripts/ci/fast_lane_registry.py" in guard.paths
 
 
 def test_iterates_paths_guards_carry_the_placeholder():
