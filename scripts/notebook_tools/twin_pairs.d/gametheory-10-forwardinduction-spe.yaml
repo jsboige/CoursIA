@@ -50,6 +50,12 @@
       csharp_sha: 14e57a3edb6c9dfc1741e832eb39957bd674867f
       content_python_sha: 965c3e723cec222657830900273bda0db202cac84a419b42532b6a4336106fa9
       content_csharp_sha: 43a8111b69170ab15c5080797e2dfc0ef14a38458e7a83ca339b86bc621a62c6
+    - date: "2026-08-23"
+      by: myia-po-2025:CoursIA-2
+      python_sha: e0fbc58833245a1b657e721ee05668cb04884e8b
+      csharp_sha: bb745d4ac71fa4ae9e5d9892696611ad671d8a77
+      content_python_sha: e0cc5d3f18ed29011d923ba97b23a29ef573beaafa0687f9efac152528694d05
+      content_csharp_sha: af0b6d8d123fa15c25af1bf8ab4b9de2b9c33d876b9c14b54f8fe55279ffbc58
   known_differences:
     - "2026-08-22 (po-2025) #12349 tranche A (PR #12356) : cote C# uniquement -- chemin Gambit code en dur (Program Files (x86) + throw) remplace par le helper FindGambitEfg() (probe GAMBIT_HOME puis candidats Windows du pattern GT-5, puis Unix /usr/bin /usr/local/bin /opt/homebrew/bin sans suffixe .exe), cote C# re-execute 14/14 (gambit-lcp trouve toujours 1 equilibre, outputs frais), cote Python inchange. Changement d'infrastructure multiplateforme #10643, aucune prose/socle pedagogique touche -- parite semantique intacte."
     - "2026-08-17 (po-2026) re-exec seq etage 3 #11112 (PR #11347) : cote python re-execute (sequences 1..N propres, outputs frais, sources byte-identiques), cote C# inchange. Aucune prose ajoutee -- parite semantique intacte, seuls les blob SHA ont bouge."

@@ -347,6 +347,48 @@ def test_decorated_paths_clause_scopes_claim():
     assert fnmatch.fnmatch("notebooks/b.ipynb", "notebooks/b.ipynb**")  # invariant
 
 
+# --- non-ASCII leading decoration (#12711) -----------------------------------
+# A leading `→` (U+2192) / `➡` / `»` / `•` / `–` / `—` is an agent decoration,
+# not an ASCII decorator. The ASCII-pure decor class voided such a marker to
+# BOTH regexes on #12465 (po-2026's `→DELIVERED` went unread; po-2027 got CLEAR
+# and delivered the same notebook 15 h later). Broadening `_DECOR` re-reads the
+# marker and re-arms the malformed lint for the bracketless form.
+
+def test_parse_marker_non_ascii_arrow_decorated():
+    ev = clc.parse_claim_event(comment(
+        "→[CLAIMED] lane myia-po-2027:CoursIA-2 -- arrow prefix",
+        "2026-08-23T18:21:01Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2027:CoursIA-2"
+
+
+def test_parse_non_ascii_decorated_delivered_closes():
+    # The exact #12465 shape, bracketed: an arrow-prefixed DELIVERED with a
+    # lane must register as a close (this is what po-2026's line should have
+    # done before po-2027 delivered the same notebook).
+    ev = clc.parse_claim_event(comment(
+        "→[DELIVERED] lane myia-po-2026:CoursIA -- PR #12512 paths: .../Search-3-Informed.ipynb",
+        "2026-08-23T03:36:33Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_open is False
+    assert ev.lane == "myia-po-2026:CoursIA"
+
+
+def test_parse_non_ascii_decoration_mid_prose_still_ignored():
+    # A `→` followed by prose, then a mid-line `[CLAIMED]`, must NOT become an
+    # event (the bracket is not at a decorator position). Non-regression pinned.
+    ev = clc.parse_claim_event(comment(
+        "→ Cette PR reprend un [CLAIMED] discute plus tot",
+        "2026-08-23T09:00:00Z",
+    ))
+    assert ev is None
+
+
 def test_check_no_paths_claim_in_prose_returns_exit_2_not_scoped(capsys):
     # Full-flow regression for the #10228 FN: a claim comment that ALSO mentions
     # a close marker in instructional prose must still BLOCK another lane. This
@@ -690,6 +732,20 @@ def test_decorated_bare_marker_flagged(capsys):
     assert '"malformed_markers": 1' in captured.out
 
 
+def test_malformed_marker_non_ascii_decorated_surfaces(capsys):
+    # #12711 -- a `→`-prefixed BARE marker (no brackets) was invisible to the
+    # #11239 lint too: the writer believed their lock was posted yet the organ
+    # answered CLEAR. Broadening `_DECOR` re-arms the WARN.
+    p = payload(comment(
+        "→CLAIMED lane myia-po-2026:CoursIA -- working here",
+        "2026-08-23T03:36:33Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"malformed_markers": 1' in captured.out
+    assert 'WARN: marqueur sans crochets "CLAIMED"' in captured.err
+
+
 def test_malformed_close_marker_flagged(capsys):
     # Close markers are linted too: a bracketless `RELEASED` never registers
     # as a release, so the claim stays locked for other lanes.
@@ -834,6 +890,90 @@ def test_stale_threshold_unparseable_not_treated_stale(capsys):
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
                         stale_threshold=24.0, now=NOW)
     assert rc == 2
+
+
+def test_stale_claims_null_when_detection_disabled(capsys):
+    # #12751 -- detection OFF (no --stale-threshold): `stale_claims` must be
+    # `null` (not measured), NOT `[]` (measured, nothing stale). Previously
+    # both rendered `[]`, so the fleet ran with detection off and a 415h
+    # claim still read as "alive".
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- very old orphan",
+        "2026-08-01T00:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA", now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] is None
+    assert out["stale_detection"] == "disabled"
+    assert "STALE_DETECTION disabled" in captured.err
+
+
+def test_stale_claims_empty_when_detection_enabled_clean(capsys):
+    # Detection ON, no claim old enough -> `stale_claims` is `[]` (measured,
+    # clean) and `stale_detection` is "active" -- the disambiguated state vs
+    # `null`/`"disabled"` (not measured).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh",
+        "2026-08-07T10:00:00Z",
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=24.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+
+
+def test_default_48_flags_17day_claim_stale(capsys):
+    # #12751 acceptance: at the default 48h threshold, a 17-day-old OTHER-lane
+    # claim is flagged STALE and removed from blocking_lanes (the zombie-lock
+    # fix -- a 415h claim was read as "alive" because `stale_claims` was `[]`).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- 17 days old",
+        "2026-07-21T00:00:00Z",   # ~396h before NOW
+    ))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == ["myia-po-2025:CoursIA"]
+    assert out["blocking_lanes"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM myia-po-2025:CoursIA" in captured.err
+    assert rc == 0
+
+
+def test_default_48_does_not_flag_2h_claim(capsys):
+    # #12751 acceptance: a fresh (2h) claim is NOT stale at the default 48h
+    # (positive polarity -- only genuinely-old claims age out).
+    p = payload(comment(
+        "[CLAIMED] lane myia-po-2025:CoursIA -- fresh 2h",
+        "2026-08-07T10:00:00Z",   # 2h before NOW
+    ))
+    clc._run_check(p, "myia-po-2024:CoursIA",
+                   stale_threshold=48.0, now=NOW)
+    captured = capsys.readouterr()
+    # The summary JSON (indent=2) is followed on stdout by a human-readable
+    # verdict line when the call is CLEAR/PATH_SCOPED (the post-summary
+    # `if others:` block). `raw_decode` parses only the first JSON value and
+    # ignores the trailing prose -- `json.loads` would fail on "Extra data".
+    out = json.JSONDecoder().raw_decode(captured.out)[0]
+    assert out["stale_claims"] == []
+    assert out["stale_detection"] == "active"
+    assert "STALE_CLAIM" not in captured.err
 
 
 # --- --paths mode (#9959) ----------------------------------------------------
@@ -1706,7 +1846,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:05:00Z"),
         comment("[CLAIMED] lane myia-po-2026:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/GameTheory/"
-                "GameTheory-4-NashEquilibrium-Csharp.ipynb",
+                "GameTheory-04-NashEquilibrium-Csharp.ipynb",
                 "2026-08-11T04:07:00Z"),
     )
     for lane in (
@@ -4009,6 +4149,7 @@ def test_is_delivered_property_distinguishes_marker():
 
 
 # ---------------------------------------------------------------------------
+
 # #12386 -- v2 conditional [DELIVERED]: gate the close on live PR state.
 #
 # v1's contract: a [DELIVERED] is a close -- it pops the lane from
@@ -4347,3 +4488,406 @@ def test_find_open_pr_for_issue_by_lane_ambiguous_returns_none(capsys):
     assert found is None
     assert "WARN" in captured.err
     assert "delivered:#N" in captured.err  # escape hatch
+
+# #12327 -- lint qualifier: epic-wide markers must read the FINAL verdict,
+# not the legacy `il bloque` wording, when the marker is superseded or
+# the lane has been filtered out by scope. Four acceptance tests, plus the
+# positive control that the legacy wording still fires when the marker is
+# a real blocker (#11755 retro-compat preserved).
+# ---------------------------------------------------------------------------
+
+
+def _events_for(*bodies_and_dates):
+    """Build a list of ClaimEvents from alternating (body, created_at) pairs.
+
+    Used by the #12327 acceptance tests below to compose multi-lane scenarios
+    where some lanes have posted an epic-wide marker followed by a scoped
+    re-claim (the supersede scenario) and others only have the legacy
+    epic-wide form (the still-blocking scenario).
+    """
+    events = []
+    for body, date in bodies_and_dates:
+        for ev in clc._parse_claim_events(comment(body, date)):
+            events.append(ev)
+    return events
+
+
+def test_lint_12327_epic_wide_superseded_by_scoped_re_claim(capsys):
+    # Lane X claim un marqueur epic-wide historique, puis re-poste un claim
+    # scoped. Le marqueur epic-wide est SUPERSEDED par le claim actif scoped
+    # de la MEME lane. Le lint doit le qualifier `SUPERSEDED`, JAMAIS
+    # `il bloque toutes les autres lanes`.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-20T10:00:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Image/03-3*.ipynb\n",
+         "2026-08-22T14:00:00Z"),  # scoped, later
+    ]
+    events = _events_for(*bodies_and_dates)
+    # Compute active_claims manually (the same reducer step the lint receives)
+    active, _ = clc.compute_active_claims(events)
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},  # empty -- the caller is in scope
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "SUPERSEDED" in err, (
+        "le marqueur epic-wide historique doit etre qualifie SUPERSEDED "
+        "quand un claim actif scoped ulterieur de la meme lane le supplante "
+        "(#12327)"
+    )
+    assert "il bloque toutes les autres lanes" not in err, (
+        "le wording legacy `il bloque toutes` est INTERDIT pour un marqueur "
+        "superseded (cf. l'incident fondateur du 2026-08-22T14:41Z)"
+    )
+    # L'hygiene debt (RELEASED) est signalee comme dette, pas comme blocage.
+    assert "Hygiene:" in err
+    assert "[RELEASED]" in err
+
+
+def test_lint_12327_epic_wide_filtered_out_by_scope_is_sans_effet(capsys):
+    # Lane Y a un marqueur epic-wide ACTIF (le seul qu'elle a poste), mais
+    # le caller declare --paths disjoint. Le verdict est CLEAR (`others`
+    # vide apres filtre scope), MAIS le lint epic-wide legacy dirait quand
+    # meme `il bloque`. Le qualifier doit dire `SANS effet` -- l'info
+    # utilisateur est preservee, le verdict n'est pas contredit.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-22T14:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    # Post scope filter: lane Y is OUT of `others` (caller scope disjoint).
+    # The lint receives this FINAL `others_verdict`, not the pre-filter state.
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},  # post scope-filter: empty
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "SANS effet" in err, (
+        "un marqueur epic-wide d'une lane filtree par scope doit etre "
+        "qualifie SANS effet, JAMAIS `il bloque` (#12327)"
+    )
+    assert "il bloque toutes les autres lanes" not in err
+
+
+def test_lint_12327_legacy_il_bloque_preserved_for_real_blocker(capsys):
+    # CONTROLE POSITIF (acceptance #12327 - 3e critere) : un marqueur
+    # epic-wide qui EST reellement dans `others_verdict` (le caller n'a
+    # pas declare de scope, donc AUCUN filtre ne l'a retire) doit TOUJOURS
+    # declencher le wording legacy `il bloque`. La correction ne doit pas
+    # se valider QUE par le bruit qu'elle elimine -- elle doit continuer
+    # d'attraper les vrais blocages.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-22T14:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    # Caller did NOT declare --paths, so the lane IS in `others_verdict`
+    # (real blocker, scope filter cannot prove disjointness).
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict=active,  # caller has no scope -> nothing filtered
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "il bloque toutes les autres lanes" in err, (
+        "CONTROLE POSITIF (#12327 acceptance 3) : un marqueur epic-wide "
+        "qui survit au scope filter DOIT toujours declencher le wording "
+        "legacy `il bloque`. La correction ne peut pas etre validee par "
+        "le silence seul -- elle doit aussi continuer d'attraper."
+    )
+    assert "SUPERSEDED" not in err, (
+        "pas de SUPERSEDED si la lane n'a pas re-poste depuis"
+    )
+
+
+def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
+    # SCENARIO EXACT de l'incident fondateur (2026-08-22T14:41Z) :
+    # 4 marqueurs epic-wide historiques (4 lanes distinctes) + 4 claims
+    # actifs scopés disjoints. Le caller declare --paths sur
+    # 10_LocalLlama*.ipynb. Le verdict FINAL est CLEAR (tous les claims
+    # scopés disjoints) -- AUCUN marqueur epic-wide historique ne doit
+    # etre rapporte comme `il bloque`, et le verdict reste CLEAR.
+    # Le mock tracked aligne les globs sur des fichiers qui matchent dans
+    # le test (le walk reel du worktree differe du walk de l'install
+    # CoursIA-2 principale ; on veut tester la logique, pas le filesystem).
+    monkeypatch.setattr(
+        clc, "_git_tracked_files",
+        lambda repo_root=None: [
+            "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3-test.ipynb",
+            "MyIA.AI.Notebooks/Sudoku/SL-5-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-test.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre-test.ipynb",
+            "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama-test.ipynb",
+        ],
+    )
+    bodies_and_dates = [
+        # 4 epic-wide historiques (4 lanes distinctes, dates anterieures)
+        ("[CLAIMED] lane myia-po-2023:CoursIA\n",
+         "2026-08-22T13:50:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA\n",
+         "2026-08-22T13:51:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-22T13:52:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA-2\n",
+         "2026-08-22T13:53:00Z"),
+        # 4 claims actifs scopés disjoints (memes lanes, dates ulterieures)
+        ("[CLAIMED] lane myia-po-2023:CoursIA -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-2*.ipynb, "
+         "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/03-3*.ipynb\n",
+         "2026-08-22T14:10:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA -- paths: "
+         "MyIA.AI.Notebooks/Sudoku/SL-5*.ipynb\n",
+         "2026-08-22T14:11:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3*.ipynb, "
+         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7*.ipynb\n",
+         "2026-08-22T14:12:00Z"),
+        ("[CLAIMED] lane myia-po-2026:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre*.ipynb\n",
+         "2026-08-22T14:13:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    p = payload(*[comment(b, d) for b, d in bodies_and_dates], number=11112)
+    # Caller is po-2024:CoursIA, declares --paths on 10_LocalLlama (none of
+    # the 4 scoped claims intersect). Sortie attendue : CLEAR (exit 0) et
+    # AUCUN marqueur epic-wide historique ne dit `il bloque` -- tous sont
+    # soit SUPERSEDED (meme lane a re-poste un scoped) soit SANS effet
+    # (la lane a re-poste un scoped disjoint, mais avec un marqueur
+    # epic-wide historique qu'on n'a pas re-poste en supersede -- dans ce
+    # cas l'organe voit 2 markers, le scoped prime comme ACTIVE, et le
+    # epic-wide historique est SUPERSEDED par construction).
+    rc = clc._run_check(
+        p,
+        "myia-po-2024:CoursIA",
+        my_paths=[
+            "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama*.ipynb",
+        ],
+    )
+    assert rc == 0, (
+        f"verdict CLEAR attendu (4 claims scopés disjoints du path 10_LocalLlama), "
+        f"got rc={rc}"
+    )
+    err = capsys.readouterr().err
+    # Aucun marqueur epic-wide ne doit affirmer `il bloque toutes les autres`
+    assert "il bloque toutes les autres lanes" not in err, (
+        "le wording legacy `il bloque toutes` est INTERDIT sur les 4 "
+        "marqueurs epic-wide historiques une fois que la meme lane a "
+        "re-poste un claim scoped (incidente fondateur 2026-08-22T14:41Z)"
+    )
+    # Les 4 marqueurs epic-wide sont SHOULD SUPERSEDED (chacun supplanté
+    # par le claim scoped ulterieur de la meme lane).
+    superseded_count = err.count("SUPERSEDED")
+    assert superseded_count == 4, (
+        f"les 4 marqueurs epic-wide historiques doivent etre qualifies "
+        f"SUPERSEDED (1 par lane), got {superseded_count}"
+    )
+
+
+def test_lint_12327_released_followed_by_scoped_is_still_superseded(capsys):
+    # Scénario complet : CLAIMED epic-wide historique, RELEASED hygiene, puis
+    # CLAIMED scoped actif. L'organe réduit à un seul ACTIVE (le scoped).
+    # L'ancien CLAIMED epic-wide reste dans la liste d'events (le RELEASED
+    # ferme le PRÉCÉDENT active, mais ne supprime pas l'event du journal) --
+    # le lint le voit et le qualifie SUPERSEDED par le scoped actif de la
+    # MEME lane. C'est la bonne sémantique : le marqueur historique n'a plus
+    # aucun effet sur le verdict (le reducer ne le considère plus), mais
+    # l'info reste utile pour la lane qui n'a pas edité son RELEASED sur
+    # CHAQUE marqueur historique (au cas où elle en aurait plusieurs).
+    # Le wording `il bloque toutes les autres lanes` reste INTERDIT.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-20T10:00:00Z"),
+        ("[RELEASED] lane myia-po-2024:CoursIA-2 -- cleanup\n",
+         "2026-08-21T10:00:00Z"),
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2 -- paths: "
+         "MyIA.AI.Notebooks/GenAI/Audio/04-3*.ipynb\n",
+         "2026-08-22T14:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "SUPERSEDED" in err, (
+        "le marqueur epic-wide historique (meme apres RELEASED) doit etre "
+        "qualifie SUPERSEDED par le scoped actif ulterieur de la meme lane"
+    )
+    assert "il bloque toutes les autres lanes" not in err, (
+        "le wording legacy `il bloque toutes` reste INTERDIT, meme apres "
+        "RELEASED (le SUPERSEDED le remplace)"
+    )
+
+
+def test_lint_12327_no_supersede_marker_when_only_rele(capsys):
+    # Controle symétrique : CLAIMED epic-wide + RELEASED SANS re-claim
+    # scoped. L'organe a 0 active pour cette lane. Le marqueur epic-wide
+    # historique n'a plus d'actif qui le supersede, mais il n'a pas non
+    # plus d'effet (pas dans `others_verdict`). Le lint doit etre SILENT
+    # sur ce marqueur (pas de SUPERSEDED, pas de `il bloque`) -- l'event
+    # est purement historique, le verdict n'a rien à en dire.
+    bodies_and_dates = [
+        ("[CLAIMED] lane myia-po-2024:CoursIA-2\n",
+         "2026-08-20T10:00:00Z"),
+        ("[RELEASED] lane myia-po-2024:CoursIA-2 -- cleanup\n",
+         "2026-08-21T10:00:00Z"),
+    ]
+    events = _events_for(*bodies_and_dates)
+    active, _ = clc.compute_active_claims(events)
+    clc._lint_claim_events(
+        events,
+        issue_number=11112,
+        active_claims=active,
+        others_verdict={},
+        my_lane="myia-po-2023:CoursIA-2",
+    )
+    err = capsys.readouterr().err
+    assert "il bloque" not in err, (
+        "un marqueur epic-wide RELEASED sans re-claim ne doit produire "
+        "AUCUN lint (pas d'actif, pas de blocker)"
+    )
+    assert "SUPERSEDED" not in err, (
+        "pas de SUPERSEDED non plus (pas d'actif pour le supplanter)"
+    )
+
+
+# --- #12656 fail-OPEN : caller a joker vs claim path-scope --------------------
+#
+# The guard read `_path_matches_any(my_scope, scope)` with the CALLER's glob
+# as the fnmatch `filename` operand and the other lane's concrete path as the
+# `pattern`, so `fnmatch("dir/**", "dir/file.md")` was False and a joker
+# caller was told CLEAR against a claim that demonstrably covered its target.
+# `_scopes_intersect` is the symmetric replacement. A game of pattern goes by
+# its FALSE NEGATIVES: the six repro rows of the issue table, jokers included,
+# must all report BLOCKED, and genuinely-disjoint jokers must still CLEAR.
+
+_RAG = "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique"
+_RAG_CLAIM = [
+    f"{_RAG}/README.md",
+    f"{_RAG}/02-Retrieval-Avance.ipynb",
+]
+_RAG_TRACKED = _RAG_CLAIM + [f"{_RAG}/01-Introduction.ipynb"]
+
+
+def test_scopes_intersect_six_repro_rows_block():
+    """#12656 table row-by-row: every caller form names the tracked README.md
+    that the po-2025 claim scopes, so it must INTERSECT (block), not clear.
+    The literal form is the control that already worked; the 5 joker forms
+    are the fail-OPEN this test pins closed."""
+    callers = [
+        f"{_RAG}/README.md",                  # literal -- control
+        f"{_RAG}/README*",                    # trailing joker
+        f"{_RAG}/READM?.md",                  # single-char joker
+        f"{_RAG}/**",                         # directory-recursive joker
+        f"{_RAG}/*",                          # single-level joker
+        "MyIA.AI.Notebooks/GenAI/**",         # upstream joker
+    ]
+    for caller in callers:
+        assert clc._scopes_intersect([caller], _RAG_CLAIM, _RAG_TRACKED) is True, (
+            f"repro row {caller!r} did not intersect the claim scope -- fail-OPEN"
+        )
+
+
+def test_scopes_intersect_disjoint_jokers_no_block():
+    """Acceptance #2: genuine disjoint globs (FineTuning/** vs RAG/**) must
+    NOT intersect -- the #10419 acquit must not be paid by over-obstruction."""
+    tracked = [
+        f"MyIA.AI.Notebooks/GenAI/FineTuning/README.md",
+        f"{_RAG}/README.md",
+    ]
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/GenAI/FineTuning/**"],
+        [f"{_RAG}/README.md"],
+        tracked,
+    ) is False
+
+
+def test_scopes_intersect_no_tracked_concrete_vs_glob():
+    """Reducer path (`compute_active_claims` has no repo walk): a scoped
+    override with a joker must CLOSE a concrete claim it covers -- the same
+    operand-order bug left it unable to."""
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/Reidemeister.lean"],
+    ) is True
+
+
+def test_scopes_intersect_no_tracked_disjoint_globs():
+    assert clc._scopes_intersect(
+        ["scripts/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+    ) is False
+
+
+def test_scopes_intersect_no_tracked_identical_glob():
+    assert clc._scopes_intersect(
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/**"],
+    ) is True
+
+
+def test_run_check_joker_caller_blocks_scoped_claim(capsys):
+    """#12656 acceptance #1 end-to-end: a `--paths` that carries a joker
+    covering a tracked file named in another lane's `paths:` claim must
+    return exit 1 (BLOCKED) -- the 5 joker forms were the reported fail-OPEN,
+    the literal form is the control."""
+    callers = [
+        f"{_RAG}/README.md",
+        f"{_RAG}/README*",
+        f"{_RAG}/READM?.md",
+        f"{_RAG}/**",
+        f"{_RAG}/*",
+        "MyIA.AI.Notebooks/GenAI/**",
+    ]
+    p = payload(
+        comment(
+            f"[CLAIMED] lane myia-po-2025:CoursIA -- paths: "
+            f"{_RAG}/README.md, {_RAG}/02-Retrieval-Avance.ipynb",
+            "2026-08-23T19:04:33Z",
+        ),
+    )
+    for caller_paths in callers:
+        rc = clc._run_check(p, "myia-po-2023:CoursIA-2", my_paths=[caller_paths])
+        assert rc == 1, (
+            f"joker caller {caller_paths!r} vs a path-scope claim covering "
+            f"README.md returned rc={rc} (expected 1 / blocked) -- #12656 "
+            f"fail-OPEN"
+        )
+
+
+def test_run_check_disjoint_joker_caller_clear(capsys):
+    """Acceptance #2 end-to-end: disjoint joker scopes must CLEAR (exit 0).
+    The caller targets RAG/**, the other lane's claim covers only FineTuning."""
+    p = payload(
+        comment(
+            "[CLAIMED] lane myia-po-2025:CoursIA -- paths: "
+            "MyIA.AI.Notebooks/GenAI/FineTuning/README.md",
+            "2026-08-23T19:04:33Z",
+        ),
+    )
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=[f"{_RAG}/**"],
+    )
+    assert rc == 0, (
+        f"disjoint joker scopes must not block each other (#10419): got rc={rc}"
+    )
+

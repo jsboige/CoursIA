@@ -23,7 +23,7 @@ Cette PR sœur (item 4-bis) archive les **10 autres one-shots post-#463** identi
 | `fix_csp9_abt.py` | 655 | 2026-05-.. | correctif ABT/AWC implementation CSP-9 |
 | `fix_csp9_stale_markdown.py` | 193 | 2026-05-.. | markdown sync post-correction ABT/AWC (suivi PR #578) |
 | `fix_issue_420.py` | 319 | 2026-04-22 | recyclage CSP-1/CSP-2 stubs (issue #420) |
-| `create_nb8.py` | 498 | 2026-.. | création notebook GameTheory-8-CombinatorialGames (issue #910) |
+| `create_nb8.py` | 498 | 2026-.. | création notebook GameTheory-08-CombinatorialGames (issue #910) |
 | **Total** | **2997** | | |
 
 ## Justification d'archivage (vs suppression)
@@ -59,7 +59,7 @@ Discipline **« Consolider ≠ Archiver »** (CLAUDE.md global) :
    - **CSP-9 ABT** : `fix(csp-9): correct ABT/AWC implementation` MERGED antérieurement.
    - **CSP-9 markdown** : `fix(csp-9): sync 3 markdown cells post-ABT/AWC fix` (suivi PR #578).
    - **CSP-1/2 (#420)** : PR antérieure MERGED.
-   - **GameTheory-8** : notebooks `GameTheory-8-CombinatorialGames.ipynb` + `GameTheory-8b-Lean-CombinatorialGames.ipynb` + `GameTheory-8c-CombinatorialGames-Csharp.ipynb` + `GameTheory-8c-CombinatorialGames-Python.ipynb` existent tous sur main. Le script `create_nb8.py` a fait son travail.
+   - **GameTheory-8** : notebooks `GameTheory-08-CombinatorialGames.ipynb` + `GameTheory-08b-Lean-CombinatorialGames.ipynb` + `GameTheory-08c-CombinatorialGames-Csharp.ipynb` + `GameTheory-08c-CombinatorialGames-Python.ipynb` existent tous sur main. Le script `create_nb8.py` a fait son travail.
 
 ## Hors scope (volontairement NON archivés)
 

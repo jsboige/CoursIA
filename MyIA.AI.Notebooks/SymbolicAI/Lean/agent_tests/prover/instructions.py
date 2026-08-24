@@ -478,6 +478,9 @@ OUTILS D'EDITION:
   → INTERDIT si la plage contient des mots-cles structuels (theorem/section/end/def).
   → Utiliser UNIQUEMENT pour ajuster des lignes dans la PREUVE (pas les bornes).
   → file_replace_sorry est TOUJOURS preferable.
+- REFUSE si la ligne sorry est le CORPS d'une definition (def/abbrev/instance/
+  structure/inductive/class, apres le ':=') : remplir un corps de definition
+  est un acte de DESIGN, pas une preuve (#12658). Cible un theorem/lemma.
 
 STRATEGIE:
 - 3 premiers echecs: explorer (rfl, omega, simp, exact)

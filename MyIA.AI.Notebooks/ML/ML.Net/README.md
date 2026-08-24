@@ -43,6 +43,7 @@ Le parcours va du premier pipeline (ML-1) jusqu'à une application complète : p
 | # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée |
 |---|----------|---------|------------------------------------------|-------|
 | 5 | [ML-5-TimeSeries](ML-5-TimeSeries.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-5-Python](ML-5-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min |
+| 5b | [ML-5b-Series-Temporelles-Classiques](ML-5b-Series-Temporelles-Classiques-Python.ipynb) | **Socle statistique des séries temporelles** : ADF (stationnarité), ACF/PACF (ordres p/q), ARIMA/SARIMA, lissage exponentiel, backtest glissant | *standalone Python (statsmodels — le socle que ML-5 suppose)* | 60-75 min |
 | 6 | [ML-6-ONNX](ML-6-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-6-Python](ML-6-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min |
 | 7 | [ML-7-Recommendation](ML-7-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-7-Python](ML-7-Recommendation-Python.ipynb) — NMF | 45-60 min |
 | 8 | [ML-8-Clustering](ML-8-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-8-Python](ML-8-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
@@ -72,6 +73,8 @@ Le notebook 4 est le plus dense (87 cellules) et le plus crucial : évaluation r
 ### Phase 2 : Fonctionnalités avancées (ML-5 à ML-9, ~2h30)
 
 Le notebook 5 aborde les séries temporelles avec `ForecastBySsa` (Singular Spectrum Analysis), un algorithme qui détecte automatiquement les tendances et saisonnalités. Vous travaillerez sur un dataset de ventes quotidiennes, apprendrez à détecter des anomalies par écart à la moyenne mobile, à quantifier l'incertitude via les intervalles de confiance, et à comparer plusieurs configurations de prévision. Ce notebook est directement applicable à la prévision de ventes, de charge serveur, ou de demande produit.
+
+Le notebook **5b** ([ML-5b-Series-Temporelles-Classiques-Python](ML-5b-Series-Temporelles-Classiques-Python.ipynb)) pose le **socle statistique** que ML-5 suppose : tester la stationnarité (test ADF), lire une ACF/PACF pour identifier les ordres `p`/`q`, ajuster un ARIMA/SARIMA avec **diagnostic des résidus** (ACF plate + Ljung-Box), lisser par Holt-Winters — souvent à égalité avec ARIMA à moindre coût —, et **comparer honnêtement** (ARIMA vs Holt-Winters vs baseline naïve) sur un backtest glissant. C'est le chaînon entre la boîte noire SSA de ML-5 et la famille moderne de prévision (les notebooks HAR de [QuantConnect](../../QuantConnect/) poussent le même socle vers les features et la profondeur).
 
 ![Ventes quotidiennes 2023-2024 — série brute avec split Train/Test matérialisé par une ligne pointillée rouge au 2024-01-01](assets/readme/ml-ts-series.png)
 *Figure extraite du jumeau Python ML-5-TimeSeries-Python (cellule 7, output 0). La série journalière court sur 2023-01 → 2025-01 (deux ans), valeurs de 50 à 250 ventes/jour, avec un split explicite Train/Test au 2024-01-01 (matérialisé en rouge pointillé). On y lit la tendance haussière de fond et la saisonnalité hebdomadaire superposée — les deux ingredients que `ForecastBySsa` et la décomposition STL cherchent à séparer.*

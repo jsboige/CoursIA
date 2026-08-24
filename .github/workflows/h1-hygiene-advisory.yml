@@ -9,14 +9,13 @@ name: h1-hygiene-advisory
 # notebooks are flagged so authors write clean H1s going forward.
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - '**.ipynb'
-      - 'scripts/notebook_tools/h1_hygiene_scan.py'
-      - '.github/workflows/h1-hygiene-advisory.yml'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '13 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
   pull-requests: write
