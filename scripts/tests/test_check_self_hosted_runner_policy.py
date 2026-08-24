@@ -322,7 +322,7 @@ def test_same_repository_reusable_workflow_allows_main(tmp_path):
     assert policy.scan_workflows(tmp_path).violations == []
 
 
-def test_same_repository_reusable_workflow_allows_commit_sha(tmp_path):
+def test_same_repository_reusable_workflow_rejects_commit_sha(tmp_path):
     sha = "0123456789abcdef0123456789abcdef01234567"
     write_workflow(tmp_path, "caller", f"""
         name: caller
@@ -331,7 +331,7 @@ def test_same_repository_reusable_workflow_allows_commit_sha(tmp_path):
           test:
             uses: jsboige/CoursIA/.github/workflows/callee.yml@{sha}
         """)
-    assert policy.scan_workflows(tmp_path).violations == []
+    assert "REMOTE_REUSABLE_WORKFLOW" in codes(policy.scan_workflows(tmp_path))
 
 
 def test_same_repository_reusable_workflow_rejects_branch_ref(tmp_path):

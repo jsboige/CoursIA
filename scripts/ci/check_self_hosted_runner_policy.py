@@ -47,7 +47,7 @@ GITHUB_HOSTED_LABELS = {
 }
 LOCAL_REUSABLE_PREFIX = "./.github/workflows/"
 SAME_REPO_REUSABLE_PATTERN = re.compile(
-    r"^jsboige/CoursIA/\.github/workflows/[^@]+@(?:main|[0-9a-fA-F]{40})$"
+    r"^jsboige/CoursIA/\.github/workflows/[^@]+@main$"
 )
 SAME_REPO_GUARD = (
     "github.event.pull_request.head.repo.full_name == github.repository"
@@ -214,7 +214,7 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                         str(job_name),
                         "REMOTE_REUSABLE_WORKFLOW",
                         "reusable workflow must be local or pin jsboige/CoursIA "
-                        "to main or a 40-character commit SHA",
+                        "to main",
                     ))
                 continue
 
