@@ -50,20 +50,13 @@ name: Slides Build Advisory
 # advisory has run green-and-stable across enough slide PRs to trust it.
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
-    paths:
-      - 'slides/**'
-      # The workflow's own file MUST be in the filter, else the gate can never
-      # run on the PR that wires it (this PR touches .github/, not slides/) AND
-      # a live-control revert would strand the label: after revert, base..head
-      # contains no slides/ change, paths blocks re-run, slides-build-failed
-      # sticks dead (the exact defect on exercises-unparseable / #8820). A gate
-      # filtered by paths that also poses a label must self-cover (#8822).
-      - '.github/workflows/slides-build-advisory.yml'
-  workflow_dispatch:
-
+  schedule:
+    # Nocturnal sweep -- post-merge main verification.
+    # Tranche 1 #12817 : sortir les advisory lourds de pull_request
+    # (clone 2.22 Go par run). Stratification user 2026-08-23 :
+    # "les jobs lourds devraient être payés une fois par fournée".
+    - cron: '20 03 * * *'
+  workflow_dispatch: {}
 permissions:
   contents: read
   pull-requests: write
