@@ -492,18 +492,18 @@ class TestUnreadableNotebookSkipped:
 # Tous les nouveaux fichiers sont des vrais positifs ou borderline pedagogique
 # (cadres Unicode de comparaison, diagrammes LEAN, pipeline Infer.NET) -- le
 # discriminant les a TOUS verifies un par un avant ce pin.
-# Drift supplementaire mesure 2026-08-24 sur main c01d9a6d94 AVANT ce fix :
-# 27 findings / 22 files (departs ajoutes par d'autres PR, test runslow-skip
-# donc invisible). Apres le fix multi-colonnes (#12324 residuel) :
-#   pre-fix main : 27 findings / 22 files
-#   post-fix     : 37 findings / 29 files (+10 blocs, tous verifies un par un
-#                  : GT-17 c15 NFSP, SK-05 VectorStores, Lab8-ADK pipeline,
-#                  Infer-13 capacites, Infer-15 arbre DBCM, QC-Py-14 c39,
-#                  QC-Py-17 c7, QC-Py-22 c23, QC-Py-24 c39 -- vrais
-#                  diagrammes ; les parois vides de cadre type Lean-7 c31
-#                  restent exclues par l'exigence d'un caractere de direction)
-CORPUS_BASELINE_TOTAL = 37
-CORPUS_BASELINE_FILES_WITH = 29
+# Re-mesure 2026-08-24 sur le MERGE-REF (origin/main d2be9dae87 + ce fix) :
+# 32 findings / 24 files. Le pin initial a la livraison (37/29) avait ete
+# mesure sur une base stale et sur-compte de 5 (le fix ajoute reellement
+# +5 blocs, pas +10) -- le merge-ref fait foi (cf. pin anti-regression du
+# corpus entier : mesurer sur le merge-ref, jamais sur un main local stale).
+# Le fix multi-colonnes (#12324 residuel) attrape GT-17 c15 NFSP, SK-05
+# VectorStores, Lab8-ADK pipeline, Infer-13 capacites, Infer-15 arbre DBCM,
+# QC-Py-14 c39, QC-Py-17 c7, QC-Py-22 c23, QC-Py-24 c39 (vrais diagrammes) ;
+# les parois vides de cadre type Lean-7 c31 restent exclues par l'exigence
+# d'un caractere de direction.
+CORPUS_BASELINE_TOTAL = 32
+CORPUS_BASELINE_FILES_WITH = 24
 
 
 class TestCorpusBaseline:
