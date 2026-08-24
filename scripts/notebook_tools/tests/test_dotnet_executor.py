@@ -558,7 +558,7 @@ def test_execution_papermill_subkey_removed(tmp_path):
         "cells": [{"cell_type": "markdown", "source": ["# hi"]}],
         "metadata": {"execution": {"papermill": {"duration": 1.0}}},
     }
-    dotnet_executor._strip_stale_papermill_metadata(nb)
+    dotnet_executor.strip_stale_papermill_metadata(nb)
     assert nb["metadata"] == {}
 
 
@@ -566,5 +566,5 @@ def test_no_papermill_metadata_untouched(tmp_path):
     """Fix D: a notebook with no Papermill block is left alone — stripping is
     a no-op, not a removal of unrelated metadata."""
     nb = {"cells": [], "metadata": {"language_info": {"name": ".net-csharp"}}}
-    dotnet_executor._strip_stale_papermill_metadata(nb)
+    dotnet_executor.strip_stale_papermill_metadata(nb)
     assert nb["metadata"] == {"language_info": {"name": ".net-csharp"}}

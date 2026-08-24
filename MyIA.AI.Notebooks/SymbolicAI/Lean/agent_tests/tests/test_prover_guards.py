@@ -2311,6 +2311,142 @@ def test_refuse_in_statement_sorry_none_when_file_missing(tmp_path):
     assert _refuse_in_statement_sorry(str(missing), 8, "demo") is None
 
 
+# --- #12658: sorry_is_def_body + def-body entry refusal ---------------------
+# Filling a DEFINITION body is an act of design, not a proof: the body of
+# ``def alexanderPolynomial (k : Knot) : AlexanderPoly := sorry`` IS the
+# polynomial — replacing sorry with ``1`` silently defines a false object
+# (the trefoil Delta function is t^2 - t + 1). Body-form mirror of the FX-6b
+# section above; STMT_MUTATION_FALSE_SUCCESS cannot see it (the statement is
+# untouched, the file builds, the sorry count drops).
+
+CONWAY_ALEXANDER_SHAPE = (
+    "import Mathlib.Tactic\n"                                         # 1
+    "\n"                                                              # 2
+    "def alexanderPolynomial (k : Knot) : AlexanderPoly := sorry\n"   # 3 <- body
+)
+
+
+@pytest.mark.parametrize("content,line", [
+    # one-liner def body — the shape of the six live Conway.lean targets
+    (CONWAY_ALEXANDER_SHAPE, 3),
+    # def body on its own line, ':=' on the header line
+    ("noncomputable def f (k : Nat) : Nat := by\n  sorry\n", 2),
+    # multi-line header: ':=' lands on a continuation line
+    ("def f (k : Nat)\n    : Nat := sorry\n", 2),
+    # attribute + modifiers stack on a multi-line header
+    ("@[simp]\nprivate noncomputable def g (k : Nat) :\n    Nat := sorry\n", 3),
+    # the remaining definition genres
+    ("abbrev Foo := sorry\n", 1),
+    ("instance : Coe Nat Foo := sorry\n", 1),
+    ("structure Point where\n  x : Nat := sorry\n", 2),
+    ("class Mem (a : Type) where\n  mem : a → a → Prop := sorry\n", 2),
+    ("inductive Edge where\n  | mk (n : Nat) : Edge := sorry\n", 2),
+])
+def test_def_body_detected_on_definition_genres(content, line):
+    from prover.lean_utils import sorry_is_def_body
+
+    assert sorry_is_def_body(content, line) is True
+
+
+@pytest.mark.parametrize("content,line", [
+    # theorem/lemma/example bodies stay proof obligations
+    ("theorem th : True := by\n  sorry\n", 2),
+    ("lemma l : True := by sorry\n", 1),
+    ("example : True := by sorry\n", 1),
+    # have/let sub-goals inside a def's proof: real obligations (type given)
+    ("def f : Nat := by\n  have h : True := by sorry\n  exact 1\n", 2),
+    ("def f : Nat := by\n  have h : True :=\n    sorry\n  exact 1\n", 3),
+    ("def f : Nat := by\n  let x : Nat := sorry\n  exact x\n", 2),
+    # sorry only inside a comment on the def line
+    ("def f : Nat := 1 -- sorry\n", 1),
+    # sorry BEFORE ':=' is the statement side — FX-6b domain, not ours
+    ("def x : sorry := trivial\n", 1),
+    # match-syntax def (no ':='): accepted residual, same as FX-6b
+    ("def f : Nat → Nat\n  | 0 => sorry\n  | _ => 1\n", 2),
+    # degenerate inputs
+    ("-- orphan\nsorry\n", 2),
+    ("", 1),
+])
+def test_def_body_spares_proof_obligations(content, line):
+    from prover.lean_utils import sorry_is_def_body
+
+    assert sorry_is_def_body(content, line) is False
+
+
+def test_def_body_out_of_range_line_not_flagged():
+    from prover.lean_utils import sorry_is_def_body
+
+    assert sorry_is_def_body("def f : Nat := sorry\n", 99) is False
+
+
+def test_refuse_def_body_sorry_returns_skip_dict(tmp_path):
+    from prover.provers import _refuse_def_body_sorry
+
+    f = tmp_path / "Conway.lean"
+    f.write_text(CONWAY_ALEXANDER_SHAPE, encoding="utf-8")
+    result = _refuse_def_body_sorry(str(f), 3, "demo-conway")
+    assert result is not None
+    assert result["success"] is False
+    assert result["skipped"] is True
+    assert result["reason"] == "def_body_sorry"
+    assert result["sorry_line"] == 3
+    assert result["demo"] == "demo-conway"
+
+
+def test_refuse_def_body_sorry_none_for_theorem_target(tmp_path):
+    from prover.provers import _refuse_def_body_sorry
+
+    f = tmp_path / "Thm.lean"
+    f.write_text("theorem t : True := by\n  sorry\n", encoding="utf-8")
+    assert _refuse_def_body_sorry(str(f), 2, "demo") is None
+
+
+def test_refuse_def_body_sorry_none_when_file_missing(tmp_path):
+    from prover.provers import _refuse_def_body_sorry
+
+    missing = tmp_path / "nope.lean"
+    assert _refuse_def_body_sorry(str(missing), 3, "demo") is None
+
+
+def test_file_replace_sorry_blocks_def_body_target(tmp_path):
+    """The edit guard refuses to author a definition body; file untouched."""
+    body = (
+        "import Mathlib.Tactic\n"
+        "namespace T\n"
+        + "\n".join(f"-- padding line {i}" for i in range(50))
+        + "\ndef alexanderPolynomial (k : Nat) : Nat := sorry\n"
+        + "\n".join(f"-- trailing line {i}" for i in range(50))
+        + "\nend T\n"
+    )
+    f = tmp_path / "Conway.lean"
+    f.write_text(body, encoding="utf-8")
+    sorry_line = next(
+        i + 1 for i, line in enumerate(body.split("\n")) if "sorry" in line
+    )
+    state = ProofState(theorem_statement="alexanderPolynomial")
+    sctx = SorryContext(
+        filepath=str(f), sorry_line=sorry_line, indentation=2,
+        indent_str="  ", full_file=body,
+    )
+    tt = TacticTools(state, str(f), sctx)
+    import json
+    result = json.loads(tt.file_replace_sorry(sorry_line, "1", build_check=False))
+    assert "BLOCKED by def-body guard" in result["error"]
+    assert Path(f).read_text(encoding="utf-8") == body  # untouched
+
+
+def test_file_replace_sorry_allows_theorem_target(tactic_tools):
+    """Positive control in the SAME invocation: a theorem-body target (the
+    fixture file) passes the def-body guard — the guard discriminates, it
+    does not refuse everything."""
+    import json
+    result = json.loads(
+        tactic_tools.file_replace_sorry(
+            tactic_tools._test_sorry_line, "trivial", build_check=False)
+    )
+    assert "def-body guard" not in result.get("error", "")
+
+
 # --- FX-5 (#1453): TRUE_PLACEHOLDER_GOAL — refuse a sorry whose goal is True -
 # A goal of `True` is never a legitimate obligation (proves by `trivial`). It
 # arises from a mutated/vacuous statement or a degenerate sub-goal; the agent
