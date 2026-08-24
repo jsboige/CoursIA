@@ -2317,6 +2317,32 @@ def test_parse_claim_event_unparseable_scope_empty_when_clean():
     assert ev.unparseable_scope == []
 
 
+def test_parse_claim_event_lane_residue_reported_not_blocking():
+    """#12719 -- a marker writing a bare date after the lane parses to the
+    BARE lane (no phantom `myia-po-2023:CoursIA 2026-08-23`), and the residue
+    is witnessed in `lane_scope_residue`. Founder marker of the 5-auto-blocage
+    night (issue #12485 form)."""
+    line = ("[CLAIMED] #12485 — myia-po-2023:CoursIA 2026-08-23 — "
+            "Medical-Chatbot : amorcage batch")
+    ev = clc.parse_claim_event(comment(line, "2026-08-23T04:00:00Z"))
+    assert ev is not None
+    # The lane is the BARE token -- the declaring lane is no longer blocked
+    # against its own claim.
+    assert ev.lane == "myia-po-2023:CoursIA"
+    # And the malformed form is REPORTED, not silently reinterpreted.
+    assert ev.lane_scope_residue == ["bare-date:2026-08-23"]
+
+
+def test_parse_claim_event_lane_residue_empty_when_clean():
+    """#12719 regression -- a well-formed marker yields an empty
+    `lane_scope_residue`. The witness must not fire on clean claims."""
+    line = "[CLAIMED] lane myia-po-2023:CoursIA -- paths: scripts/foo.py"
+    ev = clc.parse_claim_event(comment(line, "2026-08-23T04:00:00Z"))
+    assert ev is not None
+    assert ev.lane == "myia-po-2023:CoursIA"
+    assert ev.lane_scope_residue == []
+
+
 def test_filter_by_claim_scope_lifts_unparseable_to_epic_wide():
     """CORE #10597 hardener -- control positif (rouge->vert).
 

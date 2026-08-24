@@ -75,7 +75,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
-from grain_tag import extract_lane
+from grain_tag import extract_lane, lane_marker_residues
 
 # --- markers -----------------------------------------------------------------
 
@@ -434,6 +434,19 @@ class ClaimEvent(dict):
         return self.get("unparseable_scope") or []
 
     @property
+    def lane_scope_residue(self) -> list[str]:
+        """Malformed-lane residues on the marker line (#12719).
+
+        A bare date after the token (`myia-po-2023:CoursIA 2026-08-23`) or a
+        trailing sentence period (`myia-po-2023:CoursIA.`). The lane regex
+        fix makes both parse to the bare lane, so the claim is NOT blocked
+        anymore; this witness lists the residue so the declaring lane can SEE
+        its marker was malformed instead of the organ silently reinterpreting
+        it. Report-only -- a malformed marker that parses is functional.
+        """
+        return self.get("lane_scope_residue") or []
+
+    @property
     def empty_scope(self) -> list[str]:
         """Subset of `paths` matching ZERO tracked files in the repo (#10958).
 
@@ -545,8 +558,12 @@ def _parse_claim_events(comment: dict) -> list[ClaimEvent]:
         lane = extract_lane(line, marker_line=line)
         if lane is None:
             lane = extract_lane(body, marker_line=line)
+        # #12719 -- malformed-lane witness (bare date / trailing period).
+        # Report-only: the claim is attributed to the bare lane either way.
+        lane_residue = lane_marker_residues(line)
         events.append(ClaimEvent(
             lane=lane,
+            lane_scope_residue=lane_residue,
             action=action,
             marker=marker,
             created_at=created_at,
@@ -2109,6 +2126,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # scope is fully parseable) or non-empty (the claim carries
                 # patterns fnmatch cannot match).
                 "unparseable_scope": ev.get("unparseable_scope") or [],
+                # #12719 -- malformed-lane witness (bare date after the
+                # token, trailing sentence period). The claim still parses to
+                # the bare lane; the residue is surfaced so the declaring
+                # lane sees its marker was malformed (report, not block).
+                "lane_scope_residue": ev.get("lane_scope_residue") or [],
                 # #10958 -- the dead-glob witness: globs of this claim that
                 # match zero tracked files. Empty when every glob locks
                 # something (or the walk was impossible). Non-empty means the
