@@ -422,17 +422,34 @@ def main(argv: list[str] | None = None) -> int:
                   file=sys.stderr)
 
     merged_prev = None
+    merged_fallback_note = None
     if args.merged_prs_file:
         try:
             with open(args.merged_prs_file, encoding="utf-8") as f:
                 merged_prs = json.load(f)
             g = gt.parse_grain_tag(body)
             merged_prev = resolve_merged_prev_genre(merged_prs, g["lane"] if g else None)
+            if merged_prev[0] is None and merged_prs:
+                # #12636: the merged window was fetched and is non-empty, but the
+                # lane has no grain in it. The guard falls back to the declared
+                # `prev:` -- that fallback must be VISIBLE, never silent (the
+                # pre-#12095 silent fallback is exactly the defect fixed here,
+                # and a window that misses the lane deserves a note, not a mute).
+                merged_fallback_note = (
+                    f"lane {g['lane'] if g else None} absente du window merge "
+                    f"({len(merged_prs)} PRs) -- predecesseur resolu depuis le "
+                    f"prev: declare (#12636)"
+                )
         except (OSError, ValueError) as e:
             print(json.dumps({"warning": f"merged-prs unreadable: {e}"}),
                   file=sys.stderr)
 
     verdict = check(body, override=override, merged_prev=merged_prev)
+    if merged_fallback_note:
+        verdict = dict(verdict)
+        verdict["prev_source"] = "declared"
+        verdict["prev_fallback"] = merged_fallback_note
+        verdict["reason"] = f"{verdict.get('reason', '')} {merged_fallback_note}".strip()
     print(json.dumps(verdict, ensure_ascii=False))
     return 0 if verdict["guard_pass"] else 1
 
