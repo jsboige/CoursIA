@@ -143,4 +143,50 @@ theorem descent_target_before_ceiling
   ⟨hnostall _ hterm,
    Nat.lt_of_le_of_lt (descent_flips_le_barrier hstrict s₀ rest B hbarrier hL) hceiling⟩
 
+/-! ## Échec de décroissance — le défaut comme dissociation
+
+La thèse du chantier (opération 11, « descendre sous budget ») : un **échec de
+décroissance** — un flip accepté qui ne fait pas strictement décroître le coût —
+n'est pas un échec d'expérience à écarter, c'est une **dissociation** à
+enregistrer : l'objet qui fait payer l'hypothèse de stricte décroissance. Plutôt
+qu'un résidu numérique (la Loi I du chantier : « le résidu n'est pas le témoin »),
+on le rend de premier ordre — un témoin extractible dans un run. -/
+
+/-- **Témoin d'échec de décroissance** dans un run : une paire d'états
+consécutifs dont le flip est accepté mais ne fait pas strictement décroître le
+coût. `here` porte le défaut à la frontière du run, `later` le délègue à la
+queue ; un run peut porter plusieurs témoins (il s'agit d'une existence). -/
+inductive DescentFailure (accept : σ → σ → Prop) (cost : σ → Nat) : List σ → Prop
+  | here (s u : σ) (rest : List σ) (hA : accept s u) (hc : ¬ cost u < cost s) :
+      DescentFailure accept cost (s :: u :: rest)
+  | later (s u : σ) (rest : List σ)
+      (hf : DescentFailure accept cost (u :: rest)) :
+      DescentFailure accept cost (s :: u :: rest)
+
+/-- **Stricte décroissance ⇒ aucun témoin.** Si chaque flip accepté décroît
+strictement le coût, alors un run d'états acceptés (`Run`) ne porte aucun échec
+de décroissance : la stricte descente est exactement la négation du témoin. -/
+theorem run_strictdescent_excludes_failure
+    (hstrict : ∀ s t, accept s t → cost t < cost s)
+    {L : List σ} (hL : Run accept L) : ¬ DescentFailure accept cost L := by
+  induction hL with
+  | nil => intro hf; cases hf
+  | single => intro hf; cases hf
+  | cons s u rest _ _ ih =>
+    intro hf
+    cases hf with
+    | here _ _ _ hA hc => exact absurd (hstrict s u hA) hc
+    | later _ _ _ htl => exact ih htl
+
+/-- **Un témoin fait payer l'hypothèse.** Si un run porte un échec de
+décroissance, la propriété globale de stricte décroissance est fausse : le
+témoin est l'objet qui démontre la violation, pas un échec d'expérience vague. -/
+theorem failure_witness_denies_global_strict
+    {L : List σ} (hw : DescentFailure accept cost L) :
+    ¬ (∀ s t, accept s t → cost t < cost s) := by
+  intro hstrict
+  induction hw with
+  | here s u _ hA hc => exact absurd (hstrict s u hA) hc
+  | later _ _ _ htl ih => exact ih
+
 end Mimo
