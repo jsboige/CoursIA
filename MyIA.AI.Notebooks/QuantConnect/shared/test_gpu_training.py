@@ -85,6 +85,37 @@ def test_get_gpu_temp_returns_zero_on_non_int_stdout(monkeypatch):
     assert gt.get_gpu_temp() == 0
 
 
+def test_get_gpu_temp_multi_gpu_first_line_without_cvd(monkeypatch):
+    # Multi-GPU host (ai-01 3x RTX 4090): one line per GPU. Without
+    # CUDA_VISIBLE_DEVICES torch uses physical GPU 0 -> first line.
+    # (Pre-fix this raised int("42\n45\n34") -> ValueError -> silent 0 -> no-op
+    # watchdog, measured 2026-08-23.)
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.delenv("CUDA_VISIBLE_DEVICES", raising=False)
+    assert gt.get_gpu_temp() == 42
+
+
+def test_get_gpu_temp_multi_gpu_follows_cuda_visible_devices(monkeypatch):
+    # CUDA_VISIBLE_DEVICES=2 remaps torch cuda:0 to physical GPU 2; nvidia-smi
+    # keeps physical indices -> line 2.
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "2")
+    assert gt.get_gpu_temp() == 34
+
+
+def test_get_gpu_temp_multi_gpu_cvd_out_of_range_falls_back_first(monkeypatch):
+    # CVD pointing beyond the reported lines falls back to line 0, never 0-silent.
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "7")
+    assert gt.get_gpu_temp() == 42
+
+
+def test_get_gpu_temp_explicit_index_overrides_cvd(monkeypatch):
+    monkeypatch.setattr(gt.subprocess, "run", _smi("42\n45\n34"))
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "2")
+    assert gt.get_gpu_temp(index=1) == 45
+
+
 # --------------------------------------------------------------------------
 # thermal_check — CPU guard + hot/cool threshold logic
 # --------------------------------------------------------------------------
