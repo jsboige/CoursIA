@@ -54,6 +54,10 @@ from etf_vol import (                                # noqa: E402
 )
 from gpu_training import thermal_check               # noqa: E402
 from har_model import walk_forward_har               # noqa: E402
+from log_lines import (                              # noqa: E402
+    format_dm_verdict_line,
+    format_har_baseline_line,
+)                                                    # noqa: E402
 from m15_lstm_rv import walk_forward_lstm            # noqa: E402
 from realized_variance import realized_variance_to_log  # noqa: E402
 
@@ -106,8 +110,8 @@ def eval_one_symbol(
             har_mse = har_out["aggregate_mse_logrv"]
             har_errors = (har_out["forecasts"] - har_out["targets"]).dropna().values
             har_bias_oos = float(np.mean(har_errors)) if len(har_errors) else float("nan")
-            print(f"  h={h} HAR MSE(agrege)={har_mse:.5f} bias_OOS={har_bias_oos:+.5f} "
-                  f"({har_out['n_total_preds']} preds)")
+            print(format_har_baseline_line(
+                h, har_mse, har_bias_oos, har_out["n_total_preds"]))
         except Exception as exc:
             print(f"  h={h} HAR baseline FAILED: {exc}")
             continue
@@ -160,10 +164,10 @@ def eval_one_symbol(
                         "dm_verdict": dm["verdict"],
                         "dm_mean_loss_diff": dm["mean_loss_diff"],
                     }
-                    print(f"  h={h} seed={seed} LSTM MSE={lstm_mse:.5f} "
-                          f"vs HAR aligne {mse_har_aligned:.5f} "
-                          f"bias={lstm_bias_oos:+.5f} DM={dm['dm_statistic']:.3f} "
-                          f"p={dm['p_value']:.4f} -> {dm['verdict']}")
+                    print(format_dm_verdict_line(
+                        "LSTM", h, seed, lstm_mse, mse_har_aligned,
+                        lstm_bias_oos, dm["dm_statistic"], dm["p_value"],
+                        dm["verdict"]))
                 except Exception as exc:
                     print(f"  h={h} seed={seed} DM FAILED: {exc}")
                     dm_info = {"dm_verdict": "DM_FAILED"}
