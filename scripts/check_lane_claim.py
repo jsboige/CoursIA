@@ -1794,6 +1794,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
+    else:
+        # #12751 -- a zero of absence-of-measurement must not re-read as a
+        # zero of absence-of-claim. Say the detection is OFF on stderr (the
+        # JSON `stale_detection` field is set to "disabled" alongside).
+        print("STALE_DETECTION disabled -- claims are NOT age-filtered "
+              "(--no-stale or threshold None). Old claims still block.",
+              file=sys.stderr)
 
     # #12327 -- lint qualifier runs AFTER the reducer: the epic-wide marker
     # lint can no longer say `il bloque toutes les autres lanes` for a
@@ -1863,7 +1870,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
-        "stale_claims": sorted(stale_others),
+        "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
+        # #12751 -- l'etat de la detection est nomme explicitement. "active" :
+        # un seuil est pose, les claims plus vieux sont age-filtered (le
+        # comportement par defaut, 48h). "disabled" : --no-stale / threshold
+        # None -- rien n'est mesure du tout, un claim zombie de 415 h bloquerait
+        # indefiniment. `stale_claims` vaut `null` quand disabled -- un zero
+        # d'ABSENCE de mesure ne doit pas se relire comme un zero d'absence de
+        # claim (avant, les deux rendaient `[]`).
+        "stale_detection": "active" if stale_threshold is not None else "disabled",
         # #12156 -- umbrella classifier (`is_umbrella`) and the pathology it
         # describes (`epic_wide_on_umbrella`). Both default False: on a
         # unit-issue the umbrella flag stays False; on a CLEAR umbrella the
@@ -2515,12 +2530,19 @@ def main(argv: list[str] | None = None) -> int:
                    help="your lane, e.g. myia-po-2024:CoursIA")
     p.add_argument("--from-json", metavar="FILE",
                    help="read `gh issue view` JSON from FILE (offline/test mode)")
-    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=None,
+    p.add_argument("--stale-threshold", type=float, metavar="HOURS", default=48.0,
                    help="treat OTHER lanes' claims older than HOURS as stale: "
                         "warn and do not block (age from server createdAt, never "
                         "the body). The new claimant must still post its own "
-                        "[CLAIMED] -- this is not a silent bypass. Without the "
-                        "flag every active claim blocks (current behaviour).")
+                        "[CLAIMED] -- this is not a silent bypass. Default 48 "
+                        "(#12751): the canonical invocation now MEASURES. "
+                        "`--no-stale` restores the legacy behaviour (every active "
+                        "claim blocks).")
+    p.add_argument("--no-stale", action="store_true", default=False,
+                   help="#12751: disable staleness detection entirely (legacy "
+                        "behaviour: every active claim blocks, nothing is "
+                        "age-filtered). The detected state is reported as "
+                        "`stale_detection: \"disabled\"`.")
     p.add_argument("--paths", metavar="PATH", nargs="+", default=None,
                    help="path-mode (#9959): one or more file paths/globs. "
                         "Exits 2 if any OPEN PR of a different lane (or with "
@@ -2551,6 +2573,11 @@ def main(argv: list[str] | None = None) -> int:
                         "blocked (#11064). Coordinator arbitration only -- "
                         "the reading side still honours [OVERRIDE] markers.")
     args = p.parse_args(argv)
+    # #12751 -- default is 48 (measuring). `--no-stale`/threshold=None restores
+    # the legacy behaviour (every claim blocks, nothing age-filtered); the
+    # disabled state is reported honestly as `stale_detection: "disabled"`.
+    if args.no_stale:
+        args.stale_threshold = None
 
     # #10881 -- `nargs='+'` on --paths swallows a TRAILING positional issue
     # number (`--lane X --paths a b 10678` puts "10678" into the paths list,
