@@ -448,8 +448,11 @@ class TestUnreadableNotebookSkipped:
 # Tous les nouveaux fichiers sont des vrais positifs ou borderline pedagogique
 # (cadres Unicode de comparaison, diagrammes LEAN, pipeline Infer.NET) -- le
 # discriminant les a TOUS verifies un par un avant ce pin.
-CORPUS_BASELINE_TOTAL = 23
-CORPUS_BASELINE_FILES_WITH = 18
+#   c.548 (#12584, tranche Probas ASCII->Mermaid) : 3 blocs flowchart (DecInfer-1
+#                  c15, DecInfer-7 c1, DecPyMC-6 c1) convertis en Mermaid =>
+#                  20 findings / 15 files (Probas a 0).
+CORPUS_BASELINE_TOTAL = 20
+CORPUS_BASELINE_FILES_WITH = 15
 
 
 class TestCorpusBaseline:
