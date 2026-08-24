@@ -24,17 +24,21 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 
 | Notebook | Sujet | Concept-phare | Validation |
 |----------|-------|---------------|------------|
+| [3.0-Theorie-de-l-Information](3.0-Theorie-de-l-Information.ipynb) | Entropie, KL et cross-entropy from scratch (NumPy pur, vs `scipy.stats.entropy` / `scipy.special.entr, rel_entr`) sur un texte français réel | **La décomposition H(p,q) = H(p) + D_KL(p‖q)** et la saturation du gradient MSE + sigmoid rendue visible | décomposition exacte à epsilon machine près (écart < 1e-10) ; 4 distributions-test (KL ≥ 0, = 0 ssi p = q) ; non-symétrie KL(p‖q) ≠ KL(q‖p) mesurée ; parité scipy.stats.entropy et scipy.special.rel_entr ; cross-entropy minimale quand q = p (balayage 4 qs) ; MSE s'éteint aux extrêmes, CE reste proportionnelle à l'erreur |
 | [3.1-Retropropagation](3.1-Retropropagation.ipynb) | Le MLP et la rétropropagation à la main (NumPy pur, sans autograd) | **Le gradient vérifié** : différence finie vs analytique, parité exacte avec PyTorch | écart 1,3e-11 (seuil 1e-6) ; loss initiale, premier pas et trajectoire 3000 iters identiques à 1,1e-16 près ; init nulle = gradient nul (0,500 figé) |
 | [3.2-Optimisateurs](3.2-Optimisateurs.ipynb) | Momentum, Adagrad, RMSProp, Adam et schedules, écrits en NumPy pur puis validés pas à pas contre `torch.optim` | **La parité exacte** : les 5 mises à jour sont celles de torch | GD/momentum/Adam à 1,11e-16, Adagrad bit-à-bit (0,00e+00), RMSProp à 2,22e-16 (float64, 1 pas) ; Beale : 5 trajectoires superposées (facteur 200 entre lr utilisables) ; MLP du 3.1 : 5 optimisateurs × 3 graines (RMSProp 0,059 < Adam 0,061 < … < GD 0,070) ; schedules : coût en full-batch déterministe, gain sous le plancher de bruit en mini-batch |
 | [3.5-Phenomenes-de-Generalisation](3.5-Phenomenes-de-Generalisation.ipynb) | Grokking et double descente reproduits en NumPy pur (MLP à embeddings + Adam à la main), confrontés à la borne PAC du 2.8 | **Le phénomène sans la boîte noire** : mémorisation → transition abrupte, et le W de la double descente | garde gradient ≤ 1e-6 (embeddings inclus) ; grok mesuré : train saturé ~500 pas, test 100 % des dizaines de milliers de pas plus tard (wd = 1) ; contre-témoin wd = 0 ; double descente : pic au seuil M ≈ n (×5 le creux), asymptote moderne sous le creux classique, 20 graines |
 
 ## Feuille de route
 
-La suite est planifiée (issues ouvertes) : théorie de l'information appliquée — entropie, KL,
-cross-entropy (#12420) ; régularisation — dropout, weight decay, early stopping (#12409) ;
+La suite est planifiée (issues ouvertes) : régularisation — dropout, weight decay, early stopping (#12409) ;
 attention et transformer jusqu'à un mini-GPT entraîné in notebook (#12410). Le fil
 directeur ne change pas : chaque mécanisme écrit à la main, vérifié contre torch, puis
 consommé via l'API officielle.
+
+Le 3.0 (entropie, KL, cross-entropy — #12420) est livré : prerequisite de 3.1 (la loss qu'on
+différentie) et 3.4 (la loss du mini-GPT). Il est cité dans PT_03 (DPO) et PT_04 (GRPO), où
+la KL et la cross-entropy réapparaissent comme pertes canoniques.
 
 ## Prérequis
 
