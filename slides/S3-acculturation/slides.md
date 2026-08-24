@@ -256,6 +256,86 @@ layout: section
 
 
 ---
+
+
+# Décider seul, décider face à quelqu'un
+
+<div class="grid grid-cols-2 gap-8 mt-3">
+
+<div>
+
+### Théorie de la **décision**
+
+L'incertitude vient de la **nature**. Elle ne vous veut rien.
+
+- On maximise une **utilité espérée**
+- L'objet cherché est un **optimum**
+- Outils : probabilités, utilité, arbres de décision, processus markoviens
+- Chez vous : prime pure, chargement de sécurité, aversion au risque
+
+</div>
+
+<div>
+
+### Théorie des **jeux**
+
+L'incertitude vient d'un **autre décideur**, qui optimise aussi — parfois contre vous.
+
+- On cherche un **équilibre**, pas un optimum
+- L'objet cherché est l'**équilibre de Nash**
+- Outils : matrices de gains, minimax, information asymétrique, conception de mécanismes
+- Chez vous : antisélection, aléa moral, signal, dépistage
+
+</div>
+
+</div>
+
+<div class="mt-8 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+**Le même livre fonde les deux** — von Neumann &amp; Morgenstern, 1944. La théorie des jeux *dérive* de la décision, mais elle en change l'objet : dès que l'autre choisit aussi, l'optimum s'évanouit et seul l'équilibre subsiste.
+
+</div>
+
+
+---
+
+
+# Ce que la théorie des jeux ajoute — et ce qu'elle a donné à l'IA
+
+<div class="grid grid-cols-[1.05fr_1fr] gap-7 mt-2">
+
+<div>
+
+### Des objets que la décision seule ne produit pas
+
+- **Antisélection** — celui qui se sait mauvais risque s'assure en premier *(Akerlof, 1970)*
+- **Aléa moral** — être couvert change le comportement de l'assuré
+- **Signal et dépistage** — le contrat est construit pour *faire révéler* l'information cachée *(Spence 1973 ; Rothschild &amp; Stiglitz 1976, sur le marché de l'assurance)*
+- **Jeux bayésiens** — décider quand on ignore le type de l'autre *(Harsanyi)*
+
+</div>
+
+<div>
+
+### En intelligence artificielle
+
+- **Minimax et élagage alpha-bêta** : le socle des programmes de jeu depuis les années 1950
+- **Jeu contre soi-même** : le programme s'entraîne sans professeur en s'affrontant *(AlphaGo, AlphaZero)*
+- **Apprentissage par renforcement multi-agent** : plusieurs agents apprennent en s'influençant
+- **Enchères et conception de mécanismes** : ce qui régit la publicité en ligne
+
+</div>
+
+</div>
+
+<div class="mt-8 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+**Vos contrats sont déjà des mécanismes de jeu.** Franchise, bonus-malus, coassurance ne sont pas des paramètres tarifaires : ce sont des dispositifs d'incitation. La théorie des jeux est la discipline qui les conçoit.
+
+</div>
+
+
+---
 layout: section
 ---
 
@@ -2533,6 +2613,82 @@ d'entreprise offrent ce filet — c'est le premier critère de choix d'un pilote
   jamais dans le code, les prompts ou les sorties
 
 > Un outil puissant appelle une utilisation **responsable**
+
+
+---
+
+
+# Ce qui est un vrai risque — et ce qui n'en est pas un
+
+<div class="grid grid-cols-2 gap-7 mt-3">
+
+<div>
+
+### Surestimé
+
+- **Le remplacement.** Le goulot n'est pas la production, c'est la **relecture** — écrire dix fois plus réclame plus de relecteurs, pas moins.
+- **L'autonomie du modèle.** Ni intention, ni mémoire entre deux appels. Le risque n'est pas qu'il décide : c'est qu'on le **laisse** décider sans vérifier.
+- **L'hallucination comme fatalité.** Risque d'ingénierie, mesurable — atténué par le périmètre fermé, la source citée, la vérification.
+
+</div>
+
+<div>
+
+### Sous-estimé
+
+- **La fuite ordinaire.** Pas l'attaque : la pièce de dossier collée dans un service public gratuit. Premier risque réel, et **déjà là**.
+- **La dépendance non arbitrée.** Un processus qui ne sait plus fonctionner sans le modèle — sans que personne l'ait décidé.
+- **Le biais qui se durcit.** Appris sur l'historique, il reproduit la sélection passée. En souscription : discrimination indirecte, **opposable**.
+- **L'absence de trace.** L'AI Act demande de documenter ; ce qui n'est pas tracé dès le pilote ne se reconstitue pas.
+
+</div>
+
+</div>
+
+<div class="mt-6 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+Le partage utile n'est pas « risqué / pas risqué » : c'est **rattrapable / irrattrapable**.
+
+</div>
+
+
+---
+
+
+# Où la valeur se trouve — et où elle ne se trouve pas encore
+
+<div class="grid grid-cols-2 gap-7 mt-3">
+
+<div>
+
+### Mûr aujourd'hui
+*l'erreur se voit, et se corrige*
+
+- **Lire et structurer un document** : constat, pièce, conditions générales
+- **Chercher dans un corpus fermé**, réponse rattachée à sa source
+- **Pré-rédiger sous contrôle** : courrier, compte rendu, synthèse de dossier
+- **Assister l'analyse** : code, données, exploration d'un portefeuille
+
+</div>
+
+<div>
+
+### Pas encore
+*l'erreur est silencieuse*
+
+- **La décision autonome** sur un dossier
+- **Le chiffre non vérifié.** Un modèle de langage ne calcule pas : il complète. Tarification et provisionnement passent par un **outil de calcul** qu'on appelle — jamais par le modèle lui-même.
+- **Le jugement en zone grise**, là où la règle ne tranche pas et où c'est précisément le métier qui tranche
+
+</div>
+
+</div>
+
+<div class="mt-8 text-slate-600 border-l-2 border-rose-800/40 pl-5 leading-relaxed">
+
+**L'IA ne remplace pas le métier : elle réorganise le travail autour de lui.** Une nuance, et elle compte devant des actuaires — elle n'automatise pas le **calcul**, elle automatise ce qui l'entoure.
+
+</div>
 
 
 ---

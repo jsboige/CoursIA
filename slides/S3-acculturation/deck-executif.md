@@ -42,11 +42,15 @@ layout: cover
 
 <div class="font-bold text-rose-900 min-h-[3.2rem]">1 — Comprendre le fonctionnement</div>
 
+<div class="text-xs text-rose-700/70 mt-1 tracking-wide">planches 3 &rarr; 21</div>
+
 <div class="text-sm text-slate-600 mt-1 leading-relaxed">
 
 Ce que « l'IA » recouvre réellement, et les cinq familles qu'on range sous le mot.
 
 Comment un modèle de langage lit un texte : tokens, embeddings, attention.
+
+Décider seul ou décider face à quelqu'un : ce que la théorie des jeux ajoute à la théorie de la décision.
 
 </div>
 </div>
@@ -54,6 +58,8 @@ Comment un modèle de langage lit un texte : tokens, embeddings, attention.
 <div class="border-t-2 border-rose-800 pt-4 flex flex-col">
 
 <div class="font-bold text-rose-900 min-h-[3.2rem]">2 — Organisation et méthodes</div>
+
+<div class="text-xs text-rose-700/70 mt-1 tracking-wide">planches 22 &rarr; 35</div>
 
 <div class="text-sm text-slate-600 mt-1 leading-relaxed">
 
@@ -67,6 +73,8 @@ Une équipe d'agents spécialisés, coordonnée — et ce que sa structure a d'a
 <div class="border-t-2 border-rose-800 pt-4 flex flex-col">
 
 <div class="font-bold text-rose-900 min-h-[3.2rem]">3 — Risques et opportunités</div>
+
+<div class="text-xs text-rose-700/70 mt-1 tracking-wide">planches 36 &rarr; 38</div>
 
 <div class="text-sm text-slate-600 mt-1 leading-relaxed">
 
@@ -90,9 +98,9 @@ src: ./slides.md#3-8
 ---
 
 ---
-src: ./slides.md#12
+src: ./slides.md#12-14
 ---
 
 ---
-src: ./slides.md#69-95
+src: ./slides.md#71-99
 ---
