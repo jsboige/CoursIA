@@ -110,11 +110,36 @@ def _make_split_indices(n: int, n_splits: int) -> list[tuple[int, int, int]]:
     return splits
 
 
+def _fit_har_with_train_calibration(
+    rv_train: pd.Series,
+    horizon: int,
+    calibration_size: int,
+) -> tuple[HARModel, float]:
+    """Fit HAR before a train-tail holdout and estimate its signed offset."""
+    calibration_size = min(calibration_size, max(0, len(rv_train) - 60))
+    if calibration_size < max(10, horizon + 1):
+        return HARModel().fit(rv_train), 0.0
+
+    fit_end = len(rv_train) - calibration_size
+    calibration_model = HARModel().fit(rv_train.iloc[:fit_end])
+    log_rv = np.log(rv_train.clip(lower=1e-12))
+    errors: list[float] = []
+    for i in range(fit_end, len(rv_train) - horizon):
+        prediction = calibration_model.predict_h_step(rv_train.iloc[:i], horizon=horizon)
+        target = float(log_rv.iloc[i:i + horizon].mean())
+        errors.append(prediction - target)
+
+    bias = float(np.mean(errors)) if errors else 0.0
+    return calibration_model, bias
+
+
 def walk_forward_har(
     rv: pd.Series,
     horizon: int = 1,
     n_splits: int = 5,
     refit_every: int = 22,
+    calibrate_bias: bool = False,
+    calibration_size: int = 60,
 ) -> dict:
     """Walk-forward evaluation of HAR on a daily-RV series.
 
@@ -133,18 +158,26 @@ def walk_forward_har(
     preds: list[float] = []
     truths: list[float] = []
     pred_dates: list[pd.Timestamp] = []
+    initial_calibration_bias_by_fold: list[float] = []
     for fold_idx, (train_end, test_start, test_end) in enumerate(splits):
         rv_train = rv.iloc[:train_end]
         if len(rv_train) < 60:
             continue
-        model = HARModel().fit(rv_train)
+        if calibrate_bias:
+            model, bias = _fit_har_with_train_calibration(
+                rv_train, horizon=horizon, calibration_size=calibration_size,
+            )
+        else:
+            model = HARModel().fit(rv_train)
+            bias = 0.0
+        initial_calibration_bias_by_fold.append(bias)
         fold_preds: list[float] = []
         fold_truths: list[float] = []
         history = list(rv.iloc[:test_start].values)
         for i in range(test_start, test_end - horizon):
             target_window = log_rv.iloc[i:i + horizon].mean()
             tail = pd.Series(history[-(22 + horizon):])
-            log_pred = model.predict_h_step(tail, horizon=horizon)
+            log_pred = model.predict_h_step(tail, horizon=horizon) - bias
             fold_preds.append(log_pred)
             fold_truths.append(float(target_window))
             preds.append(log_pred)
@@ -152,7 +185,13 @@ def walk_forward_har(
             pred_dates.append(rv.index[i])
             history.append(float(rv.iloc[i]))
             if (i - test_start) % refit_every == 0 and i > test_start:
-                model = HARModel().fit(rv.iloc[:i])
+                if calibrate_bias:
+                    model, bias = _fit_har_with_train_calibration(
+                        rv.iloc[:i], horizon=horizon, calibration_size=calibration_size,
+                    )
+                else:
+                    model = HARModel().fit(rv.iloc[:i])
+                    bias = 0.0
         fp = np.asarray(fold_preds)
         ft = np.asarray(fold_truths)
         fold_mse = float(np.mean((fp - ft) ** 2)) if len(fp) else float("nan")
@@ -173,6 +212,9 @@ def walk_forward_har(
         "n_total_preds": len(preds_arr),
         "aggregate_mse_logrv": aggregate_mse,
         "fold_results": fold_results,
+        "calibrate_bias": calibrate_bias,
+        "calibration_size": calibration_size,
+        "initial_calibration_bias_by_fold": initial_calibration_bias_by_fold,
         "forecasts": forecasts,
         "targets": targets,
     }
