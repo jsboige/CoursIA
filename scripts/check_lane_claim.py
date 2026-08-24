@@ -112,8 +112,16 @@ from grain_tag import extract_lane
 # bold pair opener, then whitespace, then the bracket. A `[` NOT immediately at
 # a decorator position (e.g. `- Prose with [CLAIMED] mid-line`) still does not
 # match -- the mid-prose non-regression property is preserved.
+# #12711 -- the decor class was ASCII-pure, so a leading non-ASCII decoration
+# (`→` U+2192, `➡` U+27A1, `➜` U+279C, `»` U+00BB, `•` U+2022, `–` U+2013,
+# `—` U+2014) voided the marker to BOTH regexes: the claim was never read (no
+# block) and the bare-marker lint never flagged it (no WARN). Measured on
+# #12465: `→DELIVERED #12465 ...` posted by po-2026 went unread, po-2027 then
+# got CLEAR and delivered the same notebook 15 h later (#12512 / #12638).
+# `_DECOR` is the shared, broadened decoration class for all four regexes.
+_DECOR = r"(?:[#>*+\-→➡➜»•–—]{1,6}[ \t]*)*"
 _MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\s*\]",
     re.IGNORECASE,
 )
 # #11239 -- malformed-marker lint. A claim line written WITHOUT the brackets
@@ -128,7 +136,7 @@ _MARKER_RE = re.compile(
 # widening -- a malformed line must surface as a warning, never as a claim
 # event. The motif tail is on the same line only (no `[\s\S]` cross-line).
 _MALFORMED_MARKER_RE = re.compile(
-    r"(?m)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*"
+    r"(?m)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*"
     r"(CLAIMED|RELEASED|CANCELLED|ABANDONED|DONE|OVERRIDE|DELIVERED)\b"
     r"[^\n]*(?:lane\s+\S+:\S+|#\d+)",
     re.IGNORECASE,
@@ -234,7 +242,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -280,7 +288,7 @@ _PAREN_ANNOTATION_RE = re.compile(r" \(")
 # claim is NOT re-classified (see #12072: re-reading an off-marker prose line
 # as the machine clause would make the scope depend on an heuristic).
 _OFF_MARKER_SCOPE_RE = re.compile(
-    r"(?im)^[ \t]*(?:[#>*+-]{1,6}[ \t]*)*(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*paths?\s*:\s*([^\n]+?)\s*$"
 )
 
 

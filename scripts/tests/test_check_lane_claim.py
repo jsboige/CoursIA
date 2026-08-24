@@ -347,6 +347,48 @@ def test_decorated_paths_clause_scopes_claim():
     assert fnmatch.fnmatch("notebooks/b.ipynb", "notebooks/b.ipynb**")  # invariant
 
 
+# --- non-ASCII leading decoration (#12711) -----------------------------------
+# A leading `→` (U+2192) / `➡` / `»` / `•` / `–` / `—` is an agent decoration,
+# not an ASCII decorator. The ASCII-pure decor class voided such a marker to
+# BOTH regexes on #12465 (po-2026's `→DELIVERED` went unread; po-2027 got CLEAR
+# and delivered the same notebook 15 h later). Broadening `_DECOR` re-reads the
+# marker and re-arms the malformed lint for the bracketless form.
+
+def test_parse_marker_non_ascii_arrow_decorated():
+    ev = clc.parse_claim_event(comment(
+        "→[CLAIMED] lane myia-po-2027:CoursIA-2 -- arrow prefix",
+        "2026-08-23T18:21:01Z",
+    ))
+    assert ev is not None
+    assert ev.is_open is True
+    assert ev.marker == "CLAIMED"
+    assert ev.lane == "myia-po-2027:CoursIA-2"
+
+
+def test_parse_non_ascii_decorated_delivered_closes():
+    # The exact #12465 shape, bracketed: an arrow-prefixed DELIVERED with a
+    # lane must register as a close (this is what po-2026's line should have
+    # done before po-2027 delivered the same notebook).
+    ev = clc.parse_claim_event(comment(
+        "→[DELIVERED] lane myia-po-2026:CoursIA -- PR #12512 paths: .../Search-3-Informed.ipynb",
+        "2026-08-23T03:36:33Z",
+    ))
+    assert ev is not None
+    assert ev.marker == "DELIVERED"
+    assert ev.is_open is False
+    assert ev.lane == "myia-po-2026:CoursIA"
+
+
+def test_parse_non_ascii_decoration_mid_prose_still_ignored():
+    # A `→` followed by prose, then a mid-line `[CLAIMED]`, must NOT become an
+    # event (the bracket is not at a decorator position). Non-regression pinned.
+    ev = clc.parse_claim_event(comment(
+        "→ Cette PR reprend un [CLAIMED] discute plus tot",
+        "2026-08-23T09:00:00Z",
+    ))
+    assert ev is None
+
+
 def test_check_no_paths_claim_in_prose_returns_exit_2_not_scoped(capsys):
     # Full-flow regression for the #10228 FN: a claim comment that ALSO mentions
     # a close marker in instructional prose must still BLOCK another lane. This
@@ -688,6 +730,20 @@ def test_decorated_bare_marker_flagged(capsys):
     captured = capsys.readouterr()
     assert rc == 0
     assert '"malformed_markers": 1' in captured.out
+
+
+def test_malformed_marker_non_ascii_decorated_surfaces(capsys):
+    # #12711 -- a `→`-prefixed BARE marker (no brackets) was invisible to the
+    # #11239 lint too: the writer believed their lock was posted yet the organ
+    # answered CLEAR. Broadening `_DECOR` re-arms the WARN.
+    p = payload(comment(
+        "→CLAIMED lane myia-po-2026:CoursIA -- working here",
+        "2026-08-23T03:36:33Z"))
+    rc = clc._run_check(p, "myia-po-2024:CoursIA")
+    captured = capsys.readouterr()
+    assert rc == 0                          # WARN-only, never blocks
+    assert '"malformed_markers": 1' in captured.out
+    assert 'WARN: marqueur sans crochets "CLAIMED"' in captured.err
 
 
 def test_malformed_close_marker_flagged(capsys):
